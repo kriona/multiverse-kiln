@@ -1,0 +1,9 @@
+/**
+ * Name of the main game room, registered on the server and joined by the client
+ */
+export const GAME_ROOM_NAME = 'game';
+
+/**
+ * Default port the Colyseus server listens on
+ */
+export const DEFAULT_SERVER_PORT = 2567;

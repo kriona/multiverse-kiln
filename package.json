@@ -1,0 +1,37 @@
+{
+	"name": "multiverse-kiln",
+	"private": true,
+	"license": "AGPL-3.0-or-later",
+	"type": "module",
+	"workspaces": [
+		"shared",
+		"server",
+		"client"
+	],
+	"engines": {
+		"node": ">= 22.22.1"
+	},
+	"scripts": {
+		"prepare": "husky",
+		"lint": "npm run build -w shared && eslint .",
+		"lint:fix": "npm run build -w shared && eslint . --fix",
+		"dev": "npm run build -w shared && concurrently --kill-others --names shared,server,client --prefix-colors blue,green,magenta \"npm run dev -w shared\" \"npm run dev -w server\" \"npm run dev -w client\"",
+		"build": "npm run build -w shared && npm run build -w server && npm run build -w client",
+		"typecheck": "npm run build -w shared && npm run typecheck -w server && npm run typecheck -w client",
+		"test": "npm run build -w shared && npm run test -w server"
+	},
+	"devDependencies": {
+		"@eslint/js": "^10.0.1",
+		"@stylistic/eslint-plugin": "^5.10.0",
+		"concurrently": "^10.0.6",
+		"eslint": "^10.12.0",
+		"globals": "^17.13.0",
+		"husky": "^9.1.7",
+		"lint-staged": "^17.6.0",
+		"typescript": "~5.9.3",
+		"typescript-eslint": "^8.71.2"
+	},
+	"lint-staged": {
+		"*.{ts,js,cjs,mjs}": "eslint --fix"
+	}
+}

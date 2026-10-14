@@ -1,0 +1,16 @@
+* text=auto eol=crlf
+
+# Shell scripts must be LF to run on Linux (Docker, CI, servers); Windows scripts must be CRLF
+*.sh text eol=lf
+.husky/** text eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.mp3 binary
+*.ogg binary
+*.wav binary

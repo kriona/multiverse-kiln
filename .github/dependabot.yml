@@ -1,0 +1,31 @@
+# Dependabot version updates: https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference
+# Security updates are turned on separately, in the repository's Settings > Advanced Security
+version: 2
+updates:
+  # One entry covers every workspace: npm workspaces share the root package-lock.json
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    # Waits before proposing a new release, so a compromised or broken publish is likely caught
+    # and pulled first. Security updates ignore this
+    cooldown:
+      default-days: 7
+    groups:
+      # colyseus and the @colyseus/* packages must stay on matching versions
+      colyseus:
+        patterns:
+          - colyseus
+          - "@colyseus/*"
+      # Bundles the routine minor and patch updates into one PR each; majors still get their own
+      production-minor-patch:
+        dependency-type: production
+        update-types:
+          - minor
+          - patch
+      development-minor-patch:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch

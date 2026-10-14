@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Build output
+build/
+dist/
+*.tsbuildinfo
+
+# Environment files (commit only .env.example)
+.env
+.env.*
+!.env.example
+
+# Local TLS certificates and keys
+certs/
+*.pem
+
+# Agent skills: the skills live in .agents/skills/ (committed); `npx skills` links them into
+# .claude/skills/ per machine, and the link uses an absolute path that breaks in other clones
+.claude/skills/
+
+# Colyseus
+.colyseus-cloud.json
+.devmode.json
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db

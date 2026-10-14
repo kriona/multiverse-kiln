@@ -1,0 +1,21 @@
+{
+	"extends": "../tsconfig.base.json",
+	"compilerOptions": {
+		"outDir": "build",
+		"target": "ESNext",
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"allowJs": true,
+		"experimentalDecorators": true,
+		"useDefineForClassFields": false,
+		"types": [
+			"node",
+			"mocha"
+		]
+	},
+	"include": [
+		"src",
+		"test",
+		"loadtest"
+	]
+}

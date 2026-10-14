@@ -1,0 +1,21 @@
+root = true
+
+[*]
+charset = utf-8
+indent_style = tab
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Trailing spaces can be meaningful in Markdown (line breaks)
+[*.md]
+trim_trailing_whitespace = false
+
+# Shell scripts must be LF to run on Linux (matches .gitattributes), including the extensionless Git hooks
+[{*.sh,.husky/**}]
+end_of_line = lf
+
+# YAML doesn't allow tabs (docker-compose.yml)
+[*.{yml,yaml}]
+indent_style = space
+indent_size = 2

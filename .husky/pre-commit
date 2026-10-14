@@ -1,0 +1,12 @@
+# Scans staged changes for secrets (API keys, private keys, tokens); the commit is blocked if any are found
+if ! command -v gitleaks >/dev/null 2>&1
+then
+	echo 'gitleaks is not installed, so staged changes cannot be scanned for secrets. Install it (see "Install the tools" in README.md) and commit again'
+	exit 1
+fi
+gitleaks git --pre-commit --staged --redact --no-banner
+
+# Lints staged files, fixing what it can; the commit is blocked if errors remain
+# shared is built first so type-aware lint rules can resolve @multiverse-kiln/shared
+npm run build -w shared
+npx lint-staged
