@@ -1,0 +1,27 @@
+# Local Postgres for development (see README "Start the database")
+# Passwords come from the git-ignored .env next to this file (copy .env.example)
+services:
+  postgres:
+    # Matches the Neon project's major version (Neon's default for new projects is 18)
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      KILN_MIGRATOR_PASSWORD: ${KILN_MIGRATOR_PASSWORD:?Set KILN_MIGRATOR_PASSWORD in .env}
+      KILN_APP_PASSWORD: ${KILN_APP_PASSWORD:?Set KILN_APP_PASSWORD in .env}
+    ports:
+      # Only reachable from this machine
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # Postgres 18+ images keep their data under /var/lib/postgresql (not /var/lib/postgresql/data)
+      - postgres-data:/var/lib/postgresql
+      # Runs once, when the data volume is first created
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d kiln"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres-data:

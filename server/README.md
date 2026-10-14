@@ -11,6 +11,10 @@ Run all commands from the repository root with `-w server`, e.g. `npm run dev -w
 - `src/transport.ts`: HTTPS/WSS transport; refuses to start without a certificate (except on Colyseus Cloud and in tests)
 - `src/rooms/`: room handlers
 - `src/rooms/schema/`: state synchronized to every client in a room
+- `src/db/schema.ts`: Drizzle schema, the source of truth for the database tables
+- `src/db/client.ts`: connection pool for `DATABASE_URL`; only repository modules in `src/db/` use it
+- `drizzle/`: generated SQL migrations. Create them with `npm run db:generate -w server`; don't edit them by hand
+- `drizzle.config.ts`: drizzle-kit configuration; migrations connect with `MIGRATION_DATABASE_URL`
 - `test/`: mocha tests that boot the real server and connect real clients; `test/setup.ts` runs first
 - `loadtest/example.ts`: scriptable client for `npm run loadtest`
 - `ecosystem.config.cjs`: pm2 configuration used by Colyseus Cloud
@@ -21,6 +25,8 @@ Run all commands from the repository root with `-w server`, e.g. `npm run dev -w
 - `npm test -w server`: run the mocha test suite
 - `npm run build -w server`: compile to `build/`
 - `npm run start -w server`: run the compiled build
+- `npm run db:generate -w server`: create a migration in `drizzle/` from changes to `src/db/schema.ts`
+- `npm run db:migrate -w server`: apply pending migrations to `MIGRATION_DATABASE_URL`. Start Postgres first (`docker compose up -d`)
 - `npm run loadtest -w server`: connect simulated clients to `LOADTEST_ENDPOINT` with [`@colyseus/loadtest`](https://github.com/colyseus/colyseus-loadtest/). Start the server first
 
 With `ENABLE_DEV_TOOLS=true` in `server/.env`, the playground is at `https://www.multiversekiln-dev.com:2567` and the monitor at `/monitor`.

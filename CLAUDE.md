@@ -54,11 +54,14 @@ npm workspaces are assumed (`client`, `server`, `shared`). Update this section i
 - Schema changes are made in the Drizzle schema, then a migration is generated with `drizzle-kit`. Never edit the database by hand, and never run migrations automatically on server startup.
 - Use a standard TCP Postgres driver (`pg` or `postgres.js`) with a connection pool. Do not use Neon's HTTP/serverless driver; the server is a long-running process.
 - In production, use Neon's **pooled** connection string.
+- Two roles: migrations run as the migration role, which owns the tables; the server runs as the app role, which can read and write rows but not alter tables. Locally, `docker/postgres/init/01-roles.sh` creates them. Never give the server the migration role's credentials.
+- `server/src/db/client.ts` throws on import when `DATABASE_URL` is unset. The test suite doesn't set it yet, so tests that boot the server will need a test database once a room imports a repository (Phase 6).
 
 ## Configuration
 
 - All environment-specific values come from environment variables. Never hard-code URLs, credentials, or secrets, and never commit `.env` files. The pre-commit hook runs gitleaks on staged changes and blocks commits that contain secrets.
-- Server: `DATABASE_URL` (from Phase 1), `PORT` (default 2567), `ENABLE_DEV_TOOLS` (playground and `/monitor`, never in production), `SSL_KEY_FILE` / `SSL_CERT_FILE`, `ALLOWED_ORIGINS`, `LOADTEST_ENDPOINT`, auth secret(s).
+- Root (`docker-compose.yml`): `POSTGRES_PASSWORD`, `KILN_MIGRATOR_PASSWORD`, `KILN_APP_PASSWORD`, `POSTGRES_PORT`.
+- Server: `DATABASE_URL` (the app role), `MIGRATION_DATABASE_URL` (the migration role; drizzle-kit only, never the running server), `PORT` (default 2567), `ENABLE_DEV_TOOLS` (playground and `/monitor`, never in production), `SSL_KEY_FILE` / `SSL_CERT_FILE`, `ALLOWED_ORIGINS`, `LOADTEST_ENDPOINT`, auth secret(s).
 - Client: `DEV_HOST`, `DEV_PORT`, `DEV_SSL_KEY_FILE` / `DEV_SSL_CERT_FILE`, `VITE_SERVER_URL` (`wss://www.multiversekiln-dev.com:2567` locally, `wss://...` in production).
 - Commit `.env.example` files listing every variable with placeholder values, and keep them up to date.
 
@@ -80,13 +83,13 @@ npm workspaces are assumed (`client`, `server`, `shared`). Update this section i
 `start.bat` (runs `npm install`, then `npm run dev`) or `npm run dev` at the root builds `shared`, then runs the shared watcher, server, and client together in one terminal.
 
 ```bash
-docker compose up -d                 # start local Postgres (Phase 1)
-npm run db:migrate -w server         # apply Drizzle migrations (Phase 1)
+docker compose up -d                 # start local Postgres
+npm run db:generate -w server        # create a migration after changing server/src/db/schema.ts
+npm run db:migrate -w server         # apply Drizzle migrations
 npm run dev -w server                # Colyseus on wss://www.multiversekiln-dev.com:2567
 npm run dev -w client                # Vite on https://www.multiversekiln-dev.com:5173
 ```
 
-The Postgres and migration scripts are the intended convention; create them when the database is added.
 Run all npm commands from the repository root, using `-w <package>` to target one package (e.g. `npm install <pkg> -w server`).
 Test multiplayer by opening two browser tabs. The local Postgres major version should match the Neon project's.
 
