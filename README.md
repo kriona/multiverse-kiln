@@ -35,7 +35,7 @@ There is a single `node_modules` and `package-lock.json` at the root. `shared` i
 - **Node.js 22.22.1 or newer** (LTS recommended). Check with `node -v`. npm comes with it.
 - **Git**.
 - **gitleaks**, which the pre-commit hook uses to block commits containing secrets (see [Secret scanning](#secret-scanning)). On Windows: `winget install Gitleaks.Gitleaks`; on macOS: `brew install gitleaks`. Open a new terminal (and restart VS Code or your Git client) afterwards so it's on your `PATH`.
-- **Docker Desktop**, for the local Postgres database. Not needed yet: the database arrives in Phase 1 of `PLAN.md`, but installing it now saves a step later.
+- **Docker Desktop**, for the local Postgres database. On Windows: `winget install Docker.DockerDesktop`, then start Docker Desktop once and let it finish setting up.
 - **VS Code** (recommended; see [Working in VS Code](#working-in-vs-code)).
 
 ### 2. Clone and install
@@ -77,12 +77,25 @@ Check it with `ping www.multiversekiln-dev.com`, which should reply from `127.0.
 Each package that needs configuration has a committed `.env.example`. Copy it to `.env` and adjust:
 
 ```bash
+cp .env.example .env
 cp client/.env.example client/.env
 cp server/.env.example server/.env
 ```
 
+The root `.env` holds the local database passwords (used by `docker-compose.yml`). Replace each `replace-me` with a generated password:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"
+```
+
+Then put the same passwords into the connection strings in `server/.env`: `KILN_APP_PASSWORD` goes in `DATABASE_URL`, and `KILN_MIGRATOR_PASSWORD` in `MIGRATION_DATABASE_URL`. Hex passwords don't need escaping in a URL.
+
 | Variable | File | Purpose |
 |---|---|---|
+| `POSTGRES_PASSWORD` | `.env` | Password for the local Postgres superuser. Only the container's setup script uses it. |
+| `KILN_MIGRATOR_PASSWORD` | `.env` | Password for `kiln_migrator`, the role migrations run as. |
+| `KILN_APP_PASSWORD` | `.env` | Password for `kiln_app`, the role the game server runs as. |
+| `POSTGRES_PORT` | `.env` | Host port for Postgres, bound to `127.0.0.1` only (default `5432`). |
 | `DEV_HOST` | `client/.env` | Hostname for the Vite dev server: `www.multiversekiln-dev.com` (must be in your hosts file; see step 3). |
 | `DEV_PORT` | `client/.env` | Port for the Vite dev server (default `5173`). |
 | `VITE_SERVER_URL` | `client/.env` | WebSocket URL of the Colyseus server: `wss://www.multiversekiln-dev.com:2567`. Use the same hostname as `DEV_HOST` so it matches the certificate. |
@@ -90,6 +103,8 @@ cp server/.env.example server/.env
 | `ENABLE_DEV_TOOLS` | `server/.env` | Set to `true` to enable `/monitor` and the playground. Off when unset, and always off when `NODE_ENV=production`. Never set it in production. |
 | `SSL_KEY_FILE`, `SSL_CERT_FILE` | `server/.env` | Certificate for HTTPS/WSS (required). The example values point at `certs/` (see step 5). Leave unset on Colyseus Cloud, which handles TLS itself. |
 | `ALLOWED_ORIGINS` | `server/.env` | Comma-separated origins allowed to use the server from a browser (CORS and WebSocket connections). Required. Locally: the client and the server itself (for the playground). |
+| `DATABASE_URL` | `server/.env` | Postgres connection string for the game server, as `kiln_app`. In production: Neon's pooled connection string. |
+| `MIGRATION_DATABASE_URL` | `server/.env` | Postgres connection string for `npm run db:migrate -w server`, as `kiln_migrator`. Never give it to the running server. |
 | `LOADTEST_ENDPOINT` | `server/.env` | Server URL that `npm run loadtest -w server` connects to: `wss://www.multiversekiln-dev.com:2567`. |
 | `DEV_SSL_KEY_FILE`, `DEV_SSL_CERT_FILE` | `client/.env` | Local certificate for the HTTPS dev server (required). The example values point at `certs/` (see step 5). |
 
@@ -124,7 +139,33 @@ Neither the Vite dev server nor the Colyseus server will start without the certi
 - **Colyseus Cloud:** the server listens on a local socket behind Cloud's proxy, which serves HTTPS to players.
 - **Tests:** the test harness only connects over plain `ws://`, so `server/test/setup.ts` sets `NODE_ENV=test` and clears the certificate settings.
 
-### 6. Run it
+### 6. Start the database
+
+With Docker Desktop running, from the repository root:
+
+```bash
+docker compose up -d                 # start Postgres in the background
+npm run db:migrate -w server         # create or update the tables
+```
+
+Postgres listens on `127.0.0.1:5432` (only reachable from your machine) and keeps its data in a Docker volume, so it survives restarts. It keeps running in the background until you run `docker compose stop`.
+
+The first start runs `docker/postgres/init/01-roles.sh`, which creates the `kiln` database and two roles:
+
+| Role | Used by | Can |
+|---|---|---|
+| `kiln_migrator` | `npm run db:migrate -w server` (`MIGRATION_DATABASE_URL`) | Create, alter and drop tables (it owns them) |
+| `kiln_app` | The game server (`DATABASE_URL`) | Read and write rows, but not change tables |
+
+The setup script and the passwords in `.env` only take effect when the data volume is first created. To change a password or start over with an empty database, delete the volume (this deletes all local data) and migrate again:
+
+```bash
+docker compose down -v
+docker compose up -d
+npm run db:migrate -w server
+```
+
+### 7. Run it
 
 From the repository root:
 
@@ -148,7 +189,7 @@ Press `Ctrl+C` to stop all three. If any one exits, the others are stopped too.
 
 To test multiplayer, open the client in two browser tabs.
 
-### 7. Verify
+### 8. Verify
 
 ```bash
 npm run typecheck    # type-checks shared, server, and client
@@ -170,6 +211,9 @@ All commands run from the repository root.
 | `npm test` | Run server tests (mocha) |
 | `npm run lint` | Lint everything |
 | `npm run lint:fix` | Lint everything and fix what can be fixed automatically |
+| `docker compose up -d` / `docker compose stop` | Start / stop the local Postgres |
+| `npm run db:generate -w server` | Create a migration from changes to `server/src/db/schema.ts` |
+| `npm run db:migrate -w server` | Apply pending migrations (as `MIGRATION_DATABASE_URL`) |
 | `npm run loadtest -w server` | Connect simulated clients to a running server (`LOADTEST_ENDPOINT`) |
 | `npm run <script> -w <package>` | Run one package's script, e.g. `npm run dev -w server` |
 | `npm install <pkg> -w <package>` | Add a dependency to one package, e.g. `npm install drizzle-orm -w server` |

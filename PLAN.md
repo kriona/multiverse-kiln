@@ -4,7 +4,7 @@ Phased roadmap for building the game locally, then deploying to Colyseus Cloud +
 Each phase ends with a "Done when" check. Tick boxes as work completes and keep the
 **Current phase** line updated so each new session knows where to pick up.
 
-**Current phase:** 1
+**Current phase:** 2
 
 ---
 
@@ -22,12 +22,13 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 
 ## Phase 1: Local infrastructure
 
-- [ ] `docker-compose.yml` with Postgres (match Neon's major version); bind the port to `127.0.0.1` only and read the password from `.env`
-- [ ] Separate Postgres roles: the app role can read and write data but not alter tables; migrations run under a migration role
-- [ ] Install Drizzle ORM, `drizzle-kit`, and a TCP Postgres driver in `server`
-- [ ] `server/src/db/client.ts` creating a pooled connection from `DATABASE_URL`
-- [ ] Initial Drizzle schema (e.g. `players` table: id, display name, created_at)
-- [ ] `db:generate` and `db:migrate` scripts; first migration applied locally
+- [✅] `docker-compose.yml` with Postgres (match Neon's major version); bind the port to `127.0.0.1` only and read the password from `.env`
+- [✅] Separate Postgres roles: the app role can read and write data but not alter tables; migrations run under a migration role
+- [✅] Install Drizzle ORM, `drizzle-kit`, and a TCP Postgres driver in `server`
+- [✅] `server/src/db/client.ts` creating a pooled connection from `DATABASE_URL`
+- [✅] Initial Drizzle schema (e.g. `players` table: id, display name, created_at)
+- [✅] `db:generate` and `db:migrate` scripts
+- [✅] First migration applied locally
 - [✅] `.env.example` files for server and client
 
 **Done when:** Postgres runs in Docker and the first migration creates the tables.
@@ -58,7 +59,8 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 
 Do this before the game gets big, to surface WebSocket, TLS, and env issues early.
 
-- [ ] Create Neon project with `dev` and `prod` branches, in the region nearest the planned Colyseus Cloud location
+- [ ] Create Neon project with `dev` and `prod` branches, in the region nearest the planned Colyseus Cloud location. Use Postgres 18 to match `docker-compose.yml`
+- [ ] Create the migration and app roles on each Neon branch with the same ownership and grants as `docker/postgres/init/01-roles.sh`; the server gets only the app role's pooled connection string
 - [ ] Run migrations against Neon `prod`
 - [ ] Deploy server with `npx @colyseus/cloud deploy`; set env vars in the dashboard (pooled Neon URL, `ALLOWED_ORIGINS` = the production client origin)
 - [ ] Point a production client build at the `wss://` endpoint
@@ -70,7 +72,7 @@ Do this before the game gets big, to surface WebSocket, TLS, and env issues earl
 - [ ] Check whether Colyseus Cloud's proxy sends `Strict-Transport-Security` for the game server; add it if not
 - [ ] In the GitHub repository's Settings > Advanced Security, turn on Dependabot alerts, Dependabot security updates and secret scanning with push protection (`.github/dependabot.yml` already configures version updates, and gitleaks runs in the pre-commit hook)
 - [ ] Add `github-actions` (once there are workflows) and `docker-compose` entries to `.github/dependabot.yml`
-- [ ] Review `npm audit`: the known low/moderate findings come from `@colyseus/auth` (bundled with `colyseus`, unused); don't run `npm audit fix --force`, which downgrades Colyseus
+- [ ] Review `npm audit`: the known low/moderate findings come from `@colyseus/auth` (bundled with `colyseus`, unused) and the old `esbuild` under `drizzle-kit` (dev-only; the advisory concerns esbuild's dev server, which drizzle-kit doesn't run); don't run `npm audit fix --force`, which downgrades Colyseus
 
 **Done when:** two players on different networks can join the same room in the cloud.
 
