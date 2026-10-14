@@ -4,7 +4,7 @@ Phased roadmap for building the game locally, then deploying to Colyseus Cloud +
 Each phase ends with a "Done when" check. Tick boxes as work completes and keep the
 **Current phase** line updated so each new session knows where to pick up.
 
-**Current phase:** 2
+**Current phase:** 3
 
 ---
 
@@ -35,13 +35,13 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 
 ## Phase 2: Server skeleton
 
-- [ ] Message type enum and payload interfaces in `/shared`
-- [ ] Schema classes: `GameState` containing a `MapSchema<Player>`
-- [ ] `GameRoom` with `onCreate`, `onJoin`, `onLeave`, `onDispose`; set `maxMessagesPerSecond` (Colyseus defaults it to `Infinity`)
-- [ ] Input message handler that queues inputs per player; validate payloads against the `/shared` types (no `any`) and don't log raw client input
-- [ ] Simulation loop (~30 Hz) calling pure logic in `server/src/logic/`: `setTimestep`, or `setFixedTimestep` if we add client-side prediction (see the `colyseus` skill)
-- [ ] Health-check HTTP route; remove the template's `/api/hello` and `/hi` routes (or serve them only with dev tools on)
-- [ ] Unit tests for the movement logic
+- [✅] Message type enum and payload interfaces in `/shared`
+- [✅] Schema classes: `GameState` containing a `MapSchema<Player>`
+- [✅] `GameRoom` with `onCreate`, `onJoin`, `onLeave`, `onDispose`; set `maxMessagesPerSecond` (Colyseus defaults it to `Infinity`)
+- [✅] Input message handler that queues inputs per player; validate payloads against the `/shared` types (no `any`) and don't log raw client input
+- [✅] Simulation loop (~30 Hz) calling pure logic in `server/src/logic/`: `setTimestep`, or `setFixedTimestep` if we add client-side prediction (see the `colyseus` skill)
+- [✅] Health-check HTTP route; remove the template's `/api/hello` and `/hi` routes (or serve them only with dev tools on)
+- [✅] Unit tests for the movement logic
 
 **Done when:** the Colyseus dev tools can join the room and show player state changing.
 

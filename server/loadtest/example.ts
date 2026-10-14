@@ -1,28 +1,43 @@
 import { Client, type Room } from '@colyseus/sdk';
 import { cli, type Options } from '@colyseus/loadtest';
+import { MessageType, type Direction, type MovePayload } from '@multiverse-kiln/shared';
 
+const directions: Direction[] = [-1, 0, 1];
+
+/**
+ * Picks a random direction on each axis, like a player pressing arrow keys
+ *
+ * @return A random Move payload
+ */
+function randomMove(): MovePayload
+{
+	return({
+		x: directions[Math.floor(Math.random() * directions.length)],
+		y: directions[Math.floor(Math.random() * directions.length)]
+	});
+}
+
+/**
+ * Runs one simulated client: joins the room and changes direction every second
+ *
+ * @param options Load test options from the command line
+ */
 export async function main(options: Options)
 {
 	const client = new Client(options.endpoint);
-	const room: Room = await client.joinOrCreate(options.roomName, {
-		// your join options here...
-	});
+	const room: Room = await client.joinOrCreate(options.roomName, {});
 
-	console.log('joined successfully!');
+	console.log(room.sessionId, 'joined');
 
-	room.onMessage('message-type', (_payload: unknown) =>
+	const timer = setInterval(() =>
 	{
-		// logic
-	});
+		room.send(MessageType.Move, randomMove());
+	}, 1000);
 
-	room.onStateChange((state: unknown) =>
+	room.onLeave((code: number) =>
 	{
-		console.log('state change:', state);
-	});
-
-	room.onLeave((_code: number) =>
-	{
-		console.log('left');
+		clearInterval(timer);
+		console.log(room.sessionId, 'left', code);
 	});
 }
 

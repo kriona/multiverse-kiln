@@ -239,7 +239,7 @@ What it checks:
 - **Code style:** Allman braces, single quotes, `===`, tabs, braces on every `if`/`else`/loop.
 	- Parentheses around return values and ternaries aren't checked, because no lint rule exists for them.
 - **Bugs:** promises that are never awaited or handled (errors from them disappear silently), unused variables and imports.
-- **Project rules:** `any` is a warning. `server/src/logic/` can't import Colyseus, the database, or I/O and network modules (game rules must be pure functions), and `server/src/rooms/` can't import the database client directly (use the repository modules).
+- **Project rules:** no `any`. `server/src/logic/` can't import Colyseus, the database, or I/O and network modules (game rules must be pure functions), and `server/src/rooms/` can't import the database client directly (use the repository modules).
 
 `server/src/index.ts` and `server/ecosystem.config.cjs` are excluded, because they're Colyseus Cloud files left as Colyseus generated them.
 

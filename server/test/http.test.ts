@@ -2,6 +2,7 @@ import assert from 'assert';
 import { randomBytes } from 'crypto';
 import http from 'http';
 
+import { HEALTH_PATH } from '../src/http/health.js';
 import { allowedTestOrigin } from './setup.js';
 import { getTestServer, testServerUrl } from './testServer.js';
 
@@ -66,7 +67,7 @@ describe('HTTP responses', () =>
 
 	it('does not send X-Powered-By', async () =>
 	{
-		const response = await fetch(`${testServerUrl}/hi`);
+		const response = await fetch(`${testServerUrl}${HEALTH_PATH}`);
 
 		assert.strictEqual(response.status, 200);
 		assert.strictEqual(response.headers.get('x-powered-by'), null);
@@ -74,12 +75,39 @@ describe('HTTP responses', () =>
 
 	it('sends nosniff on Express routes, Colyseus routes and 404s', async () =>
 	{
-		for (const route of ['/hi', '/__healthcheck', '/nothing-here'])
+		for (const route of [HEALTH_PATH, '/__healthcheck', '/nothing-here'])
 		{
 			const response = await fetch(`${testServerUrl}${route}`);
 
 			assert.strictEqual(response.headers.get('x-content-type-options'), 'nosniff', route);
 		}
+	});
+
+	it('does not serve the Colyseus template routes', async () =>
+	{
+		for (const route of ['/hi', '/api/hello'])
+		{
+			const response = await fetch(`${testServerUrl}${route}`);
+
+			assert.strictEqual(response.status, 404, route);
+		}
+	});
+});
+
+describe('Health check', () =>
+{
+	before(async () =>
+	{
+		await getTestServer();
+	});
+
+	it('answers 200 with an uncached status', async () =>
+	{
+		const response = await fetch(`${testServerUrl}${HEALTH_PATH}`);
+
+		assert.strictEqual(response.status, 200);
+		assert.strictEqual(response.headers.get('cache-control'), 'no-store');
+		assert.deepStrictEqual(await response.json(), { status: 'ok' });
 	});
 });
 
@@ -92,7 +120,7 @@ describe('CORS', () =>
 
 	it('allows origins in ALLOWED_ORIGINS', async () =>
 	{
-		const response = await fetch(`${testServerUrl}/hi`, { headers: { Origin: allowedTestOrigin } });
+		const response = await fetch(`${testServerUrl}${HEALTH_PATH}`, { headers: { Origin: allowedTestOrigin } });
 
 		assert.strictEqual(response.headers.get('access-control-allow-origin'), allowedTestOrigin);
 		assert.strictEqual(response.headers.get('access-control-allow-credentials'), 'true');
@@ -101,7 +129,7 @@ describe('CORS', () =>
 
 	it('does not allow other origins', async () =>
 	{
-		const response = await fetch(`${testServerUrl}/hi`, { headers: { Origin: otherOrigin } });
+		const response = await fetch(`${testServerUrl}${HEALTH_PATH}`, { headers: { Origin: otherOrigin } });
 
 		assert.strictEqual(response.headers.get('access-control-allow-origin'), null);
 	});

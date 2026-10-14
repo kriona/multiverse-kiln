@@ -3,17 +3,13 @@ import {
 	defineRoom,
 	monitor,
 	playground,
-	createRouter,
-	createEndpoint,
 } from 'colyseus';
 
-/**
- * Import your Room files
- */
 import { GAME_ROOM_NAME } from '@multiverse-kiln/shared';
-import { MyRoom } from './rooms/MyRoom.js';
+import { GameRoom } from './rooms/GameRoom.js';
 import { createTransport } from './transport.js';
 import { isDevToolsEnabled } from './devTools.js';
+import { addHealthRoute } from './http/health.js';
 import { createOriginCheck, parseAllowedOrigins } from './http/origins.js';
 import { configureResponseHeaders } from './http/responseHeaders.js';
 
@@ -31,38 +27,21 @@ const server = defineServer({
 	transport: createTransport({ beforeUpgrade: createOriginCheck(allowedOrigins) }),
 
 	/**
-	 * Define your room handlers
+	 * Room types clients can join
 	 */
 	rooms: {
-		[GAME_ROOM_NAME]: defineRoom(MyRoom),
+		[GAME_ROOM_NAME]: defineRoom(GameRoom),
 	},
 
 	/**
-	 * Experimental: Define API routes. Built-in integration with the "playground" and SDK
-	 *
-	 * Usage from SDK:
-	 *   client.http.get('/api/hello').then((response) => {})
-	 */
-	routes: createRouter({
-		api_hello: createEndpoint('/api/hello', { method: 'GET' }, () =>
-		{
-			return(Promise.resolve({ message: 'Hello World' }));
-		}),
-	}),
-
-	/**
-	 * Bind your custom express routes here
-	 * Read more: https://expressjs.com/en/starter/basic-routing.html
+	 * Express routes and middleware
 	 */
 	express: (app) =>
 	{
 		// Don't advertise the server software: Express adds X-Powered-By to every response
 		app.disable('x-powered-by');
 
-		app.get('/hi', (req, res) =>
-		{
-			res.send('It\'s time to kick ass and chew bubblegum!');
-		});
+		addHealthRoute(app);
 
 		if (isDevToolsEnabled())
 		{
