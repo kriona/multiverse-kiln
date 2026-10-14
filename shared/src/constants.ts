@@ -7,3 +7,13 @@ export const GAME_ROOM_NAME = 'game';
  * Default port the Colyseus server listens on
  */
 export const DEFAULT_SERVER_PORT = 2567;
+
+/**
+ * Width of the game world in world units; the server keeps players inside it
+ */
+export const WORLD_WIDTH = 960;
+
+/**
+ * Height of the game world in world units; the server keeps players inside it
+ */
+export const WORLD_HEIGHT = 540;
