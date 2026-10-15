@@ -15,12 +15,14 @@ export interface Position
 }
 
 /**
- * The area players can move in, from (0, 0) to (width, height)
+ * The area a position must stay inside, edges included
  */
 export interface Bounds
 {
-	width: number;
-	height: number;
+	minX: number;
+	minY: number;
+	maxX: number;
+	maxY: number;
 }
 
 /**
@@ -52,8 +54,8 @@ export function stepPosition(position: Position, direction: MovePayload, deltaSe
 	const distance = speed * deltaSeconds;
 
 	return({
-		x: clamp(position.x + ((direction.x / length) * distance), 0, bounds.width),
-		y: clamp(position.y + ((direction.y / length) * distance), 0, bounds.height)
+		x: clamp(position.x + ((direction.x / length) * distance), bounds.minX, bounds.maxX),
+		y: clamp(position.y + ((direction.y / length) * distance), bounds.minY, bounds.maxY)
 	});
 }
 
@@ -67,8 +69,8 @@ export function stepPosition(position: Position, direction: MovePayload, deltaSe
 export function spawnPosition(bounds: Bounds, random: () => number): Position
 {
 	return({
-		x: random() * bounds.width,
-		y: random() * bounds.height
+		x: bounds.minX + (random() * (bounds.maxX - bounds.minX)),
+		y: bounds.minY + (random() * (bounds.maxY - bounds.minY))
 	});
 }
 

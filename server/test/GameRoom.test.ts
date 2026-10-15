@@ -2,9 +2,8 @@ import assert from 'assert';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import type { Room as ClientRoom } from '@colyseus/sdk';
 
-import { GAME_ROOM_NAME, MessageType, ServerCloseCode } from '@multiverse-kiln/shared';
+import { GAME_ROOM_NAME, MessageType, PLAYER_RADIUS, ServerCloseCode, WORLD_HEIGHT, WORLD_WIDTH, type GameState, type Player } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
-import type { GameState, Player } from '../src/rooms/schema/GameState.js';
 import { getTestServer } from './testServer.js';
 
 /**
@@ -68,9 +67,10 @@ describe('GameRoom', () =>
 		const client = await colyseus.connectTo(room);
 		const player = room.state.players.get(client.sessionId);
 
+		// The whole player is inside the world, not just its center
 		assert.ok(player);
-		assert.ok((player.x >= 0) && (player.x <= 960), `x = ${player.x}`);
-		assert.ok((player.y >= 0) && (player.y <= 540), `y = ${player.y}`);
+		assert.ok((player.x >= PLAYER_RADIUS) && (player.x <= WORLD_WIDTH - PLAYER_RADIUS), `x = ${player.x}`);
+		assert.ok((player.y >= PLAYER_RADIUS) && (player.y <= WORLD_HEIGHT - PLAYER_RADIUS), `y = ${player.y}`);
 	});
 
 	it('syncs players to clients', async () =>

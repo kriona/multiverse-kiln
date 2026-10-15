@@ -2,7 +2,7 @@ import assert from 'assert';
 
 import { PLAYER_SPEED, spawnPosition, stepPosition, type Bounds } from '../../src/logic/movement.js';
 
-const bounds: Bounds = { width: 960, height: 540 };
+const bounds: Bounds = { minX: 10, minY: 20, maxX: 950, maxY: 520 };
 
 describe('stepPosition', () =>
 {
@@ -33,8 +33,8 @@ describe('stepPosition', () =>
 
 	it('stays inside the bounds', () =>
 	{
-		assert.deepStrictEqual(stepPosition({ x: 10, y: 10 }, { x: -1, y: -1 }, 10, bounds), { x: 0, y: 0 });
-		assert.deepStrictEqual(stepPosition({ x: 950, y: 530 }, { x: 1, y: 1 }, 10, bounds), { x: 960, y: 540 });
+		assert.deepStrictEqual(stepPosition({ x: 15, y: 25 }, { x: -1, y: -1 }, 10, bounds), { x: 10, y: 20 });
+		assert.deepStrictEqual(stepPosition({ x: 940, y: 510 }, { x: 1, y: 1 }, 10, bounds), { x: 950, y: 520 });
 	});
 
 	it('does not move for a zero or negative time step', () =>
@@ -59,15 +59,15 @@ describe('spawnPosition', () =>
 	{
 		const values = [0.25, 0.5];
 
-		assert.deepStrictEqual(spawnPosition(bounds, () => values.shift() ?? 0), { x: 240, y: 270 });
+		assert.deepStrictEqual(spawnPosition(bounds, () => values.shift() ?? 0), { x: 245, y: 270 });
 	});
 
 	it('stays inside the bounds', () =>
 	{
-		assert.deepStrictEqual(spawnPosition(bounds, () => 0), { x: 0, y: 0 });
+		assert.deepStrictEqual(spawnPosition(bounds, () => 0), { x: 10, y: 20 });
 
 		const position = spawnPosition(bounds, () => 0.999999);
 
-		assert.ok((position.x < bounds.width) && (position.y < bounds.height));
+		assert.ok((position.x < bounds.maxX) && (position.y < bounds.maxY));
 	});
 });

@@ -12,7 +12,6 @@ Run all commands from the repository root with `-w server`, e.g. `npm run dev -w
 - `src/rooms/GameRoom.ts`: the game room: joins and leaves, input handling and the 30 Hz simulation loop
 - `src/rooms/payloads.ts`: zod validators for client message payloads, each matching an interface in `/shared`
 - `src/rooms/inputQueue.ts`: per-player queues of inputs received between ticks (server-only, not synced)
-- `src/rooms/schema/`: state synchronized to every client in a room
 - `src/logic/`: game rules as pure functions (no Colyseus, database or I/O), unit-tested in `test/logic/`
 - `src/http/health.ts`: `GET /health`, the health-check route
 - `src/db/schema.ts`: Drizzle schema, the source of truth for the database tables

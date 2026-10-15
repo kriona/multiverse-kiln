@@ -1,13 +1,16 @@
 import Phaser from 'phaser';
-import { BootScene } from './scenes/BootScene';
+import { WORLD_HEIGHT, WORLD_WIDTH } from '@multiverse-kiln/shared';
 
+import { GameScene } from './scenes/GameScene';
+
+// One world unit is one pixel, so the canvas shows the whole world
 const config: Phaser.Types.Core.GameConfig = {
 	type: Phaser.WEBGL,
 	parent: 'game',
-	width: 960,
-	height: 540,
+	width: WORLD_WIDTH,
+	height: WORLD_HEIGHT,
 	backgroundColor: '#1d1f27',
-	scene: [BootScene]
+	scene: [GameScene]
 };
 
 new Phaser.Game(config);

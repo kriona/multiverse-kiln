@@ -47,11 +47,11 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 
 ## Phase 3: Client connection
 
-- [ ] Connect via `@colyseus/sdk` (formerly colyseus.js) using `VITE_SERVER_URL`
-- [ ] Phaser scene creates and removes sprites from state `onAdd` / `onRemove`
-- [ ] Send keyboard input as messages; never send positions
-- [ ] Interpolate rendered positions between server patches
-- [ ] Add a "Source" link to the client UI (repository URL, copyright line, AGPL notice). The AGPL (section 13) requires anyone running a modified version to offer players its source; having the link already in place means forks carry it with them
+- [✅] Connect via `@colyseus/sdk` (formerly colyseus.js) using `VITE_SERVER_URL`
+- [✅] Phaser scene creates and removes sprites from state `onAdd` / `onRemove`
+- [✅] Send keyboard input as messages; never send positions
+- [✅] Interpolate rendered positions between server patches
+- [✅] Add a "Source" link to the client UI (repository URL, copyright line, AGPL notice). The AGPL (section 13) requires anyone running a modified version to offer players its source; having the link already in place means forks carry it with them
 
 **Done when:** two browser tabs show two players moving smoothly and seeing each other.
 

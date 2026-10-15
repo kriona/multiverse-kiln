@@ -1,10 +1,9 @@
 import { Room, type Client, type CloseCode } from 'colyseus';
-import { MessageType, ServerCloseCode, WORLD_HEIGHT, WORLD_WIDTH, type MovePayload } from '@multiverse-kiln/shared';
+import { GameState, MessageType, PATCH_INTERVAL_MS, Player, PLAYER_RADIUS, ServerCloseCode, WORLD_HEIGHT, WORLD_WIDTH, type MovePayload } from '@multiverse-kiln/shared';
 
 import { spawnPosition, stepPosition, type Bounds } from '../logic/movement.js';
 import { InputQueue } from './inputQueue.js';
 import { describeInvalidPayload, movePayload } from './payloads.js';
-import { GameState, Player } from './schema/GameState.js';
 
 /**
  * Simulation ticks per second
@@ -24,7 +23,13 @@ const MAX_QUEUED_MOVES = 8;
  */
 const MAX_INVALID_MESSAGES = 10;
 
-const worldBounds: Bounds = { width: WORLD_WIDTH, height: WORLD_HEIGHT };
+// Where a player's center can be, so the whole player stays inside the world
+const playerBounds: Bounds = {
+	minX: PLAYER_RADIUS,
+	minY: PLAYER_RADIUS,
+	maxX: WORLD_WIDTH - PLAYER_RADIUS,
+	maxY: WORLD_HEIGHT - PLAYER_RADIUS
+};
 
 const standingStill: MovePayload = { x: 0, y: 0 };
 
@@ -38,6 +43,8 @@ export class GameRoom extends Room<{ state: GameState }>
 	// Colyseus allows unlimited messages by default. A client over the limit is disconnected; clients send
 	// Move only when their direction changes, so an honest client stays far below it
 	maxMessagesPerSecond = 30;
+
+	patchRate = PATCH_INTERVAL_MS;
 
 	state = new GameState();
 
@@ -86,7 +93,7 @@ export class GameRoom extends Room<{ state: GameState }>
 	 */
 	onJoin(client: Client): void
 	{
-		const position = spawnPosition(worldBounds, Math.random);
+		const position = spawnPosition(playerBounds, Math.random);
 
 		this.state.players.set(client.sessionId, new Player({ x: position.x, y: position.y }));
 
@@ -155,7 +162,7 @@ export class GameRoom extends Room<{ state: GameState }>
 				this.heldDirections.set(sessionId, move);
 			}
 
-			const position = stepPosition(player, this.heldDirections.get(sessionId) ?? standingStill, deltaSeconds, worldBounds);
+			const position = stepPosition(player, this.heldDirections.get(sessionId) ?? standingStill, deltaSeconds, playerBounds);
 
 			player.x = position.x;
 			player.y = position.y;

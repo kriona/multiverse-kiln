@@ -23,11 +23,30 @@ function readCertificateFile(file: string | undefined, variableName: string): Bu
 	return(fs.readFileSync(file));
 }
 
+/**
+ * Checks that the source code URL is set, since the page links to it from every build
+ *
+ * Running a modified version of the game for players requires offering them its source (AGPL section 13),
+ * so a fork sets this to its own repository
+ *
+ * @param url Value of VITE_SOURCE_URL
+ */
+function requireSourceUrl(url: string | undefined): void
+{
+	if (!url)
+	{
+		throw new Error('VITE_SOURCE_URL is not set in client/.env. Set it to the repository players can get this version\'s source code from; see client/.env.example');
+	}
+}
+
 export default defineConfig(({ command, mode }) =>
 {
 	// Load all variables (not just VITE_*) so DEV_HOST stays out of the client bundle
 	const env = loadEnv(mode, process.cwd(), '');
 	const devHost = (env.DEV_HOST || undefined);
+
+	// index.html links to it as %VITE_SOURCE_URL%
+	requireSourceUrl(env.VITE_SOURCE_URL);
 
 	// The dev server always uses HTTPS; production builds don't need a certificate
 	const https = ((command === 'serve') ? {
