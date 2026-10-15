@@ -24,10 +24,42 @@ export class MovementKeys
 	 */
 	constructor(private readonly keyboard: Phaser.Input.Keyboard.KeyboardPlugin)
 	{
-		this.left = this.addKeys([KeyCodes.LEFT, KeyCodes.A, KeyCodes.NUMPAD_FOUR, KeyCodes.NUMPAD_SEVEN, KeyCodes.NUMPAD_ONE, KeyCodes.HOME, KeyCodes.END]);
-		this.right = this.addKeys([KeyCodes.RIGHT, KeyCodes.D, KeyCodes.NUMPAD_SIX, KeyCodes.NUMPAD_NINE, KeyCodes.NUMPAD_THREE, KeyCodes.PAGE_UP, KeyCodes.PAGE_DOWN]);
-		this.up = this.addKeys([KeyCodes.UP, KeyCodes.W, KeyCodes.NUMPAD_EIGHT, KeyCodes.NUMPAD_SEVEN, KeyCodes.NUMPAD_NINE, KeyCodes.HOME, KeyCodes.PAGE_UP]);
-		this.down = this.addKeys([KeyCodes.DOWN, KeyCodes.S, KeyCodes.NUMPAD_TWO, KeyCodes.NUMPAD_ONE, KeyCodes.NUMPAD_THREE, KeyCodes.END, KeyCodes.PAGE_DOWN]);
+		this.left = this.addKeys([
+			KeyCodes.LEFT,
+			KeyCodes.A,
+			KeyCodes.NUMPAD_FOUR,
+			KeyCodes.NUMPAD_SEVEN,
+			KeyCodes.NUMPAD_ONE,
+			KeyCodes.HOME,
+			KeyCodes.END
+		]);
+		this.right = this.addKeys([
+			KeyCodes.RIGHT,
+			KeyCodes.D,
+			KeyCodes.NUMPAD_SIX,
+			KeyCodes.NUMPAD_NINE,
+			KeyCodes.NUMPAD_THREE,
+			KeyCodes.PAGE_UP,
+			KeyCodes.PAGE_DOWN
+		]);
+		this.up = this.addKeys([
+			KeyCodes.UP,
+			KeyCodes.W,
+			KeyCodes.NUMPAD_EIGHT,
+			KeyCodes.NUMPAD_SEVEN,
+			KeyCodes.NUMPAD_NINE,
+			KeyCodes.HOME,
+			KeyCodes.PAGE_UP
+		]);
+		this.down = this.addKeys([
+			KeyCodes.DOWN,
+			KeyCodes.S,
+			KeyCodes.NUMPAD_TWO,
+			KeyCodes.NUMPAD_ONE,
+			KeyCodes.NUMPAD_THREE,
+			KeyCodes.END,
+			KeyCodes.PAGE_DOWN
+		]);
 	}
 
 	/**

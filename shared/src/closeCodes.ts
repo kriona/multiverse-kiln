@@ -8,5 +8,10 @@ export enum ServerCloseCode
 	/**
 	 * The client sent too many messages that failed validation
 	 */
-	TooManyInvalidMessages = 4011
+	TooManyInvalidMessages = 4011,
+
+	/**
+	 * The player is no longer in this room's group: they left it, joined another group or logged out
+	 */
+	LeftGroup = 4012
 }

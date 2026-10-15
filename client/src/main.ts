@@ -1,16 +1,23 @@
-import Phaser from 'phaser';
-import { WORLD_HEIGHT, WORLD_WIDTH } from '@multiverse-kiln/shared';
+import { App } from './App';
+import { connectToServer } from './network/serverConnection';
+import { showStatus } from './ui/dom';
 
-import { GameScene } from './scenes/GameScene';
+/**
+ * Connects to the server and starts the app, or explains that it couldn't connect
+ */
+async function start(): Promise<void>
+{
+	showStatus('Connecting...');
 
-// One world unit is one pixel, so the canvas shows the whole world
-const config: Phaser.Types.Core.GameConfig = {
-	type: Phaser.WEBGL,
-	parent: 'game',
-	width: WORLD_WIDTH,
-	height: WORLD_HEIGHT,
-	backgroundColor: '#1d1f27',
-	scene: [GameScene]
-};
+	try
+	{
+		new App(await connectToServer());
+	}
+	catch (error)
+	{
+		console.error('Could not connect to the server:', error);
+		showStatus('Could not connect to the server. Reload the page to try again.');
+	}
+}
 
-new Phaser.Game(config);
+void start();

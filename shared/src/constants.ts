@@ -1,7 +1,42 @@
 /**
- * Name of the main game room, registered on the server and joined by the client
+ * Name of the game room, registered on the server; each group of players plays in one
+ *
+ * Only the lobby creates game rooms, and a client can join one only after the lobby has put its player in that group
  */
 export const GAME_ROOM_NAME = 'game';
+
+/**
+ * Name of the lobby room, which every logged-in player is in: login, chat, who's online, and creating and joining groups
+ *
+ * Every window stays connected to it for as long as it is open, even while its player is in a group
+ */
+export const LOBBY_ROOM_NAME = 'lobby';
+
+/**
+ * Most players in one group
+ */
+export const MAX_GROUP_PLAYERS = 6;
+
+/**
+ * Most characters in a player's name
+ */
+export const MAX_PLAYER_NAME_LENGTH = 20;
+
+/**
+ * Most characters in one lobby chat message
+ */
+export const MAX_CHAT_MESSAGE_LENGTH = 500;
+
+/**
+ * Characters not allowed in names and chat: control characters, and the bidirectional marks, overrides
+ * and isolates that can make text display out of order
+ */
+export const DISALLOWED_TEXT_CHARACTERS = /[\p{Cc}\p{Bidi_Control}]/u;
+
+/**
+ * Query string parameter of a join link that holds the group's ID
+ */
+export const GROUP_QUERY_PARAMETER = 'group';
 
 /**
  * Default port the Colyseus server listens on

@@ -1,10 +1,12 @@
-import { generateId, Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
+import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
 import { GameState, GRID_CELL_SIZE, MessageType, PATCH_INTERVAL_MS, Player, ServerCloseCode, ServerMessageType, WORLD_HEIGHT, WORLD_WIDTH, type MovePayload, type WelcomePayload } from '@multiverse-kiln/shared';
 
 import { readBrowserId } from '../http/browserId.js';
 import { NO_PRESS, occupiedCells, spawnPosition, stepOnGrid, type DirectionPress, type Grid, type GridStep } from '../logic/movement.js';
 import { CellOccupancy } from '../logic/occupancy.js';
+import { onlinePlayers, type OnlinePlayerChange } from '../players/onlinePlayers.js';
 import { InputQueue } from './inputQueue.js';
+import { InvalidMessages } from './invalidMessages.js';
 import { describeInvalidPayload, movePayload } from './payloads.js';
 import { PlayerSessions } from './playerSessions.js';
 
@@ -14,9 +16,11 @@ import { PlayerSessions } from './playerSessions.js';
 interface ClientIdentity
 {
 	/**
-	 * The client's browser ID, or undefined when it sent no valid browser ID cookie
+	 * The player the client controls, from the browser's login
 	 */
-	browserId: string | undefined;
+	playerId: string;
+
+	name: string;
 }
 
 /**
@@ -28,14 +32,6 @@ export const SIMULATION_TICK_RATE = 30;
  * Most Move inputs kept per player between ticks
  */
 const MAX_QUEUED_MOVES = 8;
-
-/**
- * Invalid messages a client may send in one session before it is disconnected
- *
- * An honest client never sends one, so this only tolerates a few from a buggy client before giving up.
- * It also caps how many warnings one session can log
- */
-const MAX_INVALID_MESSAGES = 10;
 
 /**
  * The grid players move on, covering the whole world
@@ -51,15 +47,14 @@ export const worldGrid: Grid = {
 const standingStill: MovePayload = { x: 0, y: 0 };
 
 /**
- * The main game room: players join, send movement input, and the server simulates and syncs their positions
+ * A group's game room: its players join, send movement input, and the server simulates and syncs their positions
  *
- * Every window of the same browser controls the same player (see PlayerSessions)
+ * The lobby creates the room and decides who is in the group (see OnlinePlayers), which also caps the
+ * group at MAX_GROUP_PLAYERS players; the room admits only the group's players. Every window of the
+ * same browser controls the same player (see PlayerSessions)
  */
 export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: ClientIdentity }> }>
 {
-	// Counts windows, not players: several windows of one browser each take a place
-	maxClients = 4;
-
 	// Colyseus allows unlimited messages by default. A client over the limit is disconnected; clients send
 	// Move only when their direction changes, so an honest client stays far below it
 	maxMessagesPerSecond = 30;
@@ -71,7 +66,7 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 	/**
 	 * Which player each client controls (server-only, not synced)
 	 */
-	private readonly playerSessions = new PlayerSessions(() => generateId());
+	private readonly playerSessions = new PlayerSessions();
 
 	/**
 	 * Move inputs received since the last tick, per player (server-only, not synced)
@@ -96,7 +91,9 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 	/**
 	 * How many invalid messages each client has sent this session (server-only, not synced)
 	 */
-	private readonly invalidMessageCounts = new Map<string, number>();
+	private readonly invalidMessages = new InvalidMessages();
+
+	private stopListening?: () => void;
 
 	messages = {
 		[MessageType.Move]: (client: Client, payload: unknown) =>
@@ -105,7 +102,7 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 
 			if (!result.success)
 			{
-				this.rejectInvalidMessage(client, MessageType.Move, describeInvalidPayload(result.error));
+				this.invalidMessages.reject(client, MessageType.Move, describeInvalidPayload(result.error));
 				return;
 			}
 
@@ -119,26 +116,37 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 	};
 
 	/**
-	 * Starts the simulation loop
+	 * Starts the simulation loop, and starts watching for players leaving the group
 	 */
 	onCreate(): void
 	{
 		this.setTimestep((deltaTime) => this.update(deltaTime), 1000 / SIMULATION_TICK_RATE);
+
+		this.stopListening = onlinePlayers.onChange((change) =>
+		{
+			this.onPlayerChange(change);
+		});
 	}
 
 	/**
-	 * Reads the browser ID cookie the client sent with its WebSocket connection
-	 *
-	 * There are no logins yet, so every client is allowed in; one without a valid browser ID gets a player of its own
+	 * Admits a client only when its browser is logged in and its player is in this room's group
 	 *
 	 * @param _client The joining client
 	 * @param _options Join options from the client (unused)
-	 * @param context The connection's request headers
-	 * @return The client's identity, stored as client.auth
+	 * @param context The connection's request headers, which carry the browser ID cookie
+	 * @return The client's identity, stored as client.auth; false to turn the client away
 	 */
-	onAuth(_client: Client, _options: unknown, context: AuthContext): ClientIdentity
+	onAuth(_client: Client, _options: unknown, context: AuthContext): ClientIdentity | false
 	{
-		return({ browserId: readBrowserId(context.headers.get('cookie')) });
+		const browserId = readBrowserId(context.headers.get('cookie'));
+		const player = ((browserId !== undefined) ? onlinePlayers.get(browserId) : undefined);
+
+		if (!player || (player.groupId !== this.roomId))
+		{
+			return(false);
+		}
+
+		return({ playerId: player.playerId, name: player.name });
 	}
 
 	/**
@@ -149,7 +157,13 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 	 */
 	onJoin(client: Client<{ auth: ClientIdentity }>): void
 	{
-		const { playerId, isNewPlayer } = this.playerSessions.add(client.sessionId, client.auth?.browserId);
+		if (!client.auth)
+		{
+			throw new Error(`Client ${client.sessionId} joined without an identity`);
+		}
+
+		const { playerId, name } = client.auth;
+		const isNewPlayer = this.playerSessions.add(client.sessionId, playerId);
 
 		if (isNewPlayer)
 		{
@@ -162,7 +176,7 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 				throw new Error('No free cell to spawn a player in');
 			}
 
-			this.state.players.set(playerId, new Player({ x: position.x, y: position.y }));
+			this.state.players.set(playerId, new Player({ x: position.x, y: position.y, name }));
 		}
 
 		const welcome: WelcomePayload = { playerId };
@@ -182,7 +196,7 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 	{
 		const left = this.playerSessions.remove(client.sessionId);
 
-		this.invalidMessageCounts.delete(client.sessionId);
+		this.invalidMessages.forget(client.sessionId);
 
 		if (left)
 		{
@@ -214,32 +228,37 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 	}
 
 	/**
-	 * Called once the room is empty and shutting down
+	 * Called once the room is empty (or was never joined) and shutting down: the group ends, and
+	 * anyone still in it goes back to the lobby
 	 */
 	onDispose(): void
 	{
+		this.stopListening?.();
+		onlinePlayers.disbandGroup(this.roomId);
+
 		console.log('room', this.roomId, 'disposing');
 	}
 
 	/**
-	 * Ignores a message that failed validation, and disconnects the client once it has sent too many
+	 * Disconnects a player's clients once the player is no longer in this room's group
 	 *
-	 * @param client The client that sent the message
-	 * @param type Type of the message
-	 * @param reason Why it failed validation (must not include the payload)
+	 * @param change What changed about a browser's player
 	 */
-	private rejectInvalidMessage(client: Client, type: MessageType, reason: string): void
+	private onPlayerChange({ before, after }: OnlinePlayerChange): void
 	{
-		const count = (this.invalidMessageCounts.get(client.sessionId) ?? 0) + 1;
-
-		this.invalidMessageCounts.set(client.sessionId, count);
-
-		console.warn(client.sessionId, `sent an invalid ${type} message (${count} of ${MAX_INVALID_MESSAGES}), ignored:`, reason);
-
-		if (count >= MAX_INVALID_MESSAGES)
+		if (!before || (before.groupId !== this.roomId) || (after?.groupId === this.roomId))
 		{
-			console.warn(client.sessionId, 'disconnected for sending too many invalid messages');
-			client.leave(ServerCloseCode.TooManyInvalidMessages);
+			return;
+		}
+
+		const sessionIds = new Set(this.playerSessions.getSessionIds(before.playerId));
+
+		for (const client of this.clients)
+		{
+			if (sessionIds.has(client.sessionId))
+			{
+				client.leave(ServerCloseCode.LeftGroup);
+			}
 		}
 	}
 

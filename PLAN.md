@@ -4,7 +4,7 @@ Phased roadmap for building the game locally, then deploying to Colyseus Cloud +
 Each phase ends with a "Done when" check. Tick boxes as work completes and keep the
 **Current phase** line updated so each new session knows where to pick up.
 
-**Current phase:** 4
+**Current phase:** 5
 
 ---
 
@@ -67,6 +67,9 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 
 ## Phase 5: Gameplay loop
 
+- [✅] Lobby: name-only login (in memory until Phase 7), chat, who's online, and a Create game button
+- [✅] Groups of up to 6 players, each in its own game room; a player is in one group at a time and can leave it
+- [ ] Save the player's group with their profile (Phase 6), so they rejoin it on their next login
 - [ ] Define the core game rules (to be specified) as pure functions with tests
 - [ ] Server-side input validation (rate limits, bounds checks)
 - [ ] Match start/end flow; lock rooms when full or in progress

@@ -1,60 +1,36 @@
 /**
- * A player and the clients controlling it
- */
-interface PlayerEntry
-{
-	browserId: string | undefined;
-	sessionIds: Set<string>;
-}
-
-/**
  * Which player each client in a room controls
  *
- * Clients with the same browser ID (windows of the same browser) share one player; a client without
- * one (a non-browser client, or a browser whose cookie request failed) gets a player of its own.
- * Player IDs are public, since they key GameState.players; browser IDs never leave the server
+ * Every window of a browser is the same player, so several clients can control one player. The player
+ * stays in the room until its last client leaves
  */
 export class PlayerSessions
 {
-	private readonly players = new Map<string, PlayerEntry>();
-	private readonly playerIdsByBrowser = new Map<string, string>();
+	private readonly sessionIdsByPlayer = new Map<string, Set<string>>();
 	private readonly playerIdsBySession = new Map<string, string>();
 
 	/**
-	 * @param createPlayerId Returns a new, unique player ID
-	 */
-	constructor(private readonly createPlayerId: () => string)
-	{
-	}
-
-	/**
-	 * Records a joining client, finding or creating the player it controls
+	 * Records a joining client
 	 *
 	 * @param sessionId The client's session ID
-	 * @param browserId The client's browser ID, or undefined when it has none
-	 * @return The player's ID, and whether the player is new (so the room needs to add it)
+	 * @param playerId The player the client controls
+	 * @return Whether the player is new to the room (so the room needs to add it)
 	 */
-	add(sessionId: string, browserId: string | undefined): { playerId: string; isNewPlayer: boolean }
+	add(sessionId: string, playerId: string): boolean
 	{
-		const existingPlayerId = ((browserId !== undefined) ? this.playerIdsByBrowser.get(browserId) : undefined);
-		const playerId = existingPlayerId ?? this.createPlayerId();
-		let entry = this.players.get(playerId);
+		let sessionIds = this.sessionIdsByPlayer.get(playerId);
+		const isNewPlayer = !sessionIds;
 
-		if (!entry)
+		if (!sessionIds)
 		{
-			entry = { browserId, sessionIds: new Set() };
-			this.players.set(playerId, entry);
-
-			if (browserId !== undefined)
-			{
-				this.playerIdsByBrowser.set(browserId, playerId);
-			}
+			sessionIds = new Set();
+			this.sessionIdsByPlayer.set(playerId, sessionIds);
 		}
 
-		entry.sessionIds.add(sessionId);
+		sessionIds.add(sessionId);
 		this.playerIdsBySession.set(sessionId, playerId);
 
-		return({ playerId, isNewPlayer: (existingPlayerId === undefined) });
+		return(isNewPlayer);
 	}
 
 	/**
@@ -74,20 +50,15 @@ export class PlayerSessions
 
 		this.playerIdsBySession.delete(sessionId);
 
-		const entry = this.players.get(playerId);
+		const sessionIds = this.sessionIdsByPlayer.get(playerId);
 
-		entry?.sessionIds.delete(sessionId);
+		sessionIds?.delete(sessionId);
 
-		const wasLastClient = (!entry || (entry.sessionIds.size === 0));
+		const wasLastClient = (!sessionIds || (sessionIds.size === 0));
 
 		if (wasLastClient)
 		{
-			this.players.delete(playerId);
-
-			if (entry?.browserId !== undefined)
-			{
-				this.playerIdsByBrowser.delete(entry.browserId);
-			}
+			this.sessionIdsByPlayer.delete(playerId);
 		}
 
 		return({ playerId, wasLastClient });
@@ -102,5 +73,16 @@ export class PlayerSessions
 	getPlayerId(sessionId: string): string | undefined
 	{
 		return(this.playerIdsBySession.get(sessionId));
+	}
+
+	/**
+	 * The clients controlling a player
+	 *
+	 * @param playerId The player's ID
+	 * @return Their session IDs; empty when the player isn't in the room
+	 */
+	getSessionIds(playerId: string): string[]
+	{
+		return([...(this.sessionIdsByPlayer.get(playerId) ?? [])]);
 	}
 }

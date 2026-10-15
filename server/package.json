@@ -11,7 +11,7 @@
 	"scripts": {
 		"dev": "tsx watch src/index.ts",
 		"start": "node build/index.js",
-		"loadtest": "tsx --env-file-if-exists=.env --use-system-ca loadtest/example.ts --room game --numClients 2",
+		"loadtest": "tsx --env-file-if-exists=.env --use-system-ca loadtest/example.ts --room lobby --numClients 2",
 		"build": "npm run clean && tsc -p tsconfig.build.json",
 		"typecheck": "tsc -p tsconfig.json --noEmit",
 		"clean": "rimraf build",

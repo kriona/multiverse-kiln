@@ -5,8 +5,9 @@ import {
 	playground,
 } from 'colyseus';
 
-import { GAME_ROOM_NAME } from '@multiverse-kiln/shared';
+import { GAME_ROOM_NAME, LOBBY_ROOM_NAME } from '@multiverse-kiln/shared';
 import { GameRoom } from './rooms/GameRoom.js';
+import { LobbyRoom } from './rooms/LobbyRoom.js';
 import { createTransport } from './transport.js';
 import { isDevToolsEnabled } from './devTools.js';
 import { addBrowserIdRoute } from './http/browserId.js';
@@ -31,6 +32,7 @@ const server = defineServer({
 	 * Room types clients can join
 	 */
 	rooms: {
+		[LOBBY_ROOM_NAME]: defineRoom(LobbyRoom),
 		[GAME_ROOM_NAME]: defineRoom(GameRoom),
 	},
 

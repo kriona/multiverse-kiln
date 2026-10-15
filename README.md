@@ -188,7 +188,9 @@ Open the game at `https://www.multiversekiln-dev.com:5173`. The server's output 
 
 Press `Ctrl+C` to stop all three. If any one exits, the others are stopped too.
 
-Move with the arrow keys or WASD. Your player is green; other players are blue. To test multiplayer, open the client in two browser tabs (or two windows side by side, so both keep running).
+Type a name to enter the lobby, then press **Create game** to start a group and **Share** to copy a join link for other players. Move with the arrow keys or WASD. Your player is green; other players are blue.
+
+Every tab of one browser is the same player, and closing the last one logs it out, so saving a client file (which makes Vite reload every tab) logs you out. To test with several players, use separate browsers or browser profiles (a private window counts as its own browser).
 
 ### 8. Verify
 

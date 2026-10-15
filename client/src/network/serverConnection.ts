@@ -1,10 +1,15 @@
 import { Client, type Room } from '@colyseus/sdk';
-import { BROWSER_ID_PATH, GAME_ROOM_NAME, GameState, ServerMessageType, type WelcomePayload } from '@multiverse-kiln/shared';
+import { BROWSER_ID_PATH, GameState, LOBBY_ROOM_NAME, LobbyState, ServerMessageType, type WelcomePayload } from '@multiverse-kiln/shared';
 
 /**
  * A joined game room, with typed state
  */
 export type GameRoom = Room<unknown, GameState>;
+
+/**
+ * The joined lobby room, with typed state
+ */
+export type LobbyRoom = Room<unknown, LobbyState>;
 
 /**
  * A joined game room and the player this window controls
@@ -17,6 +22,15 @@ export interface GameConnection
 	 * Key of this window's player in the room's state.players, shared by every window of this browser
 	 */
 	playerId: string;
+}
+
+/**
+ * The connection to the server, and the lobby it has joined
+ */
+export interface ServerConnection
+{
+	client: Client;
+	lobby: LobbyRoom;
 }
 
 /**
@@ -34,26 +48,6 @@ function getServerUrl(): string
 	}
 
 	return(url);
-}
-
-/**
- * Asks the server for a browser ID cookie, which the browser then sends when joining a room
- *
- * Every window of this browser sends the same cookie, so they all control the same player. If the
- * request fails the window can still join, as a player of its own
- *
- * @param client Client for the server
- */
-async function requestBrowserId(client: Client): Promise<void>
-{
-	try
-	{
-		await client.http.post(BROWSER_ID_PATH);
-	}
-	catch (error)
-	{
-		console.warn('Could not get a browser ID; this window will join as a separate player:', error);
-	}
 }
 
 /**
@@ -81,19 +75,37 @@ function waitForWelcome(room: GameRoom): Promise<string>
 }
 
 /**
- * Connects to the server and joins (or creates) the game room
+ * Connects to the server and joins the lobby
  *
- * Passing the shared GameState class lets the SDK decode state into typed instances
+ * First asks the server for a browser ID cookie, which the browser then sends when joining a room:
+ * every window of this browser sends the same cookie, so they are all the same player. The server
+ * turns away windows without one
  *
- * @return The joined room and this window's player
+ * @return The client and the joined lobby
  */
-export async function joinGameRoom(): Promise<GameConnection>
+export async function connectToServer(): Promise<ServerConnection>
 {
 	const client = new Client(getServerUrl());
 
-	await requestBrowserId(client);
+	await client.http.post(BROWSER_ID_PATH);
 
-	const room = await client.joinOrCreate<GameState>(GAME_ROOM_NAME, {}, GameState);
+	const lobby = await client.joinOrCreate<LobbyState>(LOBBY_ROOM_NAME, {}, LobbyState);
+
+	return({ client, lobby });
+}
+
+/**
+ * Joins a group's game room; the lobby must already have put this browser's player in the group
+ *
+ * Passing the shared GameState class lets the SDK decode state into typed instances
+ *
+ * @param client Client for the server
+ * @param groupId The group's ID (its game room's ID)
+ * @return The joined room and this window's player
+ */
+export async function joinGroup(client: Client, groupId: string): Promise<GameConnection>
+{
+	const room = await client.joinById<GameState>(groupId, {}, GameState);
 	const playerId = await waitForWelcome(room);
 
 	return({ room, playerId });

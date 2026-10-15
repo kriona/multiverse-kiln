@@ -6,9 +6,20 @@
  * Unknown keys are stripped rather than rejected
  */
 import { z } from 'zod';
-import type { MovePayload } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, MAX_CHAT_MESSAGE_LENGTH, MAX_PLAYER_NAME_LENGTH, type ChatPayload, type JoinGroupPayload, type LoginPayload, type MovePayload } from '@multiverse-kiln/shared';
 
 const direction = z.literal([-1, 0, 1]);
+
+/**
+ * Text a player typed for others to see: trimmed, not empty, and free of disallowed characters
+ *
+ * @param maxLength Most characters allowed after trimming
+ * @return The validator
+ */
+function displayText(maxLength: number): z.ZodString
+{
+	return(z.string().trim().min(1).max(maxLength).refine((text) => !DISALLOWED_TEXT_CHARACTERS.test(text), 'Contains disallowed characters'));
+}
 
 /**
  * MovePayload: a direction on each axis
@@ -17,6 +28,27 @@ export const movePayload = z.object({
 	x: direction,
 	y: direction
 }) satisfies z.ZodType<MovePayload>;
+
+/**
+ * LoginPayload: the player's name
+ */
+export const loginPayload = z.object({
+	name: displayText(MAX_PLAYER_NAME_LENGTH)
+}) satisfies z.ZodType<LoginPayload>;
+
+/**
+ * ChatPayload: one line of chat
+ */
+export const chatPayload = z.object({
+	text: displayText(MAX_CHAT_MESSAGE_LENGTH)
+}) satisfies z.ZodType<ChatPayload>;
+
+/**
+ * JoinGroupPayload: a room ID as Colyseus generates them
+ */
+export const joinGroupPayload = z.object({
+	groupId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/)
+}) satisfies z.ZodType<JoinGroupPayload>;
 
 /**
  * Summarizes why a payload failed validation, for logging
