@@ -114,10 +114,11 @@ export class GameScene extends Phaser.Scene
 		this.setStatus('Connecting...');
 
 		let room: GameRoom;
+		let ownPlayerId: string;
 
 		try
 		{
-			room = await joinGameRoom();
+			({ room, playerId: ownPlayerId } = await joinGameRoom());
 		}
 		catch (error)
 		{
@@ -132,14 +133,14 @@ export class GameScene extends Phaser.Scene
 		const callbacks = Callbacks.get(room);
 
 		// Fires for players already in the room too
-		callbacks.onAdd('players', (player, sessionId) =>
+		callbacks.onAdd('players', (player, playerId) =>
 		{
 			const positions = new PositionBuffer(PATCH_INTERVAL_MS);
-			const color = ((sessionId === room.sessionId) ? OWN_PLAYER_COLOR : OTHER_PLAYER_COLOR);
+			const color = ((playerId === ownPlayerId) ? OWN_PLAYER_COLOR : OTHER_PLAYER_COLOR);
 
 			positions.push(performance.now(), player.x, player.y);
 
-			this.players.set(sessionId, {
+			this.players.set(playerId, {
 				shape: this.add.circle(player.x, player.y, PLAYER_RADIUS, color),
 				positions,
 				stopListening: callbacks.onChange(player, () =>
@@ -149,16 +150,16 @@ export class GameScene extends Phaser.Scene
 			});
 		});
 
-		callbacks.onRemove('players', (_player: Player, sessionId: string) =>
+		callbacks.onRemove('players', (_player: Player, playerId: string) =>
 		{
-			this.removePlayer(sessionId);
+			this.removePlayer(playerId);
 		});
 
 		room.onLeave((code: number) =>
 		{
-			for (const sessionId of [...this.players.keys()])
+			for (const playerId of [...this.players.keys()])
 			{
-				this.removePlayer(sessionId);
+				this.removePlayer(playerId);
 			}
 
 			this.room = undefined;
@@ -205,11 +206,11 @@ export class GameScene extends Phaser.Scene
 	/**
 	 * Removes a player's shape and stops listening to their state
 	 *
-	 * @param sessionId The player's session ID
+	 * @param playerId The player's ID
 	 */
-	private removePlayer(sessionId: string): void
+	private removePlayer(playerId: string): void
 	{
-		const player = this.players.get(sessionId);
+		const player = this.players.get(playerId);
 
 		if (!player)
 		{
@@ -218,7 +219,7 @@ export class GameScene extends Phaser.Scene
 
 		player.stopListening();
 		player.shape.destroy();
-		this.players.delete(sessionId);
+		this.players.delete(playerId);
 	}
 
 	/**

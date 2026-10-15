@@ -12,6 +12,17 @@ export enum MessageType
 }
 
 /**
+ * Message types the game room sends to clients, for one-off events rather than state
+ */
+export enum ServerMessageType
+{
+	/**
+	 * Sent to each client as it joins: which player in GameState.players it controls (payload: WelcomePayload)
+	 */
+	Welcome = 'welcome'
+}
+
+/**
  * One axis of movement: -1 (left or up), 0 (none) or 1 (right or down)
  */
 export type Direction = -1 | 0 | 1;
@@ -23,4 +34,15 @@ export interface MovePayload
 {
 	x: Direction;
 	y: Direction;
+}
+
+/**
+ * Payload of ServerMessageType.Welcome
+ */
+export interface WelcomePayload
+{
+	/**
+	 * Key of the client's own player in GameState.players. Windows of the same browser share one player
+	 */
+	playerId: string;
 }

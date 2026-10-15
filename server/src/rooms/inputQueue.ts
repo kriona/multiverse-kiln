@@ -18,17 +18,17 @@ export class InputQueue<T>
 	/**
 	 * Adds an input to the end of a player's queue
 	 *
-	 * @param sessionId Player the input came from
+	 * @param playerId Player the input came from
 	 * @param input Validated input
 	 */
-	push(sessionId: string, input: T): void
+	push(playerId: string, input: T): void
 	{
-		let queue = this.queues.get(sessionId);
+		let queue = this.queues.get(playerId);
 
 		if (!queue)
 		{
 			queue = [];
-			this.queues.set(sessionId, queue);
+			this.queues.set(playerId, queue);
 		}
 
 		queue.push(input);
@@ -42,19 +42,19 @@ export class InputQueue<T>
 	/**
 	 * Removes and returns every queued input for a player
 	 *
-	 * @param sessionId Player to drain
+	 * @param playerId Player to drain
 	 * @return Inputs in the order they arrived; empty when there are none
 	 */
-	drain(sessionId: string): T[]
+	drain(playerId: string): T[]
 	{
-		const queue = this.queues.get(sessionId);
+		const queue = this.queues.get(playerId);
 
 		if (!queue)
 		{
 			return([]);
 		}
 
-		this.queues.delete(sessionId);
+		this.queues.delete(playerId);
 
 		return(queue);
 	}
@@ -62,10 +62,10 @@ export class InputQueue<T>
 	/**
 	 * Discards a player's queue (when they leave)
 	 *
-	 * @param sessionId Player to remove
+	 * @param playerId Player to remove
 	 */
-	remove(sessionId: string): void
+	remove(playerId: string): void
 	{
-		this.queues.delete(sessionId);
+		this.queues.delete(playerId);
 	}
 }

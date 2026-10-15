@@ -8,7 +8,10 @@
 import { schema, t, type SchemaType } from '@colyseus/schema';
 
 /**
- * A player in the room, keyed by session ID in GameState.players
+ * A player in the room, keyed by player ID in GameState.players
+ *
+ * Every window of the same browser controls the same player. The player ID is public and is not
+ * the browser's ID, which stays on the server
  */
 export const Player = schema({
 	x: t.number(),

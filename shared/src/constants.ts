@@ -9,6 +9,13 @@ export const GAME_ROOM_NAME = 'game';
 export const DEFAULT_SERVER_PORT = 2567;
 
 /**
+ * Server route the client POSTs to before joining, to get a browser ID cookie
+ *
+ * Every window of the same browser sends the cookie when it joins a room, so they all control the same player
+ */
+export const BROWSER_ID_PATH = '/browser-id';
+
+/**
  * Width of the game world in world units; the server keeps players inside it
  */
 export const WORLD_WIDTH = 960;
