@@ -4,6 +4,7 @@ import { MessageType, PATCH_INTERVAL_MS, PLAYER_RADIUS, ServerCloseCode, type Mo
 
 import { MovementKeys } from '../input/MovementKeys';
 import { joinGameRoom, type GameRoom } from '../network/serverConnection';
+import { drawGrid } from '../rendering/drawGrid';
 import { PositionBuffer } from '../rendering/PositionBuffer';
 
 /**
@@ -56,11 +57,13 @@ export class GameScene extends Phaser.Scene
 	}
 
 	/**
-	 * Sets up input and the status line, then connects
+	 * Draws the grid, sets up input and the status line, then connects
 	 */
 	create(): void
 	{
 		const { width } = this.scale;
+
+		drawGrid(this);
 
 		this.statusText = this.add.text(width / 2, 24, '', {
 			fontFamily: 'sans-serif',

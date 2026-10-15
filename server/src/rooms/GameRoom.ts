@@ -1,8 +1,8 @@
 import { generateId, Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
-import { GameState, MessageType, PATCH_INTERVAL_MS, Player, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, WORLD_HEIGHT, WORLD_WIDTH, type MovePayload, type WelcomePayload } from '@multiverse-kiln/shared';
+import { GameState, GRID_CELL_SIZE, MessageType, PATCH_INTERVAL_MS, Player, ServerCloseCode, ServerMessageType, WORLD_HEIGHT, WORLD_WIDTH, type MovePayload, type WelcomePayload } from '@multiverse-kiln/shared';
 
 import { readBrowserId } from '../http/browserId.js';
-import { spawnPosition, stepPosition, type Bounds } from '../logic/movement.js';
+import { spawnPosition, stepOnGrid, type Grid, type Position } from '../logic/movement.js';
 import { InputQueue } from './inputQueue.js';
 import { describeInvalidPayload, movePayload } from './payloads.js';
 import { PlayerSessions } from './playerSessions.js';
@@ -36,12 +36,15 @@ const MAX_QUEUED_MOVES = 8;
  */
 const MAX_INVALID_MESSAGES = 10;
 
-// Where a player's center can be, so the whole player stays inside the world
-const playerBounds: Bounds = {
-	minX: PLAYER_RADIUS,
-	minY: PLAYER_RADIUS,
-	maxX: WORLD_WIDTH - PLAYER_RADIUS,
-	maxY: WORLD_HEIGHT - PLAYER_RADIUS
+/**
+ * The grid players move on, covering the whole world
+ *
+ * A cell is wider than a player, so a player on any cell center is entirely inside the world
+ */
+export const worldGrid: Grid = {
+	cellSize: GRID_CELL_SIZE,
+	columns: WORLD_WIDTH / GRID_CELL_SIZE,
+	rows: WORLD_HEIGHT / GRID_CELL_SIZE
 };
 
 const standingStill: MovePayload = { x: 0, y: 0 };
@@ -78,6 +81,11 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 	 * The direction each player is holding, from their latest Move (server-only, not synced)
 	 */
 	private readonly heldDirections = new Map<string, MovePayload>();
+
+	/**
+	 * The cell center each moving player is stepping to (server-only, not synced)
+	 */
+	private readonly stepTargets = new Map<string, Position>();
 
 	/**
 	 * How many invalid messages each client has sent this session (server-only, not synced)
@@ -139,7 +147,7 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 
 		if (isNewPlayer)
 		{
-			const position = spawnPosition(playerBounds, Math.random);
+			const position = spawnPosition(worldGrid, Math.random);
 
 			this.state.players.set(playerId, new Player({ x: position.x, y: position.y }));
 		}
@@ -165,14 +173,15 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 
 		if (left)
 		{
-			// A window can close while its keys are held, and its last Move may still be queued; stopping keeps
-			// the player from running on without it
+			// A window can close while its keys are held, and its last Move may still be queued; the player
+			// stops at the end of its current step instead of running on without it
 			this.moveInputs.remove(left.playerId);
 			this.heldDirections.delete(left.playerId);
 
 			if (left.wasLastClient)
 			{
 				this.state.players.delete(left.playerId);
+				this.stepTargets.delete(left.playerId);
 			}
 		}
 
@@ -236,10 +245,19 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 				this.heldDirections.set(playerId, move);
 			}
 
-			const position = stepPosition(player, this.heldDirections.get(playerId) ?? standingStill, deltaSeconds, playerBounds);
+			const mover = stepOnGrid({ x: player.x, y: player.y, target: this.stepTargets.get(playerId) }, this.heldDirections.get(playerId) ?? standingStill, deltaSeconds, worldGrid);
 
-			player.x = position.x;
-			player.y = position.y;
+			player.x = mover.x;
+			player.y = mover.y;
+
+			if (mover.target)
+			{
+				this.stepTargets.set(playerId, mover.target);
+			}
+			else
+			{
+				this.stepTargets.delete(playerId);
+			}
 		}
 	}
 }

@@ -2,10 +2,11 @@ import assert from 'assert';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { GAME_ROOM_NAME, GameState, MessageType, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, WORLD_HEIGHT, WORLD_WIDTH, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
+import { GAME_ROOM_NAME, GameState, GRID_CELL_SIZE, MessageType, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, WORLD_HEIGHT, WORLD_WIDTH, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
-import type { GameRoom } from '../src/rooms/GameRoom.js';
+import { cellCenter } from '../src/logic/movement.js';
+import { worldGrid, type GameRoom } from '../src/rooms/GameRoom.js';
 import { getTestServer, testServerUrl } from './testServer.js';
 
 const browserIdA = '0b6f4c1e-8d2a-4f3b-9c5d-7e1a2b3c4d5e';
@@ -25,6 +26,58 @@ function playerIdOf(room: GameRoom, client: ClientRoom): string
 	assert.ok(playerId, `no player for session ${client.sessionId}`);
 
 	return(playerId);
+}
+
+/**
+ * Puts a standing player on a cell's center
+ *
+ * @param player Server-side player
+ * @param column Cell's column
+ * @param row Cell's row
+ */
+function placeOnCell(player: Player, column: number, row: number): void
+{
+	const center = cellCenter(column, row, worldGrid);
+
+	player.x = center.x;
+	player.y = center.y;
+}
+
+/**
+ * Checks that a player is exactly on a cell center
+ *
+ * @param player Server-side player
+ */
+function assertOnCellCenter(player: Player): void
+{
+	const offset = GRID_CELL_SIZE / 2;
+
+	assert.strictEqual((player.x - offset) % GRID_CELL_SIZE, 0, `x = ${player.x}`);
+	assert.strictEqual((player.y - offset) % GRID_CELL_SIZE, 0, `y = ${player.y}`);
+}
+
+/**
+ * Waits for timesteps until a player stops moving
+ *
+ * @param room Server-side room
+ * @param player Server-side player
+ */
+async function waitUntilStopped(room: GameRoom, player: Player): Promise<void>
+{
+	for (let i = 0; i < 30; i++)
+	{
+		const x = player.x;
+		const y = player.y;
+
+		await room.waitForNextTimestep();
+
+		if ((player.x === x) && (player.y === y))
+		{
+			return;
+		}
+	}
+
+	throw new Error(`player still moving at (${player.x}, ${player.y})`);
 }
 
 /**
@@ -138,26 +191,40 @@ describe('GameRoom', () =>
 		const client = await colyseus.connectTo(room);
 		const player = room.state.players.get(playerIdOf(room, client)) as Player;
 
-		player.x = 100;
-		player.y = 100;
+		placeOnCell(player, 3, 3);
 
 		client.send(MessageType.Move, { x: 1, y: 0 });
 		await room.waitForNextMessage();
 		await room.waitForNextTimestep();
 		await room.waitForNextTimestep();
 
-		assert.ok(player.x > 100, `x = ${player.x}`);
-		assert.strictEqual(player.y, 100);
+		assert.ok(player.x > 105, `x = ${player.x}`);
+		assert.strictEqual(player.y, 105);
 
 		client.send(MessageType.Move, { x: 0, y: 0 });
 		await room.waitForNextMessage();
-		await room.waitForNextTimestep();
+		await waitUntilStopped(room, player);
 
-		const stoppedAt = player.x;
+		assert.ok(player.x > 105, `x = ${player.x}`);
+		assert.strictEqual(player.y, 105);
+		assertOnCellCenter(player);
+	});
 
-		await room.waitForNextTimestep();
+	it('spawns players on a cell center', async () =>
+	{
+		const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
+		const client = await colyseus.connectTo(room);
 
-		assert.strictEqual(player.x, stoppedAt);
+		assertOnCellCenter(room.state.players.get(playerIdOf(room, client)) as Player);
+	});
+
+	it('uses a grid that fits the world and the player', () =>
+	{
+		assert.ok(Number.isInteger(worldGrid.columns), `columns = ${worldGrid.columns}`);
+		assert.ok(Number.isInteger(worldGrid.rows), `rows = ${worldGrid.rows}`);
+
+		// The whole player stays inside its cell, so a player on an edge cell is inside the world
+		assert.ok((GRID_CELL_SIZE / 2) >= PLAYER_RADIUS);
 	});
 
 	it('removes the player when the client leaves', async () =>
@@ -212,15 +279,14 @@ describe('GameRoom', () =>
 				const client = await colyseus.connectTo(room);
 				const player = room.state.players.get(playerIdOf(room, client)) as Player;
 
-				player.x = 100;
-				player.y = 100;
+				placeOnCell(player, 3, 3);
 
 				client.send(MessageType.Move, payload);
 				await room.waitForNextMessage();
 				await room.waitForNextTimestep();
 
-				assert.strictEqual(player.x, 100);
-				assert.strictEqual(player.y, 100);
+				assert.strictEqual(player.x, 105);
+				assert.strictEqual(player.y, 105);
 				assert.strictEqual(warnings.length, 1);
 				assert.ok(warnings[0].startsWith(`${client.sessionId} sent an invalid move message (1 of 10), ignored: `), warnings[0]);
 
@@ -229,7 +295,7 @@ describe('GameRoom', () =>
 				await room.waitForNextMessage();
 				await room.waitForNextTimestep();
 
-				assert.ok(player.x > 100, `x = ${player.x}`);
+				assert.ok(player.x > 105, `x = ${player.x}`);
 				assert.ok(room.state.players.has(playerIdOf(room, client)));
 			});
 		}
@@ -275,13 +341,13 @@ describe('GameRoom', () =>
 			const client = await colyseus.connectTo(room);
 			const player = room.state.players.get(playerIdOf(room, client)) as Player;
 
-			player.x = 100;
+			placeOnCell(player, 3, 3);
 
 			client.send(MessageType.Move, { x: 1, y: 0, speed: 9999 });
 			await room.waitForNextMessage();
 			await room.waitForNextTimestep();
 
-			assert.ok((player.x > 100) && (player.x < 150), `x = ${player.x}`);
+			assert.ok((player.x > 105) && (player.x < 150), `x = ${player.x}`);
 			assert.strictEqual(warnings.length, 0);
 		});
 	});
@@ -332,13 +398,13 @@ describe('GameRoom', () =>
 			const window2 = await joinFromBrowser(room, browserIdA);
 			const player = room.state.players.get(playerIdOf(room, window1.client)) as Player;
 
-			player.x = 100;
+			placeOnCell(player, 3, 3);
 
 			window2.client.send(MessageType.Move, { x: 1, y: 0 });
 			await room.waitForNextMessage();
 			await room.waitForNextTimestep();
 
-			assert.ok(player.x > 100, `x = ${player.x}`);
+			assert.ok(player.x > 105, `x = ${player.x}`);
 		});
 
 		it('keep the player until the last one leaves', async () =>
@@ -364,19 +430,17 @@ describe('GameRoom', () =>
 			const window2 = await joinFromBrowser(room, browserIdA);
 			const player = room.state.players.get(playerIdOf(room, window2.client)) as Player;
 
-			player.x = 100;
+			placeOnCell(player, 3, 3);
 
 			window1.client.send(MessageType.Move, { x: 1, y: 0 });
 			await room.waitForNextMessage();
 			await window1.client.leave();
 			await waitUntil(() => (room.getPlayerId(window1.client.sessionId) === undefined));
-			await room.waitForNextTimestep();
+			await waitUntilStopped(room, player);
 
-			const stoppedAt = player.x;
-
-			await room.waitForNextTimestep();
-
-			assert.strictEqual(player.x, stoppedAt);
+			// At most one step, finished on the next cell's center
+			assert.ok(player.x <= 135, `x = ${player.x}`);
+			assertOnCellCenter(player);
 		});
 	});
 

@@ -31,6 +31,14 @@ export const WORLD_HEIGHT = 540;
 export const PLAYER_RADIUS = 12;
 
 /**
+ * Size of one grid cell in world units
+ *
+ * Players move from cell center to cell center and always stop on one. A cell is a little wider than a
+ * player, and the world's width and height are whole numbers of cells (32 x 18)
+ */
+export const GRID_CELL_SIZE = 30;
+
+/**
  * Milliseconds between the state patches the server sends to clients
  *
  * Colyseus's default, set explicitly on the room so the client's interpolation can rely on it
