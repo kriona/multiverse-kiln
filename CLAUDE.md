@@ -22,13 +22,13 @@ An engine for making multiplayer browser-based role-playing games.
   src/app.config.ts  define room types, HTTP routes, Express middleware
   src/transport.ts   HTTPS/WSS transport
   src/rooms/         Room classes (lifecycle hooks, message handlers, tick loop)
-  src/rooms/schema/  @colyseus/schema state classes
   src/logic/         pure game-simulation functions (no I/O)
   src/db/            Drizzle client, schema, and repository modules
   src/auth/          token verification
   src/http/          REST routes (health, login, leaderboard)
 /shared          Code imported by both client and server:
-                 message type enums, payload interfaces, constants
+                 message type enums, payload interfaces, close codes, constants,
+                 and the synced state's @colyseus/schema classes (src/state.ts)
 docker-compose.yml   local Postgres
 ```
 
@@ -62,7 +62,7 @@ npm workspaces are assumed (`client`, `server`, `shared`). Update this section i
 - All environment-specific values come from environment variables. Never hard-code URLs, credentials, or secrets, and never commit `.env` files. The pre-commit hook runs gitleaks on staged changes and blocks commits that contain secrets.
 - Root (`docker-compose.yml`): `POSTGRES_PASSWORD`, `KILN_MIGRATOR_PASSWORD`, `KILN_APP_PASSWORD`, `POSTGRES_PORT`.
 - Server: `DATABASE_URL` (the app role), `MIGRATION_DATABASE_URL` (the migration role; drizzle-kit only, never the running server), `PORT` (default 2567), `ENABLE_DEV_TOOLS` (playground and `/monitor`, never in production), `SSL_KEY_FILE` / `SSL_CERT_FILE`, `ALLOWED_ORIGINS`, `LOADTEST_ENDPOINT`, auth secret(s).
-- Client: `DEV_HOST`, `DEV_PORT`, `DEV_SSL_KEY_FILE` / `DEV_SSL_CERT_FILE`, `VITE_SERVER_URL` (`wss://www.multiversekiln-dev.com:2567` locally, `wss://...` in production).
+- Client: `DEV_HOST`, `DEV_PORT`, `DEV_SSL_KEY_FILE` / `DEV_SSL_CERT_FILE`, `VITE_SERVER_URL` (`wss://www.multiversekiln-dev.com:2567` locally, `wss://...` in production), `VITE_SOURCE_URL` (the source code link in the page footer, required by the AGPL; a fork sets its own repository).
 - Commit `.env.example` files listing every variable with placeholder values, and keep them up to date.
 
 ## HTTPS

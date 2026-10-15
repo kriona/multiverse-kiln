@@ -11,6 +11,7 @@
 		"preview": "vite preview"
 	},
 	"dependencies": {
+		"@colyseus/sdk": "^0.18.5",
 		"@multiverse-kiln/shared": "*",
 		"phaser": "^4.2.1"
 	},

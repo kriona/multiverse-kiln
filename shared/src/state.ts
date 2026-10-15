@@ -1,7 +1,9 @@
 /**
- * State synchronized to every client in a game room
+ * State the server synchronizes to every client in a game room
  *
- * Only what clients need to render goes here; server-only data (such as queued inputs) stays on the room
+ * The server mutates it and Colyseus sends the changes; the client only reads it. Shared so both sides
+ * use the same classes. Only what clients need to render goes here; server-only data (such as queued
+ * inputs) stays on the room
  */
 import { schema, t, type SchemaType } from '@colyseus/schema';
 

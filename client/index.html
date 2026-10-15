@@ -13,17 +13,42 @@
 				background: #111;
 			}
 
+			body
+			{
+				display: flex;
+				flex-direction: column;
+			}
+
 			#game
 			{
 				display: flex;
+				flex: 1;
 				align-items: center;
 				justify-content: center;
-				height: 100%;
+			}
+
+			footer
+			{
+				padding: 8px 16px;
+				font-family: sans-serif;
+				font-size: 12px;
+				text-align: center;
+				color: #999;
+			}
+
+			footer a
+			{
+				color: #ccc;
 			}
 		</style>
 	</head>
 	<body>
 		<div id="game"></div>
+		<footer>
+			Copyright (C) 2026 Kriona Hagen.
+			This game is free software under the <a href="https://www.gnu.org/licenses/agpl-3.0.html">GNU Affero General Public License v3 or later</a>.
+			<a href="%VITE_SOURCE_URL%">Source code</a>
+		</footer>
 		<script type="module" src="/src/main.ts"></script>
 	</body>
 </html>

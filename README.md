@@ -10,7 +10,7 @@ See `PLAN.md` for the roadmap and current phase, and `CLAUDE.md` for architectur
 |---|---|
 | Client | TypeScript + [Phaser](https://phaser.io/) rendering to a WebGL canvas, served by [Vite](https://vite.dev/) |
 | Server | Node.js + TypeScript running [Colyseus](https://docs.colyseus.io/) (rooms, state sync over WebSockets) |
-| Shared | A TypeScript package imported by both client and server (message types, payloads, constants) |
+| Shared | A TypeScript package imported by both client and server (message types, payloads, constants, synced state classes) |
 | Database | PostgreSQL via [Drizzle ORM](https://orm.drizzle.team/): Docker locally, [Neon](https://neon.tech/) in production |
 | Hosting | Colyseus Cloud (game server) + Neon (database) |
 
@@ -99,6 +99,7 @@ Then put the same passwords into the connection strings in `server/.env`: `KILN_
 | `DEV_HOST` | `client/.env` | Hostname for the Vite dev server: `www.multiversekiln-dev.com` (must be in your hosts file; see step 3). |
 | `DEV_PORT` | `client/.env` | Port for the Vite dev server (default `5173`). |
 | `VITE_SERVER_URL` | `client/.env` | WebSocket URL of the Colyseus server: `wss://www.multiversekiln-dev.com:2567`. Use the same hostname as `DEV_HOST` so it matches the certificate. |
+| `VITE_SOURCE_URL` | `client/.env` | Where players can get the game's source code, linked from the page footer (required). The AGPL requires offering the source to players of a modified version, so a fork sets its own repository. |
 | `PORT` | `server/.env` | Port the Colyseus server listens on (default `2567`). |
 | `ENABLE_DEV_TOOLS` | `server/.env` | Set to `true` to enable `/monitor` and the playground. Off when unset, and always off when `NODE_ENV=production`. Never set it in production. |
 | `SSL_KEY_FILE`, `SSL_CERT_FILE` | `server/.env` | Certificate for HTTPS/WSS (required). The example values point at `certs/` (see step 5). Leave unset on Colyseus Cloud, which handles TLS itself. |
@@ -187,7 +188,7 @@ Open the game at `https://www.multiversekiln-dev.com:5173`. The server's output 
 
 Press `Ctrl+C` to stop all three. If any one exits, the others are stopped too.
 
-To test multiplayer, open the client in two browser tabs.
+Move with the arrow keys or WASD. Your player is green; other players are blue. To test multiplayer, open the client in two browser tabs (or two windows side by side, so both keep running).
 
 ### 8. Verify
 
