@@ -4,7 +4,11 @@ import type { Direction, MovePayload } from '@multiverse-kiln/shared';
 const KeyCodes = Phaser.Input.Keyboard.KeyCodes;
 
 /**
- * Reads the movement keys (arrow keys and WASD) as a Move payload
+ * Reads the movement keys (arrow keys, WASD and the numeric keypad) as a Move payload
+ *
+ * Keypad 7, 9, 1 and 3 move diagonally by counting toward both of their axes. With Num Lock off the
+ * keypad sends Home, Page Up, End and Page Down for those keys and the arrow keys for 8, 4, 6 and 2,
+ * so those are mapped too
  */
 export class MovementKeys
 {
@@ -14,16 +18,29 @@ export class MovementKeys
 	private readonly down: Phaser.Input.Keyboard.Key[];
 
 	/**
-	 * Registers the keys; Phaser captures them so the arrow keys don't scroll the page
+	 * Registers the keys; Phaser captures them so they don't scroll the page
 	 *
 	 * @param keyboard The scene's keyboard plugin
 	 */
 	constructor(private readonly keyboard: Phaser.Input.Keyboard.KeyboardPlugin)
 	{
-		this.left = [keyboard.addKey(KeyCodes.LEFT), keyboard.addKey(KeyCodes.A)];
-		this.right = [keyboard.addKey(KeyCodes.RIGHT), keyboard.addKey(KeyCodes.D)];
-		this.up = [keyboard.addKey(KeyCodes.UP), keyboard.addKey(KeyCodes.W)];
-		this.down = [keyboard.addKey(KeyCodes.DOWN), keyboard.addKey(KeyCodes.S)];
+		this.left = this.addKeys([KeyCodes.LEFT, KeyCodes.A, KeyCodes.NUMPAD_FOUR, KeyCodes.NUMPAD_SEVEN, KeyCodes.NUMPAD_ONE, KeyCodes.HOME, KeyCodes.END]);
+		this.right = this.addKeys([KeyCodes.RIGHT, KeyCodes.D, KeyCodes.NUMPAD_SIX, KeyCodes.NUMPAD_NINE, KeyCodes.NUMPAD_THREE, KeyCodes.PAGE_UP, KeyCodes.PAGE_DOWN]);
+		this.up = this.addKeys([KeyCodes.UP, KeyCodes.W, KeyCodes.NUMPAD_EIGHT, KeyCodes.NUMPAD_SEVEN, KeyCodes.NUMPAD_NINE, KeyCodes.HOME, KeyCodes.PAGE_UP]);
+		this.down = this.addKeys([KeyCodes.DOWN, KeyCodes.S, KeyCodes.NUMPAD_TWO, KeyCodes.NUMPAD_ONE, KeyCodes.NUMPAD_THREE, KeyCodes.END, KeyCodes.PAGE_DOWN]);
+	}
+
+	/**
+	 * Registers keys with the keyboard plugin
+	 *
+	 * A key listed for two axes (a diagonal) is registered once and shared, since the plugin keeps one Key per key code
+	 *
+	 * @param keyCodes Key codes to register
+	 * @return The keys
+	 */
+	private addKeys(keyCodes: number[]): Phaser.Input.Keyboard.Key[]
+	{
+		return(keyCodes.map((keyCode) => this.keyboard.addKey(keyCode)));
 	}
 
 	/**
