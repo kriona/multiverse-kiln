@@ -2,7 +2,7 @@ import { generateId, Room, type AuthContext, type Client, type CloseCode } from 
 import { GameState, GRID_CELL_SIZE, MessageType, PATCH_INTERVAL_MS, Player, ServerCloseCode, ServerMessageType, WORLD_HEIGHT, WORLD_WIDTH, type MovePayload, type WelcomePayload } from '@multiverse-kiln/shared';
 
 import { readBrowserId } from '../http/browserId.js';
-import { occupiedCells, spawnPosition, stepOnGrid, type Grid, type GridStep } from '../logic/movement.js';
+import { NO_PRESS, occupiedCells, spawnPosition, stepOnGrid, type DirectionPress, type Grid, type GridStep } from '../logic/movement.js';
 import { CellOccupancy } from '../logic/occupancy.js';
 import { InputQueue } from './inputQueue.js';
 import { describeInvalidPayload, movePayload } from './payloads.js';
@@ -87,6 +87,11 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 	 * The step each moving player is taking (server-only, not synced)
 	 */
 	private readonly steps = new Map<string, GridStep>();
+
+	/**
+	 * How long each player has held its direction, for the step repeat delay (server-only, not synced)
+	 */
+	private readonly presses = new Map<string, DirectionPress>();
 
 	/**
 	 * How many invalid messages each client has sent this session (server-only, not synced)
@@ -190,6 +195,7 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 			{
 				this.state.players.delete(left.playerId);
 				this.steps.delete(left.playerId);
+				this.presses.delete(left.playerId);
 			}
 		}
 
@@ -256,10 +262,11 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 				this.heldDirections.set(playerId, move);
 			}
 
-			const mover = stepOnGrid({ x: player.x, y: player.y, step: this.steps.get(playerId) }, this.heldDirections.get(playerId) ?? standingStill, deltaSeconds, worldGrid, occupancy.isFreeFor(playerId));
+			const mover = stepOnGrid({ x: player.x, y: player.y, step: this.steps.get(playerId), press: this.presses.get(playerId) ?? NO_PRESS }, this.heldDirections.get(playerId) ?? standingStill, deltaSeconds, worldGrid, occupancy.isFreeFor(playerId));
 
 			player.x = mover.x;
 			player.y = mover.y;
+			this.presses.set(playerId, mover.press);
 
 			if (mover.step)
 			{

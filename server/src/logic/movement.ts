@@ -47,7 +47,25 @@ export interface GridStep
 }
 
 /**
- * A player's movement state: where it is, and the step it is taking
+ * The direction a player is holding, and for how long
+ */
+export interface DirectionPress
+{
+	direction: MovePayload;
+
+	/**
+	 * How long the direction has been held, in seconds
+	 */
+	heldSeconds: number;
+
+	/**
+	 * Steps started since the direction was pressed
+	 */
+	stepsStarted: number;
+}
+
+/**
+ * A player's movement state: where it is, the step it is taking, and the direction it is holding
  */
 export interface GridMover
 {
@@ -58,6 +76,8 @@ export interface GridMover
 	 * The step in progress; undefined when standing still
 	 */
 	step: GridStep | undefined;
+
+	press: DirectionPress;
 }
 
 /**
@@ -71,59 +91,102 @@ export type IsCellFree = (cell: Cell) => boolean;
 export const PLAYER_SPEED = 200;
 
 /**
+ * How long a direction must be held, in seconds, before a second step starts
+ *
+ * A step takes 0.15 seconds at PLAYER_SPEED. Waiting a little longer than that before repeating means
+ * a press held slightly too long moves one cell, not two, like a keyboard's key repeat delay
+ */
+export const STEP_REPEAT_DELAY = 0.15;
+
+/**
+ * Allowance for rounding when comparing times
+ */
+const TIME_EPSILON = 1e-9;
+
+/**
+ * A press of no direction, for a player that has never moved
+ */
+export const NO_PRESS: DirectionPress = { direction: { x: 0, y: 0 }, heldSeconds: 0, stepsStarted: 0 };
+
+/**
  * Moves a player along the grid for a period of time
  *
  * A step to a neighboring cell always runs to that cell's center, even if the direction is released
- * partway, so a player that stops is exactly on a cell center. While a direction is held, each step
- * that ends starts the next one with the remaining time, so movement doesn't stutter between cells.
- * Holding two axes steps diagonally, at the same speed.
+ * partway, so a player that stops is exactly on a cell center. Pressing a direction starts a step
+ * at once; the next starts only once the direction has been held for STEP_REPEAT_DELAY, and after
+ * that each step that ends starts the next one with the remaining time, so held movement doesn't
+ * stutter between cells. Holding two axes steps diagonally, at the same speed.
  *
  * A step only starts into a free cell, and a diagonal step also needs both cells beside it free, so
  * players can't pass through each other at a corner. When the diagonal step can't be taken, the
  * horizontal and then the vertical part is tried instead; when nothing can, the player waits
  *
- * @param mover The player's position and current step
- * @param direction Direction held on each axis
+ * @param mover The player's position, current step and press
+ * @param direction Direction held on each axis; a change from the press's direction starts a new press
  * @param deltaSeconds Time to move for, in seconds
  * @param grid Grid to move on
  * @param isCellFree Whether another player holds a cell (see occupiedCells)
  * @param speed Speed in world units per second
- * @return The new position and step
+ * @return The new position, step and press
  */
 export function stepOnGrid(mover: GridMover, direction: MovePayload, deltaSeconds: number, grid: Grid, isCellFree: IsCellFree, speed: number = PLAYER_SPEED): GridMover
 {
+	const isSamePress = ((direction.x === mover.press.direction.x) && (direction.y === mover.press.direction.y));
+	const press: DirectionPress = (isSamePress ? { ...mover.press } : { direction: { x: direction.x, y: direction.y }, heldSeconds: 0, stepsStarted: 0 });
+	const totalSeconds = Math.max(deltaSeconds, 0);
 	let x = mover.x;
 	let y = mover.y;
 	let step = mover.step;
-	let remaining = speed * Math.max(deltaSeconds, 0);
+	let elapsed = 0;
 
-	while (remaining > 0)
+	while (elapsed < totalSeconds)
 	{
-		step ??= nextStep({ x, y }, direction, grid, isCellFree);
-
 		if (!step)
 		{
-			break;
+			const heldSeconds = press.heldSeconds + elapsed;
+
+			// Waiting out the repeat delay before the second step of a press
+			if ((press.stepsStarted > 0) && (heldSeconds < (STEP_REPEAT_DELAY - TIME_EPSILON)))
+			{
+				elapsed = Math.min(totalSeconds, elapsed + (STEP_REPEAT_DELAY - heldSeconds));
+				continue;
+			}
+
+			step = nextStep({ x, y }, direction, grid, isCellFree);
+
+			if (!step)
+			{
+				break;
+			}
+
+			// Moving back onto the current cell's center isn't a step to another cell
+			if ((step.to.column !== step.from.column) || (step.to.row !== step.from.row))
+			{
+				press.stepsStarted++;
+			}
 		}
 
 		const target = cellCenter(step.to, grid);
 		const distance = Math.hypot(target.x - x, target.y - y);
+		const reach = speed * (totalSeconds - elapsed);
 
-		if (distance > remaining)
+		if (distance > reach)
 		{
-			x += ((target.x - x) / distance) * remaining;
-			y += ((target.y - y) / distance) * remaining;
+			x += ((target.x - x) / distance) * reach;
+			y += ((target.y - y) / distance) * reach;
 			break;
 		}
 
 		// Arriving sets the position to the cell center exactly, so rounding never leaves a player off the grid
 		x = target.x;
 		y = target.y;
-		remaining -= distance;
+		elapsed += distance / speed;
 		step = undefined;
 	}
 
-	return({ x, y, step });
+	press.heldSeconds += totalSeconds;
+
+	return({ x, y, step, press });
 }
 
 /**
@@ -136,7 +199,7 @@ export function stepOnGrid(mover: GridMover, direction: MovePayload, deltaSecond
  * @param grid The grid
  * @return The held cells
  */
-export function occupiedCells(mover: GridMover, grid: Grid): Cell[]
+export function occupiedCells(mover: Pick<GridMover, 'x' | 'y' | 'step'>, grid: Grid): Cell[]
 {
 	if (mover.step)
 	{
