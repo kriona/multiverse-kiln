@@ -9,9 +9,11 @@ Run all commands from the repository root with `-w server`, e.g. `npm run dev -w
 - `src/index.ts`: entry point. Leave it alone so the server can deploy to Colyseus Cloud
 - `src/app.config.ts`: server configuration: rooms, HTTP routes, Express middleware
 - `src/transport.ts`: HTTPS/WSS transport; refuses to start without a certificate (except on Colyseus Cloud and in tests)
-- `src/rooms/GameRoom.ts`: the game room: joins and leaves, input handling and the 30 Hz simulation loop
+- `src/rooms/LobbyRoom.ts`: the one lobby every window joins: login by name, chat, who's online, and creating and joining groups
+- `src/rooms/GameRoom.ts`: a group's game room: joins and leaves, input handling and the 30 Hz simulation loop
 - `src/rooms/payloads.ts`: zod validators for client message payloads, each matching an interface in `/shared`
 - `src/rooms/inputQueue.ts`: per-player queues of inputs received between ticks (server-only, not synced)
+- `src/players/onlinePlayers.ts`: the logged-in players (by browser ID) and the group each is in, shared by the lobby and the game rooms. In memory only, so it needs a single server process
 - `src/logic/`: game rules as pure functions (no Colyseus, database or I/O), unit-tested in `test/logic/`
 - `src/http/health.ts`: `GET /health`, the health-check route
 - `src/db/schema.ts`: Drizzle schema, the source of truth for the database tables

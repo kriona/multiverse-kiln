@@ -7,7 +7,53 @@
 		<link rel="stylesheet" href="/src/style.css" />
 	</head>
 	<body>
-		<div id="game"></div>
+		<main>
+			<section id="status-screen" class="screen">
+				<p id="status-message">Connecting...</p>
+			</section>
+
+			<section id="login-screen" class="screen" hidden>
+				<form id="login-form" class="panel login-panel">
+					<h1>Multiverse Kiln</h1>
+					<label for="login-name">What should we call you?</label>
+					<input id="login-name" name="name" autocomplete="nickname" required />
+					<button id="login-submit" type="submit">Enter</button>
+				</form>
+			</section>
+
+			<section id="lobby-screen" class="screen" hidden>
+				<header class="toolbar">
+					<h1>Lobby</h1>
+					<span class="toolbar-name">Playing as <strong id="lobby-player-name"></strong></span>
+					<button id="create-group" type="button">Create game</button>
+				</header>
+				<p id="lobby-notice" class="notice" role="status" hidden></p>
+				<div class="lobby-body">
+					<div class="panel chat">
+						<ol id="chat-log" class="chat-log" aria-live="polite"></ol>
+						<form id="chat-form" class="chat-form">
+							<input id="chat-input" name="text" autocomplete="off" placeholder="Say something..." aria-label="Chat message" />
+							<button type="submit">Send</button>
+						</form>
+					</div>
+					<aside class="panel online">
+						<h2>Online (<span id="online-count">0</span>)</h2>
+						<ul id="online-list" class="online-list"></ul>
+						<p id="online-more" class="online-more" hidden></p>
+					</aside>
+				</div>
+			</section>
+
+			<section id="group-screen" class="screen" hidden>
+				<header class="toolbar">
+					<h1>Game</h1>
+					<span id="group-status" class="toolbar-status" role="status"></span>
+					<button id="share-group" type="button">Share</button>
+					<button id="leave-group" type="button">Leave group</button>
+				</header>
+				<div id="game"></div>
+			</section>
+		</main>
 		<footer>
 			Copyright (C) 2026 Kriona Hagen.
 			This game is free software under the <a href="https://www.gnu.org/licenses/agpl-3.0.html">GNU Affero General Public License v3 or later</a>.

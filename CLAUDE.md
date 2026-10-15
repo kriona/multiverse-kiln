@@ -21,7 +21,8 @@ An engine for making multiplayer browser-based role-playing games.
   src/index.ts       Colyseus Cloud entry point - never modify it (Colyseus's rule for Cloud deploys)
   src/app.config.ts  define room types, HTTP routes, Express middleware
   src/transport.ts   HTTPS/WSS transport
-  src/rooms/         Room classes (lifecycle hooks, message handlers, tick loop)
+  src/rooms/         Room classes (lifecycle hooks, message handlers, tick loop): LobbyRoom and GameRoom (one per group)
+  src/players/       who is logged in and which group each player is in (in memory until Phase 7's real login)
   src/logic/         pure game-simulation functions (no I/O)
   src/db/            Drizzle client, schema, and repository modules
   src/auth/          token verification
@@ -91,7 +92,7 @@ npm run dev -w client                # Vite on https://www.multiversekiln-dev.co
 ```
 
 Run all npm commands from the repository root, using `-w <package>` to target one package (e.g. `npm install <pkg> -w server`).
-Test multiplayer by opening two browser tabs. The local Postgres major version should match the Neon project's.
+Test multiplayer with separate browsers or profiles: every tab of one browser is the same player. The local Postgres major version should match the Neon project's.
 
 ## Coding conventions
 

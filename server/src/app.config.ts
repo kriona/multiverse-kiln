@@ -5,10 +5,12 @@ import {
 	playground,
 } from 'colyseus';
 
-import { GAME_ROOM_NAME } from '@multiverse-kiln/shared';
+import { GAME_ROOM_NAME, LOBBY_ROOM_NAME } from '@multiverse-kiln/shared';
 import { GameRoom } from './rooms/GameRoom.js';
+import { LobbyRoom } from './rooms/LobbyRoom.js';
 import { createTransport } from './transport.js';
 import { isDevToolsEnabled } from './devTools.js';
+import { addBrowserIdRoute } from './http/browserId.js';
 import { addHealthRoute } from './http/health.js';
 import { createOriginCheck, parseAllowedOrigins } from './http/origins.js';
 import { configureResponseHeaders } from './http/responseHeaders.js';
@@ -30,6 +32,7 @@ const server = defineServer({
 	 * Room types clients can join
 	 */
 	rooms: {
+		[LOBBY_ROOM_NAME]: defineRoom(LobbyRoom),
 		[GAME_ROOM_NAME]: defineRoom(GameRoom),
 	},
 
@@ -42,6 +45,7 @@ const server = defineServer({
 		app.disable('x-powered-by');
 
 		addHealthRoute(app);
+		addBrowserIdRoute(app);
 
 		if (isDevToolsEnabled())
 		{

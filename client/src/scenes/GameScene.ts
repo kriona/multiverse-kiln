@@ -1,10 +1,16 @@
 import Phaser from 'phaser';
-import { Callbacks, CloseCode } from '@colyseus/sdk';
-import { MessageType, PATCH_INTERVAL_MS, PLAYER_RADIUS, ServerCloseCode, type MovePayload, type Player } from '@multiverse-kiln/shared';
+import { Callbacks } from '@colyseus/sdk';
+import { MessageType, PATCH_INTERVAL_MS, PLAYER_RADIUS, type MovePayload, type Player } from '@multiverse-kiln/shared';
 
 import { MovementKeys } from '../input/MovementKeys';
-import { joinGameRoom, type GameRoom } from '../network/serverConnection';
+import type { GameConnection, GameRoom } from '../network/serverConnection';
+import { drawGrid } from '../rendering/drawGrid';
 import { PositionBuffer } from '../rendering/PositionBuffer';
+
+/**
+ * Key the scene is registered under
+ */
+export const GAME_SCENE_KEY = 'GameScene';
 
 /**
  * How far in the past players are drawn: two patches, so there is normally a snapshot either side
@@ -16,57 +22,73 @@ const OWN_PLAYER_COLOR = 0x4caf50;
 const OTHER_PLAYER_COLOR = 0x42a5f5;
 
 /**
+ * Gap in pixels between the top of a player and the bottom of their name
+ */
+const NAME_OFFSET = 4;
+
+/**
+ * Data the scene is started with
+ */
+export interface GameSceneData
+{
+	/**
+	 * The group's joined game room; whoever starts the scene owns the room and leaves it
+	 */
+	connection: GameConnection;
+}
+
+/**
  * A player as drawn on screen
  */
 interface RenderedPlayer
 {
 	shape: Phaser.GameObjects.Arc;
+	label: Phaser.GameObjects.Text;
 	positions: PositionBuffer;
 	stopListening: () => void;
 }
 
 /**
- * The main scene: joins the game room, draws every player from the synced state and sends keyboard input
+ * Draws a group's game room: every player from the synced state, and sends keyboard input
  *
  * The server decides where players are. This scene only sends the direction held and draws the
  * positions the server sends back
  */
 export class GameScene extends Phaser.Scene
 {
-	private room?: GameRoom;
+	private room!: GameRoom;
+	private ownPlayerId!: string;
 	private readonly players = new Map<string, RenderedPlayer>();
+	private readonly unbinds: Array<() => void> = [];
 	private movementKeys?: MovementKeys;
 	private lastSentMove?: MovePayload;
-	private statusText!: Phaser.GameObjects.Text;
 
 	constructor()
 	{
-		super('GameScene');
+		super(GAME_SCENE_KEY);
 	}
 
 	/**
 	 * Resets per-run state (runs on every start, unlike the constructor)
+	 *
+	 * @param data The room to draw
 	 */
-	init(): void
+	init(data: GameSceneData): void
 	{
-		this.room = undefined;
+		this.room = data.connection.room;
+		this.ownPlayerId = data.connection.playerId;
 		this.players.clear();
+		this.unbinds.length = 0;
 		this.movementKeys = undefined;
 		this.lastSentMove = undefined;
 	}
 
 	/**
-	 * Sets up input and the status line, then connects
+	 * Draws the grid, sets up input, and subscribes to the players in the room's state
 	 */
 	create(): void
 	{
-		const { width } = this.scale;
-
-		this.statusText = this.add.text(width / 2, 24, '', {
-			fontFamily: 'sans-serif',
-			fontSize: '18px',
-			color: '#ffffff'
-		}).setOrigin(0.5, 0).setDepth(1);
+		drawGrid(this);
 
 		if (this.input.keyboard)
 		{
@@ -80,10 +102,24 @@ export class GameScene extends Phaser.Scene
 		{
 			this.game.events.off(Phaser.Core.Events.BLUR, this.stopMoving);
 			this.game.events.off(Phaser.Core.Events.HIDDEN, this.stopMoving);
-			void this.room?.leave();
+
+			// Captured keys have their default action blocked on the whole page, which would stop them
+			// being typed into the lobby's chat
+			this.input.keyboard?.removeAllKeys(true);
+			this.input.keyboard?.clearCaptures();
+
+			for (const unbind of this.unbinds)
+			{
+				unbind();
+			}
+
+			for (const playerId of [...this.players.keys()])
+			{
+				this.removePlayer(playerId);
+			}
 		});
 
-		void this.connect();
+		this.watchPlayers();
 	}
 
 	/**
@@ -102,68 +138,45 @@ export class GameScene extends Phaser.Scene
 			if (position)
 			{
 				player.shape.setPosition(position.x, position.y);
+				player.label.setPosition(position.x, position.y - PLAYER_RADIUS - NAME_OFFSET);
 			}
 		}
 	}
 
 	/**
-	 * Joins the game room and subscribes to the players in its state
+	 * Adds and removes players as the room's state changes
 	 */
-	private async connect(): Promise<void>
+	private watchPlayers(): void
 	{
-		this.setStatus('Connecting...');
-
-		let room: GameRoom;
-
-		try
-		{
-			room = await joinGameRoom();
-		}
-		catch (error)
-		{
-			console.error('Could not join the game room:', error);
-			this.setStatus('Could not connect to the server. Reload to try again.');
-			return;
-		}
-
-		this.room = room;
-		this.setStatus('');
-
-		const callbacks = Callbacks.get(room);
+		const callbacks = Callbacks.get(this.room);
 
 		// Fires for players already in the room too
-		callbacks.onAdd('players', (player, sessionId) =>
+		this.unbinds.push(callbacks.onAdd('players', (player, playerId) =>
 		{
 			const positions = new PositionBuffer(PATCH_INTERVAL_MS);
-			const color = ((sessionId === room.sessionId) ? OWN_PLAYER_COLOR : OTHER_PLAYER_COLOR);
+			const color = ((playerId === this.ownPlayerId) ? OWN_PLAYER_COLOR : OTHER_PLAYER_COLOR);
 
 			positions.push(performance.now(), player.x, player.y);
 
-			this.players.set(sessionId, {
+			this.players.set(playerId, {
 				shape: this.add.circle(player.x, player.y, PLAYER_RADIUS, color),
+				label: this.add.text(player.x, player.y - PLAYER_RADIUS - NAME_OFFSET, player.name, {
+					fontFamily: 'sans-serif',
+					fontSize: '12px',
+					color: '#ffffff'
+				}).setOrigin(0.5, 1).setDepth(1),
 				positions,
 				stopListening: callbacks.onChange(player, () =>
 				{
 					positions.push(performance.now(), player.x, player.y);
 				})
 			});
-		});
+		}));
 
-		callbacks.onRemove('players', (_player: Player, sessionId: string) =>
+		this.unbinds.push(callbacks.onRemove('players', (_player: Player, playerId: string) =>
 		{
-			this.removePlayer(sessionId);
-		});
-
-		room.onLeave((code: number) =>
-		{
-			for (const sessionId of [...this.players.keys()])
-			{
-				this.removePlayer(sessionId);
-			}
-
-			this.room = undefined;
-			this.setStatus(describeLeave(code));
-		});
+			this.removePlayer(playerId);
+		}));
 	}
 
 	/**
@@ -173,7 +186,7 @@ export class GameScene extends Phaser.Scene
 	 */
 	private sendMovement(): void
 	{
-		if (!this.room || !this.movementKeys)
+		if (!this.movementKeys || !this.room.connection.isOpen)
 		{
 			return;
 		}
@@ -203,13 +216,13 @@ export class GameScene extends Phaser.Scene
 	};
 
 	/**
-	 * Removes a player's shape and stops listening to their state
+	 * Removes a player's shape and name and stops listening to their state
 	 *
-	 * @param sessionId The player's session ID
+	 * @param playerId The player's ID
 	 */
-	private removePlayer(sessionId: string): void
+	private removePlayer(playerId: string): void
 	{
-		const player = this.players.get(sessionId);
+		const player = this.players.get(playerId);
 
 		if (!player)
 		{
@@ -218,37 +231,7 @@ export class GameScene extends Phaser.Scene
 
 		player.stopListening();
 		player.shape.destroy();
-		this.players.delete(sessionId);
+		player.label.destroy();
+		this.players.delete(playerId);
 	}
-
-	/**
-	 * Shows a message at the top of the screen
-	 *
-	 * @param message Text to show; empty to hide it
-	 */
-	private setStatus(message: string): void
-	{
-		this.statusText.setText(message);
-	}
-}
-
-/**
- * Explains why the client left the room
- *
- * @param code WebSocket close code
- * @return Message for the status line; empty when the client left on purpose
- */
-function describeLeave(code: number): string
-{
-	if (code === CloseCode.CONSENTED)
-	{
-		return('');
-	}
-
-	if ((code as ServerCloseCode) === ServerCloseCode.TooManyInvalidMessages)
-	{
-		return('Disconnected: the server rejected too many invalid messages. Reload to rejoin.');
-	}
-
-	return(`Disconnected from the server (code ${code}). Reload to rejoin.`);
 }
