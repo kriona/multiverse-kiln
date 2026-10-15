@@ -37,7 +37,7 @@ function playerIdOf(room: GameRoom, client: ClientRoom): string
  */
 function placeOnCell(player: Player, column: number, row: number): void
 {
-	const center = cellCenter(column, row, worldGrid);
+	const center = cellCenter({ column, row }, worldGrid);
 
 	player.x = center.x;
 	player.y = center.y;
@@ -208,6 +208,31 @@ describe('GameRoom', () =>
 		assert.ok(player.x > 105, `x = ${player.x}`);
 		assert.strictEqual(player.y, 105);
 		assertOnCellCenter(player);
+	});
+
+	it('does not let a player move into another player\'s cell', async () =>
+	{
+		const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
+		const client1 = await colyseus.connectTo(room);
+		const client2 = await colyseus.connectTo(room);
+		const player1 = room.state.players.get(playerIdOf(room, client1)) as Player;
+		const player2 = room.state.players.get(playerIdOf(room, client2)) as Player;
+
+		placeOnCell(player1, 3, 3);
+		placeOnCell(player2, 6, 3);
+
+		// Player 1 walks right until player 2 is in the way
+		client1.send(MessageType.Move, { x: 1, y: 0 });
+		await room.waitForNextMessage();
+
+		for (let i = 0; i < 30; i++)
+		{
+			await room.waitForNextTimestep();
+		}
+
+		assert.strictEqual(player1.x, cellCenter({ column: 5, row: 3 }, worldGrid).x);
+		assert.strictEqual(player1.y, player2.y);
+		assert.strictEqual(player2.x, cellCenter({ column: 6, row: 3 }, worldGrid).x);
 	});
 
 	it('spawns players on a cell center', async () =>

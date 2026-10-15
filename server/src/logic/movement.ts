@@ -1,5 +1,5 @@
 /**
- * Player movement rules: players move on a grid, from cell center to cell center
+ * Player movement rules: players move on a grid, from cell center to cell center, and never share a cell
  *
  * Pure functions: no Colyseus, database, network or timers (CLAUDE.md architecture rule 4)
  */
@@ -12,6 +12,15 @@ export interface Position
 {
 	x: number;
 	y: number;
+}
+
+/**
+ * A cell of the grid, counted from 0 at the top left
+ */
+export interface Cell
+{
+	column: number;
+	row: number;
 }
 
 /**
@@ -29,7 +38,16 @@ export interface Grid
 }
 
 /**
- * A player's movement state: where it is, and the cell center it is stepping to
+ * A move from one cell to a neighboring one
+ */
+export interface GridStep
+{
+	from: Cell;
+	to: Cell;
+}
+
+/**
+ * A player's movement state: where it is, and the step it is taking
  */
 export interface GridMover
 {
@@ -37,10 +55,15 @@ export interface GridMover
 	y: number;
 
 	/**
-	 * Center of the cell the current step ends on; undefined when standing still
+	 * The step in progress; undefined when standing still
 	 */
-	target: Position | undefined;
+	step: GridStep | undefined;
 }
+
+/**
+ * Whether a cell is free for a player to move into (not held by another player)
+ */
+export type IsCellFree = (cell: Cell) => boolean;
 
 /**
  * Player movement speed in world units per second
@@ -53,32 +76,37 @@ export const PLAYER_SPEED = 200;
  * A step to a neighboring cell always runs to that cell's center, even if the direction is released
  * partway, so a player that stops is exactly on a cell center. While a direction is held, each step
  * that ends starts the next one with the remaining time, so movement doesn't stutter between cells.
- * Holding two axes steps diagonally, at the same speed. A step that would leave the grid on an
- * axis drops that axis
+ * Holding two axes steps diagonally, at the same speed.
+ *
+ * A step only starts into a free cell, and a diagonal step also needs both cells beside it free, so
+ * players can't pass through each other at a corner. When the diagonal step can't be taken, the
+ * horizontal and then the vertical part is tried instead; when nothing can, the player waits
  *
  * @param mover The player's position and current step
  * @param direction Direction held on each axis
  * @param deltaSeconds Time to move for, in seconds
  * @param grid Grid to move on
+ * @param isCellFree Whether another player holds a cell (see occupiedCells)
  * @param speed Speed in world units per second
  * @return The new position and step
  */
-export function stepOnGrid(mover: GridMover, direction: MovePayload, deltaSeconds: number, grid: Grid, speed: number = PLAYER_SPEED): GridMover
+export function stepOnGrid(mover: GridMover, direction: MovePayload, deltaSeconds: number, grid: Grid, isCellFree: IsCellFree, speed: number = PLAYER_SPEED): GridMover
 {
 	let x = mover.x;
 	let y = mover.y;
-	let target = mover.target;
+	let step = mover.step;
 	let remaining = speed * Math.max(deltaSeconds, 0);
 
 	while (remaining > 0)
 	{
-		target ??= nextStepTarget({ x, y }, direction, grid);
+		step ??= nextStep({ x, y }, direction, grid, isCellFree);
 
-		if (!target)
+		if (!step)
 		{
 			break;
 		}
 
+		const target = cellCenter(step.to, grid);
 		const distance = Math.hypot(target.x - x, target.y - y);
 
 		if (distance > remaining)
@@ -92,61 +120,147 @@ export function stepOnGrid(mover: GridMover, direction: MovePayload, deltaSecond
 		x = target.x;
 		y = target.y;
 		remaining -= distance;
-		target = undefined;
+		step = undefined;
 	}
 
-	return({ x, y, target });
+	return({ x, y, step });
 }
 
 /**
- * Picks the cell center the next step goes to
+ * The cells a player holds, which other players can't move into
  *
- * @param position Where the player is
- * @param direction Direction held on each axis
- * @param grid Grid to move on
- * @return The neighboring cell's center in the held direction, the current cell's center when the player is
- * off-center and can't step, or undefined when the player is on a center and can't step
+ * A standing player holds the cell it is in. A moving player holds both the cell it is leaving and the
+ * one it is entering, so no other player can be partway into either
+ *
+ * @param mover The player's position and current step
+ * @param grid The grid
+ * @return The held cells
  */
-function nextStepTarget(position: Position, direction: MovePayload, grid: Grid): Position | undefined
+export function occupiedCells(mover: GridMover, grid: Grid): Cell[]
 {
-	const column = clamp(Math.floor(position.x / grid.cellSize), 0, grid.columns - 1);
-	const row = clamp(Math.floor(position.y / grid.cellSize), 0, grid.rows - 1);
-	const target = cellCenter(clamp(column + direction.x, 0, grid.columns - 1), clamp(row + direction.y, 0, grid.rows - 1), grid);
-
-	if ((target.x === position.x) && (target.y === position.y))
+	if (mover.step)
 	{
-		return(undefined);
+		return([mover.step.from, mover.step.to]);
 	}
 
-	return(target);
+	return([cellAt(mover, grid)]);
 }
 
 /**
- * Picks a random cell for a player to spawn in
+ * Picks a random free cell for a player to spawn in
+ *
+ * Starts from a random cell and, if that is held, takes the next free one along the rows
  *
  * @param grid Grid to spawn on
  * @param random Returns a number in [0, 1), like Math.random
- * @return The center of a cell in the grid
+ * @param isCellFree Whether another player holds a cell
+ * @return The center of a free cell, or undefined when every cell is held
  */
-export function spawnPosition(grid: Grid, random: () => number): Position
+export function spawnPosition(grid: Grid, random: () => number, isCellFree: IsCellFree): Position | undefined
 {
-	return(cellCenter(Math.floor(random() * grid.columns), Math.floor(random() * grid.rows), grid));
+	const cellCount = grid.columns * grid.rows;
+	const start = (Math.floor(random() * grid.rows) * grid.columns) + Math.floor(random() * grid.columns);
+
+	for (let i = 0; i < cellCount; i++)
+	{
+		const index = (start + i) % cellCount;
+		const cell = { column: index % grid.columns, row: Math.floor(index / grid.columns) };
+
+		if (isCellFree(cell))
+		{
+			return(cellCenter(cell, grid));
+		}
+	}
+
+	return(undefined);
 }
 
 /**
  * The center of a cell
  *
- * @param column Cell's column, from 0 on the left
- * @param row Cell's row, from 0 at the top
+ * @param cell The cell
  * @param grid The grid
  * @return The cell's center in world units
  */
-export function cellCenter(column: number, row: number, grid: Grid): Position
+export function cellCenter(cell: Cell, grid: Grid): Position
 {
 	return({
-		x: (column * grid.cellSize) + (grid.cellSize / 2),
-		y: (row * grid.cellSize) + (grid.cellSize / 2)
+		x: (cell.column * grid.cellSize) + (grid.cellSize / 2),
+		y: (cell.row * grid.cellSize) + (grid.cellSize / 2)
 	});
+}
+
+/**
+ * The cell a position is in
+ *
+ * @param position Position in world units
+ * @param grid The grid
+ * @return The cell, clamped to the grid
+ */
+export function cellAt(position: Position, grid: Grid): Cell
+{
+	return({
+		column: clamp(Math.floor(position.x / grid.cellSize), 0, grid.columns - 1),
+		row: clamp(Math.floor(position.y / grid.cellSize), 0, grid.rows - 1)
+	});
+}
+
+/**
+ * Picks the next step for a player that isn't mid-step
+ *
+ * @param position Where the player is
+ * @param direction Direction held on each axis
+ * @param grid Grid to move on
+ * @param isCellFree Whether another player holds a cell
+ * @return The step to take; a step within the current cell when the player is off-center and can't
+ * move on, or undefined when the player is on a center and can't move on
+ */
+function nextStep(position: Position, direction: MovePayload, grid: Grid, isCellFree: IsCellFree): GridStep | undefined
+{
+	const from = cellAt(position, grid);
+	const center = cellCenter(from, grid);
+	const candidates: MovePayload[] = [direction, { x: direction.x, y: 0 }, { x: 0, y: direction.y }];
+
+	for (const candidate of candidates)
+	{
+		if ((candidate.x !== 0) || (candidate.y !== 0))
+		{
+			const to = { column: from.column + candidate.x, row: from.row + candidate.y };
+
+			if (canEnter(from, to, grid, isCellFree))
+			{
+				return({ from, to });
+			}
+		}
+	}
+
+	if ((center.x === position.x) && (center.y === position.y))
+	{
+		return(undefined);
+	}
+
+	return({ from, to: from });
+}
+
+/**
+ * Whether a player can step from a cell to a neighboring one
+ *
+ * @param from The cell the player is in
+ * @param to The neighboring cell
+ * @param grid The grid
+ * @param isCellFree Whether another player holds a cell
+ * @return True when the cell is on the grid and free, and for a diagonal step, both cells beside it are free too
+ */
+function canEnter(from: Cell, to: Cell, grid: Grid, isCellFree: IsCellFree): boolean
+{
+	if ((to.column < 0) || (to.column >= grid.columns) || (to.row < 0) || (to.row >= grid.rows) || !isCellFree(to))
+	{
+		return(false);
+	}
+
+	const isDiagonal = ((to.column !== from.column) && (to.row !== from.row));
+
+	return(!isDiagonal || (isCellFree({ column: to.column, row: from.row }) && isCellFree({ column: from.column, row: to.row })));
 }
 
 /**

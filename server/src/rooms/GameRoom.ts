@@ -2,7 +2,8 @@ import { generateId, Room, type AuthContext, type Client, type CloseCode } from 
 import { GameState, GRID_CELL_SIZE, MessageType, PATCH_INTERVAL_MS, Player, ServerCloseCode, ServerMessageType, WORLD_HEIGHT, WORLD_WIDTH, type MovePayload, type WelcomePayload } from '@multiverse-kiln/shared';
 
 import { readBrowserId } from '../http/browserId.js';
-import { spawnPosition, stepOnGrid, type Grid, type Position } from '../logic/movement.js';
+import { occupiedCells, spawnPosition, stepOnGrid, type Grid, type GridStep } from '../logic/movement.js';
+import { CellOccupancy } from '../logic/occupancy.js';
 import { InputQueue } from './inputQueue.js';
 import { describeInvalidPayload, movePayload } from './payloads.js';
 import { PlayerSessions } from './playerSessions.js';
@@ -83,9 +84,9 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 	private readonly heldDirections = new Map<string, MovePayload>();
 
 	/**
-	 * The cell center each moving player is stepping to (server-only, not synced)
+	 * The step each moving player is taking (server-only, not synced)
 	 */
-	private readonly stepTargets = new Map<string, Position>();
+	private readonly steps = new Map<string, GridStep>();
 
 	/**
 	 * How many invalid messages each client has sent this session (server-only, not synced)
@@ -136,7 +137,7 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 	}
 
 	/**
-	 * Gives the joining client its browser's player, adding the player at a spawn position if it is new,
+	 * Gives the joining client its browser's player, adding the player on a free cell if it is new,
 	 * and tells the client which player it controls
 	 *
 	 * @param client The joining client
@@ -147,7 +148,14 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 
 		if (isNewPlayer)
 		{
-			const position = spawnPosition(worldGrid, Math.random);
+			const position = spawnPosition(worldGrid, Math.random, this.currentOccupancy().isFreeFor(playerId));
+
+			// The room holds far fewer players than the grid has cells, so this only guards against a misconfiguration
+			if (!position)
+			{
+				this.playerSessions.remove(client.sessionId);
+				throw new Error('No free cell to spawn a player in');
+			}
 
 			this.state.players.set(playerId, new Player({ x: position.x, y: position.y }));
 		}
@@ -181,7 +189,7 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 			if (left.wasLastClient)
 			{
 				this.state.players.delete(left.playerId);
-				this.stepTargets.delete(left.playerId);
+				this.steps.delete(left.playerId);
 			}
 		}
 
@@ -237,7 +245,10 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 	private update(deltaTime: number): void
 	{
 		const deltaSeconds = deltaTime / 1000;
+		const occupancy = this.currentOccupancy();
 
+		// Players move one at a time, each seeing the cells the players before it have just taken or freed.
+		// When two want the same cell, the one earlier in the map gets it
 		for (const [playerId, player] of this.state.players)
 		{
 			for (const move of this.moveInputs.drain(playerId))
@@ -245,19 +256,38 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 				this.heldDirections.set(playerId, move);
 			}
 
-			const mover = stepOnGrid({ x: player.x, y: player.y, target: this.stepTargets.get(playerId) }, this.heldDirections.get(playerId) ?? standingStill, deltaSeconds, worldGrid);
+			const mover = stepOnGrid({ x: player.x, y: player.y, step: this.steps.get(playerId) }, this.heldDirections.get(playerId) ?? standingStill, deltaSeconds, worldGrid, occupancy.isFreeFor(playerId));
 
 			player.x = mover.x;
 			player.y = mover.y;
 
-			if (mover.target)
+			if (mover.step)
 			{
-				this.stepTargets.set(playerId, mover.target);
+				this.steps.set(playerId, mover.step);
 			}
 			else
 			{
-				this.stepTargets.delete(playerId);
+				this.steps.delete(playerId);
 			}
+
+			occupancy.hold(playerId, occupiedCells(mover, worldGrid));
 		}
+	}
+
+	/**
+	 * Works out which cells every player holds right now
+	 *
+	 * @return The occupancy of the grid
+	 */
+	private currentOccupancy(): CellOccupancy
+	{
+		const occupancy = new CellOccupancy();
+
+		for (const [playerId, player] of this.state.players)
+		{
+			occupancy.hold(playerId, occupiedCells({ x: player.x, y: player.y, step: this.steps.get(playerId) }, worldGrid));
+		}
+
+		return(occupancy);
 	}
 }
