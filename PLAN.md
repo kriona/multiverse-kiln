@@ -4,7 +4,7 @@ Phased roadmap for building the game locally, then deploying to Colyseus Cloud +
 Each phase ends with a "Done when" check. Tick boxes as work completes and keep the
 **Current phase** line updated so each new session knows where to pick up.
 
-**Current phase:** 3
+**Current phase:** 4
 
 ---
 
@@ -55,26 +55,15 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 
 **Done when:** two browser tabs show two players moving smoothly and seeing each other.
 
-## Phase 4: Early cloud smoke test
+## Phase 4: Repository security
 
-Do this before the game gets big, to surface WebSocket, TLS, and env issues early.
+- [✅] Move the inline `<style>` in `client/index.html` to a CSS file so the CSP (Phase 8) doesn't need `'unsafe-inline'`
+- [✅] In the GitHub repository's Settings > Advanced Security, turn on Dependabot alerts, Dependabot security updates and secret scanning with push protection (`.github/dependabot.yml` already configures version updates, and gitleaks runs in the pre-commit hook)
+- [✅] Add a `docker-compose` entry to `.github/dependabot.yml`
+- [ ] Add a `github-actions` entry to `.github/dependabot.yml` once there are workflows
+- [✅] Review `npm audit`: the known low/moderate findings come from `@colyseus/auth` (bundled with `colyseus`, unused; its `grant` dependency pulls in the flagged `elliptic` and `uuid`) and the old `esbuild` under `drizzle-kit` (dev-only; the advisory concerns esbuild's dev server, which drizzle-kit doesn't run); don't run `npm audit fix --force`, which downgrades Colyseus
 
-- [ ] Create Neon project with `dev` and `prod` branches, in the region nearest the planned Colyseus Cloud location. Use Postgres 18 to match `docker-compose.yml`
-- [ ] Create the migration and app roles on each Neon branch with the same ownership and grants as `docker/postgres/init/01-roles.sh`; the server gets only the app role's pooled connection string
-- [ ] Run migrations against Neon `prod`
-- [ ] Deploy server with `npx @colyseus/cloud deploy`; set env vars in the dashboard (pooled Neon URL, `ALLOWED_ORIGINS` = the production client origin)
-- [ ] Point a production client build at the `wss://` endpoint
-- [ ] Choose where the production client is hosted (Colyseus Cloud only hosts the game server)
-- [ ] Move the inline `<style>` in `client/index.html` to a CSS file so the CSP doesn't need `'unsafe-inline'`
-- [ ] Set security headers on the client host and test them against the production build:
-	- `Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://<game server> wss://<game server>; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests` (Phaser needs `data:`/`blob:` for some textures and audio)
-	- `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: camera=(), microphone=(), geolocation=()`, `Cross-Origin-Opener-Policy: same-origin`
-- [ ] Check whether Colyseus Cloud's proxy sends `Strict-Transport-Security` for the game server; add it if not
-- [ ] In the GitHub repository's Settings > Advanced Security, turn on Dependabot alerts, Dependabot security updates and secret scanning with push protection (`.github/dependabot.yml` already configures version updates, and gitleaks runs in the pre-commit hook)
-- [ ] Add `github-actions` (once there are workflows) and `docker-compose` entries to `.github/dependabot.yml`
-- [ ] Review `npm audit`: the known low/moderate findings come from `@colyseus/auth` (bundled with `colyseus`, unused) and the old `esbuild` under `drizzle-kit` (dev-only; the advisory concerns esbuild's dev server, which drizzle-kit doesn't run); don't run `npm audit fix --force`, which downgrades Colyseus
-
-**Done when:** two players on different networks can join the same room in the cloud.
+**Done when:** GitHub's security features are on and `npm audit` has no unexplained findings.
 
 ## Phase 5: Gameplay loop
 
@@ -107,7 +96,25 @@ Do this before the game gets big, to surface WebSocket, TLS, and env issues earl
 
 **Done when:** only authenticated players can join, and their identity maps to a DB row.
 
-## Phase 8: Robustness and polish
+## Phase 8: Cloud deployment
+
+Neon and Colyseus Cloud cost money, so this waits until the game is worth testing with outside players.
+The first deploy tends to surface WebSocket, TLS and environment issues, so leave time for it.
+
+- [ ] Choose where the production client is hosted (Colyseus Cloud only hosts the game server), and whether QA/staging uses a subdomain or its own domain
+- [ ] Create Neon project with `dev` and `prod` branches, in the region nearest the planned Colyseus Cloud location. Use Postgres 18 to match `docker-compose.yml`
+- [ ] Create the migration and app roles on each Neon branch with the same ownership and grants as `docker/postgres/init/01-roles.sh`, using `docker/postgres/neon/01-roles.sql` and `02-grants.sql` (roles made in the Neon console join `neon_superuser`); the server gets only the app role's pooled connection string
+- [ ] Run migrations against Neon `prod`
+- [ ] Deploy server with `npx @colyseus/cloud deploy`; set env vars in the dashboard (pooled Neon URL, `ALLOWED_ORIGINS` = the production client origin)
+- [ ] Point a production client build at the `wss://` endpoint
+- [ ] Set security headers on the client host and test them against the production build:
+	- `Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://<game server> wss://<game server>; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests` (Phaser needs `data:`/`blob:` for some textures and audio)
+	- `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: camera=(), microphone=(), geolocation=()`, `Cross-Origin-Opener-Policy: same-origin`
+- [ ] Check whether Colyseus Cloud's proxy sends `Strict-Transport-Security` for the game server; add it if not
+
+**Done when:** two players on different networks can join the same room in the cloud.
+
+## Phase 9: Robustness and polish
 
 - [ ] Reconnection with `allowReconnection` for unexpected disconnects
 - [ ] Graceful handling of server restarts during deploys
@@ -126,4 +133,5 @@ Do this before the game gets big, to surface WebSocket, TLS, and env issues earl
 - Core game design and rules (Phase 5)
 - Auth approach (Phase 7)
 - Whether to add client-side prediction (after Phase 5, if movement feels laggy)
-- Colyseus Cloud deployment location(s)
+- Colyseus Cloud deployment location(s) (Phase 8)
+- Client host, and a subdomain or separate domain for QA/staging (Phase 8)

@@ -29,3 +29,17 @@ updates:
         update-types:
           - minor
           - patch
+
+  # The Postgres image in docker-compose.yml. Its major version must match the Neon project's,
+  # so major updates are ignored and made by hand alongside a Neon upgrade
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
