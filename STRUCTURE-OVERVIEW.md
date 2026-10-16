@@ -529,6 +529,21 @@ A pseudo-language for development shows every piece of engine text with accented
 
 Pirate (`en-x-pirate`) is a real translation that ships with the engine, for testing the way languages are loaded and switched without a real language's translation to keep up. Its untranslated or out-of-date messages are reported, like any language's.
 
+# Accessibility
+Every page, editor and game screen can be used with only a keyboard and with a screen reader.
+
+## Keyboard shortcuts
+- A button's shortcut letter is underlined in its text, preferring the letter at the start of a word (the S of Save); it is pressed with Alt (Option on a Mac). When a translation's text doesn't have the letter, "(S)" is added after it with the letter underlined. Screen readers announce the shortcut through `aria-keyshortcuts`.
+- `?` (when not typing) or the footer's "Keyboard shortcuts" button lists the shortcuts that work on the screen showing, including keys that aren't buttons, such as movement.
+- A shortcut only works while its button can be seen and used, and while a dialog is open only the dialog's shortcuts work, so screens and dialogs reuse keys. The keys are the same in every language. Alt+D, Alt+E and Alt+F aren't used, since browsers take them, and deleting has no shortcut.
+- The keys follow one pattern: Alt+S submits the form or dialog showing (Save, Create, Add, Resize), Alt+N adds something new, Alt+L leaves (the lobby or group) or picks the Links tool in the map editor, Alt+U enters a universe, Alt+H goes Home, Alt+B goes back, and Alt+M moves focus to the map.
+
+## Screen readers
+- When a screen changes, focus moves to its heading, so the screen is read out.
+- The game's map is a focusable application with its keys described. A screen reader is told the zone the player enters, players coming into and going out of view, a door or path underfoot that E takes, and when something is in the way. Alt+P reads out the player's zone and cell, the tile they stand on, and each player they can see with their distance and compass direction.
+- The map editor's map (and the link dialog's preview) can be focused and worked with a cursor: the arrow keys move it, Space or Enter paints or picks its cell, holding Space while moving paints a stroke, + and - zoom and Home returns to the center cell. Each cell the cursor reaches is read out with what it holds.
+- Colors are never the only way information is shown: the tile table's swatches carry the color's hex code.
+
 # Open questions
 - **Time:** how long walking a square takes, and the overworld map's scale.
 - **Offline group members:** whether to use the summoning ring.

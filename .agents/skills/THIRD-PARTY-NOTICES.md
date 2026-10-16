@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-The agent skills in this folder are third-party documentation, installed with `npx skills add` and committed unchanged. They are not covered by this project's AGPL-3.0 license or by `LICENSE-ASSETS.md`.
+The agent skills in this folder are third-party documentation, installed with `npx skills add` and committed unchanged. They are not covered by this project's AGPL-3.0 license or by `LICENSE-ASSETS.md`. The exception is `translate/`, which is part of this project.
 
 ## Colyseus skill
 

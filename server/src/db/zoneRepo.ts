@@ -4,7 +4,7 @@
  */
 import { and, asc, between, count, eq, gt, gte, inArray, lt, lte, or, sql, type SQL } from 'drizzle-orm';
 import type { PgColumn } from 'drizzle-orm/pg-core';
-import { chunkCoordinate, chunkKey, isInBounds, type CellChange, type ChunkRange, type EditorZone, type EditorZoneLink, type EditorZoneSummary, type MapBounds, type ZoneChunk, type ZoneLinkTarget, type ZonePassageOfTime, type ZoneSettingsUpdate } from '@multiverse-kiln/shared';
+import { chunkCoordinate, chunkKey, isInBounds, type CellChange, type ChunkRange, type EditorZone, type EditorZoneLink, type EditorZoneSummary, type MapBounds, type Ruleset, type ZoneChunk, type ZoneLinkTarget, type ZonePassageOfTime, type ZoneSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { applyCellChanges, chunksOfChanges, clipChunk, isChunkInside, isDefaultChunk } from '../logic/mapEdits.js';
 import type { ZoneLink } from '../logic/zoneGrid.js';
@@ -37,6 +37,12 @@ export interface ZoneRecord
 export interface LoadedZone
 {
 	zone: ZoneRecord;
+
+	/**
+	 * The universe's ruleset, which names its default tiles
+	 */
+	ruleset: Ruleset;
+
 	bounds: MapBounds;
 
 	/**
@@ -167,6 +173,7 @@ export async function loadZone(zoneId: string, executor: Executor = db): Promise
 			indoors: zone.indoors,
 			passageOfTime: zone.passageOfTime
 		},
+		ruleset,
 		bounds: boundsOf(zone),
 		defaultTileId: zone.defaultTileId,
 		loopsEastWest: zone.loopsEastWest,

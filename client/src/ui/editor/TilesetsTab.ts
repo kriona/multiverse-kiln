@@ -3,9 +3,9 @@ import { canEditWorld, defineMessages, IMPASSABLE_COST, MAX_TILES_PER_PAGE, type
 import { formatList, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, setOptions, showMessage } from '../dom';
+import { tileName } from '../tileNames';
 import { colorToHex } from './colors';
 import { TileDialog } from './TileDialog';
-import { tileName } from './tileNames';
 
 /**
  * Text the Tilesets tab shows in more than one place (see src/localization.ts)
@@ -261,8 +261,11 @@ export class TilesetsTab
 			formatList(tags)
 		];
 
+		// Screen readers read the color's hex code, which the color picker in the tile dialog also shows
 		swatch.className = 'swatch';
 		swatch.style.backgroundColor = colorToHex(tile.color);
+		swatch.setAttribute('role', 'img');
+		swatch.setAttribute('aria-label', colorToHex(tile.color));
 		nameButton.type = 'button';
 		nameButton.className = 'link-button';
 		nameButton.textContent = tileName(tile, universe.ruleset);

@@ -1,11 +1,14 @@
 import { canEditWorld, DISALLOWED_TEXT_CHARACTERS, IMPASSABLE_COST, MAX_TILE_NAME_LENGTH, type EditableUniverse, type EditorTile, type MessageDescriptor, type TileSettings } from '@multiverse-kiln/shared';
+import restoreIcon from 'virtual:icon/ph:arrow-counter-clockwise';
+import trashIcon from 'virtual:icon/ph:trash';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
-import { getElement, showMessage } from '../dom';
+import { getElement, setButtonLabel, showMessage } from '../dom';
+import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
+import { tileName } from '../tileNames';
 import { colorToHex, nightColor, parseHexColor } from './colors';
-import { tileName } from './tileNames';
 
 /**
  * Settings a new tile starts with
@@ -67,7 +70,7 @@ export class TileDialog
 		this.colorPicker.addEventListener('input', () =>
 		{
 			this.color.value = this.colorPicker.value;
-			this.color.setCustomValidity('');
+			setFieldError(this.color, undefined);
 			this.updatePreview();
 		});
 
@@ -75,7 +78,7 @@ export class TileDialog
 		{
 			const color = parseHexColor(this.color.value);
 
-			this.color.setCustomValidity('');
+			setFieldError(this.color, undefined);
 
 			if (color !== undefined)
 			{
@@ -86,7 +89,7 @@ export class TileDialog
 
 		this.name.addEventListener('input', () =>
 		{
-			this.name.setCustomValidity('');
+			setFieldError(this.name, undefined);
 		});
 
 		this.cancelButton.addEventListener('click', () =>
@@ -163,18 +166,24 @@ export class TileDialog
 		}
 
 		this.removeButton.hidden = (!editable || !tile || (!tile.custom && !tile.edited));
-		this.removeButton.textContent = (tile?.custom
-			? t({
+		if (tile?.custom)
+		{
+			setButtonLabel(this.removeButton, trashIcon, t({
 				id: 'editor.tile.delete',
 				defaultMessage: 'Delete Tile',
 				description: 'Button in the tile editor that deletes a tile made for this universe'
-			})
-			: t({
+			}));
+		}
+		else
+		{
+			setButtonLabel(this.removeButton, restoreIcon, t({
 				id: 'editor.tile.restore',
 				defaultMessage: 'Restore Default',
 				description: 'Button in the tile editor that undoes this universe\'s changes to one of the ruleset\'s tiles'
 			}));
+		}
 		showMessage(this.error, undefined);
+		clearFieldErrors(this.dialog);
 		this.updatePreview();
 		this.dialog.showModal();
 	}
@@ -206,19 +215,17 @@ export class TileDialog
 
 		if ((name === '') || DISALLOWED_TEXT_CHARACTERS.test(name))
 		{
-			this.name.setCustomValidity(t(formMessages.invalidText));
-			this.name.reportValidity();
+			reportFieldError(this.name, t(formMessages.invalidText));
 			return;
 		}
 
 		if (color === undefined)
 		{
-			this.color.setCustomValidity(t({
+			reportFieldError(this.color, t({
 				id: 'editor.tile.invalidColor',
 				defaultMessage: 'Enter a hex color, such as #7AFF3D.',
 				description: 'Shown by the color field when what was typed isn\'t a hexadecimal color'
 			}));
-			this.color.reportValidity();
 			return;
 		}
 

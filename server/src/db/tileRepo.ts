@@ -15,6 +15,12 @@ export interface TileRecord
 	id: number;
 
 	/**
+	 * The default tile's key (DEFAULT_TILE_NAMES), for a default tile whose name the universe kept, so
+	 * players read the name in their own language; null for the universe's own tiles and renamed ones
+	 */
+	key: string | null;
+
+	/**
 	 * The universe's name for it, or a default tile's English name
 	 */
 	name: string;
@@ -89,6 +95,7 @@ export async function loadUniverseTiles(universeId: string, ruleset: Ruleset, ex
 
 	return(editorTiles.map(({ tile, englishName }) => ({
 		id: tile.id,
+		key: ((tile.name === null) ? tile.key : null),
 		name: englishName,
 		indoors: tile.indoors,
 		color: tile.color,

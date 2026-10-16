@@ -3,9 +3,10 @@ import { ancestorZones, canEditWorld, childZones, defineMessages, descendantZone
 import { formatList, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
+import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
+import { tileName } from '../tileNames';
 import { MapEditor } from './MapEditor';
-import { tileName } from './tileNames';
 
 /**
  * Text the zone editor shows in more than one place (see src/localization.ts)
@@ -128,7 +129,7 @@ export class ZonesTab
 
 		this.name.addEventListener('input', () =>
 		{
-			this.name.setCustomValidity('');
+			setFieldError(this.name, undefined);
 			this.saved.textContent = '';
 		});
 
@@ -152,6 +153,7 @@ export class ZonesTab
 		{
 			this.addForm.reset();
 			showMessage(this.addError, undefined);
+			clearFieldErrors(this.addForm);
 			this.addSubmit.disabled = false;
 			this.addDialog.showModal();
 			this.addName.focus();
@@ -164,7 +166,7 @@ export class ZonesTab
 
 		this.addName.addEventListener('input', () =>
 		{
-			this.addName.setCustomValidity('');
+			setFieldError(this.addName, undefined);
 		});
 
 		this.addForm.addEventListener('submit', (event) =>
@@ -473,6 +475,7 @@ export class ZonesTab
 		this.deleteButton.hidden = (!editable || isLobby || isStart);
 		this.saved.textContent = '';
 		showMessage(this.error, undefined);
+		clearFieldErrors(this.form);
 
 		const children = childZones(this.zones.zones, zone.id);
 
@@ -592,8 +595,7 @@ export class ZonesTab
 
 		if ((name === '') || DISALLOWED_TEXT_CHARACTERS.test(name))
 		{
-			this.name.setCustomValidity(t(formMessages.invalidText));
-			this.name.reportValidity();
+			reportFieldError(this.name, t(formMessages.invalidText));
 			return;
 		}
 
@@ -698,8 +700,7 @@ export class ZonesTab
 
 		if ((name === '') || DISALLOWED_TEXT_CHARACTERS.test(name))
 		{
-			this.addName.setCustomValidity(t(formMessages.invalidText));
-			this.addName.reportValidity();
+			reportFieldError(this.addName, t(formMessages.invalidText));
 			return;
 		}
 

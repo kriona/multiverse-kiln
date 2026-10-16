@@ -1,3 +1,6 @@
+import { icons as gameIcons } from '@iconify-json/game-icons';
+import { icons as phosphorIcons } from '@iconify-json/ph';
+import { getIconData, iconToHTML, iconToSVG } from '@iconify/utils';
 import fs from 'fs';
 import path from 'path';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
@@ -67,6 +70,87 @@ function htmlPartials(): Plugin
 					server.ws.send({ type: 'full-reload' });
 				}
 			});
+		}
+	});
+}
+
+/**
+ * The icon sets the pages can use, by the prefix of their icons' names: ph is Phosphor
+ * (https://phosphoricons.com, MIT; use its Regular icons, the names without a weight such as -bold or
+ * -fill) and game-icons is game-icons.net (https://game-icons.net, CC BY 3.0, credited in the footer)
+ */
+const ICON_SETS: Record<string, typeof phosphorIcons> = {
+	'ph': phosphorIcons,
+	'game-icons': gameIcons
+};
+
+/**
+ * A comment that puts an icon in a page, e.g. <!-- icon ph:floppy-disk -->
+ */
+const ICON_PATTERN = /<!--\s*icon\s+([\w-]+:[\w-]+)\s*-->/g;
+
+/**
+ * What code imports an icon's SVG markup from, followed by the icon's name, e.g.
+ * import trashIcon from 'virtual:icon/ph:trash'
+ */
+const ICON_MODULE_PREFIX = 'virtual:icon/';
+
+/**
+ * An icon's SVG markup, sized to the text around it and hidden from screen readers
+ *
+ * @param name The icon's name, e.g. ph:floppy-disk
+ * @return The markup
+ */
+function iconSvg(name: string): string
+{
+	const separator = name.indexOf(':');
+	const set = ((separator > 0) ? ICON_SETS[name.slice(0, separator)] : undefined);
+	const icon = ((set === undefined) ? null : getIconData(set, name.slice(separator + 1)));
+
+	if (icon === null)
+	{
+		throw new Error(`There is no icon named ${name}; the names start with the prefix of one of the ICON_SETS in client/vite.config.ts`);
+	}
+
+	const { attributes, body } = iconToSVG(icon, { height: '1em' });
+
+	return(iconToHTML(body, {
+		...attributes,
+		'class': 'icon',
+		'aria-hidden': 'true'
+	}));
+}
+
+/**
+ * Puts icons in the pages and code as SVG markup when they are served and built, so only the icons
+ * used are in the pages and bundles. A page marks an icon with a comment such as
+ * <!-- icon ph:floppy-disk -->, and code imports one from virtual:icon/<name>
+ *
+ * @return The plugin
+ */
+function icons(): Plugin
+{
+	return({
+		name: 'kiln-icons',
+		transformIndexHtml: {
+			order: 'pre',
+			handler(html)
+			{
+				return(html.replace(ICON_PATTERN, (_comment, name: string) => iconSvg(name)));
+			}
+		},
+		resolveId(id)
+		{
+			return(id.startsWith(ICON_MODULE_PREFIX) ? `\0${id}` : undefined);
+		},
+		load(id)
+		{
+			if (!id.startsWith(`\0${ICON_MODULE_PREFIX}`))
+			{
+				return(undefined);
+			}
+
+			return(`export default ${JSON.stringify(iconSvg(id.slice(ICON_MODULE_PREFIX.length + 1)))};`);
 		}
 	});
 }
@@ -223,7 +307,7 @@ export default defineConfig(({ command, mode }) =>
 	} : undefined);
 
 	return({
-		plugins: [htmlPartials(), messageCatalogs(), stripDescriptions()],
+		plugins: [htmlPartials(), icons(), messageCatalogs(), stripDescriptions()],
 		server: {
 			// Bind to the dev hostname (127.0.0.1 via hosts file); the default "localhost" may bind IPv6 only
 			host: devHost,
@@ -235,10 +319,11 @@ export default defineConfig(({ command, mode }) =>
 		build: {
 			target: 'es2022',
 			rolldownOptions: {
-				// The game, and the world editor (see src/pages.ts)
+				// The game, the world editor and the licenses (see src/pages.ts)
 				input: {
 					main: path.resolve(import.meta.dirname, 'index.html'),
-					edit: path.resolve(import.meta.dirname, 'edit.html')
+					edit: path.resolve(import.meta.dirname, 'edit.html'),
+					license: path.resolve(import.meta.dirname, 'license.html')
 				}
 			}
 		}

@@ -9,10 +9,12 @@ import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import type { CameraState, MapEditorHost, PointerMode } from '../../scenes/MapEditorScene';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
+import { addKeyHelp, formatKeys } from '../shortcuts';
+import { tileName } from '../tileNames';
+import { describeCell } from './cellDescription';
 import { LinkDialog } from './LinkDialog';
 import { mapMessages } from './mapMessages';
 import { ResizeDialog } from './ResizeDialog';
-import { tileName } from './tileNames';
 
 /**
  * Text the map editor shows in more than one place (see src/localization.ts)
@@ -22,11 +24,6 @@ const messages = defineMessages({
 		id: 'editor.map.loadLinksFailed',
 		defaultMessage: 'Could not load the links.',
 		description: 'Shown in the map editor when the zone\'s links couldn\'t be loaded'
-	},
-	void: {
-		id: 'editor.map.void',
-		defaultMessage: 'Void',
-		description: 'A cell with nothing in it, drawn black, which can\'t be walked into; also a choice of what to paint'
 	}
 });
 
@@ -176,6 +173,78 @@ export class MapEditor
 		}
 
 		document.addEventListener('keydown', this.onKeyDown);
+		this.addKeyHelp();
+	}
+
+	/**
+	 * Lists the keys the map handles itself in the list of shortcuts: undo and redo while the tools
+	 * show, and the keyboard's cursor (see MapCanvas) while the map does
+	 */
+	private addKeyHelp(): void
+	{
+		addKeyHelp({
+			scope: this.tools,
+			keys: () => formatKeys('Control+Z'),
+			description: () => t({
+				id: 'editor.map.keys.undo',
+				defaultMessage: 'Undo the last painting',
+				description: 'In the list of keyboard shortcuts, what Ctrl+Z does in the map editor'
+			})
+		});
+
+		addKeyHelp({
+			scope: this.tools,
+			keys: () => formatKeys('Control+Y Control+Shift+Z'),
+			description: () => t({
+				id: 'editor.map.keys.redo',
+				defaultMessage: 'Redo the painting undone',
+				description: 'In the list of keyboard shortcuts, what Ctrl+Y does in the map editor'
+			})
+		});
+
+		addKeyHelp({
+			scope: this.canvasElement,
+			keys: () => t(mapMessages.arrowKeys),
+			description: () => t({
+				id: 'editor.map.keys.cursorDescription',
+				defaultMessage: 'Move the cursor on the focused map, 10 cells at a time with Shift',
+				description: 'In the list of keyboard shortcuts, what the arrow keys do on the map editor\'s map'
+			})
+		});
+
+		addKeyHelp({
+			scope: this.tools,
+			keys: () => t(mapMessages.spaceOrEnter),
+			description: () => t({
+				id: 'editor.map.keys.paintDescription',
+				defaultMessage: 'Paint the cursor\'s cell, or open its link with the Links tool; hold Space while moving to keep painting',
+				description: 'In the list of keyboard shortcuts, what Space and Enter do on the map editor\'s map'
+			})
+		});
+
+		addKeyHelp({
+			scope: this.canvasElement,
+			keys: () => '+ / -',
+			description: () => t({
+				id: 'editor.map.keys.zoom',
+				defaultMessage: 'Zoom in or out',
+				description: 'In the list of keyboard shortcuts, what the + and - keys do on the map editor\'s map'
+			})
+		});
+
+		addKeyHelp({
+			scope: this.canvasElement,
+			keys: () => t({
+				id: 'editor.map.keys.home',
+				defaultMessage: 'Home',
+				description: 'In the list of keyboard shortcuts, the name of the Home key'
+			}),
+			description: () => t({
+				id: 'editor.map.keys.homeDescription',
+				defaultMessage: 'Go back to the center cell',
+				description: 'In the list of keyboard shortcuts, what the Home key does on the map editor\'s map'
+			})
+		});
 	}
 
 	/**
@@ -333,8 +402,9 @@ export class MapEditor
 			hover: (cell) =>
 			{
 				this.hovered = cell;
-				this.describeCell();
+				this.showHoveredCell();
 			},
+			describe: (cell) => this.cellText(cell),
 			viewChanged: (range) =>
 			{
 				this.open?.loader.request(range);
@@ -429,7 +499,7 @@ export class MapEditor
 		if (changes.length > 0)
 		{
 			this.canvas.scene?.refreshChunks(open.map.apply(changes));
-			this.describeCell();
+			this.showHoveredCell();
 		}
 	}
 
@@ -501,7 +571,7 @@ export class MapEditor
 		if (this.open)
 		{
 			this.canvas.scene?.refreshChunks(this.open.map.apply(changes));
-			this.describeCell();
+			this.showHoveredCell();
 			this.save(changes);
 		}
 
@@ -579,70 +649,35 @@ export class MapEditor
 	}
 
 	/**
-	 * Shows the cell under the pointer and what it holds
+	 * Shows the cell under the pointer or the keyboard's cursor and what it holds
 	 */
-	private describeCell(): void
+	private showHoveredCell(): void
+	{
+		this.cursor.textContent = (this.hovered ? this.cellText(this.hovered) : '');
+	}
+
+	/**
+	 * A cell of the open zone's map and what it holds
+	 *
+	 * @param cell The cell
+	 * @return Its description, or an empty string when no zone is open or the cell is outside its map
+	 */
+	private cellText(cell: BrushCell): string
 	{
 		const open = this.open;
-		const cell = this.hovered;
 
-		if (!open || !cell || !isInBounds(open.map.bounds, cell.column, cell.row))
+		if (!open)
 		{
-			this.cursor.textContent = '';
-			return;
+			return('');
 		}
 
-		const value = open.map.valueAt(cell.column, cell.row);
-		const tileId = ((value === DEFAULT_TILE_CELL) ? open.zone.defaultTileId : value);
-		const link = open.links.find((each) => ((each.column === cell.column) && (each.row === cell.row)));
-		const tile = open.tiles.find((candidate) => (candidate.id === tileId));
-		let contents: string;
-
-		if (value === VOID_CELL)
-		{
-			contents = t(messages.void);
-		}
-		else if (tileId === undefined)
-		{
-			contents = t({
-				id: 'editor.map.cellLoading',
-				defaultMessage: 'loading...',
-				description: 'What the cell under the pointer holds, while that part of the map is loading'
-			});
-		}
-		else if (tile)
-		{
-			contents = tileName(tile, open.universe.ruleset);
-		}
-		else
-		{
-			contents = t({
-				id: 'editor.map.unknownTile',
-				defaultMessage: 'unknown tile',
-				description: 'What the cell under the pointer holds, when it is a tile the editor doesn\'t know'
-			});
-		}
-
-		this.cursor.textContent = (link
-			? t({
-				id: 'editor.map.cellWithLink',
-				defaultMessage: '{column}, {row}: {contents} ({mode, select, automatic {automatic link} other {manual link}})',
-				description: 'Under the map, the cell under the pointer when it has a zone link: its coordinates, what it holds and the kind of link'
-			}, {
-				column: cell.column,
-				row: cell.row,
-				contents,
-				mode: link.mode
-			})
-			: t({
-				id: 'editor.map.cell',
-				defaultMessage: '{column}, {row}: {contents}',
-				description: 'Under the map, the cell under the pointer: its coordinates and what it holds, e.g. "3, -2: Grass"'
-			}, {
-				column: cell.column,
-				row: cell.row,
-				contents
-			}));
+		return(describeCell({
+			map: open.map,
+			defaultTileId: open.zone.defaultTileId,
+			tiles: open.tiles,
+			links: open.links,
+			ruleset: open.universe.ruleset
+		}, cell));
 	}
 
 	/**
@@ -673,7 +708,7 @@ export class MapEditor
 			})),
 			{
 				value: VOID_CHOICE,
-				label: t(messages.void)
+				label: t(mapMessages.void)
 			}
 		]);
 

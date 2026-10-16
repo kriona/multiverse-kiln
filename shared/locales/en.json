@@ -63,6 +63,14 @@
 		"defaultMessage": "Destination: {column}, {row}",
 		"description": "The cell the link leads to; {column} and {row} are its coordinates"
 	},
+	"editor.link.keys.cursorDescription": {
+		"defaultMessage": "Move the cursor on the focused map, 10 cells at a time with Shift",
+		"description": "In the list of keyboard shortcuts, what the arrow keys do on the link dialog's map"
+	},
+	"editor.link.keys.pickDescription": {
+		"defaultMessage": "Choose the cursor's cell",
+		"description": "In the list of keyboard shortcuts, what Space and Enter do on the link dialog's map: choose the destination or the return link's cell"
+	},
 	"editor.link.manual": {
 		"defaultMessage": "Offer to take them through (manual)",
 		"description": "Choice for a zone link that asks the player whether to go to the other zone"
@@ -98,6 +106,14 @@
 	"editor.link.placeReturn": {
 		"defaultMessage": "Choose the return link's cell above, then click the map to place it.",
 		"description": "Shown in the link dialog until the cell for the link leading back is chosen"
+	},
+	"editor.link.previewHelp": {
+		"defaultMessage": "With the map focused, the arrow keys move the cursor, 10 cells at a time with Shift, and Space or Enter chooses the cell.",
+		"description": "Explains how to choose a cell on the link dialog's map with the keyboard; the keys are the same in every language"
+	},
+	"editor.link.previewLabel": {
+		"defaultMessage": "Map of the zone the link goes to",
+		"description": "Name of the map in the link dialog, for screen readers, where clicking chooses the link's destination or return cell"
 	},
 	"editor.link.returnCell": {
 		"defaultMessage": "Return link at {column}, {row}",
@@ -202,6 +218,50 @@
 	"editor.map.help": {
 		"defaultMessage": "Drag with the right mouse button to look around, and zoom with the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link.",
 		"description": "Explains how to use the map editor with the mouse and keyboard"
+	},
+	"editor.map.keyboardHelp": {
+		"defaultMessage": "With the map focused, the arrow keys move the cursor, 10 cells at a time with Shift. Space or Enter paints, or with the Links tool opens the cell's link; hold Space while moving to keep painting. + and - zoom, and Home goes back to the center cell.",
+		"description": "Explains how to use the map editor with only the keyboard; the keys are the same in every language"
+	},
+	"editor.map.keys.cursor": {
+		"defaultMessage": "Arrow keys",
+		"description": "In the list of keyboard shortcuts, the name of the arrow keys"
+	},
+	"editor.map.keys.cursorDescription": {
+		"defaultMessage": "Move the cursor on the focused map, 10 cells at a time with Shift",
+		"description": "In the list of keyboard shortcuts, what the arrow keys do on the map editor's map"
+	},
+	"editor.map.keys.home": {
+		"defaultMessage": "Home",
+		"description": "In the list of keyboard shortcuts, the name of the Home key"
+	},
+	"editor.map.keys.homeDescription": {
+		"defaultMessage": "Go back to the center cell",
+		"description": "In the list of keyboard shortcuts, what the Home key does on the map editor's map"
+	},
+	"editor.map.keys.paint": {
+		"defaultMessage": "Space / Enter",
+		"description": "In the list of keyboard shortcuts, the names of the Space and Enter keys"
+	},
+	"editor.map.keys.paintDescription": {
+		"defaultMessage": "Paint the cursor's cell, or open its link with the Links tool; hold Space while moving to keep painting",
+		"description": "In the list of keyboard shortcuts, what Space and Enter do on the map editor's map"
+	},
+	"editor.map.keys.redo": {
+		"defaultMessage": "Redo the painting undone",
+		"description": "In the list of keyboard shortcuts, what Ctrl+Y does in the map editor"
+	},
+	"editor.map.keys.undo": {
+		"defaultMessage": "Undo the last painting",
+		"description": "In the list of keyboard shortcuts, what Ctrl+Z does in the map editor"
+	},
+	"editor.map.keys.zoom": {
+		"defaultMessage": "Zoom in or out",
+		"description": "In the list of keyboard shortcuts, what the + and - keys do on the map editor's map"
+	},
+	"editor.map.label": {
+		"defaultMessage": "Map",
+		"description": "Name of the zone's map in the map editor, for screen readers"
 	},
 	"editor.map.links": {
 		"defaultMessage": "Links",
@@ -819,6 +879,10 @@
 		"defaultMessage": "Could not join that game. It may have just ended.",
 		"description": "Shown when the player couldn't go into their game"
 	},
+	"group.pageTitle": {
+		"defaultMessage": "Game - Multiverse Kiln",
+		"description": "The browser tab's title while the player is in a group's game; Multiverse Kiln is the game engine's name"
+	},
 	"group.share": {
 		"defaultMessage": "Share",
 		"description": "Button that copies a link others can use to join the game"
@@ -887,6 +951,10 @@
 		"defaultMessage": "Your universes",
 		"description": "Heading of the list of universes the player can edit"
 	},
+	"home.pageTitle": {
+		"defaultMessage": "Universes - Multiverse Kiln",
+		"description": "The browser tab's title while Home lists the universes; Multiverse Kiln is the game engine's name"
+	},
 	"home.showMore": {
 		"defaultMessage": "Show more",
 		"description": "Button that adds the next page of universes to the list"
@@ -898,6 +966,82 @@
 	"home.universes": {
 		"defaultMessage": "Universes",
 		"description": "Heading of the list of universes anyone can play"
+	},
+	"keys.alt": {
+		"defaultMessage": "Alt",
+		"description": "Name of the Alt key, as keyboard shortcuts such as Alt+S show it"
+	},
+	"keys.control": {
+		"defaultMessage": "Ctrl",
+		"description": "Name of the Control key, as keyboard shortcuts such as Ctrl+Z show it"
+	},
+	"keys.option": {
+		"defaultMessage": "Option",
+		"description": "Name of the Option key on a Mac keyboard (the Alt key on others), as keyboard shortcuts such as Option+S show it"
+	},
+	"keys.shift": {
+		"defaultMessage": "Shift",
+		"description": "Name of the Shift key, as keyboard shortcuts such as Ctrl+Shift+Z show it"
+	},
+	"license.agpl": {
+		"defaultMessage": "Multiverse Kiln is free software: you can redistribute it and/or modify it under the terms of the {license} as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.",
+		"description": "The game's license notice; {license} is a link to the license's full text, named by license.agplName"
+	},
+	"license.agplName": {
+		"defaultMessage": "GNU Affero General Public License",
+		"description": "The name of the game's license, linking to its full text"
+	},
+	"license.assets": {
+		"defaultMessage": "Art and other assets",
+		"description": "Heading of the license page's section about the game's art, audio and story"
+	},
+	"license.assetsNotice": {
+		"defaultMessage": "The game's own art, audio, fonts, characters, setting and story are not covered by the GNU Affero General Public License. They are copyright {holder}, all rights reserved, and may not be reused without written permission. Assets made by others keep their own licenses, listed below.",
+		"description": "On the license page, explaining that the game's assets aren't free software; {holder} is who holds their copyright"
+	},
+	"license.copyright": {
+		"defaultMessage": "Copyright (C) {year} {holder}.",
+		"description": "The game's copyright notice on the license page; {year} is the year and {holder} is who holds the copyright"
+	},
+	"license.game": {
+		"defaultMessage": "The game",
+		"description": "Heading of the license page's section about the game's own code"
+	},
+	"license.gameIcons": {
+		"defaultMessage": "Game icons are by {authors} at {gameIcons}, used under the {license}. Each icon's page on game-icons.net names its artist.",
+		"description": "On the license page, crediting the icon set for things in the game; {authors} are the artists' names, {gameIcons} is a link to the icon set and {license} is a link to its license, each the same in every language"
+	},
+	"license.heading": {
+		"defaultMessage": "Licenses",
+		"description": "Heading of the page with the game's license and the licenses of what it uses"
+	},
+	"license.home": {
+		"defaultMessage": "Back to Home",
+		"description": "Link at the top of the license page that goes back to the list of universes"
+	},
+	"license.icons": {
+		"defaultMessage": "Icons",
+		"description": "Heading of the license page's section crediting the icon sets the pages use"
+	},
+	"license.phosphor": {
+		"defaultMessage": "Interface icons are from {phosphor}, used under the MIT License:",
+		"description": "On the license page, crediting the icon set the pages' buttons use; {phosphor} is a link to it, named the same in every language. The license's text follows in English"
+	},
+	"license.sourceCode": {
+		"defaultMessage": "Get this version's source code",
+		"description": "Link on the license page to where this version of the game's source code can be downloaded"
+	},
+	"license.summary": {
+		"defaultMessage": "In short: you may use, change and share the game's code. If you share a changed version, or run one on a server that players connect to, you must offer its source code under the same license.",
+		"description": "On the license page, what the game's license means in plain words"
+	},
+	"license.title": {
+		"defaultMessage": "Licenses - Multiverse Kiln",
+		"description": "The browser tab's title for the page with the game's license and the licenses of what it uses"
+	},
+	"license.warranty": {
+		"defaultMessage": "Multiverse Kiln is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.",
+		"description": "The game's license notice, saying it comes with no warranty"
 	},
 	"lobby.chat.label": {
 		"defaultMessage": "Chat message",
@@ -947,6 +1091,14 @@
 		"defaultMessage": "Could not enter {universe}. Try again in a moment.",
 		"description": "Shown on Home when the player couldn't go into a universe's lobby; {universe} is its name"
 	},
+	"lobby.ownName": {
+		"defaultMessage": "{name} (you)",
+		"description": "In the list of players in the lobby, the player's own name; {name} is the name"
+	},
+	"lobby.pageTitle": {
+		"defaultMessage": "Lobby - {universe} - Multiverse Kiln",
+		"description": "The browser tab's title in a universe's lobby; {universe} is the universe's name and Multiverse Kiln is the game engine's name"
+	},
 	"lobby.title": {
 		"defaultMessage": "Lobby",
 		"description": "Heading of a universe's lobby until its name has loaded"
@@ -970,6 +1122,58 @@
 	"login.submit": {
 		"defaultMessage": "Enter",
 		"description": "Button that logs in with the name typed"
+	},
+	"map.announce.appeared": {
+		"defaultMessage": "{count, plural, one {{players} comes into view.} other {{players} come into view.}}",
+		"description": "Read out by screen readers when other players come into view on the map; {players} is a list of their names"
+	},
+	"map.announce.blocked": {
+		"defaultMessage": "Something is in the way.",
+		"description": "Read out by screen readers when the player tries to move but can't, e.g. into a wall or another player"
+	},
+	"map.announce.disappeared": {
+		"defaultMessage": "{count, plural, one {{players} goes out of view.} other {{players} go out of view.}}",
+		"description": "Read out by screen readers when other players go out of view on the map or leave; {players} is a list of their names"
+	},
+	"map.announce.player": {
+		"defaultMessage": "{name}, {cells, plural, one {# cell} other {# cells}} {direction, select, north {north} northeast {northeast} east {east} southeast {southeast} south {south} southwest {southwest} west {west} other {northwest}}",
+		"description": "Read out by screen readers in the list of players the player can see: their name, how many cells away and in which direction, e.g. \"Bo, 3 cells northeast\""
+	},
+	"map.announce.playerHere": {
+		"defaultMessage": "{name}, right where you are",
+		"description": "Read out by screen readers in the list of players the player can see, for one in the same cell; {name} is their name"
+	},
+	"map.announce.position": {
+		"defaultMessage": "{zone}, column {column}, row {row}{onTile, select, yes {, on {tile}} other {}}. {count, plural, =0 {You can't see anyone else.} other {You can see {players}.}}",
+		"description": "Read out by screen readers when the player asks where they are: the zone's name, their cell, the tile they stand on (e.g. Grass) when it is known, and the other players they can see; {players} is a list of descriptions such as \"Bo, 3 cells northeast\""
+	},
+	"map.announce.zone": {
+		"defaultMessage": "You are in {zone}.",
+		"description": "Read out by screen readers when the player comes into a zone; {zone} is its name"
+	},
+	"map.help": {
+		"defaultMessage": "Arrow keys, W A S D or the number pad move you. E goes through a door or path you stand on. {shortcut} tells you where you are and who you can see.",
+		"description": "Read by screen readers on the game's map: the keys that play it. The keys are the same in every language; {shortcut} is the keys that read out where the player is, e.g. Alt+P"
+	},
+	"map.keys.move": {
+		"defaultMessage": "Arrow keys, W A S D or number pad",
+		"description": "In the list of keyboard shortcuts, the keys that move the player; the keys are the same in every language"
+	},
+	"map.keys.moveDescription": {
+		"defaultMessage": "Move",
+		"description": "In the list of keyboard shortcuts, what the movement keys do"
+	},
+	"map.keys.position": {
+		"defaultMessage": "Say where you are and who you can see",
+		"description": "In the list of keyboard shortcuts, what the shortcut that reads out the player's position does"
+	},
+	"map.keys.takeLink": {
+		"defaultMessage": "Go through a door or path you stand on",
+		"description": "In the list of keyboard shortcuts, what the E key does: takes the player to another zone through the link they stand on"
+	},
+	"map.label": {
+		"defaultMessage": "Map",
+		"description": "Name of the game's map for screen readers"
 	},
 	"map.takeLink": {
 		"defaultMessage": "Press E to go through",
@@ -1075,6 +1279,10 @@
 		"defaultMessage": "Copyright (C) {year} {holder}.",
 		"description": "Copyright notice at the bottom of every page; {year} is the year and {holder} is who holds the copyright"
 	},
+	"page.credits": {
+		"defaultMessage": "Credits",
+		"description": "Link at the bottom of every page to the license page's credits for the icons the pages use"
+	},
 	"page.disconnected": {
 		"defaultMessage": "Disconnected from the server. Reload the page to reconnect.",
 		"description": "Shown on the whole page when the connection to the server is lost"
@@ -1093,7 +1301,7 @@
 	},
 	"page.licenseName": {
 		"defaultMessage": "GNU Affero General Public License v3 or later",
-		"description": "The name of the game's license, linking to it"
+		"description": "The name of the game's license, linking to the license page"
 	},
 	"page.name": {
 		"defaultMessage": "Multiverse Kiln",
@@ -1102,6 +1310,10 @@
 	"page.playingAs": {
 		"defaultMessage": "Playing as {name}",
 		"description": "In the toolbar, the name the player logged in with; {name} is the name"
+	},
+	"page.shortcuts": {
+		"defaultMessage": "Keyboard shortcuts",
+		"description": "Button at the bottom of every page that lists the keyboard shortcuts"
 	},
 	"page.sourceCode": {
 		"defaultMessage": "Source code",
@@ -1122,6 +1334,30 @@
 	"pager.range": {
 		"defaultMessage": "{first, number}-{last, number} of {total, number}",
 		"description": "Which items of a list a page shows, e.g. 1-500 of 1200"
+	},
+	"shortcuts.close": {
+		"defaultMessage": "Close",
+		"description": "Button that closes the list of keyboard shortcuts"
+	},
+	"shortcuts.escape": {
+		"defaultMessage": "Esc",
+		"description": "In the list of keyboard shortcuts, the name of the Escape key"
+	},
+	"shortcuts.escapeDescription": {
+		"defaultMessage": "Close a dialog",
+		"description": "In the list of keyboard shortcuts, what the Escape key does"
+	},
+	"shortcuts.explanation": {
+		"defaultMessage": "The shortcuts that work on this screen. To press a button, hold {key} and press its underlined letter.",
+		"description": "Explains the list of keyboard shortcuts; {key} is the name of the Alt key (Option on a Mac)"
+	},
+	"shortcuts.listDescription": {
+		"defaultMessage": "List the keyboard shortcuts",
+		"description": "In the list of keyboard shortcuts, what the ? key does"
+	},
+	"shortcuts.title": {
+		"defaultMessage": "Keyboard shortcuts",
+		"description": "Title of the dialog listing the keyboard shortcuts that work on the screen"
 	},
 	"tile.pf1e.desert": {
 		"defaultMessage": "Desert",

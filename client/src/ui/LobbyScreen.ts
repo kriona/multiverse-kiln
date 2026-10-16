@@ -174,6 +174,11 @@ export class LobbyScreen
 	{
 		this.ownPlayerId = playerId;
 		this.title.textContent = universeName;
+		document.title = t({
+			id: 'lobby.pageTitle',
+			defaultMessage: 'Lobby - {universe} - Multiverse Kiln',
+			description: 'The browser tab\'s title in a universe\'s lobby; {universe} is the universe\'s name and Multiverse Kiln is the game engine\'s name'
+		}, { universe: universeName });
 		this.playerName.textContent = name;
 		this.createButton.disabled = false;
 		this.queueMemberList();
@@ -301,7 +306,14 @@ export class LobbyScreen
 		{
 			const item = document.createElement('li');
 
-			item.textContent = name;
+			// Said in words as well as in color, for players who can't tell the colors apart and for screen readers
+			item.textContent = (isOwn
+				? t({
+					id: 'lobby.ownName',
+					defaultMessage: '{name} (you)',
+					description: 'In the list of players in the lobby, the player\'s own name; {name} is the name'
+				}, { name })
+				: name);
 			item.classList.toggle('member-own', isOwn);
 
 			return(item);

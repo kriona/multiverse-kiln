@@ -27,14 +27,15 @@ function loadedZone(): LoadedZone
 			indoors: false,
 			passageOfTime: 'inherit'
 		},
+		ruleset: 'pf1e',
 		bounds: { minColumn: -100, minRow: -100, maxColumn: 99, maxRow: 99 },
 		defaultTileId: GRASS,
 		loopsEastWest: false,
 		loopsNorthSouth: false,
 		links: [],
 		tiles: [
-			{ id: GRASS, name: 'Grass', indoors: false, color: 0x00ff00, visionCost: 0, movementCost: 0 },
-			{ id: FOREST, name: 'Forest', indoors: false, color: 0x008800, visionCost: 50, movementCost: 50 }
+			{ id: GRASS, key: 'grass', name: 'Grass', indoors: false, color: 0x00ff00, visionCost: 0, movementCost: 0 },
+			{ id: FOREST, key: 'forest', name: 'Forest', indoors: false, color: 0x008800, visionCost: 50, movementCost: 50 }
 		]
 	});
 }

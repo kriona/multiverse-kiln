@@ -72,7 +72,17 @@ export interface WelcomePayload
 export interface ZoneTile
 {
 	id: number;
-	name: string;
+
+	/**
+	 * The default tile's key (DEFAULT_TILE_NAMES), when name is null
+	 */
+	key: string | null;
+
+	/**
+	 * The universe's name for the tile, or null for a default tile's name, which the client shows in
+	 * the player's language from key
+	 */
+	name: string | null;
 
 	/**
 	 * 0xRRGGBB
@@ -139,6 +149,12 @@ export interface ZonePayload
 {
 	zoneId: string;
 	name: string;
+
+	/**
+	 * The universe's ruleset, which names its default tiles
+	 */
+	ruleset: Ruleset;
+
 	indoors: boolean;
 	bounds: MapBounds;
 	loopsEastWest: boolean;

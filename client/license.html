@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title data-message="license.title" data-translation-context="The browser tab's title for the page with the game's license and the licenses of what it uses">Licenses - Multiverse Kiln</title>
+		<link rel="stylesheet" href="/src/license.scss" />
+	</head>
+	<body>
+		<main>
+			<section class="license-page">
+				<header class="toolbar">
+					<h1 data-message="license.heading" data-translation-context="Heading of the page with the game's license and the licenses of what it uses">Licenses</h1>
+					<a class="toolbar-link" href="/" data-message="license.home" data-translation-context="Link at the top of the license page that goes back to the list of universes">Back to Home</a>
+				</header>
+				<div class="license-body">
+					<section id="game">
+						<h2 data-message="license.game" data-translation-context="Heading of the license page's section about the game's own code">The game</h2>
+						<p data-message="license.copyright" data-translation-context="The game's copyright notice on the license page; {year} is the year and {holder} is who holds the copyright">Copyright (C) <span data-argument="year" translate="no">2026</span> <span data-argument="holder" translate="no">Kriona Hagen</span>.</p>
+						<p data-message="license.agpl" data-translation-context="The game's license notice; {license} is a link to the license's full text, named by license.agplName">Multiverse Kiln is free software: you can redistribute it and/or modify it under the terms of the <a href="https://www.gnu.org/licenses/agpl-3.0.html" data-argument="license" data-message="license.agplName" data-translation-context="The name of the game's license, linking to its full text">GNU Affero General Public License</a> as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.</p>
+						<p data-message="license.warranty" data-translation-context="The game's license notice, saying it comes with no warranty">Multiverse Kiln is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.</p>
+						<p data-message="license.summary" data-translation-context="On the license page, what the game's license means in plain words">In short: you may use, change and share the game's code. If you share a changed version, or run one on a server that players connect to, you must offer its source code under the same license.</p>
+						<p><a href="%VITE_SOURCE_URL%" data-message="license.sourceCode" data-translation-context="Link on the license page to where this version of the game's source code can be downloaded">Get this version's source code</a></p>
+					</section>
+					<section id="assets">
+						<h2 data-message="license.assets" data-translation-context="Heading of the license page's section about the game's art, audio and story">Art and other assets</h2>
+						<p data-message="license.assetsNotice" data-translation-context="On the license page, explaining that the game's assets aren't free software; {holder} is who holds their copyright">The game's own art, audio, fonts, characters, setting and story are not covered by the GNU Affero General Public License. They are copyright <span data-argument="holder" translate="no">Kriona Hagen</span>, all rights reserved, and may not be reused without written permission. Assets made by others keep their own licenses, listed below.</p>
+					</section>
+					<section id="icons">
+						<h2 data-message="license.icons" data-translation-context="Heading of the license page's section crediting the icon sets the pages use">Icons</h2>
+						<h3 translate="no">Phosphor Icons</h3>
+						<p data-message="license.phosphor" data-translation-context="On the license page, crediting the icon set the pages' buttons use; {phosphor} is a link to it, named the same in every language. The license's text follows in English">Interface icons are from <a href="https://phosphoricons.com" data-argument="phosphor" translate="no">Phosphor Icons</a>, used under the MIT License:</p>
+						<pre translate="no" lang="en">MIT License
+
+Copyright (c) 2023 Phosphor Icons
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.</pre>
+						<h3 translate="no">game-icons.net</h3>
+						<p data-message="license.gameIcons" data-translation-context="On the license page, crediting the icon set for things in the game; {authors} are the artists' names, {gameIcons} is a link to the icon set and {license} is a link to its license, each the same in every language">Game icons are by <span data-argument="authors" translate="no">Lorc, Delapouite and other contributors</span> at <a href="https://game-icons.net" data-argument="gameIcons" translate="no">game-icons.net</a>, used under the <a href="https://creativecommons.org/licenses/by/3.0/" data-argument="license" translate="no">Creative Commons Attribution 3.0 Unported License (CC BY 3.0)</a>. Each icon's page on game-icons.net names its artist.</p>
+					</section>
+				</div>
+			</section>
+		</main>
+		<!-- include footer.html -->
+		<!-- include accessibility.html -->
+		<script type="module" src="/src/license.ts"></script>
+	</body>
+</html>

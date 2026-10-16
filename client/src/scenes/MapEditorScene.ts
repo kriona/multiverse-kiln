@@ -99,9 +99,14 @@ export interface MapEditorHost
 	pick: (column: number, row: number) => void;
 
 	/**
-	 * The pointer moves over a cell, or off the map's canvas
+	 * The pointer moves over a cell, or off the map's canvas, or the keyboard's cursor moves to a cell
 	 */
 	hover: (cell: BrushCell | undefined) => void;
+
+	/**
+	 * A cell and what it holds in words, read out when the keyboard's cursor moves onto it
+	 */
+	describe: (cell: BrushCell) => string;
 
 	/**
 	 * The chunks in or near the view have changed, so any not yet loaded should be
@@ -152,7 +157,8 @@ export interface MapEditorSceneData
  * its links and the brush outlined on top
  *
  * Left clicks paint or pick cells (see PointerMode); dragging with the right or middle button pans,
- * and the mouse wheel zooms around the pointer. A looping zone is shown once, without its far side
+ * and the mouse wheel zooms around the pointer. MapCanvas does the same from the keyboard with a
+ * cursor, which the scene outlines like the pointer. A looping zone is shown once, without its far side
  * repeated, so every cell on screen is a cell that can be edited
  */
 export class MapEditorScene extends Phaser.Scene
@@ -327,6 +333,38 @@ export class MapEditorScene extends Phaser.Scene
 	centerOnCell(column: number, row: number): void
 	{
 		this.cameras.main.centerOn((column + 0.5) * GRID_CELL_SIZE, (row + 0.5) * GRID_CELL_SIZE);
+	}
+
+	/**
+	 * Outlines the brush on the keyboard's cursor, as it is outlined under the pointer, and moves the
+	 * camera to the cursor when it reaches the edge of the view
+	 *
+	 * @param cell The cursor's cell
+	 */
+	showCursor(cell: BrushCell): void
+	{
+		const view = this.cameras.main.worldView;
+		const x = (cell.column + 0.5) * GRID_CELL_SIZE;
+		const y = (cell.row + 0.5) * GRID_CELL_SIZE;
+
+		this.hovered = cell;
+
+		if ((x < (view.x + GRID_CELL_SIZE)) || (x > (view.right - GRID_CELL_SIZE)) || (y < (view.y + GRID_CELL_SIZE)) || (y > (view.bottom - GRID_CELL_SIZE)))
+		{
+			this.centerOnCell(cell.column, cell.row);
+		}
+	}
+
+	/**
+	 * Zooms in or out one step around the middle of the view, as one turn of the mouse wheel does
+	 *
+	 * @param zoomIn True to zoom in, false to zoom out
+	 */
+	zoomStep(zoomIn: boolean): void
+	{
+		const camera = this.cameras.main;
+
+		camera.setZoom(Phaser.Math.Clamp((zoomIn ? camera.zoom * ZOOM_STEP : camera.zoom / ZOOM_STEP), MIN_ZOOM, MAX_ZOOM));
 	}
 
 	/**

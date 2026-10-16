@@ -391,14 +391,17 @@ export function toZonePayload(zone: ActiveZone, chunkKeys: Iterable<string>): Zo
 	return({
 		zoneId: loaded.zone.id,
 		name: loaded.zone.name,
+		ruleset: loaded.ruleset,
 		indoors: loaded.zone.indoors,
 		bounds: loaded.bounds,
 		loopsEastWest: loaded.loopsEastWest,
 		loopsNorthSouth: loaded.loopsNorthSouth,
 		defaultTileId: loaded.defaultTileId,
+		// A default tile's English name stays on the server; the client names it in the player's language
 		tiles: loaded.tiles.map((tile) => ({
 			id: tile.id,
-			name: tile.name,
+			key: tile.key,
+			name: ((tile.key === null) ? tile.name : null),
 			color: tile.color
 		})),
 		chunks: toChunkUpdates(zone, chunkKeys)

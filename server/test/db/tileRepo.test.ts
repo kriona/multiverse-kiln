@@ -66,7 +66,7 @@ describe('tileRepo', () =>
 			const tiles = await loadUniverseTiles(universeId, 'pf1e');
 
 			assert.strictEqual(tiles.length, 7);
-			assert.deepStrictEqual(tiles.find((tile) => (tile.id === wallId)), { id: wallId, name: 'Stone Wall', indoors: true, color: 0x8a8a8a, visionCost: 100, movementCost: 100 });
+			assert.deepStrictEqual(tiles.find((tile) => (tile.id === wallId)), { id: wallId, key: null, name: 'Stone Wall', indoors: true, color: 0x8a8a8a, visionCost: 100, movementCost: 100 });
 			assert.strictEqual(tiles.some((tile) => (tile.name === 'Lava')), false);
 		});
 
@@ -75,7 +75,7 @@ describe('tileRepo', () =>
 			const tiles = await loadUniverseTiles(await addUniverse(), 'pf1e');
 			const forest = tiles.find((tile) => (tile.name === 'Forest'));
 
-			assert.deepStrictEqual(forest, { id: forest?.id, name: 'Forest', indoors: false, color: 0x00aa11, visionCost: 50, movementCost: 50 });
+			assert.deepStrictEqual(forest, { id: forest?.id, key: 'forest', name: 'Forest', indoors: false, color: 0x00aa11, visionCost: 50, movementCost: 50 });
 		});
 
 		it('gives an edited default tile the universe\'s settings under the default tile\'s ID, for that universe only', async () =>
@@ -90,7 +90,7 @@ describe('tileRepo', () =>
 			const theirs = await loadUniverseTiles(otherId, 'pf1e');
 
 			assert.strictEqual(mine.length, 6);
-			assert.deepStrictEqual(mine.find((tile) => (tile.id === grassId)), { id: grassId, ...autumnGrass });
+			assert.deepStrictEqual(mine.find((tile) => (tile.id === grassId)), { id: grassId, key: null, ...autumnGrass });
 			assert.strictEqual(theirs.find((tile) => (tile.id === grassId))?.name, 'Grass');
 		});
 
@@ -103,7 +103,7 @@ describe('tileRepo', () =>
 
 			const grass = (await loadUniverseTiles(universeId, 'pf1e')).find((tile) => (tile.id === grassId));
 
-			assert.deepStrictEqual(grass, { id: grassId, ...autumnGrass, name: 'Grass' });
+			assert.deepStrictEqual(grass, { id: grassId, key: 'grass', ...autumnGrass, name: 'Grass' });
 		});
 	});
 

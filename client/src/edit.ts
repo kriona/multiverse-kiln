@@ -6,6 +6,7 @@ import { isEditorTab } from './ui/editor/EditorScreen';
 import { showStatus } from './ui/dom';
 import { startLanguagePicker } from './ui/languagePicker';
 import { pageMessages } from './ui/pageMessages';
+import { startShortcuts } from './ui/shortcuts';
 
 /**
  * Starts the world editor's page in the player's language for the universe its address names, or goes
@@ -24,6 +25,7 @@ async function start(): Promise<void>
 
 	await startLocalization();
 	startLanguagePicker();
+	startShortcuts();
 	showStatus(t(pageMessages.connecting));
 
 	try
