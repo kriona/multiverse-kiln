@@ -4,6 +4,7 @@ import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNING_NAM
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
+import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
 import { showMarkdown } from '../markdown';
 
@@ -78,7 +79,7 @@ export class UniverseTab
 		{
 			input.addEventListener('input', () =>
 			{
-				input.setCustomValidity('');
+				setFieldError(input, undefined);
 				this.saved.textContent = '';
 			});
 		}
@@ -116,6 +117,7 @@ export class UniverseTab
 		this.toolbar.hidden = this.fields.disabled;
 		this.saved.textContent = '';
 		showMessage(this.error, undefined);
+		clearFieldErrors(this.form);
 		showMarkdown(this.preview, universe.longDescription);
 	}
 
@@ -233,8 +235,7 @@ export class UniverseTab
 		{
 			if (((input === this.name) && (text === '')) || DISALLOWED_TEXT_CHARACTERS.test(text))
 			{
-				input.setCustomValidity(t(formMessages.invalidText));
-				input.reportValidity();
+				reportFieldError(input, t(formMessages.invalidText));
 				return(false);
 			}
 		}

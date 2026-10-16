@@ -2,6 +2,7 @@ import { DISALLOWED_TEXT_CHARACTERS, MAX_PLAYER_NAME_LENGTH } from '@multiverse-
 
 import { t } from '../localization';
 import { getElement } from './dom';
+import { reportFieldError, setFieldError } from './fieldErrors';
 
 /**
  * The login screen: the player types their name
@@ -21,7 +22,7 @@ export class LoginScreen
 
 		this.nameInput.addEventListener('input', () =>
 		{
-			this.nameInput.setCustomValidity('');
+			setFieldError(this.nameInput, undefined);
 		});
 
 		this.form.addEventListener('submit', (event) =>
@@ -32,12 +33,11 @@ export class LoginScreen
 
 			if ((name === '') || DISALLOWED_TEXT_CHARACTERS.test(name))
 			{
-				this.nameInput.setCustomValidity(t({
+				reportFieldError(this.nameInput, t({
 					id: 'login.invalidName',
 					defaultMessage: 'Enter a name of letters, numbers, spaces or punctuation.',
 					description: 'Shown by the login field when the name typed is empty or has characters that aren\'t allowed'
 				}));
-				this.nameInput.reportValidity();
 				return;
 			}
 
@@ -53,6 +53,7 @@ export class LoginScreen
 	reset(): void
 	{
 		this.submitButton.disabled = false;
+		setFieldError(this.nameInput, undefined);
 		this.nameInput.focus();
 	}
 
@@ -64,7 +65,6 @@ export class LoginScreen
 	showError(message: string): void
 	{
 		this.reset();
-		this.nameInput.setCustomValidity(message);
-		this.nameInput.reportValidity();
+		reportFieldError(this.nameInput, message);
 	}
 }

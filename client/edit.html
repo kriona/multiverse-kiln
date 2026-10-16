@@ -77,7 +77,7 @@
 								<p id="universe-error" class="form-error" role="alert" hidden></p>
 								<div class="form-buttons">
 									<span id="universe-saved" class="form-saved" role="status"></span>
-									<button id="universe-save" type="submit" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+									<button id="universe-save" type="submit" aria-describedby="universe-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
 								</div>
 							</fieldset>
 						</form>
@@ -189,9 +189,9 @@
 									<p id="zone-size"></p>
 									<p id="zone-error" class="form-error" role="alert" hidden></p>
 									<div class="form-buttons">
-										<button id="zone-delete" type="button" class="danger" data-message="editor.zone.delete" data-translation-context="Button that deletes the zone being edited"><!-- icon ph:trash -->Delete Zone</button>
+										<button id="zone-delete" type="button" class="danger" aria-describedby="zone-error" data-message="editor.zone.delete" data-translation-context="Button that deletes the zone being edited"><!-- icon ph:trash -->Delete Zone</button>
 										<span id="zone-saved" class="form-saved" role="status"></span>
-										<button id="zone-save" type="submit" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+										<button id="zone-save" type="submit" aria-describedby="zone-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
 									</div>
 								</fieldset>
 							</form>
@@ -228,7 +228,7 @@
 								<div class="map-frame">
 									<button id="map-expand-north" type="button" class="secondary map-expand-north" data-message="editor.map.expandNorth" data-translation-context="Button above the map that makes it bigger to the north">+ North</button>
 									<button id="map-expand-west" type="button" class="secondary map-expand-west" data-message="editor.map.expandWest" data-translation-context="Button left of the map that makes it bigger to the west">+ West</button>
-									<div id="map-canvas" class="map-canvas" tabindex="0" role="application" aria-label="Map" aria-describedby="map-keyboard-help" data-shortcut="Alt+M" data-message-aria-label="editor.map.label" data-translation-context-aria-label="Name of the zone's map in the map editor, for screen readers"></div>
+									<div id="map-canvas" class="map-canvas" tabindex="0" role="application" aria-label="Map" aria-describedby="map-keyboard-help map-error" data-shortcut="Alt+M" data-message-aria-label="editor.map.label" data-translation-context-aria-label="Name of the zone's map in the map editor, for screen readers"></div>
 									<button id="map-expand-east" type="button" class="secondary map-expand-east" data-message="editor.map.expandEast" data-translation-context="Button right of the map that makes it bigger to the east">+ East</button>
 									<button id="map-expand-south" type="button" class="secondary map-expand-south" data-message="editor.map.expandSouth" data-translation-context="Button below the map that makes it bigger to the south">+ South</button>
 								</div>
@@ -300,9 +300,9 @@
 							</div>
 							<p id="tile-error" class="form-error" role="alert" hidden></p>
 							<div class="form-buttons">
-								<button id="tile-remove" type="button" class="danger"></button>
+								<button id="tile-remove" type="button" class="danger" aria-describedby="tile-error"></button>
 								<button id="tile-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-								<button id="tile-save" type="submit" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+								<button id="tile-save" type="submit" aria-describedby="tile-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
 							</div>
 						</fieldset>
 					</form>
@@ -328,7 +328,7 @@
 						<p id="zone-add-error" class="form-error" role="alert" hidden></p>
 						<div class="dialog-buttons">
 							<button id="zone-add-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-							<button id="zone-add-submit" type="submit" data-shortcut="Alt+S" data-message="editor.zoneAdd.submit" data-translation-context="Button that makes the new zone">Add</button>
+							<button id="zone-add-submit" type="submit" aria-describedby="zone-add-error" data-shortcut="Alt+S" data-message="editor.zoneAdd.submit" data-translation-context="Button that makes the new zone">Add</button>
 						</div>
 					</form>
 				</dialog>
@@ -359,7 +359,7 @@
 						<p id="resize-warning" class="form-error" role="alert" hidden></p>
 						<div class="dialog-buttons">
 							<button id="resize-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-							<button id="resize-submit" type="submit" data-shortcut="Alt+S" data-message="editor.resize.submit" data-translation-context="Button that changes the map to the size given">Resize</button>
+							<button id="resize-submit" type="submit" aria-describedby="resize-warning" data-shortcut="Alt+S" data-message="editor.resize.submit" data-translation-context="Button that changes the map to the size given">Resize</button>
 						</div>
 					</form>
 				</dialog>
@@ -407,9 +407,9 @@
 							<p id="link-return-cell" role="status" hidden></p>
 							<p id="link-error" class="form-error" role="alert" hidden></p>
 							<div class="form-buttons">
-								<button id="link-delete" type="button" class="danger" data-message="editor.link.delete" data-translation-context="Button that deletes the zone link being edited"><!-- icon ph:trash -->Delete Link</button>
+								<button id="link-delete" type="button" class="danger" aria-describedby="link-error" data-message="editor.link.delete" data-translation-context="Button that deletes the zone link being edited"><!-- icon ph:trash -->Delete Link</button>
 								<button id="link-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-								<button id="link-save" type="submit" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+								<button id="link-save" type="submit" aria-describedby="link-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
 							</div>
 						</fieldset>
 					</form>

@@ -3,6 +3,7 @@ import { DISALLOWED_TEXT_CHARACTERS, MAX_CREATED_UNIVERSES, MAX_SHORT_DESCRIPTIO
 import { t } from '../localization';
 import { describeEditorError } from '../network/editorApi';
 import { getElement, namedOptions, setOptions, showMessage } from './dom';
+import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
 import { formMessages } from './formMessages';
 import { showMarkdown } from './markdown';
 
@@ -125,10 +126,13 @@ export class HomeScreen
 			this.createDialog.close();
 		});
 
-		this.createName.addEventListener('input', () =>
+		for (const field of [this.createName, this.createDescription])
 		{
-			this.createName.setCustomValidity('');
-		});
+			field.addEventListener('input', () =>
+			{
+				setFieldError(field, undefined);
+			});
+		}
 
 		this.createForm.addEventListener('submit', (event) =>
 		{
@@ -396,6 +400,7 @@ export class HomeScreen
 			...namedOptions(RULESETS, RULESET_NAMES)
 		]);
 		showMessage(this.createError, undefined);
+		clearFieldErrors(this.createForm);
 		this.createSubmit.disabled = false;
 		this.createDialog.showModal();
 		this.createName.focus();
@@ -409,10 +414,15 @@ export class HomeScreen
 		const name = this.createName.value.trim();
 		const shortDescription = this.createDescription.value.trim();
 
-		if ((name === '') || DISALLOWED_TEXT_CHARACTERS.test(name) || DISALLOWED_TEXT_CHARACTERS.test(shortDescription))
+		if ((name === '') || DISALLOWED_TEXT_CHARACTERS.test(name))
 		{
-			this.createName.setCustomValidity(t(formMessages.invalidText));
-			this.createName.reportValidity();
+			reportFieldError(this.createName, t(formMessages.invalidText));
+			return;
+		}
+
+		if (DISALLOWED_TEXT_CHARACTERS.test(shortDescription))
+		{
+			reportFieldError(this.createDescription, t(formMessages.invalidText));
 			return;
 		}
 

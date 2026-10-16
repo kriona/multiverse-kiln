@@ -5,6 +5,7 @@ import trashIcon from 'virtual:icon/ph:trash';
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, setButtonLabel, showMessage } from '../dom';
+import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
 import { colorToHex, nightColor, parseHexColor } from './colors';
 import { tileName } from './tileNames';
@@ -69,7 +70,7 @@ export class TileDialog
 		this.colorPicker.addEventListener('input', () =>
 		{
 			this.color.value = this.colorPicker.value;
-			this.color.setCustomValidity('');
+			setFieldError(this.color, undefined);
 			this.updatePreview();
 		});
 
@@ -77,7 +78,7 @@ export class TileDialog
 		{
 			const color = parseHexColor(this.color.value);
 
-			this.color.setCustomValidity('');
+			setFieldError(this.color, undefined);
 
 			if (color !== undefined)
 			{
@@ -88,7 +89,7 @@ export class TileDialog
 
 		this.name.addEventListener('input', () =>
 		{
-			this.name.setCustomValidity('');
+			setFieldError(this.name, undefined);
 		});
 
 		this.cancelButton.addEventListener('click', () =>
@@ -182,6 +183,7 @@ export class TileDialog
 			}));
 		}
 		showMessage(this.error, undefined);
+		clearFieldErrors(this.dialog);
 		this.updatePreview();
 		this.dialog.showModal();
 	}
@@ -213,19 +215,17 @@ export class TileDialog
 
 		if ((name === '') || DISALLOWED_TEXT_CHARACTERS.test(name))
 		{
-			this.name.setCustomValidity(t(formMessages.invalidText));
-			this.name.reportValidity();
+			reportFieldError(this.name, t(formMessages.invalidText));
 			return;
 		}
 
 		if (color === undefined)
 		{
-			this.color.setCustomValidity(t({
+			reportFieldError(this.color, t({
 				id: 'editor.tile.invalidColor',
 				defaultMessage: 'Enter a hex color, such as #7AFF3D.',
 				description: 'Shown by the color field when what was typed isn\'t a hexadecimal color'
 			}));
-			this.color.reportValidity();
 			return;
 		}
 
