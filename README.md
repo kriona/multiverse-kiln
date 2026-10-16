@@ -32,7 +32,7 @@ There is a single `node_modules` and `package-lock.json` at the root. `shared` i
 
 ### 1. Install the tools
 
-- **Node.js 22.22.1 or newer** (LTS recommended). Check with `node -v`. npm comes with it.
+- **Node.js 24.14.0 or newer** (LTS recommended). Check with `node -v`. npm comes with it.
 - **Git**.
 - **gitleaks**, which the pre-commit hook uses to block commits containing secrets (see [Secret scanning](#secret-scanning)). On Windows: `winget install Gitleaks.Gitleaks`; on macOS: `brew install gitleaks`. Open a new terminal (and restart VS Code or your Git client) afterwards so it's on your `PATH`.
 - **Docker Desktop**, for the local Postgres database. On Windows: `winget install Docker.DockerDesktop`, then start Docker Desktop once and let it finish setting up.
