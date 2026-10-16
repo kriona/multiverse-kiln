@@ -1,0 +1,2 @@
+ALTER TABLE "tiles" ALTER COLUMN "name" DROP NOT NULL;--> statement-breakpoint
+ALTER TABLE "tiles" ADD CONSTRAINT "tiles_name_required" CHECK ("tiles"."name" IS NOT NULL OR "tiles"."overrides_tile_id" IS NOT NULL);

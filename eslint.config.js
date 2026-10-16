@@ -8,16 +8,78 @@ import tseslint from 'typescript-eslint';
  * Imports that would make game logic impure (CLAUDE.md architecture rule 4)
  */
 const impureImports = [
-	{ group: ['colyseus', '@colyseus/*'], message: 'Game logic must be pure: no Colyseus imports. Call logic from the room instead' },
-	{ group: ['**/db/**', 'drizzle-orm', 'drizzle-orm/*', 'pg', 'postgres'], message: 'Game logic must be pure: no database access' },
-	{ group: ['fs', 'http', 'https', 'net', 'express', 'node:*'], message: 'Game logic must be pure: no I/O or network access' }
+	{
+		group: ['colyseus', '@colyseus/*'],
+		message: 'Game logic must be pure: no Colyseus imports. Call logic from the room instead'
+	},
+	{
+		group: ['**/db/**', 'drizzle-orm', 'drizzle-orm/*', 'pg', 'postgres'],
+		message: 'Game logic must be pure: no database access'
+	},
+	{
+		group: ['fs', 'http', 'https', 'net', 'express', 'node:*'],
+		message: 'Game logic must be pure: no I/O or network access'
+	}
+];
+
+/**
+ * Text with letters in it, as an esquery attribute test: a word of two letters or more
+ */
+const READABLE_TEXT = '/[A-Za-z]{2}/';
+
+/**
+ * How the code shows text to players. Text given to them as a literal skipped translation
+ * (see client/src/localization.ts)
+ */
+const textSinks = [
+	'AssignmentExpression[left.property.name=/^(textContent|innerText|innerHTML|placeholder|title|alt|label|ariaLabel)$/]',
+	'CallExpression[callee.name=/^(showMessage|showStatus)$/]',
+	'CallExpression[callee.property.name=/^(showNotice|showError|setStatus|setCustomValidity|confirm|alert|append|prepend|replaceChildren|replaceWith|createTextNode|text)$/]',
+	'NewExpression[callee.name=\'Option\']'
+];
+
+/**
+ * Text players read that the code writes as a literal instead of a message
+ */
+const literalText = [
+	...textSinks.flatMap((sink) => [
+		{
+			selector: `${sink} > Literal[value=${READABLE_TEXT}]`,
+			message: 'Text players read must be a message: declare it with defineMessages() and show it with t() (see client/src/localization.ts)'
+		},
+		{
+			selector: `${sink} > TemplateLiteral > TemplateElement[value.raw=${READABLE_TEXT}]`,
+			message: 'Text players read must be a message, with values as its arguments: declare it with defineMessages() and show it with t() (see client/src/localization.ts)'
+		}
+	]),
+	{
+		selector: `Property[key.name='label'] > Literal.value[value=${READABLE_TEXT}]`,
+		message: 'A choice\'s label must be a message: declare it with defineMessages() and show it with t() (see client/src/localization.ts)'
+	}
+];
+
+/**
+ * Error answers whose reason is a literal instead of a message the client can translate
+ */
+const literalErrors = [
+	{
+		selector: 'CallExpression[callee.property.name=\'json\'] Property[key.name=\'error\'] > :matches(Literal, TemplateLiteral)',
+		message: 'Answer errors with sendError() and a message from defineMessages(), so the client can show them in the player\'s language (see server/src/http/errors.ts)'
+	},
+	{
+		selector: `CallExpression[callee.property.name='send'] > Literal[value=${READABLE_TEXT}]`,
+		message: 'Answer with a message from defineMessages() rather than text, so the client can show it in the player\'s language (see server/src/http/errors.ts)'
+	}
 ];
 
 /**
  * Imports that bypass the repository modules (CLAUDE.md database rules)
  */
 const directDatabaseImports = [
-	{ group: ['drizzle-orm', 'drizzle-orm/*', 'pg', 'postgres', '**/db/client*'], message: 'Rooms must go through repository modules in server/src/db/, not the database client directly' }
+	{
+		group: ['drizzle-orm', 'drizzle-orm/*', 'pg', 'postgres', '**/db/client*'],
+		message: 'Rooms must go through repository modules in server/src/db/, not the database client directly'
+	}
 ];
 
 export default defineConfig(
@@ -90,6 +152,20 @@ export default defineConfig(
 		files: ['server/test/**/*.ts'],
 		languageOptions: {
 			globals: globals.mocha
+		}
+	},
+
+	{
+		files: ['client/src/**/*.ts'],
+		rules: {
+			'no-restricted-syntax': ['error', ...literalText]
+		}
+	},
+
+	{
+		files: ['server/src/http/**/*.ts'],
+		rules: {
+			'no-restricted-syntax': ['error', ...literalErrors]
 		}
 	},
 

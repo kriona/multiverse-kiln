@@ -13,7 +13,12 @@ import { tiles } from './schema.js';
 export interface TileRecord
 {
 	id: number;
+
+	/**
+	 * The universe's name for it, or a default tile's English name
+	 */
 	name: string;
+
 	indoors: boolean;
 
 	/**
@@ -29,6 +34,11 @@ export interface TileRecord
  * What a new tile needs
  */
 export type NewTile = Pick<typeof tiles.$inferInsert, 'ruleset' | 'universeId' | 'key' | 'name' | 'indoors' | 'color' | 'visionCost' | 'movementCost'>;
+
+/**
+ * The settings of a tile a universe added, which always has a name of its own
+ */
+export type CustomTileSettings = TileSettings & { name: string };
 
 /**
  * Whether a tile ID names one of a ruleset's default tiles or one a universe added
@@ -75,14 +85,21 @@ export async function findDefaultTileIds(ruleset: Ruleset, executor: Executor = 
  */
 export async function loadUniverseTiles(universeId: string, ruleset: Ruleset, executor: Executor = db): Promise<TileRecord[]>
 {
-	const editorTiles = await loadEditorTiles(universeId, ruleset, executor);
+	const editorTiles = await loadNamedTiles(universeId, ruleset, executor);
 
-	return(editorTiles.map(({ id, name, indoors, color, visionCost, movementCost }) => ({ id, name, indoors, color, visionCost, movementCost })));
+	return(editorTiles.map(({ tile, englishName }) => ({
+		id: tile.id,
+		name: englishName,
+		indoors: tile.indoors,
+		color: tile.color,
+		visionCost: tile.visionCost,
+		movementCost: tile.movementCost
+	})));
 }
 
 /**
- * Every tile a universe can paint with, as the editor lists them: loadUniverseTiles() with whether
- * each tile is custom or edited
+ * Every tile a universe can paint with, as the editor lists them: with whether each tile is custom
+ * or edited, and a default tile's key in place of a name it kept
  *
  * @param universeId The universe's ID
  * @param ruleset The universe's ruleset
@@ -91,11 +108,26 @@ export async function loadUniverseTiles(universeId: string, ruleset: Ruleset, ex
  */
 export async function loadEditorTiles(universeId: string, ruleset: Ruleset, executor: Executor = db): Promise<EditorTile[]>
 {
+	return((await loadNamedTiles(universeId, ruleset, executor)).map(({ tile }) => tile));
+}
+
+/**
+ * Every tile a universe can paint with, as the editor lists them, each with a name in English: the
+ * universe's name for it, or a default tile's own
+ *
+ * @param universeId The universe's ID
+ * @param ruleset The universe's ruleset
+ * @param executor The database, or a transaction
+ * @return The tiles, by ID
+ */
+async function loadNamedTiles(universeId: string, ruleset: Ruleset, executor: Executor): Promise<{ tile: EditorTile; englishName: string }[]>
+{
 	const rows = await executor
 		.select({
 			id: tiles.id,
 			universeId: tiles.universeId,
 			overridesTileId: tiles.overridesTileId,
+			key: tiles.key,
 			...settingsColumns
 		})
 		.from(tiles)
@@ -117,16 +149,22 @@ export async function loadEditorTiles(universeId: string, ruleset: Ruleset, exec
 		{
 			const copy = ((row.universeId === null) ? copies.get(row.id) : undefined);
 			const settings = (copy ?? row);
-
-			return({
+			const custom = (row.universeId !== null);
+			const tile: EditorTile = {
 				id: row.id,
-				name: settings.name,
+				key: (custom ? null : row.key),
+				name: (custom ? row.name : (copy?.name ?? null)),
 				indoors: settings.indoors,
 				color: settings.color,
 				visionCost: settings.visionCost,
 				movementCost: settings.movementCost,
-				custom: (row.universeId !== null),
+				custom,
 				edited: (copy !== undefined)
+			};
+
+			return({
+				tile,
+				englishName: (copy?.name ?? row.name ?? '')
 			});
 		}));
 }
@@ -143,10 +181,12 @@ export async function loadEditorTiles(universeId: string, ruleset: Ruleset, exec
 export async function listEditorTiles(universeId: string, ruleset: Ruleset, query: TileListQuery, executor: Executor = db): Promise<TileListPayload>
 {
 	const name = query.name?.toLowerCase();
-	const matching = (await loadEditorTiles(universeId, ruleset, executor)).filter((tile) =>
+
+	// A default tile that kept its name matches by its English name, since the server doesn't have the translations
+	const matching = (await loadNamedTiles(universeId, ruleset, executor)).filter(({ tile, englishName }) =>
 	{
 		return(
-			((name === undefined) || tile.name.toLowerCase().includes(name))
+			((name === undefined) || englishName.toLowerCase().includes(name))
 			&& ((query.passable === undefined) || ((tile.movementCost < IMPASSABLE_COST) === query.passable))
 			&& ((query.custom === undefined) || (tile.custom === query.custom))
 			&& ((query.edited === undefined) || (tile.edited === query.edited))
@@ -155,7 +195,9 @@ export async function listEditorTiles(universeId: string, ruleset: Ruleset, quer
 	const offset = (query.offset ?? 0);
 
 	return({
-		tiles: matching.slice(offset, offset + (query.limit ?? matching.length)),
+		tiles: matching
+			.slice(offset, offset + (query.limit ?? matching.length))
+			.map(({ tile }) => tile),
 		total: matching.length
 	});
 }
@@ -220,7 +262,7 @@ export async function countCustomTiles(universeId: string, executor: Executor = 
  * @param executor The database, or a transaction
  * @return The new tile's ID
  */
-export async function createCustomTile(universeId: string, ruleset: Ruleset, settings: TileSettings, executor: Executor = db): Promise<number>
+export async function createCustomTile(universeId: string, ruleset: Ruleset, settings: CustomTileSettings, executor: Executor = db): Promise<number>
 {
 	return(createTile({ ruleset, universeId, key: null, ...settings }, executor));
 }
@@ -233,7 +275,7 @@ export async function createCustomTile(universeId: string, ruleset: Ruleset, set
  * @param settings The tile's new settings
  * @param executor The database, or a transaction
  */
-export async function updateCustomTile(universeId: string, tileId: number, settings: TileSettings, executor: Executor = db): Promise<void>
+export async function updateCustomTile(universeId: string, tileId: number, settings: CustomTileSettings, executor: Executor = db): Promise<void>
 {
 	await executor
 		.update(tiles)
@@ -250,7 +292,7 @@ export async function updateCustomTile(universeId: string, tileId: number, setti
  * @param universeId The universe's ID
  * @param ruleset The universe's ruleset
  * @param defaultTileId The default tile's ID, from findTileKind() as default
- * @param settings The copy's settings
+ * @param settings The copy's settings; a null name keeps the default tile's
  * @param executor The database, or a transaction
  */
 export async function saveEditedDefaultTile(universeId: string, ruleset: Ruleset, defaultTileId: number, settings: TileSettings, executor: Executor = db): Promise<void>

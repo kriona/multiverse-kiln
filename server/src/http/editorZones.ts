@@ -2,17 +2,17 @@
  * The world editor's routes for a universe's zones, their maps and their links (listed in shared/src/editor.ts)
  */
 import express, { type Request, type Response } from 'express';
-import { canEditWorld, DEFAULT_TILE_CELL, isInBounds, MAX_ZONES, NEW_ZONE_BOUNDS, VOID_CELL, type ChunkListPayload, type CreatedPayload, type EditableUniverse, type EditorZone, type FaerieMorning, type ResizeConflictPayload, type Ruleset, type ZoneLinkListPayload, type ZoneListPayload, type ZoneSettings } from '@multiverse-kiln/shared';
+import { canEditWorld, DEFAULT_TILE_CELL, isInBounds, localize, MAX_ZONES, NEW_ZONE_BOUNDS, VOID_CELL, type ChunkListPayload, type CreatedPayload, type EditableUniverse, type EditorZone, type FaerieMorning, type MessageDescriptor, type ResizeConflictPayload, type Ruleset, type ZoneLinkListPayload, type ZoneListPayload, type ZoneSettings } from '@multiverse-kiln/shared';
 
 import { findDefaultTileIds, findTileKind, loadUniverseTiles } from '../db/tileRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { lockUniverse } from '../db/universeRepo.js';
 import { countZones, createZone, deleteZone, deleteZoneLink, editCells, listZoneLinks, listZones, loadChunks, lockZones, resizeZone, saveZoneLink, updateZoneSettings } from '../db/zoneRepo.js';
 import { chunksOfChanges, wouldCreateCycle } from '../logic/mapEdits.js';
-import { describeInvalidPayload } from '../rooms/payloads.js';
 import { zoneChanges } from '../world/zoneChanges.js';
 import { loadZoneContext, requireRole, universeContextOf, zoneContextOf } from './editorAccess.js';
 import { cellEditRequest, cellParameters, chunkRange, newZoneRequest, resizeZoneRequest, zoneLinkTarget, zoneSettingsUpdate } from './editorPayloads.js';
+import { errorMessages, sendError, sendInvalidRequest } from './errors.js';
 
 /**
  * The keys of the default tiles new zones use in each ruleset, outdoors and indoors
@@ -51,18 +51,26 @@ export function addZoneRoutes(router: express.Router): void
  * @param settings The passage of time and faerie morning, and for a zone whether it loops
  * @return Why the settings can't be saved, or undefined when they can
  */
-export function timeSettingsProblem(settings: { passageOfTime: string; faerieMorning: FaerieMorning | null; loopsEastWest?: boolean; loopsNorthSouth?: boolean }): string | undefined
+export function timeSettingsProblem(settings: { passageOfTime: string; faerieMorning: FaerieMorning | null; loopsEastWest?: boolean; loopsNorthSouth?: boolean }): MessageDescriptor | undefined
 {
 	const faerie = (settings.passageOfTime === 'faerie');
 
 	if (faerie !== (settings.faerieMorning !== null))
 	{
-		return('faerieMorning must be set exactly when passageOfTime is faerie');
+		return({
+			id: 'error.faerieMorningMismatch',
+			defaultMessage: 'Where morning is must be chosen when, and only when, the passage of time is faerie.',
+			description: 'Why time settings were refused: "where is morning?" was given without faerie time, or left out with it'
+		});
 	}
 
 	if (faerie && ((settings.loopsEastWest === true) || (settings.loopsNorthSouth === true)))
 	{
-		return('A zone whose passage of time is faerie can\'t loop');
+		return({
+			id: 'error.faerieCantLoop',
+			defaultMessage: 'A zone whose passage of time is faerie can\'t loop.',
+			description: 'Why a zone\'s settings were refused: faerie time and a map that wraps around can\'t be combined'
+		});
 	}
 
 	return(undefined);
@@ -98,7 +106,7 @@ async function createZoneRoute(request: Request, response: Response): Promise<vo
 
 	if (!body.success)
 	{
-		response.status(400).json({ error: describeInvalidPayload(body.error) });
+		sendInvalidRequest(response, body.error);
 		return;
 	}
 
@@ -119,7 +127,7 @@ async function createZoneRoute(request: Request, response: Response): Promise<vo
 
 	if (problem !== undefined)
 	{
-		response.status(400).json({ error: problem });
+		sendError(response, 400, problem);
 		return;
 	}
 
@@ -137,7 +145,11 @@ async function createZoneRoute(request: Request, response: Response): Promise<vo
 
 	if (zoneId === undefined)
 	{
-		response.status(409).json({ error: `A universe can have at most ${MAX_ZONES} zones` });
+		sendError(response, 409, {
+			id: 'error.zoneLimit',
+			defaultMessage: 'A universe can have at most {max, plural, one {# zone} other {# zones}}.',
+			description: 'Why a new zone wasn\'t made: the universe has as many zones as allowed'
+		}, { max: MAX_ZONES });
 		return;
 	}
 
@@ -171,7 +183,7 @@ async function updateZone(request: Request, response: Response): Promise<void>
 
 	if (!body.success)
 	{
-		response.status(400).json({ error: describeInvalidPayload(body.error) });
+		sendInvalidRequest(response, body.error);
 		return;
 	}
 
@@ -180,7 +192,7 @@ async function updateZone(request: Request, response: Response): Promise<void>
 
 	if (problem !== undefined)
 	{
-		response.status(400).json({ error: problem });
+		sendError(response, 400, problem);
 		return;
 	}
 
@@ -201,7 +213,11 @@ async function deleteZoneRoute(request: Request, response: Response): Promise<vo
 
 	if ((zone.id === universe.lobbyZoneId) || (zone.id === universe.startingZoneId))
 	{
-		response.status(409).json({ error: 'The lobby and starting zones can\'t be deleted' });
+		sendError(response, 409, {
+			id: 'error.cantDeleteZone',
+			defaultMessage: 'The lobby and starting zones can\'t be deleted.',
+			description: 'Why a zone couldn\'t be deleted: the universe needs it'
+		});
 		return;
 	}
 
@@ -222,7 +238,7 @@ async function resizeZoneRoute(request: Request, response: Response): Promise<vo
 
 	if (!body.success)
 	{
-		response.status(400).json({ error: describeInvalidPayload(body.error) });
+		sendInvalidRequest(response, body.error);
 		return;
 	}
 
@@ -231,14 +247,18 @@ async function resizeZoneRoute(request: Request, response: Response): Promise<vo
 
 	if (!result)
 	{
-		response.status(404).json({ error: 'No such zone' });
+		sendError(response, 404, errorMessages.noSuchZone);
 		return;
 	}
 
 	if (!result.resized)
 	{
 		const payload: ResizeConflictPayload = {
-			error: 'Resizing would discard cells or links',
+			error: localize({
+				id: 'error.resizeDiscards',
+				defaultMessage: 'Resizing would discard painted cells or links.',
+				description: 'Why a map wasn\'t made smaller without asking: the part it would lose has painting or links'
+			}),
 			discardedCells: result.discardedCells,
 			discardedLinks: result.discardedLinks
 		};
@@ -263,7 +283,7 @@ async function getChunks(request: Request, response: Response): Promise<void>
 
 	if (!range.success)
 	{
-		response.status(400).json({ error: describeInvalidPayload(range.error) });
+		sendInvalidRequest(response, range.error);
 		return;
 	}
 
@@ -286,7 +306,7 @@ async function editCellsRoute(request: Request, response: Response): Promise<voi
 
 	if (!body.success)
 	{
-		response.status(400).json({ error: describeInvalidPayload(body.error) });
+		sendInvalidRequest(response, body.error);
 		return;
 	}
 
@@ -314,15 +334,23 @@ async function editCellsRoute(request: Request, response: Response): Promise<voi
 			break;
 
 		case 'not_found':
-			response.status(404).json({ error: 'No such zone' });
+			sendError(response, 404, errorMessages.noSuchZone);
 			break;
 
 		case 'out_of_bounds':
-			response.status(400).json({ error: 'Every cell must be inside the zone\'s bounds' });
+			sendError(response, 400, {
+				id: 'error.cellOutOfBounds',
+				defaultMessage: 'Every cell must be inside the zone\'s map.',
+				description: 'Why painting was refused: some cells are outside the map, perhaps because another editor made it smaller'
+			});
 			break;
 
 		case 'unusable_tile':
-			response.status(400).json({ error: 'Every value must be a tile this universe can use, DEFAULT_TILE_CELL or VOID_CELL' });
+			sendError(response, 400, {
+				id: 'error.unusableTile',
+				defaultMessage: 'One of the tiles painted isn\'t one this universe can use.',
+				description: 'Why painting was refused: a tile was deleted, perhaps by another editor'
+			});
 			break;
 	}
 }
@@ -355,13 +383,13 @@ async function saveLink(request: Request, response: Response): Promise<void>
 
 	if (!cell.success)
 	{
-		response.status(400).json({ error: describeInvalidPayload(cell.error) });
+		sendInvalidRequest(response, cell.error);
 		return;
 	}
 
 	if (!body.success)
 	{
-		response.status(400).json({ error: describeInvalidPayload(body.error) });
+		sendInvalidRequest(response, body.error);
 		return;
 	}
 
@@ -371,11 +399,15 @@ async function saveLink(request: Request, response: Response): Promise<void>
 
 	if (target.targetZoneId === zone.id)
 	{
-		response.status(400).json({ error: 'A link must go to another zone' });
+		sendError(response, 400, {
+			id: 'error.linkToSameZone',
+			defaultMessage: 'A link must go to another zone.',
+			description: 'Why a zone link was refused: it leads to the zone it is in'
+		});
 		return;
 	}
 
-	const problem = await inTransaction(async (transaction) =>
+	const problem = await inTransaction(async (transaction): Promise<MessageDescriptor | undefined> =>
 	{
 		// Locked so that neither zone can shrink away from the link while it is saved
 		const locked = await lockZones([zone.id, target.targetZoneId], transaction);
@@ -384,22 +416,34 @@ async function saveLink(request: Request, response: Response): Promise<void>
 
 		if (!source)
 		{
-			return('No such zone');
+			return(errorMessages.noSuchZone);
 		}
 
 		if (!destination || (destination.universeId !== universe.id))
 		{
-			return('The target must be another zone of this universe');
+			return({
+				id: 'error.linkTargetNotInUniverse',
+				defaultMessage: 'A link must go to another zone of this universe.',
+				description: 'Why a zone link was refused: the zone it leads to doesn\'t exist or is in another universe'
+			});
 		}
 
 		if (!isInBounds(source.bounds, column, row))
 		{
-			return('The cell must be inside the zone\'s bounds');
+			return({
+				id: 'error.linkOutOfBounds',
+				defaultMessage: 'The link\'s cell must be inside the zone\'s map.',
+				description: 'Why a zone link was refused: its cell is outside the map, perhaps because another editor made it smaller'
+			});
 		}
 
 		if (!isInBounds(destination.bounds, target.targetColumn, target.targetRow))
 		{
-			return('The target cell must be inside the target zone\'s bounds');
+			return({
+				id: 'error.linkTargetOutOfBounds',
+				defaultMessage: 'Where the link goes must be inside the other zone\'s map.',
+				description: 'Why a zone link was refused: the cell it leads to is outside the other zone\'s map'
+			});
 		}
 
 		await saveZoneLink(zone.id, column, row, target, transaction);
@@ -409,7 +453,7 @@ async function saveLink(request: Request, response: Response): Promise<void>
 
 	if (problem !== undefined)
 	{
-		response.status(400).json({ error: problem });
+		sendError(response, 400, problem);
 		return;
 	}
 
@@ -431,7 +475,11 @@ async function deleteLink(request: Request, response: Response): Promise<void>
 
 	if (!cell.success || !(await deleteZoneLink(zone.id, cell.data.column, cell.data.row)))
 	{
-		response.status(404).json({ error: 'No link on that cell' });
+		sendError(response, 404, {
+			id: 'error.noSuchLink',
+			defaultMessage: 'There is no link on that cell.',
+			description: 'Why a zone link couldn\'t be deleted: it was already gone, perhaps deleted by another editor'
+		});
 		return;
 	}
 
@@ -468,7 +516,7 @@ async function defaultZoneTileId(ruleset: Ruleset, indoors: boolean): Promise<nu
  * @param settings The settings the zone would have
  * @return Why the settings can't be saved, or undefined when they can
  */
-async function zoneSettingsProblem(universe: Omit<EditableUniverse, 'role'>, zoneId: string | undefined, settings: ZoneSettings): Promise<string | undefined>
+async function zoneSettingsProblem(universe: Omit<EditableUniverse, 'role'>, zoneId: string | undefined, settings: ZoneSettings): Promise<MessageDescriptor | undefined>
 {
 	const timeProblem = timeSettingsProblem(settings);
 
@@ -483,18 +531,30 @@ async function zoneSettingsProblem(universe: Omit<EditableUniverse, 'role'>, zon
 
 		if (!parents.has(settings.parentZoneId))
 		{
-			return('The parent must be a zone of this universe');
+			return({
+				id: 'error.parentNotInUniverse',
+				defaultMessage: 'The parent zone must be a zone of this universe.',
+				description: 'Why a zone\'s settings were refused: the zone chosen to hold it doesn\'t exist'
+			});
 		}
 
 		if ((zoneId !== undefined) && wouldCreateCycle(parents, zoneId, settings.parentZoneId))
 		{
-			return('A zone can\'t be inside itself');
+			return({
+				id: 'error.zoneInsideItself',
+				defaultMessage: 'A zone can\'t be inside itself.',
+				description: 'Why a zone\'s settings were refused: the parent chosen is the zone itself or a zone inside it'
+			});
 		}
 	}
 
 	if (await findTileKind(universe.id, universe.ruleset, settings.defaultTileId) === undefined)
 	{
-		return('The default tile must be a tile this universe can use');
+		return({
+			id: 'error.unusableDefaultTile',
+			defaultMessage: 'The default tile must be a tile this universe can use.',
+			description: 'Why a zone\'s settings were refused: the default tile was deleted, perhaps by another editor'
+		});
 	}
 
 	return(undefined);

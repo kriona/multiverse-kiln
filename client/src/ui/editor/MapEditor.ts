@@ -1,15 +1,50 @@
-import { canEditWorld, DEFAULT_TILE_CELL, isInBounds, MAX_BRUSH_SIZE, MAX_CELL_CHANGES, MAX_MAP_SIDE, VOID_CELL, VIEW_HEIGHT, VIEW_WIDTH, type CellChange, type EditableUniverse, type EditorTile, type EditorZone, type EditorZoneLink, type EditorZoneSummary, type MapBounds } from '@multiverse-kiln/shared';
+import { canEditWorld, DEFAULT_TILE_CELL, defineMessages, isInBounds, MAX_BRUSH_SIZE, MAX_CELL_CHANGES, MAX_MAP_SIDE, VOID_CELL, VIEW_HEIGHT, VIEW_WIDTH, type CellChange, type EditableUniverse, type EditorTile, type EditorZone, type EditorZoneLink, type EditorZoneSummary, type MapBounds, type MessageDescriptor } from '@multiverse-kiln/shared';
 
 import { BRUSH_SHAPES, brushCells, type BrushCell, type BrushShape } from '../../editor/brush';
 import { ChunkLoader } from '../../editor/ChunkLoader';
 import { EditHistory, type EditStep } from '../../editor/EditHistory';
 import { EditorMap } from '../../editor/EditorMap';
 import { editorZonePayload, MapCanvas } from '../../editor/MapCanvas';
+import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import type { CameraState, MapEditorHost, PointerMode } from '../../scenes/MapEditorScene';
-import { getElement, setOptions, showMessage } from '../dom';
+import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { LinkDialog } from './LinkDialog';
+import { mapMessages } from './mapMessages';
 import { ResizeDialog } from './ResizeDialog';
+import { tileName } from './tileNames';
+
+/**
+ * Text the map editor shows in more than one place (see src/localization.ts)
+ */
+const messages = defineMessages({
+	loadLinksFailed: {
+		id: 'editor.map.loadLinksFailed',
+		defaultMessage: 'Could not load the links.',
+		description: 'Shown in the map editor when the zone\'s links couldn\'t be loaded'
+	},
+	void: {
+		id: 'editor.map.void',
+		defaultMessage: 'Void',
+		description: 'A cell with nothing in it, drawn black, which can\'t be walked into; also a choice of what to paint'
+	}
+});
+
+/**
+ * Each brush shape's name
+ */
+const BRUSH_SHAPE_NAMES: Record<BrushShape, MessageDescriptor> = defineMessages({
+	square: {
+		id: 'editor.map.brush.square',
+		defaultMessage: 'square',
+		description: 'Shape of the Draw tool\'s brush'
+	},
+	circle: {
+		id: 'editor.map.brush.circle',
+		defaultMessage: 'circle',
+		description: 'Shape of the Draw tool\'s brush'
+	}
+});
 
 /**
  * Value of the tile choice for Void
@@ -115,10 +150,7 @@ export class MapEditor
 		this.resizeDialog = new ResizeDialog(api);
 		this.linkDialog = new LinkDialog(api);
 		this.brushSize.max = String(MAX_BRUSH_SIZE);
-		setOptions(this.brushShape, BRUSH_SHAPES.map((shape) => ({
-			value: shape,
-			label: shape
-		})));
+		setOptions(this.brushShape, namedOptions(BRUSH_SHAPES, BRUSH_SHAPE_NAMES));
 
 		this.undoButton.addEventListener('click', () =>
 		{
@@ -163,7 +195,7 @@ export class MapEditor
 		const editable = canEditWorld(universe.role);
 		const same = ((this.open?.zone.id === zone.id) && sameBounds(this.open.map.bounds, zone.bounds));
 
-		this.fillTiles(zone, tiles);
+		this.fillTiles(universe, zone, tiles);
 		this.tools.hidden = !editable;
 		this.expandField.hidden = !editable;
 
@@ -184,7 +216,7 @@ export class MapEditor
 		{
 			if (version === this.openVersion)
 			{
-				showMessage(this.error, describeEditorError(error, 'load the links'));
+				showMessage(this.error, describeEditorError(error, messages.loadLinksFailed));
 			}
 
 			return;
@@ -243,7 +275,7 @@ export class MapEditor
 			this.canvas.scene?.refreshChunks(chunkKeys);
 		}, (error) =>
 		{
-			showMessage(this.error, describeEditorError(error, 'load the map'));
+			showMessage(this.error, describeEditorError(error, mapMessages.loadFailed));
 		});
 
 		return({ universe, zone, tiles, zones, map, loader, links });
@@ -264,7 +296,7 @@ export class MapEditor
 		}
 
 		const zone = { ...open.zone, bounds: open.map.bounds };
-		const scene = await this.canvas.show(editorZonePayload(zone, open.tiles), open.map.chunks, this.host(), camera);
+		const scene = await this.canvas.show(editorZonePayload(zone, open.tiles, open.universe.ruleset), open.map.chunks, this.host(), camera);
 
 		if (this.open === open)
 		{
@@ -506,7 +538,11 @@ export class MapEditor
 			})
 			.catch((error: unknown) =>
 			{
-				showMessage(this.error, `${describeEditorError(error, 'save some of your painting')} Open the zone again to see the map as it is saved.`);
+				showMessage(this.error, describeEditorError(error, {
+					id: 'editor.map.paintingNotSaved',
+					defaultMessage: 'Could not save some of your painting. Open the zone again to see the map as it is saved.',
+					description: 'Shown in the map editor when painting couldn\'t be stored'
+				}));
 			})
 			.finally(() =>
 			{
@@ -520,7 +556,17 @@ export class MapEditor
 	 */
 	private updateSaveStatus(): void
 	{
-		this.saveStatus.textContent = ((this.pendingSaves > 0) ? 'Saving...' : 'All changes saved');
+		this.saveStatus.textContent = ((this.pendingSaves > 0)
+			? t({
+				id: 'editor.map.saving',
+				defaultMessage: 'Saving...',
+				description: 'Shown under the map while painting is being stored'
+			})
+			: t({
+				id: 'editor.map.allSaved',
+				defaultMessage: 'All changes saved',
+				description: 'Shown under the map once all painting is stored'
+			}));
 	}
 
 	/**
@@ -549,27 +595,64 @@ export class MapEditor
 		const value = open.map.valueAt(cell.column, cell.row);
 		const tileId = ((value === DEFAULT_TILE_CELL) ? open.zone.defaultTileId : value);
 		const link = open.links.find((each) => ((each.column === cell.column) && (each.row === cell.row)));
-		let contents = 'loading...';
+		const tile = open.tiles.find((candidate) => (candidate.id === tileId));
+		let contents: string;
 
 		if (value === VOID_CELL)
 		{
-			contents = 'Void';
+			contents = t(messages.void);
 		}
-		else if (tileId !== undefined)
+		else if (tileId === undefined)
 		{
-			contents = (open.tiles.find((tile) => (tile.id === tileId))?.name ?? 'unknown tile');
+			contents = t({
+				id: 'editor.map.cellLoading',
+				defaultMessage: 'loading...',
+				description: 'What the cell under the pointer holds, while that part of the map is loading'
+			});
+		}
+		else if (tile)
+		{
+			contents = tileName(tile, open.universe.ruleset);
+		}
+		else
+		{
+			contents = t({
+				id: 'editor.map.unknownTile',
+				defaultMessage: 'unknown tile',
+				description: 'What the cell under the pointer holds, when it is a tile the editor doesn\'t know'
+			});
 		}
 
-		this.cursor.textContent = `${cell.column}, ${cell.row}: ${contents}${link ? ` (${link.mode} link)` : ''}`;
+		this.cursor.textContent = (link
+			? t({
+				id: 'editor.map.cellWithLink',
+				defaultMessage: '{column}, {row}: {contents} ({mode, select, automatic {automatic link} other {manual link}})',
+				description: 'Under the map, the cell under the pointer when it has a zone link: its coordinates, what it holds and the kind of link'
+			}, {
+				column: cell.column,
+				row: cell.row,
+				contents,
+				mode: link.mode
+			})
+			: t({
+				id: 'editor.map.cell',
+				defaultMessage: '{column}, {row}: {contents}',
+				description: 'Under the map, the cell under the pointer: its coordinates and what it holds, e.g. "3, -2: Grass"'
+			}, {
+				column: cell.column,
+				row: cell.row,
+				contents
+			}));
 	}
 
 	/**
 	 * Lists the tiles to paint with, the zone's indoor or outdoor tiles first, then Void
 	 *
+	 * @param universe The zone's universe
 	 * @param zone The zone
 	 * @param tiles Every tile the universe can use
 	 */
-	private fillTiles(zone: EditorZone, tiles: readonly EditorTile[]): void
+	private fillTiles(universe: EditableUniverse, zone: EditorZone, tiles: readonly EditorTile[]): void
 	{
 		const chosen = this.tile.value;
 		const ordered = [
@@ -580,11 +663,17 @@ export class MapEditor
 		setOptions(this.tile, [
 			...ordered.map((tile) => ({
 				value: String(tile.id),
-				label: ((tile.id === zone.defaultTileId) ? `${tile.name} (the zone's default)` : tile.name)
+				label: ((tile.id === zone.defaultTileId)
+					? t({
+						id: 'editor.map.zoneDefault',
+						defaultMessage: '{tile} (the zone\'s default)',
+						description: 'A choice of tile to paint that is the zone\'s default tile; {tile} is its name'
+					}, { tile: tileName(tile, universe.ruleset) })
+					: tileName(tile, universe.ruleset))
 			})),
 			{
 				value: VOID_CHOICE,
-				label: 'Void'
+				label: t(messages.void)
 			}
 		]);
 
@@ -630,7 +719,7 @@ export class MapEditor
 
 		if ((((bounds.maxColumn - bounds.minColumn) + 1) > MAX_MAP_SIDE) || (((bounds.maxRow - bounds.minRow) + 1) > MAX_MAP_SIDE))
 		{
-			showMessage(this.error, `A map can be at most ${MAX_MAP_SIDE} cells in each direction.`);
+			showMessage(this.error, t(mapMessages.tooLarge, { max: MAX_MAP_SIDE }));
 			return;
 		}
 
@@ -643,7 +732,11 @@ export class MapEditor
 		}
 		catch (error)
 		{
-			showMessage(this.error, describeEditorError(error, 'grow the map'));
+			showMessage(this.error, describeEditorError(error, {
+				id: 'editor.map.growFailed',
+				defaultMessage: 'Could not grow the map.',
+				description: 'Shown in the map editor when the map couldn\'t be made bigger'
+			}));
 			return;
 		}
 
@@ -709,6 +802,7 @@ export class MapEditor
 			link: open.links.find((link) => ((link.column === column) && (link.row === row))),
 			zones: open.zones,
 			tiles: open.tiles,
+			ruleset: open.universe.ruleset,
 			onChanged: () =>
 			{
 				void this.reloadLinks(open);
@@ -735,7 +829,7 @@ export class MapEditor
 		}
 		catch (error)
 		{
-			showMessage(this.error, describeEditorError(error, 'load the links'));
+			showMessage(this.error, describeEditorError(error, messages.loadLinksFailed));
 		}
 	}
 

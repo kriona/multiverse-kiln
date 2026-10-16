@@ -1,8 +1,27 @@
-import { ancestorZones, canEditWorld, childZones, descendantZoneIds, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNINGS, MAX_TILES_PER_PAGE, MAX_ZONE_NAME_LENGTH, ZONE_PASSAGES_OF_TIME, zonesTabListing, type EditableUniverse, type EditorTile, type EditorZone, type EditorZoneSummary, type FaerieMorning, type ZoneListPayload, type ZonePassageOfTime, type ZoneSettings } from '@multiverse-kiln/shared';
+import { ancestorZones, canEditWorld, childZones, defineMessages, descendantZoneIds, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_TILES_PER_PAGE, MAX_ZONE_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, ZONE_PASSAGES_OF_TIME, zonesTabListing, type EditableUniverse, type EditorTile, type EditorZone, type EditorZoneSummary, type FaerieMorning, type ZoneListPayload, type ZonePassageOfTime, type ZoneSettings } from '@multiverse-kiln/shared';
 
+import { formatList, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
-import { getElement, setOptions, settingOptions, showMessage } from '../dom';
+import { getElement, namedOptions, setOptions, showMessage } from '../dom';
+import { formMessages } from '../formMessages';
 import { MapEditor } from './MapEditor';
+import { tileName } from './tileNames';
+
+/**
+ * Text the zone editor shows in more than one place (see src/localization.ts)
+ */
+const messages = defineMessages({
+	indoorTiles: {
+		id: 'editor.zone.indoorTiles',
+		defaultMessage: 'Indoor tiles',
+		description: 'Heading of a group of choices of default tile'
+	},
+	outdoorTiles: {
+		id: 'editor.zone.outdoorTiles',
+		defaultMessage: 'Outdoor tiles',
+		description: 'Heading of a group of choices of default tile'
+	}
+});
 
 /**
  * The Zones tab: the universe's zones, opening the zone editor, and adding zones
@@ -85,8 +104,8 @@ export class ZonesTab
 		});
 		this.name.maxLength = MAX_ZONE_NAME_LENGTH;
 		this.addName.maxLength = MAX_ZONE_NAME_LENGTH;
-		setOptions(this.time, settingOptions(ZONE_PASSAGES_OF_TIME).map((option) => ((option.value === 'inherit') ? { ...option, label: 'inherit from the parent zone' } : option)));
-		setOptions(this.faerie, settingOptions(FAERIE_MORNINGS));
+		setOptions(this.time, namedOptions(ZONE_PASSAGES_OF_TIME, PASSAGE_OF_TIME_NAMES));
+		setOptions(this.faerie, namedOptions(FAERIE_MORNINGS, FAERIE_MORNING_NAMES));
 
 		this.time.addEventListener('change', () =>
 		{
@@ -207,7 +226,11 @@ export class ZonesTab
 		this.onZoneChanged(zoneId);
 		this.listView.hidden = true;
 		this.editorView.hidden = false;
-		this.editorTitle.textContent = 'Loading...';
+		this.editorTitle.textContent = t({
+			id: 'editor.zone.loading',
+			defaultMessage: 'Loading...',
+			description: 'Heading of the zone editor while the zone loads'
+		});
 		this.fields.disabled = true;
 		showMessage(this.error, undefined);
 
@@ -226,7 +249,11 @@ export class ZonesTab
 			if (version === this.openVersion)
 			{
 				this.editorTitle.textContent = '';
-				showMessage(this.error, describeEditorError(error, 'open the zone'));
+				showMessage(this.error, describeEditorError(error, {
+					id: 'editor.zone.openFailed',
+					defaultMessage: 'Could not open the zone.',
+					description: 'Shown in the zone editor when the zone couldn\'t be loaded'
+				}));
 			}
 
 			return;
@@ -266,7 +293,11 @@ export class ZonesTab
 			if (version === this.openVersion)
 			{
 				this.list.replaceChildren();
-				showMessage(this.empty, describeEditorError(error, 'list the zones'));
+				showMessage(this.empty, describeEditorError(error, {
+					id: 'editor.zones.listFailed',
+					defaultMessage: 'Could not list the zones.',
+					description: 'Shown on the Zones tab when the zones couldn\'t be loaded'
+				}));
 			}
 
 			return;
@@ -284,7 +315,13 @@ export class ZonesTab
 			...listing.path.map((zone, depth) => this.createItem(zone, depth)),
 			...listing.zones.map((zone) => this.createItem(zone, listing.path.length))
 		);
-		showMessage(this.empty, ((listing.zones.length === 0) ? 'There are no zones besides the lobby.' : undefined));
+		showMessage(this.empty, ((listing.zones.length === 0)
+			? t({
+				id: 'editor.zones.none',
+				defaultMessage: 'There are no zones besides the lobby.',
+				description: 'Shown instead of the list of zones when the universe only has its lobby'
+			})
+			: undefined));
 	}
 
 	/**
@@ -337,9 +374,31 @@ export class ZonesTab
 		const name = document.createElement('strong');
 		const details = document.createElement('span');
 		const tags = [
-			(zone.indoors ? 'indoors' : 'outdoors'),
-			((zone.id === this.zones.startingZoneId) ? 'starting zone' : undefined),
-			(zone.enabled ? undefined : 'disabled')
+			(zone.indoors
+				? t({
+					id: 'editor.zones.indoorsTag',
+					defaultMessage: 'indoors',
+					description: 'Under a zone in the list of zones, for a zone that is indoors'
+				})
+				: t({
+					id: 'editor.zones.outdoorsTag',
+					defaultMessage: 'outdoors',
+					description: 'Under a zone in the list of zones, for a zone that is outdoors'
+				})),
+			((zone.id === this.zones.startingZoneId)
+				? t({
+					id: 'editor.zones.startingZoneTag',
+					defaultMessage: 'starting zone',
+					description: 'Under a zone in the list of zones, for the zone new characters start in'
+				})
+				: undefined),
+			(zone.enabled
+				? undefined
+				: t({
+					id: 'editor.zones.disabledTag',
+					defaultMessage: 'disabled',
+					description: 'Under a zone in the list of zones, for a zone players can\'t go into'
+				}))
 		].filter((tag) => (tag !== undefined));
 
 		item.style.paddingLeft = `${depth * 20}px`;
@@ -347,7 +406,7 @@ export class ZonesTab
 		button.className = 'universe-item';
 		name.textContent = zone.name;
 		details.className = 'universe-ruleset';
-		details.textContent = tags.join(' - ');
+		details.textContent = formatList(tags);
 		button.append(name, details);
 		button.addEventListener('click', () =>
 		{
@@ -373,11 +432,24 @@ export class ZonesTab
 		const isStart = (zone.id === this.zones.startingZoneId);
 
 		this.zone = zone;
-		this.editorTitle.textContent = (isLobby ? `${zone.name} (the lobby)` : zone.name);
+		this.editorTitle.textContent = (isLobby
+			? t({
+				id: 'editor.zone.lobbyTitle',
+				defaultMessage: '{zone} (the lobby)',
+				description: 'Heading of the zone editor for the universe\'s lobby; {zone} is its name'
+			}, { zone: zone.name })
+			: zone.name);
 		this.name.value = zone.name;
 		this.enabled.checked = zone.enabled;
 		setOptions(this.parent, [
-			{ value: '', label: 'None (a top-level zone)' },
+			{
+				value: '',
+				label: t({
+					id: 'editor.zone.noParent',
+					defaultMessage: 'None (a top-level zone)',
+					description: 'Choice of parent zone for a zone that isn\'t inside another'
+				})
+			},
 			...this.zones.zones
 				.filter((other) => !excluded.has(other.id))
 				.map((other) => ({
@@ -419,7 +491,14 @@ export class ZonesTab
 		const width = (zone.bounds.maxColumn - zone.bounds.minColumn) + 1;
 		const height = (zone.bounds.maxRow - zone.bounds.minRow) + 1;
 
-		this.size.textContent = `The map is ${height} tall x ${width} wide.`;
+		this.size.textContent = t({
+			id: 'editor.zone.size',
+			defaultMessage: 'The map is {height, number} tall x {width, number} wide.',
+			description: 'The size of the zone\'s map, in cells'
+		}, {
+			height,
+			width
+		});
 	}
 
 	/**
@@ -430,13 +509,14 @@ export class ZonesTab
 	 */
 	private fillDefaultTiles(indoors: boolean, selectedTileId: number): void
 	{
+		const ruleset = this.universe?.ruleset;
 		const groups = [
 			{
-				label: (indoors ? 'Indoor tiles' : 'Outdoor tiles'),
+				label: t(indoors ? messages.indoorTiles : messages.outdoorTiles),
 				tiles: this.tiles.filter((tile) => (tile.indoors === indoors))
 			},
 			{
-				label: (indoors ? 'Outdoor tiles' : 'Indoor tiles'),
+				label: t(indoors ? messages.outdoorTiles : messages.indoorTiles),
 				tiles: this.tiles.filter((tile) => (tile.indoors !== indoors))
 			}
 		];
@@ -448,7 +528,7 @@ export class ZonesTab
 				const element = document.createElement('optgroup');
 
 				element.label = group.label;
-				element.append(...group.tiles.map((tile) => new Option(tile.name, String(tile.id))));
+				element.append(...group.tiles.map((tile) => new Option(((ruleset === undefined) ? (tile.name ?? '') : tileName(tile, ruleset)), String(tile.id))));
 
 				return(element);
 			}));
@@ -484,7 +564,16 @@ export class ZonesTab
 		const zone = this.zone;
 		const disabled = ((zone === undefined) ? [] : ancestorZones(this.zones.zones, zone.id).filter((ancestor) => !ancestor.enabled));
 
-		showMessage(this.parentDisabled, ((disabled.length === 0) ? undefined : `This zone is inside ${disabled.map((ancestor) => ancestor.name).join(', ')}, which ${(disabled.length === 1) ? 'is' : 'are'} disabled.`));
+		showMessage(this.parentDisabled, ((disabled.length === 0)
+			? undefined
+			: t({
+				id: 'editor.zone.parentDisabled',
+				defaultMessage: 'This zone is inside {zones}, which {count, plural, one {is} other {are}} disabled.',
+				description: 'Warns that players can\'t reach the zone; {zones} lists the zones it is inside that are disabled, and {count} is how many'
+			}, {
+				zones: formatList(disabled.map((ancestor) => ancestor.name), 'conjunction'),
+				count: disabled.length
+			})));
 	}
 
 	/**
@@ -503,7 +592,7 @@ export class ZonesTab
 
 		if ((name === '') || DISALLOWED_TEXT_CHARACTERS.test(name))
 		{
-			this.name.setCustomValidity('Use letters, numbers, spaces or punctuation.');
+			this.name.setCustomValidity(t(formMessages.invalidText));
 			this.name.reportValidity();
 			return;
 		}
@@ -532,12 +621,16 @@ export class ZonesTab
 			if (this.zone === zone)
 			{
 				this.showZone(universe, { ...zone, ...settings });
-				this.saved.textContent = 'Saved';
+				this.saved.textContent = t(formMessages.saved);
 			}
 		}
 		catch (error)
 		{
-			showMessage(this.error, describeEditorError(error, 'save the zone'));
+			showMessage(this.error, describeEditorError(error, {
+				id: 'editor.zone.saveFailed',
+				defaultMessage: 'Could not save the zone.',
+				description: 'Shown in the zone editor when the zone\'s settings couldn\'t be stored'
+			}));
 		}
 		finally
 		{
@@ -553,7 +646,18 @@ export class ZonesTab
 		const universe = this.universe;
 		const zone = this.zone;
 
-		if (!universe || !zone || !window.confirm(`Delete ${zone.name}, its map and every link into it? Zones inside it become top-level zones. This can't be undone.`))
+		if (!universe || !zone)
+		{
+			return;
+		}
+
+		const question = t({
+			id: 'editor.zone.confirmDelete',
+			defaultMessage: 'Delete {zone}, its map and every link into it? Zones inside it become top-level zones. This can\'t be undone.',
+			description: 'Asks before deleting a zone; {zone} is its name'
+		}, { zone: zone.name });
+
+		if (!window.confirm(question))
 		{
 			return;
 		}
@@ -567,7 +671,11 @@ export class ZonesTab
 		}
 		catch (error)
 		{
-			showMessage(this.error, describeEditorError(error, 'delete the zone'));
+			showMessage(this.error, describeEditorError(error, {
+				id: 'editor.zone.deleteFailed',
+				defaultMessage: 'Could not delete the zone.',
+				description: 'Shown in the zone editor when the zone couldn\'t be deleted'
+			}));
 		}
 		finally
 		{
@@ -590,7 +698,7 @@ export class ZonesTab
 
 		if ((name === '') || DISALLOWED_TEXT_CHARACTERS.test(name))
 		{
-			this.addName.setCustomValidity('Use letters, numbers, spaces or punctuation.');
+			this.addName.setCustomValidity(t(formMessages.invalidText));
 			this.addName.reportValidity();
 			return;
 		}
@@ -606,7 +714,11 @@ export class ZonesTab
 		}
 		catch (error)
 		{
-			showMessage(this.addError, describeEditorError(error, 'add the zone'));
+			showMessage(this.addError, describeEditorError(error, {
+				id: 'editor.zoneAdd.failed',
+				defaultMessage: 'Could not add the zone.',
+				description: 'Shown in the Add Zone dialog when the zone couldn\'t be made'
+			}));
 			this.addSubmit.disabled = false;
 		}
 	}

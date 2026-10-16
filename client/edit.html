@@ -3,258 +3,248 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Edit Universe - Multiverse Kiln</title>
+		<title data-message="page.editTitle" data-translation-context="The browser tab's title for the world editor">Edit Universe - Multiverse Kiln</title>
 		<link rel="stylesheet" href="/src/edit.scss" />
 	</head>
 	<body>
 		<main>
-			<section id="status-screen" class="screen">
-				<p id="status-message">Connecting...</p>
-			</section>
+			<!-- include status.html -->
 
-			<section id="login-screen" class="screen" hidden>
-				<form id="login-form" class="panel login-panel">
-					<h1>Multiverse Kiln</h1>
-					<label for="login-name">What should we call you?</label>
-					<input id="login-name" name="name" autocomplete="nickname" required />
-					<button id="login-submit" type="submit">Enter</button>
-				</form>
-			</section>
+			<!-- include login.html -->
 
 			<section id="editor-screen" class="screen" hidden>
 				<header class="toolbar">
-					<h1 id="editor-title">Edit Universe</h1>
-					<span class="toolbar-name">Your role: <strong id="editor-role"></strong></span>
-					<button id="editor-play" type="button">Enter Universe</button>
-					<button id="editor-home" type="button" class="secondary">Back to Home</button>
+					<h1 id="editor-title" data-message="editor.title" data-translation-context="Heading of the world editor until the universe's name has loaded">Edit Universe</h1>
+					<span class="toolbar-name" data-message="editor.role" data-translation-context="In the editor's toolbar, the player's role in the universe; {role} is e.g. creator or builder">Your role: <strong id="editor-role" data-argument="role"></strong></span>
+					<button id="editor-play" type="button" data-message="editor.play" data-translation-context="Button in the editor's toolbar that goes to the universe's lobby to play">Enter Universe</button>
+					<button id="editor-home" type="button" class="secondary" data-message="editor.home" data-translation-context="Button in the editor's toolbar that goes back to the list of universes">Back to Home</button>
 				</header>
 				<p id="editor-notice" class="notice" role="status" hidden></p>
 				<div class="tabs" role="tablist">
-					<button id="editor-tab-universe" type="button" role="tab" aria-controls="editor-panel-universe">Universe</button>
-					<button id="editor-tab-lobby" type="button" role="tab" aria-controls="editor-panel-lobby">Lobby</button>
-					<button id="editor-tab-tilesets" type="button" role="tab" aria-controls="editor-panel-tilesets">Tilesets</button>
-					<button id="editor-tab-zones" type="button" role="tab" aria-controls="editor-panel-zones">Zones</button>
+					<button id="editor-tab-universe" type="button" role="tab" aria-controls="editor-panel-universe" data-message="editor.tab.universe" data-translation-context="Tab of the editor with the universe's own settings">Universe</button>
+					<button id="editor-tab-lobby" type="button" role="tab" aria-controls="editor-panel-lobby" data-message="editor.tab.lobby" data-translation-context="Tab of the editor with the lobby's settings">Lobby</button>
+					<button id="editor-tab-tilesets" type="button" role="tab" aria-controls="editor-panel-tilesets" data-message="editor.tab.tilesets" data-translation-context="Tab of the editor listing the tiles maps are painted with">Tilesets</button>
+					<button id="editor-tab-zones" type="button" role="tab" aria-controls="editor-panel-zones" data-message="editor.tab.zones" data-translation-context="Tab of the editor listing the universe's zones (areas with their own map)">Zones</button>
 				</div>
 				<div class="editor-body">
 					<section id="editor-panel-universe" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-universe">
 						<form id="universe-form" class="form">
 							<fieldset id="universe-fields" class="plain">
-								<label>
+								<label data-message="form.name" data-translation-context="Label of the field for the name of a universe, zone or tile">
 									Name
 									<input id="universe-name-input" required />
 								</label>
-								<label>
+								<label data-message="universe.shortDescription" data-translation-context="Label of the field for a universe's description in one sentence">
 									1-sentence description
 									<input id="universe-short-description" />
 								</label>
 								<div class="markdown-editor">
 									<div class="field-label">
-										<label for="universe-long-description">Long description (Markdown)</label>
+										<label for="universe-long-description" data-message="editor.universe.longDescription" data-translation-context="Label of the field for a universe's full description, which is written in Markdown">Long description (Markdown)</label>
 										<markdown-toolbar id="universe-long-toolbar" class="markdown-toolbar" for="universe-long-description">
 											<!-- role is set here because the md-* elements don't set it themselves -->
-											<md-header level="1" role="button" title="Heading 1" aria-label="Heading 1">H1</md-header>
-											<md-header level="2" role="button" title="Heading 2" aria-label="Heading 2">H2</md-header>
-											<md-header level="3" role="button" title="Heading 3" aria-label="Heading 3">H3</md-header>
-											<md-bold role="button" title="Bold" aria-label="Bold"><strong>B</strong></md-bold>
-											<md-italic role="button" title="Italic" aria-label="Italic"><em>I</em></md-italic>
-											<md-strikethrough role="button" title="Strikethrough" aria-label="Strikethrough"><del>S</del></md-strikethrough>
-											<md-link role="button" title="Link" aria-label="Link">Link</md-link>
-											<md-quote role="button" title="Quote" aria-label="Quote">Quote</md-quote>
-											<md-code role="button" title="Code" aria-label="Code">Code</md-code>
-											<md-unordered-list role="button" title="Bulleted list" aria-label="Bulleted list">&bull; List</md-unordered-list>
-											<md-ordered-list role="button" title="Numbered list" aria-label="Numbered list">1. List</md-ordered-list>
+											<md-header level="1" role="button" title="Heading 1" aria-label="Heading 1" data-message="markdown.heading1Button" data-translation-context="Short label of the Markdown toolbar button that makes a heading of the first level" data-message-title="markdown.heading1" data-translation-context-title="Name of the Markdown toolbar button that makes a heading of the first level" data-message-aria-label="markdown.heading1" data-translation-context-aria-label="Name of the Markdown toolbar button that makes a heading of the first level">H1</md-header>
+											<md-header level="2" role="button" title="Heading 2" aria-label="Heading 2" data-message="markdown.heading2Button" data-translation-context="Short label of the Markdown toolbar button that makes a heading of the second level" data-message-title="markdown.heading2" data-translation-context-title="Name of the Markdown toolbar button that makes a heading of the second level" data-message-aria-label="markdown.heading2" data-translation-context-aria-label="Name of the Markdown toolbar button that makes a heading of the second level">H2</md-header>
+											<md-header level="3" role="button" title="Heading 3" aria-label="Heading 3" data-message="markdown.heading3Button" data-translation-context="Short label of the Markdown toolbar button that makes a heading of the third level" data-message-title="markdown.heading3" data-translation-context-title="Name of the Markdown toolbar button that makes a heading of the third level" data-message-aria-label="markdown.heading3" data-translation-context-aria-label="Name of the Markdown toolbar button that makes a heading of the third level">H3</md-header>
+											<md-bold role="button" title="Bold" aria-label="Bold" data-message-title="markdown.bold" data-translation-context-title="Name of the Markdown toolbar button that makes text bold" data-message-aria-label="markdown.bold" data-translation-context-aria-label="Name of the Markdown toolbar button that makes text bold"><strong data-message="markdown.boldButton" data-translation-context="One-letter label of the Markdown toolbar button that makes text bold, shown in bold">B</strong></md-bold>
+											<md-italic role="button" title="Italic" aria-label="Italic" data-message-title="markdown.italic" data-translation-context-title="Name of the Markdown toolbar button that makes text italic" data-message-aria-label="markdown.italic" data-translation-context-aria-label="Name of the Markdown toolbar button that makes text italic"><em data-message="markdown.italicButton" data-translation-context="One-letter label of the Markdown toolbar button that makes text italic, shown in italics">I</em></md-italic>
+											<md-strikethrough role="button" title="Strikethrough" aria-label="Strikethrough" data-message-title="markdown.strikethrough" data-translation-context-title="Name of the Markdown toolbar button that strikes text through" data-message-aria-label="markdown.strikethrough" data-translation-context-aria-label="Name of the Markdown toolbar button that strikes text through"><del data-message="markdown.strikethroughButton" data-translation-context="One-letter label of the Markdown toolbar button that strikes text through, shown struck through">S</del></md-strikethrough>
+											<md-link role="button" title="Link" aria-label="Link" data-message="markdown.linkButton" data-translation-context="Short label of the Markdown toolbar button that adds a link" data-message-title="markdown.link" data-translation-context-title="Name of the Markdown toolbar button that adds a link" data-message-aria-label="markdown.link" data-translation-context-aria-label="Name of the Markdown toolbar button that adds a link">Link</md-link>
+											<md-quote role="button" title="Quote" aria-label="Quote" data-message="markdown.quoteButton" data-translation-context="Short label of the Markdown toolbar button that makes text a quotation" data-message-title="markdown.quote" data-translation-context-title="Name of the Markdown toolbar button that makes text a quotation" data-message-aria-label="markdown.quote" data-translation-context-aria-label="Name of the Markdown toolbar button that makes text a quotation">Quote</md-quote>
+											<md-code role="button" title="Code" aria-label="Code" data-message="markdown.codeButton" data-translation-context="Short label of the Markdown toolbar button that formats text as code" data-message-title="markdown.code" data-translation-context-title="Name of the Markdown toolbar button that formats text as code" data-message-aria-label="markdown.code" data-translation-context-aria-label="Name of the Markdown toolbar button that formats text as code">Code</md-code>
+											<md-unordered-list role="button" title="Bulleted list" aria-label="Bulleted list" data-message="markdown.bulletedListButton" data-translation-context="Short label of the Markdown toolbar button that makes a bulleted list" data-message-title="markdown.bulletedList" data-translation-context-title="Name of the Markdown toolbar button that makes a bulleted list" data-message-aria-label="markdown.bulletedList" data-translation-context-aria-label="Name of the Markdown toolbar button that makes a bulleted list">&bull; List</md-unordered-list>
+											<md-ordered-list role="button" title="Numbered list" aria-label="Numbered list" data-message="markdown.numberedListButton" data-translation-context="Short label of the Markdown toolbar button that makes a numbered list" data-message-title="markdown.numberedList" data-translation-context-title="Name of the Markdown toolbar button that makes a numbered list" data-message-aria-label="markdown.numberedList" data-translation-context-aria-label="Name of the Markdown toolbar button that makes a numbered list">1. List</md-ordered-list>
 										</markdown-toolbar>
 										<textarea id="universe-long-description" rows="12"></textarea>
 									</div>
 									<div>
-										<span class="field-label">Preview</span>
+										<span class="field-label" data-message="editor.universe.preview" data-translation-context="Heading above the long description as players will see it">Preview</span>
 										<div id="universe-long-preview" class="markdown markdown-preview"></div>
 									</div>
 								</div>
-								<label>
-									Stage
-									<select id="universe-stage"></select>
-								</label>
-								<p>Ruleset: <strong id="universe-ruleset-name"></strong></p>
-								<label>
+								<fieldset id="universe-stage" class="choice stacked">
+									<legend data-message="editor.universe.stage" data-translation-context="Heading of the choice of how far along a universe is, from being built to being retired">Stage</legend>
+								</fieldset>
+								<p data-message="editor.universe.ruleset" data-translation-context="Shows the universe's game rules, which can't be changed; {ruleset} is e.g. Pathfinder 1E">Ruleset: <strong id="universe-ruleset-name" data-argument="ruleset"></strong></p>
+								<label data-message="editor.passageOfTime" data-translation-context="Label of the field for how the time of day changes in a universe or zone">
 									Passage of time
 									<select id="universe-time"></select>
 								</label>
-								<label id="universe-faerie-field" hidden>
+								<label id="universe-faerie-field" data-message="editor.faerieMorning" data-translation-context="Label of the field for which side of the map has morning, when the passage of time is faerie" hidden>
 									Where is morning?
 									<select id="universe-faerie"></select>
 								</label>
 								<p id="universe-error" class="form-error" role="alert" hidden></p>
 								<div class="form-buttons">
 									<span id="universe-saved" class="form-saved" role="status"></span>
-									<button id="universe-save" type="submit">Save</button>
+									<button id="universe-save" type="submit" data-message="form.save" data-translation-context="Button that stores the form's changes in the database">Save</button>
 								</div>
 							</fieldset>
 						</form>
 					</section>
 
 					<section id="editor-panel-lobby" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-lobby" hidden>
-						<p>The lobby is where everyone in the universe meets before joining a group. It is a zone like any other, but isn't listed on the Zones tab.</p>
-						<button id="lobby-edit-zone" type="button">Edit the lobby's zone</button>
+						<p data-message="editor.lobby.explanation" data-translation-context="Explains the lobby on the editor's Lobby tab">The lobby is where everyone in the universe meets before joining a group. It is a zone like any other, but isn't listed on the Zones tab.</p>
+						<button id="lobby-edit-zone" type="button" data-message="editor.lobby.editZone" data-translation-context="Button that opens the lobby in the zone editor">Edit the lobby's zone</button>
 					</section>
 
 					<section id="editor-panel-tilesets" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-tilesets" hidden>
 						<div class="filters">
-							<input id="tile-filter-name" type="search" placeholder="Search by name" aria-label="Search tiles by name" />
-							<label>
+							<input id="tile-filter-name" type="search" placeholder="Search by name" aria-label="Search tiles by name" data-message-placeholder="editor.tiles.search" data-translation-context-placeholder="Shown in the empty field that filters the tiles by name" data-message-aria-label="editor.tiles.searchLabel" data-translation-context-aria-label="Name of the field that filters the tiles by name, for screen readers" />
+							<label data-message="editor.tiles.passable" data-translation-context="Label of the filter for whether a tile can be walked onto">
 								Passable
 								<select id="tile-filter-passable"></select>
 							</label>
-							<label>
+							<label data-message="editor.tiles.custom" data-translation-context="Label of the filter for whether a tile was made for this universe, rather than coming with the ruleset">
 								Custom
 								<select id="tile-filter-custom"></select>
 							</label>
-							<label>
+							<label data-message="editor.tiles.edited" data-translation-context="Label of the filter for whether one of the ruleset's tiles was changed for this universe">
 								Edited from default
 								<select id="tile-filter-edited"></select>
 							</label>
-							<button id="tile-add" type="button">Add Tile</button>
+							<button id="tile-add" type="button" data-message="editor.tiles.add" data-translation-context="Button that opens the dialog for making a new tile">Add Tile</button>
 						</div>
 						<table class="tile-table">
 							<thead>
 								<tr>
-									<th scope="col">Color</th>
-									<th scope="col">Name</th>
-									<th scope="col">Movement cost</th>
-									<th scope="col">Vision cost</th>
+									<th scope="col" data-message="editor.tiles.color" data-translation-context="Heading of the table column showing each tile's color">Color</th>
+									<th scope="col" data-message="editor.tiles.name" data-translation-context="Heading of the table column with each tile's name">Name</th>
+									<th scope="col" data-message="editor.tiles.movementCost" data-translation-context="Heading of the table column with how much harder each tile is to move into">Movement cost</th>
+									<th scope="col" data-message="editor.tiles.visionCost" data-translation-context="Heading of the table column with how much of a character's vision crossing each tile uses">Vision cost</th>
 									<th scope="col"></th>
 								</tr>
 							</thead>
 							<tbody id="tile-rows"></tbody>
 						</table>
-						<p id="tile-empty" class="universe-empty" hidden>No tiles match.</p>
+						<p id="tile-empty" class="universe-empty" data-message="editor.tiles.none" data-translation-context="Shown instead of the table when no tile matches the filters" hidden>No tiles match.</p>
 						<div class="pager">
-							<button id="tile-previous" type="button" class="secondary">Previous</button>
+							<button id="tile-previous" type="button" class="secondary" data-message="pager.previous" data-translation-context="Button that shows the previous page of a list">Previous</button>
 							<span id="tile-page"></span>
-							<button id="tile-next" type="button" class="secondary">Next</button>
+							<button id="tile-next" type="button" class="secondary" data-message="pager.next" data-translation-context="Button that shows the next page of a list">Next</button>
 						</div>
 					</section>
 
 					<section id="editor-panel-zones" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-zones" hidden>
 						<div id="zone-list-view">
 							<div class="panel-heading">
-								<h2>Zones</h2>
-								<button id="zone-add" type="button">Add Zone</button>
+								<h2 data-message="editor.zones.heading" data-translation-context="Heading of the list of the universe's zones">Zones</h2>
+								<button id="zone-add" type="button" data-message="editor.zones.add" data-translation-context="Button that opens the dialog for making a new zone">Add Zone</button>
 							</div>
 							<ul id="zone-list" class="zone-list"></ul>
-							<p id="zone-empty" class="universe-empty" hidden>There are no zones besides the lobby.</p>
+							<p id="zone-empty" class="universe-empty" data-message="editor.zones.none" data-translation-context="Shown instead of the list of zones when the universe only has its lobby" hidden>There are no zones besides the lobby.</p>
 						</div>
 						<div id="zone-editor-view" hidden>
 							<div class="panel-heading">
-								<button id="zone-back" type="button" class="secondary">Back to Zones</button>
+								<button id="zone-back" type="button" class="secondary" data-message="editor.zone.back" data-translation-context="Button that closes the zone editor and goes back to the list of zones">Back to Zones</button>
 								<h2 id="zone-editor-title"></h2>
 							</div>
 							<form id="zone-form" class="form">
 								<fieldset id="zone-fields" class="plain">
-									<label>
+									<label data-message="form.name" data-translation-context="Label of the field for the name of a universe, zone or tile">
 										Name
 										<input id="zone-name" required />
 									</label>
-									<label class="checkbox">
+									<label class="checkbox" data-message="editor.zone.enabled" data-translation-context="Checkbox for whether players can go into the zone">
 										<input id="zone-enabled" type="checkbox" />
 										Enabled
 									</label>
 									<p id="zone-parent-disabled" class="hint" hidden></p>
-									<label>
+									<label data-message="editor.zone.parent" data-translation-context="Label of the field for the zone this one is inside">
 										Parent zone
 										<select id="zone-parent"></select>
 									</label>
 									<fieldset class="choice">
-										<legend>Indoors or outdoors</legend>
-										<label class="checkbox">
+										<legend data-message="form.indoorsOrOutdoors" data-translation-context="Heading of the choice between indoors and outdoors for a zone or tile">Indoors or outdoors</legend>
+										<label class="checkbox" data-message="form.outdoors" data-translation-context="Choice for a zone or tile that is outdoors">
 											<input id="zone-outdoors" name="zone-indoors" type="radio" value="outdoors" />
 											Outdoors
 										</label>
-										<label class="checkbox">
+										<label class="checkbox" data-message="form.indoors" data-translation-context="Choice for a zone or tile that is indoors">
 											<input id="zone-indoors" name="zone-indoors" type="radio" value="indoors" />
 											Indoors
 										</label>
 									</fieldset>
-									<label>
+									<label data-message="editor.zone.defaultTile" data-translation-context="Label of the field for the tile a zone's map is filled with where nothing else is painted">
 										Default tile
 										<select id="zone-default-tile"></select>
 									</label>
-									<label>
+									<label data-message="editor.passageOfTime" data-translation-context="Label of the field for how the time of day changes in a universe or zone">
 										Passage of time
 										<select id="zone-time"></select>
 									</label>
-									<label id="zone-faerie-field" hidden>
+									<label id="zone-faerie-field" data-message="editor.faerieMorning" data-translation-context="Label of the field for which side of the map has morning, when the passage of time is faerie" hidden>
 										Where is morning?
 										<select id="zone-faerie"></select>
 									</label>
-									<label class="checkbox">
+									<label class="checkbox" data-message="editor.zone.loopsEastWest" data-translation-context="Checkbox for a zone whose map wraps around, so walking off the east edge comes back on the west">
 										<input id="zone-loops-east-west" type="checkbox" />
 										Loops east-west
 									</label>
-									<label class="checkbox">
+									<label class="checkbox" data-message="editor.zone.loopsNorthSouth" data-translation-context="Checkbox for a zone whose map wraps around, so walking off the north edge comes back on the south">
 										<input id="zone-loops-north-south" type="checkbox" />
 										Loops north-south
 									</label>
-									<p id="zone-loops-hint" class="hint" hidden>A zone whose passage of time is faerie can't loop.</p>
+									<p id="zone-loops-hint" class="hint" data-message="editor.zone.faerieCantLoop" data-translation-context="Explains why the loop checkboxes are disabled" hidden>A zone whose passage of time is faerie can't loop.</p>
 									<p id="zone-size"></p>
 									<p id="zone-error" class="form-error" role="alert" hidden></p>
 									<div class="form-buttons">
-										<button id="zone-delete" type="button" class="danger">Delete Zone</button>
+										<button id="zone-delete" type="button" class="danger" data-message="editor.zone.delete" data-translation-context="Button that deletes the zone being edited">Delete Zone</button>
 										<span id="zone-saved" class="form-saved" role="status"></span>
-										<button id="zone-save" type="submit">Save</button>
+										<button id="zone-save" type="submit" data-message="form.save" data-translation-context="Button that stores the form's changes in the database">Save</button>
 									</div>
 								</fieldset>
 							</form>
 							<section class="map-editor" aria-labelledby="map-editor-title">
-								<h3 id="map-editor-title">Map</h3>
+								<h3 id="map-editor-title" data-message="editor.map.heading" data-translation-context="Heading of the zone's map editor">Map</h3>
 								<div id="map-tools" class="map-tools">
 									<fieldset class="choice">
-										<legend>Tool</legend>
-										<label class="checkbox">
+										<legend data-message="editor.map.tool" data-translation-context="Heading of the choice of what clicking the map does">Tool</legend>
+										<label class="checkbox" data-message="editor.map.draw" data-translation-context="Map tool that paints tiles onto the map">
 											<input id="map-tool-draw" name="map-tool" type="radio" value="draw" checked />
 											Draw
 										</label>
-										<label class="checkbox">
+										<label class="checkbox" data-message="editor.map.links" data-translation-context="Map tool that adds and changes links to other zones">
 											<input id="map-tool-links" name="map-tool" type="radio" value="links" />
 											Links
 										</label>
 									</fieldset>
-									<label>
+									<label data-message="editor.map.tile" data-translation-context="Label of the field for the tile the Draw tool paints">
 										Tile
 										<select id="map-tile"></select>
 									</label>
-									<label>
+									<label data-message="editor.map.brushSize" data-translation-context="Label of the field for how many cells across the Draw tool paints">
 										Size
 										<input id="map-brush-size" type="number" min="1" step="1" value="1" />
 									</label>
-									<label>
+									<label data-message="editor.map.brushShape" data-translation-context="Label of the field for the shape the Draw tool paints, a circle or a square">
 										Shape
 										<select id="map-brush-shape"></select>
 									</label>
-									<button id="map-undo" type="button" class="secondary">Undo</button>
-									<button id="map-redo" type="button" class="secondary">Redo</button>
-									<button id="map-resize" type="button" class="secondary">Edit Size</button>
+									<button id="map-undo" type="button" class="secondary" data-message="editor.map.undo" data-translation-context="Button that takes back the last painting on the map">Undo</button>
+									<button id="map-redo" type="button" class="secondary" data-message="editor.map.redo" data-translation-context="Button that paints again what Undo took back">Redo</button>
+									<button id="map-resize" type="button" class="secondary" data-message="editor.map.resize" data-translation-context="Button that opens the dialog for changing the map's size">Edit Size</button>
 								</div>
 								<div class="map-frame">
-									<button id="map-expand-north" type="button" class="secondary map-expand-north">+ North</button>
-									<button id="map-expand-west" type="button" class="secondary map-expand-west">+ West</button>
+									<button id="map-expand-north" type="button" class="secondary map-expand-north" data-message="editor.map.expandNorth" data-translation-context="Button above the map that makes it bigger to the north">+ North</button>
+									<button id="map-expand-west" type="button" class="secondary map-expand-west" data-message="editor.map.expandWest" data-translation-context="Button left of the map that makes it bigger to the west">+ West</button>
 									<div id="map-canvas" class="map-canvas"></div>
-									<button id="map-expand-east" type="button" class="secondary map-expand-east">+ East</button>
-									<button id="map-expand-south" type="button" class="secondary map-expand-south">+ South</button>
+									<button id="map-expand-east" type="button" class="secondary map-expand-east" data-message="editor.map.expandEast" data-translation-context="Button right of the map that makes it bigger to the east">+ East</button>
+									<button id="map-expand-south" type="button" class="secondary map-expand-south" data-message="editor.map.expandSouth" data-translation-context="Button below the map that makes it bigger to the south">+ South</button>
 								</div>
 								<div class="map-status">
-									<label id="map-expand-field">
+									<label id="map-expand-field" data-message="editor.map.expandBy" data-translation-context="Label of the field for how many cells the buttons around the map add">
 										Expand by
 										<input id="map-expand-by" type="number" min="1" step="1" value="10" />
 									</label>
 									<span id="map-cursor"></span>
 									<span id="map-save-status" role="status"></span>
 								</div>
-								<p class="hint">Drag with the right mouse button to look around, and zoom with the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link.</p>
+								<p class="hint" data-message="editor.map.help" data-translation-context="Explains how to use the map editor with the mouse and keyboard">Drag with the right mouse button to look around, and zoom with the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link.</p>
 								<p id="map-error" class="form-error" role="alert" hidden></p>
 							</section>
 							<div id="zone-children" hidden>
-								<h3>Zones inside this one</h3>
+								<h3 data-message="editor.zone.children" data-translation-context="Heading of the list of zones inside the zone being edited">Zones inside this one</h3>
 								<ul id="zone-child-list" class="zone-list"></ul>
 							</div>
 						</div>
@@ -264,102 +254,102 @@
 					<form id="tile-form" class="form">
 						<fieldset id="tile-fields" class="plain">
 							<h2 id="tile-dialog-title"></h2>
-							<label>
+							<label data-message="form.name" data-translation-context="Label of the field for the name of a universe, zone or tile">
 								Name
 								<input id="tile-name" required />
 							</label>
 							<fieldset class="choice">
-								<legend>Indoors or outdoors</legend>
-								<label class="checkbox">
+								<legend data-message="form.indoorsOrOutdoors" data-translation-context="Heading of the choice between indoors and outdoors for a zone or tile">Indoors or outdoors</legend>
+								<label class="checkbox" data-message="form.outdoors" data-translation-context="Choice for a zone or tile that is outdoors">
 									<input id="tile-outdoors" name="tile-indoors" type="radio" value="outdoors" />
 									Outdoors
 								</label>
-								<label class="checkbox">
+								<label class="checkbox" data-message="form.indoors" data-translation-context="Choice for a zone or tile that is indoors">
 									<input id="tile-indoors" name="tile-indoors" type="radio" value="indoors" />
 									Indoors
 								</label>
 							</fieldset>
-							<p class="hint">A preference, not a restriction: outdoor zones list outdoor tiles first.</p>
-							<label>
+							<p class="hint" data-message="editor.tile.indoorsHint" data-translation-context="Explains what choosing indoors or outdoors does for a tile">A preference, not a restriction: outdoor zones list outdoor tiles first.</p>
+							<label data-message="editor.tile.color" data-translation-context="Label of the field for the color a tile is drawn in">
 								Color
 								<span class="color-field">
-									<input id="tile-color-picker" type="color" aria-label="Pick a color" />
-									<input id="tile-color" required aria-label="Color as hex" />
+									<input id="tile-color-picker" type="color" aria-label="Pick a color" data-message-aria-label="editor.tile.colorPicker" data-translation-context-aria-label="Name of the color picker for a tile's color, for screen readers" />
+									<input id="tile-color" required aria-label="Color as hex" data-message-aria-label="editor.tile.colorHex" data-translation-context-aria-label="Name of the field for a tile's color as a hexadecimal number, for screen readers" />
 								</span>
 							</label>
-							<label>
+							<label data-message="editor.tile.visionCost" data-translation-context="Label of the field for how much of a character's vision crossing the tile uses, in percent">
 								Vision cost (%)
 								<input id="tile-vision" type="number" min="0" max="100" step="1" required />
 							</label>
-							<p class="hint">100% can't be seen through.</p>
-							<label>
+							<p class="hint" data-message="editor.tile.visionHint" data-translation-context="Explains the vision cost field">100% can't be seen through.</p>
+							<label data-message="editor.tile.movementCost" data-translation-context="Label of the field for how much harder the tile is to move into, in percent">
 								Movement cost (%)
 								<input id="tile-movement" type="number" min="0" max="100" step="1" required />
 							</label>
-							<p class="hint">0% is normal movement, 50% takes twice as long, 100% can't be entered.</p>
+							<p class="hint" data-message="editor.tile.movementHint" data-translation-context="Explains the movement cost field">0% is normal movement, 50% takes twice as long, 100% can't be entered.</p>
 							<div class="tile-preview">
 								<figure>
 									<span id="tile-preview-day" class="swatch large"></span>
-									<figcaption>Day</figcaption>
+									<figcaption data-message="editor.tile.day" data-translation-context="Caption of the preview of the tile in daylight">Day</figcaption>
 								</figure>
 								<figure>
 									<span id="tile-preview-night" class="swatch large"></span>
-									<figcaption>Night</figcaption>
+									<figcaption data-message="editor.tile.night" data-translation-context="Caption of the preview of the tile at night">Night</figcaption>
 								</figure>
 							</div>
 							<p id="tile-error" class="form-error" role="alert" hidden></p>
 							<div class="form-buttons">
 								<button id="tile-remove" type="button" class="danger"></button>
-								<button id="tile-cancel" type="button" class="secondary">Cancel</button>
-								<button id="tile-save" type="submit">Save</button>
+								<button id="tile-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+								<button id="tile-save" type="submit" data-message="form.save" data-translation-context="Button that stores the form's changes in the database">Save</button>
 							</div>
 						</fieldset>
 					</form>
 				</dialog>
 				<dialog id="zone-add-dialog" class="panel dialog" aria-labelledby="zone-add-title">
 					<form id="zone-add-form" class="form">
-						<h2 id="zone-add-title">Add Zone</h2>
-						<label>
+						<h2 id="zone-add-title" data-message="editor.zoneAdd.title" data-translation-context="Title of the dialog for making a new zone">Add Zone</h2>
+						<label data-message="form.name" data-translation-context="Label of the field for the name of a universe, zone or tile">
 							Name
 							<input id="zone-add-name" required />
 						</label>
 						<fieldset class="choice">
-							<legend>Indoors or outdoors</legend>
-							<label class="checkbox">
+							<legend data-message="form.indoorsOrOutdoors" data-translation-context="Heading of the choice between indoors and outdoors for a zone or tile">Indoors or outdoors</legend>
+							<label class="checkbox" data-message="form.outdoors" data-translation-context="Choice for a zone or tile that is outdoors">
 								<input id="zone-add-outdoors" name="zone-add-indoors" type="radio" value="outdoors" checked />
 								Outdoors
 							</label>
-							<label class="checkbox">
+							<label class="checkbox" data-message="form.indoors" data-translation-context="Choice for a zone or tile that is indoors">
 								<input id="zone-add-indoors" name="zone-add-indoors" type="radio" value="indoors" />
 								Indoors
 							</label>
 						</fieldset>
 						<p id="zone-add-error" class="form-error" role="alert" hidden></p>
 						<div class="dialog-buttons">
-							<button id="zone-add-cancel" type="button" class="secondary">Cancel</button>
-							<button id="zone-add-submit" type="submit">Add</button>
+							<button id="zone-add-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="zone-add-submit" type="submit" data-message="editor.zoneAdd.submit" data-translation-context="Button that makes the new zone">Add</button>
 						</div>
 					</form>
 				</dialog>
 				<dialog id="resize-dialog" class="panel dialog" aria-labelledby="resize-title">
 					<form id="resize-form" class="form">
-						<h2 id="resize-title">Edit Size</h2>
-						<p class="hint">How many cells the map reaches in each direction from its center cell (0, 0).</p>
+						<h2 id="resize-title" data-message="editor.resize.title" data-translation-context="Title of the dialog for changing a map's size">Edit Size</h2>
+						<p class="hint" data-message="editor.resize.explanation" data-translation-context="Explains the four fields of the dialog for changing a map's size">How many cells the map reaches in each direction from its center cell (0, 0).</p>
 						<div class="resize-grid">
-							<label class="resize-north">
+							<label class="resize-north" data-message="editor.resize.north" data-translation-context="Label of the field for how many cells the map reaches north of its center">
 								North
 								<input id="resize-north" type="number" min="0" step="1" required />
 							</label>
-							<label class="resize-west">
+							<label class="resize-west" data-message="editor.resize.west" data-translation-context="Label of the field for how many cells the map reaches west of its center">
 								West
 								<input id="resize-west" type="number" min="0" step="1" required />
 							</label>
 							<span class="resize-center">0, 0</span>
-							<label class="resize-east">
+							<label class="resize-east" data-message="editor.resize.east" data-translation-context="Label of the field for how many cells the map reaches east of its center">
 								East
 								<input id="resize-east" type="number" min="0" step="1" required />
 							</label>
-							<label class="resize-south">
+							<label class="resize-south" data-message="editor.resize.south" data-translation-context="Label of the field for how many cells the map reaches south of its center">
 								South
 								<input id="resize-south" type="number" min="0" step="1" required />
 							</label>
@@ -367,8 +357,8 @@
 						<p id="resize-total"></p>
 						<p id="resize-warning" class="form-error" role="alert" hidden></p>
 						<div class="dialog-buttons">
-							<button id="resize-cancel" type="button" class="secondary">Cancel</button>
-							<button id="resize-submit" type="submit">Resize</button>
+							<button id="resize-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="resize-submit" type="submit" data-message="editor.resize.submit" data-translation-context="Button that changes the map to the size given">Resize</button>
 						</div>
 					</form>
 				</dialog>
@@ -377,35 +367,35 @@
 						<fieldset id="link-fields" class="plain">
 							<h2 id="link-title"></h2>
 							<fieldset class="choice">
-								<legend>When a player steps onto the cell</legend>
-								<label class="checkbox">
+								<legend data-message="editor.link.mode" data-translation-context="Heading of the choice of what a zone link does when a player steps onto its cell">When a player steps onto the cell</legend>
+								<label class="checkbox" data-message="editor.link.automatic" data-translation-context="Choice for a zone link that moves the player to the other zone as soon as they step onto it">
 									<input id="link-automatic" name="link-mode" type="radio" value="automatic" />
 									Take them through (automatic)
 								</label>
-								<label class="checkbox">
+								<label class="checkbox" data-message="editor.link.manual" data-translation-context="Choice for a zone link that asks the player whether to go to the other zone">
 									<input id="link-manual" name="link-mode" type="radio" value="manual" />
 									Offer to take them through (manual)
 								</label>
 							</fieldset>
-							<label class="checkbox">
+							<label class="checkbox" data-message="editor.link.wholeGroup" data-translation-context="Checkbox for a zone link that can only be used when every member of the group is present">
 								<input id="link-whole-group" type="checkbox" />
 								Requires the whole group
 							</label>
-							<label>
+							<label data-message="editor.link.target" data-translation-context="Label of the field for the zone a link leads to">
 								Goes to
 								<select id="link-target" required></select>
 							</label>
-							<label class="checkbox">
+							<label class="checkbox" data-message="editor.link.addReturn" data-translation-context="Checkbox that also places a link in the other zone leading back">
 								<input id="link-return" type="checkbox" />
 								Add a return link that leads back to this cell
 							</label>
 							<fieldset id="link-pick-choice" class="choice" hidden>
-								<legend>Clicking the map below chooses</legend>
-								<label class="checkbox">
+								<legend data-message="editor.link.pick" data-translation-context="Heading of the choice of what clicking the map preview in the link dialog places">Clicking the map below chooses</legend>
+								<label class="checkbox" data-message="editor.link.pickDestination" data-translation-context="Choice that makes clicking the map preview choose where the link leads">
 									<input id="link-pick-destination" name="link-pick" type="radio" value="destination" checked />
 									The destination
 								</label>
-								<label class="checkbox">
+								<label class="checkbox" data-message="editor.link.pickReturn" data-translation-context="Choice that makes clicking the map preview place the return link">
 									<input id="link-pick-return" name="link-pick" type="radio" value="return" />
 									The return link's cell
 								</label>
@@ -415,20 +405,16 @@
 							<p id="link-return-cell" hidden></p>
 							<p id="link-error" class="form-error" role="alert" hidden></p>
 							<div class="form-buttons">
-								<button id="link-delete" type="button" class="danger">Delete Link</button>
-								<button id="link-cancel" type="button" class="secondary">Cancel</button>
-								<button id="link-save" type="submit">Save</button>
+								<button id="link-delete" type="button" class="danger" data-message="editor.link.delete" data-translation-context="Button that deletes the zone link being edited">Delete Link</button>
+								<button id="link-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+								<button id="link-save" type="submit" data-message="form.save" data-translation-context="Button that stores the form's changes in the database">Save</button>
 							</div>
 						</fieldset>
 					</form>
 				</dialog>
 			</section>
 		</main>
-		<footer>
-			Copyright (C) 2026 Kriona Hagen.
-			This game is free software under the <a href="https://www.gnu.org/licenses/agpl-3.0.html">GNU Affero General Public License v3 or later</a>.
-			<a href="%VITE_SOURCE_URL%">Source code</a>
-		</footer>
+		<!-- include footer.html -->
 		<script type="module" src="/src/edit.ts"></script>
 	</body>
 </html>

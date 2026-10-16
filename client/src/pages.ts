@@ -4,7 +4,14 @@
  * - index.html: Home, a universe's lobby and a group's game. ?universe=<id> enters that universe's
  *   lobby once the player has logged in, and ?group=<id> (GROUP_QUERY_PARAMETER) joins a group
  * - edit.html: the world editor for ?universe=<id>, on the tab given by ?tab= and the zone given by ?zone=
+ *
+ * Either page takes ?locale= to choose a language, as the language picker in the footer does (see src/localization.ts)
  */
+
+/**
+ * Query string parameter choosing the language, e.g. en-x-pirate, or en-XA for the pseudo-language in development
+ */
+export const LOCALE_PARAMETER = 'locale';
 
 /**
  * Query string parameter naming a universe, on either page

@@ -5,7 +5,7 @@
  * browser; routes about a universe also need a role in it, and changes need a role that allows them
  */
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
-import { canEditUniverseSettings, canEditWorld, EDITOR_UNIVERSES_PATH, MAX_CREATED_UNIVERSES, MAX_CUSTOM_TILES, NEW_ZONE_BOUNDS, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, canEditWorld, defineMessages, EDITOR_UNIVERSES_PATH, MAX_CREATED_UNIVERSES, MAX_CUSTOM_TILES, NEW_ZONE_BOUNDS, SOURCE_LOCALE, Translator, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload } from '@multiverse-kiln/shared';
 
 import { lockPlayer } from '../db/playerRepo.js';
 import { countCustomTiles, createCustomTile, deleteCustomTile, findDefaultTileIds, findTileKind, listEditorTiles, restoreDefaultTile, saveEditedDefaultTile, updateCustomTile } from '../db/tileRepo.js';
@@ -13,11 +13,33 @@ import { inTransaction } from '../db/transactions.js';
 import { countUniversesWithRole, listEditableUniverses, setUniverseRole } from '../db/universeEditorRepo.js';
 import { createUniverse, lockUniverse, setUniverseZones, updateUniverseSettings } from '../db/universeRepo.js';
 import { createZone, isTileInUse } from '../db/zoneRepo.js';
-import { describeInvalidPayload } from '../rooms/payloads.js';
 import { zoneChanges } from '../world/zoneChanges.js';
 import { loadUniverseContext, playerIdOf, refuseWritesFromOtherOrigins, requireLogin, requireRole, universeContextOf } from './editorAccess.js';
 import { newUniverseRequest, tileIdParameter, tileListQuery, tileSettings, universeSettingsUpdate } from './editorPayloads.js';
 import { addZoneRoutes, DEFAULT_ZONE_TILE_KEYS, timeSettingsProblem } from './editorZones.js';
+import { errorMessages, sendError, sendInvalidRequest } from './errors.js';
+
+/**
+ * Reasons the tile routes give in more than one place (see shared/src/localization.ts)
+ */
+const messages = defineMessages({
+	noSuchTile: {
+		id: 'error.noSuchTile',
+		defaultMessage: 'The tile doesn\'t exist.',
+		description: 'Why a request about a tile failed: it was deleted, perhaps by another editor'
+	},
+	tileNeedsName: {
+		id: 'error.tileNeedsName',
+		defaultMessage: 'A tile needs a name.',
+		description: 'Why a tile the universe added couldn\'t be saved: its name was left out'
+	}
+});
+
+/**
+ * Names the zones of a new universe. The server has no translations, so they are in English; the
+ * creator can rename them
+ */
+const universeTranslator = new Translator(SOURCE_LOCALE);
 
 /**
  * Largest request body the editor accepts: a CellEditRequest of MAX_CELL_CHANGES cells fits well inside it
@@ -99,7 +121,7 @@ async function createUniverseRoute(request: Request, response: Response): Promis
 
 	if (!body.success)
 	{
-		response.status(400).json({ error: describeInvalidPayload(body.error) });
+		sendInvalidRequest(response, body.error);
 		return;
 	}
 
@@ -131,8 +153,18 @@ async function createUniverseRoute(request: Request, response: Response): Promis
 			defaultTileId,
 			bounds: NEW_ZONE_BOUNDS
 		};
-		const lobbyZoneId = await createZone({ ...zone, name: 'Lobby' }, transaction);
-		const startingZoneId = await createZone({ ...zone, name: 'Starting Zone' }, transaction);
+		const lobbyZoneName = universeTranslator.format({
+			id: 'universe.lobbyZoneName',
+			defaultMessage: 'Lobby',
+			description: 'Name given to the lobby zone of a new universe, which its creator can change'
+		});
+		const startingZoneName = universeTranslator.format({
+			id: 'universe.startingZoneName',
+			defaultMessage: 'Starting Zone',
+			description: 'Name given to the zone characters of a new universe start in, which its creator can change'
+		});
+		const lobbyZoneId = await createZone({ ...zone, name: lobbyZoneName }, transaction);
+		const startingZoneId = await createZone({ ...zone, name: startingZoneName }, transaction);
 
 		await setUniverseZones(createdId, lobbyZoneId, startingZoneId, transaction);
 		await setUniverseRole(createdId, playerId, 'creator', transaction);
@@ -142,7 +174,11 @@ async function createUniverseRoute(request: Request, response: Response): Promis
 
 	if (universeId === undefined)
 	{
-		response.status(409).json({ error: `You can create at most ${MAX_CREATED_UNIVERSES} universes` });
+		sendError(response, 409, {
+			id: 'error.universeLimit',
+			defaultMessage: 'You can create at most {max, plural, one {# universe} other {# universes}}.',
+			description: 'Why a new universe wasn\'t made: the player has made as many as allowed'
+		}, { max: MAX_CREATED_UNIVERSES });
 		return;
 	}
 
@@ -177,7 +213,7 @@ async function updateUniverse(request: Request, response: Response): Promise<voi
 
 	if (!body.success)
 	{
-		response.status(400).json({ error: describeInvalidPayload(body.error) });
+		sendInvalidRequest(response, body.error);
 		return;
 	}
 
@@ -186,7 +222,7 @@ async function updateUniverse(request: Request, response: Response): Promise<voi
 
 	if (problem !== undefined)
 	{
-		response.status(400).json({ error: problem });
+		sendError(response, 400, problem);
 		return;
 	}
 
@@ -206,7 +242,7 @@ async function listTiles(request: Request, response: Response): Promise<void>
 
 	if (!query.success)
 	{
-		response.status(400).json({ error: describeInvalidPayload(query.error) });
+		sendInvalidRequest(response, query.error);
 		return;
 	}
 
@@ -227,7 +263,15 @@ async function createTileRoute(request: Request, response: Response): Promise<vo
 
 	if (!body.success)
 	{
-		response.status(400).json({ error: describeInvalidPayload(body.error) });
+		sendInvalidRequest(response, body.error);
+		return;
+	}
+
+	const { name } = body.data;
+
+	if (name === null)
+	{
+		sendError(response, 400, messages.tileNeedsName);
 		return;
 	}
 
@@ -241,12 +285,16 @@ async function createTileRoute(request: Request, response: Response): Promise<vo
 			return(undefined);
 		}
 
-		return(createCustomTile(universe.id, universe.ruleset, body.data, transaction));
+		return(createCustomTile(universe.id, universe.ruleset, { ...body.data, name }, transaction));
 	});
 
 	if (tileId === undefined)
 	{
-		response.status(409).json({ error: `A universe can have at most ${MAX_CUSTOM_TILES} tiles of its own` });
+		sendError(response, 409, {
+			id: 'error.tileLimit',
+			defaultMessage: 'A universe can have at most {max, plural, one {# tile} other {# tiles}} of its own.',
+			description: 'Why a new tile wasn\'t made: the universe has as many tiles of its own as allowed'
+		}, { max: MAX_CUSTOM_TILES });
 		return;
 	}
 
@@ -269,7 +317,7 @@ async function saveTile(request: Request, response: Response): Promise<void>
 
 	if (!body.success)
 	{
-		response.status(400).json({ error: describeInvalidPayload(body.error) });
+		sendInvalidRequest(response, body.error);
 		return;
 	}
 
@@ -278,17 +326,24 @@ async function saveTile(request: Request, response: Response): Promise<void>
 
 	if (!tileId.success || (kind === undefined))
 	{
-		response.status(404).json({ error: 'No such tile' });
+		sendError(response, 404, messages.noSuchTile);
 		return;
 	}
+
+	const { name } = body.data;
 
 	if (kind === 'default')
 	{
 		await saveEditedDefaultTile(universe.id, universe.ruleset, tileId.data, body.data);
 	}
+	else if (name === null)
+	{
+		sendError(response, 400, messages.tileNeedsName);
+		return;
+	}
 	else
 	{
-		await updateCustomTile(universe.id, tileId.data, body.data);
+		await updateCustomTile(universe.id, tileId.data, { ...body.data, name });
 	}
 
 	zoneChanges.publish({ kind: 'tiles', universeId: universe.id });
@@ -310,7 +365,7 @@ async function deleteTile(request: Request, response: Response): Promise<void>
 
 	if (!tileId.success || (kind === undefined))
 	{
-		response.status(404).json({ error: 'No such tile' });
+		sendError(response, 404, messages.noSuchTile);
 		return;
 	}
 
@@ -339,7 +394,11 @@ async function deleteTile(request: Request, response: Response): Promise<void>
 
 	if (!deleted)
 	{
-		response.status(409).json({ error: 'A map uses this tile' });
+		sendError(response, 409, {
+			id: 'error.tileInUse',
+			defaultMessage: 'A map uses this tile, so it can\'t be deleted.',
+			description: 'Why a tile couldn\'t be deleted: some zone\'s map is painted with it'
+		});
 		return;
 	}
 
@@ -367,10 +426,10 @@ function handleEditorError(error: unknown, request: Request, response: Response,
 
 	if ((status >= 400) && (status < 500))
 	{
-		response.status(status).json({ error: 'The request body could not be read' });
+		sendError(response, status, errorMessages.unreadableBody);
 		return;
 	}
 
 	console.error(`Editor request ${request.method} ${request.originalUrl} failed:`, error);
-	response.status(500).json({ error: 'Something went wrong' });
+	sendError(response, 500, errorMessages.somethingWentWrong);
 }

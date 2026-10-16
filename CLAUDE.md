@@ -18,8 +18,11 @@ An engine for making multiplayer browser-based role-playing games.
 ```
 /client          Phaser game (Vite). Uses `@colyseus/sdk` (formerly colyseus.js) to connect to the server.
                  Two pages: index.html (Home, lobby and game; src/main.ts, src/style.scss) and edit.html (the
-                 world editor; src/edit.ts, src/edit.scss). Both styles use src/_shared.scss, and
-                 src/pages.ts holds the addresses that link the pages
+                 world editor; src/edit.ts, src/edit.scss). HTML the pages share (status and login screens,
+                 footer) lives in partials/, included with <!-- include footer.html --> (vite.config.ts).
+                 Both styles use src/_shared.scss, and
+                 src/pages.ts holds the addresses that link the pages. src/localization.ts shows text in the
+                 player's language
 /server          Colyseus server.
   src/index.ts       Colyseus Cloud entry point - never modify it (Colyseus's rule for Cloud deploys)
   src/app.config.ts  define room types, HTTP routes, Express middleware
@@ -37,7 +40,13 @@ An engine for making multiplayer browser-based role-playing games.
 /shared          Code imported by both client and server:
                  message type enums, payload interfaces, close codes, constants,
                  the synced state's @colyseus/schema classes (src/state.ts),
-                 the map and chunk layout (src/maps.ts) and universe settings (src/universes.ts)
+                 the map and chunk layout (src/maps.ts) and universe settings (src/universes.ts),
+                 messages and the Translator (src/localization.ts)
+  locales/           en.json, the English catalog extracted from the code, and each translation's file, which
+                     stores each message with the English it was made from (en-x-pirate.json is Pirate, a
+                     test language). The client's dev server writes en-XA.json, the pseudo-language's
+                     (git-ignored)
+  scripts/           the message extractor (extractMessages.ts), run by `npm run messages` and the client's dev server
 docker-compose.yml   local Postgres
 ```
 
@@ -98,6 +107,7 @@ docker compose up -d                 # start local Postgres
 npm run db:generate -w server        # create a migration after changing server/src/db/schema.ts
 npm run db:migrate -w server         # apply Drizzle migrations
 npm run db:seed -w server            # add or replace the sample universe (server/scripts/sampleUniverse.ts); -- --creator "<name>" makes that player its creator
+npm run messages                     # update shared/locales/en.json after changing messages (the client's dev server does it as you save), and list each translation's missing and out-of-date messages
 npm run dev -w server                # Colyseus on wss://www.multiversekiln-dev.com:2567
 npm run dev -w client                # Vite on https://www.multiversekiln-dev.com:5173
 ```
@@ -110,6 +120,7 @@ Test multiplayer with separate browsers or profiles: every tab of one browser is
 - TypeScript `strict` mode everywhere. Avoid `any`; validate untrusted input (client messages, request bodies) at the boundary.
 - Prefer small, focused modules. Room classes orchestrate; logic lives elsewhere.
 - Write unit tests for `server/src/logic/` and repository modules.
+- **Text players read is a message** (see Localization in `STRUCTURE-OVERVIEW.md`): an ID, its English text and a description that tells translators what it is and where it appears, written as an object literal where it's used, e.g. `t({ id, defaultMessage, description })` with `t()` from `client/src/localization.ts`, so the English reads in place. Declare a message with `defineMessages()` from `/shared` only when it's used in more than one place or looked up from a table (such as `UNIVERSE_STAGE_NAMES`), and put the declaration as close to its uses as possible. Give the same English used for two purposes two IDs. Build sentences with ICU arguments and plurals (`'{count, plural, one {# zone} other {# zones}}'`), never by joining pieces. Text in a page's HTML gets `data-message` and `data-translation-context` attributes (see `shared/scripts/extractMessages.ts`); the client's Vite config strips `data-translation-context` from the pages it serves and builds. The server never sends English: HTTP errors go through `sendError()` (`server/src/http/errors.ts`) as a `LocalizedMessage`. Text players write (names, chat) and universe text (names and descriptions creators write) aren't messages. The client's dev server keeps `shared/locales/en.json` current as files are saved; without it, run `npm run messages`, since lint fails until the catalog is current. Check new pages in the pseudo-language with `?locale=en-XA`.
 - Code must pass `npm run lint` (ESLint, `eslint.config.js`); a pre-commit hook enforces it. Run it after making changes, and fix problems with Edit rather than `eslint --fix`. The import restrictions for `server/src/logic/` and `server/src/rooms/` enforce the architecture and database rules above - don't disable them.
 - Colyseus APIs changed substantially in 0.17 and 0.18, and recall of them is usually out of date. **Use the `colyseus` skill** (`.agents/skills/colyseus/SKILL.md`) before writing or changing any Colyseus code: rooms, Schema state, messages, matchmaking, reconnection, the client SDK (`@colyseus/sdk`) or server config. Read the matching file in its `references/` folder before non-trivial work in that area. Check the installed versions in `server/package.json` and `client/package.json` first; the skill is written for `colyseus` 0.18 and `@colyseus/schema` 5.
 - Phaser 4 also changed substantially from Phaser 3, which most recall is based on. **Use the Phaser skills** (official, from `phaserjs/phaser`: one per engine area in `.agents/skills/<area>/SKILL.md`, e.g. `scenes`, `sprites-and-images`, `loading-assets`, `input-keyboard-mouse-touch`, `tweens`, `tilemaps`) before writing or changing client code that uses Phaser. When unsure whether an API still exists, check `v4-new-features` and `v3-to-v4-migration` first. Check the installed version in `client/package.json`; the skills are written for Phaser 4.
@@ -123,7 +134,7 @@ On top of the global code style:
 
 - Name variables and parameters with full words, not abbreviations: `(request, response)` in an Express handler, not `(req, res)`.
 - A chain of two or more method calls (Drizzle queries, `filter`/`sort`/`map`, promise chains) puts each call on its own line, indented one tab under where the chain starts.
-- An object literal with more than one property goes one property per line when it doesn't fit comfortably on one line, including objects passed into a chain (`.select({...})`, `.values({...})`, `.set({...})`).
+- An object literal with more than one property goes one property per line when it doesn't fit comfortably on one line, including objects passed into a chain (`.select({...})`, `.values({...})`, `.set({...})`). A message's values (the object after the message in `t()`, `sendError()` and the like) always go one property per line when there is more than one.
 
 ```ts
 const [row] = await executor

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { MAX_UNIVERSES_PER_PAGE, UNIVERSES_PATH, type UniverseListPayload } from '@multiverse-kiln/shared';
 
 import { findUniverseDetails, listUniverses } from '../db/universeRepo.js';
+import { errorMessages, sendError, sendInvalidRequest } from './errors.js';
 
 /**
  * Query parameters of GET UNIVERSES_PATH
@@ -32,7 +33,7 @@ export function addUniversesRoutes(app: Application): void
 
 		if (!id.success)
 		{
-			response.status(404).json({ error: 'No such universe' });
+			sendError(response, 404, errorMessages.noSuchUniverse);
 			return;
 		}
 
@@ -42,7 +43,7 @@ export function addUniversesRoutes(app: Application): void
 
 			if (!universe)
 			{
-				response.status(404).json({ error: 'No such universe' });
+				sendError(response, 404, errorMessages.noSuchUniverse);
 				return;
 			}
 
@@ -51,7 +52,7 @@ export function addUniversesRoutes(app: Application): void
 		catch (error)
 		{
 			console.error('Could not load a universe:', error);
-			response.status(500).json({ error: 'Could not load the universe' });
+			sendError(response, 500, errorMessages.somethingWentWrong);
 		}
 	});
 
@@ -63,7 +64,7 @@ export function addUniversesRoutes(app: Application): void
 
 		if (!query.success)
 		{
-			response.status(400).json({ error: 'offset and limit must be whole numbers in range' });
+			sendInvalidRequest(response, query.error);
 			return;
 		}
 
@@ -83,7 +84,7 @@ export function addUniversesRoutes(app: Application): void
 		catch (error)
 		{
 			console.error('Could not list universes:', error);
-			response.status(500).json({ error: 'Could not list universes' });
+			sendError(response, 500, errorMessages.somethingWentWrong);
 		}
 	});
 }

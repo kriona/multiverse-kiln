@@ -1,11 +1,15 @@
 import { EditorPage } from './EditorPage';
+import { startLocalization, t } from './localization';
 import { connectToServer } from './network/serverConnection';
 import { gamePageUrl, readPageParameter, TAB_PARAMETER, UNIVERSE_PARAMETER, ZONE_PARAMETER } from './pages';
 import { isEditorTab } from './ui/editor/EditorScreen';
 import { showStatus } from './ui/dom';
+import { startLanguagePicker } from './ui/languagePicker';
+import { pageMessages } from './ui/pageMessages';
 
 /**
- * Starts the world editor's page for the universe its address names, or goes to Home without one
+ * Starts the world editor's page in the player's language for the universe its address names, or goes
+ * to Home without one
  */
 async function start(): Promise<void>
 {
@@ -18,7 +22,9 @@ async function start(): Promise<void>
 		return;
 	}
 
-	showStatus('Connecting...');
+	await startLocalization();
+	startLanguagePicker();
+	showStatus(t(pageMessages.connecting));
 
 	try
 	{
@@ -30,7 +36,7 @@ async function start(): Promise<void>
 	catch (error)
 	{
 		console.error('Could not connect to the server:', error);
-		showStatus('Could not connect to the server. Reload the page to try again.');
+		showStatus(t(pageMessages.connectFailed));
 	}
 }
 

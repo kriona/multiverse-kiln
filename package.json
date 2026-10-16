@@ -13,7 +13,8 @@
 	},
 	"scripts": {
 		"prepare": "husky",
-		"lint": "npm run build -w shared && eslint .",
+		"lint": "npm run build -w shared && npm run messages:check -w shared && eslint .",
+		"messages": "npm run messages -w shared",
 		"lint:fix": "npm run build -w shared && eslint . --fix",
 		"dev": "npm run build -w shared && concurrently --kill-others --names shared,server,client --prefix-colors blue,green,magenta \"npm run dev -w shared\" \"npm run dev -w server\" \"npm run dev -w client\"",
 		"build": "npm run build -w shared && npm run build -w server && npm run build -w client",

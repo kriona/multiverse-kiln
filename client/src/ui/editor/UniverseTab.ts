@@ -1,8 +1,10 @@
 import '@github/markdown-toolbar-element';
-import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNINGS, MAX_LONG_DESCRIPTION_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_NAME_LENGTH, PASSAGES_OF_TIME, RULESET_NAMES, UNIVERSE_STAGES, type EditableUniverse, type FaerieMorning, type PassageOfTime, type UniverseSettingsUpdate, type UniverseStage } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_LONG_DESCRIPTION_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, PASSAGES_OF_TIME, RULESET_NAMES, UNIVERSE_STAGE_DESCRIPTIONS, UNIVERSE_STAGE_NAMES, UNIVERSE_STAGES, type EditableUniverse, type FaerieMorning, type PassageOfTime, type UniverseSettingsUpdate, type UniverseStage } from '@multiverse-kiln/shared';
 
+import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
-import { getElement, setOptions, settingOptions, showMessage } from '../dom';
+import { getElement, namedOptions, setOptions, showMessage } from '../dom';
+import { formMessages } from '../formMessages';
 import { showMarkdown } from '../markdown';
 
 /**
@@ -25,7 +27,7 @@ export class UniverseTab
 	private readonly longDescription = getElement('universe-long-description', HTMLTextAreaElement);
 	private readonly toolbar = getElement('universe-long-toolbar', HTMLElement);
 	private readonly preview = getElement('universe-long-preview', HTMLElement);
-	private readonly stage = getElement('universe-stage', HTMLSelectElement);
+	private readonly stage = getElement('universe-stage', HTMLFieldSetElement);
 	private readonly ruleset = getElement('universe-ruleset-name', HTMLElement);
 	private readonly time = getElement('universe-time', HTMLSelectElement);
 	private readonly faerieField = getElement('universe-faerie-field', HTMLElement);
@@ -33,6 +35,11 @@ export class UniverseTab
 	private readonly error = getElement('universe-error', HTMLElement);
 	private readonly saved = getElement('universe-saved', HTMLElement);
 	private readonly saveButton = getElement('universe-save', HTMLButtonElement);
+
+	/**
+	 * The stage choices' radio buttons, by stage
+	 */
+	private readonly stageInputs = new Map<UniverseStage, HTMLInputElement>();
 
 	/**
 	 * The universe as it was last loaded or saved
@@ -48,9 +55,9 @@ export class UniverseTab
 		this.name.maxLength = MAX_UNIVERSE_NAME_LENGTH;
 		this.shortDescription.maxLength = MAX_SHORT_DESCRIPTION_LENGTH;
 		this.longDescription.maxLength = MAX_LONG_DESCRIPTION_LENGTH;
-		setOptions(this.stage, settingOptions(UNIVERSE_STAGES));
-		setOptions(this.time, settingOptions(PASSAGES_OF_TIME));
-		setOptions(this.faerie, settingOptions(FAERIE_MORNINGS));
+		this.stage.append(...UNIVERSE_STAGES.map((stage) => this.createStageChoice(stage)));
+		setOptions(this.time, namedOptions(PASSAGES_OF_TIME, PASSAGE_OF_TIME_NAMES));
+		setOptions(this.faerie, namedOptions(FAERIE_MORNINGS, FAERIE_MORNING_NAMES));
 
 		this.longDescription.addEventListener('input', () =>
 		{
@@ -94,8 +101,12 @@ export class UniverseTab
 		this.name.value = universe.name;
 		this.shortDescription.value = universe.shortDescription;
 		this.longDescription.value = universe.longDescription;
-		this.stage.value = universe.stage;
-		this.ruleset.textContent = RULESET_NAMES[universe.ruleset];
+		for (const [stage, input] of this.stageInputs)
+		{
+			input.checked = (stage === universe.stage);
+		}
+
+		this.ruleset.textContent = t(RULESET_NAMES[universe.ruleset]);
 		this.time.value = universe.passageOfTime;
 		this.faerie.value = (universe.faerieMorning ?? FAERIE_MORNINGS[0]);
 		this.faerieField.hidden = (universe.passageOfTime !== 'faerie');
@@ -106,6 +117,35 @@ export class UniverseTab
 		this.saved.textContent = '';
 		showMessage(this.error, undefined);
 		showMarkdown(this.preview, universe.longDescription);
+	}
+
+	/**
+	 * One stage's choice: a radio button, with the stage's name and what it means for the universe
+	 *
+	 * @param stage The stage
+	 * @return The choice's label, holding its radio button
+	 */
+	private createStageChoice(stage: UniverseStage): HTMLLabelElement
+	{
+		const label = document.createElement('label');
+		const input = document.createElement('input');
+		const text = document.createElement('span');
+		const name = document.createElement('span');
+		const description = document.createElement('span');
+
+		label.className = 'checkbox described-choice';
+		input.type = 'radio';
+		input.name = 'universe-stage';
+		input.value = stage;
+		text.className = 'choice-text';
+		name.textContent = t(UNIVERSE_STAGE_NAMES[stage]);
+		description.className = 'choice-description';
+		description.textContent = t(UNIVERSE_STAGE_DESCRIPTIONS[stage]);
+		text.append(name, description);
+		label.append(input, text);
+		this.stageInputs.set(stage, input);
+
+		return(label);
 	}
 
 	/**
@@ -147,7 +187,7 @@ export class UniverseTab
 			name: this.name.value.trim(),
 			shortDescription: this.shortDescription.value.trim(),
 			longDescription: this.longDescription.value,
-			stage: this.stage.value as UniverseStage,
+			stage: (UNIVERSE_STAGES.find((stage) => this.stageInputs.get(stage)?.checked) ?? universe.stage),
 			passageOfTime,
 			faerieMorning: ((passageOfTime === 'faerie') ? this.faerie.value as FaerieMorning : null)
 		};
@@ -159,12 +199,16 @@ export class UniverseTab
 		{
 			await this.api.updateUniverse(universe.id, update);
 			this.universe = { ...universe, ...update };
-			this.saved.textContent = 'Saved';
+			this.saved.textContent = t(formMessages.saved);
 			this.onSaved(this.universe);
 		}
 		catch (error)
 		{
-			showMessage(this.error, describeEditorError(error, 'save the universe'));
+			showMessage(this.error, describeEditorError(error, {
+				id: 'editor.universe.saveFailed',
+				defaultMessage: 'Could not save the universe.',
+				description: 'Shown on the Universe tab when its settings couldn\'t be stored'
+			}));
 		}
 		finally
 		{
@@ -189,7 +233,7 @@ export class UniverseTab
 		{
 			if (((input === this.name) && (text === '')) || DISALLOWED_TEXT_CHARACTERS.test(text))
 			{
-				input.setCustomValidity('Use letters, numbers, spaces or punctuation.');
+				input.setCustomValidity(t(formMessages.invalidText));
 				input.reportValidity();
 				return(false);
 			}

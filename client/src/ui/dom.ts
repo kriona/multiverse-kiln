@@ -1,3 +1,7 @@
+import type { MessageSource } from '@multiverse-kiln/shared';
+
+import { t } from '../localization';
+
 /**
  * The screens the pages have, each an element with the ID "<name>-screen" and the class "screen". Every
  * page has status and login; index.html has home, lobby and group, and edit.html has editor. Exactly one
@@ -60,14 +64,15 @@ export function setOptions(select: HTMLSelectElement, options: readonly SelectOp
 }
 
 /**
- * The choices for a setting stored as words joined by underscores, as players read them
+ * The choices for a setting, each labeled with its name in the player's language
  *
  * @param values The setting's values, e.g. UNIVERSE_STAGES
- * @return A choice for each value, e.g. "in the beginning" for in_the_beginning
+ * @param names Each value's name, e.g. UNIVERSE_STAGE_NAMES
+ * @return A choice for each value
  */
-export function settingOptions(values: readonly string[]): SelectOption[]
+export function namedOptions<V extends string>(values: readonly V[], names: Record<V, MessageSource>): SelectOption[]
 {
-	return(values.map((value) => ({ value, label: value.replaceAll('_', ' ') })));
+	return(values.map((value) => ({ value, label: t(names[value]) })));
 }
 
 /**

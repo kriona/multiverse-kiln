@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { chunkKey, DEFAULT_TILE_CELL, EDITOR_UNIVERSES_PATH, MAX_CREATED_UNIVERSES, NEW_ZONE_BOUNDS, VOID_CELL, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorZone, type ResizeConflictPayload, type TileListPayload, type TileSettings, type UniverseRole, type ZoneListPayload } from '@multiverse-kiln/shared';
+import { chunkKey, DEFAULT_TILE_CELL, EDITOR_UNIVERSES_PATH, isLocalizedMessage, MAX_CREATED_UNIVERSES, NEW_ZONE_BOUNDS, VOID_CELL, type CreatedPayload, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorZone, type ResizeConflictPayload, type TileListPayload, type TileSettings, type UniverseRole, type ZoneListPayload } from '@multiverse-kiln/shared';
 
 import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
@@ -195,12 +195,22 @@ describe('World editor API', () =>
 			}
 		});
 
-		it('answers 400 to a body that is not JSON', async () =>
+		it('answers 400 to a body that is not JSON, with a reason the client can translate', async () =>
 		{
-			const response = await send<{ error: string }>(ada, 'POST', '', { rawBody: '{ not json' });
+			const response = await send<ErrorPayload>(ada, 'POST', '', { rawBody: '{ not json' });
 
 			assert.strictEqual(response.status, 400);
-			assert.ok(response.body.error);
+			assert.ok(isLocalizedMessage(response.body.error));
+			assert.strictEqual(response.body.error.id, 'error.unreadableBody');
+		});
+
+		it('gives a refused request\'s reason as a message with its values', async () =>
+		{
+			const response = await send<ErrorPayload>(ada, 'POST', '', { body: { name: '', shortDescription: '', ruleset: 'pf1e' } });
+
+			assert.strictEqual(response.status, 400);
+			assert.strictEqual(response.body.error.id, 'error.invalidRequest');
+			assert.strictEqual(typeof response.body.error.values?.problem, 'string');
 		});
 	});
 
@@ -296,8 +306,10 @@ describe('World editor API', () =>
 			const impassable = (await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?passable=false&name=a`)).body;
 			const page = (await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?limit=2&offset=1`)).body;
 
-			assert.deepStrictEqual(custom.tiles, [{ id: created.body.id, ...lava, custom: true, edited: false }]);
-			assert.deepStrictEqual(impassable.tiles.map((tile) => tile.name), ['Mountains', 'Water', 'Lava']);
+			assert.deepStrictEqual(custom.tiles, [{ id: created.body.id, key: null, ...lava, custom: true, edited: false }]);
+
+			// Default tiles that keep their names are named by their keys, in the player's language
+			assert.deepStrictEqual(impassable.tiles.map((tile) => (tile.name ?? tile.key)), ['mountains', 'water', 'Lava']);
 			assert.strictEqual(page.total, 7);
 			assert.strictEqual(page.tiles.length, 2);
 			assert.strictEqual((await send(ada, 'GET', `/${universeId}/tiles?passable=yes`)).status, 400);
@@ -315,11 +327,23 @@ describe('World editor API', () =>
 			const edited = (await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?edited=true`)).body;
 			const untouched = (await send<TileListPayload>(ada, 'GET', `/${otherId}/tiles?edited=true`)).body;
 
-			assert.deepStrictEqual(edited.tiles, [{ id: grassId, ...autumn, custom: false, edited: true }]);
+			assert.deepStrictEqual(edited.tiles, [{ id: grassId, key: 'grass', ...autumn, custom: false, edited: true }]);
 			assert.deepStrictEqual(untouched.tiles, []);
 
 			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/tiles/${grassId}`)).status, 204);
 			assert.deepStrictEqual((await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?edited=true`)).body.tiles, []);
+		});
+
+		it('keeps a default tile\'s own name when an edit leaves the name out, but not a custom tile\'s', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const grassId = await defaultTileId('grass');
+			const tileId = (await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/tiles`, { body: lava })).body.id;
+			const darker = { name: null, indoors: false, color: 0x206010, visionCost: 0, movementCost: 0 };
+
+			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/tiles/${grassId}`, { body: darker })).status, 204);
+			assert.deepStrictEqual((await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?edited=true`)).body.tiles, [{ id: grassId, key: 'grass', ...darker, custom: false, edited: true }]);
+			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/tiles/${tileId}`, { body: darker })).status, 400);
 		});
 
 		it('refuses to delete a tile a map uses, and deletes it once nothing does', async () =>
@@ -346,7 +370,7 @@ describe('World editor API', () =>
 			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/tiles/${theirTileId}`, { body: lava })).status, 404);
 			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/tiles/abc`, { body: lava })).status, 404);
 
-			for (const body of [{ ...lava, movementCost: 101 }, { ...lava, color: 0x1000000 }, { ...lava, name: '' }])
+			for (const body of [{ ...lava, movementCost: 101 }, { ...lava, color: 0x1000000 }, { ...lava, name: '' }, { ...lava, name: null }])
 			{
 				assert.strictEqual((await send(ada, 'POST', `/${universeId}/tiles`, { body })).status, 400, JSON.stringify(body));
 			}

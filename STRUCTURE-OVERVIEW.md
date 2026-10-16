@@ -2,7 +2,7 @@ This document describes the UI + game structure for the Multiverse Kiln. It desc
 
 # Pages
 ## Home
-Lists all universes. In the beginning there will only be a few, but in the future there may be thousands, so we should be forward-thinking about the UI (even if advanced search filters don't exist yet). Each universe should show name, 1-sentence description, and ruleset. Only universes in the `prologue` or `let there be light` [stage](#edit-universe) are listed. Shows a button for [Create Universe](#create-universe).
+Lists all universes. In the beginning there will only be a few, but in the future there may be thousands, so we should be forward-thinking about the UI (even if advanced search filters don't exist yet). Each universe should show name, 1-sentence description, ruleset, and [languages](#tab-translations). Only universes in the `prologue` or `let there be light` [stage](#edit-universe) are listed. Shows a button for [Create Universe](#create-universe).
 
 Selecting a universe to join will show you a modal overview for the universe. The modal will list all details about the universe. There will be an [Enter Universe](#enter-universe) button.
 
@@ -49,6 +49,7 @@ Everything is optional except name.
 - name (required, but it doesn't need to be your real name)
 - pronouns
 - location / time zone
+- language, used for the pages and for universes translated into it (see [Localization](#localization))
 - link to socials (Discord, Facebook, Insta, TikTok)
 - "show my characters", checked by default. if unchecked, a "other players in your group will always be able to see a link to your profile, even if your character isn't shown on your profile".
 - a list of your characters, grouped by universe
@@ -169,11 +170,12 @@ This lets you change anything about a universe. It will be a whole suite of tool
 	- [Zones](#tab-zones)
 	- [Items](#tab-items)
 	- [Connect to the Multiverse](#tab-connect-to-the-multiverse)
+	- [Translations](#tab-translations)
 
 ### Universe versions
 If a creator makes changes to the current version of the universe, they apply immediately for everyone.
 
-A creator can choose to switch to a new version (e.g, 1.1) while making changes, then can switch the universe to 1.1 and all of the changes apply at once.
+A creator can choose to switch to a new version (e.g, 1.1) while making changes, then can switch the universe to 1.1 and all of the changes apply at once. A version includes its [translations](#tab-translations), so they switch over with it.
 
 ### Disabling things players are using
 Disabling or limiting something that players are already using warns the editor and asks what should happen:
@@ -190,6 +192,7 @@ Lists the users who can work on the universe, and lets you add them with a role:
 - `creator` (admin): can change everything
 - `builder`: can make changes to the world, e.h. to zones or NPCs
 - `beta tester`: can create characters and play while the universe is in `prologue`
+- `translator`: can [translate](#tab-translations) the universe's text into the languages they are assigned, and can't change anything else
 
 A universe can have several creators. If you delete your account and your universe has no other creator, you choose what happens to it:
 - promote a builder to creator
@@ -372,6 +375,23 @@ Explain that this allows characters to move freely between universes with the sa
 - There's an option for "any universe with this ruleset", which connects only to other universes that have also chosen it.
 - There's an option to list a specific universe, which requires you to work with the creators of that universe (they must list you, too).
 
+### Tab: Translations
+Lets the universe be played in more than one language. See [Localization](#localization) for how a player's language is chosen.
+- source language, the language the universe's editors write in. Defaults to the creator's language
+- languages, the languages the universe is translated into. [Home](#home) shows the source language and these
+- choosing a language shows a table of every piece of universe text:
+	- where it comes from (e.g. "Zone: Waterdeep, name")
+	- the source text
+	- a note for translators, written by the universe's editors (e.g. "a pun on the town's founder; keep the joke rather than the words")
+	- the translation
+- filters:
+	- search
+	- "is missing" toggle
+	- "is out of date" toggle
+- a translation that is [out of date](#out-of-date-translations) can be updated, or confirmed as still correct
+- export and import, for translators working outside the editor
+- long descriptions are translated as markdown, and sanitized the same way as the source
+
 # Gameplay
 ## Time and distance
 In the lobby, actions take no time. The lobby's time of day comes from its [passage of time](#tab-lobby) setting.
@@ -472,6 +492,43 @@ This is a component included in the [zone editor](#editor-zone). It shows you th
 - Movement cost - 0% to 100%. 0% is normal movement, 50% costs double (PF1E difficult terrain), 100% is impassable
 - Has a preview section for day + night
 
+# Localization
+Players choose the language they play in, and universes can be translated. There are two kinds of text, and each is looked up in the player's language separately:
+- **engine text**, written by the site developers: the pages and editors, messages from the server, emails, and each ruleset's defaults (such as PF1E's races, classes, items and tiles). Its translations ship with the engine
+- **universe text**, written by a universe's editors: the universe's name and descriptions, and the names of its zones, tiles, races, classes and items (later NPCs and dialog). Translated in the [Translations](#tab-translations) tab
+
+Text players write is never translated: character names, group names and chat.
+
+Translators get context for every piece of text, because one English word can need several translations (German has several words for "Save", and a button that stores changes needs "Speichern"). Each engine message has a description written next to it in the code, and the same English used for two purposes is two messages. Universe text shows where it comes from, and editors can add a note.
+
+## Choosing a language
+- A player's language comes from their [profile](#profile-edit), then the language picker at the bottom of every page (which the browser remembers, so it works without a profile), then the browser's settings, then English. The picker names each language in that language.
+- The pages and editors use the player's language if the engine has it. Universe text uses the closest language the universe has, so a French player sees French pages even in a universe written only in English.
+
+## Finding a translation
+Universe text uses the first of these that exists:
+1. the universe's translation in the player's language (`pt-BR`)
+2. the universe's translation in that language without its region (`pt`)
+3. the text in the universe's source language
+
+A ruleset default the universe hasn't renamed (such as a default tile whose color was edited but not its name) is engine text instead.
+
+Engine text uses the player's language, then that language without its region, then English.
+
+## Out-of-date translations
+Each translation remembers the source text it was made from. When the source text changes, the translation is still shown, but the [Translations](#tab-translations) tab marks it out of date until a translator updates it or confirms it is still correct.
+
+## Formatting
+- Numbers, dates, times ("5 minutes ago") and lists follow the player's language, and names are sorted the way that language sorts them.
+- Plurals and other grammar that changes with a number or a person are part of each translated message, never built from pieces.
+- [Money](#field-money) denominations ("pp", "gp") are ruleset text, so they are translated.
+- Pages support right-to-left languages, and layouts leave room for text longer than English (German runs about 30% longer).
+
+## Testing
+A pseudo-language for development shows every piece of engine text with accented vowels and extra length (`Saved` becomes `[Såvéd ~~]`), so text that skipped translation, or a layout that can't fit longer text, stands out.
+
+Pirate (`en-x-pirate`) is a real translation that ships with the engine, for testing the way languages are loaded and switched without a real language's translation to keep up. Its untranslated or out-of-date messages are reported, like any language's.
+
 # Open questions
 - **Time:** how long walking a square takes, and the overworld map's scale.
 - **Offline group members:** whether to use the summoning ring.
@@ -490,4 +547,8 @@ This is a component included in the [zone editor](#editor-zone). It shows you th
 	- how large objects such as trees and houses work, since a player walking behind one should be hidden
 - **Maps:** a map 50,000 tiles in each direction could hold billions of cells, so maps need to be stored sparsely or in chunks rather than as one full grid.
 - **Point buy:** the details of the PF1E point-buy system.
+- **Localization:**
+	- whether a universe can rename engine terms (calling gold "crowns"), which changes the pages' wording in that universe
+	- fonts for map text in scripts the default font doesn't cover, such as Chinese and Japanese
+	- whether to offer machine translation of chat
 - **Licensing:** how to use Pathfinder content within its open license and Paizo's terms for the "Pathfinder" name, alongside the project's AGPL license.

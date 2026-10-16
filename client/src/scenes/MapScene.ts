@@ -3,6 +3,7 @@ import { Callbacks } from '@colyseus/sdk';
 import { chunkKey, GRID_CELL_SIZE, MessageType, nearestCopy, PATCH_INTERVAL_MS, PLAYER_RADIUS, positiveModulo, ServerMessageType, type ChunksPayload, type MovePayload, type Player, type ZonePayload } from '@multiverse-kiln/shared';
 
 import { MovementKeys } from '../input/MovementKeys';
+import { t } from '../localization';
 import type { GameRoom, MapConnection, MapRoom } from '../network/serverConnection';
 import { PositionBuffer, type Point } from '../rendering/PositionBuffer';
 import { ZoneRenderer } from '../rendering/ZoneRenderer';
@@ -165,7 +166,13 @@ export class MapScene extends Phaser.Scene
 			this.takeLinkKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
 		}
 
-		this.linkPrompt = this.add.text(0, 0, 'Press E to go through', TEXT_STYLE).setOrigin(0.5, 0).setDepth(2).setVisible(false);
+		const prompt = t({
+			id: 'map.takeLink',
+			defaultMessage: 'Press E to go through',
+			description: 'Shown under the player on a cell linking to another zone, such as a door; the E key is the same in every language'
+		});
+
+		this.linkPrompt = this.add.text(0, 0, prompt, TEXT_STYLE).setOrigin(0.5, 0).setDepth(2).setVisible(false);
 
 		// Clicking the map takes the keyboard back from a text field, such as the lobby's chat
 		this.input.on(Phaser.Input.Events.POINTER_DOWN, () =>

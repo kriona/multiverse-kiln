@@ -1,11 +1,13 @@
 import { NoticeReason, SessionMessageType, SessionServerMessageType, type AccountPayload, type LoginPayload, type NoticePayload } from '@multiverse-kiln/shared';
 
+import { t } from './localization';
 import { EditorApi } from './network/editorApi';
 import type { ServerConnection } from './network/serverConnection';
 import { gamePageUrl, replacePageParameters, TAB_PARAMETER, ZONE_PARAMETER } from './pages';
 import { showScreen, showStatus } from './ui/dom';
 import { EditorScreen, type EditorPlace } from './ui/editor/EditorScreen';
 import { LoginScreen } from './ui/LoginScreen';
+import { pageMessages } from './ui/pageMessages';
 
 /**
  * Runs the world editor's page (edit.html): logs the browser in, then edits one universe
@@ -70,7 +72,7 @@ export class EditorPage
 
 		session.onLeave(() =>
 		{
-			showStatus('Disconnected from the server. Reload the page to reconnect.');
+			showStatus(t(pageMessages.disconnected));
 		});
 	}
 
@@ -106,11 +108,11 @@ export class EditorPage
 	{
 		if (reason === NoticeReason.NameInUse)
 		{
-			this.loginScreen.showError('That player is already logged in from another browser.');
+			this.loginScreen.showError(t(pageMessages.nameInUse));
 		}
 		else if (reason === NoticeReason.LoginFailed)
 		{
-			this.loginScreen.showError('Could not log in. Try again in a moment.');
+			this.loginScreen.showError(t(pageMessages.loginFailed));
 		}
 	}
 }

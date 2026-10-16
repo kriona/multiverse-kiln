@@ -1,6 +1,173 @@
 import fs from 'fs';
 import path from 'path';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
+
+import { CATALOG_FILE, catalogText, extractMessages, PAGES, PARTIALS_FOLDER, PSEUDO_CATALOG_FILE, pseudoCatalog, SOURCE_FOLDERS, writeCatalog } from '../shared/scripts/extractMessages.ts';
+
+/**
+ * The repository's root folder
+ */
+const ROOT = path.resolve(import.meta.dirname, '..');
+
+/**
+ * A comment that includes a partial, e.g. <!-- include footer.html -->, with the indentation before it.
+ * A partial's name has no folder, so an include can only reach PARTIALS_FOLDER
+ */
+const INCLUDE_PATTERN = /^([ \t]*)<!--\s*include\s+([\w.-]+)\s*-->/gm;
+
+/**
+ * Lets the pages share pieces of HTML, such as the login screen and the footer: each
+ * <!-- include <name> --> comment is replaced with that file from client/partials, indented to match,
+ * before Vite reads the page (so the partials' %VITE_...% variables are filled in). A partial can't
+ * include another. The dev server reloads the page when a partial changes
+ *
+ * @return The plugin
+ */
+function htmlPartials(): Plugin
+{
+	const folder = path.join(ROOT, PARTIALS_FOLDER);
+
+	/**
+	 * A page with its partials included
+	 *
+	 * @param html The page
+	 * @return The page with each include comment replaced
+	 */
+	function includePartials(html: string): string
+	{
+		return(html.replace(INCLUDE_PATTERN, (_comment, indent: string, name: string) =>
+		{
+			const file = path.join(folder, name);
+
+			if (!fs.existsSync(file))
+			{
+				throw new Error(`A page includes ${name}, which isn't in ${PARTIALS_FOLDER}`);
+			}
+
+			return(fs.readFileSync(file, 'utf8')
+				.replace(/\r?\n$/, '')
+				.split(/\r?\n/)
+				.map((line) => ((line === '') ? line : `${indent}${line}`))
+				.join('\n'));
+		}));
+	}
+
+	return({
+		name: 'kiln-html-partials',
+		transformIndexHtml: {
+			order: 'pre',
+			handler: includePartials
+		},
+		configureServer(server)
+		{
+			server.watcher.on('change', (file) =>
+			{
+				if (path.resolve(file).startsWith(`${folder}${path.sep}`))
+				{
+					server.ws.send({ type: 'full-reload' });
+				}
+			});
+		}
+	});
+}
+
+/**
+ * Removes the descriptions for translators (data-translation-context and data-translation-context-<attribute>) from
+ * the pages as they are served and built. The extractor reads them from the source files, and nothing
+ * on the page uses them
+ *
+ * @return The plugin
+ */
+function stripDescriptions(): Plugin
+{
+	return({
+		name: 'kiln-strip-descriptions',
+		transformIndexHtml(html)
+		{
+			return(html.replace(/\s+data-translation-context(-[\w-]+)?="[^"]*"/g, ''));
+		}
+	});
+}
+
+/**
+ * How long the dev server waits after the last change to a file before extracting the messages again,
+ * in milliseconds, so saving several files at once extracts them once
+ */
+const MESSAGE_UPDATE_DELAY_MS = 200;
+
+/**
+ * Keeps the message catalogs current while the dev server runs: shared/locales/en.json, and the
+ * pseudo-language's catalog the page loads with ?locale=en-XA. Both are made again whenever a file
+ * with messages changes, which reloads a page showing the pseudo-language. A change with a problem,
+ * such as a message still being typed, is reported and the last good catalogs are kept
+ *
+ * @return The plugin
+ */
+function messageCatalogs(): Plugin
+{
+	const sources = [...SOURCE_FOLDERS, ...PAGES, PARTIALS_FOLDER].map((entry) => path.join(ROOT, entry));
+
+	/**
+	 * Extracts the messages and writes the catalogs that changed
+	 *
+	 * @param warn Reports problems with the messages
+	 */
+	function update(warn: (message: string) => void): void
+	{
+		const { catalog, problems } = extractMessages(ROOT);
+
+		if (problems.length > 0)
+		{
+			warn(`The message catalogs weren't updated:\n${problems.map((problem) => `  ${problem}`).join('\n')}`);
+			return;
+		}
+
+		writeCatalog(ROOT, CATALOG_FILE, catalogText(catalog));
+		writeCatalog(ROOT, PSEUDO_CATALOG_FILE, catalogText(pseudoCatalog(catalog)));
+	}
+
+	/**
+	 * Whether a file can hold messages: TypeScript in a source folder, a page, or a partial
+	 *
+	 * @param file The file's full path
+	 * @return Whether it can
+	 */
+	function holdsMessages(file: string): boolean
+	{
+		const resolved = path.resolve(file);
+
+		return(/\.(ts|html)$/.test(resolved) && sources.some((source) => ((resolved === source) || resolved.startsWith(`${source}${path.sep}`))));
+	}
+
+	return({
+		name: 'kiln-message-catalogs',
+		apply: 'serve',
+		configureServer(server)
+		{
+			const warn = (message: string): void =>
+			{
+				server.config.logger.warn(message, { timestamp: true });
+			};
+			let timer: NodeJS.Timeout | undefined;
+
+			update(warn);
+
+			// The client's own files are watched already; the server's and shared code's are added
+			server.watcher.add(sources);
+			server.watcher.on('all', (_event, file) =>
+			{
+				if (holdsMessages(file))
+				{
+					clearTimeout(timer);
+					timer = setTimeout(() =>
+					{
+						update(warn);
+					}, MESSAGE_UPDATE_DELAY_MS);
+				}
+			});
+		}
+	});
+}
 
 /**
  * Reads a certificate or key file for the dev server, explaining how to create it when missing
@@ -56,6 +223,7 @@ export default defineConfig(({ command, mode }) =>
 	} : undefined);
 
 	return({
+		plugins: [htmlPartials(), messageCatalogs(), stripDescriptions()],
 		server: {
 			// Bind to the dev hostname (127.0.0.1 via hosts file); the default "localhost" may bind IPv6 only
 			host: devHost,

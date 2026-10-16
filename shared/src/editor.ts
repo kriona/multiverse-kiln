@@ -1,11 +1,12 @@
 /**
  * The world editor's REST API: routes, limits, and the requests and responses each route takes
  *
- * Every route needs a logged-in browser, and answers { error } with 400 for a request that fails
+ * Every route needs a logged-in browser, and answers an ErrorPayload with 400 for a request that fails
  * validation, 401 when the browser isn't logged in, 403 when the player's role doesn't allow the
  * change, 404 for something that doesn't exist and 409 for a change that conflicts with what is
  * there. Writes from a browser must come from an origin in the server's ALLOWED_ORIGINS
  */
+import type { LocalizedMessage } from './localization.js';
 import type { MapBounds } from './maps.js';
 import type { ZoneChunk } from './messages.js';
 import type { FaerieMorning, PassageOfTime, Ruleset, UniverseRole, UniverseStage, ZoneLinkMode, ZonePassageOfTime } from './universes.js';
@@ -109,6 +110,14 @@ export const MAX_CHUNKS_PER_REQUEST = 256;
 export const MAX_BRUSH_SIZE = 100;
 
 /**
+ * Response of a request the server refused or couldn't answer: why, for the player to read
+ */
+export interface ErrorPayload
+{
+	error: LocalizedMessage;
+}
+
+/**
  * Response of a route that creates something: the new thing's ID
  */
 export interface CreatedPayload<T extends string | number = string>
@@ -198,7 +207,12 @@ export type UniverseSettingsUpdate = Partial<UniverseSettings>;
  */
 export interface TileSettings
 {
-	name: string;
+	/**
+	 * Null for a default tile that keeps its name, which players read in their language
+	 * (DEFAULT_TILE_NAMES). A tile the universe added must have one
+	 */
+	name: string | null;
+
 	indoors: boolean;
 
 	/**
@@ -226,6 +240,12 @@ export interface EditorTile extends TileSettings
 	 * The ID maps use for the tile. An edited default tile keeps the default tile's ID
 	 */
 	id: number;
+
+	/**
+	 * A default tile's key, e.g. grass, which finds its name in DEFAULT_TILE_NAMES; null for a tile the
+	 * universe added
+	 */
+	key: string | null;
 
 	/**
 	 * Whether the universe added the tile, rather than it being one of the ruleset's default tiles
@@ -374,10 +394,8 @@ export interface ResizeZoneRequest
 /**
  * Body of the 409 answer to a ResizeZoneRequest that would discard something
  */
-export interface ResizeConflictPayload
+export interface ResizeConflictPayload extends ErrorPayload
 {
-	error: string;
-
 	/**
 	 * Cells outside the new bounds that aren't the default tile
 	 */

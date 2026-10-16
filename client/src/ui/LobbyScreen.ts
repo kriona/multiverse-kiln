@@ -1,6 +1,7 @@
 import { Callbacks } from '@colyseus/sdk';
 import { DISALLOWED_TEXT_CHARACTERS, MAX_CHAT_MESSAGE_LENGTH, type ChatMessage, type LobbyMember } from '@multiverse-kiln/shared';
 
+import { currentLocale, t } from '../localization';
 import type { LobbyConnection } from '../network/serverConnection';
 import { getElement } from './dom';
 import type { MapView } from './MapView';
@@ -209,7 +210,7 @@ export class LobbyScreen
 		const text = document.createElement('span');
 
 		time.className = 'chat-time';
-		time.textContent = new Date(message.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+		time.textContent = new Date(message.sentAt).toLocaleTimeString(currentLocale(), { hour: '2-digit', minute: '2-digit' });
 		name.className = 'chat-name';
 		name.textContent = message.name;
 		text.textContent = message.text;
@@ -286,7 +287,7 @@ export class LobbyScreen
 	{
 		const others = [...this.members]
 			.filter(([playerId]) => (playerId !== this.ownPlayerId))
-			.sort(([, a], [, b]) => a.localeCompare(b));
+			.sort(([, a], [, b]) => a.localeCompare(b, currentLocale()));
 
 		const own = ((this.ownPlayerId !== undefined) ? this.members.get(this.ownPlayerId) : undefined);
 		const listed = ((own !== undefined) ? [{ name: own, isOwn: true }] : []);
@@ -309,7 +310,11 @@ export class LobbyScreen
 		const unlisted = this.members.size - listed.length;
 
 		this.memberCount.textContent = String(this.members.size);
-		this.memberMore.textContent = `and ${unlisted} more`;
+		this.memberMore.textContent = t({
+			id: 'lobby.morePlayers',
+			defaultMessage: 'and {count, number} more',
+			description: 'Under the list of players in the lobby, how many more are here than are listed'
+		}, { count: unlisted });
 		this.memberMore.hidden = (unlisted <= 0);
 	}
 }

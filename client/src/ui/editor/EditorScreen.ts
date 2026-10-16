@@ -1,5 +1,6 @@
-import type { EditableUniverse, UniverseSummary } from '@multiverse-kiln/shared';
+import { UNIVERSE_ROLE_NAMES, type EditableUniverse, type UniverseSummary } from '@multiverse-kiln/shared';
 
+import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, showMessage } from '../dom';
 import { TilesetsTab } from './TilesetsTab';
@@ -147,7 +148,11 @@ export class EditorScreen
 		const version = ++this.openVersion;
 
 		this.universe = undefined;
-		this.title.textContent = 'Edit Universe';
+		this.title.textContent = t({
+			id: 'editor.title',
+			defaultMessage: 'Edit Universe',
+			description: 'Heading of the world editor until the universe\'s name has loaded'
+		});
 		this.role.textContent = '';
 		this.hideNotice();
 
@@ -161,7 +166,11 @@ export class EditorScreen
 		{
 			if (version === this.openVersion)
 			{
-				this.showNotice(describeEditorError(error, 'open the universe'));
+				this.showNotice(describeEditorError(error, {
+					id: 'editor.openFailed',
+					defaultMessage: 'Could not open the universe.',
+					description: 'Shown in the editor when the universe couldn\'t be loaded'
+				}));
 			}
 
 			return;
@@ -206,9 +215,17 @@ export class EditorScreen
 	private setUniverse(universe: EditableUniverse): void
 	{
 		this.universe = universe;
-		this.title.textContent = `Edit ${universe.name}`;
-		document.title = `Edit ${universe.name} - Multiverse Kiln`;
-		this.role.textContent = universe.role.replaceAll('_', ' ');
+		this.title.textContent = t({
+			id: 'editor.universeTitle',
+			defaultMessage: 'Edit {universe}',
+			description: 'Heading of the world editor; {universe} is the universe\'s name'
+		}, { universe: universe.name });
+		document.title = t({
+			id: 'editor.pageTitle',
+			defaultMessage: 'Edit {universe} - Multiverse Kiln',
+			description: 'The browser tab\'s title for the world editor; {universe} is the universe\'s name and Multiverse Kiln is the game engine\'s name'
+		}, { universe: universe.name });
+		this.role.textContent = t(UNIVERSE_ROLE_NAMES[universe.role]);
 		this.zonesTab.setUniverse(universe);
 	}
 
