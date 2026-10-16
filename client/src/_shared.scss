@@ -126,6 +126,20 @@ button
 		opacity: 0.5;
 		cursor: default;
 	}
+
+	.icon
+	{
+		margin-inline-end: 6px;
+	}
+}
+
+// Icons from the icons plugin in vite.config.ts, sized to and colored like the text around them
+.icon
+{
+	flex-shrink: 0;
+	width: 1.15em;
+	height: 1.15em;
+	vertical-align: -0.2em;
 }
 
 input,

@@ -1,8 +1,10 @@
 import { canEditWorld, DISALLOWED_TEXT_CHARACTERS, IMPASSABLE_COST, MAX_TILE_NAME_LENGTH, type EditableUniverse, type EditorTile, type MessageDescriptor, type TileSettings } from '@multiverse-kiln/shared';
+import restoreIcon from 'virtual:icon/ph:arrow-counter-clockwise';
+import trashIcon from 'virtual:icon/ph:trash';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
-import { getElement, showMessage } from '../dom';
+import { getElement, setButtonLabel, showMessage } from '../dom';
 import { formMessages } from '../formMessages';
 import { colorToHex, nightColor, parseHexColor } from './colors';
 import { tileName } from './tileNames';
@@ -163,17 +165,22 @@ export class TileDialog
 		}
 
 		this.removeButton.hidden = (!editable || !tile || (!tile.custom && !tile.edited));
-		this.removeButton.textContent = (tile?.custom
-			? t({
+		if (tile?.custom)
+		{
+			setButtonLabel(this.removeButton, trashIcon, t({
 				id: 'editor.tile.delete',
 				defaultMessage: 'Delete Tile',
 				description: 'Button in the tile editor that deletes a tile made for this universe'
-			})
-			: t({
+			}));
+		}
+		else
+		{
+			setButtonLabel(this.removeButton, restoreIcon, t({
 				id: 'editor.tile.restore',
 				defaultMessage: 'Restore Default',
 				description: 'Button in the tile editor that undoes this universe\'s changes to one of the ruleset\'s tiles'
 			}));
+		}
 		showMessage(this.error, undefined);
 		this.updatePreview();
 		this.dialog.showModal();

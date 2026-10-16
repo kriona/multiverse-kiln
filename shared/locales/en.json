@@ -899,6 +899,66 @@
 		"defaultMessage": "Universes",
 		"description": "Heading of the list of universes anyone can play"
 	},
+	"license.agpl": {
+		"defaultMessage": "Multiverse Kiln is free software: you can redistribute it and/or modify it under the terms of the {license} as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.",
+		"description": "The game's license notice; {license} is a link to the license's full text, named by license.agplName"
+	},
+	"license.agplName": {
+		"defaultMessage": "GNU Affero General Public License",
+		"description": "The name of the game's license, linking to its full text"
+	},
+	"license.assets": {
+		"defaultMessage": "Art and other assets",
+		"description": "Heading of the license page's section about the game's art, audio and story"
+	},
+	"license.assetsNotice": {
+		"defaultMessage": "The game's own art, audio, fonts, characters, setting and story are not covered by the GNU Affero General Public License. They are copyright {holder}, all rights reserved, and may not be reused without written permission. Assets made by others keep their own licenses, listed below.",
+		"description": "On the license page, explaining that the game's assets aren't free software; {holder} is who holds their copyright"
+	},
+	"license.copyright": {
+		"defaultMessage": "Copyright (C) {year} {holder}.",
+		"description": "The game's copyright notice on the license page; {year} is the year and {holder} is who holds the copyright"
+	},
+	"license.game": {
+		"defaultMessage": "The game",
+		"description": "Heading of the license page's section about the game's own code"
+	},
+	"license.gameIcons": {
+		"defaultMessage": "Game icons are by {authors} at {gameIcons}, used under the {license}. Each icon's page on game-icons.net names its artist.",
+		"description": "On the license page, crediting the icon set for things in the game; {authors} are the artists' names, {gameIcons} is a link to the icon set and {license} is a link to its license, each the same in every language"
+	},
+	"license.heading": {
+		"defaultMessage": "Licenses",
+		"description": "Heading of the page with the game's license and the licenses of what it uses"
+	},
+	"license.home": {
+		"defaultMessage": "Back to Home",
+		"description": "Link at the top of the license page that goes back to the list of universes"
+	},
+	"license.icons": {
+		"defaultMessage": "Icons",
+		"description": "Heading of the license page's section crediting the icon sets the pages use"
+	},
+	"license.phosphor": {
+		"defaultMessage": "Interface icons are from {phosphor}, used under the MIT License:",
+		"description": "On the license page, crediting the icon set the pages' buttons use; {phosphor} is a link to it, named the same in every language. The license's text follows in English"
+	},
+	"license.sourceCode": {
+		"defaultMessage": "Get this version's source code",
+		"description": "Link on the license page to where this version of the game's source code can be downloaded"
+	},
+	"license.summary": {
+		"defaultMessage": "In short: you may use, change and share the game's code. If you share a changed version, or run one on a server that players connect to, you must offer its source code under the same license.",
+		"description": "On the license page, what the game's license means in plain words"
+	},
+	"license.title": {
+		"defaultMessage": "Licenses - Multiverse Kiln",
+		"description": "The browser tab's title for the page with the game's license and the licenses of what it uses"
+	},
+	"license.warranty": {
+		"defaultMessage": "Multiverse Kiln is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.",
+		"description": "The game's license notice, saying it comes with no warranty"
+	},
 	"lobby.chat.label": {
 		"defaultMessage": "Chat message",
 		"description": "Name of the chat field for screen readers"
@@ -1075,6 +1135,10 @@
 		"defaultMessage": "Copyright (C) {year} {holder}.",
 		"description": "Copyright notice at the bottom of every page; {year} is the year and {holder} is who holds the copyright"
 	},
+	"page.credits": {
+		"defaultMessage": "Credits",
+		"description": "Link at the bottom of every page to the license page's credits for the icons the pages use"
+	},
 	"page.disconnected": {
 		"defaultMessage": "Disconnected from the server. Reload the page to reconnect.",
 		"description": "Shown on the whole page when the connection to the server is lost"
@@ -1093,7 +1157,7 @@
 	},
 	"page.licenseName": {
 		"defaultMessage": "GNU Affero General Public License v3 or later",
-		"description": "The name of the game's license, linking to it"
+		"description": "The name of the game's license, linking to the license page"
 	},
 	"page.name": {
 		"defaultMessage": "Multiverse Kiln",

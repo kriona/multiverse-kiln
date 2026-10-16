@@ -4,8 +4,9 @@
  * - index.html: Home, a universe's lobby and a group's game. ?universe=<id> enters that universe's
  *   lobby once the player has logged in, and ?group=<id> (GROUP_QUERY_PARAMETER) joins a group
  * - edit.html: the world editor for ?universe=<id>, on the tab given by ?tab= and the zone given by ?zone=
+ * - license.html: the game's license and the licenses of what it uses, linked to from the footer
  *
- * Either page takes ?locale= to choose a language, as the language picker in the footer does (see src/localization.ts)
+ * Every page takes ?locale= to choose a language, as the language picker in the footer does (see src/localization.ts)
  */
 
 /**

@@ -13,3 +13,13 @@ interface ImportMetaEnv
 	 */
 	readonly VITE_SOURCE_URL?: string;
 }
+
+/**
+ * An icon's SVG markup, e.g. import trashIcon from 'virtual:icon/ph:trash' (see the icons plugin in
+ * vite.config.ts)
+ */
+declare module 'virtual:icon/*'
+{
+	const svg: string;
+	export default svg;
+}

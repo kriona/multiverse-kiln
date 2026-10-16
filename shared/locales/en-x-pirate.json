@@ -899,6 +899,66 @@
 		"message": "Universes",
 		"source": "Universes"
 	},
+	"license.agpl": {
+		"message": "Multiverse Kiln be free software: ye can share it about and/or change it under the terms o' the {license} as published by the Free Software Foundation, either version 3 o' the License, or (at yer choosin') any later version.",
+		"source": "Multiverse Kiln is free software: you can redistribute it and/or modify it under the terms of the {license} as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version."
+	},
+	"license.agplName": {
+		"message": "GNU Affero General Public License",
+		"source": "GNU Affero General Public License"
+	},
+	"license.assets": {
+		"message": "Art an' other treasures",
+		"source": "Art and other assets"
+	},
+	"license.assetsNotice": {
+		"message": "The game's own art, sounds, fonts, characters, settin' and tale ain't covered by the GNU Affero General Public License. They be copyright {holder}, all rights reserved, an' may not be plundered for reuse without written permission. Treasures made by other hands keep their own licenses, listed below.",
+		"source": "The game's own art, audio, fonts, characters, setting and story are not covered by the GNU Affero General Public License. They are copyright {holder}, all rights reserved, and may not be reused without written permission. Assets made by others keep their own licenses, listed below."
+	},
+	"license.copyright": {
+		"message": "Copyright (C) {year} {holder}.",
+		"source": "Copyright (C) {year} {holder}."
+	},
+	"license.game": {
+		"message": "The game itself",
+		"source": "The game"
+	},
+	"license.gameIcons": {
+		"message": "Game icons be by {authors} at {gameIcons}, used under the {license}. Each icon's page on game-icons.net names the artist what drew it.",
+		"source": "Game icons are by {authors} at {gameIcons}, used under the {license}. Each icon's page on game-icons.net names its artist."
+	},
+	"license.heading": {
+		"message": "The Ship's Articles",
+		"source": "Licenses"
+	},
+	"license.home": {
+		"message": "Back to Port",
+		"source": "Back to Home"
+	},
+	"license.icons": {
+		"message": "Sigils",
+		"source": "Icons"
+	},
+	"license.phosphor": {
+		"message": "The sigils on yer buttons be from {phosphor}, used under the MIT License:",
+		"source": "Interface icons are from {phosphor}, used under the MIT License:"
+	},
+	"license.sourceCode": {
+		"message": "Grab this version's source code",
+		"source": "Get this version's source code"
+	},
+	"license.summary": {
+		"message": "In plain speak: ye may use, change an' share the game's code. If ye share a changed version, or run one on a server that players connect to, ye must offer its source code under the same license.",
+		"source": "In short: you may use, change and share the game's code. If you share a changed version, or run one on a server that players connect to, you must offer its source code under the same license."
+	},
+	"license.title": {
+		"message": "The Ship's Articles - Multiverse Kiln",
+		"source": "Licenses - Multiverse Kiln"
+	},
+	"license.warranty": {
+		"message": "Multiverse Kiln be handed out in the hope that it'll be useful, but WITHOUT ANY WARRANTY; without even the implied warranty o' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.",
+		"source": "Multiverse Kiln is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details."
+	},
 	"lobby.chat.label": {
 		"message": "Chat message",
 		"source": "Chat message"
@@ -1074,6 +1134,10 @@
 	"page.copyright": {
 		"message": "Copyright (C) {year} {holder}.",
 		"source": "Copyright (C) {year} {holder}."
+	},
+	"page.credits": {
+		"message": "Crew Roll",
+		"source": "Credits"
 	},
 	"page.disconnected": {
 		"message": "Lost sight o' the server. Reload the page to hail it again.",

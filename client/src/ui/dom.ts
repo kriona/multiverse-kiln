@@ -88,6 +88,21 @@ export function showMessage(element: HTMLElement, message: string | undefined): 
 }
 
 /**
+ * Shows an icon and text in a button, replacing what it showed
+ *
+ * @param button The button
+ * @param icon The icon's SVG markup, imported from virtual:icon/<name> (see vite.config.ts)
+ * @param text The button's text
+ */
+export function setButtonLabel(button: HTMLButtonElement, icon: string, text: string): void
+{
+	const template = document.createElement('template');
+
+	template.innerHTML = icon;
+	button.replaceChildren(template.content, text);
+}
+
+/**
  * Shows a full-page message, e.g. while connecting or after the connection is lost
  *
  * @param message Text to show
