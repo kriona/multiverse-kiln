@@ -1,8 +1,10 @@
 /**
  * Pathfinder 1E's coins, and the money field that reads and writes amounts like "1pp 2gp 2sp 4cp"
  *
- * Amounts are stored as whole copper pieces. The coins are Open Game Content from the Pathfinder
- * Roleplaying Game Core Rulebook, used under the Open Game License 1.0a (client/license.html)
+ * Money is kept as the pieces of each coin, the way a purse holds them: gaining 5sp and then 5sp more is
+ * 10sp, not 1gp. Only a money changer (changePf1eMoney) turns coins into others. The coins are Open
+ * Game Content from the Pathfinder Roleplaying Game Core Rulebook, used under the Open Game License
+ * 1.0a (client/license.html)
  */
 import { defineMessages, type MessageDescriptor } from '../../localization.js';
 
@@ -24,15 +26,14 @@ export const PF1E_COIN_VALUES: Record<Pf1eCoin, number> = {
 };
 
 /**
- * The coins an amount is written in. Platinum can be typed, but amounts are shown in gold, the coin
- * prices are given in
+ * An amount of money: how many pieces of each coin
  */
-const FORMATTED_COINS: readonly Pf1eCoin[] = ['gp', 'sp', 'cp'];
+export type Pf1eMoney = Record<Pf1eCoin, number>;
 
 /**
- * Most copper pieces an amount can be: 10 million gold pieces
+ * Most pieces of one coin an amount can hold
  */
-export const PF1E_MAX_MONEY = 1000000000;
+export const PF1E_MAX_COINS = 1000000000;
 
 /**
  * Each coin's abbreviation, written after an amount: "2gp"
@@ -66,22 +67,38 @@ export const PF1E_COIN_ABBREVIATIONS: Record<Pf1eCoin, MessageDescriptor> = defi
 export type Pf1eCoinAbbreviations = Record<Pf1eCoin, readonly string[]>;
 
 /**
- * What reading a money field found: the amount in copper pieces, or why it couldn't be read
+ * What reading a money field found: the coins, or why it couldn't be read
  *
  * - format: the text isn't amounts of coins, such as "12" or "2 gold"
- * - tooMuch: the amount is more than PF1E_MAX_MONEY
+ * - tooMuch: there are more than PF1E_MAX_COINS pieces of one coin
  */
 export type Pf1eMoneyParseResult =
-	| { copper: number }
+	| { money: Pf1eMoney }
 	| { error: 'format' | 'tooMuch' };
 
 /**
+ * No money
+ *
+ * @return A new amount with no pieces of any coin
+ */
+export function emptyPf1eMoney(): Pf1eMoney
+{
+	return({
+		pp: 0,
+		gp: 0,
+		sp: 0,
+		cp: 0
+	});
+}
+
+/**
  * Reads a money field: amounts of coins in any order, separated by spaces or commas, such as
- * "1pp 2gp 2sp 4cp". A coin written twice is added up, and an empty field is no money
+ * "1pp 2gp 2sp 4cp". A coin written twice is added up, and an empty field is no money. Coins are
+ * kept as written: "15sp" is 15 silver pieces, not 1gp 5sp
  *
  * @param text What the field holds
  * @param abbreviations The abbreviations to accept for each coin, matched ignoring capitals
- * @return The amount in copper pieces, or the problem with the text
+ * @return The coins, or the problem with the text
  */
 export function parsePf1eMoney(text: string, abbreviations: Pf1eCoinAbbreviations): Pf1eMoneyParseResult
 {
@@ -98,7 +115,7 @@ export function parsePf1eMoney(text: string, abbreviations: Pf1eCoinAbbreviation
 	const spaced = text.replaceAll(',', ' ');
 	// One amount of a coin with the spaces around it, "12gp" or "3 sp", starting where the last one ended
 	const amountPattern = /\s*(\d+)\s*([^\d\s]+)\s*/y;
-	let copper = 0;
+	const money = emptyPf1eMoney();
 	let position = 0;
 
 	// Only spaces left after the last amount ends the field
@@ -120,38 +137,29 @@ export function parsePf1eMoney(text: string, abbreviations: Pf1eCoinAbbreviation
 		{
 			return({ error: 'format' });
 		}
-		copper += Number(match[1]) * PF1E_COIN_VALUES[coin];
-		if (copper > PF1E_MAX_MONEY)
+		money[coin] += Number(match[1]);
+		if (money[coin] > PF1E_MAX_COINS)
 		{
 			return({ error: 'tooMuch' });
 		}
 	}
-	return({ copper });
+	return({ money });
 }
 
 /**
- * Writes an amount for a money field in gold, silver and copper, leaving out coins it has none of:
- * 1224 copper pieces is "12gp 2sp 4cp", and no money is "0gp"
+ * Writes an amount for a money field, most valuable coin first, leaving out coins it has none of:
+ * "1pp 302gp 4444sp 10cp", and no money is "0gp"
  *
- * @param copper The amount in copper pieces
+ * @param money The coins
  * @param abbreviations Each coin's abbreviation in the player's language
  * @return The amount as text that parsePf1eMoney() reads back
  */
-export function formatPf1eMoney(copper: number, abbreviations: Record<Pf1eCoin, string>): string
+export function formatPf1eMoney(money: Pf1eMoney, abbreviations: Record<Pf1eCoin, string>): string
 {
-	const parts: string[] = [];
-	let left = copper;
+	const parts = PF1E_COINS
+		.filter((coin) => (money[coin] > 0))
+		.map((coin) => (String(money[coin]) + abbreviations[coin]));
 
-	for (const coin of FORMATTED_COINS)
-	{
-		const count = Math.floor(left / PF1E_COIN_VALUES[coin]);
-
-		if (count > 0)
-		{
-			parts.push(String(count) + abbreviations[coin]);
-			left -= count * PF1E_COIN_VALUES[coin];
-		}
-	}
 	if (parts.length === 0)
 	{
 		parts.push('0' + abbreviations.gp);
@@ -160,13 +168,49 @@ export function formatPf1eMoney(copper: number, abbreviations: Record<Pf1eCoin, 
 }
 
 /**
- * Whether an amount of money is one the game can store: a whole number of copper pieces from 0 to
- * PF1E_MAX_MONEY
+ * What an amount is worth, for comparing prices
  *
- * @param copper The amount, from untrusted input
- * @return True when it is allowed
+ * @param money The coins
+ * @return Their worth in copper pieces
  */
-export function isValidPf1eMoney(copper: unknown): copper is number
+export function pf1eMoneyValue(money: Pf1eMoney): number
 {
-	return(Number.isSafeInteger(copper) && ((copper as number) >= 0) && ((copper as number) <= PF1E_MAX_MONEY));
+	return(PF1E_COINS.reduce((total, coin) => (total + (money[coin] * PF1E_COIN_VALUES[coin])), 0));
+}
+
+/**
+ * Puts two amounts together, coin by coin: 5sp and 5sp is 10sp
+ *
+ * @param first One amount
+ * @param second The other amount
+ * @return A new amount holding both
+ */
+export function addPf1eMoney(first: Pf1eMoney, second: Pf1eMoney): Pf1eMoney
+{
+	return({
+		pp: (first.pp + second.pp),
+		gp: (first.gp + second.gp),
+		sp: (first.sp + second.sp),
+		cp: (first.cp + second.cp)
+	});
+}
+
+/**
+ * What a money changer gives for an amount: the same worth in as few coins as possible, so
+ * 1pp 302gp 4444sp 10cp becomes 75pp 6gp 5sp
+ *
+ * @param money The coins handed over
+ * @return A new amount of the same worth
+ */
+export function changePf1eMoney(money: Pf1eMoney): Pf1eMoney
+{
+	const changed = emptyPf1eMoney();
+	let left = pf1eMoneyValue(money);
+
+	for (const coin of PF1E_COINS)
+	{
+		changed[coin] = Math.floor(left / PF1E_COIN_VALUES[coin]);
+		left -= changed[coin] * PF1E_COIN_VALUES[coin];
+	}
+	return(changed);
 }

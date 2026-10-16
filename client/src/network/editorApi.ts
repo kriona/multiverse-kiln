@@ -1,5 +1,5 @@
 import { ServerError, type Client } from '@colyseus/sdk';
-import { EDITOR_UNIVERSES_PATH, isLocalizedMessage, type CellChange, type ChunkListPayload, type ChunkRange, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorZone, type EditorZoneLink, type MapBounds, type NewUniverseRequest, type NewZoneRequest, type ResizeConflictPayload, type TileListPayload, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type ZoneLinkListPayload, type ZoneLinkTarget, type ZoneListPayload, type ZoneSettingsUpdate, type MessageSource } from '@multiverse-kiln/shared';
+import { EDITOR_UNIVERSES_PATH, isLocalizedMessage, MAX_TILES_PER_PAGE, type CellChange, type ChunkListPayload, type ChunkRange, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorTile, type EditorZone, type EditorZoneLink, type MapBounds, type NewUniverseRequest, type NewZoneRequest, type ResizeConflictPayload, type RulesetSettings, type TileListPayload, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type ZoneLinkListPayload, type ZoneLinkTarget, type ZoneListPayload, type ZoneSettingsUpdate, type MessageSource } from '@multiverse-kiln/shared';
 
 import { localizedText, t } from '../localization';
 
@@ -79,6 +79,28 @@ export class EditorApi
 	}
 
 	/**
+	 * How a universe plays under its ruleset
+	 *
+	 * @param universeId The universe's ID
+	 * @return The settings
+	 */
+	async getRulesetSettings(universeId: string): Promise<RulesetSettings>
+	{
+		return(this.send<RulesetSettings>('GET', `${universePath(universeId)}/ruleset`));
+	}
+
+	/**
+	 * Changes how a universe plays under its ruleset
+	 *
+	 * @param universeId The universe's ID
+	 * @param settings The settings, for the universe's ruleset
+	 */
+	async saveRulesetSettings(universeId: string, settings: RulesetSettings): Promise<void>
+	{
+		await this.send('PUT', `${universePath(universeId)}/ruleset`, settings);
+	}
+
+	/**
 	 * A page of a universe's tiles
 	 *
 	 * @param universeId The universe's ID
@@ -98,6 +120,33 @@ export class EditorApi
 		}
 
 		return(this.send<TileListPayload>('GET', `${universePath(universeId)}/tiles?${parameters.toString()}`));
+	}
+
+	/**
+	 * Every tile a universe can use, loaded a page at a time
+	 *
+	 * @param universeId The universe's ID
+	 * @return The tiles
+	 */
+	async listAllTiles(universeId: string): Promise<EditorTile[]>
+	{
+		const tiles: EditorTile[] = [];
+		let total = 1;
+
+		while (tiles.length < total)
+		{
+			const page = await this.listTiles(universeId, { offset: tiles.length, limit: MAX_TILES_PER_PAGE });
+
+			if (page.tiles.length === 0)
+			{
+				break;
+			}
+
+			tiles.push(...page.tiles);
+			total = page.total;
+		}
+
+		return(tiles);
 	}
 
 	/**

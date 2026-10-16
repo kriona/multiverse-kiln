@@ -173,20 +173,41 @@ export async function findEditableUniverse(universeId: string, executor: Executo
 			passageOfTime: universes.passageOfTime,
 			faerieMorning: universes.faerieMorning,
 			lobbyZoneId: universes.lobbyZoneId,
-			startingZoneId: universes.startingZoneId
+			startingZoneId: universes.startingZoneId,
+			groupSize: universes.groupSize,
+			startingPlatinum: universes.startingPlatinum,
+			startingGold: universes.startingGold,
+			startingSilver: universes.startingSilver,
+			startingCopper: universes.startingCopper
 		})
 		.from(universes)
 		.where(eq(universes.id, universeId))
 		.limit(1);
 
-	return(row);
+	if (!row)
+	{
+		return(undefined);
+	}
+
+	const { startingPlatinum, startingGold, startingSilver, startingCopper, ...settings } = row;
+
+	return({
+		...settings,
+		startingMoney: {
+			pp: startingPlatinum,
+			gp: startingGold,
+			sp: startingSilver,
+			cp: startingCopper
+		}
+	});
 }
 
 /**
  * Changes some of a universe's settings
  *
- * The database refuses a faerie passage of time without a faerie morning, and a faerie morning without
- * faerie time
+ * The database refuses a faerie passage of time without a faerie morning, a faerie morning without
+ * faerie time, and a group size or starting money out of range. The caller checks that a starting zone
+ * is one of the universe's
  *
  * @param universeId The universe's ID
  * @param update The settings to change
@@ -199,9 +220,21 @@ export async function updateUniverseSettings(universeId: string, update: Univers
 		return;
 	}
 
+	const { startingMoney, ...settings } = update;
+
 	await executor
 		.update(universes)
-		.set(update)
+		.set({
+			...settings,
+			...((startingMoney === undefined)
+				? {}
+				: {
+					startingPlatinum: startingMoney.pp,
+					startingGold: startingMoney.gp,
+					startingSilver: startingMoney.sp,
+					startingCopper: startingMoney.cp
+				})
+		})
 		.where(eq(universes.id, universeId));
 }
 

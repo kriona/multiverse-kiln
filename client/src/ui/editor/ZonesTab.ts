@@ -1,4 +1,4 @@
-import { ancestorZones, canEditWorld, childZones, defineMessages, descendantZoneIds, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_TILES_PER_PAGE, MAX_ZONE_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, ZONE_PASSAGES_OF_TIME, zonesTabListing, type EditableUniverse, type EditorTile, type EditorZone, type EditorZoneSummary, type FaerieMorning, type ZoneListPayload, type ZonePassageOfTime, type ZoneSettings } from '@multiverse-kiln/shared';
+import { ancestorZones, canEditWorld, childZones, defineMessages, descendantZoneIds, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_ZONE_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, ZONE_PASSAGES_OF_TIME, zonesTabListing, type EditableUniverse, type EditorTile, type EditorZone, type EditorZoneSummary, type FaerieMorning, type ZoneListPayload, type ZonePassageOfTime, type ZoneSettings } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -343,23 +343,7 @@ export class ZonesTab
 	 */
 	private async loadTiles(universe: EditableUniverse): Promise<void>
 	{
-		const tiles: EditorTile[] = [];
-		let total = 1;
-
-		while (tiles.length < total)
-		{
-			const page = await this.api.listTiles(universe.id, { offset: tiles.length, limit: MAX_TILES_PER_PAGE });
-
-			if (page.tiles.length === 0)
-			{
-				break;
-			}
-
-			tiles.push(...page.tiles);
-			total = page.total;
-		}
-
-		this.tiles = tiles;
+		this.tiles = await this.api.listAllTiles(universe.id);
 	}
 
 	/**

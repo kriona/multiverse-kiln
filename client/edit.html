@@ -22,7 +22,9 @@
 				<p id="editor-notice" class="notice" role="status" hidden></p>
 				<div class="tabs" role="tablist">
 					<button id="editor-tab-universe" type="button" role="tab" aria-controls="editor-panel-universe" data-message="editor.tab.universe" data-translation-context="Tab of the editor with the universe's own settings"><!-- icon game-icons:galaxy -->Universe</button>
+					<button id="editor-tab-ruleset" type="button" role="tab" aria-controls="editor-panel-ruleset" data-message="editor.tab.ruleset" data-translation-context="Tab of the editor with the settings of the universe's game rules, such as how ability scores are made"><!-- icon game-icons:rule-book -->Ruleset</button>
 					<button id="editor-tab-lobby" type="button" role="tab" aria-controls="editor-panel-lobby" data-message="editor.tab.lobby" data-translation-context="Tab of the editor with the lobby's settings"><!-- icon game-icons:campfire -->Lobby</button>
+					<button id="editor-tab-characters" type="button" role="tab" aria-controls="editor-panel-characters" data-message="editor.tab.characters" data-translation-context="Tab of the editor with what characters start with and how many play together"><!-- icon game-icons:character -->Characters</button>
 					<button id="editor-tab-tilesets" type="button" role="tab" aria-controls="editor-panel-tilesets" data-message="editor.tab.tilesets" data-translation-context="Tab of the editor listing the tiles maps are painted with"><!-- icon game-icons:stone-block -->Tilesets</button>
 					<button id="editor-tab-zones" type="button" role="tab" aria-controls="editor-panel-zones" data-message="editor.tab.zones" data-translation-context="Tab of the editor listing the universe's zones (areas with their own map)"><!-- icon game-icons:treasure-map -->Zones</button>
 				</div>
@@ -83,9 +85,71 @@
 						</form>
 					</section>
 
+					<section id="editor-panel-ruleset" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-ruleset" hidden>
+						<form id="ruleset-form" class="form">
+							<fieldset id="ruleset-fields" class="plain">
+								<p data-message="editor.ruleset.heading" data-translation-context="At the top of the editor's Ruleset tab, naming the universe's game rules; {ruleset} is e.g. Pathfinder 1E">Settings for <strong id="ruleset-name" data-argument="ruleset"></strong></p>
+								<label data-message="editor.ruleset.statMethod" data-translation-context="Label of the field for how characters' ability scores are made: rolled with dice, or bought with points">
+									Rolling for stats
+									<select id="ruleset-stat-method"></select>
+								</label>
+								<label id="ruleset-budget-field" data-message="editor.ruleset.budget" data-translation-context="Label of the field for how many points players spend on ability scores, shown when the universe chooses the number" hidden>
+									Points to spend
+									<input id="ruleset-budget" type="number" step="1" required />
+								</label>
+								<p class="hint" data-message="editor.ruleset.statMethodHint" data-translation-context="Explains that changing how ability scores are made only affects characters made afterwards">Rolled scores can be rearranged among the abilities. Changing this doesn't change characters that already exist.</p>
+								<label class="checkbox" data-message="editor.ruleset.needsSleep" data-translation-context="Checkbox for whether characters in the universe get tired and need to sleep">
+									<input id="ruleset-needs-sleep" type="checkbox" />
+									Characters get tired and need sleep
+								</label>
+								<label class="checkbox" data-message="editor.ruleset.coinsHaveWeight" data-translation-context="Checkbox for whether the coins characters carry add to the weight they carry">
+									<input id="ruleset-coins-have-weight" type="checkbox" />
+									Coins count towards what characters carry
+								</label>
+								<label class="checkbox" data-message="editor.ruleset.tracksAmmo" data-translation-context="Checkbox for whether arrows and other ammunition are used up when fired">
+									<input id="ruleset-tracks-ammo" type="checkbox" />
+									Ammunition is used up
+								</label>
+								<p class="hint" data-message="editor.ruleset.laterHint" data-translation-context="Explains that the sleep, weight and ammunition checkboxes are stored but have no effect in the game yet">The game doesn't use sleep, weight or ammunition yet. These are kept for when it does.</p>
+								<p id="ruleset-error" class="form-error" role="alert" hidden></p>
+								<div class="form-buttons">
+									<span id="ruleset-saved" class="form-saved" role="status"></span>
+									<button id="ruleset-save" type="submit" aria-describedby="ruleset-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+								</div>
+							</fieldset>
+						</form>
+					</section>
+
 					<section id="editor-panel-lobby" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-lobby" hidden>
 						<p data-message="editor.lobby.explanation" data-translation-context="Explains the lobby on the editor's Lobby tab">The lobby is where everyone in the universe meets before joining a group. It is a zone like any other, but isn't listed on the Zones tab.</p>
 						<button id="lobby-edit-zone" type="button" data-message="editor.lobby.editZone" data-translation-context="Button that opens the lobby in the zone editor"><!-- icon ph:pencil-simple -->Edit the lobby's zone</button>
+					</section>
+
+					<section id="editor-panel-characters" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-characters" hidden>
+						<form id="characters-form" class="form">
+							<fieldset id="characters-fields" class="plain">
+								<label data-message="editor.characters.groupSize" data-translation-context="Label of the field for the most characters that can play together in one group">
+									Group size
+									<input id="characters-group-size" type="number" step="1" required />
+								</label>
+								<p id="characters-group-size-hint" class="hint"></p>
+								<label data-message="editor.characters.startingMoney" data-translation-context="Label of the field for the money every character starts with">
+									Starting money
+									<input id="characters-starting-money" autocomplete="off" />
+								</label>
+								<p id="characters-starting-money-hint" class="hint"></p>
+								<p data-message="editor.characters.startingZone" data-translation-context="Shows the zone characters start in; {zone} is the zone's name">Starting zone: <strong id="characters-zone-name" data-argument="zone"></strong></p>
+								<p class="hint" data-message="editor.characters.startingZoneHint" data-translation-context="Explains the starting zone on the editor's Characters tab">Where characters start, unless their race or class says otherwise.</p>
+								<div>
+									<button id="characters-zone-choose" type="button" class="secondary" data-shortcut="Alt+C" data-message="editor.characters.chooseZone" data-translation-context="Button that opens the dialog for choosing the zone characters start in"><!-- icon ph:map-pin -->Choose Starting Zone</button>
+								</div>
+								<p id="characters-error" class="form-error" role="alert" hidden></p>
+								<div class="form-buttons">
+									<span id="characters-saved" class="form-saved" role="status"></span>
+									<button id="characters-save" type="submit" aria-describedby="characters-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+								</div>
+							</fieldset>
+						</form>
 					</section>
 
 					<section id="editor-panel-tilesets" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-tilesets" hidden>
@@ -329,6 +393,21 @@
 						<div class="dialog-buttons">
 							<button id="zone-add-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
 							<button id="zone-add-submit" type="submit" aria-describedby="zone-add-error" data-shortcut="Alt+S" data-message="editor.zoneAdd.submit" data-translation-context="Button that makes the new zone">Add</button>
+						</div>
+					</form>
+				</dialog>
+				<dialog id="zone-select-dialog" class="panel dialog zone-select-dialog" aria-labelledby="zone-select-title">
+					<form id="zone-select-form" class="form">
+						<h2 id="zone-select-title" data-message="editor.zoneSelect.title" data-translation-context="Title of the dialog for choosing one of the universe's zones">Choose a Zone</h2>
+						<input id="zone-select-search" type="search" placeholder="Search by name" aria-label="Search zones by name" autocomplete="off" data-message-placeholder="editor.zoneSelect.search" data-translation-context-placeholder="Shown in the empty field that narrows the zones down by name" data-message-aria-label="editor.zoneSelect.searchLabel" data-translation-context-aria-label="Name of the field that narrows the zones down by name, for screen readers" />
+						<fieldset id="zone-select-results" class="choice stacked zone-select-results" aria-label="Zones" data-message-aria-label="editor.zoneSelect.results" data-translation-context-aria-label="Name of the list of zones to choose from, for screen readers"></fieldset>
+						<p id="zone-select-none" class="universe-empty" data-message="editor.zoneSelect.none" data-translation-context="Shown in the dialog for choosing a zone when no zone's name matches the search" hidden>No zones match.</p>
+						<div id="zone-select-preview" class="zone-select-preview" aria-hidden="true"></div>
+						<p id="zone-select-summary" role="status"></p>
+						<p id="zone-select-error" class="form-error" role="alert" hidden></p>
+						<div class="dialog-buttons">
+							<button id="zone-select-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="zone-select-submit" type="submit" aria-describedby="zone-select-error" data-shortcut="Alt+S" data-message="editor.zoneSelect.submit" data-translation-context="Button that chooses the zone selected in the dialog">Choose</button>
 						</div>
 					</form>
 				</dialog>

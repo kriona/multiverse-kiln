@@ -185,7 +185,7 @@ export class UniverseTab
 		}
 
 		const passageOfTime = this.time.value as PassageOfTime;
-		const update: Required<UniverseSettingsUpdate> = {
+		const update: Required<Pick<UniverseSettingsUpdate, 'name' | 'shortDescription' | 'longDescription' | 'stage' | 'passageOfTime' | 'faerieMorning'>> = {
 			name: this.name.value.trim(),
 			shortDescription: this.shortDescription.value.trim(),
 			longDescription: this.longDescription.value,

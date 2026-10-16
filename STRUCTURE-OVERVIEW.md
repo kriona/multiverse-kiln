@@ -437,6 +437,8 @@ Each character has a vision budget. Looking across a tile spends its vision cost
 ## Field: Money
 Freetext but requires a format like "1pp 2gp 2sp 4cp"
 
+Money is kept as individual pieces of each coin, the way a purse holds them, and is never converted automatically: gaining 5sp twice is 10sp, not 1gp, and starting money from the universe, race and class adds up coin by coin. A character can hold 1pp 302gp 4444sp 10cp. A money changer converts coins into the fewest coins of the same worth (that purse becomes 75pp 6gp 5sp). Who offers money changing, and whether it costs a fee, comes with NPCs.
+
 ## Selection: Item
 modal dialog, lets you type to search, shows you the top results, with name + stats + picture. Each selected item has a quantity (for example, 20 arrows).
 

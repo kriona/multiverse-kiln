@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { chunkKey, DEFAULT_TILE_CELL, EDITOR_UNIVERSES_PATH, isLocalizedMessage, MAX_CREATED_UNIVERSES, NEW_ZONE_BOUNDS, VOID_CELL, type CreatedPayload, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorZone, type ResizeConflictPayload, type TileListPayload, type TileSettings, type UniverseRole, type ZoneListPayload } from '@multiverse-kiln/shared';
+import { chunkKey, DEFAULT_PF1E_SETTINGS, DEFAULT_TILE_CELL, EDITOR_UNIVERSES_PATH, emptyPf1eMoney, isLocalizedMessage, MAX_CREATED_UNIVERSES, MAX_GROUP_PLAYERS, NEW_ZONE_BOUNDS, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, VOID_CELL, type CreatedPayload, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorZone, type ResizeConflictPayload, type RulesetSettings, type TileListPayload, type TileSettings, type UniverseRole, type ZoneListPayload } from '@multiverse-kiln/shared';
 
 import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
@@ -290,6 +290,162 @@ describe('World editor API', () =>
 			universe = (await send<EditableUniverse>(ada, 'GET', path)).body;
 
 			assert.strictEqual(universe.faerieMorning, null);
+		});
+	});
+
+	describe('character settings', () =>
+	{
+		it('starts a universe with groups of the most players, no money, and its starting zone', async () =>
+		{
+			const universe = (await send<EditableUniverse>(ada, 'GET', `/${await createUniverse(ada)}`)).body;
+
+			assert.strictEqual(universe.groupSize, MAX_GROUP_PLAYERS);
+			assert.deepStrictEqual(universe.startingMoney, emptyPf1eMoney());
+			assert.notStrictEqual(universe.startingZoneId, null);
+		});
+
+		it('changes the group size, starting money and starting zone, keeping each coin as given', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const zoneId = await createZone(ada, universeId);
+			const path = `/${universeId}`;
+			const startingMoney = {
+				pp: 1,
+				gp: 302,
+				sp: 4444,
+				cp: 10
+			};
+
+			assert.strictEqual((await send(ada, 'PATCH', path, { body: { groupSize: 1, startingMoney, startingZoneId: zoneId } })).status, 204);
+
+			const universe = (await send<EditableUniverse>(ada, 'GET', path)).body;
+
+			assert.strictEqual(universe.groupSize, 1);
+			assert.deepStrictEqual(universe.startingMoney, startingMoney);
+			assert.strictEqual(universe.startingZoneId, zoneId);
+		});
+
+		it('refuses group sizes and money out of range', async () =>
+		{
+			const path = `/${await createUniverse(ada)}`;
+			const tooMuchGold = {
+				...emptyPf1eMoney(),
+				gp: PF1E_MAX_COINS + 1
+			};
+			const negativeCopper = {
+				...emptyPf1eMoney(),
+				cp: -1
+			};
+			const bodies = [
+				{ groupSize: 0 },
+				{ groupSize: MAX_GROUP_PLAYERS + 1 },
+				{ groupSize: 2.5 },
+				{ startingMoney: 1224 },
+				{ startingMoney: { gp: 5 } },
+				{ startingMoney: tooMuchGold },
+				{ startingMoney: negativeCopper },
+				{ startingZoneId: null }
+			];
+
+			for (const body of bodies)
+			{
+				assert.strictEqual((await send(ada, 'PATCH', path, { body })).status, 400, JSON.stringify(body));
+			}
+		});
+
+		it('refuses the lobby, or a zone of another universe, as the starting zone', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const universe = (await send<EditableUniverse>(ada, 'GET', `/${universeId}`)).body;
+			const otherZoneId = await createZone(ada, await createUniverse(ada, 'Elsewhere'));
+
+			for (const startingZoneId of [universe.lobbyZoneId, otherZoneId, randomUUID()])
+			{
+				const response = await send<ErrorPayload>(ada, 'PATCH', `/${universeId}`, { body: { startingZoneId } });
+
+				assert.strictEqual(response.status, 400);
+				assert.strictEqual(response.body.error.id, 'error.unusableStartingZone');
+			}
+
+			assert.strictEqual((await send<EditableUniverse>(ada, 'GET', `/${universeId}`)).body.startingZoneId, universe.startingZoneId);
+		});
+	});
+
+	describe('ruleset settings', () =>
+	{
+		const custom: RulesetSettings = {
+			ruleset: 'pf1e',
+			settings: {
+				statMethod: 'point_buy_custom',
+				customPointBuyBudget: 30,
+				needsSleep: true,
+				coinsHaveWeight: true,
+				tracksAmmo: false
+			}
+		};
+
+		it('gives a new universe the default settings', async () =>
+		{
+			const response = await send<RulesetSettings>(ada, 'GET', `/${await createUniverse(ada)}/ruleset`);
+
+			assert.strictEqual(response.status, 200);
+			assert.deepStrictEqual(response.body, { ruleset: 'pf1e', settings: DEFAULT_PF1E_SETTINGS });
+		});
+
+		it('saves the settings, and saves them again over the first', async () =>
+		{
+			const path = `/${await createUniverse(ada)}/ruleset`;
+
+			assert.strictEqual((await send(ada, 'PUT', path, { body: custom })).status, 204);
+			assert.deepStrictEqual((await send<RulesetSettings>(ada, 'GET', path)).body, custom);
+
+			const rolled: RulesetSettings = {
+				ruleset: 'pf1e',
+				settings: {
+					...custom.settings,
+					statMethod: 'roll_3d6'
+				}
+			};
+
+			assert.strictEqual((await send(ada, 'PUT', path, { body: rolled })).status, 204);
+			assert.deepStrictEqual((await send<RulesetSettings>(ada, 'GET', path)).body, rolled);
+		});
+
+		it('refuses unknown methods and budgets out of range', async () =>
+		{
+			const path = `/${await createUniverse(ada)}/ruleset`;
+			const settings = [
+				{ statMethod: 'roll_2d6' },
+				{ customPointBuyBudget: -1 },
+				{ customPointBuyBudget: PF1E_MAX_POINT_BUY_BUDGET + 1 },
+				{ needsSleep: 'yes' }
+			];
+
+			for (const changed of settings)
+			{
+				const body = {
+					ruleset: 'pf1e',
+					settings: {
+						...custom.settings,
+						...changed
+					}
+				};
+
+				assert.strictEqual((await send(ada, 'PUT', path, { body })).status, 400, JSON.stringify(changed));
+			}
+
+			assert.strictEqual((await send(ada, 'PUT', path, { body: { ...custom, ruleset: 'dnd' } })).status, 400);
+		});
+
+		it('lets builders read the settings but only creators change them', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const grace = await logIn('Grace');
+
+			await setUniverseRole(universeId, grace.playerId, 'builder');
+
+			assert.strictEqual((await send(grace, 'GET', `/${universeId}/ruleset`)).status, 200);
+			assert.strictEqual((await send(grace, 'PUT', `/${universeId}/ruleset`, { body: custom })).status, 403);
 		});
 	});
 

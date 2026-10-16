@@ -5,17 +5,18 @@
  * browser; routes about a universe also need a role in it, and changes need a role that allows them
  */
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
-import { canEditUniverseSettings, canEditWorld, defineMessages, EDITOR_UNIVERSES_PATH, MAX_CREATED_UNIVERSES, MAX_CUSTOM_TILES, NEW_ZONE_BOUNDS, SOURCE_LOCALE, Translator, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, canEditWorld, defineMessages, EDITOR_UNIVERSES_PATH, MAX_CREATED_UNIVERSES, MAX_CUSTOM_TILES, NEW_ZONE_BOUNDS, SOURCE_LOCALE, Translator, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type RulesetSettings } from '@multiverse-kiln/shared';
 
 import { lockPlayer } from '../db/playerRepo.js';
+import { findPf1eSettings, savePf1eSettings } from '../db/rulesetRepo.js';
 import { countCustomTiles, createCustomTile, deleteCustomTile, findDefaultTileIds, findTileKind, listEditorTiles, restoreDefaultTile, saveEditedDefaultTile, updateCustomTile } from '../db/tileRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { countUniversesWithRole, listEditableUniverses, setUniverseRole } from '../db/universeEditorRepo.js';
 import { createUniverse, lockUniverse, setUniverseZones, updateUniverseSettings } from '../db/universeRepo.js';
-import { createZone, isTileInUse } from '../db/zoneRepo.js';
+import { createZone, isTileInUse, listZones } from '../db/zoneRepo.js';
 import { zoneChanges } from '../world/zoneChanges.js';
 import { loadUniverseContext, playerIdOf, refuseWritesFromOtherOrigins, requireLogin, requireRole, universeContextOf } from './editorAccess.js';
-import { newUniverseRequest, tileIdParameter, tileListQuery, tileSettings, universeSettingsUpdate } from './editorPayloads.js';
+import { newUniverseRequest, rulesetSettings, tileIdParameter, tileListQuery, tileSettings, universeSettingsUpdate } from './editorPayloads.js';
 import { addZoneRoutes, DEFAULT_ZONE_TILE_KEYS, timeSettingsProblem } from './editorZones.js';
 import { errorMessages, sendError, sendInvalidRequest } from './errors.js';
 
@@ -83,6 +84,8 @@ function createEditorRouter(allowedOrigins: Set<string>): express.Router
 
 	universeRouter.get('/', getUniverse);
 	universeRouter.patch('/', requireRole(canEditUniverseSettings), updateUniverse);
+	universeRouter.get('/ruleset', getRulesetSettings);
+	universeRouter.put('/ruleset', requireRole(canEditUniverseSettings), saveRulesetSettings);
 	universeRouter.get('/tiles', listTiles);
 	universeRouter.post('/tiles', requireRole(canEditWorld), createTileRoute);
 	universeRouter.put('/tiles/:tileId', requireRole(canEditWorld), saveTile);
@@ -226,7 +229,67 @@ async function updateUniverse(request: Request, response: Response): Promise<voi
 		return;
 	}
 
+	const { startingZoneId } = body.data;
+
+	if ((startingZoneId !== undefined) && ((startingZoneId === universe.lobbyZoneId) || !(await listZones(universe.id)).some((zone) => (zone.id === startingZoneId))))
+	{
+		sendError(response, 400, {
+			id: 'error.unusableStartingZone',
+			defaultMessage: 'The starting zone must be a zone of this universe other than the lobby.',
+			description: 'Why a universe\'s settings were refused: the zone chosen for characters to start in is the lobby, or was deleted, perhaps by another editor'
+		});
+		return;
+	}
+
 	await updateUniverseSettings(universe.id, body.data);
+	response.sendStatus(204);
+}
+
+/**
+ * GET /:universeId/ruleset: how the universe plays under its ruleset
+ *
+ * @param request The request
+ * @param response The response
+ */
+async function getRulesetSettings(request: Request, response: Response): Promise<void>
+{
+	const { universe } = universeContextOf(request);
+	const payload: RulesetSettings = {
+		ruleset: universe.ruleset,
+		settings: await findPf1eSettings(universe.id)
+	};
+
+	response.json(payload);
+}
+
+/**
+ * PUT /:universeId/ruleset: changes how the universe plays under its ruleset
+ *
+ * @param request The request
+ * @param response The response
+ */
+async function saveRulesetSettings(request: Request, response: Response): Promise<void>
+{
+	const body = rulesetSettings.safeParse(request.body);
+	const { universe } = universeContextOf(request);
+
+	if (!body.success)
+	{
+		sendInvalidRequest(response, body.error);
+		return;
+	}
+
+	if (body.data.ruleset !== universe.ruleset)
+	{
+		sendError(response, 400, {
+			id: 'error.wrongRuleset',
+			defaultMessage: 'These settings are for a different ruleset than the universe\'s.',
+			description: 'Why a universe\'s ruleset settings were refused: they were made for another set of game rules'
+		});
+		return;
+	}
+
+	await savePf1eSettings(universe.id, body.data.settings);
 	response.sendStatus(204);
 }
 

@@ -145,10 +145,10 @@ Built in seven steps: licensing and the ruleset module; the Ruleset tab and the 
 1. Licensing and the ruleset module
 	- [✅] Review the Pathfinder 1E licensing (the OGL 1.0a and Paizo's terms for the "Pathfinder" name) before adding PF1E data, and add the required notices: the OGL with its Section 15 notices and Paizo's Community Use Policy notice, on the license page
 	- [✅] Rulesets as modules (PF1E first): abilities, sizes, races, classes, stat methods, settings and default items, with their names as engine messages
-	- [✅] Game rules as pure functions with tests: dice rolling (with the random source passed in), PF1E point buy costs (7 = -4 up to 18 = 17, scores 7-18 before racial modifiers), ability modifiers, and the money field ("1pp 2gp 2sp 4cp", stored in copper)
+	- [✅] Game rules as pure functions with tests: dice rolling (with the random source passed in), PF1E point buy costs (7 = -4 up to 18 = 17, scores 7-18 before racial modifiers), ability modifiers, the money field ("1pp 2gp 2sp 4cp", kept as pieces of each coin and never converted automatically) and the money changer's conversion to the fewest coins
 2. Ruleset tab and the universe's character settings
-	- [ ] Ruleset tab: stat rolling (3d6 variants, 4d6 variants, the point buy budgets and a custom budget), plus the sleep, weight and ammo settings (stored now, used later)
-	- [ ] Characters tab: group size, starting money and starting zone, with the zone selection modal
+	- [✅] Ruleset tab: stat rolling (3d6 variants, 4d6 variants, the point buy budgets and a custom budget), plus the sleep, weight and ammo settings (stored now, used later)
+	- [✅] Characters tab: group size, starting money and starting zone, with the zone selection modal
 3. Items
 	- [ ] Items tab, item editor (name, type, enabled) and the PF1E default items (a dagger for now); item selection with quantities
 	- [ ] Characters tab: starting equipment (a dagger for everyone by default)
@@ -283,6 +283,7 @@ Needed before universes are open to the public.
 ## Later (not yet specified)
 
 - Combat, monsters, NPCs and dialog (their results go in world state), and gaining experience
+- Money changers: NPCs who change a character's coins into the fewest coins of the same worth (`changePf1eMoney`), perhaps for a fee
 - One-off event messages for effects (hits, explosions)
 - The overworld map and its scale
 - Cross-universe play: the portal room, the Connect to the Multiverse tab, "[Name] of [Universe]"

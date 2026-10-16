@@ -9,6 +9,8 @@
 import type { LocalizedMessage } from './localization.js';
 import type { MapBounds } from './maps.js';
 import type { ZoneChunk } from './messages.js';
+import type { Pf1eMoney } from './rulesets/pf1e/money.js';
+import type { Pf1eSettings } from './rulesets/pf1e/settings.js';
 import type { FaerieMorning, PassageOfTime, Ruleset, UniverseRole, UniverseStage, ZoneLinkMode, ZonePassageOfTime } from './universes.js';
 
 /**
@@ -18,6 +20,8 @@ import type { FaerieMorning, PassageOfTime, Ruleset, UniverseRole, UniverseStage
  * - POST   /                                       NewUniverseRequest -> CreatedPayload: a universe the player creates
  * - GET    /:universeId                            EditableUniverse
  * - PATCH  /:universeId                            UniverseSettingsUpdate (creators only)
+ * - GET    /:universeId/ruleset                    RulesetSettings
+ * - PUT    /:universeId/ruleset                    RulesetSettings for the universe's ruleset (creators only)
  * - GET    /:universeId/tiles                      TileListQuery as query parameters -> TileListPayload
  * - POST   /:universeId/tiles                      TileSettings -> CreatedPayload: a custom tile
  * - PUT    /:universeId/tiles/:tileId              TileSettings: edits a custom tile, or stores an edited copy of a default tile
@@ -58,6 +62,11 @@ export const MAX_SHORT_DESCRIPTION_LENGTH = 200;
  * Most characters in a universe's long description (Markdown)
  */
 export const MAX_LONG_DESCRIPTION_LENGTH = 20000;
+
+/**
+ * Fewest characters a group can hold: 1 is single player. The most is MAX_GROUP_PLAYERS
+ */
+export const MIN_GROUP_SIZE = 1;
 
 /**
  * Most characters in a tile's name
@@ -178,6 +187,22 @@ export interface UniverseSettings
 	 * Set exactly when passageOfTime is faerie
 	 */
 	faerieMorning: FaerieMorning | null;
+
+	/**
+	 * Most characters in one group, from MIN_GROUP_SIZE to MAX_GROUP_PLAYERS
+	 */
+	groupSize: number;
+
+	/**
+	 * The coins every character starts with, up to PF1E_MAX_COINS of each
+	 */
+	startingMoney: Pf1eMoney;
+
+	/**
+	 * Where characters start unless their race or class says otherwise: one of the universe's zones
+	 * other than the lobby's. Null only while the universe is being created
+	 */
+	startingZoneId: string | null;
 }
 
 /**
@@ -188,7 +213,6 @@ export interface EditableUniverse extends UniverseSettings
 	id: string;
 	ruleset: Ruleset;
 	lobbyZoneId: string | null;
-	startingZoneId: string | null;
 
 	/**
 	 * The player's role, which decides what they may change
@@ -201,6 +225,15 @@ export interface EditableUniverse extends UniverseSettings
  * sent with passageOfTime whenever either changes to or from faerie
  */
 export type UniverseSettingsUpdate = Partial<UniverseSettings>;
+
+/**
+ * How a universe plays under its ruleset, as the Ruleset tab shows and changes it: response of GET
+ * EDITOR_UNIVERSES_PATH/:universeId/ruleset, and body of PUT, whose ruleset must be the universe's
+ */
+export type RulesetSettings = {
+	ruleset: 'pf1e';
+	settings: Pf1eSettings;
+};
 
 /**
  * A tile's settings, as the tile editor shows and changes them

@@ -3,8 +3,11 @@ import { UNIVERSE_ROLE_NAMES, type EditableUniverse, type UniverseSummary } from
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, showMessage } from '../dom';
+import { CharactersTab } from './CharactersTab';
+import { RulesetTab } from './RulesetTab';
 import { TilesetsTab } from './TilesetsTab';
 import { UniverseTab } from './UniverseTab';
+import { ZoneSelectDialog } from './ZoneSelectDialog';
 import { ZonesTab } from './ZonesTab';
 
 /**
@@ -12,7 +15,9 @@ import { ZonesTab } from './ZonesTab';
  */
 export const EDITOR_TABS = [
 	'universe',
+	'ruleset',
 	'lobby',
+	'characters',
 	'tilesets',
 	'zones'
 ] as const;
@@ -61,7 +66,7 @@ export function isEditorTab(value: string | undefined): value is EditorTab
 }
 
 /**
- * Edit Universe: a universe's settings, tiles and zones, in tabs
+ * Edit Universe: a universe's settings, ruleset, characters, tiles and zones, in tabs
  *
  * What the player may change depends on their role in the universe; the server checks it again on
  * every change, so the page only hides controls that would be refused
@@ -72,6 +77,8 @@ export class EditorScreen
 	private readonly role = getElement('editor-role', HTMLElement);
 	private readonly notice = getElement('editor-notice', HTMLElement);
 	private readonly universeTab: UniverseTab;
+	private readonly rulesetTab: RulesetTab;
+	private readonly charactersTab: CharactersTab;
 	private readonly tilesetsTab: TilesetsTab;
 	private readonly zonesTab: ZonesTab;
 
@@ -94,6 +101,11 @@ export class EditorScreen
 	constructor(private readonly api: EditorApi, private readonly actions: EditorScreenActions)
 	{
 		this.universeTab = new UniverseTab(api, (universe) =>
+		{
+			this.setUniverse(universe);
+		});
+		this.rulesetTab = new RulesetTab(api);
+		this.charactersTab = new CharactersTab(api, new ZoneSelectDialog(api), (universe) =>
 		{
 			this.setUniverse(universe);
 		});
@@ -191,6 +203,8 @@ export class EditorScreen
 		this.place = { tab: (place.tab ?? ((place.zoneId === undefined) ? 'universe' : 'zones')), zoneId: place.zoneId };
 		this.setUniverse(universe);
 		this.universeTab.open(universe);
+		void this.rulesetTab.open(universe);
+		this.charactersTab.open(universe);
 		this.tilesetsTab.open(universe);
 		this.zonesTab.open(universe, place.zoneId);
 		this.selectTab(this.place.tab);

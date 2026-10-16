@@ -7,6 +7,42 @@
 		"message": "Batten down",
 		"source": "Close"
 	},
+	"editor.characters.chooseZone": {
+		"message": "Choose Home Port",
+		"source": "Choose Starting Zone"
+	},
+	"editor.characters.groupSize": {
+		"message": "Crew size",
+		"source": "Group size"
+	},
+	"editor.characters.groupSizeHint": {
+		"message": "{min, number} be sailin' alone. At most {max, number} hands can sail together.",
+		"source": "{min, number} is single player. At most {max, number} characters can play together."
+	},
+	"editor.characters.saveFailed": {
+		"message": "Couldn't stow the crew's settings.",
+		"source": "Could not save the character settings."
+	},
+	"editor.characters.startingMoney": {
+		"message": "Startin' purse",
+		"source": "Starting money"
+	},
+	"editor.characters.startingMoneyHint": {
+		"message": "Heaps o' coins, like {example}. Coins stay as they're given; races an' classes can add more to the purse.",
+		"source": "Amounts of coins, like {example}. Coins stay as they are given; races and classes can add more."
+	},
+	"editor.characters.startingZone": {
+		"message": "Home port: {zone}",
+		"source": "Starting zone: {zone}"
+	},
+	"editor.characters.startingZoneHint": {
+		"message": "Where hands first come ashore, unless their race or class says otherwise.",
+		"source": "Where characters start, unless their race or class says otherwise."
+	},
+	"editor.characters.zoneFailed": {
+		"message": "Couldn't find the home port.",
+		"source": "Could not load the starting zone."
+	},
 	"editor.error.failedBecause": {
 		"message": "{failure} {reason}",
 		"source": "{failure} {reason}"
@@ -383,9 +419,57 @@
 		"message": "Yer rank: {role}",
 		"source": "Your role: {role}"
 	},
+	"editor.ruleset.budget": {
+		"message": "Doubloons to spend",
+		"source": "Points to spend"
+	},
+	"editor.ruleset.coinsHaveWeight": {
+		"message": "Coins weigh down a hand's pockets",
+		"source": "Coins count towards what characters carry"
+	},
+	"editor.ruleset.heading": {
+		"message": "Articles for {ruleset}",
+		"source": "Settings for {ruleset}"
+	},
+	"editor.ruleset.laterHint": {
+		"message": "The game don't bother with sleep, weight or ammunition yet. These be kept in the hold for when it does.",
+		"source": "The game doesn't use sleep, weight or ammunition yet. These are kept for when it does."
+	},
+	"editor.ruleset.loadFailed": {
+		"message": "Couldn't haul up the ship's articles.",
+		"source": "Could not load the ruleset's settings."
+	},
+	"editor.ruleset.needsSleep": {
+		"message": "Hands get weary an' need their hammocks",
+		"source": "Characters get tired and need sleep"
+	},
+	"editor.ruleset.saveFailed": {
+		"message": "Couldn't stow the ship's articles.",
+		"source": "Could not save the ruleset's settings."
+	},
+	"editor.ruleset.statMethod": {
+		"message": "Rollin' the bones for stats",
+		"source": "Rolling for stats"
+	},
+	"editor.ruleset.statMethodHint": {
+		"message": "Rolled scores can be shuffled among the abilities. Changin' this don't change hands already aboard.",
+		"source": "Rolled scores can be rearranged among the abilities. Changing this doesn't change characters that already exist."
+	},
+	"editor.ruleset.tracksAmmo": {
+		"message": "Shot an' arrows get used up",
+		"source": "Ammunition is used up"
+	},
+	"editor.tab.characters": {
+		"message": "Crew",
+		"source": "Characters"
+	},
 	"editor.tab.lobby": {
 		"message": "Tavern",
 		"source": "Lobby"
+	},
+	"editor.tab.ruleset": {
+		"message": "Ship's Articles",
+		"source": "Ruleset"
 	},
 	"editor.tab.tilesets": {
 		"message": "Tilesets",
@@ -675,6 +759,46 @@
 		"message": "Add Zone",
 		"source": "Add Zone"
 	},
+	"editor.zoneSelect.disabled": {
+		"message": "Closed",
+		"source": "Disabled"
+	},
+	"editor.zoneSelect.inside": {
+		"message": "Inside {zone}",
+		"source": "Inside {zone}"
+	},
+	"editor.zoneSelect.loadFailed": {
+		"message": "Couldn't haul up the zones.",
+		"source": "Could not load the zones."
+	},
+	"editor.zoneSelect.none": {
+		"message": "No zones be matchin'.",
+		"source": "No zones match."
+	},
+	"editor.zoneSelect.results": {
+		"message": "Zones",
+		"source": "Zones"
+	},
+	"editor.zoneSelect.search": {
+		"message": "Search by name",
+		"source": "Search by name"
+	},
+	"editor.zoneSelect.searchLabel": {
+		"message": "Search zones by name",
+		"source": "Search zones by name"
+	},
+	"editor.zoneSelect.submit": {
+		"message": "Aye, that one",
+		"source": "Choose"
+	},
+	"editor.zoneSelect.summary": {
+		"message": "{indoors, select, true {Below decks} other {Topside}}, {height, number} tall by {width, number} wide",
+		"source": "{indoors, select, true {Indoors} other {Outdoors}}, {height, number} tall by {width, number} wide"
+	},
+	"editor.zoneSelect.title": {
+		"message": "Pick a Zone",
+		"source": "Choose a Zone"
+	},
 	"editor.zones.add": {
 		"message": "Add Zone",
 		"source": "Add Zone"
@@ -807,9 +931,17 @@
 		"message": "The usual tile must be a tile this universe can use.",
 		"source": "The default tile must be a tile this universe can use."
 	},
+	"error.unusableStartingZone": {
+		"message": "The home port must be a zone o' this universe, an' not the tavern.",
+		"source": "The starting zone must be a zone of this universe other than the lobby."
+	},
 	"error.unusableTile": {
 		"message": "One o' the tiles painted ain't one this universe can use.",
 		"source": "One of the tiles painted isn't one this universe can use."
+	},
+	"error.wrongRuleset": {
+		"message": "These articles be for a different ship than this universe.",
+		"source": "These settings are for a different ruleset than the universe's."
 	},
 	"error.zoneInsideItself": {
 		"message": "A zone can't be inside its own hold.",
@@ -831,6 +963,14 @@
 		"message": "Use letters, numbers, spaces or punctuation, matey.",
 		"source": "Use letters, numbers, spaces or punctuation."
 	},
+	"form.money.format": {
+		"message": "Write heaps o' coins, like {example}.",
+		"source": "Write amounts of coins, like {example}."
+	},
+	"form.money.tooManyCoins": {
+		"message": "That be more than {max, number} pieces o' one coin. No chest can hold it!",
+		"source": "That's more than {max, number} pieces of one coin."
+	},
 	"form.name": {
 		"message": "Name",
 		"source": "Name"
@@ -846,6 +986,10 @@
 	"form.saved": {
 		"message": "Stowed",
 		"source": "Saved"
+	},
+	"form.wholeNumber": {
+		"message": "Give a whole number from {min, number} to {max, number}, matey.",
+		"source": "Enter a whole number from {min, number} to {max, number}."
 	},
 	"group.connectionLost": {
 		"message": "Lost sight o' the game.",

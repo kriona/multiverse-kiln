@@ -6,7 +6,7 @@
  */
 import { sql } from 'drizzle-orm';
 import { boolean, check, index, integer, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHUNK_SIZE, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_MAP_SIDE, PASSAGES_OF_TIME, RULESETS, UNIVERSE_ROLES, UNIVERSE_STAGES, ZONE_LINK_MODES, ZONE_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, DEFAULT_PF1E_SETTINGS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_GROUP_PLAYERS, MAX_MAP_SIDE, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MIN_POINT_BUY_BUDGET, PF1E_STAT_METHODS, RULESETS, UNIVERSE_ROLES, UNIVERSE_STAGES, ZONE_LINK_MODES, ZONE_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
 
 export const universeStage = pgEnum('universe_stage', UNIVERSE_STAGES);
 export const universeRole = pgEnum('universe_role', UNIVERSE_ROLES);
@@ -15,6 +15,7 @@ export const passageOfTime = pgEnum('passage_of_time', PASSAGES_OF_TIME);
 export const zonePassageOfTime = pgEnum('zone_passage_of_time', ZONE_PASSAGES_OF_TIME);
 export const faerieMorning = pgEnum('faerie_morning', FAERIE_MORNINGS);
 export const zoneLinkMode = pgEnum('zone_link_mode', ZONE_LINK_MODES);
+export const pf1eStatMethod = pgEnum('pf1e_stat_method', PF1E_STAT_METHODS);
 
 /**
  * One row per player account
@@ -58,13 +59,47 @@ export const universes = pgTable('universes', {
 	lobbyZoneId: uuid('lobby_zone_id').references((): AnyPgColumn => zones.id, { onDelete: 'set null' }),
 
 	/**
-	 * Where groups start unless a race or class says otherwise
+	 * Where characters start unless their race or class says otherwise
 	 */
 	startingZoneId: uuid('starting_zone_id').references((): AnyPgColumn => zones.id, { onDelete: 'set null' }),
 
+	/**
+	 * Most characters in one group
+	 */
+	groupSize: smallint('group_size').notNull().default(MAX_GROUP_PLAYERS),
+
+	/**
+	 * The coins every character starts with, by coin: money is kept as pieces, never converted
+	 */
+	startingPlatinum: integer('starting_platinum').notNull().default(0),
+	startingGold: integer('starting_gold').notNull().default(0),
+	startingSilver: integer('starting_silver').notNull().default(0),
+	startingCopper: integer('starting_copper').notNull().default(0),
+
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
-	check('universes_faerie_morning_set', sql`(${table.passageOfTime} = 'faerie') = (${table.faerieMorning} IS NOT NULL)`)
+	check('universes_faerie_morning_set', sql`(${table.passageOfTime} = 'faerie') = (${table.faerieMorning} IS NOT NULL)`),
+	check('universes_group_size_range', sql`${table.groupSize} BETWEEN ${sql.raw(String(MIN_GROUP_SIZE))} AND ${sql.raw(String(MAX_GROUP_PLAYERS))}`),
+	check('universes_starting_coins_range', sql`${table.startingPlatinum} BETWEEN 0 AND ${sql.raw(String(PF1E_MAX_COINS))} AND ${table.startingGold} BETWEEN 0 AND ${sql.raw(String(PF1E_MAX_COINS))} AND ${table.startingSilver} BETWEEN 0 AND ${sql.raw(String(PF1E_MAX_COINS))} AND ${table.startingCopper} BETWEEN 0 AND ${sql.raw(String(PF1E_MAX_COINS))}`)
+]);
+
+/**
+ * How each Pathfinder 1E universe plays (its Ruleset tab). A universe without a row has DEFAULT_PF1E_SETTINGS
+ */
+export const pf1eSettings = pgTable('pf1e_settings', {
+	universeId: uuid('universe_id').primaryKey().references(() => universes.id, { onDelete: 'cascade' }),
+	statMethod: pf1eStatMethod('stat_method').notNull().default(DEFAULT_PF1E_SETTINGS.statMethod),
+
+	/**
+	 * The points players spend when statMethod is point_buy_custom
+	 */
+	customPointBuyBudget: smallint('custom_point_buy_budget').notNull().default(DEFAULT_PF1E_SETTINGS.customPointBuyBudget),
+
+	needsSleep: boolean('needs_sleep').notNull().default(DEFAULT_PF1E_SETTINGS.needsSleep),
+	coinsHaveWeight: boolean('coins_have_weight').notNull().default(DEFAULT_PF1E_SETTINGS.coinsHaveWeight),
+	tracksAmmo: boolean('tracks_ammo').notNull().default(DEFAULT_PF1E_SETTINGS.tracksAmmo)
+}, (table) => [
+	check('pf1e_settings_custom_point_buy_budget_range', sql`${table.customPointBuyBudget} BETWEEN ${sql.raw(String(PF1E_MIN_POINT_BUY_BUDGET))} AND ${sql.raw(String(PF1E_MAX_POINT_BUY_BUDGET))}`)
 ]);
 
 /**

@@ -7,6 +7,42 @@
 		"defaultMessage": "Close",
 		"description": "Button that closes a dialog that only shows something, with nothing to change"
 	},
+	"editor.characters.chooseZone": {
+		"defaultMessage": "Choose Starting Zone",
+		"description": "Button that opens the dialog for choosing the zone characters start in"
+	},
+	"editor.characters.groupSize": {
+		"defaultMessage": "Group size",
+		"description": "Label of the field for the most characters that can play together in one group"
+	},
+	"editor.characters.groupSizeHint": {
+		"defaultMessage": "{min, number} is single player. At most {max, number} characters can play together.",
+		"description": "Explains the group size field on the editor's Characters tab; {min} and {max} are the smallest and largest group sizes"
+	},
+	"editor.characters.saveFailed": {
+		"defaultMessage": "Could not save the character settings.",
+		"description": "Shown on the Characters tab when its settings couldn't be stored"
+	},
+	"editor.characters.startingMoney": {
+		"defaultMessage": "Starting money",
+		"description": "Label of the field for the money every character starts with"
+	},
+	"editor.characters.startingMoneyHint": {
+		"defaultMessage": "Amounts of coins, like {example}. Coins stay as they are given; races and classes can add more.",
+		"description": "Explains the starting money field on the editor's Characters tab; {example} is an amount of money, e.g. 12gp 5sp. Coins are never changed into other coins automatically"
+	},
+	"editor.characters.startingZone": {
+		"defaultMessage": "Starting zone: {zone}",
+		"description": "Shows the zone characters start in; {zone} is the zone's name"
+	},
+	"editor.characters.startingZoneHint": {
+		"defaultMessage": "Where characters start, unless their race or class says otherwise.",
+		"description": "Explains the starting zone on the editor's Characters tab"
+	},
+	"editor.characters.zoneFailed": {
+		"defaultMessage": "Could not load the starting zone.",
+		"description": "Shown on the Characters tab when the name of the zone characters start in couldn't be loaded"
+	},
 	"editor.error.failedBecause": {
 		"defaultMessage": "{failure} {reason}",
 		"description": "An editor action that failed, followed by why; {failure} is e.g. \"Could not save the tile.\" and {reason} is the server's explanation. Change only to reorder the two sentences"
@@ -383,9 +419,57 @@
 		"defaultMessage": "Your role: {role}",
 		"description": "In the editor's toolbar, the player's role in the universe; {role} is e.g. creator or builder"
 	},
+	"editor.ruleset.budget": {
+		"defaultMessage": "Points to spend",
+		"description": "Label of the field for how many points players spend on ability scores, shown when the universe chooses the number"
+	},
+	"editor.ruleset.coinsHaveWeight": {
+		"defaultMessage": "Coins count towards what characters carry",
+		"description": "Checkbox for whether the coins characters carry add to the weight they carry"
+	},
+	"editor.ruleset.heading": {
+		"defaultMessage": "Settings for {ruleset}",
+		"description": "At the top of the editor's Ruleset tab, naming the universe's game rules; {ruleset} is e.g. Pathfinder 1E"
+	},
+	"editor.ruleset.laterHint": {
+		"defaultMessage": "The game doesn't use sleep, weight or ammunition yet. These are kept for when it does.",
+		"description": "Explains that the sleep, weight and ammunition checkboxes are stored but have no effect in the game yet"
+	},
+	"editor.ruleset.loadFailed": {
+		"defaultMessage": "Could not load the ruleset's settings.",
+		"description": "Shown on the Ruleset tab when its settings couldn't be loaded"
+	},
+	"editor.ruleset.needsSleep": {
+		"defaultMessage": "Characters get tired and need sleep",
+		"description": "Checkbox for whether characters in the universe get tired and need to sleep"
+	},
+	"editor.ruleset.saveFailed": {
+		"defaultMessage": "Could not save the ruleset's settings.",
+		"description": "Shown on the Ruleset tab when its settings couldn't be stored"
+	},
+	"editor.ruleset.statMethod": {
+		"defaultMessage": "Rolling for stats",
+		"description": "Label of the field for how characters' ability scores are made: rolled with dice, or bought with points"
+	},
+	"editor.ruleset.statMethodHint": {
+		"defaultMessage": "Rolled scores can be rearranged among the abilities. Changing this doesn't change characters that already exist.",
+		"description": "Explains that changing how ability scores are made only affects characters made afterwards"
+	},
+	"editor.ruleset.tracksAmmo": {
+		"defaultMessage": "Ammunition is used up",
+		"description": "Checkbox for whether arrows and other ammunition are used up when fired"
+	},
+	"editor.tab.characters": {
+		"defaultMessage": "Characters",
+		"description": "Tab of the editor with what characters start with and how many play together"
+	},
 	"editor.tab.lobby": {
 		"defaultMessage": "Lobby",
 		"description": "Tab of the editor with the lobby's settings"
+	},
+	"editor.tab.ruleset": {
+		"defaultMessage": "Ruleset",
+		"description": "Tab of the editor with the settings of the universe's game rules, such as how ability scores are made"
 	},
 	"editor.tab.tilesets": {
 		"defaultMessage": "Tilesets",
@@ -675,6 +759,46 @@
 		"defaultMessage": "Add Zone",
 		"description": "Title of the dialog for making a new zone"
 	},
+	"editor.zoneSelect.disabled": {
+		"defaultMessage": "Disabled",
+		"description": "In the dialog for choosing a zone, under the name of a zone players can't go into"
+	},
+	"editor.zoneSelect.inside": {
+		"defaultMessage": "Inside {zone}",
+		"description": "In the dialog for choosing a zone, under a zone's name: the zone it is inside; {zone} is that zone's name"
+	},
+	"editor.zoneSelect.loadFailed": {
+		"defaultMessage": "Could not load the zones.",
+		"description": "Shown in the dialog for choosing a zone when the universe's zones couldn't be loaded"
+	},
+	"editor.zoneSelect.none": {
+		"defaultMessage": "No zones match.",
+		"description": "Shown in the dialog for choosing a zone when no zone's name matches the search"
+	},
+	"editor.zoneSelect.results": {
+		"defaultMessage": "Zones",
+		"description": "Name of the list of zones to choose from, for screen readers"
+	},
+	"editor.zoneSelect.search": {
+		"defaultMessage": "Search by name",
+		"description": "Shown in the empty field that narrows the zones down by name"
+	},
+	"editor.zoneSelect.searchLabel": {
+		"defaultMessage": "Search zones by name",
+		"description": "Name of the field that narrows the zones down by name, for screen readers"
+	},
+	"editor.zoneSelect.submit": {
+		"defaultMessage": "Choose",
+		"description": "Button that chooses the zone selected in the dialog"
+	},
+	"editor.zoneSelect.summary": {
+		"defaultMessage": "{indoors, select, true {Indoors} other {Outdoors}}, {height, number} tall by {width, number} wide",
+		"description": "In the dialog for choosing a zone, describes the chosen zone under its map preview; {height} and {width} are its size in cells"
+	},
+	"editor.zoneSelect.title": {
+		"defaultMessage": "Choose a Zone",
+		"description": "Title of the dialog for choosing one of the universe's zones"
+	},
 	"editor.zones.add": {
 		"defaultMessage": "Add Zone",
 		"description": "Button that opens the dialog for making a new zone"
@@ -807,9 +931,17 @@
 		"defaultMessage": "The default tile must be a tile this universe can use.",
 		"description": "Why a zone's settings were refused: the default tile was deleted, perhaps by another editor"
 	},
+	"error.unusableStartingZone": {
+		"defaultMessage": "The starting zone must be a zone of this universe other than the lobby.",
+		"description": "Why a universe's settings were refused: the zone chosen for characters to start in is the lobby, or was deleted, perhaps by another editor"
+	},
 	"error.unusableTile": {
 		"defaultMessage": "One of the tiles painted isn't one this universe can use.",
 		"description": "Why painting was refused: a tile was deleted, perhaps by another editor"
+	},
+	"error.wrongRuleset": {
+		"defaultMessage": "These settings are for a different ruleset than the universe's.",
+		"description": "Why a universe's ruleset settings were refused: they were made for another set of game rules"
 	},
 	"error.zoneInsideItself": {
 		"defaultMessage": "A zone can't be inside itself.",
@@ -831,6 +963,14 @@
 		"defaultMessage": "Use letters, numbers, spaces or punctuation.",
 		"description": "Shown by a text field when what was typed is empty or has characters that aren't allowed"
 	},
+	"form.money.format": {
+		"defaultMessage": "Write amounts of coins, like {example}.",
+		"description": "Shown under a money field when what was typed isn't amounts of coins; {example} is an amount in the coins' abbreviations, e.g. 1pp 2gp 2sp 4cp"
+	},
+	"form.money.tooManyCoins": {
+		"defaultMessage": "That's more than {max, number} pieces of one coin.",
+		"description": "Shown under a money field when the number typed for one coin, such as gold pieces, is too large; {max} is the most pieces of one coin there can be"
+	},
 	"form.name": {
 		"defaultMessage": "Name",
 		"description": "Label of the field for the name of a universe, zone or tile"
@@ -846,6 +986,10 @@
 	"form.saved": {
 		"defaultMessage": "Saved",
 		"description": "Shown next to a form's Save button once its changes are stored"
+	},
+	"form.wholeNumber": {
+		"defaultMessage": "Enter a whole number from {min, number} to {max, number}.",
+		"description": "Shown under a number field when what was typed isn't a whole number in the range it allows; {min} and {max} are the smallest and largest allowed"
 	},
 	"group.connectionLost": {
 		"defaultMessage": "Lost the connection to the game.",

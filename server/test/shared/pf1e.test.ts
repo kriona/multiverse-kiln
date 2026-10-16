@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { formatPf1eMoney, isPf1eRollMethod, isValidPf1eMoney, isValidPf1ePointBuy, parsePf1eMoney, PF1E_MAX_MONEY, PF1E_MAX_POINT_BUY_BUDGET, PF1E_RACES, PF1E_STAT_METHODS, pf1eAbilityModifier, pf1ePointBuyBudget, pf1ePointBuyCost, pf1ePointBuyTotal, type Pf1eAbilityScores } from '@multiverse-kiln/shared';
+import { addPf1eMoney, changePf1eMoney, emptyPf1eMoney, formatPf1eMoney, isPf1eRollMethod, isValidPf1ePointBuy, parsePf1eMoney, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_RACES, PF1E_STAT_METHODS, pf1eAbilityModifier, pf1eMoneyValue, pf1ePointBuyBudget, pf1ePointBuyCost, pf1ePointBuyTotal, type Pf1eAbilityScores, type Pf1eMoney } from '@multiverse-kiln/shared';
 
 const ENGLISH_COINS = {
 	pp: ['pp'],
@@ -14,6 +14,20 @@ const ENGLISH_ABBREVIATIONS = {
 	sp: 'sp',
 	cp: 'cp'
 };
+
+/**
+ * An amount of money
+ *
+ * @param pp Platinum pieces
+ * @param gp Gold pieces
+ * @param sp Silver pieces
+ * @param cp Copper pieces
+ * @return The amount
+ */
+function coins(pp: number, gp: number, sp: number, cp: number): Pf1eMoney
+{
+	return({ pp, gp, sp, cp });
+}
 
 /**
  * Ability scores with every ability at the same score
@@ -134,25 +148,31 @@ describe('PF1E ruleset (shared)', () =>
 	{
 		it('reads coins in any order, with or without spaces and commas', () =>
 		{
-			assert.deepStrictEqual(parsePf1eMoney('1pp 2gp 2sp 4cp', ENGLISH_COINS), { copper: 1224 });
-			assert.deepStrictEqual(parsePf1eMoney('4cp, 2 sp,1pp  2gp ', ENGLISH_COINS), { copper: 1224 });
-			assert.deepStrictEqual(parsePf1eMoney('5gp3sp', ENGLISH_COINS), { copper: 530 });
+			assert.deepStrictEqual(parsePf1eMoney('1pp 2gp 2sp 4cp', ENGLISH_COINS), { money: coins(1, 2, 2, 4) });
+			assert.deepStrictEqual(parsePf1eMoney('4cp, 2 sp,1pp  2gp ', ENGLISH_COINS), { money: coins(1, 2, 2, 4) });
+			assert.deepStrictEqual(parsePf1eMoney('5gp3sp', ENGLISH_COINS), { money: coins(0, 5, 3, 0) });
+		});
+
+		it('keeps coins as written, without changing them for others', () =>
+		{
+			assert.deepStrictEqual(parsePf1eMoney('1pp 302gp 4444sp 10cp', ENGLISH_COINS), { money: coins(1, 302, 4444, 10) });
+			assert.deepStrictEqual(parsePf1eMoney('15sp', ENGLISH_COINS), { money: coins(0, 0, 15, 0) });
 		});
 
 		it('ignores capitals in the abbreviations', () =>
 		{
-			assert.deepStrictEqual(parsePf1eMoney('3GP 1Sp', ENGLISH_COINS), { copper: 310 });
+			assert.deepStrictEqual(parsePf1eMoney('3GP 1Sp', ENGLISH_COINS), { money: coins(0, 3, 1, 0) });
 		});
 
 		it('adds up a coin written twice', () =>
 		{
-			assert.deepStrictEqual(parsePf1eMoney('2gp 3gp', ENGLISH_COINS), { copper: 500 });
+			assert.deepStrictEqual(parsePf1eMoney('2gp 3gp', ENGLISH_COINS), { money: coins(0, 5, 0, 0) });
 		});
 
 		it('reads an empty field as no money', () =>
 		{
-			assert.deepStrictEqual(parsePf1eMoney('', ENGLISH_COINS), { copper: 0 });
-			assert.deepStrictEqual(parsePf1eMoney('   ', ENGLISH_COINS), { copper: 0 });
+			assert.deepStrictEqual(parsePf1eMoney('', ENGLISH_COINS), { money: emptyPf1eMoney() });
+			assert.deepStrictEqual(parsePf1eMoney('   ', ENGLISH_COINS), { money: emptyPf1eMoney() });
 		});
 
 		it('accepts every abbreviation it is given for a coin', () =>
@@ -162,7 +182,7 @@ describe('PF1E ruleset (shared)', () =>
 				gp: ['gp', 'doubloons']
 			};
 
-			assert.deepStrictEqual(parsePf1eMoney('2 doubloons 1gp', withPirate), { copper: 300 });
+			assert.deepStrictEqual(parsePf1eMoney('2 doubloons 1gp', withPirate), { money: coins(0, 3, 0, 0) });
 		});
 
 		it('refuses numbers without a coin, unknown coins and amounts that aren\'t whole', () =>
@@ -175,38 +195,45 @@ describe('PF1E ruleset (shared)', () =>
 			assert.deepStrictEqual(parsePf1eMoney('1.5gp', ENGLISH_COINS), { error: 'format' });
 		});
 
-		it('refuses more than the most money there can be', () =>
+		it('refuses more pieces of one coin than an amount can hold', () =>
 		{
-			assert.deepStrictEqual(parsePf1eMoney('10000000gp', ENGLISH_COINS), { copper: PF1E_MAX_MONEY });
-			assert.deepStrictEqual(parsePf1eMoney('10000000gp 1cp', ENGLISH_COINS), { error: 'tooMuch' });
+			assert.deepStrictEqual(parsePf1eMoney(`${PF1E_MAX_COINS}gp ${PF1E_MAX_COINS}sp`, ENGLISH_COINS), { money: coins(0, PF1E_MAX_COINS, PF1E_MAX_COINS, 0) });
+			assert.deepStrictEqual(parsePf1eMoney(`${PF1E_MAX_COINS}gp 1gp`, ENGLISH_COINS), { error: 'tooMuch' });
 			assert.deepStrictEqual(parsePf1eMoney('99999999999999999999pp', ENGLISH_COINS), { error: 'tooMuch' });
 		});
 
-		it('writes amounts in gold, silver and copper, leaving out coins there are none of', () =>
+		it('writes each coin there is, most valuable first, leaving out coins there are none of', () =>
 		{
-			assert.strictEqual(formatPf1eMoney(1224, ENGLISH_ABBREVIATIONS), '12gp 2sp 4cp');
-			assert.strictEqual(formatPf1eMoney(1500, ENGLISH_ABBREVIATIONS), '15gp');
-			assert.strictEqual(formatPf1eMoney(7, ENGLISH_ABBREVIATIONS), '7cp');
-			assert.strictEqual(formatPf1eMoney(0, ENGLISH_ABBREVIATIONS), '0gp');
+			assert.strictEqual(formatPf1eMoney(coins(1, 302, 4444, 10), ENGLISH_ABBREVIATIONS), '1pp 302gp 4444sp 10cp');
+			assert.strictEqual(formatPf1eMoney(coins(0, 0, 15, 0), ENGLISH_ABBREVIATIONS), '15sp');
+			assert.strictEqual(formatPf1eMoney(emptyPf1eMoney(), ENGLISH_ABBREVIATIONS), '0gp');
 		});
 
 		it('reads back what it writes', () =>
 		{
-			for (const copper of [0, 1, 99, 1224, 31415, PF1E_MAX_MONEY])
+			for (const money of [emptyPf1eMoney(), coins(1, 2, 2, 4), coins(0, 0, 0, 7), coins(1, 302, 4444, 10), coins(PF1E_MAX_COINS, 0, PF1E_MAX_COINS, 0)])
 			{
-				assert.deepStrictEqual(parsePf1eMoney(formatPf1eMoney(copper, ENGLISH_ABBREVIATIONS), ENGLISH_COINS), { copper });
+				assert.deepStrictEqual(parsePf1eMoney(formatPf1eMoney(money, ENGLISH_ABBREVIATIONS), ENGLISH_COINS), { money });
 			}
 		});
 
-		it('validates amounts from untrusted input', () =>
+		it('adds amounts coin by coin, without changing coins for others', () =>
 		{
-			assert.ok(isValidPf1eMoney(0));
-			assert.ok(isValidPf1eMoney(PF1E_MAX_MONEY));
-			assert.ok(!isValidPf1eMoney(-1));
-			assert.ok(!isValidPf1eMoney(PF1E_MAX_MONEY + 1));
-			assert.ok(!isValidPf1eMoney(1.5));
-			assert.ok(!isValidPf1eMoney('100'));
-			assert.ok(!isValidPf1eMoney(null));
+			assert.deepStrictEqual(addPf1eMoney(coins(0, 1, 5, 0), coins(1, 0, 5, 3)), coins(1, 1, 10, 3));
+		});
+
+		it('values an amount in copper pieces', () =>
+		{
+			assert.strictEqual(pf1eMoneyValue(coins(1, 302, 4444, 10)), 75650);
+			assert.strictEqual(pf1eMoneyValue(emptyPf1eMoney()), 0);
+		});
+
+		it('changes money into the fewest coins of the same worth, as a money changer does', () =>
+		{
+			assert.deepStrictEqual(changePf1eMoney(coins(1, 302, 4444, 10)), coins(75, 6, 5, 0));
+			assert.deepStrictEqual(changePf1eMoney(coins(0, 0, 0, 1234)), coins(1, 2, 3, 4));
+			assert.deepStrictEqual(changePf1eMoney(coins(0, 0, 9, 9)), coins(0, 0, 9, 9));
+			assert.deepStrictEqual(changePf1eMoney(emptyPf1eMoney()), emptyPf1eMoney());
 		});
 	});
 });

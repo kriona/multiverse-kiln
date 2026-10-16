@@ -373,3 +373,21 @@
 		}
 	}
 }
+
+.zone-select-dialog
+{
+	width: min(480px, calc(100vw - 32px));
+
+	.zone-select-results
+	{
+		max-height: 220px;
+		overflow-y: auto;
+	}
+
+	.zone-select-preview
+	{
+		align-self: flex-start;
+		line-height: 0;
+		border: 1px solid $border;
+	}
+}
