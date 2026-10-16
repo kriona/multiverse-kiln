@@ -17,6 +17,9 @@ An engine for making multiplayer browser-based role-playing games.
 
 ```
 /client          Phaser game (Vite). Uses `@colyseus/sdk` (formerly colyseus.js) to connect to the server.
+                 Two pages: index.html (Home, lobby and game; src/main.ts, src/style.scss) and edit.html (the
+                 world editor; src/edit.ts, src/edit.scss). Both styles use src/_shared.scss, and
+                 src/pages.ts holds the addresses that link the pages
 /server          Colyseus server.
   src/index.ts       Colyseus Cloud entry point - never modify it (Colyseus's rule for Cloud deploys)
   src/app.config.ts  define room types, HTTP routes, Express middleware

@@ -71,8 +71,9 @@ export class ZonesTab
 
 	/**
 	 * @param api The editor's API
+	 * @param onZoneChanged Called with the zone the zone editor opens, or undefined when the tab goes back to the list
 	 */
-	constructor(private readonly api: EditorApi)
+	constructor(private readonly api: EditorApi, private readonly onZoneChanged: (zoneId: string | undefined) => void)
 	{
 		this.mapEditor = new MapEditor(api, (bounds) =>
 		{
@@ -155,15 +156,24 @@ export class ZonesTab
 	}
 
 	/**
-	 * Lists a universe's zones
+	 * Lists a universe's zones, or opens one of them
 	 *
 	 * @param universe The universe
+	 * @param zoneId The zone to open, or undefined for the list
 	 */
-	open(universe: EditableUniverse): void
+	open(universe: EditableUniverse, zoneId?: string): void
 	{
 		this.universe = universe;
 		this.addButton.hidden = !canEditWorld(universe.role);
-		void this.showList();
+
+		if (zoneId === undefined)
+		{
+			void this.showList();
+		}
+		else
+		{
+			void this.openZone(zoneId);
+		}
 	}
 
 	/**
@@ -194,6 +204,7 @@ export class ZonesTab
 			return;
 		}
 
+		this.onZoneChanged(zoneId);
 		this.listView.hidden = true;
 		this.editorView.hidden = false;
 		this.editorTitle.textContent = 'Loading...';
@@ -236,6 +247,7 @@ export class ZonesTab
 		const version = ++this.openVersion;
 
 		this.zone = undefined;
+		this.onZoneChanged(undefined);
 		this.mapEditor.hide();
 		this.listView.hidden = false;
 		this.editorView.hidden = true;
@@ -368,7 +380,10 @@ export class ZonesTab
 			{ value: '', label: 'None (a top-level zone)' },
 			...this.zones.zones
 				.filter((other) => !excluded.has(other.id))
-				.map((other) => ({ value: other.id, label: other.name }))
+				.map((other) => ({
+					value: other.id,
+					label: other.name
+				}))
 		]);
 		this.parent.value = (zone.parentZoneId ?? '');
 		this.outdoors.checked = !zone.indoors;

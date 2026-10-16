@@ -9,17 +9,26 @@ import { ZonesTab } from './ZonesTab';
 /**
  * The editor's tabs
  */
-type TabName = 'universe' | 'lobby' | 'tilesets' | 'zones';
-
-const tabNames: TabName[] = [
+export const EDITOR_TABS = [
 	'universe',
 	'lobby',
 	'tilesets',
 	'zones'
-];
+] as const;
+
+export type EditorTab = typeof EDITOR_TABS[number];
 
 /**
- * What the editor asks the app to do
+ * Where in the editor the player is: the tab shown, and the zone open in the zone editor
+ */
+export interface EditorPlace
+{
+	tab: EditorTab;
+	zoneId: string | undefined;
+}
+
+/**
+ * What the editor asks the page to do
  */
 export interface EditorScreenActions
 {
@@ -32,6 +41,22 @@ export interface EditorScreenActions
 	 * Goes into the universe's lobby to play it
 	 */
 	play: (universe: UniverseSummary) => void;
+
+	/**
+	 * The player has moved to another tab or zone, so the page's address can follow
+	 */
+	placeChanged: (place: EditorPlace) => void;
+}
+
+/**
+ * Whether a value names one of the editor's tabs
+ *
+ * @param value The value, e.g. from the page's address
+ * @return True when it does
+ */
+export function isEditorTab(value: string | undefined): value is EditorTab
+{
+	return(EDITOR_TABS.some((tab) => (tab === value)));
 }
 
 /**
@@ -54,6 +79,8 @@ export class EditorScreen
 	 */
 	private universe: EditableUniverse | undefined;
 
+	private place: EditorPlace = { tab: 'universe', zoneId: undefined };
+
 	/**
 	 * Changes every time a universe is opened, so one that arrives for an earlier open is ignored
 	 */
@@ -63,16 +90,19 @@ export class EditorScreen
 	 * @param api The editor's API
 	 * @param actions What the screen's controls do
 	 */
-	constructor(private readonly api: EditorApi, actions: EditorScreenActions)
+	constructor(private readonly api: EditorApi, private readonly actions: EditorScreenActions)
 	{
 		this.universeTab = new UniverseTab(api, (universe) =>
 		{
 			this.setUniverse(universe);
 		});
 		this.tilesetsTab = new TilesetsTab(api);
-		this.zonesTab = new ZonesTab(api);
+		this.zonesTab = new ZonesTab(api, (zoneId) =>
+		{
+			this.setPlace({ ...this.place, zoneId });
+		});
 
-		for (const name of tabNames)
+		for (const name of EDITOR_TABS)
 		{
 			getElement(`editor-tab-${name}`, HTMLButtonElement).addEventListener('click', () =>
 			{
@@ -106,11 +136,13 @@ export class EditorScreen
 	}
 
 	/**
-	 * Loads a universe and shows its Universe tab
+	 * Loads a universe and shows it
 	 *
 	 * @param universeId The universe's ID
+	 * @param place The tab to show and the zone to open; the Universe tab when neither is given, or the
+	 * Zones tab when only a zone is
 	 */
-	async open(universeId: string): Promise<void>
+	async open(universeId: string, place: Partial<EditorPlace> = {}): Promise<void>
 	{
 		const version = ++this.openVersion;
 
@@ -118,7 +150,6 @@ export class EditorScreen
 		this.title.textContent = 'Edit Universe';
 		this.role.textContent = '';
 		this.hideNotice();
-		this.selectTab('universe');
 
 		let universe: EditableUniverse;
 
@@ -141,20 +172,12 @@ export class EditorScreen
 			return;
 		}
 
+		this.place = { tab: (place.tab ?? ((place.zoneId === undefined) ? 'universe' : 'zones')), zoneId: place.zoneId };
 		this.setUniverse(universe);
 		this.universeTab.open(universe);
 		this.tilesetsTab.open(universe);
-		this.zonesTab.open(universe);
-	}
-
-	/**
-	 * The ID of the universe being edited
-	 *
-	 * @return The ID, or undefined while none is loaded
-	 */
-	get universeId(): string | undefined
-	{
-		return(this.universe?.id);
+		this.zonesTab.open(universe, place.zoneId);
+		this.selectTab(this.place.tab);
 	}
 
 	/**
@@ -184,6 +207,7 @@ export class EditorScreen
 	{
 		this.universe = universe;
 		this.title.textContent = `Edit ${universe.name}`;
+		document.title = `Edit ${universe.name} - Multiverse Kiln`;
 		this.role.textContent = universe.role.replaceAll('_', ' ');
 		this.zonesTab.setUniverse(universe);
 	}
@@ -193,14 +217,27 @@ export class EditorScreen
 	 *
 	 * @param selected The tab to show
 	 */
-	private selectTab(selected: TabName): void
+	private selectTab(selected: EditorTab): void
 	{
-		for (const name of tabNames)
+		for (const name of EDITOR_TABS)
 		{
 			const tab = getElement(`editor-tab-${name}`, HTMLButtonElement);
 
 			tab.setAttribute('aria-selected', String(name === selected));
 			getElement(`editor-panel-${name}`, HTMLElement).hidden = (name !== selected);
 		}
+
+		this.setPlace({ ...this.place, tab: selected });
+	}
+
+	/**
+	 * Remembers where the player is in the editor and tells the page
+	 *
+	 * @param place The tab and zone
+	 */
+	private setPlace(place: EditorPlace): void
+	{
+		this.place = place;
+		this.actions.placeChanged(place);
 	}
 }

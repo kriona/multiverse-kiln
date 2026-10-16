@@ -170,7 +170,10 @@ export class LinkDialog
 		this.pickDestination.checked = true;
 		this.deleteButton.hidden = !link;
 		this.fields.disabled = false;
-		setOptions(this.targetZone, others.map((zone) => ({ value: zone.id, label: zone.name })));
+		setOptions(this.targetZone, others.map((zone) => ({
+			value: zone.id,
+			label: zone.name
+		})));
 		this.targetZone.value = (link?.targetZoneId ?? others[0]?.id ?? '');
 		showMessage(this.error, ((others.length === 0) ? 'Add another zone to link to first.' : undefined));
 		this.updateCells();

@@ -21,7 +21,7 @@ The server is authoritative: clients send inputs, and the server simulates the g
 This is an [npm workspaces](https://docs.npmjs.com/cli/using-npm/workspaces) monorepo with three packages:
 
 ```
-/client     Phaser game (Vite)
+/client     Phaser game (Vite): the game (index.html) and the world editor (edit.html)
 /server     Colyseus server
 /shared     Code used by both client and server (published locally as @multiverse-kiln/shared)
 ```

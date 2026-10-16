@@ -352,8 +352,14 @@ export class HomeScreen
 	{
 		this.createForm.reset();
 		setOptions(this.createRuleset, [
-			{ value: '', label: 'Choose a ruleset' },
-			...RULESETS.map((ruleset) => ({ value: ruleset, label: RULESET_NAMES[ruleset] }))
+			{
+				value: '',
+				label: 'Choose a ruleset'
+			},
+			...RULESETS.map((ruleset) => ({
+				value: ruleset,
+				label: RULESET_NAMES[ruleset]
+			}))
 		]);
 		showMessage(this.createError, undefined);
 		this.createSubmit.disabled = false;

@@ -1,19 +1,12 @@
 /**
- * The screens in index.html; exactly one is shown at a time
+ * The screens the pages have, each an element with the ID "<name>-screen" and the class "screen". Every
+ * page has status and login; index.html has home, lobby and group, and edit.html has editor. Exactly one
+ * is shown at a time
  */
 export type ScreenName = 'status' | 'login' | 'home' | 'editor' | 'lobby' | 'group';
 
-const screenNames: ScreenName[] = [
-	'status',
-	'login',
-	'home',
-	'editor',
-	'lobby',
-	'group'
-];
-
 /**
- * Finds an element in index.html by ID
+ * Finds an element in the page by ID
  *
  * @param id The element's ID
  * @param type The element's expected class, e.g. HTMLInputElement
@@ -25,22 +18,24 @@ export function getElement<T extends HTMLElement>(id: string, type: new () => T)
 
 	if (!(element instanceof type))
 	{
-		throw new Error(`index.html has no ${type.name} with the ID "${id}"`);
+		throw new Error(`The page has no ${type.name} with the ID "${id}"`);
 	}
 
 	return(element);
 }
 
 /**
- * Shows one screen and hides the others
+ * Shows one of the page's screens and hides the others
  *
  * @param name The screen to show
  */
 export function showScreen(name: ScreenName): void
 {
-	for (const screen of screenNames)
+	getElement(`${name}-screen`, HTMLElement);
+
+	for (const screen of document.querySelectorAll<HTMLElement>('.screen'))
 	{
-		getElement(`${screen}-screen`, HTMLElement).hidden = (screen !== name);
+		screen.hidden = (screen.id !== `${name}-screen`);
 	}
 }
 

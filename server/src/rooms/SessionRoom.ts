@@ -1,4 +1,4 @@
-import { matchMaker, Room, type AuthContext, type Client, type CloseCode, type IRoomCache } from 'colyseus';
+import { matchMaker, Room, type AuthContext, type Client, type CloseCode, type Delayed, type IRoomCache } from 'colyseus';
 import { GAME_ROOM_NAME, MAX_GROUP_PLAYERS, NoticeReason, SessionMessageType, SessionServerMessageType, type AccountPayload, type NoticePayload } from '@multiverse-kiln/shared';
 
 import { loadOrCreatePlayerByName, type PlayerProfile } from '../db/playerRepo.js';
@@ -34,14 +34,26 @@ function browserIdOf(client: SessionClient): string
 }
 
 /**
+ * How long a browser stays logged in after its last window leaves, in milliseconds, so that reloading
+ * a page or moving to another page of the client doesn't log the player out
+ */
+const LOG_OUT_DELAY_MS = 15000;
+
+/**
  * The session: where windows log in, learn who their player is, and join and leave groups
  *
  * There is one session room, which every window joins as soon as it loads and stays in until it
  * closes, wherever its player is: it is how the server tells all of a browser's windows that the
- * player has logged in or changed group. A browser is logged out once its last window has left
+ * player has logged in or changed group. A browser is logged out once its last window has been gone
+ * for logOutDelayMs
  */
 export class SessionRoom extends Room<{ client: SessionClient }>
 {
+	/**
+	 * How long a browser stays logged in after its last window leaves; tests shorten it
+	 */
+	static logOutDelayMs = LOG_OUT_DELAY_MS;
+
 	autoDispose = false;
 
 	// Clients send a message only when the player does something, so an honest client stays far below this
@@ -56,6 +68,11 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 	 * The clients of each browser in the room (server-only)
 	 */
 	private readonly windows = new Map<string, Set<SessionClient>>();
+
+	/**
+	 * The logouts waiting for a browser's windows to come back, by browser ID
+	 */
+	private readonly pendingLogOuts = new Map<string, Delayed>();
 
 	private readonly invalidMessages = new InvalidMessages();
 
@@ -182,7 +199,8 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 	}
 
 	/**
-	 * Records the window, and tells it who its player is
+	 * Records the window, keeps its browser logged in if it was about to be logged out, and tells the
+	 * window who its player is
 	 *
 	 * @param client The joining client
 	 */
@@ -190,6 +208,9 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 	{
 		const browserId = browserIdOf(client);
 		let clients = this.windows.get(browserId);
+
+		this.pendingLogOuts.get(browserId)?.clear();
+		this.pendingLogOuts.delete(browserId);
 
 		if (!clients)
 		{
@@ -202,7 +223,8 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 	}
 
 	/**
-	 * Forgets the window, and logs its browser out once it has no windows left
+	 * Forgets the window. Once its browser has no windows left, logs the browser out after
+	 * logOutDelayMs unless a window of it joins again first
 	 *
 	 * @param client The leaving client
 	 * @param code WebSocket close code
@@ -218,7 +240,11 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 		if (clients?.size === 0)
 		{
 			this.windows.delete(browserId);
-			onlinePlayers.logOut(browserId);
+			this.pendingLogOuts.set(browserId, this.clock.setTimeout(() =>
+			{
+				this.pendingLogOuts.delete(browserId);
+				onlinePlayers.logOut(browserId);
+			}, SessionRoom.logOutDelayMs));
 		}
 
 		console.log(client.sessionId, 'left the session', code);

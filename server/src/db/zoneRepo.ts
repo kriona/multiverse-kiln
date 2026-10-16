@@ -477,12 +477,21 @@ export async function resizeZone(zoneId: string, bounds: MapBounds, discard: boo
 		));
 	const clipped = edgeChunks
 		.filter((chunk) => !isChunkInside(chunk.chunkColumn, chunk.chunkRow, bounds))
-		.map((chunk) => ({ ...chunk, ...clipChunk(chunk.chunkColumn, chunk.chunkRow, chunk.cells, bounds) }))
+		.map((chunk) => ({
+			...chunk,
+			...clipChunk(chunk.chunkColumn, chunk.chunkRow, chunk.cells, bounds)
+		}))
 		.filter((chunk) => (chunk.discarded > 0));
 	const discardedCells = clipped.reduce((total, chunk) => (total + chunk.discarded), 0);
 	const discardedLinkCondition = or(
-		and(eq(zoneLinks.zoneId, zoneId), outsideBounds(zoneLinks.column, zoneLinks.row, bounds)),
-		and(eq(zoneLinks.targetZoneId, zoneId), outsideBounds(zoneLinks.targetColumn, zoneLinks.targetRow, bounds))
+		and(
+			eq(zoneLinks.zoneId, zoneId),
+			outsideBounds(zoneLinks.column, zoneLinks.row, bounds)
+		),
+		and(
+			eq(zoneLinks.targetZoneId, zoneId),
+			outsideBounds(zoneLinks.targetColumn, zoneLinks.targetRow, bounds)
+		)
 	);
 	const [{ total: discardedLinks }] = await executor
 		.select({ total: count() })
