@@ -1,11 +1,12 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { DEFAULT_TILE_CELL, EDITOR_UNIVERSES_PATH, MAX_CREATED_UNIVERSES, NEW_ZONE_BOUNDS, VOID_CELL, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorZone, type ResizeConflictPayload, type TileListPayload, type TileSettings, type UniverseRole, type ZoneListPayload } from '@multiverse-kiln/shared';
+import { chunkKey, DEFAULT_TILE_CELL, EDITOR_UNIVERSES_PATH, MAX_CREATED_UNIVERSES, NEW_ZONE_BOUNDS, VOID_CELL, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorZone, type ResizeConflictPayload, type TileListPayload, type TileSettings, type UniverseRole, type ZoneListPayload } from '@multiverse-kiln/shared';
 
 import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
 import { onlinePlayers } from '../src/players/onlinePlayers.js';
+import { zoneChanges, type ZoneChange } from '../src/world/zoneChanges.js';
 import { defaultTileId } from './db/fixtures.js';
 import { allowedTestOrigin } from './setup.js';
 import { getTestServer, logOutEveryone, testServerUrl } from './testServer.js';
@@ -536,6 +537,73 @@ describe('World editor API', () =>
 			assert.strictEqual((await send(ada, 'PUT', `${path}/99/0`, { body: target })).status, 400);
 			assert.strictEqual((await send(ada, 'PUT', `${path}/x/0`, { body: target })).status, 400);
 			assert.deepStrictEqual((await send(ada, 'GET', path)).body, { links: [] });
+		});
+	});
+
+	describe('world changes', () =>
+	{
+		let published: ZoneChange[];
+		let stopListening: () => void;
+
+		beforeEach(() =>
+		{
+			published = [];
+			stopListening = zoneChanges.onChange((change) =>
+			{
+				published.push(change);
+			});
+		});
+
+		afterEach(() =>
+		{
+			stopListening();
+		});
+
+		it('tells the rooms which chunks painting changed', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const zoneId = await createZone(ada, universeId);
+
+			await send(ada, 'PATCH', `/${universeId}/zones/${zoneId}/cells`, { body: { changes: [[0, 0, VOID_CELL], [-1, 0, VOID_CELL], [1, 1, VOID_CELL]] } });
+
+			assert.deepStrictEqual(published, [{ kind: 'cells', zoneId, chunkKeys: [chunkKey(0, 0), chunkKey(-1, 0)] }]);
+		});
+
+		it('tells the rooms about changes to a zone\'s settings, bounds and links, and its deletion', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const zoneId = await createZone(ada, universeId);
+			const otherId = await createZone(ada, universeId, { name: 'Other' });
+			const path = `/${universeId}/zones/${zoneId}`;
+
+			await send(ada, 'PATCH', path, { body: { name: 'Renamed' } });
+			await send(ada, 'PUT', `${path}/bounds`, { body: { bounds: { minColumn: -5, minRow: -5, maxColumn: 5, maxRow: 5 }, discard: true } });
+			await send(ada, 'PUT', `${path}/links/0/0`, { body: { targetZoneId: otherId, targetColumn: 0, targetRow: 0, mode: 'manual', requiresWholeGroup: false } });
+			await send(ada, 'DELETE', `${path}/links/0/0`);
+			await send(ada, 'DELETE', path);
+
+			assert.deepStrictEqual(published, [
+				{ kind: 'zone', zoneId },
+				{ kind: 'zone', zoneId },
+				{ kind: 'zone', zoneId },
+				{ kind: 'zone', zoneId },
+				{ kind: 'deleted', zoneId }
+			]);
+		});
+
+		it('tells the rooms when the universe\'s tiles change, and nothing when a change is refused', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const grassId = await defaultTileId('grass');
+
+			await send(ada, 'PUT', `/${universeId}/tiles/${grassId}`, { body: lava });
+			await send(ada, 'DELETE', `/${universeId}/tiles/${grassId}`);
+			await send(ada, 'POST', `/${universeId}/tiles`, { body: { ...lava, movementCost: 101 } });
+
+			assert.deepStrictEqual(published, [
+				{ kind: 'tiles', universeId },
+				{ kind: 'tiles', universeId }
+			]);
 		});
 	});
 });

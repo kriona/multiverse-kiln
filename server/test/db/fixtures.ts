@@ -1,8 +1,9 @@
-import { CHUNK_SIZE, cellIndexInChunk, DEFAULT_TILE_CELL, type MapBounds } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, type MapBounds } from '@multiverse-kiln/shared';
 
 import { findDefaultTileIds } from '../../src/db/tileRepo.js';
 import { createUniverse, setUniverseZones } from '../../src/db/universeRepo.js';
-import { createZone, createZoneLink, saveGroundChunk } from '../../src/db/zoneRepo.js';
+import { createZone, createZoneLink, loadChunks, loadZone, saveGroundChunk } from '../../src/db/zoneRepo.js';
+import type { ZoneMap } from '../../src/logic/zoneGrid.js';
 
 /**
  * A universe with a lobby to walk around and a starting zone for groups, from addPlayableUniverse()
@@ -75,6 +76,42 @@ export async function addZone(universeId: string, name: string = 'Test Zone', op
 		defaultTileId: await defaultTileId(options.tile ?? 'grass'),
 		bounds: (options.bounds ?? { minColumn: -2, minRow: -1, maxColumn: 2, maxRow: 1 })
 	}));
+}
+
+/**
+ * A zone's whole map: the zone with every one of its stored chunks, for checking cells in tests
+ *
+ * @param zoneId The zone's ID
+ * @return The map, or undefined when there is no such zone
+ */
+export async function loadWholeMap(zoneId: string): Promise<ZoneMap | undefined>
+{
+	const loaded = await loadZone(zoneId);
+
+	if (!loaded)
+	{
+		return(undefined);
+	}
+
+	const { bounds } = loaded;
+	const chunks = await loadChunks(zoneId, {
+		minChunkColumn: chunkCoordinate(bounds.minColumn),
+		minChunkRow: chunkCoordinate(bounds.minRow),
+		maxChunkColumn: chunkCoordinate(bounds.maxColumn),
+		maxChunkRow: chunkCoordinate(bounds.maxRow)
+	});
+
+	return({
+		tiles: {
+			bounds,
+			defaultTileId: loaded.defaultTileId,
+			chunks: new Map(chunks.map((chunk) => [chunkKey(chunk.chunkColumn, chunk.chunkRow), chunk.cells]))
+		},
+		loopsEastWest: loaded.loopsEastWest,
+		loopsNorthSouth: loaded.loopsNorthSouth,
+		tileMovementCosts: new Map(loaded.tiles.map((tile) => [tile.id, tile.movementCost])),
+		links: loaded.links
+	});
 }
 
 /**

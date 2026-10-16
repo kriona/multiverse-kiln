@@ -28,6 +28,7 @@ An engine for making multiplayer browser-based role-playing games.
                      account, joining groups), LobbyRoom (one per universe) and GameRoom (one per group). The two
                      map rooms share ZonePlayers (movement, zones, who sees whom, zone links) and ZoneCache
   src/players/       who is logged in and which group each player is in (in memory; accounts are in the database)
+  src/world/         changes the world editor makes, published to the rooms playing in that world (in memory)
   src/logic/         pure game-simulation functions (no I/O)
   src/db/            Drizzle client, schema, and repository modules
   src/auth/          token verification

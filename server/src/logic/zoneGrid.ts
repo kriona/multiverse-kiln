@@ -3,7 +3,7 @@
  *
  * Pure functions: no Colyseus, database, network or timers (CLAUDE.md architecture rule 4)
  */
-import { IMPASSABLE_COST, tileIdAt, type ZoneLinkMode, type ZoneTiles } from '@multiverse-kiln/shared';
+import { chunkCoordinate, chunkKey, IMPASSABLE_COST, tileIdAt, type ZoneLinkMode, type ZoneTiles } from '@multiverse-kiln/shared';
 
 import type { Cell, Grid } from './movement.js';
 
@@ -40,13 +40,20 @@ export interface ZoneMap
 	tileMovementCosts: ReadonlyMap<number, number>;
 
 	links: readonly ZoneLink[];
+
+	/**
+	 * The chunks loaded so far, by chunkKey(), when the map is loaded a piece at a time; undefined when
+	 * all of it is. tiles.chunks holds the loaded chunks that aren't all the default tile
+	 */
+	loadedChunks?: ReadonlySet<string>;
 }
 
 /**
  * Builds the grid for a zone's map
  *
- * A void cell, and a cell holding a tile the map doesn't know, can't be entered. Stepping onto an
- * automatic link ends the step there, so the room can take the player through it
+ * A void cell, a cell holding a tile the map doesn't know, and a cell whose chunk hasn't loaded can't
+ * be entered, so a player waits at the edge of a chunk until it arrives. Stepping onto an automatic
+ * link ends the step there, so the room can take the player through it
  *
  * @param map The zone's map
  * @param cellSize Width and height of a cell in world units
@@ -63,6 +70,11 @@ export function createZoneGrid(map: ZoneMap, cellSize: number): Grid
 		loopsNorthSouth: map.loopsNorthSouth,
 		movementCost: (cell) =>
 		{
+			if (map.loadedChunks && !map.loadedChunks.has(chunkKey(chunkCoordinate(cell.column), chunkCoordinate(cell.row))))
+			{
+				return(IMPASSABLE_COST);
+			}
+
 			const tileId = tileIdAt(map.tiles, cell.column, cell.row);
 
 			return(((tileId === undefined) ? IMPASSABLE_COST : (map.tileMovementCosts.get(tileId) ?? IMPASSABLE_COST)));

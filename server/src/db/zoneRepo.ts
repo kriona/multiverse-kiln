@@ -7,7 +7,7 @@ import type { PgColumn } from 'drizzle-orm/pg-core';
 import { chunkCoordinate, chunkKey, isInBounds, type CellChange, type ChunkRange, type EditorZone, type EditorZoneLink, type EditorZoneSummary, type MapBounds, type ZoneChunk, type ZoneLinkTarget, type ZonePassageOfTime, type ZoneSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { applyCellChanges, chunksOfChanges, clipChunk, isChunkInside, isDefaultChunk } from '../logic/mapEdits.js';
-import type { ZoneLink, ZoneMap } from '../logic/zoneGrid.js';
+import type { ZoneLink } from '../logic/zoneGrid.js';
 import { db, type Executor } from './client.js';
 import { mapChunks, universes, zoneLinks, zones } from './schema.js';
 import { loadUniverseTiles, type TileRecord } from './tileRepo.js';
@@ -37,10 +37,19 @@ export interface ZoneRecord
 export interface LoadedZone
 {
 	zone: ZoneRecord;
-	map: ZoneMap;
+	bounds: MapBounds;
 
 	/**
-	 * Every tile the map can use, for drawing it
+	 * Tile of every cell holding DEFAULT_TILE_CELL, including every cell of a chunk that isn't stored
+	 */
+	defaultTileId: number;
+
+	loopsEastWest: boolean;
+	loopsNorthSouth: boolean;
+	links: ZoneLink[];
+
+	/**
+	 * Every tile the map can use, for drawing it and for its movement costs
 	 */
 	tiles: TileRecord[];
 }
@@ -116,10 +125,8 @@ export async function createZoneLink(link: NewZoneLink, executor: Executor = db)
 }
 
 /**
- * Loads a zone and its whole ground layer
- *
- * Every stored chunk is loaded. That suits the small maps made so far; a map that fills a large part of
- * MAX_MAP_SIDE would need its chunks loaded as players approach them instead
+ * Loads a zone with everything needed to play in it except its map's cells, which a map up to
+ * MAX_MAP_SIDE across has too many of to load at once: load them a piece at a time with loadChunks
  *
  * @param zoneId The zone's ID
  * @param executor The database, or a transaction
@@ -143,18 +150,6 @@ export async function loadZone(zoneId: string, executor: Executor = db): Promise
 	}
 
 	const { zone, ruleset } = row;
-	const chunkRows = await executor
-		.select({
-			chunkColumn: mapChunks.chunkColumn,
-			chunkRow: mapChunks.chunkRow,
-			cells: mapChunks.cells
-		})
-		.from(mapChunks)
-		.where(and(
-			eq(mapChunks.zoneId, zoneId),
-			eq(mapChunks.layer, GROUND_LAYER)
-		));
-
 	const linkRows = await executor
 		.select()
 		.from(zoneLinks)
@@ -172,30 +167,19 @@ export async function loadZone(zoneId: string, executor: Executor = db): Promise
 			indoors: zone.indoors,
 			passageOfTime: zone.passageOfTime
 		},
-		map: {
-			tiles: {
-				bounds: {
-					minColumn: zone.minColumn,
-					minRow: zone.minRow,
-					maxColumn: zone.maxColumn,
-					maxRow: zone.maxRow
-				},
-				defaultTileId: zone.defaultTileId,
-				chunks: new Map(chunkRows.map((chunk) => [chunkKey(chunk.chunkColumn, chunk.chunkRow), chunk.cells]))
-			},
-			loopsEastWest: zone.loopsEastWest,
-			loopsNorthSouth: zone.loopsNorthSouth,
-			tileMovementCosts: new Map(tiles.map((tile) => [tile.id, tile.movementCost])),
-			links: linkRows.map((link) => ({
-				column: link.column,
-				row: link.row,
-				targetZoneId: link.targetZoneId,
-				targetColumn: link.targetColumn,
-				targetRow: link.targetRow,
-				mode: link.mode,
-				requiresWholeGroup: link.requiresWholeGroup
-			}))
-		},
+		bounds: boundsOf(zone),
+		defaultTileId: zone.defaultTileId,
+		loopsEastWest: zone.loopsEastWest,
+		loopsNorthSouth: zone.loopsNorthSouth,
+		links: linkRows.map((link) => ({
+			column: link.column,
+			row: link.row,
+			targetZoneId: link.targetZoneId,
+			targetColumn: link.targetColumn,
+			targetRow: link.targetRow,
+			mode: link.mode,
+			requiresWholeGroup: link.requiresWholeGroup
+		})),
 		tiles
 	});
 }
@@ -359,6 +343,35 @@ export async function loadChunks(zoneId: string, range: ChunkRange, executor: Ex
 			between(mapChunks.chunkRow, range.minChunkRow, range.maxChunkRow)
 		))
 		.orderBy(mapChunks.chunkRow, mapChunks.chunkColumn));
+}
+
+/**
+ * Some of the stored chunks of a zone's ground
+ *
+ * @param zoneId The zone's ID
+ * @param chunks The chunks wanted; a chunk that isn't stored is all the default tile and isn't returned
+ * @param executor The database, or a transaction
+ * @return The stored chunks among them
+ */
+export async function loadChunksAt(zoneId: string, chunks: readonly { chunkColumn: number; chunkRow: number }[], executor: Executor = db): Promise<ZoneChunk[]>
+{
+	if (chunks.length === 0)
+	{
+		return([]);
+	}
+
+	return(executor
+		.select({
+			chunkColumn: mapChunks.chunkColumn,
+			chunkRow: mapChunks.chunkRow,
+			cells: mapChunks.cells
+		})
+		.from(mapChunks)
+		.where(and(
+			eq(mapChunks.zoneId, zoneId),
+			eq(mapChunks.layer, GROUND_LAYER),
+			sql`(${mapChunks.chunkColumn}, ${mapChunks.chunkRow}) IN (${sql.join(chunks.map((chunk) => sql`(${chunk.chunkColumn}, ${chunk.chunkRow})`), sql`, `)})`
+		)));
 }
 
 /**

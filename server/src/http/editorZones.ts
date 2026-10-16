@@ -8,8 +8,9 @@ import { findDefaultTileIds, findTileKind, loadUniverseTiles } from '../db/tileR
 import { inTransaction } from '../db/transactions.js';
 import { lockUniverse } from '../db/universeRepo.js';
 import { countZones, createZone, deleteZone, deleteZoneLink, editCells, listZoneLinks, listZones, loadChunks, lockZones, resizeZone, saveZoneLink, updateZoneSettings } from '../db/zoneRepo.js';
-import { wouldCreateCycle } from '../logic/mapEdits.js';
+import { chunksOfChanges, wouldCreateCycle } from '../logic/mapEdits.js';
 import { describeInvalidPayload } from '../rooms/payloads.js';
+import { zoneChanges } from '../world/zoneChanges.js';
 import { loadZoneContext, requireRole, universeContextOf, zoneContextOf } from './editorAccess.js';
 import { cellEditRequest, cellParameters, chunkRange, newZoneRequest, resizeZoneRequest, zoneLinkTarget, zoneSettingsUpdate } from './editorPayloads.js';
 
@@ -184,6 +185,7 @@ async function updateZone(request: Request, response: Response): Promise<void>
 	}
 
 	await updateZoneSettings(zone.id, body.data);
+	zoneChanges.publish({ kind: 'zone', zoneId: zone.id });
 	response.sendStatus(204);
 }
 
@@ -204,6 +206,7 @@ async function deleteZoneRoute(request: Request, response: Response): Promise<vo
 	}
 
 	await deleteZone(zone.id);
+	zoneChanges.publish({ kind: 'deleted', zoneId: zone.id });
 	response.sendStatus(204);
 }
 
@@ -244,6 +247,7 @@ async function resizeZoneRoute(request: Request, response: Response): Promise<vo
 		return;
 	}
 
+	zoneChanges.publish({ kind: 'zone', zoneId: zone.id });
 	response.sendStatus(204);
 }
 
@@ -305,6 +309,7 @@ async function editCellsRoute(request: Request, response: Response): Promise<voi
 	switch (result)
 	{
 		case 'edited':
+			zoneChanges.publish({ kind: 'cells', zoneId: zone.id, chunkKeys: [...chunksOfChanges(body.data.changes).keys()] });
 			response.sendStatus(204);
 			break;
 
@@ -408,6 +413,7 @@ async function saveLink(request: Request, response: Response): Promise<void>
 		return;
 	}
 
+	zoneChanges.publish({ kind: 'zone', zoneId: zone.id });
 	response.sendStatus(204);
 }
 
@@ -421,12 +427,15 @@ async function deleteLink(request: Request, response: Response): Promise<void>
 {
 	const cell = cellParameters.safeParse(request.params);
 
-	if (!cell.success || !(await deleteZoneLink(zoneContextOf(request).zone.id, cell.data.column, cell.data.row)))
+	const { zone } = zoneContextOf(request);
+
+	if (!cell.success || !(await deleteZoneLink(zone.id, cell.data.column, cell.data.row)))
 	{
 		response.status(404).json({ error: 'No link on that cell' });
 		return;
 	}
 
+	zoneChanges.publish({ kind: 'zone', zoneId: zone.id });
 	response.sendStatus(204);
 }
 

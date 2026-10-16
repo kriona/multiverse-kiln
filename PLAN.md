@@ -5,7 +5,7 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 **Current phase** line updated so each new session knows where to pick up.
 `STRUCTURE-OVERVIEW.md` describes the pages, editors and game rules these phases build.
 
-**Current phase:** 8
+**Current phase:** 9
 
 ---
 
@@ -117,8 +117,8 @@ Built in four steps: the server API, the editor pages, the map editor, then load
 - [✅] Zones tab with the single-zone drill-down, and the zone editor's settings. Its map is the next item
 - [✅] Map editor: grid centered on 0,0, expand buttons, edit-size dialog with its warning, draw tool (a tile or Void; size 1-100; circle or square), undo/redo with a drag counted as one step. It loads chunks as the view reaches them, pans with the right or middle mouse button and zooms with the wheel. Undo covers painting; resizing to a smaller map clears the undo history
 - [✅] Zone link layer: automatic or manual, "requires the whole group", select destination coordinates with an optional return link (placed in the target zone, leading back to the link's cell)
-- [ ] Edits apply immediately (universe versions come in Phase 13): the editor routes tell open rooms in this process about changed cells, links and tiles, and the rooms update the zones they have loaded and their clients
-- [ ] Rooms load a zone's chunks as players come near them and drop chunks nobody is near, instead of loading the whole map (`loadZone`), since the editor can make maps up to 50,000 cells per side. Loading stays outside the tick: a player waits at the edge of a chunk that hasn't arrived yet. Clients are likewise sent only the chunks near their player, not the whole zone (`ZonePayload`)
+- [✅] Edits apply immediately (universe versions come in Phase 13): the editor routes tell open rooms in this process about changed cells, zones, links and tiles (`zoneChanges`), and the rooms update the zones they have loaded and their clients. Players a smaller map leaves out move to the nearest free cell inside it; players in a deleted zone go to the lobby zone (lobby) or starting zone (group)
+- [✅] Rooms load a zone's chunks as players come near them and drop chunks nobody is near, instead of loading the whole map (`loadZone` reads only the zone's settings, links and tiles), since the editor can make maps up to 50,000 cells per side. Loading stays outside the tick, on a 250 ms interval: a player waits at the edge of a chunk that hasn't arrived yet. Clients are likewise sent only the chunks near their player (`ZonePayload`, then `ChunksPayload` as they move)
 
 **Done when:** a universe can be built from scratch in the browser (tiles, zones, maps and links) and played in its lobby.
 

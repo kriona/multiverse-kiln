@@ -4,8 +4,8 @@ import { CHUNK_SIZE, cellIndexInChunk, chunkKey, DEFAULT_TILE_CELL, tileIdAt, VO
 
 import { findDefaultTileIds } from '../../src/db/tileRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
-import { countZones, createZoneLink, deleteZone, deleteZoneLink, editCells, findEditorZone, isTileInUse, listZoneLinks, listZones, loadChunks, loadZone, resizeZone, saveGroundChunk, saveZoneLink, updateZoneSettings } from '../../src/db/zoneRepo.js';
-import { addUniverse, addZone, defaultTileId } from './fixtures.js';
+import { countZones, createZoneLink, deleteZone, deleteZoneLink, editCells, findEditorZone, isTileInUse, listZoneLinks, listZones, loadChunks, loadChunksAt, loadZone, resizeZone, saveGroundChunk, saveZoneLink, updateZoneSettings } from '../../src/db/zoneRepo.js';
+import { addUniverse, addZone, defaultTileId, loadWholeMap } from './fixtures.js';
 
 /**
  * A chunk of default cells with its first cell set
@@ -26,39 +26,21 @@ describe('zoneRepo', () =>
 {
 	describe('loadZone', () =>
 	{
-		it('loads a zone with no stored chunks as all its default tile', async () =>
+		it('loads a zone\'s settings, bounds and tiles', async () =>
 		{
 			const universeId = await addUniverse();
 			const zoneId = await addZone(universeId, 'Meadow');
-			const grass = (await findDefaultTileIds('pf1e')).get('grass');
+			const tileIds = await findDefaultTileIds('pf1e');
 			const loaded = await loadZone(zoneId);
 
 			assert.ok(loaded);
 			assert.deepStrictEqual(loaded.zone, { id: zoneId, universeId, parentZoneId: undefined, name: 'Meadow', enabled: true, indoors: false, passageOfTime: 'inherit' });
-			assert.deepStrictEqual(loaded.map.tiles.bounds, { minColumn: -2, minRow: -1, maxColumn: 2, maxRow: 1 });
-			assert.strictEqual(loaded.map.tiles.chunks.size, 0);
-			assert.strictEqual(tileIdAt(loaded.map.tiles, 2, 1), grass);
-			assert.deepStrictEqual(loaded.map.links, []);
-		});
-
-		it('loads the stored chunks, with the movement cost of every tile the map can use', async () =>
-		{
-			const universeId = await addUniverse();
-			const zoneId = await addZone(universeId);
-			const tileIds = await findDefaultTileIds('pf1e');
-			const forest = tileIds.get('forest') as number;
-
-			await saveGroundChunk(zoneId, 0, 0, chunkStartingWith(forest));
-			await saveGroundChunk(zoneId, -1, -1, chunkStartingWith(VOID_CELL));
-
-			const loaded = await loadZone(zoneId);
-
-			assert.ok(loaded);
-			assert.deepStrictEqual([...loaded.map.tiles.chunks.keys()].sort(), [chunkKey(-1, -1), chunkKey(0, 0)]);
-			assert.strictEqual(tileIdAt(loaded.map.tiles, 0, 0), forest);
-			assert.strictEqual(loaded.map.tileMovementCosts.get(forest), 50);
-			assert.strictEqual(loaded.map.tileMovementCosts.get(tileIds.get('mountains') as number), 100);
+			assert.deepStrictEqual(loaded.bounds, { minColumn: -2, minRow: -1, maxColumn: 2, maxRow: 1 });
+			assert.strictEqual(loaded.defaultTileId, tileIds.get('grass'));
+			assert.strictEqual(loaded.loopsEastWest, false);
 			assert.strictEqual(loaded.tiles.length, 6);
+			assert.strictEqual(loaded.tiles.find((tile) => (tile.id === tileIds.get('forest')))?.movementCost, 50);
+			assert.deepStrictEqual(loaded.links, []);
 		});
 
 		it('loads the zone\'s links', async () =>
@@ -71,8 +53,8 @@ describe('zoneRepo', () =>
 
 			const loaded = await loadZone(zoneId);
 
-			assert.deepStrictEqual(loaded?.map.links, [{ column: 1, row: 0, targetZoneId: insideId, targetColumn: -1, targetRow: 1, mode: 'automatic', requiresWholeGroup: true }]);
-			assert.deepStrictEqual((await loadZone(insideId))?.map.links, []);
+			assert.deepStrictEqual(loaded?.links, [{ column: 1, row: 0, targetZoneId: insideId, targetColumn: -1, targetRow: 1, mode: 'automatic', requiresWholeGroup: true }]);
+			assert.deepStrictEqual((await loadZone(insideId))?.links, []);
 		});
 
 		it('finds nothing for an unknown ID', async () =>
@@ -92,10 +74,10 @@ describe('zoneRepo', () =>
 			await saveGroundChunk(zoneId, 0, 0, chunkStartingWith(tileIds.get('forest') as number));
 			await saveGroundChunk(zoneId, 0, 0, chunkStartingWith(tileIds.get('water') as number));
 
-			const loaded = await loadZone(zoneId);
+			const map = await loadWholeMap(zoneId);
 
-			assert.strictEqual(loaded?.map.tiles.chunks.size, 1);
-			assert.strictEqual(tileIdAt(loaded.map.tiles, 0, 0), tileIds.get('water'));
+			assert.strictEqual(map?.tiles.chunks.size, 1);
+			assert.strictEqual(tileIdAt(map.tiles, 0, 0), tileIds.get('water'));
 		});
 
 		it('refuses a chunk with the wrong number of cells', async () =>
@@ -147,17 +129,17 @@ describe('zoneRepo', () =>
 
 			assert.strictEqual(await inTransaction((transaction) => editCells(zoneId, [[0, 0, forest], [-1, 5, VOID_CELL]], transaction)), 'edited');
 
-			let loaded = await loadZone(zoneId);
+			let map = await loadWholeMap(zoneId);
 
-			assert.strictEqual(loaded?.map.tiles.chunks.size, 2);
-			assert.strictEqual(tileIdAt(loaded.map.tiles, 0, 0), forest);
-			assert.strictEqual(tileIdAt(loaded.map.tiles, -1, 5), undefined);
+			assert.strictEqual(map?.tiles.chunks.size, 2);
+			assert.strictEqual(tileIdAt(map.tiles, 0, 0), forest);
+			assert.strictEqual(tileIdAt(map.tiles, -1, 5), undefined);
 
 			await inTransaction((transaction) => editCells(zoneId, [[0, 0, DEFAULT_TILE_CELL]], transaction));
 
-			loaded = await loadZone(zoneId);
+			map = await loadWholeMap(zoneId);
 
-			assert.deepStrictEqual([...(loaded?.map.tiles.chunks.keys() ?? [])], [chunkKey(-1, 0)]);
+			assert.deepStrictEqual([...(map?.tiles.chunks.keys() ?? [])], [chunkKey(-1, 0)]);
 		});
 
 		it('changes nothing when a cell is outside the bounds', async () =>
@@ -166,7 +148,7 @@ describe('zoneRepo', () =>
 			const forest = await defaultTileId('forest');
 
 			assert.strictEqual(await inTransaction((transaction) => editCells(zoneId, [[0, 0, forest], [3, 0, forest]], transaction)), 'out_of_bounds');
-			assert.strictEqual((await loadZone(zoneId))?.map.tiles.chunks.size, 0);
+			assert.strictEqual((await loadWholeMap(zoneId))?.tiles.chunks.size, 0);
 		});
 
 		it('reports a zone that does not exist', async () =>
@@ -188,6 +170,22 @@ describe('zoneRepo', () =>
 
 			assert.deepStrictEqual(chunks.map((chunk) => [chunk.chunkColumn, chunk.chunkRow]), [[0, 0], [1, 0]]);
 			assert.strictEqual(chunks[0].cells[cellIndexInChunk(0, 0)], forest);
+		});
+	});
+
+	describe('loadChunksAt', () =>
+	{
+		it('loads the stored chunks among those asked for', async () =>
+		{
+			const zoneId = await addZone(await addUniverse(), 'Field', { bounds: { minColumn: -100, minRow: -100, maxColumn: 100, maxRow: 100 } });
+			const forest = await defaultTileId('forest');
+
+			await inTransaction((transaction) => editCells(zoneId, [[0, 0, forest], [40, 0, forest], [-80, -80, forest]], transaction));
+
+			const chunks = await loadChunksAt(zoneId, [{ chunkColumn: -3, chunkRow: -3 }, { chunkColumn: 1, chunkRow: 0 }, { chunkColumn: 2, chunkRow: 2 }]);
+
+			assert.deepStrictEqual(chunks.map((chunk) => [chunk.chunkColumn, chunk.chunkRow]).sort(), [[-3, -3], [1, 0]]);
+			assert.deepStrictEqual(await loadChunksAt(zoneId, []), []);
 		});
 	});
 
@@ -228,11 +226,11 @@ describe('zoneRepo', () =>
 			// Growing back shows the default tile where the discarded cells were
 			await inTransaction((transaction) => resizeZone(zoneId, wide, false, transaction));
 
-			const loaded = await loadZone(zoneId);
+			const map = await loadWholeMap(zoneId);
 
-			assert.ok(loaded);
-			assert.strictEqual(tileIdAt(loaded.map.tiles, 40, 0), loaded.map.tiles.defaultTileId);
-			assert.strictEqual(tileIdAt(loaded.map.tiles, 0, 0), forest);
+			assert.ok(map);
+			assert.strictEqual(tileIdAt(map.tiles, 40, 0), map.tiles.defaultTileId);
+			assert.strictEqual(tileIdAt(map.tiles, 0, 0), forest);
 		});
 	});
 

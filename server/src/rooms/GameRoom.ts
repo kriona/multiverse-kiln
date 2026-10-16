@@ -2,13 +2,14 @@ import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
 import { GameState, MessageType, PATCH_INTERVAL_MS, ServerCloseCode } from '@multiverse-kiln/shared';
 
 import { findUniverse } from '../db/universeRepo.js';
-import { loadZone } from '../db/zoneRepo.js';
+import { loadChunksAt, loadZone } from '../db/zoneRepo.js';
 import { readBrowserId } from '../http/browserId.js';
 import { onlinePlayers, type OnlinePlayerChange } from '../players/onlinePlayers.js';
+import { zoneChanges } from '../world/zoneChanges.js';
 import { InvalidMessages } from './invalidMessages.js';
 import { describeInvalidPayload, movePayload, roomOptions } from './payloads.js';
-import { ZoneCache, type ActiveZone } from './zoneCache.js';
-import { SIMULATION_TICK_RATE, ZonePlayers } from './zonePlayers.js';
+import { ZoneCache } from './zoneCache.js';
+import { CHUNK_REFRESH_INTERVAL_MS, SIMULATION_TICK_RATE, ZonePlayers } from './zonePlayers.js';
 
 /**
  * What onAuth found out about a client, available afterward as client.auth
@@ -41,14 +42,17 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 
 	state = new GameState();
 
-	private readonly zones = new ZoneCache(loadZone);
+	private readonly zones = new ZoneCache(loadZone, loadChunksAt);
 
-	private readonly zonePlayers = new ZonePlayers(this.state.players, this.zones);
+	/**
+	 * Players whose zone is deleted go back to the starting zone
+	 */
+	private readonly zonePlayers = new ZonePlayers(this.state.players, this.zones, () => this.startingZoneId);
 
 	/**
 	 * Where new players start
 	 */
-	private startingZone!: ActiveZone;
+	private startingZoneId!: string;
 
 	/**
 	 * How many invalid messages each client has sent this session (server-only, not synced)
@@ -56,6 +60,8 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 	private readonly invalidMessages = new InvalidMessages();
 
 	private stopListening?: () => void;
+
+	private stopFollowingChanges?: () => void;
 
 	messages = {
 		[MessageType.Move]: (client: Client, payload: unknown) =>
@@ -78,8 +84,9 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 	};
 
 	/**
-	 * Loads the universe's starting zone, starts the simulation loop, and starts watching for players
-	 * leaving the group. Fails for a universe that doesn't exist or has no starting zone
+	 * Loads the universe's starting zone, starts the simulation loop and the loading of chunks near
+	 * players, and starts watching for players leaving the group and for changes to the world. Fails for
+	 * a universe that doesn't exist or has no starting zone
 	 *
 	 * @param options The universe the group plays in
 	 */
@@ -94,12 +101,21 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 			throw new Error(`Universe ${universeId} has no starting zone to play in`);
 		}
 
-		this.startingZone = startingZone;
+		this.startingZoneId = startingZone.loaded.zone.id;
 		this.setTimestep((deltaTime) => this.zonePlayers.update(deltaTime / 1000), 1000 / SIMULATION_TICK_RATE);
+		this.clock.setInterval(() => this.zonePlayers.refreshChunks(), CHUNK_REFRESH_INTERVAL_MS);
 
 		this.stopListening = onlinePlayers.onChange((change) =>
 		{
 			this.onPlayerChange(change);
+		});
+
+		this.stopFollowingChanges = zoneChanges.onChange((change) =>
+		{
+			this.zonePlayers.applyChange(change).catch((error: unknown) =>
+			{
+				console.error('Could not apply a world change to room', this.roomId, error);
+			});
 		});
 	}
 
@@ -129,7 +145,7 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 	 *
 	 * @param client The joining client
 	 */
-	onJoin(client: Client<{ auth: ClientIdentity }>): void
+	async onJoin(client: Client<{ auth: ClientIdentity }>): Promise<void>
 	{
 		if (!client.auth)
 		{
@@ -137,8 +153,15 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 		}
 
 		const { playerId, name } = client.auth;
+		const startingZone = await this.zones.load(this.startingZoneId);
 
-		this.zonePlayers.join(client, playerId, name, this.startingZone);
+		if (!startingZone)
+		{
+			throw new Error(`The starting zone ${this.startingZoneId} no longer exists`);
+		}
+
+		await this.zonePlayers.prepareStart(startingZone);
+		this.zonePlayers.join(client, playerId, name, this.zones.get(this.startingZoneId) ?? startingZone);
 
 		console.log(client.sessionId, 'joined as player', playerId);
 	}
@@ -186,6 +209,7 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 	onDispose(): void
 	{
 		this.stopListening?.();
+		this.stopFollowingChanges?.();
 		onlinePlayers.disbandGroup(this.roomId);
 
 		console.log('room', this.roomId, 'disposing');

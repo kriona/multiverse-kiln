@@ -1,18 +1,40 @@
 import type { Client } from 'colyseus';
 import { StateView, type MapSchema } from '@colyseus/schema';
-import { Player, ServerMessageType, type MovePayload, type WelcomePayload } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, Player, ServerMessageType, type ChunksPayload, type MovePayload, type WelcomePayload } from '@multiverse-kiln/shared';
 
+import { chunksNear, type ChunkAreaMap } from '../logic/chunkArea.js';
 import { cellAt, findFreeCell, NO_PRESS, occupiedCells, stepOnGrid, type Cell, type DirectionPress, type GridStep, type Position } from '../logic/movement.js';
 import { CellOccupancy } from '../logic/occupancy.js';
 import { linkAt, type ZoneLink } from '../logic/zoneGrid.js';
+import type { ZoneChange } from '../world/zoneChanges.js';
 import { InputQueue } from './inputQueue.js';
 import { PlayerSessions } from './playerSessions.js';
-import type { ActiveZone, ZoneCache } from './zoneCache.js';
+import { toChunkUpdates, toZonePayload, type ActiveZone, type ZoneCache } from './zoneCache.js';
 
 /**
  * Simulation ticks per second, in every room with a map
  */
 export const SIMULATION_TICK_RATE = 30;
+
+/**
+ * Milliseconds between checks for the chunks players have come near or moved away from
+ *
+ * A player crosses about 7 cells a second, and chunks are loaded CHUNK_LOAD_RADIUS cells ahead, so
+ * they have arrived long before the player reaches them unless the database is slow
+ */
+export const CHUNK_REFRESH_INTERVAL_MS = 250;
+
+/**
+ * How many cells around a player their zone's chunks are loaded and sent to them: about four of the
+ * client's views across
+ */
+const CHUNK_LOAD_RADIUS = CHUNK_SIZE * 2;
+
+/**
+ * How many cells around a player loaded chunks are kept. Wider than CHUNK_LOAD_RADIUS, so a player
+ * pacing at the edge of it doesn't make the same chunks load and drop over and over
+ */
+const CHUNK_KEEP_RADIUS = CHUNK_SIZE * 3;
 
 /**
  * Most Move inputs kept per player between ticks
@@ -42,6 +64,10 @@ export interface LeftPlayer
  * in; a client sees only the players in its own player's zone, through its StateView. Stepping onto an
  * automatic zone link, or asking to take the manual link the player stands on, sends the player to
  * the link's target cell once that zone has loaded. The room calls update() from its simulation tick
+ * and refreshChunks() every CHUNK_REFRESH_INTERVAL_MS
+ *
+ * Only the chunks of each zone's map near its players are loaded, and each player is sent the chunks
+ * near them as they move. Changes the world editor makes (applyChange) reach the players straight away
  */
 export class ZonePlayers
 {
@@ -76,11 +102,27 @@ export class ZonePlayers
 	private readonly travelling = new Set<string>();
 
 	/**
+	 * The chunks of their zone each player's clients have been sent, by chunkKey()
+	 */
+	private readonly sentChunks = new Map<string, Set<string>>();
+
+	/**
 	 * @param players The room's synced players, which this adds to, moves and removes
 	 * @param zones The room's zones
+	 * @param fallbackZoneId The zone players go to when the zone they are in is deleted
 	 */
-	constructor(private readonly players: MapSchema<Player>, private readonly zones: ZoneCache)
+	constructor(private readonly players: MapSchema<Player>, private readonly zones: ZoneCache, private readonly fallbackZoneId: () => string | undefined)
 	{
+	}
+
+	/**
+	 * Loads the chunks a new player needs to be placed in a zone, around its center. Call it before join()
+	 *
+	 * @param zone The zone
+	 */
+	async prepareStart(zone: ActiveZone): Promise<void>
+	{
+		await this.zones.loadChunks(zone.loaded.zone.id, chunksNear([{ column: 0, row: 0 }], CHUNK_LOAD_RADIUS, areaOf(zone)));
 	}
 
 	/**
@@ -91,7 +133,7 @@ export class ZonePlayers
 	 * @param client The joining client
 	 * @param playerId The player the client controls
 	 * @param name The player's name
-	 * @param startZone Where a player new to the room starts
+	 * @param startZone Where a player new to the room starts, with prepareStart() done
 	 * @return Whether the player is new to the room
 	 */
 	join(client: Client, playerId: string, name: string, startZone: ActiveZone): boolean
@@ -129,7 +171,7 @@ export class ZonePlayers
 
 		if (zone)
 		{
-			client.send(ServerMessageType.Zone, zone.payload);
+			this.sendZone(playerId, zone, [client]);
 		}
 
 		return(isNewPlayer);
@@ -165,6 +207,7 @@ export class ZonePlayers
 			this.steps.delete(left.playerId);
 			this.presses.delete(left.playerId);
 			this.travelling.delete(left.playerId);
+			this.sentChunks.delete(left.playerId);
 		}
 
 		return(left);
@@ -209,7 +252,7 @@ export class ZonePlayers
 			return;
 		}
 
-		const link = linkAt(zone.loaded.map, cellAt(player, zone.grid));
+		const link = linkAt(zone.map, cellAt(player, zone.grid));
 
 		if (link?.mode === 'manual')
 		{
@@ -280,12 +323,79 @@ export class ZonePlayers
 
 			occupancy.hold(playerId, occupiedCells(mover, zone.grid));
 
-			const link = (mover.stoppedAt ? linkAt(zone.loaded.map, mover.stoppedAt) : undefined);
+			const link = (mover.stoppedAt ? linkAt(zone.map, mover.stoppedAt) : undefined);
 
 			if (link)
 			{
 				this.travel(playerId, link);
 			}
+		}
+	}
+
+	/**
+	 * Loads the chunks players have come near, drops the ones nobody is near, and sends each player the
+	 * loaded chunks near them they haven't been sent. Runs outside the simulation tick; loading finishes
+	 * later, and the chunks are sent once they arrive
+	 */
+	refreshChunks(): void
+	{
+		for (const zone of this.zones.all())
+		{
+			const zoneId = zone.loaded.zone.id;
+			const playerIds = this.playersIn(zoneId).filter((playerId) => !this.travelling.has(playerId));
+			const cells = playerIds
+				.map((playerId) => this.cellOf(playerId, zone))
+				.filter((cell) => (cell !== undefined));
+			const area = areaOf(zone);
+
+			this.zones.dropChunks(zoneId, chunksNear(cells, CHUNK_KEEP_RADIUS, area));
+
+			for (const playerId of playerIds)
+			{
+				this.sendNearbyChunks(playerId, zone);
+			}
+
+			this.zones.loadChunks(zoneId, chunksNear(cells, CHUNK_LOAD_RADIUS, area)).then((loaded) =>
+			{
+				const current = this.zones.get(zoneId);
+
+				if ((loaded.length > 0) && current)
+				{
+					for (const playerId of this.playersIn(zoneId))
+					{
+						this.sendNearbyChunks(playerId, current);
+					}
+				}
+			}, (error: unknown) =>
+			{
+				console.error(`Could not load chunks of zone ${zoneId}:`, error);
+			});
+		}
+	}
+
+	/**
+	 * Brings a change the world editor has made to the players it affects, if this room has the zone loaded
+	 *
+	 * Runs outside the simulation tick
+	 *
+	 * @param change The change
+	 */
+	async applyChange(change: ZoneChange): Promise<void>
+	{
+		if (change.kind === 'cells')
+		{
+			await this.applyCellChange(change.zoneId, change.chunkKeys);
+		}
+		else if (change.kind === 'tiles')
+		{
+			for (const zone of this.zones.all().filter((each) => (each.loaded.zone.universeId === change.universeId)))
+			{
+				await this.applyZoneChange(zone.loaded.zone.id, true);
+			}
+		}
+		else
+		{
+			await this.applyZoneChange(change.zoneId, false);
 		}
 	}
 
@@ -326,7 +436,150 @@ export class ZonePlayers
 	}
 
 	/**
-	 * Sends a player through a link: they stop, and arrive once the link's zone has loaded
+	 * Reads changed chunks of a zone again, and sends them to the players who had been sent them
+	 *
+	 * @param zoneId The zone's ID
+	 * @param chunkKeys The changed chunks, by chunkKey()
+	 */
+	private async applyCellChange(zoneId: string, chunkKeys: string[]): Promise<void>
+	{
+		const changed = await this.zones.reloadChunks(zoneId, chunkKeys);
+		const zone = this.zones.get(zoneId);
+
+		if (!zone || (changed.length === 0))
+		{
+			return;
+		}
+
+		for (const playerId of this.playersIn(zoneId))
+		{
+			const sent = this.sentChunks.get(playerId);
+			const resend = changed.filter((key) => (sent?.has(key) ?? false));
+
+			if (resend.length > 0)
+			{
+				this.sendChunks(playerId, zone, resend);
+			}
+		}
+	}
+
+	/**
+	 * Reads a zone again after its settings, bounds, links or tiles changed. Players its new bounds no
+	 * longer hold are moved onto the nearest free cell inside them, and everyone in it is sent the zone
+	 * again. Players in a zone that has been deleted go to the fallback zone
+	 *
+	 * @param zoneId The zone's ID
+	 * @param keepChunks Whether only the tiles changed, so the loaded chunks are still right
+	 */
+	private async applyZoneChange(zoneId: string, keepChunks: boolean): Promise<void>
+	{
+		if (!this.zones.get(zoneId))
+		{
+			return;
+		}
+
+		const zone = await this.zones.reload(zoneId, keepChunks);
+		const playerIds = this.playersIn(zoneId).filter((playerId) => !this.travelling.has(playerId));
+
+		if (!zone)
+		{
+			this.sendToFallback(playerIds);
+			return;
+		}
+
+		const { bounds } = zone.loaded;
+		const targets = new Map<string, Cell>();
+
+		for (const playerId of playerIds)
+		{
+			const player = this.players.get(playerId);
+
+			if (player)
+			{
+				const cell = cellAt(player, zone.grid);
+
+				targets.set(playerId, {
+					column: Math.min(Math.max(cell.column, bounds.minColumn), bounds.maxColumn),
+					row: Math.min(Math.max(cell.row, bounds.minRow), bounds.maxRow)
+				});
+			}
+		}
+
+		await this.zones.loadChunks(zoneId, chunksNear([...targets.values()], CHUNK_LOAD_RADIUS, areaOf(zone)));
+
+		const current = this.zones.get(zoneId);
+
+		if (!current)
+		{
+			return;
+		}
+
+		for (const [playerId, target] of targets)
+		{
+			const player = this.players.get(playerId);
+
+			if (!player || (this.zoneIds.get(playerId) !== zoneId) || this.travelling.has(playerId))
+			{
+				continue;
+			}
+
+			const cell = cellAt(player, current.grid);
+
+			// The step under way may lead off the new map, so every player starts afresh from a cell center
+			this.steps.delete(playerId);
+			this.presses.delete(playerId);
+
+			if ((cell.column !== target.column) || (cell.row !== target.row))
+			{
+				const position = this.findArrivalCell(playerId, current, target);
+
+				if (position)
+				{
+					player.x = position.x;
+					player.y = position.y;
+				}
+			}
+			else
+			{
+				player.x = (cell.column + 0.5) * current.grid.cellSize;
+				player.y = (cell.row + 0.5) * current.grid.cellSize;
+			}
+
+			this.sendZone(playerId, current, this.getClients(playerId));
+		}
+	}
+
+	/**
+	 * Sends players to the center of the fallback zone, for when their zone has been deleted
+	 *
+	 * @param playerIds The players
+	 */
+	private sendToFallback(playerIds: string[]): void
+	{
+		const fallbackZoneId = this.fallbackZoneId();
+
+		if (fallbackZoneId === undefined)
+		{
+			return;
+		}
+
+		for (const playerId of playerIds)
+		{
+			this.travel(playerId, {
+				column: 0,
+				row: 0,
+				targetZoneId: fallbackZoneId,
+				targetColumn: 0,
+				targetRow: 0,
+				mode: 'automatic',
+				requiresWholeGroup: false
+			});
+		}
+	}
+
+	/**
+	 * Sends a player through a link: they stop, and arrive once the link's zone and the chunks around
+	 * its target have loaded
 	 *
 	 * The load happens outside the tick. A player whose link leads nowhere they can go stays where they are
 	 *
@@ -335,20 +588,29 @@ export class ZonePlayers
 	 */
 	private travel(playerId: string, link: ZoneLink): void
 	{
+		const targetCell = { column: link.targetColumn, row: link.targetRow };
+
 		this.travelling.add(playerId);
 		this.heldDirections.delete(playerId);
 		this.presses.delete(playerId);
 		this.steps.delete(playerId);
 		this.moveInputs.remove(playerId);
 
-		this.zones.load(link.targetZoneId).then((target) =>
-		{
-			this.arrive(playerId, link, target);
-		}, (error: unknown) =>
-		{
-			console.error(`Player ${playerId} could not take a link to zone ${link.targetZoneId}:`, error);
-			this.travelling.delete(playerId);
-		});
+		this.zones.load(link.targetZoneId)
+			.then(async (target) =>
+			{
+				if (target)
+				{
+					await this.zones.loadChunks(target.loaded.zone.id, chunksNear([targetCell], CHUNK_LOAD_RADIUS, areaOf(target)));
+				}
+
+				this.arrive(playerId, link, this.zones.get(link.targetZoneId));
+			})
+			.catch((error: unknown) =>
+			{
+				console.error(`Player ${playerId} could not take a link to zone ${link.targetZoneId}:`, error);
+				this.travelling.delete(playerId);
+			});
 	}
 
 	/**
@@ -385,25 +647,137 @@ export class ZonePlayers
 		player.x = position.x;
 		player.y = position.y;
 		this.showToZone(playerId);
+		this.sendZone(playerId, target, this.getClients(playerId));
+	}
 
-		for (const client of this.getClients(playerId))
+	/**
+	 * Sends a player's clients a zone, with the loaded chunks near the player, and remembers those as sent
+	 *
+	 * @param playerId The player's ID
+	 * @param zone The zone they are in
+	 * @param clients The clients to send it to
+	 */
+	private sendZone(playerId: string, zone: ActiveZone, clients: Client[]): void
+	{
+		const near = this.loadedChunksNear(playerId, zone);
+		const payload = toZonePayload(zone, near);
+
+		this.sentChunks.set(playerId, new Set(near));
+
+		for (const client of clients)
 		{
-			client.send(ServerMessageType.Zone, target.payload);
+			client.send(ServerMessageType.Zone, payload);
 		}
 	}
 
 	/**
-	 * The center of the free cell nearest a cell of a zone, searching the whole zone if need be
+	 * Sends a player the loaded chunks near them they haven't been sent, and forgets having sent the ones
+	 * they have moved away from, so those are sent again (with any changes) when the player comes back
+	 *
+	 * @param playerId The player's ID
+	 * @param zone The zone they are in
+	 */
+	private sendNearbyChunks(playerId: string, zone: ActiveZone): void
+	{
+		const sent = this.sentChunks.get(playerId);
+		const cell = this.cellOf(playerId, zone);
+
+		if (!sent || !cell)
+		{
+			return;
+		}
+
+		const kept = chunksNear([cell], CHUNK_KEEP_RADIUS, areaOf(zone));
+
+		for (const key of [...sent])
+		{
+			if (!kept.has(key))
+			{
+				sent.delete(key);
+			}
+		}
+
+		const fresh = this.loadedChunksNear(playerId, zone).filter((key) => !sent.has(key));
+
+		if (fresh.length > 0)
+		{
+			this.sendChunks(playerId, zone, fresh);
+		}
+	}
+
+	/**
+	 * Sends a player's clients some loaded chunks of their zone, and remembers them as sent
+	 *
+	 * @param playerId The player's ID
+	 * @param zone The zone they are in
+	 * @param chunkKeys The chunks, by chunkKey()
+	 */
+	private sendChunks(playerId: string, zone: ActiveZone, chunkKeys: string[]): void
+	{
+		const sent = (this.sentChunks.get(playerId) ?? new Set<string>());
+		const payload: ChunksPayload = {
+			zoneId: zone.loaded.zone.id,
+			chunks: toChunkUpdates(zone, chunkKeys)
+		};
+
+		for (const key of chunkKeys)
+		{
+			sent.add(key);
+		}
+
+		this.sentChunks.set(playerId, sent);
+
+		for (const client of this.getClients(playerId))
+		{
+			client.send(ServerMessageType.Chunks, payload);
+		}
+	}
+
+	/**
+	 * The loaded chunks of a zone near a player
+	 *
+	 * @param playerId The player's ID
+	 * @param zone The zone they are in
+	 * @return The chunks' keys
+	 */
+	private loadedChunksNear(playerId: string, zone: ActiveZone): string[]
+	{
+		const cell = this.cellOf(playerId, zone);
+
+		if (!cell)
+		{
+			return([]);
+		}
+
+		return([...chunksNear([cell], CHUNK_LOAD_RADIUS, areaOf(zone))].filter((key) => zone.loadedChunks.has(key)));
+	}
+
+	/**
+	 * The cell a player is in
+	 *
+	 * @param playerId The player's ID
+	 * @param zone The zone they are in
+	 * @return The cell, or undefined when the player isn't in the room
+	 */
+	private cellOf(playerId: string, zone: ActiveZone): Cell | undefined
+	{
+		const player = this.players.get(playerId);
+
+		return((player ? cellAt(player, zone.grid) : undefined));
+	}
+
+	/**
+	 * The center of the free cell nearest a cell of a zone, searching as far as its chunks are loaded around the cell
 	 *
 	 * @param playerId The player arriving, whose own cells count as free
 	 * @param zone The zone
 	 * @param near The cell to start from
-	 * @return The cell's center, or undefined when the zone has no free cell
+	 * @return The cell's center, or undefined when there is no free cell that near
 	 */
 	private findArrivalCell(playerId: string, zone: ActiveZone, near: Cell): Position | undefined
 	{
 		const { minColumn, minRow, maxColumn, maxRow } = zone.grid.bounds;
-		const searchDistance = Math.max(maxColumn - minColumn, maxRow - minRow) + 1;
+		const searchDistance = Math.min(Math.max(maxColumn - minColumn, maxRow - minRow) + 1, CHUNK_LOAD_RADIUS);
 
 		return(findFreeCell(near, zone.grid, this.occupancyOf(zone.loaded.zone.id).isFreeFor(playerId), searchDistance));
 	}
@@ -549,4 +923,19 @@ export class ZonePlayers
 
 		return(((zoneId !== undefined) ? this.zones.get(zoneId) : undefined));
 	}
+}
+
+/**
+ * A zone's map as chunksNear needs it
+ *
+ * @param zone The zone
+ * @return Its bounds and whether it loops
+ */
+function areaOf(zone: ActiveZone): ChunkAreaMap
+{
+	return({
+		bounds: zone.loaded.bounds,
+		loopsEastWest: zone.loaded.loopsEastWest,
+		loopsNorthSouth: zone.loaded.loopsNorthSouth
+	});
 }

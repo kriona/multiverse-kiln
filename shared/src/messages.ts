@@ -30,9 +30,15 @@ export enum ServerMessageType
 	Welcome = 'welcome',
 
 	/**
-	 * The zone the client's player is in, sent on joining and whenever the player moves to another zone (payload: ZonePayload)
+	 * The zone the client's player is in, sent on joining, whenever the player moves to another zone,
+	 * and again when an editor changes the zone's settings, bounds or links (payload: ZonePayload)
 	 */
-	Zone = 'zone'
+	Zone = 'zone',
+
+	/**
+	 * Chunks of the zone's map that the player has come near, or that an editor has changed (payload: ChunksPayload)
+	 */
+	Chunks = 'chunks'
 }
 
 /**
@@ -89,6 +95,33 @@ export interface ZoneChunk
 }
 
 /**
+ * A chunk of a zone's map, as sent when the player comes near it or an editor changes it
+ */
+export interface ZoneChunkUpdate
+{
+	chunkColumn: number;
+	chunkRow: number;
+
+	/**
+	 * CHUNK_SIZE * CHUNK_SIZE cell values, row by row, or null when every cell is the zone's default tile
+	 */
+	cells: number[] | null;
+}
+
+/**
+ * Payload of ServerMessageType.Chunks
+ */
+export interface ChunksPayload
+{
+	/**
+	 * The zone the chunks belong to; a client whose player has since moved to another zone ignores them
+	 */
+	zoneId: string;
+
+	chunks: ZoneChunkUpdate[];
+}
+
+/**
  * A cell with a zone link, as the client sees it: where the link goes stays on the server
  */
 export interface ZoneLinkCell
@@ -99,7 +132,8 @@ export interface ZoneLinkCell
 }
 
 /**
- * Payload of ServerMessageType.Zone: everything needed to draw a zone's map
+ * Payload of ServerMessageType.Zone: everything needed to draw a zone's map, with the stored chunks
+ * near the player. Chunks further away arrive in ChunksPayloads as the player comes near them
  */
 export interface ZonePayload
 {

@@ -14,6 +14,7 @@ import { countUniversesWithRole, listEditableUniverses, setUniverseRole } from '
 import { createUniverse, lockUniverse, setUniverseZones, updateUniverseSettings } from '../db/universeRepo.js';
 import { createZone, isTileInUse } from '../db/zoneRepo.js';
 import { describeInvalidPayload } from '../rooms/payloads.js';
+import { zoneChanges } from '../world/zoneChanges.js';
 import { loadUniverseContext, playerIdOf, refuseWritesFromOtherOrigins, requireLogin, requireRole, universeContextOf } from './editorAccess.js';
 import { newUniverseRequest, tileIdParameter, tileListQuery, tileSettings, universeSettingsUpdate } from './editorPayloads.js';
 import { addZoneRoutes, DEFAULT_ZONE_TILE_KEYS, timeSettingsProblem } from './editorZones.js';
@@ -251,6 +252,7 @@ async function createTileRoute(request: Request, response: Response): Promise<vo
 
 	const payload: CreatedPayload<number> = { id: tileId };
 
+	zoneChanges.publish({ kind: 'tiles', universeId: universe.id });
 	response.status(201).json(payload);
 }
 
@@ -289,6 +291,7 @@ async function saveTile(request: Request, response: Response): Promise<void>
 		await updateCustomTile(universe.id, tileId.data, body.data);
 	}
 
+	zoneChanges.publish({ kind: 'tiles', universeId: universe.id });
 	response.sendStatus(204);
 }
 
@@ -314,6 +317,7 @@ async function deleteTile(request: Request, response: Response): Promise<void>
 	if (kind === 'default')
 	{
 		await restoreDefaultTile(universe.id, tileId.data);
+		zoneChanges.publish({ kind: 'tiles', universeId: universe.id });
 		response.sendStatus(204);
 		return;
 	}
@@ -339,6 +343,7 @@ async function deleteTile(request: Request, response: Response): Promise<void>
 		return;
 	}
 
+	zoneChanges.publish({ kind: 'tiles', universeId: universe.id });
 	response.sendStatus(204);
 }
 
