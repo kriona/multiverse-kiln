@@ -113,6 +113,34 @@ Test multiplayer with separate browsers or profiles: every tab of one browser is
 - Skill examples show library APIs, not this project's conventions. Where they differ, this file and the global code style win: rooms reach the database only through repositories and only at lifecycle boundaries (the Colyseus skill's example queries a database from a message handler), the client connects to `VITE_SERVER_URL` rather than `http://localhost:2567`, client code is TypeScript (the Phaser skills' examples are JavaScript), and code follows the house style (single quotes, Allman braces).
 - When unsure about an architectural choice, follow the rules above and ask rather than inventing a new pattern.
 
+### Formatting
+
+On top of the global code style:
+
+- Name variables and parameters with full words, not abbreviations: `(request, response)` in an Express handler, not `(req, res)`.
+- A chain of two or more method calls (Drizzle queries, `filter`/`sort`/`map`, promise chains) puts each call on its own line, indented one tab under where the chain starts.
+- An object literal with more than one property goes one property per line when it doesn't fit comfortably on one line, including objects passed into a chain (`.select({...})`, `.values({...})`, `.set({...})`).
+
+```ts
+const [row] = await executor
+	.select({
+		id: universes.id,
+		name: universes.name
+	})
+	.from(universes)
+	.where(eq(universes.id, universeId))
+	.limit(1);
+
+const others = [...this.members]
+	.filter(([playerId]) => (playerId !== this.ownPlayerId))
+	.sort(([, a], [, b]) => a.localeCompare(b));
+
+const payload: UniverseListPayload = {
+	universes: universes.slice(0, limit),
+	hasMore: (universes.length > limit)
+};
+```
+
 ## Deployment (later phases)
 
 - Game server: `npx @colyseus/cloud deploy` from `/server`. Production env vars are set in the Colyseus Cloud dashboard.

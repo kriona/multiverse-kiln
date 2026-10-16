@@ -1,8 +1,9 @@
 import { Callbacks } from '@colyseus/sdk';
 import { DISALLOWED_TEXT_CHARACTERS, MAX_CHAT_MESSAGE_LENGTH, type ChatMessage, type LobbyMember } from '@multiverse-kiln/shared';
 
-import type { LobbyRoom } from '../network/serverConnection';
+import type { LobbyConnection } from '../network/serverConnection';
 import { getElement } from './dom';
+import type { MapView } from './MapView';
 
 /**
  * Most names shown in the list of who's here; the rest are counted
@@ -28,10 +29,15 @@ export interface LobbyScreenActions
 {
 	sendChat: (text: string) => void;
 	createGroup: () => void;
+
+	/**
+	 * Go back to Home
+	 */
+	leaveLobby: () => void;
 }
 
 /**
- * The lobby screen: chat, who's here, and the Create game button
+ * The lobby screen: the lobby's map, chat, who's here, and the Create game and Leave lobby buttons
  *
  * The screen is made once and attached to whichever universe lobby the window is in
  */
@@ -40,6 +46,8 @@ export class LobbyScreen
 	private readonly title = getElement('lobby-title', HTMLElement);
 	private readonly playerName = getElement('lobby-player-name', HTMLElement);
 	private readonly createButton = getElement('create-group', HTMLButtonElement);
+	private readonly leaveButton = getElement('leave-lobby', HTMLButtonElement);
+	private readonly map = getElement('lobby-map', HTMLElement);
 	private readonly notice = getElement('lobby-notice', HTMLElement);
 	private readonly chatLog = getElement('chat-log', HTMLOListElement);
 	private readonly chatForm = getElement('chat-form', HTMLFormElement);
@@ -54,6 +62,11 @@ export class LobbyScreen
 	private readonly members = new Map<string, string>();
 
 	/**
+	 * The lobby the screen is drawing, if any
+	 */
+	private attached: LobbyConnection | undefined;
+
+	/**
 	 * Stops following the attached lobby's state
 	 */
 	private readonly unbinds: Array<() => void> = [];
@@ -63,9 +76,10 @@ export class LobbyScreen
 	private memberListQueued = false;
 
 	/**
+	 * @param mapView The map, shared with the group screen
 	 * @param actions What the screen's controls do
 	 */
-	constructor(actions: LobbyScreenActions)
+	constructor(private readonly mapView: MapView, actions: LobbyScreenActions)
 	{
 		this.chatInput.maxLength = MAX_CHAT_MESSAGE_LENGTH;
 
@@ -92,18 +106,26 @@ export class LobbyScreen
 			this.hideNotice();
 			actions.createGroup();
 		});
+
+		this.leaveButton.addEventListener('click', () =>
+		{
+			this.hideNotice();
+			actions.leaveLobby();
+		});
 	}
 
 	/**
-	 * Follows who's in a lobby the window has joined, in place of any lobby it was attached to before
+	 * Draws a lobby the window has joined and follows who's in it, in place of any lobby it was attached to before
 	 *
-	 * @param lobby The joined lobby room, whose state lists its members
+	 * @param connection The joined lobby, whose state lists its members
 	 */
-	attach(lobby: LobbyRoom): void
+	attach(connection: LobbyConnection): void
 	{
-		const callbacks = Callbacks.get(lobby);
+		const callbacks = Callbacks.get(connection.room);
 
 		this.detach();
+		this.attached = connection;
+		this.mapView.show(this.map, connection);
 
 		// Fires for members already in the lobby too
 		this.unbinds.push(callbacks.onAdd('members', (member: LobbyMember, playerId: string) =>
@@ -120,10 +142,16 @@ export class LobbyScreen
 	}
 
 	/**
-	 * Stops following the attached lobby, and empties the chat and the list of who's here
+	 * Stops drawing and following the attached lobby, and empties the chat and the list of who's here
 	 */
 	detach(): void
 	{
+		if (this.attached)
+		{
+			this.mapView.hide();
+			this.attached = undefined;
+		}
+
 		for (const unbind of this.unbinds.splice(0))
 		{
 			unbind();

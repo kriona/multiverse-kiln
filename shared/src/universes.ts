@@ -24,6 +24,13 @@ export const RULESETS = ['pf1e'] as const;
 export type Ruleset = typeof RULESETS[number];
 
 /**
+ * Each ruleset's name, as players read it
+ */
+export const RULESET_NAMES: Record<Ruleset, string> = {
+	pf1e: 'Pathfinder 1E'
+};
+
+/**
  * How the time of day changes in a universe or zone (see STRUCTURE-OVERVIEW.md)
  *
  * Zones also have inherit, which uses the parent zone's setting, or the universe's for a zone with no parent

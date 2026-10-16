@@ -1,11 +1,13 @@
 import { CloseCode } from '@colyseus/sdk';
 import { GROUP_QUERY_PARAMETER, LobbyMessageType, LobbyServerMessageType, MAX_GROUP_PLAYERS, NoticeReason, ServerCloseCode, SessionMessageType, SessionServerMessageType, type AccountPayload, type AccountPlayer, type ChatHistoryPayload, type ChatMessage, type ChatPayload, type JoinGroupPayload, type LoginPayload, type NoticePayload, type UniverseSummary } from '@multiverse-kiln/shared';
 
-import { findFirstUniverse, joinGroup, joinLobby, type GameConnection, type LobbyConnection, type ServerConnection } from './network/serverConnection';
+import { getUniverseDetails, joinGroup, joinLobby, listUniverses, type GameConnection, type LobbyConnection, type ServerConnection } from './network/serverConnection';
 import { showScreen, showStatus } from './ui/dom';
 import { GroupScreen } from './ui/GroupScreen';
+import { HomeScreen } from './ui/HomeScreen';
 import { LobbyScreen } from './ui/LobbyScreen';
 import { LoginScreen } from './ui/LoginScreen';
+import { MapView } from './ui/MapView';
 
 /**
  * The group room this window has joined
@@ -26,17 +28,18 @@ interface JoinedLobby
 }
 
 /**
- * Runs the page: shows the login, lobby or group screen to match the player the session says this
- * window is, and keeps the window in the room that goes with it
+ * Runs the page: shows the login, Home, lobby or group screen to match where the player is, and keeps
+ * the window in the room that goes with it
  *
  * The server decides who the player is and which group they are in, and tells every window of the
  * browser through the session room; a window only asks for changes and follows what it is told. A
- * logged-in player who isn't in a group is in a universe's lobby: for now always the first universe
- * the server lists
+ * logged-in player who isn't in a group is on Home, or in the lobby of the universe they chose there.
+ * Leaving a group goes back to that lobby
  */
 export class App
 {
 	private readonly loginScreen: LoginScreen;
+	private readonly homeScreen: HomeScreen;
 	private readonly lobbyScreen: LobbyScreen;
 	private readonly groupScreen: GroupScreen;
 
@@ -44,6 +47,11 @@ export class App
 	 * The player, from the session's latest Account message; null while logged out
 	 */
 	private player: AccountPlayer | null = null;
+
+	/**
+	 * The universe the player chose on Home, whose lobby they are in when they aren't in a group
+	 */
+	private chosenUniverse: UniverseSummary | undefined;
 
 	/**
 	 * The group from a join link this window was opened with, until the server has answered the request to join it
@@ -60,11 +68,6 @@ export class App
 	private failedGroupId: string | undefined;
 
 	/**
-	 * Set when no lobby could be joined, so the window doesn't keep trying; reloading the page tries again
-	 */
-	private lobbyUnavailable = false;
-
-	/**
 	 * Whether syncRooms() is running; it runs one at a time and repeats until the window is where the player is
 	 */
 	private syncingRooms = false;
@@ -74,7 +77,8 @@ export class App
 	 */
 	constructor(private readonly server: ServerConnection)
 	{
-		const { session } = server;
+		const { client, session } = server;
+		const mapView = new MapView();
 
 		this.linkGroupId = (new URLSearchParams(window.location.search).get(GROUP_QUERY_PARAMETER) ?? undefined);
 
@@ -85,7 +89,16 @@ export class App
 			session.send(SessionMessageType.Login, login);
 		});
 
-		this.lobbyScreen = new LobbyScreen({
+		this.homeScreen = new HomeScreen({
+			loadPage: (offset) => listUniverses(client, offset),
+			loadDetails: (universeId) => getUniverseDetails(client, universeId),
+			enter: (universe) =>
+			{
+				this.enterUniverse(universe);
+			}
+		});
+
+		this.lobbyScreen = new LobbyScreen(mapView, {
 			sendChat: (text) =>
 			{
 				const chat: ChatPayload = { text };
@@ -95,10 +108,16 @@ export class App
 			createGroup: () =>
 			{
 				this.joinedLobby?.connection.room.send(LobbyMessageType.CreateGroup);
+			},
+			leaveLobby: () =>
+			{
+				this.chosenUniverse = undefined;
+				this.showHome();
+				void this.syncRooms();
 			}
 		});
 
-		this.groupScreen = new GroupScreen(() =>
+		this.groupScreen = new GroupScreen(mapView, () =>
 		{
 			session.send(SessionMessageType.LeaveGroup);
 		});
@@ -144,7 +163,7 @@ export class App
 		}
 		else if (player.groupId === null)
 		{
-			this.showLobby();
+			this.showOutsideGroup();
 		}
 
 		if (player && !wasLoggedIn)
@@ -238,31 +257,74 @@ export class App
 		}
 		else
 		{
-			this.lobbyScreen.showNotice(message);
-			this.showLobby();
+			this.showOutsideGroup(message);
 			void this.syncRooms();
 		}
 	}
 
 	/**
-	 * Shows the lobby screen once the window is in a lobby, or a message while it gets there
+	 * Goes into the lobby of a universe chosen on Home
+	 *
+	 * @param universe The universe
 	 */
-	private showLobby(): void
+	private enterUniverse(universe: UniverseSummary): void
 	{
+		this.chosenUniverse = universe;
+		this.homeScreen.hideNotice();
+		this.showOutsideGroup();
+		void this.syncRooms();
+	}
+
+	/**
+	 * Shows where a player who isn't in a group is: the lobby of the universe they chose (or a message
+	 * while it is being joined), or Home
+	 *
+	 * @param notice A message to show there, if any
+	 */
+	private showOutsideGroup(notice?: string): void
+	{
+		if (!this.chosenUniverse)
+		{
+			if (notice !== undefined)
+			{
+				this.homeScreen.showNotice(notice);
+			}
+
+			this.showHome();
+			return;
+		}
+
+		if (notice !== undefined)
+		{
+			this.lobbyScreen.showNotice(notice);
+		}
+
 		if (this.joinedLobby && this.player)
 		{
 			this.lobbyScreen.show(this.joinedLobby.universe.name, this.player.playerId, this.player.name);
 			showScreen('lobby');
 		}
-		else if (!this.lobbyUnavailable)
+		else
 		{
-			showStatus('Entering the lobby...');
+			showStatus(`Entering ${this.chosenUniverse.name}...`);
+		}
+	}
+
+	/**
+	 * Shows Home, listing the universes afresh
+	 */
+	private showHome(): void
+	{
+		if (this.player)
+		{
+			this.homeScreen.show(this.player.name);
+			showScreen('home');
 		}
 	}
 
 	/**
 	 * Leaves and joins rooms until the window is where the player is: their group's room when they are
-	 * in a group, a universe's lobby when they are logged in and not, and neither when logged out
+	 * in a group, the chosen universe's lobby when they have chosen one and aren't, and neither otherwise
 	 *
 	 * The player can change again while a room is being joined, so this repeats until it catches up
 	 */
@@ -282,18 +344,13 @@ export class App
 				const wantedGroupId = this.wantedGroupId();
 
 				// While a join link is being answered, the player is about to be in a group
-				const wantsLobby = (
-					(this.player !== null) &&
-					(wantedGroupId === undefined) &&
-					(this.linkGroupId === undefined) &&
-					!this.lobbyUnavailable
-				);
+				const wantedUniverse = (((this.player !== null) && (wantedGroupId === undefined) && (this.linkGroupId === undefined)) ? this.chosenUniverse : undefined);
 
 				if (this.joinedGroup && (this.joinedGroup.groupId !== wantedGroupId))
 				{
 					await this.leaveGroupRoom();
 				}
-				else if (this.joinedLobby && !wantsLobby)
+				else if (this.joinedLobby && (this.joinedLobby.universe.id !== wantedUniverse?.id))
 				{
 					await this.leaveLobby();
 				}
@@ -301,9 +358,9 @@ export class App
 				{
 					await this.joinGroupRoom(wantedGroupId);
 				}
-				else if (wantsLobby && !this.joinedLobby)
+				else if (wantedUniverse && !this.joinedLobby)
 				{
-					await this.enterLobby();
+					await this.enterLobby(wantedUniverse);
 				}
 				else
 				{
@@ -330,40 +387,40 @@ export class App
 	}
 
 	/**
-	 * Joins the lobby of the first universe the server lists, and shows it
+	 * Joins a universe's lobby and shows it; back to Home if it can't be joined
+	 *
+	 * @param universe The universe
 	 */
-	private async enterLobby(): Promise<void>
+	private async enterLobby(universe: UniverseSummary): Promise<void>
 	{
-		let joined: JoinedLobby;
+		let connection: LobbyConnection;
 
 		try
 		{
-			const universe = await findFirstUniverse(this.server.client);
-
-			if (!universe)
-			{
-				this.lobbyUnavailable = true;
-				showStatus('There are no universes to play in yet.');
-				return;
-			}
-
-			joined = {
-				universe,
-				connection: await joinLobby(this.server.client, universe.id)
-			};
+			connection = await joinLobby(this.server.client, universe.id);
 		}
 		catch (error)
 		{
 			console.error('Could not join the lobby:', error);
-			this.lobbyUnavailable = true;
-			showStatus('Could not enter the lobby. Reload the page to try again.');
+
+			if (this.chosenUniverse === universe)
+			{
+				this.chosenUniverse = undefined;
+			}
+
+			if (this.player?.groupId === null)
+			{
+				this.showOutsideGroup(`Could not enter ${universe.name}. Try again in a moment.`);
+			}
+
 			return;
 		}
 
-		const { room } = joined.connection;
+		const joined: JoinedLobby = { universe, connection };
+		const { room } = connection;
 
 		this.joinedLobby = joined;
-		this.lobbyScreen.attach(room);
+		this.lobbyScreen.attach(connection);
 
 		room.onMessage(LobbyServerMessageType.ChatHistory, (history: ChatHistoryPayload) =>
 		{
@@ -387,7 +444,7 @@ export class App
 
 		if (this.player?.groupId === null)
 		{
-			this.showLobby();
+			this.showOutsideGroup();
 		}
 	}
 
@@ -413,7 +470,7 @@ export class App
 	}
 
 	/**
-	 * Handles the lobby's room closing when the window didn't leave it itself
+	 * Handles the lobby's room closing when the window didn't leave it itself: back to Home
 	 *
 	 * @param joined The lobby that closed
 	 * @param code WebSocket close code
@@ -428,11 +485,21 @@ export class App
 		this.joinedLobby = undefined;
 		this.lobbyScreen.detach();
 
-		if (code !== CloseCode.CONSENTED)
+		if (code === CloseCode.CONSENTED)
 		{
-			console.error(`Disconnected from the lobby (code ${code})`);
-			this.lobbyUnavailable = true;
-			showStatus('Lost the connection to the lobby. Reload the page to reconnect.');
+			return;
+		}
+
+		console.error(`Disconnected from the lobby (code ${code})`);
+
+		if (this.chosenUniverse?.id === joined.universe.id)
+		{
+			this.chosenUniverse = undefined;
+		}
+
+		if (this.player?.groupId === null)
+		{
+			this.showOutsideGroup(`Lost the connection to ${joined.universe.name}.`);
 		}
 	}
 
@@ -440,7 +507,7 @@ export class App
 	 * Joins a group's room and shows it
 	 *
 	 * If the room can't be joined, asks the session to take the player out of the group, so that every
-	 * window goes back to the lobby rather than trying again
+	 * window goes back rather than trying again
 	 *
 	 * @param groupId The group's ID
 	 */
@@ -459,8 +526,7 @@ export class App
 		{
 			console.error('Could not join the group:', error);
 			this.failedGroupId = groupId;
-			this.lobbyScreen.showNotice('Could not join that game. It may have just ended.');
-			this.showLobby();
+			this.showOutsideGroup('Could not join that game. It may have just ended.');
 			this.server.session.send(SessionMessageType.LeaveGroup);
 			return;
 		}
@@ -524,7 +590,7 @@ export class App
 		if (code !== CloseCode.CONSENTED)
 		{
 			console.error(`Disconnected from the group (code ${code})`);
-			this.lobbyScreen.showNotice('Lost the connection to the game.');
+			this.showOutsideGroup('Lost the connection to the game.');
 		}
 
 		this.server.session.send(SessionMessageType.LeaveGroup);

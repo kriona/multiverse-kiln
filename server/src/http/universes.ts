@@ -2,7 +2,7 @@ import type { Application } from 'express';
 import { z } from 'zod';
 import { MAX_UNIVERSES_PER_PAGE, UNIVERSES_PATH, type UniverseListPayload } from '@multiverse-kiln/shared';
 
-import { listUniverses } from '../db/universeRepo.js';
+import { findUniverseDetails, listUniverses } from '../db/universeRepo.js';
 
 /**
  * Query parameters of GET UNIVERSES_PATH
@@ -13,24 +13,57 @@ const listQuery = z.object({
 });
 
 /**
- * Adds GET UNIVERSES_PATH, which lists the universes Home shows: those ready for everyone (stage
- * let_there_be_light), by name, a page at a time
+ * Adds the routes for the universes Home shows, which are those ready for everyone (stage let_there_be_light):
  *
- * Answers 400 for an offset or limit that isn't a whole number in range
+ * - GET UNIVERSES_PATH lists them by name, a page at a time. Answers 400 for an offset or limit that
+ *   isn't a whole number in range
+ * - GET UNIVERSES_PATH/:id gives one of them in full. Answers 404 for anything else, including a
+ *   universe that exists but isn't listed
  *
- * @param app Express app to add the route to
+ * @param app Express app to add the routes to
  */
-export function addUniversesRoute(app: Application): void
+export function addUniversesRoutes(app: Application): void
 {
-	app.get(UNIVERSES_PATH, async (req, res) =>
+	app.get(`${UNIVERSES_PATH}/:id`, async (request, response) =>
 	{
-		const query = listQuery.safeParse(req.query);
+		const id = z.uuid().safeParse(request.params.id);
 
-		res.set('Cache-Control', 'no-store');
+		response.set('Cache-Control', 'no-store');
+
+		if (!id.success)
+		{
+			response.status(404).json({ error: 'No such universe' });
+			return;
+		}
+
+		try
+		{
+			const universe = await findUniverseDetails(id.data, 'let_there_be_light');
+
+			if (!universe)
+			{
+				response.status(404).json({ error: 'No such universe' });
+				return;
+			}
+
+			response.json(universe);
+		}
+		catch (error)
+		{
+			console.error('Could not load a universe:', error);
+			response.status(500).json({ error: 'Could not load the universe' });
+		}
+	});
+
+	app.get(UNIVERSES_PATH, async (request, response) =>
+	{
+		const query = listQuery.safeParse(request.query);
+
+		response.set('Cache-Control', 'no-store');
 
 		if (!query.success)
 		{
-			res.status(400).json({ error: 'offset and limit must be whole numbers in range' });
+			response.status(400).json({ error: 'offset and limit must be whole numbers in range' });
 			return;
 		}
 
@@ -45,12 +78,12 @@ export function addUniversesRoute(app: Application): void
 				hasMore: (universes.length > limit)
 			};
 
-			res.json(payload);
+			response.json(payload);
 		}
 		catch (error)
 		{
 			console.error('Could not list universes:', error);
-			res.status(500).json({ error: 'Could not list universes' });
+			response.status(500).json({ error: 'Could not list universes' });
 		}
 	});
 }

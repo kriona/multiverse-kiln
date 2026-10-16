@@ -14,9 +14,9 @@ export const HEALTH_PATH = '/health';
  */
 export function addHealthRoute(app: Application): void
 {
-	app.get(HEALTH_PATH, (_req, res) =>
+	app.get(HEALTH_PATH, (_request, response) =>
 	{
-		res.set('Cache-Control', 'no-store');
-		res.json({ status: 'ok' });
+		response.set('Cache-Control', 'no-store');
+		response.json({ status: 'ok' });
 	});
 }

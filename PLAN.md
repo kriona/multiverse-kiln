@@ -5,7 +5,7 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 **Current phase** line updated so each new session knows where to pick up.
 `STRUCTURE-OVERVIEW.md` describes the pages, editors and game rules these phases build.
 
-**Current phase:** 7
+**Current phase:** 8
 
 ---
 
@@ -98,11 +98,11 @@ Built in three steps: data and logic, then rooms, then the client.
 - [✅] A room holds every zone its players are in; each player has a zone, and each client only sees the players in its own zone (`StateView`, one per client for now)
 - [✅] Rooms load zone maps at lifecycle boundaries, and load the next zone before a player moves into it, never inside the tick
 - [✅] `GET /universes` lists the universes Home shows, a page at a time
-- [ ] Client draws tiles by color from the zone data (graphics come in Phase 16), loading the chunks near the player
-- [ ] Looping zones wrap seamlessly: near an edge the client draws the far side's chunks beyond it, players on the far side appear across the edge, and stepping over the edge doesn't jump the camera or the player
-- [ ] Zone links: automatic links move you, manual links offer a prompt (the server side is done: stepping onto an automatic link or sending `TakeLink` on a manual one moves the player; the client still needs the prompt)
-- [ ] The lobby screen shows the lobby's map, so players can walk around it (today it is chat and who's here only)
-- [ ] Home page: universes in `let there be light` (paginated from the start), the universe modal, and Enter Universe -> that universe's lobby
+- [✅] Client draws tiles by color from the zone data (graphics come in Phase 16), drawing only the chunks near the camera. The server still sends the whole zone (see Phase 8)
+- [✅] Looping zones wrap seamlessly: near an edge the client draws the far side's chunks beyond it, players on the far side appear across the edge, and stepping over the edge doesn't jump the camera or the player
+- [✅] Zone links: automatic links move you, manual links offer a prompt (press E)
+- [✅] The lobby screen shows the lobby's map next to chat and who's here, so players can walk around it
+- [✅] Home page: universes in `let there be light` (paginated from the start), the universe overview, and Enter Universe -> that universe's lobby. Leaving the lobby goes back to Home; the long description is shown as plain text until Markdown rendering (Phase 8)
 
 **Done when:** a player picks a universe on Home, walks its lobby's map (blocked by mountains and water, slowed by forest) and walks through a door into a house.
 
@@ -116,7 +116,7 @@ Built in three steps: data and logic, then rooms, then the client.
 - [ ] Map editor: grid centered on 0,0, expand buttons, edit-size dialog with its warning, draw tool (a tile or Void; size 1-100; circle or square), undo/redo with a drag counted as one step
 - [ ] Zone link layer: automatic or manual, "requires the whole group", select destination coordinates with an optional return link
 - [ ] Edits apply immediately (universe versions come in Phase 13)
-- [ ] Rooms load a zone's chunks as players come near them and drop chunks nobody is near, instead of loading the whole map (`loadZone`), since the editor can make maps up to 50,000 cells per side. Loading stays outside the tick: a player waits at the edge of a chunk that hasn't arrived yet
+- [ ] Rooms load a zone's chunks as players come near them and drop chunks nobody is near, instead of loading the whole map (`loadZone`), since the editor can make maps up to 50,000 cells per side. Loading stays outside the tick: a player waits at the edge of a chunk that hasn't arrived yet. Clients are likewise sent only the chunks near their player, not the whole zone (`ZonePayload`)
 
 **Done when:** a universe can be built from scratch in the browser (tiles, zones, maps and links) and played in its lobby.
 

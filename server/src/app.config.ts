@@ -13,7 +13,7 @@ import { createTransport } from './transport.js';
 import { isDevToolsEnabled } from './devTools.js';
 import { addBrowserIdRoute } from './http/browserId.js';
 import { addHealthRoute } from './http/health.js';
-import { addUniversesRoute } from './http/universes.js';
+import { addUniversesRoutes } from './http/universes.js';
 import { createOriginCheck, parseAllowedOrigins } from './http/origins.js';
 import { configureResponseHeaders } from './http/responseHeaders.js';
 
@@ -52,7 +52,7 @@ const server = defineServer({
 
 		addHealthRoute(app);
 		addBrowserIdRoute(app);
-		addUniversesRoute(app);
+		addUniversesRoutes(app);
 
 		if (isDevToolsEnabled())
 		{
@@ -65,9 +65,9 @@ const server = defineServer({
 		else
 		{
 			// Colyseus serves its version number at / unless another route claims it
-			app.get('/', (_req, res) =>
+			app.get('/', (_request, response) =>
 			{
-				res.sendStatus(404);
+				response.sendStatus(404);
 			});
 		}
 	}

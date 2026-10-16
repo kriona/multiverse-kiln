@@ -22,7 +22,8 @@ export const LOBBY_ROOM_NAME = 'lobby';
 /**
  * Server route listing the universes Home shows (GET, answered with UniverseListPayload)
  *
- * Takes optional `offset` and `limit` query parameters; limit is at most MAX_UNIVERSES_PER_PAGE
+ * Takes optional `offset` and `limit` query parameters; limit is at most MAX_UNIVERSES_PER_PAGE.
+ * GET UNIVERSES_PATH/:id answers with one of them as UniverseDetails
  */
 export const UNIVERSES_PATH = '/universes';
 
@@ -70,16 +71,6 @@ export const DEFAULT_SERVER_PORT = 2567;
 export const BROWSER_ID_PATH = '/browser-id';
 
 /**
- * Width of the client's view of the map, in pixels (one world unit is one pixel): 32 cells
- */
-export const VIEW_WIDTH = 960;
-
-/**
- * Height of the client's view of the map, in pixels (one world unit is one pixel): 18 cells
- */
-export const VIEW_HEIGHT = 540;
-
-/**
  * Radius of a player in world units
  */
 export const PLAYER_RADIUS = 12;
@@ -91,6 +82,29 @@ export const PLAYER_RADIUS = 12;
  * player, so a player on a cell center is entirely inside the cell
  */
 export const GRID_CELL_SIZE = 30;
+
+/**
+ * How many cells across the client's view of the map is
+ *
+ * The camera centers on the player, who stands on a cell's center, so an odd number of cells puts the
+ * view's edges on cell boundaries: a standing player sees only whole tiles
+ */
+export const VIEW_COLUMNS = 31;
+
+/**
+ * How many cells tall the client's view of the map is; odd for the same reason as VIEW_COLUMNS
+ */
+export const VIEW_ROWS = 17;
+
+/**
+ * Width of the client's view of the map, in pixels (one world unit is one pixel)
+ */
+export const VIEW_WIDTH = VIEW_COLUMNS * GRID_CELL_SIZE;
+
+/**
+ * Height of the client's view of the map, in pixels
+ */
+export const VIEW_HEIGHT = VIEW_ROWS * GRID_CELL_SIZE;
 
 /**
  * Milliseconds between the state patches the server sends to clients

@@ -1,5 +1,10 @@
 import { Client, type Room } from '@colyseus/sdk';
-import { BROWSER_ID_PATH, GameState, LOBBY_ROOM_NAME, LobbyState, ServerMessageType, SESSION_ROOM_NAME, UNIVERSES_PATH, type LobbyJoinOptions, type UniverseListPayload, type UniverseSummary, type WelcomePayload, type ZonePayload } from '@multiverse-kiln/shared';
+import { BROWSER_ID_PATH, GameState, LOBBY_ROOM_NAME, LobbyState, ServerMessageType, SESSION_ROOM_NAME, UNIVERSES_PATH, type LobbyJoinOptions, type UniverseDetails, type UniverseListPayload, type WelcomePayload, type ZonePayload } from '@multiverse-kiln/shared';
+
+/**
+ * How many universes Home asks for at a time
+ */
+const UNIVERSES_PER_PAGE = 20;
 
 /**
  * A joined game room, with typed state
@@ -132,16 +137,31 @@ export async function connectToServer(): Promise<ServerConnection>
 }
 
 /**
- * The first universe Home lists
+ * A page of the universes Home lists
  *
  * @param client Client for the server
- * @return The universe, or undefined when there are none
+ * @param offset How many universes to skip
+ * @return The page
  */
-export async function findFirstUniverse(client: Client): Promise<UniverseSummary | undefined>
+export async function listUniverses(client: Client, offset: number): Promise<UniverseListPayload>
 {
-	const response = await client.http.get(`${UNIVERSES_PATH}?limit=1`);
+	const response = await client.http.get(`${UNIVERSES_PATH}?offset=${offset}&limit=${UNIVERSES_PER_PAGE}`);
 
-	return((response.data as UniverseListPayload).universes[0]);
+	return(response.data as UniverseListPayload);
+}
+
+/**
+ * One of the universes Home lists, in full
+ *
+ * @param client Client for the server
+ * @param universeId The universe's ID
+ * @return The universe
+ */
+export async function getUniverseDetails(client: Client, universeId: string): Promise<UniverseDetails>
+{
+	const response = await client.http.get(`${UNIVERSES_PATH}/${encodeURIComponent(universeId)}`);
+
+	return(response.data as UniverseDetails);
 }
 
 /**

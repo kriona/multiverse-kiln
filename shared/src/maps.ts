@@ -149,6 +149,23 @@ export function tileIdAt(tiles: ZoneTiles, column: number, row: number): number 
 }
 
 /**
+ * The copy of a coordinate on a looping map that is nearest another: on a map that repeats every
+ * `period` world units, value + k * period for whichever whole k lands closest to reference
+ *
+ * Used to keep positions continuous as players cross a looping edge, and to draw a player on the far
+ * side of the edge next to the camera rather than a whole map away
+ *
+ * @param value The coordinate
+ * @param reference The coordinate to be near
+ * @param period How far apart the copies are: the map's width or height in world units
+ * @return The nearest copy of value
+ */
+export function nearestCopy(value: number, reference: number, period: number): number
+{
+	return(value + (Math.round((reference - value) / period) * period));
+}
+
+/**
  * The remainder of a division, always from 0 up to the divisor, even for a negative value
  *
  * @param value The value to divide

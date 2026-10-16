@@ -1,9 +1,8 @@
-import Phaser from 'phaser';
-import { GROUP_QUERY_PARAMETER, VIEW_HEIGHT, VIEW_WIDTH } from '@multiverse-kiln/shared';
+import { GROUP_QUERY_PARAMETER } from '@multiverse-kiln/shared';
 
 import type { GameConnection } from '../network/serverConnection';
-import { GAME_SCENE_KEY, GameScene, type GameSceneData } from '../scenes/GameScene';
 import { getElement } from './dom';
+import type { MapView } from './MapView';
 
 /**
  * How long the Share button's confirmation stays up, in milliseconds
@@ -28,24 +27,22 @@ export function buildJoinLink(groupId: string): string
 }
 
 /**
- * The group screen: the game, and the Share and Leave group buttons
- *
- * The Phaser game is created the first time a group is shown and kept afterward; each group runs a
- * fresh start of the game scene
+ * The group screen: the game's map, and the Share and Leave group buttons
  */
 export class GroupScreen
 {
 	private readonly status = getElement('group-status', HTMLElement);
 	private readonly shareButton = getElement('share-group', HTMLButtonElement);
 	private readonly leaveButton = getElement('leave-group', HTMLButtonElement);
-	private game?: Phaser.Game;
+	private readonly map = getElement('group-map', HTMLElement);
 	private groupId?: string;
 	private statusTimer?: number;
 
 	/**
+	 * @param mapView The map, shared with the lobby screen
 	 * @param onLeave Called when the player presses Leave group
 	 */
-	constructor(onLeave: () => void)
+	constructor(private readonly mapView: MapView, onLeave: () => void)
 	{
 		this.shareButton.addEventListener('click', () =>
 		{
@@ -78,32 +75,13 @@ export class GroupScreen
 	 */
 	start(connection: GameConnection): void
 	{
-		const data: GameSceneData = { connection };
-
 		// Keeps any message that arrived while joining
 		if (this.status.textContent === JOINING_MESSAGE)
 		{
 			this.setStatus('');
 		}
 
-		if (!this.game)
-		{
-			// One world unit is one pixel; the camera follows the player around zones larger than the canvas
-			this.game = new Phaser.Game({
-				type: Phaser.WEBGL,
-				parent: 'game',
-				width: VIEW_WIDTH,
-				height: VIEW_HEIGHT,
-				backgroundColor: '#1d1f27',
-				scene: []
-			});
-
-			this.game.scene.add(GAME_SCENE_KEY, GameScene, true, data);
-		}
-		else
-		{
-			this.game.scene.start(GAME_SCENE_KEY, data);
-		}
+		this.mapView.show(this.map, connection);
 	}
 
 	/**
@@ -112,7 +90,7 @@ export class GroupScreen
 	stop(): void
 	{
 		this.groupId = undefined;
-		this.game?.scene.stop(GAME_SCENE_KEY);
+		this.mapView.hide();
 	}
 
 	/**

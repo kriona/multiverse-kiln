@@ -21,26 +21,54 @@
 				</form>
 			</section>
 
+			<section id="home-screen" class="screen" hidden>
+				<header class="toolbar">
+					<h1>Multiverse Kiln</h1>
+					<span class="toolbar-name">Playing as <strong id="home-player-name"></strong></span>
+				</header>
+				<p id="home-notice" class="notice" role="status" hidden></p>
+				<div class="panel universes">
+					<h2>Universes</h2>
+					<ul id="universe-list" class="universe-list"></ul>
+					<p id="universe-empty" class="universe-empty" hidden>There are no universes to play in yet.</p>
+					<button id="universe-more" type="button" hidden>Show more</button>
+				</div>
+				<dialog id="universe-dialog" class="panel universe-dialog" aria-labelledby="universe-name">
+					<h2 id="universe-name"></h2>
+					<p id="universe-ruleset" class="universe-ruleset"></p>
+					<p id="universe-summary"></p>
+					<p id="universe-description" class="universe-description"></p>
+					<div class="dialog-buttons">
+						<button id="universe-close" type="button" class="secondary">Close</button>
+						<button id="universe-enter" type="button">Enter Universe</button>
+					</div>
+				</dialog>
+			</section>
+
 			<section id="lobby-screen" class="screen" hidden>
 				<header class="toolbar">
 					<h1 id="lobby-title">Lobby</h1>
 					<span class="toolbar-name">Playing as <strong id="lobby-player-name"></strong></span>
 					<button id="create-group" type="button">Create game</button>
+					<button id="leave-lobby" type="button" class="secondary">Leave lobby</button>
 				</header>
 				<p id="lobby-notice" class="notice" role="status" hidden></p>
 				<div class="lobby-body">
-					<div class="panel chat">
-						<ol id="chat-log" class="chat-log" aria-live="polite"></ol>
-						<form id="chat-form" class="chat-form">
-							<input id="chat-input" name="text" autocomplete="off" placeholder="Say something..." aria-label="Chat message" />
-							<button type="submit">Send</button>
-						</form>
+					<div id="lobby-map" class="map"></div>
+					<div class="lobby-side">
+						<aside class="panel members">
+							<h2>Here (<span id="member-count">0</span>)</h2>
+							<ul id="member-list" class="member-list"></ul>
+							<p id="member-more" class="member-more" hidden></p>
+						</aside>
+						<div class="panel chat">
+							<ol id="chat-log" class="chat-log" aria-live="polite"></ol>
+							<form id="chat-form" class="chat-form">
+								<input id="chat-input" name="text" autocomplete="off" placeholder="Say something..." aria-label="Chat message" />
+								<button type="submit">Send</button>
+							</form>
+						</div>
 					</div>
-					<aside class="panel members">
-						<h2>Here (<span id="member-count">0</span>)</h2>
-						<ul id="member-list" class="member-list"></ul>
-						<p id="member-more" class="member-more" hidden></p>
-					</aside>
 				</div>
 			</section>
 
@@ -51,7 +79,7 @@
 					<button id="share-group" type="button">Share</button>
 					<button id="leave-group" type="button">Leave group</button>
 				</header>
-				<div id="game"></div>
+				<div id="group-map" class="map"></div>
 			</section>
 		</main>
 		<footer>

@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { randomBytes } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
 import http from 'http';
 
 import { MAX_UNIVERSES_PER_PAGE, UNIVERSES_PATH, type UniverseListPayload, type UniverseStage } from '@multiverse-kiln/shared';
@@ -189,6 +189,38 @@ describe('Universe list', () =>
 		for (const query of ['?limit=0', `?limit=${MAX_UNIVERSES_PER_PAGE + 1}`, '?offset=-1', '?limit=two', '?offset=1.5'])
 		{
 			assert.strictEqual((await fetchUniverses(query)).response.status, 400, query);
+		}
+	});
+
+	it('gives one listed universe in full, uncached', async () =>
+	{
+		const universeId = await createUniverse({
+			name: 'Kilnhaven',
+			shortDescription: 'A small town.',
+			longDescription: 'A **small** town.',
+			ruleset: 'pf1e',
+			stage: 'let_there_be_light'
+		});
+		const { response, body } = await fetchUniverses(`/${universeId}`);
+
+		assert.strictEqual(response.status, 200);
+		assert.strictEqual(response.headers.get('cache-control'), 'no-store');
+		assert.deepStrictEqual(body, {
+			id: universeId,
+			name: 'Kilnhaven',
+			shortDescription: 'A small town.',
+			longDescription: 'A **small** town.',
+			ruleset: 'pf1e'
+		});
+	});
+
+	it('answers 404 for a universe that is not listed, does not exist or is not an ID', async () =>
+	{
+		const unlistedId = await addUniverseIn('Unfinished', 'in_the_beginning');
+
+		for (const path of [`/${unlistedId}`, `/${randomUUID()}`, '/not-an-id'])
+		{
+			assert.strictEqual((await fetchUniverses(path)).response.status, 404, path);
 		}
 	});
 });

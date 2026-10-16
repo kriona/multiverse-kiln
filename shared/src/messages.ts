@@ -339,6 +339,17 @@ export interface UniverseSummary
 }
 
 /**
+ * A universe as Home's overview of it shows it (GET UNIVERSES_PATH/:id)
+ */
+export interface UniverseDetails extends UniverseSummary
+{
+	/**
+	 * Markdown
+	 */
+	longDescription: string;
+}
+
+/**
  * Response of GET UNIVERSES_PATH
  */
 export interface UniverseListPayload
