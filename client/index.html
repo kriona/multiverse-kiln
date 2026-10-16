@@ -8,18 +8,9 @@
 	</head>
 	<body>
 		<main>
-			<section id="status-screen" class="screen">
-				<p id="status-message" data-message="page.connecting" data-translation-context="Shown on the whole page while the game connects to the server">Connecting...</p>
-			</section>
+			<!-- include status.html -->
 
-			<section id="login-screen" class="screen" hidden>
-				<form id="login-form" class="panel login-panel">
-					<h1 data-message="page.name" data-translation-context="The game engine's name, shown as a heading">Multiverse Kiln</h1>
-					<label for="login-name" data-message="login.nameLabel" data-translation-context="Label of the login field where players type the name others will see">What should we call you?</label>
-					<input id="login-name" name="name" autocomplete="nickname" required />
-					<button id="login-submit" type="submit" data-message="login.submit" data-translation-context="Button that logs in with the name typed">Enter</button>
-				</form>
-			</section>
+			<!-- include login.html -->
 
 			<section id="home-screen" class="screen" hidden>
 				<header class="toolbar">
@@ -114,11 +105,7 @@
 				<div id="group-map" class="map"></div>
 			</section>
 		</main>
-		<footer>
-			<span data-message="page.copyright" data-translation-context="Copyright notice at the bottom of every page; {year} is the year and {holder} is who holds the copyright">Copyright (C) <span data-argument="year" translate="no">2026</span> <span data-argument="holder" translate="no">Kriona Hagen</span>.</span>
-			<span data-message="page.license" data-translation-context="At the bottom of every page; {license} is a link to the license, named by page.licenseName">This game is free software under the <a href="https://www.gnu.org/licenses/agpl-3.0.html" data-argument="license" data-message="page.licenseName" data-translation-context="The name of the game's license, linking to it">GNU Affero General Public License v3 or later</a>.</span>
-			<a href="%VITE_SOURCE_URL%" data-message="page.sourceCode" data-translation-context="Link at the bottom of every page to where the game's source code can be downloaded">Source code</a>
-		</footer>
+		<!-- include footer.html -->
 		<script type="module" src="/src/main.ts"></script>
 	</body>
 </html>

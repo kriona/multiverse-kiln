@@ -3,8 +3,8 @@
  * (see shared/src/localization.ts), and makes the pseudo-language's catalog from it. Used by the
  * command in messages.ts and, while developing, by the client's Vite dev server
  *
- * Messages come from defineMessages() calls in client/src, server/src and shared/src, and from
- * data-message attributes in the client's pages:
+ * Messages come from client/src, server/src and shared/src, and from data-message attributes in the
+ * client's pages and the partials they include:
  *
  * - data-message="<id>" on an element makes its text a message. Children with data-argument="<name>"
  *   become arguments ("Playing as {name}"); other children (such as an input inside a label) stay
@@ -34,6 +34,12 @@ export const SOURCE_FOLDERS = ['client/src', 'server/src', 'shared/src'];
  * The client's pages
  */
 export const PAGES = ['client/index.html', 'client/edit.html'];
+
+/**
+ * The folder of HTML pieces the pages share, which a page includes with a comment such as
+ * <!-- include footer.html --> (see the client's vite.config.ts)
+ */
+export const PARTIALS_FOLDER = 'client/partials';
 
 /**
  * Where the English catalog is written
@@ -155,7 +161,11 @@ export function extractMessages(root: string): Extraction
 		}
 	}
 
-	for (const page of PAGES)
+	const partials = fs.readdirSync(path.join(root, PARTIALS_FOLDER))
+		.filter((name) => name.endsWith('.html'))
+		.map((name) => path.join(PARTIALS_FOLDER, name));
+
+	for (const page of [...PAGES, ...partials])
 	{
 		findPageMessages(path.join(root, page), root, found, problems);
 	}
