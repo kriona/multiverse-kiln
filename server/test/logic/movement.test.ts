@@ -7,6 +7,11 @@ import { cellAt, cellCenter, NO_PRESS, occupiedCells, PLAYER_SPEED, spawnPositio
 // a step between neighboring cells takes 0.1 seconds
 const grid: Grid = { cellSize: 10, columns: 5, rows: 4 };
 
+// The tests use their own speed and repeat delay rather than PLAYER_SPEED and STEP_REPEAT_DELAY, so
+// those can be tuned without changing the timings here. A press must be held for 0.25 seconds, two
+// and a half steps, before its second step starts
+const repeatDelay = 0.25;
+
 const standingStill = { x: 0, y: 0 } as const;
 const right = { x: 1, y: 0 } as const;
 const down = { x: 0, y: 1 } as const;
@@ -89,33 +94,33 @@ describe('stepOnGrid', () =>
 {
 	it('does not move when no direction is held', () =>
 	{
-		assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(25, 15), standingStill, 1, grid, allFree, 100)), at(25, 15));
+		assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(25, 15), standingStill, 1, grid, allFree, 100, repeatDelay)), at(25, 15));
 	});
 
 	it('starts a step toward the neighboring cell\'s center', () =>
 	{
-		assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(25, 15), right, 0.05, grid, allFree, 100)), { x: 30, y: 15, step: step([2, 1], [3, 1]) });
-		assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(25, 15), { x: 0, y: -1 }, 0.05, grid, allFree, 100)), { x: 25, y: 10, step: step([2, 1], [2, 0]) });
+		assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(25, 15), right, 0.05, grid, allFree, 100, repeatDelay)), { x: 30, y: 15, step: step([2, 1], [3, 1]) });
+		assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(25, 15), { x: 0, y: -1 }, 0.05, grid, allFree, 100, repeatDelay)), { x: 25, y: 10, step: step([2, 1], [2, 0]) });
 	});
 
 	it('finishes a step after the direction is released, stopping exactly on the cell center', () =>
 	{
 		const midStep: GridMover = { x: 30, y: 15, step: step([2, 1], [3, 1]), press: NO_PRESS };
 
-		assert.deepStrictEqual(placeOf(stepOnGrid(midStep, standingStill, 0.02, grid, allFree, 100)), { x: 32, y: 15, step: step([2, 1], [3, 1]) });
-		assert.deepStrictEqual(placeOf(stepOnGrid(midStep, standingStill, 1, grid, allFree, 100)), at(35, 15));
+		assert.deepStrictEqual(placeOf(stepOnGrid(midStep, standingStill, 0.02, grid, allFree, 100, repeatDelay)), { x: 32, y: 15, step: step([2, 1], [3, 1]) });
+		assert.deepStrictEqual(placeOf(stepOnGrid(midStep, standingStill, 1, grid, allFree, 100, repeatDelay)), at(35, 15));
 	});
 
 	it('carries on into the next cell without stopping once the direction has been held', () =>
 	{
-		assert.deepStrictEqual(placeOf(stepOnGrid(holdingAt(25, 15, right), right, 0.15, grid, allFree, 100)), { x: 40, y: 15, step: step([3, 1], [4, 1]) });
+		assert.deepStrictEqual(placeOf(stepOnGrid(holdingAt(25, 15, right), right, 0.15, grid, allFree, 100, repeatDelay)), { x: 40, y: 15, step: step([3, 1], [4, 1]) });
 	});
 
 	it('finishes the current step before changing direction', () =>
 	{
 		const midStep: GridMover = { x: 30, y: 15, step: step([2, 1], [3, 1]), press: { direction: right, heldSeconds: 0.05, stepsStarted: 1 } };
 
-		assert.deepStrictEqual(placeOf(stepOnGrid(midStep, down, 0.1, grid, allFree, 100)), { x: 35, y: 20, step: step([3, 1], [3, 2]) });
+		assert.deepStrictEqual(placeOf(stepOnGrid(midStep, down, 0.1, grid, allFree, 100, repeatDelay)), { x: 35, y: 20, step: step([3, 1], [3, 2]) });
 	});
 
 	it('uses PLAYER_SPEED by default', () =>
@@ -125,9 +130,18 @@ describe('stepOnGrid', () =>
 		assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(500, 500), right, 1, wideGrid, allFree)), { x: 500 + PLAYER_SPEED, y: 500, step: step([0, 0], [1, 0]) });
 	});
 
+	it('uses STEP_REPEAT_DELAY by default', () =>
+	{
+		// Fast enough that each step is over almost at once, so only the delay decides when the second starts
+		const fastSpeed = 1000000;
+
+		assert.strictEqual(stepOnGrid(standingAt(5, 15), right, STEP_REPEAT_DELAY / 2, grid, allFree, fastSpeed).press.stepsStarted, 1);
+		assert.ok(stepOnGrid(standingAt(5, 15), right, STEP_REPEAT_DELAY + 0.001, grid, allFree, fastSpeed).press.stepsStarted > 1);
+	});
+
 	it('steps diagonally at the same speed', () =>
 	{
-		const mover = stepOnGrid(standingAt(15, 15), downRight, 0.05, grid, allFree, 100);
+		const mover = stepOnGrid(standingAt(15, 15), downRight, 0.05, grid, allFree, 100, repeatDelay);
 		const distance = Math.hypot(mover.x - 15, mover.y - 15);
 
 		assert.deepStrictEqual(mover.step, step([1, 1], [2, 2]));
@@ -137,36 +151,36 @@ describe('stepOnGrid', () =>
 
 	it('does not step off the grid', () =>
 	{
-		assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(45, 15), right, 1, grid, allFree, 100)), at(45, 15));
-		assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(5, 5), { x: -1, y: -1 }, 1, grid, allFree, 100)), at(5, 5));
+		assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(45, 15), right, 1, grid, allFree, 100, repeatDelay)), at(45, 15));
+		assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(5, 5), { x: -1, y: -1 }, 1, grid, allFree, 100, repeatDelay)), at(5, 5));
 	});
 
 	it('drops the axis that would leave the grid from a diagonal step', () =>
 	{
-		assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(45, 15), downRight, 0.05, grid, allFree, 100)), { x: 45, y: 20, step: step([4, 1], [4, 2]) });
+		assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(45, 15), downRight, 0.05, grid, allFree, 100, repeatDelay)), { x: 45, y: 20, step: step([4, 1], [4, 2]) });
 	});
 
 	it('stops at the edge of the grid while the direction is still held', () =>
 	{
-		assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(25, 15), right, 10, grid, allFree, 100)), at(45, 15));
+		assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(25, 15), right, 10, grid, allFree, 100, repeatDelay)), at(45, 15));
 	});
 
 	it('moves a player that is off a cell center back onto it', () =>
 	{
-		assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(22, 15), standingStill, 1, grid, allFree, 100)), at(25, 15));
+		assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(22, 15), standingStill, 1, grid, allFree, 100, repeatDelay)), at(25, 15));
 	});
 
 	it('does not move for a zero or negative time step', () =>
 	{
-		assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(25, 15), right, 0, grid, allFree, 100)), at(25, 15));
-		assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(25, 15), right, -1, grid, allFree, 100)), at(25, 15));
+		assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(25, 15), right, 0, grid, allFree, 100, repeatDelay)), at(25, 15));
+		assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(25, 15), right, -1, grid, allFree, 100, repeatDelay)), at(25, 15));
 	});
 
 	it('does not change the mover it was given', () =>
 	{
 		const mover: GridMover = { x: 30, y: 15, step: step([2, 1], [3, 1]), press: { direction: right, heldSeconds: 0.05, stepsStarted: 1 } };
 
-		stepOnGrid(mover, right, 1, grid, allFree, 100);
+		stepOnGrid(mover, right, 1, grid, allFree, 100, repeatDelay);
 
 		assert.deepStrictEqual(mover, { x: 30, y: 15, step: step([2, 1], [3, 1]), press: { direction: right, heldSeconds: 0.05, stepsStarted: 1 } });
 	});
@@ -175,7 +189,7 @@ describe('stepOnGrid', () =>
 	{
 		it('moves one cell for a press held a little longer than a step but shorter than the delay', () =>
 		{
-			const mover = stepOnGrid(standingAt(5, 15), right, 0.2, grid, allFree, 100);
+			const mover = stepOnGrid(standingAt(5, 15), right, 0.2, grid, allFree, 100, repeatDelay);
 
 			assert.deepStrictEqual(placeOf(mover), at(15, 15));
 			assert.deepStrictEqual(mover.press, { direction: right, heldSeconds: 0.2, stepsStarted: 1 });
@@ -184,40 +198,40 @@ describe('stepOnGrid', () =>
 		it('starts the second step once the direction has been held for the delay', () =>
 		{
 			// First step over at 0.1s; second starts at the delay and runs for the rest of the time
-			const mover = stepOnGrid(standingAt(5, 15), right, STEP_REPEAT_DELAY + 0.05, grid, allFree, 100);
+			const mover = stepOnGrid(standingAt(5, 15), right, repeatDelay + 0.05, grid, allFree, 100, repeatDelay);
 
 			assert.deepStrictEqual(placeOf(mover), { x: 20, y: 15, step: step([1, 1], [2, 1]) });
 		});
 
 		it('measures the delay across ticks', () =>
 		{
-			const afterFirstTick = stepOnGrid(standingAt(5, 15), right, 0.2, grid, allFree, 100);
-			const afterSecondTick = stepOnGrid(afterFirstTick, right, (STEP_REPEAT_DELAY - 0.2) + 0.05, grid, allFree, 100);
+			const afterFirstTick = stepOnGrid(standingAt(5, 15), right, 0.2, grid, allFree, 100, repeatDelay);
+			const afterSecondTick = stepOnGrid(afterFirstTick, right, (repeatDelay - 0.2) + 0.05, grid, allFree, 100, repeatDelay);
 
 			assert.deepStrictEqual(placeOf(afterSecondTick), { x: 20, y: 15, step: step([1, 1], [2, 1]) });
 		});
 
 		it('steps at once in a newly pressed direction', () =>
 		{
-			const afterFirstStep = stepOnGrid(standingAt(5, 15), right, 0.15, grid, allFree, 100);
+			const afterFirstStep = stepOnGrid(standingAt(5, 15), right, 0.15, grid, allFree, 100, repeatDelay);
 
-			assert.deepStrictEqual(placeOf(stepOnGrid(afterFirstStep, down, 0.05, grid, allFree, 100)), { x: 15, y: 20, step: step([1, 1], [1, 2]) });
+			assert.deepStrictEqual(placeOf(stepOnGrid(afterFirstStep, down, 0.05, grid, allFree, 100, repeatDelay)), { x: 15, y: 20, step: step([1, 1], [1, 2]) });
 		});
 
 		it('steps at once when the same direction is released and pressed again', () =>
 		{
-			const afterFirstStep = stepOnGrid(standingAt(5, 15), right, 0.15, grid, allFree, 100);
-			const released = stepOnGrid(afterFirstStep, standingStill, 0.01, grid, allFree, 100);
+			const afterFirstStep = stepOnGrid(standingAt(5, 15), right, 0.15, grid, allFree, 100, repeatDelay);
+			const released = stepOnGrid(afterFirstStep, standingStill, 0.01, grid, allFree, 100, repeatDelay);
 
-			assert.deepStrictEqual(placeOf(stepOnGrid(released, right, 0.05, grid, allFree, 100)), { x: 20, y: 15, step: step([1, 1], [2, 1]) });
+			assert.deepStrictEqual(placeOf(stepOnGrid(released, right, 0.05, grid, allFree, 100, repeatDelay)), { x: 20, y: 15, step: step([1, 1], [2, 1]) });
 		});
 
 		it('takes the first step at once when a blocked cell frees up', () =>
 		{
-			const blocked = stepOnGrid(standingAt(5, 15), right, 0.5, grid, freeExcept([1, 1]), 100);
+			const blocked = stepOnGrid(standingAt(5, 15), right, 0.5, grid, freeExcept([1, 1]), 100, repeatDelay);
 
 			assert.deepStrictEqual(placeOf(blocked), at(5, 15));
-			assert.deepStrictEqual(placeOf(stepOnGrid(blocked, right, 0.05, grid, allFree, 100)), { x: 10, y: 15, step: step([0, 1], [1, 1]) });
+			assert.deepStrictEqual(placeOf(stepOnGrid(blocked, right, 0.05, grid, allFree, 100, repeatDelay)), { x: 10, y: 15, step: step([0, 1], [1, 1]) });
 		});
 	});
 
@@ -225,35 +239,35 @@ describe('stepOnGrid', () =>
 	{
 		it('does not step into a held cell', () =>
 		{
-			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(25, 15), right, 1, grid, freeExcept([3, 1]), 100)), at(25, 15));
+			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(25, 15), right, 1, grid, freeExcept([3, 1]), 100, repeatDelay)), at(25, 15));
 		});
 
 		it('stops on the cell before a held one while the direction is held', () =>
 		{
-			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(5, 15), right, 1, grid, freeExcept([3, 1]), 100)), at(25, 15));
+			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(5, 15), right, 1, grid, freeExcept([3, 1]), 100, repeatDelay)), at(25, 15));
 		});
 
 		it('does not cut a corner past a held cell', () =>
 		{
 			// The diagonal cell (2, 2) is free, but (2, 1) beside it is held, so only the vertical part is taken
-			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(15, 15), downRight, 0.05, grid, freeExcept([2, 1]), 100)), { x: 15, y: 20, step: step([1, 1], [1, 2]) });
+			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(15, 15), downRight, 0.05, grid, freeExcept([2, 1]), 100, repeatDelay)), { x: 15, y: 20, step: step([1, 1], [1, 2]) });
 		});
 
 		it('slides horizontally when the diagonal cell is held', () =>
 		{
-			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(15, 15), downRight, 0.05, grid, freeExcept([2, 2]), 100)), { x: 20, y: 15, step: step([1, 1], [2, 1]) });
+			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(15, 15), downRight, 0.05, grid, freeExcept([2, 2]), 100, repeatDelay)), { x: 20, y: 15, step: step([1, 1], [2, 1]) });
 		});
 
 		it('waits when every way in the held direction is blocked', () =>
 		{
-			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(15, 15), downRight, 1, grid, freeExcept([2, 1], [1, 2]), 100)), at(15, 15));
+			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(15, 15), downRight, 1, grid, freeExcept([2, 1], [1, 2]), 100, repeatDelay)), at(15, 15));
 		});
 
 		it('finishes a step already started even if the cell is now held', () =>
 		{
 			const midStep: GridMover = { x: 30, y: 15, step: step([2, 1], [3, 1]), press: NO_PRESS };
 
-			assert.deepStrictEqual(placeOf(stepOnGrid(midStep, standingStill, 1, grid, freeExcept([3, 1]), 100)), at(35, 15));
+			assert.deepStrictEqual(placeOf(stepOnGrid(midStep, standingStill, 1, grid, freeExcept([3, 1]), 100, repeatDelay)), at(35, 15));
 		});
 	});
 });

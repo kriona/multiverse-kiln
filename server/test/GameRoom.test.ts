@@ -5,6 +5,7 @@ import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
 import { GAME_ROOM_NAME, GameState, GRID_CELL_SIZE, MessageType, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, WORLD_HEIGHT, WORLD_WIDTH, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
+import { pool } from '../src/db/client.js';
 import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
 import { cellCenter } from '../src/logic/movement.js';
 import { onlinePlayers } from '../src/players/onlinePlayers.js';
@@ -107,7 +108,8 @@ function connectFromBrowser(room: GameRoom, browserId: string): Promise<ClientRo
  */
 async function joinFromBrowser(room: GameRoom, browserId: string, name: string = 'Player'): Promise<{ client: ClientRoom<unknown, GameState>; welcome: Promise<WelcomePayload> }>
 {
-	onlinePlayers.logIn(browserId, name);
+	// A browser stays logged in as its first player, so a second window joins as the same player
+	onlinePlayers.logIn(browserId, randomUUID(), name);
 	onlinePlayers.setGroup(browserId, room.roomId);
 
 	const client = await connectFromBrowser(room, browserId);
@@ -240,6 +242,41 @@ describe('GameRoom', () =>
 		assert.ok(player.x > 105, `x = ${player.x}`);
 		assert.strictEqual(player.y, 105);
 		assertOnCellCenter(player);
+	});
+
+	it('does not use the database while players move', async () =>
+	{
+		const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
+		const client = await joinAsNewPlayer(room);
+		const player = room.state.players.get(playerIdOf(room, client)) as Player;
+		let checkouts = 0;
+		const countCheckout = () =>
+		{
+			checkouts++;
+		};
+
+		placeOnCell(player, 3, 3);
+
+		// Every query, from a repository or anything else, checks a connection out of the pool
+		pool.on('acquire', countCheckout);
+
+		try
+		{
+			client.send(MessageType.Move, { x: 1, y: 1 });
+			await room.waitForNextMessage();
+
+			for (let i = 0; i < 10; i++)
+			{
+				await room.waitForNextTimestep();
+			}
+		}
+		finally
+		{
+			pool.off('acquire', countCheckout);
+		}
+
+		assert.ok(player.x > 105, `x = ${player.x}`);
+		assert.strictEqual(checkouts, 0);
 	});
 
 	it('does not let a player move into another player\'s cell', async () =>
@@ -534,7 +571,7 @@ describe('GameRoom', () =>
 		{
 			const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
 
-			onlinePlayers.logIn(browserIdA, 'Ada');
+			onlinePlayers.logIn(browserIdA, randomUUID(), 'Ada');
 			await assert.rejects(connectFromBrowser(room, browserIdA));
 
 			onlinePlayers.setGroup(browserIdA, 'another-group');
@@ -582,9 +619,9 @@ describe('GameRoom', () =>
 		{
 			const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
 
-			onlinePlayers.logIn(browserIdA, 'Ada');
+			onlinePlayers.logIn(browserIdA, randomUUID(), 'Ada');
 			onlinePlayers.setGroup(browserIdA, room.roomId);
-			onlinePlayers.logIn(browserIdB, 'Grace');
+			onlinePlayers.logIn(browserIdB, randomUUID(), 'Grace');
 			onlinePlayers.setGroup(browserIdB, 'another-group');
 
 			await room.disconnect();

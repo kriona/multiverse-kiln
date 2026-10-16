@@ -202,6 +202,18 @@ export class App
 			return;
 		}
 
+		if (reason === NoticeReason.NameInUse)
+		{
+			this.loginScreen.showError('That player is already logged in from another browser.');
+			return;
+		}
+
+		if (reason === NoticeReason.LoginFailed)
+		{
+			this.loginScreen.showError('Could not log in. Try again in a moment.');
+			return;
+		}
+
 		// Only a join link asks to join a group. A player already in a group stays in it and sees the message there
 		const message = ((reason === NoticeReason.GroupFull) ? `That game is full: it already has ${MAX_GROUP_PLAYERS} players.` : 'That game has ended or the link is wrong.');
 

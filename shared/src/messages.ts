@@ -203,7 +203,17 @@ export enum NoticeReason
 	/**
 	 * The player sent chat messages faster than the lobby allows; the message was dropped
 	 */
-	ChatTooFast = 'chatTooFast'
+	ChatTooFast = 'chatTooFast',
+
+	/**
+	 * The player with that name is already logged in from another browser
+	 */
+	NameInUse = 'nameInUse',
+
+	/**
+	 * The server couldn't load or create the player, so the browser wasn't logged in
+	 */
+	LoginFailed = 'loginFailed'
 }
 
 /**

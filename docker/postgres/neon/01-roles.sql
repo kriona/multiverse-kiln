@@ -1,4 +1,4 @@
--- Creates the kiln database and its roles on a Neon branch, matching docker/postgres/init/01-roles.sh
+-- Creates the kiln database and its roles on a Neon branch, matching docker/postgres/init/
 --
 -- Run once per branch, as the branch's default owner role (neondb_owner), connected to neondb:
 --   psql "<neondb_owner direct connection string>" -v ON_ERROR_STOP=1 -v migrator_password=... -v app_password=... -f 01-roles.sql

@@ -50,4 +50,16 @@ export class LoginScreen
 		this.submitButton.disabled = false;
 		this.nameInput.focus();
 	}
+
+	/**
+	 * Explains why the server didn't log the player in, and lets them try again
+	 *
+	 * @param message What went wrong
+	 */
+	showError(message: string): void
+	{
+		this.reset();
+		this.nameInput.setCustomValidity(message);
+		this.nameInput.reportValidity();
+	}
 }

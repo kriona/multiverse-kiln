@@ -5,7 +5,7 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 **Current phase** line updated so each new session knows where to pick up.
 `STRUCTURE-OVERVIEW.md` describes the pages, editors and game rules these phases build.
 
-**Current phase:** 6
+**Current phase:** 7
 
 ---
 
@@ -76,10 +76,10 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 
 ## Phase 6: Persistence
 
-- [ ] Test database for the test suite (`server/src/db/client.ts` throws without `DATABASE_URL`): migrated before the tests run and emptied between test files
-- [ ] `playerRepo` with `load` / `save`; the name-only login creates or loads a `players` row (still dev-grade until Phase 12)
-- [ ] Load the player in `onAuth` / `onJoin`; save in `onLeave` / `onDispose`
-- [ ] A test that fails if a repository is called from inside the simulation tick
+- [✅] Test database (`kiln_test`) for the test suite: migrated before the tests run and emptied before each test
+- [✅] `playerRepo`: the name-only login loads the player with that name (ignoring capitals) or creates them, so a name is the whole login until Phase 12. A player can be logged in from one browser at a time
+- [✅] The player is loaded when they log in. Nothing changes during play yet, so there is nothing to save in `onLeave` / `onDispose` until characters exist (Phase 9)
+- [✅] A test that fails if the database is used while players move
 
 **Done when:** a player's identity survives a server restart, and the test suite runs against its own database.
 
@@ -191,7 +191,7 @@ The first deploy tends to surface WebSocket, TLS and environment issues, so leav
 
 - [ ] Choose where the production client is hosted (Colyseus Cloud only hosts the game server), and whether QA/staging uses a subdomain or its own domain
 - [ ] Create Neon project with `dev` and `prod` branches, in the region nearest the planned Colyseus Cloud location. Use Postgres 18 to match `docker-compose.yml`
-- [ ] Create the migration and app roles on each Neon branch with the same ownership and grants as `docker/postgres/init/01-roles.sh`, using `docker/postgres/neon/01-roles.sql` and `02-grants.sql` (roles made in the Neon console join `neon_superuser`); the server gets only the app role's pooled connection string
+- [ ] Create the migration and app roles on each Neon branch with the same ownership and grants as the scripts in `docker/postgres/init/`, using `docker/postgres/neon/01-roles.sql` and `02-grants.sql` (roles made in the Neon console join `neon_superuser`); the server gets only the app role's pooled connection string
 - [ ] Run migrations against Neon `prod`
 - [ ] Deploy server with `npx @colyseus/cloud deploy`; set env vars in the dashboard (pooled Neon URL, `ALLOWED_ORIGINS` = the production client origin)
 - [ ] Read the client address from Colyseus Cloud's forwarding header, trusted only from its proxy, so per-network rate limits count clients rather than the proxy

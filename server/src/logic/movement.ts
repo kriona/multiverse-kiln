@@ -113,7 +113,7 @@ export const NO_PRESS: DirectionPress = { direction: { x: 0, y: 0 }, heldSeconds
  *
  * A step to a neighboring cell always runs to that cell's center, even if the direction is released
  * partway, so a player that stops is exactly on a cell center. Pressing a direction starts a step
- * at once; the next starts only once the direction has been held for STEP_REPEAT_DELAY, and after
+ * at once; the next starts only once the direction has been held for the repeat delay, and after
  * that each step that ends starts the next one with the remaining time, so held movement doesn't
  * stutter between cells. Holding two axes steps diagonally, at the same speed.
  *
@@ -127,9 +127,10 @@ export const NO_PRESS: DirectionPress = { direction: { x: 0, y: 0 }, heldSeconds
  * @param grid Grid to move on
  * @param isCellFree Whether another player holds a cell (see occupiedCells)
  * @param speed Speed in world units per second
+ * @param repeatDelay How long a direction must be held, in seconds, before its second step starts
  * @return The new position, step and press
  */
-export function stepOnGrid(mover: GridMover, direction: MovePayload, deltaSeconds: number, grid: Grid, isCellFree: IsCellFree, speed: number = PLAYER_SPEED): GridMover
+export function stepOnGrid(mover: GridMover, direction: MovePayload, deltaSeconds: number, grid: Grid, isCellFree: IsCellFree, speed: number = PLAYER_SPEED, repeatDelay: number = STEP_REPEAT_DELAY): GridMover
 {
 	const isSamePress = ((direction.x === mover.press.direction.x) && (direction.y === mover.press.direction.y));
 	const press: DirectionPress = (isSamePress ? { ...mover.press } : { direction: { x: direction.x, y: direction.y }, heldSeconds: 0, stepsStarted: 0 });
@@ -146,9 +147,9 @@ export function stepOnGrid(mover: GridMover, direction: MovePayload, deltaSecond
 			const heldSeconds = press.heldSeconds + elapsed;
 
 			// Waiting out the repeat delay before the second step of a press
-			if ((press.stepsStarted > 0) && (heldSeconds < (STEP_REPEAT_DELAY - TIME_EPSILON)))
+			if ((press.stepsStarted > 0) && (heldSeconds < (repeatDelay - TIME_EPSILON)))
 			{
-				elapsed = Math.min(totalSeconds, elapsed + (STEP_REPEAT_DELAY - heldSeconds));
+				elapsed = Math.min(totalSeconds, elapsed + (repeatDelay - heldSeconds));
 				continue;
 			}
 
