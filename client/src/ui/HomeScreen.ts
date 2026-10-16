@@ -1,6 +1,8 @@
-import { RULESET_NAMES, type UniverseDetails, type UniverseListPayload, type UniverseSummary } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, MAX_CREATED_UNIVERSES, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_NAME_LENGTH, RULESET_NAMES, RULESETS, type EditableUniverseListPayload, type EditableUniverseSummary, type NewUniverseRequest, type Ruleset, type UniverseDetails, type UniverseListPayload, type UniverseSummary } from '@multiverse-kiln/shared';
 
-import { getElement } from './dom';
+import { describeEditorError } from '../network/editorApi';
+import { getElement, setOptions, showMessage } from './dom';
+import { showMarkdown } from './markdown';
 
 /**
  * What the Home screen asks the app to do
@@ -21,13 +23,39 @@ export interface HomeScreenActions
 	 * Goes into a universe's lobby
 	 */
 	enter: (universe: UniverseSummary) => void;
+
+	/**
+	 * Fetches the universes the player has a role in
+	 */
+	loadOwnUniverses: () => Promise<EditableUniverseListPayload>;
+
+	/**
+	 * Creates a universe, resolving with its ID
+	 */
+	createUniverse: (universe: NewUniverseRequest) => Promise<string>;
+
+	/**
+	 * Opens a universe in the editor
+	 */
+	edit: (universeId: string) => void;
 }
 
 /**
- * Home: the universes to play in, a page at a time, and an overview of the one chosen with a button to enter it
+ * Home: the universes to play in, a page at a time, and an overview of the one chosen with a button to
+ * enter it; the universes the player works on, and creating a universe
  */
 export class HomeScreen
 {
+	private readonly ownList = getElement('own-universe-list', HTMLUListElement);
+	private readonly ownEmpty = getElement('own-universe-empty', HTMLElement);
+	private readonly createButton = getElement('create-universe', HTMLButtonElement);
+	private readonly createDialog = getElement('create-universe-dialog', HTMLDialogElement);
+	private readonly createForm = getElement('create-universe-form', HTMLFormElement);
+	private readonly createName = getElement('create-universe-name', HTMLInputElement);
+	private readonly createDescription = getElement('create-universe-description', HTMLInputElement);
+	private readonly createRuleset = getElement('create-universe-ruleset', HTMLSelectElement);
+	private readonly createError = getElement('create-universe-error', HTMLElement);
+	private readonly createSubmit = getElement('create-universe-submit', HTMLButtonElement);
 	private readonly playerName = getElement('home-player-name', HTMLElement);
 	private readonly notice = getElement('home-notice', HTMLElement);
 	private readonly list = getElement('universe-list', HTMLUListElement);
@@ -81,6 +109,30 @@ export class HomeScreen
 				actions.enter(universe);
 			}
 		});
+
+		this.createName.maxLength = MAX_UNIVERSE_NAME_LENGTH;
+		this.createDescription.maxLength = MAX_SHORT_DESCRIPTION_LENGTH;
+
+		this.createButton.addEventListener('click', () =>
+		{
+			this.openCreateDialog();
+		});
+
+		getElement('create-universe-cancel', HTMLButtonElement).addEventListener('click', () =>
+		{
+			this.createDialog.close();
+		});
+
+		this.createName.addEventListener('input', () =>
+		{
+			this.createName.setCustomValidity('');
+		});
+
+		this.createForm.addEventListener('submit', (event) =>
+		{
+			event.preventDefault();
+			void this.createUniverse();
+		});
 	}
 
 	/**
@@ -96,7 +148,10 @@ export class HomeScreen
 		this.list.replaceChildren();
 		this.empty.hidden = true;
 		this.moreButton.hidden = true;
+		this.ownList.replaceChildren();
+		this.ownEmpty.hidden = true;
 		void this.loadPage();
+		void this.loadOwnUniverses(this.listVersion);
 	}
 
 	/**
@@ -204,10 +259,9 @@ export class HomeScreen
 		{
 			const details = await this.actions.loadDetails(universe.id);
 
-			// Shown as written until descriptions are rendered as Markdown
 			if (this.chosen === universe)
 			{
-				this.dialogDescription.textContent = details.longDescription;
+				showMarkdown(this.dialogDescription, details.longDescription);
 			}
 		}
 		catch (error)
@@ -218,6 +272,129 @@ export class HomeScreen
 			{
 				this.dialogDescription.textContent = 'Could not load the rest of this universe\'s description.';
 			}
+		}
+	}
+
+	/**
+	 * Lists the universes the player works on, and allows creating one until they have created the most they may
+	 *
+	 * @param version The list's version when it was asked for; a list that arrives for an older one is ignored
+	 */
+	private async loadOwnUniverses(version: number): Promise<void>
+	{
+		let universes: EditableUniverseSummary[];
+
+		this.createButton.disabled = true;
+
+		try
+		{
+			universes = (await this.actions.loadOwnUniverses()).universes;
+		}
+		catch (error)
+		{
+			if (version === this.listVersion)
+			{
+				this.showNotice(describeEditorError(error, 'list your universes'));
+			}
+
+			return;
+		}
+
+		if (version !== this.listVersion)
+		{
+			return;
+		}
+
+		const created = universes.filter((universe) => (universe.role === 'creator')).length;
+
+		this.ownList.replaceChildren(...universes.map((universe) => this.createOwnItem(universe)));
+		this.ownEmpty.hidden = (universes.length > 0);
+		this.createButton.disabled = (created >= MAX_CREATED_UNIVERSES);
+		this.createButton.title = (this.createButton.disabled ? `You can create at most ${MAX_CREATED_UNIVERSES} universes` : '');
+	}
+
+	/**
+	 * An entry in the player's own universes: its name, description, stage and the player's role, opening the editor
+	 *
+	 * @param universe The universe
+	 * @return The list item
+	 */
+	private createOwnItem(universe: EditableUniverseSummary): HTMLLIElement
+	{
+		const item = document.createElement('li');
+		const button = document.createElement('button');
+		const name = document.createElement('strong');
+		const description = document.createElement('span');
+		const details = document.createElement('span');
+
+		button.type = 'button';
+		button.className = 'universe-item';
+		name.textContent = universe.name;
+		description.textContent = universe.shortDescription;
+		details.className = 'universe-ruleset';
+		details.textContent = `${RULESET_NAMES[universe.ruleset]} - ${universe.stage.replaceAll('_', ' ')} - ${universe.role.replaceAll('_', ' ')}`;
+
+		button.append(name, description, details);
+		button.addEventListener('click', () =>
+		{
+			this.actions.edit(universe.id);
+		});
+
+		item.append(button);
+
+		return(item);
+	}
+
+	/**
+	 * Opens the Create Universe dialog, empty
+	 */
+	private openCreateDialog(): void
+	{
+		this.createForm.reset();
+		setOptions(this.createRuleset, [
+			{
+				value: '',
+				label: 'Choose a ruleset'
+			},
+			...RULESETS.map((ruleset) => ({
+				value: ruleset,
+				label: RULESET_NAMES[ruleset]
+			}))
+		]);
+		showMessage(this.createError, undefined);
+		this.createSubmit.disabled = false;
+		this.createDialog.showModal();
+		this.createName.focus();
+	}
+
+	/**
+	 * Creates the universe the dialog describes, and opens it in the editor
+	 */
+	private async createUniverse(): Promise<void>
+	{
+		const name = this.createName.value.trim();
+		const shortDescription = this.createDescription.value.trim();
+
+		if ((name === '') || DISALLOWED_TEXT_CHARACTERS.test(name) || DISALLOWED_TEXT_CHARACTERS.test(shortDescription))
+		{
+			this.createName.setCustomValidity('Use letters, numbers, spaces or punctuation.');
+			this.createName.reportValidity();
+			return;
+		}
+
+		this.createSubmit.disabled = true;
+
+		try
+		{
+			const universeId = await this.actions.createUniverse({ name, shortDescription, ruleset: this.createRuleset.value as Ruleset });
+
+			this.createDialog.close();
+			this.actions.edit(universeId);
+		}
+		catch (error)
+		{
+			showMessage(this.createError, describeEditorError(error, 'create the universe'));
+			this.createSubmit.disabled = false;
 		}
 	}
 }

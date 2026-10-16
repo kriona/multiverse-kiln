@@ -4,7 +4,7 @@
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Multiverse Kiln</title>
-		<link rel="stylesheet" href="/src/style.css" />
+		<link rel="stylesheet" href="/src/style.scss" />
 	</head>
 	<body>
 		<main>
@@ -27,21 +27,53 @@
 					<span class="toolbar-name">Playing as <strong id="home-player-name"></strong></span>
 				</header>
 				<p id="home-notice" class="notice" role="status" hidden></p>
-				<div class="panel universes">
-					<h2>Universes</h2>
-					<ul id="universe-list" class="universe-list"></ul>
-					<p id="universe-empty" class="universe-empty" hidden>There are no universes to play in yet.</p>
-					<button id="universe-more" type="button" hidden>Show more</button>
+				<div class="home-body">
+					<div class="panel universes">
+						<h2>Universes</h2>
+						<ul id="universe-list" class="universe-list"></ul>
+						<p id="universe-empty" class="universe-empty" hidden>There are no universes to play in yet.</p>
+						<button id="universe-more" type="button" hidden>Show more</button>
+					</div>
+					<div class="panel universes">
+						<div class="panel-heading">
+							<h2>Your universes</h2>
+							<button id="create-universe" type="button">Create Universe</button>
+						</div>
+						<ul id="own-universe-list" class="universe-list"></ul>
+						<p id="own-universe-empty" class="universe-empty" hidden>You haven't made a universe yet.</p>
+					</div>
 				</div>
-				<dialog id="universe-dialog" class="panel universe-dialog" aria-labelledby="universe-name">
+				<dialog id="universe-dialog" class="panel dialog" aria-labelledby="universe-name">
 					<h2 id="universe-name"></h2>
 					<p id="universe-ruleset" class="universe-ruleset"></p>
 					<p id="universe-summary"></p>
-					<p id="universe-description" class="universe-description"></p>
+					<div id="universe-description" class="markdown"></div>
 					<div class="dialog-buttons">
 						<button id="universe-close" type="button" class="secondary">Close</button>
 						<button id="universe-enter" type="button">Enter Universe</button>
 					</div>
+				</dialog>
+				<dialog id="create-universe-dialog" class="panel dialog" aria-labelledby="create-universe-title">
+					<form id="create-universe-form" class="form">
+						<h2 id="create-universe-title">Create Universe</h2>
+						<label>
+							Name
+							<input id="create-universe-name" required />
+						</label>
+						<label>
+							1-sentence description
+							<input id="create-universe-description" />
+						</label>
+						<label>
+							Ruleset
+							<select id="create-universe-ruleset" required></select>
+						</label>
+						<p id="create-universe-error" class="form-error" role="alert" hidden></p>
+						<div class="dialog-buttons">
+							<button id="create-universe-cancel" type="button" class="secondary">Cancel</button>
+							<button id="create-universe-submit" type="submit">Create</button>
+						</div>
+					</form>
 				</dialog>
 			</section>
 

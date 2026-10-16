@@ -1,4 +1,5 @@
 import fs from 'fs';
+import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 
 /**
@@ -45,7 +46,7 @@ export default defineConfig(({ command, mode }) =>
 	const env = loadEnv(mode, process.cwd(), '');
 	const devHost = (env.DEV_HOST || undefined);
 
-	// index.html links to it as %VITE_SOURCE_URL%
+	// Every page links to it as %VITE_SOURCE_URL%
 	requireSourceUrl(env.VITE_SOURCE_URL);
 
 	// The dev server always uses HTTPS; production builds don't need a certificate
@@ -64,7 +65,14 @@ export default defineConfig(({ command, mode }) =>
 			https
 		},
 		build: {
-			target: 'es2022'
+			target: 'es2022',
+			rolldownOptions: {
+				// The game, and the world editor (see src/pages.ts)
+				input: {
+					main: path.resolve(import.meta.dirname, 'index.html'),
+					edit: path.resolve(import.meta.dirname, 'edit.html')
+				}
+			}
 		}
 	});
 });

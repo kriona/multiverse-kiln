@@ -8,7 +8,7 @@ import type appConfig from '../src/app.config.js';
 import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
 import { onlinePlayers } from '../src/players/onlinePlayers.js';
 import type { GameRoom } from '../src/rooms/GameRoom.js';
-import type { SessionRoom } from '../src/rooms/SessionRoom.js';
+import { SessionRoom } from '../src/rooms/SessionRoom.js';
 import { addPlayableUniverse } from './db/fixtures.js';
 import { Inbox } from './inbox.js';
 import { getTestServer, logOutEveryone, testServerUrl } from './testServer.js';
@@ -72,7 +72,13 @@ async function logInNewBrowser(name: string): Promise<SessionWindow & { browserI
 
 describe('SessionRoom', () =>
 {
+	/**
+	 * How long these tests let a browser stay logged in after its last window leaves
+	 */
+	const logOutDelayMs = 100;
+
 	let colyseus: ColyseusTestServer<typeof appConfig>;
+	let defaultLogOutDelayMs: number;
 
 	/**
 	 * Sends a message from a window and waits until the session room has handled it
@@ -105,6 +111,13 @@ describe('SessionRoom', () =>
 	before(async () =>
 	{
 		colyseus = await getTestServer();
+		defaultLogOutDelayMs = SessionRoom.logOutDelayMs;
+		SessionRoom.logOutDelayMs = logOutDelayMs;
+	});
+
+	after(() =>
+	{
+		SessionRoom.logOutDelayMs = defaultLogOutDelayMs;
 	});
 
 	beforeEach(async () =>
@@ -218,7 +231,7 @@ describe('SessionRoom', () =>
 			});
 		}
 
-		it('logs the browser out once its last window leaves', async () =>
+		it('logs the browser out a while after its last window leaves', async () =>
 		{
 			const { browserId, room } = await logInNewBrowser('Ada');
 			const second = await openWindow(browserId);
@@ -230,7 +243,30 @@ describe('SessionRoom', () =>
 			assert.ok(onlinePlayers.get(browserId));
 
 			await second.room.leave();
+			await waitUntil(() => (sessionRoom.clients.length === 0));
+
+			assert.ok(onlinePlayers.get(browserId), 'logged out before the delay');
+
 			await waitUntil(() => (onlinePlayers.get(browserId) === undefined));
+		});
+
+		it('keeps the browser logged in when a window of it joins again within the delay', async () =>
+		{
+			const { browserId, room, player } = await logInNewBrowser('Ada');
+			const sessionRoom = colyseus.getRoomById<SessionRoom>(room.roomId);
+
+			// Like reloading the page, or moving to another page of the client
+			await room.leave();
+			await waitUntil(() => (sessionRoom.clients.length === 0));
+
+			const again = await openWindow(browserId);
+
+			assert.strictEqual(again.account?.playerId, player.playerId);
+
+			await new Promise((resolve) => setTimeout(resolve, logOutDelayMs * 3));
+
+			assert.strictEqual(onlinePlayers.get(browserId)?.playerId, player.playerId);
+			assert.strictEqual(again.inbox.pending(SessionServerMessageType.Account), 0);
 		});
 	});
 

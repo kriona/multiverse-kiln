@@ -1,7 +1,9 @@
 import { CloseCode } from '@colyseus/sdk';
 import { GROUP_QUERY_PARAMETER, LobbyMessageType, LobbyServerMessageType, MAX_GROUP_PLAYERS, NoticeReason, ServerCloseCode, SessionMessageType, SessionServerMessageType, type AccountPayload, type AccountPlayer, type ChatHistoryPayload, type ChatMessage, type ChatPayload, type JoinGroupPayload, type LoginPayload, type NoticePayload, type UniverseSummary } from '@multiverse-kiln/shared';
 
+import { EditorApi } from './network/editorApi';
 import { getUniverseDetails, joinGroup, joinLobby, listUniverses, type GameConnection, type LobbyConnection, type ServerConnection } from './network/serverConnection';
+import { editPageUrl, readPageParameter, replacePageParameters, UNIVERSE_PARAMETER } from './pages';
 import { showScreen, showStatus } from './ui/dom';
 import { GroupScreen } from './ui/GroupScreen';
 import { HomeScreen } from './ui/HomeScreen';
@@ -33,11 +35,12 @@ interface JoinedLobby
  *
  * The server decides who the player is and which group they are in, and tells every window of the
  * browser through the session room; a window only asks for changes and follows what it is told. A
- * logged-in player who isn't in a group is on Home, or in the lobby of the universe they chose there.
- * Leaving a group goes back to that lobby
+ * logged-in player who isn't in a group is on Home, or in the lobby of the universe they chose there
+ * or that the page's address names. Leaving a group goes back to that lobby
  */
 export class App
 {
+	private readonly editorApi: EditorApi;
 	private readonly loginScreen: LoginScreen;
 	private readonly homeScreen: HomeScreen;
 	private readonly lobbyScreen: LobbyScreen;
@@ -57,6 +60,11 @@ export class App
 	 * The group from a join link this window was opened with, until the server has answered the request to join it
 	 */
 	private linkGroupId: string | undefined;
+
+	/**
+	 * The universe whose lobby this window was opened to enter (such as from the editor), until the player has logged in
+	 */
+	private linkUniverseId: string | undefined;
 
 	private joinedGroup: JoinedGroup | undefined;
 
@@ -79,8 +87,11 @@ export class App
 	{
 		const { client, session } = server;
 		const mapView = new MapView();
+		const editorApi = new EditorApi(client);
 
-		this.linkGroupId = (new URLSearchParams(window.location.search).get(GROUP_QUERY_PARAMETER) ?? undefined);
+		this.editorApi = editorApi;
+		this.linkGroupId = readPageParameter(GROUP_QUERY_PARAMETER);
+		this.linkUniverseId = readPageParameter(UNIVERSE_PARAMETER);
 
 		this.loginScreen = new LoginScreen((name) =>
 		{
@@ -95,6 +106,12 @@ export class App
 			enter: (universe) =>
 			{
 				this.enterUniverse(universe);
+			},
+			loadOwnUniverses: () => editorApi.listUniverses(),
+			createUniverse: (universe) => editorApi.createUniverse(universe),
+			edit: (universeId) =>
+			{
+				window.location.assign(editPageUrl(universeId));
 			}
 		});
 
@@ -112,7 +129,7 @@ export class App
 			leaveLobby: () =>
 			{
 				this.chosenUniverse = undefined;
-				this.showHome();
+				this.showOutsideGroup();
 				void this.syncRooms();
 			}
 		});
@@ -169,6 +186,7 @@ export class App
 		if (player && !wasLoggedIn)
 		{
 			this.followJoinLink(player);
+			void this.followUniverseLink();
 		}
 
 		if (player && (player.groupId !== null) && (player.groupId === this.linkGroupId))
@@ -207,11 +225,66 @@ export class App
 	 */
 	private finishJoinLink(): void
 	{
-		const url = new URL(window.location.href);
-
 		this.linkGroupId = undefined;
-		url.searchParams.delete(GROUP_QUERY_PARAMETER);
-		window.history.replaceState(window.history.state, '', url);
+		replacePageParameters({ [GROUP_QUERY_PARAMETER]: undefined });
+	}
+
+	/**
+	 * Enters the lobby of the universe the page's address names, once the player has logged in, unless
+	 * they are joining or already in a group
+	 */
+	private async followUniverseLink(): Promise<void>
+	{
+		const universeId = this.linkUniverseId;
+
+		if (universeId === undefined)
+		{
+			return;
+		}
+
+		this.linkUniverseId = undefined;
+		replacePageParameters({ [UNIVERSE_PARAMETER]: undefined });
+
+		let universe: UniverseSummary;
+
+		try
+		{
+			universe = await this.findUniverse(universeId);
+		}
+		catch (error)
+		{
+			console.error('Could not find the universe to enter:', error);
+			this.homeScreen.showNotice('That universe could not be found.');
+			return;
+		}
+
+		if ((this.player?.groupId === null) && (this.linkGroupId === undefined) && !this.chosenUniverse)
+		{
+			this.enterUniverse(universe);
+		}
+	}
+
+	/**
+	 * A universe as Home lists it. A universe that isn't listed yet is found through the editor's API,
+	 * which answers for universes the player has a role in
+	 *
+	 * @param universeId The universe's ID
+	 * @return The universe
+	 */
+	private async findUniverse(universeId: string): Promise<UniverseSummary>
+	{
+		try
+		{
+			const { id, name, shortDescription, ruleset } = await getUniverseDetails(this.server.client, universeId);
+
+			return({ id, name, shortDescription, ruleset });
+		}
+		catch
+		{
+			const { id, name, shortDescription, ruleset } = await this.editorApi.getUniverse(universeId);
+
+			return({ id, name, shortDescription, ruleset });
+		}
 	}
 
 	/**

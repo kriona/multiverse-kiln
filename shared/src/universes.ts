@@ -12,7 +12,12 @@
  * - let_there_be_light: ready for everyone, and listed on Home
  * - end_of_time: retired; locked and view only
  */
-export const UNIVERSE_STAGES = ['in_the_beginning', 'prologue', 'let_there_be_light', 'end_of_time'] as const;
+export const UNIVERSE_STAGES = [
+	'in_the_beginning',
+	'prologue',
+	'let_there_be_light',
+	'end_of_time'
+] as const;
 
 export type UniverseStage = typeof UNIVERSE_STAGES[number];
 
@@ -35,7 +40,14 @@ export const RULESET_NAMES: Record<Ruleset, string> = {
  *
  * Zones also have inherit, which uses the parent zone's setting, or the universe's for a zone with no parent
  */
-export const PASSAGES_OF_TIME = ['flows_normally', 'always_dawn', 'always_noon', 'always_dusk', 'always_midnight', 'faerie'] as const;
+export const PASSAGES_OF_TIME = [
+	'flows_normally',
+	'always_dawn',
+	'always_noon',
+	'always_dusk',
+	'always_midnight',
+	'faerie'
+] as const;
 
 export type PassageOfTime = typeof PASSAGES_OF_TIME[number];
 
@@ -47,7 +59,18 @@ export type ZonePassageOfTime = typeof ZONE_PASSAGES_OF_TIME[number];
  * Where morning is in faerie time: the time of day runs from sunrise on this side of the map to midnight
  * on the opposite side. horizon puts morning at every edge and night in the center
  */
-export const FAERIE_MORNINGS = ['north', 'northeast', 'east', 'southeast', 'south', 'southwest', 'west', 'northwest', 'center', 'horizon'] as const;
+export const FAERIE_MORNINGS = [
+	'north',
+	'northeast',
+	'east',
+	'southeast',
+	'south',
+	'southwest',
+	'west',
+	'northwest',
+	'center',
+	'horizon'
+] as const;
 
 export type FaerieMorning = typeof FAERIE_MORNINGS[number];
 
@@ -58,3 +81,40 @@ export type FaerieMorning = typeof FAERIE_MORNINGS[number];
 export const ZONE_LINK_MODES = ['automatic', 'manual'] as const;
 
 export type ZoneLinkMode = typeof ZONE_LINK_MODES[number];
+
+/**
+ * What a user may do with a universe (see STRUCTURE-OVERVIEW.md, Tab: Editors)
+ *
+ * - creator: change everything
+ * - builder: change the world: tiles, zones, maps and links
+ * - beta_tester: play while the universe is in prologue
+ */
+export const UNIVERSE_ROLES = [
+	'creator',
+	'builder',
+	'beta_tester'
+] as const;
+
+export type UniverseRole = typeof UNIVERSE_ROLES[number];
+
+/**
+ * Whether a role may change a universe's settings: its name, descriptions, stage and passage of time
+ *
+ * @param role The user's role in the universe
+ * @return True when the role may
+ */
+export function canEditUniverseSettings(role: UniverseRole): boolean
+{
+	return(role === 'creator');
+}
+
+/**
+ * Whether a role may change a universe's world: its tiles, zones, maps and links
+ *
+ * @param role The user's role in the universe
+ * @return True when the role may
+ */
+export function canEditWorld(role: UniverseRole): boolean
+{
+	return((role === 'creator') || (role === 'builder'));
+}

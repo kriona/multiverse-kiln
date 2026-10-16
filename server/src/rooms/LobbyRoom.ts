@@ -2,14 +2,15 @@ import { matchMaker, Room, type AuthContext, type Client, type CloseCode, type I
 import { GAME_ROOM_NAME, LobbyMember, LobbyMessageType, LobbyServerMessageType, LobbyState, MessageType, NoticeReason, PATCH_INTERVAL_MS, type ChatHistoryPayload, type ChatMessage, type LobbyJoinOptions, type NoticePayload } from '@multiverse-kiln/shared';
 
 import { findUniverse } from '../db/universeRepo.js';
-import { loadZone } from '../db/zoneRepo.js';
+import { loadChunksAt, loadZone } from '../db/zoneRepo.js';
 import { readBrowserId } from '../http/browserId.js';
 import { onlinePlayers } from '../players/onlinePlayers.js';
+import { zoneChanges } from '../world/zoneChanges.js';
 import { InvalidMessages } from './invalidMessages.js';
 import { chatPayload, describeInvalidPayload, movePayload, roomOptions } from './payloads.js';
 import { RateLimiter } from './rateLimiter.js';
-import { ZoneCache, type ActiveZone } from './zoneCache.js';
-import { SIMULATION_TICK_RATE, ZonePlayers } from './zonePlayers.js';
+import { ZoneCache } from './zoneCache.js';
+import { CHUNK_REFRESH_INTERVAL_MS, SIMULATION_TICK_RATE, ZonePlayers } from './zonePlayers.js';
 
 /**
  * What onAuth found out about a client, available afterward as client.auth
@@ -68,16 +69,21 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 
 	state = new LobbyState();
 
-	private readonly zones = new ZoneCache(loadZone);
+	private readonly zones = new ZoneCache(loadZone, loadChunksAt);
 
-	private readonly zonePlayers = new ZonePlayers(this.state.players, this.zones);
+	/**
+	 * Players whose zone is deleted go back to the lobby zone
+	 */
+	private readonly zonePlayers = new ZonePlayers(this.state.players, this.zones, () => this.lobbyZoneId);
 
 	private universeId!: string;
 
 	/**
 	 * Where players start
 	 */
-	private lobbyZone!: ActiveZone;
+	private lobbyZoneId!: string;
+
+	private stopFollowingChanges?: () => void;
 
 	/**
 	 * The most recent chat messages, oldest first (server-only, not synced)
@@ -164,8 +170,9 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	};
 
 	/**
-	 * Loads the universe's lobby zone and starts the simulation loop. Fails for a universe that doesn't
-	 * exist or has no lobby zone, which turns away the client asking for it
+	 * Loads the universe's lobby zone, starts the simulation loop and the loading of chunks near players,
+	 * and starts following changes to the world. Fails for a universe that doesn't exist or has no lobby
+	 * zone, which turns away the client asking for it
 	 *
 	 * @param options The universe, from the first client's LobbyJoinOptions
 	 */
@@ -181,8 +188,25 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		}
 
 		this.universeId = universeId;
-		this.lobbyZone = lobbyZone;
+		this.lobbyZoneId = lobbyZone.loaded.zone.id;
 		this.setTimestep((deltaTime) => this.zonePlayers.update(deltaTime / 1000), 1000 / SIMULATION_TICK_RATE);
+		this.clock.setInterval(() => this.zonePlayers.refreshChunks(), CHUNK_REFRESH_INTERVAL_MS);
+
+		this.stopFollowingChanges = zoneChanges.onChange((change) =>
+		{
+			this.zonePlayers.applyChange(change).catch((error: unknown) =>
+			{
+				console.error('Could not apply a world change to the lobby of universe', this.universeId, error);
+			});
+		});
+	}
+
+	/**
+	 * Stops following changes to the world
+	 */
+	onDispose(): void
+	{
+		this.stopFollowingChanges?.();
 	}
 
 	/**
@@ -216,11 +240,19 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	 *
 	 * @param client The joining client
 	 */
-	onJoin(client: LobbyClient): void
+	async onJoin(client: LobbyClient): Promise<void>
 	{
 		const { playerId, name } = identityOf(client);
+		const lobbyZone = await this.zones.load(this.lobbyZoneId);
 
-		if (this.zonePlayers.join(client, playerId, name, this.lobbyZone))
+		if (!lobbyZone)
+		{
+			throw new Error(`The lobby zone ${this.lobbyZoneId} no longer exists`);
+		}
+
+		await this.zonePlayers.prepareStart(lobbyZone);
+
+		if (this.zonePlayers.join(client, playerId, name, this.zones.get(this.lobbyZoneId) ?? lobbyZone))
 		{
 			this.state.members.set(playerId, new LobbyMember({ name }));
 		}

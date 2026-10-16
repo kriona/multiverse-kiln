@@ -124,7 +124,7 @@ This is a modal dialog on the home page that asks for some basic info before cre
 - 1-sentence description
 
 Creating a universe
-- creates a default zone and sets it as the starting zone for all races
+- creates a lobby zone, and a default zone that it sets as the starting zone for all races
 - makes you its creator
 
 A user may create up to 5 universes.
@@ -317,7 +317,7 @@ You can edit each class:
 		- `spontaneous`
 
 ### Tab: Tilesets
-shows you a table of all tiles in the game, populated from the default for your ruleset and any tiles you have created. Default tiles can be edited.
+shows you a table of all tiles in the game, populated from the default for your ruleset and any tiles you have created. Default tiles can be edited: the edit applies to your universe only, and can be undone to restore the default. A tile you created can be deleted once no map uses it.
 
 It needs a filter control that includes:
 - name search

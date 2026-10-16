@@ -3,13 +3,18 @@ import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { GAME_ROOM_NAME, GRID_CELL_SIZE, LOBBY_ROOM_NAME, LobbyMessageType, LobbyServerMessageType, LobbyState, MAX_CHAT_MESSAGE_LENGTH, MessageType, NoticeReason, ServerMessageType, type ChatHistoryPayload, type ChatMessage, type LobbyJoinOptions, type NoticePayload, type Player, type WelcomePayload, type ZonePayload } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, chunkCoordinate, chunkKey, GAME_ROOM_NAME, GRID_CELL_SIZE, LOBBY_ROOM_NAME, LobbyMessageType, LobbyServerMessageType, LobbyState, MAX_CHAT_MESSAGE_LENGTH, MessageType, NoticeReason, ServerMessageType, type ChatHistoryPayload, type ChatMessage, type ChunksPayload, type LobbyJoinOptions, type NoticePayload, type Player, type WelcomePayload, type ZonePayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
+import { saveEditedDefaultTile } from '../src/db/tileRepo.js';
+import { inTransaction } from '../src/db/transactions.js';
+import { createUniverse, setUniverseZones } from '../src/db/universeRepo.js';
+import { deleteZone, editCells, resizeZone } from '../src/db/zoneRepo.js';
 import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
 import { cellCenter } from '../src/logic/movement.js';
 import { onlinePlayers } from '../src/players/onlinePlayers.js';
 import { CHAT_HISTORY_LENGTH, type LobbyRoom } from '../src/rooms/LobbyRoom.js';
-import { addPlayableUniverse, defaultTileId, type PlayableUniverse } from './db/fixtures.js';
+import { zoneChanges } from '../src/world/zoneChanges.js';
+import { addPlayableUniverse, addZone, defaultTileId, type PlayableUniverse } from './db/fixtures.js';
 import { Inbox } from './inbox.js';
 import { getTestServer, logOutEveryone, testServerUrl } from './testServer.js';
 import { waitUntil } from './waitUntil.js';
@@ -388,6 +393,115 @@ describe('LobbyRoom', () =>
 			const groupId = onlinePlayers.get(ada.browserId)?.groupId as string;
 
 			assert.strictEqual(colyseus.getRoomById(groupId).roomName, GAME_ROOM_NAME);
+		});
+	});
+
+	describe('map chunks', () =>
+	{
+		it('sends the chunks near the player, and more as the player moves', async () =>
+		{
+			// A long lobby, forest near the center and far to the east
+			const universeId = await createUniverse({ name: 'Long Universe', ruleset: 'pf1e', stage: 'let_there_be_light' });
+			const zoneId = await addZone(universeId, 'Road', { bounds: { minColumn: -500, minRow: -10, maxColumn: 500, maxRow: 10 } });
+			const forest = await defaultTileId('forest');
+
+			await inTransaction((transaction) => editCells(zoneId, [[1, 1, forest], [400, 1, forest]], transaction));
+			await setUniverseZones(universeId, zoneId, zoneId);
+
+			const ada = await joinAsNewPlayer(universeId, 'Ada');
+			const zone = await ada.inbox.take<ZonePayload>(ServerMessageType.Zone);
+			const farChunk = chunkKey(chunkCoordinate(400), 0);
+
+			assert.ok(zone.chunks.some((chunk) => (chunkKey(chunk.chunkColumn, chunk.chunkRow) === chunkKey(0, 0))));
+			assert.ok(!zone.chunks.some((chunk) => (chunkKey(chunk.chunkColumn, chunk.chunkRow) === farChunk)));
+
+			// Moved by the server, as a link would
+			placeOnCell(playerOf(ada), 400, 0);
+
+			let far: ChunksPayload['chunks'][number] | undefined;
+
+			while (!far)
+			{
+				const update = await ada.inbox.take<ChunksPayload>(ServerMessageType.Chunks);
+
+				assert.strictEqual(update.zoneId, zoneId);
+				far = update.chunks.find((chunk) => (chunkKey(chunk.chunkColumn, chunk.chunkRow) === farChunk));
+			}
+
+			assert.strictEqual(far.cells?.[cellIndexInChunk(400, 1)], forest);
+		});
+	});
+
+	describe('world changes', () =>
+	{
+		it('sends painted cells to the players near them', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const water = await defaultTileId('water');
+
+			await ada.inbox.take<ZonePayload>(ServerMessageType.Zone);
+			await inTransaction((transaction) => editCells(universe.squareZoneId, [[20, 10, water]], transaction));
+			zoneChanges.publish({ kind: 'cells', zoneId: universe.squareZoneId, chunkKeys: [chunkKey(0, 0)] });
+
+			const update = await ada.inbox.take<ChunksPayload>(ServerMessageType.Chunks);
+
+			assert.deepStrictEqual(update.chunks.map((chunk) => [chunk.chunkColumn, chunk.chunkRow]), [[0, 0]]);
+			assert.strictEqual(update.chunks[0].cells?.[cellIndexInChunk(20, 10)], water);
+		});
+
+		it('sends the zone again when it changes, moving players its new bounds leave out', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const smaller = { minColumn: 0, minRow: 0, maxColumn: 9, maxRow: 9 };
+
+			await ada.inbox.take<ZonePayload>(ServerMessageType.Zone);
+			placeOnCell(playerOf(ada), 20, 15);
+			await inTransaction((transaction) => resizeZone(universe.squareZoneId, smaller, true, transaction));
+			zoneChanges.publish({ kind: 'zone', zoneId: universe.squareZoneId });
+
+			const zone = await ada.inbox.take<ZonePayload>(ServerMessageType.Zone);
+			const column = Math.floor(playerOf(ada).x / GRID_CELL_SIZE);
+			const row = Math.floor(playerOf(ada).y / GRID_CELL_SIZE);
+
+			assert.deepStrictEqual(zone.bounds, smaller);
+			assert.ok((column <= 9) && (row <= 9), `player at ${column}, ${row}`);
+		});
+
+		it('sends players in a deleted zone back to the lobby zone', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+
+			await walkIntoHouse(ada);
+			await deleteZone(universe.houseZoneId);
+			zoneChanges.publish({ kind: 'deleted', zoneId: universe.houseZoneId });
+
+			await waitUntil(() => (lobbyOf(ada).getZoneId(ada.playerId) === universe.squareZoneId));
+		});
+
+		it('sends the zone again with the universe\'s edited tiles', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const grass = await defaultTileId('grass');
+
+			await ada.inbox.take<ZonePayload>(ServerMessageType.Zone);
+			await saveEditedDefaultTile(universe.universeId, 'pf1e', grass, { name: 'Autumn Grass', indoors: false, color: 0xc08030, visionCost: 0, movementCost: 0 });
+			zoneChanges.publish({ kind: 'tiles', universeId: universe.universeId });
+
+			const zone = await ada.inbox.take<ZonePayload>(ServerMessageType.Zone);
+
+			assert.deepStrictEqual(zone.tiles.find((tile) => (tile.id === grass)), { id: grass, name: 'Autumn Grass', color: 0xc08030 });
+		});
+
+		it('ignores changes to zones it hasn\'t loaded', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+
+			await ada.inbox.take<ZonePayload>(ServerMessageType.Zone);
+			zoneChanges.publish({ kind: 'zone', zoneId: randomUUID() });
+			zoneChanges.publish({ kind: 'tiles', universeId: randomUUID() });
+			await new Promise((resolve) => setTimeout(resolve, 300));
+
+			assert.strictEqual(ada.inbox.pending(ServerMessageType.Zone), 0);
 		});
 	});
 });

@@ -21,7 +21,7 @@ The server is authoritative: clients send inputs, and the server simulates the g
 This is an [npm workspaces](https://docs.npmjs.com/cli/using-npm/workspaces) monorepo with three packages:
 
 ```
-/client     Phaser game (Vite)
+/client     Phaser game (Vite): the game (index.html) and the world editor (edit.html)
 /server     Colyseus server
 /shared     Code used by both client and server (published locally as @multiverse-kiln/shared)
 ```
@@ -153,6 +153,8 @@ npm run db:seed -w server            # add the sample universe
 
 The seed script (`server/scripts/seed.ts`) adds Kilnhaven, a sample universe drawn in `server/scripts/sampleUniverse.ts`: a town square lobby with a cottage and cellar to walk into, and a crossroads for groups to start in. Running it again replaces Kilnhaven and leaves everything else alone, so run it after changing the sample maps. It refuses to run with `NODE_ENV=production`.
 
+Nobody can open Kilnhaven in the world editor unless you name its creator: `npm run db:seed -w server -- --creator "Your Name"` makes the player who logs in with that name its creator, creating the player if the name is new. Replacing Kilnhaven also removes its editors, so pass `--creator` every time you seed.
+
 Postgres listens on `127.0.0.1:5432` (only reachable from your machine) and keeps its data in a Docker volume, so it survives restarts. It keeps running in the background until you run `docker compose stop`.
 
 The first start runs the scripts in `docker/postgres/init/`, which create two roles and two databases: `kiln` for the game, and `kiln_test` for the test suite.
@@ -234,7 +236,7 @@ All commands run from the repository root.
 | `docker compose up -d` / `docker compose stop` | Start / stop the local Postgres |
 | `npm run db:generate -w server` | Create a migration from changes to `server/src/db/schema.ts` |
 | `npm run db:migrate -w server` | Apply pending migrations (as `MIGRATION_DATABASE_URL`) |
-| `npm run db:seed -w server` | Add or replace the sample universe (as `DATABASE_URL`) |
+| `npm run db:seed -w server` | Add or replace the sample universe (as `DATABASE_URL`); add `-- --creator "<name>"` to make that player its creator |
 | `npm run loadtest -w server` | Connect simulated clients to a running server (`LOADTEST_ENDPOINT`) |
 | `npm run <script> -w <package>` | Run one package's script, e.g. `npm run dev -w server` |
 | `npm install <pkg> -w <package>` | Add a dependency to one package, e.g. `npm install drizzle-orm -w server` |

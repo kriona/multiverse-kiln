@@ -6,9 +6,10 @@
  */
 import { sql } from 'drizzle-orm';
 import { boolean, check, index, integer, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHUNK_SIZE, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_MAP_SIDE, PASSAGES_OF_TIME, RULESETS, UNIVERSE_STAGES, ZONE_LINK_MODES, ZONE_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_MAP_SIDE, PASSAGES_OF_TIME, RULESETS, UNIVERSE_ROLES, UNIVERSE_STAGES, ZONE_LINK_MODES, ZONE_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
 
 export const universeStage = pgEnum('universe_stage', UNIVERSE_STAGES);
+export const universeRole = pgEnum('universe_role', UNIVERSE_ROLES);
 export const ruleset = pgEnum('ruleset', RULESETS);
 export const passageOfTime = pgEnum('passage_of_time', PASSAGES_OF_TIME);
 export const zonePassageOfTime = pgEnum('zone_passage_of_time', ZONE_PASSAGES_OF_TIME);
@@ -67,17 +68,39 @@ export const universes = pgTable('universes', {
 ]);
 
 /**
+ * The players who may work on or test each universe, and their role in it
+ */
+export const universeEditors = pgTable('universe_editors', {
+	universeId: uuid('universe_id').notNull().references(() => universes.id, { onDelete: 'cascade' }),
+	playerId: uuid('player_id').notNull().references(() => players.id, { onDelete: 'cascade' }),
+	role: universeRole('role').notNull(),
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	primaryKey({ columns: [table.universeId, table.playerId] }),
+	index('universe_editors_player_id_index').on(table.playerId)
+]);
+
+/**
  * One row per tile a map can be painted with
  *
  * A tile with no universe is one of a ruleset's default tiles, available to every universe with that
  * ruleset; a tile with a universe belongs to that universe only. Default tiles have a key, so code and
  * seed data can find them in any database
+ *
+ * A universe's tile that overrides a default tile is that universe's edited copy of it. Maps keep using
+ * the default tile's ID, and the universe sees the copy's settings under that ID
  */
 export const tiles = pgTable('tiles', {
 	id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
 	ruleset: ruleset('ruleset').notNull(),
 	universeId: uuid('universe_id').references(() => universes.id, { onDelete: 'cascade' }),
 	key: text('key'),
+
+	/**
+	 * The default tile this one is the universe's edited copy of
+	 */
+	overridesTileId: integer('overrides_tile_id').references((): AnyPgColumn => tiles.id, { onDelete: 'cascade' }),
+
 	name: text('name').notNull(),
 	indoors: boolean('indoors').notNull(),
 
@@ -99,7 +122,9 @@ export const tiles = pgTable('tiles', {
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	unique('tiles_ruleset_key_unique').on(table.ruleset, table.key),
+	unique('tiles_universe_overrides_unique').on(table.universeId, table.overridesTileId),
 	index('tiles_universe_id_index').on(table.universeId),
+	check('tiles_overrides_belong_to_universe', sql`${table.overridesTileId} IS NULL OR ${table.universeId} IS NOT NULL`),
 	check('tiles_color_range', sql`${table.color} BETWEEN 0 AND 16777215`),
 	check('tiles_vision_cost_range', sql`${table.visionCost} BETWEEN 0 AND 100`),
 	check('tiles_movement_cost_range', sql`${table.movementCost} BETWEEN 0 AND ${sql.raw(String(IMPASSABLE_COST))}`)

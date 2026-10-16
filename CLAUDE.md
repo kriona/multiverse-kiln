@@ -17,6 +17,9 @@ An engine for making multiplayer browser-based role-playing games.
 
 ```
 /client          Phaser game (Vite). Uses `@colyseus/sdk` (formerly colyseus.js) to connect to the server.
+                 Two pages: index.html (Home, lobby and game; src/main.ts, src/style.scss) and edit.html (the
+                 world editor; src/edit.ts, src/edit.scss). Both styles use src/_shared.scss, and
+                 src/pages.ts holds the addresses that link the pages
 /server          Colyseus server.
   src/index.ts       Colyseus Cloud entry point - never modify it (Colyseus's rule for Cloud deploys)
   src/app.config.ts  define room types, HTTP routes, Express middleware
@@ -25,10 +28,11 @@ An engine for making multiplayer browser-based role-playing games.
                      account, joining groups), LobbyRoom (one per universe) and GameRoom (one per group). The two
                      map rooms share ZonePlayers (movement, zones, who sees whom, zone links) and ZoneCache
   src/players/       who is logged in and which group each player is in (in memory; accounts are in the database)
+  src/world/         changes the world editor makes, published to the rooms playing in that world (in memory)
   src/logic/         pure game-simulation functions (no I/O)
   src/db/            Drizzle client, schema, and repository modules
   src/auth/          token verification
-  src/http/          REST routes (health, login, leaderboard)
+  src/http/          REST routes (health, universes for Home, the world editor's API)
   scripts/           development tools run by hand, such as the seed script
 /shared          Code imported by both client and server:
                  message type enums, payload interfaces, close codes, constants,
@@ -93,7 +97,7 @@ npm workspaces are assumed (`client`, `server`, `shared`). Update this section i
 docker compose up -d                 # start local Postgres
 npm run db:generate -w server        # create a migration after changing server/src/db/schema.ts
 npm run db:migrate -w server         # apply Drizzle migrations
-npm run db:seed -w server            # add or replace the sample universe (server/scripts/sampleUniverse.ts)
+npm run db:seed -w server            # add or replace the sample universe (server/scripts/sampleUniverse.ts); -- --creator "<name>" makes that player its creator
 npm run dev -w server                # Colyseus on wss://www.multiversekiln-dev.com:2567
 npm run dev -w client                # Vite on https://www.multiversekiln-dev.com:5173
 ```

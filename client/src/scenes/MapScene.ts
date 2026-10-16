@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { Callbacks } from '@colyseus/sdk';
-import { GRID_CELL_SIZE, MessageType, nearestCopy, PATCH_INTERVAL_MS, PLAYER_RADIUS, positiveModulo, ServerMessageType, type MovePayload, type Player, type ZonePayload } from '@multiverse-kiln/shared';
+import { chunkKey, GRID_CELL_SIZE, MessageType, nearestCopy, PATCH_INTERVAL_MS, PLAYER_RADIUS, positiveModulo, ServerMessageType, type ChunksPayload, type MovePayload, type Player, type ZonePayload } from '@multiverse-kiln/shared';
 
 import { MovementKeys } from '../input/MovementKeys';
 import type { GameRoom, MapConnection, MapRoom } from '../network/serverConnection';
@@ -93,6 +93,11 @@ export class MapScene extends Phaser.Scene
 	private zoneRenderer?: ZoneRenderer;
 
 	/**
+	 * The zone's chunks received so far that aren't all the default tile, by chunkKey(); the renderer draws from it
+	 */
+	private chunks = new Map<string, number[]>();
+
+	/**
 	 * Cells with a manual link, by "column,row"
 	 */
 	private manualLinks = new Set<string>();
@@ -138,8 +143,20 @@ export class MapScene extends Phaser.Scene
 
 		this.unbinds.push(this.room.onMessage(ServerMessageType.Zone, (zone: ZonePayload) =>
 		{
+			// The zone the player is already in comes again when an editor changes it; the player hasn't moved zone
+			const sameZone = (zone.zoneId === this.zone.zoneId);
+
 			this.enterZone(zone);
-			this.forgetOwnPosition();
+
+			if (!sameZone)
+			{
+				this.forgetOwnPosition();
+			}
+		}));
+
+		this.unbinds.push(this.room.onMessage(ServerMessageType.Chunks, (payload: ChunksPayload) =>
+		{
+			this.receiveChunks(payload);
 		}));
 
 		if (this.input.keyboard)
@@ -232,9 +249,44 @@ export class MapScene extends Phaser.Scene
 	private enterZone(zone: ZonePayload): void
 	{
 		this.zone = zone;
+		this.chunks = new Map(zone.chunks.map((chunk) => [chunkKey(chunk.chunkColumn, chunk.chunkRow), chunk.cells]));
 		this.manualLinks = new Set(zone.links.filter((link) => (link.mode === 'manual')).map((link) => `${link.column},${link.row}`));
 		this.zoneRenderer?.destroy();
-		this.zoneRenderer = new ZoneRenderer(this, zone);
+		this.zoneRenderer = new ZoneRenderer(this, zone, this.chunks);
+	}
+
+	/**
+	 * Takes in chunks of the zone the player has come near or an editor has changed, and redraws them
+	 *
+	 * @param payload The chunks
+	 */
+	private receiveChunks(payload: ChunksPayload): void
+	{
+		// Chunks of a zone the player has since left
+		if (payload.zoneId !== this.zone.zoneId)
+		{
+			return;
+		}
+
+		const keys: string[] = [];
+
+		for (const chunk of payload.chunks)
+		{
+			const key = chunkKey(chunk.chunkColumn, chunk.chunkRow);
+
+			if (chunk.cells)
+			{
+				this.chunks.set(key, chunk.cells);
+			}
+			else
+			{
+				this.chunks.delete(key);
+			}
+
+			keys.push(key);
+		}
+
+		this.zoneRenderer?.refreshChunks(keys);
 	}
 
 	/**

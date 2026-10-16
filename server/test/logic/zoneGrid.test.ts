@@ -80,6 +80,15 @@ describe('createZoneGrid', () =>
 		assert.strictEqual(grid.movementCost({ column: 3, row: 0 }), IMPASSABLE_COST);
 	});
 
+	it('makes cells whose chunk has not loaded impassable, when the map is loaded a piece at a time', () =>
+	{
+		const partial = createZoneGrid({ ...map, loadedChunks: new Set([chunkKey(0, 0)]) }, 30);
+
+		assert.strictEqual(partial.movementCost({ column: 1, row: 0 }), 50);
+		assert.strictEqual(partial.movementCost({ column: -2, row: 0 }), IMPASSABLE_COST);
+		assert.strictEqual(grid.movementCost({ column: -2, row: 0 }), 0);
+	});
+
 	it('ends movement on automatic links only', () =>
 	{
 		assert.strictEqual(grid.endsMovement({ column: 0, row: 1 }), true);

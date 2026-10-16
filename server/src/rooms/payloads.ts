@@ -16,7 +16,7 @@ const direction = z.literal([-1, 0, 1]);
  * @param maxLength Most characters allowed after trimming
  * @return The validator
  */
-function displayText(maxLength: number): z.ZodString
+export function displayText(maxLength: number): z.ZodString
 {
 	return(z.string().trim().min(1).max(maxLength).refine((text) => !DISALLOWED_TEXT_CHARACTERS.test(text), 'Contains disallowed characters'));
 }

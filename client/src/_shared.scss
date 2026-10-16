@@ -1,0 +1,503 @@
+// Colors and the rules every page uses: the page itself, controls, panels, toolbars, lists of
+// universes, dialogs, forms and rendered Markdown. Each page's stylesheet uses this with
+// `@use 'shared' as *;` and adds its own rules
+
+// Backgrounds, darkest first
+$background-page: #111;
+$background-panel: #181a20;
+$background-field: #1d1f27;
+$background-field-hover: #232631;
+$background-code: #23252e;
+$background-control-hover: #262933;
+$background-secondary: #2a2d36;
+$background-secondary-hover: #353945;
+$backdrop: rgba(0, 0, 0, 0.6);
+
+// Borders, faintest first
+$border-subtle: #2a2d36;
+$border: #333;
+$border-strong: #444;
+$border-stronger: #555;
+
+// Text, brightest first
+$text-on-accent: #fff;
+$text: #eee;
+$text-footer-link: #ccc;
+$text-quote: #bbb;
+$text-muted: #aaa;
+$text-faint: #999;
+$text-dim: #777;
+
+// Green: primary buttons, hover borders and the player's own name
+$accent: #4caf50;
+$accent-background: #2e7d32;
+$accent-background-hover: #388e3c;
+
+// Red: buttons that delete
+$danger: #c62828;
+$danger-background: #8e1c1c;
+$danger-background-hover: #a52222;
+
+$link: #64b5f6;
+$link-hover: #90caf9;
+$chat-name: #42a5f5;
+$error: #ef9a9a;
+$success: #81c784;
+
+$notice-border: #8d6e1f;
+$notice-background: #3a2f12;
+$notice-text: #f5d58a;
+
+html,
+body
+{
+	margin: 0;
+	padding: 0;
+	height: 100%;
+	background: $background-page;
+}
+
+body
+{
+	display: flex;
+	flex-direction: column;
+	font-family: sans-serif;
+	color: $text;
+}
+
+[hidden]
+{
+	display: none !important;
+}
+
+main
+{
+	display: flex;
+	flex: 1;
+	min-height: 0;
+}
+
+h1,
+h2
+{
+	margin: 0;
+}
+
+h1
+{
+	font-size: 20px;
+}
+
+h2
+{
+	font-size: 16px;
+}
+
+h3
+{
+	margin: 16px 0 8px;
+	font-size: 14px;
+}
+
+button,
+input,
+select,
+textarea
+{
+	font: inherit;
+	border-radius: 4px;
+}
+
+button
+{
+	padding: 6px 14px;
+	border: 1px solid $accent;
+	background: $accent-background;
+	color: $text-on-accent;
+	cursor: pointer;
+
+	&:hover
+	{
+		background: $accent-background-hover;
+	}
+
+	&:disabled
+	{
+		opacity: 0.5;
+		cursor: default;
+	}
+}
+
+input,
+select,
+textarea
+{
+	padding: 6px 8px;
+	border: 1px solid $border-strong;
+	background: $background-field;
+	color: $text;
+
+	&:disabled
+	{
+		opacity: 0.7;
+	}
+}
+
+button.danger
+{
+	border-color: $danger;
+	background: $danger-background;
+
+	&:hover
+	{
+		background: $danger-background-hover;
+	}
+}
+
+button.link-button
+{
+	padding: 0;
+	border: none;
+	background: none;
+	color: $link;
+	text-align: left;
+	text-decoration: underline;
+
+	&:hover
+	{
+		background: none;
+		color: $link-hover;
+	}
+}
+
+.screen
+{
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	min-height: 0;
+}
+
+.panel
+{
+	padding: 16px;
+	border: 1px solid $border;
+	border-radius: 6px;
+	background: $background-panel;
+}
+
+#status-screen,
+#login-screen
+{
+	align-items: center;
+	justify-content: center;
+}
+
+.login-panel
+{
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	width: 280px;
+}
+
+.toolbar
+{
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 16px;
+	border-bottom: 1px solid $border;
+}
+
+.toolbar-name,
+.toolbar-status
+{
+	flex: 1;
+	color: $text-muted;
+}
+
+.toolbar-name strong
+{
+	color: $text;
+}
+
+.notice
+{
+	margin: 12px 16px 0;
+	padding: 8px 12px;
+	border: 1px solid $notice-border;
+	border-radius: 4px;
+	background: $notice-background;
+	color: $notice-text;
+}
+
+button.secondary
+{
+	border-color: $border-stronger;
+	background: $background-secondary;
+
+	&:hover
+	{
+		background: $background-secondary-hover;
+	}
+}
+
+.panel-heading
+{
+	display: flex;
+	align-items: center;
+	gap: 12px;
+
+	h2
+	{
+		flex: 1;
+	}
+}
+
+.universe-list
+{
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin: 12px 0;
+	padding: 0;
+	list-style: none;
+}
+
+.universe-item
+{
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	width: 100%;
+	padding: 10px 14px;
+	border-color: $border;
+	background: $background-field;
+	text-align: left;
+
+	&:hover
+	{
+		border-color: $accent;
+		background: $background-field-hover;
+	}
+}
+
+.universe-ruleset
+{
+	font-size: 12px;
+	color: $text-faint;
+}
+
+.universe-empty
+{
+	color: $text-faint;
+}
+
+.dialog
+{
+	width: min(560px, calc(100vw - 32px));
+	color: $text;
+
+	&::backdrop
+	{
+		background: $backdrop;
+	}
+}
+
+.dialog-buttons,
+.form-buttons
+{
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 8px;
+}
+
+.form-buttons .danger
+{
+	margin-right: auto;
+}
+
+.form,
+fieldset.plain
+{
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+fieldset.plain
+{
+	margin: 0;
+	padding: 0;
+	border: none;
+	min-width: 0;
+}
+
+fieldset.choice
+{
+	display: flex;
+	gap: 16px;
+	margin: 0;
+	padding: 8px 12px;
+	border: 1px solid $border;
+	border-radius: 4px;
+}
+
+fieldset.choice legend
+{
+	padding: 0 4px;
+	color: $text-muted;
+}
+
+.form label,
+.field-label
+{
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	color: $text-muted;
+}
+
+.form label.checkbox
+{
+	flex-direction: row;
+	align-items: center;
+	gap: 8px;
+	color: $text;
+}
+
+.form p
+{
+	margin: 0;
+}
+
+.form .hint
+{
+	font-size: 12px;
+	color: $text-faint;
+}
+
+.form-error
+{
+	color: $error;
+}
+
+.form-saved
+{
+	color: $success;
+}
+
+.markdown
+{
+	overflow-wrap: anywhere;
+
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6
+	{
+		margin: 1em 0 0.5em;
+		line-height: 1.25;
+		font-weight: bold;
+	}
+
+	h1
+	{
+		font-size: 24px;
+	}
+
+	h2
+	{
+		font-size: 21px;
+	}
+
+	h3
+	{
+		font-size: 18px;
+	}
+
+	h4
+	{
+		font-size: 16px;
+	}
+
+	h5
+	{
+		font-size: 14px;
+	}
+
+	h6
+	{
+		font-size: 13px;
+		color: $text-muted;
+	}
+
+	p
+	{
+		margin: 1em 0;
+	}
+
+	:first-child
+	{
+		margin-top: 0;
+	}
+
+	:last-child
+	{
+		margin-bottom: 0;
+	}
+
+	a
+	{
+		color: $link;
+	}
+
+	pre,
+	code
+	{
+		background: $background-code;
+	}
+
+	pre
+	{
+		overflow-x: auto;
+		padding: 8px;
+	}
+
+	table
+	{
+		border-collapse: collapse;
+	}
+
+	th,
+	td
+	{
+		padding: 4px 8px;
+		border: 1px solid $border;
+	}
+
+	blockquote
+	{
+		margin-left: 0;
+		padding-left: 12px;
+		border-left: 3px solid $border-strong;
+		color: $text-quote;
+	}
+}
+
+footer
+{
+	padding: 8px 16px;
+	font-size: 12px;
+	text-align: center;
+	color: $text-faint;
+
+	a
+	{
+		color: $text-footer-link;
+	}
+}

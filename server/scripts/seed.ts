@@ -6,11 +6,22 @@
  * Run it by hand after migrating, like the migrations themselves; nothing runs it automatically. It
  * replaces the sample universe if it is already there, and leaves everything else alone. It refuses
  * to run when NODE_ENV is production
+ *
+ * To make a player the sample universe's creator, so they can open it in the editor, name them:
+ *
+ *   npm run db:seed -w server -- --creator "Ada"
+ *
+ * The player is created if nobody has the name yet. Replacing the universe also removes its editors,
+ * so pass --creator every time
  */
+import { parseArgs } from 'node:util';
 import { CHUNK_SIZE, DEFAULT_TILE_CELL, VOID_CELL, cellIndexInChunk, chunkCoordinate, chunkKey, type MapBounds } from '@multiverse-kiln/shared';
 
 import { db, pool, type Executor } from '../src/db/client.js';
+import { loadOrCreatePlayerByName, type PlayerProfile } from '../src/db/playerRepo.js';
 import { createTile, findDefaultTileIds } from '../src/db/tileRepo.js';
+import { setUniverseRole } from '../src/db/universeEditorRepo.js';
+import { describeInvalidPayload, loginPayload } from '../src/rooms/payloads.js';
 import { createUniverse, deleteUniverse, setUniverseZones } from '../src/db/universeRepo.js';
 import { createZone, createZoneLink, saveGroundChunk } from '../src/db/zoneRepo.js';
 import { SAMPLE_UNIVERSE_ID, sampleLinks, sampleUniverse, sampleZones, stoneWall, type SampleZone } from './sampleUniverse.js';
@@ -200,11 +211,36 @@ function requireZone(zoneIds: Map<string, string>, key: string): string
 }
 
 /**
+ * Reads the name given with --creator, checked like a name typed at login
+ *
+ * @return The name, trimmed, or undefined when --creator wasn't given
+ */
+function readCreatorName(): string | undefined
+{
+	const { values } = parseArgs({ options: { creator: { type: 'string' } } });
+
+	if (values.creator === undefined)
+	{
+		return(undefined);
+	}
+
+	const result = loginPayload.safeParse({ name: values.creator });
+
+	if (!result.success)
+	{
+		throw new Error(`--creator must be a name a player could log in with (${describeInvalidPayload(result.error)})`);
+	}
+
+	return(result.data.name);
+}
+
+/**
  * Creates the sample universe, replacing it if it exists
  *
  * @param executor A transaction
+ * @param creator The player to make its creator, if any
  */
-async function seed(executor: Executor): Promise<void>
+async function seed(executor: Executor, creator: PlayerProfile | undefined): Promise<void>
 {
 	if (await deleteUniverse(SAMPLE_UNIVERSE_ID, executor))
 	{
@@ -272,6 +308,16 @@ async function seed(executor: Executor): Promise<void>
 	await setUniverseZones(universeId, requireZone(zoneIds, sampleUniverse.lobbyZone), requireZone(zoneIds, sampleUniverse.startingZone), executor);
 
 	console.log(`Created ${sampleUniverse.name} with ${sampleZones.length} zones and ${sampleLinks.length} links`);
+
+	if (creator)
+	{
+		await setUniverseRole(universeId, creator.id, 'creator', executor);
+		console.log(`${creator.displayName} is its creator`);
+	}
+	else
+	{
+		console.log('Nobody can edit it. Pass --creator "<name>" to make a player its creator');
+	}
 }
 
 if (process.env.NODE_ENV === 'production')
@@ -283,9 +329,14 @@ else
 {
 	try
 	{
+		const creatorName = readCreatorName();
+
+		// Created outside the transaction like any login, so it stays if seeding fails
+		const creator = ((creatorName === undefined) ? undefined : await loadOrCreatePlayerByName(creatorName));
+
 		await db.transaction(async (transaction) =>
 		{
-			await seed(transaction);
+			await seed(transaction, creator);
 		});
 	}
 	catch (error)
