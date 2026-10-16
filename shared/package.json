@@ -14,9 +14,17 @@
 	},
 	"scripts": {
 		"build": "tsc -p tsconfig.json",
-		"dev": "tsc -p tsconfig.json --watch --preserveWatchOutput"
+		"dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
+		"messages": "tsx scripts/messages.ts",
+		"messages:check": "tsx scripts/messages.ts --check"
 	},
 	"dependencies": {
-		"@colyseus/schema": "^5.0.39"
+		"@colyseus/schema": "^5.0.39",
+		"@formatjs/icu-messageformat-parser": "^3.5.21",
+		"intl-messageformat": "^12.1.3"
+	},
+	"devDependencies": {
+		"@types/node": "^24.19.2",
+		"tsx": "^4.23.15"
 	}
 }

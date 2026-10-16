@@ -1,8 +1,11 @@
-import { canEditWorld, DISALLOWED_TEXT_CHARACTERS, IMPASSABLE_COST, MAX_TILE_NAME_LENGTH, type EditableUniverse, type EditorTile, type TileSettings } from '@multiverse-kiln/shared';
+import { canEditWorld, DISALLOWED_TEXT_CHARACTERS, IMPASSABLE_COST, MAX_TILE_NAME_LENGTH, type EditableUniverse, type EditorTile, type MessageDescriptor, type TileSettings } from '@multiverse-kiln/shared';
 
+import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, showMessage } from '../dom';
+import { formMessages } from '../formMessages';
 import { colorToHex, nightColor, parseHexColor } from './colors';
+import { tileName } from './tileNames';
 
 /**
  * Settings a new tile starts with
@@ -114,12 +117,33 @@ export class TileDialog
 	{
 		const settings = (tile ?? NEW_TILE);
 		const editable = canEditWorld(universe.role);
+		const name = (tile ? tileName(tile, universe.ruleset) : '');
 
 		this.universe = universe;
 		this.tile = tile;
 		this.onChanged = onChanged;
-		this.title.textContent = (tile ? (editable ? `Edit ${tile.name}` : tile.name) : 'Add Tile');
-		this.name.value = settings.name;
+		if (!tile)
+		{
+			this.title.textContent = t({
+				id: 'editor.tile.addTitle',
+				defaultMessage: 'Add Tile',
+				description: 'Title of the tile editor when making a new tile'
+			});
+		}
+		else if (editable)
+		{
+			this.title.textContent = t({
+				id: 'editor.tile.editTitle',
+				defaultMessage: 'Edit {tile}',
+				description: 'Title of the tile editor for a tile the player can change; {tile} is its name'
+			}, { tile: name });
+		}
+		else
+		{
+			this.title.textContent = name;
+		}
+
+		this.name.value = name;
 		this.outdoors.checked = !settings.indoors;
 		this.indoors.checked = settings.indoors;
 		this.color.value = colorToHex(settings.color);
@@ -130,7 +154,7 @@ export class TileDialog
 		this.name.disabled = !editable;
 		this.saveButton.hidden = !editable;
 		this.saveButton.disabled = false;
-		this.cancelButton.textContent = (editable ? 'Cancel' : 'Close');
+		this.cancelButton.textContent = t(editable ? formMessages.cancel : formMessages.close);
 
 		// Only the inputs are locked for a player who can't edit, so Close still works
 		for (const input of [this.outdoors, this.indoors, this.colorPicker, this.color, this.visionCost, this.movementCost])
@@ -139,7 +163,17 @@ export class TileDialog
 		}
 
 		this.removeButton.hidden = (!editable || !tile || (!tile.custom && !tile.edited));
-		this.removeButton.textContent = (tile?.custom ? 'Delete Tile' : 'Restore Default');
+		this.removeButton.textContent = (tile?.custom
+			? t({
+				id: 'editor.tile.delete',
+				defaultMessage: 'Delete Tile',
+				description: 'Button in the tile editor that deletes a tile made for this universe'
+			})
+			: t({
+				id: 'editor.tile.restore',
+				defaultMessage: 'Restore Default',
+				description: 'Button in the tile editor that undoes this universe\'s changes to one of the ruleset\'s tiles'
+			}));
 		showMessage(this.error, undefined);
 		this.updatePreview();
 		this.dialog.showModal();
@@ -172,27 +206,37 @@ export class TileDialog
 
 		if ((name === '') || DISALLOWED_TEXT_CHARACTERS.test(name))
 		{
-			this.name.setCustomValidity('Use letters, numbers, spaces or punctuation.');
+			this.name.setCustomValidity(t(formMessages.invalidText));
 			this.name.reportValidity();
 			return;
 		}
 
 		if (color === undefined)
 		{
-			this.color.setCustomValidity('Enter a hex color, such as #7AFF3D.');
+			this.color.setCustomValidity(t({
+				id: 'editor.tile.invalidColor',
+				defaultMessage: 'Enter a hex color, such as #7AFF3D.',
+				description: 'Shown by the color field when what was typed isn\'t a hexadecimal color'
+			}));
 			this.color.reportValidity();
 			return;
 		}
 
+		// A default tile whose name wasn't changed keeps the ruleset's, which players read in their own language
+		const defaultName = ((this.tile && !this.tile.custom) ? tileName({ key: this.tile.key, name: null }, universe.ruleset) : undefined);
 		const settings: TileSettings = {
-			name,
+			name: ((name === defaultName) ? null : name),
 			indoors: this.indoors.checked,
 			color,
 			visionCost: this.visionCost.valueAsNumber,
 			movementCost: this.movementCost.valueAsNumber
 		};
 
-		await this.run('save the tile', async () =>
+		await this.run({
+			id: 'editor.tile.saveFailed',
+			defaultMessage: 'Could not save the tile.',
+			description: 'Shown in the tile editor when the tile couldn\'t be stored'
+		}, async () =>
 		{
 			if (this.tile)
 			{
@@ -218,23 +262,52 @@ export class TileDialog
 			return;
 		}
 
-		const question = (tile.custom ? `Delete ${tile.name}? This can't be undone.` : `Restore ${tile.name} to the ruleset's default? Your changes to it will be lost.`);
+		const name = tileName(tile, universe.ruleset);
+		let question: string;
+		let failure: MessageDescriptor;
+
+		if (tile.custom)
+		{
+			question = t({
+				id: 'editor.tile.confirmDelete',
+				defaultMessage: 'Delete {tile}? This can\'t be undone.',
+				description: 'Asks before deleting a tile made for this universe; {tile} is its name'
+			}, { tile: name });
+			failure = {
+				id: 'editor.tile.deleteFailed',
+				defaultMessage: 'Could not delete the tile.',
+				description: 'Shown in the tile editor when the tile couldn\'t be deleted'
+			};
+		}
+		else
+		{
+			question = t({
+				id: 'editor.tile.confirmRestore',
+				defaultMessage: 'Restore {tile} to the ruleset\'s default? Your changes to it will be lost.',
+				description: 'Asks before undoing this universe\'s changes to one of the ruleset\'s tiles; {tile} is its name'
+			}, { tile: name });
+			failure = {
+				id: 'editor.tile.restoreFailed',
+				defaultMessage: 'Could not restore the tile.',
+				description: 'Shown in the tile editor when the ruleset\'s tile couldn\'t be restored'
+			};
+		}
 
 		if (!window.confirm(question))
 		{
 			return;
 		}
 
-		await this.run((tile.custom ? 'delete the tile' : 'restore the tile'), () => this.api.deleteTile(universe.id, tile.id));
+		await this.run(failure, () => this.api.deleteTile(universe.id, tile.id));
 	}
 
 	/**
 	 * Makes a change, closing the dialog when it succeeds and explaining in it when it doesn't
 	 *
-	 * @param action What is being done, for the error message
+	 * @param failure What failed, as a sentence, for the error message
 	 * @param change The change
 	 */
-	private async run(action: string, change: () => Promise<void>): Promise<void>
+	private async run(failure: MessageDescriptor, change: () => Promise<void>): Promise<void>
 	{
 		this.fields.disabled = true;
 		showMessage(this.error, undefined);
@@ -247,7 +320,7 @@ export class TileDialog
 		}
 		catch (error)
 		{
-			showMessage(this.error, describeEditorError(error, action));
+			showMessage(this.error, describeEditorError(error, failure));
 		}
 		finally
 		{

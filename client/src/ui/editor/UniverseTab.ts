@@ -1,8 +1,10 @@
 import '@github/markdown-toolbar-element';
-import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNINGS, MAX_LONG_DESCRIPTION_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_NAME_LENGTH, PASSAGES_OF_TIME, RULESET_NAMES, UNIVERSE_STAGES, type EditableUniverse, type FaerieMorning, type PassageOfTime, type UniverseSettingsUpdate, type UniverseStage } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_LONG_DESCRIPTION_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, PASSAGES_OF_TIME, RULESET_NAMES, UNIVERSE_STAGE_NAMES, UNIVERSE_STAGES, type EditableUniverse, type FaerieMorning, type PassageOfTime, type UniverseSettingsUpdate, type UniverseStage } from '@multiverse-kiln/shared';
 
+import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
-import { getElement, setOptions, settingOptions, showMessage } from '../dom';
+import { getElement, namedOptions, setOptions, showMessage } from '../dom';
+import { formMessages } from '../formMessages';
 import { showMarkdown } from '../markdown';
 
 /**
@@ -48,9 +50,9 @@ export class UniverseTab
 		this.name.maxLength = MAX_UNIVERSE_NAME_LENGTH;
 		this.shortDescription.maxLength = MAX_SHORT_DESCRIPTION_LENGTH;
 		this.longDescription.maxLength = MAX_LONG_DESCRIPTION_LENGTH;
-		setOptions(this.stage, settingOptions(UNIVERSE_STAGES));
-		setOptions(this.time, settingOptions(PASSAGES_OF_TIME));
-		setOptions(this.faerie, settingOptions(FAERIE_MORNINGS));
+		setOptions(this.stage, namedOptions(UNIVERSE_STAGES, UNIVERSE_STAGE_NAMES));
+		setOptions(this.time, namedOptions(PASSAGES_OF_TIME, PASSAGE_OF_TIME_NAMES));
+		setOptions(this.faerie, namedOptions(FAERIE_MORNINGS, FAERIE_MORNING_NAMES));
 
 		this.longDescription.addEventListener('input', () =>
 		{
@@ -95,7 +97,7 @@ export class UniverseTab
 		this.shortDescription.value = universe.shortDescription;
 		this.longDescription.value = universe.longDescription;
 		this.stage.value = universe.stage;
-		this.ruleset.textContent = RULESET_NAMES[universe.ruleset];
+		this.ruleset.textContent = t(RULESET_NAMES[universe.ruleset]);
 		this.time.value = universe.passageOfTime;
 		this.faerie.value = (universe.faerieMorning ?? FAERIE_MORNINGS[0]);
 		this.faerieField.hidden = (universe.passageOfTime !== 'faerie');
@@ -159,12 +161,16 @@ export class UniverseTab
 		{
 			await this.api.updateUniverse(universe.id, update);
 			this.universe = { ...universe, ...update };
-			this.saved.textContent = 'Saved';
+			this.saved.textContent = t(formMessages.saved);
 			this.onSaved(this.universe);
 		}
 		catch (error)
 		{
-			showMessage(this.error, describeEditorError(error, 'save the universe'));
+			showMessage(this.error, describeEditorError(error, {
+				id: 'editor.universe.saveFailed',
+				defaultMessage: 'Could not save the universe.',
+				description: 'Shown on the Universe tab when its settings couldn\'t be stored'
+			}));
 		}
 		finally
 		{
@@ -189,7 +195,7 @@ export class UniverseTab
 		{
 			if (((input === this.name) && (text === '')) || DISALLOWED_TEXT_CHARACTERS.test(text))
 			{
-				input.setCustomValidity('Use letters, numbers, spaces or punctuation.');
+				input.setCustomValidity(t(formMessages.invalidText));
 				input.reportValidity();
 				return(false);
 			}

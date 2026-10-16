@@ -1,6 +1,7 @@
 import { CloseCode } from '@colyseus/sdk';
 import { GROUP_QUERY_PARAMETER, LobbyMessageType, LobbyServerMessageType, MAX_GROUP_PLAYERS, NoticeReason, ServerCloseCode, SessionMessageType, SessionServerMessageType, type AccountPayload, type AccountPlayer, type ChatHistoryPayload, type ChatMessage, type ChatPayload, type JoinGroupPayload, type LoginPayload, type NoticePayload, type UniverseSummary } from '@multiverse-kiln/shared';
 
+import { t } from './localization';
 import { EditorApi } from './network/editorApi';
 import { getUniverseDetails, joinGroup, joinLobby, listUniverses, type GameConnection, type LobbyConnection, type ServerConnection } from './network/serverConnection';
 import { editPageUrl, readPageParameter, replacePageParameters, UNIVERSE_PARAMETER } from './pages';
@@ -10,6 +11,7 @@ import { HomeScreen } from './ui/HomeScreen';
 import { LobbyScreen } from './ui/LobbyScreen';
 import { LoginScreen } from './ui/LoginScreen';
 import { MapView } from './ui/MapView';
+import { pageMessages } from './ui/pageMessages';
 
 /**
  * The group room this window has joined
@@ -153,7 +155,7 @@ export class App
 		{
 			this.player = null;
 			void this.syncRooms();
-			showStatus('Disconnected from the server. Reload the page to reconnect.');
+			showStatus(t(pageMessages.disconnected));
 		});
 	}
 
@@ -254,7 +256,11 @@ export class App
 		catch (error)
 		{
 			console.error('Could not find the universe to enter:', error);
-			this.homeScreen.showNotice('That universe could not be found.');
+			this.homeScreen.showNotice(t({
+				id: 'home.universeNotFound',
+				defaultMessage: 'That universe could not be found.',
+				description: 'Shown on Home when the page was opened to enter a universe that doesn\'t exist or can\'t be played'
+			}));
 			return;
 		}
 
@@ -297,30 +303,55 @@ export class App
 		if (reason === NoticeReason.ChatTooFast)
 		{
 			this.lobbyScreen.restoreLastChat();
-			this.lobbyScreen.showNotice('You are sending messages too quickly. Wait a moment and try again.');
+			this.lobbyScreen.showNotice(t({
+				id: 'lobby.chat.tooFast',
+				defaultMessage: 'You are sending messages too quickly. Wait a moment and try again.',
+				description: 'Shown in the lobby when the player sends chat messages faster than allowed'
+			}));
 			return;
 		}
 
 		if (reason === NoticeReason.NameInUse)
 		{
-			this.loginScreen.showError('That player is already logged in from another browser.');
+			this.loginScreen.showError(t(pageMessages.nameInUse));
 			return;
 		}
 
 		if (reason === NoticeReason.LoginFailed)
 		{
-			this.loginScreen.showError('Could not log in. Try again in a moment.');
+			this.loginScreen.showError(t(pageMessages.loginFailed));
 			return;
 		}
 
 		if (reason === NoticeReason.GroupNotCreated)
 		{
-			this.lobbyScreen.showNotice('Could not create a game. Try again in a moment.');
+			this.lobbyScreen.showNotice(t({
+				id: 'lobby.groupNotCreated',
+				defaultMessage: 'Could not create a game. Try again in a moment.',
+				description: 'Shown in the lobby when the server couldn\'t start a new game'
+			}));
 			return;
 		}
 
 		// Only a join link asks to join a group. A player already in a group stays in it and sees the message there
-		const message = ((reason === NoticeReason.GroupFull) ? `That game is full: it already has ${MAX_GROUP_PLAYERS} players.` : 'That game has ended or the link is wrong.');
+		let message: string;
+
+		if (reason === NoticeReason.GroupFull)
+		{
+			message = t({
+				id: 'group.full',
+				defaultMessage: 'That game is full: it already has {max, plural, one {# player} other {# players}}.',
+				description: 'Shown when a join link leads to a game that has no room left; {max} is the most players a game can have'
+			}, { max: MAX_GROUP_PLAYERS });
+		}
+		else
+		{
+			message = t({
+				id: 'group.gone',
+				defaultMessage: 'That game has ended or the link is wrong.',
+				description: 'Shown when a join link leads to a game that doesn\'t exist'
+			});
+		}
 
 		this.finishJoinLink();
 
@@ -379,7 +410,11 @@ export class App
 		}
 		else
 		{
-			showStatus(`Entering ${this.chosenUniverse.name}...`);
+			showStatus(t({
+				id: 'lobby.entering',
+				defaultMessage: 'Entering {universe}...',
+				description: 'Shown on the whole page while the player goes into a universe\'s lobby; {universe} is its name'
+			}, { universe: this.chosenUniverse.name }));
 		}
 	}
 
@@ -483,7 +518,11 @@ export class App
 
 			if (this.player?.groupId === null)
 			{
-				this.showOutsideGroup(`Could not enter ${universe.name}. Try again in a moment.`);
+				this.showOutsideGroup(t({
+					id: 'lobby.notJoined',
+					defaultMessage: 'Could not enter {universe}. Try again in a moment.',
+					description: 'Shown on Home when the player couldn\'t go into a universe\'s lobby; {universe} is its name'
+				}, { universe: universe.name }));
 			}
 
 			return;
@@ -572,7 +611,11 @@ export class App
 
 		if (this.player?.groupId === null)
 		{
-			this.showOutsideGroup(`Lost the connection to ${joined.universe.name}.`);
+			this.showOutsideGroup(t({
+				id: 'lobby.connectionLost',
+				defaultMessage: 'Lost the connection to {universe}.',
+				description: 'Shown on Home when the connection to a universe\'s lobby was lost; {universe} is its name'
+			}, { universe: joined.universe.name }));
 		}
 	}
 
@@ -599,7 +642,11 @@ export class App
 		{
 			console.error('Could not join the group:', error);
 			this.failedGroupId = groupId;
-			this.showOutsideGroup('Could not join that game. It may have just ended.');
+			this.showOutsideGroup(t({
+				id: 'group.notJoined',
+				defaultMessage: 'Could not join that game. It may have just ended.',
+				description: 'Shown when the player couldn\'t go into their game'
+			}));
 			this.server.session.send(SessionMessageType.LeaveGroup);
 			return;
 		}
@@ -663,7 +710,11 @@ export class App
 		if (code !== CloseCode.CONSENTED)
 		{
 			console.error(`Disconnected from the group (code ${code})`);
-			this.showOutsideGroup('Lost the connection to the game.');
+			this.showOutsideGroup(t({
+				id: 'group.connectionLost',
+				defaultMessage: 'Lost the connection to the game.',
+				description: 'Shown when the connection to the player\'s game was lost'
+			}));
 		}
 
 		this.server.session.send(SessionMessageType.LeaveGroup);

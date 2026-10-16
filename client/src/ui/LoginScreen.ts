@@ -1,5 +1,6 @@
 import { DISALLOWED_TEXT_CHARACTERS, MAX_PLAYER_NAME_LENGTH } from '@multiverse-kiln/shared';
 
+import { t } from '../localization';
 import { getElement } from './dom';
 
 /**
@@ -31,7 +32,11 @@ export class LoginScreen
 
 			if ((name === '') || DISALLOWED_TEXT_CHARACTERS.test(name))
 			{
-				this.nameInput.setCustomValidity('Enter a name of letters, numbers, spaces or punctuation.');
+				this.nameInput.setCustomValidity(t({
+					id: 'login.invalidName',
+					defaultMessage: 'Enter a name of letters, numbers, spaces or punctuation.',
+					description: 'Shown by the login field when the name typed is empty or has characters that aren\'t allowed'
+				}));
 				this.nameInput.reportValidity();
 				return;
 			}

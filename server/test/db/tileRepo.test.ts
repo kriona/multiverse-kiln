@@ -1,8 +1,8 @@
 import assert from 'assert';
 
-import type { TileSettings } from '@multiverse-kiln/shared';
+import { DEFAULT_TILE_NAMES, type EditorTile, type TileSettings } from '@multiverse-kiln/shared';
 
-import { countCustomTiles, createCustomTile, createTile, deleteCustomTile, findDefaultTileIds, findTileKind, listEditorTiles, loadEditorTiles, loadUniverseTiles, restoreDefaultTile, saveEditedDefaultTile, updateCustomTile } from '../../src/db/tileRepo.js';
+import { countCustomTiles, createCustomTile, createTile, deleteCustomTile, findDefaultTileIds, findTileKind, listEditorTiles, loadEditorTiles, loadUniverseTiles, restoreDefaultTile, saveEditedDefaultTile, updateCustomTile, type CustomTileSettings } from '../../src/db/tileRepo.js';
 import { addUniverse, defaultTileId } from './fixtures.js';
 
 const autumnGrass: TileSettings = {
@@ -13,13 +13,24 @@ const autumnGrass: TileSettings = {
 	movementCost: 0
 };
 
-const lava: TileSettings = {
+const lava: CustomTileSettings = {
 	name: 'Lava',
 	indoors: false,
 	color: 0xff4400,
 	visionCost: 0,
 	movementCost: 100
 };
+
+/**
+ * A tile's name as an English reader sees it: its own, or its default message's text
+ *
+ * @param tile The tile, as the editor lists it
+ * @return The name
+ */
+function englishName(tile: EditorTile): string | undefined
+{
+	return((tile.name ?? ((tile.key === null) ? undefined : DEFAULT_TILE_NAMES.pf1e[tile.key]?.defaultMessage)));
+}
 
 describe('tileRepo', () =>
 {
@@ -82,6 +93,54 @@ describe('tileRepo', () =>
 			assert.deepStrictEqual(mine.find((tile) => (tile.id === grassId)), { id: grassId, ...autumnGrass });
 			assert.strictEqual(theirs.find((tile) => (tile.id === grassId))?.name, 'Grass');
 		});
+
+		it('gives an edited default tile that kept its name the default tile\'s English name', async () =>
+		{
+			const universeId = await addUniverse();
+			const grassId = await defaultTileId('grass');
+
+			await saveEditedDefaultTile(universeId, 'pf1e', grassId, { ...autumnGrass, name: null });
+
+			const grass = (await loadUniverseTiles(universeId, 'pf1e')).find((tile) => (tile.id === grassId));
+
+			assert.deepStrictEqual(grass, { id: grassId, ...autumnGrass, name: 'Grass' });
+		});
+	});
+
+	describe('loadEditorTiles', () =>
+	{
+		it('names each default tile by a message whose English matches the name the migrations store', async () =>
+		{
+			const universeId = await addUniverse();
+			const englishNames = new Map((await loadUniverseTiles(universeId, 'pf1e')).map((tile) => [tile.id, tile.name]));
+			const tiles = await loadEditorTiles(universeId, 'pf1e');
+
+			assert.strictEqual(tiles.length, 6);
+
+			for (const tile of tiles)
+			{
+				assert.strictEqual(tile.name, null);
+				assert.strictEqual(englishName(tile), englishNames.get(tile.id), `the message for ${tile.key}`);
+			}
+		});
+
+		it('gives an edited default tile a name only when it was renamed', async () =>
+		{
+			const universeId = await addUniverse();
+			const grassId = await defaultTileId('grass');
+			const forestId = await defaultTileId('forest');
+
+			await saveEditedDefaultTile(universeId, 'pf1e', grassId, { ...autumnGrass, name: null });
+			await saveEditedDefaultTile(universeId, 'pf1e', forestId, { ...autumnGrass, name: 'Dark Forest' });
+
+			const tiles = await loadEditorTiles(universeId, 'pf1e');
+			const grass = tiles.find((tile) => (tile.id === grassId));
+			const forest = tiles.find((tile) => (tile.id === forestId));
+
+			assert.deepStrictEqual(grass, { id: grassId, key: 'grass', ...autumnGrass, name: null, custom: false, edited: true });
+			assert.strictEqual(forest?.name, 'Dark Forest');
+			assert.strictEqual(forest.key, 'forest');
+		});
 	});
 
 	describe('edited default tiles', () =>
@@ -104,7 +163,7 @@ describe('tileRepo', () =>
 
 			grass = (await loadEditorTiles(universeId, 'pf1e')).find((tile) => (tile.id === grassId));
 
-			assert.strictEqual(grass?.name, 'Grass');
+			assert.strictEqual(grass?.name, null);
 			assert.strictEqual(grass.edited, false);
 		});
 	});
@@ -122,7 +181,7 @@ describe('tileRepo', () =>
 
 			const tile = (await loadEditorTiles(universeId, 'pf1e')).find((candidate) => (candidate.id === lavaId));
 
-			assert.deepStrictEqual(tile, { id: lavaId, ...lava, name: 'Cooled Lava', movementCost: 50, custom: true, edited: false });
+			assert.deepStrictEqual(tile, { id: lavaId, key: null, ...lava, name: 'Cooled Lava', movementCost: 50, custom: true, edited: false });
 
 			await deleteCustomTile(universeId, lavaId);
 
@@ -166,9 +225,10 @@ describe('tileRepo', () =>
 			await createCustomTile(universeId, 'pf1e', { ...lava, name: 'Ash', movementCost: 0 });
 			await saveEditedDefaultTile(universeId, 'pf1e', await defaultTileId('forest'), { ...autumnGrass, name: 'Dark Forest' });
 
-			const names = async (query: Parameters<typeof listEditorTiles>[2]): Promise<string[]> => (await listEditorTiles(universeId, 'pf1e', query)).tiles.map((tile) => tile.name);
+			const names = async (query: Parameters<typeof listEditorTiles>[2]): Promise<(string | undefined)[]> => (await listEditorTiles(universeId, 'pf1e', query)).tiles.map((tile) => englishName(tile));
 
 			assert.deepStrictEqual(await names({ name: 'FOREST' }), ['Dark Forest']);
+			assert.deepStrictEqual(await names({ name: 'wood' }), ['Wood Floor']);
 			assert.deepStrictEqual(await names({ passable: false }), ['Mountains', 'Water', 'Lava']);
 			assert.deepStrictEqual(await names({ custom: true }), ['Lava', 'Ash']);
 			assert.deepStrictEqual(await names({ edited: true }), ['Dark Forest']);
@@ -177,7 +237,7 @@ describe('tileRepo', () =>
 			const page = await listEditorTiles(universeId, 'pf1e', { offset: 2, limit: 3 });
 
 			assert.strictEqual(page.total, 8);
-			assert.deepStrictEqual(page.tiles.map((tile) => tile.name), ['Desert', 'Mountains', 'Water']);
+			assert.deepStrictEqual(page.tiles.map((tile) => englishName(tile)), ['Desert', 'Mountains', 'Water']);
 		});
 	});
 });

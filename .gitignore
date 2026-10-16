@@ -27,6 +27,9 @@ certs/
 *.log
 npm-debug.log*
 
+# The pseudo-language's catalog, which the client's dev server makes from shared/locales/en.json
+shared/locales/en-XA.json
+
 # Editor / OS
 .vscode/*
 !.vscode/extensions.json

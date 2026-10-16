@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
-import type { EditorTile, EditorZone, ZonePayload } from '@multiverse-kiln/shared';
+import type { EditorTile, EditorZone, Ruleset, ZonePayload } from '@multiverse-kiln/shared';
 
 import { MAP_EDITOR_SCENE_KEY, MapEditorScene, type CameraState, type MapEditorHost } from '../scenes/MapEditorScene';
+import { tileName } from '../ui/editor/tileNames';
 
 /**
  * A canvas showing a zone's map in the map editor scene: one Phaser game, created the first time a
@@ -93,9 +94,10 @@ export class MapCanvas
  *
  * @param zone The zone as the editor knows it
  * @param tiles Every tile the universe can use
+ * @param ruleset The universe's ruleset, which names its default tiles
  * @return The zone in the form the renderer draws, without chunks (they are passed separately)
  */
-export function editorZonePayload(zone: EditorZone, tiles: readonly EditorTile[]): ZonePayload
+export function editorZonePayload(zone: EditorZone, tiles: readonly EditorTile[], ruleset: Ruleset): ZonePayload
 {
 	return({
 		zoneId: zone.id,
@@ -107,7 +109,7 @@ export function editorZonePayload(zone: EditorZone, tiles: readonly EditorTile[]
 		defaultTileId: zone.defaultTileId,
 		tiles: tiles.map((tile) => ({
 			id: tile.id,
-			name: tile.name,
+			name: tileName(tile, ruleset),
 			color: tile.color
 		})),
 		chunks: [],

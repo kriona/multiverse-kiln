@@ -1,12 +1,14 @@
-import { isInBounds, type EditorTile, type EditorZone, type EditorZoneLink, type EditorZoneSummary, type ZoneLinkMode, type ZoneLinkTarget } from '@multiverse-kiln/shared';
+import { isInBounds, type EditorTile, type EditorZone, type EditorZoneLink, type EditorZoneSummary, type MessageDescriptor, type Ruleset, type ZoneLinkMode, type ZoneLinkTarget } from '@multiverse-kiln/shared';
 
 import { ChunkLoader } from '../../editor/ChunkLoader';
 import { EditorMap } from '../../editor/EditorMap';
 import { editorZonePayload, MapCanvas } from '../../editor/MapCanvas';
+import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import type { BrushCell } from '../../editor/brush';
 import type { MapEditorHost } from '../../scenes/MapEditorScene';
 import { getElement, setOptions, showMessage } from '../dom';
+import { mapMessages } from './mapMessages';
 
 /**
  * Width of the target zone's preview, in pixels
@@ -51,6 +53,11 @@ export interface LinkDialogTarget
 	 * Every tile the universe can use, for drawing the preview
 	 */
 	tiles: readonly EditorTile[];
+
+	/**
+	 * The universe's ruleset, which names its default tiles
+	 */
+	ruleset: Ruleset;
 
 	/**
 	 * Called after the link is saved or deleted
@@ -160,7 +167,23 @@ export class LinkDialog
 		this.target = target;
 		this.destination = (link ? { column: link.targetColumn, row: link.targetRow } : undefined);
 		this.returnCell = undefined;
-		this.title.textContent = `${link ? 'Link' : 'Add a link'} at ${target.column}, ${target.row}`;
+		this.title.textContent = (link
+			? t({
+				id: 'editor.link.title',
+				defaultMessage: 'Link at {column}, {row}',
+				description: 'Title of the dialog for a cell\'s zone link; {column} and {row} are the cell\'s coordinates'
+			}, {
+				column: target.column,
+				row: target.row
+			})
+			: t({
+				id: 'editor.link.addTitle',
+				defaultMessage: 'Add a link at {column}, {row}',
+				description: 'Title of the dialog for adding a zone link to a cell; {column} and {row} are the cell\'s coordinates'
+			}, {
+				column: target.column,
+				row: target.row
+			}));
 		this.automatic.checked = ((link?.mode ?? 'automatic') === 'automatic');
 		this.manual.checked = !this.automatic.checked;
 		this.wholeGroup.checked = (link?.requiresWholeGroup ?? false);
@@ -175,7 +198,13 @@ export class LinkDialog
 			label: zone.name
 		})));
 		this.targetZone.value = (link?.targetZoneId ?? others[0]?.id ?? '');
-		showMessage(this.error, ((others.length === 0) ? 'Add another zone to link to first.' : undefined));
+		showMessage(this.error, ((others.length === 0)
+			? t({
+				id: 'editor.link.noOtherZones',
+				defaultMessage: 'Add another zone to link to first.',
+				description: 'Shown in the link dialog when the universe has only the zone being edited'
+			})
+			: undefined));
 		this.updateCells();
 		this.dialog.showModal();
 
@@ -216,7 +245,11 @@ export class LinkDialog
 		{
 			if (version === this.previewVersion)
 			{
-				showMessage(this.error, describeEditorError(error, 'show that zone'));
+				showMessage(this.error, describeEditorError(error, {
+					id: 'editor.link.showZoneFailed',
+					defaultMessage: 'Could not show that zone.',
+					description: 'Shown in the link dialog when the map of the zone the link goes to couldn\'t be loaded'
+				}));
 			}
 
 			return;
@@ -233,12 +266,12 @@ export class LinkDialog
 			this.canvas.scene?.refreshChunks(chunkKeys);
 		}, (error) =>
 		{
-			showMessage(this.error, describeEditorError(error, 'load the map'));
+			showMessage(this.error, describeEditorError(error, mapMessages.loadFailed));
 		});
 
 		this.preview = { zone, links, map, loader };
 
-		const scene = await this.canvas.show(editorZonePayload(zone, target.tiles), map.chunks, this.previewHost(loader));
+		const scene = await this.canvas.show(editorZonePayload(zone, target.tiles, target.ruleset), map.chunks, this.previewHost(loader));
 
 		scene.setLinks(links);
 		this.updateCells();
@@ -297,11 +330,51 @@ export class LinkDialog
 		const returnLink = (this.returnCell && this.preview?.links.find((link) => ((link.column === this.returnCell?.column) && (link.row === this.returnCell.row))));
 
 		this.destinationText.textContent = (this.destination
-			? `Destination: ${this.destination.column}, ${this.destination.row}`
-			: 'Click the map to choose the destination.');
-		this.returnText.textContent = (this.returnCell
-			? `Return link at ${this.returnCell.column}, ${this.returnCell.row}${returnLink ? ', replacing the link there' : ''}`
-			: 'Choose "The return link\'s cell" and click the map to place the return link.');
+			? t({
+				id: 'editor.link.destination',
+				defaultMessage: 'Destination: {column}, {row}',
+				description: 'The cell the link leads to; {column} and {row} are its coordinates'
+			}, {
+				column: this.destination.column,
+				row: this.destination.row
+			})
+			: t({
+				id: 'editor.link.chooseDestination',
+				defaultMessage: 'Click the map to choose the destination.',
+				description: 'Shown in the link dialog until the cell the link leads to is chosen'
+			}));
+
+		if (!this.returnCell)
+		{
+			this.returnText.textContent = t({
+				id: 'editor.link.placeReturn',
+				defaultMessage: 'Choose the return link\'s cell above, then click the map to place it.',
+				description: 'Shown in the link dialog until the cell for the link leading back is chosen'
+			});
+		}
+		else if (returnLink)
+		{
+			this.returnText.textContent = t({
+				id: 'editor.link.returnCellReplacing',
+				defaultMessage: 'Return link at {column}, {row}, replacing the link there',
+				description: 'The cell where the link leading back will be placed, which already has a link; {column} and {row} are its coordinates'
+			}, {
+				column: this.returnCell.column,
+				row: this.returnCell.row
+			});
+		}
+		else
+		{
+			this.returnText.textContent = t({
+				id: 'editor.link.returnCell',
+				defaultMessage: 'Return link at {column}, {row}',
+				description: 'The cell where the link leading back will be placed; {column} and {row} are its coordinates'
+			}, {
+				column: this.returnCell.column,
+				row: this.returnCell.row
+			});
+		}
+
 		this.canvas.scene?.setHighlights([
 			...(this.destination ? [{ ...this.destination, color: DESTINATION_COLOR }] : []),
 			...((this.returnCell && this.addReturn.checked) ? [{ ...this.returnCell, color: RETURN_COLOR }] : [])
@@ -324,13 +397,21 @@ export class LinkDialog
 
 		if (!destination)
 		{
-			showMessage(this.error, 'Click the map to choose where the link goes.');
+			showMessage(this.error, t({
+				id: 'editor.link.needDestination',
+				defaultMessage: 'Click the map to choose where the link goes.',
+				description: 'Shown when Save is pressed before the cell the link leads to is chosen'
+			}));
 			return;
 		}
 
 		if (this.addReturn.checked && !this.returnCell)
 		{
-			showMessage(this.error, 'Click the map to place the return link, or untick "Add a return link".');
+			showMessage(this.error, t({
+				id: 'editor.link.needReturn',
+				defaultMessage: 'Click the map to place the return link, or don\'t add one.',
+				description: 'Shown when Save is pressed with a return link asked for but not placed'
+			}));
 			return;
 		}
 
@@ -344,7 +425,11 @@ export class LinkDialog
 		};
 		const returnCell = (this.addReturn.checked ? this.returnCell : undefined);
 
-		await this.run('save the link', async () =>
+		await this.run({
+			id: 'editor.link.saveFailed',
+			defaultMessage: 'Could not save the link.',
+			description: 'Shown in the link dialog when the link couldn\'t be stored'
+		}, async () =>
 		{
 			await this.api.saveLink(target.universeId, target.zone.id, target.column, target.row, link);
 
@@ -368,21 +453,39 @@ export class LinkDialog
 	{
 		const target = this.target;
 
-		if (!target || !window.confirm(`Delete the link at ${target.column}, ${target.row}?`))
+		if (!target)
 		{
 			return;
 		}
 
-		await this.run('delete the link', () => this.api.deleteLink(target.universeId, target.zone.id, target.column, target.row));
+		const question = t({
+			id: 'editor.link.confirmDelete',
+			defaultMessage: 'Delete the link at {column}, {row}?',
+			description: 'Asks before deleting a zone link; {column} and {row} are its cell\'s coordinates'
+		}, {
+			column: target.column,
+			row: target.row
+		});
+
+		if (!window.confirm(question))
+		{
+			return;
+		}
+
+		await this.run({
+			id: 'editor.link.deleteFailed',
+			defaultMessage: 'Could not delete the link.',
+			description: 'Shown in the link dialog when the link couldn\'t be deleted'
+		}, () => this.api.deleteLink(target.universeId, target.zone.id, target.column, target.row));
 	}
 
 	/**
 	 * Makes a change, closing the dialog when it succeeds and explaining in it when it doesn't
 	 *
-	 * @param action What is being done, for the error message
+	 * @param failure What failed, as a sentence, for the error message
 	 * @param change The change
 	 */
-	private async run(action: string, change: () => Promise<void>): Promise<void>
+	private async run(failure: MessageDescriptor, change: () => Promise<void>): Promise<void>
 	{
 		this.fields.disabled = true;
 		showMessage(this.error, undefined);
@@ -395,7 +498,7 @@ export class LinkDialog
 		}
 		catch (error)
 		{
-			showMessage(this.error, describeEditorError(error, action));
+			showMessage(this.error, describeEditorError(error, failure));
 		}
 		finally
 		{

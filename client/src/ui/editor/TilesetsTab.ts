@@ -1,9 +1,22 @@
-import { canEditWorld, IMPASSABLE_COST, MAX_TILES_PER_PAGE, type EditableUniverse, type EditorTile, type TileListPayload, type TileListQuery } from '@multiverse-kiln/shared';
+import { canEditWorld, defineMessages, IMPASSABLE_COST, MAX_TILES_PER_PAGE, type EditableUniverse, type EditorTile, type TileListPayload, type TileListQuery } from '@multiverse-kiln/shared';
 
+import { formatList, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, setOptions, showMessage } from '../dom';
 import { colorToHex } from './colors';
 import { TileDialog } from './TileDialog';
+import { tileName } from './tileNames';
+
+/**
+ * Text the Tilesets tab shows in more than one place (see src/localization.ts)
+ */
+const messages = defineMessages({
+	percent: {
+		id: 'editor.tiles.percent',
+		defaultMessage: '{cost, number, percent}',
+		description: 'A tile\'s movement or vision cost as a percentage, e.g. 50%. Change only for a language whose percentages the number format gets wrong'
+	}
+});
 
 /**
  * How long the name filter waits after the last key before searching, in milliseconds
@@ -51,9 +64,30 @@ export class TilesetsTab
 		for (const filter of [this.passableFilter, this.customFilter, this.editedFilter])
 		{
 			setOptions(filter, [
-				{ value: '', label: 'Any' },
-				{ value: 'true', label: 'Yes' },
-				{ value: 'false', label: 'No' }
+				{
+					value: '',
+					label: t({
+						id: 'editor.tiles.filterAny',
+						defaultMessage: 'Any',
+						description: 'Choice of a yes-or-no tile filter that shows every tile'
+					})
+				},
+				{
+					value: 'true',
+					label: t({
+						id: 'editor.tiles.filterYes',
+						defaultMessage: 'Yes',
+						description: 'Choice of a yes-or-no tile filter, e.g. Passable: Yes'
+					})
+				},
+				{
+					value: 'false',
+					label: t({
+						id: 'editor.tiles.filterNo',
+						defaultMessage: 'No',
+						description: 'Choice of a yes-or-no tile filter, e.g. Passable: No'
+					})
+				}
 			]);
 
 			filter.addEventListener('change', () =>
@@ -139,7 +173,11 @@ export class TilesetsTab
 		{
 			if (version === this.requestVersion)
 			{
-				showMessage(this.empty, describeEditorError(error, 'list the tiles'));
+				showMessage(this.empty, describeEditorError(error, {
+					id: 'editor.tiles.listFailed',
+					defaultMessage: 'Could not list the tiles.',
+					description: 'Shown on the Tilesets tab when the tiles couldn\'t be loaded'
+				}));
 			}
 
 			return;
@@ -158,9 +196,25 @@ export class TilesetsTab
 			return;
 		}
 
-		this.rows.replaceChildren(...page.tiles.map((tile) => this.createRow(tile)));
-		showMessage(this.empty, ((page.tiles.length === 0) ? 'No tiles match.' : undefined));
-		this.page.textContent = ((page.total === 0) ? '' : `${this.offset + 1}-${this.offset + page.tiles.length} of ${page.total}`);
+		this.rows.replaceChildren(...page.tiles.map((tile) => this.createRow(tile, universe)));
+		showMessage(this.empty, ((page.tiles.length === 0)
+			? t({
+				id: 'editor.tiles.none',
+				defaultMessage: 'No tiles match.',
+				description: 'Shown instead of the table when no tile matches the filters'
+			})
+			: undefined));
+		this.page.textContent = ((page.total === 0)
+			? ''
+			: t({
+				id: 'pager.range',
+				defaultMessage: '{first, number}-{last, number} of {total, number}',
+				description: 'Which items of a list a page shows, e.g. 1-500 of 1200'
+			}, {
+				first: this.offset + 1,
+				last: this.offset + page.tiles.length,
+				total: page.total
+			}));
 		this.previousButton.disabled = (this.offset === 0);
 		this.nextButton.disabled = ((this.offset + page.tiles.length) >= page.total);
 	}
@@ -169,30 +223,49 @@ export class TilesetsTab
 	 * A tile's row in the table: its color, name (opening the tile editor), costs, and whether it is custom or edited
 	 *
 	 * @param tile The tile
+	 * @param universe The universe whose tile it is
 	 * @return The row
 	 */
-	private createRow(tile: EditorTile): HTMLTableRowElement
+	private createRow(tile: EditorTile, universe: EditableUniverse): HTMLTableRowElement
 	{
 		const row = document.createElement('tr');
 		const swatch = document.createElement('span');
 		const nameButton = document.createElement('button');
 		const tags = [
-			(tile.custom ? 'custom' : undefined),
-			(tile.edited ? 'edited' : undefined)
+			(tile.custom
+				? t({
+					id: 'editor.tiles.customTag',
+					defaultMessage: 'custom',
+					description: 'In the last column of the tile table, for a tile made for this universe'
+				})
+				: undefined),
+			(tile.edited
+				? t({
+					id: 'editor.tiles.editedTag',
+					defaultMessage: 'edited',
+					description: 'In the last column of the tile table, for one of the ruleset\'s tiles that this universe changed'
+				})
+				: undefined)
 		].filter((tag) => (tag !== undefined));
 		const cells = [
 			swatch,
 			nameButton,
-			((tile.movementCost >= IMPASSABLE_COST) ? 'impassable' : `${tile.movementCost}%`),
-			`${tile.visionCost}%`,
-			tags.join(', ')
+			((tile.movementCost >= IMPASSABLE_COST)
+				? t({
+					id: 'editor.tiles.impassable',
+					defaultMessage: 'impassable',
+					description: 'In the movement cost column, for a tile that can\'t be walked into'
+				})
+				: t(messages.percent, { cost: tile.movementCost / 100 })),
+			t(messages.percent, { cost: tile.visionCost / 100 }),
+			formatList(tags)
 		];
 
 		swatch.className = 'swatch';
 		swatch.style.backgroundColor = colorToHex(tile.color);
 		nameButton.type = 'button';
 		nameButton.className = 'link-button';
-		nameButton.textContent = tile.name;
+		nameButton.textContent = tileName(tile, universe.ruleset);
 		nameButton.addEventListener('click', () =>
 		{
 			this.openTile(tile);

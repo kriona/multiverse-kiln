@@ -101,7 +101,11 @@ export const tiles = pgTable('tiles', {
 	 */
 	overridesTileId: integer('overrides_tile_id').references((): AnyPgColumn => tiles.id, { onDelete: 'cascade' }),
 
-	name: text('name').notNull(),
+	/**
+	 * A default tile's name is the English text of its message (DEFAULT_TILE_NAMES in /shared), which
+	 * players read in their language. Null on an edited copy that keeps the default tile's name
+	 */
+	name: text('name'),
 	indoors: boolean('indoors').notNull(),
 
 	/**
@@ -125,6 +129,7 @@ export const tiles = pgTable('tiles', {
 	unique('tiles_universe_overrides_unique').on(table.universeId, table.overridesTileId),
 	index('tiles_universe_id_index').on(table.universeId),
 	check('tiles_overrides_belong_to_universe', sql`${table.overridesTileId} IS NULL OR ${table.universeId} IS NOT NULL`),
+	check('tiles_name_required', sql`${table.name} IS NOT NULL OR ${table.overridesTileId} IS NOT NULL`),
 	check('tiles_color_range', sql`${table.color} BETWEEN 0 AND 16777215`),
 	check('tiles_vision_cost_range', sql`${table.visionCost} BETWEEN 0 AND 100`),
 	check('tiles_movement_cost_range', sql`${table.movementCost} BETWEEN 0 AND ${sql.raw(String(IMPASSABLE_COST))}`)

@@ -1,7 +1,9 @@
-import { DISALLOWED_TEXT_CHARACTERS, MAX_CREATED_UNIVERSES, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_NAME_LENGTH, RULESET_NAMES, RULESETS, type EditableUniverseListPayload, type EditableUniverseSummary, type NewUniverseRequest, type Ruleset, type UniverseDetails, type UniverseListPayload, type UniverseSummary } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, MAX_CREATED_UNIVERSES, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_NAME_LENGTH, RULESET_NAMES, RULESETS, UNIVERSE_ROLE_NAMES, UNIVERSE_STAGE_NAMES, type EditableUniverseListPayload, type EditableUniverseSummary, type NewUniverseRequest, type Ruleset, type UniverseDetails, type UniverseListPayload, type UniverseSummary } from '@multiverse-kiln/shared';
 
+import { t } from '../localization';
 import { describeEditorError } from '../network/editorApi';
-import { getElement, setOptions, showMessage } from './dom';
+import { getElement, namedOptions, setOptions, showMessage } from './dom';
+import { formMessages } from './formMessages';
 import { showMarkdown } from './markdown';
 
 /**
@@ -190,7 +192,11 @@ export class HomeScreen
 		catch (error)
 		{
 			console.error('Could not list the universes:', error);
-			this.showNotice('Could not list the universes. Reload the page to try again.');
+			this.showNotice(t({
+				id: 'home.listFailed',
+				defaultMessage: 'Could not list the universes. Reload the page to try again.',
+				description: 'Shown on Home when the list of universes couldn\'t be loaded'
+			}));
 			return;
 		}
 		finally
@@ -228,7 +234,7 @@ export class HomeScreen
 		name.textContent = universe.name;
 		description.textContent = universe.shortDescription;
 		ruleset.className = 'universe-ruleset';
-		ruleset.textContent = RULESET_NAMES[universe.ruleset];
+		ruleset.textContent = t(RULESET_NAMES[universe.ruleset]);
 
 		button.append(name, description, ruleset);
 		button.addEventListener('click', () =>
@@ -250,7 +256,7 @@ export class HomeScreen
 	{
 		this.chosen = universe;
 		this.dialogName.textContent = universe.name;
-		this.dialogRuleset.textContent = RULESET_NAMES[universe.ruleset];
+		this.dialogRuleset.textContent = t(RULESET_NAMES[universe.ruleset]);
 		this.dialogSummary.textContent = universe.shortDescription;
 		this.dialogDescription.textContent = '';
 		this.dialog.showModal();
@@ -270,7 +276,11 @@ export class HomeScreen
 
 			if (this.chosen === universe)
 			{
-				this.dialogDescription.textContent = 'Could not load the rest of this universe\'s description.';
+				this.dialogDescription.textContent = t({
+					id: 'home.overview.descriptionFailed',
+					defaultMessage: 'Could not load the rest of this universe\'s description.',
+					description: 'Shown in a universe\'s overview in place of its long description when that couldn\'t be loaded'
+				});
 			}
 		}
 	}
@@ -294,7 +304,11 @@ export class HomeScreen
 		{
 			if (version === this.listVersion)
 			{
-				this.showNotice(describeEditorError(error, 'list your universes'));
+				this.showNotice(describeEditorError(error, {
+					id: 'home.ownListFailed',
+					defaultMessage: 'Could not list your universes.',
+					description: 'Shown on Home when the list of universes the player can edit couldn\'t be loaded'
+				}));
 			}
 
 			return;
@@ -310,7 +324,13 @@ export class HomeScreen
 		this.ownList.replaceChildren(...universes.map((universe) => this.createOwnItem(universe)));
 		this.ownEmpty.hidden = (universes.length > 0);
 		this.createButton.disabled = (created >= MAX_CREATED_UNIVERSES);
-		this.createButton.title = (this.createButton.disabled ? `You can create at most ${MAX_CREATED_UNIVERSES} universes` : '');
+		this.createButton.title = (this.createButton.disabled
+			? t({
+				id: 'home.createLimit',
+				defaultMessage: 'You can create at most {max, plural, one {# universe} other {# universes}}',
+				description: 'Tooltip of the disabled Create Universe button when the player has made as many universes as allowed'
+			}, { max: MAX_CREATED_UNIVERSES })
+			: '');
 	}
 
 	/**
@@ -332,7 +352,15 @@ export class HomeScreen
 		name.textContent = universe.name;
 		description.textContent = universe.shortDescription;
 		details.className = 'universe-ruleset';
-		details.textContent = `${RULESET_NAMES[universe.ruleset]} - ${universe.stage.replaceAll('_', ' ')} - ${universe.role.replaceAll('_', ' ')}`;
+		details.textContent = t({
+			id: 'home.ownDetails',
+			defaultMessage: '{ruleset} - {stage} - {role}',
+			description: 'Under each universe the player can edit: its ruleset (e.g. Pathfinder 1E), its stage (e.g. prologue) and the player\'s role (e.g. builder)'
+		}, {
+			ruleset: t(RULESET_NAMES[universe.ruleset]),
+			stage: t(UNIVERSE_STAGE_NAMES[universe.stage]),
+			role: t(UNIVERSE_ROLE_NAMES[universe.role])
+		});
 
 		button.append(name, description, details);
 		button.addEventListener('click', () =>
@@ -354,12 +382,13 @@ export class HomeScreen
 		setOptions(this.createRuleset, [
 			{
 				value: '',
-				label: 'Choose a ruleset'
+				label: t({
+					id: 'home.create.chooseRuleset',
+					defaultMessage: 'Choose a ruleset',
+					description: 'First choice in the Create Universe dialog\'s ruleset list, asking the player to pick one'
+				})
 			},
-			...RULESETS.map((ruleset) => ({
-				value: ruleset,
-				label: RULESET_NAMES[ruleset]
-			}))
+			...namedOptions(RULESETS, RULESET_NAMES)
 		]);
 		showMessage(this.createError, undefined);
 		this.createSubmit.disabled = false;
@@ -377,7 +406,7 @@ export class HomeScreen
 
 		if ((name === '') || DISALLOWED_TEXT_CHARACTERS.test(name) || DISALLOWED_TEXT_CHARACTERS.test(shortDescription))
 		{
-			this.createName.setCustomValidity('Use letters, numbers, spaces or punctuation.');
+			this.createName.setCustomValidity(t(formMessages.invalidText));
 			this.createName.reportValidity();
 			return;
 		}
@@ -393,7 +422,11 @@ export class HomeScreen
 		}
 		catch (error)
 		{
-			showMessage(this.createError, describeEditorError(error, 'create the universe'));
+			showMessage(this.createError, describeEditorError(error, {
+				id: 'home.create.failed',
+				defaultMessage: 'Could not create the universe.',
+				description: 'Shown in the Create Universe dialog when the universe couldn\'t be made'
+			}));
 			this.createSubmit.disabled = false;
 		}
 	}

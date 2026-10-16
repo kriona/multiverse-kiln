@@ -1,5 +1,6 @@
-import { GROUP_QUERY_PARAMETER } from '@multiverse-kiln/shared';
+import { defineMessages, GROUP_QUERY_PARAMETER } from '@multiverse-kiln/shared';
 
+import { t } from '../localization';
 import type { GameConnection } from '../network/serverConnection';
 import { getElement } from './dom';
 import type { MapView } from './MapView';
@@ -9,7 +10,16 @@ import type { MapView } from './MapView';
  */
 const SHARE_CONFIRMATION_MS = 3000;
 
-const JOINING_MESSAGE = 'Joining...';
+/**
+ * Text the group screen shows in more than one place (see src/localization.ts)
+ */
+const messages = defineMessages({
+	joining: {
+		id: 'group.joining',
+		defaultMessage: 'Joining...',
+		description: 'Shown in the game\'s toolbar while the player goes into the game'
+	}
+});
 
 /**
  * Builds the link that lets another player join a group
@@ -65,7 +75,7 @@ export class GroupScreen
 	{
 		this.groupId = groupId;
 		this.leaveButton.disabled = false;
-		this.setStatus(JOINING_MESSAGE);
+		this.setStatus(t(messages.joining));
 	}
 
 	/**
@@ -76,7 +86,7 @@ export class GroupScreen
 	start(connection: GameConnection): void
 	{
 		// Keeps any message that arrived while joining
-		if (this.status.textContent === JOINING_MESSAGE)
+		if (this.status.textContent === t(messages.joining))
 		{
 			this.setStatus('');
 		}
@@ -106,12 +116,20 @@ export class GroupScreen
 		const link = buildJoinLink(this.groupId);
 
 		// Shown first, so the link is there to copy by hand if the browser refuses the clipboard or never answers
-		this.setStatus(`Join link: ${link}`);
+		this.setStatus(t({
+			id: 'group.joinLink',
+			defaultMessage: 'Join link: {link}',
+			description: 'Shown in the game\'s toolbar after pressing Share; {link} is the address others can open to join'
+		}, { link }));
 
 		try
 		{
 			await navigator.clipboard.writeText(link);
-			this.setStatus('Join link copied. Send it to the players you want to invite.', SHARE_CONFIRMATION_MS);
+			this.setStatus(t({
+				id: 'group.joinLinkCopied',
+				defaultMessage: 'Join link copied. Send it to the players you want to invite.',
+				description: 'Shown in the game\'s toolbar when Share has copied the join link to the clipboard'
+			}), SHARE_CONFIRMATION_MS);
 		}
 		catch (error)
 		{

@@ -73,7 +73,7 @@ export const universeSettingsUpdate = z.object({
  * TileSettings
  */
 export const tileSettings = z.object({
-	name: displayText(MAX_TILE_NAME_LENGTH),
+	name: displayText(MAX_TILE_NAME_LENGTH).nullable(),
 	indoors: z.boolean(),
 	color: z.number().int().min(0).max(0xFFFFFF),
 	visionCost: z.number().int().min(0).max(100),

@@ -10,6 +10,7 @@ import { findEditableUniverse } from '../db/universeRepo.js';
 import { findEditorZone } from '../db/zoneRepo.js';
 import { onlinePlayers } from '../players/onlinePlayers.js';
 import { readBrowserId } from './browserId.js';
+import { errorMessages, sendError } from './errors.js';
 import { isOriginAllowed } from './origins.js';
 
 /**
@@ -57,7 +58,11 @@ export function refuseWritesFromOtherOrigins(allowedOrigins: Set<string>): Reque
 
 		if (!READ_METHODS.has(request.method) && (origin !== null) && !isOriginAllowed(origin, allowedOrigins))
 		{
-			response.status(403).json({ error: 'Not allowed from this origin' });
+			sendError(response, 403, {
+				id: 'error.otherOrigin',
+				defaultMessage: 'Changes aren\'t allowed from this website.',
+				description: 'Why an editor change was refused: it came from a page on another website'
+			});
 			return;
 		}
 
@@ -79,7 +84,11 @@ export function requireLogin(request: Request, response: Response, next: NextFun
 
 	if (!player)
 	{
-		response.status(401).json({ error: 'Log in first' });
+		sendError(response, 401, {
+			id: 'error.logInFirst',
+			defaultMessage: 'Log in first.',
+			description: 'Why an editor request was refused: the browser isn\'t logged in'
+		});
 		return;
 	}
 
@@ -117,7 +126,7 @@ export async function loadUniverseContext(request: Request, response: Response, 
 		}
 	}
 
-	response.status(404).json({ error: 'No such universe' });
+	sendError(response, 404, errorMessages.noSuchUniverse);
 }
 
 /**
@@ -144,7 +153,7 @@ export async function loadZoneContext(request: Request, response: Response, next
 		}
 	}
 
-	response.status(404).json({ error: 'No such zone' });
+	sendError(response, 404, errorMessages.noSuchZone);
 }
 
 /**
@@ -159,7 +168,11 @@ export function requireRole(allowed: (role: UniverseRole) => boolean): RequestHa
 	{
 		if (!allowed(universeContextOf(request).role))
 		{
-			response.status(403).json({ error: 'Your role in this universe doesn\'t allow that' });
+			sendError(response, 403, {
+				id: 'error.roleNotAllowed',
+				defaultMessage: 'Your role in this universe doesn\'t allow that.',
+				description: 'Why an editor change was refused: the player\'s role, such as beta tester, can\'t make it'
+			});
 			return;
 		}
 

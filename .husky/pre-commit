@@ -10,3 +10,6 @@ gitleaks git --pre-commit --staged --redact --no-banner
 # shared is built first so type-aware lint rules can resolve @multiverse-kiln/shared
 npm run build -w shared
 npx lint-staged
+
+# Checks that shared/locales/en.json holds every message in the code and pages, each with a description
+npm run messages:check -w shared

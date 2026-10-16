@@ -1,0 +1,1262 @@
+{
+	"dialog.cancel": {
+		"defaultMessage": "Cancel",
+		"description": "Button that closes a dialog without making any changes"
+	},
+	"dialog.close": {
+		"defaultMessage": "Close",
+		"description": "Button that closes a dialog that only shows something, with nothing to change"
+	},
+	"editor.error.failedBecause": {
+		"defaultMessage": "{failure} {reason}",
+		"description": "An editor action that failed, followed by why; {failure} is e.g. \"Could not save the tile.\" and {reason} is the server's explanation. Change only to reorder the two sentences"
+	},
+	"editor.error.noReason": {
+		"defaultMessage": "The server refused the request.",
+		"description": "Why an editor request failed, when the server didn't say why"
+	},
+	"editor.error.tryAgain": {
+		"defaultMessage": "{failure} Try again in a moment.",
+		"description": "An editor action that failed for a reason the player can't do anything about; {failure} is e.g. \"Could not save the tile.\""
+	},
+	"editor.error.unreachable": {
+		"defaultMessage": "Could not reach the server.",
+		"description": "Why an editor request failed, when the server didn't answer"
+	},
+	"editor.faerieMorning": {
+		"defaultMessage": "Where is morning?",
+		"description": "Label of the field for which side of the map has morning, when the passage of time is faerie"
+	},
+	"editor.home": {
+		"defaultMessage": "Back to Home",
+		"description": "Button in the editor's toolbar that goes back to the list of universes"
+	},
+	"editor.link.addReturn": {
+		"defaultMessage": "Add a return link that leads back to this cell",
+		"description": "Checkbox that also places a link in the other zone leading back"
+	},
+	"editor.link.addTitle": {
+		"defaultMessage": "Add a link at {column}, {row}",
+		"description": "Title of the dialog for adding a zone link to a cell; {column} and {row} are the cell's coordinates"
+	},
+	"editor.link.automatic": {
+		"defaultMessage": "Take them through (automatic)",
+		"description": "Choice for a zone link that moves the player to the other zone as soon as they step onto it"
+	},
+	"editor.link.chooseDestination": {
+		"defaultMessage": "Click the map to choose the destination.",
+		"description": "Shown in the link dialog until the cell the link leads to is chosen"
+	},
+	"editor.link.confirmDelete": {
+		"defaultMessage": "Delete the link at {column}, {row}?",
+		"description": "Asks before deleting a zone link; {column} and {row} are its cell's coordinates"
+	},
+	"editor.link.delete": {
+		"defaultMessage": "Delete Link",
+		"description": "Button that deletes the zone link being edited"
+	},
+	"editor.link.deleteFailed": {
+		"defaultMessage": "Could not delete the link.",
+		"description": "Shown in the link dialog when the link couldn't be deleted"
+	},
+	"editor.link.destination": {
+		"defaultMessage": "Destination: {column}, {row}",
+		"description": "The cell the link leads to; {column} and {row} are its coordinates"
+	},
+	"editor.link.manual": {
+		"defaultMessage": "Offer to take them through (manual)",
+		"description": "Choice for a zone link that asks the player whether to go to the other zone"
+	},
+	"editor.link.mode": {
+		"defaultMessage": "When a player steps onto the cell",
+		"description": "Heading of the choice of what a zone link does when a player steps onto its cell"
+	},
+	"editor.link.needDestination": {
+		"defaultMessage": "Click the map to choose where the link goes.",
+		"description": "Shown when Save is pressed before the cell the link leads to is chosen"
+	},
+	"editor.link.needReturn": {
+		"defaultMessage": "Click the map to place the return link, or don't add one.",
+		"description": "Shown when Save is pressed with a return link asked for but not placed"
+	},
+	"editor.link.noOtherZones": {
+		"defaultMessage": "Add another zone to link to first.",
+		"description": "Shown in the link dialog when the universe has only the zone being edited"
+	},
+	"editor.link.pick": {
+		"defaultMessage": "Clicking the map below chooses",
+		"description": "Heading of the choice of what clicking the map preview in the link dialog places"
+	},
+	"editor.link.pickDestination": {
+		"defaultMessage": "The destination",
+		"description": "Choice that makes clicking the map preview choose where the link leads"
+	},
+	"editor.link.pickReturn": {
+		"defaultMessage": "The return link's cell",
+		"description": "Choice that makes clicking the map preview place the return link"
+	},
+	"editor.link.placeReturn": {
+		"defaultMessage": "Choose the return link's cell above, then click the map to place it.",
+		"description": "Shown in the link dialog until the cell for the link leading back is chosen"
+	},
+	"editor.link.returnCell": {
+		"defaultMessage": "Return link at {column}, {row}",
+		"description": "The cell where the link leading back will be placed; {column} and {row} are its coordinates"
+	},
+	"editor.link.returnCellReplacing": {
+		"defaultMessage": "Return link at {column}, {row}, replacing the link there",
+		"description": "The cell where the link leading back will be placed, which already has a link; {column} and {row} are its coordinates"
+	},
+	"editor.link.saveFailed": {
+		"defaultMessage": "Could not save the link.",
+		"description": "Shown in the link dialog when the link couldn't be stored"
+	},
+	"editor.link.showZoneFailed": {
+		"defaultMessage": "Could not show that zone.",
+		"description": "Shown in the link dialog when the map of the zone the link goes to couldn't be loaded"
+	},
+	"editor.link.target": {
+		"defaultMessage": "Goes to",
+		"description": "Label of the field for the zone a link leads to"
+	},
+	"editor.link.title": {
+		"defaultMessage": "Link at {column}, {row}",
+		"description": "Title of the dialog for a cell's zone link; {column} and {row} are the cell's coordinates"
+	},
+	"editor.link.wholeGroup": {
+		"defaultMessage": "Requires the whole group",
+		"description": "Checkbox for a zone link that can only be used when every member of the group is present"
+	},
+	"editor.lobby.editZone": {
+		"defaultMessage": "Edit the lobby's zone",
+		"description": "Button that opens the lobby in the zone editor"
+	},
+	"editor.lobby.explanation": {
+		"defaultMessage": "The lobby is where everyone in the universe meets before joining a group. It is a zone like any other, but isn't listed on the Zones tab.",
+		"description": "Explains the lobby on the editor's Lobby tab"
+	},
+	"editor.map.allSaved": {
+		"defaultMessage": "All changes saved",
+		"description": "Shown under the map once all painting is stored"
+	},
+	"editor.map.brush.circle": {
+		"defaultMessage": "circle",
+		"description": "Shape of the Draw tool's brush"
+	},
+	"editor.map.brush.square": {
+		"defaultMessage": "square",
+		"description": "Shape of the Draw tool's brush"
+	},
+	"editor.map.brushShape": {
+		"defaultMessage": "Shape",
+		"description": "Label of the field for the shape the Draw tool paints, a circle or a square"
+	},
+	"editor.map.brushSize": {
+		"defaultMessage": "Size",
+		"description": "Label of the field for how many cells across the Draw tool paints"
+	},
+	"editor.map.cell": {
+		"defaultMessage": "{column}, {row}: {contents}",
+		"description": "Under the map, the cell under the pointer: its coordinates and what it holds, e.g. \"3, -2: Grass\""
+	},
+	"editor.map.cellLoading": {
+		"defaultMessage": "loading...",
+		"description": "What the cell under the pointer holds, while that part of the map is loading"
+	},
+	"editor.map.cellWithLink": {
+		"defaultMessage": "{column}, {row}: {contents} ({mode, select, automatic {automatic link} other {manual link}})",
+		"description": "Under the map, the cell under the pointer when it has a zone link: its coordinates, what it holds and the kind of link"
+	},
+	"editor.map.draw": {
+		"defaultMessage": "Draw",
+		"description": "Map tool that paints tiles onto the map"
+	},
+	"editor.map.expandBy": {
+		"defaultMessage": "Expand by",
+		"description": "Label of the field for how many cells the buttons around the map add"
+	},
+	"editor.map.expandEast": {
+		"defaultMessage": "+ East",
+		"description": "Button right of the map that makes it bigger to the east"
+	},
+	"editor.map.expandNorth": {
+		"defaultMessage": "+ North",
+		"description": "Button above the map that makes it bigger to the north"
+	},
+	"editor.map.expandSouth": {
+		"defaultMessage": "+ South",
+		"description": "Button below the map that makes it bigger to the south"
+	},
+	"editor.map.expandWest": {
+		"defaultMessage": "+ West",
+		"description": "Button left of the map that makes it bigger to the west"
+	},
+	"editor.map.growFailed": {
+		"defaultMessage": "Could not grow the map.",
+		"description": "Shown in the map editor when the map couldn't be made bigger"
+	},
+	"editor.map.heading": {
+		"defaultMessage": "Map",
+		"description": "Heading of the zone's map editor"
+	},
+	"editor.map.help": {
+		"defaultMessage": "Drag with the right mouse button to look around, and zoom with the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link.",
+		"description": "Explains how to use the map editor with the mouse and keyboard"
+	},
+	"editor.map.links": {
+		"defaultMessage": "Links",
+		"description": "Map tool that adds and changes links to other zones"
+	},
+	"editor.map.loadFailed": {
+		"defaultMessage": "Could not load the map.",
+		"description": "Shown in the map editor or a map preview when part of a zone's map couldn't be loaded"
+	},
+	"editor.map.loadLinksFailed": {
+		"defaultMessage": "Could not load the links.",
+		"description": "Shown in the map editor when the zone's links couldn't be loaded"
+	},
+	"editor.map.paintingNotSaved": {
+		"defaultMessage": "Could not save some of your painting. Open the zone again to see the map as it is saved.",
+		"description": "Shown in the map editor when painting couldn't be stored"
+	},
+	"editor.map.redo": {
+		"defaultMessage": "Redo",
+		"description": "Button that paints again what Undo took back"
+	},
+	"editor.map.resize": {
+		"defaultMessage": "Edit Size",
+		"description": "Button that opens the dialog for changing the map's size"
+	},
+	"editor.map.saving": {
+		"defaultMessage": "Saving...",
+		"description": "Shown under the map while painting is being stored"
+	},
+	"editor.map.tile": {
+		"defaultMessage": "Tile",
+		"description": "Label of the field for the tile the Draw tool paints"
+	},
+	"editor.map.tooLarge": {
+		"defaultMessage": "A map can be at most {max, number} cells in each direction.",
+		"description": "Shown when the size asked for a map is larger than allowed; {max} is the most cells on a side"
+	},
+	"editor.map.tool": {
+		"defaultMessage": "Tool",
+		"description": "Heading of the choice of what clicking the map does"
+	},
+	"editor.map.undo": {
+		"defaultMessage": "Undo",
+		"description": "Button that takes back the last painting on the map"
+	},
+	"editor.map.unknownTile": {
+		"defaultMessage": "unknown tile",
+		"description": "What the cell under the pointer holds, when it is a tile the editor doesn't know"
+	},
+	"editor.map.void": {
+		"defaultMessage": "Void",
+		"description": "A cell with nothing in it, drawn black, which can't be walked into; also a choice of what to paint"
+	},
+	"editor.map.zoneDefault": {
+		"defaultMessage": "{tile} (the zone's default)",
+		"description": "A choice of tile to paint that is the zone's default tile; {tile} is its name"
+	},
+	"editor.openFailed": {
+		"defaultMessage": "Could not open the universe.",
+		"description": "Shown in the editor when the universe couldn't be loaded"
+	},
+	"editor.pageTitle": {
+		"defaultMessage": "Edit {universe} - Multiverse Kiln",
+		"description": "The browser tab's title for the world editor; {universe} is the universe's name and Multiverse Kiln is the game engine's name"
+	},
+	"editor.passageOfTime": {
+		"defaultMessage": "Passage of time",
+		"description": "Label of the field for how the time of day changes in a universe or zone"
+	},
+	"editor.play": {
+		"defaultMessage": "Enter Universe",
+		"description": "Button in the editor's toolbar that goes to the universe's lobby to play"
+	},
+	"editor.resize.discard": {
+		"defaultMessage": "Resize and discard",
+		"description": "Button that makes the map smaller after the player was warned it loses painting or links"
+	},
+	"editor.resize.discardWarning": {
+		"defaultMessage": "The smaller map would discard {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# link} other {# links}}. Resize anyway?",
+		"description": "Warns before making a map smaller loses cells painted with something other than the default tile, and zone links"
+	},
+	"editor.resize.east": {
+		"defaultMessage": "East",
+		"description": "Label of the field for how many cells the map reaches east of its center"
+	},
+	"editor.resize.explanation": {
+		"defaultMessage": "How many cells the map reaches in each direction from its center cell (0, 0).",
+		"description": "Explains the four fields of the dialog for changing a map's size"
+	},
+	"editor.resize.failed": {
+		"defaultMessage": "Could not resize the map.",
+		"description": "Shown in the Edit Size dialog when the map's size couldn't be changed"
+	},
+	"editor.resize.north": {
+		"defaultMessage": "North",
+		"description": "Label of the field for how many cells the map reaches north of its center"
+	},
+	"editor.resize.south": {
+		"defaultMessage": "South",
+		"description": "Label of the field for how many cells the map reaches south of its center"
+	},
+	"editor.resize.submit": {
+		"defaultMessage": "Resize",
+		"description": "Button that changes the map to the size given"
+	},
+	"editor.resize.title": {
+		"defaultMessage": "Edit Size",
+		"description": "Title of the dialog for changing a map's size"
+	},
+	"editor.resize.total": {
+		"defaultMessage": "{height, number} tall x {width, number} wide",
+		"description": "The size of the map the dialog's fields describe, in cells"
+	},
+	"editor.resize.west": {
+		"defaultMessage": "West",
+		"description": "Label of the field for how many cells the map reaches west of its center"
+	},
+	"editor.role": {
+		"defaultMessage": "Your role: {role}",
+		"description": "In the editor's toolbar, the player's role in the universe; {role} is e.g. creator or builder"
+	},
+	"editor.tab.lobby": {
+		"defaultMessage": "Lobby",
+		"description": "Tab of the editor with the lobby's settings"
+	},
+	"editor.tab.tilesets": {
+		"defaultMessage": "Tilesets",
+		"description": "Tab of the editor listing the tiles maps are painted with"
+	},
+	"editor.tab.universe": {
+		"defaultMessage": "Universe",
+		"description": "Tab of the editor with the universe's own settings"
+	},
+	"editor.tab.zones": {
+		"defaultMessage": "Zones",
+		"description": "Tab of the editor listing the universe's zones (areas with their own map)"
+	},
+	"editor.tile.addTitle": {
+		"defaultMessage": "Add Tile",
+		"description": "Title of the tile editor when making a new tile"
+	},
+	"editor.tile.color": {
+		"defaultMessage": "Color",
+		"description": "Label of the field for the color a tile is drawn in"
+	},
+	"editor.tile.colorHex": {
+		"defaultMessage": "Color as hex",
+		"description": "Name of the field for a tile's color as a hexadecimal number, for screen readers"
+	},
+	"editor.tile.colorPicker": {
+		"defaultMessage": "Pick a color",
+		"description": "Name of the color picker for a tile's color, for screen readers"
+	},
+	"editor.tile.confirmDelete": {
+		"defaultMessage": "Delete {tile}? This can't be undone.",
+		"description": "Asks before deleting a tile made for this universe; {tile} is its name"
+	},
+	"editor.tile.confirmRestore": {
+		"defaultMessage": "Restore {tile} to the ruleset's default? Your changes to it will be lost.",
+		"description": "Asks before undoing this universe's changes to one of the ruleset's tiles; {tile} is its name"
+	},
+	"editor.tile.day": {
+		"defaultMessage": "Day",
+		"description": "Caption of the preview of the tile in daylight"
+	},
+	"editor.tile.delete": {
+		"defaultMessage": "Delete Tile",
+		"description": "Button in the tile editor that deletes a tile made for this universe"
+	},
+	"editor.tile.deleteFailed": {
+		"defaultMessage": "Could not delete the tile.",
+		"description": "Shown in the tile editor when the tile couldn't be deleted"
+	},
+	"editor.tile.editTitle": {
+		"defaultMessage": "Edit {tile}",
+		"description": "Title of the tile editor for a tile the player can change; {tile} is its name"
+	},
+	"editor.tile.indoorsHint": {
+		"defaultMessage": "A preference, not a restriction: outdoor zones list outdoor tiles first.",
+		"description": "Explains what choosing indoors or outdoors does for a tile"
+	},
+	"editor.tile.invalidColor": {
+		"defaultMessage": "Enter a hex color, such as #7AFF3D.",
+		"description": "Shown by the color field when what was typed isn't a hexadecimal color"
+	},
+	"editor.tile.movementCost": {
+		"defaultMessage": "Movement cost (%)",
+		"description": "Label of the field for how much harder the tile is to move into, in percent"
+	},
+	"editor.tile.movementHint": {
+		"defaultMessage": "0% is normal movement, 50% takes twice as long, 100% can't be entered.",
+		"description": "Explains the movement cost field"
+	},
+	"editor.tile.night": {
+		"defaultMessage": "Night",
+		"description": "Caption of the preview of the tile at night"
+	},
+	"editor.tile.restore": {
+		"defaultMessage": "Restore Default",
+		"description": "Button in the tile editor that undoes this universe's changes to one of the ruleset's tiles"
+	},
+	"editor.tile.restoreFailed": {
+		"defaultMessage": "Could not restore the tile.",
+		"description": "Shown in the tile editor when the ruleset's tile couldn't be restored"
+	},
+	"editor.tile.saveFailed": {
+		"defaultMessage": "Could not save the tile.",
+		"description": "Shown in the tile editor when the tile couldn't be stored"
+	},
+	"editor.tile.visionCost": {
+		"defaultMessage": "Vision cost (%)",
+		"description": "Label of the field for how much of a character's vision crossing the tile uses, in percent"
+	},
+	"editor.tile.visionHint": {
+		"defaultMessage": "100% can't be seen through.",
+		"description": "Explains the vision cost field"
+	},
+	"editor.tiles.add": {
+		"defaultMessage": "Add Tile",
+		"description": "Button that opens the dialog for making a new tile"
+	},
+	"editor.tiles.color": {
+		"defaultMessage": "Color",
+		"description": "Heading of the table column showing each tile's color"
+	},
+	"editor.tiles.custom": {
+		"defaultMessage": "Custom",
+		"description": "Label of the filter for whether a tile was made for this universe, rather than coming with the ruleset"
+	},
+	"editor.tiles.customTag": {
+		"defaultMessage": "custom",
+		"description": "In the last column of the tile table, for a tile made for this universe"
+	},
+	"editor.tiles.edited": {
+		"defaultMessage": "Edited from default",
+		"description": "Label of the filter for whether one of the ruleset's tiles was changed for this universe"
+	},
+	"editor.tiles.editedTag": {
+		"defaultMessage": "edited",
+		"description": "In the last column of the tile table, for one of the ruleset's tiles that this universe changed"
+	},
+	"editor.tiles.filterAny": {
+		"defaultMessage": "Any",
+		"description": "Choice of a yes-or-no tile filter that shows every tile"
+	},
+	"editor.tiles.filterNo": {
+		"defaultMessage": "No",
+		"description": "Choice of a yes-or-no tile filter, e.g. Passable: No"
+	},
+	"editor.tiles.filterYes": {
+		"defaultMessage": "Yes",
+		"description": "Choice of a yes-or-no tile filter, e.g. Passable: Yes"
+	},
+	"editor.tiles.impassable": {
+		"defaultMessage": "impassable",
+		"description": "In the movement cost column, for a tile that can't be walked into"
+	},
+	"editor.tiles.listFailed": {
+		"defaultMessage": "Could not list the tiles.",
+		"description": "Shown on the Tilesets tab when the tiles couldn't be loaded"
+	},
+	"editor.tiles.movementCost": {
+		"defaultMessage": "Movement cost",
+		"description": "Heading of the table column with how much harder each tile is to move into"
+	},
+	"editor.tiles.name": {
+		"defaultMessage": "Name",
+		"description": "Heading of the table column with each tile's name"
+	},
+	"editor.tiles.none": {
+		"defaultMessage": "No tiles match.",
+		"description": "Shown instead of the table when no tile matches the filters"
+	},
+	"editor.tiles.passable": {
+		"defaultMessage": "Passable",
+		"description": "Label of the filter for whether a tile can be walked onto"
+	},
+	"editor.tiles.percent": {
+		"defaultMessage": "{cost, number, percent}",
+		"description": "A tile's movement or vision cost as a percentage, e.g. 50%. Change only for a language whose percentages the number format gets wrong"
+	},
+	"editor.tiles.search": {
+		"defaultMessage": "Search by name",
+		"description": "Shown in the empty field that filters the tiles by name"
+	},
+	"editor.tiles.searchLabel": {
+		"defaultMessage": "Search tiles by name",
+		"description": "Name of the field that filters the tiles by name, for screen readers"
+	},
+	"editor.tiles.visionCost": {
+		"defaultMessage": "Vision cost",
+		"description": "Heading of the table column with how much of a character's vision crossing each tile uses"
+	},
+	"editor.title": {
+		"defaultMessage": "Edit Universe",
+		"description": "Heading of the world editor until the universe's name has loaded"
+	},
+	"editor.universe.longDescription": {
+		"defaultMessage": "Long description (Markdown)",
+		"description": "Label of the field for a universe's full description, which is written in Markdown"
+	},
+	"editor.universe.preview": {
+		"defaultMessage": "Preview",
+		"description": "Heading above the long description as players will see it"
+	},
+	"editor.universe.ruleset": {
+		"defaultMessage": "Ruleset: {ruleset}",
+		"description": "Shows the universe's game rules, which can't be changed; {ruleset} is e.g. Pathfinder 1E"
+	},
+	"editor.universe.saveFailed": {
+		"defaultMessage": "Could not save the universe.",
+		"description": "Shown on the Universe tab when its settings couldn't be stored"
+	},
+	"editor.universe.stage": {
+		"defaultMessage": "Stage",
+		"description": "Label of the field for how far along a universe is, from being built to being retired"
+	},
+	"editor.universeTitle": {
+		"defaultMessage": "Edit {universe}",
+		"description": "Heading of the world editor; {universe} is the universe's name"
+	},
+	"editor.zone.back": {
+		"defaultMessage": "Back to Zones",
+		"description": "Button that closes the zone editor and goes back to the list of zones"
+	},
+	"editor.zone.children": {
+		"defaultMessage": "Zones inside this one",
+		"description": "Heading of the list of zones inside the zone being edited"
+	},
+	"editor.zone.confirmDelete": {
+		"defaultMessage": "Delete {zone}, its map and every link into it? Zones inside it become top-level zones. This can't be undone.",
+		"description": "Asks before deleting a zone; {zone} is its name"
+	},
+	"editor.zone.defaultTile": {
+		"defaultMessage": "Default tile",
+		"description": "Label of the field for the tile a zone's map is filled with where nothing else is painted"
+	},
+	"editor.zone.delete": {
+		"defaultMessage": "Delete Zone",
+		"description": "Button that deletes the zone being edited"
+	},
+	"editor.zone.deleteFailed": {
+		"defaultMessage": "Could not delete the zone.",
+		"description": "Shown in the zone editor when the zone couldn't be deleted"
+	},
+	"editor.zone.enabled": {
+		"defaultMessage": "Enabled",
+		"description": "Checkbox for whether players can go into the zone"
+	},
+	"editor.zone.faerieCantLoop": {
+		"defaultMessage": "A zone whose passage of time is faerie can't loop.",
+		"description": "Explains why the loop checkboxes are disabled"
+	},
+	"editor.zone.indoorTiles": {
+		"defaultMessage": "Indoor tiles",
+		"description": "Heading of a group of choices of default tile"
+	},
+	"editor.zone.loading": {
+		"defaultMessage": "Loading...",
+		"description": "Heading of the zone editor while the zone loads"
+	},
+	"editor.zone.lobbyTitle": {
+		"defaultMessage": "{zone} (the lobby)",
+		"description": "Heading of the zone editor for the universe's lobby; {zone} is its name"
+	},
+	"editor.zone.loopsEastWest": {
+		"defaultMessage": "Loops east-west",
+		"description": "Checkbox for a zone whose map wraps around, so walking off the east edge comes back on the west"
+	},
+	"editor.zone.loopsNorthSouth": {
+		"defaultMessage": "Loops north-south",
+		"description": "Checkbox for a zone whose map wraps around, so walking off the north edge comes back on the south"
+	},
+	"editor.zone.noParent": {
+		"defaultMessage": "None (a top-level zone)",
+		"description": "Choice of parent zone for a zone that isn't inside another"
+	},
+	"editor.zone.openFailed": {
+		"defaultMessage": "Could not open the zone.",
+		"description": "Shown in the zone editor when the zone couldn't be loaded"
+	},
+	"editor.zone.outdoorTiles": {
+		"defaultMessage": "Outdoor tiles",
+		"description": "Heading of a group of choices of default tile"
+	},
+	"editor.zone.parent": {
+		"defaultMessage": "Parent zone",
+		"description": "Label of the field for the zone this one is inside"
+	},
+	"editor.zone.parentDisabled": {
+		"defaultMessage": "This zone is inside {zones}, which {count, plural, one {is} other {are}} disabled.",
+		"description": "Warns that players can't reach the zone; {zones} lists the zones it is inside that are disabled, and {count} is how many"
+	},
+	"editor.zone.saveFailed": {
+		"defaultMessage": "Could not save the zone.",
+		"description": "Shown in the zone editor when the zone's settings couldn't be stored"
+	},
+	"editor.zone.size": {
+		"defaultMessage": "The map is {height, number} tall x {width, number} wide.",
+		"description": "The size of the zone's map, in cells"
+	},
+	"editor.zoneAdd.failed": {
+		"defaultMessage": "Could not add the zone.",
+		"description": "Shown in the Add Zone dialog when the zone couldn't be made"
+	},
+	"editor.zoneAdd.submit": {
+		"defaultMessage": "Add",
+		"description": "Button that makes the new zone"
+	},
+	"editor.zoneAdd.title": {
+		"defaultMessage": "Add Zone",
+		"description": "Title of the dialog for making a new zone"
+	},
+	"editor.zones.add": {
+		"defaultMessage": "Add Zone",
+		"description": "Button that opens the dialog for making a new zone"
+	},
+	"editor.zones.disabledTag": {
+		"defaultMessage": "disabled",
+		"description": "Under a zone in the list of zones, for a zone players can't go into"
+	},
+	"editor.zones.heading": {
+		"defaultMessage": "Zones",
+		"description": "Heading of the list of the universe's zones"
+	},
+	"editor.zones.indoorsTag": {
+		"defaultMessage": "indoors",
+		"description": "Under a zone in the list of zones, for a zone that is indoors"
+	},
+	"editor.zones.listFailed": {
+		"defaultMessage": "Could not list the zones.",
+		"description": "Shown on the Zones tab when the zones couldn't be loaded"
+	},
+	"editor.zones.none": {
+		"defaultMessage": "There are no zones besides the lobby.",
+		"description": "Shown instead of the list of zones when the universe only has its lobby"
+	},
+	"editor.zones.outdoorsTag": {
+		"defaultMessage": "outdoors",
+		"description": "Under a zone in the list of zones, for a zone that is outdoors"
+	},
+	"editor.zones.startingZoneTag": {
+		"defaultMessage": "starting zone",
+		"description": "Under a zone in the list of zones, for the zone new characters start in"
+	},
+	"error.cantDeleteZone": {
+		"defaultMessage": "The lobby and starting zones can't be deleted.",
+		"description": "Why a zone couldn't be deleted: the universe needs it"
+	},
+	"error.cellOutOfBounds": {
+		"defaultMessage": "Every cell must be inside the zone's map.",
+		"description": "Why painting was refused: some cells are outside the map, perhaps because another editor made it smaller"
+	},
+	"error.faerieCantLoop": {
+		"defaultMessage": "A zone whose passage of time is faerie can't loop.",
+		"description": "Why a zone's settings were refused: faerie time and a map that wraps around can't be combined"
+	},
+	"error.faerieMorningMismatch": {
+		"defaultMessage": "Where morning is must be chosen when, and only when, the passage of time is faerie.",
+		"description": "Why time settings were refused: \"where is morning?\" was given without faerie time, or left out with it"
+	},
+	"error.invalidRequest": {
+		"defaultMessage": "The request isn't valid ({problem}).",
+		"description": "Why the server refused a request the page should never send; {problem} is a technical description in English"
+	},
+	"error.linkOutOfBounds": {
+		"defaultMessage": "The link's cell must be inside the zone's map.",
+		"description": "Why a zone link was refused: its cell is outside the map, perhaps because another editor made it smaller"
+	},
+	"error.linkTargetNotInUniverse": {
+		"defaultMessage": "A link must go to another zone of this universe.",
+		"description": "Why a zone link was refused: the zone it leads to doesn't exist or is in another universe"
+	},
+	"error.linkTargetOutOfBounds": {
+		"defaultMessage": "Where the link goes must be inside the other zone's map.",
+		"description": "Why a zone link was refused: the cell it leads to is outside the other zone's map"
+	},
+	"error.linkToSameZone": {
+		"defaultMessage": "A link must go to another zone.",
+		"description": "Why a zone link was refused: it leads to the zone it is in"
+	},
+	"error.logInFirst": {
+		"defaultMessage": "Log in first.",
+		"description": "Why an editor request was refused: the browser isn't logged in"
+	},
+	"error.noSuchLink": {
+		"defaultMessage": "There is no link on that cell.",
+		"description": "Why a zone link couldn't be deleted: it was already gone, perhaps deleted by another editor"
+	},
+	"error.noSuchTile": {
+		"defaultMessage": "The tile doesn't exist.",
+		"description": "Why a request about a tile failed: it was deleted, perhaps by another editor"
+	},
+	"error.noSuchUniverse": {
+		"defaultMessage": "The universe doesn't exist, or you can't see it.",
+		"description": "Why a request about a universe failed: it was deleted, or the player has no access to it"
+	},
+	"error.noSuchZone": {
+		"defaultMessage": "The zone doesn't exist.",
+		"description": "Why a request about a zone failed: it was deleted, perhaps by another editor"
+	},
+	"error.otherOrigin": {
+		"defaultMessage": "Changes aren't allowed from this website.",
+		"description": "Why an editor change was refused: it came from a page on another website"
+	},
+	"error.parentNotInUniverse": {
+		"defaultMessage": "The parent zone must be a zone of this universe.",
+		"description": "Why a zone's settings were refused: the zone chosen to hold it doesn't exist"
+	},
+	"error.resizeDiscards": {
+		"defaultMessage": "Resizing would discard painted cells or links.",
+		"description": "Why a map wasn't made smaller without asking: the part it would lose has painting or links"
+	},
+	"error.roleNotAllowed": {
+		"defaultMessage": "Your role in this universe doesn't allow that.",
+		"description": "Why an editor change was refused: the player's role, such as beta tester, can't make it"
+	},
+	"error.somethingWentWrong": {
+		"defaultMessage": "Something went wrong on the server.",
+		"description": "Why a request failed when the server had an unexpected problem"
+	},
+	"error.tileInUse": {
+		"defaultMessage": "A map uses this tile, so it can't be deleted.",
+		"description": "Why a tile couldn't be deleted: some zone's map is painted with it"
+	},
+	"error.tileLimit": {
+		"defaultMessage": "A universe can have at most {max, plural, one {# tile} other {# tiles}} of its own.",
+		"description": "Why a new tile wasn't made: the universe has as many tiles of its own as allowed"
+	},
+	"error.tileNeedsName": {
+		"defaultMessage": "A tile needs a name.",
+		"description": "Why a tile the universe added couldn't be saved: its name was left out"
+	},
+	"error.universeLimit": {
+		"defaultMessage": "You can create at most {max, plural, one {# universe} other {# universes}}.",
+		"description": "Why a new universe wasn't made: the player has made as many as allowed"
+	},
+	"error.unreadableBody": {
+		"defaultMessage": "The request could not be read.",
+		"description": "Why the server refused a request whose contents were damaged or too large"
+	},
+	"error.unusableDefaultTile": {
+		"defaultMessage": "The default tile must be a tile this universe can use.",
+		"description": "Why a zone's settings were refused: the default tile was deleted, perhaps by another editor"
+	},
+	"error.unusableTile": {
+		"defaultMessage": "One of the tiles painted isn't one this universe can use.",
+		"description": "Why painting was refused: a tile was deleted, perhaps by another editor"
+	},
+	"error.zoneInsideItself": {
+		"defaultMessage": "A zone can't be inside itself.",
+		"description": "Why a zone's settings were refused: the parent chosen is the zone itself or a zone inside it"
+	},
+	"error.zoneLimit": {
+		"defaultMessage": "A universe can have at most {max, plural, one {# zone} other {# zones}}.",
+		"description": "Why a new zone wasn't made: the universe has as many zones as allowed"
+	},
+	"form.indoors": {
+		"defaultMessage": "Indoors",
+		"description": "Choice for a zone or tile that is indoors"
+	},
+	"form.indoorsOrOutdoors": {
+		"defaultMessage": "Indoors or outdoors",
+		"description": "Heading of the choice between indoors and outdoors for a zone or tile"
+	},
+	"form.invalidText": {
+		"defaultMessage": "Use letters, numbers, spaces or punctuation.",
+		"description": "Shown by a text field when what was typed is empty or has characters that aren't allowed"
+	},
+	"form.name": {
+		"defaultMessage": "Name",
+		"description": "Label of the field for the name of a universe, zone or tile"
+	},
+	"form.outdoors": {
+		"defaultMessage": "Outdoors",
+		"description": "Choice for a zone or tile that is outdoors"
+	},
+	"form.save": {
+		"defaultMessage": "Save",
+		"description": "Button that stores the form's changes in the database"
+	},
+	"form.saved": {
+		"defaultMessage": "Saved",
+		"description": "Shown next to a form's Save button once its changes are stored"
+	},
+	"group.connectionLost": {
+		"defaultMessage": "Lost the connection to the game.",
+		"description": "Shown when the connection to the player's game was lost"
+	},
+	"group.full": {
+		"defaultMessage": "That game is full: it already has {max, plural, one {# player} other {# players}}.",
+		"description": "Shown when a join link leads to a game that has no room left; {max} is the most players a game can have"
+	},
+	"group.gone": {
+		"defaultMessage": "That game has ended or the link is wrong.",
+		"description": "Shown when a join link leads to a game that doesn't exist"
+	},
+	"group.joinLink": {
+		"defaultMessage": "Join link: {link}",
+		"description": "Shown in the game's toolbar after pressing Share; {link} is the address others can open to join"
+	},
+	"group.joinLinkCopied": {
+		"defaultMessage": "Join link copied. Send it to the players you want to invite.",
+		"description": "Shown in the game's toolbar when Share has copied the join link to the clipboard"
+	},
+	"group.joining": {
+		"defaultMessage": "Joining...",
+		"description": "Shown in the game's toolbar while the player goes into the game"
+	},
+	"group.leave": {
+		"defaultMessage": "Leave group",
+		"description": "Button that leaves the game and goes back to the lobby"
+	},
+	"group.notJoined": {
+		"defaultMessage": "Could not join that game. It may have just ended.",
+		"description": "Shown when the player couldn't go into their game"
+	},
+	"group.share": {
+		"defaultMessage": "Share",
+		"description": "Button that copies a link others can use to join the game"
+	},
+	"group.title": {
+		"defaultMessage": "Game",
+		"description": "Heading of the screen where a group plays"
+	},
+	"home.create.chooseRuleset": {
+		"defaultMessage": "Choose a ruleset",
+		"description": "First choice in the Create Universe dialog's ruleset list, asking the player to pick one"
+	},
+	"home.create.failed": {
+		"defaultMessage": "Could not create the universe.",
+		"description": "Shown in the Create Universe dialog when the universe couldn't be made"
+	},
+	"home.create.submit": {
+		"defaultMessage": "Create",
+		"description": "Button that makes the new universe"
+	},
+	"home.create.title": {
+		"defaultMessage": "Create Universe",
+		"description": "Title of the dialog for making a new universe"
+	},
+	"home.createLimit": {
+		"defaultMessage": "You can create at most {max, plural, one {# universe} other {# universes}}",
+		"description": "Tooltip of the disabled Create Universe button when the player has made as many universes as allowed"
+	},
+	"home.createUniverse": {
+		"defaultMessage": "Create Universe",
+		"description": "Button that opens the dialog for making a new universe"
+	},
+	"home.listFailed": {
+		"defaultMessage": "Could not list the universes. Reload the page to try again.",
+		"description": "Shown on Home when the list of universes couldn't be loaded"
+	},
+	"home.noOwnUniverses": {
+		"defaultMessage": "You haven't made a universe yet.",
+		"description": "Shown instead of the list of universes the player can edit when there are none"
+	},
+	"home.noUniverses": {
+		"defaultMessage": "There are no universes to play in yet.",
+		"description": "Shown instead of the list of universes when there are none to play"
+	},
+	"home.overview.close": {
+		"defaultMessage": "Close",
+		"description": "Button that closes a universe's overview"
+	},
+	"home.overview.descriptionFailed": {
+		"defaultMessage": "Could not load the rest of this universe's description.",
+		"description": "Shown in a universe's overview in place of its long description when that couldn't be loaded"
+	},
+	"home.overview.enter": {
+		"defaultMessage": "Enter Universe",
+		"description": "Button that takes the player into the universe shown, starting in its lobby"
+	},
+	"home.ownDetails": {
+		"defaultMessage": "{ruleset} - {stage} - {role}",
+		"description": "Under each universe the player can edit: its ruleset (e.g. Pathfinder 1E), its stage (e.g. prologue) and the player's role (e.g. builder)"
+	},
+	"home.ownListFailed": {
+		"defaultMessage": "Could not list your universes.",
+		"description": "Shown on Home when the list of universes the player can edit couldn't be loaded"
+	},
+	"home.ownUniverses": {
+		"defaultMessage": "Your universes",
+		"description": "Heading of the list of universes the player can edit"
+	},
+	"home.showMore": {
+		"defaultMessage": "Show more",
+		"description": "Button that adds the next page of universes to the list"
+	},
+	"home.universeNotFound": {
+		"defaultMessage": "That universe could not be found.",
+		"description": "Shown on Home when the page was opened to enter a universe that doesn't exist or can't be played"
+	},
+	"home.universes": {
+		"defaultMessage": "Universes",
+		"description": "Heading of the list of universes anyone can play"
+	},
+	"lobby.chat.label": {
+		"defaultMessage": "Chat message",
+		"description": "Name of the chat field for screen readers"
+	},
+	"lobby.chat.placeholder": {
+		"defaultMessage": "Say something...",
+		"description": "Shown in the empty chat field"
+	},
+	"lobby.chat.send": {
+		"defaultMessage": "Send",
+		"description": "Button that sends the chat message typed"
+	},
+	"lobby.chat.tooFast": {
+		"defaultMessage": "You are sending messages too quickly. Wait a moment and try again.",
+		"description": "Shown in the lobby when the player sends chat messages faster than allowed"
+	},
+	"lobby.connectionLost": {
+		"defaultMessage": "Lost the connection to {universe}.",
+		"description": "Shown on Home when the connection to a universe's lobby was lost; {universe} is its name"
+	},
+	"lobby.createGroup": {
+		"defaultMessage": "Create game",
+		"description": "Button that starts a new game, which the player can share with others"
+	},
+	"lobby.entering": {
+		"defaultMessage": "Entering {universe}...",
+		"description": "Shown on the whole page while the player goes into a universe's lobby; {universe} is its name"
+	},
+	"lobby.groupNotCreated": {
+		"defaultMessage": "Could not create a game. Try again in a moment.",
+		"description": "Shown in the lobby when the server couldn't start a new game"
+	},
+	"lobby.here": {
+		"defaultMessage": "Here ({count})",
+		"description": "Heading of the list of players in the lobby; {count} is how many there are"
+	},
+	"lobby.leave": {
+		"defaultMessage": "Leave lobby",
+		"description": "Button that leaves the lobby and goes back to the list of universes"
+	},
+	"lobby.morePlayers": {
+		"defaultMessage": "and {count, number} more",
+		"description": "Under the list of players in the lobby, how many more are here than are listed"
+	},
+	"lobby.notJoined": {
+		"defaultMessage": "Could not enter {universe}. Try again in a moment.",
+		"description": "Shown on Home when the player couldn't go into a universe's lobby; {universe} is its name"
+	},
+	"lobby.title": {
+		"defaultMessage": "Lobby",
+		"description": "Heading of a universe's lobby until its name has loaded"
+	},
+	"login.failed": {
+		"defaultMessage": "Could not log in. Try again in a moment.",
+		"description": "Shown on the login screen when the server couldn't log the player in"
+	},
+	"login.invalidName": {
+		"defaultMessage": "Enter a name of letters, numbers, spaces or punctuation.",
+		"description": "Shown by the login field when the name typed is empty or has characters that aren't allowed"
+	},
+	"login.nameInUse": {
+		"defaultMessage": "That player is already logged in from another browser.",
+		"description": "Shown on the login screen when someone using the name typed is logged in elsewhere"
+	},
+	"login.nameLabel": {
+		"defaultMessage": "What should we call you?",
+		"description": "Label of the login field where players type the name others will see"
+	},
+	"login.submit": {
+		"defaultMessage": "Enter",
+		"description": "Button that logs in with the name typed"
+	},
+	"map.takeLink": {
+		"defaultMessage": "Press E to go through",
+		"description": "Shown under the player on a cell linking to another zone, such as a door; the E key is the same in every language"
+	},
+	"markdown.bold": {
+		"defaultMessage": "Bold",
+		"description": "Name of the Markdown toolbar button that makes text bold"
+	},
+	"markdown.boldButton": {
+		"defaultMessage": "B",
+		"description": "One-letter label of the Markdown toolbar button that makes text bold, shown in bold"
+	},
+	"markdown.bulletedList": {
+		"defaultMessage": "Bulleted list",
+		"description": "Name of the Markdown toolbar button that makes a bulleted list"
+	},
+	"markdown.bulletedListButton": {
+		"defaultMessage": "• List",
+		"description": "Short label of the Markdown toolbar button that makes a bulleted list"
+	},
+	"markdown.code": {
+		"defaultMessage": "Code",
+		"description": "Name of the Markdown toolbar button that formats text as code"
+	},
+	"markdown.codeButton": {
+		"defaultMessage": "Code",
+		"description": "Short label of the Markdown toolbar button that formats text as code"
+	},
+	"markdown.heading1": {
+		"defaultMessage": "Heading 1",
+		"description": "Name of the Markdown toolbar button that makes a heading of the first level"
+	},
+	"markdown.heading1Button": {
+		"defaultMessage": "H1",
+		"description": "Short label of the Markdown toolbar button that makes a heading of the first level"
+	},
+	"markdown.heading2": {
+		"defaultMessage": "Heading 2",
+		"description": "Name of the Markdown toolbar button that makes a heading of the second level"
+	},
+	"markdown.heading2Button": {
+		"defaultMessage": "H2",
+		"description": "Short label of the Markdown toolbar button that makes a heading of the second level"
+	},
+	"markdown.heading3": {
+		"defaultMessage": "Heading 3",
+		"description": "Name of the Markdown toolbar button that makes a heading of the third level"
+	},
+	"markdown.heading3Button": {
+		"defaultMessage": "H3",
+		"description": "Short label of the Markdown toolbar button that makes a heading of the third level"
+	},
+	"markdown.italic": {
+		"defaultMessage": "Italic",
+		"description": "Name of the Markdown toolbar button that makes text italic"
+	},
+	"markdown.italicButton": {
+		"defaultMessage": "I",
+		"description": "One-letter label of the Markdown toolbar button that makes text italic, shown in italics"
+	},
+	"markdown.link": {
+		"defaultMessage": "Link",
+		"description": "Name of the Markdown toolbar button that adds a link"
+	},
+	"markdown.linkButton": {
+		"defaultMessage": "Link",
+		"description": "Short label of the Markdown toolbar button that adds a link"
+	},
+	"markdown.numberedList": {
+		"defaultMessage": "Numbered list",
+		"description": "Name of the Markdown toolbar button that makes a numbered list"
+	},
+	"markdown.numberedListButton": {
+		"defaultMessage": "1. List",
+		"description": "Short label of the Markdown toolbar button that makes a numbered list"
+	},
+	"markdown.quote": {
+		"defaultMessage": "Quote",
+		"description": "Name of the Markdown toolbar button that makes text a quotation"
+	},
+	"markdown.quoteButton": {
+		"defaultMessage": "Quote",
+		"description": "Short label of the Markdown toolbar button that makes text a quotation"
+	},
+	"markdown.strikethrough": {
+		"defaultMessage": "Strikethrough",
+		"description": "Name of the Markdown toolbar button that strikes text through"
+	},
+	"markdown.strikethroughButton": {
+		"defaultMessage": "S",
+		"description": "One-letter label of the Markdown toolbar button that strikes text through, shown struck through"
+	},
+	"page.connectFailed": {
+		"defaultMessage": "Could not connect to the server. Reload the page to try again.",
+		"description": "Shown on the whole page when the game couldn't connect to the server"
+	},
+	"page.connecting": {
+		"defaultMessage": "Connecting...",
+		"description": "Shown on the whole page while the game connects to the server"
+	},
+	"page.copyright": {
+		"defaultMessage": "Copyright (C) {year} {holder}.",
+		"description": "Copyright notice at the bottom of every page; {year} is the year and {holder} is who holds the copyright"
+	},
+	"page.disconnected": {
+		"defaultMessage": "Disconnected from the server. Reload the page to reconnect.",
+		"description": "Shown on the whole page when the connection to the server is lost"
+	},
+	"page.editTitle": {
+		"defaultMessage": "Edit Universe - Multiverse Kiln",
+		"description": "The browser tab's title for the world editor"
+	},
+	"page.license": {
+		"defaultMessage": "This game is free software under the {license}.",
+		"description": "At the bottom of every page; {license} is a link to the license, named by page.licenseName"
+	},
+	"page.licenseName": {
+		"defaultMessage": "GNU Affero General Public License v3 or later",
+		"description": "The name of the game's license, linking to it"
+	},
+	"page.name": {
+		"defaultMessage": "Multiverse Kiln",
+		"description": "The game engine's name, shown as a heading"
+	},
+	"page.playingAs": {
+		"defaultMessage": "Playing as {name}",
+		"description": "In the toolbar, the name the player logged in with; {name} is the name"
+	},
+	"page.sourceCode": {
+		"defaultMessage": "Source code",
+		"description": "Link at the bottom of every page to where the game's source code can be downloaded"
+	},
+	"page.title": {
+		"defaultMessage": "Multiverse Kiln",
+		"description": "The browser tab's title for the game's page"
+	},
+	"pager.next": {
+		"defaultMessage": "Next",
+		"description": "Button that shows the next page of a list"
+	},
+	"pager.previous": {
+		"defaultMessage": "Previous",
+		"description": "Button that shows the previous page of a list"
+	},
+	"pager.range": {
+		"defaultMessage": "{first, number}-{last, number} of {total, number}",
+		"description": "Which items of a list a page shows, e.g. 1-500 of 1200"
+	},
+	"tile.pf1e.desert": {
+		"defaultMessage": "Desert",
+		"description": "Name of a map tile: sandy desert, which is slow to cross"
+	},
+	"tile.pf1e.forest": {
+		"defaultMessage": "Forest",
+		"description": "Name of a map tile: woodland, which is slow to cross and hard to see through"
+	},
+	"tile.pf1e.grass": {
+		"defaultMessage": "Grass",
+		"description": "Name of a map tile: open grassland"
+	},
+	"tile.pf1e.mountains": {
+		"defaultMessage": "Mountains",
+		"description": "Name of a map tile: mountains, which can't be crossed or seen past"
+	},
+	"tile.pf1e.water": {
+		"defaultMessage": "Water",
+		"description": "Name of a map tile: deep water, which can't be walked into"
+	},
+	"tile.pf1e.wood_floor": {
+		"defaultMessage": "Wood Floor",
+		"description": "Name of a map tile: the wooden floor of a building"
+	},
+	"universe.faerie.center": {
+		"defaultMessage": "center",
+		"description": "Where morning is in faerie time: the center of the map, with midnight at the edges"
+	},
+	"universe.faerie.east": {
+		"defaultMessage": "east",
+		"description": "Where morning is in faerie time: the east edge of the map"
+	},
+	"universe.faerie.horizon": {
+		"defaultMessage": "horizon",
+		"description": "Where morning is in faerie time: every edge of the map, with night in the center"
+	},
+	"universe.faerie.north": {
+		"defaultMessage": "north",
+		"description": "Where morning is in faerie time: the north edge of the map"
+	},
+	"universe.faerie.northeast": {
+		"defaultMessage": "northeast",
+		"description": "Where morning is in faerie time: the northeast corner of the map"
+	},
+	"universe.faerie.northwest": {
+		"defaultMessage": "northwest",
+		"description": "Where morning is in faerie time: the northwest corner of the map"
+	},
+	"universe.faerie.south": {
+		"defaultMessage": "south",
+		"description": "Where morning is in faerie time: the south edge of the map"
+	},
+	"universe.faerie.southeast": {
+		"defaultMessage": "southeast",
+		"description": "Where morning is in faerie time: the southeast corner of the map"
+	},
+	"universe.faerie.southwest": {
+		"defaultMessage": "southwest",
+		"description": "Where morning is in faerie time: the southwest corner of the map"
+	},
+	"universe.faerie.west": {
+		"defaultMessage": "west",
+		"description": "Where morning is in faerie time: the west edge of the map"
+	},
+	"universe.lobbyZoneName": {
+		"defaultMessage": "Lobby",
+		"description": "Name given to the lobby zone of a new universe, which its creator can change"
+	},
+	"universe.role.beta_tester": {
+		"defaultMessage": "beta tester",
+		"description": "Role of someone who can play a universe before it opens to everyone"
+	},
+	"universe.role.builder": {
+		"defaultMessage": "builder",
+		"description": "Role of someone who can change a universe's world: its tiles, zones, maps and links"
+	},
+	"universe.role.creator": {
+		"defaultMessage": "creator",
+		"description": "Role of someone who can change everything about a universe"
+	},
+	"universe.ruleset": {
+		"defaultMessage": "Ruleset",
+		"description": "Label of the field for a universe's game rules, e.g. Pathfinder 1E"
+	},
+	"universe.ruleset.pf1e": {
+		"defaultMessage": "Pathfinder 1E",
+		"description": "Name of the game rules of the tabletop role-playing game Pathfinder, first edition"
+	},
+	"universe.shortDescription": {
+		"defaultMessage": "1-sentence description",
+		"description": "Label of the field for a universe's description in one sentence"
+	},
+	"universe.stage.end_of_time": {
+		"defaultMessage": "end of time",
+		"description": "Stage of a universe that is retired: locked, and only viewed"
+	},
+	"universe.stage.in_the_beginning": {
+		"defaultMessage": "in the beginning",
+		"description": "Stage of a universe that is still being created, so only its creators and builders can play. Named after the opening of Genesis"
+	},
+	"universe.stage.let_there_be_light": {
+		"defaultMessage": "let there be light",
+		"description": "Stage of a universe that is ready for everyone to play. Named after the line in Genesis"
+	},
+	"universe.stage.prologue": {
+		"defaultMessage": "prologue",
+		"description": "Stage of a universe that is open for beta testers"
+	},
+	"universe.startingZoneName": {
+		"defaultMessage": "Starting Zone",
+		"description": "Name given to the zone characters of a new universe start in, which its creator can change"
+	},
+	"universe.time.always_dawn": {
+		"defaultMessage": "always dawn",
+		"description": "Passage of time where it is dawn forever"
+	},
+	"universe.time.always_dusk": {
+		"defaultMessage": "always dusk",
+		"description": "Passage of time where it is dusk forever"
+	},
+	"universe.time.always_midnight": {
+		"defaultMessage": "always midnight",
+		"description": "Passage of time where it is midnight forever"
+	},
+	"universe.time.always_noon": {
+		"defaultMessage": "always noon",
+		"description": "Passage of time where it is noon forever"
+	},
+	"universe.time.faerie": {
+		"defaultMessage": "faerie",
+		"description": "Passage of time where the time of day depends on where you are on the map, as in the realm of Faerie"
+	},
+	"universe.time.flows_normally": {
+		"defaultMessage": "flows normally",
+		"description": "Passage of time where time passes as characters act"
+	},
+	"universe.time.inherit": {
+		"defaultMessage": "inherit from the parent zone",
+		"description": "Passage of time for a zone that uses its parent zone's setting, or the universe's"
+	}
+}

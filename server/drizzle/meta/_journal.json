@@ -36,6 +36,20 @@
       "when": 1792118416288,
       "tag": "0004_universe_editors_and_tile_overrides",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792152799234,
+      "tag": "0005_keep_default_tile_names",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792152803312,
+      "tag": "0006_unrenamed_tile_copies",
+      "breakpoints": true
     }
   ]
 }

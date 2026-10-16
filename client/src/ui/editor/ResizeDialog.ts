@@ -1,7 +1,9 @@
 import { MAX_MAP_SIDE, type MapBounds } from '@multiverse-kiln/shared';
 
+import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, showMessage } from '../dom';
+import { mapMessages } from './mapMessages';
 
 /**
  * The zone a resize is for, and what happens once it is resized
@@ -111,10 +113,23 @@ export class ResizeDialog
 		const tooLarge = (valid && ((width > MAX_MAP_SIDE) || (height > MAX_MAP_SIDE)));
 
 		this.confirmedBounds = undefined;
-		this.submit.textContent = 'Resize';
+		this.submit.textContent = t({
+			id: 'editor.resize.submit',
+			defaultMessage: 'Resize',
+			description: 'Button that changes the map to the size given'
+		});
 		this.submit.disabled = (!valid || tooLarge);
-		this.total.textContent = (valid ? `${height} tall x ${width} wide` : '');
-		showMessage(this.warning, (tooLarge ? `A map can be at most ${MAX_MAP_SIDE} cells in each direction.` : undefined));
+		this.total.textContent = (valid
+			? t({
+				id: 'editor.resize.total',
+				defaultMessage: '{height, number} tall x {width, number} wide',
+				description: 'The size of the map the dialog\'s fields describe, in cells'
+			}, {
+				height,
+				width
+			})
+			: '');
+		showMessage(this.warning, (tooLarge ? t(mapMessages.tooLarge, { max: MAX_MAP_SIDE }) : undefined));
 	}
 
 	/**
@@ -140,8 +155,19 @@ export class ResizeDialog
 			if (conflict)
 			{
 				this.confirmedBounds = key;
-				this.submit.textContent = 'Resize and discard';
-				showMessage(this.warning, `The smaller map would discard ${describeCount(conflict.discardedCells, 'painted cell')} and ${describeCount(conflict.discardedLinks, 'link')}. Resize anyway?`);
+				this.submit.textContent = t({
+					id: 'editor.resize.discard',
+					defaultMessage: 'Resize and discard',
+					description: 'Button that makes the map smaller after the player was warned it loses painting or links'
+				});
+				showMessage(this.warning, t({
+					id: 'editor.resize.discardWarning',
+					defaultMessage: 'The smaller map would discard {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# link} other {# links}}. Resize anyway?',
+					description: 'Warns before making a map smaller loses cells painted with something other than the default tile, and zone links'
+				}, {
+					cells: conflict.discardedCells,
+					links: conflict.discardedLinks
+				}));
 				return;
 			}
 
@@ -150,23 +176,15 @@ export class ResizeDialog
 		}
 		catch (error)
 		{
-			showMessage(this.warning, describeEditorError(error, 'resize the map'));
+			showMessage(this.warning, describeEditorError(error, {
+				id: 'editor.resize.failed',
+				defaultMessage: 'Could not resize the map.',
+				description: 'Shown in the Edit Size dialog when the map\'s size couldn\'t be changed'
+			}));
 		}
 		finally
 		{
 			this.submit.disabled = false;
 		}
 	}
-}
-
-/**
- * A count with its noun, made plural when needed
- *
- * @param count How many
- * @param noun The noun for one
- * @return e.g. "1 link" or "3 links"
- */
-function describeCount(count: number, noun: string): string
-{
-	return(`${count} ${noun}${(count === 1) ? '' : 's'}`);
 }

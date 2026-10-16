@@ -1,13 +1,17 @@
 import { App } from './App';
+import { startLocalization, t } from './localization';
 import { connectToServer } from './network/serverConnection';
 import { showStatus } from './ui/dom';
+import { pageMessages } from './ui/pageMessages';
 
 /**
- * Connects to the server and starts the app, or explains that it couldn't connect
+ * Shows the page in the player's language, connects to the server and starts the app, or explains that
+ * it couldn't connect
  */
 async function start(): Promise<void>
 {
-	showStatus('Connecting...');
+	await startLocalization();
+	showStatus(t(pageMessages.connecting));
 
 	try
 	{
@@ -16,7 +20,7 @@ async function start(): Promise<void>
 	catch (error)
 	{
 		console.error('Could not connect to the server:', error);
-		showStatus('Could not connect to the server. Reload the page to try again.');
+		showStatus(t(pageMessages.connectFailed));
 	}
 }
 

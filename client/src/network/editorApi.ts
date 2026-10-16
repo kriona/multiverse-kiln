@@ -1,5 +1,7 @@
 import { ServerError, type Client } from '@colyseus/sdk';
-import { EDITOR_UNIVERSES_PATH, type CellChange, type ChunkListPayload, type ChunkRange, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorZone, type EditorZoneLink, type MapBounds, type NewUniverseRequest, type NewZoneRequest, type ResizeConflictPayload, type TileListPayload, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type ZoneLinkListPayload, type ZoneLinkTarget, type ZoneListPayload, type ZoneSettingsUpdate } from '@multiverse-kiln/shared';
+import { EDITOR_UNIVERSES_PATH, isLocalizedMessage, type CellChange, type ChunkListPayload, type ChunkRange, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorZone, type EditorZoneLink, type MapBounds, type NewUniverseRequest, type NewZoneRequest, type ResizeConflictPayload, type TileListPayload, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type ZoneLinkListPayload, type ZoneLinkTarget, type ZoneListPayload, type ZoneSettingsUpdate, type MessageSource } from '@multiverse-kiln/shared';
+
+import { localizedText, t } from '../localization';
 
 /**
  * A request to the world editor's API that the server refused or couldn't answer
@@ -7,7 +9,7 @@ import { EDITOR_UNIVERSES_PATH, type CellChange, type ChunkListPayload, type Chu
 export class EditorApiError extends Error
 {
 	/**
-	 * @param message What went wrong, as the server put it
+	 * @param message What went wrong, in the player's language
 	 * @param status The HTTP status, or 0 when the server couldn't be reached
 	 * @param data The response body, for answers that carry more than a message
 	 */
@@ -334,7 +336,7 @@ export class EditorApi
 			{
 				const status = ((typeof error.status === 'number') ? error.status : 0);
 
-				throw new EditorApiError(((status === 0) ? 'Could not reach the server' : error.message), status, error.data);
+				throw new EditorApiError(describeServerError(status, error.data), status, error.data);
 			}
 
 			throw error;
@@ -366,20 +368,63 @@ function zonePath(universeId: string, zoneId: string): string
 }
 
 /**
+ * Why the server refused a request, in the player's language
+ *
+ * @param status The HTTP status, or 0 when the server couldn't be reached
+ * @param data The response body, an ErrorPayload
+ * @return The reason
+ */
+function describeServerError(status: number, data: unknown): string
+{
+	if (status === 0)
+	{
+		return(t({
+			id: 'editor.error.unreachable',
+			defaultMessage: 'Could not reach the server.',
+			description: 'Why an editor request failed, when the server didn\'t answer'
+		}));
+	}
+
+	const reason = (((typeof data === 'object') && (data !== null) && ('error' in data)) ? data.error : undefined);
+
+	if (isLocalizedMessage(reason))
+	{
+		return(localizedText(reason));
+	}
+
+	return(t({
+		id: 'editor.error.noReason',
+		defaultMessage: 'The server refused the request.',
+		description: 'Why an editor request failed, when the server didn\'t say why'
+	}));
+}
+
+/**
  * A message to show for a failed editor request
  *
  * @param error What was thrown
- * @param action What was being done, e.g. "save the tile"
+ * @param failure What failed, as a sentence, e.g. "Could not save the tile."
  * @return The message
  */
-export function describeEditorError(error: unknown, action: string): string
+export function describeEditorError(error: unknown, failure: MessageSource): string
 {
 	if (error instanceof EditorApiError)
 	{
-		return(`Could not ${action}: ${error.message}`);
+		return(t({
+			id: 'editor.error.failedBecause',
+			defaultMessage: '{failure} {reason}',
+			description: 'An editor action that failed, followed by why; {failure} is e.g. "Could not save the tile." and {reason} is the server\'s explanation. Change only to reorder the two sentences'
+		}, {
+			failure: t(failure),
+			reason: error.message
+		}));
 	}
 
-	console.error(`Could not ${action}:`, error);
+	console.error(failure.defaultMessage, error);
 
-	return(`Could not ${action}. Try again in a moment.`);
+	return(t({
+		id: 'editor.error.tryAgain',
+		defaultMessage: '{failure} Try again in a moment.',
+		description: 'An editor action that failed for a reason the player can\'t do anything about; {failure} is e.g. "Could not save the tile."'
+	}, { failure: t(failure) }));
 }
