@@ -2,11 +2,12 @@ import { ancestorZones, canEditWorld, childZones, descendantZoneIds, DISALLOWED_
 
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, setOptions, settingOptions, showMessage } from '../dom';
+import { MapEditor } from './MapEditor';
 
 /**
  * The Zones tab: the universe's zones, opening the zone editor, and adding zones
  *
- * The zone editor is a view in the tab rather than a dialog, since it will hold the zone's map
+ * The zone editor is a view in the tab rather than a dialog, since it holds the zone's map
  */
 export class ZonesTab
 {
@@ -44,6 +45,7 @@ export class ZonesTab
 	private readonly addIndoors = getElement('zone-add-indoors', HTMLInputElement);
 	private readonly addError = getElement('zone-add-error', HTMLElement);
 	private readonly addSubmit = getElement('zone-add-submit', HTMLButtonElement);
+	private readonly mapEditor: MapEditor;
 
 	private universe: EditableUniverse | undefined;
 
@@ -72,6 +74,14 @@ export class ZonesTab
 	 */
 	constructor(private readonly api: EditorApi)
 	{
+		this.mapEditor = new MapEditor(api, (bounds) =>
+		{
+			if (this.zone)
+			{
+				this.zone = { ...this.zone, bounds };
+				this.showSize(this.zone);
+			}
+		});
 		this.name.maxLength = MAX_ZONE_NAME_LENGTH;
 		this.addName.maxLength = MAX_ZONE_NAME_LENGTH;
 		setOptions(this.time, settingOptions(ZONE_PASSAGES_OF_TIME).map((option) => ((option.value === 'inherit') ? { ...option, label: 'inherit from the parent zone' } : option)));
@@ -226,6 +236,7 @@ export class ZonesTab
 		const version = ++this.openVersion;
 
 		this.zone = undefined;
+		this.mapEditor.hide();
 		this.listView.hidden = false;
 		this.editorView.hidden = true;
 
@@ -348,8 +359,6 @@ export class ZonesTab
 		const excluded = descendantZoneIds(this.zones.zones, zone.id).add(zone.id);
 		const isLobby = (zone.id === this.zones.lobbyZoneId);
 		const isStart = (zone.id === this.zones.startingZoneId);
-		const width = zone.bounds.maxColumn - zone.bounds.minColumn + 1;
-		const height = zone.bounds.maxRow - zone.bounds.minRow + 1;
 
 		this.zone = zone;
 		this.editorTitle.textContent = (isLobby ? `${zone.name} (the lobby)` : zone.name);
@@ -369,7 +378,7 @@ export class ZonesTab
 		this.faerie.value = (zone.faerieMorning ?? FAERIE_MORNINGS[0]);
 		this.loopsEastWest.checked = zone.loopsEastWest;
 		this.loopsNorthSouth.checked = zone.loopsNorthSouth;
-		this.size.textContent = `The map is ${height} tall x ${width} wide.`;
+		this.showSize(zone);
 		this.updateTimeFields();
 		this.updateParentMessage();
 		this.fields.disabled = !editable;
@@ -382,6 +391,20 @@ export class ZonesTab
 
 		this.childList.replaceChildren(...children.map((child) => this.createItem(child, 0)));
 		this.children.hidden = (children.length === 0);
+		void this.mapEditor.show(universe, zone, this.tiles, this.zones.zones);
+	}
+
+	/**
+	 * Shows how large a zone's map is
+	 *
+	 * @param zone The zone
+	 */
+	private showSize(zone: EditorZone): void
+	{
+		const width = (zone.bounds.maxColumn - zone.bounds.minColumn) + 1;
+		const height = (zone.bounds.maxRow - zone.bounds.minRow) + 1;
+
+		this.size.textContent = `The map is ${height} tall x ${width} wide.`;
 	}
 
 	/**
@@ -393,8 +416,14 @@ export class ZonesTab
 	private fillDefaultTiles(indoors: boolean, selectedTileId: number): void
 	{
 		const groups = [
-			{ label: (indoors ? 'Indoor tiles' : 'Outdoor tiles'), tiles: this.tiles.filter((tile) => (tile.indoors === indoors)) },
-			{ label: (indoors ? 'Outdoor tiles' : 'Indoor tiles'), tiles: this.tiles.filter((tile) => (tile.indoors !== indoors)) }
+			{
+				label: (indoors ? 'Indoor tiles' : 'Outdoor tiles'),
+				tiles: this.tiles.filter((tile) => (tile.indoors === indoors))
+			},
+			{
+				label: (indoors ? 'Outdoor tiles' : 'Indoor tiles'),
+				tiles: this.tiles.filter((tile) => (tile.indoors !== indoors))
+			}
 		];
 
 		this.defaultTile.replaceChildren(...groups

@@ -706,6 +706,173 @@ fieldset.choice legend
 	list-style: none;
 }
 
+.map-editor
+{
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-top: 16px;
+
+	.hint
+	{
+		margin: 0;
+		font-size: 12px;
+		color: $text-faint;
+	}
+}
+
+.map-tools
+{
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 12px;
+
+	label
+	{
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		color: $text-muted;
+
+		&.checkbox
+		{
+			flex-direction: row;
+			align-items: center;
+			gap: 8px;
+			color: $text;
+		}
+	}
+
+	input[type="number"]
+	{
+		width: 72px;
+	}
+}
+
+.map-frame
+{
+	display: grid;
+	grid-template-areas:
+		". north ."
+		"west canvas east"
+		". south .";
+	grid-template-columns: auto auto auto;
+	justify-content: start;
+	align-items: center;
+	justify-items: center;
+	gap: 4px;
+
+	.map-expand-north
+	{
+		grid-area: north;
+	}
+
+	.map-expand-west
+	{
+		grid-area: west;
+	}
+
+	.map-expand-east
+	{
+		grid-area: east;
+	}
+
+	.map-expand-south
+	{
+		grid-area: south;
+	}
+}
+
+.map-canvas
+{
+	grid-area: canvas;
+	line-height: 0;
+	border: 1px solid $border;
+
+	canvas
+	{
+		cursor: crosshair;
+	}
+}
+
+.map-status
+{
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 16px;
+	color: $text-muted;
+
+	label
+	{
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	input[type="number"]
+	{
+		width: 72px;
+	}
+}
+
+.resize-grid
+{
+	display: grid;
+	grid-template-areas:
+		". north ."
+		"west center east"
+		". south .";
+	grid-template-columns: repeat(3, 1fr);
+	align-items: center;
+	gap: 8px;
+
+	.resize-north
+	{
+		grid-area: north;
+	}
+
+	.resize-west
+	{
+		grid-area: west;
+	}
+
+	.resize-east
+	{
+		grid-area: east;
+	}
+
+	.resize-south
+	{
+		grid-area: south;
+	}
+
+	.resize-center
+	{
+		grid-area: center;
+		text-align: center;
+		color: $text-faint;
+	}
+}
+
+.link-dialog
+{
+	width: min(660px, calc(100vw - 32px));
+
+	.link-preview
+	{
+		align-self: flex-start;
+		line-height: 0;
+		border: 1px solid $border;
+
+		canvas
+		{
+			cursor: crosshair;
+		}
+	}
+}
+
 .lobby-body
 {
 	display: flex;

@@ -27,6 +27,19 @@ const PIECE_SIZE = CHUNK_SIZE * GRID_CELL_SIZE;
 const EMPTY_INDEX = -1;
 
 /**
+ * One drawn piece of the map
+ */
+interface Piece
+{
+	map: Phaser.Tilemaps.Tilemap;
+
+	/**
+	 * The chunks its cells came from, by chunkKey(), so it can be redrawn when one of them changes
+	 */
+	chunks: Set<string>;
+}
+
+/**
  * Draws a zone's tiles, a chunk-sized piece at a time around the camera
  *
  * Tiles are drawn as their colors. Pieces are laid out in world units the way the camera sees them,
@@ -66,13 +79,20 @@ export class ZoneRenderer
 	/**
 	 * The pieces drawn now, by chunkKey() of their position in world units divided by PIECE_SIZE
 	 */
-	private readonly pieces = new Map<string, Phaser.Tilemaps.Tilemap>();
+	private readonly pieces = new Map<string, Piece>();
+
+	/**
+	 * The camera's view at the last update, for redrawing pieces between updates
+	 */
+	private lastView: Phaser.Geom.Rectangle | undefined;
 
 	/**
 	 * @param scene Scene to draw in
 	 * @param zone The zone
+	 * @param chunks The zone's stored chunks, by chunkKey(), when someone else holds them and changes
+	 * them (calling refreshChunks); otherwise they are taken from zone.chunks
 	 */
-	constructor(private readonly scene: Phaser.Scene, private readonly zone: ZonePayload)
+	constructor(private readonly scene: Phaser.Scene, private readonly zone: ZonePayload, chunks?: ReadonlyMap<string, readonly number[]>)
 	{
 		const { bounds } = zone;
 
@@ -81,7 +101,7 @@ export class ZoneRenderer
 		this.tiles = {
 			bounds,
 			defaultTileId: zone.defaultTileId,
-			chunks: new Map(zone.chunks.map((chunk) => [chunkKey(chunk.chunkColumn, chunk.chunkRow), chunk.cells]))
+			chunks: (chunks ?? new Map(zone.chunks.map((chunk) => [chunkKey(chunk.chunkColumn, chunk.chunkRow), chunk.cells])))
 		};
 		this.textureKey = `zone-tiles-${ZoneRenderer.nextTextureId++}`;
 
@@ -102,6 +122,8 @@ export class ZoneRenderer
 	update(view: Phaser.Geom.Rectangle): void
 	{
 		const wanted = new Set<string>();
+
+		this.lastView = view;
 		const columns = this.pieceRange(view.x, view.right, this.zone.bounds.minColumn, this.zone.bounds.maxColumn, this.zone.loopsEastWest);
 		const rows = this.pieceRange(view.y, view.bottom, this.zone.bounds.minRow, this.zone.bounds.maxRow, this.zone.loopsNorthSouth);
 
@@ -124,9 +146,33 @@ export class ZoneRenderer
 		{
 			if (!wanted.has(key))
 			{
-				piece.destroy();
+				piece.map.destroy();
 				this.pieces.delete(key);
 			}
+		}
+	}
+
+	/**
+	 * Redraws the pieces showing chunks that have changed
+	 *
+	 * @param chunkKeys The changed chunks, by chunkKey()
+	 */
+	refreshChunks(chunkKeys: Iterable<string>): void
+	{
+		const changed = new Set(chunkKeys);
+
+		for (const [key, piece] of this.pieces)
+		{
+			if ([...piece.chunks].some((chunk) => changed.has(chunk)))
+			{
+				piece.map.destroy();
+				this.pieces.delete(key);
+			}
+		}
+
+		if (this.lastView)
+		{
+			this.update(this.lastView);
 		}
 	}
 
@@ -137,7 +183,7 @@ export class ZoneRenderer
 	{
 		for (const piece of this.pieces.values())
 		{
-			piece.destroy();
+			piece.map.destroy();
 		}
 
 		this.pieces.clear();
@@ -205,9 +251,9 @@ export class ZoneRenderer
 	 *
 	 * @param pieceColumn The piece's column: its position in world units divided by PIECE_SIZE
 	 * @param pieceRow The piece's row
-	 * @return The piece's tilemap
+	 * @return The piece
 	 */
-	private drawPiece(pieceColumn: number, pieceRow: number): Phaser.Tilemaps.Tilemap
+	private drawPiece(pieceColumn: number, pieceRow: number): Piece
 	{
 		const map = this.scene.make.tilemap({
 			tileWidth: GRID_CELL_SIZE,
@@ -225,6 +271,7 @@ export class ZoneRenderer
 		}
 
 		const indexes: number[][] = [];
+		const chunks = new Set<string>();
 
 		for (let rowOffset = 0; rowOffset < CHUNK_SIZE; rowOffset++)
 		{
@@ -232,7 +279,11 @@ export class ZoneRenderer
 
 			for (let columnOffset = 0; columnOffset < CHUNK_SIZE; columnOffset++)
 			{
-				row.push(this.indexAt((pieceColumn * CHUNK_SIZE) + columnOffset, (pieceRow * CHUNK_SIZE) + rowOffset));
+				row.push(this.indexAt(
+					(pieceColumn * CHUNK_SIZE) + columnOffset,
+					(pieceRow * CHUNK_SIZE) + rowOffset,
+					chunks
+				));
 			}
 
 			indexes.push(row);
@@ -241,7 +292,7 @@ export class ZoneRenderer
 		layer.putTilesAt(indexes, 0, 0);
 		layer.setDepth(-1);
 
-		return(map);
+		return({ map, chunks });
 	}
 
 	/**
@@ -249,9 +300,10 @@ export class ZoneRenderer
 	 *
 	 * @param column The cell's column, which on a looping zone may be past an edge
 	 * @param row The cell's row, likewise
+	 * @param chunks Collects the key of the chunk the cell is drawn from
 	 * @return Its index in the tile texture, or EMPTY_INDEX for a cell off the map
 	 */
-	private indexAt(column: number, row: number): number
+	private indexAt(column: number, row: number, chunks: Set<string>): number
 	{
 		const { bounds, loopsEastWest, loopsNorthSouth } = this.zone;
 		const wrappedColumn = (loopsEastWest ? bounds.minColumn + positiveModulo(column - bounds.minColumn, (bounds.maxColumn - bounds.minColumn) + 1) : column);
@@ -261,6 +313,8 @@ export class ZoneRenderer
 		{
 			return(EMPTY_INDEX);
 		}
+
+		chunks.add(chunkKey(chunkCoordinate(wrappedColumn), chunkCoordinate(wrappedRow)));
 
 		const tileId = tileIdAt(this.tiles, wrappedColumn, wrappedRow);
 

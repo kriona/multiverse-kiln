@@ -115,8 +115,8 @@ Built in four steps: the server API, the editor pages, the map editor, then load
 - [✅] Edit Universe page: name, descriptions (markdown rendered sanitized with `marked` and DOMPurify, also on Home's overview), stage, ruleset, passage of time. Logo and banner wait for image storage (Phase 16). A Lobby tab opens the lobby's zone until the rest of the tab arrives (Phase 11)
 - [✅] Tilesets tab (filters for name, passable, custom and edited; pagination) and tile editor (name, indoors, color, vision cost, movement cost)
 - [✅] Zones tab with the single-zone drill-down, and the zone editor's settings. Its map is the next item
-- [ ] Map editor: grid centered on 0,0, expand buttons, edit-size dialog with its warning, draw tool (a tile or Void; size 1-100; circle or square), undo/redo with a drag counted as one step
-- [ ] Zone link layer: automatic or manual, "requires the whole group", select destination coordinates with an optional return link
+- [✅] Map editor: grid centered on 0,0, expand buttons, edit-size dialog with its warning, draw tool (a tile or Void; size 1-100; circle or square), undo/redo with a drag counted as one step. It loads chunks as the view reaches them, pans with the right or middle mouse button and zooms with the wheel. Undo covers painting; resizing to a smaller map clears the undo history
+- [✅] Zone link layer: automatic or manual, "requires the whole group", select destination coordinates with an optional return link (placed in the target zone, leading back to the link's cell)
 - [ ] Edits apply immediately (universe versions come in Phase 13): the editor routes tell open rooms in this process about changed cells, links and tiles, and the rooms update the zones they have loaded and their clients
 - [ ] Rooms load a zone's chunks as players come near them and drop chunks nobody is near, instead of loading the whole map (`loadZone`), since the editor can make maps up to 50,000 cells per side. Loading stays outside the tick: a player waits at the edge of a chunk that hasn't arrived yet. Clients are likewise sent only the chunks near their player, not the whole zone (`ZonePayload`)
 

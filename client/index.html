@@ -261,6 +261,54 @@
 									</div>
 								</fieldset>
 							</form>
+							<section class="map-editor" aria-labelledby="map-editor-title">
+								<h3 id="map-editor-title">Map</h3>
+								<div id="map-tools" class="map-tools">
+									<fieldset class="choice">
+										<legend>Tool</legend>
+										<label class="checkbox">
+											<input id="map-tool-draw" name="map-tool" type="radio" value="draw" checked />
+											Draw
+										</label>
+										<label class="checkbox">
+											<input id="map-tool-links" name="map-tool" type="radio" value="links" />
+											Links
+										</label>
+									</fieldset>
+									<label>
+										Tile
+										<select id="map-tile"></select>
+									</label>
+									<label>
+										Size
+										<input id="map-brush-size" type="number" min="1" step="1" value="1" />
+									</label>
+									<label>
+										Shape
+										<select id="map-brush-shape"></select>
+									</label>
+									<button id="map-undo" type="button" class="secondary">Undo</button>
+									<button id="map-redo" type="button" class="secondary">Redo</button>
+									<button id="map-resize" type="button" class="secondary">Edit Size</button>
+								</div>
+								<div class="map-frame">
+									<button id="map-expand-north" type="button" class="secondary map-expand-north">+ North</button>
+									<button id="map-expand-west" type="button" class="secondary map-expand-west">+ West</button>
+									<div id="map-canvas" class="map-canvas"></div>
+									<button id="map-expand-east" type="button" class="secondary map-expand-east">+ East</button>
+									<button id="map-expand-south" type="button" class="secondary map-expand-south">+ South</button>
+								</div>
+								<div class="map-status">
+									<label id="map-expand-field">
+										Expand by
+										<input id="map-expand-by" type="number" min="1" step="1" value="10" />
+									</label>
+									<span id="map-cursor"></span>
+									<span id="map-save-status" role="status"></span>
+								</div>
+								<p class="hint">Drag with the right mouse button to look around, and zoom with the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link.</p>
+								<p id="map-error" class="form-error" role="alert" hidden></p>
+							</section>
 							<div id="zone-children" hidden>
 								<h3>Zones inside this one</h3>
 								<ul id="zone-child-list" class="zone-list"></ul>
@@ -347,6 +395,87 @@
 							<button id="zone-add-cancel" type="button" class="secondary">Cancel</button>
 							<button id="zone-add-submit" type="submit">Add</button>
 						</div>
+					</form>
+				</dialog>
+				<dialog id="resize-dialog" class="panel dialog" aria-labelledby="resize-title">
+					<form id="resize-form" class="form">
+						<h2 id="resize-title">Edit Size</h2>
+						<p class="hint">How many cells the map reaches in each direction from its center cell (0, 0).</p>
+						<div class="resize-grid">
+							<label class="resize-north">
+								North
+								<input id="resize-north" type="number" min="0" step="1" required />
+							</label>
+							<label class="resize-west">
+								West
+								<input id="resize-west" type="number" min="0" step="1" required />
+							</label>
+							<span class="resize-center">0, 0</span>
+							<label class="resize-east">
+								East
+								<input id="resize-east" type="number" min="0" step="1" required />
+							</label>
+							<label class="resize-south">
+								South
+								<input id="resize-south" type="number" min="0" step="1" required />
+							</label>
+						</div>
+						<p id="resize-total"></p>
+						<p id="resize-warning" class="form-error" role="alert" hidden></p>
+						<div class="dialog-buttons">
+							<button id="resize-cancel" type="button" class="secondary">Cancel</button>
+							<button id="resize-submit" type="submit">Resize</button>
+						</div>
+					</form>
+				</dialog>
+				<dialog id="link-dialog" class="panel dialog link-dialog" aria-labelledby="link-title">
+					<form id="link-form" class="form">
+						<fieldset id="link-fields" class="plain">
+							<h2 id="link-title"></h2>
+							<fieldset class="choice">
+								<legend>When a player steps onto the cell</legend>
+								<label class="checkbox">
+									<input id="link-automatic" name="link-mode" type="radio" value="automatic" />
+									Take them through (automatic)
+								</label>
+								<label class="checkbox">
+									<input id="link-manual" name="link-mode" type="radio" value="manual" />
+									Offer to take them through (manual)
+								</label>
+							</fieldset>
+							<label class="checkbox">
+								<input id="link-whole-group" type="checkbox" />
+								Requires the whole group
+							</label>
+							<label>
+								Goes to
+								<select id="link-target" required></select>
+							</label>
+							<label class="checkbox">
+								<input id="link-return" type="checkbox" />
+								Add a return link that leads back to this cell
+							</label>
+							<fieldset id="link-pick-choice" class="choice" hidden>
+								<legend>Clicking the map below chooses</legend>
+								<label class="checkbox">
+									<input id="link-pick-destination" name="link-pick" type="radio" value="destination" checked />
+									The destination
+								</label>
+								<label class="checkbox">
+									<input id="link-pick-return" name="link-pick" type="radio" value="return" />
+									The return link's cell
+								</label>
+							</fieldset>
+							<div id="link-preview" class="link-preview"></div>
+							<p id="link-destination"></p>
+							<p id="link-return-cell" hidden></p>
+							<p id="link-error" class="form-error" role="alert" hidden></p>
+							<div class="form-buttons">
+								<button id="link-delete" type="button" class="danger">Delete Link</button>
+								<button id="link-cancel" type="button" class="secondary">Cancel</button>
+								<button id="link-save" type="submit">Save</button>
+							</div>
+						</fieldset>
 					</form>
 				</dialog>
 			</section>
