@@ -967,6 +967,10 @@
 		"message": "Universes",
 		"source": "Universes"
 	},
+	"item.pf1e.dagger": {
+		"message": "Dirk",
+		"source": "Dagger"
+	},
 	"keys.alt": {
 		"message": "Alt",
 		"source": "Alt"
@@ -999,6 +1003,10 @@
 		"message": "The game's own art, sounds, fonts, characters, settin' and tale ain't covered by the GNU Affero General Public License. They be copyright {holder}, all rights reserved, an' may not be plundered for reuse without written permission. Treasures made by other hands keep their own licenses, listed below.",
 		"source": "The game's own art, audio, fonts, characters, setting and story are not covered by the GNU Affero General Public License. They are copyright {holder}, all rights reserved, and may not be reused without written permission. Assets made by others keep their own licenses, listed below."
 	},
+	"license.communityUse": {
+		"message": "Multiverse Kiln uses trademarks an'/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy ({policy}). We be expressly forbidden from chargin' ye to use or reach this content. Multiverse Kiln ain't published, endorsed, or specifically approved by Paizo. For more about Paizo Inc. an' Paizo products, visit {paizo}.",
+		"source": "Multiverse Kiln uses trademarks and/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy ({policy}). We are expressly prohibited from charging you to use or access this content. Multiverse Kiln is not published, endorsed, or specifically approved by Paizo. For more information about Paizo Inc. and Paizo products, visit {paizo}."
+	},
 	"license.copyright": {
 		"message": "Copyright (C) {year} {holder}.",
 		"source": "Copyright (C) {year} {holder}."
@@ -1022,6 +1030,14 @@
 	"license.icons": {
 		"message": "Sigils",
 		"source": "Icons"
+	},
+	"license.openGameContent": {
+		"message": "The game mechanics o' the Pathfinder First Edition ruleset be Open Game Content, used under the Open Game License 1.0a below: its abilities, ways o' makin' ability scores, sizes, races, classes, coins an' items, an' their names in every tongue. In the source code, they be in {folder}, an' their names in {locales}. Nothin' else in Multiverse Kiln be Open Game Content.",
+		"source": "The Pathfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a below: its abilities, ways of making ability scores, sizes, races, classes, coins and items, and their names in every language. In the source code, they are in {folder}, and their names in {locales}. Nothing else in Multiverse Kiln is Open Game Content."
+	},
+	"license.pathfinder": {
+		"message": "Pathfinder First Edition rules o' the sea",
+		"source": "Pathfinder First Edition rules"
 	},
 	"license.phosphor": {
 		"message": "The sigils on yer buttons be from {phosphor}, used under the MIT License:",
@@ -1334,6 +1350,258 @@
 	"pager.range": {
 		"message": "{first, number}-{last, number} o' {total, number}",
 		"source": "{first, number}-{last, number} of {total, number}"
+	},
+	"pf1e.ability.charisma": {
+		"message": "Swagger",
+		"source": "Charisma"
+	},
+	"pf1e.ability.constitution": {
+		"message": "Grit",
+		"source": "Constitution"
+	},
+	"pf1e.ability.dexterity": {
+		"message": "Nimbleness",
+		"source": "Dexterity"
+	},
+	"pf1e.ability.intelligence": {
+		"message": "Cunning",
+		"source": "Intelligence"
+	},
+	"pf1e.ability.strength": {
+		"message": "Brawn",
+		"source": "Strength"
+	},
+	"pf1e.ability.wisdom": {
+		"message": "Sea Sense",
+		"source": "Wisdom"
+	},
+	"pf1e.castingStyle.none": {
+		"message": "none",
+		"source": "none"
+	},
+	"pf1e.castingStyle.prepared": {
+		"message": "readied at dawn",
+		"source": "prepared"
+	},
+	"pf1e.castingStyle.spontaneous": {
+		"message": "off the cuff",
+		"source": "spontaneous"
+	},
+	"pf1e.class.alchemist": {
+		"message": "Powder Monkey",
+		"source": "Alchemist"
+	},
+	"pf1e.class.barbarian": {
+		"message": "Berserker",
+		"source": "Barbarian"
+	},
+	"pf1e.class.bard": {
+		"message": "Shanty Singer",
+		"source": "Bard"
+	},
+	"pf1e.class.cavalier": {
+		"message": "Cavalier",
+		"source": "Cavalier"
+	},
+	"pf1e.class.cleric": {
+		"message": "Ship's Chaplain",
+		"source": "Cleric"
+	},
+	"pf1e.class.druid": {
+		"message": "Druid",
+		"source": "Druid"
+	},
+	"pf1e.class.fighter": {
+		"message": "Cutthroat",
+		"source": "Fighter"
+	},
+	"pf1e.class.inquisitor": {
+		"message": "Inquisitor",
+		"source": "Inquisitor"
+	},
+	"pf1e.class.monk": {
+		"message": "Monk",
+		"source": "Monk"
+	},
+	"pf1e.class.oracle": {
+		"message": "Oracle",
+		"source": "Oracle"
+	},
+	"pf1e.class.paladin": {
+		"message": "Paladin",
+		"source": "Paladin"
+	},
+	"pf1e.class.ranger": {
+		"message": "Scout",
+		"source": "Ranger"
+	},
+	"pf1e.class.rogue": {
+		"message": "Scallywag",
+		"source": "Rogue"
+	},
+	"pf1e.class.sorcerer": {
+		"message": "Sorcerer",
+		"source": "Sorcerer"
+	},
+	"pf1e.class.summoner": {
+		"message": "Summoner",
+		"source": "Summoner"
+	},
+	"pf1e.class.witch": {
+		"message": "Sea Witch",
+		"source": "Witch"
+	},
+	"pf1e.class.wizard": {
+		"message": "Wizard",
+		"source": "Wizard"
+	},
+	"pf1e.coin.cp": {
+		"message": "cp",
+		"source": "cp"
+	},
+	"pf1e.coin.gp": {
+		"message": "dbl",
+		"source": "gp"
+	},
+	"pf1e.coin.pp": {
+		"message": "pp",
+		"source": "pp"
+	},
+	"pf1e.coin.sp": {
+		"message": "pcs",
+		"source": "sp"
+	},
+	"pf1e.race.catfolk": {
+		"message": "Ship's Cat",
+		"source": "Catfolk"
+	},
+	"pf1e.race.drow": {
+		"message": "Drow",
+		"source": "Drow"
+	},
+	"pf1e.race.dwarf": {
+		"message": "Dwarf",
+		"source": "Dwarf"
+	},
+	"pf1e.race.elf": {
+		"message": "Elf",
+		"source": "Elf"
+	},
+	"pf1e.race.gnome": {
+		"message": "Gnome",
+		"source": "Gnome"
+	},
+	"pf1e.race.goblin": {
+		"message": "Goblin",
+		"source": "Goblin"
+	},
+	"pf1e.race.half_elf": {
+		"message": "Half-Elf",
+		"source": "Half-Elf"
+	},
+	"pf1e.race.half_orc": {
+		"message": "Half-Orc",
+		"source": "Half-Orc"
+	},
+	"pf1e.race.halfling": {
+		"message": "Halfling",
+		"source": "Halfling"
+	},
+	"pf1e.race.hobgoblin": {
+		"message": "Hobgoblin",
+		"source": "Hobgoblin"
+	},
+	"pf1e.race.human": {
+		"message": "Landlubber",
+		"source": "Human"
+	},
+	"pf1e.race.ratfolk": {
+		"message": "Bilge Rat",
+		"source": "Ratfolk"
+	},
+	"pf1e.size.colossal": {
+		"message": "Kraken-sized",
+		"source": "Colossal"
+	},
+	"pf1e.size.diminutive": {
+		"message": "Barnacle-sized",
+		"source": "Diminutive"
+	},
+	"pf1e.size.fine": {
+		"message": "Flea-sized",
+		"source": "Fine"
+	},
+	"pf1e.size.gargantuan": {
+		"message": "Whale-sized",
+		"source": "Gargantuan"
+	},
+	"pf1e.size.huge": {
+		"message": "Huge",
+		"source": "Huge"
+	},
+	"pf1e.size.large": {
+		"message": "Large",
+		"source": "Large"
+	},
+	"pf1e.size.medium": {
+		"message": "Medium",
+		"source": "Medium"
+	},
+	"pf1e.size.small": {
+		"message": "Small",
+		"source": "Small"
+	},
+	"pf1e.size.tiny": {
+		"message": "Wee",
+		"source": "Tiny"
+	},
+	"pf1e.statMethod.point_buy_custom": {
+		"message": "point buy: name yer own price",
+		"source": "point buy: choose the number of points"
+	},
+	"pf1e.statMethod.point_buy_epic_fantasy": {
+		"message": "point buy: legends o' the deep (25 points)",
+		"source": "point buy: epic fantasy (25 points)"
+	},
+	"pf1e.statMethod.point_buy_high_fantasy": {
+		"message": "point buy: fearsome buccaneers (20 points)",
+		"source": "point buy: high fantasy (20 points)"
+	},
+	"pf1e.statMethod.point_buy_low_fantasy": {
+		"message": "point buy: lowly deckhands (10 points)",
+		"source": "point buy: low fantasy (10 points)"
+	},
+	"pf1e.statMethod.point_buy_standard_fantasy": {
+		"message": "point buy: honest sailors (15 points)",
+		"source": "point buy: standard fantasy (15 points)"
+	},
+	"pf1e.statMethod.roll_3d6": {
+		"message": "3d6",
+		"source": "3d6"
+	},
+	"pf1e.statMethod.roll_3d6_reroll_ones": {
+		"message": "3d6, toss 1s overboard",
+		"source": "3d6, reroll 1s"
+	},
+	"pf1e.statMethod.roll_4d6_drop_lowest": {
+		"message": "4d6, make the lowest walk the plank",
+		"source": "4d6, drop the lowest"
+	},
+	"pf1e.statMethod.roll_4d6_reroll_ones_drop_lowest": {
+		"message": "4d6, toss 1s overboard, make the lowest walk the plank",
+		"source": "4d6, reroll 1s, drop the lowest"
+	},
+	"pf1e.tradition.arcane": {
+		"message": "arcane",
+		"source": "arcane"
+	},
+	"pf1e.tradition.divine": {
+		"message": "blessed by the sea gods",
+		"source": "divine"
+	},
+	"pf1e.tradition.none": {
+		"message": "none",
+		"source": "none"
 	},
 	"shortcuts.close": {
 		"message": "Batten down",

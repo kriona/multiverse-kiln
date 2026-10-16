@@ -5,7 +5,7 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 **Current phase** line updated so each new session knows where to pick up.
 `STRUCTURE-OVERVIEW.md` describes the pages, editors and game rules these phases build.
 
-**Current phase:** 9
+**Current phase:** 10
 
 ---
 
@@ -140,15 +140,28 @@ From here on, all text players read can be translated (see Localization in `STRU
 
 ## Phase 10: Characters and the PF1E ruleset
 
-- [ ] Review the Pathfinder 1E licensing (the OGL 1.0a and Paizo's terms for the "Pathfinder" name) before adding PF1E data, and add the required notices
-- [ ] Rulesets as modules (PF1E first): races, classes, settings and default items, with game rules as pure functions and their names as engine messages
-- [ ] Ruleset tab: stat rolling (3d6 variants, 4d6 variants, the point buy budgets and a custom budget), plus the sleep, weight and ammo settings (stored now, used later)
-- [ ] Items tab, item editor (name, type, enabled) and PF1E default items; item selection with quantities
-- [ ] Money field as a pure function with tests ("1pp 2gp 2sp 4cp", stored in copper)
-- [ ] Characters tab: group size, starting equipment, money and zone. Races and Classes tabs with their overrides, custom races and classes, and the PF1E fields (ability modifiers, floating bonus, darkvision, size, primary ability, tradition, casting style)
-- [ ] Create Character: the server rolls the stats and validates point buy choices (the client never sends ability scores); up to 20 per universe; starting zone by precedence (class + race > class > race > universe); starting equipment and money
-- [ ] Lobby: ghosts (invisible, don't block cells, can read but not send chat), choosing and switching characters, chatting as your character
-- [ ] Character sheet modal
+Built in seven steps: licensing and the ruleset module; the Ruleset tab and the universe's character settings; items; races and classes; characters; the lobby with characters; then the character sheet and finishing.
+
+1. Licensing and the ruleset module
+	- [✅] Review the Pathfinder 1E licensing (the OGL 1.0a and Paizo's terms for the "Pathfinder" name) before adding PF1E data, and add the required notices: the OGL with its Section 15 notices and Paizo's Community Use Policy notice, on the license page
+	- [✅] Rulesets as modules (PF1E first): abilities, sizes, races, classes, stat methods, settings and default items, with their names as engine messages
+	- [✅] Game rules as pure functions with tests: dice rolling (with the random source passed in), PF1E point buy costs (7 = -4 up to 18 = 17, scores 7-18 before racial modifiers), ability modifiers, and the money field ("1pp 2gp 2sp 4cp", stored in copper)
+2. Ruleset tab and the universe's character settings
+	- [ ] Ruleset tab: stat rolling (3d6 variants, 4d6 variants, the point buy budgets and a custom budget), plus the sleep, weight and ammo settings (stored now, used later)
+	- [ ] Characters tab: group size, starting money and starting zone, with the zone selection modal
+3. Items
+	- [ ] Items tab, item editor (name, type, enabled) and the PF1E default items (a dagger for now); item selection with quantities
+	- [ ] Characters tab: starting equipment (a dagger for everyone by default)
+4. Races and classes
+	- [ ] Races and Classes tabs with their overrides, custom races and classes, and the PF1E fields (ability modifiers, floating bonus, darkvision, size, primary ability, tradition, casting style)
+	- [ ] Each race's and class's starting equipment, money and zone, and the class's per-race zones; the starting zone's precedence (class + race > class > race > universe) as a pure function with tests
+5. Characters
+	- [ ] Create Character: the server rolls the stats, and the player can rearrange the rolled scores among the abilities (the class's primary ability is a hint); point buy choices are validated on the server (the client never sends ability scores); up to 20 per universe; starting equipment and money
+6. Lobby with characters
+	- [ ] Ghosts (invisible, don't block cells, can read but not send chat), choosing and switching characters, chatting as your character; Create game needs a character
+7. Character sheet and finishing
+	- [ ] Character sheet modal
+	- [ ] Check the new screens in the pseudo-language, update Pirate, and add keyboard shortcuts and screen reader text for the new dialogs
 
 **Done when:** a player creates a PF1E character with rolled stats and starting gear, then walks and chats as them in the lobby while ghosts watch.
 
@@ -281,6 +294,7 @@ Needed before universes are open to the public.
 
 ## Open decisions
 
+- Whether character names must be unique within a universe (Phase 10)
 - How long walking a square takes (Phase 12)
 - Whether vision runs on the server or the client (Phase 12)
 - How groups are listed in the lobby (Phase 11)

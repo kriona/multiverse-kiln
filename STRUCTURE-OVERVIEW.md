@@ -92,6 +92,8 @@ If a universe allows it, and you are in the universe's lobby, you may enter a po
 ## Create Character
 Based entirely on the universe's ruleset.
 
+For PF1E, the server rolls the ability scores (or checks the point buy choices) using the universe's [stat rolling](#pf1e) setting; the client never sends ability scores. The player can rearrange rolled scores among the abilities, with the class's primary ability as a hint.
+
 ## Create Group
 The character creating the group is the "anchor being". This shows you a landing page for your new group. It explains that your character is the anchor being for this universe, and that the game is centered around them.
 - The group starts in the anchor being's [starting zone](#tab-characters).
@@ -202,6 +204,8 @@ A universe can have several creators. If you delete your account and your univer
 What shows up here depends on what ruleset is chosen.
 
 #### PF1E
+Pathfinder 1E's rules (races, classes, abilities, point buy, sizes and items) are Open Game Content used under the Open Game License 1.0a, and the name "Pathfinder" is used under Paizo's Community Use Policy. Both notices are on the license page. The Community Use Policy only covers a game that is free to play (donations and ads are allowed, a paywall isn't).
+
 - dropdown for "rolling for stats"
 	- 3d6
 	- 3d6 reroll 1s
@@ -212,6 +216,8 @@ What shows up here depends on what ruleset is chosen.
 	- point buy `high fantasy` (20)
 	- point buy `epic fantasy` (25)
 	- point buy (you define the #)
+	- rolling makes six scores, which the player can rearrange among the abilities. Rerolling 1s rolls each 1 again until it isn't one
+	- point buy uses PF1E's costs: 7 = -4, 8 = -2, 9 = -1, 10 = 0, 11 = 1, 12 = 2, 13 = 3, 14 = 5, 15 = 7, 16 = 10, 17 = 13, 18 = 17. Each score is 7 to 18 before racial modifiers, and the total can't be more than the budget. A custom budget is 0 to 102 (every score 18)
 - do characters get tired and require sleep?
 - does gold count towards weight?
 - track ammo?
@@ -368,6 +374,8 @@ the table contains:
 - icon
 - name, links to the [item editor](#editor-item)
 - summary (item type, properties, etc)
+
+For PF1E, the only default item for now is a Dagger.
 
 ### Tab: Connect to the Multiverse
 Explain that this allows characters to move freely between universes with the same ruleset. If no other universes with this ruleset exist, say that you're alone in the multiverse.
@@ -561,7 +569,7 @@ Every page, editor and game screen can be used with only a keyboard and with a s
 	- Dual-Grid vs. 47-Tile Blob, possibly per layer
 	- how large objects such as trees and houses work, since a player walking behind one should be hidden
 - **Maps:** a map 50,000 tiles in each direction could hold billions of cells, so maps need to be stored sparsely or in chunks rather than as one full grid.
-- **Point buy:** the details of the PF1E point-buy system.
+- **Characters:** whether character names must be unique within a universe.
 - **Localization:**
 	- whether a universe can rename engine terms (calling gold "crowns"), which changes the pages' wording in that universe
 	- fonts for map text in scripts the default font doesn't cover, such as Chinese and Japanese

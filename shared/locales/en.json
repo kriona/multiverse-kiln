@@ -967,6 +967,10 @@
 		"defaultMessage": "Universes",
 		"description": "Heading of the list of universes anyone can play"
 	},
+	"item.pf1e.dagger": {
+		"defaultMessage": "Dagger",
+		"description": "Name of an item in Pathfinder: a short blade for stabbing or throwing"
+	},
 	"keys.alt": {
 		"defaultMessage": "Alt",
 		"description": "Name of the Alt key, as keyboard shortcuts such as Alt+S show it"
@@ -999,6 +1003,10 @@
 		"defaultMessage": "The game's own art, audio, fonts, characters, setting and story are not covered by the GNU Affero General Public License. They are copyright {holder}, all rights reserved, and may not be reused without written permission. Assets made by others keep their own licenses, listed below.",
 		"description": "On the license page, explaining that the game's assets aren't free software; {holder} is who holds their copyright"
 	},
+	"license.communityUse": {
+		"defaultMessage": "Multiverse Kiln uses trademarks and/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy ({policy}). We are expressly prohibited from charging you to use or access this content. Multiverse Kiln is not published, endorsed, or specifically approved by Paizo. For more information about Paizo Inc. and Paizo products, visit {paizo}.",
+		"description": "The notice Paizo requires from anyone using its trademarks under its Community Use Policy, which keeps the game free; {policy} is a link to the policy and {paizo} a link to Paizo's website, each the same in every language"
+	},
 	"license.copyright": {
 		"defaultMessage": "Copyright (C) {year} {holder}.",
 		"description": "The game's copyright notice on the license page; {year} is the year and {holder} is who holds the copyright"
@@ -1022,6 +1030,14 @@
 	"license.icons": {
 		"defaultMessage": "Icons",
 		"description": "Heading of the license page's section crediting the icon sets the pages use"
+	},
+	"license.openGameContent": {
+		"defaultMessage": "The Pathfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a below: its abilities, ways of making ability scores, sizes, races, classes, coins and items, and their names in every language. In the source code, they are in {folder}, and their names in {locales}. Nothing else in Multiverse Kiln is Open Game Content.",
+		"description": "On the license page, saying which part of the game is Open Game Content, as the Open Game License requires; {folder} and {locales} are folders in the game's source code. The license's text follows in English"
+	},
+	"license.pathfinder": {
+		"defaultMessage": "Pathfinder First Edition rules",
+		"description": "Heading of the license page's section about the rules of the tabletop role-playing game Pathfinder, first edition, which the game uses"
 	},
 	"license.phosphor": {
 		"defaultMessage": "Interface icons are from {phosphor}, used under the MIT License:",
@@ -1334,6 +1350,258 @@
 	"pager.range": {
 		"defaultMessage": "{first, number}-{last, number} of {total, number}",
 		"description": "Which items of a list a page shows, e.g. 1-500 of 1200"
+	},
+	"pf1e.ability.charisma": {
+		"defaultMessage": "Charisma",
+		"description": "Name of a character's ability score in Pathfinder: force of personality"
+	},
+	"pf1e.ability.constitution": {
+		"defaultMessage": "Constitution",
+		"description": "Name of a character's ability score in Pathfinder: health and stamina"
+	},
+	"pf1e.ability.dexterity": {
+		"defaultMessage": "Dexterity",
+		"description": "Name of a character's ability score in Pathfinder: agility and reflexes"
+	},
+	"pf1e.ability.intelligence": {
+		"defaultMessage": "Intelligence",
+		"description": "Name of a character's ability score in Pathfinder: learning and reasoning"
+	},
+	"pf1e.ability.strength": {
+		"defaultMessage": "Strength",
+		"description": "Name of a character's ability score in Pathfinder: physical power"
+	},
+	"pf1e.ability.wisdom": {
+		"defaultMessage": "Wisdom",
+		"description": "Name of a character's ability score in Pathfinder: willpower, common sense and perception"
+	},
+	"pf1e.castingStyle.none": {
+		"defaultMessage": "none",
+		"description": "Spellcasting style of a class in Pathfinder that casts no spells"
+	},
+	"pf1e.castingStyle.prepared": {
+		"defaultMessage": "prepared",
+		"description": "Spellcasting style of a class in Pathfinder that chooses its spells ahead of time each day"
+	},
+	"pf1e.castingStyle.spontaneous": {
+		"defaultMessage": "spontaneous",
+		"description": "Spellcasting style of a class in Pathfinder that casts any spell it knows without preparing it"
+	},
+	"pf1e.class.alchemist": {
+		"defaultMessage": "Alchemist",
+		"description": "Name of a character class in Pathfinder: brews potions, bombs and magical extracts. Singular, used as a label"
+	},
+	"pf1e.class.barbarian": {
+		"defaultMessage": "Barbarian",
+		"description": "Name of a character class in Pathfinder: a warrior who fights in a rage. Singular, used as a label"
+	},
+	"pf1e.class.bard": {
+		"defaultMessage": "Bard",
+		"description": "Name of a character class in Pathfinder: a performer whose music and words are magic. Singular, used as a label"
+	},
+	"pf1e.class.cavalier": {
+		"defaultMessage": "Cavalier",
+		"description": "Name of a character class in Pathfinder: a mounted knight sworn to an order. Singular, used as a label"
+	},
+	"pf1e.class.cleric": {
+		"defaultMessage": "Cleric",
+		"description": "Name of a character class in Pathfinder: a priest who casts spells granted by a deity. Singular, used as a label"
+	},
+	"pf1e.class.druid": {
+		"defaultMessage": "Druid",
+		"description": "Name of a character class in Pathfinder: a guardian of nature who can take animal shapes. Singular, used as a label"
+	},
+	"pf1e.class.fighter": {
+		"defaultMessage": "Fighter",
+		"description": "Name of a character class in Pathfinder: a trained warrior skilled with weapons and armor. Singular, used as a label"
+	},
+	"pf1e.class.inquisitor": {
+		"defaultMessage": "Inquisitor",
+		"description": "Name of a character class in Pathfinder: a hunter of a faith's enemies. Singular, used as a label"
+	},
+	"pf1e.class.monk": {
+		"defaultMessage": "Monk",
+		"description": "Name of a character class in Pathfinder: a martial artist who fights unarmed. Singular, used as a label"
+	},
+	"pf1e.class.oracle": {
+		"defaultMessage": "Oracle",
+		"description": "Name of a character class in Pathfinder: chosen by divine powers, cursed and gifted with spells. Singular, used as a label"
+	},
+	"pf1e.class.paladin": {
+		"defaultMessage": "Paladin",
+		"description": "Name of a character class in Pathfinder: a holy warrior. Singular, used as a label"
+	},
+	"pf1e.class.ranger": {
+		"defaultMessage": "Ranger",
+		"description": "Name of a character class in Pathfinder: a hunter and tracker of the wilds. Singular, used as a label"
+	},
+	"pf1e.class.rogue": {
+		"defaultMessage": "Rogue",
+		"description": "Name of a character class in Pathfinder: a sneaky, skilled thief or scout. Singular, used as a label"
+	},
+	"pf1e.class.sorcerer": {
+		"defaultMessage": "Sorcerer",
+		"description": "Name of a character class in Pathfinder: casts magic that comes from their bloodline. Singular, used as a label"
+	},
+	"pf1e.class.summoner": {
+		"defaultMessage": "Summoner",
+		"description": "Name of a character class in Pathfinder: bonded to a summoned creature from another plane. Singular, used as a label"
+	},
+	"pf1e.class.witch": {
+		"defaultMessage": "Witch",
+		"description": "Name of a character class in Pathfinder: casts spells learned from a patron through a familiar. Singular, used as a label"
+	},
+	"pf1e.class.wizard": {
+		"defaultMessage": "Wizard",
+		"description": "Name of a character class in Pathfinder: casts spells learned from study and a spellbook. Singular, used as a label"
+	},
+	"pf1e.coin.cp": {
+		"defaultMessage": "cp",
+		"description": "Abbreviation of copper pieces, the least valuable coin in Pathfinder, written after a number with no space: \"4cp\". Players type it into money fields, so keep it short and without spaces or digits"
+	},
+	"pf1e.coin.gp": {
+		"defaultMessage": "gp",
+		"description": "Abbreviation of gold pieces, the coin prices are given in in Pathfinder, written after a number with no space: \"2gp\". Players type it into money fields, so keep it short and without spaces or digits"
+	},
+	"pf1e.coin.pp": {
+		"defaultMessage": "pp",
+		"description": "Abbreviation of platinum pieces, the most valuable coin in Pathfinder, written after a number with no space: \"1pp\". Players type it into money fields, so keep it short and without spaces or digits"
+	},
+	"pf1e.coin.sp": {
+		"defaultMessage": "sp",
+		"description": "Abbreviation of silver pieces, a coin in Pathfinder worth a tenth of a gold piece, written after a number with no space: \"2sp\". Players type it into money fields, so keep it short and without spaces or digits"
+	},
+	"pf1e.race.catfolk": {
+		"defaultMessage": "Catfolk",
+		"description": "Name of a playable race in Pathfinder: curious, agile people who look like cats standing upright"
+	},
+	"pf1e.race.drow": {
+		"defaultMessage": "Drow",
+		"description": "Name of a playable race in Pathfinder: dark elves who live underground"
+	},
+	"pf1e.race.dwarf": {
+		"defaultMessage": "Dwarf",
+		"description": "Name of a playable race in Pathfinder: short, stout people of the mountains. Singular, used as a label"
+	},
+	"pf1e.race.elf": {
+		"defaultMessage": "Elf",
+		"description": "Name of a playable race in Pathfinder: long-lived, graceful people. Singular, used as a label"
+	},
+	"pf1e.race.gnome": {
+		"defaultMessage": "Gnome",
+		"description": "Name of a playable race in Pathfinder: small, whimsical people with fey ancestry. Singular, used as a label"
+	},
+	"pf1e.race.goblin": {
+		"defaultMessage": "Goblin",
+		"description": "Name of a playable race in Pathfinder: small, mischievous, fire-loving people. Singular, used as a label"
+	},
+	"pf1e.race.half_elf": {
+		"defaultMessage": "Half-Elf",
+		"description": "Name of a playable race in Pathfinder: people with one human and one elven parent. Singular, used as a label"
+	},
+	"pf1e.race.half_orc": {
+		"defaultMessage": "Half-Orc",
+		"description": "Name of a playable race in Pathfinder: people with one human and one orc parent. Singular, used as a label"
+	},
+	"pf1e.race.halfling": {
+		"defaultMessage": "Halfling",
+		"description": "Name of a playable race in Pathfinder: small, lucky people about half the height of a human. Singular, used as a label"
+	},
+	"pf1e.race.hobgoblin": {
+		"defaultMessage": "Hobgoblin",
+		"description": "Name of a playable race in Pathfinder: disciplined, militaristic cousins of goblins, the size of humans. Singular, used as a label"
+	},
+	"pf1e.race.human": {
+		"defaultMessage": "Human",
+		"description": "Name of a playable race in Pathfinder: humans. Singular, used as a label"
+	},
+	"pf1e.race.ratfolk": {
+		"defaultMessage": "Ratfolk",
+		"description": "Name of a playable race in Pathfinder: small, clever people who look like rats standing upright"
+	},
+	"pf1e.size.colossal": {
+		"defaultMessage": "Colossal",
+		"description": "Size of a creature in Pathfinder, the largest: an ancient dragon"
+	},
+	"pf1e.size.diminutive": {
+		"defaultMessage": "Diminutive",
+		"description": "Size of a creature in Pathfinder, between Fine and Tiny: a rat"
+	},
+	"pf1e.size.fine": {
+		"defaultMessage": "Fine",
+		"description": "Size of a creature in Pathfinder, the smallest: an insect"
+	},
+	"pf1e.size.gargantuan": {
+		"defaultMessage": "Gargantuan",
+		"description": "Size of a creature in Pathfinder, between Huge and Colossal: an old dragon"
+	},
+	"pf1e.size.huge": {
+		"defaultMessage": "Huge",
+		"description": "Size of a creature in Pathfinder, between Large and Gargantuan: a giant"
+	},
+	"pf1e.size.large": {
+		"defaultMessage": "Large",
+		"description": "Size of a creature in Pathfinder, between Medium and Huge: an ogre or horse"
+	},
+	"pf1e.size.medium": {
+		"defaultMessage": "Medium",
+		"description": "Size of a creature in Pathfinder, between Small and Large: a human"
+	},
+	"pf1e.size.small": {
+		"defaultMessage": "Small",
+		"description": "Size of a creature in Pathfinder, between Tiny and Medium: a halfling or gnome"
+	},
+	"pf1e.size.tiny": {
+		"defaultMessage": "Tiny",
+		"description": "Size of a creature in Pathfinder, between Diminutive and Small: a cat"
+	},
+	"pf1e.statMethod.point_buy_custom": {
+		"defaultMessage": "point buy: choose the number of points",
+		"description": "Way of making a character's ability scores: the player spends a number of points the universe's editor chooses"
+	},
+	"pf1e.statMethod.point_buy_epic_fantasy": {
+		"defaultMessage": "point buy: epic fantasy (25 points)",
+		"description": "Way of making a character's ability scores: the player spends 25 points on them, for a campaign of mighty heroes"
+	},
+	"pf1e.statMethod.point_buy_high_fantasy": {
+		"defaultMessage": "point buy: high fantasy (20 points)",
+		"description": "Way of making a character's ability scores: the player spends 20 points on them, for a campaign of stronger heroes"
+	},
+	"pf1e.statMethod.point_buy_low_fantasy": {
+		"defaultMessage": "point buy: low fantasy (10 points)",
+		"description": "Way of making a character's ability scores: the player spends 10 points on them, for a campaign of weaker heroes"
+	},
+	"pf1e.statMethod.point_buy_standard_fantasy": {
+		"defaultMessage": "point buy: standard fantasy (15 points)",
+		"description": "Way of making a character's ability scores: the player spends 15 points on them, the usual amount"
+	},
+	"pf1e.statMethod.roll_3d6": {
+		"defaultMessage": "3d6",
+		"description": "Way of making a character's ability scores: roll three six-sided dice for each and add them up"
+	},
+	"pf1e.statMethod.roll_3d6_reroll_ones": {
+		"defaultMessage": "3d6, reroll 1s",
+		"description": "Way of making a character's ability scores: roll three six-sided dice for each, rolling any 1 again, and add them up"
+	},
+	"pf1e.statMethod.roll_4d6_drop_lowest": {
+		"defaultMessage": "4d6, drop the lowest",
+		"description": "Way of making a character's ability scores: roll four six-sided dice for each and add up the highest three"
+	},
+	"pf1e.statMethod.roll_4d6_reroll_ones_drop_lowest": {
+		"defaultMessage": "4d6, reroll 1s, drop the lowest",
+		"description": "Way of making a character's ability scores: roll four six-sided dice for each, rolling any 1 again, and add up the highest three"
+	},
+	"pf1e.tradition.arcane": {
+		"defaultMessage": "arcane",
+		"description": "Magic tradition of a class in Pathfinder whose spells come from study or innate talent, like a wizard's"
+	},
+	"pf1e.tradition.divine": {
+		"defaultMessage": "divine",
+		"description": "Magic tradition of a class in Pathfinder whose spells come from a deity or nature, like a cleric's"
+	},
+	"pf1e.tradition.none": {
+		"defaultMessage": "none",
+		"description": "Magic tradition of a class in Pathfinder that casts no spells"
 	},
 	"shortcuts.close": {
 		"defaultMessage": "Close",

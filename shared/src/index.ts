@@ -5,6 +5,7 @@ export * from './editor.js';
 export * from './localization.js';
 export * from './maps.js';
 export * from './messages.js';
+export * from './rulesets/pf1e/index.js';
 export * from './state.js';
 export * from './universes.js';
 export * from './zoneTree.js';
