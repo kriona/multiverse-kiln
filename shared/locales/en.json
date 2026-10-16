@@ -517,7 +517,7 @@
 	},
 	"editor.universe.stage": {
 		"defaultMessage": "Stage",
-		"description": "Label of the field for how far along a universe is, from being built to being retired"
+		"description": "Heading of the choice of how far along a universe is, from being built to being retired"
 	},
 	"editor.universeTitle": {
 		"defaultMessage": "Edit {universe}",
@@ -1083,6 +1083,10 @@
 		"defaultMessage": "Edit Universe - Multiverse Kiln",
 		"description": "The browser tab's title for the world editor"
 	},
+	"page.language": {
+		"defaultMessage": "Language",
+		"description": "Label of the list of languages at the bottom of every page, which switches the language the game is shown in"
+	},
 	"page.license": {
 		"defaultMessage": "This game is free software under the {license}.",
 		"description": "At the bottom of every page; {license} is a link to the license, named by page.licenseName"
@@ -1226,6 +1230,22 @@
 	"universe.stage.prologue": {
 		"defaultMessage": "prologue",
 		"description": "Stage of a universe that is open for beta testers"
+	},
+	"universe.stageDescription.end_of_time": {
+		"defaultMessage": "Retired. It is locked and can only be viewed, and it isn't listed on Home.",
+		"description": "Shown under the stage \"end of time\" in the editor, explaining what it means"
+	},
+	"universe.stageDescription.in_the_beginning": {
+		"defaultMessage": "Still being built. Only its creators and builders can play, and it isn't listed on Home.",
+		"description": "Shown under the stage \"in the beginning\" in the editor, explaining what it means"
+	},
+	"universe.stageDescription.let_there_be_light": {
+		"defaultMessage": "Ready for everyone. Anyone can play, and it's listed on Home.",
+		"description": "Shown under the stage \"let there be light\" in the editor, explaining what it means"
+	},
+	"universe.stageDescription.prologue": {
+		"defaultMessage": "Open for testing. Its creators, builders and beta testers can play, and it isn't listed on Home.",
+		"description": "Shown under the stage \"prologue\" in the editor, explaining what it means"
 	},
 	"universe.startingZoneName": {
 		"defaultMessage": "Starting Zone",

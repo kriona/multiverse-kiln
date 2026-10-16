@@ -76,6 +76,66 @@ export interface LocalizedMessage extends MessageSource
 export type MessageCatalog = Record<string, string>;
 
 /**
+ * One translated message as its language's file stores it
+ */
+export interface Translation
+{
+	/**
+	 * The translation, in ICU MessageFormat
+	 */
+	message: string;
+
+	/**
+	 * The English it was translated from. When the English changes, the translation is out of date:
+	 * it is still shown until it is updated
+	 */
+	source: string;
+}
+
+/**
+ * A language's file in shared/locales, e.g. de.json: each message's translation by its ID
+ */
+export type TranslationFile = Record<string, Translation>;
+
+/**
+ * Which English messages a language's file is missing, and which of its translations are out of date
+ */
+export interface TranslationStatus
+{
+	missing: string[];
+	outdated: string[];
+}
+
+/**
+ * The translations in a language's file, for a Translator
+ *
+ * @param file The language's file
+ * @return Each message's translation by its ID
+ */
+export function translationCatalog(file: TranslationFile): MessageCatalog
+{
+	return(Object.fromEntries(Object.entries(file).map(([id, translation]) => [id, translation.message])));
+}
+
+/**
+ * How current a language's translations are
+ *
+ * @param messages The English messages by ID, as in shared/locales/en.json
+ * @param file The language's file
+ * @return The IDs of the English messages it has no translation of, and of the translations made from
+ * English that has changed since, each sorted
+ */
+export function translationStatus(messages: Record<string, { defaultMessage: string }>, file: TranslationFile): TranslationStatus
+{
+	const ids = Object.keys(messages).sort();
+
+	return({
+		missing: ids.filter((id) => (file[id] === undefined)),
+		outdated: ids.filter((id) => ((file[id] !== undefined) && (file[id].source !== messages[id].defaultMessage)))
+	});
+}
+
+/**
  * Declares messages, so the extractor can find them
  *
  * @param messages Each message by a name the code uses for it

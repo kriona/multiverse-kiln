@@ -134,6 +134,7 @@ From here on, all text players read can be translated (see Localization in `STRU
 - [✅] Default tiles' names are engine messages (`DEFAULT_TILE_NAMES`) found by their `key`; a universe's edited copy stores a name only when it was renamed. The Tilesets tab's name filter still matches those names in English, since the server has no translations
 - [✅] A pseudo-language (`?locale=en-XA` in development), loaded as a catalog like any other language: the client's dev server writes it and `en.json` whenever a file with messages is saved, and production builds leave it out. An ESLint rule against literal text in the UI and in error responses, and a test that every translation parses and uses the same arguments as its English
 - [✅] Add the rule to `CLAUDE.md`: text players read is a message with an ID, English text and a description
+- [✅] Pirate (`en-x-pirate`), a test language shipped in production builds, and a language picker in the footer that the browser remembers until profiles exist. Each translation stores the English it was made from, and `npm run messages` reports each language's missing and out-of-date messages (players see English, or the old translation, until it's updated)
 
 **Done when:** every page shows no untranslated text in the pseudo-language, and the English catalog is extracted from the code with a description for every message.
 

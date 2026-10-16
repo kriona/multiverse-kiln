@@ -50,6 +50,32 @@ export const UNIVERSE_STAGE_NAMES: Record<UniverseStage, MessageDescriptor> = de
 });
 
 /**
+ * What each stage means for who can play the universe and whether Home lists it
+ */
+export const UNIVERSE_STAGE_DESCRIPTIONS: Record<UniverseStage, MessageDescriptor> = defineMessages({
+	in_the_beginning: {
+		id: 'universe.stageDescription.in_the_beginning',
+		defaultMessage: 'Still being built. Only its creators and builders can play, and it isn\'t listed on Home.',
+		description: 'Shown under the stage "in the beginning" in the editor, explaining what it means'
+	},
+	prologue: {
+		id: 'universe.stageDescription.prologue',
+		defaultMessage: 'Open for testing. Its creators, builders and beta testers can play, and it isn\'t listed on Home.',
+		description: 'Shown under the stage "prologue" in the editor, explaining what it means'
+	},
+	let_there_be_light: {
+		id: 'universe.stageDescription.let_there_be_light',
+		defaultMessage: 'Ready for everyone. Anyone can play, and it\'s listed on Home.',
+		description: 'Shown under the stage "let there be light" in the editor, explaining what it means'
+	},
+	end_of_time: {
+		id: 'universe.stageDescription.end_of_time',
+		defaultMessage: 'Retired. It is locked and can only be viewed, and it isn\'t listed on Home.',
+		description: 'Shown under the stage "end of time" in the editor, explaining what it means'
+	}
+});
+
+/**
  * The game rules a universe is played with
  */
 export const RULESETS = ['pf1e'] as const;

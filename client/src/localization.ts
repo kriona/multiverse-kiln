@@ -1,24 +1,30 @@
 /**
  * The player's language, and the text the pages show in it (see shared/src/localization.ts)
  *
- * startLocalization() runs before anything else on a page: it picks the language, loads its catalog and
- * translates the text the page's HTML marks with data-message. Code then shows messages with t()
+ * startLocalization() runs before anything else on a page: it picks the language, loads its
+ * translations and translates the text the page's HTML marks with data-message. Code then shows
+ * messages with t()
  */
-import { LOCALE_PARAMETER, readPageParameter } from './pages';
-import { matchLocale, SOURCE_LOCALE, Translator, type LocalizedMessage, type MessageCatalog, type MessageSource, type MessageValues } from '@multiverse-kiln/shared';
+import { LOCALE_PARAMETER, readPageParameter, replacePageParameters } from './pages';
+import { matchLocale, SOURCE_LOCALE, translationCatalog, Translator, type LocalizedMessage, type MessageSource, type MessageValues, type TranslationFile } from '@multiverse-kiln/shared';
 
 /**
- * Each translation's catalog, loaded when it's needed, by its file's path. In development this
- * includes the pseudo-language's, which the dev server writes (see vite.config.ts); production builds
- * leave it out even when the file is there
+ * Each language's file, loaded when it's needed, by its file's path. In development this includes the
+ * pseudo-language's, which the dev server writes (see vite.config.ts); production builds leave it out
+ * even when the file is there
  */
-const catalogFiles = {
-	...import.meta.glob<MessageCatalog>(['../../shared/locales/*.json', '!../../shared/locales/en.json', '!../../shared/locales/en-XA.json'], { import: 'default' }),
-	...(import.meta.env.DEV ? import.meta.glob<MessageCatalog>('../../shared/locales/en-XA.json', { import: 'default' }) : {})
+const translationFiles = {
+	...import.meta.glob<TranslationFile>(['../../shared/locales/*.json', '!../../shared/locales/en.json', '!../../shared/locales/en-XA.json'], { import: 'default' }),
+	...(import.meta.env.DEV ? import.meta.glob<TranslationFile>('../../shared/locales/en-XA.json', { import: 'default' }) : {})
 };
 
 /**
- * Where the browser keeps the language chosen with the locale parameter, in development
+ * Each language's file loader, by its language tag
+ */
+const loaders = new Map(Object.entries(translationFiles).map(([file, load]) => [(file.split('/').pop() ?? '').replace(/\.json$/, ''), load]));
+
+/**
+ * Where the browser keeps the language the player chose, until profiles hold it (Phase 13)
  */
 const LOCALE_STORAGE_KEY = 'kiln.locale';
 
@@ -32,14 +38,12 @@ let translator = new Translator(SOURCE_LOCALE);
  */
 export async function startLocalization(): Promise<void>
 {
-	const loaders = new Map(Object.entries(catalogFiles).map(([file, load]) => [(file.split('/').pop() ?? '').replace(/\.json$/, ''), load]));
-	const available = [SOURCE_LOCALE, ...loaders.keys()];
-	const locale = matchLocale(requestedLocales(), available);
+	const locale = matchLocale(requestedLocales(), availableLocales());
 	const load = loaders.get(locale);
 
 	try
 	{
-		translator = new Translator(locale, ((load === undefined) ? {} : await load()));
+		translator = new Translator(locale, ((load === undefined) ? {} : translationCatalog(await load())));
 	}
 	catch (error)
 	{
@@ -52,42 +56,70 @@ export async function startLocalization(): Promise<void>
 }
 
 /**
- * The languages the player wants, most wanted first: the browser's, or in development the one chosen
- * with ?locale= (e.g. ?locale=en-XA for the pseudo-language), which the browser remembers until
- * ?locale= is given empty
+ * The languages there are translations for
+ *
+ * @return Their language tags, English first
+ */
+export function availableLocales(): string[]
+{
+	return([SOURCE_LOCALE, ...loaders.keys()]);
+}
+
+/**
+ * Switches to a language: remembers it in the browser and loads the page again in it
+ *
+ * @param locale The language tag
+ */
+export function chooseLocale(locale: string): void
+{
+	try
+	{
+		localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+		replacePageParameters({ [LOCALE_PARAMETER]: undefined });
+	}
+	catch
+	{
+		// Without storage, the choice lasts as long as it stays in the page's address
+		replacePageParameters({ [LOCALE_PARAMETER]: locale });
+	}
+
+	window.location.reload();
+}
+
+/**
+ * The languages the player wants, most wanted first: the one chosen with the language picker or with
+ * ?locale= (e.g. ?locale=en-XA for the pseudo-language), then the browser's. ?locale= given empty
+ * forgets the choice
  *
  * @return The languages
  */
 function requestedLocales(): readonly string[]
 {
-	if (import.meta.env.DEV)
+	const chosen = readPageParameter(LOCALE_PARAMETER);
+
+	try
 	{
-		const chosen = readPageParameter(LOCALE_PARAMETER);
-
-		try
+		if (chosen === '')
 		{
-			if (chosen === '')
-			{
-				localStorage.removeItem(LOCALE_STORAGE_KEY);
-			}
-			else if (chosen !== undefined)
-			{
-				localStorage.setItem(LOCALE_STORAGE_KEY, chosen);
-			}
-
-			const remembered = localStorage.getItem(LOCALE_STORAGE_KEY);
-
-			if (remembered !== null)
-			{
-				return([remembered]);
-			}
+			localStorage.removeItem(LOCALE_STORAGE_KEY);
 		}
-		catch
+		else if (chosen !== undefined)
 		{
-			if ((chosen !== undefined) && (chosen !== ''))
-			{
-				return([chosen]);
-			}
+			localStorage.setItem(LOCALE_STORAGE_KEY, chosen);
+		}
+
+		const remembered = localStorage.getItem(LOCALE_STORAGE_KEY);
+
+		if (remembered !== null)
+		{
+			return([remembered, ...navigator.languages]);
+		}
+	}
+	catch
+	{
+		if ((chosen !== undefined) && (chosen !== ''))
+		{
+			return([chosen, ...navigator.languages]);
 		}
 	}
 

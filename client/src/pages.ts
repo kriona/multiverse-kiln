@@ -5,11 +5,11 @@
  *   lobby once the player has logged in, and ?group=<id> (GROUP_QUERY_PARAMETER) joins a group
  * - edit.html: the world editor for ?universe=<id>, on the tab given by ?tab= and the zone given by ?zone=
  *
- * In development, either page takes ?locale= to choose a language (see src/localization.ts)
+ * Either page takes ?locale= to choose a language, as the language picker in the footer does (see src/localization.ts)
  */
 
 /**
- * Query string parameter choosing the language in development, e.g. en-XA for the pseudo-language
+ * Query string parameter choosing the language, e.g. en-x-pirate, or en-XA for the pseudo-language in development
  */
 export const LOCALE_PARAMETER = 'locale';
 

@@ -1,7 +1,7 @@
 import assert from 'assert';
 import fs from 'fs';
 import path from 'path';
-import { catalogProblems, defineMessages, isLocalizedMessage, localize, matchLocale, messageArguments, PSEUDO_LOCALE, pseudoMessage, SOURCE_LOCALE, Translator } from '@multiverse-kiln/shared';
+import { catalogProblems, defineMessages, isLocalizedMessage, localize, matchLocale, messageArguments, PSEUDO_LOCALE, pseudoMessage, SOURCE_LOCALE, translationCatalog, Translator, translationStatus, type TranslationFile } from '@multiverse-kiln/shared';
 
 /**
  * Where the English catalog and the translations are
@@ -187,20 +187,58 @@ describe('localization (shared)', () =>
 		});
 	});
 
+	describe('translationStatus', () =>
+	{
+		const english = {
+			'test.playingAs': { defaultMessage: 'Playing as {name}' },
+			'test.saved': { defaultMessage: 'Saved' },
+			'test.zones': { defaultMessage: '{count} zones' }
+		};
+
+		it('lists the messages a translation is missing, and those made from English that has changed', () =>
+		{
+			const file = {
+				'test.playingAs': {
+					message: 'Sailin\' as {name}',
+					source: 'Playing as {name}'
+				},
+				'test.saved': {
+					message: 'Stowed',
+					source: 'Saved!'
+				}
+			};
+
+			assert.deepStrictEqual(translationStatus(english, file), {
+				missing: ['test.zones'],
+				outdated: ['test.saved']
+			});
+			assert.deepStrictEqual(translationCatalog(file), {
+				'test.playingAs': 'Sailin\' as {name}',
+				'test.saved': 'Stowed'
+			});
+		});
+	});
+
 	describe('the translations in shared/locales', () =>
 	{
-		it('each keep the English catalog\'s messages and arguments', () =>
+		it('each have a message and its English for every entry, and keep the English catalog\'s messages and arguments', () =>
 		{
 			const english = JSON.parse(fs.readFileSync(path.join(LOCALES_FOLDER, `${SOURCE_LOCALE}.json`), 'utf8')) as Record<string, { defaultMessage: string }>;
 
-			// The pseudo-language's catalog is left out: the dev server makes it, and it isn't committed
+			// The pseudo-language's file is left out: the dev server makes it, and it isn't committed
 			const translations = fs.readdirSync(LOCALES_FOLDER).filter((name) => (name.endsWith('.json') && ![`${SOURCE_LOCALE}.json`, `${PSEUDO_LOCALE}.json`].includes(name)));
 
-			for (const file of translations)
+			for (const name of translations)
 			{
-				const catalog = JSON.parse(fs.readFileSync(path.join(LOCALES_FOLDER, file), 'utf8')) as Record<string, string>;
+				const file = JSON.parse(fs.readFileSync(path.join(LOCALES_FOLDER, name), 'utf8')) as TranslationFile;
 
-				assert.deepStrictEqual(catalogProblems(english, catalog), [], file);
+				for (const [id, translation] of Object.entries(file))
+				{
+					assert.strictEqual(typeof translation.message, 'string', `${name}: ${id}`);
+					assert.strictEqual(typeof translation.source, 'string', `${name}: ${id}`);
+				}
+
+				assert.deepStrictEqual(catalogProblems(english, translationCatalog(file)), [], name);
 			}
 		});
 	});

@@ -1,0 +1,1282 @@
+{
+	"dialog.cancel": {
+		"message": "Belay that",
+		"source": "Cancel"
+	},
+	"dialog.close": {
+		"message": "Batten down",
+		"source": "Close"
+	},
+	"editor.error.failedBecause": {
+		"message": "{failure} {reason}",
+		"source": "{failure} {reason}"
+	},
+	"editor.error.noReason": {
+		"message": "The server sent us packin'.",
+		"source": "The server refused the request."
+	},
+	"editor.error.tryAgain": {
+		"message": "{failure} Try again in a tick.",
+		"source": "{failure} Try again in a moment."
+	},
+	"editor.error.unreachable": {
+		"message": "Couldn't hail the server.",
+		"source": "Could not reach the server."
+	},
+	"editor.faerieMorning": {
+		"message": "Where be the mornin'?",
+		"source": "Where is morning?"
+	},
+	"editor.home": {
+		"message": "Back to Port",
+		"source": "Back to Home"
+	},
+	"editor.link.addReturn": {
+		"message": "Add a return passage that leads back to this cell",
+		"source": "Add a return link that leads back to this cell"
+	},
+	"editor.link.addTitle": {
+		"message": "Add a passage at {column}, {row}",
+		"source": "Add a link at {column}, {row}"
+	},
+	"editor.link.automatic": {
+		"message": "Haul 'em through (automatic)",
+		"source": "Take them through (automatic)"
+	},
+	"editor.link.chooseDestination": {
+		"message": "Click the chart to choose where ye be headed.",
+		"source": "Click the map to choose the destination."
+	},
+	"editor.link.confirmDelete": {
+		"message": "Scuttle the passage at {column}, {row}?",
+		"source": "Delete the link at {column}, {row}?"
+	},
+	"editor.link.delete": {
+		"message": "Scuttle Passage",
+		"source": "Delete Link"
+	},
+	"editor.link.deleteFailed": {
+		"message": "Couldn't scuttle the passage.",
+		"source": "Could not delete the link."
+	},
+	"editor.link.destination": {
+		"message": "Headed for: {column}, {row}",
+		"source": "Destination: {column}, {row}"
+	},
+	"editor.link.manual": {
+		"message": "Ask if they be wantin' through (manual)",
+		"source": "Offer to take them through (manual)"
+	},
+	"editor.link.mode": {
+		"message": "When a scallywag steps onto the cell",
+		"source": "When a player steps onto the cell"
+	},
+	"editor.link.needDestination": {
+		"message": "Click the chart to choose where the passage goes.",
+		"source": "Click the map to choose where the link goes."
+	},
+	"editor.link.needReturn": {
+		"message": "Click the chart to place the return passage, or don't be addin' one.",
+		"source": "Click the map to place the return link, or don't add one."
+	},
+	"editor.link.noOtherZones": {
+		"message": "Chart another zone to sail to first.",
+		"source": "Add another zone to link to first."
+	},
+	"editor.link.pick": {
+		"message": "Clickin' the chart below chooses",
+		"source": "Clicking the map below chooses"
+	},
+	"editor.link.pickDestination": {
+		"message": "Where ye be headed",
+		"source": "The destination"
+	},
+	"editor.link.pickReturn": {
+		"message": "The return passage's cell",
+		"source": "The return link's cell"
+	},
+	"editor.link.placeReturn": {
+		"message": "Choose the return passage's cell above, then click the chart to place it.",
+		"source": "Choose the return link's cell above, then click the map to place it."
+	},
+	"editor.link.returnCell": {
+		"message": "Return passage at {column}, {row}",
+		"source": "Return link at {column}, {row}"
+	},
+	"editor.link.returnCellReplacing": {
+		"message": "Return passage at {column}, {row}, sinkin' the passage there",
+		"source": "Return link at {column}, {row}, replacing the link there"
+	},
+	"editor.link.saveFailed": {
+		"message": "Couldn't stow the passage.",
+		"source": "Could not save the link."
+	},
+	"editor.link.showZoneFailed": {
+		"message": "Couldn't sight that zone.",
+		"source": "Could not show that zone."
+	},
+	"editor.link.target": {
+		"message": "Sails to",
+		"source": "Goes to"
+	},
+	"editor.link.title": {
+		"message": "Passage at {column}, {row}",
+		"source": "Link at {column}, {row}"
+	},
+	"editor.link.wholeGroup": {
+		"message": "Needs the whole crew",
+		"source": "Requires the whole group"
+	},
+	"editor.lobby.editZone": {
+		"message": "Edit the tavern's zone",
+		"source": "Edit the lobby's zone"
+	},
+	"editor.lobby.explanation": {
+		"message": "The tavern be where every soul in the universe gathers afore joinin' a crew. It be a zone like any other, but it ain't listed on the Zones tab.",
+		"source": "The lobby is where everyone in the universe meets before joining a group. It is a zone like any other, but isn't listed on the Zones tab."
+	},
+	"editor.map.allSaved": {
+		"message": "All changes stowed",
+		"source": "All changes saved"
+	},
+	"editor.map.brush.circle": {
+		"message": "round as a cannonball",
+		"source": "circle"
+	},
+	"editor.map.brush.square": {
+		"message": "square as a crate",
+		"source": "square"
+	},
+	"editor.map.brushShape": {
+		"message": "Shape",
+		"source": "Shape"
+	},
+	"editor.map.brushSize": {
+		"message": "Size",
+		"source": "Size"
+	},
+	"editor.map.cell": {
+		"message": "{column}, {row}: {contents}",
+		"source": "{column}, {row}: {contents}"
+	},
+	"editor.map.cellLoading": {
+		"message": "hoistin'...",
+		"source": "loading..."
+	},
+	"editor.map.cellWithLink": {
+		"message": "{column}, {row}: {contents} ({mode, select, automatic {passage that hauls ye through} other {passage that asks first}})",
+		"source": "{column}, {row}: {contents} ({mode, select, automatic {automatic link} other {manual link}})"
+	},
+	"editor.map.draw": {
+		"message": "Paint",
+		"source": "Draw"
+	},
+	"editor.map.expandBy": {
+		"message": "Widen by",
+		"source": "Expand by"
+	},
+	"editor.map.expandEast": {
+		"message": "+ East",
+		"source": "+ East"
+	},
+	"editor.map.expandNorth": {
+		"message": "+ North",
+		"source": "+ North"
+	},
+	"editor.map.expandSouth": {
+		"message": "+ South",
+		"source": "+ South"
+	},
+	"editor.map.expandWest": {
+		"message": "+ West",
+		"source": "+ West"
+	},
+	"editor.map.growFailed": {
+		"message": "Couldn't widen the chart.",
+		"source": "Could not grow the map."
+	},
+	"editor.map.heading": {
+		"message": "Chart",
+		"source": "Map"
+	},
+	"editor.map.help": {
+		"message": "Drag with the right mouse button to look about, and spin the mouse wheel to zoom. Ctrl+Z undoes and Ctrl+Y redoes. With the Passages tool, click a cell to add or change its passage.",
+		"source": "Drag with the right mouse button to look around, and zoom with the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link."
+	},
+	"editor.map.links": {
+		"message": "Passages",
+		"source": "Links"
+	},
+	"editor.map.loadFailed": {
+		"message": "Couldn't haul up the chart.",
+		"source": "Could not load the map."
+	},
+	"editor.map.loadLinksFailed": {
+		"message": "Couldn't haul up the passages.",
+		"source": "Could not load the links."
+	},
+	"editor.map.paintingNotSaved": {
+		"message": "Some o' yer paintin' went down with the ship. Open the zone again to see the chart as it be stowed.",
+		"source": "Could not save some of your painting. Open the zone again to see the map as it is saved."
+	},
+	"editor.map.redo": {
+		"message": "Redo",
+		"source": "Redo"
+	},
+	"editor.map.resize": {
+		"message": "Change Size",
+		"source": "Edit Size"
+	},
+	"editor.map.saving": {
+		"message": "Stowin'...",
+		"source": "Saving..."
+	},
+	"editor.map.tile": {
+		"message": "Tile",
+		"source": "Tile"
+	},
+	"editor.map.tooLarge": {
+		"message": "A chart can be at most {max, number} cells in each direction, matey.",
+		"source": "A map can be at most {max, number} cells in each direction."
+	},
+	"editor.map.tool": {
+		"message": "Tool",
+		"source": "Tool"
+	},
+	"editor.map.undo": {
+		"message": "Undo",
+		"source": "Undo"
+	},
+	"editor.map.unknownTile": {
+		"message": "mystery tile",
+		"source": "unknown tile"
+	},
+	"editor.map.void": {
+		"message": "Davy Jones' Locker",
+		"source": "Void"
+	},
+	"editor.map.zoneDefault": {
+		"message": "{tile} (the zone's usual)",
+		"source": "{tile} (the zone's default)"
+	},
+	"editor.openFailed": {
+		"message": "Couldn't open the universe.",
+		"source": "Could not open the universe."
+	},
+	"editor.pageTitle": {
+		"message": "Edit {universe} - Multiverse Kiln",
+		"source": "Edit {universe} - Multiverse Kiln"
+	},
+	"editor.passageOfTime": {
+		"message": "How the hours pass",
+		"source": "Passage of time"
+	},
+	"editor.play": {
+		"message": "Set Sail",
+		"source": "Enter Universe"
+	},
+	"editor.resize.discard": {
+		"message": "Resize and toss overboard",
+		"source": "Resize and discard"
+	},
+	"editor.resize.discardWarning": {
+		"message": "The smaller chart would toss {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# passage} other {# passages}} overboard. Resize anyway?",
+		"source": "The smaller map would discard {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# link} other {# links}}. Resize anyway?"
+	},
+	"editor.resize.east": {
+		"message": "East",
+		"source": "East"
+	},
+	"editor.resize.explanation": {
+		"message": "How many cells the chart reaches in each direction from its middle cell (0, 0).",
+		"source": "How many cells the map reaches in each direction from its center cell (0, 0)."
+	},
+	"editor.resize.failed": {
+		"message": "Couldn't resize the chart.",
+		"source": "Could not resize the map."
+	},
+	"editor.resize.north": {
+		"message": "North",
+		"source": "North"
+	},
+	"editor.resize.south": {
+		"message": "South",
+		"source": "South"
+	},
+	"editor.resize.submit": {
+		"message": "Resize",
+		"source": "Resize"
+	},
+	"editor.resize.title": {
+		"message": "Change Size",
+		"source": "Edit Size"
+	},
+	"editor.resize.total": {
+		"message": "{height, number} tall by {width, number} wide",
+		"source": "{height, number} tall x {width, number} wide"
+	},
+	"editor.resize.west": {
+		"message": "West",
+		"source": "West"
+	},
+	"editor.role": {
+		"message": "Yer rank: {role}",
+		"source": "Your role: {role}"
+	},
+	"editor.tab.lobby": {
+		"message": "Tavern",
+		"source": "Lobby"
+	},
+	"editor.tab.tilesets": {
+		"message": "Tilesets",
+		"source": "Tilesets"
+	},
+	"editor.tab.universe": {
+		"message": "Universe",
+		"source": "Universe"
+	},
+	"editor.tab.zones": {
+		"message": "Zones",
+		"source": "Zones"
+	},
+	"editor.tile.addTitle": {
+		"message": "Add Tile",
+		"source": "Add Tile"
+	},
+	"editor.tile.color": {
+		"message": "Color",
+		"source": "Color"
+	},
+	"editor.tile.colorHex": {
+		"message": "Color as hex",
+		"source": "Color as hex"
+	},
+	"editor.tile.colorPicker": {
+		"message": "Pick a color",
+		"source": "Pick a color"
+	},
+	"editor.tile.confirmDelete": {
+		"message": "Scuttle {tile}? There be no bringin' it back.",
+		"source": "Delete {tile}? This can't be undone."
+	},
+	"editor.tile.confirmRestore": {
+		"message": "Return {tile} to the ruleset's way? Yer changes to it will be lost at sea.",
+		"source": "Restore {tile} to the ruleset's default? Your changes to it will be lost."
+	},
+	"editor.tile.day": {
+		"message": "Day",
+		"source": "Day"
+	},
+	"editor.tile.delete": {
+		"message": "Scuttle Tile",
+		"source": "Delete Tile"
+	},
+	"editor.tile.deleteFailed": {
+		"message": "Couldn't scuttle the tile.",
+		"source": "Could not delete the tile."
+	},
+	"editor.tile.editTitle": {
+		"message": "Edit {tile}",
+		"source": "Edit {tile}"
+	},
+	"editor.tile.indoorsHint": {
+		"message": "A leanin', not a law: outdoor zones list outdoor tiles first.",
+		"source": "A preference, not a restriction: outdoor zones list outdoor tiles first."
+	},
+	"editor.tile.invalidColor": {
+		"message": "Give a hex color, such as #7AFF3D.",
+		"source": "Enter a hex color, such as #7AFF3D."
+	},
+	"editor.tile.movementCost": {
+		"message": "Sailin' cost (%)",
+		"source": "Movement cost (%)"
+	},
+	"editor.tile.movementHint": {
+		"message": "0% be plain sailin', 50% takes twice as long, 100% can't be boarded.",
+		"source": "0% is normal movement, 50% takes twice as long, 100% can't be entered."
+	},
+	"editor.tile.night": {
+		"message": "Night",
+		"source": "Night"
+	},
+	"editor.tile.restore": {
+		"message": "Restore the Old Ways",
+		"source": "Restore Default"
+	},
+	"editor.tile.restoreFailed": {
+		"message": "Couldn't restore the tile.",
+		"source": "Could not restore the tile."
+	},
+	"editor.tile.saveFailed": {
+		"message": "Couldn't stow the tile.",
+		"source": "Could not save the tile."
+	},
+	"editor.tile.visionCost": {
+		"message": "Spyglass cost (%)",
+		"source": "Vision cost (%)"
+	},
+	"editor.tile.visionHint": {
+		"message": "100% can't be seen through, even with a spyglass.",
+		"source": "100% can't be seen through."
+	},
+	"editor.tiles.add": {
+		"message": "Add Tile",
+		"source": "Add Tile"
+	},
+	"editor.tiles.color": {
+		"message": "Color",
+		"source": "Color"
+	},
+	"editor.tiles.custom": {
+		"message": "Custom",
+		"source": "Custom"
+	},
+	"editor.tiles.customTag": {
+		"message": "custom",
+		"source": "custom"
+	},
+	"editor.tiles.edited": {
+		"message": "Changed from the ruleset",
+		"source": "Edited from default"
+	},
+	"editor.tiles.editedTag": {
+		"message": "changed",
+		"source": "edited"
+	},
+	"editor.tiles.filterAny": {
+		"message": "Any",
+		"source": "Any"
+	},
+	"editor.tiles.filterNo": {
+		"message": "Nay",
+		"source": "No"
+	},
+	"editor.tiles.filterYes": {
+		"message": "Aye",
+		"source": "Yes"
+	},
+	"editor.tiles.impassable": {
+		"message": "no passage",
+		"source": "impassable"
+	},
+	"editor.tiles.listFailed": {
+		"message": "Couldn't list the tiles.",
+		"source": "Could not list the tiles."
+	},
+	"editor.tiles.movementCost": {
+		"message": "Sailin' cost",
+		"source": "Movement cost"
+	},
+	"editor.tiles.name": {
+		"message": "Name",
+		"source": "Name"
+	},
+	"editor.tiles.none": {
+		"message": "No tiles be matchin'.",
+		"source": "No tiles match."
+	},
+	"editor.tiles.passable": {
+		"message": "Passable",
+		"source": "Passable"
+	},
+	"editor.tiles.percent": {
+		"message": "{cost, number, percent}",
+		"source": "{cost, number, percent}"
+	},
+	"editor.tiles.search": {
+		"message": "Search by name",
+		"source": "Search by name"
+	},
+	"editor.tiles.searchLabel": {
+		"message": "Search tiles by name",
+		"source": "Search tiles by name"
+	},
+	"editor.tiles.visionCost": {
+		"message": "Spyglass cost",
+		"source": "Vision cost"
+	},
+	"editor.title": {
+		"message": "Edit Universe",
+		"source": "Edit Universe"
+	},
+	"editor.universe.longDescription": {
+		"message": "Long tale (Markdown)",
+		"source": "Long description (Markdown)"
+	},
+	"editor.universe.preview": {
+		"message": "Peek",
+		"source": "Preview"
+	},
+	"editor.universe.ruleset": {
+		"message": "Ship's articles: {ruleset}",
+		"source": "Ruleset: {ruleset}"
+	},
+	"editor.universe.saveFailed": {
+		"message": "Couldn't stow the universe.",
+		"source": "Could not save the universe."
+	},
+	"editor.universe.stage": {
+		"message": "Voyage",
+		"source": "Stage"
+	},
+	"editor.universeTitle": {
+		"message": "Edit {universe}",
+		"source": "Edit {universe}"
+	},
+	"editor.zone.back": {
+		"message": "Back to Zones",
+		"source": "Back to Zones"
+	},
+	"editor.zone.children": {
+		"message": "Zones in this one's hold",
+		"source": "Zones inside this one"
+	},
+	"editor.zone.confirmDelete": {
+		"message": "Scuttle {zone}, its chart and every passage into it? Zones inside it be cast adrift as top-level zones. There be no bringin' it back.",
+		"source": "Delete {zone}, its map and every link into it? Zones inside it become top-level zones. This can't be undone."
+	},
+	"editor.zone.defaultTile": {
+		"message": "Usual tile",
+		"source": "Default tile"
+	},
+	"editor.zone.delete": {
+		"message": "Scuttle Zone",
+		"source": "Delete Zone"
+	},
+	"editor.zone.deleteFailed": {
+		"message": "Couldn't scuttle the zone.",
+		"source": "Could not delete the zone."
+	},
+	"editor.zone.enabled": {
+		"message": "Open to all hands",
+		"source": "Enabled"
+	},
+	"editor.zone.faerieCantLoop": {
+		"message": "A zone where the hours pass the faerie way can't loop.",
+		"source": "A zone whose passage of time is faerie can't loop."
+	},
+	"editor.zone.indoorTiles": {
+		"message": "Below-decks tiles",
+		"source": "Indoor tiles"
+	},
+	"editor.zone.loading": {
+		"message": "Hoistin'...",
+		"source": "Loading..."
+	},
+	"editor.zone.lobbyTitle": {
+		"message": "{zone} (the tavern)",
+		"source": "{zone} (the lobby)"
+	},
+	"editor.zone.loopsEastWest": {
+		"message": "Wraps east-west",
+		"source": "Loops east-west"
+	},
+	"editor.zone.loopsNorthSouth": {
+		"message": "Wraps north-south",
+		"source": "Loops north-south"
+	},
+	"editor.zone.noParent": {
+		"message": "None (a top-level zone)",
+		"source": "None (a top-level zone)"
+	},
+	"editor.zone.openFailed": {
+		"message": "Couldn't open the zone.",
+		"source": "Could not open the zone."
+	},
+	"editor.zone.outdoorTiles": {
+		"message": "Topside tiles",
+		"source": "Outdoor tiles"
+	},
+	"editor.zone.parent": {
+		"message": "Mother zone",
+		"source": "Parent zone"
+	},
+	"editor.zone.parentDisabled": {
+		"message": "This zone be inside {zones}, which {count, plural, one {be} other {be}} closed to all hands.",
+		"source": "This zone is inside {zones}, which {count, plural, one {is} other {are}} disabled."
+	},
+	"editor.zone.saveFailed": {
+		"message": "Couldn't stow the zone.",
+		"source": "Could not save the zone."
+	},
+	"editor.zone.size": {
+		"message": "The chart be {height, number} tall by {width, number} wide.",
+		"source": "The map is {height, number} tall x {width, number} wide."
+	},
+	"editor.zoneAdd.failed": {
+		"message": "Couldn't add the zone.",
+		"source": "Could not add the zone."
+	},
+	"editor.zoneAdd.submit": {
+		"message": "Add",
+		"source": "Add"
+	},
+	"editor.zoneAdd.title": {
+		"message": "Add Zone",
+		"source": "Add Zone"
+	},
+	"editor.zones.add": {
+		"message": "Add Zone",
+		"source": "Add Zone"
+	},
+	"editor.zones.disabledTag": {
+		"message": "closed",
+		"source": "disabled"
+	},
+	"editor.zones.heading": {
+		"message": "Zones",
+		"source": "Zones"
+	},
+	"editor.zones.indoorsTag": {
+		"message": "below decks",
+		"source": "indoors"
+	},
+	"editor.zones.listFailed": {
+		"message": "Couldn't list the zones.",
+		"source": "Could not list the zones."
+	},
+	"editor.zones.none": {
+		"message": "There be no zones but the tavern.",
+		"source": "There are no zones besides the lobby."
+	},
+	"editor.zones.outdoorsTag": {
+		"message": "topside",
+		"source": "outdoors"
+	},
+	"editor.zones.startingZoneTag": {
+		"message": "home port",
+		"source": "starting zone"
+	},
+	"error.cantDeleteZone": {
+		"message": "The tavern and home port can't be scuttled.",
+		"source": "The lobby and starting zones can't be deleted."
+	},
+	"error.cellOutOfBounds": {
+		"message": "Every cell must be inside the zone's chart.",
+		"source": "Every cell must be inside the zone's map."
+	},
+	"error.faerieCantLoop": {
+		"message": "A zone where the hours pass the faerie way can't loop.",
+		"source": "A zone whose passage of time is faerie can't loop."
+	},
+	"error.faerieMorningMismatch": {
+		"message": "Where the mornin' be must be chosen when, and only when, the hours pass the faerie way.",
+		"source": "Where morning is must be chosen when, and only when, the passage of time is faerie."
+	},
+	"error.invalidRequest": {
+		"message": "That request be no good ({problem}).",
+		"source": "The request isn't valid ({problem})."
+	},
+	"error.linkOutOfBounds": {
+		"message": "The passage's cell must be inside the zone's chart.",
+		"source": "The link's cell must be inside the zone's map."
+	},
+	"error.linkTargetNotInUniverse": {
+		"message": "A passage must sail to another zone of this universe.",
+		"source": "A link must go to another zone of this universe."
+	},
+	"error.linkTargetOutOfBounds": {
+		"message": "Where the passage goes must be inside the other zone's chart.",
+		"source": "Where the link goes must be inside the other zone's map."
+	},
+	"error.linkToSameZone": {
+		"message": "A passage must sail to another zone.",
+		"source": "A link must go to another zone."
+	},
+	"error.logInFirst": {
+		"message": "Come aboard first.",
+		"source": "Log in first."
+	},
+	"error.noSuchLink": {
+		"message": "There be no passage on that cell.",
+		"source": "There is no link on that cell."
+	},
+	"error.noSuchTile": {
+		"message": "That tile be lost at sea.",
+		"source": "The tile doesn't exist."
+	},
+	"error.noSuchUniverse": {
+		"message": "That universe be lost at sea, or ye can't see it.",
+		"source": "The universe doesn't exist, or you can't see it."
+	},
+	"error.noSuchZone": {
+		"message": "That zone be lost at sea.",
+		"source": "The zone doesn't exist."
+	},
+	"error.otherOrigin": {
+		"message": "No changes from that port.",
+		"source": "Changes aren't allowed from this website."
+	},
+	"error.parentNotInUniverse": {
+		"message": "The mother zone must be a zone of this universe.",
+		"source": "The parent zone must be a zone of this universe."
+	},
+	"error.resizeDiscards": {
+		"message": "Resizin' would toss painted cells or passages overboard.",
+		"source": "Resizing would discard painted cells or links."
+	},
+	"error.roleNotAllowed": {
+		"message": "Yer rank in this universe don't allow that.",
+		"source": "Your role in this universe doesn't allow that."
+	},
+	"error.somethingWentWrong": {
+		"message": "Somethin' went awry in the server's hold.",
+		"source": "Something went wrong on the server."
+	},
+	"error.tileInUse": {
+		"message": "A chart uses this tile, so it can't be scuttled.",
+		"source": "A map uses this tile, so it can't be deleted."
+	},
+	"error.tileLimit": {
+		"message": "A universe can have at most {max, plural, one {# tile} other {# tiles}} of its own.",
+		"source": "A universe can have at most {max, plural, one {# tile} other {# tiles}} of its own."
+	},
+	"error.tileNeedsName": {
+		"message": "A tile needs a name.",
+		"source": "A tile needs a name."
+	},
+	"error.universeLimit": {
+		"message": "Ye can create at most {max, plural, one {# universe} other {# universes}}.",
+		"source": "You can create at most {max, plural, one {# universe} other {# universes}}."
+	},
+	"error.unreadableBody": {
+		"message": "That request couldn't be read.",
+		"source": "The request could not be read."
+	},
+	"error.unusableDefaultTile": {
+		"message": "The usual tile must be a tile this universe can use.",
+		"source": "The default tile must be a tile this universe can use."
+	},
+	"error.unusableTile": {
+		"message": "One o' the tiles painted ain't one this universe can use.",
+		"source": "One of the tiles painted isn't one this universe can use."
+	},
+	"error.zoneInsideItself": {
+		"message": "A zone can't be inside its own hold.",
+		"source": "A zone can't be inside itself."
+	},
+	"error.zoneLimit": {
+		"message": "A universe can have at most {max, plural, one {# zone} other {# zones}}.",
+		"source": "A universe can have at most {max, plural, one {# zone} other {# zones}}."
+	},
+	"form.indoors": {
+		"message": "Below decks",
+		"source": "Indoors"
+	},
+	"form.indoorsOrOutdoors": {
+		"message": "Below decks or topside",
+		"source": "Indoors or outdoors"
+	},
+	"form.invalidText": {
+		"message": "Use letters, numbers, spaces or punctuation, matey.",
+		"source": "Use letters, numbers, spaces or punctuation."
+	},
+	"form.name": {
+		"message": "Name",
+		"source": "Name"
+	},
+	"form.outdoors": {
+		"message": "Topside",
+		"source": "Outdoors"
+	},
+	"form.save": {
+		"message": "Stow",
+		"source": "Save"
+	},
+	"form.saved": {
+		"message": "Stowed",
+		"source": "Saved"
+	},
+	"group.connectionLost": {
+		"message": "Lost sight o' the game.",
+		"source": "Lost the connection to the game."
+	},
+	"group.full": {
+		"message": "That ship be full: it already has {max, plural, one {# hand} other {# hands}} aboard.",
+		"source": "That game is full: it already has {max, plural, one {# player} other {# players}}."
+	},
+	"group.gone": {
+		"message": "That ship has sunk, or the map be wrong.",
+		"source": "That game has ended or the link is wrong."
+	},
+	"group.joinLink": {
+		"message": "Boardin' link: {link}",
+		"source": "Join link: {link}"
+	},
+	"group.joinLinkCopied": {
+		"message": "Boardin' link copied. Send it to the hands ye want aboard.",
+		"source": "Join link copied. Send it to the players you want to invite."
+	},
+	"group.joining": {
+		"message": "Boardin'...",
+		"source": "Joining..."
+	},
+	"group.leave": {
+		"message": "Abandon ship",
+		"source": "Leave group"
+	},
+	"group.notJoined": {
+		"message": "Couldn't board that ship. It may have just sunk.",
+		"source": "Could not join that game. It may have just ended."
+	},
+	"group.share": {
+		"message": "Share",
+		"source": "Share"
+	},
+	"group.title": {
+		"message": "Voyage",
+		"source": "Game"
+	},
+	"home.create.chooseRuleset": {
+		"message": "Choose yer ship's articles",
+		"source": "Choose a ruleset"
+	},
+	"home.create.failed": {
+		"message": "Couldn't create the universe.",
+		"source": "Could not create the universe."
+	},
+	"home.create.submit": {
+		"message": "Create",
+		"source": "Create"
+	},
+	"home.create.title": {
+		"message": "Create Universe",
+		"source": "Create Universe"
+	},
+	"home.createLimit": {
+		"message": "Ye can create at most {max, plural, one {# universe} other {# universes}}",
+		"source": "You can create at most {max, plural, one {# universe} other {# universes}}"
+	},
+	"home.createUniverse": {
+		"message": "Create Universe",
+		"source": "Create Universe"
+	},
+	"home.listFailed": {
+		"message": "Couldn't list the universes. Reload the page to try again.",
+		"source": "Could not list the universes. Reload the page to try again."
+	},
+	"home.noOwnUniverses": {
+		"message": "Ye haven't made a universe yet.",
+		"source": "You haven't made a universe yet."
+	},
+	"home.noUniverses": {
+		"message": "There be no universes to sail yet.",
+		"source": "There are no universes to play in yet."
+	},
+	"home.overview.close": {
+		"message": "Batten down",
+		"source": "Close"
+	},
+	"home.overview.descriptionFailed": {
+		"message": "Couldn't haul up the rest o' this universe's tale.",
+		"source": "Could not load the rest of this universe's description."
+	},
+	"home.overview.enter": {
+		"message": "Set Sail",
+		"source": "Enter Universe"
+	},
+	"home.ownDetails": {
+		"message": "{ruleset} - {stage} - {role}",
+		"source": "{ruleset} - {stage} - {role}"
+	},
+	"home.ownListFailed": {
+		"message": "Couldn't list yer universes.",
+		"source": "Could not list your universes."
+	},
+	"home.ownUniverses": {
+		"message": "Yer universes",
+		"source": "Your universes"
+	},
+	"home.showMore": {
+		"message": "Show more",
+		"source": "Show more"
+	},
+	"home.universeNotFound": {
+		"message": "That universe be lost at sea.",
+		"source": "That universe could not be found."
+	},
+	"home.universes": {
+		"message": "Universes",
+		"source": "Universes"
+	},
+	"lobby.chat.label": {
+		"message": "Chat message",
+		"source": "Chat message"
+	},
+	"lobby.chat.placeholder": {
+		"message": "Say somethin'...",
+		"source": "Say something..."
+	},
+	"lobby.chat.send": {
+		"message": "Send",
+		"source": "Send"
+	},
+	"lobby.chat.tooFast": {
+		"message": "Ye be squawkin' too fast. Wait a moment and try again.",
+		"source": "You are sending messages too quickly. Wait a moment and try again."
+	},
+	"lobby.connectionLost": {
+		"message": "Lost sight o' {universe}.",
+		"source": "Lost the connection to {universe}."
+	},
+	"lobby.createGroup": {
+		"message": "Raise a crew",
+		"source": "Create game"
+	},
+	"lobby.entering": {
+		"message": "Sailin' to {universe}...",
+		"source": "Entering {universe}..."
+	},
+	"lobby.groupNotCreated": {
+		"message": "Couldn't raise a crew. Try again in a tick.",
+		"source": "Could not create a game. Try again in a moment."
+	},
+	"lobby.here": {
+		"message": "Aboard ({count})",
+		"source": "Here ({count})"
+	},
+	"lobby.leave": {
+		"message": "Leave the tavern",
+		"source": "Leave lobby"
+	},
+	"lobby.morePlayers": {
+		"message": "and {count, number} more",
+		"source": "and {count, number} more"
+	},
+	"lobby.notJoined": {
+		"message": "Couldn't reach {universe}. Try again in a tick.",
+		"source": "Could not enter {universe}. Try again in a moment."
+	},
+	"lobby.title": {
+		"message": "Tavern",
+		"source": "Lobby"
+	},
+	"login.failed": {
+		"message": "Couldn't come aboard. Try again in a tick.",
+		"source": "Could not log in. Try again in a moment."
+	},
+	"login.invalidName": {
+		"message": "Give a name o' letters, numbers, spaces or punctuation.",
+		"source": "Enter a name of letters, numbers, spaces or punctuation."
+	},
+	"login.nameInUse": {
+		"message": "That pirate be already aboard from another browser.",
+		"source": "That player is already logged in from another browser."
+	},
+	"login.nameLabel": {
+		"message": "What be yer name, sailor?",
+		"source": "What should we call you?"
+	},
+	"login.submit": {
+		"message": "Come aboard",
+		"source": "Enter"
+	},
+	"map.takeLink": {
+		"message": "Press E to go through",
+		"source": "Press E to go through"
+	},
+	"markdown.bold": {
+		"message": "Bold",
+		"source": "Bold"
+	},
+	"markdown.boldButton": {
+		"message": "B",
+		"source": "B"
+	},
+	"markdown.bulletedList": {
+		"message": "Bulleted list",
+		"source": "Bulleted list"
+	},
+	"markdown.bulletedListButton": {
+		"message": "• List",
+		"source": "• List"
+	},
+	"markdown.code": {
+		"message": "Code",
+		"source": "Code"
+	},
+	"markdown.codeButton": {
+		"message": "Code",
+		"source": "Code"
+	},
+	"markdown.heading1": {
+		"message": "Headin' 1",
+		"source": "Heading 1"
+	},
+	"markdown.heading1Button": {
+		"message": "H1",
+		"source": "H1"
+	},
+	"markdown.heading2": {
+		"message": "Headin' 2",
+		"source": "Heading 2"
+	},
+	"markdown.heading2Button": {
+		"message": "H2",
+		"source": "H2"
+	},
+	"markdown.heading3": {
+		"message": "Headin' 3",
+		"source": "Heading 3"
+	},
+	"markdown.heading3Button": {
+		"message": "H3",
+		"source": "H3"
+	},
+	"markdown.italic": {
+		"message": "Italic",
+		"source": "Italic"
+	},
+	"markdown.italicButton": {
+		"message": "I",
+		"source": "I"
+	},
+	"markdown.link": {
+		"message": "Link",
+		"source": "Link"
+	},
+	"markdown.linkButton": {
+		"message": "Link",
+		"source": "Link"
+	},
+	"markdown.numberedList": {
+		"message": "Numbered list",
+		"source": "Numbered list"
+	},
+	"markdown.numberedListButton": {
+		"message": "1. List",
+		"source": "1. List"
+	},
+	"markdown.quote": {
+		"message": "Quote",
+		"source": "Quote"
+	},
+	"markdown.quoteButton": {
+		"message": "Quote",
+		"source": "Quote"
+	},
+	"markdown.strikethrough": {
+		"message": "Strikethrough",
+		"source": "Strikethrough"
+	},
+	"markdown.strikethroughButton": {
+		"message": "S",
+		"source": "S"
+	},
+	"page.connectFailed": {
+		"message": "Couldn't hail the server. Reload the page to try again.",
+		"source": "Could not connect to the server. Reload the page to try again."
+	},
+	"page.connecting": {
+		"message": "Hailin' the server...",
+		"source": "Connecting..."
+	},
+	"page.copyright": {
+		"message": "Copyright (C) {year} {holder}.",
+		"source": "Copyright (C) {year} {holder}."
+	},
+	"page.disconnected": {
+		"message": "Lost sight o' the server. Reload the page to hail it again.",
+		"source": "Disconnected from the server. Reload the page to reconnect."
+	},
+	"page.editTitle": {
+		"message": "Edit Universe - Multiverse Kiln",
+		"source": "Edit Universe - Multiverse Kiln"
+	},
+	"page.language": {
+		"message": "Tongue",
+		"source": "Language"
+	},
+	"page.license": {
+		"message": "This game be free software under the {license}.",
+		"source": "This game is free software under the {license}."
+	},
+	"page.licenseName": {
+		"message": "GNU Affero General Public License v3 or later",
+		"source": "GNU Affero General Public License v3 or later"
+	},
+	"page.name": {
+		"message": "Multiverse Kiln",
+		"source": "Multiverse Kiln"
+	},
+	"page.playingAs": {
+		"message": "Sailin' as {name}",
+		"source": "Playing as {name}"
+	},
+	"page.sourceCode": {
+		"message": "Source code",
+		"source": "Source code"
+	},
+	"page.title": {
+		"message": "Multiverse Kiln",
+		"source": "Multiverse Kiln"
+	},
+	"pager.next": {
+		"message": "Onward",
+		"source": "Next"
+	},
+	"pager.previous": {
+		"message": "Back astern",
+		"source": "Previous"
+	},
+	"pager.range": {
+		"message": "{first, number}-{last, number} o' {total, number}",
+		"source": "{first, number}-{last, number} of {total, number}"
+	},
+	"tile.pf1e.desert": {
+		"message": "Barren Sands",
+		"source": "Desert"
+	},
+	"tile.pf1e.forest": {
+		"message": "Timber",
+		"source": "Forest"
+	},
+	"tile.pf1e.grass": {
+		"message": "Grassy Shore",
+		"source": "Grass"
+	},
+	"tile.pf1e.mountains": {
+		"message": "Crags",
+		"source": "Mountains"
+	},
+	"tile.pf1e.water": {
+		"message": "Briny Deep",
+		"source": "Water"
+	},
+	"tile.pf1e.wood_floor": {
+		"message": "Deck Planks",
+		"source": "Wood Floor"
+	},
+	"universe.faerie.center": {
+		"message": "the middle",
+		"source": "center"
+	},
+	"universe.faerie.east": {
+		"message": "east",
+		"source": "east"
+	},
+	"universe.faerie.horizon": {
+		"message": "the horizon",
+		"source": "horizon"
+	},
+	"universe.faerie.north": {
+		"message": "north",
+		"source": "north"
+	},
+	"universe.faerie.northeast": {
+		"message": "northeast",
+		"source": "northeast"
+	},
+	"universe.faerie.northwest": {
+		"message": "northwest",
+		"source": "northwest"
+	},
+	"universe.faerie.south": {
+		"message": "south",
+		"source": "south"
+	},
+	"universe.faerie.southeast": {
+		"message": "southeast",
+		"source": "southeast"
+	},
+	"universe.faerie.southwest": {
+		"message": "southwest",
+		"source": "southwest"
+	},
+	"universe.faerie.west": {
+		"message": "west",
+		"source": "west"
+	},
+	"universe.lobbyZoneName": {
+		"message": "Tavern",
+		"source": "Lobby"
+	},
+	"universe.role.beta_tester": {
+		"message": "deckhand",
+		"source": "beta tester"
+	},
+	"universe.role.builder": {
+		"message": "shipwright",
+		"source": "builder"
+	},
+	"universe.role.creator": {
+		"message": "captain",
+		"source": "creator"
+	},
+	"universe.ruleset": {
+		"message": "Ship's articles",
+		"source": "Ruleset"
+	},
+	"universe.ruleset.pf1e": {
+		"message": "Pathfinder 1E",
+		"source": "Pathfinder 1E"
+	},
+	"universe.shortDescription": {
+		"message": "1-sentence tale",
+		"source": "1-sentence description"
+	},
+	"universe.stage.end_of_time": {
+		"message": "sunk to the depths",
+		"source": "end of time"
+	},
+	"universe.stage.in_the_beginning": {
+		"message": "still in drydock",
+		"source": "in the beginning"
+	},
+	"universe.stage.let_there_be_light": {
+		"message": "sailin' the open sea",
+		"source": "let there be light"
+	},
+	"universe.stage.prologue": {
+		"message": "sea trials",
+		"source": "prologue"
+	},
+	"universe.stageDescription.end_of_time": {
+		"message": "Sunk for good. She be locked and can only be gawked at, and she ain't listed on Home.",
+		"source": "Retired. It is locked and can only be viewed, and it isn't listed on Home."
+	},
+	"universe.stageDescription.in_the_beginning": {
+		"message": "Still bein' built. Only her captains and shipwrights can sail her, and she ain't listed on Home.",
+		"source": "Still being built. Only its creators and builders can play, and it isn't listed on Home."
+	},
+	"universe.stageDescription.let_there_be_light": {
+		"message": "Ready for all hands. Any soul can sail her, and she be listed on Home.",
+		"source": "Ready for everyone. Anyone can play, and it's listed on Home."
+	},
+	"universe.stageDescription.prologue": {
+		"message": "Out for testin'. Her captains, shipwrights and deckhands can sail her, and she ain't listed on Home.",
+		"source": "Open for testing. Its creators, builders and beta testers can play, and it isn't listed on Home."
+	},
+	"universe.startingZoneName": {
+		"message": "Home Port",
+		"source": "Starting Zone"
+	},
+	"universe.time.always_dawn": {
+		"message": "always first light",
+		"source": "always dawn"
+	},
+	"universe.time.always_dusk": {
+		"message": "always sundown",
+		"source": "always dusk"
+	},
+	"universe.time.always_midnight": {
+		"message": "always the dead o' night",
+		"source": "always midnight"
+	},
+	"universe.time.always_noon": {
+		"message": "always high noon",
+		"source": "always noon"
+	},
+	"universe.time.faerie": {
+		"message": "the faerie way",
+		"source": "faerie"
+	},
+	"universe.time.flows_normally": {
+		"message": "passes as ye sail",
+		"source": "flows normally"
+	},
+	"universe.time.inherit": {
+		"message": "same as the mother zone",
+		"source": "inherit from the parent zone"
+	}
+}

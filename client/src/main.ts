@@ -2,6 +2,7 @@ import { App } from './App';
 import { startLocalization, t } from './localization';
 import { connectToServer } from './network/serverConnection';
 import { showStatus } from './ui/dom';
+import { startLanguagePicker } from './ui/languagePicker';
 import { pageMessages } from './ui/pageMessages';
 
 /**
@@ -11,6 +12,7 @@ import { pageMessages } from './ui/pageMessages';
 async function start(): Promise<void>
 {
 	await startLocalization();
+	startLanguagePicker();
 	showStatus(t(pageMessages.connecting));
 
 	try

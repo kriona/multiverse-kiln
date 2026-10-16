@@ -42,8 +42,10 @@ An engine for making multiplayer browser-based role-playing games.
                  the synced state's @colyseus/schema classes (src/state.ts),
                  the map and chunk layout (src/maps.ts) and universe settings (src/universes.ts),
                  messages and the Translator (src/localization.ts)
-  locales/           en.json, the English catalog extracted from the code, and each translation's catalog. The
-                     client's dev server writes en-XA.json, the pseudo-language's (git-ignored)
+  locales/           en.json, the English catalog extracted from the code, and each translation's file, which
+                     stores each message with the English it was made from (en-x-pirate.json is Pirate, a
+                     test language). The client's dev server writes en-XA.json, the pseudo-language's
+                     (git-ignored)
   scripts/           the message extractor (extractMessages.ts), run by `npm run messages` and the client's dev server
 docker-compose.yml   local Postgres
 ```
@@ -105,7 +107,7 @@ docker compose up -d                 # start local Postgres
 npm run db:generate -w server        # create a migration after changing server/src/db/schema.ts
 npm run db:migrate -w server         # apply Drizzle migrations
 npm run db:seed -w server            # add or replace the sample universe (server/scripts/sampleUniverse.ts); -- --creator "<name>" makes that player its creator
-npm run messages                     # update shared/locales/en.json after changing messages (the client's dev server does it as you save)
+npm run messages                     # update shared/locales/en.json after changing messages (the client's dev server does it as you save), and list each translation's missing and out-of-date messages
 npm run dev -w server                # Colyseus on wss://www.multiversekiln-dev.com:2567
 npm run dev -w client                # Vite on https://www.multiversekiln-dev.com:5173
 ```

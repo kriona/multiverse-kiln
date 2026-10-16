@@ -4,6 +4,7 @@ import { connectToServer } from './network/serverConnection';
 import { gamePageUrl, readPageParameter, TAB_PARAMETER, UNIVERSE_PARAMETER, ZONE_PARAMETER } from './pages';
 import { isEditorTab } from './ui/editor/EditorScreen';
 import { showStatus } from './ui/dom';
+import { startLanguagePicker } from './ui/languagePicker';
 import { pageMessages } from './ui/pageMessages';
 
 /**
@@ -22,6 +23,7 @@ async function start(): Promise<void>
 	}
 
 	await startLocalization();
+	startLanguagePicker();
 	showStatus(t(pageMessages.connecting));
 
 	try

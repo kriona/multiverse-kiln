@@ -23,7 +23,7 @@ import fs from 'fs';
 import path from 'path';
 import ts from 'typescript';
 import { parse } from '@formatjs/icu-messageformat-parser';
-import { PSEUDO_LOCALE, pseudoMessage, type MessageCatalog } from '@multiverse-kiln/shared';
+import { PSEUDO_LOCALE, pseudoMessage, SOURCE_LOCALE, type TranslationFile } from '@multiverse-kiln/shared';
 
 /**
  * Folders whose TypeScript files are searched for defineMessages() calls
@@ -174,14 +174,42 @@ export function extractMessages(root: string): Extraction
 }
 
 /**
- * The pseudo-language's catalog: every English message accented, lengthened and bracketed
+ * The pseudo-language's file: every English message accented, lengthened and bracketed
  *
  * @param catalog The English catalog
- * @return Each message's pseudo-language text, by ID
+ * @return Each message's pseudo-language text and its English, by ID
  */
-export function pseudoCatalog(catalog: Record<string, CatalogEntry>): MessageCatalog
+export function pseudoCatalog(catalog: Record<string, CatalogEntry>): TranslationFile
 {
-	return(Object.fromEntries(Object.entries(catalog).map(([id, entry]) => [id, pseudoMessage(entry.defaultMessage)])));
+	return(Object.fromEntries(Object.entries(catalog).map(([id, entry]) => [id, {
+		message: pseudoMessage(entry.defaultMessage),
+		source: entry.defaultMessage
+	}])));
+}
+
+/**
+ * The committed translations in shared/locales: every language's file except English's and the
+ * pseudo-language's
+ *
+ * @param root The repository's root folder
+ * @return Each language's file, by its language tag
+ */
+export function readTranslations(root: string): Map<string, TranslationFile>
+{
+	const folder = path.join(root, path.dirname(CATALOG_FILE));
+	const translations = new Map<string, TranslationFile>();
+
+	for (const name of fs.readdirSync(folder))
+	{
+		const locale = name.replace(/\.json$/, '');
+
+		if (name.endsWith('.json') && (locale !== SOURCE_LOCALE) && (locale !== PSEUDO_LOCALE))
+		{
+			translations.set(locale, JSON.parse(fs.readFileSync(path.join(folder, name), 'utf8')) as TranslationFile);
+		}
+	}
+
+	return(translations);
 }
 
 /**

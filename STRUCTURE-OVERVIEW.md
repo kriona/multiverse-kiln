@@ -502,7 +502,7 @@ Text players write is never translated: character names, group names and chat.
 Translators get context for every piece of text, because one English word can need several translations (German has several words for "Save", and a button that stores changes needs "Speichern"). Each engine message has a description written next to it in the code, and the same English used for two purposes is two messages. Universe text shows where it comes from, and editors can add a note.
 
 ## Choosing a language
-- A player's language comes from their [profile](#profile-edit), then the browser's settings, then English.
+- A player's language comes from their [profile](#profile-edit), then the language picker at the bottom of every page (which the browser remembers, so it works without a profile), then the browser's settings, then English. The picker names each language in that language.
 - The pages and editors use the player's language if the engine has it. Universe text uses the closest language the universe has, so a French player sees French pages even in a universe written only in English.
 
 ## Finding a translation
@@ -526,6 +526,8 @@ Each translation remembers the source text it was made from. When the source tex
 
 ## Testing
 A pseudo-language for development shows every piece of engine text with accented vowels and extra length (`Saved` becomes `[Såvéd ~~]`), so text that skipped translation, or a layout that can't fit longer text, stands out.
+
+Pirate (`en-x-pirate`) is a real translation that ships with the engine, for testing the way languages are loaded and switched without a real language's translation to keep up. Its untranslated or out-of-date messages are reported, like any language's.
 
 # Open questions
 - **Time:** how long walking a square takes, and the overworld map's scale.
