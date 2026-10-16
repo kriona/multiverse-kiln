@@ -3,17 +3,24 @@ import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { GAME_ROOM_NAME, GameState, GRID_CELL_SIZE, MessageType, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, WORLD_HEIGHT, WORLD_WIDTH, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
+import { GAME_ROOM_NAME, GameState, GRID_CELL_SIZE, MessageType, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, type Player, type WelcomePayload, type ZonePayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { pool } from '../src/db/client.js';
 import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
 import { cellCenter } from '../src/logic/movement.js';
 import { onlinePlayers } from '../src/players/onlinePlayers.js';
-import { worldGrid, type GameRoom } from '../src/rooms/GameRoom.js';
+import type { GameRoom } from '../src/rooms/GameRoom.js';
+import { addPlayableUniverse, type PlayableUniverse } from './db/fixtures.js';
 import { getTestServer, logOutEveryone, testServerUrl } from './testServer.js';
+import { waitUntil } from './waitUntil.js';
 
 const browserIdA = '0b6f4c1e-8d2a-4f3b-9c5d-7e1a2b3c4d5e';
 const browserIdB = '6a1d2e3f-4b5c-4d6e-8f70-819a2b3c4d5e';
+
+/**
+ * The grid's cell size, for cellCenter
+ */
+const grid = { cellSize: GRID_CELL_SIZE };
 
 /**
  * The player a client controls, as the server's room records it
@@ -40,7 +47,7 @@ function playerIdOf(room: GameRoom, client: ClientRoom): string
  */
 function placeOnCell(player: Player, column: number, row: number): void
 {
-	const center = cellCenter({ column, row }, worldGrid);
+	const center = cellCenter({ column, row }, grid);
 
 	player.x = center.x;
 	player.y = center.y;
@@ -104,9 +111,9 @@ function connectFromBrowser(room: GameRoom, browserId: string): Promise<ClientRo
  * @param room Server-side room to join
  * @param browserId Browser ID the window's cookie holds
  * @param name The player's name
- * @return The client-side room, and the Welcome payload once it arrives
+ * @return The client-side room, and the Welcome and Zone payloads once they arrive
  */
-async function joinFromBrowser(room: GameRoom, browserId: string, name: string = 'Player'): Promise<{ client: ClientRoom<unknown, GameState>; welcome: Promise<WelcomePayload> }>
+async function joinFromBrowser(room: GameRoom, browserId: string, name: string = 'Player'): Promise<{ client: ClientRoom<unknown, GameState>; welcome: Promise<WelcomePayload>; zone: Promise<ZonePayload> }>
 {
 	// A browser stays logged in as its first player, so a second window joins as the same player
 	onlinePlayers.logIn(browserId, randomUUID(), name);
@@ -114,15 +121,19 @@ async function joinFromBrowser(room: GameRoom, browserId: string, name: string =
 
 	const client = await connectFromBrowser(room, browserId);
 
-	// Registered straight after joining: the server sends Welcome once the client has acknowledged the join
+	// Registered straight after joining: the server sends these once the client has acknowledged the join
 	const welcome = new Promise<WelcomePayload>((resolve) =>
 	{
 		client.onMessage(ServerMessageType.Welcome, resolve);
 	});
+	const zone = new Promise<ZonePayload>((resolve) =>
+	{
+		client.onMessage(ServerMessageType.Zone, resolve);
+	});
 
 	await client.waitForInitialState();
 
-	return({ client, welcome });
+	return({ client, welcome, zone });
 }
 
 /**
@@ -153,33 +164,20 @@ function waitForLeave(room: ClientRoom): Promise<number>
 	}));
 }
 
-/**
- * Resolves once a condition is true, checking every few milliseconds
- *
- * For server-side effects with no event to wait on, such as onLeave after the room has emptied
- * (an empty room is disposed, so waiting for its next timestep would never resolve)
- *
- * @param condition Returns true when the wait is over
- * @param timeoutMs How long to wait before failing
- */
-async function waitUntil(condition: () => boolean, timeoutMs: number = 2000): Promise<void>
-{
-	const deadline = Date.now() + timeoutMs;
-
-	while (!condition())
-	{
-		if (Date.now() > deadline)
-		{
-			throw new Error(`condition not met within ${timeoutMs}ms`);
-		}
-
-		await new Promise((resolve) => setTimeout(resolve, 10));
-	}
-}
-
 describe('GameRoom', () =>
 {
 	let colyseus: ColyseusTestServer<typeof appConfig>;
+	let universe: PlayableUniverse;
+
+	/**
+	 * Creates a game room for the test universe, as its lobby would
+	 *
+	 * @return The server-side room
+	 */
+	function createGameRoom(): Promise<GameRoom>
+	{
+		return(colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, { universeId: universe.universeId }));
+	}
 
 	before(async () =>
 	{
@@ -190,23 +188,29 @@ describe('GameRoom', () =>
 	{
 		await colyseus.cleanup();
 		logOutEveryone();
+		universe = await addPlayableUniverse();
 	});
 
-	it('adds a player inside the world when a client joins', async () =>
+	it('adds a player to the universe\'s starting zone when a client joins', async () =>
 	{
-		const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
-		const client = await joinAsNewPlayer(room);
-		const player = room.state.players.get(playerIdOf(room, client));
+		const room = await createGameRoom();
+		const { client, zone } = await joinFromBrowser(room, randomUUID());
+		const playerId = playerIdOf(room, client);
 
-		// The whole player is inside the world, not just its center
-		assert.ok(player);
-		assert.ok((player.x >= PLAYER_RADIUS) && (player.x <= WORLD_WIDTH - PLAYER_RADIUS), `x = ${player.x}`);
-		assert.ok((player.y >= PLAYER_RADIUS) && (player.y <= WORLD_HEIGHT - PLAYER_RADIUS), `y = ${player.y}`);
+		assert.strictEqual(room.getZoneId(playerId), universe.fieldZoneId);
+		assert.strictEqual((await zone).zoneId, universe.fieldZoneId);
+		assert.strictEqual((await zone).name, 'Field');
+	});
+
+	it('cannot be created for a universe that does not exist, or with no universe', async () =>
+	{
+		await assert.rejects(colyseus.createRoom(GAME_ROOM_NAME, { universeId: randomUUID() }));
+		await assert.rejects(colyseus.createRoom(GAME_ROOM_NAME, {}));
 	});
 
 	it('syncs players to clients', async () =>
 	{
-		const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
+		const room = await createGameRoom();
 		const client1 = await joinAsNewPlayer(room);
 		const client2 = await joinAsNewPlayer(room);
 
@@ -221,7 +225,7 @@ describe('GameRoom', () =>
 
 	it('moves a player in the direction they send', async () =>
 	{
-		const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
+		const room = await createGameRoom();
 		const client = await joinAsNewPlayer(room);
 		const player = room.state.players.get(playerIdOf(room, client)) as Player;
 
@@ -246,7 +250,7 @@ describe('GameRoom', () =>
 
 	it('does not use the database while players move', async () =>
 	{
-		const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
+		const room = await createGameRoom();
 		const client = await joinAsNewPlayer(room);
 		const player = room.state.players.get(playerIdOf(room, client)) as Player;
 		let checkouts = 0;
@@ -281,7 +285,7 @@ describe('GameRoom', () =>
 
 	it('does not let a player move into another player\'s cell', async () =>
 	{
-		const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
+		const room = await createGameRoom();
 		const client1 = await joinAsNewPlayer(room);
 		const client2 = await joinAsNewPlayer(room);
 		const player1 = room.state.players.get(playerIdOf(room, client1)) as Player;
@@ -299,31 +303,28 @@ describe('GameRoom', () =>
 			await room.waitForNextTimestep();
 		}
 
-		assert.strictEqual(player1.x, cellCenter({ column: 5, row: 3 }, worldGrid).x);
+		assert.strictEqual(player1.x, cellCenter({ column: 5, row: 3 }, grid).x);
 		assert.strictEqual(player1.y, player2.y);
-		assert.strictEqual(player2.x, cellCenter({ column: 6, row: 3 }, worldGrid).x);
+		assert.strictEqual(player2.x, cellCenter({ column: 6, row: 3 }, grid).x);
 	});
 
 	it('spawns players on a cell center', async () =>
 	{
-		const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
+		const room = await createGameRoom();
 		const client = await joinAsNewPlayer(room);
 
 		assertOnCellCenter(room.state.players.get(playerIdOf(room, client)) as Player);
 	});
 
-	it('uses a grid that fits the world and the player', () =>
+	it('uses cells wider than a player', () =>
 	{
-		assert.ok(Number.isInteger(worldGrid.columns), `columns = ${worldGrid.columns}`);
-		assert.ok(Number.isInteger(worldGrid.rows), `rows = ${worldGrid.rows}`);
-
-		// The whole player stays inside its cell, so a player on an edge cell is inside the world
+		// The whole player stays inside its cell, so a player on an edge cell is inside the map
 		assert.ok((GRID_CELL_SIZE / 2) >= PLAYER_RADIUS);
 	});
 
 	it('removes the player when the client leaves', async () =>
 	{
-		const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
+		const room = await createGameRoom();
 		const client1 = await joinAsNewPlayer(room);
 		const client2 = await joinAsNewPlayer(room);
 		const playerId1 = playerIdOf(room, client1);
@@ -369,7 +370,7 @@ describe('GameRoom', () =>
 		{
 			it(`ignores ${label} and keeps the client connected`, async () =>
 			{
-				const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
+				const room = await createGameRoom();
 				const client = await joinAsNewPlayer(room);
 				const player = room.state.players.get(playerIdOf(room, client)) as Player;
 
@@ -396,7 +397,7 @@ describe('GameRoom', () =>
 
 		it('does not log the payload', async () =>
 		{
-			const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
+			const room = await createGameRoom();
 			const client = await joinAsNewPlayer(room);
 
 			client.send(MessageType.Move, { x: 'secret-value', y: 0 });
@@ -408,7 +409,7 @@ describe('GameRoom', () =>
 
 		it('disconnects a client on its 10th invalid message', async () =>
 		{
-			const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
+			const room = await createGameRoom();
 			const client = await joinAsNewPlayer(room);
 			const playerId = playerIdOf(room, client);
 			const left = waitForLeave(client);
@@ -431,7 +432,7 @@ describe('GameRoom', () =>
 
 		it('ignores extra keys on a valid payload', async () =>
 		{
-			const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
+			const room = await createGameRoom();
 			const client = await joinAsNewPlayer(room);
 			const player = room.state.players.get(playerIdOf(room, client)) as Player;
 
@@ -448,7 +449,7 @@ describe('GameRoom', () =>
 
 	it('disconnects a client that sends too many messages', async () =>
 	{
-		const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
+		const room = await createGameRoom();
 		const client = await joinAsNewPlayer(room);
 		const playerId = playerIdOf(room, client);
 		const left = waitForLeave(client);
@@ -467,7 +468,7 @@ describe('GameRoom', () =>
 	{
 		it('control one shared player', async () =>
 		{
-			const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
+			const room = await createGameRoom();
 			const window1 = await joinFromBrowser(room, browserIdA);
 			const window2 = await joinFromBrowser(room, browserIdA);
 
@@ -477,7 +478,7 @@ describe('GameRoom', () =>
 
 		it('are told which player they control', async () =>
 		{
-			const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
+			const room = await createGameRoom();
 			const window1 = await joinFromBrowser(room, browserIdA);
 			const window2 = await joinFromBrowser(room, browserIdA);
 
@@ -487,7 +488,7 @@ describe('GameRoom', () =>
 
 		it('can each move the player', async () =>
 		{
-			const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
+			const room = await createGameRoom();
 			const window1 = await joinFromBrowser(room, browserIdA);
 			const window2 = await joinFromBrowser(room, browserIdA);
 			const player = room.state.players.get(playerIdOf(room, window1.client)) as Player;
@@ -503,7 +504,7 @@ describe('GameRoom', () =>
 
 		it('keep the player until the last one leaves', async () =>
 		{
-			const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
+			const room = await createGameRoom();
 			const window1 = await joinFromBrowser(room, browserIdA);
 			const window2 = await joinFromBrowser(room, browserIdA);
 			const playerId = playerIdOf(room, window1.client);
@@ -519,7 +520,7 @@ describe('GameRoom', () =>
 
 		it('stop the player when one of them leaves', async () =>
 		{
-			const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
+			const room = await createGameRoom();
 			const window1 = await joinFromBrowser(room, browserIdA);
 			const window2 = await joinFromBrowser(room, browserIdA);
 			const player = room.state.players.get(playerIdOf(room, window2.client)) as Player;
@@ -540,7 +541,7 @@ describe('GameRoom', () =>
 
 	it('gives different browsers different players', async () =>
 	{
-		const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
+		const room = await createGameRoom();
 		const browserA = await joinFromBrowser(room, browserIdA);
 		const browserB = await joinFromBrowser(room, browserIdB);
 
@@ -552,7 +553,7 @@ describe('GameRoom', () =>
 	{
 		it('uses the player ID and name from the login', async () =>
 		{
-			const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
+			const room = await createGameRoom();
 			const { client } = await joinFromBrowser(room, browserIdA, 'Ada');
 			const playerId = playerIdOf(room, client);
 
@@ -562,14 +563,14 @@ describe('GameRoom', () =>
 
 		it('turns away a browser that is not logged in', async () =>
 		{
-			const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
+			const room = await createGameRoom();
 
 			await assert.rejects(connectFromBrowser(room, browserIdA));
 		});
 
 		it('turns away a player who is not in the group', async () =>
 		{
-			const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
+			const room = await createGameRoom();
 
 			onlinePlayers.logIn(browserIdA, randomUUID(), 'Ada');
 			await assert.rejects(connectFromBrowser(room, browserIdA));
@@ -580,14 +581,14 @@ describe('GameRoom', () =>
 
 		it('turns away a client without a browser ID', async () =>
 		{
-			const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
+			const room = await createGameRoom();
 
 			await assert.rejects(colyseus.connectTo(room));
 		});
 
 		it('disconnects every window of a player who leaves the group', async () =>
 		{
-			const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
+			const room = await createGameRoom();
 			const window1 = await joinFromBrowser(room, browserIdA);
 			const window2 = await joinFromBrowser(room, browserIdA);
 			const other = await joinFromBrowser(room, browserIdB);
@@ -605,7 +606,7 @@ describe('GameRoom', () =>
 
 		it('disconnects a player who joins another group', async () =>
 		{
-			const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
+			const room = await createGameRoom();
 			const { client } = await joinFromBrowser(room, browserIdA);
 			await joinFromBrowser(room, browserIdB);
 			const left = waitForLeave(client);
@@ -617,7 +618,7 @@ describe('GameRoom', () =>
 
 		it('sends the group back to the lobby when the room is disposed', async () =>
 		{
-			const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, {});
+			const room = await createGameRoom();
 
 			onlinePlayers.logIn(browserIdA, randomUUID(), 'Ada');
 			onlinePlayers.setGroup(browserIdA, room.roomId);

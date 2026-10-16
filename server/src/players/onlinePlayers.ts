@@ -98,7 +98,11 @@ export class OnlinePlayers
 			}
 		}
 
-		const player: OnlinePlayerRecord = { playerId, name, groupId: undefined };
+		const player: OnlinePlayerRecord = {
+			playerId,
+			name,
+			groupId: undefined
+		};
 
 		this.update(browserId, player);
 

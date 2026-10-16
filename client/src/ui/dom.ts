@@ -1,9 +1,9 @@
 /**
  * The screens in index.html; exactly one is shown at a time
  */
-export type ScreenName = 'status' | 'login' | 'lobby' | 'group';
+export type ScreenName = 'status' | 'login' | 'home' | 'lobby' | 'group';
 
-const screenNames: ScreenName[] = ['status', 'login', 'lobby', 'group'];
+const screenNames: ScreenName[] = ['status', 'login', 'home', 'lobby', 'group'];
 
 /**
  * Finds an element in index.html by ID

@@ -65,6 +65,15 @@ export class PositionBuffer
 	}
 
 	/**
+	 * Forgets every position, so the next one is drawn straight away instead of being reached smoothly,
+	 * as when the entity moves to another zone
+	 */
+	clear(): void
+	{
+		this.snapshots.length = 0;
+	}
+
+	/**
 	 * Works out where the entity was at a given time
 	 *
 	 * @param time Time to sample, in milliseconds (performance.now() minus the interpolation delay)

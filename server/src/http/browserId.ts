@@ -26,11 +26,11 @@ const browserIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3
  */
 export function addBrowserIdRoute(app: Application): void
 {
-	app.post(BROWSER_ID_PATH, (req, res) =>
+	app.post(BROWSER_ID_PATH, (request, response) =>
 	{
-		if (readBrowserId(req.headers.cookie) === undefined)
+		if (readBrowserId(request.headers.cookie) === undefined)
 		{
-			res.cookie(BROWSER_ID_COOKIE, randomUUID(), {
+			response.cookie(BROWSER_ID_COOKIE, randomUUID(), {
 				httpOnly: true,
 				secure: true,
 				sameSite: 'strict',
@@ -38,8 +38,8 @@ export function addBrowserIdRoute(app: Application): void
 			});
 		}
 
-		res.set('Cache-Control', 'no-store');
-		res.sendStatus(204);
+		response.set('Cache-Control', 'no-store');
+		response.sendStatus(204);
 	});
 }
 

@@ -1,5 +1,8 @@
+import type { MapBounds } from './maps.js';
+import type { Ruleset, ZoneLinkMode } from './universes.js';
+
 /**
- * Message types clients send to the game room
+ * Message types clients send to the rooms with a map: a universe's lobby and a group's game room
  *
  * Clients send inputs, never state (positions, health, scores): the server decides the outcome
  */
@@ -8,18 +11,28 @@ export enum MessageType
 	/**
 	 * The direction the player wants to move in, sent whenever it changes (payload: MovePayload)
 	 */
-	Move = 'move'
+	Move = 'move',
+
+	/**
+	 * Take the manual zone link on the cell the player is standing on (no payload)
+	 */
+	TakeLink = 'takeLink'
 }
 
 /**
- * Message types the game room sends to clients, for one-off events rather than state
+ * Message types the rooms with a map send to clients, for one-off events rather than state
  */
 export enum ServerMessageType
 {
 	/**
-	 * Sent to each client as it joins: which player in GameState.players it controls (payload: WelcomePayload)
+	 * Sent to each client as it joins: which player in state.players it controls (payload: WelcomePayload)
 	 */
-	Welcome = 'welcome'
+	Welcome = 'welcome',
+
+	/**
+	 * The zone the client's player is in, sent on joining and whenever the player moves to another zone (payload: ZonePayload)
+	 */
+	Zone = 'zone'
 }
 
 /**
@@ -42,15 +55,75 @@ export interface MovePayload
 export interface WelcomePayload
 {
 	/**
-	 * Key of the client's own player in GameState.players. Windows of the same browser share one player
+	 * Key of the client's own player in state.players. Windows of the same browser share one player
 	 */
 	playerId: string;
 }
 
 /**
- * Message types clients send to the lobby room
+ * A tile a zone's map can use, as the client draws it
  */
-export enum LobbyMessageType
+export interface ZoneTile
+{
+	id: number;
+	name: string;
+
+	/**
+	 * 0xRRGGBB
+	 */
+	color: number;
+}
+
+/**
+ * One stored chunk of a zone's map
+ */
+export interface ZoneChunk
+{
+	chunkColumn: number;
+	chunkRow: number;
+
+	/**
+	 * CHUNK_SIZE * CHUNK_SIZE cell values, row by row: a tile ID, DEFAULT_TILE_CELL or VOID_CELL
+	 */
+	cells: number[];
+}
+
+/**
+ * A cell with a zone link, as the client sees it: where the link goes stays on the server
+ */
+export interface ZoneLinkCell
+{
+	column: number;
+	row: number;
+	mode: ZoneLinkMode;
+}
+
+/**
+ * Payload of ServerMessageType.Zone: everything needed to draw a zone's map
+ */
+export interface ZonePayload
+{
+	zoneId: string;
+	name: string;
+	indoors: boolean;
+	bounds: MapBounds;
+	loopsEastWest: boolean;
+	loopsNorthSouth: boolean;
+
+	/**
+	 * Tile of every cell holding DEFAULT_TILE_CELL, including every cell of a chunk that isn't listed
+	 */
+	defaultTileId: number;
+
+	tiles: ZoneTile[];
+	chunks: ZoneChunk[];
+	links: ZoneLinkCell[];
+}
+
+/**
+ * Message types clients send to the session room
+ */
+export enum SessionMessageType
 {
 	/**
 	 * Log in with a name; every window of the browser is logged in (payload: LoginPayload)
@@ -58,43 +131,60 @@ export enum LobbyMessageType
 	Login = 'login',
 
 	/**
-	 * Say something in the lobby chat (payload: ChatPayload)
-	 */
-	Chat = 'chat',
-
-	/**
-	 * Create a new group and move the player into it (no payload)
-	 */
-	CreateGroup = 'createGroup',
-
-	/**
 	 * Move the player into an existing group, from a join link (payload: JoinGroupPayload)
 	 */
 	JoinGroup = 'joinGroup',
 
 	/**
-	 * Take the player out of their group, back to the lobby (no payload)
+	 * Take the player out of their group (no payload)
 	 */
 	LeaveGroup = 'leaveGroup'
 }
 
 /**
- * Message types the lobby room sends to clients
+ * Message types the session room sends to clients
  */
-export enum LobbyServerMessageType
+export enum SessionServerMessageType
 {
 	/**
-	 * Who the window's player is and which group they are in, sent on joining the lobby and whenever it changes (payload: AccountPayload)
+	 * Who the window's player is and which group they are in, sent on joining and whenever it changes (payload: AccountPayload)
 	 */
 	Account = 'account',
 
 	/**
-	 * Recent chat, sent to a window when its player logs in or it joins already logged in (payload: ChatHistoryPayload)
+	 * Something the player asked for didn't happen (payload: NoticePayload)
+	 */
+	Notice = 'notice'
+}
+
+/**
+ * Message types clients send to a universe's lobby room
+ */
+export enum LobbyMessageType
+{
+	/**
+	 * Say something in the lobby chat (payload: ChatPayload)
+	 */
+	Chat = 'chat',
+
+	/**
+	 * Create a new group in this universe and move the player into it (no payload)
+	 */
+	CreateGroup = 'createGroup'
+}
+
+/**
+ * Message types a universe's lobby room sends to clients
+ */
+export enum LobbyServerMessageType
+{
+	/**
+	 * Recent chat, sent to a window as it joins (payload: ChatHistoryPayload)
 	 */
 	ChatHistory = 'chatHistory',
 
 	/**
-	 * A new chat message, sent to every logged-in window (payload: ChatMessage)
+	 * A new chat message, sent to every window in the lobby (payload: ChatMessage)
 	 */
 	Chat = 'chat',
 
@@ -105,7 +195,15 @@ export enum LobbyServerMessageType
 }
 
 /**
- * Payload of LobbyMessageType.Login
+ * Options a client joins a universe's lobby with
+ */
+export interface LobbyJoinOptions
+{
+	universeId: string;
+}
+
+/**
+ * Payload of SessionMessageType.Login
  */
 export interface LoginPayload
 {
@@ -121,7 +219,7 @@ export interface ChatPayload
 }
 
 /**
- * Payload of LobbyMessageType.JoinGroup
+ * Payload of SessionMessageType.JoinGroup
  */
 export interface JoinGroupPayload
 {
@@ -134,20 +232,20 @@ export interface JoinGroupPayload
 export interface AccountPlayer
 {
 	/**
-	 * Public ID of the player: the key in LobbyState.players and GameState.players
+	 * Public ID of the player: their key in LobbyState and GameState
 	 */
 	playerId: string;
 
 	name: string;
 
 	/**
-	 * ID of the player's group (the game room's ID), or null when they are in the lobby
+	 * ID of the player's group (the game room's ID), or null when they aren't in one
 	 */
 	groupId: string | null;
 }
 
 /**
- * Payload of LobbyServerMessageType.Account
+ * Payload of SessionServerMessageType.Account
  */
 export interface AccountPayload
 {
@@ -186,7 +284,7 @@ export interface ChatHistoryPayload
 }
 
 /**
- * Why a request to the lobby was turned down
+ * Why a request to the session or a lobby was turned down
  */
 export enum NoticeReason
 {
@@ -199,6 +297,11 @@ export enum NoticeReason
 	 * The group in a join link already has MAX_GROUP_PLAYERS players
 	 */
 	GroupFull = 'groupFull',
+
+	/**
+	 * The server couldn't create a group
+	 */
+	GroupNotCreated = 'groupNotCreated',
 
 	/**
 	 * The player sent chat messages faster than the lobby allows; the message was dropped
@@ -217,9 +320,44 @@ export enum NoticeReason
 }
 
 /**
- * Payload of LobbyServerMessageType.Notice
+ * Payload of SessionServerMessageType.Notice and LobbyServerMessageType.Notice
  */
 export interface NoticePayload
 {
 	reason: NoticeReason;
+}
+
+/**
+ * A universe as Home lists it (GET UNIVERSES_PATH)
+ */
+export interface UniverseSummary
+{
+	id: string;
+	name: string;
+	shortDescription: string;
+	ruleset: Ruleset;
+}
+
+/**
+ * A universe as Home's overview of it shows it (GET UNIVERSES_PATH/:id)
+ */
+export interface UniverseDetails extends UniverseSummary
+{
+	/**
+	 * Markdown
+	 */
+	longDescription: string;
+}
+
+/**
+ * Response of GET UNIVERSES_PATH
+ */
+export interface UniverseListPayload
+{
+	universes: UniverseSummary[];
+
+	/**
+	 * Whether there are more universes after these
+	 */
+	hasMore: boolean;
 }

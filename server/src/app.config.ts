@@ -5,13 +5,15 @@ import {
 	playground,
 } from 'colyseus';
 
-import { GAME_ROOM_NAME, LOBBY_ROOM_NAME } from '@multiverse-kiln/shared';
+import { GAME_ROOM_NAME, LOBBY_ROOM_NAME, SESSION_ROOM_NAME } from '@multiverse-kiln/shared';
 import { GameRoom } from './rooms/GameRoom.js';
 import { LobbyRoom } from './rooms/LobbyRoom.js';
+import { SessionRoom } from './rooms/SessionRoom.js';
 import { createTransport } from './transport.js';
 import { isDevToolsEnabled } from './devTools.js';
 import { addBrowserIdRoute } from './http/browserId.js';
 import { addHealthRoute } from './http/health.js';
+import { addUniversesRoutes } from './http/universes.js';
 import { createOriginCheck, parseAllowedOrigins } from './http/origins.js';
 import { configureResponseHeaders } from './http/responseHeaders.js';
 
@@ -32,7 +34,11 @@ const server = defineServer({
 	 * Room types clients can join
 	 */
 	rooms: {
-		[LOBBY_ROOM_NAME]: defineRoom(LobbyRoom),
+		[SESSION_ROOM_NAME]: defineRoom(SessionRoom),
+
+		// One lobby per universe: clients asking for the same universeId share a room
+		[LOBBY_ROOM_NAME]: defineRoom(LobbyRoom).filterBy(['universeId']),
+
 		[GAME_ROOM_NAME]: defineRoom(GameRoom),
 	},
 
@@ -46,6 +52,7 @@ const server = defineServer({
 
 		addHealthRoute(app);
 		addBrowserIdRoute(app);
+		addUniversesRoutes(app);
 
 		if (isDevToolsEnabled())
 		{
@@ -58,9 +65,9 @@ const server = defineServer({
 		else
 		{
 			// Colyseus serves its version number at / unless another route claims it
-			app.get('/', (_req, res) =>
+			app.get('/', (_request, response) =>
 			{
-				res.sendStatus(404);
+				response.sendStatus(404);
 			});
 		}
 	}

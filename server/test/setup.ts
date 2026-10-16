@@ -13,7 +13,7 @@
  */
 import { existsSync } from 'fs';
 
-import { closeTestDatabase, emptyTestDatabase, migrateTestDatabase, requireTestDatabaseUrl } from './testDatabase.js';
+import { buildTestDatabase, closeTestDatabase, emptyTestDatabase, requireTestDatabaseUrl } from './testDatabase.js';
 
 /**
  * The only origin the test server allows
@@ -37,13 +37,13 @@ process.env.DATABASE_URL = requireTestDatabaseUrl('TEST_DATABASE_URL');
 const migrationDatabaseUrl = requireTestDatabaseUrl('TEST_MIGRATION_DATABASE_URL');
 
 /**
- * Root hooks for every test file: migrate the test database once, empty it before each test, and
+ * Root hooks for every test file: build the test database once, empty it before each test, and
  * close both connections at the end
  */
 export const mochaHooks = {
 	async beforeAll(): Promise<void>
 	{
-		await migrateTestDatabase(migrationDatabaseUrl);
+		await buildTestDatabase(migrationDatabaseUrl);
 	},
 
 	async beforeEach(): Promise<void>

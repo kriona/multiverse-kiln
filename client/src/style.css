@@ -135,13 +135,103 @@ input
 	color: #f5d58a;
 }
 
+button.secondary
+{
+	border-color: #555;
+	background: #2a2d36;
+}
+
+button.secondary:hover
+{
+	background: #353945;
+}
+
+.universes
+{
+	margin: 16px;
+	max-width: 720px;
+}
+
+.universe-list
+{
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin: 12px 0;
+	padding: 0;
+	list-style: none;
+}
+
+.universe-item
+{
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	width: 100%;
+	padding: 10px 14px;
+	border-color: #333;
+	background: #1d1f27;
+	text-align: left;
+}
+
+.universe-item:hover
+{
+	border-color: #4caf50;
+	background: #232631;
+}
+
+.universe-ruleset
+{
+	font-size: 12px;
+	color: #999;
+}
+
+.universe-empty
+{
+	color: #999;
+}
+
+.universe-dialog
+{
+	width: min(560px, calc(100vw - 32px));
+	color: #eee;
+}
+
+.universe-dialog::backdrop
+{
+	background: rgba(0, 0, 0, 0.6);
+}
+
+.universe-description
+{
+	white-space: pre-wrap;
+}
+
+.dialog-buttons
+{
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+}
+
 .lobby-body
 {
 	display: flex;
 	flex: 1;
+	flex-wrap: wrap;
 	gap: 16px;
 	min-height: 0;
 	padding: 16px;
+}
+
+.lobby-side
+{
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	gap: 16px;
+	min-width: 280px;
+	min-height: 0;
 }
 
 .chat
@@ -150,6 +240,7 @@ input
 	flex: 1;
 	flex-direction: column;
 	min-width: 0;
+	min-height: 200px;
 }
 
 .chat-log
@@ -198,14 +289,14 @@ input
 	min-width: 0;
 }
 
-.online
+.members
 {
 	display: flex;
 	flex-direction: column;
-	width: 220px;
+	max-height: 200px;
 }
 
-.online-list
+.member-list
 {
 	flex: 1;
 	overflow-y: auto;
@@ -215,29 +306,34 @@ input
 	overflow-wrap: anywhere;
 }
 
-.online-list li
+.member-list li
 {
 	padding: 2px 0;
 }
 
-.online-own
+.member-own
 {
 	color: #4caf50;
 }
 
-.online-more
+.member-more
 {
 	margin: 8px 0 0;
 	font-size: 12px;
 	color: #999;
 }
 
-#game
+.map
 {
 	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+}
+
+#group-map
+{
 	flex: 1;
 	align-items: center;
-	justify-content: center;
 }
 
 footer

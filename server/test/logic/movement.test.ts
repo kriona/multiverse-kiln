@@ -1,11 +1,19 @@
 import assert from 'assert';
 import type { MovePayload } from '@multiverse-kiln/shared';
 
-import { cellAt, cellCenter, NO_PRESS, occupiedCells, PLAYER_SPEED, spawnPosition, STEP_REPEAT_DELAY, stepOnGrid, type Cell, type GridMover, type Grid, type GridStep, type IsCellFree } from '../../src/logic/movement.js';
+import { IMPASSABLE_COST } from '@multiverse-kiln/shared';
+import { cellAt, cellCenter, findFreeCell, NO_PRESS, occupiedCells, PLAYER_SPEED, STEP_REPEAT_DELAY, stepOnGrid, wrapCell, type Cell, type GridMover, type Grid, type GridStep, type IsCellFree } from '../../src/logic/movement.js';
 
 // Cell centers are at x = 5, 15, 25, 35, 45 and y = 5, 15, 25, 35. At the speed of 100 these tests use,
 // a step between neighboring cells takes 0.1 seconds
-const grid: Grid = { cellSize: 10, columns: 5, rows: 4 };
+const grid: Grid = {
+	cellSize: 10,
+	bounds: { minColumn: 0, minRow: 0, maxColumn: 4, maxRow: 3 },
+	loopsEastWest: false,
+	loopsNorthSouth: false,
+	movementCost: () => 0,
+	endsMovement: () => false
+};
 
 // The tests use their own speed and repeat delay rather than PLAYER_SPEED and STEP_REPEAT_DELAY, so
 // those can be tuned without changing the timings here. A press must be held for 0.25 seconds, two
@@ -28,6 +36,28 @@ const allFree: IsCellFree = () => true;
 function freeExcept(...held: [number, number][]): IsCellFree
 {
 	return((cell) => !held.some(([column, row]) => ((cell.column === column) && (cell.row === row))));
+}
+
+/**
+ * The test grid with some of its settings changed
+ *
+ * @param changes The settings to change
+ * @return The grid
+ */
+function gridWith(changes: Partial<Grid>): Grid
+{
+	return({ ...grid, ...changes });
+}
+
+/**
+ * Movement costs where the given cells cost something and every other cell is free to move into
+ *
+ * @param costs Cells and their costs, as [column, row, cost]
+ * @return The movement cost function for a grid
+ */
+function costs(...costs: [number, number, number][]): Grid['movementCost']
+{
+	return((cell) => costs.find(([column, row]) => ((cell.column === column) && (cell.row === row)))?.[2] ?? 0);
 }
 
 /**
@@ -125,7 +155,7 @@ describe('stepOnGrid', () =>
 
 	it('uses PLAYER_SPEED by default', () =>
 	{
-		const wideGrid: Grid = { cellSize: 1000, columns: 3, rows: 1 };
+		const wideGrid = gridWith({ cellSize: 1000, bounds: { minColumn: 0, minRow: 0, maxColumn: 2, maxRow: 0 } });
 
 		assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(500, 500), right, 1, wideGrid, allFree)), { x: 500 + PLAYER_SPEED, y: 500, step: step([0, 0], [1, 0]) });
 	});
@@ -270,6 +300,111 @@ describe('stepOnGrid', () =>
 			assert.deepStrictEqual(placeOf(stepOnGrid(midStep, standingStill, 1, grid, freeExcept([3, 1]), 100, repeatDelay)), at(35, 15));
 		});
 	});
+
+	describe('terrain', () =>
+	{
+		it('moves at half speed into a cell with a movement cost of 50', () =>
+		{
+			const forest = gridWith({ movementCost: costs([3, 1, 50]) });
+
+			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(25, 15), right, 0.1, forest, allFree, 100, repeatDelay)), { x: 30, y: 15, step: step([2, 1], [3, 1]) });
+			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(25, 15), right, 0.2, forest, allFree, 100, repeatDelay)), at(35, 15));
+		});
+
+		it('moves at full speed out of a costly cell into a free one', () =>
+		{
+			const forest = gridWith({ movementCost: costs([3, 1, 50]) });
+
+			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(35, 15), right, 0.05, forest, allFree, 100, repeatDelay)), { x: 40, y: 15, step: step([3, 1], [4, 1]) });
+		});
+
+		it('does not enter an impassable cell', () =>
+		{
+			const wall = gridWith({ movementCost: costs([3, 1, IMPASSABLE_COST]) });
+
+			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(25, 15), right, 1, wall, allFree, 100, repeatDelay)), at(25, 15));
+		});
+
+		it('does not cut diagonally past an impassable corner, but takes the part of the step it can', () =>
+		{
+			const wall = gridWith({ movementCost: costs([2, 1, IMPASSABLE_COST]) });
+
+			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(15, 15), downRight, 0.05, wall, allFree, 100, repeatDelay)), { x: 15, y: 20, step: step([1, 1], [1, 2]) });
+		});
+	});
+
+	describe('cells that end movement', () =>
+	{
+		it('stops a player who steps onto one, even with the direction still held', () =>
+		{
+			const door = gridWith({ endsMovement: (cell) => ((cell.column === 3) && (cell.row === 1)) });
+			const mover = stepOnGrid(holdingAt(15, 15, right), right, 1, door, allFree, 100, repeatDelay);
+
+			assert.deepStrictEqual(placeOf(mover), at(35, 15));
+			assert.deepStrictEqual(mover.stoppedAt, { column: 3, row: 1 });
+		});
+
+		it('lets a player standing on one walk off it', () =>
+		{
+			const door = gridWith({ endsMovement: (cell) => ((cell.column === 3) && (cell.row === 1)) });
+			const mover = stepOnGrid(holdingAt(35, 15, right), right, 1, door, allFree, 100, repeatDelay);
+
+			assert.deepStrictEqual(placeOf(mover), at(45, 15));
+			assert.strictEqual(mover.stoppedAt, undefined);
+		});
+
+		it('says nothing when the player stopped for any other reason', () =>
+		{
+			assert.strictEqual(stepOnGrid(standingAt(25, 15), right, 1, grid, allFree, 100, repeatDelay).stoppedAt, undefined);
+		});
+	});
+
+	describe('looping edges', () =>
+	{
+		it('steps off the east edge and comes back on at the west', () =>
+		{
+			const loops = gridWith({ loopsEastWest: true });
+
+			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(45, 15), right, 0.05, loops, allFree, 100, repeatDelay)), { x: 50, y: 15, step: step([4, 1], [5, 1]) });
+			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(45, 15), right, 0.1, loops, allFree, 100, repeatDelay)), at(5, 15));
+		});
+
+		it('steps off the north edge and comes back on at the south', () =>
+		{
+			const loops = gridWith({ loopsNorthSouth: true });
+
+			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(25, 5), { x: 0, y: -1 }, 0.1, loops, allFree, 100, repeatDelay)), at(25, 35));
+		});
+
+		it('does not step off an edge that does not loop', () =>
+		{
+			const loops = gridWith({ loopsNorthSouth: true });
+
+			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(45, 15), right, 1, loops, allFree, 100, repeatDelay)), at(45, 15));
+		});
+
+		it('does not step across a looping edge into a held cell', () =>
+		{
+			const loops = gridWith({ loopsEastWest: true });
+
+			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(45, 15), right, 1, loops, freeExcept([0, 1]), 100, repeatDelay)), at(45, 15));
+		});
+	});
+
+	describe('cells left of and above the center', () =>
+	{
+		const centered = gridWith({ bounds: { minColumn: -2, minRow: -2, maxColumn: 2, maxRow: 2 } });
+
+		it('moves through negative columns and rows', () =>
+		{
+			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(-15, -15), right, 0.05, centered, allFree, 100, repeatDelay)), { x: -10, y: -15, step: step([-2, -2], [-1, -2]) });
+		});
+
+		it('stops at the map\'s west and north edges', () =>
+		{
+			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(-15, -15), { x: -1, y: -1 }, 1, centered, allFree, 100, repeatDelay)), at(-15, -15));
+		});
+	});
 });
 
 describe('occupiedCells', () =>
@@ -285,36 +420,61 @@ describe('occupiedCells', () =>
 
 		assert.deepStrictEqual(cells, [{ column: 2, row: 1 }, { column: 3, row: 1 }]);
 	});
+
+	it('is the cell on the far side for a step off a looping edge', () =>
+	{
+		const loops = gridWith({ loopsEastWest: true });
+
+		assert.deepStrictEqual(occupiedCells({ x: 50, y: 15, step: step([4, 1], [5, 1]) }, loops), [{ column: 4, row: 1 }, { column: 0, row: 1 }]);
+	});
 });
 
-describe('spawnPosition', () =>
+describe('findFreeCell', () =>
 {
-	it('picks the cell the random values point to', () =>
+	it('is the cell itself when it is free', () =>
 	{
-		const values = [0.5, 0.5];
-
-		assert.deepStrictEqual(spawnPosition(grid, () => values.shift() ?? 0, allFree), { x: 25, y: 25 });
+		assert.deepStrictEqual(findFreeCell({ column: 2, row: 1 }, grid, allFree, 3), { x: 25, y: 15 });
 	});
 
-	it('stays on the grid', () =>
+	it('looks in rings around a held cell, from the top left', () =>
 	{
-		assert.deepStrictEqual(spawnPosition(grid, () => 0, allFree), { x: 5, y: 5 });
-		assert.deepStrictEqual(spawnPosition(grid, () => 0.999999, allFree), { x: 45, y: 35 });
+		assert.deepStrictEqual(findFreeCell({ column: 2, row: 1 }, grid, freeExcept([2, 1]), 3), { x: 15, y: 5 });
 	});
 
-	it('takes the next free cell when the random one is held', () =>
+	it('skips cells that are off the map or impassable', () =>
 	{
-		assert.deepStrictEqual(spawnPosition(grid, () => 0, freeExcept([0, 0], [1, 0])), { x: 25, y: 5 });
+		const walls = gridWith({ movementCost: costs([0, 0, IMPASSABLE_COST], [1, 0, IMPASSABLE_COST]) });
+
+		assert.deepStrictEqual(findFreeCell({ column: 0, row: 0 }, walls, allFree, 3), { x: 5, y: 15 });
 	});
 
-	it('wraps around to the start of the grid', () =>
+	it('looks across a looping edge', () =>
 	{
-		assert.deepStrictEqual(spawnPosition(grid, () => 0.999999, freeExcept([4, 3])), { x: 5, y: 5 });
+		const loops = gridWith({ loopsEastWest: true });
+
+		assert.deepStrictEqual(findFreeCell({ column: 0, row: 1 }, loops, freeExcept([0, 1]), 3), { x: 45, y: 5 });
 	});
 
-	it('returns undefined when every cell is held', () =>
+	it('returns undefined when no cell is free within the distance', () =>
 	{
-		assert.strictEqual(spawnPosition(grid, () => 0, () => false), undefined);
+		assert.strictEqual(findFreeCell({ column: 0, row: 0 }, grid, () => false, 10), undefined);
+		assert.strictEqual(findFreeCell({ column: 2, row: 1 }, grid, freeExcept([2, 1]), 0), undefined);
+	});
+});
+
+describe('wrapCell', () =>
+{
+	it('brings a cell past a looping edge back onto the map', () =>
+	{
+		const loops = gridWith({ loopsEastWest: true, loopsNorthSouth: true });
+
+		assert.deepStrictEqual(wrapCell({ column: 5, row: 1 }, loops), { column: 0, row: 1 });
+		assert.deepStrictEqual(wrapCell({ column: -1, row: -1 }, loops), { column: 4, row: 3 });
+	});
+
+	it('leaves a cell alone along an axis that does not loop', () =>
+	{
+		assert.deepStrictEqual(wrapCell({ column: 5, row: -1 }, grid), { column: 5, row: -1 });
 	});
 });
 
@@ -334,5 +494,13 @@ describe('cellAt', () =>
 		assert.deepStrictEqual(cellAt({ x: 25, y: 15 }, grid), { column: 2, row: 1 });
 		assert.deepStrictEqual(cellAt({ x: 49.9, y: 0 }, grid), { column: 4, row: 0 });
 		assert.deepStrictEqual(cellAt({ x: 999, y: -5 }, grid), { column: 4, row: 0 });
+	});
+
+	it('handles negative positions', () =>
+	{
+		const centered = gridWith({ bounds: { minColumn: -2, minRow: -2, maxColumn: 2, maxRow: 2 } });
+
+		assert.deepStrictEqual(cellAt({ x: -15, y: -0.5 }, centered), { column: -2, row: -1 });
+		assert.deepStrictEqual(cellAt({ x: -999, y: 999 }, centered), { column: -2, row: 2 });
 	});
 });

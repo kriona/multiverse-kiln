@@ -21,15 +21,19 @@ An engine for making multiplayer browser-based role-playing games.
   src/index.ts       Colyseus Cloud entry point - never modify it (Colyseus's rule for Cloud deploys)
   src/app.config.ts  define room types, HTTP routes, Express middleware
   src/transport.ts   HTTPS/WSS transport
-  src/rooms/         Room classes (lifecycle hooks, message handlers, tick loop): LobbyRoom and GameRoom (one per group)
+  src/rooms/         Room classes (lifecycle hooks, message handlers, tick loop): SessionRoom (one, global: login,
+                     account, joining groups), LobbyRoom (one per universe) and GameRoom (one per group). The two
+                     map rooms share ZonePlayers (movement, zones, who sees whom, zone links) and ZoneCache
   src/players/       who is logged in and which group each player is in (in memory; accounts are in the database)
   src/logic/         pure game-simulation functions (no I/O)
   src/db/            Drizzle client, schema, and repository modules
   src/auth/          token verification
   src/http/          REST routes (health, login, leaderboard)
+  scripts/           development tools run by hand, such as the seed script
 /shared          Code imported by both client and server:
                  message type enums, payload interfaces, close codes, constants,
-                 and the synced state's @colyseus/schema classes (src/state.ts)
+                 the synced state's @colyseus/schema classes (src/state.ts),
+                 the map and chunk layout (src/maps.ts) and universe settings (src/universes.ts)
 docker-compose.yml   local Postgres
 ```
 
@@ -53,10 +57,11 @@ npm workspaces are assumed (`client`, `server`, `shared`). Update this section i
   - Optional periodic checkpoints for long sessions, run off the tick path.
 - All queries go through repository modules in `server/src/db/` (e.g. `playerRepo.ts`). Rooms call repositories, never raw SQL or the Drizzle client directly.
 - Schema changes are made in the Drizzle schema, then a migration is generated with `drizzle-kit`. Never edit the database by hand, and never run migrations automatically on server startup.
+- Give migrations descriptive names (`npx drizzle-kit generate --name=<name>` from `server/`). Data every database needs, such as a ruleset's default tiles, goes in a custom migration (`--custom --name=<name>`); sample data for development goes in the seed script instead.
 - Use a standard TCP Postgres driver (`pg` or `postgres.js`) with a connection pool. Do not use Neon's HTTP/serverless driver; the server is a long-running process.
 - In production, use Neon's **pooled** connection string.
 - Two roles: migrations run as the migration role, which owns the tables; the server runs as the app role, which can read and write rows but not alter tables. Locally, the scripts in `docker/postgres/init/` create them, along with the `kiln` and `kiln_test` databases. Never give the server the migration role's credentials.
-- `server/src/db/client.ts` throws on import when `DATABASE_URL` is unset. Tests run against their own database: `server/test/setup.ts` points `DATABASE_URL` at `TEST_DATABASE_URL`, migrates it once, and empties every table before each test, so a test never depends on rows another test left behind. It refuses a database whose name doesn't end in `_test`.
+- `server/src/db/client.ts` throws on import when `DATABASE_URL` is unset. Tests run against their own database: `server/test/setup.ts` points `DATABASE_URL` at `TEST_DATABASE_URL`, rebuilds it from the migrations at the start of every run, and before each test deletes every row except those the migrations inserted (such as default tiles), so a test never depends on rows another test left behind. It refuses a database whose name doesn't end in `_test`.
 - Write repository tests against the real test database (`server/test/db/`), not mocks.
 
 ## Configuration
@@ -88,6 +93,7 @@ npm workspaces are assumed (`client`, `server`, `shared`). Update this section i
 docker compose up -d                 # start local Postgres
 npm run db:generate -w server        # create a migration after changing server/src/db/schema.ts
 npm run db:migrate -w server         # apply Drizzle migrations
+npm run db:seed -w server            # add or replace the sample universe (server/scripts/sampleUniverse.ts)
 npm run dev -w server                # Colyseus on wss://www.multiversekiln-dev.com:2567
 npm run dev -w client                # Vite on https://www.multiversekiln-dev.com:5173
 ```
@@ -106,6 +112,34 @@ Test multiplayer with separate browsers or profiles: every tab of one browser is
 - **Never use Phaser physics (`physics-arcade`, `physics-matter`) for gameplay.** Movement, collisions and every other game rule run on the server (architecture rules 1, 4 and 6); the client only renders and interpolates. Phaser physics is acceptable only for purely cosmetic effects that never feed back into game state. If client-side prediction is added later, it reuses the server's pure functions from `server/src/logic/` (moved to `/shared` if needed), not Phaser physics.
 - Skill examples show library APIs, not this project's conventions. Where they differ, this file and the global code style win: rooms reach the database only through repositories and only at lifecycle boundaries (the Colyseus skill's example queries a database from a message handler), the client connects to `VITE_SERVER_URL` rather than `http://localhost:2567`, client code is TypeScript (the Phaser skills' examples are JavaScript), and code follows the house style (single quotes, Allman braces).
 - When unsure about an architectural choice, follow the rules above and ask rather than inventing a new pattern.
+
+### Formatting
+
+On top of the global code style:
+
+- Name variables and parameters with full words, not abbreviations: `(request, response)` in an Express handler, not `(req, res)`.
+- A chain of two or more method calls (Drizzle queries, `filter`/`sort`/`map`, promise chains) puts each call on its own line, indented one tab under where the chain starts.
+- An object literal with more than one property goes one property per line when it doesn't fit comfortably on one line, including objects passed into a chain (`.select({...})`, `.values({...})`, `.set({...})`).
+
+```ts
+const [row] = await executor
+	.select({
+		id: universes.id,
+		name: universes.name
+	})
+	.from(universes)
+	.where(eq(universes.id, universeId))
+	.limit(1);
+
+const others = [...this.members]
+	.filter(([playerId]) => (playerId !== this.ownPlayerId))
+	.sort(([, a], [, b]) => a.localeCompare(b));
+
+const payload: UniverseListPayload = {
+	universes: universes.slice(0, limit),
+	hasMore: (universes.length > limit)
+};
+```
 
 ## Deployment (later phases)
 

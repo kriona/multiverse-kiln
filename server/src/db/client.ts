@@ -4,7 +4,8 @@
  * Only repository modules in this folder import it; rooms call the repositories
  * (eslint.config.js enforces this), and never from inside the simulation tick
  */
-import { drizzle } from 'drizzle-orm/node-postgres';
+import { drizzle, type NodePgQueryResultHKT } from 'drizzle-orm/node-postgres';
+import type { PgDatabase } from 'drizzle-orm/pg-core';
 import pg from 'pg';
 
 import * as schema from './schema.js';
@@ -40,3 +41,9 @@ pool.on('error', (error) =>
  * Drizzle instance for repository modules
  */
 export const db = drizzle(pool, { schema });
+
+/**
+ * What a repository function runs its queries on: the database itself, or a transaction from
+ * db.transaction() when several calls must succeed or fail together
+ */
+export type Executor = PgDatabase<NodePgQueryResultHKT, typeof schema>;

@@ -3,7 +3,7 @@
  *
  * Pure functions: no Colyseus, database, network or timers (CLAUDE.md architecture rule 4)
  */
-import type { MovePayload } from '@multiverse-kiln/shared';
+import { IMPASSABLE_COST, isInBounds, positiveModulo, type MapBounds, type MovePayload } from '@multiverse-kiln/shared';
 
 /**
  * A point in world units
@@ -15,7 +15,8 @@ export interface Position
 }
 
 /**
- * A cell of the grid, counted from 0 at the top left
+ * A cell of the grid. Column 0, row 0 is the map's center cell, and its top left corner is at world
+ * position (0, 0), so cells left of or above it have negative columns or rows
  */
 export interface Cell
 {
@@ -24,7 +25,7 @@ export interface Cell
 }
 
 /**
- * The grid players move on, covering the world from (0, 0)
+ * The grid players move on: a zone's map
  */
 export interface Grid
 {
@@ -33,12 +34,39 @@ export interface Grid
 	 */
 	cellSize: number;
 
-	columns: number;
-	rows: number;
+	/**
+	 * The cells players can be in
+	 */
+	bounds: MapBounds;
+
+	/**
+	 * Whether stepping off the east or west edge comes back on at the other
+	 */
+	loopsEastWest: boolean;
+
+	/**
+	 * Whether stepping off the north or south edge comes back on at the other
+	 */
+	loopsNorthSouth: boolean;
+
+	/**
+	 * How much harder a cell inside the bounds is to move into, in percent: 0 is normal, 50 takes twice
+	 * as long, and IMPASSABLE_COST can't be entered
+	 */
+	movementCost: (cell: Cell) => number;
+
+	/**
+	 * Whether a player who steps onto a cell inside the bounds stops there, even with a direction still
+	 * held, such as a cell that takes the player to another zone
+	 */
+	endsMovement: (cell: Cell) => boolean;
 }
 
 /**
  * A move from one cell to a neighboring one
+ *
+ * At a looping edge, `to` is the cell just past the edge rather than the cell on the far side it stands
+ * for, so the player moves smoothly off the edge; wrapCell() gives the cell they arrive in
  */
 export interface GridStep
 {
@@ -81,12 +109,24 @@ export interface GridMover
 }
 
 /**
+ * A player's movement state after stepOnGrid
+ */
+export interface StepResult extends GridMover
+{
+	/**
+	 * The cell the player stepped onto and stopped in because the grid's endsMovement() says so, or
+	 * undefined when they didn't
+	 */
+	stoppedAt: Cell | undefined;
+}
+
+/**
  * Whether a cell is free for a player to move into (not held by another player)
  */
 export type IsCellFree = (cell: Cell) => boolean;
 
 /**
- * Player movement speed in world units per second
+ * Player movement speed in world units per second, on a cell with no movement cost
  */
 export const PLAYER_SPEED = 200;
 
@@ -106,7 +146,14 @@ const TIME_EPSILON = 1e-9;
 /**
  * A press of no direction, for a player that has never moved
  */
-export const NO_PRESS: DirectionPress = { direction: { x: 0, y: 0 }, heldSeconds: 0, stepsStarted: 0 };
+export const NO_PRESS: DirectionPress = {
+	direction: {
+		x: 0,
+		y: 0
+	},
+	heldSeconds: 0,
+	stepsStarted: 0
+};
 
 /**
  * Moves a player along the grid for a period of time
@@ -117,20 +164,22 @@ export const NO_PRESS: DirectionPress = { direction: { x: 0, y: 0 }, heldSeconds
  * that each step that ends starts the next one with the remaining time, so held movement doesn't
  * stutter between cells. Holding two axes steps diagonally, at the same speed.
  *
- * A step only starts into a free cell, and a diagonal step also needs both cells beside it free, so
- * players can't pass through each other at a corner. When the diagonal step can't be taken, the
- * horizontal and then the vertical part is tried instead; when nothing can, the player waits
+ * A step only starts into a free cell the player can enter, and a diagonal step also needs both cells
+ * beside it free and enterable, so players can't pass through each other or cut past a wall at a
+ * corner. When the diagonal step can't be taken, the horizontal and then the vertical part is tried
+ * instead; when nothing can, the player waits. A step into a cell with a movement cost is slower, and
+ * a step onto a cell that ends movement stops the player there
  *
  * @param mover The player's position, current step and press
  * @param direction Direction held on each axis; a change from the press's direction starts a new press
  * @param deltaSeconds Time to move for, in seconds
  * @param grid Grid to move on
  * @param isCellFree Whether another player holds a cell (see occupiedCells)
- * @param speed Speed in world units per second
+ * @param speed Speed in world units per second, on a cell with no movement cost
  * @param repeatDelay How long a direction must be held, in seconds, before its second step starts
- * @return The new position, step and press
+ * @return The new position, step and press, and where the player stopped if a cell ended their movement
  */
-export function stepOnGrid(mover: GridMover, direction: MovePayload, deltaSeconds: number, grid: Grid, isCellFree: IsCellFree, speed: number = PLAYER_SPEED, repeatDelay: number = STEP_REPEAT_DELAY): GridMover
+export function stepOnGrid(mover: GridMover, direction: MovePayload, deltaSeconds: number, grid: Grid, isCellFree: IsCellFree, speed: number = PLAYER_SPEED, repeatDelay: number = STEP_REPEAT_DELAY): StepResult
 {
 	const isSamePress = ((direction.x === mover.press.direction.x) && (direction.y === mover.press.direction.y));
 	const press: DirectionPress = (isSamePress ? { ...mover.press } : { direction: { x: direction.x, y: direction.y }, heldSeconds: 0, stepsStarted: 0 });
@@ -138,6 +187,7 @@ export function stepOnGrid(mover: GridMover, direction: MovePayload, deltaSecond
 	let x = mover.x;
 	let y = mover.y;
 	let step = mover.step;
+	let stoppedAt: Cell | undefined;
 	let elapsed = 0;
 
 	while (elapsed < totalSeconds)
@@ -160,16 +210,17 @@ export function stepOnGrid(mover: GridMover, direction: MovePayload, deltaSecond
 				break;
 			}
 
-			// Moving back onto the current cell's center isn't a step to another cell
-			if ((step.to.column !== step.from.column) || (step.to.row !== step.from.row))
+			if (!isSameCell(step.from, step.to))
 			{
 				press.stepsStarted++;
 			}
 		}
 
+		const arrival = wrapCell(step.to, grid);
+		const stepSpeed = speedInto(arrival, grid, speed);
 		const target = cellCenter(step.to, grid);
 		const distance = Math.hypot(target.x - x, target.y - y);
-		const reach = speed * (totalSeconds - elapsed);
+		const reach = stepSpeed * (totalSeconds - elapsed);
 
 		if (distance > reach)
 		{
@@ -178,16 +229,28 @@ export function stepOnGrid(mover: GridMover, direction: MovePayload, deltaSecond
 			break;
 		}
 
-		// Arriving sets the position to the cell center exactly, so rounding never leaves a player off the grid
-		x = target.x;
-		y = target.y;
-		elapsed += distance / speed;
+		// Arriving sets the position to the cell center exactly, so rounding never leaves a player off the
+		// grid, and a player who stepped off a looping edge comes back on at the other
+		const center = cellCenter(arrival, grid);
+
+		x = center.x;
+		y = center.y;
+		elapsed += distance / stepSpeed;
+
+		const steppedOnto = !isSameCell(step.from, step.to);
+
 		step = undefined;
+
+		if (steppedOnto && grid.endsMovement(arrival))
+		{
+			stoppedAt = arrival;
+			break;
+		}
 	}
 
 	press.heldSeconds += totalSeconds;
 
-	return({ x, y, step, press });
+	return({ x, y, step, press, stoppedAt });
 }
 
 /**
@@ -204,35 +267,42 @@ export function occupiedCells(mover: Pick<GridMover, 'x' | 'y' | 'step'>, grid: 
 {
 	if (mover.step)
 	{
-		return([mover.step.from, mover.step.to]);
+		return([mover.step.from, wrapCell(mover.step.to, grid)]);
 	}
 
 	return([cellAt(mover, grid)]);
 }
 
 /**
- * Picks a random free cell for a player to spawn in
+ * Finds the cell nearest to another that a player can stand in, for placing a player who arrives
  *
- * Starts from a random cell and, if that is held, takes the next free one along the rows
+ * Looks at the cell itself, then at each ring of cells around it in turn
  *
- * @param grid Grid to spawn on
- * @param random Returns a number in [0, 1), like Math.random
+ * @param near The cell to start from
+ * @param grid The grid
  * @param isCellFree Whether another player holds a cell
- * @return The center of a free cell, or undefined when every cell is held
+ * @param maxDistance Most cells away from `near` to look
+ * @return The center of the nearest cell that is on the map, enterable and free, or undefined when
+ * there is none within maxDistance
  */
-export function spawnPosition(grid: Grid, random: () => number, isCellFree: IsCellFree): Position | undefined
+export function findFreeCell(near: Cell, grid: Grid, isCellFree: IsCellFree, maxDistance: number): Position | undefined
 {
-	const cellCount = grid.columns * grid.rows;
-	const start = (Math.floor(random() * grid.rows) * grid.columns) + Math.floor(random() * grid.columns);
-
-	for (let i = 0; i < cellCount; i++)
+	for (let distance = 0; distance <= maxDistance; distance++)
 	{
-		const index = (start + i) % cellCount;
-		const cell = { column: index % grid.columns, row: Math.floor(index / grid.columns) };
-
-		if (isCellFree(cell))
+		for (let rowOffset = -distance; rowOffset <= distance; rowOffset++)
 		{
-			return(cellCenter(cell, grid));
+			// Inside the ring only its first and last columns are on it
+			const columnStep = (((rowOffset === -distance) || (rowOffset === distance)) ? 1 : Math.max(distance * 2, 1));
+
+			for (let columnOffset = -distance; columnOffset <= distance; columnOffset += columnStep)
+			{
+				const cell = wrapCell({ column: near.column + columnOffset, row: near.row + rowOffset }, grid);
+
+				if (canStandIn(cell, grid, isCellFree))
+				{
+					return(cellCenter(cell, grid));
+				}
+			}
 		}
 	}
 
@@ -246,7 +316,7 @@ export function spawnPosition(grid: Grid, random: () => number, isCellFree: IsCe
  * @param grid The grid
  * @return The cell's center in world units
  */
-export function cellCenter(cell: Cell, grid: Grid): Position
+export function cellCenter(cell: Cell, grid: Pick<Grid, 'cellSize'>): Position
 {
 	return({
 		x: (cell.column * grid.cellSize) + (grid.cellSize / 2),
@@ -259,13 +329,33 @@ export function cellCenter(cell: Cell, grid: Grid): Position
  *
  * @param position Position in world units
  * @param grid The grid
- * @return The cell, clamped to the grid
+ * @return The cell, clamped to the map
  */
 export function cellAt(position: Position, grid: Grid): Cell
 {
+	const cell = wrapCell({ column: Math.floor(position.x / grid.cellSize), row: Math.floor(position.y / grid.cellSize) }, grid);
+
 	return({
-		column: clamp(Math.floor(position.x / grid.cellSize), 0, grid.columns - 1),
-		row: clamp(Math.floor(position.y / grid.cellSize), 0, grid.rows - 1)
+		column: clamp(cell.column, grid.bounds.minColumn, grid.bounds.maxColumn),
+		row: clamp(cell.row, grid.bounds.minRow, grid.bounds.maxRow)
+	});
+}
+
+/**
+ * The cell a cell past a looping edge stands for: on a map that loops east-west, the column after the
+ * last is the first, and so on
+ *
+ * @param cell The cell, which may be off the map
+ * @param grid The grid
+ * @return The cell on the map along each looping axis; unchanged along an axis that doesn't loop
+ */
+export function wrapCell(cell: Cell, grid: Grid): Cell
+{
+	const { minColumn, minRow, maxColumn, maxRow } = grid.bounds;
+
+	return({
+		column: (grid.loopsEastWest ? minColumn + positiveModulo(cell.column - minColumn, (maxColumn - minColumn) + 1) : cell.column),
+		row: (grid.loopsNorthSouth ? minRow + positiveModulo(cell.row - minRow, (maxRow - minRow) + 1) : cell.row)
 	});
 }
 
@@ -289,7 +379,10 @@ function nextStep(position: Position, direction: MovePayload, grid: Grid, isCell
 	{
 		if ((candidate.x !== 0) || (candidate.y !== 0))
 		{
-			const to = { column: from.column + candidate.x, row: from.row + candidate.y };
+			const to = {
+				column: from.column + candidate.x,
+				row: from.row + candidate.y
+			};
 
 			if (canEnter(from, to, grid, isCellFree))
 			{
@@ -310,21 +403,62 @@ function nextStep(position: Position, direction: MovePayload, grid: Grid, isCell
  * Whether a player can step from a cell to a neighboring one
  *
  * @param from The cell the player is in
- * @param to The neighboring cell
+ * @param to The neighboring cell, which may be just past a looping edge
  * @param grid The grid
  * @param isCellFree Whether another player holds a cell
- * @return True when the cell is on the grid and free, and for a diagonal step, both cells beside it are free too
+ * @return True when the cell is one the player can stand in, and for a diagonal step, both cells beside it are too
  */
 function canEnter(from: Cell, to: Cell, grid: Grid, isCellFree: IsCellFree): boolean
 {
-	if ((to.column < 0) || (to.column >= grid.columns) || (to.row < 0) || (to.row >= grid.rows) || !isCellFree(to))
+	if (!canStandIn(wrapCell(to, grid), grid, isCellFree))
 	{
 		return(false);
 	}
 
 	const isDiagonal = ((to.column !== from.column) && (to.row !== from.row));
 
-	return(!isDiagonal || (isCellFree({ column: to.column, row: from.row }) && isCellFree({ column: from.column, row: to.row })));
+	return(!isDiagonal || (canStandIn(wrapCell({ column: to.column, row: from.row }, grid), grid, isCellFree) && canStandIn(wrapCell({ column: from.column, row: to.row }, grid), grid, isCellFree)));
+}
+
+/**
+ * Whether a player can be in a cell
+ *
+ * @param cell The cell, already wrapped
+ * @param grid The grid
+ * @param isCellFree Whether another player holds a cell
+ * @return True when the cell is on the map, can be entered, and nobody else holds it
+ */
+function canStandIn(cell: Cell, grid: Grid, isCellFree: IsCellFree): boolean
+{
+	return(isInBounds(grid.bounds, cell.column, cell.row) && (grid.movementCost(cell) < IMPASSABLE_COST) && isCellFree(cell));
+}
+
+/**
+ * How fast a player moves into a cell, slowed by its movement cost
+ *
+ * @param cell The cell being entered, already wrapped
+ * @param grid The grid
+ * @param speed Speed on a cell with no movement cost
+ * @return The speed; full speed into a cell that can't be entered, which only happens when a player
+ * steps back to the center of a cell that has stopped being enterable under them
+ */
+function speedInto(cell: Cell, grid: Grid, speed: number): number
+{
+	const cost = (isInBounds(grid.bounds, cell.column, cell.row) ? grid.movementCost(cell) : 0);
+
+	return(((cost < IMPASSABLE_COST) ? speed * (1 - (cost / IMPASSABLE_COST)) : speed));
+}
+
+/**
+ * Whether two cells are the same
+ *
+ * @param a A cell
+ * @param b Another cell
+ * @return True when they have the same column and row
+ */
+function isSameCell(a: Cell, b: Cell): boolean
+{
+	return((a.column === b.column) && (a.row === b.row));
 }
 
 /**

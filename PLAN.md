@@ -5,7 +5,7 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 **Current phase** line updated so each new session knows where to pick up.
 `STRUCTURE-OVERVIEW.md` describes the pages, editors and game rules these phases build.
 
-**Current phase:** 7
+**Current phase:** 8
 
 ---
 
@@ -87,16 +87,22 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 
 The game runs on real universe data. Content comes from a seed script until the editor exists (Phase 8).
 
-- [ ] Tables: `universes` (name, descriptions, stage, ruleset, passage of time), `zones` (universe, parent, name, enabled, indoors, default tile, loops, passage of time), `tiles` (ruleset defaults plus each universe's custom and edited tiles), map cells and zone links
-- [ ] Store map cells in chunks, saving only chunks that differ from the zone's default tile: a map can be 50,000 tiles in each direction
-- [ ] PF1E default tiles (Grass, Forest, Desert, Mountains, Water, Wood Floor)
-- [ ] Seed script for a sample universe: a lobby zone, a town and a house, with links between them. Run by hand like migrations, never on startup
-- [ ] Pure logic with tests: movement cost (50% = double, 100% = impassable), map bounds, wrapping in zones that loop, following a zone link
-- [ ] One lobby room per universe (`filterBy` the universe ID)
-- [ ] Rooms load zone maps at lifecycle boundaries, and load the next zone before a player moves into it, never inside the tick
-- [ ] Client draws tiles by color from the zone data (graphics come in Phase 16), loading the chunks near the player
-- [ ] Zone links: automatic links move you, manual links offer a prompt
-- [ ] Home page: universes in `let there be light` (paginated from the start), the universe modal, and Enter Universe -> that universe's lobby
+Built in three steps: data and logic, then rooms, then the client.
+
+- [✅] Tables: `universes` (name, descriptions, stage, ruleset, passage of time, lobby and starting zones), `zones` (universe, parent, name, enabled, indoors, default tile, bounds, loops, passage of time), `tiles` (ruleset defaults plus each universe's own tiles), `map_chunks` and `zone_links`. Edited copies of default tiles come with the tile editor (Phase 8)
+- [✅] Store map cells in chunks of 32 x 32, saving only chunks that differ from the zone's default tile: a map can be 50,000 tiles in each direction
+- [✅] PF1E default tiles (Grass, Forest, Desert, Mountains, Water, Wood Floor), added by a migration
+- [✅] Seed script for a sample universe (`npm run db:seed -w server`): a town square lobby with a cottage and a cellar, and a crossroads for groups that loops east-west. Run by hand like migrations, never on startup
+- [✅] Pure logic with tests: movement cost (50% = double, 100% = impassable), map bounds around 0,0, no cutting past impassable corners, wrapping in zones that loop, stopping on automatic links, finding a free cell to arrive in
+- [✅] Rename today's global `LobbyRoom` to `SessionRoom` (login, account, group membership), and add a `LobbyRoom` per universe (`filterBy` the universe ID) with the map, chat, who's here and Create game. Groups belong to a universe and start in its starting zone
+- [✅] A room holds every zone its players are in; each player has a zone, and each client only sees the players in its own zone (`StateView`, one per client for now)
+- [✅] Rooms load zone maps at lifecycle boundaries, and load the next zone before a player moves into it, never inside the tick
+- [✅] `GET /universes` lists the universes Home shows, a page at a time
+- [✅] Client draws tiles by color from the zone data (graphics come in Phase 16), drawing only the chunks near the camera. The server still sends the whole zone (see Phase 8)
+- [✅] Looping zones wrap seamlessly: near an edge the client draws the far side's chunks beyond it, players on the far side appear across the edge, and stepping over the edge doesn't jump the camera or the player
+- [✅] Zone links: automatic links move you, manual links offer a prompt (press E)
+- [✅] The lobby screen shows the lobby's map next to chat and who's here, so players can walk around it
+- [✅] Home page: universes in `let there be light` (paginated from the start), the universe overview, and Enter Universe -> that universe's lobby. Leaving the lobby goes back to Home; the long description is shown as plain text until Markdown rendering (Phase 8)
 
 **Done when:** a player picks a universe on Home, walks its lobby's map (blocked by mountains and water, slowed by forest) and walks through a door into a house.
 
@@ -110,6 +116,7 @@ The game runs on real universe data. Content comes from a seed script until the 
 - [ ] Map editor: grid centered on 0,0, expand buttons, edit-size dialog with its warning, draw tool (a tile or Void; size 1-100; circle or square), undo/redo with a drag counted as one step
 - [ ] Zone link layer: automatic or manual, "requires the whole group", select destination coordinates with an optional return link
 - [ ] Edits apply immediately (universe versions come in Phase 13)
+- [ ] Rooms load a zone's chunks as players come near them and drop chunks nobody is near, instead of loading the whole map (`loadZone`), since the editor can make maps up to 50,000 cells per side. Loading stays outside the tick: a player waits at the edge of a chunk that hasn't arrived yet. Clients are likewise sent only the chunks near their player, not the whole zone (`ZonePayload`)
 
 **Done when:** a universe can be built from scratch in the browser (tiles, zones, maps and links) and played in its lobby.
 

@@ -1,0 +1,471 @@
+import Phaser from 'phaser';
+import { Callbacks } from '@colyseus/sdk';
+import { GRID_CELL_SIZE, MessageType, nearestCopy, PATCH_INTERVAL_MS, PLAYER_RADIUS, positiveModulo, ServerMessageType, type MovePayload, type Player, type ZonePayload } from '@multiverse-kiln/shared';
+
+import { MovementKeys } from '../input/MovementKeys';
+import type { GameRoom, MapConnection, MapRoom } from '../network/serverConnection';
+import { PositionBuffer, type Point } from '../rendering/PositionBuffer';
+import { ZoneRenderer } from '../rendering/ZoneRenderer';
+
+/**
+ * Key the scene is registered under
+ */
+export const MAP_SCENE_KEY = 'MapScene';
+
+/**
+ * How far in the past players are drawn: two patches, so there is normally a snapshot either side
+ */
+const INTERPOLATION_DELAY_MS = PATCH_INTERVAL_MS * 2;
+
+const OWN_PLAYER_COLOR = 0x4caf50;
+
+const OTHER_PLAYER_COLOR = 0x42a5f5;
+
+/**
+ * Players are outlined so they stand out on any tile, including grass the same green as the player
+ */
+const PLAYER_OUTLINE_COLOR = 0x111111;
+
+const PLAYER_OUTLINE_WIDTH = 2;
+
+/**
+ * Gap in pixels between the top of a player and the bottom of their name
+ */
+const NAME_OFFSET = 4;
+
+/**
+ * Gap in pixels between the bottom of the player and the top of the prompt to take a manual link
+ */
+const PROMPT_OFFSET = 6;
+
+const TEXT_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
+	fontFamily: 'sans-serif',
+	fontSize: '12px',
+	color: '#ffffff'
+};
+
+/**
+ * Data the scene is started with
+ */
+export interface MapSceneData
+{
+	/**
+	 * The joined room; whoever starts the scene owns the room and leaves it
+	 */
+	connection: MapConnection<MapRoom>;
+}
+
+/**
+ * A player as drawn on screen
+ */
+interface RenderedPlayer
+{
+	shape: Phaser.GameObjects.Arc;
+	label: Phaser.GameObjects.Text;
+
+	/**
+	 * Positions from the server, made continuous across looping edges (see trackPosition)
+	 */
+	positions: PositionBuffer;
+
+	/**
+	 * The latest position pushed, or undefined to take the next one as it comes
+	 */
+	lastPosition: Point | undefined;
+
+	stopListening: () => void;
+}
+
+/**
+ * Draws a room with a map (a universe's lobby or a group's game room): the zone the player is in, the
+ * players the server shows in it, and sends keyboard input. The camera follows the player
+ *
+ * The server decides where players are. This scene only sends the direction held and draws the
+ * positions the server sends back. On a zone that loops, players are drawn wherever is nearest the
+ * player along each looping axis, and a player crossing the edge carries on smoothly rather than
+ * jumping to the far side
+ */
+export class MapScene extends Phaser.Scene
+{
+	private room!: GameRoom;
+	private ownPlayerId!: string;
+	private zone!: ZonePayload;
+	private zoneRenderer?: ZoneRenderer;
+
+	/**
+	 * Cells with a manual link, by "column,row"
+	 */
+	private manualLinks = new Set<string>();
+
+	private readonly players = new Map<string, RenderedPlayer>();
+	private readonly unbinds: Array<() => void> = [];
+	private movementKeys?: MovementKeys;
+	private takeLinkKey?: Phaser.Input.Keyboard.Key;
+	private linkPrompt?: Phaser.GameObjects.Text;
+	private lastSentMove?: MovePayload;
+
+	constructor()
+	{
+		super(MAP_SCENE_KEY);
+	}
+
+	/**
+	 * Resets per-run state (runs on every start, unlike the constructor)
+	 *
+	 * @param data The room to draw
+	 */
+	init(data: MapSceneData): void
+	{
+		// A lobby's state holds its players the same way a game room's does; the scene reads nothing else
+		this.room = data.connection.room as unknown as GameRoom;
+		this.ownPlayerId = data.connection.playerId;
+		this.zone = data.connection.zone;
+		this.zoneRenderer = undefined;
+		this.players.clear();
+		this.unbinds.length = 0;
+		this.movementKeys = undefined;
+		this.takeLinkKey = undefined;
+		this.linkPrompt = undefined;
+		this.lastSentMove = undefined;
+	}
+
+	/**
+	 * Draws the zone, sets up input, and subscribes to the players in the room's state and the zone changes
+	 */
+	create(): void
+	{
+		this.enterZone(this.zone);
+
+		this.unbinds.push(this.room.onMessage(ServerMessageType.Zone, (zone: ZonePayload) =>
+		{
+			this.enterZone(zone);
+			this.forgetOwnPosition();
+		}));
+
+		if (this.input.keyboard)
+		{
+			this.movementKeys = new MovementKeys(this.input.keyboard);
+			this.takeLinkKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+		}
+
+		this.linkPrompt = this.add.text(0, 0, 'Press E to go through', TEXT_STYLE).setOrigin(0.5, 0).setDepth(2).setVisible(false);
+
+		// Clicking the map takes the keyboard back from a text field, such as the lobby's chat
+		this.input.on(Phaser.Input.Events.POINTER_DOWN, () =>
+		{
+			if (document.activeElement instanceof HTMLElement)
+			{
+				document.activeElement.blur();
+			}
+		});
+
+		this.game.events.on(Phaser.Core.Events.BLUR, this.stopMoving);
+		this.game.events.on(Phaser.Core.Events.HIDDEN, this.stopMoving);
+		document.addEventListener('focusin', this.onFocusChange);
+		document.addEventListener('focusout', this.onFocusChange);
+		this.onFocusChange();
+
+		this.events.once(Phaser.Scenes.Events.SHUTDOWN, () =>
+		{
+			this.game.events.off(Phaser.Core.Events.BLUR, this.stopMoving);
+			this.game.events.off(Phaser.Core.Events.HIDDEN, this.stopMoving);
+			document.removeEventListener('focusin', this.onFocusChange);
+			document.removeEventListener('focusout', this.onFocusChange);
+			this.input.removeAllListeners(Phaser.Input.Events.POINTER_DOWN);
+
+			// Captured keys have their default action blocked on the whole page, which would stop them
+			// being typed into the lobby's chat
+			this.input.keyboard?.removeAllKeys(true);
+			this.input.keyboard?.clearCaptures();
+			this.input.keyboard?.enableGlobalCapture();
+
+			for (const unbind of this.unbinds)
+			{
+				unbind();
+			}
+
+			for (const playerId of [...this.players.keys()])
+			{
+				this.removePlayer(playerId);
+			}
+
+			this.zoneRenderer?.destroy();
+			this.zoneRenderer = undefined;
+		});
+
+		this.watchPlayers();
+	}
+
+	/**
+	 * Sends input when it changes, moves every player to its interpolated position, draws the map around
+	 * the camera, and offers the manual link the player is standing on
+	 */
+	update(): void
+	{
+		this.sendMovement();
+
+		const renderTime = performance.now() - INTERPOLATION_DELAY_MS;
+		const own = this.players.get(this.ownPlayerId)?.positions.sample(renderTime);
+
+		for (const [playerId, player] of this.players)
+		{
+			const position = ((playerId === this.ownPlayerId) ? own : player.positions.sample(renderTime));
+
+			if (position)
+			{
+				const drawn = (own ? this.nearestTo(position, own) : position);
+
+				player.shape.setPosition(drawn.x, drawn.y);
+				player.label.setPosition(drawn.x, drawn.y - PLAYER_RADIUS - NAME_OFFSET);
+			}
+		}
+
+		this.zoneRenderer?.update(this.cameras.main.worldView);
+		this.updateLinkPrompt(own);
+	}
+
+	/**
+	 * Starts drawing a zone in place of the one before
+	 *
+	 * @param zone The zone
+	 */
+	private enterZone(zone: ZonePayload): void
+	{
+		this.zone = zone;
+		this.manualLinks = new Set(zone.links.filter((link) => (link.mode === 'manual')).map((link) => `${link.column},${link.row}`));
+		this.zoneRenderer?.destroy();
+		this.zoneRenderer = new ZoneRenderer(this, zone);
+	}
+
+	/**
+	 * Makes the player's next position from the server be drawn straight away, rather than reached
+	 * smoothly from where they were in the zone they have just left
+	 *
+	 * Players in the old zone are removed and those in the new one added through the state, like any
+	 * other player coming and going
+	 */
+	private forgetOwnPosition(): void
+	{
+		const own = this.players.get(this.ownPlayerId);
+
+		own?.positions.clear();
+
+		if (own)
+		{
+			own.lastPosition = undefined;
+		}
+	}
+
+	/**
+	 * Adds and removes players as the room's state changes
+	 */
+	private watchPlayers(): void
+	{
+		const callbacks = Callbacks.get(this.room);
+
+		// Fires for players already in the room too
+		this.unbinds.push(callbacks.onAdd('players', (player, playerId) =>
+		{
+			const isOwn = (playerId === this.ownPlayerId);
+			const shape = this.add.circle(player.x, player.y, PLAYER_RADIUS, (isOwn ? OWN_PLAYER_COLOR : OTHER_PLAYER_COLOR)).setStrokeStyle(PLAYER_OUTLINE_WIDTH, PLAYER_OUTLINE_COLOR);
+			const rendered: RenderedPlayer = {
+				shape,
+				label: this.add.text(player.x, player.y - PLAYER_RADIUS - NAME_OFFSET, player.name, TEXT_STYLE).setOrigin(0.5, 1).setDepth(1),
+				positions: new PositionBuffer(PATCH_INTERVAL_MS),
+				lastPosition: undefined,
+				stopListening: () => undefined
+			};
+
+			this.trackPosition(rendered, player);
+
+			rendered.stopListening = callbacks.onChange(player, () =>
+			{
+				this.trackPosition(rendered, player);
+			});
+
+			if (isOwn)
+			{
+				this.cameras.main.startFollow(shape, true);
+			}
+
+			this.players.set(playerId, rendered);
+		}));
+
+		this.unbinds.push(callbacks.onRemove('players', (_player: Player, playerId: string) =>
+		{
+			this.removePlayer(playerId);
+		}));
+	}
+
+	/**
+	 * Records a player's position from the server
+	 *
+	 * The server keeps positions on the zone, so a player stepping off a looping edge jumps a whole zone
+	 * to the far side. Taking the copy of each position nearest the last one undoes the jump, so the
+	 * player (and the camera following them) carries on smoothly
+	 *
+	 * @param rendered The player as drawn
+	 * @param player The player's synced state
+	 */
+	private trackPosition(rendered: RenderedPlayer, player: Player): void
+	{
+		const position = (rendered.lastPosition ? this.nearestTo(player, rendered.lastPosition) : { x: player.x, y: player.y });
+
+		rendered.lastPosition = position;
+		rendered.positions.push(performance.now(), position.x, position.y);
+	}
+
+	/**
+	 * The copy of a position nearest another, along each axis the zone loops on
+	 *
+	 * @param position The position
+	 * @param reference The position to be near
+	 * @return The nearest copy; the position itself on a zone that doesn't loop
+	 */
+	private nearestTo(position: Point, reference: Point): Point
+	{
+		if (!this.zoneRenderer)
+		{
+			return(position);
+		}
+
+		return({
+			x: (this.zone.loopsEastWest ? nearestCopy(position.x, reference.x, this.zoneRenderer.width) : position.x),
+			y: (this.zone.loopsNorthSouth ? nearestCopy(position.y, reference.y, this.zoneRenderer.height) : position.y)
+		});
+	}
+
+	/**
+	 * Shows the prompt to take a manual link while the player stands on one, and takes it when E is pressed
+	 *
+	 * @param own Where the player is drawn, or undefined before they have been
+	 */
+	private updateLinkPrompt(own: Point | undefined): void
+	{
+		const player = this.room.state.players?.get(this.ownPlayerId);
+		const isStanding = (
+			(player !== undefined) &&
+			(positiveModulo(player.x, GRID_CELL_SIZE) === GRID_CELL_SIZE / 2) &&
+			(positiveModulo(player.y, GRID_CELL_SIZE) === GRID_CELL_SIZE / 2)
+		);
+		const onLink = (isStanding && this.manualLinks.has(`${Math.floor(player.x / GRID_CELL_SIZE)},${Math.floor(player.y / GRID_CELL_SIZE)}`));
+
+		this.linkPrompt?.setVisible(onLink && (own !== undefined));
+
+		if (onLink && own)
+		{
+			this.linkPrompt?.setPosition(own.x, own.y + PLAYER_RADIUS + PROMPT_OFFSET);
+
+			if (this.takeLinkKey && Phaser.Input.Keyboard.JustDown(this.takeLinkKey))
+			{
+				this.room.send(MessageType.TakeLink);
+			}
+		}
+	}
+
+	/**
+	 * Sends the held direction when it differs from the last one sent
+	 *
+	 * Only the direction goes to the server, never a position: the server moves the player
+	 */
+	private sendMovement(): void
+	{
+		if (!this.movementKeys || !this.room.connection.isOpen)
+		{
+			return;
+		}
+
+		const move = this.movementKeys.read();
+
+		if (this.lastSentMove && (move.x === this.lastSentMove.x) && (move.y === this.lastSentMove.y))
+		{
+			return;
+		}
+
+		this.room.send(MessageType.Move, move);
+		this.lastSentMove = move;
+	}
+
+	/**
+	 * Releases held keys and tells the server the player has stopped
+	 *
+	 * Runs when the window loses focus or the page is hidden. The browser stops sending key events then,
+	 * and a hidden page stops running frames, so update() wouldn't send the stop itself; without this the
+	 * server would keep moving the player in the last direction sent
+	 */
+	private readonly stopMoving = (): void =>
+	{
+		this.movementKeys?.release();
+		this.sendMovement();
+	};
+
+	/**
+	 * Hands the keyboard to a text field while one has focus, and takes it back afterward
+	 *
+	 * While the game has the keyboard it blocks the movement keys' normal effect on the whole page, which
+	 * would stop W, A, S, D and E being typed into the chat
+	 */
+	private readonly onFocusChange = (): void =>
+	{
+		const keyboard = this.input.keyboard;
+
+		// focusout fires before focus moves on, so wait until it has landed
+		queueMicrotask(() =>
+		{
+			if (!keyboard)
+			{
+				return;
+			}
+
+			const typing = isTextEntry(document.activeElement);
+
+			if (typing && keyboard.enabled)
+			{
+				this.stopMoving();
+				keyboard.enabled = false;
+				keyboard.disableGlobalCapture();
+			}
+			else if (!typing && !keyboard.enabled)
+			{
+				keyboard.enabled = true;
+				keyboard.enableGlobalCapture();
+			}
+		});
+	};
+
+	/**
+	 * Removes a player's shape and name and stops listening to their state
+	 *
+	 * @param playerId The player's ID
+	 */
+	private removePlayer(playerId: string): void
+	{
+		const player = this.players.get(playerId);
+
+		if (!player)
+		{
+			return;
+		}
+
+		player.stopListening();
+		player.shape.destroy();
+		player.label.destroy();
+		this.players.delete(playerId);
+	}
+}
+
+/**
+ * Whether an element takes typed text
+ *
+ * @param element The element
+ * @return True for text inputs, text areas and editable content
+ */
+function isTextEntry(element: Element | null): boolean
+{
+	if (element instanceof HTMLInputElement)
+	{
+		return(!['button', 'checkbox', 'radio', 'submit', 'reset', 'range', 'color', 'file'].includes(element.type));
+	}
+
+	return((element instanceof HTMLTextAreaElement) || ((element instanceof HTMLElement) && element.isContentEditable));
+}
