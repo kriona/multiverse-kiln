@@ -2,7 +2,7 @@
  * Universes: the only module that reads or writes the universes table
  */
 import { and, eq } from 'drizzle-orm';
-import type { PassageOfTime, Ruleset, UniverseDetails, UniverseStage, UniverseSummary } from '@multiverse-kiln/shared';
+import type { EditableUniverse, PassageOfTime, Ruleset, UniverseDetails, UniverseSettingsUpdate, UniverseStage, UniverseSummary } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { universes } from './schema.js';
@@ -144,10 +144,84 @@ export async function findUniverseDetails(universeId: string, stage: UniverseSta
 			ruleset: universes.ruleset
 		})
 		.from(universes)
-		.where(and(eq(universes.id, universeId), eq(universes.stage, stage)))
+		.where(and(
+			eq(universes.id, universeId),
+			eq(universes.stage, stage)
+		))
 		.limit(1);
 
 	return(row);
+}
+
+/**
+ * A universe with every setting the editor shows
+ *
+ * @param universeId The universe's ID
+ * @param executor The database, or a transaction
+ * @return The universe without the player's role, or undefined when there is none with that ID
+ */
+export async function findEditableUniverse(universeId: string, executor: Executor = db): Promise<Omit<EditableUniverse, 'role'> | undefined>
+{
+	const [row] = await executor
+		.select({
+			id: universes.id,
+			name: universes.name,
+			shortDescription: universes.shortDescription,
+			longDescription: universes.longDescription,
+			stage: universes.stage,
+			ruleset: universes.ruleset,
+			passageOfTime: universes.passageOfTime,
+			faerieMorning: universes.faerieMorning,
+			lobbyZoneId: universes.lobbyZoneId,
+			startingZoneId: universes.startingZoneId
+		})
+		.from(universes)
+		.where(eq(universes.id, universeId))
+		.limit(1);
+
+	return(row);
+}
+
+/**
+ * Changes some of a universe's settings
+ *
+ * The database refuses a faerie passage of time without a faerie morning, and a faerie morning without
+ * faerie time
+ *
+ * @param universeId The universe's ID
+ * @param update The settings to change
+ * @param executor The database, or a transaction
+ */
+export async function updateUniverseSettings(universeId: string, update: UniverseSettingsUpdate, executor: Executor = db): Promise<void>
+{
+	if (Object.keys(update).length === 0)
+	{
+		return;
+	}
+
+	await executor
+		.update(universes)
+		.set(update)
+		.where(eq(universes.id, universeId));
+}
+
+/**
+ * Locks a universe's row until the transaction ends, so limits on what it holds (such as its number
+ * of zones) are checked by one transaction at a time
+ *
+ * @param universeId The universe's ID
+ * @param executor A transaction
+ * @return Whether the universe exists
+ */
+export async function lockUniverse(universeId: string, executor: Executor): Promise<boolean>
+{
+	const rows = await executor
+		.select({ id: universes.id })
+		.from(universes)
+		.where(eq(universes.id, universeId))
+		.for('update');
+
+	return(rows.length > 0);
 }
 
 /**

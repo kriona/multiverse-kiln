@@ -28,7 +28,7 @@ An engine for making multiplayer browser-based role-playing games.
   src/logic/         pure game-simulation functions (no I/O)
   src/db/            Drizzle client, schema, and repository modules
   src/auth/          token verification
-  src/http/          REST routes (health, login, leaderboard)
+  src/http/          REST routes (health, universes for Home, the world editor's API)
   scripts/           development tools run by hand, such as the seed script
 /shared          Code imported by both client and server:
                  message type enums, payload interfaces, close codes, constants,

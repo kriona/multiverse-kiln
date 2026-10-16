@@ -108,14 +108,16 @@ Built in three steps: data and logic, then rooms, then the client.
 
 ## Phase 8: World editor
 
-- [ ] Editor API as REST routes in `server/src/http/` backed by repositories (editing isn't real-time, so it doesn't need a room). Every request checks the user may edit that universe, and validates against the same limits as the UI
+Built in four steps: the server API, the editor pages, the map editor, then loading chunks as players approach them.
+
+- [✅] Editor API as REST routes in `server/src/http/` backed by repositories (editing isn't real-time, so it doesn't need a room). Every request checks the user may edit that universe, and validates against the same limits as the UI. Who may edit is stored in `universe_editors` (creator, builder, beta tester; Phase 13 adds the Editors tab), and until logins exist (Phase 12) a request's player is the one its browser ID cookie is logged in as
 - [ ] Create Universe modal (name, 1-sentence description), up to 5 per user. Creates a default zone as every race's starting zone and makes the user its creator
 - [ ] Edit Universe page: name, descriptions (markdown rendered sanitized), stage, ruleset, passage of time. Logo and banner wait for image storage (Phase 16)
 - [ ] Tilesets tab (filters for name, passable, custom and edited; pagination) and tile editor (name, indoors, color, vision cost, movement cost)
 - [ ] Zones tab with the single-zone drill-down, and the zone editor
 - [ ] Map editor: grid centered on 0,0, expand buttons, edit-size dialog with its warning, draw tool (a tile or Void; size 1-100; circle or square), undo/redo with a drag counted as one step
 - [ ] Zone link layer: automatic or manual, "requires the whole group", select destination coordinates with an optional return link
-- [ ] Edits apply immediately (universe versions come in Phase 13)
+- [ ] Edits apply immediately (universe versions come in Phase 13): the editor routes tell open rooms in this process about changed cells, links and tiles, and the rooms update the zones they have loaded and their clients
 - [ ] Rooms load a zone's chunks as players come near them and drop chunks nobody is near, instead of loading the whole map (`loadZone`), since the editor can make maps up to 50,000 cells per side. Loading stays outside the tick: a player waits at the edge of a chunk that hasn't arrived yet. Clients are likewise sent only the chunks near their player, not the whole zone (`ZonePayload`)
 
 **Done when:** a universe can be built from scratch in the browser (tiles, zones, maps and links) and played in its lobby.

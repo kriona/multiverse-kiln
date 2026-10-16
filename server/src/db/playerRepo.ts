@@ -1,9 +1,9 @@
 /**
  * Player accounts: the only module that reads or writes the players table
  */
-import { sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
-import { db } from './client.js';
+import { db, type Executor } from './client.js';
 import { players } from './schema.js';
 
 /**
@@ -72,4 +72,23 @@ export async function loadOrCreatePlayerByName(name: string): Promise<PlayerProf
 	}
 
 	return(raced);
+}
+
+/**
+ * Locks a player's row until the transaction ends, so checks and changes made for that player in
+ * concurrent transactions happen one after another
+ *
+ * @param playerId The player's ID
+ * @param executor A transaction
+ * @return Whether the player exists
+ */
+export async function lockPlayer(playerId: string, executor: Executor): Promise<boolean>
+{
+	const rows = await executor
+		.select({ id: players.id })
+		.from(players)
+		.where(eq(players.id, playerId))
+		.for('update');
+
+	return(rows.length > 0);
 }
