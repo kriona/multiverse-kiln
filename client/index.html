@@ -4,7 +4,7 @@
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Multiverse Kiln</title>
-		<link rel="stylesheet" href="/src/style.css" />
+		<link rel="stylesheet" href="/src/style.scss" />
 	</head>
 	<body>
 		<main>
@@ -27,21 +27,327 @@
 					<span class="toolbar-name">Playing as <strong id="home-player-name"></strong></span>
 				</header>
 				<p id="home-notice" class="notice" role="status" hidden></p>
-				<div class="panel universes">
-					<h2>Universes</h2>
-					<ul id="universe-list" class="universe-list"></ul>
-					<p id="universe-empty" class="universe-empty" hidden>There are no universes to play in yet.</p>
-					<button id="universe-more" type="button" hidden>Show more</button>
+				<div class="home-body">
+					<div class="panel universes">
+						<h2>Universes</h2>
+						<ul id="universe-list" class="universe-list"></ul>
+						<p id="universe-empty" class="universe-empty" hidden>There are no universes to play in yet.</p>
+						<button id="universe-more" type="button" hidden>Show more</button>
+					</div>
+					<div class="panel universes">
+						<div class="panel-heading">
+							<h2>Your universes</h2>
+							<button id="create-universe" type="button">Create Universe</button>
+						</div>
+						<ul id="own-universe-list" class="universe-list"></ul>
+						<p id="own-universe-empty" class="universe-empty" hidden>You haven't made a universe yet.</p>
+					</div>
 				</div>
-				<dialog id="universe-dialog" class="panel universe-dialog" aria-labelledby="universe-name">
+				<dialog id="universe-dialog" class="panel dialog" aria-labelledby="universe-name">
 					<h2 id="universe-name"></h2>
 					<p id="universe-ruleset" class="universe-ruleset"></p>
 					<p id="universe-summary"></p>
-					<p id="universe-description" class="universe-description"></p>
+					<div id="universe-description" class="markdown"></div>
 					<div class="dialog-buttons">
 						<button id="universe-close" type="button" class="secondary">Close</button>
 						<button id="universe-enter" type="button">Enter Universe</button>
 					</div>
+				</dialog>
+				<dialog id="create-universe-dialog" class="panel dialog" aria-labelledby="create-universe-title">
+					<form id="create-universe-form" class="form">
+						<h2 id="create-universe-title">Create Universe</h2>
+						<label>
+							Name
+							<input id="create-universe-name" required />
+						</label>
+						<label>
+							1-sentence description
+							<input id="create-universe-description" />
+						</label>
+						<label>
+							Ruleset
+							<select id="create-universe-ruleset" required></select>
+						</label>
+						<p id="create-universe-error" class="form-error" role="alert" hidden></p>
+						<div class="dialog-buttons">
+							<button id="create-universe-cancel" type="button" class="secondary">Cancel</button>
+							<button id="create-universe-submit" type="submit">Create</button>
+						</div>
+					</form>
+				</dialog>
+			</section>
+
+			<section id="editor-screen" class="screen" hidden>
+				<header class="toolbar">
+					<h1 id="editor-title">Edit Universe</h1>
+					<span class="toolbar-name">Your role: <strong id="editor-role"></strong></span>
+					<button id="editor-play" type="button">Enter Universe</button>
+					<button id="editor-home" type="button" class="secondary">Back to Home</button>
+				</header>
+				<p id="editor-notice" class="notice" role="status" hidden></p>
+				<div class="tabs" role="tablist">
+					<button id="editor-tab-universe" type="button" role="tab" aria-controls="editor-panel-universe">Universe</button>
+					<button id="editor-tab-lobby" type="button" role="tab" aria-controls="editor-panel-lobby">Lobby</button>
+					<button id="editor-tab-tilesets" type="button" role="tab" aria-controls="editor-panel-tilesets">Tilesets</button>
+					<button id="editor-tab-zones" type="button" role="tab" aria-controls="editor-panel-zones">Zones</button>
+				</div>
+				<div class="editor-body">
+					<section id="editor-panel-universe" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-universe">
+						<form id="universe-form" class="form">
+							<fieldset id="universe-fields" class="plain">
+								<label>
+									Name
+									<input id="universe-name-input" required />
+								</label>
+								<label>
+									1-sentence description
+									<input id="universe-short-description" />
+								</label>
+								<div class="markdown-editor">
+									<div class="field-label">
+										<label for="universe-long-description">Long description (Markdown)</label>
+										<markdown-toolbar id="universe-long-toolbar" class="markdown-toolbar" for="universe-long-description">
+											<!-- role is set here because the md-* elements don't set it themselves -->
+											<md-header level="1" role="button" title="Heading 1" aria-label="Heading 1">H1</md-header>
+											<md-header level="2" role="button" title="Heading 2" aria-label="Heading 2">H2</md-header>
+											<md-header level="3" role="button" title="Heading 3" aria-label="Heading 3">H3</md-header>
+											<md-bold role="button" title="Bold" aria-label="Bold"><strong>B</strong></md-bold>
+											<md-italic role="button" title="Italic" aria-label="Italic"><em>I</em></md-italic>
+											<md-strikethrough role="button" title="Strikethrough" aria-label="Strikethrough"><del>S</del></md-strikethrough>
+											<md-link role="button" title="Link" aria-label="Link">Link</md-link>
+											<md-quote role="button" title="Quote" aria-label="Quote">Quote</md-quote>
+											<md-code role="button" title="Code" aria-label="Code">Code</md-code>
+											<md-unordered-list role="button" title="Bulleted list" aria-label="Bulleted list">&bull; List</md-unordered-list>
+											<md-ordered-list role="button" title="Numbered list" aria-label="Numbered list">1. List</md-ordered-list>
+										</markdown-toolbar>
+										<textarea id="universe-long-description" rows="12"></textarea>
+									</div>
+									<div>
+										<span class="field-label">Preview</span>
+										<div id="universe-long-preview" class="markdown markdown-preview"></div>
+									</div>
+								</div>
+								<label>
+									Stage
+									<select id="universe-stage"></select>
+								</label>
+								<p>Ruleset: <strong id="universe-ruleset-name"></strong></p>
+								<label>
+									Passage of time
+									<select id="universe-time"></select>
+								</label>
+								<label id="universe-faerie-field" hidden>
+									Where is morning?
+									<select id="universe-faerie"></select>
+								</label>
+								<p id="universe-error" class="form-error" role="alert" hidden></p>
+								<div class="form-buttons">
+									<span id="universe-saved" class="form-saved" role="status"></span>
+									<button id="universe-save" type="submit">Save</button>
+								</div>
+							</fieldset>
+						</form>
+					</section>
+
+					<section id="editor-panel-lobby" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-lobby" hidden>
+						<p>The lobby is where everyone in the universe meets before joining a group. It is a zone like any other, but isn't listed on the Zones tab.</p>
+						<button id="lobby-edit-zone" type="button">Edit the lobby's zone</button>
+					</section>
+
+					<section id="editor-panel-tilesets" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-tilesets" hidden>
+						<div class="filters">
+							<input id="tile-filter-name" type="search" placeholder="Search by name" aria-label="Search tiles by name" />
+							<label>
+								Passable
+								<select id="tile-filter-passable"></select>
+							</label>
+							<label>
+								Custom
+								<select id="tile-filter-custom"></select>
+							</label>
+							<label>
+								Edited from default
+								<select id="tile-filter-edited"></select>
+							</label>
+							<button id="tile-add" type="button">Add Tile</button>
+						</div>
+						<table class="tile-table">
+							<thead>
+								<tr>
+									<th scope="col">Color</th>
+									<th scope="col">Name</th>
+									<th scope="col">Movement cost</th>
+									<th scope="col">Vision cost</th>
+									<th scope="col"></th>
+								</tr>
+							</thead>
+							<tbody id="tile-rows"></tbody>
+						</table>
+						<p id="tile-empty" class="universe-empty" hidden>No tiles match.</p>
+						<div class="pager">
+							<button id="tile-previous" type="button" class="secondary">Previous</button>
+							<span id="tile-page"></span>
+							<button id="tile-next" type="button" class="secondary">Next</button>
+						</div>
+					</section>
+
+					<section id="editor-panel-zones" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-zones" hidden>
+						<div id="zone-list-view">
+							<div class="panel-heading">
+								<h2>Zones</h2>
+								<button id="zone-add" type="button">Add Zone</button>
+							</div>
+							<ul id="zone-list" class="zone-list"></ul>
+							<p id="zone-empty" class="universe-empty" hidden>There are no zones besides the lobby.</p>
+						</div>
+						<div id="zone-editor-view" hidden>
+							<div class="panel-heading">
+								<button id="zone-back" type="button" class="secondary">Back to Zones</button>
+								<h2 id="zone-editor-title"></h2>
+							</div>
+							<form id="zone-form" class="form">
+								<fieldset id="zone-fields" class="plain">
+									<label>
+										Name
+										<input id="zone-name" required />
+									</label>
+									<label class="checkbox">
+										<input id="zone-enabled" type="checkbox" />
+										Enabled
+									</label>
+									<p id="zone-parent-disabled" class="hint" hidden></p>
+									<label>
+										Parent zone
+										<select id="zone-parent"></select>
+									</label>
+									<fieldset class="choice">
+										<legend>Indoors or outdoors</legend>
+										<label class="checkbox">
+											<input id="zone-outdoors" name="zone-indoors" type="radio" value="outdoors" />
+											Outdoors
+										</label>
+										<label class="checkbox">
+											<input id="zone-indoors" name="zone-indoors" type="radio" value="indoors" />
+											Indoors
+										</label>
+									</fieldset>
+									<label>
+										Default tile
+										<select id="zone-default-tile"></select>
+									</label>
+									<label>
+										Passage of time
+										<select id="zone-time"></select>
+									</label>
+									<label id="zone-faerie-field" hidden>
+										Where is morning?
+										<select id="zone-faerie"></select>
+									</label>
+									<label class="checkbox">
+										<input id="zone-loops-east-west" type="checkbox" />
+										Loops east-west
+									</label>
+									<label class="checkbox">
+										<input id="zone-loops-north-south" type="checkbox" />
+										Loops north-south
+									</label>
+									<p id="zone-loops-hint" class="hint" hidden>A zone whose passage of time is faerie can't loop.</p>
+									<p id="zone-size"></p>
+									<p id="zone-error" class="form-error" role="alert" hidden></p>
+									<div class="form-buttons">
+										<button id="zone-delete" type="button" class="danger">Delete Zone</button>
+										<span id="zone-saved" class="form-saved" role="status"></span>
+										<button id="zone-save" type="submit">Save</button>
+									</div>
+								</fieldset>
+							</form>
+							<div id="zone-children" hidden>
+								<h3>Zones inside this one</h3>
+								<ul id="zone-child-list" class="zone-list"></ul>
+							</div>
+						</div>
+					</section>
+				</div>
+				<dialog id="tile-dialog" class="panel dialog" aria-labelledby="tile-dialog-title">
+					<form id="tile-form" class="form">
+						<fieldset id="tile-fields" class="plain">
+							<h2 id="tile-dialog-title"></h2>
+							<label>
+								Name
+								<input id="tile-name" required />
+							</label>
+							<fieldset class="choice">
+								<legend>Indoors or outdoors</legend>
+								<label class="checkbox">
+									<input id="tile-outdoors" name="tile-indoors" type="radio" value="outdoors" />
+									Outdoors
+								</label>
+								<label class="checkbox">
+									<input id="tile-indoors" name="tile-indoors" type="radio" value="indoors" />
+									Indoors
+								</label>
+							</fieldset>
+							<p class="hint">A preference, not a restriction: outdoor zones list outdoor tiles first.</p>
+							<label>
+								Color
+								<span class="color-field">
+									<input id="tile-color-picker" type="color" aria-label="Pick a color" />
+									<input id="tile-color" required aria-label="Color as hex" />
+								</span>
+							</label>
+							<label>
+								Vision cost (%)
+								<input id="tile-vision" type="number" min="0" max="100" step="1" required />
+							</label>
+							<p class="hint">100% can't be seen through.</p>
+							<label>
+								Movement cost (%)
+								<input id="tile-movement" type="number" min="0" max="100" step="1" required />
+							</label>
+							<p class="hint">0% is normal movement, 50% takes twice as long, 100% can't be entered.</p>
+							<div class="tile-preview">
+								<figure>
+									<span id="tile-preview-day" class="swatch large"></span>
+									<figcaption>Day</figcaption>
+								</figure>
+								<figure>
+									<span id="tile-preview-night" class="swatch large"></span>
+									<figcaption>Night</figcaption>
+								</figure>
+							</div>
+							<p id="tile-error" class="form-error" role="alert" hidden></p>
+							<div class="form-buttons">
+								<button id="tile-remove" type="button" class="danger"></button>
+								<button id="tile-cancel" type="button" class="secondary">Cancel</button>
+								<button id="tile-save" type="submit">Save</button>
+							</div>
+						</fieldset>
+					</form>
+				</dialog>
+				<dialog id="zone-add-dialog" class="panel dialog" aria-labelledby="zone-add-title">
+					<form id="zone-add-form" class="form">
+						<h2 id="zone-add-title">Add Zone</h2>
+						<label>
+							Name
+							<input id="zone-add-name" required />
+						</label>
+						<fieldset class="choice">
+							<legend>Indoors or outdoors</legend>
+							<label class="checkbox">
+								<input id="zone-add-outdoors" name="zone-add-indoors" type="radio" value="outdoors" checked />
+								Outdoors
+							</label>
+							<label class="checkbox">
+								<input id="zone-add-indoors" name="zone-add-indoors" type="radio" value="indoors" />
+								Indoors
+							</label>
+						</fieldset>
+						<p id="zone-add-error" class="form-error" role="alert" hidden></p>
+						<div class="dialog-buttons">
+							<button id="zone-add-cancel" type="button" class="secondary">Cancel</button>
+							<button id="zone-add-submit" type="submit">Add</button>
+						</div>
+					</form>
 				</dialog>
 			</section>
 

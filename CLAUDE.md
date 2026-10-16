@@ -93,7 +93,7 @@ npm workspaces are assumed (`client`, `server`, `shared`). Update this section i
 docker compose up -d                 # start local Postgres
 npm run db:generate -w server        # create a migration after changing server/src/db/schema.ts
 npm run db:migrate -w server         # apply Drizzle migrations
-npm run db:seed -w server            # add or replace the sample universe (server/scripts/sampleUniverse.ts)
+npm run db:seed -w server            # add or replace the sample universe (server/scripts/sampleUniverse.ts); -- --creator "<name>" makes that player its creator
 npm run dev -w server                # Colyseus on wss://www.multiversekiln-dev.com:2567
 npm run dev -w client                # Vite on https://www.multiversekiln-dev.com:5173
 ```

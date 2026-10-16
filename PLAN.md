@@ -111,10 +111,10 @@ Built in three steps: data and logic, then rooms, then the client.
 Built in four steps: the server API, the editor pages, the map editor, then loading chunks as players approach them.
 
 - [✅] Editor API as REST routes in `server/src/http/` backed by repositories (editing isn't real-time, so it doesn't need a room). Every request checks the user may edit that universe, and validates against the same limits as the UI. Who may edit is stored in `universe_editors` (creator, builder, beta tester; Phase 13 adds the Editors tab), and until logins exist (Phase 12) a request's player is the one its browser ID cookie is logged in as
-- [ ] Create Universe modal (name, 1-sentence description), up to 5 per user. Creates a default zone as every race's starting zone and makes the user its creator
-- [ ] Edit Universe page: name, descriptions (markdown rendered sanitized), stage, ruleset, passage of time. Logo and banner wait for image storage (Phase 16)
-- [ ] Tilesets tab (filters for name, passable, custom and edited; pagination) and tile editor (name, indoors, color, vision cost, movement cost)
-- [ ] Zones tab with the single-zone drill-down, and the zone editor
+- [✅] Create Universe modal (name, 1-sentence description, ruleset), up to 5 per user. Creates a lobby zone and a default zone as every race's starting zone, and makes the user its creator. Home lists the universes the user has a role in, which opens them in the editor
+- [✅] Edit Universe page: name, descriptions (markdown rendered sanitized with `marked` and DOMPurify, also on Home's overview), stage, ruleset, passage of time. Logo and banner wait for image storage (Phase 16). A Lobby tab opens the lobby's zone until the rest of the tab arrives (Phase 11)
+- [✅] Tilesets tab (filters for name, passable, custom and edited; pagination) and tile editor (name, indoors, color, vision cost, movement cost)
+- [✅] Zones tab with the single-zone drill-down, and the zone editor's settings. Its map is the next item
 - [ ] Map editor: grid centered on 0,0, expand buttons, edit-size dialog with its warning, draw tool (a tile or Void; size 1-100; circle or square), undo/redo with a drag counted as one step
 - [ ] Zone link layer: automatic or manual, "requires the whole group", select destination coordinates with an optional return link
 - [ ] Edits apply immediately (universe versions come in Phase 13): the editor routes tell open rooms in this process about changed cells, links and tiles, and the rooms update the zones they have loaded and their clients

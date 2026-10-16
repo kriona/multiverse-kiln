@@ -1,8 +1,10 @@
 import { CloseCode } from '@colyseus/sdk';
 import { GROUP_QUERY_PARAMETER, LobbyMessageType, LobbyServerMessageType, MAX_GROUP_PLAYERS, NoticeReason, ServerCloseCode, SessionMessageType, SessionServerMessageType, type AccountPayload, type AccountPlayer, type ChatHistoryPayload, type ChatMessage, type ChatPayload, type JoinGroupPayload, type LoginPayload, type NoticePayload, type UniverseSummary } from '@multiverse-kiln/shared';
 
+import { EditorApi } from './network/editorApi';
 import { getUniverseDetails, joinGroup, joinLobby, listUniverses, type GameConnection, type LobbyConnection, type ServerConnection } from './network/serverConnection';
 import { showScreen, showStatus } from './ui/dom';
+import { EditorScreen } from './ui/editor/EditorScreen';
 import { GroupScreen } from './ui/GroupScreen';
 import { HomeScreen } from './ui/HomeScreen';
 import { LobbyScreen } from './ui/LobbyScreen';
@@ -33,13 +35,15 @@ interface JoinedLobby
  *
  * The server decides who the player is and which group they are in, and tells every window of the
  * browser through the session room; a window only asks for changes and follows what it is told. A
- * logged-in player who isn't in a group is on Home, or in the lobby of the universe they chose there.
- * Leaving a group goes back to that lobby
+ * logged-in player who isn't in a group is on Home, in the editor, or in the lobby of the universe
+ * they chose. Leaving a group goes back to that lobby, and leaving a lobby goes back to the editor
+ * when the universe was entered from there
  */
 export class App
 {
 	private readonly loginScreen: LoginScreen;
 	private readonly homeScreen: HomeScreen;
+	private readonly editorScreen: EditorScreen;
 	private readonly lobbyScreen: LobbyScreen;
 	private readonly groupScreen: GroupScreen;
 
@@ -52,6 +56,11 @@ export class App
 	 * The universe the player chose on Home, whose lobby they are in when they aren't in a group
 	 */
 	private chosenUniverse: UniverseSummary | undefined;
+
+	/**
+	 * The universe open in the editor, shown instead of Home while the player isn't in a lobby or group
+	 */
+	private editingUniverseId: string | undefined;
 
 	/**
 	 * The group from a join link this window was opened with, until the server has answered the request to join it
@@ -79,6 +88,7 @@ export class App
 	{
 		const { client, session } = server;
 		const mapView = new MapView();
+		const editorApi = new EditorApi(client);
 
 		this.linkGroupId = (new URLSearchParams(window.location.search).get(GROUP_QUERY_PARAMETER) ?? undefined);
 
@@ -93,6 +103,24 @@ export class App
 			loadPage: (offset) => listUniverses(client, offset),
 			loadDetails: (universeId) => getUniverseDetails(client, universeId),
 			enter: (universe) =>
+			{
+				this.enterUniverse(universe);
+			},
+			loadOwnUniverses: () => editorApi.listUniverses(),
+			createUniverse: (universe) => editorApi.createUniverse(universe),
+			edit: (universeId) =>
+			{
+				this.openEditor(universeId);
+			}
+		});
+
+		this.editorScreen = new EditorScreen(editorApi, {
+			goHome: () =>
+			{
+				this.editingUniverseId = undefined;
+				this.showHome();
+			},
+			play: (universe) =>
 			{
 				this.enterUniverse(universe);
 			}
@@ -112,7 +140,7 @@ export class App
 			leaveLobby: () =>
 			{
 				this.chosenUniverse = undefined;
-				this.showHome();
+				this.showOutsideGroup();
 				void this.syncRooms();
 			}
 		});
@@ -158,6 +186,7 @@ export class App
 
 		if (!player)
 		{
+			this.editingUniverseId = undefined;
 			this.loginScreen.reset();
 			showScreen('login');
 		}
@@ -276,13 +305,37 @@ export class App
 	}
 
 	/**
+	 * Opens a universe in the editor
+	 *
+	 * @param universeId The universe's ID
+	 */
+	private openEditor(universeId: string): void
+	{
+		this.editingUniverseId = universeId;
+		this.homeScreen.hideNotice();
+		void this.editorScreen.open(universeId);
+		showScreen('editor');
+	}
+
+	/**
 	 * Shows where a player who isn't in a group is: the lobby of the universe they chose (or a message
-	 * while it is being joined), or Home
+	 * while it is being joined), the editor, or Home
 	 *
 	 * @param notice A message to show there, if any
 	 */
 	private showOutsideGroup(notice?: string): void
 	{
+		if (!this.chosenUniverse && (this.editingUniverseId !== undefined) && this.player)
+		{
+			if (notice !== undefined)
+			{
+				this.editorScreen.showNotice(notice);
+			}
+
+			showScreen('editor');
+			return;
+		}
+
 		if (!this.chosenUniverse)
 		{
 			if (notice !== undefined)
