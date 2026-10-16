@@ -28,7 +28,7 @@
 					<div class="panel universes">
 						<div class="panel-heading">
 							<h2 data-message="home.ownUniverses" data-translation-context="Heading of the list of universes the player can edit">Your universes</h2>
-							<button id="create-universe" type="button" data-message="home.createUniverse" data-translation-context="Button that opens the dialog for making a new universe"><!-- icon ph:plus -->Create Universe</button>
+							<button id="create-universe" type="button" data-shortcut="Alt+N" data-message="home.createUniverse" data-translation-context="Button that opens the dialog for making a new universe"><!-- icon ph:plus -->Create Universe</button>
 						</div>
 						<ul id="own-universe-list" class="universe-list"></ul>
 						<p id="own-universe-empty" class="universe-empty" data-message="home.noOwnUniverses" data-translation-context="Shown instead of the list of universes the player can edit when there are none" hidden>You haven't made a universe yet.</p>
@@ -41,7 +41,7 @@
 					<div id="universe-description" class="markdown"></div>
 					<div class="dialog-buttons">
 						<button id="universe-close" type="button" class="secondary" data-message="home.overview.close" data-translation-context="Button that closes a universe's overview">Close</button>
-						<button id="universe-enter" type="button" data-message="home.overview.enter" data-translation-context="Button that takes the player into the universe shown, starting in its lobby"><!-- icon game-icons:magic-portal -->Enter Universe</button>
+						<button id="universe-enter" type="button" data-shortcut="Alt+U" data-message="home.overview.enter" data-translation-context="Button that takes the player into the universe shown, starting in its lobby"><!-- icon game-icons:magic-portal -->Enter Universe</button>
 					</div>
 				</dialog>
 				<dialog id="create-universe-dialog" class="panel dialog" aria-labelledby="create-universe-title">
@@ -62,7 +62,7 @@
 						<p id="create-universe-error" class="form-error" role="alert" hidden></p>
 						<div class="dialog-buttons">
 							<button id="create-universe-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-							<button id="create-universe-submit" type="submit" data-message="home.create.submit" data-translation-context="Button that makes the new universe">Create</button>
+							<button id="create-universe-submit" type="submit" data-shortcut="Alt+S" data-message="home.create.submit" data-translation-context="Button that makes the new universe">Create</button>
 						</div>
 					</form>
 				</dialog>
@@ -72,12 +72,13 @@
 				<header class="toolbar">
 					<h1 id="lobby-title" data-message="lobby.title" data-translation-context="Heading of a universe's lobby until its name has loaded">Lobby</h1>
 					<span class="toolbar-name" data-message="page.playingAs" data-translation-context="In the toolbar, the name the player logged in with; {name} is the name">Playing as <strong id="lobby-player-name" data-argument="name"></strong></span>
-					<button id="create-group" type="button" data-message="lobby.createGroup" data-translation-context="Button that starts a new game, which the player can share with others"><!-- icon game-icons:crossed-swords -->Create game</button>
-					<button id="leave-lobby" type="button" class="secondary" data-message="lobby.leave" data-translation-context="Button that leaves the lobby and goes back to the list of universes"><!-- icon ph:sign-out -->Leave lobby</button>
+					<button id="create-group" type="button" data-shortcut="Alt+G" data-message="lobby.createGroup" data-translation-context="Button that starts a new game, which the player can share with others"><!-- icon game-icons:crossed-swords -->Create game</button>
+					<button id="leave-lobby" type="button" class="secondary" data-shortcut="Alt+L" data-message="lobby.leave" data-translation-context="Button that leaves the lobby and goes back to the list of universes"><!-- icon ph:sign-out -->Leave lobby</button>
 				</header>
 				<p id="lobby-notice" class="notice" role="status" hidden></p>
 				<div class="lobby-body">
-					<div id="lobby-map" class="map"></div>
+					<div id="lobby-map" class="map" tabindex="0" role="application" aria-label="Map" aria-describedby="lobby-map-help" data-shortcut="Alt+M" data-message-aria-label="map.label" data-translation-context-aria-label="Name of the game's map for screen readers"></div>
+					<p id="lobby-map-help" class="visually-hidden" data-message="map.help" data-translation-context="Read by screen readers on the game's map: the keys that play it. The keys are the same in every language; {shortcut} is the keys that read out where the player is, e.g. Alt+P">Arrow keys, W A S D or the number pad move you. E goes through a door or path you stand on. <kbd data-argument="shortcut" data-keys="Alt+P" translate="no">Alt+P</kbd> tells you where you are and who you can see.</p>
 					<div class="lobby-side">
 						<aside class="panel members">
 							<h2 data-message="lobby.here" data-translation-context="Heading of the list of players in the lobby; {count} is how many there are">Here (<span id="member-count" data-argument="count">0</span>)</h2>
@@ -87,7 +88,7 @@
 						<div class="panel chat">
 							<ol id="chat-log" class="chat-log" aria-live="polite"></ol>
 							<form id="chat-form" class="chat-form">
-								<input id="chat-input" name="text" autocomplete="off" placeholder="Say something..." aria-label="Chat message" data-message-placeholder="lobby.chat.placeholder" data-translation-context-placeholder="Shown in the empty chat field" data-message-aria-label="lobby.chat.label" data-translation-context-aria-label="Name of the chat field for screen readers" />
+								<input id="chat-input" name="text" autocomplete="off" data-shortcut="Alt+C" placeholder="Say something..." aria-label="Chat message" data-message-placeholder="lobby.chat.placeholder" data-translation-context-placeholder="Shown in the empty chat field" data-message-aria-label="lobby.chat.label" data-translation-context-aria-label="Name of the chat field for screen readers" />
 								<button type="submit" data-message="lobby.chat.send" data-translation-context="Button that sends the chat message typed"><!-- icon ph:paper-plane-right -->Send</button>
 							</form>
 						</div>
@@ -99,13 +100,15 @@
 				<header class="toolbar">
 					<h1 data-message="group.title" data-translation-context="Heading of the screen where a group plays">Game</h1>
 					<span id="group-status" class="toolbar-status" role="status"></span>
-					<button id="share-group" type="button" data-message="group.share" data-translation-context="Button that copies a link others can use to join the game"><!-- icon ph:share-network -->Share</button>
-					<button id="leave-group" type="button" data-message="group.leave" data-translation-context="Button that leaves the game and goes back to the lobby"><!-- icon ph:sign-out -->Leave group</button>
+					<button id="share-group" type="button" data-shortcut="Alt+I" data-message="group.share" data-translation-context="Button that copies a link others can use to join the game"><!-- icon ph:share-network -->Share</button>
+					<button id="leave-group" type="button" data-shortcut="Alt+L" data-message="group.leave" data-translation-context="Button that leaves the game and goes back to the lobby"><!-- icon ph:sign-out -->Leave group</button>
 				</header>
-				<div id="group-map" class="map"></div>
+				<div id="group-map" class="map" tabindex="0" role="application" aria-label="Map" aria-describedby="group-map-help" data-shortcut="Alt+M" data-message-aria-label="map.label" data-translation-context-aria-label="Name of the game's map for screen readers"></div>
+				<p id="group-map-help" class="visually-hidden" data-message="map.help" data-translation-context="Read by screen readers on the game's map: the keys that play it. The keys are the same in every language; {shortcut} is the keys that read out where the player is, e.g. Alt+P">Arrow keys, W A S D or the number pad move you. E goes through a door or path you stand on. <kbd data-argument="shortcut" data-keys="Alt+P" translate="no">Alt+P</kbd> tells you where you are and who you can see.</p>
 			</section>
 		</main>
 		<!-- include footer.html -->
+		<!-- include accessibility.html -->
 		<script type="module" src="/src/main.ts"></script>
 	</body>
 </html>

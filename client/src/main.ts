@@ -4,6 +4,7 @@ import { connectToServer } from './network/serverConnection';
 import { showStatus } from './ui/dom';
 import { startLanguagePicker } from './ui/languagePicker';
 import { pageMessages } from './ui/pageMessages';
+import { startShortcuts } from './ui/shortcuts';
 
 /**
  * Shows the page in the player's language, connects to the server and starts the app, or explains that
@@ -13,6 +14,7 @@ async function start(): Promise<void>
 {
 	await startLocalization();
 	startLanguagePicker();
+	startShortcuts();
 	showStatus(t(pageMessages.connecting));
 
 	try

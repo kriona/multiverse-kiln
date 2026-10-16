@@ -105,9 +105,16 @@ export class EditorScreen
 
 		for (const name of EDITOR_TABS)
 		{
-			getElement(`editor-tab-${name}`, HTMLButtonElement).addEventListener('click', () =>
+			const tab = getElement(`editor-tab-${name}`, HTMLButtonElement);
+
+			tab.addEventListener('click', () =>
 			{
 				this.selectTab(name);
+			});
+
+			tab.addEventListener('keydown', (event) =>
+			{
+				this.moveBetweenTabs(event, name);
 			});
 		}
 
@@ -230,7 +237,37 @@ export class EditorScreen
 	}
 
 	/**
-	 * Shows one tab and hides the others
+	 * Moves to the tab before or after with the arrow keys, or the first or last with Home and End, as
+	 * tabs do in the platform's own tab lists
+	 *
+	 * @param event The key press on a tab
+	 * @param current The tab pressed on
+	 */
+	private moveBetweenTabs(event: KeyboardEvent, current: EditorTab): void
+	{
+		const index = EDITOR_TABS.indexOf(current);
+		const last = EDITOR_TABS.length - 1;
+		const targets: Record<string, number> = {
+			ArrowLeft: ((index === 0) ? last : (index - 1)),
+			ArrowRight: ((index === last) ? 0 : (index + 1)),
+			Home: 0,
+			End: last
+		};
+		const target = targets[event.key];
+
+		if ((target === undefined) || event.altKey || event.ctrlKey || event.metaKey)
+		{
+			return;
+		}
+
+		event.preventDefault();
+		this.selectTab(EDITOR_TABS[target]);
+		getElement(`editor-tab-${EDITOR_TABS[target]}`, HTMLButtonElement).focus();
+	}
+
+	/**
+	 * Shows one tab and hides the others. Only the tab shown is in the Tab key's order; the arrow keys
+	 * move between tabs (see moveBetweenTabs)
 	 *
 	 * @param selected The tab to show
 	 */
@@ -241,6 +278,7 @@ export class EditorScreen
 			const tab = getElement(`editor-tab-${name}`, HTMLButtonElement);
 
 			tab.setAttribute('aria-selected', String(name === selected));
+			tab.tabIndex = ((name === selected) ? 0 : -1);
 			getElement(`editor-panel-${name}`, HTMLElement).hidden = (name !== selected);
 		}
 

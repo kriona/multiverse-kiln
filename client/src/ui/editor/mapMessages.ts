@@ -1,9 +1,24 @@
 import { defineMessages } from '@multiverse-kiln/shared';
 
 /**
- * Text about a map's size that more than one part of the editor shows (see src/localization.ts)
+ * Text about maps that more than one part of the editor shows (see src/localization.ts)
  */
 export const mapMessages = defineMessages({
+	arrowKeys: {
+		id: 'editor.map.keys.cursor',
+		defaultMessage: 'Arrow keys',
+		description: 'In the list of keyboard shortcuts, the name of the arrow keys'
+	},
+	spaceOrEnter: {
+		id: 'editor.map.keys.paint',
+		defaultMessage: 'Space / Enter',
+		description: 'In the list of keyboard shortcuts, the names of the Space and Enter keys'
+	},
+	void: {
+		id: 'editor.map.void',
+		defaultMessage: 'Void',
+		description: 'A cell with nothing in it, drawn black, which can\'t be walked into; also a choice of what to paint'
+	},
 	tooLarge: {
 		id: 'editor.map.tooLarge',
 		defaultMessage: 'A map can be at most {max, number} cells in each direction.',

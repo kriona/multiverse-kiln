@@ -2,7 +2,7 @@ import { MAX_MAP_SIDE, type MapBounds } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
-import { getElement, showMessage } from '../dom';
+import { getElement, setButtonText, showMessage } from '../dom';
 import { mapMessages } from './mapMessages';
 
 /**
@@ -113,11 +113,11 @@ export class ResizeDialog
 		const tooLarge = (valid && ((width > MAX_MAP_SIDE) || (height > MAX_MAP_SIDE)));
 
 		this.confirmedBounds = undefined;
-		this.submit.textContent = t({
+		setButtonText(this.submit, t({
 			id: 'editor.resize.submit',
 			defaultMessage: 'Resize',
 			description: 'Button that changes the map to the size given'
-		});
+		}));
 		this.submit.disabled = (!valid || tooLarge);
 		this.total.textContent = (valid
 			? t({
@@ -155,11 +155,11 @@ export class ResizeDialog
 			if (conflict)
 			{
 				this.confirmedBounds = key;
-				this.submit.textContent = t({
+				setButtonText(this.submit, t({
 					id: 'editor.resize.discard',
 					defaultMessage: 'Resize and discard',
 					description: 'Button that makes the map smaller after the player was warned it loses painting or links'
-				});
+				}));
 				showMessage(this.warning, t({
 					id: 'editor.resize.discardWarning',
 					defaultMessage: 'The smaller map would discard {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# link} other {# links}}. Resize anyway?',

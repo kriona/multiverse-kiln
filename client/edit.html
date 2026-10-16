@@ -16,8 +16,8 @@
 				<header class="toolbar">
 					<h1 id="editor-title" data-message="editor.title" data-translation-context="Heading of the world editor until the universe's name has loaded">Edit Universe</h1>
 					<span class="toolbar-name" data-message="editor.role" data-translation-context="In the editor's toolbar, the player's role in the universe; {role} is e.g. creator or builder">Your role: <strong id="editor-role" data-argument="role"></strong></span>
-					<button id="editor-play" type="button" data-message="editor.play" data-translation-context="Button in the editor's toolbar that goes to the universe's lobby to play"><!-- icon game-icons:magic-portal -->Enter Universe</button>
-					<button id="editor-home" type="button" class="secondary" data-message="editor.home" data-translation-context="Button in the editor's toolbar that goes back to the list of universes"><!-- icon ph:house -->Back to Home</button>
+					<button id="editor-play" type="button" data-shortcut="Alt+U" data-message="editor.play" data-translation-context="Button in the editor's toolbar that goes to the universe's lobby to play"><!-- icon game-icons:magic-portal -->Enter Universe</button>
+					<button id="editor-home" type="button" class="secondary" data-shortcut="Alt+H" data-message="editor.home" data-translation-context="Button in the editor's toolbar that goes back to the list of universes"><!-- icon ph:house -->Back to Home</button>
 				</header>
 				<p id="editor-notice" class="notice" role="status" hidden></p>
 				<div class="tabs" role="tablist">
@@ -77,7 +77,7 @@
 								<p id="universe-error" class="form-error" role="alert" hidden></p>
 								<div class="form-buttons">
 									<span id="universe-saved" class="form-saved" role="status"></span>
-									<button id="universe-save" type="submit" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+									<button id="universe-save" type="submit" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
 								</div>
 							</fieldset>
 						</form>
@@ -103,7 +103,7 @@
 								Edited from default
 								<select id="tile-filter-edited"></select>
 							</label>
-							<button id="tile-add" type="button" data-message="editor.tiles.add" data-translation-context="Button that opens the dialog for making a new tile"><!-- icon ph:plus -->Add Tile</button>
+							<button id="tile-add" type="button" data-shortcut="Alt+N" data-message="editor.tiles.add" data-translation-context="Button that opens the dialog for making a new tile"><!-- icon ph:plus -->Add Tile</button>
 						</div>
 						<table class="tile-table">
 							<thead>
@@ -129,14 +129,14 @@
 						<div id="zone-list-view">
 							<div class="panel-heading">
 								<h2 data-message="editor.zones.heading" data-translation-context="Heading of the list of the universe's zones">Zones</h2>
-								<button id="zone-add" type="button" data-message="editor.zones.add" data-translation-context="Button that opens the dialog for making a new zone"><!-- icon ph:plus -->Add Zone</button>
+								<button id="zone-add" type="button" data-shortcut="Alt+N" data-message="editor.zones.add" data-translation-context="Button that opens the dialog for making a new zone"><!-- icon ph:plus -->Add Zone</button>
 							</div>
 							<ul id="zone-list" class="zone-list"></ul>
 							<p id="zone-empty" class="universe-empty" data-message="editor.zones.none" data-translation-context="Shown instead of the list of zones when the universe only has its lobby" hidden>There are no zones besides the lobby.</p>
 						</div>
 						<div id="zone-editor-view" hidden>
 							<div class="panel-heading">
-								<button id="zone-back" type="button" class="secondary" data-message="editor.zone.back" data-translation-context="Button that closes the zone editor and goes back to the list of zones"><!-- icon ph:arrow-left -->Back to Zones</button>
+								<button id="zone-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="editor.zone.back" data-translation-context="Button that closes the zone editor and goes back to the list of zones"><!-- icon ph:arrow-left -->Back to Zones</button>
 								<h2 id="zone-editor-title"></h2>
 							</div>
 							<form id="zone-form" class="form">
@@ -191,7 +191,7 @@
 									<div class="form-buttons">
 										<button id="zone-delete" type="button" class="danger" data-message="editor.zone.delete" data-translation-context="Button that deletes the zone being edited"><!-- icon ph:trash -->Delete Zone</button>
 										<span id="zone-saved" class="form-saved" role="status"></span>
-										<button id="zone-save" type="submit" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+										<button id="zone-save" type="submit" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
 									</div>
 								</fieldset>
 							</form>
@@ -201,17 +201,17 @@
 									<fieldset class="choice">
 										<legend data-message="editor.map.tool" data-translation-context="Heading of the choice of what clicking the map does">Tool</legend>
 										<label class="checkbox" data-message="editor.map.draw" data-translation-context="Map tool that paints tiles onto the map">
-											<input id="map-tool-draw" name="map-tool" type="radio" value="draw" checked />
+											<input id="map-tool-draw" name="map-tool" type="radio" value="draw" data-shortcut="Alt+R" checked />
 											Draw
 										</label>
 										<label class="checkbox" data-message="editor.map.links" data-translation-context="Map tool that adds and changes links to other zones">
-											<input id="map-tool-links" name="map-tool" type="radio" value="links" />
+											<input id="map-tool-links" name="map-tool" type="radio" value="links" data-shortcut="Alt+L" />
 											Links
 										</label>
 									</fieldset>
 									<label data-message="editor.map.tile" data-translation-context="Label of the field for the tile the Draw tool paints">
 										Tile
-										<select id="map-tile"></select>
+										<select id="map-tile" data-shortcut="Alt+T"></select>
 									</label>
 									<label data-message="editor.map.brushSize" data-translation-context="Label of the field for how many cells across the Draw tool paints">
 										Size
@@ -221,14 +221,14 @@
 										Shape
 										<select id="map-brush-shape"></select>
 									</label>
-									<button id="map-undo" type="button" class="secondary" data-message="editor.map.undo" data-translation-context="Button that takes back the last painting on the map"><!-- icon ph:arrow-counter-clockwise -->Undo</button>
-									<button id="map-redo" type="button" class="secondary" data-message="editor.map.redo" data-translation-context="Button that paints again what Undo took back"><!-- icon ph:arrow-clockwise -->Redo</button>
-									<button id="map-resize" type="button" class="secondary" data-message="editor.map.resize" data-translation-context="Button that opens the dialog for changing the map's size"><!-- icon ph:arrows-out -->Edit Size</button>
+									<button id="map-undo" type="button" class="secondary" aria-keyshortcuts="Control+Z" data-message="editor.map.undo" data-translation-context="Button that takes back the last painting on the map"><!-- icon ph:arrow-counter-clockwise -->Undo</button>
+									<button id="map-redo" type="button" class="secondary" aria-keyshortcuts="Control+Y Control+Shift+Z" data-message="editor.map.redo" data-translation-context="Button that paints again what Undo took back"><!-- icon ph:arrow-clockwise -->Redo</button>
+									<button id="map-resize" type="button" class="secondary" data-shortcut="Alt+Z" data-message="editor.map.resize" data-translation-context="Button that opens the dialog for changing the map's size"><!-- icon ph:arrows-out -->Edit Size</button>
 								</div>
 								<div class="map-frame">
 									<button id="map-expand-north" type="button" class="secondary map-expand-north" data-message="editor.map.expandNorth" data-translation-context="Button above the map that makes it bigger to the north">+ North</button>
 									<button id="map-expand-west" type="button" class="secondary map-expand-west" data-message="editor.map.expandWest" data-translation-context="Button left of the map that makes it bigger to the west">+ West</button>
-									<div id="map-canvas" class="map-canvas"></div>
+									<div id="map-canvas" class="map-canvas" tabindex="0" role="application" aria-label="Map" aria-describedby="map-keyboard-help" data-shortcut="Alt+M" data-message-aria-label="editor.map.label" data-translation-context-aria-label="Name of the zone's map in the map editor, for screen readers"></div>
 									<button id="map-expand-east" type="button" class="secondary map-expand-east" data-message="editor.map.expandEast" data-translation-context="Button right of the map that makes it bigger to the east">+ East</button>
 									<button id="map-expand-south" type="button" class="secondary map-expand-south" data-message="editor.map.expandSouth" data-translation-context="Button below the map that makes it bigger to the south">+ South</button>
 								</div>
@@ -241,6 +241,7 @@
 									<span id="map-save-status" role="status"></span>
 								</div>
 								<p class="hint" data-message="editor.map.help" data-translation-context="Explains how to use the map editor with the mouse and keyboard">Drag with the right mouse button to look around, and zoom with the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link.</p>
+								<p id="map-keyboard-help" class="hint" data-message="editor.map.keyboardHelp" data-translation-context="Explains how to use the map editor with only the keyboard; the keys are the same in every language">With the map focused, the arrow keys move the cursor, 10 cells at a time with Shift. Space or Enter paints, or with the Links tool opens the cell's link; hold Space while moving to keep painting. + and - zoom, and Home goes back to the center cell.</p>
 								<p id="map-error" class="form-error" role="alert" hidden></p>
 							</section>
 							<div id="zone-children" hidden>
@@ -301,7 +302,7 @@
 							<div class="form-buttons">
 								<button id="tile-remove" type="button" class="danger"></button>
 								<button id="tile-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-								<button id="tile-save" type="submit" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+								<button id="tile-save" type="submit" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
 							</div>
 						</fieldset>
 					</form>
@@ -327,7 +328,7 @@
 						<p id="zone-add-error" class="form-error" role="alert" hidden></p>
 						<div class="dialog-buttons">
 							<button id="zone-add-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-							<button id="zone-add-submit" type="submit" data-message="editor.zoneAdd.submit" data-translation-context="Button that makes the new zone">Add</button>
+							<button id="zone-add-submit" type="submit" data-shortcut="Alt+S" data-message="editor.zoneAdd.submit" data-translation-context="Button that makes the new zone">Add</button>
 						</div>
 					</form>
 				</dialog>
@@ -358,7 +359,7 @@
 						<p id="resize-warning" class="form-error" role="alert" hidden></p>
 						<div class="dialog-buttons">
 							<button id="resize-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-							<button id="resize-submit" type="submit" data-message="editor.resize.submit" data-translation-context="Button that changes the map to the size given">Resize</button>
+							<button id="resize-submit" type="submit" data-shortcut="Alt+S" data-message="editor.resize.submit" data-translation-context="Button that changes the map to the size given">Resize</button>
 						</div>
 					</form>
 				</dialog>
@@ -400,14 +401,15 @@
 									The return link's cell
 								</label>
 							</fieldset>
-							<div id="link-preview" class="link-preview"></div>
-							<p id="link-destination"></p>
-							<p id="link-return-cell" hidden></p>
+							<div id="link-preview" class="link-preview" tabindex="0" role="application" aria-label="Map of the zone the link goes to" aria-describedby="link-preview-help" data-message-aria-label="editor.link.previewLabel" data-translation-context-aria-label="Name of the map in the link dialog, for screen readers, where clicking chooses the link's destination or return cell"></div>
+							<p id="link-preview-help" class="hint" data-message="editor.link.previewHelp" data-translation-context="Explains how to choose a cell on the link dialog's map with the keyboard; the keys are the same in every language">With the map focused, the arrow keys move the cursor, 10 cells at a time with Shift, and Space or Enter chooses the cell.</p>
+							<p id="link-destination" role="status"></p>
+							<p id="link-return-cell" role="status" hidden></p>
 							<p id="link-error" class="form-error" role="alert" hidden></p>
 							<div class="form-buttons">
 								<button id="link-delete" type="button" class="danger" data-message="editor.link.delete" data-translation-context="Button that deletes the zone link being edited"><!-- icon ph:trash -->Delete Link</button>
 								<button id="link-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-								<button id="link-save" type="submit" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+								<button id="link-save" type="submit" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
 							</div>
 						</fieldset>
 					</form>
@@ -415,6 +417,7 @@
 			</section>
 		</main>
 		<!-- include footer.html -->
+		<!-- include accessibility.html -->
 		<script type="module" src="/src/edit.ts"></script>
 	</body>
 </html>

@@ -261,8 +261,11 @@ export class TilesetsTab
 			formatList(tags)
 		];
 
+		// Screen readers read the color's hex code, which the color picker in the tile dialog also shows
 		swatch.className = 'swatch';
 		swatch.style.backgroundColor = colorToHex(tile.color);
+		swatch.setAttribute('role', 'img');
+		swatch.setAttribute('aria-label', colorToHex(tile.color));
 		nameButton.type = 'button';
 		nameButton.className = 'link-button';
 		nameButton.textContent = tileName(tile, universe.ruleset);

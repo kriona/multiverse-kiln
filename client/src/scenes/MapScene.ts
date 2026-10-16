@@ -7,6 +7,9 @@ import { t } from '../localization';
 import type { GameRoom, MapConnection, MapRoom } from '../network/serverConnection';
 import { PositionBuffer, type Point } from '../rendering/PositionBuffer';
 import { ZoneRenderer } from '../rendering/ZoneRenderer';
+import { isTextEntry } from '../ui/dom';
+import { MapAnnouncer, type SeenPlayer } from '../ui/MapAnnouncer';
+import { addKeyHelp, addShortcut } from '../ui/shortcuts';
 
 /**
  * Key the scene is registered under
@@ -109,6 +112,7 @@ export class MapScene extends Phaser.Scene
 	private takeLinkKey?: Phaser.Input.Keyboard.Key;
 	private linkPrompt?: Phaser.GameObjects.Text;
 	private lastSentMove?: MovePayload;
+	private announcer!: MapAnnouncer;
 
 	constructor()
 	{
@@ -133,6 +137,7 @@ export class MapScene extends Phaser.Scene
 		this.takeLinkKey = undefined;
 		this.linkPrompt = undefined;
 		this.lastSentMove = undefined;
+		this.announcer = new MapAnnouncer();
 	}
 
 	/**
@@ -140,7 +145,10 @@ export class MapScene extends Phaser.Scene
 	 */
 	create(): void
 	{
+		const mapElement = this.game.canvas.parentElement;
+
 		this.enterZone(this.zone);
+		this.announcer.enteredZone(this.zone.name);
 
 		this.unbinds.push(this.room.onMessage(ServerMessageType.Zone, (zone: ZonePayload) =>
 		{
@@ -152,6 +160,7 @@ export class MapScene extends Phaser.Scene
 			if (!sameZone)
 			{
 				this.forgetOwnPosition();
+				this.announcer.enteredZone(zone.name);
 			}
 		}));
 
@@ -177,11 +186,13 @@ export class MapScene extends Phaser.Scene
 		// Clicking the map takes the keyboard back from a text field, such as the lobby's chat
 		this.input.on(Phaser.Input.Events.POINTER_DOWN, () =>
 		{
-			if (document.activeElement instanceof HTMLElement)
-			{
-				document.activeElement.blur();
-			}
+			mapElement?.focus();
 		});
+
+		if (mapElement)
+		{
+			this.addKeys(mapElement);
+		}
 
 		this.game.events.on(Phaser.Core.Events.BLUR, this.stopMoving);
 		this.game.events.on(Phaser.Core.Events.HIDDEN, this.stopMoving);
@@ -208,6 +219,8 @@ export class MapScene extends Phaser.Scene
 				unbind();
 			}
 
+			this.announcer.stop();
+
 			for (const playerId of [...this.players.keys()])
 			{
 				this.removePlayer(playerId);
@@ -227,6 +240,13 @@ export class MapScene extends Phaser.Scene
 	update(): void
 	{
 		this.sendMovement();
+
+		const ownState = this.room.state.players?.get(this.ownPlayerId);
+
+		if (ownState && this.lastSentMove)
+		{
+			this.announcer.movementChecked(((this.lastSentMove.x !== 0) || (this.lastSentMove.y !== 0)), ownState.x, ownState.y);
+		}
 
 		const renderTime = performance.now() - INTERPOLATION_DELAY_MS;
 		const own = this.players.get(this.ownPlayerId)?.positions.sample(renderTime);
@@ -346,12 +366,21 @@ export class MapScene extends Phaser.Scene
 			{
 				this.cameras.main.startFollow(shape, true);
 			}
+			else
+			{
+				this.announcer.playerAppeared(player.name);
+			}
 
 			this.players.set(playerId, rendered);
 		}));
 
-		this.unbinds.push(callbacks.onRemove('players', (_player: Player, playerId: string) =>
+		this.unbinds.push(callbacks.onRemove('players', (player: Player, playerId: string) =>
 		{
+			if (playerId !== this.ownPlayerId)
+			{
+				this.announcer.playerDisappeared(player.name);
+			}
+
 			this.removePlayer(playerId);
 		}));
 	}
@@ -410,6 +439,7 @@ export class MapScene extends Phaser.Scene
 		const onLink = (isStanding && this.manualLinks.has(`${Math.floor(player.x / GRID_CELL_SIZE)},${Math.floor(player.y / GRID_CELL_SIZE)}`));
 
 		this.linkPrompt?.setVisible(onLink && (own !== undefined));
+		this.announcer.linkChanged(onLink, (this.linkPrompt?.text ?? ''));
 
 		if (onLink && own)
 		{
@@ -493,6 +523,85 @@ export class MapScene extends Phaser.Scene
 	};
 
 	/**
+	 * Adds the shortcut that reads out where the player is, and lists the keys that play, while the map shows
+	 *
+	 * @param mapElement The element the map is in
+	 */
+	private addKeys(mapElement: HTMLElement): void
+	{
+		this.unbinds.push(addShortcut({
+			keys: 'Alt+P',
+			scope: mapElement,
+			description: () => t({
+				id: 'map.keys.position',
+				defaultMessage: 'Say where you are and who you can see',
+				description: 'In the list of keyboard shortcuts, what the shortcut that reads out the player\'s position does'
+			}),
+			run: () =>
+			{
+				this.describePosition();
+			}
+		}));
+
+		this.unbinds.push(addKeyHelp({
+			scope: mapElement,
+			keys: () => t({
+				id: 'map.keys.move',
+				defaultMessage: 'Arrow keys, W A S D or number pad',
+				description: 'In the list of keyboard shortcuts, the keys that move the player; the keys are the same in every language'
+			}),
+			description: () => t({
+				id: 'map.keys.moveDescription',
+				defaultMessage: 'Move',
+				description: 'In the list of keyboard shortcuts, what the movement keys do'
+			})
+		}));
+
+		this.unbinds.push(addKeyHelp({
+			scope: mapElement,
+			keys: () => 'E',
+			description: () => t({
+				id: 'map.keys.takeLink',
+				defaultMessage: 'Go through a door or path you stand on',
+				description: 'In the list of keyboard shortcuts, what the E key does: takes the player to another zone through the link they stand on'
+			})
+		}));
+	}
+
+	/**
+	 * Reads out where the player is, and how far away and in which direction each other player they can see is
+	 */
+	private describePosition(): void
+	{
+		const own = this.room.state.players?.get(this.ownPlayerId);
+
+		if (!own)
+		{
+			return;
+		}
+
+		const column = Math.floor(own.x / GRID_CELL_SIZE);
+		const row = Math.floor(own.y / GRID_CELL_SIZE);
+		const others: SeenPlayer[] = [];
+
+		this.room.state.players.forEach((player, playerId) =>
+		{
+			if (playerId !== this.ownPlayerId)
+			{
+				const nearest = this.nearestTo(player, own);
+
+				others.push({
+					name: player.name,
+					columns: Math.floor(nearest.x / GRID_CELL_SIZE) - column,
+					rows: Math.floor(nearest.y / GRID_CELL_SIZE) - row
+				});
+			}
+		});
+
+		this.announcer.describePosition(this.zone.name, column, row, others);
+	}
+
+	/**
 	 * Removes a player's shape and name and stops listening to their state
 	 *
 	 * @param playerId The player's ID
@@ -511,20 +620,4 @@ export class MapScene extends Phaser.Scene
 		player.label.destroy();
 		this.players.delete(playerId);
 	}
-}
-
-/**
- * Whether an element takes typed text
- *
- * @param element The element
- * @return True for text inputs, text areas and editable content
- */
-function isTextEntry(element: Element | null): boolean
-{
-	if (element instanceof HTMLInputElement)
-	{
-		return(!['button', 'checkbox', 'radio', 'submit', 'reset', 'range', 'color', 'file'].includes(element.type));
-	}
-
-	return((element instanceof HTMLTextAreaElement) || ((element instanceof HTMLElement) && element.isContentEditable));
 }

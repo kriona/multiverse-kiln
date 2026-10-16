@@ -8,6 +8,8 @@ import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import type { BrushCell } from '../../editor/brush';
 import type { MapEditorHost } from '../../scenes/MapEditorScene';
 import { getElement, setOptions, showMessage } from '../dom';
+import { addKeyHelp } from '../shortcuts';
+import { describeCell } from './cellDescription';
 import { mapMessages } from './mapMessages';
 
 /**
@@ -116,6 +118,28 @@ export class LinkDialog
 	 */
 	constructor(private readonly api: EditorApi)
 	{
+		const previewElement = getElement('link-preview', HTMLElement);
+
+		addKeyHelp({
+			scope: previewElement,
+			keys: () => t(mapMessages.arrowKeys),
+			description: () => t({
+				id: 'editor.link.keys.cursorDescription',
+				defaultMessage: 'Move the cursor on the focused map, 10 cells at a time with Shift',
+				description: 'In the list of keyboard shortcuts, what the arrow keys do on the link dialog\'s map'
+			})
+		});
+
+		addKeyHelp({
+			scope: previewElement,
+			keys: () => t(mapMessages.spaceOrEnter),
+			description: () => t({
+				id: 'editor.link.keys.pickDescription',
+				defaultMessage: 'Choose the cursor\'s cell',
+				description: 'In the list of keyboard shortcuts, what Space and Enter do on the link dialog\'s map: choose the destination or the return link\'s cell'
+			})
+		});
+
 		this.targetZone.addEventListener('change', () =>
 		{
 			this.destination = undefined;
@@ -297,6 +321,24 @@ export class LinkDialog
 			paint: () => undefined,
 			paintEnd: () => undefined,
 			hover: () => undefined,
+			describe: (cell) =>
+			{
+				const preview = this.preview;
+				const target = this.target;
+
+				if (!preview || !target)
+				{
+					return('');
+				}
+
+				return(describeCell({
+					map: preview.map,
+					defaultTileId: preview.zone.defaultTileId,
+					tiles: target.tiles,
+					links: preview.links,
+					ruleset: target.ruleset
+				}, cell));
+			},
 			viewChanged: (range) =>
 			{
 				loader.request(range);

@@ -63,6 +63,14 @@
 		"message": "Headed for: {column}, {row}",
 		"source": "Destination: {column}, {row}"
 	},
+	"editor.link.keys.cursorDescription": {
+		"message": "Steer the cursor on the chart in hand, 10 cells at a time with Shift",
+		"source": "Move the cursor on the focused map, 10 cells at a time with Shift"
+	},
+	"editor.link.keys.pickDescription": {
+		"message": "Pick the cursor's cell",
+		"source": "Choose the cursor's cell"
+	},
 	"editor.link.manual": {
 		"message": "Ask if they be wantin' through (manual)",
 		"source": "Offer to take them through (manual)"
@@ -98,6 +106,14 @@
 	"editor.link.placeReturn": {
 		"message": "Choose the return passage's cell above, then click the chart to place it.",
 		"source": "Choose the return link's cell above, then click the map to place it."
+	},
+	"editor.link.previewHelp": {
+		"message": "With the chart in hand, the arrow keys steer the cursor, 10 cells at a time with Shift, and Space or Enter picks the cell.",
+		"source": "With the map focused, the arrow keys move the cursor, 10 cells at a time with Shift, and Space or Enter chooses the cell."
+	},
+	"editor.link.previewLabel": {
+		"message": "Chart o' the zone the passage leads to",
+		"source": "Map of the zone the link goes to"
 	},
 	"editor.link.returnCell": {
 		"message": "Return passage at {column}, {row}",
@@ -202,6 +218,50 @@
 	"editor.map.help": {
 		"message": "Drag with the right mouse button to look about, and spin the mouse wheel to zoom. Ctrl+Z undoes and Ctrl+Y redoes. With the Passages tool, click a cell to add or change its passage.",
 		"source": "Drag with the right mouse button to look around, and zoom with the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link."
+	},
+	"editor.map.keyboardHelp": {
+		"message": "With the chart in hand, the arrow keys steer the cursor, 10 cells at a time with Shift. Space or Enter paints, or with the Passages tool opens the cell's passage; hold Space while steerin' to keep paintin'. + and - zoom, and Home sails back to the center cell.",
+		"source": "With the map focused, the arrow keys move the cursor, 10 cells at a time with Shift. Space or Enter paints, or with the Links tool opens the cell's link; hold Space while moving to keep painting. + and - zoom, and Home goes back to the center cell."
+	},
+	"editor.map.keys.cursor": {
+		"message": "Arrow keys",
+		"source": "Arrow keys"
+	},
+	"editor.map.keys.cursorDescription": {
+		"message": "Steer the cursor on the chart in hand, 10 cells at a time with Shift",
+		"source": "Move the cursor on the focused map, 10 cells at a time with Shift"
+	},
+	"editor.map.keys.home": {
+		"message": "Home",
+		"source": "Home"
+	},
+	"editor.map.keys.homeDescription": {
+		"message": "Sail back to the center cell",
+		"source": "Go back to the center cell"
+	},
+	"editor.map.keys.paint": {
+		"message": "Space / Enter",
+		"source": "Space / Enter"
+	},
+	"editor.map.keys.paintDescription": {
+		"message": "Paint the cursor's cell, or open its passage with the Passages tool; hold Space while steerin' to keep paintin'",
+		"source": "Paint the cursor's cell, or open its link with the Links tool; hold Space while moving to keep painting"
+	},
+	"editor.map.keys.redo": {
+		"message": "Paint again what ye took back",
+		"source": "Redo the painting undone"
+	},
+	"editor.map.keys.undo": {
+		"message": "Take back the last paintin'",
+		"source": "Undo the last painting"
+	},
+	"editor.map.keys.zoom": {
+		"message": "Spyglass in or out",
+		"source": "Zoom in or out"
+	},
+	"editor.map.label": {
+		"message": "Chart",
+		"source": "Map"
 	},
 	"editor.map.links": {
 		"message": "Passages",
@@ -899,6 +959,22 @@
 		"message": "Universes",
 		"source": "Universes"
 	},
+	"keys.alt": {
+		"message": "Alt",
+		"source": "Alt"
+	},
+	"keys.control": {
+		"message": "Ctrl",
+		"source": "Ctrl"
+	},
+	"keys.option": {
+		"message": "Option",
+		"source": "Option"
+	},
+	"keys.shift": {
+		"message": "Shift",
+		"source": "Shift"
+	},
 	"license.agpl": {
 		"message": "Multiverse Kiln be free software: ye can share it about and/or change it under the terms o' the {license} as published by the Free Software Foundation, either version 3 o' the License, or (at yer choosin') any later version.",
 		"source": "Multiverse Kiln is free software: you can redistribute it and/or modify it under the terms of the {license} as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version."
@@ -1030,6 +1106,58 @@
 	"login.submit": {
 		"message": "Come aboard",
 		"source": "Enter"
+	},
+	"map.announce.appeared": {
+		"message": "{count, plural, one {{players} heaves into view.} other {{players} heave into view.}}",
+		"source": "{count, plural, one {{players} comes into view.} other {{players} come into view.}}"
+	},
+	"map.announce.blocked": {
+		"message": "Somethin' be in yer way.",
+		"source": "Something is in the way."
+	},
+	"map.announce.disappeared": {
+		"message": "{count, plural, one {{players} slips out o' sight.} other {{players} slip out o' sight.}}",
+		"source": "{count, plural, one {{players} goes out of view.} other {{players} go out of view.}}"
+	},
+	"map.announce.player": {
+		"message": "{name}, {cells, plural, one {# cell} other {# cells}} {direction, select, north {north} northeast {nor'east} east {east} southeast {sou'east} south {south} southwest {sou'west} west {west} other {nor'west}}",
+		"source": "{name}, {cells, plural, one {# cell} other {# cells}} {direction, select, north {north} northeast {northeast} east {east} southeast {southeast} south {south} southwest {southwest} west {west} other {northwest}}"
+	},
+	"map.announce.playerHere": {
+		"message": "{name}, right alongside ye",
+		"source": "{name}, right where you are"
+	},
+	"map.announce.position": {
+		"message": "{zone}, column {column}, row {row}. {count, plural, =0 {Not a soul in sight.} other {Ye can spy {players}.}}",
+		"source": "{zone}, column {column}, row {row}. {count, plural, =0 {You can't see anyone else.} other {You can see {players}.}}"
+	},
+	"map.announce.zone": {
+		"message": "Ye be in {zone}.",
+		"source": "You are in {zone}."
+	},
+	"map.help": {
+		"message": "Arrow keys, W A S D or the number pad sail ye about. E takes ye through a door or passage ye stand on. {shortcut} tells ye where ye be and who ye can spy.",
+		"source": "Arrow keys, W A S D or the number pad move you. E goes through a door or path you stand on. {shortcut} tells you where you are and who you can see."
+	},
+	"map.keys.move": {
+		"message": "Arrow keys, W A S D or number pad",
+		"source": "Arrow keys, W A S D or number pad"
+	},
+	"map.keys.moveDescription": {
+		"message": "Sail about",
+		"source": "Move"
+	},
+	"map.keys.position": {
+		"message": "Say where ye be and who ye can spy",
+		"source": "Say where you are and who you can see"
+	},
+	"map.keys.takeLink": {
+		"message": "Go through a door or passage ye stand on",
+		"source": "Go through a door or path you stand on"
+	},
+	"map.label": {
+		"message": "Chart",
+		"source": "Map"
 	},
 	"map.takeLink": {
 		"message": "Press E to go through",
@@ -1167,6 +1295,10 @@
 		"message": "Sailin' as {name}",
 		"source": "Playing as {name}"
 	},
+	"page.shortcuts": {
+		"message": "Keyboard shortcuts",
+		"source": "Keyboard shortcuts"
+	},
 	"page.sourceCode": {
 		"message": "Source code",
 		"source": "Source code"
@@ -1186,6 +1318,30 @@
 	"pager.range": {
 		"message": "{first, number}-{last, number} o' {total, number}",
 		"source": "{first, number}-{last, number} of {total, number}"
+	},
+	"shortcuts.close": {
+		"message": "Batten down",
+		"source": "Close"
+	},
+	"shortcuts.escape": {
+		"message": "Esc",
+		"source": "Esc"
+	},
+	"shortcuts.escapeDescription": {
+		"message": "Batten down a dialog",
+		"source": "Close a dialog"
+	},
+	"shortcuts.explanation": {
+		"message": "The shortcuts that work on this screen. To press a button, hold {key} and press its underlined letter, matey.",
+		"source": "The shortcuts that work on this screen. To press a button, hold {key} and press its underlined letter."
+	},
+	"shortcuts.listDescription": {
+		"message": "List the keyboard shortcuts",
+		"source": "List the keyboard shortcuts"
+	},
+	"shortcuts.title": {
+		"message": "Keyboard shortcuts",
+		"source": "Keyboard shortcuts"
 	},
 	"tile.pf1e.desert": {
 		"message": "Barren Sands",
