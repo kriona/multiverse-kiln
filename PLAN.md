@@ -94,12 +94,14 @@ Built in three steps: data and logic, then rooms, then the client.
 - [✅] PF1E default tiles (Grass, Forest, Desert, Mountains, Water, Wood Floor), added by a migration
 - [✅] Seed script for a sample universe (`npm run db:seed -w server`): a town square lobby with a cottage and a cellar, and a crossroads for groups that loops east-west. Run by hand like migrations, never on startup
 - [✅] Pure logic with tests: movement cost (50% = double, 100% = impassable), map bounds around 0,0, no cutting past impassable corners, wrapping in zones that loop, stopping on automatic links, finding a free cell to arrive in
-- [ ] Rename today's global `LobbyRoom` to `SessionRoom` (login, account, group membership), and add a `LobbyRoom` per universe (`filterBy` the universe ID) with the map, chat, who's here and Create game. Groups belong to a universe and start in its starting zone
-- [ ] A room holds every zone its players are in; each player has a zone, and each client only sees the players in its own zone (`StateView`)
-- [ ] Rooms load zone maps at lifecycle boundaries, and load the next zone before a player moves into it, never inside the tick
+- [✅] Rename today's global `LobbyRoom` to `SessionRoom` (login, account, group membership), and add a `LobbyRoom` per universe (`filterBy` the universe ID) with the map, chat, who's here and Create game. Groups belong to a universe and start in its starting zone
+- [✅] A room holds every zone its players are in; each player has a zone, and each client only sees the players in its own zone (`StateView`, one per client for now)
+- [✅] Rooms load zone maps at lifecycle boundaries, and load the next zone before a player moves into it, never inside the tick
+- [✅] `GET /universes` lists the universes Home shows, a page at a time
 - [ ] Client draws tiles by color from the zone data (graphics come in Phase 16), loading the chunks near the player
 - [ ] Looping zones wrap seamlessly: near an edge the client draws the far side's chunks beyond it, players on the far side appear across the edge, and stepping over the edge doesn't jump the camera or the player
-- [ ] Zone links: automatic links move you, manual links offer a prompt
+- [ ] Zone links: automatic links move you, manual links offer a prompt (the server side is done: stepping onto an automatic link or sending `TakeLink` on a manual one moves the player; the client still needs the prompt)
+- [ ] The lobby screen shows the lobby's map, so players can walk around it (today it is chat and who's here only)
 - [ ] Home page: universes in `let there be light` (paginated from the start), the universe modal, and Enter Universe -> that universe's lobby
 
 **Done when:** a player picks a universe on Home, walks its lobby's map (blocked by mountains and water, slowed by forest) and walks through a door into a house.

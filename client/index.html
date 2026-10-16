@@ -23,7 +23,7 @@
 
 			<section id="lobby-screen" class="screen" hidden>
 				<header class="toolbar">
-					<h1>Lobby</h1>
+					<h1 id="lobby-title">Lobby</h1>
 					<span class="toolbar-name">Playing as <strong id="lobby-player-name"></strong></span>
 					<button id="create-group" type="button">Create game</button>
 				</header>
@@ -36,10 +36,10 @@
 							<button type="submit">Send</button>
 						</form>
 					</div>
-					<aside class="panel online">
-						<h2>Online (<span id="online-count">0</span>)</h2>
-						<ul id="online-list" class="online-list"></ul>
-						<p id="online-more" class="online-more" hidden></p>
+					<aside class="panel members">
+						<h2>Here (<span id="member-count">0</span>)</h2>
+						<ul id="member-list" class="member-list"></ul>
+						<p id="member-more" class="member-more" hidden></p>
 					</aside>
 				</div>
 			</section>

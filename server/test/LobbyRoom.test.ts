@@ -3,168 +3,135 @@ import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { GAME_ROOM_NAME, LOBBY_ROOM_NAME, LobbyMessageType, LobbyServerMessageType, LobbyState, MAX_CHAT_MESSAGE_LENGTH, MAX_GROUP_PLAYERS, MAX_PLAYER_NAME_LENGTH, NoticeReason, type AccountPayload, type AccountPlayer, type ChatHistoryPayload, type ChatMessage, type NoticePayload } from '@multiverse-kiln/shared';
+import { GAME_ROOM_NAME, GRID_CELL_SIZE, LOBBY_ROOM_NAME, LobbyMessageType, LobbyServerMessageType, LobbyState, MAX_CHAT_MESSAGE_LENGTH, MessageType, NoticeReason, ServerMessageType, type ChatHistoryPayload, type ChatMessage, type LobbyJoinOptions, type NoticePayload, type Player, type WelcomePayload, type ZonePayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
+import { cellCenter } from '../src/logic/movement.js';
 import { onlinePlayers } from '../src/players/onlinePlayers.js';
 import { CHAT_HISTORY_LENGTH, type LobbyRoom } from '../src/rooms/LobbyRoom.js';
+import { addPlayableUniverse, defaultTileId, type PlayableUniverse } from './db/fixtures.js';
+import { Inbox } from './inbox.js';
 import { getTestServer, logOutEveryone, testServerUrl } from './testServer.js';
+import { waitUntil } from './waitUntil.js';
 
-type LobbyClient = ClientRoom<unknown, LobbyState>;
-
-/**
- * Collects the messages the lobby sends one window, so a test can wait for them in order
- */
-class Inbox
-{
-	private readonly received = new Map<string, unknown[]>();
-	private readonly waiting = new Map<string, Array<(payload: unknown) => void>>();
-
-	/**
-	 * Starts listening for every lobby message type
-	 *
-	 * @param room Client-side lobby room
-	 */
-	constructor(room: LobbyClient)
-	{
-		for (const type of Object.values(LobbyServerMessageType))
-		{
-			room.onMessage(type, (payload: unknown) =>
-			{
-				const resolve = this.waiting.get(type)?.shift();
-
-				if (resolve)
-				{
-					resolve(payload);
-				}
-				else
-				{
-					this.received.set(type, [...(this.received.get(type) ?? []), payload]);
-				}
-			});
-		}
-	}
-
-	/**
-	 * Takes the oldest message of a type not taken yet, waiting for one if there is none
-	 *
-	 * @param type Message type
-	 * @param timeoutMs How long to wait before failing
-	 * @return The message's payload
-	 */
-	take<T>(type: LobbyServerMessageType, timeoutMs: number = 2000): Promise<T>
-	{
-		const queued = this.received.get(type);
-
-		if (queued && (queued.length > 0))
-		{
-			return(Promise.resolve(queued.shift() as T));
-		}
-
-		return(new Promise<T>((resolve, reject) =>
-		{
-			const waiter = (payload: unknown) =>
-			{
-				clearTimeout(timer);
-				resolve(payload as T);
-			};
-			const timer = setTimeout(() =>
-			{
-				const waiters = this.waiting.get(type) ?? [];
-
-				waiters.splice(waiters.indexOf(waiter), 1);
-				reject(new Error(`no ${type} message within ${timeoutMs}ms`));
-			}, timeoutMs);
-
-			this.waiting.set(type, [...(this.waiting.get(type) ?? []), waiter]);
-		}));
-	}
-
-	/**
-	 * Takes the next Account message's player
-	 *
-	 * @return The player, or null when the browser isn't logged in
-	 */
-	async takeAccount(): Promise<AccountPlayer | null>
-	{
-		return((await this.take<AccountPayload>(LobbyServerMessageType.Account)).player);
-	}
-
-	/**
-	 * How many messages of a type have arrived and not been taken
-	 *
-	 * @param type Message type
-	 * @return The number of messages
-	 */
-	pending(type: LobbyServerMessageType): number
-	{
-		return(this.received.get(type)?.length ?? 0);
-	}
-}
+type LobbyMessage = LobbyServerMessageType | ServerMessageType;
 
 /**
- * A browser window connected to the lobby
+ * A browser window in a universe's lobby
  */
 interface LobbyWindow
 {
-	room: LobbyClient;
-	inbox: Inbox;
+	room: ClientRoom<unknown, LobbyState>;
+	inbox: Inbox<LobbyMessage>;
+	browserId: string;
+	playerId: string;
 }
 
 /**
- * Opens a window of a browser: joins the lobby with the browser's ID cookie
+ * Connects to a universe's lobby like a browser window holding a browser ID cookie
  *
  * @param browserId Browser ID the window's cookie holds
- * @return The window, with the Account message it is sent on joining already taken
+ * @param options The join options
+ * @return The client-side room
  */
-async function openWindow(browserId: string): Promise<LobbyWindow & { account: AccountPlayer | null }>
+function connect(browserId: string, options: unknown): Promise<ClientRoom<unknown, LobbyState>>
 {
 	const sdk = new SDKClient(testServerUrl.replace(/^http/, 'ws'), { headers: { cookie: `${BROWSER_ID_COOKIE}=${browserId}` } });
-	const room = await sdk.joinOrCreate<LobbyState>(LOBBY_ROOM_NAME, {}, LobbyState);
-	const inbox = new Inbox(room);
-	const account = await inbox.takeAccount();
 
-	return({ room, inbox, account });
+	return(sdk.joinOrCreate<LobbyState>(LOBBY_ROOM_NAME, options, LobbyState));
 }
 
 /**
- * Opens a window of a new browser and logs it in
+ * Logs a new browser in, as the session room would, and opens a window of it in a universe's lobby
  *
+ * @param universeId The universe whose lobby to join
  * @param name The player's name
- * @return The window and its player
+ * @return The window, with its Welcome message already taken
  */
-async function logInNewBrowser(name: string): Promise<LobbyWindow & { browserId: string; player: AccountPlayer }>
+async function joinAsNewPlayer(universeId: string, name: string): Promise<LobbyWindow>
 {
 	const browserId = randomUUID();
-	const window = await openWindow(browserId);
 
-	window.room.send(LobbyMessageType.Login, { name });
+	onlinePlayers.logIn(browserId, randomUUID(), name);
 
-	const player = await window.inbox.takeAccount();
-
-	assert.ok(player);
-	await window.inbox.take(LobbyServerMessageType.ChatHistory);
-
-	return({ ...window, browserId, player });
+	return(openWindow(browserId, universeId));
 }
 
 /**
- * Waits for one round trip to the lobby, so that messages sent before it have been handled
+ * Opens a window of an already logged-in browser in a universe's lobby
  *
- * @param colyseus Test server
- * @param window A window in the lobby
+ * @param browserId The browser's ID
+ * @param universeId The universe whose lobby to join
+ * @return The window, with its Welcome message already taken
  */
-async function settle(colyseus: ColyseusTestServer<typeof appConfig>, window: LobbyWindow): Promise<void>
+async function openWindow(browserId: string, universeId: string): Promise<LobbyWindow>
 {
-	const room = colyseus.getRoomById<LobbyRoom>(window.room.roomId);
+	const options: LobbyJoinOptions = { universeId };
+	const room = await connect(browserId, options);
+	const inbox = new Inbox<LobbyMessage>(room, [...Object.values(LobbyServerMessageType), ...Object.values(ServerMessageType)]);
+	const welcome = await inbox.take<WelcomePayload>(ServerMessageType.Welcome);
 
-	await room.waitForNextPatch();
-	await room.waitForNextPatch();
+	return({ room, inbox, browserId, playerId: welcome.playerId });
+}
+
+/**
+ * Puts a standing player on a cell's center
+ *
+ * @param player Server-side player
+ * @param column Cell's column
+ * @param row Cell's row
+ */
+function placeOnCell(player: Player, column: number, row: number): void
+{
+	const center = cellCenter({ column, row }, { cellSize: GRID_CELL_SIZE });
+
+	player.x = center.x;
+	player.y = center.y;
 }
 
 describe('LobbyRoom', () =>
 {
 	let colyseus: ColyseusTestServer<typeof appConfig>;
+	let universe: PlayableUniverse;
+
+	/**
+	 * The server-side lobby a window is in
+	 *
+	 * @param window The window
+	 * @return The room
+	 */
+	function lobbyOf(window: LobbyWindow): LobbyRoom
+	{
+		return(colyseus.getRoomById<LobbyRoom>(window.room.roomId));
+	}
+
+	/**
+	 * A window's player in the server-side room
+	 *
+	 * @param window The window
+	 * @return The player
+	 */
+	function playerOf(window: LobbyWindow): Player
+	{
+		const player = lobbyOf(window).state.players.get(window.playerId);
+
+		assert.ok(player, `no player ${window.playerId}`);
+
+		return(player);
+	}
+
+	/**
+	 * Sends a window's player through the square's door into the house
+	 *
+	 * @param window The window
+	 */
+	async function walkIntoHouse(window: LobbyWindow): Promise<void>
+	{
+		placeOnCell(playerOf(window), 4, 5);
+		window.room.send(MessageType.Move, { x: 1, y: 0 });
+		await waitUntil(() => (lobbyOf(window).getZoneId(window.playerId) === universe.houseZoneId));
+		window.room.send(MessageType.Move, { x: 0, y: 0 });
+	}
 
 	before(async () =>
 	{
@@ -175,176 +142,163 @@ describe('LobbyRoom', () =>
 	{
 		await colyseus.cleanup();
 		logOutEveryone();
+		universe = await addPlayableUniverse();
 	});
 
-	it('turns away a client without a browser ID', async () =>
+	describe('joining', () =>
 	{
-		const sdk = new SDKClient(testServerUrl.replace(/^http/, 'ws'));
+		it('turns away a browser that is not logged in', async () =>
+		{
+			await assert.rejects(connect(randomUUID(), { universeId: universe.universeId }));
+		});
 
-		await assert.rejects(sdk.joinOrCreate(LOBBY_ROOM_NAME));
-	});
-
-	it('is a single room shared by every window', async () =>
-	{
-		const window1 = await openWindow(randomUUID());
-		const window2 = await openWindow(randomUUID());
-
-		assert.strictEqual(window1.room.roomId, window2.room.roomId);
-		await assert.rejects(colyseus.sdk.create(LOBBY_ROOM_NAME));
-	});
-
-	it('tells a window that is not logged in', async () =>
-	{
-		const window = await openWindow(randomUUID());
-
-		assert.strictEqual(window.account, null);
-	});
-
-	describe('logging in', () =>
-	{
-		it('logs in every window of the browser', async () =>
+		it('turns away a client asking for a universe that does not exist, or no universe', async () =>
 		{
 			const browserId = randomUUID();
-			const window1 = await openWindow(browserId);
-			const window2 = await openWindow(browserId);
 
-			window1.room.send(LobbyMessageType.Login, { name: '  Ada  ' });
+			onlinePlayers.logIn(browserId, randomUUID(), 'Ada');
 
-			const player1 = await window1.inbox.takeAccount();
-			const player2 = await window2.inbox.takeAccount();
-
-			assert.strictEqual(player1?.name, 'Ada');
-			assert.strictEqual(player1?.groupId, null);
-			assert.deepStrictEqual(player2, player1);
+			await assert.rejects(connect(browserId, { universeId: randomUUID() }));
+			await assert.rejects(connect(browserId, {}));
 		});
 
-		it('tells a window opened later that it is already logged in', async () =>
+		it('is one room per universe', async () =>
 		{
-			const { browserId, player } = await logInNewBrowser('Ada');
-			const window = await openWindow(browserId);
+			const other = await addPlayableUniverse();
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
+			const alan = await joinAsNewPlayer(other.universeId, 'Alan');
 
-			assert.deepStrictEqual(window.account, player);
+			assert.strictEqual(ada.room.roomId, grace.room.roomId);
+			assert.notStrictEqual(ada.room.roomId, alan.room.roomId);
 		});
 
-		for (const [label, name] of [
-			['an empty name', ''],
-			['a name of only spaces', '   '],
-			['a name that is too long', 'x'.repeat(MAX_PLAYER_NAME_LENGTH + 1)],
-			['a name with a control character', 'Ada\nLovelace'],
-			['a name with a bidirectional override', `Ada${String.fromCharCode(0x202E)}`],
-			['a name that is not a string', 42]
-		] as const)
+		it('puts a new player in the universe\'s lobby zone and sends them its map', async () =>
 		{
-			it(`does not log in with ${label}`, async () =>
-			{
-				const browserId = randomUUID();
-				const window = await openWindow(browserId);
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const zone = await ada.inbox.take<ZonePayload>(ServerMessageType.Zone);
 
-				window.room.send(LobbyMessageType.Login, { name });
-				await settle(colyseus, window);
-
-				assert.strictEqual(onlinePlayers.get(browserId), undefined);
-				assert.strictEqual(window.inbox.pending(LobbyServerMessageType.Account), 0);
-			});
-		}
-
-		it('logs a name in as the same player every time, whatever the capitals', async () =>
-		{
-			const first = await logInNewBrowser('Ada');
-
-			// Forgetting who is online is what a server restart does; the player is in the database
-			logOutEveryone();
-
-			const second = await logInNewBrowser('ADA');
-
-			assert.strictEqual(second.player.playerId, first.player.playerId);
-			assert.strictEqual(second.player.name, 'Ada');
+			assert.strictEqual(lobbyOf(ada).getZoneId(ada.playerId), universe.squareZoneId);
+			assert.strictEqual(zone.zoneId, universe.squareZoneId);
+			assert.strictEqual(zone.name, 'Square');
+			assert.deepStrictEqual(zone.bounds, { minColumn: 0, minRow: 0, maxColumn: 31, maxRow: 17 });
+			assert.strictEqual(zone.defaultTileId, await defaultTileId('grass'));
+			assert.strictEqual(zone.chunks.length, 1);
+			assert.deepStrictEqual(zone.links, [{ column: 5, row: 5, mode: 'automatic' }]);
+			assert.strictEqual(zone.tiles.find((tile) => (tile.name === 'Forest'))?.color, 0x00aa11);
 		});
 
-		it('gives different names different players', async () =>
+		it('lists who is here, and stops listing them once they leave', async () =>
 		{
-			const ada = await logInNewBrowser('Ada');
-			const grace = await logInNewBrowser('Grace');
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
 
-			assert.notStrictEqual(ada.player.playerId, grace.player.playerId);
-		});
-
-		it('does not log in a player who is logged in from another browser, and says so', async () =>
-		{
-			await logInNewBrowser('Ada');
-
-			const browserId = randomUUID();
-			const window = await openWindow(browserId);
-
-			window.room.send(LobbyMessageType.Login, { name: 'ada' });
-
-			assert.strictEqual((await window.inbox.take<NoticePayload>(LobbyServerMessageType.Notice)).reason, NoticeReason.NameInUse);
-			assert.strictEqual(onlinePlayers.get(browserId), undefined);
-			assert.strictEqual(window.inbox.pending(LobbyServerMessageType.Account), 0);
-		});
-
-		it('logs the browser out once its last window leaves', async () =>
-		{
-			const { browserId, room } = await logInNewBrowser('Ada');
-			const other = await logInNewBrowser('Grace');
-			const second = await openWindow(browserId);
-
-			await room.leave();
-			await settle(colyseus, other);
-
-			assert.ok(onlinePlayers.get(browserId));
-
-			await second.room.leave();
-			await settle(colyseus, other);
-
-			assert.strictEqual(onlinePlayers.get(browserId), undefined);
-		});
-	});
-
-	describe('online list', () =>
-	{
-		it('shows logged-in windows who is online', async () =>
-		{
-			const ada = await logInNewBrowser('Ada');
-			const grace = await logInNewBrowser('Grace');
-
-			await settle(colyseus, ada);
-
-			assert.strictEqual(ada.room.state.players.size, 2);
-			assert.strictEqual(ada.room.state.players.get(grace.player.playerId)?.name, 'Grace');
-		});
-
-		it('hides the online list from windows that are not logged in', async () =>
-		{
-			await logInNewBrowser('Ada');
-
-			const window = await openWindow(randomUUID());
-
-			await settle(colyseus, window);
-
-			assert.strictEqual(window.room.state.players?.size ?? 0, 0);
-		});
-
-		it('removes a player who logs out', async () =>
-		{
-			const ada = await logInNewBrowser('Ada');
-			const grace = await logInNewBrowser('Grace');
+			await waitUntil(() => (ada.room.state.members?.size === 2));
+			assert.strictEqual(ada.room.state.members.get(grace.playerId)?.name, 'Grace');
 
 			await grace.room.leave();
-			await settle(colyseus, ada);
-			await settle(colyseus, ada);
+			await waitUntil(() => (ada.room.state.members.size === 1));
+		});
 
-			assert.strictEqual(ada.room.state.players.has(grace.player.playerId), false);
+		it('gives every window of a browser the same player', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const second = await openWindow(ada.browserId, universe.universeId);
+
+			assert.strictEqual(second.playerId, ada.playerId);
+			assert.strictEqual(lobbyOf(ada).state.members.size, 1);
+		});
+	});
+
+	describe('zones', () =>
+	{
+		it('does not let a player walk into the mountains', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const player = playerOf(ada);
+
+			placeOnCell(player, 11, 3);
+			ada.room.send(MessageType.Move, { x: 1, y: 0 });
+
+			for (let i = 0; i < 10; i++)
+			{
+				await lobbyOf(ada).waitForNextTimestep();
+			}
+
+			assert.strictEqual(player.x, cellCenter({ column: 11, row: 3 }, { cellSize: GRID_CELL_SIZE }).x);
+		});
+
+		it('takes a player who steps onto an automatic link to its cell in the other zone', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+
+			await ada.inbox.take(ServerMessageType.Zone);
+			await walkIntoHouse(ada);
+
+			const zone = await ada.inbox.take<ZonePayload>(ServerMessageType.Zone);
+			const player = playerOf(ada);
+
+			assert.strictEqual(zone.name, 'House');
+			assert.deepStrictEqual({ x: player.x, y: player.y }, cellCenter({ column: 2, row: 2 }, { cellSize: GRID_CELL_SIZE }));
+		});
+
+		it('takes a player standing on a manual link through it when asked, and not otherwise', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+
+			await walkIntoHouse(ada);
+
+			// (2, 2), where the player arrived, has no link
+			ada.room.send(MessageType.TakeLink);
+			await lobbyOf(ada).waitForNextMessage();
+			await lobbyOf(ada).waitForNextTimestep();
+			assert.strictEqual(lobbyOf(ada).getZoneId(ada.playerId), universe.houseZoneId);
+
+			placeOnCell(playerOf(ada), 2, 4);
+			ada.room.send(MessageType.TakeLink);
+			await waitUntil(() => (lobbyOf(ada).getZoneId(ada.playerId) === universe.squareZoneId));
+
+			const player = playerOf(ada);
+
+			assert.deepStrictEqual({ x: player.x, y: player.y }, cellCenter({ column: 5, row: 6 }, { cellSize: GRID_CELL_SIZE }));
+		});
+
+		it('shows each window only the players in its own zone', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
+
+			await waitUntil(() => (ada.room.state.players?.size === 2) && (grace.room.state.players?.size === 2));
+
+			await walkIntoHouse(ada);
+
+			await waitUntil(() => !grace.room.state.players.has(ada.playerId) && !ada.room.state.players.has(grace.playerId));
+			assert.ok(ada.room.state.players.has(ada.playerId));
+			assert.ok(grace.room.state.players.has(grace.playerId));
+
+			// Grace follows Ada in, and they see each other again
+			await walkIntoHouse(grace);
+			await waitUntil(() => grace.room.state.players.has(ada.playerId) && ada.room.state.players.has(grace.playerId));
+		});
+
+		it('lists a player as here whichever zone they are in', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
+
+			await walkIntoHouse(ada);
+			await waitUntil(() => !grace.room.state.players.has(ada.playerId));
+
+			assert.ok(grace.room.state.members.has(ada.playerId));
 		});
 	});
 
 	describe('chat', () =>
 	{
-		it('sends a message to every logged-in window, but not to windows that are not logged in', async () =>
+		it('sends a message to everyone in the lobby', async () =>
 		{
-			const ada = await logInNewBrowser('Ada');
-			const grace = await logInNewBrowser('Grace');
-			const loggedOut = await openWindow(randomUUID());
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
 
 			ada.room.send(LobbyMessageType.Chat, { text: ' Hello! ' });
 
@@ -353,25 +307,26 @@ describe('LobbyRoom', () =>
 
 			assert.strictEqual(received.text, 'Hello!');
 			assert.strictEqual(received.name, 'Ada');
-			assert.strictEqual(received.playerId, ada.player.playerId);
+			assert.strictEqual(received.playerId, ada.playerId);
 			assert.deepStrictEqual(echoed, received);
-			assert.strictEqual(loggedOut.inbox.pending(LobbyServerMessageType.Chat), 0);
 		});
 
-		it('ignores chat from a window that is not logged in', async () =>
+		it('does not send a message to another universe\'s lobby', async () =>
 		{
-			const ada = await logInNewBrowser('Ada');
-			const loggedOut = await openWindow(randomUUID());
+			const other = await addPlayableUniverse();
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const alan = await joinAsNewPlayer(other.universeId, 'Alan');
 
-			loggedOut.room.send(LobbyMessageType.Chat, { text: 'Hello' });
-			await settle(colyseus, ada);
+			ada.room.send(LobbyMessageType.Chat, { text: 'Hello' });
+			await ada.inbox.take(LobbyServerMessageType.Chat);
+			await lobbyOf(alan).waitForNextPatch();
 
-			assert.strictEqual(ada.inbox.pending(LobbyServerMessageType.Chat), 0);
+			assert.strictEqual(alan.inbox.pending(LobbyServerMessageType.Chat), 0);
 		});
 
 		it('ignores a message that is too long', async () =>
 		{
-			const ada = await logInNewBrowser('Ada');
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
 
 			ada.room.send(LobbyMessageType.Chat, { text: 'x'.repeat(MAX_CHAT_MESSAGE_LENGTH + 1) });
 			ada.room.send(LobbyMessageType.Chat, { text: 'x'.repeat(MAX_CHAT_MESSAGE_LENGTH) });
@@ -381,27 +336,9 @@ describe('LobbyRoom', () =>
 			assert.strictEqual(received.text.length, MAX_CHAT_MESSAGE_LENGTH);
 		});
 
-		it('sends the recent chat to a player who logs in', async () =>
+		it('sends the recent chat to a player who joins later, keeping only the most recent messages', async () =>
 		{
-			const ada = await logInNewBrowser('Ada');
-
-			ada.room.send(LobbyMessageType.Chat, { text: 'first' });
-			ada.room.send(LobbyMessageType.Chat, { text: 'second' });
-			await ada.inbox.take(LobbyServerMessageType.Chat);
-			await ada.inbox.take(LobbyServerMessageType.Chat);
-
-			const window = await openWindow(randomUUID());
-
-			window.room.send(LobbyMessageType.Login, { name: 'Grace' });
-
-			const history = await window.inbox.take<ChatHistoryPayload>(LobbyServerMessageType.ChatHistory);
-
-			assert.deepStrictEqual(history.messages.map((message) => message.text), ['first', 'second']);
-		});
-
-		it('keeps only the most recent messages', async () =>
-		{
-			const players = await Promise.all(Array.from({ length: 11 }, (_, i) => logInNewBrowser(`Player ${i}`)));
+			const players = await Promise.all(Array.from({ length: 11 }, (_, i) => joinAsNewPlayer(universe.universeId, `Player ${i}`)));
 			let sent = 0;
 
 			// Each player may send 5 messages at a time
@@ -414,11 +351,8 @@ describe('LobbyRoom', () =>
 				}
 			}
 
-			const { room, inbox } = await openWindow(randomUUID());
-
-			room.send(LobbyMessageType.Login, { name: 'Late' });
-
-			const history = await inbox.take<ChatHistoryPayload>(LobbyServerMessageType.ChatHistory);
+			const late = await joinAsNewPlayer(universe.universeId, 'Late');
+			const history = await late.inbox.take<ChatHistoryPayload>(LobbyServerMessageType.ChatHistory);
 
 			assert.strictEqual(history.messages.length, CHAT_HISTORY_LENGTH);
 			assert.strictEqual(history.messages[0].text, `message ${sent - CHAT_HISTORY_LENGTH + 1}`);
@@ -427,7 +361,7 @@ describe('LobbyRoom', () =>
 
 		it('drops messages sent too quickly, and says so', async () =>
 		{
-			const ada = await logInNewBrowser('Ada');
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
 
 			for (let i = 0; i < 6; i++)
 			{
@@ -437,145 +371,23 @@ describe('LobbyRoom', () =>
 			const notice = await ada.inbox.take<NoticePayload>(LobbyServerMessageType.Notice);
 
 			assert.strictEqual(notice.reason, NoticeReason.ChatTooFast);
-			await settle(colyseus, ada);
+			await lobbyOf(ada).waitForNextPatch();
 			assert.strictEqual(ada.inbox.pending(LobbyServerMessageType.Chat), 5);
 		});
 	});
 
 	describe('groups', () =>
 	{
-		it('creates a group and puts the player in it, in every window', async () =>
+		it('creates a group in the universe and puts the player in it', async () =>
 		{
-			const ada = await logInNewBrowser('Ada');
-			const second = await openWindow(ada.browserId);
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
 
 			ada.room.send(LobbyMessageType.CreateGroup);
+			await waitUntil(() => (onlinePlayers.get(ada.browserId)?.groupId !== undefined));
 
-			const player = await ada.inbox.takeAccount();
-			const inSecond = await second.inbox.takeAccount();
+			const groupId = onlinePlayers.get(ada.browserId)?.groupId as string;
 
-			assert.ok(player?.groupId);
-			assert.deepStrictEqual(inSecond, player);
-			assert.strictEqual(colyseus.getRoomById(player.groupId).roomName, GAME_ROOM_NAME);
-		});
-
-		it('does not create a group for a window that is not logged in', async () =>
-		{
-			const window = await openWindow(randomUUID());
-
-			window.room.send(LobbyMessageType.CreateGroup);
-			await settle(colyseus, window);
-
-			assert.strictEqual(window.inbox.pending(LobbyServerMessageType.Account), 0);
-		});
-
-		it('puts a player in an existing group', async () =>
-		{
-			const ada = await logInNewBrowser('Ada');
-			const grace = await logInNewBrowser('Grace');
-
-			ada.room.send(LobbyMessageType.CreateGroup);
-
-			const groupId = (await ada.inbox.takeAccount())?.groupId;
-
-			assert.ok(groupId);
-
-			grace.room.send(LobbyMessageType.JoinGroup, { groupId });
-
-			assert.strictEqual((await grace.inbox.takeAccount())?.groupId, groupId);
-		});
-
-		it('moves a player who joins another group out of their first one', async () =>
-		{
-			const ada = await logInNewBrowser('Ada');
-			const grace = await logInNewBrowser('Grace');
-
-			ada.room.send(LobbyMessageType.CreateGroup);
-			grace.room.send(LobbyMessageType.CreateGroup);
-
-			const adaGroupId = (await ada.inbox.takeAccount())?.groupId;
-			const graceGroupId = (await grace.inbox.takeAccount())?.groupId;
-
-			assert.ok(adaGroupId && graceGroupId);
-
-			grace.room.send(LobbyMessageType.JoinGroup, { groupId: adaGroupId });
-
-			assert.strictEqual((await grace.inbox.takeAccount())?.groupId, adaGroupId);
-			assert.strictEqual(onlinePlayers.countInGroup(graceGroupId), 0);
-		});
-
-		it('says so when the group does not exist', async () =>
-		{
-			const ada = await logInNewBrowser('Ada');
-
-			ada.room.send(LobbyMessageType.JoinGroup, { groupId: 'missing' });
-
-			assert.strictEqual((await ada.inbox.take<NoticePayload>(LobbyServerMessageType.Notice)).reason, NoticeReason.GroupNotFound);
-			assert.strictEqual(onlinePlayers.get(ada.browserId)?.groupId, undefined);
-		});
-
-		it('does not treat the lobby as a group', async () =>
-		{
-			const ada = await logInNewBrowser('Ada');
-
-			ada.room.send(LobbyMessageType.JoinGroup, { groupId: ada.room.roomId });
-
-			assert.strictEqual((await ada.inbox.take<NoticePayload>(LobbyServerMessageType.Notice)).reason, NoticeReason.GroupNotFound);
-		});
-
-		it(`says so when the group already has ${MAX_GROUP_PLAYERS} players`, async () =>
-		{
-			const players = await Promise.all(Array.from({ length: MAX_GROUP_PLAYERS + 1 }, (_, i) => logInNewBrowser(`Player ${i}`)));
-			const [creator, ...others] = players;
-			const latecomer = others.pop();
-
-			assert.ok(latecomer);
-
-			creator.room.send(LobbyMessageType.CreateGroup);
-
-			const groupId = (await creator.inbox.takeAccount())?.groupId;
-
-			assert.ok(groupId);
-
-			for (const player of others)
-			{
-				player.room.send(LobbyMessageType.JoinGroup, { groupId });
-				await player.inbox.takeAccount();
-			}
-
-			latecomer.room.send(LobbyMessageType.JoinGroup, { groupId });
-
-			assert.strictEqual((await latecomer.inbox.take<NoticePayload>(LobbyServerMessageType.Notice)).reason, NoticeReason.GroupFull);
-			assert.strictEqual(onlinePlayers.countInGroup(groupId), MAX_GROUP_PLAYERS);
-		});
-
-		it('takes a player out of their group', async () =>
-		{
-			const ada = await logInNewBrowser('Ada');
-
-			ada.room.send(LobbyMessageType.CreateGroup);
-			await ada.inbox.takeAccount();
-
-			ada.room.send(LobbyMessageType.LeaveGroup);
-
-			assert.strictEqual((await ada.inbox.takeAccount())?.groupId, null);
-		});
-
-		it('takes a player out of their group when they log out', async () =>
-		{
-			const ada = await logInNewBrowser('Ada');
-			const grace = await logInNewBrowser('Grace');
-
-			ada.room.send(LobbyMessageType.CreateGroup);
-
-			const groupId = (await ada.inbox.takeAccount())?.groupId;
-
-			assert.ok(groupId);
-
-			await ada.room.leave();
-			await settle(colyseus, grace);
-
-			assert.strictEqual(onlinePlayers.countInGroup(groupId), 0);
+			assert.strictEqual(colyseus.getRoomById(groupId).roomName, GAME_ROOM_NAME);
 		});
 	});
 });

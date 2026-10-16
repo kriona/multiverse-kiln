@@ -1,12 +1,12 @@
 /**
- * Validators for client message payloads
+ * Validators for client message payloads and room options
  *
  * Each one must accept exactly the matching interface in /shared; `satisfies` makes the compiler check that.
  * Handlers parse with safeParse and drop a payload that fails, so one bad message doesn't disconnect the client.
  * Unknown keys are stripped rather than rejected
  */
 import { z } from 'zod';
-import { DISALLOWED_TEXT_CHARACTERS, MAX_CHAT_MESSAGE_LENGTH, MAX_PLAYER_NAME_LENGTH, type ChatPayload, type JoinGroupPayload, type LoginPayload, type MovePayload } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, MAX_CHAT_MESSAGE_LENGTH, MAX_PLAYER_NAME_LENGTH, type ChatPayload, type JoinGroupPayload, type LobbyJoinOptions, type LoginPayload, type MovePayload } from '@multiverse-kiln/shared';
 
 const direction = z.literal([-1, 0, 1]);
 
@@ -49,6 +49,13 @@ export const chatPayload = z.object({
 export const joinGroupPayload = z.object({
 	groupId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/)
 }) satisfies z.ZodType<JoinGroupPayload>;
+
+/**
+ * Options a universe's lobby and a group's game room are created with: which universe
+ */
+export const roomOptions = z.object({
+	universeId: z.uuid()
+}) satisfies z.ZodType<LobbyJoinOptions>;
 
 /**
  * Summarizes why a payload failed validation, for logging

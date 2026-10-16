@@ -1,16 +1,35 @@
 /**
  * Name of the game room, registered on the server; each group of players plays in one
  *
- * Only the lobby creates game rooms, and a client can join one only after the lobby has put its player in that group
+ * Only a lobby creates game rooms, and a client can join one only after its player has been put in that group
  */
 export const GAME_ROOM_NAME = 'game';
 
 /**
- * Name of the lobby room, which every logged-in player is in: login, chat, who's online, and creating and joining groups
+ * Name of the session room: logging in, who the player is, and joining and leaving groups
  *
- * Every window stays connected to it for as long as it is open, even while its player is in a group
+ * There is one, and every window stays connected to it for as long as it is open, wherever its player is
+ */
+export const SESSION_ROOM_NAME = 'session';
+
+/**
+ * Name of a universe's lobby room: its map, chat, who's here, and creating groups
+ *
+ * Clients join with LobbyJoinOptions, and every client of the same universe joins the same lobby
  */
 export const LOBBY_ROOM_NAME = 'lobby';
+
+/**
+ * Server route listing the universes Home shows (GET, answered with UniverseListPayload)
+ *
+ * Takes optional `offset` and `limit` query parameters; limit is at most MAX_UNIVERSES_PER_PAGE
+ */
+export const UNIVERSES_PATH = '/universes';
+
+/**
+ * Most universes GET UNIVERSES_PATH returns at once
+ */
+export const MAX_UNIVERSES_PER_PAGE = 100;
 
 /**
  * Most players in one group
@@ -51,17 +70,17 @@ export const DEFAULT_SERVER_PORT = 2567;
 export const BROWSER_ID_PATH = '/browser-id';
 
 /**
- * Width of the game world in world units; the server keeps players inside it
+ * Width of the client's view of the map, in pixels (one world unit is one pixel): 32 cells
  */
-export const WORLD_WIDTH = 960;
+export const VIEW_WIDTH = 960;
 
 /**
- * Height of the game world in world units; the server keeps players inside it
+ * Height of the client's view of the map, in pixels (one world unit is one pixel): 18 cells
  */
-export const WORLD_HEIGHT = 540;
+export const VIEW_HEIGHT = 540;
 
 /**
- * Radius of a player in world units; the server keeps the whole player inside the world
+ * Radius of a player in world units
  */
 export const PLAYER_RADIUS = 12;
 
@@ -69,7 +88,7 @@ export const PLAYER_RADIUS = 12;
  * Size of one grid cell in world units
  *
  * Players move from cell center to cell center and always stop on one. A cell is a little wider than a
- * player, and the world's width and height are whole numbers of cells (32 x 18)
+ * player, so a player on a cell center is entirely inside the cell
  */
 export const GRID_CELL_SIZE = 30;
 

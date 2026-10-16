@@ -2,7 +2,7 @@
  * Universes: the only module that reads or writes the universes table
  */
 import { eq } from 'drizzle-orm';
-import type { PassageOfTime, Ruleset, UniverseStage } from '@multiverse-kiln/shared';
+import type { PassageOfTime, Ruleset, UniverseStage, UniverseSummary } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { universes } from './schema.js';
@@ -98,6 +98,31 @@ export async function findUniverse(universeId: string, executor: Executor = db):
 		lobbyZoneId: row.lobbyZoneId ?? undefined,
 		startingZoneId: row.startingZoneId ?? undefined
 	});
+}
+
+/**
+ * A page of the universes in a stage, by name
+ *
+ * @param stage The stage
+ * @param offset How many universes to skip
+ * @param limit Most universes to return
+ * @param executor The database, or a transaction
+ * @return The universes
+ */
+export async function listUniverses(stage: UniverseStage, offset: number, limit: number, executor: Executor = db): Promise<UniverseSummary[]>
+{
+	return(executor
+		.select({
+			id: universes.id,
+			name: universes.name,
+			shortDescription: universes.shortDescription,
+			ruleset: universes.ruleset
+		})
+		.from(universes)
+		.where(eq(universes.stage, stage))
+		.orderBy(universes.name, universes.id)
+		.offset(offset)
+		.limit(limit));
 }
 
 /**

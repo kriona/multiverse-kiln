@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GROUP_QUERY_PARAMETER, WORLD_HEIGHT, WORLD_WIDTH } from '@multiverse-kiln/shared';
+import { GROUP_QUERY_PARAMETER, VIEW_HEIGHT, VIEW_WIDTH } from '@multiverse-kiln/shared';
 
 import type { GameConnection } from '../network/serverConnection';
 import { GAME_SCENE_KEY, GameScene, type GameSceneData } from '../scenes/GameScene';
@@ -88,12 +88,12 @@ export class GroupScreen
 
 		if (!this.game)
 		{
-			// One world unit is one pixel, so the canvas shows the whole world
+			// One world unit is one pixel; the camera follows the player around zones larger than the canvas
 			this.game = new Phaser.Game({
 				type: Phaser.WEBGL,
 				parent: 'game',
-				width: WORLD_WIDTH,
-				height: WORLD_HEIGHT,
+				width: VIEW_WIDTH,
+				height: VIEW_HEIGHT,
 				backgroundColor: '#1d1f27',
 				scene: []
 			});

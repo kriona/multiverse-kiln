@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { Callbacks } from '@colyseus/sdk';
-import { MessageType, PATCH_INTERVAL_MS, PLAYER_RADIUS, type MovePayload, type Player } from '@multiverse-kiln/shared';
+import { MessageType, PATCH_INTERVAL_MS, PLAYER_RADIUS, ServerMessageType, type MovePayload, type Player, type ZonePayload } from '@multiverse-kiln/shared';
 
 import { MovementKeys } from '../input/MovementKeys';
 import type { GameConnection, GameRoom } from '../network/serverConnection';
@@ -49,7 +49,8 @@ interface RenderedPlayer
 }
 
 /**
- * Draws a group's game room: every player from the synced state, and sends keyboard input
+ * Draws a group's game room: the zone the player is in, the players the server shows in it, and sends
+ * keyboard input. The camera follows the player
  *
  * The server decides where players are. This scene only sends the direction held and draws the
  * positions the server sends back
@@ -58,6 +59,8 @@ export class GameScene extends Phaser.Scene
 {
 	private room!: GameRoom;
 	private ownPlayerId!: string;
+	private zone!: ZonePayload;
+	private grid?: Phaser.GameObjects.Graphics;
 	private readonly players = new Map<string, RenderedPlayer>();
 	private readonly unbinds: Array<() => void> = [];
 	private movementKeys?: MovementKeys;
@@ -77,6 +80,8 @@ export class GameScene extends Phaser.Scene
 	{
 		this.room = data.connection.room;
 		this.ownPlayerId = data.connection.playerId;
+		this.zone = data.connection.zone;
+		this.grid = undefined;
 		this.players.clear();
 		this.unbinds.length = 0;
 		this.movementKeys = undefined;
@@ -84,11 +89,16 @@ export class GameScene extends Phaser.Scene
 	}
 
 	/**
-	 * Draws the grid, sets up input, and subscribes to the players in the room's state
+	 * Draws the zone, sets up input, and subscribes to the players in the room's state and the zone changes
 	 */
 	create(): void
 	{
-		drawGrid(this);
+		this.grid = drawGrid(this, this.zone.bounds);
+
+		this.unbinds.push(this.room.onMessage(ServerMessageType.Zone, (zone: ZonePayload) =>
+		{
+			this.enterZone(zone);
+		}));
 
 		if (this.input.keyboard)
 		{
@@ -154,12 +164,18 @@ export class GameScene extends Phaser.Scene
 		this.unbinds.push(callbacks.onAdd('players', (player, playerId) =>
 		{
 			const positions = new PositionBuffer(PATCH_INTERVAL_MS);
-			const color = ((playerId === this.ownPlayerId) ? OWN_PLAYER_COLOR : OTHER_PLAYER_COLOR);
+			const isOwn = (playerId === this.ownPlayerId);
+			const shape = this.add.circle(player.x, player.y, PLAYER_RADIUS, (isOwn ? OWN_PLAYER_COLOR : OTHER_PLAYER_COLOR));
 
 			positions.push(performance.now(), player.x, player.y);
 
+			if (isOwn)
+			{
+				this.cameras.main.startFollow(shape, true);
+			}
+
 			this.players.set(playerId, {
-				shape: this.add.circle(player.x, player.y, PLAYER_RADIUS, color),
+				shape,
 				label: this.add.text(player.x, player.y - PLAYER_RADIUS - NAME_OFFSET, player.name, {
 					fontFamily: 'sans-serif',
 					fontSize: '12px',
@@ -177,6 +193,23 @@ export class GameScene extends Phaser.Scene
 		{
 			this.removePlayer(playerId);
 		}));
+	}
+
+	/**
+	 * Redraws the scene for a zone the player has just moved to
+	 *
+	 * The server has already moved the player; their next position is drawn straight away rather than
+	 * reached smoothly from where they were in the old zone. Players in the old zone are removed and
+	 * those in the new one added through the state, like any other player coming and going
+	 *
+	 * @param zone The new zone
+	 */
+	private enterZone(zone: ZonePayload): void
+	{
+		this.zone = zone;
+		this.grid?.destroy();
+		this.grid = drawGrid(this, zone.bounds);
+		this.players.get(this.ownPlayerId)?.positions.clear();
 	}
 
 	/**

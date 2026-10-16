@@ -85,6 +85,19 @@ export function chunkKey(chunkColumn: number, chunkRow: number): string
 }
 
 /**
+ * The chunk a key from chunkKey() names
+ *
+ * @param key The key
+ * @return The chunk's column and row
+ */
+export function parseChunkKey(key: string): { chunkColumn: number; chunkRow: number }
+{
+	const [chunkColumn, chunkRow] = key.split(',').map(Number);
+
+	return({ chunkColumn, chunkRow });
+}
+
+/**
  * Where a cell's value sits in its chunk's array
  *
  * @param column The cell's column

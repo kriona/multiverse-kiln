@@ -1,11 +1,16 @@
 import { randomUUID } from 'crypto';
 import { Client, type Room } from '@colyseus/sdk';
 import { cli, type Options } from '@colyseus/loadtest';
-import { LOBBY_ROOM_NAME, LobbyMessageType, LobbyServerMessageType, MessageType, type AccountPayload, type Direction, type LoginPayload, type MovePayload } from '@multiverse-kiln/shared';
+import { LOBBY_ROOM_NAME, LobbyMessageType, MessageType, SESSION_ROOM_NAME, SessionMessageType, SessionServerMessageType, UNIVERSES_PATH, type AccountPayload, type Direction, type LobbyJoinOptions, type LoginPayload, type MovePayload, type UniverseListPayload } from '@multiverse-kiln/shared';
 
 import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
 
 const directions: Direction[] = [-1, 0, 1];
+
+/**
+ * How long each simulated player walks around the lobby before creating a group
+ */
+const LOBBY_SECONDS = 5;
 
 /**
  * Picks a random direction on each axis, like a player pressing arrow keys
@@ -45,7 +50,48 @@ async function playInGroup(client: Client, groupId: string): Promise<void>
 }
 
 /**
- * Runs one simulated player: logs in through the lobby, creates a group of its own and moves around in it
+ * Joins the first universe's lobby, walks around it for a few seconds, then creates a group of its own
+ *
+ * @param client Client for the server
+ * @return The joined lobby, which the caller leaves once the group exists
+ */
+async function playInLobby(client: Client): Promise<Room>
+{
+	const response = await client.http.get(UNIVERSES_PATH);
+	const universe = (response.data as UniverseListPayload).universes[0];
+
+	if (!universe)
+	{
+		throw new Error('The server lists no universes. Run npm run db:seed -w server first');
+	}
+
+	const options: LobbyJoinOptions = { universeId: universe.id };
+	const lobby: Room = await client.joinOrCreate(LOBBY_ROOM_NAME, options);
+	const timer = setInterval(() =>
+	{
+		lobby.send(MessageType.Move, randomMove());
+	}, 1000);
+
+	console.log(lobby.sessionId, 'joined the lobby of', universe.name);
+
+	setTimeout(() =>
+	{
+		clearInterval(timer);
+		lobby.send(LobbyMessageType.CreateGroup);
+	}, LOBBY_SECONDS * 1000);
+
+	lobby.onLeave((code: number) =>
+	{
+		clearInterval(timer);
+		console.log(lobby.sessionId, 'left the lobby', code);
+	});
+
+	return(lobby);
+}
+
+/**
+ * Runs one simulated player: logs in through the session room, walks around a universe's lobby, then
+ * creates a group of its own and moves around in it
  *
  * Each player is a browser of its own, with a random browser ID cookie
  *
@@ -54,33 +100,35 @@ async function playInGroup(client: Client, groupId: string): Promise<void>
 export async function main(options: Options)
 {
 	const client = new Client(options.endpoint, { headers: { cookie: `${BROWSER_ID_COOKIE}=${randomUUID()}` } });
-	const lobby: Room = await client.joinOrCreate(LOBBY_ROOM_NAME, {});
+	const session: Room = await client.joinOrCreate(SESSION_ROOM_NAME, {});
+	let lobby: Promise<Room> | undefined;
 	let joinedGroupId: string | undefined;
 
-	lobby.onMessage(LobbyServerMessageType.Account, (account: AccountPayload) =>
+	session.onMessage(SessionServerMessageType.Account, (account: AccountPayload) =>
 	{
 		const groupId = account.player?.groupId;
 
 		if (!account.player)
 		{
-			const login: LoginPayload = { name: `Bot ${lobby.sessionId}` };
+			const login: LoginPayload = { name: `Bot ${session.sessionId}` };
 
-			lobby.send(LobbyMessageType.Login, login);
+			session.send(SessionMessageType.Login, login);
 		}
-		else if (!groupId)
+		else if (!groupId && !lobby)
 		{
-			lobby.send(LobbyMessageType.CreateGroup);
+			lobby = playInLobby(client);
 		}
-		else if (groupId !== joinedGroupId)
+		else if (groupId && (groupId !== joinedGroupId))
 		{
 			joinedGroupId = groupId;
+			void lobby?.then((room) => room.leave());
 			void playInGroup(client, groupId);
 		}
 	});
 
-	lobby.onLeave((code: number) =>
+	session.onLeave((code: number) =>
 	{
-		console.log(lobby.sessionId, 'left the lobby', code);
+		console.log(session.sessionId, 'left the session', code);
 	});
 }
 

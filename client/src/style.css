@@ -198,14 +198,14 @@ input
 	min-width: 0;
 }
 
-.online
+.members
 {
 	display: flex;
 	flex-direction: column;
 	width: 220px;
 }
 
-.online-list
+.member-list
 {
 	flex: 1;
 	overflow-y: auto;
@@ -215,17 +215,17 @@ input
 	overflow-wrap: anywhere;
 }
 
-.online-list li
+.member-list li
 {
 	padding: 2px 0;
 }
 
-.online-own
+.member-own
 {
 	color: #4caf50;
 }
 
-.online-more
+.member-more
 {
 	margin: 8px 0 0;
 	font-size: 12px;

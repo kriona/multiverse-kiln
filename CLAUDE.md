@@ -21,7 +21,9 @@ An engine for making multiplayer browser-based role-playing games.
   src/index.ts       Colyseus Cloud entry point - never modify it (Colyseus's rule for Cloud deploys)
   src/app.config.ts  define room types, HTTP routes, Express middleware
   src/transport.ts   HTTPS/WSS transport
-  src/rooms/         Room classes (lifecycle hooks, message handlers, tick loop): LobbyRoom and GameRoom (one per group)
+  src/rooms/         Room classes (lifecycle hooks, message handlers, tick loop): SessionRoom (one, global: login,
+                     account, joining groups), LobbyRoom (one per universe) and GameRoom (one per group). The two
+                     map rooms share ZonePlayers (movement, zones, who sees whom, zone links) and ZoneCache
   src/players/       who is logged in and which group each player is in (in memory; accounts are in the database)
   src/logic/         pure game-simulation functions (no I/O)
   src/db/            Drizzle client, schema, and repository modules

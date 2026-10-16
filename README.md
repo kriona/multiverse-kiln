@@ -203,7 +203,7 @@ Open the game at `https://www.multiversekiln-dev.com:5173`. The server's output 
 
 Press `Ctrl+C` to stop all three. If any one exits, the others are stopped too.
 
-Type a name to enter the lobby, then press **Create game** to start a group and **Share** to copy a join link for other players. Move with the arrow keys or WASD. Your player is green; other players are blue.
+Type a name to enter the lobby of the first universe the server lists (Kilnhaven, after seeding), then press **Create game** to start a group and **Share** to copy a join link for other players. The group starts in the universe's starting zone. Move with the arrow keys or WASD. Your player is green; other players are blue.
 
 Until there are real logins, a name is the whole login: typing a name you've used before (in any capitals) logs you in as that player again, from any browser, and a new name creates a new player. A player can only be logged in from one browser at a time.
 
