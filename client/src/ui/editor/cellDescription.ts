@@ -3,8 +3,8 @@ import { DEFAULT_TILE_CELL, isInBounds, VOID_CELL, type EditorTile, type EditorZ
 import type { BrushCell } from '../../editor/brush';
 import type { EditorMap } from '../../editor/EditorMap';
 import { t } from '../../localization';
+import { tileName } from '../tileNames';
 import { mapMessages } from './mapMessages';
-import { tileName } from './tileNames';
 
 /**
  * A zone's map as the editor has loaded it, with what is needed to name what its cells hold

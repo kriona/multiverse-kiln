@@ -41,6 +41,21 @@ export interface SeenPlayer
 }
 
 /**
+ * Where the player is on the map
+ */
+export interface PlayerPosition
+{
+	zoneName: string;
+	column: number;
+	row: number;
+
+	/**
+	 * The tile the player stands on, in their language, or undefined when it isn't known
+	 */
+	tileName: string | undefined;
+}
+
+/**
  * Reads out what a screen reader user can't see on the game's map: the zone they enter, players
  * coming into and going out of view, a way to another zone underfoot, and being unable to move. The
  * map scene tells it what happens; it decides what is worth reading out and words it
@@ -154,14 +169,12 @@ export class MapAnnouncer
 	}
 
 	/**
-	 * Reads out where the player is and the other players they can see, nearest first
+	 * Reads out where the player is, the tile they stand on, and the other players they can see, nearest first
 	 *
-	 * @param zoneName The zone's name
-	 * @param column The player's cell's column
-	 * @param row The player's cell's row
+	 * @param position Where the player is
 	 * @param others The other players they can see
 	 */
-	describePosition(zoneName: string, column: number, row: number, others: readonly SeenPlayer[]): void
+	describePosition(position: PlayerPosition, others: readonly SeenPlayer[]): void
 	{
 		const players = [...others]
 			.sort((first, second) => (distance(first) - distance(second)))
@@ -169,12 +182,14 @@ export class MapAnnouncer
 
 		announce(t({
 			id: 'map.announce.position',
-			defaultMessage: '{zone}, column {column}, row {row}. {count, plural, =0 {You can\'t see anyone else.} other {You can see {players}.}}',
-			description: 'Read out by screen readers when the player asks where they are: the zone\'s name, their cell, and the other players they can see; {players} is a list of descriptions such as "Bo, 3 cells northeast"'
+			defaultMessage: '{zone}, column {column}, row {row}{onTile, select, yes {, on {tile}} other {}}. {count, plural, =0 {You can\'t see anyone else.} other {You can see {players}.}}',
+			description: 'Read out by screen readers when the player asks where they are: the zone\'s name, their cell, the tile they stand on (e.g. Grass) when it is known, and the other players they can see; {players} is a list of descriptions such as "Bo, 3 cells northeast"'
 		}, {
-			zone: zoneName,
-			column,
-			row,
+			zone: position.zoneName,
+			column: position.column,
+			row: position.row,
+			onTile: ((position.tileName === undefined) ? 'no' : 'yes'),
+			tile: (position.tileName ?? ''),
 			count: players.length,
 			players: formatList(players, 'conjunction')
 		}), true);

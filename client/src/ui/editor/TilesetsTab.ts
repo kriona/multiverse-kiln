@@ -3,9 +3,9 @@ import { canEditWorld, defineMessages, IMPASSABLE_COST, MAX_TILES_PER_PAGE, type
 import { formatList, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, setOptions, showMessage } from '../dom';
+import { tileName } from '../tileNames';
 import { colorToHex } from './colors';
 import { TileDialog } from './TileDialog';
-import { tileName } from './tileNames';
 
 /**
  * Text the Tilesets tab shows in more than one place (see src/localization.ts)

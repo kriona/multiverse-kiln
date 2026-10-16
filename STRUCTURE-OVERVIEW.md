@@ -540,7 +540,7 @@ Every page, editor and game screen can be used with only a keyboard and with a s
 
 ## Screen readers
 - When a screen changes, focus moves to its heading, so the screen is read out.
-- The game's map is a focusable application with its keys described. A screen reader is told the zone the player enters, players coming into and going out of view, a door or path underfoot that E takes, and when something is in the way. Alt+P reads out the player's zone and cell, and each player they can see with their distance and compass direction.
+- The game's map is a focusable application with its keys described. A screen reader is told the zone the player enters, players coming into and going out of view, a door or path underfoot that E takes, and when something is in the way. Alt+P reads out the player's zone and cell, the tile they stand on, and each player they can see with their distance and compass direction.
 - The map editor's map (and the link dialog's preview) can be focused and worked with a cursor: the arrow keys move it, Space or Enter paints or picks its cell, holding Space while moving paints a stroke, + and - zoom and Home returns to the center cell. Each cell the cursor reaches is read out with what it holds.
 - Colors are never the only way information is shown: the tile table's swatches carry the color's hex code.
 

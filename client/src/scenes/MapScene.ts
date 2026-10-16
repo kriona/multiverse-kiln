@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { Callbacks } from '@colyseus/sdk';
-import { chunkKey, GRID_CELL_SIZE, MessageType, nearestCopy, PATCH_INTERVAL_MS, PLAYER_RADIUS, positiveModulo, ServerMessageType, type ChunksPayload, type MovePayload, type Player, type ZonePayload } from '@multiverse-kiln/shared';
+import { chunkKey, GRID_CELL_SIZE, MessageType, nearestCopy, PATCH_INTERVAL_MS, PLAYER_RADIUS, positiveModulo, ServerMessageType, tileIdAt, type ChunksPayload, type MovePayload, type Player, type ZonePayload } from '@multiverse-kiln/shared';
 
 import { MovementKeys } from '../input/MovementKeys';
 import { t } from '../localization';
@@ -10,6 +10,7 @@ import { ZoneRenderer } from '../rendering/ZoneRenderer';
 import { isTextEntry } from '../ui/dom';
 import { MapAnnouncer, type SeenPlayer } from '../ui/MapAnnouncer';
 import { addKeyHelp, addShortcut } from '../ui/shortcuts';
+import { tileName } from '../ui/tileNames';
 
 /**
  * Key the scene is registered under
@@ -569,7 +570,8 @@ export class MapScene extends Phaser.Scene
 	}
 
 	/**
-	 * Reads out where the player is, and how far away and in which direction each other player they can see is
+	 * Reads out where the player is and the tile they stand on, and how far away and in which direction
+	 * each other player they can see is
 	 */
 	private describePosition(): void
 	{
@@ -582,6 +584,8 @@ export class MapScene extends Phaser.Scene
 
 		const column = Math.floor(own.x / GRID_CELL_SIZE);
 		const row = Math.floor(own.y / GRID_CELL_SIZE);
+		const tileId = tileIdAt({ bounds: this.zone.bounds, defaultTileId: this.zone.defaultTileId, chunks: this.chunks }, column, row);
+		const tile = this.zone.tiles.find((candidate) => (candidate.id === tileId));
 		const others: SeenPlayer[] = [];
 
 		this.room.state.players.forEach((player, playerId) =>
@@ -598,7 +602,12 @@ export class MapScene extends Phaser.Scene
 			}
 		});
 
-		this.announcer.describePosition(this.zone.name, column, row, others);
+		this.announcer.describePosition({
+			zoneName: this.zone.name,
+			column,
+			row,
+			tileName: (tile ? tileName(tile, this.zone.ruleset) : undefined)
+		}, others);
 	}
 
 	/**

@@ -190,7 +190,11 @@ describe('LobbyRoom', () =>
 			assert.strictEqual(zone.defaultTileId, await defaultTileId('grass'));
 			assert.strictEqual(zone.chunks.length, 1);
 			assert.deepStrictEqual(zone.links, [{ column: 5, row: 5, mode: 'automatic' }]);
-			assert.strictEqual(zone.tiles.find((tile) => (tile.name === 'Forest'))?.color, 0x00aa11);
+			const forest = zone.tiles.find((tile) => (tile.key === 'forest'));
+
+			assert.strictEqual(zone.ruleset, 'pf1e');
+			assert.deepStrictEqual(forest, { id: forest?.id, key: 'forest', name: null, color: 0x00aa11 });
+			assert.strictEqual(zone.tiles.some((tile) => (tile.name !== null)), false, 'default tiles are named by key, not in English');
 		});
 
 		it('lists who is here, and stops listing them once they leave', async () =>
@@ -489,7 +493,7 @@ describe('LobbyRoom', () =>
 
 			const zone = await ada.inbox.take<ZonePayload>(ServerMessageType.Zone);
 
-			assert.deepStrictEqual(zone.tiles.find((tile) => (tile.id === grass)), { id: grass, name: 'Autumn Grass', color: 0xc08030 });
+			assert.deepStrictEqual(zone.tiles.find((tile) => (tile.id === grass)), { id: grass, key: null, name: 'Autumn Grass', color: 0xc08030 });
 		});
 
 		it('ignores changes to zones it hasn\'t loaded', async () =>

@@ -1,6 +1,6 @@
 import { DEFAULT_TILE_NAMES, type EditorTile, type Ruleset } from '@multiverse-kiln/shared';
 
-import { t } from '../../localization';
+import { t } from '../localization';
 
 /**
  * A tile's name as the player reads it: the universe's name for it, or a default tile's name in the

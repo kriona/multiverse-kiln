@@ -1091,6 +1091,10 @@
 		"defaultMessage": "Could not enter {universe}. Try again in a moment.",
 		"description": "Shown on Home when the player couldn't go into a universe's lobby; {universe} is its name"
 	},
+	"lobby.ownName": {
+		"defaultMessage": "{name} (you)",
+		"description": "In the list of players in the lobby, the player's own name; {name} is the name"
+	},
 	"lobby.pageTitle": {
 		"defaultMessage": "Lobby - {universe} - Multiverse Kiln",
 		"description": "The browser tab's title in a universe's lobby; {universe} is the universe's name and Multiverse Kiln is the game engine's name"
@@ -1140,8 +1144,8 @@
 		"description": "Read out by screen readers in the list of players the player can see, for one in the same cell; {name} is their name"
 	},
 	"map.announce.position": {
-		"defaultMessage": "{zone}, column {column}, row {row}. {count, plural, =0 {You can't see anyone else.} other {You can see {players}.}}",
-		"description": "Read out by screen readers when the player asks where they are: the zone's name, their cell, and the other players they can see; {players} is a list of descriptions such as \"Bo, 3 cells northeast\""
+		"defaultMessage": "{zone}, column {column}, row {row}{onTile, select, yes {, on {tile}} other {}}. {count, plural, =0 {You can't see anyone else.} other {You can see {players}.}}",
+		"description": "Read out by screen readers when the player asks where they are: the zone's name, their cell, the tile they stand on (e.g. Grass) when it is known, and the other players they can see; {players} is a list of descriptions such as \"Bo, 3 cells northeast\""
 	},
 	"map.announce.zone": {
 		"defaultMessage": "You are in {zone}.",

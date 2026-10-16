@@ -3,7 +3,6 @@ import type { EditorTile, EditorZone, MapBounds, Ruleset, ZonePayload } from '@m
 
 import { MAP_EDITOR_SCENE_KEY, MapEditorScene, type CameraState, type MapEditorHost } from '../scenes/MapEditorScene';
 import { announce } from '../ui/announcer';
-import { tileName } from '../ui/editor/tileNames';
 import { cellsBetween, type BrushCell } from './brush';
 
 /**
@@ -314,6 +313,7 @@ export function editorZonePayload(zone: EditorZone, tiles: readonly EditorTile[]
 	return({
 		zoneId: zone.id,
 		name: zone.name,
+		ruleset,
 		indoors: zone.indoors,
 		bounds: zone.bounds,
 		loopsEastWest: zone.loopsEastWest,
@@ -321,7 +321,8 @@ export function editorZonePayload(zone: EditorZone, tiles: readonly EditorTile[]
 		defaultTileId: zone.defaultTileId,
 		tiles: tiles.map((tile) => ({
 			id: tile.id,
-			name: tileName(tile, ruleset),
+			key: tile.key,
+			name: tile.name,
 			color: tile.color
 		})),
 		chunks: [],

@@ -5,8 +5,8 @@ import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
+import { tileName } from '../tileNames';
 import { MapEditor } from './MapEditor';
-import { tileName } from './tileNames';
 
 /**
  * Text the zone editor shows in more than one place (see src/localization.ts)

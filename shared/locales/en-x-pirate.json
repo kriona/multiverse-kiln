@@ -1091,6 +1091,10 @@
 		"message": "Couldn't reach {universe}. Try again in a tick.",
 		"source": "Could not enter {universe}. Try again in a moment."
 	},
+	"lobby.ownName": {
+		"message": "{name} (that be ye)",
+		"source": "{name} (you)"
+	},
 	"lobby.pageTitle": {
 		"message": "Tavern - {universe} - Multiverse Kiln",
 		"source": "Lobby - {universe} - Multiverse Kiln"
@@ -1140,8 +1144,8 @@
 		"source": "{name}, right where you are"
 	},
 	"map.announce.position": {
-		"message": "{zone}, column {column}, row {row}. {count, plural, =0 {Not a soul in sight.} other {Ye can spy {players}.}}",
-		"source": "{zone}, column {column}, row {row}. {count, plural, =0 {You can't see anyone else.} other {You can see {players}.}}"
+		"message": "{zone}, column {column}, row {row}{onTile, select, yes {, standin' on {tile}} other {}}. {count, plural, =0 {Not a soul in sight.} other {Ye can spy {players}.}}",
+		"source": "{zone}, column {column}, row {row}{onTile, select, yes {, on {tile}} other {}}. {count, plural, =0 {You can't see anyone else.} other {You can see {players}.}}"
 	},
 	"map.announce.zone": {
 		"message": "Ye be in {zone}.",

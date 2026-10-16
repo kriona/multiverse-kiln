@@ -7,8 +7,8 @@ import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, setButtonLabel, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
+import { tileName } from '../tileNames';
 import { colorToHex, nightColor, parseHexColor } from './colors';
-import { tileName } from './tileNames';
 
 /**
  * Settings a new tile starts with

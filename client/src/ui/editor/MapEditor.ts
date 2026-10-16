@@ -10,11 +10,11 @@ import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import type { CameraState, MapEditorHost, PointerMode } from '../../scenes/MapEditorScene';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { addKeyHelp, formatKeys } from '../shortcuts';
+import { tileName } from '../tileNames';
 import { describeCell } from './cellDescription';
 import { LinkDialog } from './LinkDialog';
 import { mapMessages } from './mapMessages';
 import { ResizeDialog } from './ResizeDialog';
-import { tileName } from './tileNames';
 
 /**
  * Text the map editor shows in more than one place (see src/localization.ts)
