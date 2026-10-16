@@ -4,6 +4,7 @@ import { GROUP_QUERY_PARAMETER, LobbyMessageType, LobbyServerMessageType, MAX_GR
 import { t } from './localization';
 import { EditorApi } from './network/editorApi';
 import { getUniverseDetails, joinGroup, joinLobby, listUniverses, type GameConnection, type LobbyConnection, type ServerConnection } from './network/serverConnection';
+import { isLeavingPage } from './pageLifecycle';
 import { editPageUrl, readPageParameter, replacePageParameters, UNIVERSE_PARAMETER } from './pages';
 import { showScreen, showStatus } from './ui/dom';
 import { GroupScreen } from './ui/GroupScreen';
@@ -155,7 +156,11 @@ export class App
 		{
 			this.player = null;
 			void this.syncRooms();
-			showStatus(t(pageMessages.disconnected));
+
+			if (!isLeavingPage())
+			{
+				showStatus(t(pageMessages.disconnected));
+			}
 		});
 	}
 

@@ -1,6 +1,7 @@
 import { EditorPage } from './EditorPage';
 import { startLocalization, t } from './localization';
 import { connectToServer } from './network/serverConnection';
+import { startPageLifecycle } from './pageLifecycle';
 import { gamePageUrl, readPageParameter, TAB_PARAMETER, UNIVERSE_PARAMETER, ZONE_PARAMETER } from './pages';
 import { isEditorTab } from './ui/editor/EditorScreen';
 import { showStatus } from './ui/dom';
@@ -23,6 +24,7 @@ async function start(): Promise<void>
 		return;
 	}
 
+	startPageLifecycle();
 	await startLocalization();
 	startLanguagePicker();
 	startShortcuts();

@@ -3,6 +3,7 @@ import { NoticeReason, SessionMessageType, SessionServerMessageType, type Accoun
 import { t } from './localization';
 import { EditorApi } from './network/editorApi';
 import type { ServerConnection } from './network/serverConnection';
+import { isLeavingPage } from './pageLifecycle';
 import { gamePageUrl, replacePageParameters, TAB_PARAMETER, ZONE_PARAMETER } from './pages';
 import { showScreen, showStatus } from './ui/dom';
 import { EditorScreen, type EditorPlace } from './ui/editor/EditorScreen';
@@ -72,7 +73,10 @@ export class EditorPage
 
 		session.onLeave(() =>
 		{
-			showStatus(t(pageMessages.disconnected));
+			if (!isLeavingPage())
+			{
+				showStatus(t(pageMessages.disconnected));
+			}
 		});
 	}
 

@@ -1,6 +1,7 @@
 import { App } from './App';
 import { startLocalization, t } from './localization';
 import { connectToServer } from './network/serverConnection';
+import { startPageLifecycle } from './pageLifecycle';
 import { showStatus } from './ui/dom';
 import { startLanguagePicker } from './ui/languagePicker';
 import { pageMessages } from './ui/pageMessages';
@@ -12,6 +13,7 @@ import { startShortcuts } from './ui/shortcuts';
  */
 async function start(): Promise<void>
 {
+	startPageLifecycle();
 	await startLocalization();
 	startLanguagePicker();
 	startShortcuts();
