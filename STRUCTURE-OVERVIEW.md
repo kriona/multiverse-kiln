@@ -174,6 +174,9 @@ This lets you change anything about a universe. It will be a whole suite of tool
 	- [Connect to the Multiverse](#tab-connect-to-the-multiverse)
 	- [Translations](#tab-translations)
 
+### Unsaved changes
+The editor makes it hard to lose work by accident. A form or dialog with changes that haven't been saved says "Unsaved changes" next to its Save button, and its tab gets a dot. Closing a dialog (Cancel or Escape), leaving the zone being edited, and leaving or reloading the page all ask first while there are unsaved changes, and so does leaving the page while painting is still being saved.
+
 ### Universe versions
 If a creator makes changes to the current version of the universe, they apply immediately for everyone.
 

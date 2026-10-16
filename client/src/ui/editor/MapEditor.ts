@@ -8,6 +8,7 @@ import { editorZonePayload, MapCanvas } from '../../editor/MapCanvas';
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import type { CameraState, MapEditorHost, PointerMode } from '../../scenes/MapEditorScene';
+import { refreshUnsavedWork, watchUnsavedWork } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { addKeyHelp, formatKeys } from '../shortcuts';
 import { tileName } from '../tileNames';
@@ -146,6 +147,8 @@ export class MapEditor
 	{
 		this.resizeDialog = new ResizeDialog(api);
 		this.linkDialog = new LinkDialog(api);
+		// Painting is saved as it is done, so it is only at risk while it is still being sent
+		watchUnsavedWork({ hasUnsavedChanges: () => (this.pendingSaves > 0) });
 		this.brushSize.max = String(MAX_BRUSH_SIZE);
 		setOptions(this.brushShape, namedOptions(BRUSH_SHAPES, BRUSH_SHAPE_NAMES));
 
@@ -622,10 +625,11 @@ export class MapEditor
 	}
 
 	/**
-	 * Shows whether painting is still being saved
+	 * Shows whether painting is still being saved, and has the browser ask before leaving the page while it is
 	 */
 	private updateSaveStatus(): void
 	{
+		refreshUnsavedWork();
 		this.saveStatus.textContent = ((this.pendingSaves > 0)
 			? t({
 				id: 'editor.map.saving',

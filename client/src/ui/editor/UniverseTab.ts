@@ -3,6 +3,7 @@ import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNING_NAM
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
+import { ChangeTracker } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
@@ -41,6 +42,14 @@ export class UniverseTab
 	 * The stage choices' radio buttons, by stage
 	 */
 	private readonly stageInputs = new Map<UniverseStage, HTMLInputElement>();
+
+	/**
+	 * Whether the form has changes that haven't been saved
+	 */
+	readonly changes = new ChangeTracker({
+		root: this.form,
+		status: this.saved
+	});
 
 	/**
 	 * The universe as it was last loaded or saved
@@ -119,6 +128,7 @@ export class UniverseTab
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.form);
 		showMarkdown(this.preview, universe.longDescription);
+		this.changes.markSaved();
 	}
 
 	/**
@@ -201,6 +211,7 @@ export class UniverseTab
 		{
 			await this.api.updateUniverse(universe.id, update);
 			this.universe = { ...universe, ...update };
+			this.changes.markSaved();
 			this.saved.textContent = t(formMessages.saved);
 			this.onSaved(this.universe);
 		}

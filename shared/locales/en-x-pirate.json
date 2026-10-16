@@ -479,6 +479,10 @@
 		"message": "Universe",
 		"source": "Universe"
 	},
+	"editor.tab.unsavedChanges": {
+		"message": "(changes not yet stowed)",
+		"source": "(unsaved changes)"
+	},
 	"editor.tab.zones": {
 		"message": "Zones",
 		"source": "Zones"
@@ -951,6 +955,10 @@
 		"message": "A universe can have at most {max, plural, one {# zone} other {# zones}}.",
 		"source": "A universe can have at most {max, plural, one {# zone} other {# zones}}."
 	},
+	"form.discardChanges": {
+		"message": "Ye've changes not yet stowed. Toss 'em overboard?",
+		"source": "You have changes that haven't been saved. Discard them?"
+	},
 	"form.indoors": {
 		"message": "Below decks",
 		"source": "Indoors"
@@ -986,6 +994,10 @@
 	"form.saved": {
 		"message": "Stowed",
 		"source": "Saved"
+	},
+	"form.unsavedChanges": {
+		"message": "Not yet stowed",
+		"source": "Unsaved changes"
 	},
 	"form.wholeNumber": {
 		"message": "Give a whole number from {min, number} to {max, number}, matey.",

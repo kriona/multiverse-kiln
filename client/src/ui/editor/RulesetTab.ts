@@ -2,6 +2,7 @@ import { canEditUniverseSettings, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MIN_POINT_BUY_
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
+import { ChangeTracker } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
@@ -24,6 +25,14 @@ export class RulesetTab
 	private readonly error = getElement('ruleset-error', HTMLElement);
 	private readonly saved = getElement('ruleset-saved', HTMLElement);
 	private readonly saveButton = getElement('ruleset-save', HTMLButtonElement);
+
+	/**
+	 * Whether the form has changes that haven't been saved
+	 */
+	readonly changes = new ChangeTracker({
+		root: this.form,
+		status: this.saved
+	});
 
 	private universe: EditableUniverse | undefined;
 
@@ -119,6 +128,7 @@ export class RulesetTab
 		this.coinsHaveWeight.checked = settings.coinsHaveWeight;
 		this.tracksAmmo.checked = settings.tracksAmmo;
 		this.fields.disabled = !canEditUniverseSettings(universe.role);
+		this.changes.markSaved();
 	}
 
 	/**
@@ -161,6 +171,7 @@ export class RulesetTab
 		try
 		{
 			await this.api.saveRulesetSettings(universe.id, ruleset);
+			this.changes.markSaved();
 			this.saved.textContent = t(formMessages.saved);
 		}
 		catch (error)

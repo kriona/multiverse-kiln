@@ -7,6 +7,7 @@ import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import type { BrushCell } from '../../editor/brush';
 import type { MapEditorHost } from '../../scenes/MapEditorScene';
+import { ChangeTracker } from '../changeTracker';
 import { getElement, setOptions, showMessage } from '../dom';
 import { addKeyHelp } from '../shortcuts';
 import { describeCell } from './cellDescription';
@@ -109,6 +110,14 @@ export class LinkDialog
 	private returnCell: BrushCell | undefined;
 
 	/**
+	 * Whether the link, or the cells chosen on the preview, have changes that haven't been saved
+	 */
+	private readonly changes = new ChangeTracker({
+		root: this.form,
+		state: () => [this.destination, this.returnCell]
+	});
+
+	/**
 	 * Changes every time the preview switches zone, so a zone that arrives for an earlier choice is ignored
 	 */
 	private previewVersion = 0;
@@ -156,9 +165,14 @@ export class LinkDialog
 			this.updateCells();
 		});
 
+		this.changes.guardDialog(this.dialog);
+
 		getElement('link-cancel', HTMLButtonElement).addEventListener('click', () =>
 		{
-			this.dialog.close();
+			if (this.changes.confirmDiscard())
+			{
+				this.dialog.close();
+			}
 		});
 
 		this.dialog.addEventListener('close', () =>
@@ -231,6 +245,7 @@ export class LinkDialog
 			: undefined));
 		this.updateCells();
 		this.dialog.showModal();
+		this.changes.markSaved();
 
 		if (this.targetZone.value !== '')
 		{
@@ -421,6 +436,7 @@ export class LinkDialog
 			...(this.destination ? [{ ...this.destination, color: DESTINATION_COLOR }] : []),
 			...((this.returnCell && this.addReturn.checked) ? [{ ...this.returnCell, color: RETURN_COLOR }] : [])
 		]);
+		this.changes.check();
 	}
 
 	/**

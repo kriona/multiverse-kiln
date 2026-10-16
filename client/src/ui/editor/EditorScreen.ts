@@ -2,6 +2,7 @@ import { UNIVERSE_ROLE_NAMES, type EditableUniverse, type UniverseSummary } from
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
+import type { ChangeTracker } from '../changeTracker';
 import { getElement, showMessage } from '../dom';
 import { CharactersTab } from './CharactersTab';
 import { RulesetTab } from './RulesetTab';
@@ -114,6 +115,21 @@ export class EditorScreen
 		{
 			this.setPlace({ ...this.place, zoneId });
 		});
+
+		const trackedTabs: [EditorTab, ChangeTracker][] = [
+			['universe', this.universeTab.changes],
+			['ruleset', this.rulesetTab.changes],
+			['characters', this.charactersTab.changes],
+			['zones', this.zonesTab.changes]
+		];
+
+		for (const [name, changes] of trackedTabs)
+		{
+			changes.subscribe((unsaved) =>
+			{
+				this.markTab(name, unsaved);
+			});
+		}
 
 		for (const name of EDITOR_TABS)
 		{
@@ -248,6 +264,43 @@ export class EditorScreen
 		}, { universe: universe.name });
 		this.role.textContent = t(UNIVERSE_ROLE_NAMES[universe.role]);
 		this.zonesTab.setUniverse(universe);
+	}
+
+	/**
+	 * Marks a tab whose form has changes that haven't been saved, with a dot and, for screen readers,
+	 * words after the tab's name, so they aren't forgotten on a tab out of view
+	 *
+	 * @param name The tab
+	 * @param unsaved Whether its form has unsaved changes
+	 */
+	private markTab(name: EditorTab, unsaved: boolean): void
+	{
+		const tab = getElement(`editor-tab-${name}`, HTMLButtonElement);
+		const marker = tab.querySelector('.tab-changes');
+
+		if (!unsaved)
+		{
+			marker?.remove();
+			return;
+		}
+
+		if (marker)
+		{
+			return;
+		}
+
+		const added = document.createElement('span');
+		const text = document.createElement('span');
+
+		added.className = 'tab-changes';
+		text.className = 'visually-hidden';
+		text.textContent = t({
+			id: 'editor.tab.unsavedChanges',
+			defaultMessage: '(unsaved changes)',
+			description: 'Read out by screen readers after the name of an editor tab whose form has changes that haven\'t been saved; a dot shows it on screen'
+		});
+		added.append(text);
+		tab.append(added);
 	}
 
 	/**

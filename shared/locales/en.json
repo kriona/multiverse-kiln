@@ -479,6 +479,10 @@
 		"defaultMessage": "Universe",
 		"description": "Tab of the editor with the universe's own settings"
 	},
+	"editor.tab.unsavedChanges": {
+		"defaultMessage": "(unsaved changes)",
+		"description": "Read out by screen readers after the name of an editor tab whose form has changes that haven't been saved; a dot shows it on screen"
+	},
 	"editor.tab.zones": {
 		"defaultMessage": "Zones",
 		"description": "Tab of the editor listing the universe's zones (areas with their own map)"
@@ -951,6 +955,10 @@
 		"defaultMessage": "A universe can have at most {max, plural, one {# zone} other {# zones}}.",
 		"description": "Why a new zone wasn't made: the universe has as many zones as allowed"
 	},
+	"form.discardChanges": {
+		"defaultMessage": "You have changes that haven't been saved. Discard them?",
+		"description": "Asked before closing a form or dialog that has unsaved changes; the browser's OK discards them and Cancel goes back to the form"
+	},
 	"form.indoors": {
 		"defaultMessage": "Indoors",
 		"description": "Choice for a zone or tile that is indoors"
@@ -986,6 +994,10 @@
 	"form.saved": {
 		"defaultMessage": "Saved",
 		"description": "Shown next to a form's Save button once its changes are stored"
+	},
+	"form.unsavedChanges": {
+		"defaultMessage": "Unsaved changes",
+		"description": "Shown next to a form's Save button while it has changes that haven't been saved"
 	},
 	"form.wholeNumber": {
 		"defaultMessage": "Enter a whole number from {min, number} to {max, number}.",

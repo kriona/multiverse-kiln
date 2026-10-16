@@ -73,6 +73,19 @@
 			color: $text;
 		}
 	}
+
+	// A dot after the name of a tab with unsaved changes
+	.tab-changes::before
+	{
+		content: '';
+		display: inline-block;
+		width: 8px;
+		height: 8px;
+		margin-inline-start: 6px;
+		border-radius: 50%;
+		background: $notice-text;
+		vertical-align: middle;
+	}
 }
 
 .editor-body

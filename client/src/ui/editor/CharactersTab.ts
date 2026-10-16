@@ -2,6 +2,7 @@ import { canEditUniverseSettings, MAX_GROUP_PLAYERS, MIN_GROUP_SIZE, type Editab
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
+import { ChangeTracker } from '../changeTracker';
 import { getElement, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
@@ -30,6 +31,15 @@ export class CharactersTab
 	 * The starting zone the form shows, which may not be saved yet
 	 */
 	private startingZoneId: string | null = null;
+
+	/**
+	 * Whether the form, or the starting zone chosen, has changes that haven't been saved
+	 */
+	readonly changes = new ChangeTracker({
+		root: this.form,
+		state: () => this.startingZoneId,
+		status: this.saved
+	});
 
 	/**
 	 * Changes every time the tab opens a universe, so a zone name that arrives for an earlier one is ignored
@@ -103,7 +113,9 @@ export class CharactersTab
 		this.saved.textContent = '';
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.form);
+		// Sets the starting zone straight away, then loads its name
 		void this.showStartingZone(universe.startingZoneId);
+		this.changes.markSaved();
 	}
 
 	/**
@@ -166,6 +178,7 @@ export class CharactersTab
 			this.startingZoneId = zone.id;
 			this.zoneName.textContent = zone.name;
 			this.saved.textContent = '';
+			this.changes.check();
 		}
 	}
 
@@ -218,6 +231,7 @@ export class CharactersTab
 				startingZoneId
 			};
 			this.startingMoney.value = formatMoney(startingMoney);
+			this.changes.markSaved();
 			this.saved.textContent = t(formMessages.saved);
 			this.onSaved(this.universe);
 		}

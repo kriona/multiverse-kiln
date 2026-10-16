@@ -2,6 +2,7 @@ import { ancestorZones, canEditWorld, childZones, defineMessages, descendantZone
 
 import { formatList, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
+import { ChangeTracker } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
@@ -66,6 +67,19 @@ export class ZonesTab
 	private readonly addError = getElement('zone-add-error', HTMLElement);
 	private readonly addSubmit = getElement('zone-add-submit', HTMLButtonElement);
 	private readonly mapEditor: MapEditor;
+
+	/**
+	 * Whether the zone editor's settings have changes that haven't been saved
+	 */
+	readonly changes = new ChangeTracker({
+		root: this.form,
+		status: this.saved
+	});
+
+	/**
+	 * Whether the Add Zone dialog has been filled in
+	 */
+	private readonly addChanges = new ChangeTracker({ root: this.addForm });
 
 	private universe: EditableUniverse | undefined;
 
@@ -146,8 +160,13 @@ export class ZonesTab
 
 		getElement('zone-back', HTMLButtonElement).addEventListener('click', () =>
 		{
-			void this.showList();
+			if (this.changes.confirmDiscard())
+			{
+				void this.showList();
+			}
 		});
+
+		this.addChanges.guardDialog(this.addDialog);
 
 		this.addButton.addEventListener('click', () =>
 		{
@@ -156,12 +175,16 @@ export class ZonesTab
 			clearFieldErrors(this.addForm);
 			this.addSubmit.disabled = false;
 			this.addDialog.showModal();
+			this.addChanges.markSaved();
 			this.addName.focus();
 		});
 
 		getElement('zone-add-cancel', HTMLButtonElement).addEventListener('click', () =>
 		{
-			this.addDialog.close();
+			if (this.addChanges.confirmDiscard())
+			{
+				this.addDialog.close();
+			}
 		});
 
 		this.addName.addEventListener('input', () =>
@@ -211,19 +234,20 @@ export class ZonesTab
 	}
 
 	/**
-	 * Opens a zone in the zone editor
+	 * Opens a zone in the zone editor, first asking whether to discard the unsaved changes of the zone it shows
 	 *
 	 * @param zoneId The zone's ID
 	 */
 	async openZone(zoneId: string): Promise<void>
 	{
 		const universe = this.universe;
-		const version = ++this.openVersion;
 
-		if (!universe)
+		if (!universe || (!this.editorView.hidden && !this.changes.confirmDiscard()))
 		{
 			return;
 		}
+
+		const version = ++this.openVersion;
 
 		this.onZoneChanged(zoneId);
 		this.listView.hidden = true;
@@ -278,6 +302,8 @@ export class ZonesTab
 		this.zone = undefined;
 		this.onZoneChanged(undefined);
 		this.mapEditor.hide();
+		// The hidden zone editor is filled afresh when a zone opens, so nothing left in it can be saved
+		this.changes.markSaved();
 		this.listView.hidden = false;
 		this.editorView.hidden = true;
 
@@ -465,6 +491,7 @@ export class ZonesTab
 
 		this.childList.replaceChildren(...children.map((child) => this.createItem(child, 0)));
 		this.children.hidden = (children.length === 0);
+		this.changes.markSaved();
 		void this.mapEditor.show(universe, zone, this.tiles, this.zones.zones);
 	}
 
