@@ -3,8 +3,9 @@
 Phased roadmap for building the game locally, then deploying to Colyseus Cloud + Neon.
 Each phase ends with a "Done when" check. Tick boxes as work completes and keep the
 **Current phase** line updated so each new session knows where to pick up.
+`STRUCTURE-OVERVIEW.md` describes the pages, editors and game rules these phases build.
 
-**Current phase:** 5
+**Current phase:** 6
 
 ---
 
@@ -57,7 +58,7 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 
 ## Phase 4: Repository security
 
-- [✅] Move the inline `<style>` in `client/index.html` to a CSS file so the CSP (Phase 8) doesn't need `'unsafe-inline'`
+- [✅] Move the inline `<style>` in `client/index.html` to a CSS file so the CSP (Phase 14) doesn't need `'unsafe-inline'`
 - [✅] In the GitHub repository's Settings > Advanced Security, turn on Dependabot alerts, Dependabot security updates and secret scanning with push protection (`.github/dependabot.yml` already configures version updates, and gitleaks runs in the pre-commit hook)
 - [✅] Add a `docker-compose` entry to `.github/dependabot.yml`
 - [ ] Add a `github-actions` entry to `.github/dependabot.yml` once there are workflows
@@ -65,41 +66,125 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 
 **Done when:** GitHub's security features are on and `npm audit` has no unexplained findings.
 
-## Phase 5: Gameplay loop
+## Phase 5: Lobby and groups
 
-- [✅] Lobby: name-only login (in memory until Phase 7), chat, who's online, and a Create game button
+- [✅] Lobby: name-only login (in memory until Phase 12), chat, who's online, and a Create game button
 - [✅] Groups of up to 6 players, each in its own game room; a player is in one group at a time and can leave it
-- [ ] Save the player's group with their profile (Phase 6), so they rejoin it on their next login
-- [ ] Define the core game rules (to be specified) as pure functions with tests
-- [ ] Server-side input validation (rate limits, bounds checks)
-- [ ] Match start/end flow; lock rooms when full or in progress
-- [ ] One-off event messages for effects (hits, explosions)
+- [✅] Rate limits on room messages (`maxMessagesPerSecond`) and on chat
 
-**Done when:** a full match can be played start to finish.
+**Done when:** players can log in by name, chat in the lobby, and move around together in a group's room.
 
 ## Phase 6: Persistence
 
-- [ ] `playerRepo` with `load` / `save` functions
-- [ ] Load profile in `onJoin`; save in `onLeave` / `onDispose`
-- [ ] Match history table and save on match end
-- [ ] Verify no DB calls occur inside the simulation tick
+- [ ] Test database for the test suite (`server/src/db/client.ts` throws without `DATABASE_URL`): migrated before the tests run and emptied between test files
+- [ ] `playerRepo` with `load` / `save`; the name-only login creates or loads a `players` row (still dev-grade until Phase 12)
+- [ ] Load the player in `onAuth` / `onJoin`; save in `onLeave` / `onDispose`
+- [ ] A test that fails if a repository is called from inside the simulation tick
 
-**Done when:** player progress survives a server restart.
+**Done when:** a player's identity survives a server restart, and the test suite runs against its own database.
 
-## Phase 7: Authentication
+## Phase 7: Universes, zones and maps
 
-- [ ] Choose an approach (own JWT login route vs. a hosted auth provider); prefer OAuth or a provider so the server never stores passwords. If choosing `@colyseus/auth`, check its `npm audit` findings first
+The game runs on real universe data. Content comes from a seed script until the editor exists (Phase 8).
+
+- [ ] Tables: `universes` (name, descriptions, stage, ruleset, passage of time), `zones` (universe, parent, name, enabled, indoors, default tile, loops, passage of time), `tiles` (ruleset defaults plus each universe's custom and edited tiles), map cells and zone links
+- [ ] Store map cells in chunks, saving only chunks that differ from the zone's default tile: a map can be 50,000 tiles in each direction
+- [ ] PF1E default tiles (Grass, Forest, Desert, Mountains, Water, Wood Floor)
+- [ ] Seed script for a sample universe: a lobby zone, a town and a house, with links between them. Run by hand like migrations, never on startup
+- [ ] Pure logic with tests: movement cost (50% = double, 100% = impassable), map bounds, wrapping in zones that loop, following a zone link
+- [ ] One lobby room per universe (`filterBy` the universe ID)
+- [ ] Rooms load zone maps at lifecycle boundaries, and load the next zone before a player moves into it, never inside the tick
+- [ ] Client draws tiles by color from the zone data (graphics come in Phase 16), loading the chunks near the player
+- [ ] Zone links: automatic links move you, manual links offer a prompt
+- [ ] Home page: universes in `let there be light` (paginated from the start), the universe modal, and Enter Universe -> that universe's lobby
+
+**Done when:** a player picks a universe on Home, walks its lobby's map (blocked by mountains and water, slowed by forest) and walks through a door into a house.
+
+## Phase 8: World editor
+
+- [ ] Editor API as REST routes in `server/src/http/` backed by repositories (editing isn't real-time, so it doesn't need a room). Every request checks the user may edit that universe, and validates against the same limits as the UI
+- [ ] Create Universe modal (name, 1-sentence description), up to 5 per user. Creates a default zone as every race's starting zone and makes the user its creator
+- [ ] Edit Universe page: name, descriptions (markdown rendered sanitized), stage, ruleset, passage of time. Logo and banner wait for image storage (Phase 16)
+- [ ] Tilesets tab (filters for name, passable, custom and edited; pagination) and tile editor (name, indoors, color, vision cost, movement cost)
+- [ ] Zones tab with the single-zone drill-down, and the zone editor
+- [ ] Map editor: grid centered on 0,0, expand buttons, edit-size dialog with its warning, draw tool (a tile or Void; size 1-100; circle or square), undo/redo with a drag counted as one step
+- [ ] Zone link layer: automatic or manual, "requires the whole group", select destination coordinates with an optional return link
+- [ ] Edits apply immediately (universe versions come in Phase 13)
+
+**Done when:** a universe can be built from scratch in the browser (tiles, zones, maps and links) and played in its lobby.
+
+## Phase 9: Characters and the PF1E ruleset
+
+- [ ] Review the Pathfinder 1E licensing (the OGL 1.0a and Paizo's terms for the "Pathfinder" name) before adding PF1E data, and add the required notices
+- [ ] Rulesets as modules (PF1E first): races, classes, settings and default items, with game rules as pure functions
+- [ ] Ruleset tab: stat rolling (3d6 variants, 4d6 variants, the point buy budgets and a custom budget), plus the sleep, weight and ammo settings (stored now, used later)
+- [ ] Items tab, item editor (name, type, enabled) and PF1E default items; item selection with quantities
+- [ ] Money field as a pure function with tests ("1pp 2gp 2sp 4cp", stored in copper)
+- [ ] Characters tab: group size, starting equipment, money and zone. Races and Classes tabs with their overrides, custom races and classes, and the PF1E fields (ability modifiers, floating bonus, darkvision, size, primary ability, tradition, casting style)
+- [ ] Create Character: the server rolls the stats and validates point buy choices (the client never sends ability scores); up to 20 per universe; starting zone by precedence (class + race > class > race > universe); starting equipment and money
+- [ ] Lobby: ghosts (invisible, don't block cells, can read but not send chat), choosing and switching characters, chatting as your character
+- [ ] Character sheet modal
+
+**Done when:** a player creates a PF1E character with rolled stats and starting gear, then walks and chats as them in the lobby while ghosts watch.
+
+## Phase 10: Groups and the anchor being
+
+- [ ] Rework sessions so a player controls characters rather than a browser being one player: a player's characters can be in different groups, several can be in the same group, and the UI switches between them without changing tabs
+- [ ] Groups belong to the anchor being, start in its starting zone, and are limited to the universe's group size
+- [ ] Invite links: random, unguessable tokens; single or multi-use; valid for 1 day, 1 week or indefinitely; Copy Link
+- [ ] Opening an invite: character selection (characters already in a group grayed out, create a character), or a "group is full" message
+- [ ] Leaving: a member can leave; the anchor being leaving disbands the group
+- [ ] Links that require the whole group are refused while any member (including the anchor being) is missing
+- [ ] Group rooms are created from the database when a member returns, and save and dispose when everyone has left
+- [ ] Enter Universe: return to your last character's group, or to the lobby as that character if the group isn't running or is gone
+- [ ] Listing groups in the lobby (once its design is decided)
+
+**Done when:** a player invites friends by link, one player brings several characters into the group, and the group picks up where it was after everyone logs off and back on.
+
+## Phase 11: Time, vision and world state
+
+- [ ] Game clock per group: standing still passes no time, walking a square takes a set time (to be defined), a combat round is 6 seconds
+- [ ] Passage of time per zone with `inherit`; fixed times of day; `faerie` (time of day from map position and "where is morning"; faerie zones can't loop)
+- [ ] Lobby tab: lobby time (fixed, real-time from the Unix epoch with a day of 1-240 hours, or faerie)
+- [ ] Day and night rendering
+- [ ] Vision as a pure function with tests: vision budget, tile vision costs, lower at night unless the character has darkvision
+- [ ] Decide where vision runs. Prefer the server, sending each client only what it can see (Colyseus `StateView`)
+- [ ] World state per group, stored as a diff of the universe: explored areas first. Deleted when the group disbands
+- [ ] Offline group members (the summoning ring, if chosen)
+
+**Done when:** a group watches day turn to night as it explores, sees less at night unless it has darkvision, can't see past mountains, and its explored areas are remembered after a restart.
+
+## Phase 12: Authentication and accounts
+
+- [ ] Choose an approach (own JWT login route vs. a hosted auth provider). If choosing `@colyseus/auth`, check its `npm audit` findings first
+- [ ] Google and Discord login through OAuth, recommended on the login and register pages
+- [ ] Local accounts: email-based logins, passwords hashed with a modern KDF (e.g. argon2id), and the email code rules from `STRUCTURE-OVERVIEW.md` as pure functions with tests
+- [ ] Email sending service; register, forgot password and change email flows, with notification emails. A password change signs the account out everywhere
+- [ ] Optional 2FA
+- [ ] Account linking when a provider login and a local account share an email
+- [ ] Replace the name-only login
 - [ ] Verify tokens in `onAuth`; reject unauthenticated joins. Tokens are short-lived with a pinned algorithm, and `exp`, `iss` and `aud` are checked
 - [ ] Client login flow passing the token in join options
 - [ ] Rate-limit login, signup and reset routes; use generic error messages that don't reveal whether an account exists
 - [ ] Log auth events (logins, failures, resets) without passwords or tokens
-- [ ] Tests for expired tokens, tokens for deleted users, another user's resource IDs and replayed reset links
-- [ ] Account deletion, data export and a privacy policy
+- [ ] Tests for expired tokens, tokens for deleted users, another user's resource IDs and replayed codes
+- [ ] Profile edit and view, with character visibility
+- [ ] Account deletion (handling universes with no other creator and groups the user anchors), data export and a privacy policy
 - [ ] Review against sections 1-3 and 5 of `SECURITY-PRACTICES.md`
 
-**Done when:** only authenticated players can join, and their identity maps to a DB row.
+**Done when:** only authenticated players can join, their identity maps to a DB row, and local accounts can register and reset passwords by email.
 
-## Phase 8: Cloud deployment
+## Phase 13: Universe management
+
+- [ ] Editors tab: creators, builders and beta testers, with permissions checked on the server
+- [ ] Stages: who can play in each (`in the beginning`: creators and builders; `prologue`: beta testers; `end of time`: view only) and which are listed on Home
+- [ ] Disabling things players are using: the warnings and options for races, classes, zones, items and group size
+- [ ] Universe versions: build a new version while players play the current one, then switch to it
+- [ ] Server admins: disable universes, and edit universes that have gone dormant
+
+**Done when:** a team of editors and beta testers takes a universe from `in the beginning` to `let there be light`, and a creator can disable a race without breaking its existing characters.
+
+## Phase 14: Cloud deployment
 
 Neon and Colyseus Cloud cost money, so this waits until the game is worth testing with outside players.
 The first deploy tends to surface WebSocket, TLS and environment issues, so leave time for it.
@@ -109,6 +194,7 @@ The first deploy tends to surface WebSocket, TLS and environment issues, so leav
 - [ ] Create the migration and app roles on each Neon branch with the same ownership and grants as `docker/postgres/init/01-roles.sh`, using `docker/postgres/neon/01-roles.sql` and `02-grants.sql` (roles made in the Neon console join `neon_superuser`); the server gets only the app role's pooled connection string
 - [ ] Run migrations against Neon `prod`
 - [ ] Deploy server with `npx @colyseus/cloud deploy`; set env vars in the dashboard (pooled Neon URL, `ALLOWED_ORIGINS` = the production client origin)
+- [ ] Read the client address from Colyseus Cloud's forwarding header, trusted only from its proxy, so per-network rate limits count clients rather than the proxy
 - [ ] Point a production client build at the `wss://` endpoint
 - [ ] Set security headers on the client host and test them against the production build:
 	- `Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://<game server> wss://<game server>; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests` (Phaser needs `data:`/`blob:` for some textures and audio)
@@ -117,7 +203,7 @@ The first deploy tends to surface WebSocket, TLS and environment issues, so leav
 
 **Done when:** two players on different networks can join the same room in the cloud.
 
-## Phase 9: Robustness and polish
+## Phase 15: Robustness and polish
 
 - [ ] Reconnection with `allowReconnection` for unexpected disconnects
 - [ ] Graceful handling of server restarts during deploys
@@ -126,15 +212,49 @@ The first deploy tends to surface WebSocket, TLS and environment issues, so leav
 - [ ] Confirm Neon's point-in-time restore retention and test a restore
 - [ ] Alerts for spikes in failed logins and server errors
 - [ ] Load test with simulated clients to size the Colyseus Cloud plan
+- [ ] Load test the lobby to set its `maxClients`, and open another lobby instance when one is full
 
 **Done when:** players survive brief network drops and a redeploy without data loss.
+
+## Phase 16: Images and moderation
+
+Needed before universes are open to the public.
+
+- [ ] Choose image storage (object storage, not Postgres). Validate type and size, and re-encode uploads to strip metadata and anything that isn't an image. The CSP's `img-src` will need the storage origin
+- [ ] "I have the rights to use this image" on every upload
+- [ ] Profile photos, universe logos and banners, tile graphics (Dual-Grid / 47-Tile Blob, possibly per layer)
+- [ ] Stock graphics for each ruleset
+- [ ] Reporting content and players, copyright infringement reports, and a review queue for server admins
+
+**Done when:** universes can use uploaded art, and anything inappropriate can be reported and taken down.
+
+## Phase 17: Messages
+
+- [ ] Private messages with blocking, reporting and rules for who can message whom
+- [ ] Group invites sent by private message
+- [ ] A way to tell users with the same name apart, which user search depends on
+
+**Done when:** players can message each other and invite each other to groups, and can block anyone who abuses it.
+
+## Later (not yet specified)
+
+- Combat, monsters, NPCs and dialog (their results go in world state), and gaining experience
+- One-off event messages for effects (hits, explosions)
+- The overworld map and its scale
+- Cross-universe play: the portal room, the Connect to the Multiverse tab, "[Name] of [Universe]"
+- Character sprites and avatars, and art for each item
+- Large objects such as trees and houses hiding players behind them
 
 ---
 
 ## Open decisions
 
-- Core game design and rules (Phase 5)
-- Auth approach (Phase 7)
-- Whether to add client-side prediction (after Phase 5, if movement feels laggy)
-- Colyseus Cloud deployment location(s) (Phase 8)
-- Client host, and a subdomain or separate domain for QA/staging (Phase 8)
+- How long walking a square takes (Phase 11)
+- Whether vision runs on the server or the client (Phase 11)
+- How groups are listed in the lobby (Phase 10)
+- Auth approach, account linking, the email sending service, and whether to add a CAPTCHA (Phase 12)
+- Image storage, and the tile graphic formats (Phase 16)
+- Telling users with the same name apart (Phase 17)
+- Whether to add client-side prediction (after Phase 7, if movement feels laggy)
+- Colyseus Cloud deployment location(s) (Phase 14)
+- Client host, and a subdomain or separate domain for QA/staging (Phase 14)

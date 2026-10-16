@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 Context and rules for working in this repository. Read this before making changes.
-See `PLAN.md` for the build roadmap and current phase.
+See `PLAN.md` for the build roadmap and current phase, and `STRUCTURE-OVERVIEW.md` for the pages, editors and game rules the phases build. Read the relevant sections of `STRUCTURE-OVERVIEW.md` before planning or implementing a feature, and update it when a design decision changes.
 
 ## Project overview
 
@@ -22,7 +22,7 @@ An engine for making multiplayer browser-based role-playing games.
   src/app.config.ts  define room types, HTTP routes, Express middleware
   src/transport.ts   HTTPS/WSS transport
   src/rooms/         Room classes (lifecycle hooks, message handlers, tick loop): LobbyRoom and GameRoom (one per group)
-  src/players/       who is logged in and which group each player is in (in memory until Phase 7's real login)
+  src/players/       who is logged in and which group each player is in (in memory until Phase 12's real login)
   src/logic/         pure game-simulation functions (no I/O)
   src/db/            Drizzle client, schema, and repository modules
   src/auth/          token verification

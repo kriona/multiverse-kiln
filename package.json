@@ -9,7 +9,7 @@
 		"client"
 	],
 	"engines": {
-		"node": ">= 22.22.1"
+		"node": ">= 24.14.0"
 	},
 	"scripts": {
 		"prepare": "husky",
