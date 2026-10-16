@@ -34,6 +34,14 @@ const PLAYER_OUTLINE_COLOR = 0x111111;
 const PLAYER_OUTLINE_WIDTH = 2;
 
 /**
+ * The player's own outline is white and thicker, so they can find themselves without telling green
+ * from blue
+ */
+const OWN_PLAYER_OUTLINE_COLOR = 0xffffff;
+
+const OWN_PLAYER_OUTLINE_WIDTH = 3;
+
+/**
  * Gap in pixels between the top of a player and the bottom of their name
  */
 const NAME_OFFSET = 4;
@@ -347,7 +355,8 @@ export class MapScene extends Phaser.Scene
 		this.unbinds.push(callbacks.onAdd('players', (player, playerId) =>
 		{
 			const isOwn = (playerId === this.ownPlayerId);
-			const shape = this.add.circle(player.x, player.y, PLAYER_RADIUS, (isOwn ? OWN_PLAYER_COLOR : OTHER_PLAYER_COLOR)).setStrokeStyle(PLAYER_OUTLINE_WIDTH, PLAYER_OUTLINE_COLOR);
+			const shape = this.add.circle(player.x, player.y, PLAYER_RADIUS, (isOwn ? OWN_PLAYER_COLOR : OTHER_PLAYER_COLOR))
+				.setStrokeStyle((isOwn ? OWN_PLAYER_OUTLINE_WIDTH : PLAYER_OUTLINE_WIDTH), (isOwn ? OWN_PLAYER_OUTLINE_COLOR : PLAYER_OUTLINE_COLOR));
 			const rendered: RenderedPlayer = {
 				shape,
 				label: this.add.text(player.x, player.y - PLAYER_RADIUS - NAME_OFFSET, player.name, TEXT_STYLE).setOrigin(0.5, 1).setDepth(1),

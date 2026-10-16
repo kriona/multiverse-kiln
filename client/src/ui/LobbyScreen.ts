@@ -306,7 +306,14 @@ export class LobbyScreen
 		{
 			const item = document.createElement('li');
 
-			item.textContent = name;
+			// Said in words as well as in color, for players who can't tell the colors apart and for screen readers
+			item.textContent = (isOwn
+				? t({
+					id: 'lobby.ownName',
+					defaultMessage: '{name} (you)',
+					description: 'In the list of players in the lobby, the player\'s own name; {name} is the name'
+				}, { name })
+				: name);
 			item.classList.toggle('member-own', isOwn);
 
 			return(item);
