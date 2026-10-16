@@ -1,5 +1,5 @@
 -- Gives kiln_app read and write access to the kiln database on a Neon branch, matching
--- docker/postgres/init/01-roles.sh
+-- docker/postgres/init/02-databases.sh
 --
 -- Run after 01-roles.sql, as kiln_migrator, connected to kiln:
 --   psql "<kiln_migrator direct connection string to kiln>" -v ON_ERROR_STOP=1 -f 02-grants.sql

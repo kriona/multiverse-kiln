@@ -1,12 +1,10 @@
-import { generateId } from 'colyseus';
-
 /**
  * A logged-in player (server-only)
  */
 export interface OnlinePlayerRecord
 {
 	/**
-	 * Public ID of the player, used as their key in synced state. The browser ID never leaves the server
+	 * Public ID of the player (their account's ID), used as their key in synced state. The browser ID never leaves the server
 	 */
 	readonly playerId: string;
 
@@ -45,20 +43,14 @@ export type OnlinePlayerListener = (change: OnlinePlayerChange) => void;
  * Every logged-in player, keyed by browser ID, and the group each one is in
  *
  * This is the source of truth for logins and group membership: the lobby changes it, and game rooms
- * admit only the players it says are in their group. Every window of a browser is the same player.
- * It lives in memory until there is a real login system, so it only works with a single server process
+ * admit only the players it says are in their group. Every window of a browser is the same player,
+ * and a player is logged in from at most one browser. It lives in memory, so it only works with a
+ * single server process
  */
 export class OnlinePlayers
 {
 	private readonly players = new Map<string, OnlinePlayerRecord>();
 	private readonly listeners = new Set<OnlinePlayerListener>();
-
-	/**
-	 * @param createPlayerId Returns a new, unique player ID
-	 */
-	constructor(private readonly createPlayerId: () => string)
-	{
-	}
 
 	/**
 	 * The player a browser is logged in as
@@ -82,13 +74,14 @@ export class OnlinePlayers
 	}
 
 	/**
-	 * Logs a browser in, unless it already is
+	 * Logs a browser in as a player, unless it already is logged in
 	 *
 	 * @param browserId The browser's ID
-	 * @param name The player's name, already validated
-	 * @return The browser's player
+	 * @param playerId The player's account ID
+	 * @param name The player's name
+	 * @return The browser's player, or undefined when the player is logged in from another browser
 	 */
-	logIn(browserId: string, name: string): OnlinePlayerRecord
+	logIn(browserId: string, playerId: string, name: string): OnlinePlayerRecord | undefined
 	{
 		const existing = this.players.get(browserId);
 
@@ -97,7 +90,15 @@ export class OnlinePlayers
 			return(existing);
 		}
 
-		const player: OnlinePlayerRecord = { playerId: this.createPlayerId(), name, groupId: undefined };
+		for (const other of this.players.values())
+		{
+			if (other.playerId === playerId)
+			{
+				return(undefined);
+			}
+		}
+
+		const player: OnlinePlayerRecord = { playerId, name, groupId: undefined };
 
 		this.update(browserId, player);
 
@@ -223,4 +224,4 @@ export class OnlinePlayers
 /**
  * The server's logged-in players, shared by the lobby and every game room
  */
-export const onlinePlayers = new OnlinePlayers(() => generateId());
+export const onlinePlayers = new OnlinePlayers();

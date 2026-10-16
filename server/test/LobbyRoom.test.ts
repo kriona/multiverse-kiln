@@ -248,6 +248,41 @@ describe('LobbyRoom', () =>
 			});
 		}
 
+		it('logs a name in as the same player every time, whatever the capitals', async () =>
+		{
+			const first = await logInNewBrowser('Ada');
+
+			// Forgetting who is online is what a server restart does; the player is in the database
+			logOutEveryone();
+
+			const second = await logInNewBrowser('ADA');
+
+			assert.strictEqual(second.player.playerId, first.player.playerId);
+			assert.strictEqual(second.player.name, 'Ada');
+		});
+
+		it('gives different names different players', async () =>
+		{
+			const ada = await logInNewBrowser('Ada');
+			const grace = await logInNewBrowser('Grace');
+
+			assert.notStrictEqual(ada.player.playerId, grace.player.playerId);
+		});
+
+		it('does not log in a player who is logged in from another browser, and says so', async () =>
+		{
+			await logInNewBrowser('Ada');
+
+			const browserId = randomUUID();
+			const window = await openWindow(browserId);
+
+			window.room.send(LobbyMessageType.Login, { name: 'ada' });
+
+			assert.strictEqual((await window.inbox.take<NoticePayload>(LobbyServerMessageType.Notice)).reason, NoticeReason.NameInUse);
+			assert.strictEqual(onlinePlayers.get(browserId), undefined);
+			assert.strictEqual(window.inbox.pending(LobbyServerMessageType.Account), 0);
+		});
+
 		it('logs the browser out once its last window leaves', async () =>
 		{
 			const { browserId, room } = await logInNewBrowser('Ada');

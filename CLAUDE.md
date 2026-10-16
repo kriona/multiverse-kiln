@@ -22,7 +22,7 @@ An engine for making multiplayer browser-based role-playing games.
   src/app.config.ts  define room types, HTTP routes, Express middleware
   src/transport.ts   HTTPS/WSS transport
   src/rooms/         Room classes (lifecycle hooks, message handlers, tick loop): LobbyRoom and GameRoom (one per group)
-  src/players/       who is logged in and which group each player is in (in memory until Phase 12's real login)
+  src/players/       who is logged in and which group each player is in (in memory; accounts are in the database)
   src/logic/         pure game-simulation functions (no I/O)
   src/db/            Drizzle client, schema, and repository modules
   src/auth/          token verification
@@ -55,8 +55,9 @@ npm workspaces are assumed (`client`, `server`, `shared`). Update this section i
 - Schema changes are made in the Drizzle schema, then a migration is generated with `drizzle-kit`. Never edit the database by hand, and never run migrations automatically on server startup.
 - Use a standard TCP Postgres driver (`pg` or `postgres.js`) with a connection pool. Do not use Neon's HTTP/serverless driver; the server is a long-running process.
 - In production, use Neon's **pooled** connection string.
-- Two roles: migrations run as the migration role, which owns the tables; the server runs as the app role, which can read and write rows but not alter tables. Locally, `docker/postgres/init/01-roles.sh` creates them. Never give the server the migration role's credentials.
-- `server/src/db/client.ts` throws on import when `DATABASE_URL` is unset. The test suite doesn't set it yet, so tests that boot the server will need a test database once a room imports a repository (Phase 6).
+- Two roles: migrations run as the migration role, which owns the tables; the server runs as the app role, which can read and write rows but not alter tables. Locally, the scripts in `docker/postgres/init/` create them, along with the `kiln` and `kiln_test` databases. Never give the server the migration role's credentials.
+- `server/src/db/client.ts` throws on import when `DATABASE_URL` is unset. Tests run against their own database: `server/test/setup.ts` points `DATABASE_URL` at `TEST_DATABASE_URL`, migrates it once, and empties every table before each test, so a test never depends on rows another test left behind. It refuses a database whose name doesn't end in `_test`.
+- Write repository tests against the real test database (`server/test/db/`), not mocks.
 
 ## Configuration
 

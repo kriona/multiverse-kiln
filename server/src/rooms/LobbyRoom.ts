@@ -2,6 +2,7 @@ import { matchMaker, Room, type AuthContext, type Client, type CloseCode, type I
 import { StateView } from '@colyseus/schema';
 import { GAME_ROOM_NAME, LobbyMessageType, LobbyServerMessageType, LobbyState, MAX_GROUP_PLAYERS, NoticeReason, OnlinePlayer, type AccountPayload, type ChatHistoryPayload, type ChatMessage, type NoticePayload } from '@multiverse-kiln/shared';
 
+import { loadOrCreatePlayerByName, type PlayerProfile } from '../db/playerRepo.js';
 import { readBrowserId } from '../http/browserId.js';
 import { onlinePlayers, type OnlinePlayerChange, type OnlinePlayerRecord } from '../players/onlinePlayers.js';
 import { InvalidMessages } from './invalidMessages.js';
@@ -84,7 +85,8 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	private stopListening?: () => void;
 
 	messages = {
-		[LobbyMessageType.Login]: (client: LobbyClient, payload: unknown) =>
+		// Logging in is when a player's account is loaded, so this is the lobby's one database call
+		[LobbyMessageType.Login]: async (client: LobbyClient, payload: unknown) =>
 		{
 			const result = loginPayload.safeParse(payload);
 
@@ -94,7 +96,37 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 				return;
 			}
 
-			onlinePlayers.logIn(browserIdOf(client), result.data.name);
+			const browserId = browserIdOf(client);
+
+			if (onlinePlayers.get(browserId))
+			{
+				return;
+			}
+
+			let profile: PlayerProfile;
+
+			try
+			{
+				profile = await loadOrCreatePlayerByName(result.data.name);
+			}
+			catch (error)
+			{
+				console.error(client.sessionId, 'could not log in:', error);
+				this.sendNoticeIfConnected(client, NoticeReason.LoginFailed);
+				return;
+			}
+
+			// Every window of the browser may have closed while the player was loading, and nothing
+			// would log the browser out again
+			if (!this.windows.has(browserId))
+			{
+				return;
+			}
+
+			if (!onlinePlayers.logIn(browserId, profile.id, profile.displayName))
+			{
+				this.sendNoticeIfConnected(client, NoticeReason.NameInUse);
+			}
 		},
 
 		[LobbyMessageType.Chat]: (client: LobbyClient, payload: unknown) =>
@@ -374,6 +406,20 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		const notice: NoticePayload = { reason };
 
 		client.send(LobbyServerMessageType.Notice, notice);
+	}
+
+	/**
+	 * Sends a notice to a window that may have left while its request was waiting on the database
+	 *
+	 * @param client The window
+	 * @param reason Why
+	 */
+	private sendNoticeIfConnected(client: LobbyClient, reason: NoticeReason): void
+	{
+		if (this.windows.get(browserIdOf(client))?.has(client))
+		{
+			this.sendNotice(client, reason);
+		}
 	}
 
 	/**

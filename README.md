@@ -106,6 +106,7 @@ Then put the same passwords into the connection strings in `server/.env`: `KILN_
 | `ALLOWED_ORIGINS` | `server/.env` | Comma-separated origins allowed to use the server from a browser (CORS and WebSocket connections). Required. Locally: the client and the server itself (for the playground). |
 | `DATABASE_URL` | `server/.env` | Postgres connection string for the game server, as `kiln_app`. In production: Neon's pooled connection string. |
 | `MIGRATION_DATABASE_URL` | `server/.env` | Postgres connection string for `npm run db:migrate -w server`, as `kiln_migrator`. Never give it to the running server. |
+| `TEST_DATABASE_URL`, `TEST_MIGRATION_DATABASE_URL` | `server/.env` | The same two connection strings for the `kiln_test` database that `npm test` uses. The tests empty it before every test, so they refuse to run against a database whose name doesn't end in `_test`. |
 | `LOADTEST_ENDPOINT` | `server/.env` | Server URL that `npm run loadtest -w server` connects to: `wss://www.multiversekiln-dev.com:2567`. |
 | `DEV_SSL_KEY_FILE`, `DEV_SSL_CERT_FILE` | `client/.env` | Local certificate for the HTTPS dev server (required). The example values point at `certs/` (see step 5). |
 
@@ -151,14 +152,24 @@ npm run db:migrate -w server         # create or update the tables
 
 Postgres listens on `127.0.0.1:5432` (only reachable from your machine) and keeps its data in a Docker volume, so it survives restarts. It keeps running in the background until you run `docker compose stop`.
 
-The first start runs `docker/postgres/init/01-roles.sh`, which creates the `kiln` database and two roles:
+The first start runs the scripts in `docker/postgres/init/`, which create two roles and two databases: `kiln` for the game, and `kiln_test` for the test suite.
 
 | Role | Used by | Can |
 |---|---|---|
 | `kiln_migrator` | `npm run db:migrate -w server` (`MIGRATION_DATABASE_URL`) | Create, alter and drop tables (it owns them) |
 | `kiln_app` | The game server (`DATABASE_URL`) | Read and write rows, but not change tables |
 
-The setup script and the passwords in `.env` only take effect when the data volume is first created. To change a password or start over with an empty database, delete the volume (this deletes all local data) and migrate again:
+`npm test` applies the migrations to `kiln_test` itself and empties it before every test, so it never needs migrating by hand.
+
+The setup scripts and the passwords in `.env` only take effect when the data volume is first created. A volume created before `kiln_test` existed can add it without losing data:
+
+```bash
+docker compose exec postgres sh /docker-entrypoint-initdb.d/02-databases.sh
+```
+
+In Git Bash, put `MSYS_NO_PATHCONV=1` before that command, or it rewrites the container path into a Windows one.
+
+To change a password or start over with an empty database, delete the volume (this deletes all local data) and migrate again:
 
 ```bash
 docker compose down -v
@@ -190,7 +201,9 @@ Press `Ctrl+C` to stop all three. If any one exits, the others are stopped too.
 
 Type a name to enter the lobby, then press **Create game** to start a group and **Share** to copy a join link for other players. Move with the arrow keys or WASD. Your player is green; other players are blue.
 
-Every tab of one browser is the same player, and closing the last one logs it out, so saving a client file (which makes Vite reload every tab) logs you out. To test with several players, use separate browsers or browser profiles (a private window counts as its own browser).
+Until there are real logins, a name is the whole login: typing a name you've used before (in any capitals) logs you in as that player again, from any browser, and a new name creates a new player. A player can only be logged in from one browser at a time.
+
+Every tab of one browser is the same player, and closing the last one logs it out, so saving a client file (which makes Vite reload every tab) logs you out. To test with several players, use separate browsers or browser profiles (a private window counts as its own browser), each with its own name.
 
 ### 8. Verify
 
