@@ -879,6 +879,10 @@
 		"defaultMessage": "Could not join that game. It may have just ended.",
 		"description": "Shown when the player couldn't go into their game"
 	},
+	"group.pageTitle": {
+		"defaultMessage": "Game - Multiverse Kiln",
+		"description": "The browser tab's title while the player is in a group's game; Multiverse Kiln is the game engine's name"
+	},
 	"group.share": {
 		"defaultMessage": "Share",
 		"description": "Button that copies a link others can use to join the game"
@@ -946,6 +950,10 @@
 	"home.ownUniverses": {
 		"defaultMessage": "Your universes",
 		"description": "Heading of the list of universes the player can edit"
+	},
+	"home.pageTitle": {
+		"defaultMessage": "Universes - Multiverse Kiln",
+		"description": "The browser tab's title while Home lists the universes; Multiverse Kiln is the game engine's name"
 	},
 	"home.showMore": {
 		"defaultMessage": "Show more",
@@ -1082,6 +1090,10 @@
 	"lobby.notJoined": {
 		"defaultMessage": "Could not enter {universe}. Try again in a moment.",
 		"description": "Shown on Home when the player couldn't go into a universe's lobby; {universe} is its name"
+	},
+	"lobby.pageTitle": {
+		"defaultMessage": "Lobby - {universe} - Multiverse Kiln",
+		"description": "The browser tab's title in a universe's lobby; {universe} is the universe's name and Multiverse Kiln is the game engine's name"
 	},
 	"lobby.title": {
 		"defaultMessage": "Lobby",

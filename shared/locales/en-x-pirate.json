@@ -879,6 +879,10 @@
 		"message": "Couldn't board that ship. It may have just sunk.",
 		"source": "Could not join that game. It may have just ended."
 	},
+	"group.pageTitle": {
+		"message": "Voyage - Multiverse Kiln",
+		"source": "Game - Multiverse Kiln"
+	},
 	"group.share": {
 		"message": "Share",
 		"source": "Share"
@@ -946,6 +950,10 @@
 	"home.ownUniverses": {
 		"message": "Yer universes",
 		"source": "Your universes"
+	},
+	"home.pageTitle": {
+		"message": "Universes - Multiverse Kiln",
+		"source": "Universes - Multiverse Kiln"
 	},
 	"home.showMore": {
 		"message": "Show more",
@@ -1082,6 +1090,10 @@
 	"lobby.notJoined": {
 		"message": "Couldn't reach {universe}. Try again in a tick.",
 		"source": "Could not enter {universe}. Try again in a moment."
+	},
+	"lobby.pageTitle": {
+		"message": "Tavern - {universe} - Multiverse Kiln",
+		"source": "Lobby - {universe} - Multiverse Kiln"
 	},
 	"lobby.title": {
 		"message": "Tavern",

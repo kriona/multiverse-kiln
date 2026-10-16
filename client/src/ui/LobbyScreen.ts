@@ -174,6 +174,11 @@ export class LobbyScreen
 	{
 		this.ownPlayerId = playerId;
 		this.title.textContent = universeName;
+		document.title = t({
+			id: 'lobby.pageTitle',
+			defaultMessage: 'Lobby - {universe} - Multiverse Kiln',
+			description: 'The browser tab\'s title in a universe\'s lobby; {universe} is the universe\'s name and Multiverse Kiln is the game engine\'s name'
+		}, { universe: universeName });
 		this.playerName.textContent = name;
 		this.createButton.disabled = false;
 		this.queueMemberList();

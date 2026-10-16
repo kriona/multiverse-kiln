@@ -144,6 +144,11 @@ export class HomeScreen
 	 */
 	show(playerName: string): void
 	{
+		document.title = t({
+			id: 'home.pageTitle',
+			defaultMessage: 'Universes - Multiverse Kiln',
+			description: 'The browser tab\'s title while Home lists the universes; Multiverse Kiln is the game engine\'s name'
+		});
 		this.playerName.textContent = playerName;
 		this.listed = 0;
 		this.listVersion++;

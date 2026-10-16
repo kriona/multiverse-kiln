@@ -75,6 +75,11 @@ export class GroupScreen
 	{
 		this.groupId = groupId;
 		this.leaveButton.disabled = false;
+		document.title = t({
+			id: 'group.pageTitle',
+			defaultMessage: 'Game - Multiverse Kiln',
+			description: 'The browser tab\'s title while the player is in a group\'s game; Multiverse Kiln is the game engine\'s name'
+		});
 		this.setStatus(t(messages.joining));
 	}
 
