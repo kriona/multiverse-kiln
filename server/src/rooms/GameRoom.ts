@@ -2,7 +2,7 @@ import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
 import { GameState, GRID_CELL_SIZE, MessageType, PATCH_INTERVAL_MS, Player, ServerCloseCode, ServerMessageType, WORLD_HEIGHT, WORLD_WIDTH, type MovePayload, type WelcomePayload } from '@multiverse-kiln/shared';
 
 import { readBrowserId } from '../http/browserId.js';
-import { NO_PRESS, occupiedCells, spawnPosition, stepOnGrid, type DirectionPress, type Grid, type GridStep } from '../logic/movement.js';
+import { findFreeCell, NO_PRESS, occupiedCells, stepOnGrid, type DirectionPress, type Grid, type GridStep } from '../logic/movement.js';
 import { CellOccupancy } from '../logic/occupancy.js';
 import { onlinePlayers, type OnlinePlayerChange } from '../players/onlinePlayers.js';
 import { InputQueue } from './inputQueue.js';
@@ -34,15 +34,23 @@ export const SIMULATION_TICK_RATE = 30;
 const MAX_QUEUED_MOVES = 8;
 
 /**
- * The grid players move on, covering the whole world
+ * The grid players move on, covering the whole world: open ground everywhere, with no edges that loop
  *
  * A cell is wider than a player, so a player on any cell center is entirely inside the world
  */
 export const worldGrid: Grid = {
 	cellSize: GRID_CELL_SIZE,
-	columns: WORLD_WIDTH / GRID_CELL_SIZE,
-	rows: WORLD_HEIGHT / GRID_CELL_SIZE
+	bounds: { minColumn: 0, minRow: 0, maxColumn: (WORLD_WIDTH / GRID_CELL_SIZE) - 1, maxRow: (WORLD_HEIGHT / GRID_CELL_SIZE) - 1 },
+	loopsEastWest: false,
+	loopsNorthSouth: false,
+	movementCost: () => 0,
+	endsMovement: () => false
 };
+
+/**
+ * Most cells from a random starting cell that a new player's spawn cell can be; reaches every cell of the world
+ */
+const SPAWN_SEARCH_DISTANCE = Math.max(WORLD_WIDTH, WORLD_HEIGHT) / GRID_CELL_SIZE;
 
 const standingStill: MovePayload = { x: 0, y: 0 };
 
@@ -167,7 +175,12 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 
 		if (isNewPlayer)
 		{
-			const position = spawnPosition(worldGrid, Math.random, this.currentOccupancy().isFreeFor(playerId));
+			const { minColumn, minRow, maxColumn, maxRow } = worldGrid.bounds;
+			const start = {
+				column: minColumn + Math.floor(Math.random() * ((maxColumn - minColumn) + 1)),
+				row: minRow + Math.floor(Math.random() * ((maxRow - minRow) + 1))
+			};
+			const position = findFreeCell(start, worldGrid, this.currentOccupancy().isFreeFor(playerId), SPAWN_SEARCH_DISTANCE);
 
 			// The room holds far fewer players than the grid has cells, so this only guards against a misconfiguration
 			if (!position)

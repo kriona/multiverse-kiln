@@ -152,7 +152,12 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 				return;
 			}
 
-			const message: ChatMessage = { playerId: player.playerId, name: player.name, text: result.data.text, sentAt: Date.now() };
+			const message: ChatMessage = {
+				playerId: player.playerId,
+				name: player.name,
+				text: result.data.text,
+				sentAt: Date.now()
+			};
 
 			this.chatHistory = [...this.chatHistory, message].slice(-CHAT_HISTORY_LENGTH);
 

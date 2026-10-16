@@ -314,8 +314,8 @@ describe('GameRoom', () =>
 
 	it('uses a grid that fits the world and the player', () =>
 	{
-		assert.ok(Number.isInteger(worldGrid.columns), `columns = ${worldGrid.columns}`);
-		assert.ok(Number.isInteger(worldGrid.rows), `rows = ${worldGrid.rows}`);
+		assert.ok(Number.isInteger(worldGrid.bounds.maxColumn), `maxColumn = ${worldGrid.bounds.maxColumn}`);
+		assert.ok(Number.isInteger(worldGrid.bounds.maxRow), `maxRow = ${worldGrid.bounds.maxRow}`);
 
 		// The whole player stays inside its cell, so a player on an edge cell is inside the world
 		assert.ok((GRID_CELL_SIZE / 2) >= PLAYER_RADIUS);

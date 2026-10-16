@@ -17,6 +17,7 @@
 		"clean": "rimraf build",
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",
+		"db:seed": "tsx --env-file-if-exists=.env scripts/seed.ts",
 		"test": "mocha -r tsx -r ./test/setup.ts \"test/**/*.test.ts\" --timeout 15000"
 	},
 	"author": "",

@@ -148,7 +148,10 @@ With Docker Desktop running, from the repository root:
 ```bash
 docker compose up -d                 # start Postgres in the background
 npm run db:migrate -w server         # create or update the tables
+npm run db:seed -w server            # add the sample universe
 ```
+
+The seed script (`server/scripts/seed.ts`) adds Kilnhaven, a sample universe drawn in `server/scripts/sampleUniverse.ts`: a town square lobby with a cottage and cellar to walk into, and a crossroads for groups to start in. Running it again replaces Kilnhaven and leaves everything else alone, so run it after changing the sample maps. It refuses to run with `NODE_ENV=production`.
 
 Postgres listens on `127.0.0.1:5432` (only reachable from your machine) and keeps its data in a Docker volume, so it survives restarts. It keeps running in the background until you run `docker compose stop`.
 
@@ -159,7 +162,7 @@ The first start runs the scripts in `docker/postgres/init/`, which create two ro
 | `kiln_migrator` | `npm run db:migrate -w server` (`MIGRATION_DATABASE_URL`) | Create, alter and drop tables (it owns them) |
 | `kiln_app` | The game server (`DATABASE_URL`) | Read and write rows, but not change tables |
 
-`npm test` applies the migrations to `kiln_test` itself and empties it before every test, so it never needs migrating by hand.
+`npm test` rebuilds `kiln_test` from the migrations at the start of every run and empties it before every test (keeping the rows migrations insert, such as default tiles), so it never needs migrating by hand.
 
 The setup scripts and the passwords in `.env` only take effect when the data volume is first created. A volume created before `kiln_test` existed can add it without losing data:
 
@@ -175,6 +178,7 @@ To change a password or start over with an empty database, delete the volume (th
 docker compose down -v
 docker compose up -d
 npm run db:migrate -w server
+npm run db:seed -w server
 ```
 
 ### 7. Run it
@@ -230,6 +234,7 @@ All commands run from the repository root.
 | `docker compose up -d` / `docker compose stop` | Start / stop the local Postgres |
 | `npm run db:generate -w server` | Create a migration from changes to `server/src/db/schema.ts` |
 | `npm run db:migrate -w server` | Apply pending migrations (as `MIGRATION_DATABASE_URL`) |
+| `npm run db:seed -w server` | Add or replace the sample universe (as `DATABASE_URL`) |
 | `npm run loadtest -w server` | Connect simulated clients to a running server (`LOADTEST_ENDPOINT`) |
 | `npm run <script> -w <package>` | Run one package's script, e.g. `npm run dev -w server` |
 | `npm install <pkg> -w <package>` | Add a dependency to one package, e.g. `npm install drizzle-orm -w server` |

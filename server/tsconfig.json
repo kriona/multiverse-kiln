@@ -17,6 +17,7 @@
 		"src",
 		"test",
 		"loadtest",
+		"scripts",
 		"drizzle.config.ts"
 	]
 }

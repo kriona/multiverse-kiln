@@ -15,6 +15,20 @@
       "when": 1792109368166,
       "tag": "0001_unique_player_names",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792110649182,
+      "tag": "0002_universes_zones_and_maps",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792110651065,
+      "tag": "0003_pf1e_default_tiles",
+      "breakpoints": true
     }
   ]
 }

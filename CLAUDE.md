@@ -27,9 +27,11 @@ An engine for making multiplayer browser-based role-playing games.
   src/db/            Drizzle client, schema, and repository modules
   src/auth/          token verification
   src/http/          REST routes (health, login, leaderboard)
+  scripts/           development tools run by hand, such as the seed script
 /shared          Code imported by both client and server:
                  message type enums, payload interfaces, close codes, constants,
-                 and the synced state's @colyseus/schema classes (src/state.ts)
+                 the synced state's @colyseus/schema classes (src/state.ts),
+                 the map and chunk layout (src/maps.ts) and universe settings (src/universes.ts)
 docker-compose.yml   local Postgres
 ```
 
@@ -53,10 +55,11 @@ npm workspaces are assumed (`client`, `server`, `shared`). Update this section i
   - Optional periodic checkpoints for long sessions, run off the tick path.
 - All queries go through repository modules in `server/src/db/` (e.g. `playerRepo.ts`). Rooms call repositories, never raw SQL or the Drizzle client directly.
 - Schema changes are made in the Drizzle schema, then a migration is generated with `drizzle-kit`. Never edit the database by hand, and never run migrations automatically on server startup.
+- Give migrations descriptive names (`npx drizzle-kit generate --name=<name>` from `server/`). Data every database needs, such as a ruleset's default tiles, goes in a custom migration (`--custom --name=<name>`); sample data for development goes in the seed script instead.
 - Use a standard TCP Postgres driver (`pg` or `postgres.js`) with a connection pool. Do not use Neon's HTTP/serverless driver; the server is a long-running process.
 - In production, use Neon's **pooled** connection string.
 - Two roles: migrations run as the migration role, which owns the tables; the server runs as the app role, which can read and write rows but not alter tables. Locally, the scripts in `docker/postgres/init/` create them, along with the `kiln` and `kiln_test` databases. Never give the server the migration role's credentials.
-- `server/src/db/client.ts` throws on import when `DATABASE_URL` is unset. Tests run against their own database: `server/test/setup.ts` points `DATABASE_URL` at `TEST_DATABASE_URL`, migrates it once, and empties every table before each test, so a test never depends on rows another test left behind. It refuses a database whose name doesn't end in `_test`.
+- `server/src/db/client.ts` throws on import when `DATABASE_URL` is unset. Tests run against their own database: `server/test/setup.ts` points `DATABASE_URL` at `TEST_DATABASE_URL`, rebuilds it from the migrations at the start of every run, and before each test deletes every row except those the migrations inserted (such as default tiles), so a test never depends on rows another test left behind. It refuses a database whose name doesn't end in `_test`.
 - Write repository tests against the real test database (`server/test/db/`), not mocks.
 
 ## Configuration
@@ -88,6 +91,7 @@ npm workspaces are assumed (`client`, `server`, `shared`). Update this section i
 docker compose up -d                 # start local Postgres
 npm run db:generate -w server        # create a migration after changing server/src/db/schema.ts
 npm run db:migrate -w server         # apply Drizzle migrations
+npm run db:seed -w server            # add or replace the sample universe (server/scripts/sampleUniverse.ts)
 npm run dev -w server                # Colyseus on wss://www.multiversekiln-dev.com:2567
 npm run dev -w client                # Vite on https://www.multiversekiln-dev.com:5173
 ```

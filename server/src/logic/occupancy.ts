@@ -55,7 +55,7 @@ export class CellOccupancy
 	 * Checks cells from one player's point of view: its own cells count as free
 	 *
 	 * @param holderId The player's ID
-	 * @return A check for stepOnGrid and spawnPosition
+	 * @return A check for stepOnGrid and findFreeCell
 	 */
 	isFreeFor(holderId: string): IsCellFree
 	{
