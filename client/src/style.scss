@@ -111,17 +111,17 @@ button
 	background: $accent-background;
 	color: $text-on-accent;
 	cursor: pointer;
-}
 
-button:hover
-{
-	background: $accent-background-hover;
-}
+	&:hover
+	{
+		background: $accent-background-hover;
+	}
 
-button:disabled
-{
-	opacity: 0.5;
-	cursor: default;
+	&:disabled
+	{
+		opacity: 0.5;
+		cursor: default;
+	}
 }
 
 input,
@@ -132,24 +132,22 @@ textarea
 	border: 1px solid $border-strong;
 	background: $background-field;
 	color: $text;
-}
 
-input:disabled,
-select:disabled,
-textarea:disabled
-{
-	opacity: 0.7;
+	&:disabled
+	{
+		opacity: 0.7;
+	}
 }
 
 button.danger
 {
 	border-color: $danger;
 	background: $danger-background;
-}
 
-button.danger:hover
-{
-	background: $danger-background-hover;
+	&:hover
+	{
+		background: $danger-background-hover;
+	}
 }
 
 button.link-button
@@ -160,12 +158,12 @@ button.link-button
 	color: $link;
 	text-align: left;
 	text-decoration: underline;
-}
 
-button.link-button:hover
-{
-	background: none;
-	color: $link-hover;
+	&:hover
+	{
+		background: none;
+		color: $link-hover;
+	}
 }
 
 .screen
@@ -234,11 +232,11 @@ button.secondary
 {
 	border-color: $border-stronger;
 	background: $background-secondary;
-}
 
-button.secondary:hover
-{
-	background: $background-secondary-hover;
+	&:hover
+	{
+		background: $background-secondary-hover;
+	}
 }
 
 .home-body
@@ -262,11 +260,11 @@ button.secondary:hover
 	display: flex;
 	align-items: center;
 	gap: 12px;
-}
 
-.panel-heading h2
-{
-	flex: 1;
+	h2
+	{
+		flex: 1;
+	}
 }
 
 .universe-list
@@ -289,12 +287,12 @@ button.secondary:hover
 	border-color: $border;
 	background: $background-field;
 	text-align: left;
-}
 
-.universe-item:hover
-{
-	border-color: $accent;
-	background: $background-field-hover;
+	&:hover
+	{
+		border-color: $accent;
+		background: $background-field-hover;
+	}
 }
 
 .universe-ruleset
@@ -312,11 +310,11 @@ button.secondary:hover
 {
 	width: min(560px, calc(100vw - 32px));
 	color: $text;
-}
 
-.dialog::backdrop
-{
-	background: $backdrop;
+	&::backdrop
+	{
+		background: $backdrop;
+	}
 }
 
 .dialog-buttons,
@@ -406,101 +404,101 @@ fieldset.choice legend
 .markdown
 {
 	overflow-wrap: anywhere;
-}
 
-.markdown h1,
-.markdown h2,
-.markdown h3,
-.markdown h4,
-.markdown h5,
-.markdown h6
-{
-	margin: 1em 0 0.5em;
-	line-height: 1.25;
-	font-weight: bold;
-}
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6
+	{
+		margin: 1em 0 0.5em;
+		line-height: 1.25;
+		font-weight: bold;
+	}
 
-.markdown h1
-{
-	font-size: 24px;
-}
+	h1
+	{
+		font-size: 24px;
+	}
 
-.markdown h2
-{
-	font-size: 21px;
-}
+	h2
+	{
+		font-size: 21px;
+	}
 
-.markdown h3
-{
-	font-size: 18px;
-}
+	h3
+	{
+		font-size: 18px;
+	}
 
-.markdown h4
-{
-	font-size: 16px;
-}
+	h4
+	{
+		font-size: 16px;
+	}
 
-.markdown h5
-{
-	font-size: 14px;
-}
+	h5
+	{
+		font-size: 14px;
+	}
 
-.markdown h6
-{
-	font-size: 13px;
-	color: $text-muted;
-}
+	h6
+	{
+		font-size: 13px;
+		color: $text-muted;
+	}
 
-.markdown p
-{
-	margin: 1em 0;
-}
+	p
+	{
+		margin: 1em 0;
+	}
 
-.markdown :first-child
-{
-	margin-top: 0;
-}
+	:first-child
+	{
+		margin-top: 0;
+	}
 
-.markdown :last-child
-{
-	margin-bottom: 0;
-}
+	:last-child
+	{
+		margin-bottom: 0;
+	}
 
-.markdown a
-{
-	color: $link;
-}
+	a
+	{
+		color: $link;
+	}
 
-.markdown pre,
-.markdown code
-{
-	background: $background-code;
-}
+	pre,
+	code
+	{
+		background: $background-code;
+	}
 
-.markdown pre
-{
-	overflow-x: auto;
-	padding: 8px;
-}
+	pre
+	{
+		overflow-x: auto;
+		padding: 8px;
+	}
 
-.markdown table
-{
-	border-collapse: collapse;
-}
+	table
+	{
+		border-collapse: collapse;
+	}
 
-.markdown th,
-.markdown td
-{
-	padding: 4px 8px;
-	border: 1px solid $border;
-}
+	th,
+	td
+	{
+		padding: 4px 8px;
+		border: 1px solid $border;
+	}
 
-.markdown blockquote
-{
-	margin-left: 0;
-	padding-left: 12px;
-	border-left: 3px solid $border-strong;
-	color: $text-quote;
+	blockquote
+	{
+		margin-left: 0;
+		padding-left: 12px;
+		border-left: 3px solid $border-strong;
+		color: $text-quote;
+	}
 }
 
 .markdown-editor
@@ -508,11 +506,11 @@ fieldset.choice legend
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 	gap: 16px;
-}
 
-.markdown-editor textarea
-{
-	resize: vertical;
+	textarea
+	{
+		resize: vertical;
+	}
 }
 
 .markdown-toolbar
@@ -520,26 +518,26 @@ fieldset.choice legend
 	display: flex;
 	flex-wrap: wrap;
 	gap: 4px;
-}
 
-.markdown-toolbar [role="button"]
-{
-	min-width: 28px;
-	padding: 2px 8px;
-	border: 1px solid $border-strong;
-	border-radius: 4px;
-	background: $background-field;
-	color: $text;
-	text-align: center;
-	cursor: pointer;
-	user-select: none;
-}
+	[role="button"]
+	{
+		min-width: 28px;
+		padding: 2px 8px;
+		border: 1px solid $border-strong;
+		border-radius: 4px;
+		background: $background-field;
+		color: $text;
+		text-align: center;
+		cursor: pointer;
+		user-select: none;
+	}
 
-.markdown-toolbar [role="button"]:hover,
-.markdown-toolbar [role="button"]:focus-visible
-{
-	border-color: $accent;
-	background: $background-control-hover;
+	[role="button"]:hover,
+	[role="button"]:focus-visible
+	{
+		border-color: $accent;
+		background: $background-control-hover;
+	}
 }
 
 .markdown-preview
@@ -559,21 +557,21 @@ fieldset.choice legend
 	gap: 4px;
 	padding: 12px 16px 0;
 	border-bottom: 1px solid $border;
-}
 
-.tabs button
-{
-	border-color: $border;
-	border-bottom: none;
-	border-radius: 4px 4px 0 0;
-	background: $background-field;
-	color: $text-muted;
-}
+	button
+	{
+		border-color: $border;
+		border-bottom: none;
+		border-radius: 4px 4px 0 0;
+		background: $background-field;
+		color: $text-muted;
 
-.tabs button[aria-selected="true"]
-{
-	background: $background-panel;
-	color: $text;
+		&[aria-selected="true"]
+		{
+			background: $background-panel;
+			color: $text;
+		}
+	}
 }
 
 .editor-body
@@ -587,11 +585,11 @@ fieldset.choice legend
 .editor-panel
 {
 	max-width: 960px;
-}
 
-.editor-panel > p:first-child
-{
-	margin-top: 0;
+	> p:first-child
+	{
+		margin-top: 0;
+	}
 }
 
 .filters
@@ -601,40 +599,40 @@ fieldset.choice legend
 	align-items: flex-end;
 	gap: 12px;
 	margin-bottom: 12px;
-}
 
-.filters label
-{
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-	color: $text-muted;
-}
+	label
+	{
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		color: $text-muted;
+	}
 
-.filters input[type="search"]
-{
-	flex: 1;
-	min-width: 180px;
+	input[type="search"]
+	{
+		flex: 1;
+		min-width: 180px;
+	}
 }
 
 .tile-table
 {
 	width: 100%;
 	border-collapse: collapse;
-}
 
-.tile-table th
-{
-	font-weight: normal;
-	text-align: left;
-	color: $text-muted;
-}
+	th
+	{
+		font-weight: normal;
+		text-align: left;
+		color: $text-muted;
+	}
 
-.tile-table th,
-.tile-table td
-{
-	padding: 6px 8px;
-	border-bottom: 1px solid $border-subtle;
+	th,
+	td
+	{
+		padding: 6px 8px;
+		border-bottom: 1px solid $border-subtle;
+	}
 }
 
 .swatch
@@ -645,47 +643,47 @@ fieldset.choice legend
 	border: 1px solid $border-stronger;
 	border-radius: 3px;
 	vertical-align: middle;
-}
 
-.swatch.large
-{
-	width: 64px;
-	height: 64px;
+	&.large
+	{
+		width: 64px;
+		height: 64px;
+	}
 }
 
 .tile-preview
 {
 	display: flex;
 	gap: 16px;
-}
 
-.tile-preview figure
-{
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 4px;
-	margin: 0;
-	font-size: 12px;
-	color: $text-muted;
+	figure
+	{
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 4px;
+		margin: 0;
+		font-size: 12px;
+		color: $text-muted;
+	}
 }
 
 .color-field
 {
 	display: flex;
 	gap: 8px;
-}
 
-.color-field input[type="color"]
-{
-	width: 48px;
-	height: 34px;
-	padding: 2px;
-}
+	input[type="color"]
+	{
+		width: 48px;
+		height: 34px;
+		padding: 2px;
+	}
 
-.color-field input:not([type="color"])
-{
-	flex: 1;
+	input:not([type="color"])
+	{
+		flex: 1;
+	}
 }
 
 .pager
@@ -745,11 +743,11 @@ fieldset.choice legend
 	padding: 0;
 	list-style: none;
 	overflow-wrap: anywhere;
-}
 
-.chat-log li
-{
-	padding: 2px 0;
+	li
+	{
+		padding: 2px 0;
+	}
 }
 
 .chat-time
@@ -764,11 +762,11 @@ fieldset.choice legend
 	margin-right: 6px;
 	font-weight: bold;
 	color: $chat-name;
-}
 
-.chat-own .chat-name
-{
-	color: $accent;
+	.chat-own &
+	{
+		color: $accent;
+	}
 }
 
 .chat-form
@@ -798,11 +796,11 @@ fieldset.choice legend
 	padding: 0;
 	list-style: none;
 	overflow-wrap: anywhere;
-}
 
-.member-list li
-{
-	padding: 2px 0;
+	li
+	{
+		padding: 2px 0;
+	}
 }
 
 .member-own
@@ -836,9 +834,9 @@ footer
 	font-size: 12px;
 	text-align: center;
 	color: $text-faint;
-}
 
-footer a
-{
-	color: $text-footer-link;
+	a
+	{
+		color: $text-footer-link;
+	}
 }
