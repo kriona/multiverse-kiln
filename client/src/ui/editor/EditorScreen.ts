@@ -276,12 +276,16 @@ export class EditorScreen
 			id: 'editor.universeTitle',
 			defaultMessage: 'Edit {universe}',
 			description: 'Heading of the world editor; {universe} is the universe\'s name'
-		}, { universe: universe.name });
+		}, {
+			universe: universe.name
+		});
 		document.title = t({
 			id: 'editor.pageTitle',
 			defaultMessage: 'Edit {universe} - Multiverse Kiln',
 			description: 'The browser tab\'s title for the world editor; {universe} is the universe\'s name and Multiverse Kiln is the game engine\'s name'
-		}, { universe: universe.name });
+		}, {
+			universe: universe.name
+		});
 		this.role.textContent = t(UNIVERSE_ROLE_NAMES[universe.role]);
 		this.zonesTab.setUniverse(universe);
 	}

@@ -707,7 +707,9 @@ export class MapEditor
 						id: 'editor.map.zoneDefault',
 						defaultMessage: '{tile} (the zone\'s default)',
 						description: 'A choice of tile to paint that is the zone\'s default tile; {tile} is its name'
-					}, { tile: tileName(tile, universe.ruleset) })
+					}, {
+						tile: tileName(tile, universe.ruleset)
+					})
 					: tileName(tile, universe.ruleset))
 			})),
 			{

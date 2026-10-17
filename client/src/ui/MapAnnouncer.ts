@@ -92,7 +92,9 @@ export class MapAnnouncer
 			id: 'map.announce.zone',
 			defaultMessage: 'You are in {zone}.',
 			description: 'Read out by screen readers when the player comes into a zone; {zone} is its name'
-		}, { zone: zoneName }));
+		}, {
+			zone: zoneName
+		}));
 	}
 
 	/**
@@ -291,7 +293,9 @@ function describePlayer(other: SeenPlayer): string
 			id: 'map.announce.playerHere',
 			defaultMessage: '{name}, right where you are',
 			description: 'Read out by screen readers in the list of players the player can see, for one in the same cell; {name} is their name'
-		}, { name: other.name }));
+		}, {
+			name: other.name
+		}));
 	}
 
 	return(t({

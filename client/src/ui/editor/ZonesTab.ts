@@ -449,7 +449,9 @@ export class ZonesTab
 				id: 'editor.zone.lobbyTitle',
 				defaultMessage: '{zone} (the lobby)',
 				description: 'Heading of the zone editor for the universe\'s lobby; {zone} is its name'
-			}, { zone: zone.name })
+			}, {
+				zone: zone.name
+			})
 			: zone.name);
 		this.name.value = zone.name;
 		this.enabled.checked = zone.enabled;
@@ -668,7 +670,9 @@ export class ZonesTab
 			id: 'editor.zone.confirmDelete',
 			defaultMessage: 'Delete {zone}, its map and every link into it? Zones inside it become top-level zones. This can\'t be undone.',
 			description: 'Asks before deleting a zone; {zone} is its name'
-		}, { zone: zone.name });
+		}, {
+			zone: zone.name
+		});
 
 		if (!window.confirm(question))
 		{

@@ -110,7 +110,9 @@ export class ItemDialog
 				id: 'editor.item.editTitle',
 				defaultMessage: 'Edit {item}',
 				description: 'Title of the item editor for an item the player can change; {item} is its name'
-			}, { item: name });
+			}, {
+				item: name
+			});
 		}
 		else
 		{
@@ -245,7 +247,9 @@ export class ItemDialog
 				id: 'editor.item.confirmDelete',
 				defaultMessage: 'Delete {item}? This can\'t be undone.',
 				description: 'Asks before deleting an item made for this universe; {item} is its name'
-			}, { item: name });
+			}, {
+				item: name
+			});
 			failure = {
 				id: 'editor.item.deleteFailed',
 				defaultMessage: 'Could not delete the item.',
@@ -258,7 +262,9 @@ export class ItemDialog
 				id: 'editor.item.confirmRestore',
 				defaultMessage: 'Restore {item} to the ruleset\'s default? Your changes to it will be lost.',
 				description: 'Asks before undoing this universe\'s changes to one of the ruleset\'s items; {item} is its name'
-			}, { item: name });
+			}, {
+				item: name
+			});
 			failure = {
 				id: 'editor.item.restoreFailed',
 				defaultMessage: 'Could not restore the item.',

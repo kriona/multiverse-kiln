@@ -644,5 +644,7 @@ export function describeEditorError(error: unknown, failure: MessageSource): str
 		id: 'editor.error.tryAgain',
 		defaultMessage: '{failure} Try again in a moment.',
 		description: 'An editor action that failed for a reason the player can\'t do anything about; {failure} is e.g. "Could not save the tile."'
-	}, { failure: t(failure) }));
+	}, {
+		failure: t(failure)
+	}));
 }

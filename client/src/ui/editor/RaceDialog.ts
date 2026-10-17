@@ -90,7 +90,9 @@ export class RaceDialog
 			id: 'editor.race.floatingBonusHint',
 			defaultMessage: 'The player chooses one ability to get +{bonus, number}, as humans, half-elves and half-orcs do.',
 			description: 'Explains the race editor\'s Floating ability bonus checkbox; {bonus} is how much the chosen ability score goes up'
-		}, { bonus: PF1E_FLOATING_ABILITY_BONUS });
+		}, {
+			bonus: PF1E_FLOATING_ABILITY_BONUS
+		});
 
 		this.startingItems = new StartingItemsField(api, itemSelect, {
 			list: getElement('race-items', HTMLUListElement),
@@ -177,7 +179,9 @@ export class RaceDialog
 				id: 'editor.race.editTitle',
 				defaultMessage: 'Edit {race}',
 				description: 'Title of the race editor for a race the player can change; {race} is its name, e.g. Dwarf'
-			}, { race: name });
+			}, {
+				race: name
+			});
 		}
 		else
 		{
@@ -354,7 +358,9 @@ export class RaceDialog
 				id: 'editor.race.confirmDelete',
 				defaultMessage: 'Delete {race}? This can\'t be undone.',
 				description: 'Asks before deleting a race made for this universe; {race} is its name'
-			}, { race: name });
+			}, {
+				race: name
+			});
 			failure = {
 				id: 'editor.race.deleteFailed',
 				defaultMessage: 'Could not delete the race.',
@@ -367,7 +373,9 @@ export class RaceDialog
 				id: 'editor.race.confirmRestore',
 				defaultMessage: 'Restore {race} to the ruleset\'s default? Your changes to it, including its starting money, equipment and zone, will be lost.',
 				description: 'Asks before undoing this universe\'s changes to one of the ruleset\'s races; {race} is its name'
-			}, { race: name });
+			}, {
+				race: name
+			});
 			failure = {
 				id: 'editor.race.restoreFailed',
 				defaultMessage: 'Could not restore the race.',

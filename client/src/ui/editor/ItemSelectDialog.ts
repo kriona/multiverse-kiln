@@ -350,7 +350,9 @@ export class ItemSelectDialog
 				id: 'editor.itemSelect.quantity',
 				defaultMessage: 'How many of {item}',
 				description: 'Name of the quantity field beside a chosen item in the dialog for choosing items, for screen readers; {item} is the item\'s name'
-			}, { item: displayName }));
+			}, {
+				item: displayName
+			}));
 			field.addEventListener('input', () =>
 			{
 				setFieldError(field, undefined);
@@ -368,7 +370,9 @@ export class ItemSelectDialog
 				id: 'editor.itemSelect.removeItem',
 				defaultMessage: 'Remove {item}',
 				description: 'Name of the Remove button beside a chosen item, for screen readers; {item} is the item\'s name'
-			}, { item: displayName }));
+			}, {
+				item: displayName
+			}));
 			removeButton.addEventListener('click', () =>
 			{
 				this.unchoose(item.id);

@@ -235,7 +235,9 @@ export class CreateCharacterScreen
 				id: 'character.create.limit',
 				defaultMessage: 'You have {max, plural, one {# character} other {# characters}} in this universe, as many as you can have.',
 				description: 'Shown on the Create Character page when the player can\'t make another character in this universe; {max} is the most allowed'
-			}, { max: MAX_CHARACTERS_PER_UNIVERSE }));
+			}, {
+				max: MAX_CHARACTERS_PER_UNIVERSE
+			}));
 			this.createButton.disabled = true;
 		}
 
@@ -263,7 +265,9 @@ export class CreateCharacterScreen
 				id: 'character.pageTitle',
 				defaultMessage: 'Create Character - {universe} - Multiverse Kiln',
 				description: 'The browser tab\'s title for the Create Character page; {universe} is the universe\'s name and Multiverse Kiln is the game engine\'s name'
-			}, { universe: universeName }));
+			}, {
+				universe: universeName
+			}));
 	}
 
 	/**
@@ -325,7 +329,9 @@ export class CreateCharacterScreen
 				id: 'character.create.rolled',
 				defaultMessage: 'The server rolled your scores with {method}. Choose which ability gets each score: giving an ability another score swaps the two.',
 				description: 'Explains the ability scores in Create Character when they were rolled; {method} is how, e.g. "4d6, drop the lowest"'
-			}, { method: t(PF1E_STAT_METHOD_NAMES[abilities.statMethod]) });
+			}, {
+				method: t(PF1E_STAT_METHOD_NAMES[abilities.statMethod])
+			});
 		}
 		else
 		{
@@ -355,7 +361,9 @@ export class CreateCharacterScreen
 				id: 'character.create.pointBuy',
 				defaultMessage: 'Buy your scores with {budget, plural, one {# point} other {# points}}. Scores above 10 cost points, and scores below 10 give some back.',
 				description: 'Explains the ability scores in Create Character when the player buys them with points; {budget} is how many points they have'
-			}, { budget: abilities.budget });
+			}, {
+				budget: abilities.budget
+			});
 		}
 	}
 
@@ -476,7 +484,9 @@ export class CreateCharacterScreen
 					id: 'character.create.primaryAbility',
 					defaultMessage: '{ability} (main ability)',
 					description: 'An ability\'s name in Create Character\'s table of scores when the chosen class relies on it most; {ability} is its name, e.g. Strength'
-				}, { ability: t(PF1E_ABILITY_NAMES[ability]) })
+				}, {
+					ability: t(PF1E_ABILITY_NAMES[ability])
+				})
 				: t(PF1E_ABILITY_NAMES[ability]));
 		}
 
@@ -485,7 +495,9 @@ export class CreateCharacterScreen
 				id: 'character.create.classHint',
 				defaultMessage: 'This class relies most on {ability}, so it is a good place for a high score.',
 				description: 'Hint under the class field of Create Character; {ability} is the ability the chosen class relies on, e.g. Strength'
-			}, { ability: t(PF1E_ABILITY_NAMES[characterClass.rules.primaryAbility]) })
+			}, {
+				ability: t(PF1E_ABILITY_NAMES[characterClass.rules.primaryAbility])
+			})
 			: '');
 	}
 
@@ -800,7 +812,9 @@ export class CreateCharacterScreen
 				id: 'character.create.overBudget',
 				defaultMessage: 'These scores cost more than your {budget, plural, one {# point} other {# points}}. Lower some of them.',
 				description: 'Shown in Create Character when the bought ability scores cost more points than the player has; {budget} is how many they have'
-			}, { budget: options.abilities.budget }));
+			}, {
+				budget: options.abilities.budget
+			}));
 			return;
 		}
 
@@ -957,7 +971,9 @@ function createAbilityRows(body: HTMLTableSectionElement): Record<Pf1eAbility, A
 			id: 'character.create.baseLabel',
 			defaultMessage: '{ability} base score',
 			description: 'Name for screen readers of the field for one ability\'s score before the race changes it, in Create Character; {ability} is e.g. Strength'
-		}, { ability: t(PF1E_ABILITY_NAMES[ability]) }));
+		}, {
+			ability: t(PF1E_ABILITY_NAMES[ability])
+		}));
 		baseCell.append(base);
 		row.append(name, baseCell, race, score, modifier);
 		body.append(row);
@@ -992,7 +1008,9 @@ function describeRace(race: CharacterRaceOption): string
 			id: 'character.race.floatingBonus',
 			defaultMessage: '+{bonus, number} to an ability you choose',
 			description: 'In Create Character, part of what a race (such as human) changes: the player raises one ability of their choice; {bonus} is how much'
-		}, { bonus: PF1E_FLOATING_ABILITY_BONUS }));
+		}, {
+			bonus: PF1E_FLOATING_ABILITY_BONUS
+		}));
 	}
 
 	if (modifiers.length === 0)

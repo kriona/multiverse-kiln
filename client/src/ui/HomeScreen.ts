@@ -338,7 +338,9 @@ export class HomeScreen
 				id: 'home.createLimit',
 				defaultMessage: 'You can create at most {max, plural, one {# universe} other {# universes}}',
 				description: 'Tooltip of the disabled Create Universe button when the player has made as many universes as allowed'
-			}, { max: MAX_CREATED_UNIVERSES })
+			}, {
+				max: MAX_CREATED_UNIVERSES
+			})
 			: '');
 	}
 

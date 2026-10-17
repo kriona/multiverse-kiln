@@ -188,7 +188,9 @@ export class ClassDialog
 				id: 'editor.class.editTitle',
 				defaultMessage: 'Edit {class}',
 				description: 'Title of the class editor for a character class the player can change; {class} is its name, e.g. Wizard'
-			}, { class: name });
+			}, {
+				class: name
+			});
 		}
 		else
 		{
@@ -340,7 +342,9 @@ export class ClassDialog
 				id: 'editor.class.chooseRaceZoneLabel',
 				defaultMessage: 'Choose the starting zone for {race}',
 				description: 'Name of the button that chooses where the class\'s characters of one race start, for screen readers; {race} is the race\'s name'
-			}, { race: name }));
+			}, {
+				race: name
+			}));
 			clear.type = 'button';
 			clear.className = 'secondary';
 			setButtonLabel(clear, clearIcon, t({
@@ -352,7 +356,9 @@ export class ClassDialog
 				id: 'editor.class.clearRaceZoneLabel',
 				defaultMessage: 'Clear the starting zone for {race}',
 				description: 'Name of the button that takes away the class\'s zone for one race, for screen readers; {race} is the race\'s name'
-			}, { race: name }));
+			}, {
+				race: name
+			}));
 			row.append(label, zoneName, choose, clear);
 			this.raceZoneList.append(row);
 			choice.show(universe, (this.raceZones.get(race.id) ?? null), editable);
@@ -467,7 +473,9 @@ export class ClassDialog
 				id: 'editor.class.confirmDelete',
 				defaultMessage: 'Delete {class}? This can\'t be undone.',
 				description: 'Asks before deleting a character class made for this universe; {class} is its name'
-			}, { class: name });
+			}, {
+				class: name
+			});
 			failure = {
 				id: 'editor.class.deleteFailed',
 				defaultMessage: 'Could not delete the class.',
@@ -480,7 +488,9 @@ export class ClassDialog
 				id: 'editor.class.confirmRestore',
 				defaultMessage: 'Restore {class} to the ruleset\'s default? Your changes to it, including its starting money, equipment and zones, will be lost.',
 				description: 'Asks before undoing this universe\'s changes to one of the ruleset\'s character classes; {class} is its name'
-			}, { class: name });
+			}, {
+				class: name
+			});
 			failure = {
 				id: 'editor.class.restoreFailed',
 				defaultMessage: 'Could not restore the class.',

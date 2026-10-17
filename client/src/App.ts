@@ -363,7 +363,9 @@ export class App
 				id: 'group.full',
 				defaultMessage: 'That game is full: it already has {max, plural, one {# player} other {# players}}.',
 				description: 'Shown when a join link leads to a game that has no room left; {max} is the most players a game can have'
-			}, { max: MAX_GROUP_PLAYERS });
+			}, {
+				max: MAX_GROUP_PLAYERS
+			});
 		}
 		else
 		{
@@ -435,7 +437,9 @@ export class App
 				id: 'lobby.entering',
 				defaultMessage: 'Entering {universe}...',
 				description: 'Shown on the whole page while the player goes into a universe\'s lobby; {universe} is its name'
-			}, { universe: this.chosenUniverse.name }));
+			}, {
+				universe: this.chosenUniverse.name
+			}));
 		}
 	}
 
@@ -572,7 +576,9 @@ export class App
 					id: 'lobby.notJoined',
 					defaultMessage: 'Could not enter {universe}. Try again in a moment.',
 					description: 'Shown on Home when the player couldn\'t go into a universe\'s lobby; {universe} is its name'
-				}, { universe: universe.name }));
+				}, {
+					universe: universe.name
+				}));
 			}
 
 			return;
@@ -666,7 +672,9 @@ export class App
 				id: 'lobby.connectionLost',
 				defaultMessage: 'Lost the connection to {universe}.',
 				description: 'Shown on Home when the connection to a universe\'s lobby was lost; {universe} is its name'
-			}, { universe: joined.universe.name }));
+			}, {
+				universe: joined.universe.name
+			}));
 		}
 	}
 

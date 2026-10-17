@@ -136,7 +136,9 @@ function describeClass(characterClass: EditorClass): string
 			id: 'editor.classes.primaryAbility',
 			defaultMessage: 'relies on {ability}',
 			description: 'In a character class\'s summary on the editor\'s Classes tab, the ability the class relies on most; {ability} is its name, e.g. Intelligence'
-		}, { ability: t(PF1E_ABILITY_NAMES[primaryAbility]) })
+		}, {
+			ability: t(PF1E_ABILITY_NAMES[primaryAbility])
+		})
 	];
 
 	if (tradition !== 'none')

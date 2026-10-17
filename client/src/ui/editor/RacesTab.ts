@@ -151,7 +151,9 @@ function describeRace(race: EditorRace): string
 			id: 'editor.races.floatingBonus',
 			defaultMessage: '{bonus, number, ::sign-always} to one ability',
 			description: 'In a race\'s summary on the editor\'s Races tab, for a race whose players choose one ability to raise; {bonus} is by how much, e.g. +2'
-		}, { bonus: PF1E_FLOATING_ABILITY_BONUS }));
+		}, {
+			bonus: PF1E_FLOATING_ABILITY_BONUS
+		}));
 	}
 
 	if (darkvision)

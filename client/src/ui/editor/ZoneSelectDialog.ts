@@ -217,7 +217,9 @@ export class ZoneSelectDialog
 				id: 'editor.zoneSelect.inside',
 				defaultMessage: 'Inside {zone}',
 				description: 'In the dialog for choosing a zone, under a zone\'s name: the zone it is inside; {zone} is that zone\'s name'
-			}, { zone: parent.name }));
+			}, {
+				zone: parent.name
+			}));
 		}
 
 		if (!zone.enabled)

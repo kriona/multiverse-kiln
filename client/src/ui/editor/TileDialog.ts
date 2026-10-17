@@ -150,7 +150,9 @@ export class TileDialog
 				id: 'editor.tile.editTitle',
 				defaultMessage: 'Edit {tile}',
 				description: 'Title of the tile editor for a tile the player can change; {tile} is its name'
-			}, { tile: name });
+			}, {
+				tile: name
+			});
 		}
 		else
 		{
@@ -291,7 +293,9 @@ export class TileDialog
 				id: 'editor.tile.confirmDelete',
 				defaultMessage: 'Delete {tile}? This can\'t be undone.',
 				description: 'Asks before deleting a tile made for this universe; {tile} is its name'
-			}, { tile: name });
+			}, {
+				tile: name
+			});
 			failure = {
 				id: 'editor.tile.deleteFailed',
 				defaultMessage: 'Could not delete the tile.',
@@ -304,7 +308,9 @@ export class TileDialog
 				id: 'editor.tile.confirmRestore',
 				defaultMessage: 'Restore {tile} to the ruleset\'s default? Your changes to it will be lost.',
 				description: 'Asks before undoing this universe\'s changes to one of the ruleset\'s tiles; {tile} is its name'
-			}, { tile: name });
+			}, {
+				tile: name
+			});
 			failure = {
 				id: 'editor.tile.restoreFailed',
 				defaultMessage: 'Could not restore the tile.',

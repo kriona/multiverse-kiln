@@ -195,7 +195,9 @@ export class LobbyScreen
 			id: 'lobby.pageTitle',
 			defaultMessage: 'Lobby - {universe} - Multiverse Kiln',
 			description: 'The browser tab\'s title in a universe\'s lobby; {universe} is the universe\'s name and Multiverse Kiln is the game engine\'s name'
-		}, { universe: universeName });
+		}, {
+			universe: universeName
+		});
 		this.playerName.textContent = name;
 		this.createButton.disabled = false;
 		this.queueMemberList();
@@ -370,7 +372,9 @@ export class LobbyScreen
 					id: 'lobby.ownName',
 					defaultMessage: '{name} (you)',
 					description: 'In the list of players in the lobby, the player\'s own name; {name} is the name'
-				}, { name })
+				}, {
+					name
+				})
 				: name);
 			item.classList.toggle('member-own', isOwn);
 
@@ -384,7 +388,9 @@ export class LobbyScreen
 			id: 'lobby.morePlayers',
 			defaultMessage: 'and {count, number} more',
 			description: 'Under the list of players in the lobby, how many more are here than are listed'
-		}, { count: unlisted });
+		}, {
+			count: unlisted
+		});
 		this.memberMore.hidden = (unlisted <= 0);
 	}
 }

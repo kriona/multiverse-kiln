@@ -71,12 +71,16 @@ export function readMoneyField(field: HTMLInputElement): Pf1eMoney | undefined
 			id: 'form.money.tooManyCoins',
 			defaultMessage: 'That\'s more than {max, number} pieces of one coin.',
 			description: 'Shown under a money field when the number typed for one coin, such as gold pieces, is too large; {max} is the most pieces of one coin there can be'
-		}, { max: PF1E_MAX_COINS })
+		}, {
+			max: PF1E_MAX_COINS
+		})
 		: t({
 			id: 'form.money.format',
 			defaultMessage: 'Write amounts of coins, like {example}.',
 			description: 'Shown under a money field when what was typed isn\'t amounts of coins; {example} is an amount in the coins\' abbreviations, e.g. 1pp 2gp 2sp 4cp'
-		}, { example: `1${abbreviations.pp} 2${abbreviations.gp} 2${abbreviations.sp} 4${abbreviations.cp}` })));
+		}, {
+			example: `1${abbreviations.pp} 2${abbreviations.gp} 2${abbreviations.sp} 4${abbreviations.cp}`
+		})));
 
 	return(undefined);
 }

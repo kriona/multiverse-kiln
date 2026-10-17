@@ -125,7 +125,9 @@ export class GroupScreen
 			id: 'group.joinLink',
 			defaultMessage: 'Join link: {link}',
 			description: 'Shown in the game\'s toolbar after pressing Share; {link} is the address others can open to join'
-		}, { link }));
+		}, {
+			link
+		}));
 
 		try
 		{
