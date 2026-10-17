@@ -13,13 +13,15 @@ import { countCustomTiles, createCustomTile, deleteCustomTile, findDefaultTileId
 import { inTransaction } from '../db/transactions.js';
 import { countUniversesWithRole, listEditableUniverses, setUniverseRole } from '../db/universeEditorRepo.js';
 import { createUniverse, lockUniverse, setUniverseZones, updateUniverseSettings } from '../db/universeRepo.js';
-import { createZone, isTileInUse, listZones } from '../db/zoneRepo.js';
+import { createZone, isTileInUse } from '../db/zoneRepo.js';
 import { zoneChanges } from '../world/zoneChanges.js';
 import { loadUniverseContext, playerIdOf, refuseWritesFromOtherOrigins, requireLogin, requireRole, universeContextOf } from './editorAccess.js';
-import { loadEditorItems } from '../db/itemRepo.js';
 import { addDefaultStartingItems } from '../db/startingItemRepo.js';
+import { addClassRoutes } from './editorClasses.js';
 import { addItemRoutes } from './editorItems.js';
 import { newUniverseRequest, rulesetSettings, tileIdParameter, tileListQuery, tileSettings, universeSettingsUpdate } from './editorPayloads.js';
+import { addRaceRoutes } from './editorRaces.js';
+import { findStartingProblem } from './editorStartingExtras.js';
 import { addZoneRoutes, DEFAULT_ZONE_TILE_KEYS, timeSettingsProblem } from './editorZones.js';
 import { errorMessages, sendError, sendInvalidRequest } from './errors.js';
 
@@ -94,6 +96,8 @@ function createEditorRouter(allowedOrigins: Set<string>): express.Router
 	universeRouter.put('/tiles/:tileId', requireRole(canEditWorld), saveTile);
 	universeRouter.delete('/tiles/:tileId', requireRole(canEditWorld), deleteTile);
 	addItemRoutes(universeRouter);
+	addRaceRoutes(universeRouter);
+	addClassRoutes(universeRouter);
 	addZoneRoutes(universeRouter);
 
 	router.use(handleEditorError);
@@ -234,46 +238,28 @@ async function updateUniverse(request: Request, response: Response): Promise<voi
 		return;
 	}
 
-	const { startingZoneId } = body.data;
-
-	if ((startingZoneId !== undefined) && ((startingZoneId === universe.lobbyZoneId) || !(await listZones(universe.id)).some((zone) => (zone.id === startingZoneId))))
-	{
-		sendError(response, 400, {
-			id: 'error.unusableStartingZone',
-			defaultMessage: 'The starting zone must be a zone of this universe other than the lobby.',
-			description: 'Why a universe\'s settings were refused: the zone chosen for characters to start in is the lobby, or was deleted, perhaps by another editor'
-		});
-		return;
-	}
-
-	const { startingItems } = body.data;
-	const updated = await inTransaction(async (transaction) =>
+	const { startingZoneId, startingItems } = body.data;
+	const startingProblem = await inTransaction(async (transaction) =>
 	{
 		// Deleting an item waits for the universe's lock too, so an item can't be deleted as it is added here
 		await lockUniverse(universe.id, transaction);
 
-		if (startingItems !== undefined)
-		{
-			const usableItemIds = new Set((await loadEditorItems(universe.id, universe.ruleset, transaction)).map((item) => item.id));
+		const found = await findStartingProblem(universe, {
+			zoneIds: ((startingZoneId === undefined) ? [] : [startingZoneId]),
+			itemIds: startingItems?.map(({ itemId }) => itemId)
+		}, transaction);
 
-			if (!startingItems.every(({ itemId }) => usableItemIds.has(itemId)))
-			{
-				return(false);
-			}
+		if (found === undefined)
+		{
+			await updateUniverseSettings(universe.id, body.data, transaction);
 		}
 
-		await updateUniverseSettings(universe.id, body.data, transaction);
-
-		return(true);
+		return(found);
 	});
 
-	if (!updated)
+	if (startingProblem !== undefined)
 	{
-		sendError(response, 400, {
-			id: 'error.unusableStartingItem',
-			defaultMessage: 'The starting equipment holds an item this universe doesn\'t have.',
-			description: 'Why a universe\'s starting equipment was refused: one of its items was deleted, perhaps by another editor'
-		});
+		sendError(response, 400, startingProblem);
 		return;
 	}
 

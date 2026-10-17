@@ -1,4 +1,4 @@
-import { canEditUniverseSettings, MAX_GROUP_PLAYERS, MIN_GROUP_SIZE, type EditableUniverse, type EditorItem, type ItemQuantity } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, MAX_GROUP_PLAYERS, MIN_GROUP_SIZE, type EditableUniverse } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -6,9 +6,9 @@ import { ChangeTracker } from '../changeTracker';
 import { getElement, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
-import { createItemIcon, itemName } from '../itemNames';
 import { formatMoney, readMoneyField } from '../moneyField';
-import type { ChosenItem, ItemSelectDialog } from './ItemSelectDialog';
+import type { ItemSelectDialog } from './ItemSelectDialog';
+import { StartingItemsField } from './StartingItemsField';
 import type { ZoneSelectDialog } from './ZoneSelectDialog';
 
 /**
@@ -21,8 +21,6 @@ export class CharactersTab
 	private readonly fields = getElement('characters-fields', HTMLFieldSetElement);
 	private readonly groupSize = getElement('characters-group-size', HTMLInputElement);
 	private readonly startingMoney = getElement('characters-starting-money', HTMLInputElement);
-	private readonly itemList = getElement('characters-items', HTMLUListElement);
-	private readonly noItems = getElement('characters-items-none', HTMLElement);
 	private readonly chooseItemsButton = getElement('characters-items-choose', HTMLButtonElement);
 	private readonly zoneName = getElement('characters-zone-name', HTMLElement);
 	private readonly chooseZoneButton = getElement('characters-zone-choose', HTMLButtonElement);
@@ -40,21 +38,12 @@ export class CharactersTab
 	/**
 	 * The starting equipment the form shows, which may not be saved yet
 	 */
-	private startingItems: ItemQuantity[] = [];
-
-	/**
-	 * The items in the starting equipment, by ID, for their names
-	 */
-	private readonly items = new Map<number, EditorItem>();
+	private readonly startingItems: StartingItemsField;
 
 	/**
 	 * Whether the form, the starting equipment or the starting zone chosen has changes that haven't been saved
 	 */
-	readonly changes = new ChangeTracker({
-		root: this.form,
-		state: () => [this.startingZoneId, this.startingItems],
-		status: this.saved
-	});
+	readonly changes: ChangeTracker;
 
 	/**
 	 * Changes every time the tab opens a universe, so a zone name that arrives for an earlier one is ignored
@@ -62,18 +51,30 @@ export class CharactersTab
 	private openVersion = 0;
 
 	/**
-	 * Changes every time the tab opens a universe, so items that arrive for an earlier one are ignored
-	 */
-	private itemsVersion = 0;
-
-	/**
 	 * @param api The editor's API
 	 * @param zoneSelect The dialog for choosing the starting zone
 	 * @param itemSelect The dialog for choosing the starting equipment
 	 * @param onSaved Called with the universe after the settings are saved
 	 */
-	constructor(private readonly api: EditorApi, private readonly zoneSelect: ZoneSelectDialog, private readonly itemSelect: ItemSelectDialog, private readonly onSaved: (universe: EditableUniverse) => void)
+	constructor(private readonly api: EditorApi, private readonly zoneSelect: ZoneSelectDialog, itemSelect: ItemSelectDialog, private readonly onSaved: (universe: EditableUniverse) => void)
 	{
+		this.startingItems = new StartingItemsField(api, itemSelect, {
+			list: getElement('characters-items', HTMLUListElement),
+			none: getElement('characters-items-none', HTMLElement),
+			choose: this.chooseItemsButton
+		}, () =>
+		{
+			this.saved.textContent = '';
+			this.changes.check();
+		}, (message) =>
+		{
+			showMessage(this.error, message);
+		});
+		this.changes = new ChangeTracker({
+			root: this.form,
+			state: () => [this.startingZoneId, this.startingItems.value],
+			status: this.saved
+		});
 		this.groupSize.min = String(MIN_GROUP_SIZE);
 		this.groupSize.max = String(MAX_GROUP_PLAYERS);
 		getElement('characters-group-size-hint', HTMLElement).textContent = t({
@@ -111,11 +112,6 @@ export class CharactersTab
 			void this.chooseZone();
 		});
 
-		this.chooseItemsButton.addEventListener('click', () =>
-		{
-			void this.chooseItems();
-		});
-
 		this.form.addEventListener('submit', (event) =>
 		{
 			event.preventDefault();
@@ -142,135 +138,8 @@ export class CharactersTab
 		clearFieldErrors(this.form);
 		// Sets the starting zone and equipment straight away, then loads their names
 		void this.showStartingZone(universe.startingZoneId);
-		void this.showStartingItems(universe.startingItems);
+		void this.startingItems.show(universe, universe.startingItems);
 		this.changes.markSaved();
-	}
-
-	/**
-	 * Shows the starting equipment, loading the items' names
-	 *
-	 * @param startingItems The items and how many of each
-	 */
-	private async showStartingItems(startingItems: ItemQuantity[]): Promise<void>
-	{
-		const universe = this.universe;
-		const version = ++this.itemsVersion;
-
-		this.startingItems = startingItems;
-		this.items.clear();
-		this.renderStartingItems();
-
-		// Choosing needs every item, or the items not loaded would be dropped from the equipment
-		this.chooseItemsButton.disabled = (startingItems.length > 0);
-
-		if (!universe || (startingItems.length === 0))
-		{
-			return;
-		}
-
-		try
-		{
-			const { items } = await this.api.listItems(universe.id, { ids: startingItems.map(({ itemId }) => itemId) });
-
-			if (version === this.itemsVersion)
-			{
-				for (const item of items)
-				{
-					this.items.set(item.id, item);
-				}
-
-				this.renderStartingItems();
-				this.chooseItemsButton.disabled = false;
-			}
-		}
-		catch (error)
-		{
-			if (version === this.itemsVersion)
-			{
-				showMessage(this.error, describeEditorError(error, {
-					id: 'editor.characters.itemsFailed',
-					defaultMessage: 'Could not load the starting equipment.',
-					description: 'Shown on the Characters tab when the items characters start with couldn\'t be loaded'
-				}));
-			}
-		}
-	}
-
-	/**
-	 * Lists the starting equipment: each item's icon, how many and its name, or a note that there is none
-	 */
-	private renderStartingItems(): void
-	{
-		const ruleset = this.universe?.ruleset;
-
-		this.itemList.replaceChildren();
-		this.itemList.hidden = (this.startingItems.length === 0);
-		this.noItems.hidden = (this.startingItems.length > 0);
-
-		if (ruleset === undefined)
-		{
-			return;
-		}
-
-		for (const { itemId, quantity } of this.startingItems)
-		{
-			const item = this.items.get(itemId);
-			const row = document.createElement('li');
-
-			if (item)
-			{
-				row.append(createItemIcon(item.type, ruleset));
-			}
-
-			row.append(t({
-				id: 'editor.characters.startingItem',
-				defaultMessage: '{quantity, number} {item}',
-				description: 'One line of the starting equipment on the editor\'s Characters tab, e.g. 20 Arrows; {item} is the item\'s name. Change only to reorder the two'
-			}, {
-				quantity,
-				item: ((item === undefined) ? '' : itemName(item, ruleset))
-			}));
-			this.itemList.append(row);
-		}
-	}
-
-	/**
-	 * Lets the player choose other starting equipment, which the form shows until it is saved
-	 */
-	private async chooseItems(): Promise<void>
-	{
-		if (!this.universe)
-		{
-			return;
-		}
-
-		const current: ChosenItem[] = this.startingItems.flatMap(({ itemId, quantity }) =>
-		{
-			const item = this.items.get(itemId);
-
-			return((item ? [{ item, quantity }] : []));
-		});
-		const chosen = await this.itemSelect.open(this.universe, current);
-
-		this.chooseItemsButton.focus();
-
-		if (chosen)
-		{
-			++this.itemsVersion;
-
-			for (const { item } of chosen)
-			{
-				this.items.set(item.id, item);
-			}
-
-			this.startingItems = chosen.map(({ item, quantity }) => ({
-				itemId: item.id,
-				quantity
-			}));
-			this.renderStartingItems();
-			this.saved.textContent = '';
-			this.changes.check();
-		}
 	}
 
 	/**
@@ -367,7 +236,7 @@ export class CharactersTab
 		}
 
 		const startingZoneId = this.startingZoneId;
-		const startingItems = this.startingItems;
+		const startingItems = this.startingItems.value;
 
 		this.saveButton.disabled = true;
 		showMessage(this.error, undefined);

@@ -5,6 +5,7 @@ import { and, eq } from 'drizzle-orm';
 import type { EditableUniverse, PassageOfTime, Ruleset, UniverseDetails, UniverseSettingsUpdate, UniverseStage, UniverseSummary } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
+import { fromCoinColumns, toCoinColumns } from './coinColumns.js';
 import { universes } from './schema.js';
 import { loadStartingItems, replaceStartingItems } from './startingItemRepo.js';
 
@@ -194,12 +195,7 @@ export async function findEditableUniverse(universeId: string, executor: Executo
 
 	return({
 		...settings,
-		startingMoney: {
-			pp: startingPlatinum,
-			gp: startingGold,
-			sp: startingSilver,
-			cp: startingCopper
-		},
+		startingMoney: fromCoinColumns({ startingPlatinum, startingGold, startingSilver, startingCopper }),
 		startingItems: await loadStartingItems(universeId, executor)
 	});
 }
@@ -233,14 +229,7 @@ export async function updateUniverseSettings(universeId: string, update: Univers
 		.update(universes)
 		.set({
 			...settings,
-			...((startingMoney === undefined)
-				? {}
-				: {
-					startingPlatinum: startingMoney.pp,
-					startingGold: startingMoney.gp,
-					startingSilver: startingMoney.sp,
-					startingCopper: startingMoney.cp
-				})
+			...((startingMoney === undefined) ? {} : toCoinColumns(startingMoney))
 		})
 		.where(eq(universes.id, universeId));
 }

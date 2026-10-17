@@ -168,6 +168,8 @@ This lets you change anything about a universe. It will be a whole suite of tool
 	- [Ruleset](#tab-ruleset)
 	- [Lobby](#tab-lobby)
 	- [Characters](#tab-characters)
+	- [Races](#tab-races)
+	- [Classes](#tab-classes)
 	- [Tilesets](#tab-tilesets)
 	- [Zones](#tab-zones)
 	- [Items](#tab-items)
@@ -241,13 +243,14 @@ Pathfinder 1E's rules (races, classes, abilities, point buy, sizes and items) ar
 - Starting equipment, lets you [select items](#selection-item). A new universe starts with one dagger for every character. An item in the starting equipment can't be deleted until it is taken out
 - Starting [money](#field-money)
 - Starting [zone](#selection-zone)
-- Tabs:
-	- [Races](#tab-races)
-	- [Classes](#tab-classes)
 
-A character's starting zone is chosen in this order, most specific first: the class's entry for their race, the class, the race, then the universe.
+Each [race](#tab-races) and [class](#tab-classes) can add to the starting money and equipment, and choose a starting zone of its own.
 
-#### Tab: Races
+A character's starting zone is chosen in this order, most specific first: the class's entry for their race, the class, the race, then the universe. A class with a zone of its own has no entries for races, so the two never compete.
+
+Races and classes work like default items: the ruleset's defaults are in every universe, an edit applies to that universe only and can be undone to restore the default (losing its starting money, equipment and zones too), and a race or class the universe added can be deleted. Like the Characters tab, only creators can change them.
+
+### Tab: Races
 based on the ruleset, show a list of races.
 
 For PF1E that list is:
@@ -286,7 +289,7 @@ You can edit each race:
 		- `gargantuan`
 		- `colossal`
 
-#### Tab: Classes
+### Tab: Classes
 based on the ruleset, show a list of classes.
 
 For PF1E that list is:
@@ -315,8 +318,8 @@ You can edit each class:
 - Add starting equipment, note it is in addition to starting + racial equipment, lets you [select items](#selection-item)
 - Add starting [money](#field-money), note it is in addition to starting + racial money
 - Edit starting zone button. If clicked:
-	- [Zone selection](#selection-zone), default null. If a zone is selected, the per-race entries for this class are disabled. Show a message: all members of this class, regardless of race, start here.
-	- An entry for each playable race. Default is the race's start zone, can be overridden
+	- [Zone selection](#selection-zone), default null. If a zone is selected, the per-race entries for this class are disabled. Show a message: all members of this class, regardless of race, start here. The entries stay in the form while it is open, so clearing the zone brings them back, but saving with a zone selected discards them
+	- An entry for each playable race (and any disabled race that has one). Default is the race's start zone, can be overridden
 - for PF1E:
 	- primary ability score (`strength`, `dexterity`, `constitution`, `intelligence`, `wisdom`, `charisma`), used as a hint when assigning stats
 	- magic tradition

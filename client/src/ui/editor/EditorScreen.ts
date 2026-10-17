@@ -5,8 +5,10 @@ import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import type { ChangeTracker } from '../changeTracker';
 import { getElement, showMessage } from '../dom';
 import { CharactersTab } from './CharactersTab';
+import { ClassesTab } from './ClassesTab';
 import { ItemSelectDialog } from './ItemSelectDialog';
 import { ItemsTab } from './ItemsTab';
+import { RacesTab } from './RacesTab';
 import { RulesetTab } from './RulesetTab';
 import { TilesetsTab } from './TilesetsTab';
 import { UniverseTab } from './UniverseTab';
@@ -21,6 +23,8 @@ export const EDITOR_TABS = [
 	'ruleset',
 	'lobby',
 	'characters',
+	'races',
+	'classes',
 	'tilesets',
 	'zones',
 	'items'
@@ -70,7 +74,7 @@ export function isEditorTab(value: string | undefined): value is EditorTab
 }
 
 /**
- * Edit Universe: a universe's settings, ruleset, characters, tiles, zones and items, in tabs
+ * Edit Universe: a universe's settings, ruleset, characters, races, classes, tiles, zones and items, in tabs
  *
  * What the player may change depends on their role in the universe; the server checks it again on
  * every change, so the page only hides controls that would be refused
@@ -83,6 +87,8 @@ export class EditorScreen
 	private readonly universeTab: UniverseTab;
 	private readonly rulesetTab: RulesetTab;
 	private readonly charactersTab: CharactersTab;
+	private readonly racesTab: RacesTab;
+	private readonly classesTab: ClassesTab;
 	private readonly tilesetsTab: TilesetsTab;
 	private readonly zonesTab: ZonesTab;
 	private readonly itemsTab: ItemsTab;
@@ -110,10 +116,16 @@ export class EditorScreen
 			this.setUniverse(universe);
 		});
 		this.rulesetTab = new RulesetTab(api);
-		this.charactersTab = new CharactersTab(api, new ZoneSelectDialog(api), new ItemSelectDialog(api), (universe) =>
+
+		const zoneSelect = new ZoneSelectDialog(api);
+		const itemSelect = new ItemSelectDialog(api);
+
+		this.charactersTab = new CharactersTab(api, zoneSelect, itemSelect, (universe) =>
 		{
 			this.setUniverse(universe);
 		});
+		this.racesTab = new RacesTab(api, zoneSelect, itemSelect);
+		this.classesTab = new ClassesTab(api, zoneSelect, itemSelect);
 		this.tilesetsTab = new TilesetsTab(api);
 		this.zonesTab = new ZonesTab(api, (zoneId) =>
 		{
@@ -226,6 +238,8 @@ export class EditorScreen
 		this.universeTab.open(universe);
 		void this.rulesetTab.open(universe);
 		this.charactersTab.open(universe);
+		this.racesTab.open(universe);
+		this.classesTab.open(universe);
 		this.tilesetsTab.open(universe);
 		this.zonesTab.open(universe, place.zoneId);
 		this.itemsTab.open(universe);

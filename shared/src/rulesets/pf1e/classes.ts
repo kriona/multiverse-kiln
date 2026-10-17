@@ -64,9 +64,9 @@ export const PF1E_CASTING_STYLE_NAMES: Record<Pf1eCastingStyle, MessageDescripto
 });
 
 /**
- * What a class starts with before a universe edits it
+ * A class's rules: what a default class starts with, and what a universe stores and edits
  */
-export interface Pf1eClassDefaults
+export interface Pf1eClassRules
 {
 	/**
 	 * The ability the class relies on most, a hint when the player arranges their scores
@@ -76,6 +76,15 @@ export interface Pf1eClassDefaults
 	tradition: Pf1eMagicTradition;
 	castingStyle: Pf1eCastingStyle;
 }
+
+/**
+ * The rules a class the universe adds starts with: relying on strength, casting no spells
+ */
+export const NEW_PF1E_CLASS_RULES: Readonly<Pf1eClassRules> = {
+	primaryAbility: 'strength',
+	tradition: 'none',
+	castingStyle: 'none'
+};
 
 /**
  * The default classes by key. The alchemist's extracts count as arcane and prepared
@@ -166,7 +175,7 @@ export const PF1E_CLASSES = {
 		tradition: 'arcane',
 		castingStyle: 'prepared'
 	}
-} as const satisfies Record<string, Pf1eClassDefaults>;
+} as const satisfies Record<string, Pf1eClassRules>;
 
 export type Pf1eClassKey = keyof typeof PF1E_CLASSES;
 

@@ -504,3 +504,68 @@
 		}
 	}
 }
+
+// The race and class editors, which hold more than fits beside each other
+.option-dialog
+{
+	h3
+	{
+		margin: 0;
+		font-size: 1em;
+	}
+}
+
+// A race's six ability modifiers, three to a row
+.ability-modifiers
+{
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 8px 12px;
+
+	.form & label
+	{
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	input
+	{
+		width: 100%;
+	}
+}
+
+.zone-buttons
+{
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+// Where a class's members of each race start: the race, its zone, and buttons to change it
+.race-zones
+{
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+
+	ul
+	{
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		max-height: 260px;
+		margin: 0;
+		padding: 0;
+		overflow-y: auto;
+		list-style: none;
+	}
+
+	li
+	{
+		display: grid;
+		grid-template-columns: 8em 1fr auto auto;
+		align-items: center;
+		gap: 8px;
+	}
+}

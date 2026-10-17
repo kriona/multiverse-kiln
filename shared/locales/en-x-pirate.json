@@ -23,10 +23,6 @@
 		"message": "{min, number} be sailin' alone. At most {max, number} hands can sail together.",
 		"source": "{min, number} is single player. At most {max, number} characters can play together."
 	},
-	"editor.characters.itemsFailed": {
-		"message": "Couldn't haul up the startin' kit.",
-		"source": "Could not load the starting equipment."
-	},
 	"editor.characters.noStartingEquipment": {
 		"message": "The crew sets sail empty-handed.",
 		"source": "Characters start with nothing."
@@ -42,10 +38,6 @@
 	"editor.characters.startingEquipmentHint": {
 		"message": "What every hand comes aboard with. Races an' classes can add more.",
 		"source": "What every character starts with. Races and classes can add more."
-	},
-	"editor.characters.startingItem": {
-		"message": "{quantity, number} {item}",
-		"source": "{quantity, number} {item}"
 	},
 	"editor.characters.startingMoney": {
 		"message": "Startin' purse",
@@ -66,6 +58,150 @@
 	"editor.characters.zoneFailed": {
 		"message": "Couldn't find the home port.",
 		"source": "Could not load the starting zone."
+	},
+	"editor.class.addTitle": {
+		"message": "Add a Callin'",
+		"source": "Add Class"
+	},
+	"editor.class.castingStyle": {
+		"message": "Way o' spellslingin'",
+		"source": "Spellcasting style"
+	},
+	"editor.class.chooseEquipment": {
+		"message": "Choose Kit",
+		"source": "Choose Equipment"
+	},
+	"editor.class.chooseRaceZone": {
+		"message": "Choose",
+		"source": "Choose"
+	},
+	"editor.class.chooseRaceZoneLabel": {
+		"message": "Choose the home port for {race}",
+		"source": "Choose the starting zone for {race}"
+	},
+	"editor.class.chooseZone": {
+		"message": "Choose Port",
+		"source": "Choose Zone"
+	},
+	"editor.class.clearRaceZone": {
+		"message": "Cast Off",
+		"source": "Clear"
+	},
+	"editor.class.clearRaceZoneLabel": {
+		"message": "Cast off the home port for {race}",
+		"source": "Clear the starting zone for {race}"
+	},
+	"editor.class.clearZone": {
+		"message": "Choose by Folk",
+		"source": "Choose by Race"
+	},
+	"editor.class.confirmDelete": {
+		"message": "Scuttle {class}? There be no bringin' it back.",
+		"source": "Delete {class}? This can't be undone."
+	},
+	"editor.class.confirmRestore": {
+		"message": "Return {class} to the ruleset's way? Yer changes to it, its startin' coin, kit and ports too, will be lost at sea.",
+		"source": "Restore {class} to the ruleset's default? Your changes to it, including its starting money, equipment and zones, will be lost."
+	},
+	"editor.class.delete": {
+		"message": "Scuttle Callin'",
+		"source": "Delete Class"
+	},
+	"editor.class.deleteFailed": {
+		"message": "Couldn't scuttle the callin'.",
+		"source": "Could not delete the class."
+	},
+	"editor.class.editTitle": {
+		"message": "Edit {class}",
+		"source": "Edit {class}"
+	},
+	"editor.class.enabled": {
+		"message": "Open to all hands",
+		"source": "Enabled"
+	},
+	"editor.class.enabledHint": {
+		"message": "New crew can only take up callin's open to all hands, an' at least one must stay open.",
+		"source": "New characters can only choose enabled classes, and at least one class must be enabled."
+	},
+	"editor.class.name": {
+		"message": "Name",
+		"source": "Name"
+	},
+	"editor.class.noStartingEquipment": {
+		"message": "Naught more.",
+		"source": "Nothing more."
+	},
+	"editor.class.primaryAbility": {
+		"message": "Chief knack",
+		"source": "Primary ability"
+	},
+	"editor.class.primaryAbilityHint": {
+		"message": "Whispered to the crew when they be dealin' out their scores.",
+		"source": "Suggested to players when they arrange their ability scores."
+	},
+	"editor.class.raceZones": {
+		"message": "Home port by folk",
+		"source": "Starting zone by race"
+	},
+	"editor.class.raceZonesNote": {
+		"message": "All hands o' this callin', whatever their folk, set sail from the callin's port.",
+		"source": "All members of this class, whatever their race, start in the class's zone."
+	},
+	"editor.class.restore": {
+		"message": "Restore the Old Ways",
+		"source": "Restore Default"
+	},
+	"editor.class.restoreFailed": {
+		"message": "Couldn't restore the callin'.",
+		"source": "Could not restore the class."
+	},
+	"editor.class.saveFailed": {
+		"message": "Couldn't stow the callin'.",
+		"source": "Could not save the class."
+	},
+	"editor.class.startingEquipment": {
+		"message": "Extra startin' kit",
+		"source": "Extra starting equipment"
+	},
+	"editor.class.startingMoney": {
+		"message": "Extra startin' coin",
+		"source": "Extra starting money"
+	},
+	"editor.class.startingZone": {
+		"message": "Home port: {zone}",
+		"source": "Starting zone: {zone}"
+	},
+	"editor.class.tradition": {
+		"message": "Source o' magic",
+		"source": "Magic tradition"
+	},
+	"editor.class.zoneByRace": {
+		"message": "Settled by folk (below)",
+		"source": "Decided by race (below)"
+	},
+	"editor.classes.add": {
+		"message": "Add a Callin'",
+		"source": "Add Class"
+	},
+	"editor.classes.hint": {
+		"message": "The callin's new crew can take up. Each callin's startin' coin an' kit be added to what every hand an' their folk set sail with.",
+		"source": "The classes new characters can choose. Each class's starting money and equipment are added to what every character and their race start with."
+	},
+	"editor.classes.listFailed": {
+		"message": "Couldn't list the callin's.",
+		"source": "Could not list the classes."
+	},
+	"editor.classes.name": {
+		"message": "Name",
+		"source": "Name"
+	},
+	"editor.classes.primaryAbility": {
+		"message": "leans on {ability}",
+		"source": "relies on {ability}"
+	},
+	"editor.classes.summary": {
+		"message": "Particulars",
+		"source": "Summary"
 	},
 	"editor.error.failedBecause": {
 		"message": "{failure} {reason}",
@@ -623,6 +759,150 @@
 		"message": "West",
 		"source": "West"
 	},
+	"editor.options.customTag": {
+		"message": "custom",
+		"source": "custom"
+	},
+	"editor.options.disabledTag": {
+		"message": "closed",
+		"source": "disabled"
+	},
+	"editor.options.editedTag": {
+		"message": "changed",
+		"source": "edited"
+	},
+	"editor.race.abilityModifiers": {
+		"message": "Knack tweaks",
+		"source": "Ability modifiers"
+	},
+	"editor.race.addTitle": {
+		"message": "Add Folk",
+		"source": "Add Race"
+	},
+	"editor.race.chooseEquipment": {
+		"message": "Choose Kit",
+		"source": "Choose Equipment"
+	},
+	"editor.race.chooseZone": {
+		"message": "Choose Port",
+		"source": "Choose Zone"
+	},
+	"editor.race.clearZone": {
+		"message": "Use the Universe's Port",
+		"source": "Use the Universe's Zone"
+	},
+	"editor.race.confirmDelete": {
+		"message": "Scuttle {race}? There be no bringin' it back.",
+		"source": "Delete {race}? This can't be undone."
+	},
+	"editor.race.confirmRestore": {
+		"message": "Return {race} to the ruleset's way? Yer changes to it, its startin' coin, kit and port too, will be lost at sea.",
+		"source": "Restore {race} to the ruleset's default? Your changes to it, including its starting money, equipment and zone, will be lost."
+	},
+	"editor.race.darkvision": {
+		"message": "Sees in the dark",
+		"source": "Darkvision"
+	},
+	"editor.race.delete": {
+		"message": "Scuttle Folk",
+		"source": "Delete Race"
+	},
+	"editor.race.deleteFailed": {
+		"message": "Couldn't scuttle the folk.",
+		"source": "Could not delete the race."
+	},
+	"editor.race.editTitle": {
+		"message": "Edit {race}",
+		"source": "Edit {race}"
+	},
+	"editor.race.enabled": {
+		"message": "Open to all hands",
+		"source": "Enabled"
+	},
+	"editor.race.enabledHint": {
+		"message": "New crew can only hail from folk open to all hands, an' at least one must stay open.",
+		"source": "New characters can only choose enabled races, and at least one race must be enabled."
+	},
+	"editor.race.floatingBonus": {
+		"message": "Knack o' their choosin'",
+		"source": "Floating ability bonus"
+	},
+	"editor.race.floatingBonusHint": {
+		"message": "The hand picks one knack to get +{bonus, number}, as humans, half-elves an' half-orcs do.",
+		"source": "The player chooses one ability to get +{bonus, number}, as humans, half-elves and half-orcs do."
+	},
+	"editor.race.name": {
+		"message": "Name",
+		"source": "Name"
+	},
+	"editor.race.noStartingEquipment": {
+		"message": "Naught more.",
+		"source": "Nothing more."
+	},
+	"editor.race.restore": {
+		"message": "Restore the Old Ways",
+		"source": "Restore Default"
+	},
+	"editor.race.restoreFailed": {
+		"message": "Couldn't restore the folk.",
+		"source": "Could not restore the race."
+	},
+	"editor.race.saveFailed": {
+		"message": "Couldn't stow the folk.",
+		"source": "Could not save the race."
+	},
+	"editor.race.size": {
+		"message": "Heft",
+		"source": "Size"
+	},
+	"editor.race.startingEquipment": {
+		"message": "Extra startin' kit",
+		"source": "Extra starting equipment"
+	},
+	"editor.race.startingMoney": {
+		"message": "Extra startin' coin",
+		"source": "Extra starting money"
+	},
+	"editor.race.startingZone": {
+		"message": "Home port: {zone}",
+		"source": "Starting zone: {zone}"
+	},
+	"editor.race.startingZoneHint": {
+		"message": "Where these folk set sail from, unless their callin' says otherwise.",
+		"source": "Where the race's characters start, unless their class says otherwise."
+	},
+	"editor.races.add": {
+		"message": "Add Folk",
+		"source": "Add Race"
+	},
+	"editor.races.darkvision": {
+		"message": "sees in the dark",
+		"source": "darkvision"
+	},
+	"editor.races.floatingBonus": {
+		"message": "{bonus, number, ::sign-always} to a knack o' choice",
+		"source": "{bonus, number, ::sign-always} to one ability"
+	},
+	"editor.races.hint": {
+		"message": "The folk new crew can hail from. Each folk's startin' coin an' kit be added to what every hand sets sail with.",
+		"source": "The races new characters can choose. Each race's starting money and equipment are added to what every character starts with."
+	},
+	"editor.races.listFailed": {
+		"message": "Couldn't list the folk.",
+		"source": "Could not list the races."
+	},
+	"editor.races.modifier": {
+		"message": "{ability} {modifier, number, ::sign-always}",
+		"source": "{ability} {modifier, number, ::sign-always}"
+	},
+	"editor.races.name": {
+		"message": "Name",
+		"source": "Name"
+	},
+	"editor.races.summary": {
+		"message": "Particulars",
+		"source": "Summary"
+	},
 	"editor.role": {
 		"message": "Yer rank: {role}",
 		"source": "Your role: {role}"
@@ -667,9 +947,33 @@
 		"message": "Shot an' arrows get used up",
 		"source": "Ammunition is used up"
 	},
+	"editor.startingItems.item": {
+		"message": "{quantity, number} {item}",
+		"source": "{quantity, number} {item}"
+	},
+	"editor.startingItems.loadFailed": {
+		"message": "Couldn't haul up the startin' kit.",
+		"source": "Could not load the starting equipment."
+	},
+	"editor.startingZone.loadFailed": {
+		"message": "Couldn't make out the ports' names.",
+		"source": "Could not load the zones' names."
+	},
+	"editor.startingZone.races": {
+		"message": "{zone} (the folk's)",
+		"source": "{zone} (the race's)"
+	},
+	"editor.startingZone.universes": {
+		"message": "{zone} (the universe's)",
+		"source": "{zone} (the universe's)"
+	},
 	"editor.tab.characters": {
 		"message": "Crew",
 		"source": "Characters"
+	},
+	"editor.tab.classes": {
+		"message": "Callin's",
+		"source": "Classes"
 	},
 	"editor.tab.items": {
 		"message": "Booty",
@@ -678,6 +982,10 @@
 	"editor.tab.lobby": {
 		"message": "Tavern",
 		"source": "Lobby"
+	},
+	"editor.tab.races": {
+		"message": "Folk",
+		"source": "Races"
 	},
 	"editor.tab.ruleset": {
 		"message": "Ship's Articles",
@@ -1055,6 +1363,14 @@
 		"message": "Every cell must be inside the zone's chart.",
 		"source": "Every cell must be inside the zone's map."
 	},
+	"error.classLimit": {
+		"message": "A universe can have at most {max, plural, one {# callin''} other {# callin's}} of its own.",
+		"source": "A universe can have at most {max, plural, one {# class} other {# classes}} of its own."
+	},
+	"error.classNeedsName": {
+		"message": "A callin' needs a name.",
+		"source": "A class needs a name."
+	},
 	"error.faerieCantLoop": {
 		"message": "A zone where the hours pass the faerie way can't loop.",
 		"source": "A zone whose passage of time is faerie can't loop."
@@ -1068,8 +1384,8 @@
 		"source": "The request isn't valid ({problem})."
 	},
 	"error.itemInStartingEquipment": {
-		"message": "The crew comes aboard with this booty, so it can't be scuttled. Take it out o' the startin' kit first.",
-		"source": "Characters start with this item, so it can't be deleted. Take it out of the starting equipment first."
+		"message": "The crew comes aboard with this booty, so it can't be scuttled. Take it out o' the universe's startin' kit, an' every folk's an' callin's, first.",
+		"source": "Characters start with this item, so it can't be deleted. Take it out of the starting equipment of the universe and of every race and class first."
 	},
 	"error.itemLimit": {
 		"message": "A universe can stow at most {max, plural, one {# piece o' booty} other {# pieces o' booty}} of its own.",
@@ -1099,6 +1415,18 @@
 		"message": "Come aboard first.",
 		"source": "Log in first."
 	},
+	"error.noEnabledClass": {
+		"message": "A universe needs at least one callin' open to all hands, so new crew have one to take up.",
+		"source": "A universe needs at least one enabled class, so new characters have one to be."
+	},
+	"error.noEnabledRace": {
+		"message": "A universe needs at least one folk open to all hands, so new crew have one to hail from.",
+		"source": "A universe needs at least one enabled race, so new characters have one to be."
+	},
+	"error.noSuchClass": {
+		"message": "That callin' be lost at sea.",
+		"source": "The class doesn't exist."
+	},
 	"error.noSuchItem": {
 		"message": "That booty be lost at sea.",
 		"source": "The item doesn't exist."
@@ -1106,6 +1434,10 @@
 	"error.noSuchLink": {
 		"message": "There be no passage on that cell.",
 		"source": "There is no link on that cell."
+	},
+	"error.noSuchRace": {
+		"message": "Those folk be lost at sea.",
+		"source": "The race doesn't exist."
 	},
 	"error.noSuchTile": {
 		"message": "That tile be lost at sea.",
@@ -1126,6 +1458,14 @@
 	"error.parentNotInUniverse": {
 		"message": "The mother zone must be a zone of this universe.",
 		"source": "The parent zone must be a zone of this universe."
+	},
+	"error.raceLimit": {
+		"message": "A universe can have at most {max, plural, one {# folk} other {# folks}} of its own.",
+		"source": "A universe can have at most {max, plural, one {# race} other {# races}} of its own."
+	},
+	"error.raceNeedsName": {
+		"message": "Folk need a name.",
+		"source": "A race needs a name."
 	},
 	"error.resizeDiscards": {
 		"message": "Resizin' would toss painted cells or passages overboard.",
@@ -1158,6 +1498,10 @@
 	"error.unknownItemType": {
 		"message": "The universe's ruleset knows no such sort o' booty.",
 		"source": "The universe's ruleset has no such type of item."
+	},
+	"error.unknownRaceZone": {
+		"message": "A home port be chosen for folk this universe doesn't have.",
+		"source": "A starting zone is chosen for a race this universe doesn't have."
 	},
 	"error.unreadableBody": {
 		"message": "That request couldn't be read.",

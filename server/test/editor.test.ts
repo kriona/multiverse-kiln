@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { chunkKey, DEFAULT_PF1E_SETTINGS, DEFAULT_TILE_CELL, EDITOR_UNIVERSES_PATH, emptyPf1eMoney, isLocalizedMessage, MAX_CREATED_UNIVERSES, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_STARTING_ITEMS, NEW_ZONE_BOUNDS, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, VOID_CELL, type CreatedPayload, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorZone, type ItemListPayload, type ItemSettings, type ResizeConflictPayload, type RulesetSettings, type TileListPayload, type TileSettings, type UniverseRole, type ZoneListPayload } from '@multiverse-kiln/shared';
+import { chunkKey, DEFAULT_PF1E_SETTINGS, DEFAULT_TILE_CELL, EDITOR_UNIVERSES_PATH, emptyPf1eMoney, isLocalizedMessage, MAX_CREATED_UNIVERSES, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_STARTING_ITEMS, NEW_PF1E_CLASS_RULES, NEW_PF1E_RACE_RULES, NEW_ZONE_BOUNDS, PF1E_CLASSES, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_RACES, VOID_CELL, type ClassListPayload, type ClassSettings, type CreatedPayload, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorZone, type ItemListPayload, type ItemSettings, type RaceListPayload, type RaceSettings, type ResizeConflictPayload, type RulesetSettings, type TileListPayload, type TileSettings, type UniverseRole, type ZoneListPayload } from '@multiverse-kiln/shared';
 
 import { findDefaultItemIds } from '../src/db/itemRepo.js';
 import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
@@ -49,6 +49,51 @@ const torch: ItemSettings = {
 	type: 'torch',
 	enabled: true
 };
+
+const lizardfolk: RaceSettings = {
+	name: 'Lizardfolk',
+	enabled: true,
+	startingMoney: emptyPf1eMoney(),
+	startingItems: [],
+	startingZoneId: null,
+	rules: NEW_PF1E_RACE_RULES
+};
+
+const gunslinger: ClassSettings = {
+	name: 'Gunslinger',
+	enabled: true,
+	startingMoney: emptyPf1eMoney(),
+	startingItems: [],
+	startingZoneId: null,
+	raceZones: [],
+	rules: NEW_PF1E_CLASS_RULES
+};
+
+/**
+ * A race's settings as the race editor sends them, without what only the list shows
+ *
+ * @param race The race, as listed
+ * @return Its settings
+ */
+function raceSettingsOf(race: EditorRace): RaceSettings
+{
+	const { name, enabled, startingMoney, startingItems, startingZoneId, rules } = race;
+
+	return({ name, enabled, startingMoney, startingItems, startingZoneId, rules });
+}
+
+/**
+ * A class's settings as the class editor sends them, without what only the list shows
+ *
+ * @param characterClass The class, as listed
+ * @return Its settings
+ */
+function classSettingsOf(characterClass: EditorClass): ClassSettings
+{
+	const { name, enabled, startingMoney, startingItems, startingZoneId, raceZones, rules } = characterClass;
+
+	return({ name, enabled, startingMoney, startingItems, startingZoneId, raceZones, rules });
+}
 
 /**
  * Logs a new browser in as a player
@@ -670,6 +715,205 @@ describe('World editor API', () =>
 
 			await setUniverseRole(universeId, grace.playerId, 'builder');
 			assert.strictEqual((await send(grace, 'POST', `/${universeId}/items`, { body: torch })).status, 201);
+		});
+	});
+
+	describe('races', () =>
+	{
+		it('lists the default races, and edits one for this universe only before restoring it', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const otherId = await createUniverse(ada, 'Other');
+			const races = (await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races;
+			const dwarf = races.find((race) => (race.key === 'dwarf')) as EditorRace;
+			const { id, key, custom } = dwarf;
+			const changed: RaceSettings = {
+				...raceSettingsOf(dwarf),
+				startingMoney: {
+					...emptyPf1eMoney(),
+					gp: 10
+				},
+				startingZoneId: await createZone(ada, universeId)
+			};
+
+			assert.deepStrictEqual(races.map((race) => race.key), Object.keys(PF1E_RACES));
+			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/races/${id}`, { body: changed })).status, 204);
+
+			const after = (await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races;
+			const theirs = (await send<RaceListPayload>(ada, 'GET', `/${otherId}/races`)).body.races;
+
+			assert.deepStrictEqual(after.find((race) => (race.id === id)), { id, key, ...changed, custom, edited: true });
+			assert.deepStrictEqual(theirs.find((race) => (race.id === id)), dwarf);
+
+			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/races/${id}`)).status, 204);
+			assert.deepStrictEqual((await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races.find((race) => (race.id === id)), dwarf);
+		});
+
+		it('adds and deletes a custom race, and answers 404 for one of another universe', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const otherId = await createUniverse(ada, 'Other');
+			const created = await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/races`, { body: lizardfolk });
+			const theirRaceId = (await send<CreatedPayload<number>>(ada, 'POST', `/${otherId}/races`, { body: lizardfolk })).body.id;
+
+			assert.strictEqual(created.status, 201);
+			assert.deepStrictEqual((await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races.filter((race) => race.custom), [{ id: created.body.id, key: null, ...lizardfolk, custom: true, edited: false }]);
+			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/races/${theirRaceId}`, { body: lizardfolk })).status, 404);
+			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/races/abc`, { body: lizardfolk })).status, 404);
+			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/races/${created.body.id}`)).status, 204);
+			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/races/${created.body.id}`)).status, 404);
+		});
+
+		it('refuses a custom race without a name, invalid rules, and zones or items the universe can\'t use', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const universe = (await send<EditableUniverse>(ada, 'GET', `/${universeId}`)).body;
+			const otherId = await createUniverse(ada, 'Other');
+			const theirZoneId = await createZone(ada, otherId);
+			const theirItemId = (await send<CreatedPayload<number>>(ada, 'POST', `/${otherId}/items`, { body: torch })).body.id;
+			const invalid = [
+				{ ...lizardfolk, name: null },
+				{ ...lizardfolk, name: '' },
+				{ ...lizardfolk, rules: { ...lizardfolk.rules, size: 'enormous' } },
+				{ ...lizardfolk, rules: { ...lizardfolk.rules, abilityModifiers: { ...lizardfolk.rules.abilityModifiers, wisdom: PF1E_MAX_RACE_ABILITY_MODIFIER + 1 } } },
+				{ ...lizardfolk, startingItems: [{ itemId: 1, quantity: 0 }] }
+			];
+
+			for (const body of invalid)
+			{
+				assert.strictEqual((await send(ada, 'POST', `/${universeId}/races`, { body })).status, 400, JSON.stringify(body));
+			}
+
+			for (const startingZoneId of [universe.lobbyZoneId, theirZoneId])
+			{
+				const response = await send<ErrorPayload>(ada, 'POST', `/${universeId}/races`, { body: { ...lizardfolk, startingZoneId } });
+
+				assert.strictEqual(response.body.error.id, 'error.unusableStartingZone');
+			}
+
+			const response = await send<ErrorPayload>(ada, 'POST', `/${universeId}/races`, { body: { ...lizardfolk, startingItems: [{ itemId: theirItemId, quantity: 1 }] } });
+
+			assert.strictEqual(response.body.error.id, 'error.unusableStartingItem');
+			assert.deepStrictEqual((await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races.filter((race) => race.custom), []);
+		});
+
+		it('keeps at least one race enabled', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const raceId = (await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/races`, { body: lizardfolk })).body.id;
+
+			for (const race of (await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races.filter((listed) => !listed.custom))
+			{
+				assert.strictEqual((await send(ada, 'PUT', `/${universeId}/races/${race.id}`, { body: { ...raceSettingsOf(race), enabled: false } })).status, 204, race.key ?? '');
+			}
+
+			assert.strictEqual((await send<ErrorPayload>(ada, 'PUT', `/${universeId}/races/${raceId}`, { body: { ...lizardfolk, enabled: false } })).body.error.id, 'error.noEnabledRace');
+			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/races/${raceId}`)).status, 409);
+			assert.strictEqual((await send(ada, 'POST', `/${universeId}/races`, { body: { ...lizardfolk, enabled: false } })).status, 201);
+		});
+
+		it('refuses to delete an item a race starts with', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const torchId = (await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/items`, { body: torch })).body.id;
+			const raceId = (await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/races`, { body: { ...lizardfolk, startingItems: [{ itemId: torchId, quantity: 2 }] } })).body.id;
+
+			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/items/${torchId}`)).status, 409);
+
+			await send(ada, 'PUT', `/${universeId}/races/${raceId}`, { body: lizardfolk });
+			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/items/${torchId}`)).status, 204);
+		});
+
+		it('lets only creators change races', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const grace = await logIn('Grace');
+
+			await setUniverseRole(universeId, grace.playerId, 'builder');
+			assert.strictEqual((await send(grace, 'GET', `/${universeId}/races`)).status, 200);
+			assert.strictEqual((await send(grace, 'POST', `/${universeId}/races`, { body: lizardfolk })).status, 403);
+		});
+	});
+
+	describe('classes', () =>
+	{
+		it('adds a class with a zone for some races, and edits a default class before restoring it', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const zoneId = await createZone(ada, universeId);
+			const races = (await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races;
+			const settings: ClassSettings = {
+				...gunslinger,
+				raceZones: [{ raceId: races[0].id, zoneId }]
+			};
+			const created = await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/classes`, { body: settings });
+			const classes = (await send<ClassListPayload>(ada, 'GET', `/${universeId}/classes`)).body.classes;
+
+			assert.strictEqual(created.status, 201);
+			assert.deepStrictEqual(classes.map((characterClass) => characterClass.key), [...Object.keys(PF1E_CLASSES), null]);
+			assert.deepStrictEqual(classes.find((characterClass) => characterClass.custom), { id: created.body.id, key: null, ...settings, custom: true, edited: false });
+
+			const wizard = classes.find((characterClass) => (characterClass.key === 'wizard')) as EditorClass;
+			const { id, key, custom } = wizard;
+			const changed: ClassSettings = {
+				...classSettingsOf(wizard),
+				startingZoneId: zoneId
+			};
+
+			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/classes/${id}`, { body: changed })).status, 204);
+			assert.deepStrictEqual((await send<ClassListPayload>(ada, 'GET', `/${universeId}/classes`)).body.classes.find((characterClass) => (characterClass.id === id)), { id, key, ...changed, custom, edited: true });
+
+			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/classes/${id}`)).status, 204);
+			assert.deepStrictEqual((await send<ClassListPayload>(ada, 'GET', `/${universeId}/classes`)).body.classes.find((characterClass) => (characterClass.id === id)), wizard);
+		});
+
+		it('refuses zones for races alongside a zone for every race, and zones for races the universe doesn\'t have', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const zoneId = await createZone(ada, universeId);
+			const theirRaceId = (await send<CreatedPayload<number>>(ada, 'POST', `/${await createUniverse(ada, 'Other')}/races`, { body: lizardfolk })).body.id;
+			const elfId = (await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races[3].id;
+			const both = {
+				...gunslinger,
+				startingZoneId: zoneId,
+				raceZones: [{ raceId: elfId, zoneId }]
+			};
+			const twice = {
+				...gunslinger,
+				raceZones: [{ raceId: elfId, zoneId }, { raceId: elfId, zoneId }]
+			};
+
+			assert.strictEqual((await send(ada, 'POST', `/${universeId}/classes`, { body: both })).status, 400);
+			assert.strictEqual((await send(ada, 'POST', `/${universeId}/classes`, { body: twice })).status, 400);
+			assert.strictEqual((await send(ada, 'POST', `/${universeId}/classes`, { body: { ...gunslinger, rules: { ...gunslinger.rules, tradition: 'psychic' } } })).status, 400);
+
+			const response = await send<ErrorPayload>(ada, 'POST', `/${universeId}/classes`, { body: { ...gunslinger, raceZones: [{ raceId: theirRaceId, zoneId }] } });
+
+			assert.strictEqual(response.status, 400);
+			assert.strictEqual(response.body.error.id, 'error.unknownRaceZone');
+		});
+
+		it('keeps at least one class enabled', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const classId = (await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/classes`, { body: gunslinger })).body.id;
+
+			for (const characterClass of (await send<ClassListPayload>(ada, 'GET', `/${universeId}/classes`)).body.classes.filter((listed) => !listed.custom))
+			{
+				assert.strictEqual((await send(ada, 'PUT', `/${universeId}/classes/${characterClass.id}`, { body: { ...classSettingsOf(characterClass), enabled: false } })).status, 204, characterClass.key ?? '');
+			}
+
+			assert.strictEqual((await send<ErrorPayload>(ada, 'PUT', `/${universeId}/classes/${classId}`, { body: { ...gunslinger, enabled: false } })).body.error.id, 'error.noEnabledClass');
+			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/classes/${classId}`)).status, 409);
+		});
+
+		it('refuses to delete an item a class starts with', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const torchId = (await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/items`, { body: torch })).body.id;
+
+			await send(ada, 'POST', `/${universeId}/classes`, { body: { ...gunslinger, startingItems: [{ itemId: torchId, quantity: 1 }] } });
+			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/items/${torchId}`)).status, 409);
 		});
 	});
 

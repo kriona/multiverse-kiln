@@ -25,6 +25,8 @@
 					<button id="editor-tab-ruleset" type="button" role="tab" aria-controls="editor-panel-ruleset" data-message="editor.tab.ruleset" data-translation-context="Tab of the editor with the settings of the universe's game rules, such as how ability scores are made"><!-- icon game-icons:rule-book -->Ruleset</button>
 					<button id="editor-tab-lobby" type="button" role="tab" aria-controls="editor-panel-lobby" data-message="editor.tab.lobby" data-translation-context="Tab of the editor with the lobby's settings"><!-- icon game-icons:campfire -->Lobby</button>
 					<button id="editor-tab-characters" type="button" role="tab" aria-controls="editor-panel-characters" data-message="editor.tab.characters" data-translation-context="Tab of the editor with what characters start with and how many play together"><!-- icon game-icons:character -->Characters</button>
+					<button id="editor-tab-races" type="button" role="tab" aria-controls="editor-panel-races" data-message="editor.tab.races" data-translation-context="Tab of the editor listing the races characters can be, such as elves and dwarves"><!-- icon game-icons:dwarf-face -->Races</button>
+					<button id="editor-tab-classes" type="button" role="tab" aria-controls="editor-panel-classes" data-message="editor.tab.classes" data-translation-context="Tab of the editor listing the classes characters can be, such as fighters and wizards"><!-- icon game-icons:pointy-hat -->Classes</button>
 					<button id="editor-tab-tilesets" type="button" role="tab" aria-controls="editor-panel-tilesets" data-message="editor.tab.tilesets" data-translation-context="Tab of the editor listing the tiles maps are painted with"><!-- icon game-icons:stone-block -->Tilesets</button>
 					<button id="editor-tab-zones" type="button" role="tab" aria-controls="editor-panel-zones" data-message="editor.tab.zones" data-translation-context="Tab of the editor listing the universe's zones (areas with their own map)"><!-- icon game-icons:treasure-map -->Zones</button>
 					<button id="editor-tab-items" type="button" role="tab" aria-controls="editor-panel-items" data-message="editor.tab.items" data-translation-context="Tab of the editor listing the items characters can be given, such as weapons and gear"><!-- icon game-icons:swap-bag -->Items</button>
@@ -160,6 +162,42 @@
 								</div>
 							</fieldset>
 						</form>
+					</section>
+
+					<section id="editor-panel-races" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-races" hidden>
+						<div class="filters">
+							<p class="hint" data-message="editor.races.hint" data-translation-context="Explains the editor's Races tab">The races new characters can choose. Each race's starting money and equipment are added to what every character starts with.</p>
+							<button id="race-add" type="button" data-shortcut="Alt+N" data-message="editor.races.add" data-translation-context="Button that opens the dialog for making a new race"><!-- icon ph:plus -->Add Race</button>
+						</div>
+						<p id="race-list-error" class="form-error" role="alert" hidden></p>
+						<table class="item-table">
+							<thead>
+								<tr>
+									<th scope="col" data-message="editor.races.name" data-translation-context="Heading of the table column with each race's name">Name</th>
+									<th scope="col" data-message="editor.races.summary" data-translation-context="Heading of the table column describing each race's rules, such as its size and ability modifiers">Summary</th>
+									<th scope="col"></th>
+								</tr>
+							</thead>
+							<tbody id="race-rows"></tbody>
+						</table>
+					</section>
+
+					<section id="editor-panel-classes" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-classes" hidden>
+						<div class="filters">
+							<p class="hint" data-message="editor.classes.hint" data-translation-context="Explains the editor's Classes tab">The classes new characters can choose. Each class's starting money and equipment are added to what every character and their race start with.</p>
+							<button id="class-add" type="button" data-shortcut="Alt+N" data-message="editor.classes.add" data-translation-context="Button that opens the dialog for making a new character class"><!-- icon ph:plus -->Add Class</button>
+						</div>
+						<p id="class-list-error" class="form-error" role="alert" hidden></p>
+						<table class="item-table">
+							<thead>
+								<tr>
+									<th scope="col" data-message="editor.classes.name" data-translation-context="Heading of the table column with each character class's name">Name</th>
+									<th scope="col" data-message="editor.classes.summary" data-translation-context="Heading of the table column describing each character class's rules, such as its magic">Summary</th>
+									<th scope="col"></th>
+								</tr>
+							</thead>
+							<tbody id="class-rows"></tbody>
+						</table>
 					</section>
 
 					<section id="editor-panel-tilesets" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-tilesets" hidden>
@@ -409,6 +447,120 @@
 							<button id="item-select-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
 							<button id="item-select-submit" type="submit" aria-describedby="item-select-error" data-shortcut="Alt+S" data-message="editor.itemSelect.submit" data-translation-context="Button that chooses the items selected in the dialog, with how many of each">Choose</button>
 						</div>
+					</form>
+				</dialog>
+				<dialog id="race-dialog" class="panel dialog option-dialog" aria-labelledby="race-dialog-title">
+					<form id="race-form" class="form">
+						<fieldset id="race-fields" class="plain">
+							<h2 id="race-dialog-title"></h2>
+							<label data-message="editor.race.name" data-translation-context="Label of the field for a race's name">
+								Name
+								<input id="race-name" required />
+							</label>
+							<label class="checkbox" data-message="editor.race.enabled" data-translation-context="Checkbox for whether new characters can choose the race">
+								<input id="race-enabled" type="checkbox" />
+								Enabled
+							</label>
+							<p class="hint" data-message="editor.race.enabledHint" data-translation-context="Explains the race editor's Enabled checkbox">New characters can only choose enabled races, and at least one race must be enabled.</p>
+							<fieldset class="choice">
+								<legend data-message="editor.race.abilityModifiers" data-translation-context="Heading of the race editor's fields for how much the race adds to or takes from each ability score">Ability modifiers</legend>
+								<div id="race-modifiers" class="ability-modifiers"></div>
+							</fieldset>
+							<label class="checkbox" data-message="editor.race.floatingBonus" data-translation-context="Checkbox for whether the player chooses one ability score for the race to raise">
+								<input id="race-floating" type="checkbox" />
+								Floating ability bonus
+							</label>
+							<p id="race-floating-hint" class="hint"></p>
+							<label class="checkbox" data-message="editor.race.darkvision" data-translation-context="Checkbox for whether the race can see in the dark">
+								<input id="race-darkvision" type="checkbox" />
+								Darkvision
+							</label>
+							<label data-message="editor.race.size" data-translation-context="Label of the field for a race's size, such as small or medium">
+								Size
+								<select id="race-size"></select>
+							</label>
+							<label data-message="editor.race.startingMoney" data-translation-context="Label of the field for the money a race's characters get on top of what every character starts with">
+								Extra starting money
+								<input id="race-money" autocomplete="off" />
+							</label>
+							<div class="starting-equipment">
+								<h3 id="race-items-heading" data-message="editor.race.startingEquipment" data-translation-context="Heading of the list of items a race's characters get on top of what every character starts with">Extra starting equipment</h3>
+								<ul id="race-items" class="starting-items" aria-labelledby="race-items-heading"></ul>
+								<p id="race-items-none" data-message="editor.race.noStartingEquipment" data-translation-context="Shown in the race editor when the race's characters get no items beyond what every character starts with" hidden>Nothing more.</p>
+								<div>
+									<button id="race-items-choose" type="button" class="secondary" data-shortcut="Alt+Q" data-message="editor.race.chooseEquipment" data-translation-context="Button in the race editor that opens the dialog for choosing the items the race's characters also start with"><!-- icon game-icons:swap-bag -->Choose Equipment</button>
+								</div>
+							</div>
+							<p data-message="editor.race.startingZone" data-translation-context="Shows the zone a race's characters start in; {zone} is the zone's name">Starting zone: <strong id="race-zone-name" data-argument="zone"></strong></p>
+							<p class="hint" data-message="editor.race.startingZoneHint" data-translation-context="Explains the race editor's starting zone">Where the race's characters start, unless their class says otherwise.</p>
+							<div class="zone-buttons">
+								<button id="race-zone-choose" type="button" class="secondary" data-shortcut="Alt+C" data-message="editor.race.chooseZone" data-translation-context="Button in the race editor that opens the dialog for choosing the zone the race's characters start in"><!-- icon ph:map-pin -->Choose Zone</button>
+								<button id="race-zone-clear" type="button" class="secondary" data-shortcut="Alt+L" data-message="editor.race.clearZone" data-translation-context="Button in the race editor that takes away the race's starting zone, so its characters start in the universe's"><!-- icon ph:x -->Use the Universe's Zone</button>
+							</div>
+							<p id="race-error" class="form-error" role="alert" hidden></p>
+							<div class="form-buttons">
+								<button id="race-remove" type="button" class="danger" aria-describedby="race-error"></button>
+								<button id="race-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+								<button id="race-save" type="submit" aria-describedby="race-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+							</div>
+						</fieldset>
+					</form>
+				</dialog>
+				<dialog id="class-dialog" class="panel dialog option-dialog" aria-labelledby="class-dialog-title">
+					<form id="class-form" class="form">
+						<fieldset id="class-fields" class="plain">
+							<h2 id="class-dialog-title"></h2>
+							<label data-message="editor.class.name" data-translation-context="Label of the field for a character class's name">
+								Name
+								<input id="class-name" required />
+							</label>
+							<label class="checkbox" data-message="editor.class.enabled" data-translation-context="Checkbox for whether new characters can choose the character class">
+								<input id="class-enabled" type="checkbox" />
+								Enabled
+							</label>
+							<p class="hint" data-message="editor.class.enabledHint" data-translation-context="Explains the class editor's Enabled checkbox">New characters can only choose enabled classes, and at least one class must be enabled.</p>
+							<label data-message="editor.class.primaryAbility" data-translation-context="Label of the field for the ability score a character class relies on most">
+								Primary ability
+								<select id="class-primary-ability"></select>
+							</label>
+							<p class="hint" data-message="editor.class.primaryAbilityHint" data-translation-context="Explains the class editor's Primary ability field">Suggested to players when they arrange their ability scores.</p>
+							<label data-message="editor.class.tradition" data-translation-context="Label of the field for where a character class's magic comes from: none, arcane or divine">
+								Magic tradition
+								<select id="class-tradition"></select>
+							</label>
+							<label data-message="editor.class.castingStyle" data-translation-context="Label of the field for how a character class casts spells: none, prepared or spontaneous">
+								Spellcasting style
+								<select id="class-casting-style"></select>
+							</label>
+							<label data-message="editor.class.startingMoney" data-translation-context="Label of the field for the money a character class's members get on top of what every character and their race start with">
+								Extra starting money
+								<input id="class-money" autocomplete="off" />
+							</label>
+							<div class="starting-equipment">
+								<h3 id="class-items-heading" data-message="editor.class.startingEquipment" data-translation-context="Heading of the list of items a character class's members get on top of what every character and their race start with">Extra starting equipment</h3>
+								<ul id="class-items" class="starting-items" aria-labelledby="class-items-heading"></ul>
+								<p id="class-items-none" data-message="editor.class.noStartingEquipment" data-translation-context="Shown in the class editor when the class's members get no items beyond what every character and their race start with" hidden>Nothing more.</p>
+								<div>
+									<button id="class-items-choose" type="button" class="secondary" data-shortcut="Alt+Q" data-message="editor.class.chooseEquipment" data-translation-context="Button in the class editor that opens the dialog for choosing the items the class's members also start with"><!-- icon game-icons:swap-bag -->Choose Equipment</button>
+								</div>
+							</div>
+							<p data-message="editor.class.startingZone" data-translation-context="Shows the zone every member of a character class starts in, whatever their race; {zone} is the zone's name">Starting zone: <strong id="class-zone-name" data-argument="zone"></strong></p>
+							<div class="zone-buttons">
+								<button id="class-zone-choose" type="button" class="secondary" data-shortcut="Alt+C" data-message="editor.class.chooseZone" data-translation-context="Button in the class editor that opens the dialog for choosing the zone every member of the class starts in"><!-- icon ph:map-pin -->Choose Zone</button>
+								<button id="class-zone-clear" type="button" class="secondary" data-shortcut="Alt+L" data-message="editor.class.clearZone" data-translation-context="Button in the class editor that takes away the class's zone for every race, so a zone can be chosen for each race"><!-- icon ph:x -->Choose by Race</button>
+							</div>
+							<div class="race-zones">
+								<h3 id="class-race-zones-heading" data-message="editor.class.raceZones" data-translation-context="Heading of the class editor's list of where the class's members of each race start">Starting zone by race</h3>
+								<p id="class-race-zones-note" class="hint" data-message="editor.class.raceZonesNote" data-translation-context="Shown in the class editor while the class has a zone for every race, which turns off the zones for each race" hidden>All members of this class, whatever their race, start in the class's zone.</p>
+								<ul id="class-race-zones" aria-labelledby="class-race-zones-heading"></ul>
+							</div>
+							<p id="class-error" class="form-error" role="alert" hidden></p>
+							<div class="form-buttons">
+								<button id="class-remove" type="button" class="danger" aria-describedby="class-error"></button>
+								<button id="class-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+								<button id="class-save" type="submit" aria-describedby="class-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+							</div>
+						</fieldset>
 					</form>
 				</dialog>
 				<dialog id="tile-dialog" class="panel dialog" aria-labelledby="tile-dialog-title">

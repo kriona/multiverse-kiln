@@ -153,8 +153,8 @@ Built in seven steps: licensing and the ruleset module; the Ruleset tab and the 
 	- [✅] Items tab, item editor (name, type, enabled) and the PF1E default items (a dagger for now); item selection with quantities
 	- [✅] Characters tab: starting equipment (a dagger for everyone by default)
 4. Races and classes
-	- [ ] Races and Classes tabs with their overrides, custom races and classes, and the PF1E fields (ability modifiers, floating bonus, darkvision, size, primary ability, tradition, casting style)
-	- [ ] Each race's and class's starting equipment, money and zone, and the class's per-race zones; the starting zone's precedence (class + race > class > race > universe) as a pure function with tests
+	- [✅] Races and Classes tabs with their overrides, custom races and classes, and the PF1E fields (ability modifiers, floating bonus, darkvision, size, primary ability, tradition, casting style)
+	- [✅] Each race's and class's starting equipment, money and zone, and the class's per-race zones; the starting zone's precedence (class + race > class > race > universe) as a pure function with tests
 5. Characters
 	- [ ] Create Character: the server rolls the stats, and the player can rearrange the rolled scores among the abilities (the class's primary ability is a hint); point buy choices are validated on the server (the client never sends ability scores); up to 20 per universe; starting equipment and money
 6. Lobby with characters

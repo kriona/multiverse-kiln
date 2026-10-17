@@ -5,7 +5,9 @@ import type express from 'express';
 import type { Request, Response } from 'express';
 import { canEditWorld, defineMessages, isItemType, MAX_CUSTOM_ITEMS, type CreatedPayload } from '@multiverse-kiln/shared';
 
+import { isClassStartingItem } from '../db/classRepo.js';
 import { countCustomItems, createCustomItem, deleteCustomItem, findItemKind, listEditorItems, restoreDefaultItem, saveEditedDefaultItem, updateCustomItem } from '../db/itemRepo.js';
+import { isRaceStartingItem } from '../db/raceRepo.js';
 import { isStartingItem } from '../db/startingItemRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { lockUniverse } from '../db/universeRepo.js';
@@ -208,7 +210,7 @@ async function deleteItem(request: Request, response: Response): Promise<void>
 		// Saving the starting equipment waits for the universe's lock too, so the item can't be added to it before it is deleted
 		await lockUniverse(universe.id, transaction);
 
-		if (await isStartingItem(universe.id, itemId.data, transaction))
+		if (await isStartingItem(universe.id, itemId.data, transaction) || await isRaceStartingItem(universe.id, itemId.data, transaction) || await isClassStartingItem(universe.id, itemId.data, transaction))
 		{
 			return(false);
 		}
@@ -222,8 +224,8 @@ async function deleteItem(request: Request, response: Response): Promise<void>
 	{
 		sendError(response, 409, {
 			id: 'error.itemInStartingEquipment',
-			defaultMessage: 'Characters start with this item, so it can\'t be deleted. Take it out of the starting equipment first.',
-			description: 'Why an item couldn\'t be deleted: it is in the equipment every character of the universe starts with'
+			defaultMessage: 'Characters start with this item, so it can\'t be deleted. Take it out of the starting equipment of the universe and of every race and class first.',
+			description: 'Why an item couldn\'t be deleted: it is in the equipment characters of the universe, or of one of its races or classes, start with'
 		});
 		return;
 	}

@@ -40,6 +40,20 @@ export const errorMessages = defineMessages({
 });
 
 /**
+ * Why a request is refused, decided where the response isn't at hand, such as inside a transaction
+ */
+export interface Refusal
+{
+	/**
+	 * The HTTP status, e.g. 409
+	 */
+	status: number;
+
+	message: MessageDescriptor;
+	values?: MessageValues;
+}
+
+/**
  * Answers a request with an error
  *
  * @param response The response

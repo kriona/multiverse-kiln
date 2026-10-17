@@ -10,6 +10,8 @@ import type { LocalizedMessage } from './localization.js';
 import type { MapBounds } from './maps.js';
 import type { ZoneChunk } from './messages.js';
 import type { Pf1eMoney } from './rulesets/pf1e/money.js';
+import type { Pf1eClassRules } from './rulesets/pf1e/classes.js';
+import type { Pf1eRaceRules } from './rulesets/pf1e/races.js';
 import type { Pf1eSettings } from './rulesets/pf1e/settings.js';
 import type { FaerieMorning, PassageOfTime, Ruleset, UniverseRole, UniverseStage, ZoneLinkMode, ZonePassageOfTime } from './universes.js';
 
@@ -30,6 +32,14 @@ import type { FaerieMorning, PassageOfTime, Ruleset, UniverseRole, UniverseStage
  * - POST   /:universeId/items                      ItemSettings -> CreatedPayload: a custom item
  * - PUT    /:universeId/items/:itemId              ItemSettings: edits a custom item, or stores an edited copy of a default item
  * - DELETE /:universeId/items/:itemId              deletes a custom item no starting equipment holds, or restores a default item
+ * - GET    /:universeId/races                      RaceListPayload
+ * - POST   /:universeId/races                      RaceSettings -> CreatedPayload: a custom race (creators only)
+ * - PUT    /:universeId/races/:raceId              RaceSettings: edits a custom race, or stores an edited copy of a default race (creators only)
+ * - DELETE /:universeId/races/:raceId              deletes a custom race, or restores a default race (creators only)
+ * - GET    /:universeId/classes                    ClassListPayload
+ * - POST   /:universeId/classes                    ClassSettings -> CreatedPayload: a custom class (creators only)
+ * - PUT    /:universeId/classes/:classId           ClassSettings: edits a custom class, or stores an edited copy of a default class (creators only)
+ * - DELETE /:universeId/classes/:classId           deletes a custom class, or restores a default class (creators only)
  * - GET    /:universeId/zones                      ZoneListPayload
  * - POST   /:universeId/zones                      NewZoneRequest -> CreatedPayload
  * - GET    /:universeId/zones/:zoneId              EditorZone
@@ -111,6 +121,18 @@ export const MAX_ITEM_QUANTITY = 999;
  * Most different items a universe's starting equipment can hold
  */
 export const MAX_STARTING_ITEMS = 50;
+
+/**
+ * Most characters in a race's or class's name
+ */
+export const MAX_RACE_NAME_LENGTH = 40;
+export const MAX_CLASS_NAME_LENGTH = 40;
+
+/**
+ * Most races, and most classes, a universe may add to its ruleset's defaults
+ */
+export const MAX_CUSTOM_RACES = 100;
+export const MAX_CUSTOM_CLASSES = 100;
 
 /**
  * Most characters in a zone's name
@@ -480,6 +502,165 @@ export interface ItemQuantity
 	 * 1 to MAX_ITEM_QUANTITY
 	 */
 	quantity: number;
+}
+
+/**
+ * What a race or class gives its characters on top of what every character of the universe starts with
+ */
+export interface StartingExtras
+{
+	/**
+	 * Coins added to the universe's starting money, up to PF1E_MAX_COINS of each
+	 */
+	startingMoney: Pf1eMoney;
+
+	/**
+	 * Items added to the universe's starting equipment, by item ID: up to MAX_STARTING_ITEMS items the
+	 * universe can use, each listed once
+	 */
+	startingItems: ItemQuantity[];
+
+	/**
+	 * Where its characters start: one of the universe's zones other than the lobby's, or null to leave it
+	 * to the next choice down (see chooseStartingZone() in server/src/logic/startingZone.ts)
+	 */
+	startingZoneId: string | null;
+}
+
+/**
+ * A race's settings, as the race editor shows and changes them
+ */
+export interface RaceSettings extends StartingExtras
+{
+	/**
+	 * Null for a default race that keeps its name, which players read in their language
+	 * (DEFAULT_RACE_NAMES). A race the universe added must have one
+	 */
+	name: string | null;
+
+	/**
+	 * Whether new characters can be this race. A universe always has at least one enabled race
+	 */
+	enabled: boolean;
+
+	/**
+	 * The race's rules under the universe's ruleset
+	 */
+	rules: Pf1eRaceRules;
+}
+
+/**
+ * A race as the Races tab lists it
+ */
+export interface EditorRace extends RaceSettings
+{
+	/**
+	 * The ID everything else uses for the race. An edited default race keeps the default race's ID
+	 */
+	id: number;
+
+	/**
+	 * A default race's key, e.g. dwarf, which finds its name in DEFAULT_RACE_NAMES; null for a race the
+	 * universe added
+	 */
+	key: string | null;
+
+	/**
+	 * Whether the universe added the race, rather than it being one of the ruleset's default races
+	 */
+	custom: boolean;
+
+	/**
+	 * Whether the race is a default race the universe has changed
+	 */
+	edited: boolean;
+}
+
+/**
+ * Response of GET EDITOR_UNIVERSES_PATH/:universeId/races: every race the universe can use, by ID
+ */
+export interface RaceListPayload
+{
+	races: EditorRace[];
+}
+
+/**
+ * Where a class's characters of one race start
+ */
+export interface ClassRaceZone
+{
+	/**
+	 * A race the universe can use (an EditorRace's ID)
+	 */
+	raceId: number;
+
+	/**
+	 * One of the universe's zones other than the lobby's
+	 */
+	zoneId: string;
+}
+
+/**
+ * A class's settings, as the class editor shows and changes them
+ */
+export interface ClassSettings extends StartingExtras
+{
+	/**
+	 * Null for a default class that keeps its name, which players read in their language
+	 * (DEFAULT_CLASS_NAMES). A class the universe added must have one
+	 */
+	name: string | null;
+
+	/**
+	 * Whether new characters can be this class. A universe always has at least one enabled class
+	 */
+	enabled: boolean;
+
+	/**
+	 * Where the class's characters of each race listed start, each race listed once. Must be empty while
+	 * startingZoneId is set, since then every member of the class starts there
+	 */
+	raceZones: ClassRaceZone[];
+
+	/**
+	 * The class's rules under the universe's ruleset
+	 */
+	rules: Pf1eClassRules;
+}
+
+/**
+ * A class as the Classes tab lists it
+ */
+export interface EditorClass extends ClassSettings
+{
+	/**
+	 * The ID everything else uses for the class. An edited default class keeps the default class's ID
+	 */
+	id: number;
+
+	/**
+	 * A default class's key, e.g. wizard, which finds its name in DEFAULT_CLASS_NAMES; null for a class
+	 * the universe added
+	 */
+	key: string | null;
+
+	/**
+	 * Whether the universe added the class, rather than it being one of the ruleset's default classes
+	 */
+	custom: boolean;
+
+	/**
+	 * Whether the class is a default class the universe has changed
+	 */
+	edited: boolean;
+}
+
+/**
+ * Response of GET EDITOR_UNIVERSES_PATH/:universeId/classes: every class the universe can use, by ID
+ */
+export interface ClassListPayload
+{
+	classes: EditorClass[];
 }
 
 /**

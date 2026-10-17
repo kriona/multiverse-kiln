@@ -1,5 +1,5 @@
 import { ServerError, type Client } from '@colyseus/sdk';
-import { EDITOR_UNIVERSES_PATH, isLocalizedMessage, MAX_TILES_PER_PAGE, type CellChange, type ChunkListPayload, type ChunkRange, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorTile, type EditorZone, type EditorZoneLink, type ItemListPayload, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type NewZoneRequest, type ResizeConflictPayload, type RulesetSettings, type TileListPayload, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type ZoneLinkListPayload, type ZoneLinkTarget, type ZoneListPayload, type ZoneSettingsUpdate, type MessageSource } from '@multiverse-kiln/shared';
+import { EDITOR_UNIVERSES_PATH, isLocalizedMessage, MAX_TILES_PER_PAGE, type CellChange, type ChunkListPayload, type ChunkRange, type ClassListPayload, type ClassSettings, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorTile, type EditorZone, type EditorZoneLink, type ItemListPayload, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type NewZoneRequest, type RaceListPayload, type RaceSettings, type ResizeConflictPayload, type RulesetSettings, type TileListPayload, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type ZoneLinkListPayload, type ZoneLinkTarget, type ZoneListPayload, type ZoneSettingsUpdate, type MessageSource } from '@multiverse-kiln/shared';
 
 import { localizedText, t } from '../localization';
 
@@ -219,6 +219,98 @@ export class EditorApi
 	async deleteItem(universeId: string, itemId: number): Promise<void>
 	{
 		await this.send('DELETE', `${universePath(universeId)}/items/${itemId}`);
+	}
+
+	/**
+	 * Every race a universe can use
+	 *
+	 * @param universeId The universe's ID
+	 * @return The races, by ID
+	 */
+	async listRaces(universeId: string): Promise<EditorRace[]>
+	{
+		return((await this.send<RaceListPayload>('GET', `${universePath(universeId)}/races`)).races);
+	}
+
+	/**
+	 * Adds a race to a universe
+	 *
+	 * @param universeId The universe's ID
+	 * @param settings The race's settings, with a name
+	 * @return The new race's ID
+	 */
+	async createRace(universeId: string, settings: RaceSettings): Promise<number>
+	{
+		return((await this.send<CreatedPayload<number>>('POST', `${universePath(universeId)}/races`, settings)).id);
+	}
+
+	/**
+	 * Changes one of a universe's races, or stores its edited copy of a default race
+	 *
+	 * @param universeId The universe's ID
+	 * @param raceId The race's ID
+	 * @param settings The race's settings
+	 */
+	async saveRace(universeId: string, raceId: number, settings: RaceSettings): Promise<void>
+	{
+		await this.send('PUT', `${universePath(universeId)}/races/${raceId}`, settings);
+	}
+
+	/**
+	 * Deletes one of a universe's own races, or restores a default race it has edited
+	 *
+	 * @param universeId The universe's ID
+	 * @param raceId The race's ID
+	 */
+	async deleteRace(universeId: string, raceId: number): Promise<void>
+	{
+		await this.send('DELETE', `${universePath(universeId)}/races/${raceId}`);
+	}
+
+	/**
+	 * Every class a universe can use
+	 *
+	 * @param universeId The universe's ID
+	 * @return The classes, by ID
+	 */
+	async listClasses(universeId: string): Promise<EditorClass[]>
+	{
+		return((await this.send<ClassListPayload>('GET', `${universePath(universeId)}/classes`)).classes);
+	}
+
+	/**
+	 * Adds a class to a universe
+	 *
+	 * @param universeId The universe's ID
+	 * @param settings The class's settings, with a name
+	 * @return The new class's ID
+	 */
+	async createClass(universeId: string, settings: ClassSettings): Promise<number>
+	{
+		return((await this.send<CreatedPayload<number>>('POST', `${universePath(universeId)}/classes`, settings)).id);
+	}
+
+	/**
+	 * Changes one of a universe's classes, or stores its edited copy of a default class
+	 *
+	 * @param universeId The universe's ID
+	 * @param classId The class's ID
+	 * @param settings The class's settings
+	 */
+	async saveClass(universeId: string, classId: number, settings: ClassSettings): Promise<void>
+	{
+		await this.send('PUT', `${universePath(universeId)}/classes/${classId}`, settings);
+	}
+
+	/**
+	 * Deletes one of a universe's own classes, or restores a default class it has edited
+	 *
+	 * @param universeId The universe's ID
+	 * @param classId The class's ID
+	 */
+	async deleteClass(universeId: string, classId: number): Promise<void>
+	{
+		await this.send('DELETE', `${universePath(universeId)}/classes/${classId}`);
 	}
 
 	/**

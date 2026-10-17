@@ -4,9 +4,9 @@
  * After changing it, run `npm run db:generate -w server` to create a migration, then
  * `npm run db:migrate -w server` to apply it. Never change the database by hand
  */
-import { sql } from 'drizzle-orm';
+import { sql, type SQL } from 'drizzle-orm';
 import { boolean, check, index, integer, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHUNK_SIZE, DEFAULT_PF1E_SETTINGS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MIN_POINT_BUY_BUDGET, PF1E_STAT_METHODS, RULESETS, UNIVERSE_ROLES, UNIVERSE_STAGES, ZONE_LINK_MODES, ZONE_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, DEFAULT_PF1E_SETTINGS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, UNIVERSE_ROLES, UNIVERSE_STAGES, ZONE_LINK_MODES, ZONE_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
 
 export const universeStage = pgEnum('universe_stage', UNIVERSE_STAGES);
 export const universeRole = pgEnum('universe_role', UNIVERSE_ROLES);
@@ -16,6 +16,23 @@ export const zonePassageOfTime = pgEnum('zone_passage_of_time', ZONE_PASSAGES_OF
 export const faerieMorning = pgEnum('faerie_morning', FAERIE_MORNINGS);
 export const zoneLinkMode = pgEnum('zone_link_mode', ZONE_LINK_MODES);
 export const pf1eStatMethod = pgEnum('pf1e_stat_method', PF1E_STAT_METHODS);
+export const pf1eAbility = pgEnum('pf1e_ability', PF1E_ABILITIES);
+export const pf1eSize = pgEnum('pf1e_size', PF1E_SIZES);
+export const pf1eMagicTradition = pgEnum('pf1e_magic_tradition', PF1E_MAGIC_TRADITIONS);
+export const pf1eCastingStyle = pgEnum('pf1e_casting_style', PF1E_CASTING_STYLES);
+
+/**
+ * SQL that checks every one of some columns holds a number in a range
+ *
+ * @param columns The columns
+ * @param min The lowest number allowed
+ * @param max The highest number allowed
+ * @return The condition
+ */
+function allInRange(columns: AnyPgColumn[], min: number, max: number): SQL
+{
+	return(sql.join(columns.map((column) => sql`${column} BETWEEN ${sql.raw(String(min))} AND ${sql.raw(String(max))}`), sql` AND `));
+}
 
 /**
  * One row per player account
@@ -225,6 +242,201 @@ export const universeStartingItems = pgTable('universe_starting_items', {
 	primaryKey({ columns: [table.universeId, table.itemId] }),
 	index('universe_starting_items_item_id_index').on(table.itemId),
 	check('universe_starting_items_quantity_range', sql`${table.quantity} BETWEEN 1 AND ${sql.raw(String(MAX_ITEM_QUANTITY))}`)
+]);
+
+/**
+ * One row per race characters can be
+ *
+ * Works like items: a race with no universe is one of a ruleset's default races, and a universe's race
+ * that overrides a default race is that universe's edited copy of it. Everything else keeps using the
+ * default race's ID. A default race has no starting money, equipment or zone; those belong to a
+ * universe, so a universe's copy holds them
+ *
+ * The race's rules live in its ruleset's table (pf1e_races)
+ */
+export const races = pgTable('races', {
+	id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+	ruleset: ruleset('ruleset').notNull(),
+	universeId: uuid('universe_id').references(() => universes.id, { onDelete: 'cascade' }),
+	key: text('key'),
+
+	/**
+	 * The default race this one is the universe's edited copy of
+	 */
+	overridesRaceId: integer('overrides_race_id').references((): AnyPgColumn => races.id, { onDelete: 'cascade' }),
+
+	/**
+	 * A default race's name is the English text of its message (DEFAULT_RACE_NAMES in /shared), which
+	 * players read in their language. Null on an edited copy that keeps the default race's name
+	 */
+	name: text('name'),
+
+	enabled: boolean('enabled').notNull().default(true),
+
+	/**
+	 * Coins the race's characters get on top of the universe's starting money
+	 */
+	startingPlatinum: integer('starting_platinum').notNull().default(0),
+	startingGold: integer('starting_gold').notNull().default(0),
+	startingSilver: integer('starting_silver').notNull().default(0),
+	startingCopper: integer('starting_copper').notNull().default(0),
+
+	/**
+	 * Where the race's characters start, unless their class says otherwise; null for the universe's starting zone
+	 */
+	startingZoneId: uuid('starting_zone_id').references((): AnyPgColumn => zones.id, { onDelete: 'set null' }),
+
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	unique('races_ruleset_key_unique').on(table.ruleset, table.key),
+	unique('races_universe_overrides_unique').on(table.universeId, table.overridesRaceId),
+	index('races_universe_id_index').on(table.universeId),
+	index('races_starting_zone_id_index').on(table.startingZoneId),
+	check('races_overrides_belong_to_universe', sql`${table.overridesRaceId} IS NULL OR ${table.universeId} IS NOT NULL`),
+	check('races_name_required', sql`${table.name} IS NOT NULL OR ${table.overridesRaceId} IS NOT NULL`),
+	check('races_starting_coins_range', allInRange([table.startingPlatinum, table.startingGold, table.startingSilver, table.startingCopper], 0, PF1E_MAX_COINS))
+]);
+
+/**
+ * Each Pathfinder 1E race's rules, for default races and universes' races alike
+ */
+export const pf1eRaces = pgTable('pf1e_races', {
+	raceId: integer('race_id').primaryKey().references(() => races.id, { onDelete: 'cascade' }),
+
+	/**
+	 * Added to each ability score
+	 */
+	strengthModifier: smallint('strength_modifier').notNull().default(0),
+	dexterityModifier: smallint('dexterity_modifier').notNull().default(0),
+	constitutionModifier: smallint('constitution_modifier').notNull().default(0),
+	intelligenceModifier: smallint('intelligence_modifier').notNull().default(0),
+	wisdomModifier: smallint('wisdom_modifier').notNull().default(0),
+	charismaModifier: smallint('charisma_modifier').notNull().default(0),
+
+	/**
+	 * Whether the player chooses one ability to get PF1E_FLOATING_ABILITY_BONUS
+	 */
+	floatingBonus: boolean('floating_bonus').notNull().default(false),
+
+	darkvision: boolean('darkvision').notNull().default(false),
+	size: pf1eSize('size').notNull().default('medium')
+}, (table) => [
+	check('pf1e_races_modifiers_range', allInRange([table.strengthModifier, table.dexterityModifier, table.constitutionModifier, table.intelligenceModifier, table.wisdomModifier, table.charismaModifier], PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_MAX_RACE_ABILITY_MODIFIER))
+]);
+
+/**
+ * The items a race's characters get on top of the universe's starting equipment
+ *
+ * Listed against the row holding the race's settings: a universe's own race, or its edited copy of a
+ * default race. An item is listed by its own ID, never by the ID of an edited copy of it
+ */
+export const raceStartingItems = pgTable('race_starting_items', {
+	raceId: integer('race_id').notNull().references(() => races.id, { onDelete: 'cascade' }),
+	itemId: integer('item_id').notNull().references(() => items.id, { onDelete: 'cascade' }),
+	quantity: smallint('quantity').notNull()
+}, (table) => [
+	primaryKey({ columns: [table.raceId, table.itemId] }),
+	index('race_starting_items_item_id_index').on(table.itemId),
+	check('race_starting_items_quantity_range', sql`${table.quantity} BETWEEN 1 AND ${sql.raw(String(MAX_ITEM_QUANTITY))}`)
+]);
+
+/**
+ * One row per class characters can be
+ *
+ * Works like races: a class with no universe is one of a ruleset's default classes, and a universe's
+ * class that overrides a default class is that universe's edited copy of it. Everything else keeps
+ * using the default class's ID
+ *
+ * The class's rules live in its ruleset's table (pf1e_classes)
+ */
+export const classes = pgTable('classes', {
+	id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+	ruleset: ruleset('ruleset').notNull(),
+	universeId: uuid('universe_id').references(() => universes.id, { onDelete: 'cascade' }),
+	key: text('key'),
+
+	/**
+	 * The default class this one is the universe's edited copy of
+	 */
+	overridesClassId: integer('overrides_class_id').references((): AnyPgColumn => classes.id, { onDelete: 'cascade' }),
+
+	/**
+	 * A default class's name is the English text of its message (DEFAULT_CLASS_NAMES in /shared), which
+	 * players read in their language. Null on an edited copy that keeps the default class's name
+	 */
+	name: text('name'),
+
+	enabled: boolean('enabled').notNull().default(true),
+
+	/**
+	 * Coins the class's characters get on top of the universe's and their race's starting money
+	 */
+	startingPlatinum: integer('starting_platinum').notNull().default(0),
+	startingGold: integer('starting_gold').notNull().default(0),
+	startingSilver: integer('starting_silver').notNull().default(0),
+	startingCopper: integer('starting_copper').notNull().default(0),
+
+	/**
+	 * Where every member of the class starts, whatever their race; null to leave it to class_race_zones,
+	 * then the race, then the universe
+	 */
+	startingZoneId: uuid('starting_zone_id').references((): AnyPgColumn => zones.id, { onDelete: 'set null' }),
+
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	unique('classes_ruleset_key_unique').on(table.ruleset, table.key),
+	unique('classes_universe_overrides_unique').on(table.universeId, table.overridesClassId),
+	index('classes_universe_id_index').on(table.universeId),
+	index('classes_starting_zone_id_index').on(table.startingZoneId),
+	check('classes_overrides_belong_to_universe', sql`${table.overridesClassId} IS NULL OR ${table.universeId} IS NOT NULL`),
+	check('classes_name_required', sql`${table.name} IS NOT NULL OR ${table.overridesClassId} IS NOT NULL`),
+	check('classes_starting_coins_range', allInRange([table.startingPlatinum, table.startingGold, table.startingSilver, table.startingCopper], 0, PF1E_MAX_COINS))
+]);
+
+/**
+ * Each Pathfinder 1E class's rules, for default classes and universes' classes alike
+ */
+export const pf1eClasses = pgTable('pf1e_classes', {
+	classId: integer('class_id').primaryKey().references(() => classes.id, { onDelete: 'cascade' }),
+
+	/**
+	 * A hint when the player arranges their ability scores
+	 */
+	primaryAbility: pf1eAbility('primary_ability').notNull(),
+
+	tradition: pf1eMagicTradition('tradition').notNull().default('none'),
+	castingStyle: pf1eCastingStyle('casting_style').notNull().default('none')
+});
+
+/**
+ * The items a class's characters get on top of the universe's and their race's starting equipment
+ *
+ * Listed against the row holding the class's settings, as race_starting_items is
+ */
+export const classStartingItems = pgTable('class_starting_items', {
+	classId: integer('class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }),
+	itemId: integer('item_id').notNull().references(() => items.id, { onDelete: 'cascade' }),
+	quantity: smallint('quantity').notNull()
+}, (table) => [
+	primaryKey({ columns: [table.classId, table.itemId] }),
+	index('class_starting_items_item_id_index').on(table.itemId),
+	check('class_starting_items_quantity_range', sql`${table.quantity} BETWEEN 1 AND ${sql.raw(String(MAX_ITEM_QUANTITY))}`)
+]);
+
+/**
+ * Where a class's characters of one race start, for a class with no starting zone of its own
+ *
+ * Listed against the row holding the class's settings. The race is listed by the ID everything else
+ * uses for it: a default race's own ID, never its edited copy's
+ */
+export const classRaceZones = pgTable('class_race_zones', {
+	classId: integer('class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }),
+	raceId: integer('race_id').notNull().references(() => races.id, { onDelete: 'cascade' }),
+	zoneId: uuid('zone_id').notNull().references(() => zones.id, { onDelete: 'cascade' })
+}, (table) => [
+	primaryKey({ columns: [table.classId, table.raceId] }),
+	index('class_race_zones_race_id_index').on(table.raceId),
+	index('class_race_zones_zone_id_index').on(table.zoneId)
 ]);
 
 /**

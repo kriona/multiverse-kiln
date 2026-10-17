@@ -6,7 +6,7 @@
  * need the database (such as whether a tile belongs to the universe) are made by the routes
  */
 import { z } from 'zod';
-import { DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_CELL_CHANGES, MAX_CHUNKS_PER_REQUEST, MAX_GROUP_PLAYERS, MAX_ITEM_NAME_LENGTH, MAX_ITEM_QUANTITY, MAX_ITEMS_PER_PAGE, MAX_LONG_DESCRIPTION_LENGTH, MAX_MAP_SIDE, MAX_SHORT_DESCRIPTION_LENGTH, MAX_STARTING_ITEMS, MAX_TILE_NAME_LENGTH, MAX_TILES_PER_PAGE, MAX_UNIVERSE_NAME_LENGTH, MAX_ZONE_NAME_LENGTH, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MIN_POINT_BUY_BUDGET, PF1E_STAT_METHODS, RULESETS, UNIVERSE_STAGES, VOID_CELL, ZONE_LINK_MODES, ZONE_PASSAGES_OF_TIME, type CellEditRequest, type ChunkRange, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type NewZoneRequest, type ResizeZoneRequest, type RulesetSettings, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type ZoneLinkTarget, type ZoneSettingsUpdate } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_CELL_CHANGES, MAX_CHUNKS_PER_REQUEST, MAX_CLASS_NAME_LENGTH, MAX_CUSTOM_RACES, MAX_GROUP_PLAYERS, MAX_ITEM_NAME_LENGTH, MAX_ITEM_QUANTITY, MAX_ITEMS_PER_PAGE, MAX_LONG_DESCRIPTION_LENGTH, MAX_MAP_SIDE, MAX_RACE_NAME_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_STARTING_ITEMS, MAX_TILE_NAME_LENGTH, MAX_TILES_PER_PAGE, MAX_UNIVERSE_NAME_LENGTH, MAX_ZONE_NAME_LENGTH, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_RACES, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, UNIVERSE_STAGES, VOID_CELL, ZONE_LINK_MODES, ZONE_PASSAGES_OF_TIME, type CellEditRequest, type ChunkRange, type ClassSettings, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type NewZoneRequest, type RaceSettings, type ResizeZoneRequest, type RulesetSettings, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type ZoneLinkTarget, type ZoneSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { displayText } from '../rooms/payloads.js';
 
@@ -39,6 +39,27 @@ const longDescription = z.string().max(MAX_LONG_DESCRIPTION_LENGTH).refine((text
  * How many pieces of one coin an amount of money holds
  */
 const coinCount = z.number().int().min(0).max(PF1E_MAX_COINS);
+
+/**
+ * An amount of money, as pieces of each coin
+ */
+const money = z.object({
+	pp: coinCount,
+	gp: coinCount,
+	sp: coinCount,
+	cp: coinCount
+});
+
+/**
+ * A list of items and how many of each, each listed once. Whether the universe can use each item is
+ * checked by the route
+ */
+const startingItemList = z.array(z.object({
+	itemId: z.number().int().min(1).max(2147483647),
+	quantity: z.number().int().min(1).max(MAX_ITEM_QUANTITY)
+}))
+	.max(MAX_STARTING_ITEMS)
+	.refine((items) => (new Set(items.map((item) => item.itemId)).size === items.length), 'Each item can be listed only once');
 
 /**
  * A tile ID in a path
@@ -83,19 +104,8 @@ export const universeSettingsUpdate = z.object({
 	passageOfTime: z.enum(PASSAGES_OF_TIME).optional(),
 	faerieMorning: z.enum(FAERIE_MORNINGS).nullable().optional(),
 	groupSize: z.number().int().min(MIN_GROUP_SIZE).max(MAX_GROUP_PLAYERS).optional(),
-	startingMoney: z.object({
-		pp: coinCount,
-		gp: coinCount,
-		sp: coinCount,
-		cp: coinCount
-	}).optional(),
-	startingItems: z.array(z.object({
-		itemId: itemIdParameter,
-		quantity: z.number().int().min(1).max(MAX_ITEM_QUANTITY)
-	}))
-		.max(MAX_STARTING_ITEMS)
-		.refine((items) => (new Set(items.map((item) => item.itemId)).size === items.length), 'Each item can be listed only once')
-		.optional(),
+	startingMoney: money.optional(),
+	startingItems: startingItemList.optional(),
 	startingZoneId: z.uuid().optional()
 }) satisfies z.ZodType<UniverseSettingsUpdate>;
 
@@ -162,6 +172,73 @@ export const itemListQuery = z.object({
 	offset: z.coerce.number().int().min(0).default(0),
 	limit: z.coerce.number().int().min(1).max(MAX_ITEMS_PER_PAGE).default(MAX_ITEMS_PER_PAGE)
 }) satisfies z.ZodType<ItemListQuery, unknown>;
+
+/**
+ * A race ID in a path
+ */
+export const raceIdParameter = z.coerce.number().int().min(1).max(2147483647);
+
+/**
+ * A class ID in a path
+ */
+export const classIdParameter = z.coerce.number().int().min(1).max(2147483647);
+
+/**
+ * A race's ability modifier
+ */
+const raceAbilityModifier = z.number().int().min(PF1E_MIN_RACE_ABILITY_MODIFIER).max(PF1E_MAX_RACE_ABILITY_MODIFIER);
+
+/**
+ * The settings races and classes share: what they add to every character's starting money and
+ * equipment, and where they start. Whether the zone and items belong to the universe is checked by the route
+ */
+const startingExtrasFields = {
+	enabled: z.boolean(),
+	startingMoney: money,
+	startingItems: startingItemList,
+	startingZoneId: z.uuid().nullable()
+};
+
+/**
+ * RaceSettings
+ */
+export const raceSettings = z.object({
+	...startingExtrasFields,
+	name: displayText(MAX_RACE_NAME_LENGTH).nullable(),
+	rules: z.object({
+		abilityModifiers: z.object({
+			strength: raceAbilityModifier,
+			dexterity: raceAbilityModifier,
+			constitution: raceAbilityModifier,
+			intelligence: raceAbilityModifier,
+			wisdom: raceAbilityModifier,
+			charisma: raceAbilityModifier
+		}),
+		floatingBonus: z.boolean(),
+		darkvision: z.boolean(),
+		size: z.enum(PF1E_SIZES)
+	})
+}) satisfies z.ZodType<RaceSettings>;
+
+/**
+ * ClassSettings. Whether each race is one the universe can use is checked by the route
+ */
+export const classSettings = z.object({
+	...startingExtrasFields,
+	name: displayText(MAX_CLASS_NAME_LENGTH).nullable(),
+	raceZones: z.array(z.object({
+		raceId: raceIdParameter,
+		zoneId: z.uuid()
+	}))
+		.max(MAX_CUSTOM_RACES + Object.keys(PF1E_RACES).length)
+		.refine((entries) => (new Set(entries.map((entry) => entry.raceId)).size === entries.length), 'Each race can be listed only once'),
+	rules: z.object({
+		primaryAbility: z.enum(PF1E_ABILITIES),
+		tradition: z.enum(PF1E_MAGIC_TRADITIONS),
+		castingStyle: z.enum(PF1E_CASTING_STYLES)
+	})
+})
+	.refine((settings) => ((settings.startingZoneId === null) || (settings.raceZones.length === 0)), 'A class with its own starting zone can\'t have a zone for each race') satisfies z.ZodType<ClassSettings>;
 
 /**
  * The settings a zone may be created with or changed to, each optional

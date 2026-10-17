@@ -23,10 +23,6 @@
 		"defaultMessage": "{min, number} is single player. At most {max, number} characters can play together.",
 		"description": "Explains the group size field on the editor's Characters tab; {min} and {max} are the smallest and largest group sizes"
 	},
-	"editor.characters.itemsFailed": {
-		"defaultMessage": "Could not load the starting equipment.",
-		"description": "Shown on the Characters tab when the items characters start with couldn't be loaded"
-	},
 	"editor.characters.noStartingEquipment": {
 		"defaultMessage": "Characters start with nothing.",
 		"description": "Shown on the editor's Characters tab when characters start with no items"
@@ -42,10 +38,6 @@
 	"editor.characters.startingEquipmentHint": {
 		"defaultMessage": "What every character starts with. Races and classes can add more.",
 		"description": "Explains the starting equipment on the editor's Characters tab"
-	},
-	"editor.characters.startingItem": {
-		"defaultMessage": "{quantity, number} {item}",
-		"description": "One line of the starting equipment on the editor's Characters tab, e.g. 20 Arrows; {item} is the item's name. Change only to reorder the two"
 	},
 	"editor.characters.startingMoney": {
 		"defaultMessage": "Starting money",
@@ -66,6 +58,150 @@
 	"editor.characters.zoneFailed": {
 		"defaultMessage": "Could not load the starting zone.",
 		"description": "Shown on the Characters tab when the name of the zone characters start in couldn't be loaded"
+	},
+	"editor.class.addTitle": {
+		"defaultMessage": "Add Class",
+		"description": "Title of the class editor when making a new character class"
+	},
+	"editor.class.castingStyle": {
+		"defaultMessage": "Spellcasting style",
+		"description": "Label of the field for how a character class casts spells: none, prepared or spontaneous"
+	},
+	"editor.class.chooseEquipment": {
+		"defaultMessage": "Choose Equipment",
+		"description": "Button in the class editor that opens the dialog for choosing the items the class's members also start with"
+	},
+	"editor.class.chooseRaceZone": {
+		"defaultMessage": "Choose",
+		"description": "Button in the class editor, beside a race's name, that chooses where the class's characters of that race start"
+	},
+	"editor.class.chooseRaceZoneLabel": {
+		"defaultMessage": "Choose the starting zone for {race}",
+		"description": "Name of the button that chooses where the class's characters of one race start, for screen readers; {race} is the race's name"
+	},
+	"editor.class.chooseZone": {
+		"defaultMessage": "Choose Zone",
+		"description": "Button in the class editor that opens the dialog for choosing the zone every member of the class starts in"
+	},
+	"editor.class.clearRaceZone": {
+		"defaultMessage": "Clear",
+		"description": "Button in the class editor, beside a race's name, that takes away the class's zone for that race so the race's own is used"
+	},
+	"editor.class.clearRaceZoneLabel": {
+		"defaultMessage": "Clear the starting zone for {race}",
+		"description": "Name of the button that takes away the class's zone for one race, for screen readers; {race} is the race's name"
+	},
+	"editor.class.clearZone": {
+		"defaultMessage": "Choose by Race",
+		"description": "Button in the class editor that takes away the class's zone for every race, so a zone can be chosen for each race"
+	},
+	"editor.class.confirmDelete": {
+		"defaultMessage": "Delete {class}? This can't be undone.",
+		"description": "Asks before deleting a character class made for this universe; {class} is its name"
+	},
+	"editor.class.confirmRestore": {
+		"defaultMessage": "Restore {class} to the ruleset's default? Your changes to it, including its starting money, equipment and zones, will be lost.",
+		"description": "Asks before undoing this universe's changes to one of the ruleset's character classes; {class} is its name"
+	},
+	"editor.class.delete": {
+		"defaultMessage": "Delete Class",
+		"description": "Button in the class editor that deletes a character class made for this universe"
+	},
+	"editor.class.deleteFailed": {
+		"defaultMessage": "Could not delete the class.",
+		"description": "Shown in the class editor when the character class couldn't be deleted"
+	},
+	"editor.class.editTitle": {
+		"defaultMessage": "Edit {class}",
+		"description": "Title of the class editor for a character class the player can change; {class} is its name, e.g. Wizard"
+	},
+	"editor.class.enabled": {
+		"defaultMessage": "Enabled",
+		"description": "Checkbox for whether new characters can choose the character class"
+	},
+	"editor.class.enabledHint": {
+		"defaultMessage": "New characters can only choose enabled classes, and at least one class must be enabled.",
+		"description": "Explains the class editor's Enabled checkbox"
+	},
+	"editor.class.name": {
+		"defaultMessage": "Name",
+		"description": "Label of the field for a character class's name"
+	},
+	"editor.class.noStartingEquipment": {
+		"defaultMessage": "Nothing more.",
+		"description": "Shown in the class editor when the class's members get no items beyond what every character and their race start with"
+	},
+	"editor.class.primaryAbility": {
+		"defaultMessage": "Primary ability",
+		"description": "Label of the field for the ability score a character class relies on most"
+	},
+	"editor.class.primaryAbilityHint": {
+		"defaultMessage": "Suggested to players when they arrange their ability scores.",
+		"description": "Explains the class editor's Primary ability field"
+	},
+	"editor.class.raceZones": {
+		"defaultMessage": "Starting zone by race",
+		"description": "Heading of the class editor's list of where the class's members of each race start"
+	},
+	"editor.class.raceZonesNote": {
+		"defaultMessage": "All members of this class, whatever their race, start in the class's zone.",
+		"description": "Shown in the class editor while the class has a zone for every race, which turns off the zones for each race"
+	},
+	"editor.class.restore": {
+		"defaultMessage": "Restore Default",
+		"description": "Button in the class editor that undoes this universe's changes to one of the ruleset's character classes"
+	},
+	"editor.class.restoreFailed": {
+		"defaultMessage": "Could not restore the class.",
+		"description": "Shown in the class editor when the ruleset's character class couldn't be restored"
+	},
+	"editor.class.saveFailed": {
+		"defaultMessage": "Could not save the class.",
+		"description": "Shown in the class editor when the character class couldn't be stored"
+	},
+	"editor.class.startingEquipment": {
+		"defaultMessage": "Extra starting equipment",
+		"description": "Heading of the list of items a character class's members get on top of what every character and their race start with"
+	},
+	"editor.class.startingMoney": {
+		"defaultMessage": "Extra starting money",
+		"description": "Label of the field for the money a character class's members get on top of what every character and their race start with"
+	},
+	"editor.class.startingZone": {
+		"defaultMessage": "Starting zone: {zone}",
+		"description": "Shows the zone every member of a character class starts in, whatever their race; {zone} is the zone's name"
+	},
+	"editor.class.tradition": {
+		"defaultMessage": "Magic tradition",
+		"description": "Label of the field for where a character class's magic comes from: none, arcane or divine"
+	},
+	"editor.class.zoneByRace": {
+		"defaultMessage": "Decided by race (below)",
+		"description": "Shown in the class editor as the class's starting zone when it has none for every race, so each race's zone listed below it is used"
+	},
+	"editor.classes.add": {
+		"defaultMessage": "Add Class",
+		"description": "Button that opens the dialog for making a new character class"
+	},
+	"editor.classes.hint": {
+		"defaultMessage": "The classes new characters can choose. Each class's starting money and equipment are added to what every character and their race start with.",
+		"description": "Explains the editor's Classes tab"
+	},
+	"editor.classes.listFailed": {
+		"defaultMessage": "Could not list the classes.",
+		"description": "Shown on the Classes tab when the character classes couldn't be loaded"
+	},
+	"editor.classes.name": {
+		"defaultMessage": "Name",
+		"description": "Heading of the table column with each character class's name"
+	},
+	"editor.classes.primaryAbility": {
+		"defaultMessage": "relies on {ability}",
+		"description": "In a character class's summary on the editor's Classes tab, the ability the class relies on most; {ability} is its name, e.g. Intelligence"
+	},
+	"editor.classes.summary": {
+		"defaultMessage": "Summary",
+		"description": "Heading of the table column describing each character class's rules, such as its magic"
 	},
 	"editor.error.failedBecause": {
 		"defaultMessage": "{failure} {reason}",
@@ -567,6 +703,18 @@
 		"defaultMessage": "Could not open the universe.",
 		"description": "Shown in the editor when the universe couldn't be loaded"
 	},
+	"editor.options.customTag": {
+		"defaultMessage": "custom",
+		"description": "In the last column of the editor's race or class table, for a race or class made for this universe"
+	},
+	"editor.options.disabledTag": {
+		"defaultMessage": "disabled",
+		"description": "In the last column of the editor's race or class table, for a race or class new characters can't choose"
+	},
+	"editor.options.editedTag": {
+		"defaultMessage": "edited",
+		"description": "In the last column of the editor's race or class table, for one of the ruleset's races or classes that this universe changed"
+	},
 	"editor.pageTitle": {
 		"defaultMessage": "Edit {universe} - Multiverse Kiln",
 		"description": "The browser tab's title for the world editor; {universe} is the universe's name and Multiverse Kiln is the game engine's name"
@@ -578,6 +726,138 @@
 	"editor.play": {
 		"defaultMessage": "Enter Universe",
 		"description": "Button in the editor's toolbar that goes to the universe's lobby to play"
+	},
+	"editor.race.abilityModifiers": {
+		"defaultMessage": "Ability modifiers",
+		"description": "Heading of the race editor's fields for how much the race adds to or takes from each ability score"
+	},
+	"editor.race.addTitle": {
+		"defaultMessage": "Add Race",
+		"description": "Title of the race editor when making a new race"
+	},
+	"editor.race.chooseEquipment": {
+		"defaultMessage": "Choose Equipment",
+		"description": "Button in the race editor that opens the dialog for choosing the items the race's characters also start with"
+	},
+	"editor.race.chooseZone": {
+		"defaultMessage": "Choose Zone",
+		"description": "Button in the race editor that opens the dialog for choosing the zone the race's characters start in"
+	},
+	"editor.race.clearZone": {
+		"defaultMessage": "Use the Universe's Zone",
+		"description": "Button in the race editor that takes away the race's starting zone, so its characters start in the universe's"
+	},
+	"editor.race.confirmDelete": {
+		"defaultMessage": "Delete {race}? This can't be undone.",
+		"description": "Asks before deleting a race made for this universe; {race} is its name"
+	},
+	"editor.race.confirmRestore": {
+		"defaultMessage": "Restore {race} to the ruleset's default? Your changes to it, including its starting money, equipment and zone, will be lost.",
+		"description": "Asks before undoing this universe's changes to one of the ruleset's races; {race} is its name"
+	},
+	"editor.race.darkvision": {
+		"defaultMessage": "Darkvision",
+		"description": "Checkbox for whether the race can see in the dark"
+	},
+	"editor.race.delete": {
+		"defaultMessage": "Delete Race",
+		"description": "Button in the race editor that deletes a race made for this universe"
+	},
+	"editor.race.deleteFailed": {
+		"defaultMessage": "Could not delete the race.",
+		"description": "Shown in the race editor when the race couldn't be deleted"
+	},
+	"editor.race.editTitle": {
+		"defaultMessage": "Edit {race}",
+		"description": "Title of the race editor for a race the player can change; {race} is its name, e.g. Dwarf"
+	},
+	"editor.race.enabled": {
+		"defaultMessage": "Enabled",
+		"description": "Checkbox for whether new characters can choose the race"
+	},
+	"editor.race.enabledHint": {
+		"defaultMessage": "New characters can only choose enabled races, and at least one race must be enabled.",
+		"description": "Explains the race editor's Enabled checkbox"
+	},
+	"editor.race.floatingBonus": {
+		"defaultMessage": "Floating ability bonus",
+		"description": "Checkbox for whether the player chooses one ability score for the race to raise"
+	},
+	"editor.race.floatingBonusHint": {
+		"defaultMessage": "The player chooses one ability to get +{bonus, number}, as humans, half-elves and half-orcs do.",
+		"description": "Explains the race editor's Floating ability bonus checkbox; {bonus} is how much the chosen ability score goes up"
+	},
+	"editor.race.name": {
+		"defaultMessage": "Name",
+		"description": "Label of the field for a race's name"
+	},
+	"editor.race.noStartingEquipment": {
+		"defaultMessage": "Nothing more.",
+		"description": "Shown in the race editor when the race's characters get no items beyond what every character starts with"
+	},
+	"editor.race.restore": {
+		"defaultMessage": "Restore Default",
+		"description": "Button in the race editor that undoes this universe's changes to one of the ruleset's races"
+	},
+	"editor.race.restoreFailed": {
+		"defaultMessage": "Could not restore the race.",
+		"description": "Shown in the race editor when the ruleset's race couldn't be restored"
+	},
+	"editor.race.saveFailed": {
+		"defaultMessage": "Could not save the race.",
+		"description": "Shown in the race editor when the race couldn't be stored"
+	},
+	"editor.race.size": {
+		"defaultMessage": "Size",
+		"description": "Label of the field for a race's size, such as small or medium"
+	},
+	"editor.race.startingEquipment": {
+		"defaultMessage": "Extra starting equipment",
+		"description": "Heading of the list of items a race's characters get on top of what every character starts with"
+	},
+	"editor.race.startingMoney": {
+		"defaultMessage": "Extra starting money",
+		"description": "Label of the field for the money a race's characters get on top of what every character starts with"
+	},
+	"editor.race.startingZone": {
+		"defaultMessage": "Starting zone: {zone}",
+		"description": "Shows the zone a race's characters start in; {zone} is the zone's name"
+	},
+	"editor.race.startingZoneHint": {
+		"defaultMessage": "Where the race's characters start, unless their class says otherwise.",
+		"description": "Explains the race editor's starting zone"
+	},
+	"editor.races.add": {
+		"defaultMessage": "Add Race",
+		"description": "Button that opens the dialog for making a new race"
+	},
+	"editor.races.darkvision": {
+		"defaultMessage": "darkvision",
+		"description": "In a race's summary on the editor's Races tab, for a race that can see in the dark"
+	},
+	"editor.races.floatingBonus": {
+		"defaultMessage": "{bonus, number, ::sign-always} to one ability",
+		"description": "In a race's summary on the editor's Races tab, for a race whose players choose one ability to raise; {bonus} is by how much, e.g. +2"
+	},
+	"editor.races.hint": {
+		"defaultMessage": "The races new characters can choose. Each race's starting money and equipment are added to what every character starts with.",
+		"description": "Explains the editor's Races tab"
+	},
+	"editor.races.listFailed": {
+		"defaultMessage": "Could not list the races.",
+		"description": "Shown on the Races tab when the races couldn't be loaded"
+	},
+	"editor.races.modifier": {
+		"defaultMessage": "{ability} {modifier, number, ::sign-always}",
+		"description": "One ability modifier in a race's summary on the editor's Races tab, e.g. Dexterity +2; {ability} is the ability's name"
+	},
+	"editor.races.name": {
+		"defaultMessage": "Name",
+		"description": "Heading of the table column with each race's name"
+	},
+	"editor.races.summary": {
+		"defaultMessage": "Summary",
+		"description": "Heading of the table column describing each race's rules, such as its size and ability modifiers"
 	},
 	"editor.resize.discard": {
 		"defaultMessage": "Resize and discard",
@@ -667,9 +947,33 @@
 		"defaultMessage": "Ammunition is used up",
 		"description": "Checkbox for whether arrows and other ammunition are used up when fired"
 	},
+	"editor.startingItems.item": {
+		"defaultMessage": "{quantity, number} {item}",
+		"description": "One line of a list of starting equipment in the editor, e.g. 20 Arrows; {item} is the item's name. Change only to reorder the two"
+	},
+	"editor.startingItems.loadFailed": {
+		"defaultMessage": "Could not load the starting equipment.",
+		"description": "Shown in the editor when the items characters start with (the universe's, a race's or a class's) couldn't be loaded"
+	},
+	"editor.startingZone.loadFailed": {
+		"defaultMessage": "Could not load the zones' names.",
+		"description": "Shown in the race or class editor when the names of the zones characters start in couldn't be loaded"
+	},
+	"editor.startingZone.races": {
+		"defaultMessage": "{zone} (the race's)",
+		"description": "Shown in the class editor as where the class's characters of one race start when the class has no zone for that race, so they start in the race's; {zone} is that zone's name"
+	},
+	"editor.startingZone.universes": {
+		"defaultMessage": "{zone} (the universe's)",
+		"description": "Shown as a race's or class's starting zone when it has none of its own, so its characters start in the universe's; {zone} is that zone's name"
+	},
 	"editor.tab.characters": {
 		"defaultMessage": "Characters",
 		"description": "Tab of the editor with what characters start with and how many play together"
+	},
+	"editor.tab.classes": {
+		"defaultMessage": "Classes",
+		"description": "Tab of the editor listing the classes characters can be, such as fighters and wizards"
 	},
 	"editor.tab.items": {
 		"defaultMessage": "Items",
@@ -678,6 +982,10 @@
 	"editor.tab.lobby": {
 		"defaultMessage": "Lobby",
 		"description": "Tab of the editor with the lobby's settings"
+	},
+	"editor.tab.races": {
+		"defaultMessage": "Races",
+		"description": "Tab of the editor listing the races characters can be, such as elves and dwarves"
 	},
 	"editor.tab.ruleset": {
 		"defaultMessage": "Ruleset",
@@ -1055,6 +1363,14 @@
 		"defaultMessage": "Every cell must be inside the zone's map.",
 		"description": "Why painting was refused: some cells are outside the map, perhaps because another editor made it smaller"
 	},
+	"error.classLimit": {
+		"defaultMessage": "A universe can have at most {max, plural, one {# class} other {# classes}} of its own.",
+		"description": "Why a new character class wasn't made: the universe has as many classes of its own as allowed"
+	},
+	"error.classNeedsName": {
+		"defaultMessage": "A class needs a name.",
+		"description": "Why a character class the universe added couldn't be saved: its name was left out"
+	},
 	"error.faerieCantLoop": {
 		"defaultMessage": "A zone whose passage of time is faerie can't loop.",
 		"description": "Why a zone's settings were refused: faerie time and a map that wraps around can't be combined"
@@ -1068,8 +1384,8 @@
 		"description": "Why the server refused a request the page should never send; {problem} is a technical description in English"
 	},
 	"error.itemInStartingEquipment": {
-		"defaultMessage": "Characters start with this item, so it can't be deleted. Take it out of the starting equipment first.",
-		"description": "Why an item couldn't be deleted: it is in the equipment every character of the universe starts with"
+		"defaultMessage": "Characters start with this item, so it can't be deleted. Take it out of the starting equipment of the universe and of every race and class first.",
+		"description": "Why an item couldn't be deleted: it is in the equipment characters of the universe, or of one of its races or classes, start with"
 	},
 	"error.itemLimit": {
 		"defaultMessage": "A universe can have at most {max, plural, one {# item} other {# items}} of its own.",
@@ -1099,6 +1415,18 @@
 		"defaultMessage": "Log in first.",
 		"description": "Why an editor request was refused: the browser isn't logged in"
 	},
+	"error.noEnabledClass": {
+		"defaultMessage": "A universe needs at least one enabled class, so new characters have one to be.",
+		"description": "Why a character class couldn't be disabled or deleted: it is the last class new characters can choose"
+	},
+	"error.noEnabledRace": {
+		"defaultMessage": "A universe needs at least one enabled race, so new characters have one to be.",
+		"description": "Why a race couldn't be disabled or deleted: it is the last race new characters can choose"
+	},
+	"error.noSuchClass": {
+		"defaultMessage": "The class doesn't exist.",
+		"description": "Why a request about a character class (such as fighter or wizard) failed: it was deleted, perhaps by another editor"
+	},
 	"error.noSuchItem": {
 		"defaultMessage": "The item doesn't exist.",
 		"description": "Why a request about an item failed: it was deleted, perhaps by another editor"
@@ -1106,6 +1434,10 @@
 	"error.noSuchLink": {
 		"defaultMessage": "There is no link on that cell.",
 		"description": "Why a zone link couldn't be deleted: it was already gone, perhaps deleted by another editor"
+	},
+	"error.noSuchRace": {
+		"defaultMessage": "The race doesn't exist.",
+		"description": "Why a request about a race (such as elf or dwarf) failed: it was deleted, perhaps by another editor"
 	},
 	"error.noSuchTile": {
 		"defaultMessage": "The tile doesn't exist.",
@@ -1126,6 +1458,14 @@
 	"error.parentNotInUniverse": {
 		"defaultMessage": "The parent zone must be a zone of this universe.",
 		"description": "Why a zone's settings were refused: the zone chosen to hold it doesn't exist"
+	},
+	"error.raceLimit": {
+		"defaultMessage": "A universe can have at most {max, plural, one {# race} other {# races}} of its own.",
+		"description": "Why a new race wasn't made: the universe has as many races of its own as allowed"
+	},
+	"error.raceNeedsName": {
+		"defaultMessage": "A race needs a name.",
+		"description": "Why a race the universe added couldn't be saved: its name was left out"
 	},
 	"error.resizeDiscards": {
 		"defaultMessage": "Resizing would discard painted cells or links.",
@@ -1159,6 +1499,10 @@
 		"defaultMessage": "The universe's ruleset has no such type of item.",
 		"description": "Why an item couldn't be saved: the type chosen for it isn't one of the game rules' item types"
 	},
+	"error.unknownRaceZone": {
+		"defaultMessage": "A starting zone is chosen for a race this universe doesn't have.",
+		"description": "Why a character class's settings were refused: one of its zones for a race is for a race that was deleted, perhaps by another editor"
+	},
 	"error.unreadableBody": {
 		"defaultMessage": "The request could not be read.",
 		"description": "Why the server refused a request whose contents were damaged or too large"
@@ -1169,11 +1513,11 @@
 	},
 	"error.unusableStartingItem": {
 		"defaultMessage": "The starting equipment holds an item this universe doesn't have.",
-		"description": "Why a universe's starting equipment was refused: one of its items was deleted, perhaps by another editor"
+		"description": "Why starting equipment (the universe's, a race's or a class's) was refused: one of its items was deleted, perhaps by another editor"
 	},
 	"error.unusableStartingZone": {
 		"defaultMessage": "The starting zone must be a zone of this universe other than the lobby.",
-		"description": "Why a universe's settings were refused: the zone chosen for characters to start in is the lobby, or was deleted, perhaps by another editor"
+		"description": "Why a starting zone (the universe's, a race's or a class's) was refused: the zone chosen for characters to start in is the lobby, or was deleted, perhaps by another editor"
 	},
 	"error.unusableTile": {
 		"defaultMessage": "One of the tiles painted isn't one this universe can use.",

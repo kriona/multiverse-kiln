@@ -5,7 +5,7 @@
  * the Open Game License 1.0a (client/license.html)
  */
 import { defineMessages, type MessageDescriptor } from '../../localization.js';
-import type { Pf1eAbilityScores } from './abilities.js';
+import { emptyPf1eAbilityScores, type Pf1eAbilityScores } from './abilities.js';
 import type { Pf1eSize } from './sizes.js';
 
 /**
@@ -36,6 +36,45 @@ export interface Pf1eRaceDefaults
 
 	darkvision: boolean;
 	size: Pf1eSize;
+}
+
+/**
+ * A race's rules as a universe stores and edits them, with a modifier for every ability
+ */
+export interface Pf1eRaceRules extends Omit<Pf1eRaceDefaults, 'abilityModifiers'>
+{
+	/**
+	 * Added to the character's ability scores, each from PF1E_MIN_RACE_ABILITY_MODIFIER to
+	 * PF1E_MAX_RACE_ABILITY_MODIFIER
+	 */
+	abilityModifiers: Pf1eAbilityScores;
+}
+
+/**
+ * The rules a race the universe adds starts with: no modifiers, no darkvision, medium
+ */
+export const NEW_PF1E_RACE_RULES: Readonly<Pf1eRaceRules> = {
+	abilityModifiers: emptyPf1eAbilityScores(),
+	floatingBonus: false,
+	darkvision: false,
+	size: 'medium'
+};
+
+/**
+ * A default race's rules, with +0 for each ability it leaves out
+ *
+ * @param race The default race
+ * @return Its rules
+ */
+export function pf1eRaceRules(race: Pf1eRaceDefaults): Pf1eRaceRules
+{
+	return({
+		...race,
+		abilityModifiers: {
+			...emptyPf1eAbilityScores(),
+			...race.abilityModifiers
+		}
+	});
 }
 
 /**

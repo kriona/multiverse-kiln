@@ -145,7 +145,7 @@ export function currentLocale(): string
  */
 export function formatList(items: readonly string[], type: 'conjunction' | 'unit' = 'unit'): string
 {
-	return(new Intl.ListFormat(translator.locale, { style: ((type === 'unit') ? 'narrow' : 'long'), type }).format(items));
+	return(new Intl.ListFormat(translator.locale, { style: ((type === 'unit') ? 'short' : 'long'), type }).format(items));
 }
 
 /**
