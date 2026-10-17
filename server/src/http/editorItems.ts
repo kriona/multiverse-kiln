@@ -6,6 +6,7 @@ import type { Request, Response } from 'express';
 import { canEditWorld, defineMessages, isItemType, MAX_CUSTOM_ITEMS, type CreatedPayload } from '@multiverse-kiln/shared';
 
 import { countCustomItems, createCustomItem, deleteCustomItem, findItemKind, listEditorItems, restoreDefaultItem, saveEditedDefaultItem, updateCustomItem } from '../db/itemRepo.js';
+import { isStartingItem } from '../db/startingItemRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { lockUniverse } from '../db/universeRepo.js';
 import { requireRole, universeContextOf } from './editorAccess.js';
@@ -177,8 +178,8 @@ async function saveItem(request: Request, response: Response): Promise<void>
 }
 
 /**
- * DELETE /:universeId/items/:itemId: deletes one of the universe's own items, or restores a default
- * item the universe has edited
+ * DELETE /:universeId/items/:itemId: deletes one of the universe's own items if characters don't start
+ * with it, or restores a default item the universe has edited
  *
  * @param request The request
  * @param response The response
@@ -198,10 +199,33 @@ async function deleteItem(request: Request, response: Response): Promise<void>
 	if (kind === 'default')
 	{
 		await restoreDefaultItem(universe.id, itemId.data);
+		response.sendStatus(204);
+		return;
 	}
-	else
+
+	const deleted = await inTransaction(async (transaction) =>
 	{
-		await deleteCustomItem(universe.id, itemId.data);
+		// Saving the starting equipment waits for the universe's lock too, so the item can't be added to it before it is deleted
+		await lockUniverse(universe.id, transaction);
+
+		if (await isStartingItem(universe.id, itemId.data, transaction))
+		{
+			return(false);
+		}
+
+		await deleteCustomItem(universe.id, itemId.data, transaction);
+
+		return(true);
+	});
+
+	if (!deleted)
+	{
+		sendError(response, 409, {
+			id: 'error.itemInStartingEquipment',
+			defaultMessage: 'Characters start with this item, so it can\'t be deleted. Take it out of the starting equipment first.',
+			description: 'Why an item couldn\'t be deleted: it is in the equipment every character of the universe starts with'
+		});
+		return;
 	}
 
 	response.sendStatus(204);

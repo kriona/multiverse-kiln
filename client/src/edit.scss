@@ -419,6 +419,36 @@
 	}
 }
 
+.starting-equipment
+{
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+
+	h3
+	{
+		margin: 0;
+		font-size: 1em;
+	}
+}
+
+.starting-items
+{
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+
+	li
+	{
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+}
+
 .item-select-dialog
 {
 	width: min(480px, calc(100vw - 32px));

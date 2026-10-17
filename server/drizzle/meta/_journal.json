@@ -85,6 +85,20 @@
       "when": 1792194332289,
       "tag": "0011_pf1e_default_items",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792195237654,
+      "tag": "0012_universe_starting_items",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792195239055,
+      "tag": "0013_starting_daggers",
+      "breakpoints": true
     }
   ]
 }

@@ -29,7 +29,7 @@ import type { FaerieMorning, PassageOfTime, Ruleset, UniverseRole, UniverseStage
  * - GET    /:universeId/items                      ItemListQuery as query parameters -> ItemListPayload
  * - POST   /:universeId/items                      ItemSettings -> CreatedPayload: a custom item
  * - PUT    /:universeId/items/:itemId              ItemSettings: edits a custom item, or stores an edited copy of a default item
- * - DELETE /:universeId/items/:itemId              deletes a custom item, or restores a default item
+ * - DELETE /:universeId/items/:itemId              deletes a custom item no starting equipment holds, or restores a default item
  * - GET    /:universeId/zones                      ZoneListPayload
  * - POST   /:universeId/zones                      NewZoneRequest -> CreatedPayload
  * - GET    /:universeId/zones/:zoneId              EditorZone
@@ -106,6 +106,11 @@ export const MAX_ITEMS_PER_PAGE = 500;
  * Most of one item a quantity can be, e.g. 20 arrows
  */
 export const MAX_ITEM_QUANTITY = 999;
+
+/**
+ * Most different items a universe's starting equipment can hold
+ */
+export const MAX_STARTING_ITEMS = 50;
 
 /**
  * Most characters in a zone's name
@@ -221,6 +226,12 @@ export interface UniverseSettings
 	 * The coins every character starts with, up to PF1E_MAX_COINS of each
 	 */
 	startingMoney: Pf1eMoney;
+
+	/**
+	 * The items every character starts with, by item ID: up to MAX_STARTING_ITEMS items the universe
+	 * can use, each listed once
+	 */
+	startingItems: ItemQuantity[];
 
 	/**
 	 * Where characters start unless their race or class says otherwise: one of the universe's zones
@@ -425,6 +436,11 @@ export interface ItemListQuery
 	 * One of the ruleset's item types, e.g. dagger
 	 */
 	type?: string;
+
+	/**
+	 * Only these items, by ID, up to MAX_STARTING_ITEMS of them (a comma-separated list in the query string)
+	 */
+	ids?: number[];
 
 	/**
 	 * How many matching items to skip

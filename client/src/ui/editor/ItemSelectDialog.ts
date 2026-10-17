@@ -46,6 +46,11 @@ export class ItemSelectDialog
 	private readonly error = getElement('item-select-error', HTMLElement);
 
 	/**
+	 * The items chosen, in the order they were chosen. Each quantity is read from its field on submit
+	 */
+	private chosen: ChosenItem[] = [];
+
+	/**
 	 * Whether the items chosen differ from those the dialog opened with
 	 */
 	private readonly changes = new ChangeTracker({
@@ -54,11 +59,6 @@ export class ItemSelectDialog
 	});
 
 	private universe: EditableUniverse | undefined;
-
-	/**
-	 * The items chosen, in the order they were chosen. Each quantity is read from its field on submit
-	 */
-	private chosen: ChosenItem[] = [];
 
 	/**
 	 * Each chosen item's quantity field, by the item's ID

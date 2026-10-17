@@ -131,6 +131,7 @@ async function loadNamedItems(universeId: string, ruleset: Ruleset, executor: Ex
 export async function listEditorItems(universeId: string, ruleset: Ruleset, query: ItemListQuery, executor: Executor = db): Promise<ItemListPayload>
 {
 	const name = query.name?.toLowerCase();
+	const ids = ((query.ids === undefined) ? undefined : new Set(query.ids));
 
 	// A default item that kept its name matches by its English name, since the server doesn't have the translations
 	const matching = (await loadNamedItems(universeId, ruleset, executor)).filter(({ item, englishName }) =>
@@ -142,6 +143,7 @@ export async function listEditorItems(universeId: string, ruleset: Ruleset, quer
 			&& ((query.edited === undefined) || (item.edited === query.edited))
 			&& ((query.category === undefined) || (itemCategory(ruleset, item.type) === query.category))
 			&& ((query.type === undefined) || (item.type === query.type))
+			&& ((ids === undefined) || ids.has(item.id))
 		);
 	});
 	const offset = (query.offset ?? 0);

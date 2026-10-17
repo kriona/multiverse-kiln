@@ -16,6 +16,8 @@ import { createUniverse, lockUniverse, setUniverseZones, updateUniverseSettings 
 import { createZone, isTileInUse, listZones } from '../db/zoneRepo.js';
 import { zoneChanges } from '../world/zoneChanges.js';
 import { loadUniverseContext, playerIdOf, refuseWritesFromOtherOrigins, requireLogin, requireRole, universeContextOf } from './editorAccess.js';
+import { loadEditorItems } from '../db/itemRepo.js';
+import { addDefaultStartingItems } from '../db/startingItemRepo.js';
 import { addItemRoutes } from './editorItems.js';
 import { newUniverseRequest, rulesetSettings, tileIdParameter, tileListQuery, tileSettings, universeSettingsUpdate } from './editorPayloads.js';
 import { addZoneRoutes, DEFAULT_ZONE_TILE_KEYS, timeSettingsProblem } from './editorZones.js';
@@ -172,6 +174,7 @@ async function createUniverseRoute(request: Request, response: Response): Promis
 		const startingZoneId = await createZone({ ...zone, name: startingZoneName }, transaction);
 
 		await setUniverseZones(createdId, lobbyZoneId, startingZoneId, transaction);
+		await addDefaultStartingItems(createdId, ruleset, transaction);
 		await setUniverseRole(createdId, playerId, 'creator', transaction);
 
 		return(createdId);
@@ -243,7 +246,37 @@ async function updateUniverse(request: Request, response: Response): Promise<voi
 		return;
 	}
 
-	await updateUniverseSettings(universe.id, body.data);
+	const { startingItems } = body.data;
+	const updated = await inTransaction(async (transaction) =>
+	{
+		// Deleting an item waits for the universe's lock too, so an item can't be deleted as it is added here
+		await lockUniverse(universe.id, transaction);
+
+		if (startingItems !== undefined)
+		{
+			const usableItemIds = new Set((await loadEditorItems(universe.id, universe.ruleset, transaction)).map((item) => item.id));
+
+			if (!startingItems.every(({ itemId }) => usableItemIds.has(itemId)))
+			{
+				return(false);
+			}
+		}
+
+		await updateUniverseSettings(universe.id, body.data, transaction);
+
+		return(true);
+	});
+
+	if (!updated)
+	{
+		sendError(response, 400, {
+			id: 'error.unusableStartingItem',
+			defaultMessage: 'The starting equipment holds an item this universe doesn\'t have.',
+			description: 'Why a universe\'s starting equipment was refused: one of its items was deleted, perhaps by another editor'
+		});
+		return;
+	}
+
 	response.sendStatus(204);
 }
 

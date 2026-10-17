@@ -6,6 +6,7 @@ import type { EditableUniverse, PassageOfTime, Ruleset, UniverseDetails, Univers
 
 import { db, type Executor } from './client.js';
 import { universes } from './schema.js';
+import { loadStartingItems, replaceStartingItems } from './startingItemRepo.js';
 
 /**
  * A universe as the rest of the server sees it
@@ -198,7 +199,8 @@ export async function findEditableUniverse(universeId: string, executor: Executo
 			gp: startingGold,
 			sp: startingSilver,
 			cp: startingCopper
-		}
+		},
+		startingItems: await loadStartingItems(universeId, executor)
 	});
 }
 
@@ -207,20 +209,25 @@ export async function findEditableUniverse(universeId: string, executor: Executo
  *
  * The database refuses a faerie passage of time without a faerie morning, a faerie morning without
  * faerie time, and a group size or starting money out of range. The caller checks that a starting zone
- * is one of the universe's
+ * is one of the universe's, and that the starting items are items it can use
  *
  * @param universeId The universe's ID
  * @param update The settings to change
- * @param executor The database, or a transaction
+ * @param executor A transaction when the update holds starting items, otherwise the database or a transaction
  */
 export async function updateUniverseSettings(universeId: string, update: UniverseSettingsUpdate, executor: Executor = db): Promise<void>
 {
-	if (Object.keys(update).length === 0)
+	const { startingMoney, startingItems, ...settings } = update;
+
+	if (startingItems !== undefined)
+	{
+		await replaceStartingItems(universeId, startingItems, executor);
+	}
+
+	if ((Object.keys(settings).length === 0) && (startingMoney === undefined))
 	{
 		return;
 	}
-
-	const { startingMoney, ...settings } = update;
 
 	await executor
 		.update(universes)

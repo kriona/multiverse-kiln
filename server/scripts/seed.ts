@@ -19,6 +19,7 @@ import { CHUNK_SIZE, DEFAULT_TILE_CELL, VOID_CELL, cellIndexInChunk, chunkCoordi
 
 import { db, pool, type Executor } from '../src/db/client.js';
 import { loadOrCreatePlayerByName, type PlayerProfile } from '../src/db/playerRepo.js';
+import { addDefaultStartingItems } from '../src/db/startingItemRepo.js';
 import { createTile, findDefaultTileIds } from '../src/db/tileRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { describeInvalidPayload, loginPayload } from '../src/rooms/payloads.js';
@@ -258,6 +259,7 @@ async function seed(executor: Executor, creator: PlayerProfile | undefined): Pro
 		passageOfTime: sampleUniverse.passageOfTime
 	}, executor);
 
+	await addDefaultStartingItems(universeId, 'pf1e', executor);
 	tileIds.set(stoneWall.key, await createTile({ ...stoneWall, key: null, ruleset: 'pf1e', universeId }, executor));
 
 	const zoneIds = new Map<string, string>();

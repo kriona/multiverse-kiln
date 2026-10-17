@@ -5,6 +5,7 @@ import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import type { ChangeTracker } from '../changeTracker';
 import { getElement, showMessage } from '../dom';
 import { CharactersTab } from './CharactersTab';
+import { ItemSelectDialog } from './ItemSelectDialog';
 import { ItemsTab } from './ItemsTab';
 import { RulesetTab } from './RulesetTab';
 import { TilesetsTab } from './TilesetsTab';
@@ -109,7 +110,7 @@ export class EditorScreen
 			this.setUniverse(universe);
 		});
 		this.rulesetTab = new RulesetTab(api);
-		this.charactersTab = new CharactersTab(api, new ZoneSelectDialog(api), (universe) =>
+		this.charactersTab = new CharactersTab(api, new ZoneSelectDialog(api), new ItemSelectDialog(api), (universe) =>
 		{
 			this.setUniverse(universe);
 		});

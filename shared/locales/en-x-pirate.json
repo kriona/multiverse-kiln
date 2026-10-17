@@ -7,6 +7,10 @@
 		"message": "Batten down",
 		"source": "Close"
 	},
+	"editor.characters.chooseEquipment": {
+		"message": "Choose Startin' Kit",
+		"source": "Choose Starting Equipment"
+	},
 	"editor.characters.chooseZone": {
 		"message": "Choose Home Port",
 		"source": "Choose Starting Zone"
@@ -19,9 +23,29 @@
 		"message": "{min, number} be sailin' alone. At most {max, number} hands can sail together.",
 		"source": "{min, number} is single player. At most {max, number} characters can play together."
 	},
+	"editor.characters.itemsFailed": {
+		"message": "Couldn't haul up the startin' kit.",
+		"source": "Could not load the starting equipment."
+	},
+	"editor.characters.noStartingEquipment": {
+		"message": "The crew sets sail empty-handed.",
+		"source": "Characters start with nothing."
+	},
 	"editor.characters.saveFailed": {
 		"message": "Couldn't stow the crew's settings.",
 		"source": "Could not save the character settings."
+	},
+	"editor.characters.startingEquipment": {
+		"message": "Startin' kit",
+		"source": "Starting equipment"
+	},
+	"editor.characters.startingEquipmentHint": {
+		"message": "What every hand comes aboard with. Races an' classes can add more.",
+		"source": "What every character starts with. Races and classes can add more."
+	},
+	"editor.characters.startingItem": {
+		"message": "{quantity, number} {item}",
+		"source": "{quantity, number} {item}"
 	},
 	"editor.characters.startingMoney": {
 		"message": "Startin' purse",
@@ -1043,6 +1067,10 @@
 		"message": "That request be no good ({problem}).",
 		"source": "The request isn't valid ({problem})."
 	},
+	"error.itemInStartingEquipment": {
+		"message": "The crew comes aboard with this booty, so it can't be scuttled. Take it out o' the startin' kit first.",
+		"source": "Characters start with this item, so it can't be deleted. Take it out of the starting equipment first."
+	},
 	"error.itemLimit": {
 		"message": "A universe can stow at most {max, plural, one {# piece o' booty} other {# pieces o' booty}} of its own.",
 		"source": "A universe can have at most {max, plural, one {# item} other {# items}} of its own."
@@ -1138,6 +1166,10 @@
 	"error.unusableDefaultTile": {
 		"message": "The usual tile must be a tile this universe can use.",
 		"source": "The default tile must be a tile this universe can use."
+	},
+	"error.unusableStartingItem": {
+		"message": "The startin' kit holds booty this universe doesn't have.",
+		"source": "The starting equipment holds an item this universe doesn't have."
 	},
 	"error.unusableStartingZone": {
 		"message": "The home port must be a zone o' this universe, an' not the tavern.",

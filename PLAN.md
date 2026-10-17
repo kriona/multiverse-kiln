@@ -151,7 +151,7 @@ Built in seven steps: licensing and the ruleset module; the Ruleset tab and the 
 	- [✅] Characters tab: group size, starting money and starting zone, with the zone selection modal
 3. Items
 	- [✅] Items tab, item editor (name, type, enabled) and the PF1E default items (a dagger for now); item selection with quantities
-	- [ ] Characters tab: starting equipment (a dagger for everyone by default)
+	- [✅] Characters tab: starting equipment (a dagger for everyone by default)
 4. Races and classes
 	- [ ] Races and Classes tabs with their overrides, custom races and classes, and the PF1E fields (ability modifiers, floating bonus, darkvision, size, primary ability, tradition, casting style)
 	- [ ] Each race's and class's starting equipment, money and zone, and the class's per-race zones; the starting zone's precedence (class + race > class > race > universe) as a pure function with tests

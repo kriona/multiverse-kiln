@@ -45,6 +45,18 @@ export const DEFAULT_ITEM_NAMES: Record<Ruleset, Record<string, MessageDescripto
 };
 
 /**
+ * What every character of a new universe starts with, by ruleset: each default item's key, and how many
+ */
+export const DEFAULT_STARTING_ITEMS: Record<Ruleset, readonly { key: string; quantity: number }[]> = {
+	pf1e: [
+		{
+			key: 'dagger',
+			quantity: 1
+		}
+	]
+};
+
+/**
  * Whether a ruleset has an item type
  *
  * @param ruleset The ruleset

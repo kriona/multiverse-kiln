@@ -7,6 +7,10 @@
 		"defaultMessage": "Close",
 		"description": "Button that closes a dialog that only shows something, with nothing to change"
 	},
+	"editor.characters.chooseEquipment": {
+		"defaultMessage": "Choose Starting Equipment",
+		"description": "Button that opens the dialog for choosing the items every character starts with"
+	},
 	"editor.characters.chooseZone": {
 		"defaultMessage": "Choose Starting Zone",
 		"description": "Button that opens the dialog for choosing the zone characters start in"
@@ -19,9 +23,29 @@
 		"defaultMessage": "{min, number} is single player. At most {max, number} characters can play together.",
 		"description": "Explains the group size field on the editor's Characters tab; {min} and {max} are the smallest and largest group sizes"
 	},
+	"editor.characters.itemsFailed": {
+		"defaultMessage": "Could not load the starting equipment.",
+		"description": "Shown on the Characters tab when the items characters start with couldn't be loaded"
+	},
+	"editor.characters.noStartingEquipment": {
+		"defaultMessage": "Characters start with nothing.",
+		"description": "Shown on the editor's Characters tab when characters start with no items"
+	},
 	"editor.characters.saveFailed": {
 		"defaultMessage": "Could not save the character settings.",
 		"description": "Shown on the Characters tab when its settings couldn't be stored"
+	},
+	"editor.characters.startingEquipment": {
+		"defaultMessage": "Starting equipment",
+		"description": "Heading of the list of items every character starts with, on the editor's Characters tab"
+	},
+	"editor.characters.startingEquipmentHint": {
+		"defaultMessage": "What every character starts with. Races and classes can add more.",
+		"description": "Explains the starting equipment on the editor's Characters tab"
+	},
+	"editor.characters.startingItem": {
+		"defaultMessage": "{quantity, number} {item}",
+		"description": "One line of the starting equipment on the editor's Characters tab, e.g. 20 Arrows; {item} is the item's name. Change only to reorder the two"
 	},
 	"editor.characters.startingMoney": {
 		"defaultMessage": "Starting money",
@@ -1043,6 +1067,10 @@
 		"defaultMessage": "The request isn't valid ({problem}).",
 		"description": "Why the server refused a request the page should never send; {problem} is a technical description in English"
 	},
+	"error.itemInStartingEquipment": {
+		"defaultMessage": "Characters start with this item, so it can't be deleted. Take it out of the starting equipment first.",
+		"description": "Why an item couldn't be deleted: it is in the equipment every character of the universe starts with"
+	},
 	"error.itemLimit": {
 		"defaultMessage": "A universe can have at most {max, plural, one {# item} other {# items}} of its own.",
 		"description": "Why a new item wasn't made: the universe has as many items of its own as allowed"
@@ -1138,6 +1166,10 @@
 	"error.unusableDefaultTile": {
 		"defaultMessage": "The default tile must be a tile this universe can use.",
 		"description": "Why a zone's settings were refused: the default tile was deleted, perhaps by another editor"
+	},
+	"error.unusableStartingItem": {
+		"defaultMessage": "The starting equipment holds an item this universe doesn't have.",
+		"description": "Why a universe's starting equipment was refused: one of its items was deleted, perhaps by another editor"
 	},
 	"error.unusableStartingZone": {
 		"defaultMessage": "The starting zone must be a zone of this universe other than the lobby.",

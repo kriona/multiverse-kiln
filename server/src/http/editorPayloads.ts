@@ -6,7 +6,7 @@
  * need the database (such as whether a tile belongs to the universe) are made by the routes
  */
 import { z } from 'zod';
-import { DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_CELL_CHANGES, MAX_CHUNKS_PER_REQUEST, MAX_GROUP_PLAYERS, MAX_ITEM_NAME_LENGTH, MAX_ITEMS_PER_PAGE, MAX_LONG_DESCRIPTION_LENGTH, MAX_MAP_SIDE, MAX_SHORT_DESCRIPTION_LENGTH, MAX_TILE_NAME_LENGTH, MAX_TILES_PER_PAGE, MAX_UNIVERSE_NAME_LENGTH, MAX_ZONE_NAME_LENGTH, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MIN_POINT_BUY_BUDGET, PF1E_STAT_METHODS, RULESETS, UNIVERSE_STAGES, VOID_CELL, ZONE_LINK_MODES, ZONE_PASSAGES_OF_TIME, type CellEditRequest, type ChunkRange, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type NewZoneRequest, type ResizeZoneRequest, type RulesetSettings, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type ZoneLinkTarget, type ZoneSettingsUpdate } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_CELL_CHANGES, MAX_CHUNKS_PER_REQUEST, MAX_GROUP_PLAYERS, MAX_ITEM_NAME_LENGTH, MAX_ITEM_QUANTITY, MAX_ITEMS_PER_PAGE, MAX_LONG_DESCRIPTION_LENGTH, MAX_MAP_SIDE, MAX_SHORT_DESCRIPTION_LENGTH, MAX_STARTING_ITEMS, MAX_TILE_NAME_LENGTH, MAX_TILES_PER_PAGE, MAX_UNIVERSE_NAME_LENGTH, MAX_ZONE_NAME_LENGTH, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MIN_POINT_BUY_BUDGET, PF1E_STAT_METHODS, RULESETS, UNIVERSE_STAGES, VOID_CELL, ZONE_LINK_MODES, ZONE_PASSAGES_OF_TIME, type CellEditRequest, type ChunkRange, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type NewZoneRequest, type ResizeZoneRequest, type RulesetSettings, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type ZoneLinkTarget, type ZoneSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { displayText } from '../rooms/payloads.js';
 
@@ -89,6 +89,13 @@ export const universeSettingsUpdate = z.object({
 		sp: coinCount,
 		cp: coinCount
 	}).optional(),
+	startingItems: z.array(z.object({
+		itemId: itemIdParameter,
+		quantity: z.number().int().min(1).max(MAX_ITEM_QUANTITY)
+	}))
+		.max(MAX_STARTING_ITEMS)
+		.refine((items) => (new Set(items.map((item) => item.itemId)).size === items.length), 'Each item can be listed only once')
+		.optional(),
 	startingZoneId: z.uuid().optional()
 }) satisfies z.ZodType<UniverseSettingsUpdate>;
 
@@ -148,6 +155,10 @@ export const itemListQuery = z.object({
 	edited: booleanText.optional(),
 	category: itemKindKey.optional(),
 	type: itemKindKey.optional(),
+	ids: z.string()
+		.transform((text) => text.split(',').map(Number))
+		.pipe(z.array(z.number().int().min(1).max(2147483647)).min(1).max(MAX_STARTING_ITEMS))
+		.optional(),
 	offset: z.coerce.number().int().min(0).default(0),
 	limit: z.coerce.number().int().min(1).max(MAX_ITEMS_PER_PAGE).default(MAX_ITEMS_PER_PAGE)
 }) satisfies z.ZodType<ItemListQuery, unknown>;

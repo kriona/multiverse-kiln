@@ -238,7 +238,7 @@ Pathfinder 1E's rules (races, classes, abilities, point buy, sizes and items) ar
 
 ### Tab: Characters
 - Group size, minimum 1 (single player only) maximum 6 (infrastructure / server max), default server max
-- Starting equipment, lets you [select items](#selection-item)
+- Starting equipment, lets you [select items](#selection-item). A new universe starts with one dagger for every character. An item in the starting equipment can't be deleted until it is taken out
 - Starting [money](#field-money)
 - Starting [zone](#selection-zone)
 - Tabs:

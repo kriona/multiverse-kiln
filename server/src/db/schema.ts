@@ -6,7 +6,7 @@
  */
 import { sql } from 'drizzle-orm';
 import { boolean, check, index, integer, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHUNK_SIZE, DEFAULT_PF1E_SETTINGS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_GROUP_PLAYERS, MAX_MAP_SIDE, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MIN_POINT_BUY_BUDGET, PF1E_STAT_METHODS, RULESETS, UNIVERSE_ROLES, UNIVERSE_STAGES, ZONE_LINK_MODES, ZONE_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, DEFAULT_PF1E_SETTINGS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MIN_POINT_BUY_BUDGET, PF1E_STAT_METHODS, RULESETS, UNIVERSE_ROLES, UNIVERSE_STAGES, ZONE_LINK_MODES, ZONE_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
 
 export const universeStage = pgEnum('universe_stage', UNIVERSE_STAGES);
 export const universeRole = pgEnum('universe_role', UNIVERSE_ROLES);
@@ -210,6 +210,21 @@ export const items = pgTable('items', {
 	index('items_universe_id_index').on(table.universeId),
 	check('items_overrides_belong_to_universe', sql`${table.overridesItemId} IS NULL OR ${table.universeId} IS NOT NULL`),
 	check('items_name_required', sql`${table.name} IS NOT NULL OR ${table.overridesItemId} IS NOT NULL`)
+]);
+
+/**
+ * The items every character of a universe starts with, and how many of each
+ *
+ * A default item is listed by its own ID, never by the ID of the universe's edited copy of it
+ */
+export const universeStartingItems = pgTable('universe_starting_items', {
+	universeId: uuid('universe_id').notNull().references(() => universes.id, { onDelete: 'cascade' }),
+	itemId: integer('item_id').notNull().references(() => items.id, { onDelete: 'cascade' }),
+	quantity: smallint('quantity').notNull()
+}, (table) => [
+	primaryKey({ columns: [table.universeId, table.itemId] }),
+	index('universe_starting_items_item_id_index').on(table.itemId),
+	check('universe_starting_items_quantity_range', sql`${table.quantity} BETWEEN 1 AND ${sql.raw(String(MAX_ITEM_QUANTITY))}`)
 ]);
 
 /**

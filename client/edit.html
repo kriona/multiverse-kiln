@@ -139,6 +139,15 @@
 									<input id="characters-starting-money" autocomplete="off" />
 								</label>
 								<p id="characters-starting-money-hint" class="hint"></p>
+								<div class="starting-equipment">
+									<h3 id="characters-items-heading" data-message="editor.characters.startingEquipment" data-translation-context="Heading of the list of items every character starts with, on the editor's Characters tab">Starting equipment</h3>
+									<ul id="characters-items" class="starting-items" aria-labelledby="characters-items-heading"></ul>
+									<p id="characters-items-none" data-message="editor.characters.noStartingEquipment" data-translation-context="Shown on the editor's Characters tab when characters start with no items" hidden>Characters start with nothing.</p>
+									<p class="hint" data-message="editor.characters.startingEquipmentHint" data-translation-context="Explains the starting equipment on the editor's Characters tab">What every character starts with. Races and classes can add more.</p>
+									<div>
+										<button id="characters-items-choose" type="button" class="secondary" data-shortcut="Alt+Q" data-message="editor.characters.chooseEquipment" data-translation-context="Button that opens the dialog for choosing the items every character starts with"><!-- icon game-icons:swap-bag -->Choose Starting Equipment</button>
+									</div>
+								</div>
 								<p data-message="editor.characters.startingZone" data-translation-context="Shows the zone characters start in; {zone} is the zone's name">Starting zone: <strong id="characters-zone-name" data-argument="zone"></strong></p>
 								<p class="hint" data-message="editor.characters.startingZoneHint" data-translation-context="Explains the starting zone on the editor's Characters tab">Where characters start, unless their race or class says otherwise.</p>
 								<div>

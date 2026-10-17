@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { chunkKey, DEFAULT_PF1E_SETTINGS, DEFAULT_TILE_CELL, EDITOR_UNIVERSES_PATH, emptyPf1eMoney, isLocalizedMessage, MAX_CREATED_UNIVERSES, MAX_GROUP_PLAYERS, NEW_ZONE_BOUNDS, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, VOID_CELL, type CreatedPayload, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorZone, type ItemListPayload, type ItemSettings, type ResizeConflictPayload, type RulesetSettings, type TileListPayload, type TileSettings, type UniverseRole, type ZoneListPayload } from '@multiverse-kiln/shared';
+import { chunkKey, DEFAULT_PF1E_SETTINGS, DEFAULT_TILE_CELL, EDITOR_UNIVERSES_PATH, emptyPf1eMoney, isLocalizedMessage, MAX_CREATED_UNIVERSES, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_STARTING_ITEMS, NEW_ZONE_BOUNDS, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, VOID_CELL, type CreatedPayload, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorZone, type ItemListPayload, type ItemSettings, type ResizeConflictPayload, type RulesetSettings, type TileListPayload, type TileSettings, type UniverseRole, type ZoneListPayload } from '@multiverse-kiln/shared';
 
 import { findDefaultItemIds } from '../src/db/itemRepo.js';
 import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
@@ -358,6 +358,61 @@ describe('World editor API', () =>
 			{
 				assert.strictEqual((await send(ada, 'PATCH', path, { body })).status, 400, JSON.stringify(body));
 			}
+		});
+
+		it('starts a universe with a dagger for every character, and changes its starting equipment', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const path = `/${universeId}`;
+			const daggerId = (await findDefaultItemIds('pf1e')).get('dagger') as number;
+			const torchId = (await send<CreatedPayload<number>>(ada, 'POST', `${path}/items`, { body: torch })).body.id;
+
+			assert.deepStrictEqual((await send<EditableUniverse>(ada, 'GET', path)).body.startingItems, [{ itemId: daggerId, quantity: 1 }]);
+
+			const startingItems = [{ itemId: torchId, quantity: 3 }, { itemId: daggerId, quantity: 2 }];
+
+			assert.strictEqual((await send(ada, 'PATCH', path, { body: { startingItems } })).status, 204);
+			assert.deepStrictEqual((await send<EditableUniverse>(ada, 'GET', path)).body.startingItems, [{ itemId: daggerId, quantity: 2 }, { itemId: torchId, quantity: 3 }]);
+
+			const listed = (await send<ItemListPayload>(ada, 'GET', `${path}/items?ids=${torchId},${daggerId}`)).body;
+
+			assert.deepStrictEqual(listed.items.map((item) => item.id), [daggerId, torchId]);
+
+			assert.strictEqual((await send(ada, 'PATCH', path, { body: { startingItems: [] } })).status, 204);
+			assert.deepStrictEqual((await send<EditableUniverse>(ada, 'GET', path)).body.startingItems, []);
+		});
+
+		it('refuses starting equipment with an item twice, a quantity out of range, or an item the universe doesn\'t have', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const path = `/${universeId}`;
+			const daggerId = (await findDefaultItemIds('pf1e')).get('dagger') as number;
+			const theirItemId = (await send<CreatedPayload<number>>(ada, 'POST', `/${await createUniverse(ada, 'Other')}/items`, { body: torch })).body.id;
+			const tooMany = Array.from({ length: MAX_STARTING_ITEMS + 1 }, (_, index) => ({ itemId: index + 1, quantity: 1 }));
+
+			for (const startingItems of [[{ itemId: daggerId, quantity: 1 }, { itemId: daggerId, quantity: 2 }], [{ itemId: daggerId, quantity: 0 }], [{ itemId: daggerId, quantity: MAX_ITEM_QUANTITY + 1 }], tooMany])
+			{
+				assert.strictEqual((await send(ada, 'PATCH', path, { body: { startingItems } })).status, 400, JSON.stringify(startingItems).slice(0, 80));
+			}
+
+			const response = await send<ErrorPayload>(ada, 'PATCH', path, { body: { startingItems: [{ itemId: theirItemId, quantity: 1 }] } });
+
+			assert.strictEqual(response.status, 400);
+			assert.strictEqual(response.body.error.id, 'error.unusableStartingItem');
+			assert.deepStrictEqual((await send<EditableUniverse>(ada, 'GET', path)).body.startingItems, [{ itemId: daggerId, quantity: 1 }]);
+		});
+
+		it('refuses to delete an item characters start with, and deletes it once they don\'t', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const path = `/${universeId}`;
+			const torchId = (await send<CreatedPayload<number>>(ada, 'POST', `${path}/items`, { body: torch })).body.id;
+
+			await send(ada, 'PATCH', path, { body: { startingItems: [{ itemId: torchId, quantity: 1 }] } });
+			assert.strictEqual((await send(ada, 'DELETE', `${path}/items/${torchId}`)).status, 409);
+
+			await send(ada, 'PATCH', path, { body: { startingItems: [] } });
+			assert.strictEqual((await send(ada, 'DELETE', `${path}/items/${torchId}`)).status, 204);
 		});
 
 		it('refuses the lobby, or a zone of another universe, as the starting zone', async () =>
