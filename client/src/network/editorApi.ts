@@ -473,52 +473,71 @@ export class EditorApi
 	 * @param body The JSON body, if any
 	 * @return The response body
 	 */
-	private async send<T = unknown>(method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE', path: string, body?: object): Promise<T>
+	private async send<T = unknown>(method: HttpMethod, path: string, body?: object): Promise<T>
 	{
-		const http = this.client.http;
-		const url = `${EDITOR_UNIVERSES_PATH}${path}`;
-		const options = ((body === undefined) ? undefined : { body });
+		return(sendRequest<T>(this.client, method, `${EDITOR_UNIVERSES_PATH}${path}`, body));
+	}
+}
 
-		try
+/**
+ * The HTTP methods the server's REST routes use
+ */
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+
+/**
+ * Sends a request to one of the server's REST routes, with the browser ID cookie
+ *
+ * @param client Client for the server
+ * @param method The HTTP method
+ * @param url The route's path
+ * @param body The JSON body, if any
+ * @return The response body
+ * @throws EditorApiError when the server refuses the request or can't be reached
+ */
+export async function sendRequest<T = unknown>(client: Client, method: HttpMethod, url: string, body?: object): Promise<T>
+{
+	const http = client.http;
+	const options = ((body === undefined) ? undefined : { body });
+
+	try
+	{
+		let data: unknown;
+
+		switch (method)
 		{
-			let data: unknown;
+			case 'GET':
+				data = (await http.get(url, options)).data;
+				break;
 
-			switch (method)
-			{
-				case 'GET':
-					data = (await http.get(url, options)).data;
-					break;
+			case 'POST':
+				data = (await http.post(url, options)).data;
+				break;
 
-				case 'POST':
-					data = (await http.post(url, options)).data;
-					break;
+			case 'PUT':
+				data = (await http.put(url, options)).data;
+				break;
 
-				case 'PUT':
-					data = (await http.put(url, options)).data;
-					break;
+			case 'PATCH':
+				data = (await http.patch(url, options)).data;
+				break;
 
-				case 'PATCH':
-					data = (await http.patch(url, options)).data;
-					break;
-
-				case 'DELETE':
-					data = (await http.delete(url, options)).data;
-					break;
-			}
-
-			return(data as T);
+			case 'DELETE':
+				data = (await http.delete(url, options)).data;
+				break;
 		}
-		catch (error)
+
+		return(data as T);
+	}
+	catch (error)
+	{
+		if (error instanceof ServerError)
 		{
-			if (error instanceof ServerError)
-			{
-				const status = ((typeof error.status === 'number') ? error.status : 0);
+			const status = ((typeof error.status === 'number') ? error.status : 0);
 
-				throw new EditorApiError(describeServerError(status, error.data), status, error.data);
-			}
-
-			throw error;
+			throw new EditorApiError(describeServerError(status, error.data), status, error.data);
 		}
+
+		throw error;
 	}
 }
 

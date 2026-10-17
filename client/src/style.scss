@@ -115,6 +115,39 @@
 	}
 }
 
+.characters
+{
+	display: flex;
+	flex-direction: column;
+	max-height: 200px;
+}
+
+.character-list
+{
+	flex: 1;
+	overflow-y: auto;
+	margin: 12px 0 0;
+	padding: 0;
+	list-style: none;
+	overflow-wrap: anywhere;
+
+	li
+	{
+		padding: 2px 0;
+	}
+}
+
+.character-description,
+.character-none
+{
+	color: $text-faint;
+}
+
+.character-none
+{
+	margin: 12px 0 0;
+}
+
 .member-own
 {
 	color: $accent;

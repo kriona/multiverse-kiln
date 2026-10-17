@@ -5,6 +5,7 @@ import type express from 'express';
 import type { Request, Response } from 'express';
 import { canEditUniverseSettings, defineMessages, MAX_CUSTOM_RACES, type CreatedPayload, type RaceListPayload, type RaceSettings } from '@multiverse-kiln/shared';
 
+import { hasCharactersOfRace } from '../db/characterRepo.js';
 import type { Executor } from '../db/client.js';
 import { countCustomRaces, createCustomRace, deleteCustomRace, findRaceKind, loadEditorRaces, restoreDefaultRace, saveEditedDefaultRace, updateCustomRace } from '../db/raceRepo.js';
 import { inTransaction } from '../db/transactions.js';
@@ -32,6 +33,11 @@ const messages = defineMessages({
 		id: 'error.noEnabledRace',
 		defaultMessage: 'A universe needs at least one enabled race, so new characters have one to be.',
 		description: 'Why a race couldn\'t be disabled or deleted: it is the last race new characters can choose'
+	},
+	raceInUse: {
+		id: 'error.raceInUse',
+		defaultMessage: 'Characters are this race, so it can\'t be deleted. Disable it instead.',
+		description: 'Why a race the universe added couldn\'t be deleted: players have made characters of it; disabling it only stops new characters choosing it'
 	}
 });
 
@@ -219,25 +225,31 @@ async function deleteRace(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	const deleted = await inTransaction(async (transaction) =>
+	const refusal = await inTransaction(async (transaction) =>
 	{
+		// Making a character waits for the universe's lock too, so nobody becomes the race as it is deleted
 		await lockUniverse(universe.id, transaction);
+
+		if (await hasCharactersOfRace(raceId.data, transaction))
+		{
+			return(messages.raceInUse);
+		}
 
 		const others = (await loadEditorRaces(universe.id, universe.ruleset, transaction)).filter((race) => (race.id !== raceId.data));
 
 		if (!others.some((race) => race.enabled))
 		{
-			return(false);
+			return(messages.noEnabledRace);
 		}
 
 		await deleteCustomRace(universe.id, raceId.data, transaction);
 
-		return(true);
+		return(undefined);
 	});
 
-	if (!deleted)
+	if (refusal !== undefined)
 	{
-		sendError(response, 409, messages.noEnabledRace);
+		sendError(response, 409, refusal);
 		return;
 	}
 

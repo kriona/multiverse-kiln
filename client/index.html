@@ -72,6 +72,7 @@
 				<header class="toolbar">
 					<h1 id="lobby-title" data-message="lobby.title" data-translation-context="Heading of a universe's lobby until its name has loaded">Lobby</h1>
 					<span class="toolbar-name" data-message="page.playingAs" data-translation-context="In the toolbar, the name the player logged in with; {name} is the name">Playing as <strong id="lobby-player-name" data-argument="name"></strong></span>
+					<button id="create-character" type="button" data-shortcut="Alt+N" data-message="lobby.createCharacter" data-translation-context="Button that goes to the page for making a new character in this universe"><!-- icon ph:user-plus -->Create Character</button>
 					<button id="create-group" type="button" data-shortcut="Alt+G" data-message="lobby.createGroup" data-translation-context="Button that starts a new game, which the player can share with others"><!-- icon game-icons:crossed-swords -->Create game</button>
 					<button id="leave-lobby" type="button" class="secondary" data-shortcut="Alt+L" data-message="lobby.leave" data-translation-context="Button that leaves the lobby and goes back to the list of universes"><!-- icon ph:sign-out -->Leave lobby</button>
 				</header>
@@ -80,6 +81,12 @@
 					<div id="lobby-map" class="map" tabindex="0" role="application" aria-label="Map" aria-describedby="lobby-map-help" data-shortcut="Alt+M" data-message-aria-label="map.label" data-translation-context-aria-label="Name of the game's map for screen readers"></div>
 					<p id="lobby-map-help" class="visually-hidden" data-message="map.help" data-translation-context="Read by screen readers on the game's map: the keys that play it. The keys are the same in every language; {shortcut} is the keys that read out where the player is, e.g. Alt+P">Arrow keys, W A S D or the number pad move you. E goes through a door or path you stand on. <kbd data-argument="shortcut" data-keys="Alt+P" translate="no">Alt+P</kbd> tells you where you are and who you can see.</p>
 					<div class="lobby-side">
+						<aside class="panel characters" aria-labelledby="character-list-heading">
+							<h2 id="character-list-heading" data-message="lobby.characters" data-translation-context="Heading of the list of characters the player has made in this universe">Your characters</h2>
+							<ul id="character-list" class="character-list"></ul>
+							<p id="character-none" class="character-none" data-message="lobby.noCharacters" data-translation-context="Shown instead of the list of the player's characters when they haven't made one in this universe" hidden>You haven't made a character in this universe yet.</p>
+							<p id="character-error" class="form-error" role="alert" hidden></p>
+						</aside>
 						<aside class="panel members">
 							<h2 data-message="lobby.here" data-translation-context="Heading of the list of players in the lobby; {count} is how many there are">Here (<span id="member-count" data-argument="count">0</span>)</h2>
 							<ul id="member-list" class="member-list"></ul>

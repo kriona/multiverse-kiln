@@ -1,0 +1,104 @@
+// The Create Character page (character.html): the steps of making a character
+
+@use 'shared' as *;
+
+.character-loading
+{
+	margin: 16px;
+	color: $text-faint;
+}
+
+.character-body
+{
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: 16px;
+	margin: 16px;
+}
+
+.character-steps
+{
+	min-width: 180px;
+
+	ol
+	{
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		margin: 0;
+		padding-left: 24px;
+	}
+
+	// The step showing is marked by more than color: bold, with a bar beside it
+	button[aria-current="step"]
+	{
+		padding-left: 6px;
+		border-left: 3px solid $accent;
+		font-weight: bold;
+		color: $text;
+	}
+}
+
+.character-form
+{
+	flex: 1;
+	min-width: 280px;
+	max-width: 720px;
+}
+
+.character-step
+{
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+
+	h2
+	{
+		margin: 0;
+	}
+}
+
+// Each ability's base, race modifier, score and modifier
+.ability-table
+{
+	width: 100%;
+	border-collapse: collapse;
+
+	th
+	{
+		font-weight: normal;
+		text-align: left;
+		color: $text-muted;
+	}
+
+	tbody th
+	{
+		color: $text;
+	}
+
+	th,
+	td
+	{
+		padding: 4px 6px;
+		border-bottom: 1px solid $border-subtle;
+	}
+}
+
+.character-review
+{
+	display: grid;
+	grid-template-columns: max-content 1fr;
+	gap: 6px 16px;
+	margin: 0;
+
+	dt
+	{
+		color: $text-muted;
+	}
+
+	dd
+	{
+		margin: 0;
+	}
+}

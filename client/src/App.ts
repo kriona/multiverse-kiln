@@ -2,10 +2,11 @@ import { CloseCode } from '@colyseus/sdk';
 import { GROUP_QUERY_PARAMETER, LobbyMessageType, LobbyServerMessageType, MAX_GROUP_PLAYERS, NoticeReason, ServerCloseCode, SessionMessageType, SessionServerMessageType, type AccountPayload, type AccountPlayer, type ChatHistoryPayload, type ChatMessage, type ChatPayload, type JoinGroupPayload, type LoginPayload, type NoticePayload, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { t } from './localization';
-import { EditorApi } from './network/editorApi';
+import { CharacterApi } from './network/characterApi';
+import { describeEditorError, EditorApi } from './network/editorApi';
 import { getUniverseDetails, joinGroup, joinLobby, listUniverses, type GameConnection, type LobbyConnection, type ServerConnection } from './network/serverConnection';
 import { isLeavingPage } from './pageLifecycle';
-import { editPageUrl, readPageParameter, replacePageParameters, UNIVERSE_PARAMETER } from './pages';
+import { characterPageUrl, editPageUrl, readPageParameter, replacePageParameters, UNIVERSE_PARAMETER } from './pages';
 import { showScreen, showStatus } from './ui/dom';
 import { GroupScreen } from './ui/GroupScreen';
 import { HomeScreen } from './ui/HomeScreen';
@@ -44,6 +45,7 @@ interface JoinedLobby
 export class App
 {
 	private readonly editorApi: EditorApi;
+	private readonly characterApi: CharacterApi;
 	private readonly loginScreen: LoginScreen;
 	private readonly homeScreen: HomeScreen;
 	private readonly lobbyScreen: LobbyScreen;
@@ -93,6 +95,7 @@ export class App
 		const editorApi = new EditorApi(client);
 
 		this.editorApi = editorApi;
+		this.characterApi = new CharacterApi(client);
 		this.linkGroupId = readPageParameter(GROUP_QUERY_PARAMETER);
 		this.linkUniverseId = readPageParameter(UNIVERSE_PARAMETER);
 
@@ -124,6 +127,13 @@ export class App
 				const chat: ChatPayload = { text };
 
 				this.joinedLobby?.connection.room.send(LobbyMessageType.Chat, chat);
+			},
+			createCharacter: () =>
+			{
+				if (this.joinedLobby)
+				{
+					window.location.assign(characterPageUrl(this.joinedLobby.universe.id));
+				}
 			},
 			createGroup: () =>
 			{
@@ -500,6 +510,35 @@ export class App
 	}
 
 	/**
+	 * Lists the player's characters on the lobby screen, if the window is still in that lobby when they arrive
+	 *
+	 * @param lobby The joined lobby
+	 */
+	private async loadCharacters(lobby: JoinedLobby): Promise<void>
+	{
+		try
+		{
+			const list = await this.characterApi.listCharacters(lobby.universe.id);
+
+			if (this.joinedLobby === lobby)
+			{
+				this.lobbyScreen.showCharacters(list);
+			}
+		}
+		catch (error)
+		{
+			if (this.joinedLobby === lobby)
+			{
+				this.lobbyScreen.showCharacterError(describeEditorError(error, {
+					id: 'lobby.charactersFailed',
+					defaultMessage: 'Could not list your characters.',
+					description: 'Shown in the lobby when the list of the player\'s characters in the universe couldn\'t be loaded'
+				}));
+			}
+		}
+	}
+
+	/**
 	 * Joins a universe's lobby and shows it; back to Home if it can't be joined
 	 *
 	 * @param universe The universe
@@ -538,6 +577,7 @@ export class App
 
 		this.joinedLobby = joined;
 		this.lobbyScreen.attach(connection);
+		void this.loadCharacters(joined);
 
 		room.onMessage(LobbyServerMessageType.ChatHistory, (history: ChatHistoryPayload) =>
 		{

@@ -113,6 +113,20 @@
       "when": 1792198163547,
       "tag": "0015_pf1e_default_races_and_classes",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1792242553709,
+      "tag": "0016_characters",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792244207810,
+      "tag": "0017_character_drafts",
+      "breakpoints": true
     }
   ]
 }

@@ -5,7 +5,7 @@
  * `npm run db:migrate -w server` to apply it. Never change the database by hand
  */
 import { sql, type SQL } from 'drizzle-orm';
-import { boolean, check, index, integer, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
+import { boolean, check, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
 import { CHUNK_SIZE, DEFAULT_PF1E_SETTINGS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, UNIVERSE_ROLES, UNIVERSE_STAGES, ZONE_LINK_MODES, ZONE_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
 
 export const universeStage = pgEnum('universe_stage', UNIVERSE_STAGES);
@@ -515,4 +515,112 @@ export const zoneLinks = pgTable('zone_links', {
 }, (table) => [
 	unique('zone_links_cell_unique').on(table.zoneId, table.column, table.row),
 	index('zone_links_target_zone_id_index').on(table.targetZoneId)
+]);
+
+/**
+ * One row per character a player has made in a universe
+ *
+ * The race and class are listed by the IDs everything else uses for them: a default's own ID, never its
+ * edited copy's. A race, class or item that characters have can't be deleted while they have it
+ */
+export const characters = pgTable('characters', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	playerId: uuid('player_id').notNull().references(() => players.id, { onDelete: 'cascade' }),
+	universeId: uuid('universe_id').notNull().references(() => universes.id, { onDelete: 'cascade' }),
+	name: text('name').notNull(),
+	raceId: integer('race_id').notNull().references(() => races.id),
+	classId: integer('class_id').notNull().references(() => classes.id),
+
+	/**
+	 * The coins the character carries, by coin: money is kept as pieces, never converted
+	 */
+	platinum: integer('platinum').notNull().default(0),
+	gold: integer('gold').notNull().default(0),
+	silver: integer('silver').notNull().default(0),
+	copper: integer('copper').notNull().default(0),
+
+	/**
+	 * The zone the character is in; null when the zone was deleted, or the universe had none to start in
+	 */
+	zoneId: uuid('zone_id').references((): AnyPgColumn => zones.id, { onDelete: 'set null' }),
+
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	index('characters_player_universe_index').on(table.playerId, table.universeId),
+	index('characters_universe_id_index').on(table.universeId),
+	index('characters_race_id_index').on(table.raceId),
+	index('characters_class_id_index').on(table.classId),
+	index('characters_zone_id_index').on(table.zoneId),
+	check('characters_coins_range', allInRange([table.platinum, table.gold, table.silver, table.copper], 0, PF1E_MAX_COINS))
+]);
+
+/**
+ * Each Pathfinder 1E character's ability scores, with their race's modifiers added
+ */
+export const pf1eCharacters = pgTable('pf1e_characters', {
+	characterId: uuid('character_id').primaryKey().references(() => characters.id, { onDelete: 'cascade' }),
+	strength: smallint('strength').notNull(),
+	dexterity: smallint('dexterity').notNull(),
+	constitution: smallint('constitution').notNull(),
+	intelligence: smallint('intelligence').notNull(),
+	wisdom: smallint('wisdom').notNull(),
+	charisma: smallint('charisma').notNull()
+});
+
+/**
+ * The items each character carries, and how many of each
+ *
+ * An item is listed by its own ID, never by the ID of an edited copy of it
+ */
+export const characterItems = pgTable('character_items', {
+	characterId: uuid('character_id').notNull().references(() => characters.id, { onDelete: 'cascade' }),
+	itemId: integer('item_id').notNull().references(() => items.id),
+	quantity: integer('quantity').notNull()
+}, (table) => [
+	primaryKey({ columns: [table.characterId, table.itemId] }),
+	index('character_items_item_id_index').on(table.itemId),
+	check('character_items_quantity_positive', sql`${table.quantity} >= 1`)
+]);
+
+/**
+ * Each player's progress in Create Character in a universe, until they make the character or start over
+ *
+ * The progress is a CharacterDraft (shared/src/characters.ts) as JSON, so steps can be added to Create
+ * Character without changing the table. The server checks it against the universe only when the
+ * character is made
+ */
+export const characterDrafts = pgTable('character_drafts', {
+	playerId: uuid('player_id').notNull().references(() => players.id, { onDelete: 'cascade' }),
+	universeId: uuid('universe_id').notNull().references(() => universes.id, { onDelete: 'cascade' }),
+	draft: jsonb('draft').notNull(),
+	updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	primaryKey({ columns: [table.playerId, table.universeId] }),
+	index('character_drafts_universe_id_index').on(table.universeId)
+]);
+
+/**
+ * The ability scores the server rolled for a player's next character in a Pathfinder 1E universe that
+ * rolls them. They are kept until a character is made with them, so opening Create Character again
+ * doesn't roll again, unless the universe has since changed how it rolls
+ */
+export const pf1eAbilityRolls = pgTable('pf1e_ability_rolls', {
+	playerId: uuid('player_id').notNull().references(() => players.id, { onDelete: 'cascade' }),
+	universeId: uuid('universe_id').notNull().references(() => universes.id, { onDelete: 'cascade' }),
+
+	/**
+	 * How the scores were rolled
+	 */
+	statMethod: pf1eStatMethod('stat_method').notNull(),
+
+	/**
+	 * One score per ability, in the order they were rolled
+	 */
+	scores: smallint('scores').array().notNull(),
+
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	primaryKey({ columns: [table.playerId, table.universeId] }),
+	index('pf1e_ability_rolls_universe_id_index').on(table.universeId),
+	check('pf1e_ability_rolls_score_count', sql`cardinality(${table.scores}) = ${sql.raw(String(PF1E_ABILITIES.length))}`)
 ]);

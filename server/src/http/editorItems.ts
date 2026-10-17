@@ -3,8 +3,9 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { canEditWorld, defineMessages, isItemType, MAX_CUSTOM_ITEMS, type CreatedPayload } from '@multiverse-kiln/shared';
+import { canEditWorld, defineMessages, isItemType, MAX_CUSTOM_ITEMS, type CreatedPayload, type MessageDescriptor } from '@multiverse-kiln/shared';
 
+import { isCarriedItem } from '../db/characterRepo.js';
 import { isClassStartingItem } from '../db/classRepo.js';
 import { countCustomItems, createCustomItem, deleteCustomItem, findItemKind, listEditorItems, restoreDefaultItem, saveEditedDefaultItem, updateCustomItem } from '../db/itemRepo.js';
 import { isRaceStartingItem } from '../db/raceRepo.js';
@@ -205,28 +206,38 @@ async function deleteItem(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	const deleted = await inTransaction(async (transaction) =>
+	const refusal = await inTransaction(async (transaction): Promise<MessageDescriptor | undefined> =>
 	{
-		// Saving the starting equipment waits for the universe's lock too, so the item can't be added to it before it is deleted
+		// Saving the starting equipment and making a character wait for the universe's lock too, so the
+		// item can't be added to either before it is deleted
 		await lockUniverse(universe.id, transaction);
 
 		if (await isStartingItem(universe.id, itemId.data, transaction) || await isRaceStartingItem(universe.id, itemId.data, transaction) || await isClassStartingItem(universe.id, itemId.data, transaction))
 		{
-			return(false);
+			return({
+				id: 'error.itemInStartingEquipment',
+				defaultMessage: 'Characters start with this item, so it can\'t be deleted. Take it out of the starting equipment of the universe and of every race and class first.',
+				description: 'Why an item couldn\'t be deleted: it is in the equipment characters of the universe, or of one of its races or classes, start with'
+			});
+		}
+
+		if (await isCarriedItem(itemId.data, transaction))
+		{
+			return({
+				id: 'error.itemCarried',
+				defaultMessage: 'Characters carry this item, so it can\'t be deleted. Disable it instead.',
+				description: 'Why an item the universe added couldn\'t be deleted: players\' characters have it; disabling it only stops new characters being given it'
+			});
 		}
 
 		await deleteCustomItem(universe.id, itemId.data, transaction);
 
-		return(true);
+		return(undefined);
 	});
 
-	if (!deleted)
+	if (refusal !== undefined)
 	{
-		sendError(response, 409, {
-			id: 'error.itemInStartingEquipment',
-			defaultMessage: 'Characters start with this item, so it can\'t be deleted. Take it out of the starting equipment of the universe and of every race and class first.',
-			description: 'Why an item couldn\'t be deleted: it is in the equipment characters of the universe, or of one of its races or classes, start with'
-		});
+		sendError(response, 409, refusal);
 		return;
 	}
 

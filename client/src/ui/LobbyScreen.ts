@@ -1,10 +1,11 @@
 import { Callbacks } from '@colyseus/sdk';
-import { DISALLOWED_TEXT_CHARACTERS, MAX_CHAT_MESSAGE_LENGTH, type ChatMessage, type LobbyMember } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, MAX_CHAT_MESSAGE_LENGTH, type CharacterListPayload, type ChatMessage, type LobbyMember } from '@multiverse-kiln/shared';
 
 import { currentLocale, t } from '../localization';
 import type { LobbyConnection } from '../network/serverConnection';
-import { getElement } from './dom';
+import { getElement, showMessage } from './dom';
 import type { MapView } from './MapView';
+import { className, raceName } from './raceAndClassNames';
 
 /**
  * Most names shown in the list of who's here; the rest are counted
@@ -29,6 +30,7 @@ const CHAT_FOLLOW_THRESHOLD = 40;
 export interface LobbyScreenActions
 {
 	sendChat: (text: string) => void;
+	createCharacter: () => void;
 	createGroup: () => void;
 
 	/**
@@ -38,7 +40,8 @@ export interface LobbyScreenActions
 }
 
 /**
- * The lobby screen: the lobby's map, chat, who's here, and the Create game and Leave lobby buttons
+ * The lobby screen: the lobby's map, chat, who's here, the player's characters, and the Create
+ * Character, Create game and Leave lobby buttons
  *
  * The screen is made once and attached to whichever universe lobby the window is in
  */
@@ -46,6 +49,10 @@ export class LobbyScreen
 {
 	private readonly title = getElement('lobby-title', HTMLElement);
 	private readonly playerName = getElement('lobby-player-name', HTMLElement);
+	private readonly createCharacterButton = getElement('create-character', HTMLButtonElement);
+	private readonly characterList = getElement('character-list', HTMLUListElement);
+	private readonly characterNone = getElement('character-none', HTMLElement);
+	private readonly characterError = getElement('character-error', HTMLElement);
 	private readonly createButton = getElement('create-group', HTMLButtonElement);
 	private readonly leaveButton = getElement('leave-lobby', HTMLButtonElement);
 	private readonly map = getElement('lobby-map', HTMLElement);
@@ -100,6 +107,12 @@ export class LobbyScreen
 			this.chatInput.value = '';
 		});
 
+		this.createCharacterButton.addEventListener('click', () =>
+		{
+			this.hideNotice();
+			actions.createCharacter();
+		});
+
 		this.createButton.addEventListener('click', () =>
 		{
 			// Stays disabled until the server answers, which shows the group screen
@@ -143,7 +156,8 @@ export class LobbyScreen
 	}
 
 	/**
-	 * Stops drawing and following the attached lobby, and empties the chat and the list of who's here
+	 * Stops drawing and following the attached lobby, and empties the chat, the list of who's here and
+	 * the list of the player's characters
 	 */
 	detach(): void
 	{
@@ -160,6 +174,9 @@ export class LobbyScreen
 
 		this.members.clear();
 		this.chatLog.replaceChildren();
+		this.characterList.replaceChildren();
+		this.characterNone.hidden = true;
+		showMessage(this.characterError, undefined);
 		this.queueMemberList();
 	}
 
@@ -182,6 +199,47 @@ export class LobbyScreen
 		this.playerName.textContent = name;
 		this.createButton.disabled = false;
 		this.queueMemberList();
+	}
+
+	/**
+	 * Lists the player's characters in the universe
+	 *
+	 * @param list The characters, oldest first, and the universe's ruleset
+	 */
+	showCharacters(list: CharacterListPayload): void
+	{
+		showMessage(this.characterError, undefined);
+		this.characterNone.hidden = (list.characters.length > 0);
+		this.characterList.replaceChildren(...list.characters.map((character) =>
+		{
+			const item = document.createElement('li');
+			const name = document.createElement('strong');
+			const description = document.createElement('span');
+
+			name.textContent = character.name;
+			description.className = 'character-description';
+			description.textContent = t({
+				id: 'lobby.characterDescription',
+				defaultMessage: '{race} {class}',
+				description: 'In the lobby\'s list of the player\'s characters, a character\'s race and class after their name, e.g. "Dwarf Fighter". Reorder them as your language needs'
+			}, {
+				race: raceName(character.race, list.ruleset),
+				class: className(character.characterClass, list.ruleset)
+			});
+			item.append(name, ' ', description);
+
+			return(item);
+		}));
+	}
+
+	/**
+	 * Says the player's characters couldn't be listed
+	 *
+	 * @param message Why, in the player's language
+	 */
+	showCharacterError(message: string): void
+	{
+		showMessage(this.characterError, message);
 	}
 
 	/**

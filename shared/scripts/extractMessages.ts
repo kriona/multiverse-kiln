@@ -33,7 +33,7 @@ export const SOURCE_FOLDERS = ['client/src', 'server/src', 'shared/src'];
 /**
  * The client's pages
  */
-export const PAGES = ['client/index.html', 'client/edit.html', 'client/license.html'];
+export const PAGES = ['client/index.html', 'client/edit.html', 'client/character.html', 'client/license.html'];
 
 /**
  * The folder of HTML pieces the pages share, which a page includes with a comment such as

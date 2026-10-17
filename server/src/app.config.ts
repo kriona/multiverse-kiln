@@ -12,6 +12,7 @@ import { SessionRoom } from './rooms/SessionRoom.js';
 import { createTransport } from './transport.js';
 import { isDevToolsEnabled } from './devTools.js';
 import { addBrowserIdRoute } from './http/browserId.js';
+import { addCharacterRoutes } from './http/characters.js';
 import { addEditorRoutes } from './http/editor.js';
 import { addHealthRoute } from './http/health.js';
 import { addUniversesRoutes } from './http/universes.js';
@@ -54,6 +55,7 @@ const server = defineServer({
 		addHealthRoute(app);
 		addBrowserIdRoute(app);
 		addUniversesRoutes(app);
+		addCharacterRoutes(app, allowedOrigins);
 		addEditorRoutes(app, allowedOrigins);
 
 		if (isDevToolsEnabled())

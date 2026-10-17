@@ -17,8 +17,9 @@ An engine for making multiplayer browser-based role-playing games.
 
 ```
 /client          Phaser game (Vite). Uses `@colyseus/sdk` (formerly colyseus.js) to connect to the server.
-                 Three pages: index.html (Home, lobby and game; src/main.ts, src/style.scss), edit.html (the
-                 world editor; src/edit.ts, src/edit.scss) and license.html (the game's license and the
+                 Four pages: index.html (Home, lobby and game; src/main.ts, src/style.scss), edit.html (the
+                 world editor; src/edit.ts, src/edit.scss), character.html (Create Character; src/character.ts,
+                 src/character.scss) and license.html (the game's license and the
                  licenses of what it uses, linked from the footer; src/license.ts, src/license.scss). HTML the pages share (status and login screens,
                  footer, the keyboard shortcut list and screen reader live regions) lives in partials/, included with <!-- include footer.html --> (vite.config.ts).
                  Both styles use src/_shared.scss, and

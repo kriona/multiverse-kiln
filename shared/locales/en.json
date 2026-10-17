@@ -1,4 +1,224 @@
 {
+	"character.back": {
+		"defaultMessage": "Back",
+		"description": "Button on the Create Character page that goes to the step before"
+	},
+	"character.backToLobby": {
+		"defaultMessage": "Back to Lobby",
+		"description": "Button on the Create Character page that goes back to the universe's lobby; progress so far is kept"
+	},
+	"character.confirmStartOver": {
+		"defaultMessage": "Start over? Your choices so far will be lost. Your rolled ability scores stay the same.",
+		"description": "Asks before the Create Character page throws away the player's choices; the scores the server rolled are kept"
+	},
+	"character.create.abilityColumn": {
+		"defaultMessage": "Ability",
+		"description": "Heading of the column of ability names, such as Strength, in Create Character"
+	},
+	"character.create.abilityScores": {
+		"defaultMessage": "Ability scores",
+		"description": "Heading of the part of Create Character where the player sets the character's ability scores"
+	},
+	"character.create.baseColumn": {
+		"defaultMessage": "Base",
+		"description": "Heading of the column of the scores the player rolled or bought, before the race changes them, in Create Character"
+	},
+	"character.create.baseLabel": {
+		"defaultMessage": "{ability} base score",
+		"description": "Name for screen readers of the field for one ability's score before the race changes it, in Create Character; {ability} is e.g. Strength"
+	},
+	"character.create.boughtScore": {
+		"defaultMessage": "{score, number} ({cost, plural, one {# point} other {# points}})",
+		"description": "One choice of ability score when buying scores with points in Create Character; {score} is the score and {cost} what it costs, which is negative for scores under 10"
+	},
+	"character.create.class": {
+		"defaultMessage": "Class",
+		"description": "Label of the field for a new character's class, such as fighter or wizard"
+	},
+	"character.create.classHint": {
+		"defaultMessage": "This class relies most on {ability}, so it is a good place for a high score.",
+		"description": "Hint under the class field of Create Character; {ability} is the ability the chosen class relies on, e.g. Strength"
+	},
+	"character.create.failed": {
+		"defaultMessage": "Could not make the character.",
+		"description": "Shown in Create Character when the character couldn't be made"
+	},
+	"character.create.floatingAbility": {
+		"defaultMessage": "Ability for the race's bonus",
+		"description": "Label of the field for which ability gets the bonus some races (such as humans) let the player place"
+	},
+	"character.create.limit": {
+		"defaultMessage": "You have {max, plural, one {# character} other {# characters}} in this universe, as many as you can have.",
+		"description": "Shown on the Create Character page when the player can't make another character in this universe; {max} is the most allowed"
+	},
+	"character.create.loadFailed": {
+		"defaultMessage": "Could not load the races, classes and ability scores.",
+		"description": "Shown on the Create Character page when what it offers couldn't be loaded"
+	},
+	"character.create.loading": {
+		"defaultMessage": "Loading...",
+		"description": "Shown on the Create Character page while the races, classes and ability scores load"
+	},
+	"character.create.modifierColumn": {
+		"defaultMessage": "Modifier",
+		"description": "Heading of the column of the bonus or penalty each final score gives, such as +2, in Create Character"
+	},
+	"character.create.name": {
+		"defaultMessage": "Name",
+		"description": "Label of the field for a new character's name"
+	},
+	"character.create.overBudget": {
+		"defaultMessage": "These scores cost more than your {budget, plural, one {# point} other {# points}}. Lower some of them.",
+		"description": "Shown in Create Character when the bought ability scores cost more points than the player has; {budget} is how many they have"
+	},
+	"character.create.pointBuy": {
+		"defaultMessage": "Buy your scores with {budget, plural, one {# point} other {# points}}. Scores above 10 cost points, and scores below 10 give some back.",
+		"description": "Explains the ability scores in Create Character when the player buys them with points; {budget} is how many points they have"
+	},
+	"character.create.pointsSpent": {
+		"defaultMessage": "Points spent: {spent, number} of {budget, number}",
+		"description": "Under the ability scores in Create Character when buying them with points; {spent} is how many the chosen scores cost and {budget} how many the player has"
+	},
+	"character.create.primaryAbility": {
+		"defaultMessage": "{ability} (main ability)",
+		"description": "An ability's name in Create Character's table of scores when the chosen class relies on it most; {ability} is its name, e.g. Strength"
+	},
+	"character.create.race": {
+		"defaultMessage": "Race",
+		"description": "Label of the field for a new character's race, such as elf or dwarf"
+	},
+	"character.create.raceColumn": {
+		"defaultMessage": "Race",
+		"description": "Heading of the column of how much the chosen race adds to or takes from each score, in Create Character"
+	},
+	"character.create.rolled": {
+		"defaultMessage": "The server rolled your scores with {method}. Choose which ability gets each score: giving an ability another score swaps the two.",
+		"description": "Explains the ability scores in Create Character when they were rolled; {method} is how, e.g. \"4d6, drop the lowest\""
+	},
+	"character.create.scoreColumn": {
+		"defaultMessage": "Score",
+		"description": "Heading of the column of the character's final ability scores, in Create Character"
+	},
+	"character.create.submit": {
+		"defaultMessage": "Create",
+		"description": "Button that makes the new character"
+	},
+	"character.create.swapped": {
+		"defaultMessage": "{ability} now has {score, number}.",
+		"description": "Read out by screen readers in Create Character when giving one ability a rolled score moves that ability's old score to another; {ability} is the other ability, e.g. Dexterity"
+	},
+	"character.create.title": {
+		"defaultMessage": "Create Character",
+		"description": "Heading of the page for making a new character"
+	},
+	"character.heading.class": {
+		"defaultMessage": "Choose a class",
+		"description": "Heading of the Create Character step where the player chooses the character's class"
+	},
+	"character.heading.name": {
+		"defaultMessage": "Name your character",
+		"description": "Heading of the Create Character step where the player names the character"
+	},
+	"character.heading.race": {
+		"defaultMessage": "Choose a race",
+		"description": "Heading of the Create Character step where the player chooses the character's race"
+	},
+	"character.heading.review": {
+		"defaultMessage": "Review",
+		"description": "Heading of the last step of Create Character, which shows the choices before the character is made"
+	},
+	"character.next": {
+		"defaultMessage": "Next",
+		"description": "Button on the Create Character page that goes to the next step"
+	},
+	"character.pageTitle": {
+		"defaultMessage": "Create Character - {universe} - Multiverse Kiln",
+		"description": "The browser tab's title for the Create Character page; {universe} is the universe's name and Multiverse Kiln is the game engine's name"
+	},
+	"character.pageTitleLoading": {
+		"defaultMessage": "Create Character - Multiverse Kiln",
+		"description": "The browser tab's title for the Create Character page until the universe's name has loaded"
+	},
+	"character.race.floatingBonus": {
+		"defaultMessage": "+{bonus, number} to an ability you choose",
+		"description": "In Create Character, part of what a race (such as human) changes: the player raises one ability of their choice; {bonus} is how much"
+	},
+	"character.race.modifier": {
+		"defaultMessage": "{modifier} {ability}",
+		"description": "One of a race's ability modifiers in Create Character; {modifier} is e.g. +2 and {ability} e.g. Wisdom. Reorder them as your language needs"
+	},
+	"character.race.noModifiers": {
+		"defaultMessage": "No changes to ability scores",
+		"description": "In Create Character, shown for a race that doesn't raise or lower any ability score"
+	},
+	"character.review.class": {
+		"defaultMessage": "Class",
+		"description": "In the review step of Create Character, the label of the character's class"
+	},
+	"character.review.name": {
+		"defaultMessage": "Name",
+		"description": "In the review step of Create Character, the label of the character's name"
+	},
+	"character.review.noName": {
+		"defaultMessage": "Not chosen yet",
+		"description": "In the review step of Create Character, shown for the name when the player hasn't written one"
+	},
+	"character.review.race": {
+		"defaultMessage": "Race",
+		"description": "In the review step of Create Character, the label of the character's race"
+	},
+	"character.review.raceWithBonus": {
+		"defaultMessage": "{race}, +{bonus, number} {ability}",
+		"description": "In the review step of Create Character, a race that lets the player place a bonus, with where it went; {race} is e.g. Human, {bonus} the bonus and {ability} e.g. Strength"
+	},
+	"character.review.score": {
+		"defaultMessage": "{score, number} ({modifier})",
+		"description": "In the review step of Create Character, an ability score with the bonus or penalty it gives; {score} is e.g. 16 and {modifier} e.g. +3"
+	},
+	"character.saveFailed": {
+		"defaultMessage": "Could not save your progress.",
+		"description": "In the toolbar of the Create Character page when the player's progress couldn't be saved; it is tried again after their next change"
+	},
+	"character.saved": {
+		"defaultMessage": "Progress saved",
+		"description": "In the toolbar of the Create Character page once the player's progress is saved, so they can leave and come back to it"
+	},
+	"character.saving": {
+		"defaultMessage": "Saving...",
+		"description": "In the toolbar of the Create Character page while the player's progress is being saved"
+	},
+	"character.startOver": {
+		"defaultMessage": "Start Over",
+		"description": "Button on the Create Character page that throws away the choices made so far and starts again; rolled ability scores are kept"
+	},
+	"character.startOverFailed": {
+		"defaultMessage": "Could not start over.",
+		"description": "Shown on the Create Character page when the player's progress couldn't be thrown away"
+	},
+	"character.step.abilities": {
+		"defaultMessage": "Ability scores",
+		"description": "Step of Create Character where the player sets the character's ability scores"
+	},
+	"character.step.class": {
+		"defaultMessage": "Class",
+		"description": "Step of Create Character where the player chooses the character's class, such as fighter or wizard"
+	},
+	"character.step.name": {
+		"defaultMessage": "Name",
+		"description": "Step of Create Character where the player names the character"
+	},
+	"character.step.race": {
+		"defaultMessage": "Race",
+		"description": "Step of Create Character where the player chooses the character's race, such as elf or dwarf"
+	},
+	"character.step.review": {
+		"defaultMessage": "Review",
+		"description": "Last step of Create Character, which shows the choices before the character is made"
+	},
+	"character.steps": {
+		"defaultMessage": "Steps",
+		"description": "Name for screen readers of the list of steps on the Create Character page"
+	},
 	"dialog.cancel": {
 		"defaultMessage": "Cancel",
 		"description": "Button that closes a dialog without making any changes"
@@ -1363,6 +1583,14 @@
 		"defaultMessage": "Every cell must be inside the zone's map.",
 		"description": "Why painting was refused: some cells are outside the map, perhaps because another editor made it smaller"
 	},
+	"error.characterLimit": {
+		"defaultMessage": "You can have at most {max, plural, one {# character} other {# characters}} in a universe.",
+		"description": "Why a new character wasn't made: the player has as many characters in this universe as allowed"
+	},
+	"error.classInUse": {
+		"defaultMessage": "Characters are this class, so it can't be deleted. Disable it instead.",
+		"description": "Why a character class the universe added couldn't be deleted: players have made characters of it; disabling it only stops new characters choosing it"
+	},
 	"error.classLimit": {
 		"defaultMessage": "A universe can have at most {max, plural, one {# class} other {# classes}} of its own.",
 		"description": "Why a new character class wasn't made: the universe has as many classes of its own as allowed"
@@ -1370,6 +1598,10 @@
 	"error.classNeedsName": {
 		"defaultMessage": "A class needs a name.",
 		"description": "Why a character class the universe added couldn't be saved: its name was left out"
+	},
+	"error.classUnavailable": {
+		"defaultMessage": "That class can't be chosen any more. Choose another.",
+		"description": "Why a new character wasn't made: the class chosen was deleted or disabled while the player was making the character"
 	},
 	"error.faerieCantLoop": {
 		"defaultMessage": "A zone whose passage of time is faerie can't loop.",
@@ -1379,9 +1611,21 @@
 		"defaultMessage": "Where morning is must be chosen when, and only when, the passage of time is faerie.",
 		"description": "Why time settings were refused: \"where is morning?\" was given without faerie time, or left out with it"
 	},
+	"error.floatingAbility": {
+		"defaultMessage": "Choose the ability that gets the race's bonus, and only for a race that has one.",
+		"description": "Why a new character wasn't made: a race that lets the player choose an ability to raise had none chosen, or another race had one"
+	},
 	"error.invalidRequest": {
 		"defaultMessage": "The request isn't valid ({problem}).",
 		"description": "Why the server refused a request the page should never send; {problem} is a technical description in English"
+	},
+	"error.invalidScores": {
+		"defaultMessage": "The ability scores aren't allowed: use each rolled score once, or stay within the points you can spend.",
+		"description": "Why a new character wasn't made: the ability scores sent weren't the rolled ones, or cost more points than allowed"
+	},
+	"error.itemCarried": {
+		"defaultMessage": "Characters carry this item, so it can't be deleted. Disable it instead.",
+		"description": "Why an item the universe added couldn't be deleted: players' characters have it; disabling it only stops new characters being given it"
 	},
 	"error.itemInStartingEquipment": {
 		"defaultMessage": "Characters start with this item, so it can't be deleted. Take it out of the starting equipment of the universe and of every race and class first.",
@@ -1459,6 +1703,10 @@
 		"defaultMessage": "The parent zone must be a zone of this universe.",
 		"description": "Why a zone's settings were refused: the zone chosen to hold it doesn't exist"
 	},
+	"error.raceInUse": {
+		"defaultMessage": "Characters are this race, so it can't be deleted. Disable it instead.",
+		"description": "Why a race the universe added couldn't be deleted: players have made characters of it; disabling it only stops new characters choosing it"
+	},
 	"error.raceLimit": {
 		"defaultMessage": "A universe can have at most {max, plural, one {# race} other {# races}} of its own.",
 		"description": "Why a new race wasn't made: the universe has as many races of its own as allowed"
@@ -1467,6 +1715,10 @@
 		"defaultMessage": "A race needs a name.",
 		"description": "Why a race the universe added couldn't be saved: its name was left out"
 	},
+	"error.raceUnavailable": {
+		"defaultMessage": "That race can't be chosen any more. Choose another.",
+		"description": "Why a new character wasn't made: the race chosen was deleted or disabled while the player was making the character"
+	},
 	"error.resizeDiscards": {
 		"defaultMessage": "Resizing would discard painted cells or links.",
 		"description": "Why a map wasn't made smaller without asking: the part it would lose has painting or links"
@@ -1474,6 +1726,10 @@
 	"error.roleNotAllowed": {
 		"defaultMessage": "Your role in this universe doesn't allow that.",
 		"description": "Why an editor change was refused: the player's role, such as beta tester, can't make it"
+	},
+	"error.scoresChanged": {
+		"defaultMessage": "The universe has changed how ability scores are made. Close Create Character and open it again.",
+		"description": "Why a new character wasn't made: the universe's editor changed between rolling and buying ability scores, or how they are rolled, while the player was making the character"
 	},
 	"error.somethingWentWrong": {
 		"defaultMessage": "Something went wrong on the server.",
@@ -1795,6 +2051,18 @@
 		"defaultMessage": "Multiverse Kiln is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.",
 		"description": "The game's license notice, saying it comes with no warranty"
 	},
+	"lobby.characterDescription": {
+		"defaultMessage": "{race} {class}",
+		"description": "In the lobby's list of the player's characters, a character's race and class after their name, e.g. \"Dwarf Fighter\". Reorder them as your language needs"
+	},
+	"lobby.characters": {
+		"defaultMessage": "Your characters",
+		"description": "Heading of the list of characters the player has made in this universe"
+	},
+	"lobby.charactersFailed": {
+		"defaultMessage": "Could not list your characters.",
+		"description": "Shown in the lobby when the list of the player's characters in the universe couldn't be loaded"
+	},
 	"lobby.chat.label": {
 		"defaultMessage": "Chat message",
 		"description": "Name of the chat field for screen readers"
@@ -1814,6 +2082,10 @@
 	"lobby.connectionLost": {
 		"defaultMessage": "Lost the connection to {universe}.",
 		"description": "Shown on Home when the connection to a universe's lobby was lost; {universe} is its name"
+	},
+	"lobby.createCharacter": {
+		"defaultMessage": "Create Character",
+		"description": "Button that goes to the page for making a new character in this universe"
 	},
 	"lobby.createGroup": {
 		"defaultMessage": "Create game",
@@ -1838,6 +2110,10 @@
 	"lobby.morePlayers": {
 		"defaultMessage": "and {count, number} more",
 		"description": "Under the list of players in the lobby, how many more are here than are listed"
+	},
+	"lobby.noCharacters": {
+		"defaultMessage": "You haven't made a character in this universe yet.",
+		"description": "Shown instead of the list of the player's characters when they haven't made one in this universe"
 	},
 	"lobby.notJoined": {
 		"defaultMessage": "Could not enter {universe}. Try again in a moment.",
@@ -2018,6 +2294,10 @@
 	"markdown.strikethroughButton": {
 		"defaultMessage": "S",
 		"description": "One-letter label of the Markdown toolbar button that strikes text through, shown struck through"
+	},
+	"name.reserved": {
+		"defaultMessage": "That name could be mistaken for the game's staff. Choose another.",
+		"description": "Why a player or character name was refused: it contains a word such as \"admin\" or \"moderator\" that would let someone pass as the people running the game"
 	},
 	"page.connectFailed": {
 		"defaultMessage": "Could not connect to the server. Reload the page to try again.",

@@ -4,10 +4,10 @@ import { t } from '../localization';
 
 /**
  * The screens the pages have, each an element with the ID "<name>-screen" and the class "screen". Every
- * page has status and login; index.html has home, lobby and group, and edit.html has editor. Exactly one
- * is shown at a time
+ * page has status and login; index.html has home, lobby and group, edit.html has editor, and
+ * character.html has character. Exactly one is shown at a time
  */
-export type ScreenName = 'status' | 'login' | 'home' | 'editor' | 'lobby' | 'group';
+export type ScreenName = 'status' | 'login' | 'home' | 'editor' | 'lobby' | 'group' | 'character';
 
 /**
  * Finds an element in the page by ID

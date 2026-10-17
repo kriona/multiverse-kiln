@@ -5,6 +5,7 @@ import type express from 'express';
 import type { Request, Response } from 'express';
 import { canEditUniverseSettings, defineMessages, MAX_CUSTOM_CLASSES, type ClassListPayload, type ClassSettings, type CreatedPayload } from '@multiverse-kiln/shared';
 
+import { hasCharactersOfClass } from '../db/characterRepo.js';
 import type { Executor } from '../db/client.js';
 import { countCustomClasses, createCustomClass, deleteCustomClass, findClassKind, loadEditorClasses, restoreDefaultClass, saveEditedDefaultClass, updateCustomClass } from '../db/classRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
@@ -33,6 +34,11 @@ const messages = defineMessages({
 		id: 'error.noEnabledClass',
 		defaultMessage: 'A universe needs at least one enabled class, so new characters have one to be.',
 		description: 'Why a character class couldn\'t be disabled or deleted: it is the last class new characters can choose'
+	},
+	classInUse: {
+		id: 'error.classInUse',
+		defaultMessage: 'Characters are this class, so it can\'t be deleted. Disable it instead.',
+		description: 'Why a character class the universe added couldn\'t be deleted: players have made characters of it; disabling it only stops new characters choosing it'
 	}
 });
 
@@ -221,25 +227,31 @@ async function deleteClass(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	const deleted = await inTransaction(async (transaction) =>
+	const refusal = await inTransaction(async (transaction) =>
 	{
+		// Making a character waits for the universe's lock too, so nobody becomes the class as it is deleted
 		await lockUniverse(universe.id, transaction);
+
+		if (await hasCharactersOfClass(classId.data, transaction))
+		{
+			return(messages.classInUse);
+		}
 
 		const others = (await loadEditorClasses(universe.id, universe.ruleset, transaction)).filter((characterClass) => (characterClass.id !== classId.data));
 
 		if (!others.some((characterClass) => characterClass.enabled))
 		{
-			return(false);
+			return(messages.noEnabledClass);
 		}
 
 		await deleteCustomClass(universe.id, classId.data, transaction);
 
-		return(true);
+		return(undefined);
 	});
 
-	if (!deleted)
+	if (refusal !== undefined)
 	{
-		sendError(response, 409, messages.noEnabledClass);
+		sendError(response, 409, refusal);
 		return;
 	}
 

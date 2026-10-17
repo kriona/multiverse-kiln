@@ -319,10 +319,11 @@ export default defineConfig(({ command, mode }) =>
 		build: {
 			target: 'es2022',
 			rolldownOptions: {
-				// The game, the world editor and the licenses (see src/pages.ts)
+				// The game, the world editor, Create Character and the licenses (see src/pages.ts)
 				input: {
 					main: path.resolve(import.meta.dirname, 'index.html'),
 					edit: path.resolve(import.meta.dirname, 'edit.html'),
+					character: path.resolve(import.meta.dirname, 'character.html'),
 					license: path.resolve(import.meta.dirname, 'license.html')
 				}
 			}

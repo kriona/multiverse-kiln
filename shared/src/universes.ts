@@ -294,3 +294,28 @@ export function canEditWorld(role: UniverseRole): boolean
 {
 	return((role === 'creator') || (role === 'builder'));
 }
+
+/**
+ * Whether a user may play a universe, and make characters in it, in the stage it is in
+ *
+ * @param stage The universe's stage
+ * @param role The user's role in the universe, or undefined for none
+ * @return True when the user may
+ */
+export function canPlayUniverse(stage: UniverseStage, role: UniverseRole | undefined): boolean
+{
+	switch (stage)
+	{
+		case 'in_the_beginning':
+			return((role !== undefined) && canEditWorld(role));
+
+		case 'prologue':
+			return(role !== undefined);
+
+		case 'let_there_be_light':
+			return(true);
+
+		case 'end_of_time':
+			return(false);
+	}
+}

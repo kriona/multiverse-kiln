@@ -90,9 +90,16 @@ If a universe allows it, and you are in the universe's lobby, you may enter a po
 	- an avatar, a larger view of the character showing all their worn items. Every item needs avatar art drawn by an artist
 
 ## Create Character
-Based entirely on the universe's ruleset.
+Based entirely on the universe's ruleset. It is a page of its own, reached from the lobby, that goes through steps (name, race, class, ability scores, then a review) and returns to the lobby when the character is made. Rulesets will add more steps, so there may be a lot to work through:
+- the player's progress is saved on the server a moment after each change and when the step changes, so they can go back to the lobby, close the browser, or switch browsers, and pick up on the step they were on. "Start over" throws the progress away
+- progress is checked against the universe only when the character is made; a race or class that has since been disabled is left out when the progress loads
 
-For PF1E, the server rolls the ability scores (or checks the point buy choices) using the universe's [stat rolling](#pf1e) setting; the client never sends ability scores. The player can rearrange rolled scores among the abilities, with the class's primary ability as a hint.
+For PF1E, the server rolls the ability scores (or checks the point buy choices) using the universe's [stat rolling](#pf1e) setting; the client never sends ability scores of its own. The player can rearrange rolled scores among the abilities, with the class's primary ability as a hint.
+- the server keeps a player's rolled scores until they make a character with them, so leaving Create Character or starting over doesn't roll again. If the universe changes how it rolls, the next visit rolls again
+- the player chooses a name, an enabled race and an enabled class. A race with a floating ability bonus asks which ability gets it
+- the character starts with the universe's, race's and class's starting money added coin by coin, their starting equipment added together (enabled items only), and the [starting zone](#tab-characters) the precedence picks
+- the lobby lists the player's characters in the universe
+- a race, class or item that characters have can't be deleted; it can be disabled instead
 
 ## Create Group
 The character creating the group is the "anchor being". This shows you a landing page for your new group. It explains that your character is the anchor being for this universe, and that the game is centered around them.

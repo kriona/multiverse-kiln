@@ -4,6 +4,7 @@
  * - index.html: Home, a universe's lobby and a group's game. ?universe=<id> enters that universe's
  *   lobby once the player has logged in, and ?group=<id> (GROUP_QUERY_PARAMETER) joins a group
  * - edit.html: the world editor for ?universe=<id>, on the tab given by ?tab= and the zone given by ?zone=
+ * - character.html: Create Character for ?universe=<id>, which goes back to that universe's lobby
  * - license.html: the game's license and the licenses of what it uses, linked to from the footer
  *
  * Every page takes ?locale= to choose a language, as the language picker in the footer does (see src/localization.ts)
@@ -35,6 +36,11 @@ export const ZONE_PARAMETER = 'zone';
 const EDIT_PAGE = '/edit.html';
 
 /**
+ * Path of the Create Character page
+ */
+const CHARACTER_PAGE = '/character.html';
+
+/**
  * Path of the game's page
  */
 const GAME_PAGE = '/';
@@ -48,6 +54,17 @@ const GAME_PAGE = '/';
 export function editPageUrl(universeId: string): string
 {
 	return(`${EDIT_PAGE}?${new URLSearchParams({ [UNIVERSE_PARAMETER]: universeId }).toString()}`);
+}
+
+/**
+ * The address of Create Character for a universe
+ *
+ * @param universeId The universe's ID
+ * @return The address
+ */
+export function characterPageUrl(universeId: string): string
+{
+	return(`${CHARACTER_PAGE}?${new URLSearchParams({ [UNIVERSE_PARAMETER]: universeId }).toString()}`);
 }
 
 /**

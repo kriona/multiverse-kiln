@@ -1,4 +1,224 @@
 {
+	"character.back": {
+		"message": "Astern",
+		"source": "Back"
+	},
+	"character.backToLobby": {
+		"message": "Back to the Tavern",
+		"source": "Back to Lobby"
+	},
+	"character.confirmStartOver": {
+		"message": "Start afresh? Yer choices so far go overboard. Yer rolled knacks stay as they be.",
+		"source": "Start over? Your choices so far will be lost. Your rolled ability scores stay the same."
+	},
+	"character.create.abilityColumn": {
+		"message": "Knack",
+		"source": "Ability"
+	},
+	"character.create.abilityScores": {
+		"message": "Knacks",
+		"source": "Ability scores"
+	},
+	"character.create.baseColumn": {
+		"message": "Bare",
+		"source": "Base"
+	},
+	"character.create.baseLabel": {
+		"message": "{ability} bare score",
+		"source": "{ability} base score"
+	},
+	"character.create.boughtScore": {
+		"message": "{score, number} ({cost, plural, one {# doubloon} other {# doubloons}})",
+		"source": "{score, number} ({cost, plural, one {# point} other {# points}})"
+	},
+	"character.create.class": {
+		"message": "Callin'",
+		"source": "Class"
+	},
+	"character.create.classHint": {
+		"message": "This callin' leans hardest on {ability}, so stow a high score there.",
+		"source": "This class relies most on {ability}, so it is a good place for a high score."
+	},
+	"character.create.failed": {
+		"message": "Couldn't sign on the hand.",
+		"source": "Could not make the character."
+	},
+	"character.create.floatingAbility": {
+		"message": "Knack fer the folk's gift",
+		"source": "Ability for the race's bonus"
+	},
+	"character.create.limit": {
+		"message": "Ye've {max, plural, one {# hand} other {# hands}} in this universe, as many as the articles allow.",
+		"source": "You have {max, plural, one {# character} other {# characters}} in this universe, as many as you can have."
+	},
+	"character.create.loadFailed": {
+		"message": "Couldn't haul in the folk, callin's an' knacks.",
+		"source": "Could not load the races, classes and ability scores."
+	},
+	"character.create.loading": {
+		"message": "Hoistin'...",
+		"source": "Loading..."
+	},
+	"character.create.modifierColumn": {
+		"message": "Edge",
+		"source": "Modifier"
+	},
+	"character.create.name": {
+		"message": "Name",
+		"source": "Name"
+	},
+	"character.create.overBudget": {
+		"message": "These scores cost more than yer {budget, plural, one {# doubloon} other {# doubloons}}. Lower some o' them.",
+		"source": "These scores cost more than your {budget, plural, one {# point} other {# points}}. Lower some of them."
+	},
+	"character.create.pointBuy": {
+		"message": "Buy yer scores with {budget, plural, one {# doubloon} other {# doubloons}}. Scores above 10 cost doubloons, an' scores below 10 give some back.",
+		"source": "Buy your scores with {budget, plural, one {# point} other {# points}}. Scores above 10 cost points, and scores below 10 give some back."
+	},
+	"character.create.pointsSpent": {
+		"message": "Doubloons spent: {spent, number} o' {budget, number}",
+		"source": "Points spent: {spent, number} of {budget, number}"
+	},
+	"character.create.primaryAbility": {
+		"message": "{ability} (chief knack)",
+		"source": "{ability} (main ability)"
+	},
+	"character.create.race": {
+		"message": "Folk",
+		"source": "Race"
+	},
+	"character.create.raceColumn": {
+		"message": "Folk",
+		"source": "Race"
+	},
+	"character.create.rolled": {
+		"message": "The server rolled the bones fer ye with {method}. Choose which knack gets each score: givin' a knack another score swaps the two.",
+		"source": "The server rolled your scores with {method}. Choose which ability gets each score: giving an ability another score swaps the two."
+	},
+	"character.create.scoreColumn": {
+		"message": "Score",
+		"source": "Score"
+	},
+	"character.create.submit": {
+		"message": "Sign 'em on",
+		"source": "Create"
+	},
+	"character.create.swapped": {
+		"message": "{ability} now holds {score, number}.",
+		"source": "{ability} now has {score, number}."
+	},
+	"character.create.title": {
+		"message": "Sign On a Hand",
+		"source": "Create Character"
+	},
+	"character.heading.class": {
+		"message": "Choose a callin'",
+		"source": "Choose a class"
+	},
+	"character.heading.name": {
+		"message": "Name yer hand",
+		"source": "Name your character"
+	},
+	"character.heading.race": {
+		"message": "Choose yer folk",
+		"source": "Choose a race"
+	},
+	"character.heading.review": {
+		"message": "Look 'er over",
+		"source": "Review"
+	},
+	"character.next": {
+		"message": "Onward",
+		"source": "Next"
+	},
+	"character.pageTitle": {
+		"message": "Sign On a Hand - {universe} - Multiverse Kiln",
+		"source": "Create Character - {universe} - Multiverse Kiln"
+	},
+	"character.pageTitleLoading": {
+		"message": "Sign On a Hand - Multiverse Kiln",
+		"source": "Create Character - Multiverse Kiln"
+	},
+	"character.race.floatingBonus": {
+		"message": "+{bonus, number} to a knack o' yer choosin'",
+		"source": "+{bonus, number} to an ability you choose"
+	},
+	"character.race.modifier": {
+		"message": "{modifier} {ability}",
+		"source": "{modifier} {ability}"
+	},
+	"character.race.noModifiers": {
+		"message": "No tweaks to any knack",
+		"source": "No changes to ability scores"
+	},
+	"character.review.class": {
+		"message": "Callin'",
+		"source": "Class"
+	},
+	"character.review.name": {
+		"message": "Name",
+		"source": "Name"
+	},
+	"character.review.noName": {
+		"message": "Not chosen yet",
+		"source": "Not chosen yet"
+	},
+	"character.review.race": {
+		"message": "Folk",
+		"source": "Race"
+	},
+	"character.review.raceWithBonus": {
+		"message": "{race}, +{bonus, number} {ability}",
+		"source": "{race}, +{bonus, number} {ability}"
+	},
+	"character.review.score": {
+		"message": "{score, number} ({modifier})",
+		"source": "{score, number} ({modifier})"
+	},
+	"character.saveFailed": {
+		"message": "Couldn't stow yer progress.",
+		"source": "Could not save your progress."
+	},
+	"character.saved": {
+		"message": "Progress stowed",
+		"source": "Progress saved"
+	},
+	"character.saving": {
+		"message": "Stowin'...",
+		"source": "Saving..."
+	},
+	"character.startOver": {
+		"message": "Start Afresh",
+		"source": "Start Over"
+	},
+	"character.startOverFailed": {
+		"message": "Couldn't start afresh.",
+		"source": "Could not start over."
+	},
+	"character.step.abilities": {
+		"message": "Knacks",
+		"source": "Ability scores"
+	},
+	"character.step.class": {
+		"message": "Callin'",
+		"source": "Class"
+	},
+	"character.step.name": {
+		"message": "Name",
+		"source": "Name"
+	},
+	"character.step.race": {
+		"message": "Folk",
+		"source": "Race"
+	},
+	"character.step.review": {
+		"message": "Look 'er over",
+		"source": "Review"
+	},
+	"character.steps": {
+		"message": "Course",
+		"source": "Steps"
+	},
 	"dialog.cancel": {
 		"message": "Belay that",
 		"source": "Cancel"
@@ -1363,6 +1583,14 @@
 		"message": "Every cell must be inside the zone's chart.",
 		"source": "Every cell must be inside the zone's map."
 	},
+	"error.characterLimit": {
+		"message": "Ye can have at most {max, plural, one {# hand} other {# hands}} in a universe.",
+		"source": "You can have at most {max, plural, one {# character} other {# characters}} in a universe."
+	},
+	"error.classInUse": {
+		"message": "Hands follow this callin', so it can't be scuttled. Lock it away instead.",
+		"source": "Characters are this class, so it can't be deleted. Disable it instead."
+	},
 	"error.classLimit": {
 		"message": "A universe can have at most {max, plural, one {# callin''} other {# callin's}} of its own.",
 		"source": "A universe can have at most {max, plural, one {# class} other {# classes}} of its own."
@@ -1370,6 +1598,10 @@
 	"error.classNeedsName": {
 		"message": "A callin' needs a name.",
 		"source": "A class needs a name."
+	},
+	"error.classUnavailable": {
+		"message": "That callin' be off the books now. Choose another.",
+		"source": "That class can't be chosen any more. Choose another."
 	},
 	"error.faerieCantLoop": {
 		"message": "A zone where the hours pass the faerie way can't loop.",
@@ -1379,9 +1611,21 @@
 		"message": "Where the mornin' be must be chosen when, and only when, the hours pass the faerie way.",
 		"source": "Where morning is must be chosen when, and only when, the passage of time is faerie."
 	},
+	"error.floatingAbility": {
+		"message": "Choose the knack that gets the folk's gift, an' only fer folk that have one.",
+		"source": "Choose the ability that gets the race's bonus, and only for a race that has one."
+	},
 	"error.invalidRequest": {
 		"message": "That request be no good ({problem}).",
 		"source": "The request isn't valid ({problem})."
+	},
+	"error.invalidScores": {
+		"message": "Them scores won't pass muster: use each rolled score once, or stay within the doubloons ye can spend.",
+		"source": "The ability scores aren't allowed: use each rolled score once, or stay within the points you can spend."
+	},
+	"error.itemCarried": {
+		"message": "Hands carry this booty, so it can't be scuttled. Lock it away instead.",
+		"source": "Characters carry this item, so it can't be deleted. Disable it instead."
 	},
 	"error.itemInStartingEquipment": {
 		"message": "The crew comes aboard with this booty, so it can't be scuttled. Take it out o' the universe's startin' kit, an' every folk's an' callin's, first.",
@@ -1459,6 +1703,10 @@
 		"message": "The mother zone must be a zone of this universe.",
 		"source": "The parent zone must be a zone of this universe."
 	},
+	"error.raceInUse": {
+		"message": "Hands hail from these folk, so they can't be scuttled. Lock 'em away instead.",
+		"source": "Characters are this race, so it can't be deleted. Disable it instead."
+	},
 	"error.raceLimit": {
 		"message": "A universe can have at most {max, plural, one {# folk} other {# folks}} of its own.",
 		"source": "A universe can have at most {max, plural, one {# race} other {# races}} of its own."
@@ -1467,6 +1715,10 @@
 		"message": "Folk need a name.",
 		"source": "A race needs a name."
 	},
+	"error.raceUnavailable": {
+		"message": "Those folk be off the books now. Choose another.",
+		"source": "That race can't be chosen any more. Choose another."
+	},
 	"error.resizeDiscards": {
 		"message": "Resizin' would toss painted cells or passages overboard.",
 		"source": "Resizing would discard painted cells or links."
@@ -1474,6 +1726,10 @@
 	"error.roleNotAllowed": {
 		"message": "Yer rank in this universe don't allow that.",
 		"source": "Your role in this universe doesn't allow that."
+	},
+	"error.scoresChanged": {
+		"message": "The universe has changed how knacks be scored. Close Sign On a Hand an' open it again.",
+		"source": "The universe has changed how ability scores are made. Close Create Character and open it again."
 	},
 	"error.somethingWentWrong": {
 		"message": "Somethin' went awry in the server's hold.",
@@ -1795,6 +2051,18 @@
 		"message": "Multiverse Kiln be handed out in the hope that it'll be useful, but WITHOUT ANY WARRANTY; without even the implied warranty o' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.",
 		"source": "Multiverse Kiln is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details."
 	},
+	"lobby.characterDescription": {
+		"message": "{race} {class}",
+		"source": "{race} {class}"
+	},
+	"lobby.characters": {
+		"message": "Yer hands",
+		"source": "Your characters"
+	},
+	"lobby.charactersFailed": {
+		"message": "Couldn't muster yer hands.",
+		"source": "Could not list your characters."
+	},
 	"lobby.chat.label": {
 		"message": "Chat message",
 		"source": "Chat message"
@@ -1814,6 +2082,10 @@
 	"lobby.connectionLost": {
 		"message": "Lost sight o' {universe}.",
 		"source": "Lost the connection to {universe}."
+	},
+	"lobby.createCharacter": {
+		"message": "Sign On a Hand",
+		"source": "Create Character"
 	},
 	"lobby.createGroup": {
 		"message": "Raise a crew",
@@ -1838,6 +2110,10 @@
 	"lobby.morePlayers": {
 		"message": "and {count, number} more",
 		"source": "and {count, number} more"
+	},
+	"lobby.noCharacters": {
+		"message": "Ye haven't signed on a hand in this universe yet.",
+		"source": "You haven't made a character in this universe yet."
 	},
 	"lobby.notJoined": {
 		"message": "Couldn't reach {universe}. Try again in a tick.",

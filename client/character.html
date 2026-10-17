@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title data-message="character.pageTitleLoading" data-translation-context="The browser tab's title for the Create Character page until the universe's name has loaded">Create Character - Multiverse Kiln</title>
+		<link rel="stylesheet" href="/src/character.scss" />
+	</head>
+	<body>
+		<main>
+			<!-- include status.html -->
+
+			<!-- include login.html -->
+
+			<section id="character-screen" class="screen" hidden>
+				<header class="toolbar">
+					<h1 id="character-title" data-message="character.create.title" data-translation-context="Heading of the page for making a new character">Create Character</h1>
+					<span id="character-universe" class="toolbar-name"></span>
+					<span id="character-save-status" class="toolbar-status" role="status"></span>
+					<button id="character-lobby" type="button" class="secondary" data-shortcut="Alt+L" data-message="character.backToLobby" data-translation-context="Button on the Create Character page that goes back to the universe's lobby; progress so far is kept"><!-- icon ph:sign-out -->Back to Lobby</button>
+				</header>
+				<p id="character-loading" class="character-loading" data-message="character.create.loading" data-translation-context="Shown on the Create Character page while the races, classes and ability scores load">Loading...</p>
+				<p id="character-error" class="notice" role="alert" hidden></p>
+				<div id="character-body" class="character-body" hidden>
+					<nav class="panel character-steps" aria-labelledby="character-steps-heading">
+						<h2 id="character-steps-heading" class="visually-hidden" data-message="character.steps" data-translation-context="Name for screen readers of the list of steps on the Create Character page">Steps</h2>
+						<ol>
+							<li><button id="character-nav-name" type="button" class="link-button" data-message="character.step.name" data-translation-context="Step of Create Character where the player names the character">Name</button></li>
+							<li><button id="character-nav-race" type="button" class="link-button" data-message="character.step.race" data-translation-context="Step of Create Character where the player chooses the character's race, such as elf or dwarf">Race</button></li>
+							<li><button id="character-nav-class" type="button" class="link-button" data-message="character.step.class" data-translation-context="Step of Create Character where the player chooses the character's class, such as fighter or wizard">Class</button></li>
+							<li><button id="character-nav-abilities" type="button" class="link-button" data-message="character.step.abilities" data-translation-context="Step of Create Character where the player sets the character's ability scores">Ability scores</button></li>
+							<li><button id="character-nav-review" type="button" class="link-button" data-message="character.step.review" data-translation-context="Last step of Create Character, which shows the choices before the character is made">Review</button></li>
+						</ol>
+					</nav>
+					<form id="character-form" class="panel form character-form">
+						<fieldset id="character-fields" class="plain">
+							<section id="character-step-name" class="character-step" aria-labelledby="character-heading-name">
+								<h2 id="character-heading-name" data-message="character.heading.name" data-translation-context="Heading of the Create Character step where the player names the character">Name your character</h2>
+								<label data-message="character.create.name" data-translation-context="Label of the field for a new character's name">
+									Name
+									<input id="character-name" autocomplete="off" />
+								</label>
+							</section>
+							<section id="character-step-race" class="character-step" aria-labelledby="character-heading-race" hidden>
+								<h2 id="character-heading-race" data-message="character.heading.race" data-translation-context="Heading of the Create Character step where the player chooses the character's race">Choose a race</h2>
+								<label data-message="character.create.race" data-translation-context="Label of the field for a new character's race, such as elf or dwarf">
+									Race
+									<select id="character-race"></select>
+								</label>
+								<p id="character-race-summary" class="hint"></p>
+								<label id="character-floating-label" data-message="character.create.floatingAbility" data-translation-context="Label of the field for which ability gets the bonus some races (such as humans) let the player place" hidden>
+									Ability for the race's bonus
+									<select id="character-floating"></select>
+								</label>
+							</section>
+							<section id="character-step-class" class="character-step" aria-labelledby="character-heading-class" hidden>
+								<h2 id="character-heading-class" data-message="character.heading.class" data-translation-context="Heading of the Create Character step where the player chooses the character's class">Choose a class</h2>
+								<label data-message="character.create.class" data-translation-context="Label of the field for a new character's class, such as fighter or wizard">
+									Class
+									<select id="character-class"></select>
+								</label>
+								<p id="character-class-hint" class="hint"></p>
+							</section>
+							<section id="character-step-abilities" class="character-step" aria-labelledby="character-heading-abilities" hidden>
+								<h2 id="character-heading-abilities" data-message="character.create.abilityScores" data-translation-context="Heading of the part of Create Character where the player sets the character's ability scores">Ability scores</h2>
+								<p id="character-method" class="hint"></p>
+								<table class="ability-table">
+									<thead>
+										<tr>
+											<th scope="col" data-message="character.create.abilityColumn" data-translation-context="Heading of the column of ability names, such as Strength, in Create Character">Ability</th>
+											<th scope="col" data-message="character.create.baseColumn" data-translation-context="Heading of the column of the scores the player rolled or bought, before the race changes them, in Create Character">Base</th>
+											<th scope="col" data-message="character.create.raceColumn" data-translation-context="Heading of the column of how much the chosen race adds to or takes from each score, in Create Character">Race</th>
+											<th scope="col" data-message="character.create.scoreColumn" data-translation-context="Heading of the column of the character's final ability scores, in Create Character">Score</th>
+											<th scope="col" data-message="character.create.modifierColumn" data-translation-context="Heading of the column of the bonus or penalty each final score gives, such as +2, in Create Character">Modifier</th>
+										</tr>
+									</thead>
+									<tbody id="character-abilities"></tbody>
+								</table>
+								<p id="character-points" aria-live="polite"></p>
+							</section>
+							<section id="character-step-review" class="character-step" aria-labelledby="character-heading-review" hidden>
+								<h2 id="character-heading-review" data-message="character.heading.review" data-translation-context="Heading of the last step of Create Character, which shows the choices before the character is made">Review</h2>
+								<dl id="character-review" class="character-review"></dl>
+							</section>
+							<p id="character-form-error" class="form-error" role="alert" hidden></p>
+							<div class="form-buttons">
+								<button id="character-start-over" type="button" class="danger" data-message="character.startOver" data-translation-context="Button on the Create Character page that throws away the choices made so far and starts again; rolled ability scores are kept"><!-- icon ph:arrow-counter-clockwise -->Start Over</button>
+								<button id="character-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="character.back" data-translation-context="Button on the Create Character page that goes to the step before"><!-- icon ph:arrow-left -->Back</button>
+								<button id="character-next" type="button" data-shortcut="Alt+X" data-message="character.next" data-translation-context="Button on the Create Character page that goes to the next step"><!-- icon ph:arrow-right -->Next</button>
+								<button id="character-create" type="submit" aria-describedby="character-form-error" data-shortcut="Alt+S" data-message="character.create.submit" data-translation-context="Button that makes the new character">Create</button>
+							</div>
+						</fieldset>
+					</form>
+				</div>
+			</section>
+		</main>
+		<!-- include footer.html -->
+		<!-- include accessibility.html -->
+		<script type="module" src="/src/character.ts"></script>
+	</body>
+</html>

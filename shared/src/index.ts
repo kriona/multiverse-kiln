@@ -1,3 +1,4 @@
+export * from './characters.js';
 export * from './closeCodes.js';
 export * from './constants.js';
 export * from './defaultTiles.js';
