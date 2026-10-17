@@ -1,7 +1,8 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { chunkKey, DEFAULT_PF1E_SETTINGS, DEFAULT_TILE_CELL, EDITOR_UNIVERSES_PATH, emptyPf1eMoney, isLocalizedMessage, MAX_CREATED_UNIVERSES, MAX_GROUP_PLAYERS, NEW_ZONE_BOUNDS, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, VOID_CELL, type CreatedPayload, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorZone, type ResizeConflictPayload, type RulesetSettings, type TileListPayload, type TileSettings, type UniverseRole, type ZoneListPayload } from '@multiverse-kiln/shared';
+import { chunkKey, DEFAULT_PF1E_SETTINGS, DEFAULT_TILE_CELL, EDITOR_UNIVERSES_PATH, emptyPf1eMoney, isLocalizedMessage, MAX_CREATED_UNIVERSES, MAX_GROUP_PLAYERS, NEW_ZONE_BOUNDS, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, VOID_CELL, type CreatedPayload, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorZone, type ItemListPayload, type ItemSettings, type ResizeConflictPayload, type RulesetSettings, type TileListPayload, type TileSettings, type UniverseRole, type ZoneListPayload } from '@multiverse-kiln/shared';
 
+import { findDefaultItemIds } from '../src/db/itemRepo.js';
 import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
@@ -41,6 +42,12 @@ const lava: TileSettings = {
 	color: 0xff4400,
 	visionCost: 0,
 	movementCost: 100
+};
+
+const torch: ItemSettings = {
+	name: 'Torch',
+	type: 'torch',
+	enabled: true
 };
 
 /**
@@ -530,6 +537,84 @@ describe('World editor API', () =>
 			{
 				assert.strictEqual((await send(ada, 'POST', `/${universeId}/tiles`, { body })).status, 400, JSON.stringify(body));
 			}
+		});
+	});
+
+	describe('items', () =>
+	{
+		it('adds an item, and lists items with filters', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const created = await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/items`, { body: torch });
+
+			assert.strictEqual(created.status, 201);
+
+			const custom = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?custom=true`)).body;
+			const weapons = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?category=weapon`)).body;
+			const page = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?limit=1&offset=1`)).body;
+
+			assert.deepStrictEqual(custom.items, [{ id: created.body.id, key: null, ...torch, custom: true, edited: false }]);
+
+			// Default items that keep their names are named by their keys, in the player's language
+			assert.deepStrictEqual(weapons.items.map((item) => (item.name ?? item.key)), ['dagger']);
+			assert.strictEqual(page.total, 2);
+			assert.deepStrictEqual(page.items.map((item) => item.id), [created.body.id]);
+			assert.strictEqual((await send(ada, 'GET', `/${universeId}/items?enabled=yes`)).status, 400);
+		});
+
+		it('edits a default item for this universe only, and restores it', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const otherId = await createUniverse(ada, 'Other');
+			const daggerId = (await findDefaultItemIds('pf1e')).get('dagger');
+			const disabled = { name: null, type: 'dagger', enabled: false };
+
+			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/items/${daggerId}`, { body: disabled })).status, 204);
+			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?edited=true`)).body.items, [{ id: daggerId, key: 'dagger', ...disabled, custom: false, edited: true }]);
+			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${otherId}/items?edited=true`)).body.items, []);
+
+			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/items/${daggerId}`)).status, 204);
+			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?edited=true`)).body.items, []);
+		});
+
+		it('deletes a custom item, and answers 404 for one of another universe', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const otherId = await createUniverse(ada, 'Other');
+			const itemId = (await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/items`, { body: torch })).body.id;
+			const theirItemId = (await send<CreatedPayload<number>>(ada, 'POST', `/${otherId}/items`, { body: torch })).body.id;
+
+			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/items/${theirItemId}`, { body: torch })).status, 404);
+			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/items/abc`, { body: torch })).status, 404);
+			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/items/${itemId}`)).status, 204);
+			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/items/${itemId}`)).status, 404);
+		});
+
+		it('refuses an unknown type, a custom item without a name and invalid settings', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const itemId = (await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/items`, { body: torch })).body.id;
+
+			for (const body of [{ ...torch, type: 'lightsaber' }, { ...torch, name: null }, { ...torch, name: '' }, { ...torch, enabled: 'yes' }])
+			{
+				assert.strictEqual((await send(ada, 'POST', `/${universeId}/items`, { body })).status, 400, JSON.stringify(body));
+			}
+
+			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/items/${itemId}`, { body: { ...torch, name: null } })).status, 400);
+			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/items/${itemId}`, { body: { ...torch, type: 'lightsaber' } })).status, 400);
+		});
+
+		it('lets builders change items, but not beta testers', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const grace = await logIn('Grace');
+
+			await setUniverseRole(universeId, grace.playerId, 'beta_tester');
+			assert.strictEqual((await send(grace, 'GET', `/${universeId}/items`)).status, 200);
+			assert.strictEqual((await send(grace, 'POST', `/${universeId}/items`, { body: torch })).status, 403);
+
+			await setUniverseRole(universeId, grace.playerId, 'builder');
+			assert.strictEqual((await send(grace, 'POST', `/${universeId}/items`, { body: torch })).status, 201);
 		});
 	});
 

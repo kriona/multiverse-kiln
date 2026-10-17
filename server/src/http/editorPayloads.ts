@@ -6,7 +6,7 @@
  * need the database (such as whether a tile belongs to the universe) are made by the routes
  */
 import { z } from 'zod';
-import { DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_CELL_CHANGES, MAX_CHUNKS_PER_REQUEST, MAX_GROUP_PLAYERS, MAX_LONG_DESCRIPTION_LENGTH, MAX_MAP_SIDE, MAX_SHORT_DESCRIPTION_LENGTH, MAX_TILE_NAME_LENGTH, MAX_TILES_PER_PAGE, MAX_UNIVERSE_NAME_LENGTH, MAX_ZONE_NAME_LENGTH, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MIN_POINT_BUY_BUDGET, PF1E_STAT_METHODS, RULESETS, UNIVERSE_STAGES, VOID_CELL, ZONE_LINK_MODES, ZONE_PASSAGES_OF_TIME, type CellEditRequest, type ChunkRange, type MapBounds, type NewUniverseRequest, type NewZoneRequest, type ResizeZoneRequest, type RulesetSettings, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type ZoneLinkTarget, type ZoneSettingsUpdate } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_CELL_CHANGES, MAX_CHUNKS_PER_REQUEST, MAX_GROUP_PLAYERS, MAX_ITEM_NAME_LENGTH, MAX_ITEMS_PER_PAGE, MAX_LONG_DESCRIPTION_LENGTH, MAX_MAP_SIDE, MAX_SHORT_DESCRIPTION_LENGTH, MAX_TILE_NAME_LENGTH, MAX_TILES_PER_PAGE, MAX_UNIVERSE_NAME_LENGTH, MAX_ZONE_NAME_LENGTH, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MIN_POINT_BUY_BUDGET, PF1E_STAT_METHODS, RULESETS, UNIVERSE_STAGES, VOID_CELL, ZONE_LINK_MODES, ZONE_PASSAGES_OF_TIME, type CellEditRequest, type ChunkRange, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type NewZoneRequest, type ResizeZoneRequest, type RulesetSettings, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type ZoneLinkTarget, type ZoneSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { displayText } from '../rooms/payloads.js';
 
@@ -44,6 +44,16 @@ const coinCount = z.number().int().min(0).max(PF1E_MAX_COINS);
  * A tile ID in a path
  */
 export const tileIdParameter = z.coerce.number().int().min(1).max(2147483647);
+
+/**
+ * An item ID in a path
+ */
+export const itemIdParameter = z.coerce.number().int().min(1).max(2147483647);
+
+/**
+ * The key of an item type or category. Whether the universe's ruleset has it is checked by the route
+ */
+const itemKindKey = z.string().trim().min(1).max(40);
 
 /**
  * A cell in a path: /:column/:row
@@ -118,6 +128,29 @@ export const tileListQuery = z.object({
 	offset: z.coerce.number().int().min(0).default(0),
 	limit: z.coerce.number().int().min(1).max(MAX_TILES_PER_PAGE).default(MAX_TILES_PER_PAGE)
 }) satisfies z.ZodType<TileListQuery, unknown>;
+
+/**
+ * ItemSettings
+ */
+export const itemSettings = z.object({
+	name: displayText(MAX_ITEM_NAME_LENGTH).nullable(),
+	type: itemKindKey,
+	enabled: z.boolean()
+}) satisfies z.ZodType<ItemSettings>;
+
+/**
+ * ItemListQuery, from query parameters
+ */
+export const itemListQuery = z.object({
+	name: z.string().trim().max(MAX_ITEM_NAME_LENGTH).optional(),
+	enabled: booleanText.optional(),
+	custom: booleanText.optional(),
+	edited: booleanText.optional(),
+	category: itemKindKey.optional(),
+	type: itemKindKey.optional(),
+	offset: z.coerce.number().int().min(0).default(0),
+	limit: z.coerce.number().int().min(1).max(MAX_ITEMS_PER_PAGE).default(MAX_ITEMS_PER_PAGE)
+}) satisfies z.ZodType<ItemListQuery, unknown>;
 
 /**
  * The settings a zone may be created with or changed to, each optional

@@ -71,6 +71,20 @@
       "when": 1792192915953,
       "tag": "0009_drop_starting_money",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792194330929,
+      "tag": "0010_items",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792194332289,
+      "tag": "0011_pf1e_default_items",
+      "breakpoints": true
     }
   ]
 }

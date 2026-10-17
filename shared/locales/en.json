@@ -67,6 +67,190 @@
 		"defaultMessage": "Back to Home",
 		"description": "Button in the editor's toolbar that goes back to the list of universes"
 	},
+	"editor.item.addTitle": {
+		"defaultMessage": "Add Item",
+		"description": "Title of the item editor when making a new item"
+	},
+	"editor.item.confirmDelete": {
+		"defaultMessage": "Delete {item}? This can't be undone.",
+		"description": "Asks before deleting an item made for this universe; {item} is its name"
+	},
+	"editor.item.confirmRestore": {
+		"defaultMessage": "Restore {item} to the ruleset's default? Your changes to it will be lost.",
+		"description": "Asks before undoing this universe's changes to one of the ruleset's items; {item} is its name"
+	},
+	"editor.item.delete": {
+		"defaultMessage": "Delete Item",
+		"description": "Button in the item editor that deletes an item made for this universe"
+	},
+	"editor.item.deleteFailed": {
+		"defaultMessage": "Could not delete the item.",
+		"description": "Shown in the item editor when the item couldn't be deleted"
+	},
+	"editor.item.editTitle": {
+		"defaultMessage": "Edit {item}",
+		"description": "Title of the item editor for an item the player can change; {item} is its name"
+	},
+	"editor.item.enabled": {
+		"defaultMessage": "Enabled",
+		"description": "Checkbox for whether characters can be given the item"
+	},
+	"editor.item.enabledHint": {
+		"defaultMessage": "Characters can only be given enabled items.",
+		"description": "Explains the item editor's Enabled checkbox"
+	},
+	"editor.item.name": {
+		"defaultMessage": "Name",
+		"description": "Label of the field for an item's name"
+	},
+	"editor.item.restore": {
+		"defaultMessage": "Restore Default",
+		"description": "Button in the item editor that undoes this universe's changes to one of the ruleset's items"
+	},
+	"editor.item.restoreFailed": {
+		"defaultMessage": "Could not restore the item.",
+		"description": "Shown in the item editor when the ruleset's item couldn't be restored"
+	},
+	"editor.item.saveFailed": {
+		"defaultMessage": "Could not save the item.",
+		"description": "Shown in the item editor when the item couldn't be stored"
+	},
+	"editor.item.type": {
+		"defaultMessage": "Type",
+		"description": "Label of the field for an item's type, such as dagger or longsword"
+	},
+	"editor.itemSelect.chosen": {
+		"defaultMessage": "Chosen",
+		"description": "Heading of the list of items chosen so far in the dialog for choosing items, each with how many"
+	},
+	"editor.itemSelect.disabled": {
+		"defaultMessage": "Disabled",
+		"description": "In the dialog for choosing items, under the name of an item characters can't be given"
+	},
+	"editor.itemSelect.loadFailed": {
+		"defaultMessage": "Could not load the items.",
+		"description": "Shown in the dialog for choosing items when the universe's items couldn't be loaded"
+	},
+	"editor.itemSelect.none": {
+		"defaultMessage": "No items match.",
+		"description": "Shown in the dialog for choosing items when no item's name matches the search"
+	},
+	"editor.itemSelect.nothing": {
+		"defaultMessage": "No items are chosen.",
+		"description": "Shown in the dialog for choosing items while no item is chosen"
+	},
+	"editor.itemSelect.quantity": {
+		"defaultMessage": "How many of {item}",
+		"description": "Name of the quantity field beside a chosen item in the dialog for choosing items, for screen readers; {item} is the item's name"
+	},
+	"editor.itemSelect.remove": {
+		"defaultMessage": "Remove",
+		"description": "Button beside a chosen item in the dialog for choosing items that takes it out of the items chosen"
+	},
+	"editor.itemSelect.removeItem": {
+		"defaultMessage": "Remove {item}",
+		"description": "Name of the Remove button beside a chosen item, for screen readers; {item} is the item's name"
+	},
+	"editor.itemSelect.results": {
+		"defaultMessage": "Items",
+		"description": "Name of the list of items to choose from, for screen readers"
+	},
+	"editor.itemSelect.search": {
+		"defaultMessage": "Search by name",
+		"description": "Shown in the empty field that narrows the items down by name"
+	},
+	"editor.itemSelect.searchLabel": {
+		"defaultMessage": "Search items by name",
+		"description": "Name of the field that narrows the items down by name, for screen readers"
+	},
+	"editor.itemSelect.submit": {
+		"defaultMessage": "Choose",
+		"description": "Button that chooses the items selected in the dialog, with how many of each"
+	},
+	"editor.itemSelect.title": {
+		"defaultMessage": "Choose Items",
+		"description": "Title of the dialog for choosing items and how many of each, e.g. for the equipment characters start with"
+	},
+	"editor.items.add": {
+		"defaultMessage": "Add Item",
+		"description": "Button that opens the dialog for making a new item"
+	},
+	"editor.items.anyKind": {
+		"defaultMessage": "Any",
+		"description": "Choice of the item kind or type filter that shows items of every kind or type"
+	},
+	"editor.items.category": {
+		"defaultMessage": "Kind",
+		"description": "Label of the filter for an item's broad kind, such as weapons or armor"
+	},
+	"editor.items.custom": {
+		"defaultMessage": "Custom",
+		"description": "Label of the filter for whether an item was made for this universe, rather than coming with the ruleset"
+	},
+	"editor.items.customTag": {
+		"defaultMessage": "custom",
+		"description": "In the last column of the item table, for an item made for this universe"
+	},
+	"editor.items.disabledTag": {
+		"defaultMessage": "disabled",
+		"description": "In the last column of the item table, for an item characters can't be given"
+	},
+	"editor.items.edited": {
+		"defaultMessage": "Edited from default",
+		"description": "Label of the filter for whether one of the ruleset's items was changed for this universe"
+	},
+	"editor.items.editedTag": {
+		"defaultMessage": "edited",
+		"description": "In the last column of the item table, for one of the ruleset's items that this universe changed"
+	},
+	"editor.items.enabled": {
+		"defaultMessage": "Enabled",
+		"description": "Label of the filter for whether characters can be given an item"
+	},
+	"editor.items.filterAny": {
+		"defaultMessage": "Any",
+		"description": "Choice of a yes-or-no item filter that shows every item"
+	},
+	"editor.items.filterNo": {
+		"defaultMessage": "No",
+		"description": "Choice of a yes-or-no item filter, e.g. Enabled: No"
+	},
+	"editor.items.filterYes": {
+		"defaultMessage": "Yes",
+		"description": "Choice of a yes-or-no item filter, e.g. Enabled: Yes"
+	},
+	"editor.items.icon": {
+		"defaultMessage": "Icon",
+		"description": "Heading of the table column showing each item's picture"
+	},
+	"editor.items.listFailed": {
+		"defaultMessage": "Could not list the items.",
+		"description": "Shown on the Items tab when the items couldn't be loaded"
+	},
+	"editor.items.name": {
+		"defaultMessage": "Name",
+		"description": "Heading of the table column with each item's name"
+	},
+	"editor.items.none": {
+		"defaultMessage": "No items match.",
+		"description": "Shown instead of the table when no item matches the filters"
+	},
+	"editor.items.search": {
+		"defaultMessage": "Search by name",
+		"description": "Shown in the empty field that filters the items by name"
+	},
+	"editor.items.searchLabel": {
+		"defaultMessage": "Search items by name",
+		"description": "Name of the field that filters the items by name, for screen readers"
+	},
+	"editor.items.summary": {
+		"defaultMessage": "Summary",
+		"description": "Heading of the table column describing each item, such as its type"
+	},
+	"editor.items.type": {
+		"defaultMessage": "Type",
+		"description": "Label of the filter for an item's type, such as dagger or longsword"
+	},
 	"editor.link.addReturn": {
 		"defaultMessage": "Add a return link that leads back to this cell",
 		"description": "Checkbox that also places a link in the other zone leading back"
@@ -463,6 +647,10 @@
 		"defaultMessage": "Characters",
 		"description": "Tab of the editor with what characters start with and how many play together"
 	},
+	"editor.tab.items": {
+		"defaultMessage": "Items",
+		"description": "Tab of the editor listing the items characters can be given, such as weapons and gear"
+	},
 	"editor.tab.lobby": {
 		"defaultMessage": "Lobby",
 		"description": "Tab of the editor with the lobby's settings"
@@ -855,6 +1043,14 @@
 		"defaultMessage": "The request isn't valid ({problem}).",
 		"description": "Why the server refused a request the page should never send; {problem} is a technical description in English"
 	},
+	"error.itemLimit": {
+		"defaultMessage": "A universe can have at most {max, plural, one {# item} other {# items}} of its own.",
+		"description": "Why a new item wasn't made: the universe has as many items of its own as allowed"
+	},
+	"error.itemNeedsName": {
+		"defaultMessage": "An item needs a name.",
+		"description": "Why an item the universe added couldn't be saved: its name was left out"
+	},
 	"error.linkOutOfBounds": {
 		"defaultMessage": "The link's cell must be inside the zone's map.",
 		"description": "Why a zone link was refused: its cell is outside the map, perhaps because another editor made it smaller"
@@ -874,6 +1070,10 @@
 	"error.logInFirst": {
 		"defaultMessage": "Log in first.",
 		"description": "Why an editor request was refused: the browser isn't logged in"
+	},
+	"error.noSuchItem": {
+		"defaultMessage": "The item doesn't exist.",
+		"description": "Why a request about an item failed: it was deleted, perhaps by another editor"
 	},
 	"error.noSuchLink": {
 		"defaultMessage": "There is no link on that cell.",
@@ -926,6 +1126,10 @@
 	"error.universeLimit": {
 		"defaultMessage": "You can create at most {max, plural, one {# universe} other {# universes}}.",
 		"description": "Why a new universe wasn't made: the player has made as many as allowed"
+	},
+	"error.unknownItemType": {
+		"defaultMessage": "The universe's ruleset has no such type of item.",
+		"description": "Why an item couldn't be saved: the type chosen for it isn't one of the game rules' item types"
 	},
 	"error.unreadableBody": {
 		"defaultMessage": "The request could not be read.",
@@ -1626,6 +1830,94 @@
 	"pf1e.coin.sp": {
 		"defaultMessage": "sp",
 		"description": "Abbreviation of silver pieces, a coin in Pathfinder worth a tenth of a gold piece, written after a number with no space: \"2sp\". Players type it into money fields, so keep it short and without spaces or digits"
+	},
+	"pf1e.itemCategory.armor": {
+		"defaultMessage": "Armor",
+		"description": "Kind of item in Pathfinder, a filter on the editor's Items tab: armor and shields"
+	},
+	"pf1e.itemCategory.gear": {
+		"defaultMessage": "Gear",
+		"description": "Kind of item in Pathfinder, a filter on the editor's Items tab: adventuring equipment such as rope and torches"
+	},
+	"pf1e.itemCategory.weapon": {
+		"defaultMessage": "Weapons",
+		"description": "Kind of item in Pathfinder, a filter on the editor's Items tab: swords, bows, ammunition and the like"
+	},
+	"pf1e.itemType.arrows": {
+		"defaultMessage": "arrows",
+		"description": "Type of item in Pathfinder, shown beside an item's name: ammunition for a bow"
+	},
+	"pf1e.itemType.chain_shirt": {
+		"defaultMessage": "chain shirt",
+		"description": "Type of item in Pathfinder, shown beside an item's name: light armor, a shirt of metal rings"
+	},
+	"pf1e.itemType.club": {
+		"defaultMessage": "club",
+		"description": "Type of item in Pathfinder, shown beside an item's name: a wooden cudgel"
+	},
+	"pf1e.itemType.crossbow_bolts": {
+		"defaultMessage": "crossbow bolts",
+		"description": "Type of item in Pathfinder, shown beside an item's name: ammunition for a crossbow"
+	},
+	"pf1e.itemType.dagger": {
+		"defaultMessage": "dagger",
+		"description": "Type of item in Pathfinder, shown beside an item's name: a short blade for stabbing or throwing"
+	},
+	"pf1e.itemType.heavy_shield": {
+		"defaultMessage": "heavy shield",
+		"description": "Type of item in Pathfinder, shown beside an item's name: a large shield held with the whole arm"
+	},
+	"pf1e.itemType.leather_armor": {
+		"defaultMessage": "leather armor",
+		"description": "Type of item in Pathfinder, shown beside an item's name: light armor of stiffened leather"
+	},
+	"pf1e.itemType.light_crossbow": {
+		"defaultMessage": "light crossbow",
+		"description": "Type of item in Pathfinder, shown beside an item's name: a crossbow drawn back by hand"
+	},
+	"pf1e.itemType.light_shield": {
+		"defaultMessage": "light shield",
+		"description": "Type of item in Pathfinder, shown beside an item's name: a small shield strapped to the forearm"
+	},
+	"pf1e.itemType.longbow": {
+		"defaultMessage": "longbow",
+		"description": "Type of item in Pathfinder, shown beside an item's name: a bow about as tall as its archer"
+	},
+	"pf1e.itemType.longsword": {
+		"defaultMessage": "longsword",
+		"description": "Type of item in Pathfinder, shown beside an item's name: a straight one-handed sword"
+	},
+	"pf1e.itemType.other_gear": {
+		"defaultMessage": "other gear",
+		"description": "Type of item in Pathfinder, shown beside an item's name: equipment that is none of the other types"
+	},
+	"pf1e.itemType.padded_armor": {
+		"defaultMessage": "padded armor",
+		"description": "Type of item in Pathfinder, shown beside an item's name: light armor of quilted cloth"
+	},
+	"pf1e.itemType.quarterstaff": {
+		"defaultMessage": "quarterstaff",
+		"description": "Type of item in Pathfinder, shown beside an item's name: a long wooden staff used as a weapon"
+	},
+	"pf1e.itemType.rope": {
+		"defaultMessage": "rope",
+		"description": "Type of item in Pathfinder, shown beside an item's name: a length of rope"
+	},
+	"pf1e.itemType.short_sword": {
+		"defaultMessage": "short sword",
+		"description": "Type of item in Pathfinder, shown beside an item's name: a light one-handed sword"
+	},
+	"pf1e.itemType.shortbow": {
+		"defaultMessage": "shortbow",
+		"description": "Type of item in Pathfinder, shown beside an item's name: a small bow"
+	},
+	"pf1e.itemType.spear": {
+		"defaultMessage": "spear",
+		"description": "Type of item in Pathfinder, shown beside an item's name: a pole with a pointed head"
+	},
+	"pf1e.itemType.torch": {
+		"defaultMessage": "torch",
+		"description": "Type of item in Pathfinder, shown beside an item's name: a burning stick that gives light"
 	},
 	"pf1e.race.catfolk": {
 		"defaultMessage": "Catfolk",

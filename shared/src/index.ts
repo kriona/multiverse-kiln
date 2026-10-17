@@ -2,6 +2,7 @@ export * from './closeCodes.js';
 export * from './constants.js';
 export * from './defaultTiles.js';
 export * from './editor.js';
+export * from './items.js';
 export * from './localization.js';
 export * from './maps.js';
 export * from './messages.js';

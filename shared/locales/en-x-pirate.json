@@ -67,6 +67,190 @@
 		"message": "Back to Port",
 		"source": "Back to Home"
 	},
+	"editor.item.addTitle": {
+		"message": "Add Booty",
+		"source": "Add Item"
+	},
+	"editor.item.confirmDelete": {
+		"message": "Scuttle {item}? There be no bringin' it back.",
+		"source": "Delete {item}? This can't be undone."
+	},
+	"editor.item.confirmRestore": {
+		"message": "Return {item} to the ruleset's way? Yer changes to it will be lost at sea.",
+		"source": "Restore {item} to the ruleset's default? Your changes to it will be lost."
+	},
+	"editor.item.delete": {
+		"message": "Scuttle Booty",
+		"source": "Delete Item"
+	},
+	"editor.item.deleteFailed": {
+		"message": "Couldn't scuttle the booty.",
+		"source": "Could not delete the item."
+	},
+	"editor.item.editTitle": {
+		"message": "Edit {item}",
+		"source": "Edit {item}"
+	},
+	"editor.item.enabled": {
+		"message": "Open to all hands",
+		"source": "Enabled"
+	},
+	"editor.item.enabledHint": {
+		"message": "Crew can only be handed booty that be open to all hands.",
+		"source": "Characters can only be given enabled items."
+	},
+	"editor.item.name": {
+		"message": "Name",
+		"source": "Name"
+	},
+	"editor.item.restore": {
+		"message": "Restore the Old Ways",
+		"source": "Restore Default"
+	},
+	"editor.item.restoreFailed": {
+		"message": "Couldn't restore the booty.",
+		"source": "Could not restore the item."
+	},
+	"editor.item.saveFailed": {
+		"message": "Couldn't stow the booty.",
+		"source": "Could not save the item."
+	},
+	"editor.item.type": {
+		"message": "Sort",
+		"source": "Type"
+	},
+	"editor.itemSelect.chosen": {
+		"message": "In the hold",
+		"source": "Chosen"
+	},
+	"editor.itemSelect.disabled": {
+		"message": "Closed",
+		"source": "Disabled"
+	},
+	"editor.itemSelect.loadFailed": {
+		"message": "Couldn't haul up the booty.",
+		"source": "Could not load the items."
+	},
+	"editor.itemSelect.none": {
+		"message": "No booty be matchin'.",
+		"source": "No items match."
+	},
+	"editor.itemSelect.nothing": {
+		"message": "The hold be empty.",
+		"source": "No items are chosen."
+	},
+	"editor.itemSelect.quantity": {
+		"message": "How many o' {item}",
+		"source": "How many of {item}"
+	},
+	"editor.itemSelect.remove": {
+		"message": "Toss",
+		"source": "Remove"
+	},
+	"editor.itemSelect.removeItem": {
+		"message": "Toss {item}",
+		"source": "Remove {item}"
+	},
+	"editor.itemSelect.results": {
+		"message": "Booty",
+		"source": "Items"
+	},
+	"editor.itemSelect.search": {
+		"message": "Search by name",
+		"source": "Search by name"
+	},
+	"editor.itemSelect.searchLabel": {
+		"message": "Search booty by name",
+		"source": "Search items by name"
+	},
+	"editor.itemSelect.submit": {
+		"message": "Aye, these",
+		"source": "Choose"
+	},
+	"editor.itemSelect.title": {
+		"message": "Pick Yer Booty",
+		"source": "Choose Items"
+	},
+	"editor.items.add": {
+		"message": "Add Booty",
+		"source": "Add Item"
+	},
+	"editor.items.anyKind": {
+		"message": "Any",
+		"source": "Any"
+	},
+	"editor.items.category": {
+		"message": "Kind",
+		"source": "Kind"
+	},
+	"editor.items.custom": {
+		"message": "Custom",
+		"source": "Custom"
+	},
+	"editor.items.customTag": {
+		"message": "custom",
+		"source": "custom"
+	},
+	"editor.items.disabledTag": {
+		"message": "closed",
+		"source": "disabled"
+	},
+	"editor.items.edited": {
+		"message": "Changed from the ruleset",
+		"source": "Edited from default"
+	},
+	"editor.items.editedTag": {
+		"message": "changed",
+		"source": "edited"
+	},
+	"editor.items.enabled": {
+		"message": "Open to all hands",
+		"source": "Enabled"
+	},
+	"editor.items.filterAny": {
+		"message": "Any",
+		"source": "Any"
+	},
+	"editor.items.filterNo": {
+		"message": "Nay",
+		"source": "No"
+	},
+	"editor.items.filterYes": {
+		"message": "Aye",
+		"source": "Yes"
+	},
+	"editor.items.icon": {
+		"message": "Picture",
+		"source": "Icon"
+	},
+	"editor.items.listFailed": {
+		"message": "Couldn't list the booty.",
+		"source": "Could not list the items."
+	},
+	"editor.items.name": {
+		"message": "Name",
+		"source": "Name"
+	},
+	"editor.items.none": {
+		"message": "No booty be matchin'.",
+		"source": "No items match."
+	},
+	"editor.items.search": {
+		"message": "Search by name",
+		"source": "Search by name"
+	},
+	"editor.items.searchLabel": {
+		"message": "Search booty by name",
+		"source": "Search items by name"
+	},
+	"editor.items.summary": {
+		"message": "Particulars",
+		"source": "Summary"
+	},
+	"editor.items.type": {
+		"message": "Sort",
+		"source": "Type"
+	},
 	"editor.link.addReturn": {
 		"message": "Add a return passage that leads back to this cell",
 		"source": "Add a return link that leads back to this cell"
@@ -463,6 +647,10 @@
 		"message": "Crew",
 		"source": "Characters"
 	},
+	"editor.tab.items": {
+		"message": "Booty",
+		"source": "Items"
+	},
 	"editor.tab.lobby": {
 		"message": "Tavern",
 		"source": "Lobby"
@@ -855,6 +1043,14 @@
 		"message": "That request be no good ({problem}).",
 		"source": "The request isn't valid ({problem})."
 	},
+	"error.itemLimit": {
+		"message": "A universe can stow at most {max, plural, one {# piece o' booty} other {# pieces o' booty}} of its own.",
+		"source": "A universe can have at most {max, plural, one {# item} other {# items}} of its own."
+	},
+	"error.itemNeedsName": {
+		"message": "Booty needs a name.",
+		"source": "An item needs a name."
+	},
 	"error.linkOutOfBounds": {
 		"message": "The passage's cell must be inside the zone's chart.",
 		"source": "The link's cell must be inside the zone's map."
@@ -874,6 +1070,10 @@
 	"error.logInFirst": {
 		"message": "Come aboard first.",
 		"source": "Log in first."
+	},
+	"error.noSuchItem": {
+		"message": "That booty be lost at sea.",
+		"source": "The item doesn't exist."
 	},
 	"error.noSuchLink": {
 		"message": "There be no passage on that cell.",
@@ -926,6 +1126,10 @@
 	"error.universeLimit": {
 		"message": "Ye can create at most {max, plural, one {# universe} other {# universes}}.",
 		"source": "You can create at most {max, plural, one {# universe} other {# universes}}."
+	},
+	"error.unknownItemType": {
+		"message": "The universe's ruleset knows no such sort o' booty.",
+		"source": "The universe's ruleset has no such type of item."
 	},
 	"error.unreadableBody": {
 		"message": "That request couldn't be read.",
@@ -1626,6 +1830,94 @@
 	"pf1e.coin.sp": {
 		"message": "pcs",
 		"source": "sp"
+	},
+	"pf1e.itemCategory.armor": {
+		"message": "Armor",
+		"source": "Armor"
+	},
+	"pf1e.itemCategory.gear": {
+		"message": "Ship's Stores",
+		"source": "Gear"
+	},
+	"pf1e.itemCategory.weapon": {
+		"message": "Arms",
+		"source": "Weapons"
+	},
+	"pf1e.itemType.arrows": {
+		"message": "arrows",
+		"source": "arrows"
+	},
+	"pf1e.itemType.chain_shirt": {
+		"message": "chain shirt",
+		"source": "chain shirt"
+	},
+	"pf1e.itemType.club": {
+		"message": "belayin' pin",
+		"source": "club"
+	},
+	"pf1e.itemType.crossbow_bolts": {
+		"message": "crossbow bolts",
+		"source": "crossbow bolts"
+	},
+	"pf1e.itemType.dagger": {
+		"message": "dirk",
+		"source": "dagger"
+	},
+	"pf1e.itemType.heavy_shield": {
+		"message": "heavy shield",
+		"source": "heavy shield"
+	},
+	"pf1e.itemType.leather_armor": {
+		"message": "leather armor",
+		"source": "leather armor"
+	},
+	"pf1e.itemType.light_crossbow": {
+		"message": "light crossbow",
+		"source": "light crossbow"
+	},
+	"pf1e.itemType.light_shield": {
+		"message": "buckler",
+		"source": "light shield"
+	},
+	"pf1e.itemType.longbow": {
+		"message": "longbow",
+		"source": "longbow"
+	},
+	"pf1e.itemType.longsword": {
+		"message": "broadsword",
+		"source": "longsword"
+	},
+	"pf1e.itemType.other_gear": {
+		"message": "odds an' ends",
+		"source": "other gear"
+	},
+	"pf1e.itemType.padded_armor": {
+		"message": "padded armor",
+		"source": "padded armor"
+	},
+	"pf1e.itemType.quarterstaff": {
+		"message": "quarterstaff",
+		"source": "quarterstaff"
+	},
+	"pf1e.itemType.rope": {
+		"message": "line",
+		"source": "rope"
+	},
+	"pf1e.itemType.short_sword": {
+		"message": "cutlass",
+		"source": "short sword"
+	},
+	"pf1e.itemType.shortbow": {
+		"message": "shortbow",
+		"source": "shortbow"
+	},
+	"pf1e.itemType.spear": {
+		"message": "boardin' pike",
+		"source": "spear"
+	},
+	"pf1e.itemType.torch": {
+		"message": "torch",
+		"source": "torch"
 	},
 	"pf1e.race.catfolk": {
 		"message": "Ship's Cat",

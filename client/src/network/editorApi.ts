@@ -1,5 +1,5 @@
 import { ServerError, type Client } from '@colyseus/sdk';
-import { EDITOR_UNIVERSES_PATH, isLocalizedMessage, MAX_TILES_PER_PAGE, type CellChange, type ChunkListPayload, type ChunkRange, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorTile, type EditorZone, type EditorZoneLink, type MapBounds, type NewUniverseRequest, type NewZoneRequest, type ResizeConflictPayload, type RulesetSettings, type TileListPayload, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type ZoneLinkListPayload, type ZoneLinkTarget, type ZoneListPayload, type ZoneSettingsUpdate, type MessageSource } from '@multiverse-kiln/shared';
+import { EDITOR_UNIVERSES_PATH, isLocalizedMessage, MAX_TILES_PER_PAGE, type CellChange, type ChunkListPayload, type ChunkRange, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorTile, type EditorZone, type EditorZoneLink, type ItemListPayload, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type NewZoneRequest, type ResizeConflictPayload, type RulesetSettings, type TileListPayload, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type ZoneLinkListPayload, type ZoneLinkTarget, type ZoneListPayload, type ZoneSettingsUpdate, type MessageSource } from '@multiverse-kiln/shared';
 
 import { localizedText, t } from '../localization';
 
@@ -109,17 +109,7 @@ export class EditorApi
 	 */
 	async listTiles(universeId: string, query: TileListQuery): Promise<TileListPayload>
 	{
-		const parameters = new URLSearchParams();
-
-		for (const [key, value] of Object.entries(query))
-		{
-			if (value !== undefined)
-			{
-				parameters.set(key, String(value));
-			}
-		}
-
-		return(this.send<TileListPayload>('GET', `${universePath(universeId)}/tiles?${parameters.toString()}`));
+		return(this.send<TileListPayload>('GET', `${universePath(universeId)}/tiles?${queryString(query)}`));
 	}
 
 	/**
@@ -182,6 +172,53 @@ export class EditorApi
 	async deleteTile(universeId: string, tileId: number): Promise<void>
 	{
 		await this.send('DELETE', `${universePath(universeId)}/tiles/${tileId}`);
+	}
+
+	/**
+	 * A page of a universe's items
+	 *
+	 * @param universeId The universe's ID
+	 * @param query The filters, and which page
+	 * @return The page, and how many items match
+	 */
+	async listItems(universeId: string, query: ItemListQuery): Promise<ItemListPayload>
+	{
+		return(this.send<ItemListPayload>('GET', `${universePath(universeId)}/items?${queryString(query)}`));
+	}
+
+	/**
+	 * Adds an item to a universe
+	 *
+	 * @param universeId The universe's ID
+	 * @param item The item's settings
+	 * @return The new item's ID
+	 */
+	async createItem(universeId: string, item: ItemSettings): Promise<number>
+	{
+		return((await this.send<CreatedPayload<number>>('POST', `${universePath(universeId)}/items`, item)).id);
+	}
+
+	/**
+	 * Changes one of a universe's own items, or stores its edited copy of a default item
+	 *
+	 * @param universeId The universe's ID
+	 * @param itemId The item's ID
+	 * @param item The item's settings
+	 */
+	async saveItem(universeId: string, itemId: number, item: ItemSettings): Promise<void>
+	{
+		await this.send('PUT', `${universePath(universeId)}/items/${itemId}`, item);
+	}
+
+	/**
+	 * Deletes one of a universe's own items, or restores a default item it has edited
+	 *
+	 * @param universeId The universe's ID
+	 * @param itemId The item's ID
+	 */
+	async deleteItem(universeId: string, itemId: number): Promise<void>
+	{
+		await this.send('DELETE', `${universePath(universeId)}/items/${itemId}`);
 	}
 
 	/**
@@ -402,6 +439,27 @@ export class EditorApi
 function universePath(universeId: string): string
 {
 	return(`/${encodeURIComponent(universeId)}`);
+}
+
+/**
+ * A list query as query parameters, leaving out the filters that aren't set
+ *
+ * @param query The filters, and which page
+ * @return The query string, without the ?
+ */
+function queryString(query: object): string
+{
+	const parameters = new URLSearchParams();
+
+	for (const [key, value] of Object.entries(query))
+	{
+		if (value !== undefined)
+		{
+			parameters.set(key, String(value));
+		}
+	}
+
+	return(parameters.toString());
 }
 
 /**

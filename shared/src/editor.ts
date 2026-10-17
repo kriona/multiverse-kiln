@@ -26,6 +26,10 @@ import type { FaerieMorning, PassageOfTime, Ruleset, UniverseRole, UniverseStage
  * - POST   /:universeId/tiles                      TileSettings -> CreatedPayload: a custom tile
  * - PUT    /:universeId/tiles/:tileId              TileSettings: edits a custom tile, or stores an edited copy of a default tile
  * - DELETE /:universeId/tiles/:tileId              deletes a custom tile nothing uses, or restores a default tile
+ * - GET    /:universeId/items                      ItemListQuery as query parameters -> ItemListPayload
+ * - POST   /:universeId/items                      ItemSettings -> CreatedPayload: a custom item
+ * - PUT    /:universeId/items/:itemId              ItemSettings: edits a custom item, or stores an edited copy of a default item
+ * - DELETE /:universeId/items/:itemId              deletes a custom item, or restores a default item
  * - GET    /:universeId/zones                      ZoneListPayload
  * - POST   /:universeId/zones                      NewZoneRequest -> CreatedPayload
  * - GET    /:universeId/zones/:zoneId              EditorZone
@@ -82,6 +86,26 @@ export const MAX_CUSTOM_TILES = 1000;
  * Most tiles one page of the Tilesets tab lists
  */
 export const MAX_TILES_PER_PAGE = 500;
+
+/**
+ * Most characters in an item's name
+ */
+export const MAX_ITEM_NAME_LENGTH = 60;
+
+/**
+ * Most items a universe may add to its ruleset's default items
+ */
+export const MAX_CUSTOM_ITEMS = 5000;
+
+/**
+ * Most items one page of the Items tab lists
+ */
+export const MAX_ITEMS_PER_PAGE = 500;
+
+/**
+ * Most of one item a quantity can be, e.g. 20 arrows
+ */
+export const MAX_ITEM_QUANTITY = 999;
 
 /**
  * Most characters in a zone's name
@@ -327,6 +351,119 @@ export interface TileListPayload
 	 * How many tiles match, on every page
 	 */
 	total: number;
+}
+
+/**
+ * An item's settings, as the item editor shows and changes them
+ */
+export interface ItemSettings
+{
+	/**
+	 * Null for a default item that keeps its name, which players read in their language
+	 * (DEFAULT_ITEM_NAMES). An item the universe added must have one
+	 */
+	name: string | null;
+
+	/**
+	 * One of the ruleset's item types (ITEM_KINDS), e.g. dagger
+	 */
+	type: string;
+
+	/**
+	 * Whether characters can be given the item
+	 */
+	enabled: boolean;
+}
+
+/**
+ * An item as the Items tab lists it
+ */
+export interface EditorItem extends ItemSettings
+{
+	/**
+	 * The ID everything else uses for the item. An edited default item keeps the default item's ID
+	 */
+	id: number;
+
+	/**
+	 * A default item's key, e.g. dagger, which finds its name in DEFAULT_ITEM_NAMES; null for an item the
+	 * universe added
+	 */
+	key: string | null;
+
+	/**
+	 * Whether the universe added the item, rather than it being one of the ruleset's default items
+	 */
+	custom: boolean;
+
+	/**
+	 * Whether the item is a default item the universe has changed
+	 */
+	edited: boolean;
+}
+
+/**
+ * Query parameters of GET EDITOR_UNIVERSES_PATH/:universeId/items. Each filter left out matches every item
+ */
+export interface ItemListQuery
+{
+	/**
+	 * Part of the name, ignoring capitals
+	 */
+	name?: string;
+
+	enabled?: boolean;
+	custom?: boolean;
+	edited?: boolean;
+
+	/**
+	 * One of the ruleset's item categories, e.g. weapon
+	 */
+	category?: string;
+
+	/**
+	 * One of the ruleset's item types, e.g. dagger
+	 */
+	type?: string;
+
+	/**
+	 * How many matching items to skip
+	 */
+	offset?: number;
+
+	/**
+	 * Most items to return, up to MAX_ITEMS_PER_PAGE (the default)
+	 */
+	limit?: number;
+}
+
+/**
+ * Response of GET EDITOR_UNIVERSES_PATH/:universeId/items: a page of the matching items, by ID
+ */
+export interface ItemListPayload
+{
+	items: EditorItem[];
+
+	/**
+	 * How many items match, on every page
+	 */
+	total: number;
+}
+
+/**
+ * A number of one item, e.g. 20 arrows
+ */
+export interface ItemQuantity
+{
+	/**
+	 * An item the universe can use (an EditorItem's ID)
+	 */
+	itemId: number;
+
+	/**
+	 * 1 to MAX_ITEM_QUANTITY
+	 */
+	quantity: number;
 }
 
 /**

@@ -171,6 +171,48 @@ export const tiles = pgTable('tiles', {
 ]);
 
 /**
+ * One row per item characters can be given
+ *
+ * An item with no universe is one of a ruleset's default items, available to every universe with that
+ * ruleset; an item with a universe belongs to that universe only. Default items have a key, so code
+ * and seed data can find them in any database
+ *
+ * A universe's item that overrides a default item is that universe's edited copy of it. Everything
+ * else keeps using the default item's ID, and the universe sees the copy's settings under that ID
+ */
+export const items = pgTable('items', {
+	id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+	ruleset: ruleset('ruleset').notNull(),
+	universeId: uuid('universe_id').references(() => universes.id, { onDelete: 'cascade' }),
+	key: text('key'),
+
+	/**
+	 * The default item this one is the universe's edited copy of
+	 */
+	overridesItemId: integer('overrides_item_id').references((): AnyPgColumn => items.id, { onDelete: 'cascade' }),
+
+	/**
+	 * A default item's name is the English text of its message (DEFAULT_ITEM_NAMES in /shared), which
+	 * players read in their language. Null on an edited copy that keeps the default item's name
+	 */
+	name: text('name'),
+
+	/**
+	 * One of the ruleset's item types (ITEM_KINDS in /shared), e.g. dagger
+	 */
+	type: text('type').notNull(),
+
+	enabled: boolean('enabled').notNull().default(true),
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	unique('items_ruleset_key_unique').on(table.ruleset, table.key),
+	unique('items_universe_overrides_unique').on(table.universeId, table.overridesItemId),
+	index('items_universe_id_index').on(table.universeId),
+	check('items_overrides_belong_to_universe', sql`${table.overridesItemId} IS NULL OR ${table.universeId} IS NOT NULL`),
+	check('items_name_required', sql`${table.name} IS NOT NULL OR ${table.overridesItemId} IS NOT NULL`)
+]);
+
+/**
  * One row per zone: a map, and where it sits among the universe's zones
  *
  * The map covers minColumn..maxColumn and minRow..maxRow, both inclusive, around column 0, row 0

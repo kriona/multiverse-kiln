@@ -129,7 +129,8 @@
 	}
 }
 
-.tile-table
+.tile-table,
+.item-table
 {
 	width: 100%;
 	border-collapse: collapse;
@@ -146,6 +147,19 @@
 	{
 		padding: 6px 8px;
 		border-bottom: 1px solid $border-subtle;
+	}
+}
+
+// An item's picture: its category's icon until items have art of their own
+.item-icon
+{
+	display: inline-flex;
+	font-size: 1.4em;
+	vertical-align: middle;
+
+	.icon
+	{
+		vertical-align: 0;
 	}
 }
 
@@ -402,5 +416,61 @@
 		align-self: flex-start;
 		line-height: 0;
 		border: 1px solid $border;
+	}
+}
+
+.item-select-dialog
+{
+	width: min(480px, calc(100vw - 32px));
+
+	.item-select-results
+	{
+		max-height: 220px;
+		overflow-y: auto;
+	}
+
+	h3
+	{
+		margin: 0;
+		font-size: 1em;
+	}
+}
+
+.item-select-chosen
+{
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	max-height: 220px;
+	margin: 0;
+	padding: 0;
+	overflow-y: auto;
+	list-style: none;
+
+	li
+	{
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.form & label.item-quantity
+	{
+		display: flex;
+		flex: 1;
+		flex-direction: row;
+		align-items: center;
+		gap: 8px;
+		color: $text;
+
+		span:not(.item-icon)
+		{
+			flex: 1;
+		}
+
+		input
+		{
+			width: 6em;
+		}
 	}
 }

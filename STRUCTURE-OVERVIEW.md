@@ -380,6 +380,15 @@ the table contains:
 
 For PF1E, the only default item for now is a Dagger.
 
+Default items work like default tiles: an edit applies to your universe only and can be undone to restore the default, and an item you created can be deleted.
+
+Each ruleset groups its item types into categories, which the filters use. For PF1E:
+- `weapons`: dagger, club, quarterstaff, spear, short sword, longsword, shortbow, longbow, light crossbow, arrows, crossbow bolts
+- `armor`: padded armor, leather armor, chain shirt, light shield, heavy shield
+- `gear`: rope, torch
+
+Until items have pictures, the icon is the item's category's.
+
 ### Tab: Connect to the Multiverse
 Explain that this allows characters to move freely between universes with the same ruleset. If no other universes with this ruleset exist, say that you're alone in the multiverse.
 
@@ -443,12 +452,12 @@ Freetext but requires a format like "1pp 2gp 2sp 4cp"
 Money is kept as individual pieces of each coin, the way a purse holds them, and is never converted automatically: gaining 5sp twice is 10sp, not 1gp, and starting money from the universe, race and class adds up coin by coin. A character can hold 1pp 302gp 4444sp 10cp. A money changer converts coins into the fewest coins of the same worth (that purse becomes 75pp 6gp 5sp). Who offers money changing, and whether it costs a fee, comes with NPCs.
 
 ## Selection: Item
-modal dialog, lets you type to search, shows you the top results, with name + stats + picture. Each selected item has a quantity (for example, 20 arrows).
+modal dialog, lets you type to search, shows you the top results, with name + stats + picture. Each selected item has a quantity (for example, 20 arrows), from 1 to 999. Disabled items can be selected and are marked as disabled; characters are only given enabled items.
 
 ## Editor: Item
 - name
-- type (e.g., "longsword")
-- a checkbox for "Enabled?"
+- type (e.g., "longsword"), one of the ruleset's item types
+- a checkbox for "Enabled?", checked by default
 
 ## Selection: Zone
 modal dialog, lets you type to search, shows the top results, shows you a small preview image of the zone

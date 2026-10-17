@@ -16,6 +16,7 @@ import { createUniverse, lockUniverse, setUniverseZones, updateUniverseSettings 
 import { createZone, isTileInUse, listZones } from '../db/zoneRepo.js';
 import { zoneChanges } from '../world/zoneChanges.js';
 import { loadUniverseContext, playerIdOf, refuseWritesFromOtherOrigins, requireLogin, requireRole, universeContextOf } from './editorAccess.js';
+import { addItemRoutes } from './editorItems.js';
 import { newUniverseRequest, rulesetSettings, tileIdParameter, tileListQuery, tileSettings, universeSettingsUpdate } from './editorPayloads.js';
 import { addZoneRoutes, DEFAULT_ZONE_TILE_KEYS, timeSettingsProblem } from './editorZones.js';
 import { errorMessages, sendError, sendInvalidRequest } from './errors.js';
@@ -90,6 +91,7 @@ function createEditorRouter(allowedOrigins: Set<string>): express.Router
 	universeRouter.post('/tiles', requireRole(canEditWorld), createTileRoute);
 	universeRouter.put('/tiles/:tileId', requireRole(canEditWorld), saveTile);
 	universeRouter.delete('/tiles/:tileId', requireRole(canEditWorld), deleteTile);
+	addItemRoutes(universeRouter);
 	addZoneRoutes(universeRouter);
 
 	router.use(handleEditorError);

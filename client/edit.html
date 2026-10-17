@@ -27,6 +27,7 @@
 					<button id="editor-tab-characters" type="button" role="tab" aria-controls="editor-panel-characters" data-message="editor.tab.characters" data-translation-context="Tab of the editor with what characters start with and how many play together"><!-- icon game-icons:character -->Characters</button>
 					<button id="editor-tab-tilesets" type="button" role="tab" aria-controls="editor-panel-tilesets" data-message="editor.tab.tilesets" data-translation-context="Tab of the editor listing the tiles maps are painted with"><!-- icon game-icons:stone-block -->Tilesets</button>
 					<button id="editor-tab-zones" type="button" role="tab" aria-controls="editor-panel-zones" data-message="editor.tab.zones" data-translation-context="Tab of the editor listing the universe's zones (areas with their own map)"><!-- icon game-icons:treasure-map -->Zones</button>
+					<button id="editor-tab-items" type="button" role="tab" aria-controls="editor-panel-items" data-message="editor.tab.items" data-translation-context="Tab of the editor listing the items characters can be given, such as weapons and gear"><!-- icon game-icons:swap-bag -->Items</button>
 				</div>
 				<div class="editor-body">
 					<section id="editor-panel-universe" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-universe">
@@ -314,7 +315,93 @@
 							</div>
 						</div>
 					</section>
+
+					<section id="editor-panel-items" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-items" hidden>
+						<div class="filters">
+							<input id="item-filter-name" type="search" placeholder="Search by name" aria-label="Search items by name" data-message-placeholder="editor.items.search" data-translation-context-placeholder="Shown in the empty field that filters the items by name" data-message-aria-label="editor.items.searchLabel" data-translation-context-aria-label="Name of the field that filters the items by name, for screen readers" />
+							<label data-message="editor.items.category" data-translation-context="Label of the filter for an item's broad kind, such as weapons or armor">
+								Kind
+								<select id="item-filter-category"></select>
+							</label>
+							<label data-message="editor.items.type" data-translation-context="Label of the filter for an item's type, such as dagger or longsword">
+								Type
+								<select id="item-filter-type"></select>
+							</label>
+							<label data-message="editor.items.enabled" data-translation-context="Label of the filter for whether characters can be given an item">
+								Enabled
+								<select id="item-filter-enabled"></select>
+							</label>
+							<label data-message="editor.items.custom" data-translation-context="Label of the filter for whether an item was made for this universe, rather than coming with the ruleset">
+								Custom
+								<select id="item-filter-custom"></select>
+							</label>
+							<label data-message="editor.items.edited" data-translation-context="Label of the filter for whether one of the ruleset's items was changed for this universe">
+								Edited from default
+								<select id="item-filter-edited"></select>
+							</label>
+							<button id="item-add" type="button" data-shortcut="Alt+N" data-message="editor.items.add" data-translation-context="Button that opens the dialog for making a new item"><!-- icon ph:plus -->Add Item</button>
+						</div>
+						<table class="item-table">
+							<thead>
+								<tr>
+									<th scope="col" data-message="editor.items.icon" data-translation-context="Heading of the table column showing each item's picture">Icon</th>
+									<th scope="col" data-message="editor.items.name" data-translation-context="Heading of the table column with each item's name">Name</th>
+									<th scope="col" data-message="editor.items.summary" data-translation-context="Heading of the table column describing each item, such as its type">Summary</th>
+									<th scope="col"></th>
+								</tr>
+							</thead>
+							<tbody id="item-rows"></tbody>
+						</table>
+						<p id="item-empty" class="universe-empty" data-message="editor.items.none" data-translation-context="Shown instead of the table when no item matches the filters" hidden>No items match.</p>
+						<div class="pager">
+							<button id="item-previous" type="button" class="secondary" data-message="pager.previous" data-translation-context="Button that shows the previous page of a list">Previous</button>
+							<span id="item-page"></span>
+							<button id="item-next" type="button" class="secondary" data-message="pager.next" data-translation-context="Button that shows the next page of a list">Next</button>
+						</div>
+					</section>
 				</div>
+				<dialog id="item-dialog" class="panel dialog" aria-labelledby="item-dialog-title">
+					<form id="item-form" class="form">
+						<fieldset id="item-fields" class="plain">
+							<h2 id="item-dialog-title"></h2>
+							<label data-message="editor.item.name" data-translation-context="Label of the field for an item's name">
+								Name
+								<input id="item-name" required />
+							</label>
+							<label data-message="editor.item.type" data-translation-context="Label of the field for an item's type, such as dagger or longsword">
+								Type
+								<select id="item-type"></select>
+							</label>
+							<label class="checkbox" data-message="editor.item.enabled" data-translation-context="Checkbox for whether characters can be given the item">
+								<input id="item-enabled" type="checkbox" />
+								Enabled
+							</label>
+							<p class="hint" data-message="editor.item.enabledHint" data-translation-context="Explains the item editor's Enabled checkbox">Characters can only be given enabled items.</p>
+							<p id="item-error" class="form-error" role="alert" hidden></p>
+							<div class="form-buttons">
+								<button id="item-remove" type="button" class="danger" aria-describedby="item-error"></button>
+								<button id="item-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+								<button id="item-save" type="submit" aria-describedby="item-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+							</div>
+						</fieldset>
+					</form>
+				</dialog>
+				<dialog id="item-select-dialog" class="panel dialog item-select-dialog" aria-labelledby="item-select-title">
+					<form id="item-select-form" class="form">
+						<h2 id="item-select-title" data-message="editor.itemSelect.title" data-translation-context="Title of the dialog for choosing items and how many of each, e.g. for the equipment characters start with">Choose Items</h2>
+						<input id="item-select-search" type="search" placeholder="Search by name" aria-label="Search items by name" autocomplete="off" data-message-placeholder="editor.itemSelect.search" data-translation-context-placeholder="Shown in the empty field that narrows the items down by name" data-message-aria-label="editor.itemSelect.searchLabel" data-translation-context-aria-label="Name of the field that narrows the items down by name, for screen readers" />
+						<fieldset id="item-select-results" class="choice stacked item-select-results" aria-label="Items" data-message-aria-label="editor.itemSelect.results" data-translation-context-aria-label="Name of the list of items to choose from, for screen readers"></fieldset>
+						<p id="item-select-none" class="universe-empty" data-message="editor.itemSelect.none" data-translation-context="Shown in the dialog for choosing items when no item's name matches the search" hidden>No items match.</p>
+						<h3 data-message="editor.itemSelect.chosen" data-translation-context="Heading of the list of items chosen so far in the dialog for choosing items, each with how many">Chosen</h3>
+						<ul id="item-select-chosen" class="item-select-chosen"></ul>
+						<p id="item-select-nothing" class="hint" data-message="editor.itemSelect.nothing" data-translation-context="Shown in the dialog for choosing items while no item is chosen" hidden>No items are chosen.</p>
+						<p id="item-select-error" class="form-error" role="alert" hidden></p>
+						<div class="dialog-buttons">
+							<button id="item-select-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="item-select-submit" type="submit" aria-describedby="item-select-error" data-shortcut="Alt+S" data-message="editor.itemSelect.submit" data-translation-context="Button that chooses the items selected in the dialog, with how many of each">Choose</button>
+						</div>
+					</form>
+				</dialog>
 				<dialog id="tile-dialog" class="panel dialog" aria-labelledby="tile-dialog-title">
 					<form id="tile-form" class="form">
 						<fieldset id="tile-fields" class="plain">

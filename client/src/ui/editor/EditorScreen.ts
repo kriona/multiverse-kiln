@@ -5,6 +5,7 @@ import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import type { ChangeTracker } from '../changeTracker';
 import { getElement, showMessage } from '../dom';
 import { CharactersTab } from './CharactersTab';
+import { ItemsTab } from './ItemsTab';
 import { RulesetTab } from './RulesetTab';
 import { TilesetsTab } from './TilesetsTab';
 import { UniverseTab } from './UniverseTab';
@@ -20,7 +21,8 @@ export const EDITOR_TABS = [
 	'lobby',
 	'characters',
 	'tilesets',
-	'zones'
+	'zones',
+	'items'
 ] as const;
 
 export type EditorTab = typeof EDITOR_TABS[number];
@@ -67,7 +69,7 @@ export function isEditorTab(value: string | undefined): value is EditorTab
 }
 
 /**
- * Edit Universe: a universe's settings, ruleset, characters, tiles and zones, in tabs
+ * Edit Universe: a universe's settings, ruleset, characters, tiles, zones and items, in tabs
  *
  * What the player may change depends on their role in the universe; the server checks it again on
  * every change, so the page only hides controls that would be refused
@@ -82,6 +84,7 @@ export class EditorScreen
 	private readonly charactersTab: CharactersTab;
 	private readonly tilesetsTab: TilesetsTab;
 	private readonly zonesTab: ZonesTab;
+	private readonly itemsTab: ItemsTab;
 
 	/**
 	 * The universe being edited, once it has loaded
@@ -115,6 +118,7 @@ export class EditorScreen
 		{
 			this.setPlace({ ...this.place, zoneId });
 		});
+		this.itemsTab = new ItemsTab(api);
 
 		const trackedTabs: [EditorTab, ChangeTracker][] = [
 			['universe', this.universeTab.changes],
@@ -223,6 +227,7 @@ export class EditorScreen
 		this.charactersTab.open(universe);
 		this.tilesetsTab.open(universe);
 		this.zonesTab.open(universe, place.zoneId);
+		this.itemsTab.open(universe);
 		this.selectTab(this.place.tab);
 	}
 

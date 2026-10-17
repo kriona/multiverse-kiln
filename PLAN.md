@@ -150,7 +150,7 @@ Built in seven steps: licensing and the ruleset module; the Ruleset tab and the 
 	- [✅] Ruleset tab: stat rolling (3d6 variants, 4d6 variants, the point buy budgets and a custom budget), plus the sleep, weight and ammo settings (stored now, used later)
 	- [✅] Characters tab: group size, starting money and starting zone, with the zone selection modal
 3. Items
-	- [ ] Items tab, item editor (name, type, enabled) and the PF1E default items (a dagger for now); item selection with quantities
+	- [✅] Items tab, item editor (name, type, enabled) and the PF1E default items (a dagger for now); item selection with quantities
 	- [ ] Characters tab: starting equipment (a dagger for everyone by default)
 4. Races and classes
 	- [ ] Races and Classes tabs with their overrides, custom races and classes, and the PF1E fields (ability modifiers, floating bonus, darkvision, size, primary ability, tradition, casting style)
