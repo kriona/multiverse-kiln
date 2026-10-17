@@ -24,7 +24,7 @@ describe('startingItemRepo', () =>
 	{
 		const universeId = await addUniverse('Mine');
 		const otherId = await addUniverse('Theirs');
-		const torchId = await createCustomItem(universeId, 'pf1e', { name: 'Torch', type: 'torch', enabled: true });
+		const torchId = await createCustomItem(universeId, 'pf1e', { name: 'torch', type: 'torch', enabled: true });
 		const daggerId = (await findDefaultItemIds('pf1e')).get('dagger') as number;
 
 		await inTransaction(async (transaction) =>
@@ -43,7 +43,7 @@ describe('startingItemRepo', () =>
 	it('loses an item when it is deleted, and everything when the universe is', async () =>
 	{
 		const universeId = await addUniverse();
-		const torchId = await createCustomItem(universeId, 'pf1e', { name: 'Torch', type: 'torch', enabled: true });
+		const torchId = await createCustomItem(universeId, 'pf1e', { name: 'torch', type: 'torch', enabled: true });
 
 		await inTransaction((transaction) => replaceStartingItems(universeId, [{ itemId: torchId, quantity: 2 }], transaction));
 		await deleteCustomItem(universeId, torchId);

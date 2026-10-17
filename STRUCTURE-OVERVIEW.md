@@ -378,7 +378,7 @@ the table contains:
 - name, links to the [item editor](#editor-item)
 - summary (item type, properties, etc)
 
-For PF1E, the only default item for now is a Dagger.
+For PF1E, the only default item for now is a dagger.
 
 Default items work like default tiles: an edit applies to your universe only and can be undone to restore the default, and an item you created can be deleted.
 

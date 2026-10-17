@@ -168,7 +168,7 @@ export const PF1E_ITEM_TYPE_NAMES: Record<Pf1eItemType, MessageDescriptor> = def
 export const PF1E_DEFAULT_ITEM_NAMES: Record<string, MessageDescriptor> = defineMessages({
 	dagger: {
 		id: 'item.pf1e.dagger',
-		defaultMessage: 'Dagger',
+		defaultMessage: 'dagger',
 		description: 'Name of an item in Pathfinder: a short blade for stabbing or throwing'
 	}
 });

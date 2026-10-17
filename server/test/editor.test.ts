@@ -45,7 +45,7 @@ const lava: TileSettings = {
 };
 
 const torch: ItemSettings = {
-	name: 'Torch',
+	name: 'torch',
 	type: 'torch',
 	enabled: true
 };

@@ -6,13 +6,13 @@ import { countCustomItems, createCustomItem, deleteCustomItem, findDefaultItemId
 import { addUniverse } from './fixtures.js';
 
 const rustyDagger: ItemSettings = {
-	name: 'Rusty Dagger',
+	name: 'rusty dagger',
 	type: 'dagger',
 	enabled: true
 };
 
 const torch: CustomItemSettings = {
-	name: 'Torch',
+	name: 'torch',
 	type: 'torch',
 	enabled: true
 };
@@ -88,7 +88,7 @@ describe('itemRepo', () =>
 			await createCustomItem(universeId, 'pf1e', torch);
 			await createCustomItem(otherId, 'pf1e', { ...torch, name: 'Lantern' });
 
-			assert.deepStrictEqual((await loadEditorItems(universeId, 'pf1e')).map(englishName), ['Dagger', 'Torch']);
+			assert.deepStrictEqual((await loadEditorItems(universeId, 'pf1e')).map(englishName), ['dagger', 'torch']);
 		});
 
 		it('gives an edited default item the universe\'s settings under the default item\'s ID, for that universe only', async () =>
@@ -159,8 +159,8 @@ describe('itemRepo', () =>
 			await saveEditedDefaultItem(universeId, 'pf1e', await daggerId(), rustyDagger);
 			assert.strictEqual(await countCustomItems(universeId), 1);
 
-			await updateCustomItem(universeId, torchId, { ...torch, name: 'Everburning Torch' });
-			assert.deepStrictEqual((await loadEditorItems(universeId, 'pf1e')).map(englishName), ['Rusty Dagger', 'Everburning Torch']);
+			await updateCustomItem(universeId, torchId, { ...torch, name: 'everburning torch' });
+			assert.deepStrictEqual((await loadEditorItems(universeId, 'pf1e')).map(englishName), ['rusty dagger', 'everburning torch']);
 
 			await deleteCustomItem(universeId, torchId);
 			assert.strictEqual(await countCustomItems(universeId), 0);

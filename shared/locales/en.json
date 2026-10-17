@@ -1360,7 +1360,7 @@
 		"description": "Heading of the list of universes anyone can play"
 	},
 	"item.pf1e.dagger": {
-		"defaultMessage": "Dagger",
+		"defaultMessage": "dagger",
 		"description": "Name of an item in Pathfinder: a short blade for stabbing or throwing"
 	},
 	"keys.alt": {

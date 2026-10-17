@@ -1360,8 +1360,8 @@
 		"source": "Universes"
 	},
 	"item.pf1e.dagger": {
-		"message": "Dirk",
-		"source": "Dagger"
+		"message": "dirk",
+		"source": "dagger"
 	},
 	"keys.alt": {
 		"message": "Alt",
