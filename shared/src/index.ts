@@ -7,6 +7,7 @@ export * from './items.js';
 export * from './localization.js';
 export * from './maps.js';
 export * from './messages.js';
+export * from './names.js';
 export * from './racesAndClasses.js';
 export * from './rulesets/pf1e/index.js';
 export * from './state.js';

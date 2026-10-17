@@ -1,4 +1,4 @@
-import { CHARACTER_STEPS, DISALLOWED_TEXT_CHARACTERS, MAX_CHARACTER_NAME_LENGTH, MAX_CHARACTERS_PER_UNIVERSE, PF1E_ABILITIES, PF1E_ABILITY_NAMES, PF1E_FLOATING_ABILITY_BONUS, PF1E_MAX_POINT_BUY_SCORE, PF1E_MIN_POINT_BUY_SCORE, PF1E_STAT_METHOD_NAMES, pf1eAbilityModifier, pf1ePointBuyCost, pf1ePointBuyTotal, type CharacterClassOption, type CharacterDraft, type CharacterRaceOption, type CharacterStep, type NewCharacterOptions, type Pf1eAbility, type Pf1eAbilityScores } from '@multiverse-kiln/shared';
+import { CHARACTER_STEPS, DISALLOWED_TEXT_CHARACTERS, isReservedName, MAX_CHARACTER_NAME_LENGTH, MAX_CHARACTERS_PER_UNIVERSE, NAME_MESSAGES, PF1E_ABILITIES, PF1E_ABILITY_NAMES, PF1E_FLOATING_ABILITY_BONUS, PF1E_MAX_POINT_BUY_SCORE, PF1E_MIN_POINT_BUY_SCORE, PF1E_STAT_METHOD_NAMES, pf1eAbilityModifier, pf1ePointBuyCost, pf1ePointBuyTotal, type CharacterClassOption, type CharacterDraft, type CharacterRaceOption, type CharacterStep, type NewCharacterOptions, type Pf1eAbility, type Pf1eAbilityScores } from '@multiverse-kiln/shared';
 
 import { currentLocale, formatList, t } from '../localization';
 import type { CharacterApi } from '../network/characterApi';
@@ -123,9 +123,10 @@ export class CreateCharacterScreen
 			});
 		}
 
+		// Says straight away when a name can't be taken; the server checks it again
 		this.name.addEventListener('input', () =>
 		{
-			setFieldError(this.name, undefined);
+			setFieldError(this.name, (isReservedName(this.name.value) ? t(NAME_MESSAGES.reserved) : undefined));
 		});
 
 		this.race.addEventListener('change', () =>
@@ -780,6 +781,13 @@ export class CreateCharacterScreen
 		{
 			this.goToStep('name');
 			reportFieldError(this.name, t(formMessages.invalidText));
+			return;
+		}
+
+		if (isReservedName(name))
+		{
+			this.goToStep('name');
+			reportFieldError(this.name, t(NAME_MESSAGES.reserved));
 			return;
 		}
 

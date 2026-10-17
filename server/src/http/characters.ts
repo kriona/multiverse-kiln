@@ -8,7 +8,7 @@
 import { randomInt } from 'crypto';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { canPlayUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, MAX_CHARACTER_NAME_LENGTH, MAX_CHARACTERS_PER_UNIVERSE, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, UNIVERSES_PATH, type CharacterDraft, type CharacterListPayload, type CreatedPayload, type EditableUniverse, type NewCharacterOptions, type NewCharacterRequest, type OptionName } from '@multiverse-kiln/shared';
+import { canPlayUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, isReservedName, MAX_CHARACTER_NAME_LENGTH, MAX_CHARACTERS_PER_UNIVERSE, NAME_MESSAGES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, UNIVERSES_PATH, type CharacterDraft, type CharacterListPayload, type CreatedPayload, type EditableUniverse, type NewCharacterOptions, type NewCharacterRequest, type OptionName } from '@multiverse-kiln/shared';
 
 import { countCharacters, createCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDraft, findPf1eAbilityRoll, keepPf1eAbilityRoll, listCharacters, saveCharacterDraft } from '../db/characterRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
@@ -327,6 +327,13 @@ async function createRoute(request: Request, response: Response): Promise<void>
 	const playerId = playerIdOf(request);
 	const { id: universeId } = universeOf(request);
 	const { name, raceId, classId, baseScores, floatingAbility } = body.data;
+
+	if (isReservedName(name))
+	{
+		sendError(response, 400, NAME_MESSAGES.reserved);
+		return;
+	}
+
 	const result = await inTransaction(async (transaction): Promise<Refusal | string> =>
 	{
 		// Concurrent requests from the same player wait here, so they can't all slip under the limit.

@@ -364,6 +364,11 @@ export enum NoticeReason
 	NameInUse = 'nameInUse',
 
 	/**
+	 * The name could pass as the game's staff (isReservedName), so the browser wasn't logged in
+	 */
+	NameReserved = 'nameReserved',
+
+	/**
 	 * The server couldn't load or create the player, so the browser wasn't logged in
 	 */
 	LoginFailed = 'loginFailed'

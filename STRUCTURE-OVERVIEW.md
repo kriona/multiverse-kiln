@@ -448,6 +448,8 @@ Each character has a vision budget. Looking across a tile spends its vision cost
 - Ideally the server works out what each player can see and only sends them that. If that turns out to be too expensive, the client does it. To be decided during implementation.
 
 ## Moderation
+- Player and character names can't pass as the game's staff: words such as `admin`, `moderator`, `staff` and `system`, and the game's name, are kept back (`isReservedName()` in `/shared`, checked as the player types and again on the server). Names are compared in a reduced form that sees through capitals, accents, look-alike letters from other alphabets, leetspeak, separators, repeated letters and added digits, and words are found at spaces, punctuation and changes of case, so "TheAdm1n" is refused but "Quarterstaff" isn't.
+- Still to come: a profanity filter matching whole words with an allow list (to avoid blocking names like Cockburn or Assassin), slurs blocked everywhere but milder words left to each universe, each universe's own blocked words, and reporting a name so a moderator can force a rename.
 - Users can report content and players.
 - Copyright holders can report infringement.
 - Server admins can disable universes.

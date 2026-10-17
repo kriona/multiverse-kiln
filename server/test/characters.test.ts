@@ -458,6 +458,22 @@ describe('Character routes', () =>
 		assert.strictEqual((await newOptions()).draft, null);
 	});
 
+	it('refuses a name that passes as staff', async () =>
+	{
+		await usePointBuy();
+
+		const answer = await send(ada, 'POST', charactersPath(universeId), {
+			name: 'Moderator',
+			raceId: dwarfId,
+			classId: fighterId,
+			baseScores: standardBuy,
+			floatingAbility: null
+		});
+
+		assert.strictEqual(answer.status, 400);
+		assert.strictEqual((await newOptions()).characterCount, 0);
+	});
+
 	it('refuses a name with disallowed characters', async () =>
 	{
 		await usePointBuy();

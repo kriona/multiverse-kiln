@@ -2295,6 +2295,10 @@
 		"message": "S",
 		"source": "S"
 	},
+	"name.reserved": {
+		"message": "That name could pass fer one o' the ship's officers. Choose another.",
+		"source": "That name could be mistaken for the game's staff. Choose another."
+	},
 	"page.connectFailed": {
 		"message": "Couldn't hail the server. Reload the page to try again.",
 		"source": "Could not connect to the server. Reload the page to try again."

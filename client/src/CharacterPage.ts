@@ -1,4 +1,4 @@
-import { NoticeReason, SessionMessageType, SessionServerMessageType, type AccountPayload, type LoginPayload, type NoticePayload } from '@multiverse-kiln/shared';
+import { NAME_MESSAGES, NoticeReason, SessionMessageType, SessionServerMessageType, type AccountPayload, type LoginPayload, type NoticePayload } from '@multiverse-kiln/shared';
 
 import { t } from './localization';
 import { CharacterApi } from './network/characterApi';
@@ -98,6 +98,10 @@ export class CharacterPage
 		if (reason === NoticeReason.NameInUse)
 		{
 			this.loginScreen.showError(t(pageMessages.nameInUse));
+		}
+		else if (reason === NoticeReason.NameReserved)
+		{
+			this.loginScreen.showError(t(NAME_MESSAGES.reserved));
 		}
 		else if (reason === NoticeReason.LoginFailed)
 		{

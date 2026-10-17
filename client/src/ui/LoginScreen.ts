@@ -1,4 +1,4 @@
-import { DISALLOWED_TEXT_CHARACTERS, MAX_PLAYER_NAME_LENGTH } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, isReservedName, MAX_PLAYER_NAME_LENGTH, NAME_MESSAGES } from '@multiverse-kiln/shared';
 
 import { t } from '../localization';
 import { getElement } from './dom';
@@ -20,9 +20,10 @@ export class LoginScreen
 	{
 		this.nameInput.maxLength = MAX_PLAYER_NAME_LENGTH;
 
+		// Says straight away when a name can't be taken; the server checks it again
 		this.nameInput.addEventListener('input', () =>
 		{
-			setFieldError(this.nameInput, undefined);
+			setFieldError(this.nameInput, (isReservedName(this.nameInput.value) ? t(NAME_MESSAGES.reserved) : undefined));
 		});
 
 		this.form.addEventListener('submit', (event) =>
@@ -38,6 +39,12 @@ export class LoginScreen
 					defaultMessage: 'Enter a name of letters, numbers, spaces or punctuation.',
 					description: 'Shown by the login field when the name typed is empty or has characters that aren\'t allowed'
 				}));
+				return;
+			}
+
+			if (isReservedName(name))
+			{
+				reportFieldError(this.nameInput, t(NAME_MESSAGES.reserved));
 				return;
 			}
 

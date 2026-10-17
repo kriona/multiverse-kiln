@@ -1,5 +1,5 @@
 import { CloseCode } from '@colyseus/sdk';
-import { GROUP_QUERY_PARAMETER, LobbyMessageType, LobbyServerMessageType, MAX_GROUP_PLAYERS, NoticeReason, ServerCloseCode, SessionMessageType, SessionServerMessageType, type AccountPayload, type AccountPlayer, type ChatHistoryPayload, type ChatMessage, type ChatPayload, type JoinGroupPayload, type LoginPayload, type NoticePayload, type UniverseSummary } from '@multiverse-kiln/shared';
+import { GROUP_QUERY_PARAMETER, LobbyMessageType, LobbyServerMessageType, MAX_GROUP_PLAYERS, NAME_MESSAGES, NoticeReason, ServerCloseCode, SessionMessageType, SessionServerMessageType, type AccountPayload, type AccountPlayer, type ChatHistoryPayload, type ChatMessage, type ChatPayload, type JoinGroupPayload, type LoginPayload, type NoticePayload, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { t } from './localization';
 import { CharacterApi } from './network/characterApi';
@@ -329,6 +329,12 @@ export class App
 		if (reason === NoticeReason.NameInUse)
 		{
 			this.loginScreen.showError(t(pageMessages.nameInUse));
+			return;
+		}
+
+		if (reason === NoticeReason.NameReserved)
+		{
+			this.loginScreen.showError(t(NAME_MESSAGES.reserved));
 			return;
 		}
 

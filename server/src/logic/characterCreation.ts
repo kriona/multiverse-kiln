@@ -24,7 +24,9 @@ export type Pf1eScoreSource =
  */
 export function areValidBaseScores(baseScores: Pf1eAbilityScores, source: Pf1eScoreSource): boolean
 {
-	return(((source.kind === 'roll') ? isArrangementOfRolls(source.rolls, baseScores) : isValidPf1ePointBuy(baseScores, source.budget)));
+	return(((source.kind === 'roll')
+		? isArrangementOfRolls(source.rolls, baseScores)
+		: isValidPf1ePointBuy(baseScores, source.budget)));
 }
 
 /**
