@@ -5,10 +5,11 @@
  * browser; routes about a universe also need a role in it, and changes need a role that allows them
  */
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
-import { canEditUniverseSettings, canEditWorld, defineMessages, EDITOR_UNIVERSES_PATH, MAX_CREATED_UNIVERSES, MAX_CUSTOM_TILES, NEW_ZONE_BOUNDS, SOURCE_LOCALE, Translator, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type RulesetSettings } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, canEditWorld, defineMessages, EDITOR_UNIVERSES_PATH, MAX_CUSTOM_TILES, NEW_ZONE_BOUNDS, SOURCE_LOCALE, Translator, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type RulesetSettings } from '@multiverse-kiln/shared';
 
 import { lockPlayer } from '../db/playerRepo.js';
 import { findPf1eSettings, savePf1eSettings } from '../db/rulesetRepo.js';
+import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { countCustomTiles, createCustomTile, deleteCustomTile, findDefaultTileIds, findTileKind, listEditorTiles, restoreDefaultTile, saveEditedDefaultTile, updateCustomTile } from '../db/tileRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { countUniversesWithRole, listEditableUniverses, setUniverseRole } from '../db/universeEditorRepo.js';
@@ -23,7 +24,7 @@ import { newUniverseRequest, rulesetSettings, tileIdParameter, tileListQuery, ti
 import { addRaceRoutes } from './editorRaces.js';
 import { findStartingProblem } from './editorStartingExtras.js';
 import { addZoneRoutes, DEFAULT_ZONE_TILE_KEYS, timeSettingsProblem } from './editorZones.js';
-import { errorMessages, sendError, sendInvalidRequest } from './errors.js';
+import { errorMessages, sendError, sendInvalidRequest, type Refusal } from './errors.js';
 
 /**
  * Reasons the tile routes give in more than one place (see shared/src/localization.ts)
@@ -113,8 +114,11 @@ function createEditorRouter(allowedOrigins: Set<string>): express.Router
  */
 async function listUniverses(request: Request, response: Response): Promise<void>
 {
+	const { universeCreationEnabled, universesPerCreator } = await findSiteSettings();
 	const payload: EditableUniverseListPayload = {
-		universes: await listEditableUniverses(playerIdOf(request))
+		universes: await listEditableUniverses(playerIdOf(request)),
+		universeCreationEnabled,
+		universesPerCreator
 	};
 
 	response.json(payload);
@@ -138,14 +142,38 @@ async function createUniverseRoute(request: Request, response: Response): Promis
 
 	const playerId = playerIdOf(request);
 	const { name, shortDescription, ruleset } = body.data;
-	const universeId = await inTransaction(async (transaction) =>
+	const created = await inTransaction(async (transaction): Promise<Refusal | string> =>
 	{
 		// Concurrent requests from the same player wait here, so they can't all slip under the limit
 		await lockPlayer(playerId, transaction);
 
-		if (await countUniversesWithRole(playerId, 'creator', transaction) >= MAX_CREATED_UNIVERSES)
+		const { universeCreationEnabled, universesPerCreator } = await findSiteSettings(transaction);
+
+		if (!universeCreationEnabled)
 		{
-			return(undefined);
+			return({
+				status: 403,
+				message: {
+					id: 'error.universeCreationDisabled',
+					defaultMessage: 'Creating universes is turned off for now.',
+					description: 'Why a new universe wasn\'t made: the site\'s admins have stopped everyone from creating universes'
+				}
+			});
+		}
+
+		if (await countUniversesWithRole(playerId, 'creator', transaction) >= universesPerCreator)
+		{
+			return({
+				status: 409,
+				message: {
+					id: 'error.universeLimit',
+					defaultMessage: 'You can create at most {max, plural, one {# universe} other {# universes}}.',
+					description: 'Why a new universe wasn\'t made: the player has made as many as allowed'
+				},
+				values: {
+					max: universesPerCreator
+				}
+			});
 		}
 
 		const createdId = await createUniverse({ name, shortDescription, ruleset }, transaction);
@@ -184,17 +212,13 @@ async function createUniverseRoute(request: Request, response: Response): Promis
 		return(createdId);
 	});
 
-	if (universeId === undefined)
+	if (typeof created !== 'string')
 	{
-		sendError(response, 409, {
-			id: 'error.universeLimit',
-			defaultMessage: 'You can create at most {max, plural, one {# universe} other {# universes}}.',
-			description: 'Why a new universe wasn\'t made: the player has made as many as allowed'
-		}, { max: MAX_CREATED_UNIVERSES });
+		sendError(response, created.status, created.message, created.values);
 		return;
 	}
 
-	const payload: CreatedPayload = { id: universeId };
+	const payload: CreatedPayload = { id: created };
 
 	response.status(201).json(payload);
 }

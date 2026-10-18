@@ -175,7 +175,9 @@ textarea
 	border-radius: 4px;
 }
 
-button
+// a.button is a link to another page that looks like a button, such as Back to Home in a toolbar
+button,
+a.button
 {
 	padding: 6px 14px;
 	border: 1px solid $accent;
@@ -198,6 +200,13 @@ button
 	{
 		margin-inline-end: 6px;
 	}
+}
+
+a.button
+{
+	display: inline-block;
+	border-radius: 4px;
+	text-decoration: none;
 }
 
 // Icons from the icons plugin in vite.config.ts, sized to and colored like the text around them
@@ -303,6 +312,12 @@ button.link-button
 	color: $text;
 }
 
+// A link at the end of a page's toolbar, such as Back to Home
+.toolbar-link
+{
+	margin-inline-start: auto;
+}
+
 .notice
 {
 	margin: 12px 16px 0;
@@ -313,7 +328,8 @@ button.link-button
 	color: $notice-text;
 }
 
-button.secondary
+button.secondary,
+a.button.secondary
 {
 	border-color: $border-stronger;
 	background: $background-secondary;

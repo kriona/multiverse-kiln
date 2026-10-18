@@ -1,4 +1,4 @@
-import { DISALLOWED_TEXT_CHARACTERS, MAX_CREATED_UNIVERSES, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_NAME_LENGTH, RULESET_NAMES, RULESETS, UNIVERSE_ROLE_NAMES, UNIVERSE_STAGE_NAMES, type EditableUniverseListPayload, type EditableUniverseSummary, type NewUniverseRequest, type Ruleset, type UniverseDetails, type UniverseListPayload, type UniverseSummary } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_NAME_LENGTH, RULESET_NAMES, RULESETS, UNIVERSE_ROLE_NAMES, UNIVERSE_STAGE_NAMES, type EditableUniverseListPayload, type EditableUniverseSummary, type NewUniverseRequest, type Ruleset, type UniverseDetails, type UniverseListPayload, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { t } from '../localization';
 import { describeEditorError } from '../network/editorApi';
@@ -301,13 +301,13 @@ export class HomeScreen
 	 */
 	private async loadOwnUniverses(version: number): Promise<void>
 	{
-		let universes: EditableUniverseSummary[];
+		let list: EditableUniverseListPayload;
 
 		this.createButton.disabled = true;
 
 		try
 		{
-			universes = (await this.actions.loadOwnUniverses()).universes;
+			list = await this.actions.loadOwnUniverses();
 		}
 		catch (error)
 		{
@@ -328,20 +328,37 @@ export class HomeScreen
 			return;
 		}
 
+		const { universes, universeCreationEnabled, universesPerCreator } = list;
 		const created = universes.filter((universe) => (universe.role === 'creator')).length;
 
 		this.ownList.replaceChildren(...universes.map((universe) => this.createOwnItem(universe)));
 		this.ownEmpty.hidden = (universes.length > 0);
-		this.createButton.disabled = (created >= MAX_CREATED_UNIVERSES);
-		this.createButton.title = (this.createButton.disabled
-			? t({
+
+		if (!universeCreationEnabled)
+		{
+			this.createButton.disabled = true;
+			this.createButton.title = t({
+				id: 'home.createDisabled',
+				defaultMessage: 'Creating universes is turned off for now',
+				description: 'Tooltip of the disabled Create Universe button when the site\'s admins have stopped everyone from creating universes'
+			});
+		}
+		else if (created >= universesPerCreator)
+		{
+			this.createButton.disabled = true;
+			this.createButton.title = t({
 				id: 'home.createLimit',
 				defaultMessage: 'You can create at most {max, plural, one {# universe} other {# universes}}',
 				description: 'Tooltip of the disabled Create Universe button when the player has made as many universes as allowed'
 			}, {
-				max: MAX_CREATED_UNIVERSES
-			})
-			: '');
+				max: universesPerCreator
+			});
+		}
+		else
+		{
+			this.createButton.disabled = false;
+			this.createButton.title = '';
+		}
 	}
 
 	/**

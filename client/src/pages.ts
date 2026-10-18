@@ -6,6 +6,8 @@
  * - edit.html: the world editor for ?universe=<id>, on the tab given by ?tab= and the zone given by ?zone=
  * - character.html: Create Character for ?universe=<id>, which goes back to that universe's lobby
  * - license.html: the game's license and the licenses of what it uses, linked to from the footer
+ * - admin.html: settings for the whole site, linked to from Home's toolbar. Anyone can use it until
+ *   there are server admin accounts
  *
  * Every page takes ?locale= to choose a language, as the language picker in the footer does (see src/localization.ts)
  */

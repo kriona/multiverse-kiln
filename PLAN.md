@@ -224,6 +224,7 @@ Built in seven steps: licensing and the ruleset module; the Ruleset tab and the 
 - [ ] Translations tab: the table of universe text with its filters, editors' notes for translators, and updating or confirming out-of-date translations
 - [ ] Universe versions: build a new version while players play the current one, then switch to it. A version includes its translations
 - [ ] Server admins: disable universes, and edit universes that have gone dormant
+- [ ] Only server admins can see and use the admin page (`admin.html` and `/admin/settings`), which anyone can use until then
 
 **Done when:** a team of editors and beta testers takes a universe from `in the beginning` to `let there be light`, and a creator can disable a race without breaking its existing characters. A translator adds French to the universe, and a French player sees it in French.
 

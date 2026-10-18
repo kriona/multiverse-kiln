@@ -6,7 +6,7 @@
  */
 import { sql, type SQL } from 'drizzle-orm';
 import { boolean, check, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHUNK_SIZE, DEFAULT_PF1E_SETTINGS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, UNIVERSE_ROLES, UNIVERSE_STAGES, ZONE_LINK_MODES, ZONE_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, DEFAULT_PF1E_SETTINGS, DEFAULT_SITE_SETTINGS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_UNIVERSES_PER_CREATOR, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, UNIVERSE_ROLES, UNIVERSE_STAGES, ZONE_LINK_MODES, ZONE_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
 
 export const universeStage = pgEnum('universe_stage', UNIVERSE_STAGES);
 export const universeRole = pgEnum('universe_role', UNIVERSE_ROLES);
@@ -623,4 +623,20 @@ export const pf1eAbilityRolls = pgTable('pf1e_ability_rolls', {
 	primaryKey({ columns: [table.playerId, table.universeId] }),
 	index('pf1e_ability_rolls_universe_id_index').on(table.universeId),
 	check('pf1e_ability_rolls_score_count', sql`cardinality(${table.scores}) = ${sql.raw(String(PF1E_ABILITIES.length))}`)
+]);
+
+/**
+ * Settings for the whole site, in at most one row. A site without the row has DEFAULT_SITE_SETTINGS
+ */
+export const siteSettings = pgTable('site_settings', {
+	/**
+	 * Always true: the primary key and its check keep the table to one row
+	 */
+	id: boolean('id').primaryKey().default(true),
+
+	universeCreationEnabled: boolean('universe_creation_enabled').notNull().default(DEFAULT_SITE_SETTINGS.universeCreationEnabled),
+	universesPerCreator: integer('universes_per_creator').notNull().default(DEFAULT_SITE_SETTINGS.universesPerCreator)
+}, (table) => [
+	check('site_settings_one_row', sql`${table.id}`),
+	check('site_settings_universes_per_creator_range', sql`${table.universesPerCreator} BETWEEN ${sql.raw(String(MIN_UNIVERSES_PER_CREATOR))} AND ${sql.raw(String(MAX_UNIVERSES_PER_CREATOR))}`)
 ]);

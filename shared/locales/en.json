@@ -1,4 +1,44 @@
 {
+	"admin.heading": {
+		"defaultMessage": "Site Settings",
+		"description": "Heading of the page where the site's admins change settings for the whole site"
+	},
+	"admin.home": {
+		"defaultMessage": "Back to Home",
+		"description": "Link at the top of the site settings page that goes back to the list of universes"
+	},
+	"admin.loadFailed": {
+		"defaultMessage": "Could not load the site settings.",
+		"description": "Shown on the site settings page when the settings couldn't be loaded"
+	},
+	"admin.loading": {
+		"defaultMessage": "Loading...",
+		"description": "Shown on the site settings page while the settings load"
+	},
+	"admin.saveFailed": {
+		"defaultMessage": "Could not save the site settings.",
+		"description": "Shown on the site settings page when the settings couldn't be stored"
+	},
+	"admin.title": {
+		"defaultMessage": "Site Settings - Multiverse Kiln",
+		"description": "The browser tab's title for the page where the site's admins change settings for the whole site"
+	},
+	"admin.universeCreationEnabled": {
+		"defaultMessage": "Players can create universes",
+		"description": "Checkbox on the site settings page for whether players can create new universes"
+	},
+	"admin.universes": {
+		"defaultMessage": "Universes",
+		"description": "Heading of the site settings about creating universes"
+	},
+	"admin.universesHint": {
+		"defaultMessage": "These only affect new universes. Universes that already exist stay as they are, even for players who have more than the limit.",
+		"description": "Explains on the site settings page that the universe settings only affect making new universes"
+	},
+	"admin.universesPerCreator": {
+		"defaultMessage": "Universes each player can create",
+		"description": "Label of the field on the site settings page for the most universes one player may create"
+	},
 	"character.back": {
 		"defaultMessage": "Back",
 		"description": "Button on the Create Character page that goes to the step before"
@@ -1747,6 +1787,10 @@
 		"defaultMessage": "A tile needs a name.",
 		"description": "Why a tile the universe added couldn't be saved: its name was left out"
 	},
+	"error.universeCreationDisabled": {
+		"defaultMessage": "Creating universes is turned off for now.",
+		"description": "Why a new universe wasn't made: the site's admins have stopped everyone from creating universes"
+	},
 	"error.universeLimit": {
 		"defaultMessage": "You can create at most {max, plural, one {# universe} other {# universes}}.",
 		"description": "Why a new universe wasn't made: the player has made as many as allowed"
@@ -1899,6 +1943,10 @@
 		"defaultMessage": "Create Universe",
 		"description": "Title of the dialog for making a new universe"
 	},
+	"home.createDisabled": {
+		"defaultMessage": "Creating universes is turned off for now",
+		"description": "Tooltip of the disabled Create Universe button when the site's admins have stopped everyone from creating universes"
+	},
 	"home.createLimit": {
 		"defaultMessage": "You can create at most {max, plural, one {# universe} other {# universes}}",
 		"description": "Tooltip of the disabled Create Universe button when the player has made as many universes as allowed"
@@ -1950,6 +1998,10 @@
 	"home.showMore": {
 		"defaultMessage": "Show more",
 		"description": "Button that adds the next page of universes to the list"
+	},
+	"home.siteSettings": {
+		"defaultMessage": "Site Settings",
+		"description": "Link in Home's toolbar to the page where the site's admins change settings for the whole site"
 	},
 	"home.universeNotFound": {
 		"defaultMessage": "That universe could not be found.",

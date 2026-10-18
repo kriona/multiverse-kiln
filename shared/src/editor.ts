@@ -58,11 +58,6 @@ import type { FaerieMorning, PassageOfTime, Ruleset, UniverseRole, UniverseStage
 export const EDITOR_UNIVERSES_PATH = '/editor/universes';
 
 /**
- * Most universes one player may create
- */
-export const MAX_CREATED_UNIVERSES = 5;
-
-/**
  * Most characters in a universe's name
  */
 export const MAX_UNIVERSE_NAME_LENGTH = 60;
@@ -204,6 +199,16 @@ export interface EditableUniverseSummary
 export interface EditableUniverseListPayload
 {
 	universes: EditableUniverseSummary[];
+
+	/**
+	 * Whether the site lets players create universes (SiteSettings)
+	 */
+	universeCreationEnabled: boolean;
+
+	/**
+	 * Most universes the player may create (SiteSettings)
+	 */
+	universesPerCreator: number;
 }
 
 /**

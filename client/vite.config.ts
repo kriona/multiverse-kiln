@@ -324,7 +324,8 @@ export default defineConfig(({ command, mode }) =>
 					main: path.resolve(import.meta.dirname, 'index.html'),
 					edit: path.resolve(import.meta.dirname, 'edit.html'),
 					character: path.resolve(import.meta.dirname, 'character.html'),
-					license: path.resolve(import.meta.dirname, 'license.html')
+					license: path.resolve(import.meta.dirname, 'license.html'),
+					admin: path.resolve(import.meta.dirname, 'admin.html')
 				}
 			}
 		}

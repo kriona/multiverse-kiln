@@ -127,6 +127,13 @@
       "when": 1792244207810,
       "tag": "0017_character_drafts",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792348133495,
+      "tag": "0018_site_settings",
+      "breakpoints": true
     }
   ]
 }

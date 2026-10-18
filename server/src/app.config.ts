@@ -11,6 +11,7 @@ import { LobbyRoom } from './rooms/LobbyRoom.js';
 import { SessionRoom } from './rooms/SessionRoom.js';
 import { createTransport } from './transport.js';
 import { isDevToolsEnabled } from './devTools.js';
+import { addAdminRoutes } from './http/admin.js';
 import { addBrowserIdRoute } from './http/browserId.js';
 import { addCharacterRoutes } from './http/characters.js';
 import { addEditorRoutes } from './http/editor.js';
@@ -57,6 +58,7 @@ const server = defineServer({
 		addUniversesRoutes(app);
 		addCharacterRoutes(app, allowedOrigins);
 		addEditorRoutes(app, allowedOrigins);
+		addAdminRoutes(app, allowedOrigins);
 
 		if (isDevToolsEnabled())
 		{

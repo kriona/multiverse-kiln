@@ -1,9 +1,10 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { chunkKey, DEFAULT_PF1E_SETTINGS, DEFAULT_TILE_CELL, EDITOR_UNIVERSES_PATH, emptyPf1eMoney, isLocalizedMessage, MAX_CREATED_UNIVERSES, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_STARTING_ITEMS, NEW_PF1E_CLASS_RULES, NEW_PF1E_RACE_RULES, NEW_ZONE_BOUNDS, PF1E_CLASSES, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_RACES, VOID_CELL, type ClassListPayload, type ClassSettings, type CreatedPayload, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorZone, type ItemListPayload, type ItemSettings, type RaceListPayload, type RaceSettings, type ResizeConflictPayload, type RulesetSettings, type TileListPayload, type TileSettings, type UniverseRole, type ZoneListPayload } from '@multiverse-kiln/shared';
+import { chunkKey, DEFAULT_PF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_TILE_CELL, EDITOR_UNIVERSES_PATH, emptyPf1eMoney, isLocalizedMessage, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_STARTING_ITEMS, NEW_PF1E_CLASS_RULES, NEW_PF1E_RACE_RULES, NEW_ZONE_BOUNDS, PF1E_CLASSES, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_RACES, VOID_CELL, type ClassListPayload, type ClassSettings, type CreatedPayload, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorZone, type ItemListPayload, type ItemSettings, type RaceListPayload, type RaceSettings, type ResizeConflictPayload, type RulesetSettings, type TileListPayload, type TileSettings, type UniverseRole, type ZoneListPayload } from '@multiverse-kiln/shared';
 
 import { findDefaultItemIds } from '../src/db/itemRepo.js';
 import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
+import { saveSiteSettings } from '../src/db/siteSettingsRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
 import { onlinePlayers } from '../src/players/onlinePlayers.js';
@@ -299,17 +300,43 @@ describe('World editor API', () =>
 			assert.deepStrictEqual(response.body.universes.map((universe) => [universe.name, universe.role]), [['Apple', 'creator'], ['Zebra', 'creator']]);
 		});
 
-		it(`allows each player at most ${MAX_CREATED_UNIVERSES} universes`, async () =>
+		it('allows each player as many universes as the site settings allow', async () =>
 		{
-			for (let created = 0; created < MAX_CREATED_UNIVERSES; created++)
+			const { universesPerCreator } = DEFAULT_SITE_SETTINGS;
+
+			for (let created = 0; created < universesPerCreator; created++)
 			{
 				await createUniverse(ada, `Universe ${created}`);
 			}
 
 			const refused = await send(ada, 'POST', '', { body: { name: 'One Too Many', shortDescription: '', ruleset: 'pf1e' } });
+			const list = (await send<EditableUniverseListPayload>(ada, 'GET', '')).body;
 
 			assert.strictEqual(refused.status, 409);
-			assert.strictEqual((await send<EditableUniverseListPayload>(ada, 'GET', '')).body.universes.length, MAX_CREATED_UNIVERSES);
+			assert.strictEqual(list.universes.length, universesPerCreator);
+			assert.strictEqual(list.universesPerCreator, universesPerCreator);
+
+			await saveSiteSettings({
+				...DEFAULT_SITE_SETTINGS,
+				universesPerCreator: (universesPerCreator + 1)
+			});
+			await createUniverse(ada, 'One More');
+			assert.strictEqual((await send(ada, 'POST', '', { body: { name: 'Too Many Again', shortDescription: '', ruleset: 'pf1e' } })).status, 409);
+		});
+
+		it('refuses every new universe while creating universes is turned off', async () =>
+		{
+			await saveSiteSettings({
+				...DEFAULT_SITE_SETTINGS,
+				universeCreationEnabled: false
+			});
+
+			const refused = await send(ada, 'POST', '', { body: { name: 'Kilnhaven', shortDescription: '', ruleset: 'pf1e' } });
+			const list = (await send<EditableUniverseListPayload>(ada, 'GET', '')).body;
+
+			assert.strictEqual(refused.status, 403);
+			assert.deepStrictEqual(list.universes, []);
+			assert.strictEqual(list.universeCreationEnabled, false);
 		});
 
 		it('refuses a universe without a valid name or ruleset', async () =>

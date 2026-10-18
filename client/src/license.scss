@@ -8,17 +8,6 @@
 	overflow-y: auto;
 }
 
-.toolbar-link
-{
-	margin-inline-start: auto;
-	color: $link;
-
-	&:hover
-	{
-		color: $link-hover;
-	}
-}
-
 .license-body
 {
 	max-width: 760px;

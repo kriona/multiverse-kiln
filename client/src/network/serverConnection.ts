@@ -76,6 +76,16 @@ function getServerUrl(): string
 }
 
 /**
+ * A client for the server, for a page that only uses its HTTP routes
+ *
+ * @return The client
+ */
+export function createClient(): Client
+{
+	return(new Client(getServerUrl()));
+}
+
+/**
  * Resolves with the player ID from a room's Welcome message and the zone from its first Zone message
  *
  * The server sends both right after the join, so this must be called as soon as the room is joined
@@ -127,7 +137,7 @@ function waitForArrival(room: MapRoom): Promise<{ playerId: string; zone: ZonePa
  */
 export async function connectToServer(): Promise<ServerConnection>
 {
-	const client = new Client(getServerUrl());
+	const client = createClient();
 
 	await client.http.post(BROWSER_ID_PATH);
 

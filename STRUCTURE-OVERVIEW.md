@@ -137,7 +137,14 @@ Creating a universe
 - creates a lobby zone, and a default zone that it sets as the starting zone for all races
 - makes you its creator
 
-A user may create up to 5 universes.
+The [admin page](#admin) decides how many universes a user can create. The admin page can also turn off creating universes for everyone, which disables the Create Universe button.
+
+## Admin
+Settings for the whole site (`admin.html`), stored in one row of the `site_settings` table. Home's toolbar links to it, and anyone can use it until there are server admin accounts.
+- universe creation enabled: whether players can create universes
+- universes per creator: the most universes one player may create, from 1 to 1000
+
+Neither changes universes that already exist.
 
 ## Edit Universe
 This lets you change anything about a universe. It will be a whole suite of tools unrelated to playing the game.
