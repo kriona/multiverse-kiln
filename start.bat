@@ -2,6 +2,11 @@
 rem Starts the shared watcher, Colyseus server, and Vite client. Ctrl+C stops everything.
 cd /d "%~dp0"
 
+rem End a copy of the game already running from this folder (an earlier start.bat or npm run dev), so
+rem its ports are free and it isn't holding files npm install replaces. It matches node processes
+rem running this folder's Vite, tsx, concurrently or tsc --watch, and ends each with what it started
+powershell -NoProfile -Command "$root = '%~dp0'.ToLower(); $running = @(Get-CimInstance Win32_Process -Filter 'Name = ''node.exe''' | Where-Object { $line = ([string]$_.CommandLine).ToLower(); $line.Contains($root) -and ($line.Contains('vite\bin\vite.js') -or $line.Contains('tsx\dist\cli.mjs') -or $line.Contains('concurrently\dist\bin\index.js') -or ($line.Contains('typescript\bin\tsc') -and $line.Contains('--watch'))) }); if ($running.Count -gt 0) { Write-Output 'Stopping the copy of the game already running...'; foreach ($process in $running) { taskkill /T /F /PID $process.ProcessId 2>&1 | Out-Null } }"
+
 rem Start Docker Desktop if its engine isn't running, so it boots while dependencies install
 set "DOCKER_DESKTOP=%ProgramFiles%\Docker\Docker\Docker Desktop.exe"
 docker info >nul 2>&1
