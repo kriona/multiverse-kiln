@@ -66,7 +66,10 @@ export async function setUniverseZones(universeId: string, lobbyZoneId: string, 
 {
 	await executor
 		.update(universes)
-		.set({ lobbyZoneId, startingZoneId })
+		.set({
+			lobbyZoneId,
+			startingZoneId
+		})
 		.where(eq(universes.id, universeId));
 }
 
@@ -245,7 +248,9 @@ export async function updateUniverseSettings(universeId: string, update: Univers
 export async function lockUniverse(universeId: string, executor: Executor): Promise<boolean>
 {
 	const rows = await executor
-		.select({ id: universes.id })
+		.select({
+			id: universes.id
+		})
 		.from(universes)
 		.where(eq(universes.id, universeId))
 		.for('update');

@@ -91,7 +91,9 @@ export async function addDefaultStartingItems(universeId: string, ruleset: Rules
 export async function isStartingItem(universeId: string, itemId: number, executor: Executor = db): Promise<boolean>
 {
 	const rows = await executor
-		.select({ itemId: universeStartingItems.itemId })
+		.select({
+			itemId: universeStartingItems.itemId
+		})
 		.from(universeStartingItems)
 		.where(and(
 			eq(universeStartingItems.universeId, universeId),

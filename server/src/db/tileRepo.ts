@@ -69,7 +69,10 @@ const settingsColumns = {
 export async function findDefaultTileIds(ruleset: Ruleset, executor: Executor = db): Promise<Map<string, number>>
 {
 	const rows = await executor
-		.select({ id: tiles.id, key: tiles.key })
+		.select({
+			id: tiles.id,
+			key: tiles.key
+		})
 		.from(tiles)
 		.where(and(
 			eq(tiles.ruleset, ruleset),
@@ -222,7 +225,9 @@ export async function listEditorTiles(universeId: string, ruleset: Ruleset, quer
 export async function findTileKind(universeId: string, ruleset: Ruleset, tileId: number, executor: Executor = db): Promise<TileKind | undefined>
 {
 	const [row] = await executor
-		.select({ universeId: tiles.universeId })
+		.select({
+			universeId: tiles.universeId
+		})
 		.from(tiles)
 		.where(and(
 			eq(tiles.id, tileId),
@@ -250,7 +255,9 @@ export async function findTileKind(universeId: string, ruleset: Ruleset, tileId:
 export async function countCustomTiles(universeId: string, executor: Executor = db): Promise<number>
 {
 	const [row] = await executor
-		.select({ total: count() })
+		.select({
+			total: count()
+		})
 		.from(tiles)
 		.where(and(
 			eq(tiles.universeId, universeId),

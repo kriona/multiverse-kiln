@@ -154,7 +154,9 @@ export async function markCharacterPlayed(characterId: string, playedAt: Date, e
 export async function countCharacters(playerId: string, universeId: string, executor: Executor = db): Promise<number>
 {
 	const [row] = await executor
-		.select({ total: count() })
+		.select({
+			total: count()
+		})
 		.from(characters)
 		.where(and(
 			eq(characters.playerId, playerId),
@@ -222,7 +224,9 @@ export async function createCharacter(character: NewCharacter, executor: Executo
 export async function hasCharactersOfRace(raceId: number, executor: Executor = db): Promise<boolean>
 {
 	const rows = await executor
-		.select({ id: characters.id })
+		.select({
+			id: characters.id
+		})
 		.from(characters)
 		.where(eq(characters.raceId, raceId))
 		.limit(1);
@@ -240,7 +244,9 @@ export async function hasCharactersOfRace(raceId: number, executor: Executor = d
 export async function hasCharactersOfClass(classId: number, executor: Executor = db): Promise<boolean>
 {
 	const rows = await executor
-		.select({ id: characters.id })
+		.select({
+			id: characters.id
+		})
 		.from(characters)
 		.where(eq(characters.classId, classId))
 		.limit(1);
@@ -258,7 +264,9 @@ export async function hasCharactersOfClass(classId: number, executor: Executor =
 export async function isCarriedItem(itemId: number, executor: Executor = db): Promise<boolean>
 {
 	const rows = await executor
-		.select({ characterId: characterItems.characterId })
+		.select({
+			characterId: characterItems.characterId
+		})
 		.from(characterItems)
 		.where(eq(characterItems.itemId, itemId))
 		.limit(1);
@@ -278,7 +286,9 @@ export async function isCarriedItem(itemId: number, executor: Executor = db): Pr
 export async function findCharacterDraft(playerId: string, universeId: string, executor: Executor = db): Promise<unknown>
 {
 	const [row] = await executor
-		.select({ draft: characterDrafts.draft })
+		.select({
+			draft: characterDrafts.draft
+		})
 		.from(characterDrafts)
 		.where(and(
 			eq(characterDrafts.playerId, playerId),

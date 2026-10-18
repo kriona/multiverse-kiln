@@ -188,7 +188,9 @@ async function loadClassRaceZones(universeId: string, executor: Executor): Promi
 export async function findClassKind(universeId: string, ruleset: Ruleset, classId: number, executor: Executor = db): Promise<ClassKind | undefined>
 {
 	const [row] = await executor
-		.select({ universeId: classes.universeId })
+		.select({
+			universeId: classes.universeId
+		})
 		.from(classes)
 		.where(and(
 			eq(classes.id, classId),
@@ -219,7 +221,9 @@ export async function findClassKind(universeId: string, ruleset: Ruleset, classI
 export async function countCustomClasses(universeId: string, executor: Executor = db): Promise<number>
 {
 	const [row] = await executor
-		.select({ total: count() })
+		.select({
+			total: count()
+		})
 		.from(classes)
 		.where(and(
 			eq(classes.universeId, universeId),
@@ -348,7 +352,9 @@ export async function deleteCustomClass(universeId: string, classId: number, exe
 export async function isClassStartingItem(universeId: string, itemId: number, executor: Executor = db): Promise<boolean>
 {
 	const rows = await executor
-		.select({ classId: classStartingItems.classId })
+		.select({
+			classId: classStartingItems.classId
+		})
 		.from(classStartingItems)
 		.innerJoin(classes, eq(classes.id, classStartingItems.classId))
 		.where(and(

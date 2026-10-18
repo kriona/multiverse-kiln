@@ -170,7 +170,9 @@ async function loadRaceStartingItems(universeId: string, executor: Executor): Pr
 export async function findRaceKind(universeId: string, ruleset: Ruleset, raceId: number, executor: Executor = db): Promise<RaceKind | undefined>
 {
 	const [row] = await executor
-		.select({ universeId: races.universeId })
+		.select({
+			universeId: races.universeId
+		})
 		.from(races)
 		.where(and(
 			eq(races.id, raceId),
@@ -201,7 +203,9 @@ export async function findRaceKind(universeId: string, ruleset: Ruleset, raceId:
 export async function countCustomRaces(universeId: string, executor: Executor = db): Promise<number>
 {
 	const [row] = await executor
-		.select({ total: count() })
+		.select({
+			total: count()
+		})
 		.from(races)
 		.where(and(
 			eq(races.universeId, universeId),
@@ -330,7 +334,9 @@ export async function deleteCustomRace(universeId: string, raceId: number, execu
 export async function isRaceStartingItem(universeId: string, itemId: number, executor: Executor = db): Promise<boolean>
 {
 	const rows = await executor
-		.select({ raceId: raceStartingItems.raceId })
+		.select({
+			raceId: raceStartingItems.raceId
+		})
 		.from(raceStartingItems)
 		.innerJoin(races, eq(races.id, raceStartingItems.raceId))
 		.where(and(

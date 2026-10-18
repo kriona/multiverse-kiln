@@ -169,7 +169,9 @@ export async function listEditorItems(universeId: string, ruleset: Ruleset, quer
 export async function findItemKind(universeId: string, ruleset: Ruleset, itemId: number, executor: Executor = db): Promise<ItemKind | undefined>
 {
 	const [row] = await executor
-		.select({ universeId: items.universeId })
+		.select({
+			universeId: items.universeId
+		})
 		.from(items)
 		.where(and(
 			eq(items.id, itemId),
@@ -200,7 +202,9 @@ export async function findItemKind(universeId: string, ruleset: Ruleset, itemId:
 export async function countCustomItems(universeId: string, executor: Executor = db): Promise<number>
 {
 	const [row] = await executor
-		.select({ total: count() })
+		.select({
+			total: count()
+		})
 		.from(items)
 		.where(and(
 			eq(items.universeId, universeId),

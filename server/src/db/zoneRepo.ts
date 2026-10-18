@@ -261,7 +261,9 @@ export async function listZones(universeId: string, executor: Executor = db): Pr
 export async function countZones(universeId: string, executor: Executor = db): Promise<number>
 {
 	const [row] = await executor
-		.select({ total: count() })
+		.select({
+			total: count()
+		})
 		.from(zones)
 		.where(eq(zones.universeId, universeId));
 
@@ -514,7 +516,9 @@ export async function resizeZone(zoneId: string, bounds: MapBounds, discard: boo
 		)
 	);
 	const [{ total: discardedLinks }] = await executor
-		.select({ total: count() })
+		.select({
+			total: count()
+		})
 		.from(zoneLinks)
 		.where(discardedLinkCondition);
 
@@ -623,7 +627,9 @@ export async function deleteZoneLink(zoneId: string, column: number, row: number
 export async function isTileInUse(universeId: string, tileId: number, executor: Executor = db): Promise<boolean>
 {
 	const [asDefault] = await executor
-		.select({ id: zones.id })
+		.select({
+			id: zones.id
+		})
 		.from(zones)
 		.where(and(
 			eq(zones.universeId, universeId),
@@ -637,7 +643,9 @@ export async function isTileInUse(universeId: string, tileId: number, executor: 
 	}
 
 	const [painted] = await executor
-		.select({ zoneId: mapChunks.zoneId })
+		.select({
+			zoneId: mapChunks.zoneId
+		})
 		.from(mapChunks)
 		.innerJoin(zones, eq(zones.id, mapChunks.zoneId))
 		.where(and(

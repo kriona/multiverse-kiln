@@ -41,7 +41,9 @@ export async function setUniverseRole(universeId: string, playerId: string, role
 export async function findUniverseRole(universeId: string, playerId: string, executor: Executor = db): Promise<UniverseRole | undefined>
 {
 	const [row] = await executor
-		.select({ role: universeEditors.role })
+		.select({
+			role: universeEditors.role
+		})
 		.from(universeEditors)
 		.where(and(
 			eq(universeEditors.universeId, universeId),
@@ -63,7 +65,9 @@ export async function findUniverseRole(universeId: string, playerId: string, exe
 export async function countUniversesWithRole(playerId: string, role: UniverseRole, executor: Executor = db): Promise<number>
 {
 	const [row] = await executor
-		.select({ total: count() })
+		.select({
+			total: count()
+		})
 		.from(universeEditors)
 		.where(and(
 			eq(universeEditors.playerId, playerId),
