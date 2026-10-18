@@ -191,7 +191,7 @@ From the repository root:
 npm run dev
 ```
 
-On Windows you can also double-click `start.bat` (or run `.\start.bat`). It runs `npm install` (a quick no-op when nothing changed), then `npm run dev`.
+On Windows you can also double-click `start.bat` (or run `.\start.bat`). It starts Docker Desktop if it isn't running, runs `npm install` (a quick no-op when nothing changed), starts Postgres with `docker compose up -d` and waits until it's ready, then runs `npm run dev`.
 
 This builds `shared` once, then runs three processes in one terminal with colored prefixes:
 

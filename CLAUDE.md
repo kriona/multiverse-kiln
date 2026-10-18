@@ -104,7 +104,7 @@ npm workspaces are assumed (`client`, `server`, `shared`). Update this section i
 
 ## Local development
 
-`start.bat` (runs `npm install`, then `npm run dev`) or `npm run dev` at the root builds `shared`, then runs the shared watcher, server, and client together in one terminal.
+`start.bat` (starts Docker Desktop and Postgres if needed, runs `npm install`, then `npm run dev`) or `npm run dev` at the root builds `shared`, then runs the shared watcher, server, and client together in one terminal.
 
 ```bash
 docker compose up -d                 # start local Postgres
