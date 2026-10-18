@@ -6,7 +6,7 @@
  * Unknown keys are stripped rather than rejected
  */
 import { z } from 'zod';
-import { DISALLOWED_TEXT_CHARACTERS, MAX_CHAT_MESSAGE_LENGTH, MAX_PLAYER_NAME_LENGTH, type ChatPayload, type JoinGroupPayload, type LobbyJoinOptions, type LoginPayload, type MovePayload } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, MAX_CHAT_MESSAGE_LENGTH, MAX_PLAYER_NAME_LENGTH, type ChatPayload, type ChooseCharacterPayload, type JoinGroupPayload, type LobbyJoinOptions, type LoginPayload, type MovePayload } from '@multiverse-kiln/shared';
 
 const direction = z.literal([-1, 0, 1]);
 
@@ -42,6 +42,13 @@ export const loginPayload = z.object({
 export const chatPayload = z.object({
 	text: displayText(MAX_CHAT_MESSAGE_LENGTH)
 }) satisfies z.ZodType<ChatPayload>;
+
+/**
+ * ChooseCharacterPayload: a character's ID
+ */
+export const chooseCharacterPayload = z.object({
+	characterId: z.uuid()
+}) satisfies z.ZodType<ChooseCharacterPayload>;
 
 /**
  * JoinGroupPayload: a room ID as Colyseus generates them

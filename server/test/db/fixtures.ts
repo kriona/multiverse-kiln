@@ -1,6 +1,11 @@
 import { CHUNK_SIZE, cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, type MapBounds } from '@multiverse-kiln/shared';
 
+import { createCharacter, type NewCharacter } from '../../src/db/characterRepo.js';
+import { findDefaultClassIds } from '../../src/db/classRepo.js';
+import { findDefaultItemIds } from '../../src/db/itemRepo.js';
+import { findDefaultRaceIds } from '../../src/db/raceRepo.js';
 import { findDefaultTileIds } from '../../src/db/tileRepo.js';
+import { inTransaction } from '../../src/db/transactions.js';
 import { createUniverse, setUniverseZones } from '../../src/db/universeRepo.js';
 import { createZone, createZoneLink, loadChunks, loadZone, saveGroundChunk } from '../../src/db/zoneRepo.js';
 import type { ZoneMap } from '../../src/logic/zoneGrid.js';
@@ -28,6 +33,68 @@ export interface PlayableUniverse
 	 * Where groups start: 32 x 18 cells of grass from column 0, row 0
 	 */
 	fieldZoneId: string;
+}
+
+/**
+ * A dwarf fighter with two daggers, for a player in a universe
+ *
+ * @param playerId The player's ID
+ * @param universeId The universe's ID
+ * @param name The character's name
+ * @return The character
+ */
+export async function dwarfFighter(playerId: string, universeId: string, name: string = 'Brokk'): Promise<NewCharacter>
+{
+	const raceId = (await findDefaultRaceIds('pf1e')).get('dwarf');
+	const classId = (await findDefaultClassIds('pf1e')).get('fighter');
+	const daggerId = (await findDefaultItemIds('pf1e')).get('dagger');
+
+	if ((raceId === undefined) || (classId === undefined) || (daggerId === undefined))
+	{
+		throw new Error('The default dwarf, fighter or dagger is missing from the test database');
+	}
+
+	return({
+		playerId,
+		universeId,
+		name,
+		raceId,
+		classId,
+		abilityScores: {
+			strength: 16,
+			dexterity: 12,
+			constitution: 16,
+			intelligence: 10,
+			wisdom: 12,
+			charisma: 6
+		},
+		money: {
+			pp: 0,
+			gp: 15,
+			sp: 5,
+			cp: 0
+		},
+		items: [{
+			itemId: daggerId,
+			quantity: 2
+		}],
+		zoneId: null
+	});
+}
+
+/**
+ * Adds a dwarf fighter (see dwarfFighter) for a player in a universe
+ *
+ * @param playerId The player's ID
+ * @param universeId The universe's ID
+ * @param name The character's name
+ * @return The character's ID
+ */
+export async function addCharacter(playerId: string, universeId: string, name: string): Promise<string>
+{
+	const character = await dwarfFighter(playerId, universeId, name);
+
+	return(inTransaction((transaction) => createCharacter(character, transaction)));
 }
 
 /**

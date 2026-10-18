@@ -11,12 +11,14 @@ import { schema, t, type SchemaType } from '@colyseus/schema';
  * A player on a room's map, keyed by player ID in the room's players
  *
  * Every window of the same browser controls the same player. The player ID is public and is not
- * the browser's ID, which stays on the server
+ * the browser's ID, which stays on the server. In a lobby, name is the character's being played, and a
+ * player playing none is a ghost: only their own windows see them, and their name is empty
  */
 export const Player = schema({
 	x: t.number(),
 	y: t.number(),
-	name: t.string()
+	name: t.string(),
+	ghost: t.boolean()
 }, 'Player');
 export type Player = SchemaType<typeof Player>;
 
@@ -32,7 +34,8 @@ export const GameState = schema({
 export type GameState = SchemaType<typeof GameState>;
 
 /**
- * A player in a universe's lobby, keyed by player ID in LobbyState.members
+ * A player in a universe's lobby playing a character, keyed by player ID in LobbyState.members; name
+ * is the character's. Ghosts aren't members
  */
 export const LobbyMember = schema({
 	name: t.string()
@@ -42,8 +45,8 @@ export type LobbyMember = SchemaType<typeof LobbyMember>;
 /**
  * Root state of a universe's lobby room
  *
- * players works as in GameState: a client sees only the players in its own player's zone. members
- * lists everyone in the lobby, whichever zone they are in
+ * players works as in GameState: a client sees only the players in its own player's zone, and never
+ * another player's ghost. members lists everyone in the lobby playing a character, whichever zone they are in
  */
 export const LobbyState = schema({
 	players: t.map(Player).view(),

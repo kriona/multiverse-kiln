@@ -1,52 +1,11 @@
 import assert from 'assert';
 import type { CharacterDraft } from '@multiverse-kiln/shared';
 
-import { countCharacters, createCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDraft, findPf1eAbilityRoll, hasCharactersOfClass, hasCharactersOfRace, isCarriedItem, keepPf1eAbilityRoll, listCharacters, saveCharacterDraft, type NewCharacter } from '../../src/db/characterRepo.js';
-import { findDefaultClassIds } from '../../src/db/classRepo.js';
-import { findDefaultItemIds } from '../../src/db/itemRepo.js';
+import { countCharacters, createCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDraft, findPf1eAbilityRoll, hasCharactersOfClass, hasCharactersOfRace, isCarriedItem, keepPf1eAbilityRoll, listCharacters, listPlayableCharacters, markCharacterPlayed, saveCharacterDraft } from '../../src/db/characterRepo.js';
 import { loadOrCreatePlayerByName } from '../../src/db/playerRepo.js';
 import { findDefaultRaceIds } from '../../src/db/raceRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
-import { addUniverse } from './fixtures.js';
-
-/**
- * A dwarf fighter with a dagger, for a player in a universe
- *
- * @param playerId The player's ID
- * @param universeId The universe's ID
- * @param name The character's name
- * @return The character
- */
-async function dwarfFighter(playerId: string, universeId: string, name: string = 'Brokk'): Promise<NewCharacter>
-{
-	const raceId = (await findDefaultRaceIds('pf1e')).get('dwarf');
-	const classId = (await findDefaultClassIds('pf1e')).get('fighter');
-	const daggerId = (await findDefaultItemIds('pf1e')).get('dagger');
-
-	if ((raceId === undefined) || (classId === undefined) || (daggerId === undefined))
-	{
-		throw new Error('The default dwarf, fighter or dagger is missing from the test database');
-	}
-
-	return({
-		playerId,
-		universeId,
-		name,
-		raceId,
-		classId,
-		abilityScores: {
-			strength: 16,
-			dexterity: 12,
-			constitution: 16,
-			intelligence: 10,
-			wisdom: 12,
-			charisma: 6
-		},
-		money: { pp: 0, gp: 15, sp: 5, cp: 0 },
-		items: [{ itemId: daggerId, quantity: 2 }],
-		zoneId: null
-	});
-}
+import { addUniverse, dwarfFighter } from './fixtures.js';
 
 describe('characterRepo', () =>
 {
@@ -75,6 +34,25 @@ describe('characterRepo', () =>
 			{ id: secondId, name: 'Dain', raceId: brokk.raceId, classId: brokk.classId }
 		]);
 		assert.strictEqual(await countCharacters(playerId, universeId), 2);
+	});
+
+	it('lists a player\'s characters for the lobby, the one played or made most recently first', async () =>
+	{
+		const brokk = await dwarfFighter(playerId, universeId);
+		const firstId = await inTransaction((transaction) => createCharacter(brokk, transaction));
+		const secondId = await inTransaction((transaction) => createCharacter({ ...brokk, name: 'Dain' }, transaction));
+		const otherUniverseId = await addUniverse('Elsewhere');
+
+		await inTransaction((transaction) => createCharacter({ ...brokk, universeId: otherUniverseId }, transaction));
+
+		assert.deepStrictEqual(await listPlayableCharacters(playerId, universeId), [
+			{ id: secondId, name: 'Dain' },
+			{ id: firstId, name: 'Brokk' }
+		]);
+
+		await markCharacterPlayed(firstId, new Date(Date.now() + 1000));
+
+		assert.deepStrictEqual((await listPlayableCharacters(playerId, universeId)).map(({ id }) => id), [firstId, secondId]);
 	});
 
 	it('knows which races, classes and items characters have', async () =>

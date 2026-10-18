@@ -3,7 +3,7 @@ import { StateView, type MapSchema } from '@colyseus/schema';
 import { CHUNK_SIZE, Player, ServerMessageType, type ChunksPayload, type MovePayload, type WelcomePayload } from '@multiverse-kiln/shared';
 
 import { chunksNear, type ChunkAreaMap } from '../logic/chunkArea.js';
-import { cellAt, findFreeCell, NO_PRESS, occupiedCells, stepOnGrid, type Cell, type DirectionPress, type GridStep, type Position } from '../logic/movement.js';
+import { cellAt, findFreeCell, NO_PRESS, occupiedCells, stepOnGrid, type Cell, type DirectionPress, type GridStep, type IsCellFree, type Position } from '../logic/movement.js';
 import { CellOccupancy } from '../logic/occupancy.js';
 import { linkAt, type ZoneLink } from '../logic/zoneGrid.js';
 import type { ZoneChange } from '../world/zoneChanges.js';
@@ -44,6 +44,27 @@ const MAX_QUEUED_MOVES = 8;
 const standingStill: MovePayload = { x: 0, y: 0 };
 
 /**
+ * Every cell is free for a ghost
+ *
+ * @return True
+ */
+const anyCell: IsCellFree = () => true;
+
+/**
+ * How a player shows on the map
+ */
+export interface Appearance
+{
+	name: string;
+
+	/**
+	 * Whether the player is a ghost: only their own clients see them, and they hold no cell, so they
+	 * pass through other players and nobody bumps into them
+	 */
+	ghost: boolean;
+}
+
+/**
  * A player leaving the room, from ZonePlayers.leave()
  */
 export interface LeftPlayer
@@ -61,7 +82,8 @@ export interface LeftPlayer
  * clients control them, which zone each is in, how they move, and which of them each client sees
  *
  * Every window of the same browser controls the same player. A room holds every zone its players are
- * in; a client sees only the players in its own player's zone, through its StateView. Stepping onto an
+ * in; a client sees only the players in its own player's zone, through its StateView, and no other
+ * player's ghost. Stepping onto an
  * automatic zone link, or asking to take the manual link the player stands on, sends the player to
  * the link's target cell once that zone has loaded. The room calls update() from its simulation tick
  * and refreshChunks() every CHUNK_REFRESH_INTERVAL_MS
@@ -132,25 +154,32 @@ export class ZonePlayers
 	 *
 	 * @param client The joining client
 	 * @param playerId The player the client controls
-	 * @param name The player's name
+	 * @param appearance How a player new to the room shows
 	 * @param startZone Where a player new to the room starts, with prepareStart() done
 	 * @return Whether the player is new to the room
 	 */
-	join(client: Client, playerId: string, name: string, startZone: ActiveZone): boolean
+	join(client: Client, playerId: string, appearance: Appearance, startZone: ActiveZone): boolean
 	{
 		const isNewPlayer = this.sessions.add(client.sessionId, playerId);
 
 		if (isNewPlayer)
 		{
+			// Added before it has a cell, so the search below knows whether the player is a ghost
+			const player = new Player({ x: 0, y: 0, name: appearance.name, ghost: appearance.ghost });
+
+			this.players.set(playerId, player);
+
 			const position = this.findArrivalCell(playerId, startZone, { column: 0, row: 0 });
 
 			if (!position)
 			{
+				this.players.delete(playerId);
 				this.sessions.remove(client.sessionId);
 				throw new Error(`No free cell for player ${playerId} in zone ${startZone.loaded.zone.id}`);
 			}
 
-			this.players.set(playerId, new Player({ x: position.x, y: position.y, name }));
+			player.x = position.x;
+			player.y = position.y;
 			this.zoneIds.set(playerId, startZone.loaded.zone.id);
 			this.showToZone(playerId);
 		}
@@ -162,7 +191,10 @@ export class ZonePlayers
 
 		for (const otherId of this.playersIn(this.zoneIds.get(playerId)))
 		{
-			this.show(otherId, client);
+			if ((otherId === playerId) || !this.isGhost(otherId))
+			{
+				this.show(otherId, client);
+			}
 		}
 
 		const welcome: WelcomePayload = { playerId };
@@ -261,6 +293,65 @@ export class ZonePlayers
 	}
 
 	/**
+	 * Changes how a player shows. A ghost becoming visible stops where they are, moving to the nearest
+	 * free cell if another player holds theirs, and appears to the others in their zone; a player becoming
+	 * a ghost disappears from the others' view
+	 *
+	 * @param playerId The player's ID
+	 * @param appearance How they show now
+	 */
+	setAppearance(playerId: string, appearance: Appearance): void
+	{
+		const player = this.players.get(playerId);
+
+		if (!player)
+		{
+			return;
+		}
+
+		const wasGhost = player.ghost;
+
+		player.name = appearance.name;
+		player.ghost = appearance.ghost;
+
+		if (wasGhost === appearance.ghost)
+		{
+			return;
+		}
+
+		if (appearance.ghost)
+		{
+			this.hideFromOthers(playerId);
+			return;
+		}
+
+		const zone = this.zoneOf(playerId);
+
+		// A travelling player is placed on a free cell when they arrive
+		if (zone && !this.travelling.has(playerId))
+		{
+			const position = this.findArrivalCell(playerId, zone, cellAt(player, zone.grid));
+
+			this.steps.delete(playerId);
+			this.presses.delete(playerId);
+
+			if (position)
+			{
+				player.x = position.x;
+				player.y = position.y;
+			}
+		}
+
+		for (const otherId of this.playersIn(this.zoneIds.get(playerId)))
+		{
+			if (otherId !== playerId)
+			{
+				this.showToPlayer(playerId, otherId);
+			}
+		}
+	}
+
+	/**
 	 * One simulation tick: applies queued inputs, then moves every player in their zone, and sends
 	 * players who stepped onto an automatic link on their way
 	 *
@@ -305,7 +396,7 @@ export class ZonePlayers
 				this.heldDirections.get(playerId) ?? standingStill,
 				deltaSeconds,
 				zone.grid,
-				occupancy.isFreeFor(playerId)
+				(player.ghost ? anyCell : occupancy.isFreeFor(playerId))
 			);
 
 			player.x = mover.x;
@@ -321,7 +412,10 @@ export class ZonePlayers
 				this.steps.delete(playerId);
 			}
 
-			occupancy.hold(playerId, occupiedCells(mover, zone.grid));
+			if (!player.ghost)
+			{
+				occupancy.hold(playerId, occupiedCells(mover, zone.grid));
+			}
 
 			const link = (mover.stoppedAt ? linkAt(zone.map, mover.stoppedAt) : undefined);
 
@@ -767,7 +861,8 @@ export class ZonePlayers
 	}
 
 	/**
-	 * The center of the free cell nearest a cell of a zone, searching as far as its chunks are loaded around the cell
+	 * The center of the free cell nearest a cell of a zone, searching as far as its chunks are loaded around
+	 * the cell. Other players don't hold cells for a ghost, so a ghost needs only a cell they can stand in
 	 *
 	 * @param playerId The player arriving, whose own cells count as free
 	 * @param zone The zone
@@ -778,17 +873,22 @@ export class ZonePlayers
 	{
 		const { minColumn, minRow, maxColumn, maxRow } = zone.grid.bounds;
 		const searchDistance = Math.min(Math.max(maxColumn - minColumn, maxRow - minRow) + 1, CHUNK_LOAD_RADIUS);
+		const isCellFree = (this.isGhost(playerId) ? anyCell : this.occupancyOf(zone.loaded.zone.id, playerId).isFreeFor(playerId));
 
-		return(findFreeCell(near, zone.grid, this.occupancyOf(zone.loaded.zone.id).isFreeFor(playerId), searchDistance));
+		return(findFreeCell(near, zone.grid, isCellFree, searchDistance));
 	}
 
 	/**
-	 * Works out which cells the players in a zone hold right now
+	 * Works out which cells the players in a zone hold right now; ghosts hold none
+	 *
+	 * A cell has one holder, so a player standing where another is (such as a ghost becoming visible)
+	 * would hide the other's hold on it. Leaving that player out keeps the other's
 	 *
 	 * @param zoneId The zone's ID
+	 * @param exceptPlayerId A player whose cells to leave out
 	 * @return The zone's occupancy
 	 */
-	private occupancyOf(zoneId: string): CellOccupancy
+	private occupancyOf(zoneId: string, exceptPlayerId?: string): CellOccupancy
 	{
 		const occupancy = new CellOccupancy();
 		const zone = this.zones.get(zoneId);
@@ -802,7 +902,7 @@ export class ZonePlayers
 		{
 			const player = this.players.get(playerId);
 
-			if (player)
+			if (player && !player.ghost && (playerId !== exceptPlayerId))
 			{
 				occupancy.hold(
 					playerId,
@@ -845,41 +945,86 @@ export class ZonePlayers
 	 */
 	private hideFromZone(playerId: string): void
 	{
-		const player = this.players.get(playerId);
+		this.hideFromOthers(playerId);
 
 		for (const otherId of this.playersIn(this.zoneIds.get(playerId)))
 		{
-			const other = this.players.get(otherId);
-
-			if ((otherId === playerId) || !player || !other)
+			if (otherId !== playerId)
 			{
-				continue;
-			}
-
-			for (const client of this.getClients(otherId))
-			{
-				client.view?.remove(player);
-			}
-
-			for (const client of this.getClients(playerId))
-			{
-				client.view?.remove(other);
+				this.hideFromPlayer(otherId, playerId);
 			}
 		}
 	}
 
 	/**
-	 * Shows a player to every client of another player
+	 * Hides a player from everyone else in their zone
+	 *
+	 * @param playerId The player's ID
+	 */
+	private hideFromOthers(playerId: string): void
+	{
+		for (const otherId of this.playersIn(this.zoneIds.get(playerId)))
+		{
+			if (otherId !== playerId)
+			{
+				this.hideFromPlayer(playerId, otherId);
+			}
+		}
+	}
+
+	/**
+	 * Hides a player from every client of another player that sees them
+	 *
+	 * @param playerId The player to hide
+	 * @param viewerId The player whose clients stop seeing them
+	 */
+	private hideFromPlayer(playerId: string, viewerId: string): void
+	{
+		const player = this.players.get(playerId);
+
+		if (!player)
+		{
+			return;
+		}
+
+		for (const client of this.getClients(viewerId))
+		{
+			// Removing a player a view doesn't hold would still send its clients a removal
+			if (client.view?.has(player))
+			{
+				client.view.remove(player);
+			}
+		}
+	}
+
+	/**
+	 * Shows a player to every client of another player, unless the player is a ghost
 	 *
 	 * @param playerId The player to show
 	 * @param viewerId The player whose clients see them
 	 */
 	private showToPlayer(playerId: string, viewerId: string): void
 	{
+		if (this.isGhost(playerId))
+		{
+			return;
+		}
+
 		for (const client of this.getClients(viewerId))
 		{
 			this.show(playerId, client);
 		}
+	}
+
+	/**
+	 * Whether a player is a ghost
+	 *
+	 * @param playerId The player's ID
+	 * @return True when they are in the room as a ghost
+	 */
+	private isGhost(playerId: string): boolean
+	{
+		return(this.players.get(playerId)?.ghost ?? false);
 	}
 
 	/**

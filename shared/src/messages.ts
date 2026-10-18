@@ -218,7 +218,13 @@ export enum LobbyMessageType
 	Chat = 'chat',
 
 	/**
-	 * Create a new group in this universe and move the player into it (no payload)
+	 * Play one of the player's characters in this universe, in every window of the player
+	 * (payload: ChooseCharacterPayload)
+	 */
+	ChooseCharacter = 'chooseCharacter',
+
+	/**
+	 * Create a new group in this universe and move the player into it (no payload). Needs a character
 	 */
 	CreateGroup = 'createGroup'
 }
@@ -237,6 +243,12 @@ export enum LobbyServerMessageType
 	 * A new chat message, sent to every window in the lobby (payload: ChatMessage)
 	 */
 	Chat = 'chat',
+
+	/**
+	 * Which character the player is playing, sent to a window as it joins and to every window of the
+	 * player when it changes (payload: PlayingAsPayload)
+	 */
+	PlayingAs = 'playingAs',
 
 	/**
 	 * Something the player asked for didn't happen (payload: NoticePayload)
@@ -266,6 +278,29 @@ export interface LoginPayload
 export interface ChatPayload
 {
 	text: string;
+}
+
+/**
+ * Payload of LobbyMessageType.ChooseCharacter
+ */
+export interface ChooseCharacterPayload
+{
+	/**
+	 * One of the player's characters in the lobby's universe
+	 */
+	characterId: string;
+}
+
+/**
+ * Payload of LobbyServerMessageType.PlayingAs
+ */
+export interface PlayingAsPayload
+{
+	/**
+	 * The character the player is playing, or null while they are a ghost: unseen by others, holding no
+	 * cell, and unable to chat
+	 */
+	characterId: string | null;
 }
 
 /**
@@ -313,7 +348,7 @@ export interface ChatMessage
 	playerId: string;
 
 	/**
-	 * The sender's name when they sent it
+	 * The sender's name when they sent it: in a lobby, their character's
 	 */
 	name: string;
 

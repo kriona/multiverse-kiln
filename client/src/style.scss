@@ -137,6 +137,45 @@
 	}
 }
 
+// Each character is a button that plays them; the one being played has an outline and says so in words
+.character-choice
+{
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0 6px;
+	align-items: baseline;
+	width: 100%;
+	padding: 4px 8px;
+	border-color: transparent;
+	background: none;
+	color: $text;
+	text-align: left;
+
+	&:hover
+	{
+		background: $background-control-hover;
+	}
+
+	&[aria-pressed="true"]
+	{
+		border-color: $accent;
+		cursor: default;
+	}
+}
+
+.character-playing
+{
+	margin-inline-start: auto;
+	font-size: 12px;
+	color: $accent;
+}
+
+.ghost-note
+{
+	margin: 12px 0 0;
+	color: $text-muted;
+}
+
 .character-description,
 .character-none
 {

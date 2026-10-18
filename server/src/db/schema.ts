@@ -544,7 +544,13 @@ export const characters = pgTable('characters', {
 	 */
 	zoneId: uuid('zone_id').references((): AnyPgColumn => zones.id, { onDelete: 'set null' }),
 
-	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+
+	/**
+	 * When the player last stopped playing the character in the lobby; null until they have. The lobby
+	 * starts a player as whichever of their characters was played or made most recently
+	 */
+	lastPlayedAt: timestamp('last_played_at', { withTimezone: true })
 }, (table) => [
 	index('characters_player_universe_index').on(table.playerId, table.universeId),
 	index('characters_universe_id_index').on(table.universeId),

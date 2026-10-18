@@ -2107,6 +2107,10 @@
 		"message": "{race} {class}",
 		"source": "{race} {class}"
 	},
+	"lobby.characterPlaying": {
+		"message": "At the helm",
+		"source": "Playing"
+	},
 	"lobby.characters": {
 		"message": "Yer hands",
 		"source": "Your characters"
@@ -2147,6 +2151,10 @@
 		"message": "Sailin' to {universe}...",
 		"source": "Entering {universe}..."
 	},
+	"lobby.ghostNote": {
+		"message": "Ye be a ghost: no soul can see ye, and ye can hear the squawkin' but not join in or raise a crew. Pick or sign on a hand to sail as.",
+		"source": "You're a ghost: nobody can see you, and you can read the chat but not join in or start a game. Choose or create a character to play."
+	},
 	"lobby.groupNotCreated": {
 		"message": "Couldn't raise a crew. Try again in a tick.",
 		"source": "Could not create a game. Try again in a moment."
@@ -2170,6 +2178,14 @@
 	"lobby.notJoined": {
 		"message": "Couldn't reach {universe}. Try again in a tick.",
 		"source": "Could not enter {universe}. Try again in a moment."
+	},
+	"lobby.nowPlaying": {
+		"message": "Ye be sailin' as {name} now.",
+		"source": "You are now playing {name}."
+	},
+	"lobby.ownGhost": {
+		"message": "Ye (a ghost)",
+		"source": "You (a ghost)"
 	},
 	"lobby.ownName": {
 		"message": "{name} (that be ye)",
@@ -2230,6 +2246,10 @@
 	"map.announce.zone": {
 		"message": "Ye be in {zone}.",
 		"source": "You are in {zone}."
+	},
+	"map.ghost": {
+		"message": "Ghost",
+		"source": "Ghost"
 	},
 	"map.help": {
 		"message": "Arrow keys, W A S D or the number pad sail ye about. E takes ye through a door or passage ye stand on. {shortcut} tells ye where ye be and who ye can spy.",

@@ -3,6 +3,7 @@ import { DISALLOWED_TEXT_CHARACTERS, MAX_CHAT_MESSAGE_LENGTH, type CharacterList
 
 import { currentLocale, t } from '../localization';
 import type { LobbyConnection } from '../network/serverConnection';
+import { announce } from './announcer';
 import { getElement, showMessage } from './dom';
 import type { MapView } from './MapView';
 import { className, raceName } from './raceAndClassNames';
@@ -31,6 +32,12 @@ export interface LobbyScreenActions
 {
 	sendChat: (text: string) => void;
 	createCharacter: () => void;
+
+	/**
+	 * Play one of the player's characters
+	 */
+	chooseCharacter: (characterId: string) => void;
+
 	createGroup: () => void;
 
 	/**
@@ -43,13 +50,16 @@ export interface LobbyScreenActions
  * The lobby screen: the lobby's map, chat, who's here, the player's characters, and the Create
  * Character, Create game and Leave lobby buttons
  *
- * The screen is made once and attached to whichever universe lobby the window is in
+ * The screen is made once and attached to whichever universe lobby the window is in. Choosing one of
+ * the player's characters plays them. A player playing none is a ghost: the screen says so, makes
+ * Create Character the main button, and turns off the chat and Create game
  */
 export class LobbyScreen
 {
 	private readonly title = getElement('lobby-title', HTMLElement);
 	private readonly playerName = getElement('lobby-player-name', HTMLElement);
 	private readonly createCharacterButton = getElement('create-character', HTMLButtonElement);
+	private readonly ghostNote = getElement('lobby-ghost-note', HTMLElement);
 	private readonly characterList = getElement('character-list', HTMLUListElement);
 	private readonly characterNone = getElement('character-none', HTMLElement);
 	private readonly characterError = getElement('character-error', HTMLElement);
@@ -60,6 +70,7 @@ export class LobbyScreen
 	private readonly chatLog = getElement('chat-log', HTMLOListElement);
 	private readonly chatForm = getElement('chat-form', HTMLFormElement);
 	private readonly chatInput = getElement('chat-input', HTMLInputElement);
+	private readonly chatSendButton = getElement('chat-send', HTMLButtonElement);
 	private readonly memberCount = getElement('member-count', HTMLElement);
 	private readonly memberList = getElement('member-list', HTMLUListElement);
 	private readonly memberMore = getElement('member-more', HTMLElement);
@@ -79,6 +90,21 @@ export class LobbyScreen
 	 */
 	private readonly unbinds: Array<() => void> = [];
 
+	/**
+	 * The player's characters in the universe, once they have loaded
+	 */
+	private characters: CharacterListPayload | undefined;
+
+	/**
+	 * The character the player is playing: null while they are a ghost, undefined until the lobby has said
+	 */
+	private playingId: string | null | undefined;
+
+	/**
+	 * Whether the player has asked to create a group and the server hasn't answered
+	 */
+	private creatingGroup = false;
+
 	private ownPlayerId: string | undefined;
 	private lastSentChat = '';
 	private memberListQueued = false;
@@ -87,7 +113,7 @@ export class LobbyScreen
 	 * @param mapView The map, shared with the group screen
 	 * @param actions What the screen's controls do
 	 */
-	constructor(private readonly mapView: MapView, actions: LobbyScreenActions)
+	constructor(private readonly mapView: MapView, private readonly actions: LobbyScreenActions)
 	{
 		this.chatInput.maxLength = MAX_CHAT_MESSAGE_LENGTH;
 
@@ -116,7 +142,8 @@ export class LobbyScreen
 		this.createButton.addEventListener('click', () =>
 		{
 			// Stays disabled until the server answers, which shows the group screen
-			this.createButton.disabled = true;
+			this.creatingGroup = true;
+			this.updatePlayingState();
 			this.hideNotice();
 			actions.createGroup();
 		});
@@ -174,8 +201,10 @@ export class LobbyScreen
 
 		this.members.clear();
 		this.chatLog.replaceChildren();
-		this.characterList.replaceChildren();
-		this.characterNone.hidden = true;
+		this.characters = undefined;
+		this.playingId = undefined;
+		this.renderCharacters();
+		this.updatePlayingState();
 		showMessage(this.characterError, undefined);
 		this.queueMemberList();
 	}
@@ -199,7 +228,8 @@ export class LobbyScreen
 			universe: universeName
 		});
 		this.playerName.textContent = name;
-		this.createButton.disabled = false;
+		this.creatingGroup = false;
+		this.updatePlayingState();
 		this.queueMemberList();
 	}
 
@@ -211,27 +241,38 @@ export class LobbyScreen
 	showCharacters(list: CharacterListPayload): void
 	{
 		showMessage(this.characterError, undefined);
-		this.characterNone.hidden = (list.characters.length > 0);
-		this.characterList.replaceChildren(...list.characters.map((character) =>
+		this.characters = list;
+		this.renderCharacters();
+	}
+
+	/**
+	 * Shows which character the player is playing, reading out a change
+	 *
+	 * @param characterId The character, or null for a ghost
+	 * @return False when the character isn't in the list the screen has, so the list needs loading again
+	 */
+	setPlayingAs(characterId: string | null): boolean
+	{
+		const previous = this.playingId;
+		const character = this.characters?.characters.find((each) => (each.id === characterId));
+
+		this.playingId = characterId;
+		this.renderCharacters();
+		this.updatePlayingState();
+		this.queueMemberList();
+
+		if ((previous !== undefined) && (previous !== characterId) && character)
 		{
-			const item = document.createElement('li');
-			const name = document.createElement('strong');
-			const description = document.createElement('span');
-
-			name.textContent = character.name;
-			description.className = 'character-description';
-			description.textContent = t({
-				id: 'lobby.characterDescription',
-				defaultMessage: '{race} {class}',
-				description: 'In the lobby\'s list of the player\'s characters, a character\'s race and class after their name, e.g. "Dwarf Fighter". Reorder them as your language needs'
+			announce(t({
+				id: 'lobby.nowPlaying',
+				defaultMessage: 'You are now playing {name}.',
+				description: 'Read out by screen readers in the lobby when the player switches to another of their characters; {name} is the character\'s name'
 			}, {
-				race: raceName(character.race, list.ruleset),
-				class: className(character.characterClass, list.ruleset)
-			});
-			item.append(name, ' ', description);
+				name: character.name
+			}));
+		}
 
-			return(item);
-		}));
+		return((characterId === null) || (this.characters === undefined) || (character !== undefined));
 	}
 
 	/**
@@ -304,7 +345,8 @@ export class LobbyScreen
 	{
 		this.notice.textContent = message;
 		this.notice.hidden = false;
-		this.createButton.disabled = false;
+		this.creatingGroup = false;
+		this.updatePlayingState();
 	}
 
 	/**
@@ -327,6 +369,101 @@ export class LobbyScreen
 	}
 
 	/**
+	 * Draws the player's characters, each a button that plays them, marking the one being played
+	 */
+	private renderCharacters(): void
+	{
+		const list = this.characters;
+
+		if (!list)
+		{
+			this.characterNone.hidden = true;
+			this.characterList.replaceChildren();
+			return;
+		}
+
+		this.characterNone.hidden = (list.characters.length > 0);
+		this.characterList.replaceChildren(...list.characters.map((character) =>
+		{
+			const item = document.createElement('li');
+			const button = document.createElement('button');
+			const name = document.createElement('strong');
+			const description = document.createElement('span');
+			const isPlaying = (character.id === this.playingId);
+
+			name.textContent = character.name;
+			description.className = 'character-description';
+			description.textContent = t({
+				id: 'lobby.characterDescription',
+				defaultMessage: '{race} {class}',
+				description: 'In the lobby\'s list of the player\'s characters, a character\'s race and class after their name, e.g. "Dwarf Fighter". Reorder them as your language needs'
+			}, {
+				race: raceName(character.race, list.ruleset),
+				class: className(character.characterClass, list.ruleset)
+			});
+
+			button.type = 'button';
+			button.className = 'character-choice';
+			button.setAttribute('aria-pressed', String(isPlaying));
+			button.append(name, ' ', description);
+
+			// Said in words as well as by the outline, for players who can't see it
+			if (isPlaying)
+			{
+				const playing = document.createElement('span');
+
+				playing.className = 'character-playing';
+				playing.textContent = t({
+					id: 'lobby.characterPlaying',
+					defaultMessage: 'Playing',
+					description: 'In the lobby\'s list of the player\'s characters, shown beside the one they are playing now'
+				});
+				button.append(' ', playing);
+			}
+
+			button.addEventListener('click', () =>
+			{
+				if (character.id !== this.playingId)
+				{
+					this.hideNotice();
+					this.actions.chooseCharacter(character.id);
+				}
+			});
+
+			item.append(button);
+
+			return(item);
+		}));
+	}
+
+	/**
+	 * Matches the controls to whether the player is a ghost: a ghost can't chat or create a group, and
+	 * Create Character becomes the main button
+	 */
+	private updatePlayingState(): void
+	{
+		const isGhost = (this.playingId === null);
+
+		this.ghostNote.hidden = !isGhost;
+		this.chatInput.disabled = isGhost;
+		this.chatSendButton.disabled = isGhost;
+		this.createButton.disabled = (this.creatingGroup || (this.playingId === null) || (this.playingId === undefined));
+		this.createCharacterButton.classList.toggle('secondary', (typeof this.playingId === 'string'));
+
+		for (const control of [this.chatInput, this.chatSendButton, this.createButton])
+		{
+			if (isGhost)
+			{
+				control.setAttribute('aria-describedby', this.ghostNote.id);
+			}
+			else
+			{
+				control.removeAttribute('aria-describedby');
+			}
+		}
+	}
+
+	/**
 	 * Redraws the list of who's here once the current state patch has been applied, however many players it added or removed
 	 */
 	private queueMemberList(): void
@@ -346,7 +483,8 @@ export class LobbyScreen
 	}
 
 	/**
-	 * Draws the list of who's here: the player first, then everyone else by name, up to MAX_LISTED_PLAYERS
+	 * Draws the list of who's here: the player first (as a ghost when they are one, whom only they see
+	 * listed), then everyone else by name, up to MAX_LISTED_PLAYERS
 	 */
 	private renderMemberList(): void
 	{
@@ -355,35 +493,50 @@ export class LobbyScreen
 			.sort(([, a], [, b]) => a.localeCompare(b, currentLocale()));
 
 		const own = ((this.ownPlayerId !== undefined) ? this.members.get(this.ownPlayerId) : undefined);
-		const listed = ((own !== undefined) ? [{ name: own, isOwn: true }] : []);
+		const isGhost = ((own === undefined) && (this.playingId === null));
+		const listed: string[] = [];
 
-		for (const [, name] of others.slice(0, MAX_LISTED_PLAYERS - listed.length))
+		// Said in words as well as in color, for players who can't tell the colors apart and for screen readers
+		if (own !== undefined)
 		{
-			listed.push({ name, isOwn: false });
+			listed.push(t({
+				id: 'lobby.ownName',
+				defaultMessage: '{name} (you)',
+				description: 'In the list of players in the lobby, the player\'s own name; {name} is the name'
+			}, {
+				name: own
+			}));
+		}
+		else if (isGhost)
+		{
+			listed.push(t({
+				id: 'lobby.ownGhost',
+				defaultMessage: 'You (a ghost)',
+				description: 'In the list of players in the lobby, the player themself while they play no character: a ghost, whom only they see listed'
+			}));
 		}
 
-		this.memberList.replaceChildren(...listed.map(({ name, isOwn }) =>
+		const ownCount = listed.length;
+
+		for (const [, name] of others.slice(0, MAX_LISTED_PLAYERS - ownCount))
+		{
+			listed.push(name);
+		}
+
+		this.memberList.replaceChildren(...listed.map((name, index) =>
 		{
 			const item = document.createElement('li');
 
-			// Said in words as well as in color, for players who can't tell the colors apart and for screen readers
-			item.textContent = (isOwn
-				? t({
-					id: 'lobby.ownName',
-					defaultMessage: '{name} (you)',
-					description: 'In the list of players in the lobby, the player\'s own name; {name} is the name'
-				}, {
-					name
-				})
-				: name);
-			item.classList.toggle('member-own', isOwn);
+			item.textContent = name;
+			item.classList.toggle('member-own', (index < ownCount));
 
 			return(item);
 		}));
 
-		const unlisted = this.members.size - listed.length;
+		const total = this.members.size + (isGhost ? 1 : 0);
+		const unlisted = total - listed.length;
 
-		this.memberCount.textContent = String(this.members.size);
+		this.memberCount.textContent = String(total);
 		this.memberMore.textContent = t({
 			id: 'lobby.morePlayers',
 			defaultMessage: 'and {count, number} more',

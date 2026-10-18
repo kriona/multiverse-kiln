@@ -1,5 +1,5 @@
 import { CloseCode } from '@colyseus/sdk';
-import { GROUP_QUERY_PARAMETER, LobbyMessageType, LobbyServerMessageType, MAX_GROUP_PLAYERS, NAME_MESSAGES, NoticeReason, ServerCloseCode, SessionMessageType, SessionServerMessageType, type AccountPayload, type AccountPlayer, type ChatHistoryPayload, type ChatMessage, type ChatPayload, type JoinGroupPayload, type LoginPayload, type NoticePayload, type UniverseSummary } from '@multiverse-kiln/shared';
+import { GROUP_QUERY_PARAMETER, LobbyMessageType, LobbyServerMessageType, MAX_GROUP_PLAYERS, NAME_MESSAGES, NoticeReason, ServerCloseCode, SessionMessageType, SessionServerMessageType, type AccountPayload, type AccountPlayer, type ChatHistoryPayload, type ChatMessage, type ChatPayload, type ChooseCharacterPayload, type JoinGroupPayload, type LoginPayload, type NoticePayload, type PlayingAsPayload, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { t } from './localization';
 import { CharacterApi } from './network/characterApi';
@@ -134,6 +134,12 @@ export class App
 				{
 					window.location.assign(characterPageUrl(this.joinedLobby.universe.id));
 				}
+			},
+			chooseCharacter: (characterId) =>
+			{
+				const choice: ChooseCharacterPayload = { characterId };
+
+				this.joinedLobby?.connection.room.send(LobbyMessageType.ChooseCharacter, choice);
 			},
 			createGroup: () =>
 			{
@@ -599,6 +605,15 @@ export class App
 		room.onMessage(LobbyServerMessageType.Chat, (message: ChatMessage) =>
 		{
 			this.lobbyScreen.addChatMessage(message);
+		});
+
+		// A character the screen doesn't list was made in another window since the list loaded
+		room.onMessage(LobbyServerMessageType.PlayingAs, (playingAs: PlayingAsPayload) =>
+		{
+			if (!this.lobbyScreen.setPlayingAs(playingAs.characterId))
+			{
+				void this.loadCharacters(joined);
+			}
 		});
 
 		room.onMessage(LobbyServerMessageType.Notice, (notice: NoticePayload) =>

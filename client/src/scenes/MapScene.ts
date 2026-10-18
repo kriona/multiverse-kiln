@@ -42,6 +42,11 @@ const OWN_PLAYER_OUTLINE_COLOR = 0xffffff;
 const OWN_PLAYER_OUTLINE_WIDTH = 3;
 
 /**
+ * How opaque the player is drawn while they are a ghost
+ */
+const GHOST_ALPHA = 0.4;
+
+/**
  * Gap in pixels between the top of a player and the bottom of their name
  */
 const NAME_OFFSET = 4;
@@ -359,17 +364,19 @@ export class MapScene extends Phaser.Scene
 				.setStrokeStyle((isOwn ? OWN_PLAYER_OUTLINE_WIDTH : PLAYER_OUTLINE_WIDTH), (isOwn ? OWN_PLAYER_OUTLINE_COLOR : PLAYER_OUTLINE_COLOR));
 			const rendered: RenderedPlayer = {
 				shape,
-				label: this.add.text(player.x, player.y - PLAYER_RADIUS - NAME_OFFSET, player.name, TEXT_STYLE).setOrigin(0.5, 1).setDepth(1),
+				label: this.add.text(player.x, player.y - PLAYER_RADIUS - NAME_OFFSET, '', TEXT_STYLE).setOrigin(0.5, 1).setDepth(1),
 				positions: new PositionBuffer(PATCH_INTERVAL_MS),
 				lastPosition: undefined,
 				stopListening: () => undefined
 			};
 
 			this.trackPosition(rendered, player);
+			this.showAppearance(rendered, player);
 
 			rendered.stopListening = callbacks.onChange(player, () =>
 			{
 				this.trackPosition(rendered, player);
+				this.showAppearance(rendered, player);
 			});
 
 			if (isOwn)
@@ -393,6 +400,25 @@ export class MapScene extends Phaser.Scene
 
 			this.removePlayer(playerId);
 		}));
+	}
+
+	/**
+	 * Shows a player's name, or that they are a ghost: faded, and labeled as one. Only the player's own
+	 * ghost is ever in the state
+	 *
+	 * @param rendered The player as drawn
+	 * @param player The player's synced state
+	 */
+	private showAppearance(rendered: RenderedPlayer, player: Player): void
+	{
+		rendered.shape.setAlpha((player.ghost ? GHOST_ALPHA : 1));
+		rendered.label.setText((player.ghost
+			? t({
+				id: 'map.ghost',
+				defaultMessage: 'Ghost',
+				description: 'Shown above the player on the lobby\'s map while they play no character: they are a ghost, whom other players can\'t see'
+			})
+			: player.name));
 	}
 
 	/**

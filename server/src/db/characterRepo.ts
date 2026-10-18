@@ -2,7 +2,7 @@
  * Characters: the only module that reads or writes the characters, pf1e_characters, character_items,
  * character_drafts and pf1e_ability_rolls tables
  */
-import { and, asc, count, eq, ne } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ne, sql } from 'drizzle-orm';
 import { isPf1eRollMethod, type CharacterDraft, type ItemQuantity, type Pf1eAbilityScores, type Pf1eMoney, type Pf1eRollMethod } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
@@ -17,6 +17,15 @@ export interface CharacterRecord
 	name: string;
 	raceId: number;
 	classId: number;
+}
+
+/**
+ * A character as the lobby plays them
+ */
+export interface PlayableCharacter
+{
+	id: string;
+	name: string;
 }
 
 /**
@@ -92,6 +101,46 @@ export async function listCharacters(playerId: string, universeId: string, execu
 			eq(characters.universeId, universeId)
 		))
 		.orderBy(asc(characters.createdAt), asc(characters.id)));
+}
+
+/**
+ * A player's characters in a universe as the lobby plays them
+ *
+ * @param playerId The player's ID
+ * @param universeId The universe's ID
+ * @param executor The database, or a transaction
+ * @return The characters, the one played or made most recently first
+ */
+export async function listPlayableCharacters(playerId: string, universeId: string, executor: Executor = db): Promise<PlayableCharacter[]>
+{
+	return(executor
+		.select({
+			id: characters.id,
+			name: characters.name
+		})
+		.from(characters)
+		.where(and(
+			eq(characters.playerId, playerId),
+			eq(characters.universeId, universeId)
+		))
+		.orderBy(desc(sql`coalesce(${characters.lastPlayedAt}, ${characters.createdAt})`), asc(characters.id)));
+}
+
+/**
+ * Records that a player has stopped playing a character, so the lobby starts them as it next time
+ *
+ * @param characterId The character's ID
+ * @param playedAt When they stopped
+ * @param executor The database, or a transaction
+ */
+export async function markCharacterPlayed(characterId: string, playedAt: Date, executor: Executor = db): Promise<void>
+{
+	await executor
+		.update(characters)
+		.set({
+			lastPlayedAt: playedAt
+		})
+		.where(eq(characters.id, characterId));
 }
 
 /**

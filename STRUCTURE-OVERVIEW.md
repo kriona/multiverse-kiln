@@ -70,8 +70,8 @@ The lobby runs the game engine. It will be a small area where many people (more 
 - Some rules will be different - you cannot use items, time passes based on [lobby settings](#tab-lobby) and not game settings (it's not turn-based).
 - There will be a button for [Create Character](#create-character). You can create multiple characters.
 - There will be a chat. You chat as your character.
-- If you have not created a character, you will use a ghost icon and nobody can see you. You can walk around the space. You can read chat but not send messages. Ghosts don't block cells. The [Create Character](#create-character) button should be more prominent.
-- If you have created a character, chat will be enabled. You will move about the space as your character. You can switch characters at any time.
+- If you have not created a character, you will use a ghost icon and nobody can see you. You can walk around the space. You can read chat but not send messages. Ghosts don't block cells, and pass through other players. Other players aren't shown ghosts in the list of who's here; a ghost sees themself listed as one. The [Create Character](#create-character) button should be more prominent.
+- If you have created a character, chat will be enabled. You will move about the space as your character, starting as the one you played or made most recently. You can switch characters at any time, and every window of yours switches with you.
 - You may create up to 20 characters per universe.
 - If you have a character selected, a [Create Group](#create-group) button will be enabled.
 - Groups can be listed in the lobby so players can find them without an invite. How a group manages its listing is not yet defined.

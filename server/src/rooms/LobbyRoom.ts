@@ -1,16 +1,17 @@
 import { matchMaker, Room, type AuthContext, type Client, type CloseCode, type IRoomCache } from 'colyseus';
-import { GAME_ROOM_NAME, LobbyMember, LobbyMessageType, LobbyServerMessageType, LobbyState, MessageType, NoticeReason, PATCH_INTERVAL_MS, type ChatHistoryPayload, type ChatMessage, type LobbyJoinOptions, type NoticePayload } from '@multiverse-kiln/shared';
+import { GAME_ROOM_NAME, LobbyMember, LobbyMessageType, LobbyServerMessageType, LobbyState, MessageType, NoticeReason, PATCH_INTERVAL_MS, type ChatHistoryPayload, type ChatMessage, type LobbyJoinOptions, type NoticePayload, type PlayingAsPayload } from '@multiverse-kiln/shared';
 
+import { listPlayableCharacters, markCharacterPlayed, type PlayableCharacter } from '../db/characterRepo.js';
 import { findUniverse } from '../db/universeRepo.js';
 import { loadChunksAt, loadZone } from '../db/zoneRepo.js';
 import { readBrowserId } from '../http/browserId.js';
 import { onlinePlayers } from '../players/onlinePlayers.js';
 import { zoneChanges } from '../world/zoneChanges.js';
 import { InvalidMessages } from './invalidMessages.js';
-import { chatPayload, describeInvalidPayload, movePayload, roomOptions } from './payloads.js';
+import { chatPayload, chooseCharacterPayload, describeInvalidPayload, movePayload, roomOptions } from './payloads.js';
 import { RateLimiter } from './rateLimiter.js';
 import { ZoneCache } from './zoneCache.js';
-import { CHUNK_REFRESH_INTERVAL_MS, SIMULATION_TICK_RATE, ZonePlayers } from './zonePlayers.js';
+import { CHUNK_REFRESH_INTERVAL_MS, SIMULATION_TICK_RATE, ZonePlayers, type Appearance } from './zonePlayers.js';
 
 /**
  * What onAuth found out about a client, available afterward as client.auth
@@ -41,6 +42,20 @@ function identityOf(client: LobbyClient): LobbyIdentity
 }
 
 /**
+ * How a player shows on the lobby's map
+ *
+ * @param character The character they are playing, or undefined for a ghost
+ * @return The character's name, or a ghost with no name
+ */
+function appearanceOf(character: PlayableCharacter | undefined): Appearance
+{
+	return({
+		name: character?.name ?? '',
+		ghost: !character
+	});
+}
+
+/**
  * Chat messages kept for players who join later
  */
 export const CHAT_HISTORY_LENGTH = 50;
@@ -58,6 +73,10 @@ const CHAT_RATE_WINDOW_MS = 5000;
  * Clients join with the universe's ID (LobbyJoinOptions), and every client asking for the same universe
  * joins the same room (filterBy in app.config.ts). Only logged-in browsers are admitted. Players start
  * in the universe's lobby zone and can walk through its links into other zones (see ZonePlayers)
+ *
+ * Each player plays one of their characters in the universe, and can switch between them. A player
+ * with no character is a ghost: nobody else sees them, they hold no cell, and they can read the chat
+ * but not send to it or create a group
  */
 export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 {
@@ -92,6 +111,16 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 
 	private readonly chatLimiter = new RateLimiter(CHAT_RATE_LIMIT, CHAT_RATE_WINDOW_MS);
 
+	/**
+	 * Each player's characters in the universe, read again whenever one of their windows joins
+	 */
+	private readonly characters = new Map<string, PlayableCharacter[]>();
+
+	/**
+	 * The character each player is playing; a player with none is a ghost
+	 */
+	private readonly playing = new Map<string, PlayableCharacter>();
+
 	private readonly invalidMessages = new InvalidMessages();
 
 	messages = {
@@ -123,7 +152,14 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 				return;
 			}
 
-			const { playerId, name } = identityOf(client);
+			const { playerId } = identityOf(client);
+			const character = this.playing.get(playerId);
+
+			// Ghosts can read the chat but not send to it; their windows don't offer it
+			if (!character)
+			{
+				return;
+			}
 
 			if (!this.chatLimiter.tryTake(playerId))
 			{
@@ -133,7 +169,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 
 			const message: ChatMessage = {
 				playerId,
-				name,
+				name: character.name,
 				text: result.data.text,
 				sentAt: Date.now()
 			};
@@ -142,11 +178,30 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 			this.broadcast(LobbyServerMessageType.Chat, message);
 		},
 
+		[LobbyMessageType.ChooseCharacter]: (client: LobbyClient, payload: unknown) =>
+		{
+			const result = chooseCharacterPayload.safeParse(payload);
+
+			if (!result.success)
+			{
+				this.invalidMessages.reject(client, LobbyMessageType.ChooseCharacter, describeInvalidPayload(result.error));
+				return;
+			}
+
+			const { playerId } = identityOf(client);
+			const character = this.characters.get(playerId)?.find((each) => (each.id === result.data.characterId));
+
+			if (character && (this.playing.get(playerId)?.id !== character.id))
+			{
+				this.play(playerId, character);
+			}
+		},
+
 		[LobbyMessageType.CreateGroup]: async (client: LobbyClient) =>
 		{
-			const { browserId } = identityOf(client);
+			const { browserId, playerId } = identityOf(client);
 
-			if (!onlinePlayers.get(browserId))
+			if (!onlinePlayers.get(browserId) || !this.playing.has(playerId))
 			{
 				return;
 			}
@@ -235,14 +290,17 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	}
 
 	/**
-	 * Puts the joining client's player in the lobby zone if they are new, lists them as here, and
-	 * sends the recent chat
+	 * Reads the joining client's player's characters, and puts a player new to the room in the lobby
+	 * zone as the character they played or made most recently (a ghost when they have none). A player
+	 * already here keeps their character, unless they were a ghost and have since made one. Then sends
+	 * the client who it is playing and the recent chat
 	 *
 	 * @param client The joining client
 	 */
 	async onJoin(client: LobbyClient): Promise<void>
 	{
-		const { playerId, name } = identityOf(client);
+		const { playerId } = identityOf(client);
+		const characters = await listPlayableCharacters(playerId, this.universeId);
 		const lobbyZone = await this.zones.load(this.lobbyZoneId);
 
 		if (!lobbyZone)
@@ -251,36 +309,67 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		}
 
 		await this.zonePlayers.prepareStart(lobbyZone);
+		this.characters.set(playerId, characters);
 
-		if (this.zonePlayers.join(client, playerId, name, this.zones.get(this.lobbyZoneId) ?? lobbyZone))
+		const isNewPlayer = !this.state.players.has(playerId);
+		const character = (isNewPlayer ? characters.at(0) : undefined);
+
+		this.zonePlayers.join(client, playerId, appearanceOf(character), this.zones.get(this.lobbyZoneId) ?? lobbyZone);
+
+		if (character)
 		{
-			this.state.members.set(playerId, new LobbyMember({ name }));
+			this.playing.set(playerId, character);
+			this.state.members.set(playerId, new LobbyMember({ name: character.name }));
+		}
+		else if (!isNewPlayer && !this.playing.has(playerId) && (characters.length > 0))
+		{
+			this.play(playerId, characters[0]);
 		}
 
+		const playingAs: PlayingAsPayload = { characterId: this.playing.get(playerId)?.id ?? null };
 		const history: ChatHistoryPayload = { messages: this.chatHistory };
 
+		client.send(LobbyServerMessageType.PlayingAs, playingAs);
 		client.send(LobbyServerMessageType.ChatHistory, history);
 	}
 
 	/**
-	 * Stops the client's player, and removes the player once their last client has left
+	 * Stops the client's player, and removes the player once their last client has left, recording
+	 * that they last played the character they were playing
 	 *
 	 * @param client The leaving client
 	 * @param code WebSocket close code
 	 */
-	onLeave(client: LobbyClient, code: CloseCode): void
+	async onLeave(client: LobbyClient, code: CloseCode): Promise<void>
 	{
 		const left = this.zonePlayers.leave(client);
 
 		this.invalidMessages.forget(client.sessionId);
+		console.log(client.sessionId, 'left the lobby of universe', this.universeId, code);
 
-		if (left?.wasLastClient)
+		if (!left?.wasLastClient)
 		{
-			this.state.members.delete(left.playerId);
-			this.chatLimiter.forget(left.playerId);
+			return;
 		}
 
-		console.log(client.sessionId, 'left the lobby of universe', this.universeId, code);
+		const character = this.playing.get(left.playerId);
+
+		this.state.members.delete(left.playerId);
+		this.chatLimiter.forget(left.playerId);
+		this.characters.delete(left.playerId);
+		this.playing.delete(left.playerId);
+
+		if (character)
+		{
+			try
+			{
+				await markCharacterPlayed(character.id, new Date());
+			}
+			catch (error)
+			{
+				console.error('Could not record that character', character.id, 'was played:', error);
+			}
+		}
 	}
 
 	/**
@@ -303,6 +392,26 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	getZoneId(playerId: string): string | undefined
 	{
 		return(this.zonePlayers.getZoneId(playerId));
+	}
+
+	/**
+	 * Makes a player in the room play one of their characters, in every window of theirs
+	 *
+	 * @param playerId The player's ID
+	 * @param character The character
+	 */
+	private play(playerId: string, character: PlayableCharacter): void
+	{
+		const playingAs: PlayingAsPayload = { characterId: character.id };
+
+		this.playing.set(playerId, character);
+		this.zonePlayers.setAppearance(playerId, appearanceOf(character));
+		this.state.members.set(playerId, new LobbyMember({ name: character.name }));
+
+		for (const client of this.zonePlayers.getClients(playerId))
+		{
+			client.send(LobbyServerMessageType.PlayingAs, playingAs);
+		}
 	}
 
 	/**

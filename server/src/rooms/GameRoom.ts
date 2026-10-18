@@ -161,7 +161,7 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 		}
 
 		await this.zonePlayers.prepareStart(startingZone);
-		this.zonePlayers.join(client, playerId, name, this.zones.get(this.startingZoneId) ?? startingZone);
+		this.zonePlayers.join(client, playerId, { name, ghost: false }, this.zones.get(this.startingZoneId) ?? startingZone);
 
 		console.log(client.sessionId, 'joined as player', playerId);
 	}
