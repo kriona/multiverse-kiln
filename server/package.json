@@ -40,7 +40,7 @@
 		"@colyseus/tools": "^0.18.1",
 		"@multiverse-kiln/shared": "*",
 		"colyseus": "^0.18.2",
-		"drizzle-orm": "^0.45.3",
+		"drizzle-orm": "^0.45.4",
 		"express": "^5.2.1",
 		"pg": "^8.23.1",
 		"zod": "^4.6.7"
