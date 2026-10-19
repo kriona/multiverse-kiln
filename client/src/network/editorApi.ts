@@ -1,5 +1,5 @@
 import { ServerError, type Client } from '@colyseus/sdk';
-import { EDITOR_UNIVERSES_PATH, isLocalizedMessage, MAX_TILES_PER_PAGE, type CellChange, type ChunkListPayload, type ChunkRange, type ClassListPayload, type ClassSettings, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorTile, type EditorZone, type EditorZoneLink, type ItemListPayload, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type NewZoneRequest, type RaceListPayload, type RaceSettings, type ResizeConflictPayload, type RulesetSettings, type TileListPayload, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type ZoneLinkListPayload, type ZoneLinkTarget, type ZoneListPayload, type ZoneSettingsUpdate, type MessageSource } from '@multiverse-kiln/shared';
+import { EDITOR_UNIVERSES_PATH, isLocalizedMessage, MAX_TILES_PER_PAGE, type CellChange, type ChunkListPayload, type ChunkRange, type ClassListPayload, type ClassSettings, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type NewAreaRequest, type RaceListPayload, type RaceSettings, type ResizeConflictPayload, type RulesetSettings, type TileListPayload, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type AreaLinkListPayload, type AreaLinkTarget, type AreaListPayload, type AreaSettingsUpdate, type MessageSource } from '@multiverse-kiln/shared';
 
 import { localizedText, t } from '../localization';
 
@@ -314,77 +314,77 @@ export class EditorApi
 	}
 
 	/**
-	 * Every zone of a universe
+	 * Every area of a universe
 	 *
 	 * @param universeId The universe's ID
-	 * @return The zones, and which are the lobby and starting zones
+	 * @return The areas, and which are the lobby and starting areas
 	 */
-	async listZones(universeId: string): Promise<ZoneListPayload>
+	async listAreas(universeId: string): Promise<AreaListPayload>
 	{
-		return(this.send<ZoneListPayload>('GET', `${universePath(universeId)}/zones`));
+		return(this.send<AreaListPayload>('GET', `${universePath(universeId)}/areas`));
 	}
 
 	/**
-	 * Adds a zone to a universe
+	 * Adds an area to a universe
 	 *
 	 * @param universeId The universe's ID
-	 * @param zone The zone's name and any settings that shouldn't take their defaults
-	 * @return The new zone's ID
+	 * @param area The area's name and any settings that shouldn't take their defaults
+	 * @return The new area's ID
 	 */
-	async createZone(universeId: string, zone: NewZoneRequest): Promise<string>
+	async createArea(universeId: string, area: NewAreaRequest): Promise<string>
 	{
-		return((await this.send<CreatedPayload>('POST', `${universePath(universeId)}/zones`, zone)).id);
+		return((await this.send<CreatedPayload>('POST', `${universePath(universeId)}/areas`, area)).id);
 	}
 
 	/**
-	 * A zone's settings and bounds
+	 * An area's settings and bounds
 	 *
 	 * @param universeId The universe's ID
-	 * @param zoneId The zone's ID
-	 * @return The zone
+	 * @param areaId The area's ID
+	 * @return The area
 	 */
-	async getZone(universeId: string, zoneId: string): Promise<EditorZone>
+	async getArea(universeId: string, areaId: string): Promise<EditorArea>
 	{
-		return(this.send<EditorZone>('GET', zonePath(universeId, zoneId)));
+		return(this.send<EditorArea>('GET', areaPath(universeId, areaId)));
 	}
 
 	/**
-	 * Changes a zone's settings
+	 * Changes an area's settings
 	 *
 	 * @param universeId The universe's ID
-	 * @param zoneId The zone's ID
+	 * @param areaId The area's ID
 	 * @param update The settings to change
 	 */
-	async updateZone(universeId: string, zoneId: string, update: ZoneSettingsUpdate): Promise<void>
+	async updateArea(universeId: string, areaId: string, update: AreaSettingsUpdate): Promise<void>
 	{
-		await this.send('PATCH', zonePath(universeId, zoneId), update);
+		await this.send('PATCH', areaPath(universeId, areaId), update);
 	}
 
 	/**
-	 * Deletes a zone
+	 * Deletes an area
 	 *
 	 * @param universeId The universe's ID
-	 * @param zoneId The zone's ID
+	 * @param areaId The area's ID
 	 */
-	async deleteZone(universeId: string, zoneId: string): Promise<void>
+	async deleteArea(universeId: string, areaId: string): Promise<void>
 	{
-		await this.send('DELETE', zonePath(universeId, zoneId));
+		await this.send('DELETE', areaPath(universeId, areaId));
 	}
 
 	/**
-	 * Gives a zone's map new bounds
+	 * Gives an area's map new bounds
 	 *
 	 * @param universeId The universe's ID
-	 * @param zoneId The zone's ID
+	 * @param areaId The area's ID
 	 * @param bounds The new bounds
 	 * @param discard Whether to go ahead when that discards painted cells or links
 	 * @return undefined when the map was resized, or what would be discarded when it wasn't
 	 */
-	async resizeZone(universeId: string, zoneId: string, bounds: MapBounds, discard: boolean): Promise<ResizeConflictPayload | undefined>
+	async resizeArea(universeId: string, areaId: string, bounds: MapBounds, discard: boolean): Promise<ResizeConflictPayload | undefined>
 	{
 		try
 		{
-			await this.send('PUT', `${zonePath(universeId, zoneId)}/bounds`, { bounds, discard });
+			await this.send('PUT', `${areaPath(universeId, areaId)}/bounds`, { bounds, discard });
 		}
 		catch (error)
 		{
@@ -400,69 +400,69 @@ export class EditorApi
 	}
 
 	/**
-	 * The stored chunks of a zone's map in a range
+	 * The stored chunks of an area's map in a range
 	 *
 	 * @param universeId The universe's ID
-	 * @param zoneId The zone's ID
+	 * @param areaId The area's ID
 	 * @param range The chunks, inclusive at both ends
 	 * @return The stored chunks
 	 */
-	async loadChunks(universeId: string, zoneId: string, range: ChunkRange): Promise<ChunkListPayload>
+	async loadChunks(universeId: string, areaId: string, range: ChunkRange): Promise<ChunkListPayload>
 	{
 		const parameters = new URLSearchParams(Object.entries(range).map(([key, value]) => [key, String(value)]));
 
-		return(this.send<ChunkListPayload>('GET', `${zonePath(universeId, zoneId)}/chunks?${parameters.toString()}`));
+		return(this.send<ChunkListPayload>('GET', `${areaPath(universeId, areaId)}/chunks?${parameters.toString()}`));
 	}
 
 	/**
-	 * Changes cells of a zone's map
+	 * Changes cells of an area's map
 	 *
 	 * @param universeId The universe's ID
-	 * @param zoneId The zone's ID
+	 * @param areaId The area's ID
 	 * @param changes Up to MAX_CELL_CHANGES cells
 	 */
-	async editCells(universeId: string, zoneId: string, changes: CellChange[]): Promise<void>
+	async editCells(universeId: string, areaId: string, changes: CellChange[]): Promise<void>
 	{
-		await this.send('PATCH', `${zonePath(universeId, zoneId)}/cells`, { changes });
+		await this.send('PATCH', `${areaPath(universeId, areaId)}/cells`, { changes });
 	}
 
 	/**
-	 * The links on a zone's cells
+	 * The links on an area's cells
 	 *
 	 * @param universeId The universe's ID
-	 * @param zoneId The zone's ID
+	 * @param areaId The area's ID
 	 * @return The links
 	 */
-	async listLinks(universeId: string, zoneId: string): Promise<EditorZoneLink[]>
+	async listLinks(universeId: string, areaId: string): Promise<EditorAreaLink[]>
 	{
-		return((await this.send<ZoneLinkListPayload>('GET', `${zonePath(universeId, zoneId)}/links`)).links);
+		return((await this.send<AreaLinkListPayload>('GET', `${areaPath(universeId, areaId)}/links`)).links);
 	}
 
 	/**
 	 * Adds or replaces the link on a cell
 	 *
 	 * @param universeId The universe's ID
-	 * @param zoneId The zone's ID
+	 * @param areaId The area's ID
 	 * @param column The cell's column
 	 * @param row The cell's row
 	 * @param target Where the link goes
 	 */
-	async saveLink(universeId: string, zoneId: string, column: number, row: number, target: ZoneLinkTarget): Promise<void>
+	async saveLink(universeId: string, areaId: string, column: number, row: number, target: AreaLinkTarget): Promise<void>
 	{
-		await this.send('PUT', `${zonePath(universeId, zoneId)}/links/${column}/${row}`, target);
+		await this.send('PUT', `${areaPath(universeId, areaId)}/links/${column}/${row}`, target);
 	}
 
 	/**
 	 * Deletes the link on a cell
 	 *
 	 * @param universeId The universe's ID
-	 * @param zoneId The zone's ID
+	 * @param areaId The area's ID
 	 * @param column The cell's column
 	 * @param row The cell's row
 	 */
-	async deleteLink(universeId: string, zoneId: string, column: number, row: number): Promise<void>
+	async deleteLink(universeId: string, areaId: string, column: number, row: number): Promise<void>
 	{
-		await this.send('DELETE', `${zonePath(universeId, zoneId)}/links/${column}/${row}`);
+		await this.send('DELETE', `${areaPath(universeId, areaId)}/links/${column}/${row}`);
 	}
 
 	/**
@@ -574,15 +574,15 @@ function queryString(query: object): string
 }
 
 /**
- * The path of a zone under EDITOR_UNIVERSES_PATH
+ * The path of an area under EDITOR_UNIVERSES_PATH
  *
  * @param universeId The universe's ID
- * @param zoneId The zone's ID
+ * @param areaId The area's ID
  * @return The path
  */
-function zonePath(universeId: string, zoneId: string): string
+function areaPath(universeId: string, areaId: string): string
 {
-	return(`${universePath(universeId)}/zones/${encodeURIComponent(zoneId)}`);
+	return(`${universePath(universeId)}/areas/${encodeURIComponent(areaId)}`);
 }
 
 /**

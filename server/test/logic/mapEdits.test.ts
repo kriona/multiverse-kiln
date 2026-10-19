@@ -131,17 +131,17 @@ describe('mapEdits', () =>
 			['moon', null]
 		]);
 
-		it('refuses a zone as its own parent', () =>
+		it('refuses an area as its own parent', () =>
 		{
 			assert.strictEqual(wouldCreateCycle(parents, 'city', 'city'), true);
 		});
 
-		it('refuses one of the zone\'s descendants as its parent', () =>
+		it('refuses one of the area\'s descendants as its parent', () =>
 		{
 			assert.strictEqual(wouldCreateCycle(parents, 'world', 'city'), true);
 		});
 
-		it('allows any other zone', () =>
+		it('allows any other area', () =>
 		{
 			assert.strictEqual(wouldCreateCycle(parents, 'city', 'moon'), false);
 			assert.strictEqual(wouldCreateCycle(parents, 'moon', 'city'), false);

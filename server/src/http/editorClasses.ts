@@ -259,7 +259,7 @@ async function deleteClass(request: Request, response: Response): Promise<void>
 }
 
 /**
- * Why a class's settings can't be saved: a starting zone, item or race the universe can't use, or
+ * Why a class's settings can't be saved: a starting area, item or race the universe can't use, or
  * leaving the universe without an enabled class
  *
  * @param universe The universe
@@ -271,9 +271,9 @@ async function deleteClass(request: Request, response: Response): Promise<void>
 async function findClassProblem(universe: UniverseContext['universe'], classId: number | undefined, settings: ClassSettings, executor: Executor): Promise<Refusal | undefined>
 {
 	const startingProblem = await findStartingProblem(universe, {
-		zoneIds: [
-			...((settings.startingZoneId === null) ? [] : [settings.startingZoneId]),
-			...settings.raceZones.map(({ zoneId }) => zoneId)
+		areaIds: [
+			...((settings.startingAreaId === null) ? [] : [settings.startingAreaId]),
+			...settings.raceAreas.map(({ areaId }) => areaId)
 		],
 		itemIds: settings.startingItems.map(({ itemId }) => itemId)
 	}, executor);
@@ -286,18 +286,18 @@ async function findClassProblem(universe: UniverseContext['universe'], classId: 
 		});
 	}
 
-	if (settings.raceZones.length > 0)
+	if (settings.raceAreas.length > 0)
 	{
 		const raceIds = new Set((await loadEditorRaces(universe.id, universe.ruleset, executor)).map((race) => race.id));
 
-		if (!settings.raceZones.every(({ raceId }) => raceIds.has(raceId)))
+		if (!settings.raceAreas.every(({ raceId }) => raceIds.has(raceId)))
 		{
 			return({
 				status: 400,
 				message: {
-					id: 'error.unknownRaceZone',
-					defaultMessage: 'A starting zone is chosen for a race this universe doesn\'t have.',
-					description: 'Why a character class\'s settings were refused: one of its zones for a race is for a race that was deleted, perhaps by another editor'
+					id: 'error.unknownRaceArea',
+					defaultMessage: 'A starting area is chosen for a race this universe doesn\'t have.',
+					description: 'Why a character class\'s settings were refused: one of its areas for a race is for a race that was deleted, perhaps by another editor'
 				}
 			});
 		}

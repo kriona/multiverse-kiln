@@ -28,14 +28,14 @@
 					<button id="editor-tab-races" type="button" role="tab" aria-controls="editor-panel-races" data-message="editor.tab.races" data-translation-context="Tab of the editor listing the races characters can be, such as elves and dwarves"><!-- icon game-icons:dwarf-face -->Races</button>
 					<button id="editor-tab-classes" type="button" role="tab" aria-controls="editor-panel-classes" data-message="editor.tab.classes" data-translation-context="Tab of the editor listing the classes characters can be, such as fighters and wizards"><!-- icon game-icons:pointy-hat -->Classes</button>
 					<button id="editor-tab-tilesets" type="button" role="tab" aria-controls="editor-panel-tilesets" data-message="editor.tab.tilesets" data-translation-context="Tab of the editor listing the tiles maps are painted with"><!-- icon game-icons:stone-block -->Tilesets</button>
-					<button id="editor-tab-zones" type="button" role="tab" aria-controls="editor-panel-zones" data-message="editor.tab.zones" data-translation-context="Tab of the editor listing the universe's zones (areas with their own map)"><!-- icon game-icons:treasure-map -->Zones</button>
+					<button id="editor-tab-areas" type="button" role="tab" aria-controls="editor-panel-areas" data-message="editor.tab.areas" data-translation-context="Tab of the editor listing the universe's areas (places with their own map)"><!-- icon game-icons:treasure-map -->Areas</button>
 					<button id="editor-tab-items" type="button" role="tab" aria-controls="editor-panel-items" data-message="editor.tab.items" data-translation-context="Tab of the editor listing the items characters can be given, such as weapons and gear"><!-- icon game-icons:swap-bag -->Items</button>
 				</div>
 				<div class="editor-body">
 					<section id="editor-panel-universe" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-universe">
 						<form id="universe-form" class="form">
 							<fieldset id="universe-fields" class="plain">
-								<label data-message="form.name" data-translation-context="Label of the field for the name of a universe, zone or tile">
+								<label data-message="form.name" data-translation-context="Label of the field for the name of a universe, area or tile">
 									Name
 									<input id="universe-name-input" required />
 								</label>
@@ -71,7 +71,7 @@
 									<legend data-message="editor.universe.stage" data-translation-context="Heading of the choice of how far along a universe is, from being built to being retired">Stage</legend>
 								</fieldset>
 								<p data-message="editor.universe.ruleset" data-translation-context="Shows the universe's game rules, which can't be changed; {ruleset} is e.g. Pathfinder 1E">Ruleset: <strong id="universe-ruleset-name" data-argument="ruleset"></strong></p>
-								<label data-message="editor.passageOfTime" data-translation-context="Label of the field for how the time of day changes in a universe or zone">
+								<label data-message="editor.passageOfTime" data-translation-context="Label of the field for how the time of day changes in a universe or area">
 									Passage of time
 									<select id="universe-time"></select>
 								</label>
@@ -124,8 +124,8 @@
 					</section>
 
 					<section id="editor-panel-lobby" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-lobby" hidden>
-						<p data-message="editor.lobby.explanation" data-translation-context="Explains the lobby on the editor's Lobby tab">The lobby is where everyone in the universe meets before joining a group. It is a zone like any other, but isn't listed on the Zones tab.</p>
-						<button id="lobby-edit-zone" type="button" data-message="editor.lobby.editZone" data-translation-context="Button that opens the lobby in the zone editor"><!-- icon ph:pencil-simple -->Edit the lobby's zone</button>
+						<p data-message="editor.lobby.explanation" data-translation-context="Explains the lobby on the editor's Lobby tab">The lobby is where everyone in the universe meets before joining a group. It is an area like any other, but isn't listed on the Areas tab.</p>
+						<button id="lobby-edit-area" type="button" data-message="editor.lobby.editArea" data-translation-context="Button that opens the lobby in the area editor"><!-- icon ph:pencil-simple -->Edit the lobby's area</button>
 					</section>
 
 					<section id="editor-panel-characters" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-characters" hidden>
@@ -150,10 +150,10 @@
 										<button id="characters-items-choose" type="button" class="secondary" data-shortcut="Alt+Q" data-message="editor.characters.chooseEquipment" data-translation-context="Button that opens the dialog for choosing the items every character starts with"><!-- icon game-icons:swap-bag -->Choose Starting Equipment</button>
 									</div>
 								</div>
-								<p data-message="editor.characters.startingZone" data-translation-context="Shows the zone characters start in; {zone} is the zone's name">Starting zone: <strong id="characters-zone-name" data-argument="zone"></strong></p>
-								<p class="hint" data-message="editor.characters.startingZoneHint" data-translation-context="Explains the starting zone on the editor's Characters tab">Where characters start, unless their race or class says otherwise.</p>
+								<p data-message="editor.characters.startingArea" data-translation-context="Shows the area characters start in; {area} is the area's name">Starting area: <strong id="characters-area-name" data-argument="area"></strong></p>
+								<p class="hint" data-message="editor.characters.startingAreaHint" data-translation-context="Explains the starting area on the editor's Characters tab">Where characters start, unless their race or class says otherwise.</p>
 								<div>
-									<button id="characters-zone-choose" type="button" class="secondary" data-shortcut="Alt+C" data-message="editor.characters.chooseZone" data-translation-context="Button that opens the dialog for choosing the zone characters start in"><!-- icon ph:map-pin -->Choose Starting Zone</button>
+									<button id="characters-area-choose" type="button" class="secondary" data-shortcut="Alt+C" data-message="editor.characters.chooseArea" data-translation-context="Button that opens the dialog for choosing the area characters start in"><!-- icon ph:map-pin -->Choose Starting Area</button>
 								</div>
 								<p id="characters-error" class="form-error" role="alert" hidden></p>
 								<div class="form-buttons">
@@ -237,78 +237,78 @@
 						</div>
 					</section>
 
-					<section id="editor-panel-zones" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-zones" hidden>
-						<div id="zone-list-view">
+					<section id="editor-panel-areas" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-areas" hidden>
+						<div id="area-list-view">
 							<div class="panel-heading">
-								<h2 data-message="editor.zones.heading" data-translation-context="Heading of the list of the universe's zones">Zones</h2>
-								<button id="zone-add" type="button" data-shortcut="Alt+N" data-message="editor.zones.add" data-translation-context="Button that opens the dialog for making a new zone"><!-- icon ph:plus -->Add Zone</button>
+								<h2 data-message="editor.areas.heading" data-translation-context="Heading of the list of the universe's areas">Areas</h2>
+								<button id="area-add" type="button" data-shortcut="Alt+N" data-message="editor.areas.add" data-translation-context="Button that opens the dialog for making a new area"><!-- icon ph:plus -->Add Area</button>
 							</div>
-							<ul id="zone-list" class="zone-list"></ul>
-							<p id="zone-empty" class="universe-empty" data-message="editor.zones.none" data-translation-context="Shown instead of the list of zones when the universe only has its lobby" hidden>There are no zones besides the lobby.</p>
+							<ul id="area-list" class="area-list"></ul>
+							<p id="area-empty" class="universe-empty" data-message="editor.areas.none" data-translation-context="Shown instead of the list of areas when the universe only has its lobby" hidden>There are no areas besides the lobby.</p>
 						</div>
-						<div id="zone-editor-view" hidden>
+						<div id="area-editor-view" hidden>
 							<div class="panel-heading">
-								<button id="zone-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="editor.zone.back" data-translation-context="Button that closes the zone editor and goes back to the list of zones"><!-- icon ph:arrow-left -->Back to Zones</button>
-								<h2 id="zone-editor-title"></h2>
+								<button id="area-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="editor.area.back" data-translation-context="Button that closes the area editor and goes back to the list of areas"><!-- icon ph:arrow-left -->Back to Areas</button>
+								<h2 id="area-editor-title"></h2>
 							</div>
-							<form id="zone-form" class="form">
-								<fieldset id="zone-fields" class="plain">
-									<label data-message="form.name" data-translation-context="Label of the field for the name of a universe, zone or tile">
+							<form id="area-form" class="form">
+								<fieldset id="area-fields" class="plain">
+									<label data-message="form.name" data-translation-context="Label of the field for the name of a universe, area or tile">
 										Name
-										<input id="zone-name" required />
+										<input id="area-name" required />
 									</label>
-									<label class="checkbox" data-message="editor.zone.enabled" data-translation-context="Checkbox for whether players can go into the zone">
-										<input id="zone-enabled" type="checkbox" />
+									<label class="checkbox" data-message="editor.area.enabled" data-translation-context="Checkbox for whether players can go into the area">
+										<input id="area-enabled" type="checkbox" />
 										Enabled
 									</label>
-									<p id="zone-parent-disabled" class="hint" hidden></p>
-									<label data-message="editor.zone.parent" data-translation-context="Label of the field for the zone this one is inside">
-										Parent zone
-										<select id="zone-parent"></select>
+									<p id="area-parent-disabled" class="hint" hidden></p>
+									<label data-message="editor.area.parent" data-translation-context="Label of the field for the area this one is inside">
+										Parent area
+										<select id="area-parent"></select>
 									</label>
 									<fieldset class="choice">
-										<legend data-message="form.indoorsOrOutdoors" data-translation-context="Heading of the choice between indoors and outdoors for a zone or tile">Indoors or outdoors</legend>
-										<label class="checkbox" data-message="form.outdoors" data-translation-context="Choice for a zone or tile that is outdoors">
-											<input id="zone-outdoors" name="zone-indoors" type="radio" value="outdoors" />
+										<legend data-message="form.indoorsOrOutdoors" data-translation-context="Heading of the choice between indoors and outdoors for an area or tile">Indoors or outdoors</legend>
+										<label class="checkbox" data-message="form.outdoors" data-translation-context="Choice for an area or tile that is outdoors">
+											<input id="area-outdoors" name="area-indoors" type="radio" value="outdoors" />
 											Outdoors
 										</label>
-										<label class="checkbox" data-message="form.indoors" data-translation-context="Choice for a zone or tile that is indoors">
-											<input id="zone-indoors" name="zone-indoors" type="radio" value="indoors" />
+										<label class="checkbox" data-message="form.indoors" data-translation-context="Choice for an area or tile that is indoors">
+											<input id="area-indoors" name="area-indoors" type="radio" value="indoors" />
 											Indoors
 										</label>
 									</fieldset>
-									<label data-message="editor.zone.defaultTile" data-translation-context="Label of the field for the tile a zone's map is filled with where nothing else is painted">
+									<label data-message="editor.area.defaultTile" data-translation-context="Label of the field for the tile an area's map is filled with where nothing else is painted">
 										Default tile
-										<select id="zone-default-tile"></select>
+										<select id="area-default-tile"></select>
 									</label>
-									<label data-message="editor.passageOfTime" data-translation-context="Label of the field for how the time of day changes in a universe or zone">
+									<label data-message="editor.passageOfTime" data-translation-context="Label of the field for how the time of day changes in a universe or area">
 										Passage of time
-										<select id="zone-time"></select>
+										<select id="area-time"></select>
 									</label>
-									<label id="zone-faerie-field" data-message="editor.faerieMorning" data-translation-context="Label of the field for which side of the map has morning, when the passage of time is faerie" hidden>
+									<label id="area-faerie-field" data-message="editor.faerieMorning" data-translation-context="Label of the field for which side of the map has morning, when the passage of time is faerie" hidden>
 										Where is morning?
-										<select id="zone-faerie"></select>
+										<select id="area-faerie"></select>
 									</label>
-									<label class="checkbox" data-message="editor.zone.loopsEastWest" data-translation-context="Checkbox for a zone whose map wraps around, so walking off the east edge comes back on the west">
-										<input id="zone-loops-east-west" type="checkbox" />
+									<label class="checkbox" data-message="editor.area.loopsEastWest" data-translation-context="Checkbox for an area whose map wraps around, so walking off the east edge comes back on the west">
+										<input id="area-loops-east-west" type="checkbox" />
 										Loops east-west
 									</label>
-									<label class="checkbox" data-message="editor.zone.loopsNorthSouth" data-translation-context="Checkbox for a zone whose map wraps around, so walking off the north edge comes back on the south">
-										<input id="zone-loops-north-south" type="checkbox" />
+									<label class="checkbox" data-message="editor.area.loopsNorthSouth" data-translation-context="Checkbox for an area whose map wraps around, so walking off the north edge comes back on the south">
+										<input id="area-loops-north-south" type="checkbox" />
 										Loops north-south
 									</label>
-									<p id="zone-loops-hint" class="hint" data-message="editor.zone.faerieCantLoop" data-translation-context="Explains why the loop checkboxes are disabled" hidden>A zone whose passage of time is faerie can't loop.</p>
-									<p id="zone-size"></p>
-									<p id="zone-error" class="form-error" role="alert" hidden></p>
+									<p id="area-loops-hint" class="hint" data-message="editor.area.faerieCantLoop" data-translation-context="Explains why the loop checkboxes are disabled" hidden>An area whose passage of time is faerie can't loop.</p>
+									<p id="area-size"></p>
+									<p id="area-error" class="form-error" role="alert" hidden></p>
 									<div class="form-buttons">
-										<button id="zone-delete" type="button" class="danger" aria-describedby="zone-error" data-message="editor.zone.delete" data-translation-context="Button that deletes the zone being edited"><!-- icon ph:trash -->Delete Zone</button>
-										<span id="zone-saved" class="form-saved" role="status"></span>
-										<button id="zone-save" type="submit" aria-describedby="zone-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+										<button id="area-delete" type="button" class="danger" aria-describedby="area-error" data-message="editor.area.delete" data-translation-context="Button that deletes the area being edited"><!-- icon ph:trash -->Delete Area</button>
+										<span id="area-saved" class="form-saved" role="status"></span>
+										<button id="area-save" type="submit" aria-describedby="area-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
 									</div>
 								</fieldset>
 							</form>
 							<section class="map-editor" aria-labelledby="map-editor-title">
-								<h3 id="map-editor-title" data-message="editor.map.heading" data-translation-context="Heading of the zone's map editor">Map</h3>
+								<h3 id="map-editor-title" data-message="editor.map.heading" data-translation-context="Heading of the area's map editor">Map</h3>
 								<div id="map-tools" class="map-tools">
 									<fieldset class="choice">
 										<legend data-message="editor.map.tool" data-translation-context="Heading of the choice of what clicking the map does">Tool</legend>
@@ -316,7 +316,7 @@
 											<input id="map-tool-draw" name="map-tool" type="radio" value="draw" data-shortcut="Alt+R" checked />
 											Draw
 										</label>
-										<label class="checkbox" data-message="editor.map.links" data-translation-context="Map tool that adds and changes links to other zones">
+										<label class="checkbox" data-message="editor.map.links" data-translation-context="Map tool that adds and changes links to other areas">
 											<input id="map-tool-links" name="map-tool" type="radio" value="links" data-shortcut="Alt+L" />
 											Links
 										</label>
@@ -340,7 +340,7 @@
 								<div class="map-frame">
 									<button id="map-expand-north" type="button" class="secondary map-expand-north" data-message="editor.map.expandNorth" data-translation-context="Button above the map that makes it bigger to the north">+ North</button>
 									<button id="map-expand-west" type="button" class="secondary map-expand-west" data-message="editor.map.expandWest" data-translation-context="Button left of the map that makes it bigger to the west">+ West</button>
-									<div id="map-canvas" class="map-canvas" tabindex="0" role="application" aria-label="Map" aria-describedby="map-keyboard-help map-error" data-shortcut="Alt+M" data-message-aria-label="editor.map.label" data-translation-context-aria-label="Name of the zone's map in the map editor, for screen readers"></div>
+									<div id="map-canvas" class="map-canvas" tabindex="0" role="application" aria-label="Map" aria-describedby="map-keyboard-help map-error" data-shortcut="Alt+M" data-message-aria-label="editor.map.label" data-translation-context-aria-label="Name of the area's map in the map editor, for screen readers"></div>
 									<button id="map-expand-east" type="button" class="secondary map-expand-east" data-message="editor.map.expandEast" data-translation-context="Button right of the map that makes it bigger to the east">+ East</button>
 									<button id="map-expand-south" type="button" class="secondary map-expand-south" data-message="editor.map.expandSouth" data-translation-context="Button below the map that makes it bigger to the south">+ South</button>
 								</div>
@@ -356,9 +356,9 @@
 								<p id="map-keyboard-help" class="hint" data-message="editor.map.keyboardHelp" data-translation-context="Explains how to use the map editor with only the keyboard; the keys are the same in every language">With the map focused, the arrow keys move the cursor, 10 cells at a time with Shift. Space or Enter paints, or with the Links tool opens the cell's link; hold Space while moving to keep painting. + and - zoom, and Home goes back to the center cell.</p>
 								<p id="map-error" class="form-error" role="alert" hidden></p>
 							</section>
-							<div id="zone-children" hidden>
-								<h3 data-message="editor.zone.children" data-translation-context="Heading of the list of zones inside the zone being edited">Zones inside this one</h3>
-								<ul id="zone-child-list" class="zone-list"></ul>
+							<div id="area-children" hidden>
+								<h3 data-message="editor.area.children" data-translation-context="Heading of the list of areas inside the area being edited">Areas inside this one</h3>
+								<ul id="area-child-list" class="area-list"></ul>
 							</div>
 						</div>
 					</section>
@@ -491,11 +491,11 @@
 									<button id="race-items-choose" type="button" class="secondary" data-shortcut="Alt+Q" data-message="editor.race.chooseEquipment" data-translation-context="Button in the race editor that opens the dialog for choosing the items the race's characters also start with"><!-- icon game-icons:swap-bag -->Choose Equipment</button>
 								</div>
 							</div>
-							<p data-message="editor.race.startingZone" data-translation-context="Shows the zone a race's characters start in; {zone} is the zone's name">Starting zone: <strong id="race-zone-name" data-argument="zone"></strong></p>
-							<p class="hint" data-message="editor.race.startingZoneHint" data-translation-context="Explains the race editor's starting zone">Where the race's characters start, unless their class says otherwise.</p>
-							<div class="zone-buttons">
-								<button id="race-zone-choose" type="button" class="secondary" data-shortcut="Alt+C" data-message="editor.race.chooseZone" data-translation-context="Button in the race editor that opens the dialog for choosing the zone the race's characters start in"><!-- icon ph:map-pin -->Choose Zone</button>
-								<button id="race-zone-clear" type="button" class="secondary" data-shortcut="Alt+L" data-message="editor.race.clearZone" data-translation-context="Button in the race editor that takes away the race's starting zone, so its characters start in the universe's"><!-- icon ph:x -->Use the Universe's Zone</button>
+							<p data-message="editor.race.startingArea" data-translation-context="Shows the area a race's characters start in; {area} is the area's name">Starting area: <strong id="race-area-name" data-argument="area"></strong></p>
+							<p class="hint" data-message="editor.race.startingAreaHint" data-translation-context="Explains the race editor's starting area">Where the race's characters start, unless their class says otherwise.</p>
+							<div class="area-buttons">
+								<button id="race-area-choose" type="button" class="secondary" data-shortcut="Alt+C" data-message="editor.race.chooseArea" data-translation-context="Button in the race editor that opens the dialog for choosing the area the race's characters start in"><!-- icon ph:map-pin -->Choose Area</button>
+								<button id="race-area-clear" type="button" class="secondary" data-shortcut="Alt+L" data-message="editor.race.clearArea" data-translation-context="Button in the race editor that takes away the race's starting area, so its characters start in the universe's"><!-- icon ph:x -->Use the Universe's Area</button>
 							</div>
 							<p id="race-error" class="form-error" role="alert" hidden></p>
 							<div class="form-buttons">
@@ -544,15 +544,15 @@
 									<button id="class-items-choose" type="button" class="secondary" data-shortcut="Alt+Q" data-message="editor.class.chooseEquipment" data-translation-context="Button in the class editor that opens the dialog for choosing the items the class's members also start with"><!-- icon game-icons:swap-bag -->Choose Equipment</button>
 								</div>
 							</div>
-							<p data-message="editor.class.startingZone" data-translation-context="Shows the zone every member of a character class starts in, whatever their race; {zone} is the zone's name">Starting zone: <strong id="class-zone-name" data-argument="zone"></strong></p>
-							<div class="zone-buttons">
-								<button id="class-zone-choose" type="button" class="secondary" data-shortcut="Alt+C" data-message="editor.class.chooseZone" data-translation-context="Button in the class editor that opens the dialog for choosing the zone every member of the class starts in"><!-- icon ph:map-pin -->Choose Zone</button>
-								<button id="class-zone-clear" type="button" class="secondary" data-shortcut="Alt+L" data-message="editor.class.clearZone" data-translation-context="Button in the class editor that takes away the class's zone for every race, so a zone can be chosen for each race"><!-- icon ph:x -->Choose by Race</button>
+							<p data-message="editor.class.startingArea" data-translation-context="Shows the area every member of a character class starts in, whatever their race; {area} is the area's name">Starting area: <strong id="class-area-name" data-argument="area"></strong></p>
+							<div class="area-buttons">
+								<button id="class-area-choose" type="button" class="secondary" data-shortcut="Alt+C" data-message="editor.class.chooseArea" data-translation-context="Button in the class editor that opens the dialog for choosing the area every member of the class starts in"><!-- icon ph:map-pin -->Choose Area</button>
+								<button id="class-area-clear" type="button" class="secondary" data-shortcut="Alt+L" data-message="editor.class.clearArea" data-translation-context="Button in the class editor that takes away the class's area for every race, so an area can be chosen for each race"><!-- icon ph:x -->Choose by Race</button>
 							</div>
-							<div class="race-zones">
-								<h3 id="class-race-zones-heading" data-message="editor.class.raceZones" data-translation-context="Heading of the class editor's list of where the class's members of each race start">Starting zone by race</h3>
-								<p id="class-race-zones-note" class="hint" data-message="editor.class.raceZonesNote" data-translation-context="Shown in the class editor while the class has a zone for every race, which turns off the zones for each race" hidden>All members of this class, whatever their race, start in the class's zone.</p>
-								<ul id="class-race-zones" aria-labelledby="class-race-zones-heading"></ul>
+							<div class="race-areas">
+								<h3 id="class-race-areas-heading" data-message="editor.class.raceAreas" data-translation-context="Heading of the class editor's list of where the class's members of each race start">Starting area by race</h3>
+								<p id="class-race-areas-note" class="hint" data-message="editor.class.raceAreasNote" data-translation-context="Shown in the class editor while the class has an area for every race, which turns off the areas for each race" hidden>All members of this class, whatever their race, start in the class's area.</p>
+								<ul id="class-race-areas" aria-labelledby="class-race-areas-heading"></ul>
 							</div>
 							<p id="class-error" class="form-error" role="alert" hidden></p>
 							<div class="form-buttons">
@@ -567,22 +567,22 @@
 					<form id="tile-form" class="form">
 						<fieldset id="tile-fields" class="plain">
 							<h2 id="tile-dialog-title"></h2>
-							<label data-message="form.name" data-translation-context="Label of the field for the name of a universe, zone or tile">
+							<label data-message="form.name" data-translation-context="Label of the field for the name of a universe, area or tile">
 								Name
 								<input id="tile-name" required />
 							</label>
 							<fieldset class="choice">
-								<legend data-message="form.indoorsOrOutdoors" data-translation-context="Heading of the choice between indoors and outdoors for a zone or tile">Indoors or outdoors</legend>
-								<label class="checkbox" data-message="form.outdoors" data-translation-context="Choice for a zone or tile that is outdoors">
+								<legend data-message="form.indoorsOrOutdoors" data-translation-context="Heading of the choice between indoors and outdoors for an area or tile">Indoors or outdoors</legend>
+								<label class="checkbox" data-message="form.outdoors" data-translation-context="Choice for an area or tile that is outdoors">
 									<input id="tile-outdoors" name="tile-indoors" type="radio" value="outdoors" />
 									Outdoors
 								</label>
-								<label class="checkbox" data-message="form.indoors" data-translation-context="Choice for a zone or tile that is indoors">
+								<label class="checkbox" data-message="form.indoors" data-translation-context="Choice for an area or tile that is indoors">
 									<input id="tile-indoors" name="tile-indoors" type="radio" value="indoors" />
 									Indoors
 								</label>
 							</fieldset>
-							<p class="hint" data-message="editor.tile.indoorsHint" data-translation-context="Explains what choosing indoors or outdoors does for a tile">A preference, not a restriction: outdoor zones list outdoor tiles first.</p>
+							<p class="hint" data-message="editor.tile.indoorsHint" data-translation-context="Explains what choosing indoors or outdoors does for a tile">A preference, not a restriction: outdoor areas list outdoor tiles first.</p>
 							<label data-message="editor.tile.color" data-translation-context="Label of the field for the color a tile is drawn in">
 								Color
 								<span class="color-field">
@@ -619,43 +619,43 @@
 						</fieldset>
 					</form>
 				</dialog>
-				<dialog id="zone-add-dialog" class="panel dialog" aria-labelledby="zone-add-title">
-					<form id="zone-add-form" class="form">
-						<h2 id="zone-add-title" data-message="editor.zoneAdd.title" data-translation-context="Title of the dialog for making a new zone">Add Zone</h2>
-						<label data-message="form.name" data-translation-context="Label of the field for the name of a universe, zone or tile">
+				<dialog id="area-add-dialog" class="panel dialog" aria-labelledby="area-add-title">
+					<form id="area-add-form" class="form">
+						<h2 id="area-add-title" data-message="editor.areaAdd.title" data-translation-context="Title of the dialog for making a new area">Add Area</h2>
+						<label data-message="form.name" data-translation-context="Label of the field for the name of a universe, area or tile">
 							Name
-							<input id="zone-add-name" required />
+							<input id="area-add-name" required />
 						</label>
 						<fieldset class="choice">
-							<legend data-message="form.indoorsOrOutdoors" data-translation-context="Heading of the choice between indoors and outdoors for a zone or tile">Indoors or outdoors</legend>
-							<label class="checkbox" data-message="form.outdoors" data-translation-context="Choice for a zone or tile that is outdoors">
-								<input id="zone-add-outdoors" name="zone-add-indoors" type="radio" value="outdoors" checked />
+							<legend data-message="form.indoorsOrOutdoors" data-translation-context="Heading of the choice between indoors and outdoors for an area or tile">Indoors or outdoors</legend>
+							<label class="checkbox" data-message="form.outdoors" data-translation-context="Choice for an area or tile that is outdoors">
+								<input id="area-add-outdoors" name="area-add-indoors" type="radio" value="outdoors" checked />
 								Outdoors
 							</label>
-							<label class="checkbox" data-message="form.indoors" data-translation-context="Choice for a zone or tile that is indoors">
-								<input id="zone-add-indoors" name="zone-add-indoors" type="radio" value="indoors" />
+							<label class="checkbox" data-message="form.indoors" data-translation-context="Choice for an area or tile that is indoors">
+								<input id="area-add-indoors" name="area-add-indoors" type="radio" value="indoors" />
 								Indoors
 							</label>
 						</fieldset>
-						<p id="zone-add-error" class="form-error" role="alert" hidden></p>
+						<p id="area-add-error" class="form-error" role="alert" hidden></p>
 						<div class="dialog-buttons">
-							<button id="zone-add-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-							<button id="zone-add-submit" type="submit" aria-describedby="zone-add-error" data-shortcut="Alt+S" data-message="editor.zoneAdd.submit" data-translation-context="Button that makes the new zone">Add</button>
+							<button id="area-add-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="area-add-submit" type="submit" aria-describedby="area-add-error" data-shortcut="Alt+S" data-message="editor.areaAdd.submit" data-translation-context="Button that makes the new area">Add</button>
 						</div>
 					</form>
 				</dialog>
-				<dialog id="zone-select-dialog" class="panel dialog zone-select-dialog" aria-labelledby="zone-select-title">
-					<form id="zone-select-form" class="form">
-						<h2 id="zone-select-title" data-message="editor.zoneSelect.title" data-translation-context="Title of the dialog for choosing one of the universe's zones">Choose a Zone</h2>
-						<input id="zone-select-search" type="search" placeholder="Search by name" aria-label="Search zones by name" autocomplete="off" data-message-placeholder="editor.zoneSelect.search" data-translation-context-placeholder="Shown in the empty field that narrows the zones down by name" data-message-aria-label="editor.zoneSelect.searchLabel" data-translation-context-aria-label="Name of the field that narrows the zones down by name, for screen readers" />
-						<fieldset id="zone-select-results" class="choice stacked zone-select-results" aria-label="Zones" data-message-aria-label="editor.zoneSelect.results" data-translation-context-aria-label="Name of the list of zones to choose from, for screen readers"></fieldset>
-						<p id="zone-select-none" class="universe-empty" data-message="editor.zoneSelect.none" data-translation-context="Shown in the dialog for choosing a zone when no zone's name matches the search" hidden>No zones match.</p>
-						<div id="zone-select-preview" class="zone-select-preview" aria-hidden="true"></div>
-						<p id="zone-select-summary" role="status"></p>
-						<p id="zone-select-error" class="form-error" role="alert" hidden></p>
+				<dialog id="area-select-dialog" class="panel dialog area-select-dialog" aria-labelledby="area-select-title">
+					<form id="area-select-form" class="form">
+						<h2 id="area-select-title" data-message="editor.areaSelect.title" data-translation-context="Title of the dialog for choosing one of the universe's areas">Choose an Area</h2>
+						<input id="area-select-search" type="search" placeholder="Search by name" aria-label="Search areas by name" autocomplete="off" data-message-placeholder="editor.areaSelect.search" data-translation-context-placeholder="Shown in the empty field that narrows the areas down by name" data-message-aria-label="editor.areaSelect.searchLabel" data-translation-context-aria-label="Name of the field that narrows the areas down by name, for screen readers" />
+						<fieldset id="area-select-results" class="choice stacked area-select-results" aria-label="Areas" data-message-aria-label="editor.areaSelect.results" data-translation-context-aria-label="Name of the list of areas to choose from, for screen readers"></fieldset>
+						<p id="area-select-none" class="universe-empty" data-message="editor.areaSelect.none" data-translation-context="Shown in the dialog for choosing an area when no area's name matches the search" hidden>No areas match.</p>
+						<div id="area-select-preview" class="area-select-preview" aria-hidden="true"></div>
+						<p id="area-select-summary" role="status"></p>
+						<p id="area-select-error" class="form-error" role="alert" hidden></p>
 						<div class="dialog-buttons">
-							<button id="zone-select-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-							<button id="zone-select-submit" type="submit" aria-describedby="zone-select-error" data-shortcut="Alt+S" data-message="editor.zoneSelect.submit" data-translation-context="Button that chooses the zone selected in the dialog">Choose</button>
+							<button id="area-select-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="area-select-submit" type="submit" aria-describedby="area-select-error" data-shortcut="Alt+S" data-message="editor.areaSelect.submit" data-translation-context="Button that chooses the area selected in the dialog">Choose</button>
 						</div>
 					</form>
 				</dialog>
@@ -695,25 +695,25 @@
 						<fieldset id="link-fields" class="plain">
 							<h2 id="link-title"></h2>
 							<fieldset class="choice">
-								<legend data-message="editor.link.mode" data-translation-context="Heading of the choice of what a zone link does when a player steps onto its cell">When a player steps onto the cell</legend>
-								<label class="checkbox" data-message="editor.link.automatic" data-translation-context="Choice for a zone link that moves the player to the other zone as soon as they step onto it">
+								<legend data-message="editor.link.mode" data-translation-context="Heading of the choice of what an area link does when a player steps onto its cell">When a player steps onto the cell</legend>
+								<label class="checkbox" data-message="editor.link.automatic" data-translation-context="Choice for an area link that moves the player to the other area as soon as they step onto it">
 									<input id="link-automatic" name="link-mode" type="radio" value="automatic" />
 									Take them through (automatic)
 								</label>
-								<label class="checkbox" data-message="editor.link.manual" data-translation-context="Choice for a zone link that asks the player whether to go to the other zone">
+								<label class="checkbox" data-message="editor.link.manual" data-translation-context="Choice for an area link that asks the player whether to go to the other area">
 									<input id="link-manual" name="link-mode" type="radio" value="manual" />
 									Offer to take them through (manual)
 								</label>
 							</fieldset>
-							<label class="checkbox" data-message="editor.link.wholeGroup" data-translation-context="Checkbox for a zone link that can only be used when every member of the group is present">
+							<label class="checkbox" data-message="editor.link.wholeGroup" data-translation-context="Checkbox for an area link that can only be used when every member of the group is present">
 								<input id="link-whole-group" type="checkbox" />
 								Requires the whole group
 							</label>
-							<label data-message="editor.link.target" data-translation-context="Label of the field for the zone a link leads to">
+							<label data-message="editor.link.target" data-translation-context="Label of the field for the area a link leads to">
 								Goes to
 								<select id="link-target" required></select>
 							</label>
-							<label class="checkbox" data-message="editor.link.addReturn" data-translation-context="Checkbox that also places a link in the other zone leading back">
+							<label class="checkbox" data-message="editor.link.addReturn" data-translation-context="Checkbox that also places a link in the other area leading back">
 								<input id="link-return" type="checkbox" />
 								Add a return link that leads back to this cell
 							</label>
@@ -728,13 +728,13 @@
 									The return link's cell
 								</label>
 							</fieldset>
-							<div id="link-preview" class="link-preview" tabindex="0" role="application" aria-label="Map of the zone the link goes to" aria-describedby="link-preview-help" data-message-aria-label="editor.link.previewLabel" data-translation-context-aria-label="Name of the map in the link dialog, for screen readers, where clicking chooses the link's destination or return cell"></div>
+							<div id="link-preview" class="link-preview" tabindex="0" role="application" aria-label="Map of the area the link goes to" aria-describedby="link-preview-help" data-message-aria-label="editor.link.previewLabel" data-translation-context-aria-label="Name of the map in the link dialog, for screen readers, where clicking chooses the link's destination or return cell"></div>
 							<p id="link-preview-help" class="hint" data-message="editor.link.previewHelp" data-translation-context="Explains how to choose a cell on the link dialog's map with the keyboard; the keys are the same in every language">With the map focused, the arrow keys move the cursor, 10 cells at a time with Shift, and Space or Enter chooses the cell.</p>
 							<p id="link-destination" role="status"></p>
 							<p id="link-return-cell" role="status" hidden></p>
 							<p id="link-error" class="form-error" role="alert" hidden></p>
 							<div class="form-buttons">
-								<button id="link-delete" type="button" class="danger" aria-describedby="link-error" data-message="editor.link.delete" data-translation-context="Button that deletes the zone link being edited"><!-- icon ph:trash -->Delete Link</button>
+								<button id="link-delete" type="button" class="danger" aria-describedby="link-error" data-message="editor.link.delete" data-translation-context="Button that deletes the area link being edited"><!-- icon ph:trash -->Delete Link</button>
 								<button id="link-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
 								<button id="link-save" type="submit" aria-describedby="link-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
 							</div>

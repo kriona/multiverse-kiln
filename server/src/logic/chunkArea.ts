@@ -1,5 +1,5 @@
 /**
- * Which chunks of a zone's map are near its players: the ones a room keeps loaded and sends to clients
+ * Which chunks of an area's map are near its players: the ones a room keeps loaded and sends to clients
  *
  * Pure functions: no Colyseus, database, network or timers (CLAUDE.md architecture rule 4)
  */
@@ -8,7 +8,7 @@ import { chunkCoordinate, chunkKey, positiveModulo, type MapBounds } from '@mult
 import type { Cell } from './movement.js';
 
 /**
- * The shape of a zone's map, as chunkArea needs it
+ * The shape of an area's map, as chunkArea needs it
  */
 export interface ChunkAreaMap
 {

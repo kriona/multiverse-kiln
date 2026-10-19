@@ -7,7 +7,7 @@ import { className } from '../raceAndClassNames';
 import { ClassDialog } from './ClassDialog';
 import type { ItemSelectDialog } from './ItemSelectDialog';
 import { createOptionRow, optionTags } from './optionRows';
-import type { ZoneSelectDialog } from './ZoneSelectDialog';
+import type { AreaSelectDialog } from './AreaSelectDialog';
 
 /**
  * The Classes tab: every class characters of the universe can be, opening the class editor
@@ -28,12 +28,12 @@ export class ClassesTab
 
 	/**
 	 * @param api The editor's API
-	 * @param zoneSelect The dialog for choosing a class's starting zones
+	 * @param areaSelect The dialog for choosing a class's starting areas
 	 * @param itemSelect The dialog for choosing a class's starting equipment
 	 */
-	constructor(private readonly api: EditorApi, zoneSelect: ZoneSelectDialog, itemSelect: ItemSelectDialog)
+	constructor(private readonly api: EditorApi, areaSelect: AreaSelectDialog, itemSelect: ItemSelectDialog)
 	{
-		this.dialog = new ClassDialog(api, zoneSelect, itemSelect);
+		this.dialog = new ClassDialog(api, areaSelect, itemSelect);
 
 		this.addButton.addEventListener('click', () =>
 		{

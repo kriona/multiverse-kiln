@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import { CHUNK_SIZE, chunkCoordinate, chunkKey, GRID_CELL_SIZE, isInBounds, positiveModulo, tileIdAt, type ZonePayload, type ZoneTiles } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, chunkCoordinate, chunkKey, GRID_CELL_SIZE, isInBounds, positiveModulo, tileIdAt, type AreaPayload, type AreaTiles } from '@multiverse-kiln/shared';
 
 /**
  * Color of a void cell, and of a cell whose tile the client wasn't told about
@@ -40,30 +40,30 @@ interface Piece
 }
 
 /**
- * Draws a zone's tiles, a chunk-sized piece at a time around the camera
+ * Draws an area's tiles, a chunk-sized piece at a time around the camera
  *
  * Tiles are drawn as their colors. Pieces are laid out in world units the way the camera sees them,
- * and each one is filled from the zone's cells: on a zone that loops, a piece past an edge is filled
+ * and each one is filled from the area's cells: on an area that loops, a piece past an edge is filled
  * from the far side, so the map carries on seamlessly. Pieces that fall out of view are dropped
  */
-export class ZoneRenderer
+export class AreaRenderer
 {
 	/**
-	 * Gives each zone's tile texture a key of its own, so a zone's texture can be removed while the next one is made
+	 * Gives each area's tile texture a key of its own, so an area's texture can be removed while the next one is made
 	 */
 	private static nextTextureId = 0;
 
 	/**
-	 * Width of the zone in world units: how far apart the copies of a looping zone are
+	 * Width of the area in world units: how far apart the copies of a looping area are
 	 */
 	readonly width: number;
 
 	/**
-	 * Height of the zone in world units
+	 * Height of the area in world units
 	 */
 	readonly height: number;
 
-	private readonly tiles: ZoneTiles;
+	private readonly tiles: AreaTiles;
 	private readonly textureKey: string;
 
 	/**
@@ -88,29 +88,29 @@ export class ZoneRenderer
 
 	/**
 	 * @param scene Scene to draw in
-	 * @param zone The zone
-	 * @param chunks The zone's stored chunks, by chunkKey(), when someone else holds them and changes
-	 * them (calling refreshChunks); otherwise they are taken from zone.chunks
+	 * @param area The area
+	 * @param chunks The area's stored chunks, by chunkKey(), when someone else holds them and changes
+	 * them (calling refreshChunks); otherwise they are taken from area.chunks
 	 */
-	constructor(private readonly scene: Phaser.Scene, private readonly zone: ZonePayload, chunks?: ReadonlyMap<string, readonly number[]>)
+	constructor(private readonly scene: Phaser.Scene, private readonly area: AreaPayload, chunks?: ReadonlyMap<string, readonly number[]>)
 	{
-		const { bounds } = zone;
+		const { bounds } = area;
 
 		this.width = ((bounds.maxColumn - bounds.minColumn) + 1) * GRID_CELL_SIZE;
 		this.height = ((bounds.maxRow - bounds.minRow) + 1) * GRID_CELL_SIZE;
 		this.tiles = {
 			bounds,
-			defaultTileId: zone.defaultTileId,
-			chunks: (chunks ?? new Map(zone.chunks.map((chunk) => [chunkKey(chunk.chunkColumn, chunk.chunkRow), chunk.cells])))
+			defaultTileId: area.defaultTileId,
+			chunks: (chunks ?? new Map(area.chunks.map((chunk) => [chunkKey(chunk.chunkColumn, chunk.chunkRow), chunk.cells])))
 		};
-		this.textureKey = `zone-tiles-${ZoneRenderer.nextTextureId++}`;
+		this.textureKey = `area-tiles-${AreaRenderer.nextTextureId++}`;
 
-		zone.tiles.forEach((tile, index) =>
+		area.tiles.forEach((tile, index) =>
 		{
 			this.tileIndexes.set(tile.id, index);
 		});
 
-		this.voidIndex = zone.tiles.length;
+		this.voidIndex = area.tiles.length;
 		this.createTexture();
 	}
 
@@ -124,8 +124,8 @@ export class ZoneRenderer
 		const wanted = new Set<string>();
 
 		this.lastView = view;
-		const columns = this.pieceRange(view.x, view.right, this.zone.bounds.minColumn, this.zone.bounds.maxColumn, this.zone.loopsEastWest);
-		const rows = this.pieceRange(view.y, view.bottom, this.zone.bounds.minRow, this.zone.bounds.maxRow, this.zone.loopsNorthSouth);
+		const columns = this.pieceRange(view.x, view.right, this.area.bounds.minColumn, this.area.bounds.maxColumn, this.area.loopsEastWest);
+		const rows = this.pieceRange(view.y, view.bottom, this.area.bounds.minRow, this.area.bounds.maxRow, this.area.loopsNorthSouth);
 
 		for (let pieceRow = rows.first; pieceRow <= rows.last; pieceRow++)
 		{
@@ -195,7 +195,7 @@ export class ZoneRenderer
 	 */
 	private createTexture(): void
 	{
-		const colors = [...this.zone.tiles.map((tile) => tile.color), VOID_COLOR];
+		const colors = [...this.area.tiles.map((tile) => tile.color), VOID_COLOR];
 		const texture = this.scene.textures.createCanvas(this.textureKey, colors.length * GRID_CELL_SIZE, GRID_CELL_SIZE);
 
 		if (!texture)
@@ -221,13 +221,13 @@ export class ZoneRenderer
 	/**
 	 * The pieces along one axis that cover a stretch of the world, plus the margin
 	 *
-	 * Along an axis that doesn't loop, only pieces that hold some of the zone are drawn
+	 * Along an axis that doesn't loop, only pieces that hold some of the area are drawn
 	 *
 	 * @param start Where the view starts, in world units
 	 * @param end Where the view ends, in world units
-	 * @param minCell The zone's first column or row
-	 * @param maxCell The zone's last column or row
-	 * @param loops Whether the zone loops along this axis
+	 * @param minCell The area's first column or row
+	 * @param maxCell The area's last column or row
+	 * @param loops Whether the area loops along this axis
 	 * @return The first and last piece, which may be an empty range
 	 */
 	private pieceRange(start: number, end: number, minCell: number, maxCell: number, loops: boolean): { first: number; last: number }
@@ -298,14 +298,14 @@ export class ZoneRenderer
 	/**
 	 * What to draw for a cell as the camera sees it
 	 *
-	 * @param column The cell's column, which on a looping zone may be past an edge
+	 * @param column The cell's column, which on a looping area may be past an edge
 	 * @param row The cell's row, likewise
 	 * @param chunks Collects the key of the chunk the cell is drawn from
 	 * @return Its index in the tile texture, or EMPTY_INDEX for a cell off the map
 	 */
 	private indexAt(column: number, row: number, chunks: Set<string>): number
 	{
-		const { bounds, loopsEastWest, loopsNorthSouth } = this.zone;
+		const { bounds, loopsEastWest, loopsNorthSouth } = this.area;
 		const wrappedColumn = (loopsEastWest ? bounds.minColumn + positiveModulo(column - bounds.minColumn, (bounds.maxColumn - bounds.minColumn) + 1) : column);
 		const wrappedRow = (loopsNorthSouth ? bounds.minRow + positiveModulo(row - bounds.minRow, (bounds.maxRow - bounds.minRow) + 1) : row);
 

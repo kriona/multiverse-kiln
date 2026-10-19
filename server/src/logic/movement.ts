@@ -25,7 +25,7 @@ export interface Cell
 }
 
 /**
- * The grid players move on: a zone's map
+ * The grid players move on: an area's map
  */
 export interface Grid
 {
@@ -57,7 +57,7 @@ export interface Grid
 
 	/**
 	 * Whether a player who steps onto a cell inside the bounds stops there, even with a direction still
-	 * held, such as a cell that takes the player to another zone
+	 * held, such as a cell that takes the player to another area
 	 */
 	endsMovement: (cell: Cell) => boolean;
 }

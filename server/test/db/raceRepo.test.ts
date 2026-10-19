@@ -5,14 +5,14 @@ import { DEFAULT_RACE_NAMES, emptyPf1eMoney, NEW_PF1E_RACE_RULES, PF1E_RACES, pf
 import { findDefaultItemIds } from '../../src/db/itemRepo.js';
 import { countCustomRaces, createCustomRace, deleteCustomRace, findDefaultRaceIds, findRaceKind, isRaceStartingItem, loadEditorRaces, restoreDefaultRace, saveEditedDefaultRace, updateCustomRace, type CustomRaceSettings } from '../../src/db/raceRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
-import { addUniverse, addZone } from './fixtures.js';
+import { addUniverse, addArea } from './fixtures.js';
 
 const lizardfolk: CustomRaceSettings = {
 	name: 'Lizardfolk',
 	enabled: true,
 	startingMoney: emptyPf1eMoney(),
 	startingItems: [],
-	startingZoneId: null,
+	startingAreaId: null,
 	rules: {
 		...NEW_PF1E_RACE_RULES,
 		abilityModifiers: {
@@ -75,7 +75,7 @@ describe('raceRepo', () =>
 					enabled: true,
 					startingMoney: emptyPf1eMoney(),
 					startingItems: [],
-					startingZoneId: null,
+					startingAreaId: null,
 					rules: pf1eRaceRules(PF1E_RACES[key]),
 					custom: false,
 					edited: false
@@ -87,7 +87,7 @@ describe('raceRepo', () =>
 	it('adds, changes and deletes a universe\'s own race', async () =>
 	{
 		const universeId = await addUniverse();
-		const zoneId = await addZone(universeId);
+		const areaId = await addArea(universeId);
 		const daggerId = (await findDefaultItemIds('pf1e')).get('dagger') as number;
 		const raceId = await inTransaction((transaction) => createCustomRace(universeId, 'pf1e', lizardfolk, transaction));
 
@@ -104,7 +104,7 @@ describe('raceRepo', () =>
 				gp: 5
 			},
 			startingItems: [{ itemId: daggerId, quantity: 2 }],
-			startingZoneId: zoneId,
+			startingAreaId: areaId,
 			rules: {
 				...lizardfolk.rules,
 				darkvision: true,

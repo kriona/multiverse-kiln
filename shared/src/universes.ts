@@ -1,5 +1,5 @@
 /**
- * The settings a universe and its zones choose from
+ * The settings a universe and its areas choose from
  *
  * The database stores these values as enums (server/src/db/schema.ts), so adding one needs a migration.
  * Each also has its name as players read it, in their language
@@ -94,9 +94,9 @@ export const RULESET_NAMES: Record<Ruleset, MessageDescriptor> = defineMessages(
 });
 
 /**
- * How the time of day changes in a universe or zone (see STRUCTURE-OVERVIEW.md)
+ * How the time of day changes in a universe or area (see STRUCTURE-OVERVIEW.md)
  *
- * Zones also have inherit, which uses the parent zone's setting, or the universe's for a zone with no parent
+ * Areas also have inherit, which uses the parent area's setting, or the universe's for an area with no parent
  */
 export const PASSAGES_OF_TIME = [
 	'flows_normally',
@@ -109,18 +109,18 @@ export const PASSAGES_OF_TIME = [
 
 export type PassageOfTime = typeof PASSAGES_OF_TIME[number];
 
-export const ZONE_PASSAGES_OF_TIME = ['inherit', ...PASSAGES_OF_TIME] as const;
+export const AREA_PASSAGES_OF_TIME = ['inherit', ...PASSAGES_OF_TIME] as const;
 
-export type ZonePassageOfTime = typeof ZONE_PASSAGES_OF_TIME[number];
+export type AreaPassageOfTime = typeof AREA_PASSAGES_OF_TIME[number];
 
 /**
- * Each passage of time's name, including a zone's inherit
+ * Each passage of time's name, including an area's inherit
  */
-export const PASSAGE_OF_TIME_NAMES: Record<ZonePassageOfTime, MessageDescriptor> = defineMessages({
+export const PASSAGE_OF_TIME_NAMES: Record<AreaPassageOfTime, MessageDescriptor> = defineMessages({
 	inherit: {
 		id: 'universe.time.inherit',
-		defaultMessage: 'inherit from the parent zone',
-		description: 'Passage of time for a zone that uses its parent zone\'s setting, or the universe\'s'
+		defaultMessage: 'inherit from the parent area',
+		description: 'Passage of time for an area that uses its parent area\'s setting, or the universe\'s'
 	},
 	flows_normally: {
 		id: 'universe.time.flows_normally',
@@ -230,18 +230,18 @@ export const FAERIE_MORNING_NAMES: Record<FaerieMorning, MessageDescriptor> = de
 });
 
 /**
- * How a zone link is taken: automatic links move you as soon as you step onto the cell, manual links
+ * How an area link is taken: automatic links move you as soon as you step onto the cell, manual links
  * offer to
  */
-export const ZONE_LINK_MODES = ['automatic', 'manual'] as const;
+export const AREA_LINK_MODES = ['automatic', 'manual'] as const;
 
-export type ZoneLinkMode = typeof ZONE_LINK_MODES[number];
+export type AreaLinkMode = typeof AREA_LINK_MODES[number];
 
 /**
  * What a user may do with a universe (see STRUCTURE-OVERVIEW.md, Tab: Editors)
  *
  * - creator: change everything
- * - builder: change the world: tiles, zones, maps and links
+ * - builder: change the world: tiles, areas, maps and links
  * - beta_tester: play while the universe is in prologue
  */
 export const UNIVERSE_ROLES = [
@@ -264,7 +264,7 @@ export const UNIVERSE_ROLE_NAMES: Record<UniverseRole, MessageDescriptor> = defi
 	builder: {
 		id: 'universe.role.builder',
 		defaultMessage: 'builder',
-		description: 'Role of someone who can change a universe\'s world: its tiles, zones, maps and links'
+		description: 'Role of someone who can change a universe\'s world: its tiles, areas, maps and links'
 	},
 	beta_tester: {
 		id: 'universe.role.beta_tester',
@@ -285,7 +285,7 @@ export function canEditUniverseSettings(role: UniverseRole): boolean
 }
 
 /**
- * Whether a role may change a universe's world: its tiles, zones, maps and links
+ * Whether a role may change a universe's world: its tiles, areas, maps and links
  *
  * @param role The user's role in the universe
  * @return True when the role may

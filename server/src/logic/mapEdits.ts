@@ -1,5 +1,5 @@
 /**
- * Changes the world editor makes to zone maps and the zone tree
+ * Changes the world editor makes to area maps and the area tree
  *
  * Pure functions: no Colyseus, database, network or timers (CLAUDE.md architecture rule 4)
  */
@@ -117,21 +117,21 @@ export function clipChunk(chunkColumn: number, chunkRow: number, cells: readonly
 }
 
 /**
- * Whether giving a zone a new parent would make it its own ancestor
+ * Whether giving an area a new parent would make it its own ancestor
  *
- * @param parents Every zone's parent in the universe (null for a top-level zone), by zone ID
- * @param zoneId The zone being changed
- * @param parentZoneId Its new parent
- * @return True when the zone is the new parent or one of the new parent's ancestors
+ * @param parents Every area's parent in the universe (null for a top-level area), by area ID
+ * @param areaId The area being changed
+ * @param parentAreaId Its new parent
+ * @return True when the area is the new parent or one of the new parent's ancestors
  */
-export function wouldCreateCycle(parents: ReadonlyMap<string, string | null>, zoneId: string, parentZoneId: string): boolean
+export function wouldCreateCycle(parents: ReadonlyMap<string, string | null>, areaId: string, parentAreaId: string): boolean
 {
 	const visited = new Set<string>();
-	let current: string | null | undefined = parentZoneId;
+	let current: string | null | undefined = parentAreaId;
 
 	while ((current !== null) && (current !== undefined) && !visited.has(current))
 	{
-		if (current === zoneId)
+		if (current === areaId)
 		{
 			return(true);
 		}

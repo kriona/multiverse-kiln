@@ -6,16 +6,16 @@ import { countCustomClasses, createCustomClass, deleteCustomClass, findClassKind
 import { findDefaultItemIds } from '../../src/db/itemRepo.js';
 import { findDefaultRaceIds } from '../../src/db/raceRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
-import { deleteZone } from '../../src/db/zoneRepo.js';
-import { addUniverse, addZone } from './fixtures.js';
+import { deleteArea } from '../../src/db/areaRepo.js';
+import { addUniverse, addArea } from './fixtures.js';
 
 const gunslinger: CustomClassSettings = {
 	name: 'Gunslinger',
 	enabled: true,
 	startingMoney: emptyPf1eMoney(),
 	startingItems: [],
-	startingZoneId: null,
-	raceZones: [],
+	startingAreaId: null,
+	raceAreas: [],
 	rules: {
 		...NEW_PF1E_CLASS_RULES,
 		primaryAbility: 'dexterity'
@@ -75,8 +75,8 @@ describe('classRepo', () =>
 					enabled: true,
 					startingMoney: emptyPf1eMoney(),
 					startingItems: [],
-					startingZoneId: null,
-					raceZones: [],
+					startingAreaId: null,
+					raceAreas: [],
 					rules: { ...PF1E_CLASSES[key] },
 					custom: false,
 					edited: false
@@ -88,7 +88,7 @@ describe('classRepo', () =>
 	it('adds, changes and deletes a universe\'s own class', async () =>
 	{
 		const universeId = await addUniverse();
-		const zoneId = await addZone(universeId);
+		const areaId = await addArea(universeId);
 		const elfId = (await findDefaultRaceIds('pf1e')).get('elf') as number;
 		const daggerId = (await findDefaultItemIds('pf1e')).get('dagger') as number;
 		const classId = await inTransaction((transaction) => createCustomClass(universeId, 'pf1e', gunslinger, transaction));
@@ -105,7 +105,7 @@ describe('classRepo', () =>
 				sp: 30
 			},
 			startingItems: [{ itemId: daggerId, quantity: 1 }],
-			raceZones: [{ raceId: elfId, zoneId }],
+			raceAreas: [{ raceId: elfId, areaId }],
 			rules: {
 				primaryAbility: 'wisdom',
 				tradition: 'divine',
@@ -117,9 +117,9 @@ describe('classRepo', () =>
 		assert.deepStrictEqual(await findClass(universeId, classId), { id: classId, key: null, ...changed, custom: true, edited: false });
 		assert.strictEqual(await isClassStartingItem(universeId, daggerId), true);
 
-		// Deleting a zone drops the per-race entries that start there
-		await deleteZone(zoneId);
-		assert.deepStrictEqual((await findClass(universeId, classId))?.raceZones, []);
+		// Deleting an area drops the per-race entries that start there
+		await deleteArea(areaId);
+		assert.deepStrictEqual((await findClass(universeId, classId))?.raceAreas, []);
 
 		await deleteCustomClass(universeId, classId);
 		assert.strictEqual(await findClass(universeId, classId), undefined);
@@ -130,12 +130,12 @@ describe('classRepo', () =>
 	{
 		const universeId = await addUniverse();
 		const otherId = await addUniverse('Other');
-		const zoneId = await addZone(universeId);
+		const areaId = await addArea(universeId);
 		const wizardId = await defaultClassId('wizard');
 		const original = await findClass(universeId, wizardId) as EditorClass;
 		const edited: ClassSettings = {
 			...original,
-			startingZoneId: zoneId,
+			startingAreaId: areaId,
 			rules: {
 				...original.rules,
 				castingStyle: 'spontaneous'
@@ -148,9 +148,9 @@ describe('classRepo', () =>
 		assert.deepStrictEqual(await findClass(universeId, wizardId), { ...original, ...edited, edited: true });
 		assert.deepStrictEqual(await findClass(otherId, wizardId), original);
 
-		// Deleting a class's zone leaves its members to start where their race or the universe says
-		await deleteZone(zoneId);
-		assert.strictEqual((await findClass(universeId, wizardId))?.startingZoneId, null);
+		// Deleting a class's area leaves its members to start where their race or the universe says
+		await deleteArea(areaId);
+		assert.strictEqual((await findClass(universeId, wizardId))?.startingAreaId, null);
 
 		await restoreDefaultClass(universeId, wizardId);
 		assert.deepStrictEqual(await findClass(universeId, wizardId), original);

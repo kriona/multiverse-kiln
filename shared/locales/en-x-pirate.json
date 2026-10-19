@@ -267,13 +267,181 @@
 		"message": "Batten down",
 		"source": "Close"
 	},
+	"editor.area.back": {
+		"message": "Back to Areas",
+		"source": "Back to Areas"
+	},
+	"editor.area.children": {
+		"message": "Areas in this one's hold",
+		"source": "Areas inside this one"
+	},
+	"editor.area.confirmDelete": {
+		"message": "Scuttle {area}, its chart and every passage into it? Areas inside it be cast adrift as top-level areas. There be no bringin' it back.",
+		"source": "Delete {area}, its map and every link into it? Areas inside it become top-level areas. This can't be undone."
+	},
+	"editor.area.defaultTile": {
+		"message": "Usual tile",
+		"source": "Default tile"
+	},
+	"editor.area.delete": {
+		"message": "Scuttle Area",
+		"source": "Delete Area"
+	},
+	"editor.area.deleteFailed": {
+		"message": "Couldn't scuttle the area.",
+		"source": "Could not delete the area."
+	},
+	"editor.area.enabled": {
+		"message": "Open to all hands",
+		"source": "Enabled"
+	},
+	"editor.area.faerieCantLoop": {
+		"message": "An area where the hours pass the faerie way can't loop.",
+		"source": "An area whose passage of time is faerie can't loop."
+	},
+	"editor.area.indoorTiles": {
+		"message": "Below-decks tiles",
+		"source": "Indoor tiles"
+	},
+	"editor.area.loading": {
+		"message": "Hoistin'...",
+		"source": "Loading..."
+	},
+	"editor.area.lobbyTitle": {
+		"message": "{area} (the tavern)",
+		"source": "{area} (the lobby)"
+	},
+	"editor.area.loopsEastWest": {
+		"message": "Wraps east-west",
+		"source": "Loops east-west"
+	},
+	"editor.area.loopsNorthSouth": {
+		"message": "Wraps north-south",
+		"source": "Loops north-south"
+	},
+	"editor.area.noParent": {
+		"message": "None (a top-level area)",
+		"source": "None (a top-level area)"
+	},
+	"editor.area.openFailed": {
+		"message": "Couldn't open the area.",
+		"source": "Could not open the area."
+	},
+	"editor.area.outdoorTiles": {
+		"message": "Topside tiles",
+		"source": "Outdoor tiles"
+	},
+	"editor.area.parent": {
+		"message": "Mother area",
+		"source": "Parent area"
+	},
+	"editor.area.parentDisabled": {
+		"message": "This area be inside {areas}, which {count, plural, one {be} other {be}} closed to all hands.",
+		"source": "This area is inside {areas}, which {count, plural, one {is} other {are}} disabled."
+	},
+	"editor.area.saveFailed": {
+		"message": "Couldn't stow the area.",
+		"source": "Could not save the area."
+	},
+	"editor.area.size": {
+		"message": "The chart be {height, number} tall by {width, number} wide.",
+		"source": "The map is {height, number} tall x {width, number} wide."
+	},
+	"editor.areaAdd.failed": {
+		"message": "Couldn't add the area.",
+		"source": "Could not add the area."
+	},
+	"editor.areaAdd.submit": {
+		"message": "Add",
+		"source": "Add"
+	},
+	"editor.areaAdd.title": {
+		"message": "Add Area",
+		"source": "Add Area"
+	},
+	"editor.areaSelect.disabled": {
+		"message": "Closed",
+		"source": "Disabled"
+	},
+	"editor.areaSelect.inside": {
+		"message": "Inside {area}",
+		"source": "Inside {area}"
+	},
+	"editor.areaSelect.loadFailed": {
+		"message": "Couldn't haul up the areas.",
+		"source": "Could not load the areas."
+	},
+	"editor.areaSelect.none": {
+		"message": "No areas be matchin'.",
+		"source": "No areas match."
+	},
+	"editor.areaSelect.results": {
+		"message": "Areas",
+		"source": "Areas"
+	},
+	"editor.areaSelect.search": {
+		"message": "Search by name",
+		"source": "Search by name"
+	},
+	"editor.areaSelect.searchLabel": {
+		"message": "Search areas by name",
+		"source": "Search areas by name"
+	},
+	"editor.areaSelect.submit": {
+		"message": "Aye, that one",
+		"source": "Choose"
+	},
+	"editor.areaSelect.summary": {
+		"message": "{indoors, select, true {Below decks} other {Topside}}, {height, number} tall by {width, number} wide",
+		"source": "{indoors, select, true {Indoors} other {Outdoors}}, {height, number} tall by {width, number} wide"
+	},
+	"editor.areaSelect.title": {
+		"message": "Pick an Area",
+		"source": "Choose an Area"
+	},
+	"editor.areas.add": {
+		"message": "Add Area",
+		"source": "Add Area"
+	},
+	"editor.areas.disabledTag": {
+		"message": "closed",
+		"source": "disabled"
+	},
+	"editor.areas.heading": {
+		"message": "Areas",
+		"source": "Areas"
+	},
+	"editor.areas.indoorsTag": {
+		"message": "below decks",
+		"source": "indoors"
+	},
+	"editor.areas.listFailed": {
+		"message": "Couldn't list the areas.",
+		"source": "Could not list the areas."
+	},
+	"editor.areas.none": {
+		"message": "There be no areas but the tavern.",
+		"source": "There are no areas besides the lobby."
+	},
+	"editor.areas.outdoorsTag": {
+		"message": "topside",
+		"source": "outdoors"
+	},
+	"editor.areas.startingAreaTag": {
+		"message": "home port",
+		"source": "starting area"
+	},
+	"editor.characters.areaFailed": {
+		"message": "Couldn't find the home port.",
+		"source": "Could not load the starting area."
+	},
+	"editor.characters.chooseArea": {
+		"message": "Choose Home Port",
+		"source": "Choose Starting Area"
+	},
 	"editor.characters.chooseEquipment": {
 		"message": "Choose Startin' Kit",
 		"source": "Choose Starting Equipment"
-	},
-	"editor.characters.chooseZone": {
-		"message": "Choose Home Port",
-		"source": "Choose Starting Zone"
 	},
 	"editor.characters.groupSize": {
 		"message": "Crew size",
@@ -291,6 +459,14 @@
 		"message": "Couldn't stow the crew's settings.",
 		"source": "Could not save the character settings."
 	},
+	"editor.characters.startingArea": {
+		"message": "Home port: {area}",
+		"source": "Starting area: {area}"
+	},
+	"editor.characters.startingAreaHint": {
+		"message": "Where hands first come ashore, unless their race or class says otherwise.",
+		"source": "Where characters start, unless their race or class says otherwise."
+	},
 	"editor.characters.startingEquipment": {
 		"message": "Startin' kit",
 		"source": "Starting equipment"
@@ -307,53 +483,45 @@
 		"message": "Heaps o' coins, like {example}. Coins stay as they're given; races an' classes can add more to the purse.",
 		"source": "Amounts of coins, like {example}. Coins stay as they are given; races and classes can add more."
 	},
-	"editor.characters.startingZone": {
-		"message": "Home port: {zone}",
-		"source": "Starting zone: {zone}"
-	},
-	"editor.characters.startingZoneHint": {
-		"message": "Where hands first come ashore, unless their race or class says otherwise.",
-		"source": "Where characters start, unless their race or class says otherwise."
-	},
-	"editor.characters.zoneFailed": {
-		"message": "Couldn't find the home port.",
-		"source": "Could not load the starting zone."
-	},
 	"editor.class.addTitle": {
 		"message": "Add a Callin'",
 		"source": "Add Class"
+	},
+	"editor.class.areaByRace": {
+		"message": "Settled by folk (below)",
+		"source": "Decided by race (below)"
 	},
 	"editor.class.castingStyle": {
 		"message": "Way o' spellslingin'",
 		"source": "Spellcasting style"
 	},
+	"editor.class.chooseArea": {
+		"message": "Choose Port",
+		"source": "Choose Area"
+	},
 	"editor.class.chooseEquipment": {
 		"message": "Choose Kit",
 		"source": "Choose Equipment"
 	},
-	"editor.class.chooseRaceZone": {
+	"editor.class.chooseRaceArea": {
 		"message": "Choose",
 		"source": "Choose"
 	},
-	"editor.class.chooseRaceZoneLabel": {
+	"editor.class.chooseRaceAreaLabel": {
 		"message": "Choose the home port for {race}",
-		"source": "Choose the starting zone for {race}"
+		"source": "Choose the starting area for {race}"
 	},
-	"editor.class.chooseZone": {
-		"message": "Choose Port",
-		"source": "Choose Zone"
+	"editor.class.clearArea": {
+		"message": "Choose by Folk",
+		"source": "Choose by Race"
 	},
-	"editor.class.clearRaceZone": {
+	"editor.class.clearRaceArea": {
 		"message": "Cast Off",
 		"source": "Clear"
 	},
-	"editor.class.clearRaceZoneLabel": {
+	"editor.class.clearRaceAreaLabel": {
 		"message": "Cast off the home port for {race}",
-		"source": "Clear the starting zone for {race}"
-	},
-	"editor.class.clearZone": {
-		"message": "Choose by Folk",
-		"source": "Choose by Race"
+		"source": "Clear the starting area for {race}"
 	},
 	"editor.class.confirmDelete": {
 		"message": "Scuttle {class}? There be no bringin' it back.",
@@ -361,7 +529,7 @@
 	},
 	"editor.class.confirmRestore": {
 		"message": "Return {class} to the ruleset's way? Yer changes to it, its startin' coin, kit and ports too, will be lost at sea.",
-		"source": "Restore {class} to the ruleset's default? Your changes to it, including its starting money, equipment and zones, will be lost."
+		"source": "Restore {class} to the ruleset's default? Your changes to it, including its starting money, equipment and areas, will be lost."
 	},
 	"editor.class.delete": {
 		"message": "Scuttle Callin'",
@@ -399,13 +567,13 @@
 		"message": "Whispered to the crew when they be dealin' out their scores.",
 		"source": "Suggested to players when they arrange their ability scores."
 	},
-	"editor.class.raceZones": {
+	"editor.class.raceAreas": {
 		"message": "Home port by folk",
-		"source": "Starting zone by race"
+		"source": "Starting area by race"
 	},
-	"editor.class.raceZonesNote": {
+	"editor.class.raceAreasNote": {
 		"message": "All hands o' this callin', whatever their folk, set sail from the callin's port.",
-		"source": "All members of this class, whatever their race, start in the class's zone."
+		"source": "All members of this class, whatever their race, start in the class's area."
 	},
 	"editor.class.restore": {
 		"message": "Restore the Old Ways",
@@ -419,6 +587,10 @@
 		"message": "Couldn't stow the callin'.",
 		"source": "Could not save the class."
 	},
+	"editor.class.startingArea": {
+		"message": "Home port: {area}",
+		"source": "Starting area: {area}"
+	},
 	"editor.class.startingEquipment": {
 		"message": "Extra startin' kit",
 		"source": "Extra starting equipment"
@@ -427,17 +599,9 @@
 		"message": "Extra startin' coin",
 		"source": "Extra starting money"
 	},
-	"editor.class.startingZone": {
-		"message": "Home port: {zone}",
-		"source": "Starting zone: {zone}"
-	},
 	"editor.class.tradition": {
 		"message": "Source o' magic",
 		"source": "Magic tradition"
-	},
-	"editor.class.zoneByRace": {
-		"message": "Settled by folk (below)",
-		"source": "Decided by race (below)"
 	},
 	"editor.classes.add": {
 		"message": "Add a Callin'",
@@ -727,9 +891,9 @@
 		"message": "Click the chart to place the return passage, or don't be addin' one.",
 		"source": "Click the map to place the return link, or don't add one."
 	},
-	"editor.link.noOtherZones": {
-		"message": "Chart another zone to sail to first.",
-		"source": "Add another zone to link to first."
+	"editor.link.noOtherAreas": {
+		"message": "Chart another area to sail to first.",
+		"source": "Add another area to link to first."
 	},
 	"editor.link.pick": {
 		"message": "Clickin' the chart below chooses",
@@ -752,8 +916,8 @@
 		"source": "With the map focused, the arrow keys move the cursor, 10 cells at a time with Shift, and Space or Enter chooses the cell."
 	},
 	"editor.link.previewLabel": {
-		"message": "Chart o' the zone the passage leads to",
-		"source": "Map of the zone the link goes to"
+		"message": "Chart o' the area the passage leads to",
+		"source": "Map of the area the link goes to"
 	},
 	"editor.link.returnCell": {
 		"message": "Return passage at {column}, {row}",
@@ -767,9 +931,9 @@
 		"message": "Couldn't stow the passage.",
 		"source": "Could not save the link."
 	},
-	"editor.link.showZoneFailed": {
-		"message": "Couldn't sight that zone.",
-		"source": "Could not show that zone."
+	"editor.link.showAreaFailed": {
+		"message": "Couldn't sight that area.",
+		"source": "Could not show that area."
 	},
 	"editor.link.target": {
 		"message": "Sails to",
@@ -783,17 +947,21 @@
 		"message": "Needs the whole crew",
 		"source": "Requires the whole group"
 	},
-	"editor.lobby.editZone": {
-		"message": "Edit the tavern's zone",
-		"source": "Edit the lobby's zone"
+	"editor.lobby.editArea": {
+		"message": "Edit the tavern's area",
+		"source": "Edit the lobby's area"
 	},
 	"editor.lobby.explanation": {
-		"message": "The tavern be where every soul in the universe gathers afore joinin' a crew. It be a zone like any other, but it ain't listed on the Zones tab.",
-		"source": "The lobby is where everyone in the universe meets before joining a group. It is a zone like any other, but isn't listed on the Zones tab."
+		"message": "The tavern be where every soul in the universe gathers afore joinin' a crew. It be an area like any other, but it ain't listed on the Areas tab.",
+		"source": "The lobby is where everyone in the universe meets before joining a group. It is an area like any other, but isn't listed on the Areas tab."
 	},
 	"editor.map.allSaved": {
 		"message": "All changes stowed",
 		"source": "All changes saved"
+	},
+	"editor.map.areaDefault": {
+		"message": "{tile} (the area's usual)",
+		"source": "{tile} (the area's default)"
 	},
 	"editor.map.brush.circle": {
 		"message": "round as a cannonball",
@@ -916,8 +1084,8 @@
 		"source": "Could not load the links."
 	},
 	"editor.map.paintingNotSaved": {
-		"message": "Some o' yer paintin' went down with the ship. Open the zone again to see the chart as it be stowed.",
-		"source": "Could not save some of your painting. Open the zone again to see the map as it is saved."
+		"message": "Some o' yer paintin' went down with the ship. Open the area again to see the chart as it be stowed.",
+		"source": "Could not save some of your painting. Open the area again to see the map as it is saved."
 	},
 	"editor.map.redo": {
 		"message": "Redo",
@@ -954,10 +1122,6 @@
 	"editor.map.void": {
 		"message": "Davy Jones' Locker",
 		"source": "Void"
-	},
-	"editor.map.zoneDefault": {
-		"message": "{tile} (the zone's usual)",
-		"source": "{tile} (the zone's default)"
 	},
 	"editor.openFailed": {
 		"message": "Couldn't open the universe.",
@@ -1039,17 +1203,17 @@
 		"message": "Add Folk",
 		"source": "Add Race"
 	},
+	"editor.race.chooseArea": {
+		"message": "Choose Port",
+		"source": "Choose Area"
+	},
 	"editor.race.chooseEquipment": {
 		"message": "Choose Kit",
 		"source": "Choose Equipment"
 	},
-	"editor.race.chooseZone": {
-		"message": "Choose Port",
-		"source": "Choose Zone"
-	},
-	"editor.race.clearZone": {
+	"editor.race.clearArea": {
 		"message": "Use the Universe's Port",
-		"source": "Use the Universe's Zone"
+		"source": "Use the Universe's Area"
 	},
 	"editor.race.confirmDelete": {
 		"message": "Scuttle {race}? There be no bringin' it back.",
@@ -1057,7 +1221,7 @@
 	},
 	"editor.race.confirmRestore": {
 		"message": "Return {race} to the ruleset's way? Yer changes to it, its startin' coin, kit and port too, will be lost at sea.",
-		"source": "Restore {race} to the ruleset's default? Your changes to it, including its starting money, equipment and zone, will be lost."
+		"source": "Restore {race} to the ruleset's default? Your changes to it, including its starting money, equipment and area, will be lost."
 	},
 	"editor.race.darkvision": {
 		"message": "Sees in the dark",
@@ -1115,6 +1279,14 @@
 		"message": "Heft",
 		"source": "Size"
 	},
+	"editor.race.startingArea": {
+		"message": "Home port: {area}",
+		"source": "Starting area: {area}"
+	},
+	"editor.race.startingAreaHint": {
+		"message": "Where these folk set sail from, unless their callin' says otherwise.",
+		"source": "Where the race's characters start, unless their class says otherwise."
+	},
 	"editor.race.startingEquipment": {
 		"message": "Extra startin' kit",
 		"source": "Extra starting equipment"
@@ -1122,14 +1294,6 @@
 	"editor.race.startingMoney": {
 		"message": "Extra startin' coin",
 		"source": "Extra starting money"
-	},
-	"editor.race.startingZone": {
-		"message": "Home port: {zone}",
-		"source": "Starting zone: {zone}"
-	},
-	"editor.race.startingZoneHint": {
-		"message": "Where these folk set sail from, unless their callin' says otherwise.",
-		"source": "Where the race's characters start, unless their class says otherwise."
 	},
 	"editor.races.add": {
 		"message": "Add Folk",
@@ -1207,6 +1371,18 @@
 		"message": "Shot an' arrows get used up",
 		"source": "Ammunition is used up"
 	},
+	"editor.startingArea.loadFailed": {
+		"message": "Couldn't make out the ports' names.",
+		"source": "Could not load the areas' names."
+	},
+	"editor.startingArea.races": {
+		"message": "{area} (the folk's)",
+		"source": "{area} (the race's)"
+	},
+	"editor.startingArea.universes": {
+		"message": "{area} (the universe's)",
+		"source": "{area} (the universe's)"
+	},
 	"editor.startingItems.item": {
 		"message": "{quantity, number} {item}",
 		"source": "{quantity, number} {item}"
@@ -1215,17 +1391,9 @@
 		"message": "Couldn't haul up the startin' kit.",
 		"source": "Could not load the starting equipment."
 	},
-	"editor.startingZone.loadFailed": {
-		"message": "Couldn't make out the ports' names.",
-		"source": "Could not load the zones' names."
-	},
-	"editor.startingZone.races": {
-		"message": "{zone} (the folk's)",
-		"source": "{zone} (the race's)"
-	},
-	"editor.startingZone.universes": {
-		"message": "{zone} (the universe's)",
-		"source": "{zone} (the universe's)"
+	"editor.tab.areas": {
+		"message": "Areas",
+		"source": "Areas"
 	},
 	"editor.tab.characters": {
 		"message": "Crew",
@@ -1262,10 +1430,6 @@
 	"editor.tab.unsavedChanges": {
 		"message": "(changes not yet stowed)",
 		"source": "(unsaved changes)"
-	},
-	"editor.tab.zones": {
-		"message": "Zones",
-		"source": "Zones"
 	},
 	"editor.tile.addTitle": {
 		"message": "Add Tile",
@@ -1308,8 +1472,8 @@
 		"source": "Edit {tile}"
 	},
 	"editor.tile.indoorsHint": {
-		"message": "A leanin', not a law: outdoor zones list outdoor tiles first.",
-		"source": "A preference, not a restriction: outdoor zones list outdoor tiles first."
+		"message": "A leanin', not a law: outdoor areas list outdoor tiles first.",
+		"source": "A preference, not a restriction: outdoor areas list outdoor tiles first."
 	},
 	"editor.tile.invalidColor": {
 		"message": "Give a hex color, such as #7AFF3D.",
@@ -1451,177 +1615,21 @@
 		"message": "Edit {universe}",
 		"source": "Edit {universe}"
 	},
-	"editor.zone.back": {
-		"message": "Back to Zones",
-		"source": "Back to Zones"
+	"error.areaInsideItself": {
+		"message": "An area can't be inside its own hold.",
+		"source": "An area can't be inside itself."
 	},
-	"editor.zone.children": {
-		"message": "Zones in this one's hold",
-		"source": "Zones inside this one"
+	"error.areaLimit": {
+		"message": "A universe can have at most {max, plural, one {# area} other {# areas}}.",
+		"source": "A universe can have at most {max, plural, one {# area} other {# areas}}."
 	},
-	"editor.zone.confirmDelete": {
-		"message": "Scuttle {zone}, its chart and every passage into it? Zones inside it be cast adrift as top-level zones. There be no bringin' it back.",
-		"source": "Delete {zone}, its map and every link into it? Zones inside it become top-level zones. This can't be undone."
-	},
-	"editor.zone.defaultTile": {
-		"message": "Usual tile",
-		"source": "Default tile"
-	},
-	"editor.zone.delete": {
-		"message": "Scuttle Zone",
-		"source": "Delete Zone"
-	},
-	"editor.zone.deleteFailed": {
-		"message": "Couldn't scuttle the zone.",
-		"source": "Could not delete the zone."
-	},
-	"editor.zone.enabled": {
-		"message": "Open to all hands",
-		"source": "Enabled"
-	},
-	"editor.zone.faerieCantLoop": {
-		"message": "A zone where the hours pass the faerie way can't loop.",
-		"source": "A zone whose passage of time is faerie can't loop."
-	},
-	"editor.zone.indoorTiles": {
-		"message": "Below-decks tiles",
-		"source": "Indoor tiles"
-	},
-	"editor.zone.loading": {
-		"message": "Hoistin'...",
-		"source": "Loading..."
-	},
-	"editor.zone.lobbyTitle": {
-		"message": "{zone} (the tavern)",
-		"source": "{zone} (the lobby)"
-	},
-	"editor.zone.loopsEastWest": {
-		"message": "Wraps east-west",
-		"source": "Loops east-west"
-	},
-	"editor.zone.loopsNorthSouth": {
-		"message": "Wraps north-south",
-		"source": "Loops north-south"
-	},
-	"editor.zone.noParent": {
-		"message": "None (a top-level zone)",
-		"source": "None (a top-level zone)"
-	},
-	"editor.zone.openFailed": {
-		"message": "Couldn't open the zone.",
-		"source": "Could not open the zone."
-	},
-	"editor.zone.outdoorTiles": {
-		"message": "Topside tiles",
-		"source": "Outdoor tiles"
-	},
-	"editor.zone.parent": {
-		"message": "Mother zone",
-		"source": "Parent zone"
-	},
-	"editor.zone.parentDisabled": {
-		"message": "This zone be inside {zones}, which {count, plural, one {be} other {be}} closed to all hands.",
-		"source": "This zone is inside {zones}, which {count, plural, one {is} other {are}} disabled."
-	},
-	"editor.zone.saveFailed": {
-		"message": "Couldn't stow the zone.",
-		"source": "Could not save the zone."
-	},
-	"editor.zone.size": {
-		"message": "The chart be {height, number} tall by {width, number} wide.",
-		"source": "The map is {height, number} tall x {width, number} wide."
-	},
-	"editor.zoneAdd.failed": {
-		"message": "Couldn't add the zone.",
-		"source": "Could not add the zone."
-	},
-	"editor.zoneAdd.submit": {
-		"message": "Add",
-		"source": "Add"
-	},
-	"editor.zoneAdd.title": {
-		"message": "Add Zone",
-		"source": "Add Zone"
-	},
-	"editor.zoneSelect.disabled": {
-		"message": "Closed",
-		"source": "Disabled"
-	},
-	"editor.zoneSelect.inside": {
-		"message": "Inside {zone}",
-		"source": "Inside {zone}"
-	},
-	"editor.zoneSelect.loadFailed": {
-		"message": "Couldn't haul up the zones.",
-		"source": "Could not load the zones."
-	},
-	"editor.zoneSelect.none": {
-		"message": "No zones be matchin'.",
-		"source": "No zones match."
-	},
-	"editor.zoneSelect.results": {
-		"message": "Zones",
-		"source": "Zones"
-	},
-	"editor.zoneSelect.search": {
-		"message": "Search by name",
-		"source": "Search by name"
-	},
-	"editor.zoneSelect.searchLabel": {
-		"message": "Search zones by name",
-		"source": "Search zones by name"
-	},
-	"editor.zoneSelect.submit": {
-		"message": "Aye, that one",
-		"source": "Choose"
-	},
-	"editor.zoneSelect.summary": {
-		"message": "{indoors, select, true {Below decks} other {Topside}}, {height, number} tall by {width, number} wide",
-		"source": "{indoors, select, true {Indoors} other {Outdoors}}, {height, number} tall by {width, number} wide"
-	},
-	"editor.zoneSelect.title": {
-		"message": "Pick a Zone",
-		"source": "Choose a Zone"
-	},
-	"editor.zones.add": {
-		"message": "Add Zone",
-		"source": "Add Zone"
-	},
-	"editor.zones.disabledTag": {
-		"message": "closed",
-		"source": "disabled"
-	},
-	"editor.zones.heading": {
-		"message": "Zones",
-		"source": "Zones"
-	},
-	"editor.zones.indoorsTag": {
-		"message": "below decks",
-		"source": "indoors"
-	},
-	"editor.zones.listFailed": {
-		"message": "Couldn't list the zones.",
-		"source": "Could not list the zones."
-	},
-	"editor.zones.none": {
-		"message": "There be no zones but the tavern.",
-		"source": "There are no zones besides the lobby."
-	},
-	"editor.zones.outdoorsTag": {
-		"message": "topside",
-		"source": "outdoors"
-	},
-	"editor.zones.startingZoneTag": {
-		"message": "home port",
-		"source": "starting zone"
-	},
-	"error.cantDeleteZone": {
+	"error.cantDeleteArea": {
 		"message": "The tavern and home port can't be scuttled.",
-		"source": "The lobby and starting zones can't be deleted."
+		"source": "The lobby and starting areas can't be deleted."
 	},
 	"error.cellOutOfBounds": {
-		"message": "Every cell must be inside the zone's chart.",
-		"source": "Every cell must be inside the zone's map."
+		"message": "Every cell must be inside the area's chart.",
+		"source": "Every cell must be inside the area's map."
 	},
 	"error.characterLimit": {
 		"message": "Ye can have at most {max, plural, one {# hand} other {# hands}} in a universe.",
@@ -1644,8 +1652,8 @@
 		"source": "That class can't be chosen any more. Choose another."
 	},
 	"error.faerieCantLoop": {
-		"message": "A zone where the hours pass the faerie way can't loop.",
-		"source": "A zone whose passage of time is faerie can't loop."
+		"message": "An area where the hours pass the faerie way can't loop.",
+		"source": "An area whose passage of time is faerie can't loop."
 	},
 	"error.faerieMorningMismatch": {
 		"message": "Where the mornin' be must be chosen when, and only when, the hours pass the faerie way.",
@@ -1680,20 +1688,20 @@
 		"source": "An item needs a name."
 	},
 	"error.linkOutOfBounds": {
-		"message": "The passage's cell must be inside the zone's chart.",
-		"source": "The link's cell must be inside the zone's map."
+		"message": "The passage's cell must be inside the area's chart.",
+		"source": "The link's cell must be inside the area's map."
 	},
 	"error.linkTargetNotInUniverse": {
-		"message": "A passage must sail to another zone of this universe.",
-		"source": "A link must go to another zone of this universe."
+		"message": "A passage must sail to another area of this universe.",
+		"source": "A link must go to another area of this universe."
 	},
 	"error.linkTargetOutOfBounds": {
-		"message": "Where the passage goes must be inside the other zone's chart.",
-		"source": "Where the link goes must be inside the other zone's map."
+		"message": "Where the passage goes must be inside the other area's chart.",
+		"source": "Where the link goes must be inside the other area's map."
 	},
-	"error.linkToSameZone": {
-		"message": "A passage must sail to another zone.",
-		"source": "A link must go to another zone."
+	"error.linkToSameArea": {
+		"message": "A passage must sail to another area.",
+		"source": "A link must go to another area."
 	},
 	"error.logInFirst": {
 		"message": "Come aboard first.",
@@ -1706,6 +1714,10 @@
 	"error.noEnabledRace": {
 		"message": "A universe needs at least one folk open to all hands, so new crew have one to hail from.",
 		"source": "A universe needs at least one enabled race, so new characters have one to be."
+	},
+	"error.noSuchArea": {
+		"message": "That area be lost at sea.",
+		"source": "The area doesn't exist."
 	},
 	"error.noSuchClass": {
 		"message": "That callin' be lost at sea.",
@@ -1731,17 +1743,13 @@
 		"message": "That universe be lost at sea, or ye can't see it.",
 		"source": "The universe doesn't exist, or you can't see it."
 	},
-	"error.noSuchZone": {
-		"message": "That zone be lost at sea.",
-		"source": "The zone doesn't exist."
-	},
 	"error.otherOrigin": {
 		"message": "No changes from that port.",
 		"source": "Changes aren't allowed from this website."
 	},
 	"error.parentNotInUniverse": {
-		"message": "The mother zone must be a zone of this universe.",
-		"source": "The parent zone must be a zone of this universe."
+		"message": "The mother area must be an area of this universe.",
+		"source": "The parent area must be an area of this universe."
 	},
 	"error.raceInUse": {
 		"message": "Hands hail from these folk, so they can't be scuttled. Lock 'em away instead.",
@@ -1799,9 +1807,9 @@
 		"message": "The universe's ruleset knows no such sort o' booty.",
 		"source": "The universe's ruleset has no such type of item."
 	},
-	"error.unknownRaceZone": {
+	"error.unknownRaceArea": {
 		"message": "A home port be chosen for folk this universe doesn't have.",
-		"source": "A starting zone is chosen for a race this universe doesn't have."
+		"source": "A starting area is chosen for a race this universe doesn't have."
 	},
 	"error.unreadableBody": {
 		"message": "That request couldn't be read.",
@@ -1811,13 +1819,13 @@
 		"message": "The usual tile must be a tile this universe can use.",
 		"source": "The default tile must be a tile this universe can use."
 	},
+	"error.unusableStartingArea": {
+		"message": "The home port must be an area o' this universe, an' not the tavern.",
+		"source": "The starting area must be an area of this universe other than the lobby."
+	},
 	"error.unusableStartingItem": {
 		"message": "The startin' kit holds booty this universe doesn't have.",
 		"source": "The starting equipment holds an item this universe doesn't have."
-	},
-	"error.unusableStartingZone": {
-		"message": "The home port must be a zone o' this universe, an' not the tavern.",
-		"source": "The starting zone must be a zone of this universe other than the lobby."
 	},
 	"error.unusableTile": {
 		"message": "One o' the tiles painted ain't one this universe can use.",
@@ -1826,14 +1834,6 @@
 	"error.wrongRuleset": {
 		"message": "These articles be for a different ship than this universe.",
 		"source": "These settings are for a different ruleset than the universe's."
-	},
-	"error.zoneInsideItself": {
-		"message": "A zone can't be inside its own hold.",
-		"source": "A zone can't be inside itself."
-	},
-	"error.zoneLimit": {
-		"message": "A universe can have at most {max, plural, one {# zone} other {# zones}}.",
-		"source": "A universe can have at most {max, plural, one {# zone} other {# zones}}."
 	},
 	"form.discardChanges": {
 		"message": "Ye've changes not yet stowed. Toss 'em overboard?",
@@ -2223,6 +2223,10 @@
 		"message": "{count, plural, one {{players} heaves into view.} other {{players} heave into view.}}",
 		"source": "{count, plural, one {{players} comes into view.} other {{players} come into view.}}"
 	},
+	"map.announce.area": {
+		"message": "Ye be in {area}.",
+		"source": "You are in {area}."
+	},
 	"map.announce.blocked": {
 		"message": "Somethin' be in yer way.",
 		"source": "Something is in the way."
@@ -2240,12 +2244,8 @@
 		"source": "{name}, right where you are"
 	},
 	"map.announce.position": {
-		"message": "{zone}, column {column}, row {row}{onTile, select, yes {, standin' on {tile}} other {}}. {count, plural, =0 {Not a soul in sight.} other {Ye can spy {players}.}}",
-		"source": "{zone}, column {column}, row {row}{onTile, select, yes {, on {tile}} other {}}. {count, plural, =0 {You can't see anyone else.} other {You can see {players}.}}"
-	},
-	"map.announce.zone": {
-		"message": "Ye be in {zone}.",
-		"source": "You are in {zone}."
+		"message": "{area}, column {column}, row {row}{onTile, select, yes {, standin' on {tile}} other {}}. {count, plural, =0 {Not a soul in sight.} other {Ye can spy {players}.}}",
+		"source": "{area}, column {column}, row {row}{onTile, select, yes {, on {tile}} other {}}. {count, plural, =0 {You can't see anyone else.} other {You can see {players}.}}"
 	},
 	"map.ghost": {
 		"message": "Ghost",
@@ -2867,7 +2867,7 @@
 		"message": "west",
 		"source": "west"
 	},
-	"universe.lobbyZoneName": {
+	"universe.lobbyAreaName": {
 		"message": "Tavern",
 		"source": "Lobby"
 	},
@@ -2927,9 +2927,9 @@
 		"message": "Out for testin'. Her captains, shipwrights and deckhands can sail her, and she ain't listed on Home.",
 		"source": "Open for testing. Its creators, builders and beta testers can play, and it isn't listed on Home."
 	},
-	"universe.startingZoneName": {
+	"universe.startingAreaName": {
 		"message": "Home Port",
-		"source": "Starting Zone"
+		"source": "Starting Area"
 	},
 	"universe.time.always_dawn": {
 		"message": "always first light",
@@ -2956,7 +2956,7 @@
 		"source": "flows normally"
 	},
 	"universe.time.inherit": {
-		"message": "same as the mother zone",
-		"source": "inherit from the parent zone"
+		"message": "same as the mother area",
+		"source": "inherit from the parent area"
 	}
 }

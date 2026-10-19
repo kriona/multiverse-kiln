@@ -4,7 +4,7 @@ import { t } from './localization';
 import { EditorApi } from './network/editorApi';
 import type { ServerConnection } from './network/serverConnection';
 import { isLeavingPage } from './pageLifecycle';
-import { gamePageUrl, replacePageParameters, TAB_PARAMETER, ZONE_PARAMETER } from './pages';
+import { gamePageUrl, replacePageParameters, TAB_PARAMETER, AREA_PARAMETER } from './pages';
 import { showScreen, showStatus } from './ui/dom';
 import { EditorScreen, type EditorPlace } from './ui/editor/EditorScreen';
 import { LoginScreen } from './ui/LoginScreen';
@@ -30,7 +30,7 @@ export class EditorPage
 	/**
 	 * @param server The connection to the server and the joined session room
 	 * @param universeId The universe to edit
-	 * @param place The tab and zone to open it at
+	 * @param place The tab and area to open it at
 	 */
 	constructor(server: ServerConnection, private readonly universeId: string, private readonly place: Partial<EditorPlace>)
 	{
@@ -56,7 +56,7 @@ export class EditorPage
 			{
 				replacePageParameters({
 					[TAB_PARAMETER]: ((changed.tab === 'universe') ? undefined : changed.tab),
-					[ZONE_PARAMETER]: changed.zoneId
+					[AREA_PARAMETER]: changed.areaId
 				});
 			}
 		});

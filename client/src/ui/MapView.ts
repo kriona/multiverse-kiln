@@ -26,7 +26,7 @@ export class MapView
 
 		if (!this.game)
 		{
-			// One world unit is one pixel; the camera follows the player around zones larger than the canvas
+			// One world unit is one pixel; the camera follows the player around areas larger than the canvas
 			this.game = new Phaser.Game({
 				type: Phaser.WEBGL,
 				parent,

@@ -3,7 +3,7 @@
  *
  * - index.html: Home, a universe's lobby and a group's game. ?universe=<id> enters that universe's
  *   lobby once the player has logged in, and ?group=<id> (GROUP_QUERY_PARAMETER) joins a group
- * - edit.html: the world editor for ?universe=<id>, on the tab given by ?tab= and the zone given by ?zone=
+ * - edit.html: the world editor for ?universe=<id>, on the tab given by ?tab= and the area given by ?area=
  * - character.html: Create Character for ?universe=<id>, which goes back to that universe's lobby
  * - license.html: the game's license and the licenses of what it uses, linked to from the footer
  * - admin.html: settings for the whole site, linked to from Home's toolbar. Anyone can use it until
@@ -28,9 +28,9 @@ export const UNIVERSE_PARAMETER = 'universe';
 export const TAB_PARAMETER = 'tab';
 
 /**
- * Query string parameter of the editor naming the zone open in the zone editor
+ * Query string parameter of the editor naming the area open in the area editor
  */
-export const ZONE_PARAMETER = 'zone';
+export const AREA_PARAMETER = 'area';
 
 /**
  * Path of the world editor's page

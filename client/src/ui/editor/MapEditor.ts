@@ -1,10 +1,10 @@
-import { canEditWorld, DEFAULT_TILE_CELL, defineMessages, isInBounds, MAX_BRUSH_SIZE, MAX_CELL_CHANGES, MAX_MAP_SIDE, VOID_CELL, VIEW_HEIGHT, VIEW_WIDTH, type CellChange, type EditableUniverse, type EditorTile, type EditorZone, type EditorZoneLink, type EditorZoneSummary, type MapBounds, type MessageDescriptor } from '@multiverse-kiln/shared';
+import { canEditWorld, DEFAULT_TILE_CELL, defineMessages, isInBounds, MAX_BRUSH_SIZE, MAX_CELL_CHANGES, MAX_MAP_SIDE, VOID_CELL, VIEW_HEIGHT, VIEW_WIDTH, type CellChange, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type MapBounds, type MessageDescriptor } from '@multiverse-kiln/shared';
 
 import { BRUSH_SHAPES, brushCells, type BrushCell, type BrushShape } from '../../editor/brush';
 import { ChunkLoader } from '../../editor/ChunkLoader';
 import { EditHistory, type EditStep } from '../../editor/EditHistory';
 import { EditorMap } from '../../editor/EditorMap';
-import { editorZonePayload, MapCanvas } from '../../editor/MapCanvas';
+import { editorAreaPayload, MapCanvas } from '../../editor/MapCanvas';
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import type { CameraState, MapEditorHost, PointerMode } from '../../scenes/MapEditorScene';
@@ -24,7 +24,7 @@ const messages = defineMessages({
 	loadLinksFailed: {
 		id: 'editor.map.loadLinksFailed',
 		defaultMessage: 'Could not load the links.',
-		description: 'Shown in the map editor when the zone\'s links couldn\'t be loaded'
+		description: 'Shown in the map editor when the area\'s links couldn\'t be loaded'
 	}
 });
 
@@ -62,17 +62,17 @@ const sides: Side[] = [
 ];
 
 /**
- * The zone being edited and everything that goes with it
+ * The area being edited and everything that goes with it
  */
-interface OpenZone
+interface OpenArea
 {
 	universe: EditableUniverse;
-	zone: EditorZone;
+	area: EditorArea;
 	tiles: readonly EditorTile[];
-	zones: readonly EditorZoneSummary[];
+	areas: readonly EditorAreaSummary[];
 	map: EditorMap;
 	loader: ChunkLoader;
-	links: EditorZoneLink[];
+	links: EditorAreaLink[];
 }
 
 /**
@@ -92,9 +92,9 @@ interface Stroke
 }
 
 /**
- * The map editor in the zone editor: the zone's map on the same grid as gameplay, a draw tool (a tile
+ * The map editor in the area editor: the area's map on the same grid as gameplay, a draw tool (a tile
  * or Void, 1 to MAX_BRUSH_SIZE cells across, square or circle) with undo and redo, buttons to grow the
- * map on each side, Edit Size, and a tool for the map's zone links
+ * map on each side, Edit Size, and a tool for the map's area links
  *
  * Painting shows straight away and is saved when the stroke ends; a click or drag is one step to undo.
  * Saves go to the server one after another, in the order they were made
@@ -119,7 +119,7 @@ export class MapEditor
 	private readonly resizeDialog: ResizeDialog;
 	private readonly linkDialog: LinkDialog;
 
-	private open: OpenZone | undefined;
+	private open: OpenArea | undefined;
 	private stroke: Stroke | undefined;
 
 	/**
@@ -135,13 +135,13 @@ export class MapEditor
 	private pendingSaves = 0;
 
 	/**
-	 * Changes every time a zone is opened, so data that arrives for an earlier one is ignored
+	 * Changes every time an area is opened, so data that arrives for an earlier one is ignored
 	 */
 	private openVersion = 0;
 
 	/**
 	 * @param api The editor's API
-	 * @param onBoundsChanged Called with a zone's new bounds after the map editor resizes it
+	 * @param onBoundsChanged Called with an area's new bounds after the map editor resizes it
 	 */
 	constructor(private readonly api: EditorApi, private readonly onBoundsChanged: (bounds: MapBounds) => void)
 	{
@@ -251,23 +251,23 @@ export class MapEditor
 	}
 
 	/**
-	 * Shows a zone's map, read-only unless the player's role may change the world
+	 * Shows an area's map, read-only unless the player's role may change the world
 	 *
-	 * Opening the zone already shown keeps what has loaded and the undo history, so changing the zone's
+	 * Opening the area already shown keeps what has loaded and the undo history, so changing the area's
 	 * other settings doesn't lose them
 	 *
-	 * @param universe The zone's universe
-	 * @param zone The zone
+	 * @param universe The area's universe
+	 * @param area The area
 	 * @param tiles Every tile the universe can use
-	 * @param zones Every zone of the universe, for the links' targets
+	 * @param areas Every area of the universe, for the links' targets
 	 */
-	async show(universe: EditableUniverse, zone: EditorZone, tiles: readonly EditorTile[], zones: readonly EditorZoneSummary[]): Promise<void>
+	async show(universe: EditableUniverse, area: EditorArea, tiles: readonly EditorTile[], areas: readonly EditorAreaSummary[]): Promise<void>
 	{
 		const version = ++this.openVersion;
 		const editable = canEditWorld(universe.role);
-		const same = ((this.open?.zone.id === zone.id) && sameBounds(this.open.map.bounds, zone.bounds));
+		const same = ((this.open?.area.id === area.id) && sameBounds(this.open.map.bounds, area.bounds));
 
-		this.fillTiles(universe, zone, tiles);
+		this.fillTiles(universe, area, tiles);
 		this.tools.hidden = !editable;
 		this.expandField.hidden = !editable;
 
@@ -278,11 +278,11 @@ export class MapEditor
 
 		showMessage(this.error, undefined);
 
-		let links: EditorZoneLink[];
+		let links: EditorAreaLink[];
 
 		try
 		{
-			links = await this.api.listLinks(universe.id, zone.id);
+			links = await this.api.listLinks(universe.id, area.id);
 		}
 		catch (error)
 		{
@@ -303,13 +303,13 @@ export class MapEditor
 
 		if (same && this.open)
 		{
-			this.open = { ...this.open, universe, zone, tiles, zones, links };
+			this.open = { ...this.open, universe, area, tiles, areas, links };
 		}
 		else
 		{
 			this.open?.loader.stop();
 			this.history.clear();
-			this.open = this.openMap(universe, zone, tiles, zones, links);
+			this.open = this.openMap(universe, area, tiles, areas, links);
 		}
 
 		await this.startScene(camera);
@@ -317,7 +317,7 @@ export class MapEditor
 	}
 
 	/**
-	 * Stops showing the map, for when the zone editor closes
+	 * Stops showing the map, for when the area editor closes
 	 */
 	hide(): void
 	{
@@ -330,19 +330,19 @@ export class MapEditor
 	}
 
 	/**
-	 * Sets up the map of a zone that wasn't open
+	 * Sets up the map of an area that wasn't open
 	 *
-	 * @param universe The zone's universe
-	 * @param zone The zone
+	 * @param universe The area's universe
+	 * @param area The area
 	 * @param tiles Every tile the universe can use
-	 * @param zones Every zone of the universe
-	 * @param links The zone's links
-	 * @return The open zone
+	 * @param areas Every area of the universe
+	 * @param links The area's links
+	 * @return The open area
 	 */
-	private openMap(universe: EditableUniverse, zone: EditorZone, tiles: readonly EditorTile[], zones: readonly EditorZoneSummary[], links: EditorZoneLink[]): OpenZone
+	private openMap(universe: EditableUniverse, area: EditorArea, tiles: readonly EditorTile[], areas: readonly EditorAreaSummary[], links: EditorAreaLink[]): OpenArea
 	{
-		const map = new EditorMap(zone.bounds);
-		const loader = new ChunkLoader(this.api, universe.id, zone.id, map, (chunkKeys) =>
+		const map = new EditorMap(area.bounds);
+		const loader = new ChunkLoader(this.api, universe.id, area.id, map, (chunkKeys) =>
 		{
 			this.canvas.scene?.refreshChunks(chunkKeys);
 		}, (error) =>
@@ -350,11 +350,11 @@ export class MapEditor
 			showMessage(this.error, describeEditorError(error, mapMessages.loadFailed));
 		});
 
-		return({ universe, zone, tiles, zones, map, loader, links });
+		return({ universe, area, tiles, areas, map, loader, links });
 	}
 
 	/**
-	 * Starts the scene for the open zone
+	 * Starts the scene for the open area
 	 *
 	 * @param camera Where the camera starts, or undefined for the map's center
 	 */
@@ -367,8 +367,8 @@ export class MapEditor
 			return;
 		}
 
-		const zone = { ...open.zone, bounds: open.map.bounds };
-		const scene = await this.canvas.show(editorZonePayload(zone, open.tiles, open.universe.ruleset), open.map.chunks, this.host(), camera);
+		const area = { ...open.area, bounds: open.map.bounds };
+		const scene = await this.canvas.show(editorAreaPayload(area, open.tiles, open.universe.ruleset), open.map.chunks, this.host(), camera);
 
 		if (this.open === open)
 		{
@@ -443,8 +443,8 @@ export class MapEditor
 	}
 
 	/**
-	 * The value the draw tool paints. The zone's own default tile is painted as DEFAULT_TILE_CELL, so it
-	 * follows the zone's default tile and keeps chunks small
+	 * The value the draw tool paints. The area's own default tile is painted as DEFAULT_TILE_CELL, so it
+	 * follows the area's default tile and keeps chunks small
 	 *
 	 * @return A tile ID, DEFAULT_TILE_CELL or VOID_CELL
 	 */
@@ -457,7 +457,7 @@ export class MapEditor
 
 		const tileId = Number(this.tile.value);
 
-		return(((tileId === this.open?.zone.defaultTileId) ? DEFAULT_TILE_CELL : tileId));
+		return(((tileId === this.open?.area.defaultTileId) ? DEFAULT_TILE_CELL : tileId));
 	}
 
 	/**
@@ -596,7 +596,7 @@ export class MapEditor
 		}
 
 		const universeId = open.universe.id;
-		const zoneId = open.zone.id;
+		const areaId = open.area.id;
 
 		this.pendingSaves++;
 		this.updateSaveStatus();
@@ -606,14 +606,14 @@ export class MapEditor
 			{
 				for (let start = 0; start < changes.length; start += MAX_CELL_CHANGES)
 				{
-					await this.api.editCells(universeId, zoneId, changes.slice(start, start + MAX_CELL_CHANGES));
+					await this.api.editCells(universeId, areaId, changes.slice(start, start + MAX_CELL_CHANGES));
 				}
 			})
 			.catch((error: unknown) =>
 			{
 				showMessage(this.error, describeEditorError(error, {
 					id: 'editor.map.paintingNotSaved',
-					defaultMessage: 'Could not save some of your painting. Open the zone again to see the map as it is saved.',
+					defaultMessage: 'Could not save some of your painting. Open the area again to see the map as it is saved.',
 					description: 'Shown in the map editor when painting couldn\'t be stored'
 				}));
 			})
@@ -661,10 +661,10 @@ export class MapEditor
 	}
 
 	/**
-	 * A cell of the open zone's map and what it holds
+	 * A cell of the open area's map and what it holds
 	 *
 	 * @param cell The cell
-	 * @return Its description, or an empty string when no zone is open or the cell is outside its map
+	 * @return Its description, or an empty string when no area is open or the cell is outside its map
 	 */
 	private cellText(cell: BrushCell): string
 	{
@@ -677,7 +677,7 @@ export class MapEditor
 
 		return(describeCell({
 			map: open.map,
-			defaultTileId: open.zone.defaultTileId,
+			defaultTileId: open.area.defaultTileId,
 			tiles: open.tiles,
 			links: open.links,
 			ruleset: open.universe.ruleset
@@ -685,28 +685,28 @@ export class MapEditor
 	}
 
 	/**
-	 * Lists the tiles to paint with, the zone's indoor or outdoor tiles first, then Void
+	 * Lists the tiles to paint with, the area's indoor or outdoor tiles first, then Void
 	 *
-	 * @param universe The zone's universe
-	 * @param zone The zone
+	 * @param universe The area's universe
+	 * @param area The area
 	 * @param tiles Every tile the universe can use
 	 */
-	private fillTiles(universe: EditableUniverse, zone: EditorZone, tiles: readonly EditorTile[]): void
+	private fillTiles(universe: EditableUniverse, area: EditorArea, tiles: readonly EditorTile[]): void
 	{
 		const chosen = this.tile.value;
 		const ordered = [
-			...tiles.filter((tile) => (tile.indoors === zone.indoors)),
-			...tiles.filter((tile) => (tile.indoors !== zone.indoors))
+			...tiles.filter((tile) => (tile.indoors === area.indoors)),
+			...tiles.filter((tile) => (tile.indoors !== area.indoors))
 		];
 
 		setOptions(this.tile, [
 			...ordered.map((tile) => ({
 				value: String(tile.id),
-				label: ((tile.id === zone.defaultTileId)
+				label: ((tile.id === area.defaultTileId)
 					? t({
-						id: 'editor.map.zoneDefault',
-						defaultMessage: '{tile} (the zone\'s default)',
-						description: 'A choice of tile to paint that is the zone\'s default tile; {tile} is its name'
+						id: 'editor.map.areaDefault',
+						defaultMessage: '{tile} (the area\'s default)',
+						description: 'A choice of tile to paint that is the area\'s default tile; {tile} is its name'
 					}, {
 						tile: tileName(tile, universe.ruleset)
 					})
@@ -769,7 +769,7 @@ export class MapEditor
 		try
 		{
 			// Growing never discards anything
-			await this.api.resizeZone(open.universe.id, open.zone.id, bounds, false);
+			await this.api.resizeArea(open.universe.id, open.area.id, bounds, false);
 		}
 		catch (error)
 		{
@@ -784,7 +784,7 @@ export class MapEditor
 		if (this.open === open)
 		{
 			open.map.grow(bounds);
-			open.zone = { ...open.zone, bounds };
+			open.area = { ...open.area, bounds };
 			await this.startScene(this.canvas.scene?.cameraState());
 			this.onBoundsChanged(bounds);
 		}
@@ -804,16 +804,16 @@ export class MapEditor
 
 		this.resizeDialog.open({
 			universeId: open.universe.id,
-			zoneId: open.zone.id,
+			areaId: open.area.id,
 			bounds: open.map.bounds,
 			onResized: (bounds) =>
 			{
 				if (this.open === open)
 				{
-					const zone = { ...open.zone, bounds };
+					const area = { ...open.area, bounds };
 
 					this.hide();
-					void this.show(open.universe, zone, open.tiles, open.zones);
+					void this.show(open.universe, area, open.tiles, open.areas);
 					this.onBoundsChanged(bounds);
 				}
 			}
@@ -837,11 +837,11 @@ export class MapEditor
 
 		this.linkDialog.open({
 			universeId: open.universe.id,
-			zone: open.zone,
+			area: open.area,
 			column,
 			row,
 			link: open.links.find((link) => ((link.column === column) && (link.row === row))),
-			zones: open.zones,
+			areas: open.areas,
 			tiles: open.tiles,
 			ruleset: open.universe.ruleset,
 			onChanged: () =>
@@ -852,15 +852,15 @@ export class MapEditor
 	}
 
 	/**
-	 * Loads the zone's links again after one has changed
+	 * Loads the area's links again after one has changed
 	 *
-	 * @param open The zone open when the link changed
+	 * @param open The area open when the link changed
 	 */
-	private async reloadLinks(open: OpenZone): Promise<void>
+	private async reloadLinks(open: OpenArea): Promise<void>
 	{
 		try
 		{
-			const links = await this.api.listLinks(open.universe.id, open.zone.id);
+			const links = await this.api.listLinks(open.universe.id, open.area.id);
 
 			if (this.open === open)
 			{

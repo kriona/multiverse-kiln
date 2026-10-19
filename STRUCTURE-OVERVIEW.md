@@ -81,7 +81,7 @@ Colyseus has no built-in player limit for a room; we set it (`maxClients`). The 
 ### Cross-universe play
 This stays loosely defined until more of the infrastructure exists.
 
-If a universe allows it, and you are in the universe's lobby, you may enter a portal room that lets you jump universes. The portal room is probably an auto-generated zone showing each universe you can enter.
+If a universe allows it, and you are in the universe's lobby, you may enter a portal room that lets you jump universes. The portal room is probably an auto-generated area showing each universe you can enter.
 - Your name will be "[Name] of [Universe]" and "of [Universe]" should be styled italic / slightly darker than the rest of the text it displays with.
 - You can enter even if your race or class is disabled in the other universe. Universes that allow cross-play need to work this out between themselves.
 - Items work the same as in your home universe. Items may need a "source universe" setting.
@@ -97,15 +97,15 @@ Based entirely on the universe's ruleset. It is a page of its own, reached from 
 For PF1E, the server rolls the ability scores (or checks the point buy choices) using the universe's [stat rolling](#pf1e) setting; the client never sends ability scores of its own. The player can rearrange rolled scores among the abilities, with the class's primary ability as a hint.
 - the server keeps a player's rolled scores until they make a character with them, so leaving Create Character or starting over doesn't roll again. If the universe changes how it rolls, the next visit rolls again
 - the player chooses a name, an enabled race and an enabled class. A race with a floating ability bonus asks which ability gets it
-- the character starts with the universe's, race's and class's starting money added coin by coin, their starting equipment added together (enabled items only), and the [starting zone](#tab-characters) the precedence picks
+- the character starts with the universe's, race's and class's starting money added coin by coin, their starting equipment added together (enabled items only), and the [starting area](#tab-characters) the precedence picks
 - the lobby lists the player's characters in the universe
 - a race, class or item that characters have can't be deleted; it can be disabled instead
 
 ## Create Group
 The character creating the group is the "anchor being". This shows you a landing page for your new group. It explains that your character is the anchor being for this universe, and that the game is centered around them.
-- The group starts in the anchor being's [starting zone](#tab-characters).
+- The group starts in the anchor being's [starting area](#tab-characters).
 - If the anchor being leaves the group, the group is disbanded and its [world state](#world-state) is deleted. Every character keeps their items, money and experience.
-- If the anchor being is offline, the group can't use [zone links](#editor-map) that require the whole group (for example, leaving the city for the wilderness), but can use the ones that don't (entering a shop in the city).
+- If the anchor being is offline, the group can't use [area links](#editor-map) that require the whole group (for example, leaving the city for the wilderness), but can use the ones that don't (entering a shop in the city).
 
 You can give the group a name.
 
@@ -134,7 +134,7 @@ This is a modal dialog on the home page that asks for some basic info before cre
 - 1-sentence description
 
 Creating a universe
-- creates a lobby zone, and a default zone that it sets as the starting zone for all races
+- creates a lobby area, and a default area that it sets as the starting area for all races
 - makes you its creator
 
 The [admin page](#admin) decides how many universes a user can create. The admin page can also turn off creating universes for everyone, which disables the Create Universe button.
@@ -159,7 +159,7 @@ This lets you change anything about a universe. It will be a whole suite of tool
 	- `let there be light` - (ready for people to join. Listed on [Home](#home)
 	- `end of time` - retired. Locked and view only. Not listed on [Home](#home)
 - a dropdown for ruleset - no default, the only option for now is Pathfinder 1E
-- a dropdown for "passage of time", the default for every [zone](#editor-zone)
+- a dropdown for "passage of time", the default for every [area](#editor-area)
 	- `flows normally` (based on character actions, see [time and distance](#time-and-distance))
 	- `always dawn`
 	- `always noon`
@@ -185,13 +185,13 @@ This lets you change anything about a universe. It will be a whole suite of tool
 	- [Races](#tab-races)
 	- [Classes](#tab-classes)
 	- [Tilesets](#tab-tilesets)
-	- [Zones](#tab-zones)
+	- [Areas](#tab-areas)
 	- [Items](#tab-items)
 	- [Connect to the Multiverse](#tab-connect-to-the-multiverse)
 	- [Translations](#tab-translations)
 
 ### Unsaved changes
-The editor makes it hard to lose work by accident. A form or dialog with changes that haven't been saved says "Unsaved changes" next to its Save button, and its tab gets a dot. Closing a dialog (Cancel or Escape), leaving the zone being edited, and leaving or reloading the page all ask first while there are unsaved changes, and so does leaving the page while painting is still being saved.
+The editor makes it hard to lose work by accident. A form or dialog with changes that haven't been saved says "Unsaved changes" next to its Save button, and its tab gets a dot. Closing a dialog (Cancel or Escape), leaving the area being edited, and leaving or reloading the page all ask first while there are unsaved changes, and so does leaving the page while painting is still being saved.
 
 ### Universe versions
 If a creator makes changes to the current version of the universe, they apply immediately for everyone.
@@ -202,7 +202,7 @@ A creator can choose to switch to a new version (e.g, 1.1) while making changes,
 Disabling or limiting something that players are already using warns the editor and asks what should happen:
 - a race: "allow them to continue to play, only disable the race for new characters" or "prevent them from playing"
 - a class: "allow them to continue to play, only disable the class for new characters" or "prevent them from playing"
-- a zone with characters in it: "move everyone to the parent zone" or "move everyone back to their start zone"
+- an area with characters in it: "move everyone to the parent area" or "move everyone back to their start area"
 - an item characters have: "allow them to continue to use it, prevent new copies of the item from being made" or "remove it from characters, it will be re-added when the item is re-enabled"
 - lowering the group size below a group's current size: "allow those groups to continue to play, only limit the size for new groups", "disband larger groups" or "remove X number of group members, starting with those who joined most recently"
 
@@ -211,7 +211,7 @@ Changing the stat rolling method doesn't change existing characters.
 ### Tab: Editors
 Lists the users who can work on the universe, and lets you add them with a role:
 - `creator` (admin): can change everything
-- `builder`: can make changes to the world, e.h. to zones or NPCs
+- `builder`: can make changes to the world, e.h. to areas or NPCs
 - `beta tester`: can create characters and play while the universe is in `prologue`
 - `translator`: can [translate](#tab-translations) the universe's text into the languages they are assigned, and can't change anything else
 
@@ -250,19 +250,19 @@ Pathfinder 1E's rules (races, classes, abilities, point buy, sizes and items) ar
 	- `real-time`
 		- shows an additional option for "how quickly?" with a description of "how long in real-time does it take for 1 day in the lobby to pass?" minimum 1 hour, maximum 240 hours. Default 24. Current time of day is based on the Unix epoch
 	- `faerie`
-- a button for "Edit Map" which takes you to the [zone editor](#editor-zone) for the lobby
+- a button for "Edit Map" which takes you to the [area editor](#editor-area) for the lobby
 
 ### Tab: Characters
 - Group size, minimum 1 (single player only) maximum 6 (infrastructure / server max), default server max
 - Starting equipment, lets you [select items](#selection-item). A new universe starts with one dagger for every character. An item in the starting equipment can't be deleted until it is taken out
 - Starting [money](#field-money)
-- Starting [zone](#selection-zone)
+- Starting [area](#selection-area)
 
-Each [race](#tab-races) and [class](#tab-classes) can add to the starting money and equipment, and choose a starting zone of its own.
+Each [race](#tab-races) and [class](#tab-classes) can add to the starting money and equipment, and choose a starting area of its own.
 
-A character's starting zone is chosen in this order, most specific first: the class's entry for their race, the class, the race, then the universe. A class with a zone of its own has no entries for races, so the two never compete.
+A character's starting area is chosen in this order, most specific first: the class's entry for their race, the class, the race, then the universe. A class with an area of its own has no entries for races, so the two never compete.
 
-Races and classes work like default items: the ruleset's defaults are in every universe, an edit applies to that universe only and can be undone to restore the default (losing its starting money, equipment and zones too), and a race or class the universe added can be deleted. Like the Characters tab, only creators can change them.
+Races and classes work like default items: the ruleset's defaults are in every universe, an edit applies to that universe only and can be undone to restore the default (losing its starting money, equipment and areas too), and a race or class the universe added can be deleted. Like the Characters tab, only creators can change them.
 
 ### Tab: Races
 based on the ruleset, show a list of races.
@@ -287,7 +287,7 @@ You can edit each race:
 - Enabled? Checked by default. There must be at least 1 enabled race in order to save changes
 - Additional starting equipment, lets you [select items](#selection-item)
 - Additional starting [money](#field-money)
-- Starting [zone](#selection-zone), lets you override
+- Starting [area](#selection-area), lets you override
 - for PF1E:
 	- ability modifiers? lists abilities (`strength`, `dexterity`, `constitution`, `intelligence`, `wisdom`, `charisma`) and a number field for each (minimum -99, maximum 99)
 	- floating ability bonus? a checkbox. When checked, the player chooses which ability gets the bonus (in PF1E, humans, half elves and half orcs get +2 to one ability of their choice)
@@ -331,9 +331,9 @@ You can edit each class:
 - Enabled? Checked by default. There must be at least 1 enabled class in order to save changes
 - Add starting equipment, note it is in addition to starting + racial equipment, lets you [select items](#selection-item)
 - Add starting [money](#field-money), note it is in addition to starting + racial money
-- Edit starting zone button. If clicked:
-	- [Zone selection](#selection-zone), default null. If a zone is selected, the per-race entries for this class are disabled. Show a message: all members of this class, regardless of race, start here. The entries stay in the form while it is open, so clearing the zone brings them back, but saving with a zone selected discards them
-	- An entry for each playable race (and any disabled race that has one). Default is the race's start zone, can be overridden
+- Edit starting area button. If clicked:
+	- [Area selection](#selection-area), default null. If an area is selected, the per-race entries for this class are disabled. Show a message: all members of this class, regardless of race, start here. The entries stay in the form while it is open, so clearing the area brings them back, but saving with an area selected discards them
+	- An entry for each playable race (and any disabled race that has one). Default is the race's start area, can be overridden
 - for PF1E:
 	- primary ability score (`strength`, `dexterity`, `constitution`, `intelligence`, `wisdom`, `charisma`), used as a hint when assigning stats
 	- magic tradition
@@ -370,12 +370,12 @@ For PF1E, the default tiles are
 - indoors
 	- Wood Floor, color #7A3202, 0% vision cost, 0% movement cost
 
-### Tab: Zones
-lists all top-level zones for a universe, excluding the lobby.
-- if there is only one zone, show all child zones for that zone. keep showing child zones until there are no children or there are more than 1 children.
-- clicking on a zone lets you [edit it](#editor-zone).
+### Tab: Areas
+lists all top-level areas for a universe, excluding the lobby.
+- if there is only one area, show all child areas for that area. keep showing child areas until there are no children or there are more than 1 children.
+- clicking on an area lets you [edit it](#editor-area).
 
-button to Add Zone
+button to Add Area
 
 ### Tab: Items
 shows you a table of all items in the game, populated from the default for your ruleset and any items you have created.
@@ -417,7 +417,7 @@ Lets the universe be played in more than one language. See [Localization](#local
 - source language, the language the universe's editors write in. Defaults to the creator's language
 - languages, the languages the universe is translated into. [Home](#home) shows the source language and these
 - choosing a language shows a table of every piece of universe text:
-	- where it comes from (e.g. "Zone: Waterdeep, name")
+	- where it comes from (e.g. "Area: Waterdeep, name")
 	- the source text
 	- a note for translators, written by the universe's editors (e.g. "a pun on the town's founder; keep the joke rather than the words")
 	- the translation
@@ -478,26 +478,26 @@ modal dialog, lets you type to search, shows you the top results, with name + st
 - type (e.g., "longsword"), one of the ruleset's item types
 - a checkbox for "Enabled?", checked by default
 
-## Selection: Zone
-modal dialog, lets you type to search, shows the top results, shows you a small preview image of the zone
+## Selection: Area
+modal dialog, lets you type to search, shows the top results, shows you a small preview image of the area
 
-## Editor: Zone
-Lets you edit details about the zone
+## Editor: Area
+Lets you edit details about the area
 - name
 - enabled?
-	- For new zones, if the universe stage is `in the beginning`, default checked, otherwise default unchecked.
-	- if any parent zone is not enabled, show a message
-- parent zone. Parent zones mostly give zones a structure; a child zone inherits only its passage of time
+	- For new areas, if the universe stage is `in the beginning`, default checked, otherwise default unchecked.
+	- if any parent area is not enabled, show a message
+- parent area. Parent areas mostly give areas a structure; a child area inherits only its passage of time
 - indoors / outdoors
 - default tile, which defaults to "grass" if outdoors and "wood floor" if indoors
-- passage of time, the same options as the universe's plus `inherit` (the default). `inherit` uses the parent zone's setting, and a zone with no parent uses the universe's
+- passage of time, the same options as the universe's plus `inherit` (the default). `inherit` uses the parent area's setting, and an area with no parent uses the universe's
 - checkbox for "loops east-west"
 - checkbox for "loops north-south"
-	- a zone whose passage of time is `faerie` can't loop
+	- an area whose passage of time is `faerie` can't loop
 - [map editor](#editor-map)
 
 ## Editor: Map
-This is a component included in the [zone editor](#editor-zone). It shows you the same grid as gameplay.
+This is a component included in the [area editor](#editor-area). It shows you the same grid as gameplay.
 - the center of map is x = 0, y = 0
 - each side of the map (top, right, bottom, left) has a button with an arrow pointing away from the editor. clicking it allows you to add the specified number of grid coordinates in that direction, expanding the map
 - a map can be at most 50,000 tiles in each direction
@@ -509,11 +509,11 @@ This is a component included in the [zone editor](#editor-zone). It shows you th
 - undo / redo
 	- clicking and dragging counts all changes during that as 1 for the purpose of undo/redo
 - maps have multiple layers, such as the ground and objects on it
-- zone links, a layer independent of the artwork. Any cell can link to a cell in another zone
-	- `automatic`: entering the cell moves you to the target zone
-	- `manual`: you are offered the option to enter the zone
+- area links, a layer independent of the artwork. Any cell can link to a cell in another area
+	- `automatic`: entering the cell moves you to the target area
+	- `manual`: you are offered the option to enter the area
 	- "requires the whole group": the link can only be used when every member of the group is present, including the anchor being. For example, the city -> wilderness link requires the whole group, but the city -> shop link doesn't
-	- "select destination coordinates": shows a preview of the target zone's map. Clicking a cell marks it as the destination, then lets you place a return link (optional)
+	- "select destination coordinates": shows a preview of the target area's map. Clicking a cell marks it as the destination, then lets you place a return link (optional)
 	- since links are separate from the artwork, you also need to draw a door (or similar) so players know where to walk
 
 ### Tool: Draw
@@ -523,7 +523,7 @@ This is a component included in the [zone editor](#editor-zone). It shows you th
 
 ## Editor: Tile
 - name
-- indoors / outdoors. This is a preference, not a restriction: any tile can be used in any zone, but outdoor zones get the outdoor tileset first
+- indoors / outdoors. This is a preference, not a restriction: any tile can be used in any area, but outdoor areas get the outdoor tileset first
 - color (used if there are no graphics), accepts hex + has a color picker
 - graphic (image)
 	- outdoors uses the Dual-Grid System
@@ -536,7 +536,7 @@ This is a component included in the [zone editor](#editor-zone). It shows you th
 # Localization
 Players choose the language they play in, and universes can be translated. There are two kinds of text, and each is looked up in the player's language separately:
 - **engine text**, written by the site developers: the pages and editors, messages from the server, emails, and each ruleset's defaults (such as PF1E's races, classes, items and tiles). Its translations ship with the engine
-- **universe text**, written by a universe's editors: the universe's name and descriptions, and the names of its zones, tiles, races, classes and items (later NPCs and dialog). Translated in the [Translations](#tab-translations) tab
+- **universe text**, written by a universe's editors: the universe's name and descriptions, and the names of its areas, tiles, races, classes and items (later NPCs and dialog). Translated in the [Translations](#tab-translations) tab
 
 Text players write is never translated: character names, group names and chat.
 
@@ -581,7 +581,7 @@ Every page, editor and game screen can be used with only a keyboard and with a s
 
 ## Screen readers
 - When a screen changes, focus moves to its heading, so the screen is read out.
-- The game's map is a focusable application with its keys described. A screen reader is told the zone the player enters, players coming into and going out of view, a door or path underfoot that E takes, and when something is in the way. Alt+P reads out the player's zone and cell, the tile they stand on, and each player they can see with their distance and compass direction.
+- The game's map is a focusable application with its keys described. A screen reader is told the area the player enters, players coming into and going out of view, a door or path underfoot that E takes, and when something is in the way. Alt+P reads out the player's area and cell, the tile they stand on, and each player they can see with their distance and compass direction.
 - The map editor's map (and the link dialog's preview) can be focused and worked with a cursor: the arrow keys move it, Space or Enter paints or picks its cell, holding Space while moving paints a stroke, + and - zoom and Home returns to the center cell. Each cell the cursor reaches is read out with what it holds.
 - Colors are never the only way information is shown: the tile table's swatches carry the color's hex code.
 

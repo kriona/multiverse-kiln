@@ -6,7 +6,7 @@
  * need the database (such as whether a tile belongs to the universe) are made by the routes
  */
 import { z } from 'zod';
-import { DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_CELL_CHANGES, MAX_CHUNKS_PER_REQUEST, MAX_CLASS_NAME_LENGTH, MAX_CUSTOM_RACES, MAX_GROUP_PLAYERS, MAX_ITEM_NAME_LENGTH, MAX_ITEM_QUANTITY, MAX_ITEMS_PER_PAGE, MAX_LONG_DESCRIPTION_LENGTH, MAX_MAP_SIDE, MAX_RACE_NAME_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_STARTING_ITEMS, MAX_TILE_NAME_LENGTH, MAX_TILES_PER_PAGE, MAX_UNIVERSE_NAME_LENGTH, MAX_ZONE_NAME_LENGTH, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_RACES, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, UNIVERSE_STAGES, VOID_CELL, ZONE_LINK_MODES, ZONE_PASSAGES_OF_TIME, type CellEditRequest, type ChunkRange, type ClassSettings, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type NewZoneRequest, type RaceSettings, type ResizeZoneRequest, type RulesetSettings, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type ZoneLinkTarget, type ZoneSettingsUpdate } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_CELL_CHANGES, MAX_CHUNKS_PER_REQUEST, MAX_CLASS_NAME_LENGTH, MAX_CUSTOM_RACES, MAX_GROUP_PLAYERS, MAX_ITEM_NAME_LENGTH, MAX_ITEM_QUANTITY, MAX_ITEMS_PER_PAGE, MAX_LONG_DESCRIPTION_LENGTH, MAX_MAP_SIDE, MAX_RACE_NAME_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_STARTING_ITEMS, MAX_TILE_NAME_LENGTH, MAX_TILES_PER_PAGE, MAX_UNIVERSE_NAME_LENGTH, MAX_AREA_NAME_LENGTH, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_RACES, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, UNIVERSE_STAGES, VOID_CELL, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, type CellEditRequest, type ChunkRange, type ClassSettings, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type NewAreaRequest, type RaceSettings, type ResizeAreaRequest, type RulesetSettings, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type AreaLinkTarget, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { displayText } from '../rooms/payloads.js';
 
@@ -106,7 +106,7 @@ export const universeSettingsUpdate = z.object({
 	groupSize: z.number().int().min(MIN_GROUP_SIZE).max(MAX_GROUP_PLAYERS).optional(),
 	startingMoney: money.optional(),
 	startingItems: startingItemList.optional(),
-	startingZoneId: z.uuid().optional()
+	startingAreaId: z.uuid().optional()
 }) satisfies z.ZodType<UniverseSettingsUpdate>;
 
 /**
@@ -190,13 +190,13 @@ const raceAbilityModifier = z.number().int().min(PF1E_MIN_RACE_ABILITY_MODIFIER)
 
 /**
  * The settings races and classes share: what they add to every character's starting money and
- * equipment, and where they start. Whether the zone and items belong to the universe is checked by the route
+ * equipment, and where they start. Whether the area and items belong to the universe is checked by the route
  */
 const startingExtrasFields = {
 	enabled: z.boolean(),
 	startingMoney: money,
 	startingItems: startingItemList,
-	startingZoneId: z.uuid().nullable()
+	startingAreaId: z.uuid().nullable()
 };
 
 /**
@@ -226,9 +226,9 @@ export const raceSettings = z.object({
 export const classSettings = z.object({
 	...startingExtrasFields,
 	name: displayText(MAX_CLASS_NAME_LENGTH).nullable(),
-	raceZones: z.array(z.object({
+	raceAreas: z.array(z.object({
 		raceId: raceIdParameter,
-		zoneId: z.uuid()
+		areaId: z.uuid()
 	}))
 		.max(MAX_CUSTOM_RACES + Object.keys(PF1E_RACES).length)
 		.refine((entries) => (new Set(entries.map((entry) => entry.raceId)).size === entries.length), 'Each race can be listed only once'),
@@ -238,35 +238,35 @@ export const classSettings = z.object({
 		castingStyle: z.enum(PF1E_CASTING_STYLES)
 	})
 })
-	.refine((settings) => ((settings.startingZoneId === null) || (settings.raceZones.length === 0)), 'A class with its own starting zone can\'t have a zone for each race') satisfies z.ZodType<ClassSettings>;
+	.refine((settings) => ((settings.startingAreaId === null) || (settings.raceAreas.length === 0)), 'A class with its own starting area can\'t have an area for each race') satisfies z.ZodType<ClassSettings>;
 
 /**
- * The settings a zone may be created with or changed to, each optional
+ * The settings an area may be created with or changed to, each optional
  */
-const zoneSettingsFields = {
-	name: displayText(MAX_ZONE_NAME_LENGTH).optional(),
-	parentZoneId: z.uuid().nullable().optional(),
+const areaSettingsFields = {
+	name: displayText(MAX_AREA_NAME_LENGTH).optional(),
+	parentAreaId: z.uuid().nullable().optional(),
 	enabled: z.boolean().optional(),
 	indoors: z.boolean().optional(),
 	defaultTileId: tileIdParameter.optional(),
-	passageOfTime: z.enum(ZONE_PASSAGES_OF_TIME).optional(),
+	passageOfTime: z.enum(AREA_PASSAGES_OF_TIME).optional(),
 	faerieMorning: z.enum(FAERIE_MORNINGS).nullable().optional(),
 	loopsEastWest: z.boolean().optional(),
 	loopsNorthSouth: z.boolean().optional()
 };
 
 /**
- * NewZoneRequest
+ * NewAreaRequest
  */
-export const newZoneRequest = z.object({
-	...zoneSettingsFields,
-	name: displayText(MAX_ZONE_NAME_LENGTH)
-}) satisfies z.ZodType<NewZoneRequest>;
+export const newAreaRequest = z.object({
+	...areaSettingsFields,
+	name: displayText(MAX_AREA_NAME_LENGTH)
+}) satisfies z.ZodType<NewAreaRequest>;
 
 /**
- * ZoneSettingsUpdate
+ * AreaSettingsUpdate
  */
-export const zoneSettingsUpdate = z.object(zoneSettingsFields) satisfies z.ZodType<ZoneSettingsUpdate>;
+export const areaSettingsUpdate = z.object(areaSettingsFields) satisfies z.ZodType<AreaSettingsUpdate>;
 
 /**
  * MapBounds a map may have: each side at most MAX_MAP_SIDE cells, holding column 0, row 0
@@ -281,12 +281,12 @@ const mapBounds = z.object({
 	.refine((bounds) => ((bounds.maxRow - bounds.minRow) < MAX_MAP_SIDE), `The map can be at most ${MAX_MAP_SIDE} cells tall`) satisfies z.ZodType<MapBounds>;
 
 /**
- * ResizeZoneRequest
+ * ResizeAreaRequest
  */
-export const resizeZoneRequest = z.object({
+export const resizeAreaRequest = z.object({
 	bounds: mapBounds,
 	discard: z.boolean()
-}) satisfies z.ZodType<ResizeZoneRequest>;
+}) satisfies z.ZodType<ResizeAreaRequest>;
 
 /**
  * ChunkRange, from query parameters
@@ -308,12 +308,12 @@ export const cellEditRequest = z.object({
 }) satisfies z.ZodType<CellEditRequest>;
 
 /**
- * ZoneLinkTarget
+ * AreaLinkTarget
  */
-export const zoneLinkTarget = z.object({
-	targetZoneId: z.uuid(),
+export const areaLinkTarget = z.object({
+	targetAreaId: z.uuid(),
 	targetColumn: cellCoordinate,
 	targetRow: cellCoordinate,
-	mode: z.enum(ZONE_LINK_MODES),
+	mode: z.enum(AREA_LINK_MODES),
 	requiresWholeGroup: z.boolean()
-}) satisfies z.ZodType<ZoneLinkTarget>;
+}) satisfies z.ZodType<AreaLinkTarget>;

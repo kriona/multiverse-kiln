@@ -21,7 +21,7 @@ import { findUniverseRole } from '../db/universeEditorRepo.js';
 import { findEditableUniverse, lockUniverse } from '../db/universeRepo.js';
 import { rollPf1eAbilityScores } from '../logic/abilityRolls.js';
 import { areValidBaseScores, combineStartingItems, combineStartingMoney, finalPf1eAbilityScores, isValidFloatingAbility, type Pf1eScoreSource } from '../logic/characterCreation.js';
-import { chooseStartingZone } from '../logic/startingZone.js';
+import { chooseStartingArea } from '../logic/startingArea.js';
 import { displayText } from '../rooms/payloads.js';
 import { playerIdOf, refuseWritesFromOtherOrigins, requireLogin } from './editorAccess.js';
 import { errorMessages, sendError, sendInvalidRequest, type Refusal } from './errors.js';
@@ -436,7 +436,7 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			abilityScores: finalPf1eAbilityScores(baseScores, race.rules, floatingAbility),
 			money: combineStartingMoney([universe.startingMoney, race.startingMoney, characterClass.startingMoney]),
 			items: combineStartingItems([universe.startingItems, race.startingItems, characterClass.startingItems], enabledItemIds),
-			zoneId: chooseStartingZone(universe.startingZoneId, race, characterClass)
+			areaId: chooseStartingArea(universe.startingAreaId, race, characterClass)
 		}, transaction);
 
 		if (source.kind === 'roll')

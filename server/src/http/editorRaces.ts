@@ -257,7 +257,7 @@ async function deleteRace(request: Request, response: Response): Promise<void>
 }
 
 /**
- * Why a race's settings can't be saved: a starting zone or item the universe can't use, or leaving the
+ * Why a race's settings can't be saved: a starting area or item the universe can't use, or leaving the
  * universe without an enabled race
  *
  * @param universe The universe
@@ -269,7 +269,7 @@ async function deleteRace(request: Request, response: Response): Promise<void>
 async function findRaceProblem(universe: UniverseContext['universe'], raceId: number | undefined, settings: RaceSettings, executor: Executor): Promise<Refusal | undefined>
 {
 	const startingProblem = await findStartingProblem(universe, {
-		zoneIds: ((settings.startingZoneId === null) ? [] : [settings.startingZoneId]),
+		areaIds: ((settings.startingAreaId === null) ? [] : [settings.startingAreaId]),
 		itemIds: settings.startingItems.map(({ itemId }) => itemId)
 	}, executor);
 

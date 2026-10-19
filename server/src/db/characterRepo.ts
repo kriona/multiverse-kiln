@@ -60,9 +60,9 @@ export interface NewCharacter
 	items: readonly ItemQuantity[];
 
 	/**
-	 * Where the character starts, or null when nothing names a zone
+	 * Where the character starts, or null when nothing names an area
 	 */
-	zoneId: string | null;
+	areaId: string | null;
 }
 
 /**
@@ -189,7 +189,7 @@ export async function createCharacter(character: NewCharacter, executor: Executo
 			gold: money.gp,
 			silver: money.sp,
 			copper: money.cp,
-			zoneId: character.zoneId
+			areaId: character.areaId
 		})
 		.returning({ id: characters.id });
 

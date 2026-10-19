@@ -5,7 +5,7 @@
  * browser; routes about a universe also need a role in it, and changes need a role that allows them
  */
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
-import { canEditUniverseSettings, canEditWorld, defineMessages, EDITOR_UNIVERSES_PATH, MAX_CUSTOM_TILES, NEW_ZONE_BOUNDS, SOURCE_LOCALE, Translator, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type RulesetSettings } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, canEditWorld, defineMessages, EDITOR_UNIVERSES_PATH, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, SOURCE_LOCALE, Translator, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type RulesetSettings } from '@multiverse-kiln/shared';
 
 import { lockPlayer } from '../db/playerRepo.js';
 import { findPf1eSettings, savePf1eSettings } from '../db/rulesetRepo.js';
@@ -13,9 +13,9 @@ import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { countCustomTiles, createCustomTile, deleteCustomTile, findDefaultTileIds, findTileKind, listEditorTiles, restoreDefaultTile, saveEditedDefaultTile, updateCustomTile } from '../db/tileRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { countUniversesWithRole, listEditableUniverses, setUniverseRole } from '../db/universeEditorRepo.js';
-import { createUniverse, lockUniverse, setUniverseZones, updateUniverseSettings } from '../db/universeRepo.js';
-import { createZone, isTileInUse } from '../db/zoneRepo.js';
-import { zoneChanges } from '../world/zoneChanges.js';
+import { createUniverse, lockUniverse, setUniverseAreas, updateUniverseSettings } from '../db/universeRepo.js';
+import { createArea, isTileInUse } from '../db/areaRepo.js';
+import { areaChanges } from '../world/areaChanges.js';
 import { loadUniverseContext, playerIdOf, refuseWritesFromOtherOrigins, requireLogin, requireRole, universeContextOf } from './editorAccess.js';
 import { addDefaultStartingItems } from '../db/startingItemRepo.js';
 import { addClassRoutes } from './editorClasses.js';
@@ -23,7 +23,7 @@ import { addItemRoutes } from './editorItems.js';
 import { newUniverseRequest, rulesetSettings, tileIdParameter, tileListQuery, tileSettings, universeSettingsUpdate } from './editorPayloads.js';
 import { addRaceRoutes } from './editorRaces.js';
 import { findStartingProblem } from './editorStartingExtras.js';
-import { addZoneRoutes, DEFAULT_ZONE_TILE_KEYS, timeSettingsProblem } from './editorZones.js';
+import { addAreaRoutes, DEFAULT_AREA_TILE_KEYS, timeSettingsProblem } from './editorAreas.js';
 import { errorMessages, sendError, sendInvalidRequest, type Refusal } from './errors.js';
 
 /**
@@ -43,7 +43,7 @@ const messages = defineMessages({
 });
 
 /**
- * Names the zones of a new universe. The server has no translations, so they are in English; the
+ * Names the areas of a new universe. The server has no translations, so they are in English; the
  * creator can rename them
  */
 const universeTranslator = new Translator(SOURCE_LOCALE);
@@ -99,7 +99,7 @@ function createEditorRouter(allowedOrigins: Set<string>): express.Router
 	addItemRoutes(universeRouter);
 	addRaceRoutes(universeRouter);
 	addClassRoutes(universeRouter);
-	addZoneRoutes(universeRouter);
+	addAreaRoutes(universeRouter);
 
 	router.use(handleEditorError);
 
@@ -125,7 +125,7 @@ async function listUniverses(request: Request, response: Response): Promise<void
 }
 
 /**
- * POST /: a new universe with a lobby zone and a starting zone, created by the player
+ * POST /: a new universe with a lobby area and a starting area, created by the player
  *
  * @param request The request
  * @param response The response
@@ -177,7 +177,7 @@ async function createUniverseRoute(request: Request, response: Response): Promis
 		}
 
 		const createdId = await createUniverse({ name, shortDescription, ruleset }, transaction);
-		const tileKey = DEFAULT_ZONE_TILE_KEYS[ruleset].outdoors;
+		const tileKey = DEFAULT_AREA_TILE_KEYS[ruleset].outdoors;
 		const defaultTileId = (await findDefaultTileIds(ruleset, transaction)).get(tileKey);
 
 		if (defaultTileId === undefined)
@@ -185,27 +185,27 @@ async function createUniverseRoute(request: Request, response: Response): Promis
 			throw new Error(`The ${ruleset} default tile "${tileKey}" is missing`);
 		}
 
-		const zone = {
+		const area = {
 			universeId: createdId,
 			enabled: true,
 			indoors: false,
 			defaultTileId,
-			bounds: NEW_ZONE_BOUNDS
+			bounds: NEW_AREA_BOUNDS
 		};
-		const lobbyZoneName = universeTranslator.format({
-			id: 'universe.lobbyZoneName',
+		const lobbyAreaName = universeTranslator.format({
+			id: 'universe.lobbyAreaName',
 			defaultMessage: 'Lobby',
-			description: 'Name given to the lobby zone of a new universe, which its creator can change'
+			description: 'Name given to the lobby area of a new universe, which its creator can change'
 		});
-		const startingZoneName = universeTranslator.format({
-			id: 'universe.startingZoneName',
-			defaultMessage: 'Starting Zone',
-			description: 'Name given to the zone characters of a new universe start in, which its creator can change'
+		const startingAreaName = universeTranslator.format({
+			id: 'universe.startingAreaName',
+			defaultMessage: 'Starting Area',
+			description: 'Name given to the area characters of a new universe start in, which its creator can change'
 		});
-		const lobbyZoneId = await createZone({ ...zone, name: lobbyZoneName }, transaction);
-		const startingZoneId = await createZone({ ...zone, name: startingZoneName }, transaction);
+		const lobbyAreaId = await createArea({ ...area, name: lobbyAreaName }, transaction);
+		const startingAreaId = await createArea({ ...area, name: startingAreaName }, transaction);
 
-		await setUniverseZones(createdId, lobbyZoneId, startingZoneId, transaction);
+		await setUniverseAreas(createdId, lobbyAreaId, startingAreaId, transaction);
 		await addDefaultStartingItems(createdId, ruleset, transaction);
 		await setUniverseRole(createdId, playerId, 'creator', transaction);
 
@@ -262,14 +262,14 @@ async function updateUniverse(request: Request, response: Response): Promise<voi
 		return;
 	}
 
-	const { startingZoneId, startingItems } = body.data;
+	const { startingAreaId, startingItems } = body.data;
 	const startingProblem = await inTransaction(async (transaction) =>
 	{
 		// Deleting an item waits for the universe's lock too, so an item can't be deleted as it is added here
 		await lockUniverse(universe.id, transaction);
 
 		const found = await findStartingProblem(universe, {
-			zoneIds: ((startingZoneId === undefined) ? [] : [startingZoneId]),
+			areaIds: ((startingAreaId === undefined) ? [] : [startingAreaId]),
 			itemIds: startingItems?.map(({ itemId }) => itemId)
 		}, transaction);
 
@@ -408,7 +408,7 @@ async function createTileRoute(request: Request, response: Response): Promise<vo
 
 	const payload: CreatedPayload<number> = { id: tileId };
 
-	zoneChanges.publish({ kind: 'tiles', universeId: universe.id });
+	areaChanges.publish({ kind: 'tiles', universeId: universe.id });
 	response.status(201).json(payload);
 }
 
@@ -454,7 +454,7 @@ async function saveTile(request: Request, response: Response): Promise<void>
 		await updateCustomTile(universe.id, tileId.data, { ...body.data, name });
 	}
 
-	zoneChanges.publish({ kind: 'tiles', universeId: universe.id });
+	areaChanges.publish({ kind: 'tiles', universeId: universe.id });
 	response.sendStatus(204);
 }
 
@@ -480,7 +480,7 @@ async function deleteTile(request: Request, response: Response): Promise<void>
 	if (kind === 'default')
 	{
 		await restoreDefaultTile(universe.id, tileId.data);
-		zoneChanges.publish({ kind: 'tiles', universeId: universe.id });
+		areaChanges.publish({ kind: 'tiles', universeId: universe.id });
 		response.sendStatus(204);
 		return;
 	}
@@ -505,12 +505,12 @@ async function deleteTile(request: Request, response: Response): Promise<void>
 		sendError(response, 409, {
 			id: 'error.tileInUse',
 			defaultMessage: 'A map uses this tile, so it can\'t be deleted.',
-			description: 'Why a tile couldn\'t be deleted: some zone\'s map is painted with it'
+			description: 'Why a tile couldn\'t be deleted: some area\'s map is painted with it'
 		});
 		return;
 	}
 
-	zoneChanges.publish({ kind: 'tiles', universeId: universe.id });
+	areaChanges.publish({ kind: 'tiles', universeId: universe.id });
 	response.sendStatus(204);
 }
 

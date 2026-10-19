@@ -6,17 +6,17 @@ import { defineMessages, type MessageDescriptor } from '@multiverse-kiln/shared'
 
 import type { Executor } from '../db/client.js';
 import { loadEditorItems } from '../db/itemRepo.js';
-import { listZones } from '../db/zoneRepo.js';
+import { listAreas } from '../db/areaRepo.js';
 import type { UniverseContext } from './editorAccess.js';
 
 /**
  * Why starting settings were refused (see shared/src/localization.ts)
  */
 export const startingMessages = defineMessages({
-	unusableStartingZone: {
-		id: 'error.unusableStartingZone',
-		defaultMessage: 'The starting zone must be a zone of this universe other than the lobby.',
-		description: 'Why a starting zone (the universe\'s, a race\'s or a class\'s) was refused: the zone chosen for characters to start in is the lobby, or was deleted, perhaps by another editor'
+	unusableStartingArea: {
+		id: 'error.unusableStartingArea',
+		defaultMessage: 'The starting area must be an area of this universe other than the lobby.',
+		description: 'Why a starting area (the universe\'s, a race\'s or a class\'s) was refused: the area chosen for characters to start in is the lobby, or was deleted, perhaps by another editor'
 	},
 	unusableStartingItem: {
 		id: 'error.unusableStartingItem',
@@ -31,9 +31,9 @@ export const startingMessages = defineMessages({
 export interface StartingReferences
 {
 	/**
-	 * Zones characters would start in
+	 * Areas characters would start in
 	 */
-	zoneIds?: readonly string[];
+	areaIds?: readonly string[];
 
 	/**
 	 * Items characters would start with
@@ -42,27 +42,27 @@ export interface StartingReferences
 }
 
 /**
- * Why starting settings can't be saved: a zone that isn't one of the universe's or is its lobby, or
+ * Why starting settings can't be saved: an area that isn't one of the universe's or is its lobby, or
  * an item the universe can't use
  *
  * @param universe The universe
- * @param references The zones and items the settings name
+ * @param references The areas and items the settings name
  * @param executor The database, or a transaction
  * @return The reason, or undefined when they can be saved
  */
 export async function findStartingProblem(universe: UniverseContext['universe'], references: StartingReferences, executor: Executor): Promise<MessageDescriptor | undefined>
 {
-	const { zoneIds = [], itemIds = [] } = references;
+	const { areaIds = [], itemIds = [] } = references;
 
-	if (zoneIds.length > 0)
+	if (areaIds.length > 0)
 	{
-		const usableZoneIds = new Set((await listZones(universe.id, executor))
-			.map((zone) => zone.id)
-			.filter((zoneId) => (zoneId !== universe.lobbyZoneId)));
+		const usableAreaIds = new Set((await listAreas(universe.id, executor))
+			.map((area) => area.id)
+			.filter((areaId) => (areaId !== universe.lobbyAreaId)));
 
-		if (!zoneIds.every((zoneId) => usableZoneIds.has(zoneId)))
+		if (!areaIds.every((areaId) => usableAreaIds.has(areaId)))
 		{
-			return(startingMessages.unusableStartingZone);
+			return(startingMessages.unusableStartingArea);
 		}
 	}
 

@@ -8,15 +8,15 @@
  */
 import type { LocalizedMessage } from './localization.js';
 import type { MapBounds } from './maps.js';
-import type { ZoneChunk } from './messages.js';
+import type { AreaChunk } from './messages.js';
 import type { Pf1eMoney } from './rulesets/pf1e/money.js';
 import type { Pf1eClassRules } from './rulesets/pf1e/classes.js';
 import type { Pf1eRaceRules } from './rulesets/pf1e/races.js';
 import type { Pf1eSettings } from './rulesets/pf1e/settings.js';
-import type { FaerieMorning, PassageOfTime, Ruleset, UniverseRole, UniverseStage, ZoneLinkMode, ZonePassageOfTime } from './universes.js';
+import type { FaerieMorning, PassageOfTime, Ruleset, UniverseRole, UniverseStage, AreaLinkMode, AreaPassageOfTime } from './universes.js';
 
 /**
- * Base of every editor route. Under it, with :universeId and :zoneId standing for IDs:
+ * Base of every editor route. Under it, with :universeId and :areaId standing for IDs:
  *
  * - GET    /                                       EditableUniverseListPayload: the universes the player has a role in
  * - POST   /                                       NewUniverseRequest -> CreatedPayload: a universe the player creates
@@ -40,17 +40,17 @@ import type { FaerieMorning, PassageOfTime, Ruleset, UniverseRole, UniverseStage
  * - POST   /:universeId/classes                    ClassSettings -> CreatedPayload: a custom class (creators only)
  * - PUT    /:universeId/classes/:classId           ClassSettings: edits a custom class, or stores an edited copy of a default class (creators only)
  * - DELETE /:universeId/classes/:classId           deletes a custom class, or restores a default class (creators only)
- * - GET    /:universeId/zones                      ZoneListPayload
- * - POST   /:universeId/zones                      NewZoneRequest -> CreatedPayload
- * - GET    /:universeId/zones/:zoneId              EditorZone
- * - PATCH  /:universeId/zones/:zoneId              ZoneSettingsUpdate
- * - DELETE /:universeId/zones/:zoneId              deletes a zone that isn't the lobby or starting zone
- * - PUT    /:universeId/zones/:zoneId/bounds       ResizeZoneRequest; 409 with ResizeConflictPayload when it would discard anything
- * - GET    /:universeId/zones/:zoneId/chunks       ChunkRange as query parameters -> ChunkListPayload
- * - PATCH  /:universeId/zones/:zoneId/cells        CellEditRequest
- * - GET    /:universeId/zones/:zoneId/links        ZoneLinkListPayload
- * - PUT    /:universeId/zones/:zoneId/links/:column/:row  ZoneLinkTarget: adds or replaces the cell's link
- * - DELETE /:universeId/zones/:zoneId/links/:column/:row
+ * - GET    /:universeId/areas                      AreaListPayload
+ * - POST   /:universeId/areas                      NewAreaRequest -> CreatedPayload
+ * - GET    /:universeId/areas/:areaId              EditorArea
+ * - PATCH  /:universeId/areas/:areaId              AreaSettingsUpdate
+ * - DELETE /:universeId/areas/:areaId              deletes an area that isn't the lobby or starting area
+ * - PUT    /:universeId/areas/:areaId/bounds       ResizeAreaRequest; 409 with ResizeConflictPayload when it would discard anything
+ * - GET    /:universeId/areas/:areaId/chunks       ChunkRange as query parameters -> ChunkListPayload
+ * - PATCH  /:universeId/areas/:areaId/cells        CellEditRequest
+ * - GET    /:universeId/areas/:areaId/links        AreaLinkListPayload
+ * - PUT    /:universeId/areas/:areaId/links/:column/:row  AreaLinkTarget: adds or replaces the cell's link
+ * - DELETE /:universeId/areas/:areaId/links/:column/:row
  *
  * Every route except the list and create needs a role in the universe. Changing the universe's
  * settings needs canEditUniverseSettings(), and everything else that changes it needs canEditWorld()
@@ -130,19 +130,19 @@ export const MAX_CUSTOM_RACES = 100;
 export const MAX_CUSTOM_CLASSES = 100;
 
 /**
- * Most characters in a zone's name
+ * Most characters in an area's name
  */
-export const MAX_ZONE_NAME_LENGTH = 60;
+export const MAX_AREA_NAME_LENGTH = 60;
 
 /**
- * Most zones in one universe
+ * Most areas in one universe
  */
-export const MAX_ZONES = 1000;
+export const MAX_AREAS = 1000;
 
 /**
- * The map a new zone starts with: one screen's worth of cells around column 0, row 0
+ * The map a new area starts with: one screen's worth of cells around column 0, row 0
  */
-export const NEW_ZONE_BOUNDS: Readonly<MapBounds> = {
+export const NEW_AREA_BOUNDS: Readonly<MapBounds> = {
 	minColumn: -15,
 	minRow: -8,
 	maxColumn: 15,
@@ -214,7 +214,7 @@ export interface EditableUniverseListPayload
 /**
  * Body of POST EDITOR_UNIVERSES_PATH: what the Create Universe dialog asks for
  *
- * The new universe is in_the_beginning, with a lobby zone and a starting zone, and the player is its creator
+ * The new universe is in_the_beginning, with a lobby area and a starting area, and the player is its creator
  */
 export interface NewUniverseRequest
 {
@@ -261,10 +261,10 @@ export interface UniverseSettings
 	startingItems: ItemQuantity[];
 
 	/**
-	 * Where characters start unless their race or class says otherwise: one of the universe's zones
+	 * Where characters start unless their race or class says otherwise: one of the universe's areas
 	 * other than the lobby's. Null only while the universe is being created
 	 */
-	startingZoneId: string | null;
+	startingAreaId: string | null;
 }
 
 /**
@@ -274,7 +274,7 @@ export interface EditableUniverse extends UniverseSettings
 {
 	id: string;
 	ruleset: Ruleset;
-	lobbyZoneId: string | null;
+	lobbyAreaId: string | null;
 
 	/**
 	 * The player's role, which decides what they may change
@@ -526,10 +526,10 @@ export interface StartingExtras
 	startingItems: ItemQuantity[];
 
 	/**
-	 * Where its characters start: one of the universe's zones other than the lobby's, or null to leave it
-	 * to the next choice down (see chooseStartingZone() in server/src/logic/startingZone.ts)
+	 * Where its characters start: one of the universe's areas other than the lobby's, or null to leave it
+	 * to the next choice down (see chooseStartingArea() in server/src/logic/startingArea.ts)
 	 */
-	startingZoneId: string | null;
+	startingAreaId: string | null;
 }
 
 /**
@@ -592,7 +592,7 @@ export interface RaceListPayload
 /**
  * Where a class's characters of one race start
  */
-export interface ClassRaceZone
+export interface ClassRaceArea
 {
 	/**
 	 * A race the universe can use (an EditorRace's ID)
@@ -600,9 +600,9 @@ export interface ClassRaceZone
 	raceId: number;
 
 	/**
-	 * One of the universe's zones other than the lobby's
+	 * One of the universe's areas other than the lobby's
 	 */
-	zoneId: string;
+	areaId: string;
 }
 
 /**
@@ -623,9 +623,9 @@ export interface ClassSettings extends StartingExtras
 
 	/**
 	 * Where the class's characters of each race listed start, each race listed once. Must be empty while
-	 * startingZoneId is set, since then every member of the class starts there
+	 * startingAreaId is set, since then every member of the class starts there
 	 */
-	raceZones: ClassRaceZone[];
+	raceAreas: ClassRaceArea[];
 
 	/**
 	 * The class's rules under the universe's ruleset
@@ -669,16 +669,16 @@ export interface ClassListPayload
 }
 
 /**
- * A zone's settings, as the zone editor shows and changes them
+ * An area's settings, as the area editor shows and changes them
  */
-export interface ZoneSettings
+export interface AreaSettings
 {
 	name: string;
 
 	/**
-	 * Another zone of the same universe, or null for a top-level zone
+	 * Another area of the same universe, or null for a top-level area
 	 */
-	parentZoneId: string | null;
+	parentAreaId: string | null;
 
 	enabled: boolean;
 	indoors: boolean;
@@ -688,7 +688,7 @@ export interface ZoneSettings
 	 */
 	defaultTileId: number;
 
-	passageOfTime: ZonePassageOfTime;
+	passageOfTime: AreaPassageOfTime;
 
 	/**
 	 * Set exactly when passageOfTime is faerie
@@ -696,7 +696,7 @@ export interface ZoneSettings
 	faerieMorning: FaerieMorning | null;
 
 	/**
-	 * A zone whose passage of time is faerie can't loop
+	 * An area whose passage of time is faerie can't loop
 	 */
 	loopsEastWest: boolean;
 
@@ -704,55 +704,55 @@ export interface ZoneSettings
 }
 
 /**
- * A zone as the Zones tab lists it
+ * An area as the Areas tab lists it
  */
-export interface EditorZoneSummary
+export interface EditorAreaSummary
 {
 	id: string;
 	name: string;
-	parentZoneId: string | null;
+	parentAreaId: string | null;
 	enabled: boolean;
 	indoors: boolean;
 }
 
 /**
- * Response of GET EDITOR_UNIVERSES_PATH/:universeId/zones: every zone of the universe, by name
+ * Response of GET EDITOR_UNIVERSES_PATH/:universeId/areas: every area of the universe, by name
  */
-export interface ZoneListPayload
+export interface AreaListPayload
 {
-	zones: EditorZoneSummary[];
-	lobbyZoneId: string | null;
-	startingZoneId: string | null;
+	areas: EditorAreaSummary[];
+	lobbyAreaId: string | null;
+	startingAreaId: string | null;
 }
 
 /**
- * Response of GET EDITOR_UNIVERSES_PATH/:universeId/zones/:zoneId
+ * Response of GET EDITOR_UNIVERSES_PATH/:universeId/areas/:areaId
  */
-export interface EditorZone extends ZoneSettings
+export interface EditorArea extends AreaSettings
 {
 	id: string;
 	bounds: MapBounds;
 }
 
 /**
- * Body of POST EDITOR_UNIVERSES_PATH/:universeId/zones. Settings left out take their defaults: enabled
+ * Body of POST EDITOR_UNIVERSES_PATH/:universeId/areas. Settings left out take their defaults: enabled
  * while the universe is in_the_beginning, outdoors, the default tile grass outdoors or wood floor indoors,
- * inherit time, not looping, and a map of NEW_ZONE_BOUNDS
+ * inherit time, not looping, and a map of NEW_AREA_BOUNDS
  */
-export type NewZoneRequest = Pick<ZoneSettings, 'name'> & Partial<ZoneSettings>;
+export type NewAreaRequest = Pick<AreaSettings, 'name'> & Partial<AreaSettings>;
 
 /**
- * Body of PATCH EDITOR_UNIVERSES_PATH/:universeId/zones/:zoneId: the settings to change. faerieMorning
+ * Body of PATCH EDITOR_UNIVERSES_PATH/:universeId/areas/:areaId: the settings to change. faerieMorning
  * must be sent with passageOfTime whenever either changes to or from faerie
  */
-export type ZoneSettingsUpdate = Partial<ZoneSettings>;
+export type AreaSettingsUpdate = Partial<AreaSettings>;
 
 /**
- * Body of PUT EDITOR_UNIVERSES_PATH/:universeId/zones/:zoneId/bounds
+ * Body of PUT EDITOR_UNIVERSES_PATH/:universeId/areas/:areaId/bounds
  *
  * Each side may be at most MAX_MAP_SIDE cells long, and the map must still hold column 0, row 0
  */
-export interface ResizeZoneRequest
+export interface ResizeAreaRequest
 {
 	bounds: MapBounds;
 
@@ -764,7 +764,7 @@ export interface ResizeZoneRequest
 }
 
 /**
- * Body of the 409 answer to a ResizeZoneRequest that would discard something
+ * Body of the 409 answer to a ResizeAreaRequest that would discard something
  */
 export interface ResizeConflictPayload extends ErrorPayload
 {
@@ -774,13 +774,13 @@ export interface ResizeConflictPayload extends ErrorPayload
 	discardedCells: number;
 
 	/**
-	 * Links on cells outside the new bounds, and links from other zones into them
+	 * Links on cells outside the new bounds, and links from other areas into them
 	 */
 	discardedLinks: number;
 }
 
 /**
- * Query parameters of GET EDITOR_UNIVERSES_PATH/:universeId/zones/:zoneId/chunks: a rectangle of
+ * Query parameters of GET EDITOR_UNIVERSES_PATH/:universeId/areas/:areaId/chunks: a rectangle of
  * chunks, inclusive at both ends, covering at most MAX_CHUNKS_PER_REQUEST chunks
  */
 export interface ChunkRange
@@ -792,12 +792,12 @@ export interface ChunkRange
 }
 
 /**
- * Response of GET EDITOR_UNIVERSES_PATH/:universeId/zones/:zoneId/chunks: the stored chunks in the
- * range. A chunk that isn't listed is all the zone's default tile
+ * Response of GET EDITOR_UNIVERSES_PATH/:universeId/areas/:areaId/chunks: the stored chunks in the
+ * range. A chunk that isn't listed is all the area's default tile
  */
 export interface ChunkListPayload
 {
-	chunks: ZoneChunk[];
+	chunks: AreaChunk[];
 }
 
 /**
@@ -807,8 +807,8 @@ export interface ChunkListPayload
 export type CellChange = [column: number, row: number, value: number];
 
 /**
- * Body of PATCH EDITOR_UNIVERSES_PATH/:universeId/zones/:zoneId/cells: up to MAX_CELL_CHANGES cells
- * inside the zone's bounds. A cell listed twice takes the later value
+ * Body of PATCH EDITOR_UNIVERSES_PATH/:universeId/areas/:areaId/cells: up to MAX_CELL_CHANGES cells
+ * inside the area's bounds. A cell listed twice takes the later value
  */
 export interface CellEditRequest
 {
@@ -816,22 +816,22 @@ export interface CellEditRequest
 }
 
 /**
- * Where a zone link goes and how it is taken
+ * Where an area link goes and how it is taken
  */
-export interface ZoneLinkTarget
+export interface AreaLinkTarget
 {
 	/**
-	 * Another zone of the same universe
+	 * Another area of the same universe
 	 */
-	targetZoneId: string;
+	targetAreaId: string;
 
 	/**
-	 * A cell inside the target zone's bounds
+	 * A cell inside the target area's bounds
 	 */
 	targetColumn: number;
 
 	targetRow: number;
-	mode: ZoneLinkMode;
+	mode: AreaLinkMode;
 
 	/**
 	 * The link can only be used while every member of the group is present
@@ -840,19 +840,19 @@ export interface ZoneLinkTarget
 }
 
 /**
- * A zone link as the editor shows it
+ * An area link as the editor shows it
  */
-export interface EditorZoneLink extends ZoneLinkTarget
+export interface EditorAreaLink extends AreaLinkTarget
 {
 	column: number;
 	row: number;
 }
 
 /**
- * Response of GET EDITOR_UNIVERSES_PATH/:universeId/zones/:zoneId/links: the links on the zone's
+ * Response of GET EDITOR_UNIVERSES_PATH/:universeId/areas/:areaId/links: the links on the area's
  * cells, by row then column
  */
-export interface ZoneLinkListPayload
+export interface AreaLinkListPayload
 {
-	links: EditorZoneLink[];
+	links: EditorAreaLink[];
 }

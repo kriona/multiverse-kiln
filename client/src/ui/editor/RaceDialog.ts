@@ -11,10 +11,10 @@ import { formMessages } from '../formMessages';
 import { formatMoney, readMoneyField } from '../moneyField';
 import { raceName } from '../raceAndClassNames';
 import type { ItemSelectDialog } from './ItemSelectDialog';
-import { startingZoneMessages } from './startingZoneMessages';
+import { startingAreaMessages } from './startingAreaMessages';
 import { StartingItemsField } from './StartingItemsField';
-import { ZoneChoice } from './ZoneChoice';
-import type { ZoneSelectDialog } from './ZoneSelectDialog';
+import { AreaChoice } from './AreaChoice';
+import type { AreaSelectDialog } from './AreaSelectDialog';
 
 /**
  * The race editor: a dialog for a race's name, whether it is enabled, its rules, and what its
@@ -47,7 +47,7 @@ export class RaceDialog
 	private readonly modifiers: Record<Pf1eAbility, HTMLInputElement>;
 
 	private readonly startingItems: StartingItemsField;
-	private readonly startingZone: ZoneChoice;
+	private readonly startingArea: AreaChoice;
 
 	/**
 	 * Whether the race has changes that haven't been saved
@@ -62,12 +62,12 @@ export class RaceDialog
 	private race: EditorRace | undefined;
 
 	/**
-	 * The universe's starting zone's name, which characters of a race without a zone start in
+	 * The universe's starting area's name, which characters of a race without an area start in
 	 */
-	private universeZoneName = '';
+	private universeAreaName = '';
 
 	/**
-	 * Changes every time the dialog opens, so zone names that arrive for an earlier opening are ignored
+	 * Changes every time the dialog opens, so area names that arrive for an earlier opening are ignored
 	 */
 	private openVersion = 0;
 
@@ -78,10 +78,10 @@ export class RaceDialog
 
 	/**
 	 * @param api The editor's API
-	 * @param zoneSelect The dialog for choosing the starting zone
+	 * @param areaSelect The dialog for choosing the starting area
 	 * @param itemSelect The dialog for choosing the starting equipment
 	 */
-	constructor(private readonly api: EditorApi, zoneSelect: ZoneSelectDialog, itemSelect: ItemSelectDialog)
+	constructor(private readonly api: EditorApi, areaSelect: AreaSelectDialog, itemSelect: ItemSelectDialog)
 	{
 		this.name.maxLength = MAX_RACE_NAME_LENGTH;
 		this.modifiers = createModifierFields(getElement('race-modifiers', HTMLElement));
@@ -105,17 +105,17 @@ export class RaceDialog
 		{
 			showMessage(this.error, message);
 		});
-		this.startingZone = new ZoneChoice(zoneSelect, {
-			name: getElement('race-zone-name', HTMLElement),
-			choose: getElement('race-zone-choose', HTMLButtonElement),
-			clear: getElement('race-zone-clear', HTMLButtonElement)
-		}, () => t(startingZoneMessages.universes, { zone: this.universeZoneName }), () =>
+		this.startingArea = new AreaChoice(areaSelect, {
+			name: getElement('race-area-name', HTMLElement),
+			choose: getElement('race-area-choose', HTMLButtonElement),
+			clear: getElement('race-area-clear', HTMLButtonElement)
+		}, () => t(startingAreaMessages.universes, { area: this.universeAreaName }), () =>
 		{
 			this.changes.check();
 		});
 		this.changes = new ChangeTracker({
 			root: this.form,
-			state: () => [this.startingItems.value, this.startingZone.value]
+			state: () => [this.startingItems.value, this.startingArea.value]
 		});
 		this.changes.guardDialog(this.dialog);
 
@@ -163,7 +163,7 @@ export class RaceDialog
 		this.universe = universe;
 		this.race = race;
 		this.onChanged = onChanged;
-		this.universeZoneName = '';
+		this.universeAreaName = '';
 
 		if (!race)
 		{
@@ -200,7 +200,7 @@ export class RaceDialog
 		this.darkvision.checked = rules.darkvision;
 		this.size.value = rules.size;
 		this.startingMoney.value = formatMoney(race?.startingMoney ?? emptyPf1eMoney());
-		this.startingZone.show(universe, (race?.startingZoneId ?? null), editable);
+		this.startingArea.show(universe, (race?.startingAreaId ?? null), editable);
 		this.fields.disabled = false;
 		this.saveButton.hidden = !editable;
 		this.saveButton.disabled = false;
@@ -234,37 +234,37 @@ export class RaceDialog
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.dialog);
 		void this.startingItems.show(universe, (race?.startingItems ?? []));
-		void this.loadZoneNames(universe);
+		void this.loadAreaNames(universe);
 		this.dialog.showModal();
 		this.changes.markSaved();
 	}
 
 	/**
-	 * Loads the zones' names, for the race's starting zone and the universe's
+	 * Loads the areas' names, for the race's starting area and the universe's
 	 *
 	 * @param universe The universe
 	 */
-	private async loadZoneNames(universe: EditableUniverse): Promise<void>
+	private async loadAreaNames(universe: EditableUniverse): Promise<void>
 	{
 		const version = ++this.openVersion;
 
 		try
 		{
-			const { zones } = await this.api.listZones(universe.id);
+			const { areas } = await this.api.listAreas(universe.id);
 
 			if (version === this.openVersion)
 			{
-				const names = new Map(zones.map((zone) => [zone.id, zone.name]));
+				const names = new Map(areas.map((area) => [area.id, area.name]));
 
-				this.universeZoneName = ((universe.startingZoneId === null) ? '' : (names.get(universe.startingZoneId) ?? ''));
-				this.startingZone.setZoneNames(names);
+				this.universeAreaName = ((universe.startingAreaId === null) ? '' : (names.get(universe.startingAreaId) ?? ''));
+				this.startingArea.setAreaNames(names);
 			}
 		}
 		catch (error)
 		{
 			if (version === this.openVersion)
 			{
-				showMessage(this.error, describeEditorError(error, startingZoneMessages.loadFailed));
+				showMessage(this.error, describeEditorError(error, startingAreaMessages.loadFailed));
 			}
 		}
 	}
@@ -309,7 +309,7 @@ export class RaceDialog
 			enabled: this.enabled.checked,
 			startingMoney,
 			startingItems: this.startingItems.value,
-			startingZoneId: this.startingZone.value,
+			startingAreaId: this.startingArea.value,
 			rules: {
 				abilityModifiers,
 				floatingBonus: this.floatingBonus.checked,
@@ -371,7 +371,7 @@ export class RaceDialog
 		{
 			question = t({
 				id: 'editor.race.confirmRestore',
-				defaultMessage: 'Restore {race} to the ruleset\'s default? Your changes to it, including its starting money, equipment and zone, will be lost.',
+				defaultMessage: 'Restore {race} to the ruleset\'s default? Your changes to it, including its starting money, equipment and area, will be lost.',
 				description: 'Asks before undoing this universe\'s changes to one of the ruleset\'s races; {race} is its name'
 			}, {
 				race: name

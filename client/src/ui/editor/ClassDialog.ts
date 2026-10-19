@@ -1,4 +1,4 @@
-import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, emptyPf1eMoney, MAX_CLASS_NAME_LENGTH, NEW_PF1E_CLASS_RULES, PF1E_ABILITIES, PF1E_ABILITY_NAMES, PF1E_CASTING_STYLE_NAMES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITION_NAMES, PF1E_MAGIC_TRADITIONS, type ClassRaceZone, type ClassSettings, type EditableUniverse, type EditorClass, type EditorRace, type MessageDescriptor, type Pf1eAbility, type Pf1eCastingStyle, type Pf1eMagicTradition } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, emptyPf1eMoney, MAX_CLASS_NAME_LENGTH, NEW_PF1E_CLASS_RULES, PF1E_ABILITIES, PF1E_ABILITY_NAMES, PF1E_CASTING_STYLE_NAMES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITION_NAMES, PF1E_MAGIC_TRADITIONS, type ClassRaceArea, type ClassSettings, type EditableUniverse, type EditorClass, type EditorRace, type MessageDescriptor, type Pf1eAbility, type Pf1eCastingStyle, type Pf1eMagicTradition } from '@multiverse-kiln/shared';
 import mapPinIcon from 'virtual:icon/ph:map-pin';
 import restoreIcon from 'virtual:icon/ph:arrow-counter-clockwise';
 import trashIcon from 'virtual:icon/ph:trash';
@@ -13,10 +13,10 @@ import { formMessages } from '../formMessages';
 import { formatMoney, readMoneyField } from '../moneyField';
 import { className, raceName } from '../raceAndClassNames';
 import type { ItemSelectDialog } from './ItemSelectDialog';
-import { startingZoneMessages } from './startingZoneMessages';
+import { startingAreaMessages } from './startingAreaMessages';
 import { StartingItemsField } from './StartingItemsField';
-import { ZoneChoice } from './ZoneChoice';
-import type { ZoneSelectDialog } from './ZoneSelectDialog';
+import { AreaChoice } from './AreaChoice';
+import type { AreaSelectDialog } from './AreaSelectDialog';
 
 /**
  * The class editor: a dialog for a class's name, whether it is enabled, its rules, and what its
@@ -38,26 +38,26 @@ export class ClassDialog
 	private readonly castingStyle = getElement('class-casting-style', HTMLSelectElement);
 	private readonly startingMoney = getElement('class-money', HTMLInputElement);
 	private readonly chooseItemsButton = getElement('class-items-choose', HTMLButtonElement);
-	private readonly raceZoneList = getElement('class-race-zones', HTMLUListElement);
-	private readonly raceZoneNote = getElement('class-race-zones-note', HTMLElement);
+	private readonly raceAreaList = getElement('class-race-areas', HTMLUListElement);
+	private readonly raceAreaNote = getElement('class-race-areas-note', HTMLElement);
 	private readonly error = getElement('class-error', HTMLElement);
 	private readonly removeButton = getElement('class-remove', HTMLButtonElement);
 	private readonly cancelButton = getElement('class-cancel', HTMLButtonElement);
 	private readonly saveButton = getElement('class-save', HTMLButtonElement);
 
 	private readonly startingItems: StartingItemsField;
-	private readonly startingZone: ZoneChoice;
+	private readonly startingArea: AreaChoice;
 
 	/**
-	 * The zone for each race's members of the class, by race ID, which may not be saved yet. Kept while
-	 * the class has a zone for every race, so taking that zone away brings them back
+	 * The area for each race's members of the class, by race ID, which may not be saved yet. Kept while
+	 * the class has an area for every race, so taking that area away brings them back
 	 */
-	private readonly raceZones = new Map<number, string>();
+	private readonly raceAreas = new Map<number, string>();
 
 	/**
-	 * The choice for each race's zone, once the races have loaded
+	 * The choice for each race's area, once the races have loaded
 	 */
-	private raceZoneChoices: ZoneChoice[] = [];
+	private raceAreaChoices: AreaChoice[] = [];
 
 	/**
 	 * Whether the class has changes that haven't been saved
@@ -72,12 +72,12 @@ export class ClassDialog
 	private characterClass: EditorClass | undefined;
 
 	/**
-	 * Every zone's name, by ID, once they have loaded
+	 * Every area's name, by ID, once they have loaded
 	 */
-	private zoneNames: ReadonlyMap<string, string> = new Map();
+	private areaNames: ReadonlyMap<string, string> = new Map();
 
 	/**
-	 * Changes every time the dialog opens, so zones and races that arrive for an earlier opening are ignored
+	 * Changes every time the dialog opens, so areas and races that arrive for an earlier opening are ignored
 	 */
 	private openVersion = 0;
 
@@ -88,10 +88,10 @@ export class ClassDialog
 
 	/**
 	 * @param api The editor's API
-	 * @param zoneSelect The dialog for choosing starting zones
+	 * @param areaSelect The dialog for choosing starting areas
 	 * @param itemSelect The dialog for choosing the starting equipment
 	 */
-	constructor(private readonly api: EditorApi, private readonly zoneSelect: ZoneSelectDialog, itemSelect: ItemSelectDialog)
+	constructor(private readonly api: EditorApi, private readonly areaSelect: AreaSelectDialog, itemSelect: ItemSelectDialog)
 	{
 		this.name.maxLength = MAX_CLASS_NAME_LENGTH;
 		setOptions(this.primaryAbility, namedOptions(PF1E_ABILITIES, PF1E_ABILITY_NAMES));
@@ -109,22 +109,22 @@ export class ClassDialog
 		{
 			showMessage(this.error, message);
 		});
-		this.startingZone = new ZoneChoice(zoneSelect, {
-			name: getElement('class-zone-name', HTMLElement),
-			choose: getElement('class-zone-choose', HTMLButtonElement),
-			clear: getElement('class-zone-clear', HTMLButtonElement)
+		this.startingArea = new AreaChoice(areaSelect, {
+			name: getElement('class-area-name', HTMLElement),
+			choose: getElement('class-area-choose', HTMLButtonElement),
+			clear: getElement('class-area-clear', HTMLButtonElement)
 		}, () => t({
-			id: 'editor.class.zoneByRace',
+			id: 'editor.class.areaByRace',
 			defaultMessage: 'Decided by race (below)',
-			description: 'Shown in the class editor as the class\'s starting zone when it has none for every race, so each race\'s zone listed below it is used'
+			description: 'Shown in the class editor as the class\'s starting area when it has none for every race, so each race\'s area listed below it is used'
 		}), () =>
 		{
-			this.showRaceZonesEnabled();
+			this.showRaceAreasEnabled();
 			this.changes.check();
 		});
 		this.changes = new ChangeTracker({
 			root: this.form,
-			state: () => [this.startingItems.value, this.startingZone.value, [...this.raceZones].sort(([a], [b]) => (a - b))]
+			state: () => [this.startingItems.value, this.startingArea.value, [...this.raceAreas].sort(([a], [b]) => (a - b))]
 		});
 		this.changes.guardDialog(this.dialog);
 
@@ -172,7 +172,7 @@ export class ClassDialog
 		this.universe = universe;
 		this.characterClass = characterClass;
 		this.onChanged = onChanged;
-		this.zoneNames = new Map();
+		this.areaNames = new Map();
 
 		if (!characterClass)
 		{
@@ -203,17 +203,17 @@ export class ClassDialog
 		this.tradition.value = rules.tradition;
 		this.castingStyle.value = rules.castingStyle;
 		this.startingMoney.value = formatMoney(characterClass?.startingMoney ?? emptyPf1eMoney());
-		this.startingZone.show(universe, (characterClass?.startingZoneId ?? null), editable);
-		this.raceZones.clear();
+		this.startingArea.show(universe, (characterClass?.startingAreaId ?? null), editable);
+		this.raceAreas.clear();
 
-		for (const { raceId, zoneId } of (characterClass?.raceZones ?? []))
+		for (const { raceId, areaId } of (characterClass?.raceAreas ?? []))
 		{
-			this.raceZones.set(raceId, zoneId);
+			this.raceAreas.set(raceId, areaId);
 		}
 
-		this.raceZoneChoices = [];
-		this.raceZoneList.replaceChildren();
-		this.showRaceZonesEnabled();
+		this.raceAreaChoices = [];
+		this.raceAreaList.replaceChildren();
+		this.showRaceAreasEnabled();
 		this.fields.disabled = false;
 		this.saveButton.hidden = !editable;
 		this.saveButton.disabled = false;
@@ -247,84 +247,84 @@ export class ClassDialog
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.dialog);
 		void this.startingItems.show(universe, (characterClass?.startingItems ?? []));
-		void this.loadRacesAndZones(universe, editable);
+		void this.loadRacesAndAreas(universe, editable);
 		this.dialog.showModal();
 		this.changes.markSaved();
 	}
 
 	/**
-	 * Loads the races and the zones' names, then lists where each race's members of the class start
+	 * Loads the races and the areas' names, then lists where each race's members of the class start
 	 *
 	 * @param universe The universe
-	 * @param editable Whether the player may change the zones
+	 * @param editable Whether the player may change the areas
 	 */
-	private async loadRacesAndZones(universe: EditableUniverse, editable: boolean): Promise<void>
+	private async loadRacesAndAreas(universe: EditableUniverse, editable: boolean): Promise<void>
 	{
 		const version = ++this.openVersion;
 
 		try
 		{
-			const [{ zones }, races] = await Promise.all([
-				this.api.listZones(universe.id),
+			const [{ areas }, races] = await Promise.all([
+				this.api.listAreas(universe.id),
 				this.api.listRaces(universe.id)
 			]);
 
 			if (version === this.openVersion)
 			{
-				this.zoneNames = new Map(zones.map((zone) => [zone.id, zone.name]));
-				this.startingZone.setZoneNames(this.zoneNames);
-				this.showRaceZones(universe, races, editable);
+				this.areaNames = new Map(areas.map((area) => [area.id, area.name]));
+				this.startingArea.setAreaNames(this.areaNames);
+				this.showRaceAreas(universe, races, editable);
 			}
 		}
 		catch (error)
 		{
 			if (version === this.openVersion)
 			{
-				showMessage(this.error, describeEditorError(error, startingZoneMessages.loadFailed));
+				showMessage(this.error, describeEditorError(error, startingAreaMessages.loadFailed));
 			}
 		}
 	}
 
 	/**
 	 * Lists where each race's members of the class start: every enabled race, and any disabled race the
-	 * class has a zone for
+	 * class has an area for
 	 *
 	 * @param universe The universe
 	 * @param races The universe's races
-	 * @param editable Whether the player may change the zones
+	 * @param editable Whether the player may change the areas
 	 */
-	private showRaceZones(universe: EditableUniverse, races: EditorRace[], editable: boolean): void
+	private showRaceAreas(universe: EditableUniverse, races: EditorRace[], editable: boolean): void
 	{
-		const universeZoneName = ((universe.startingZoneId === null) ? '' : (this.zoneNames.get(universe.startingZoneId) ?? ''));
+		const universeAreaName = ((universe.startingAreaId === null) ? '' : (this.areaNames.get(universe.startingAreaId) ?? ''));
 		const listed = races
-			.filter((race) => (race.enabled || this.raceZones.has(race.id)))
+			.filter((race) => (race.enabled || this.raceAreas.has(race.id)))
 			.map((race) => ({
 				race,
 				name: raceName(race, universe.ruleset)
 			}))
 			.sort((a, b) => a.name.localeCompare(b.name));
 
-		this.raceZoneChoices = listed.map(({ race, name }) =>
+		this.raceAreaChoices = listed.map(({ race, name }) =>
 		{
 			const row = document.createElement('li');
 			const label = document.createElement('span');
-			const zoneName = document.createElement('strong');
+			const areaName = document.createElement('strong');
 			const choose = document.createElement('button');
 			const clear = document.createElement('button');
-			const choice = new ZoneChoice(this.zoneSelect, { name: zoneName, choose, clear }, () =>
+			const choice = new AreaChoice(this.areaSelect, { name: areaName, choose, clear }, () =>
 			{
-				return((race.startingZoneId === null)
-					? t(startingZoneMessages.universes, { zone: universeZoneName })
-					: t(startingZoneMessages.races, { zone: (this.zoneNames.get(race.startingZoneId) ?? '') }));
+				return((race.startingAreaId === null)
+					? t(startingAreaMessages.universes, { area: universeAreaName })
+					: t(startingAreaMessages.races, { area: (this.areaNames.get(race.startingAreaId) ?? '') }));
 			}, () =>
 			{
 				if (choice.value === null)
 				{
-					this.raceZones.delete(race.id);
+					this.raceAreas.delete(race.id);
 				}
 				else
 				{
-					this.raceZones.set(race.id, choice.value);
+					this.raceAreas.set(race.id, choice.value);
 				}
 
 				this.changes.check();
@@ -334,13 +334,13 @@ export class ClassDialog
 			choose.type = 'button';
 			choose.className = 'secondary';
 			setButtonLabel(choose, mapPinIcon, t({
-				id: 'editor.class.chooseRaceZone',
+				id: 'editor.class.chooseRaceArea',
 				defaultMessage: 'Choose',
 				description: 'Button in the class editor, beside a race\'s name, that chooses where the class\'s characters of that race start'
 			}));
 			choose.setAttribute('aria-label', t({
-				id: 'editor.class.chooseRaceZoneLabel',
-				defaultMessage: 'Choose the starting zone for {race}',
+				id: 'editor.class.chooseRaceAreaLabel',
+				defaultMessage: 'Choose the starting area for {race}',
 				description: 'Name of the button that chooses where the class\'s characters of one race start, for screen readers; {race} is the race\'s name'
 			}, {
 				race: name
@@ -348,38 +348,38 @@ export class ClassDialog
 			clear.type = 'button';
 			clear.className = 'secondary';
 			setButtonLabel(clear, clearIcon, t({
-				id: 'editor.class.clearRaceZone',
+				id: 'editor.class.clearRaceArea',
 				defaultMessage: 'Clear',
-				description: 'Button in the class editor, beside a race\'s name, that takes away the class\'s zone for that race so the race\'s own is used'
+				description: 'Button in the class editor, beside a race\'s name, that takes away the class\'s area for that race so the race\'s own is used'
 			}));
 			clear.setAttribute('aria-label', t({
-				id: 'editor.class.clearRaceZoneLabel',
-				defaultMessage: 'Clear the starting zone for {race}',
-				description: 'Name of the button that takes away the class\'s zone for one race, for screen readers; {race} is the race\'s name'
+				id: 'editor.class.clearRaceAreaLabel',
+				defaultMessage: 'Clear the starting area for {race}',
+				description: 'Name of the button that takes away the class\'s area for one race, for screen readers; {race} is the race\'s name'
 			}, {
 				race: name
 			}));
-			row.append(label, zoneName, choose, clear);
-			this.raceZoneList.append(row);
-			choice.show(universe, (this.raceZones.get(race.id) ?? null), editable);
-			choice.setZoneNames(this.zoneNames);
+			row.append(label, areaName, choose, clear);
+			this.raceAreaList.append(row);
+			choice.show(universe, (this.raceAreas.get(race.id) ?? null), editable);
+			choice.setAreaNames(this.areaNames);
 
 			return(choice);
 		});
 
-		this.showRaceZonesEnabled();
+		this.showRaceAreasEnabled();
 	}
 
 	/**
-	 * Locks the zones for each race while the class has a zone for every race, and says why
+	 * Locks the areas for each race while the class has an area for every race, and says why
 	 */
-	private showRaceZonesEnabled(): void
+	private showRaceAreasEnabled(): void
 	{
-		const byRace = (this.startingZone.value === null);
+		const byRace = (this.startingArea.value === null);
 
-		this.raceZoneNote.hidden = byRace;
+		this.raceAreaNote.hidden = byRace;
 
-		for (const choice of this.raceZoneChoices)
+		for (const choice of this.raceAreaChoices)
 		{
 			choice.setEnabled(byRace);
 		}
@@ -413,19 +413,19 @@ export class ClassDialog
 
 		// A default class whose name wasn't changed keeps the ruleset's, which players read in their own language
 		const defaultName = ((this.characterClass && !this.characterClass.custom) ? className({ key: this.characterClass.key, name: null }, universe.ruleset) : undefined);
-		const startingZoneId = this.startingZone.value;
+		const startingAreaId = this.startingArea.value;
 
-		// A zone for every race leaves no room for one per race; the server refuses both
-		const raceZones: ClassRaceZone[] = ((startingZoneId === null)
-			? [...this.raceZones].map(([raceId, zoneId]) => ({ raceId, zoneId }))
+		// An area for every race leaves no room for one per race; the server refuses both
+		const raceAreas: ClassRaceArea[] = ((startingAreaId === null)
+			? [...this.raceAreas].map(([raceId, areaId]) => ({ raceId, areaId }))
 			: []);
 		const settings: ClassSettings = {
 			name: ((name === defaultName) ? null : name),
 			enabled: this.enabled.checked,
 			startingMoney,
 			startingItems: this.startingItems.value,
-			startingZoneId,
-			raceZones,
+			startingAreaId,
+			raceAreas,
 			rules: {
 				primaryAbility: this.primaryAbility.value as Pf1eAbility,
 				tradition: this.tradition.value as Pf1eMagicTradition,
@@ -486,7 +486,7 @@ export class ClassDialog
 		{
 			question = t({
 				id: 'editor.class.confirmRestore',
-				defaultMessage: 'Restore {class} to the ruleset\'s default? Your changes to it, including its starting money, equipment and zones, will be lost.',
+				defaultMessage: 'Restore {class} to the ruleset\'s default? Your changes to it, including its starting money, equipment and areas, will be lost.',
 				description: 'Asks before undoing this universe\'s changes to one of the ruleset\'s character classes; {class} is its name'
 			}, {
 				class: name

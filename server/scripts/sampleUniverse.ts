@@ -4,29 +4,29 @@
  *
  * Maps are drawn one character per cell, row by row, and centered on column 0, row 0:
  *
- *   .  the zone's default tile        g  grass        f  forest     d  desert
+ *   .  the area's default tile        g  grass        f  forest     d  desert
  *   ^  mountains                      ~  water        =  wood floor
  *   #  stone wall (a tile of this universe's own)
  *   (space)  void
  *
- * Digits mark cells that links start from or arrive at. Each zone says which tile its digits are
+ * Digits mark cells that links start from or arrive at. Each area says which tile its digits are
  */
-import type { PassageOfTime, UniverseStage, ZoneLinkMode } from '@multiverse-kiln/shared';
+import type { PassageOfTime, UniverseStage, AreaLinkMode } from '@multiverse-kiln/shared';
 
 /**
- * A zone to create
+ * An area to create
  */
-export interface SampleZone
+export interface SampleArea
 {
 	/**
-	 * Name other zones and links use for it
+	 * Name other areas and links use for it
 	 */
 	key: string;
 
 	name: string;
 
 	/**
-	 * Key of the zone it sits inside
+	 * Key of the area it sits inside
 	 */
 	parent?: string;
 
@@ -48,13 +48,13 @@ export interface SampleZone
 }
 
 /**
- * A link to create, from a marked cell of one zone to a marked cell of another
+ * A link to create, from a marked cell of one area to a marked cell of another
  */
 export interface SampleLink
 {
-	from: [zone: string, marker: string];
-	to: [zone: string, marker: string];
-	mode: ZoneLinkMode;
+	from: [area: string, marker: string];
+	to: [area: string, marker: string];
+	mode: AreaLinkMode;
 }
 
 /**
@@ -68,8 +68,8 @@ export const sampleUniverse = {
 	longDescription: 'Walk around the town square, step into the cottage, and climb down into its cellar.',
 	stage: 'let_there_be_light' as UniverseStage,
 	passageOfTime: 'flows_normally' as PassageOfTime,
-	lobbyZone: 'town-square',
-	startingZone: 'crossroads'
+	lobbyArea: 'town-square',
+	startingArea: 'crossroads'
 };
 
 /**
@@ -84,7 +84,7 @@ export const stoneWall = {
 	movementCost: 100
 };
 
-export const sampleZones: SampleZone[] = [
+export const sampleAreas: SampleArea[] = [
 	{
 		key: 'town-square',
 		name: 'Town Square',

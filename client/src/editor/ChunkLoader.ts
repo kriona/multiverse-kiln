@@ -9,7 +9,7 @@ import type { EditorMap } from './EditorMap';
 const BLOCK_SIDE = Math.floor(Math.sqrt(MAX_CHUNKS_PER_REQUEST));
 
 /**
- * Loads a zone's chunks into an EditorMap as the editor's view reaches them
+ * Loads an area's chunks into an EditorMap as the editor's view reaches them
  *
  * The map is split into square blocks of chunks, and each block is asked for once, the first time
  * the view touches it. Loaded chunks are kept: maps are only loaded where someone looks, and the
@@ -26,8 +26,8 @@ export class ChunkLoader
 
 	/**
 	 * @param api The editor's API
-	 * @param universeId The zone's universe
-	 * @param zoneId The zone
+	 * @param universeId The area's universe
+	 * @param areaId The area
 	 * @param map Where the chunks go
 	 * @param onLoaded Called with the keys of the chunks each block newly loaded
 	 * @param onError Called when a block couldn't be loaded; it will be asked for again next time the view reaches it
@@ -35,7 +35,7 @@ export class ChunkLoader
 	constructor(
 		private readonly api: EditorApi,
 		private readonly universeId: string,
-		private readonly zoneId: string,
+		private readonly areaId: string,
 		private readonly map: EditorMap,
 		private readonly onLoaded: (chunkKeys: string[]) => void,
 		private readonly onError: (error: unknown) => void
@@ -50,11 +50,11 @@ export class ChunkLoader
 	 */
 	request(view: ChunkRange): void
 	{
-		const zone = this.map.chunkRange;
-		const minChunkColumn = Math.max(view.minChunkColumn, zone.minChunkColumn);
-		const maxChunkColumn = Math.min(view.maxChunkColumn, zone.maxChunkColumn);
-		const minChunkRow = Math.max(view.minChunkRow, zone.minChunkRow);
-		const maxChunkRow = Math.min(view.maxChunkRow, zone.maxChunkRow);
+		const area = this.map.chunkRange;
+		const minChunkColumn = Math.max(view.minChunkColumn, area.minChunkColumn);
+		const maxChunkColumn = Math.min(view.maxChunkColumn, area.maxChunkColumn);
+		const minChunkRow = Math.max(view.minChunkRow, area.minChunkRow);
+		const maxChunkRow = Math.min(view.maxChunkRow, area.maxChunkRow);
 
 		for (let blockRow = Math.floor(minChunkRow / BLOCK_SIDE); blockRow <= Math.floor(maxChunkRow / BLOCK_SIDE); blockRow++)
 		{
@@ -66,10 +66,10 @@ export class ChunkLoader
 				{
 					this.requested.add(key);
 					void this.loadBlock(key, {
-						minChunkColumn: Math.max(blockColumn * BLOCK_SIDE, zone.minChunkColumn),
-						minChunkRow: Math.max(blockRow * BLOCK_SIDE, zone.minChunkRow),
-						maxChunkColumn: Math.min(((blockColumn + 1) * BLOCK_SIDE) - 1, zone.maxChunkColumn),
-						maxChunkRow: Math.min(((blockRow + 1) * BLOCK_SIDE) - 1, zone.maxChunkRow)
+						minChunkColumn: Math.max(blockColumn * BLOCK_SIDE, area.minChunkColumn),
+						minChunkRow: Math.max(blockRow * BLOCK_SIDE, area.minChunkRow),
+						maxChunkColumn: Math.min(((blockColumn + 1) * BLOCK_SIDE) - 1, area.maxChunkColumn),
+						maxChunkRow: Math.min(((blockRow + 1) * BLOCK_SIDE) - 1, area.maxChunkRow)
 					});
 				}
 			}
@@ -77,7 +77,7 @@ export class ChunkLoader
 	}
 
 	/**
-	 * Stops taking in chunks, for when the editor moves on to another zone or map
+	 * Stops taking in chunks, for when the editor moves on to another area or map
 	 */
 	stop(): void
 	{
@@ -94,7 +94,7 @@ export class ChunkLoader
 	{
 		try
 		{
-			const { chunks } = await this.api.loadChunks(this.universeId, this.zoneId, range);
+			const { chunks } = await this.api.loadChunks(this.universeId, this.areaId, range);
 
 			if (!this.stopped)
 			{

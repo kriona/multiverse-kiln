@@ -67,7 +67,7 @@ export async function loadEditorRaces(universeId: string, ruleset: Ruleset, exec
 			startingGold: races.startingGold,
 			startingSilver: races.startingSilver,
 			startingCopper: races.startingCopper,
-			startingZoneId: races.startingZoneId,
+			startingAreaId: races.startingAreaId,
 			strength: pf1eRaces.strengthModifier,
 			dexterity: pf1eRaces.dexterityModifier,
 			constitution: pf1eRaces.constitutionModifier,
@@ -108,7 +108,7 @@ export async function loadEditorRaces(universeId: string, ruleset: Ruleset, exec
 				enabled: settings.enabled,
 				startingMoney: fromCoinColumns(settings),
 				startingItems: (startingItems.get(settings.id) ?? []),
-				startingZoneId: settings.startingZoneId,
+				startingAreaId: settings.startingAreaId,
 				rules: {
 					abilityModifiers: {
 						strength: settings.strength,
@@ -354,13 +354,13 @@ export async function isRaceStartingItem(universeId: string, itemId: number, exe
  * @param settings The settings
  * @return The columns' values
  */
-function raceColumns(settings: RaceSettings): Pick<typeof races.$inferInsert, 'name' | 'enabled' | 'startingPlatinum' | 'startingGold' | 'startingSilver' | 'startingCopper' | 'startingZoneId'>
+function raceColumns(settings: RaceSettings): Pick<typeof races.$inferInsert, 'name' | 'enabled' | 'startingPlatinum' | 'startingGold' | 'startingSilver' | 'startingCopper' | 'startingAreaId'>
 {
 	return({
 		name: settings.name,
 		enabled: settings.enabled,
 		...toCoinColumns(settings.startingMoney),
-		startingZoneId: settings.startingZoneId
+		startingAreaId: settings.startingAreaId
 	});
 }
 

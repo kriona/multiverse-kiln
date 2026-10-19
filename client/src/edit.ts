@@ -2,7 +2,7 @@ import { EditorPage } from './EditorPage';
 import { startLocalization, t } from './localization';
 import { connectToServer } from './network/serverConnection';
 import { startPageLifecycle } from './pageLifecycle';
-import { gamePageUrl, readPageParameter, TAB_PARAMETER, UNIVERSE_PARAMETER, ZONE_PARAMETER } from './pages';
+import { gamePageUrl, readPageParameter, TAB_PARAMETER, UNIVERSE_PARAMETER, AREA_PARAMETER } from './pages';
 import { isEditorTab } from './ui/editor/EditorScreen';
 import { showStatus } from './ui/dom';
 import { startLanguagePicker } from './ui/languagePicker';
@@ -34,7 +34,7 @@ async function start(): Promise<void>
 	{
 		new EditorPage(await connectToServer(), universeId, {
 			tab: (isEditorTab(tab) ? tab : undefined),
-			zoneId: readPageParameter(ZONE_PARAMETER)
+			areaId: readPageParameter(AREA_PARAMETER)
 		});
 	}
 	catch (error)

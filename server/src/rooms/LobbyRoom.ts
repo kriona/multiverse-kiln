@@ -3,15 +3,15 @@ import { GAME_ROOM_NAME, LobbyMember, LobbyMessageType, LobbyServerMessageType, 
 
 import { listPlayableCharacters, markCharacterPlayed, type PlayableCharacter } from '../db/characterRepo.js';
 import { findUniverse } from '../db/universeRepo.js';
-import { loadChunksAt, loadZone } from '../db/zoneRepo.js';
+import { loadChunksAt, loadArea } from '../db/areaRepo.js';
 import { readBrowserId } from '../http/browserId.js';
 import { onlinePlayers } from '../players/onlinePlayers.js';
-import { zoneChanges } from '../world/zoneChanges.js';
+import { areaChanges } from '../world/areaChanges.js';
 import { InvalidMessages } from './invalidMessages.js';
 import { chatPayload, chooseCharacterPayload, describeInvalidPayload, movePayload, roomOptions } from './payloads.js';
 import { RateLimiter } from './rateLimiter.js';
-import { ZoneCache } from './zoneCache.js';
-import { CHUNK_REFRESH_INTERVAL_MS, SIMULATION_TICK_RATE, ZonePlayers, type Appearance } from './zonePlayers.js';
+import { AreaCache } from './areaCache.js';
+import { CHUNK_REFRESH_INTERVAL_MS, SIMULATION_TICK_RATE, AreaPlayers, type Appearance } from './areaPlayers.js';
 
 /**
  * What onAuth found out about a client, available afterward as client.auth
@@ -72,7 +72,7 @@ const CHAT_RATE_WINDOW_MS = 5000;
  *
  * Clients join with the universe's ID (LobbyJoinOptions), and every client asking for the same universe
  * joins the same room (filterBy in app.config.ts). Only logged-in browsers are admitted. Players start
- * in the universe's lobby zone and can walk through its links into other zones (see ZonePlayers)
+ * in the universe's lobby area and can walk through its links into other areas (see AreaPlayers)
  *
  * Each player plays one of their characters in the universe, and can switch between them. A player
  * with no character is a ghost: nobody else sees them, they hold no cell, and they can read the chat
@@ -88,19 +88,19 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 
 	state = new LobbyState();
 
-	private readonly zones = new ZoneCache(loadZone, loadChunksAt);
+	private readonly areas = new AreaCache(loadArea, loadChunksAt);
 
 	/**
-	 * Players whose zone is deleted go back to the lobby zone
+	 * Players whose area is deleted go back to the lobby area
 	 */
-	private readonly zonePlayers = new ZonePlayers(this.state.players, this.zones, () => this.lobbyZoneId);
+	private readonly areaPlayers = new AreaPlayers(this.state.players, this.areas, () => this.lobbyAreaId);
 
 	private universeId!: string;
 
 	/**
 	 * Where players start
 	 */
-	private lobbyZoneId!: string;
+	private lobbyAreaId!: string;
 
 	private stopFollowingChanges?: () => void;
 
@@ -134,12 +134,12 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 				return;
 			}
 
-			this.zonePlayers.queueMove(client.sessionId, result.data);
+			this.areaPlayers.queueMove(client.sessionId, result.data);
 		},
 
 		[MessageType.TakeLink]: (client: LobbyClient) =>
 		{
-			this.zonePlayers.takeLink(client.sessionId);
+			this.areaPlayers.takeLink(client.sessionId);
 		},
 
 		[LobbyMessageType.Chat]: (client: LobbyClient, payload: unknown) =>
@@ -225,9 +225,9 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	};
 
 	/**
-	 * Loads the universe's lobby zone, starts the simulation loop and the loading of chunks near players,
+	 * Loads the universe's lobby area, starts the simulation loop and the loading of chunks near players,
 	 * and starts following changes to the world. Fails for a universe that doesn't exist or has no lobby
-	 * zone, which turns away the client asking for it
+	 * area, which turns away the client asking for it
 	 *
 	 * @param options The universe, from the first client's LobbyJoinOptions
 	 */
@@ -235,21 +235,21 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	{
 		const { universeId } = roomOptions.parse(options);
 		const universe = await findUniverse(universeId);
-		const lobbyZone = ((universe?.lobbyZoneId !== undefined) ? await this.zones.load(universe.lobbyZoneId) : undefined);
+		const lobbyArea = ((universe?.lobbyAreaId !== undefined) ? await this.areas.load(universe.lobbyAreaId) : undefined);
 
-		if (!lobbyZone)
+		if (!lobbyArea)
 		{
 			throw new Error(`Universe ${universeId} has no lobby to join`);
 		}
 
 		this.universeId = universeId;
-		this.lobbyZoneId = lobbyZone.loaded.zone.id;
-		this.setTimestep((deltaTime) => this.zonePlayers.update(deltaTime / 1000), 1000 / SIMULATION_TICK_RATE);
-		this.clock.setInterval(() => this.zonePlayers.refreshChunks(), CHUNK_REFRESH_INTERVAL_MS);
+		this.lobbyAreaId = lobbyArea.loaded.area.id;
+		this.setTimestep((deltaTime) => this.areaPlayers.update(deltaTime / 1000), 1000 / SIMULATION_TICK_RATE);
+		this.clock.setInterval(() => this.areaPlayers.refreshChunks(), CHUNK_REFRESH_INTERVAL_MS);
 
-		this.stopFollowingChanges = zoneChanges.onChange((change) =>
+		this.stopFollowingChanges = areaChanges.onChange((change) =>
 		{
-			this.zonePlayers.applyChange(change).catch((error: unknown) =>
+			this.areaPlayers.applyChange(change).catch((error: unknown) =>
 			{
 				console.error('Could not apply a world change to the lobby of universe', this.universeId, error);
 			});
@@ -291,7 +291,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 
 	/**
 	 * Reads the joining client's player's characters, and puts a player new to the room in the lobby
-	 * zone as the character they played or made most recently (a ghost when they have none). A player
+	 * area as the character they played or made most recently (a ghost when they have none). A player
 	 * already here keeps their character, unless they were a ghost and have since made one. Then sends
 	 * the client who it is playing and the recent chat
 	 *
@@ -301,20 +301,20 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	{
 		const { playerId } = identityOf(client);
 		const characters = await listPlayableCharacters(playerId, this.universeId);
-		const lobbyZone = await this.zones.load(this.lobbyZoneId);
+		const lobbyArea = await this.areas.load(this.lobbyAreaId);
 
-		if (!lobbyZone)
+		if (!lobbyArea)
 		{
-			throw new Error(`The lobby zone ${this.lobbyZoneId} no longer exists`);
+			throw new Error(`The lobby area ${this.lobbyAreaId} no longer exists`);
 		}
 
-		await this.zonePlayers.prepareStart(lobbyZone);
+		await this.areaPlayers.prepareStart(lobbyArea);
 		this.characters.set(playerId, characters);
 
 		const isNewPlayer = !this.state.players.has(playerId);
 		const character = (isNewPlayer ? characters.at(0) : undefined);
 
-		this.zonePlayers.join(client, playerId, appearanceOf(character), this.zones.get(this.lobbyZoneId) ?? lobbyZone);
+		this.areaPlayers.join(client, playerId, appearanceOf(character), this.areas.get(this.lobbyAreaId) ?? lobbyArea);
 
 		if (character)
 		{
@@ -342,7 +342,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	 */
 	async onLeave(client: LobbyClient, code: CloseCode): Promise<void>
 	{
-		const left = this.zonePlayers.leave(client);
+		const left = this.areaPlayers.leave(client);
 
 		this.invalidMessages.forget(client.sessionId);
 		console.log(client.sessionId, 'left the lobby of universe', this.universeId, code);
@@ -380,18 +380,18 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	 */
 	getPlayerId(sessionId: string): string | undefined
 	{
-		return(this.zonePlayers.getPlayerId(sessionId));
+		return(this.areaPlayers.getPlayerId(sessionId));
 	}
 
 	/**
-	 * The zone a player is in
+	 * The area a player is in
 	 *
 	 * @param playerId The player's ID
-	 * @return The zone's ID, or undefined when the player isn't in the room
+	 * @return The area's ID, or undefined when the player isn't in the room
 	 */
-	getZoneId(playerId: string): string | undefined
+	getAreaId(playerId: string): string | undefined
 	{
-		return(this.zonePlayers.getZoneId(playerId));
+		return(this.areaPlayers.getAreaId(playerId));
 	}
 
 	/**
@@ -405,10 +405,10 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		const playingAs: PlayingAsPayload = { characterId: character.id };
 
 		this.playing.set(playerId, character);
-		this.zonePlayers.setAppearance(playerId, appearanceOf(character));
+		this.areaPlayers.setAppearance(playerId, appearanceOf(character));
 		this.state.members.set(playerId, new LobbyMember({ name: character.name }));
 
-		for (const client of this.zonePlayers.getClients(playerId))
+		for (const client of this.areaPlayers.getClients(playerId))
 		{
 			client.send(LobbyServerMessageType.PlayingAs, playingAs);
 		}

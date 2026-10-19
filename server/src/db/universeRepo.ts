@@ -22,18 +22,18 @@ export interface UniverseRecord
 	passageOfTime: PassageOfTime;
 
 	/**
-	 * Undefined until the universe's zones exist
+	 * Undefined until the universe's areas exist
 	 */
-	lobbyZoneId: string | undefined;
+	lobbyAreaId: string | undefined;
 
 	/**
-	 * Undefined until the universe's zones exist
+	 * Undefined until the universe's areas exist
 	 */
-	startingZoneId: string | undefined;
+	startingAreaId: string | undefined;
 }
 
 /**
- * What a new universe needs. Its lobby and starting zones are set once they exist (setUniverseZones)
+ * What a new universe needs. Its lobby and starting areas are set once they exist (setUniverseAreas)
  */
 export type NewUniverse = Pick<typeof universes.$inferInsert, 'id' | 'name' | 'shortDescription' | 'longDescription' | 'stage' | 'ruleset' | 'passageOfTime'>;
 
@@ -55,20 +55,20 @@ export async function createUniverse(universe: NewUniverse, executor: Executor =
 }
 
 /**
- * Sets the zone a universe's lobby is in and the zone its groups start in
+ * Sets the area a universe's lobby is in and the area its groups start in
  *
  * @param universeId The universe's ID
- * @param lobbyZoneId The lobby's zone
- * @param startingZoneId The zone groups start in
+ * @param lobbyAreaId The lobby's area
+ * @param startingAreaId The area groups start in
  * @param executor The database, or a transaction
  */
-export async function setUniverseZones(universeId: string, lobbyZoneId: string, startingZoneId: string, executor: Executor = db): Promise<void>
+export async function setUniverseAreas(universeId: string, lobbyAreaId: string, startingAreaId: string, executor: Executor = db): Promise<void>
 {
 	await executor
 		.update(universes)
 		.set({
-			lobbyZoneId,
-			startingZoneId
+			lobbyAreaId,
+			startingAreaId
 		})
 		.where(eq(universes.id, universeId));
 }
@@ -100,8 +100,8 @@ export async function findUniverse(universeId: string, executor: Executor = db):
 		stage: row.stage,
 		ruleset: row.ruleset,
 		passageOfTime: row.passageOfTime,
-		lobbyZoneId: row.lobbyZoneId ?? undefined,
-		startingZoneId: row.startingZoneId ?? undefined
+		lobbyAreaId: row.lobbyAreaId ?? undefined,
+		startingAreaId: row.startingAreaId ?? undefined
 	});
 }
 
@@ -177,8 +177,8 @@ export async function findEditableUniverse(universeId: string, executor: Executo
 			ruleset: universes.ruleset,
 			passageOfTime: universes.passageOfTime,
 			faerieMorning: universes.faerieMorning,
-			lobbyZoneId: universes.lobbyZoneId,
-			startingZoneId: universes.startingZoneId,
+			lobbyAreaId: universes.lobbyAreaId,
+			startingAreaId: universes.startingAreaId,
 			groupSize: universes.groupSize,
 			startingPlatinum: universes.startingPlatinum,
 			startingGold: universes.startingGold,
@@ -207,7 +207,7 @@ export async function findEditableUniverse(universeId: string, executor: Executo
  * Changes some of a universe's settings
  *
  * The database refuses a faerie passage of time without a faerie morning, a faerie morning without
- * faerie time, and a group size or starting money out of range. The caller checks that a starting zone
+ * faerie time, and a group size or starting money out of range. The caller checks that a starting area
  * is one of the universe's, and that the starting items are items it can use
  *
  * @param universeId The universe's ID
@@ -239,7 +239,7 @@ export async function updateUniverseSettings(universeId: string, update: Univers
 
 /**
  * Locks a universe's row until the transaction ends, so limits on what it holds (such as its number
- * of zones) are checked by one transaction at a time
+ * of areas) are checked by one transaction at a time
  *
  * @param universeId The universe's ID
  * @param executor A transaction
@@ -259,7 +259,7 @@ export async function lockUniverse(universeId: string, executor: Executor): Prom
 }
 
 /**
- * Deletes a universe and everything in it: its zones, maps, links and tiles
+ * Deletes a universe and everything in it: its areas, maps, links and tiles
  *
  * @param universeId The universe's ID
  * @param executor The database, or a transaction

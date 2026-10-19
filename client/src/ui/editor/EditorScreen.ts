@@ -12,8 +12,8 @@ import { RacesTab } from './RacesTab';
 import { RulesetTab } from './RulesetTab';
 import { TilesetsTab } from './TilesetsTab';
 import { UniverseTab } from './UniverseTab';
-import { ZoneSelectDialog } from './ZoneSelectDialog';
-import { ZonesTab } from './ZonesTab';
+import { AreaSelectDialog } from './AreaSelectDialog';
+import { AreasTab } from './AreasTab';
 
 /**
  * The editor's tabs
@@ -26,19 +26,19 @@ export const EDITOR_TABS = [
 	'races',
 	'classes',
 	'tilesets',
-	'zones',
+	'areas',
 	'items'
 ] as const;
 
 export type EditorTab = typeof EDITOR_TABS[number];
 
 /**
- * Where in the editor the player is: the tab shown, and the zone open in the zone editor
+ * Where in the editor the player is: the tab shown, and the area open in the area editor
  */
 export interface EditorPlace
 {
 	tab: EditorTab;
-	zoneId: string | undefined;
+	areaId: string | undefined;
 }
 
 /**
@@ -57,7 +57,7 @@ export interface EditorScreenActions
 	play: (universe: UniverseSummary) => void;
 
 	/**
-	 * The player has moved to another tab or zone, so the page's address can follow
+	 * The player has moved to another tab or area, so the page's address can follow
 	 */
 	placeChanged: (place: EditorPlace) => void;
 }
@@ -74,7 +74,7 @@ export function isEditorTab(value: string | undefined): value is EditorTab
 }
 
 /**
- * Edit Universe: a universe's settings, ruleset, characters, races, classes, tiles, zones and items, in tabs
+ * Edit Universe: a universe's settings, ruleset, characters, races, classes, tiles, areas and items, in tabs
  *
  * What the player may change depends on their role in the universe; the server checks it again on
  * every change, so the page only hides controls that would be refused
@@ -90,7 +90,7 @@ export class EditorScreen
 	private readonly racesTab: RacesTab;
 	private readonly classesTab: ClassesTab;
 	private readonly tilesetsTab: TilesetsTab;
-	private readonly zonesTab: ZonesTab;
+	private readonly areasTab: AreasTab;
 	private readonly itemsTab: ItemsTab;
 
 	/**
@@ -98,7 +98,7 @@ export class EditorScreen
 	 */
 	private universe: EditableUniverse | undefined;
 
-	private place: EditorPlace = { tab: 'universe', zoneId: undefined };
+	private place: EditorPlace = { tab: 'universe', areaId: undefined };
 
 	/**
 	 * Changes every time a universe is opened, so one that arrives for an earlier open is ignored
@@ -117,19 +117,19 @@ export class EditorScreen
 		});
 		this.rulesetTab = new RulesetTab(api);
 
-		const zoneSelect = new ZoneSelectDialog(api);
+		const areaSelect = new AreaSelectDialog(api);
 		const itemSelect = new ItemSelectDialog(api);
 
-		this.charactersTab = new CharactersTab(api, zoneSelect, itemSelect, (universe) =>
+		this.charactersTab = new CharactersTab(api, areaSelect, itemSelect, (universe) =>
 		{
 			this.setUniverse(universe);
 		});
-		this.racesTab = new RacesTab(api, zoneSelect, itemSelect);
-		this.classesTab = new ClassesTab(api, zoneSelect, itemSelect);
+		this.racesTab = new RacesTab(api, areaSelect, itemSelect);
+		this.classesTab = new ClassesTab(api, areaSelect, itemSelect);
 		this.tilesetsTab = new TilesetsTab(api);
-		this.zonesTab = new ZonesTab(api, (zoneId) =>
+		this.areasTab = new AreasTab(api, (areaId) =>
 		{
-			this.setPlace({ ...this.place, zoneId });
+			this.setPlace({ ...this.place, areaId });
 		});
 		this.itemsTab = new ItemsTab(api);
 
@@ -137,7 +137,7 @@ export class EditorScreen
 			['universe', this.universeTab.changes],
 			['ruleset', this.rulesetTab.changes],
 			['characters', this.charactersTab.changes],
-			['zones', this.zonesTab.changes]
+			['areas', this.areasTab.changes]
 		];
 
 		for (const [name, changes] of trackedTabs)
@@ -178,12 +178,12 @@ export class EditorScreen
 			}
 		});
 
-		getElement('lobby-edit-zone', HTMLButtonElement).addEventListener('click', () =>
+		getElement('lobby-edit-area', HTMLButtonElement).addEventListener('click', () =>
 		{
-			if (this.universe?.lobbyZoneId)
+			if (this.universe?.lobbyAreaId)
 			{
-				this.selectTab('zones');
-				void this.zonesTab.openZone(this.universe.lobbyZoneId);
+				this.selectTab('areas');
+				void this.areasTab.openArea(this.universe.lobbyAreaId);
 			}
 		});
 	}
@@ -192,8 +192,8 @@ export class EditorScreen
 	 * Loads a universe and shows it
 	 *
 	 * @param universeId The universe's ID
-	 * @param place The tab to show and the zone to open; the Universe tab when neither is given, or the
-	 * Zones tab when only a zone is
+	 * @param place The tab to show and the area to open; the Universe tab when neither is given, or the
+	 * Areas tab when only an area is
 	 */
 	async open(universeId: string, place: Partial<EditorPlace> = {}): Promise<void>
 	{
@@ -233,7 +233,7 @@ export class EditorScreen
 			return;
 		}
 
-		this.place = { tab: (place.tab ?? ((place.zoneId === undefined) ? 'universe' : 'zones')), zoneId: place.zoneId };
+		this.place = { tab: (place.tab ?? ((place.areaId === undefined) ? 'universe' : 'areas')), areaId: place.areaId };
 		this.setUniverse(universe);
 		this.universeTab.open(universe);
 		void this.rulesetTab.open(universe);
@@ -241,7 +241,7 @@ export class EditorScreen
 		this.racesTab.open(universe);
 		this.classesTab.open(universe);
 		this.tilesetsTab.open(universe);
-		this.zonesTab.open(universe, place.zoneId);
+		this.areasTab.open(universe, place.areaId);
 		this.itemsTab.open(universe);
 		this.selectTab(this.place.tab);
 	}
@@ -287,7 +287,7 @@ export class EditorScreen
 			universe: universe.name
 		});
 		this.role.textContent = t(UNIVERSE_ROLE_NAMES[universe.role]);
-		this.zonesTab.setUniverse(universe);
+		this.areasTab.setUniverse(universe);
 	}
 
 	/**
@@ -379,7 +379,7 @@ export class EditorScreen
 	/**
 	 * Remembers where the player is in the editor and tells the page
 	 *
-	 * @param place The tab and zone
+	 * @param place The tab and area
 	 */
 	private setPlace(place: EditorPlace): void
 	{

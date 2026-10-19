@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
-import { CHUNK_SIZE, chunkCoordinate, GRID_CELL_SIZE, type ChunkRange, type ZoneLinkMode, type ZonePayload } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, chunkCoordinate, GRID_CELL_SIZE, type ChunkRange, type AreaLinkMode, type AreaPayload } from '@multiverse-kiln/shared';
 
 import { brushOrigin, cellsBetween, type BrushCell, type BrushShape } from '../editor/brush';
-import { ZoneRenderer } from '../rendering/ZoneRenderer';
+import { AreaRenderer } from '../rendering/AreaRenderer';
 
 /**
  * Key the scene is registered under in each editor's game
@@ -29,7 +29,7 @@ const CENTER_COLOR = 0xffffff;
 
 const BRUSH_COLOR = 0xffeb3b;
 
-const LINK_COLORS: Record<ZoneLinkMode, number> = {
+const LINK_COLORS: Record<AreaLinkMode, number> = {
 	automatic: 0xff9800,
 	manual: 0x00e5ff
 };
@@ -41,7 +41,7 @@ export interface LinkMarker
 {
 	column: number;
 	row: number;
-	mode: ZoneLinkMode;
+	mode: AreaLinkMode;
 }
 
 /**
@@ -130,17 +130,17 @@ export interface CameraState
 export interface MapEditorSceneData
 {
 	/**
-	 * Where the camera starts, or undefined to center on the zone's center cell
+	 * Where the camera starts, or undefined to center on the area's center cell
 	 */
 	camera: CameraState | undefined;
 
 	/**
-	 * The zone's bounds, default tile and tiles. Its chunks are ignored in favor of chunks
+	 * The area's bounds, default tile and tiles. Its chunks are ignored in favor of chunks
 	 */
-	zone: ZonePayload;
+	area: AreaPayload;
 
 	/**
-	 * The zone's loaded chunks, by chunkKey(); the host changes them and calls refreshChunks
+	 * The area's loaded chunks, by chunkKey(); the host changes them and calls refreshChunks
 	 */
 	chunks: ReadonlyMap<string, readonly number[]>;
 
@@ -153,22 +153,22 @@ export interface MapEditorSceneData
 }
 
 /**
- * Shows a zone's map for editing: the same grid as gameplay, with the map's edges, its center cell,
+ * Shows an area's map for editing: the same grid as gameplay, with the map's edges, its center cell,
  * its links and the brush outlined on top
  *
  * Left clicks paint or pick cells (see PointerMode); dragging with the right or middle button pans,
  * and the mouse wheel zooms around the pointer. MapCanvas does the same from the keyboard with a
- * cursor, which the scene outlines like the pointer. A looping zone is shown once, without its far side
+ * cursor, which the scene outlines like the pointer. A looping area is shown once, without its far side
  * repeated, so every cell on screen is a cell that can be edited
  */
 export class MapEditorScene extends Phaser.Scene
 {
-	private zone!: ZonePayload;
+	private area!: AreaPayload;
 	private startCamera: CameraState | undefined;
 	private chunks!: ReadonlyMap<string, readonly number[]>;
 	private host!: MapEditorHost;
 	private onReady!: (scene: MapEditorScene) => void;
-	private zoneRenderer?: ZoneRenderer;
+	private areaRenderer?: AreaRenderer;
 	private overlay?: Phaser.GameObjects.Graphics;
 	private links: LinkMarker[] = [];
 	private highlights: CellHighlight[] = [];
@@ -206,12 +206,12 @@ export class MapEditorScene extends Phaser.Scene
 	/**
 	 * Resets per-run state (runs on every start, unlike the constructor)
 	 *
-	 * @param data The zone to show and whoever shows it
+	 * @param data The area to show and whoever shows it
 	 */
 	init(data: MapEditorSceneData): void
 	{
-		this.zone = {
-			...data.zone,
+		this.area = {
+			...data.area,
 			loopsEastWest: false,
 			loopsNorthSouth: false
 		};
@@ -219,7 +219,7 @@ export class MapEditorScene extends Phaser.Scene
 		this.chunks = data.chunks;
 		this.host = data.host;
 		this.onReady = data.onReady;
-		this.zoneRenderer = undefined;
+		this.areaRenderer = undefined;
 		this.overlay = undefined;
 		this.links = [];
 		this.highlights = [];
@@ -234,7 +234,7 @@ export class MapEditorScene extends Phaser.Scene
 	 */
 	create(): void
 	{
-		this.zoneRenderer = new ZoneRenderer(this, this.zone, this.chunks);
+		this.areaRenderer = new AreaRenderer(this, this.area, this.chunks);
 		this.overlay = this.add.graphics().setDepth(1);
 
 		if (this.startCamera)
@@ -259,8 +259,8 @@ export class MapEditorScene extends Phaser.Scene
 		{
 			this.finishStroke();
 			this.input.removeAllListeners();
-			this.zoneRenderer?.destroy();
-			this.zoneRenderer = undefined;
+			this.areaRenderer?.destroy();
+			this.areaRenderer = undefined;
 		});
 
 		this.onReady(this);
@@ -273,7 +273,7 @@ export class MapEditorScene extends Phaser.Scene
 	{
 		const view = this.cameras.main.worldView;
 
-		this.zoneRenderer?.update(view);
+		this.areaRenderer?.update(view);
 		this.reportView(view);
 		this.drawOverlay();
 	}
@@ -285,7 +285,7 @@ export class MapEditorScene extends Phaser.Scene
 	 */
 	refreshChunks(chunkKeys: Iterable<string>): void
 	{
-		this.zoneRenderer?.refreshChunks(chunkKeys);
+		this.areaRenderer?.refreshChunks(chunkKeys);
 	}
 
 	/**
@@ -550,7 +550,7 @@ export class MapEditorScene extends Phaser.Scene
 
 		// Lines stay the same width on screen however far the camera zooms
 		const line = 2 / this.cameras.main.zoom;
-		const { bounds } = this.zone;
+		const { bounds } = this.area;
 
 		overlay.clear();
 		overlay.lineStyle(line, BOUNDS_COLOR, 0.8);

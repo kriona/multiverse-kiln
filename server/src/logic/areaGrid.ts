@@ -1,23 +1,23 @@
 /**
- * Turns a zone's map into the grid players move on
+ * Turns an area's map into the grid players move on
  *
  * Pure functions: no Colyseus, database, network or timers (CLAUDE.md architecture rule 4)
  */
-import { chunkCoordinate, chunkKey, IMPASSABLE_COST, tileIdAt, type ZoneLinkMode, type ZoneTiles } from '@multiverse-kiln/shared';
+import { chunkCoordinate, chunkKey, IMPASSABLE_COST, tileIdAt, type AreaLinkMode, type AreaTiles } from '@multiverse-kiln/shared';
 
 import type { Cell, Grid } from './movement.js';
 
 /**
- * A cell that takes a player to a cell in another zone
+ * A cell that takes a player to a cell in another area
  */
-export interface ZoneLink
+export interface AreaLink
 {
 	column: number;
 	row: number;
-	targetZoneId: string;
+	targetAreaId: string;
 	targetColumn: number;
 	targetRow: number;
-	mode: ZoneLinkMode;
+	mode: AreaLinkMode;
 
 	/**
 	 * The link can only be used while every member of the group is present
@@ -26,11 +26,11 @@ export interface ZoneLink
 }
 
 /**
- * Everything about a zone's map that movement depends on
+ * Everything about an area's map that movement depends on
  */
-export interface ZoneMap
+export interface AreaMap
 {
-	tiles: ZoneTiles;
+	tiles: AreaTiles;
 	loopsEastWest: boolean;
 	loopsNorthSouth: boolean;
 
@@ -39,7 +39,7 @@ export interface ZoneMap
 	 */
 	tileMovementCosts: ReadonlyMap<number, number>;
 
-	links: readonly ZoneLink[];
+	links: readonly AreaLink[];
 
 	/**
 	 * The chunks loaded so far, by chunkKey(), when the map is loaded a piece at a time; undefined when
@@ -49,17 +49,17 @@ export interface ZoneMap
 }
 
 /**
- * Builds the grid for a zone's map
+ * Builds the grid for an area's map
  *
  * A void cell, a cell holding a tile the map doesn't know, and a cell whose chunk hasn't loaded can't
  * be entered, so a player waits at the edge of a chunk until it arrives. Stepping onto an automatic
  * link ends the step there, so the room can take the player through it
  *
- * @param map The zone's map
+ * @param map The area's map
  * @param cellSize Width and height of a cell in world units
  * @return The grid
  */
-export function createZoneGrid(map: ZoneMap, cellSize: number): Grid
+export function createAreaGrid(map: AreaMap, cellSize: number): Grid
 {
 	const automaticLinks = new Set(map.links.filter((link) => (link.mode === 'automatic')).map((link) => linkKey(link)));
 
@@ -86,11 +86,11 @@ export function createZoneGrid(map: ZoneMap, cellSize: number): Grid
 /**
  * The link on a cell
  *
- * @param map The zone's map
+ * @param map The area's map
  * @param cell The cell
  * @return The link, or undefined when the cell has none
  */
-export function linkAt(map: ZoneMap, cell: Cell): ZoneLink | undefined
+export function linkAt(map: AreaMap, cell: Cell): AreaLink | undefined
 {
 	return(map.links.find((link) => ((link.column === cell.column) && (link.row === cell.row))));
 }

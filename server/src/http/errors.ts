@@ -32,10 +32,10 @@ export const errorMessages = defineMessages({
 		defaultMessage: 'The universe doesn\'t exist, or you can\'t see it.',
 		description: 'Why a request about a universe failed: it was deleted, or the player has no access to it'
 	},
-	noSuchZone: {
-		id: 'error.noSuchZone',
-		defaultMessage: 'The zone doesn\'t exist.',
-		description: 'Why a request about a zone failed: it was deleted, perhaps by another editor'
+	noSuchArea: {
+		id: 'error.noSuchArea',
+		defaultMessage: 'The area doesn\'t exist.',
+		description: 'Why a request about an area failed: it was deleted, perhaps by another editor'
 	}
 });
 

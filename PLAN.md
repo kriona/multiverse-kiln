@@ -83,24 +83,24 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 
 **Done when:** a player's identity survives a server restart, and the test suite runs against its own database.
 
-## Phase 7: Universes, zones and maps
+## Phase 7: Universes, areas and maps
 
 The game runs on real universe data. Content comes from a seed script until the editor exists (Phase 8).
 
 Built in three steps: data and logic, then rooms, then the client.
 
-- [✅] Tables: `universes` (name, descriptions, stage, ruleset, passage of time, lobby and starting zones), `zones` (universe, parent, name, enabled, indoors, default tile, bounds, loops, passage of time), `tiles` (ruleset defaults plus each universe's own tiles), `map_chunks` and `zone_links`. Edited copies of default tiles come with the tile editor (Phase 8)
-- [✅] Store map cells in chunks of 32 x 32, saving only chunks that differ from the zone's default tile: a map can be 50,000 tiles in each direction
+- [✅] Tables: `universes` (name, descriptions, stage, ruleset, passage of time, lobby and starting areas), `areas` (universe, parent, name, enabled, indoors, default tile, bounds, loops, passage of time), `tiles` (ruleset defaults plus each universe's own tiles), `map_chunks` and `area_links`. Edited copies of default tiles come with the tile editor (Phase 8)
+- [✅] Store map cells in chunks of 32 x 32, saving only chunks that differ from the area's default tile: a map can be 50,000 tiles in each direction
 - [✅] PF1E default tiles (Grass, Forest, Desert, Mountains, Water, Wood Floor), added by a migration
 - [✅] Seed script for a sample universe (`npm run db:seed -w server`): a town square lobby with a cottage and a cellar, and a crossroads for groups that loops east-west. Run by hand like migrations, never on startup
-- [✅] Pure logic with tests: movement cost (50% = double, 100% = impassable), map bounds around 0,0, no cutting past impassable corners, wrapping in zones that loop, stopping on automatic links, finding a free cell to arrive in
-- [✅] Rename today's global `LobbyRoom` to `SessionRoom` (login, account, group membership), and add a `LobbyRoom` per universe (`filterBy` the universe ID) with the map, chat, who's here and Create game. Groups belong to a universe and start in its starting zone
-- [✅] A room holds every zone its players are in; each player has a zone, and each client only sees the players in its own zone (`StateView`, one per client for now)
-- [✅] Rooms load zone maps at lifecycle boundaries, and load the next zone before a player moves into it, never inside the tick
+- [✅] Pure logic with tests: movement cost (50% = double, 100% = impassable), map bounds around 0,0, no cutting past impassable corners, wrapping in areas that loop, stopping on automatic links, finding a free cell to arrive in
+- [✅] Rename today's global `LobbyRoom` to `SessionRoom` (login, account, group membership), and add a `LobbyRoom` per universe (`filterBy` the universe ID) with the map, chat, who's here and Create game. Groups belong to a universe and start in its starting area
+- [✅] A room holds every area its players are in; each player has an area, and each client only sees the players in its own area (`StateView`, one per client for now)
+- [✅] Rooms load area maps at lifecycle boundaries, and load the next area before a player moves into it, never inside the tick
 - [✅] `GET /universes` lists the universes Home shows, a page at a time
-- [✅] Client draws tiles by color from the zone data (graphics come in Phase 17), drawing only the chunks near the camera. The server still sends the whole zone (see Phase 8)
-- [✅] Looping zones wrap seamlessly: near an edge the client draws the far side's chunks beyond it, players on the far side appear across the edge, and stepping over the edge doesn't jump the camera or the player
-- [✅] Zone links: automatic links move you, manual links offer a prompt (press E)
+- [✅] Client draws tiles by color from the area data (graphics come in Phase 17), drawing only the chunks near the camera. The server still sends the whole area (see Phase 8)
+- [✅] Looping areas wrap seamlessly: near an edge the client draws the far side's chunks beyond it, players on the far side appear across the edge, and stepping over the edge doesn't jump the camera or the player
+- [✅] Area links: automatic links move you, manual links offer a prompt (press E)
 - [✅] The lobby screen shows the lobby's map next to chat and who's here, so players can walk around it
 - [✅] Home page: universes in `let there be light` (paginated from the start), the universe overview, and Enter Universe -> that universe's lobby. Leaving the lobby goes back to Home; the long description is shown as plain text until Markdown rendering (Phase 8)
 
@@ -111,16 +111,16 @@ Built in three steps: data and logic, then rooms, then the client.
 Built in four steps: the server API, the editor pages, the map editor, then loading chunks as players approach them.
 
 - [✅] Editor API as REST routes in `server/src/http/` backed by repositories (editing isn't real-time, so it doesn't need a room). Every request checks the user may edit that universe, and validates against the same limits as the UI. Who may edit is stored in `universe_editors` (creator, builder, beta tester; Phase 14 adds the Editors tab), and until logins exist (Phase 13) a request's player is the one its browser ID cookie is logged in as
-- [✅] Create Universe modal (name, 1-sentence description, ruleset), up to 5 per user. Creates a lobby zone and a default zone as every race's starting zone, and makes the user its creator. Home lists the universes the user has a role in, which opens them in the editor
-- [✅] Edit Universe page: name, descriptions (markdown rendered sanitized with `marked` and DOMPurify, also on Home's overview), stage, ruleset, passage of time. Logo and banner wait for image storage (Phase 17). A Lobby tab opens the lobby's zone until the rest of the tab arrives (Phase 12)
+- [✅] Create Universe modal (name, 1-sentence description, ruleset), up to 5 per user. Creates a lobby area and a default area as every race's starting area, and makes the user its creator. Home lists the universes the user has a role in, which opens them in the editor
+- [✅] Edit Universe page: name, descriptions (markdown rendered sanitized with `marked` and DOMPurify, also on Home's overview), stage, ruleset, passage of time. Logo and banner wait for image storage (Phase 17). A Lobby tab opens the lobby's area until the rest of the tab arrives (Phase 12)
 - [✅] Tilesets tab (filters for name, passable, custom and edited; pagination) and tile editor (name, indoors, color, vision cost, movement cost)
-- [✅] Zones tab with the single-zone drill-down, and the zone editor's settings. Its map is the next item
+- [✅] Areas tab with the single-area drill-down, and the area editor's settings. Its map is the next item
 - [✅] Map editor: grid centered on 0,0, expand buttons, edit-size dialog with its warning, draw tool (a tile or Void; size 1-100; circle or square), undo/redo with a drag counted as one step. It loads chunks as the view reaches them, pans with the right or middle mouse button and zooms with the wheel. Undo covers painting; resizing to a smaller map clears the undo history
-- [✅] Zone link layer: automatic or manual, "requires the whole group", select destination coordinates with an optional return link (placed in the target zone, leading back to the link's cell)
-- [✅] Edits apply immediately (universe versions come in Phase 14): the editor routes tell open rooms in this process about changed cells, zones, links and tiles (`zoneChanges`), and the rooms update the zones they have loaded and their clients. Players a smaller map leaves out move to the nearest free cell inside it; players in a deleted zone go to the lobby zone (lobby) or starting zone (group)
-- [✅] Rooms load a zone's chunks as players come near them and drop chunks nobody is near, instead of loading the whole map (`loadZone` reads only the zone's settings, links and tiles), since the editor can make maps up to 50,000 cells per side. Loading stays outside the tick, on a 250 ms interval: a player waits at the edge of a chunk that hasn't arrived yet. Clients are likewise sent only the chunks near their player (`ZonePayload`, then `ChunksPayload` as they move)
+- [✅] Area link layer: automatic or manual, "requires the whole group", select destination coordinates with an optional return link (placed in the target area, leading back to the link's cell)
+- [✅] Edits apply immediately (universe versions come in Phase 14): the editor routes tell open rooms in this process about changed cells, areas, links and tiles (`areaChanges`), and the rooms update the areas they have loaded and their clients. Players a smaller map leaves out move to the nearest free cell inside it; players in a deleted area go to the lobby area (lobby) or starting area (group)
+- [✅] Rooms load an area's chunks as players come near them and drop chunks nobody is near, instead of loading the whole map (`loadArea` reads only the area's settings, links and tiles), since the editor can make maps up to 50,000 cells per side. Loading stays outside the tick, on a 250 ms interval: a player waits at the edge of a chunk that hasn't arrived yet. Clients are likewise sent only the chunks near their player (`AreaPayload`, then `ChunksPayload` as they move)
 
-**Done when:** a universe can be built from scratch in the browser (tiles, zones, maps and links) and played in its lobby.
+**Done when:** a universe can be built from scratch in the browser (tiles, areas, maps and links) and played in its lobby.
 
 ## Phase 9: Localization groundwork
 
@@ -130,7 +130,7 @@ From here on, all text players read can be translated (see Localization in `STRU
 - [✅] The extractor (`npm run messages`, `shared/scripts/extractMessages.ts`) writes `shared/locales/en.json`, with the descriptions, from the code and pages. `npm run lint` and the pre-commit hook fail when the catalog isn't current, when a message has no description, when one ID has two different English texts, or when text in a page isn't marked. It uses the TypeScript compiler API rather than `formatjs extract`, whose dependencies have open high-severity advisories. Other languages' catalogs sit beside it
 - [✅] `Translator` in `/shared` over `intl-messageformat` (ICU messages, for plurals and other grammar), and on the client `t()`, `formatList()` and the page's locale for `Intl` formatting. Other languages' catalogs load on demand with `import.meta.glob`. Until profiles exist (Phase 13), the player's language comes from the browser's settings
 - [✅] Move the client's hard-coded text into messages, along with the enum labels (stages, roles, passage of time, faerie mornings, `RULESET_NAMES`)
-- [✅] The server sends a `LocalizedMessage` (ID, English text and values) instead of English, through `sendError()` for every HTTP error. New universes' zone names are messages too, in English until the creator's language is known
+- [✅] The server sends a `LocalizedMessage` (ID, English text and values) instead of English, through `sendError()` for every HTTP error. New universes' area names are messages too, in English until the creator's language is known
 - [✅] Default tiles' names are engine messages (`DEFAULT_TILE_NAMES`) found by their `key`; a universe's edited copy stores a name only when it was renamed. The Tilesets tab's name filter still matches those names in English, since the server has no translations
 - [✅] A pseudo-language (`?locale=en-XA` in development), loaded as a catalog like any other language: the client's dev server writes it and `en.json` whenever a file with messages is saved, and production builds leave it out. An ESLint rule against literal text in the UI and in error responses, and a test that every translation parses and uses the same arguments as its English
 - [✅] Add the rule to `CLAUDE.md`: text players read is a message with an ID, English text and a description
@@ -148,13 +148,13 @@ Built in seven steps: licensing and the ruleset module; the Ruleset tab and the 
 	- [✅] Game rules as pure functions with tests: dice rolling (with the random source passed in), PF1E point buy costs (7 = -4 up to 18 = 17, scores 7-18 before racial modifiers), ability modifiers, the money field ("1pp 2gp 2sp 4cp", kept as pieces of each coin and never converted automatically) and the money changer's conversion to the fewest coins
 2. Ruleset tab and the universe's character settings
 	- [✅] Ruleset tab: stat rolling (3d6 variants, 4d6 variants, the point buy budgets and a custom budget), plus the sleep, weight and ammo settings (stored now, used later)
-	- [✅] Characters tab: group size, starting money and starting zone, with the zone selection modal
+	- [✅] Characters tab: group size, starting money and starting area, with the area selection modal
 3. Items
 	- [✅] Items tab, item editor (name, type, enabled) and the PF1E default items (a dagger for now); item selection with quantities
 	- [✅] Characters tab: starting equipment (a dagger for everyone by default)
 4. Races and classes
 	- [✅] Races and Classes tabs with their overrides, custom races and classes, and the PF1E fields (ability modifiers, floating bonus, darkvision, size, primary ability, tradition, casting style)
-	- [✅] Each race's and class's starting equipment, money and zone, and the class's per-race zones; the starting zone's precedence (class + race > class > race > universe) as a pure function with tests
+	- [✅] Each race's and class's starting equipment, money and area, and the class's per-race areas; the starting area's precedence (class + race > class > race > universe) as a pure function with tests
 5. Characters
 	- [✅] Create Character: the server rolls the stats, and the player can rearrange the rolled scores among the abilities (the class's primary ability is a hint); point buy choices are validated on the server (the client never sends ability scores); up to 20 per universe; starting equipment and money
 6. Lobby with characters
@@ -168,7 +168,7 @@ Built in seven steps: licensing and the ruleset module; the Ruleset tab and the 
 ## Phase 11: Groups and the anchor being
 
 - [ ] Rework sessions so a player controls characters rather than a browser being one player: a player's characters can be in different groups, several can be in the same group, and the UI switches between them without changing tabs
-- [ ] Groups belong to the anchor being, start in its starting zone, and are limited to the universe's group size
+- [ ] Groups belong to the anchor being, start in its starting area, and are limited to the universe's group size
 - [ ] Invite links: random, unguessable tokens; single or multi-use; valid for 1 day, 1 week or indefinitely; Copy Link
 - [ ] Opening an invite: character selection (characters already in a group grayed out, create a character), or a "group is full" message
 - [ ] Leaving: a member can leave; the anchor being leaving disbands the group
@@ -182,7 +182,7 @@ Built in seven steps: licensing and the ruleset module; the Ruleset tab and the 
 ## Phase 12: Time, vision and world state
 
 - [ ] Game clock per group: standing still passes no time, walking a square takes a set time (to be defined), a combat round is 6 seconds
-- [ ] Passage of time per zone with `inherit`; fixed times of day; `faerie` (time of day from map position and "where is morning"; faerie zones can't loop)
+- [ ] Passage of time per area with `inherit`; fixed times of day; `faerie` (time of day from map position and "where is morning"; faerie areas can't loop)
 - [ ] Lobby tab: lobby time (fixed, real-time from the Unix epoch with a day of 1-240 hours, or faerie)
 - [ ] Day and night rendering
 - [ ] Vision as a pure function with tests: vision budget, tile vision costs, lower at night unless the character has darkvision
@@ -217,7 +217,7 @@ Built in seven steps: licensing and the ruleset module; the Ruleset tab and the 
 
 - [ ] Editors tab: creators, builders, beta testers and translators (with their languages), with permissions checked on the server
 - [ ] Stages: who can play in each (`in the beginning`: creators and builders; `prologue`: beta testers; `end of time`: view only) and which are listed on Home
-- [ ] Disabling things players are using: the warnings and options for races, classes, zones, items and group size
+- [ ] Disabling things players are using: the warnings and options for races, classes, areas, items and group size
 - [ ] Universe languages: a source language and the languages it's translated into, shown on Home
 - [ ] Translations stored in one table (universe, what the text belongs to, field, language, text, and a hash of the source text it was made from) through a repository, with the fallback order from `STRUCTURE-OVERVIEW.md` as a pure function with tests
 - [ ] Universe text reaches each client in its own language outside the Schema (which sends the same state to everyone in a room): synced state carries IDs, and the client fetches the universe's text in its language once, cached with an ETag

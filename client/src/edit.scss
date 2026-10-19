@@ -1,4 +1,4 @@
-// The world editor's page (edit.html): the Edit Universe tabs, the tile editor, the zone editor and its map
+// The world editor's page (edit.html): the Edit Universe tabs, the tile editor, the area editor and its map
 
 @use 'shared' as *;
 
@@ -224,7 +224,7 @@
 	color: $text-muted;
 }
 
-.zone-list
+.area-list
 {
 	display: flex;
 	flex-direction: column;
@@ -401,17 +401,17 @@
 	}
 }
 
-.zone-select-dialog
+.area-select-dialog
 {
 	width: min(480px, calc(100vw - 32px));
 
-	.zone-select-results
+	.area-select-results
 	{
 		max-height: 220px;
 		overflow-y: auto;
 	}
 
-	.zone-select-preview
+	.area-select-preview
 	{
 		align-self: flex-start;
 		line-height: 0;
@@ -535,15 +535,15 @@
 	}
 }
 
-.zone-buttons
+.area-buttons
 {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 8px;
 }
 
-// Where a class's members of each race start: the race, its zone, and buttons to change it
-.race-zones
+// Where a class's members of each race start: the race, its area, and buttons to change it
+.race-areas
 {
 	display: flex;
 	flex-direction: column;

@@ -1,12 +1,12 @@
 import Phaser from 'phaser';
 import { Callbacks } from '@colyseus/sdk';
-import { chunkKey, GRID_CELL_SIZE, MessageType, nearestCopy, PATCH_INTERVAL_MS, PLAYER_RADIUS, positiveModulo, ServerMessageType, tileIdAt, type ChunksPayload, type MovePayload, type Player, type ZonePayload } from '@multiverse-kiln/shared';
+import { chunkKey, GRID_CELL_SIZE, MessageType, nearestCopy, PATCH_INTERVAL_MS, PLAYER_RADIUS, positiveModulo, ServerMessageType, tileIdAt, type ChunksPayload, type MovePayload, type Player, type AreaPayload } from '@multiverse-kiln/shared';
 
 import { MovementKeys } from '../input/MovementKeys';
 import { t } from '../localization';
 import type { GameRoom, MapConnection, MapRoom } from '../network/serverConnection';
 import { PositionBuffer, type Point } from '../rendering/PositionBuffer';
-import { ZoneRenderer } from '../rendering/ZoneRenderer';
+import { AreaRenderer } from '../rendering/AreaRenderer';
 import { isTextEntry } from '../ui/dom';
 import { MapAnnouncer, type SeenPlayer } from '../ui/MapAnnouncer';
 import { addKeyHelp, addShortcut } from '../ui/shortcuts';
@@ -95,11 +95,11 @@ interface RenderedPlayer
 }
 
 /**
- * Draws a room with a map (a universe's lobby or a group's game room): the zone the player is in, the
+ * Draws a room with a map (a universe's lobby or a group's game room): the area the player is in, the
  * players the server shows in it, and sends keyboard input. The camera follows the player
  *
  * The server decides where players are. This scene only sends the direction held and draws the
- * positions the server sends back. On a zone that loops, players are drawn wherever is nearest the
+ * positions the server sends back. On an area that loops, players are drawn wherever is nearest the
  * player along each looping axis, and a player crossing the edge carries on smoothly rather than
  * jumping to the far side
  */
@@ -107,11 +107,11 @@ export class MapScene extends Phaser.Scene
 {
 	private room!: GameRoom;
 	private ownPlayerId!: string;
-	private zone!: ZonePayload;
-	private zoneRenderer?: ZoneRenderer;
+	private area!: AreaPayload;
+	private areaRenderer?: AreaRenderer;
 
 	/**
-	 * The zone's chunks received so far that aren't all the default tile, by chunkKey(); the renderer draws from it
+	 * The area's chunks received so far that aren't all the default tile, by chunkKey(); the renderer draws from it
 	 */
 	private chunks = new Map<string, number[]>();
 
@@ -143,8 +143,8 @@ export class MapScene extends Phaser.Scene
 		// A lobby's state holds its players the same way a game room's does; the scene reads nothing else
 		this.room = data.connection.room as unknown as GameRoom;
 		this.ownPlayerId = data.connection.playerId;
-		this.zone = data.connection.zone;
-		this.zoneRenderer = undefined;
+		this.area = data.connection.area;
+		this.areaRenderer = undefined;
 		this.players.clear();
 		this.unbinds.length = 0;
 		this.movementKeys = undefined;
@@ -155,26 +155,26 @@ export class MapScene extends Phaser.Scene
 	}
 
 	/**
-	 * Draws the zone, sets up input, and subscribes to the players in the room's state and the zone changes
+	 * Draws the area, sets up input, and subscribes to the players in the room's state and the area changes
 	 */
 	create(): void
 	{
 		const mapElement = this.game.canvas.parentElement;
 
-		this.enterZone(this.zone);
-		this.announcer.enteredZone(this.zone.name);
+		this.enterArea(this.area);
+		this.announcer.enteredArea(this.area.name);
 
-		this.unbinds.push(this.room.onMessage(ServerMessageType.Zone, (zone: ZonePayload) =>
+		this.unbinds.push(this.room.onMessage(ServerMessageType.Area, (area: AreaPayload) =>
 		{
-			// The zone the player is already in comes again when an editor changes it; the player hasn't moved zone
-			const sameZone = (zone.zoneId === this.zone.zoneId);
+			// The area the player is already in comes again when an editor changes it; the player hasn't moved area
+			const sameArea = (area.areaId === this.area.areaId);
 
-			this.enterZone(zone);
+			this.enterArea(area);
 
-			if (!sameZone)
+			if (!sameArea)
 			{
 				this.forgetOwnPosition();
-				this.announcer.enteredZone(zone.name);
+				this.announcer.enteredArea(area.name);
 			}
 		}));
 
@@ -192,7 +192,7 @@ export class MapScene extends Phaser.Scene
 		const prompt = t({
 			id: 'map.takeLink',
 			defaultMessage: 'Press E to go through',
-			description: 'Shown under the player on a cell linking to another zone, such as a door; the E key is the same in every language'
+			description: 'Shown under the player on a cell linking to another area, such as a door; the E key is the same in every language'
 		});
 
 		this.linkPrompt = this.add.text(0, 0, prompt, TEXT_STYLE).setOrigin(0.5, 0).setDepth(2).setVisible(false);
@@ -240,8 +240,8 @@ export class MapScene extends Phaser.Scene
 				this.removePlayer(playerId);
 			}
 
-			this.zoneRenderer?.destroy();
-			this.zoneRenderer = undefined;
+			this.areaRenderer?.destroy();
+			this.areaRenderer = undefined;
 		});
 
 		this.watchPlayers();
@@ -278,33 +278,33 @@ export class MapScene extends Phaser.Scene
 			}
 		}
 
-		this.zoneRenderer?.update(this.cameras.main.worldView);
+		this.areaRenderer?.update(this.cameras.main.worldView);
 		this.updateLinkPrompt(own);
 	}
 
 	/**
-	 * Starts drawing a zone in place of the one before
+	 * Starts drawing an area in place of the one before
 	 *
-	 * @param zone The zone
+	 * @param area The area
 	 */
-	private enterZone(zone: ZonePayload): void
+	private enterArea(area: AreaPayload): void
 	{
-		this.zone = zone;
-		this.chunks = new Map(zone.chunks.map((chunk) => [chunkKey(chunk.chunkColumn, chunk.chunkRow), chunk.cells]));
-		this.manualLinks = new Set(zone.links.filter((link) => (link.mode === 'manual')).map((link) => `${link.column},${link.row}`));
-		this.zoneRenderer?.destroy();
-		this.zoneRenderer = new ZoneRenderer(this, zone, this.chunks);
+		this.area = area;
+		this.chunks = new Map(area.chunks.map((chunk) => [chunkKey(chunk.chunkColumn, chunk.chunkRow), chunk.cells]));
+		this.manualLinks = new Set(area.links.filter((link) => (link.mode === 'manual')).map((link) => `${link.column},${link.row}`));
+		this.areaRenderer?.destroy();
+		this.areaRenderer = new AreaRenderer(this, area, this.chunks);
 	}
 
 	/**
-	 * Takes in chunks of the zone the player has come near or an editor has changed, and redraws them
+	 * Takes in chunks of the area the player has come near or an editor has changed, and redraws them
 	 *
 	 * @param payload The chunks
 	 */
 	private receiveChunks(payload: ChunksPayload): void
 	{
-		// Chunks of a zone the player has since left
-		if (payload.zoneId !== this.zone.zoneId)
+		// Chunks of an area the player has since left
+		if (payload.areaId !== this.area.areaId)
 		{
 			return;
 		}
@@ -327,14 +327,14 @@ export class MapScene extends Phaser.Scene
 			keys.push(key);
 		}
 
-		this.zoneRenderer?.refreshChunks(keys);
+		this.areaRenderer?.refreshChunks(keys);
 	}
 
 	/**
 	 * Makes the player's next position from the server be drawn straight away, rather than reached
-	 * smoothly from where they were in the zone they have just left
+	 * smoothly from where they were in the area they have just left
 	 *
-	 * Players in the old zone are removed and those in the new one added through the state, like any
+	 * Players in the old area are removed and those in the new one added through the state, like any
 	 * other player coming and going
 	 */
 	private forgetOwnPosition(): void
@@ -424,7 +424,7 @@ export class MapScene extends Phaser.Scene
 	/**
 	 * Records a player's position from the server
 	 *
-	 * The server keeps positions on the zone, so a player stepping off a looping edge jumps a whole zone
+	 * The server keeps positions on the area, so a player stepping off a looping edge jumps a whole area
 	 * to the far side. Taking the copy of each position nearest the last one undoes the jump, so the
 	 * player (and the camera following them) carries on smoothly
 	 *
@@ -440,22 +440,22 @@ export class MapScene extends Phaser.Scene
 	}
 
 	/**
-	 * The copy of a position nearest another, along each axis the zone loops on
+	 * The copy of a position nearest another, along each axis the area loops on
 	 *
 	 * @param position The position
 	 * @param reference The position to be near
-	 * @return The nearest copy; the position itself on a zone that doesn't loop
+	 * @return The nearest copy; the position itself on an area that doesn't loop
 	 */
 	private nearestTo(position: Point, reference: Point): Point
 	{
-		if (!this.zoneRenderer)
+		if (!this.areaRenderer)
 		{
 			return(position);
 		}
 
 		return({
-			x: (this.zone.loopsEastWest ? nearestCopy(position.x, reference.x, this.zoneRenderer.width) : position.x),
-			y: (this.zone.loopsNorthSouth ? nearestCopy(position.y, reference.y, this.zoneRenderer.height) : position.y)
+			x: (this.area.loopsEastWest ? nearestCopy(position.x, reference.x, this.areaRenderer.width) : position.x),
+			y: (this.area.loopsNorthSouth ? nearestCopy(position.y, reference.y, this.areaRenderer.height) : position.y)
 		});
 	}
 
@@ -599,7 +599,7 @@ export class MapScene extends Phaser.Scene
 			description: () => t({
 				id: 'map.keys.takeLink',
 				defaultMessage: 'Go through a door or path you stand on',
-				description: 'In the list of keyboard shortcuts, what the E key does: takes the player to another zone through the link they stand on'
+				description: 'In the list of keyboard shortcuts, what the E key does: takes the player to another area through the link they stand on'
 			})
 		}));
 	}
@@ -619,8 +619,8 @@ export class MapScene extends Phaser.Scene
 
 		const column = Math.floor(own.x / GRID_CELL_SIZE);
 		const row = Math.floor(own.y / GRID_CELL_SIZE);
-		const tileId = tileIdAt({ bounds: this.zone.bounds, defaultTileId: this.zone.defaultTileId, chunks: this.chunks }, column, row);
-		const tile = this.zone.tiles.find((candidate) => (candidate.id === tileId));
+		const tileId = tileIdAt({ bounds: this.area.bounds, defaultTileId: this.area.defaultTileId, chunks: this.chunks }, column, row);
+		const tile = this.area.tiles.find((candidate) => (candidate.id === tileId));
 		const others: SeenPlayer[] = [];
 
 		this.room.state.players.forEach((player, playerId) =>
@@ -638,10 +638,10 @@ export class MapScene extends Phaser.Scene
 		});
 
 		this.announcer.describePosition({
-			zoneName: this.zone.name,
+			areaName: this.area.name,
 			column,
 			row,
-			tileName: (tile ? tileName(tile, this.zone.ruleset) : undefined)
+			tileName: (tile ? tileName(tile, this.area.ruleset) : undefined)
 		}, others);
 	}
 

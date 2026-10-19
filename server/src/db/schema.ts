@@ -6,15 +6,15 @@
  */
 import { sql, type SQL } from 'drizzle-orm';
 import { boolean, check, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHUNK_SIZE, DEFAULT_PF1E_SETTINGS, DEFAULT_SITE_SETTINGS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_UNIVERSES_PER_CREATOR, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, UNIVERSE_ROLES, UNIVERSE_STAGES, ZONE_LINK_MODES, ZONE_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, DEFAULT_PF1E_SETTINGS, DEFAULT_SITE_SETTINGS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_UNIVERSES_PER_CREATOR, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
 
 export const universeStage = pgEnum('universe_stage', UNIVERSE_STAGES);
 export const universeRole = pgEnum('universe_role', UNIVERSE_ROLES);
 export const ruleset = pgEnum('ruleset', RULESETS);
 export const passageOfTime = pgEnum('passage_of_time', PASSAGES_OF_TIME);
-export const zonePassageOfTime = pgEnum('zone_passage_of_time', ZONE_PASSAGES_OF_TIME);
+export const areaPassageOfTime = pgEnum('area_passage_of_time', AREA_PASSAGES_OF_TIME);
 export const faerieMorning = pgEnum('faerie_morning', FAERIE_MORNINGS);
-export const zoneLinkMode = pgEnum('zone_link_mode', ZONE_LINK_MODES);
+export const areaLinkMode = pgEnum('area_link_mode', AREA_LINK_MODES);
 export const pf1eStatMethod = pgEnum('pf1e_stat_method', PF1E_STAT_METHODS);
 export const pf1eAbility = pgEnum('pf1e_ability', PF1E_ABILITIES);
 export const pf1eSize = pgEnum('pf1e_size', PF1E_SIZES);
@@ -51,7 +51,7 @@ export const players = pgTable('players', {
 /**
  * One row per universe
  *
- * The lobby and starting zones are set once the universe's zones exist, so both may be null for a
+ * The lobby and starting areas are set once the universe's areas exist, so both may be null for a
  * moment while a universe is created
  */
 export const universes = pgTable('universes', {
@@ -73,12 +73,12 @@ export const universes = pgTable('universes', {
 	 */
 	faerieMorning: faerieMorning('faerie_morning'),
 
-	lobbyZoneId: uuid('lobby_zone_id').references((): AnyPgColumn => zones.id, { onDelete: 'set null' }),
+	lobbyAreaId: uuid('lobby_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
 
 	/**
 	 * Where characters start unless their race or class says otherwise
 	 */
-	startingZoneId: uuid('starting_zone_id').references((): AnyPgColumn => zones.id, { onDelete: 'set null' }),
+	startingAreaId: uuid('starting_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
 
 	/**
 	 * Most characters in one group
@@ -249,7 +249,7 @@ export const universeStartingItems = pgTable('universe_starting_items', {
  *
  * Works like items: a race with no universe is one of a ruleset's default races, and a universe's race
  * that overrides a default race is that universe's edited copy of it. Everything else keeps using the
- * default race's ID. A default race has no starting money, equipment or zone; those belong to a
+ * default race's ID. A default race has no starting money, equipment or area; those belong to a
  * universe, so a universe's copy holds them
  *
  * The race's rules live in its ruleset's table (pf1e_races)
@@ -282,16 +282,16 @@ export const races = pgTable('races', {
 	startingCopper: integer('starting_copper').notNull().default(0),
 
 	/**
-	 * Where the race's characters start, unless their class says otherwise; null for the universe's starting zone
+	 * Where the race's characters start, unless their class says otherwise; null for the universe's starting area
 	 */
-	startingZoneId: uuid('starting_zone_id').references((): AnyPgColumn => zones.id, { onDelete: 'set null' }),
+	startingAreaId: uuid('starting_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
 
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	unique('races_ruleset_key_unique').on(table.ruleset, table.key),
 	unique('races_universe_overrides_unique').on(table.universeId, table.overridesRaceId),
 	index('races_universe_id_index').on(table.universeId),
-	index('races_starting_zone_id_index').on(table.startingZoneId),
+	index('races_starting_area_id_index').on(table.startingAreaId),
 	check('races_overrides_belong_to_universe', sql`${table.overridesRaceId} IS NULL OR ${table.universeId} IS NOT NULL`),
 	check('races_name_required', sql`${table.name} IS NOT NULL OR ${table.overridesRaceId} IS NOT NULL`),
 	check('races_starting_coins_range', allInRange([table.startingPlatinum, table.startingGold, table.startingSilver, table.startingCopper], 0, PF1E_MAX_COINS))
@@ -377,17 +377,17 @@ export const classes = pgTable('classes', {
 	startingCopper: integer('starting_copper').notNull().default(0),
 
 	/**
-	 * Where every member of the class starts, whatever their race; null to leave it to class_race_zones,
+	 * Where every member of the class starts, whatever their race; null to leave it to class_race_areas,
 	 * then the race, then the universe
 	 */
-	startingZoneId: uuid('starting_zone_id').references((): AnyPgColumn => zones.id, { onDelete: 'set null' }),
+	startingAreaId: uuid('starting_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
 
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	unique('classes_ruleset_key_unique').on(table.ruleset, table.key),
 	unique('classes_universe_overrides_unique').on(table.universeId, table.overridesClassId),
 	index('classes_universe_id_index').on(table.universeId),
-	index('classes_starting_zone_id_index').on(table.startingZoneId),
+	index('classes_starting_area_id_index').on(table.startingAreaId),
 	check('classes_overrides_belong_to_universe', sql`${table.overridesClassId} IS NULL OR ${table.universeId} IS NOT NULL`),
 	check('classes_name_required', sql`${table.name} IS NOT NULL OR ${table.overridesClassId} IS NOT NULL`),
 	check('classes_starting_coins_range', allInRange([table.startingPlatinum, table.startingGold, table.startingSilver, table.startingCopper], 0, PF1E_MAX_COINS))
@@ -424,30 +424,30 @@ export const classStartingItems = pgTable('class_starting_items', {
 ]);
 
 /**
- * Where a class's characters of one race start, for a class with no starting zone of its own
+ * Where a class's characters of one race start, for a class with no starting area of its own
  *
  * Listed against the row holding the class's settings. The race is listed by the ID everything else
  * uses for it: a default race's own ID, never its edited copy's
  */
-export const classRaceZones = pgTable('class_race_zones', {
+export const classRaceAreas = pgTable('class_race_areas', {
 	classId: integer('class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }),
 	raceId: integer('race_id').notNull().references(() => races.id, { onDelete: 'cascade' }),
-	zoneId: uuid('zone_id').notNull().references(() => zones.id, { onDelete: 'cascade' })
+	areaId: uuid('area_id').notNull().references(() => areas.id, { onDelete: 'cascade' })
 }, (table) => [
 	primaryKey({ columns: [table.classId, table.raceId] }),
-	index('class_race_zones_race_id_index').on(table.raceId),
-	index('class_race_zones_zone_id_index').on(table.zoneId)
+	index('class_race_areas_race_id_index').on(table.raceId),
+	index('class_race_areas_area_id_index').on(table.areaId)
 ]);
 
 /**
- * One row per zone: a map, and where it sits among the universe's zones
+ * One row per area: a map, and where it sits among the universe's areas
  *
  * The map covers minColumn..maxColumn and minRow..maxRow, both inclusive, around column 0, row 0
  */
-export const zones = pgTable('zones', {
+export const areas = pgTable('areas', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	universeId: uuid('universe_id').notNull().references(() => universes.id, { onDelete: 'cascade' }),
-	parentZoneId: uuid('parent_zone_id').references((): AnyPgColumn => zones.id, { onDelete: 'set null' }),
+	parentAreaId: uuid('parent_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
 	name: text('name').notNull(),
 	enabled: boolean('enabled').notNull().default(true),
 	indoors: boolean('indoors').notNull(),
@@ -458,7 +458,7 @@ export const zones = pgTable('zones', {
 	maxRow: integer('max_row').notNull(),
 	loopsEastWest: boolean('loops_east_west').notNull().default(false),
 	loopsNorthSouth: boolean('loops_north_south').notNull().default(false),
-	passageOfTime: zonePassageOfTime('passage_of_time').notNull().default('inherit'),
+	passageOfTime: areaPassageOfTime('passage_of_time').notNull().default('inherit'),
 
 	/**
 	 * Set when passageOfTime is faerie
@@ -467,21 +467,21 @@ export const zones = pgTable('zones', {
 
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
-	index('zones_universe_id_index').on(table.universeId),
-	index('zones_parent_zone_id_index').on(table.parentZoneId),
-	check('zones_width', sql`${table.maxColumn} - ${table.minColumn} BETWEEN 0 AND ${sql.raw(String(MAX_MAP_SIDE - 1))}`),
-	check('zones_height', sql`${table.maxRow} - ${table.minRow} BETWEEN 0 AND ${sql.raw(String(MAX_MAP_SIDE - 1))}`),
-	check('zones_faerie_morning_set', sql`(${table.passageOfTime} = 'faerie') = (${table.faerieMorning} IS NOT NULL)`),
-	check('zones_faerie_does_not_loop', sql`${table.passageOfTime} <> 'faerie' OR NOT (${table.loopsEastWest} OR ${table.loopsNorthSouth})`)
+	index('areas_universe_id_index').on(table.universeId),
+	index('areas_parent_area_id_index').on(table.parentAreaId),
+	check('areas_width', sql`${table.maxColumn} - ${table.minColumn} BETWEEN 0 AND ${sql.raw(String(MAX_MAP_SIDE - 1))}`),
+	check('areas_height', sql`${table.maxRow} - ${table.minRow} BETWEEN 0 AND ${sql.raw(String(MAX_MAP_SIDE - 1))}`),
+	check('areas_faerie_morning_set', sql`(${table.passageOfTime} = 'faerie') = (${table.faerieMorning} IS NOT NULL)`),
+	check('areas_faerie_does_not_loop', sql`${table.passageOfTime} <> 'faerie' OR NOT (${table.loopsEastWest} OR ${table.loopsNorthSouth})`)
 ]);
 
 /**
- * The stored chunks of each zone's map. A chunk that isn't stored is all the zone's default tile
+ * The stored chunks of each area's map. A chunk that isn't stored is all the area's default tile
  *
  * Layer 0 is the ground; later layers go on top of it
  */
 export const mapChunks = pgTable('map_chunks', {
-	zoneId: uuid('zone_id').notNull().references(() => zones.id, { onDelete: 'cascade' }),
+	areaId: uuid('area_id').notNull().references(() => areas.id, { onDelete: 'cascade' }),
 	layer: smallint('layer').notNull().default(0),
 	chunkColumn: integer('chunk_column').notNull(),
 	chunkRow: integer('chunk_row').notNull(),
@@ -491,30 +491,30 @@ export const mapChunks = pgTable('map_chunks', {
 	 */
 	cells: integer('cells').array().notNull()
 }, (table) => [
-	primaryKey({ columns: [table.zoneId, table.layer, table.chunkColumn, table.chunkRow] }),
+	primaryKey({ columns: [table.areaId, table.layer, table.chunkColumn, table.chunkRow] }),
 	check('map_chunks_cell_count', sql`cardinality(${table.cells}) = ${sql.raw(String(CHUNK_SIZE * CHUNK_SIZE))}`)
 ]);
 
 /**
- * Cells that take a player to a cell in another zone
+ * Cells that take a player to a cell in another area
  */
-export const zoneLinks = pgTable('zone_links', {
+export const areaLinks = pgTable('area_links', {
 	id: uuid('id').primaryKey().defaultRandom(),
-	zoneId: uuid('zone_id').notNull().references(() => zones.id, { onDelete: 'cascade' }),
+	areaId: uuid('area_id').notNull().references(() => areas.id, { onDelete: 'cascade' }),
 	column: integer('column').notNull(),
 	row: integer('row').notNull(),
-	targetZoneId: uuid('target_zone_id').notNull().references(() => zones.id, { onDelete: 'cascade' }),
+	targetAreaId: uuid('target_area_id').notNull().references(() => areas.id, { onDelete: 'cascade' }),
 	targetColumn: integer('target_column').notNull(),
 	targetRow: integer('target_row').notNull(),
-	mode: zoneLinkMode('mode').notNull(),
+	mode: areaLinkMode('mode').notNull(),
 
 	/**
 	 * The link can only be used while every member of the group is present
 	 */
 	requiresWholeGroup: boolean('requires_whole_group').notNull().default(false)
 }, (table) => [
-	unique('zone_links_cell_unique').on(table.zoneId, table.column, table.row),
-	index('zone_links_target_zone_id_index').on(table.targetZoneId)
+	unique('area_links_cell_unique').on(table.areaId, table.column, table.row),
+	index('area_links_target_area_id_index').on(table.targetAreaId)
 ]);
 
 /**
@@ -540,9 +540,9 @@ export const characters = pgTable('characters', {
 	copper: integer('copper').notNull().default(0),
 
 	/**
-	 * The zone the character is in; null when the zone was deleted, or the universe had none to start in
+	 * The area the character is in; null when the area was deleted, or the universe had none to start in
 	 */
-	zoneId: uuid('zone_id').references((): AnyPgColumn => zones.id, { onDelete: 'set null' }),
+	areaId: uuid('area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
 
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 
@@ -556,7 +556,7 @@ export const characters = pgTable('characters', {
 	index('characters_universe_id_index').on(table.universeId),
 	index('characters_race_id_index').on(table.raceId),
 	index('characters_class_id_index').on(table.classId),
-	index('characters_zone_id_index').on(table.zoneId),
+	index('characters_area_id_index').on(table.areaId),
 	check('characters_coins_range', allInRange([table.platinum, table.gold, table.silver, table.copper], 0, PF1E_MAX_COINS))
 ]);
 

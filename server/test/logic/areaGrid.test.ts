@@ -1,7 +1,7 @@
 import assert from 'assert';
 import { CHUNK_SIZE, chunkKey, cellIndexInChunk, DEFAULT_TILE_CELL, IMPASSABLE_COST, VOID_CELL } from '@multiverse-kiln/shared';
 
-import { createZoneGrid, linkAt, type ZoneLink, type ZoneMap } from '../../src/logic/zoneGrid.js';
+import { createAreaGrid, linkAt, type AreaLink, type AreaMap } from '../../src/logic/areaGrid.js';
 
 const GRASS = 1;
 const FOREST = 2;
@@ -26,21 +26,21 @@ function chunkWith(...cells: [number, number, number][]): number[]
 }
 
 /**
- * A link from a cell to the center of another zone
+ * A link from a cell to the center of another area
  *
  * @param column The cell's column
  * @param row The cell's row
  * @param mode How the link is taken
  * @return The link
  */
-function link(column: number, row: number, mode: ZoneLink['mode']): ZoneLink
+function link(column: number, row: number, mode: AreaLink['mode']): AreaLink
 {
-	return({ column, row, targetZoneId: 'other-zone', targetColumn: 0, targetRow: 0, mode, requiresWholeGroup: false });
+	return({ column, row, targetAreaId: 'other-area', targetColumn: 0, targetRow: 0, mode, requiresWholeGroup: false });
 }
 
 // Five columns by three rows around the center, mostly grass: forest at (1, 0), void at (2, 0), and an
 // unknown tile at (-1, -1), which is in a different chunk from the rest
-const map: ZoneMap = {
+const map: AreaMap = {
 	tiles: {
 		bounds: { minColumn: -2, minRow: -1, maxColumn: 2, maxRow: 1 },
 		defaultTileId: GRASS,
@@ -55,11 +55,11 @@ const map: ZoneMap = {
 	links: [link(0, 1, 'automatic'), link(-2, 1, 'manual')]
 };
 
-describe('createZoneGrid', () =>
+describe('createAreaGrid', () =>
 {
-	const grid = createZoneGrid(map, 30);
+	const grid = createAreaGrid(map, 30);
 
-	it('takes its bounds, edges and cell size from the zone', () =>
+	it('takes its bounds, edges and cell size from the area', () =>
 	{
 		assert.deepStrictEqual(grid.bounds, map.tiles.bounds);
 		assert.strictEqual(grid.loopsEastWest, true);
@@ -82,7 +82,7 @@ describe('createZoneGrid', () =>
 
 	it('makes cells whose chunk has not loaded impassable, when the map is loaded a piece at a time', () =>
 	{
-		const partial = createZoneGrid({ ...map, loadedChunks: new Set([chunkKey(0, 0)]) }, 30);
+		const partial = createAreaGrid({ ...map, loadedChunks: new Set([chunkKey(0, 0)]) }, 30);
 
 		assert.strictEqual(partial.movementCost({ column: 1, row: 0 }), 50);
 		assert.strictEqual(partial.movementCost({ column: -2, row: 0 }), IMPASSABLE_COST);

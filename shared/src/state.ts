@@ -25,8 +25,8 @@ export type Player = SchemaType<typeof Player>;
 /**
  * Root state of a group's game room
  *
- * A client sees only the players in the same zone as its own player: the server adds each one to the
- * client's view (StateView) as they enter the zone and removes them as they leave it
+ * A client sees only the players in the same area as its own player: the server adds each one to the
+ * client's view (StateView) as they enter the area and removes them as they leave it
  */
 export const GameState = schema({
 	players: t.map(Player).view()
@@ -45,8 +45,8 @@ export type LobbyMember = SchemaType<typeof LobbyMember>;
 /**
  * Root state of a universe's lobby room
  *
- * players works as in GameState: a client sees only the players in its own player's zone, and never
- * another player's ghost. members lists everyone in the lobby playing a character, whichever zone they are in
+ * players works as in GameState: a client sees only the players in its own player's area, and never
+ * another player's ghost. members lists everyone in the lobby playing a character, whichever area they are in
  */
 export const LobbyState = schema({
 	players: t.map(Player).view(),

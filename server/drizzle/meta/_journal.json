@@ -141,6 +141,13 @@
       "when": 1792350751272,
       "tag": "0019_character_last_played",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792353463759,
+      "tag": "0020_rename_zones_to_areas",
+      "breakpoints": true
     }
   ]
 }

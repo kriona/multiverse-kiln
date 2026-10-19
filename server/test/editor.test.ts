@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { chunkKey, DEFAULT_PF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_TILE_CELL, EDITOR_UNIVERSES_PATH, emptyPf1eMoney, isLocalizedMessage, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_STARTING_ITEMS, NEW_PF1E_CLASS_RULES, NEW_PF1E_RACE_RULES, NEW_ZONE_BOUNDS, PF1E_CLASSES, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_RACES, VOID_CELL, type ClassListPayload, type ClassSettings, type CreatedPayload, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorZone, type ItemListPayload, type ItemSettings, type RaceListPayload, type RaceSettings, type ResizeConflictPayload, type RulesetSettings, type TileListPayload, type TileSettings, type UniverseRole, type ZoneListPayload } from '@multiverse-kiln/shared';
+import { chunkKey, DEFAULT_PF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_TILE_CELL, EDITOR_UNIVERSES_PATH, emptyPf1eMoney, isLocalizedMessage, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_STARTING_ITEMS, NEW_PF1E_CLASS_RULES, NEW_PF1E_RACE_RULES, NEW_AREA_BOUNDS, PF1E_CLASSES, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_RACES, VOID_CELL, type ClassListPayload, type ClassSettings, type CreatedPayload, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorArea, type ItemListPayload, type ItemSettings, type RaceListPayload, type RaceSettings, type ResizeConflictPayload, type RulesetSettings, type TileListPayload, type TileSettings, type UniverseRole, type AreaListPayload } from '@multiverse-kiln/shared';
 
 import { findDefaultItemIds } from '../src/db/itemRepo.js';
 import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
@@ -8,7 +8,7 @@ import { saveSiteSettings } from '../src/db/siteSettingsRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
 import { onlinePlayers } from '../src/players/onlinePlayers.js';
-import { zoneChanges, type ZoneChange } from '../src/world/zoneChanges.js';
+import { areaChanges, type AreaChange } from '../src/world/areaChanges.js';
 import { defaultTileId } from './db/fixtures.js';
 import { allowedTestOrigin } from './setup.js';
 import { getTestServer, logOutEveryone, testServerUrl } from './testServer.js';
@@ -56,7 +56,7 @@ const lizardfolk: RaceSettings = {
 	enabled: true,
 	startingMoney: emptyPf1eMoney(),
 	startingItems: [],
-	startingZoneId: null,
+	startingAreaId: null,
 	rules: NEW_PF1E_RACE_RULES
 };
 
@@ -65,8 +65,8 @@ const gunslinger: ClassSettings = {
 	enabled: true,
 	startingMoney: emptyPf1eMoney(),
 	startingItems: [],
-	startingZoneId: null,
-	raceZones: [],
+	startingAreaId: null,
+	raceAreas: [],
 	rules: NEW_PF1E_CLASS_RULES
 };
 
@@ -78,9 +78,9 @@ const gunslinger: ClassSettings = {
  */
 function raceSettingsOf(race: EditorRace): RaceSettings
 {
-	const { name, enabled, startingMoney, startingItems, startingZoneId, rules } = race;
+	const { name, enabled, startingMoney, startingItems, startingAreaId, rules } = race;
 
-	return({ name, enabled, startingMoney, startingItems, startingZoneId, rules });
+	return({ name, enabled, startingMoney, startingItems, startingAreaId, rules });
 }
 
 /**
@@ -91,9 +91,9 @@ function raceSettingsOf(race: EditorRace): RaceSettings
  */
 function classSettingsOf(characterClass: EditorClass): ClassSettings
 {
-	const { name, enabled, startingMoney, startingItems, startingZoneId, raceZones, rules } = characterClass;
+	const { name, enabled, startingMoney, startingItems, startingAreaId, raceAreas, rules } = characterClass;
 
-	return({ name, enabled, startingMoney, startingItems, startingZoneId, raceZones, rules });
+	return({ name, enabled, startingMoney, startingItems, startingAreaId, raceAreas, rules });
 }
 
 /**
@@ -171,16 +171,16 @@ async function createUniverse(editor: Editor, name: string = 'Kilnhaven'): Promi
 }
 
 /**
- * Creates a zone through the API
+ * Creates an area through the API
  *
  * @param editor The browser creating it
  * @param universeId The universe's ID
- * @param settings The zone's settings
- * @return The zone's ID
+ * @param settings The area's settings
+ * @return The area's ID
  */
-async function createZone(editor: Editor, universeId: string, settings: Record<string, unknown> = {}): Promise<string>
+async function createArea(editor: Editor, universeId: string, settings: Record<string, unknown> = {}): Promise<string>
 {
-	const response = await send<CreatedPayload>(editor, 'POST', `/${universeId}/zones`, { body: { name: 'Meadow', ...settings } });
+	const response = await send<CreatedPayload>(editor, 'POST', `/${universeId}/areas`, { body: { name: 'Meadow', ...settings } });
 
 	assert.strictEqual(response.status, 201, JSON.stringify(response.body));
 
@@ -225,7 +225,7 @@ describe('World editor API', () =>
 			const universeId = await createUniverse(ada);
 			const grace = await logIn('Grace');
 
-			for (const path of [`/${universeId}`, `/${universeId}/zones`, `/${randomUUID()}`, '/not-an-id'])
+			for (const path of [`/${universeId}`, `/${universeId}/areas`, `/${randomUUID()}`, '/not-an-id'])
 			{
 				assert.strictEqual((await send(grace, 'GET', path)).status, 404, path);
 			}
@@ -269,23 +269,23 @@ describe('World editor API', () =>
 
 	describe('universes', () =>
 	{
-		it('creates a universe with a lobby and a starting zone, and makes the player its creator', async () =>
+		it('creates a universe with a lobby and a starting area, and makes the player its creator', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const universe = (await send<EditableUniverse>(ada, 'GET', `/${universeId}`)).body;
-			const zones = (await send<ZoneListPayload>(ada, 'GET', `/${universeId}/zones`)).body;
+			const areas = (await send<AreaListPayload>(ada, 'GET', `/${universeId}/areas`)).body;
 
 			assert.strictEqual(universe.name, 'Kilnhaven');
 			assert.strictEqual(universe.stage, 'in_the_beginning');
 			assert.strictEqual(universe.role, 'creator');
-			assert.deepStrictEqual(zones.zones.map((zone) => zone.name), ['Lobby', 'Starting Zone']);
-			assert.strictEqual(zones.lobbyZoneId, universe.lobbyZoneId);
-			assert.strictEqual(zones.startingZoneId, universe.startingZoneId);
-			assert.notStrictEqual(universe.lobbyZoneId, universe.startingZoneId);
+			assert.deepStrictEqual(areas.areas.map((area) => area.name), ['Lobby', 'Starting Area']);
+			assert.strictEqual(areas.lobbyAreaId, universe.lobbyAreaId);
+			assert.strictEqual(areas.startingAreaId, universe.startingAreaId);
+			assert.notStrictEqual(universe.lobbyAreaId, universe.startingAreaId);
 
-			const lobby = (await send<EditorZone>(ada, 'GET', `/${universeId}/zones/${universe.lobbyZoneId}`)).body;
+			const lobby = (await send<EditorArea>(ada, 'GET', `/${universeId}/areas/${universe.lobbyAreaId}`)).body;
 
-			assert.deepStrictEqual(lobby.bounds, NEW_ZONE_BOUNDS);
+			assert.deepStrictEqual(lobby.bounds, NEW_AREA_BOUNDS);
 			assert.strictEqual(lobby.defaultTileId, await defaultTileId('grass'));
 		});
 
@@ -374,19 +374,19 @@ describe('World editor API', () =>
 
 	describe('character settings', () =>
 	{
-		it('starts a universe with groups of the most players, no money, and its starting zone', async () =>
+		it('starts a universe with groups of the most players, no money, and its starting area', async () =>
 		{
 			const universe = (await send<EditableUniverse>(ada, 'GET', `/${await createUniverse(ada)}`)).body;
 
 			assert.strictEqual(universe.groupSize, MAX_GROUP_PLAYERS);
 			assert.deepStrictEqual(universe.startingMoney, emptyPf1eMoney());
-			assert.notStrictEqual(universe.startingZoneId, null);
+			assert.notStrictEqual(universe.startingAreaId, null);
 		});
 
-		it('changes the group size, starting money and starting zone, keeping each coin as given', async () =>
+		it('changes the group size, starting money and starting area, keeping each coin as given', async () =>
 		{
 			const universeId = await createUniverse(ada);
-			const zoneId = await createZone(ada, universeId);
+			const areaId = await createArea(ada, universeId);
 			const path = `/${universeId}`;
 			const startingMoney = {
 				pp: 1,
@@ -395,13 +395,13 @@ describe('World editor API', () =>
 				cp: 10
 			};
 
-			assert.strictEqual((await send(ada, 'PATCH', path, { body: { groupSize: 1, startingMoney, startingZoneId: zoneId } })).status, 204);
+			assert.strictEqual((await send(ada, 'PATCH', path, { body: { groupSize: 1, startingMoney, startingAreaId: areaId } })).status, 204);
 
 			const universe = (await send<EditableUniverse>(ada, 'GET', path)).body;
 
 			assert.strictEqual(universe.groupSize, 1);
 			assert.deepStrictEqual(universe.startingMoney, startingMoney);
-			assert.strictEqual(universe.startingZoneId, zoneId);
+			assert.strictEqual(universe.startingAreaId, areaId);
 		});
 
 		it('refuses group sizes and money out of range', async () =>
@@ -423,7 +423,7 @@ describe('World editor API', () =>
 				{ startingMoney: { gp: 5 } },
 				{ startingMoney: tooMuchGold },
 				{ startingMoney: negativeCopper },
-				{ startingZoneId: null }
+				{ startingAreaId: null }
 			];
 
 			for (const body of bodies)
@@ -487,21 +487,21 @@ describe('World editor API', () =>
 			assert.strictEqual((await send(ada, 'DELETE', `${path}/items/${torchId}`)).status, 204);
 		});
 
-		it('refuses the lobby, or a zone of another universe, as the starting zone', async () =>
+		it('refuses the lobby, or an area of another universe, as the starting area', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const universe = (await send<EditableUniverse>(ada, 'GET', `/${universeId}`)).body;
-			const otherZoneId = await createZone(ada, await createUniverse(ada, 'Elsewhere'));
+			const otherAreaId = await createArea(ada, await createUniverse(ada, 'Elsewhere'));
 
-			for (const startingZoneId of [universe.lobbyZoneId, otherZoneId, randomUUID()])
+			for (const startingAreaId of [universe.lobbyAreaId, otherAreaId, randomUUID()])
 			{
-				const response = await send<ErrorPayload>(ada, 'PATCH', `/${universeId}`, { body: { startingZoneId } });
+				const response = await send<ErrorPayload>(ada, 'PATCH', `/${universeId}`, { body: { startingAreaId } });
 
 				assert.strictEqual(response.status, 400);
-				assert.strictEqual(response.body.error.id, 'error.unusableStartingZone');
+				assert.strictEqual(response.body.error.id, 'error.unusableStartingArea');
 			}
 
-			assert.strictEqual((await send<EditableUniverse>(ada, 'GET', `/${universeId}`)).body.startingZoneId, universe.startingZoneId);
+			assert.strictEqual((await send<EditableUniverse>(ada, 'GET', `/${universeId}`)).body.startingAreaId, universe.startingAreaId);
 		});
 	});
 
@@ -641,7 +641,7 @@ describe('World editor API', () =>
 			const universeId = await createUniverse(ada);
 			const universe = (await send<EditableUniverse>(ada, 'GET', `/${universeId}`)).body;
 			const tileId = (await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/tiles`, { body: lava })).body.id;
-			const cellsPath = `/${universeId}/zones/${universe.lobbyZoneId}/cells`;
+			const cellsPath = `/${universeId}/areas/${universe.lobbyAreaId}/cells`;
 
 			await send(ada, 'PATCH', cellsPath, { body: { changes: [[0, 0, tileId]] } });
 			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/tiles/${tileId}`)).status, 409);
@@ -760,7 +760,7 @@ describe('World editor API', () =>
 					...emptyPf1eMoney(),
 					gp: 10
 				},
-				startingZoneId: await createZone(ada, universeId)
+				startingAreaId: await createArea(ada, universeId)
 			};
 
 			assert.deepStrictEqual(races.map((race) => race.key), Object.keys(PF1E_RACES));
@@ -791,12 +791,12 @@ describe('World editor API', () =>
 			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/races/${created.body.id}`)).status, 404);
 		});
 
-		it('refuses a custom race without a name, invalid rules, and zones or items the universe can\'t use', async () =>
+		it('refuses a custom race without a name, invalid rules, and areas or items the universe can\'t use', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const universe = (await send<EditableUniverse>(ada, 'GET', `/${universeId}`)).body;
 			const otherId = await createUniverse(ada, 'Other');
-			const theirZoneId = await createZone(ada, otherId);
+			const theirAreaId = await createArea(ada, otherId);
 			const theirItemId = (await send<CreatedPayload<number>>(ada, 'POST', `/${otherId}/items`, { body: torch })).body.id;
 			const invalid = [
 				{ ...lizardfolk, name: null },
@@ -811,11 +811,11 @@ describe('World editor API', () =>
 				assert.strictEqual((await send(ada, 'POST', `/${universeId}/races`, { body })).status, 400, JSON.stringify(body));
 			}
 
-			for (const startingZoneId of [universe.lobbyZoneId, theirZoneId])
+			for (const startingAreaId of [universe.lobbyAreaId, theirAreaId])
 			{
-				const response = await send<ErrorPayload>(ada, 'POST', `/${universeId}/races`, { body: { ...lizardfolk, startingZoneId } });
+				const response = await send<ErrorPayload>(ada, 'POST', `/${universeId}/races`, { body: { ...lizardfolk, startingAreaId } });
 
-				assert.strictEqual(response.body.error.id, 'error.unusableStartingZone');
+				assert.strictEqual(response.body.error.id, 'error.unusableStartingArea');
 			}
 
 			const response = await send<ErrorPayload>(ada, 'POST', `/${universeId}/races`, { body: { ...lizardfolk, startingItems: [{ itemId: theirItemId, quantity: 1 }] } });
@@ -864,14 +864,14 @@ describe('World editor API', () =>
 
 	describe('classes', () =>
 	{
-		it('adds a class with a zone for some races, and edits a default class before restoring it', async () =>
+		it('adds a class with an area for some races, and edits a default class before restoring it', async () =>
 		{
 			const universeId = await createUniverse(ada);
-			const zoneId = await createZone(ada, universeId);
+			const areaId = await createArea(ada, universeId);
 			const races = (await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races;
 			const settings: ClassSettings = {
 				...gunslinger,
-				raceZones: [{ raceId: races[0].id, zoneId }]
+				raceAreas: [{ raceId: races[0].id, areaId }]
 			};
 			const created = await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/classes`, { body: settings });
 			const classes = (await send<ClassListPayload>(ada, 'GET', `/${universeId}/classes`)).body.classes;
@@ -884,7 +884,7 @@ describe('World editor API', () =>
 			const { id, key, custom } = wizard;
 			const changed: ClassSettings = {
 				...classSettingsOf(wizard),
-				startingZoneId: zoneId
+				startingAreaId: areaId
 			};
 
 			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/classes/${id}`, { body: changed })).status, 204);
@@ -894,30 +894,30 @@ describe('World editor API', () =>
 			assert.deepStrictEqual((await send<ClassListPayload>(ada, 'GET', `/${universeId}/classes`)).body.classes.find((characterClass) => (characterClass.id === id)), wizard);
 		});
 
-		it('refuses zones for races alongside a zone for every race, and zones for races the universe doesn\'t have', async () =>
+		it('refuses areas for races alongside an area for every race, and areas for races the universe doesn\'t have', async () =>
 		{
 			const universeId = await createUniverse(ada);
-			const zoneId = await createZone(ada, universeId);
+			const areaId = await createArea(ada, universeId);
 			const theirRaceId = (await send<CreatedPayload<number>>(ada, 'POST', `/${await createUniverse(ada, 'Other')}/races`, { body: lizardfolk })).body.id;
 			const elfId = (await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races[3].id;
 			const both = {
 				...gunslinger,
-				startingZoneId: zoneId,
-				raceZones: [{ raceId: elfId, zoneId }]
+				startingAreaId: areaId,
+				raceAreas: [{ raceId: elfId, areaId }]
 			};
 			const twice = {
 				...gunslinger,
-				raceZones: [{ raceId: elfId, zoneId }, { raceId: elfId, zoneId }]
+				raceAreas: [{ raceId: elfId, areaId }, { raceId: elfId, areaId }]
 			};
 
 			assert.strictEqual((await send(ada, 'POST', `/${universeId}/classes`, { body: both })).status, 400);
 			assert.strictEqual((await send(ada, 'POST', `/${universeId}/classes`, { body: twice })).status, 400);
 			assert.strictEqual((await send(ada, 'POST', `/${universeId}/classes`, { body: { ...gunslinger, rules: { ...gunslinger.rules, tradition: 'psychic' } } })).status, 400);
 
-			const response = await send<ErrorPayload>(ada, 'POST', `/${universeId}/classes`, { body: { ...gunslinger, raceZones: [{ raceId: theirRaceId, zoneId }] } });
+			const response = await send<ErrorPayload>(ada, 'POST', `/${universeId}/classes`, { body: { ...gunslinger, raceAreas: [{ raceId: theirRaceId, areaId }] } });
 
 			assert.strictEqual(response.status, 400);
-			assert.strictEqual(response.body.error.id, 'error.unknownRaceZone');
+			assert.strictEqual(response.body.error.id, 'error.unknownRaceArea');
 		});
 
 		it('keeps at least one class enabled', async () =>
@@ -944,20 +944,20 @@ describe('World editor API', () =>
 		});
 	});
 
-	describe('zones', () =>
+	describe('areas', () =>
 	{
-		it('creates a zone with its defaults', async () =>
+		it('creates an area with its defaults', async () =>
 		{
 			const universeId = await createUniverse(ada);
-			const outsideId = await createZone(ada, universeId);
-			const insideId = await createZone(ada, universeId, { name: 'Cellar', indoors: true, parentZoneId: outsideId });
-			const outside = (await send<EditorZone>(ada, 'GET', `/${universeId}/zones/${outsideId}`)).body;
-			const inside = (await send<EditorZone>(ada, 'GET', `/${universeId}/zones/${insideId}`)).body;
+			const outsideId = await createArea(ada, universeId);
+			const insideId = await createArea(ada, universeId, { name: 'Cellar', indoors: true, parentAreaId: outsideId });
+			const outside = (await send<EditorArea>(ada, 'GET', `/${universeId}/areas/${outsideId}`)).body;
+			const inside = (await send<EditorArea>(ada, 'GET', `/${universeId}/areas/${insideId}`)).body;
 
 			assert.deepStrictEqual(outside, {
 				id: outsideId,
 				name: 'Meadow',
-				parentZoneId: null,
+				parentAreaId: null,
 				enabled: true,
 				indoors: false,
 				defaultTileId: await defaultTileId('grass'),
@@ -965,70 +965,70 @@ describe('World editor API', () =>
 				faerieMorning: null,
 				loopsEastWest: false,
 				loopsNorthSouth: false,
-				bounds: NEW_ZONE_BOUNDS
+				bounds: NEW_AREA_BOUNDS
 			});
 			assert.strictEqual(inside.defaultTileId, await defaultTileId('wood_floor'));
-			assert.strictEqual(inside.parentZoneId, outsideId);
+			assert.strictEqual(inside.parentAreaId, outsideId);
 		});
 
-		it('starts new zones disabled once the universe is past in_the_beginning', async () =>
+		it('starts new areas disabled once the universe is past in_the_beginning', async () =>
 		{
 			const universeId = await createUniverse(ada);
 
 			await send(ada, 'PATCH', `/${universeId}`, { body: { stage: 'prologue' } });
 
-			const zoneId = await createZone(ada, universeId);
+			const areaId = await createArea(ada, universeId);
 
-			assert.strictEqual((await send<EditorZone>(ada, 'GET', `/${universeId}/zones/${zoneId}`)).body.enabled, false);
+			assert.strictEqual((await send<EditorArea>(ada, 'GET', `/${universeId}/areas/${areaId}`)).body.enabled, false);
 		});
 
-		it('refuses a parent that would put a zone inside itself, or that is in another universe', async () =>
+		it('refuses a parent that would put an area inside itself, or that is in another universe', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const otherId = await createUniverse(ada, 'Other');
-			const worldId = await createZone(ada, universeId, { name: 'World' });
-			const cityId = await createZone(ada, universeId, { name: 'City', parentZoneId: worldId });
-			const elsewhereId = await createZone(ada, otherId, { name: 'Elsewhere' });
+			const worldId = await createArea(ada, universeId, { name: 'World' });
+			const cityId = await createArea(ada, universeId, { name: 'City', parentAreaId: worldId });
+			const elsewhereId = await createArea(ada, otherId, { name: 'Elsewhere' });
 
-			assert.strictEqual((await send(ada, 'PATCH', `/${universeId}/zones/${worldId}`, { body: { parentZoneId: cityId } })).status, 400);
-			assert.strictEqual((await send(ada, 'PATCH', `/${universeId}/zones/${worldId}`, { body: { parentZoneId: worldId } })).status, 400);
-			assert.strictEqual((await send(ada, 'PATCH', `/${universeId}/zones/${worldId}`, { body: { parentZoneId: elsewhereId } })).status, 400);
-			assert.strictEqual((await send(ada, 'POST', `/${universeId}/zones`, { body: { name: 'Lost', parentZoneId: elsewhereId } })).status, 400);
+			assert.strictEqual((await send(ada, 'PATCH', `/${universeId}/areas/${worldId}`, { body: { parentAreaId: cityId } })).status, 400);
+			assert.strictEqual((await send(ada, 'PATCH', `/${universeId}/areas/${worldId}`, { body: { parentAreaId: worldId } })).status, 400);
+			assert.strictEqual((await send(ada, 'PATCH', `/${universeId}/areas/${worldId}`, { body: { parentAreaId: elsewhereId } })).status, 400);
+			assert.strictEqual((await send(ada, 'POST', `/${universeId}/areas`, { body: { name: 'Lost', parentAreaId: elsewhereId } })).status, 400);
 		});
 
-		it('refuses faerie time on a looping zone, and a default tile of another universe', async () =>
+		it('refuses faerie time on a looping area, and a default tile of another universe', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const otherId = await createUniverse(ada, 'Other');
-			const zoneId = await createZone(ada, universeId, { loopsEastWest: true });
+			const areaId = await createArea(ada, universeId, { loopsEastWest: true });
 			const theirTileId = (await send<CreatedPayload<number>>(ada, 'POST', `/${otherId}/tiles`, { body: lava })).body.id;
-			const path = `/${universeId}/zones/${zoneId}`;
+			const path = `/${universeId}/areas/${areaId}`;
 
 			assert.strictEqual((await send(ada, 'PATCH', path, { body: { passageOfTime: 'faerie', faerieMorning: 'east' } })).status, 400);
 			assert.strictEqual((await send(ada, 'PATCH', path, { body: { passageOfTime: 'faerie', faerieMorning: 'east', loopsEastWest: false } })).status, 204);
 			assert.strictEqual((await send(ada, 'PATCH', path, { body: { defaultTileId: theirTileId } })).status, 400);
 		});
 
-		it('deletes zones, but not the lobby or starting zone', async () =>
+		it('deletes areas, but not the lobby or starting area', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const universe = (await send<EditableUniverse>(ada, 'GET', `/${universeId}`)).body;
-			const zoneId = await createZone(ada, universeId);
+			const areaId = await createArea(ada, universeId);
 
-			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/zones/${universe.lobbyZoneId}`)).status, 409);
-			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/zones/${universe.startingZoneId}`)).status, 409);
-			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/zones/${zoneId}`)).status, 204);
-			assert.strictEqual((await send(ada, 'GET', `/${universeId}/zones/${zoneId}`)).status, 404);
+			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/areas/${universe.lobbyAreaId}`)).status, 409);
+			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/areas/${universe.startingAreaId}`)).status, 409);
+			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/areas/${areaId}`)).status, 204);
+			assert.strictEqual((await send(ada, 'GET', `/${universeId}/areas/${areaId}`)).status, 404);
 		});
 
-		it('answers 404 for a zone of another universe', async () =>
+		it('answers 404 for an area of another universe', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const otherId = await createUniverse(ada, 'Other');
-			const theirZoneId = await createZone(ada, otherId);
+			const theirAreaId = await createArea(ada, otherId);
 
-			assert.strictEqual((await send(ada, 'GET', `/${universeId}/zones/${theirZoneId}`)).status, 404);
-			assert.strictEqual((await send(ada, 'PATCH', `/${universeId}/zones/${theirZoneId}/cells`, { body: { changes: [[0, 0, VOID_CELL]] } })).status, 404);
+			assert.strictEqual((await send(ada, 'GET', `/${universeId}/areas/${theirAreaId}`)).status, 404);
+			assert.strictEqual((await send(ada, 'PATCH', `/${universeId}/areas/${theirAreaId}/cells`, { body: { changes: [[0, 0, VOID_CELL]] } })).status, 404);
 		});
 	});
 
@@ -1037,9 +1037,9 @@ describe('World editor API', () =>
 		it('paints cells and reads them back by chunk', async () =>
 		{
 			const universeId = await createUniverse(ada);
-			const zoneId = await createZone(ada, universeId);
+			const areaId = await createArea(ada, universeId);
 			const forest = await defaultTileId('forest');
-			const path = `/${universeId}/zones/${zoneId}`;
+			const path = `/${universeId}/areas/${areaId}`;
 
 			assert.strictEqual((await send(ada, 'PATCH', `${path}/cells`, { body: { changes: [[0, 0, forest], [-1, -1, VOID_CELL]] } })).status, 204);
 
@@ -1053,11 +1053,11 @@ describe('World editor API', () =>
 		{
 			const universeId = await createUniverse(ada);
 			const otherId = await createUniverse(ada, 'Other');
-			const zoneId = await createZone(ada, universeId);
+			const areaId = await createArea(ada, universeId);
 			const theirTileId = (await send<CreatedPayload<number>>(ada, 'POST', `/${otherId}/tiles`, { body: lava })).body.id;
-			const path = `/${universeId}/zones/${zoneId}`;
+			const path = `/${universeId}/areas/${areaId}`;
 
-			assert.strictEqual((await send(ada, 'PATCH', `${path}/cells`, { body: { changes: [[NEW_ZONE_BOUNDS.maxColumn + 1, 0, VOID_CELL]] } })).status, 400);
+			assert.strictEqual((await send(ada, 'PATCH', `${path}/cells`, { body: { changes: [[NEW_AREA_BOUNDS.maxColumn + 1, 0, VOID_CELL]] } })).status, 400);
 			assert.strictEqual((await send(ada, 'PATCH', `${path}/cells`, { body: { changes: [[0, 0, theirTileId]] } })).status, 400);
 			assert.strictEqual((await send(ada, 'PATCH', `${path}/cells`, { body: { changes: [] } })).status, 400);
 			assert.strictEqual((await send(ada, 'GET', `${path}/chunks?minChunkColumn=0&minChunkRow=0&maxChunkColumn=16&maxChunkRow=15`)).status, 400);
@@ -1067,8 +1067,8 @@ describe('World editor API', () =>
 		it('resizes a map, asking before it discards painted cells', async () =>
 		{
 			const universeId = await createUniverse(ada);
-			const zoneId = await createZone(ada, universeId);
-			const path = `/${universeId}/zones/${zoneId}`;
+			const areaId = await createArea(ada, universeId);
+			const path = `/${universeId}/areas/${areaId}`;
 			const small = { minColumn: -5, minRow: -5, maxColumn: 5, maxRow: 5 };
 
 			await send(ada, 'PATCH', `${path}/cells`, { body: { changes: [[10, 0, VOID_CELL]] } });
@@ -1080,14 +1080,14 @@ describe('World editor API', () =>
 			assert.strictEqual(refused.body.discardedLinks, 0);
 
 			assert.strictEqual((await send(ada, 'PUT', `${path}/bounds`, { body: { bounds: small, discard: true } })).status, 204);
-			assert.deepStrictEqual((await send<EditorZone>(ada, 'GET', path)).body.bounds, small);
+			assert.deepStrictEqual((await send<EditorArea>(ada, 'GET', path)).body.bounds, small);
 		});
 
 		it('refuses bounds that leave out the center or are too large', async () =>
 		{
 			const universeId = await createUniverse(ada);
-			const zoneId = await createZone(ada, universeId);
-			const path = `/${universeId}/zones/${zoneId}/bounds`;
+			const areaId = await createArea(ada, universeId);
+			const path = `/${universeId}/areas/${areaId}/bounds`;
 
 			for (const bounds of [{ minColumn: 1, minRow: 0, maxColumn: 5, maxRow: 5 }, { minColumn: -25000, minRow: 0, maxColumn: 25000, maxRow: 0 }])
 			{
@@ -1101,10 +1101,10 @@ describe('World editor API', () =>
 		it('adds, lists and deletes a cell\'s link', async () =>
 		{
 			const universeId = await createUniverse(ada);
-			const outsideId = await createZone(ada, universeId, { name: 'Outside' });
-			const insideId = await createZone(ada, universeId, { name: 'Inside', indoors: true });
-			const target = { targetZoneId: insideId, targetColumn: 1, targetRow: 2, mode: 'automatic', requiresWholeGroup: true };
-			const path = `/${universeId}/zones/${outsideId}/links`;
+			const outsideId = await createArea(ada, universeId, { name: 'Outside' });
+			const insideId = await createArea(ada, universeId, { name: 'Inside', indoors: true });
+			const target = { targetAreaId: insideId, targetColumn: 1, targetRow: 2, mode: 'automatic', requiresWholeGroup: true };
+			const path = `/${universeId}/areas/${outsideId}/links`;
 
 			assert.strictEqual((await send(ada, 'PUT', `${path}/3/-4`, { body: target })).status, 204);
 			assert.deepStrictEqual((await send(ada, 'GET', path)).body, { links: [{ column: 3, row: -4, ...target }] });
@@ -1112,18 +1112,18 @@ describe('World editor API', () =>
 			assert.strictEqual((await send(ada, 'DELETE', `${path}/3/-4`)).status, 404);
 		});
 
-		it('refuses links to the same zone, another universe, or a cell off either map', async () =>
+		it('refuses links to the same area, another universe, or a cell off either map', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const otherId = await createUniverse(ada, 'Other');
-			const outsideId = await createZone(ada, universeId, { name: 'Outside' });
-			const insideId = await createZone(ada, universeId, { name: 'Inside' });
-			const elsewhereId = await createZone(ada, otherId, { name: 'Elsewhere' });
-			const target = { targetZoneId: insideId, targetColumn: 0, targetRow: 0, mode: 'manual', requiresWholeGroup: false };
-			const path = `/${universeId}/zones/${outsideId}/links`;
+			const outsideId = await createArea(ada, universeId, { name: 'Outside' });
+			const insideId = await createArea(ada, universeId, { name: 'Inside' });
+			const elsewhereId = await createArea(ada, otherId, { name: 'Elsewhere' });
+			const target = { targetAreaId: insideId, targetColumn: 0, targetRow: 0, mode: 'manual', requiresWholeGroup: false };
+			const path = `/${universeId}/areas/${outsideId}/links`;
 
-			assert.strictEqual((await send(ada, 'PUT', `${path}/0/0`, { body: { ...target, targetZoneId: outsideId } })).status, 400);
-			assert.strictEqual((await send(ada, 'PUT', `${path}/0/0`, { body: { ...target, targetZoneId: elsewhereId } })).status, 400);
+			assert.strictEqual((await send(ada, 'PUT', `${path}/0/0`, { body: { ...target, targetAreaId: outsideId } })).status, 400);
+			assert.strictEqual((await send(ada, 'PUT', `${path}/0/0`, { body: { ...target, targetAreaId: elsewhereId } })).status, 400);
 			assert.strictEqual((await send(ada, 'PUT', `${path}/0/0`, { body: { ...target, targetColumn: 99 } })).status, 400);
 			assert.strictEqual((await send(ada, 'PUT', `${path}/99/0`, { body: target })).status, 400);
 			assert.strictEqual((await send(ada, 'PUT', `${path}/x/0`, { body: target })).status, 400);
@@ -1133,13 +1133,13 @@ describe('World editor API', () =>
 
 	describe('world changes', () =>
 	{
-		let published: ZoneChange[];
+		let published: AreaChange[];
 		let stopListening: () => void;
 
 		beforeEach(() =>
 		{
 			published = [];
-			stopListening = zoneChanges.onChange((change) =>
+			stopListening = areaChanges.onChange((change) =>
 			{
 				published.push(change);
 			});
@@ -1153,32 +1153,32 @@ describe('World editor API', () =>
 		it('tells the rooms which chunks painting changed', async () =>
 		{
 			const universeId = await createUniverse(ada);
-			const zoneId = await createZone(ada, universeId);
+			const areaId = await createArea(ada, universeId);
 
-			await send(ada, 'PATCH', `/${universeId}/zones/${zoneId}/cells`, { body: { changes: [[0, 0, VOID_CELL], [-1, 0, VOID_CELL], [1, 1, VOID_CELL]] } });
+			await send(ada, 'PATCH', `/${universeId}/areas/${areaId}/cells`, { body: { changes: [[0, 0, VOID_CELL], [-1, 0, VOID_CELL], [1, 1, VOID_CELL]] } });
 
-			assert.deepStrictEqual(published, [{ kind: 'cells', zoneId, chunkKeys: [chunkKey(0, 0), chunkKey(-1, 0)] }]);
+			assert.deepStrictEqual(published, [{ kind: 'cells', areaId, chunkKeys: [chunkKey(0, 0), chunkKey(-1, 0)] }]);
 		});
 
-		it('tells the rooms about changes to a zone\'s settings, bounds and links, and its deletion', async () =>
+		it('tells the rooms about changes to an area\'s settings, bounds and links, and its deletion', async () =>
 		{
 			const universeId = await createUniverse(ada);
-			const zoneId = await createZone(ada, universeId);
-			const otherId = await createZone(ada, universeId, { name: 'Other' });
-			const path = `/${universeId}/zones/${zoneId}`;
+			const areaId = await createArea(ada, universeId);
+			const otherId = await createArea(ada, universeId, { name: 'Other' });
+			const path = `/${universeId}/areas/${areaId}`;
 
 			await send(ada, 'PATCH', path, { body: { name: 'Renamed' } });
 			await send(ada, 'PUT', `${path}/bounds`, { body: { bounds: { minColumn: -5, minRow: -5, maxColumn: 5, maxRow: 5 }, discard: true } });
-			await send(ada, 'PUT', `${path}/links/0/0`, { body: { targetZoneId: otherId, targetColumn: 0, targetRow: 0, mode: 'manual', requiresWholeGroup: false } });
+			await send(ada, 'PUT', `${path}/links/0/0`, { body: { targetAreaId: otherId, targetColumn: 0, targetRow: 0, mode: 'manual', requiresWholeGroup: false } });
 			await send(ada, 'DELETE', `${path}/links/0/0`);
 			await send(ada, 'DELETE', path);
 
 			assert.deepStrictEqual(published, [
-				{ kind: 'zone', zoneId },
-				{ kind: 'zone', zoneId },
-				{ kind: 'zone', zoneId },
-				{ kind: 'zone', zoneId },
-				{ kind: 'deleted', zoneId }
+				{ kind: 'area', areaId },
+				{ kind: 'area', areaId },
+				{ kind: 'area', areaId },
+				{ kind: 'area', areaId },
+				{ kind: 'deleted', areaId }
 			]);
 		});
 

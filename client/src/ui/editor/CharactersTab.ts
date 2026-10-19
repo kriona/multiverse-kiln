@@ -9,11 +9,11 @@ import { formMessages } from '../formMessages';
 import { formatMoney, readMoneyField } from '../moneyField';
 import type { ItemSelectDialog } from './ItemSelectDialog';
 import { StartingItemsField } from './StartingItemsField';
-import type { ZoneSelectDialog } from './ZoneSelectDialog';
+import type { AreaSelectDialog } from './AreaSelectDialog';
 
 /**
  * The Characters tab: how many characters play together in a group, and the money, equipment and
- * zone every character starts with
+ * area every character starts with
  */
 export class CharactersTab
 {
@@ -22,8 +22,8 @@ export class CharactersTab
 	private readonly groupSize = getElement('characters-group-size', HTMLInputElement);
 	private readonly startingMoney = getElement('characters-starting-money', HTMLInputElement);
 	private readonly chooseItemsButton = getElement('characters-items-choose', HTMLButtonElement);
-	private readonly zoneName = getElement('characters-zone-name', HTMLElement);
-	private readonly chooseZoneButton = getElement('characters-zone-choose', HTMLButtonElement);
+	private readonly areaName = getElement('characters-area-name', HTMLElement);
+	private readonly chooseAreaButton = getElement('characters-area-choose', HTMLButtonElement);
 	private readonly error = getElement('characters-error', HTMLElement);
 	private readonly saved = getElement('characters-saved', HTMLElement);
 	private readonly saveButton = getElement('characters-save', HTMLButtonElement);
@@ -31,9 +31,9 @@ export class CharactersTab
 	private universe: EditableUniverse | undefined;
 
 	/**
-	 * The starting zone the form shows, which may not be saved yet
+	 * The starting area the form shows, which may not be saved yet
 	 */
-	private startingZoneId: string | null = null;
+	private startingAreaId: string | null = null;
 
 	/**
 	 * The starting equipment the form shows, which may not be saved yet
@@ -41,22 +41,22 @@ export class CharactersTab
 	private readonly startingItems: StartingItemsField;
 
 	/**
-	 * Whether the form, the starting equipment or the starting zone chosen has changes that haven't been saved
+	 * Whether the form, the starting equipment or the starting area chosen has changes that haven't been saved
 	 */
 	readonly changes: ChangeTracker;
 
 	/**
-	 * Changes every time the tab opens a universe, so a zone name that arrives for an earlier one is ignored
+	 * Changes every time the tab opens a universe, so an area name that arrives for an earlier one is ignored
 	 */
 	private openVersion = 0;
 
 	/**
 	 * @param api The editor's API
-	 * @param zoneSelect The dialog for choosing the starting zone
+	 * @param areaSelect The dialog for choosing the starting area
 	 * @param itemSelect The dialog for choosing the starting equipment
 	 * @param onSaved Called with the universe after the settings are saved
 	 */
-	constructor(private readonly api: EditorApi, private readonly zoneSelect: ZoneSelectDialog, itemSelect: ItemSelectDialog, private readonly onSaved: (universe: EditableUniverse) => void)
+	constructor(private readonly api: EditorApi, private readonly areaSelect: AreaSelectDialog, itemSelect: ItemSelectDialog, private readonly onSaved: (universe: EditableUniverse) => void)
 	{
 		this.startingItems = new StartingItemsField(api, itemSelect, {
 			list: getElement('characters-items', HTMLUListElement),
@@ -72,7 +72,7 @@ export class CharactersTab
 		});
 		this.changes = new ChangeTracker({
 			root: this.form,
-			state: () => [this.startingZoneId, this.startingItems.value],
+			state: () => [this.startingAreaId, this.startingItems.value],
 			status: this.saved
 		});
 		this.groupSize.min = String(MIN_GROUP_SIZE);
@@ -107,9 +107,9 @@ export class CharactersTab
 			});
 		}
 
-		this.chooseZoneButton.addEventListener('click', () =>
+		this.chooseAreaButton.addEventListener('click', () =>
 		{
-			void this.chooseZone();
+			void this.chooseArea();
 		});
 
 		this.form.addEventListener('submit', (event) =>
@@ -131,42 +131,42 @@ export class CharactersTab
 		this.startingMoney.value = formatMoney(universe.startingMoney);
 		this.fields.disabled = !canEditUniverseSettings(universe.role);
 		this.saveButton.hidden = this.fields.disabled;
-		this.chooseZoneButton.hidden = this.fields.disabled;
+		this.chooseAreaButton.hidden = this.fields.disabled;
 		this.chooseItemsButton.hidden = this.fields.disabled;
 		this.saved.textContent = '';
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.form);
-		// Sets the starting zone and equipment straight away, then loads their names
-		void this.showStartingZone(universe.startingZoneId);
+		// Sets the starting area and equipment straight away, then loads their names
+		void this.showStartingArea(universe.startingAreaId);
 		void this.startingItems.show(universe, universe.startingItems);
 		this.changes.markSaved();
 	}
 
 	/**
-	 * Shows the starting zone's name
+	 * Shows the starting area's name
 	 *
-	 * @param zoneId The zone, or null for none
+	 * @param areaId The area, or null for none
 	 */
-	private async showStartingZone(zoneId: string | null): Promise<void>
+	private async showStartingArea(areaId: string | null): Promise<void>
 	{
 		const universe = this.universe;
 		const version = ++this.openVersion;
 
-		this.startingZoneId = zoneId;
-		this.zoneName.textContent = '';
+		this.startingAreaId = areaId;
+		this.areaName.textContent = '';
 
-		if (!universe || (zoneId === null))
+		if (!universe || (areaId === null))
 		{
 			return;
 		}
 
 		try
 		{
-			const { zones } = await this.api.listZones(universe.id);
+			const { areas } = await this.api.listAreas(universe.id);
 
 			if (version === this.openVersion)
 			{
-				this.zoneName.textContent = (zones.find((zone) => (zone.id === zoneId))?.name ?? '');
+				this.areaName.textContent = (areas.find((area) => (area.id === areaId))?.name ?? '');
 			}
 		}
 		catch (error)
@@ -174,33 +174,33 @@ export class CharactersTab
 			if (version === this.openVersion)
 			{
 				showMessage(this.error, describeEditorError(error, {
-					id: 'editor.characters.zoneFailed',
-					defaultMessage: 'Could not load the starting zone.',
-					description: 'Shown on the Characters tab when the name of the zone characters start in couldn\'t be loaded'
+					id: 'editor.characters.areaFailed',
+					defaultMessage: 'Could not load the starting area.',
+					description: 'Shown on the Characters tab when the name of the area characters start in couldn\'t be loaded'
 				}));
 			}
 		}
 	}
 
 	/**
-	 * Lets the player choose another starting zone, which the form shows until it is saved
+	 * Lets the player choose another starting area, which the form shows until it is saved
 	 */
-	private async chooseZone(): Promise<void>
+	private async chooseArea(): Promise<void>
 	{
 		if (!this.universe)
 		{
 			return;
 		}
 
-		const zone = await this.zoneSelect.open(this.universe, this.startingZoneId);
+		const area = await this.areaSelect.open(this.universe, this.startingAreaId);
 
-		this.chooseZoneButton.focus();
+		this.chooseAreaButton.focus();
 
-		if (zone && (zone.id !== this.startingZoneId))
+		if (area && (area.id !== this.startingAreaId))
 		{
 			++this.openVersion;
-			this.startingZoneId = zone.id;
-			this.zoneName.textContent = zone.name;
+			this.startingAreaId = area.id;
+			this.areaName.textContent = area.name;
 			this.saved.textContent = '';
 			this.changes.check();
 		}
@@ -235,7 +235,7 @@ export class CharactersTab
 			return;
 		}
 
-		const startingZoneId = this.startingZoneId;
+		const startingAreaId = this.startingAreaId;
 		const startingItems = this.startingItems.value;
 
 		this.saveButton.disabled = true;
@@ -243,19 +243,19 @@ export class CharactersTab
 
 		try
 		{
-			// Only a universe still being created has no starting zone, and the server won't take null
+			// Only a universe still being created has no starting area, and the server won't take null
 			await this.api.updateUniverse(universe.id, {
 				groupSize,
 				startingMoney,
 				startingItems,
-				...((startingZoneId === null) ? {} : { startingZoneId })
+				...((startingAreaId === null) ? {} : { startingAreaId })
 			});
 			this.universe = {
 				...universe,
 				groupSize,
 				startingMoney,
 				startingItems,
-				startingZoneId
+				startingAreaId
 			};
 			this.startingMoney.value = formatMoney(startingMoney);
 			this.changes.markSaved();

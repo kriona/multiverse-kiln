@@ -1,8 +1,8 @@
 /**
- * How zone maps are laid out: cells, chunks and what a cell holds
+ * How area maps are laid out: cells, chunks and what a cell holds
  *
  * A map is a grid of cells centered on column 0, row 0, reaching out in every direction. Its cells are
- * stored in square chunks of CHUNK_SIZE x CHUNK_SIZE, and only chunks that differ from the zone's
+ * stored in square chunks of CHUNK_SIZE x CHUNK_SIZE, and only chunks that differ from the area's
  * default tile are stored at all, so a large, mostly empty map takes little space
  */
 
@@ -17,7 +17,7 @@ export const CHUNK_SIZE = 32;
 export const MAX_MAP_SIDE = 50000;
 
 /**
- * Cell value meaning the zone's default tile
+ * Cell value meaning the area's default tile
  */
 export const DEFAULT_TILE_CELL = 0;
 
@@ -43,9 +43,9 @@ export interface MapBounds
 }
 
 /**
- * The tiles of a zone's map: one layer of cells
+ * The tiles of an area's map: one layer of cells
  */
-export interface ZoneTiles
+export interface AreaTiles
 {
 	bounds: MapBounds;
 
@@ -73,7 +73,7 @@ export function chunkCoordinate(coordinate: number): number
 }
 
 /**
- * The key a chunk is stored under in ZoneTiles.chunks
+ * The key a chunk is stored under in AreaTiles.chunks
  *
  * @param chunkColumn The chunk's column, from chunkCoordinate()
  * @param chunkRow The chunk's row, from chunkCoordinate()
@@ -125,12 +125,12 @@ export function isInBounds(bounds: MapBounds, column: number, row: number): bool
 /**
  * The tile in a cell
  *
- * @param tiles The zone's tiles
+ * @param tiles The area's tiles
  * @param column The cell's column
  * @param row The cell's row
  * @return The tile's ID, or undefined for a void cell or one outside the map
  */
-export function tileIdAt(tiles: ZoneTiles, column: number, row: number): number | undefined
+export function tileIdAt(tiles: AreaTiles, column: number, row: number): number | undefined
 {
 	if (!isInBounds(tiles.bounds, column, row))
 	{

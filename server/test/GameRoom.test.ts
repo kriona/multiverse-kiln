@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { GAME_ROOM_NAME, GameState, GRID_CELL_SIZE, MessageType, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, type Player, type WelcomePayload, type ZonePayload } from '@multiverse-kiln/shared';
+import { GAME_ROOM_NAME, GameState, GRID_CELL_SIZE, MessageType, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, type Player, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { pool } from '../src/db/client.js';
 import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
@@ -111,9 +111,9 @@ function connectFromBrowser(room: GameRoom, browserId: string): Promise<ClientRo
  * @param room Server-side room to join
  * @param browserId Browser ID the window's cookie holds
  * @param name The player's name
- * @return The client-side room, and the Welcome and Zone payloads once they arrive
+ * @return The client-side room, and the Welcome and Area payloads once they arrive
  */
-async function joinFromBrowser(room: GameRoom, browserId: string, name: string = 'Player'): Promise<{ client: ClientRoom<unknown, GameState>; welcome: Promise<WelcomePayload>; zone: Promise<ZonePayload> }>
+async function joinFromBrowser(room: GameRoom, browserId: string, name: string = 'Player'): Promise<{ client: ClientRoom<unknown, GameState>; welcome: Promise<WelcomePayload>; area: Promise<AreaPayload> }>
 {
 	// A browser stays logged in as its first player, so a second window joins as the same player
 	onlinePlayers.logIn(browserId, randomUUID(), name);
@@ -126,14 +126,14 @@ async function joinFromBrowser(room: GameRoom, browserId: string, name: string =
 	{
 		client.onMessage(ServerMessageType.Welcome, resolve);
 	});
-	const zone = new Promise<ZonePayload>((resolve) =>
+	const area = new Promise<AreaPayload>((resolve) =>
 	{
-		client.onMessage(ServerMessageType.Zone, resolve);
+		client.onMessage(ServerMessageType.Area, resolve);
 	});
 
 	await client.waitForInitialState();
 
-	return({ client, welcome, zone });
+	return({ client, welcome, area });
 }
 
 /**
@@ -191,15 +191,15 @@ describe('GameRoom', () =>
 		universe = await addPlayableUniverse();
 	});
 
-	it('adds a player to the universe\'s starting zone when a client joins', async () =>
+	it('adds a player to the universe\'s starting area when a client joins', async () =>
 	{
 		const room = await createGameRoom();
-		const { client, zone } = await joinFromBrowser(room, randomUUID());
+		const { client, area } = await joinFromBrowser(room, randomUUID());
 		const playerId = playerIdOf(room, client);
 
-		assert.strictEqual(room.getZoneId(playerId), universe.fieldZoneId);
-		assert.strictEqual((await zone).zoneId, universe.fieldZoneId);
-		assert.strictEqual((await zone).name, 'Field');
+		assert.strictEqual(room.getAreaId(playerId), universe.fieldAreaId);
+		assert.strictEqual((await area).areaId, universe.fieldAreaId);
+		assert.strictEqual((await area).name, 'Field');
 	});
 
 	it('cannot be created for a universe that does not exist, or with no universe', async () =>

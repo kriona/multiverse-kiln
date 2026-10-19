@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { CHUNK_SIZE, cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, nearestCopy, parseChunkKey, positiveModulo, tileIdAt, VOID_CELL, type ZoneTiles } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, nearestCopy, parseChunkKey, positiveModulo, tileIdAt, VOID_CELL, type AreaTiles } from '@multiverse-kiln/shared';
 
 describe('map layout (shared)', () =>
 {
@@ -40,7 +40,7 @@ describe('map layout (shared)', () =>
 		cells[cellIndexInChunk(1, 0)] = 7;
 		cells[cellIndexInChunk(2, 0)] = VOID_CELL;
 
-		const tiles: ZoneTiles = {
+		const tiles: AreaTiles = {
 			bounds: { minColumn: -2, minRow: -1, maxColumn: 2, maxRow: 1 },
 			defaultTileId: 3,
 			chunks: new Map([[chunkKey(0, 0), cells]])

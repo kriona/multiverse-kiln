@@ -116,7 +116,7 @@ export interface ChangeTrackerOptions
 	root: HTMLElement;
 
 	/**
-	 * What the form holds outside its fields, such as a zone chosen in another dialog, compared as JSON
+	 * What the form holds outside its fields, such as an area chosen in another dialog, compared as JSON
 	 */
 	state?: () => unknown;
 

@@ -2,14 +2,14 @@ import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
 import { GameState, MessageType, PATCH_INTERVAL_MS, ServerCloseCode } from '@multiverse-kiln/shared';
 
 import { findUniverse } from '../db/universeRepo.js';
-import { loadChunksAt, loadZone } from '../db/zoneRepo.js';
+import { loadChunksAt, loadArea } from '../db/areaRepo.js';
 import { readBrowserId } from '../http/browserId.js';
 import { onlinePlayers, type OnlinePlayerChange } from '../players/onlinePlayers.js';
-import { zoneChanges } from '../world/zoneChanges.js';
+import { areaChanges } from '../world/areaChanges.js';
 import { InvalidMessages } from './invalidMessages.js';
 import { describeInvalidPayload, movePayload, roomOptions } from './payloads.js';
-import { ZoneCache } from './zoneCache.js';
-import { CHUNK_REFRESH_INTERVAL_MS, SIMULATION_TICK_RATE, ZonePlayers } from './zonePlayers.js';
+import { AreaCache } from './areaCache.js';
+import { CHUNK_REFRESH_INTERVAL_MS, SIMULATION_TICK_RATE, AreaPlayers } from './areaPlayers.js';
 
 /**
  * What onAuth found out about a client, available afterward as client.auth
@@ -29,8 +29,8 @@ interface ClientIdentity
  *
  * A universe's lobby creates the room, with the universe's ID, and decides who is in the group (see
  * OnlinePlayers), which also caps the group at MAX_GROUP_PLAYERS players; the room admits only the
- * group's players. Players start in the universe's starting zone, and each can go through zone links
- * on their own (see ZonePlayers)
+ * group's players. Players start in the universe's starting area, and each can go through area links
+ * on their own (see AreaPlayers)
  */
 export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: ClientIdentity }> }>
 {
@@ -42,17 +42,17 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 
 	state = new GameState();
 
-	private readonly zones = new ZoneCache(loadZone, loadChunksAt);
+	private readonly areas = new AreaCache(loadArea, loadChunksAt);
 
 	/**
-	 * Players whose zone is deleted go back to the starting zone
+	 * Players whose area is deleted go back to the starting area
 	 */
-	private readonly zonePlayers = new ZonePlayers(this.state.players, this.zones, () => this.startingZoneId);
+	private readonly areaPlayers = new AreaPlayers(this.state.players, this.areas, () => this.startingAreaId);
 
 	/**
 	 * Where new players start
 	 */
-	private startingZoneId!: string;
+	private startingAreaId!: string;
 
 	/**
 	 * How many invalid messages each client has sent this session (server-only, not synced)
@@ -74,19 +74,19 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 				return;
 			}
 
-			this.zonePlayers.queueMove(client.sessionId, result.data);
+			this.areaPlayers.queueMove(client.sessionId, result.data);
 		},
 
 		[MessageType.TakeLink]: (client: Client) =>
 		{
-			this.zonePlayers.takeLink(client.sessionId);
+			this.areaPlayers.takeLink(client.sessionId);
 		}
 	};
 
 	/**
-	 * Loads the universe's starting zone, starts the simulation loop and the loading of chunks near
+	 * Loads the universe's starting area, starts the simulation loop and the loading of chunks near
 	 * players, and starts watching for players leaving the group and for changes to the world. Fails for
-	 * a universe that doesn't exist or has no starting zone
+	 * a universe that doesn't exist or has no starting area
 	 *
 	 * @param options The universe the group plays in
 	 */
@@ -94,25 +94,25 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 	{
 		const { universeId } = roomOptions.parse(options);
 		const universe = await findUniverse(universeId);
-		const startingZone = ((universe?.startingZoneId !== undefined) ? await this.zones.load(universe.startingZoneId) : undefined);
+		const startingArea = ((universe?.startingAreaId !== undefined) ? await this.areas.load(universe.startingAreaId) : undefined);
 
-		if (!startingZone)
+		if (!startingArea)
 		{
-			throw new Error(`Universe ${universeId} has no starting zone to play in`);
+			throw new Error(`Universe ${universeId} has no starting area to play in`);
 		}
 
-		this.startingZoneId = startingZone.loaded.zone.id;
-		this.setTimestep((deltaTime) => this.zonePlayers.update(deltaTime / 1000), 1000 / SIMULATION_TICK_RATE);
-		this.clock.setInterval(() => this.zonePlayers.refreshChunks(), CHUNK_REFRESH_INTERVAL_MS);
+		this.startingAreaId = startingArea.loaded.area.id;
+		this.setTimestep((deltaTime) => this.areaPlayers.update(deltaTime / 1000), 1000 / SIMULATION_TICK_RATE);
+		this.clock.setInterval(() => this.areaPlayers.refreshChunks(), CHUNK_REFRESH_INTERVAL_MS);
 
 		this.stopListening = onlinePlayers.onChange((change) =>
 		{
 			this.onPlayerChange(change);
 		});
 
-		this.stopFollowingChanges = zoneChanges.onChange((change) =>
+		this.stopFollowingChanges = areaChanges.onChange((change) =>
 		{
-			this.zonePlayers.applyChange(change).catch((error: unknown) =>
+			this.areaPlayers.applyChange(change).catch((error: unknown) =>
 			{
 				console.error('Could not apply a world change to room', this.roomId, error);
 			});
@@ -141,7 +141,7 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 	}
 
 	/**
-	 * Gives the joining client its browser's player, adding the player to the starting zone if it is new
+	 * Gives the joining client its browser's player, adding the player to the starting area if it is new
 	 *
 	 * @param client The joining client
 	 */
@@ -153,15 +153,15 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 		}
 
 		const { playerId, name } = client.auth;
-		const startingZone = await this.zones.load(this.startingZoneId);
+		const startingArea = await this.areas.load(this.startingAreaId);
 
-		if (!startingZone)
+		if (!startingArea)
 		{
-			throw new Error(`The starting zone ${this.startingZoneId} no longer exists`);
+			throw new Error(`The starting area ${this.startingAreaId} no longer exists`);
 		}
 
-		await this.zonePlayers.prepareStart(startingZone);
-		this.zonePlayers.join(client, playerId, { name, ghost: false }, this.zones.get(this.startingZoneId) ?? startingZone);
+		await this.areaPlayers.prepareStart(startingArea);
+		this.areaPlayers.join(client, playerId, { name, ghost: false }, this.areas.get(this.startingAreaId) ?? startingArea);
 
 		console.log(client.sessionId, 'joined as player', playerId);
 	}
@@ -174,7 +174,7 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 	 */
 	onLeave(client: Client, code: CloseCode): void
 	{
-		this.zonePlayers.leave(client);
+		this.areaPlayers.leave(client);
 		this.invalidMessages.forget(client.sessionId);
 
 		console.log(client.sessionId, 'left', code);
@@ -188,18 +188,18 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 	 */
 	getPlayerId(sessionId: string): string | undefined
 	{
-		return(this.zonePlayers.getPlayerId(sessionId));
+		return(this.areaPlayers.getPlayerId(sessionId));
 	}
 
 	/**
-	 * The zone a player is in
+	 * The area a player is in
 	 *
 	 * @param playerId The player's ID
-	 * @return The zone's ID, or undefined when the player isn't in the room
+	 * @return The area's ID, or undefined when the player isn't in the room
 	 */
-	getZoneId(playerId: string): string | undefined
+	getAreaId(playerId: string): string | undefined
 	{
-		return(this.zonePlayers.getZoneId(playerId));
+		return(this.areaPlayers.getAreaId(playerId));
 	}
 
 	/**
@@ -227,7 +227,7 @@ export class GameRoom extends Room<{ state: GameState; client: Client<{ auth: Cl
 			return;
 		}
 
-		for (const client of this.zonePlayers.getClients(before.playerId))
+		for (const client of this.areaPlayers.getClients(before.playerId))
 		{
 			client.leave(ServerCloseCode.LeftGroup);
 		}

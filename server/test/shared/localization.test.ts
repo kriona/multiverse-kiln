@@ -19,9 +19,9 @@ const messages = defineMessages({
 		defaultMessage: 'Playing as {name}',
 		description: 'A test message with an argument'
 	},
-	zones: {
-		id: 'test.zones',
-		defaultMessage: '{count, plural, one {# zone} other {# zones}}',
+	areas: {
+		id: 'test.areas',
+		defaultMessage: '{count, plural, one {# area} other {# areas}}',
 		description: 'A test message with a plural'
 	}
 });
@@ -77,8 +77,8 @@ describe('localization (shared)', () =>
 			const translator = new Translator(SOURCE_LOCALE);
 
 			assert.strictEqual(translator.format(messages.playingAs, { name: 'Ada' }), 'Playing as Ada');
-			assert.strictEqual(translator.format(messages.zones, { count: 1 }), '1 zone');
-			assert.strictEqual(translator.format(messages.zones, { count: 3 }), '3 zones');
+			assert.strictEqual(translator.format(messages.areas, { count: 1 }), '1 area');
+			assert.strictEqual(translator.format(messages.areas, { count: 3 }), '3 areas');
 		});
 
 		it('uses a translation when there is one', () =>
@@ -98,9 +98,9 @@ describe('localization (shared)', () =>
 
 		it('shows a message sent by the server with its values', () =>
 		{
-			const sent = localize(messages.zones, { count: 2 });
+			const sent = localize(messages.areas, { count: 2 });
 
-			assert.strictEqual(new Translator(SOURCE_LOCALE).format(sent, sent.values), '2 zones');
+			assert.strictEqual(new Translator(SOURCE_LOCALE).format(sent, sent.values), '2 areas');
 		});
 
 		it('keeps objects given as arguments, e.g. elements on a page', () =>
@@ -120,8 +120,8 @@ describe('localization (shared)', () =>
 
 			assert.strictEqual(translator.format(messages.saved), '[Såvéd ~~]');
 			assert.strictEqual(translator.format(messages.playingAs, { name: 'Ada' }), '[Plåyîng ås Ada ~~~]');
-			assert.strictEqual(translator.format(messages.zones, { count: 1 }), '[1 zöné ~~]');
-			assert.strictEqual(translator.format(messages.zones, { count: 3 }), '[3 zönés ~~]');
+			assert.strictEqual(translator.format(messages.areas, { count: 1 }), '[1 åréå ~~]');
+			assert.strictEqual(translator.format(messages.areas, { count: 3 }), '[3 åréås ~~]');
 		});
 
 		it('pads a long message with words, so it wraps like a longer translation', () =>
@@ -144,10 +144,10 @@ describe('localization (shared)', () =>
 		it('accepts a message with or without values, and nothing else', () =>
 		{
 			assert.strictEqual(isLocalizedMessage(localize(messages.saved)), true);
-			assert.strictEqual(isLocalizedMessage(localize(messages.zones, { count: 2 })), true);
+			assert.strictEqual(isLocalizedMessage(localize(messages.areas, { count: 2 })), true);
 			assert.strictEqual(isLocalizedMessage('Something went wrong'), false);
 			assert.strictEqual(isLocalizedMessage({ id: 'test.saved' }), false);
-			assert.strictEqual(isLocalizedMessage({ id: 'test.zones', defaultMessage: '{count}', values: { count: {} } }), false);
+			assert.strictEqual(isLocalizedMessage({ id: 'test.areas', defaultMessage: '{count}', values: { count: {} } }), false);
 		});
 	});
 
@@ -155,7 +155,7 @@ describe('localization (shared)', () =>
 	{
 		it('lists the arguments and tags a message uses, including inside plurals', () =>
 		{
-			assert.deepStrictEqual(messageArguments('{count, plural, one {# zone in {universe}} other {<b>#</b> zones}}'), ['<b>', 'count', 'universe']);
+			assert.deepStrictEqual(messageArguments('{count, plural, one {# area in {universe}} other {<b>#</b> areas}}'), ['<b>', 'count', 'universe']);
 			assert.deepStrictEqual(messageArguments('Saved'), []);
 		});
 	});
@@ -192,7 +192,7 @@ describe('localization (shared)', () =>
 		const english = {
 			'test.playingAs': { defaultMessage: 'Playing as {name}' },
 			'test.saved': { defaultMessage: 'Saved' },
-			'test.zones': { defaultMessage: '{count} zones' }
+			'test.areas': { defaultMessage: '{count} areas' }
 		};
 
 		it('lists the messages a translation is missing, and those made from English that has changed', () =>
@@ -209,7 +209,7 @@ describe('localization (shared)', () =>
 			};
 
 			assert.deepStrictEqual(translationStatus(english, file), {
-				missing: ['test.zones'],
+				missing: ['test.areas'],
 				outdated: ['test.saved']
 			});
 			assert.deepStrictEqual(translationCatalog(file), {

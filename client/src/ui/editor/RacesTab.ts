@@ -7,7 +7,7 @@ import { raceName } from '../raceAndClassNames';
 import type { ItemSelectDialog } from './ItemSelectDialog';
 import { createOptionRow, optionTags } from './optionRows';
 import { RaceDialog } from './RaceDialog';
-import type { ZoneSelectDialog } from './ZoneSelectDialog';
+import type { AreaSelectDialog } from './AreaSelectDialog';
 
 /**
  * The Races tab: every race characters of the universe can be, opening the race editor
@@ -28,12 +28,12 @@ export class RacesTab
 
 	/**
 	 * @param api The editor's API
-	 * @param zoneSelect The dialog for choosing a race's starting zone
+	 * @param areaSelect The dialog for choosing a race's starting area
 	 * @param itemSelect The dialog for choosing a race's starting equipment
 	 */
-	constructor(private readonly api: EditorApi, zoneSelect: ZoneSelectDialog, itemSelect: ItemSelectDialog)
+	constructor(private readonly api: EditorApi, areaSelect: AreaSelectDialog, itemSelect: ItemSelectDialog)
 	{
-		this.dialog = new RaceDialog(api, zoneSelect, itemSelect);
+		this.dialog = new RaceDialog(api, areaSelect, itemSelect);
 
 		this.addButton.addEventListener('click', () =>
 		{

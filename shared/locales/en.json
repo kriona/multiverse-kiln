@@ -267,13 +267,181 @@
 		"defaultMessage": "Close",
 		"description": "Button that closes a dialog that only shows something, with nothing to change"
 	},
+	"editor.area.back": {
+		"defaultMessage": "Back to Areas",
+		"description": "Button that closes the area editor and goes back to the list of areas"
+	},
+	"editor.area.children": {
+		"defaultMessage": "Areas inside this one",
+		"description": "Heading of the list of areas inside the area being edited"
+	},
+	"editor.area.confirmDelete": {
+		"defaultMessage": "Delete {area}, its map and every link into it? Areas inside it become top-level areas. This can't be undone.",
+		"description": "Asks before deleting an area; {area} is its name"
+	},
+	"editor.area.defaultTile": {
+		"defaultMessage": "Default tile",
+		"description": "Label of the field for the tile an area's map is filled with where nothing else is painted"
+	},
+	"editor.area.delete": {
+		"defaultMessage": "Delete Area",
+		"description": "Button that deletes the area being edited"
+	},
+	"editor.area.deleteFailed": {
+		"defaultMessage": "Could not delete the area.",
+		"description": "Shown in the area editor when the area couldn't be deleted"
+	},
+	"editor.area.enabled": {
+		"defaultMessage": "Enabled",
+		"description": "Checkbox for whether players can go into the area"
+	},
+	"editor.area.faerieCantLoop": {
+		"defaultMessage": "An area whose passage of time is faerie can't loop.",
+		"description": "Explains why the loop checkboxes are disabled"
+	},
+	"editor.area.indoorTiles": {
+		"defaultMessage": "Indoor tiles",
+		"description": "Heading of a group of choices of default tile"
+	},
+	"editor.area.loading": {
+		"defaultMessage": "Loading...",
+		"description": "Heading of the area editor while the area loads"
+	},
+	"editor.area.lobbyTitle": {
+		"defaultMessage": "{area} (the lobby)",
+		"description": "Heading of the area editor for the universe's lobby; {area} is its name"
+	},
+	"editor.area.loopsEastWest": {
+		"defaultMessage": "Loops east-west",
+		"description": "Checkbox for an area whose map wraps around, so walking off the east edge comes back on the west"
+	},
+	"editor.area.loopsNorthSouth": {
+		"defaultMessage": "Loops north-south",
+		"description": "Checkbox for an area whose map wraps around, so walking off the north edge comes back on the south"
+	},
+	"editor.area.noParent": {
+		"defaultMessage": "None (a top-level area)",
+		"description": "Choice of parent area for an area that isn't inside another"
+	},
+	"editor.area.openFailed": {
+		"defaultMessage": "Could not open the area.",
+		"description": "Shown in the area editor when the area couldn't be loaded"
+	},
+	"editor.area.outdoorTiles": {
+		"defaultMessage": "Outdoor tiles",
+		"description": "Heading of a group of choices of default tile"
+	},
+	"editor.area.parent": {
+		"defaultMessage": "Parent area",
+		"description": "Label of the field for the area this one is inside"
+	},
+	"editor.area.parentDisabled": {
+		"defaultMessage": "This area is inside {areas}, which {count, plural, one {is} other {are}} disabled.",
+		"description": "Warns that players can't reach the area; {areas} lists the areas it is inside that are disabled, and {count} is how many"
+	},
+	"editor.area.saveFailed": {
+		"defaultMessage": "Could not save the area.",
+		"description": "Shown in the area editor when the area's settings couldn't be stored"
+	},
+	"editor.area.size": {
+		"defaultMessage": "The map is {height, number} tall x {width, number} wide.",
+		"description": "The size of the area's map, in cells"
+	},
+	"editor.areaAdd.failed": {
+		"defaultMessage": "Could not add the area.",
+		"description": "Shown in the Add Area dialog when the area couldn't be made"
+	},
+	"editor.areaAdd.submit": {
+		"defaultMessage": "Add",
+		"description": "Button that makes the new area"
+	},
+	"editor.areaAdd.title": {
+		"defaultMessage": "Add Area",
+		"description": "Title of the dialog for making a new area"
+	},
+	"editor.areaSelect.disabled": {
+		"defaultMessage": "Disabled",
+		"description": "In the dialog for choosing an area, under the name of an area players can't go into"
+	},
+	"editor.areaSelect.inside": {
+		"defaultMessage": "Inside {area}",
+		"description": "In the dialog for choosing an area, under an area's name: the area it is inside; {area} is that area's name"
+	},
+	"editor.areaSelect.loadFailed": {
+		"defaultMessage": "Could not load the areas.",
+		"description": "Shown in the dialog for choosing an area when the universe's areas couldn't be loaded"
+	},
+	"editor.areaSelect.none": {
+		"defaultMessage": "No areas match.",
+		"description": "Shown in the dialog for choosing an area when no area's name matches the search"
+	},
+	"editor.areaSelect.results": {
+		"defaultMessage": "Areas",
+		"description": "Name of the list of areas to choose from, for screen readers"
+	},
+	"editor.areaSelect.search": {
+		"defaultMessage": "Search by name",
+		"description": "Shown in the empty field that narrows the areas down by name"
+	},
+	"editor.areaSelect.searchLabel": {
+		"defaultMessage": "Search areas by name",
+		"description": "Name of the field that narrows the areas down by name, for screen readers"
+	},
+	"editor.areaSelect.submit": {
+		"defaultMessage": "Choose",
+		"description": "Button that chooses the area selected in the dialog"
+	},
+	"editor.areaSelect.summary": {
+		"defaultMessage": "{indoors, select, true {Indoors} other {Outdoors}}, {height, number} tall by {width, number} wide",
+		"description": "In the dialog for choosing an area, describes the chosen area under its map preview; {height} and {width} are its size in cells"
+	},
+	"editor.areaSelect.title": {
+		"defaultMessage": "Choose an Area",
+		"description": "Title of the dialog for choosing one of the universe's areas"
+	},
+	"editor.areas.add": {
+		"defaultMessage": "Add Area",
+		"description": "Button that opens the dialog for making a new area"
+	},
+	"editor.areas.disabledTag": {
+		"defaultMessage": "disabled",
+		"description": "Under an area in the list of areas, for an area players can't go into"
+	},
+	"editor.areas.heading": {
+		"defaultMessage": "Areas",
+		"description": "Heading of the list of the universe's areas"
+	},
+	"editor.areas.indoorsTag": {
+		"defaultMessage": "indoors",
+		"description": "Under an area in the list of areas, for an area that is indoors"
+	},
+	"editor.areas.listFailed": {
+		"defaultMessage": "Could not list the areas.",
+		"description": "Shown on the Areas tab when the areas couldn't be loaded"
+	},
+	"editor.areas.none": {
+		"defaultMessage": "There are no areas besides the lobby.",
+		"description": "Shown instead of the list of areas when the universe only has its lobby"
+	},
+	"editor.areas.outdoorsTag": {
+		"defaultMessage": "outdoors",
+		"description": "Under an area in the list of areas, for an area that is outdoors"
+	},
+	"editor.areas.startingAreaTag": {
+		"defaultMessage": "starting area",
+		"description": "Under an area in the list of areas, for the area new characters start in"
+	},
+	"editor.characters.areaFailed": {
+		"defaultMessage": "Could not load the starting area.",
+		"description": "Shown on the Characters tab when the name of the area characters start in couldn't be loaded"
+	},
+	"editor.characters.chooseArea": {
+		"defaultMessage": "Choose Starting Area",
+		"description": "Button that opens the dialog for choosing the area characters start in"
+	},
 	"editor.characters.chooseEquipment": {
 		"defaultMessage": "Choose Starting Equipment",
 		"description": "Button that opens the dialog for choosing the items every character starts with"
-	},
-	"editor.characters.chooseZone": {
-		"defaultMessage": "Choose Starting Zone",
-		"description": "Button that opens the dialog for choosing the zone characters start in"
 	},
 	"editor.characters.groupSize": {
 		"defaultMessage": "Group size",
@@ -291,6 +459,14 @@
 		"defaultMessage": "Could not save the character settings.",
 		"description": "Shown on the Characters tab when its settings couldn't be stored"
 	},
+	"editor.characters.startingArea": {
+		"defaultMessage": "Starting area: {area}",
+		"description": "Shows the area characters start in; {area} is the area's name"
+	},
+	"editor.characters.startingAreaHint": {
+		"defaultMessage": "Where characters start, unless their race or class says otherwise.",
+		"description": "Explains the starting area on the editor's Characters tab"
+	},
 	"editor.characters.startingEquipment": {
 		"defaultMessage": "Starting equipment",
 		"description": "Heading of the list of items every character starts with, on the editor's Characters tab"
@@ -307,60 +483,52 @@
 		"defaultMessage": "Amounts of coins, like {example}. Coins stay as they are given; races and classes can add more.",
 		"description": "Explains the starting money field on the editor's Characters tab; {example} is an amount of money, e.g. 12gp 5sp. Coins are never changed into other coins automatically"
 	},
-	"editor.characters.startingZone": {
-		"defaultMessage": "Starting zone: {zone}",
-		"description": "Shows the zone characters start in; {zone} is the zone's name"
-	},
-	"editor.characters.startingZoneHint": {
-		"defaultMessage": "Where characters start, unless their race or class says otherwise.",
-		"description": "Explains the starting zone on the editor's Characters tab"
-	},
-	"editor.characters.zoneFailed": {
-		"defaultMessage": "Could not load the starting zone.",
-		"description": "Shown on the Characters tab when the name of the zone characters start in couldn't be loaded"
-	},
 	"editor.class.addTitle": {
 		"defaultMessage": "Add Class",
 		"description": "Title of the class editor when making a new character class"
+	},
+	"editor.class.areaByRace": {
+		"defaultMessage": "Decided by race (below)",
+		"description": "Shown in the class editor as the class's starting area when it has none for every race, so each race's area listed below it is used"
 	},
 	"editor.class.castingStyle": {
 		"defaultMessage": "Spellcasting style",
 		"description": "Label of the field for how a character class casts spells: none, prepared or spontaneous"
 	},
+	"editor.class.chooseArea": {
+		"defaultMessage": "Choose Area",
+		"description": "Button in the class editor that opens the dialog for choosing the area every member of the class starts in"
+	},
 	"editor.class.chooseEquipment": {
 		"defaultMessage": "Choose Equipment",
 		"description": "Button in the class editor that opens the dialog for choosing the items the class's members also start with"
 	},
-	"editor.class.chooseRaceZone": {
+	"editor.class.chooseRaceArea": {
 		"defaultMessage": "Choose",
 		"description": "Button in the class editor, beside a race's name, that chooses where the class's characters of that race start"
 	},
-	"editor.class.chooseRaceZoneLabel": {
-		"defaultMessage": "Choose the starting zone for {race}",
+	"editor.class.chooseRaceAreaLabel": {
+		"defaultMessage": "Choose the starting area for {race}",
 		"description": "Name of the button that chooses where the class's characters of one race start, for screen readers; {race} is the race's name"
 	},
-	"editor.class.chooseZone": {
-		"defaultMessage": "Choose Zone",
-		"description": "Button in the class editor that opens the dialog for choosing the zone every member of the class starts in"
-	},
-	"editor.class.clearRaceZone": {
-		"defaultMessage": "Clear",
-		"description": "Button in the class editor, beside a race's name, that takes away the class's zone for that race so the race's own is used"
-	},
-	"editor.class.clearRaceZoneLabel": {
-		"defaultMessage": "Clear the starting zone for {race}",
-		"description": "Name of the button that takes away the class's zone for one race, for screen readers; {race} is the race's name"
-	},
-	"editor.class.clearZone": {
+	"editor.class.clearArea": {
 		"defaultMessage": "Choose by Race",
-		"description": "Button in the class editor that takes away the class's zone for every race, so a zone can be chosen for each race"
+		"description": "Button in the class editor that takes away the class's area for every race, so an area can be chosen for each race"
+	},
+	"editor.class.clearRaceArea": {
+		"defaultMessage": "Clear",
+		"description": "Button in the class editor, beside a race's name, that takes away the class's area for that race so the race's own is used"
+	},
+	"editor.class.clearRaceAreaLabel": {
+		"defaultMessage": "Clear the starting area for {race}",
+		"description": "Name of the button that takes away the class's area for one race, for screen readers; {race} is the race's name"
 	},
 	"editor.class.confirmDelete": {
 		"defaultMessage": "Delete {class}? This can't be undone.",
 		"description": "Asks before deleting a character class made for this universe; {class} is its name"
 	},
 	"editor.class.confirmRestore": {
-		"defaultMessage": "Restore {class} to the ruleset's default? Your changes to it, including its starting money, equipment and zones, will be lost.",
+		"defaultMessage": "Restore {class} to the ruleset's default? Your changes to it, including its starting money, equipment and areas, will be lost.",
 		"description": "Asks before undoing this universe's changes to one of the ruleset's character classes; {class} is its name"
 	},
 	"editor.class.delete": {
@@ -399,13 +567,13 @@
 		"defaultMessage": "Suggested to players when they arrange their ability scores.",
 		"description": "Explains the class editor's Primary ability field"
 	},
-	"editor.class.raceZones": {
-		"defaultMessage": "Starting zone by race",
+	"editor.class.raceAreas": {
+		"defaultMessage": "Starting area by race",
 		"description": "Heading of the class editor's list of where the class's members of each race start"
 	},
-	"editor.class.raceZonesNote": {
-		"defaultMessage": "All members of this class, whatever their race, start in the class's zone.",
-		"description": "Shown in the class editor while the class has a zone for every race, which turns off the zones for each race"
+	"editor.class.raceAreasNote": {
+		"defaultMessage": "All members of this class, whatever their race, start in the class's area.",
+		"description": "Shown in the class editor while the class has an area for every race, which turns off the areas for each race"
 	},
 	"editor.class.restore": {
 		"defaultMessage": "Restore Default",
@@ -419,6 +587,10 @@
 		"defaultMessage": "Could not save the class.",
 		"description": "Shown in the class editor when the character class couldn't be stored"
 	},
+	"editor.class.startingArea": {
+		"defaultMessage": "Starting area: {area}",
+		"description": "Shows the area every member of a character class starts in, whatever their race; {area} is the area's name"
+	},
 	"editor.class.startingEquipment": {
 		"defaultMessage": "Extra starting equipment",
 		"description": "Heading of the list of items a character class's members get on top of what every character and their race start with"
@@ -427,17 +599,9 @@
 		"defaultMessage": "Extra starting money",
 		"description": "Label of the field for the money a character class's members get on top of what every character and their race start with"
 	},
-	"editor.class.startingZone": {
-		"defaultMessage": "Starting zone: {zone}",
-		"description": "Shows the zone every member of a character class starts in, whatever their race; {zone} is the zone's name"
-	},
 	"editor.class.tradition": {
 		"defaultMessage": "Magic tradition",
 		"description": "Label of the field for where a character class's magic comes from: none, arcane or divine"
-	},
-	"editor.class.zoneByRace": {
-		"defaultMessage": "Decided by race (below)",
-		"description": "Shown in the class editor as the class's starting zone when it has none for every race, so each race's zone listed below it is used"
 	},
 	"editor.classes.add": {
 		"defaultMessage": "Add Class",
@@ -673,15 +837,15 @@
 	},
 	"editor.link.addReturn": {
 		"defaultMessage": "Add a return link that leads back to this cell",
-		"description": "Checkbox that also places a link in the other zone leading back"
+		"description": "Checkbox that also places a link in the other area leading back"
 	},
 	"editor.link.addTitle": {
 		"defaultMessage": "Add a link at {column}, {row}",
-		"description": "Title of the dialog for adding a zone link to a cell; {column} and {row} are the cell's coordinates"
+		"description": "Title of the dialog for adding an area link to a cell; {column} and {row} are the cell's coordinates"
 	},
 	"editor.link.automatic": {
 		"defaultMessage": "Take them through (automatic)",
-		"description": "Choice for a zone link that moves the player to the other zone as soon as they step onto it"
+		"description": "Choice for an area link that moves the player to the other area as soon as they step onto it"
 	},
 	"editor.link.chooseDestination": {
 		"defaultMessage": "Click the map to choose the destination.",
@@ -689,11 +853,11 @@
 	},
 	"editor.link.confirmDelete": {
 		"defaultMessage": "Delete the link at {column}, {row}?",
-		"description": "Asks before deleting a zone link; {column} and {row} are its cell's coordinates"
+		"description": "Asks before deleting an area link; {column} and {row} are its cell's coordinates"
 	},
 	"editor.link.delete": {
 		"defaultMessage": "Delete Link",
-		"description": "Button that deletes the zone link being edited"
+		"description": "Button that deletes the area link being edited"
 	},
 	"editor.link.deleteFailed": {
 		"defaultMessage": "Could not delete the link.",
@@ -713,11 +877,11 @@
 	},
 	"editor.link.manual": {
 		"defaultMessage": "Offer to take them through (manual)",
-		"description": "Choice for a zone link that asks the player whether to go to the other zone"
+		"description": "Choice for an area link that asks the player whether to go to the other area"
 	},
 	"editor.link.mode": {
 		"defaultMessage": "When a player steps onto the cell",
-		"description": "Heading of the choice of what a zone link does when a player steps onto its cell"
+		"description": "Heading of the choice of what an area link does when a player steps onto its cell"
 	},
 	"editor.link.needDestination": {
 		"defaultMessage": "Click the map to choose where the link goes.",
@@ -727,9 +891,9 @@
 		"defaultMessage": "Click the map to place the return link, or don't add one.",
 		"description": "Shown when Save is pressed with a return link asked for but not placed"
 	},
-	"editor.link.noOtherZones": {
-		"defaultMessage": "Add another zone to link to first.",
-		"description": "Shown in the link dialog when the universe has only the zone being edited"
+	"editor.link.noOtherAreas": {
+		"defaultMessage": "Add another area to link to first.",
+		"description": "Shown in the link dialog when the universe has only the area being edited"
 	},
 	"editor.link.pick": {
 		"defaultMessage": "Clicking the map below chooses",
@@ -752,7 +916,7 @@
 		"description": "Explains how to choose a cell on the link dialog's map with the keyboard; the keys are the same in every language"
 	},
 	"editor.link.previewLabel": {
-		"defaultMessage": "Map of the zone the link goes to",
+		"defaultMessage": "Map of the area the link goes to",
 		"description": "Name of the map in the link dialog, for screen readers, where clicking chooses the link's destination or return cell"
 	},
 	"editor.link.returnCell": {
@@ -767,33 +931,37 @@
 		"defaultMessage": "Could not save the link.",
 		"description": "Shown in the link dialog when the link couldn't be stored"
 	},
-	"editor.link.showZoneFailed": {
-		"defaultMessage": "Could not show that zone.",
-		"description": "Shown in the link dialog when the map of the zone the link goes to couldn't be loaded"
+	"editor.link.showAreaFailed": {
+		"defaultMessage": "Could not show that area.",
+		"description": "Shown in the link dialog when the map of the area the link goes to couldn't be loaded"
 	},
 	"editor.link.target": {
 		"defaultMessage": "Goes to",
-		"description": "Label of the field for the zone a link leads to"
+		"description": "Label of the field for the area a link leads to"
 	},
 	"editor.link.title": {
 		"defaultMessage": "Link at {column}, {row}",
-		"description": "Title of the dialog for a cell's zone link; {column} and {row} are the cell's coordinates"
+		"description": "Title of the dialog for a cell's area link; {column} and {row} are the cell's coordinates"
 	},
 	"editor.link.wholeGroup": {
 		"defaultMessage": "Requires the whole group",
-		"description": "Checkbox for a zone link that can only be used when every member of the group is present"
+		"description": "Checkbox for an area link that can only be used when every member of the group is present"
 	},
-	"editor.lobby.editZone": {
-		"defaultMessage": "Edit the lobby's zone",
-		"description": "Button that opens the lobby in the zone editor"
+	"editor.lobby.editArea": {
+		"defaultMessage": "Edit the lobby's area",
+		"description": "Button that opens the lobby in the area editor"
 	},
 	"editor.lobby.explanation": {
-		"defaultMessage": "The lobby is where everyone in the universe meets before joining a group. It is a zone like any other, but isn't listed on the Zones tab.",
+		"defaultMessage": "The lobby is where everyone in the universe meets before joining a group. It is an area like any other, but isn't listed on the Areas tab.",
 		"description": "Explains the lobby on the editor's Lobby tab"
 	},
 	"editor.map.allSaved": {
 		"defaultMessage": "All changes saved",
 		"description": "Shown under the map once all painting is stored"
+	},
+	"editor.map.areaDefault": {
+		"defaultMessage": "{tile} (the area's default)",
+		"description": "A choice of tile to paint that is the area's default tile; {tile} is its name"
 	},
 	"editor.map.brush.circle": {
 		"defaultMessage": "circle",
@@ -821,7 +989,7 @@
 	},
 	"editor.map.cellWithLink": {
 		"defaultMessage": "{column}, {row}: {contents} ({mode, select, automatic {automatic link} other {manual link}})",
-		"description": "Under the map, the cell under the pointer when it has a zone link: its coordinates, what it holds and the kind of link"
+		"description": "Under the map, the cell under the pointer when it has an area link: its coordinates, what it holds and the kind of link"
 	},
 	"editor.map.draw": {
 		"defaultMessage": "Draw",
@@ -853,7 +1021,7 @@
 	},
 	"editor.map.heading": {
 		"defaultMessage": "Map",
-		"description": "Heading of the zone's map editor"
+		"description": "Heading of the area's map editor"
 	},
 	"editor.map.help": {
 		"defaultMessage": "Drag with the right mouse button to look around, and zoom with the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link.",
@@ -901,22 +1069,22 @@
 	},
 	"editor.map.label": {
 		"defaultMessage": "Map",
-		"description": "Name of the zone's map in the map editor, for screen readers"
+		"description": "Name of the area's map in the map editor, for screen readers"
 	},
 	"editor.map.links": {
 		"defaultMessage": "Links",
-		"description": "Map tool that adds and changes links to other zones"
+		"description": "Map tool that adds and changes links to other areas"
 	},
 	"editor.map.loadFailed": {
 		"defaultMessage": "Could not load the map.",
-		"description": "Shown in the map editor or a map preview when part of a zone's map couldn't be loaded"
+		"description": "Shown in the map editor or a map preview when part of an area's map couldn't be loaded"
 	},
 	"editor.map.loadLinksFailed": {
 		"defaultMessage": "Could not load the links.",
-		"description": "Shown in the map editor when the zone's links couldn't be loaded"
+		"description": "Shown in the map editor when the area's links couldn't be loaded"
 	},
 	"editor.map.paintingNotSaved": {
-		"defaultMessage": "Could not save some of your painting. Open the zone again to see the map as it is saved.",
+		"defaultMessage": "Could not save some of your painting. Open the area again to see the map as it is saved.",
 		"description": "Shown in the map editor when painting couldn't be stored"
 	},
 	"editor.map.redo": {
@@ -955,10 +1123,6 @@
 		"defaultMessage": "Void",
 		"description": "A cell with nothing in it, drawn black, which can't be walked into; also a choice of what to paint"
 	},
-	"editor.map.zoneDefault": {
-		"defaultMessage": "{tile} (the zone's default)",
-		"description": "A choice of tile to paint that is the zone's default tile; {tile} is its name"
-	},
 	"editor.openFailed": {
 		"defaultMessage": "Could not open the universe.",
 		"description": "Shown in the editor when the universe couldn't be loaded"
@@ -981,7 +1145,7 @@
 	},
 	"editor.passageOfTime": {
 		"defaultMessage": "Passage of time",
-		"description": "Label of the field for how the time of day changes in a universe or zone"
+		"description": "Label of the field for how the time of day changes in a universe or area"
 	},
 	"editor.play": {
 		"defaultMessage": "Enter Universe",
@@ -995,24 +1159,24 @@
 		"defaultMessage": "Add Race",
 		"description": "Title of the race editor when making a new race"
 	},
+	"editor.race.chooseArea": {
+		"defaultMessage": "Choose Area",
+		"description": "Button in the race editor that opens the dialog for choosing the area the race's characters start in"
+	},
 	"editor.race.chooseEquipment": {
 		"defaultMessage": "Choose Equipment",
 		"description": "Button in the race editor that opens the dialog for choosing the items the race's characters also start with"
 	},
-	"editor.race.chooseZone": {
-		"defaultMessage": "Choose Zone",
-		"description": "Button in the race editor that opens the dialog for choosing the zone the race's characters start in"
-	},
-	"editor.race.clearZone": {
-		"defaultMessage": "Use the Universe's Zone",
-		"description": "Button in the race editor that takes away the race's starting zone, so its characters start in the universe's"
+	"editor.race.clearArea": {
+		"defaultMessage": "Use the Universe's Area",
+		"description": "Button in the race editor that takes away the race's starting area, so its characters start in the universe's"
 	},
 	"editor.race.confirmDelete": {
 		"defaultMessage": "Delete {race}? This can't be undone.",
 		"description": "Asks before deleting a race made for this universe; {race} is its name"
 	},
 	"editor.race.confirmRestore": {
-		"defaultMessage": "Restore {race} to the ruleset's default? Your changes to it, including its starting money, equipment and zone, will be lost.",
+		"defaultMessage": "Restore {race} to the ruleset's default? Your changes to it, including its starting money, equipment and area, will be lost.",
 		"description": "Asks before undoing this universe's changes to one of the ruleset's races; {race} is its name"
 	},
 	"editor.race.darkvision": {
@@ -1071,6 +1235,14 @@
 		"defaultMessage": "Size",
 		"description": "Label of the field for a race's size, such as small or medium"
 	},
+	"editor.race.startingArea": {
+		"defaultMessage": "Starting area: {area}",
+		"description": "Shows the area a race's characters start in; {area} is the area's name"
+	},
+	"editor.race.startingAreaHint": {
+		"defaultMessage": "Where the race's characters start, unless their class says otherwise.",
+		"description": "Explains the race editor's starting area"
+	},
 	"editor.race.startingEquipment": {
 		"defaultMessage": "Extra starting equipment",
 		"description": "Heading of the list of items a race's characters get on top of what every character starts with"
@@ -1078,14 +1250,6 @@
 	"editor.race.startingMoney": {
 		"defaultMessage": "Extra starting money",
 		"description": "Label of the field for the money a race's characters get on top of what every character starts with"
-	},
-	"editor.race.startingZone": {
-		"defaultMessage": "Starting zone: {zone}",
-		"description": "Shows the zone a race's characters start in; {zone} is the zone's name"
-	},
-	"editor.race.startingZoneHint": {
-		"defaultMessage": "Where the race's characters start, unless their class says otherwise.",
-		"description": "Explains the race editor's starting zone"
 	},
 	"editor.races.add": {
 		"defaultMessage": "Add Race",
@@ -1125,7 +1289,7 @@
 	},
 	"editor.resize.discardWarning": {
 		"defaultMessage": "The smaller map would discard {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# link} other {# links}}. Resize anyway?",
-		"description": "Warns before making a map smaller loses cells painted with something other than the default tile, and zone links"
+		"description": "Warns before making a map smaller loses cells painted with something other than the default tile, and area links"
 	},
 	"editor.resize.east": {
 		"defaultMessage": "East",
@@ -1207,6 +1371,18 @@
 		"defaultMessage": "Ammunition is used up",
 		"description": "Checkbox for whether arrows and other ammunition are used up when fired"
 	},
+	"editor.startingArea.loadFailed": {
+		"defaultMessage": "Could not load the areas' names.",
+		"description": "Shown in the race or class editor when the names of the areas characters start in couldn't be loaded"
+	},
+	"editor.startingArea.races": {
+		"defaultMessage": "{area} (the race's)",
+		"description": "Shown in the class editor as where the class's characters of one race start when the class has no area for that race, so they start in the race's; {area} is that area's name"
+	},
+	"editor.startingArea.universes": {
+		"defaultMessage": "{area} (the universe's)",
+		"description": "Shown as a race's or class's starting area when it has none of its own, so its characters start in the universe's; {area} is that area's name"
+	},
 	"editor.startingItems.item": {
 		"defaultMessage": "{quantity, number} {item}",
 		"description": "One line of a list of starting equipment in the editor, e.g. 20 Arrows; {item} is the item's name. Change only to reorder the two"
@@ -1215,17 +1391,9 @@
 		"defaultMessage": "Could not load the starting equipment.",
 		"description": "Shown in the editor when the items characters start with (the universe's, a race's or a class's) couldn't be loaded"
 	},
-	"editor.startingZone.loadFailed": {
-		"defaultMessage": "Could not load the zones' names.",
-		"description": "Shown in the race or class editor when the names of the zones characters start in couldn't be loaded"
-	},
-	"editor.startingZone.races": {
-		"defaultMessage": "{zone} (the race's)",
-		"description": "Shown in the class editor as where the class's characters of one race start when the class has no zone for that race, so they start in the race's; {zone} is that zone's name"
-	},
-	"editor.startingZone.universes": {
-		"defaultMessage": "{zone} (the universe's)",
-		"description": "Shown as a race's or class's starting zone when it has none of its own, so its characters start in the universe's; {zone} is that zone's name"
+	"editor.tab.areas": {
+		"defaultMessage": "Areas",
+		"description": "Tab of the editor listing the universe's areas (places with their own map)"
 	},
 	"editor.tab.characters": {
 		"defaultMessage": "Characters",
@@ -1262,10 +1430,6 @@
 	"editor.tab.unsavedChanges": {
 		"defaultMessage": "(unsaved changes)",
 		"description": "Read out by screen readers after the name of an editor tab whose form has changes that haven't been saved; a dot shows it on screen"
-	},
-	"editor.tab.zones": {
-		"defaultMessage": "Zones",
-		"description": "Tab of the editor listing the universe's zones (areas with their own map)"
 	},
 	"editor.tile.addTitle": {
 		"defaultMessage": "Add Tile",
@@ -1308,7 +1472,7 @@
 		"description": "Title of the tile editor for a tile the player can change; {tile} is its name"
 	},
 	"editor.tile.indoorsHint": {
-		"defaultMessage": "A preference, not a restriction: outdoor zones list outdoor tiles first.",
+		"defaultMessage": "A preference, not a restriction: outdoor areas list outdoor tiles first.",
 		"description": "Explains what choosing indoors or outdoors does for a tile"
 	},
 	"editor.tile.invalidColor": {
@@ -1451,176 +1615,20 @@
 		"defaultMessage": "Edit {universe}",
 		"description": "Heading of the world editor; {universe} is the universe's name"
 	},
-	"editor.zone.back": {
-		"defaultMessage": "Back to Zones",
-		"description": "Button that closes the zone editor and goes back to the list of zones"
+	"error.areaInsideItself": {
+		"defaultMessage": "An area can't be inside itself.",
+		"description": "Why an area's settings were refused: the parent chosen is the area itself or an area inside it"
 	},
-	"editor.zone.children": {
-		"defaultMessage": "Zones inside this one",
-		"description": "Heading of the list of zones inside the zone being edited"
+	"error.areaLimit": {
+		"defaultMessage": "A universe can have at most {max, plural, one {# area} other {# areas}}.",
+		"description": "Why a new area wasn't made: the universe has as many areas as allowed"
 	},
-	"editor.zone.confirmDelete": {
-		"defaultMessage": "Delete {zone}, its map and every link into it? Zones inside it become top-level zones. This can't be undone.",
-		"description": "Asks before deleting a zone; {zone} is its name"
-	},
-	"editor.zone.defaultTile": {
-		"defaultMessage": "Default tile",
-		"description": "Label of the field for the tile a zone's map is filled with where nothing else is painted"
-	},
-	"editor.zone.delete": {
-		"defaultMessage": "Delete Zone",
-		"description": "Button that deletes the zone being edited"
-	},
-	"editor.zone.deleteFailed": {
-		"defaultMessage": "Could not delete the zone.",
-		"description": "Shown in the zone editor when the zone couldn't be deleted"
-	},
-	"editor.zone.enabled": {
-		"defaultMessage": "Enabled",
-		"description": "Checkbox for whether players can go into the zone"
-	},
-	"editor.zone.faerieCantLoop": {
-		"defaultMessage": "A zone whose passage of time is faerie can't loop.",
-		"description": "Explains why the loop checkboxes are disabled"
-	},
-	"editor.zone.indoorTiles": {
-		"defaultMessage": "Indoor tiles",
-		"description": "Heading of a group of choices of default tile"
-	},
-	"editor.zone.loading": {
-		"defaultMessage": "Loading...",
-		"description": "Heading of the zone editor while the zone loads"
-	},
-	"editor.zone.lobbyTitle": {
-		"defaultMessage": "{zone} (the lobby)",
-		"description": "Heading of the zone editor for the universe's lobby; {zone} is its name"
-	},
-	"editor.zone.loopsEastWest": {
-		"defaultMessage": "Loops east-west",
-		"description": "Checkbox for a zone whose map wraps around, so walking off the east edge comes back on the west"
-	},
-	"editor.zone.loopsNorthSouth": {
-		"defaultMessage": "Loops north-south",
-		"description": "Checkbox for a zone whose map wraps around, so walking off the north edge comes back on the south"
-	},
-	"editor.zone.noParent": {
-		"defaultMessage": "None (a top-level zone)",
-		"description": "Choice of parent zone for a zone that isn't inside another"
-	},
-	"editor.zone.openFailed": {
-		"defaultMessage": "Could not open the zone.",
-		"description": "Shown in the zone editor when the zone couldn't be loaded"
-	},
-	"editor.zone.outdoorTiles": {
-		"defaultMessage": "Outdoor tiles",
-		"description": "Heading of a group of choices of default tile"
-	},
-	"editor.zone.parent": {
-		"defaultMessage": "Parent zone",
-		"description": "Label of the field for the zone this one is inside"
-	},
-	"editor.zone.parentDisabled": {
-		"defaultMessage": "This zone is inside {zones}, which {count, plural, one {is} other {are}} disabled.",
-		"description": "Warns that players can't reach the zone; {zones} lists the zones it is inside that are disabled, and {count} is how many"
-	},
-	"editor.zone.saveFailed": {
-		"defaultMessage": "Could not save the zone.",
-		"description": "Shown in the zone editor when the zone's settings couldn't be stored"
-	},
-	"editor.zone.size": {
-		"defaultMessage": "The map is {height, number} tall x {width, number} wide.",
-		"description": "The size of the zone's map, in cells"
-	},
-	"editor.zoneAdd.failed": {
-		"defaultMessage": "Could not add the zone.",
-		"description": "Shown in the Add Zone dialog when the zone couldn't be made"
-	},
-	"editor.zoneAdd.submit": {
-		"defaultMessage": "Add",
-		"description": "Button that makes the new zone"
-	},
-	"editor.zoneAdd.title": {
-		"defaultMessage": "Add Zone",
-		"description": "Title of the dialog for making a new zone"
-	},
-	"editor.zoneSelect.disabled": {
-		"defaultMessage": "Disabled",
-		"description": "In the dialog for choosing a zone, under the name of a zone players can't go into"
-	},
-	"editor.zoneSelect.inside": {
-		"defaultMessage": "Inside {zone}",
-		"description": "In the dialog for choosing a zone, under a zone's name: the zone it is inside; {zone} is that zone's name"
-	},
-	"editor.zoneSelect.loadFailed": {
-		"defaultMessage": "Could not load the zones.",
-		"description": "Shown in the dialog for choosing a zone when the universe's zones couldn't be loaded"
-	},
-	"editor.zoneSelect.none": {
-		"defaultMessage": "No zones match.",
-		"description": "Shown in the dialog for choosing a zone when no zone's name matches the search"
-	},
-	"editor.zoneSelect.results": {
-		"defaultMessage": "Zones",
-		"description": "Name of the list of zones to choose from, for screen readers"
-	},
-	"editor.zoneSelect.search": {
-		"defaultMessage": "Search by name",
-		"description": "Shown in the empty field that narrows the zones down by name"
-	},
-	"editor.zoneSelect.searchLabel": {
-		"defaultMessage": "Search zones by name",
-		"description": "Name of the field that narrows the zones down by name, for screen readers"
-	},
-	"editor.zoneSelect.submit": {
-		"defaultMessage": "Choose",
-		"description": "Button that chooses the zone selected in the dialog"
-	},
-	"editor.zoneSelect.summary": {
-		"defaultMessage": "{indoors, select, true {Indoors} other {Outdoors}}, {height, number} tall by {width, number} wide",
-		"description": "In the dialog for choosing a zone, describes the chosen zone under its map preview; {height} and {width} are its size in cells"
-	},
-	"editor.zoneSelect.title": {
-		"defaultMessage": "Choose a Zone",
-		"description": "Title of the dialog for choosing one of the universe's zones"
-	},
-	"editor.zones.add": {
-		"defaultMessage": "Add Zone",
-		"description": "Button that opens the dialog for making a new zone"
-	},
-	"editor.zones.disabledTag": {
-		"defaultMessage": "disabled",
-		"description": "Under a zone in the list of zones, for a zone players can't go into"
-	},
-	"editor.zones.heading": {
-		"defaultMessage": "Zones",
-		"description": "Heading of the list of the universe's zones"
-	},
-	"editor.zones.indoorsTag": {
-		"defaultMessage": "indoors",
-		"description": "Under a zone in the list of zones, for a zone that is indoors"
-	},
-	"editor.zones.listFailed": {
-		"defaultMessage": "Could not list the zones.",
-		"description": "Shown on the Zones tab when the zones couldn't be loaded"
-	},
-	"editor.zones.none": {
-		"defaultMessage": "There are no zones besides the lobby.",
-		"description": "Shown instead of the list of zones when the universe only has its lobby"
-	},
-	"editor.zones.outdoorsTag": {
-		"defaultMessage": "outdoors",
-		"description": "Under a zone in the list of zones, for a zone that is outdoors"
-	},
-	"editor.zones.startingZoneTag": {
-		"defaultMessage": "starting zone",
-		"description": "Under a zone in the list of zones, for the zone new characters start in"
-	},
-	"error.cantDeleteZone": {
-		"defaultMessage": "The lobby and starting zones can't be deleted.",
-		"description": "Why a zone couldn't be deleted: the universe needs it"
+	"error.cantDeleteArea": {
+		"defaultMessage": "The lobby and starting areas can't be deleted.",
+		"description": "Why an area couldn't be deleted: the universe needs it"
 	},
 	"error.cellOutOfBounds": {
-		"defaultMessage": "Every cell must be inside the zone's map.",
+		"defaultMessage": "Every cell must be inside the area's map.",
 		"description": "Why painting was refused: some cells are outside the map, perhaps because another editor made it smaller"
 	},
 	"error.characterLimit": {
@@ -1644,8 +1652,8 @@
 		"description": "Why a new character wasn't made: the class chosen was deleted or disabled while the player was making the character"
 	},
 	"error.faerieCantLoop": {
-		"defaultMessage": "A zone whose passage of time is faerie can't loop.",
-		"description": "Why a zone's settings were refused: faerie time and a map that wraps around can't be combined"
+		"defaultMessage": "An area whose passage of time is faerie can't loop.",
+		"description": "Why an area's settings were refused: faerie time and a map that wraps around can't be combined"
 	},
 	"error.faerieMorningMismatch": {
 		"defaultMessage": "Where morning is must be chosen when, and only when, the passage of time is faerie.",
@@ -1680,20 +1688,20 @@
 		"description": "Why an item the universe added couldn't be saved: its name was left out"
 	},
 	"error.linkOutOfBounds": {
-		"defaultMessage": "The link's cell must be inside the zone's map.",
-		"description": "Why a zone link was refused: its cell is outside the map, perhaps because another editor made it smaller"
+		"defaultMessage": "The link's cell must be inside the area's map.",
+		"description": "Why an area link was refused: its cell is outside the map, perhaps because another editor made it smaller"
 	},
 	"error.linkTargetNotInUniverse": {
-		"defaultMessage": "A link must go to another zone of this universe.",
-		"description": "Why a zone link was refused: the zone it leads to doesn't exist or is in another universe"
+		"defaultMessage": "A link must go to another area of this universe.",
+		"description": "Why an area link was refused: the area it leads to doesn't exist or is in another universe"
 	},
 	"error.linkTargetOutOfBounds": {
-		"defaultMessage": "Where the link goes must be inside the other zone's map.",
-		"description": "Why a zone link was refused: the cell it leads to is outside the other zone's map"
+		"defaultMessage": "Where the link goes must be inside the other area's map.",
+		"description": "Why an area link was refused: the cell it leads to is outside the other area's map"
 	},
-	"error.linkToSameZone": {
-		"defaultMessage": "A link must go to another zone.",
-		"description": "Why a zone link was refused: it leads to the zone it is in"
+	"error.linkToSameArea": {
+		"defaultMessage": "A link must go to another area.",
+		"description": "Why an area link was refused: it leads to the area it is in"
 	},
 	"error.logInFirst": {
 		"defaultMessage": "Log in first.",
@@ -1707,6 +1715,10 @@
 		"defaultMessage": "A universe needs at least one enabled race, so new characters have one to be.",
 		"description": "Why a race couldn't be disabled or deleted: it is the last race new characters can choose"
 	},
+	"error.noSuchArea": {
+		"defaultMessage": "The area doesn't exist.",
+		"description": "Why a request about an area failed: it was deleted, perhaps by another editor"
+	},
 	"error.noSuchClass": {
 		"defaultMessage": "The class doesn't exist.",
 		"description": "Why a request about a character class (such as fighter or wizard) failed: it was deleted, perhaps by another editor"
@@ -1717,7 +1729,7 @@
 	},
 	"error.noSuchLink": {
 		"defaultMessage": "There is no link on that cell.",
-		"description": "Why a zone link couldn't be deleted: it was already gone, perhaps deleted by another editor"
+		"description": "Why an area link couldn't be deleted: it was already gone, perhaps deleted by another editor"
 	},
 	"error.noSuchRace": {
 		"defaultMessage": "The race doesn't exist.",
@@ -1731,17 +1743,13 @@
 		"defaultMessage": "The universe doesn't exist, or you can't see it.",
 		"description": "Why a request about a universe failed: it was deleted, or the player has no access to it"
 	},
-	"error.noSuchZone": {
-		"defaultMessage": "The zone doesn't exist.",
-		"description": "Why a request about a zone failed: it was deleted, perhaps by another editor"
-	},
 	"error.otherOrigin": {
 		"defaultMessage": "Changes aren't allowed from this website.",
 		"description": "Why an editor change was refused: it came from a page on another website"
 	},
 	"error.parentNotInUniverse": {
-		"defaultMessage": "The parent zone must be a zone of this universe.",
-		"description": "Why a zone's settings were refused: the zone chosen to hold it doesn't exist"
+		"defaultMessage": "The parent area must be an area of this universe.",
+		"description": "Why an area's settings were refused: the area chosen to hold it doesn't exist"
 	},
 	"error.raceInUse": {
 		"defaultMessage": "Characters are this race, so it can't be deleted. Disable it instead.",
@@ -1777,7 +1785,7 @@
 	},
 	"error.tileInUse": {
 		"defaultMessage": "A map uses this tile, so it can't be deleted.",
-		"description": "Why a tile couldn't be deleted: some zone's map is painted with it"
+		"description": "Why a tile couldn't be deleted: some area's map is painted with it"
 	},
 	"error.tileLimit": {
 		"defaultMessage": "A universe can have at most {max, plural, one {# tile} other {# tiles}} of its own.",
@@ -1799,9 +1807,9 @@
 		"defaultMessage": "The universe's ruleset has no such type of item.",
 		"description": "Why an item couldn't be saved: the type chosen for it isn't one of the game rules' item types"
 	},
-	"error.unknownRaceZone": {
-		"defaultMessage": "A starting zone is chosen for a race this universe doesn't have.",
-		"description": "Why a character class's settings were refused: one of its zones for a race is for a race that was deleted, perhaps by another editor"
+	"error.unknownRaceArea": {
+		"defaultMessage": "A starting area is chosen for a race this universe doesn't have.",
+		"description": "Why a character class's settings were refused: one of its areas for a race is for a race that was deleted, perhaps by another editor"
 	},
 	"error.unreadableBody": {
 		"defaultMessage": "The request could not be read.",
@@ -1809,15 +1817,15 @@
 	},
 	"error.unusableDefaultTile": {
 		"defaultMessage": "The default tile must be a tile this universe can use.",
-		"description": "Why a zone's settings were refused: the default tile was deleted, perhaps by another editor"
+		"description": "Why an area's settings were refused: the default tile was deleted, perhaps by another editor"
+	},
+	"error.unusableStartingArea": {
+		"defaultMessage": "The starting area must be an area of this universe other than the lobby.",
+		"description": "Why a starting area (the universe's, a race's or a class's) was refused: the area chosen for characters to start in is the lobby, or was deleted, perhaps by another editor"
 	},
 	"error.unusableStartingItem": {
 		"defaultMessage": "The starting equipment holds an item this universe doesn't have.",
 		"description": "Why starting equipment (the universe's, a race's or a class's) was refused: one of its items was deleted, perhaps by another editor"
-	},
-	"error.unusableStartingZone": {
-		"defaultMessage": "The starting zone must be a zone of this universe other than the lobby.",
-		"description": "Why a starting zone (the universe's, a race's or a class's) was refused: the zone chosen for characters to start in is the lobby, or was deleted, perhaps by another editor"
 	},
 	"error.unusableTile": {
 		"defaultMessage": "One of the tiles painted isn't one this universe can use.",
@@ -1827,25 +1835,17 @@
 		"defaultMessage": "These settings are for a different ruleset than the universe's.",
 		"description": "Why a universe's ruleset settings were refused: they were made for another set of game rules"
 	},
-	"error.zoneInsideItself": {
-		"defaultMessage": "A zone can't be inside itself.",
-		"description": "Why a zone's settings were refused: the parent chosen is the zone itself or a zone inside it"
-	},
-	"error.zoneLimit": {
-		"defaultMessage": "A universe can have at most {max, plural, one {# zone} other {# zones}}.",
-		"description": "Why a new zone wasn't made: the universe has as many zones as allowed"
-	},
 	"form.discardChanges": {
 		"defaultMessage": "You have changes that haven't been saved. Discard them?",
 		"description": "Asked before closing a form or dialog that has unsaved changes; the browser's OK discards them and Cancel goes back to the form"
 	},
 	"form.indoors": {
 		"defaultMessage": "Indoors",
-		"description": "Choice for a zone or tile that is indoors"
+		"description": "Choice for an area or tile that is indoors"
 	},
 	"form.indoorsOrOutdoors": {
 		"defaultMessage": "Indoors or outdoors",
-		"description": "Heading of the choice between indoors and outdoors for a zone or tile"
+		"description": "Heading of the choice between indoors and outdoors for an area or tile"
 	},
 	"form.invalidText": {
 		"defaultMessage": "Use letters, numbers, spaces or punctuation.",
@@ -1861,11 +1861,11 @@
 	},
 	"form.name": {
 		"defaultMessage": "Name",
-		"description": "Label of the field for the name of a universe, zone or tile"
+		"description": "Label of the field for the name of a universe, area or tile"
 	},
 	"form.outdoors": {
 		"defaultMessage": "Outdoors",
-		"description": "Choice for a zone or tile that is outdoors"
+		"description": "Choice for an area or tile that is outdoors"
 	},
 	"form.save": {
 		"defaultMessage": "Save",
@@ -2223,6 +2223,10 @@
 		"defaultMessage": "{count, plural, one {{players} comes into view.} other {{players} come into view.}}",
 		"description": "Read out by screen readers when other players come into view on the map; {players} is a list of their names"
 	},
+	"map.announce.area": {
+		"defaultMessage": "You are in {area}.",
+		"description": "Read out by screen readers when the player comes into an area; {area} is its name"
+	},
 	"map.announce.blocked": {
 		"defaultMessage": "Something is in the way.",
 		"description": "Read out by screen readers when the player tries to move but can't, e.g. into a wall or another player"
@@ -2240,12 +2244,8 @@
 		"description": "Read out by screen readers in the list of players the player can see, for one in the same cell; {name} is their name"
 	},
 	"map.announce.position": {
-		"defaultMessage": "{zone}, column {column}, row {row}{onTile, select, yes {, on {tile}} other {}}. {count, plural, =0 {You can't see anyone else.} other {You can see {players}.}}",
-		"description": "Read out by screen readers when the player asks where they are: the zone's name, their cell, the tile they stand on (e.g. Grass) when it is known, and the other players they can see; {players} is a list of descriptions such as \"Bo, 3 cells northeast\""
-	},
-	"map.announce.zone": {
-		"defaultMessage": "You are in {zone}.",
-		"description": "Read out by screen readers when the player comes into a zone; {zone} is its name"
+		"defaultMessage": "{area}, column {column}, row {row}{onTile, select, yes {, on {tile}} other {}}. {count, plural, =0 {You can't see anyone else.} other {You can see {players}.}}",
+		"description": "Read out by screen readers when the player asks where they are: the area's name, their cell, the tile they stand on (e.g. Grass) when it is known, and the other players they can see; {players} is a list of descriptions such as \"Bo, 3 cells northeast\""
 	},
 	"map.ghost": {
 		"defaultMessage": "Ghost",
@@ -2269,7 +2269,7 @@
 	},
 	"map.keys.takeLink": {
 		"defaultMessage": "Go through a door or path you stand on",
-		"description": "In the list of keyboard shortcuts, what the E key does: takes the player to another zone through the link they stand on"
+		"description": "In the list of keyboard shortcuts, what the E key does: takes the player to another area through the link they stand on"
 	},
 	"map.label": {
 		"defaultMessage": "Map",
@@ -2277,7 +2277,7 @@
 	},
 	"map.takeLink": {
 		"defaultMessage": "Press E to go through",
-		"description": "Shown under the player on a cell linking to another zone, such as a door; the E key is the same in every language"
+		"description": "Shown under the player on a cell linking to another area, such as a door; the E key is the same in every language"
 	},
 	"markdown.bold": {
 		"defaultMessage": "Bold",
@@ -2867,9 +2867,9 @@
 		"defaultMessage": "west",
 		"description": "Where morning is in faerie time: the west edge of the map"
 	},
-	"universe.lobbyZoneName": {
+	"universe.lobbyAreaName": {
 		"defaultMessage": "Lobby",
-		"description": "Name given to the lobby zone of a new universe, which its creator can change"
+		"description": "Name given to the lobby area of a new universe, which its creator can change"
 	},
 	"universe.role.beta_tester": {
 		"defaultMessage": "beta tester",
@@ -2877,7 +2877,7 @@
 	},
 	"universe.role.builder": {
 		"defaultMessage": "builder",
-		"description": "Role of someone who can change a universe's world: its tiles, zones, maps and links"
+		"description": "Role of someone who can change a universe's world: its tiles, areas, maps and links"
 	},
 	"universe.role.creator": {
 		"defaultMessage": "creator",
@@ -2927,9 +2927,9 @@
 		"defaultMessage": "Open for testing. Its creators, builders and beta testers can play, and it isn't listed on Home.",
 		"description": "Shown under the stage \"prologue\" in the editor, explaining what it means"
 	},
-	"universe.startingZoneName": {
-		"defaultMessage": "Starting Zone",
-		"description": "Name given to the zone characters of a new universe start in, which its creator can change"
+	"universe.startingAreaName": {
+		"defaultMessage": "Starting Area",
+		"description": "Name given to the area characters of a new universe start in, which its creator can change"
 	},
 	"universe.time.always_dawn": {
 		"defaultMessage": "always dawn",
@@ -2956,7 +2956,7 @@
 		"description": "Passage of time where time passes as characters act"
 	},
 	"universe.time.inherit": {
-		"defaultMessage": "inherit from the parent zone",
-		"description": "Passage of time for a zone that uses its parent zone's setting, or the universe's"
+		"defaultMessage": "inherit from the parent area",
+		"description": "Passage of time for an area that uses its parent area's setting, or the universe's"
 	}
 }

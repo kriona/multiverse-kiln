@@ -27,6 +27,6 @@ export const mapMessages = defineMessages({
 	loadFailed: {
 		id: 'editor.map.loadFailed',
 		defaultMessage: 'Could not load the map.',
-		description: 'Shown in the map editor or a map preview when part of a zone\'s map couldn\'t be loaded'
+		description: 'Shown in the map editor or a map preview when part of an area\'s map couldn\'t be loaded'
 	}
 });

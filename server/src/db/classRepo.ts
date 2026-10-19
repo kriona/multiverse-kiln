@@ -1,13 +1,13 @@
 /**
  * Classes: the only module that reads or writes the classes, pf1e_classes, class_starting_items and
- * class_race_zones tables
+ * class_race_areas tables
  */
 import { and, asc, count, eq, isNull, or } from 'drizzle-orm';
-import type { ClassRaceZone, ClassSettings, EditorClass, ItemQuantity, Ruleset } from '@multiverse-kiln/shared';
+import type { ClassRaceArea, ClassSettings, EditorClass, ItemQuantity, Ruleset } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { fromCoinColumns, toCoinColumns } from './coinColumns.js';
-import { classes, classRaceZones, classStartingItems, pf1eClasses } from './schema.js';
+import { classes, classRaceAreas, classStartingItems, pf1eClasses } from './schema.js';
 
 /**
  * The settings of a class a universe added, which always has a name of its own
@@ -68,7 +68,7 @@ export async function loadEditorClasses(universeId: string, ruleset: Ruleset, ex
 			startingGold: classes.startingGold,
 			startingSilver: classes.startingSilver,
 			startingCopper: classes.startingCopper,
-			startingZoneId: classes.startingZoneId,
+			startingAreaId: classes.startingAreaId,
 			primaryAbility: pf1eClasses.primaryAbility,
 			tradition: pf1eClasses.tradition,
 			castingStyle: pf1eClasses.castingStyle
@@ -84,7 +84,7 @@ export async function loadEditorClasses(universeId: string, ruleset: Ruleset, ex
 		))
 		.orderBy(asc(classes.id));
 	const startingItems = await loadClassStartingItems(universeId, executor);
-	const raceZones = await loadClassRaceZones(universeId, executor);
+	const raceAreas = await loadClassRaceAreas(universeId, executor);
 	const copies = new Map(rows
 		.filter((row) => (row.overridesClassId !== null))
 		.map((row) => [row.overridesClassId, row]));
@@ -104,8 +104,8 @@ export async function loadEditorClasses(universeId: string, ruleset: Ruleset, ex
 				enabled: settings.enabled,
 				startingMoney: fromCoinColumns(settings),
 				startingItems: (startingItems.get(settings.id) ?? []),
-				startingZoneId: settings.startingZoneId,
-				raceZones: (raceZones.get(settings.id) ?? []),
+				startingAreaId: settings.startingAreaId,
+				raceAreas: (raceAreas.get(settings.id) ?? []),
 				rules: {
 					primaryAbility: settings.primaryAbility,
 					tradition: settings.tradition,
@@ -151,25 +151,25 @@ async function loadClassStartingItems(universeId: string, executor: Executor): P
  *
  * @param universeId The universe's ID
  * @param executor The database, or a transaction
- * @return The zones, by race ID, keyed by the ID of the row holding the class's settings
+ * @return The areas, by race ID, keyed by the ID of the row holding the class's settings
  */
-async function loadClassRaceZones(universeId: string, executor: Executor): Promise<Map<number, ClassRaceZone[]>>
+async function loadClassRaceAreas(universeId: string, executor: Executor): Promise<Map<number, ClassRaceArea[]>>
 {
 	const rows = await executor
 		.select({
-			classId: classRaceZones.classId,
-			raceId: classRaceZones.raceId,
-			zoneId: classRaceZones.zoneId
+			classId: classRaceAreas.classId,
+			raceId: classRaceAreas.raceId,
+			areaId: classRaceAreas.areaId
 		})
-		.from(classRaceZones)
-		.innerJoin(classes, eq(classes.id, classRaceZones.classId))
+		.from(classRaceAreas)
+		.innerJoin(classes, eq(classes.id, classRaceAreas.classId))
 		.where(eq(classes.universeId, universeId))
-		.orderBy(asc(classRaceZones.raceId));
-	const byClass = new Map<number, ClassRaceZone[]>();
+		.orderBy(asc(classRaceAreas.raceId));
+	const byClass = new Map<number, ClassRaceArea[]>();
 
-	for (const { classId, raceId, zoneId } of rows)
+	for (const { classId, raceId, areaId } of rows)
 	{
-		byClass.set(classId, [...(byClass.get(classId) ?? []), { raceId, zoneId }]);
+		byClass.set(classId, [...(byClass.get(classId) ?? []), { raceId, areaId }]);
 	}
 
 	return(byClass);
@@ -372,18 +372,18 @@ export async function isClassStartingItem(universeId: string, itemId: number, ex
  * @param settings The settings
  * @return The columns' values
  */
-function classColumns(settings: ClassSettings): Pick<typeof classes.$inferInsert, 'name' | 'enabled' | 'startingPlatinum' | 'startingGold' | 'startingSilver' | 'startingCopper' | 'startingZoneId'>
+function classColumns(settings: ClassSettings): Pick<typeof classes.$inferInsert, 'name' | 'enabled' | 'startingPlatinum' | 'startingGold' | 'startingSilver' | 'startingCopper' | 'startingAreaId'>
 {
 	return({
 		name: settings.name,
 		enabled: settings.enabled,
 		...toCoinColumns(settings.startingMoney),
-		startingZoneId: settings.startingZoneId
+		startingAreaId: settings.startingAreaId
 	});
 }
 
 /**
- * Stores the rules, extra starting equipment and per-race zones of a row of class settings, replacing
+ * Stores the rules, extra starting equipment and per-race areas of a row of class settings, replacing
  * what it had
  *
  * @param classId The ID of the row holding the class's settings
@@ -406,8 +406,8 @@ async function saveClassDetails(classId: number, settings: ClassSettings, execut
 		.delete(classStartingItems)
 		.where(eq(classStartingItems.classId, classId));
 	await executor
-		.delete(classRaceZones)
-		.where(eq(classRaceZones.classId, classId));
+		.delete(classRaceAreas)
+		.where(eq(classRaceAreas.classId, classId));
 
 	if (settings.startingItems.length > 0)
 	{
@@ -420,14 +420,14 @@ async function saveClassDetails(classId: number, settings: ClassSettings, execut
 			})));
 	}
 
-	if (settings.raceZones.length > 0)
+	if (settings.raceAreas.length > 0)
 	{
 		await executor
-			.insert(classRaceZones)
-			.values(settings.raceZones.map(({ raceId, zoneId }) => ({
+			.insert(classRaceAreas)
+			.values(settings.raceAreas.map(({ raceId, areaId }) => ({
 				classId,
 				raceId,
-				zoneId
+				areaId
 			})));
 	}
 }

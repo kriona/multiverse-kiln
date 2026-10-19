@@ -5,11 +5,11 @@ import { CHUNK_SIZE, Player, ServerMessageType, type ChunksPayload, type MovePay
 import { chunksNear, type ChunkAreaMap } from '../logic/chunkArea.js';
 import { cellAt, findFreeCell, NO_PRESS, occupiedCells, stepOnGrid, type Cell, type DirectionPress, type GridStep, type IsCellFree, type Position } from '../logic/movement.js';
 import { CellOccupancy } from '../logic/occupancy.js';
-import { linkAt, type ZoneLink } from '../logic/zoneGrid.js';
-import type { ZoneChange } from '../world/zoneChanges.js';
+import { linkAt, type AreaLink } from '../logic/areaGrid.js';
+import type { AreaChange } from '../world/areaChanges.js';
 import { InputQueue } from './inputQueue.js';
 import { PlayerSessions } from './playerSessions.js';
-import { toChunkUpdates, toZonePayload, type ActiveZone, type ZoneCache } from './zoneCache.js';
+import { toChunkUpdates, toAreaPayload, type ActiveArea, type AreaCache } from './areaCache.js';
 
 /**
  * Simulation ticks per second, in every room with a map
@@ -25,7 +25,7 @@ export const SIMULATION_TICK_RATE = 30;
 export const CHUNK_REFRESH_INTERVAL_MS = 250;
 
 /**
- * How many cells around a player their zone's chunks are loaded and sent to them: about four of the
+ * How many cells around a player their area's chunks are loaded and sent to them: about four of the
  * client's views across
  */
 const CHUNK_LOAD_RADIUS = CHUNK_SIZE * 2;
@@ -65,7 +65,7 @@ export interface Appearance
 }
 
 /**
- * A player leaving the room, from ZonePlayers.leave()
+ * A player leaving the room, from AreaPlayers.leave()
  */
 export interface LeftPlayer
 {
@@ -78,28 +78,28 @@ export interface LeftPlayer
 }
 
 /**
- * The players on the map of a room with zones (a universe's lobby or a group's game room): which
- * clients control them, which zone each is in, how they move, and which of them each client sees
+ * The players on the map of a room with areas (a universe's lobby or a group's game room): which
+ * clients control them, which area each is in, how they move, and which of them each client sees
  *
- * Every window of the same browser controls the same player. A room holds every zone its players are
- * in; a client sees only the players in its own player's zone, through its StateView, and no other
+ * Every window of the same browser controls the same player. A room holds every area its players are
+ * in; a client sees only the players in its own player's area, through its StateView, and no other
  * player's ghost. Stepping onto an
- * automatic zone link, or asking to take the manual link the player stands on, sends the player to
- * the link's target cell once that zone has loaded. The room calls update() from its simulation tick
+ * automatic area link, or asking to take the manual link the player stands on, sends the player to
+ * the link's target cell once that area has loaded. The room calls update() from its simulation tick
  * and refreshChunks() every CHUNK_REFRESH_INTERVAL_MS
  *
- * Only the chunks of each zone's map near its players are loaded, and each player is sent the chunks
+ * Only the chunks of each area's map near its players are loaded, and each player is sent the chunks
  * near them as they move. Changes the world editor makes (applyChange) reach the players straight away
  */
-export class ZonePlayers
+export class AreaPlayers
 {
 	private readonly sessions = new PlayerSessions();
 	private readonly clients = new Map<string, Client>();
 
 	/**
-	 * The zone each player is in
+	 * The area each player is in
 	 */
-	private readonly zoneIds = new Map<string, string>();
+	private readonly areaIds = new Map<string, string>();
 
 	private readonly moveInputs = new InputQueue<MovePayload>(MAX_QUEUED_MOVES);
 
@@ -119,46 +119,46 @@ export class ZonePlayers
 	private readonly presses = new Map<string, DirectionPress>();
 
 	/**
-	 * Players waiting for the zone a link is taking them to; they don't move until they arrive
+	 * Players waiting for the area a link is taking them to; they don't move until they arrive
 	 */
 	private readonly travelling = new Set<string>();
 
 	/**
-	 * The chunks of their zone each player's clients have been sent, by chunkKey()
+	 * The chunks of their area each player's clients have been sent, by chunkKey()
 	 */
 	private readonly sentChunks = new Map<string, Set<string>>();
 
 	/**
 	 * @param players The room's synced players, which this adds to, moves and removes
-	 * @param zones The room's zones
-	 * @param fallbackZoneId The zone players go to when the zone they are in is deleted
+	 * @param areas The room's areas
+	 * @param fallbackAreaId The area players go to when the area they are in is deleted
 	 */
-	constructor(private readonly players: MapSchema<Player>, private readonly zones: ZoneCache, private readonly fallbackZoneId: () => string | undefined)
+	constructor(private readonly players: MapSchema<Player>, private readonly areas: AreaCache, private readonly fallbackAreaId: () => string | undefined)
 	{
 	}
 
 	/**
-	 * Loads the chunks a new player needs to be placed in a zone, around its center. Call it before join()
+	 * Loads the chunks a new player needs to be placed in an area, around its center. Call it before join()
 	 *
-	 * @param zone The zone
+	 * @param area The area
 	 */
-	async prepareStart(zone: ActiveZone): Promise<void>
+	async prepareStart(area: ActiveArea): Promise<void>
 	{
-		await this.zones.loadChunks(zone.loaded.zone.id, chunksNear([{ column: 0, row: 0 }], CHUNK_LOAD_RADIUS, areaOf(zone)));
+		await this.areas.loadChunks(area.loaded.area.id, chunksNear([{ column: 0, row: 0 }], CHUNK_LOAD_RADIUS, chunkMapOf(area)));
 	}
 
 	/**
 	 * Adds a joining client. A player new to the room is placed on the free cell nearest the start
-	 * zone's center; a player already here gets another window. Either way the client is told which
-	 * player it controls and which zone it is in
+	 * area's center; a player already here gets another window. Either way the client is told which
+	 * player it controls and which area it is in
 	 *
 	 * @param client The joining client
 	 * @param playerId The player the client controls
 	 * @param appearance How a player new to the room shows
-	 * @param startZone Where a player new to the room starts, with prepareStart() done
+	 * @param startArea Where a player new to the room starts, with prepareStart() done
 	 * @return Whether the player is new to the room
 	 */
-	join(client: Client, playerId: string, appearance: Appearance, startZone: ActiveZone): boolean
+	join(client: Client, playerId: string, appearance: Appearance, startArea: ActiveArea): boolean
 	{
 		const isNewPlayer = this.sessions.add(client.sessionId, playerId);
 
@@ -169,27 +169,27 @@ export class ZonePlayers
 
 			this.players.set(playerId, player);
 
-			const position = this.findArrivalCell(playerId, startZone, { column: 0, row: 0 });
+			const position = this.findArrivalCell(playerId, startArea, { column: 0, row: 0 });
 
 			if (!position)
 			{
 				this.players.delete(playerId);
 				this.sessions.remove(client.sessionId);
-				throw new Error(`No free cell for player ${playerId} in zone ${startZone.loaded.zone.id}`);
+				throw new Error(`No free cell for player ${playerId} in area ${startArea.loaded.area.id}`);
 			}
 
 			player.x = position.x;
 			player.y = position.y;
-			this.zoneIds.set(playerId, startZone.loaded.zone.id);
-			this.showToZone(playerId);
+			this.areaIds.set(playerId, startArea.loaded.area.id);
+			this.showToArea(playerId);
 		}
 
-		const zone = this.zoneOf(playerId);
+		const area = this.areaOf(playerId);
 
 		this.clients.set(client.sessionId, client);
 		client.view = new StateView();
 
-		for (const otherId of this.playersIn(this.zoneIds.get(playerId)))
+		for (const otherId of this.playersIn(this.areaIds.get(playerId)))
 		{
 			if ((otherId === playerId) || !this.isGhost(otherId))
 			{
@@ -201,9 +201,9 @@ export class ZonePlayers
 
 		client.send(ServerMessageType.Welcome, welcome);
 
-		if (zone)
+		if (area)
 		{
-			this.sendZone(playerId, zone, [client]);
+			this.sendArea(playerId, area, [client]);
 		}
 
 		return(isNewPlayer);
@@ -233,9 +233,9 @@ export class ZonePlayers
 
 		if (left.wasLastClient)
 		{
-			this.hideFromZone(left.playerId);
+			this.hideFromArea(left.playerId);
 			this.players.delete(left.playerId);
-			this.zoneIds.delete(left.playerId);
+			this.areaIds.delete(left.playerId);
 			this.steps.delete(left.playerId);
 			this.presses.delete(left.playerId);
 			this.travelling.delete(left.playerId);
@@ -277,14 +277,14 @@ export class ZonePlayers
 		}
 
 		const player = this.players.get(playerId);
-		const zone = this.zoneOf(playerId);
+		const area = this.areaOf(playerId);
 
-		if (!player || !zone)
+		if (!player || !area)
 		{
 			return;
 		}
 
-		const link = linkAt(zone.map, cellAt(player, zone.grid));
+		const link = linkAt(area.map, cellAt(player, area.grid));
 
 		if (link?.mode === 'manual')
 		{
@@ -294,7 +294,7 @@ export class ZonePlayers
 
 	/**
 	 * Changes how a player shows. A ghost becoming visible stops where they are, moving to the nearest
-	 * free cell if another player holds theirs, and appears to the others in their zone; a player becoming
+	 * free cell if another player holds theirs, and appears to the others in their area; a player becoming
 	 * a ghost disappears from the others' view
 	 *
 	 * @param playerId The player's ID
@@ -325,12 +325,12 @@ export class ZonePlayers
 			return;
 		}
 
-		const zone = this.zoneOf(playerId);
+		const area = this.areaOf(playerId);
 
 		// A travelling player is placed on a free cell when they arrive
-		if (zone && !this.travelling.has(playerId))
+		if (area && !this.travelling.has(playerId))
 		{
-			const position = this.findArrivalCell(playerId, zone, cellAt(player, zone.grid));
+			const position = this.findArrivalCell(playerId, area, cellAt(player, area.grid));
 
 			this.steps.delete(playerId);
 			this.presses.delete(playerId);
@@ -342,7 +342,7 @@ export class ZonePlayers
 			}
 		}
 
-		for (const otherId of this.playersIn(this.zoneIds.get(playerId)))
+		for (const otherId of this.playersIn(this.areaIds.get(playerId)))
 		{
 			if (otherId !== playerId)
 			{
@@ -352,7 +352,7 @@ export class ZonePlayers
 	}
 
 	/**
-	 * One simulation tick: applies queued inputs, then moves every player in their zone, and sends
+	 * One simulation tick: applies queued inputs, then moves every player in their area, and sends
 	 * players who stepped onto an automatic link on their way
 	 *
 	 * @param deltaSeconds Seconds since the previous tick
@@ -370,20 +370,20 @@ export class ZonePlayers
 				this.heldDirections.set(playerId, move);
 			}
 
-			const zoneId = this.zoneIds.get(playerId);
-			const zone = this.zoneOf(playerId);
+			const areaId = this.areaIds.get(playerId);
+			const area = this.areaOf(playerId);
 
-			if ((zoneId === undefined) || !zone || this.travelling.has(playerId))
+			if ((areaId === undefined) || !area || this.travelling.has(playerId))
 			{
 				continue;
 			}
 
-			let occupancy = occupancies.get(zoneId);
+			let occupancy = occupancies.get(areaId);
 
 			if (!occupancy)
 			{
-				occupancy = this.occupancyOf(zoneId);
-				occupancies.set(zoneId, occupancy);
+				occupancy = this.occupancyOf(areaId);
+				occupancies.set(areaId, occupancy);
 			}
 
 			const mover = stepOnGrid(
@@ -395,7 +395,7 @@ export class ZonePlayers
 				},
 				this.heldDirections.get(playerId) ?? standingStill,
 				deltaSeconds,
-				zone.grid,
+				area.grid,
 				(player.ghost ? anyCell : occupancy.isFreeFor(playerId))
 			);
 
@@ -414,10 +414,10 @@ export class ZonePlayers
 
 			if (!player.ghost)
 			{
-				occupancy.hold(playerId, occupiedCells(mover, zone.grid));
+				occupancy.hold(playerId, occupiedCells(mover, area.grid));
 			}
 
-			const link = (mover.stoppedAt ? linkAt(zone.map, mover.stoppedAt) : undefined);
+			const link = (mover.stoppedAt ? linkAt(area.map, mover.stoppedAt) : undefined);
 
 			if (link)
 			{
@@ -433,63 +433,63 @@ export class ZonePlayers
 	 */
 	refreshChunks(): void
 	{
-		for (const zone of this.zones.all())
+		for (const area of this.areas.all())
 		{
-			const zoneId = zone.loaded.zone.id;
-			const playerIds = this.playersIn(zoneId).filter((playerId) => !this.travelling.has(playerId));
+			const areaId = area.loaded.area.id;
+			const playerIds = this.playersIn(areaId).filter((playerId) => !this.travelling.has(playerId));
 			const cells = playerIds
-				.map((playerId) => this.cellOf(playerId, zone))
+				.map((playerId) => this.cellOf(playerId, area))
 				.filter((cell) => (cell !== undefined));
-			const area = areaOf(zone);
+			const chunkMap = chunkMapOf(area);
 
-			this.zones.dropChunks(zoneId, chunksNear(cells, CHUNK_KEEP_RADIUS, area));
+			this.areas.dropChunks(areaId, chunksNear(cells, CHUNK_KEEP_RADIUS, chunkMap));
 
 			for (const playerId of playerIds)
 			{
-				this.sendNearbyChunks(playerId, zone);
+				this.sendNearbyChunks(playerId, area);
 			}
 
-			this.zones.loadChunks(zoneId, chunksNear(cells, CHUNK_LOAD_RADIUS, area)).then((loaded) =>
+			this.areas.loadChunks(areaId, chunksNear(cells, CHUNK_LOAD_RADIUS, chunkMap)).then((loaded) =>
 			{
-				const current = this.zones.get(zoneId);
+				const current = this.areas.get(areaId);
 
 				if ((loaded.length > 0) && current)
 				{
-					for (const playerId of this.playersIn(zoneId))
+					for (const playerId of this.playersIn(areaId))
 					{
 						this.sendNearbyChunks(playerId, current);
 					}
 				}
 			}, (error: unknown) =>
 			{
-				console.error(`Could not load chunks of zone ${zoneId}:`, error);
+				console.error(`Could not load chunks of area ${areaId}:`, error);
 			});
 		}
 	}
 
 	/**
-	 * Brings a change the world editor has made to the players it affects, if this room has the zone loaded
+	 * Brings a change the world editor has made to the players it affects, if this room has the area loaded
 	 *
 	 * Runs outside the simulation tick
 	 *
 	 * @param change The change
 	 */
-	async applyChange(change: ZoneChange): Promise<void>
+	async applyChange(change: AreaChange): Promise<void>
 	{
 		if (change.kind === 'cells')
 		{
-			await this.applyCellChange(change.zoneId, change.chunkKeys);
+			await this.applyCellChange(change.areaId, change.chunkKeys);
 		}
 		else if (change.kind === 'tiles')
 		{
-			for (const zone of this.zones.all().filter((each) => (each.loaded.zone.universeId === change.universeId)))
+			for (const area of this.areas.all().filter((each) => (each.loaded.area.universeId === change.universeId)))
 			{
-				await this.applyZoneChange(zone.loaded.zone.id, true);
+				await this.applyAreaChange(area.loaded.area.id, true);
 			}
 		}
 		else
 		{
-			await this.applyZoneChange(change.zoneId, false);
+			await this.applyAreaChange(change.areaId, false);
 		}
 	}
 
@@ -519,69 +519,69 @@ export class ZonePlayers
 	}
 
 	/**
-	 * The zone a player is in
+	 * The area a player is in
 	 *
 	 * @param playerId The player's ID
-	 * @return The zone's ID, or undefined when the player isn't in the room
+	 * @return The area's ID, or undefined when the player isn't in the room
 	 */
-	getZoneId(playerId: string): string | undefined
+	getAreaId(playerId: string): string | undefined
 	{
-		return(this.zoneIds.get(playerId));
+		return(this.areaIds.get(playerId));
 	}
 
 	/**
-	 * Reads changed chunks of a zone again, and sends them to the players who had been sent them
+	 * Reads changed chunks of an area again, and sends them to the players who had been sent them
 	 *
-	 * @param zoneId The zone's ID
+	 * @param areaId The area's ID
 	 * @param chunkKeys The changed chunks, by chunkKey()
 	 */
-	private async applyCellChange(zoneId: string, chunkKeys: string[]): Promise<void>
+	private async applyCellChange(areaId: string, chunkKeys: string[]): Promise<void>
 	{
-		const changed = await this.zones.reloadChunks(zoneId, chunkKeys);
-		const zone = this.zones.get(zoneId);
+		const changed = await this.areas.reloadChunks(areaId, chunkKeys);
+		const area = this.areas.get(areaId);
 
-		if (!zone || (changed.length === 0))
+		if (!area || (changed.length === 0))
 		{
 			return;
 		}
 
-		for (const playerId of this.playersIn(zoneId))
+		for (const playerId of this.playersIn(areaId))
 		{
 			const sent = this.sentChunks.get(playerId);
 			const resend = changed.filter((key) => (sent?.has(key) ?? false));
 
 			if (resend.length > 0)
 			{
-				this.sendChunks(playerId, zone, resend);
+				this.sendChunks(playerId, area, resend);
 			}
 		}
 	}
 
 	/**
-	 * Reads a zone again after its settings, bounds, links or tiles changed. Players its new bounds no
-	 * longer hold are moved onto the nearest free cell inside them, and everyone in it is sent the zone
-	 * again. Players in a zone that has been deleted go to the fallback zone
+	 * Reads an area again after its settings, bounds, links or tiles changed. Players its new bounds no
+	 * longer hold are moved onto the nearest free cell inside them, and everyone in it is sent the area
+	 * again. Players in an area that has been deleted go to the fallback area
 	 *
-	 * @param zoneId The zone's ID
+	 * @param areaId The area's ID
 	 * @param keepChunks Whether only the tiles changed, so the loaded chunks are still right
 	 */
-	private async applyZoneChange(zoneId: string, keepChunks: boolean): Promise<void>
+	private async applyAreaChange(areaId: string, keepChunks: boolean): Promise<void>
 	{
-		if (!this.zones.get(zoneId))
+		if (!this.areas.get(areaId))
 		{
 			return;
 		}
 
-		const zone = await this.zones.reload(zoneId, keepChunks);
-		const playerIds = this.playersIn(zoneId).filter((playerId) => !this.travelling.has(playerId));
+		const area = await this.areas.reload(areaId, keepChunks);
+		const playerIds = this.playersIn(areaId).filter((playerId) => !this.travelling.has(playerId));
 
-		if (!zone)
+		if (!area)
 		{
 			this.sendToFallback(playerIds);
 			return;
 		}
 
-		const { bounds } = zone.loaded;
+		const { bounds } = area.loaded;
 		const targets = new Map<string, Cell>();
 
 		for (const playerId of playerIds)
@@ -590,7 +590,7 @@ export class ZonePlayers
 
 			if (player)
 			{
-				const cell = cellAt(player, zone.grid);
+				const cell = cellAt(player, area.grid);
 
 				targets.set(playerId, {
 					column: Math.min(Math.max(cell.column, bounds.minColumn), bounds.maxColumn),
@@ -599,9 +599,9 @@ export class ZonePlayers
 			}
 		}
 
-		await this.zones.loadChunks(zoneId, chunksNear([...targets.values()], CHUNK_LOAD_RADIUS, areaOf(zone)));
+		await this.areas.loadChunks(areaId, chunksNear([...targets.values()], CHUNK_LOAD_RADIUS, chunkMapOf(area)));
 
-		const current = this.zones.get(zoneId);
+		const current = this.areas.get(areaId);
 
 		if (!current)
 		{
@@ -612,7 +612,7 @@ export class ZonePlayers
 		{
 			const player = this.players.get(playerId);
 
-			if (!player || (this.zoneIds.get(playerId) !== zoneId) || this.travelling.has(playerId))
+			if (!player || (this.areaIds.get(playerId) !== areaId) || this.travelling.has(playerId))
 			{
 				continue;
 			}
@@ -639,20 +639,20 @@ export class ZonePlayers
 				player.y = (cell.row + 0.5) * current.grid.cellSize;
 			}
 
-			this.sendZone(playerId, current, this.getClients(playerId));
+			this.sendArea(playerId, current, this.getClients(playerId));
 		}
 	}
 
 	/**
-	 * Sends players to the center of the fallback zone, for when their zone has been deleted
+	 * Sends players to the center of the fallback area, for when their area has been deleted
 	 *
 	 * @param playerIds The players
 	 */
 	private sendToFallback(playerIds: string[]): void
 	{
-		const fallbackZoneId = this.fallbackZoneId();
+		const fallbackAreaId = this.fallbackAreaId();
 
-		if (fallbackZoneId === undefined)
+		if (fallbackAreaId === undefined)
 		{
 			return;
 		}
@@ -662,7 +662,7 @@ export class ZonePlayers
 			this.travel(playerId, {
 				column: 0,
 				row: 0,
-				targetZoneId: fallbackZoneId,
+				targetAreaId: fallbackAreaId,
 				targetColumn: 0,
 				targetRow: 0,
 				mode: 'automatic',
@@ -672,7 +672,7 @@ export class ZonePlayers
 	}
 
 	/**
-	 * Sends a player through a link: they stop, and arrive once the link's zone and the chunks around
+	 * Sends a player through a link: they stop, and arrive once the link's area and the chunks around
 	 * its target have loaded
 	 *
 	 * The load happens outside the tick. A player whose link leads nowhere they can go stays where they are
@@ -680,7 +680,7 @@ export class ZonePlayers
 	 * @param playerId The player's ID
 	 * @param link The link
 	 */
-	private travel(playerId: string, link: ZoneLink): void
+	private travel(playerId: string, link: AreaLink): void
 	{
 		const targetCell = { column: link.targetColumn, row: link.targetRow };
 
@@ -690,33 +690,33 @@ export class ZonePlayers
 		this.steps.delete(playerId);
 		this.moveInputs.remove(playerId);
 
-		this.zones.load(link.targetZoneId)
+		this.areas.load(link.targetAreaId)
 			.then(async (target) =>
 			{
 				if (target)
 				{
-					await this.zones.loadChunks(target.loaded.zone.id, chunksNear([targetCell], CHUNK_LOAD_RADIUS, areaOf(target)));
+					await this.areas.loadChunks(target.loaded.area.id, chunksNear([targetCell], CHUNK_LOAD_RADIUS, chunkMapOf(target)));
 				}
 
-				this.arrive(playerId, link, this.zones.get(link.targetZoneId));
+				this.arrive(playerId, link, this.areas.get(link.targetAreaId));
 			})
 			.catch((error: unknown) =>
 			{
-				console.error(`Player ${playerId} could not take a link to zone ${link.targetZoneId}:`, error);
+				console.error(`Player ${playerId} could not take a link to area ${link.targetAreaId}:`, error);
 				this.travelling.delete(playerId);
 			});
 	}
 
 	/**
-	 * Moves a travelling player into the zone their link leads to, on the free cell nearest its target
+	 * Moves a travelling player into the area their link leads to, on the free cell nearest its target
 	 *
 	 * @param playerId The player's ID
 	 * @param link The link they took
-	 * @param target The link's zone, or undefined when it doesn't exist
+	 * @param target The link's area, or undefined when it doesn't exist
 	 */
-	private arrive(playerId: string, link: ZoneLink, target: ActiveZone | undefined): void
+	private arrive(playerId: string, link: AreaLink, target: ActiveArea | undefined): void
 	{
-		// The player may have left the room while the zone loaded
+		// The player may have left the room while the area loaded
 		if (!this.travelling.delete(playerId))
 		{
 			return;
@@ -724,7 +724,7 @@ export class ZonePlayers
 
 		const player = this.players.get(playerId);
 
-		if (!player || !target || !target.loaded.zone.enabled)
+		if (!player || !target || !target.loaded.area.enabled)
 		{
 			return;
 		}
@@ -736,31 +736,31 @@ export class ZonePlayers
 			return;
 		}
 
-		this.hideFromZone(playerId);
-		this.zoneIds.set(playerId, target.loaded.zone.id);
+		this.hideFromArea(playerId);
+		this.areaIds.set(playerId, target.loaded.area.id);
 		player.x = position.x;
 		player.y = position.y;
-		this.showToZone(playerId);
-		this.sendZone(playerId, target, this.getClients(playerId));
+		this.showToArea(playerId);
+		this.sendArea(playerId, target, this.getClients(playerId));
 	}
 
 	/**
-	 * Sends a player's clients a zone, with the loaded chunks near the player, and remembers those as sent
+	 * Sends a player's clients an area, with the loaded chunks near the player, and remembers those as sent
 	 *
 	 * @param playerId The player's ID
-	 * @param zone The zone they are in
+	 * @param area The area they are in
 	 * @param clients The clients to send it to
 	 */
-	private sendZone(playerId: string, zone: ActiveZone, clients: Client[]): void
+	private sendArea(playerId: string, area: ActiveArea, clients: Client[]): void
 	{
-		const near = this.loadedChunksNear(playerId, zone);
-		const payload = toZonePayload(zone, near);
+		const near = this.loadedChunksNear(playerId, area);
+		const payload = toAreaPayload(area, near);
 
 		this.sentChunks.set(playerId, new Set(near));
 
 		for (const client of clients)
 		{
-			client.send(ServerMessageType.Zone, payload);
+			client.send(ServerMessageType.Area, payload);
 		}
 	}
 
@@ -769,19 +769,19 @@ export class ZonePlayers
 	 * they have moved away from, so those are sent again (with any changes) when the player comes back
 	 *
 	 * @param playerId The player's ID
-	 * @param zone The zone they are in
+	 * @param area The area they are in
 	 */
-	private sendNearbyChunks(playerId: string, zone: ActiveZone): void
+	private sendNearbyChunks(playerId: string, area: ActiveArea): void
 	{
 		const sent = this.sentChunks.get(playerId);
-		const cell = this.cellOf(playerId, zone);
+		const cell = this.cellOf(playerId, area);
 
 		if (!sent || !cell)
 		{
 			return;
 		}
 
-		const kept = chunksNear([cell], CHUNK_KEEP_RADIUS, areaOf(zone));
+		const kept = chunksNear([cell], CHUNK_KEEP_RADIUS, chunkMapOf(area));
 
 		for (const key of [...sent])
 		{
@@ -791,27 +791,27 @@ export class ZonePlayers
 			}
 		}
 
-		const fresh = this.loadedChunksNear(playerId, zone).filter((key) => !sent.has(key));
+		const fresh = this.loadedChunksNear(playerId, area).filter((key) => !sent.has(key));
 
 		if (fresh.length > 0)
 		{
-			this.sendChunks(playerId, zone, fresh);
+			this.sendChunks(playerId, area, fresh);
 		}
 	}
 
 	/**
-	 * Sends a player's clients some loaded chunks of their zone, and remembers them as sent
+	 * Sends a player's clients some loaded chunks of their area, and remembers them as sent
 	 *
 	 * @param playerId The player's ID
-	 * @param zone The zone they are in
+	 * @param area The area they are in
 	 * @param chunkKeys The chunks, by chunkKey()
 	 */
-	private sendChunks(playerId: string, zone: ActiveZone, chunkKeys: string[]): void
+	private sendChunks(playerId: string, area: ActiveArea, chunkKeys: string[]): void
 	{
 		const sent = (this.sentChunks.get(playerId) ?? new Set<string>());
 		const payload: ChunksPayload = {
-			zoneId: zone.loaded.zone.id,
-			chunks: toChunkUpdates(zone, chunkKeys)
+			areaId: area.loaded.area.id,
+			chunks: toChunkUpdates(area, chunkKeys)
 		};
 
 		for (const key of chunkKeys)
@@ -828,77 +828,77 @@ export class ZonePlayers
 	}
 
 	/**
-	 * The loaded chunks of a zone near a player
+	 * The loaded chunks of an area near a player
 	 *
 	 * @param playerId The player's ID
-	 * @param zone The zone they are in
+	 * @param area The area they are in
 	 * @return The chunks' keys
 	 */
-	private loadedChunksNear(playerId: string, zone: ActiveZone): string[]
+	private loadedChunksNear(playerId: string, area: ActiveArea): string[]
 	{
-		const cell = this.cellOf(playerId, zone);
+		const cell = this.cellOf(playerId, area);
 
 		if (!cell)
 		{
 			return([]);
 		}
 
-		return([...chunksNear([cell], CHUNK_LOAD_RADIUS, areaOf(zone))].filter((key) => zone.loadedChunks.has(key)));
+		return([...chunksNear([cell], CHUNK_LOAD_RADIUS, chunkMapOf(area))].filter((key) => area.loadedChunks.has(key)));
 	}
 
 	/**
 	 * The cell a player is in
 	 *
 	 * @param playerId The player's ID
-	 * @param zone The zone they are in
+	 * @param area The area they are in
 	 * @return The cell, or undefined when the player isn't in the room
 	 */
-	private cellOf(playerId: string, zone: ActiveZone): Cell | undefined
+	private cellOf(playerId: string, area: ActiveArea): Cell | undefined
 	{
 		const player = this.players.get(playerId);
 
-		return((player ? cellAt(player, zone.grid) : undefined));
+		return((player ? cellAt(player, area.grid) : undefined));
 	}
 
 	/**
-	 * The center of the free cell nearest a cell of a zone, searching as far as its chunks are loaded around
+	 * The center of the free cell nearest a cell of an area, searching as far as its chunks are loaded around
 	 * the cell. Other players don't hold cells for a ghost, so a ghost needs only a cell they can stand in
 	 *
 	 * @param playerId The player arriving, whose own cells count as free
-	 * @param zone The zone
+	 * @param area The area
 	 * @param near The cell to start from
 	 * @return The cell's center, or undefined when there is no free cell that near
 	 */
-	private findArrivalCell(playerId: string, zone: ActiveZone, near: Cell): Position | undefined
+	private findArrivalCell(playerId: string, area: ActiveArea, near: Cell): Position | undefined
 	{
-		const { minColumn, minRow, maxColumn, maxRow } = zone.grid.bounds;
+		const { minColumn, minRow, maxColumn, maxRow } = area.grid.bounds;
 		const searchDistance = Math.min(Math.max(maxColumn - minColumn, maxRow - minRow) + 1, CHUNK_LOAD_RADIUS);
-		const isCellFree = (this.isGhost(playerId) ? anyCell : this.occupancyOf(zone.loaded.zone.id, playerId).isFreeFor(playerId));
+		const isCellFree = (this.isGhost(playerId) ? anyCell : this.occupancyOf(area.loaded.area.id, playerId).isFreeFor(playerId));
 
-		return(findFreeCell(near, zone.grid, isCellFree, searchDistance));
+		return(findFreeCell(near, area.grid, isCellFree, searchDistance));
 	}
 
 	/**
-	 * Works out which cells the players in a zone hold right now; ghosts hold none
+	 * Works out which cells the players in an area hold right now; ghosts hold none
 	 *
 	 * A cell has one holder, so a player standing where another is (such as a ghost becoming visible)
 	 * would hide the other's hold on it. Leaving that player out keeps the other's
 	 *
-	 * @param zoneId The zone's ID
+	 * @param areaId The area's ID
 	 * @param exceptPlayerId A player whose cells to leave out
-	 * @return The zone's occupancy
+	 * @return The area's occupancy
 	 */
-	private occupancyOf(zoneId: string, exceptPlayerId?: string): CellOccupancy
+	private occupancyOf(areaId: string, exceptPlayerId?: string): CellOccupancy
 	{
 		const occupancy = new CellOccupancy();
-		const zone = this.zones.get(zoneId);
+		const area = this.areas.get(areaId);
 
-		if (!zone)
+		if (!area)
 		{
 			return(occupancy);
 		}
 
-		for (const playerId of this.playersIn(zoneId))
+		for (const playerId of this.playersIn(areaId))
 		{
 			const player = this.players.get(playerId);
 
@@ -912,7 +912,7 @@ export class ZonePlayers
 							y: player.y,
 							step: this.steps.get(playerId)
 						},
-						zone.grid
+						area.grid
 					)
 				);
 			}
@@ -922,13 +922,13 @@ export class ZonePlayers
 	}
 
 	/**
-	 * Shows a player to everyone else in their zone, and everyone else in it to them
+	 * Shows a player to everyone else in their area, and everyone else in it to them
 	 *
 	 * @param playerId The player's ID
 	 */
-	private showToZone(playerId: string): void
+	private showToArea(playerId: string): void
 	{
-		for (const otherId of this.playersIn(this.zoneIds.get(playerId)))
+		for (const otherId of this.playersIn(this.areaIds.get(playerId)))
 		{
 			if (otherId !== playerId)
 			{
@@ -939,15 +939,15 @@ export class ZonePlayers
 	}
 
 	/**
-	 * Hides a player from everyone else in their zone, and everyone else in it from them
+	 * Hides a player from everyone else in their area, and everyone else in it from them
 	 *
 	 * @param playerId The player's ID
 	 */
-	private hideFromZone(playerId: string): void
+	private hideFromArea(playerId: string): void
 	{
 		this.hideFromOthers(playerId);
 
-		for (const otherId of this.playersIn(this.zoneIds.get(playerId)))
+		for (const otherId of this.playersIn(this.areaIds.get(playerId)))
 		{
 			if (otherId !== playerId)
 			{
@@ -957,13 +957,13 @@ export class ZonePlayers
 	}
 
 	/**
-	 * Hides a player from everyone else in their zone
+	 * Hides a player from everyone else in their area
 	 *
 	 * @param playerId The player's ID
 	 */
 	private hideFromOthers(playerId: string): void
 	{
-		for (const otherId of this.playersIn(this.zoneIds.get(playerId)))
+		for (const otherId of this.playersIn(this.areaIds.get(playerId)))
 		{
 			if (otherId !== playerId)
 			{
@@ -1044,43 +1044,43 @@ export class ZonePlayers
 	}
 
 	/**
-	 * The players in a zone
+	 * The players in an area
 	 *
-	 * @param zoneId The zone's ID
+	 * @param areaId The area's ID
 	 * @return Their IDs
 	 */
-	private playersIn(zoneId: string | undefined): string[]
+	private playersIn(areaId: string | undefined): string[]
 	{
-		return([...this.zoneIds]
-			.filter(([, playerZoneId]) => (playerZoneId === zoneId))
+		return([...this.areaIds]
+			.filter(([, playerAreaId]) => (playerAreaId === areaId))
 			.map(([playerId]) => playerId));
 	}
 
 	/**
-	 * The zone a player is in
+	 * The area a player is in
 	 *
 	 * @param playerId The player's ID
-	 * @return The zone, or undefined when the player isn't in the room
+	 * @return The area, or undefined when the player isn't in the room
 	 */
-	private zoneOf(playerId: string): ActiveZone | undefined
+	private areaOf(playerId: string): ActiveArea | undefined
 	{
-		const zoneId = this.zoneIds.get(playerId);
+		const areaId = this.areaIds.get(playerId);
 
-		return(((zoneId !== undefined) ? this.zones.get(zoneId) : undefined));
+		return(((areaId !== undefined) ? this.areas.get(areaId) : undefined));
 	}
 }
 
 /**
- * A zone's map as chunksNear needs it
+ * An area's map as chunksNear needs it
  *
- * @param zone The zone
+ * @param area The area
  * @return Its bounds and whether it loops
  */
-function areaOf(zone: ActiveZone): ChunkAreaMap
+function chunkMapOf(area: ActiveArea): ChunkAreaMap
 {
 	return({
-		bounds: zone.loaded.bounds,
-		loopsEastWest: zone.loaded.loopsEastWest,
-		loopsNorthSouth: zone.loaded.loopsNorthSouth
+		bounds: area.loaded.bounds,
+		loopsEastWest: area.loaded.loopsEastWest,
+		loopsNorthSouth: area.loaded.loopsNorthSouth
 	});
 }

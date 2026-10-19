@@ -1,7 +1,7 @@
-import { cellIndexInChunk, CHUNK_SIZE, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, isInBounds, type CellChange, type ChunkRange, type MapBounds, type ZoneChunk } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, CHUNK_SIZE, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, isInBounds, type CellChange, type ChunkRange, type MapBounds, type AreaChunk } from '@multiverse-kiln/shared';
 
 /**
- * The cells of a zone's map as the editor holds them: the chunks loaded so far, which the editor
+ * The cells of an area's map as the editor holds them: the chunks loaded so far, which the editor
  * changes as the player paints
  *
  * A chunk the server doesn't store is all the default tile, but the editor only knows that once it
@@ -82,7 +82,7 @@ export class EditorMap
 	 * @param chunks The stored chunks in it
 	 * @return The keys of the chunks that were newly loaded
 	 */
-	load(range: ChunkRange, chunks: readonly ZoneChunk[]): string[]
+	load(range: ChunkRange, chunks: readonly AreaChunk[]): string[]
 	{
 		const stored = new Map(chunks.map((chunk) => [chunkKey(chunk.chunkColumn, chunk.chunkRow), chunk.cells]));
 		const newlyLoaded: string[] = [];
