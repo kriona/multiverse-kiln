@@ -6,12 +6,12 @@ import { getElement, setButtonText, showMessage } from '../dom';
 import { mapMessages } from './mapMessages';
 
 /**
- * The zone a resize is for, and what happens once it is resized
+ * The area a resize is for, and what happens once it is resized
  */
 interface ResizeTarget
 {
 	universeId: string;
-	zoneId: string;
+	areaId: string;
 	bounds: MapBounds;
 
 	/**
@@ -73,7 +73,7 @@ export class ResizeDialog
 	/**
 	 * Opens the dialog with a map's bounds
 	 *
-	 * @param target The zone and what to do once it is resized
+	 * @param target The area and what to do once it is resized
 	 */
 	open(target: ResizeTarget): void
 	{
@@ -150,7 +150,7 @@ export class ResizeDialog
 
 		try
 		{
-			const conflict = await this.api.resizeZone(target.universeId, target.zoneId, bounds, (this.confirmedBounds === key));
+			const conflict = await this.api.resizeArea(target.universeId, target.areaId, bounds, (this.confirmedBounds === key));
 
 			if (conflict)
 			{
@@ -163,7 +163,7 @@ export class ResizeDialog
 				showMessage(this.warning, t({
 					id: 'editor.resize.discardWarning',
 					defaultMessage: 'The smaller map would discard {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# link} other {# links}}. Resize anyway?',
-					description: 'Warns before making a map smaller loses cells painted with something other than the default tile, and zone links'
+					description: 'Warns before making a map smaller loses cells painted with something other than the default tile, and area links'
 				}, {
 					cells: conflict.discardedCells,
 					links: conflict.discardedLinks

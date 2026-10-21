@@ -50,6 +50,125 @@
       "when": 1792152803312,
       "tag": "0006_unrenamed_tile_copies",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792172368362,
+      "tag": "0007_universe_character_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792192905045,
+      "tag": "0008_starting_coins",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792192915953,
+      "tag": "0009_drop_starting_money",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792194330929,
+      "tag": "0010_items",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792194332289,
+      "tag": "0011_pf1e_default_items",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792195237654,
+      "tag": "0012_universe_starting_items",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792195239055,
+      "tag": "0013_starting_daggers",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792198157557,
+      "tag": "0014_races_and_classes",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1792198163547,
+      "tag": "0015_pf1e_default_races_and_classes",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1792242553709,
+      "tag": "0016_characters",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792244207810,
+      "tag": "0017_character_drafts",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792348133495,
+      "tag": "0018_site_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792350751272,
+      "tag": "0019_character_last_played",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792353463759,
+      "tag": "0020_rename_zones_to_areas",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792589105536,
+      "tag": "0021_unique_universe_slugs",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1792592700516,
+      "tag": "0022_character_deletion",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792593776169,
+      "tag": "0023_character_deletion_days",
+      "breakpoints": true
     }
   ]
 }

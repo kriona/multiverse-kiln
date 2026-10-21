@@ -1,0 +1,1 @@
+ALTER TABLE "characters" ADD COLUMN "last_played_at" timestamp with time zone;

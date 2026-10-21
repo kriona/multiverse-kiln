@@ -1,12 +1,19 @@
+import { randomUUID } from 'crypto';
+
 import { CHUNK_SIZE, cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, type MapBounds } from '@multiverse-kiln/shared';
 
+import { createCharacter, type NewCharacter } from '../../src/db/characterRepo.js';
+import { findDefaultClassIds } from '../../src/db/classRepo.js';
+import { findDefaultItemIds } from '../../src/db/itemRepo.js';
+import { findDefaultRaceIds } from '../../src/db/raceRepo.js';
 import { findDefaultTileIds } from '../../src/db/tileRepo.js';
-import { createUniverse, setUniverseZones } from '../../src/db/universeRepo.js';
-import { createZone, createZoneLink, loadChunks, loadZone, saveGroundChunk } from '../../src/db/zoneRepo.js';
-import type { ZoneMap } from '../../src/logic/zoneGrid.js';
+import { inTransaction } from '../../src/db/transactions.js';
+import { createUniverse, setUniverseAreas } from '../../src/db/universeRepo.js';
+import { createArea, createAreaLink, loadChunks, loadArea, saveGroundChunk } from '../../src/db/areaRepo.js';
+import type { AreaMap } from '../../src/logic/areaGrid.js';
 
 /**
- * A universe with a lobby to walk around and a starting zone for groups, from addPlayableUniverse()
+ * A universe with a lobby to walk around and a starting area for groups, from addPlayableUniverse()
  */
 export interface PlayableUniverse
 {
@@ -16,18 +23,80 @@ export interface PlayableUniverse
 	 * The lobby: 32 x 18 cells of grass from column 0, row 0, with forest at (10, 3) and mountains at
 	 * (12, 3). Stepping onto (5, 5) takes a player into the house
 	 */
-	squareZoneId: string;
+	squareAreaId: string;
 
 	/**
 	 * 10 x 6 cells of wood floor from column 0, row 0. A player arrives at (2, 2), and (2, 4) has a
 	 * manual link back out to (5, 6) in the square
 	 */
-	houseZoneId: string;
+	houseAreaId: string;
 
 	/**
 	 * Where groups start: 32 x 18 cells of grass from column 0, row 0
 	 */
-	fieldZoneId: string;
+	fieldAreaId: string;
+}
+
+/**
+ * A dwarf fighter with two daggers, for a player in a universe
+ *
+ * @param playerId The player's ID
+ * @param universeId The universe's ID
+ * @param name The character's name
+ * @return The character
+ */
+export async function dwarfFighter(playerId: string, universeId: string, name: string = 'Brokk'): Promise<NewCharacter>
+{
+	const raceId = (await findDefaultRaceIds('pf1e')).get('dwarf');
+	const classId = (await findDefaultClassIds('pf1e')).get('fighter');
+	const daggerId = (await findDefaultItemIds('pf1e')).get('dagger');
+
+	if ((raceId === undefined) || (classId === undefined) || (daggerId === undefined))
+	{
+		throw new Error('The default dwarf, fighter or dagger is missing from the test database');
+	}
+
+	return({
+		playerId,
+		universeId,
+		name,
+		raceId,
+		classId,
+		abilityScores: {
+			strength: 16,
+			dexterity: 12,
+			constitution: 16,
+			intelligence: 10,
+			wisdom: 12,
+			charisma: 6
+		},
+		money: {
+			pp: 0,
+			gp: 15,
+			sp: 5,
+			cp: 0
+		},
+		items: [{
+			itemId: daggerId,
+			quantity: 2
+		}],
+		areaId: null
+	});
+}
+
+/**
+ * Adds a dwarf fighter (see dwarfFighter) for a player in a universe
+ *
+ * @param playerId The player's ID
+ * @param universeId The universe's ID
+ * @param name The character's name
+ * @return The character's ID
+ */
+export async function addCharacter(playerId: string, universeId: string, name: string): Promise<string>
+{
+	const character = await dwarfFighter(playerId, universeId, name);
+
+	return(inTransaction((transaction) => createCharacter(character, transaction)));
 }
 
 /**
@@ -49,27 +118,42 @@ export async function defaultTileId(key: string): Promise<number>
 }
 
 /**
- * Adds a Pathfinder 1E universe with no zones
+ * A universe name no other universe has (universe names are unique). A counter wouldn't do, since names
+ * that differ only in repeated characters, such as "1" and "11", count as the same
  *
- * @param name The universe's name
- * @return The universe's ID
+ * @param prefix The start of the name
+ * @return The name
  */
-export async function addUniverse(name: string = 'Test Universe'): Promise<string>
+function newUniverseName(prefix: string): string
 {
-	return(createUniverse({ name, ruleset: 'pf1e' }));
+	return(`${prefix} ${randomUUID()}`);
 }
 
 /**
- * Adds a zone to a universe: five columns by three rows of grass around the center, unless told otherwise
+ * Adds a Pathfinder 1E universe with no areas
+ *
+ * @param name The universe's name, or undefined for a name no other universe has
+ * @return The universe's ID
+ */
+export async function addUniverse(name?: string): Promise<string>
+{
+	return(createUniverse({
+		name: (name ?? newUniverseName('Test Universe')),
+		ruleset: 'pf1e'
+	}));
+}
+
+/**
+ * Adds an area to a universe: five columns by three rows of grass around the center, unless told otherwise
  *
  * @param universeId The universe's ID
- * @param name The zone's name
- * @param options The zone's bounds, default tile and whether it is indoors
- * @return The zone's ID
+ * @param name The area's name
+ * @param options The area's bounds, default tile and whether it is indoors
+ * @return The area's ID
  */
-export async function addZone(universeId: string, name: string = 'Test Zone', options: { bounds?: MapBounds; tile?: string; indoors?: boolean } = {}): Promise<string>
+export async function addArea(universeId: string, name: string = 'Test Area', options: { bounds?: MapBounds; tile?: string; indoors?: boolean } = {}): Promise<string>
 {
-	return(createZone({
+	return(createArea({
 		universeId,
 		name,
 		indoors: (options.indoors ?? false),
@@ -79,14 +163,14 @@ export async function addZone(universeId: string, name: string = 'Test Zone', op
 }
 
 /**
- * A zone's whole map: the zone with every one of its stored chunks, for checking cells in tests
+ * An area's whole map: the area with every one of its stored chunks, for checking cells in tests
  *
- * @param zoneId The zone's ID
- * @return The map, or undefined when there is no such zone
+ * @param areaId The area's ID
+ * @return The map, or undefined when there is no such area
  */
-export async function loadWholeMap(zoneId: string): Promise<ZoneMap | undefined>
+export async function loadWholeMap(areaId: string): Promise<AreaMap | undefined>
 {
-	const loaded = await loadZone(zoneId);
+	const loaded = await loadArea(areaId);
 
 	if (!loaded)
 	{
@@ -94,7 +178,7 @@ export async function loadWholeMap(zoneId: string): Promise<ZoneMap | undefined>
 	}
 
 	const { bounds } = loaded;
-	const chunks = await loadChunks(zoneId, {
+	const chunks = await loadChunks(areaId, {
 		minChunkColumn: chunkCoordinate(bounds.minColumn),
 		minChunkRow: chunkCoordinate(bounds.minRow),
 		maxChunkColumn: chunkCoordinate(bounds.maxColumn),
@@ -115,26 +199,26 @@ export async function loadWholeMap(zoneId: string): Promise<ZoneMap | undefined>
 }
 
 /**
- * Adds a universe with a lobby zone, a house off it, and a starting zone for groups (see PlayableUniverse)
+ * Adds a universe with a lobby area, a house off it, and a starting area for groups (see PlayableUniverse)
  *
- * @return The universe's and zones' IDs
+ * @return The universe's and areas' IDs
  */
 export async function addPlayableUniverse(): Promise<PlayableUniverse>
 {
-	const universeId = await createUniverse({ name: 'Playable Universe', ruleset: 'pf1e', stage: 'let_there_be_light' });
+	const universeId = await createUniverse({ name: newUniverseName('Playable Universe'), ruleset: 'pf1e', stage: 'let_there_be_light' });
 	const wideBounds = { minColumn: 0, minRow: 0, maxColumn: 31, maxRow: 17 };
-	const squareZoneId = await addZone(universeId, 'Square', { bounds: wideBounds });
-	const houseZoneId = await addZone(universeId, 'House', { bounds: { minColumn: 0, minRow: 0, maxColumn: 9, maxRow: 5 }, tile: 'wood_floor', indoors: true });
-	const fieldZoneId = await addZone(universeId, 'Field', { bounds: wideBounds });
+	const squareAreaId = await addArea(universeId, 'Square', { bounds: wideBounds });
+	const houseAreaId = await addArea(universeId, 'House', { bounds: { minColumn: 0, minRow: 0, maxColumn: 9, maxRow: 5 }, tile: 'wood_floor', indoors: true });
+	const fieldAreaId = await addArea(universeId, 'Field', { bounds: wideBounds });
 	const cells = new Array<number>(CHUNK_SIZE * CHUNK_SIZE).fill(DEFAULT_TILE_CELL);
 
 	cells[cellIndexInChunk(10, 3)] = await defaultTileId('forest');
 	cells[cellIndexInChunk(12, 3)] = await defaultTileId('mountains');
-	await saveGroundChunk(squareZoneId, 0, 0, cells);
+	await saveGroundChunk(squareAreaId, 0, 0, cells);
 
-	await createZoneLink({ zoneId: squareZoneId, column: 5, row: 5, targetZoneId: houseZoneId, targetColumn: 2, targetRow: 2, mode: 'automatic', requiresWholeGroup: false });
-	await createZoneLink({ zoneId: houseZoneId, column: 2, row: 4, targetZoneId: squareZoneId, targetColumn: 5, targetRow: 6, mode: 'manual', requiresWholeGroup: false });
-	await setUniverseZones(universeId, squareZoneId, fieldZoneId);
+	await createAreaLink({ areaId: squareAreaId, column: 5, row: 5, targetAreaId: houseAreaId, targetColumn: 2, targetRow: 2, mode: 'automatic', requiresWholeGroup: false });
+	await createAreaLink({ areaId: houseAreaId, column: 2, row: 4, targetAreaId: squareAreaId, targetColumn: 5, targetRow: 6, mode: 'manual', requiresWholeGroup: false });
+	await setUniverseAreas(universeId, squareAreaId, fieldAreaId);
 
-	return({ universeId, squareZoneId, houseZoneId, fieldZoneId });
+	return({ universeId, squareAreaId, houseAreaId, fieldAreaId });
 }

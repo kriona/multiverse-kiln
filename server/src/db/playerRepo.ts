@@ -85,7 +85,9 @@ export async function loadOrCreatePlayerByName(name: string): Promise<PlayerProf
 export async function lockPlayer(playerId: string, executor: Executor): Promise<boolean>
 {
 	const rows = await executor
-		.select({ id: players.id })
+		.select({
+			id: players.id
+		})
 		.from(players)
 		.where(eq(players.id, playerId))
 		.for('update');

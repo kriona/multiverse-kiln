@@ -8,8 +8,10 @@ gitleaks git --pre-commit --staged --redact --no-banner
 
 # Lints staged files, fixing what it can; the commit is blocked if errors remain
 # shared is built first so type-aware lint rules can resolve @multiverse-kiln/shared
+# Every unstaged change is hidden while it runs, so a staged file is checked against the staged
+# versions of the files it uses rather than unstaged work in them
 npm run build -w shared
-npx lint-staged
+npx lint-staged --hide-unstaged
 
 # Checks that shared/locales/en.json holds every message in the code and pages, each with a description
 npm run messages:check -w shared

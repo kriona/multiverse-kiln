@@ -8,7 +8,7 @@
  * translators work from. A translation is a MessageCatalog in shared/locales/<language>.json
  *
  * Messages use ICU MessageFormat, so plurals and other grammar that changes with a value are part of
- * the message: "{count, plural, one {# zone} other {# zones}}"
+ * the message: "{count, plural, one {# area} other {# areas}}"
  */
 import { createLiteralElement, isLiteralElement, isPluralElement, isSelectElement, isTagElement, parse, type MessageFormatElement } from '@formatjs/icu-messageformat-parser';
 import { printAST } from '@formatjs/icu-messageformat-parser/printer.js';

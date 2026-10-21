@@ -15,8 +15,8 @@ const BASELINE_SCHEMA = 'test_baseline';
 let migrationPool: pg.Pool | undefined;
 
 /**
- * Tables the migrations put rows in, in the order they were created, so rows that refer to other
- * tables' rows are put back after them
+ * Tables the migrations put rows in, each after the tables its foreign keys refer to, so rows that
+ * refer to other tables' rows are put back after them
  */
 let baselineTables: string[] = [];
 
@@ -69,8 +69,8 @@ export async function buildTestDatabase(connectionString: string): Promise<void>
 	await migrationPool.query(`CREATE SCHEMA ${BASELINE_SCHEMA}`);
 
 	const tables = await migrationPool.query<{ name: string }>(`SELECT c.relname AS name FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'public' AND c.relkind = 'r' ORDER BY c.oid`);
-
-	baselineTables = [];
+	const references = await migrationPool.query<{ child: string; parent: string }>(`SELECT child.relname AS child, parent.relname AS parent FROM pg_constraint k JOIN pg_class child ON child.oid = k.conrelid JOIN pg_class parent ON parent.oid = k.confrelid JOIN pg_namespace n ON n.oid = child.relnamespace WHERE k.contype = 'f' AND n.nspname = 'public'`);
+	const filled: string[] = [];
 
 	for (const { name } of tables.rows)
 	{
@@ -78,9 +78,57 @@ export async function buildTestDatabase(connectionString: string): Promise<void>
 
 		if ((copied.rowCount ?? 0) > 0)
 		{
-			baselineTables.push(name);
+			filled.push(name);
 		}
 	}
+
+	baselineTables = orderByReferences(filled, references.rows);
+}
+
+/**
+ * Orders tables so each comes after the tables its foreign keys refer to. A table that refers to
+ * itself only needs its own rows in order, which a copy of them keeps
+ *
+ * @param tables The tables' names
+ * @param references Each foreign key, as the referring (child) and referred-to (parent) table
+ * @return The tables, parents first
+ */
+function orderByReferences(tables: readonly string[], references: readonly { child: string; parent: string }[]): string[]
+{
+	const ordered: string[] = [];
+	const visiting = new Set<string>();
+
+	/**
+	 * Adds a table after the tables it refers to
+	 *
+	 * @param table The table's name
+	 */
+	const visit = (table: string): void =>
+	{
+		if (ordered.includes(table) || visiting.has(table))
+		{
+			return;
+		}
+
+		visiting.add(table);
+
+		for (const { child, parent } of references)
+		{
+			if ((child === table) && (parent !== table) && tables.includes(parent))
+			{
+				visit(parent);
+			}
+		}
+
+		ordered.push(table);
+	};
+
+	for (const table of tables)
+	{
+		visit(table);
+	}
+
+	return(ordered);
 }
 
 /**

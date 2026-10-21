@@ -1,4 +1,4 @@
-// The world editor's page (edit.html): the Edit Universe tabs, the tile editor, the zone editor and its map
+// The world editor's page (edit.html): the Edit Universe tabs, the tile editor, the area editor and its map
 
 @use 'shared' as *;
 
@@ -73,6 +73,19 @@
 			color: $text;
 		}
 	}
+
+	// A dot after the name of a tab with unsaved changes
+	.tab-changes::before
+	{
+		content: '';
+		display: inline-block;
+		width: 8px;
+		height: 8px;
+		margin-inline-start: 6px;
+		border-radius: 50%;
+		background: $notice-text;
+		vertical-align: middle;
+	}
 }
 
 .editor-body
@@ -116,7 +129,8 @@
 	}
 }
 
-.tile-table
+.tile-table,
+.item-table
 {
 	width: 100%;
 	border-collapse: collapse;
@@ -133,6 +147,19 @@
 	{
 		padding: 6px 8px;
 		border-bottom: 1px solid $border-subtle;
+	}
+}
+
+// An item's picture: its category's icon until items have art of their own
+.item-icon
+{
+	display: inline-flex;
+	font-size: 1.4em;
+	vertical-align: middle;
+
+	.icon
+	{
+		vertical-align: 0;
 	}
 }
 
@@ -197,7 +224,7 @@
 	color: $text-muted;
 }
 
-.zone-list
+.area-list
 {
 	display: flex;
 	flex-direction: column;
@@ -371,5 +398,174 @@
 		{
 			cursor: crosshair;
 		}
+	}
+}
+
+.area-select-dialog
+{
+	width: min(480px, calc(100vw - 32px));
+
+	.area-select-results
+	{
+		max-height: 220px;
+		overflow-y: auto;
+	}
+
+	.area-select-preview
+	{
+		align-self: flex-start;
+		line-height: 0;
+		border: 1px solid $border;
+	}
+}
+
+.starting-equipment
+{
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+
+	h3
+	{
+		margin: 0;
+		font-size: 1em;
+	}
+}
+
+.starting-items
+{
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+
+	li
+	{
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+}
+
+.item-select-dialog
+{
+	width: min(480px, calc(100vw - 32px));
+
+	.item-select-results
+	{
+		max-height: 220px;
+		overflow-y: auto;
+	}
+
+	h3
+	{
+		margin: 0;
+		font-size: 1em;
+	}
+}
+
+.item-select-chosen
+{
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	max-height: 220px;
+	margin: 0;
+	padding: 0;
+	overflow-y: auto;
+	list-style: none;
+
+	li
+	{
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.form & label.item-quantity
+	{
+		display: flex;
+		flex: 1;
+		flex-direction: row;
+		align-items: center;
+		gap: 8px;
+		color: $text;
+
+		span:not(.item-icon)
+		{
+			flex: 1;
+		}
+
+		input
+		{
+			width: 6em;
+		}
+	}
+}
+
+// The race and class editors, which hold more than fits beside each other
+.option-dialog
+{
+	h3
+	{
+		margin: 0;
+		font-size: 1em;
+	}
+}
+
+// A race's six ability modifiers, three to a row
+.ability-modifiers
+{
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 8px 12px;
+
+	.form & label
+	{
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	input
+	{
+		width: 100%;
+	}
+}
+
+.area-buttons
+{
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+// Where a class's members of each race start: the race, its area, and buttons to change it
+.race-areas
+{
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+
+	ul
+	{
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		max-height: 260px;
+		margin: 0;
+		padding: 0;
+		overflow-y: auto;
+		list-style: none;
+	}
+
+	li
+	{
+		display: grid;
+		grid-template-columns: 8em 1fr auto auto;
+		align-items: center;
+		gap: 8px;
 	}
 }

@@ -1,4 +1,4 @@
-import { DEFAULT_TILE_CELL, isInBounds, VOID_CELL, type EditorTile, type EditorZoneLink, type Ruleset } from '@multiverse-kiln/shared';
+import { DEFAULT_TILE_CELL, isInBounds, VOID_CELL, type EditorTile, type EditorAreaLink, type Ruleset } from '@multiverse-kiln/shared';
 
 import type { BrushCell } from '../../editor/brush';
 import type { EditorMap } from '../../editor/EditorMap';
@@ -7,7 +7,7 @@ import { tileName } from '../tileNames';
 import { mapMessages } from './mapMessages';
 
 /**
- * A zone's map as the editor has loaded it, with what is needed to name what its cells hold
+ * An area's map as the editor has loaded it, with what is needed to name what its cells hold
  */
 export interface DescribedMap
 {
@@ -23,7 +23,7 @@ export interface DescribedMap
 	 */
 	tiles: readonly EditorTile[];
 
-	links: readonly EditorZoneLink[];
+	links: readonly EditorAreaLink[];
 
 	/**
 	 * The universe's ruleset, which names its default tiles
@@ -83,7 +83,7 @@ export function describeCell(described: DescribedMap, cell: BrushCell): string
 		? t({
 			id: 'editor.map.cellWithLink',
 			defaultMessage: '{column}, {row}: {contents} ({mode, select, automatic {automatic link} other {manual link}})',
-			description: 'Under the map, the cell under the pointer when it has a zone link: its coordinates, what it holds and the kind of link'
+			description: 'Under the map, the cell under the pointer when it has an area link: its coordinates, what it holds and the kind of link'
 		}, {
 			column: cell.column,
 			row: cell.row,

@@ -1,0 +1,152 @@
+// The character sheet dialog (partials/character-sheet.html), on the game's page and a universe's page.
+// Each page's stylesheet includes it with `@use 'characterSheet';`
+
+@use 'shared' as *;
+
+.character-sheet-dialog
+{
+	h2
+	{
+		margin: 0;
+		overflow-wrap: anywhere;
+	}
+
+	h3
+	{
+		margin: 0 0 8px;
+		font-size: 14px;
+		color: $text-muted;
+	}
+}
+
+// Said of a character given their last rites, with when they will be deleted
+.character-sheet-pending
+{
+	margin: 0 0 12px;
+}
+
+// Delete sits apart from Restore and Close, on the other side
+// Delete is rarely wanted, so it is a small faint link on the other side from Restore and Close,
+// turning red only when pointed at or focused
+button.character-sheet-delete
+{
+	margin-inline-end: auto;
+	font-size: 12px;
+	color: $text-faint;
+
+	&:hover,
+	&:focus-visible
+	{
+		color: $error;
+	}
+}
+
+// The buttons of the last question before deleting a character, which wrap on narrow screens
+.character-farewell-buttons
+{
+	flex-wrap: wrap;
+	align-items: flex-end;
+}
+
+// The two ways of deleting stack on the left, apart from keeping the character on the right
+.character-farewell-delete-buttons
+{
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 8px;
+	margin-inline-end: auto;
+}
+
+.character-sheet-summary
+{
+	margin: 4px 0 12px;
+	color: $text-faint;
+}
+
+.character-sheet
+{
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	margin-bottom: 16px;
+}
+
+// Each ability's score and modifier
+.character-sheet-abilities
+{
+	width: 100%;
+	border-collapse: collapse;
+
+	th
+	{
+		font-weight: normal;
+		text-align: left;
+		color: $text-muted;
+	}
+
+	tbody th
+	{
+		color: $text;
+	}
+
+	th,
+	td
+	{
+		padding: 4px 6px;
+		border-bottom: 1px solid $border-subtle;
+	}
+}
+
+.character-sheet-traits
+{
+	display: grid;
+	grid-template-columns: max-content 1fr;
+	gap: 6px 16px;
+	margin: 0;
+
+	dt
+	{
+		color: $text-muted;
+	}
+
+	dd
+	{
+		margin: 0;
+	}
+}
+
+.character-sheet-items
+{
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	overflow-wrap: anywhere;
+
+	li
+	{
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.item-icon
+	{
+		display: inline-flex;
+		font-size: 1.4em;
+
+		.icon
+		{
+			vertical-align: 0;
+		}
+	}
+}
+
+.character-sheet-none
+{
+	margin: 0;
+	color: $text-faint;
+}

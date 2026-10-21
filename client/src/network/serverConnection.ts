@@ -1,5 +1,5 @@
 import { Client, type Room } from '@colyseus/sdk';
-import { BROWSER_ID_PATH, GameState, LOBBY_ROOM_NAME, LobbyState, ServerMessageType, SESSION_ROOM_NAME, UNIVERSES_PATH, type LobbyJoinOptions, type UniverseDetails, type UniverseListPayload, type WelcomePayload, type ZonePayload } from '@multiverse-kiln/shared';
+import { BROWSER_ID_PATH, GameState, LOBBY_ROOM_NAME, LobbyState, ServerMessageType, SESSION_ROOM_NAME, UNIVERSES_PATH, type LobbyJoinOptions, type UniverseDetails, type UniverseListPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
 
 /**
  * How many universes Home asks for at a time
@@ -22,7 +22,7 @@ export type LobbyRoom = Room<unknown, LobbyState>;
 export type MapRoom = GameRoom | LobbyRoom;
 
 /**
- * A joined room with a map, the player this window controls in it, and the zone the player started in
+ * A joined room with a map, the player this window controls in it, and the area the player started in
  */
 export interface MapConnection<R extends MapRoom>
 {
@@ -34,9 +34,9 @@ export interface MapConnection<R extends MapRoom>
 	playerId: string;
 
 	/**
-	 * The zone the player was in on joining; later zones arrive as ServerMessageType.Zone
+	 * The area the player was in on joining; later areas arrive as ServerMessageType.Area
 	 */
-	zone: ZonePayload;
+	area: AreaPayload;
 }
 
 /**
@@ -76,14 +76,24 @@ function getServerUrl(): string
 }
 
 /**
- * Resolves with the player ID from a room's Welcome message and the zone from its first Zone message
+ * A client for the server, for a page that only uses its HTTP routes
+ *
+ * @return The client
+ */
+export function createClient(): Client
+{
+	return(new Client(getServerUrl()));
+}
+
+/**
+ * Resolves with the player ID from a room's Welcome message and the area from its first Area message
  *
  * The server sends both right after the join, so this must be called as soon as the room is joined
  *
  * @param room The joined room
- * @return The player this window controls, and their zone
+ * @return The player this window controls, and their area
  */
-function waitForArrival(room: MapRoom): Promise<{ playerId: string; zone: ZonePayload }>
+function waitForArrival(room: MapRoom): Promise<{ playerId: string; area: AreaPayload }>
 {
 	const welcome = new Promise<string>((resolve) =>
 	{
@@ -92,9 +102,9 @@ function waitForArrival(room: MapRoom): Promise<{ playerId: string; zone: ZonePa
 			resolve(payload.playerId);
 		});
 	});
-	const zone = new Promise<ZonePayload>((resolve) =>
+	const area = new Promise<AreaPayload>((resolve) =>
 	{
-		const stopListening = room.onMessage(ServerMessageType.Zone, (payload: ZonePayload) =>
+		const stopListening = room.onMessage(ServerMessageType.Area, (payload: AreaPayload) =>
 		{
 			stopListening();
 			resolve(payload);
@@ -110,8 +120,8 @@ function waitForArrival(room: MapRoom): Promise<{ playerId: string; zone: ZonePa
 
 	return(Promise.race([
 		Promise
-			.all([welcome, zone])
-			.then(([playerId, firstZone]) => ({ playerId, zone: firstZone })),
+			.all([welcome, area])
+			.then(([playerId, firstArea]) => ({ playerId, area: firstArea })),
 		left
 	]));
 }
@@ -127,7 +137,7 @@ function waitForArrival(room: MapRoom): Promise<{ playerId: string; zone: ZonePa
  */
 export async function connectToServer(): Promise<ServerConnection>
 {
-	const client = new Client(getServerUrl());
+	const client = createClient();
 
 	await client.http.post(BROWSER_ID_PATH);
 
@@ -154,12 +164,12 @@ export async function listUniverses(client: Client, offset: number): Promise<Uni
  * One of the universes Home lists, in full
  *
  * @param client Client for the server
- * @param universeId The universe's ID
+ * @param key The universe's ID or slug
  * @return The universe
  */
-export async function getUniverseDetails(client: Client, universeId: string): Promise<UniverseDetails>
+export async function getUniverseDetails(client: Client, key: string): Promise<UniverseDetails>
 {
-	const response = await client.http.get(`${UNIVERSES_PATH}/${encodeURIComponent(universeId)}`);
+	const response = await client.http.get(`${UNIVERSES_PATH}/${encodeURIComponent(key)}`);
 
 	return(response.data as UniverseDetails);
 }
@@ -169,7 +179,7 @@ export async function getUniverseDetails(client: Client, universeId: string): Pr
  *
  * @param client Client for the server
  * @param universeId The universe's ID
- * @return The joined lobby, this window's player and their zone
+ * @return The joined lobby, this window's player and their area
  */
 export async function joinLobby(client: Client, universeId: string): Promise<LobbyConnection>
 {
@@ -186,7 +196,7 @@ export async function joinLobby(client: Client, universeId: string): Promise<Lob
  *
  * @param client Client for the server
  * @param groupId The group's ID (its game room's ID)
- * @return The joined room, this window's player and their zone
+ * @return The joined room, this window's player and their area
  */
 export async function joinGroup(client: Client, groupId: string): Promise<GameConnection>
 {

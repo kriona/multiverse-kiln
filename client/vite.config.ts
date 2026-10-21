@@ -3,9 +3,10 @@ import { icons as phosphorIcons } from '@iconify-json/ph';
 import { getIconData, iconToHTML, iconToSVG } from '@iconify/utils';
 import fs from 'fs';
 import path from 'path';
-import { defineConfig, loadEnv, type Plugin } from 'vite';
+import { defineConfig, loadEnv, type Connect, type Plugin } from 'vite';
 
 import { CATALOG_FILE, catalogText, extractMessages, PAGES, PARTIALS_FOLDER, PSEUDO_CATALOG_FILE, pseudoCatalog, SOURCE_FOLDERS, writeCatalog } from '../shared/scripts/extractMessages.ts';
+import { PATH_PAGES } from './src/pages.ts';
 
 /**
  * The repository's root folder
@@ -70,6 +71,50 @@ function htmlPartials(): Plugin
 					server.ws.send({ type: 'full-reload' });
 				}
 			});
+		}
+	});
+}
+
+/**
+ * Serves each of PATH_PAGES (src/pages.ts) for every address under its path, such as game.html for
+ * /game/<universe ID>, on the dev and preview servers, keeping the query string. The production
+ * client's host has to do the same
+ *
+ * @return The plugin
+ */
+function pathPages(): Plugin
+{
+	/**
+	 * Points a request under a page's path at the page's file
+	 *
+	 * @param request The request
+	 * @param _response The response
+	 * @param next Passes the request on
+	 */
+	const rewrite: Connect.NextHandleFunction = (request, _response, next) =>
+	{
+		const url = (request.url ?? '');
+		const page = Object.keys(PATH_PAGES).find((path) => url.startsWith(`${path}/`));
+
+		if (page !== undefined)
+		{
+			const query = url.indexOf('?');
+
+			request.url = `/${PATH_PAGES[page]}${((query === -1) ? '' : url.slice(query))}`;
+		}
+
+		next();
+	};
+
+	return({
+		name: 'kiln-path-pages',
+		configureServer(server)
+		{
+			server.middlewares.use(rewrite);
+		},
+		configurePreviewServer(server)
+		{
+			server.middlewares.use(rewrite);
 		}
 	});
 }
@@ -287,7 +332,7 @@ function requireSourceUrl(url: string | undefined): void
 {
 	if (!url)
 	{
-		throw new Error('VITE_SOURCE_URL is not set in client/.env. Set it to the repository players can get this version\'s source code from; see client/.env.example');
+		throw new Error('VITE_SOURCE_URL is not set in client/.env. Set it to the repository players can get the source code from; see client/.env.example');
 	}
 }
 
@@ -307,7 +352,7 @@ export default defineConfig(({ command, mode }) =>
 	} : undefined);
 
 	return({
-		plugins: [htmlPartials(), icons(), messageCatalogs(), stripDescriptions()],
+		plugins: [pathPages(), htmlPartials(), icons(), messageCatalogs(), stripDescriptions()],
 		server: {
 			// Bind to the dev hostname (127.0.0.1 via hosts file); the default "localhost" may bind IPv6 only
 			host: devHost,
@@ -319,11 +364,15 @@ export default defineConfig(({ command, mode }) =>
 		build: {
 			target: 'es2022',
 			rolldownOptions: {
-				// The game, the world editor and the licenses (see src/pages.ts)
+				// Home, a universe's page, the game, the world editor, Create Character, the licenses and the site's settings (see src/pages.ts)
 				input: {
 					main: path.resolve(import.meta.dirname, 'index.html'),
+					universe: path.resolve(import.meta.dirname, 'universe.html'),
+					game: path.resolve(import.meta.dirname, 'game.html'),
 					edit: path.resolve(import.meta.dirname, 'edit.html'),
-					license: path.resolve(import.meta.dirname, 'license.html')
+					character: path.resolve(import.meta.dirname, 'character.html'),
+					license: path.resolve(import.meta.dirname, 'license.html'),
+					admin: path.resolve(import.meta.dirname, 'admin.html')
 				}
 			}
 		}

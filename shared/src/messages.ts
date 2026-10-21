@@ -1,5 +1,5 @@
 import type { MapBounds } from './maps.js';
-import type { Ruleset, ZoneLinkMode } from './universes.js';
+import type { Ruleset, AreaLinkMode } from './universes.js';
 
 /**
  * Message types clients send to the rooms with a map: a universe's lobby and a group's game room
@@ -14,7 +14,7 @@ export enum MessageType
 	Move = 'move',
 
 	/**
-	 * Take the manual zone link on the cell the player is standing on (no payload)
+	 * Take the manual area link on the cell the player is standing on (no payload)
 	 */
 	TakeLink = 'takeLink'
 }
@@ -30,13 +30,13 @@ export enum ServerMessageType
 	Welcome = 'welcome',
 
 	/**
-	 * The zone the client's player is in, sent on joining, whenever the player moves to another zone,
-	 * and again when an editor changes the zone's settings, bounds or links (payload: ZonePayload)
+	 * The area the client's player is in, sent on joining, whenever the player moves to another area,
+	 * and again when an editor changes the area's settings, bounds or links (payload: AreaPayload)
 	 */
-	Zone = 'zone',
+	Area = 'area',
 
 	/**
-	 * Chunks of the zone's map that the player has come near, or that an editor has changed (payload: ChunksPayload)
+	 * Chunks of the area's map that the player has come near, or that an editor has changed (payload: ChunksPayload)
 	 */
 	Chunks = 'chunks'
 }
@@ -67,9 +67,9 @@ export interface WelcomePayload
 }
 
 /**
- * A tile a zone's map can use, as the client draws it
+ * A tile an area's map can use, as the client draws it
  */
-export interface ZoneTile
+export interface AreaTile
 {
 	id: number;
 
@@ -91,9 +91,9 @@ export interface ZoneTile
 }
 
 /**
- * One stored chunk of a zone's map
+ * One stored chunk of an area's map
  */
-export interface ZoneChunk
+export interface AreaChunk
 {
 	chunkColumn: number;
 	chunkRow: number;
@@ -105,15 +105,15 @@ export interface ZoneChunk
 }
 
 /**
- * A chunk of a zone's map, as sent when the player comes near it or an editor changes it
+ * A chunk of an area's map, as sent when the player comes near it or an editor changes it
  */
-export interface ZoneChunkUpdate
+export interface AreaChunkUpdate
 {
 	chunkColumn: number;
 	chunkRow: number;
 
 	/**
-	 * CHUNK_SIZE * CHUNK_SIZE cell values, row by row, or null when every cell is the zone's default tile
+	 * CHUNK_SIZE * CHUNK_SIZE cell values, row by row, or null when every cell is the area's default tile
 	 */
 	cells: number[] | null;
 }
@@ -124,30 +124,30 @@ export interface ZoneChunkUpdate
 export interface ChunksPayload
 {
 	/**
-	 * The zone the chunks belong to; a client whose player has since moved to another zone ignores them
+	 * The area the chunks belong to; a client whose player has since moved to another area ignores them
 	 */
-	zoneId: string;
+	areaId: string;
 
-	chunks: ZoneChunkUpdate[];
+	chunks: AreaChunkUpdate[];
 }
 
 /**
- * A cell with a zone link, as the client sees it: where the link goes stays on the server
+ * A cell with an area link, as the client sees it: where the link goes stays on the server
  */
-export interface ZoneLinkCell
+export interface AreaLinkCell
 {
 	column: number;
 	row: number;
-	mode: ZoneLinkMode;
+	mode: AreaLinkMode;
 }
 
 /**
- * Payload of ServerMessageType.Zone: everything needed to draw a zone's map, with the stored chunks
+ * Payload of ServerMessageType.Area: everything needed to draw an area's map, with the stored chunks
  * near the player. Chunks further away arrive in ChunksPayloads as the player comes near them
  */
-export interface ZonePayload
+export interface AreaPayload
 {
-	zoneId: string;
+	areaId: string;
 	name: string;
 
 	/**
@@ -165,9 +165,9 @@ export interface ZonePayload
 	 */
 	defaultTileId: number;
 
-	tiles: ZoneTile[];
-	chunks: ZoneChunk[];
-	links: ZoneLinkCell[];
+	tiles: AreaTile[];
+	chunks: AreaChunk[];
+	links: AreaLinkCell[];
 }
 
 /**
@@ -218,7 +218,13 @@ export enum LobbyMessageType
 	Chat = 'chat',
 
 	/**
-	 * Create a new group in this universe and move the player into it (no payload)
+	 * Play one of the player's characters in this universe, in every window of the player
+	 * (payload: ChooseCharacterPayload)
+	 */
+	ChooseCharacter = 'chooseCharacter',
+
+	/**
+	 * Create a new group in this universe and move the player into it (no payload). Needs a character
 	 */
 	CreateGroup = 'createGroup'
 }
@@ -237,6 +243,18 @@ export enum LobbyServerMessageType
 	 * A new chat message, sent to every window in the lobby (payload: ChatMessage)
 	 */
 	Chat = 'chat',
+
+	/**
+	 * Which character the player is playing, sent to a window as it joins and to every window of the
+	 * player when it changes (payload: PlayingAsPayload)
+	 */
+	PlayingAs = 'playingAs',
+
+	/**
+	 * The player's characters in the universe changed (one was deleted, given their last rites or
+	 * restored), so their windows list them again (no payload)
+	 */
+	CharactersChanged = 'charactersChanged',
 
 	/**
 	 * Something the player asked for didn't happen (payload: NoticePayload)
@@ -266,6 +284,29 @@ export interface LoginPayload
 export interface ChatPayload
 {
 	text: string;
+}
+
+/**
+ * Payload of LobbyMessageType.ChooseCharacter
+ */
+export interface ChooseCharacterPayload
+{
+	/**
+	 * One of the player's characters in the lobby's universe
+	 */
+	characterId: string;
+}
+
+/**
+ * Payload of LobbyServerMessageType.PlayingAs
+ */
+export interface PlayingAsPayload
+{
+	/**
+	 * The character the player is playing, or null while they are a ghost: unseen by others, holding no
+	 * cell, and unable to chat
+	 */
+	characterId: string | null;
 }
 
 /**
@@ -313,7 +354,7 @@ export interface ChatMessage
 	playerId: string;
 
 	/**
-	 * The sender's name when they sent it
+	 * The sender's name when they sent it: in a lobby, their character's
 	 */
 	name: string;
 
@@ -364,6 +405,11 @@ export enum NoticeReason
 	NameInUse = 'nameInUse',
 
 	/**
+	 * The name could pass as the game's staff (isReservedName), so the browser wasn't logged in
+	 */
+	NameReserved = 'nameReserved',
+
+	/**
 	 * The server couldn't load or create the player, so the browser wasn't logged in
 	 */
 	LoginFailed = 'loginFailed'
@@ -384,12 +430,18 @@ export interface UniverseSummary
 {
 	id: string;
 	name: string;
+
+	/**
+	 * The name in the form its page's address uses (universeSlug)
+	 */
+	slug: string;
+
 	shortDescription: string;
 	ruleset: Ruleset;
 }
 
 /**
- * A universe as Home's overview of it shows it (GET UNIVERSES_PATH/:id)
+ * A universe as its page shows it (GET UNIVERSES_PATH/:key, by ID or slug)
  */
 export interface UniverseDetails extends UniverseSummary
 {

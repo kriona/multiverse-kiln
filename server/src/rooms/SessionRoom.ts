@@ -1,5 +1,5 @@
 import { matchMaker, Room, type AuthContext, type Client, type CloseCode, type Delayed, type IRoomCache } from 'colyseus';
-import { GAME_ROOM_NAME, MAX_GROUP_PLAYERS, NoticeReason, SessionMessageType, SessionServerMessageType, type AccountPayload, type NoticePayload } from '@multiverse-kiln/shared';
+import { GAME_ROOM_NAME, isReservedName, MAX_GROUP_PLAYERS, NoticeReason, SessionMessageType, SessionServerMessageType, type AccountPayload, type NoticePayload } from '@multiverse-kiln/shared';
 
 import { loadOrCreatePlayerByName, type PlayerProfile } from '../db/playerRepo.js';
 import { readBrowserId } from '../http/browserId.js';
@@ -94,6 +94,12 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 
 			if (onlinePlayers.get(browserId))
 			{
+				return;
+			}
+
+			if (isReservedName(result.data.name))
+			{
+				this.sendNotice(client, NoticeReason.NameReserved);
 				return;
 			}
 

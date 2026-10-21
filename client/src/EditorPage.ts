@@ -1,9 +1,10 @@
-import { NoticeReason, SessionMessageType, SessionServerMessageType, type AccountPayload, type LoginPayload, type NoticePayload } from '@multiverse-kiln/shared';
+import { NAME_MESSAGES, NoticeReason, SessionMessageType, SessionServerMessageType, type AccountPayload, type LoginPayload, type NoticePayload } from '@multiverse-kiln/shared';
 
 import { t } from './localization';
 import { EditorApi } from './network/editorApi';
 import type { ServerConnection } from './network/serverConnection';
-import { gamePageUrl, replacePageParameters, TAB_PARAMETER, ZONE_PARAMETER } from './pages';
+import { isLeavingPage } from './pageLifecycle';
+import { gamePageUrl, HOME_PAGE_URL, replacePageParameters, TAB_PARAMETER, AREA_PARAMETER } from './pages';
 import { showScreen, showStatus } from './ui/dom';
 import { EditorScreen, type EditorPlace } from './ui/editor/EditorScreen';
 import { LoginScreen } from './ui/LoginScreen';
@@ -29,7 +30,7 @@ export class EditorPage
 	/**
 	 * @param server The connection to the server and the joined session room
 	 * @param universeId The universe to edit
-	 * @param place The tab and zone to open it at
+	 * @param place The tab and area to open it at
 	 */
 	constructor(server: ServerConnection, private readonly universeId: string, private readonly place: Partial<EditorPlace>)
 	{
@@ -45,17 +46,17 @@ export class EditorPage
 		this.editorScreen = new EditorScreen(new EditorApi(client), {
 			goHome: () =>
 			{
-				window.location.assign(gamePageUrl());
+				window.location.assign(HOME_PAGE_URL);
 			},
 			play: (universe) =>
 			{
-				window.location.assign(gamePageUrl(universe.id));
+				window.location.assign(gamePageUrl(universe.slug));
 			},
 			placeChanged: (changed) =>
 			{
 				replacePageParameters({
 					[TAB_PARAMETER]: ((changed.tab === 'universe') ? undefined : changed.tab),
-					[ZONE_PARAMETER]: changed.zoneId
+					[AREA_PARAMETER]: changed.areaId
 				});
 			}
 		});
@@ -72,7 +73,10 @@ export class EditorPage
 
 		session.onLeave(() =>
 		{
-			showStatus(t(pageMessages.disconnected));
+			if (!isLeavingPage())
+			{
+				showStatus(t(pageMessages.disconnected));
+			}
 		});
 	}
 
@@ -109,6 +113,10 @@ export class EditorPage
 		if (reason === NoticeReason.NameInUse)
 		{
 			this.loginScreen.showError(t(pageMessages.nameInUse));
+		}
+		else if (reason === NoticeReason.NameReserved)
+		{
+			this.loginScreen.showError(t(NAME_MESSAGES.reserved));
 		}
 		else if (reason === NoticeReason.LoginFailed)
 		{

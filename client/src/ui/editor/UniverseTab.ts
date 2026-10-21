@@ -1,8 +1,9 @@
 import '@github/markdown-toolbar-element';
-import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_LONG_DESCRIPTION_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, PASSAGES_OF_TIME, RULESET_NAMES, UNIVERSE_STAGE_DESCRIPTIONS, UNIVERSE_STAGE_NAMES, UNIVERSE_STAGES, type EditableUniverse, type FaerieMorning, type PassageOfTime, type UniverseSettingsUpdate, type UniverseStage } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_LONG_DESCRIPTION_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, PASSAGES_OF_TIME, RULESET_NAMES, UNIVERSE_STAGE_DESCRIPTIONS, UNIVERSE_STAGE_NAMES, UNIVERSE_STAGES, universeSlug, type EditableUniverse, type FaerieMorning, type PassageOfTime, type UniverseSettingsUpdate, type UniverseStage } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
+import { ChangeTracker } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
@@ -41,6 +42,14 @@ export class UniverseTab
 	 * The stage choices' radio buttons, by stage
 	 */
 	private readonly stageInputs = new Map<UniverseStage, HTMLInputElement>();
+
+	/**
+	 * Whether the form has changes that haven't been saved
+	 */
+	readonly changes = new ChangeTracker({
+		root: this.form,
+		status: this.saved
+	});
 
 	/**
 	 * The universe as it was last loaded or saved
@@ -119,6 +128,7 @@ export class UniverseTab
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.form);
 		showMarkdown(this.preview, universe.longDescription);
+		this.changes.markSaved();
 	}
 
 	/**
@@ -185,7 +195,7 @@ export class UniverseTab
 		}
 
 		const passageOfTime = this.time.value as PassageOfTime;
-		const update: Required<UniverseSettingsUpdate> = {
+		const update: Required<Pick<UniverseSettingsUpdate, 'name' | 'shortDescription' | 'longDescription' | 'stage' | 'passageOfTime' | 'faerieMorning'>> = {
 			name: this.name.value.trim(),
 			shortDescription: this.shortDescription.value.trim(),
 			longDescription: this.longDescription.value,
@@ -201,6 +211,7 @@ export class UniverseTab
 		{
 			await this.api.updateUniverse(universe.id, update);
 			this.universe = { ...universe, ...update };
+			this.changes.markSaved();
 			this.saved.textContent = t(formMessages.saved);
 			this.onSaved(this.universe);
 		}
@@ -219,7 +230,8 @@ export class UniverseTab
 	}
 
 	/**
-	 * Checks the text fields for characters the server refuses, pointing the player at the first that has any
+	 * Checks the text fields for characters the server refuses, and the name for a letter or number,
+	 * pointing the player at the first field with a problem
 	 *
 	 * @return True when every field may be saved
 	 */
@@ -236,6 +248,12 @@ export class UniverseTab
 			if (((input === this.name) && (text === '')) || DISALLOWED_TEXT_CHARACTERS.test(text))
 			{
 				reportFieldError(input, t(formMessages.invalidText));
+				return(false);
+			}
+
+			if ((input === this.name) && (universeSlug(text) === ''))
+			{
+				reportFieldError(input, t(formMessages.universeNameNoLetters));
 				return(false);
 			}
 		}

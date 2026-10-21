@@ -1,0 +1,1042 @@
+{
+  "id": "fb79151f-acd4-4358-97ec-764dc10abf15",
+  "prevId": "01832972-0519-4fcb-9b1f-2ebe1c3b6b35",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.map_chunks": {
+      "name": "map_chunks",
+      "schema": "",
+      "columns": {
+        "zone_id": {
+          "name": "zone_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "layer": {
+          "name": "layer",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "chunk_column": {
+          "name": "chunk_column",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "chunk_row": {
+          "name": "chunk_row",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cells": {
+          "name": "cells",
+          "type": "integer[]",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "map_chunks_zone_id_zones_id_fk": {
+          "name": "map_chunks_zone_id_zones_id_fk",
+          "tableFrom": "map_chunks",
+          "tableTo": "zones",
+          "columnsFrom": [
+            "zone_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "map_chunks_zone_id_layer_chunk_column_chunk_row_pk": {
+          "name": "map_chunks_zone_id_layer_chunk_column_chunk_row_pk",
+          "columns": [
+            "zone_id",
+            "layer",
+            "chunk_column",
+            "chunk_row"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "map_chunks_cell_count": {
+          "name": "map_chunks_cell_count",
+          "value": "cardinality(\"map_chunks\".\"cells\") = 1024"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.pf1e_settings": {
+      "name": "pf1e_settings",
+      "schema": "",
+      "columns": {
+        "universe_id": {
+          "name": "universe_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "stat_method": {
+          "name": "stat_method",
+          "type": "pf1e_stat_method",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'roll_4d6_drop_lowest'"
+        },
+        "custom_point_buy_budget": {
+          "name": "custom_point_buy_budget",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 15
+        },
+        "needs_sleep": {
+          "name": "needs_sleep",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "coins_have_weight": {
+          "name": "coins_have_weight",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "tracks_ammo": {
+          "name": "tracks_ammo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "pf1e_settings_universe_id_universes_id_fk": {
+          "name": "pf1e_settings_universe_id_universes_id_fk",
+          "tableFrom": "pf1e_settings",
+          "tableTo": "universes",
+          "columnsFrom": [
+            "universe_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "pf1e_settings_custom_point_buy_budget_range": {
+          "name": "pf1e_settings_custom_point_buy_budget_range",
+          "value": "\"pf1e_settings\".\"custom_point_buy_budget\" BETWEEN 0 AND 102"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.players": {
+      "name": "players",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "players_display_name_lower_unique": {
+          "name": "players_display_name_lower_unique",
+          "columns": [
+            {
+              "expression": "lower(\"display_name\")",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.tiles": {
+      "name": "tiles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "tiles_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "ruleset": {
+          "name": "ruleset",
+          "type": "ruleset",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "universe_id": {
+          "name": "universe_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "overrides_tile_id": {
+          "name": "overrides_tile_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "indoors": {
+          "name": "indoors",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "color": {
+          "name": "color",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "vision_cost": {
+          "name": "vision_cost",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "movement_cost": {
+          "name": "movement_cost",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "tiles_universe_id_index": {
+          "name": "tiles_universe_id_index",
+          "columns": [
+            {
+              "expression": "universe_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "tiles_universe_id_universes_id_fk": {
+          "name": "tiles_universe_id_universes_id_fk",
+          "tableFrom": "tiles",
+          "tableTo": "universes",
+          "columnsFrom": [
+            "universe_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "tiles_overrides_tile_id_tiles_id_fk": {
+          "name": "tiles_overrides_tile_id_tiles_id_fk",
+          "tableFrom": "tiles",
+          "tableTo": "tiles",
+          "columnsFrom": [
+            "overrides_tile_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "tiles_ruleset_key_unique": {
+          "name": "tiles_ruleset_key_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "ruleset",
+            "key"
+          ]
+        },
+        "tiles_universe_overrides_unique": {
+          "name": "tiles_universe_overrides_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "universe_id",
+            "overrides_tile_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "tiles_overrides_belong_to_universe": {
+          "name": "tiles_overrides_belong_to_universe",
+          "value": "\"tiles\".\"overrides_tile_id\" IS NULL OR \"tiles\".\"universe_id\" IS NOT NULL"
+        },
+        "tiles_name_required": {
+          "name": "tiles_name_required",
+          "value": "\"tiles\".\"name\" IS NOT NULL OR \"tiles\".\"overrides_tile_id\" IS NOT NULL"
+        },
+        "tiles_color_range": {
+          "name": "tiles_color_range",
+          "value": "\"tiles\".\"color\" BETWEEN 0 AND 16777215"
+        },
+        "tiles_vision_cost_range": {
+          "name": "tiles_vision_cost_range",
+          "value": "\"tiles\".\"vision_cost\" BETWEEN 0 AND 100"
+        },
+        "tiles_movement_cost_range": {
+          "name": "tiles_movement_cost_range",
+          "value": "\"tiles\".\"movement_cost\" BETWEEN 0 AND 100"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.universe_editors": {
+      "name": "universe_editors",
+      "schema": "",
+      "columns": {
+        "universe_id": {
+          "name": "universe_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "player_id": {
+          "name": "player_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "universe_role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "universe_editors_player_id_index": {
+          "name": "universe_editors_player_id_index",
+          "columns": [
+            {
+              "expression": "player_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "universe_editors_universe_id_universes_id_fk": {
+          "name": "universe_editors_universe_id_universes_id_fk",
+          "tableFrom": "universe_editors",
+          "tableTo": "universes",
+          "columnsFrom": [
+            "universe_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "universe_editors_player_id_players_id_fk": {
+          "name": "universe_editors_player_id_players_id_fk",
+          "tableFrom": "universe_editors",
+          "tableTo": "players",
+          "columnsFrom": [
+            "player_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "universe_editors_universe_id_player_id_pk": {
+          "name": "universe_editors_universe_id_player_id_pk",
+          "columns": [
+            "universe_id",
+            "player_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.universes": {
+      "name": "universes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "short_description": {
+          "name": "short_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "long_description": {
+          "name": "long_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "stage": {
+          "name": "stage",
+          "type": "universe_stage",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'in_the_beginning'"
+        },
+        "ruleset": {
+          "name": "ruleset",
+          "type": "ruleset",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "passage_of_time": {
+          "name": "passage_of_time",
+          "type": "passage_of_time",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'flows_normally'"
+        },
+        "faerie_morning": {
+          "name": "faerie_morning",
+          "type": "faerie_morning",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lobby_zone_id": {
+          "name": "lobby_zone_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "starting_zone_id": {
+          "name": "starting_zone_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "group_size": {
+          "name": "group_size",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 6
+        },
+        "starting_money": {
+          "name": "starting_money",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "universes_lobby_zone_id_zones_id_fk": {
+          "name": "universes_lobby_zone_id_zones_id_fk",
+          "tableFrom": "universes",
+          "tableTo": "zones",
+          "columnsFrom": [
+            "lobby_zone_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "universes_starting_zone_id_zones_id_fk": {
+          "name": "universes_starting_zone_id_zones_id_fk",
+          "tableFrom": "universes",
+          "tableTo": "zones",
+          "columnsFrom": [
+            "starting_zone_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "universes_faerie_morning_set": {
+          "name": "universes_faerie_morning_set",
+          "value": "(\"universes\".\"passage_of_time\" = 'faerie') = (\"universes\".\"faerie_morning\" IS NOT NULL)"
+        },
+        "universes_group_size_range": {
+          "name": "universes_group_size_range",
+          "value": "\"universes\".\"group_size\" BETWEEN 1 AND 6"
+        },
+        "universes_starting_money_range": {
+          "name": "universes_starting_money_range",
+          "value": "\"universes\".\"starting_money\" BETWEEN 0 AND 1000000000"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.zone_links": {
+      "name": "zone_links",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "zone_id": {
+          "name": "zone_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "column": {
+          "name": "column",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "row": {
+          "name": "row",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "target_zone_id": {
+          "name": "target_zone_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "target_column": {
+          "name": "target_column",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "target_row": {
+          "name": "target_row",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mode": {
+          "name": "mode",
+          "type": "zone_link_mode",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "requires_whole_group": {
+          "name": "requires_whole_group",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {
+        "zone_links_target_zone_id_index": {
+          "name": "zone_links_target_zone_id_index",
+          "columns": [
+            {
+              "expression": "target_zone_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "zone_links_zone_id_zones_id_fk": {
+          "name": "zone_links_zone_id_zones_id_fk",
+          "tableFrom": "zone_links",
+          "tableTo": "zones",
+          "columnsFrom": [
+            "zone_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "zone_links_target_zone_id_zones_id_fk": {
+          "name": "zone_links_target_zone_id_zones_id_fk",
+          "tableFrom": "zone_links",
+          "tableTo": "zones",
+          "columnsFrom": [
+            "target_zone_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "zone_links_cell_unique": {
+          "name": "zone_links_cell_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "zone_id",
+            "column",
+            "row"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.zones": {
+      "name": "zones",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "universe_id": {
+          "name": "universe_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parent_zone_id": {
+          "name": "parent_zone_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "enabled": {
+          "name": "enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "indoors": {
+          "name": "indoors",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "default_tile_id": {
+          "name": "default_tile_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "min_column": {
+          "name": "min_column",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "min_row": {
+          "name": "min_row",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "max_column": {
+          "name": "max_column",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "max_row": {
+          "name": "max_row",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "loops_east_west": {
+          "name": "loops_east_west",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "loops_north_south": {
+          "name": "loops_north_south",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "passage_of_time": {
+          "name": "passage_of_time",
+          "type": "zone_passage_of_time",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'inherit'"
+        },
+        "faerie_morning": {
+          "name": "faerie_morning",
+          "type": "faerie_morning",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "zones_universe_id_index": {
+          "name": "zones_universe_id_index",
+          "columns": [
+            {
+              "expression": "universe_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "zones_parent_zone_id_index": {
+          "name": "zones_parent_zone_id_index",
+          "columns": [
+            {
+              "expression": "parent_zone_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "zones_universe_id_universes_id_fk": {
+          "name": "zones_universe_id_universes_id_fk",
+          "tableFrom": "zones",
+          "tableTo": "universes",
+          "columnsFrom": [
+            "universe_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "zones_parent_zone_id_zones_id_fk": {
+          "name": "zones_parent_zone_id_zones_id_fk",
+          "tableFrom": "zones",
+          "tableTo": "zones",
+          "columnsFrom": [
+            "parent_zone_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "zones_default_tile_id_tiles_id_fk": {
+          "name": "zones_default_tile_id_tiles_id_fk",
+          "tableFrom": "zones",
+          "tableTo": "tiles",
+          "columnsFrom": [
+            "default_tile_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "zones_width": {
+          "name": "zones_width",
+          "value": "\"zones\".\"max_column\" - \"zones\".\"min_column\" BETWEEN 0 AND 49999"
+        },
+        "zones_height": {
+          "name": "zones_height",
+          "value": "\"zones\".\"max_row\" - \"zones\".\"min_row\" BETWEEN 0 AND 49999"
+        },
+        "zones_faerie_morning_set": {
+          "name": "zones_faerie_morning_set",
+          "value": "(\"zones\".\"passage_of_time\" = 'faerie') = (\"zones\".\"faerie_morning\" IS NOT NULL)"
+        },
+        "zones_faerie_does_not_loop": {
+          "name": "zones_faerie_does_not_loop",
+          "value": "\"zones\".\"passage_of_time\" <> 'faerie' OR NOT (\"zones\".\"loops_east_west\" OR \"zones\".\"loops_north_south\")"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.faerie_morning": {
+      "name": "faerie_morning",
+      "schema": "public",
+      "values": [
+        "north",
+        "northeast",
+        "east",
+        "southeast",
+        "south",
+        "southwest",
+        "west",
+        "northwest",
+        "center",
+        "horizon"
+      ]
+    },
+    "public.passage_of_time": {
+      "name": "passage_of_time",
+      "schema": "public",
+      "values": [
+        "flows_normally",
+        "always_dawn",
+        "always_noon",
+        "always_dusk",
+        "always_midnight",
+        "faerie"
+      ]
+    },
+    "public.pf1e_stat_method": {
+      "name": "pf1e_stat_method",
+      "schema": "public",
+      "values": [
+        "roll_3d6",
+        "roll_3d6_reroll_ones",
+        "roll_4d6_drop_lowest",
+        "roll_4d6_reroll_ones_drop_lowest",
+        "point_buy_low_fantasy",
+        "point_buy_standard_fantasy",
+        "point_buy_high_fantasy",
+        "point_buy_epic_fantasy",
+        "point_buy_custom"
+      ]
+    },
+    "public.ruleset": {
+      "name": "ruleset",
+      "schema": "public",
+      "values": [
+        "pf1e"
+      ]
+    },
+    "public.universe_role": {
+      "name": "universe_role",
+      "schema": "public",
+      "values": [
+        "creator",
+        "builder",
+        "beta_tester"
+      ]
+    },
+    "public.universe_stage": {
+      "name": "universe_stage",
+      "schema": "public",
+      "values": [
+        "in_the_beginning",
+        "prologue",
+        "let_there_be_light",
+        "end_of_time"
+      ]
+    },
+    "public.zone_link_mode": {
+      "name": "zone_link_mode",
+      "schema": "public",
+      "values": [
+        "automatic",
+        "manual"
+      ]
+    },
+    "public.zone_passage_of_time": {
+      "name": "zone_passage_of_time",
+      "schema": "public",
+      "values": [
+        "inherit",
+        "flows_normally",
+        "always_dawn",
+        "always_noon",
+        "always_dusk",
+        "always_midnight",
+        "faerie"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

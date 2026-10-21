@@ -1,0 +1,814 @@
+import { CloseCode } from '@colyseus/sdk';
+import { GROUP_QUERY_PARAMETER, LobbyMessageType, LobbyServerMessageType, MAX_GROUP_PLAYERS, NAME_MESSAGES, NoticeReason, ServerCloseCode, SessionMessageType, SessionServerMessageType, type AccountPayload, type AccountPlayer, type ChatHistoryPayload, type ChatMessage, type ChatPayload, type ChooseCharacterPayload, type JoinGroupPayload, type LoginPayload, type NoticePayload, type PlayingAsPayload, type UniverseSummary } from '@multiverse-kiln/shared';
+
+import { t } from './localization';
+import { CharacterApi } from './network/characterApi';
+import { describeEditorError, EditorApi } from './network/editorApi';
+import { getUniverseDetails, joinGroup, joinLobby, type GameConnection, type LobbyConnection, type ServerConnection } from './network/serverConnection';
+import { isLeavingPage } from './pageLifecycle';
+import { characterPageUrl, gamePageUrl, HOME_PAGE_URL, readGameUniverseKey, readPageParameter, replacePageParameters, replacePagePath } from './pages';
+import { CharacterSheetDialog } from './ui/CharacterSheetDialog';
+import { showNoticeScreen, showScreen, showStatus } from './ui/dom';
+import { GroupScreen } from './ui/GroupScreen';
+import { LobbyScreen } from './ui/LobbyScreen';
+import { LoginScreen } from './ui/LoginScreen';
+import { MapView } from './ui/MapView';
+import { pageMessages } from './ui/pageMessages';
+
+/**
+ * The group room this window has joined
+ */
+interface JoinedGroup
+{
+	groupId: string;
+	connection: GameConnection;
+}
+
+/**
+ * The universe lobby this window has joined
+ */
+interface JoinedLobby
+{
+	universe: UniverseSummary;
+	connection: LobbyConnection;
+}
+
+/**
+ * Runs the game's page (game.html): shows the login, lobby or group screen to match where the player
+ * is, and keeps the window in the room that goes with it
+ *
+ * The server decides who the player is and which group they are in, and tells every window of the
+ * browser through the session room; a window only asks for changes and follows what it is told. A
+ * logged-in player who isn't in a group is in the lobby of the universe the page's address names.
+ * Leaving a group goes back to that lobby, or to Home when the address names none
+ */
+export class GamePage
+{
+	private readonly editorApi: EditorApi;
+	private readonly characterApi: CharacterApi;
+	private readonly characterSheet: CharacterSheetDialog;
+	private readonly loginScreen: LoginScreen;
+	private readonly lobbyScreen: LobbyScreen;
+	private readonly groupScreen: GroupScreen;
+
+	/**
+	 * The player, from the session's latest Account message; null while logged out
+	 */
+	private player: AccountPlayer | null = null;
+
+	/**
+	 * The universe the page's address names, whose lobby the player is in when they aren't in a group
+	 */
+	private chosenUniverse: UniverseSummary | undefined;
+
+	/**
+	 * The group from a join link this window was opened with, until the server has answered the request to join it
+	 */
+	private linkGroupId: string | undefined;
+
+	/**
+	 * The universe the page's address names, by slug or ID, until it has been looked up once the player has logged in
+	 */
+	private linkUniverseId: string | undefined;
+
+	private joinedGroup: JoinedGroup | undefined;
+
+	private joinedLobby: JoinedLobby | undefined;
+
+	/**
+	 * A group whose room couldn't be joined, so it isn't tried again while the session takes the player out of it
+	 */
+	private failedGroupId: string | undefined;
+
+	/**
+	 * Whether syncRooms() is running; it runs one at a time and repeats until the window is where the player is
+	 */
+	private syncingRooms = false;
+
+	/**
+	 * @param server The connection to the server and the joined session room
+	 */
+	constructor(private readonly server: ServerConnection)
+	{
+		const { client, session } = server;
+		const mapView = new MapView();
+		const editorApi = new EditorApi(client);
+
+		this.editorApi = editorApi;
+		this.characterApi = new CharacterApi(client);
+		// The lobby tells every window of the player, this one included, to list the characters again
+		this.characterSheet = new CharacterSheetDialog(this.characterApi, () => undefined);
+		this.linkGroupId = readPageParameter(GROUP_QUERY_PARAMETER);
+		this.linkUniverseId = readGameUniverseKey();
+
+		this.loginScreen = new LoginScreen((name) =>
+		{
+			const login: LoginPayload = { name };
+
+			session.send(SessionMessageType.Login, login);
+		});
+
+		this.lobbyScreen = new LobbyScreen(mapView, {
+			sendChat: (text) =>
+			{
+				const chat: ChatPayload = { text };
+
+				this.joinedLobby?.connection.room.send(LobbyMessageType.Chat, chat);
+			},
+			createCharacter: () =>
+			{
+				if (this.joinedLobby)
+				{
+					window.location.assign(characterPageUrl(this.joinedLobby.universe.id));
+				}
+			},
+			chooseCharacter: (characterId) =>
+			{
+				const choice: ChooseCharacterPayload = { characterId };
+
+				this.joinedLobby?.connection.room.send(LobbyMessageType.ChooseCharacter, choice);
+			},
+			openCharacterSheet: (character) =>
+			{
+				if (this.joinedLobby)
+				{
+					void this.characterSheet.open(this.joinedLobby.universe.id, character.id, character.name);
+				}
+			},
+			createGroup: () =>
+			{
+				this.joinedLobby?.connection.room.send(LobbyMessageType.CreateGroup);
+			},
+			leaveLobby: () =>
+			{
+				window.location.assign(HOME_PAGE_URL);
+			}
+		});
+
+		this.groupScreen = new GroupScreen(mapView, () =>
+		{
+			session.send(SessionMessageType.LeaveGroup);
+		});
+
+		session.onMessage(SessionServerMessageType.Account, (account: AccountPayload) =>
+		{
+			this.onAccount(account.player);
+		});
+
+		session.onMessage(SessionServerMessageType.Notice, (notice: NoticePayload) =>
+		{
+			this.onNotice(notice.reason);
+		});
+
+		session.onLeave(() =>
+		{
+			this.player = null;
+			void this.syncRooms();
+
+			if (!isLeavingPage())
+			{
+				showStatus(t(pageMessages.disconnected));
+			}
+		});
+	}
+
+	/**
+	 * Shows the screen for the player, and moves the window into the room they should be in
+	 *
+	 * @param player The player, or null when the browser isn't logged in
+	 */
+	private onAccount(player: AccountPlayer | null): void
+	{
+		const wasLoggedIn = (this.player !== null);
+
+		this.player = player;
+
+		if (player?.groupId !== this.failedGroupId)
+		{
+			this.failedGroupId = undefined;
+		}
+
+		if (!player)
+		{
+			this.loginScreen.reset();
+			showScreen('login');
+		}
+		else if (player.groupId === null)
+		{
+			this.showOutsideGroup();
+		}
+
+		if (player && !wasLoggedIn)
+		{
+			this.followJoinLink(player);
+			void this.followUniverseLink();
+		}
+
+		if (player && (player.groupId !== null) && (player.groupId === this.linkGroupId))
+		{
+			this.finishJoinLink();
+		}
+
+		void this.syncRooms();
+	}
+
+	/**
+	 * Asks to join the group from the join link, once the player has logged in
+	 *
+	 * @param player The player
+	 */
+	private followJoinLink(player: AccountPlayer): void
+	{
+		if (this.linkGroupId === undefined)
+		{
+			return;
+		}
+
+		if (player.groupId === this.linkGroupId)
+		{
+			this.finishJoinLink();
+			return;
+		}
+
+		const join: JoinGroupPayload = { groupId: this.linkGroupId };
+
+		this.server.session.send(SessionMessageType.JoinGroup, join);
+	}
+
+	/**
+	 * Forgets the join link and removes it from the address bar, once the server has answered it
+	 */
+	private finishJoinLink(): void
+	{
+		this.linkGroupId = undefined;
+		replacePageParameters({ [GROUP_QUERY_PARAMETER]: undefined });
+	}
+
+	/**
+	 * Looks up the universe the page's address names once the player has logged in, and enters its
+	 * lobby unless they are joining or already in a group, in which case it is where leaving the group goes
+	 */
+	private async followUniverseLink(): Promise<void>
+	{
+		const key = this.linkUniverseId;
+
+		if (key === undefined)
+		{
+			return;
+		}
+
+		let universe: UniverseSummary;
+
+		try
+		{
+			universe = await this.findUniverse(key);
+		}
+		catch (error)
+		{
+			console.error('Could not find the universe to enter:', error);
+			this.linkUniverseId = undefined;
+
+			if (this.player?.groupId === null)
+			{
+				this.showOutsideGroup(t({
+					id: 'game.universeNotFound',
+					defaultMessage: 'That universe could not be found.',
+					description: 'Shown on the game\'s page when it was opened to enter a universe that doesn\'t exist or can\'t be played'
+				}));
+			}
+
+			return;
+		}
+
+		this.linkUniverseId = undefined;
+		replacePagePath(gamePageUrl(universe.slug));
+		this.enterUniverse(universe);
+	}
+
+	/**
+	 * A universe as Home lists it. A universe that isn't listed yet is found among the universes the
+	 * player has a role in, the only ones they could play
+	 *
+	 * @param key The universe's slug or ID
+	 * @return The universe
+	 */
+	private async findUniverse(key: string): Promise<UniverseSummary>
+	{
+		try
+		{
+			const { id, name, slug, shortDescription, ruleset } = await getUniverseDetails(this.server.client, key);
+
+			return({ id, name, slug, shortDescription, ruleset });
+		}
+		catch
+		{
+			const { universes } = await this.editorApi.listUniverses();
+			const own = universes.find((universe) => ((universe.slug === key) || (universe.id === key)));
+
+			if (!own)
+			{
+				throw new Error(`The player has no universe with the slug or ID ${key}`);
+			}
+
+			const { id, name, slug, shortDescription, ruleset } = own;
+
+			return({ id, name, slug, shortDescription, ruleset });
+		}
+	}
+
+	/**
+	 * Explains to the player why something they asked for didn't happen
+	 *
+	 * @param reason Why
+	 */
+	private onNotice(reason: NoticeReason): void
+	{
+		if (reason === NoticeReason.ChatTooFast)
+		{
+			this.lobbyScreen.restoreLastChat();
+			this.lobbyScreen.showNotice(t({
+				id: 'lobby.chat.tooFast',
+				defaultMessage: 'You are sending messages too quickly. Wait a moment and try again.',
+				description: 'Shown in the lobby when the player sends chat messages faster than allowed'
+			}));
+			return;
+		}
+
+		if (reason === NoticeReason.NameInUse)
+		{
+			this.loginScreen.showError(t(pageMessages.nameInUse));
+			return;
+		}
+
+		if (reason === NoticeReason.NameReserved)
+		{
+			this.loginScreen.showError(t(NAME_MESSAGES.reserved));
+			return;
+		}
+
+		if (reason === NoticeReason.LoginFailed)
+		{
+			this.loginScreen.showError(t(pageMessages.loginFailed));
+			return;
+		}
+
+		if (reason === NoticeReason.GroupNotCreated)
+		{
+			this.lobbyScreen.showNotice(t({
+				id: 'lobby.groupNotCreated',
+				defaultMessage: 'Could not create a game. Try again in a moment.',
+				description: 'Shown in the lobby when the server couldn\'t start a new game'
+			}));
+			return;
+		}
+
+		// Only a join link asks to join a group. A player already in a group stays in it and sees the message there
+		let message: string;
+
+		if (reason === NoticeReason.GroupFull)
+		{
+			message = t({
+				id: 'group.full',
+				defaultMessage: 'That game is full: it already has {max, plural, one {# player} other {# players}}.',
+				description: 'Shown when a join link leads to a game that has no room left; {max} is the most players a game can have'
+			}, {
+				max: MAX_GROUP_PLAYERS
+			});
+		}
+		else
+		{
+			message = t({
+				id: 'group.gone',
+				defaultMessage: 'That game has ended or the link is wrong.',
+				description: 'Shown when a join link leads to a game that doesn\'t exist'
+			});
+		}
+
+		this.finishJoinLink();
+
+		if (this.player?.groupId)
+		{
+			this.groupScreen.setStatus(message);
+		}
+		else
+		{
+			this.showOutsideGroup(message);
+			void this.syncRooms();
+		}
+	}
+
+	/**
+	 * Makes a universe the one whose lobby the player is in while they aren't in a group, and goes into
+	 * it now if they aren't
+	 *
+	 * @param universe The universe
+	 */
+	private enterUniverse(universe: UniverseSummary): void
+	{
+		this.chosenUniverse = universe;
+
+		if ((this.player?.groupId === null) && (this.linkGroupId === undefined))
+		{
+			this.showOutsideGroup();
+		}
+
+		void this.syncRooms();
+	}
+
+	/**
+	 * Shows where a player who isn't in a group is: the lobby of the page's universe (or a message while
+	 * it is being joined). Without a universe, a notice is shown on its own with a link to Home, and
+	 * otherwise the window goes to Home, unless a join link or the page's universe is still being followed
+	 *
+	 * @param notice A message to show there, if any
+	 */
+	private showOutsideGroup(notice?: string): void
+	{
+		if (!this.chosenUniverse)
+		{
+			if (notice !== undefined)
+			{
+				this.showOutside(notice);
+			}
+			else if ((this.linkGroupId === undefined) && (this.linkUniverseId === undefined))
+			{
+				window.location.replace(HOME_PAGE_URL);
+			}
+
+			return;
+		}
+
+		if (notice !== undefined)
+		{
+			this.lobbyScreen.showNotice(notice);
+		}
+
+		if (this.joinedLobby && this.player)
+		{
+			this.lobbyScreen.show(this.joinedLobby.universe.name, this.player.playerId, this.player.name);
+			showScreen('lobby');
+		}
+		else
+		{
+			showStatus(t({
+				id: 'lobby.entering',
+				defaultMessage: 'Entering {universe}...',
+				description: 'Shown on the whole page while the player goes into a universe\'s lobby; {universe} is its name'
+			}, {
+				universe: this.chosenUniverse.name
+			}));
+		}
+	}
+
+	/**
+	 * Shows a message on its own, with a link to Home, for a player who is in neither a lobby nor a group
+	 *
+	 * @param message Why the player isn't in one
+	 */
+	private showOutside(message: string): void
+	{
+		showNoticeScreen(message, t({
+			id: 'game.outside.title',
+			defaultMessage: 'Multiverse Kiln',
+			description: 'The browser tab\'s title on the game\'s page when the player isn\'t in a universe or game, such as when a join link has expired'
+		}));
+	}
+
+	/**
+	 * Leaves and joins rooms until the window is where the player is: their group's room when they are
+	 * in a group, the chosen universe's lobby when they have chosen one and aren't, and neither otherwise
+	 *
+	 * The player can change again while a room is being joined, so this repeats until it catches up
+	 */
+	private async syncRooms(): Promise<void>
+	{
+		if (this.syncingRooms)
+		{
+			return;
+		}
+
+		this.syncingRooms = true;
+
+		try
+		{
+			for (;;)
+			{
+				const wantedGroupId = this.wantedGroupId();
+
+				// While a join link is being answered, the player is about to be in a group
+				const wantedUniverse = (((this.player !== null) && (wantedGroupId === undefined) && (this.linkGroupId === undefined)) ? this.chosenUniverse : undefined);
+
+				if (this.joinedGroup && (this.joinedGroup.groupId !== wantedGroupId))
+				{
+					await this.leaveGroupRoom();
+				}
+				else if (this.joinedLobby && (this.joinedLobby.universe.id !== wantedUniverse?.id))
+				{
+					await this.leaveLobby();
+				}
+				else if ((wantedGroupId !== undefined) && !this.joinedGroup)
+				{
+					await this.joinGroupRoom(wantedGroupId);
+				}
+				else if (wantedUniverse && !this.joinedLobby)
+				{
+					await this.enterLobby(wantedUniverse);
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
+		finally
+		{
+			this.syncingRooms = false;
+		}
+	}
+
+	/**
+	 * The group the window should be in
+	 *
+	 * @return The player's group ID, or undefined when they aren't in one
+	 */
+	private wantedGroupId(): string | undefined
+	{
+		const groupId = (this.player?.groupId ?? undefined);
+
+		return(((groupId === this.failedGroupId) ? undefined : groupId));
+	}
+
+	/**
+	 * Lists the player's characters on the lobby screen, if the window is still in that lobby when they arrive
+	 *
+	 * @param lobby The joined lobby
+	 */
+	private async loadCharacters(lobby: JoinedLobby): Promise<void>
+	{
+		try
+		{
+			const list = await this.characterApi.listCharacters(lobby.universe.id);
+
+			if (this.joinedLobby === lobby)
+			{
+				this.lobbyScreen.showCharacters(list);
+			}
+		}
+		catch (error)
+		{
+			if (this.joinedLobby === lobby)
+			{
+				this.lobbyScreen.showCharacterError(describeEditorError(error, {
+					id: 'lobby.charactersFailed',
+					defaultMessage: 'Could not list your characters.',
+					description: 'Shown in the lobby when the list of the player\'s characters in the universe couldn\'t be loaded'
+				}));
+			}
+		}
+	}
+
+	/**
+	 * Joins a universe's lobby and shows it, or explains that it couldn't be joined
+	 *
+	 * @param universe The universe
+	 */
+	private async enterLobby(universe: UniverseSummary): Promise<void>
+	{
+		let connection: LobbyConnection;
+
+		try
+		{
+			connection = await joinLobby(this.server.client, universe.id);
+		}
+		catch (error)
+		{
+			console.error('Could not join the lobby:', error);
+
+			if (this.chosenUniverse === universe)
+			{
+				this.chosenUniverse = undefined;
+			}
+
+			if (this.player?.groupId === null)
+			{
+				this.showOutsideGroup(t({
+					id: 'lobby.notJoined',
+					defaultMessage: 'Could not enter {universe}. Try again in a moment.',
+					description: 'Shown on the game\'s page when the player couldn\'t go into a universe\'s lobby; {universe} is its name'
+				}, {
+					universe: universe.name
+				}));
+			}
+
+			return;
+		}
+
+		const joined: JoinedLobby = { universe, connection };
+		const { room } = connection;
+
+		this.joinedLobby = joined;
+		this.lobbyScreen.attach(connection);
+		void this.loadCharacters(joined);
+
+		room.onMessage(LobbyServerMessageType.ChatHistory, (history: ChatHistoryPayload) =>
+		{
+			this.lobbyScreen.setChatHistory(history.messages);
+		});
+
+		room.onMessage(LobbyServerMessageType.Chat, (message: ChatMessage) =>
+		{
+			this.lobbyScreen.addChatMessage(message);
+		});
+
+		// A character the screen doesn't list was made in another window since the list loaded
+		room.onMessage(LobbyServerMessageType.PlayingAs, (playingAs: PlayingAsPayload) =>
+		{
+			if (!this.lobbyScreen.setPlayingAs(playingAs.characterId))
+			{
+				void this.loadCharacters(joined);
+			}
+		});
+
+		room.onMessage(LobbyServerMessageType.CharactersChanged, () =>
+		{
+			void this.loadCharacters(joined);
+		});
+
+		room.onMessage(LobbyServerMessageType.Notice, (notice: NoticePayload) =>
+		{
+			this.onNotice(notice.reason);
+		});
+
+		room.onLeave((code: number) =>
+		{
+			this.onLobbyLeft(joined, code);
+		});
+
+		if (this.player?.groupId === null)
+		{
+			this.showOutsideGroup();
+		}
+	}
+
+	/**
+	 * Stops showing the lobby and leaves its room
+	 */
+	private async leaveLobby(): Promise<void>
+	{
+		const joined = this.joinedLobby;
+
+		if (!joined)
+		{
+			return;
+		}
+
+		this.joinedLobby = undefined;
+		this.lobbyScreen.detach();
+
+		if (joined.connection.room.connection.isOpen)
+		{
+			await joined.connection.room.leave();
+		}
+	}
+
+	/**
+	 * Handles the lobby's room closing when the window didn't leave it itself, explaining that the connection was lost
+	 *
+	 * @param joined The lobby that closed
+	 * @param code WebSocket close code
+	 */
+	private onLobbyLeft(joined: JoinedLobby, code: number): void
+	{
+		if (this.joinedLobby !== joined)
+		{
+			return;
+		}
+
+		this.joinedLobby = undefined;
+		this.lobbyScreen.detach();
+
+		if (code === CloseCode.CONSENTED)
+		{
+			return;
+		}
+
+		console.error(`Disconnected from the lobby (code ${code})`);
+
+		if (this.chosenUniverse?.id === joined.universe.id)
+		{
+			this.chosenUniverse = undefined;
+		}
+
+		if (this.player?.groupId === null)
+		{
+			this.showOutsideGroup(t({
+				id: 'lobby.connectionLost',
+				defaultMessage: 'Lost the connection to {universe}.',
+				description: 'Shown on the game\'s page when the connection to a universe\'s lobby was lost; {universe} is its name'
+			}, {
+				universe: joined.universe.name
+			}));
+		}
+	}
+
+	/**
+	 * Joins a group's room and shows it
+	 *
+	 * If the room can't be joined, asks the session to take the player out of the group, so that every
+	 * window goes back rather than trying again
+	 *
+	 * @param groupId The group's ID
+	 */
+	private async joinGroupRoom(groupId: string): Promise<void>
+	{
+		let connection: GameConnection;
+
+		this.groupScreen.prepare(groupId);
+		showScreen('group');
+
+		try
+		{
+			connection = await joinGroup(this.server.client, groupId);
+		}
+		catch (error)
+		{
+			console.error('Could not join the group:', error);
+			this.failedGroupId = groupId;
+			this.showOutsideGroup(t({
+				id: 'group.notJoined',
+				defaultMessage: 'Could not join that game. It may have just ended.',
+				description: 'Shown when the player couldn\'t go into their game'
+			}));
+			this.server.session.send(SessionMessageType.LeaveGroup);
+			return;
+		}
+
+		this.joinedGroup = { groupId, connection };
+
+		connection.room.onLeave((code: number) =>
+		{
+			this.onGroupRoomLeft(connection, code);
+		});
+
+		this.groupScreen.start(connection);
+	}
+
+	/**
+	 * Stops showing the group and leaves its room
+	 */
+	private async leaveGroupRoom(): Promise<void>
+	{
+		const joined = this.joinedGroup;
+
+		if (!joined)
+		{
+			return;
+		}
+
+		this.joinedGroup = undefined;
+		this.groupScreen.stop();
+
+		if (joined.connection.room.connection.isOpen)
+		{
+			await joined.connection.room.leave();
+		}
+	}
+
+	/**
+	 * Handles the group's room closing when the window didn't leave it itself
+	 *
+	 * The server closes it with LeftGroup when the player leaves the group from another window, and
+	 * the session's Account message moves this window too. Any other close means the room failed, so the
+	 * player is taken out of the group
+	 *
+	 * @param connection The room that closed
+	 * @param code WebSocket close code
+	 */
+	private onGroupRoomLeft(connection: GameConnection, code: number): void
+	{
+		if (this.joinedGroup?.connection !== connection)
+		{
+			return;
+		}
+
+		this.joinedGroup = undefined;
+		this.groupScreen.stop();
+
+		if (code === ServerCloseCode.LeftGroup.valueOf())
+		{
+			return;
+		}
+
+		if (code !== CloseCode.CONSENTED)
+		{
+			console.error(`Disconnected from the group (code ${code})`);
+			this.showOutsideGroup(t({
+				id: 'group.connectionLost',
+				defaultMessage: 'Lost the connection to the game.',
+				description: 'Shown when the connection to the player\'s game was lost'
+			}));
+		}
+
+		this.server.session.send(SessionMessageType.LeaveGroup);
+	}
+}

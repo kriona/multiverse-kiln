@@ -2,30 +2,43 @@ import { UNIVERSE_ROLE_NAMES, type EditableUniverse, type UniverseSummary } from
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
+import type { ChangeTracker } from '../changeTracker';
 import { getElement, showMessage } from '../dom';
+import { CharactersTab } from './CharactersTab';
+import { ClassesTab } from './ClassesTab';
+import { ItemSelectDialog } from './ItemSelectDialog';
+import { ItemsTab } from './ItemsTab';
+import { RacesTab } from './RacesTab';
+import { RulesetTab } from './RulesetTab';
 import { TilesetsTab } from './TilesetsTab';
 import { UniverseTab } from './UniverseTab';
-import { ZonesTab } from './ZonesTab';
+import { AreaSelectDialog } from './AreaSelectDialog';
+import { AreasTab } from './AreasTab';
 
 /**
  * The editor's tabs
  */
 export const EDITOR_TABS = [
 	'universe',
+	'ruleset',
 	'lobby',
+	'characters',
+	'races',
+	'classes',
 	'tilesets',
-	'zones'
+	'areas',
+	'items'
 ] as const;
 
 export type EditorTab = typeof EDITOR_TABS[number];
 
 /**
- * Where in the editor the player is: the tab shown, and the zone open in the zone editor
+ * Where in the editor the player is: the tab shown, and the area open in the area editor
  */
 export interface EditorPlace
 {
 	tab: EditorTab;
-	zoneId: string | undefined;
+	areaId: string | undefined;
 }
 
 /**
@@ -44,7 +57,7 @@ export interface EditorScreenActions
 	play: (universe: UniverseSummary) => void;
 
 	/**
-	 * The player has moved to another tab or zone, so the page's address can follow
+	 * The player has moved to another tab or area, so the page's address can follow
 	 */
 	placeChanged: (place: EditorPlace) => void;
 }
@@ -61,7 +74,7 @@ export function isEditorTab(value: string | undefined): value is EditorTab
 }
 
 /**
- * Edit Universe: a universe's settings, tiles and zones, in tabs
+ * Edit Universe: a universe's settings, ruleset, characters, races, classes, tiles, areas and items, in tabs
  *
  * What the player may change depends on their role in the universe; the server checks it again on
  * every change, so the page only hides controls that would be refused
@@ -72,15 +85,20 @@ export class EditorScreen
 	private readonly role = getElement('editor-role', HTMLElement);
 	private readonly notice = getElement('editor-notice', HTMLElement);
 	private readonly universeTab: UniverseTab;
+	private readonly rulesetTab: RulesetTab;
+	private readonly charactersTab: CharactersTab;
+	private readonly racesTab: RacesTab;
+	private readonly classesTab: ClassesTab;
 	private readonly tilesetsTab: TilesetsTab;
-	private readonly zonesTab: ZonesTab;
+	private readonly areasTab: AreasTab;
+	private readonly itemsTab: ItemsTab;
 
 	/**
 	 * The universe being edited, once it has loaded
 	 */
 	private universe: EditableUniverse | undefined;
 
-	private place: EditorPlace = { tab: 'universe', zoneId: undefined };
+	private place: EditorPlace = { tab: 'universe', areaId: undefined };
 
 	/**
 	 * Changes every time a universe is opened, so one that arrives for an earlier open is ignored
@@ -97,11 +115,38 @@ export class EditorScreen
 		{
 			this.setUniverse(universe);
 		});
-		this.tilesetsTab = new TilesetsTab(api);
-		this.zonesTab = new ZonesTab(api, (zoneId) =>
+		this.rulesetTab = new RulesetTab(api);
+
+		const areaSelect = new AreaSelectDialog(api);
+		const itemSelect = new ItemSelectDialog(api);
+
+		this.charactersTab = new CharactersTab(api, areaSelect, itemSelect, (universe) =>
 		{
-			this.setPlace({ ...this.place, zoneId });
+			this.setUniverse(universe);
 		});
+		this.racesTab = new RacesTab(api, areaSelect, itemSelect);
+		this.classesTab = new ClassesTab(api, areaSelect, itemSelect);
+		this.tilesetsTab = new TilesetsTab(api);
+		this.areasTab = new AreasTab(api, (areaId) =>
+		{
+			this.setPlace({ ...this.place, areaId });
+		});
+		this.itemsTab = new ItemsTab(api);
+
+		const trackedTabs: [EditorTab, ChangeTracker][] = [
+			['universe', this.universeTab.changes],
+			['ruleset', this.rulesetTab.changes],
+			['characters', this.charactersTab.changes],
+			['areas', this.areasTab.changes]
+		];
+
+		for (const [name, changes] of trackedTabs)
+		{
+			changes.subscribe((unsaved) =>
+			{
+				this.markTab(name, unsaved);
+			});
+		}
 
 		for (const name of EDITOR_TABS)
 		{
@@ -127,18 +172,18 @@ export class EditorScreen
 		{
 			if (this.universe)
 			{
-				const { id, name, shortDescription, ruleset } = this.universe;
+				const { id, name, slug, shortDescription, ruleset } = this.universe;
 
-				actions.play({ id, name, shortDescription, ruleset });
+				actions.play({ id, name, slug, shortDescription, ruleset });
 			}
 		});
 
-		getElement('lobby-edit-zone', HTMLButtonElement).addEventListener('click', () =>
+		getElement('lobby-edit-area', HTMLButtonElement).addEventListener('click', () =>
 		{
-			if (this.universe?.lobbyZoneId)
+			if (this.universe?.lobbyAreaId)
 			{
-				this.selectTab('zones');
-				void this.zonesTab.openZone(this.universe.lobbyZoneId);
+				this.selectTab('areas');
+				void this.areasTab.openArea(this.universe.lobbyAreaId);
 			}
 		});
 	}
@@ -147,8 +192,8 @@ export class EditorScreen
 	 * Loads a universe and shows it
 	 *
 	 * @param universeId The universe's ID
-	 * @param place The tab to show and the zone to open; the Universe tab when neither is given, or the
-	 * Zones tab when only a zone is
+	 * @param place The tab to show and the area to open; the Universe tab when neither is given, or the
+	 * Areas tab when only an area is
 	 */
 	async open(universeId: string, place: Partial<EditorPlace> = {}): Promise<void>
 	{
@@ -188,11 +233,16 @@ export class EditorScreen
 			return;
 		}
 
-		this.place = { tab: (place.tab ?? ((place.zoneId === undefined) ? 'universe' : 'zones')), zoneId: place.zoneId };
+		this.place = { tab: (place.tab ?? ((place.areaId === undefined) ? 'universe' : 'areas')), areaId: place.areaId };
 		this.setUniverse(universe);
 		this.universeTab.open(universe);
+		void this.rulesetTab.open(universe);
+		this.charactersTab.open(universe);
+		this.racesTab.open(universe);
+		this.classesTab.open(universe);
 		this.tilesetsTab.open(universe);
-		this.zonesTab.open(universe, place.zoneId);
+		this.areasTab.open(universe, place.areaId);
+		this.itemsTab.open(universe);
 		this.selectTab(this.place.tab);
 	}
 
@@ -226,14 +276,55 @@ export class EditorScreen
 			id: 'editor.universeTitle',
 			defaultMessage: 'Edit {universe}',
 			description: 'Heading of the world editor; {universe} is the universe\'s name'
-		}, { universe: universe.name });
+		}, {
+			universe: universe.name
+		});
 		document.title = t({
 			id: 'editor.pageTitle',
 			defaultMessage: 'Edit {universe} - Multiverse Kiln',
 			description: 'The browser tab\'s title for the world editor; {universe} is the universe\'s name and Multiverse Kiln is the game engine\'s name'
-		}, { universe: universe.name });
+		}, {
+			universe: universe.name
+		});
 		this.role.textContent = t(UNIVERSE_ROLE_NAMES[universe.role]);
-		this.zonesTab.setUniverse(universe);
+		this.areasTab.setUniverse(universe);
+	}
+
+	/**
+	 * Marks a tab whose form has changes that haven't been saved, with a dot and, for screen readers,
+	 * words after the tab's name, so they aren't forgotten on a tab out of view
+	 *
+	 * @param name The tab
+	 * @param unsaved Whether its form has unsaved changes
+	 */
+	private markTab(name: EditorTab, unsaved: boolean): void
+	{
+		const tab = getElement(`editor-tab-${name}`, HTMLButtonElement);
+		const marker = tab.querySelector('.tab-changes');
+
+		if (!unsaved)
+		{
+			marker?.remove();
+			return;
+		}
+
+		if (marker)
+		{
+			return;
+		}
+
+		const added = document.createElement('span');
+		const text = document.createElement('span');
+
+		added.className = 'tab-changes';
+		text.className = 'visually-hidden';
+		text.textContent = t({
+			id: 'editor.tab.unsavedChanges',
+			defaultMessage: '(unsaved changes)',
+			description: 'Read out by screen readers after the name of an editor tab whose form has changes that haven\'t been saved; a dot shows it on screen'
+		});
+		added.append(text);
+		tab.append(added);
 	}
 
 	/**
@@ -288,7 +379,7 @@ export class EditorScreen
 	/**
 	 * Remembers where the player is in the editor and tells the page
 	 *
-	 * @param place The tab and zone
+	 * @param place The tab and area
 	 */
 	private setPlace(place: EditorPlace): void
 	{

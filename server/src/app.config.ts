@@ -10,8 +10,11 @@ import { GameRoom } from './rooms/GameRoom.js';
 import { LobbyRoom } from './rooms/LobbyRoom.js';
 import { SessionRoom } from './rooms/SessionRoom.js';
 import { createTransport } from './transport.js';
+import { startCharacterSweep } from './characterSweep.js';
 import { isDevToolsEnabled } from './devTools.js';
+import { addAdminRoutes } from './http/admin.js';
 import { addBrowserIdRoute } from './http/browserId.js';
+import { addCharacterRoutes } from './http/characters.js';
 import { addEditorRoutes } from './http/editor.js';
 import { addHealthRoute } from './http/health.js';
 import { addUniversesRoutes } from './http/universes.js';
@@ -30,6 +33,14 @@ const server = defineServer({
 	 * WebSocket connections from browsers on origins outside ALLOWED_ORIGINS are rejected
 	 */
 	transport: createTransport({ beforeUpgrade: createOriginCheck(allowedOrigins) }),
+
+	/**
+	 * Deletes characters whose last rites are over, now and every hour
+	 */
+	beforeListen: () =>
+	{
+		startCharacterSweep();
+	},
 
 	/**
 	 * Room types clients can join
@@ -54,7 +65,9 @@ const server = defineServer({
 		addHealthRoute(app);
 		addBrowserIdRoute(app);
 		addUniversesRoutes(app);
+		addCharacterRoutes(app, allowedOrigins);
 		addEditorRoutes(app, allowedOrigins);
+		addAdminRoutes(app, allowedOrigins);
 
 		if (isDevToolsEnabled())
 		{

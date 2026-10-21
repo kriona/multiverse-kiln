@@ -210,6 +210,17 @@ describe('SessionRoom', () =>
 			assert.strictEqual(window.inbox.pending(SessionServerMessageType.Account), 0);
 		});
 
+		it('does not log in with a name that passes as staff, and says so', async () =>
+		{
+			const browserId = randomUUID();
+			const window = await openWindow(browserId);
+
+			window.room.send(SessionMessageType.Login, { name: 'The Adm1n' });
+
+			assert.strictEqual((await window.inbox.take<NoticePayload>(SessionServerMessageType.Notice)).reason, NoticeReason.NameReserved);
+			assert.strictEqual(onlinePlayers.get(browserId), undefined);
+		});
+
 		for (const [label, name] of [
 			['an empty name', ''],
 			['a name of only spaces', '   '],

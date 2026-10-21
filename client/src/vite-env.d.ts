@@ -9,7 +9,7 @@ interface ImportMetaEnv
 	readonly VITE_SERVER_URL?: string;
 
 	/**
-	 * Where players can get the game's source code (AGPL section 13)
+	 * Where players can get the game engine's source code (AGPL section 13)
 	 */
 	readonly VITE_SOURCE_URL?: string;
 }

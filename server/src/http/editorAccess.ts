@@ -3,11 +3,11 @@
  */
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import { z } from 'zod';
-import type { EditableUniverse, EditorZone, UniverseRole } from '@multiverse-kiln/shared';
+import type { EditableUniverse, EditorArea, UniverseRole } from '@multiverse-kiln/shared';
 
 import { findUniverseRole } from '../db/universeEditorRepo.js';
 import { findEditableUniverse } from '../db/universeRepo.js';
-import { findEditorZone } from '../db/zoneRepo.js';
+import { findEditorArea } from '../db/areaRepo.js';
 import { onlinePlayers } from '../players/onlinePlayers.js';
 import { readBrowserId } from './browserId.js';
 import { errorMessages, sendError } from './errors.js';
@@ -24,11 +24,11 @@ export interface UniverseContext
 }
 
 /**
- * The zone a request is about, in its universe
+ * The area a request is about, in its universe
  */
-export interface ZoneContext extends UniverseContext
+export interface AreaContext extends UniverseContext
 {
-	zone: EditorZone;
+	area: EditorArea;
 }
 
 /**
@@ -38,7 +38,7 @@ const READ_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 const playerIds = new WeakMap<Request, string>();
 const universeContexts = new WeakMap<Request, UniverseContext>();
-const zoneContexts = new WeakMap<Request, ZoneContext>();
+const areaContexts = new WeakMap<Request, AreaContext>();
 
 /**
  * Middleware that refuses writes from browsers on origins outside ALLOWED_ORIGINS
@@ -130,30 +130,30 @@ export async function loadUniverseContext(request: Request, response: Response, 
 }
 
 /**
- * Middleware for routes under /:universeId/zones/:zoneId: loads the zone, which must belong to the universe
+ * Middleware for routes under /:universeId/areas/:areaId: loads the area, which must belong to the universe
  *
  * @param request The request
  * @param response The response
  * @param next Continues to the next handler
  */
-export async function loadZoneContext(request: Request, response: Response, next: NextFunction): Promise<void>
+export async function loadAreaContext(request: Request, response: Response, next: NextFunction): Promise<void>
 {
-	const zoneId = z.uuid().safeParse(request.params.zoneId);
+	const areaId = z.uuid().safeParse(request.params.areaId);
 	const context = universeContextOf(request);
 
-	if (zoneId.success)
+	if (areaId.success)
 	{
-		const found = await findEditorZone(zoneId.data);
+		const found = await findEditorArea(areaId.data);
 
 		if (found && (found.universeId === context.universe.id))
 		{
-			zoneContexts.set(request, { ...context, zone: found.zone });
+			areaContexts.set(request, { ...context, area: found.area });
 			next();
 			return;
 		}
 	}
 
-	sendError(response, 404, errorMessages.noSuchZone);
+	sendError(response, 404, errorMessages.noSuchArea);
 }
 
 /**
@@ -217,18 +217,18 @@ export function universeContextOf(request: Request): UniverseContext
 }
 
 /**
- * The zone of a request that has passed loadZoneContext
+ * The area of a request that has passed loadAreaContext
  *
  * @param request The request
- * @return The zone, its universe and the player's role in it
+ * @return The area, its universe and the player's role in it
  */
-export function zoneContextOf(request: Request): ZoneContext
+export function areaContextOf(request: Request): AreaContext
 {
-	const context = zoneContexts.get(request);
+	const context = areaContexts.get(request);
 
 	if (!context)
 	{
-		throw new Error(`${request.method} ${request.path} reached a handler without loadZoneContext`);
+		throw new Error(`${request.method} ${request.path} reached a handler without loadAreaContext`);
 	}
 
 	return(context);

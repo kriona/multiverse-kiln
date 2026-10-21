@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title data-message="page.title" data-translation-context="The browser tab's title for Home, a universe's page and the game's page while they load">Multiverse Kiln</title>
+		<link rel="stylesheet" href="/src/universe.scss" />
+	</head>
+	<body>
+		<main>
+			<!-- include status.html -->
+
+			<!-- include notice.html -->
+
+			<section id="universe-screen" class="screen" hidden>
+				<header class="toolbar">
+					<h1 id="universe-name"></h1>
+					<a class="button secondary toolbar-link" href="/" data-shortcut="Alt+H" data-message="universePage.home" data-translation-context="Link at the top of a universe's page that goes back to the list of universes"><!-- icon ph:house -->Back to Home</a>
+				</header>
+				<div class="universe-page">
+					<article class="panel universe-overview">
+						<p id="universe-ruleset" class="universe-ruleset"></p>
+						<p id="universe-summary" class="universe-summary"></p>
+						<div id="universe-description" class="markdown"></div>
+						<a id="universe-enter" class="button universe-enter" href="/game" data-shortcut="Alt+U" data-message="universePage.enter" data-translation-context="Button on a universe's page that takes the player into the universe, starting in its lobby"><!-- icon game-icons:magic-portal -->Enter Universe</a>
+					</article>
+					<section id="universe-characters" class="panel universe-characters" aria-labelledby="universe-characters-heading" hidden>
+						<h2 id="universe-characters-heading" data-message="universePage.characters" data-translation-context="Heading on a universe's page of the list of characters the player has made in the universe, shown while they are logged in">Your characters</h2>
+						<ul id="universe-character-list" class="universe-character-list"></ul>
+						<p id="universe-character-none" class="universe-character-none" data-message="universePage.noCharacters" data-translation-context="Shown on a universe's page instead of the list of the player's characters when they haven't made one in the universe" hidden>You haven't made a character in this universe yet.</p>
+						<p id="universe-character-error" class="form-error" role="alert" hidden></p>
+					</section>
+				</div>
+			</section>
+			<!-- include character-sheet.html -->
+		</main>
+		<!-- include footer.html -->
+		<!-- include accessibility.html -->
+		<script type="module" src="/src/universe.ts"></script>
+	</body>
+</html>

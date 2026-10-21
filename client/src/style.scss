@@ -1,6 +1,7 @@
-// The game's page (index.html): Home, a universe's lobby and a group's game
+// Home (index.html), and the game's page (game.html): a universe's lobby and a group's game
 
 @use 'shared' as *;
+@use 'characterSheet';
 
 .home-body
 {
@@ -113,6 +114,108 @@
 	{
 		padding: 2px 0;
 	}
+}
+
+.characters
+{
+	display: flex;
+	flex-direction: column;
+	max-height: 200px;
+}
+
+.character-list
+{
+	flex: 1;
+	overflow-y: auto;
+	margin: 12px 0 0;
+	padding: 0;
+	list-style: none;
+	overflow-wrap: anywhere;
+
+	li
+	{
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		padding: 2px 0;
+	}
+}
+
+// Each character is a button that plays them; the one being played has an outline and says so in words
+.character-choice
+{
+	display: flex;
+	flex: 1;
+	flex-wrap: wrap;
+	gap: 0 6px;
+	align-items: baseline;
+	min-width: 0;
+	padding: 4px 8px;
+	border-color: transparent;
+	background: none;
+	color: $text;
+	text-align: left;
+
+	&:hover
+	{
+		background: $background-control-hover;
+	}
+
+	&[aria-pressed="true"]
+	{
+		border-color: $accent;
+		cursor: default;
+	}
+
+	// A character given their last rites, who can't be played until restored
+	&[aria-disabled="true"]
+	{
+		color: $text-faint;
+		cursor: default;
+
+		&:hover
+		{
+			background: none;
+		}
+	}
+}
+
+.character-leaving
+{
+	margin-inline-start: auto;
+	font-size: 12px;
+	color: $error;
+}
+
+.character-sheet-button
+{
+	flex-shrink: 0;
+	padding: 4px 8px;
+	font-size: 12px;
+}
+
+.character-playing
+{
+	margin-inline-start: auto;
+	font-size: 12px;
+	color: $accent;
+}
+
+.ghost-note
+{
+	margin: 12px 0 0;
+	color: $text-muted;
+}
+
+.character-description,
+.character-none
+{
+	color: $text-faint;
+}
+
+.character-none
+{
+	margin: 12px 0 0;
 }
 
 .member-own

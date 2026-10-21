@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title data-message="admin.title" data-translation-context="The browser tab's title for the page where the site's admins change settings for the whole site">Site Settings - Multiverse Kiln</title>
+		<link rel="stylesheet" href="/src/admin.scss" />
+	</head>
+	<body>
+		<main>
+			<section class="admin-page">
+				<header class="toolbar">
+					<h1 data-message="admin.heading" data-translation-context="Heading of the page where the site's admins change settings for the whole site">Site Settings</h1>
+					<a class="button secondary toolbar-link" href="/" data-message="admin.home" data-translation-context="Link at the top of the site settings page that goes back to the list of universes"><!-- icon ph:house -->Back to Home</a>
+				</header>
+				<div class="admin-body">
+					<p id="site-settings-loading" class="admin-loading" data-message="admin.loading" data-translation-context="Shown on the site settings page while the settings load">Loading...</p>
+					<p id="site-settings-load-error" class="notice" role="alert" hidden></p>
+					<form id="site-settings-form" class="panel form" hidden>
+						<fieldset id="site-settings-fields" class="plain">
+							<h2 data-message="admin.universes" data-translation-context="Heading of the site settings about creating universes">Universes</h2>
+							<label class="checkbox" data-message="admin.universeCreationEnabled" data-translation-context="Checkbox on the site settings page for whether players can create new universes">
+								<input id="site-universe-creation" type="checkbox" />
+								Players can create universes
+							</label>
+							<label data-message="admin.universesPerCreator" data-translation-context="Label of the field on the site settings page for the most universes one player may create">
+								Universes each player can create
+								<input id="site-universes-per-creator" type="number" step="1" required />
+							</label>
+							<p class="hint" data-message="admin.universesHint" data-translation-context="Explains on the site settings page that the universe settings only affect making new universes">These only affect new universes. Universes that already exist persist, even for players who have more than the limit.</p>
+							<h2 data-message="admin.characters" data-translation-context="Heading of the site settings about players' characters">Characters</h2>
+							<label data-message="admin.characterDeletionDays" data-translation-context="Label of the field on the site settings page for how many days a character given their last rites waits before being deleted">
+								Days between last rites and deletion
+								<input id="site-character-deletion-days" type="number" step="1" required aria-describedby="site-character-deletion-hint" />
+							</label>
+							<p id="site-character-deletion-hint" class="hint" data-message="admin.characterDeletionHint" data-translation-context="Explains the field on the site settings page for how many days last rites wait. Last Rites is the name of the button players use to delete a character after those days">Last Rites deletes a character after this many days, and players can restore them until then. 0 turns Last Rites off, so characters can only be deleted. Characters already given their last rites keep their day.</p>
+							<p id="site-settings-error" class="form-error" role="alert" hidden></p>
+							<div class="form-buttons">
+								<span id="site-settings-saved" class="form-saved" role="status"></span>
+								<button id="site-settings-save" type="submit" aria-describedby="site-settings-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+							</div>
+						</fieldset>
+					</form>
+				</div>
+			</section>
+		</main>
+		<!-- include footer.html -->
+		<!-- include accessibility.html -->
+		<script type="module" src="/src/admin.ts"></script>
+	</body>
+</html>

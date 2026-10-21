@@ -32,12 +32,31 @@ export const errorMessages = defineMessages({
 		defaultMessage: 'The universe doesn\'t exist, or you can\'t see it.',
 		description: 'Why a request about a universe failed: it was deleted, or the player has no access to it'
 	},
-	noSuchZone: {
-		id: 'error.noSuchZone',
-		defaultMessage: 'The zone doesn\'t exist.',
-		description: 'Why a request about a zone failed: it was deleted, perhaps by another editor'
+	noSuchArea: {
+		id: 'error.noSuchArea',
+		defaultMessage: 'The area doesn\'t exist.',
+		description: 'Why a request about an area failed: it was deleted, perhaps by another editor'
+	},
+	universeNameTaken: {
+		id: 'error.universeNameTaken',
+		defaultMessage: 'Another universe already has that name, or one too much like it.',
+		description: 'Why a universe wasn\'t made or renamed: universe names must be unique, and names that could be mistaken for each other count as the same, such as ones that differ only in capitals, accents, spaces or punctuation, letters from another alphabet that look the same, or "1" for "i"'
 	}
 });
+
+/**
+ * Why a request is refused, decided where the response isn't at hand, such as inside a transaction
+ */
+export interface Refusal
+{
+	/**
+	 * The HTTP status, e.g. 409
+	 */
+	status: number;
+
+	message: MessageDescriptor;
+	values?: MessageValues;
+}
 
 /**
  * Answers a request with an error

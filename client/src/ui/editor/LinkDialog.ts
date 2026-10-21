@@ -1,24 +1,25 @@
-import { isInBounds, type EditorTile, type EditorZone, type EditorZoneLink, type EditorZoneSummary, type MessageDescriptor, type Ruleset, type ZoneLinkMode, type ZoneLinkTarget } from '@multiverse-kiln/shared';
+import { isInBounds, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type MessageDescriptor, type Ruleset, type AreaLinkMode, type AreaLinkTarget } from '@multiverse-kiln/shared';
 
 import { ChunkLoader } from '../../editor/ChunkLoader';
 import { EditorMap } from '../../editor/EditorMap';
-import { editorZonePayload, MapCanvas } from '../../editor/MapCanvas';
+import { editorAreaPayload, MapCanvas } from '../../editor/MapCanvas';
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import type { BrushCell } from '../../editor/brush';
 import type { MapEditorHost } from '../../scenes/MapEditorScene';
+import { ChangeTracker } from '../changeTracker';
 import { getElement, setOptions, showMessage } from '../dom';
 import { addKeyHelp } from '../shortcuts';
 import { describeCell } from './cellDescription';
 import { mapMessages } from './mapMessages';
 
 /**
- * Width of the target zone's preview, in pixels
+ * Width of the target area's preview, in pixels
  */
 const PREVIEW_WIDTH = 600;
 
 /**
- * Height of the target zone's preview, in pixels
+ * Height of the target area's preview, in pixels
  */
 const PREVIEW_HEIGHT = 330;
 
@@ -34,9 +35,9 @@ export interface LinkDialogTarget
 	universeId: string;
 
 	/**
-	 * The zone the link is in
+	 * The area the link is in
 	 */
-	zone: EditorZone;
+	area: EditorArea;
 
 	column: number;
 	row: number;
@@ -44,12 +45,12 @@ export interface LinkDialogTarget
 	/**
 	 * The link the cell has, or undefined to add one
 	 */
-	link: EditorZoneLink | undefined;
+	link: EditorAreaLink | undefined;
 
 	/**
-	 * Every zone of the universe
+	 * Every area of the universe
 	 */
-	zones: readonly EditorZoneSummary[];
+	areas: readonly EditorAreaSummary[];
 
 	/**
 	 * Every tile the universe can use, for drawing the preview
@@ -68,20 +69,20 @@ export interface LinkDialogTarget
 }
 
 /**
- * The zone the preview shows
+ * The area the preview shows
  */
-interface PreviewZone
+interface PreviewArea
 {
-	zone: EditorZone;
-	links: EditorZoneLink[];
+	area: EditorArea;
+	links: EditorAreaLink[];
 	map: EditorMap;
 	loader: ChunkLoader;
 }
 
 /**
- * Adds, changes or deletes a cell's zone link: how it is taken, whether it needs the whole group, and
- * where it goes, chosen by clicking a preview of the target zone's map. It can also place a return
- * link in the target zone that leads back to the cell
+ * Adds, changes or deletes a cell's area link: how it is taken, whether it needs the whole group, and
+ * where it goes, chosen by clicking a preview of the target area's map. It can also place a return
+ * link in the target area that leads back to the cell
  */
 export class LinkDialog
 {
@@ -92,7 +93,7 @@ export class LinkDialog
 	private readonly automatic = getElement('link-automatic', HTMLInputElement);
 	private readonly manual = getElement('link-manual', HTMLInputElement);
 	private readonly wholeGroup = getElement('link-whole-group', HTMLInputElement);
-	private readonly targetZone = getElement('link-target', HTMLSelectElement);
+	private readonly targetArea = getElement('link-target', HTMLSelectElement);
 	private readonly addReturn = getElement('link-return', HTMLInputElement);
 	private readonly pickChoice = getElement('link-pick-choice', HTMLElement);
 	private readonly pickReturn = getElement('link-pick-return', HTMLInputElement);
@@ -104,12 +105,20 @@ export class LinkDialog
 	private readonly canvas = new MapCanvas(getElement('link-preview', HTMLElement), PREVIEW_WIDTH, PREVIEW_HEIGHT);
 
 	private target: LinkDialogTarget | undefined;
-	private preview: PreviewZone | undefined;
+	private preview: PreviewArea | undefined;
 	private destination: BrushCell | undefined;
 	private returnCell: BrushCell | undefined;
 
 	/**
-	 * Changes every time the preview switches zone, so a zone that arrives for an earlier choice is ignored
+	 * Whether the link, or the cells chosen on the preview, have changes that haven't been saved
+	 */
+	private readonly changes = new ChangeTracker({
+		root: this.form,
+		state: () => [this.destination, this.returnCell]
+	});
+
+	/**
+	 * Changes every time the preview switches area, so an area that arrives for an earlier choice is ignored
 	 */
 	private previewVersion = 0;
 
@@ -140,11 +149,11 @@ export class LinkDialog
 			})
 		});
 
-		this.targetZone.addEventListener('change', () =>
+		this.targetArea.addEventListener('change', () =>
 		{
 			this.destination = undefined;
 			this.returnCell = undefined;
-			void this.showPreview(this.targetZone.value);
+			void this.showPreview(this.targetArea.value);
 		});
 
 		this.addReturn.addEventListener('change', () =>
@@ -156,9 +165,14 @@ export class LinkDialog
 			this.updateCells();
 		});
 
+		this.changes.guardDialog(this.dialog);
+
 		getElement('link-cancel', HTMLButtonElement).addEventListener('click', () =>
 		{
-			this.dialog.close();
+			if (this.changes.confirmDiscard())
+			{
+				this.dialog.close();
+			}
 		});
 
 		this.dialog.addEventListener('close', () =>
@@ -186,7 +200,7 @@ export class LinkDialog
 	open(target: LinkDialogTarget): void
 	{
 		const { link } = target;
-		const others = target.zones.filter((zone) => (zone.id !== target.zone.id));
+		const others = target.areas.filter((area) => (area.id !== target.area.id));
 
 		this.target = target;
 		this.destination = (link ? { column: link.targetColumn, row: link.targetRow } : undefined);
@@ -195,7 +209,7 @@ export class LinkDialog
 			? t({
 				id: 'editor.link.title',
 				defaultMessage: 'Link at {column}, {row}',
-				description: 'Title of the dialog for a cell\'s zone link; {column} and {row} are the cell\'s coordinates'
+				description: 'Title of the dialog for a cell\'s area link; {column} and {row} are the cell\'s coordinates'
 			}, {
 				column: target.column,
 				row: target.row
@@ -203,7 +217,7 @@ export class LinkDialog
 			: t({
 				id: 'editor.link.addTitle',
 				defaultMessage: 'Add a link at {column}, {row}',
-				description: 'Title of the dialog for adding a zone link to a cell; {column} and {row} are the cell\'s coordinates'
+				description: 'Title of the dialog for adding an area link to a cell; {column} and {row} are the cell\'s coordinates'
 			}, {
 				column: target.column,
 				row: target.row
@@ -217,33 +231,34 @@ export class LinkDialog
 		this.pickDestination.checked = true;
 		this.deleteButton.hidden = !link;
 		this.fields.disabled = false;
-		setOptions(this.targetZone, others.map((zone) => ({
-			value: zone.id,
-			label: zone.name
+		setOptions(this.targetArea, others.map((area) => ({
+			value: area.id,
+			label: area.name
 		})));
-		this.targetZone.value = (link?.targetZoneId ?? others[0]?.id ?? '');
+		this.targetArea.value = (link?.targetAreaId ?? others[0]?.id ?? '');
 		showMessage(this.error, ((others.length === 0)
 			? t({
-				id: 'editor.link.noOtherZones',
-				defaultMessage: 'Add another zone to link to first.',
-				description: 'Shown in the link dialog when the universe has only the zone being edited'
+				id: 'editor.link.noOtherAreas',
+				defaultMessage: 'Add another area to link to first.',
+				description: 'Shown in the link dialog when the universe has only the area being edited'
 			})
 			: undefined));
 		this.updateCells();
 		this.dialog.showModal();
+		this.changes.markSaved();
 
-		if (this.targetZone.value !== '')
+		if (this.targetArea.value !== '')
 		{
-			void this.showPreview(this.targetZone.value);
+			void this.showPreview(this.targetArea.value);
 		}
 	}
 
 	/**
-	 * Shows a zone's map in the preview, centered on the destination if it has one
+	 * Shows an area's map in the preview, centered on the destination if it has one
 	 *
-	 * @param zoneId The zone's ID
+	 * @param areaId The area's ID
 	 */
-	private async showPreview(zoneId: string): Promise<void>
+	private async showPreview(areaId: string): Promise<void>
 	{
 		const target = this.target;
 		const version = ++this.previewVersion;
@@ -255,14 +270,14 @@ export class LinkDialog
 			return;
 		}
 
-		let zone: EditorZone;
-		let links: EditorZoneLink[];
+		let area: EditorArea;
+		let links: EditorAreaLink[];
 
 		try
 		{
-			[zone, links] = await Promise.all([
-				this.api.getZone(target.universeId, zoneId),
-				this.api.listLinks(target.universeId, zoneId)
+			[area, links] = await Promise.all([
+				this.api.getArea(target.universeId, areaId),
+				this.api.listLinks(target.universeId, areaId)
 			]);
 		}
 		catch (error)
@@ -270,9 +285,9 @@ export class LinkDialog
 			if (version === this.previewVersion)
 			{
 				showMessage(this.error, describeEditorError(error, {
-					id: 'editor.link.showZoneFailed',
-					defaultMessage: 'Could not show that zone.',
-					description: 'Shown in the link dialog when the map of the zone the link goes to couldn\'t be loaded'
+					id: 'editor.link.showAreaFailed',
+					defaultMessage: 'Could not show that area.',
+					description: 'Shown in the link dialog when the map of the area the link goes to couldn\'t be loaded'
 				}));
 			}
 
@@ -284,8 +299,8 @@ export class LinkDialog
 			return;
 		}
 
-		const map = new EditorMap(zone.bounds);
-		const loader = new ChunkLoader(this.api, target.universeId, zone.id, map, (chunkKeys) =>
+		const map = new EditorMap(area.bounds);
+		const loader = new ChunkLoader(this.api, target.universeId, area.id, map, (chunkKeys) =>
 		{
 			this.canvas.scene?.refreshChunks(chunkKeys);
 		}, (error) =>
@@ -293,9 +308,9 @@ export class LinkDialog
 			showMessage(this.error, describeEditorError(error, mapMessages.loadFailed));
 		});
 
-		this.preview = { zone, links, map, loader };
+		this.preview = { area, links, map, loader };
 
-		const scene = await this.canvas.show(editorZonePayload(zone, target.tiles, target.ruleset), map.chunks, this.previewHost(loader));
+		const scene = await this.canvas.show(editorAreaPayload(area, target.tiles, target.ruleset), map.chunks, this.previewHost(loader));
 
 		scene.setLinks(links);
 		this.updateCells();
@@ -309,7 +324,7 @@ export class LinkDialog
 	/**
 	 * What clicks on the preview do: choose the destination or the return link's cell
 	 *
-	 * @param loader Loads the preview zone's chunks
+	 * @param loader Loads the preview area's chunks
 	 * @return The host
 	 */
 	private previewHost(loader: ChunkLoader): MapEditorHost
@@ -333,7 +348,7 @@ export class LinkDialog
 
 				return(describeCell({
 					map: preview.map,
-					defaultTileId: preview.zone.defaultTileId,
+					defaultTileId: preview.area.defaultTileId,
 					tiles: target.tiles,
 					links: preview.links,
 					ruleset: target.ruleset
@@ -345,7 +360,7 @@ export class LinkDialog
 			},
 			pick: (column, row) =>
 			{
-				if (!this.preview || !isInBounds(this.preview.zone.bounds, column, row))
+				if (!this.preview || !isInBounds(this.preview.area.bounds, column, row))
 				{
 					return;
 				}
@@ -421,6 +436,7 @@ export class LinkDialog
 			...(this.destination ? [{ ...this.destination, color: DESTINATION_COLOR }] : []),
 			...((this.returnCell && this.addReturn.checked) ? [{ ...this.returnCell, color: RETURN_COLOR }] : [])
 		]);
+		this.changes.check();
 	}
 
 	/**
@@ -457,9 +473,9 @@ export class LinkDialog
 			return;
 		}
 
-		const mode: ZoneLinkMode = (this.manual.checked ? 'manual' : 'automatic');
-		const link: ZoneLinkTarget = {
-			targetZoneId: preview.zone.id,
+		const mode: AreaLinkMode = (this.manual.checked ? 'manual' : 'automatic');
+		const link: AreaLinkTarget = {
+			targetAreaId: preview.area.id,
 			targetColumn: destination.column,
 			targetRow: destination.row,
 			mode,
@@ -473,12 +489,12 @@ export class LinkDialog
 			description: 'Shown in the link dialog when the link couldn\'t be stored'
 		}, async () =>
 		{
-			await this.api.saveLink(target.universeId, target.zone.id, target.column, target.row, link);
+			await this.api.saveLink(target.universeId, target.area.id, target.column, target.row, link);
 
 			if (returnCell)
 			{
-				await this.api.saveLink(target.universeId, preview.zone.id, returnCell.column, returnCell.row, {
-					targetZoneId: target.zone.id,
+				await this.api.saveLink(target.universeId, preview.area.id, returnCell.column, returnCell.row, {
+					targetAreaId: target.area.id,
 					targetColumn: target.column,
 					targetRow: target.row,
 					mode,
@@ -503,7 +519,7 @@ export class LinkDialog
 		const question = t({
 			id: 'editor.link.confirmDelete',
 			defaultMessage: 'Delete the link at {column}, {row}?',
-			description: 'Asks before deleting a zone link; {column} and {row} are its cell\'s coordinates'
+			description: 'Asks before deleting an area link; {column} and {row} are its cell\'s coordinates'
 		}, {
 			column: target.column,
 			row: target.row
@@ -518,7 +534,7 @@ export class LinkDialog
 			id: 'editor.link.deleteFailed',
 			defaultMessage: 'Could not delete the link.',
 			description: 'Shown in the link dialog when the link couldn\'t be deleted'
-		}, () => this.api.deleteLink(target.universeId, target.zone.id, target.column, target.row));
+		}, () => this.api.deleteLink(target.universeId, target.area.id, target.column, target.row));
 	}
 
 	/**
@@ -549,7 +565,7 @@ export class LinkDialog
 	}
 
 	/**
-	 * Stops showing and loading the preview's zone
+	 * Stops showing and loading the preview's area
 	 */
 	private closePreview(): void
 	{

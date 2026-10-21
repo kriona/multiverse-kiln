@@ -3,18 +3,21 @@ import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { cellIndexInChunk, chunkCoordinate, chunkKey, GAME_ROOM_NAME, GRID_CELL_SIZE, LOBBY_ROOM_NAME, LobbyMessageType, LobbyServerMessageType, LobbyState, MAX_CHAT_MESSAGE_LENGTH, MessageType, NoticeReason, ServerMessageType, type ChatHistoryPayload, type ChatMessage, type ChunksPayload, type LobbyJoinOptions, type NoticePayload, type Player, type WelcomePayload, type ZonePayload } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, chunkCoordinate, chunkKey, GAME_ROOM_NAME, GRID_CELL_SIZE, LOBBY_ROOM_NAME, LobbyMessageType, LobbyServerMessageType, LobbyState, MAX_CHAT_MESSAGE_LENGTH, MessageType, NoticeReason, ServerMessageType, type ChatHistoryPayload, type ChatMessage, type ChunksPayload, type LobbyJoinOptions, type NoticePayload, type Player, type PlayingAsPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
+import { listPlayableCharacters } from '../src/db/characterRepo.js';
+import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
 import { saveEditedDefaultTile } from '../src/db/tileRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
-import { createUniverse, setUniverseZones } from '../src/db/universeRepo.js';
-import { deleteZone, editCells, resizeZone } from '../src/db/zoneRepo.js';
+import { createUniverse, setUniverseAreas } from '../src/db/universeRepo.js';
+import { deleteArea, editCells, resizeArea } from '../src/db/areaRepo.js';
 import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
 import { cellCenter } from '../src/logic/movement.js';
+import { characterChanges } from '../src/players/characterChanges.js';
 import { onlinePlayers } from '../src/players/onlinePlayers.js';
 import { CHAT_HISTORY_LENGTH, type LobbyRoom } from '../src/rooms/LobbyRoom.js';
-import { zoneChanges } from '../src/world/zoneChanges.js';
-import { addPlayableUniverse, addZone, defaultTileId, type PlayableUniverse } from './db/fixtures.js';
+import { areaChanges } from '../src/world/areaChanges.js';
+import { addCharacter, addPlayableUniverse, addArea, defaultTileId, type PlayableUniverse } from './db/fixtures.js';
 import { Inbox } from './inbox.js';
 import { getTestServer, logOutEveryone, testServerUrl } from './testServer.js';
 import { waitUntil } from './waitUntil.js';
@@ -50,14 +53,21 @@ function connect(browserId: string, options: unknown): Promise<ClientRoom<unknow
  * Logs a new browser in, as the session room would, and opens a window of it in a universe's lobby
  *
  * @param universeId The universe whose lobby to join
- * @param name The player's name
+ * @param name The player's name, and their character's unless they are a ghost
+ * @param options ghost: join with no character
  * @return The window, with its Welcome message already taken
  */
-async function joinAsNewPlayer(universeId: string, name: string): Promise<LobbyWindow>
+async function joinAsNewPlayer(universeId: string, name: string, options: { ghost?: boolean } = {}): Promise<LobbyWindow>
 {
 	const browserId = randomUUID();
+	const playerId = (await loadOrCreatePlayerByName(name)).id;
 
-	onlinePlayers.logIn(browserId, randomUUID(), name);
+	if (!options.ghost)
+	{
+		await addCharacter(playerId, universeId, name);
+	}
+
+	onlinePlayers.logIn(browserId, playerId, name);
 
 	return(openWindow(browserId, universeId));
 }
@@ -134,7 +144,7 @@ describe('LobbyRoom', () =>
 	{
 		placeOnCell(playerOf(window), 4, 5);
 		window.room.send(MessageType.Move, { x: 1, y: 0 });
-		await waitUntil(() => (lobbyOf(window).getZoneId(window.playerId) === universe.houseZoneId));
+		await waitUntil(() => (lobbyOf(window).getAreaId(window.playerId) === universe.houseAreaId));
 		window.room.send(MessageType.Move, { x: 0, y: 0 });
 	}
 
@@ -178,23 +188,23 @@ describe('LobbyRoom', () =>
 			assert.notStrictEqual(ada.room.roomId, alan.room.roomId);
 		});
 
-		it('puts a new player in the universe\'s lobby zone and sends them its map', async () =>
+		it('puts a new player in the universe\'s lobby area and sends them its map', async () =>
 		{
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
-			const zone = await ada.inbox.take<ZonePayload>(ServerMessageType.Zone);
+			const area = await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
 
-			assert.strictEqual(lobbyOf(ada).getZoneId(ada.playerId), universe.squareZoneId);
-			assert.strictEqual(zone.zoneId, universe.squareZoneId);
-			assert.strictEqual(zone.name, 'Square');
-			assert.deepStrictEqual(zone.bounds, { minColumn: 0, minRow: 0, maxColumn: 31, maxRow: 17 });
-			assert.strictEqual(zone.defaultTileId, await defaultTileId('grass'));
-			assert.strictEqual(zone.chunks.length, 1);
-			assert.deepStrictEqual(zone.links, [{ column: 5, row: 5, mode: 'automatic' }]);
-			const forest = zone.tiles.find((tile) => (tile.key === 'forest'));
+			assert.strictEqual(lobbyOf(ada).getAreaId(ada.playerId), universe.squareAreaId);
+			assert.strictEqual(area.areaId, universe.squareAreaId);
+			assert.strictEqual(area.name, 'Square');
+			assert.deepStrictEqual(area.bounds, { minColumn: 0, minRow: 0, maxColumn: 31, maxRow: 17 });
+			assert.strictEqual(area.defaultTileId, await defaultTileId('grass'));
+			assert.strictEqual(area.chunks.length, 1);
+			assert.deepStrictEqual(area.links, [{ column: 5, row: 5, mode: 'automatic' }]);
+			const forest = area.tiles.find((tile) => (tile.key === 'forest'));
 
-			assert.strictEqual(zone.ruleset, 'pf1e');
+			assert.strictEqual(area.ruleset, 'pf1e');
 			assert.deepStrictEqual(forest, { id: forest?.id, key: 'forest', name: null, color: 0x00aa11 });
-			assert.strictEqual(zone.tiles.some((tile) => (tile.name !== null)), false, 'default tiles are named by key, not in English');
+			assert.strictEqual(area.tiles.some((tile) => (tile.name !== null)), false, 'default tiles are named by key, not in English');
 		});
 
 		it('lists who is here, and stops listing them once they leave', async () =>
@@ -219,7 +229,7 @@ describe('LobbyRoom', () =>
 		});
 	});
 
-	describe('zones', () =>
+	describe('areas', () =>
 	{
 		it('does not let a player walk into the mountains', async () =>
 		{
@@ -237,17 +247,17 @@ describe('LobbyRoom', () =>
 			assert.strictEqual(player.x, cellCenter({ column: 11, row: 3 }, { cellSize: GRID_CELL_SIZE }).x);
 		});
 
-		it('takes a player who steps onto an automatic link to its cell in the other zone', async () =>
+		it('takes a player who steps onto an automatic link to its cell in the other area', async () =>
 		{
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
 
-			await ada.inbox.take(ServerMessageType.Zone);
+			await ada.inbox.take(ServerMessageType.Area);
 			await walkIntoHouse(ada);
 
-			const zone = await ada.inbox.take<ZonePayload>(ServerMessageType.Zone);
+			const area = await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
 			const player = playerOf(ada);
 
-			assert.strictEqual(zone.name, 'House');
+			assert.strictEqual(area.name, 'House');
 			assert.deepStrictEqual({ x: player.x, y: player.y }, cellCenter({ column: 2, row: 2 }, { cellSize: GRID_CELL_SIZE }));
 		});
 
@@ -261,18 +271,18 @@ describe('LobbyRoom', () =>
 			ada.room.send(MessageType.TakeLink);
 			await lobbyOf(ada).waitForNextMessage();
 			await lobbyOf(ada).waitForNextTimestep();
-			assert.strictEqual(lobbyOf(ada).getZoneId(ada.playerId), universe.houseZoneId);
+			assert.strictEqual(lobbyOf(ada).getAreaId(ada.playerId), universe.houseAreaId);
 
 			placeOnCell(playerOf(ada), 2, 4);
 			ada.room.send(MessageType.TakeLink);
-			await waitUntil(() => (lobbyOf(ada).getZoneId(ada.playerId) === universe.squareZoneId));
+			await waitUntil(() => (lobbyOf(ada).getAreaId(ada.playerId) === universe.squareAreaId));
 
 			const player = playerOf(ada);
 
 			assert.deepStrictEqual({ x: player.x, y: player.y }, cellCenter({ column: 5, row: 6 }, { cellSize: GRID_CELL_SIZE }));
 		});
 
-		it('shows each window only the players in its own zone', async () =>
+		it('shows each window only the players in its own area', async () =>
 		{
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
 			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
@@ -290,7 +300,7 @@ describe('LobbyRoom', () =>
 			await waitUntil(() => grace.room.state.players.has(ada.playerId) && ada.room.state.players.has(grace.playerId));
 		});
 
-		it('lists a player as here whichever zone they are in', async () =>
+		it('lists a player as here whichever area they are in', async () =>
 		{
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
 			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
@@ -400,24 +410,269 @@ describe('LobbyRoom', () =>
 		});
 	});
 
+	describe('characters', () =>
+	{
+		it('starts a player as the character they played or made most recently, and says so', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const [character] = await listPlayableCharacters(ada.playerId, universe.universeId);
+			const playingAs = await ada.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs);
+
+			assert.strictEqual(playingAs.characterId, character.id);
+			assert.strictEqual(playerOf(ada).name, 'Ada');
+			assert.strictEqual(playerOf(ada).ghost, false);
+		});
+
+		it('makes a player with no character a ghost, whom nobody else sees or lists', async () =>
+		{
+			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
+			const ghost = await joinAsNewPlayer(universe.universeId, 'Casper', { ghost: true });
+			const playingAs = await ghost.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs);
+
+			assert.strictEqual(playingAs.characterId, null);
+
+			// The ghost sees Grace and themself
+			await waitUntil(() => (ghost.room.state.players?.size === 2));
+			assert.strictEqual(ghost.room.state.players.get(ghost.playerId)?.ghost, true);
+
+			const alan = await joinAsNewPlayer(universe.universeId, 'Alan');
+
+			await waitUntil(() => (alan.room.state.players?.size === 2) && (grace.room.state.players?.size === 2));
+			await lobbyOf(grace).waitForNextPatch();
+
+			for (const window of [grace, alan])
+			{
+				assert.ok(!window.room.state.players.has(ghost.playerId));
+				assert.ok(!window.room.state.members.has(ghost.playerId));
+			}
+		});
+
+		it('keeps a ghost hidden as they move between areas', async () =>
+		{
+			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
+			const ghost = await joinAsNewPlayer(universe.universeId, 'Casper', { ghost: true });
+
+			await walkIntoHouse(grace);
+			await walkIntoHouse(ghost);
+			await waitUntil(() => ghost.room.state.players.has(grace.playerId));
+			await lobbyOf(grace).waitForNextPatch();
+
+			assert.ok(!grace.room.state.players.has(ghost.playerId));
+		});
+
+		it('does not let a ghost chat or create a group', async () =>
+		{
+			const ghost = await joinAsNewPlayer(universe.universeId, 'Casper', { ghost: true });
+
+			ghost.room.send(LobbyMessageType.Chat, { text: 'Boo' });
+			ghost.room.send(LobbyMessageType.CreateGroup);
+			await lobbyOf(ghost).waitForNextMessage();
+			await lobbyOf(ghost).waitForNextMessage();
+			await lobbyOf(ghost).waitForNextPatch();
+
+			assert.strictEqual(ghost.inbox.pending(LobbyServerMessageType.Chat), 0);
+			assert.strictEqual(onlinePlayers.get(ghost.browserId)?.groupId, undefined);
+		});
+
+		it('lets ghosts and other players pass through each other', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const ghost = await joinAsNewPlayer(universe.universeId, 'Casper', { ghost: true });
+
+			placeOnCell(playerOf(ada), 3, 3);
+			placeOnCell(playerOf(ghost), 4, 3);
+			ada.room.send(MessageType.Move, { x: 1, y: 0 });
+			ghost.room.send(MessageType.Move, { x: -1, y: 0 });
+
+			const start = cellCenter({ column: 3, row: 3 }, { cellSize: GRID_CELL_SIZE });
+
+			await waitUntil(() => (playerOf(ada).x > start.x + GRID_CELL_SIZE) && (playerOf(ghost).x < start.x));
+		});
+
+		it('switches every window of a player to the character they choose, and chats as them', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const second = await openWindow(ada.browserId, universe.universeId);
+			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
+			const lovelaceId = await addCharacter(ada.playerId, universe.universeId, 'Lovelace');
+			const third = await openWindow(ada.browserId, universe.universeId);
+
+			await ada.inbox.take(LobbyServerMessageType.PlayingAs);
+			await second.inbox.take(LobbyServerMessageType.PlayingAs);
+			await third.inbox.take(LobbyServerMessageType.PlayingAs);
+
+			// A window that joined before the character was made has its characters read again with the third
+			ada.room.send(LobbyMessageType.ChooseCharacter, { characterId: lovelaceId });
+
+			for (const window of [ada, second, third])
+			{
+				assert.strictEqual((await window.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs)).characterId, lovelaceId);
+			}
+
+			await waitUntil(() => (grace.room.state.members.get(ada.playerId)?.name === 'Lovelace'));
+			assert.strictEqual(playerOf(ada).name, 'Lovelace');
+
+			ada.room.send(LobbyMessageType.Chat, { text: 'Hello' });
+			assert.strictEqual((await grace.inbox.take<ChatMessage>(LobbyServerMessageType.Chat)).name, 'Lovelace');
+		});
+
+		it('switches a player off a character that is deleted, makes them a ghost with none left, and plays one restored', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const [adaCharacter] = await listPlayableCharacters(ada.playerId, universe.universeId);
+			const lovelaceId = await addCharacter(ada.playerId, universe.universeId, 'Lovelace');
+			const second = await openWindow(ada.browserId, universe.universeId);
+			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
+
+			await ada.inbox.take(LobbyServerMessageType.PlayingAs);
+			await second.inbox.take(LobbyServerMessageType.PlayingAs);
+
+			characterChanges.publish({
+				kind: 'removed',
+				playerId: ada.playerId,
+				universeId: universe.universeId,
+				characterId: adaCharacter.id
+			});
+
+			for (const window of [ada, second])
+			{
+				assert.strictEqual((await window.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs)).characterId, lovelaceId);
+				await window.inbox.take(LobbyServerMessageType.CharactersChanged);
+			}
+
+			characterChanges.publish({
+				kind: 'removed',
+				playerId: ada.playerId,
+				universeId: universe.universeId,
+				characterId: lovelaceId
+			});
+
+			assert.strictEqual((await ada.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs)).characterId, null);
+			await waitUntil(() => !grace.room.state.members.has(ada.playerId));
+			assert.strictEqual(playerOf(ada).ghost, true);
+
+			// A ghost can't choose a character that can no longer be played
+			ada.room.send(LobbyMessageType.ChooseCharacter, { characterId: lovelaceId });
+			await lobbyOf(ada).waitForNextMessage();
+			assert.strictEqual(playerOf(ada).ghost, true);
+
+			characterChanges.publish({
+				kind: 'restored',
+				playerId: ada.playerId,
+				universeId: universe.universeId,
+				character: {
+					id: lovelaceId,
+					name: 'Lovelace'
+				}
+			});
+
+			assert.strictEqual((await ada.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs)).characterId, lovelaceId);
+			await waitUntil(() => (grace.room.state.members.get(ada.playerId)?.name === 'Lovelace'));
+			assert.strictEqual(playerOf(ada).ghost, false);
+		});
+
+		it('ignores a change to a character in another universe', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const [adaCharacter] = await listPlayableCharacters(ada.playerId, universe.universeId);
+
+			await ada.inbox.take(LobbyServerMessageType.PlayingAs);
+
+			characterChanges.publish({
+				kind: 'removed',
+				playerId: ada.playerId,
+				universeId: randomUUID(),
+				characterId: adaCharacter.id
+			});
+			await lobbyOf(ada).waitForNextPatch();
+
+			assert.strictEqual(ada.inbox.pending(LobbyServerMessageType.CharactersChanged), 0);
+			assert.strictEqual(playerOf(ada).ghost, false);
+		});
+
+		it('ignores a choice of another player\'s character', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
+			const [graceCharacter] = await listPlayableCharacters(grace.playerId, universe.universeId);
+
+			ada.room.send(LobbyMessageType.ChooseCharacter, { characterId: graceCharacter.id });
+			await lobbyOf(ada).waitForNextMessage();
+			await lobbyOf(ada).waitForNextPatch();
+
+			assert.strictEqual(playerOf(ada).name, 'Ada');
+		});
+
+		it('makes a ghost who has since made a character play them when another window joins', async () =>
+		{
+			const ghost = await joinAsNewPlayer(universe.universeId, 'Casper', { ghost: true });
+
+			await ghost.inbox.take(LobbyServerMessageType.PlayingAs);
+
+			const characterId = await addCharacter(ghost.playerId, universe.universeId, 'Casper');
+
+			await openWindow(ghost.browserId, universe.universeId);
+
+			assert.strictEqual((await ghost.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs)).characterId, characterId);
+			assert.strictEqual(playerOf(ghost).ghost, false);
+			assert.strictEqual(lobbyOf(ghost).state.members.get(ghost.playerId)?.name, 'Casper');
+		});
+
+		it('moves a ghost who becomes a character off another player\'s cell, and shows them', async () =>
+		{
+			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
+			const ghost = await joinAsNewPlayer(universe.universeId, 'Casper', { ghost: true });
+
+			placeOnCell(playerOf(grace), 3, 3);
+			placeOnCell(playerOf(ghost), 3, 3);
+
+			await addCharacter(ghost.playerId, universe.universeId, 'Casper');
+			await openWindow(ghost.browserId, universe.universeId);
+			await waitUntil(() => grace.room.state.players.has(ghost.playerId));
+
+			assert.notDeepStrictEqual({ x: playerOf(ghost).x, y: playerOf(ghost).y }, { x: playerOf(grace).x, y: playerOf(grace).y });
+		});
+
+		it('starts a player as the character they last played the next time they join, over one made since', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const { characterId } = await ada.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs);
+
+			await addCharacter(ada.playerId, universe.universeId, 'Lovelace');
+			await ada.room.leave();
+
+			// The lobby records the character as it empties, after the window has gone
+			const deadline = Date.now() + 2000;
+
+			while (((await listPlayableCharacters(ada.playerId, universe.universeId))[0].id !== characterId) && (Date.now() < deadline))
+			{
+				await new Promise((resolve) => setTimeout(resolve, 10));
+			}
+
+			const again = await openWindow(ada.browserId, universe.universeId);
+
+			assert.strictEqual((await again.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs)).characterId, characterId);
+		});
+	});
+
 	describe('map chunks', () =>
 	{
 		it('sends the chunks near the player, and more as the player moves', async () =>
 		{
 			// A long lobby, forest near the center and far to the east
 			const universeId = await createUniverse({ name: 'Long Universe', ruleset: 'pf1e', stage: 'let_there_be_light' });
-			const zoneId = await addZone(universeId, 'Road', { bounds: { minColumn: -500, minRow: -10, maxColumn: 500, maxRow: 10 } });
+			const areaId = await addArea(universeId, 'Road', { bounds: { minColumn: -500, minRow: -10, maxColumn: 500, maxRow: 10 } });
 			const forest = await defaultTileId('forest');
 
-			await inTransaction((transaction) => editCells(zoneId, [[1, 1, forest], [400, 1, forest]], transaction));
-			await setUniverseZones(universeId, zoneId, zoneId);
+			await inTransaction((transaction) => editCells(areaId, [[1, 1, forest], [400, 1, forest]], transaction));
+			await setUniverseAreas(universeId, areaId, areaId);
 
 			const ada = await joinAsNewPlayer(universeId, 'Ada');
-			const zone = await ada.inbox.take<ZonePayload>(ServerMessageType.Zone);
+			const area = await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
 			const farChunk = chunkKey(chunkCoordinate(400), 0);
 
-			assert.ok(zone.chunks.some((chunk) => (chunkKey(chunk.chunkColumn, chunk.chunkRow) === chunkKey(0, 0))));
-			assert.ok(!zone.chunks.some((chunk) => (chunkKey(chunk.chunkColumn, chunk.chunkRow) === farChunk)));
+			assert.ok(area.chunks.some((chunk) => (chunkKey(chunk.chunkColumn, chunk.chunkRow) === chunkKey(0, 0))));
+			assert.ok(!area.chunks.some((chunk) => (chunkKey(chunk.chunkColumn, chunk.chunkRow) === farChunk)));
 
 			// Moved by the server, as a link would
 			placeOnCell(playerOf(ada), 400, 0);
@@ -428,7 +683,7 @@ describe('LobbyRoom', () =>
 			{
 				const update = await ada.inbox.take<ChunksPayload>(ServerMessageType.Chunks);
 
-				assert.strictEqual(update.zoneId, zoneId);
+				assert.strictEqual(update.areaId, areaId);
 				far = update.chunks.find((chunk) => (chunkKey(chunk.chunkColumn, chunk.chunkRow) === farChunk));
 			}
 
@@ -443,9 +698,9 @@ describe('LobbyRoom', () =>
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
 			const water = await defaultTileId('water');
 
-			await ada.inbox.take<ZonePayload>(ServerMessageType.Zone);
-			await inTransaction((transaction) => editCells(universe.squareZoneId, [[20, 10, water]], transaction));
-			zoneChanges.publish({ kind: 'cells', zoneId: universe.squareZoneId, chunkKeys: [chunkKey(0, 0)] });
+			await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
+			await inTransaction((transaction) => editCells(universe.squareAreaId, [[20, 10, water]], transaction));
+			areaChanges.publish({ kind: 'cells', areaId: universe.squareAreaId, chunkKeys: [chunkKey(0, 0)] });
 
 			const update = await ada.inbox.take<ChunksPayload>(ServerMessageType.Chunks);
 
@@ -453,59 +708,59 @@ describe('LobbyRoom', () =>
 			assert.strictEqual(update.chunks[0].cells?.[cellIndexInChunk(20, 10)], water);
 		});
 
-		it('sends the zone again when it changes, moving players its new bounds leave out', async () =>
+		it('sends the area again when it changes, moving players its new bounds leave out', async () =>
 		{
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
 			const smaller = { minColumn: 0, minRow: 0, maxColumn: 9, maxRow: 9 };
 
-			await ada.inbox.take<ZonePayload>(ServerMessageType.Zone);
+			await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
 			placeOnCell(playerOf(ada), 20, 15);
-			await inTransaction((transaction) => resizeZone(universe.squareZoneId, smaller, true, transaction));
-			zoneChanges.publish({ kind: 'zone', zoneId: universe.squareZoneId });
+			await inTransaction((transaction) => resizeArea(universe.squareAreaId, smaller, true, transaction));
+			areaChanges.publish({ kind: 'area', areaId: universe.squareAreaId });
 
-			const zone = await ada.inbox.take<ZonePayload>(ServerMessageType.Zone);
+			const area = await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
 			const column = Math.floor(playerOf(ada).x / GRID_CELL_SIZE);
 			const row = Math.floor(playerOf(ada).y / GRID_CELL_SIZE);
 
-			assert.deepStrictEqual(zone.bounds, smaller);
+			assert.deepStrictEqual(area.bounds, smaller);
 			assert.ok((column <= 9) && (row <= 9), `player at ${column}, ${row}`);
 		});
 
-		it('sends players in a deleted zone back to the lobby zone', async () =>
+		it('sends players in a deleted area back to the lobby area', async () =>
 		{
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
 
 			await walkIntoHouse(ada);
-			await deleteZone(universe.houseZoneId);
-			zoneChanges.publish({ kind: 'deleted', zoneId: universe.houseZoneId });
+			await deleteArea(universe.houseAreaId);
+			areaChanges.publish({ kind: 'deleted', areaId: universe.houseAreaId });
 
-			await waitUntil(() => (lobbyOf(ada).getZoneId(ada.playerId) === universe.squareZoneId));
+			await waitUntil(() => (lobbyOf(ada).getAreaId(ada.playerId) === universe.squareAreaId));
 		});
 
-		it('sends the zone again with the universe\'s edited tiles', async () =>
+		it('sends the area again with the universe\'s edited tiles', async () =>
 		{
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
 			const grass = await defaultTileId('grass');
 
-			await ada.inbox.take<ZonePayload>(ServerMessageType.Zone);
+			await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
 			await saveEditedDefaultTile(universe.universeId, 'pf1e', grass, { name: 'Autumn Grass', indoors: false, color: 0xc08030, visionCost: 0, movementCost: 0 });
-			zoneChanges.publish({ kind: 'tiles', universeId: universe.universeId });
+			areaChanges.publish({ kind: 'tiles', universeId: universe.universeId });
 
-			const zone = await ada.inbox.take<ZonePayload>(ServerMessageType.Zone);
+			const area = await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
 
-			assert.deepStrictEqual(zone.tiles.find((tile) => (tile.id === grass)), { id: grass, key: null, name: 'Autumn Grass', color: 0xc08030 });
+			assert.deepStrictEqual(area.tiles.find((tile) => (tile.id === grass)), { id: grass, key: null, name: 'Autumn Grass', color: 0xc08030 });
 		});
 
-		it('ignores changes to zones it hasn\'t loaded', async () =>
+		it('ignores changes to areas it hasn\'t loaded', async () =>
 		{
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
 
-			await ada.inbox.take<ZonePayload>(ServerMessageType.Zone);
-			zoneChanges.publish({ kind: 'zone', zoneId: randomUUID() });
-			zoneChanges.publish({ kind: 'tiles', universeId: randomUUID() });
+			await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
+			areaChanges.publish({ kind: 'area', areaId: randomUUID() });
+			areaChanges.publish({ kind: 'tiles', universeId: randomUUID() });
 			await new Promise((resolve) => setTimeout(resolve, 300));
 
-			assert.strictEqual(ada.inbox.pending(ServerMessageType.Zone), 0);
+			assert.strictEqual(ada.inbox.pending(ServerMessageType.Area), 0);
 		});
 	});
 });

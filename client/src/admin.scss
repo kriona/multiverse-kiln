@@ -1,0 +1,21 @@
+// The admin page (admin.html): settings for the whole site
+
+@use 'shared' as *;
+
+.admin-page
+{
+	flex: 1;
+	overflow-y: auto;
+}
+
+.admin-body
+{
+	max-width: 560px;
+	margin: 0 auto;
+	padding: 16px;
+}
+
+.admin-loading
+{
+	color: $text-faint;
+}

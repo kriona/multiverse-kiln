@@ -4,7 +4,12 @@ This document describes the UI + game structure for the Multiverse Kiln. It desc
 ## Home
 Lists all universes. In the beginning there will only be a few, but in the future there may be thousands, so we should be forward-thinking about the UI (even if advanced search filters don't exist yet). Each universe should show name, 1-sentence description, ruleset, and [languages](#tab-translations). Only universes in the `prologue` or `let there be light` [stage](#edit-universe) are listed. Shows a button for [Create Universe](#create-universe).
 
-Selecting a universe to join will show you a modal overview for the universe. The modal will list all details about the universe. There will be an [Enter Universe](#enter-universe) button.
+Each universe links to its [page](#universe-page).
+
+## Universe page
+Every universe on Home has a page of its own at `/universe/<slug>`, listing all details about the universe, with an [Enter Universe](#enter-universe) button. The page doesn't need a login; while the browser is logged in (in any tab), it also lists the player's characters in the universe, with each one's race and class; choosing one shows their [character sheet](#character-sheet). The slug is made from the universe's name: lowercase, with every run of characters other than letters and digits turned into a hyphen ("The Shattered Isles!" is `the-shattered-isles`). Letters of every alphabet are kept, so a name in any language reads in its address. `/universe/<id>` always works too, and changes the address to the slug.
+
+Universe names are unique, and names that could be mistaken for each other count as the same, so one universe can't pass as another. Two names are the same when they have the same slug, or when they match once capitals, accents, letters from other alphabets that look like Latin ones, stand-ins such as "1" for "i", repeated letters and the spaces and punctuation between words are set aside (the same comparison player names get for reserved words, `shared/src/names.ts`). "Kilnhaven", "Kiln Haven", "K1lnhaven" and "Кilnhaven" (with a Cyrillic К) are all the same name. A name needs at least one letter or digit. Renaming a universe changes its slug, so links that used the old slug stop working; links by ID keep working.
 
 ## About
 Free text. There will be many of these pages (like an FAQ or Help).
@@ -60,6 +65,8 @@ Everything is optional except name.
 Shows every profile field the user has filled in (name, photo, pronouns, location, time zone, socials) and their visible characters. Fields are optional, so users control what others see by leaving them blank.
 
 ## Enter Universe
+The lobby and the game are on a page of their own (`/game/<slug>`, or `/game/<universe ID>`, which changes to the slug), apart from Home, so a player can keep Home, their profile or the editor open in other tabs while they play.
+
 If you have not created a character, you will go to the [lobby](#lobby).
 
 If you have created a character, you will go to where your most recently played character is (either the lobby or the game itself). If that character's group isn't running or has been disbanded, you go to the lobby as that character.
@@ -70,8 +77,9 @@ The lobby runs the game engine. It will be a small area where many people (more 
 - Some rules will be different - you cannot use items, time passes based on [lobby settings](#tab-lobby) and not game settings (it's not turn-based).
 - There will be a button for [Create Character](#create-character). You can create multiple characters.
 - There will be a chat. You chat as your character.
-- If you have not created a character, you will use a ghost icon and nobody can see you. You can walk around the space. You can read chat but not send messages. Ghosts don't block cells. The [Create Character](#create-character) button should be more prominent.
-- If you have created a character, chat will be enabled. You will move about the space as your character. You can switch characters at any time.
+- If you have not created a character, you will use a ghost icon and nobody can see you. You can walk around the space. You can read chat but not send messages. Ghosts don't block cells, and pass through other players. Other players aren't shown ghosts in the list of who's here; a ghost sees themself listed as one. The [Create Character](#create-character) button should be more prominent.
+- If you have created a character, chat will be enabled. You will move about the space as your character, starting as the one you played or made most recently. You can switch characters at any time, and every window of yours switches with you.
+- Each of your characters has a button that shows their [character sheet](#character-sheet), and Alt+K shows the sheet of the one you're playing.
 - You may create up to 20 characters per universe.
 - If you have a character selected, a [Create Group](#create-group) button will be enabled.
 - Groups can be listed in the lobby so players can find them without an invite. How a group manages its listing is not yet defined.
@@ -81,7 +89,7 @@ Colyseus has no built-in player limit for a room; we set it (`maxClients`). The 
 ### Cross-universe play
 This stays loosely defined until more of the infrastructure exists.
 
-If a universe allows it, and you are in the universe's lobby, you may enter a portal room that lets you jump universes. The portal room is probably an auto-generated zone showing each universe you can enter.
+If a universe allows it, and you are in the universe's lobby, you may enter a portal room that lets you jump universes. The portal room is probably an auto-generated area showing each universe you can enter.
 - Your name will be "[Name] of [Universe]" and "of [Universe]" should be styled italic / slightly darker than the rest of the text it displays with.
 - You can enter even if your race or class is disabled in the other universe. Universes that allow cross-play need to work this out between themselves.
 - Items work the same as in your home universe. Items may need a "source universe" setting.
@@ -90,13 +98,38 @@ If a universe allows it, and you are in the universe's lobby, you may enter a po
 	- an avatar, a larger view of the character showing all their worn items. Every item needs avatar art drawn by an artist
 
 ## Create Character
-Based entirely on the universe's ruleset.
+Based entirely on the universe's ruleset. It is a page of its own, reached from the lobby, that goes through steps (name, race, class, ability scores, then a review) and returns to the lobby when the character is made. Rulesets will add more steps, so there may be a lot to work through:
+- the player's progress is saved on the server a moment after each change and when the step changes, so they can go back to the lobby, close the browser, or switch browsers, and pick up on the step they were on. "Start over" throws the progress away
+- progress is checked against the universe only when the character is made; a race or class that has since been disabled is left out when the progress loads
+
+For PF1E, the server rolls the ability scores (or checks the point buy choices) using the universe's [stat rolling](#pf1e) setting; the client never sends ability scores of its own. The player can rearrange rolled scores among the abilities, with the class's primary ability as a hint.
+- the server keeps a player's rolled scores until they make a character with them, so leaving Create Character or starting over doesn't roll again. If the universe changes how it rolls, the next visit rolls again
+- the player chooses a name, an enabled race and an enabled class. A race with a floating ability bonus asks which ability gets it
+- the character starts with the universe's, race's and class's starting money added coin by coin, their starting equipment added together (enabled items only), and the [starting area](#tab-characters) the precedence picks
+- the lobby lists the player's characters in the universe
+- a race, class or item that characters have can't be deleted; it can be disabled instead
+
+## Character sheet
+A modal dialog showing one of the player's characters, opened from the [lobby](#lobby) and the [universe page](#universe-page) (later the [profile](#profile-edit) too). Only the character's player can see it. For PF1E it shows:
+- the name, race and class
+- each ability score (with the race's modifiers added) and the modifier it gives
+- size and darkvision, from the race as the universe sets it now
+- money, as a [money field](#field-money) writes it
+- equipment, sorted by name, with how many of each
+
+### Deleting a character
+The sheet's Delete button asks twice. "Delete Character" asks "Do you want to delete [character]?" (Cancel / Delete), then a second dialog asks "Are you absolutely sure you want to delete [character]? This is permanent (a very long time!) and cannot be undone.", with three buttons:
+- **Cremate (delete immediately)** deletes the character straight away
+- **Last Rites (delete in 7 days)** deletes them after the days the [admin](#admin) setting gives (7 by default), and isn't offered when it is 0. Until then they are listed, marked with the day they go, and count toward the 20 characters a universe allows, but can't be played. Their sheet says when they go and has a Restore button. A player playing them switches to their most recent other character, or becomes a ghost; restoring a character while a ghost plays them. A character already given their last rites can still be cremated
+- **I've Made A Terrible Mistake** keeps the character, and is the button focused
+
+The server deletes characters whose days are over once an hour, and hides them until it does.
 
 ## Create Group
 The character creating the group is the "anchor being". This shows you a landing page for your new group. It explains that your character is the anchor being for this universe, and that the game is centered around them.
-- The group starts in the anchor being's [starting zone](#tab-characters).
+- The group starts in the anchor being's [starting area](#tab-characters).
 - If the anchor being leaves the group, the group is disbanded and its [world state](#world-state) is deleted. Every character keeps their items, money and experience.
-- If the anchor being is offline, the group can't use [zone links](#editor-map) that require the whole group (for example, leaving the city for the wilderness), but can use the ones that don't (entering a shop in the city).
+- If the anchor being is offline, the group can't use [area links](#editor-map) that require the whole group (for example, leaving the city for the wilderness), but can use the ones that don't (entering a shop in the city).
 
 You can give the group a name.
 
@@ -125,14 +158,22 @@ This is a modal dialog on the home page that asks for some basic info before cre
 - 1-sentence description
 
 Creating a universe
-- creates a lobby zone, and a default zone that it sets as the starting zone for all races
+- creates a lobby area, and a default area that it sets as the starting area for all races
 - makes you its creator
 
-A user may create up to 5 universes.
+The [admin page](#admin) decides how many universes a user can create. The admin page can also turn off creating universes for everyone, which disables the Create Universe button.
+
+## Admin
+Settings for the whole site (`admin.html`), stored in one row of the `site_settings` table. Home's toolbar links to it, and anyone can use it until there are server admin accounts.
+- universe creation enabled: whether players can create universes
+- universes per creator: the most universes one player may create, from 1 to 1000
+- character deletion days: how many days [Last Rites](#deleting-a-character) waits before deleting a character, from 0 to 365 (7 by default). 0 turns Last Rites off. Characters already given their last rites keep their day
+
+The universe settings don't change universes that already exist.
 
 ## Edit Universe
 This lets you change anything about a universe. It will be a whole suite of tools unrelated to playing the game.
-- name
+- name, unique among universes (see [Universe page](#universe-page))
 - logo
 - banner image
 - 1-sentence description
@@ -143,7 +184,7 @@ This lets you change anything about a universe. It will be a whole suite of tool
 	- `let there be light` - (ready for people to join. Listed on [Home](#home)
 	- `end of time` - retired. Locked and view only. Not listed on [Home](#home)
 - a dropdown for ruleset - no default, the only option for now is Pathfinder 1E
-- a dropdown for "passage of time", the default for every [zone](#editor-zone)
+- a dropdown for "passage of time", the default for every [area](#editor-area)
 	- `flows normally` (based on character actions, see [time and distance](#time-and-distance))
 	- `always dawn`
 	- `always noon`
@@ -166,11 +207,16 @@ This lets you change anything about a universe. It will be a whole suite of tool
 	- [Ruleset](#tab-ruleset)
 	- [Lobby](#tab-lobby)
 	- [Characters](#tab-characters)
+	- [Races](#tab-races)
+	- [Classes](#tab-classes)
 	- [Tilesets](#tab-tilesets)
-	- [Zones](#tab-zones)
+	- [Areas](#tab-areas)
 	- [Items](#tab-items)
 	- [Connect to the Multiverse](#tab-connect-to-the-multiverse)
 	- [Translations](#tab-translations)
+
+### Unsaved changes
+The editor makes it hard to lose work by accident. A form or dialog with changes that haven't been saved says "Unsaved changes" next to its Save button, and its tab gets a dot. Closing a dialog (Cancel or Escape), leaving the area being edited, and leaving or reloading the page all ask first while there are unsaved changes, and so does leaving the page while painting is still being saved.
 
 ### Universe versions
 If a creator makes changes to the current version of the universe, they apply immediately for everyone.
@@ -181,7 +227,7 @@ A creator can choose to switch to a new version (e.g, 1.1) while making changes,
 Disabling or limiting something that players are already using warns the editor and asks what should happen:
 - a race: "allow them to continue to play, only disable the race for new characters" or "prevent them from playing"
 - a class: "allow them to continue to play, only disable the class for new characters" or "prevent them from playing"
-- a zone with characters in it: "move everyone to the parent zone" or "move everyone back to their start zone"
+- an area with characters in it: "move everyone to the parent area" or "move everyone back to their start area"
 - an item characters have: "allow them to continue to use it, prevent new copies of the item from being made" or "remove it from characters, it will be re-added when the item is re-enabled"
 - lowering the group size below a group's current size: "allow those groups to continue to play, only limit the size for new groups", "disband larger groups" or "remove X number of group members, starting with those who joined most recently"
 
@@ -190,7 +236,7 @@ Changing the stat rolling method doesn't change existing characters.
 ### Tab: Editors
 Lists the users who can work on the universe, and lets you add them with a role:
 - `creator` (admin): can change everything
-- `builder`: can make changes to the world, e.h. to zones or NPCs
+- `builder`: can make changes to the world, e.h. to areas or NPCs
 - `beta tester`: can create characters and play while the universe is in `prologue`
 - `translator`: can [translate](#tab-translations) the universe's text into the languages they are assigned, and can't change anything else
 
@@ -202,6 +248,8 @@ A universe can have several creators. If you delete your account and your univer
 What shows up here depends on what ruleset is chosen.
 
 #### PF1E
+Pathfinder 1E's rules (races, classes, abilities, point buy, sizes and items) are Open Game Content used under the Open Game License 1.0a, and the name "Pathfinder" is used under Paizo's Community Use Policy. Both notices are on the license page. The Community Use Policy only covers a game that is free to play (donations and ads are allowed, a paywall isn't).
+
 - dropdown for "rolling for stats"
 	- 3d6
 	- 3d6 reroll 1s
@@ -212,6 +260,8 @@ What shows up here depends on what ruleset is chosen.
 	- point buy `high fantasy` (20)
 	- point buy `epic fantasy` (25)
 	- point buy (you define the #)
+	- rolling makes six scores, which the player can rearrange among the abilities. Rerolling 1s rolls each 1 again until it isn't one
+	- point buy uses PF1E's costs: 7 = -4, 8 = -2, 9 = -1, 10 = 0, 11 = 1, 12 = 2, 13 = 3, 14 = 5, 15 = 7, 16 = 10, 17 = 13, 18 = 17. Each score is 7 to 18 before racial modifiers, and the total can't be more than the budget. A custom budget is 0 to 102 (every score 18)
 - do characters get tired and require sleep?
 - does gold count towards weight?
 - track ammo?
@@ -225,20 +275,21 @@ What shows up here depends on what ruleset is chosen.
 	- `real-time`
 		- shows an additional option for "how quickly?" with a description of "how long in real-time does it take for 1 day in the lobby to pass?" minimum 1 hour, maximum 240 hours. Default 24. Current time of day is based on the Unix epoch
 	- `faerie`
-- a button for "Edit Map" which takes you to the [zone editor](#editor-zone) for the lobby
+- a button for "Edit Map" which takes you to the [area editor](#editor-area) for the lobby
 
 ### Tab: Characters
 - Group size, minimum 1 (single player only) maximum 6 (infrastructure / server max), default server max
-- Starting equipment, lets you [select items](#selection-item)
+- Starting equipment, lets you [select items](#selection-item). A new universe starts with one dagger for every character. An item in the starting equipment can't be deleted until it is taken out
 - Starting [money](#field-money)
-- Starting [zone](#selection-zone)
-- Tabs:
-	- [Races](#tab-races)
-	- [Classes](#tab-classes)
+- Starting [area](#selection-area)
 
-A character's starting zone is chosen in this order, most specific first: the class's entry for their race, the class, the race, then the universe.
+Each [race](#tab-races) and [class](#tab-classes) can add to the starting money and equipment, and choose a starting area of its own.
 
-#### Tab: Races
+A character's starting area is chosen in this order, most specific first: the class's entry for their race, the class, the race, then the universe. A class with an area of its own has no entries for races, so the two never compete.
+
+Races and classes work like default items: the ruleset's defaults are in every universe, an edit applies to that universe only and can be undone to restore the default (losing its starting money, equipment and areas too), and a race or class the universe added can be deleted. Like the Characters tab, only creators can change them.
+
+### Tab: Races
 based on the ruleset, show a list of races.
 
 For PF1E that list is:
@@ -261,7 +312,7 @@ You can edit each race:
 - Enabled? Checked by default. There must be at least 1 enabled race in order to save changes
 - Additional starting equipment, lets you [select items](#selection-item)
 - Additional starting [money](#field-money)
-- Starting [zone](#selection-zone), lets you override
+- Starting [area](#selection-area), lets you override
 - for PF1E:
 	- ability modifiers? lists abilities (`strength`, `dexterity`, `constitution`, `intelligence`, `wisdom`, `charisma`) and a number field for each (minimum -99, maximum 99)
 	- floating ability bonus? a checkbox. When checked, the player chooses which ability gets the bonus (in PF1E, humans, half elves and half orcs get +2 to one ability of their choice)
@@ -277,7 +328,7 @@ You can edit each race:
 		- `gargantuan`
 		- `colossal`
 
-#### Tab: Classes
+### Tab: Classes
 based on the ruleset, show a list of classes.
 
 For PF1E that list is:
@@ -305,9 +356,9 @@ You can edit each class:
 - Enabled? Checked by default. There must be at least 1 enabled class in order to save changes
 - Add starting equipment, note it is in addition to starting + racial equipment, lets you [select items](#selection-item)
 - Add starting [money](#field-money), note it is in addition to starting + racial money
-- Edit starting zone button. If clicked:
-	- [Zone selection](#selection-zone), default null. If a zone is selected, the per-race entries for this class are disabled. Show a message: all members of this class, regardless of race, start here.
-	- An entry for each playable race. Default is the race's start zone, can be overridden
+- Edit starting area button. If clicked:
+	- [Area selection](#selection-area), default null. If an area is selected, the per-race entries for this class are disabled. Show a message: all members of this class, regardless of race, start here. The entries stay in the form while it is open, so clearing the area brings them back, but saving with an area selected discards them
+	- An entry for each playable race (and any disabled race that has one). Default is the race's start area, can be overridden
 - for PF1E:
 	- primary ability score (`strength`, `dexterity`, `constitution`, `intelligence`, `wisdom`, `charisma`), used as a hint when assigning stats
 	- magic tradition
@@ -344,12 +395,12 @@ For PF1E, the default tiles are
 - indoors
 	- Wood Floor, color #7A3202, 0% vision cost, 0% movement cost
 
-### Tab: Zones
-lists all top-level zones for a universe, excluding the lobby.
-- if there is only one zone, show all child zones for that zone. keep showing child zones until there are no children or there are more than 1 children.
-- clicking on a zone lets you [edit it](#editor-zone).
+### Tab: Areas
+lists all top-level areas for a universe, excluding the lobby.
+- if there is only one area, show all child areas for that area. keep showing child areas until there are no children or there are more than 1 children.
+- clicking on an area lets you [edit it](#editor-area).
 
-button to Add Zone
+button to Add Area
 
 ### Tab: Items
 shows you a table of all items in the game, populated from the default for your ruleset and any items you have created.
@@ -369,6 +420,17 @@ the table contains:
 - name, links to the [item editor](#editor-item)
 - summary (item type, properties, etc)
 
+For PF1E, the only default item for now is a dagger.
+
+Default items work like default tiles: an edit applies to your universe only and can be undone to restore the default, and an item you created can be deleted.
+
+Each ruleset groups its item types into categories, which the filters use. For PF1E:
+- `weapons`: dagger, club, quarterstaff, spear, short sword, longsword, shortbow, longbow, light crossbow, arrows, crossbow bolts
+- `armor`: padded armor, leather armor, chain shirt, light shield, heavy shield
+- `gear`: rope, torch
+
+Until items have pictures, the icon is the item's category's.
+
 ### Tab: Connect to the Multiverse
 Explain that this allows characters to move freely between universes with the same ruleset. If no other universes with this ruleset exist, say that you're alone in the multiverse.
 
@@ -380,7 +442,7 @@ Lets the universe be played in more than one language. See [Localization](#local
 - source language, the language the universe's editors write in. Defaults to the creator's language
 - languages, the languages the universe is translated into. [Home](#home) shows the source language and these
 - choosing a language shows a table of every piece of universe text:
-	- where it comes from (e.g. "Zone: Waterdeep, name")
+	- where it comes from (e.g. "Area: Waterdeep, name")
 	- the source text
 	- a note for translators, written by the universe's editors (e.g. "a pun on the town's founder; keep the joke rather than the words")
 	- the translation
@@ -418,6 +480,8 @@ Each character has a vision budget. Looking across a tile spends its vision cost
 - Ideally the server works out what each player can see and only sends them that. If that turns out to be too expensive, the client does it. To be decided during implementation.
 
 ## Moderation
+- Player and character names can't pass as the game's staff: words such as `admin`, `moderator`, `staff` and `system`, and the game's name, are kept back (`isReservedName()` in `/shared`, checked as the player types and again on the server). Names are compared in a reduced form that sees through capitals, accents, look-alike letters from other alphabets, leetspeak, separators, repeated letters and added digits, and words are found at spaces, punctuation and changes of case, so "TheAdm1n" is refused but "Quarterstaff" isn't.
+- Still to come: a profanity filter matching whole words with an allow list (to avoid blocking names like Cockburn or Assassin), slurs blocked everywhere but milder words left to each universe, each universe's own blocked words, and reporting a name so a moderator can force a rename.
 - Users can report content and players.
 - Copyright holders can report infringement.
 - Server admins can disable universes.
@@ -429,34 +493,36 @@ Each character has a vision budget. Looking across a tile spends its vision cost
 ## Field: Money
 Freetext but requires a format like "1pp 2gp 2sp 4cp"
 
+Money is kept as individual pieces of each coin, the way a purse holds them, and is never converted automatically: gaining 5sp twice is 10sp, not 1gp, and starting money from the universe, race and class adds up coin by coin. A character can hold 1pp 302gp 4444sp 10cp. A money changer converts coins into the fewest coins of the same worth (that purse becomes 75pp 6gp 5sp). Who offers money changing, and whether it costs a fee, comes with NPCs.
+
 ## Selection: Item
-modal dialog, lets you type to search, shows you the top results, with name + stats + picture. Each selected item has a quantity (for example, 20 arrows).
+modal dialog, lets you type to search, shows you the top results, with name + stats + picture. Each selected item has a quantity (for example, 20 arrows), from 1 to 999. Disabled items can be selected and are marked as disabled; characters are only given enabled items.
 
 ## Editor: Item
 - name
-- type (e.g., "longsword")
-- a checkbox for "Enabled?"
+- type (e.g., "longsword"), one of the ruleset's item types
+- a checkbox for "Enabled?", checked by default
 
-## Selection: Zone
-modal dialog, lets you type to search, shows the top results, shows you a small preview image of the zone
+## Selection: Area
+modal dialog, lets you type to search, shows the top results, shows you a small preview image of the area
 
-## Editor: Zone
-Lets you edit details about the zone
+## Editor: Area
+Lets you edit details about the area
 - name
 - enabled?
-	- For new zones, if the universe stage is `in the beginning`, default checked, otherwise default unchecked.
-	- if any parent zone is not enabled, show a message
-- parent zone. Parent zones mostly give zones a structure; a child zone inherits only its passage of time
+	- For new areas, if the universe stage is `in the beginning`, default checked, otherwise default unchecked.
+	- if any parent area is not enabled, show a message
+- parent area. Parent areas mostly give areas a structure; a child area inherits only its passage of time
 - indoors / outdoors
 - default tile, which defaults to "grass" if outdoors and "wood floor" if indoors
-- passage of time, the same options as the universe's plus `inherit` (the default). `inherit` uses the parent zone's setting, and a zone with no parent uses the universe's
+- passage of time, the same options as the universe's plus `inherit` (the default). `inherit` uses the parent area's setting, and an area with no parent uses the universe's
 - checkbox for "loops east-west"
 - checkbox for "loops north-south"
-	- a zone whose passage of time is `faerie` can't loop
+	- an area whose passage of time is `faerie` can't loop
 - [map editor](#editor-map)
 
 ## Editor: Map
-This is a component included in the [zone editor](#editor-zone). It shows you the same grid as gameplay.
+This is a component included in the [area editor](#editor-area). It shows you the same grid as gameplay.
 - the center of map is x = 0, y = 0
 - each side of the map (top, right, bottom, left) has a button with an arrow pointing away from the editor. clicking it allows you to add the specified number of grid coordinates in that direction, expanding the map
 - a map can be at most 50,000 tiles in each direction
@@ -468,11 +534,11 @@ This is a component included in the [zone editor](#editor-zone). It shows you th
 - undo / redo
 	- clicking and dragging counts all changes during that as 1 for the purpose of undo/redo
 - maps have multiple layers, such as the ground and objects on it
-- zone links, a layer independent of the artwork. Any cell can link to a cell in another zone
-	- `automatic`: entering the cell moves you to the target zone
-	- `manual`: you are offered the option to enter the zone
+- area links, a layer independent of the artwork. Any cell can link to a cell in another area
+	- `automatic`: entering the cell moves you to the target area
+	- `manual`: you are offered the option to enter the area
 	- "requires the whole group": the link can only be used when every member of the group is present, including the anchor being. For example, the city -> wilderness link requires the whole group, but the city -> shop link doesn't
-	- "select destination coordinates": shows a preview of the target zone's map. Clicking a cell marks it as the destination, then lets you place a return link (optional)
+	- "select destination coordinates": shows a preview of the target area's map. Clicking a cell marks it as the destination, then lets you place a return link (optional)
 	- since links are separate from the artwork, you also need to draw a door (or similar) so players know where to walk
 
 ### Tool: Draw
@@ -482,7 +548,7 @@ This is a component included in the [zone editor](#editor-zone). It shows you th
 
 ## Editor: Tile
 - name
-- indoors / outdoors. This is a preference, not a restriction: any tile can be used in any zone, but outdoor zones get the outdoor tileset first
+- indoors / outdoors. This is a preference, not a restriction: any tile can be used in any area, but outdoor areas get the outdoor tileset first
 - color (used if there are no graphics), accepts hex + has a color picker
 - graphic (image)
 	- outdoors uses the Dual-Grid System
@@ -495,7 +561,7 @@ This is a component included in the [zone editor](#editor-zone). It shows you th
 # Localization
 Players choose the language they play in, and universes can be translated. There are two kinds of text, and each is looked up in the player's language separately:
 - **engine text**, written by the site developers: the pages and editors, messages from the server, emails, and each ruleset's defaults (such as PF1E's races, classes, items and tiles). Its translations ship with the engine
-- **universe text**, written by a universe's editors: the universe's name and descriptions, and the names of its zones, tiles, races, classes and items (later NPCs and dialog). Translated in the [Translations](#tab-translations) tab
+- **universe text**, written by a universe's editors: the universe's name and descriptions, and the names of its areas, tiles, races, classes and items (later NPCs and dialog). Translated in the [Translations](#tab-translations) tab
 
 Text players write is never translated: character names, group names and chat.
 
@@ -540,7 +606,7 @@ Every page, editor and game screen can be used with only a keyboard and with a s
 
 ## Screen readers
 - When a screen changes, focus moves to its heading, so the screen is read out.
-- The game's map is a focusable application with its keys described. A screen reader is told the zone the player enters, players coming into and going out of view, a door or path underfoot that E takes, and when something is in the way. Alt+P reads out the player's zone and cell, the tile they stand on, and each player they can see with their distance and compass direction.
+- The game's map is a focusable application with its keys described. A screen reader is told the area the player enters, players coming into and going out of view, a door or path underfoot that E takes, and when something is in the way. Alt+P reads out the player's area and cell, the tile they stand on, and each player they can see with their distance and compass direction.
 - The map editor's map (and the link dialog's preview) can be focused and worked with a cursor: the arrow keys move it, Space or Enter paints or picks its cell, holding Space while moving paints a stroke, + and - zoom and Home returns to the center cell. Each cell the cursor reaches is read out with what it holds.
 - Colors are never the only way information is shown: the tile table's swatches carry the color's hex code.
 
@@ -561,7 +627,7 @@ Every page, editor and game screen can be used with only a keyboard and with a s
 	- Dual-Grid vs. 47-Tile Blob, possibly per layer
 	- how large objects such as trees and houses work, since a player walking behind one should be hidden
 - **Maps:** a map 50,000 tiles in each direction could hold billions of cells, so maps need to be stored sparsely or in chunks rather than as one full grid.
-- **Point buy:** the details of the PF1E point-buy system.
+- **Characters:** whether character names must be unique within a universe.
 - **Localization:**
 	- whether a universe can rename engine terms (calling gold "crowns"), which changes the pages' wording in that universe
 	- fonts for map text in scripts the default font doesn't cover, such as Chinese and Japanese

@@ -4,6 +4,7 @@ import trashIcon from 'virtual:icon/ph:trash';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
+import { ChangeTracker } from '../changeTracker';
 import { getElement, setButtonLabel, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
@@ -46,6 +47,11 @@ export class TileDialog
 	private readonly removeButton = getElement('tile-remove', HTMLButtonElement);
 	private readonly cancelButton = getElement('tile-cancel', HTMLButtonElement);
 	private readonly saveButton = getElement('tile-save', HTMLButtonElement);
+
+	/**
+	 * Whether the tile has changes that haven't been saved
+	 */
+	private readonly changes = new ChangeTracker({ root: this.form });
 
 	private universe: EditableUniverse | undefined;
 
@@ -92,9 +98,14 @@ export class TileDialog
 			setFieldError(this.name, undefined);
 		});
 
+		this.changes.guardDialog(this.dialog);
+
 		this.cancelButton.addEventListener('click', () =>
 		{
-			this.dialog.close();
+			if (this.changes.confirmDiscard())
+			{
+				this.dialog.close();
+			}
 		});
 
 		this.removeButton.addEventListener('click', () =>
@@ -139,7 +150,9 @@ export class TileDialog
 				id: 'editor.tile.editTitle',
 				defaultMessage: 'Edit {tile}',
 				description: 'Title of the tile editor for a tile the player can change; {tile} is its name'
-			}, { tile: name });
+			}, {
+				tile: name
+			});
 		}
 		else
 		{
@@ -186,6 +199,7 @@ export class TileDialog
 		clearFieldErrors(this.dialog);
 		this.updatePreview();
 		this.dialog.showModal();
+		this.changes.markSaved();
 	}
 
 	/**
@@ -279,7 +293,9 @@ export class TileDialog
 				id: 'editor.tile.confirmDelete',
 				defaultMessage: 'Delete {tile}? This can\'t be undone.',
 				description: 'Asks before deleting a tile made for this universe; {tile} is its name'
-			}, { tile: name });
+			}, {
+				tile: name
+			});
 			failure = {
 				id: 'editor.tile.deleteFailed',
 				defaultMessage: 'Could not delete the tile.',
@@ -292,7 +308,9 @@ export class TileDialog
 				id: 'editor.tile.confirmRestore',
 				defaultMessage: 'Restore {tile} to the ruleset\'s default? Your changes to it will be lost.',
 				description: 'Asks before undoing this universe\'s changes to one of the ruleset\'s tiles; {tile} is its name'
-			}, { tile: name });
+			}, {
+				tile: name
+			});
 			failure = {
 				id: 'editor.tile.restoreFailed',
 				defaultMessage: 'Could not restore the tile.',

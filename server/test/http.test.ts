@@ -2,7 +2,7 @@ import assert from 'assert';
 import { randomBytes, randomUUID } from 'crypto';
 import http from 'http';
 
-import { MAX_UNIVERSES_PER_PAGE, UNIVERSES_PATH, type UniverseListPayload, type UniverseStage } from '@multiverse-kiln/shared';
+import { MAX_UNIVERSES_PER_PAGE, UNIVERSES_PATH, type UniverseDetails, type UniverseListPayload, type UniverseStage } from '@multiverse-kiln/shared';
 
 import { createUniverse } from '../src/db/universeRepo.js';
 import { HEALTH_PATH } from '../src/http/health.js';
@@ -161,8 +161,8 @@ describe('Universe list', () =>
 		assert.strictEqual(response.headers.get('cache-control'), 'no-store');
 		assert.deepStrictEqual(body, {
 			universes: [
-				{ id: appleId, name: 'Apple', shortDescription: 'About Apple.', ruleset: 'pf1e' },
-				{ id: zebraId, name: 'Zebra', shortDescription: 'About Zebra.', ruleset: 'pf1e' }
+				{ id: appleId, name: 'Apple', slug: 'apple', shortDescription: 'About Apple.', ruleset: 'pf1e' },
+				{ id: zebraId, name: 'Zebra', slug: 'zebra', shortDescription: 'About Zebra.', ruleset: 'pf1e' }
 			],
 			hasMore: false
 		});
@@ -208,17 +208,31 @@ describe('Universe list', () =>
 		assert.deepStrictEqual(body, {
 			id: universeId,
 			name: 'Kilnhaven',
+			slug: 'kilnhaven',
 			shortDescription: 'A small town.',
 			longDescription: 'A **small** town.',
 			ruleset: 'pf1e'
 		});
 	});
 
-	it('answers 404 for a universe that is not listed, does not exist or is not an ID', async () =>
+	it('finds a listed universe by its slug as well as its ID', async () =>
+	{
+		const universeId = await addUniverseIn('The Shattered Isles!', 'let_there_be_light');
+
+		for (const path of ['/the-shattered-isles', `/${universeId}`])
+		{
+			const { response, body } = await fetchUniverses(path);
+
+			assert.strictEqual(response.status, 200, path);
+			assert.strictEqual((body as UniverseDetails).id, universeId, path);
+		}
+	});
+
+	it('answers 404 for a universe that is not listed, does not exist or has no such slug', async () =>
 	{
 		const unlistedId = await addUniverseIn('Unfinished', 'in_the_beginning');
 
-		for (const path of [`/${unlistedId}`, `/${randomUUID()}`, '/not-an-id'])
+		for (const path of [`/${unlistedId}`, '/unfinished', `/${randomUUID()}`, '/no-such-universe'])
 		{
 			assert.strictEqual((await fetchUniverses(path)).response.status, 404, path);
 		}

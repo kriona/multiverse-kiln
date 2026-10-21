@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { EditorTile, EditorZone, MapBounds, Ruleset, ZonePayload } from '@multiverse-kiln/shared';
+import type { EditorTile, EditorArea, MapBounds, Ruleset, AreaPayload } from '@multiverse-kiln/shared';
 
 import { MAP_EDITOR_SCENE_KEY, MapEditorScene, type CameraState, type MapEditorHost } from '../scenes/MapEditorScene';
 import { announce } from '../ui/announcer';
@@ -21,7 +21,7 @@ const ARROW_STEPS: Record<string, BrushCell> = {
 };
 
 /**
- * A canvas showing a zone's map in the map editor scene: one Phaser game, created the first time a
+ * A canvas showing an area's map in the map editor scene: one Phaser game, created the first time a
  * map is shown, running a fresh start of the scene for each map
  *
  * The canvas's element can be focused, and then the keyboard works the map with a cursor: the arrow
@@ -72,15 +72,15 @@ export class MapCanvas
 	/**
 	 * Shows a map in place of the one before
 	 *
-	 * @param zone The zone, with the tiles its map can use
-	 * @param chunks The zone's loaded chunks, by chunkKey(); the host changes them and calls refreshChunks
+	 * @param area The area, with the tiles its map can use
+	 * @param chunks The area's loaded chunks, by chunkKey(); the host changes them and calls refreshChunks
 	 * @param host Decides what clicks do and hears what happens
-	 * @param camera Where the camera starts, or undefined for the zone's center cell
+	 * @param camera Where the camera starts, or undefined for the area's center cell
 	 * @return The scene, once it is ready
 	 */
-	show(zone: ZonePayload, chunks: ReadonlyMap<string, readonly number[]>, host: MapEditorHost, camera?: CameraState): Promise<MapEditorScene>
+	show(area: AreaPayload, chunks: ReadonlyMap<string, readonly number[]>, host: MapEditorHost, camera?: CameraState): Promise<MapEditorScene>
 	{
-		const { bounds } = zone;
+		const { bounds } = area;
 
 		this.stopPainting();
 		this.current = undefined;
@@ -95,7 +95,7 @@ export class MapCanvas
 		return(new Promise((resolve) =>
 		{
 			const data = {
-				zone,
+				area,
 				chunks,
 				host,
 				camera,
@@ -301,24 +301,24 @@ export class MapCanvas
 }
 
 /**
- * What the map editor scene needs to draw a zone
+ * What the map editor scene needs to draw an area
  *
- * @param zone The zone as the editor knows it
+ * @param area The area as the editor knows it
  * @param tiles Every tile the universe can use
  * @param ruleset The universe's ruleset, which names its default tiles
- * @return The zone in the form the renderer draws, without chunks (they are passed separately)
+ * @return The area in the form the renderer draws, without chunks (they are passed separately)
  */
-export function editorZonePayload(zone: EditorZone, tiles: readonly EditorTile[], ruleset: Ruleset): ZonePayload
+export function editorAreaPayload(area: EditorArea, tiles: readonly EditorTile[], ruleset: Ruleset): AreaPayload
 {
 	return({
-		zoneId: zone.id,
-		name: zone.name,
+		areaId: area.id,
+		name: area.name,
 		ruleset,
-		indoors: zone.indoors,
-		bounds: zone.bounds,
-		loopsEastWest: zone.loopsEastWest,
-		loopsNorthSouth: zone.loopsNorthSouth,
-		defaultTileId: zone.defaultTileId,
+		indoors: area.indoors,
+		bounds: area.bounds,
+		loopsEastWest: area.loopsEastWest,
+		loopsNorthSouth: area.loopsNorthSouth,
+		defaultTileId: area.defaultTileId,
 		tiles: tiles.map((tile) => ({
 			id: tile.id,
 			key: tile.key,

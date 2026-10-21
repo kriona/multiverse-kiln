@@ -7,10 +7,10 @@ import { announce } from './announcer';
 const GATHER_MS = 1000;
 
 /**
- * How long after entering a zone players going out of view aren't read out: they are the players of
- * the zone just left
+ * How long after entering an area players going out of view aren't read out: they are the players of
+ * the area just left
  */
-const ZONE_CHANGE_QUIET_MS = 1000;
+const AREA_CHANGE_QUIET_MS = 1000;
 
 /**
  * How long the player must hold a direction without moving before they are told something is in the way
@@ -45,7 +45,7 @@ export interface SeenPlayer
  */
 export interface PlayerPosition
 {
-	zoneName: string;
+	areaName: string;
 	column: number;
 	row: number;
 
@@ -56,8 +56,8 @@ export interface PlayerPosition
 }
 
 /**
- * Reads out what a screen reader user can't see on the game's map: the zone they enter, players
- * coming into and going out of view, a way to another zone underfoot, and being unable to move. The
+ * Reads out what a screen reader user can't see on the game's map: the area they enter, players
+ * coming into and going out of view, a way to another area underfoot, and being unable to move. The
  * map scene tells it what happens; it decides what is worth reading out and words it
  */
 export class MapAnnouncer
@@ -76,23 +76,25 @@ export class MapAnnouncer
 	private blockedSaid = false;
 
 	/**
-	 * The player has come into a zone, from another or by joining the room
+	 * The player has come into an area, from another or by joining the room
 	 *
-	 * @param zoneName The zone's name
+	 * @param areaName The area's name
 	 */
-	enteredZone(zoneName: string): void
+	enteredArea(areaName: string): void
 	{
 		this.appeared.length = 0;
 		this.disappeared.length = 0;
-		this.quietUntil = performance.now() + ZONE_CHANGE_QUIET_MS;
+		this.quietUntil = performance.now() + AREA_CHANGE_QUIET_MS;
 		this.onLink = false;
 		this.still = undefined;
 
 		announce(t({
-			id: 'map.announce.zone',
-			defaultMessage: 'You are in {zone}.',
-			description: 'Read out by screen readers when the player comes into a zone; {zone} is its name'
-		}, { zone: zoneName }));
+			id: 'map.announce.area',
+			defaultMessage: 'You are in {area}.',
+			description: 'Read out by screen readers when the player comes into an area; {area} is its name'
+		}, {
+			area: areaName
+		}));
 	}
 
 	/**
@@ -123,7 +125,7 @@ export class MapAnnouncer
 	}
 
 	/**
-	 * Tells the player when they step onto a way to another zone that they take with a key
+	 * Tells the player when they step onto a way to another area that they take with a key
 	 *
 	 * @param onLink Whether the player is standing on one
 	 * @param prompt What the map shows them, e.g. "Press E to go through"
@@ -182,10 +184,10 @@ export class MapAnnouncer
 
 		announce(t({
 			id: 'map.announce.position',
-			defaultMessage: '{zone}, column {column}, row {row}{onTile, select, yes {, on {tile}} other {}}. {count, plural, =0 {You can\'t see anyone else.} other {You can see {players}.}}',
-			description: 'Read out by screen readers when the player asks where they are: the zone\'s name, their cell, the tile they stand on (e.g. Grass) when it is known, and the other players they can see; {players} is a list of descriptions such as "Bo, 3 cells northeast"'
+			defaultMessage: '{area}, column {column}, row {row}{onTile, select, yes {, on {tile}} other {}}. {count, plural, =0 {You can\'t see anyone else.} other {You can see {players}.}}',
+			description: 'Read out by screen readers when the player asks where they are: the area\'s name, their cell, the tile they stand on (e.g. Grass) when it is known, and the other players they can see; {players} is a list of descriptions such as "Bo, 3 cells northeast"'
 		}, {
-			zone: position.zoneName,
+			area: position.areaName,
 			column: position.column,
 			row: position.row,
 			onTile: ((position.tileName === undefined) ? 'no' : 'yes'),
@@ -291,7 +293,9 @@ function describePlayer(other: SeenPlayer): string
 			id: 'map.announce.playerHere',
 			defaultMessage: '{name}, right where you are',
 			description: 'Read out by screen readers in the list of players the player can see, for one in the same cell; {name} is their name'
-		}, { name: other.name }));
+		}, {
+			name: other.name
+		}));
 	}
 
 	return(t({

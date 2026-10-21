@@ -17,9 +17,14 @@ An engine for making multiplayer browser-based role-playing games.
 
 ```
 /client          Phaser game (Vite). Uses `@colyseus/sdk` (formerly colyseus.js) to connect to the server.
-                 Three pages: index.html (Home, lobby and game; src/main.ts, src/style.scss), edit.html (the
-                 world editor; src/edit.ts, src/edit.scss) and license.html (the game's license and the
-                 licenses of what it uses, linked from the footer; src/license.ts, src/license.scss). HTML the pages share (status and login screens,
+                 Seven pages, linked without .html (/game): index.html (Home; src/main.ts, src/style.scss),
+                 universe.html (a universe's page at /universe/<slug or id>; src/universe.ts, src/universe.scss),
+                 game.html (lobby and game at /game/<slug or id>, apart from Home so other pages can be open in
+                 other tabs while playing; src/game.ts, src/style.scss), edit.html (the
+                 world editor at /edit/<universe id>; src/edit.ts, src/edit.scss), character.html (Create Character; src/character.ts,
+                 src/character.scss), license.html (the game's license and the
+                 licenses of what it uses, linked from the footer; src/license.ts, src/license.scss) and
+                 admin.html (settings for the whole site; src/admin.ts, src/admin.scss). HTML the pages share (status, notice and login screens,
                  footer, the keyboard shortcut list and screen reader live regions) lives in partials/, included with <!-- include footer.html --> (vite.config.ts).
                  Both styles use src/_shared.scss, and
                  src/pages.ts holds the addresses that link the pages. src/localization.ts shows text in the
@@ -30,18 +35,20 @@ An engine for making multiplayer browser-based role-playing games.
   src/transport.ts   HTTPS/WSS transport
   src/rooms/         Room classes (lifecycle hooks, message handlers, tick loop): SessionRoom (one, global: login,
                      account, joining groups), LobbyRoom (one per universe) and GameRoom (one per group). The two
-                     map rooms share ZonePlayers (movement, zones, who sees whom, zone links) and ZoneCache
+                     map rooms share AreaPlayers (movement, areas, who sees whom, area links) and AreaCache
   src/players/       who is logged in and which group each player is in (in memory; accounts are in the database)
   src/world/         changes the world editor makes, published to the rooms playing in that world (in memory)
   src/logic/         pure game-simulation functions (no I/O)
   src/db/            Drizzle client, schema, and repository modules
   src/auth/          token verification
-  src/http/          REST routes (health, universes for Home, the world editor's API)
+  src/http/          REST routes (health, universes for Home, the world editor's API, the admin page's site settings)
   scripts/           development tools run by hand, such as the seed script
 /shared          Code imported by both client and server:
                  message type enums, payload interfaces, close codes, constants,
                  the synced state's @colyseus/schema classes (src/state.ts),
                  the map and chunk layout (src/maps.ts) and universe settings (src/universes.ts),
+                 each ruleset's data and rules (src/rulesets/<ruleset>/, Open Game Content for PF1E; see
+                 client/license.html),
                  messages and the Translator (src/localization.ts)
   locales/           en.json, the English catalog extracted from the code, and each translation's file, which
                      stores each message with the English it was made from (en-x-pirate.json is Pirate, a
@@ -101,7 +108,7 @@ npm workspaces are assumed (`client`, `server`, `shared`). Update this section i
 
 ## Local development
 
-`start.bat` (runs `npm install`, then `npm run dev`) or `npm run dev` at the root builds `shared`, then runs the shared watcher, server, and client together in one terminal.
+`start.bat` (starts Docker Desktop and Postgres if needed, runs `npm install`, then `npm run dev`) or `npm run dev` at the root builds `shared`, then runs the shared watcher, server, and client together in one terminal.
 
 ```bash
 docker compose up -d                 # start local Postgres
@@ -121,13 +128,14 @@ Test multiplayer with separate browsers or profiles: every tab of one browser is
 - TypeScript `strict` mode everywhere. Avoid `any`; validate untrusted input (client messages, request bodies) at the boundary.
 - Prefer small, focused modules. Room classes orchestrate; logic lives elsewhere.
 - Write unit tests for `server/src/logic/` and repository modules.
-- **Text players read is a message** (see Localization in `STRUCTURE-OVERVIEW.md`): an ID, its English text and a description that tells translators what it is and where it appears, written as an object literal where it's used, e.g. `t({ id, defaultMessage, description })` with `t()` from `client/src/localization.ts`, so the English reads in place. Declare a message with `defineMessages()` from `/shared` only when it's used in more than one place or looked up from a table (such as `UNIVERSE_STAGE_NAMES`), and put the declaration as close to its uses as possible. Give the same English used for two purposes two IDs. Build sentences with ICU arguments and plurals (`'{count, plural, one {# zone} other {# zones}}'`), never by joining pieces. Text in a page's HTML gets `data-message` and `data-translation-context` attributes (see `shared/scripts/extractMessages.ts`); the client's Vite config strips `data-translation-context` from the pages it serves and builds. The server never sends English: HTTP errors go through `sendError()` (`server/src/http/errors.ts`) as a `LocalizedMessage`. Text players write (names, chat) and universe text (names and descriptions creators write) aren't messages. The client's dev server keeps `shared/locales/en.json` current as files are saved; without it, run `npm run messages`, since lint fails until the catalog is current. When it or lint warns that a translation is missing messages or out of date, update it with the `translate` skill (`.agents/skills/translate/SKILL.md`): Pirate (`en-x-pirate`) right away, a real language only when asked. Check new pages in the pseudo-language with `?locale=en-XA`.
+- **Text players read is a message** (see Localization in `STRUCTURE-OVERVIEW.md`): an ID, its English text and a description that tells translators what it is and where it appears, written as an object literal where it's used, e.g. `t({ id, defaultMessage, description })` with `t()` from `client/src/localization.ts`, so the English reads in place. Declare a message with `defineMessages()` from `/shared` only when it's used in more than one place or looked up from a table (such as `UNIVERSE_STAGE_NAMES`), and put the declaration as close to its uses as possible. Give the same English used for two purposes two IDs. Build sentences with ICU arguments and plurals (`'{count, plural, one {# area} other {# areas}}'`), never by joining pieces. Text in a page's HTML gets `data-message` and `data-translation-context` attributes (see `shared/scripts/extractMessages.ts`); the client's Vite config strips `data-translation-context` from the pages it serves and builds. The server never sends English: HTTP errors go through `sendError()` (`server/src/http/errors.ts`) as a `LocalizedMessage`. Text players write (names, chat) and universe text (names and descriptions creators write) aren't messages. The client's dev server keeps `shared/locales/en.json` current as files are saved; without it, run `npm run messages`, since lint fails until the catalog is current. When it or lint warns that a translation is missing messages or out of date, update it with the `translate` skill (`.agents/skills/translate/SKILL.md`): Pirate (`en-x-pirate`) right away, a real language only when asked. Check new pages in the pseudo-language with `?locale=en-XA`.
 - **Icons** come from Phosphor's Regular icons (`ph:<name>`, https://phosphoricons.com) for interface actions and game-icons.net (`game-icons:<name>`, https://game-icons.net) for game concepts. A page marks one with `<!-- icon ph:floppy-disk -->` before a button's text; code imports one with `import trashIcon from 'virtual:icon/ph:trash'` and shows it with `setButtonLabel()` (`client/src/ui/dom.ts`). The icons plugin in `client/vite.config.ts` inlines them as SVG at build time. Both are credited, with their licenses, on `client/license.html`; credit any new third-party code or assets the pages use there too.
 - **Every screen works with only a keyboard and with a screen reader** (see Accessibility in `STRUCTURE-OVERVIEW.md`). When adding a screen, dialog or game feature:
 	- Give its main buttons shortcuts with `data-shortcut="Alt+<letter>"`, following the pattern there (Alt+S submits, Alt+N adds, and so on). `client/src/ui/shortcuts.ts` underlines the letter, sets `aria-keyshortcuts` and lists it under `?`. Use `addShortcut()` for a shortcut that isn't a button, and `addKeyHelp()` to list keys the code handles itself. Don't use Alt+D, Alt+E or Alt+F, and don't give deleting a shortcut.
 	- Read out what changes without the player acting, and what is only drawn on a canvas, with `announce()` (`client/src/ui/announcer.ts`), the way `MapAnnouncer` does for the game's map.
 	- Show a field's problem with `reportFieldError()` (`client/src/ui/fieldErrors.ts`), and point the form's buttons at its error text with `aria-describedby`.
 	- Never show something by color alone, give anything drawn on a canvas a keyboard way to reach it, and set `document.title` when the screen shows.
+- **Don't let work be lost by accident.** Give a form or dialog that edits something a `ChangeTracker` (`client/src/ui/changeTracker.ts`): call `markSaved()` once it is filled and after it saves, `confirmDiscard()` before closing or replacing it, and `guardDialog()` for a dialog. Anything else holding work not yet saved (such as painting still being sent) registers with `watchUnsavedWork()`. While any of it has unsaved changes, the browser asks before the page is left.
 - Code must pass `npm run lint` (ESLint, `eslint.config.js`); a pre-commit hook enforces it. Run it after making changes, and fix problems with Edit rather than `eslint --fix`. The import restrictions for `server/src/logic/` and `server/src/rooms/` enforce the architecture and database rules above - don't disable them.
 - Colyseus APIs changed substantially in 0.17 and 0.18, and recall of them is usually out of date. **Use the `colyseus` skill** (`.agents/skills/colyseus/SKILL.md`) before writing or changing any Colyseus code: rooms, Schema state, messages, matchmaking, reconnection, the client SDK (`@colyseus/sdk`) or server config. Read the matching file in its `references/` folder before non-trivial work in that area. Check the installed versions in `server/package.json` and `client/package.json` first; the skill is written for `colyseus` 0.18 and `@colyseus/schema` 5.
 - Phaser 4 also changed substantially from Phaser 3, which most recall is based on. **Use the Phaser skills** (official, from `phaserjs/phaser`: one per engine area in `.agents/skills/<area>/SKILL.md`, e.g. `scenes`, `sprites-and-images`, `loading-assets`, `input-keyboard-mouse-touch`, `tweens`, `tilemaps`) before writing or changing client code that uses Phaser. When unsure whether an API still exists, check `v4-new-features` and `v3-to-v4-migration` first. Check the installed version in `client/package.json`; the skills are written for Phaser 4.

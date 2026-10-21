@@ -21,7 +21,7 @@ The server is authoritative: clients send inputs, and the server simulates the g
 This is an [npm workspaces](https://docs.npmjs.com/cli/using-npm/workspaces) monorepo with three packages:
 
 ```
-/client     Phaser game (Vite): the game (index.html) and the world editor (edit.html)
+/client     Phaser game (Vite): Home (index.html), the game (game.html) and the world editor (edit.html)
 /server     Colyseus server
 /shared     Code used by both client and server (published locally as @multiverse-kiln/shared)
 ```
@@ -99,7 +99,7 @@ Then put the same passwords into the connection strings in `server/.env`: `KILN_
 | `DEV_HOST` | `client/.env` | Hostname for the Vite dev server: `www.multiversekiln-dev.com` (must be in your hosts file; see step 3). |
 | `DEV_PORT` | `client/.env` | Port for the Vite dev server (default `5173`). |
 | `VITE_SERVER_URL` | `client/.env` | WebSocket URL of the Colyseus server: `wss://www.multiversekiln-dev.com:2567`. Use the same hostname as `DEV_HOST` so it matches the certificate. |
-| `VITE_SOURCE_URL` | `client/.env` | Where players can get the game's source code, linked from the page footer (required). The AGPL requires offering the source to players of a modified version, so a fork sets its own repository. |
+| `VITE_SOURCE_URL` | `client/.env` | Where players can get the game engine's source code, linked from the page footer (required). The AGPL requires offering the source to players of a modified version, so a fork sets its own repository. |
 | `PORT` | `server/.env` | Port the Colyseus server listens on (default `2567`). |
 | `ENABLE_DEV_TOOLS` | `server/.env` | Set to `true` to enable `/monitor` and the playground. Off when unset, and always off when `NODE_ENV=production`. Never set it in production. |
 | `SSL_KEY_FILE`, `SSL_CERT_FILE` | `server/.env` | Certificate for HTTPS/WSS (required). The example values point at `certs/` (see step 5). Leave unset on Colyseus Cloud, which handles TLS itself. |
@@ -191,7 +191,7 @@ From the repository root:
 npm run dev
 ```
 
-On Windows you can also double-click `start.bat` (or run `.\start.bat`). It runs `npm install` (a quick no-op when nothing changed), then `npm run dev`.
+On Windows you can also double-click `start.bat` (or run `.\start.bat`). It starts Docker Desktop if it isn't running, runs `npm install` (a quick no-op when nothing changed), starts Postgres with `docker compose up -d` and waits until it's ready, then runs `npm run dev`.
 
 This builds `shared` once, then runs three processes in one terminal with colored prefixes:
 
@@ -205,7 +205,7 @@ Open the game at `https://www.multiversekiln-dev.com:5173`. The server's output 
 
 Press `Ctrl+C` to stop all three. If any one exits, the others are stopped too.
 
-Type a name to log in, then pick a universe on Home (Kilnhaven, after seeding) and press **Enter Universe** to walk around its lobby. Press **Create game** to start a group and **Share** to copy a join link for other players; the group starts in the universe's starting zone. Move with the arrow keys or WASD, and press **E** to go through a doorway that offers to take you somewhere (such as Kilnhaven's cottage trapdoor). Click the map to move again after typing in the chat. Your player is green; other players are blue.
+Type a name to log in, then pick a universe on Home (Kilnhaven, after seeding) and press **Enter Universe** to walk around its lobby. Press **Create game** to start a group and **Share** to copy a join link for other players; the group starts in the universe's starting area. Move with the arrow keys or WASD, and press **E** to go through a doorway that offers to take you somewhere (such as Kilnhaven's cottage trapdoor). Click the map to move again after typing in the chat. Your player is green; other players are blue.
 
 Until there are real logins, a name is the whole login: typing a name you've used before (in any capitals) logs you in as that player again, from any browser, and a new name creates a new player. A player can only be logged in from one browser at a time.
 
