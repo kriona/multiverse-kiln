@@ -455,6 +455,10 @@
 		"message": "Wraps north-south",
 		"source": "Loops north-south"
 	},
+	"editor.area.mapSaveFailed": {
+		"message": "Couldn't stow the chart.",
+		"source": "Could not save the map."
+	},
 	"editor.area.noParent": {
 		"message": "None (a top-level area)",
 		"source": "None (a top-level area)"
@@ -1091,10 +1095,6 @@
 		"message": "The tavern be where every soul in the universe gathers afore joinin' a crew. It be an area like any other, but it ain't listed on the Areas tab.",
 		"source": "The lobby is where everyone in the universe meets before joining a group. It is an area like any other, but isn't listed on the Areas tab."
 	},
-	"editor.map.allSaved": {
-		"message": "All changes stowed",
-		"source": "All changes saved"
-	},
 	"editor.map.areaDefault": {
 		"message": "{tile} (the area's usual)",
 		"source": "{tile} (the area's default)"
@@ -1127,6 +1127,10 @@
 		"message": "{column}, {row}: {contents} ({mode, select, automatic {passage that hauls ye through} other {passage that asks first}})",
 		"source": "{column}, {row}: {contents} ({mode, select, automatic {automatic link} other {manual link}})"
 	},
+	"editor.map.confirmDeleteLinks": {
+		"message": "Stowin' the smaller chart scuttles {links, plural, one {# passage} other {# passages}} on or into the cells it cuts off. There be no takin' it back. Stow anyway?",
+		"source": "Saving the smaller map deletes {links, plural, one {# link} other {# links}} on or into the cells it cuts off. This can't be undone. Save anyway?"
+	},
 	"editor.map.draw": {
 		"message": "Paint",
 		"source": "Draw"
@@ -1151,17 +1155,13 @@
 		"message": "+ West",
 		"source": "+ West"
 	},
-	"editor.map.growFailed": {
-		"message": "Couldn't widen the chart.",
-		"source": "Could not grow the map."
-	},
 	"editor.map.heading": {
 		"message": "Chart",
 		"source": "Map"
 	},
 	"editor.map.help": {
-		"message": "Drag with the right mouse button to look about, and spin the mouse wheel to zoom. Ctrl+Z undoes and Ctrl+Y redoes. With the Passages tool, click a cell to add or change its passage.",
-		"source": "Drag with the right mouse button to look around, and zoom with the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link."
+		"message": "Drag with the right mouse button to look about, and hold Ctrl while spinnin' the mouse wheel to zoom. Ctrl+Z undoes and Ctrl+Y redoes. With the Passages tool, click a cell to add or change its passage.",
+		"source": "Drag with the right mouse button to look around, and zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link."
 	},
 	"editor.map.keyboardHelp": {
 		"message": "With the chart in hand, the arrow keys steer the cursor, 10 cells at a time with Shift. Space or Enter paints, or with the Passages tool opens the cell's passage; hold Space while steerin' to keep paintin'. + and - zoom, and Home sails back to the center cell.",
@@ -1192,12 +1192,12 @@
 		"source": "Paint the cursor's cell, or open its link with the Links tool; hold Space while moving to keep painting"
 	},
 	"editor.map.keys.redo": {
-		"message": "Paint again what ye took back",
-		"source": "Redo the painting undone"
+		"message": "Paint or resize again what ye took back",
+		"source": "Redo the painting or change of size undone"
 	},
 	"editor.map.keys.undo": {
-		"message": "Take back the last paintin'",
-		"source": "Undo the last painting"
+		"message": "Take back the last paintin' or change to the chart's size",
+		"source": "Undo the last painting or change to the map's size"
 	},
 	"editor.map.keys.zoom": {
 		"message": "Spyglass in or out",
@@ -1207,9 +1207,17 @@
 		"message": "Chart",
 		"source": "Map"
 	},
+	"editor.map.linkNeedsSave": {
+		"message": "Stow the chart's new size before addin' passages there.",
+		"source": "Save the map's new size before adding links there."
+	},
 	"editor.map.links": {
 		"message": "Passages",
 		"source": "Links"
+	},
+	"editor.map.linksKept": {
+		"message": "The passages were kept, so the chart weren't made smaller.",
+		"source": "The links were kept, so the map wasn't made smaller."
 	},
 	"editor.map.loadFailed": {
 		"message": "Couldn't haul up the chart.",
@@ -1218,10 +1226,6 @@
 	"editor.map.loadLinksFailed": {
 		"message": "Couldn't haul up the passages.",
 		"source": "Could not load the links."
-	},
-	"editor.map.paintingNotSaved": {
-		"message": "Some o' yer paintin' went down with the ship. Open the area again to see the chart as it be stowed.",
-		"source": "Could not save some of your painting. Open the area again to see the map as it is saved."
 	},
 	"editor.map.redo": {
 		"message": "Redo",
@@ -1255,6 +1259,10 @@
 		"message": "mystery tile",
 		"source": "unknown tile"
 	},
+	"editor.map.unsaved": {
+		"message": "Chart changes not stowed yet",
+		"source": "Map changes not saved yet"
+	},
 	"editor.map.void": {
 		"message": "Davy Jones' Locker",
 		"source": "Void"
@@ -1275,13 +1283,13 @@
 		"message": "Set Sail",
 		"source": "Enter Universe"
 	},
+	"editor.resize.cutOffWarning": {
+		"message": "The smaller chart cuts off {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# passage} other {# passages}}. Undo brings the cells back, but the passages be scuttled when the chart is stowed. Resize anyway?",
+		"source": "The smaller map cuts off {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# link} other {# links}}. Undo brings the cells back, but the links are deleted when the map is saved. Resize anyway?"
+	},
 	"editor.resize.discard": {
 		"message": "Resize and toss overboard",
 		"source": "Resize and discard"
-	},
-	"editor.resize.discardWarning": {
-		"message": "The smaller chart would toss {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# passage} other {# passages}} overboard. Resize anyway?",
-		"source": "The smaller map would discard {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# link} other {# links}}. Resize anyway?"
 	},
 	"editor.resize.east": {
 		"message": "East",

@@ -1,4 +1,4 @@
-import { cellIndexInChunk, CHUNK_SIZE, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, isInBounds, type CellChange, type ChunkRange, type MapBounds, type AreaChunk } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, CHUNK_SIZE, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, isInBounds, parseChunkKey, type CellChange, type ChunkRange, type MapBounds, type AreaChunk } from '@multiverse-kiln/shared';
 
 /**
  * The cells of an area's map as the editor holds them: the chunks loaded so far, which the editor
@@ -21,10 +21,16 @@ export class EditorMap
 	private readonly loaded = new Set<string>();
 
 	/**
+	 * The map's bounds when it was opened. Every cell outside them is the default tile
+	 */
+	private readonly openedBounds: MapBounds;
+
+	/**
 	 * @param bounds The map's bounds
 	 */
 	constructor(private currentBounds: MapBounds)
 	{
+		this.openedBounds = currentBounds;
 	}
 
 	/**
@@ -38,11 +44,13 @@ export class EditorMap
 	}
 
 	/**
-	 * Grows the map. The loaded chunks stay right: cells outside the old bounds were always the default tile
+	 * Gives the map new bounds. Chunks wholly outside the bounds the map was opened with count as loaded,
+	 * since cells outside them were always the default tile; cells a smaller map cuts off keep their values,
+	 * so set them to the default tile first (see paintedCellsOutside)
 	 *
-	 * @param bounds The new bounds, holding all of the old ones
+	 * @param bounds The new bounds
 	 */
-	grow(bounds: MapBounds): void
+	setBounds(bounds: MapBounds): void
 	{
 		this.currentBounds = bounds;
 	}
@@ -71,7 +79,15 @@ export class EditorMap
 	 */
 	isLoaded(chunkColumn: number, chunkRow: number): boolean
 	{
-		return(this.loaded.has(chunkKey(chunkColumn, chunkRow)));
+		const bounds = this.openedBounds;
+		const outsideOpened = (
+			(chunkColumn < chunkCoordinate(bounds.minColumn)) ||
+			(chunkColumn > chunkCoordinate(bounds.maxColumn)) ||
+			(chunkRow < chunkCoordinate(bounds.minRow)) ||
+			(chunkRow > chunkCoordinate(bounds.maxRow))
+		);
+
+		return(outsideOpened || this.loaded.has(chunkKey(chunkColumn, chunkRow)));
 	}
 
 	/**
@@ -123,12 +139,42 @@ export class EditorMap
 	{
 		const key = chunkKey(chunkCoordinate(column), chunkCoordinate(row));
 
-		if (!isInBounds(this.bounds, column, row) || !this.loaded.has(key))
+		if (!isInBounds(this.bounds, column, row) || !this.isLoaded(chunkCoordinate(column), chunkCoordinate(row)))
 		{
 			return(undefined);
 		}
 
 		return(this.chunks.get(key)?.[cellIndexInChunk(column, row)] ?? DEFAULT_TILE_CELL);
+	}
+
+	/**
+	 * The cells on the map, outside some bounds, that hold anything but the default tile, such as the
+	 * cells a smaller map would cut off. Only loaded chunks are looked at
+	 *
+	 * @param bounds The bounds
+	 * @return The cells and their values
+	 */
+	paintedCellsOutside(bounds: MapBounds): CellChange[]
+	{
+		const cells: CellChange[] = [];
+
+		for (const [key, values] of this.chunks)
+		{
+			const { chunkColumn, chunkRow } = parseChunkKey(key);
+
+			values.forEach((value, index) =>
+			{
+				const column = (chunkColumn * CHUNK_SIZE) + (index % CHUNK_SIZE);
+				const row = (chunkRow * CHUNK_SIZE) + Math.floor(index / CHUNK_SIZE);
+
+				if ((value !== DEFAULT_TILE_CELL) && isInBounds(this.bounds, column, row) && !isInBounds(bounds, column, row))
+				{
+					cells.push([column, row, value]);
+				}
+			});
+		}
+
+		return(cells);
 	}
 
 	/**

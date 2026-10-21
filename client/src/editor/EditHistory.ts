@@ -1,4 +1,4 @@
-import type { CellChange } from '@multiverse-kiln/shared';
+import type { CellChange, MapBounds } from '@multiverse-kiln/shared';
 
 /**
  * Most steps the editor can undo
@@ -6,7 +6,8 @@ import type { CellChange } from '@multiverse-kiln/shared';
 const MAX_STEPS = 200;
 
 /**
- * One undoable change to a map: everything a single click or drag painted
+ * One undoable change to a map: everything a single click or drag painted, or one change of the map's
+ * size, with the cells a smaller map cut off set to the default tile
  */
 export interface EditStep
 {
@@ -19,6 +20,14 @@ export interface EditStep
 	 * The same cells and the values they had before
 	 */
 	inverse: CellChange[];
+
+	/**
+	 * For a change of the map's size, its bounds before and after
+	 */
+	bounds?: {
+		before: MapBounds;
+		after: MapBounds;
+	};
 }
 
 /**
@@ -100,7 +109,7 @@ export class EditHistory
 	}
 
 	/**
-	 * Forgets every step, for when the map changes in a way the steps don't know about (such as a resize)
+	 * Forgets every step, for when another map opens
 	 */
 	clear(): void
 	{

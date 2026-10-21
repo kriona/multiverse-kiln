@@ -1,28 +1,47 @@
 import { MAX_MAP_SIDE, type MapBounds } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
-import { describeEditorError, type EditorApi } from '../../network/editorApi';
+import { describeEditorError } from '../../network/editorApi';
 import { getElement, setButtonText, showMessage } from '../dom';
 import { mapMessages } from './mapMessages';
 
 /**
- * The area a resize is for, and what happens once it is resized
+ * What a smaller map would cut off
+ */
+export interface ResizeLoss
+{
+	/**
+	 * Cells painted with something other than the default tile
+	 */
+	cells: number;
+
+	/**
+	 * The area's links on the cells
+	 */
+	links: number;
+}
+
+/**
+ * The map a resize is for, and what happens when it is resized
  */
 interface ResizeTarget
 {
-	universeId: string;
-	areaId: string;
 	bounds: MapBounds;
 
 	/**
-	 * Called with the new bounds once the map has been resized
+	 * Finds out what new bounds would cut off
 	 */
-	onResized: (bounds: MapBounds) => void;
+	check: (bounds: MapBounds) => Promise<ResizeLoss>;
+
+	/**
+	 * Called with the new bounds when the player resizes the map
+	 */
+	onResize: (bounds: MapBounds) => void;
 }
 
 /**
  * Edit Size: how far a map reaches from its center cell in each direction, with the total size, and a
- * warning before a smaller map discards painted cells or links
+ * warning before a smaller map cuts off painted cells or links
  */
 export class ResizeDialog
 {
@@ -39,14 +58,14 @@ export class ResizeDialog
 	private target: ResizeTarget | undefined;
 
 	/**
-	 * The bounds the player has agreed may discard cells and links, so submitting them again goes ahead
+	 * The bounds the player has agreed may cut off cells and links, so submitting them again goes ahead
 	 */
 	private confirmedBounds: string | undefined;
 
 	/**
-	 * @param api The editor's API
+	 * Sets up the dialog's fields and buttons
 	 */
-	constructor(private readonly api: EditorApi)
+	constructor()
 	{
 		for (const input of [this.north, this.east, this.south, this.west])
 		{
@@ -73,7 +92,7 @@ export class ResizeDialog
 	/**
 	 * Opens the dialog with a map's bounds
 	 *
-	 * @param target The area and what to do once it is resized
+	 * @param target The map and what to do when it is resized
 	 */
 	open(target: ResizeTarget): void
 	{
@@ -133,7 +152,7 @@ export class ResizeDialog
 	}
 
 	/**
-	 * Resizes the map. If that would discard anything, explains what and waits for the player to submit again
+	 * Resizes the map. If that would cut anything off, explains what and waits for the player to submit again
 	 */
 	private async resize(): Promise<void>
 	{
@@ -150,29 +169,32 @@ export class ResizeDialog
 
 		try
 		{
-			const conflict = await this.api.resizeArea(target.universeId, target.areaId, bounds, (this.confirmedBounds === key));
-
-			if (conflict)
+			if (this.confirmedBounds !== key)
 			{
-				this.confirmedBounds = key;
-				setButtonText(this.submit, t({
-					id: 'editor.resize.discard',
-					defaultMessage: 'Resize and discard',
-					description: 'Button that makes the map smaller after the player was warned it loses painting or links'
-				}));
-				showMessage(this.warning, t({
-					id: 'editor.resize.discardWarning',
-					defaultMessage: 'The smaller map would discard {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# link} other {# links}}. Resize anyway?',
-					description: 'Warns before making a map smaller loses cells painted with something other than the default tile, and area links'
-				}, {
-					cells: conflict.discardedCells,
-					links: conflict.discardedLinks
-				}));
-				return;
+				const loss = await target.check(bounds);
+
+				if ((loss.cells > 0) || (loss.links > 0))
+				{
+					this.confirmedBounds = key;
+					setButtonText(this.submit, t({
+						id: 'editor.resize.discard',
+						defaultMessage: 'Resize and discard',
+						description: 'Button that makes the map smaller after the player was warned it loses painting or links'
+					}));
+					showMessage(this.warning, t({
+						id: 'editor.resize.cutOffWarning',
+						defaultMessage: 'The smaller map cuts off {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# link} other {# links}}. Undo brings the cells back, but the links are deleted when the map is saved. Resize anyway?',
+						description: 'Warns before making a map smaller cuts off cells painted with something other than the default tile, and area links'
+					}, {
+						cells: loss.cells,
+						links: loss.links
+					}));
+					return;
+				}
 			}
 
 			this.dialog.close();
-			target.onResized(bounds);
+			target.onResize(bounds);
 		}
 		catch (error)
 		{
