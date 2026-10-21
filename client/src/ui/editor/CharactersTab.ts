@@ -6,7 +6,7 @@ import { ChangeTracker } from '../changeTracker';
 import { getElement, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
-import { formatMoney, readMoneyField } from '../moneyField';
+import { exampleMoney, formatMoney, readMoneyField } from '../moneyField';
 import type { ItemSelectDialog } from './ItemSelectDialog';
 import { StartingItemsField } from './StartingItemsField';
 import type { AreaSelectDialog } from './AreaSelectDialog';
@@ -21,6 +21,7 @@ export class CharactersTab
 	private readonly fields = getElement('characters-fields', HTMLFieldSetElement);
 	private readonly groupSize = getElement('characters-group-size', HTMLInputElement);
 	private readonly startingMoney = getElement('characters-starting-money', HTMLInputElement);
+	private readonly startingMoneyHint = getElement('characters-starting-money-hint', HTMLElement);
 	private readonly chooseItemsButton = getElement('characters-items-choose', HTMLButtonElement);
 	private readonly areaName = getElement('characters-area-name', HTMLElement);
 	private readonly chooseAreaButton = getElement('characters-area-choose', HTMLButtonElement);
@@ -85,19 +86,6 @@ export class CharactersTab
 			min: MIN_GROUP_SIZE,
 			max: MAX_GROUP_PLAYERS
 		});
-		getElement('characters-starting-money-hint', HTMLElement).textContent = t({
-			id: 'editor.characters.startingMoneyHint',
-			defaultMessage: 'Amounts of coins, like {example}. Coins stay as they are given; races and classes can add more.',
-			description: 'Explains the starting money field on the editor\'s Characters tab; {example} is an amount of money, e.g. 12gp 5sp. Coins are never changed into other coins automatically'
-		}, {
-			example: formatMoney({
-				pp: 0,
-				gp: 12,
-				sp: 5,
-				cp: 0
-			})
-		});
-
 		for (const input of [this.groupSize, this.startingMoney])
 		{
 			input.addEventListener('input', () =>
@@ -128,7 +116,14 @@ export class CharactersTab
 	{
 		this.universe = universe;
 		this.groupSize.value = String(universe.groupSize);
-		this.startingMoney.value = formatMoney(universe.startingMoney);
+		this.startingMoney.value = formatMoney(universe.startingMoney, universe.ruleset);
+		this.startingMoneyHint.textContent = t({
+			id: 'editor.characters.startingMoneyHint',
+			defaultMessage: 'Amounts of coins, like {example}. Coins stay as they are given; races and classes can add more.',
+			description: 'Explains the starting money field on the editor\'s Characters tab; {example} is an amount of money, e.g. 1pp 2gp 2sp 4cp or 250cr. Coins are never changed into other coins automatically'
+		}, {
+			example: exampleMoney(universe.ruleset)
+		});
 		this.fields.disabled = !canEditUniverseSettings(universe.role);
 		this.saveButton.hidden = this.fields.disabled;
 		this.chooseAreaButton.hidden = this.fields.disabled;
@@ -228,7 +223,7 @@ export class CharactersTab
 			return;
 		}
 
-		const startingMoney = readMoneyField(this.startingMoney);
+		const startingMoney = readMoneyField(this.startingMoney, universe.ruleset);
 
 		if (startingMoney === undefined)
 		{
@@ -257,7 +252,7 @@ export class CharactersTab
 				startingItems,
 				startingAreaId
 			};
-			this.startingMoney.value = formatMoney(startingMoney);
+			this.startingMoney.value = formatMoney(startingMoney, universe.ruleset);
 			this.changes.markSaved();
 			this.saved.textContent = t(formMessages.saved);
 			this.onSaved(this.universe);

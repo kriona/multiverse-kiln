@@ -98,7 +98,7 @@ If a universe allows it, and you are in the universe's lobby, you may enter a po
 	- an avatar, a larger view of the character showing all their worn items. Every item needs avatar art drawn by an artist
 
 ## Create Character
-Based entirely on the universe's ruleset. It is a page of its own, reached from the lobby, that goes through steps (name, race, class, ability scores, then a review) and returns to the lobby when the character is made. Rulesets will add more steps, so there may be a lot to work through:
+Based entirely on the universe's ruleset. It is a page of its own, reached from the lobby, that goes through steps (name, race, class, a theme in SF1E, ability scores, then a review) and returns to the lobby when the character is made. Rulesets will add more steps, so there may be a lot to work through:
 - the player's progress is saved on the server a moment after each change and when the step changes, so they can go back to the lobby, close the browser, or switch browsers, and pick up on the step they were on. "Start over" throws the progress away
 - progress is checked against the universe only when the character is made; a race or class that has since been disabled is left out when the progress loads
 
@@ -107,7 +107,9 @@ For PF1E, the server rolls the ability scores (or checks the point buy choices) 
 - the player chooses a name, an enabled race and an enabled class. A race with a floating ability bonus asks which ability gets it
 - the character starts with the universe's, race's and class's starting money added coin by coin, their starting equipment added together (enabled items only), and the [starting area](#tab-characters) the precedence picks
 - the lobby lists the player's characters in the universe
-- a race, class or item that characters have can't be deleted; it can be disabled instead
+- a race, class, theme or item that characters have can't be deleted; it can be disabled instead
+
+For SF1E, every ability score starts at 10, and the player spends the universe's [ability points](#sf1e) to raise them, one point for each +1. Points can't raise a score above 18 once the race's and theme's bonuses are added (bonuses alone can), and points left unspent are lost; the server checks both. The player also chooses an enabled [theme](#themes), whose +1 is added to its ability. The class's key ability is the hint.
 
 ## Character sheet
 A modal dialog showing one of the player's characters, opened from the [lobby](#lobby) and the [universe page](#universe-page) (later the [profile](#profile-edit) too). Only the character's player can see it. For PF1E it shows:
@@ -116,6 +118,8 @@ A modal dialog showing one of the player's characters, opened from the [lobby](#
 - size and darkvision, from the race as the universe sets it now
 - money, as a [money field](#field-money) writes it
 - equipment, sorted by name, with how many of each
+
+For SF1E it also shows the theme, hit points (the race's and the class's) and stamina points (the class's plus the Constitution modifier, at least 0), from the race and class as the universe sets them now.
 
 ### Deleting a character
 The sheet's Delete button asks twice. "Delete Character" asks "Do you want to delete [character]?" (Cancel / Delete), then a second dialog asks "Are you absolutely sure you want to delete [character]? This is permanent (a very long time!) and cannot be undone.", with three buttons:
@@ -183,7 +187,7 @@ This lets you change anything about a universe. It will be a whole suite of tool
 	- `prologue` - open for beta testers. Not listed on [Home](#home)
 	- `let there be light` - (ready for people to join. Listed on [Home](#home)
 	- `end of time` - retired. Locked and view only. Not listed on [Home](#home)
-- a dropdown for ruleset - no default, the only option for now is Pathfinder 1E
+- a dropdown for ruleset - no default, Pathfinder 1E or Starfinder 1E
 - a dropdown for "passage of time", the default for every [area](#editor-area)
 	- `flows normally` (based on character actions, see [time and distance](#time-and-distance))
 	- `always dawn`
@@ -206,7 +210,7 @@ This lets you change anything about a universe. It will be a whole suite of tool
 	- [Editors](#tab-editors)
 	- [Ruleset](#tab-ruleset)
 	- [Lobby](#tab-lobby)
-	- [Characters](#tab-characters)
+	- [Characters](#tab-characters), with [themes](#themes) for a ruleset that has them (SF1E)
 	- [Races](#tab-races)
 	- [Classes](#tab-classes)
 	- [Tilesets](#tab-tilesets)
@@ -266,6 +270,17 @@ Pathfinder 1E's rules (races, classes, abilities, point buy, sizes and items) ar
 - does gold count towards weight?
 - track ammo?
 
+#### SF1E
+Starfinder 1E's rules (races, classes, themes, abilities, ability points, sizes, credits and items) are Open Game Content from the Starfinder Core Rulebook, used under the Open Game License 1.0a, and the name "Starfinder" is used under Paizo's Community Use Policy, the same as [PF1E](#pf1e). Both notices are on the license page.
+
+Only a few of each step's rules are modeled for now; the rest of the ruleset comes later.
+
+- ability points: how many points players spend raising ability scores from 10, 0 to 48 (every score 18), default 10
+- do characters get tired and require sleep?
+- track ammo?
+
+Money is credits (`cr`), the only coin.
+
 ### Tab: Lobby
 - a dropdown for "passage of time". the options being:
 	- `always dawn`
@@ -279,7 +294,7 @@ Pathfinder 1E's rules (races, classes, abilities, point buy, sizes and items) ar
 
 ### Tab: Characters
 - Group size, minimum 1 (single player only) maximum 6 (infrastructure / server max), default server max
-- Starting equipment, lets you [select items](#selection-item). A new universe starts with one dagger for every character. An item in the starting equipment can't be deleted until it is taken out
+- Starting equipment, lets you [select items](#selection-item). A new universe starts with one dagger (PF1E) or survival knife (SF1E) for every character. An item in the starting equipment can't be deleted until it is taken out
 - Starting [money](#field-money)
 - Starting [area](#selection-area)
 
@@ -287,7 +302,25 @@ Each [race](#tab-races) and [class](#tab-classes) can add to the starting money 
 
 A character's starting area is chosen in this order, most specific first: the class's entry for their race, the class, the race, then the universe. A class with an area of its own has no entries for races, so the two never compete.
 
-Races and classes work like default items: the ruleset's defaults are in every universe, an edit applies to that universe only and can be undone to restore the default (losing its starting money, equipment and areas too), and a race or class the universe added can be deleted. Like the Characters tab, only creators can change them.
+Races, classes and themes work like default items: the ruleset's defaults are in every universe, an edit applies to that universe only and can be undone to restore the default (losing its starting money, equipment and areas too), and a race, class or theme the universe added can be deleted. Like the Characters tab, only creators can change them.
+
+#### Themes
+Only for a ruleset with themes (SF1E), listed under the Characters tab's settings rather than in a tab of their own, to keep the tabs few. A theme is a character's background, which raises one ability score by 1. It belongs to neither race nor class: any theme goes with any race and class. The list is:
+- `Ace Pilot` (Dexterity)
+- `Bounty Hunter` (Constitution)
+- `Icon` (Charisma)
+- `Mercenary` (Strength)
+- `Outlaw` (Dexterity)
+- `Priest` (Wisdom)
+- `Scholar` (Intelligence)
+- `Spacefarer` (Constitution)
+- `Xenoseeker` (Charisma)
+
+Themeless, which lets the player choose the ability, isn't modeled yet.
+
+You can add your own themes, and edit each one:
+- Enabled? Checked by default. There must be at least 1 enabled theme in order to save changes
+- the ability it raises
 
 ### Tab: Races
 based on the ruleset, show a list of races.
@@ -305,6 +338,8 @@ For PF1E that list is:
 - `Hobgoblin`
 - `Human`
 - `Ratfolk`
+
+For SF1E that list is `Android`, `Human`, `Kasatha`, `Lashunta`, `Shirren`, `Vesk` and `Ysoki`. Lashuntas' two kinds aren't modeled, so a lashunta gets only the +2 Charisma both share.
 
 You can add your own races, but any unique abilities of a race must be coded by the site developers.
 
@@ -327,6 +362,8 @@ You can edit each race:
 		- `huge`
 		- `gargantuan`
 		- `colossal`
+- for SF1E: the same ability modifiers, floating ability bonus (humans get +2 to one ability of their choice), darkvision and size, and
+	- hit points: the hit points the race gives on top of the class's, 0 to 99
 
 ### Tab: Classes
 based on the ruleset, show a list of classes.
@@ -350,6 +387,8 @@ For PF1E that list is:
 - `Witch`
 - `Wizard`
 
+For SF1E that list is `Envoy`, `Mechanic`, `Mystic`, `Operative`, `Solarian`, `Soldier` and `Technomancer`.
+
 You can add your own classes, but any unique abilities of a race must be coded by the site developers.
 
 You can edit each class:
@@ -369,6 +408,10 @@ You can edit each class:
 		- `none`
 		- `prepared`
 		- `spontaneous`
+- for SF1E:
+	- key ability score, used as a hint when spending ability points. A soldier's is Strength or Dexterity; the default is Strength
+	- hit points per level, 0 to 99
+	- stamina points per level, 0 to 99
 
 ### Tab: Tilesets
 shows you a table of all tiles in the game, populated from the default for your ruleset and any tiles you have created. Default tiles can be edited: the edit applies to your universe only, and can be undone to restore the default. A tile you created can be deleted once no map uses it.
@@ -395,6 +438,16 @@ For PF1E, the default tiles are
 - indoors
 	- Wood Floor, color #7A3202, 0% vision cost, 0% movement cost
 
+For SF1E, the default tiles are
+- outdoors
+	- Grass, color #7AFF3D, 0% vision cost, 0% movement cost
+	- Sand, color #D9C27A, 0% vision cost, 50% movement cost
+	- Rock, color #6B6B6B, 100% vision cost, 100% movement cost
+	- Water, color #3D97FF, 0% vision cost, 100% movement cost
+- indoors
+	- Metal Floor, color #9AA4AE, 0% vision cost, 0% movement cost
+	- Bulkhead, color #4A5560, 100% vision cost, 100% movement cost
+
 ### Tab: Areas
 lists all top-level areas for a universe, excluding the lobby.
 - if there is only one area, show all child areas for that area. keep showing child areas until there are no children or there are more than 1 children.
@@ -420,7 +473,7 @@ the table contains:
 - name, links to the [item editor](#editor-item)
 - summary (item type, properties, etc)
 
-For PF1E, the only default item for now is a dagger.
+For PF1E, the only default item for now is a dagger; for SF1E, a survival knife.
 
 Default items work like default tiles: an edit applies to your universe only and can be undone to restore the default, and an item you created can be deleted.
 
@@ -428,6 +481,11 @@ Each ruleset groups its item types into categories, which the filters use. For P
 - `weapons`: dagger, club, quarterstaff, spear, short sword, longsword, shortbow, longbow, light crossbow, arrows, crossbow bolts
 - `armor`: padded armor, leather armor, chain shirt, light shield, heavy shield
 - `gear`: rope, torch
+
+For SF1E:
+- `weapons`: survival knife, tactical baton, laser pistol, semi-auto pistol, laser rifle, frag grenade, battery, small arm rounds
+- `armor`: second skin, light armor, heavy armor
+- `gear`: comm unit, flashlight
 
 Until items have pictures, the icon is the item's category's.
 
@@ -491,7 +549,7 @@ Each character has a vision budget. Looking across a tile spends its vision cost
 # Controls
 
 ## Field: Money
-Freetext but requires a format like "1pp 2gp 2sp 4cp"
+Freetext but requires a format like "1pp 2gp 2sp 4cp" (PF1E) or "250cr" (SF1E), in the universe's ruleset's coins only
 
 Money is kept as individual pieces of each coin, the way a purse holds them, and is never converted automatically: gaining 5sp twice is 10sp, not 1gp, and starting money from the universe, race and class adds up coin by coin. A character can hold 1pp 302gp 4444sp 10cp. A money changer converts coins into the fewest coins of the same worth (that purse becomes 75pp 6gp 5sp). Who offers money changing, and whether it costs a fee, comes with NPCs.
 

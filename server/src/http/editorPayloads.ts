@@ -6,7 +6,7 @@
  * need the database (such as whether a tile belongs to the universe) are made by the routes
  */
 import { z } from 'zod';
-import { DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_CELL_CHANGES, MAX_CHUNKS_PER_REQUEST, MAX_CLASS_NAME_LENGTH, MAX_CUSTOM_RACES, MAX_GROUP_PLAYERS, MAX_ITEM_NAME_LENGTH, MAX_ITEM_QUANTITY, MAX_ITEMS_PER_PAGE, MAX_LONG_DESCRIPTION_LENGTH, MAX_MAP_SIDE, MAX_RACE_NAME_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_STARTING_ITEMS, MAX_TILE_NAME_LENGTH, MAX_TILES_PER_PAGE, MAX_UNIVERSE_NAME_LENGTH, MAX_AREA_NAME_LENGTH, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_RACES, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, UNIVERSE_STAGES, universeSlug, VOID_CELL, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, type CellEditRequest, type ChunkRange, type ClassSettings, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type NewAreaRequest, type RaceSettings, type ResizeAreaRequest, type RulesetSettings, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type AreaLinkTarget, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
+import { DEFAULT_RACE_NAMES, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNINGS, IMPASSABLE_COST, isRulesetMoney, MAX_CELL_CHANGES, MAX_CHUNKS_PER_REQUEST, MAX_CLASS_NAME_LENGTH, MAX_COINS, MAX_CUSTOM_RACES, MAX_GROUP_PLAYERS, MAX_ITEM_NAME_LENGTH, MAX_ITEM_QUANTITY, MAX_ITEMS_PER_PAGE, MAX_LONG_DESCRIPTION_LENGTH, MAX_MAP_SIDE, MAX_RACE_NAME_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_STARTING_ITEMS, MAX_THEME_NAME_LENGTH, MAX_TILE_NAME_LENGTH, MAX_TILES_PER_PAGE, MAX_UNIVERSE_NAME_LENGTH, MAX_AREA_NAME_LENGTH, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, UNIVERSE_STAGES, universeSlug, VOID_CELL, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, type CellEditRequest, type ChunkRange, type ClassSettings, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type NewAreaRequest, type RaceSettings, type ResizeAreaRequest, type Ruleset, type RulesetSettings, type ThemeSettings, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type AreaLinkTarget, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { displayText } from '../rooms/payloads.js';
 
@@ -38,17 +38,36 @@ const longDescription = z.string().max(MAX_LONG_DESCRIPTION_LENGTH).refine((text
 /**
  * How many pieces of one coin an amount of money holds
  */
-const coinCount = z.number().int().min(0).max(PF1E_MAX_COINS);
+const coinCount = z.number().int().min(0).max(MAX_COINS);
 
 /**
- * An amount of money, as pieces of each coin
+ * An amount of money in a ruleset, as pieces of each coin, with none of other rulesets' coins
+ *
+ * @param ruleset The universe's ruleset
+ * @return The validator
  */
-const money = z.object({
-	pp: coinCount,
-	gp: coinCount,
-	sp: coinCount,
-	cp: coinCount
-});
+function money(ruleset: Ruleset)
+{
+	return(z.object({
+		pp: coinCount,
+		gp: coinCount,
+		sp: coinCount,
+		cp: coinCount,
+		cr: coinCount
+	})
+		.refine((amount) => isRulesetMoney(amount, ruleset), 'Holds coins the universe\'s ruleset doesn\'t use'));
+}
+
+/**
+ * A validator for each ruleset
+ *
+ * @param make Makes the validator for one ruleset
+ * @return The validators, by ruleset
+ */
+function byRuleset<T>(make: (ruleset: Ruleset) => T): Record<Ruleset, T>
+{
+	return(Object.fromEntries(RULESETS.map((ruleset) => [ruleset, make(ruleset)])) as Record<Ruleset, T>);
+}
 
 /**
  * A list of items and how many of each, each listed once. Whether the universe can use each item is
@@ -99,9 +118,9 @@ export const newUniverseRequest = z.object({
 }) satisfies z.ZodType<NewUniverseRequest>;
 
 /**
- * UniverseSettingsUpdate
+ * UniverseSettingsUpdate, by the universe's ruleset
  */
-export const universeSettingsUpdate = z.object({
+export const universeSettingsUpdate = byRuleset((ruleset) => z.object({
 	name: universeName.optional(),
 	shortDescription: shortDescription.optional(),
 	longDescription: longDescription.optional(),
@@ -109,24 +128,34 @@ export const universeSettingsUpdate = z.object({
 	passageOfTime: z.enum(PASSAGES_OF_TIME).optional(),
 	faerieMorning: z.enum(FAERIE_MORNINGS).nullable().optional(),
 	groupSize: z.number().int().min(MIN_GROUP_SIZE).max(MAX_GROUP_PLAYERS).optional(),
-	startingMoney: money.optional(),
+	startingMoney: money(ruleset).optional(),
 	startingItems: startingItemList.optional(),
 	startingAreaId: z.uuid().optional()
-}) satisfies z.ZodType<UniverseSettingsUpdate>;
+}) satisfies z.ZodType<UniverseSettingsUpdate>);
 
 /**
  * RulesetSettings
  */
-export const rulesetSettings = z.object({
-	ruleset: z.literal('pf1e'),
-	settings: z.object({
-		statMethod: z.enum(PF1E_STAT_METHODS),
-		customPointBuyBudget: z.number().int().min(PF1E_MIN_POINT_BUY_BUDGET).max(PF1E_MAX_POINT_BUY_BUDGET),
-		needsSleep: z.boolean(),
-		coinsHaveWeight: z.boolean(),
-		tracksAmmo: z.boolean()
+export const rulesetSettings = z.discriminatedUnion('ruleset', [
+	z.object({
+		ruleset: z.literal('pf1e'),
+		settings: z.object({
+			statMethod: z.enum(PF1E_STAT_METHODS),
+			customPointBuyBudget: z.number().int().min(PF1E_MIN_POINT_BUY_BUDGET).max(PF1E_MAX_POINT_BUY_BUDGET),
+			needsSleep: z.boolean(),
+			coinsHaveWeight: z.boolean(),
+			tracksAmmo: z.boolean()
+		})
+	}),
+	z.object({
+		ruleset: z.literal('sf1e'),
+		settings: z.object({
+			abilityPoints: z.number().int().min(SF1E_MIN_ABILITY_POINTS).max(SF1E_MAX_ABILITY_POINTS),
+			needsSleep: z.boolean(),
+			tracksAmmo: z.boolean()
+		})
 	})
-}) satisfies z.ZodType<RulesetSettings>;
+]) satisfies z.ZodType<RulesetSettings>;
 
 /**
  * TileSettings
@@ -189,61 +218,118 @@ export const raceIdParameter = z.coerce.number().int().min(1).max(2147483647);
 export const classIdParameter = z.coerce.number().int().min(1).max(2147483647);
 
 /**
- * A race's ability modifier
+ * A theme ID in a path
  */
-const raceAbilityModifier = z.number().int().min(PF1E_MIN_RACE_ABILITY_MODIFIER).max(PF1E_MAX_RACE_ABILITY_MODIFIER);
+export const themeIdParameter = z.coerce.number().int().min(1).max(2147483647);
+
+/**
+ * A modifier for each ability, each a whole number in a range
+ *
+ * @param min The lowest modifier
+ * @param max The highest modifier
+ * @return The validator
+ */
+function abilityModifiers(min: number, max: number)
+{
+	const modifier = z.number().int().min(min).max(max);
+
+	return(z.object({
+		strength: modifier,
+		dexterity: modifier,
+		constitution: modifier,
+		intelligence: modifier,
+		wisdom: modifier,
+		charisma: modifier
+	}));
+}
+
+/**
+ * Each ruleset's race rules
+ */
+const raceRules = {
+	pf1e: z.object({
+		abilityModifiers: abilityModifiers(PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_MAX_RACE_ABILITY_MODIFIER),
+		floatingBonus: z.boolean(),
+		darkvision: z.boolean(),
+		size: z.enum(PF1E_SIZES)
+	}),
+	sf1e: z.object({
+		abilityModifiers: abilityModifiers(SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_ABILITY_MODIFIER),
+		floatingBonus: z.boolean(),
+		darkvision: z.boolean(),
+		size: z.enum(SF1E_SIZES),
+		hitPoints: z.number().int().min(SF1E_MIN_RACE_HIT_POINTS).max(SF1E_MAX_RACE_HIT_POINTS)
+	})
+};
+
+/**
+ * Each ruleset's class rules
+ */
+const classRules = {
+	pf1e: z.object({
+		primaryAbility: z.enum(PF1E_ABILITIES),
+		tradition: z.enum(PF1E_MAGIC_TRADITIONS),
+		castingStyle: z.enum(PF1E_CASTING_STYLES)
+	}),
+	sf1e: z.object({
+		keyAbility: z.enum(SF1E_ABILITIES),
+		hitPoints: z.number().int().min(SF1E_MIN_CLASS_POINTS).max(SF1E_MAX_CLASS_POINTS),
+		staminaPoints: z.number().int().min(SF1E_MIN_CLASS_POINTS).max(SF1E_MAX_CLASS_POINTS)
+	})
+};
 
 /**
  * The settings races and classes share: what they add to every character's starting money and
  * equipment, and where they start. Whether the area and items belong to the universe is checked by the route
+ *
+ * @param ruleset The universe's ruleset
+ * @return The fields' validators
  */
-const startingExtrasFields = {
-	enabled: z.boolean(),
-	startingMoney: money,
-	startingItems: startingItemList,
-	startingAreaId: z.uuid().nullable()
-};
+function startingExtrasFields(ruleset: Ruleset)
+{
+	return({
+		enabled: z.boolean(),
+		startingMoney: money(ruleset),
+		startingItems: startingItemList,
+		startingAreaId: z.uuid().nullable()
+	});
+}
 
 /**
- * RaceSettings
+ * RaceSettings, by the universe's ruleset
  */
-export const raceSettings = z.object({
-	...startingExtrasFields,
+export const raceSettings = byRuleset((ruleset) => z.object({
+	...startingExtrasFields(ruleset),
 	name: displayText(MAX_RACE_NAME_LENGTH).nullable(),
-	rules: z.object({
-		abilityModifiers: z.object({
-			strength: raceAbilityModifier,
-			dexterity: raceAbilityModifier,
-			constitution: raceAbilityModifier,
-			intelligence: raceAbilityModifier,
-			wisdom: raceAbilityModifier,
-			charisma: raceAbilityModifier
-		}),
-		floatingBonus: z.boolean(),
-		darkvision: z.boolean(),
-		size: z.enum(PF1E_SIZES)
-	})
-}) satisfies z.ZodType<RaceSettings>;
+	rules: raceRules[ruleset]
+}) satisfies z.ZodType<RaceSettings>);
 
 /**
- * ClassSettings. Whether each race is one the universe can use is checked by the route
+ * ClassSettings, by the universe's ruleset. Whether each race is one the universe can use is checked by the route
  */
-export const classSettings = z.object({
-	...startingExtrasFields,
+export const classSettings = byRuleset((ruleset) => z.object({
+	...startingExtrasFields(ruleset),
 	name: displayText(MAX_CLASS_NAME_LENGTH).nullable(),
 	raceAreas: z.array(z.object({
 		raceId: raceIdParameter,
 		areaId: z.uuid()
 	}))
-		.max(MAX_CUSTOM_RACES + Object.keys(PF1E_RACES).length)
+		.max(MAX_CUSTOM_RACES + Object.keys(DEFAULT_RACE_NAMES[ruleset]).length)
 		.refine((entries) => (new Set(entries.map((entry) => entry.raceId)).size === entries.length), 'Each race can be listed only once'),
-	rules: z.object({
-		primaryAbility: z.enum(PF1E_ABILITIES),
-		tradition: z.enum(PF1E_MAGIC_TRADITIONS),
-		castingStyle: z.enum(PF1E_CASTING_STYLES)
-	})
+	rules: classRules[ruleset]
 })
-	.refine((settings) => ((settings.startingAreaId === null) || (settings.raceAreas.length === 0)), 'A class with its own starting area can\'t have an area for each race') satisfies z.ZodType<ClassSettings>;
+	.refine((settings) => ((settings.startingAreaId === null) || (settings.raceAreas.length === 0)), 'A class with its own starting area can\'t have an area for each race') satisfies z.ZodType<ClassSettings>);
+
+/**
+ * ThemeSettings
+ */
+export const themeSettings = z.object({
+	name: displayText(MAX_THEME_NAME_LENGTH).nullable(),
+	enabled: z.boolean(),
+	rules: z.object({
+		ability: z.enum(SF1E_ABILITIES)
+	})
+}) satisfies z.ZodType<ThemeSettings>;
 
 /**
  * The settings an area may be created with or changed to, each optional

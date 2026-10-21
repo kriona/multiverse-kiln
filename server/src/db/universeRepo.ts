@@ -294,7 +294,8 @@ export async function findEditableUniverse(universeId: string, executor: Executo
 			startingPlatinum: universes.startingPlatinum,
 			startingGold: universes.startingGold,
 			startingSilver: universes.startingSilver,
-			startingCopper: universes.startingCopper
+			startingCopper: universes.startingCopper,
+			startingCredits: universes.startingCredits
 		})
 		.from(universes)
 		.where(eq(universes.id, universeId))
@@ -305,11 +306,11 @@ export async function findEditableUniverse(universeId: string, executor: Executo
 		return(undefined);
 	}
 
-	const { startingPlatinum, startingGold, startingSilver, startingCopper, ...settings } = row;
+	const { startingPlatinum, startingGold, startingSilver, startingCopper, startingCredits, ...settings } = row;
 
 	return({
 		...settings,
-		startingMoney: fromCoinColumns({ startingPlatinum, startingGold, startingSilver, startingCopper }),
+		startingMoney: fromCoinColumns({ startingPlatinum, startingGold, startingSilver, startingCopper, startingCredits }),
 		startingItems: await loadStartingItems(universeId, executor)
 	});
 }

@@ -6,7 +6,7 @@
  */
 import { sql, type SQL } from 'drizzle-orm';
 import { boolean, check, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHUNK_SIZE, DEFAULT_PF1E_SETTINGS, DEFAULT_SITE_SETTINGS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_UNIVERSES_PER_CREATOR, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_UNIVERSES_PER_CREATOR, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
 
 export const universeStage = pgEnum('universe_stage', UNIVERSE_STAGES);
 export const universeRole = pgEnum('universe_role', UNIVERSE_ROLES);
@@ -20,6 +20,8 @@ export const pf1eAbility = pgEnum('pf1e_ability', PF1E_ABILITIES);
 export const pf1eSize = pgEnum('pf1e_size', PF1E_SIZES);
 export const pf1eMagicTradition = pgEnum('pf1e_magic_tradition', PF1E_MAGIC_TRADITIONS);
 export const pf1eCastingStyle = pgEnum('pf1e_casting_style', PF1E_CASTING_STYLES);
+export const sf1eAbility = pgEnum('sf1e_ability', SF1E_ABILITIES);
+export const sf1eSize = pgEnum('sf1e_size', SF1E_SIZES);
 
 /**
  * SQL that checks every one of some columns holds a number in a range
@@ -99,13 +101,15 @@ export const universes = pgTable('universes', {
 	startingGold: integer('starting_gold').notNull().default(0),
 	startingSilver: integer('starting_silver').notNull().default(0),
 	startingCopper: integer('starting_copper').notNull().default(0),
+	startingCredits: integer('starting_credits').notNull().default(0),
 
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	uniqueIndex('universes_slug_unique').on(table.slug),
 	check('universes_faerie_morning_set', sql`(${table.passageOfTime} = 'faerie') = (${table.faerieMorning} IS NOT NULL)`),
 	check('universes_group_size_range', sql`${table.groupSize} BETWEEN ${sql.raw(String(MIN_GROUP_SIZE))} AND ${sql.raw(String(MAX_GROUP_PLAYERS))}`),
-	check('universes_starting_coins_range', sql`${table.startingPlatinum} BETWEEN 0 AND ${sql.raw(String(PF1E_MAX_COINS))} AND ${table.startingGold} BETWEEN 0 AND ${sql.raw(String(PF1E_MAX_COINS))} AND ${table.startingSilver} BETWEEN 0 AND ${sql.raw(String(PF1E_MAX_COINS))} AND ${table.startingCopper} BETWEEN 0 AND ${sql.raw(String(PF1E_MAX_COINS))}`)
+	check('universes_starting_coins_range', sql`${table.startingPlatinum} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))} AND ${table.startingGold} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))} AND ${table.startingSilver} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))} AND ${table.startingCopper} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))}`),
+	check('universes_starting_credits_range', sql`${table.startingCredits} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))}`)
 ]);
 
 /**
@@ -125,6 +129,23 @@ export const pf1eSettings = pgTable('pf1e_settings', {
 	tracksAmmo: boolean('tracks_ammo').notNull().default(DEFAULT_PF1E_SETTINGS.tracksAmmo)
 }, (table) => [
 	check('pf1e_settings_custom_point_buy_budget_range', sql`${table.customPointBuyBudget} BETWEEN ${sql.raw(String(PF1E_MIN_POINT_BUY_BUDGET))} AND ${sql.raw(String(PF1E_MAX_POINT_BUY_BUDGET))}`)
+]);
+
+/**
+ * How each Starfinder 1E universe plays (its Ruleset tab). A universe without a row has DEFAULT_SF1E_SETTINGS
+ */
+export const sf1eSettings = pgTable('sf1e_settings', {
+	universeId: uuid('universe_id').primaryKey().references(() => universes.id, { onDelete: 'cascade' }),
+
+	/**
+	 * The ability points players spend on their characters' ability scores
+	 */
+	abilityPoints: smallint('ability_points').notNull().default(DEFAULT_SF1E_SETTINGS.abilityPoints),
+
+	needsSleep: boolean('needs_sleep').notNull().default(DEFAULT_SF1E_SETTINGS.needsSleep),
+	tracksAmmo: boolean('tracks_ammo').notNull().default(DEFAULT_SF1E_SETTINGS.tracksAmmo)
+}, (table) => [
+	check('sf1e_settings_ability_points_range', sql`${table.abilityPoints} BETWEEN ${sql.raw(String(SF1E_MIN_ABILITY_POINTS))} AND ${sql.raw(String(SF1E_MAX_ABILITY_POINTS))}`)
 ]);
 
 /**
@@ -288,6 +309,7 @@ export const races = pgTable('races', {
 	startingGold: integer('starting_gold').notNull().default(0),
 	startingSilver: integer('starting_silver').notNull().default(0),
 	startingCopper: integer('starting_copper').notNull().default(0),
+	startingCredits: integer('starting_credits').notNull().default(0),
 
 	/**
 	 * Where the race's characters start, unless their class says otherwise; null for the universe's starting area
@@ -302,7 +324,8 @@ export const races = pgTable('races', {
 	index('races_starting_area_id_index').on(table.startingAreaId),
 	check('races_overrides_belong_to_universe', sql`${table.overridesRaceId} IS NULL OR ${table.universeId} IS NOT NULL`),
 	check('races_name_required', sql`${table.name} IS NOT NULL OR ${table.overridesRaceId} IS NOT NULL`),
-	check('races_starting_coins_range', allInRange([table.startingPlatinum, table.startingGold, table.startingSilver, table.startingCopper], 0, PF1E_MAX_COINS))
+	check('races_starting_coins_range', allInRange([table.startingPlatinum, table.startingGold, table.startingSilver, table.startingCopper], 0, MAX_COINS)),
+	check('races_starting_credits_range', allInRange([table.startingCredits], 0, MAX_COINS))
 ]);
 
 /**
@@ -330,6 +353,39 @@ export const pf1eRaces = pgTable('pf1e_races', {
 	size: pf1eSize('size').notNull().default('medium')
 }, (table) => [
 	check('pf1e_races_modifiers_range', allInRange([table.strengthModifier, table.dexterityModifier, table.constitutionModifier, table.intelligenceModifier, table.wisdomModifier, table.charismaModifier], PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_MAX_RACE_ABILITY_MODIFIER))
+]);
+
+/**
+ * Each Starfinder 1E race's rules, for default races and universes' races alike
+ */
+export const sf1eRaces = pgTable('sf1e_races', {
+	raceId: integer('race_id').primaryKey().references(() => races.id, { onDelete: 'cascade' }),
+
+	/**
+	 * Added to each ability score
+	 */
+	strengthModifier: smallint('strength_modifier').notNull().default(0),
+	dexterityModifier: smallint('dexterity_modifier').notNull().default(0),
+	constitutionModifier: smallint('constitution_modifier').notNull().default(0),
+	intelligenceModifier: smallint('intelligence_modifier').notNull().default(0),
+	wisdomModifier: smallint('wisdom_modifier').notNull().default(0),
+	charismaModifier: smallint('charisma_modifier').notNull().default(0),
+
+	/**
+	 * Whether the player chooses one ability to get SF1E_FLOATING_ABILITY_BONUS
+	 */
+	floatingBonus: boolean('floating_bonus').notNull().default(false),
+
+	darkvision: boolean('darkvision').notNull().default(false),
+	size: sf1eSize('size').notNull().default('medium'),
+
+	/**
+	 * The hit points the race gives a character, on top of their class's
+	 */
+	hitPoints: smallint('hit_points').notNull()
+}, (table) => [
+	check('sf1e_races_modifiers_range', allInRange([table.strengthModifier, table.dexterityModifier, table.constitutionModifier, table.intelligenceModifier, table.wisdomModifier, table.charismaModifier], SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_ABILITY_MODIFIER)),
+	check('sf1e_races_hit_points_range', allInRange([table.hitPoints], SF1E_MIN_RACE_HIT_POINTS, SF1E_MAX_RACE_HIT_POINTS))
 ]);
 
 /**
@@ -383,6 +439,7 @@ export const classes = pgTable('classes', {
 	startingGold: integer('starting_gold').notNull().default(0),
 	startingSilver: integer('starting_silver').notNull().default(0),
 	startingCopper: integer('starting_copper').notNull().default(0),
+	startingCredits: integer('starting_credits').notNull().default(0),
 
 	/**
 	 * Where every member of the class starts, whatever their race; null to leave it to class_race_areas,
@@ -398,7 +455,8 @@ export const classes = pgTable('classes', {
 	index('classes_starting_area_id_index').on(table.startingAreaId),
 	check('classes_overrides_belong_to_universe', sql`${table.overridesClassId} IS NULL OR ${table.universeId} IS NOT NULL`),
 	check('classes_name_required', sql`${table.name} IS NOT NULL OR ${table.overridesClassId} IS NOT NULL`),
-	check('classes_starting_coins_range', allInRange([table.startingPlatinum, table.startingGold, table.startingSilver, table.startingCopper], 0, PF1E_MAX_COINS))
+	check('classes_starting_coins_range', allInRange([table.startingPlatinum, table.startingGold, table.startingSilver, table.startingCopper], 0, MAX_COINS)),
+	check('classes_starting_credits_range', allInRange([table.startingCredits], 0, MAX_COINS))
 ]);
 
 /**
@@ -414,6 +472,74 @@ export const pf1eClasses = pgTable('pf1e_classes', {
 
 	tradition: pf1eMagicTradition('tradition').notNull().default('none'),
 	castingStyle: pf1eCastingStyle('casting_style').notNull().default('none')
+});
+
+/**
+ * Each Starfinder 1E class's rules, for default classes and universes' classes alike
+ */
+export const sf1eClasses = pgTable('sf1e_classes', {
+	classId: integer('class_id').primaryKey().references(() => classes.id, { onDelete: 'cascade' }),
+
+	/**
+	 * A hint when the player spends their ability points
+	 */
+	keyAbility: sf1eAbility('key_ability').notNull(),
+
+	/**
+	 * Hit points and stamina points the class gives at each level
+	 */
+	hitPoints: smallint('hit_points').notNull(),
+	staminaPoints: smallint('stamina_points').notNull()
+}, (table) => [
+	check('sf1e_classes_points_range', allInRange([table.hitPoints, table.staminaPoints], SF1E_MIN_CLASS_POINTS, SF1E_MAX_CLASS_POINTS))
+]);
+
+/**
+ * One row per theme characters can have, in a ruleset with themes (Starfinder 1E)
+ *
+ * Works like races: a theme with no universe is one of a ruleset's default themes, and a universe's
+ * theme that overrides a default theme is that universe's edited copy of it. Everything else keeps using
+ * the default theme's ID
+ *
+ * The theme's rules live in its ruleset's table (sf1e_themes)
+ */
+export const themes = pgTable('themes', {
+	id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+	ruleset: ruleset('ruleset').notNull(),
+	universeId: uuid('universe_id').references(() => universes.id, { onDelete: 'cascade' }),
+	key: text('key'),
+
+	/**
+	 * The default theme this one is the universe's edited copy of
+	 */
+	overridesThemeId: integer('overrides_theme_id').references((): AnyPgColumn => themes.id, { onDelete: 'cascade' }),
+
+	/**
+	 * A default theme's name is the English text of its message (DEFAULT_THEME_NAMES in /shared), which
+	 * players read in their language. Null on an edited copy that keeps the default theme's name
+	 */
+	name: text('name'),
+
+	enabled: boolean('enabled').notNull().default(true),
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	unique('themes_ruleset_key_unique').on(table.ruleset, table.key),
+	unique('themes_universe_overrides_unique').on(table.universeId, table.overridesThemeId),
+	index('themes_universe_id_index').on(table.universeId),
+	check('themes_overrides_belong_to_universe', sql`${table.overridesThemeId} IS NULL OR ${table.universeId} IS NOT NULL`),
+	check('themes_name_required', sql`${table.name} IS NOT NULL OR ${table.overridesThemeId} IS NOT NULL`)
+]);
+
+/**
+ * Each Starfinder 1E theme's rules, for default themes and universes' themes alike
+ */
+export const sf1eThemes = pgTable('sf1e_themes', {
+	themeId: integer('theme_id').primaryKey().references(() => themes.id, { onDelete: 'cascade' }),
+
+	/**
+	 * The ability that gets SF1E_THEME_ABILITY_BONUS
+	 */
+	ability: sf1eAbility('ability').notNull()
 });
 
 /**
@@ -546,6 +672,7 @@ export const characters = pgTable('characters', {
 	gold: integer('gold').notNull().default(0),
 	silver: integer('silver').notNull().default(0),
 	copper: integer('copper').notNull().default(0),
+	credits: integer('credits').notNull().default(0),
 
 	/**
 	 * The area the character is in; null when the area was deleted, or the universe had none to start in
@@ -573,7 +700,8 @@ export const characters = pgTable('characters', {
 	index('characters_class_id_index').on(table.classId),
 	index('characters_area_id_index').on(table.areaId),
 	index('characters_delete_at_index').on(table.deleteAt).where(sql`${table.deleteAt} is not null`),
-	check('characters_coins_range', allInRange([table.platinum, table.gold, table.silver, table.copper], 0, PF1E_MAX_COINS))
+	check('characters_coins_range', allInRange([table.platinum, table.gold, table.silver, table.copper], 0, MAX_COINS)),
+	check('characters_credits_range', allInRange([table.credits], 0, MAX_COINS))
 ]);
 
 /**
@@ -588,6 +716,26 @@ export const pf1eCharacters = pgTable('pf1e_characters', {
 	wisdom: smallint('wisdom').notNull(),
 	charisma: smallint('charisma').notNull()
 });
+
+/**
+ * Each Starfinder 1E character's ability scores, with their race's modifiers and theme's bonus added,
+ * and their theme
+ *
+ * The theme is listed by the ID everything else uses for it: a default's own ID, never its edited copy's.
+ * A theme characters have can't be deleted while they have it
+ */
+export const sf1eCharacters = pgTable('sf1e_characters', {
+	characterId: uuid('character_id').primaryKey().references(() => characters.id, { onDelete: 'cascade' }),
+	themeId: integer('theme_id').notNull().references(() => themes.id),
+	strength: smallint('strength').notNull(),
+	dexterity: smallint('dexterity').notNull(),
+	constitution: smallint('constitution').notNull(),
+	intelligence: smallint('intelligence').notNull(),
+	wisdom: smallint('wisdom').notNull(),
+	charisma: smallint('charisma').notNull()
+}, (table) => [
+	index('sf1e_characters_theme_id_index').on(table.themeId)
+]);
 
 /**
  * The items each character carries, and how many of each

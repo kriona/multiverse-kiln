@@ -1,4 +1,4 @@
-import { DEFAULT_CLASS_NAMES, DEFAULT_RACE_NAMES, type MessageDescriptor, type Ruleset } from '@multiverse-kiln/shared';
+import { DEFAULT_CLASS_NAMES, DEFAULT_RACE_NAMES, DEFAULT_THEME_NAMES, type MessageDescriptor, type Ruleset } from '@multiverse-kiln/shared';
 
 import { t } from '../localization';
 
@@ -35,6 +35,19 @@ export function raceName(race: Named, ruleset: Ruleset): string
 export function className(characterClass: Named, ruleset: Ruleset): string
 {
 	return(nameOf(characterClass, DEFAULT_CLASS_NAMES[ruleset]));
+}
+
+/**
+ * A theme's name as the player reads it: the universe's name for it, or a default theme's name in the
+ * player's language
+ *
+ * @param theme The theme
+ * @param ruleset The universe's ruleset
+ * @return The name
+ */
+export function themeName(theme: Named, ruleset: Ruleset): string
+{
+	return(nameOf(theme, DEFAULT_THEME_NAMES[ruleset]));
 }
 
 /**

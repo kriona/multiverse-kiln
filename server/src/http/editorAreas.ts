@@ -18,7 +18,8 @@ import { errorMessages, sendError, sendInvalidRequest } from './errors.js';
  * The keys of the default tiles new areas use in each ruleset, outdoors and indoors
  */
 export const DEFAULT_AREA_TILE_KEYS: Record<Ruleset, { outdoors: string; indoors: string }> = {
-	pf1e: { outdoors: 'grass', indoors: 'wood_floor' }
+	pf1e: { outdoors: 'grass', indoors: 'wood_floor' },
+	sf1e: { outdoors: 'grass', indoors: 'metal_floor' }
 };
 
 /**

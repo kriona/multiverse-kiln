@@ -1,4 +1,4 @@
-import { PF1E_ABILITIES, PF1E_ABILITY_NAMES, PF1E_SIZE_NAMES, pf1eAbilityModifier, type CharacterSheet } from '@multiverse-kiln/shared';
+import { ABILITY_NAMES, pf1eAbilityModifier, RULESET_ABILITIES, SIZE_NAMES, type CharacterSheet } from '@multiverse-kiln/shared';
 import lastRitesIcon from 'virtual:icon/game-icons:candle-light';
 
 import { currentLocale, signedNumber, t } from '../localization';
@@ -8,7 +8,7 @@ import { announce } from './announcer';
 import { getElement, setButtonLabel, showMessage } from './dom';
 import { createItemIcon, itemName } from './itemNames';
 import { formatMoney } from './moneyField';
-import { className, raceName } from './raceAndClassNames';
+import { className, raceName, themeName } from './raceAndClassNames';
 
 /**
  * A dialog showing one of the player's characters: their race and class, ability scores, size,
@@ -451,7 +451,7 @@ export class CharacterSheetDialog
 	 */
 	private showAbilities(sheet: CharacterSheet): void
 	{
-		this.abilityRows.replaceChildren(...PF1E_ABILITIES.map((ability) =>
+		this.abilityRows.replaceChildren(...RULESET_ABILITIES[sheet.ruleset].map((ability) =>
 		{
 			const row = document.createElement('tr');
 			const name = document.createElement('th');
@@ -460,7 +460,7 @@ export class CharacterSheetDialog
 			const value = sheet.abilityScores[ability];
 
 			name.scope = 'row';
-			name.textContent = t(PF1E_ABILITY_NAMES[ability]);
+			name.textContent = t(ABILITY_NAMES[sheet.ruleset][ability]);
 			score.textContent = value.toLocaleString(currentLocale());
 			modifier.textContent = signedNumber(pf1eAbilityModifier(value));
 			row.append(name, score, modifier);
@@ -470,18 +470,48 @@ export class CharacterSheetDialog
 	}
 
 	/**
-	 * Lists the character's size, whether they have darkvision, and their money
+	 * Lists the character's theme, hit points and stamina points in a ruleset that has them, their size,
+	 * whether they have darkvision, and their money
 	 *
 	 * @param sheet The character
 	 */
 	private showTraits(sheet: CharacterSheet): void
 	{
-		const entries: [string, string][] = [
+		const entries: [string, string][] = [];
+
+		if (sheet.theme !== null)
+		{
+			entries.push([t({
+				id: 'characterSheet.theme',
+				defaultMessage: 'Theme',
+				description: 'On a character\'s sheet in Starfinder, the label of their theme: a background such as ace pilot'
+			}), themeName(sheet.theme, sheet.ruleset)]);
+		}
+
+		if (sheet.hitPoints !== null)
+		{
+			entries.push([t({
+				id: 'characterSheet.hitPoints',
+				defaultMessage: 'Hit points',
+				description: 'On a character\'s sheet in Starfinder, the label of their hit points'
+			}), sheet.hitPoints.toLocaleString(currentLocale())]);
+		}
+
+		if (sheet.staminaPoints !== null)
+		{
+			entries.push([t({
+				id: 'characterSheet.staminaPoints',
+				defaultMessage: 'Stamina points',
+				description: 'On a character\'s sheet in Starfinder, the label of their stamina points, which are lost before hit points and come back with rest'
+			}), sheet.staminaPoints.toLocaleString(currentLocale())]);
+		}
+
+		entries.push(
 			[t({
 				id: 'characterSheet.size',
 				defaultMessage: 'Size',
 				description: 'On a character\'s sheet, the label of their size, such as Medium'
-			}), t(PF1E_SIZE_NAMES[sheet.size])],
+			}), t(SIZE_NAMES[sheet.ruleset][sheet.size])],
 			[t({
 				id: 'characterSheet.darkvision',
 				defaultMessage: 'Darkvision',
@@ -497,8 +527,8 @@ export class CharacterSheetDialog
 				id: 'characterSheet.money',
 				defaultMessage: 'Money',
 				description: 'On a character\'s sheet, the label of the coins they carry, such as 15gp 5sp'
-			}), formatMoney(sheet.money)]
-		];
+			}), formatMoney(sheet.money, sheet.ruleset)]
+		);
 
 		this.traits.replaceChildren(...entries.flatMap(([term, value]) =>
 		{

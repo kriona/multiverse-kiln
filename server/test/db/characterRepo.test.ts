@@ -84,18 +84,19 @@ describe('characterRepo', () =>
 		const brokk = await dwarfFighter(playerId, universeId);
 		const characterId = await inTransaction((transaction) => createCharacter(brokk, transaction));
 
-		assert.deepStrictEqual(await findCharacterDetails(playerId, universeId, characterId), {
+		assert.deepStrictEqual(await findCharacterDetails(playerId, universeId, 'pf1e', characterId), {
 			id: characterId,
 			name: 'Brokk',
 			raceId: brokk.raceId,
 			classId: brokk.classId,
 			deleteAt: null,
+			themeId: null,
 			abilityScores: brokk.abilityScores,
 			money: brokk.money,
 			items: brokk.items
 		});
-		assert.strictEqual(await findCharacterDetails(otherPlayerId, universeId, characterId), undefined);
-		assert.strictEqual(await findCharacterDetails(playerId, otherUniverseId, characterId), undefined);
+		assert.strictEqual(await findCharacterDetails(otherPlayerId, universeId, 'pf1e', characterId), undefined);
+		assert.strictEqual(await findCharacterDetails(playerId, otherUniverseId, 'pf1e', characterId), undefined);
 	});
 
 	describe('deleting', () =>
@@ -133,7 +134,7 @@ describe('characterRepo', () =>
 			assert.deepStrictEqual(await scheduleCharacterDeletion(playerId, universeId, characterId, deleteAt), deleteAt);
 			assert.deepStrictEqual(await scheduleCharacterDeletion(playerId, universeId, characterId, daysFromNow(9)), deleteAt);
 			assert.deepStrictEqual((await listCharacters(playerId, universeId)).map((character) => character.deleteAt), [deleteAt]);
-			assert.deepStrictEqual((await findCharacterDetails(playerId, universeId, characterId))?.deleteAt, deleteAt);
+			assert.deepStrictEqual((await findCharacterDetails(playerId, universeId, 'pf1e', characterId))?.deleteAt, deleteAt);
 			assert.strictEqual(await countCharacters(playerId, universeId), 1);
 			assert.deepStrictEqual(await listPlayableCharacters(playerId, universeId), []);
 
@@ -152,7 +153,7 @@ describe('characterRepo', () =>
 			await scheduleCharacterDeletion(playerId, universeId, waitingId, daysFromNow(1));
 
 			assert.deepStrictEqual((await listCharacters(playerId, universeId)).map(({ id }) => id), [waitingId]);
-			assert.strictEqual(await findCharacterDetails(playerId, universeId, goneId), undefined);
+			assert.strictEqual(await findCharacterDetails(playerId, universeId, 'pf1e', goneId), undefined);
 			assert.strictEqual(await countCharacters(playerId, universeId), 1);
 			assert.strictEqual(await restoreCharacter(playerId, universeId, goneId), undefined);
 			assert.strictEqual(await scheduleCharacterDeletion(playerId, universeId, goneId, daysFromNow(7)), undefined);
@@ -172,6 +173,7 @@ describe('characterRepo', () =>
 			raceId: null,
 			classId: null,
 			baseScores: null,
+			themeId: null,
 			floatingAbility: null
 		};
 

@@ -1,7 +1,7 @@
 import assert from 'assert';
-import { NEW_PF1E_RACE_RULES, pf1eRaceRules, PF1E_MAX_COINS, PF1E_RACES, type Pf1eAbilityScores } from '@multiverse-kiln/shared';
+import { emptySf1eAbilityScores, NEW_PF1E_RACE_RULES, pf1eRaceRules, PF1E_RACES, SF1E_RACES, SF1E_THEMES, sf1eRaceRules, type Pf1eAbilityScores, type Sf1eAbilityScores } from '@multiverse-kiln/shared';
 
-import { areValidBaseScores, combineStartingItems, combineStartingMoney, finalPf1eAbilityScores, isValidFloatingAbility } from '../../src/logic/characterCreation.js';
+import { abilityBonuses, areValidBaseScores, combineStartingItems, finalAbilityScores, isValidFloatingAbility } from '../../src/logic/characterCreation.js';
 
 const rolls = [15, 12, 9, 17, 10, 13];
 
@@ -24,33 +24,62 @@ const standardBuy: Pf1eAbilityScores = {
 	charisma: 11
 };
 
+// 6 + 0 + 4 + 0 + 0 + 0 = 10 ability points
+const sf1eBuy: Sf1eAbilityScores = {
+	strength: 16,
+	dexterity: 10,
+	constitution: 14,
+	intelligence: 10,
+	wisdom: 10,
+	charisma: 10
+};
+
+const noBonuses = emptySf1eAbilityScores();
+
 describe('areValidBaseScores', () =>
 {
 	it('accepts the rolled scores in any order', () =>
 	{
-		assert.strictEqual(areValidBaseScores(arranged, { kind: 'roll', rolls }), true);
+		assert.strictEqual(areValidBaseScores(arranged, { kind: 'roll', rolls }, noBonuses), true);
 	});
 
 	it('refuses scores that weren\'t rolled', () =>
 	{
-		assert.strictEqual(areValidBaseScores({ ...arranged, charisma: 18 }, { kind: 'roll', rolls }), false);
+		assert.strictEqual(areValidBaseScores({ ...arranged, charisma: 18 }, { kind: 'roll', rolls }, noBonuses), false);
 	});
 
 	it('refuses a rolled score used twice', () =>
 	{
-		assert.strictEqual(areValidBaseScores({ ...arranged, charisma: 17 }, { kind: 'roll', rolls }), false);
+		assert.strictEqual(areValidBaseScores({ ...arranged, charisma: 17 }, { kind: 'roll', rolls }, noBonuses), false);
 	});
 
 	it('accepts point buy within the budget, and refuses it over', () =>
 	{
-		assert.strictEqual(areValidBaseScores(standardBuy, { kind: 'pointBuy', budget: 15 }), true);
-		assert.strictEqual(areValidBaseScores(standardBuy, { kind: 'pointBuy', budget: 14 }), false);
+		assert.strictEqual(areValidBaseScores(standardBuy, { kind: 'pointBuy', budget: 15 }, noBonuses), true);
+		assert.strictEqual(areValidBaseScores(standardBuy, { kind: 'pointBuy', budget: 14 }, noBonuses), false);
 	});
 
 	it('refuses point buy scores outside 7 to 18', () =>
 	{
-		assert.strictEqual(areValidBaseScores({ ...standardBuy, charisma: 6 }, { kind: 'pointBuy', budget: 102 }), false);
-		assert.strictEqual(areValidBaseScores({ ...standardBuy, charisma: 19 }, { kind: 'pointBuy', budget: 102 }), false);
+		assert.strictEqual(areValidBaseScores({ ...standardBuy, charisma: 6 }, { kind: 'pointBuy', budget: 102 }, noBonuses), false);
+		assert.strictEqual(areValidBaseScores({ ...standardBuy, charisma: 19 }, { kind: 'pointBuy', budget: 102 }, noBonuses), false);
+	});
+
+	it('accepts ability points within the points, and refuses them over', () =>
+	{
+		assert.strictEqual(areValidBaseScores(sf1eBuy, { kind: 'abilityPoints', points: 10 }, noBonuses), true);
+		assert.strictEqual(areValidBaseScores(sf1eBuy, { kind: 'abilityPoints', points: 9 }, noBonuses), false);
+	});
+
+	it('refuses ability points that raise a score past 18 with its bonuses', () =>
+	{
+		const bonuses = {
+			...noBonuses,
+			strength: 3
+		};
+
+		assert.strictEqual(areValidBaseScores({ ...sf1eBuy, strength: 15 }, { kind: 'abilityPoints', points: 10 }, bonuses), true);
+		assert.strictEqual(areValidBaseScores(sf1eBuy, { kind: 'abilityPoints', points: 10 }, bonuses), false);
 	});
 });
 
@@ -73,11 +102,11 @@ describe('isValidFloatingAbility', () =>
 	});
 });
 
-describe('finalPf1eAbilityScores', () =>
+describe('abilityBonuses and finalAbilityScores', () =>
 {
 	it('adds the race\'s modifiers', () =>
 	{
-		const scores = finalPf1eAbilityScores(arranged, pf1eRaceRules(PF1E_RACES.dwarf), null);
+		const scores = finalAbilityScores('pf1e', arranged, abilityBonuses('pf1e', pf1eRaceRules(PF1E_RACES.dwarf), null, null));
 
 		assert.deepStrictEqual(scores, {
 			...arranged,
@@ -89,7 +118,7 @@ describe('finalPf1eAbilityScores', () =>
 
 	it('adds the floating bonus to the chosen ability', () =>
 	{
-		const scores = finalPf1eAbilityScores(arranged, pf1eRaceRules(PF1E_RACES.human), 'intelligence');
+		const scores = finalAbilityScores('pf1e', arranged, abilityBonuses('pf1e', pf1eRaceRules(PF1E_RACES.human), 'intelligence', null));
 
 		assert.deepStrictEqual(scores, {
 			...arranged,
@@ -99,41 +128,33 @@ describe('finalPf1eAbilityScores', () =>
 
 	it('ignores a floating ability for a race without the bonus', () =>
 	{
-		assert.deepStrictEqual(finalPf1eAbilityScores(arranged, NEW_PF1E_RACE_RULES, 'strength'), arranged);
+		assert.deepStrictEqual(finalAbilityScores('pf1e', arranged, abilityBonuses('pf1e', NEW_PF1E_RACE_RULES, 'strength', null)), arranged);
+	});
+
+	it('adds a Starfinder theme\'s bonus on top of the race\'s', () =>
+	{
+		const bonuses = abilityBonuses('sf1e', sf1eRaceRules(SF1E_RACES.vesk), null, SF1E_THEMES.mercenary);
+
+		assert.deepStrictEqual(bonuses, {
+			...noBonuses,
+			strength: 3,
+			constitution: 2,
+			intelligence: -2
+		});
+		assert.deepStrictEqual(finalAbilityScores('sf1e', sf1eBuy, bonuses), {
+			...sf1eBuy,
+			strength: 19,
+			constitution: 16,
+			intelligence: 8
+		});
 	});
 
 	it('leaves the base scores as they were', () =>
 	{
 		const before = { ...arranged };
 
-		finalPf1eAbilityScores(arranged, pf1eRaceRules(PF1E_RACES.dwarf), null);
+		finalAbilityScores('pf1e', arranged, abilityBonuses('pf1e', pf1eRaceRules(PF1E_RACES.dwarf), null, null));
 		assert.deepStrictEqual(arranged, before);
-	});
-});
-
-describe('combineStartingMoney', () =>
-{
-	it('adds the amounts coin by coin, without changing coins', () =>
-	{
-		const money = combineStartingMoney([
-			{ pp: 0, gp: 10, sp: 5, cp: 0 },
-			{ pp: 1, gp: 0, sp: 5, cp: 3 },
-			{ pp: 0, gp: 2, sp: 0, cp: 0 }
-		]);
-
-		assert.deepStrictEqual(money, { pp: 1, gp: 12, sp: 10, cp: 3 });
-	});
-
-	it('caps each coin at the most a purse can hold', () =>
-	{
-		const full = { pp: PF1E_MAX_COINS, gp: 0, sp: 0, cp: 0 };
-
-		assert.strictEqual(combineStartingMoney([full, full]).pp, PF1E_MAX_COINS);
-	});
-
-	it('is no money for no amounts', () =>
-	{
-		assert.deepStrictEqual(combineStartingMoney([]), { pp: 0, gp: 0, sp: 0, cp: 0 });
 	});
 });
 

@@ -76,7 +76,8 @@ async function listRaces(request: Request, response: Response): Promise<void>
  */
 async function createRaceRoute(request: Request, response: Response): Promise<void>
 {
-	const body = raceSettings.safeParse(request.body);
+	const { universe } = universeContextOf(request);
+	const body = raceSettings[universe.ruleset].safeParse(request.body);
 
 	if (!body.success)
 	{
@@ -84,7 +85,6 @@ async function createRaceRoute(request: Request, response: Response): Promise<vo
 		return;
 	}
 
-	const { universe } = universeContextOf(request);
 	const { name } = body.data;
 
 	if (name === null)
@@ -140,7 +140,8 @@ async function createRaceRoute(request: Request, response: Response): Promise<vo
 async function saveRace(request: Request, response: Response): Promise<void>
 {
 	const raceId = raceIdParameter.safeParse(request.params.raceId);
-	const body = raceSettings.safeParse(request.body);
+	const { universe } = universeContextOf(request);
+	const body = raceSettings[universe.ruleset].safeParse(request.body);
 
 	if (!body.success)
 	{
@@ -148,7 +149,6 @@ async function saveRace(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	const { universe } = universeContextOf(request);
 	const kind = (raceId.success ? await findRaceKind(universe.id, universe.ruleset, raceId.data) : undefined);
 
 	if (!raceId.success || (kind === undefined))
@@ -183,7 +183,7 @@ async function saveRace(request: Request, response: Response): Promise<void>
 		}
 		else if (name !== null)
 		{
-			await updateCustomRace(universe.id, raceId.data, { ...body.data, name }, transaction);
+			await updateCustomRace(universe.id, universe.ruleset, raceId.data, { ...body.data, name }, transaction);
 		}
 
 		return(undefined);

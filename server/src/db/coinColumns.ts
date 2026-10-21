@@ -1,10 +1,10 @@
 /**
  * Money as tables store it: a column for each coin, holding how many pieces of it there are
  */
-import type { Pf1eMoney } from '@multiverse-kiln/shared';
+import type { Money } from '@multiverse-kiln/shared';
 
 /**
- * The four coin columns a table with money has
+ * The coin columns a table with starting money has
  */
 export interface CoinColumns
 {
@@ -12,6 +12,7 @@ export interface CoinColumns
 	startingGold: number;
 	startingSilver: number;
 	startingCopper: number;
+	startingCredits: number;
 }
 
 /**
@@ -20,13 +21,14 @@ export interface CoinColumns
  * @param money The money
  * @return The columns' values
  */
-export function toCoinColumns(money: Pf1eMoney): CoinColumns
+export function toCoinColumns(money: Money): CoinColumns
 {
 	return({
 		startingPlatinum: money.pp,
 		startingGold: money.gp,
 		startingSilver: money.sp,
-		startingCopper: money.cp
+		startingCopper: money.cp,
+		startingCredits: money.cr
 	});
 }
 
@@ -36,12 +38,13 @@ export function toCoinColumns(money: Pf1eMoney): CoinColumns
  * @param row The row
  * @return The money
  */
-export function fromCoinColumns(row: CoinColumns): Pf1eMoney
+export function fromCoinColumns(row: CoinColumns): Money
 {
 	return({
 		pp: row.startingPlatinum,
 		gp: row.startingGold,
 		sp: row.startingSilver,
-		cp: row.startingCopper
+		cp: row.startingCopper,
+		cr: row.startingCredits
 	});
 }

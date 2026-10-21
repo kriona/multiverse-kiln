@@ -67,6 +67,10 @@
 		"defaultMessage": "Ability",
 		"description": "Heading of the column of ability names, such as Strength, in Create Character"
 	},
+	"character.create.abilityPoints": {
+		"defaultMessage": "Every score starts at {base, number}. Spend {points, plural, one {# ability point} other {# ability points}} to raise them, one point for each +1, up to {max, number} with your race's and theme's bonuses.",
+		"description": "Explains the ability scores in Create Character in Starfinder; {base} is the score every ability starts at, {points} how many points the player has, and {max} the highest score points can raise one to"
+	},
 	"character.create.abilityScores": {
 		"defaultMessage": "Ability scores",
 		"description": "Heading of the part of Create Character where the player sets the character's ability scores"
@@ -123,6 +127,10 @@
 		"defaultMessage": "These scores cost more than your {budget, plural, one {# point} other {# points}}. Lower some of them.",
 		"description": "Shown in Create Character, under the ability scores, while the bought scores cost more points than the player has; {budget} is how many they have"
 	},
+	"character.create.overLimit": {
+		"defaultMessage": "Ability points can't raise a score above {max, number} with its bonuses. Lower {abilities}.",
+		"description": "Shown in Create Character in Starfinder, under the ability scores, while points raise a score past the most allowed; {max} is that score and {abilities} the abilities to lower, e.g. \"Strength and Dexterity\""
+	},
 	"character.create.pointBuy": {
 		"defaultMessage": "Buy your scores with {budget, plural, one {# point} other {# points}}. Scores above 10 cost points, and scores below 10 give some back.",
 		"description": "Explains the ability scores in Create Character when the player buys them with points; {budget} is how many points they have"
@@ -139,9 +147,17 @@
 		"defaultMessage": "Race",
 		"description": "Label of the field for a new character's race, such as elf or dwarf"
 	},
+	"character.create.raceAndThemeColumn": {
+		"defaultMessage": "Race and theme",
+		"description": "Heading of the column of how much the chosen race and theme add to or take from each score, in Create Character in Starfinder"
+	},
 	"character.create.raceColumn": {
 		"defaultMessage": "Race",
 		"description": "Heading of the column of how much the chosen race adds to or takes from each score, in Create Character"
+	},
+	"character.create.raisedScore": {
+		"defaultMessage": "{score, number} ({points, plural, one {# point} other {# points}})",
+		"description": "One choice of ability score when raising scores with ability points in Create Character in Starfinder; {score} is the score and {points} how many points it takes from 10"
 	},
 	"character.create.rolled": {
 		"defaultMessage": "The server rolled your scores with {method}. Choose which ability gets each score: giving an ability another score swaps the two.",
@@ -163,6 +179,14 @@
 		"defaultMessage": "{ability} now has {score, number}.",
 		"description": "Read out by screen readers in Create Character when giving one ability a rolled score moves that ability's old score to another; {ability} is the other ability, e.g. Dexterity"
 	},
+	"character.create.theme": {
+		"defaultMessage": "Theme",
+		"description": "Label of the field for a new character's theme, in Starfinder: a background such as ace pilot or scholar"
+	},
+	"character.create.themeHint": {
+		"defaultMessage": "This theme raises {ability} by {bonus, number}.",
+		"description": "Hint under the theme field of Create Character in Starfinder; {ability} is the ability the chosen theme raises, e.g. Dexterity, and {bonus} by how much"
+	},
 	"character.create.title": {
 		"defaultMessage": "Create Character",
 		"description": "Heading of the page for making a new character"
@@ -182,6 +206,10 @@
 	"character.heading.review": {
 		"defaultMessage": "Review",
 		"description": "Heading of the last step of Create Character, which shows the choices before the character is made"
+	},
+	"character.heading.theme": {
+		"defaultMessage": "Choose a theme",
+		"description": "Heading of the Create Character step, in Starfinder, where the player chooses the character's theme (a background, such as ace pilot)"
 	},
 	"character.next": {
 		"defaultMessage": "Next",
@@ -231,6 +259,10 @@
 		"defaultMessage": "{score, number} ({modifier})",
 		"description": "In the review step of Create Character, an ability score with the bonus or penalty it gives; {score} is e.g. 16 and {modifier} e.g. +3"
 	},
+	"character.review.theme": {
+		"defaultMessage": "Theme",
+		"description": "In the review step of Create Character in Starfinder, the label of the character's theme (a background, such as ace pilot)"
+	},
 	"character.saveFailed": {
 		"defaultMessage": "Could not save your progress.",
 		"description": "In the toolbar of the Create Character page when the player's progress couldn't be saved; it is tried again after their next change"
@@ -270,6 +302,10 @@
 	"character.step.review": {
 		"defaultMessage": "Review",
 		"description": "Last step of Create Character, which shows the choices before the character is made"
+	},
+	"character.step.theme": {
+		"defaultMessage": "Theme",
+		"description": "Step of Create Character, in Starfinder, where the player chooses the character's theme: a background such as ace pilot or scholar"
 	},
 	"character.steps": {
 		"defaultMessage": "Steps",
@@ -335,6 +371,10 @@
 		"defaultMessage": "Delete",
 		"description": "Button on a character's sheet that starts deleting the character, asking first"
 	},
+	"characterSheet.hitPoints": {
+		"defaultMessage": "Hit points",
+		"description": "On a character's sheet in Starfinder, the label of their hit points"
+	},
 	"characterSheet.item": {
 		"defaultMessage": "{quantity, plural, =1 {{item}} other {{item} x#}}",
 		"description": "On a character's sheet, an item they carry, with how many when there is more than one; {item} is the item's name, e.g. \"Arrow x20\""
@@ -387,9 +427,17 @@
 		"defaultMessage": "Size",
 		"description": "On a character's sheet, the label of their size, such as Medium"
 	},
+	"characterSheet.staminaPoints": {
+		"defaultMessage": "Stamina points",
+		"description": "On a character's sheet in Starfinder, the label of their stamina points, which are lost before hit points and come back with rest"
+	},
 	"characterSheet.summary": {
 		"defaultMessage": "{race} {class}",
 		"description": "Under the name at the top of a character's sheet, their race and class, e.g. \"Dwarf Fighter\". Reorder them as your language needs"
+	},
+	"characterSheet.theme": {
+		"defaultMessage": "Theme",
+		"description": "On a character's sheet in Starfinder, the label of their theme: a background such as ace pilot"
 	},
 	"characterSheet.traits": {
 		"defaultMessage": "Traits",
@@ -621,7 +669,7 @@
 	},
 	"editor.characters.startingMoneyHint": {
 		"defaultMessage": "Amounts of coins, like {example}. Coins stay as they are given; races and classes can add more.",
-		"description": "Explains the starting money field on the editor's Characters tab; {example} is an amount of money, e.g. 12gp 5sp. Coins are never changed into other coins automatically"
+		"description": "Explains the starting money field on the editor's Characters tab; {example} is an amount of money, e.g. 1pp 2gp 2sp 4cp or 250cr. Coins are never changed into other coins automatically"
 	},
 	"editor.class.addTitle": {
 		"defaultMessage": "Add Class",
@@ -691,6 +739,18 @@
 		"defaultMessage": "New characters can only choose enabled classes, and at least one class must be enabled.",
 		"description": "Explains the class editor's Enabled checkbox"
 	},
+	"editor.class.hitPoints": {
+		"defaultMessage": "Hit points per level",
+		"description": "Label of the field for the hit points a character class gives at each level, in Starfinder"
+	},
+	"editor.class.keyAbility": {
+		"defaultMessage": "Key ability",
+		"description": "Label of the field for the ability score a character class relies on most, its key ability score in Starfinder"
+	},
+	"editor.class.keyAbilityHint": {
+		"defaultMessage": "Suggested to players when they spend their ability points.",
+		"description": "Explains the class editor's Key ability field in Starfinder"
+	},
 	"editor.class.name": {
 		"defaultMessage": "Name",
 		"description": "Label of the field for a character class's name"
@@ -727,6 +787,10 @@
 		"defaultMessage": "Could not save the class.",
 		"description": "Shown in the class editor when the character class couldn't be stored"
 	},
+	"editor.class.staminaPoints": {
+		"defaultMessage": "Stamina points per level",
+		"description": "Label of the field for the stamina points a character class gives at each level, in Starfinder; stamina is lost before hit points and comes back with rest"
+	},
 	"editor.class.startingArea": {
 		"defaultMessage": "Starting area: {area}",
 		"description": "Shows the area every member of a character class starts in, whatever their race; {area} is the area's name"
@@ -758,6 +822,10 @@
 	"editor.classes.name": {
 		"defaultMessage": "Name",
 		"description": "Heading of the table column with each character class's name"
+	},
+	"editor.classes.points": {
+		"defaultMessage": "{hitPoints, plural, one {# hit point} other {# hit points}} and {staminaPoints, plural, one {# stamina point} other {# stamina points}} a level",
+		"description": "In a character class's summary on the editor's Classes tab, in Starfinder, the hit points and stamina points the class gives at each level"
 	},
 	"editor.classes.primaryAbility": {
 		"defaultMessage": "relies on {ability}",
@@ -1355,6 +1423,14 @@
 		"defaultMessage": "The player chooses one ability to get +{bonus, number}, as humans, half-elves and half-orcs do.",
 		"description": "Explains the race editor's Floating ability bonus checkbox; {bonus} is how much the chosen ability score goes up"
 	},
+	"editor.race.floatingBonusHintSf1e": {
+		"defaultMessage": "The player chooses one ability to get +{bonus, number}, as humans do.",
+		"description": "Explains the race editor's Floating ability bonus checkbox in a Starfinder universe; {bonus} is how much the chosen ability score goes up"
+	},
+	"editor.race.hitPoints": {
+		"defaultMessage": "Hit points",
+		"description": "Label of the field for the hit points a race gives its characters on top of their class's, in Starfinder"
+	},
 	"editor.race.name": {
 		"defaultMessage": "Name",
 		"description": "Label of the field for a race's name"
@@ -1410,6 +1486,10 @@
 	"editor.races.hint": {
 		"defaultMessage": "The races new characters can choose. Each race's starting money and equipment are added to what every character starts with.",
 		"description": "Explains the editor's Races tab"
+	},
+	"editor.races.hitPoints": {
+		"defaultMessage": "{hitPoints, plural, one {# hit point} other {# hit points}}",
+		"description": "In a race's summary on the editor's Races tab, in Starfinder, the hit points the race gives its characters"
 	},
 	"editor.races.listFailed": {
 		"defaultMessage": "Could not list the races.",
@@ -1474,6 +1554,14 @@
 	"editor.role": {
 		"defaultMessage": "Your role: {role}",
 		"description": "In the editor's toolbar, the player's role in the universe; {role} is e.g. creator or builder"
+	},
+	"editor.ruleset.abilityPoints": {
+		"defaultMessage": "Ability points",
+		"description": "Label of the field for how many ability points players spend raising their characters' ability scores, in Starfinder"
+	},
+	"editor.ruleset.abilityPointsHint": {
+		"defaultMessage": "Every ability score starts at 10, and each point raises one by 1, up to 18 with the race's and theme's bonuses. Changing this doesn't change characters that already exist.",
+		"description": "Explains the Starfinder ability points field: how ability scores are made, and that changing it only affects characters made afterwards"
 	},
 	"editor.ruleset.budget": {
 		"defaultMessage": "Points to spend",
@@ -1574,6 +1662,90 @@
 	"editor.tab.unsavedChanges": {
 		"defaultMessage": "(unsaved changes)",
 		"description": "Read out by screen readers after the name of an editor tab whose form has changes that haven't been saved; a dot shows it on screen"
+	},
+	"editor.theme.ability": {
+		"defaultMessage": "Ability raised",
+		"description": "Label of the field for the ability score a theme raises"
+	},
+	"editor.theme.abilityHint": {
+		"defaultMessage": "Characters with the theme get +{bonus, number} to this ability.",
+		"description": "Explains the theme editor's Ability raised field; {bonus} is how much the ability score goes up"
+	},
+	"editor.theme.addTitle": {
+		"defaultMessage": "Add Theme",
+		"description": "Title of the theme editor when making a new theme (a character background, such as ace pilot)"
+	},
+	"editor.theme.confirmDelete": {
+		"defaultMessage": "Delete {theme}? This can't be undone.",
+		"description": "Asks before deleting a theme made for this universe; {theme} is its name"
+	},
+	"editor.theme.confirmRestore": {
+		"defaultMessage": "Restore {theme} to the ruleset's default? Your changes to it will be lost.",
+		"description": "Asks before undoing this universe's changes to one of the ruleset's themes; {theme} is its name"
+	},
+	"editor.theme.delete": {
+		"defaultMessage": "Delete Theme",
+		"description": "Button in the theme editor that deletes a theme made for this universe"
+	},
+	"editor.theme.deleteFailed": {
+		"defaultMessage": "Could not delete the theme.",
+		"description": "Shown in the theme editor when the theme couldn't be deleted"
+	},
+	"editor.theme.editTitle": {
+		"defaultMessage": "Edit {theme}",
+		"description": "Title of the theme editor for a theme the player can change; {theme} is its name, e.g. Ace Pilot"
+	},
+	"editor.theme.enabled": {
+		"defaultMessage": "Enabled",
+		"description": "Checkbox for whether new characters can choose the theme"
+	},
+	"editor.theme.enabledHint": {
+		"defaultMessage": "New characters can only choose enabled themes, and at least one theme must be enabled.",
+		"description": "Explains the theme editor's Enabled checkbox"
+	},
+	"editor.theme.name": {
+		"defaultMessage": "Name",
+		"description": "Label of the field for a theme's name (a character background, such as ace pilot)"
+	},
+	"editor.theme.restore": {
+		"defaultMessage": "Restore Default",
+		"description": "Button in the theme editor that undoes this universe's changes to one of the ruleset's themes"
+	},
+	"editor.theme.restoreFailed": {
+		"defaultMessage": "Could not restore the theme.",
+		"description": "Shown in the theme editor when the ruleset's theme couldn't be restored"
+	},
+	"editor.theme.saveFailed": {
+		"defaultMessage": "Could not save the theme.",
+		"description": "Shown in the theme editor when the theme couldn't be stored"
+	},
+	"editor.themes.ability": {
+		"defaultMessage": "{ability} {bonus, number, ::sign-always}",
+		"description": "A theme's summary in the list of themes on the editor's Characters tab: the ability it raises and by how much, e.g. Dexterity +1; {ability} is the ability's name"
+	},
+	"editor.themes.add": {
+		"defaultMessage": "Add Theme",
+		"description": "Button that opens the dialog for making a new theme (a character background, such as ace pilot)"
+	},
+	"editor.themes.heading": {
+		"defaultMessage": "Themes",
+		"description": "Heading of the part of the editor's Characters tab listing the themes characters can have in Starfinder: backgrounds such as ace pilot or scholar"
+	},
+	"editor.themes.hint": {
+		"defaultMessage": "The themes new characters can choose: a background, such as a pilot or a scholar, that raises one ability score.",
+		"description": "Explains the themes on the editor's Characters tab, in Starfinder: a theme is a character's background, such as ace pilot or scholar"
+	},
+	"editor.themes.listFailed": {
+		"defaultMessage": "Could not list the themes.",
+		"description": "Shown on the editor's Characters tab when the themes (character backgrounds, such as ace pilot) couldn't be loaded"
+	},
+	"editor.themes.name": {
+		"defaultMessage": "Name",
+		"description": "Heading of the table column with each theme's name"
+	},
+	"editor.themes.summary": {
+		"defaultMessage": "Summary",
+		"description": "Heading of the table column describing each theme's rules, such as the ability it raises"
 	},
 	"editor.tile.addTitle": {
 		"defaultMessage": "Add Tile",
@@ -1863,6 +2035,10 @@
 		"defaultMessage": "A universe needs at least one enabled race, so new characters have one to be.",
 		"description": "Why a race couldn't be disabled or deleted: it is the last race new characters can choose"
 	},
+	"error.noEnabledTheme": {
+		"defaultMessage": "A universe needs at least one enabled theme, so new characters have one to choose.",
+		"description": "Why a theme couldn't be disabled or deleted: it is the last theme new characters can choose"
+	},
 	"error.noSuchArea": {
 		"defaultMessage": "The area doesn't exist.",
 		"description": "Why a request about an area failed: it was deleted, perhaps by another editor"
@@ -1887,6 +2063,10 @@
 		"defaultMessage": "The race doesn't exist.",
 		"description": "Why a request about a race (such as elf or dwarf) failed: it was deleted, perhaps by another editor"
 	},
+	"error.noSuchTheme": {
+		"defaultMessage": "The theme doesn't exist.",
+		"description": "Why a request about a theme (a character background, such as ace pilot or scholar) failed: it was deleted, perhaps by another editor"
+	},
 	"error.noSuchTile": {
 		"defaultMessage": "The tile doesn't exist.",
 		"description": "Why a request about a tile failed: it was deleted, perhaps by another editor"
@@ -1894,6 +2074,10 @@
 	"error.noSuchUniverse": {
 		"defaultMessage": "The universe doesn't exist, or you can't see it.",
 		"description": "Why a request about a universe failed: it was deleted, or the player has no access to it"
+	},
+	"error.noThemes": {
+		"defaultMessage": "This universe's ruleset has no themes.",
+		"description": "Why a request about themes (character backgrounds, such as ace pilot or scholar) failed: the universe's game rules don't use them"
 	},
 	"error.otherOrigin": {
 		"defaultMessage": "Changes aren't allowed from this website.",
@@ -1934,6 +2118,22 @@
 	"error.somethingWentWrong": {
 		"defaultMessage": "Something went wrong on the server.",
 		"description": "Why a request failed when the server had an unexpected problem"
+	},
+	"error.themeInUse": {
+		"defaultMessage": "Characters have this theme, so it can't be deleted. Disable it instead.",
+		"description": "Why a theme the universe added couldn't be deleted: players have made characters with it; disabling it only stops new characters choosing it"
+	},
+	"error.themeLimit": {
+		"defaultMessage": "A universe can have at most {max, plural, one {# theme} other {# themes}} of its own.",
+		"description": "Why a new theme (character background) wasn't made: the universe has as many themes of its own as allowed"
+	},
+	"error.themeNeedsName": {
+		"defaultMessage": "A theme needs a name.",
+		"description": "Why a theme the universe added couldn't be saved: its name was left out"
+	},
+	"error.themeUnavailable": {
+		"defaultMessage": "That theme can't be chosen any more. Choose another.",
+		"description": "Why a new character wasn't made: the theme (character background, such as ace pilot) chosen was deleted or disabled while the player was making the character, or none was chosen"
 	},
 	"error.tileInUse": {
 		"defaultMessage": "A map uses this tile, so it can't be deleted.",
@@ -2009,7 +2209,7 @@
 	},
 	"form.money.format": {
 		"defaultMessage": "Write amounts of coins, like {example}.",
-		"description": "Shown under a money field when what was typed isn't amounts of coins; {example} is an amount in the coins' abbreviations, e.g. 1pp 2gp 2sp 4cp"
+		"description": "Shown under a money field when what was typed isn't amounts of coins; {example} is an amount in the coins' abbreviations, e.g. 1pp 2gp 2sp 4cp or 250cr"
 	},
 	"form.money.tooManyCoins": {
 		"defaultMessage": "That's more than {max, number} pieces of one coin.",
@@ -2167,6 +2367,10 @@
 		"defaultMessage": "dagger",
 		"description": "Name of an item in Pathfinder: a short blade for stabbing or throwing"
 	},
+	"item.sf1e.survival_knife": {
+		"defaultMessage": "survival knife",
+		"description": "Name of an item in Starfinder: a sturdy knife for fighting and for use in the wild"
+	},
 	"keys.alt": {
 		"defaultMessage": "Alt",
 		"description": "Name of the Alt key, as keyboard shortcuts such as Alt+S show it"
@@ -2232,12 +2436,16 @@
 		"description": "Heading of the license page's section crediting the icon sets the pages use, and its link in the page's contents"
 	},
 	"license.openGameContent": {
-		"defaultMessage": "The Pathfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a below: its abilities, ways of making ability scores, sizes, races, classes, coins and items, and their names in every language. In the source code, they are in {folder}, and their names in {locales}. Nothing else in Multiverse Kiln is Open Game Content.",
+		"defaultMessage": "The Pathfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a below: its abilities, ways of making ability scores, sizes, races, classes, coins and items, and their names in every language. In the source code, they are in {folder}, and their names in {locales}.",
 		"description": "On the license page, saying which part of the game is Open Game Content, as the Open Game License requires; {folder} and {locales} are folders in the game engine's source code. The license's text follows in English"
 	},
 	"license.pathfinder": {
 		"defaultMessage": "Pathfinder First Edition rules",
 		"description": "Heading of the license page's section about the rules of the tabletop role-playing game Pathfinder, first edition, which the game uses, and its link in the page's contents"
+	},
+	"license.pathfinderSectionLink": {
+		"defaultMessage": "Pathfinder First Edition rules",
+		"description": "Link on the license page to its section about the Pathfinder First Edition rules"
 	},
 	"license.phosphor": {
 		"defaultMessage": "Interface icons are from {phosphor}, used under the MIT License:",
@@ -2246,6 +2454,18 @@
 	"license.sourceCode": {
 		"defaultMessage": "Source code",
 		"description": "Link on the license page to where the game engine's source code can be downloaded"
+	},
+	"license.starfinder": {
+		"defaultMessage": "Starfinder First Edition rules",
+		"description": "Heading of the license page's section about the rules of the science fantasy tabletop role-playing game Starfinder, first edition, which the game uses, and its link in the page's contents"
+	},
+	"license.starfinderCommunityUse": {
+		"defaultMessage": "Starfinder is a trademark of Paizo Inc., used under the Community Use Policy described in the {pathfinder} section.",
+		"description": "On the license page, saying the notice about Paizo's Community Use Policy in the Pathfinder section covers Starfinder too; {pathfinder} is a link to that section"
+	},
+	"license.starfinderOpenGameContent": {
+		"defaultMessage": "The Starfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a in the Pathfinder First Edition rules section, whose copyright notice lists the Starfinder Core Rulebook: its abilities, ability points, sizes, races, classes, themes, credits and items, and their names in every language. In the source code, they are in {folder}, and their names in {locales}. Nothing else in Multiverse Kiln is Open Game Content.",
+		"description": "On the license page, saying which part of the game is Open Game Content from Starfinder, as the Open Game License requires; {folder} and {locales} are folders in the game engine's source code"
 	},
 	"license.summary": {
 		"defaultMessage": "In short: you may use, change and share the game engine's code. If you share a changed version, or run one on a server that players connect to, you must offer its source code under the same license.",
@@ -2959,6 +3179,230 @@
 		"defaultMessage": "none",
 		"description": "Magic tradition of a class in Pathfinder that casts no spells"
 	},
+	"sf1e.ability.charisma": {
+		"defaultMessage": "Charisma",
+		"description": "Name of a character's ability score in Starfinder: force of personality"
+	},
+	"sf1e.ability.constitution": {
+		"defaultMessage": "Constitution",
+		"description": "Name of a character's ability score in Starfinder: health and stamina"
+	},
+	"sf1e.ability.dexterity": {
+		"defaultMessage": "Dexterity",
+		"description": "Name of a character's ability score in Starfinder: agility and reflexes"
+	},
+	"sf1e.ability.intelligence": {
+		"defaultMessage": "Intelligence",
+		"description": "Name of a character's ability score in Starfinder: learning and reasoning"
+	},
+	"sf1e.ability.strength": {
+		"defaultMessage": "Strength",
+		"description": "Name of a character's ability score in Starfinder: physical power"
+	},
+	"sf1e.ability.wisdom": {
+		"defaultMessage": "Wisdom",
+		"description": "Name of a character's ability score in Starfinder: willpower, common sense and perception"
+	},
+	"sf1e.class.envoy": {
+		"defaultMessage": "Envoy",
+		"description": "Name of a character class in Starfinder: a charismatic leader who inspires allies and talks their way past trouble. Singular, used as a label"
+	},
+	"sf1e.class.mechanic": {
+		"defaultMessage": "Mechanic",
+		"description": "Name of a character class in Starfinder: an engineer with a drone or a computer implant. Singular, used as a label"
+	},
+	"sf1e.class.mystic": {
+		"defaultMessage": "Mystic",
+		"description": "Name of a character class in Starfinder: casts spells drawn from a connection to the universe or a deity. Singular, used as a label"
+	},
+	"sf1e.class.operative": {
+		"defaultMessage": "Operative",
+		"description": "Name of a character class in Starfinder: a stealthy, skilled spy or scout. Singular, used as a label"
+	},
+	"sf1e.class.solarian": {
+		"defaultMessage": "Solarian",
+		"description": "Name of a character class in Starfinder: a warrior who wields the power of stars and black holes. Singular, used as a label"
+	},
+	"sf1e.class.soldier": {
+		"defaultMessage": "Soldier",
+		"description": "Name of a character class in Starfinder: a trained warrior skilled with weapons and armor. Singular, used as a label"
+	},
+	"sf1e.class.technomancer": {
+		"defaultMessage": "Technomancer",
+		"description": "Name of a character class in Starfinder: casts spells that blend magic and technology. Singular, used as a label"
+	},
+	"sf1e.coin.cr": {
+		"defaultMessage": "cr",
+		"description": "Abbreviation of credits, the money of Starfinder, written after a number with no space: \"250cr\". Players type it into money fields, so keep it short and without spaces or digits"
+	},
+	"sf1e.itemCategory.armor": {
+		"defaultMessage": "Armor",
+		"description": "Kind of item in Starfinder, a filter on the editor's Items tab: armor suits"
+	},
+	"sf1e.itemCategory.gear": {
+		"defaultMessage": "Gear",
+		"description": "Kind of item in Starfinder, a filter on the editor's Items tab: equipment such as comm units and flashlights"
+	},
+	"sf1e.itemCategory.weapon": {
+		"defaultMessage": "Weapons",
+		"description": "Kind of item in Starfinder, a filter on the editor's Items tab: knives, guns, grenades, ammunition and the like"
+	},
+	"sf1e.itemType.battery": {
+		"defaultMessage": "battery",
+		"description": "Type of item in Starfinder, shown beside an item's name: stored power, the ammunition of laser weapons"
+	},
+	"sf1e.itemType.comm_unit": {
+		"defaultMessage": "comm unit",
+		"description": "Type of item in Starfinder, shown beside an item's name: a handheld device for calling and messaging, like a phone"
+	},
+	"sf1e.itemType.flashlight": {
+		"defaultMessage": "flashlight",
+		"description": "Type of item in Starfinder, shown beside an item's name: a handheld electric light"
+	},
+	"sf1e.itemType.frag_grenade": {
+		"defaultMessage": "frag grenade",
+		"description": "Type of item in Starfinder, shown beside an item's name: a thrown bomb that bursts into shrapnel"
+	},
+	"sf1e.itemType.heavy_armor": {
+		"defaultMessage": "heavy armor",
+		"description": "Type of item in Starfinder, shown beside an item's name: thick armor that slows its wearer"
+	},
+	"sf1e.itemType.laser_pistol": {
+		"defaultMessage": "laser pistol",
+		"description": "Type of item in Starfinder, shown beside an item's name: a handgun that fires beams of light"
+	},
+	"sf1e.itemType.laser_rifle": {
+		"defaultMessage": "laser rifle",
+		"description": "Type of item in Starfinder, shown beside an item's name: a long gun held in two hands that fires beams of light"
+	},
+	"sf1e.itemType.light_armor": {
+		"defaultMessage": "light armor",
+		"description": "Type of item in Starfinder, shown beside an item's name: armor that is light enough to move freely in, other than a second skin"
+	},
+	"sf1e.itemType.other_gear": {
+		"defaultMessage": "other gear",
+		"description": "Type of item in Starfinder, shown beside an item's name: equipment that is none of the other types"
+	},
+	"sf1e.itemType.second_skin": {
+		"defaultMessage": "second skin",
+		"description": "Type of item in Starfinder, shown beside an item's name: light armor, a thin protective bodysuit"
+	},
+	"sf1e.itemType.semi_auto_pistol": {
+		"defaultMessage": "semi-auto pistol",
+		"description": "Type of item in Starfinder, shown beside an item's name: a handgun that fires bullets, one for each pull of the trigger"
+	},
+	"sf1e.itemType.small_arm_rounds": {
+		"defaultMessage": "small arm rounds",
+		"description": "Type of item in Starfinder, shown beside an item's name: bullets for pistols"
+	},
+	"sf1e.itemType.survival_knife": {
+		"defaultMessage": "survival knife",
+		"description": "Type of item in Starfinder, shown beside an item's name: a sturdy knife for fighting and for use in the wild"
+	},
+	"sf1e.itemType.tactical_baton": {
+		"defaultMessage": "tactical baton",
+		"description": "Type of item in Starfinder, shown beside an item's name: a club carried by guards and police"
+	},
+	"sf1e.race.android": {
+		"defaultMessage": "Android",
+		"description": "Name of a playable race in Starfinder: artificial people with bodies of machinery and flesh. Singular, used as a label"
+	},
+	"sf1e.race.human": {
+		"defaultMessage": "Human",
+		"description": "Name of a playable race in Starfinder: humans. Singular, used as a label"
+	},
+	"sf1e.race.kasatha": {
+		"defaultMessage": "Kasatha",
+		"description": "Name of a playable race in Starfinder: tall, four-armed desert people. Singular, used as a label"
+	},
+	"sf1e.race.lashunta": {
+		"defaultMessage": "Lashunta",
+		"description": "Name of a playable race in Starfinder: telepathic people with antennae. Singular, used as a label"
+	},
+	"sf1e.race.shirren": {
+		"defaultMessage": "Shirren",
+		"description": "Name of a playable race in Starfinder: insect-like people who broke free of a hive mind. Singular, used as a label"
+	},
+	"sf1e.race.vesk": {
+		"defaultMessage": "Vesk",
+		"description": "Name of a playable race in Starfinder: large, warlike reptilian people. Singular, used as a label"
+	},
+	"sf1e.race.ysoki": {
+		"defaultMessage": "Ysoki",
+		"description": "Name of a playable race in Starfinder: small, clever people who look like rats standing upright. Singular, used as a label"
+	},
+	"sf1e.size.colossal": {
+		"defaultMessage": "Colossal",
+		"description": "Size of a creature in Starfinder, the largest: an ancient dragon"
+	},
+	"sf1e.size.diminutive": {
+		"defaultMessage": "Diminutive",
+		"description": "Size of a creature in Starfinder, between Fine and Tiny: a rat"
+	},
+	"sf1e.size.fine": {
+		"defaultMessage": "Fine",
+		"description": "Size of a creature in Starfinder, the smallest: an insect"
+	},
+	"sf1e.size.gargantuan": {
+		"defaultMessage": "Gargantuan",
+		"description": "Size of a creature in Starfinder, between Huge and Colossal: an old dragon"
+	},
+	"sf1e.size.huge": {
+		"defaultMessage": "Huge",
+		"description": "Size of a creature in Starfinder, between Large and Gargantuan: a giant"
+	},
+	"sf1e.size.large": {
+		"defaultMessage": "Large",
+		"description": "Size of a creature in Starfinder, between Medium and Huge: a horse"
+	},
+	"sf1e.size.medium": {
+		"defaultMessage": "Medium",
+		"description": "Size of a creature in Starfinder, between Small and Large: a human"
+	},
+	"sf1e.size.small": {
+		"defaultMessage": "Small",
+		"description": "Size of a creature in Starfinder, between Tiny and Medium: a ysoki"
+	},
+	"sf1e.size.tiny": {
+		"defaultMessage": "Tiny",
+		"description": "Size of a creature in Starfinder, between Diminutive and Small: a cat"
+	},
+	"sf1e.theme.ace_pilot": {
+		"defaultMessage": "Ace Pilot",
+		"description": "Name of a character theme (background) in Starfinder: a skilled pilot of starships and vehicles. Used as a label"
+	},
+	"sf1e.theme.bounty_hunter": {
+		"defaultMessage": "Bounty Hunter",
+		"description": "Name of a character theme (background) in Starfinder: hunts down people for a reward. Used as a label"
+	},
+	"sf1e.theme.icon": {
+		"defaultMessage": "Icon",
+		"description": "Name of a character theme (background) in Starfinder: a celebrity, such as a performer or athlete. Used as a label"
+	},
+	"sf1e.theme.mercenary": {
+		"defaultMessage": "Mercenary",
+		"description": "Name of a character theme (background) in Starfinder: a soldier who fights for pay. Used as a label"
+	},
+	"sf1e.theme.outlaw": {
+		"defaultMessage": "Outlaw",
+		"description": "Name of a character theme (background) in Starfinder: a criminal who lives outside the law. Used as a label"
+	},
+	"sf1e.theme.priest": {
+		"defaultMessage": "Priest",
+		"description": "Name of a character theme (background) in Starfinder: devoted to a deity or philosophy. Used as a label"
+	},
+	"sf1e.theme.scholar": {
+		"defaultMessage": "Scholar",
+		"description": "Name of a character theme (background) in Starfinder: a student of a field of knowledge. Used as a label"
+	},
+	"sf1e.theme.spacefarer": {
+		"defaultMessage": "Spacefarer",
+		"description": "Name of a character theme (background) in Starfinder: an explorer of the unknown reaches of space. Used as a label"
+	},
+	"sf1e.theme.xenoseeker": {
+		"defaultMessage": "Xenoseeker",
+		"description": "Name of a character theme (background) in Starfinder: seeks out and studies alien life. Used as a label"
+	},
 	"shortcuts.close": {
 		"defaultMessage": "Close",
 		"description": "Button that closes the list of keyboard shortcuts"
@@ -3006,6 +3450,30 @@
 	"tile.pf1e.wood_floor": {
 		"defaultMessage": "Wood Floor",
 		"description": "Name of a map tile: the wooden floor of a building"
+	},
+	"tile.sf1e.bulkhead": {
+		"defaultMessage": "Bulkhead",
+		"description": "Name of a map tile in a science fantasy world: a metal wall inside a starship or station, which can't be crossed or seen past"
+	},
+	"tile.sf1e.grass": {
+		"defaultMessage": "Grass",
+		"description": "Name of a map tile in a science fantasy world: open grassland"
+	},
+	"tile.sf1e.metal_floor": {
+		"defaultMessage": "Metal Floor",
+		"description": "Name of a map tile in a science fantasy world: the metal deck of a starship or station"
+	},
+	"tile.sf1e.rock": {
+		"defaultMessage": "Rock",
+		"description": "Name of a map tile in a science fantasy world: bare rock cliffs, which can't be crossed or seen past"
+	},
+	"tile.sf1e.sand": {
+		"defaultMessage": "Sand",
+		"description": "Name of a map tile in a science fantasy world: loose sand, which is slow to cross"
+	},
+	"tile.sf1e.water": {
+		"defaultMessage": "Water",
+		"description": "Name of a map tile in a science fantasy world: deep water, which can't be walked into"
 	},
 	"universe.faerie.center": {
 		"defaultMessage": "center",
@@ -3070,6 +3538,10 @@
 	"universe.ruleset.pf1e": {
 		"defaultMessage": "Pathfinder 1E",
 		"description": "Name of the game rules of the tabletop role-playing game Pathfinder, first edition"
+	},
+	"universe.ruleset.sf1e": {
+		"defaultMessage": "Starfinder 1E",
+		"description": "Name of the game rules of the science fantasy tabletop role-playing game Starfinder, first edition"
 	},
 	"universe.shortDescription": {
 		"defaultMessage": "1-sentence description",

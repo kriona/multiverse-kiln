@@ -77,7 +77,8 @@ async function listClasses(request: Request, response: Response): Promise<void>
  */
 async function createClassRoute(request: Request, response: Response): Promise<void>
 {
-	const body = classSettings.safeParse(request.body);
+	const { universe } = universeContextOf(request);
+	const body = classSettings[universe.ruleset].safeParse(request.body);
 
 	if (!body.success)
 	{
@@ -85,7 +86,6 @@ async function createClassRoute(request: Request, response: Response): Promise<v
 		return;
 	}
 
-	const { universe } = universeContextOf(request);
 	const { name } = body.data;
 
 	if (name === null)
@@ -142,7 +142,8 @@ async function createClassRoute(request: Request, response: Response): Promise<v
 async function saveClass(request: Request, response: Response): Promise<void>
 {
 	const classId = classIdParameter.safeParse(request.params.classId);
-	const body = classSettings.safeParse(request.body);
+	const { universe } = universeContextOf(request);
+	const body = classSettings[universe.ruleset].safeParse(request.body);
 
 	if (!body.success)
 	{
@@ -150,7 +151,6 @@ async function saveClass(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	const { universe } = universeContextOf(request);
 	const kind = (classId.success ? await findClassKind(universe.id, universe.ruleset, classId.data) : undefined);
 
 	if (!classId.success || (kind === undefined))
@@ -185,7 +185,7 @@ async function saveClass(request: Request, response: Response): Promise<void>
 		}
 		else if (name !== null)
 		{
-			await updateCustomClass(universe.id, classId.data, { ...body.data, name }, transaction);
+			await updateCustomClass(universe.id, universe.ruleset, classId.data, { ...body.data, name }, transaction);
 		}
 
 		return(undefined);

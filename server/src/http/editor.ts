@@ -8,7 +8,7 @@ import express, { type Application, type NextFunction, type Request, type Respon
 import { canEditUniverseSettings, canEditWorld, defineMessages, EDITOR_UNIVERSES_PATH, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, SOURCE_LOCALE, Translator, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type RulesetSettings } from '@multiverse-kiln/shared';
 
 import { lockPlayer } from '../db/playerRepo.js';
-import { findPf1eSettings, savePf1eSettings } from '../db/rulesetRepo.js';
+import { loadRulesetSettings, storeRulesetSettings } from '../db/rulesetRepo.js';
 import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { countCustomTiles, createCustomTile, deleteCustomTile, findDefaultTileIds, findTileKind, listEditorTiles, restoreDefaultTile, saveEditedDefaultTile, updateCustomTile } from '../db/tileRepo.js';
 import { inTransaction } from '../db/transactions.js';
@@ -22,6 +22,7 @@ import { addClassRoutes } from './editorClasses.js';
 import { addItemRoutes } from './editorItems.js';
 import { newUniverseRequest, rulesetSettings, tileIdParameter, tileListQuery, tileSettings, universeSettingsUpdate } from './editorPayloads.js';
 import { addRaceRoutes } from './editorRaces.js';
+import { addThemeRoutes } from './editorThemes.js';
 import { findStartingProblem } from './editorStartingExtras.js';
 import { addAreaRoutes, DEFAULT_AREA_TILE_KEYS, timeSettingsProblem } from './editorAreas.js';
 import { errorMessages, sendError, sendInvalidRequest, type Refusal } from './errors.js';
@@ -99,6 +100,7 @@ function createEditorRouter(allowedOrigins: Set<string>): express.Router
 	addItemRoutes(universeRouter);
 	addRaceRoutes(universeRouter);
 	addClassRoutes(universeRouter);
+	addThemeRoutes(universeRouter);
 	addAreaRoutes(universeRouter);
 
 	router.use(handleEditorError);
@@ -272,7 +274,8 @@ function getUniverse(request: Request, response: Response): void
  */
 async function updateUniverse(request: Request, response: Response): Promise<void>
 {
-	const body = universeSettingsUpdate.safeParse(request.body);
+	const { universe } = universeContextOf(request);
+	const body = universeSettingsUpdate[universe.ruleset].safeParse(request.body);
 
 	if (!body.success)
 	{
@@ -280,7 +283,6 @@ async function updateUniverse(request: Request, response: Response): Promise<voi
 		return;
 	}
 
-	const { universe } = universeContextOf(request);
 	const problem = timeSettingsProblem({ ...universe, ...body.data });
 
 	if (problem !== undefined)
@@ -331,10 +333,7 @@ async function updateUniverse(request: Request, response: Response): Promise<voi
 async function getRulesetSettings(request: Request, response: Response): Promise<void>
 {
 	const { universe } = universeContextOf(request);
-	const payload: RulesetSettings = {
-		ruleset: universe.ruleset,
-		settings: await findPf1eSettings(universe.id)
-	};
+	const payload: RulesetSettings = await loadRulesetSettings(universe.id, universe.ruleset);
 
 	response.json(payload);
 }
@@ -366,7 +365,7 @@ async function saveRulesetSettings(request: Request, response: Response): Promis
 		return;
 	}
 
-	await savePf1eSettings(universe.id, body.data.settings);
+	await storeRulesetSettings(universe.id, body.data);
 	response.sendStatus(204);
 }
 

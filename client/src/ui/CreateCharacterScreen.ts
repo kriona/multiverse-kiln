@@ -1,4 +1,4 @@
-import { CHARACTER_STEPS, DISALLOWED_TEXT_CHARACTERS, isReservedName, MAX_CHARACTER_NAME_LENGTH, MAX_CHARACTERS_PER_UNIVERSE, NAME_MESSAGES, PF1E_ABILITIES, PF1E_ABILITY_NAMES, PF1E_FLOATING_ABILITY_BONUS, PF1E_MAX_POINT_BUY_SCORE, PF1E_MIN_POINT_BUY_SCORE, PF1E_STAT_METHOD_NAMES, pf1eAbilityModifier, pf1ePointBuyCost, pf1ePointBuyTotal, type CharacterClassOption, type CharacterDraft, type CharacterRaceOption, type CharacterStep, type NewCharacterOptions, type Pf1eAbility, type Pf1eAbilityScores } from '@multiverse-kiln/shared';
+import { ABILITY_NAMES, characterSteps, DISALLOWED_TEXT_CHARACTERS, FLOATING_ABILITY_BONUSES, isReservedName, mainAbility, MAX_CHARACTER_NAME_LENGTH, MAX_CHARACTERS_PER_UNIVERSE, NAME_MESSAGES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, PF1E_MIN_POINT_BUY_SCORE, PF1E_STAT_METHOD_NAMES, pf1eAbilityModifier, pf1ePointBuyCost, pf1ePointBuyTotal, SF1E_BASE_ABILITY_SCORE, SF1E_MAX_BOUGHT_SCORE, SF1E_THEME_ABILITY_BONUS, sf1eAbilityPointsSpent, sf1eOverraisedAbilities, type Ability, type AbilityScores, type CharacterClassOption, type CharacterDraft, type CharacterRaceOption, type CharacterStep, type CharacterThemeOption, type NewCharacterOptions, type Ruleset } from '@multiverse-kiln/shared';
 
 import { currentLocale, formatList, signedNumber, t } from '../localization';
 import type { CharacterApi } from '../network/characterApi';
@@ -8,7 +8,7 @@ import { ChangeTracker } from './changeTracker';
 import { getElement, setOptions, showMessage } from './dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
 import { formMessages } from './formMessages';
-import { className, raceName } from './raceAndClassNames';
+import { className, raceName, themeName } from './raceAndClassNames';
 
 /**
  * How long after the player's last change their progress is saved, in milliseconds
@@ -26,7 +26,7 @@ interface AbilityRow
 	name: HTMLElement;
 
 	/**
-	 * The rolled score (by its place among the rolls) or bought score the ability gets
+	 * The rolled score (by its place among the rolls), bought score or raised score the ability gets
 	 */
 	base: HTMLSelectElement;
 
@@ -41,7 +41,8 @@ interface AbilityRow
  *
  * The player's progress is saved on the server a moment after each change and whenever the step changes,
  * so they can leave and come back to it, in this browser or another. The server checks everything again
- * when the character is made: the scores must be its rolls in some order, or within the point buy budget
+ * when the character is made: the scores must be its rolls in some order, within the point buy budget,
+ * or within the ability points
  */
 export class CreateCharacterScreen
 {
@@ -60,16 +61,20 @@ export class CreateCharacterScreen
 	private readonly floating = getElement('character-floating', HTMLSelectElement);
 	private readonly characterClass = getElement('character-class', HTMLSelectElement);
 	private readonly classHint = getElement('character-class-hint', HTMLElement);
+	private readonly theme = getElement('character-theme', HTMLSelectElement);
+	private readonly themeHint = getElement('character-theme-hint', HTMLElement);
+	private readonly raceColumn = getElement('character-race-column', HTMLElement);
 	private readonly method = getElement('character-method', HTMLElement);
 	private readonly points = getElement('character-points', HTMLElement);
 	private readonly overBudget = getElement('character-over-budget', HTMLElement);
+	private readonly overLimit = getElement('character-over-limit', HTMLElement);
 	private readonly review = getElement('character-review', HTMLElement);
 	private readonly error = getElement('character-form-error', HTMLElement);
 	private readonly backButton = getElement('character-back', HTMLButtonElement);
 	private readonly nextButton = getElement('character-next', HTMLButtonElement);
 	private readonly createButton = getElement('character-create', HTMLButtonElement);
 
-	private readonly rows: Record<Pf1eAbility, AbilityRow>;
+	private readonly rows: Record<Ability, AbilityRow>;
 
 	/**
 	 * Whether the page holds progress the server hasn't saved yet, so leaving asks first
@@ -83,6 +88,11 @@ export class CreateCharacterScreen
 
 	private universeId = '';
 	private step: CharacterStep = 'name';
+
+	/**
+	 * The steps of the universe's ruleset, in order
+	 */
+	private steps: CharacterStep[] = characterSteps('pf1e');
 
 	/**
 	 * The progress as last saved, as JSON
@@ -107,10 +117,6 @@ export class CreateCharacterScreen
 	{
 		this.name.maxLength = MAX_CHARACTER_NAME_LENGTH;
 		this.rows = createAbilityRows(getElement('character-abilities', HTMLTableSectionElement));
-		setOptions(this.floating, PF1E_ABILITIES.map((ability) => ({
-			value: ability,
-			label: t(PF1E_ABILITY_NAMES[ability])
-		})));
 		this.changes = new ChangeTracker({
 			root: this.form,
 			state: () => this.step
@@ -145,6 +151,11 @@ export class CreateCharacterScreen
 			this.showClass();
 		});
 
+		this.theme.addEventListener('change', () =>
+		{
+			this.showTheme();
+		});
+
 		for (const ability of PF1E_ABILITIES)
 		{
 			this.rows[ability].base.addEventListener('change', () =>
@@ -153,7 +164,7 @@ export class CreateCharacterScreen
 			});
 		}
 
-		for (const step of CHARACTER_STEPS)
+		for (const step of characterSteps('sf1e'))
 		{
 			getElement(`character-nav-${step}`, HTMLButtonElement).addEventListener('click', () =>
 			{
@@ -163,12 +174,12 @@ export class CreateCharacterScreen
 
 		this.backButton.addEventListener('click', () =>
 		{
-			this.goToStep(CHARACTER_STEPS[Math.max(CHARACTER_STEPS.indexOf(this.step) - 1, 0)]);
+			this.goToStep(this.steps[Math.max(this.steps.indexOf(this.step) - 1, 0)]);
 		});
 
 		this.nextButton.addEventListener('click', () =>
 		{
-			this.goToStep(CHARACTER_STEPS[Math.min(CHARACTER_STEPS.indexOf(this.step) + 1, CHARACTER_STEPS.length - 1)]);
+			this.goToStep(this.steps[Math.min(this.steps.indexOf(this.step) + 1, this.steps.length - 1)]);
 		});
 
 		getElement('character-start-over', HTMLButtonElement).addEventListener('click', () =>
@@ -215,16 +226,29 @@ export class CreateCharacterScreen
 			return;
 		}
 
+		const { ruleset } = options;
+
 		this.options = options;
+		this.steps = characterSteps(ruleset);
 		this.setTitle(options.universeName);
+		this.showRulesetSteps(ruleset);
 		setOptions(this.race, sortByName(options.races.map((race) => ({
 			value: String(race.id),
-			label: raceName(race, options.ruleset)
+			label: raceName(race, ruleset)
 		}))));
 		setOptions(this.characterClass, sortByName(options.classes.map((characterClass) => ({
 			value: String(characterClass.id),
-			label: className(characterClass, options.ruleset)
+			label: className(characterClass, ruleset)
 		}))));
+		setOptions(this.theme, sortByName(options.themes.map((theme) => ({
+			value: String(theme.id),
+			label: themeName(theme, ruleset)
+		}))));
+		setOptions(this.floating, PF1E_ABILITIES.map((ability) => ({
+			value: ability,
+			label: this.abilityName(ability)
+		})));
+		this.nameAbilityRows();
 		this.showAbilityOptions(options);
 		this.applyDraft(options.draft);
 		this.loading.hidden = true;
@@ -242,7 +266,7 @@ export class CreateCharacterScreen
 			this.createButton.disabled = true;
 		}
 
-		this.step = (options.draft?.step ?? 'name');
+		this.step = (this.steps.find((step) => (step === options.draft?.step)) ?? 'name');
 		this.savedDraft = JSON.stringify(this.readDraft());
 		this.changes.markSaved();
 		this.goToStep(this.step);
@@ -272,8 +296,36 @@ export class CreateCharacterScreen
 	}
 
 	/**
-	 * Fills the form with saved progress, leaving out what no longer fits the universe: a race or class
-	 * that can't be chosen now, or scores that aren't the current rolls or can't be bought
+	 * Shows the steps of the universe's ruleset in the list of steps, and names the table's column of
+	 * bonuses for what adds to the scores
+	 *
+	 * @param ruleset The universe's ruleset
+	 */
+	private showRulesetSteps(ruleset: Ruleset): void
+	{
+		for (const step of characterSteps('sf1e'))
+		{
+			const item = getElement(`character-nav-${step}`, HTMLButtonElement).parentElement;
+
+			if (item)
+			{
+				item.hidden = !this.steps.includes(step);
+			}
+		}
+
+		if (ruleset === 'sf1e')
+		{
+			this.raceColumn.textContent = t({
+				id: 'character.create.raceAndThemeColumn',
+				defaultMessage: 'Race and theme',
+				description: 'Heading of the column of how much the chosen race and theme add to or take from each score, in Create Character in Starfinder'
+			});
+		}
+	}
+
+	/**
+	 * Fills the form with saved progress, leaving out what no longer fits the universe: a race, class or
+	 * theme that can't be chosen now, or scores that aren't the current rolls or can't be bought
 	 *
 	 * @param draft The progress, or null to start from nothing
 	 */
@@ -289,9 +341,11 @@ export class CreateCharacterScreen
 		this.name.value = (draft?.name ?? '');
 		this.race.value = String(options.races.find((race) => (race.id === draft?.raceId))?.id ?? (this.race.options[0]?.value ?? ''));
 		this.characterClass.value = String(options.classes.find((characterClass) => (characterClass.id === draft?.classId))?.id ?? (this.characterClass.options[0]?.value ?? ''));
+		this.theme.value = String(options.themes.find((theme) => (theme.id === draft?.themeId))?.id ?? (this.theme.options[0]?.value ?? ''));
 		this.setBaseScores(draft?.baseScores ?? null);
 		this.floatingLabel.hidden = true;
 		this.showClass();
+		this.showTheme();
 		this.showRace();
 
 		if (draft?.floatingAbility)
@@ -305,8 +359,8 @@ export class CreateCharacterScreen
 	}
 
 	/**
-	 * Fills the base score fields with the rolled scores, in the order rolled, or with point buy's
-	 * scores, and says how the scores were made
+	 * Fills the base score fields with the rolled scores, in the order rolled, with point buy's scores,
+	 * or with the scores ability points can raise to, and says how the scores are made
 	 *
 	 * @param options What the server offered
 	 */
@@ -340,7 +394,7 @@ export class CreateCharacterScreen
 				method: t(PF1E_STAT_METHOD_NAMES[abilities.statMethod])
 			});
 		}
-		else
+		else if (abilities.kind === 'pointBuy')
 		{
 			const choices = [];
 
@@ -372,15 +426,49 @@ export class CreateCharacterScreen
 				budget: abilities.budget
 			});
 		}
+		else
+		{
+			const choices = [];
+
+			for (let score = SF1E_BASE_ABILITY_SCORE; score <= SF1E_MAX_BOUGHT_SCORE; score++)
+			{
+				choices.push({
+					value: String(score),
+					label: t({
+						id: 'character.create.raisedScore',
+						defaultMessage: '{score, number} ({points, plural, one {# point} other {# points}})',
+						description: 'One choice of ability score when raising scores with ability points in Create Character in Starfinder; {score} is the score and {points} how many points it takes from 10'
+					}, {
+						score,
+						points: (score - SF1E_BASE_ABILITY_SCORE)
+					})
+				});
+			}
+
+			for (const ability of PF1E_ABILITIES)
+			{
+				setOptions(this.rows[ability].base, choices);
+			}
+
+			this.method.textContent = t({
+				id: 'character.create.abilityPoints',
+				defaultMessage: 'Every score starts at {base, number}. Spend {points, plural, one {# ability point} other {# ability points}} to raise them, one point for each +1, up to {max, number} with your race\'s and theme\'s bonuses.',
+				description: 'Explains the ability scores in Create Character in Starfinder; {base} is the score every ability starts at, {points} how many points the player has, and {max} the highest score points can raise one to'
+			}, {
+				base: SF1E_BASE_ABILITY_SCORE,
+				points: abilities.points,
+				max: SF1E_MAX_BOUGHT_SCORE
+			});
+		}
 	}
 
 	/**
 	 * Sets the base score fields: rolled scores in the order saved when they are still the rolls, or in
-	 * the order rolled; bought scores as saved when point buy allows each, or 10
+	 * the order rolled; bought or raised scores as saved when the ruleset allows each, or 10
 	 *
 	 * @param scores The saved scores, or null for none
 	 */
-	private setBaseScores(scores: Pf1eAbilityScores | null): void
+	private setBaseScores(scores: AbilityScores | null): void
 	{
 		const abilities = this.options?.abilities;
 
@@ -409,8 +497,11 @@ export class CreateCharacterScreen
 			for (const ability of PF1E_ABILITIES)
 			{
 				const score = (scores?.[ability] ?? 10);
+				const allowed = ((abilities.kind === 'pointBuy')
+					? (pf1ePointBuyCost(score) !== null)
+					: ((score >= SF1E_BASE_ABILITY_SCORE) && (score <= SF1E_MAX_BOUGHT_SCORE)));
 
-				this.rows[ability].base.value = String(((pf1ePointBuyCost(score) === null) ? 10 : score));
+				this.rows[ability].base.value = String((allowed ? score : 10));
 			}
 		}
 	}
@@ -422,11 +513,11 @@ export class CreateCharacterScreen
 	 */
 	private goToStep(step: CharacterStep): void
 	{
-		const index = CHARACTER_STEPS.indexOf(step);
+		const index = this.steps.indexOf(step);
 
 		this.step = step;
 
-		for (const other of CHARACTER_STEPS)
+		for (const other of characterSteps('sf1e'))
 		{
 			const button = getElement(`character-nav-${other}`, HTMLButtonElement);
 
@@ -443,7 +534,7 @@ export class CreateCharacterScreen
 		}
 
 		this.backButton.hidden = (index === 0);
-		this.nextButton.hidden = (index === (CHARACTER_STEPS.length - 1));
+		this.nextButton.hidden = (index === (this.steps.length - 1));
 		this.createButton.hidden = (step !== 'review');
 
 		if (step === 'review')
@@ -465,15 +556,16 @@ export class CreateCharacterScreen
 	private showRace(): void
 	{
 		const race = this.chosenRace();
+		const characterClass = this.chosenClass();
 		const floatingBonus = (race?.rules.floatingBonus ?? false);
 
 		if (floatingBonus && this.floatingLabel.hidden)
 		{
-			this.floating.value = (this.chosenClass()?.rules.primaryAbility ?? PF1E_ABILITIES[0]);
+			this.floating.value = (characterClass ? mainAbility(characterClass.rules) : PF1E_ABILITIES[0]);
 		}
 
 		this.floatingLabel.hidden = !floatingBonus;
-		this.raceSummary.textContent = (race ? describeRace(race) : '');
+		this.raceSummary.textContent = (race ? this.describeRace(race) : '');
 		this.showScores();
 	}
 
@@ -483,29 +575,50 @@ export class CreateCharacterScreen
 	private showClass(): void
 	{
 		const characterClass = this.chosenClass();
+		const classAbility = (characterClass ? mainAbility(characterClass.rules) : undefined);
 
 		for (const ability of PF1E_ABILITIES)
 		{
-			this.rows[ability].name.textContent = ((characterClass?.rules.primaryAbility === ability)
+			this.rows[ability].name.textContent = ((classAbility === ability)
 				? t({
 					id: 'character.create.primaryAbility',
 					defaultMessage: '{ability} (main ability)',
 					description: 'An ability\'s name in Create Character\'s table of scores when the chosen class relies on it most; {ability} is its name, e.g. Strength'
 				}, {
-					ability: t(PF1E_ABILITY_NAMES[ability])
+					ability: this.abilityName(ability)
 				})
-				: t(PF1E_ABILITY_NAMES[ability]));
+				: this.abilityName(ability));
 		}
 
-		this.classHint.textContent = (characterClass
-			? t({
+		this.classHint.textContent = ((classAbility === undefined)
+			? ''
+			: t({
 				id: 'character.create.classHint',
 				defaultMessage: 'This class relies most on {ability}, so it is a good place for a high score.',
 				description: 'Hint under the class field of Create Character; {ability} is the ability the chosen class relies on, e.g. Strength'
 			}, {
-				ability: t(PF1E_ABILITY_NAMES[characterClass.rules.primaryAbility])
+				ability: this.abilityName(classAbility)
+			}));
+	}
+
+	/**
+	 * Says which ability the chosen theme raises, and shows the scores with its bonus
+	 */
+	private showTheme(): void
+	{
+		const theme = this.chosenTheme();
+
+		this.themeHint.textContent = (theme
+			? t({
+				id: 'character.create.themeHint',
+				defaultMessage: 'This theme raises {ability} by {bonus, number}.',
+				description: 'Hint under the theme field of Create Character in Starfinder; {ability} is the ability the chosen theme raises, e.g. Dexterity, and {bonus} by how much'
+			}, {
+				ability: this.abilityName(theme.rules.ability),
+				bonus: SF1E_THEME_ABILITY_BONUS
 			})
 			: '');
+		this.showScores();
 	}
 
 	/**
@@ -514,7 +627,7 @@ export class CreateCharacterScreen
 	 *
 	 * @param changed The ability whose score the player changed
 	 */
-	private onBaseChanged(changed: Pf1eAbility): void
+	private onBaseChanged(changed: Ability): void
 	{
 		const abilities = this.options?.abilities;
 
@@ -536,7 +649,7 @@ export class CreateCharacterScreen
 					defaultMessage: '{ability} now has {score, number}.',
 					description: 'Read out by screen readers in Create Character when giving one ability a rolled score moves that ability\'s old score to another; {ability} is the other ability, e.g. Dexterity'
 				}, {
-					ability: t(PF1E_ABILITY_NAMES[other]),
+					ability: this.abilityName(other),
 					score: (abilities.rolls[Number(freed)] ?? 0)
 				}));
 			}
@@ -547,7 +660,7 @@ export class CreateCharacterScreen
 
 	/**
 	 * Shows each ability's race modifier, final score and its modifier, the points spent, and whether
-	 * they are more than the player has
+	 * they are more than the player has or raise a score too high
 	 */
 	private showScores(): void
 	{
@@ -559,6 +672,7 @@ export class CreateCharacterScreen
 		}
 
 		const scores = this.finalScores(options);
+		const { abilities } = options;
 
 		this.labelRolledScores(options);
 
@@ -566,31 +680,32 @@ export class CreateCharacterScreen
 		{
 			const row = this.rows[ability];
 
-			row.race.textContent = signedNumber(this.raceModifier(ability));
+			row.race.textContent = signedNumber(this.bonus(ability));
 			row.score.textContent = String(scores[ability]);
 			row.modifier.textContent = signedNumber(pf1eAbilityModifier(scores[ability]));
 		}
 
-		if (options.abilities.kind === 'pointBuy')
-		{
-			const { budget } = options.abilities;
-
-			this.points.textContent = t({
-				id: 'character.create.pointsSpent',
-				defaultMessage: 'Points spent: {spent, number} of {budget, number}',
-				description: 'Under the ability scores in Create Character when buying them with points; {spent} is how many the chosen scores cost and {budget} how many the player has'
-			}, {
-				spent: (pf1ePointBuyTotal(this.baseScores(options)) ?? 0),
-				budget
-			});
-			this.points.hidden = false;
-			this.showOverBudget(this.isOverBudget(options) ? budget : undefined);
-		}
-		else
+		if (abilities.kind === 'roll')
 		{
 			this.points.hidden = true;
 			this.showOverBudget(undefined);
+			this.showOverLimit([]);
+			return;
 		}
+
+		const budget = ((abilities.kind === 'pointBuy') ? abilities.budget : abilities.points);
+
+		this.points.textContent = t({
+			id: 'character.create.pointsSpent',
+			defaultMessage: 'Points spent: {spent, number} of {budget, number}',
+			description: 'Under the ability scores in Create Character when buying them with points; {spent} is how many the chosen scores cost and {budget} how many the player has'
+		}, {
+			spent: (this.pointsSpent(options) ?? 0),
+			budget
+		});
+		this.points.hidden = false;
+		this.showOverBudget(this.isOverBudget(options) ? budget : undefined);
+		this.showOverLimit(this.overraisedAbilities(options));
 	}
 
 	/**
@@ -626,21 +741,69 @@ export class CreateCharacterScreen
 						description: 'One choice of rolled score for an ability in Create Character, naming the other ability that has it now, which choosing it swaps with; {score} is the score and {ability} that ability, e.g. "15 (Wisdom)"'
 					}, {
 						score,
-						ability: t(PF1E_ABILITY_NAMES[holder])
+						ability: this.abilityName(holder)
 					}));
 			}
 		}
 	}
 
 	/**
-	 * Whether the bought scores cost more points than the player has
+	 * How many points the bought or raised scores spend
+	 *
+	 * @param options What Create Character offers
+	 * @return The points, or null when the universe rolls scores or a score can't be bought
+	 */
+	private pointsSpent(options: NewCharacterOptions): number | null
+	{
+		const baseScores = this.baseScores(options);
+
+		switch (options.abilities.kind)
+		{
+			case 'roll':
+				return(null);
+
+			case 'pointBuy':
+				return(pf1ePointBuyTotal(baseScores));
+
+			case 'abilityPoints':
+				return(sf1eAbilityPointsSpent(baseScores));
+		}
+	}
+
+	/**
+	 * Whether the bought or raised scores spend more points than the player has
 	 *
 	 * @param options What Create Character offers
 	 * @return True when they do; false when the universe rolls scores
 	 */
 	private isOverBudget(options: NewCharacterOptions): boolean
 	{
-		return((options.abilities.kind === 'pointBuy') && ((pf1ePointBuyTotal(this.baseScores(options)) ?? Infinity) > options.abilities.budget));
+		const { abilities } = options;
+
+		if (abilities.kind === 'roll')
+		{
+			return(false);
+		}
+
+		return((this.pointsSpent(options) ?? Infinity) > ((abilities.kind === 'pointBuy') ? abilities.budget : abilities.points));
+	}
+
+	/**
+	 * The abilities that ability points raise above SF1E_MAX_BOUGHT_SCORE with their bonuses
+	 *
+	 * @param options What Create Character offers
+	 * @return The abilities; none unless the universe uses ability points
+	 */
+	private overraisedAbilities(options: NewCharacterOptions): Ability[]
+	{
+		if (options.abilities.kind !== 'abilityPoints')
+		{
+			return([]);
+		}
+
+		const bonuses = Object.fromEntries(PF1E_ABILITIES.map((ability) => [ability, this.bonus(ability)])) as AbilityScores;
+
+		return(sf1eOverraisedAbilities(this.baseScores(options), bonuses));
 	}
 
 	/**
@@ -661,10 +824,29 @@ export class CreateCharacterScreen
 				budget
 			}));
 
-		if ((message ?? '') !== (this.overBudget.hidden ? '' : this.overBudget.textContent))
-		{
-			showMessage(this.overBudget, message);
-		}
+		showChangedMessage(this.overBudget, message);
+	}
+
+	/**
+	 * Shows or hides the warning that ability points raise scores too high, changing it only when that
+	 * changes, so a screen reader reads it out once each time it appears
+	 *
+	 * @param abilities The abilities raised too high; none hides it
+	 */
+	private showOverLimit(abilities: Ability[]): void
+	{
+		const message = ((abilities.length === 0)
+			? undefined
+			: t({
+				id: 'character.create.overLimit',
+				defaultMessage: 'Ability points can\'t raise a score above {max, number} with its bonuses. Lower {abilities}.',
+				description: 'Shown in Create Character in Starfinder, under the ability scores, while points raise a score past the most allowed; {max} is that score and {abilities} the abilities to lower, e.g. "Strength and Dexterity"'
+			}, {
+				max: SF1E_MAX_BOUGHT_SCORE,
+				abilities: formatList(abilities.map((ability) => this.abilityName(ability)))
+			}));
+
+		showChangedMessage(this.overLimit, message);
 	}
 
 	/**
@@ -675,12 +857,14 @@ export class CreateCharacterScreen
 		const options = this.options;
 		const race = this.chosenRace();
 		const characterClass = this.chosenClass();
+		const theme = this.chosenTheme();
 
 		if (!options)
 		{
 			return;
 		}
 
+		const { ruleset } = options;
 		const scores = this.finalScores(options);
 		const floatingAbility = this.chosenFloatingAbility();
 		const entries: [string, string][] = [
@@ -705,25 +889,35 @@ export class CreateCharacterScreen
 					defaultMessage: '{race}, +{bonus, number} {ability}',
 					description: 'In the review step of Create Character, a race that lets the player place a bonus, with where it went; {race} is e.g. Human, {bonus} the bonus and {ability} e.g. Strength'
 				}, {
-					race: raceName(race, options.ruleset),
-					bonus: PF1E_FLOATING_ABILITY_BONUS,
-					ability: t(PF1E_ABILITY_NAMES[floatingAbility])
+					race: raceName(race, ruleset),
+					bonus: FLOATING_ABILITY_BONUSES[ruleset],
+					ability: this.abilityName(floatingAbility)
 				})
-				: (race ? raceName(race, options.ruleset) : ''))],
+				: (race ? raceName(race, ruleset) : ''))],
 			[t({
 				id: 'character.review.class',
 				defaultMessage: 'Class',
 				description: 'In the review step of Create Character, the label of the character\'s class'
-			}), (characterClass ? className(characterClass, options.ruleset) : '')],
-			...PF1E_ABILITIES.map((ability): [string, string] => [t(PF1E_ABILITY_NAMES[ability]), t({
-				id: 'character.review.score',
-				defaultMessage: '{score, number} ({modifier})',
-				description: 'In the review step of Create Character, an ability score with the bonus or penalty it gives; {score} is e.g. 16 and {modifier} e.g. +3'
-			}, {
-				score: scores[ability],
-				modifier: signedNumber(pf1eAbilityModifier(scores[ability]))
-			})])
+			}), (characterClass ? className(characterClass, ruleset) : '')]
 		];
+
+		if (this.steps.includes('theme'))
+		{
+			entries.push([t({
+				id: 'character.review.theme',
+				defaultMessage: 'Theme',
+				description: 'In the review step of Create Character in Starfinder, the label of the character\'s theme (a background, such as ace pilot)'
+			}), (theme ? themeName(theme, ruleset) : '')]);
+		}
+
+		entries.push(...PF1E_ABILITIES.map((ability): [string, string] => [this.abilityName(ability), t({
+			id: 'character.review.score',
+			defaultMessage: '{score, number} ({modifier})',
+			description: 'In the review step of Create Character, an ability score with the bonus or penalty it gives; {score} is e.g. 16 and {modifier} e.g. +3'
+		}, {
+			score: scores[ability],
+			modifier: signedNumber(pf1eAbilityModifier(scores[ability]))
+		})]));
 
 		this.review.replaceChildren(...entries.flatMap(([term, value]) =>
 		{
@@ -872,9 +1066,10 @@ export class CreateCharacterScreen
 		const options = this.options;
 		const race = this.chosenRace();
 		const characterClass = this.chosenClass();
+		const theme = this.chosenTheme();
 		const name = this.name.value.trim();
 
-		if (!options || !race || !characterClass)
+		if (!options || !race || !characterClass || (this.steps.includes('theme') && !theme))
 		{
 			return;
 		}
@@ -896,7 +1091,7 @@ export class CreateCharacterScreen
 		const baseScores = this.baseScores(options);
 
 		// The abilities step shows why
-		if (this.isOverBudget(options))
+		if (this.isOverBudget(options) || (this.overraisedAbilities(options).length > 0))
 		{
 			this.goToStep('abilities');
 			return;
@@ -912,6 +1107,7 @@ export class CreateCharacterScreen
 				name,
 				raceId: race.id,
 				classId: characterClass.id,
+				themeId: (theme?.id ?? null),
 				baseScores,
 				floatingAbility: this.chosenFloatingAbility()
 			});
@@ -946,6 +1142,7 @@ export class CreateCharacterScreen
 			name: this.name.value.slice(0, MAX_CHARACTER_NAME_LENGTH),
 			raceId: (this.chosenRace()?.id ?? null),
 			classId: (this.chosenClass()?.id ?? null),
+			themeId: (this.chosenTheme()?.id ?? null),
 			baseScores: (options ? this.baseScores(options) : null),
 			floatingAbility: this.chosenFloatingAbility()
 		});
@@ -957,7 +1154,7 @@ export class CreateCharacterScreen
 	 * @param options What the server offered
 	 * @return The scores, before racial modifiers
 	 */
-	private baseScores(options: NewCharacterOptions): Pf1eAbilityScores
+	private baseScores(options: NewCharacterOptions): AbilityScores
 	{
 		const { abilities } = options;
 
@@ -966,31 +1163,36 @@ export class CreateCharacterScreen
 			const value = Number(this.rows[ability].base.value);
 
 			return([ability, ((abilities.kind === 'roll') ? (abilities.rolls[value] ?? 0) : value)]);
-		})) as Pf1eAbilityScores);
+		})) as AbilityScores);
 	}
 
 	/**
-	 * Each ability's score with the chosen race's modifiers and bonus
+	 * Each ability's score with the chosen race's modifiers and bonus, and the chosen theme's bonus
 	 *
 	 * @param options What the server offered
 	 * @return The scores
 	 */
-	private finalScores(options: NewCharacterOptions): Pf1eAbilityScores
+	private finalScores(options: NewCharacterOptions): AbilityScores
 	{
 		const base = this.baseScores(options);
 
-		return(Object.fromEntries(PF1E_ABILITIES.map((ability) => [ability, (base[ability] + this.raceModifier(ability))])) as Pf1eAbilityScores);
+		return(Object.fromEntries(PF1E_ABILITIES.map((ability) => [ability, (base[ability] + this.bonus(ability))])) as AbilityScores);
 	}
 
 	/**
-	 * What the chosen race adds to an ability, its floating bonus included
+	 * What the chosen race and theme add to an ability, the race's floating bonus included
 	 *
 	 * @param ability The ability
 	 * @return The amount, which may be negative
 	 */
-	private raceModifier(ability: Pf1eAbility): number
+	private bonus(ability: Ability): number
 	{
-		return(((this.chosenRace()?.rules.abilityModifiers[ability] ?? 0) + ((ability === this.chosenFloatingAbility()) ? PF1E_FLOATING_ABILITY_BONUS : 0)));
+		const ruleset = (this.options?.ruleset ?? 'pf1e');
+		const race = (this.chosenRace()?.rules.abilityModifiers[ability] ?? 0);
+		const floating = ((ability === this.chosenFloatingAbility()) ? FLOATING_ABILITY_BONUSES[ruleset] : 0);
+		const theme = ((this.chosenTheme()?.rules.ability === ability) ? SF1E_THEME_ABILITY_BONUS : 0);
+
+		return(race + floating + theme);
 	}
 
 	/**
@@ -1014,11 +1216,21 @@ export class CreateCharacterScreen
 	}
 
 	/**
+	 * The theme chosen
+	 *
+	 * @return The theme, or undefined in a ruleset without themes or before the options load
+	 */
+	private chosenTheme(): CharacterThemeOption | undefined
+	{
+		return(this.options?.themes.find((theme) => (String(theme.id) === this.theme.value)));
+	}
+
+	/**
 	 * The ability chosen for the race's floating bonus
 	 *
 	 * @return The ability, or null when the race has no floating bonus
 	 */
-	private chosenFloatingAbility(): Pf1eAbility | null
+	private chosenFloatingAbility(): Ability | null
 	{
 		if (!this.chosenRace()?.rules.floatingBonus)
 		{
@@ -1027,17 +1239,88 @@ export class CreateCharacterScreen
 
 		return((PF1E_ABILITIES.find((ability) => (ability === this.floating.value)) ?? null));
 	}
+
+	/**
+	 * An ability's name in the universe's ruleset, in the player's language
+	 *
+	 * @param ability The ability
+	 * @return The name
+	 */
+	private abilityName(ability: Ability): string
+	{
+		return(t(ABILITY_NAMES[this.options?.ruleset ?? 'pf1e'][ability]));
+	}
+
+	/**
+	 * Names each ability's base score field for screen readers, in the universe's ruleset's words
+	 */
+	private nameAbilityRows(): void
+	{
+		for (const ability of PF1E_ABILITIES)
+		{
+			this.rows[ability].base.setAttribute('aria-label', t({
+				id: 'character.create.baseLabel',
+				defaultMessage: '{ability} base score',
+				description: 'Name for screen readers of the field for one ability\'s score before the race changes it, in Create Character; {ability} is e.g. Strength'
+			}, {
+				ability: this.abilityName(ability)
+			}));
+		}
+	}
+
+	/**
+	 * What a race changes, in a sentence: its ability modifiers and whether the player places a bonus
+	 *
+	 * @param race The race
+	 * @return The sentence, e.g. "+2 Constitution, +2 Wisdom, -2 Charisma"
+	 */
+	private describeRace(race: CharacterRaceOption): string
+	{
+		const modifiers = PF1E_ABILITIES
+			.filter((ability) => (race.rules.abilityModifiers[ability] !== 0))
+			.map((ability) => t({
+				id: 'character.race.modifier',
+				defaultMessage: '{modifier} {ability}',
+				description: 'One of a race\'s ability modifiers in Create Character; {modifier} is e.g. +2 and {ability} e.g. Wisdom. Reorder them as your language needs'
+			}, {
+				modifier: signedNumber(race.rules.abilityModifiers[ability]),
+				ability: this.abilityName(ability)
+			}));
+
+		if (race.rules.floatingBonus)
+		{
+			modifiers.push(t({
+				id: 'character.race.floatingBonus',
+				defaultMessage: '+{bonus, number} to an ability you choose',
+				description: 'In Create Character, part of what a race (such as human) changes: the player raises one ability of their choice; {bonus} is how much'
+			}, {
+				bonus: FLOATING_ABILITY_BONUSES[this.options?.ruleset ?? 'pf1e']
+			}));
+		}
+
+		if (modifiers.length === 0)
+		{
+			return(t({
+				id: 'character.race.noModifiers',
+				defaultMessage: 'No changes to ability scores',
+				description: 'In Create Character, shown for a race that doesn\'t raise or lower any ability score'
+			}));
+		}
+
+		return(formatList(modifiers));
+	}
 }
 
 /**
- * Adds a row for each ability to the table of scores
+ * Adds a row for each ability to the table of scores. Every ruleset has the same abilities; the rows
+ * are named once the universe's ruleset is known
  *
  * @param body The table's body
  * @return The rows' cells and fields, by ability
  */
-function createAbilityRows(body: HTMLTableSectionElement): Record<Pf1eAbility, AbilityRow>
+function createAbilityRows(body: HTMLTableSectionElement): Record<Ability, AbilityRow>
 {
-	const rows = {} as Record<Pf1eAbility, AbilityRow>;
+	const rows = {} as Record<Ability, AbilityRow>;
 
 	for (const ability of PF1E_ABILITIES)
 	{
@@ -1051,13 +1334,6 @@ function createAbilityRows(body: HTMLTableSectionElement): Record<Pf1eAbility, A
 
 		name.scope = 'row';
 		base.id = `character-base-${ability}`;
-		base.setAttribute('aria-label', t({
-			id: 'character.create.baseLabel',
-			defaultMessage: '{ability} base score',
-			description: 'Name for screen readers of the field for one ability\'s score before the race changes it, in Create Character; {ability} is e.g. Strength'
-		}, {
-			ability: t(PF1E_ABILITY_NAMES[ability])
-		}));
 		baseCell.append(base);
 		row.append(name, baseCell, race, score, modifier);
 		body.append(row);
@@ -1068,45 +1344,18 @@ function createAbilityRows(body: HTMLTableSectionElement): Record<Pf1eAbility, A
 }
 
 /**
- * What a race changes, in a sentence: its ability modifiers and whether the player places a bonus
+ * Shows or hides a warning, changing it only when its text changes, so a screen reader reads it out once
+ * each time it appears
  *
- * @param race The race
- * @return The sentence, e.g. "+2 Constitution, +2 Wisdom, -2 Charisma"
+ * @param element The warning
+ * @param message The text, or undefined to hide it
  */
-function describeRace(race: CharacterRaceOption): string
+function showChangedMessage(element: HTMLElement, message: string | undefined): void
 {
-	const modifiers = PF1E_ABILITIES
-		.filter((ability) => (race.rules.abilityModifiers[ability] !== 0))
-		.map((ability) => t({
-			id: 'character.race.modifier',
-			defaultMessage: '{modifier} {ability}',
-			description: 'One of a race\'s ability modifiers in Create Character; {modifier} is e.g. +2 and {ability} e.g. Wisdom. Reorder them as your language needs'
-		}, {
-			modifier: signedNumber(race.rules.abilityModifiers[ability]),
-			ability: t(PF1E_ABILITY_NAMES[ability])
-		}));
-
-	if (race.rules.floatingBonus)
+	if ((message ?? '') !== (element.hidden ? '' : element.textContent))
 	{
-		modifiers.push(t({
-			id: 'character.race.floatingBonus',
-			defaultMessage: '+{bonus, number} to an ability you choose',
-			description: 'In Create Character, part of what a race (such as human) changes: the player raises one ability of their choice; {bonus} is how much'
-		}, {
-			bonus: PF1E_FLOATING_ABILITY_BONUS
-		}));
+		showMessage(element, message);
 	}
-
-	if (modifiers.length === 0)
-	{
-		return(t({
-			id: 'character.race.noModifiers',
-			defaultMessage: 'No changes to ability scores',
-			description: 'In Create Character, shown for a race that doesn\'t raise or lower any ability score'
-		}));
-	}
-
-	return(formatList(modifiers));
 }
 
 /**

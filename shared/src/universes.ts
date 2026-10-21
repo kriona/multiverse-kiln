@@ -78,7 +78,7 @@ export const UNIVERSE_STAGE_DESCRIPTIONS: Record<UniverseStage, MessageDescripto
 /**
  * The game rules a universe is played with
  */
-export const RULESETS = ['pf1e'] as const;
+export const RULESETS = ['pf1e', 'sf1e'] as const;
 
 export type Ruleset = typeof RULESETS[number];
 
@@ -90,6 +90,11 @@ export const RULESET_NAMES: Record<Ruleset, MessageDescriptor> = defineMessages(
 		id: 'universe.ruleset.pf1e',
 		defaultMessage: 'Pathfinder 1E',
 		description: 'Name of the game rules of the tabletop role-playing game Pathfinder, first edition'
+	},
+	sf1e: {
+		id: 'universe.ruleset.sf1e',
+		defaultMessage: 'Starfinder 1E',
+		description: 'Name of the game rules of the science fantasy tabletop role-playing game Starfinder, first edition'
 	}
 });
 

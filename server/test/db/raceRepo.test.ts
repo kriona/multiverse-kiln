@@ -1,6 +1,6 @@
 import assert from 'assert';
 
-import { DEFAULT_RACE_NAMES, emptyPf1eMoney, NEW_PF1E_RACE_RULES, PF1E_RACES, pf1eRaceRules, type EditorRace, type RaceSettings } from '@multiverse-kiln/shared';
+import { DEFAULT_RACE_NAMES, emptyMoney, NEW_PF1E_RACE_RULES, PF1E_RACES, pf1eRaceRules, type EditorRace, type RaceSettings } from '@multiverse-kiln/shared';
 
 import { findDefaultItemIds } from '../../src/db/itemRepo.js';
 import { countCustomRaces, createCustomRace, deleteCustomRace, findDefaultRaceIds, findRaceKind, isRaceStartingItem, loadEditorRaces, restoreDefaultRace, saveEditedDefaultRace, updateCustomRace, type CustomRaceSettings } from '../../src/db/raceRepo.js';
@@ -10,7 +10,7 @@ import { addUniverse, addArea } from './fixtures.js';
 const lizardfolk: CustomRaceSettings = {
 	name: 'Lizardfolk',
 	enabled: true,
-	startingMoney: emptyPf1eMoney(),
+	startingMoney: emptyMoney(),
 	startingItems: [],
 	startingAreaId: null,
 	rules: {
@@ -73,7 +73,7 @@ describe('raceRepo', () =>
 					key,
 					name: null,
 					enabled: true,
-					startingMoney: emptyPf1eMoney(),
+					startingMoney: emptyMoney(),
 					startingItems: [],
 					startingAreaId: null,
 					rules: pf1eRaceRules(PF1E_RACES[key]),
@@ -100,7 +100,7 @@ describe('raceRepo', () =>
 			...lizardfolk,
 			name: 'Saurian',
 			startingMoney: {
-				...emptyPf1eMoney(),
+				...emptyMoney(),
 				gp: 5
 			},
 			startingItems: [{ itemId: daggerId, quantity: 2 }],
@@ -112,7 +112,7 @@ describe('raceRepo', () =>
 			}
 		};
 
-		await inTransaction((transaction) => updateCustomRace(universeId, raceId, changed, transaction));
+		await inTransaction((transaction) => updateCustomRace(universeId, 'pf1e', raceId, changed, transaction));
 		assert.deepStrictEqual(await findRace(universeId, raceId), { id: raceId, key: null, ...changed, custom: true, edited: false });
 		assert.strictEqual(await isRaceStartingItem(universeId, daggerId), true);
 

@@ -1,13 +1,13 @@
 /**
- * Classes: the only module that reads or writes the classes, pf1e_classes, class_starting_items and
- * class_race_areas tables
+ * Classes: the only module that reads or writes the classes, pf1e_classes, sf1e_classes,
+ * class_starting_items and class_race_areas tables
  */
-import { and, asc, count, eq, isNull, or } from 'drizzle-orm';
-import type { ClassRaceArea, ClassSettings, EditorClass, ItemQuantity, Ruleset } from '@multiverse-kiln/shared';
+import { and, asc, count, eq, isNull, or, type SQL } from 'drizzle-orm';
+import { isSf1eClassRules, type ClassRaceArea, type ClassRules, type ClassSettings, type EditorClass, type ItemQuantity, type Pf1eClassRules, type Ruleset, type Sf1eClassRules } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { fromCoinColumns, toCoinColumns } from './coinColumns.js';
-import { classes, classRaceAreas, classStartingItems, pf1eClasses } from './schema.js';
+import { classes, classRaceAreas, classStartingItems, pf1eClasses, sf1eClasses } from './schema.js';
 
 /**
  * The settings of a class a universe added, which always has a name of its own
@@ -68,21 +68,13 @@ export async function loadEditorClasses(universeId: string, ruleset: Ruleset, ex
 			startingGold: classes.startingGold,
 			startingSilver: classes.startingSilver,
 			startingCopper: classes.startingCopper,
-			startingAreaId: classes.startingAreaId,
-			primaryAbility: pf1eClasses.primaryAbility,
-			tradition: pf1eClasses.tradition,
-			castingStyle: pf1eClasses.castingStyle
+			startingCredits: classes.startingCredits,
+			startingAreaId: classes.startingAreaId
 		})
 		.from(classes)
-		.innerJoin(pf1eClasses, eq(pf1eClasses.classId, classes.id))
-		.where(and(
-			eq(classes.ruleset, ruleset),
-			or(
-				isNull(classes.universeId),
-				eq(classes.universeId, universeId)
-			)
-		))
+		.where(usableClasses(universeId, ruleset))
 		.orderBy(asc(classes.id));
+	const rules = await loadClassRules(universeId, ruleset, executor);
 	const startingItems = await loadClassStartingItems(universeId, executor);
 	const raceAreas = await loadClassRaceAreas(universeId, executor);
 	const copies = new Map(rows
@@ -96,6 +88,12 @@ export async function loadEditorClasses(universeId: string, ruleset: Ruleset, ex
 			const copy = ((row.universeId === null) ? copies.get(row.id) : undefined);
 			const settings = (copy ?? row);
 			const custom = (row.universeId !== null);
+			const classRules = rules.get(settings.id);
+
+			if (!classRules)
+			{
+				throw new Error(`Class ${settings.id} has no ${ruleset} rules`);
+			}
 
 			return({
 				id: row.id,
@@ -106,15 +104,76 @@ export async function loadEditorClasses(universeId: string, ruleset: Ruleset, ex
 				startingItems: (startingItems.get(settings.id) ?? []),
 				startingAreaId: settings.startingAreaId,
 				raceAreas: (raceAreas.get(settings.id) ?? []),
-				rules: {
-					primaryAbility: settings.primaryAbility,
-					tradition: settings.tradition,
-					castingStyle: settings.castingStyle
-				},
+				rules: classRules,
 				custom,
 				edited: (copy !== undefined)
 			});
 		}));
+}
+
+/**
+ * Matches the rows of classes a universe can see: its ruleset's default classes, and its own classes
+ * and edited copies
+ *
+ * @param universeId The universe's ID
+ * @param ruleset The universe's ruleset
+ * @return The condition
+ */
+function usableClasses(universeId: string, ruleset: Ruleset): SQL | undefined
+{
+	return(and(
+		eq(classes.ruleset, ruleset),
+		or(
+			isNull(classes.universeId),
+			eq(classes.universeId, universeId)
+		)
+	));
+}
+
+/**
+ * The rules of each row of classes a universe can see, from its ruleset's table
+ *
+ * @param universeId The universe's ID
+ * @param ruleset The universe's ruleset
+ * @param executor The database, or a transaction
+ * @return The rules, keyed by the ID of the row holding the class's settings
+ */
+async function loadClassRules(universeId: string, ruleset: Ruleset, executor: Executor): Promise<Map<number, ClassRules>>
+{
+	switch (ruleset)
+	{
+		case 'pf1e':
+		{
+			const rows = await executor
+				.select({
+					classId: pf1eClasses.classId,
+					primaryAbility: pf1eClasses.primaryAbility,
+					tradition: pf1eClasses.tradition,
+					castingStyle: pf1eClasses.castingStyle
+				})
+				.from(pf1eClasses)
+				.innerJoin(classes, eq(classes.id, pf1eClasses.classId))
+				.where(usableClasses(universeId, ruleset));
+
+			return(new Map(rows.map(({ classId, ...rules }): [number, Pf1eClassRules] => [classId, rules])));
+		}
+
+		case 'sf1e':
+		{
+			const rows = await executor
+				.select({
+					classId: sf1eClasses.classId,
+					keyAbility: sf1eClasses.keyAbility,
+					hitPoints: sf1eClasses.hitPoints,
+					staminaPoints: sf1eClasses.staminaPoints
+				})
+				.from(sf1eClasses)
+				.innerJoin(classes, eq(classes.id, sf1eClasses.classId))
+				.where(usableClasses(universeId, ruleset));
+
+			return(new Map(rows.map(({ classId, ...rules }): [number, Sf1eClassRules] => [classId, rules])));
+		}
+	}
 }
 
 /**
@@ -253,7 +312,7 @@ export async function createCustomClass(universeId: string, ruleset: Ruleset, se
 		})
 		.returning({ id: classes.id });
 
-	await saveClassDetails(created.id, settings, executor);
+	await saveClassDetails(created.id, ruleset, settings, executor);
 
 	return(created.id);
 }
@@ -262,11 +321,12 @@ export async function createCustomClass(universeId: string, ruleset: Ruleset, se
  * Changes one of a universe's own classes. Call it inside a transaction
  *
  * @param universeId The universe's ID
+ * @param ruleset The universe's ruleset
  * @param classId The class's ID, from findClassKind() as custom
  * @param settings The class's new settings
  * @param executor A transaction
  */
-export async function updateCustomClass(universeId: string, classId: number, settings: CustomClassSettings, executor: Executor): Promise<void>
+export async function updateCustomClass(universeId: string, ruleset: Ruleset, classId: number, settings: CustomClassSettings, executor: Executor): Promise<void>
 {
 	await executor
 		.update(classes)
@@ -275,7 +335,7 @@ export async function updateCustomClass(universeId: string, classId: number, set
 			eq(classes.id, classId),
 			eq(classes.universeId, universeId)
 		));
-	await saveClassDetails(classId, settings, executor);
+	await saveClassDetails(classId, ruleset, settings, executor);
 }
 
 /**
@@ -304,7 +364,7 @@ export async function saveEditedDefaultClass(universeId: string, ruleset: Rulese
 		})
 		.returning({ id: classes.id });
 
-	await saveClassDetails(copy.id, settings, executor);
+	await saveClassDetails(copy.id, ruleset, settings, executor);
 }
 
 /**
@@ -372,7 +432,7 @@ export async function isClassStartingItem(universeId: string, itemId: number, ex
  * @param settings The settings
  * @return The columns' values
  */
-function classColumns(settings: ClassSettings): Pick<typeof classes.$inferInsert, 'name' | 'enabled' | 'startingPlatinum' | 'startingGold' | 'startingSilver' | 'startingCopper' | 'startingAreaId'>
+function classColumns(settings: ClassSettings): Pick<typeof classes.$inferInsert, 'name' | 'enabled' | 'startingPlatinum' | 'startingGold' | 'startingSilver' | 'startingCopper' | 'startingCredits' | 'startingAreaId'>
 {
 	return({
 		name: settings.name,
@@ -387,21 +447,57 @@ function classColumns(settings: ClassSettings): Pick<typeof classes.$inferInsert
  * what it had
  *
  * @param classId The ID of the row holding the class's settings
+ * @param ruleset The universe's ruleset, which the rules must be for
  * @param settings The settings
  * @param executor A transaction
  */
-async function saveClassDetails(classId: number, settings: ClassSettings, executor: Executor): Promise<void>
+async function saveClassDetails(classId: number, ruleset: Ruleset, settings: ClassSettings, executor: Executor): Promise<void>
 {
-	await executor
-		.insert(pf1eClasses)
-		.values({
-			classId,
-			...settings.rules
-		})
-		.onConflictDoUpdate({
-			target: pf1eClasses.classId,
-			set: settings.rules
-		});
+	const { rules } = settings;
+
+	if ((ruleset === 'sf1e') && isSf1eClassRules(rules))
+	{
+		const columns: Sf1eClassRules = {
+			keyAbility: rules.keyAbility,
+			hitPoints: rules.hitPoints,
+			staminaPoints: rules.staminaPoints
+		};
+
+		await executor
+			.insert(sf1eClasses)
+			.values({
+				classId,
+				...columns
+			})
+			.onConflictDoUpdate({
+				target: sf1eClasses.classId,
+				set: columns
+			});
+	}
+	else if ((ruleset === 'pf1e') && !isSf1eClassRules(rules))
+	{
+		const columns: Pf1eClassRules = {
+			primaryAbility: rules.primaryAbility,
+			tradition: rules.tradition,
+			castingStyle: rules.castingStyle
+		};
+
+		await executor
+			.insert(pf1eClasses)
+			.values({
+				classId,
+				...columns
+			})
+			.onConflictDoUpdate({
+				target: pf1eClasses.classId,
+				set: columns
+			});
+	}
+	else
+	{
+		throw new Error(`Class ${classId}'s rules aren't ${ruleset} rules`);
+	}
+
 	await executor
 		.delete(classStartingItems)
 		.where(eq(classStartingItems.classId, classId));
