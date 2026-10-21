@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { characterPath, charactersPath, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyPf1eMoney, MAX_CHARACTERS_PER_UNIVERSE, NEW_PF1E_RACE_RULES, PF1E_ABILITIES, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type NewCharacterOptions, type NewCharacterRequest, type Pf1eAbilityScores, type RaceSettings } from '@multiverse-kiln/shared';
+import { characterPath, charactersPath, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyMoney, MAX_CHARACTERS_PER_UNIVERSE, NEW_PF1E_RACE_RULES, PF1E_ABILITIES, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type NewCharacterOptions, type NewCharacterRequest, type Pf1eAbilityScores, type RaceSettings } from '@multiverse-kiln/shared';
 
 import { findDefaultClassIds } from '../src/db/classRepo.js';
 import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
@@ -185,6 +185,7 @@ describe('Character routes', () =>
 			raceId: dwarfId,
 			classId: fighterId,
 			baseScores: inRolledOrder(abilities.rolls),
+			themeId: null,
 			floatingAbility: null
 		});
 	}
@@ -295,6 +296,9 @@ describe('Character routes', () =>
 			deletionDays: DEFAULT_SITE_SETTINGS.characterDeletionDays,
 			size: 'medium',
 			darkvision: true,
+			theme: null,
+			hitPoints: null,
+			staminaPoints: null,
 			abilityScores: {
 				...baseScores,
 				constitution: (baseScores.constitution + 2),
@@ -302,7 +306,7 @@ describe('Character routes', () =>
 				charisma: (baseScores.charisma - 2)
 			}
 		});
-		assert.deepStrictEqual(Object.keys(money), Object.keys(emptyPf1eMoney()));
+		assert.deepStrictEqual(Object.keys(money), Object.keys(emptyMoney()));
 		assert.deepStrictEqual(items.map(({ key, type, quantity }) => ({ key, type, quantity })), [{ key: 'dagger', type: 'dagger', quantity: 1 }]);
 
 		await send(ada, 'PATCH', `${EDITOR_UNIVERSES_PATH}/${universeId}`, { stage: 'prologue' });
@@ -412,6 +416,7 @@ describe('Character routes', () =>
 			raceId: dwarfId,
 			classId: fighterId,
 			baseScores: standardBuy,
+			themeId: null,
 			floatingAbility: null
 		};
 		const over = await send(ada, 'POST', charactersPath(universeId), {
@@ -435,6 +440,7 @@ describe('Character routes', () =>
 			raceId: humanId,
 			classId: fighterId,
 			baseScores: standardBuy,
+			themeId: null,
 			floatingAbility: null
 		};
 
@@ -450,7 +456,7 @@ describe('Character routes', () =>
 		const lizardfolk: RaceSettings = {
 			name: 'Lizardfolk',
 			enabled: false,
-			startingMoney: emptyPf1eMoney(),
+			startingMoney: emptyMoney(),
 			startingItems: [],
 			startingAreaId: null,
 			rules: NEW_PF1E_RACE_RULES
@@ -461,6 +467,7 @@ describe('Character routes', () =>
 			raceId: created.body.id,
 			classId: fighterId,
 			baseScores: standardBuy,
+			themeId: null,
 			floatingAbility: null
 		});
 
@@ -475,7 +482,7 @@ describe('Character routes', () =>
 		const lizardfolk: RaceSettings = {
 			name: 'Lizardfolk',
 			enabled: true,
-			startingMoney: emptyPf1eMoney(),
+			startingMoney: emptyMoney(),
 			startingItems: [],
 			startingAreaId: null,
 			rules: NEW_PF1E_RACE_RULES
@@ -487,6 +494,7 @@ describe('Character routes', () =>
 			raceId: race.body.id,
 			classId: fighterId,
 			baseScores: standardBuy,
+			themeId: null,
 			floatingAbility: null
 		});
 
@@ -502,6 +510,7 @@ describe('Character routes', () =>
 			raceId: dwarfId,
 			classId: fighterId,
 			baseScores: standardBuy,
+			themeId: null,
 			floatingAbility: null
 		};
 
@@ -521,6 +530,7 @@ describe('Character routes', () =>
 			raceId: dwarfId,
 			classId: null,
 			baseScores: null,
+			themeId: null,
 			floatingAbility: null
 		};
 
@@ -545,6 +555,7 @@ describe('Character routes', () =>
 			raceId: null,
 			classId: null,
 			baseScores: null,
+			themeId: null,
 			floatingAbility: null
 		});
 
@@ -561,6 +572,7 @@ describe('Character routes', () =>
 			raceId: dwarfId,
 			classId: fighterId,
 			baseScores: request.baseScores,
+			themeId: null,
 			floatingAbility: null
 		});
 		assert.strictEqual((await send(ada, 'POST', charactersPath(universeId), request)).status, 201);
@@ -576,6 +588,7 @@ describe('Character routes', () =>
 			raceId: dwarfId,
 			classId: fighterId,
 			baseScores: standardBuy,
+			themeId: null,
 			floatingAbility: null
 		});
 
@@ -592,9 +605,122 @@ describe('Character routes', () =>
 			raceId: dwarfId,
 			classId: fighterId,
 			baseScores: standardBuy,
+			themeId: null,
 			floatingAbility: null
 		});
 
 		assert.strictEqual(answer.status, 400);
+	});
+
+	describe('in a Starfinder 1E universe', () =>
+	{
+		let starUniverseId: string;
+		let options: NewCharacterOptions;
+		let request: NewCharacterRequest;
+
+		beforeEach(async () =>
+		{
+			const created = await send<CreatedPayload>(ada, 'POST', EDITOR_UNIVERSES_PATH, {
+				name: 'Absalom Station',
+				shortDescription: 'A station at the center of the galaxy.',
+				ruleset: 'sf1e'
+			});
+
+			assert.strictEqual(created.status, 201, JSON.stringify(created.body));
+			starUniverseId = created.body.id;
+
+			const answer = await send<NewCharacterOptions>(ada, 'GET', `${charactersPath(starUniverseId)}/new`);
+
+			assert.strictEqual(answer.status, 200, JSON.stringify(answer.body));
+			options = answer.body;
+
+			const vesk = options.races.find((race) => (race.key === 'vesk'));
+			const soldier = options.classes.find((characterClass) => (characterClass.key === 'soldier'));
+			const mercenary = options.themes.find((theme) => (theme.key === 'mercenary'));
+
+			assert.ok(vesk && soldier && mercenary);
+
+			// Vesk +2 Str +2 Con -2 Int, mercenary +1 Str: 5 + 4 = 9 of the 10 points, raising Strength to 18
+			request = {
+				name: 'Grenn',
+				raceId: vesk.id,
+				classId: soldier.id,
+				themeId: mercenary.id,
+				baseScores: {
+					strength: 15,
+					dexterity: 14,
+					constitution: 10,
+					intelligence: 10,
+					wisdom: 10,
+					charisma: 10
+				},
+				floatingAbility: null
+			};
+		});
+
+		it('offers ability points and themes', () =>
+		{
+			assert.deepStrictEqual(options.abilities, { kind: 'abilityPoints', points: 10 });
+			assert.strictEqual(options.themes.length, 9);
+		});
+
+		it('makes a character with their race\'s and theme\'s bonuses, hit points, stamina and credits', async () =>
+		{
+			await send(ada, 'PATCH', `${EDITOR_UNIVERSES_PATH}/${starUniverseId}`, { startingMoney: { ...emptyMoney(), cr: 1000 } });
+
+			const created = await send<CreatedPayload>(ada, 'POST', charactersPath(starUniverseId), request);
+
+			assert.strictEqual(created.status, 201, JSON.stringify(created.body));
+
+			const sheet = (await send<CharacterSheet>(ada, 'GET', characterPath(starUniverseId, created.body.id))).body;
+
+			assert.deepStrictEqual(sheet.abilityScores, {
+				strength: 18,
+				dexterity: 14,
+				constitution: 12,
+				intelligence: 8,
+				wisdom: 10,
+				charisma: 10
+			});
+			assert.deepStrictEqual(sheet.theme, { key: 'mercenary', name: null });
+
+			// 6 from vesk and 7 from soldier; 7 stamina from soldier and +1 from Constitution 12
+			assert.strictEqual(sheet.hitPoints, 13);
+			assert.strictEqual(sheet.staminaPoints, 8);
+			assert.deepStrictEqual(sheet.money, { ...emptyMoney(), cr: 1000 });
+			assert.deepStrictEqual(sheet.items.map(({ key }) => key), ['survival_knife']);
+		});
+
+		it('refuses more ability points than the universe gives, or raising a score past 18', async () =>
+		{
+			const tooMany = await send(ada, 'POST', charactersPath(starUniverseId), { ...request, baseScores: { ...request.baseScores, wisdom: 12 } });
+			const pastEighteen = await send(ada, 'POST', charactersPath(starUniverseId), { ...request, baseScores: { ...request.baseScores, strength: 16, dexterity: 13 } });
+
+			assert.strictEqual(tooMany.status, 400);
+			assert.strictEqual(pastEighteen.status, 400);
+		});
+
+		it('needs a theme', async () =>
+		{
+			const answer = await send(ada, 'POST', charactersPath(starUniverseId), { ...request, themeId: null });
+
+			assert.strictEqual(answer.status, 409);
+		});
+
+		it('refuses a theme in a Pathfinder universe', async () =>
+		{
+			await usePointBuy();
+
+			const answer = await send(ada, 'POST', charactersPath(universeId), {
+				name: 'Brokk',
+				raceId: dwarfId,
+				classId: fighterId,
+				baseScores: standardBuy,
+				themeId: request.themeId,
+				floatingAbility: null
+			});
+
+			assert.strictEqual(answer.status, 409);
+		});
 	});
 });

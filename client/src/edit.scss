@@ -106,6 +106,24 @@
 	}
 }
 
+// A tab holding cards that save separately, such as the Characters tab's settings and its themes
+.editor-cards
+{
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+// The themes card on the Characters tab, in a ruleset with themes
+.themes
+{
+	h2
+	{
+		margin: 0 0 8px;
+		font-size: 1.15em;
+	}
+}
+
 .filters
 {
 	display: flex;

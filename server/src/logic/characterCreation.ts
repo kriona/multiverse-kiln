@@ -1,32 +1,46 @@
 /**
- * Making a Pathfinder 1E character (see STRUCTURE-OVERVIEW.md, Create Character): checking the base
- * ability scores the player chose, adding their race's modifiers, and putting together what they start
+ * Making a character (see STRUCTURE-OVERVIEW.md, Create Character): checking the base ability scores the
+ * player chose, adding their race's modifiers and theme's bonus, and putting together what they start
  * with from the universe, their race and their class
  */
-import { emptyPf1eMoney, isValidPf1ePointBuy, PF1E_ABILITIES, PF1E_COINS, PF1E_FLOATING_ABILITY_BONUS, PF1E_MAX_COINS, type ItemQuantity, type Pf1eAbility, type Pf1eAbilityScores, type Pf1eMoney, type Pf1eRaceRules } from '@multiverse-kiln/shared';
+import { FLOATING_ABILITY_BONUSES, isValidPf1ePointBuy, isValidSf1eAbilityBuy, RULESET_ABILITIES, SF1E_THEME_ABILITY_BONUS, type Ability, type AbilityScores, type ItemQuantity, type RaceRules, type Ruleset, type Sf1eThemeRules } from '@multiverse-kiln/shared';
 
 import { isArrangementOfRolls } from './abilityRolls.js';
 
 /**
  * Where a character's base ability scores have to come from
+ *
+ * - roll (PF1E): the server's rolls, in any order
+ * - pointBuy (PF1E): scores bought within the budget
+ * - abilityPoints (SF1E): scores of 10 raised with up to this many points
  */
-export type Pf1eScoreSource =
+export type ScoreSource =
 	| { kind: 'roll'; rolls: readonly number[] }
-	| { kind: 'pointBuy'; budget: number };
+	| { kind: 'pointBuy'; budget: number }
+	| { kind: 'abilityPoints'; points: number };
 
 /**
- * Whether the base ability scores a player chose are allowed: the server's rolls in some order, or
- * scores point buy allows within the budget
+ * Whether the base ability scores a player chose are allowed: the server's rolls in some order, scores
+ * point buy allows within the budget, or scores the ability points can raise to
  *
  * @param baseScores The score the player gave each ability, before racial modifiers
- * @param source The rolls, or the point buy budget
+ * @param source The rolls, the point buy budget, or the ability points
+ * @param bonuses What the race and theme add to each ability, which ability points can't raise a score past 18 with
  * @return True when they are allowed
  */
-export function areValidBaseScores(baseScores: Pf1eAbilityScores, source: Pf1eScoreSource): boolean
+export function areValidBaseScores(baseScores: AbilityScores, source: ScoreSource, bonuses: AbilityScores): boolean
 {
-	return(((source.kind === 'roll')
-		? isArrangementOfRolls(source.rolls, baseScores)
-		: isValidPf1ePointBuy(baseScores, source.budget)));
+	switch (source.kind)
+	{
+		case 'roll':
+			return(isArrangementOfRolls(source.rolls, baseScores));
+
+		case 'pointBuy':
+			return(isValidPf1ePointBuy(baseScores, source.budget));
+
+		case 'abilityPoints':
+			return(isValidSf1eAbilityBuy(baseScores, bonuses, source.points));
+	}
 }
 
 /**
@@ -37,56 +51,56 @@ export function areValidBaseScores(baseScores: Pf1eAbilityScores, source: Pf1eSc
  * @param floatingAbility The ability the player chose for the bonus, or null
  * @return True when it fits
  */
-export function isValidFloatingAbility(rules: Pf1eRaceRules, floatingAbility: Pf1eAbility | null): boolean
+export function isValidFloatingAbility(rules: RaceRules, floatingAbility: Ability | null): boolean
 {
 	return(rules.floatingBonus === (floatingAbility !== null));
 }
 
 /**
- * A character's ability scores: their base scores with their race's modifiers and floating bonus added
+ * What a character's race and theme add to each ability: the race's modifiers, its floating bonus,
+ * and the theme's bonus
  *
- * @param baseScores The score the player gave each ability
+ * @param ruleset The universe's ruleset
  * @param rules The race's rules
- * @param floatingAbility The ability that gets PF1E_FLOATING_ABILITY_BONUS, or null for none
- * @return The scores
+ * @param floatingAbility The ability that gets the ruleset's floating bonus, or null for none
+ * @param theme The theme's rules, or null in a ruleset without themes
+ * @return The bonuses, which may be negative
  */
-export function finalPf1eAbilityScores(baseScores: Pf1eAbilityScores, rules: Pf1eRaceRules, floatingAbility: Pf1eAbility | null): Pf1eAbilityScores
+export function abilityBonuses(ruleset: Ruleset, rules: RaceRules, floatingAbility: Ability | null, theme: Sf1eThemeRules | null): AbilityScores
 {
-	const scores = { ...baseScores };
-
-	for (const ability of PF1E_ABILITIES)
-	{
-		scores[ability] += rules.abilityModifiers[ability];
-	}
+	const bonuses = { ...rules.abilityModifiers };
 
 	if (rules.floatingBonus && (floatingAbility !== null))
 	{
-		scores[floatingAbility] += PF1E_FLOATING_ABILITY_BONUS;
+		bonuses[floatingAbility] += FLOATING_ABILITY_BONUSES[ruleset];
 	}
 
-	return(scores);
+	if (theme !== null)
+	{
+		bonuses[theme.ability] += SF1E_THEME_ABILITY_BONUS;
+	}
+
+	return(bonuses);
 }
 
 /**
- * The money a new character starts with: every amount put together coin by coin, each coin capped at
- * PF1E_MAX_COINS
+ * A character's ability scores: their base scores with their bonuses added
  *
- * @param amounts The universe's, race's and class's starting money
- * @return The character's money
+ * @param ruleset The universe's ruleset
+ * @param baseScores The score the player gave each ability
+ * @param bonuses What the race and theme add to each ability (abilityBonuses())
+ * @return The scores
  */
-export function combineStartingMoney(amounts: readonly Pf1eMoney[]): Pf1eMoney
+export function finalAbilityScores(ruleset: Ruleset, baseScores: AbilityScores, bonuses: AbilityScores): AbilityScores
 {
-	const total = emptyPf1eMoney();
+	const scores = { ...baseScores };
 
-	for (const amount of amounts)
+	for (const ability of RULESET_ABILITIES[ruleset])
 	{
-		for (const coin of PF1E_COINS)
-		{
-			total[coin] = Math.min(total[coin] + amount[coin], PF1E_MAX_COINS);
-		}
+		scores[ability] += bonuses[ability];
 	}
 
-	return(total);
+	return(scores);
 }
 
 /**

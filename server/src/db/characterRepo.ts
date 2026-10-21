@@ -1,12 +1,12 @@
 /**
- * Characters: the only module that reads or writes the characters, pf1e_characters, character_items,
- * character_drafts and pf1e_ability_rolls tables
+ * Characters: the only module that reads or writes the characters, pf1e_characters, sf1e_characters,
+ * character_items, character_drafts and pf1e_ability_rolls tables
  */
 import { and, asc, count, desc, eq, gt, isNotNull, isNull, lte, ne, or, sql, type SQL } from 'drizzle-orm';
-import { isPf1eRollMethod, type CharacterDraft, type ItemQuantity, type Pf1eAbilityScores, type Pf1eMoney, type Pf1eRollMethod } from '@multiverse-kiln/shared';
+import { isPf1eRollMethod, type AbilityScores, type CharacterDraft, type ItemQuantity, type Money, type Pf1eRollMethod, type Ruleset } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
-import { characterDrafts, characterItems, characters, pf1eAbilityRolls, pf1eCharacters } from './schema.js';
+import { characterDrafts, characterItems, characters, pf1eAbilityRolls, pf1eCharacters, sf1eCharacters } from './schema.js';
 
 /**
  * A character as the lobby lists it
@@ -30,11 +30,16 @@ export interface CharacterRecord
 export interface CharacterDetails extends CharacterRecord
 {
 	/**
-	 * The ability scores, with the race's modifiers added
+	 * The theme, by the ID everything else uses for it, in a ruleset with themes; null otherwise
 	 */
-	abilityScores: Pf1eAbilityScores;
+	themeId: number | null;
 
-	money: Pf1eMoney;
+	/**
+	 * The ability scores, with the race's modifiers and theme's bonus added
+	 */
+	abilityScores: AbilityScores;
+
+	money: Money;
 
 	/**
 	 * The items the character carries, each listed once by its own ID, by ID
@@ -58,6 +63,12 @@ export interface NewCharacter
 {
 	playerId: string;
 	universeId: string;
+
+	/**
+	 * The universe's ruleset, whose table holds the ability scores
+	 */
+	ruleset: Ruleset;
+
 	name: string;
 
 	/**
@@ -71,11 +82,16 @@ export interface NewCharacter
 	classId: number;
 
 	/**
-	 * The ability scores, with the race's modifiers added
+	 * The ID everything else uses for the theme, in a ruleset with themes; null otherwise
 	 */
-	abilityScores: Pf1eAbilityScores;
+	themeId: number | null;
 
-	money: Pf1eMoney;
+	/**
+	 * The ability scores, with the race's modifiers and theme's bonus added
+	 */
+	abilityScores: AbilityScores;
+
+	money: Money;
 
 	/**
 	 * The items the character carries, each listed once by its own ID
@@ -156,11 +172,12 @@ export async function listCharacters(playerId: string, universeId: string, execu
  *
  * @param playerId The player's ID
  * @param universeId The universe's ID
+ * @param ruleset The universe's ruleset, whose table holds the ability scores
  * @param characterId The character's ID
  * @param executor The database, or a transaction
  * @return The character, or undefined when the player has no such character in the universe
  */
-export async function findCharacterDetails(playerId: string, universeId: string, characterId: string, executor: Executor = db): Promise<CharacterDetails | undefined>
+export async function findCharacterDetails(playerId: string, universeId: string, ruleset: Ruleset, characterId: string, executor: Executor = db): Promise<CharacterDetails | undefined>
 {
 	const [row] = await executor
 		.select({
@@ -173,22 +190,17 @@ export async function findCharacterDetails(playerId: string, universeId: string,
 			gold: characters.gold,
 			silver: characters.silver,
 			copper: characters.copper,
-			strength: pf1eCharacters.strength,
-			dexterity: pf1eCharacters.dexterity,
-			constitution: pf1eCharacters.constitution,
-			intelligence: pf1eCharacters.intelligence,
-			wisdom: pf1eCharacters.wisdom,
-			charisma: pf1eCharacters.charisma
+			credits: characters.credits
 		})
 		.from(characters)
-		.innerJoin(pf1eCharacters, eq(pf1eCharacters.characterId, characters.id))
 		.where(and(
 			ownCharacter(playerId, universeId, characterId),
 			notExpired
 		))
 		.limit(1);
+	const abilities = (row ? await findCharacterAbilities(ruleset, characterId, executor) : undefined);
 
-	if (!row)
+	if (!row || !abilities)
 	{
 		return(undefined);
 	}
@@ -208,22 +220,82 @@ export async function findCharacterDetails(playerId: string, universeId: string,
 		raceId: row.raceId,
 		classId: row.classId,
 		deleteAt: row.deleteAt,
-		abilityScores: {
-			strength: row.strength,
-			dexterity: row.dexterity,
-			constitution: row.constitution,
-			intelligence: row.intelligence,
-			wisdom: row.wisdom,
-			charisma: row.charisma
-		},
+		themeId: abilities.themeId,
+		abilityScores: abilities.abilityScores,
 		money: {
 			pp: row.platinum,
 			gp: row.gold,
 			sp: row.silver,
-			cp: row.copper
+			cp: row.copper,
+			cr: row.credits
 		},
 		items: carried
 	});
+}
+
+/**
+ * A character's ability scores and theme, from their ruleset's table
+ *
+ * @param ruleset The universe's ruleset
+ * @param characterId The character's ID
+ * @param executor The database, or a transaction
+ * @return The scores, and the theme or null in a ruleset without themes; undefined when the
+ * ruleset's table has no row for the character
+ */
+async function findCharacterAbilities(ruleset: Ruleset, characterId: string, executor: Executor): Promise<{ abilityScores: AbilityScores; themeId: number | null } | undefined>
+{
+	switch (ruleset)
+	{
+		case 'pf1e':
+		{
+			const [row] = await executor
+				.select({
+					strength: pf1eCharacters.strength,
+					dexterity: pf1eCharacters.dexterity,
+					constitution: pf1eCharacters.constitution,
+					intelligence: pf1eCharacters.intelligence,
+					wisdom: pf1eCharacters.wisdom,
+					charisma: pf1eCharacters.charisma
+				})
+				.from(pf1eCharacters)
+				.where(eq(pf1eCharacters.characterId, characterId))
+				.limit(1);
+
+			return((row ? {
+				abilityScores: row,
+				themeId: null
+			} : undefined));
+		}
+
+		case 'sf1e':
+		{
+			const [row] = await executor
+				.select({
+					themeId: sf1eCharacters.themeId,
+					strength: sf1eCharacters.strength,
+					dexterity: sf1eCharacters.dexterity,
+					constitution: sf1eCharacters.constitution,
+					intelligence: sf1eCharacters.intelligence,
+					wisdom: sf1eCharacters.wisdom,
+					charisma: sf1eCharacters.charisma
+				})
+				.from(sf1eCharacters)
+				.where(eq(sf1eCharacters.characterId, characterId))
+				.limit(1);
+
+			if (!row)
+			{
+				return(undefined);
+			}
+
+			const { themeId, ...abilityScores } = row;
+
+			return({
+				abilityScores,
+				themeId
+			});
+		}
+	}
 }
 
 /**
@@ -406,16 +478,36 @@ export async function createCharacter(character: NewCharacter, executor: Executo
 			gold: money.gp,
 			silver: money.sp,
 			copper: money.cp,
+			credits: money.cr,
 			areaId: character.areaId
 		})
 		.returning({ id: characters.id });
 
-	await executor
-		.insert(pf1eCharacters)
-		.values({
-			characterId: created.id,
-			...character.abilityScores
-		});
+	switch (character.ruleset)
+	{
+		case 'pf1e':
+			await executor
+				.insert(pf1eCharacters)
+				.values({
+					characterId: created.id,
+					...character.abilityScores
+				});
+			break;
+
+		case 'sf1e':
+			if (character.themeId === null)
+			{
+				throw new Error('A Starfinder 1E character needs a theme');
+			}
+			await executor
+				.insert(sf1eCharacters)
+				.values({
+					characterId: created.id,
+					themeId: character.themeId,
+					...character.abilityScores
+				});
+			break;
+	}
 
 	if (character.items.length > 0)
 	{
@@ -466,6 +558,26 @@ export async function hasCharactersOfClass(classId: number, executor: Executor =
 		})
 		.from(characters)
 		.where(eq(characters.classId, classId))
+		.limit(1);
+
+	return(rows.length > 0);
+}
+
+/**
+ * Whether any character has a theme
+ *
+ * @param themeId The theme's ID
+ * @param executor The database, or a transaction
+ * @return True when one does
+ */
+export async function hasCharactersOfTheme(themeId: number, executor: Executor = db): Promise<boolean>
+{
+	const rows = await executor
+		.select({
+			characterId: sf1eCharacters.characterId
+		})
+		.from(sf1eCharacters)
+		.where(eq(sf1eCharacters.themeId, themeId))
 		.limit(1);
 
 	return(rows.length > 0);

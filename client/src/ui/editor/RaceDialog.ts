@@ -1,4 +1,4 @@
-import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, emptyPf1eAbilityScores, emptyPf1eMoney, MAX_RACE_NAME_LENGTH, NEW_PF1E_RACE_RULES, PF1E_ABILITIES, PF1E_ABILITY_NAMES, PF1E_FLOATING_ABILITY_BONUS, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZE_NAMES, PF1E_SIZES, type EditableUniverse, type EditorRace, type MessageDescriptor, type Pf1eAbility, type Pf1eAbilityScores, type Pf1eSize, type RaceSettings } from '@multiverse-kiln/shared';
+import { ABILITY_NAMES, canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, emptyMoney, emptyPf1eAbilityScores, FLOATING_ABILITY_BONUSES, isSf1eRaceRules, MAX_RACE_NAME_LENGTH, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_RACE_ABILITY_MODIFIER, RULESET_SIZES, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_RACE_HIT_POINTS, SIZE_NAMES, type Ability, type AbilityScores, type EditableUniverse, type EditorRace, type MessageDescriptor, type Pf1eSize, type RaceRules, type RaceSettings, type Sf1eSize } from '@multiverse-kiln/shared';
 import restoreIcon from 'virtual:icon/ph:arrow-counter-clockwise';
 import trashIcon from 'virtual:icon/ph:trash';
 
@@ -34,6 +34,9 @@ export class RaceDialog
 	private readonly floatingBonus = getElement('race-floating', HTMLInputElement);
 	private readonly darkvision = getElement('race-darkvision', HTMLInputElement);
 	private readonly size = getElement('race-size', HTMLSelectElement);
+	private readonly hitPointsField = getElement('race-hit-points-field', HTMLElement);
+	private readonly hitPoints = getElement('race-hit-points', HTMLInputElement);
+	private readonly floatingHint = getElement('race-floating-hint', HTMLElement);
 	private readonly startingMoney = getElement('race-money', HTMLInputElement);
 	private readonly chooseItemsButton = getElement('race-items-choose', HTMLButtonElement);
 	private readonly error = getElement('race-error', HTMLElement);
@@ -42,9 +45,10 @@ export class RaceDialog
 	private readonly saveButton = getElement('race-save', HTMLButtonElement);
 
 	/**
-	 * The field for each ability's modifier
+	 * The field for each ability's modifier, and the name beside it
 	 */
-	private readonly modifiers: Record<Pf1eAbility, HTMLInputElement>;
+	private readonly modifiers: Record<Ability, HTMLInputElement>;
+	private readonly modifierNames: Record<Ability, Text>;
 
 	private readonly startingItems: StartingItemsField;
 	private readonly startingArea: AreaChoice;
@@ -84,15 +88,9 @@ export class RaceDialog
 	constructor(private readonly api: EditorApi, areaSelect: AreaSelectDialog, itemSelect: ItemSelectDialog)
 	{
 		this.name.maxLength = MAX_RACE_NAME_LENGTH;
-		this.modifiers = createModifierFields(getElement('race-modifiers', HTMLElement));
-		setOptions(this.size, namedOptions(PF1E_SIZES, PF1E_SIZE_NAMES));
-		getElement('race-floating-hint', HTMLElement).textContent = t({
-			id: 'editor.race.floatingBonusHint',
-			defaultMessage: 'The player chooses one ability to get +{bonus, number}, as humans, half-elves and half-orcs do.',
-			description: 'Explains the race editor\'s Floating ability bonus checkbox; {bonus} is how much the chosen ability score goes up'
-		}, {
-			bonus: PF1E_FLOATING_ABILITY_BONUS
-		});
+		this.hitPoints.min = String(SF1E_MIN_RACE_HIT_POINTS);
+		this.hitPoints.max = String(SF1E_MAX_RACE_HIT_POINTS);
+		({ inputs: this.modifiers, names: this.modifierNames } = createModifierFields(getElement('race-modifiers', HTMLElement)));
 
 		this.startingItems = new StartingItemsField(api, itemSelect, {
 			list: getElement('race-items', HTMLUListElement),
@@ -119,7 +117,7 @@ export class RaceDialog
 		});
 		this.changes.guardDialog(this.dialog);
 
-		for (const input of [this.name, this.startingMoney, ...Object.values(this.modifiers)])
+		for (const input of [this.name, this.startingMoney, this.hitPoints, ...Object.values(this.modifiers)])
 		{
 			input.addEventListener('input', () =>
 			{
@@ -158,7 +156,7 @@ export class RaceDialog
 	{
 		const editable = canEditUniverseSettings(universe.role);
 		const name = (race ? raceName(race, universe.ruleset) : '');
-		const rules = (race?.rules ?? NEW_PF1E_RACE_RULES);
+		const rules = (race?.rules ?? NEW_RACE_RULES[universe.ruleset]);
 
 		this.universe = universe;
 		this.race = race;
@@ -193,13 +191,18 @@ export class RaceDialog
 
 		for (const ability of PF1E_ABILITIES)
 		{
+			this.modifierNames[ability].data = t(ABILITY_NAMES[universe.ruleset][ability]);
 			this.modifiers[ability].value = String(rules.abilityModifiers[ability]);
 		}
 
 		this.floatingBonus.checked = rules.floatingBonus;
+		this.floatingHint.textContent = floatingBonusHint(universe);
 		this.darkvision.checked = rules.darkvision;
+		setOptions(this.size, namedOptions(RULESET_SIZES[universe.ruleset], SIZE_NAMES[universe.ruleset]));
 		this.size.value = rules.size;
-		this.startingMoney.value = formatMoney(race?.startingMoney ?? emptyPf1eMoney());
+		this.hitPointsField.hidden = !isSf1eRaceRules(rules);
+		this.hitPoints.value = (isSf1eRaceRules(rules) ? String(rules.hitPoints) : '');
+		this.startingMoney.value = formatMoney((race?.startingMoney ?? emptyMoney()), universe.ruleset);
 		this.startingArea.show(universe, (race?.startingAreaId ?? null), editable);
 		this.fields.disabled = false;
 		this.saveButton.hidden = !editable;
@@ -208,7 +211,7 @@ export class RaceDialog
 		this.cancelButton.textContent = t(editable ? formMessages.cancel : formMessages.close);
 
 		// Only the inputs are locked for a player who can't edit, so Close still works
-		for (const input of [this.name, this.enabled, this.floatingBonus, this.darkvision, this.size, this.startingMoney, ...Object.values(this.modifiers)])
+		for (const input of [this.name, this.enabled, this.floatingBonus, this.darkvision, this.size, this.hitPoints, this.startingMoney, ...Object.values(this.modifiers)])
 		{
 			input.disabled = !editable;
 		}
@@ -295,7 +298,14 @@ export class RaceDialog
 			return;
 		}
 
-		const startingMoney = readMoneyField(this.startingMoney);
+		const rules = this.readRules(universe, abilityModifiers);
+
+		if (rules === undefined)
+		{
+			return;
+		}
+
+		const startingMoney = readMoneyField(this.startingMoney, universe.ruleset);
 
 		if (startingMoney === undefined)
 		{
@@ -310,12 +320,7 @@ export class RaceDialog
 			startingMoney,
 			startingItems: this.startingItems.value,
 			startingAreaId: this.startingArea.value,
-			rules: {
-				abilityModifiers,
-				floatingBonus: this.floatingBonus.checked,
-				darkvision: this.darkvision.checked,
-				size: this.size.value as Pf1eSize
-			}
+			rules
 		};
 
 		await this.run({
@@ -332,6 +337,47 @@ export class RaceDialog
 			{
 				await this.api.createRace(universe.id, settings);
 			}
+		});
+	}
+
+	/**
+	 * The race's rules under the universe's ruleset as the form shows them, reporting hit points out of range
+	 *
+	 * @param universe The universe
+	 * @param abilityModifiers The ability modifiers, already read
+	 * @return The rules, or undefined when a field shows a problem
+	 */
+	private readRules(universe: EditableUniverse, abilityModifiers: AbilityScores): RaceRules | undefined
+	{
+		const common = {
+			abilityModifiers,
+			floatingBonus: this.floatingBonus.checked,
+			darkvision: this.darkvision.checked
+		};
+
+		if (universe.ruleset === 'pf1e')
+		{
+			return({
+				...common,
+				size: this.size.value as Pf1eSize
+			});
+		}
+
+		const hitPoints = Number(this.hitPoints.value);
+
+		if ((this.hitPoints.value.trim() === '') || !Number.isInteger(hitPoints) || (hitPoints < SF1E_MIN_RACE_HIT_POINTS) || (hitPoints > SF1E_MAX_RACE_HIT_POINTS))
+		{
+			reportFieldError(this.hitPoints, t(formMessages.wholeNumber, {
+				min: SF1E_MIN_RACE_HIT_POINTS,
+				max: SF1E_MAX_RACE_HIT_POINTS
+			}));
+			return(undefined);
+		}
+
+		return({
+			...common,
+			size: this.size.value as Sf1eSize,
+			hitPoints
 		});
 	}
 
@@ -420,31 +466,68 @@ export class RaceDialog
 }
 
 /**
- * Adds a number field for each ability's modifier
+ * What the race editor's floating ability bonus checkbox does, naming the ruleset's races that have one
+ *
+ * @param universe The universe
+ * @return The hint
+ */
+function floatingBonusHint(universe: EditableUniverse): string
+{
+	const bonus = FLOATING_ABILITY_BONUSES[universe.ruleset];
+
+	if (universe.ruleset === 'sf1e')
+	{
+		return(t({
+			id: 'editor.race.floatingBonusHintSf1e',
+			defaultMessage: 'The player chooses one ability to get +{bonus, number}, as humans do.',
+			description: 'Explains the race editor\'s Floating ability bonus checkbox in a Starfinder universe; {bonus} is how much the chosen ability score goes up'
+		}, {
+			bonus
+		}));
+	}
+
+	return(t({
+		id: 'editor.race.floatingBonusHint',
+		defaultMessage: 'The player chooses one ability to get +{bonus, number}, as humans, half-elves and half-orcs do.',
+		description: 'Explains the race editor\'s Floating ability bonus checkbox; {bonus} is how much the chosen ability score goes up'
+	}, {
+		bonus
+	}));
+}
+
+/**
+ * Adds a number field for each ability's modifier. Every ruleset has the same abilities; each field's
+ * name is set when the dialog opens, in the universe's ruleset's words
  *
  * @param container Where the fields go
- * @return The fields, by ability
+ * @return The fields and the names beside them, by ability
  */
-function createModifierFields(container: HTMLElement): Record<Pf1eAbility, HTMLInputElement>
+function createModifierFields(container: HTMLElement): { inputs: Record<Ability, HTMLInputElement>; names: Record<Ability, Text> }
 {
-	const fields = {} as Record<Pf1eAbility, HTMLInputElement>;
+	const inputs = {} as Record<Ability, HTMLInputElement>;
+	const names = {} as Record<Ability, Text>;
 
 	for (const ability of PF1E_ABILITIES)
 	{
 		const label = document.createElement('label');
 		const input = document.createElement('input');
+		const name = document.createTextNode('');
 
 		input.type = 'number';
 		input.min = String(PF1E_MIN_RACE_ABILITY_MODIFIER);
 		input.max = String(PF1E_MAX_RACE_ABILITY_MODIFIER);
 		input.step = '1';
 		input.required = true;
-		label.append(t(PF1E_ABILITY_NAMES[ability]), input);
+		label.append(name, input);
 		container.append(label);
-		fields[ability] = input;
+		inputs[ability] = input;
+		names[ability] = name;
 	}
 
-	return(fields);
+	return({
+		inputs,
+		names
+	});
 }
 
 /**
@@ -453,7 +536,7 @@ function createModifierFields(container: HTMLElement): Record<Pf1eAbility, HTMLI
  * @param fields The fields, by ability
  * @return The modifiers, or undefined when one is wrong
  */
-function readModifierFields(fields: Record<Pf1eAbility, HTMLInputElement>): Pf1eAbilityScores | undefined
+function readModifierFields(fields: Record<Ability, HTMLInputElement>): AbilityScores | undefined
 {
 	const modifiers = emptyPf1eAbilityScores();
 

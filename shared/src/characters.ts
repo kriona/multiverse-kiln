@@ -21,12 +21,10 @@
  * - DELETE characterPath(universeId, characterId)/deletion: restores a character given their last rites
  */
 import { UNIVERSES_PATH } from './constants.js';
-import type { Pf1eAbility, Pf1eAbilityScores } from './rulesets/pf1e/abilities.js';
-import type { Pf1eClassRules } from './rulesets/pf1e/classes.js';
-import type { Pf1eMoney } from './rulesets/pf1e/money.js';
-import type { Pf1eRaceRules } from './rulesets/pf1e/races.js';
-import type { Pf1eSize } from './rulesets/pf1e/sizes.js';
+import type { Money } from './money.js';
+import { rulesetHasThemes, type Ability, type AbilityScores, type ClassRules, type RaceRules, type Size } from './racesAndClasses.js';
 import type { Pf1eRollMethod, Pf1eStatMethod } from './rulesets/pf1e/statMethods.js';
+import type { Sf1eThemeRules } from './rulesets/sf1e/themes.js';
 import type { Ruleset } from './universes.js';
 
 /**
@@ -115,7 +113,7 @@ export interface CharacterListPayload
 export interface CharacterRaceOption extends OptionName
 {
 	id: number;
-	rules: Pf1eRaceRules;
+	rules: RaceRules;
 }
 
 /**
@@ -124,29 +122,54 @@ export interface CharacterRaceOption extends OptionName
 export interface CharacterClassOption extends OptionName
 {
 	id: number;
-	rules: Pf1eClassRules;
+	rules: ClassRules;
 }
 
 /**
- * How a new character gets their ability scores: six rolled scores to arrange among the abilities, or
- * points to spend on them
+ * A theme new characters can have, in a ruleset with themes
  */
-export type Pf1eAbilityOptions =
-	| { kind: 'roll'; statMethod: Pf1eRollMethod; rolls: number[] }
-	| { kind: 'pointBuy'; statMethod: Exclude<Pf1eStatMethod, Pf1eRollMethod>; budget: number };
+export interface CharacterThemeOption extends OptionName
+{
+	id: number;
+	rules: Sf1eThemeRules;
+}
 
 /**
- * The steps of Create Character, in order
+ * How a new character gets their ability scores
+ *
+ * - roll (PF1E): six rolled scores to arrange among the abilities
+ * - pointBuy (PF1E): points to buy scores with, scores below 10 giving some back
+ * - abilityPoints (SF1E): points that each raise a score of 10 by 1 (shared/src/rulesets/sf1e/abilityPoints.ts)
+ */
+export type AbilityOptions =
+	| { kind: 'roll'; statMethod: Pf1eRollMethod; rolls: number[] }
+	| { kind: 'pointBuy'; statMethod: Exclude<Pf1eStatMethod, Pf1eRollMethod>; budget: number }
+	| { kind: 'abilityPoints'; points: number };
+
+/**
+ * The steps of Create Character, in order. Theme is only in rulesets with themes (characterSteps())
  */
 export const CHARACTER_STEPS = [
 	'name',
 	'race',
 	'class',
+	'theme',
 	'abilities',
 	'review'
 ] as const;
 
 export type CharacterStep = typeof CHARACTER_STEPS[number];
+
+/**
+ * The steps of Create Character in a ruleset, in order
+ *
+ * @param ruleset The universe's ruleset
+ * @return The steps
+ */
+export function characterSteps(ruleset: Ruleset): CharacterStep[]
+{
+	return(CHARACTER_STEPS.filter((step) => ((step !== 'theme') || rulesetHasThemes(ruleset))));
+}
 
 /**
  * A player's progress in Create Character, kept on the server until they make the character or start
@@ -169,12 +192,17 @@ export interface CharacterDraft
 	classId: number | null;
 
 	/**
+	 * The theme chosen, in a ruleset with themes
+	 */
+	themeId: number | null;
+
+	/**
 	 * Each ability's score before racial modifiers, as the player arranged or bought them, or null
 	 * before they have changed any
 	 */
-	baseScores: Pf1eAbilityScores | null;
+	baseScores: AbilityScores | null;
 
-	floatingAbility: Pf1eAbility | null;
+	floatingAbility: Ability | null;
 }
 
 /**
@@ -188,7 +216,7 @@ export interface NewCharacterOptions
 	universeName: string;
 
 	ruleset: Ruleset;
-	abilities: Pf1eAbilityOptions;
+	abilities: AbilityOptions;
 
 	/**
 	 * The enabled races, by ID
@@ -199,6 +227,11 @@ export interface NewCharacterOptions
 	 * The enabled classes, by ID
 	 */
 	classes: CharacterClassOption[];
+
+	/**
+	 * The enabled themes, by ID; empty for a ruleset without themes
+	 */
+	themes: CharacterThemeOption[];
 
 	/**
 	 * How many characters the player already has in the universe
@@ -229,15 +262,22 @@ export interface NewCharacterRequest
 	classId: number;
 
 	/**
-	 * Each ability's score before racial modifiers: the rolled scores in the order the player chose, or
-	 * the scores the player bought. The server checks them against its rolls or the point buy budget
+	 * An enabled theme's ID, in a ruleset with themes; null otherwise
 	 */
-	baseScores: Pf1eAbilityScores;
+	themeId: number | null;
 
 	/**
-	 * The ability that gets PF1E_FLOATING_ABILITY_BONUS, for a race with a floating bonus; null otherwise
+	 * Each ability's score before racial modifiers: the rolled scores in the order the player chose, the
+	 * scores the player bought, or 10 plus the ability points spent on each. The server checks them
+	 * against its rolls or the points the player has
 	 */
-	floatingAbility: Pf1eAbility | null;
+	baseScores: AbilityScores;
+
+	/**
+	 * The ability that gets the ruleset's FLOATING_ABILITY_BONUSES, for a race with a floating bonus;
+	 * null otherwise
+	 */
+	floatingAbility: Ability | null;
 }
 
 /**
@@ -281,15 +321,27 @@ export interface CharacterSheet
 	/**
 	 * The race's size and darkvision, as the universe sets them now
 	 */
-	size: Pf1eSize;
+	size: Size;
 	darkvision: boolean;
 
 	/**
-	 * The ability scores, with the race's modifiers added
+	 * The character's theme, in a ruleset with themes; null otherwise
 	 */
-	abilityScores: Pf1eAbilityScores;
+	theme: OptionName | null;
 
-	money: Pf1eMoney;
+	/**
+	 * Hit points and stamina points, as the race and class set them now, in a ruleset that has them
+	 * (SF1E); null otherwise
+	 */
+	hitPoints: number | null;
+	staminaPoints: number | null;
+
+	/**
+	 * The ability scores, with the race's modifiers and theme's bonus added
+	 */
+	abilityScores: AbilityScores;
+
+	money: Money;
 
 	/**
 	 * The items the character carries, by ID

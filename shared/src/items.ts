@@ -3,6 +3,7 @@
  */
 import type { MessageDescriptor } from './localization.js';
 import { PF1E_DEFAULT_ITEM_NAMES, PF1E_ITEM_CATEGORIES, PF1E_ITEM_CATEGORY_NAMES, PF1E_ITEM_TYPE_NAMES, PF1E_ITEM_TYPES } from './rulesets/pf1e/items.js';
+import { SF1E_DEFAULT_ITEM_NAMES, SF1E_ITEM_CATEGORIES, SF1E_ITEM_CATEGORY_NAMES, SF1E_ITEM_TYPE_NAMES, SF1E_ITEM_TYPES } from './rulesets/sf1e/items.js';
 import type { Ruleset } from './universes.js';
 
 /**
@@ -34,6 +35,12 @@ export const ITEM_KINDS: Record<Ruleset, ItemKinds> = {
 		categoryNames: PF1E_ITEM_CATEGORY_NAMES,
 		types: PF1E_ITEM_TYPES,
 		typeNames: PF1E_ITEM_TYPE_NAMES
+	},
+	sf1e: {
+		categories: SF1E_ITEM_CATEGORIES,
+		categoryNames: SF1E_ITEM_CATEGORY_NAMES,
+		types: SF1E_ITEM_TYPES,
+		typeNames: SF1E_ITEM_TYPE_NAMES
 	}
 };
 
@@ -41,7 +48,8 @@ export const ITEM_KINDS: Record<Ruleset, ItemKinds> = {
  * Each default item's name, by ruleset and the item's key. The database stores each name's English text
  */
 export const DEFAULT_ITEM_NAMES: Record<Ruleset, Record<string, MessageDescriptor>> = {
-	pf1e: PF1E_DEFAULT_ITEM_NAMES
+	pf1e: PF1E_DEFAULT_ITEM_NAMES,
+	sf1e: SF1E_DEFAULT_ITEM_NAMES
 };
 
 /**
@@ -51,6 +59,12 @@ export const DEFAULT_STARTING_ITEMS: Record<Ruleset, readonly { key: string; qua
 	pf1e: [
 		{
 			key: 'dagger',
+			quantity: 1
+		}
+	],
+	sf1e: [
+		{
+			key: 'survival_knife',
 			quantity: 1
 		}
 	]

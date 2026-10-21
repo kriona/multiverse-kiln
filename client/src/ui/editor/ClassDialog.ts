@@ -1,4 +1,4 @@
-import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, emptyPf1eMoney, MAX_CLASS_NAME_LENGTH, NEW_PF1E_CLASS_RULES, PF1E_ABILITIES, PF1E_ABILITY_NAMES, PF1E_CASTING_STYLE_NAMES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITION_NAMES, PF1E_MAGIC_TRADITIONS, type ClassRaceArea, type ClassSettings, type EditableUniverse, type EditorClass, type EditorRace, type MessageDescriptor, type Pf1eAbility, type Pf1eCastingStyle, type Pf1eMagicTradition } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, emptyMoney, isSf1eClassRules, MAX_CLASS_NAME_LENGTH, NEW_CLASS_RULES, NEW_PF1E_CLASS_RULES, NEW_SF1E_CLASS_RULES, PF1E_ABILITIES, PF1E_ABILITY_NAMES, PF1E_CASTING_STYLE_NAMES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITION_NAMES, PF1E_MAGIC_TRADITIONS, SF1E_ABILITIES, SF1E_ABILITY_NAMES, SF1E_MAX_CLASS_POINTS, SF1E_MIN_CLASS_POINTS, type ClassRaceArea, type ClassRules, type ClassSettings, type EditableUniverse, type EditorClass, type EditorRace, type MessageDescriptor, type Pf1eAbility, type Pf1eCastingStyle, type Pf1eMagicTradition, type Sf1eAbility } from '@multiverse-kiln/shared';
 import mapPinIcon from 'virtual:icon/ph:map-pin';
 import restoreIcon from 'virtual:icon/ph:arrow-counter-clockwise';
 import trashIcon from 'virtual:icon/ph:trash';
@@ -36,6 +36,11 @@ export class ClassDialog
 	private readonly primaryAbility = getElement('class-primary-ability', HTMLSelectElement);
 	private readonly tradition = getElement('class-tradition', HTMLSelectElement);
 	private readonly castingStyle = getElement('class-casting-style', HTMLSelectElement);
+	private readonly pf1eRules = getElement('class-pf1e-rules', HTMLElement);
+	private readonly sf1eRules = getElement('class-sf1e-rules', HTMLElement);
+	private readonly keyAbility = getElement('class-key-ability', HTMLSelectElement);
+	private readonly hitPoints = getElement('class-hit-points', HTMLInputElement);
+	private readonly staminaPoints = getElement('class-stamina-points', HTMLInputElement);
 	private readonly startingMoney = getElement('class-money', HTMLInputElement);
 	private readonly chooseItemsButton = getElement('class-items-choose', HTMLButtonElement);
 	private readonly raceAreaList = getElement('class-race-areas', HTMLUListElement);
@@ -97,6 +102,17 @@ export class ClassDialog
 		setOptions(this.primaryAbility, namedOptions(PF1E_ABILITIES, PF1E_ABILITY_NAMES));
 		setOptions(this.tradition, namedOptions(PF1E_MAGIC_TRADITIONS, PF1E_MAGIC_TRADITION_NAMES));
 		setOptions(this.castingStyle, namedOptions(PF1E_CASTING_STYLES, PF1E_CASTING_STYLE_NAMES));
+		setOptions(this.keyAbility, namedOptions(SF1E_ABILITIES, SF1E_ABILITY_NAMES));
+
+		for (const input of [this.hitPoints, this.staminaPoints])
+		{
+			input.min = String(SF1E_MIN_CLASS_POINTS);
+			input.max = String(SF1E_MAX_CLASS_POINTS);
+			input.addEventListener('input', () =>
+			{
+				setFieldError(input, undefined);
+			});
+		}
 
 		this.startingItems = new StartingItemsField(api, itemSelect, {
 			list: getElement('class-items', HTMLUListElement),
@@ -167,7 +183,7 @@ export class ClassDialog
 	{
 		const editable = canEditUniverseSettings(universe.role);
 		const name = (characterClass ? className(characterClass, universe.ruleset) : '');
-		const rules = (characterClass?.rules ?? NEW_PF1E_CLASS_RULES);
+		const rules = (characterClass?.rules ?? NEW_CLASS_RULES[universe.ruleset]);
 
 		this.universe = universe;
 		this.characterClass = characterClass;
@@ -199,10 +215,8 @@ export class ClassDialog
 
 		this.name.value = name;
 		this.enabled.checked = (characterClass?.enabled ?? true);
-		this.primaryAbility.value = rules.primaryAbility;
-		this.tradition.value = rules.tradition;
-		this.castingStyle.value = rules.castingStyle;
-		this.startingMoney.value = formatMoney(characterClass?.startingMoney ?? emptyPf1eMoney());
+		this.showRules(rules);
+		this.startingMoney.value = formatMoney((characterClass?.startingMoney ?? emptyMoney()), universe.ruleset);
 		this.startingArea.show(universe, (characterClass?.startingAreaId ?? null), editable);
 		this.raceAreas.clear();
 
@@ -221,7 +235,7 @@ export class ClassDialog
 		this.cancelButton.textContent = t(editable ? formMessages.cancel : formMessages.close);
 
 		// Only the inputs are locked for a player who can't edit, so Close still works
-		for (const input of [this.name, this.enabled, this.primaryAbility, this.tradition, this.castingStyle, this.startingMoney])
+		for (const input of [this.name, this.enabled, this.primaryAbility, this.tradition, this.castingStyle, this.keyAbility, this.hitPoints, this.staminaPoints, this.startingMoney])
 		{
 			input.disabled = !editable;
 		}
@@ -404,7 +418,14 @@ export class ClassDialog
 			return;
 		}
 
-		const startingMoney = readMoneyField(this.startingMoney);
+		const rules = this.readRules(universe);
+
+		if (rules === undefined)
+		{
+			return;
+		}
+
+		const startingMoney = readMoneyField(this.startingMoney, universe.ruleset);
 
 		if (startingMoney === undefined)
 		{
@@ -426,11 +447,7 @@ export class ClassDialog
 			startingItems: this.startingItems.value,
 			startingAreaId,
 			raceAreas,
-			rules: {
-				primaryAbility: this.primaryAbility.value as Pf1eAbility,
-				tradition: this.tradition.value as Pf1eMagicTradition,
-				castingStyle: this.castingStyle.value as Pf1eCastingStyle
-			}
+			rules
 		};
 
 		await this.run({
@@ -447,6 +464,65 @@ export class ClassDialog
 			{
 				await this.api.createClass(universe.id, settings);
 			}
+		});
+	}
+
+	/**
+	 * Fills the rules fields, showing only the ruleset's
+	 *
+	 * @param rules The class's rules
+	 */
+	private showRules(rules: ClassRules): void
+	{
+		const sf1e = isSf1eClassRules(rules);
+		const pf1eRules = (sf1e ? NEW_PF1E_CLASS_RULES : rules);
+		const sf1eRules = (sf1e ? rules : NEW_SF1E_CLASS_RULES);
+
+		this.pf1eRules.hidden = sf1e;
+		this.sf1eRules.hidden = !sf1e;
+		this.primaryAbility.value = pf1eRules.primaryAbility;
+		this.tradition.value = pf1eRules.tradition;
+		this.castingStyle.value = pf1eRules.castingStyle;
+		this.keyAbility.value = sf1eRules.keyAbility;
+		this.hitPoints.value = String(sf1eRules.hitPoints);
+		this.staminaPoints.value = String(sf1eRules.staminaPoints);
+	}
+
+	/**
+	 * The class's rules under the universe's ruleset as the form shows them, reporting points out of range
+	 *
+	 * @param universe The universe
+	 * @return The rules, or undefined when a field shows a problem
+	 */
+	private readRules(universe: EditableUniverse): ClassRules | undefined
+	{
+		if (universe.ruleset === 'pf1e')
+		{
+			return({
+				primaryAbility: this.primaryAbility.value as Pf1eAbility,
+				tradition: this.tradition.value as Pf1eMagicTradition,
+				castingStyle: this.castingStyle.value as Pf1eCastingStyle
+			});
+		}
+
+		for (const field of [this.hitPoints, this.staminaPoints])
+		{
+			const value = Number(field.value);
+
+			if ((field.value.trim() === '') || !Number.isInteger(value) || (value < SF1E_MIN_CLASS_POINTS) || (value > SF1E_MAX_CLASS_POINTS))
+			{
+				reportFieldError(field, t(formMessages.wholeNumber, {
+					min: SF1E_MIN_CLASS_POINTS,
+					max: SF1E_MAX_CLASS_POINTS
+				}));
+				return(undefined);
+			}
+		}
+
+		return({
+			keyAbility: this.keyAbility.value as Sf1eAbility,
+			hitPoints: Number(this.hitPoints.value),
+			staminaPoints: Number(this.staminaPoints.value)
 		});
 	}
 

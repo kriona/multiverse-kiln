@@ -169,6 +169,20 @@
       "when": 1792593776169,
       "tag": "0023_character_deletion_days",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792605347424,
+      "tag": "0024_sf1e_ruleset",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792605369172,
+      "tag": "0025_sf1e_defaults",
+      "breakpoints": true
     }
   ]
 }

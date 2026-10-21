@@ -1,4 +1,4 @@
-import { canEditUniverseSettings, PF1E_ABILITY_NAMES, PF1E_CASTING_STYLE_NAMES, PF1E_MAGIC_TRADITION_NAMES, type EditableUniverse, type EditorClass } from '@multiverse-kiln/shared';
+import { ABILITY_NAMES, canEditUniverseSettings, isSf1eClassRules, mainAbility, PF1E_CASTING_STYLE_NAMES, PF1E_MAGIC_TRADITION_NAMES, type EditableUniverse, type EditorClass, type Ruleset } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -99,7 +99,7 @@ export class ClassesTab
 				name: className(characterClass, universe.ruleset)
 			}))
 			.sort((a, b) => a.name.localeCompare(b.name))
-			.map(({ characterClass, name }) => createOptionRow(name, describeClass(characterClass), optionTags(characterClass), () =>
+			.map(({ characterClass, name }) => createOptionRow(name, describeClass(characterClass, universe.ruleset), optionTags(characterClass), () =>
 			{
 				this.openClass(characterClass);
 			})));
@@ -123,32 +123,47 @@ export class ClassesTab
 }
 
 /**
- * A class's rules in a few words: its primary ability, and its magic for a class that casts spells
+ * A class's rules in a few words: its primary or key ability, and its magic for a Pathfinder class that
+ * casts spells or its hit and stamina points for a Starfinder class
  *
  * @param characterClass The class
+ * @param ruleset The universe's ruleset
  * @return The summary
  */
-function describeClass(characterClass: EditorClass): string
+function describeClass(characterClass: EditorClass, ruleset: Ruleset): string
 {
-	const { primaryAbility, tradition, castingStyle } = characterClass.rules;
+	const { rules } = characterClass;
 	const parts = [
 		t({
 			id: 'editor.classes.primaryAbility',
 			defaultMessage: 'relies on {ability}',
 			description: 'In a character class\'s summary on the editor\'s Classes tab, the ability the class relies on most; {ability} is its name, e.g. Intelligence'
 		}, {
-			ability: t(PF1E_ABILITY_NAMES[primaryAbility])
+			ability: t(ABILITY_NAMES[ruleset][mainAbility(rules)])
 		})
 	];
 
-	if (tradition !== 'none')
+	if (isSf1eClassRules(rules))
 	{
-		parts.push(t(PF1E_MAGIC_TRADITION_NAMES[tradition]));
+		parts.push(t({
+			id: 'editor.classes.points',
+			defaultMessage: '{hitPoints, plural, one {# hit point} other {# hit points}} and {staminaPoints, plural, one {# stamina point} other {# stamina points}} a level',
+			description: 'In a character class\'s summary on the editor\'s Classes tab, in Starfinder, the hit points and stamina points the class gives at each level'
+		}, {
+			hitPoints: rules.hitPoints,
+			staminaPoints: rules.staminaPoints
+		}));
+		return(formatList(parts));
 	}
 
-	if (castingStyle !== 'none')
+	if (rules.tradition !== 'none')
 	{
-		parts.push(t(PF1E_CASTING_STYLE_NAMES[castingStyle]));
+		parts.push(t(PF1E_MAGIC_TRADITION_NAMES[rules.tradition]));
+	}
+
+	if (rules.castingStyle !== 'none')
+	{
+		parts.push(t(PF1E_CASTING_STYLE_NAMES[rules.castingStyle]));
 	}
 
 	return(formatList(parts));

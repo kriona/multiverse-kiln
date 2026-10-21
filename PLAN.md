@@ -165,6 +165,12 @@ Built in seven steps: licensing and the ruleset module; the Ruleset tab and the 
 
 **Done when:** a player creates a PF1E character with rolled stats and starting gear, then walks and chats as them in the lobby while ghosts watch.
 
+Alongside it, a basic Starfinder 1E ruleset (see SF1E in `STRUCTURE-OVERVIEW.md`), with a few fields from each step; the rest of the ruleset comes later:
+- [✅] Licensing: the Starfinder Core Rulebook in the OGL's Section 15, and the Community Use Policy covering the name
+- [✅] Money as each ruleset's coins (credits for SF1E), stored in a column per coin
+- [✅] Ruleset tab (ability points, sleep, ammo), races (hit points), classes (key ability, hit and stamina points), themes on the Characters tab, default tiles and a survival knife
+- [✅] Create Character with a theme step and ability points, and the character sheet's theme, hit points and stamina points
+
 ## Phase 11: Groups and the anchor being
 
 - [ ] Rework sessions so a player controls characters rather than a browser being one player: a player's characters can be in different groups, several can be in the same group, and the UI switches between them without changing tabs

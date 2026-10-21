@@ -47,8 +47,9 @@ An engine for making multiplayer browser-based role-playing games.
                  message type enums, payload interfaces, close codes, constants,
                  the synced state's @colyseus/schema classes (src/state.ts),
                  the map and chunk layout (src/maps.ts) and universe settings (src/universes.ts),
-                 each ruleset's data and rules (src/rulesets/<ruleset>/, Open Game Content for PF1E; see
-                 client/license.html),
+                 each ruleset's data and rules (src/rulesets/<ruleset>/, Open Game Content for PF1E and
+                 SF1E; see client/license.html), and what the rulesets share: money (src/money.ts) and
+                 the abilities, sizes, races, classes and themes tables (src/racesAndClasses.ts),
                  messages and the Translator (src/localization.ts)
   locales/           en.json, the English catalog extracted from the code, and each translation's file, which
                      stores each message with the English it was made from (en-x-pirate.json is Pirate, a

@@ -67,6 +67,10 @@
 		"message": "Knack",
 		"source": "Ability"
 	},
+	"character.create.abilityPoints": {
+		"message": "Every score starts at {base, number}. Spend {points, plural, one {# doubloon} other {# doubloons}} to raise 'em, one doubloon for each +1, up to {max, number} with yer folk's an' yarn's boons.",
+		"source": "Every score starts at {base, number}. Spend {points, plural, one {# ability point} other {# ability points}} to raise them, one point for each +1, up to {max, number} with your race's and theme's bonuses."
+	},
 	"character.create.abilityScores": {
 		"message": "Knacks",
 		"source": "Ability scores"
@@ -123,6 +127,10 @@
 		"message": "These scores cost more than yer {budget, plural, one {# doubloon} other {# doubloons}}. Lower some o' them.",
 		"source": "These scores cost more than your {budget, plural, one {# point} other {# points}}. Lower some of them."
 	},
+	"character.create.overLimit": {
+		"message": "Doubloons can't raise a score past {max, number} with its boons. Lower {abilities}.",
+		"source": "Ability points can't raise a score above {max, number} with its bonuses. Lower {abilities}."
+	},
 	"character.create.pointBuy": {
 		"message": "Buy yer scores with {budget, plural, one {# doubloon} other {# doubloons}}. Scores above 10 cost doubloons, an' scores below 10 give some back.",
 		"source": "Buy your scores with {budget, plural, one {# point} other {# points}}. Scores above 10 cost points, and scores below 10 give some back."
@@ -139,9 +147,17 @@
 		"message": "Folk",
 		"source": "Race"
 	},
+	"character.create.raceAndThemeColumn": {
+		"message": "Folk an' yarn",
+		"source": "Race and theme"
+	},
 	"character.create.raceColumn": {
 		"message": "Folk",
 		"source": "Race"
+	},
+	"character.create.raisedScore": {
+		"message": "{score, number} ({points, plural, one {# doubloon} other {# doubloons}})",
+		"source": "{score, number} ({points, plural, one {# point} other {# points}})"
 	},
 	"character.create.rolled": {
 		"message": "The server rolled the bones fer ye with {method}. Choose which knack gets each score: givin' a knack another score swaps the two.",
@@ -163,6 +179,14 @@
 		"message": "{ability} now holds {score, number}.",
 		"source": "{ability} now has {score, number}."
 	},
+	"character.create.theme": {
+		"message": "Yarn",
+		"source": "Theme"
+	},
+	"character.create.themeHint": {
+		"message": "This yarn raises {ability} by {bonus, number}.",
+		"source": "This theme raises {ability} by {bonus, number}."
+	},
 	"character.create.title": {
 		"message": "Sign On a Hand",
 		"source": "Create Character"
@@ -182,6 +206,10 @@
 	"character.heading.review": {
 		"message": "Look 'er over",
 		"source": "Review"
+	},
+	"character.heading.theme": {
+		"message": "Spin yer yarn",
+		"source": "Choose a theme"
 	},
 	"character.next": {
 		"message": "Onward",
@@ -231,6 +259,10 @@
 		"message": "{score, number} ({modifier})",
 		"source": "{score, number} ({modifier})"
 	},
+	"character.review.theme": {
+		"message": "Yarn",
+		"source": "Theme"
+	},
 	"character.saveFailed": {
 		"message": "Couldn't stow yer progress.",
 		"source": "Could not save your progress."
@@ -270,6 +302,10 @@
 	"character.step.review": {
 		"message": "Look 'er over",
 		"source": "Review"
+	},
+	"character.step.theme": {
+		"message": "Yarn",
+		"source": "Theme"
 	},
 	"character.steps": {
 		"message": "Course",
@@ -335,6 +371,10 @@
 		"message": "Throw Overboard",
 		"source": "Delete"
 	},
+	"characterSheet.hitPoints": {
+		"message": "Lifeblood",
+		"source": "Hit points"
+	},
 	"characterSheet.item": {
 		"message": "{quantity, plural, =1 {{item}} other {{item} x#}}",
 		"source": "{quantity, plural, =1 {{item}} other {{item} x#}}"
@@ -387,9 +427,17 @@
 		"message": "Heft",
 		"source": "Size"
 	},
+	"characterSheet.staminaPoints": {
+		"message": "Wind",
+		"source": "Stamina points"
+	},
 	"characterSheet.summary": {
 		"message": "{race} {class}",
 		"source": "{race} {class}"
+	},
+	"characterSheet.theme": {
+		"message": "Yarn",
+		"source": "Theme"
 	},
 	"characterSheet.traits": {
 		"message": "Marks o' the hand",
@@ -691,6 +739,18 @@
 		"message": "New crew can only take up callin's open to all hands, an' at least one must stay open.",
 		"source": "New characters can only choose enabled classes, and at least one class must be enabled."
 	},
+	"editor.class.hitPoints": {
+		"message": "Lifeblood each rank",
+		"source": "Hit points per level"
+	},
+	"editor.class.keyAbility": {
+		"message": "Chief knack",
+		"source": "Key ability"
+	},
+	"editor.class.keyAbilityHint": {
+		"message": "Whispered to the crew when they be spendin' their doubloons on knacks.",
+		"source": "Suggested to players when they spend their ability points."
+	},
 	"editor.class.name": {
 		"message": "Name",
 		"source": "Name"
@@ -727,6 +787,10 @@
 		"message": "Couldn't stow the callin'.",
 		"source": "Could not save the class."
 	},
+	"editor.class.staminaPoints": {
+		"message": "Wind each rank",
+		"source": "Stamina points per level"
+	},
 	"editor.class.startingArea": {
 		"message": "Home port: {area}",
 		"source": "Starting area: {area}"
@@ -758,6 +822,10 @@
 	"editor.classes.name": {
 		"message": "Name",
 		"source": "Name"
+	},
+	"editor.classes.points": {
+		"message": "{hitPoints, number} lifeblood an' {staminaPoints, number} wind each rank",
+		"source": "{hitPoints, plural, one {# hit point} other {# hit points}} and {staminaPoints, plural, one {# stamina point} other {# stamina points}} a level"
 	},
 	"editor.classes.primaryAbility": {
 		"message": "leans on {ability}",
@@ -1399,6 +1467,14 @@
 		"message": "The hand picks one knack to get +{bonus, number}, as humans, half-elves an' half-orcs do.",
 		"source": "The player chooses one ability to get +{bonus, number}, as humans, half-elves and half-orcs do."
 	},
+	"editor.race.floatingBonusHintSf1e": {
+		"message": "The hand picks one knack to get +{bonus, number}, as humans do.",
+		"source": "The player chooses one ability to get +{bonus, number}, as humans do."
+	},
+	"editor.race.hitPoints": {
+		"message": "Lifeblood",
+		"source": "Hit points"
+	},
 	"editor.race.name": {
 		"message": "Name",
 		"source": "Name"
@@ -1455,6 +1531,10 @@
 		"message": "The folk new crew can hail from. Each folk's startin' coin an' kit be added to what every hand sets sail with.",
 		"source": "The races new characters can choose. Each race's starting money and equipment are added to what every character starts with."
 	},
+	"editor.races.hitPoints": {
+		"message": "{hitPoints, number} lifeblood",
+		"source": "{hitPoints, plural, one {# hit point} other {# hit points}}"
+	},
 	"editor.races.listFailed": {
 		"message": "Couldn't list the folk.",
 		"source": "Could not list the races."
@@ -1474,6 +1554,14 @@
 	"editor.role": {
 		"message": "Yer rank: {role}",
 		"source": "Your role: {role}"
+	},
+	"editor.ruleset.abilityPoints": {
+		"message": "Doubloons for knacks",
+		"source": "Ability points"
+	},
+	"editor.ruleset.abilityPointsHint": {
+		"message": "Every knack starts at 10, an' each doubloon raises one by 1, up to 18 with the folk's an' yarn's boons. Changin' this don't change hands already aboard.",
+		"source": "Every ability score starts at 10, and each point raises one by 1, up to 18 with the race's and theme's bonuses. Changing this doesn't change characters that already exist."
 	},
 	"editor.ruleset.budget": {
 		"message": "Doubloons to spend",
@@ -1574,6 +1662,90 @@
 	"editor.tab.unsavedChanges": {
 		"message": "(changes not yet stowed)",
 		"source": "(unsaved changes)"
+	},
+	"editor.theme.ability": {
+		"message": "Knack raised",
+		"source": "Ability raised"
+	},
+	"editor.theme.abilityHint": {
+		"message": "Hands with this yarn get +{bonus, number} to this knack.",
+		"source": "Characters with the theme get +{bonus, number} to this ability."
+	},
+	"editor.theme.addTitle": {
+		"message": "Add a Yarn",
+		"source": "Add Theme"
+	},
+	"editor.theme.confirmDelete": {
+		"message": "Scuttle {theme}? There be no bringin' it back.",
+		"source": "Delete {theme}? This can't be undone."
+	},
+	"editor.theme.confirmRestore": {
+		"message": "Return {theme} to the ruleset's way? Yer changes to it will be lost at sea.",
+		"source": "Restore {theme} to the ruleset's default? Your changes to it will be lost."
+	},
+	"editor.theme.delete": {
+		"message": "Scuttle Yarn",
+		"source": "Delete Theme"
+	},
+	"editor.theme.deleteFailed": {
+		"message": "Couldn't scuttle the yarn.",
+		"source": "Could not delete the theme."
+	},
+	"editor.theme.editTitle": {
+		"message": "Edit {theme}",
+		"source": "Edit {theme}"
+	},
+	"editor.theme.enabled": {
+		"message": "Open to all hands",
+		"source": "Enabled"
+	},
+	"editor.theme.enabledHint": {
+		"message": "New crew can only spin yarns open to all hands, an' at least one must stay open.",
+		"source": "New characters can only choose enabled themes, and at least one theme must be enabled."
+	},
+	"editor.theme.name": {
+		"message": "Name",
+		"source": "Name"
+	},
+	"editor.theme.restore": {
+		"message": "Restore the Old Ways",
+		"source": "Restore Default"
+	},
+	"editor.theme.restoreFailed": {
+		"message": "Couldn't restore the yarn.",
+		"source": "Could not restore the theme."
+	},
+	"editor.theme.saveFailed": {
+		"message": "Couldn't stow the yarn.",
+		"source": "Could not save the theme."
+	},
+	"editor.themes.ability": {
+		"message": "{ability} {bonus, number, ::sign-always}",
+		"source": "{ability} {bonus, number, ::sign-always}"
+	},
+	"editor.themes.add": {
+		"message": "Add a Yarn",
+		"source": "Add Theme"
+	},
+	"editor.themes.heading": {
+		"message": "Yarns",
+		"source": "Themes"
+	},
+	"editor.themes.hint": {
+		"message": "The yarns new crew can spin: a past, like a helmsman or a scholar, that raises one knack.",
+		"source": "The themes new characters can choose: a background, such as a pilot or a scholar, that raises one ability score."
+	},
+	"editor.themes.listFailed": {
+		"message": "Couldn't list the yarns.",
+		"source": "Could not list the themes."
+	},
+	"editor.themes.name": {
+		"message": "Name",
+		"source": "Name"
+	},
+	"editor.themes.summary": {
+		"message": "Particulars",
+		"source": "Summary"
 	},
 	"editor.tile.addTitle": {
 		"message": "Add Tile",
@@ -1863,6 +2035,10 @@
 		"message": "A universe needs at least one folk open to all hands, so new crew have one to hail from.",
 		"source": "A universe needs at least one enabled race, so new characters have one to be."
 	},
+	"error.noEnabledTheme": {
+		"message": "A universe needs at least one yarn open to all hands, so new crew have one to spin.",
+		"source": "A universe needs at least one enabled theme, so new characters have one to choose."
+	},
 	"error.noSuchArea": {
 		"message": "That area be lost at sea.",
 		"source": "The area doesn't exist."
@@ -1887,6 +2063,10 @@
 		"message": "Those folk be lost at sea.",
 		"source": "The race doesn't exist."
 	},
+	"error.noSuchTheme": {
+		"message": "That yarn be lost at sea.",
+		"source": "The theme doesn't exist."
+	},
 	"error.noSuchTile": {
 		"message": "That tile be lost at sea.",
 		"source": "The tile doesn't exist."
@@ -1894,6 +2074,10 @@
 	"error.noSuchUniverse": {
 		"message": "That universe be lost at sea, or ye can't see it.",
 		"source": "The universe doesn't exist, or you can't see it."
+	},
+	"error.noThemes": {
+		"message": "This universe's ship's articles have no yarns.",
+		"source": "This universe's ruleset has no themes."
 	},
 	"error.otherOrigin": {
 		"message": "No changes from that port.",
@@ -1934,6 +2118,22 @@
 	"error.somethingWentWrong": {
 		"message": "Somethin' went awry in the server's hold.",
 		"source": "Something went wrong on the server."
+	},
+	"error.themeInUse": {
+		"message": "Hands spin this yarn, so it can't be scuttled. Lock it away instead.",
+		"source": "Characters have this theme, so it can't be deleted. Disable it instead."
+	},
+	"error.themeLimit": {
+		"message": "A universe can have at most {max, plural, one {# yarn} other {# yarns}} of its own.",
+		"source": "A universe can have at most {max, plural, one {# theme} other {# themes}} of its own."
+	},
+	"error.themeNeedsName": {
+		"message": "A yarn needs a name.",
+		"source": "A theme needs a name."
+	},
+	"error.themeUnavailable": {
+		"message": "That yarn be off the books now. Choose another.",
+		"source": "That theme can't be chosen any more. Choose another."
 	},
 	"error.tileInUse": {
 		"message": "A chart uses this tile, so it can't be scuttled.",
@@ -2167,6 +2367,10 @@
 		"message": "dirk",
 		"source": "dagger"
 	},
+	"item.sf1e.survival_knife": {
+		"message": "boardin' knife",
+		"source": "survival knife"
+	},
 	"keys.alt": {
 		"message": "Alt",
 		"source": "Alt"
@@ -2232,10 +2436,14 @@
 		"source": "Icons"
 	},
 	"license.openGameContent": {
-		"message": "The game mechanics o' the Pathfinder First Edition ruleset be Open Game Content, used under the Open Game License 1.0a below: its abilities, ways o' makin' ability scores, sizes, races, classes, coins an' items, an' their names in every tongue. In the source code, they be in {folder}, an' their names in {locales}. Nothin' else in Multiverse Kiln be Open Game Content.",
-		"source": "The Pathfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a below: its abilities, ways of making ability scores, sizes, races, classes, coins and items, and their names in every language. In the source code, they are in {folder}, and their names in {locales}. Nothing else in Multiverse Kiln is Open Game Content."
+		"message": "The game mechanics o' the Pathfinder First Edition ruleset be Open Game Content, used under the Open Game License 1.0a below: its abilities, ways o' makin' ability scores, sizes, races, classes, coins an' items, an' their names in every tongue. In the source code, they be in {folder}, an' their names in {locales}.",
+		"source": "The Pathfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a below: its abilities, ways of making ability scores, sizes, races, classes, coins and items, and their names in every language. In the source code, they are in {folder}, and their names in {locales}."
 	},
 	"license.pathfinder": {
+		"message": "Pathfinder First Edition rules o' the sea",
+		"source": "Pathfinder First Edition rules"
+	},
+	"license.pathfinderSectionLink": {
 		"message": "Pathfinder First Edition rules o' the sea",
 		"source": "Pathfinder First Edition rules"
 	},
@@ -2246,6 +2454,18 @@
 	"license.sourceCode": {
 		"message": "Source code",
 		"source": "Source code"
+	},
+	"license.starfinder": {
+		"message": "Starfinder First Edition rules o' the stars",
+		"source": "Starfinder First Edition rules"
+	},
+	"license.starfinderCommunityUse": {
+		"message": "Starfinder be a trademark o' Paizo Inc., used under the Community Use Policy told of in the {pathfinder} section.",
+		"source": "Starfinder is a trademark of Paizo Inc., used under the Community Use Policy described in the {pathfinder} section."
+	},
+	"license.starfinderOpenGameContent": {
+		"message": "The game mechanics o' the Starfinder First Edition ruleset be Open Game Content, used under the Open Game License 1.0a in the Pathfinder First Edition rules section, whose copyright notice names the Starfinder Core Rulebook: its abilities, ability points, sizes, races, classes, themes, credits an' items, an' their names in every tongue. In the source code, they be in {folder}, an' their names in {locales}. Nothin' else in Multiverse Kiln be Open Game Content.",
+		"source": "The Starfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a in the Pathfinder First Edition rules section, whose copyright notice lists the Starfinder Core Rulebook: its abilities, ability points, sizes, races, classes, themes, credits and items, and their names in every language. In the source code, they are in {folder}, and their names in {locales}. Nothing else in Multiverse Kiln is Open Game Content."
 	},
 	"license.summary": {
 		"message": "In plain speak: ye may use, change an' share the game's code. If ye share a changed version, or run one on a server that players connect to, ye must offer its source code under the same license.",
@@ -2959,6 +3179,230 @@
 		"message": "none",
 		"source": "none"
 	},
+	"sf1e.ability.charisma": {
+		"message": "Swagger",
+		"source": "Charisma"
+	},
+	"sf1e.ability.constitution": {
+		"message": "Grit",
+		"source": "Constitution"
+	},
+	"sf1e.ability.dexterity": {
+		"message": "Nimbleness",
+		"source": "Dexterity"
+	},
+	"sf1e.ability.intelligence": {
+		"message": "Cunning",
+		"source": "Intelligence"
+	},
+	"sf1e.ability.strength": {
+		"message": "Brawn",
+		"source": "Strength"
+	},
+	"sf1e.ability.wisdom": {
+		"message": "Star Sense",
+		"source": "Wisdom"
+	},
+	"sf1e.class.envoy": {
+		"message": "Silver Tongue",
+		"source": "Envoy"
+	},
+	"sf1e.class.mechanic": {
+		"message": "Ship's Wright",
+		"source": "Mechanic"
+	},
+	"sf1e.class.mystic": {
+		"message": "Star Witch",
+		"source": "Mystic"
+	},
+	"sf1e.class.operative": {
+		"message": "Spy",
+		"source": "Operative"
+	},
+	"sf1e.class.solarian": {
+		"message": "Sun-Blade",
+		"source": "Solarian"
+	},
+	"sf1e.class.soldier": {
+		"message": "Marine",
+		"source": "Soldier"
+	},
+	"sf1e.class.technomancer": {
+		"message": "Gear Witch",
+		"source": "Technomancer"
+	},
+	"sf1e.coin.cr": {
+		"message": "cr",
+		"source": "cr"
+	},
+	"sf1e.itemCategory.armor": {
+		"message": "Armor",
+		"source": "Armor"
+	},
+	"sf1e.itemCategory.gear": {
+		"message": "Ship's Stores",
+		"source": "Gear"
+	},
+	"sf1e.itemCategory.weapon": {
+		"message": "Arms",
+		"source": "Weapons"
+	},
+	"sf1e.itemType.battery": {
+		"message": "powder charge",
+		"source": "battery"
+	},
+	"sf1e.itemType.comm_unit": {
+		"message": "speakin' shell",
+		"source": "comm unit"
+	},
+	"sf1e.itemType.flashlight": {
+		"message": "lantern",
+		"source": "flashlight"
+	},
+	"sf1e.itemType.frag_grenade": {
+		"message": "grenado",
+		"source": "frag grenade"
+	},
+	"sf1e.itemType.heavy_armor": {
+		"message": "heavy armor",
+		"source": "heavy armor"
+	},
+	"sf1e.itemType.laser_pistol": {
+		"message": "ray pistol",
+		"source": "laser pistol"
+	},
+	"sf1e.itemType.laser_rifle": {
+		"message": "ray musket",
+		"source": "laser rifle"
+	},
+	"sf1e.itemType.light_armor": {
+		"message": "light armor",
+		"source": "light armor"
+	},
+	"sf1e.itemType.other_gear": {
+		"message": "other stores",
+		"source": "other gear"
+	},
+	"sf1e.itemType.second_skin": {
+		"message": "second hide",
+		"source": "second skin"
+	},
+	"sf1e.itemType.semi_auto_pistol": {
+		"message": "repeatin' pistol",
+		"source": "semi-auto pistol"
+	},
+	"sf1e.itemType.small_arm_rounds": {
+		"message": "pistol shot",
+		"source": "small arm rounds"
+	},
+	"sf1e.itemType.survival_knife": {
+		"message": "boardin' knife",
+		"source": "survival knife"
+	},
+	"sf1e.itemType.tactical_baton": {
+		"message": "belayin' pin",
+		"source": "tactical baton"
+	},
+	"sf1e.race.android": {
+		"message": "Clockwork Hand",
+		"source": "Android"
+	},
+	"sf1e.race.human": {
+		"message": "Human",
+		"source": "Human"
+	},
+	"sf1e.race.kasatha": {
+		"message": "Kasatha",
+		"source": "Kasatha"
+	},
+	"sf1e.race.lashunta": {
+		"message": "Lashunta",
+		"source": "Lashunta"
+	},
+	"sf1e.race.shirren": {
+		"message": "Shirren",
+		"source": "Shirren"
+	},
+	"sf1e.race.vesk": {
+		"message": "Vesk",
+		"source": "Vesk"
+	},
+	"sf1e.race.ysoki": {
+		"message": "Ysoki",
+		"source": "Ysoki"
+	},
+	"sf1e.size.colossal": {
+		"message": "Kraken-sized",
+		"source": "Colossal"
+	},
+	"sf1e.size.diminutive": {
+		"message": "Barnacle-sized",
+		"source": "Diminutive"
+	},
+	"sf1e.size.fine": {
+		"message": "Flea-sized",
+		"source": "Fine"
+	},
+	"sf1e.size.gargantuan": {
+		"message": "Whale-sized",
+		"source": "Gargantuan"
+	},
+	"sf1e.size.huge": {
+		"message": "Huge",
+		"source": "Huge"
+	},
+	"sf1e.size.large": {
+		"message": "Large",
+		"source": "Large"
+	},
+	"sf1e.size.medium": {
+		"message": "Medium",
+		"source": "Medium"
+	},
+	"sf1e.size.small": {
+		"message": "Small",
+		"source": "Small"
+	},
+	"sf1e.size.tiny": {
+		"message": "Wee",
+		"source": "Tiny"
+	},
+	"sf1e.theme.ace_pilot": {
+		"message": "Ace Helmsman",
+		"source": "Ace Pilot"
+	},
+	"sf1e.theme.bounty_hunter": {
+		"message": "Bounty Hunter",
+		"source": "Bounty Hunter"
+	},
+	"sf1e.theme.icon": {
+		"message": "Legend o' the Stars",
+		"source": "Icon"
+	},
+	"sf1e.theme.mercenary": {
+		"message": "Sword for Hire",
+		"source": "Mercenary"
+	},
+	"sf1e.theme.outlaw": {
+		"message": "Outlaw",
+		"source": "Outlaw"
+	},
+	"sf1e.theme.priest": {
+		"message": "Ship's Chaplain",
+		"source": "Priest"
+	},
+	"sf1e.theme.scholar": {
+		"message": "Scholar",
+		"source": "Scholar"
+	},
+	"sf1e.theme.spacefarer": {
+		"message": "Star Sailor",
+		"source": "Spacefarer"
+	},
+	"sf1e.theme.xenoseeker": {
+		"message": "Strange-Shore Seeker",
+		"source": "Xenoseeker"
+	},
 	"shortcuts.close": {
 		"message": "Batten down",
 		"source": "Close"
@@ -3006,6 +3450,30 @@
 	"tile.pf1e.wood_floor": {
 		"message": "Deck Planks",
 		"source": "Wood Floor"
+	},
+	"tile.sf1e.bulkhead": {
+		"message": "Bulkhead",
+		"source": "Bulkhead"
+	},
+	"tile.sf1e.grass": {
+		"message": "Grassy Shore",
+		"source": "Grass"
+	},
+	"tile.sf1e.metal_floor": {
+		"message": "Iron Deck",
+		"source": "Metal Floor"
+	},
+	"tile.sf1e.rock": {
+		"message": "Crags",
+		"source": "Rock"
+	},
+	"tile.sf1e.sand": {
+		"message": "Barren Sands",
+		"source": "Sand"
+	},
+	"tile.sf1e.water": {
+		"message": "Briny Deep",
+		"source": "Water"
 	},
 	"universe.faerie.center": {
 		"message": "the middle",
@@ -3070,6 +3538,10 @@
 	"universe.ruleset.pf1e": {
 		"message": "Pathfinder 1E",
 		"source": "Pathfinder 1E"
+	},
+	"universe.ruleset.sf1e": {
+		"message": "Starfinder 1E",
+		"source": "Starfinder 1E"
 	},
 	"universe.shortDescription": {
 		"message": "1-sentence tale",

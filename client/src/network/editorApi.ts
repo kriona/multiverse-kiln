@@ -1,5 +1,5 @@
 import { ServerError, type Client } from '@colyseus/sdk';
-import { EDITOR_UNIVERSES_PATH, isLocalizedMessage, MAX_TILES_PER_PAGE, type CellChange, type ChunkListPayload, type ChunkRange, type ClassListPayload, type ClassSettings, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type NewAreaRequest, type RaceListPayload, type RaceSettings, type ResizeConflictPayload, type RulesetSettings, type TileListPayload, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type AreaLinkListPayload, type AreaLinkTarget, type AreaListPayload, type AreaSettingsUpdate, type MessageSource } from '@multiverse-kiln/shared';
+import { EDITOR_UNIVERSES_PATH, isLocalizedMessage, MAX_TILES_PER_PAGE, type CellChange, type ChunkListPayload, type ChunkRange, type ClassListPayload, type ClassSettings, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type NewAreaRequest, type RaceListPayload, type RaceSettings, type ResizeConflictPayload, type RulesetSettings, type EditorTheme, type ThemeListPayload, type ThemeSettings, type TileListPayload, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type AreaLinkListPayload, type AreaLinkTarget, type AreaListPayload, type AreaSettingsUpdate, type MessageSource } from '@multiverse-kiln/shared';
 
 import { localizedText, t } from '../localization';
 
@@ -311,6 +311,52 @@ export class EditorApi
 	async deleteClass(universeId: string, classId: number): Promise<void>
 	{
 		await this.send('DELETE', `${universePath(universeId)}/classes/${classId}`);
+	}
+
+	/**
+	 * Every theme a universe can use, in a ruleset with themes
+	 *
+	 * @param universeId The universe's ID
+	 * @return The themes, by ID
+	 */
+	async listThemes(universeId: string): Promise<EditorTheme[]>
+	{
+		return((await this.send<ThemeListPayload>('GET', `${universePath(universeId)}/themes`)).themes);
+	}
+
+	/**
+	 * Adds a theme to a universe
+	 *
+	 * @param universeId The universe's ID
+	 * @param settings The theme's settings, with a name
+	 * @return The new theme's ID
+	 */
+	async createTheme(universeId: string, settings: ThemeSettings): Promise<number>
+	{
+		return((await this.send<CreatedPayload<number>>('POST', `${universePath(universeId)}/themes`, settings)).id);
+	}
+
+	/**
+	 * Changes one of a universe's themes, or stores its edited copy of a default theme
+	 *
+	 * @param universeId The universe's ID
+	 * @param themeId The theme's ID
+	 * @param settings The theme's settings
+	 */
+	async saveTheme(universeId: string, themeId: number, settings: ThemeSettings): Promise<void>
+	{
+		await this.send('PUT', `${universePath(universeId)}/themes/${themeId}`, settings);
+	}
+
+	/**
+	 * Deletes one of a universe's own themes, or restores a default theme it has edited
+	 *
+	 * @param universeId The universe's ID
+	 * @param themeId The theme's ID
+	 */
+	async deleteTheme(universeId: string, themeId: number): Promise<void>
+	{
+		await this.send('DELETE', `${universePath(universeId)}/themes/${themeId}`);
 	}
 
 	/**

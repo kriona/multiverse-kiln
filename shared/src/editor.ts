@@ -9,10 +9,11 @@
 import type { LocalizedMessage } from './localization.js';
 import type { MapBounds } from './maps.js';
 import type { AreaChunk } from './messages.js';
-import type { Pf1eMoney } from './rulesets/pf1e/money.js';
-import type { Pf1eClassRules } from './rulesets/pf1e/classes.js';
-import type { Pf1eRaceRules } from './rulesets/pf1e/races.js';
+import type { Money } from './money.js';
+import type { ClassRules, RaceRules } from './racesAndClasses.js';
 import type { Pf1eSettings } from './rulesets/pf1e/settings.js';
+import type { Sf1eSettings } from './rulesets/sf1e/settings.js';
+import type { Sf1eThemeRules } from './rulesets/sf1e/themes.js';
 import type { FaerieMorning, PassageOfTime, Ruleset, UniverseRole, UniverseStage, AreaLinkMode, AreaPassageOfTime } from './universes.js';
 
 /**
@@ -40,6 +41,10 @@ import type { FaerieMorning, PassageOfTime, Ruleset, UniverseRole, UniverseStage
  * - POST   /:universeId/classes                    ClassSettings -> CreatedPayload: a custom class (creators only)
  * - PUT    /:universeId/classes/:classId           ClassSettings: edits a custom class, or stores an edited copy of a default class (creators only)
  * - DELETE /:universeId/classes/:classId           deletes a custom class, or restores a default class (creators only)
+ * - GET    /:universeId/themes                     ThemeListPayload (rulesets with themes only, rulesetHasThemes())
+ * - POST   /:universeId/themes                     ThemeSettings -> CreatedPayload: a custom theme (creators only)
+ * - PUT    /:universeId/themes/:themeId            ThemeSettings: edits a custom theme, or stores an edited copy of a default theme (creators only)
+ * - DELETE /:universeId/themes/:themeId            deletes a custom theme, or restores a default theme (creators only)
  * - GET    /:universeId/areas                      AreaListPayload
  * - POST   /:universeId/areas                      NewAreaRequest -> CreatedPayload
  * - GET    /:universeId/areas/:areaId              EditorArea
@@ -128,6 +133,16 @@ export const MAX_CLASS_NAME_LENGTH = 40;
  */
 export const MAX_CUSTOM_RACES = 100;
 export const MAX_CUSTOM_CLASSES = 100;
+
+/**
+ * Most characters in a theme's name
+ */
+export const MAX_THEME_NAME_LENGTH = 40;
+
+/**
+ * Most themes a universe may add to its ruleset's defaults
+ */
+export const MAX_CUSTOM_THEMES = 100;
 
 /**
  * Most characters in an area's name
@@ -256,9 +271,9 @@ export interface UniverseSettings
 	groupSize: number;
 
 	/**
-	 * The coins every character starts with, up to PF1E_MAX_COINS of each
+	 * The coins every character starts with: up to MAX_COINS of each of the ruleset's coins, and none of others
 	 */
-	startingMoney: Pf1eMoney;
+	startingMoney: Money;
 
 	/**
 	 * The items every character starts with, by item ID: up to MAX_STARTING_ITEMS items the universe
@@ -304,10 +319,9 @@ export type UniverseSettingsUpdate = Partial<UniverseSettings>;
  * How a universe plays under its ruleset, as the Ruleset tab shows and changes it: response of GET
  * EDITOR_UNIVERSES_PATH/:universeId/ruleset, and body of PUT, whose ruleset must be the universe's
  */
-export type RulesetSettings = {
-	ruleset: 'pf1e';
-	settings: Pf1eSettings;
-};
+export type RulesetSettings =
+	| { ruleset: 'pf1e'; settings: Pf1eSettings }
+	| { ruleset: 'sf1e'; settings: Sf1eSettings };
 
 /**
  * A tile's settings, as the tile editor shows and changes them
@@ -527,9 +541,10 @@ export interface ItemQuantity
 export interface StartingExtras
 {
 	/**
-	 * Coins added to the universe's starting money, up to PF1E_MAX_COINS of each
+	 * Coins added to the universe's starting money: up to MAX_COINS of each of the ruleset's coins, and
+	 * none of others
 	 */
-	startingMoney: Pf1eMoney;
+	startingMoney: Money;
 
 	/**
 	 * Items added to the universe's starting equipment, by item ID: up to MAX_STARTING_ITEMS items the
@@ -563,7 +578,7 @@ export interface RaceSettings extends StartingExtras
 	/**
 	 * The race's rules under the universe's ruleset
 	 */
-	rules: Pf1eRaceRules;
+	rules: RaceRules;
 }
 
 /**
@@ -642,7 +657,7 @@ export interface ClassSettings extends StartingExtras
 	/**
 	 * The class's rules under the universe's ruleset
 	 */
-	rules: Pf1eClassRules;
+	rules: ClassRules;
 }
 
 /**
@@ -678,6 +693,63 @@ export interface EditorClass extends ClassSettings
 export interface ClassListPayload
 {
 	classes: EditorClass[];
+}
+
+/**
+ * A theme's settings, as the theme editor shows and changes them
+ */
+export interface ThemeSettings
+{
+	/**
+	 * Null for a default theme that keeps its name, which players read in their language
+	 * (DEFAULT_THEME_NAMES). A theme the universe added must have one
+	 */
+	name: string | null;
+
+	/**
+	 * Whether new characters can have this theme. A universe with themes always has at least one enabled
+	 */
+	enabled: boolean;
+
+	/**
+	 * The theme's rules under the universe's ruleset
+	 */
+	rules: Sf1eThemeRules;
+}
+
+/**
+ * A theme as the Characters tab lists it
+ */
+export interface EditorTheme extends ThemeSettings
+{
+	/**
+	 * The ID everything else uses for the theme. An edited default theme keeps the default theme's ID
+	 */
+	id: number;
+
+	/**
+	 * A default theme's key, e.g. ace_pilot, which finds its name in DEFAULT_THEME_NAMES; null for a theme
+	 * the universe added
+	 */
+	key: string | null;
+
+	/**
+	 * Whether the universe added the theme, rather than it being one of the ruleset's default themes
+	 */
+	custom: boolean;
+
+	/**
+	 * Whether the theme is a default theme the universe has changed
+	 */
+	edited: boolean;
+}
+
+/**
+ * Response of GET EDITOR_UNIVERSES_PATH/:universeId/themes: every theme the universe can use, by ID
+ */
+export interface ThemeListPayload
+{
+	themes: EditorTheme[];
 }
 
 /**

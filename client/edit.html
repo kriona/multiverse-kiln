@@ -26,8 +26,7 @@
 					<button id="editor-tab-lobby" type="button" role="tab" aria-controls="editor-panel-lobby" data-message="editor.tab.lobby" data-translation-context="Tab of the editor with the lobby's settings"><!-- icon game-icons:campfire -->Lobby</button>
 					<button id="editor-tab-characters" type="button" role="tab" aria-controls="editor-panel-characters" data-message="editor.tab.characters" data-translation-context="Tab of the editor with what characters start with and how many play together"><!-- icon game-icons:character -->Characters</button>
 					<button id="editor-tab-races" type="button" role="tab" aria-controls="editor-panel-races" data-message="editor.tab.races" data-translation-context="Tab of the editor listing the races characters can be, such as elves and dwarves"><!-- icon game-icons:dwarf-face -->Races</button>
-					<button id="editor-tab-classes" type="button" role="tab" aria-controls="editor-panel-classes" data-message="editor.tab.classes" data-translation-context="Tab of the editor listing the classes characters can be, such as fighters and wizards"><!-- icon game-icons:pointy-hat -->Classes</button>
-					<button id="editor-tab-tilesets" type="button" role="tab" aria-controls="editor-panel-tilesets" data-message="editor.tab.tilesets" data-translation-context="Tab of the editor listing the tiles maps are painted with"><!-- icon game-icons:stone-block -->Tilesets</button>
+					<button id="editor-tab-classes" type="button" role="tab" aria-controls="editor-panel-classes" data-message="editor.tab.classes" data-translation-context="Tab of the editor listing the classes characters can be, such as fighters and wizards"><!-- icon game-icons:pointy-hat -->Classes</button>					<button id="editor-tab-tilesets" type="button" role="tab" aria-controls="editor-panel-tilesets" data-message="editor.tab.tilesets" data-translation-context="Tab of the editor listing the tiles maps are painted with"><!-- icon game-icons:stone-block -->Tilesets</button>
 					<button id="editor-tab-areas" type="button" role="tab" aria-controls="editor-panel-areas" data-message="editor.tab.areas" data-translation-context="Tab of the editor listing the universe's areas (places with their own map)"><!-- icon game-icons:treasure-map -->Areas</button>
 					<button id="editor-tab-items" type="button" role="tab" aria-controls="editor-panel-items" data-message="editor.tab.items" data-translation-context="Tab of the editor listing the items characters can be given, such as weapons and gear"><!-- icon game-icons:swap-bag -->Items</button>
 				</div>
@@ -92,20 +91,29 @@
 						<form id="ruleset-form" class="form">
 							<fieldset id="ruleset-fields" class="plain">
 								<p data-message="editor.ruleset.heading" data-translation-context="At the top of the editor's Ruleset tab, naming the universe's game rules; {ruleset} is e.g. Pathfinder 1E">Settings for <strong id="ruleset-name" data-argument="ruleset"></strong></p>
-								<label data-message="editor.ruleset.statMethod" data-translation-context="Label of the field for how characters' ability scores are made: rolled with dice, or bought with points">
-									Rolling for stats
-									<select id="ruleset-stat-method"></select>
-								</label>
-								<label id="ruleset-budget-field" data-message="editor.ruleset.budget" data-translation-context="Label of the field for how many points players spend on ability scores, shown when the universe chooses the number" hidden>
-									Points to spend
-									<input id="ruleset-budget" type="number" step="1" required />
-								</label>
-								<p class="hint" data-message="editor.ruleset.statMethodHint" data-translation-context="Explains that changing how ability scores are made only affects characters made afterwards">Rolled scores can be rearranged among the abilities. Changing this doesn't change characters that already exist.</p>
+								<div id="ruleset-pf1e-stats" class="form-group">
+									<label data-message="editor.ruleset.statMethod" data-translation-context="Label of the field for how characters' ability scores are made: rolled with dice, or bought with points">
+										Rolling for stats
+										<select id="ruleset-stat-method"></select>
+									</label>
+									<label id="ruleset-budget-field" data-message="editor.ruleset.budget" data-translation-context="Label of the field for how many points players spend on ability scores, shown when the universe chooses the number" hidden>
+										Points to spend
+										<input id="ruleset-budget" type="number" step="1" required />
+									</label>
+									<p class="hint" data-message="editor.ruleset.statMethodHint" data-translation-context="Explains that changing how ability scores are made only affects characters made afterwards">Rolled scores can be rearranged among the abilities. Changing this doesn't change characters that already exist.</p>
+								</div>
+								<div id="ruleset-sf1e-stats" class="form-group" hidden>
+									<label data-message="editor.ruleset.abilityPoints" data-translation-context="Label of the field for how many ability points players spend raising their characters' ability scores, in Starfinder">
+										Ability points
+										<input id="ruleset-ability-points" type="number" step="1" required />
+									</label>
+									<p class="hint" data-message="editor.ruleset.abilityPointsHint" data-translation-context="Explains the Starfinder ability points field: how ability scores are made, and that changing it only affects characters made afterwards">Every ability score starts at 10, and each point raises one by 1, up to 18 with the race's and theme's bonuses. Changing this doesn't change characters that already exist.</p>
+								</div>
 								<label class="checkbox" data-message="editor.ruleset.needsSleep" data-translation-context="Checkbox for whether characters in the universe get tired and need to sleep">
 									<input id="ruleset-needs-sleep" type="checkbox" />
 									Characters get tired and need sleep
 								</label>
-								<label class="checkbox" data-message="editor.ruleset.coinsHaveWeight" data-translation-context="Checkbox for whether the coins characters carry add to the weight they carry">
+								<label id="ruleset-coins-have-weight-field" class="checkbox" data-message="editor.ruleset.coinsHaveWeight" data-translation-context="Checkbox for whether the coins characters carry add to the weight they carry">
 									<input id="ruleset-coins-have-weight" type="checkbox" />
 									Coins count towards carrying capacity
 								</label>
@@ -128,8 +136,8 @@
 						<button id="lobby-edit-area" type="button" data-message="editor.lobby.editArea" data-translation-context="Button that opens the lobby in the area editor"><!-- icon ph:pencil-simple -->Edit the lobby's area</button>
 					</section>
 
-					<section id="editor-panel-characters" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-characters" hidden>
-						<form id="characters-form" class="form">
+					<section id="editor-panel-characters" class="editor-panel editor-cards" role="tabpanel" aria-labelledby="editor-tab-characters" hidden>
+						<form id="characters-form" class="panel form">
 							<fieldset id="characters-fields" class="plain">
 								<label data-message="editor.characters.groupSize" data-translation-context="Label of the field for the most characters that can play together in one group">
 									Group size
@@ -162,6 +170,25 @@
 								</div>
 							</fieldset>
 						</form>
+
+						<section id="characters-themes" class="panel themes" aria-labelledby="characters-themes-heading" hidden>
+							<h2 id="characters-themes-heading" data-message="editor.themes.heading" data-translation-context="Heading of the part of the editor's Characters tab listing the themes characters can have in Starfinder: backgrounds such as ace pilot or scholar">Themes</h2>
+							<div class="filters">
+								<p class="hint" data-message="editor.themes.hint" data-translation-context="Explains the themes on the editor's Characters tab, in Starfinder: a theme is a character's background, such as ace pilot or scholar">The themes new characters can choose: a background, such as a pilot or a scholar, that raises one ability score.</p>
+								<button id="theme-add" type="button" data-shortcut="Alt+N" data-message="editor.themes.add" data-translation-context="Button that opens the dialog for making a new theme (a character background, such as ace pilot)"><!-- icon ph:plus -->Add Theme</button>
+							</div>
+							<p id="theme-list-error" class="form-error" role="alert" hidden></p>
+							<table class="item-table">
+								<thead>
+									<tr>
+										<th scope="col" data-message="editor.themes.name" data-translation-context="Heading of the table column with each theme's name">Name</th>
+										<th scope="col" data-message="editor.themes.summary" data-translation-context="Heading of the table column describing each theme's rules, such as the ability it raises">Summary</th>
+										<th scope="col"></th>
+									</tr>
+								</thead>
+								<tbody id="theme-rows"></tbody>
+							</table>
+						</section>
 					</section>
 
 					<section id="editor-panel-races" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-races" hidden>
@@ -479,6 +506,10 @@
 								Size
 								<select id="race-size"></select>
 							</label>
+							<label id="race-hit-points-field" data-message="editor.race.hitPoints" data-translation-context="Label of the field for the hit points a race gives its characters on top of their class's, in Starfinder" hidden>
+								Hit points
+								<input id="race-hit-points" type="number" step="1" required />
+							</label>
 							<label data-message="editor.race.startingMoney" data-translation-context="Label of the field for the money a race's characters get on top of what every character starts with">
 								Extra starting money
 								<input id="race-money" autocomplete="off" />
@@ -519,19 +550,36 @@
 								Enabled
 							</label>
 							<p class="hint" data-message="editor.class.enabledHint" data-translation-context="Explains the class editor's Enabled checkbox">New characters can only choose enabled classes, and at least one class must be enabled.</p>
-							<label data-message="editor.class.primaryAbility" data-translation-context="Label of the field for the ability score a character class relies on most">
-								Primary ability
-								<select id="class-primary-ability"></select>
-							</label>
-							<p class="hint" data-message="editor.class.primaryAbilityHint" data-translation-context="Explains the class editor's Primary ability field">Suggested to players when they arrange their ability scores.</p>
-							<label data-message="editor.class.tradition" data-translation-context="Label of the field for where a character class's magic comes from: none, arcane or divine">
-								Magic tradition
-								<select id="class-tradition"></select>
-							</label>
-							<label data-message="editor.class.castingStyle" data-translation-context="Label of the field for how a character class casts spells: none, prepared or spontaneous">
-								Spellcasting style
-								<select id="class-casting-style"></select>
-							</label>
+							<div id="class-pf1e-rules" class="form-group">
+								<label data-message="editor.class.primaryAbility" data-translation-context="Label of the field for the ability score a character class relies on most">
+									Primary ability
+									<select id="class-primary-ability"></select>
+								</label>
+								<p class="hint" data-message="editor.class.primaryAbilityHint" data-translation-context="Explains the class editor's Primary ability field">Suggested to players when they arrange their ability scores.</p>
+								<label data-message="editor.class.tradition" data-translation-context="Label of the field for where a character class's magic comes from: none, arcane or divine">
+									Magic tradition
+									<select id="class-tradition"></select>
+								</label>
+								<label data-message="editor.class.castingStyle" data-translation-context="Label of the field for how a character class casts spells: none, prepared or spontaneous">
+									Spellcasting style
+									<select id="class-casting-style"></select>
+								</label>
+							</div>
+							<div id="class-sf1e-rules" class="form-group" hidden>
+								<label data-message="editor.class.keyAbility" data-translation-context="Label of the field for the ability score a character class relies on most, its key ability score in Starfinder">
+									Key ability
+									<select id="class-key-ability"></select>
+								</label>
+								<p class="hint" data-message="editor.class.keyAbilityHint" data-translation-context="Explains the class editor's Key ability field in Starfinder">Suggested to players when they spend their ability points.</p>
+								<label data-message="editor.class.hitPoints" data-translation-context="Label of the field for the hit points a character class gives at each level, in Starfinder">
+									Hit points per level
+									<input id="class-hit-points" type="number" step="1" required />
+								</label>
+								<label data-message="editor.class.staminaPoints" data-translation-context="Label of the field for the stamina points a character class gives at each level, in Starfinder; stamina is lost before hit points and comes back with rest">
+									Stamina points per level
+									<input id="class-stamina-points" type="number" step="1" required />
+								</label>
+							</div>
 							<label data-message="editor.class.startingMoney" data-translation-context="Label of the field for the money a character class's members get on top of what every character and their race start with">
 								Extra starting money
 								<input id="class-money" autocomplete="off" />
@@ -559,6 +607,33 @@
 								<button id="class-remove" type="button" class="danger" aria-describedby="class-error"></button>
 								<button id="class-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
 								<button id="class-save" type="submit" aria-describedby="class-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+							</div>
+						</fieldset>
+					</form>
+				</dialog>
+				<dialog id="theme-dialog" class="panel dialog option-dialog" aria-labelledby="theme-dialog-title">
+					<form id="theme-form" class="form">
+						<fieldset id="theme-fields" class="plain">
+							<h2 id="theme-dialog-title"></h2>
+							<label data-message="editor.theme.name" data-translation-context="Label of the field for a theme's name (a character background, such as ace pilot)">
+								Name
+								<input id="theme-name" required />
+							</label>
+							<label class="checkbox" data-message="editor.theme.enabled" data-translation-context="Checkbox for whether new characters can choose the theme">
+								<input id="theme-enabled" type="checkbox" />
+								Enabled
+							</label>
+							<p class="hint" data-message="editor.theme.enabledHint" data-translation-context="Explains the theme editor's Enabled checkbox">New characters can only choose enabled themes, and at least one theme must be enabled.</p>
+							<label data-message="editor.theme.ability" data-translation-context="Label of the field for the ability score a theme raises">
+								Ability raised
+								<select id="theme-ability"></select>
+							</label>
+							<p id="theme-ability-hint" class="hint"></p>
+							<p id="theme-error" class="form-error" role="alert" hidden></p>
+							<div class="form-buttons">
+								<button id="theme-remove" type="button" class="danger" aria-describedby="theme-error"></button>
+								<button id="theme-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+								<button id="theme-save" type="submit" aria-describedby="theme-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
 							</div>
 						</fieldset>
 					</form>

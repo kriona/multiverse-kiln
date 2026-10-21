@@ -1,6 +1,6 @@
 import assert from 'assert';
 
-import { DEFAULT_CLASS_NAMES, emptyPf1eMoney, NEW_PF1E_CLASS_RULES, PF1E_CLASSES, type ClassSettings, type EditorClass } from '@multiverse-kiln/shared';
+import { DEFAULT_CLASS_NAMES, emptyMoney, NEW_PF1E_CLASS_RULES, PF1E_CLASSES, type ClassSettings, type EditorClass } from '@multiverse-kiln/shared';
 
 import { countCustomClasses, createCustomClass, deleteCustomClass, findClassKind, findDefaultClassIds, isClassStartingItem, loadEditorClasses, restoreDefaultClass, saveEditedDefaultClass, updateCustomClass, type CustomClassSettings } from '../../src/db/classRepo.js';
 import { findDefaultItemIds } from '../../src/db/itemRepo.js';
@@ -12,7 +12,7 @@ import { addUniverse, addArea } from './fixtures.js';
 const gunslinger: CustomClassSettings = {
 	name: 'Gunslinger',
 	enabled: true,
-	startingMoney: emptyPf1eMoney(),
+	startingMoney: emptyMoney(),
 	startingItems: [],
 	startingAreaId: null,
 	raceAreas: [],
@@ -73,7 +73,7 @@ describe('classRepo', () =>
 					key,
 					name: null,
 					enabled: true,
-					startingMoney: emptyPf1eMoney(),
+					startingMoney: emptyMoney(),
 					startingItems: [],
 					startingAreaId: null,
 					raceAreas: [],
@@ -101,7 +101,7 @@ describe('classRepo', () =>
 		const changed: CustomClassSettings = {
 			...gunslinger,
 			startingMoney: {
-				...emptyPf1eMoney(),
+				...emptyMoney(),
 				sp: 30
 			},
 			startingItems: [{ itemId: daggerId, quantity: 1 }],
@@ -113,7 +113,7 @@ describe('classRepo', () =>
 			}
 		};
 
-		await inTransaction((transaction) => updateCustomClass(universeId, classId, changed, transaction));
+		await inTransaction((transaction) => updateCustomClass(universeId, 'pf1e', classId, changed, transaction));
 		assert.deepStrictEqual(await findClass(universeId, classId), { id: classId, key: null, ...changed, custom: true, edited: false });
 		assert.strictEqual(await isClassStartingItem(universeId, daggerId), true);
 

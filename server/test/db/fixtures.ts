@@ -59,9 +59,11 @@ export async function dwarfFighter(playerId: string, universeId: string, name: s
 	return({
 		playerId,
 		universeId,
+		ruleset: 'pf1e',
 		name,
 		raceId,
 		classId,
+		themeId: null,
 		abilityScores: {
 			strength: 16,
 			dexterity: 12,
@@ -74,7 +76,8 @@ export async function dwarfFighter(playerId: string, universeId: string, name: s
 			pp: 0,
 			gp: 15,
 			sp: 5,
-			cp: 0
+			cp: 0,
+			cr: 0
 		},
 		items: [{
 			itemId: daggerId,

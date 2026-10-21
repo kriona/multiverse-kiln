@@ -1,4 +1,4 @@
-import { canEditUniverseSettings, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MIN_POINT_BUY_BUDGET, PF1E_STAT_METHOD_NAMES, PF1E_STAT_METHODS, RULESET_NAMES, type EditableUniverse, type Pf1eStatMethod, type RulesetSettings } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MIN_POINT_BUY_BUDGET, PF1E_STAT_METHOD_NAMES, PF1E_STAT_METHODS, RULESET_NAMES, SF1E_MAX_ABILITY_POINTS, SF1E_MIN_ABILITY_POINTS, type EditableUniverse, type Pf1eStatMethod, type RulesetSettings } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -9,17 +9,23 @@ import { formMessages } from '../formMessages';
 
 /**
  * The Ruleset tab: how the universe plays under its ruleset. For Pathfinder 1E, how ability scores
- * are made, and whether characters need sleep, coins have weight and ammunition is tracked
+ * are made, and whether characters need sleep, coins have weight and ammunition is tracked. For
+ * Starfinder 1E, how many ability points characters spend, and whether characters need sleep and
+ * ammunition is tracked
  */
 export class RulesetTab
 {
 	private readonly form = getElement('ruleset-form', HTMLFormElement);
 	private readonly fields = getElement('ruleset-fields', HTMLFieldSetElement);
 	private readonly rulesetName = getElement('ruleset-name', HTMLElement);
+	private readonly pf1eStats = getElement('ruleset-pf1e-stats', HTMLElement);
+	private readonly sf1eStats = getElement('ruleset-sf1e-stats', HTMLElement);
 	private readonly statMethod = getElement('ruleset-stat-method', HTMLSelectElement);
 	private readonly budgetField = getElement('ruleset-budget-field', HTMLElement);
 	private readonly budget = getElement('ruleset-budget', HTMLInputElement);
+	private readonly abilityPoints = getElement('ruleset-ability-points', HTMLInputElement);
 	private readonly needsSleep = getElement('ruleset-needs-sleep', HTMLInputElement);
+	private readonly coinsHaveWeightField = getElement('ruleset-coins-have-weight-field', HTMLElement);
 	private readonly coinsHaveWeight = getElement('ruleset-coins-have-weight', HTMLInputElement);
 	private readonly tracksAmmo = getElement('ruleset-tracks-ammo', HTMLInputElement);
 	private readonly error = getElement('ruleset-error', HTMLElement);
@@ -48,6 +54,8 @@ export class RulesetTab
 	{
 		this.budget.min = String(PF1E_MIN_POINT_BUY_BUDGET);
 		this.budget.max = String(PF1E_MAX_POINT_BUY_BUDGET);
+		this.abilityPoints.min = String(SF1E_MIN_ABILITY_POINTS);
+		this.abilityPoints.max = String(SF1E_MAX_ABILITY_POINTS);
 		setOptions(this.statMethod, namedOptions(PF1E_STAT_METHODS, PF1E_STAT_METHOD_NAMES));
 
 		this.statMethod.addEventListener('change', () =>
@@ -56,11 +64,14 @@ export class RulesetTab
 			this.saved.textContent = '';
 		});
 
-		this.budget.addEventListener('input', () =>
+		for (const input of [this.budget, this.abilityPoints])
 		{
-			setFieldError(this.budget, undefined);
-			this.saved.textContent = '';
-		});
+			input.addEventListener('input', () =>
+			{
+				setFieldError(input, undefined);
+				this.saved.textContent = '';
+			});
+		}
 
 		for (const checkbox of [this.needsSleep, this.coinsHaveWeight, this.tracksAmmo])
 		{
@@ -88,6 +99,9 @@ export class RulesetTab
 
 		this.universe = universe;
 		this.rulesetName.textContent = t(RULESET_NAMES[universe.ruleset]);
+		this.pf1eStats.hidden = (universe.ruleset !== 'pf1e');
+		this.coinsHaveWeightField.hidden = (universe.ruleset !== 'pf1e');
+		this.sf1eStats.hidden = (universe.ruleset !== 'sf1e');
 		this.fields.disabled = true;
 		this.saveButton.hidden = !canEditUniverseSettings(universe.role);
 		this.saved.textContent = '';
@@ -119,14 +133,22 @@ export class RulesetTab
 			return;
 		}
 
-		const { settings } = ruleset;
+		if (ruleset.ruleset === 'pf1e')
+		{
+			const { settings } = ruleset;
 
-		this.statMethod.value = settings.statMethod;
-		this.budget.value = String(settings.customPointBuyBudget);
-		this.budgetField.hidden = (settings.statMethod !== 'point_buy_custom');
-		this.needsSleep.checked = settings.needsSleep;
-		this.coinsHaveWeight.checked = settings.coinsHaveWeight;
-		this.tracksAmmo.checked = settings.tracksAmmo;
+			this.statMethod.value = settings.statMethod;
+			this.budget.value = String(settings.customPointBuyBudget);
+			this.budgetField.hidden = (settings.statMethod !== 'point_buy_custom');
+			this.coinsHaveWeight.checked = settings.coinsHaveWeight;
+		}
+		else
+		{
+			this.abilityPoints.value = String(ruleset.settings.abilityPoints);
+		}
+
+		this.needsSleep.checked = ruleset.settings.needsSleep;
+		this.tracksAmmo.checked = ruleset.settings.tracksAmmo;
 		this.fields.disabled = !canEditUniverseSettings(universe.role);
 		this.changes.markSaved();
 	}
@@ -137,33 +159,18 @@ export class RulesetTab
 	private async save(): Promise<void>
 	{
 		const universe = this.universe;
-		const budget = Number(this.budget.value);
 
 		if (!universe)
 		{
 			return;
 		}
 
-		if (!Number.isInteger(budget) || (budget < PF1E_MIN_POINT_BUY_BUDGET) || (budget > PF1E_MAX_POINT_BUY_BUDGET) || (this.budget.value.trim() === ''))
+		const ruleset = this.readSettings(universe);
+
+		if (ruleset === undefined)
 		{
-			this.budgetField.hidden = false;
-			reportFieldError(this.budget, t(formMessages.wholeNumber, {
-				min: PF1E_MIN_POINT_BUY_BUDGET,
-				max: PF1E_MAX_POINT_BUY_BUDGET
-			}));
 			return;
 		}
-
-		const ruleset: RulesetSettings = {
-			ruleset: 'pf1e',
-			settings: {
-				statMethod: this.statMethod.value as Pf1eStatMethod,
-				customPointBuyBudget: budget,
-				needsSleep: this.needsSleep.checked,
-				coinsHaveWeight: this.coinsHaveWeight.checked,
-				tracksAmmo: this.tracksAmmo.checked
-			}
-		};
 
 		this.saveButton.disabled = true;
 		showMessage(this.error, undefined);
@@ -187,4 +194,83 @@ export class RulesetTab
 			this.saveButton.disabled = false;
 		}
 	}
+
+	/**
+	 * The settings as the form shows them, reporting the first number that is out of range
+	 *
+	 * @param universe The universe
+	 * @return The settings for the universe's ruleset, or undefined when a field is wrong
+	 */
+	private readSettings(universe: EditableUniverse): RulesetSettings | undefined
+	{
+		if (universe.ruleset === 'sf1e')
+		{
+			const abilityPoints = wholeNumberIn(this.abilityPoints, SF1E_MIN_ABILITY_POINTS, SF1E_MAX_ABILITY_POINTS);
+
+			if (abilityPoints === undefined)
+			{
+				reportNotWholeNumber(this.abilityPoints, SF1E_MIN_ABILITY_POINTS, SF1E_MAX_ABILITY_POINTS);
+				return(undefined);
+			}
+
+			return({
+				ruleset: 'sf1e',
+				settings: {
+					abilityPoints,
+					needsSleep: this.needsSleep.checked,
+					tracksAmmo: this.tracksAmmo.checked
+				}
+			});
+		}
+
+		const budget = wholeNumberIn(this.budget, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MAX_POINT_BUY_BUDGET);
+
+		if (budget === undefined)
+		{
+			this.budgetField.hidden = false;
+			reportNotWholeNumber(this.budget, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MAX_POINT_BUY_BUDGET);
+			return(undefined);
+		}
+
+		return({
+			ruleset: 'pf1e',
+			settings: {
+				statMethod: this.statMethod.value as Pf1eStatMethod,
+				customPointBuyBudget: budget,
+				needsSleep: this.needsSleep.checked,
+				coinsHaveWeight: this.coinsHaveWeight.checked,
+				tracksAmmo: this.tracksAmmo.checked
+			}
+		});
+	}
+}
+
+/**
+ * Reads a number field that must hold a whole number in a range
+ *
+ * @param field The field
+ * @param min The lowest number allowed
+ * @param max The highest number allowed
+ * @return The number, or undefined when the field holds anything else
+ */
+function wholeNumberIn(field: HTMLInputElement, min: number, max: number): number | undefined
+{
+	const value = Number(field.value);
+
+	return(((!Number.isInteger(value) || (value < min) || (value > max) || (field.value.trim() === '')) ? undefined : value));
+}
+
+/**
+ * Shows under a number field that it needs a whole number in a range, and takes the player there
+ *
+ * @param field The field, which must be showing
+ * @param min The lowest number allowed
+ * @param max The highest number allowed
+ */
+function reportNotWholeNumber(field: HTMLInputElement, min: number, max: number): void
+{
+	reportFieldError(field, t(formMessages.wholeNumber, {
+		min,
+		max
+	}));
 }

@@ -28,6 +28,7 @@
 							<li><button id="character-nav-name" type="button" class="link-button" data-message="character.step.name" data-translation-context="Step of Create Character where the player names the character">Name</button></li>
 							<li><button id="character-nav-race" type="button" class="link-button" data-message="character.step.race" data-translation-context="Step of Create Character where the player chooses the character's race, such as elf or dwarf">Race</button></li>
 							<li><button id="character-nav-class" type="button" class="link-button" data-message="character.step.class" data-translation-context="Step of Create Character where the player chooses the character's class, such as fighter or wizard">Class</button></li>
+							<li hidden><button id="character-nav-theme" type="button" class="link-button" data-message="character.step.theme" data-translation-context="Step of Create Character, in Starfinder, where the player chooses the character's theme: a background such as ace pilot or scholar">Theme</button></li>
 							<li><button id="character-nav-abilities" type="button" class="link-button" data-message="character.step.abilities" data-translation-context="Step of Create Character where the player sets the character's ability scores">Ability scores</button></li>
 							<li><button id="character-nav-review" type="button" class="link-button" data-message="character.step.review" data-translation-context="Last step of Create Character, which shows the choices before the character is made">Review</button></li>
 						</ol>
@@ -61,6 +62,14 @@
 								</label>
 								<p id="character-class-hint" class="hint"></p>
 							</section>
+							<section id="character-step-theme" class="character-step" aria-labelledby="character-heading-theme" hidden>
+								<h2 id="character-heading-theme" data-message="character.heading.theme" data-translation-context="Heading of the Create Character step, in Starfinder, where the player chooses the character's theme (a background, such as ace pilot)">Choose a theme</h2>
+								<label data-message="character.create.theme" data-translation-context="Label of the field for a new character's theme, in Starfinder: a background such as ace pilot or scholar">
+									Theme
+									<select id="character-theme"></select>
+								</label>
+								<p id="character-theme-hint" class="hint"></p>
+							</section>
 							<section id="character-step-abilities" class="character-step" aria-labelledby="character-heading-abilities" hidden>
 								<h2 id="character-heading-abilities" data-message="character.create.abilityScores" data-translation-context="Heading of the part of Create Character where the player sets the character's ability scores">Ability scores</h2>
 								<p id="character-method" class="hint"></p>
@@ -69,7 +78,7 @@
 										<tr>
 											<th scope="col" data-message="character.create.abilityColumn" data-translation-context="Heading of the column of ability names, such as Strength, in Create Character">Ability</th>
 											<th scope="col" data-message="character.create.baseColumn" data-translation-context="Heading of the column of the scores the player rolled or bought, before the race changes them, in Create Character">Base</th>
-											<th scope="col" data-message="character.create.raceColumn" data-translation-context="Heading of the column of how much the chosen race adds to or takes from each score, in Create Character">Race</th>
+											<th id="character-race-column" scope="col" data-message="character.create.raceColumn" data-translation-context="Heading of the column of how much the chosen race adds to or takes from each score, in Create Character">Race</th>
 											<th scope="col" data-message="character.create.scoreColumn" data-translation-context="Heading of the column of the character's final ability scores, in Create Character">Score</th>
 											<th scope="col" data-message="character.create.modifierColumn" data-translation-context="Heading of the column of the bonus or penalty each final score gives, such as +2, in Create Character">Modifier</th>
 										</tr>
@@ -78,6 +87,7 @@
 								</table>
 								<p id="character-points" aria-live="polite"></p>
 								<p id="character-over-budget" class="form-error" role="alert" hidden></p>
+								<p id="character-over-limit" class="form-error" role="alert" hidden></p>
 							</section>
 							<section id="character-step-review" class="character-step" aria-labelledby="character-heading-review" hidden>
 								<h2 id="character-heading-review" data-message="character.heading.review" data-translation-context="Heading of the last step of Create Character, which shows the choices before the character is made">Review</h2>

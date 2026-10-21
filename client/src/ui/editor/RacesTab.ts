@@ -1,4 +1,4 @@
-import { canEditUniverseSettings, PF1E_ABILITIES, PF1E_ABILITY_NAMES, PF1E_FLOATING_ABILITY_BONUS, PF1E_SIZE_NAMES, type EditableUniverse, type EditorRace } from '@multiverse-kiln/shared';
+import { ABILITY_NAMES, canEditUniverseSettings, FLOATING_ABILITY_BONUSES, isSf1eRaceRules, RULESET_ABILITIES, SIZE_NAMES, type EditableUniverse, type EditorRace, type Ruleset } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -99,7 +99,7 @@ export class RacesTab
 				name: raceName(race, universe.ruleset)
 			}))
 			.sort((a, b) => a.name.localeCompare(b.name))
-			.map(({ race, name }) => createOptionRow(name, describeRace(race), optionTags(race), () =>
+			.map(({ race, name }) => createOptionRow(name, describeRace(race, universe.ruleset), optionTags(race), () =>
 			{
 				this.openRace(race);
 			})));
@@ -123,24 +123,27 @@ export class RacesTab
 }
 
 /**
- * A race's rules in a few words: its size, ability modifiers, floating bonus and darkvision
+ * A race's rules in a few words: its size, ability modifiers, floating bonus, darkvision and, in a
+ * ruleset that has them, hit points
  *
  * @param race The race
+ * @param ruleset The universe's ruleset
  * @return The summary
  */
-function describeRace(race: EditorRace): string
+function describeRace(race: EditorRace, ruleset: Ruleset): string
 {
-	const { abilityModifiers, floatingBonus, darkvision, size } = race.rules;
+	const { rules } = race;
+	const { abilityModifiers, floatingBonus, darkvision, size } = rules;
 	const parts = [
-		t(PF1E_SIZE_NAMES[size]),
-		...PF1E_ABILITIES
+		t(SIZE_NAMES[ruleset][size]),
+		...RULESET_ABILITIES[ruleset]
 			.filter((ability) => (abilityModifiers[ability] !== 0))
 			.map((ability) => t({
 				id: 'editor.races.modifier',
 				defaultMessage: '{ability} {modifier, number, ::sign-always}',
 				description: 'One ability modifier in a race\'s summary on the editor\'s Races tab, e.g. Dexterity +2; {ability} is the ability\'s name'
 			}, {
-				ability: t(PF1E_ABILITY_NAMES[ability]),
+				ability: t(ABILITY_NAMES[ruleset][ability]),
 				modifier: abilityModifiers[ability]
 			}))
 	];
@@ -152,7 +155,18 @@ function describeRace(race: EditorRace): string
 			defaultMessage: '{bonus, number, ::sign-always} to one ability',
 			description: 'In a race\'s summary on the editor\'s Races tab, for a race whose players choose one ability to raise; {bonus} is by how much, e.g. +2'
 		}, {
-			bonus: PF1E_FLOATING_ABILITY_BONUS
+			bonus: FLOATING_ABILITY_BONUSES[ruleset]
+		}));
+	}
+
+	if (isSf1eRaceRules(rules))
+	{
+		parts.push(t({
+			id: 'editor.races.hitPoints',
+			defaultMessage: '{hitPoints, plural, one {# hit point} other {# hit points}}',
+			description: 'In a race\'s summary on the editor\'s Races tab, in Starfinder, the hit points the race gives its characters'
+		}, {
+			hitPoints: rules.hitPoints
 		}));
 	}
 

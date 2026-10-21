@@ -8,21 +8,23 @@
 import { randomInt } from 'crypto';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { canPlayUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, isReservedName, MAX_CHARACTER_NAME_LENGTH, MAX_CHARACTERS_PER_UNIVERSE, NAME_MESSAGES, NEW_PF1E_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditableUniverse, type NewCharacterOptions, type NewCharacterRequest, type OptionName } from '@multiverse-kiln/shared';
+import { addMoney, canPlayUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, isReservedName, isSf1eClassRules, isSf1eRaceRules, MAX_CHARACTER_NAME_LENGTH, MAX_CHARACTERS_PER_UNIVERSE, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditableUniverse, type EditorClass, type EditorRace, type NewCharacterOptions, type NewCharacterRequest, type OptionName } from '@multiverse-kiln/shared';
 
 import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findPf1eAbilityRoll, keepPf1eAbilityRoll, listCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion } from '../db/characterRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
+import type { Executor } from '../db/client.js';
 import { lockPlayer } from '../db/playerRepo.js';
 import { loadEditorItems } from '../db/itemRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
-import { findPf1eSettings } from '../db/rulesetRepo.js';
+import { findPf1eSettings, findSf1eSettings } from '../db/rulesetRepo.js';
 import { findSiteSettings } from '../db/siteSettingsRepo.js';
+import { loadEditorThemes } from '../db/themeRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { findUniverseRole } from '../db/universeEditorRepo.js';
 import { findEditableUniverse, lockUniverse } from '../db/universeRepo.js';
 import { rollPf1eAbilityScores } from '../logic/abilityRolls.js';
 import { characterChanges } from '../players/characterChanges.js';
-import { areValidBaseScores, combineStartingItems, combineStartingMoney, finalPf1eAbilityScores, isValidFloatingAbility, type Pf1eScoreSource } from '../logic/characterCreation.js';
+import { abilityBonuses, areValidBaseScores, combineStartingItems, finalAbilityScores, isValidFloatingAbility, type ScoreSource } from '../logic/characterCreation.js';
 import { chooseStartingArea } from '../logic/startingArea.js';
 import { displayText } from '../rooms/payloads.js';
 import { playerIdOf, refuseWritesFromOtherOrigins, requireLogin } from './editorAccess.js';
@@ -34,17 +36,18 @@ import { errorMessages, sendError, sendInvalidRequest, type Refusal } from './er
 type PlayableUniverse = Omit<EditableUniverse, 'role'>;
 
 /**
- * A base ability score as sent: no rolled or bought score is outside this
+ * A base ability score as sent: no rolled, bought or raised score is outside this
  */
-const baseScore = z.number().int().min(0).max(PF1E_MAX_POINT_BUY_SCORE);
+const baseScore = z.number().int().min(0).max(Math.max(PF1E_MAX_POINT_BUY_SCORE, SF1E_MAX_BOUGHT_SCORE));
 
 /**
- * NewCharacterRequest. Whether the race, class and scores are allowed is checked by the route
+ * NewCharacterRequest. Whether the race, class, theme and scores are allowed is checked by the route
  */
 const newCharacterRequest = z.object({
 	name: displayText(MAX_CHARACTER_NAME_LENGTH),
 	raceId: z.number().int().min(1).max(2147483647),
 	classId: z.number().int().min(1).max(2147483647),
+	themeId: z.number().int().min(1).max(2147483647).nullable(),
 	baseScores: z.object({
 		strength: baseScore,
 		dexterity: baseScore,
@@ -65,6 +68,8 @@ const characterDraft = z.object({
 	name: z.string().max(MAX_CHARACTER_NAME_LENGTH).refine((text) => !DISALLOWED_TEXT_CHARACTERS.test(text), 'Contains disallowed characters'),
 	raceId: z.number().int().min(1).max(2147483647).nullable(),
 	classId: z.number().int().min(1).max(2147483647).nullable(),
+	// Progress saved before themes existed has none
+	themeId: z.number().int().min(1).max(2147483647).nullable().default(null),
 	baseScores: newCharacterRequest.shape.baseScores.nullable(),
 	floatingAbility: z.enum(PF1E_ABILITIES).nullable()
 }) satisfies z.ZodType<CharacterDraft>;
@@ -97,6 +102,11 @@ const messages = defineMessages({
 		id: 'error.classUnavailable',
 		defaultMessage: 'That class can\'t be chosen any more. Choose another.',
 		description: 'Why a new character wasn\'t made: the class chosen was deleted or disabled while the player was making the character'
+	},
+	themeUnavailable: {
+		id: 'error.themeUnavailable',
+		defaultMessage: 'That theme can\'t be chosen any more. Choose another.',
+		description: 'Why a new character wasn\'t made: the theme (character background, such as ace pilot) chosen was deleted or disabled while the player was making the character, or none was chosen'
 	},
 	floatingAbility: {
 		id: 'error.floatingAbility',
@@ -245,10 +255,11 @@ async function sheetRoute(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	const [character, races, classes, items, siteSettings] = await Promise.all([
-		findCharacterDetails(playerIdOf(request), universe.id, characterId),
+	const [character, races, classes, themes, items, siteSettings] = await Promise.all([
+		findCharacterDetails(playerIdOf(request), universe.id, universe.ruleset, characterId),
 		loadEditorRaces(universe.id, universe.ruleset),
 		loadEditorClasses(universe.id, universe.ruleset),
+		loadEditorThemes(universe.id, universe.ruleset),
 		loadEditorItems(universe.id, universe.ruleset),
 		findSiteSettings()
 	]);
@@ -261,7 +272,11 @@ async function sheetRoute(request: Request, response: Response): Promise<void>
 
 	const race = races.find((option) => (option.id === character.raceId));
 	const characterClass = classes.find((option) => (option.id === character.classId));
+	const theme = themes.find((option) => (option.id === character.themeId));
 	const itemsById = new Map(items.map((item) => [item.id, item]));
+	const { hitPoints, staminaPoints } = ((universe.ruleset === 'sf1e')
+		? sf1ePoints(race, characterClass, character.abilityScores.constitution)
+		: { hitPoints: null, staminaPoints: null });
 	const payload: CharacterSheet = {
 		ruleset: universe.ruleset,
 		id: character.id,
@@ -276,8 +291,16 @@ async function sheetRoute(request: Request, response: Response): Promise<void>
 		},
 		deleteAt: (character.deleteAt?.toISOString() ?? null),
 		deletionDays: siteSettings.characterDeletionDays,
-		size: (race?.rules.size ?? NEW_PF1E_RACE_RULES.size),
-		darkvision: (race?.rules.darkvision ?? NEW_PF1E_RACE_RULES.darkvision),
+		size: (race?.rules.size ?? NEW_RACE_RULES[universe.ruleset].size),
+		darkvision: (race?.rules.darkvision ?? NEW_RACE_RULES[universe.ruleset].darkvision),
+		theme: ((character.themeId === null)
+			? null
+			: {
+				key: (theme?.key ?? null),
+				name: (theme?.name ?? null)
+			}),
+		hitPoints,
+		staminaPoints,
 		abilityScores: character.abilityScores,
 		money: character.money,
 		items: character.items.map(({ itemId, quantity }) =>
@@ -295,6 +318,26 @@ async function sheetRoute(request: Request, response: Response): Promise<void>
 	};
 
 	response.json(payload);
+}
+
+/**
+ * A 1st-level Starfinder 1E character's hit points (their race's and class's) and stamina points (their
+ * class's and their Constitution modifier, at least 0), as the race and class set them now
+ *
+ * @param race The character's race, or undefined when it can't be found
+ * @param characterClass The character's class, or undefined when it can't be found
+ * @param constitution The character's Constitution score
+ * @return The points; a race or class that can't be found gives none
+ */
+function sf1ePoints(race: EditorRace | undefined, characterClass: EditorClass | undefined, constitution: number): { hitPoints: number; staminaPoints: number }
+{
+	const raceHitPoints = ((race && isSf1eRaceRules(race.rules)) ? race.rules.hitPoints : 0);
+	const classRules = ((characterClass && isSf1eClassRules(characterClass.rules)) ? characterClass.rules : undefined);
+
+	return({
+		hitPoints: (raceHitPoints + (classRules?.hitPoints ?? 0)),
+		staminaPoints: Math.max((classRules?.staminaPoints ?? 0) + sf1eAbilityModifier(constitution), 0)
+	});
 }
 
 /**
@@ -441,41 +484,17 @@ async function newCharacterRoute(request: Request, response: Response): Promise<
 {
 	const universe = universeOf(request);
 	const playerId = playerIdOf(request);
-	const [settings, races, classes, characterCount, storedDraft] = await Promise.all([
-		findPf1eSettings(universe.id),
+	const [abilities, races, classes, themes, characterCount, storedDraft] = await Promise.all([
+		offerAbilities(universe, playerId),
 		loadEditorRaces(universe.id, universe.ruleset),
 		loadEditorClasses(universe.id, universe.ruleset),
+		loadEditorThemes(universe.id, universe.ruleset),
 		countCharacters(playerId, universe.id),
 		findCharacterDraft(playerId, universe.id)
 	]);
 
 	// Progress saved by an older version of Create Character is dropped rather than refused
 	const draft = characterDraft.safeParse(storedDraft);
-	const { statMethod } = settings;
-	let abilities: NewCharacterOptions['abilities'];
-
-	if (isPf1eRollMethod(statMethod))
-	{
-		const roll = await keepPf1eAbilityRoll(playerId, universe.id, {
-			statMethod,
-			scores: rollPf1eAbilityScores(statMethod, secureRandom)
-		});
-
-		abilities = {
-			kind: 'roll',
-			statMethod,
-			rolls: roll.scores
-		};
-	}
-	else
-	{
-		abilities = {
-			kind: 'pointBuy',
-			statMethod,
-			budget: pf1ePointBuyBudget(statMethod, settings.customPointBuyBudget)
-		};
-	}
-
 	const payload: NewCharacterOptions = {
 		universeName: universe.name,
 		ruleset: universe.ruleset,
@@ -486,11 +505,56 @@ async function newCharacterRoute(request: Request, response: Response): Promise<
 		classes: classes
 			.filter((characterClass) => characterClass.enabled)
 			.map(({ id, key, name, rules }) => ({ id, key, name, rules })),
+		themes: themes
+			.filter((theme) => theme.enabled)
+			.map(({ id, key, name, rules }) => ({ id, key, name, rules })),
 		characterCount,
 		draft: (draft.success ? draft.data : null)
 	};
 
 	response.json(payload);
+}
+
+/**
+ * How a universe's new characters get their ability scores, rolling the player's scores if the universe
+ * rolls them and none are kept
+ *
+ * @param universe The universe
+ * @param playerId The player's ID
+ * @return What Create Character offers
+ */
+async function offerAbilities(universe: PlayableUniverse, playerId: string): Promise<NewCharacterOptions['abilities']>
+{
+	if (universe.ruleset === 'sf1e')
+	{
+		return({
+			kind: 'abilityPoints',
+			points: (await findSf1eSettings(universe.id)).abilityPoints
+		});
+	}
+
+	const settings = await findPf1eSettings(universe.id);
+	const { statMethod } = settings;
+
+	if (isPf1eRollMethod(statMethod))
+	{
+		const roll = await keepPf1eAbilityRoll(playerId, universe.id, {
+			statMethod,
+			scores: rollPf1eAbilityScores(statMethod, secureRandom)
+		});
+
+		return({
+			kind: 'roll',
+			statMethod,
+			rolls: roll.scores
+		});
+	}
+
+	return({
+		kind: 'pointBuy',
+		statMethod,
+		budget: pf1ePointBuyBudget(statMethod, settings.customPointBuyBudget)
+	});
 }
 
 /**
@@ -544,7 +608,7 @@ async function createRoute(request: Request, response: Response): Promise<void>
 
 	const playerId = playerIdOf(request);
 	const { id: universeId } = universeOf(request);
-	const { name, raceId, classId, baseScores, floatingAbility } = body.data;
+	const { name, raceId, classId, themeId, baseScores, floatingAbility } = body.data;
 
 	if (isReservedName(name))
 	{
@@ -578,39 +642,13 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			});
 		}
 
-		const settings = await findPf1eSettings(universeId, transaction);
-		let source: Pf1eScoreSource;
+		const source = await findScoreSource(universe, playerId, transaction);
 
-		if (isPf1eRollMethod(settings.statMethod))
-		{
-			const roll = await findPf1eAbilityRoll(playerId, universeId, transaction);
-
-			if (roll?.statMethod !== settings.statMethod)
-			{
-				return({
-					status: 409,
-					message: messages.scoresChanged
-				});
-			}
-
-			source = {
-				kind: 'roll',
-				rolls: roll.scores
-			};
-		}
-		else
-		{
-			source = {
-				kind: 'pointBuy',
-				budget: pf1ePointBuyBudget(settings.statMethod, settings.customPointBuyBudget)
-			};
-		}
-
-		if (!areValidBaseScores(baseScores, source))
+		if (source === undefined)
 		{
 			return({
-				status: 400,
-				message: messages.invalidScores
+				status: 409,
+				message: messages.scoresChanged
 			});
 		}
 
@@ -634,11 +672,33 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			});
 		}
 
+		const theme = (rulesetHasThemes(universe.ruleset)
+			? (await loadEditorThemes(universeId, universe.ruleset, transaction)).find((option) => ((option.id === themeId) && option.enabled))
+			: undefined);
+
+		if (rulesetHasThemes(universe.ruleset) ? !theme : (themeId !== null))
+		{
+			return({
+				status: 409,
+				message: messages.themeUnavailable
+			});
+		}
+
 		if (!isValidFloatingAbility(race.rules, floatingAbility))
 		{
 			return({
 				status: 400,
 				message: messages.floatingAbility
+			});
+		}
+
+		const bonuses = abilityBonuses(universe.ruleset, race.rules, floatingAbility, (theme?.rules ?? null));
+
+		if (!areValidBaseScores(baseScores, source, bonuses))
+		{
+			return({
+				status: 400,
+				message: messages.invalidScores
 			});
 		}
 
@@ -648,11 +708,13 @@ async function createRoute(request: Request, response: Response): Promise<void>
 		const characterId = await createCharacter({
 			playerId,
 			universeId,
+			ruleset: universe.ruleset,
 			name,
 			raceId,
 			classId,
-			abilityScores: finalPf1eAbilityScores(baseScores, race.rules, floatingAbility),
-			money: combineStartingMoney([universe.startingMoney, race.startingMoney, characterClass.startingMoney]),
+			themeId: (theme?.id ?? null),
+			abilityScores: finalAbilityScores(universe.ruleset, baseScores, bonuses),
+			money: addMoney([universe.startingMoney, race.startingMoney, characterClass.startingMoney]),
 			items: combineStartingItems([universe.startingItems, race.startingItems, characterClass.startingItems], enabledItemIds),
 			areaId: chooseStartingArea(universe.startingAreaId, race, characterClass)
 		}, transaction);
@@ -676,6 +738,48 @@ async function createRoute(request: Request, response: Response): Promise<void>
 	const payload: CreatedPayload = { id: result };
 
 	response.status(201).json(payload);
+}
+
+/**
+ * Where a new character's base ability scores have to come from, under the universe's settings now
+ *
+ * @param universe The universe
+ * @param playerId The player's ID
+ * @param executor A transaction
+ * @return The rolls, point buy budget or ability points, or undefined when the universe rolls scores but
+ * the scores kept for the player weren't rolled the way it rolls them now
+ */
+async function findScoreSource(universe: PlayableUniverse, playerId: string, executor: Executor): Promise<ScoreSource | undefined>
+{
+	if (universe.ruleset === 'sf1e')
+	{
+		return({
+			kind: 'abilityPoints',
+			points: (await findSf1eSettings(universe.id, executor)).abilityPoints
+		});
+	}
+
+	const settings = await findPf1eSettings(universe.id, executor);
+
+	if (!isPf1eRollMethod(settings.statMethod))
+	{
+		return({
+			kind: 'pointBuy',
+			budget: pf1ePointBuyBudget(settings.statMethod, settings.customPointBuyBudget)
+		});
+	}
+
+	const roll = await findPf1eAbilityRoll(playerId, universe.id, executor);
+
+	if (roll?.statMethod !== settings.statMethod)
+	{
+		return(undefined);
+	}
+
+	return({
+		kind: 'roll',
+		rolls: roll.scores
+	});
 }
 
 /**

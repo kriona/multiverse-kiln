@@ -39,5 +39,37 @@ export const DEFAULT_TILE_NAMES: Record<Ruleset, Record<string, MessageDescripto
 			defaultMessage: 'Wood Floor',
 			description: 'Name of a map tile: the wooden floor of a building'
 		}
+	}),
+	sf1e: defineMessages({
+		grass: {
+			id: 'tile.sf1e.grass',
+			defaultMessage: 'Grass',
+			description: 'Name of a map tile in a science fantasy world: open grassland'
+		},
+		sand: {
+			id: 'tile.sf1e.sand',
+			defaultMessage: 'Sand',
+			description: 'Name of a map tile in a science fantasy world: loose sand, which is slow to cross'
+		},
+		rock: {
+			id: 'tile.sf1e.rock',
+			defaultMessage: 'Rock',
+			description: 'Name of a map tile in a science fantasy world: bare rock cliffs, which can\'t be crossed or seen past'
+		},
+		water: {
+			id: 'tile.sf1e.water',
+			defaultMessage: 'Water',
+			description: 'Name of a map tile in a science fantasy world: deep water, which can\'t be walked into'
+		},
+		metal_floor: {
+			id: 'tile.sf1e.metal_floor',
+			defaultMessage: 'Metal Floor',
+			description: 'Name of a map tile in a science fantasy world: the metal deck of a starship or station'
+		},
+		bulkhead: {
+			id: 'tile.sf1e.bulkhead',
+			defaultMessage: 'Bulkhead',
+			description: 'Name of a map tile in a science fantasy world: a metal wall inside a starship or station, which can\'t be crossed or seen past'
+		}
 	})
 };
