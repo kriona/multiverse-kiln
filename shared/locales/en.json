@@ -455,6 +455,10 @@
 		"defaultMessage": "Loops north-south",
 		"description": "Checkbox for an area whose map wraps around, so walking off the north edge comes back on the south"
 	},
+	"editor.area.mapSaveFailed": {
+		"defaultMessage": "Could not save the map.",
+		"description": "Shown in the area editor when the painting on the area's map, or its new size, couldn't be stored"
+	},
 	"editor.area.noParent": {
 		"defaultMessage": "None (a top-level area)",
 		"description": "Choice of parent area for an area that isn't inside another"
@@ -1091,10 +1095,6 @@
 		"defaultMessage": "The lobby is where everyone in the universe meets before joining a group. It is an area like any other, but isn't listed on the Areas tab.",
 		"description": "Explains the lobby on the editor's Lobby tab"
 	},
-	"editor.map.allSaved": {
-		"defaultMessage": "All changes saved",
-		"description": "Shown under the map once all painting is stored"
-	},
 	"editor.map.areaDefault": {
 		"defaultMessage": "{tile} (the area's default)",
 		"description": "A choice of tile to paint that is the area's default tile; {tile} is its name"
@@ -1127,6 +1127,10 @@
 		"defaultMessage": "{column}, {row}: {contents} ({mode, select, automatic {automatic link} other {manual link}})",
 		"description": "Under the map, the cell under the pointer when it has an area link: its coordinates, what it holds and the kind of link"
 	},
+	"editor.map.confirmDeleteLinks": {
+		"defaultMessage": "Saving the smaller map deletes {links, plural, one {# link} other {# links}} on or into the cells it cuts off. This can't be undone. Save anyway?",
+		"description": "Asked while saving a map made smaller, when links are on the cells it cuts off or lead into them; {links} is how many"
+	},
 	"editor.map.draw": {
 		"defaultMessage": "Draw",
 		"description": "Map tool that paints tiles onto the map"
@@ -1151,16 +1155,12 @@
 		"defaultMessage": "+ West",
 		"description": "Button left of the map that makes it bigger to the west"
 	},
-	"editor.map.growFailed": {
-		"defaultMessage": "Could not grow the map.",
-		"description": "Shown in the map editor when the map couldn't be made bigger"
-	},
 	"editor.map.heading": {
 		"defaultMessage": "Map",
 		"description": "Heading of the area's map editor"
 	},
 	"editor.map.help": {
-		"defaultMessage": "Drag with the right mouse button to look around, and zoom with the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link.",
+		"defaultMessage": "Drag with the right mouse button to look around, and zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link.",
 		"description": "Explains how to use the map editor with the mouse and keyboard"
 	},
 	"editor.map.keyboardHelp": {
@@ -1192,11 +1192,11 @@
 		"description": "In the list of keyboard shortcuts, what Space and Enter do on the map editor's map"
 	},
 	"editor.map.keys.redo": {
-		"defaultMessage": "Redo the painting undone",
+		"defaultMessage": "Redo the painting or change of size undone",
 		"description": "In the list of keyboard shortcuts, what Ctrl+Y does in the map editor"
 	},
 	"editor.map.keys.undo": {
-		"defaultMessage": "Undo the last painting",
+		"defaultMessage": "Undo the last painting or change to the map's size",
 		"description": "In the list of keyboard shortcuts, what Ctrl+Z does in the map editor"
 	},
 	"editor.map.keys.zoom": {
@@ -1207,9 +1207,17 @@
 		"defaultMessage": "Map",
 		"description": "Name of the area's map in the map editor, for screen readers"
 	},
+	"editor.map.linkNeedsSave": {
+		"defaultMessage": "Save the map's new size before adding links there.",
+		"description": "Shown in the map editor when the Links tool is used on a cell the map has grown to include but that hasn't been saved"
+	},
 	"editor.map.links": {
 		"defaultMessage": "Links",
 		"description": "Map tool that adds and changes links to other areas"
+	},
+	"editor.map.linksKept": {
+		"defaultMessage": "The links were kept, so the map wasn't made smaller.",
+		"description": "Why saving the map stopped: the player chose not to delete the links a smaller map would cut off"
 	},
 	"editor.map.loadFailed": {
 		"defaultMessage": "Could not load the map.",
@@ -1219,13 +1227,9 @@
 		"defaultMessage": "Could not load the links.",
 		"description": "Shown in the map editor when the area's links couldn't be loaded"
 	},
-	"editor.map.paintingNotSaved": {
-		"defaultMessage": "Could not save some of your painting. Open the area again to see the map as it is saved.",
-		"description": "Shown in the map editor when painting couldn't be stored"
-	},
 	"editor.map.redo": {
 		"defaultMessage": "Redo",
-		"description": "Button that paints again what Undo took back"
+		"description": "Button that makes again the painting or change of size Undo took back"
 	},
 	"editor.map.resize": {
 		"defaultMessage": "Edit Size",
@@ -1249,11 +1253,15 @@
 	},
 	"editor.map.undo": {
 		"defaultMessage": "Undo",
-		"description": "Button that takes back the last painting on the map"
+		"description": "Button that takes back the last painting or change to the map's size"
 	},
 	"editor.map.unknownTile": {
 		"defaultMessage": "unknown tile",
 		"description": "What the cell under the pointer holds, when it is a tile the editor doesn't know"
+	},
+	"editor.map.unsaved": {
+		"defaultMessage": "Map changes not saved yet",
+		"description": "Shown under the map while it has painting or growth that the area editor's Save button hasn't stored yet"
 	},
 	"editor.map.void": {
 		"defaultMessage": "Void",
@@ -1419,13 +1427,13 @@
 		"defaultMessage": "Summary",
 		"description": "Heading of the table column describing each race's rules, such as its size and ability modifiers"
 	},
+	"editor.resize.cutOffWarning": {
+		"defaultMessage": "The smaller map cuts off {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# link} other {# links}}. Undo brings the cells back, but the links are deleted when the map is saved. Resize anyway?",
+		"description": "Warns before making a map smaller cuts off cells painted with something other than the default tile, and area links"
+	},
 	"editor.resize.discard": {
 		"defaultMessage": "Resize and discard",
 		"description": "Button that makes the map smaller after the player was warned it loses painting or links"
-	},
-	"editor.resize.discardWarning": {
-		"defaultMessage": "The smaller map would discard {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# link} other {# links}}. Resize anyway?",
-		"description": "Warns before making a map smaller loses cells painted with something other than the default tile, and area links"
 	},
 	"editor.resize.east": {
 		"defaultMessage": "East",

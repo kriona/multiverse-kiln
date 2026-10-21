@@ -333,8 +333,8 @@
 										Shape
 										<select id="map-brush-shape"></select>
 									</label>
-									<button id="map-undo" type="button" class="secondary" aria-keyshortcuts="Control+Z" data-message="editor.map.undo" data-translation-context="Button that takes back the last painting on the map"><!-- icon ph:arrow-counter-clockwise -->Undo</button>
-									<button id="map-redo" type="button" class="secondary" aria-keyshortcuts="Control+Y Control+Shift+Z" data-message="editor.map.redo" data-translation-context="Button that paints again what Undo took back"><!-- icon ph:arrow-clockwise -->Redo</button>
+									<button id="map-undo" type="button" class="secondary" aria-keyshortcuts="Control+Z" data-message="editor.map.undo" data-translation-context="Button that takes back the last painting or change to the map's size"><!-- icon ph:arrow-counter-clockwise -->Undo</button>
+									<button id="map-redo" type="button" class="secondary" aria-keyshortcuts="Control+Y Control+Shift+Z" data-message="editor.map.redo" data-translation-context="Button that makes again the painting or change of size Undo took back"><!-- icon ph:arrow-clockwise -->Redo</button>
 									<button id="map-resize" type="button" class="secondary" data-shortcut="Alt+Z" data-message="editor.map.resize" data-translation-context="Button that opens the dialog for changing the map's size"><!-- icon ph:arrows-out -->Edit Size</button>
 								</div>
 								<div class="map-frame">
@@ -352,7 +352,7 @@
 									<span id="map-cursor"></span>
 									<span id="map-save-status" role="status"></span>
 								</div>
-								<p class="hint" data-message="editor.map.help" data-translation-context="Explains how to use the map editor with the mouse and keyboard">Drag with the right mouse button to look around, and zoom with the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link.</p>
+								<p class="hint" data-message="editor.map.help" data-translation-context="Explains how to use the map editor with the mouse and keyboard">Drag with the right mouse button to look around, and zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link.</p>
 								<p id="map-keyboard-help" class="hint" data-message="editor.map.keyboardHelp" data-translation-context="Explains how to use the map editor with only the keyboard; the keys are the same in every language">With the map focused, the arrow keys move the cursor, 10 cells at a time with Shift. Space or Enter paints, or with the Links tool opens the cell's link; hold Space while moving to keep painting. + and - zoom, and Home goes back to the center cell.</p>
 								<p id="map-error" class="form-error" role="alert" hidden></p>
 							</section>

@@ -157,7 +157,7 @@ export interface MapEditorSceneData
  * its links and the brush outlined on top
  *
  * Left clicks paint or pick cells (see PointerMode); dragging with the right or middle button pans,
- * and the mouse wheel zooms around the pointer. MapCanvas does the same from the keyboard with a
+ * and Ctrl+wheel zooms around the pointer. MapCanvas does the same from the keyboard with a
  * cursor, which the scene outlines like the pointer. A looping area is shown once, without its far side
  * repeated, so every cell on screen is a cell that can be edited
  */
@@ -356,7 +356,7 @@ export class MapEditorScene extends Phaser.Scene
 	}
 
 	/**
-	 * Zooms in or out one step around the middle of the view, as one turn of the mouse wheel does
+	 * Zooms in or out one step around the middle of the view, as one turn of the mouse wheel with Ctrl does
 	 *
 	 * @param zoomIn True to zoom in, false to zoom out
 	 */
@@ -460,7 +460,8 @@ export class MapEditorScene extends Phaser.Scene
 	};
 
 	/**
-	 * Zooms in or out, keeping the point under the pointer where it is
+	 * Zooms in or out while Ctrl is held, keeping the point under the pointer where it is. Without Ctrl
+	 * the wheel scrolls the page
 	 *
 	 * @param pointer The pointer
 	 * @param _over Game objects under the pointer
@@ -469,6 +470,11 @@ export class MapEditorScene extends Phaser.Scene
 	 */
 	private readonly onWheel = (pointer: Phaser.Input.Pointer, _over: unknown, _deltaX: number, deltaY: number): void =>
 	{
+		if (!pointer.event.ctrlKey)
+		{
+			return;
+		}
+
 		const camera = this.cameras.main;
 		const zoom = Phaser.Math.Clamp(((deltaY < 0) ? camera.zoom * ZOOM_STEP : camera.zoom / ZOOM_STEP), MIN_ZOOM, MAX_ZOOM);
 		const halfWidth = camera.width / 2;

@@ -216,7 +216,7 @@ This lets you change anything about a universe. It will be a whole suite of tool
 	- [Translations](#tab-translations)
 
 ### Unsaved changes
-The editor makes it hard to lose work by accident. A form or dialog with changes that haven't been saved says "Unsaved changes" next to its Save button, and its tab gets a dot. Closing a dialog (Cancel or Escape), leaving the area being edited, and leaving or reloading the page all ask first while there are unsaved changes, and so does leaving the page while painting is still being saved.
+The editor makes it hard to lose work by accident. A form or dialog with changes that haven't been saved says "Unsaved changes" next to its Save button, and its tab gets a dot. Closing a dialog (Cancel or Escape), leaving the area being edited, and leaving or reloading the page all ask first while there are unsaved changes. The area editor's unsaved changes include painting on its map.
 
 ### Universe versions
 If a creator makes changes to the current version of the universe, they apply immediately for everyone.
@@ -524,6 +524,7 @@ Lets you edit details about the area
 ## Editor: Map
 This is a component included in the [area editor](#editor-area). It shows you the same grid as gameplay.
 - the center of map is x = 0, y = 0
+- Ctrl+wheel zooms the map; the wheel alone scrolls the page
 - each side of the map (top, right, bottom, left) has a button with an arrow pointing away from the editor. clicking it allows you to add the specified number of grid coordinates in that direction, expanding the map
 - a map can be at most 50,000 tiles in each direction
 - a button to edit size
@@ -533,6 +534,9 @@ This is a component included in the [area editor](#editor-area). It shows you th
 - there is a [draw tool](#tool-draw)
 - undo / redo
 	- clicking and dragging counts all changes during that as 1 for the purpose of undo/redo
+	- each use of an expand button or Edit Size is 1 step too. Making the map smaller sets the cells it cuts off to the default tile, so undoing it brings them back, even after it is saved
+- painting and changes to the map's size are kept in the editor until the area editor's Save button saves them along with the area's settings, and the map is read-only while it is being saved. Links are saved as soon as they are made, and a link can't be added in unsaved expansion
+- links on or into cells a smaller map cuts off are deleted when the smaller map is saved, after asking; undo doesn't bring them back
 - maps have multiple layers, such as the ground and objects on it
 - area links, a layer independent of the artwork. Any cell can link to a cell in another area
 	- `automatic`: entering the cell moves you to the target area

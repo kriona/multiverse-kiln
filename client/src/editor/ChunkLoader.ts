@@ -1,4 +1,4 @@
-import { chunkKey, MAX_CHUNKS_PER_REQUEST, type ChunkRange } from '@multiverse-kiln/shared';
+import { chunkCoordinate, chunkKey, MAX_CHUNKS_PER_REQUEST, type ChunkRange, type MapBounds } from '@multiverse-kiln/shared';
 
 import type { EditorApi } from '../network/editorApi';
 import type { EditorMap } from './EditorMap';
@@ -74,6 +74,77 @@ export class ChunkLoader
 				}
 			}
 		}
+	}
+
+	/**
+	 * Loads every chunk of the map that isn't wholly inside some bounds, such as the chunks a smaller map
+	 * would cut off, a block at a time
+	 *
+	 * @param bounds The bounds
+	 * @return Resolves once they have all loaded, or the loader has stopped; rejects when a block couldn't be loaded
+	 */
+	async loadOutside(bounds: MapBounds): Promise<void>
+	{
+		const area = this.map.chunkRange;
+		const inner = {
+			minChunkColumn: chunkCoordinate(bounds.minColumn - 1) + 1,
+			minChunkRow: chunkCoordinate(bounds.minRow - 1) + 1,
+			maxChunkColumn: chunkCoordinate(bounds.maxColumn + 1) - 1,
+			maxChunkRow: chunkCoordinate(bounds.maxRow + 1) - 1
+		};
+
+		for (let blockRow = Math.floor(area.minChunkRow / BLOCK_SIDE); blockRow <= Math.floor(area.maxChunkRow / BLOCK_SIDE); blockRow++)
+		{
+			for (let blockColumn = Math.floor(area.minChunkColumn / BLOCK_SIDE); blockColumn <= Math.floor(area.maxChunkColumn / BLOCK_SIDE); blockColumn++)
+			{
+				const range = {
+					minChunkColumn: Math.max(blockColumn * BLOCK_SIDE, area.minChunkColumn),
+					minChunkRow: Math.max(blockRow * BLOCK_SIDE, area.minChunkRow),
+					maxChunkColumn: Math.min(((blockColumn + 1) * BLOCK_SIDE) - 1, area.maxChunkColumn),
+					maxChunkRow: Math.min(((blockRow + 1) * BLOCK_SIDE) - 1, area.maxChunkRow)
+				};
+				const insideOnly = (
+					(range.minChunkColumn >= inner.minChunkColumn) &&
+					(range.maxChunkColumn <= inner.maxChunkColumn) &&
+					(range.minChunkRow >= inner.minChunkRow) &&
+					(range.maxChunkRow <= inner.maxChunkRow)
+				);
+
+				if (this.stopped || insideOnly || this.isRangeLoaded(range))
+				{
+					continue;
+				}
+
+				const { chunks } = await this.api.loadChunks(this.universeId, this.areaId, range);
+
+				if (!this.stopped)
+				{
+					this.onLoaded(this.map.load(range, chunks));
+				}
+			}
+		}
+	}
+
+	/**
+	 * Whether every chunk in a range has loaded
+	 *
+	 * @param range The chunks
+	 * @return True when they all have
+	 */
+	private isRangeLoaded(range: ChunkRange): boolean
+	{
+		for (let chunkRow = range.minChunkRow; chunkRow <= range.maxChunkRow; chunkRow++)
+		{
+			for (let chunkColumn = range.minChunkColumn; chunkColumn <= range.maxChunkColumn; chunkColumn++)
+			{
+				if (!this.map.isLoaded(chunkColumn, chunkRow))
+				{
+					return(false);
+				}
+			}
+		}
+
+		return(true);
 	}
 
 	/**

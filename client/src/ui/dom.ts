@@ -173,6 +173,11 @@ export function underlineShortcut(control: HTMLElement): void
 		underlined.replaceWith(underlined.textContent ?? '');
 	}
 
+	for (const wrapper of container.querySelectorAll('.shortcut-text'))
+	{
+		wrapper.replaceWith(...wrapper.childNodes);
+	}
+
 	container.normalize();
 
 	const texts = labelTexts(container);
@@ -183,6 +188,13 @@ export function underlineShortcut(control: HTMLElement): void
 
 	if (found)
 	{
+		// The pieces the text splits into stay in one box, so a flex label or button doesn't put its gap between them
+		const wrapper = document.createElement('span');
+
+		wrapper.className = 'shortcut-text';
+		found.text.replaceWith(wrapper);
+		wrapper.append(found.text);
+
 		const rest = found.text.splitText(found.index);
 
 		rest.splitText(1);

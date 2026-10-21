@@ -69,10 +69,16 @@ export class AreasTab
 	private readonly mapEditor: MapEditor;
 
 	/**
-	 * Whether the area editor's settings have changes that haven't been saved
+	 * Whether the map editor has painting or growth that hasn't been saved
+	 */
+	private mapUnsaved = false;
+
+	/**
+	 * Whether the area editor's settings or map have changes that haven't been saved
 	 */
 	readonly changes = new ChangeTracker({
 		root: this.form,
+		state: () => this.mapUnsaved,
 		status: this.saved
 	});
 
@@ -116,6 +122,10 @@ export class AreasTab
 				this.area = { ...this.area, bounds };
 				this.showSize(this.area);
 			}
+		}, (unsaved) =>
+		{
+			this.mapUnsaved = unsaved;
+			this.changes.check();
 		});
 		this.name.maxLength = MAX_AREA_NAME_LENGTH;
 		this.addName.maxLength = MAX_AREA_NAME_LENGTH;
@@ -249,6 +259,9 @@ export class AreasTab
 
 		const version = ++this.openVersion;
 
+		// Any unsaved painting has been discarded, so the map loads afresh
+		this.mapEditor.hide();
+		this.changes.markSaved();
 		this.onAreaChanged(areaId);
 		this.listView.hidden = true;
 		this.editorView.hidden = false;
@@ -593,7 +606,7 @@ export class AreasTab
 	}
 
 	/**
-	 * Saves the area's settings as the form shows them
+	 * Saves the map's painting, then the area's settings as the form shows them
 	 */
 	private async save(): Promise<void>
 	{
@@ -627,6 +640,21 @@ export class AreasTab
 
 		this.saveButton.disabled = true;
 		showMessage(this.error, undefined);
+
+		try
+		{
+			await this.mapEditor.save();
+		}
+		catch (error)
+		{
+			showMessage(this.error, describeEditorError(error, {
+				id: 'editor.area.mapSaveFailed',
+				defaultMessage: 'Could not save the map.',
+				description: 'Shown in the area editor when the painting on the area\'s map, or its new size, couldn\'t be stored'
+			}));
+			this.saveButton.disabled = false;
+			return;
+		}
 
 		try
 		{

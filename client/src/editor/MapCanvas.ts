@@ -57,6 +57,7 @@ export class MapCanvas
 		parent.addEventListener('keyup', this.onKeyUp);
 		parent.addEventListener('focus', this.onFocus);
 		parent.addEventListener('blur', this.stopPainting);
+		parent.addEventListener('wheel', this.onWheel, { passive: false });
 	}
 
 	/**
@@ -115,14 +116,17 @@ export class MapCanvas
 			if (!this.game)
 			{
 				// The canvas's element handles the keyboard itself (see onKeyDown), so the game mustn't take
-				// keys from the page's text fields
+				// keys from the page's text fields. The wheel scrolls the page unless Ctrl is held (see onWheel)
 				this.game = new Phaser.Game({
 					type: Phaser.WEBGL,
 					parent: this.parent,
 					width: this.width,
 					height: this.height,
 					backgroundColor: '#111111',
-					input: { keyboard: false },
+					input: {
+						keyboard: false,
+						mouse: { preventDefaultWheel: false }
+					},
 					scene: []
 				});
 				this.game.scene.add(MAP_EDITOR_SCENE_KEY, MapEditorScene, true, data);
@@ -198,6 +202,20 @@ export class MapCanvas
 
 		// The keys would otherwise scroll the page
 		event.preventDefault();
+	};
+
+	/**
+	 * Keeps Ctrl+wheel, which the scene zooms the map with, from zooming the page. The wheel alone
+	 * scrolls the page
+	 *
+	 * @param event The wheel turn over the map
+	 */
+	private readonly onWheel = (event: WheelEvent): void =>
+	{
+		if (event.ctrlKey)
+		{
+			event.preventDefault();
+		}
 	};
 
 	/**
