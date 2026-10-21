@@ -251,6 +251,12 @@ export enum LobbyServerMessageType
 	PlayingAs = 'playingAs',
 
 	/**
+	 * The player's characters in the universe changed (one was deleted, given their last rites or
+	 * restored), so their windows list them again (no payload)
+	 */
+	CharactersChanged = 'charactersChanged',
+
+	/**
 	 * Something the player asked for didn't happen (payload: NoticePayload)
 	 */
 	Notice = 'notice'

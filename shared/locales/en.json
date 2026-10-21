@@ -1,4 +1,16 @@
 {
+	"admin.characterDeletionDays": {
+		"defaultMessage": "Days between last rites and deletion",
+		"description": "Label of the field on the site settings page for how many days a character given their last rites waits before being deleted"
+	},
+	"admin.characterDeletionHint": {
+		"defaultMessage": "Last Rites deletes a character after this many days, and players can restore them until then. 0 turns Last Rites off, so characters can only be deleted. Characters already given their last rites keep their day.",
+		"description": "Explains the field on the site settings page for how many days last rites wait. Last Rites is the name of the button players use to delete a character after those days"
+	},
+	"admin.characters": {
+		"defaultMessage": "Characters",
+		"description": "Heading of the site settings about players' characters"
+	},
 	"admin.heading": {
 		"defaultMessage": "Site Settings",
 		"description": "Heading of the page where the site's admins change settings for the whole site"
@@ -32,7 +44,7 @@
 		"description": "Heading of the site settings about creating universes"
 	},
 	"admin.universesHint": {
-		"defaultMessage": "These only affect new universes. Universes that already exist stay as they are, even for players who have more than the limit.",
+		"defaultMessage": "These only affect new universes. Universes that already exist persist, even for players who have more than the limit.",
 		"description": "Explains on the site settings page that the universe settings only affect making new universes"
 	},
 	"admin.universesPerCreator": {
@@ -109,7 +121,7 @@
 	},
 	"character.create.overBudget": {
 		"defaultMessage": "These scores cost more than your {budget, plural, one {# point} other {# points}}. Lower some of them.",
-		"description": "Shown in Create Character when the bought ability scores cost more points than the player has; {budget} is how many they have"
+		"description": "Shown in Create Character, under the ability scores, while the bought scores cost more points than the player has; {budget} is how many they have"
 	},
 	"character.create.pointBuy": {
 		"defaultMessage": "Buy your scores with {budget, plural, one {# point} other {# points}}. Scores above 10 cost points, and scores below 10 give some back.",
@@ -134,6 +146,10 @@
 	"character.create.rolled": {
 		"defaultMessage": "The server rolled your scores with {method}. Choose which ability gets each score: giving an ability another score swaps the two.",
 		"description": "Explains the ability scores in Create Character when they were rolled; {method} is how, e.g. \"4d6, drop the lowest\""
+	},
+	"character.create.rolledScoreHeld": {
+		"defaultMessage": "{score, number} ({ability})",
+		"description": "One choice of rolled score for an ability in Create Character, naming the other ability that has it now, which choosing it swaps with; {score} is the score and {ability} that ability, e.g. \"15 (Wisdom)\""
 	},
 	"character.create.scoreColumn": {
 		"defaultMessage": "Score",
@@ -258,6 +274,126 @@
 	"character.steps": {
 		"defaultMessage": "Steps",
 		"description": "Name for screen readers of the list of steps on the Create Character page"
+	},
+	"characterDelete.confirm": {
+		"defaultMessage": "Delete",
+		"description": "Button in the dialog asking whether to delete a character that goes on to the last question before deleting them"
+	},
+	"characterDelete.cremate": {
+		"defaultMessage": "Cremate (delete immediately)",
+		"description": "Button that deletes a character straight away, for good. Cremate is a playful way of saying it (their body is burned); the words in parentheses say plainly what it does"
+	},
+	"characterDelete.cremated": {
+		"defaultMessage": "{name} has been deleted.",
+		"description": "Read out by screen readers once a character has been deleted straight away; {name} is the character's name"
+	},
+	"characterDelete.failed": {
+		"defaultMessage": "Could not delete the character.",
+		"description": "Shown in the last dialog before deleting a character when the deletion failed"
+	},
+	"characterDelete.farewell": {
+		"defaultMessage": "Are you absolutely sure you want to delete {name}? This is permanent (a very long time!) and cannot be undone.",
+		"description": "In the last dialog before deleting a character; {name} is the character's name. Playful: \"permanent\" is joked about as a very long time"
+	},
+	"characterDelete.lastRites": {
+		"defaultMessage": "Last Rites (delete in {days, plural, one {# day} other {# days}})",
+		"description": "Button that deletes a character after some days, and lets the player restore them until then. Last Rites is a playful way of saying it (the rites said for someone about to die); the words in parentheses say plainly what it does. {days} is how many days it waits"
+	},
+	"characterDelete.lastRitesFailed": {
+		"defaultMessage": "Could not give the character their last rites.",
+		"description": "Shown in the last dialog before deleting a character when scheduling the deletion failed"
+	},
+	"characterDelete.mistake": {
+		"defaultMessage": "I've Made A Terrible Mistake",
+		"description": "Button that closes the last question before deleting a character, keeping the character. A playful way of saying Cancel"
+	},
+	"characterDelete.question": {
+		"defaultMessage": "Do you want to delete {name}?",
+		"description": "In the dialog that asks whether to delete a character; {name} is the character's name"
+	},
+	"characterDelete.title": {
+		"defaultMessage": "Delete Character",
+		"description": "Title of the dialog that asks whether to delete a character"
+	},
+	"characterSheet.abilities": {
+		"defaultMessage": "Ability scores",
+		"description": "Heading on a character's sheet of their six ability scores"
+	},
+	"characterSheet.ability": {
+		"defaultMessage": "Ability",
+		"description": "Heading on a character's sheet of the column naming each ability, such as Strength"
+	},
+	"characterSheet.darkvision": {
+		"defaultMessage": "Darkvision",
+		"description": "On a character's sheet, the label of whether they can see in the dark"
+	},
+	"characterSheet.darkvisionValue": {
+		"defaultMessage": "{darkvision, select, true {Yes} other {No}}",
+		"description": "On a character's sheet, whether they can see in the dark"
+	},
+	"characterSheet.delete": {
+		"defaultMessage": "Delete",
+		"description": "Button on a character's sheet that starts deleting the character, asking first"
+	},
+	"characterSheet.item": {
+		"defaultMessage": "{quantity, plural, =1 {{item}} other {{item} x#}}",
+		"description": "On a character's sheet, an item they carry, with how many when there is more than one; {item} is the item's name, e.g. \"Arrow x20\""
+	},
+	"characterSheet.items": {
+		"defaultMessage": "Equipment",
+		"description": "Heading on a character's sheet of the items they carry"
+	},
+	"characterSheet.loadFailed": {
+		"defaultMessage": "Could not load the character sheet.",
+		"description": "Shown in a character's sheet when the character couldn't be loaded"
+	},
+	"characterSheet.loading": {
+		"defaultMessage": "Loading the character sheet...",
+		"description": "Shown in a character's sheet while the character loads"
+	},
+	"characterSheet.modifier": {
+		"defaultMessage": "Modifier",
+		"description": "Heading on a character's sheet of the column of the bonus or penalty each ability score gives, such as +3"
+	},
+	"characterSheet.money": {
+		"defaultMessage": "Money",
+		"description": "On a character's sheet, the label of the coins they carry, such as 15gp 5sp"
+	},
+	"characterSheet.noItems": {
+		"defaultMessage": "Carries nothing.",
+		"description": "Shown on a character's sheet instead of their equipment when they carry no items"
+	},
+	"characterSheet.pending": {
+		"defaultMessage": "{name} has had their last rites and will be deleted on {deleteAt, date, long}.",
+		"description": "On the sheet of a character waiting to be deleted; {name} is the character's name and {deleteAt} the day they will be deleted"
+	},
+	"characterSheet.restore": {
+		"defaultMessage": "Restore",
+		"description": "Button on the sheet of a character waiting to be deleted that takes back the deletion, so they can be played again"
+	},
+	"characterSheet.restoreFailed": {
+		"defaultMessage": "Could not restore the character.",
+		"description": "Shown on the sheet of a character waiting to be deleted when taking back the deletion failed"
+	},
+	"characterSheet.restored": {
+		"defaultMessage": "{name} has been restored.",
+		"description": "Read out by screen readers once a character waiting to be deleted has been restored; {name} is the character's name"
+	},
+	"characterSheet.score": {
+		"defaultMessage": "Score",
+		"description": "Heading on a character's sheet of the column of ability scores, such as 16"
+	},
+	"characterSheet.size": {
+		"defaultMessage": "Size",
+		"description": "On a character's sheet, the label of their size, such as Medium"
+	},
+	"characterSheet.summary": {
+		"defaultMessage": "{race} {class}",
+		"description": "Under the name at the top of a character's sheet, their race and class, e.g. \"Dwarf Fighter\". Reorder them as your language needs"
+	},
+	"characterSheet.traits": {
+		"defaultMessage": "Traits",
+		"description": "Heading on a character's sheet of their size, whether they have darkvision and their money"
 	},
 	"dialog.cancel": {
 		"defaultMessage": "Cancel",
@@ -1687,6 +1823,10 @@
 		"defaultMessage": "An item needs a name.",
 		"description": "Why an item the universe added couldn't be saved: its name was left out"
 	},
+	"error.lastRitesOff": {
+		"defaultMessage": "Characters can't be given their last rites on this site. They can only be deleted straight away.",
+		"description": "Why a character wasn't given their last rites (deleted after some days): the site's settings have turned waiting off"
+	},
 	"error.linkOutOfBounds": {
 		"defaultMessage": "The link's cell must be inside the area's map.",
 		"description": "Why an area link was refused: its cell is outside the map, perhaps because another editor made it smaller"
@@ -1718,6 +1858,10 @@
 	"error.noSuchArea": {
 		"defaultMessage": "The area doesn't exist.",
 		"description": "Why a request about an area failed: it was deleted, perhaps by another editor"
+	},
+	"error.noSuchCharacter": {
+		"defaultMessage": "The character doesn't exist, or isn't yours.",
+		"description": "Why a character's sheet couldn't be shown: the character isn't one of the player's in this universe"
 	},
 	"error.noSuchClass": {
 		"defaultMessage": "The class doesn't exist.",
@@ -2115,9 +2259,21 @@
 		"defaultMessage": "{race} {class}",
 		"description": "In the lobby's list of the player's characters, a character's race and class after their name, e.g. \"Dwarf Fighter\". Reorder them as your language needs"
 	},
+	"lobby.characterLeaving": {
+		"defaultMessage": "To be deleted on {deleteAt, date, medium}",
+		"description": "In the lobby's list of the player's characters, beside one given their last rites, who can't be played until restored from their sheet; {deleteAt} is the day they will be deleted"
+	},
 	"lobby.characterPlaying": {
 		"defaultMessage": "Playing",
 		"description": "In the lobby's list of the player's characters, shown beside the one they are playing now"
+	},
+	"lobby.characterSheet": {
+		"defaultMessage": "Sheet",
+		"description": "Short button beside each of the player's characters in the lobby that shows the character's sheet: their ability scores, money and equipment"
+	},
+	"lobby.characterSheetLabel": {
+		"defaultMessage": "Character sheet of {name}",
+		"description": "Name for screen readers of the button beside one of the player's characters in the lobby that shows their sheet; {name} is the character's name"
 	},
 	"lobby.characters": {
 		"defaultMessage": "Your characters",
@@ -2170,6 +2326,10 @@
 	"lobby.here": {
 		"defaultMessage": "Here ({count})",
 		"description": "Heading of the list of players in the lobby; {count} is how many there are"
+	},
+	"lobby.keys.characterSheet": {
+		"defaultMessage": "Open the character sheet of the character you're playing",
+		"description": "In the list of keyboard shortcuts in the lobby, what the shortcut that shows the character the player is playing does"
 	},
 	"lobby.leave": {
 		"defaultMessage": "Leave lobby",
@@ -2974,6 +3134,10 @@
 	"universePage.characterDescription": {
 		"defaultMessage": "{race} {class}",
 		"description": "On a universe's page, in the list of the player's characters, a character's race and class after their name, e.g. \"Dwarf Fighter\". Reorder them as your language needs"
+	},
+	"universePage.characterLeaving": {
+		"defaultMessage": "To be deleted on {deleteAt, date, medium}",
+		"description": "On a universe's page, in the list of the player's characters, beside one given their last rites, who can be restored from their sheet until then; {deleteAt} is the day they will be deleted"
 	},
 	"universePage.characters": {
 		"defaultMessage": "Your characters",

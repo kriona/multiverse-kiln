@@ -7,6 +7,7 @@ import { describeEditorError, EditorApi } from './network/editorApi';
 import { getUniverseDetails, joinGroup, joinLobby, type GameConnection, type LobbyConnection, type ServerConnection } from './network/serverConnection';
 import { isLeavingPage } from './pageLifecycle';
 import { characterPageUrl, gamePageUrl, HOME_PAGE_URL, readGameUniverseKey, readPageParameter, replacePageParameters, replacePagePath } from './pages';
+import { CharacterSheetDialog } from './ui/CharacterSheetDialog';
 import { showNoticeScreen, showScreen, showStatus } from './ui/dom';
 import { GroupScreen } from './ui/GroupScreen';
 import { LobbyScreen } from './ui/LobbyScreen';
@@ -45,6 +46,7 @@ export class GamePage
 {
 	private readonly editorApi: EditorApi;
 	private readonly characterApi: CharacterApi;
+	private readonly characterSheet: CharacterSheetDialog;
 	private readonly loginScreen: LoginScreen;
 	private readonly lobbyScreen: LobbyScreen;
 	private readonly groupScreen: GroupScreen;
@@ -94,6 +96,8 @@ export class GamePage
 
 		this.editorApi = editorApi;
 		this.characterApi = new CharacterApi(client);
+		// The lobby tells every window of the player, this one included, to list the characters again
+		this.characterSheet = new CharacterSheetDialog(this.characterApi, () => undefined);
 		this.linkGroupId = readPageParameter(GROUP_QUERY_PARAMETER);
 		this.linkUniverseId = readGameUniverseKey();
 
@@ -123,6 +127,13 @@ export class GamePage
 				const choice: ChooseCharacterPayload = { characterId };
 
 				this.joinedLobby?.connection.room.send(LobbyMessageType.ChooseCharacter, choice);
+			},
+			openCharacterSheet: (character) =>
+			{
+				if (this.joinedLobby)
+				{
+					void this.characterSheet.open(this.joinedLobby.universe.id, character.id, character.name);
+				}
 			},
 			createGroup: () =>
 			{
@@ -616,6 +627,11 @@ export class GamePage
 			{
 				void this.loadCharacters(joined);
 			}
+		});
+
+		room.onMessage(LobbyServerMessageType.CharactersChanged, () =>
+		{
+			void this.loadCharacters(joined);
 		});
 
 		room.onMessage(LobbyServerMessageType.Notice, (notice: NoticePayload) =>

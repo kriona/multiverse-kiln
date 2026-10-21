@@ -6,7 +6,7 @@
  */
 import { sql, type SQL } from 'drizzle-orm';
 import { boolean, check, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHUNK_SIZE, DEFAULT_PF1E_SETTINGS, DEFAULT_SITE_SETTINGS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_UNIVERSES_PER_CREATOR, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, DEFAULT_PF1E_SETTINGS, DEFAULT_SITE_SETTINGS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_UNIVERSES_PER_CREATOR, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
 
 export const universeStage = pgEnum('universe_stage', UNIVERSE_STAGES);
 export const universeRole = pgEnum('universe_role', UNIVERSE_ROLES);
@@ -558,13 +558,21 @@ export const characters = pgTable('characters', {
 	 * When the player last stopped playing the character in the lobby; null until they have. The lobby
 	 * starts a player as whichever of their characters was played or made most recently
 	 */
-	lastPlayedAt: timestamp('last_played_at', { withTimezone: true })
+	lastPlayedAt: timestamp('last_played_at', { withTimezone: true }),
+
+	/**
+	 * When the character is deleted, once their player has given them their last rites; null otherwise.
+	 * Until then the player can restore them, but not play them. The server sweeps away characters
+	 * past it, and hides them until it does
+	 */
+	deleteAt: timestamp('delete_at', { withTimezone: true })
 }, (table) => [
 	index('characters_player_universe_index').on(table.playerId, table.universeId),
 	index('characters_universe_id_index').on(table.universeId),
 	index('characters_race_id_index').on(table.raceId),
 	index('characters_class_id_index').on(table.classId),
 	index('characters_area_id_index').on(table.areaId),
+	index('characters_delete_at_index').on(table.deleteAt).where(sql`${table.deleteAt} is not null`),
 	check('characters_coins_range', allInRange([table.platinum, table.gold, table.silver, table.copper], 0, PF1E_MAX_COINS))
 ]);
 
@@ -649,8 +657,10 @@ export const siteSettings = pgTable('site_settings', {
 	id: boolean('id').primaryKey().default(true),
 
 	universeCreationEnabled: boolean('universe_creation_enabled').notNull().default(DEFAULT_SITE_SETTINGS.universeCreationEnabled),
-	universesPerCreator: integer('universes_per_creator').notNull().default(DEFAULT_SITE_SETTINGS.universesPerCreator)
+	universesPerCreator: integer('universes_per_creator').notNull().default(DEFAULT_SITE_SETTINGS.universesPerCreator),
+	characterDeletionDays: integer('character_deletion_days').notNull().default(DEFAULT_SITE_SETTINGS.characterDeletionDays)
 }, (table) => [
 	check('site_settings_one_row', sql`${table.id}`),
-	check('site_settings_universes_per_creator_range', sql`${table.universesPerCreator} BETWEEN ${sql.raw(String(MIN_UNIVERSES_PER_CREATOR))} AND ${sql.raw(String(MAX_UNIVERSES_PER_CREATOR))}`)
+	check('site_settings_universes_per_creator_range', sql`${table.universesPerCreator} BETWEEN ${sql.raw(String(MIN_UNIVERSES_PER_CREATOR))} AND ${sql.raw(String(MAX_UNIVERSES_PER_CREATOR))}`),
+	check('site_settings_character_deletion_days_range', sql`${table.characterDeletionDays} BETWEEN 0 AND ${sql.raw(String(MAX_CHARACTER_DELETION_DAYS))}`)
 ]);

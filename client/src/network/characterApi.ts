@@ -1,5 +1,5 @@
 import type { Client } from '@colyseus/sdk';
-import { charactersPath, type CharacterDraft, type CharacterListPayload, type CreatedPayload, type NewCharacterOptions, type NewCharacterRequest } from '@multiverse-kiln/shared';
+import { characterPath, charactersPath, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type NewCharacterOptions, type NewCharacterRequest } from '@multiverse-kiln/shared';
 
 import { sendRequest } from './editorApi';
 
@@ -71,5 +71,52 @@ export class CharacterApi
 	async createCharacter(universeId: string, character: NewCharacterRequest): Promise<string>
 	{
 		return((await sendRequest<CreatedPayload>(this.client, 'POST', charactersPath(universeId), character)).id);
+	}
+
+	/**
+	 * One of the player's characters, as their character sheet shows them
+	 *
+	 * @param universeId The universe's ID
+	 * @param characterId The character's ID
+	 * @return The character
+	 */
+	async getCharacterSheet(universeId: string, characterId: string): Promise<CharacterSheet>
+	{
+		return(sendRequest<CharacterSheet>(this.client, 'GET', characterPath(universeId, characterId)));
+	}
+
+	/**
+	 * Deletes one of the player's characters straight away
+	 *
+	 * @param universeId The universe's ID
+	 * @param characterId The character's ID
+	 */
+	async deleteCharacter(universeId: string, characterId: string): Promise<void>
+	{
+		await sendRequest(this.client, 'DELETE', characterPath(universeId, characterId));
+	}
+
+	/**
+	 * Gives one of the player's characters their last rites, so they are deleted the site's
+	 * characterDeletionDays later. Refused while the site sets that to 0
+	 *
+	 * @param universeId The universe's ID
+	 * @param characterId The character's ID
+	 * @return When the character is deleted, as an ISO 8601 time
+	 */
+	async scheduleCharacterDeletion(universeId: string, characterId: string): Promise<string>
+	{
+		return((await sendRequest<CharacterDeletionPayload>(this.client, 'PUT', `${characterPath(universeId, characterId)}/deletion`)).deleteAt);
+	}
+
+	/**
+	 * Restores one of the player's characters given their last rites
+	 *
+	 * @param universeId The universe's ID
+	 * @param characterId The character's ID
+	 */
+	async restoreCharacter(universeId: string, characterId: string): Promise<void>
+	{
+		await sendRequest(this.client, 'DELETE', `${characterPath(universeId, characterId)}/deletion`);
 	}
 }

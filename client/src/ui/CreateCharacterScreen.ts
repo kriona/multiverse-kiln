@@ -1,6 +1,6 @@
 import { CHARACTER_STEPS, DISALLOWED_TEXT_CHARACTERS, isReservedName, MAX_CHARACTER_NAME_LENGTH, MAX_CHARACTERS_PER_UNIVERSE, NAME_MESSAGES, PF1E_ABILITIES, PF1E_ABILITY_NAMES, PF1E_FLOATING_ABILITY_BONUS, PF1E_MAX_POINT_BUY_SCORE, PF1E_MIN_POINT_BUY_SCORE, PF1E_STAT_METHOD_NAMES, pf1eAbilityModifier, pf1ePointBuyCost, pf1ePointBuyTotal, type CharacterClassOption, type CharacterDraft, type CharacterRaceOption, type CharacterStep, type NewCharacterOptions, type Pf1eAbility, type Pf1eAbilityScores } from '@multiverse-kiln/shared';
 
-import { currentLocale, formatList, t } from '../localization';
+import { currentLocale, formatList, signedNumber, t } from '../localization';
 import type { CharacterApi } from '../network/characterApi';
 import { describeEditorError } from '../network/editorApi';
 import { announce } from './announcer';
@@ -62,6 +62,7 @@ export class CreateCharacterScreen
 	private readonly classHint = getElement('character-class-hint', HTMLElement);
 	private readonly method = getElement('character-method', HTMLElement);
 	private readonly points = getElement('character-points', HTMLElement);
+	private readonly overBudget = getElement('character-over-budget', HTMLElement);
 	private readonly review = getElement('character-review', HTMLElement);
 	private readonly error = getElement('character-form-error', HTMLElement);
 	private readonly backButton = getElement('character-back', HTMLButtonElement);
@@ -313,6 +314,12 @@ export class CreateCharacterScreen
 	{
 		const { abilities } = options;
 
+		// A rolled score's field shows only its number while closed, so it can be narrower
+		for (const ability of PF1E_ABILITIES)
+		{
+			this.rows[ability].base.classList.toggle('rolled-score', (abilities.kind === 'roll'));
+		}
+
 		if (abilities.kind === 'roll')
 		{
 			const choices = abilities.rolls.map((score, index) => ({
@@ -509,7 +516,9 @@ export class CreateCharacterScreen
 	 */
 	private onBaseChanged(changed: Pf1eAbility): void
 	{
-		if (this.options?.abilities.kind === 'roll')
+		const abilities = this.options?.abilities;
+
+		if (abilities?.kind === 'roll')
 		{
 			const taken = new Set(PF1E_ABILITIES.map((ability) => this.rows[ability].base.value));
 			const freed = [...this.rows[changed].base.options]
@@ -528,7 +537,7 @@ export class CreateCharacterScreen
 					description: 'Read out by screen readers in Create Character when giving one ability a rolled score moves that ability\'s old score to another; {ability} is the other ability, e.g. Dexterity'
 				}, {
 					ability: t(PF1E_ABILITY_NAMES[other]),
-					score: Number(otherBase.selectedOptions[0]?.textContent ?? 0)
+					score: (abilities.rolls[Number(freed)] ?? 0)
 				}));
 			}
 		}
@@ -537,7 +546,8 @@ export class CreateCharacterScreen
 	}
 
 	/**
-	 * Shows each ability's race modifier, final score and its modifier, and the points spent
+	 * Shows each ability's race modifier, final score and its modifier, the points spent, and whether
+	 * they are more than the player has
 	 */
 	private showScores(): void
 	{
@@ -550,6 +560,8 @@ export class CreateCharacterScreen
 
 		const scores = this.finalScores(options);
 
+		this.labelRolledScores(options);
+
 		for (const ability of PF1E_ABILITIES)
 		{
 			const row = this.rows[ability];
@@ -561,19 +573,97 @@ export class CreateCharacterScreen
 
 		if (options.abilities.kind === 'pointBuy')
 		{
+			const { budget } = options.abilities;
+
 			this.points.textContent = t({
 				id: 'character.create.pointsSpent',
 				defaultMessage: 'Points spent: {spent, number} of {budget, number}',
 				description: 'Under the ability scores in Create Character when buying them with points; {spent} is how many the chosen scores cost and {budget} how many the player has'
 			}, {
 				spent: (pf1ePointBuyTotal(this.baseScores(options)) ?? 0),
-				budget: options.abilities.budget
+				budget
 			});
 			this.points.hidden = false;
+			this.showOverBudget(this.isOverBudget(options) ? budget : undefined);
 		}
 		else
 		{
 			this.points.hidden = true;
+			this.showOverBudget(undefined);
+		}
+	}
+
+	/**
+	 * Names, in each ability's choice of rolled scores, the ability that holds each other score, so
+	 * equal scores can be told apart: choosing "15 (Wisdom)" swaps with Wisdom. The ability's own score
+	 * is just the number
+	 *
+	 * @param options What Create Character offers
+	 */
+	private labelRolledScores(options: NewCharacterOptions): void
+	{
+		const { abilities } = options;
+
+		if (abilities.kind !== 'roll')
+		{
+			return;
+		}
+
+		const holders = new Map(PF1E_ABILITIES.map((ability) => [this.rows[ability].base.value, ability]));
+
+		for (const ability of PF1E_ABILITIES)
+		{
+			for (const option of this.rows[ability].base.options)
+			{
+				const score = (abilities.rolls[Number(option.value)] ?? 0);
+				const holder = holders.get(option.value);
+
+				option.textContent = (((holder === undefined) || (holder === ability))
+					? score.toLocaleString(currentLocale())
+					: t({
+						id: 'character.create.rolledScoreHeld',
+						defaultMessage: '{score, number} ({ability})',
+						description: 'One choice of rolled score for an ability in Create Character, naming the other ability that has it now, which choosing it swaps with; {score} is the score and {ability} that ability, e.g. "15 (Wisdom)"'
+					}, {
+						score,
+						ability: t(PF1E_ABILITY_NAMES[holder])
+					}));
+			}
+		}
+	}
+
+	/**
+	 * Whether the bought scores cost more points than the player has
+	 *
+	 * @param options What Create Character offers
+	 * @return True when they do; false when the universe rolls scores
+	 */
+	private isOverBudget(options: NewCharacterOptions): boolean
+	{
+		return((options.abilities.kind === 'pointBuy') && ((pf1ePointBuyTotal(this.baseScores(options)) ?? Infinity) > options.abilities.budget));
+	}
+
+	/**
+	 * Shows or hides the warning that the bought scores cost too much, changing it only when that
+	 * changes, so a screen reader reads it out once each time it appears
+	 *
+	 * @param budget The points the player has while the scores cost more, or undefined to hide it
+	 */
+	private showOverBudget(budget: number | undefined): void
+	{
+		const message = ((budget === undefined)
+			? undefined
+			: t({
+				id: 'character.create.overBudget',
+				defaultMessage: 'These scores cost more than your {budget, plural, one {# point} other {# points}}. Lower some of them.',
+				description: 'Shown in Create Character, under the ability scores, while the bought scores cost more points than the player has; {budget} is how many they have'
+			}, {
+				budget
+			}));
+
+		if ((message ?? '') !== (this.overBudget.hidden ? '' : this.overBudget.textContent))
+		{
+			showMessage(this.overBudget, message);
 		}
 	}
 
@@ -805,16 +895,10 @@ export class CreateCharacterScreen
 
 		const baseScores = this.baseScores(options);
 
-		if ((options.abilities.kind === 'pointBuy') && ((pf1ePointBuyTotal(baseScores) ?? Infinity) > options.abilities.budget))
+		// The abilities step shows why
+		if (this.isOverBudget(options))
 		{
 			this.goToStep('abilities');
-			showMessage(this.error, t({
-				id: 'character.create.overBudget',
-				defaultMessage: 'These scores cost more than your {budget, plural, one {# point} other {# points}}. Lower some of them.',
-				description: 'Shown in Create Character when the bought ability scores cost more points than the player has; {budget} is how many they have'
-			}, {
-				budget: options.abilities.budget
-			}));
 			return;
 		}
 
@@ -1023,17 +1107,6 @@ function describeRace(race: CharacterRaceOption): string
 	}
 
 	return(formatList(modifiers));
-}
-
-/**
- * A number with its sign, such as +2, -1 or 0
- *
- * @param value The number
- * @return The number in the player's language
- */
-function signedNumber(value: number): string
-{
-	return(new Intl.NumberFormat(currentLocale(), { signDisplay: 'exceptZero' }).format(value));
 }
 
 /**

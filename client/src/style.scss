@@ -1,6 +1,7 @@
 // Home (index.html), and the game's page (game.html): a universe's lobby and a group's game
 
 @use 'shared' as *;
+@use 'characterSheet';
 
 .home-body
 {
@@ -133,6 +134,9 @@
 
 	li
 	{
+		display: flex;
+		align-items: center;
+		gap: 4px;
 		padding: 2px 0;
 	}
 }
@@ -141,10 +145,11 @@
 .character-choice
 {
 	display: flex;
+	flex: 1;
 	flex-wrap: wrap;
 	gap: 0 6px;
 	align-items: baseline;
-	width: 100%;
+	min-width: 0;
 	padding: 4px 8px;
 	border-color: transparent;
 	background: none;
@@ -161,6 +166,32 @@
 		border-color: $accent;
 		cursor: default;
 	}
+
+	// A character given their last rites, who can't be played until restored
+	&[aria-disabled="true"]
+	{
+		color: $text-faint;
+		cursor: default;
+
+		&:hover
+		{
+			background: none;
+		}
+	}
+}
+
+.character-leaving
+{
+	margin-inline-start: auto;
+	font-size: 12px;
+	color: $error;
+}
+
+.character-sheet-button
+{
+	flex-shrink: 0;
+	padding: 4px 8px;
+	font-size: 12px;
 }
 
 .character-playing

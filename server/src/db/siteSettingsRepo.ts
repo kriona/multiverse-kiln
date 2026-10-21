@@ -17,7 +17,8 @@ export async function findSiteSettings(executor: Executor = db): Promise<SiteSet
 	const [row] = await executor
 		.select({
 			universeCreationEnabled: siteSettings.universeCreationEnabled,
-			universesPerCreator: siteSettings.universesPerCreator
+			universesPerCreator: siteSettings.universesPerCreator,
+			characterDeletionDays: siteSettings.characterDeletionDays
 		})
 		.from(siteSettings)
 		.limit(1);

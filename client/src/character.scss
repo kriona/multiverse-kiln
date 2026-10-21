@@ -83,6 +83,13 @@
 		padding: 4px 6px;
 		border-bottom: 1px solid $border-subtle;
 	}
+
+	// Sized for the number it shows while closed, not for its longest choice, such as
+	// "15 (Constitution)"; the open list still fits its choices
+	select.rolled-score
+	{
+		width: 5em;
+	}
 }
 
 .character-review

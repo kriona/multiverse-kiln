@@ -1,7 +1,7 @@
 import assert from 'assert';
 import type { CharacterDraft } from '@multiverse-kiln/shared';
 
-import { countCharacters, createCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDraft, findPf1eAbilityRoll, hasCharactersOfClass, hasCharactersOfRace, isCarriedItem, keepPf1eAbilityRoll, listCharacters, listPlayableCharacters, markCharacterPlayed, saveCharacterDraft } from '../../src/db/characterRepo.js';
+import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findPf1eAbilityRoll, hasCharactersOfClass, hasCharactersOfRace, isCarriedItem, keepPf1eAbilityRoll, listCharacters, listPlayableCharacters, markCharacterPlayed, purgeExpiredCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion } from '../../src/db/characterRepo.js';
 import { loadOrCreatePlayerByName } from '../../src/db/playerRepo.js';
 import { findDefaultRaceIds } from '../../src/db/raceRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
@@ -30,8 +30,8 @@ describe('characterRepo', () =>
 		await inTransaction((transaction) => createCharacter({ ...brokk, playerId: otherPlayerId }, transaction));
 
 		assert.deepStrictEqual(await listCharacters(playerId, universeId), [
-			{ id: firstId, name: 'Brokk', raceId: brokk.raceId, classId: brokk.classId },
-			{ id: secondId, name: 'Dain', raceId: brokk.raceId, classId: brokk.classId }
+			{ id: firstId, name: 'Brokk', raceId: brokk.raceId, classId: brokk.classId, deleteAt: null },
+			{ id: secondId, name: 'Dain', raceId: brokk.raceId, classId: brokk.classId, deleteAt: null }
 		]);
 		assert.strictEqual(await countCharacters(playerId, universeId), 2);
 	});
@@ -75,6 +75,93 @@ describe('characterRepo', () =>
 
 		await inTransaction((transaction) => createCharacter({ ...brokk, items: [] }, transaction));
 		assert.strictEqual(await isCarriedItem(brokk.items[0].itemId), false);
+	});
+
+	it('finds one of a player\'s characters with their scores, money and items', async () =>
+	{
+		const otherPlayerId = (await loadOrCreatePlayerByName('Grace')).id;
+		const otherUniverseId = await addUniverse('Elsewhere');
+		const brokk = await dwarfFighter(playerId, universeId);
+		const characterId = await inTransaction((transaction) => createCharacter(brokk, transaction));
+
+		assert.deepStrictEqual(await findCharacterDetails(playerId, universeId, characterId), {
+			id: characterId,
+			name: 'Brokk',
+			raceId: brokk.raceId,
+			classId: brokk.classId,
+			deleteAt: null,
+			abilityScores: brokk.abilityScores,
+			money: brokk.money,
+			items: brokk.items
+		});
+		assert.strictEqual(await findCharacterDetails(otherPlayerId, universeId, characterId), undefined);
+		assert.strictEqual(await findCharacterDetails(playerId, otherUniverseId, characterId), undefined);
+	});
+
+	describe('deleting', () =>
+	{
+		/**
+		 * A time some days from now
+		 *
+		 * @param days How many days; negative for the past
+		 * @return The time
+		 */
+		function daysFromNow(days: number): Date
+		{
+			return(new Date(Date.now() + (days * 24 * 60 * 60 * 1000)));
+		}
+
+		it('deletes only the player\'s own character, with their items', async () =>
+		{
+			const otherPlayerId = (await loadOrCreatePlayerByName('Grace')).id;
+			const brokk = await dwarfFighter(playerId, universeId);
+			const characterId = await inTransaction((transaction) => createCharacter(brokk, transaction));
+
+			assert.strictEqual(await deleteCharacter(otherPlayerId, universeId, characterId), false);
+			assert.strictEqual(await deleteCharacter(playerId, universeId, characterId), true);
+			assert.strictEqual(await countCharacters(playerId, universeId), 0);
+			assert.strictEqual(await isCarriedItem(brokk.items[0].itemId), false);
+			assert.strictEqual(await deleteCharacter(playerId, universeId, characterId), false);
+		});
+
+		it('keeps a character given their last rites listed and counted, but not playable, and keeps their first time', async () =>
+		{
+			const brokk = await dwarfFighter(playerId, universeId);
+			const characterId = await inTransaction((transaction) => createCharacter(brokk, transaction));
+			const deleteAt = daysFromNow(7);
+
+			assert.deepStrictEqual(await scheduleCharacterDeletion(playerId, universeId, characterId, deleteAt), deleteAt);
+			assert.deepStrictEqual(await scheduleCharacterDeletion(playerId, universeId, characterId, daysFromNow(9)), deleteAt);
+			assert.deepStrictEqual((await listCharacters(playerId, universeId)).map((character) => character.deleteAt), [deleteAt]);
+			assert.deepStrictEqual((await findCharacterDetails(playerId, universeId, characterId))?.deleteAt, deleteAt);
+			assert.strictEqual(await countCharacters(playerId, universeId), 1);
+			assert.deepStrictEqual(await listPlayableCharacters(playerId, universeId), []);
+
+			assert.deepStrictEqual(await restoreCharacter(playerId, universeId, characterId), { id: characterId, name: 'Brokk' });
+			assert.deepStrictEqual((await listPlayableCharacters(playerId, universeId)).map(({ id }) => id), [characterId]);
+			assert.strictEqual(await restoreCharacter(playerId, universeId, characterId), undefined);
+		});
+
+		it('hides a character whose time has come, and sweeps them away', async () =>
+		{
+			const brokk = await dwarfFighter(playerId, universeId);
+			const goneId = await inTransaction((transaction) => createCharacter(brokk, transaction));
+			const waitingId = await inTransaction((transaction) => createCharacter({ ...brokk, name: 'Dain' }, transaction));
+
+			await scheduleCharacterDeletion(playerId, universeId, goneId, daysFromNow(-1));
+			await scheduleCharacterDeletion(playerId, universeId, waitingId, daysFromNow(1));
+
+			assert.deepStrictEqual((await listCharacters(playerId, universeId)).map(({ id }) => id), [waitingId]);
+			assert.strictEqual(await findCharacterDetails(playerId, universeId, goneId), undefined);
+			assert.strictEqual(await countCharacters(playerId, universeId), 1);
+			assert.strictEqual(await restoreCharacter(playerId, universeId, goneId), undefined);
+			assert.strictEqual(await scheduleCharacterDeletion(playerId, universeId, goneId, daysFromNow(7)), undefined);
+
+			assert.strictEqual(await purgeExpiredCharacters(), 1);
+			assert.strictEqual(await purgeExpiredCharacters(), 0);
+			assert.strictEqual(await deleteCharacter(playerId, universeId, goneId), false);
+			assert.deepStrictEqual((await listCharacters(playerId, universeId)).map(({ id }) => id), [waitingId]);
+		});
 	});
 
 	it('keeps one draft per player and universe', async () =>

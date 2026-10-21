@@ -13,6 +13,7 @@ import { createUniverse, setUniverseAreas } from '../src/db/universeRepo.js';
 import { deleteArea, editCells, resizeArea } from '../src/db/areaRepo.js';
 import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
 import { cellCenter } from '../src/logic/movement.js';
+import { characterChanges } from '../src/players/characterChanges.js';
 import { onlinePlayers } from '../src/players/onlinePlayers.js';
 import { CHAT_HISTORY_LENGTH, type LobbyRoom } from '../src/rooms/LobbyRoom.js';
 import { areaChanges } from '../src/world/areaChanges.js';
@@ -513,6 +514,80 @@ describe('LobbyRoom', () =>
 
 			ada.room.send(LobbyMessageType.Chat, { text: 'Hello' });
 			assert.strictEqual((await grace.inbox.take<ChatMessage>(LobbyServerMessageType.Chat)).name, 'Lovelace');
+		});
+
+		it('switches a player off a character that is deleted, makes them a ghost with none left, and plays one restored', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const [adaCharacter] = await listPlayableCharacters(ada.playerId, universe.universeId);
+			const lovelaceId = await addCharacter(ada.playerId, universe.universeId, 'Lovelace');
+			const second = await openWindow(ada.browserId, universe.universeId);
+			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
+
+			await ada.inbox.take(LobbyServerMessageType.PlayingAs);
+			await second.inbox.take(LobbyServerMessageType.PlayingAs);
+
+			characterChanges.publish({
+				kind: 'removed',
+				playerId: ada.playerId,
+				universeId: universe.universeId,
+				characterId: adaCharacter.id
+			});
+
+			for (const window of [ada, second])
+			{
+				assert.strictEqual((await window.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs)).characterId, lovelaceId);
+				await window.inbox.take(LobbyServerMessageType.CharactersChanged);
+			}
+
+			characterChanges.publish({
+				kind: 'removed',
+				playerId: ada.playerId,
+				universeId: universe.universeId,
+				characterId: lovelaceId
+			});
+
+			assert.strictEqual((await ada.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs)).characterId, null);
+			await waitUntil(() => !grace.room.state.members.has(ada.playerId));
+			assert.strictEqual(playerOf(ada).ghost, true);
+
+			// A ghost can't choose a character that can no longer be played
+			ada.room.send(LobbyMessageType.ChooseCharacter, { characterId: lovelaceId });
+			await lobbyOf(ada).waitForNextMessage();
+			assert.strictEqual(playerOf(ada).ghost, true);
+
+			characterChanges.publish({
+				kind: 'restored',
+				playerId: ada.playerId,
+				universeId: universe.universeId,
+				character: {
+					id: lovelaceId,
+					name: 'Lovelace'
+				}
+			});
+
+			assert.strictEqual((await ada.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs)).characterId, lovelaceId);
+			await waitUntil(() => (grace.room.state.members.get(ada.playerId)?.name === 'Lovelace'));
+			assert.strictEqual(playerOf(ada).ghost, false);
+		});
+
+		it('ignores a change to a character in another universe', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const [adaCharacter] = await listPlayableCharacters(ada.playerId, universe.universeId);
+
+			await ada.inbox.take(LobbyServerMessageType.PlayingAs);
+
+			characterChanges.publish({
+				kind: 'removed',
+				playerId: ada.playerId,
+				universeId: randomUUID(),
+				characterId: adaCharacter.id
+			});
+			await lobbyOf(ada).waitForNextPatch();
+
+			assert.strictEqual(ada.inbox.pending(LobbyServerMessageType.CharactersChanged), 0);
+			assert.strictEqual(playerOf(ada).ghost, false);
 		});
 
 		it('ignores a choice of another player\'s character', async () =>

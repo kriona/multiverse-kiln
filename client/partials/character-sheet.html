@@ -1,0 +1,56 @@
+<dialog id="character-sheet-dialog" class="panel dialog character-sheet-dialog" aria-labelledby="character-sheet-title" aria-describedby="character-sheet-summary">
+	<h2 id="character-sheet-title" tabindex="-1"></h2>
+	<p id="character-sheet-summary" class="character-sheet-summary"></p>
+	<p id="character-sheet-status" role="status"></p>
+	<p id="character-sheet-error" class="form-error" role="alert" hidden></p>
+	<p id="character-sheet-pending" class="notice character-sheet-pending" hidden></p>
+	<div id="character-sheet-body" class="character-sheet" hidden>
+		<section aria-labelledby="character-sheet-abilities-heading">
+			<h3 id="character-sheet-abilities-heading" data-message="characterSheet.abilities" data-translation-context="Heading on a character's sheet of their six ability scores">Ability scores</h3>
+			<table class="character-sheet-abilities">
+				<thead>
+					<tr>
+						<th scope="col" data-message="characterSheet.ability" data-translation-context="Heading on a character's sheet of the column naming each ability, such as Strength">Ability</th>
+						<th scope="col" data-message="characterSheet.score" data-translation-context="Heading on a character's sheet of the column of ability scores, such as 16">Score</th>
+						<th scope="col" data-message="characterSheet.modifier" data-translation-context="Heading on a character's sheet of the column of the bonus or penalty each ability score gives, such as +3">Modifier</th>
+					</tr>
+				</thead>
+				<tbody id="character-sheet-ability-rows"></tbody>
+			</table>
+		</section>
+		<section aria-labelledby="character-sheet-traits-heading">
+			<h3 id="character-sheet-traits-heading" data-message="characterSheet.traits" data-translation-context="Heading on a character's sheet of their size, whether they have darkvision and their money">Traits</h3>
+			<dl id="character-sheet-traits" class="character-sheet-traits"></dl>
+		</section>
+		<section aria-labelledby="character-sheet-items-heading">
+			<h3 id="character-sheet-items-heading" data-message="characterSheet.items" data-translation-context="Heading on a character's sheet of the items they carry">Equipment</h3>
+			<ul id="character-sheet-items" class="character-sheet-items"></ul>
+			<p id="character-sheet-no-items" class="character-sheet-none" data-message="characterSheet.noItems" data-translation-context="Shown on a character's sheet instead of their equipment when they carry no items" hidden>Carries nothing.</p>
+		</section>
+	</div>
+	<div class="dialog-buttons character-sheet-buttons">
+		<button id="character-sheet-delete" type="button" class="link-button character-sheet-delete" hidden data-message="characterSheet.delete" data-translation-context="Button on a character's sheet that starts deleting the character, asking first">Delete</button>
+		<button id="character-sheet-restore" type="button" aria-describedby="character-sheet-pending" hidden data-shortcut="Alt+R" data-message="characterSheet.restore" data-translation-context="Button on the sheet of a character waiting to be deleted that takes back the deletion, so they can be played again"><!-- icon ph:arrow-counter-clockwise -->Restore</button>
+		<button id="character-sheet-close" type="button" class="secondary" data-message="dialog.close" data-translation-context="Button that closes a dialog that only shows something, with nothing to change">Close</button>
+	</div>
+</dialog>
+<dialog id="character-delete-dialog" class="panel dialog" aria-labelledby="character-delete-title" aria-describedby="character-delete-question">
+	<h2 id="character-delete-title" data-message="characterDelete.title" data-translation-context="Title of the dialog that asks whether to delete a character">Delete Character</h2>
+	<p id="character-delete-question"></p>
+	<div class="dialog-buttons">
+		<button id="character-delete-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+		<button id="character-delete-confirm" type="button" class="danger" data-message="characterDelete.confirm" data-translation-context="Button in the dialog asking whether to delete a character that goes on to the last question before deleting them"><!-- icon ph:trash -->Delete</button>
+	</div>
+</dialog>
+<dialog id="character-farewell-dialog" class="panel dialog character-farewell-dialog" aria-labelledby="character-farewell-title" aria-describedby="character-farewell-question">
+	<h2 id="character-farewell-title" data-message="characterDelete.title" data-translation-context="Title of the dialog that asks whether to delete a character">Delete Character</h2>
+	<p id="character-farewell-question"></p>
+	<p id="character-farewell-error" class="form-error" role="alert" hidden></p>
+	<div class="dialog-buttons character-farewell-buttons">
+		<div class="character-farewell-delete-buttons">
+			<button id="character-cremate" type="button" class="danger" aria-describedby="character-farewell-error" data-message="characterDelete.cremate" data-translation-context="Button that deletes a character straight away, for good. Cremate is a playful way of saying it (their body is burned); the words in parentheses say plainly what it does"><!-- icon game-icons:campfire -->Cremate (delete immediately)</button>
+			<button id="character-last-rites" type="button" class="secondary" aria-describedby="character-farewell-error"></button>
+		</div>
+		<button id="character-farewell-cancel" type="button" data-message="characterDelete.mistake" data-translation-context="Button that closes the last question before deleting a character, keeping the character. A playful way of saying Cancel">I've Made A Terrible Mistake</button>
+	</div>
+</dialog>

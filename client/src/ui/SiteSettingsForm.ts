@@ -1,4 +1,4 @@
-import { MAX_UNIVERSES_PER_CREATOR, MIN_UNIVERSES_PER_CREATOR, type SiteSettings } from '@multiverse-kiln/shared';
+import { MAX_CHARACTER_DELETION_DAYS, MAX_UNIVERSES_PER_CREATOR, MIN_UNIVERSES_PER_CREATOR, type SiteSettings } from '@multiverse-kiln/shared';
 
 import { t } from '../localization';
 import type { AdminApi } from '../network/adminApi';
@@ -10,6 +10,7 @@ import { formMessages } from './formMessages';
 
 /**
  * The admin page's form: settings for the whole site, such as whether players can create universes
+ * and how long last rites wait before deleting a character
  */
 export class SiteSettingsForm
 {
@@ -18,6 +19,7 @@ export class SiteSettingsForm
 	private readonly form = getElement('site-settings-form', HTMLFormElement);
 	private readonly universeCreation = getElement('site-universe-creation', HTMLInputElement);
 	private readonly universesPerCreator = getElement('site-universes-per-creator', HTMLInputElement);
+	private readonly characterDeletionDays = getElement('site-character-deletion-days', HTMLInputElement);
 	private readonly error = getElement('site-settings-error', HTMLElement);
 	private readonly saved = getElement('site-settings-saved', HTMLElement);
 	private readonly saveButton = getElement('site-settings-save', HTMLButtonElement);
@@ -37,12 +39,17 @@ export class SiteSettingsForm
 	{
 		this.universesPerCreator.min = String(MIN_UNIVERSES_PER_CREATOR);
 		this.universesPerCreator.max = String(MAX_UNIVERSES_PER_CREATOR);
+		this.characterDeletionDays.min = '0';
+		this.characterDeletionDays.max = String(MAX_CHARACTER_DELETION_DAYS);
 
-		this.universesPerCreator.addEventListener('input', () =>
+		for (const field of [this.universesPerCreator, this.characterDeletionDays])
 		{
-			setFieldError(this.universesPerCreator, undefined);
-			this.saved.textContent = '';
-		});
+			field.addEventListener('input', () =>
+			{
+				setFieldError(field, undefined);
+				this.saved.textContent = '';
+			});
+		}
 
 		this.universeCreation.addEventListener('change', () =>
 		{
@@ -80,6 +87,7 @@ export class SiteSettingsForm
 
 		this.universeCreation.checked = settings.universeCreationEnabled;
 		this.universesPerCreator.value = String(settings.universesPerCreator);
+		this.characterDeletionDays.value = String(settings.characterDeletionDays);
 		this.loading.hidden = true;
 		this.form.hidden = false;
 		this.changes.markSaved();
@@ -90,20 +98,24 @@ export class SiteSettingsForm
 	 */
 	private async save(): Promise<void>
 	{
-		const universesPerCreator = Number(this.universesPerCreator.value);
+		const universesPerCreator = readWholeNumber(this.universesPerCreator, MIN_UNIVERSES_PER_CREATOR, MAX_UNIVERSES_PER_CREATOR);
 
-		if (!Number.isInteger(universesPerCreator) || (universesPerCreator < MIN_UNIVERSES_PER_CREATOR) || (universesPerCreator > MAX_UNIVERSES_PER_CREATOR) || (this.universesPerCreator.value.trim() === ''))
+		if (universesPerCreator === undefined)
 		{
-			reportFieldError(this.universesPerCreator, t(formMessages.wholeNumber, {
-				min: MIN_UNIVERSES_PER_CREATOR,
-				max: MAX_UNIVERSES_PER_CREATOR
-			}));
+			return;
+		}
+
+		const characterDeletionDays = readWholeNumber(this.characterDeletionDays, 0, MAX_CHARACTER_DELETION_DAYS);
+
+		if (characterDeletionDays === undefined)
+		{
 			return;
 		}
 
 		const settings: SiteSettings = {
 			universeCreationEnabled: this.universeCreation.checked,
-			universesPerCreator
+			universesPerCreator,
+			characterDeletionDays
 		};
 
 		this.saveButton.disabled = true;
@@ -128,4 +140,29 @@ export class SiteSettingsForm
 			this.saveButton.disabled = false;
 		}
 	}
+}
+
+/**
+ * Reads a field that takes a whole number in a range. When it holds anything else, shows what is
+ * wrong under it and takes the player there
+ *
+ * @param field The field
+ * @param min The smallest number allowed
+ * @param max The largest number allowed
+ * @return The number, or undefined when the field shows a problem
+ */
+function readWholeNumber(field: HTMLInputElement, min: number, max: number): number | undefined
+{
+	const value = Number(field.value);
+
+	if (!Number.isInteger(value) || (value < min) || (value > max) || (field.value.trim() === ''))
+	{
+		reportFieldError(field, t(formMessages.wholeNumber, {
+			min,
+			max
+		}));
+		return(undefined);
+	}
+
+	return(value);
 }

@@ -5,7 +5,7 @@
  */
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { MAX_UNIVERSES_PER_CREATOR, MIN_UNIVERSES_PER_CREATOR, SITE_SETTINGS_PATH, type SiteSettings } from '@multiverse-kiln/shared';
+import { MAX_CHARACTER_DELETION_DAYS, MAX_UNIVERSES_PER_CREATOR, MIN_UNIVERSES_PER_CREATOR, SITE_SETTINGS_PATH, type SiteSettings } from '@multiverse-kiln/shared';
 
 import { findSiteSettings, saveSiteSettings } from '../db/siteSettingsRepo.js';
 import { refuseWritesFromOtherOrigins } from './editorAccess.js';
@@ -16,7 +16,8 @@ import { errorMessages, sendError, sendInvalidRequest } from './errors.js';
  */
 const siteSettingsBody: z.ZodType<SiteSettings> = z.strictObject({
 	universeCreationEnabled: z.boolean(),
-	universesPerCreator: z.number().int().min(MIN_UNIVERSES_PER_CREATOR).max(MAX_UNIVERSES_PER_CREATOR)
+	universesPerCreator: z.number().int().min(MIN_UNIVERSES_PER_CREATOR).max(MAX_UNIVERSES_PER_CREATOR),
+	characterDeletionDays: z.number().int().min(0).max(MAX_CHARACTER_DELETION_DAYS)
 });
 
 /**

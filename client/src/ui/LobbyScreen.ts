@@ -1,12 +1,14 @@
 import { Callbacks } from '@colyseus/sdk';
-import { DISALLOWED_TEXT_CHARACTERS, MAX_CHAT_MESSAGE_LENGTH, type CharacterListPayload, type ChatMessage, type LobbyMember } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, MAX_CHAT_MESSAGE_LENGTH, type CharacterListPayload, type CharacterSummary, type ChatMessage, type LobbyMember } from '@multiverse-kiln/shared';
+import sheetIcon from 'virtual:icon/ph:scroll';
 
 import { currentLocale, t } from '../localization';
 import type { LobbyConnection } from '../network/serverConnection';
 import { announce } from './announcer';
-import { getElement, showMessage } from './dom';
+import { getElement, setButtonLabel, showMessage } from './dom';
 import type { MapView } from './MapView';
 import { className, raceName } from './raceAndClassNames';
+import { addShortcut } from './shortcuts';
 
 /**
  * Most names shown in the list of who's here; the rest are counted
@@ -37,6 +39,11 @@ export interface LobbyScreenActions
 	 * Play one of the player's characters
 	 */
 	chooseCharacter: (characterId: string) => void;
+
+	/**
+	 * Show one of the player's characters on their character sheet
+	 */
+	openCharacterSheet: (character: CharacterSummary) => void;
 
 	createGroup: () => void;
 
@@ -152,6 +159,25 @@ export class LobbyScreen
 		{
 			this.hideNotice();
 			actions.leaveLobby();
+		});
+
+		addShortcut({
+			keys: 'Alt+K',
+			scope: getElement('lobby-screen', HTMLElement),
+			description: () => t({
+				id: 'lobby.keys.characterSheet',
+				defaultMessage: 'Open the character sheet of the character you\'re playing',
+				description: 'In the list of keyboard shortcuts in the lobby, what the shortcut that shows the character the player is playing does'
+			}),
+			run: () =>
+			{
+				const character = this.characters?.characters.find((each) => (each.id === this.playingId));
+
+				if (character)
+				{
+					actions.openCharacterSheet(character);
+				}
+			}
 		});
 	}
 
@@ -369,7 +395,8 @@ export class LobbyScreen
 	}
 
 	/**
-	 * Draws the player's characters, each a button that plays them, marking the one being played
+	 * Draws the player's characters, each a button that plays them beside one that shows their sheet,
+	 * marking the one being played
 	 */
 	private renderCharacters(): void
 	{
@@ -407,6 +434,23 @@ export class LobbyScreen
 			button.setAttribute('aria-pressed', String(isPlaying));
 			button.append(name, ' ', description);
 
+			// Kept focusable, so a screen reader still reads the character and when they go
+			if (character.deleteAt !== null)
+			{
+				const leaving = document.createElement('span');
+
+				leaving.className = 'character-leaving';
+				leaving.textContent = t({
+					id: 'lobby.characterLeaving',
+					defaultMessage: 'To be deleted on {deleteAt, date, medium}',
+					description: 'In the lobby\'s list of the player\'s characters, beside one given their last rites, who can\'t be played until restored from their sheet; {deleteAt} is the day they will be deleted'
+				}, {
+					deleteAt: Date.parse(character.deleteAt)
+				});
+				button.setAttribute('aria-disabled', 'true');
+				button.append(' ', leaving);
+			}
+
 			// Said in words as well as by the outline, for players who can't see it
 			if (isPlaying)
 			{
@@ -423,14 +467,35 @@ export class LobbyScreen
 
 			button.addEventListener('click', () =>
 			{
-				if (character.id !== this.playingId)
+				if ((character.id !== this.playingId) && (character.deleteAt === null))
 				{
 					this.hideNotice();
 					this.actions.chooseCharacter(character.id);
 				}
 			});
 
-			item.append(button);
+			const sheetButton = document.createElement('button');
+
+			sheetButton.type = 'button';
+			sheetButton.className = 'secondary character-sheet-button';
+			setButtonLabel(sheetButton, sheetIcon, t({
+				id: 'lobby.characterSheet',
+				defaultMessage: 'Sheet',
+				description: 'Short button beside each of the player\'s characters in the lobby that shows the character\'s sheet: their ability scores, money and equipment'
+			}));
+			sheetButton.setAttribute('aria-label', t({
+				id: 'lobby.characterSheetLabel',
+				defaultMessage: 'Character sheet of {name}',
+				description: 'Name for screen readers of the button beside one of the player\'s characters in the lobby that shows their sheet; {name} is the character\'s name'
+			}, {
+				name: character.name
+			}));
+			sheetButton.addEventListener('click', () =>
+			{
+				this.actions.openCharacterSheet(character);
+			});
+
+			item.append(button, sheetButton);
 
 			return(item);
 		}));

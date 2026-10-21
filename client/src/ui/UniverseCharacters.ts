@@ -3,6 +3,7 @@ import type { CharacterListPayload } from '@multiverse-kiln/shared';
 import { t } from '../localization';
 import type { CharacterApi } from '../network/characterApi';
 import { describeEditorError } from '../network/editorApi';
+import type { CharacterSheetDialog } from './CharacterSheetDialog';
 import { getElement, showMessage } from './dom';
 import { className, raceName } from './raceAndClassNames';
 
@@ -25,8 +26,9 @@ export class UniverseCharacters
 	/**
 	 * @param api The player's characters
 	 * @param universeId The universe whose characters are listed
+	 * @param sheet Shows a character's sheet
 	 */
-	constructor(private readonly api: CharacterApi, private readonly universeId: string)
+	constructor(private readonly api: CharacterApi, private readonly universeId: string, private readonly sheet: CharacterSheetDialog)
 	{
 	}
 
@@ -75,7 +77,7 @@ export class UniverseCharacters
 	}
 
 	/**
-	 * Shows the characters: each one's name, race and class
+	 * Shows the characters: each one's name, race and class, on a button that shows their sheet
 	 *
 	 * @param characters The player's characters in the universe
 	 */
@@ -84,6 +86,7 @@ export class UniverseCharacters
 		this.list.replaceChildren(...characters.characters.map((character) =>
 		{
 			const item = document.createElement('li');
+			const button = document.createElement('button');
 			const name = document.createElement('strong');
 			const description = document.createElement('span');
 
@@ -97,7 +100,29 @@ export class UniverseCharacters
 				race: raceName(character.race, characters.ruleset),
 				class: className(character.characterClass, characters.ruleset)
 			});
-			item.append(name, ' ', description);
+			button.type = 'button';
+			button.className = 'universe-character-choice';
+			button.append(name, ' ', description);
+
+			if (character.deleteAt !== null)
+			{
+				const leaving = document.createElement('span');
+
+				leaving.className = 'universe-character-leaving';
+				leaving.textContent = t({
+					id: 'universePage.characterLeaving',
+					defaultMessage: 'To be deleted on {deleteAt, date, medium}',
+					description: 'On a universe\'s page, in the list of the player\'s characters, beside one given their last rites, who can be restored from their sheet until then; {deleteAt} is the day they will be deleted'
+				}, {
+					deleteAt: Date.parse(character.deleteAt)
+				});
+				button.append(' ', leaving);
+			}
+			button.addEventListener('click', () =>
+			{
+				void this.sheet.open(this.universeId, character.id, character.name);
+			});
+			item.append(button);
 
 			return(item);
 		}));

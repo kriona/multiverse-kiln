@@ -11,11 +11,21 @@
  * - DELETE charactersPath(universeId)/draft: throws the progress away, to start over. Rolled scores are kept
  * - POST charactersPath(universeId): makes a character (NewCharacterRequest), answering CreatedPayload,
  *   and throws the progress away
+ * - GET characterPath(universeId, characterId): one of the player's characters, as their character
+ *   sheet shows them (CharacterSheet)
+ * - DELETE characterPath(universeId, characterId): deletes the character straight away
+ * - PUT characterPath(universeId, characterId)/deletion: gives the character their last rites, so they
+ *   are deleted the site's characterDeletionDays later (see shared/src/siteSettings.ts), answering
+ *   CharacterDeletionPayload, or 409 while the site sets it to 0. Until then they can be restored but
+ *   not played
+ * - DELETE characterPath(universeId, characterId)/deletion: restores a character given their last rites
  */
 import { UNIVERSES_PATH } from './constants.js';
 import type { Pf1eAbility, Pf1eAbilityScores } from './rulesets/pf1e/abilities.js';
 import type { Pf1eClassRules } from './rulesets/pf1e/classes.js';
+import type { Pf1eMoney } from './rulesets/pf1e/money.js';
 import type { Pf1eRaceRules } from './rulesets/pf1e/races.js';
+import type { Pf1eSize } from './rulesets/pf1e/sizes.js';
 import type { Pf1eRollMethod, Pf1eStatMethod } from './rulesets/pf1e/statMethods.js';
 import type { Ruleset } from './universes.js';
 
@@ -41,6 +51,18 @@ export function charactersPath(universeId: string): string
 }
 
 /**
+ * The path of one of the player's characters
+ *
+ * @param universeId The universe's ID
+ * @param characterId The character's ID
+ * @return The path
+ */
+export function characterPath(universeId: string, characterId: string): string
+{
+	return(`${charactersPath(universeId)}/${encodeURIComponent(characterId)}`);
+}
+
+/**
  * A race's or class's name: the universe's own, or a default's key that finds its name in
  * DEFAULT_RACE_NAMES or DEFAULT_CLASS_NAMES
  */
@@ -59,6 +81,23 @@ export interface CharacterSummary
 	name: string;
 	race: OptionName;
 	characterClass: OptionName;
+
+	/**
+	 * When the character is deleted (an ISO 8601 time), once given their last rites; null otherwise.
+	 * Until then they can be restored but not played
+	 */
+	deleteAt: string | null;
+}
+
+/**
+ * Response of PUT characterPath(universeId, characterId)/deletion
+ */
+export interface CharacterDeletionPayload
+{
+	/**
+	 * When the character is deleted, as an ISO 8601 time
+	 */
+	deleteAt: string;
 }
 
 /**
@@ -199,4 +238,61 @@ export interface NewCharacterRequest
 	 * The ability that gets PF1E_FLOATING_ABILITY_BONUS, for a race with a floating bonus; null otherwise
 	 */
 	floatingAbility: Pf1eAbility | null;
+}
+
+/**
+ * An item a character carries, named the way the universe names it
+ */
+export interface CharacterSheetItem extends OptionName
+{
+	id: number;
+
+	/**
+	 * The item's type, a key of the ruleset's ITEM_KINDS
+	 */
+	type: string;
+
+	quantity: number;
+}
+
+/**
+ * Response of GET characterPath(universeId, characterId): one of the player's characters, as their
+ * character sheet shows them
+ */
+export interface CharacterSheet
+{
+	ruleset: Ruleset;
+	id: string;
+	name: string;
+	race: OptionName;
+	characterClass: OptionName;
+
+	/**
+	 * When the character is deleted (an ISO 8601 time), once given their last rites; null otherwise
+	 */
+	deleteAt: string | null;
+
+	/**
+	 * How many days last rites wait before deleting a character (the site's characterDeletionDays);
+	 * 0 when last rites are turned off
+	 */
+	deletionDays: number;
+
+	/**
+	 * The race's size and darkvision, as the universe sets them now
+	 */
+	size: Pf1eSize;
+	darkvision: boolean;
+
+	/**
+	 * The ability scores, with the race's modifiers added
+	 */
+	abilityScores: Pf1eAbilityScores;
+
+	money: Pf1eMoney;
+
+	/**
+	 * The items the character carries, by ID
+	 */
+	items: CharacterSheetItem[];
 }

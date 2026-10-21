@@ -1,13 +1,14 @@
 import assert from 'assert';
 
-import { DEFAULT_SITE_SETTINGS, MAX_UNIVERSES_PER_CREATOR, SITE_SETTINGS_PATH, type SiteSettings } from '@multiverse-kiln/shared';
+import { DEFAULT_SITE_SETTINGS, MAX_CHARACTER_DELETION_DAYS, MAX_UNIVERSES_PER_CREATOR, SITE_SETTINGS_PATH, type SiteSettings } from '@multiverse-kiln/shared';
 
 import { allowedTestOrigin } from './setup.js';
 import { getTestServer, testServerUrl } from './testServer.js';
 
 const closed: SiteSettings = {
 	universeCreationEnabled: false,
-	universesPerCreator: 12
+	universesPerCreator: 12,
+	characterDeletionDays: 0
 };
 
 /**
@@ -75,6 +76,9 @@ describe('Site settings', () =>
 			{ ...closed, universesPerCreator: 0 },
 			{ ...closed, universesPerCreator: MAX_UNIVERSES_PER_CREATOR + 1 },
 			{ ...closed, universesPerCreator: 2.5 },
+			{ ...closed, characterDeletionDays: -1 },
+			{ ...closed, characterDeletionDays: MAX_CHARACTER_DELETION_DAYS + 1 },
+			{ ...closed, characterDeletionDays: 1.5 },
 			{ ...closed, universeCreationEnabled: 'no' },
 			{ ...closed, extra: 1 }
 		];

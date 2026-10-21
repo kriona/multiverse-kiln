@@ -149,6 +149,17 @@ export function formatList(items: readonly string[], type: 'conjunction' | 'unit
 }
 
 /**
+ * A number with its sign, such as +2, -1 or 0
+ *
+ * @param value The number
+ * @return The number in the player's language
+ */
+export function signedNumber(value: number): string
+{
+	return(new Intl.NumberFormat(translator.locale, { signDisplay: 'exceptZero' }).format(value));
+}
+
+/**
  * A message in the player's language
  *
  * @param message The message, from a defineMessages() call or sent by the server

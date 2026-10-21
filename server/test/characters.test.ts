@@ -1,10 +1,11 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { charactersPath, EDITOR_UNIVERSES_PATH, emptyPf1eMoney, MAX_CHARACTERS_PER_UNIVERSE, NEW_PF1E_RACE_RULES, PF1E_ABILITIES, type CharacterDraft, type CharacterListPayload, type CreatedPayload, type NewCharacterOptions, type NewCharacterRequest, type Pf1eAbilityScores, type RaceSettings } from '@multiverse-kiln/shared';
+import { characterPath, charactersPath, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyPf1eMoney, MAX_CHARACTERS_PER_UNIVERSE, NEW_PF1E_RACE_RULES, PF1E_ABILITIES, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type NewCharacterOptions, type NewCharacterRequest, type Pf1eAbilityScores, type RaceSettings } from '@multiverse-kiln/shared';
 
 import { findDefaultClassIds } from '../src/db/classRepo.js';
 import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
 import { findDefaultRaceIds } from '../src/db/raceRepo.js';
+import { saveSiteSettings } from '../src/db/siteSettingsRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
 import { onlinePlayers } from '../src/players/onlinePlayers.js';
@@ -259,7 +260,8 @@ describe('Character routes', () =>
 				id: created.body.id,
 				name: 'Brokk',
 				race: { key: 'dwarf', name: null },
-				characterClass: { key: 'fighter', name: null }
+				characterClass: { key: 'fighter', name: null },
+				deleteAt: null
 			}]
 		});
 
@@ -268,6 +270,113 @@ describe('Character routes', () =>
 
 		assert.strictEqual(again.status, 409);
 		assert.strictEqual((await newOptions()).characterCount, 1);
+	});
+
+	it('shows a character\'s sheet only to their player', async () =>
+	{
+		const request = await rolledDwarf();
+		const created = await send<CreatedPayload>(ada, 'POST', charactersPath(universeId), request);
+
+		assert.strictEqual(created.status, 201, JSON.stringify(created.body));
+
+		const path = characterPath(universeId, created.body.id);
+		const sheet = await send<CharacterSheet>(ada, 'GET', path);
+		const { baseScores } = request;
+		const { money, items, ...character } = sheet.body;
+
+		assert.strictEqual(sheet.status, 200, JSON.stringify(sheet.body));
+		assert.deepStrictEqual(character, {
+			ruleset: 'pf1e',
+			id: created.body.id,
+			name: 'Brokk',
+			race: { key: 'dwarf', name: null },
+			characterClass: { key: 'fighter', name: null },
+			deleteAt: null,
+			deletionDays: DEFAULT_SITE_SETTINGS.characterDeletionDays,
+			size: 'medium',
+			darkvision: true,
+			abilityScores: {
+				...baseScores,
+				constitution: (baseScores.constitution + 2),
+				wisdom: (baseScores.wisdom + 2),
+				charisma: (baseScores.charisma - 2)
+			}
+		});
+		assert.deepStrictEqual(Object.keys(money), Object.keys(emptyPf1eMoney()));
+		assert.deepStrictEqual(items.map(({ key, type, quantity }) => ({ key, type, quantity })), [{ key: 'dagger', type: 'dagger', quantity: 1 }]);
+
+		await send(ada, 'PATCH', `${EDITOR_UNIVERSES_PATH}/${universeId}`, { stage: 'prologue' });
+
+		const grace = await logIn('Grace');
+
+		assert.strictEqual((await send(grace, 'GET', path)).status, 404);
+		assert.strictEqual((await send(ada, 'GET', characterPath(universeId, randomUUID()))).status, 404);
+		assert.strictEqual((await send(ada, 'GET', characterPath(universeId, 'brokk'))).status, 404);
+	});
+
+	it('gives a character their last rites, restores them, and deletes them', async () =>
+	{
+		const created = await send<CreatedPayload>(ada, 'POST', charactersPath(universeId), await rolledDwarf());
+
+		assert.strictEqual(created.status, 201, JSON.stringify(created.body));
+
+		const path = characterPath(universeId, created.body.id);
+		const before = Date.now();
+		const scheduled = await send<CharacterDeletionPayload>(ada, 'PUT', `${path}/deletion`);
+		const deleteAt = Date.parse(scheduled.body.deleteAt);
+		const delay = (DEFAULT_SITE_SETTINGS.characterDeletionDays * 24 * 60 * 60 * 1000);
+
+		assert.strictEqual(scheduled.status, 200, JSON.stringify(scheduled.body));
+		assert.ok((deleteAt >= (before + delay - 1000)) && (deleteAt <= (Date.now() + delay)));
+
+		const list = await send<CharacterListPayload>(ada, 'GET', charactersPath(universeId));
+
+		assert.strictEqual(list.body.characters[0].deleteAt, scheduled.body.deleteAt);
+		assert.strictEqual((await send<CharacterSheet>(ada, 'GET', path)).body.deleteAt, scheduled.body.deleteAt);
+
+		assert.strictEqual((await send(ada, 'DELETE', `${path}/deletion`)).status, 204);
+		assert.strictEqual((await send(ada, 'DELETE', `${path}/deletion`)).status, 404);
+		assert.strictEqual((await send<CharacterSheet>(ada, 'GET', path)).body.deleteAt, null);
+
+		await send(ada, 'PATCH', `${EDITOR_UNIVERSES_PATH}/${universeId}`, { stage: 'prologue' });
+
+		const grace = await logIn('Grace');
+
+		assert.strictEqual((await send(grace, 'PUT', `${path}/deletion`)).status, 404);
+		assert.strictEqual((await send(grace, 'DELETE', path)).status, 404);
+
+		assert.strictEqual((await send(ada, 'DELETE', path)).status, 204);
+		assert.strictEqual((await send(ada, 'GET', path)).status, 404);
+		assert.strictEqual((await send(ada, 'DELETE', path)).status, 404);
+		assert.deepStrictEqual((await send<CharacterListPayload>(ada, 'GET', charactersPath(universeId))).body.characters, []);
+	});
+
+	it('waits the days the site sets after last rites, and refuses them when it sets none', async () =>
+	{
+		const created = await send<CreatedPayload>(ada, 'POST', charactersPath(universeId), await rolledDwarf());
+		const path = characterPath(universeId, created.body.id);
+
+		await saveSiteSettings({
+			...DEFAULT_SITE_SETTINGS,
+			characterDeletionDays: 0
+		});
+
+		assert.strictEqual((await send<CharacterSheet>(ada, 'GET', path)).body.deletionDays, 0);
+		assert.strictEqual((await send(ada, 'PUT', `${path}/deletion`)).status, 409);
+		assert.strictEqual((await send<CharacterSheet>(ada, 'GET', path)).body.deleteAt, null);
+
+		await saveSiteSettings({
+			...DEFAULT_SITE_SETTINGS,
+			characterDeletionDays: 30
+		});
+
+		const before = Date.now();
+		const scheduled = await send<CharacterDeletionPayload>(ada, 'PUT', `${path}/deletion`);
+		const delay = (30 * 24 * 60 * 60 * 1000);
+		const deleteAt = Date.parse(scheduled.body.deleteAt);
+
+		assert.strictEqual(scheduled.status, 200, JSON.stringify(scheduled.body));
+		assert.ok((deleteAt >= (before + delay - 1000)) && (deleteAt <= (Date.now() + delay)));
 	});
 
 	it('refuses scores that weren\'t rolled', async () =>

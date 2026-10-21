@@ -7,7 +7,7 @@ Lists all universes. In the beginning there will only be a few, but in the futur
 Each universe links to its [page](#universe-page).
 
 ## Universe page
-Every universe on Home has a page of its own at `/universe/<slug>`, listing all details about the universe, with an [Enter Universe](#enter-universe) button. The page doesn't need a login; while the browser is logged in (in any tab), it also lists the player's characters in the universe, with each one's race and class. The slug is made from the universe's name: lowercase, with every run of characters other than letters and digits turned into a hyphen ("The Shattered Isles!" is `the-shattered-isles`). Letters of every alphabet are kept, so a name in any language reads in its address. `/universe/<id>` always works too, and changes the address to the slug.
+Every universe on Home has a page of its own at `/universe/<slug>`, listing all details about the universe, with an [Enter Universe](#enter-universe) button. The page doesn't need a login; while the browser is logged in (in any tab), it also lists the player's characters in the universe, with each one's race and class; choosing one shows their [character sheet](#character-sheet). The slug is made from the universe's name: lowercase, with every run of characters other than letters and digits turned into a hyphen ("The Shattered Isles!" is `the-shattered-isles`). Letters of every alphabet are kept, so a name in any language reads in its address. `/universe/<id>` always works too, and changes the address to the slug.
 
 Universe names are unique, and names that could be mistaken for each other count as the same, so one universe can't pass as another. Two names are the same when they have the same slug, or when they match once capitals, accents, letters from other alphabets that look like Latin ones, stand-ins such as "1" for "i", repeated letters and the spaces and punctuation between words are set aside (the same comparison player names get for reserved words, `shared/src/names.ts`). "Kilnhaven", "Kiln Haven", "K1lnhaven" and "Кilnhaven" (with a Cyrillic К) are all the same name. A name needs at least one letter or digit. Renaming a universe changes its slug, so links that used the old slug stop working; links by ID keep working.
 
@@ -79,6 +79,7 @@ The lobby runs the game engine. It will be a small area where many people (more 
 - There will be a chat. You chat as your character.
 - If you have not created a character, you will use a ghost icon and nobody can see you. You can walk around the space. You can read chat but not send messages. Ghosts don't block cells, and pass through other players. Other players aren't shown ghosts in the list of who's here; a ghost sees themself listed as one. The [Create Character](#create-character) button should be more prominent.
 - If you have created a character, chat will be enabled. You will move about the space as your character, starting as the one you played or made most recently. You can switch characters at any time, and every window of yours switches with you.
+- Each of your characters has a button that shows their [character sheet](#character-sheet), and Alt+K shows the sheet of the one you're playing.
 - You may create up to 20 characters per universe.
 - If you have a character selected, a [Create Group](#create-group) button will be enabled.
 - Groups can be listed in the lobby so players can find them without an invite. How a group manages its listing is not yet defined.
@@ -107,6 +108,22 @@ For PF1E, the server rolls the ability scores (or checks the point buy choices) 
 - the character starts with the universe's, race's and class's starting money added coin by coin, their starting equipment added together (enabled items only), and the [starting area](#tab-characters) the precedence picks
 - the lobby lists the player's characters in the universe
 - a race, class or item that characters have can't be deleted; it can be disabled instead
+
+## Character sheet
+A modal dialog showing one of the player's characters, opened from the [lobby](#lobby) and the [universe page](#universe-page) (later the [profile](#profile-edit) too). Only the character's player can see it. For PF1E it shows:
+- the name, race and class
+- each ability score (with the race's modifiers added) and the modifier it gives
+- size and darkvision, from the race as the universe sets it now
+- money, as a [money field](#field-money) writes it
+- equipment, sorted by name, with how many of each
+
+### Deleting a character
+The sheet's Delete button asks twice. "Delete Character" asks "Do you want to delete [character]?" (Cancel / Delete), then a second dialog asks "Are you absolutely sure you want to delete [character]? This is permanent (a very long time!) and cannot be undone.", with three buttons:
+- **Cremate (delete immediately)** deletes the character straight away
+- **Last Rites (delete in 7 days)** deletes them after the days the [admin](#admin) setting gives (7 by default), and isn't offered when it is 0. Until then they are listed, marked with the day they go, and count toward the 20 characters a universe allows, but can't be played. Their sheet says when they go and has a Restore button. A player playing them switches to their most recent other character, or becomes a ghost; restoring a character while a ghost plays them. A character already given their last rites can still be cremated
+- **I've Made A Terrible Mistake** keeps the character, and is the button focused
+
+The server deletes characters whose days are over once an hour, and hides them until it does.
 
 ## Create Group
 The character creating the group is the "anchor being". This shows you a landing page for your new group. It explains that your character is the anchor being for this universe, and that the game is centered around them.
@@ -150,8 +167,9 @@ The [admin page](#admin) decides how many universes a user can create. The admin
 Settings for the whole site (`admin.html`), stored in one row of the `site_settings` table. Home's toolbar links to it, and anyone can use it until there are server admin accounts.
 - universe creation enabled: whether players can create universes
 - universes per creator: the most universes one player may create, from 1 to 1000
+- character deletion days: how many days [Last Rites](#deleting-a-character) waits before deleting a character, from 0 to 365 (7 by default). 0 turns Last Rites off. Characters already given their last rites keep their day
 
-Neither changes universes that already exist.
+The universe settings don't change universes that already exist.
 
 ## Edit Universe
 This lets you change anything about a universe. It will be a whole suite of tools unrelated to playing the game.

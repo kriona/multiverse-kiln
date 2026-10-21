@@ -27,7 +27,13 @@
 								Universes each player can create
 								<input id="site-universes-per-creator" type="number" step="1" required />
 							</label>
-							<p class="hint" data-message="admin.universesHint" data-translation-context="Explains on the site settings page that the universe settings only affect making new universes">These only affect new universes. Universes that already exist stay as they are, even for players who have more than the limit.</p>
+							<p class="hint" data-message="admin.universesHint" data-translation-context="Explains on the site settings page that the universe settings only affect making new universes">These only affect new universes. Universes that already exist persist, even for players who have more than the limit.</p>
+							<h2 data-message="admin.characters" data-translation-context="Heading of the site settings about players' characters">Characters</h2>
+							<label data-message="admin.characterDeletionDays" data-translation-context="Label of the field on the site settings page for how many days a character given their last rites waits before being deleted">
+								Days between last rites and deletion
+								<input id="site-character-deletion-days" type="number" step="1" required aria-describedby="site-character-deletion-hint" />
+							</label>
+							<p id="site-character-deletion-hint" class="hint" data-message="admin.characterDeletionHint" data-translation-context="Explains the field on the site settings page for how many days last rites wait. Last Rites is the name of the button players use to delete a character after those days">Last Rites deletes a character after this many days, and players can restore them until then. 0 turns Last Rites off, so characters can only be deleted. Characters already given their last rites keep their day.</p>
 							<p id="site-settings-error" class="form-error" role="alert" hidden></p>
 							<div class="form-buttons">
 								<span id="site-settings-saved" class="form-saved" role="status"></span>

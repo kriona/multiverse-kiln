@@ -21,6 +21,11 @@ export const MIN_UNIVERSES_PER_CREATOR = 1;
 export const MAX_UNIVERSES_PER_CREATOR = 1000;
 
 /**
+ * Most days the site can wait after a character's last rites before deleting them
+ */
+export const MAX_CHARACTER_DELETION_DAYS = 365;
+
+/**
  * Settings for the whole site
  */
 export interface SiteSettings
@@ -34,6 +39,13 @@ export interface SiteSettings
 	 * Most universes one player may create, from MIN_UNIVERSES_PER_CREATOR to MAX_UNIVERSES_PER_CREATOR
 	 */
 	universesPerCreator: number;
+
+	/**
+	 * How many days after their last rites a character is deleted, from 0 to MAX_CHARACTER_DELETION_DAYS.
+	 * 0 turns last rites off, so characters can only be deleted. Characters already given
+	 * their last rites keep the day they were given
+	 */
+	characterDeletionDays: number;
 }
 
 /**
@@ -41,5 +53,6 @@ export interface SiteSettings
  */
 export const DEFAULT_SITE_SETTINGS: Readonly<SiteSettings> = {
 	universeCreationEnabled: true,
-	universesPerCreator: 5
+	universesPerCreator: 5,
+	characterDeletionDays: 7
 };

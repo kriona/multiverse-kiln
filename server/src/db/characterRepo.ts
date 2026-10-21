@@ -2,7 +2,7 @@
  * Characters: the only module that reads or writes the characters, pf1e_characters, character_items,
  * character_drafts and pf1e_ability_rolls tables
  */
-import { and, asc, count, desc, eq, ne, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gt, isNotNull, isNull, lte, ne, or, sql, type SQL } from 'drizzle-orm';
 import { isPf1eRollMethod, type CharacterDraft, type ItemQuantity, type Pf1eAbilityScores, type Pf1eMoney, type Pf1eRollMethod } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
@@ -17,6 +17,29 @@ export interface CharacterRecord
 	name: string;
 	raceId: number;
 	classId: number;
+
+	/**
+	 * When the character is deleted, once given their last rites; null otherwise
+	 */
+	deleteAt: Date | null;
+}
+
+/**
+ * A character with everything their character sheet shows
+ */
+export interface CharacterDetails extends CharacterRecord
+{
+	/**
+	 * The ability scores, with the race's modifiers added
+	 */
+	abilityScores: Pf1eAbilityScores;
+
+	money: Pf1eMoney;
+
+	/**
+	 * The items the character carries, each listed once by its own ID, by ID
+	 */
+	items: ItemQuantity[];
 }
 
 /**
@@ -79,7 +102,30 @@ export interface Pf1eAbilityRoll
 }
 
 /**
- * A player's characters in a universe
+ * Matches the characters that still exist: those not given their last rites, and those whose time
+ * hasn't come. Characters past their time are hidden until the sweep deletes them
+ */
+const notExpired = or(isNull(characters.deleteAt), gt(characters.deleteAt, sql`now()`));
+
+/**
+ * Matches one of a player's characters in a universe
+ *
+ * @param playerId The player's ID
+ * @param universeId The universe's ID
+ * @param characterId The character's ID
+ * @return The condition
+ */
+function ownCharacter(playerId: string, universeId: string, characterId: string): SQL | undefined
+{
+	return(and(
+		eq(characters.id, characterId),
+		eq(characters.playerId, playerId),
+		eq(characters.universeId, universeId)
+	));
+}
+
+/**
+ * A player's characters in a universe, including those given their last rites
  *
  * @param playerId The player's ID
  * @param universeId The universe's ID
@@ -93,18 +139,95 @@ export async function listCharacters(playerId: string, universeId: string, execu
 			id: characters.id,
 			name: characters.name,
 			raceId: characters.raceId,
-			classId: characters.classId
+			classId: characters.classId,
+			deleteAt: characters.deleteAt
 		})
 		.from(characters)
 		.where(and(
 			eq(characters.playerId, playerId),
-			eq(characters.universeId, universeId)
+			eq(characters.universeId, universeId),
+			notExpired
 		))
 		.orderBy(asc(characters.createdAt), asc(characters.id)));
 }
 
 /**
- * A player's characters in a universe as the lobby plays them
+ * One of a player's characters in a universe, with their ability scores, money and items
+ *
+ * @param playerId The player's ID
+ * @param universeId The universe's ID
+ * @param characterId The character's ID
+ * @param executor The database, or a transaction
+ * @return The character, or undefined when the player has no such character in the universe
+ */
+export async function findCharacterDetails(playerId: string, universeId: string, characterId: string, executor: Executor = db): Promise<CharacterDetails | undefined>
+{
+	const [row] = await executor
+		.select({
+			id: characters.id,
+			name: characters.name,
+			raceId: characters.raceId,
+			classId: characters.classId,
+			deleteAt: characters.deleteAt,
+			platinum: characters.platinum,
+			gold: characters.gold,
+			silver: characters.silver,
+			copper: characters.copper,
+			strength: pf1eCharacters.strength,
+			dexterity: pf1eCharacters.dexterity,
+			constitution: pf1eCharacters.constitution,
+			intelligence: pf1eCharacters.intelligence,
+			wisdom: pf1eCharacters.wisdom,
+			charisma: pf1eCharacters.charisma
+		})
+		.from(characters)
+		.innerJoin(pf1eCharacters, eq(pf1eCharacters.characterId, characters.id))
+		.where(and(
+			ownCharacter(playerId, universeId, characterId),
+			notExpired
+		))
+		.limit(1);
+
+	if (!row)
+	{
+		return(undefined);
+	}
+
+	const carried = await executor
+		.select({
+			itemId: characterItems.itemId,
+			quantity: characterItems.quantity
+		})
+		.from(characterItems)
+		.where(eq(characterItems.characterId, characterId))
+		.orderBy(asc(characterItems.itemId));
+
+	return({
+		id: row.id,
+		name: row.name,
+		raceId: row.raceId,
+		classId: row.classId,
+		deleteAt: row.deleteAt,
+		abilityScores: {
+			strength: row.strength,
+			dexterity: row.dexterity,
+			constitution: row.constitution,
+			intelligence: row.intelligence,
+			wisdom: row.wisdom,
+			charisma: row.charisma
+		},
+		money: {
+			pp: row.platinum,
+			gp: row.gold,
+			sp: row.silver,
+			cp: row.copper
+		},
+		items: carried
+	});
+}
+
+/**
+ * A player's characters in a universe as the lobby plays them, leaving out those given their last rites
  *
  * @param playerId The player's ID
  * @param universeId The universe's ID
@@ -121,7 +244,8 @@ export async function listPlayableCharacters(playerId: string, universeId: strin
 		.from(characters)
 		.where(and(
 			eq(characters.playerId, playerId),
-			eq(characters.universeId, universeId)
+			eq(characters.universeId, universeId),
+			isNull(characters.deleteAt)
 		))
 		.orderBy(desc(sql`coalesce(${characters.lastPlayedAt}, ${characters.createdAt})`), asc(characters.id)));
 }
@@ -144,7 +268,8 @@ export async function markCharacterPlayed(characterId: string, playedAt: Date, e
 }
 
 /**
- * How many characters a player has in a universe
+ * How many characters a player has in a universe, counting those given their last rites until their
+ * time comes
  *
  * @param playerId The player's ID
  * @param universeId The universe's ID
@@ -160,10 +285,102 @@ export async function countCharacters(playerId: string, universeId: string, exec
 		.from(characters)
 		.where(and(
 			eq(characters.playerId, playerId),
-			eq(characters.universeId, universeId)
+			eq(characters.universeId, universeId),
+			notExpired
 		));
 
 	return(row.total);
+}
+
+/**
+ * Deletes one of a player's characters, with their ability scores and items, straight away
+ *
+ * @param playerId The player's ID
+ * @param universeId The universe's ID
+ * @param characterId The character's ID
+ * @param executor The database, or a transaction
+ * @return False when the player has no such character in the universe
+ */
+export async function deleteCharacter(playerId: string, universeId: string, characterId: string, executor: Executor = db): Promise<boolean>
+{
+	const deleted = await executor
+		.delete(characters)
+		.where(ownCharacter(playerId, universeId, characterId))
+		.returning({ id: characters.id });
+
+	return(deleted.length > 0);
+}
+
+/**
+ * Gives one of a player's characters their last rites, so the sweep deletes them at a time to come. A
+ * character already given them keeps the time they were given
+ *
+ * @param playerId The player's ID
+ * @param universeId The universe's ID
+ * @param characterId The character's ID
+ * @param deleteAt When to delete them
+ * @param executor The database, or a transaction
+ * @return When the character is deleted, or undefined when the player has no such character in the universe
+ */
+export async function scheduleCharacterDeletion(playerId: string, universeId: string, characterId: string, deleteAt: Date, executor: Executor = db): Promise<Date | undefined>
+{
+	const [row] = await executor
+		.update(characters)
+		.set({
+			deleteAt: sql`coalesce(${characters.deleteAt}, ${deleteAt})`
+		})
+		.where(and(
+			ownCharacter(playerId, universeId, characterId),
+			notExpired
+		))
+		.returning({ deleteAt: characters.deleteAt });
+
+	return(row?.deleteAt ?? undefined);
+}
+
+/**
+ * Takes back the last rites of one of a player's characters whose time hasn't come, so they can be played again
+ *
+ * @param playerId The player's ID
+ * @param universeId The universe's ID
+ * @param characterId The character's ID
+ * @param executor The database, or a transaction
+ * @return The character, or undefined when the player has no such character waiting to be deleted
+ */
+export async function restoreCharacter(playerId: string, universeId: string, characterId: string, executor: Executor = db): Promise<PlayableCharacter | undefined>
+{
+	const [row] = await executor
+		.update(characters)
+		.set({
+			deleteAt: null
+		})
+		.where(and(
+			ownCharacter(playerId, universeId, characterId),
+			isNotNull(characters.deleteAt),
+			gt(characters.deleteAt, sql`now()`)
+		))
+		.returning({
+			id: characters.id,
+			name: characters.name
+		});
+
+	return(row);
+}
+
+/**
+ * Deletes every character whose last rites' time has come
+ *
+ * @param executor The database, or a transaction
+ * @return How many were deleted
+ */
+export async function purgeExpiredCharacters(executor: Executor = db): Promise<number>
+{
+	const deleted = await executor
+		.delete(characters)
+		.where(lte(characters.deleteAt, sql`now()`))
+		.returning({ id: characters.id });
+
+	return(deleted.length);
 }
 
 /**

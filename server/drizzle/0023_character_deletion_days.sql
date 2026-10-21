@@ -1,0 +1,2 @@
+ALTER TABLE "site_settings" ADD COLUMN "character_deletion_days" integer DEFAULT 7 NOT NULL;--> statement-breakpoint
+ALTER TABLE "site_settings" ADD CONSTRAINT "site_settings_character_deletion_days_range" CHECK ("site_settings"."character_deletion_days" BETWEEN 0 AND 365);

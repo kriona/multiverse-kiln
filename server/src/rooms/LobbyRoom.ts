@@ -6,6 +6,7 @@ import { findUniverse } from '../db/universeRepo.js';
 import { loadChunksAt, loadArea } from '../db/areaRepo.js';
 import { readBrowserId } from '../http/browserId.js';
 import { onlinePlayers } from '../players/onlinePlayers.js';
+import { characterChanges, type CharacterChange } from '../players/characterChanges.js';
 import { areaChanges } from '../world/areaChanges.js';
 import { InvalidMessages } from './invalidMessages.js';
 import { chatPayload, chooseCharacterPayload, describeInvalidPayload, movePayload, roomOptions } from './payloads.js';
@@ -103,6 +104,8 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	private lobbyAreaId!: string;
 
 	private stopFollowingChanges?: () => void;
+
+	private stopFollowingCharacters?: () => void;
 
 	/**
 	 * The most recent chat messages, oldest first (server-only, not synced)
@@ -254,14 +257,20 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 				console.error('Could not apply a world change to the lobby of universe', this.universeId, error);
 			});
 		});
+
+		this.stopFollowingCharacters = characterChanges.onChange((change) =>
+		{
+			this.applyCharacterChange(change);
+		});
 	}
 
 	/**
-	 * Stops following changes to the world
+	 * Stops following changes to the world and to players' characters
 	 */
 	onDispose(): void
 	{
 		this.stopFollowingChanges?.();
+		this.stopFollowingCharacters?.();
 	}
 
 	/**
@@ -411,6 +420,81 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		for (const client of this.areaPlayers.getClients(playerId))
 		{
 			client.send(LobbyServerMessageType.PlayingAs, playingAs);
+		}
+	}
+
+	/**
+	 * Makes a player in the room a ghost, in every window of theirs
+	 *
+	 * @param playerId The player's ID
+	 */
+	private becomeGhost(playerId: string): void
+	{
+		const playingAs: PlayingAsPayload = { characterId: null };
+
+		this.playing.delete(playerId);
+		this.areaPlayers.setAppearance(playerId, appearanceOf(undefined));
+		this.state.members.delete(playerId);
+
+		for (const client of this.areaPlayers.getClients(playerId))
+		{
+			client.send(LobbyServerMessageType.PlayingAs, playingAs);
+		}
+	}
+
+	/**
+	 * Follows a change to a player in the room's characters, then has their windows list them again. A
+	 * player whose character can no longer be played switches to the one they played or made most
+	 * recently, or becomes a ghost; a ghost plays a character restored
+	 *
+	 * @param change The change
+	 */
+	private applyCharacterChange(change: CharacterChange): void
+	{
+		const { playerId } = change;
+		const characters = this.characters.get(playerId);
+
+		if ((change.universeId !== this.universeId) || !characters)
+		{
+			return;
+		}
+
+		if (change.kind === 'removed')
+		{
+			const remaining = characters.filter((character) => (character.id !== change.characterId));
+
+			this.characters.set(playerId, remaining);
+
+			if (this.playing.get(playerId)?.id === change.characterId)
+			{
+				const next = remaining.at(0);
+
+				if (next)
+				{
+					this.play(playerId, next);
+				}
+				else
+				{
+					this.becomeGhost(playerId);
+				}
+			}
+		}
+		else
+		{
+			if (!characters.some((character) => (character.id === change.character.id)))
+			{
+				this.characters.set(playerId, [change.character, ...characters]);
+			}
+
+			if (!this.playing.has(playerId))
+			{
+				this.play(playerId, change.character);
+			}
+		}
+
+		for (const client of this.areaPlayers.getClients(playerId))
+		{
+			client.send(LobbyServerMessageType.CharactersChanged);
 		}
 	}
 

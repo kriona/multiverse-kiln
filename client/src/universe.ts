@@ -6,6 +6,7 @@ import { CharacterApi } from './network/characterApi';
 import { connectToServer, createClient, getUniverseDetails, type ServerConnection } from './network/serverConnection';
 import { startPageLifecycle } from './pageLifecycle';
 import { gamePageUrl, HOME_PAGE_URL, readUniverseKey, replacePagePath, universePageUrl } from './pages';
+import { CharacterSheetDialog } from './ui/CharacterSheetDialog';
 import { getElement, showNoticeScreen, showScreen, showStatus } from './ui/dom';
 import { startLanguagePicker } from './ui/languagePicker';
 import { showMarkdown } from './ui/markdown';
@@ -57,7 +58,12 @@ async function followPlayer(universe: UniverseDetails): Promise<void>
 		return;
 	}
 
-	const characters = new UniverseCharacters(new CharacterApi(server.client), universe.id);
+	const api = new CharacterApi(server.client);
+	const sheet = new CharacterSheetDialog(api, () =>
+	{
+		void characters.follow(true);
+	});
+	const characters = new UniverseCharacters(api, universe.id, sheet);
 
 	server.session.onMessage(SessionServerMessageType.Account, (account: AccountPayload) =>
 	{

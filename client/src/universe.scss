@@ -1,6 +1,7 @@
 // A universe's page (universe.html): its name, ruleset and descriptions, and Enter Universe
 
 @use 'shared' as *;
+@use 'characterSheet';
 
 .universe-page
 {
@@ -64,6 +65,33 @@
 	{
 		padding: 2px 0;
 	}
+}
+
+// Each character is a button that shows their sheet
+.universe-character-choice
+{
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0 6px;
+	align-items: baseline;
+	width: 100%;
+	padding: 4px 8px;
+	border-color: transparent;
+	background: none;
+	color: $text;
+	text-align: left;
+
+	&:hover
+	{
+		background: $background-control-hover;
+	}
+}
+
+.universe-character-leaving
+{
+	margin-inline-start: auto;
+	font-size: 12px;
+	color: $error;
 }
 
 .universe-character-description,

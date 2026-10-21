@@ -8,18 +8,20 @@
 import { randomInt } from 'crypto';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { canPlayUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, isReservedName, MAX_CHARACTER_NAME_LENGTH, MAX_CHARACTERS_PER_UNIVERSE, NAME_MESSAGES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, UNIVERSES_PATH, type CharacterDraft, type CharacterListPayload, type CreatedPayload, type EditableUniverse, type NewCharacterOptions, type NewCharacterRequest, type OptionName } from '@multiverse-kiln/shared';
+import { canPlayUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, isReservedName, MAX_CHARACTER_NAME_LENGTH, MAX_CHARACTERS_PER_UNIVERSE, NAME_MESSAGES, NEW_PF1E_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditableUniverse, type NewCharacterOptions, type NewCharacterRequest, type OptionName } from '@multiverse-kiln/shared';
 
-import { countCharacters, createCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDraft, findPf1eAbilityRoll, keepPf1eAbilityRoll, listCharacters, saveCharacterDraft } from '../db/characterRepo.js';
+import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findPf1eAbilityRoll, keepPf1eAbilityRoll, listCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion } from '../db/characterRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
 import { lockPlayer } from '../db/playerRepo.js';
 import { loadEditorItems } from '../db/itemRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
 import { findPf1eSettings } from '../db/rulesetRepo.js';
+import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { findUniverseRole } from '../db/universeEditorRepo.js';
 import { findEditableUniverse, lockUniverse } from '../db/universeRepo.js';
 import { rollPf1eAbilityScores } from '../logic/abilityRolls.js';
+import { characterChanges } from '../players/characterChanges.js';
 import { areValidBaseScores, combineStartingItems, combineStartingMoney, finalPf1eAbilityScores, isValidFloatingAbility, type Pf1eScoreSource } from '../logic/characterCreation.js';
 import { chooseStartingArea } from '../logic/startingArea.js';
 import { displayText } from '../rooms/payloads.js';
@@ -100,6 +102,16 @@ const messages = defineMessages({
 		id: 'error.floatingAbility',
 		defaultMessage: 'Choose the ability that gets the race\'s bonus, and only for a race that has one.',
 		description: 'Why a new character wasn\'t made: a race that lets the player choose an ability to raise had none chosen, or another race had one'
+	},
+	noSuchCharacter: {
+		id: 'error.noSuchCharacter',
+		defaultMessage: 'The character doesn\'t exist, or isn\'t yours.',
+		description: 'Why a character\'s sheet couldn\'t be shown: the character isn\'t one of the player\'s in this universe'
+	},
+	lastRitesOff: {
+		id: 'error.lastRitesOff',
+		defaultMessage: 'Characters can\'t be given their last rites on this site. They can only be deleted straight away.',
+		description: 'Why a character wasn\'t given their last rites (deleted after some days): the site\'s settings have turned waiting off'
 	}
 });
 
@@ -130,6 +142,10 @@ export function addCharacterRoutes(app: Application, allowedOrigins: Set<string>
 	router.put('/draft', saveDraftRoute);
 	router.delete('/draft', deleteDraftRoute);
 	router.post('/', createRoute);
+	router.get('/:characterId', sheetRoute);
+	router.delete('/:characterId', deleteRoute);
+	router.put('/:characterId/deletion', scheduleDeletionRoute);
+	router.delete('/:characterId/deletion', restoreRoute);
 	router.use(handleCharacterError);
 
 	app.use(`${UNIVERSES_PATH}/:universeId/characters`, router);
@@ -201,15 +217,217 @@ async function listRoute(request: Request, response: Response): Promise<void>
 	const unnamed: OptionName = { key: null, name: null };
 	const payload: CharacterListPayload = {
 		ruleset: universe.ruleset,
-		characters: characters.map(({ id, name, raceId, classId }) => ({
+		characters: characters.map(({ id, name, raceId, classId, deleteAt }) => ({
 			id,
 			name,
 			race: (raceNames.get(raceId) ?? unnamed),
-			characterClass: (classNames.get(classId) ?? unnamed)
+			characterClass: (classNames.get(classId) ?? unnamed),
+			deleteAt: (deleteAt?.toISOString() ?? null)
 		}))
 	};
 
 	response.json(payload);
+}
+
+/**
+ * GET /:characterId: one of the player's characters, as their character sheet shows them
+ *
+ * @param request The request
+ * @param response The response
+ */
+async function sheetRoute(request: Request, response: Response): Promise<void>
+{
+	const characterId = characterIdOf(request, response);
+	const universe = universeOf(request);
+
+	if (characterId === undefined)
+	{
+		return;
+	}
+
+	const [character, races, classes, items, siteSettings] = await Promise.all([
+		findCharacterDetails(playerIdOf(request), universe.id, characterId),
+		loadEditorRaces(universe.id, universe.ruleset),
+		loadEditorClasses(universe.id, universe.ruleset),
+		loadEditorItems(universe.id, universe.ruleset),
+		findSiteSettings()
+	]);
+
+	if (!character)
+	{
+		sendError(response, 404, messages.noSuchCharacter);
+		return;
+	}
+
+	const race = races.find((option) => (option.id === character.raceId));
+	const characterClass = classes.find((option) => (option.id === character.classId));
+	const itemsById = new Map(items.map((item) => [item.id, item]));
+	const payload: CharacterSheet = {
+		ruleset: universe.ruleset,
+		id: character.id,
+		name: character.name,
+		race: {
+			key: (race?.key ?? null),
+			name: (race?.name ?? null)
+		},
+		characterClass: {
+			key: (characterClass?.key ?? null),
+			name: (characterClass?.name ?? null)
+		},
+		deleteAt: (character.deleteAt?.toISOString() ?? null),
+		deletionDays: siteSettings.characterDeletionDays,
+		size: (race?.rules.size ?? NEW_PF1E_RACE_RULES.size),
+		darkvision: (race?.rules.darkvision ?? NEW_PF1E_RACE_RULES.darkvision),
+		abilityScores: character.abilityScores,
+		money: character.money,
+		items: character.items.map(({ itemId, quantity }) =>
+		{
+			const item = itemsById.get(itemId);
+
+			return({
+				id: itemId,
+				key: (item?.key ?? null),
+				name: (item?.name ?? null),
+				type: (item?.type ?? ''),
+				quantity
+			});
+		})
+	};
+
+	response.json(payload);
+}
+
+/**
+ * The character a request's path names, answering 404 when the ID can't be one
+ *
+ * @param request The request
+ * @param response The response
+ * @return The character's ID, or undefined once the response has been sent
+ */
+function characterIdOf(request: Request, response: Response): string | undefined
+{
+	const characterId = z.uuid().safeParse(request.params.characterId);
+
+	if (!characterId.success)
+	{
+		sendError(response, 404, messages.noSuchCharacter);
+		return(undefined);
+	}
+
+	return(characterId.data);
+}
+
+/**
+ * DELETE /:characterId: deletes one of the player's characters straight away
+ *
+ * @param request The request
+ * @param response The response
+ */
+async function deleteRoute(request: Request, response: Response): Promise<void>
+{
+	const characterId = characterIdOf(request, response);
+	const playerId = playerIdOf(request);
+	const universeId = universeOf(request).id;
+
+	if (characterId === undefined)
+	{
+		return;
+	}
+
+	if (!await deleteCharacter(playerId, universeId, characterId))
+	{
+		sendError(response, 404, messages.noSuchCharacter);
+		return;
+	}
+
+	characterChanges.publish({
+		kind: 'removed',
+		playerId,
+		universeId,
+		characterId
+	});
+	response.sendStatus(204);
+}
+
+/**
+ * PUT /:characterId/deletion: gives one of the player's characters their last rites, to be deleted the
+ * site's characterDeletionDays from now, or refuses while it is 0. A character already given them keeps
+ * their time
+ *
+ * @param request The request
+ * @param response The response
+ */
+async function scheduleDeletionRoute(request: Request, response: Response): Promise<void>
+{
+	const characterId = characterIdOf(request, response);
+	const playerId = playerIdOf(request);
+	const universeId = universeOf(request).id;
+
+	if (characterId === undefined)
+	{
+		return;
+	}
+
+	const { characterDeletionDays } = await findSiteSettings();
+
+	if (characterDeletionDays === 0)
+	{
+		sendError(response, 409, messages.lastRitesOff);
+		return;
+	}
+
+	const deleteAt = await scheduleCharacterDeletion(playerId, universeId, characterId, new Date(Date.now() + (characterDeletionDays * 24 * 60 * 60 * 1000)));
+
+	if (!deleteAt)
+	{
+		sendError(response, 404, messages.noSuchCharacter);
+		return;
+	}
+
+	characterChanges.publish({
+		kind: 'removed',
+		playerId,
+		universeId,
+		characterId
+	});
+
+	const payload: CharacterDeletionPayload = { deleteAt: deleteAt.toISOString() };
+
+	response.json(payload);
+}
+
+/**
+ * DELETE /:characterId/deletion: restores one of the player's characters given their last rites
+ *
+ * @param request The request
+ * @param response The response
+ */
+async function restoreRoute(request: Request, response: Response): Promise<void>
+{
+	const characterId = characterIdOf(request, response);
+	const playerId = playerIdOf(request);
+	const universeId = universeOf(request).id;
+
+	if (characterId === undefined)
+	{
+		return;
+	}
+
+	const character = await restoreCharacter(playerId, universeId, characterId);
+
+	if (!character)
+	{
+		sendError(response, 404, messages.noSuchCharacter);
+		return;
+	}
+
+	characterChanges.publish({
+		kind: 'restored',
+		playerId,
+		universeId,
+		character
+	});
+	response.sendStatus(204);
 }
 
 /**

@@ -1,4 +1,16 @@
 {
+	"admin.characterDeletionDays": {
+		"message": "Days 'twixt last rites and Davy Jones",
+		"source": "Days between last rites and deletion"
+	},
+	"admin.characterDeletionHint": {
+		"message": "Last Rites sends a hand to Davy Jones after this many days, and their captain can bring 'em back till then. 0 strikes Last Rites from the ship, so hands can only be thrown overboard on the spot. Hands what already had their last rites keep their day.",
+		"source": "Last Rites deletes a character after this many days, and players can restore them until then. 0 turns Last Rites off, so characters can only be deleted. Characters already given their last rites keep their day."
+	},
+	"admin.characters": {
+		"message": "Hands",
+		"source": "Characters"
+	},
 	"admin.heading": {
 		"message": "The Captain's Orders",
 		"source": "Site Settings"
@@ -32,8 +44,8 @@
 		"source": "Universes"
 	},
 	"admin.universesHint": {
-		"message": "These only touch new universes. Universes already afloat stay as they be, even fer hands what have more than the limit.",
-		"source": "These only affect new universes. Universes that already exist stay as they are, even for players who have more than the limit."
+		"message": "These only touch new universes. Universes already afloat continue to be, even fer hands what have more than the limit.",
+		"source": "These only affect new universes. Universes that already exist persist, even for players who have more than the limit."
 	},
 	"admin.universesPerCreator": {
 		"message": "Universes each hand can create",
@@ -134,6 +146,10 @@
 	"character.create.rolled": {
 		"message": "The server rolled the bones fer ye with {method}. Choose which knack gets each score: givin' a knack another score swaps the two.",
 		"source": "The server rolled your scores with {method}. Choose which ability gets each score: giving an ability another score swaps the two."
+	},
+	"character.create.rolledScoreHeld": {
+		"message": "{score, number} ({ability} has it)",
+		"source": "{score, number} ({ability})"
 	},
 	"character.create.scoreColumn": {
 		"message": "Score",
@@ -258,6 +274,126 @@
 	"character.steps": {
 		"message": "Course",
 		"source": "Steps"
+	},
+	"characterDelete.confirm": {
+		"message": "Throw Overboard",
+		"source": "Delete"
+	},
+	"characterDelete.cremate": {
+		"message": "Viking Funeral (throw 'em overboard now)",
+		"source": "Cremate (delete immediately)"
+	},
+	"characterDelete.cremated": {
+		"message": "{name} be gone to Davy Jones.",
+		"source": "{name} has been deleted."
+	},
+	"characterDelete.failed": {
+		"message": "Couldn't send this hand to Davy Jones.",
+		"source": "Could not delete the character."
+	},
+	"characterDelete.farewell": {
+		"message": "Be ye truly, deeply sure ye want to throw {name} overboard? This be forever (a mighty long voyage!) and there be no bringin' 'em back.",
+		"source": "Are you absolutely sure you want to delete {name}? This is permanent (a very long time!) and cannot be undone."
+	},
+	"characterDelete.lastRites": {
+		"message": "Last Rites (throw 'em overboard in {days, plural, one {# day} other {# days}})",
+		"source": "Last Rites (delete in {days, plural, one {# day} other {# days}})"
+	},
+	"characterDelete.lastRitesFailed": {
+		"message": "Couldn't say the last rites o' this hand.",
+		"source": "Could not give the character their last rites."
+	},
+	"characterDelete.mistake": {
+		"message": "Arr, I've Made a Terrible Mistake",
+		"source": "I've Made A Terrible Mistake"
+	},
+	"characterDelete.question": {
+		"message": "Do ye want to throw {name} overboard?",
+		"source": "Do you want to delete {name}?"
+	},
+	"characterDelete.title": {
+		"message": "Throw Hand Overboard",
+		"source": "Delete Character"
+	},
+	"characterSheet.abilities": {
+		"message": "Knacks",
+		"source": "Ability scores"
+	},
+	"characterSheet.ability": {
+		"message": "Knack",
+		"source": "Ability"
+	},
+	"characterSheet.darkvision": {
+		"message": "Sees in the dark",
+		"source": "Darkvision"
+	},
+	"characterSheet.darkvisionValue": {
+		"message": "{darkvision, select, true {Aye} other {Nay}}",
+		"source": "{darkvision, select, true {Yes} other {No}}"
+	},
+	"characterSheet.delete": {
+		"message": "Throw Overboard",
+		"source": "Delete"
+	},
+	"characterSheet.item": {
+		"message": "{quantity, plural, =1 {{item}} other {{item} x#}}",
+		"source": "{quantity, plural, =1 {{item}} other {{item} x#}}"
+	},
+	"characterSheet.items": {
+		"message": "Kit",
+		"source": "Equipment"
+	},
+	"characterSheet.loadFailed": {
+		"message": "Couldn't unroll this hand's papers.",
+		"source": "Could not load the character sheet."
+	},
+	"characterSheet.loading": {
+		"message": "Unrollin' the papers...",
+		"source": "Loading the character sheet..."
+	},
+	"characterSheet.modifier": {
+		"message": "Edge",
+		"source": "Modifier"
+	},
+	"characterSheet.money": {
+		"message": "Purse",
+		"source": "Money"
+	},
+	"characterSheet.noItems": {
+		"message": "Empty-handed, savvy?",
+		"source": "Carries nothing."
+	},
+	"characterSheet.pending": {
+		"message": "{name} has had their last rites and goes to Davy Jones on {deleteAt, date, long}.",
+		"source": "{name} has had their last rites and will be deleted on {deleteAt, date, long}."
+	},
+	"characterSheet.restore": {
+		"message": "Bring 'Em Back",
+		"source": "Restore"
+	},
+	"characterSheet.restoreFailed": {
+		"message": "Couldn't bring this hand back.",
+		"source": "Could not restore the character."
+	},
+	"characterSheet.restored": {
+		"message": "{name} be back aboard.",
+		"source": "{name} has been restored."
+	},
+	"characterSheet.score": {
+		"message": "Mark",
+		"source": "Score"
+	},
+	"characterSheet.size": {
+		"message": "Heft",
+		"source": "Size"
+	},
+	"characterSheet.summary": {
+		"message": "{race} {class}",
+		"source": "{race} {class}"
+	},
+	"characterSheet.traits": {
+		"message": "Marks o' the hand",
+		"source": "Traits"
 	},
 	"dialog.cancel": {
 		"message": "Belay that",
@@ -1687,6 +1823,10 @@
 		"message": "Booty needs a name.",
 		"source": "An item needs a name."
 	},
+	"error.lastRitesOff": {
+		"message": "There be no last rites on this ship. Hands can only be thrown overboard on the spot.",
+		"source": "Characters can't be given their last rites on this site. They can only be deleted straight away."
+	},
 	"error.linkOutOfBounds": {
 		"message": "The passage's cell must be inside the area's chart.",
 		"source": "The link's cell must be inside the area's map."
@@ -1718,6 +1858,10 @@
 	"error.noSuchArea": {
 		"message": "That area be lost at sea.",
 		"source": "The area doesn't exist."
+	},
+	"error.noSuchCharacter": {
+		"message": "That hand be lost at sea, or sails under another flag.",
+		"source": "The character doesn't exist, or isn't yours."
 	},
 	"error.noSuchClass": {
 		"message": "That callin' be lost at sea.",
@@ -2115,9 +2259,21 @@
 		"message": "{race} {class}",
 		"source": "{race} {class}"
 	},
+	"lobby.characterLeaving": {
+		"message": "To Davy Jones on {deleteAt, date, medium}",
+		"source": "To be deleted on {deleteAt, date, medium}"
+	},
 	"lobby.characterPlaying": {
 		"message": "At the helm",
 		"source": "Playing"
+	},
+	"lobby.characterSheet": {
+		"message": "Papers",
+		"source": "Sheet"
+	},
+	"lobby.characterSheetLabel": {
+		"message": "Papers o' {name}",
+		"source": "Character sheet of {name}"
 	},
 	"lobby.characters": {
 		"message": "Yer hands",
@@ -2170,6 +2326,10 @@
 	"lobby.here": {
 		"message": "Aboard ({count})",
 		"source": "Here ({count})"
+	},
+	"lobby.keys.characterSheet": {
+		"message": "Unroll the papers o' the hand ye be sailin' as",
+		"source": "Open the character sheet of the character you're playing"
 	},
 	"lobby.leave": {
 		"message": "Leave the tavern",
@@ -2974,6 +3134,10 @@
 	"universePage.characterDescription": {
 		"message": "{race} {class}",
 		"source": "{race} {class}"
+	},
+	"universePage.characterLeaving": {
+		"message": "To Davy Jones on {deleteAt, date, medium}",
+		"source": "To be deleted on {deleteAt, date, medium}"
 	},
 	"universePage.characters": {
 		"message": "Yer hands",

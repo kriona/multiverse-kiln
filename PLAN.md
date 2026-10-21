@@ -160,8 +160,8 @@ Built in seven steps: licensing and the ruleset module; the Ruleset tab and the 
 6. Lobby with characters
 	- [✅] Ghosts (invisible, don't block cells, can read but not send chat), choosing and switching characters, chatting as your character; Create game needs a character. The lobby starts a player as the character they played or made most recently (`characters.last_played_at`, saved as they leave); the group room still uses the login name until Phase 11
 7. Character sheet and finishing
-	- [ ] Character sheet modal
-	- [ ] Check the new screens in the pseudo-language, update Pirate, and add keyboard shortcuts and screen reader text for the new dialogs
+	- [✅] Character sheet modal
+	- [✅ Check the new screens in the pseudo-language, update Pirate, and add keyboard shortcuts and screen reader text for the new dialogs
 
 **Done when:** a player creates a PF1E character with rolled stats and starting gear, then walks and chats as them in the lobby while ghosts watch.
 
