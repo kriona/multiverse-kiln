@@ -4,7 +4,7 @@ import { t } from './localization';
 import { EditorApi } from './network/editorApi';
 import type { ServerConnection } from './network/serverConnection';
 import { isLeavingPage } from './pageLifecycle';
-import { gamePageUrl, replacePageParameters, TAB_PARAMETER, AREA_PARAMETER } from './pages';
+import { gamePageUrl, HOME_PAGE_URL, replacePageParameters, TAB_PARAMETER, AREA_PARAMETER } from './pages';
 import { showScreen, showStatus } from './ui/dom';
 import { EditorScreen, type EditorPlace } from './ui/editor/EditorScreen';
 import { LoginScreen } from './ui/LoginScreen';
@@ -46,11 +46,11 @@ export class EditorPage
 		this.editorScreen = new EditorScreen(new EditorApi(client), {
 			goHome: () =>
 			{
-				window.location.assign(gamePageUrl());
+				window.location.assign(HOME_PAGE_URL);
 			},
 			play: (universe) =>
 			{
-				window.location.assign(gamePageUrl(universe.id));
+				window.location.assign(gamePageUrl(universe.slug));
 			},
 			placeChanged: (changed) =>
 			{

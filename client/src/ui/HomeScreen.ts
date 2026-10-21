@@ -1,11 +1,11 @@
-import { DISALLOWED_TEXT_CHARACTERS, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_NAME_LENGTH, RULESET_NAMES, RULESETS, UNIVERSE_ROLE_NAMES, UNIVERSE_STAGE_NAMES, type EditableUniverseListPayload, type EditableUniverseSummary, type NewUniverseRequest, type Ruleset, type UniverseDetails, type UniverseListPayload, type UniverseSummary } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_NAME_LENGTH, RULESET_NAMES, RULESETS, UNIVERSE_ROLE_NAMES, UNIVERSE_STAGE_NAMES, universeSlug, type EditableUniverseListPayload, type EditableUniverseSummary, type NewUniverseRequest, type Ruleset, type UniverseListPayload, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { t } from '../localization';
 import { describeEditorError } from '../network/editorApi';
+import { universePageUrl } from '../pages';
 import { getElement, namedOptions, setOptions, showMessage } from './dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
 import { formMessages } from './formMessages';
-import { showMarkdown } from './markdown';
 
 /**
  * What the Home screen asks the app to do
@@ -16,16 +16,6 @@ export interface HomeScreenActions
 	 * Fetches a page of universes, starting after the first `offset`
 	 */
 	loadPage: (offset: number) => Promise<UniverseListPayload>;
-
-	/**
-	 * Fetches a universe in full, for its overview
-	 */
-	loadDetails: (universeId: string) => Promise<UniverseDetails>;
-
-	/**
-	 * Goes into a universe's lobby
-	 */
-	enter: (universe: UniverseSummary) => void;
 
 	/**
 	 * Fetches the universes the player has a role in
@@ -44,8 +34,8 @@ export interface HomeScreenActions
 }
 
 /**
- * Home: the universes to play in, a page at a time, and an overview of the one chosen with a button to
- * enter it; the universes the player works on, and creating a universe
+ * Home: the universes to play in, a page at a time, each linking to its page; the universes the player
+ * works on, and creating a universe
  */
 export class HomeScreen
 {
@@ -64,12 +54,6 @@ export class HomeScreen
 	private readonly list = getElement('universe-list', HTMLUListElement);
 	private readonly empty = getElement('universe-empty', HTMLElement);
 	private readonly moreButton = getElement('universe-more', HTMLButtonElement);
-	private readonly dialog = getElement('universe-dialog', HTMLDialogElement);
-	private readonly dialogName = getElement('universe-name', HTMLElement);
-	private readonly dialogRuleset = getElement('universe-ruleset', HTMLElement);
-	private readonly dialogSummary = getElement('universe-summary', HTMLElement);
-	private readonly dialogDescription = getElement('universe-description', HTMLElement);
-	private readonly enterButton = getElement('universe-enter', HTMLButtonElement);
 
 	/**
 	 * How many universes are listed, which is where the next page starts
@@ -82,11 +66,6 @@ export class HomeScreen
 	private listVersion = 0;
 
 	/**
-	 * The universe the overview is showing
-	 */
-	private chosen: UniverseSummary | undefined;
-
-	/**
 	 * @param actions What the screen's controls do
 	 */
 	constructor(private readonly actions: HomeScreenActions)
@@ -94,23 +73,6 @@ export class HomeScreen
 		this.moreButton.addEventListener('click', () =>
 		{
 			void this.loadPage();
-		});
-
-		getElement('universe-close', HTMLButtonElement).addEventListener('click', () =>
-		{
-			this.dialog.close();
-		});
-
-		this.enterButton.addEventListener('click', () =>
-		{
-			const universe = this.chosen;
-
-			this.dialog.close();
-
-			if (universe)
-			{
-				actions.enter(universe);
-			}
 		});
 
 		this.createName.maxLength = MAX_UNIVERSE_NAME_LENGTH;
@@ -225,7 +187,7 @@ export class HomeScreen
 	}
 
 	/**
-	 * A universe's entry in the list: its name, one-sentence description and ruleset, opening its overview
+	 * A universe's entry in the list: its name, one-sentence description and ruleset, linking to its page
 	 *
 	 * @param universe The universe
 	 * @return The list item
@@ -233,65 +195,22 @@ export class HomeScreen
 	private createItem(universe: UniverseSummary): HTMLLIElement
 	{
 		const item = document.createElement('li');
-		const button = document.createElement('button');
+		const link = document.createElement('a');
 		const name = document.createElement('strong');
 		const description = document.createElement('span');
 		const ruleset = document.createElement('span');
 
-		button.type = 'button';
-		button.className = 'universe-item';
+		link.className = 'button universe-item';
+		link.href = universePageUrl(universe.slug);
 		name.textContent = universe.name;
 		description.textContent = universe.shortDescription;
 		ruleset.className = 'universe-ruleset';
 		ruleset.textContent = t(RULESET_NAMES[universe.ruleset]);
 
-		button.append(name, description, ruleset);
-		button.addEventListener('click', () =>
-		{
-			void this.openOverview(universe);
-		});
-
-		item.append(button);
+		link.append(name, description, ruleset);
+		item.append(link);
 
 		return(item);
-	}
-
-	/**
-	 * Shows a universe's overview, filling in its long description once it has loaded
-	 *
-	 * @param universe The universe
-	 */
-	private async openOverview(universe: UniverseSummary): Promise<void>
-	{
-		this.chosen = universe;
-		this.dialogName.textContent = universe.name;
-		this.dialogRuleset.textContent = t(RULESET_NAMES[universe.ruleset]);
-		this.dialogSummary.textContent = universe.shortDescription;
-		this.dialogDescription.textContent = '';
-		this.dialog.showModal();
-
-		try
-		{
-			const details = await this.actions.loadDetails(universe.id);
-
-			if (this.chosen === universe)
-			{
-				showMarkdown(this.dialogDescription, details.longDescription);
-			}
-		}
-		catch (error)
-		{
-			console.error('Could not load the universe:', error);
-
-			if (this.chosen === universe)
-			{
-				this.dialogDescription.textContent = t({
-					id: 'home.overview.descriptionFailed',
-					defaultMessage: 'Could not load the rest of this universe\'s description.',
-					description: 'Shown in a universe\'s overview in place of its long description when that couldn\'t be loaded'
-				});
-			}
-		}
 	}
 
 	/**
@@ -436,6 +355,12 @@ export class HomeScreen
 		if ((name === '') || DISALLOWED_TEXT_CHARACTERS.test(name))
 		{
 			reportFieldError(this.createName, t(formMessages.invalidText));
+			return;
+		}
+
+		if (universeSlug(name) === '')
+		{
+			reportFieldError(this.createName, t(formMessages.universeNameNoLetters));
 			return;
 		}
 

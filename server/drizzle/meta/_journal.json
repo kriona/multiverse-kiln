@@ -148,6 +148,13 @@
       "when": 1792353463759,
       "tag": "0020_rename_zones_to_areas",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792589105536,
+      "tag": "0021_unique_universe_slugs",
+      "breakpoints": true
     }
   ]
 }

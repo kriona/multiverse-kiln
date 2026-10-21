@@ -172,9 +172,9 @@ export class EditorScreen
 		{
 			if (this.universe)
 			{
-				const { id, name, shortDescription, ruleset } = this.universe;
+				const { id, name, slug, shortDescription, ruleset } = this.universe;
 
-				actions.play({ id, name, shortDescription, ruleset });
+				actions.play({ id, name, slug, shortDescription, ruleset });
 			}
 		});
 

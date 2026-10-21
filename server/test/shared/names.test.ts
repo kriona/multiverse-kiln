@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { isReservedName } from '@multiverse-kiln/shared';
+import { isReservedName, nameKey } from '@multiverse-kiln/shared';
 
 describe('isReservedName (shared)', () =>
 {
@@ -50,5 +50,24 @@ describe('isReservedName (shared)', () =>
 		{
 			assert.strictEqual(isReservedName(name), false, name);
 		}
+	});
+});
+
+describe('nameKey (shared)', () =>
+{
+	it('gives names that could be mistaken for each other the same key', () =>
+	{
+		// Cyrillic К, Cyrillic Н and к, Greek Ν, accents, full-width letters, a zero-width space
+		for (const name of ['Kilnhaven', 'KILNHAVEN', 'Kiln Haven', 'Kiln-Haven', 'K1lnhaven', 'Kiiilnhaaven', 'Кilnhaven', 'KILNНAVEN', 'кilnhaven', 'KILΝHAVEΝ', 'Kílnhavén', 'Ｋｉｌｎｈａｖｅｎ', 'Kiln​haven'])
+		{
+			assert.strictEqual(nameKey(name), nameKey('Kilnhaven'), name);
+		}
+	});
+
+	it('gives different names different keys', () =>
+	{
+		const keys = ['Kilnhaven', 'Kilnhaven 2', 'Brightwater', 'Kiln', 'Haven'].map(nameKey);
+
+		assert.strictEqual(new Set(keys).size, keys.length);
 	});
 });

@@ -17,11 +17,14 @@ An engine for making multiplayer browser-based role-playing games.
 
 ```
 /client          Phaser game (Vite). Uses `@colyseus/sdk` (formerly colyseus.js) to connect to the server.
-                 Five pages: index.html (Home, lobby and game; src/main.ts, src/style.scss), edit.html (the
-                 world editor; src/edit.ts, src/edit.scss), character.html (Create Character; src/character.ts,
+                 Seven pages, linked without .html (/game): index.html (Home; src/main.ts, src/style.scss),
+                 universe.html (a universe's page at /universe/<slug or id>; src/universe.ts, src/universe.scss),
+                 game.html (lobby and game at /game/<slug or id>, apart from Home so other pages can be open in
+                 other tabs while playing; src/game.ts, src/style.scss), edit.html (the
+                 world editor at /edit/<universe id>; src/edit.ts, src/edit.scss), character.html (Create Character; src/character.ts,
                  src/character.scss), license.html (the game's license and the
                  licenses of what it uses, linked from the footer; src/license.ts, src/license.scss) and
-                 admin.html (settings for the whole site; src/admin.ts, src/admin.scss). HTML the pages share (status and login screens,
+                 admin.html (settings for the whole site; src/admin.ts, src/admin.scss). HTML the pages share (status, notice and login screens,
                  footer, the keyboard shortcut list and screen reader live regions) lives in partials/, included with <!-- include footer.html --> (vite.config.ts).
                  Both styles use src/_shared.scss, and
                  src/pages.ts holds the addresses that link the pages. src/localization.ts shows text in the

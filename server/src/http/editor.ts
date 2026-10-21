@@ -13,7 +13,7 @@ import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { countCustomTiles, createCustomTile, deleteCustomTile, findDefaultTileIds, findTileKind, listEditorTiles, restoreDefaultTile, saveEditedDefaultTile, updateCustomTile } from '../db/tileRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { countUniversesWithRole, listEditableUniverses, setUniverseRole } from '../db/universeEditorRepo.js';
-import { createUniverse, lockUniverse, setUniverseAreas, updateUniverseSettings } from '../db/universeRepo.js';
+import { createUniverse, lockUniverse, setUniverseAreas, UniverseNameTakenError, updateUniverseSettings } from '../db/universeRepo.js';
 import { createArea, isTileInUse } from '../db/areaRepo.js';
 import { areaChanges } from '../world/areaChanges.js';
 import { loadUniverseContext, playerIdOf, refuseWritesFromOtherOrigins, requireLogin, requireRole, universeContextOf } from './editorAccess.js';
@@ -125,6 +125,33 @@ async function listUniverses(request: Request, response: Response): Promise<void
 }
 
 /**
+ * Runs work that names a universe, refusing with 409 when another universe has the name. The work's
+ * transaction has rolled back by then
+ *
+ * @param work The work, such as a transaction
+ * @return What the work returns, or the refusal
+ */
+async function refusingTakenName<T>(work: () => Promise<T>): Promise<T | Refusal>
+{
+	try
+	{
+		return(await work());
+	}
+	catch (error)
+	{
+		if (error instanceof UniverseNameTakenError)
+		{
+			return({
+				status: 409,
+				message: errorMessages.universeNameTaken
+			});
+		}
+
+		throw error;
+	}
+}
+
+/**
  * POST /: a new universe with a lobby area and a starting area, created by the player
  *
  * @param request The request
@@ -142,7 +169,7 @@ async function createUniverseRoute(request: Request, response: Response): Promis
 
 	const playerId = playerIdOf(request);
 	const { name, shortDescription, ruleset } = body.data;
-	const created = await inTransaction(async (transaction): Promise<Refusal | string> =>
+	const created = await refusingTakenName(() => inTransaction(async (transaction): Promise<Refusal | string> =>
 	{
 		// Concurrent requests from the same player wait here, so they can't all slip under the limit
 		await lockPlayer(playerId, transaction);
@@ -210,7 +237,7 @@ async function createUniverseRoute(request: Request, response: Response): Promis
 		await setUniverseRole(createdId, playerId, 'creator', transaction);
 
 		return(createdId);
-	});
+	}));
 
 	if (typeof created !== 'string')
 	{
@@ -263,7 +290,7 @@ async function updateUniverse(request: Request, response: Response): Promise<voi
 	}
 
 	const { startingAreaId, startingItems } = body.data;
-	const startingProblem = await inTransaction(async (transaction) =>
+	const refusal = await refusingTakenName(() => inTransaction(async (transaction): Promise<Refusal | undefined> =>
 	{
 		// Deleting an item waits for the universe's lock too, so an item can't be deleted as it is added here
 		await lockUniverse(universe.id, transaction);
@@ -273,17 +300,22 @@ async function updateUniverse(request: Request, response: Response): Promise<voi
 			itemIds: startingItems?.map(({ itemId }) => itemId)
 		}, transaction);
 
-		if (found === undefined)
+		if (found !== undefined)
 		{
-			await updateUniverseSettings(universe.id, body.data, transaction);
+			return({
+				status: 400,
+				message: found
+			});
 		}
 
-		return(found);
-	});
+		await updateUniverseSettings(universe.id, body.data, transaction);
 
-	if (startingProblem !== undefined)
+		return(undefined);
+	}));
+
+	if (refusal !== undefined)
 	{
-		sendError(response, 400, startingProblem);
+		sendError(response, refusal.status, refusal.message, refusal.values);
 		return;
 	}
 

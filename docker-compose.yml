@@ -22,6 +22,10 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+      # After an unclean shutdown (such as Docker stopping), Postgres syncs every data file before it
+      # accepts connections, which can take minutes; failed checks in this time don't count
+      start_period: 5m
+      start_interval: 2s
 
 volumes:
   postgres-data:

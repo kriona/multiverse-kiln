@@ -319,3 +319,22 @@ export function canPlayUniverse(stage: UniverseStage, role: UniverseRole | undef
 			return(false);
 	}
 }
+
+/**
+ * The part of a universe's address that names it, made from its name: lowercase, with every run of
+ * characters other than letters and digits turned into one hyphen, e.g. "The Shattered Isles!" is
+ * the-shattered-isles. Letters of every alphabet are kept, so a name in any language reads in its
+ * address. No two universes have the same slug, which makes names that differ only in capitals or
+ * punctuation the same name
+ *
+ * @param name The universe's name
+ * @return The slug, empty for a name without letters or digits
+ */
+export function universeSlug(name: string): string
+{
+	return(name
+		.normalize('NFC')
+		.toLowerCase()
+		.replace(/[^\p{L}\p{M}\p{N}]+/gu, '-')
+		.replace(/^-+|-+$/g, ''));
+}

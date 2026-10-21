@@ -187,6 +187,12 @@ export interface EditableUniverseSummary
 {
 	id: string;
 	name: string;
+
+	/**
+	 * The name in the form its page's address uses (universeSlug)
+	 */
+	slug: string;
+
 	shortDescription: string;
 	ruleset: Ruleset;
 	stage: UniverseStage;
@@ -273,6 +279,12 @@ export interface UniverseSettings
 export interface EditableUniverse extends UniverseSettings
 {
 	id: string;
+
+	/**
+	 * The name in the form its page's address uses (universeSlug)
+	 */
+	slug: string;
+
 	ruleset: Ruleset;
 	lobbyAreaId: string | null;
 

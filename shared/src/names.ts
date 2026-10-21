@@ -78,7 +78,25 @@ const LOOKALIKES: Record<string, string> = {
 	'ł': 'l',
 	'ø': 'o',
 	'đ': 'd',
-	'ß': 'ss'
+	'ß': 'ss',
+	'к': 'k'
+};
+
+/**
+ * Capitals from other alphabets that look like Latin capitals although their lowercase letters don't
+ * look like the Latin ones (Cyrillic В is "в", Greek Ν is "ν"), by the letter they pass for. These are
+ * looked up before the name is lowercased
+ */
+const CAPITAL_LOOKALIKES: Record<string, string> = {
+	'В': 'b',
+	'Н': 'h',
+	'Β': 'b',
+	'Η': 'h',
+	'Ζ': 'z',
+	'Μ': 'm',
+	'Ν': 'n',
+	'Χ': 'x',
+	'Υ': 'y'
 };
 
 /**
@@ -126,6 +144,20 @@ export function isReservedName(name: string): boolean
 }
 
 /**
+ * A name in the form names are compared in, for telling whether two names could be mistaken for each
+ * other: capitals, accents, look-alike letters, stand-ins, repeated letters and the spaces and
+ * punctuation between words don't count, so "Kilnhaven", "K1LN HAVEN" and "Кilnhaaven" (with a
+ * Cyrillic К) all have the same key
+ *
+ * @param name The name, as typed
+ * @return The key
+ */
+export function nameKey(name: string): string
+{
+	return(reduceWord(splitWords(name).join('')));
+}
+
+/**
  * Splits a name into its words, each in lowercase plain letters, digits and the symbols that stand in
  * for letters
  *
@@ -134,11 +166,13 @@ export function isReservedName(name: string): boolean
  */
 function splitWords(name: string): string[]
 {
-	const plain = name
+	const plain = [...name
 		.normalize('NFKC')
 		.replace(/(\p{Ll})(\p{Lu})/gu, '$1 $2')
 		.normalize('NFKD')
-		.replace(/[\p{M}\p{Cf}]/gu, '')
+		.replace(/[\p{M}\p{Cf}]/gu, '')]
+		.map((character) => (CAPITAL_LOOKALIKES[character] ?? character))
+		.join('')
 		.toLowerCase();
 	const unmasked = [...plain]
 		.map((character) => (LOOKALIKES[character] ?? character))

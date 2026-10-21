@@ -341,10 +341,29 @@ describe('World editor API', () =>
 
 		it('refuses a universe without a valid name or ruleset', async () =>
 		{
-			for (const body of [{ name: '', shortDescription: '', ruleset: 'pf1e' }, { name: `A${rightToLeftOverride}b`, shortDescription: '', ruleset: 'pf1e' }, { name: 'Kilnhaven', shortDescription: '', ruleset: 'dnd' }])
+			for (const body of [{ name: '', shortDescription: '', ruleset: 'pf1e' }, { name: `A${rightToLeftOverride}b`, shortDescription: '', ruleset: 'pf1e' }, { name: '!?', shortDescription: '', ruleset: 'pf1e' }, { name: 'Kilnhaven', shortDescription: '', ruleset: 'dnd' }])
 			{
 				assert.strictEqual((await send(ada, 'POST', '', { body })).status, 400, JSON.stringify(body));
 			}
+		});
+
+		it('refuses a name another universe has, or one too much like it, when creating or renaming', async () =>
+		{
+			const universeId = await createUniverse(ada, 'Kilnhaven');
+			const grace = await logIn('Grace');
+			const otherId = await createUniverse(grace, 'Brightwater');
+
+			// The last has a Cyrillic К
+			for (const name of ['Kilnhaven', 'KILNHAVEN', '"Kilnhaven!"', 'Kiln Haven', 'K1lnhaven', 'Кilnhaven'])
+			{
+				const refused = await send<ErrorPayload>(grace, 'POST', '', { body: { name, shortDescription: '', ruleset: 'pf1e' } });
+
+				assert.strictEqual(refused.status, 409, name);
+				assert.strictEqual(refused.body.error.id, 'error.universeNameTaken', name);
+			}
+
+			assert.strictEqual((await send(grace, 'PATCH', `/${otherId}`, { body: { name: 'kilnhaven' } })).status, 409);
+			assert.strictEqual((await send(ada, 'PATCH', `/${universeId}`, { body: { name: 'KilnHaven' } })).status, 204);
 		});
 
 		it('changes the settings, keeping faerie time and its morning together', async () =>

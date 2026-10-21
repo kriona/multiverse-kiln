@@ -2,7 +2,7 @@ import { EditorPage } from './EditorPage';
 import { startLocalization, t } from './localization';
 import { connectToServer } from './network/serverConnection';
 import { startPageLifecycle } from './pageLifecycle';
-import { gamePageUrl, readPageParameter, TAB_PARAMETER, UNIVERSE_PARAMETER, AREA_PARAMETER } from './pages';
+import { HOME_PAGE_URL, readEditUniverseId, readPageParameter, TAB_PARAMETER, AREA_PARAMETER } from './pages';
 import { isEditorTab } from './ui/editor/EditorScreen';
 import { showStatus } from './ui/dom';
 import { startLanguagePicker } from './ui/languagePicker';
@@ -15,12 +15,12 @@ import { startShortcuts } from './ui/shortcuts';
  */
 async function start(): Promise<void>
 {
-	const universeId = readPageParameter(UNIVERSE_PARAMETER);
+	const universeId = readEditUniverseId();
 	const tab = readPageParameter(TAB_PARAMETER);
 
 	if (universeId === undefined)
 	{
-		window.location.replace(gamePageUrl());
+		window.location.replace(HOME_PAGE_URL);
 		return;
 	}
 

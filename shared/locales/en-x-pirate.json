@@ -1803,6 +1803,10 @@
 		"message": "Ye can create at most {max, plural, one {# universe} other {# universes}}.",
 		"source": "You can create at most {max, plural, one {# universe} other {# universes}}."
 	},
+	"error.universeNameTaken": {
+		"message": "Another universe already sails under that name, or one too much like it.",
+		"source": "Another universe already has that name, or one too much like it."
+	},
 	"error.unknownItemType": {
 		"message": "The universe's ruleset knows no such sort o' booty.",
 		"source": "The universe's ruleset has no such type of item."
@@ -1879,9 +1883,21 @@
 		"message": "Not yet stowed",
 		"source": "Unsaved changes"
 	},
+	"form.universeNameNoLetters": {
+		"message": "A universe's name needs at least one letter or number, matey.",
+		"source": "A universe's name needs at least one letter or number."
+	},
 	"form.wholeNumber": {
 		"message": "Give a whole number from {min, number} to {max, number}, matey.",
 		"source": "Enter a whole number from {min, number} to {max, number}."
+	},
+	"game.outside.title": {
+		"message": "Multiverse Kiln",
+		"source": "Multiverse Kiln"
+	},
+	"game.universeNotFound": {
+		"message": "That universe be lost at sea.",
+		"source": "That universe could not be found."
 	},
 	"group.connectionLost": {
 		"message": "Lost sight o' the game.",
@@ -1967,18 +1983,6 @@
 		"message": "There be no universes to sail yet.",
 		"source": "There are no universes to play in yet."
 	},
-	"home.overview.close": {
-		"message": "Batten down",
-		"source": "Close"
-	},
-	"home.overview.descriptionFailed": {
-		"message": "Couldn't haul up the rest o' this universe's tale.",
-		"source": "Could not load the rest of this universe's description."
-	},
-	"home.overview.enter": {
-		"message": "Set Sail",
-		"source": "Enter Universe"
-	},
 	"home.ownDetails": {
 		"message": "{ruleset} - {stage} - {role}",
 		"source": "{ruleset} - {stage} - {role}"
@@ -2002,10 +2006,6 @@
 	"home.siteSettings": {
 		"message": "The Captain's Orders",
 		"source": "Site Settings"
-	},
-	"home.universeNotFound": {
-		"message": "That universe be lost at sea.",
-		"source": "That universe could not be found."
 	},
 	"home.universes": {
 		"message": "Universes",
@@ -2378,6 +2378,10 @@
 	"name.reserved": {
 		"message": "That name could pass fer one o' the ship's officers. Choose another.",
 		"source": "That name could be mistaken for the game's staff. Choose another."
+	},
+	"page.backToHome": {
+		"message": "Back to Port",
+		"source": "Back to Home"
 	},
 	"page.connectFailed": {
 		"message": "Couldn't hail the server. Reload the page to try again.",
@@ -2966,5 +2970,49 @@
 	"universe.time.inherit": {
 		"message": "same as the mother area",
 		"source": "inherit from the parent area"
+	},
+	"universePage.characterDescription": {
+		"message": "{race} {class}",
+		"source": "{race} {class}"
+	},
+	"universePage.characters": {
+		"message": "Yer hands",
+		"source": "Your characters"
+	},
+	"universePage.charactersFailed": {
+		"message": "Couldn't muster yer hands.",
+		"source": "Could not list your characters."
+	},
+	"universePage.enter": {
+		"message": "Set Sail",
+		"source": "Enter Universe"
+	},
+	"universePage.home": {
+		"message": "Back to Port",
+		"source": "Back to Home"
+	},
+	"universePage.loadFailed": {
+		"message": "Couldn't haul up the universe. Reload the page to try again.",
+		"source": "Could not load the universe. Reload the page to try again."
+	},
+	"universePage.loading": {
+		"message": "Haulin' it aboard...",
+		"source": "Loading..."
+	},
+	"universePage.noCharacters": {
+		"message": "Ye haven't signed on a hand in this universe yet.",
+		"source": "You haven't made a character in this universe yet."
+	},
+	"universePage.notFound": {
+		"message": "That universe be lost at sea. It may sail under a new name, or it ain't open to all hands yet.",
+		"source": "That universe could not be found. It may have been renamed, or it isn't open to everyone yet."
+	},
+	"universePage.title": {
+		"message": "{universe} - Multiverse Kiln",
+		"source": "{universe} - Multiverse Kiln"
+	},
+	"universePage.unavailableTitle": {
+		"message": "Universe - Multiverse Kiln",
+		"source": "Universe - Multiverse Kiln"
 	}
 }

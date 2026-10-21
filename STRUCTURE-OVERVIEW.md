@@ -4,7 +4,12 @@ This document describes the UI + game structure for the Multiverse Kiln. It desc
 ## Home
 Lists all universes. In the beginning there will only be a few, but in the future there may be thousands, so we should be forward-thinking about the UI (even if advanced search filters don't exist yet). Each universe should show name, 1-sentence description, ruleset, and [languages](#tab-translations). Only universes in the `prologue` or `let there be light` [stage](#edit-universe) are listed. Shows a button for [Create Universe](#create-universe).
 
-Selecting a universe to join will show you a modal overview for the universe. The modal will list all details about the universe. There will be an [Enter Universe](#enter-universe) button.
+Each universe links to its [page](#universe-page).
+
+## Universe page
+Every universe on Home has a page of its own at `/universe/<slug>`, listing all details about the universe, with an [Enter Universe](#enter-universe) button. The page doesn't need a login; while the browser is logged in (in any tab), it also lists the player's characters in the universe, with each one's race and class. The slug is made from the universe's name: lowercase, with every run of characters other than letters and digits turned into a hyphen ("The Shattered Isles!" is `the-shattered-isles`). Letters of every alphabet are kept, so a name in any language reads in its address. `/universe/<id>` always works too, and changes the address to the slug.
+
+Universe names are unique, and names that could be mistaken for each other count as the same, so one universe can't pass as another. Two names are the same when they have the same slug, or when they match once capitals, accents, letters from other alphabets that look like Latin ones, stand-ins such as "1" for "i", repeated letters and the spaces and punctuation between words are set aside (the same comparison player names get for reserved words, `shared/src/names.ts`). "Kilnhaven", "Kiln Haven", "K1lnhaven" and "Кilnhaven" (with a Cyrillic К) are all the same name. A name needs at least one letter or digit. Renaming a universe changes its slug, so links that used the old slug stop working; links by ID keep working.
 
 ## About
 Free text. There will be many of these pages (like an FAQ or Help).
@@ -60,6 +65,8 @@ Everything is optional except name.
 Shows every profile field the user has filled in (name, photo, pronouns, location, time zone, socials) and their visible characters. Fields are optional, so users control what others see by leaving them blank.
 
 ## Enter Universe
+The lobby and the game are on a page of their own (`/game/<slug>`, or `/game/<universe ID>`, which changes to the slug), apart from Home, so a player can keep Home, their profile or the editor open in other tabs while they play.
+
 If you have not created a character, you will go to the [lobby](#lobby).
 
 If you have created a character, you will go to where your most recently played character is (either the lobby or the game itself). If that character's group isn't running or has been disbanded, you go to the lobby as that character.
@@ -148,7 +155,7 @@ Neither changes universes that already exist.
 
 ## Edit Universe
 This lets you change anything about a universe. It will be a whole suite of tools unrelated to playing the game.
-- name
+- name, unique among universes (see [Universe page](#universe-page))
 - logo
 - banner image
 - 1-sentence description

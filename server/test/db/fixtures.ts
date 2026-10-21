@@ -1,3 +1,5 @@
+import { randomUUID } from 'crypto';
+
 import { CHUNK_SIZE, cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, type MapBounds } from '@multiverse-kiln/shared';
 
 import { createCharacter, type NewCharacter } from '../../src/db/characterRepo.js';
@@ -116,14 +118,29 @@ export async function defaultTileId(key: string): Promise<number>
 }
 
 /**
+ * A universe name no other universe has (universe names are unique). A counter wouldn't do, since names
+ * that differ only in repeated characters, such as "1" and "11", count as the same
+ *
+ * @param prefix The start of the name
+ * @return The name
+ */
+function newUniverseName(prefix: string): string
+{
+	return(`${prefix} ${randomUUID()}`);
+}
+
+/**
  * Adds a Pathfinder 1E universe with no areas
  *
- * @param name The universe's name
+ * @param name The universe's name, or undefined for a name no other universe has
  * @return The universe's ID
  */
-export async function addUniverse(name: string = 'Test Universe'): Promise<string>
+export async function addUniverse(name?: string): Promise<string>
 {
-	return(createUniverse({ name, ruleset: 'pf1e' }));
+	return(createUniverse({
+		name: (name ?? newUniverseName('Test Universe')),
+		ruleset: 'pf1e'
+	}));
 }
 
 /**
@@ -188,7 +205,7 @@ export async function loadWholeMap(areaId: string): Promise<AreaMap | undefined>
  */
 export async function addPlayableUniverse(): Promise<PlayableUniverse>
 {
-	const universeId = await createUniverse({ name: 'Playable Universe', ruleset: 'pf1e', stage: 'let_there_be_light' });
+	const universeId = await createUniverse({ name: newUniverseName('Playable Universe'), ruleset: 'pf1e', stage: 'let_there_be_light' });
 	const wideBounds = { minColumn: 0, minRow: 0, maxColumn: 31, maxRow: 17 };
 	const squareAreaId = await addArea(universeId, 'Square', { bounds: wideBounds });
 	const houseAreaId = await addArea(universeId, 'House', { bounds: { minColumn: 0, minRow: 0, maxColumn: 9, maxRow: 5 }, tile: 'wood_floor', indoors: true });

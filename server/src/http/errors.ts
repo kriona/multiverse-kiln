@@ -36,6 +36,11 @@ export const errorMessages = defineMessages({
 		id: 'error.noSuchArea',
 		defaultMessage: 'The area doesn\'t exist.',
 		description: 'Why a request about an area failed: it was deleted, perhaps by another editor'
+	},
+	universeNameTaken: {
+		id: 'error.universeNameTaken',
+		defaultMessage: 'Another universe already has that name, or one too much like it.',
+		description: 'Why a universe wasn\'t made or renamed: universe names must be unique, and names that could be mistaken for each other count as the same, such as ones that differ only in capitals, accents, spaces or punctuation, letters from another alphabet that look the same, or "1" for "i"'
 	}
 });
 

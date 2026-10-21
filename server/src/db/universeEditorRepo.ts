@@ -90,6 +90,7 @@ export async function listEditableUniverses(playerId: string, executor: Executor
 		.select({
 			id: universes.id,
 			name: universes.name,
+			slug: universes.slug,
 			shortDescription: universes.shortDescription,
 			ruleset: universes.ruleset,
 			stage: universes.stage,

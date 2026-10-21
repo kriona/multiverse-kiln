@@ -1,7 +1,7 @@
 import { defineMessages } from '@multiverse-kiln/shared';
 
 /**
- * Text both pages show, about connecting and logging in (see src/localization.ts)
+ * Text the pages show about connecting and logging in (see src/localization.ts)
  */
 export const pageMessages = defineMessages({
 	connecting: {

@@ -1803,6 +1803,10 @@
 		"defaultMessage": "You can create at most {max, plural, one {# universe} other {# universes}}.",
 		"description": "Why a new universe wasn't made: the player has made as many as allowed"
 	},
+	"error.universeNameTaken": {
+		"defaultMessage": "Another universe already has that name, or one too much like it.",
+		"description": "Why a universe wasn't made or renamed: universe names must be unique, and names that could be mistaken for each other count as the same, such as ones that differ only in capitals, accents, spaces or punctuation, letters from another alphabet that look the same, or \"1\" for \"i\""
+	},
 	"error.unknownItemType": {
 		"defaultMessage": "The universe's ruleset has no such type of item.",
 		"description": "Why an item couldn't be saved: the type chosen for it isn't one of the game rules' item types"
@@ -1875,6 +1879,10 @@
 		"defaultMessage": "Saved",
 		"description": "Shown next to a form's Save button once its changes are stored"
 	},
+	"form.universeNameNoLetters": {
+		"defaultMessage": "A universe's name needs at least one letter or number.",
+		"description": "Shown by the field for a universe's name when it has only spaces and punctuation; the name is made into the universe's web address, which needs a letter or number"
+	},
 	"form.unsavedChanges": {
 		"defaultMessage": "Unsaved changes",
 		"description": "Shown next to a form's Save button while it has changes that haven't been saved"
@@ -1882,6 +1890,14 @@
 	"form.wholeNumber": {
 		"defaultMessage": "Enter a whole number from {min, number} to {max, number}.",
 		"description": "Shown under a number field when what was typed isn't a whole number in the range it allows; {min} and {max} are the smallest and largest allowed"
+	},
+	"game.outside.title": {
+		"defaultMessage": "Multiverse Kiln",
+		"description": "The browser tab's title on the game's page when the player isn't in a universe or game, such as when a join link has expired"
+	},
+	"game.universeNotFound": {
+		"defaultMessage": "That universe could not be found.",
+		"description": "Shown on the game's page when it was opened to enter a universe that doesn't exist or can't be played"
 	},
 	"group.connectionLost": {
 		"defaultMessage": "Lost the connection to the game.",
@@ -1967,18 +1983,6 @@
 		"defaultMessage": "There are no universes to play in yet.",
 		"description": "Shown instead of the list of universes when there are none to play"
 	},
-	"home.overview.close": {
-		"defaultMessage": "Close",
-		"description": "Button that closes a universe's overview"
-	},
-	"home.overview.descriptionFailed": {
-		"defaultMessage": "Could not load the rest of this universe's description.",
-		"description": "Shown in a universe's overview in place of its long description when that couldn't be loaded"
-	},
-	"home.overview.enter": {
-		"defaultMessage": "Enter Universe",
-		"description": "Button that takes the player into the universe shown, starting in its lobby"
-	},
 	"home.ownDetails": {
 		"defaultMessage": "{ruleset} - {stage} - {role}",
 		"description": "Under each universe the player can edit: its ruleset (e.g. Pathfinder 1E), its stage (e.g. prologue) and the player's role (e.g. builder)"
@@ -2002,10 +2006,6 @@
 	"home.siteSettings": {
 		"defaultMessage": "Site Settings",
 		"description": "Link in Home's toolbar to the page where the site's admins change settings for the whole site"
-	},
-	"home.universeNotFound": {
-		"defaultMessage": "That universe could not be found.",
-		"description": "Shown on Home when the page was opened to enter a universe that doesn't exist or can't be played"
 	},
 	"home.universes": {
 		"defaultMessage": "Universes",
@@ -2145,7 +2145,7 @@
 	},
 	"lobby.connectionLost": {
 		"defaultMessage": "Lost the connection to {universe}.",
-		"description": "Shown on Home when the connection to a universe's lobby was lost; {universe} is its name"
+		"description": "Shown on the game's page when the connection to a universe's lobby was lost; {universe} is its name"
 	},
 	"lobby.createCharacter": {
 		"defaultMessage": "Create Character",
@@ -2185,7 +2185,7 @@
 	},
 	"lobby.notJoined": {
 		"defaultMessage": "Could not enter {universe}. Try again in a moment.",
-		"description": "Shown on Home when the player couldn't go into a universe's lobby; {universe} is its name"
+		"description": "Shown on the game's page when the player couldn't go into a universe's lobby; {universe} is its name"
 	},
 	"lobby.nowPlaying": {
 		"defaultMessage": "You are now playing {name}.",
@@ -2379,6 +2379,10 @@
 		"defaultMessage": "That name could be mistaken for the game's staff. Choose another.",
 		"description": "Why a player or character name was refused: it contains a word such as \"admin\" or \"moderator\" that would let someone pass as the people running the game"
 	},
+	"page.backToHome": {
+		"defaultMessage": "Back to Home",
+		"description": "Link below a message filling the page, such as one saying a universe couldn't be found, that goes to the list of universes"
+	},
 	"page.connectFailed": {
 		"defaultMessage": "Could not connect to the server. Reload the page to try again.",
 		"description": "Shown on the whole page when the game couldn't connect to the server"
@@ -2433,7 +2437,7 @@
 	},
 	"page.title": {
 		"defaultMessage": "Multiverse Kiln",
-		"description": "The browser tab's title for the game's page"
+		"description": "The browser tab's title for Home, a universe's page and the game's page while they load"
 	},
 	"pager.next": {
 		"defaultMessage": "Next",
@@ -2966,5 +2970,49 @@
 	"universe.time.inherit": {
 		"defaultMessage": "inherit from the parent area",
 		"description": "Passage of time for an area that uses its parent area's setting, or the universe's"
+	},
+	"universePage.characterDescription": {
+		"defaultMessage": "{race} {class}",
+		"description": "On a universe's page, in the list of the player's characters, a character's race and class after their name, e.g. \"Dwarf Fighter\". Reorder them as your language needs"
+	},
+	"universePage.characters": {
+		"defaultMessage": "Your characters",
+		"description": "Heading on a universe's page of the list of characters the player has made in the universe, shown while they are logged in"
+	},
+	"universePage.charactersFailed": {
+		"defaultMessage": "Could not list your characters.",
+		"description": "Shown on a universe's page when the list of the player's characters in the universe couldn't be loaded"
+	},
+	"universePage.enter": {
+		"defaultMessage": "Enter Universe",
+		"description": "Button on a universe's page that takes the player into the universe, starting in its lobby"
+	},
+	"universePage.home": {
+		"defaultMessage": "Back to Home",
+		"description": "Link at the top of a universe's page that goes back to the list of universes"
+	},
+	"universePage.loadFailed": {
+		"defaultMessage": "Could not load the universe. Reload the page to try again.",
+		"description": "Shown on the whole of a universe's page when the universe couldn't be loaded, such as when the server can't be reached"
+	},
+	"universePage.loading": {
+		"defaultMessage": "Loading...",
+		"description": "Shown on the whole of a universe's page while the universe loads"
+	},
+	"universePage.noCharacters": {
+		"defaultMessage": "You haven't made a character in this universe yet.",
+		"description": "Shown on a universe's page instead of the list of the player's characters when they haven't made one in the universe"
+	},
+	"universePage.notFound": {
+		"defaultMessage": "That universe could not be found. It may have been renamed, or it isn't open to everyone yet.",
+		"description": "Shown on the whole of a universe's page when the universe its address names doesn't exist or isn't listed on Home"
+	},
+	"universePage.title": {
+		"defaultMessage": "{universe} - Multiverse Kiln",
+		"description": "The browser tab's title on a universe's page; {universe} is the universe's name, and Multiverse Kiln is the game engine's name"
+	},
+	"universePage.unavailableTitle": {
+		"defaultMessage": "Universe - Multiverse Kiln",
+		"description": "The browser tab's title on a universe's page when the universe couldn't be shown; Multiverse Kiln is the game engine's name"
 	}
 }

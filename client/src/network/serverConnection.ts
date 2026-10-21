@@ -164,12 +164,12 @@ export async function listUniverses(client: Client, offset: number): Promise<Uni
  * One of the universes Home lists, in full
  *
  * @param client Client for the server
- * @param universeId The universe's ID
+ * @param key The universe's ID or slug
  * @return The universe
  */
-export async function getUniverseDetails(client: Client, universeId: string): Promise<UniverseDetails>
+export async function getUniverseDetails(client: Client, key: string): Promise<UniverseDetails>
 {
-	const response = await client.http.get(`${UNIVERSES_PATH}/${encodeURIComponent(universeId)}`);
+	const response = await client.http.get(`${UNIVERSES_PATH}/${encodeURIComponent(key)}`);
 
 	return(response.data as UniverseDetails);
 }

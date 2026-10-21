@@ -424,12 +424,18 @@ export interface UniverseSummary
 {
 	id: string;
 	name: string;
+
+	/**
+	 * The name in the form its page's address uses (universeSlug)
+	 */
+	slug: string;
+
 	shortDescription: string;
 	ruleset: Ruleset;
 }
 
 /**
- * A universe as Home's overview of it shows it (GET UNIVERSES_PATH/:id)
+ * A universe as its page shows it (GET UNIVERSES_PATH/:key, by ID or slug)
  */
 export interface UniverseDetails extends UniverseSummary
 {

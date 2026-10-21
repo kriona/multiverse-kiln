@@ -4,12 +4,11 @@ import { GROUP_QUERY_PARAMETER, LobbyMessageType, LobbyServerMessageType, MAX_GR
 import { t } from './localization';
 import { CharacterApi } from './network/characterApi';
 import { describeEditorError, EditorApi } from './network/editorApi';
-import { getUniverseDetails, joinGroup, joinLobby, listUniverses, type GameConnection, type LobbyConnection, type ServerConnection } from './network/serverConnection';
+import { getUniverseDetails, joinGroup, joinLobby, type GameConnection, type LobbyConnection, type ServerConnection } from './network/serverConnection';
 import { isLeavingPage } from './pageLifecycle';
-import { characterPageUrl, editPageUrl, readPageParameter, replacePageParameters, UNIVERSE_PARAMETER } from './pages';
-import { showScreen, showStatus } from './ui/dom';
+import { characterPageUrl, gamePageUrl, HOME_PAGE_URL, readGameUniverseKey, readPageParameter, replacePageParameters, replacePagePath } from './pages';
+import { showNoticeScreen, showScreen, showStatus } from './ui/dom';
 import { GroupScreen } from './ui/GroupScreen';
-import { HomeScreen } from './ui/HomeScreen';
 import { LobbyScreen } from './ui/LobbyScreen';
 import { LoginScreen } from './ui/LoginScreen';
 import { MapView } from './ui/MapView';
@@ -34,20 +33,19 @@ interface JoinedLobby
 }
 
 /**
- * Runs the page: shows the login, Home, lobby or group screen to match where the player is, and keeps
- * the window in the room that goes with it
+ * Runs the game's page (game.html): shows the login, lobby or group screen to match where the player
+ * is, and keeps the window in the room that goes with it
  *
  * The server decides who the player is and which group they are in, and tells every window of the
  * browser through the session room; a window only asks for changes and follows what it is told. A
- * logged-in player who isn't in a group is on Home, or in the lobby of the universe they chose there
- * or that the page's address names. Leaving a group goes back to that lobby
+ * logged-in player who isn't in a group is in the lobby of the universe the page's address names.
+ * Leaving a group goes back to that lobby, or to Home when the address names none
  */
-export class App
+export class GamePage
 {
 	private readonly editorApi: EditorApi;
 	private readonly characterApi: CharacterApi;
 	private readonly loginScreen: LoginScreen;
-	private readonly homeScreen: HomeScreen;
 	private readonly lobbyScreen: LobbyScreen;
 	private readonly groupScreen: GroupScreen;
 
@@ -57,7 +55,7 @@ export class App
 	private player: AccountPlayer | null = null;
 
 	/**
-	 * The universe the player chose on Home, whose lobby they are in when they aren't in a group
+	 * The universe the page's address names, whose lobby the player is in when they aren't in a group
 	 */
 	private chosenUniverse: UniverseSummary | undefined;
 
@@ -67,7 +65,7 @@ export class App
 	private linkGroupId: string | undefined;
 
 	/**
-	 * The universe whose lobby this window was opened to enter (such as from the editor), until the player has logged in
+	 * The universe the page's address names, by slug or ID, until it has been looked up once the player has logged in
 	 */
 	private linkUniverseId: string | undefined;
 
@@ -97,28 +95,13 @@ export class App
 		this.editorApi = editorApi;
 		this.characterApi = new CharacterApi(client);
 		this.linkGroupId = readPageParameter(GROUP_QUERY_PARAMETER);
-		this.linkUniverseId = readPageParameter(UNIVERSE_PARAMETER);
+		this.linkUniverseId = readGameUniverseKey();
 
 		this.loginScreen = new LoginScreen((name) =>
 		{
 			const login: LoginPayload = { name };
 
 			session.send(SessionMessageType.Login, login);
-		});
-
-		this.homeScreen = new HomeScreen({
-			loadPage: (offset) => listUniverses(client, offset),
-			loadDetails: (universeId) => getUniverseDetails(client, universeId),
-			enter: (universe) =>
-			{
-				this.enterUniverse(universe);
-			},
-			loadOwnUniverses: () => editorApi.listUniverses(),
-			createUniverse: (universe) => editorApi.createUniverse(universe),
-			edit: (universeId) =>
-			{
-				window.location.assign(editPageUrl(universeId));
-			}
 		});
 
 		this.lobbyScreen = new LobbyScreen(mapView, {
@@ -147,9 +130,7 @@ export class App
 			},
 			leaveLobby: () =>
 			{
-				this.chosenUniverse = undefined;
-				this.showOutsideGroup();
-				void this.syncRooms();
+				window.location.assign(HOME_PAGE_URL);
 			}
 		});
 
@@ -253,64 +234,74 @@ export class App
 	}
 
 	/**
-	 * Enters the lobby of the universe the page's address names, once the player has logged in, unless
-	 * they are joining or already in a group
+	 * Looks up the universe the page's address names once the player has logged in, and enters its
+	 * lobby unless they are joining or already in a group, in which case it is where leaving the group goes
 	 */
 	private async followUniverseLink(): Promise<void>
 	{
-		const universeId = this.linkUniverseId;
+		const key = this.linkUniverseId;
 
-		if (universeId === undefined)
+		if (key === undefined)
 		{
 			return;
 		}
-
-		this.linkUniverseId = undefined;
-		replacePageParameters({ [UNIVERSE_PARAMETER]: undefined });
 
 		let universe: UniverseSummary;
 
 		try
 		{
-			universe = await this.findUniverse(universeId);
+			universe = await this.findUniverse(key);
 		}
 		catch (error)
 		{
 			console.error('Could not find the universe to enter:', error);
-			this.homeScreen.showNotice(t({
-				id: 'home.universeNotFound',
-				defaultMessage: 'That universe could not be found.',
-				description: 'Shown on Home when the page was opened to enter a universe that doesn\'t exist or can\'t be played'
-			}));
+			this.linkUniverseId = undefined;
+
+			if (this.player?.groupId === null)
+			{
+				this.showOutsideGroup(t({
+					id: 'game.universeNotFound',
+					defaultMessage: 'That universe could not be found.',
+					description: 'Shown on the game\'s page when it was opened to enter a universe that doesn\'t exist or can\'t be played'
+				}));
+			}
+
 			return;
 		}
 
-		if ((this.player?.groupId === null) && (this.linkGroupId === undefined) && !this.chosenUniverse)
-		{
-			this.enterUniverse(universe);
-		}
+		this.linkUniverseId = undefined;
+		replacePagePath(gamePageUrl(universe.slug));
+		this.enterUniverse(universe);
 	}
 
 	/**
-	 * A universe as Home lists it. A universe that isn't listed yet is found through the editor's API,
-	 * which answers for universes the player has a role in
+	 * A universe as Home lists it. A universe that isn't listed yet is found among the universes the
+	 * player has a role in, the only ones they could play
 	 *
-	 * @param universeId The universe's ID
+	 * @param key The universe's slug or ID
 	 * @return The universe
 	 */
-	private async findUniverse(universeId: string): Promise<UniverseSummary>
+	private async findUniverse(key: string): Promise<UniverseSummary>
 	{
 		try
 		{
-			const { id, name, shortDescription, ruleset } = await getUniverseDetails(this.server.client, universeId);
+			const { id, name, slug, shortDescription, ruleset } = await getUniverseDetails(this.server.client, key);
 
-			return({ id, name, shortDescription, ruleset });
+			return({ id, name, slug, shortDescription, ruleset });
 		}
 		catch
 		{
-			const { id, name, shortDescription, ruleset } = await this.editorApi.getUniverse(universeId);
+			const { universes } = await this.editorApi.listUniverses();
+			const own = universes.find((universe) => ((universe.slug === key) || (universe.id === key)));
 
-			return({ id, name, shortDescription, ruleset });
+			if (!own)
+			{
+				throw new Error(`The player has no universe with the slug or ID ${key}`);
+			}
+
+			const { id, name, slug, shortDescription, ruleset } = own;
+
+			return({ id, name, slug, shortDescription, ruleset });
 		}
 	}
 
@@ -396,21 +387,27 @@ export class App
 	}
 
 	/**
-	 * Goes into the lobby of a universe chosen on Home
+	 * Makes a universe the one whose lobby the player is in while they aren't in a group, and goes into
+	 * it now if they aren't
 	 *
 	 * @param universe The universe
 	 */
 	private enterUniverse(universe: UniverseSummary): void
 	{
 		this.chosenUniverse = universe;
-		this.homeScreen.hideNotice();
-		this.showOutsideGroup();
+
+		if ((this.player?.groupId === null) && (this.linkGroupId === undefined))
+		{
+			this.showOutsideGroup();
+		}
+
 		void this.syncRooms();
 	}
 
 	/**
-	 * Shows where a player who isn't in a group is: the lobby of the universe they chose (or a message
-	 * while it is being joined), or Home
+	 * Shows where a player who isn't in a group is: the lobby of the page's universe (or a message while
+	 * it is being joined). Without a universe, a notice is shown on its own with a link to Home, and
+	 * otherwise the window goes to Home, unless a join link or the page's universe is still being followed
 	 *
 	 * @param notice A message to show there, if any
 	 */
@@ -420,10 +417,13 @@ export class App
 		{
 			if (notice !== undefined)
 			{
-				this.homeScreen.showNotice(notice);
+				this.showOutside(notice);
+			}
+			else if ((this.linkGroupId === undefined) && (this.linkUniverseId === undefined))
+			{
+				window.location.replace(HOME_PAGE_URL);
 			}
 
-			this.showHome();
 			return;
 		}
 
@@ -450,15 +450,17 @@ export class App
 	}
 
 	/**
-	 * Shows Home, listing the universes afresh
+	 * Shows a message on its own, with a link to Home, for a player who is in neither a lobby nor a group
+	 *
+	 * @param message Why the player isn't in one
 	 */
-	private showHome(): void
+	private showOutside(message: string): void
 	{
-		if (this.player)
-		{
-			this.homeScreen.show(this.player.name);
-			showScreen('home');
-		}
+		showNoticeScreen(message, t({
+			id: 'game.outside.title',
+			defaultMessage: 'Multiverse Kiln',
+			description: 'The browser tab\'s title on the game\'s page when the player isn\'t in a universe or game, such as when a join link has expired'
+		}));
 	}
 
 	/**
@@ -555,7 +557,7 @@ export class App
 	}
 
 	/**
-	 * Joins a universe's lobby and shows it; back to Home if it can't be joined
+	 * Joins a universe's lobby and shows it, or explains that it couldn't be joined
 	 *
 	 * @param universe The universe
 	 */
@@ -581,7 +583,7 @@ export class App
 				this.showOutsideGroup(t({
 					id: 'lobby.notJoined',
 					defaultMessage: 'Could not enter {universe}. Try again in a moment.',
-					description: 'Shown on Home when the player couldn\'t go into a universe\'s lobby; {universe} is its name'
+					description: 'Shown on the game\'s page when the player couldn\'t go into a universe\'s lobby; {universe} is its name'
 				}, {
 					universe: universe.name
 				}));
@@ -654,7 +656,7 @@ export class App
 	}
 
 	/**
-	 * Handles the lobby's room closing when the window didn't leave it itself: back to Home
+	 * Handles the lobby's room closing when the window didn't leave it itself, explaining that the connection was lost
 	 *
 	 * @param joined The lobby that closed
 	 * @param code WebSocket close code
@@ -686,7 +688,7 @@ export class App
 			this.showOutsideGroup(t({
 				id: 'lobby.connectionLost',
 				defaultMessage: 'Lost the connection to {universe}.',
-				description: 'Shown on Home when the connection to a universe\'s lobby was lost; {universe} is its name'
+				description: 'Shown on the game\'s page when the connection to a universe\'s lobby was lost; {universe} is its name'
 			}, {
 				universe: joined.universe.name
 			}));

@@ -4,10 +4,11 @@ import { t } from '../localization';
 
 /**
  * The screens the pages have, each an element with the ID "<name>-screen" and the class "screen". Every
- * page has status and login; index.html has home, lobby and group, edit.html has editor, and
- * character.html has character. Exactly one is shown at a time
+ * page has status and login; index.html has home, universe.html has universe and notice, game.html has
+ * notice, lobby and group, edit.html has editor, and character.html has character. Exactly one is
+ * shown at a time
  */
-export type ScreenName = 'status' | 'login' | 'home' | 'editor' | 'lobby' | 'group' | 'character';
+export type ScreenName = 'status' | 'login' | 'home' | 'universe' | 'notice' | 'editor' | 'lobby' | 'group' | 'character';
 
 /**
  * Finds an element in the page by ID
@@ -259,4 +260,17 @@ export function showStatus(message: string): void
 {
 	getElement('status-message', HTMLElement).textContent = message;
 	showScreen('status');
+}
+
+/**
+ * Shows a full-page message with a link to Home (partials/notice.html), e.g. when a universe can't be found
+ *
+ * @param message Text to show
+ * @param title The browser tab's title
+ */
+export function showNoticeScreen(message: string, title: string): void
+{
+	getElement('notice-message', HTMLElement).textContent = message;
+	document.title = title;
+	showScreen('notice');
 }

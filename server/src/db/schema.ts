@@ -57,6 +57,13 @@ export const players = pgTable('players', {
 export const universes = pgTable('universes', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	name: text('name').notNull(),
+
+	/**
+	 * The name in the form its page's address uses (universeSlug), kept with the name. Unique, which
+	 * makes universe names unique
+	 */
+	slug: text('slug').notNull(),
+
 	shortDescription: text('short_description').notNull().default(''),
 
 	/**
@@ -95,6 +102,7 @@ export const universes = pgTable('universes', {
 
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
+	uniqueIndex('universes_slug_unique').on(table.slug),
 	check('universes_faerie_morning_set', sql`(${table.passageOfTime} = 'faerie') = (${table.faerieMorning} IS NOT NULL)`),
 	check('universes_group_size_range', sql`${table.groupSize} BETWEEN ${sql.raw(String(MIN_GROUP_SIZE))} AND ${sql.raw(String(MAX_GROUP_PLAYERS))}`),
 	check('universes_starting_coins_range', sql`${table.startingPlatinum} BETWEEN 0 AND ${sql.raw(String(PF1E_MAX_COINS))} AND ${table.startingGold} BETWEEN 0 AND ${sql.raw(String(PF1E_MAX_COINS))} AND ${table.startingSilver} BETWEEN 0 AND ${sql.raw(String(PF1E_MAX_COINS))} AND ${table.startingCopper} BETWEEN 0 AND ${sql.raw(String(PF1E_MAX_COINS))}`)

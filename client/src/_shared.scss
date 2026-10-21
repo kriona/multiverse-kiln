@@ -283,6 +283,14 @@ button.link-button
 	justify-content: center;
 }
 
+// A message filling the page with a link to Home (partials/notice.html), such as for a universe that can't be found
+#notice-screen
+{
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+}
+
 .login-panel
 {
 	display: flex;
@@ -362,11 +370,14 @@ a.button.secondary
 	list-style: none;
 }
 
-.universe-item
+// A universe in a list: a link to its page, or a button that opens it in the editor
+button.universe-item,
+a.button.universe-item
 {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
+	box-sizing: border-box;
 	width: 100%;
 	padding: 10px 14px;
 	border-color: $border;
