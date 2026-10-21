@@ -449,7 +449,7 @@
 	},
 	"editor.characters.groupSizeHint": {
 		"message": "{min, number} be sailin' alone. At most {max, number} hands can sail together.",
-		"source": "{min, number} is single player. At most {max, number} characters can play together."
+		"source": "{min, number} is single player game. At most {max, number} characters can play together."
 	},
 	"editor.characters.noStartingEquipment": {
 		"message": "The crew sets sail empty-handed.",
@@ -1337,7 +1337,7 @@
 	},
 	"editor.ruleset.coinsHaveWeight": {
 		"message": "Coins weigh down a hand's pockets",
-		"source": "Coins count towards what characters carry"
+		"source": "Coins count towards carrying capacity"
 	},
 	"editor.ruleset.heading": {
 		"message": "Articles for {ruleset}",
@@ -1368,8 +1368,8 @@
 		"source": "Rolled scores can be rearranged among the abilities. Changing this doesn't change characters that already exist."
 	},
 	"editor.ruleset.tracksAmmo": {
-		"message": "Shot an' arrows get used up",
-		"source": "Ammunition is used up"
+		"message": "Track what arrows get shot",
+		"source": "Track ammunition"
 	},
 	"editor.startingArea.loadFailed": {
 		"message": "Couldn't make out the ports' names.",
@@ -2032,8 +2032,8 @@
 		"source": "Shift"
 	},
 	"license.agpl": {
-		"message": "Multiverse Kiln be free software: ye can share it about and/or change it under the terms o' the {license} as published by the Free Software Foundation, either version 3 o' the License, or (at yer choosin') any later version.",
-		"source": "Multiverse Kiln is free software: you can redistribute it and/or modify it under the terms of the {license} as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version."
+		"message": "Multiverse Kiln™ be free software: ye can share it about and/or change it under the terms o' the {license} as published by the Free Software Foundation, either version 3 o' the License, or (at yer choosin') any later version.",
+		"source": "Multiverse Kiln™ is free software: you can redistribute it and/or modify it under the terms of the {license} as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version."
 	},
 	"license.agplName": {
 		"message": "GNU Affero General Public License",
@@ -2051,13 +2051,17 @@
 		"message": "Multiverse Kiln uses trademarks an'/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy ({policy}). We be expressly forbidden from chargin' ye to use or reach this content. Multiverse Kiln ain't published, endorsed, or specifically approved by Paizo. For more about Paizo Inc. an' Paizo products, visit {paizo}.",
 		"source": "Multiverse Kiln uses trademarks and/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy ({policy}). We are expressly prohibited from charging you to use or access this content. Multiverse Kiln is not published, endorsed, or specifically approved by Paizo. For more information about Paizo Inc. and Paizo products, visit {paizo}."
 	},
+	"license.contents": {
+		"message": "What's in the hold",
+		"source": "Contents"
+	},
 	"license.copyright": {
 		"message": "Copyright (C) {year} {holder}.",
 		"source": "Copyright (C) {year} {holder}."
 	},
 	"license.game": {
-		"message": "The game itself",
-		"source": "The game"
+		"message": "Ye ol' Game Engine",
+		"source": "The Game Engine"
 	},
 	"license.gameIcons": {
 		"message": "Game icons be by {authors} at {gameIcons}, used under the {license}. Each icon's page on game-icons.net names the artist what drew it.",
@@ -2088,16 +2092,20 @@
 		"source": "Interface icons are from {phosphor}, used under the MIT License:"
 	},
 	"license.sourceCode": {
-		"message": "Grab this version's source code",
-		"source": "Get this version's source code"
+		"message": "Source code",
+		"source": "Source code"
 	},
 	"license.summary": {
 		"message": "In plain speak: ye may use, change an' share the game's code. If ye share a changed version, or run one on a server that players connect to, ye must offer its source code under the same license.",
-		"source": "In short: you may use, change and share the game's code. If you share a changed version, or run one on a server that players connect to, you must offer its source code under the same license."
+		"source": "In short: you may use, change and share the game engine's code. If you share a changed version, or run one on a server that players connect to, you must offer its source code under the same license."
 	},
 	"license.title": {
 		"message": "The Ship's Articles - Multiverse Kiln",
 		"source": "Licenses - Multiverse Kiln"
+	},
+	"license.trademark": {
+		"message": "Multiverse Kiln be a trademark o' {holder}.",
+		"source": "Multiverse Kiln is a trademark of {holder}."
 	},
 	"license.warranty": {
 		"message": "Multiverse Kiln be handed out in the hope that it'll be useful, but WITHOUT ANY WARRANTY; without even the implied warranty o' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.",
@@ -2400,8 +2408,8 @@
 		"source": "Language"
 	},
 	"page.license": {
-		"message": "This game be free software under the {license}.",
-		"source": "This game is free software under the {license}."
+		"message": "Multiverse Kiln™ be free software under the {license}.",
+		"source": "Multiverse Kiln™ is free software under the {license}."
 	},
 	"page.licenseName": {
 		"message": "GNU Affero General Public License v3 or later",

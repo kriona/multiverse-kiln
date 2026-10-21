@@ -79,7 +79,7 @@ export class CharactersTab
 		this.groupSize.max = String(MAX_GROUP_PLAYERS);
 		getElement('characters-group-size-hint', HTMLElement).textContent = t({
 			id: 'editor.characters.groupSizeHint',
-			defaultMessage: '{min, number} is single player. At most {max, number} characters can play together.',
+			defaultMessage: '{min, number} is single player game. At most {max, number} characters can play together.',
 			description: 'Explains the group size field on the editor\'s Characters tab; {min} and {max} are the smallest and largest group sizes'
 		}, {
 			min: MIN_GROUP_SIZE,

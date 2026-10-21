@@ -73,7 +73,7 @@ export const MAX_SHORT_DESCRIPTION_LENGTH = 200;
 export const MAX_LONG_DESCRIPTION_LENGTH = 20000;
 
 /**
- * Fewest characters a group can hold: 1 is single player. The most is MAX_GROUP_PLAYERS
+ * Fewest characters a group can hold: 1 is single player game. The most is MAX_GROUP_PLAYERS
  */
 export const MIN_GROUP_SIZE = 1;
 

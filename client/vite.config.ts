@@ -287,7 +287,7 @@ function requireSourceUrl(url: string | undefined): void
 {
 	if (!url)
 	{
-		throw new Error('VITE_SOURCE_URL is not set in client/.env. Set it to the repository players can get this version\'s source code from; see client/.env.example');
+		throw new Error('VITE_SOURCE_URL is not set in client/.env. Set it to the repository players can get the source code from; see client/.env.example');
 	}
 }
 

@@ -9,7 +9,7 @@ import { formMessages } from '../formMessages';
 
 /**
  * The Ruleset tab: how the universe plays under its ruleset. For Pathfinder 1E, how ability scores
- * are made, and whether characters need sleep, coins have weight and ammunition is used up
+ * are made, and whether characters need sleep, coins have weight and ammunition is tracked
  */
 export class RulesetTab
 {

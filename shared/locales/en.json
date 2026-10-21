@@ -448,7 +448,7 @@
 		"description": "Label of the field for the most characters that can play together in one group"
 	},
 	"editor.characters.groupSizeHint": {
-		"defaultMessage": "{min, number} is single player. At most {max, number} characters can play together.",
+		"defaultMessage": "{min, number} is single player game. At most {max, number} characters can play together.",
 		"description": "Explains the group size field on the editor's Characters tab; {min} and {max} are the smallest and largest group sizes"
 	},
 	"editor.characters.noStartingEquipment": {
@@ -1336,7 +1336,7 @@
 		"description": "Label of the field for how many points players spend on ability scores, shown when the universe chooses the number"
 	},
 	"editor.ruleset.coinsHaveWeight": {
-		"defaultMessage": "Coins count towards what characters carry",
+		"defaultMessage": "Coins count towards carrying capacity",
 		"description": "Checkbox for whether the coins characters carry add to the weight they carry"
 	},
 	"editor.ruleset.heading": {
@@ -1368,7 +1368,7 @@
 		"description": "Explains that changing how ability scores are made only affects characters made afterwards"
 	},
 	"editor.ruleset.tracksAmmo": {
-		"defaultMessage": "Ammunition is used up",
+		"defaultMessage": "Track ammunition",
 		"description": "Checkbox for whether arrows and other ammunition are used up when fired"
 	},
 	"editor.startingArea.loadFailed": {
@@ -2032,8 +2032,8 @@
 		"description": "Name of the Shift key, as keyboard shortcuts such as Ctrl+Shift+Z show it"
 	},
 	"license.agpl": {
-		"defaultMessage": "Multiverse Kiln is free software: you can redistribute it and/or modify it under the terms of the {license} as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.",
-		"description": "The game's license notice; {license} is a link to the license's full text, named by license.agplName"
+		"defaultMessage": "Multiverse Kiln™ is free software: you can redistribute it and/or modify it under the terms of the {license} as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.",
+		"description": "The game's license notice; {license} is a link to the license's full text, named by license.agplName, and Multiverse Kiln™ is the game engine's trademarked name"
 	},
 	"license.agplName": {
 		"defaultMessage": "GNU Affero General Public License",
@@ -2041,7 +2041,7 @@
 	},
 	"license.assets": {
 		"defaultMessage": "Art and other assets",
-		"description": "Heading of the license page's section about the game's art, audio and story"
+		"description": "Heading of the license page's section about the game's art, audio and story, and its link in the page's contents"
 	},
 	"license.assetsNotice": {
 		"defaultMessage": "The game's own art, audio, fonts, characters, setting and story are not covered by the GNU Affero General Public License. They are copyright {holder}, all rights reserved, and may not be reused without written permission. Assets made by others keep their own licenses, listed below.",
@@ -2051,13 +2051,17 @@
 		"defaultMessage": "Multiverse Kiln uses trademarks and/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy ({policy}). We are expressly prohibited from charging you to use or access this content. Multiverse Kiln is not published, endorsed, or specifically approved by Paizo. For more information about Paizo Inc. and Paizo products, visit {paizo}.",
 		"description": "The notice Paizo requires from anyone using its trademarks under its Community Use Policy, which keeps the game free; {policy} is a link to the policy and {paizo} a link to Paizo's website, each the same in every language"
 	},
+	"license.contents": {
+		"defaultMessage": "Contents",
+		"description": "Heading of the list of links to each section of the license page"
+	},
 	"license.copyright": {
 		"defaultMessage": "Copyright (C) {year} {holder}.",
 		"description": "The game's copyright notice on the license page; {year} is the year and {holder} is who holds the copyright"
 	},
 	"license.game": {
-		"defaultMessage": "The game",
-		"description": "Heading of the license page's section about the game's own code"
+		"defaultMessage": "The Game Engine",
+		"description": "Heading of the license page's section about the game's own code, and its link in the page's contents"
 	},
 	"license.gameIcons": {
 		"defaultMessage": "Game icons are by {authors} at {gameIcons}, used under the {license}. Each icon's page on game-icons.net names its artist.",
@@ -2073,31 +2077,35 @@
 	},
 	"license.icons": {
 		"defaultMessage": "Icons",
-		"description": "Heading of the license page's section crediting the icon sets the pages use"
+		"description": "Heading of the license page's section crediting the icon sets the pages use, and its link in the page's contents"
 	},
 	"license.openGameContent": {
 		"defaultMessage": "The Pathfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a below: its abilities, ways of making ability scores, sizes, races, classes, coins and items, and their names in every language. In the source code, they are in {folder}, and their names in {locales}. Nothing else in Multiverse Kiln is Open Game Content.",
-		"description": "On the license page, saying which part of the game is Open Game Content, as the Open Game License requires; {folder} and {locales} are folders in the game's source code. The license's text follows in English"
+		"description": "On the license page, saying which part of the game is Open Game Content, as the Open Game License requires; {folder} and {locales} are folders in the game engine's source code. The license's text follows in English"
 	},
 	"license.pathfinder": {
 		"defaultMessage": "Pathfinder First Edition rules",
-		"description": "Heading of the license page's section about the rules of the tabletop role-playing game Pathfinder, first edition, which the game uses"
+		"description": "Heading of the license page's section about the rules of the tabletop role-playing game Pathfinder, first edition, which the game uses, and its link in the page's contents"
 	},
 	"license.phosphor": {
 		"defaultMessage": "Interface icons are from {phosphor}, used under the MIT License:",
 		"description": "On the license page, crediting the icon set the pages' buttons use; {phosphor} is a link to it, named the same in every language. The license's text follows in English"
 	},
 	"license.sourceCode": {
-		"defaultMessage": "Get this version's source code",
-		"description": "Link on the license page to where this version of the game's source code can be downloaded"
+		"defaultMessage": "Source code",
+		"description": "Link on the license page to where the game engine's source code can be downloaded"
 	},
 	"license.summary": {
-		"defaultMessage": "In short: you may use, change and share the game's code. If you share a changed version, or run one on a server that players connect to, you must offer its source code under the same license.",
+		"defaultMessage": "In short: you may use, change and share the game engine's code. If you share a changed version, or run one on a server that players connect to, you must offer its source code under the same license.",
 		"description": "On the license page, what the game's license means in plain words"
 	},
 	"license.title": {
 		"defaultMessage": "Licenses - Multiverse Kiln",
 		"description": "The browser tab's title for the page with the game's license and the licenses of what it uses"
+	},
+	"license.trademark": {
+		"defaultMessage": "Multiverse Kiln is a trademark of {holder}.",
+		"description": "The game's trademark notice on the license page; Multiverse Kiln is the game engine's name and {holder} is who owns the trademark"
 	},
 	"license.warranty": {
 		"defaultMessage": "Multiverse Kiln is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.",
@@ -2400,8 +2408,8 @@
 		"description": "Label of the list of languages at the bottom of every page, which switches the language the game is shown in"
 	},
 	"page.license": {
-		"defaultMessage": "This game is free software under the {license}.",
-		"description": "At the bottom of every page; {license} is a link to the license, named by page.licenseName"
+		"defaultMessage": "Multiverse Kiln™ is free software under the {license}.",
+		"description": "At the bottom of every page; {license} is a link to the license, named by page.licenseName, and Multiverse Kiln™ is the game engine's trademarked name"
 	},
 	"page.licenseName": {
 		"defaultMessage": "GNU Affero General Public License v3 or later",
@@ -2421,7 +2429,7 @@
 	},
 	"page.sourceCode": {
 		"defaultMessage": "Source code",
-		"description": "Link at the bottom of every page to where the game's source code can be downloaded"
+		"description": "Link at the bottom of every page to where the game engine's source code can be downloaded"
 	},
 	"page.title": {
 		"defaultMessage": "Multiverse Kiln",

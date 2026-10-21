@@ -19,6 +19,7 @@
 	{
 		margin: 24px 0 8px;
 		font-size: 18px;
+		border-bottom: 1px solid #666;
 	}
 
 	a
@@ -29,6 +30,12 @@
 		{
 			color: $link-hover;
 		}
+	}
+
+	.license-contents ul
+	{
+		margin: 0;
+		padding-left: 24px;
 	}
 
 	pre

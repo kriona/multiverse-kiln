@@ -24,7 +24,7 @@ export interface Pf1eSettings
 	needsSleep: boolean;
 
 	/**
-	 * Whether coins count towards what characters carry
+	 * Whether coins count towards carrying capacity
 	 */
 	coinsHaveWeight: boolean;
 
