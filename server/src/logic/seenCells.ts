@@ -1,4 +1,9 @@
-import { chunkCoordinate, chunkKey, emptySeenChunk, markCellSeen, parseChunkKey } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, parseChunkKey, UNSEEN_CELL } from '@multiverse-kiln/shared';
+
+/**
+ * Bytes in a chunk's seen cells: one bit per cell, in the order of cellIndexInChunk()
+ */
+export const SEEN_CHUNK_BYTES = (CHUNK_SIZE * CHUNK_SIZE) / 8;
 
 /**
  * The cells a group has seen in one chunk of an area's map
@@ -10,14 +15,25 @@ export interface AreaSeenChunk
 	chunkRow: number;
 
 	/**
-	 * One bit per cell (see shared/src/seen.ts)
+	 * One bit per cell (SEEN_CHUNK_BYTES)
 	 */
 	cells: Uint8Array;
 }
 
 /**
+ * A cell of a map
+ */
+export interface SeenCell
+{
+	column: number;
+	row: number;
+}
+
+/**
  * The cells a group has seen in every area, part of its world state, and which chunks have changed
  * since they were last saved
+ *
+ * A chunk with no cell seen isn't kept
  */
 export class SeenCells
 {
@@ -27,18 +43,28 @@ export class SeenCells
 	private readonly areas = new Map<string, Map<string, Uint8Array>>();
 
 	/**
+	 * How many cells of each area have been seen, by area ID
+	 */
+	private readonly counts = new Map<string, number>();
+
+	/**
 	 * The chunks seen since the last save, by area ID, then by chunkKey()
 	 */
 	private readonly changed = new Map<string, Set<string>>();
 
 	/**
-	 * @param saved The chunks saved before
+	 * Adds the chunks saved before
+	 *
+	 * @param saved The chunks
 	 */
-	constructor(saved: Iterable<AreaSeenChunk> = [])
+	load(saved: Iterable<AreaSeenChunk>): void
 	{
 		for (const chunk of saved)
 		{
-			this.chunksOf(chunk.areaId).set(chunkKey(chunk.chunkColumn, chunk.chunkRow), Uint8Array.from(chunk.cells));
+			const bits = Uint8Array.from(chunk.cells);
+
+			this.chunksOf(chunk.areaId).set(chunkKey(chunk.chunkColumn, chunk.chunkRow), bits);
+			this.counts.set(chunk.areaId, this.count(chunk.areaId) + countBits(bits));
 		}
 	}
 
@@ -47,53 +73,83 @@ export class SeenCells
 	 *
 	 * @param areaId The area's ID
 	 * @param cells The cells, as "column,row" (visionKey)
+	 * @return The cells that hadn't been seen before
 	 */
-	mark(areaId: string, cells: Iterable<string>): void
+	mark(areaId: string, cells: Iterable<string>): SeenCell[]
 	{
 		const chunks = this.chunksOf(areaId);
+		const fresh: SeenCell[] = [];
 
 		for (const cell of cells)
 		{
 			const [column, row] = cell.split(',').map(Number);
 			const key = chunkKey(chunkCoordinate(column), chunkCoordinate(row));
+			const index = cellIndexInChunk(column, row);
 			let bits = chunks.get(key);
 
 			if (!bits)
 			{
-				bits = emptySeenChunk();
+				bits = new Uint8Array(SEEN_CHUNK_BYTES);
 				chunks.set(key, bits);
 			}
 
-			if (markCellSeen(bits, column, row))
+			if (!isBitSet(bits, index))
 			{
+				bits[index >> 3] |= 1 << (index & 7);
 				this.changedIn(areaId).add(key);
+				fresh.push({ column, row });
 			}
 		}
+
+		this.counts.set(areaId, this.count(areaId) + fresh.length);
+
+		return(fresh);
 	}
 
 	/**
-	 * The seen cells of some chunks of an area
+	 * Whether a cell of an area has been seen
 	 *
 	 * @param areaId The area's ID
-	 * @param chunkKeys The chunks, by chunkKey()
-	 * @return Those with any cell seen
+	 * @param column The cell's column
+	 * @param row The cell's row
+	 * @return True when it has
 	 */
-	get(areaId: string, chunkKeys: Iterable<string>): AreaSeenChunk[]
+	has(areaId: string, column: number, row: number): boolean
 	{
-		const chunks = this.areas.get(areaId);
-		const found: AreaSeenChunk[] = [];
+		const bits = this.areas.get(areaId)?.get(chunkKey(chunkCoordinate(column), chunkCoordinate(row)));
 
-		for (const key of chunkKeys)
+		return((bits !== undefined) && isBitSet(bits, cellIndexInChunk(column, row)));
+	}
+
+	/**
+	 * How many cells of an area have been seen, counting any a smaller map has since cut off
+	 *
+	 * @param areaId The area's ID
+	 * @return The number of cells
+	 */
+	count(areaId: string): number
+	{
+		return(this.counts.get(areaId) ?? 0);
+	}
+
+	/**
+	 * A chunk's cells as the group knows them: each cell it hasn't seen is UNSEEN_CELL
+	 *
+	 * @param areaId The area's ID
+	 * @param key The chunk, by chunkKey()
+	 * @param cells The chunk's cells, or null when every cell is the default tile
+	 * @return The cells; null when every cell is the default tile and has been seen
+	 */
+	mask(areaId: string, key: string, cells: readonly number[] | null): number[] | null
+	{
+		const bits = this.areas.get(areaId)?.get(key);
+
+		if (bits && (countBits(bits) === (CHUNK_SIZE * CHUNK_SIZE)))
 		{
-			const bits = chunks?.get(key);
-
-			if (bits)
-			{
-				found.push(toChunk(areaId, key, bits));
-			}
+			return((cells ? [...cells] : null));
 		}
 
-		return(found);
+		return(Array.from({ length: CHUNK_SIZE * CHUNK_SIZE }, (_value, index) => ((bits && isBitSet(bits, index)) ? (cells?.[index] ?? DEFAULT_TILE_CELL) : UNSEEN_CELL)));
 	}
 
 	/**
@@ -104,6 +160,7 @@ export class SeenCells
 	forget(areaId: string): void
 	{
 		this.areas.delete(areaId);
+		this.counts.delete(areaId);
 		this.changed.delete(areaId);
 	}
 
@@ -124,7 +181,11 @@ export class SeenCells
 
 				if (bits)
 				{
-					taken.push(toChunk(areaId, key, Uint8Array.from(bits)));
+					taken.push({
+						areaId,
+						...parseChunkKey(key),
+						cells: Uint8Array.from(bits)
+					});
 				}
 			}
 		}
@@ -190,18 +251,35 @@ export class SeenCells
 }
 
 /**
- * A chunk's seen cells with where they are
+ * Whether a cell's bit is set
  *
- * @param areaId The area's ID
- * @param key The chunk, by chunkKey()
- * @param cells The seen cells
- * @return The chunk
+ * @param bits A chunk's seen cells
+ * @param index The cell's index in its chunk (cellIndexInChunk)
+ * @return True when it is
  */
-function toChunk(areaId: string, key: string, cells: Uint8Array): AreaSeenChunk
+function isBitSet(bits: Uint8Array, index: number): boolean
 {
-	return({
-		areaId,
-		...parseChunkKey(key),
-		cells
-	});
+	return((bits[index >> 3] & (1 << (index & 7))) !== 0);
+}
+
+/**
+ * How many cells of a chunk have been seen
+ *
+ * @param bits The chunk's seen cells
+ * @return The number of bits set
+ */
+function countBits(bits: Uint8Array): number
+{
+	let count = 0;
+
+	for (let byte of bits)
+	{
+		while (byte !== 0)
+		{
+			count += byte & 1;
+			byte >>= 1;
+		}
+	}
+
+	return(count);
 }

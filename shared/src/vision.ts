@@ -62,8 +62,8 @@ export interface VisionCell
 }
 
 /**
- * An area's tiles as vision sees them. A void cell is nothing at all, so it is seen past, as is a cell
- * holding a tile the map doesn't know
+ * An area's tiles as vision sees them. A void cell is nothing at all, so it is seen past, as are a cell
+ * holding a tile the map doesn't know and a cell the client hasn't been sent (UNSEEN_CELL)
  *
  * @param tiles The area's tiles
  * @param loopsEastWest Whether the area loops east-west

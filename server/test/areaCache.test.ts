@@ -1,7 +1,8 @@
 import assert from 'assert';
-import { CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, IMPASSABLE_COST, type AreaChunk } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, IMPASSABLE_COST, UNSEEN_CELL, visionKey, type AreaChunk } from '@multiverse-kiln/shared';
 
 import type { LoadedArea } from '../src/db/areaRepo.js';
+import { SeenCells } from '../src/logic/seenCells.js';
 import { toAreaPayload, AreaCache } from '../src/rooms/areaCache.js';
 
 const AREA_ID = 'area';
@@ -233,5 +234,39 @@ describe('AreaCache', () =>
 
 		assert.deepStrictEqual(payload.chunks.map((chunk) => chunkKey(chunk.chunkColumn, chunk.chunkRow)), [chunkKey(0, 0)]);
 		assert.strictEqual(toAreaPayload(area, []).chunks.length, 0);
+		assert.strictEqual(payload.exploredCells, null);
+	});
+
+	it('puts only the cells and links a group has seen in an area\'s payload', async () =>
+	{
+		const database = new FakeDatabase();
+		const loadedArea = await database.cache.load(AREA_ID);
+		const loading = database.cache.loadChunks(AREA_ID, [chunkKey(0, 0), chunkKey(1, 0)]);
+
+		database.finishReads();
+		await loading;
+
+		assert.ok(loadedArea);
+
+		const link = { targetAreaId: 'elsewhere', targetColumn: 0, targetRow: 0, mode: 'automatic' as const, requiresWholeGroup: false };
+		const area = {
+			...loadedArea,
+			loaded: {
+				...loadedArea.loaded,
+				links: [{ ...link, column: 0, row: 0 }, { ...link, column: 5, row: 0 }]
+			}
+		};
+		const seen = new SeenCells();
+
+		seen.mark(AREA_ID, [visionKey(0, 0), visionKey(1, 0)]);
+
+		const payload = toAreaPayload(area, [chunkKey(0, 0), chunkKey(1, 0)], seen);
+		const [first, second] = payload.chunks;
+
+		assert.deepStrictEqual(payload.chunks.map((chunk) => chunkKey(chunk.chunkColumn, chunk.chunkRow)), [chunkKey(0, 0), chunkKey(1, 0)], 'an unseen chunk of the default tile is still sent, as unseen');
+		assert.deepStrictEqual(first.cells.slice(0, 3), [FOREST, DEFAULT_TILE_CELL, UNSEEN_CELL]);
+		assert.ok(second.cells.every((value) => (value === UNSEEN_CELL)));
+		assert.deepStrictEqual(payload.links, [{ column: 0, row: 0, mode: 'automatic' }]);
+		assert.strictEqual(payload.exploredCells, 2);
 	});
 });

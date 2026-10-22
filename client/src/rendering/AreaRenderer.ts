@@ -1,8 +1,9 @@
 import type Phaser from 'phaser';
-import { CHUNK_SIZE, chunkCoordinate, chunkKey, GRID_CELL_SIZE, isInBounds, positiveModulo, tileIdAt, type AreaPayload, type AreaTiles } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, chunkCoordinate, chunkKey, GRID_CELL_SIZE, isInBounds, parseChunkKey, positiveModulo, tileIdAt, type AreaPayload, type AreaTiles } from '@multiverse-kiln/shared';
 
 /**
- * Color of a void cell, and of a cell whose tile the client wasn't told about
+ * Color of a void cell, of a cell whose tile the client wasn't told about, and of a cell the group
+ * hasn't seen (UNSEEN_CELL)
  */
 const VOID_COLOR = 0x000000;
 
@@ -32,6 +33,11 @@ const EMPTY_INDEX = -1;
 interface Piece
 {
 	map: Phaser.Tilemaps.Tilemap;
+
+	/**
+	 * The layer its tiles are drawn on, so single cells can be redrawn in place
+	 */
+	layer: Phaser.Tilemaps.TilemapLayer;
 
 	/**
 	 * The chunks its cells came from, by chunkKey(), so it can be redrawn when one of them changes
@@ -177,6 +183,37 @@ export class AreaRenderer
 	}
 
 	/**
+	 * Redraws single cells whose tiles have changed, in place, in every piece showing them; cheaper than
+	 * refreshChunks() for a few cells, such as those a group has just seen
+	 *
+	 * @param cells The cells, on the map
+	 */
+	refreshCells(cells: readonly { column: number; row: number }[]): void
+	{
+		const { bounds, loopsEastWest, loopsNorthSouth } = this.area;
+		const columns = (bounds.maxColumn - bounds.minColumn) + 1;
+		const rows = (bounds.maxRow - bounds.minRow) + 1;
+
+		for (const [key, piece] of this.pieces)
+		{
+			const { chunkColumn, chunkRow } = parseChunkKey(key);
+			const firstColumn = chunkColumn * CHUNK_SIZE;
+			const firstRow = chunkRow * CHUNK_SIZE;
+
+			for (const { column, row } of cells)
+			{
+				for (const drawnRow of copiesIn(row, firstRow, rows, loopsNorthSouth))
+				{
+					for (const drawnColumn of copiesIn(column, firstColumn, columns, loopsEastWest))
+					{
+						piece.layer.putTileAt(this.indexAt(drawnColumn, drawnRow, piece.chunks), drawnColumn - firstColumn, drawnRow - firstRow);
+					}
+				}
+			}
+		}
+	}
+
+	/**
 	 * Removes everything this has drawn, and its texture
 	 */
 	destroy(): void
@@ -292,7 +329,7 @@ export class AreaRenderer
 		layer.putTilesAt(indexes, 0, 0);
 		layer.setDepth(-1);
 
-		return({ map, chunks });
+		return({ map, layer, chunks });
 	}
 
 	/**
@@ -320,6 +357,35 @@ export class AreaRenderer
 
 		return(((tileId === undefined) ? this.voidIndex : (this.tileIndexes.get(tileId) ?? this.voidIndex)));
 	}
+}
+
+/**
+ * Where a column or row of the map is drawn within one piece: itself, or on an area that loops, each
+ * copy of it the piece shows
+ *
+ * @param value The column or row, on the map
+ * @param first The piece's first column or row
+ * @param period How many columns or rows the area has
+ * @param loops Whether the area loops along this axis
+ * @return The columns or rows the piece draws it at
+ */
+function copiesIn(value: number, first: number, period: number, loops: boolean): number[]
+{
+	const last = first + CHUNK_SIZE - 1;
+
+	if (!loops)
+	{
+		return((((value >= first) && (value <= last)) ? [value] : []));
+	}
+
+	const copies: number[] = [];
+
+	for (let copy = first + positiveModulo(value - first, period); copy <= last; copy += period)
+	{
+		copies.push(copy);
+	}
+
+	return(copies);
 }
 
 /**

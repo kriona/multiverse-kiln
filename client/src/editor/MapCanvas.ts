@@ -388,6 +388,7 @@ export function editorAreaPayload(area: EditorArea, tiles: readonly EditorTile[]
 			visionCost: tile.visionCost
 		})),
 		chunks: [],
-		links: []
+		links: [],
+		exploredCells: null
 	});
 }

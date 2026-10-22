@@ -383,14 +383,51 @@ function activate(loaded: LoadedArea, chunks: Map<string, number[]>, loadedChunk
 }
 
 /**
+ * What a group remembers of the areas, in a group's room: the cells it has seen (see SeenCells). Its
+ * clients are sent only those
+ */
+export interface AreaMemory
+{
+	/**
+	 * A chunk's cells with each cell the group hasn't seen as UNSEEN_CELL
+	 *
+	 * @param areaId The area's ID
+	 * @param key The chunk, by chunkKey()
+	 * @param cells The chunk's cells, or null when every cell is the default tile
+	 * @return The cells; null when every cell is the default tile and has been seen
+	 */
+	mask(areaId: string, key: string, cells: readonly number[] | null): number[] | null;
+
+	/**
+	 * Whether the group has seen a cell
+	 *
+	 * @param areaId The area's ID
+	 * @param column The cell's column
+	 * @param row The cell's row
+	 * @return True when it has
+	 */
+	has(areaId: string, column: number, row: number): boolean;
+
+	/**
+	 * How many cells of an area the group has seen
+	 *
+	 * @param areaId The area's ID
+	 * @return The number of cells
+	 */
+	count(areaId: string): number;
+}
+
+/**
  * What a client is told about an area: its settings, tiles and some chunks of its map, and where its
- * links are but not where they lead
+ * links are but not where they lead. In a group's room, only what the group has seen of the map
  *
  * @param area The area
- * @param chunkKeys The loaded chunks to include, by chunkKey(); chunks that are all the default tile are left out
+ * @param chunkKeys The loaded chunks to include, by chunkKey(); chunks that are all the default tile
+ * (and all seen) are left out
+ * @param memory What the group has seen, in a group's room
  * @return The payload
  */
-export function toAreaPayload(area: ActiveArea, chunkKeys: Iterable<string>): AreaPayload
+export function toAreaPayload(area: ActiveArea, chunkKeys: Iterable<string>, memory?: AreaMemory): AreaPayload
 {
 	const { loaded } = area;
 
@@ -412,13 +449,16 @@ export function toAreaPayload(area: ActiveArea, chunkKeys: Iterable<string>): Ar
 			color: tile.color,
 			visionCost: tile.visionCost
 		})),
-		chunks: toChunkUpdates(area, chunkKeys)
+		chunks: toChunkUpdates(area, chunkKeys, memory)
 			.filter((chunk): chunk is AreaChunk => (chunk.cells !== null)),
-		links: loaded.links.map((link) => ({
-			column: link.column,
-			row: link.row,
-			mode: link.mode
-		}))
+		links: loaded.links
+			.filter((link) => (memory?.has(loaded.area.id, link.column, link.row) ?? true))
+			.map((link) => ({
+				column: link.column,
+				row: link.row,
+				mode: link.mode
+			})),
+		exploredCells: (memory ? memory.count(loaded.area.id) : null)
 	});
 }
 
@@ -427,14 +467,18 @@ export function toAreaPayload(area: ActiveArea, chunkKeys: Iterable<string>): Ar
  *
  * @param area The area
  * @param chunkKeys The chunks, by chunkKey()
- * @return Each chunk, with null cells when it is all the default tile
+ * @param memory What the group has seen, in a group's room
+ * @return Each chunk, with null cells when it is all the default tile (and all seen)
  */
-export function toChunkUpdates(area: ActiveArea, chunkKeys: Iterable<string>): AreaChunkUpdate[]
+export function toChunkUpdates(area: ActiveArea, chunkKeys: Iterable<string>, memory?: AreaMemory): AreaChunkUpdate[]
 {
 	return([...chunkKeys].map((key) =>
 	{
-		const cells = area.chunks.get(key);
+		const cells = (area.chunks.get(key) ?? null);
 
-		return({ ...parseChunkKey(key), cells: (cells ? [...cells] : null) });
+		return({
+			...parseChunkKey(key),
+			cells: (memory ? memory.mask(area.loaded.area.id, key, cells) : (cells ? [...cells] : null))
+		});
 	}));
 }

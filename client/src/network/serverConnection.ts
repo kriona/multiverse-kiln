@@ -1,8 +1,6 @@
 import { Client, type Room } from '@colyseus/sdk';
 import { BROWSER_ID_PATH, GAME_ROOM_NAME, GameState, LOBBY_ROOM_NAME, LobbyState, ServerMessageType, SESSION_ROOM_NAME, UNIVERSES_PATH, type GameJoinOptions, type LobbyJoinOptions, type UniverseDetails, type UniverseListPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
 
-import { SeenCellsStore } from './SeenCellsStore';
-
 /**
  * How many universes Home asks for at a time
  */
@@ -40,11 +38,6 @@ export interface MapConnection<R extends MapRoom>
 	 * The area the player was in on joining; later areas arrive as ServerMessageType.Area
 	 */
 	area: AreaPayload;
-
-	/**
-	 * What the group has seen, in a group's room; a lobby remembers nothing
-	 */
-	seen?: SeenCellsStore;
 }
 
 /**
@@ -212,7 +205,5 @@ export async function joinGroup(client: Client, groupId: string, characterId: st
 {
 	const options: GameJoinOptions = { groupId, characterId };
 	const room = await client.joinOrCreate<GameState>(GAME_ROOM_NAME, options, GameState);
-	const seen = new SeenCellsStore(room);
-
-	return({ room, seen, ...(await waitForArrival(room)) });
+	return({ room, ...(await waitForArrival(room)) });
 }

@@ -1,10 +1,10 @@
 import assert from 'assert';
-import { emptySeenChunk } from '@multiverse-kiln/shared';
 
 import { deleteArea } from '../../src/db/areaRepo.js';
 import { leaveGroup } from '../../src/db/groupRepo.js';
 import { loadOrCreatePlayerByName } from '../../src/db/playerRepo.js';
 import { loadSeenChunks, saveSeenChunks } from '../../src/db/worldStateRepo.js';
+import { SEEN_CHUNK_BYTES } from '../../src/logic/seenCells.js';
 import { addCharacter, addGroup, addPlayableUniverse, type PlayableUniverse } from './fixtures.js';
 
 /**
@@ -15,7 +15,7 @@ import { addCharacter, addGroup, addPlayableUniverse, type PlayableUniverse } fr
  */
 function cellsWith(bytes: Record<number, number>): Uint8Array
 {
-	const cells = emptySeenChunk();
+	const cells = new Uint8Array(SEEN_CHUNK_BYTES);
 
 	for (const [index, value] of Object.entries(bytes))
 	{

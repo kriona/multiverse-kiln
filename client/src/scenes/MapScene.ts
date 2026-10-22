@@ -1,10 +1,9 @@
 import Phaser from 'phaser';
 import { Callbacks } from '@colyseus/sdk';
-import { chunkKey, createVisionMap, daylight, GRID_CELL_SIZE, isInBounds, MessageType, nearestCopy, partOfDay, PATCH_INTERVAL_MS, PLAYER_RADIUS, positiveModulo, secondOfDay, ServerMessageType, tileIdAt, VIEW_COLUMNS, VIEW_HEIGHT, VIEW_ROWS, VIEW_WIDTH, visibleCells, visionBudget, visionKey, type ChunksPayload, type MovePayload, type Player, type AreaPayload, type VisionMap } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, chunkCoordinate, chunkKey, createVisionMap, daylight, GameServerMessageType, GRID_CELL_SIZE, isInBounds, MessageType, nearestCopy, partOfDay, PATCH_INTERVAL_MS, PLAYER_RADIUS, positiveModulo, secondOfDay, ServerMessageType, tileIdAt, UNSEEN_CELL, VIEW_COLUMNS, VIEW_HEIGHT, VIEW_ROWS, VIEW_WIDTH, visibleCells, visionBudget, visionKey, type CellsSeenPayload, type CellValue, type ChunksPayload, type MovePayload, type Player, type AreaPayload, type VisionMap } from '@multiverse-kiln/shared';
 
 import { MovementKeys } from '../input/MovementKeys';
 import { t } from '../localization';
-import type { SeenCellsStore } from '../network/SeenCellsStore';
 import type { GameRoom, MapConnection, MapRoom } from '../network/serverConnection';
 import { PositionBuffer, type Point } from '../rendering/PositionBuffer';
 import { AreaRenderer } from '../rendering/AreaRenderer';
@@ -196,9 +195,9 @@ export class MapScene extends Phaser.Scene
 	private chunkRevision = 0;
 
 	/**
-	 * What the group has seen, in a group's room; undefined in a lobby, which remembers nothing
+	 * How many cells of the area the group has seen, in a group's room; null in a lobby, which remembers nothing
 	 */
-	private seen?: SeenCellsStore;
+	private exploredCells: number | null = null;
 
 	constructor()
 	{
@@ -227,7 +226,6 @@ export class MapScene extends Phaser.Scene
 		this.night = undefined;
 		this.fog = undefined;
 		this.fogKey = '';
-		this.seen = data.connection.seen;
 	}
 
 	/**
@@ -259,14 +257,11 @@ export class MapScene extends Phaser.Scene
 			this.receiveChunks(payload);
 		}));
 
-		if (this.seen)
+		// Only a group's room sends it
+		this.unbinds.push(this.room.onMessage(GameServerMessageType.CellsSeen, (payload: CellsSeenPayload) =>
 		{
-			// Draws the fog again with what the group saw before
-			this.unbinds.push(this.seen.onChange(() =>
-			{
-				this.fogKey = '';
-			}));
-		}
+			this.receiveCellsSeen(payload);
+		}));
 
 		if (this.input.keyboard)
 		{
@@ -377,8 +372,9 @@ export class MapScene extends Phaser.Scene
 
 	/**
 	 * Draws fog over the cells around the player that nobody they see with can see: the player alone in
-	 * a lobby, and in a group's room every member in the area, who are all the players it shows. Drawn
-	 * again only when where they stand, how far they see or the map changes
+	 * a lobby, and in a group's room every member in the area, who are all the players it shows. Looks
+	 * from where each is drawn (drawnCellOf), and draws again only when that, how far they see or the map
+	 * changes
 	 */
 	private updateFog(): void
 	{
@@ -389,32 +385,24 @@ export class MapScene extends Phaser.Scene
 			return;
 		}
 
-		const lookers: Player[] = [];
+		const sights: { cell: { column: number; row: number }; budget: number }[] = [];
 
 		this.room.state.players.forEach((player, playerId) =>
 		{
 			if ((playerId === this.ownPlayerId) || (this.sharesVision && !player.ghost))
 			{
-				lookers.push(player);
+				const cell = this.drawnCellOf(playerId, player);
+
+				sights.push({
+					cell,
+					budget: visionBudget(this.secondOfDayAt(cell), player.darkvision)
+				});
 			}
 		});
 
-		const sights = lookers.map((player) =>
-		{
-			const cell = this.cellOf(player);
-
-			return({
-				cell,
-				budget: visionBudget(this.secondOfDayAt(cell), player.darkvision)
-			});
-		});
-		// Around where the player is drawn, which the camera follows: past a looping edge that is a whole
-		// map away from their position on the map
-		const drawn = this.players.get(this.ownPlayerId)?.shape ?? own;
-		const center = {
-			column: Math.floor(drawn.x / GRID_CELL_SIZE),
-			row: Math.floor(drawn.y / GRID_CELL_SIZE)
-		};
+		// The camera follows where the player is drawn: past a looping edge, a whole map away from their
+		// position on the map
+		const center = this.drawnCellOf(this.ownPlayerId, own);
 		const key = [
 			this.area.areaId,
 			this.chunkRevision,
@@ -439,14 +427,6 @@ export class MapScene extends Phaser.Scene
 			{
 				visible.add(cellKey);
 			}
-		}
-
-		// The server marks the same cells; marking them here too shows them as seen without waiting for it
-		for (const cellKey of visible)
-		{
-			const [column, row] = cellKey.split(',').map(Number);
-
-			this.seen?.mark(this.area.areaId, column, row);
 		}
 
 		this.drawFog(center, visible);
@@ -485,10 +465,7 @@ export class MapScene extends Phaser.Scene
 
 				if (isInBounds(bounds, mapColumn, mapRow) && !visible.has(visionKey(mapColumn, mapRow)))
 				{
-					// A lobby remembers nothing, so it only dims what is out of sight
-					const isSeen = (this.seen?.has(this.area.areaId, mapColumn, mapRow) ?? true);
-
-					fog.fillStyle(FOG_COLOR, (isSeen ? FOG_ALPHA : UNSEEN_ALPHA));
+					fog.fillStyle(FOG_COLOR, (this.isUnseen(mapColumn, mapRow) ? UNSEEN_ALPHA : FOG_ALPHA));
 					fog.fillRect(column * GRID_CELL_SIZE, row * GRID_CELL_SIZE, GRID_CELL_SIZE, GRID_CELL_SIZE);
 				}
 			}
@@ -504,6 +481,37 @@ export class MapScene extends Phaser.Scene
 	private get sharesVision(): boolean
 	{
 		return((this.room.state.clock as number | undefined) !== undefined);
+	}
+
+	/**
+	 * The cell a player is drawn in, which trails their position from the server by INTERPOLATION_DELAY_MS.
+	 * The fog follows it, so it stays with the picture, and the tiles of cells the group sees for the first
+	 * time have usually arrived from the server before the fog uncovers them
+	 *
+	 * @param playerId The player's ID
+	 * @param player The player's synced state, for a player not drawn yet
+	 * @return The cell; past a looping edge, off the map, next to the player this window controls
+	 */
+	private drawnCellOf(playerId: string, player: Player): { column: number; row: number }
+	{
+		const drawn = this.players.get(playerId)?.shape ?? player;
+
+		return({
+			column: Math.floor(drawn.x / GRID_CELL_SIZE),
+			row: Math.floor(drawn.y / GRID_CELL_SIZE)
+		});
+	}
+
+	/**
+	 * Whether a cell's tile hasn't been sent because the group hasn't seen it, in a group's room
+	 *
+	 * @param column The cell's column, on the map
+	 * @param row The cell's row, on the map
+	 * @return True when it holds UNSEEN_CELL
+	 */
+	private isUnseen(column: number, row: number): boolean
+	{
+		return(this.chunks.get(chunkKey(chunkCoordinate(column), chunkCoordinate(row)))?.[cellIndexInChunk(column, row)] === UNSEEN_CELL);
 	}
 
 	/**
@@ -572,7 +580,8 @@ export class MapScene extends Phaser.Scene
 	{
 		this.area = area;
 		this.chunks = new Map(area.chunks.map((chunk) => [chunkKey(chunk.chunkColumn, chunk.chunkRow), chunk.cells]));
-		this.manualLinks = new Set(area.links.filter((link) => (link.mode === 'manual')).map((link) => `${link.column},${link.row}`));
+		this.exploredCells = area.exploredCells;
+		this.manualLinks =new Set(area.links.filter((link) => (link.mode === 'manual')).map((link) => `${link.column},${link.row}`));
 		this.visionMap = createVisionMap(
 			{
 				bounds: area.bounds,
@@ -621,6 +630,45 @@ export class MapScene extends Phaser.Scene
 
 		this.chunkRevision++;
 		this.areaRenderer?.refreshChunks(keys);
+	}
+
+	/**
+	 * Takes in the tiles of cells the group has just seen for the first time, with the links on them, and
+	 * draws them. A cell in a chunk this window doesn't hold is left for the chunk, which carries it
+	 *
+	 * @param payload The cells
+	 */
+	private receiveCellsSeen(payload: CellsSeenPayload): void
+	{
+		if (payload.areaId !== this.area.areaId)
+		{
+			return;
+		}
+
+		const changed: CellValue[] = [];
+
+		for (const cell of payload.cells)
+		{
+			const chunk = this.chunks.get(chunkKey(chunkCoordinate(cell.column), chunkCoordinate(cell.row)));
+
+			if (chunk)
+			{
+				chunk[cellIndexInChunk(cell.column, cell.row)] = cell.value;
+				changed.push(cell);
+			}
+		}
+
+		for (const link of payload.links)
+		{
+			if (link.mode === 'manual')
+			{
+				this.manualLinks.add(`${link.column},${link.row}`);
+			}
+		}
+
+		this.exploredCells = payload.exploredCells;
+		this.chunkRevision++;
+		this.areaRenderer?.refreshCells(changed);
 	}
 
 	/**
@@ -950,16 +998,16 @@ export class MapScene extends Phaser.Scene
 	 */
 	private exploredShare(): number | undefined
 	{
-		if (!this.seen)
+		if (this.exploredCells === null)
 		{
 			return(undefined);
 		}
 
 		const { bounds } = this.area;
 		const cells = ((bounds.maxColumn - bounds.minColumn) + 1) * ((bounds.maxRow - bounds.minRow) + 1);
-		const seen = this.seen.count(this.area.areaId, (column, row) => isInBounds(bounds, column, row));
 
-		return(Math.floor((seen / cells) * 100) / 100);
+		// Cells seen before a smaller map cut them off still count, so the share can't pass the whole area
+		return(Math.min(Math.floor((this.exploredCells / cells) * 100) / 100, 1));
 	}
 
 	/**

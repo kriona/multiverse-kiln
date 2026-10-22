@@ -66,27 +66,50 @@ export enum GameServerMessageType
 	Notice = 'notice',
 
 	/**
-	 * The cells the group has seen in chunks the client has just been sent, after the Area or Chunks
-	 * message carrying them (payload: SeenPayload)
+	 * The group has seen cells of the client's area for the first time: their tiles, which were sent as
+	 * UNSEEN_CELL until now (payload: CellsSeenPayload)
 	 */
-	Seen = 'seen'
+	CellsSeen = 'cellsSeen'
 }
 
 /**
- * Payload of GameServerMessageType.Seen
+ * A cell of an area's map and what it holds
  */
-export interface SeenPayload
+export interface CellValue
 {
+	column: number;
+	row: number;
+
+	/**
+	 * A tile ID, DEFAULT_TILE_CELL or VOID_CELL
+	 */
+	value: number;
+}
+
+/**
+ * Payload of GameServerMessageType.CellsSeen
+ */
+export interface CellsSeenPayload
+{
+	/**
+	 * The area the cells belong to; a client whose player has since moved to another area ignores them
+	 */
 	areaId: string;
 
 	/**
-	 * The chunks the group has seen any cell of, with the seen cells encoded by encodeSeenChunk()
+	 * The cells, leaving out those in chunks not yet loaded on the server, which arrive with their chunk
 	 */
-	chunks: {
-		chunkColumn: number;
-		chunkRow: number;
-		cells: string;
-	}[];
+	cells: CellValue[];
+
+	/**
+	 * The links on the cells
+	 */
+	links: AreaLinkCell[];
+
+	/**
+	 * How many cells of the area the group has seen now (AreaPayload.exploredCells)
+	 */
+	exploredCells: number;
 }
 
 /**
@@ -251,8 +274,19 @@ export interface AreaPayload
 	defaultTileId: number;
 
 	tiles: AreaTile[];
+
+	/**
+	 * In a group's room, every cell the group hasn't seen holds UNSEEN_CELL, and links on them are left
+	 * out; they arrive as GameServerMessageType.CellsSeen once the group sees them
+	 */
 	chunks: AreaChunk[];
+
 	links: AreaLinkCell[];
+
+	/**
+	 * In a group's room, how many cells of the area the group has seen; null in a lobby, which remembers nothing
+	 */
+	exploredCells: number | null;
 }
 
 /**

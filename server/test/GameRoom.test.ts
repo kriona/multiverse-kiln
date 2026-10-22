@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { decodeSeenChunk, GAME_ROOM_NAME, GameMessageType, GameServerMessageType, GameState, GRID_CELL_SIZE, GROUP_START_SECONDS, isCellSeen, MessageType, NoticeReason, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, WALK_SECONDS_PER_SQUARE, type AreaPayload, type GameJoinOptions, type NoticePayload, type Player, type SeenPayload, type WelcomePayload } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, DEFAULT_TILE_CELL, GAME_ROOM_NAME, GameMessageType, GameServerMessageType, GameState, GRID_CELL_SIZE, GROUP_START_SECONDS, MessageType, NoticeReason, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, UNSEEN_CELL, WALK_SECONDS_PER_SQUARE, type AreaPayload, type CellsSeenPayload, type GameJoinOptions, type NoticePayload, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { scheduleCharacterDeletion } from '../src/db/characterRepo.js';
 import { pool } from '../src/db/client.js';
@@ -14,6 +14,7 @@ import { loadSeenChunks } from '../src/db/worldStateRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
 import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
 import { cellCenter } from '../src/logic/movement.js';
+import { SeenCells } from '../src/logic/seenCells.js';
 import { characterChanges } from '../src/players/characterChanges.js';
 import { groupChanges } from '../src/players/groupChanges.js';
 import { onlinePlayers } from '../src/players/onlinePlayers.js';
@@ -42,14 +43,15 @@ interface Member
 }
 
 /**
- * A client-side room, and the Welcome, Area and first Seen payloads once they arrive
+ * A client-side room, the Welcome and first Area payloads once they arrive, and the cells the group
+ * has seen for the first time since it joined (GameServerMessageType.CellsSeen), by "column,row"
  */
 interface JoinedWindow
 {
 	client: ClientRoom<unknown, GameState>;
 	welcome: Promise<WelcomePayload>;
 	area: Promise<AreaPayload>;
-	seen: Promise<SeenPayload>;
+	cellsSeen: Map<string, number>;
 }
 
 let universe: PlayableUniverse;
@@ -220,14 +222,19 @@ async function joinAs(room: GameRoom, browserId: string, member: Member): Promis
 	{
 		client.onMessage(ServerMessageType.Area, resolve);
 	});
-	const seen = new Promise<SeenPayload>((resolve) =>
+	const cellsSeen = new Map<string, number>();
+
+	client.onMessage(GameServerMessageType.CellsSeen, (payload: CellsSeenPayload) =>
 	{
-		client.onMessage(GameServerMessageType.Seen, resolve);
+		for (const { column, row, value } of payload.cells)
+		{
+			cellsSeen.set(`${column},${row}`, value);
+		}
 	});
 
 	await client.waitForInitialState();
 
-	return({ client, welcome, area, seen });
+	return({ client, welcome, area, cellsSeen });
 }
 
 /**
@@ -478,35 +485,36 @@ describe('GameRoom', () =>
 		assert.strictEqual(room.state.players.get(adaId)?.darkvision, true);
 	});
 
-	it('remembers what the group has seen, saves it when everyone has left, and sends it back on returning', async () =>
+	it('sends only the cells the group has seen, each as it is first seen, and remembers them after everyone has left', async () =>
 	{
 		await updateAreaSettings(universe.fieldAreaId, { passageOfTime: 'always_noon', faerieMorning: null });
 
 		const room = await createGameRoom();
 		const window = await joinFromBrowser(room, browserIdA, 'Ada');
+		const area = await window.area;
 
-		assert.deepStrictEqual((await window.seen).chunks, [], 'the group hasn\'t seen anything yet');
+		assert.strictEqual(area.exploredCells, 0);
+		assert.ok(area.chunks[0].cells.every((value) => (value === UNSEEN_CELL)), 'the group hasn\'t seen anything yet');
 
 		placeOnCell(room.state.players.get(playerIdOf(room, window.client)) as Player, 3, 3);
-
-		for (let i = 0; i < 3; i++)
-		{
-			await room.waitForNextTimestep();
-		}
+		await waitUntil(() => window.cellsSeen.has('20,3'));
+		assert.strictEqual(window.cellsSeen.get('3,3'), DEFAULT_TILE_CELL);
+		assert.strictEqual(window.cellsSeen.has('31,17'), false, 'too far to see');
 
 		await window.client.leave();
 		await waitUntil(async () => ((await loadSeenChunks(groupId)).length > 0));
 
-		const [saved] = await loadSeenChunks(groupId);
+		const saved = new SeenCells();
 
-		assert.strictEqual(saved.areaId, universe.fieldAreaId);
-		assert.ok(isCellSeen(saved.cells, 3, 3));
-		assert.ok(isCellSeen(saved.cells, 20, 3));
+		saved.load(await loadSeenChunks(groupId));
+		assert.ok(saved.has(universe.fieldAreaId, 3, 3) && saved.has(universe.fieldAreaId, 20, 3));
 
 		const again = await joinFromBrowser(await createGameRoom(), browserIdA);
-		const [chunk] = (await again.seen).chunks;
+		const { chunks, exploredCells } = await again.area;
 
-		assert.deepStrictEqual(decodeSeenChunk(chunk.cells), saved.cells);
+		assert.strictEqual(exploredCells, saved.count(universe.fieldAreaId));
+		assert.strictEqual(chunks[0].cells[cellIndexInChunk(20, 3)], DEFAULT_TILE_CELL);
+		assert.strictEqual(chunks[0].cells[cellIndexInChunk(31, 17)], UNSEEN_CELL);
 	});
 
 	it('does not use the database while players move', async () =>

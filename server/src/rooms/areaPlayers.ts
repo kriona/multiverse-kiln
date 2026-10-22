@@ -11,7 +11,7 @@ import { isGroupTogether } from '../logic/groupLinks.js';
 import type { AreaChange } from '../world/areaChanges.js';
 import { InputQueue } from './inputQueue.js';
 import { PlayerSessions } from './playerSessions.js';
-import { toChunkUpdates, toAreaPayload, type ActiveArea, type AreaCache } from './areaCache.js';
+import { toChunkUpdates, toAreaPayload, type ActiveArea, type AreaCache, type AreaMemory } from './areaCache.js';
 
 /**
  * Simulation ticks per second, in every room with a map
@@ -88,6 +88,12 @@ export interface RoomVision
 	 * @return Seconds of game time
 	 */
 	clockSeconds(): number;
+
+	/**
+	 * What the group has seen, in a group's room: its clients are sent only those cells of the map, and
+	 * the links on them
+	 */
+	memory?: AreaMemory;
 }
 
 /**
@@ -140,15 +146,6 @@ export interface WholeGroupLinks
  * @param time How the time of day works in the area the step was in
  */
 export type WalkListener = (playerId: string, seconds: number, time: AreaTime) => void;
-
-/**
- * Told that clients have been sent chunks of an area's map, with an Area or Chunks message
- *
- * @param clients The clients
- * @param areaId The area's ID
- * @param chunkKeys The chunks, by chunkKey()
- */
-export type ChunksSentListener = (clients: readonly Client[], areaId: string, chunkKeys: readonly string[]) => void;
 
 /**
  * Where a player looks from and how far they see
@@ -225,10 +222,6 @@ export class AreaPlayers
 	 */
 	private walkListener?: WalkListener;
 
-	/**
-	 * Told of the chunks each client is sent (see onChunksSent)
-	 */
-	private chunksSentListener?: ChunksSentListener;
 
 	/**
 	 * @param players The room's synced players, which this adds to, moves and removes
@@ -252,14 +245,18 @@ export class AreaPlayers
 	}
 
 	/**
-	 * Listens for the chunks of the map clients are sent, so a group's room can send what the group has
-	 * seen of them
+	 * The clients of the players in an area who have been sent a chunk of its map, for telling them
+	 * about cells of it
 	 *
-	 * @param listener Called after each Area or Chunks message, with its clients, area and chunks
+	 * @param areaId The area's ID
+	 * @param key The chunk, by chunkKey()
+	 * @return The clients
 	 */
-	onChunksSent(listener: ChunksSentListener): void
+	clientsSentChunk(areaId: string, key: string): Client[]
 	{
-		this.chunksSentListener = listener;
+		return(this.playersIn(areaId)
+			.filter((playerId) => (this.sentChunks.get(playerId)?.has(key) ?? false))
+			.flatMap((playerId) => this.getClients(playerId)));
 	}
 
 	/**
@@ -1048,7 +1045,7 @@ export class AreaPlayers
 	private sendArea(playerId: string, area: ActiveArea, clients: Client[]): void
 	{
 		const near = this.loadedChunksNear(playerId, area);
-		const payload = toAreaPayload(area, near);
+		const payload = toAreaPayload(area, near, this.vision.memory);
 
 		this.sentChunks.set(playerId, new Set(near));
 
@@ -1057,7 +1054,6 @@ export class AreaPlayers
 			client.send(ServerMessageType.Area, payload);
 		}
 
-		this.chunksSentListener?.(clients, area.loaded.area.id, near);
 	}
 
 	/**
@@ -1107,7 +1103,7 @@ export class AreaPlayers
 		const sent = (this.sentChunks.get(playerId) ?? new Set<string>());
 		const payload: ChunksPayload = {
 			areaId: area.loaded.area.id,
-			chunks: toChunkUpdates(area, chunkKeys)
+			chunks: toChunkUpdates(area, chunkKeys, this.vision.memory)
 		};
 
 		for (const key of chunkKeys)
@@ -1117,14 +1113,10 @@ export class AreaPlayers
 
 		this.sentChunks.set(playerId, sent);
 
-		const clients = this.getClients(playerId);
-
-		for (const client of clients)
+		for (const client of this.getClients(playerId))
 		{
 			client.send(ServerMessageType.Chunks, payload);
 		}
-
-		this.chunksSentListener?.(clients, area.loaded.area.id, chunkKeys);
 	}
 
 	/**

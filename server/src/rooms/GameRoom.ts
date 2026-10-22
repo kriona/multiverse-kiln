@@ -1,5 +1,5 @@
 import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
-import { encodeSeenChunk, GameMessageType, GameServerMessageType, GameState, GroupMember, MessageType, NoticeReason, PATCH_INTERVAL_MS, ServerCloseCode, visibleCells, type NoticePayload, type SeenPayload } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, GameMessageType, GameServerMessageType, GameState, GroupMember, MessageType, NoticeReason, PATCH_INTERVAL_MS, ServerCloseCode, visibleCells, type CellsSeenPayload, type CellValue, type NoticePayload } from '@multiverse-kiln/shared';
 
 import { markCharacterPlayed } from '../db/characterRepo.js';
 import { findGroup, listGroupMembers, saveGroupClock, saveMemberPositions, type GroupMemberRecord, type MemberPosition } from '../db/groupRepo.js';
@@ -87,13 +87,20 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	private readonly areas = new AreaCache(loadArea, loadChunksAt);
 
 	/**
+	 * The cells the group has seen, part of its world state; loaded in onCreate
+	 */
+	private readonly seen = new SeenCells();
+
+	/**
 	 * Characters whose area is deleted go to the group's starting area. Everyone here is in the group,
-	 * so they see what any of them sees. A link that needs the whole group is refused unless every
-	 * member who can be played, and the anchor being, is here together
+	 * so they see what any of them sees, and are sent only the cells the group has seen. A link that
+	 * needs the whole group is refused unless every member who can be played, and the anchor being, is
+	 * here together
 	 */
 	private readonly areaPlayers = new AreaPlayers(this.state.players, this.areas, () => this.startingAreaId, {
 		shared: true,
-		clockSeconds: () => this.state.clock
+		clockSeconds: () => this.state.clock,
+		memory: this.seen
 	}, {
 		members: () => this.linkMemberIds(),
 		refuse: (characterId) =>
@@ -128,11 +135,6 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	 * Whether each of the universe's races has darkvision, by race ID, as the room found them on starting
 	 */
 	private raceDarkvision = new Map<number, boolean>();
-
-	/**
-	 * The cells the group has seen, part of its world state
-	 */
-	private seen = new SeenCells();
 
 	/**
 	 * Where each member last looked from and how far they saw (see explore), by character ID
@@ -249,11 +251,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			this.addMember(member);
 		}
 
-		this.seen = new SeenCells(await loadSeenChunks(group.id));
-		this.areaPlayers.onChunksSent((clients, areaId, chunkKeys) =>
-		{
-			this.sendSeen(clients, areaId, chunkKeys);
-		});
+		this.seen.load(await loadSeenChunks(group.id));
 
 		this.setTimestep((deltaTime) =>
 		{
@@ -571,32 +569,72 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			if (this.lastSights.get(playerId) !== key)
 			{
 				this.lastSights.set(playerId, key);
-				this.seen.mark(areaId, visibleCells(cell, budget, area.vision));
+
+				const fresh = this.seen.mark(areaId, visibleCells(cell, budget, area.vision));
+
+				if (fresh.length > 0)
+				{
+					this.sendCellsSeen(area, fresh);
+				}
 			}
 		}
 	}
 
 	/**
-	 * Sends clients what the group has seen of chunks they have just been sent
+	 * Sends the clients in an area the tiles of cells the group has just seen for the first time, each
+	 * client only those in chunks it holds. A cell in a chunk a client hasn't been sent yet, or one the
+	 * server hasn't loaded, arrives with its chunk
 	 *
-	 * @param clients The clients
-	 * @param areaId The chunks' area
-	 * @param chunkKeys The chunks, by chunkKey()
+	 * @param area The area
+	 * @param cells The cells
 	 */
-	private sendSeen(clients: readonly Client[], areaId: string, chunkKeys: readonly string[]): void
+	private sendCellsSeen(area: ActiveArea, cells: readonly { column: number; row: number }[]): void
 	{
-		const payload: SeenPayload = {
-			areaId,
-			chunks: this.seen.get(areaId, chunkKeys).map((chunk) => ({
-				chunkColumn: chunk.chunkColumn,
-				chunkRow: chunk.chunkRow,
-				cells: encodeSeenChunk(chunk.cells)
-			}))
-		};
+		const areaId = area.loaded.area.id;
+		const byClient = new Map<Client, CellValue[]>();
 
-		for (const client of clients)
+		for (const { column, row } of cells)
 		{
-			client.send(GameServerMessageType.Seen, payload);
+			const key = chunkKey(chunkCoordinate(column), chunkCoordinate(row));
+
+			if (!area.loadedChunks.has(key))
+			{
+				continue;
+			}
+
+			const value = (area.chunks.get(key)?.[cellIndexInChunk(column, row)] ?? DEFAULT_TILE_CELL);
+
+			for (const client of this.areaPlayers.clientsSentChunk(areaId, key))
+			{
+				let values = byClient.get(client);
+
+				if (!values)
+				{
+					values = [];
+					byClient.set(client, values);
+				}
+
+				values.push({ column, row, value });
+			}
+		}
+
+		for (const [client, values] of byClient)
+		{
+			const revealed = new Set(values.map(({ column, row }) => `${column},${row}`));
+			const payload: CellsSeenPayload = {
+				areaId,
+				cells: values,
+				links: area.loaded.links
+					.filter((link) => revealed.has(`${link.column},${link.row}`))
+					.map((link) => ({
+						column: link.column,
+						row: link.row,
+						mode: link.mode
+					})),
+				exploredCells: this.seen.count(areaId)
+			};
+
+			client.send(GameServerMessageType.CellsSeen, payload);
 		}
 	}
 

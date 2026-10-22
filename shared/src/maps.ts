@@ -27,6 +27,12 @@ export const DEFAULT_TILE_CELL = 0;
 export const VOID_CELL = -1;
 
 /**
+ * Cell value a group's room sends in place of a cell the group hasn't seen, so its tile never reaches
+ * the client before then: drawn black, and seen past as if it were open ground. It is never stored
+ */
+export const UNSEEN_CELL = -2;
+
+/**
  * Movement cost of a cell nobody can enter, in percent. 0 is normal movement and 50 takes twice as long
  */
 export const IMPASSABLE_COST = 100;
@@ -56,7 +62,7 @@ export interface AreaTiles
 
 	/**
 	 * The stored chunks, keyed by chunkKey(). Each holds CHUNK_SIZE * CHUNK_SIZE cell values, row by row:
-	 * a tile ID, DEFAULT_TILE_CELL or VOID_CELL
+	 * a tile ID, DEFAULT_TILE_CELL or VOID_CELL, or on a client in a group's room UNSEEN_CELL
 	 */
 	chunks: ReadonlyMap<string, readonly number[]>;
 }
@@ -128,7 +134,7 @@ export function isInBounds(bounds: MapBounds, column: number, row: number): bool
  * @param tiles The area's tiles
  * @param column The cell's column
  * @param row The cell's row
- * @return The tile's ID, or undefined for a void cell or one outside the map
+ * @return The tile's ID, or undefined for a void or unseen cell or one outside the map
  */
 export function tileIdAt(tiles: AreaTiles, column: number, row: number): number | undefined
 {
@@ -140,7 +146,7 @@ export function tileIdAt(tiles: AreaTiles, column: number, row: number): number 
 	const chunk = tiles.chunks.get(chunkKey(chunkCoordinate(column), chunkCoordinate(row)));
 	const value = (chunk?.[cellIndexInChunk(column, row)] ?? DEFAULT_TILE_CELL);
 
-	if (value === VOID_CELL)
+	if ((value === VOID_CELL) || (value === UNSEEN_CELL))
 	{
 		return(undefined);
 	}
