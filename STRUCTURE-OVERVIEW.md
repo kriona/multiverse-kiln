@@ -299,9 +299,10 @@ Money is credits (`cr`), the only coin.
 	- `always noon`
 	- `always dusk`
 	- `always midnight`
-	- `real-time`
-		- shows an additional option for "how quickly?" with a description of "how long in real-time does it take for 1 day in the lobby to pass?" minimum 1 hour, maximum 240 hours. Default 24. Current time of day is based on the Unix epoch
-	- `faerie`
+	- `real-time` (the default)
+		- shows an additional option for "how quickly?" with a description of "how long in real-time does it take for 1 day in the lobby to pass?" minimum 1 hour, maximum 240 hours. Default 24. Current time of day is based on the Unix epoch, so a 24-hour day follows the time in UTC
+	- `faerie`, with "where is morning?". The lobby's map can't loop while it is chosen
+	- the lobby's area has no passage of time of its own: the area editor says it is set here
 - a button for "Edit Map" which takes you to the [area editor](#editor-area) for the lobby
 
 ### Tab: Characters
@@ -532,7 +533,11 @@ Combat is turn-based.
 - A square is 5 feet, matching PF1E's movement, reach and spell areas.
 - A PF1E combat round is 6 seconds, so the time combat took is added when it ends.
 
-Outside of combat, time is based on your actions - if you are standing still, no time passes. Walking a square takes a set amount of time (still to be defined - tiles need to be given a size).
+Outside of combat, time is based on your actions - if you are standing still, no time passes. Walking a square takes 1 second (PF1E's walking pace of 300 feet a minute), longer on a tile with a movement cost (50% takes twice as long), and a diagonal step counts as one and a half squares.
+
+Each group has its own clock, which starts at 8 in the morning and is saved with the group. The whole group shares that one time: when one member walks, time passes for everyone, including members standing still. Members walking at the same time don't pass the time twice: a step is left out when another member's step was counted less than half a second (real time) before it, so two members walking side by side pass the time of one. Only walking in an area whose time `flows normally` passes the group's time: in an `always` area or a `faerie` one the time of day doesn't come from the clock, so the clock stands still there. The group's page shows the day and the time of day in the character's area: the clock's time, or the area's fixed time in an `always` area. In a `faerie` area it shows a word for that time of day, such as afternoon, in place of the clock's time.
+
+The time of day comes from the area's passage of time (see [Edit Universe](#edit-universe)): from the group's clock when time flows normally, fixed for the `always` settings, and from the cell's place on the map for `faerie`. It is light from 7 in the morning to 5 in the evening, dark from 7 in the evening to 5 in the morning, and the light changes over the two hours around dawn (6:00) and dusk (18:00). The map darkens with it, and screen readers are told as dawn breaks or night falls.
 
 On the overworld map, squares are much bigger distances. The scale is not yet defined, but time will pass faster.
 
@@ -547,7 +552,7 @@ Disbanding a group deletes its world state. Characters (items, money, experience
 ## Vision
 Each character has a vision budget. Looking across a tile spends its vision cost, and once the budget runs out you can't see past that tile, so a line of mountains blocks your view.
 - Night lowers the vision budget unless the character has darkvision.
-- Ideally the server works out what each player can see and only sends them that. If that turns out to be too expensive, the client does it. To be decided during implementation.
+- The server works out what each player can see and only shows them the players in sight. The client runs the same function to draw fog over the tiles it has been sent.
 
 ## Moderation
 - Player and character names can't pass as the game's staff: words such as `admin`, `moderator`, `staff` and `system`, and the game's name, are kept back (`isReservedName()` in `/shared`, checked as the player types and again on the server). Names are compared in a reduced form that sees through capitals, accents, look-alike letters from other alphabets, leetspeak, separators, repeated letters and added digits, and words are found at spaces, punctuation and changes of case, so "TheAdm1n" is refused but "Quarterstaff" isn't.
@@ -686,7 +691,7 @@ Every page, editor and game screen can be used with only a keyboard and with a s
 - Colors are never the only way information is shown: the tile table's swatches carry the color's hex code.
 
 # Open questions
-- **Time:** how long walking a square takes, and the overworld map's scale.
+- **Time:** the overworld map's scale.
 - **Offline group members:** whether to use the summoning ring.
 - **Lobby:** the player limit (from load testing), and how groups manage their lobby listing.
 - **Cross-universe play:** art style, and whether items need a "source universe" setting.
@@ -697,7 +702,6 @@ Every page, editor and game screen can be used with only a keyboard and with a s
 	- whether to add a CAPTCHA. The code limits stop guessing, but someone who knows an address can make 15 wrong guesses and block that address's codes for a day
 - **Messages:** blocking, reporting and who can message whom, before messaging is supported.
 - **Universe versions:** how versions are built and switched.
-- **Vision:** whether the server or the client works out what each player can see.
 - **Tiles:**
 	- Dual-Grid vs. 47-Tile Blob, possibly per layer
 	- how large objects such as trees and houses work, since a player walking behind one should be hidden

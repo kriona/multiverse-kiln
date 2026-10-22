@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { chunkKey, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_TILE_CELL, DEFAULT_TILE_NAMES, EDITOR_UNIVERSES_PATH, emptyMoney, isLocalizedMessage, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_STARTING_ITEMS, NEW_PF1E_CLASS_RULES, NEW_PF1E_RACE_RULES, NEW_AREA_BOUNDS, PF1E_CLASSES, MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_RACES, SF1E_CLASSES, SF1E_MAX_ABILITY_POINTS, SF1E_RACES, SF1E_THEMES, sf1eRaceRules, VOID_CELL, type Ruleset, type ThemeListPayload, type ThemeSettings, type ClassListPayload, type ClassSettings, type CreatedPayload, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorArea, type ItemListPayload, type ItemSettings, type RaceListPayload, type RaceSettings, type ResizeConflictPayload, type RulesetSettings, type TileListPayload, type TileSettings, type UniverseRole, type AreaListPayload } from '@multiverse-kiln/shared';
+import { chunkKey, DEFAULT_LOBBY_DAY_HOURS, MAX_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_TILE_CELL, DEFAULT_TILE_NAMES, EDITOR_UNIVERSES_PATH, emptyMoney, isLocalizedMessage, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_STARTING_ITEMS, NEW_PF1E_CLASS_RULES, NEW_PF1E_RACE_RULES, NEW_AREA_BOUNDS, PF1E_CLASSES, MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_RACES, SF1E_CLASSES, SF1E_MAX_ABILITY_POINTS, SF1E_RACES, SF1E_THEMES, sf1eRaceRules, VOID_CELL, type Ruleset, type ThemeListPayload, type ThemeSettings, type ClassListPayload, type ClassSettings, type CreatedPayload, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorArea, type ItemListPayload, type ItemSettings, type RaceListPayload, type RaceSettings, type ResizeConflictPayload, type RulesetSettings, type TileListPayload, type TileSettings, type UniverseRole, type AreaListPayload } from '@multiverse-kiln/shared';
 
 import { findDefaultItemIds } from '../src/db/itemRepo.js';
 import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
@@ -389,6 +389,33 @@ describe('World editor API', () =>
 			universe = (await send<EditableUniverse>(ada, 'GET', path)).body;
 
 			assert.strictEqual(universe.faerieMorning, null);
+		});
+
+		it('changes the lobby\'s time, keeping faerie time off a lobby whose map loops', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const path = `/${universeId}`;
+			let universe = (await send<EditableUniverse>(ada, 'GET', path)).body;
+			const lobbyPath = `${path}/areas/${universe.lobbyAreaId}`;
+
+			assert.strictEqual(universe.lobbyPassageOfTime, 'real_time');
+			assert.strictEqual(universe.lobbyDayHours, DEFAULT_LOBBY_DAY_HOURS);
+			assert.strictEqual((await send(ada, 'PATCH', path, { body: { lobbyDayHours: 0 } })).status, 400);
+			assert.strictEqual((await send(ada, 'PATCH', path, { body: { lobbyDayHours: MAX_LOBBY_DAY_HOURS + 1 } })).status, 400);
+			assert.strictEqual((await send(ada, 'PATCH', path, { body: { lobbyDayHours: 6 } })).status, 204);
+			assert.strictEqual((await send(ada, 'PATCH', path, { body: { lobbyPassageOfTime: 'faerie' } })).status, 400);
+
+			assert.strictEqual((await send(ada, 'PATCH', lobbyPath, { body: { loopsNorthSouth: true } })).status, 204);
+			assert.strictEqual((await send<ErrorPayload>(ada, 'PATCH', path, { body: { lobbyPassageOfTime: 'faerie', lobbyFaerieMorning: 'west' } })).body.error.id, 'error.faerieLobbyCantLoop');
+			assert.strictEqual((await send(ada, 'PATCH', lobbyPath, { body: { loopsNorthSouth: false } })).status, 204);
+			assert.strictEqual((await send(ada, 'PATCH', path, { body: { lobbyPassageOfTime: 'faerie', lobbyFaerieMorning: 'west' } })).status, 204);
+			assert.strictEqual((await send<ErrorPayload>(ada, 'PATCH', lobbyPath, { body: { loopsEastWest: true } })).body.error.id, 'error.faerieLobbyCantLoop');
+
+			universe = (await send<EditableUniverse>(ada, 'GET', path)).body;
+
+			assert.strictEqual(universe.lobbyPassageOfTime, 'faerie');
+			assert.strictEqual(universe.lobbyFaerieMorning, 'west');
+			assert.strictEqual(universe.lobbyDayHours, 6);
 		});
 	});
 
@@ -1215,6 +1242,24 @@ describe('World editor API', () =>
 			assert.deepStrictEqual(published, [
 				{ kind: 'tiles', universeId },
 				{ kind: 'tiles', universeId }
+			]);
+		});
+
+		it('tells the rooms when a passage of time changes, which other areas may inherit', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const areaId = await createArea(ada, universeId);
+
+			await send(ada, 'PATCH', `/${universeId}`, { body: { name: 'Renamed Universe' } });
+			await send(ada, 'PATCH', `/${universeId}`, { body: { passageOfTime: 'always_dusk' } });
+			await send(ada, 'PATCH', `/${universeId}`, { body: { lobbyPassageOfTime: 'always_noon' } });
+			await send(ada, 'PATCH', `/${universeId}/areas/${areaId}`, { body: { passageOfTime: 'always_dawn' } });
+
+			assert.deepStrictEqual(published, [
+				{ kind: 'time', universeId },
+				{ kind: 'time', universeId },
+				{ kind: 'area', areaId },
+				{ kind: 'time', universeId }
 			]);
 		});
 	});

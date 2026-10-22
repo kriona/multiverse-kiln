@@ -5,8 +5,8 @@
  * `npm run db:migrate -w server` to apply it. Never change the database by hand
  */
 import { sql, type SQL } from 'drizzle-orm';
-import { boolean, check, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHUNK_SIZE, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_UNIVERSES_PER_CREATOR, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
+import { boolean, check, doublePrecision, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
+import { CHUNK_SIZE, DEFAULT_LOBBY_DAY_HOURS, GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_UNIVERSES_PER_CREATOR, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
 
 export const universeStage = pgEnum('universe_stage', UNIVERSE_STAGES);
 export const universeRole = pgEnum('universe_role', UNIVERSE_ROLES);
@@ -14,6 +14,7 @@ export const ruleset = pgEnum('ruleset', RULESETS);
 export const passageOfTime = pgEnum('passage_of_time', PASSAGES_OF_TIME);
 export const areaPassageOfTime = pgEnum('area_passage_of_time', AREA_PASSAGES_OF_TIME);
 export const faerieMorning = pgEnum('faerie_morning', FAERIE_MORNINGS);
+export const lobbyPassageOfTime = pgEnum('lobby_passage_of_time', LOBBY_PASSAGES_OF_TIME);
 export const areaLinkMode = pgEnum('area_link_mode', AREA_LINK_MODES);
 export const pf1eStatMethod = pgEnum('pf1e_stat_method', PF1E_STAT_METHODS);
 export const pf1eAbility = pgEnum('pf1e_ability', PF1E_ABILITIES);
@@ -85,6 +86,21 @@ export const universes = pgTable('universes', {
 	lobbyAreaId: uuid('lobby_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
 
 	/**
+	 * How the time of day changes in the lobby, which ignores its area's own passage of time
+	 */
+	lobbyPassageOfTime: lobbyPassageOfTime('lobby_passage_of_time').notNull().default('real_time'),
+
+	/**
+	 * How many real hours a lobby day lasts when lobbyPassageOfTime is real_time
+	 */
+	lobbyDayHours: smallint('lobby_day_hours').notNull().default(DEFAULT_LOBBY_DAY_HOURS),
+
+	/**
+	 * Set when lobbyPassageOfTime is faerie
+	 */
+	lobbyFaerieMorning: faerieMorning('lobby_faerie_morning'),
+
+	/**
 	 * Where characters start unless their race or class says otherwise
 	 */
 	startingAreaId: uuid('starting_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
@@ -107,6 +123,8 @@ export const universes = pgTable('universes', {
 }, (table) => [
 	uniqueIndex('universes_slug_unique').on(table.slug),
 	check('universes_faerie_morning_set', sql`(${table.passageOfTime} = 'faerie') = (${table.faerieMorning} IS NOT NULL)`),
+	check('universes_lobby_faerie_morning_set', sql`(${table.lobbyPassageOfTime} = 'faerie') = (${table.lobbyFaerieMorning} IS NOT NULL)`),
+	check('universes_lobby_day_hours_range', sql`${table.lobbyDayHours} BETWEEN ${sql.raw(String(MIN_LOBBY_DAY_HOURS))} AND ${sql.raw(String(MAX_LOBBY_DAY_HOURS))}`),
 	check('universes_group_size_range', sql`${table.groupSize} BETWEEN ${sql.raw(String(MIN_GROUP_SIZE))} AND ${sql.raw(String(MAX_GROUP_PLAYERS))}`),
 	check('universes_starting_coins_range', sql`${table.startingPlatinum} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))} AND ${table.startingGold} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))} AND ${table.startingSilver} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))} AND ${table.startingCopper} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))}`),
 	check('universes_starting_credits_range', sql`${table.startingCredits} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))}`)
@@ -819,6 +837,12 @@ export const groups = pgTable('groups', {
 	 * there; null when it was deleted, and the universe's starting area is used instead
 	 */
 	startingAreaId: uuid('starting_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
+
+	/**
+	 * The group's game clock: seconds of game time since its world began, which starts in the morning
+	 * (see GroupClock)
+	 */
+	clockSeconds: doublePrecision('clock_seconds').notNull().default(GROUP_START_SECONDS),
 
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [

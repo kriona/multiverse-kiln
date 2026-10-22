@@ -118,6 +118,11 @@ export interface StepResult extends GridMover
 	 * undefined when they didn't
 	 */
 	stoppedAt: Cell | undefined;
+
+	/**
+	 * The steps to another cell the player finished, in order
+	 */
+	finishedSteps: GridStep[];
 }
 
 /**
@@ -188,6 +193,7 @@ export function stepOnGrid(mover: GridMover, direction: MovePayload, deltaSecond
 	let y = mover.y;
 	let step = mover.step;
 	let stoppedAt: Cell | undefined;
+	const finishedSteps: GridStep[] = [];
 	let elapsed = 0;
 
 	while (elapsed < totalSeconds)
@@ -239,6 +245,11 @@ export function stepOnGrid(mover: GridMover, direction: MovePayload, deltaSecond
 
 		const steppedOnto = !isSameCell(step.from, step.to);
 
+		if (steppedOnto)
+		{
+			finishedSteps.push(step);
+		}
+
 		step = undefined;
 
 		if (steppedOnto && grid.endsMovement(arrival))
@@ -250,7 +261,7 @@ export function stepOnGrid(mover: GridMover, direction: MovePayload, deltaSecond
 
 	press.heldSeconds += totalSeconds;
 
-	return({ x, y, step, press, stoppedAt });
+	return({ x, y, step, press, stoppedAt, finishedSteps });
 }
 
 /**

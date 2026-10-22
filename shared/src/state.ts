@@ -61,7 +61,13 @@ export const GameState = schema({
 	 */
 	anchorId: t.string(),
 
-	members: t.map(GroupMember)
+	members: t.map(GroupMember),
+
+	/**
+	 * The group's game clock: seconds of game time since its world began. Areas whose time flows
+	 * normally take their time of day from it (see secondOfDay)
+	 */
+	clock: t.number()
 }, 'GameState');
 export type GameState = SchemaType<typeof GameState>;
 

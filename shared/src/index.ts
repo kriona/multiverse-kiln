@@ -15,5 +15,6 @@ export * from './rulesets/pf1e/index.js';
 export * from './rulesets/sf1e/index.js';
 export * from './siteSettings.js';
 export * from './state.js';
+export * from './time.js';
 export * from './universes.js';
 export * from './areaTree.js';

@@ -160,6 +160,43 @@ export const PASSAGE_OF_TIME_NAMES: Record<AreaPassageOfTime, MessageDescriptor>
 });
 
 /**
+ * How the time of day changes in a universe's lobby (see Tab: Lobby in STRUCTURE-OVERVIEW.md)
+ *
+ * Actions take no time in the lobby, so time can't flow with them. real_time runs from the Unix epoch
+ * instead, with a day of the universe's lobby day hours
+ */
+export const LOBBY_PASSAGES_OF_TIME = [
+	'always_dawn',
+	'always_noon',
+	'always_dusk',
+	'always_midnight',
+	'real_time',
+	'faerie'
+] as const;
+
+export type LobbyPassageOfTime = typeof LOBBY_PASSAGES_OF_TIME[number];
+
+/**
+ * The name of the lobby's real_time; its other passages of time are named in PASSAGE_OF_TIME_NAMES
+ */
+export const REAL_TIME_NAME: MessageDescriptor = defineMessages({
+	realTime: {
+		id: 'universe.time.real_time',
+		defaultMessage: 'real time',
+		description: 'Passage of time for a universe\'s lobby, where the time of day follows the real clock, with a day as long as the universe chooses'
+	}
+}).realTime;
+
+/**
+ * How many real hours a day in the lobby lasts when its passage of time is real_time
+ */
+export const MIN_LOBBY_DAY_HOURS = 1;
+
+export const MAX_LOBBY_DAY_HOURS = 240;
+
+export const DEFAULT_LOBBY_DAY_HOURS = 24;
+
+/**
  * Where morning is in faerie time: the time of day runs from sunrise on this side of the map to midnight
  * on the opposite side. horizon puts morning at every edge and night in the center
  */

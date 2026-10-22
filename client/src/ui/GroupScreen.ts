@@ -1,8 +1,8 @@
 import { Callbacks } from '@colyseus/sdk';
-import { defineMessages, ServerMessageType, type AreaPayload, type CharacterListPayload, type CharacterSummary, type GroupMember, type WelcomePayload } from '@multiverse-kiln/shared';
+import { DAY_SECONDS, defineMessages, GRID_CELL_SIZE, periodOfDay, positiveModulo, secondOfDay, ServerMessageType, type AreaPayload, type CharacterListPayload, type CharacterSummary, type GroupMember, type WelcomePayload } from '@multiverse-kiln/shared';
 import signOutIcon from 'virtual:icon/ph:sign-out';
 
-import { currentLocale, t } from '../localization';
+import { currentLocale, formatTimeOfDay, t } from '../localization';
 import type { GameConnection } from '../network/serverConnection';
 import { announce } from './announcer';
 import { CharacterList } from './CharacterList';
@@ -20,6 +20,12 @@ const messages = defineMessages({
 		description: 'Shown in the group\'s toolbar while the player goes into the group'
 	}
 });
+
+/**
+ * Milliseconds between refreshes of the toolbar's clock, which in a faerie area follows the character
+ * as they walk
+ */
+const CLOCK_REFRESH_MS = 500;
 
 /**
  * What the group screen asks the app to do
@@ -69,6 +75,7 @@ export class GroupScreen
 	private readonly title = getElement('group-title', HTMLElement);
 	private readonly characterName = getElement('group-character-name', HTMLElement);
 	private readonly status = getElement('group-status', HTMLElement);
+	private readonly time = getElement('group-time', HTMLElement);
 	private readonly inviteButton = getElement('invite-group', HTMLButtonElement);
 	private readonly leaveButton = getElement('leave-group', HTMLButtonElement);
 	private readonly map = getElement('group-map', HTMLElement);
@@ -92,6 +99,11 @@ export class GroupScreen
 	 * The joined room, once the window is in it
 	 */
 	private connection: GameConnection | undefined;
+
+	/**
+	 * The area the window's character is in, for the toolbar's clock
+	 */
+	private area: AreaPayload | undefined;
 
 	/**
 	 * The player's ID, which tells their own members apart
@@ -225,6 +237,7 @@ export class GroupScreen
 
 		this.connection = connection;
 		this.characterId = connection.playerId;
+		this.area = connection.area;
 
 		// Keeps any message that arrived while joining
 		if (this.status.textContent === t(messages.joining))
@@ -245,6 +258,22 @@ export class GroupScreen
 			this.anchorId = anchorId;
 			this.queueRender();
 		}));
+
+		this.unbinds.push(callbacks.listen('clock', () =>
+		{
+			this.showClock();
+		}));
+
+		// Faerie time changes as the character walks, without the clock moving
+		const clockTimer = window.setInterval(() =>
+		{
+			this.showClock();
+		}, CLOCK_REFRESH_MS);
+
+		this.unbinds.push(() =>
+		{
+			window.clearInterval(clockTimer);
+		});
 
 		// Fires for members already in the group too
 		this.unbinds.push(callbacks.onAdd('members', (member: GroupMember, characterId: string) =>
@@ -290,7 +319,9 @@ export class GroupScreen
 
 		this.unbinds.push(room.onMessage(ServerMessageType.Area, (area: AreaPayload) =>
 		{
+			this.area = area;
 			this.finishSwitch(area);
+			this.showClock();
 		}));
 	}
 
@@ -305,10 +336,58 @@ export class GroupScreen
 		}
 
 		this.connection = undefined;
+		this.area = undefined;
 		this.groupId = undefined;
 		this.switchingTo = undefined;
+		this.time.textContent = '';
 		this.leaveDialog.close();
 		this.mapView.hide();
+	}
+
+	/**
+	 * Shows the group's game clock in the toolbar: the day since its world began, and the time of day in
+	 * the character's area. That is the clock's time where time flows normally and the area's fixed time
+	 * in an always area. In a faerie area, where the time of day comes from where the character stands,
+	 * it is a word for the time of day there, such as afternoon
+	 */
+	private showClock(): void
+	{
+		const connection = this.connection;
+
+		if (!connection)
+		{
+			return;
+		}
+
+		const clock = connection.room.state.clock;
+		const day = Math.floor(clock / DAY_SECONDS) + 1;
+		const area = this.area;
+		const own = ((this.characterId !== undefined) ? connection.room.state.players.get(this.characterId) : undefined);
+		const seconds = (area
+			? secondOfDay(area.time, clock, Date.now(), { column: Math.floor((own?.x ?? 0) / GRID_CELL_SIZE), row: Math.floor((own?.y ?? 0) / GRID_CELL_SIZE) }, area.bounds)
+			: positiveModulo(clock, DAY_SECONDS));
+
+		if ((area?.time.passage === 'faerie') && own)
+		{
+			this.time.textContent = t({
+				id: 'group.clockFaerie',
+				defaultMessage: 'Day {day, number}, {period, select, midnight {midnight} pre_dawn {pre-dawn} dawn {dawn} early_morning {early morning} morning {morning} late_morning {late morning} noon {noon} early_afternoon {early afternoon} afternoon {afternoon} late_afternoon {late afternoon} evening {evening} late_evening {late evening} other {night}}',
+				description: 'In the group\'s toolbar in a faerie area, where the time of day depends on where the character stands: how many days the group\'s world has run, counting the first as 1, and a word for the time of day there, e.g. "Day 1, afternoon"'
+			}, {
+				day,
+				period: periodOfDay(seconds)
+			});
+			return;
+		}
+
+		this.time.textContent = t({
+			id: 'group.clock',
+			defaultMessage: 'Day {day, number}, {time}',
+			description: 'In the group\'s toolbar, the group\'s game clock: how many days its world has run, counting the first as 1, and the time of day, e.g. "Day 1, 8:00 AM"'
+		}, {
+			day,
+			time: formatTimeOfDay(seconds)
+		});
 	}
 
 	/**

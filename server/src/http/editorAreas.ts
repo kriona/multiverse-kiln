@@ -2,7 +2,7 @@
  * The world editor's routes for a universe's areas, their maps and their links (listed in shared/src/editor.ts)
  */
 import express, { type Request, type Response } from 'express';
-import { canEditWorld, DEFAULT_TILE_CELL, isInBounds, localize, MAX_AREAS, NEW_AREA_BOUNDS, VOID_CELL, type ChunkListPayload, type CreatedPayload, type EditableUniverse, type EditorArea, type FaerieMorning, type MessageDescriptor, type ResizeConflictPayload, type Ruleset, type AreaLinkListPayload, type AreaListPayload, type AreaSettings } from '@multiverse-kiln/shared';
+import { canEditWorld, DEFAULT_TILE_CELL, isInBounds, localize, MAX_AREAS, NEW_AREA_BOUNDS, VOID_CELL, type ChunkListPayload, type CreatedPayload, type EditableUniverse, type EditorArea, type FaerieMorning, type UniverseSettings, type MessageDescriptor, type ResizeConflictPayload, type Ruleset, type AreaLinkListPayload, type AreaListPayload, type AreaSettings } from '@multiverse-kiln/shared';
 
 import { findDefaultTileIds, findTileKind, loadUniverseTiles } from '../db/tileRepo.js';
 import { inTransaction } from '../db/transactions.js';
@@ -71,6 +71,37 @@ export function timeSettingsProblem(settings: { passageOfTime: string; faerieMor
 			id: 'error.faerieCantLoop',
 			defaultMessage: 'An area whose passage of time is faerie can\'t loop.',
 			description: 'Why an area\'s settings were refused: faerie time and a map that wraps around can\'t be combined'
+		});
+	}
+
+	return(undefined);
+}
+
+/**
+ * What is wrong with a universe's lobby time, if anything
+ *
+ * @param lobby The lobby's passage of time and faerie morning
+ * @param lobbyArea Whether the lobby's area loops, or undefined when the universe has no lobby area yet
+ * @return Why the settings can't be saved, or undefined when they can
+ */
+export function lobbyTimeProblem(lobby: Pick<UniverseSettings, 'lobbyPassageOfTime' | 'lobbyFaerieMorning'>, lobbyArea: Pick<EditorArea, 'loopsEastWest' | 'loopsNorthSouth'> | undefined): MessageDescriptor | undefined
+{
+	const problem = timeSettingsProblem({
+		passageOfTime: lobby.lobbyPassageOfTime,
+		faerieMorning: lobby.lobbyFaerieMorning
+	});
+
+	if (problem !== undefined)
+	{
+		return(problem);
+	}
+
+	if ((lobby.lobbyPassageOfTime === 'faerie') && ((lobbyArea?.loopsEastWest ?? false) || (lobbyArea?.loopsNorthSouth ?? false)))
+	{
+		return({
+			id: 'error.faerieLobbyCantLoop',
+			defaultMessage: 'The lobby\'s passage of time can\'t be faerie while its map loops.',
+			description: 'Why the lobby\'s settings, or its area\'s, were refused: faerie time and a map that wraps around can\'t be combined'
 		});
 	}
 
@@ -199,6 +230,13 @@ async function updateArea(request: Request, response: Response): Promise<void>
 
 	await updateAreaSettings(area.id, body.data);
 	areaChanges.publish({ kind: 'area', areaId: area.id });
+
+	// The areas inside it may inherit its passage of time
+	if ((body.data.passageOfTime !== undefined) || (body.data.faerieMorning !== undefined) || (body.data.parentAreaId !== undefined))
+	{
+		areaChanges.publish({ kind: 'time', universeId: universe.id });
+	}
+
 	response.sendStatus(204);
 }
 
@@ -519,7 +557,8 @@ async function defaultAreaTileId(ruleset: Ruleset, indoors: boolean): Promise<nu
  */
 async function areaSettingsProblem(universe: Omit<EditableUniverse, 'role'>, areaId: string | undefined, settings: AreaSettings): Promise<MessageDescriptor | undefined>
 {
-	const timeProblem = timeSettingsProblem(settings);
+	const timeProblem = (timeSettingsProblem(settings)
+		?? ((areaId === universe.lobbyAreaId) ? lobbyTimeProblem(universe, settings) : undefined));
 
 	if (timeProblem !== undefined)
 	{

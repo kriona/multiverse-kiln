@@ -393,6 +393,7 @@ export function toAreaPayload(area: ActiveArea, chunkKeys: Iterable<string>): Ar
 		name: loaded.area.name,
 		ruleset: loaded.ruleset,
 		indoors: loaded.area.indoors,
+		time: loaded.time,
 		bounds: loaded.bounds,
 		loopsEastWest: loaded.loopsEastWest,
 		loopsNorthSouth: loaded.loopsNorthSouth,

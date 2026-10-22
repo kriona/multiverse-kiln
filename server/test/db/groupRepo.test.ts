@@ -1,9 +1,10 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
+import { GROUP_START_SECONDS } from '@multiverse-kiln/shared';
 
 import { findLastPlayedCharacterId, findOwnCharacter, listPlayableCharacters, markCharacterPlayed, purgeExpiredCharacters, scheduleCharacterDeletion } from '../../src/db/characterRepo.js';
 import { db } from '../../src/db/client.js';
-import { addGroupMember, countGroupMembers, createInvite, deleteInvite, findGroup, findInvite, findMembership, leaveGroup, listExpiredMemberships, listGroupMembers, listMembersOfGroups, listPlayerGroupIds, purgeExpiredInvites, saveMemberPositions } from '../../src/db/groupRepo.js';
+import { addGroupMember, countGroupMembers, createInvite, deleteInvite, findGroup, findInvite, findMembership, leaveGroup, listExpiredMemberships, listGroupMembers, listMembersOfGroups, listPlayerGroupIds, purgeExpiredInvites, saveGroupClock, saveMemberPositions } from '../../src/db/groupRepo.js';
 import { loadOrCreatePlayerByName } from '../../src/db/playerRepo.js';
 import { characters } from '../../src/db/schema.js';
 import { inTransaction } from '../../src/db/transactions.js';
@@ -34,12 +35,20 @@ describe('groupRepo', () =>
 			universeId: universe.universeId,
 			anchorCharacterId: anchorId,
 			name: 'The Fellowship',
-			startingAreaId: universe.fieldAreaId
+			startingAreaId: universe.fieldAreaId,
+			clockSeconds: GROUP_START_SECONDS
 		});
 		assert.deepStrictEqual(await findMembership(anchorId), { groupId, universeId: universe.universeId, isAnchor: true });
 		assert.deepStrictEqual(await findMembership(memberId), { groupId, universeId: universe.universeId, isAnchor: false });
 		assert.strictEqual(await countGroupMembers(groupId), 2);
 		assert.deepStrictEqual(await listPlayerGroupIds(playerId, universe.universeId), new Map([[anchorId, groupId], [memberId, groupId]]));
+	});
+
+	it('saves the group\'s clock', async () =>
+	{
+		await saveGroupClock(groupId, GROUP_START_SECONDS + 1234.5);
+
+		assert.strictEqual((await findGroup(groupId))?.clockSeconds, GROUP_START_SECONDS + 1234.5);
 	});
 
 	it('lists the members, with where they were last', async () =>

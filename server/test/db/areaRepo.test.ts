@@ -1,8 +1,9 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { CHUNK_SIZE, cellIndexInChunk, chunkKey, DEFAULT_TILE_CELL, tileIdAt, VOID_CELL } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, cellIndexInChunk, chunkKey, DEFAULT_LOBBY_DAY_HOURS, DEFAULT_TILE_CELL, tileIdAt, VOID_CELL } from '@multiverse-kiln/shared';
 
 import { findDefaultTileIds } from '../../src/db/tileRepo.js';
+import { setUniverseAreas, updateUniverseSettings } from '../../src/db/universeRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
 import { countAreas, createAreaLink, deleteArea, deleteAreaLink, editCells, findEditorArea, isTileInUse, listAreaLinks, listAreas, loadChunks, loadChunksAt, loadArea, resizeArea, saveGroundChunk, saveAreaLink, updateAreaSettings } from '../../src/db/areaRepo.js';
 import { addUniverse, addArea, defaultTileId, loadWholeMap } from './fixtures.js';
@@ -55,6 +56,43 @@ describe('areaRepo', () =>
 
 			assert.deepStrictEqual(loaded?.links, [{ column: 1, row: 0, targetAreaId: insideId, targetColumn: -1, targetRow: 1, mode: 'automatic', requiresWholeGroup: true }]);
 			assert.deepStrictEqual((await loadArea(insideId))?.links, []);
+		});
+
+		it('follows inherit through the parent areas to the universe\'s passage of time', async () =>
+		{
+			const universeId = await addUniverse();
+			const worldId = await addArea(universeId, 'World');
+			const regionId = await addArea(universeId, 'Region');
+			const townId = await addArea(universeId, 'Town');
+
+			await updateAreaSettings(regionId, { parentAreaId: worldId });
+			await updateAreaSettings(townId, { parentAreaId: regionId });
+
+			assert.deepStrictEqual((await loadArea(townId))?.time, { passage: 'flows_normally' });
+
+			await updateAreaSettings(worldId, { passageOfTime: 'faerie', faerieMorning: 'north' });
+
+			assert.deepStrictEqual((await loadArea(townId))?.time, { passage: 'faerie', morning: 'north' });
+
+			await updateAreaSettings(regionId, { passageOfTime: 'always_dusk' });
+
+			assert.deepStrictEqual((await loadArea(townId))?.time, { passage: 'always_dusk' });
+		});
+
+		it('gives the lobby\'s area the universe\'s lobby time', async () =>
+		{
+			const universeId = await addUniverse();
+			const lobbyId = await addArea(universeId, 'Lobby');
+			const startId = await addArea(universeId, 'Start');
+
+			await setUniverseAreas(universeId, lobbyId, startId);
+			await updateAreaSettings(lobbyId, { passageOfTime: 'always_noon' });
+
+			assert.deepStrictEqual((await loadArea(lobbyId))?.time, { passage: 'real_time', dayHours: DEFAULT_LOBBY_DAY_HOURS });
+
+			await updateUniverseSettings(universeId, { lobbyPassageOfTime: 'faerie', lobbyFaerieMorning: 'horizon' });
+
+			assert.deepStrictEqual((await loadArea(lobbyId))?.time, { passage: 'faerie', morning: 'horizon' });
 		});
 
 		it('finds nothing for an unknown ID', async () =>

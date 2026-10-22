@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { Callbacks } from '@colyseus/sdk';
-import { chunkKey, GRID_CELL_SIZE, MessageType, nearestCopy, PATCH_INTERVAL_MS, PLAYER_RADIUS, positiveModulo, ServerMessageType, tileIdAt, type ChunksPayload, type MovePayload, type Player, type AreaPayload } from '@multiverse-kiln/shared';
+import { chunkKey, daylight, GRID_CELL_SIZE, MessageType, nearestCopy, partOfDay, PATCH_INTERVAL_MS, PLAYER_RADIUS, positiveModulo, secondOfDay, ServerMessageType, tileIdAt, VIEW_HEIGHT, VIEW_WIDTH, type ChunksPayload, type MovePayload, type Player, type AreaPayload } from '@multiverse-kiln/shared';
 
 import { MovementKeys } from '../input/MovementKeys';
 import { t } from '../localization';
@@ -55,6 +55,21 @@ const NAME_OFFSET = 4;
  * Gap in pixels between the bottom of the player and the top of the prompt to take a manual link
  */
 const PROMPT_OFFSET = 6;
+
+/**
+ * The color laid over the map at night
+ */
+const NIGHT_COLOR = 0x0a1030;
+
+/**
+ * How opaque the night color is at full dark; the map fades toward it as the light goes
+ */
+const NIGHT_ALPHA = 0.65;
+
+/**
+ * Depth of the night color: over the map and players, under their names and the link prompt
+ */
+const NIGHT_DEPTH = 0.5;
 
 const TEXT_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
 	fontFamily: 'sans-serif',
@@ -128,6 +143,11 @@ export class MapScene extends Phaser.Scene
 	private lastSentMove?: MovePayload;
 	private announcer!: MapAnnouncer;
 
+	/**
+	 * Darkens the view as the light goes
+	 */
+	private night?: Phaser.GameObjects.Rectangle;
+
 	constructor()
 	{
 		super(MAP_SCENE_KEY);
@@ -152,6 +172,7 @@ export class MapScene extends Phaser.Scene
 		this.linkPrompt = undefined;
 		this.lastSentMove = undefined;
 		this.announcer = new MapAnnouncer();
+		this.night = undefined;
 	}
 
 	/**
@@ -196,6 +217,11 @@ export class MapScene extends Phaser.Scene
 		});
 
 		this.linkPrompt = this.add.text(0, 0, prompt, TEXT_STYLE).setOrigin(0.5, 0).setDepth(2).setVisible(false);
+		this.night = this.add.rectangle(0, 0, VIEW_WIDTH, VIEW_HEIGHT, NIGHT_COLOR, NIGHT_ALPHA)
+			.setOrigin(0, 0)
+			.setScrollFactor(0)
+			.setDepth(NIGHT_DEPTH)
+			.setAlpha(0);
 
 		// Clicking the map takes the keyboard back from a text field, such as the lobby's chat
 		this.input.on(Phaser.Input.Events.POINTER_DOWN, () =>
@@ -280,6 +306,48 @@ export class MapScene extends Phaser.Scene
 
 		this.areaRenderer?.update(this.cameras.main.worldView);
 		this.updateLinkPrompt(own);
+		this.updateDaylight();
+	}
+
+	/**
+	 * Darkens the map for the time of day where the player is, and tells screen reader users as the part
+	 * of the day changes
+	 */
+	private updateDaylight(): void
+	{
+		const seconds = this.currentSecondOfDay();
+
+		if (seconds === undefined)
+		{
+			return;
+		}
+
+		this.night?.setAlpha(1 - daylight(seconds));
+		this.announcer.partOfDayChanged(partOfDay(seconds));
+	}
+
+	/**
+	 * The time of day where the player is
+	 *
+	 * @return Seconds since midnight, or undefined before the player is on the map
+	 */
+	private currentSecondOfDay(): number | undefined
+	{
+		const own = this.room.state.players?.get(this.ownPlayerId);
+
+		if (!own)
+		{
+			return(undefined);
+		}
+
+		// A lobby has no clock: its time of day never flows with the players' actions
+		const clock = (this.room.state.clock as number | undefined) ?? 0;
+		const cell = {
+			column: Math.floor(own.x / GRID_CELL_SIZE),
+			row: Math.floor(own.y / GRID_CELL_SIZE)
+		};
+
+		return(secondOfDay(this.area.time, clock, Date.now(), cell, this.area.bounds));
 	}
 
 	/**
@@ -641,7 +709,8 @@ export class MapScene extends Phaser.Scene
 			areaName: this.area.name,
 			column,
 			row,
-			tileName: (tile ? tileName(tile, this.area.ruleset) : undefined)
+			tileName: (tile ? tileName(tile, this.area.ruleset) : undefined),
+			secondOfDay: (this.currentSecondOfDay() ?? 0)
 		}, others);
 	}
 

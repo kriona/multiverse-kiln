@@ -2,7 +2,8 @@ import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
 import { GameMessageType, GameServerMessageType, GameState, GroupMember, MessageType, NoticeReason, PATCH_INTERVAL_MS, ServerCloseCode, type NoticePayload } from '@multiverse-kiln/shared';
 
 import { markCharacterPlayed } from '../db/characterRepo.js';
-import { findGroup, listGroupMembers, saveMemberPositions, type GroupMemberRecord, type MemberPosition } from '../db/groupRepo.js';
+import { findGroup, listGroupMembers, saveGroupClock, saveMemberPositions, type GroupMemberRecord, type MemberPosition } from '../db/groupRepo.js';
+import { GroupClock } from '../logic/gameClock.js';
 import { findUniverse } from '../db/universeRepo.js';
 import { loadChunksAt, loadArea } from '../db/areaRepo.js';
 import { readBrowserId } from '../http/browserId.js';
@@ -101,6 +102,11 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	private startingAreaId!: string;
 
 	/**
+	 * The group's game clock, which state.clock shows. Named apart from Room's clock, which runs timers
+	 */
+	private gameClock!: GroupClock;
+
+	/**
 	 * Every member of the group, by character ID (server-only; state.members has what clients see)
 	 */
 	private readonly members = new Map<string, GroupMemberRecord>();
@@ -192,6 +198,22 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		this.startingAreaId = startingArea.loaded.area.id;
 		this.state.name = group.name;
 		this.state.anchorId = group.anchorCharacterId;
+		this.gameClock = new GroupClock(group.clockSeconds);
+		this.state.clock = this.gameClock.seconds;
+
+		this.areaPlayers.onWalk((characterId, seconds, time) =>
+		{
+			// Only areas whose time flows normally follow the group's clock; walking in any other leaves it where it is
+			if (time.passage !== 'flows_normally')
+			{
+				return;
+			}
+
+			if (this.gameClock.walk(characterId, seconds, this.clock.currentTime))
+			{
+				this.state.clock = this.gameClock.seconds;
+			}
+		});
 
 		for (const member of await listGroupMembers(group.id))
 		{
@@ -319,6 +341,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			if (!this.disbanded)
 			{
 				await saveMemberPositions(this.groupId, positions);
+				await saveGroupClock(this.groupId, this.gameClock.seconds);
 			}
 
 			if (left)

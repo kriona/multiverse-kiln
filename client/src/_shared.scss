@@ -320,6 +320,13 @@ button.link-button
 	color: $text;
 }
 
+// The group's game clock, in the group's toolbar
+.toolbar-time
+{
+	color: $text-muted;
+	white-space: nowrap;
+}
+
 // A link at the end of a page's toolbar, such as Back to Home
 .toolbar-link
 {

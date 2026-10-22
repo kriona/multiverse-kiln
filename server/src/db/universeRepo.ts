@@ -288,6 +288,9 @@ export async function findEditableUniverse(universeId: string, executor: Executo
 			ruleset: universes.ruleset,
 			passageOfTime: universes.passageOfTime,
 			faerieMorning: universes.faerieMorning,
+			lobbyPassageOfTime: universes.lobbyPassageOfTime,
+			lobbyDayHours: universes.lobbyDayHours,
+			lobbyFaerieMorning: universes.lobbyFaerieMorning,
 			lobbyAreaId: universes.lobbyAreaId,
 			startingAreaId: universes.startingAreaId,
 			groupSize: universes.groupSize,
@@ -319,7 +322,8 @@ export async function findEditableUniverse(universeId: string, executor: Executo
  * Changes some of a universe's settings
  *
  * The database refuses a faerie passage of time without a faerie morning, a faerie morning without
- * faerie time, and a group size or starting money out of range. The caller checks that a starting area
+ * faerie time (for the universe and for its lobby), and a lobby day length, group size or starting
+ * money out of range. The caller checks that a starting area
  * is one of the universe's, and that the starting items are items it can use. A new name changes the
  * universe's slug with it
  *

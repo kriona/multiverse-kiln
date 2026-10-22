@@ -134,6 +134,29 @@
 					<section id="editor-panel-lobby" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-lobby" hidden>
 						<p data-message="editor.lobby.explanation" data-translation-context="Explains the lobby on the editor's Lobby tab">The lobby is where everyone in the universe meets before joining a group. It is an area like any other, but isn't listed on the Areas tab.</p>
 						<button id="lobby-edit-area" type="button" data-message="editor.lobby.editArea" data-translation-context="Button that opens the lobby in the area editor"><!-- icon ph:pencil-simple -->Edit the lobby's area</button>
+						<form id="lobby-form" class="form">
+							<fieldset id="lobby-fields" class="plain">
+								<label data-message="editor.passageOfTime" data-translation-context="Label of the field for how the time of day changes in a universe or area">
+									Passage of time
+									<select id="lobby-time"></select>
+								</label>
+								<p class="hint" data-message="editor.lobby.timeHint" data-translation-context="Explains the lobby's passage of time on the editor's Lobby tab">Actions take no time in the lobby, so its time of day follows this instead of the universe's passage of time.</p>
+								<label id="lobby-day-hours-field" data-message="editor.lobby.dayHours" data-translation-context="Label of the field for how many real hours a day in the lobby lasts, shown when the lobby's passage of time is real time">
+									How quickly?
+									<input id="lobby-day-hours" type="number" step="1" required />
+								</label>
+								<p id="lobby-day-hours-hint" class="hint"></p>
+								<label id="lobby-faerie-field" data-message="editor.faerieMorning" data-translation-context="Label of the field for which side of the map has morning, when the passage of time is faerie" hidden>
+									Where is morning?
+									<select id="lobby-faerie"></select>
+								</label>
+								<p id="lobby-error" class="form-error" role="alert" hidden></p>
+								<div class="form-buttons">
+									<span id="lobby-saved" class="form-saved" role="status"></span>
+									<button id="lobby-save" type="submit" aria-describedby="lobby-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+								</div>
+							</fieldset>
+						</form>
 					</section>
 
 					<section id="editor-panel-characters" class="editor-panel editor-cards" role="tabpanel" aria-labelledby="editor-tab-characters" hidden>
@@ -308,10 +331,11 @@
 										Default tile
 										<select id="area-default-tile"></select>
 									</label>
-									<label data-message="editor.passageOfTime" data-translation-context="Label of the field for how the time of day changes in a universe or area">
+									<label id="area-time-field" data-message="editor.passageOfTime" data-translation-context="Label of the field for how the time of day changes in a universe or area">
 										Passage of time
 										<select id="area-time"></select>
 									</label>
+									<p id="area-lobby-time-hint" class="hint" data-message="editor.area.lobbyTime" data-translation-context="Shown in the area editor for the lobby in place of its passage of time, which the Lobby tab sets" hidden>The lobby's passage of time is set on the Lobby tab.</p>
 									<label id="area-faerie-field" data-message="editor.faerieMorning" data-translation-context="Label of the field for which side of the map has morning, when the passage of time is faerie" hidden>
 										Where is morning?
 										<select id="area-faerie"></select>

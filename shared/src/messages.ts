@@ -1,4 +1,5 @@
 import type { MapBounds } from './maps.js';
+import type { AreaTime } from './time.js';
 import type { Ruleset, AreaLinkMode } from './universes.js';
 
 /**
@@ -205,6 +206,13 @@ export interface AreaPayload
 	ruleset: Ruleset;
 
 	indoors: boolean;
+
+	/**
+	 * How the area's time of day is worked out, with the room's clock (GameState.clock) when time flows
+	 * normally
+	 */
+	time: AreaTime;
+
 	bounds: MapBounds;
 	loopsEastWest: boolean;
 	loopsNorthSouth: boolean;

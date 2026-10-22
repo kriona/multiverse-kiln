@@ -4,7 +4,7 @@
  */
 import { and, asc, between, count, eq, gt, gte, inArray, lt, lte, or, sql, type SQL } from 'drizzle-orm';
 import type { PgColumn } from 'drizzle-orm/pg-core';
-import { chunkCoordinate, chunkKey, isInBounds, type CellChange, type ChunkRange, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type MapBounds, type Ruleset, type AreaChunk, type AreaLinkTarget, type AreaPassageOfTime, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
+import { ancestorAreas, chunkCoordinate, chunkKey, isInBounds, lobbyAreaTime, resolveAreaTime, type AreaTime, type PassageOfTimeSetting, type CellChange, type ChunkRange, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type MapBounds, type Ruleset, type AreaChunk, type AreaLinkTarget, type AreaPassageOfTime, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { applyCellChanges, chunksOfChanges, clipChunk, isChunkInside, isDefaultChunk } from '../logic/mapEdits.js';
 import type { AreaLink } from '../logic/areaGrid.js';
@@ -42,6 +42,12 @@ export interface LoadedArea
 	 * The universe's ruleset, which names its default tiles
 	 */
 	ruleset: Ruleset;
+
+	/**
+	 * How its time of day is worked out: its passage of time with inherit followed up to the universe's,
+	 * or the universe's lobby time for the lobby's area
+	 */
+	time: AreaTime;
 
 	bounds: MapBounds;
 
@@ -143,7 +149,15 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 	const [row] = await executor
 		.select({
 			area: areas,
-			ruleset: universes.ruleset
+			ruleset: universes.ruleset,
+			universe: {
+				passageOfTime: universes.passageOfTime,
+				faerieMorning: universes.faerieMorning,
+				lobbyAreaId: universes.lobbyAreaId,
+				lobbyPassageOfTime: universes.lobbyPassageOfTime,
+				lobbyDayHours: universes.lobbyDayHours,
+				lobbyFaerieMorning: universes.lobbyFaerieMorning
+			}
 		})
 		.from(areas)
 		.innerJoin(universes, eq(universes.id, areas.universeId))
@@ -155,7 +169,7 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 		return(undefined);
 	}
 
-	const { area, ruleset } = row;
+	const { area, ruleset, universe } = row;
 	const linkRows = await executor
 		.select()
 		.from(areaLinks)
@@ -174,6 +188,13 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 			passageOfTime: area.passageOfTime
 		},
 		ruleset,
+		time: ((area.id === universe.lobbyAreaId)
+			? lobbyAreaTime({
+				passageOfTime: universe.lobbyPassageOfTime,
+				faerieMorning: universe.lobbyFaerieMorning,
+				dayHours: universe.lobbyDayHours
+			})
+			: resolveAreaTime(await loadTimeChain(area, executor), universe)),
 		bounds: boundsOf(area),
 		defaultTileId: area.defaultTileId,
 		loopsEastWest: area.loopsEastWest,
@@ -189,6 +210,34 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 		})),
 		tiles
 	});
+}
+
+/**
+ * The passage of time settings resolveAreaTime() follows for an area: its own, then its parent's, and
+ * so on up to its top-level area, stopping at the first that doesn't inherit
+ *
+ * @param area The area's row
+ * @param executor The database, or a transaction
+ * @return The settings, the area's first
+ */
+async function loadTimeChain(area: typeof areas.$inferSelect, executor: Executor): Promise<PassageOfTimeSetting<AreaPassageOfTime>[]>
+{
+	if ((area.passageOfTime !== 'inherit') || (area.parentAreaId === null))
+	{
+		return([area]);
+	}
+
+	const rows = await executor
+		.select({
+			id: areas.id,
+			parentAreaId: areas.parentAreaId,
+			passageOfTime: areas.passageOfTime,
+			faerieMorning: areas.faerieMorning
+		})
+		.from(areas)
+		.where(eq(areas.universeId, area.universeId));
+
+	return([area, ...ancestorAreas(rows, area.id)]);
 }
 
 /**

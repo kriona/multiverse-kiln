@@ -47,7 +47,13 @@ export class AreasTab
 	private readonly outdoors = getElement('area-outdoors', HTMLInputElement);
 	private readonly indoors = getElement('area-indoors', HTMLInputElement);
 	private readonly defaultTile = getElement('area-default-tile', HTMLSelectElement);
+	private readonly timeField = getElement('area-time-field', HTMLElement);
 	private readonly time = getElement('area-time', HTMLSelectElement);
+
+	/**
+	 * Shown in place of the passage of time for the lobby, whose time the Lobby tab sets
+	 */
+	private readonly lobbyTimeHint = getElement('area-lobby-time-hint', HTMLElement);
 	private readonly faerieField = getElement('area-faerie-field', HTMLElement);
 	private readonly faerie = getElement('area-faerie', HTMLSelectElement);
 	private readonly loopsEastWest = getElement('area-loops-east-west', HTMLInputElement);
@@ -489,6 +495,8 @@ export class AreasTab
 		this.indoors.checked = area.indoors;
 		this.fillDefaultTiles(area.indoors, area.defaultTileId);
 		this.time.value = area.passageOfTime;
+		this.timeField.hidden = isLobby;
+		this.lobbyTimeHint.hidden = !isLobby;
 		this.faerie.value = (area.faerieMorning ?? FAERIE_MORNINGS[0]);
 		this.loopsEastWest.checked = area.loopsEastWest;
 		this.loopsNorthSouth.checked = area.loopsNorthSouth;

@@ -523,6 +523,10 @@
 		"defaultMessage": "Loading...",
 		"description": "Heading of the area editor while the area loads"
 	},
+	"editor.area.lobbyTime": {
+		"defaultMessage": "The lobby's passage of time is set on the Lobby tab.",
+		"description": "Shown in the area editor for the lobby in place of its passage of time, which the Lobby tab sets"
+	},
 	"editor.area.lobbyTitle": {
 		"defaultMessage": "{area} (the lobby)",
 		"description": "Heading of the area editor for the universe's lobby; {area} is its name"
@@ -1187,6 +1191,10 @@
 		"defaultMessage": "Requires the whole group",
 		"description": "Checkbox for an area link that can only be used when every member of the group is present"
 	},
+	"editor.lobby.dayHours": {
+		"defaultMessage": "How quickly?",
+		"description": "Label of the field for how many real hours a day in the lobby lasts, shown when the lobby's passage of time is real time"
+	},
 	"editor.lobby.dayHoursHint": {
 		"defaultMessage": "How long in real time it takes for one day in the lobby to pass, from {min, plural, one {# hour} other {# hours}} to {max, plural, one {# hour} other {# hours}}. The time of day is the same for everyone, counted from the start of 1970.",
 		"description": "Explains the lobby's \"How quickly?\" field; {min} and {max} are the fewest and most hours allowed"
@@ -1202,6 +1210,10 @@
 	"editor.lobby.saveFailed": {
 		"defaultMessage": "Could not save the lobby's settings.",
 		"description": "Shown on the Lobby tab when its settings couldn't be stored"
+	},
+	"editor.lobby.timeHint": {
+		"defaultMessage": "Actions take no time in the lobby, so its time of day follows this instead of the universe's passage of time.",
+		"description": "Explains the lobby's passage of time on the editor's Lobby tab"
 	},
 	"editor.map.areaDefault": {
 		"defaultMessage": "{tile} (the area's default)",
@@ -2023,6 +2035,10 @@
 		"defaultMessage": "An area whose passage of time is faerie can't loop.",
 		"description": "Why an area's settings were refused: faerie time and a map that wraps around can't be combined"
 	},
+	"error.faerieLobbyCantLoop": {
+		"defaultMessage": "The lobby's passage of time can't be faerie while its map loops.",
+		"description": "Why the lobby's settings, or its area's, were refused: faerie time and a map that wraps around can't be combined"
+	},
 	"error.faerieMorningMismatch": {
 		"defaultMessage": "Where morning is must be chosen when, and only when, the passage of time is faerie.",
 		"description": "Why time settings were refused: \"where is morning?\" was given without faerie time, or left out with it"
@@ -2330,6 +2346,14 @@
 	"group.characterLeft": {
 		"defaultMessage": "{name} is no longer in the group, or can't be played.",
 		"description": "Shown in the lobby when the character a window played left the group from another window, or was deleted; {name} is the character's name"
+	},
+	"group.clock": {
+		"defaultMessage": "Day {day, number}, {time}",
+		"description": "In the group's toolbar, the group's game clock: how many days its world has run, counting the first as 1, and the time of day, e.g. \"Day 1, 8:00 AM\""
+	},
+	"group.clockFaerie": {
+		"defaultMessage": "Day {day, number}, {period, select, midnight {midnight} pre_dawn {pre-dawn} dawn {dawn} early_morning {early morning} morning {morning} late_morning {late morning} noon {noon} early_afternoon {early afternoon} afternoon {afternoon} late_afternoon {late afternoon} evening {evening} late_evening {late evening} other {night}}",
+		"description": "In the group's toolbar in a faerie area, where the time of day depends on where the character stands: how many days the group's world has run, counting the first as 1, and a word for the time of day there, e.g. \"Day 1, afternoon\""
 	},
 	"group.connectionLost": {
 		"defaultMessage": "Lost the connection to the group.",
@@ -2891,6 +2915,10 @@
 		"defaultMessage": "{count, plural, one {{players} goes out of view.} other {{players} go out of view.}}",
 		"description": "Read out by screen readers when other players go out of view on the map or leave; {players} is a list of their names"
 	},
+	"map.announce.partOfDay": {
+		"defaultMessage": "{part, select, dawn {Dawn breaks.} day {The sun is up.} dusk {Dusk falls.} other {Night falls.}}",
+		"description": "Read out by screen readers as the time of day changes where the player is: dawn begins, full daylight comes, dusk begins, or night comes"
+	},
 	"map.announce.player": {
 		"defaultMessage": "{name}, {cells, plural, one {# cell} other {# cells}} {direction, select, north {north} northeast {northeast} east {east} southeast {southeast} south {south} southwest {southwest} west {west} other {northwest}}",
 		"description": "Read out by screen readers in the list of players the player can see: their name, how many cells away and in which direction, e.g. \"Bo, 3 cells northeast\""
@@ -2902,6 +2930,10 @@
 	"map.announce.position": {
 		"defaultMessage": "{area}, column {column}, row {row}{onTile, select, yes {, on {tile}} other {}}. {count, plural, =0 {You can't see anyone else.} other {You can see {players}.}}",
 		"description": "Read out by screen readers when the player asks where they are: the area's name, their cell, the tile they stand on (e.g. Grass) when it is known, and the other players they can see; {players} is a list of descriptions such as \"Bo, 3 cells northeast\""
+	},
+	"map.announce.timeOfDay": {
+		"defaultMessage": "It is {time}, {part, select, dawn {dawn} day {day} dusk {dusk} other {night}}.",
+		"description": "Read out by screen readers when the player asks where they are, after their position: the time of day in the game, e.g. \"6:30 PM\", and the part of the day it falls in"
 	},
 	"map.ghost": {
 		"defaultMessage": "Ghost",
@@ -3870,6 +3902,10 @@
 	"universe.time.inherit": {
 		"defaultMessage": "inherit from the parent area",
 		"description": "Passage of time for an area that uses its parent area's setting, or the universe's"
+	},
+	"universe.time.real_time": {
+		"defaultMessage": "real time",
+		"description": "Passage of time for a universe's lobby, where the time of day follows the real clock, with a day as long as the universe chooses"
 	},
 	"universePage.characterDescription": {
 		"defaultMessage": "{race} {class}",

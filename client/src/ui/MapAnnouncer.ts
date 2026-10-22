@@ -1,4 +1,6 @@
-import { formatList, t } from '../localization';
+import { partOfDay, type PartOfDay } from '@multiverse-kiln/shared';
+
+import { formatList, formatTimeOfDay, t } from '../localization';
 import { announce } from './announcer';
 
 /**
@@ -53,6 +55,11 @@ export interface PlayerPosition
 	 * The tile the player stands on, in their language, or undefined when it isn't known
 	 */
 	tileName: string | undefined;
+
+	/**
+	 * The time of day where the player is, in seconds since midnight
+	 */
+	secondOfDay: number;
 }
 
 /**
@@ -76,6 +83,11 @@ export class MapAnnouncer
 	private blockedSaid = false;
 
 	/**
+	 * The part of the day last told of, or undefined since entering an area
+	 */
+	private partOfDay: PartOfDay | undefined;
+
+	/**
 	 * The player has come into an area, from another or by joining the room
 	 *
 	 * @param areaName The area's name
@@ -87,6 +99,7 @@ export class MapAnnouncer
 		this.quietUntil = performance.now() + AREA_CHANGE_QUIET_MS;
 		this.onLink = false;
 		this.still = undefined;
+		this.partOfDay = undefined;
 
 		announce(t({
 			id: 'map.announce.area',
@@ -171,7 +184,34 @@ export class MapAnnouncer
 	}
 
 	/**
-	 * Reads out where the player is, the tile they stand on, and the other players they can see, nearest first
+	 * Tells the player as the part of the day changes around them, such as night falling. The first part
+	 * of the day after entering an area isn't read out; describePosition() gives it
+	 *
+	 * @param part The part of the day it is now
+	 */
+	partOfDayChanged(part: PartOfDay): void
+	{
+		const previous = this.partOfDay;
+
+		this.partOfDay = part;
+
+		if ((previous === undefined) || (previous === part))
+		{
+			return;
+		}
+
+		announce(t({
+			id: 'map.announce.partOfDay',
+			defaultMessage: '{part, select, dawn {Dawn breaks.} day {The sun is up.} dusk {Dusk falls.} other {Night falls.}}',
+			description: 'Read out by screen readers as the time of day changes where the player is: dawn begins, full daylight comes, dusk begins, or night comes'
+		}, {
+			part
+		}));
+	}
+
+	/**
+	 * Reads out where the player is, the tile they stand on, the time of day, and the other players they
+	 * can see, nearest first
 	 *
 	 * @param position Where the player is
 	 * @param others The other players they can see
@@ -181,8 +221,17 @@ export class MapAnnouncer
 		const players = [...others]
 			.sort((first, second) => (distance(first) - distance(second)))
 			.map((other) => describePlayer(other));
+		const time = t({
+			id: 'map.announce.timeOfDay',
+			defaultMessage: 'It is {time}, {part, select, dawn {dawn} day {day} dusk {dusk} other {night}}.',
+			description: 'Read out by screen readers when the player asks where they are, after their position: the time of day in the game, e.g. "6:30 PM", and the part of the day it falls in'
+		}, {
+			time: formatTimeOfDay(position.secondOfDay),
+			part: partOfDay(position.secondOfDay)
+		});
 
-		announce(t({
+		// Each part is whole sentences
+		announce(`${t({
 			id: 'map.announce.position',
 			defaultMessage: '{area}, column {column}, row {row}{onTile, select, yes {, on {tile}} other {}}. {count, plural, =0 {You can\'t see anyone else.} other {You can see {players}.}}',
 			description: 'Read out by screen readers when the player asks where they are: the area\'s name, their cell, the tile they stand on (e.g. Grass) when it is known, and the other players they can see; {players} is a list of descriptions such as "Bo, 3 cells northeast"'
@@ -194,7 +243,7 @@ export class MapAnnouncer
 			tile: (position.tileName ?? ''),
 			count: players.length,
 			players: formatList(players, 'conjunction')
-		}), true);
+		})} ${time}`, true);
 	}
 
 	/**

@@ -3,12 +3,12 @@ import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { GAME_ROOM_NAME, GameMessageType, GameServerMessageType, GameState, GRID_CELL_SIZE, MessageType, NoticeReason, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, type AreaPayload, type GameJoinOptions, type NoticePayload, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
+import { GAME_ROOM_NAME, GameMessageType, GameServerMessageType, GameState, GRID_CELL_SIZE, GROUP_START_SECONDS, MessageType, NoticeReason, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, WALK_SECONDS_PER_SQUARE, type AreaPayload, type GameJoinOptions, type NoticePayload, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { scheduleCharacterDeletion } from '../src/db/characterRepo.js';
 import { pool } from '../src/db/client.js';
-import { addGroupMember, leaveGroup, listGroupMembers } from '../src/db/groupRepo.js';
-import { createAreaLink } from '../src/db/areaRepo.js';
+import { addGroupMember, findGroup, leaveGroup, listGroupMembers } from '../src/db/groupRepo.js';
+import { createAreaLink, updateAreaSettings } from '../src/db/areaRepo.js';
 import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
 import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
@@ -395,6 +395,59 @@ describe('GameRoom', () =>
 		assert.strictEqual(player.y, 105);
 		assertOnCellCenter(player);
 	});
+
+	it('passes game time as players walk, and saves the clock when everyone has left', async () =>
+	{
+		const room = await createGameRoom();
+		const client = await joinAsNewPlayer(room);
+		const player = room.state.players.get(playerIdOf(room, client)) as Player;
+
+		assert.strictEqual(room.state.clock, GROUP_START_SECONDS);
+
+		placeOnCell(player, 3, 3);
+
+		// Standing still passes no time
+		for (let i = 0; i < 10; i++)
+		{
+			await room.waitForNextTimestep();
+		}
+
+		assert.strictEqual(room.state.clock, GROUP_START_SECONDS);
+
+		client.send(MessageType.Move, { x: 1, y: 0 });
+		await room.waitForNextMessage();
+		await waitUntil(() => (room.state.clock >= (GROUP_START_SECONDS + (2 * WALK_SECONDS_PER_SQUARE))));
+		client.send(MessageType.Move, { x: 0, y: 0 });
+		await room.waitForNextMessage();
+		await waitUntilStopped(room, player);
+
+		const clock = room.state.clock;
+
+		await client.leave();
+		await waitUntil(async () => ((await findGroup(groupId))?.clockSeconds === clock));
+	});
+
+	for (const settings of [{ passageOfTime: 'faerie', faerieMorning: 'north' }, { passageOfTime: 'always_noon', faerieMorning: null }] as const)
+	{
+		it(`passes no game time as players walk in an area whose time is ${settings.passageOfTime}`, async () =>
+		{
+			await updateAreaSettings(universe.fieldAreaId, settings);
+
+			const room = await createGameRoom();
+			const client = await joinAsNewPlayer(room);
+			const player = room.state.players.get(playerIdOf(room, client)) as Player;
+			const startX = player.x;
+
+			client.send(MessageType.Move, { x: 1, y: 0 });
+			await room.waitForNextMessage();
+			await waitUntil(() => (player.x >= (startX + (2 * GRID_CELL_SIZE))));
+			client.send(MessageType.Move, { x: 0, y: 0 });
+			await room.waitForNextMessage();
+			await waitUntilStopped(room, player);
+
+			assert.strictEqual(room.state.clock, GROUP_START_SECONDS);
+		});
+	}
 
 	it('does not use the database while players move', async () =>
 	{

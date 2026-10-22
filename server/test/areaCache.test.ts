@@ -28,6 +28,7 @@ function loadedArea(): LoadedArea
 			passageOfTime: 'inherit'
 		},
 		ruleset: 'pf1e',
+		time: { passage: 'flows_normally' },
 		bounds: { minColumn: -100, minRow: -100, maxColumn: 99, maxRow: 99 },
 		defaultTileId: GRASS,
 		loopsEastWest: false,

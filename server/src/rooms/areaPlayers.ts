@@ -1,9 +1,10 @@
 import type { Client } from 'colyseus';
 import { StateView, type MapSchema } from '@colyseus/schema';
-import { CHUNK_SIZE, Player, ServerMessageType, type ChunksPayload, type MovePayload, type WelcomePayload } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, Player, ServerMessageType, type AreaTime, type ChunksPayload, type MovePayload, type WelcomePayload } from '@multiverse-kiln/shared';
 
 import { chunksNear, type ChunkAreaMap } from '../logic/chunkArea.js';
-import { cellAt, findFreeCell, NO_PRESS, occupiedCells, stepOnGrid, type Cell, type DirectionPress, type GridStep, type IsCellFree, type Position } from '../logic/movement.js';
+import { stepSeconds } from '../logic/gameClock.js';
+import { cellAt, findFreeCell, NO_PRESS, occupiedCells, stepOnGrid, wrapCell, type Cell, type DirectionPress, type GridStep, type IsCellFree, type Position } from '../logic/movement.js';
 import { CellOccupancy } from '../logic/occupancy.js';
 import { linkAt, type AreaLink } from '../logic/areaGrid.js';
 import { isGroupTogether } from '../logic/groupLinks.js';
@@ -108,6 +109,15 @@ export interface WholeGroupLinks
 }
 
 /**
+ * Told that a player finished a step
+ *
+ * @param playerId The player's ID
+ * @param seconds The game time the step took (stepSeconds)
+ * @param time How the time of day works in the area the step was in
+ */
+export type WalkListener = (playerId: string, seconds: number, time: AreaTime) => void;
+
+/**
  * The players on the map of a room with areas (a universe's lobby or a group's game room): which
  * clients control them, which area each is in, how they move, and which of them each client sees
  *
@@ -162,6 +172,11 @@ export class AreaPlayers
 	private readonly sentChunks = new Map<string, Set<string>>();
 
 	/**
+	 * Told of each step a player other than a ghost finishes (see onWalk)
+	 */
+	private walkListener?: WalkListener;
+
+	/**
 	 * @param players The room's synced players, which this adds to, moves and removes
 	 * @param areas The room's areas
 	 * @param fallbackAreaId The area players go to when the area they are in is deleted
@@ -169,6 +184,16 @@ export class AreaPlayers
 	 */
 	constructor(private readonly players: MapSchema<Player>, private readonly areas: AreaCache, private readonly fallbackAreaId: () => string | undefined, private readonly wholeGroupLinks?: WholeGroupLinks)
 	{
+	}
+
+	/**
+	 * Listens for the steps players finish, during update(), so a group's room can pass game time
+	 *
+	 * @param listener Called with each step's player, the game time it took, and its area's time setting
+	 */
+	onWalk(listener: WalkListener): void
+	{
+		this.walkListener = listener;
 	}
 
 	/**
@@ -570,6 +595,11 @@ export class AreaPlayers
 			if (!player.ghost)
 			{
 				occupancy.hold(playerId, occupiedCells(mover, area.grid));
+
+				for (const step of mover.finishedSteps)
+				{
+					this.walkListener?.(playerId, stepSeconds(step, area.grid.movementCost(wrapCell(step.to, area.grid))), area.loaded.time);
+				}
 			}
 
 			const link = (mover.stoppedAt ? linkAt(area.map, mover.stoppedAt) : undefined);
@@ -635,7 +665,7 @@ export class AreaPlayers
 		{
 			await this.applyCellChange(change.areaId, change.chunkKeys);
 		}
-		else if (change.kind === 'tiles')
+		else if ((change.kind === 'tiles') || (change.kind === 'time'))
 		{
 			for (const area of this.areas.all().filter((each) => (each.loaded.area.universeId === change.universeId)))
 			{

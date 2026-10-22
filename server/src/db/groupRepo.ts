@@ -28,6 +28,11 @@ export interface GroupRecord
 	 * Where members with nowhere else to be go, or null when the area was deleted
 	 */
 	startingAreaId: string | null;
+
+	/**
+	 * The group's game clock, in seconds of game time
+	 */
+	clockSeconds: number;
 }
 
 /**
@@ -156,7 +161,8 @@ const groupColumns = {
 	universeId: groups.universeId,
 	anchorCharacterId: groups.anchorCharacterId,
 	name: groups.name,
-	startingAreaId: groups.startingAreaId
+	startingAreaId: groups.startingAreaId,
+	clockSeconds: groups.clockSeconds
 };
 
 /**
@@ -428,6 +434,21 @@ export async function saveMemberPositions(groupId: string, positions: readonly M
 				eq(groupMembers.characterId, characterId)
 			));
 	}
+}
+
+/**
+ * Records a group's game clock
+ *
+ * @param groupId The group's ID
+ * @param clockSeconds The clock, in seconds of game time
+ * @param executor The database, or a transaction
+ */
+export async function saveGroupClock(groupId: string, clockSeconds: number, executor: Executor = db): Promise<void>
+{
+	await executor
+		.update(groups)
+		.set({ clockSeconds })
+		.where(eq(groups.id, groupId));
 }
 
 /**

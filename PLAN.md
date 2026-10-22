@@ -5,7 +5,7 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 **Current phase** line updated so each new session knows where to pick up.
 `STRUCTURE-OVERVIEW.md` describes the pages, editors and game rules these phases build.
 
-**Current phase:** 11
+**Current phase:** 12
 
 ---
 
@@ -187,14 +187,22 @@ Alongside it, a basic Starfinder 1E ruleset (see SF1E in `STRUCTURE-OVERVIEW.md`
 
 ## Phase 12: Time, vision and world state
 
-- [ ] Game clock per group: standing still passes no time, walking a square takes a set time (to be defined), a combat round is 6 seconds
-- [ ] Passage of time per area with `inherit`; fixed times of day; `faerie` (time of day from map position and "where is morning"; faerie areas can't loop)
-- [ ] Lobby tab: lobby time (fixed, real-time from the Unix epoch with a day of 1-240 hours, or faerie)
-- [ ] Day and night rendering
-- [ ] Vision as a pure function with tests: vision budget, tile vision costs, lower at night unless the character has darkvision
-- [ ] Decide where vision runs. Prefer the server, sending each client only what it can see (Colyseus `StateView`)
-- [ ] World state per group, stored as a diff of the universe: explored areas first. Deleted when the group disbands
-- [ ] Offline group members (the summoning ring, if chosen)
+Decided: walking a square takes 1 second of game time (PF1E's walking pace), more on tiles with a movement cost; vision runs on the server, which shows each client only the players it can see, and the client runs the same shared function to draw fog over the tiles it already has; world state remembers the areas a group has explored and the cells it has seen in them; the summoning ring waits for items and NPCs.
+
+Built in three steps: time, vision, then world state.
+
+1. Time
+	- [✅] Time of day as pure functions in `/shared` with tests: fixed times, flowing time from a clock, real time from the Unix epoch, faerie time from map position, daylight, and each area's passage of time resolved through `inherit`
+	- [✅] Game clock per group, saved with the group: standing still passes no time, walking a square takes 1 second (longer on tiles with a movement cost), a combat round is 6 seconds
+	- [✅] Lobby tab: lobby time (fixed, real-time from the Unix epoch with a day of 1-240 hours, or faerie)
+	- [✅] Day and night rendering, and the time of day for screen readers
+2. Vision
+	- [ ] Vision as a pure function in `/shared` with tests: vision range, tile vision costs, shorter at night unless the character has darkvision
+	- [ ] The server shows each client only the players its group can see (`StateView`); the client draws fog with the same function
+3. World state
+	- [ ] World state per group, stored as a diff of the universe: the areas explored and the cells seen in them, deleted when the group disbands
+	- [ ] Seen cells drawn dimmed, unseen ones black
+	- [ ] Check the new screens in the pseudo-language, update Pirate, and add screen reader text
 
 **Done when:** a group watches day turn to night as it explores, sees less at night unless it has darkvision, can't see past mountains, and its explored areas are remembered after a restart.
 
@@ -290,6 +298,7 @@ Needed before universes are open to the public.
 ## Later (not yet specified)
 
 - Combat, monsters, NPCs and dialog (their results go in world state), and gaining experience
+- Offline group members: the summoning ring (see Offline group members in `STRUCTURE-OVERVIEW.md`)
 - Money changers: NPCs who change a character's coins into the fewest coins of the same worth (`changePf1eMoney`), perhaps for a fee
 - One-off event messages for effects (hits, explosions)
 - The overworld map and its scale
@@ -303,8 +312,6 @@ Needed before universes are open to the public.
 ## Open decisions
 
 - Whether character names must be unique within a universe (Phase 10)
-- How long walking a square takes (Phase 12)
-- Whether vision runs on the server or the client (Phase 12)
 - How groups are listed in the lobby (Phase 11)
 - Auth approach, account linking, the email sending service, and whether to add a CAPTCHA (Phase 13)
 - Image storage, and the tile graphic formats (Phase 17)

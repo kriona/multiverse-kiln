@@ -523,6 +523,10 @@
 		"message": "Hoistin'...",
 		"source": "Loading..."
 	},
+	"editor.area.lobbyTime": {
+		"message": "How the hours pass in the tavern be set on the Lobby tab.",
+		"source": "The lobby's passage of time is set on the Lobby tab."
+	},
 	"editor.area.lobbyTitle": {
 		"message": "{area} (the tavern)",
 		"source": "{area} (the lobby)"
@@ -1187,6 +1191,14 @@
 		"message": "Needs the whole crew",
 		"source": "Requires the whole group"
 	},
+	"editor.lobby.dayHours": {
+		"message": "How swift?",
+		"source": "How quickly?"
+	},
+	"editor.lobby.dayHoursHint": {
+		"message": "How long a day in the tavern lasts by the real clock, from {min, plural, one {# hour} other {# hours}} to {max, plural, one {# hour} other {# hours}}. Every soul shares the same hour, reckoned from the start o' 1970.",
+		"source": "How long in real time it takes for one day in the lobby to pass, from {min, plural, one {# hour} other {# hours}} to {max, plural, one {# hour} other {# hours}}. The time of day is the same for everyone, counted from the start of 1970."
+	},
 	"editor.lobby.editArea": {
 		"message": "Edit the tavern's area",
 		"source": "Edit the lobby's area"
@@ -1194,6 +1206,14 @@
 	"editor.lobby.explanation": {
 		"message": "The tavern be where every soul in the universe gathers afore joinin' a crew. It be an area like any other, but it ain't listed on the Areas tab.",
 		"source": "The lobby is where everyone in the universe meets before joining a group. It is an area like any other, but isn't listed on the Areas tab."
+	},
+	"editor.lobby.saveFailed": {
+		"message": "Couldn't stow the tavern's settings.",
+		"source": "Could not save the lobby's settings."
+	},
+	"editor.lobby.timeHint": {
+		"message": "Nothin' ye do in the tavern takes any time, so its hours pass by this 'stead o' the universe's way.",
+		"source": "Actions take no time in the lobby, so its time of day follows this instead of the universe's passage of time."
 	},
 	"editor.map.areaDefault": {
 		"message": "{tile} (the area's usual)",
@@ -2015,6 +2035,10 @@
 		"message": "An area where the hours pass the faerie way can't loop.",
 		"source": "An area whose passage of time is faerie can't loop."
 	},
+	"error.faerieLobbyCantLoop": {
+		"message": "The tavern's hours can't pass the faerie way while its chart loops.",
+		"source": "The lobby's passage of time can't be faerie while its map loops."
+	},
 	"error.faerieMorningMismatch": {
 		"message": "Where the mornin' be must be chosen when, and only when, the hours pass the faerie way.",
 		"source": "Where morning is must be chosen when, and only when, the passage of time is faerie."
@@ -2323,6 +2347,14 @@
 		"message": "{name} no longer sails with the crew, or can't take the helm.",
 		"source": "{name} is no longer in the group, or can't be played."
 	},
+	"group.clock": {
+		"message": "Day {day, number} o' the voyage, {time}",
+		"source": "Day {day, number}, {time}"
+	},
+	"group.clockFaerie": {
+		"message": "Day {day, number} o' the voyage, {period, select, midnight {the witchin' hour} pre_dawn {afore first light} dawn {first light} early_morning {early mornin'} morning {mornin'} late_morning {late mornin'} noon {high noon} early_afternoon {early afternoon} afternoon {afternoon} late_afternoon {late afternoon} evening {eventide} late_evening {late eventide} other {the dark o' night}}",
+		"source": "Day {day, number}, {period, select, midnight {midnight} pre_dawn {pre-dawn} dawn {dawn} early_morning {early morning} morning {morning} late_morning {late morning} noon {noon} early_afternoon {early afternoon} afternoon {afternoon} late_afternoon {late afternoon} evening {evening} late_evening {late evening} other {night}}"
+	},
 	"group.connectionLost": {
 		"message": "Lost sight o' the crew.",
 		"source": "Lost the connection to the group."
@@ -2357,7 +2389,7 @@
 	},
 	"group.member.anchor": {
 		"message": "anchor",
-		"source": "anchor being"
+		"source": "anchor"
 	},
 	"group.member.away": {
 		"message": "ashore",
@@ -2525,7 +2557,7 @@
 	},
 	"invite.summary": {
 		"message": "Ye be summoned to sail {universe} with a crew gathered by {anchor}. It has {count, number} o' {size, plural, one {# hand} other {# hands}}.",
-		"source": "You're invited to play {universe} in a group centered on {anchor}. It has {count, number} of {size, plural, one {# character} other {# characters}}."
+		"source": "You're invited to play {universe} in a group created by {anchor}. It has {count, number} of {size, plural, one {# character} other {# characters}}."
 	},
 	"invite.title": {
 		"message": "Summons",
@@ -2883,6 +2915,10 @@
 		"message": "{count, plural, one {{players} slips out o' sight.} other {{players} slip out o' sight.}}",
 		"source": "{count, plural, one {{players} goes out of view.} other {{players} go out of view.}}"
 	},
+	"map.announce.partOfDay": {
+		"message": "{part, select, dawn {First light breaks.} day {The sun be high.} dusk {Dusk be fallin'.} other {Night falls o'er the sea.}}",
+		"source": "{part, select, dawn {Dawn breaks.} day {The sun is up.} dusk {Dusk falls.} other {Night falls.}}"
+	},
 	"map.announce.player": {
 		"message": "{name}, {cells, plural, one {# cell} other {# cells}} {direction, select, north {north} northeast {nor'east} east {east} southeast {sou'east} south {south} southwest {sou'west} west {west} other {nor'west}}",
 		"source": "{name}, {cells, plural, one {# cell} other {# cells}} {direction, select, north {north} northeast {northeast} east {east} southeast {southeast} south {south} southwest {southwest} west {west} other {northwest}}"
@@ -2894,6 +2930,10 @@
 	"map.announce.position": {
 		"message": "{area}, column {column}, row {row}{onTile, select, yes {, standin' on {tile}} other {}}. {count, plural, =0 {Not a soul in sight.} other {Ye can spy {players}.}}",
 		"source": "{area}, column {column}, row {row}{onTile, select, yes {, on {tile}} other {}}. {count, plural, =0 {You can't see anyone else.} other {You can see {players}.}}"
+	},
+	"map.announce.timeOfDay": {
+		"message": "'Tis {time}, {part, select, dawn {first light} day {broad day} dusk {dusk} other {the dark o' night}}.",
+		"source": "It is {time}, {part, select, dawn {dawn} day {day} dusk {dusk} other {night}}."
 	},
 	"map.ghost": {
 		"message": "Ghost",
@@ -3862,6 +3902,10 @@
 	"universe.time.inherit": {
 		"message": "same as the mother area",
 		"source": "inherit from the parent area"
+	},
+	"universe.time.real_time": {
+		"message": "by the real clock",
+		"source": "real time"
 	},
 	"universePage.characterDescription": {
 		"message": "{race} {class}",

@@ -5,6 +5,7 @@ import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import type { ChangeTracker } from '../changeTracker';
 import { getElement, showMessage } from '../dom';
 import { CharactersTab } from './CharactersTab';
+import { LobbyTab } from './LobbyTab';
 import { ClassesTab } from './ClassesTab';
 import { ItemSelectDialog } from './ItemSelectDialog';
 import { ItemsTab } from './ItemsTab';
@@ -88,6 +89,7 @@ export class EditorScreen
 	private readonly notice = getElement('editor-notice', HTMLElement);
 	private readonly universeTab: UniverseTab;
 	private readonly rulesetTab: RulesetTab;
+	private readonly lobbyTab: LobbyTab;
 	private readonly charactersTab: CharactersTab;
 	private readonly racesTab: RacesTab;
 	private readonly classesTab: ClassesTab;
@@ -119,6 +121,10 @@ export class EditorScreen
 			this.setUniverse(universe);
 		});
 		this.rulesetTab = new RulesetTab(api);
+		this.lobbyTab = new LobbyTab(api, (universe) =>
+		{
+			this.setUniverse(universe);
+		});
 
 		const areaSelect = new AreaSelectDialog(api);
 		const itemSelect = new ItemSelectDialog(api);
@@ -140,6 +146,7 @@ export class EditorScreen
 		const trackedTabs: [EditorTab, ChangeTracker][] = [
 			['universe', this.universeTab.changes],
 			['ruleset', this.rulesetTab.changes],
+			['lobby', this.lobbyTab.changes],
 			['characters', this.charactersTab.changes],
 			['areas', this.areasTab.changes]
 		];
@@ -241,6 +248,7 @@ export class EditorScreen
 		this.setUniverse(universe);
 		this.universeTab.open(universe);
 		void this.rulesetTab.open(universe);
+		this.lobbyTab.open(universe);
 		this.charactersTab.open(universe);
 		this.themesSection.open(universe);
 		this.racesTab.open(universe);

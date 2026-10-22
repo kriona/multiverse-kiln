@@ -5,7 +5,7 @@
  * browser; routes about a universe also need a role in it, and changes need a role that allows them
  */
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
-import { canEditUniverseSettings, canEditWorld, defineMessages, EDITOR_UNIVERSES_PATH, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, SOURCE_LOCALE, Translator, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type RulesetSettings } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, canEditWorld, defineMessages, EDITOR_UNIVERSES_PATH, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, SOURCE_LOCALE, Translator, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type RulesetSettings, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { lockPlayer } from '../db/playerRepo.js';
 import { loadRulesetSettings, storeRulesetSettings } from '../db/rulesetRepo.js';
@@ -14,7 +14,7 @@ import { countCustomTiles, createCustomTile, deleteCustomTile, findDefaultTileId
 import { inTransaction } from '../db/transactions.js';
 import { countUniversesWithRole, listEditableUniverses, setUniverseRole } from '../db/universeEditorRepo.js';
 import { createUniverse, lockUniverse, setUniverseAreas, UniverseNameTakenError, updateUniverseSettings } from '../db/universeRepo.js';
-import { createArea, isTileInUse } from '../db/areaRepo.js';
+import { createArea, findEditorArea, isTileInUse } from '../db/areaRepo.js';
 import { areaChanges } from '../world/areaChanges.js';
 import { loadUniverseContext, playerIdOf, refuseWritesFromOtherOrigins, requireLogin, requireRole, universeContextOf } from './editorAccess.js';
 import { addDefaultStartingItems } from '../db/startingItemRepo.js';
@@ -24,7 +24,7 @@ import { newUniverseRequest, rulesetSettings, tileIdParameter, tileListQuery, ti
 import { addRaceRoutes } from './editorRaces.js';
 import { addThemeRoutes } from './editorThemes.js';
 import { findStartingProblem } from './editorStartingExtras.js';
-import { addAreaRoutes, DEFAULT_AREA_TILE_KEYS, timeSettingsProblem } from './editorAreas.js';
+import { addAreaRoutes, DEFAULT_AREA_TILE_KEYS, lobbyTimeProblem, timeSettingsProblem } from './editorAreas.js';
 import { errorMessages, sendError, sendInvalidRequest, type Refusal } from './errors.js';
 
 /**
@@ -283,7 +283,9 @@ async function updateUniverse(request: Request, response: Response): Promise<voi
 		return;
 	}
 
-	const problem = timeSettingsProblem({ ...universe, ...body.data });
+	const lobbyArea = ((universe.lobbyAreaId !== null) ? await findEditorArea(universe.lobbyAreaId) : undefined);
+	const problem = (timeSettingsProblem({ ...universe, ...body.data })
+		?? lobbyTimeProblem({ ...universe, ...body.data }, lobbyArea?.area));
 
 	if (problem !== undefined)
 	{
@@ -319,6 +321,13 @@ async function updateUniverse(request: Request, response: Response): Promise<voi
 	{
 		sendError(response, refusal.status, refusal.message, refusal.values);
 		return;
+	}
+
+	const timeKeys: (keyof UniverseSettingsUpdate)[] = ['passageOfTime', 'faerieMorning', 'lobbyPassageOfTime', 'lobbyDayHours', 'lobbyFaerieMorning'];
+
+	if (timeKeys.some((key) => (body.data[key] !== undefined)))
+	{
+		areaChanges.publish({ kind: 'time', universeId: universe.id });
 	}
 
 	response.sendStatus(204);

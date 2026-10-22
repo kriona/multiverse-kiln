@@ -14,7 +14,7 @@ import type { ClassRules, RaceRules } from './racesAndClasses.js';
 import type { Pf1eSettings } from './rulesets/pf1e/settings.js';
 import type { Sf1eSettings } from './rulesets/sf1e/settings.js';
 import type { Sf1eThemeRules } from './rulesets/sf1e/themes.js';
-import type { FaerieMorning, PassageOfTime, Ruleset, UniverseRole, UniverseStage, AreaLinkMode, AreaPassageOfTime } from './universes.js';
+import type { FaerieMorning, LobbyPassageOfTime, PassageOfTime, Ruleset, UniverseRole, UniverseStage, AreaLinkMode, AreaPassageOfTime } from './universes.js';
 
 /**
  * Base of every editor route. Under it, with :universeId and :areaId standing for IDs:
@@ -266,6 +266,22 @@ export interface UniverseSettings
 	faerieMorning: FaerieMorning | null;
 
 	/**
+	 * How the time of day changes in the lobby (the Lobby tab)
+	 */
+	lobbyPassageOfTime: LobbyPassageOfTime;
+
+	/**
+	 * How many real hours a lobby day lasts when lobbyPassageOfTime is real_time, from MIN_LOBBY_DAY_HOURS
+	 * to MAX_LOBBY_DAY_HOURS
+	 */
+	lobbyDayHours: number;
+
+	/**
+	 * Set exactly when lobbyPassageOfTime is faerie. The lobby's area can't loop while it is
+	 */
+	lobbyFaerieMorning: FaerieMorning | null;
+
+	/**
 	 * Most characters in one group, from MIN_GROUP_SIZE to MAX_GROUP_PLAYERS
 	 */
 	groupSize: number;
@@ -311,7 +327,8 @@ export interface EditableUniverse extends UniverseSettings
 
 /**
  * Body of PATCH EDITOR_UNIVERSES_PATH/:universeId: the settings to change. faerieMorning must be
- * sent with passageOfTime whenever either changes to or from faerie
+ * sent with passageOfTime whenever either changes to or from faerie, and lobbyFaerieMorning with
+ * lobbyPassageOfTime
  */
 export type UniverseSettingsUpdate = Partial<UniverseSettings>;
 
