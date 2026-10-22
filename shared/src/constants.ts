@@ -1,12 +1,14 @@
 /**
- * Name of the game room, registered on the server; each group of players plays in one
+ * Name of the game room, registered on the server; each group plays in one
  *
- * Only a lobby creates game rooms, and a client can join one only after its player has been put in that group
+ * Clients join with GameJoinOptions, and every client asking for the same group joins the same room,
+ * which is made from the database when the first of them arrives. A client is admitted only to play one
+ * of its player's characters in the group
  */
 export const GAME_ROOM_NAME = 'game';
 
 /**
- * Name of the session room: logging in, who the player is, and joining and leaving groups
+ * Name of the session room: logging in and who the player is
  *
  * There is one, and every window stays connected to it for as long as it is open, wherever its player is
  */
@@ -33,7 +35,7 @@ export const UNIVERSES_PATH = '/universes';
 export const MAX_UNIVERSES_PER_PAGE = 100;
 
 /**
- * Most players in one group
+ * Most characters in one group; each universe sets its own group size up to it
  */
 export const MAX_GROUP_PLAYERS = 6;
 
@@ -52,11 +54,6 @@ export const MAX_CHAT_MESSAGE_LENGTH = 500;
  * and isolates that can make text display out of order
  */
 export const DISALLOWED_TEXT_CHARACTERS = /[\p{Cc}\p{Bidi_Control}]/u;
-
-/**
- * Query string parameter of a join link that holds the group's ID
- */
-export const GROUP_QUERY_PARAMETER = 'group';
 
 /**
  * Default port the Colyseus server listens on

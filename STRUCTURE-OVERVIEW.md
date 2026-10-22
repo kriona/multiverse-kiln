@@ -69,7 +69,9 @@ The lobby and the game are on a page of their own (`/game/<slug>`, or `/game/<un
 
 If you have not created a character, you will go to the [lobby](#lobby).
 
-If you have created a character, you will go to where your most recently played character is (either the lobby or the game itself). If that character's group isn't running or has been disbanded, you go to the lobby as that character.
+If you have created a character, you will go to where your most recently played character is (either the lobby or the game itself). If that character's group has been disbanded, you go to the lobby as that character. A group's game doesn't need to be running: it starts from where the group was when everyone left. Each browser tab remembers the character it played, so reloading a tab plays that character again.
+
+Opening an invite link (`/game/<slug>?invite=<token>`) shows the [invite](#create-group) instead.
 
 ## Lobby
 The lobby runs the game engine. It will be a small area where many people (more than the 6-player group limit) can connect and chat.
@@ -78,7 +80,7 @@ The lobby runs the game engine. It will be a small area where many people (more 
 - There will be a button for [Create Character](#create-character). You can create multiple characters.
 - There will be a chat. You chat as your character.
 - If you have not created a character, you will use a ghost icon and nobody can see you. You can walk around the space. You can read chat but not send messages. Ghosts don't block cells, and pass through other players. Other players aren't shown ghosts in the list of who's here; a ghost sees themself listed as one. The [Create Character](#create-character) button should be more prominent.
-- If you have created a character, chat will be enabled. You will move about the space as your character, starting as the one you played or made most recently. You can switch characters at any time, and every window of yours switches with you.
+- If you have created a character, chat will be enabled. You will move about the space as your character, starting as the one you played or made most recently. You can switch characters at any time, and every window of yours in the lobby switches with you. Characters in a group play in their group, not the lobby; choosing one in the lobby's list goes to their group.
 - Each of your characters has a button that shows their [character sheet](#character-sheet), and Alt+K shows the sheet of the one you're playing.
 - You may create up to 20 characters per universe.
 - If you have a character selected, a [Create Group](#create-group) button will be enabled.
@@ -132,21 +134,31 @@ The server deletes characters whose days are over once an hour, and hides them u
 ## Create Group
 The character creating the group is the "anchor being". This shows you a landing page for your new group. It explains that your character is the anchor being for this universe, and that the game is centered around them.
 - The group starts in the anchor being's [starting area](#tab-characters).
-- If the anchor being leaves the group, the group is disbanded and its [world state](#world-state) is deleted. Every character keeps their items, money and experience.
+- If the anchor being leaves the group, the group is disbanded and its [world state](#world-state) is deleted. Every character keeps their items, money and experience. Deleting the anchor being's character disbands it too.
 - If the anchor being is offline, the group can't use [area links](#editor-map) that require the whole group (for example, leaving the city for the wilderness), but can use the ones that don't (entering a shop in the city).
+- A group holds at most the universe's [group size](#tab-characters) characters. A character is in at most one group.
 
-You can give the group a name.
+You can give the group a name. Create Group is a dialog in the lobby, made around the character you're playing there.
 
-There's a "Invite" button that opens a modal dialog.
-- You can pick a user and send them an invite in a private message.
+Only the anchor being's player sees the "Invite" button, which opens a modal dialog.
+- Later, once [messages](#messages) exist: you can pick a user and send them an invite in a private message.
 - You can create a link with the following options:
 	- single use or multi-use
-	- valid for 1 day, 1 week, indefinite
+	- valid for 1 day, 1 week, indefinite (until the group is disbanded)
 	- there will be a "Copy Link" button
+- The link holds a random token the server keeps only a hash of, so a link is shown once, when it is made.
 
-Opening an invite takes you to a character selection screen with an option to create a character. Characters that are already in a group are grayed out and can't be selected. If the group is full, you get a message saying you can't join because it's full.
+Opening an invite takes you to a character selection screen with an option to create a character (which comes back to the invite). Characters that are already in a group are grayed out and can't be selected. If the group is full, you get a message saying you can't join because it's full.
 
 A player can have several characters in one group (a player could make a group of 6 of their own characters), and switches between them in the UI without changing browser tabs.
+- Each window plays one character. Choosing another character in the same group switches the window to them; one in another group moves the window to that group; one not in a group moves it to the lobby. Several windows can play different characters of the same player side by side.
+- While a player has any window in a group's game, all of their characters in it are on the map; the ones no window controls stand still. When their last window leaves, their characters leave the map, and where each one was is saved for when they come back.
+- A character new to the group appears beside the anchor being.
+- A member can leave from the group screen, after a question; they go to the lobby and need a new invite to come back. The anchor being leaving asks whether to disband the group.
+
+The group screen lists the members, saying which is the anchor being, which are yours and which aren't here.
+
+A link that requires the whole group works only while every member who can be played (and the anchor being, always) is in the game, in the same area as the character taking it, and not already on their way somewhere. Then the whole group goes through together, so a player with several characters doesn't walk each one through. Otherwise the player is told the whole group has to be there.
 
 ## Messages
 You can send messages to other users (or yourself).

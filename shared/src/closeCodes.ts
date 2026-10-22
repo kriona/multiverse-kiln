@@ -11,7 +11,12 @@ export enum ServerCloseCode
 	TooManyInvalidMessages = 4011,
 
 	/**
-	 * The player is no longer in this room's group: they left it, joined another group or logged out
+	 * The character the window controls is no longer in this room's group: they left it, or were deleted
 	 */
-	LeftGroup = 4012
+	LeftGroup = 4012,
+
+	/**
+	 * The group's anchor being left it, so the group is no more
+	 */
+	GroupDisbanded = 4013
 }

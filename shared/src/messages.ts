@@ -25,7 +25,8 @@ export enum MessageType
 export enum ServerMessageType
 {
 	/**
-	 * Sent to each client as it joins: which player in state.players it controls (payload: WelcomePayload)
+	 * Sent to each client as it joins, and in a group's room whenever the window controls another
+	 * character: which player in state.players it controls (payload: WelcomePayload)
 	 */
 	Welcome = 'welcome',
 
@@ -39,6 +40,53 @@ export enum ServerMessageType
 	 * Chunks of the area's map that the player has come near, or that an editor has changed (payload: ChunksPayload)
 	 */
 	Chunks = 'chunks'
+}
+
+/**
+ * Message types clients send to a group's game room
+ */
+export enum GameMessageType
+{
+	/**
+	 * Control another of the player's characters in the group, in this window only
+	 * (payload: ControlPayload). The room answers with Welcome and Area, as on joining
+	 */
+	Control = 'control'
+}
+
+/**
+ * Message types a group's game room sends to clients
+ */
+export enum GameServerMessageType
+{
+	/**
+	 * Something the player asked for didn't happen (payload: NoticePayload)
+	 */
+	Notice = 'notice'
+}
+
+/**
+ * Options a client joins a group's game room with
+ */
+export interface GameJoinOptions
+{
+	groupId: string;
+
+	/**
+	 * The character the window controls: one of the player's characters in the group
+	 */
+	characterId: string;
+}
+
+/**
+ * Payload of GameMessageType.Control
+ */
+export interface ControlPayload
+{
+	/**
+	 * One of the player's characters in the group
+	 */
+	characterId: string;
 }
 
 /**
@@ -61,7 +109,8 @@ export interface MovePayload
 export interface WelcomePayload
 {
 	/**
-	 * Key of the client's own player in state.players. Windows of the same browser share one player
+	 * Key of the client's own player in state.players. In a lobby it is the player's ID, shared by every
+	 * window of the browser; in a group's room it is the ID of the character the window controls
 	 */
 	playerId: string;
 }
@@ -178,17 +227,7 @@ export enum SessionMessageType
 	/**
 	 * Log in with a name; every window of the browser is logged in (payload: LoginPayload)
 	 */
-	Login = 'login',
-
-	/**
-	 * Move the player into an existing group, from a join link (payload: JoinGroupPayload)
-	 */
-	JoinGroup = 'joinGroup',
-
-	/**
-	 * Take the player out of their group (no payload)
-	 */
-	LeaveGroup = 'leaveGroup'
+	Login = 'login'
 }
 
 /**
@@ -197,7 +236,7 @@ export enum SessionMessageType
 export enum SessionServerMessageType
 {
 	/**
-	 * Who the window's player is and which group they are in, sent on joining and whenever it changes (payload: AccountPayload)
+	 * Who the window's player is, sent on joining and whenever it changes (payload: AccountPayload)
 	 */
 	Account = 'account',
 
@@ -218,15 +257,10 @@ export enum LobbyMessageType
 	Chat = 'chat',
 
 	/**
-	 * Play one of the player's characters in this universe, in every window of the player
-	 * (payload: ChooseCharacterPayload)
+	 * Play one of the player's characters in this universe who isn't in a group, in every window of the
+	 * player in the lobby (payload: ChooseCharacterPayload)
 	 */
-	ChooseCharacter = 'chooseCharacter',
-
-	/**
-	 * Create a new group in this universe and move the player into it (no payload). Needs a character
-	 */
-	CreateGroup = 'createGroup'
+	ChooseCharacter = 'chooseCharacter'
 }
 
 /**
@@ -310,29 +344,16 @@ export interface PlayingAsPayload
 }
 
 /**
- * Payload of SessionMessageType.JoinGroup
- */
-export interface JoinGroupPayload
-{
-	groupId: string;
-}
-
-/**
  * A logged-in player, as their own windows see them
  */
 export interface AccountPlayer
 {
 	/**
-	 * Public ID of the player: their key in LobbyState and GameState
+	 * Public ID of the player: their key in LobbyState, and GroupMember.playerId in GameState
 	 */
 	playerId: string;
 
 	name: string;
-
-	/**
-	 * ID of the player's group (the game room's ID), or null when they aren't in one
-	 */
-	groupId: string | null;
 }
 
 /**
@@ -375,24 +396,15 @@ export interface ChatHistoryPayload
 }
 
 /**
- * Why a request to the session or a lobby was turned down
+ * Why a request to the session, a lobby or a group's room was turned down
  */
 export enum NoticeReason
 {
 	/**
-	 * The group in a join link doesn't exist (any more)
+	 * The link the character stands on needs the whole group, and a member isn't here: their player
+	 * isn't playing, they are in another area, or they are on their way somewhere
 	 */
-	GroupNotFound = 'groupNotFound',
-
-	/**
-	 * The group in a join link already has MAX_GROUP_PLAYERS players
-	 */
-	GroupFull = 'groupFull',
-
-	/**
-	 * The server couldn't create a group
-	 */
-	GroupNotCreated = 'groupNotCreated',
+	GroupNotTogether = 'groupNotTogether',
 
 	/**
 	 * The player sent chat messages faster than the lobby allows; the message was dropped

@@ -10,18 +10,22 @@
  * - universe.html: a universe's page, at /universe/<slug> or /universe/<id>: its name, ruleset and
  *   descriptions, and Enter Universe. Opened by ID, the address changes to the slug
  * - game.html: a universe's lobby and a group's game, on a page of their own so Home and the other pages
- *   can be open in other tabs while the player plays. /game/<slug> or /game/<id> enters that universe's
- *   lobby once the player has logged in (the address then changes to the slug), and ?group=<id>
- *   (GROUP_QUERY_PARAMETER) joins a group. Without either it shows the player's group, or goes to Home
- *   when they aren't in one
+ *   can be open in other tabs while the player plays. /game/<slug> or /game/<id> enters that universe
+ *   once the player has logged in (the address then changes to the slug), playing the character the tab
+ *   last played there, or the player's most recent: in their group, or in the lobby when they aren't in
+ *   one. ?invite=<token> (INVITE_QUERY_PARAMETER) opens an invite link, to choose a character to join
+ *   its group. Without a universe it goes to Home
  * - edit.html: the world editor at /edit/<id>, on the tab given by ?tab= and the area given by ?area=
- * - character.html: Create Character for ?universe=<id>, which goes back to that universe's lobby
+ * - character.html: Create Character for ?universe=<id>, which goes back to that universe's lobby, or to
+ *   the invite link in ?invite= when it was opened from one
  * - license.html: the game's license and the licenses of what it uses, linked to from the footer
  * - admin.html: settings for the whole site, linked to from Home's toolbar. Anyone can use it until
  *   there are server admin accounts
  *
  * Every page takes ?locale= to choose a language, as the language picker in the footer does (see src/localization.ts)
  */
+
+import { INVITE_QUERY_PARAMETER } from '@multiverse-kiln/shared';
 
 /**
  * Query string parameter choosing the language, e.g. en-x-pirate, or en-XA for the pseudo-language in development
@@ -92,22 +96,45 @@ export function editPageUrl(universeId: string): string
  * The address of Create Character for a universe
  *
  * @param universeId The universe's ID
+ * @param inviteToken The invite link to go back to once the character is made, if any
  * @return The address
  */
-export function characterPageUrl(universeId: string): string
+export function characterPageUrl(universeId: string, inviteToken?: string): string
 {
-	return(`${CHARACTER_PAGE}?${new URLSearchParams({ [UNIVERSE_PARAMETER]: universeId }).toString()}`);
+	const parameters = new URLSearchParams({ [UNIVERSE_PARAMETER]: universeId });
+
+	if (inviteToken !== undefined)
+	{
+		parameters.set(INVITE_QUERY_PARAMETER, inviteToken);
+	}
+
+	return(`${CHARACTER_PAGE}?${parameters.toString()}`);
 }
 
 /**
- * The address of the game's page, entering a universe's lobby if one is given
+ * The address of the game's page, entering a universe if one is given
  *
- * @param key The universe's slug or ID, or undefined for the player's group
+ * @param key The universe's slug or ID, or undefined for none
+ * @param inviteToken An invite link's token, to open the invite in that universe
  * @return The address
  */
-export function gamePageUrl(key?: string): string
+export function gamePageUrl(key?: string, inviteToken?: string): string
 {
-	return(((key === undefined) ? GAME_PAGE : `${GAME_PAGE}/${encodeURIComponent(key)}`));
+	const path = ((key === undefined) ? GAME_PAGE : `${GAME_PAGE}/${encodeURIComponent(key)}`);
+
+	return(((inviteToken === undefined) ? path : `${path}?${new URLSearchParams({ [INVITE_QUERY_PARAMETER]: inviteToken }).toString()}`));
+}
+
+/**
+ * The full address of an invite link, as shared with other players
+ *
+ * @param universeSlug The universe's slug
+ * @param inviteToken The link's token
+ * @return The address, with the page's origin
+ */
+export function inviteLinkUrl(universeSlug: string, inviteToken: string): string
+{
+	return(new URL(gamePageUrl(universeSlug, inviteToken), window.location.origin).toString());
 }
 
 /**

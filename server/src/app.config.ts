@@ -16,6 +16,7 @@ import { addAdminRoutes } from './http/admin.js';
 import { addBrowserIdRoute } from './http/browserId.js';
 import { addCharacterRoutes } from './http/characters.js';
 import { addEditorRoutes } from './http/editor.js';
+import { addGroupRoutes } from './http/groups.js';
 import { addHealthRoute } from './http/health.js';
 import { addUniversesRoutes } from './http/universes.js';
 import { createOriginCheck, parseAllowedOrigins } from './http/origins.js';
@@ -51,7 +52,8 @@ const server = defineServer({
 		// One lobby per universe: clients asking for the same universeId share a room
 		[LOBBY_ROOM_NAME]: defineRoom(LobbyRoom).filterBy(['universeId']),
 
-		[GAME_ROOM_NAME]: defineRoom(GameRoom),
+		// One game room per group: clients asking for the same groupId share a room
+		[GAME_ROOM_NAME]: defineRoom(GameRoom).filterBy(['groupId']),
 	},
 
 	/**
@@ -66,6 +68,7 @@ const server = defineServer({
 		addBrowserIdRoute(app);
 		addUniversesRoutes(app);
 		addCharacterRoutes(app, allowedOrigins);
+		addGroupRoutes(app, allowedOrigins);
 		addEditorRoutes(app, allowedOrigins);
 		addAdminRoutes(app, allowedOrigins);
 

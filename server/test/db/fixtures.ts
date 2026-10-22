@@ -4,6 +4,7 @@ import { CHUNK_SIZE, cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_C
 
 import { createCharacter, type NewCharacter } from '../../src/db/characterRepo.js';
 import { findDefaultClassIds } from '../../src/db/classRepo.js';
+import { createGroup } from '../../src/db/groupRepo.js';
 import { findDefaultItemIds } from '../../src/db/itemRepo.js';
 import { findDefaultRaceIds } from '../../src/db/raceRepo.js';
 import { findDefaultTileIds } from '../../src/db/tileRepo.js';
@@ -100,6 +101,20 @@ export async function addCharacter(playerId: string, universeId: string, name: s
 	const character = await dwarfFighter(playerId, universeId, name);
 
 	return(inTransaction((transaction) => createCharacter(character, transaction)));
+}
+
+/**
+ * Adds a group around a character, starting in an area
+ *
+ * @param universeId The universe's ID
+ * @param anchorCharacterId The anchor being's character ID
+ * @param startingAreaId Where the group starts, or null for the universe's starting area
+ * @param name The group's name
+ * @return The group's ID
+ */
+export async function addGroup(universeId: string, anchorCharacterId: string, startingAreaId: string | null, name: string = ''): Promise<string>
+{
+	return(inTransaction((transaction) => createGroup({ universeId, anchorCharacterId, name, startingAreaId }, transaction)));
 }
 
 /**

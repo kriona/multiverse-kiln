@@ -9,11 +9,6 @@ export interface OnlinePlayerRecord
 	readonly playerId: string;
 
 	readonly name: string;
-
-	/**
-	 * ID of the game room the player's group plays in, or undefined when they are in the lobby
-	 */
-	readonly groupId: string | undefined;
 }
 
 /**
@@ -40,12 +35,12 @@ export interface OnlinePlayerChange
 export type OnlinePlayerListener = (change: OnlinePlayerChange) => void;
 
 /**
- * Every logged-in player, keyed by browser ID, and the group each one is in
+ * Every logged-in player, keyed by browser ID
  *
- * This is the source of truth for logins and group membership: the lobby changes it, and game rooms
- * admit only the players it says are in their group. Every window of a browser is the same player,
- * and a player is logged in from at most one browser. It lives in memory, so it only works with a
- * single server process
+ * This is the source of truth for logins: the lobbies and game rooms admit only browsers it says are
+ * logged in. Every window of a browser is the same player, and a player is logged in from at most one
+ * browser. Which character each window plays, and where, is up to the window. It lives in memory, so it
+ * only works with a single server process
  */
 export class OnlinePlayers
 {
@@ -100,8 +95,7 @@ export class OnlinePlayers
 
 		const player: OnlinePlayerRecord = {
 			playerId,
-			name,
-			groupId: undefined
+			name
 		};
 
 		this.update(browserId, player);
@@ -110,7 +104,7 @@ export class OnlinePlayers
 	}
 
 	/**
-	 * Logs a browser out, taking its player out of their group
+	 * Logs a browser out
 	 *
 	 * @param browserId The browser's ID
 	 */
@@ -119,67 +113,6 @@ export class OnlinePlayers
 		if (this.players.has(browserId))
 		{
 			this.update(browserId, undefined);
-		}
-	}
-
-	/**
-	 * Moves a browser's player into a group, or back to the lobby; a player is in at most one group
-	 *
-	 * @param browserId The browser's ID
-	 * @param groupId The group's ID, or undefined for the lobby
-	 * @return Whether the browser is logged in (nothing happens when it isn't)
-	 */
-	setGroup(browserId: string, groupId: string | undefined): boolean
-	{
-		const player = this.players.get(browserId);
-
-		if (!player)
-		{
-			return(false);
-		}
-
-		if (player.groupId !== groupId)
-		{
-			this.update(browserId, { ...player, groupId });
-		}
-
-		return(true);
-	}
-
-	/**
-	 * How many players are in a group
-	 *
-	 * @param groupId The group's ID
-	 * @return The number of players
-	 */
-	countInGroup(groupId: string): number
-	{
-		let count = 0;
-
-		for (const player of this.players.values())
-		{
-			if (player.groupId === groupId)
-			{
-				count++;
-			}
-		}
-
-		return(count);
-	}
-
-	/**
-	 * Moves every player in a group back to the lobby, for when the group ends
-	 *
-	 * @param groupId The group's ID
-	 */
-	disbandGroup(groupId: string): void
-	{
-		for (const [browserId, player] of [...this.players])
-		{
-			if (player.groupId === groupId)
-			{
-				this.update(browserId, { ...player, groupId: undefined });
-			}
 		}
 	}
 
@@ -226,6 +159,6 @@ export class OnlinePlayers
 }
 
 /**
- * The server's logged-in players, shared by the lobby and every game room
+ * The server's logged-in players, shared by the session, the lobbies and every game room
  */
 export const onlinePlayers = new OnlinePlayers();

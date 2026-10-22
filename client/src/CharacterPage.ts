@@ -1,10 +1,10 @@
-import { NAME_MESSAGES, NoticeReason, SessionMessageType, SessionServerMessageType, type AccountPayload, type LoginPayload, type NoticePayload } from '@multiverse-kiln/shared';
+import { INVITE_QUERY_PARAMETER, NAME_MESSAGES, NoticeReason, SessionMessageType, SessionServerMessageType, type AccountPayload, type LoginPayload, type NoticePayload } from '@multiverse-kiln/shared';
 
 import { t } from './localization';
 import { CharacterApi } from './network/characterApi';
 import type { ServerConnection } from './network/serverConnection';
 import { isLeavingPage } from './pageLifecycle';
-import { gamePageUrl } from './pages';
+import { gamePageUrl, readPageParameter } from './pages';
 import { CreateCharacterScreen } from './ui/CreateCharacterScreen';
 import { showScreen, showStatus } from './ui/dom';
 import { LoginScreen } from './ui/LoginScreen';
@@ -41,9 +41,10 @@ export class CharacterPage
 			session.send(SessionMessageType.Login, login);
 		});
 
+		// Opened from an invite link, it goes back to the invite to choose the new character
 		this.characterScreen = new CreateCharacterScreen(new CharacterApi(client), () =>
 		{
-			window.location.assign(gamePageUrl(universeId));
+			window.location.assign(gamePageUrl(universeId, readPageParameter(INVITE_QUERY_PARAMETER)));
 		});
 
 		session.onMessage(SessionServerMessageType.Account, (account: AccountPayload) =>

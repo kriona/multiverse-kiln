@@ -1,12 +1,13 @@
 /**
  * Characters: the only module that reads or writes the characters, pf1e_characters, sf1e_characters,
- * character_items, character_drafts and pf1e_ability_rolls tables
+ * character_items, character_drafts and pf1e_ability_rolls tables. It reads group_members only to
+ * tell which characters are in a group
  */
 import { and, asc, count, desc, eq, gt, isNotNull, isNull, lte, ne, or, sql, type SQL } from 'drizzle-orm';
 import { isPf1eRollMethod, type AbilityScores, type CharacterDraft, type ItemQuantity, type Money, type Pf1eRollMethod, type Ruleset } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
-import { characterDrafts, characterItems, characters, pf1eAbilityRolls, pf1eCharacters, sf1eCharacters } from './schema.js';
+import { characterDrafts, characterItems, characters, groupMembers, pf1eAbilityRolls, pf1eCharacters, sf1eCharacters } from './schema.js';
 
 /**
  * A character as the lobby lists it
@@ -22,12 +23,36 @@ export interface CharacterRecord
 	 * When the character is deleted, once given their last rites; null otherwise
 	 */
 	deleteAt: Date | null;
+
+	/**
+	 * The group the character is in, or null when they are in none
+	 */
+	groupId: string | null;
+}
+
+/**
+ * One of a player's characters, as the group routes check them
+ */
+export interface OwnCharacter
+{
+	id: string;
+	name: string;
+
+	/**
+	 * The character's starting area, or null when they have none
+	 */
+	areaId: string | null;
+
+	/**
+	 * Whether the character can be played: they haven't been given their last rites
+	 */
+	playable: boolean;
 }
 
 /**
  * A character with everything their character sheet shows
  */
-export interface CharacterDetails extends CharacterRecord
+export interface CharacterDetails extends Omit<CharacterRecord, 'groupId'>
 {
 	/**
 	 * The theme, by the ID everything else uses for it, in a ruleset with themes; null otherwise
@@ -124,6 +149,12 @@ export interface Pf1eAbilityRoll
 const notExpired = or(isNull(characters.deleteAt), gt(characters.deleteAt, sql`now()`));
 
 /**
+ * When a character was last played, or made when they haven't been: the lobby and Enter Universe play
+ * the most recent
+ */
+const playedAt = sql`coalesce(${characters.lastPlayedAt}, ${characters.createdAt})`;
+
+/**
  * Matches one of a player's characters in a universe
  *
  * @param playerId The player's ID
@@ -156,9 +187,11 @@ export async function listCharacters(playerId: string, universeId: string, execu
 			name: characters.name,
 			raceId: characters.raceId,
 			classId: characters.classId,
-			deleteAt: characters.deleteAt
+			deleteAt: characters.deleteAt,
+			groupId: groupMembers.groupId
 		})
 		.from(characters)
+		.leftJoin(groupMembers, eq(groupMembers.characterId, characters.id))
 		.where(and(
 			eq(characters.playerId, playerId),
 			eq(characters.universeId, universeId),
@@ -300,6 +333,7 @@ async function findCharacterAbilities(ruleset: Ruleset, characterId: string, exe
 
 /**
  * A player's characters in a universe as the lobby plays them, leaving out those given their last rites
+ * and those in a group, who play there
  *
  * @param playerId The player's ID
  * @param universeId The universe's ID
@@ -314,12 +348,79 @@ export async function listPlayableCharacters(playerId: string, universeId: strin
 			name: characters.name
 		})
 		.from(characters)
+		.leftJoin(groupMembers, eq(groupMembers.characterId, characters.id))
+		.where(and(
+			eq(characters.playerId, playerId),
+			eq(characters.universeId, universeId),
+			isNull(characters.deleteAt),
+			isNull(groupMembers.characterId)
+		))
+		.orderBy(desc(playedAt), asc(characters.id)));
+}
+
+/**
+ * The character a player played or made most recently in a universe, in a group or not, leaving out
+ * those given their last rites
+ *
+ * @param playerId The player's ID
+ * @param universeId The universe's ID
+ * @param executor The database, or a transaction
+ * @return The character's ID, or undefined when the player has none to play
+ */
+export async function findLastPlayedCharacterId(playerId: string, universeId: string, executor: Executor = db): Promise<string | undefined>
+{
+	const [row] = await executor
+		.select({
+			id: characters.id
+		})
+		.from(characters)
 		.where(and(
 			eq(characters.playerId, playerId),
 			eq(characters.universeId, universeId),
 			isNull(characters.deleteAt)
 		))
-		.orderBy(desc(sql`coalesce(${characters.lastPlayedAt}, ${characters.createdAt})`), asc(characters.id)));
+		.orderBy(desc(playedAt), asc(characters.id))
+		.limit(1);
+
+	return(row?.id);
+}
+
+/**
+ * One of a player's characters in a universe, as the group routes check them
+ *
+ * @param playerId The player's ID
+ * @param universeId The universe's ID
+ * @param characterId The character's ID
+ * @param executor The database, or a transaction
+ * @return The character, or undefined when the player has no such character in the universe
+ */
+export async function findOwnCharacter(playerId: string, universeId: string, characterId: string, executor: Executor = db): Promise<OwnCharacter | undefined>
+{
+	const [row] = await executor
+		.select({
+			id: characters.id,
+			name: characters.name,
+			areaId: characters.areaId,
+			deleteAt: characters.deleteAt
+		})
+		.from(characters)
+		.where(and(
+			ownCharacter(playerId, universeId, characterId),
+			notExpired
+		))
+		.limit(1);
+
+	if (!row)
+	{
+		return(undefined);
+	}
+
+	return({
+		id: row.id,
+		name: row.name,
+		areaId: row.areaId,
+		playable: (row.deleteAt === null)
+	});
 }
 
 /**

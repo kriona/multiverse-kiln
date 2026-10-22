@@ -5,7 +5,7 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 **Current phase** line updated so each new session knows where to pick up.
 `STRUCTURE-OVERVIEW.md` describes the pages, editors and game rules these phases build.
 
-**Current phase:** 10
+**Current phase:** 11
 
 ---
 
@@ -173,14 +173,14 @@ Alongside it, a basic Starfinder 1E ruleset (see SF1E in `STRUCTURE-OVERVIEW.md`
 
 ## Phase 11: Groups and the anchor being
 
-- [ ] Rework sessions so a player controls characters rather than a browser being one player: a player's characters can be in different groups, several can be in the same group, and the UI switches between them without changing tabs
-- [ ] Groups belong to the anchor being, start in its starting area, and are limited to the universe's group size
-- [ ] Invite links: random, unguessable tokens; single or multi-use; valid for 1 day, 1 week or indefinitely; Copy Link
-- [ ] Opening an invite: character selection (characters already in a group grayed out, create a character), or a "group is full" message
-- [ ] Leaving: a member can leave; the anchor being leaving disbands the group
-- [ ] Links that require the whole group are refused while any member (including the anchor being) is missing
-- [ ] Group rooms are created from the database when a member returns, and save and dispose when everyone has left
-- [ ] Enter Universe: return to your last character's group, or to the lobby as that character if the group isn't running or is gone
+- [✅] Rework sessions so a player controls characters rather than a browser being one player: a player's characters can be in different groups, several can be in the same group, and the UI switches between them without changing tabs (each window plays one character; see Create Group in `STRUCTURE-OVERVIEW.md`)
+- [✅] Groups belong to the anchor being, start in its starting area, and are limited to the universe's group size
+- [✅] Invite links: random, unguessable tokens; single or multi-use; valid for 1 day, 1 week or indefinitely; Copy Link. Only the anchor being's player makes them
+- [✅] Opening an invite: character selection (characters already in a group grayed out, create a character), or a "group is full" message
+- [✅] Leaving: a member can leave; the anchor being leaving disbands the group
+- [✅] Links that require the whole group are refused while any member (including the anchor being) is missing; when everyone is together, the whole group goes through
+- [✅] Group rooms are created from the database when a member returns, and save and dispose when everyone has left
+- [✅] Enter Universe: return to your last character's group, or to the lobby as that character if the group is gone
 - [ ] Listing groups in the lobby (once its design is decided)
 
 **Done when:** a player invites friends by link, one player brings several characters into the group, and the group picks up where it was after everyone logs off and back on.

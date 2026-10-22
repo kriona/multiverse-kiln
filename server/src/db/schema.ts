@@ -796,6 +796,89 @@ export const pf1eAbilityRolls = pgTable('pf1e_ability_rolls', {
 ]);
 
 /**
+ * One row per group: characters playing a universe together, around their anchor being
+ *
+ * Deleting the anchor being's character disbands the group, deleting its members and invites with it
+ */
+export const groups = pgTable('groups', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	universeId: uuid('universe_id').notNull().references(() => universes.id, { onDelete: 'cascade' }),
+
+	/**
+	 * The character the group is centered on; they are also one of its members
+	 */
+	anchorCharacterId: uuid('anchor_character_id').notNull().references(() => characters.id, { onDelete: 'cascade' }),
+
+	/**
+	 * The name its anchor being's player gave it; empty when they gave none
+	 */
+	name: text('name').notNull().default(''),
+
+	/**
+	 * Where the group started: the anchor being's starting area. Members with nowhere else to be go
+	 * there; null when it was deleted, and the universe's starting area is used instead
+	 */
+	startingAreaId: uuid('starting_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
+
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	unique('groups_anchor_character_id_unique').on(table.anchorCharacterId),
+	index('groups_universe_id_index').on(table.universeId),
+	index('groups_starting_area_id_index').on(table.startingAreaId)
+]);
+
+/**
+ * The characters in each group, and where each one was when their player last left the group's room.
+ * A character is in at most one group
+ */
+export const groupMembers = pgTable('group_members', {
+	characterId: uuid('character_id').primaryKey().references(() => characters.id, { onDelete: 'cascade' }),
+	groupId: uuid('group_id').notNull().references(() => groups.id, { onDelete: 'cascade' }),
+
+	/**
+	 * The area the character was last in, with the cell; all three are null until they have been
+	 * played in the group, and the area is null when it was deleted
+	 */
+	areaId: uuid('area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
+	column: integer('column'),
+	row: integer('row'),
+
+	joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	index('group_members_group_id_index').on(table.groupId),
+	index('group_members_area_id_index').on(table.areaId)
+]);
+
+/**
+ * Invite links to groups. Only a hash of each link's token is kept, so the links can't be read back
+ * out of the database
+ */
+export const groupInvites = pgTable('group_invites', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	groupId: uuid('group_id').notNull().references(() => groups.id, { onDelete: 'cascade' }),
+
+	/**
+	 * SHA-256 of the token in the link, as hex
+	 */
+	tokenHash: text('token_hash').notNull(),
+
+	/**
+	 * Whether the link can be used again; a single-use link is deleted when a character joins with it
+	 */
+	multiUse: boolean('multi_use').notNull(),
+
+	/**
+	 * When the link stops working; null when it never does
+	 */
+	expiresAt: timestamp('expires_at', { withTimezone: true }),
+
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	unique('group_invites_token_hash_unique').on(table.tokenHash),
+	index('group_invites_group_id_index').on(table.groupId)
+]);
+
+/**
  * Settings for the whole site, in at most one row. A site without the row has DEFAULT_SITE_SETTINGS
  */
 export const siteSettings = pgTable('site_settings', {

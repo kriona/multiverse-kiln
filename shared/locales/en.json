@@ -443,6 +443,38 @@
 		"defaultMessage": "Traits",
 		"description": "Heading on a character's sheet of their size, whether they have darkvision and their money"
 	},
+	"characters.inGroup": {
+		"defaultMessage": "In a group",
+		"description": "In the list of the player's characters, beside one who is in a group (characters playing together); choosing them goes to that group"
+	},
+	"characters.inThisGroup": {
+		"defaultMessage": "In this group",
+		"description": "In the list of the player's characters, beside one who is in the group the player is playing now; choosing them switches to them"
+	},
+	"createGroup.explanation": {
+		"defaultMessage": "{name} will be the group's anchor being: the game centers around them. Only {name} can invite others. If {name} leaves the group, it will be disbanded; though every character keeps their items and money.",
+		"description": "In the Create Group dialog, what being the anchor being means; {name} is the name of the character the player is playing, who the group is made around"
+	},
+	"createGroup.failed": {
+		"defaultMessage": "Could not create the group.",
+		"description": "Shown in the Create Group dialog when the group couldn't be made"
+	},
+	"createGroup.name": {
+		"defaultMessage": "Group name (optional)",
+		"description": "Label of the optional field for the new group's name"
+	},
+	"createGroup.nameInvalid": {
+		"defaultMessage": "The name has characters that aren't allowed.",
+		"description": "Under the group name field when the name holds control characters or other characters that could make text display wrongly"
+	},
+	"createGroup.submit": {
+		"defaultMessage": "Create Group",
+		"description": "Button that makes the new group and goes into it"
+	},
+	"createGroup.title": {
+		"defaultMessage": "Create Group",
+		"description": "Title of the dialog that makes a new group (characters who play the universe together)"
+	},
 	"dialog.cancel": {
 		"defaultMessage": "Cancel",
 		"description": "Button that closes a dialog without making any changes"
@@ -1931,6 +1963,10 @@
 		"defaultMessage": "Edit {universe}",
 		"description": "Heading of the world editor; {universe} is the universe's name"
 	},
+	"error.alreadyInGroup": {
+		"defaultMessage": "That character is already in a group. They have to leave it first.",
+		"description": "Why a character couldn't make or join a group: a character can be in only one group at a time"
+	},
 	"error.areaInsideItself": {
 		"defaultMessage": "An area can't be inside itself.",
 		"description": "Why an area's settings were refused: the parent chosen is the area itself or an area inside it"
@@ -1979,6 +2015,14 @@
 		"defaultMessage": "Choose the ability that gets the race's bonus, and only for a race that has one.",
 		"description": "Why a new character wasn't made: a race that lets the player choose an ability to raise had none chosen, or another race had one"
 	},
+	"error.groupCharacterUnavailable": {
+		"defaultMessage": "That character can't do that: they don't exist, aren't yours, or have been given their last rites.",
+		"description": "Why a character couldn't make, join or leave a group: the character isn't one of the player's in this universe, or is waiting to be deleted"
+	},
+	"error.groupFull": {
+		"defaultMessage": "The group is full: it already has {max, plural, one {# character} other {# characters}}.",
+		"description": "Why a character couldn't join a group with an invite link; {max} is the most characters the universe allows in a group"
+	},
 	"error.invalidRequest": {
 		"defaultMessage": "The request isn't valid ({problem}).",
 		"description": "Why the server refused a request the page should never send; {problem} is a technical description in English"
@@ -1986,6 +2030,10 @@
 	"error.invalidScores": {
 		"defaultMessage": "The ability scores aren't allowed: use each rolled score once, or stay within the points you can spend.",
 		"description": "Why a new character wasn't made: the ability scores sent weren't the rolled ones, or cost more points than allowed"
+	},
+	"error.inviteGone": {
+		"defaultMessage": "This invite link has expired, has already been used, or is wrong.",
+		"description": "Why an invite link to a group didn't work"
 	},
 	"error.itemCarried": {
 		"defaultMessage": "Characters carry this item, so it can't be deleted. Disable it instead.",
@@ -2051,6 +2099,10 @@
 		"defaultMessage": "The class doesn't exist.",
 		"description": "Why a request about a character class (such as fighter or wizard) failed: it was deleted, perhaps by another editor"
 	},
+	"error.noSuchGroup": {
+		"defaultMessage": "The group doesn't exist any more, or that character isn't in it.",
+		"description": "Why a character couldn't leave a group or an invite link couldn't be made: the group was disbanded, or the character had already left"
+	},
 	"error.noSuchItem": {
 		"defaultMessage": "The item doesn't exist.",
 		"description": "Why a request about an item failed: it was deleted, perhaps by another editor"
@@ -2078,6 +2130,10 @@
 	"error.noThemes": {
 		"defaultMessage": "This universe's ruleset has no themes.",
 		"description": "Why a request about themes (character backgrounds, such as ace pilot or scholar) failed: the universe's game rules don't use them"
+	},
+	"error.onlyAnchorInvites": {
+		"defaultMessage": "Only the anchor being's player can invite others to the group.",
+		"description": "Why an invite link wasn't made: only the player of the character the group is centered on (its \"anchor being\") may make one"
 	},
 	"error.otherOrigin": {
 		"defaultMessage": "Changes aren't allowed from this website.",
@@ -2243,6 +2299,10 @@
 		"defaultMessage": "Enter a whole number from {min, number} to {max, number}.",
 		"description": "Shown under a number field when what was typed isn't a whole number in the range it allows; {min} and {max} are the smallest and largest allowed"
 	},
+	"game.loadingUniverse": {
+		"defaultMessage": "Loading the universe...",
+		"description": "Shown on the whole page while the game looks up the universe it was opened for"
+	},
 	"game.outside.title": {
 		"defaultMessage": "Multiverse Kiln",
 		"description": "The browser tab's title on the game's page when the player isn't in a universe or game, such as when a join link has expired"
@@ -2251,49 +2311,93 @@
 		"defaultMessage": "That universe could not be found.",
 		"description": "Shown on the game's page when it was opened to enter a universe that doesn't exist or can't be played"
 	},
+	"group.characterLeft": {
+		"defaultMessage": "{name} is no longer in the group, or can't be played.",
+		"description": "Shown in the lobby when the character a window played left the group from another window, or was deleted; {name} is the character's name"
+	},
 	"group.connectionLost": {
-		"defaultMessage": "Lost the connection to the game.",
-		"description": "Shown when the connection to the player's game was lost"
+		"defaultMessage": "Lost the connection to the group.",
+		"description": "Shown in the lobby when the connection to the player's group was lost"
 	},
-	"group.full": {
-		"defaultMessage": "That game is full: it already has {max, plural, one {# player} other {# players}}.",
-		"description": "Shown when a join link leads to a game that has no room left; {max} is the most players a game can have"
+	"group.disband": {
+		"defaultMessage": "Disband Group",
+		"description": "Button, in place of Leave group while the window plays the anchor being, that takes them out of the group, which ends the group for everyone (it asks first)"
 	},
-	"group.gone": {
-		"defaultMessage": "That game has ended or the link is wrong.",
-		"description": "Shown when a join link leads to a game that doesn't exist"
+	"group.disbanded": {
+		"defaultMessage": "The group was disbanded.",
+		"description": "Shown in the lobby when the player's group ended because the character it was centered on left it"
 	},
-	"group.joinLink": {
-		"defaultMessage": "Join link: {link}",
-		"description": "Shown in the game's toolbar after pressing Share; {link} is the address others can open to join"
-	},
-	"group.joinLinkCopied": {
-		"defaultMessage": "Join link copied. Send it to the players you want to invite.",
-		"description": "Shown in the game's toolbar when Share has copied the join link to the clipboard"
+	"group.invite": {
+		"defaultMessage": "Invite",
+		"description": "Button, for the anchor being's player only, that makes a link others can open to join the group"
 	},
 	"group.joining": {
 		"defaultMessage": "Joining...",
-		"description": "Shown in the game's toolbar while the player goes into the game"
+		"description": "Shown in the group's toolbar while the player goes into the group"
+	},
+	"group.keys.characterSheet": {
+		"defaultMessage": "Open the character sheet of the character you're playing",
+		"description": "In the list of keyboard shortcuts in a group, what the shortcut that shows the character this window plays does"
 	},
 	"group.leave": {
 		"defaultMessage": "Leave group",
-		"description": "Button that leaves the game and goes back to the lobby"
+		"description": "Button that takes the character this window plays out of the group, back to the lobby"
+	},
+	"group.leaveFailed": {
+		"defaultMessage": "Could not leave the group.",
+		"description": "Shown when the character couldn't be taken out of their group"
+	},
+	"group.member.anchor": {
+		"defaultMessage": "anchor",
+		"description": "In the list of a group's members, beside the character the group is centered on"
+	},
+	"group.member.away": {
+		"defaultMessage": "not here",
+		"description": "In the list of a group's members, beside one whose player isn't playing; links that need the whole group can't be used until they are"
+	},
+	"group.member.own": {
+		"defaultMessage": "yours",
+		"description": "In the list of a group's members, beside the player's own characters"
+	},
+	"group.member.withNotes": {
+		"defaultMessage": "{name} ({notes})",
+		"description": "In the list of a group's members, a member's name followed by notes about them, such as \"anchor being, not here\"; {notes} is the notes joined as a list"
+	},
+	"group.members": {
+		"defaultMessage": "In the group ({count})",
+		"description": "Heading of the list of characters in the group; {count} is how many there are"
 	},
 	"group.notJoined": {
-		"defaultMessage": "Could not join that game. It may have just ended.",
-		"description": "Shown when the player couldn't go into their game"
+		"defaultMessage": "Could not join that group. It may have been disbanded.",
+		"description": "Shown in the lobby when the player couldn't go into their character's group"
+	},
+	"group.notTogether": {
+		"defaultMessage": "The whole group has to be here to go that way, the anchor being included.",
+		"description": "Shown in a group's toolbar, and read out, when a character tries a door or path that needs every member of the group, and one isn't playing, is in another area, or is on their way somewhere"
+	},
+	"group.nowPlaying": {
+		"defaultMessage": "You are now playing {name}.",
+		"description": "Read out by screen readers in a group when the window switches to another of the player's characters; {name} is the character's name"
 	},
 	"group.pageTitle": {
-		"defaultMessage": "Game - Multiverse Kiln",
-		"description": "The browser tab's title while the player is in a group's game; Multiverse Kiln is the game engine's name"
+		"defaultMessage": "{group} - Multiverse Kiln",
+		"description": "The browser tab's title while the player is in a group; {group} is the group's name, or \"Group\", and Multiverse Kiln is the game engine's name"
 	},
-	"group.share": {
-		"defaultMessage": "Share",
-		"description": "Button that copies a link others can use to join the game"
+	"group.playingAs": {
+		"defaultMessage": "Playing as {name}",
+		"description": "In the group's toolbar, the character this window plays; {name} is the character's name"
+	},
+	"group.returning": {
+		"defaultMessage": "Going back to the lobby...",
+		"description": "Shown on the whole page while the player goes back to the lobby after leaving their group"
 	},
 	"group.title": {
-		"defaultMessage": "Game",
-		"description": "Heading of the screen where a group plays"
+		"defaultMessage": "Group",
+		"description": "Heading of the screen where a group plays, until the group's name has loaded, or when it has none"
+	},
+	"group.unnamed": {
+		"defaultMessage": "Group",
+		"description": "Heading of a group's screen when the group has no name"
 	},
 	"home.create.chooseRuleset": {
 		"defaultMessage": "Choose a ruleset",
@@ -2363,6 +2467,126 @@
 		"defaultMessage": "Universes",
 		"description": "Heading of the list of universes anyone can play"
 	},
+	"invite.characterInGroup": {
+		"defaultMessage": "Already in a group",
+		"description": "On the screen an invite link opens, beside a character who can't join because they are in a group already"
+	},
+	"invite.characterLeaving": {
+		"defaultMessage": "To be deleted",
+		"description": "On the screen an invite link opens, beside a character who can't join because they have been given their last rites (are waiting to be deleted)"
+	},
+	"invite.choose": {
+		"defaultMessage": "Choose a character to join the group. Characters already in a group can't join another.",
+		"description": "On the screen an invite link opens, above the list of the player's characters: they choose one to join the group with"
+	},
+	"invite.failed": {
+		"defaultMessage": "Could not open the invite.",
+		"description": "Shown on the screen an invite link opens when the invite couldn't be loaded"
+	},
+	"invite.full": {
+		"defaultMessage": "You can't join: the group is full.",
+		"description": "On the screen an invite link opens, when the group already has as many characters as its universe allows"
+	},
+	"invite.joinFailed": {
+		"defaultMessage": "Could not join the group.",
+		"description": "Shown on the screen an invite link opens when the chosen character couldn't join the group"
+	},
+	"invite.joinNamed": {
+		"defaultMessage": "Join {group}",
+		"description": "Heading of the screen an invite link opens; {group} is the group's name"
+	},
+	"invite.joinUnnamed": {
+		"defaultMessage": "Join {anchor}'s group",
+		"description": "Heading of the screen an invite link opens, for a group with no name; {anchor} is the name of the character the group is centered on"
+	},
+	"invite.loading": {
+		"defaultMessage": "Opening the invite...",
+		"description": "Shown on the whole page while an invite link to a group loads"
+	},
+	"invite.lobby": {
+		"defaultMessage": "Go to the lobby",
+		"description": "Button on the screen an invite link opens that goes to the universe's lobby without joining the group"
+	},
+	"invite.noCharacters": {
+		"defaultMessage": "You haven't made a character in this universe yet. Create one to join the group.",
+		"description": "On the screen an invite link opens, instead of the list of the player's characters when they have none in this universe"
+	},
+	"invite.pageTitle": {
+		"defaultMessage": "{title} - {universe} - Multiverse Kiln",
+		"description": "The browser tab's title on the screen an invite link opens; {title} is its heading, e.g. \"Join The Fellowship\", {universe} is the universe's name, and Multiverse Kiln is the game engine's name"
+	},
+	"invite.summary": {
+		"defaultMessage": "You're invited to play {universe} in a group created by {anchor}. It has {count, number} of {size, plural, one {# character} other {# characters}}.",
+		"description": "On the screen an invite link opens, what the invite is for; {universe} is the universe's name, {anchor} is the name of the character the group is centered on, {count} is how many characters are in it, and {size} is the most it can have"
+	},
+	"invite.title": {
+		"defaultMessage": "Invite",
+		"description": "Heading of the screen an invite link opens, until the group it leads to has loaded"
+	},
+	"inviteDialog.copied": {
+		"defaultMessage": "Link copied.",
+		"description": "Shown in the Invite dialog when Copy Link has copied the invite link to the clipboard"
+	},
+	"inviteDialog.copy": {
+		"defaultMessage": "Copy Link",
+		"description": "Button that copies the invite link to the clipboard"
+	},
+	"inviteDialog.copyFailed": {
+		"defaultMessage": "Your browser didn't allow copying. Select the link and copy it yourself.",
+		"description": "Shown in the Invite dialog when the browser refused to copy the invite link"
+	},
+	"inviteDialog.create": {
+		"defaultMessage": "Create Link",
+		"description": "Button that makes a new invite link with the options chosen"
+	},
+	"inviteDialog.duration": {
+		"defaultMessage": "Valid for",
+		"description": "Label of the choice of how long an invite link works"
+	},
+	"inviteDialog.duration.day": {
+		"defaultMessage": "1 day",
+		"description": "Choice of how long an invite link works: one day from now"
+	},
+	"inviteDialog.duration.indefinite": {
+		"defaultMessage": "Until the group is disbanded",
+		"description": "Choice of how long an invite link works: it never expires, but stops working when the group ends"
+	},
+	"inviteDialog.duration.week": {
+		"defaultMessage": "1 week",
+		"description": "Choice of how long an invite link works: one week from now"
+	},
+	"inviteDialog.expires": {
+		"defaultMessage": "Works until {expiresAt, date, medium} {expiresAt, time, short}. This link is shown only once: copy it now.",
+		"description": "Under an invite link that expires; {expiresAt} is when it stops working"
+	},
+	"inviteDialog.failed": {
+		"defaultMessage": "Could not make an invite link.",
+		"description": "Shown in the Invite dialog when the link couldn't be made"
+	},
+	"inviteDialog.link": {
+		"defaultMessage": "Invite link",
+		"description": "Label of the field holding the invite link just made, to copy and send to other players"
+	},
+	"inviteDialog.multiUse": {
+		"defaultMessage": "Anyone with the link (multi-use)",
+		"description": "Choice for an invite link that keeps working for any number of characters until it expires or the group is full"
+	},
+	"inviteDialog.neverExpires": {
+		"defaultMessage": "Works until the group is disbanded. This link is shown only once: copy it now.",
+		"description": "Under an invite link that never expires"
+	},
+	"inviteDialog.singleUse": {
+		"defaultMessage": "One character (single use)",
+		"description": "Choice for an invite link that works for one character only, then stops working"
+	},
+	"inviteDialog.title": {
+		"defaultMessage": "Invite to the Group",
+		"description": "Title of the dialog that makes a link others can open to join the group"
+	},
+	"inviteDialog.uses": {
+		"defaultMessage": "Who can use the link",
+		"description": "Label of the choice of how many characters can join the group with an invite link"
+	},
 	"item.pf1e.dagger": {
 		"defaultMessage": "dagger",
 		"description": "Name of an item in Pathfinder: a short blade for stabbing or throwing"
@@ -2386,6 +2610,30 @@
 	"keys.shift": {
 		"defaultMessage": "Shift",
 		"description": "Name of the Shift key, as keyboard shortcuts such as Ctrl+Shift+Z show it"
+	},
+	"leaveGroup.confirm": {
+		"defaultMessage": "Leave Group",
+		"description": "Button that takes the character out of their group"
+	},
+	"leaveGroup.disband": {
+		"defaultMessage": "Disband",
+		"description": "Button that takes the anchor being out of the group, which ends the group for everyone"
+	},
+	"leaveGroup.disbandQuestion": {
+		"defaultMessage": "{name} is the anchor being, so if they leave, the group is disbanded for everyone. Every character keeps their items and money.",
+		"description": "Asked before the anchor being leaves their group; {name} is the anchor being's name"
+	},
+	"leaveGroup.disbandTitle": {
+		"defaultMessage": "Disband the Group?",
+		"description": "Title of the dialog that asks the anchor being's player whether to leave the group, which ends it"
+	},
+	"leaveGroup.question": {
+		"defaultMessage": "{name} leaves the group and goes to the lobby. To come back, they need a new invite.",
+		"description": "Asked before a character leaves their group; {name} is the character's name"
+	},
+	"leaveGroup.title": {
+		"defaultMessage": "Leave the Group?",
+		"description": "Title of the dialog that asks whether to take a character out of their group"
 	},
 	"license.agpl": {
 		"defaultMessage": "Multiverse Kiln™ is free software: you can redistribute it and/or modify it under the terms of the {license} as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.",
@@ -2536,20 +2784,16 @@
 		"description": "Button that goes to the page for making a new character in this universe"
 	},
 	"lobby.createGroup": {
-		"defaultMessage": "Create game",
-		"description": "Button that starts a new game, which the player can share with others"
+		"defaultMessage": "Create Group",
+		"description": "Button that makes a new group (characters who play the universe together) around the character the player is playing, which others can be invited to"
 	},
 	"lobby.entering": {
 		"defaultMessage": "Entering {universe}...",
 		"description": "Shown on the whole page while the player goes into a universe's lobby; {universe} is its name"
 	},
 	"lobby.ghostNote": {
-		"defaultMessage": "You're a ghost: nobody can see you, and you can read the chat but not join in or start a game. Choose or create a character to play.",
+		"defaultMessage": "You're a ghost: nobody can see you, and you can read the chat but not join in or start a group. Choose or create a character to play.",
 		"description": "In the lobby, shown above the player's characters while they play none: they are a ghost, whom other players can't see"
-	},
-	"lobby.groupNotCreated": {
-		"defaultMessage": "Could not create a game. Try again in a moment.",
-		"description": "Shown in the lobby when the server couldn't start a new game"
 	},
 	"lobby.here": {
 		"defaultMessage": "Here ({count})",

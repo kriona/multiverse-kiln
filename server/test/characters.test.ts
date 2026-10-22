@@ -262,8 +262,10 @@ describe('Character routes', () =>
 				name: 'Brokk',
 				race: { key: 'dwarf', name: null },
 				characterClass: { key: 'fighter', name: null },
-				deleteAt: null
-			}]
+				deleteAt: null,
+				groupId: null
+			}],
+			lastPlayedId: created.body.id
 		});
 
 		// The rolls were used up, so making another with them is refused until new ones are rolled

@@ -6,7 +6,7 @@
  * Unknown keys are stripped rather than rejected
  */
 import { z } from 'zod';
-import { DISALLOWED_TEXT_CHARACTERS, MAX_CHAT_MESSAGE_LENGTH, MAX_PLAYER_NAME_LENGTH, type ChatPayload, type ChooseCharacterPayload, type JoinGroupPayload, type LobbyJoinOptions, type LoginPayload, type MovePayload } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, MAX_CHAT_MESSAGE_LENGTH, MAX_PLAYER_NAME_LENGTH, type ChatPayload, type ChooseCharacterPayload, type ControlPayload, type GameJoinOptions, type LobbyJoinOptions, type LoginPayload, type MovePayload } from '@multiverse-kiln/shared';
 
 const direction = z.literal([-1, 0, 1]);
 
@@ -51,18 +51,26 @@ export const chooseCharacterPayload = z.object({
 }) satisfies z.ZodType<ChooseCharacterPayload>;
 
 /**
- * JoinGroupPayload: a room ID as Colyseus generates them
+ * ControlPayload: a character's ID
  */
-export const joinGroupPayload = z.object({
-	groupId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/)
-}) satisfies z.ZodType<JoinGroupPayload>;
+export const controlPayload = z.object({
+	characterId: z.uuid()
+}) satisfies z.ZodType<ControlPayload>;
 
 /**
- * Options a universe's lobby and a group's game room are created with: which universe
+ * Options a universe's lobby is created and joined with: which universe
  */
 export const roomOptions = z.object({
 	universeId: z.uuid()
 }) satisfies z.ZodType<LobbyJoinOptions>;
+
+/**
+ * Options a group's game room is created and joined with: which group, and which character the window plays
+ */
+export const gameJoinOptions = z.object({
+	groupId: z.uuid(),
+	characterId: z.uuid()
+}) satisfies z.ZodType<GameJoinOptions>;
 
 /**
  * Summarizes why a payload failed validation, for logging

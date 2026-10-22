@@ -1,8 +1,9 @@
 /**
  * Which player each client in a room controls
  *
- * Every window of a browser is the same player, so several clients can control one player. The player
- * stays in the room until its last client leaves
+ * A player here is someone on the room's map: in a lobby, a logged-in player, whom every window of the
+ * browser controls; in a group's room, a character, whom any window of their player may control. So
+ * several clients can control one player, and a client can switch to another
  */
 export class PlayerSessions
 {
@@ -62,6 +63,45 @@ export class PlayerSessions
 		}
 
 		return({ playerId, wasLastClient });
+	}
+
+	/**
+	 * Makes a client control another player
+	 *
+	 * @param sessionId The client's session ID
+	 * @param playerId The player it controls now
+	 * @return The player it controlled, and whether it was that player's last client; undefined for an unknown session
+	 */
+	move(sessionId: string, playerId: string): { playerId: string; wasLastClient: boolean } | undefined
+	{
+		const left = this.remove(sessionId);
+
+		if (left)
+		{
+			this.add(sessionId, playerId);
+		}
+
+		return(left);
+	}
+
+	/**
+	 * Forgets every client controlling a player
+	 *
+	 * @param playerId The player's ID
+	 * @return The clients' session IDs
+	 */
+	removePlayer(playerId: string): string[]
+	{
+		const sessionIds = this.getSessionIds(playerId);
+
+		for (const sessionId of sessionIds)
+		{
+			this.playerIdsBySession.delete(sessionId);
+		}
+
+		this.sessionIdsByPlayer.delete(playerId);
+
+		return(sessionIds);
 	}
 
 	/**
