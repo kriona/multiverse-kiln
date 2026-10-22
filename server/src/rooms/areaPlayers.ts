@@ -1,6 +1,6 @@
 import type { Client } from 'colyseus';
 import { StateView, type MapSchema } from '@colyseus/schema';
-import { CHUNK_SIZE, Player, ServerMessageType, type AreaTime, type ChunksPayload, type MovePayload, type WelcomePayload } from '@multiverse-kiln/shared';
+import { canSee, CHUNK_SIZE, Player, secondOfDay, ServerMessageType, visionBudget, type AreaTime, type ChunksPayload, type MovePayload, type WelcomePayload } from '@multiverse-kiln/shared';
 
 import { chunksNear, type ChunkAreaMap } from '../logic/chunkArea.js';
 import { stepSeconds } from '../logic/gameClock.js';
@@ -64,6 +64,30 @@ export interface Appearance
 	 * pass through other players and nobody bumps into them
 	 */
 	ghost: boolean;
+
+	/**
+	 * Whether the character sees in the dark (see visionBudget)
+	 */
+	darkvision: boolean;
+}
+
+/**
+ * How the players in a room see
+ */
+export interface RoomVision
+{
+	/**
+	 * Whether everyone in the room is in one group, which sees whatever any of its members in an area
+	 * sees there. Otherwise each player sees only what they see themselves
+	 */
+	shared: boolean;
+
+	/**
+	 * The game clock, for the time of day in areas where time flows normally
+	 *
+	 * @return Seconds of game time
+	 */
+	clockSeconds(): number;
 }
 
 /**
@@ -124,8 +148,9 @@ export type WalkListener = (playerId: string, seconds: number, time: AreaTime) =
  * Each client controls one player (see PlayerSessions), and can be switched to another (control()).
  * Players stay in the room until the room removes them (remove()), so a lobby removes a player once
  * their last client has left, and a group's room keeps every character of a player who has any window
- * in it. A room holds every area its players are in; a client sees only the players in its own
- * player's area, through its StateView, and no other player's ghost. Stepping onto an automatic area
+ * in it. A room holds every area its players are in; a client sees, through its StateView, only the
+ * players in its own player's area that its player can see (see RoomVision and canSee), and no other
+ * player's ghost; what each client sees is brought up to date every tick. Stepping onto an automatic area
  * link, or asking to take the manual link the player stands on, sends the player to the link's target
  * cell once that area has loaded; a link that requires the whole group sends every member (see
  * WholeGroupLinks). The room calls update() from its simulation tick and refreshChunks() every
@@ -180,9 +205,10 @@ export class AreaPlayers
 	 * @param players The room's synced players, which this adds to, moves and removes
 	 * @param areas The room's areas
 	 * @param fallbackAreaId The area players go to when the area they are in is deleted
+	 * @param vision How the room's players see
 	 * @param wholeGroupLinks How links that require the whole group work, in a group's room
 	 */
-	constructor(private readonly players: MapSchema<Player>, private readonly areas: AreaCache, private readonly fallbackAreaId: () => string | undefined, private readonly wholeGroupLinks?: WholeGroupLinks)
+	constructor(private readonly players: MapSchema<Player>, private readonly areas: AreaCache, private readonly fallbackAreaId: () => string | undefined, private readonly vision: RoomVision, private readonly wholeGroupLinks?: WholeGroupLinks)
 	{
 	}
 
@@ -224,7 +250,7 @@ export class AreaPlayers
 		}
 
 		// Added before it has a cell, so the search below knows whether the player is a ghost
-		const player = new Player({ x: 0, y: 0, name: appearance.name, ghost: appearance.ghost });
+		const player = new Player({ x: 0, y: 0, name: appearance.name, ghost: appearance.ghost, darkvision: appearance.darkvision });
 
 		this.players.set(playerId, player);
 
@@ -239,7 +265,7 @@ export class AreaPlayers
 		player.x = position.x;
 		player.y = position.y;
 		this.areaIds.set(playerId, area.loaded.area.id);
-		this.showToArea(playerId);
+		this.refreshViews();
 	}
 
 	/**
@@ -330,9 +356,11 @@ export class AreaPlayers
 		}
 
 		this.stop(playerId);
-		this.hideFromArea(playerId);
-		this.players.delete(playerId);
+
+		// Out of every area first, so the views that hold the player let go of them before they are deleted
 		this.areaIds.delete(playerId);
+		this.refreshViews();
+		this.players.delete(playerId);
 		this.steps.delete(playerId);
 		this.presses.delete(playerId);
 		this.travelling.delete(playerId);
@@ -373,8 +401,8 @@ export class AreaPlayers
 	}
 
 	/**
-	 * Shows a client the players in its player's area, and only them, and tells it which player it
-	 * controls and which area it is in
+	 * Shows a client the players its player sees, and tells it which player it controls and which area
+	 * it is in
 	 *
 	 * @param client The client, already recorded as controlling the player
 	 * @param playerId The player
@@ -382,26 +410,8 @@ export class AreaPlayers
 	private attach(client: Client, playerId: string): void
 	{
 		const area = this.areaOf(playerId);
-		const visible = new Set(this.playersIn(this.areaIds.get(playerId)).filter((otherId) => ((otherId === playerId) || !this.isGhost(otherId))));
 
-		if (!client.view)
-		{
-			client.view = new StateView();
-		}
-
-		// Players who stay in view aren't removed and added again, which would make the client redraw them
-		for (const [otherId, other] of this.players)
-		{
-			if (!visible.has(otherId) && client.view.has(other))
-			{
-				client.view.remove(other);
-			}
-		}
-
-		for (const otherId of visible)
-		{
-			this.show(otherId, client);
-		}
+		this.refreshViews();
 
 		const welcome: WelcomePayload = { playerId };
 
@@ -474,8 +484,8 @@ export class AreaPlayers
 
 	/**
 	 * Changes how a player shows. A ghost becoming visible stops where they are, moving to the nearest
-	 * free cell if another player holds theirs, and appears to the others in their area; a player becoming
-	 * a ghost disappears from the others' view
+	 * free cell if another player holds theirs, and appears to the others in their area who can see
+	 * them; a player becoming a ghost disappears from the others' view
 	 *
 	 * @param playerId The player's ID
 	 * @param appearance How they show now
@@ -493,6 +503,7 @@ export class AreaPlayers
 
 		player.name = appearance.name;
 		player.ghost = appearance.ghost;
+		player.darkvision = appearance.darkvision;
 
 		if (wasGhost === appearance.ghost)
 		{
@@ -501,7 +512,7 @@ export class AreaPlayers
 
 		if (appearance.ghost)
 		{
-			this.hideFromOthers(playerId);
+			this.refreshViews();
 			return;
 		}
 
@@ -522,18 +533,13 @@ export class AreaPlayers
 			}
 		}
 
-		for (const otherId of this.playersIn(this.areaIds.get(playerId)))
-		{
-			if (otherId !== playerId)
-			{
-				this.showToPlayer(playerId, otherId);
-			}
-		}
+		this.refreshViews();
 	}
 
 	/**
-	 * One simulation tick: applies queued inputs, then moves every player in their area, and sends
-	 * players who stepped onto an automatic link on their way
+	 * One simulation tick: applies queued inputs, then moves every player in their area, sends players
+	 * who stepped onto an automatic link on their way, and shows each client the players its player
+	 * now sees
 	 *
 	 * @param deltaSeconds Seconds since the previous tick
 	 */
@@ -609,6 +615,8 @@ export class AreaPlayers
 				this.takeLinkFrom(playerId, link);
 			}
 		}
+
+		this.refreshViews();
 	}
 
 	/**
@@ -954,11 +962,10 @@ export class AreaPlayers
 			return;
 		}
 
-		this.hideFromArea(playerId);
 		this.areaIds.set(playerId, target.loaded.area.id);
 		player.x = position.x;
 		player.y = position.y;
-		this.showToArea(playerId);
+		this.refreshViews();
 		this.sendArea(playerId, target, this.getClients(playerId));
 	}
 
@@ -1140,75 +1147,61 @@ export class AreaPlayers
 	}
 
 	/**
-	 * Shows a player to everyone else in their area, and everyone else in it to them
+	 * Shows every client the players its player sees, and only them
 	 *
-	 * @param playerId The player's ID
+	 * Runs every tick, and straight away when players come, go, change area or stop being a ghost
 	 */
-	private showToArea(playerId: string): void
+	private refreshViews(): void
 	{
-		for (const otherId of this.playersIn(this.areaIds.get(playerId)))
+		const seenByPlayer = new Map<string, Set<string>>();
+		const nowMilliseconds = Date.now();
+
+		for (const [sessionId, client] of this.clients)
 		{
-			if (otherId !== playerId)
+			const playerId = this.sessions.getPlayerId(sessionId);
+
+			if (playerId === undefined)
 			{
-				this.showToPlayer(playerId, otherId);
-				this.showToPlayer(otherId, playerId);
+				continue;
 			}
+
+			let seen = seenByPlayer.get(playerId);
+
+			if (!seen)
+			{
+				seen = this.seenBy(playerId, nowMilliseconds);
+				seenByPlayer.set(playerId, seen);
+			}
+
+			this.showOnly(client, seen);
 		}
 	}
 
 	/**
-	 * Hides a player from everyone else in their area, and everyone else in it from them
+	 * Makes a client's view hold some players and no others
 	 *
-	 * @param playerId The player's ID
+	 * Players who stay in view aren't removed and added again, which would make the client redraw them,
+	 * and a player the view doesn't hold isn't removed, which would still send the client a removal
+	 *
+	 * @param client The client
+	 * @param playerIds The players it sees
 	 */
-	private hideFromArea(playerId: string): void
+	private showOnly(client: Client, playerIds: ReadonlySet<string>): void
 	{
-		this.hideFromOthers(playerId);
-
-		for (const otherId of this.playersIn(this.areaIds.get(playerId)))
+		if (!client.view)
 		{
-			if (otherId !== playerId)
+			client.view = new StateView();
+		}
+
+		for (const [playerId, player] of this.players)
+		{
+			const isShown = client.view.has(player);
+
+			if (playerIds.has(playerId) && !isShown)
 			{
-				this.hideFromPlayer(otherId, playerId);
+				client.view.add(player);
 			}
-		}
-	}
-
-	/**
-	 * Hides a player from everyone else in their area
-	 *
-	 * @param playerId The player's ID
-	 */
-	private hideFromOthers(playerId: string): void
-	{
-		for (const otherId of this.playersIn(this.areaIds.get(playerId)))
-		{
-			if (otherId !== playerId)
-			{
-				this.hideFromPlayer(playerId, otherId);
-			}
-		}
-	}
-
-	/**
-	 * Hides a player from every client of another player that sees them
-	 *
-	 * @param playerId The player to hide
-	 * @param viewerId The player whose clients stop seeing them
-	 */
-	private hideFromPlayer(playerId: string, viewerId: string): void
-	{
-		const player = this.players.get(playerId);
-
-		if (!player)
-		{
-			return;
-		}
-
-		for (const client of this.getClients(viewerId))
-		{
-			// Removing a player a view doesn't hold would still send its clients a removal
-			if (client.view?.has(player))
+			else if (!playerIds.has(playerId) && isShown)
 			{
 				client.view.remove(player);
 			}
@@ -1216,22 +1209,66 @@ export class AreaPlayers
 	}
 
 	/**
-	 * Shows a player to every client of another player, unless the player is a ghost
+	 * The players a player sees: themselves, and those in their area who aren't ghosts and are in sight
+	 * of them or, in a room whose vision is shared, are members of the group or in sight of one there
 	 *
-	 * @param playerId The player to show
-	 * @param viewerId The player whose clients see them
+	 * @param playerId The player's ID
+	 * @param nowMilliseconds The real time, for areas whose time of day follows it
+	 * @return Their IDs
 	 */
-	private showToPlayer(playerId: string, viewerId: string): void
+	private seenBy(playerId: string, nowMilliseconds: number): Set<string>
 	{
-		if (this.isGhost(playerId))
+		const seen = new Set([playerId]);
+		const area = this.areaOf(playerId);
+
+		if (!area)
 		{
-			return;
+			return(seen);
 		}
 
-		for (const client of this.getClients(viewerId))
+		const others = this.playersIn(area.loaded.area.id).filter((otherId) => ((otherId !== playerId) && !this.isGhost(otherId)));
+		const lookers = (this.vision.shared ? [playerId, ...others] : [playerId]);
+		const sights = lookers
+			.map((lookerId) => this.sightOf(lookerId, area, nowMilliseconds))
+			.filter((sight) => (sight !== undefined));
+
+		for (const otherId of others)
 		{
-			this.show(playerId, client);
+			const cell = this.cellOf(otherId, area);
+
+			if (lookers.includes(otherId) || (cell && sights.some((sight) => canSee(sight.cell, cell, sight.budget, area.vision))))
+			{
+				seen.add(otherId);
+			}
 		}
+
+		return(seen);
+	}
+
+	/**
+	 * Where a player looks from and how far they see
+	 *
+	 * @param playerId The player's ID
+	 * @param area The area they are in
+	 * @param nowMilliseconds The real time, for areas whose time of day follows it
+	 * @return Their cell and vision budget, or undefined when they aren't in the room
+	 */
+	private sightOf(playerId: string, area: ActiveArea, nowMilliseconds: number): { cell: Cell; budget: number } | undefined
+	{
+		const player = this.players.get(playerId);
+		const cell = this.cellOf(playerId, area);
+
+		if (!player || !cell)
+		{
+			return(undefined);
+		}
+
+		const second = secondOfDay(area.loaded.time, this.vision.clockSeconds(), nowMilliseconds, cell, area.loaded.bounds);
+
+		return({
+			cell,
+			budget: visionBudget(second, player.darkvision)
+		});
 	}
 
 	/**
@@ -1243,22 +1280,6 @@ export class AreaPlayers
 	private isGhost(playerId: string): boolean
 	{
 		return(this.players.get(playerId)?.ghost ?? false);
-	}
-
-	/**
-	 * Shows a player to one client
-	 *
-	 * @param playerId The player to show
-	 * @param client The client
-	 */
-	private show(playerId: string, client: Client): void
-	{
-		const player = this.players.get(playerId);
-
-		if (player && !client.view?.has(player))
-		{
-			client.view?.add(player);
-		}
 	}
 
 	/**

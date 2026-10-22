@@ -109,6 +109,21 @@ export async function loadEditorRaces(universeId: string, ruleset: Ruleset, exec
 }
 
 /**
+ * Whether each race a universe can use has darkvision, as the universe sets it now
+ *
+ * @param universeId The universe's ID
+ * @param ruleset The universe's ruleset
+ * @param executor The database, or a transaction
+ * @return Whether each race sees in the dark, by the race ID characters hold
+ */
+export async function loadRaceDarkvision(universeId: string, ruleset: Ruleset, executor: Executor = db): Promise<Map<number, boolean>>
+{
+	const editorRaces = await loadEditorRaces(universeId, ruleset, executor);
+
+	return(new Map(editorRaces.map((race) => [race.id, race.rules.darkvision])));
+}
+
+/**
  * Matches the rows of races a universe can see: its ruleset's default races, and its own races and
  * edited copies
  *

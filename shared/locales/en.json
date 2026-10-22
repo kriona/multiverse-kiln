@@ -2931,6 +2931,10 @@
 		"defaultMessage": "{area}, column {column}, row {row}{onTile, select, yes {, on {tile}} other {}}. {count, plural, =0 {You can't see anyone else.} other {You can see {players}.}}",
 		"description": "Read out by screen readers when the player asks where they are: the area's name, their cell, the tile they stand on (e.g. Grass) when it is known, and the other players they can see; {players} is a list of descriptions such as \"Bo, 3 cells northeast\""
 	},
+	"map.announce.sight": {
+		"defaultMessage": "You can see {squares, plural, one {# square} other {# squares}} across open ground.",
+		"description": "Read out by screen readers when the player asks where they are, after the time of day: how far they can see, which is less at night unless their character has darkvision, and less past forests and mountains"
+	},
 	"map.announce.timeOfDay": {
 		"defaultMessage": "It is {time}, {part, select, dawn {dawn} day {day} dusk {dusk} other {night}}.",
 		"description": "Read out by screen readers when the player asks where they are, after their position: the time of day in the game, e.g. \"6:30 PM\", and the part of the day it falls in"

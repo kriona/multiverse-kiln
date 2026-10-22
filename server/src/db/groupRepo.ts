@@ -74,6 +74,7 @@ export interface GroupCharacter
 	characterId: string;
 	playerId: string;
 	name: string;
+	raceId: number;
 
 	/**
 	 * False while the character has been given their last rites, so they can't be played
@@ -302,6 +303,7 @@ export async function listGroupMembers(groupId: string, executor: Executor = db)
 			characterId: groupMembers.characterId,
 			playerId: characters.playerId,
 			name: characters.name,
+			raceId: characters.raceId,
 			deleteAt: characters.deleteAt,
 			areaId: groupMembers.areaId,
 			column: groupMembers.column,
@@ -315,10 +317,11 @@ export async function listGroupMembers(groupId: string, executor: Executor = db)
 		))
 		.orderBy(asc(groupMembers.joinedAt), asc(groupMembers.characterId));
 
-	return(rows.map(({ characterId, playerId, name, deleteAt, areaId, column, row }) => ({
+	return(rows.map(({ characterId, playerId, name, raceId, deleteAt, areaId, column, row }) => ({
 		characterId,
 		playerId,
 		name,
+		raceId,
 		playable: (deleteAt === null),
 		position: (((areaId !== null) && (column !== null) && (row !== null)) ? { areaId, column, row } : null)
 	})));
@@ -467,14 +470,15 @@ export async function listExpiredMemberships(executor: Executor = db): Promise<(
 			anchorCharacterId: groups.anchorCharacterId,
 			characterId: groupMembers.characterId,
 			playerId: characters.playerId,
-			name: characters.name
+			name: characters.name,
+			raceId: characters.raceId
 		})
 		.from(groupMembers)
 		.innerJoin(groups, eq(groups.id, groupMembers.groupId))
 		.innerJoin(characters, eq(characters.id, groupMembers.characterId))
 		.where(lte(characters.deleteAt, sql`now()`));
 
-	return(rows.map(({ groupId, universeId, anchorCharacterId, characterId, playerId, name }) => ({
+	return(rows.map(({ groupId, universeId, anchorCharacterId, characterId, playerId, name, raceId }) => ({
 		groupId,
 		universeId,
 		isAnchor: (anchorCharacterId === characterId),
@@ -482,6 +486,7 @@ export async function listExpiredMemberships(executor: Executor = db): Promise<(
 			characterId,
 			playerId,
 			name,
+			raceId,
 			playable: false
 		}
 	})));
@@ -509,18 +514,20 @@ export async function listMembersOfGroups(groupIds: readonly string[], executor:
 			characterId: groupMembers.characterId,
 			playerId: characters.playerId,
 			name: characters.name,
+			raceId: characters.raceId,
 			deleteAt: characters.deleteAt
 		})
 		.from(groupMembers)
 		.innerJoin(characters, eq(characters.id, groupMembers.characterId))
 		.where(inArray(groupMembers.groupId, [...groupIds]));
 
-	for (const { groupId, characterId, playerId, name, deleteAt } of rows)
+	for (const { groupId, characterId, playerId, name, raceId, deleteAt } of rows)
 	{
 		const character: GroupCharacter = {
 			characterId,
 			playerId,
 			name,
+			raceId,
 			playable: (deleteAt === null)
 		};
 
@@ -608,7 +615,7 @@ export async function purgeExpiredInvites(executor: Executor = db): Promise<numb
  * @param member The member
  * @return The character and their player
  */
-function toGroupCharacter({ characterId, playerId, name, playable }: GroupMemberRecord): GroupCharacter
+function toGroupCharacter({ characterId, playerId, name, raceId, playable }: GroupMemberRecord): GroupCharacter
 {
-	return({ characterId, playerId, name, playable });
+	return({ characterId, playerId, name, raceId, playable });
 }

@@ -550,9 +550,11 @@ Each group has its own world state, stored as a diff of the universe as it was b
 Disbanding a group deletes its world state. Characters (items, money, experience) are stored separately and kept.
 
 ## Vision
-Each character has a vision budget. Looking across a tile spends its vision cost, and once the budget runs out you can't see past that tile, so a line of mountains blocks your view.
-- Night lowers the vision budget unless the character has darkvision.
-- The server works out what each player can see and only shows them the players in sight. The client runs the same function to draw fog over the tiles it has been sent.
+Each character has a vision budget, in squares. A character looks along straight lines from their cell, and each step along a line spends its length (a diagonal step counts as one and a half squares, as in movement), more when it leaves a tile with a vision cost: 50% spends twice as much, the way a movement cost slows walking. A 100% tile can be seen but not seen past, so a line of mountains blocks your view. It is also seen when open ground next to it is, so the walls lining a tunnel show along its length, while the inside of a thick wall and its far side stay hidden. The character's own cell never gets in the way. Void cells are seen past.
+- The budget is 20 squares in full daylight and 4 at night, changing with the light around dawn and dusk. Darkvision sees at least 12 squares (60 feet), day or night.
+- In a group's room, the group sees whatever any of its members in the area sees, so members always see each other. In a lobby each player sees only what they see themselves.
+- The server works out what each player can see and only shows them the players in sight. The client runs the same function (`/shared`) to draw fog over the cells out of sight. Screen readers are told how many squares the player can see when they ask where they are.
+- A character's darkvision comes from their race as the universe set it when the room started.
 
 ## Moderation
 - Player and character names can't pass as the game's staff: words such as `admin`, `moderator`, `staff` and `system`, and the game's name, are kept back (`isReservedName()` in `/shared`, checked as the player types and again on the server). Names are compared in a reduced form that sees through capitals, accents, look-alike letters from other alphabets, leetspeak, separators, repeated letters and added digits, and words are found at spaces, punctuation and changes of case, so "TheAdm1n" is refused but "Quarterstaff" isn't.

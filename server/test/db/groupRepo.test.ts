@@ -8,7 +8,7 @@ import { addGroupMember, countGroupMembers, createInvite, deleteInvite, findGrou
 import { loadOrCreatePlayerByName } from '../../src/db/playerRepo.js';
 import { characters } from '../../src/db/schema.js';
 import { inTransaction } from '../../src/db/transactions.js';
-import { addCharacter, addGroup, addPlayableUniverse, type PlayableUniverse } from './fixtures.js';
+import { addCharacter, addGroup, addPlayableUniverse, defaultRaceId, type PlayableUniverse } from './fixtures.js';
 
 describe('groupRepo', () =>
 {
@@ -79,7 +79,7 @@ describe('groupRepo', () =>
 
 		assert.deepStrictEqual((await listPlayableCharacters(playerId, universe.universeId)).map(({ id }) => id), [lonerId]);
 		assert.strictEqual(await findLastPlayedCharacterId(playerId, universe.universeId), anchorId);
-		assert.deepStrictEqual(await findOwnCharacter(playerId, universe.universeId, anchorId), { id: anchorId, name: 'Anchor', areaId: null, playable: true });
+		assert.deepStrictEqual(await findOwnCharacter(playerId, universe.universeId, anchorId), { id: anchorId, name: 'Anchor', raceId: await defaultRaceId('dwarf'), areaId: null, playable: true });
 		assert.strictEqual(await findOwnCharacter(playerId, universe.universeId, randomUUID()), undefined);
 	});
 
@@ -87,7 +87,7 @@ describe('groupRepo', () =>
 	{
 		const left = await leaveGroup(groupId, memberId);
 
-		assert.deepStrictEqual(left, { kind: 'left', character: { characterId: memberId, playerId, name: 'Member', playable: true } });
+		assert.deepStrictEqual(left, { kind: 'left', character: { characterId: memberId, playerId, name: 'Member', raceId: await defaultRaceId('dwarf'), playable: true } });
 		assert.strictEqual(await findMembership(memberId), undefined);
 		assert.strictEqual(await leaveGroup(groupId, memberId), undefined);
 	});

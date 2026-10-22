@@ -17,7 +17,7 @@ import { characterChanges } from '../src/players/characterChanges.js';
 import { groupChanges } from '../src/players/groupChanges.js';
 import { onlinePlayers } from '../src/players/onlinePlayers.js';
 import type { GameRoom } from '../src/rooms/GameRoom.js';
-import { addCharacter, addGroup, addPlayableUniverse, type PlayableUniverse } from './db/fixtures.js';
+import { addCharacter, addGroup, addPlayableUniverse, defaultRaceId, type PlayableUniverse } from './db/fixtures.js';
 import { getTestServer, logOutEveryone, testServerUrl } from './testServer.js';
 import { waitUntil } from './waitUntil.js';
 
@@ -37,6 +37,7 @@ interface Member
 	playerId: string;
 	characterId: string;
 	name: string;
+	raceId: number;
 }
 
 /**
@@ -73,7 +74,7 @@ async function addPlayerWithCharacter(name: string): Promise<Member>
 	const player = await loadOrCreatePlayerByName(`Player ${randomUUID().slice(0, 8)}`);
 	const characterId = await addCharacter(player.id, universe.universeId, name);
 
-	return({ playerId: player.id, characterId, name });
+	return({ playerId: player.id, characterId, name, raceId: await defaultRaceId('dwarf') });
 }
 
 /**
@@ -102,7 +103,7 @@ async function joinGroup(member: Member): Promise<void>
 async function addSecondCharacter(member: Member, name: string): Promise<Member>
 {
 	const characterId = await addCharacter(member.playerId, universe.universeId, name);
-	const second = { playerId: member.playerId, characterId, name };
+	const second = { playerId: member.playerId, characterId, name, raceId: member.raceId };
 
 	await joinGroup(second);
 
@@ -448,6 +449,28 @@ describe('GameRoom', () =>
 			assert.strictEqual(room.state.clock, GROUP_START_SECONDS);
 		});
 	}
+
+	it('shows every member in the area to the whole group, however far apart, and gives each their race\'s darkvision', async () =>
+	{
+		await updateAreaSettings(universe.fieldAreaId, { passageOfTime: 'always_midnight', faerieMorning: null });
+
+		const room = await createGameRoom();
+		const ada = await joinFromBrowser(room, browserIdA, 'Ada');
+		const grace = await joinFromBrowser(room, browserIdB, 'Grace');
+		const adaId = playerIdOf(room, ada.client);
+		const graceId = playerIdOf(room, grace.client);
+
+		placeOnCell(room.state.players.get(adaId) as Player, 0, 0);
+		placeOnCell(room.state.players.get(graceId) as Player, 31, 17);
+
+		for (let i = 0; i < 3; i++)
+		{
+			await room.waitForNextTimestep();
+		}
+
+		await waitUntil(() => ((ada.client.state.players?.has(graceId) ?? false) && (grace.client.state.players?.has(adaId) ?? false)));
+		assert.strictEqual(room.state.players.get(adaId)?.darkvision, true);
+	});
 
 	it('does not use the database while players move', async () =>
 	{

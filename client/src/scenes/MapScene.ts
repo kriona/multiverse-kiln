@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { Callbacks } from '@colyseus/sdk';
-import { chunkKey, daylight, GRID_CELL_SIZE, MessageType, nearestCopy, partOfDay, PATCH_INTERVAL_MS, PLAYER_RADIUS, positiveModulo, secondOfDay, ServerMessageType, tileIdAt, VIEW_HEIGHT, VIEW_WIDTH, type ChunksPayload, type MovePayload, type Player, type AreaPayload } from '@multiverse-kiln/shared';
+import { chunkKey, createVisionMap, daylight, GRID_CELL_SIZE, isInBounds, MessageType, nearestCopy, partOfDay, PATCH_INTERVAL_MS, PLAYER_RADIUS, positiveModulo, secondOfDay, ServerMessageType, tileIdAt, VIEW_COLUMNS, VIEW_HEIGHT, VIEW_ROWS, VIEW_WIDTH, visibleCells, visionBudget, visionKey, type ChunksPayload, type MovePayload, type Player, type AreaPayload, type VisionMap } from '@multiverse-kiln/shared';
 
 import { MovementKeys } from '../input/MovementKeys';
 import { t } from '../localization';
@@ -70,6 +70,27 @@ const NIGHT_ALPHA = 0.65;
  * Depth of the night color: over the map and players, under their names and the link prompt
  */
 const NIGHT_DEPTH = 0.5;
+
+/**
+ * The color laid over cells out of sight
+ */
+const FOG_COLOR = 0x000000;
+
+/**
+ * How opaque the fog is
+ */
+const FOG_ALPHA = 0.55;
+
+/**
+ * Depth of the fog: over the map, under the players
+ */
+const FOG_DEPTH = -0.5;
+
+/**
+ * How many cells past the edges of the view the fog is drawn, so it still covers the view while the
+ * camera catches up with the player
+ */
+const FOG_MARGIN = 2;
 
 const TEXT_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
 	fontFamily: 'sans-serif',
@@ -148,6 +169,26 @@ export class MapScene extends Phaser.Scene
 	 */
 	private night?: Phaser.GameObjects.Rectangle;
 
+	/**
+	 * The area's map as vision sees it, from the chunks received so far
+	 */
+	private visionMap!: VisionMap;
+
+	/**
+	 * Darkens the cells out of sight
+	 */
+	private fog?: Phaser.GameObjects.Graphics;
+
+	/**
+	 * What the fog was last drawn from (see updateFog), so it is drawn again only when that changes
+	 */
+	private fogKey = '';
+
+	/**
+	 * Counts the chunks received, so the fog is drawn again when the map under it changes
+	 */
+	private chunkRevision = 0;
+
 	constructor()
 	{
 		super(MAP_SCENE_KEY);
@@ -173,6 +214,8 @@ export class MapScene extends Phaser.Scene
 		this.lastSentMove = undefined;
 		this.announcer = new MapAnnouncer();
 		this.night = undefined;
+		this.fog = undefined;
+		this.fogKey = '';
 	}
 
 	/**
@@ -222,6 +265,7 @@ export class MapScene extends Phaser.Scene
 			.setScrollFactor(0)
 			.setDepth(NIGHT_DEPTH)
 			.setAlpha(0);
+		this.fog = this.add.graphics().setDepth(FOG_DEPTH);
 
 		// Clicking the map takes the keyboard back from a text field, such as the lobby's chat
 		this.input.on(Phaser.Input.Events.POINTER_DOWN, () =>
@@ -307,6 +351,141 @@ export class MapScene extends Phaser.Scene
 		this.areaRenderer?.update(this.cameras.main.worldView);
 		this.updateLinkPrompt(own);
 		this.updateDaylight();
+		this.updateFog();
+	}
+
+	/**
+	 * Draws fog over the cells around the player that nobody they see with can see: the player alone in
+	 * a lobby, and in a group's room every member in the area, who are all the players it shows. Drawn
+	 * again only when where they stand, how far they see or the map changes
+	 */
+	private updateFog(): void
+	{
+		const own = this.room.state.players?.get(this.ownPlayerId);
+
+		if (!own || !this.fog)
+		{
+			return;
+		}
+
+		const lookers: Player[] = [];
+
+		this.room.state.players.forEach((player, playerId) =>
+		{
+			if ((playerId === this.ownPlayerId) || (this.sharesVision && !player.ghost))
+			{
+				lookers.push(player);
+			}
+		});
+
+		const sights = lookers.map((player) =>
+		{
+			const cell = this.cellOf(player);
+
+			return({
+				cell,
+				budget: visionBudget(this.secondOfDayAt(cell), player.darkvision)
+			});
+		});
+		// Around where the player is drawn, which the camera follows: past a looping edge that is a whole
+		// map away from their position on the map
+		const drawn = this.players.get(this.ownPlayerId)?.shape ?? own;
+		const center = {
+			column: Math.floor(drawn.x / GRID_CELL_SIZE),
+			row: Math.floor(drawn.y / GRID_CELL_SIZE)
+		};
+		const key = [
+			this.area.areaId,
+			this.chunkRevision,
+			center.column,
+			center.row,
+			// The light changes a little every frame around dawn and dusk; a tenth of a square is too little to see
+			...sights.map((sight) => `${sight.cell.column},${sight.cell.row},${Math.floor(sight.budget * 10)}`)
+		].join(';');
+
+		if (key === this.fogKey)
+		{
+			return;
+		}
+
+		this.fogKey = key;
+
+		const visible = new Set<string>();
+
+		for (const sight of sights)
+		{
+			for (const cellKey of visibleCells(sight.cell, sight.budget, this.visionMap))
+			{
+				visible.add(cellKey);
+			}
+		}
+
+		this.drawFog(center, visible);
+	}
+
+	/**
+	 * Draws fog over the cells around the view's center that aren't visible
+	 *
+	 * @param center The cell the player is drawn in, which the camera follows; past a looping edge, off the map
+	 * @param visible The cells in sight, by visionKey()
+	 */
+	private drawFog(center: { column: number; row: number }, visible: ReadonlySet<string>): void
+	{
+		const fog = this.fog;
+
+		if (!fog)
+		{
+			return;
+		}
+
+		const { bounds } = this.area;
+		const halfColumns = Math.ceil(VIEW_COLUMNS / 2) + FOG_MARGIN;
+		const halfRows = Math.ceil(VIEW_ROWS / 2) + FOG_MARGIN;
+		const width = (bounds.maxColumn - bounds.minColumn) + 1;
+		const height = (bounds.maxRow - bounds.minRow) + 1;
+
+		fog.clear();
+		fog.fillStyle(FOG_COLOR, FOG_ALPHA);
+
+		for (let row = center.row - halfRows; row <= center.row + halfRows; row++)
+		{
+			for (let column = center.column - halfColumns; column <= center.column + halfColumns; column++)
+			{
+				// Past a looping edge the map carries on from the far side, drawn next to the player
+				const mapColumn = (this.area.loopsEastWest ? bounds.minColumn + positiveModulo(column - bounds.minColumn, width) : column);
+				const mapRow = (this.area.loopsNorthSouth ? bounds.minRow + positiveModulo(row - bounds.minRow, height) : row);
+
+				if (isInBounds(bounds, mapColumn, mapRow) && !visible.has(visionKey(mapColumn, mapRow)))
+				{
+					fog.fillRect(column * GRID_CELL_SIZE, row * GRID_CELL_SIZE, GRID_CELL_SIZE, GRID_CELL_SIZE);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Whether everyone the room shows is in one group, which sees whatever any of its members sees: a
+	 * group's room, whose state has the group's clock, unlike a lobby's
+	 *
+	 * @return True in a group's room
+	 */
+	private get sharesVision(): boolean
+	{
+		return((this.room.state.clock as number | undefined) !== undefined);
+	}
+
+	/**
+	 * The cell a player is in
+	 *
+	 * @param player The player's synced state
+	 * @return The cell
+	 */
+	private cellOf(player: Player): { column: number; row: number }
+	{
+		return({
+			column: Math.floor(player.x / GRID_CELL_SIZE),
+			row: Math.floor(player.y / GRID_CELL_SIZE)
+		});
 	}
 
 	/**
@@ -335,17 +514,19 @@ export class MapScene extends Phaser.Scene
 	{
 		const own = this.room.state.players?.get(this.ownPlayerId);
 
-		if (!own)
-		{
-			return(undefined);
-		}
+		return((own ? this.secondOfDayAt(this.cellOf(own)) : undefined));
+	}
 
+	/**
+	 * The time of day at a cell of the area
+	 *
+	 * @param cell The cell
+	 * @return Seconds since midnight
+	 */
+	private secondOfDayAt(cell: { column: number; row: number }): number
+	{
 		// A lobby has no clock: its time of day never flows with the players' actions
 		const clock = (this.room.state.clock as number | undefined) ?? 0;
-		const cell = {
-			column: Math.floor(own.x / GRID_CELL_SIZE),
-			row: Math.floor(own.y / GRID_CELL_SIZE)
-		};
 
 		return(secondOfDay(this.area.time, clock, Date.now(), cell, this.area.bounds));
 	}
@@ -360,6 +541,17 @@ export class MapScene extends Phaser.Scene
 		this.area = area;
 		this.chunks = new Map(area.chunks.map((chunk) => [chunkKey(chunk.chunkColumn, chunk.chunkRow), chunk.cells]));
 		this.manualLinks = new Set(area.links.filter((link) => (link.mode === 'manual')).map((link) => `${link.column},${link.row}`));
+		this.visionMap = createVisionMap(
+			{
+				bounds: area.bounds,
+				defaultTileId: area.defaultTileId,
+				chunks: this.chunks
+			},
+			area.loopsEastWest,
+			area.loopsNorthSouth,
+			new Map(area.tiles.map((tile) => [tile.id, tile.visionCost]))
+		);
+		this.chunkRevision++;
 		this.areaRenderer?.destroy();
 		this.areaRenderer = new AreaRenderer(this, area, this.chunks);
 	}
@@ -395,6 +587,7 @@ export class MapScene extends Phaser.Scene
 			keys.push(key);
 		}
 
+		this.chunkRevision++;
 		this.areaRenderer?.refreshChunks(keys);
 	}
 
@@ -689,6 +882,7 @@ export class MapScene extends Phaser.Scene
 		const row = Math.floor(own.y / GRID_CELL_SIZE);
 		const tileId = tileIdAt({ bounds: this.area.bounds, defaultTileId: this.area.defaultTileId, chunks: this.chunks }, column, row);
 		const tile = this.area.tiles.find((candidate) => (candidate.id === tileId));
+		const seconds = this.secondOfDayAt({ column, row });
 		const others: SeenPlayer[] = [];
 
 		this.room.state.players.forEach((player, playerId) =>
@@ -710,7 +904,8 @@ export class MapScene extends Phaser.Scene
 			column,
 			row,
 			tileName: (tile ? tileName(tile, this.area.ruleset) : undefined),
-			secondOfDay: (this.currentSecondOfDay() ?? 0)
+			secondOfDay: seconds,
+			sightSquares: Math.floor(visionBudget(seconds, own.darkvision))
 		}, others);
 	}
 

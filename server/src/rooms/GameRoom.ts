@@ -4,6 +4,7 @@ import { GameMessageType, GameServerMessageType, GameState, GroupMember, Message
 import { markCharacterPlayed } from '../db/characterRepo.js';
 import { findGroup, listGroupMembers, saveGroupClock, saveMemberPositions, type GroupMemberRecord, type MemberPosition } from '../db/groupRepo.js';
 import { GroupClock } from '../logic/gameClock.js';
+import { loadRaceDarkvision } from '../db/raceRepo.js';
 import { findUniverse } from '../db/universeRepo.js';
 import { loadChunksAt, loadArea } from '../db/areaRepo.js';
 import { readBrowserId } from '../http/browserId.js';
@@ -14,7 +15,7 @@ import { areaChanges } from '../world/areaChanges.js';
 import { InvalidMessages } from './invalidMessages.js';
 import { controlPayload, describeInvalidPayload, gameJoinOptions, movePayload } from './payloads.js';
 import { AreaCache, type ActiveArea } from './areaCache.js';
-import { CHUNK_REFRESH_INTERVAL_MS, SIMULATION_TICK_RATE, AreaPlayers, type PlayerPosition } from './areaPlayers.js';
+import { CHUNK_REFRESH_INTERVAL_MS, SIMULATION_TICK_RATE, AreaPlayers, type Appearance, type PlayerPosition } from './areaPlayers.js';
 
 /**
  * What onAuth found out about a client, available afterward as client.auth
@@ -78,10 +79,14 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	private readonly areas = new AreaCache(loadArea, loadChunksAt);
 
 	/**
-	 * Characters whose area is deleted go to the group's starting area. A link that needs the whole
-	 * group is refused unless every member who can be played, and the anchor being, is here together
+	 * Characters whose area is deleted go to the group's starting area. Everyone here is in the group,
+	 * so they see what any of them sees. A link that needs the whole group is refused unless every
+	 * member who can be played, and the anchor being, is here together
 	 */
 	private readonly areaPlayers = new AreaPlayers(this.state.players, this.areas, () => this.startingAreaId, {
+		shared: true,
+		clockSeconds: () => this.state.clock
+	}, {
 		members: () => this.linkMemberIds(),
 		refuse: (characterId) =>
 		{
@@ -110,6 +115,11 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	 * Every member of the group, by character ID (server-only; state.members has what clients see)
 	 */
 	private readonly members = new Map<string, GroupMemberRecord>();
+
+	/**
+	 * Whether each of the universe's races has darkvision, by race ID, as the room found them on starting
+	 */
+	private raceDarkvision = new Map<number, boolean>();
 
 	/**
 	 * Each player's clients in the room, by player ID
@@ -200,6 +210,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		this.state.anchorId = group.anchorCharacterId;
 		this.gameClock = new GroupClock(group.clockSeconds);
 		this.state.clock = this.gameClock.seconds;
+		this.raceDarkvision = await loadRaceDarkvision(universe.id, universe.ruleset);
 
 		this.areaPlayers.onWalk((characterId, seconds, time) =>
 		{
@@ -304,7 +315,9 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			throw new Error(`Character ${characterId} can no longer be played in group ${this.groupId}`);
 		}
 
-		this.areaPlayers.join(client, characterId, { name: this.members.get(characterId)?.name ?? '', ghost: false }, startingArea);
+		const member = this.members.get(characterId);
+
+		this.areaPlayers.join(client, characterId, this.appearanceOf(member), startingArea);
 
 		console.log(client.sessionId, 'joined group', this.groupId, 'as character', characterId);
 	}
@@ -411,7 +424,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			}
 
 			await this.areaPlayers.prepareStart(start.area, start);
-			this.areaPlayers.add(member.characterId, { name: member.name, ghost: false }, this.areas.get(start.area.loaded.area.id) ?? start.area, start);
+			this.areaPlayers.add(member.characterId, this.appearanceOf(member), this.areas.get(start.area.loaded.area.id) ?? start.area, start);
 
 			const shown = this.state.members.get(member.characterId);
 
@@ -499,6 +512,21 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		}
 
 		return(positions);
+	}
+
+	/**
+	 * How a member shows on the map
+	 *
+	 * @param member The member, or undefined when they have left the group
+	 * @return Their name and darkvision
+	 */
+	private appearanceOf(member: GroupMemberRecord | undefined): Appearance
+	{
+		return({
+			name: member?.name ?? '',
+			ghost: false,
+			darkvision: ((member !== undefined) && (this.raceDarkvision.get(member.raceId) ?? false))
+		});
 	}
 
 	/**

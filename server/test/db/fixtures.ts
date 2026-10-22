@@ -136,6 +136,24 @@ export async function defaultTileId(key: string): Promise<number>
 }
 
 /**
+ * The ID of one of the Pathfinder 1E default races
+ *
+ * @param key The race's key
+ * @return Its ID
+ */
+export async function defaultRaceId(key: string): Promise<number>
+{
+	const id = (await findDefaultRaceIds('pf1e')).get(key);
+
+	if (id === undefined)
+	{
+		throw new Error(`The default race "${key}" is missing from the test database`);
+	}
+
+	return(id);
+}
+
+/**
  * A universe name no other universe has (universe names are unique). A counter wouldn't do, since names
  * that differ only in repeated characters, such as "1" and "11", count as the same
  *

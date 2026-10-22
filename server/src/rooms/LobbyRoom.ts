@@ -2,6 +2,7 @@ import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
 import { LobbyMember, LobbyMessageType, LobbyServerMessageType, LobbyState, MessageType, NoticeReason, PATCH_INTERVAL_MS, type ChatHistoryPayload, type ChatMessage, type NoticePayload, type PlayingAsPayload } from '@multiverse-kiln/shared';
 
 import { listPlayableCharacters, markCharacterPlayed, type PlayableCharacter } from '../db/characterRepo.js';
+import { loadRaceDarkvision } from '../db/raceRepo.js';
 import { findUniverse } from '../db/universeRepo.js';
 import { loadChunksAt, loadArea } from '../db/areaRepo.js';
 import { readBrowserId } from '../http/browserId.js';
@@ -44,20 +45,6 @@ function identityOf(client: LobbyClient): LobbyIdentity
 }
 
 /**
- * How a player shows on the lobby's map
- *
- * @param character The character they are playing, or undefined for a ghost
- * @return The character's name, or a ghost with no name
- */
-function appearanceOf(character: PlayableCharacter | undefined): Appearance
-{
-	return({
-		name: character?.name ?? '',
-		ghost: !character
-	});
-}
-
-/**
  * Chat messages kept for players who join later
  */
 export const CHAT_HISTORY_LENGTH = 50;
@@ -94,9 +81,18 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	private readonly areas = new AreaCache(loadArea, loadChunksAt);
 
 	/**
-	 * Players whose area is deleted go back to the lobby area
+	 * Players whose area is deleted go back to the lobby area. Each player sees only what they see
+	 * themselves, and the lobby has no clock
 	 */
-	private readonly areaPlayers = new AreaPlayers(this.state.players, this.areas, () => this.lobbyAreaId);
+	private readonly areaPlayers = new AreaPlayers(this.state.players, this.areas, () => this.lobbyAreaId, {
+		shared: false,
+		clockSeconds: () => 0
+	});
+
+	/**
+	 * Whether each of the universe's races has darkvision, by race ID, as the room found them on starting
+	 */
+	private raceDarkvision = new Map<number, boolean>();
 
 	private universeId!: string;
 
@@ -225,6 +221,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 
 		this.universeId = universeId;
 		this.lobbyAreaId = lobbyArea.loaded.area.id;
+		this.raceDarkvision = await loadRaceDarkvision(universeId, lobbyArea.loaded.ruleset);
 		this.setTimestep((deltaTime) => this.areaPlayers.update(deltaTime / 1000), 1000 / SIMULATION_TICK_RATE);
 		this.clock.setInterval(() => this.areaPlayers.refreshChunks(), CHUNK_REFRESH_INTERVAL_MS);
 
@@ -307,7 +304,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		const isNewPlayer = !this.state.players.has(playerId);
 		const character = (isNewPlayer ? characters.at(0) : undefined);
 
-		this.areaPlayers.join(client, playerId, appearanceOf(character), this.areas.get(this.lobbyAreaId) ?? lobbyArea);
+		this.areaPlayers.join(client, playerId, this.appearanceOf(character),this.areas.get(this.lobbyAreaId) ?? lobbyArea);
 
 		if (character)
 		{
@@ -399,7 +396,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		const playingAs: PlayingAsPayload = { characterId: character.id };
 
 		this.playing.set(playerId, character);
-		this.areaPlayers.setAppearance(playerId, appearanceOf(character));
+		this.areaPlayers.setAppearance(playerId, this.appearanceOf(character));
 		this.state.members.set(playerId, new LobbyMember({ name: character.name }));
 
 		for (const client of this.areaPlayers.getClients(playerId))
@@ -418,7 +415,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		const playingAs: PlayingAsPayload = { characterId: null };
 
 		this.playing.delete(playerId);
-		this.areaPlayers.setAppearance(playerId, appearanceOf(undefined));
+		this.areaPlayers.setAppearance(playerId, this.appearanceOf(undefined));
 		this.state.members.delete(playerId);
 
 		for (const client of this.areaPlayers.getClients(playerId))
@@ -470,7 +467,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		const affected = ((change.kind === 'disbanded') ? change.members : [change.character]);
 		const players = new Set<string>();
 
-		for (const { characterId, playerId, name, playable } of affected)
+		for (const { characterId, playerId, name, raceId, playable } of affected)
 		{
 			if (!this.characters.has(playerId))
 			{
@@ -483,7 +480,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 			}
 			else if (playable)
 			{
-				this.offer(playerId, { id: characterId, name });
+				this.offer(playerId, { id: characterId, name, raceId });
 			}
 
 			players.add(playerId);
@@ -545,6 +542,21 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		{
 			this.play(playerId, character);
 		}
+	}
+
+	/**
+	 * How a player shows on the lobby's map
+	 *
+	 * @param character The character they are playing, or undefined for a ghost
+	 * @return The character's name and darkvision, or a ghost with no name
+	 */
+	private appearanceOf(character: PlayableCharacter | undefined): Appearance
+	{
+		return({
+			name: character?.name ?? '',
+			ghost: !character,
+			darkvision: ((character !== undefined) && (this.raceDarkvision.get(character.raceId) ?? false))
+		});
 	}
 
 	/**

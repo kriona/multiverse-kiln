@@ -2352,7 +2352,7 @@
 		"source": "Day {day, number}, {time}"
 	},
 	"group.clockFaerie": {
-		"message": "Day {day, number} o' the voyage, {period, select, midnight {the witchin' hour} pre_dawn {afore first light} dawn {first light} early_morning {early mornin'} morning {mornin'} late_morning {late mornin'} noon {high noon} early_afternoon {early afternoon} afternoon {afternoon} late_afternoon {late afternoon} evening {eventide} late_evening {late eventide} other {the dark o' night}}",
+		"message": "Day {day, number} o' the voyage, {period, select, midnight {the witchin' hour} pre_dawn {afore first light} dawn {first light} early_morning {early mornin''} morning {mornin''} late_morning {late mornin''} noon {high noon} early_afternoon {early afternoon} afternoon {afternoon} late_afternoon {late afternoon} evening {eventide} late_evening {late eventide} other {the dark o' night}}",
 		"source": "Day {day, number}, {period, select, midnight {midnight} pre_dawn {pre-dawn} dawn {dawn} early_morning {early morning} morning {morning} late_morning {late morning} noon {noon} early_afternoon {early afternoon} afternoon {afternoon} late_afternoon {late afternoon} evening {evening} late_evening {late evening} other {night}}"
 	},
 	"group.connectionLost": {
@@ -2930,6 +2930,10 @@
 	"map.announce.position": {
 		"message": "{area}, column {column}, row {row}{onTile, select, yes {, standin' on {tile}} other {}}. {count, plural, =0 {Not a soul in sight.} other {Ye can spy {players}.}}",
 		"source": "{area}, column {column}, row {row}{onTile, select, yes {, on {tile}} other {}}. {count, plural, =0 {You can't see anyone else.} other {You can see {players}.}}"
+	},
+	"map.announce.sight": {
+		"message": "Ye can spy {squares, plural, one {# square} other {# squares}} across open ground.",
+		"source": "You can see {squares, plural, one {# square} other {# squares}} across open ground."
 	},
 	"map.announce.timeOfDay": {
 		"message": "'Tis {time}, {part, select, dawn {first light} day {broad day} dusk {dusk} other {the dark o' night}}.",

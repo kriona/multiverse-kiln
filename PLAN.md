@@ -197,8 +197,8 @@ Built in three steps: time, vision, then world state.
 	- [✅] Lobby tab: lobby time (fixed, real-time from the Unix epoch with a day of 1-240 hours, or faerie)
 	- [✅] Day and night rendering, and the time of day for screen readers
 2. Vision
-	- [ ] Vision as a pure function in `/shared` with tests: vision range, tile vision costs, shorter at night unless the character has darkvision
-	- [ ] The server shows each client only the players its group can see (`StateView`); the client draws fog with the same function
+	- [✅] Vision as a pure function in `/shared` with tests: vision range, tile vision costs, shorter at night unless the character has darkvision
+	- [✅] The server shows each client only the players its group can see (`StateView`); the client draws fog with the same function
 3. World state
 	- [ ] World state per group, stored as a diff of the universe: the areas explored and the cells seen in them, deleted when the group disbands
 	- [ ] Seen cells drawn dimmed, unseen ones black

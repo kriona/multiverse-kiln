@@ -37,6 +37,7 @@ export interface OwnCharacter
 {
 	id: string;
 	name: string;
+	raceId: number;
 
 	/**
 	 * The character's starting area, or null when they have none
@@ -79,6 +80,7 @@ export interface PlayableCharacter
 {
 	id: string;
 	name: string;
+	raceId: number;
 }
 
 /**
@@ -345,7 +347,8 @@ export async function listPlayableCharacters(playerId: string, universeId: strin
 	return(executor
 		.select({
 			id: characters.id,
-			name: characters.name
+			name: characters.name,
+			raceId: characters.raceId
 		})
 		.from(characters)
 		.leftJoin(groupMembers, eq(groupMembers.characterId, characters.id))
@@ -400,6 +403,7 @@ export async function findOwnCharacter(playerId: string, universeId: string, cha
 		.select({
 			id: characters.id,
 			name: characters.name,
+			raceId: characters.raceId,
 			areaId: characters.areaId,
 			deleteAt: characters.deleteAt
 		})
@@ -418,6 +422,7 @@ export async function findOwnCharacter(playerId: string, universeId: string, cha
 	return({
 		id: row.id,
 		name: row.name,
+		raceId: row.raceId,
 		areaId: row.areaId,
 		playable: (row.deleteAt === null)
 	});
@@ -534,7 +539,8 @@ export async function restoreCharacter(playerId: string, universeId: string, cha
 		))
 		.returning({
 			id: characters.id,
-			name: characters.name
+			name: characters.name,
+			raceId: characters.raceId
 		});
 
 	return(row);

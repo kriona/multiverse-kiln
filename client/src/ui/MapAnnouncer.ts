@@ -60,6 +60,11 @@ export interface PlayerPosition
 	 * The time of day where the player is, in seconds since midnight
 	 */
 	secondOfDay: number;
+
+	/**
+	 * How many squares the player can see across open ground (visionBudget)
+	 */
+	sightSquares: number;
 }
 
 /**
@@ -229,6 +234,13 @@ export class MapAnnouncer
 			time: formatTimeOfDay(position.secondOfDay),
 			part: partOfDay(position.secondOfDay)
 		});
+		const sight = t({
+			id: 'map.announce.sight',
+			defaultMessage: 'You can see {squares, plural, one {# square} other {# squares}} across open ground.',
+			description: 'Read out by screen readers when the player asks where they are, after the time of day: how far they can see, which is less at night unless their character has darkvision, and less past forests and mountains'
+		}, {
+			squares: position.sightSquares
+		});
 
 		// Each part is whole sentences
 		announce(`${t({
@@ -243,7 +255,7 @@ export class MapAnnouncer
 			tile: (position.tileName ?? ''),
 			count: players.length,
 			players: formatList(players, 'conjunction')
-		})} ${time}`, true);
+		})} ${time} ${sight}`, true);
 	}
 
 	/**

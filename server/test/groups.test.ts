@@ -9,7 +9,7 @@ import { updateUniverseSettings } from '../src/db/universeRepo.js';
 import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
 import { groupChanges, type GroupChange } from '../src/players/groupChanges.js';
 import { onlinePlayers } from '../src/players/onlinePlayers.js';
-import { addCharacter, addPlayableUniverse, type PlayableUniverse } from './db/fixtures.js';
+import { addCharacter, addPlayableUniverse, defaultRaceId, type PlayableUniverse } from './db/fixtures.js';
 import { getTestServer, logOutEveryone, testServerUrl } from './testServer.js';
 
 /**
@@ -189,7 +189,7 @@ describe('group routes', () =>
 				kind: 'joined',
 				groupId,
 				universeId: universe.universeId,
-				character: { characterId: ada.characterId, playerId: ada.playerId, name: 'Ada', playable: true }
+				character: { characterId: ada.characterId, playerId: ada.playerId, name: 'Ada', raceId: await defaultRaceId('dwarf'), playable: true }
 			}]);
 		});
 
@@ -350,7 +350,7 @@ describe('group routes', () =>
 				kind: 'left',
 				groupId,
 				universeId: universe.universeId,
-				character: { characterId: grace.characterId, playerId: grace.playerId, name: 'Grace', playable: true }
+				character: { characterId: grace.characterId, playerId: grace.playerId, name: 'Grace', raceId: await defaultRaceId('dwarf'), playable: true }
 			});
 		});
 

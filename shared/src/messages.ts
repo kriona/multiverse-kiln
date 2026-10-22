@@ -138,6 +138,11 @@ export interface AreaTile
 	 * 0xRRGGBB
 	 */
 	color: number;
+
+	/**
+	 * How hard the tile is to see past, in percent, which the client's fog follows (see VisionMap)
+	 */
+	visionCost: number;
 }
 
 /**

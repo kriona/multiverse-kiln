@@ -18,7 +18,12 @@ export const Player = schema({
 	x: t.number(),
 	y: t.number(),
 	name: t.string(),
-	ghost: t.boolean()
+	ghost: t.boolean(),
+
+	/**
+	 * Whether the character sees in the dark, which the client's fog follows (see visionBudget)
+	 */
+	darkvision: t.boolean()
 }, 'Player');
 export type Player = SchemaType<typeof Player>;
 

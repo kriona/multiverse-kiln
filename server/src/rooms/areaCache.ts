@@ -1,4 +1,4 @@
-import { chunkKey, GRID_CELL_SIZE, parseChunkKey, type AreaChunk, type AreaChunkUpdate, type AreaPayload } from '@multiverse-kiln/shared';
+import { chunkKey, createVisionMap, GRID_CELL_SIZE, parseChunkKey, type AreaChunk, type AreaChunkUpdate, type AreaPayload, type VisionMap } from '@multiverse-kiln/shared';
 
 import type { LoadedArea } from '../db/areaRepo.js';
 import type { Grid } from '../logic/movement.js';
@@ -18,6 +18,11 @@ export interface ActiveArea
 	map: AreaMap;
 
 	grid: Grid;
+
+	/**
+	 * The map as vision sees it; a cell whose chunk hasn't loaded is seen as the default tile
+	 */
+	vision: VisionMap;
 
 	/**
 	 * The loaded chunks that aren't all the default tile, by chunkKey()
@@ -371,6 +376,7 @@ function activate(loaded: LoadedArea, chunks: Map<string, number[]>, loadedChunk
 		loaded,
 		map,
 		grid: createAreaGrid(map, GRID_CELL_SIZE),
+		vision: createVisionMap(map.tiles, loaded.loopsEastWest, loaded.loopsNorthSouth, new Map(loaded.tiles.map((tile) => [tile.id, tile.visionCost]))),
 		chunks,
 		loadedChunks
 	});
@@ -403,7 +409,8 @@ export function toAreaPayload(area: ActiveArea, chunkKeys: Iterable<string>): Ar
 			id: tile.id,
 			key: tile.key,
 			name: ((tile.key === null) ? tile.name : null),
-			color: tile.color
+			color: tile.color,
+			visionCost: tile.visionCost
 		})),
 		chunks: toChunkUpdates(area, chunkKeys)
 			.filter((chunk): chunk is AreaChunk => (chunk.cells !== null)),

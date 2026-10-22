@@ -181,6 +181,7 @@ async function createRoute(request: Request, response: Response): Promise<void>
 				characterId: anchorId,
 				playerId,
 				name: character.name,
+				raceId: character.raceId,
 				playable: true
 			}
 		});
@@ -437,6 +438,7 @@ async function acceptInviteRoute(request: Request, response: Response): Promise<
 				characterId: joiningId,
 				playerId,
 				name: character.name,
+				raceId: character.raceId,
 				playable: true
 			}
 		});
