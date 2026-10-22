@@ -1187,6 +1187,10 @@
 		"defaultMessage": "Requires the whole group",
 		"description": "Checkbox for an area link that can only be used when every member of the group is present"
 	},
+	"editor.lobby.dayHoursHint": {
+		"defaultMessage": "How long in real time it takes for one day in the lobby to pass, from {min, plural, one {# hour} other {# hours}} to {max, plural, one {# hour} other {# hours}}. The time of day is the same for everyone, counted from the start of 1970.",
+		"description": "Explains the lobby's \"How quickly?\" field; {min} and {max} are the fewest and most hours allowed"
+	},
 	"editor.lobby.editArea": {
 		"defaultMessage": "Edit the lobby's area",
 		"description": "Button that opens the lobby in the area editor"
@@ -1194,6 +1198,10 @@
 	"editor.lobby.explanation": {
 		"defaultMessage": "The lobby is where everyone in the universe meets before joining a group. It is an area like any other, but isn't listed on the Areas tab.",
 		"description": "Explains the lobby on the editor's Lobby tab"
+	},
+	"editor.lobby.saveFailed": {
+		"defaultMessage": "Could not save the lobby's settings.",
+		"description": "Shown on the Lobby tab when its settings couldn't be stored"
 	},
 	"editor.map.areaDefault": {
 		"defaultMessage": "{tile} (the area's default)",
@@ -1235,6 +1243,10 @@
 		"defaultMessage": "Draw",
 		"description": "Map tool that paints tiles onto the map"
 	},
+	"editor.map.exitFullPage": {
+		"defaultMessage": "Exit Full Page",
+		"description": "Button that puts the map editor back in the page after it was made to fill the window"
+	},
 	"editor.map.expandBy": {
 		"defaultMessage": "Expand by",
 		"description": "Label of the field for how many cells the buttons around the map add"
@@ -1254,6 +1266,10 @@
 	"editor.map.expandWest": {
 		"defaultMessage": "+ West",
 		"description": "Button left of the map that makes it bigger to the west"
+	},
+	"editor.map.fullPage": {
+		"defaultMessage": "Full Page",
+		"description": "Button that makes the map editor fill the window"
 	},
 	"editor.map.heading": {
 		"defaultMessage": "Map",

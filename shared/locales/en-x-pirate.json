@@ -1235,6 +1235,10 @@
 		"message": "Paint",
 		"source": "Draw"
 	},
+	"editor.map.exitFullPage": {
+		"message": "Furl the Page Back",
+		"source": "Exit Full Page"
+	},
 	"editor.map.expandBy": {
 		"message": "Widen by",
 		"source": "Expand by"
@@ -1254,6 +1258,10 @@
 	"editor.map.expandWest": {
 		"message": "+ West",
 		"source": "+ West"
+	},
+	"editor.map.fullPage": {
+		"message": "Unfurl Full Page",
+		"source": "Full Page"
 	},
 	"editor.map.heading": {
 		"message": "Chart",

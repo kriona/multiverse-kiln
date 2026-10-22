@@ -1,3 +1,5 @@
+import exitFullPageIcon from 'virtual:icon/ph:arrows-in';
+import fullPageIcon from 'virtual:icon/ph:arrows-out';
 import { canEditWorld, DEFAULT_TILE_CELL, defineMessages, isInBounds, MAX_BRUSH_SIZE, MAX_CELL_CHANGES, MAX_MAP_SIDE, VOID_CELL, VIEW_HEIGHT, VIEW_WIDTH, type CellChange, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type MapBounds, type MessageDescriptor } from '@multiverse-kiln/shared';
 
 import { BRUSH_SHAPES, brushCells, type BrushCell, type BrushShape } from '../../editor/brush';
@@ -8,7 +10,7 @@ import { editorAreaPayload, MapCanvas } from '../../editor/MapCanvas';
 import { t } from '../../localization';
 import { describeEditorError, EditorApiError, type EditorApi } from '../../network/editorApi';
 import type { CameraState, MapEditorHost, PointerMode } from '../../scenes/MapEditorScene';
-import { getElement, namedOptions, setOptions, showMessage } from '../dom';
+import { getElement, namedOptions, setButtonLabel, setOptions, showMessage } from '../dom';
 import { addKeyHelp, formatKeys } from '../shortcuts';
 import { tileName } from '../tileNames';
 import { describeCell } from './cellDescription';
@@ -109,6 +111,8 @@ export class MapEditor
 	private readonly undoButton = getElement('map-undo', HTMLButtonElement);
 	private readonly redoButton = getElement('map-redo', HTMLButtonElement);
 	private readonly resizeButton = getElement('map-resize', HTMLButtonElement);
+	private readonly section = getElement('map-editor', HTMLElement);
+	private readonly fullPageButton = getElement('map-full-page', HTMLButtonElement);
 	private readonly expandButtons = sides.map((side) => getElement(`map-expand-${side}`, HTMLButtonElement));
 	private readonly expandField = getElement('map-expand-field', HTMLElement);
 	private readonly expandBy = getElement('map-expand-by', HTMLInputElement);
@@ -120,9 +124,18 @@ export class MapEditor
 	private readonly history = new EditHistory();
 	private readonly resizeDialog: ResizeDialog;
 	private readonly linkDialog: LinkDialog;
+	private readonly canvasObserver = new ResizeObserver(() =>
+	{
+		this.fitCanvas();
+	});
 
 	private open: OpenArea | undefined;
 	private stroke: Stroke | undefined;
+
+	/**
+	 * Whether the map editor covers the window (see setFullPage)
+	 */
+	private fullPage = false;
 
 	/**
 	 * The cell under the pointer, while it is over the map
@@ -175,6 +188,13 @@ export class MapEditor
 		{
 			this.openResizeDialog();
 		});
+
+		this.fullPageButton.addEventListener('click', () =>
+		{
+			this.setFullPage(!this.fullPage);
+		});
+
+		this.setFullPage(false);
 
 		sides.forEach((side, index) =>
 		{
@@ -330,6 +350,7 @@ export class MapEditor
 	 */
 	hide(): void
 	{
+		this.setFullPage(false);
 		this.openVersion++;
 		this.open?.loader.stop();
 		this.open = undefined;
@@ -1096,12 +1117,62 @@ export class MapEditor
 	}
 
 	/**
-	 * Undoes on Ctrl+Z and redoes on Ctrl+Y or Ctrl+Shift+Z, while the map is showing and nothing is being typed
+	 * Shows the map editor over the whole window, with the map filling the space left, or puts it back in the page
+	 *
+	 * @param fullPage True to cover the window
+	 */
+	private setFullPage(fullPage: boolean): void
+	{
+		this.fullPage = fullPage;
+		this.section.classList.toggle('full-page', fullPage);
+
+		if (fullPage)
+		{
+			setButtonLabel(this.fullPageButton, exitFullPageIcon, t({
+				id: 'editor.map.exitFullPage',
+				defaultMessage: 'Exit Full Page',
+				description: 'Button that puts the map editor back in the page after it was made to fill the window'
+			}));
+			this.canvasObserver.observe(this.canvasElement);
+		}
+		else
+		{
+			setButtonLabel(this.fullPageButton, fullPageIcon, t({
+				id: 'editor.map.fullPage',
+				defaultMessage: 'Full Page',
+				description: 'Button that makes the map editor fill the window'
+			}));
+			this.canvasObserver.disconnect();
+			this.canvas.setSize(VIEW_WIDTH, VIEW_HEIGHT);
+		}
+	}
+
+	/**
+	 * Sizes the canvas to fill its element while the map editor is full page
+	 */
+	private fitCanvas(): void
+	{
+		if (this.fullPage)
+		{
+			this.canvas.setSize(this.canvasElement.clientWidth, this.canvasElement.clientHeight);
+		}
+	}
+
+	/**
+	 * Leaves full page on Escape when no dialog is open, and while the map is showing and nothing is
+	 * being typed, undoes on Ctrl+Z and redoes on Ctrl+Y or Ctrl+Shift+Z
 	 *
 	 * @param event The key press
 	 */
 	private readonly onKeyDown = (event: KeyboardEvent): void =>
 	{
+		if (this.fullPage && (event.key === 'Escape') && !document.querySelector('dialog[open]'))
+		{
+			event.preventDefault();
+			this.setFullPage(false);
+			return;
+		}
+
 		const target = event.target;
 		const typing = ((target instanceof HTMLInputElement) || (target instanceof HTMLTextAreaElement) || (target instanceof HTMLSelectElement));
 		const key = event.key.toLowerCase();

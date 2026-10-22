@@ -361,6 +361,49 @@
 	{
 		width: 72px;
 	}
+
+	.map-full-page
+	{
+		margin-left: auto;
+	}
+}
+
+// Full page: the map editor covers the window, and MapEditor sizes the canvas to fill the space left
+html:has(.map-editor.full-page),
+html:has(.map-editor.full-page) body
+{
+	overflow: hidden;
+}
+
+.map-editor.full-page
+{
+	position: fixed;
+	inset: 0;
+	z-index: 10;
+	margin: 0;
+	padding: 16px;
+	background: $background-page;
+
+	.hint
+	{
+		display: none;
+	}
+
+	.map-frame
+	{
+		flex: 1;
+		min-height: 0;
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		grid-template-rows: auto minmax(0, 1fr) auto;
+		justify-content: stretch;
+	}
+
+	.map-canvas
+	{
+		align-self: stretch;
+		justify-self: stretch;
+		overflow: hidden;
+	}
 }
 
 .resize-grid
