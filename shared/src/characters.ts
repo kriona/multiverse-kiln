@@ -85,6 +85,12 @@ export interface CharacterSummary
 	 * Until then they can be restored but not played
 	 */
 	deleteAt: string | null;
+
+	/**
+	 * The group the character is in, or null when they are in none. A character in a group plays there,
+	 * not in the lobby
+	 */
+	groupId: string | null;
 }
 
 /**
@@ -105,6 +111,12 @@ export interface CharacterListPayload
 {
 	ruleset: Ruleset;
 	characters: CharacterSummary[];
+
+	/**
+	 * The character the player played or made most recently, leaving out those given their last rites;
+	 * null when they have none. Entering the universe plays them, in their group if they are in one
+	 */
+	lastPlayedId: string | null;
 }
 
 /**

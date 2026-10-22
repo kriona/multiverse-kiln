@@ -19,7 +19,7 @@
 					<h1 id="lobby-title" data-message="lobby.title" data-translation-context="Heading of a universe's lobby until its name has loaded">Lobby</h1>
 					<span class="toolbar-name" data-message="page.playingAs" data-translation-context="In the toolbar, the name the player logged in with; {name} is the name">Playing as <strong id="lobby-player-name" data-argument="name"></strong></span>
 					<button id="create-character" type="button" data-shortcut="Alt+N" data-message="lobby.createCharacter" data-translation-context="Button that goes to the page for making a new character in this universe"><!-- icon ph:user-plus -->Create Character</button>
-					<button id="create-group" type="button" data-shortcut="Alt+G" data-message="lobby.createGroup" data-translation-context="Button that starts a new game, which the player can share with others"><!-- icon game-icons:crossed-swords -->Create game</button>
+					<button id="create-group" type="button" data-shortcut="Alt+G" data-message="lobby.createGroup" data-translation-context="Button that makes a new group (characters who play the universe together) around the character the player is playing, which others can be invited to"><!-- icon game-icons:crossed-swords -->Create Group</button>
 					<button id="leave-lobby" type="button" class="secondary" data-shortcut="Alt+L" data-message="lobby.leave" data-translation-context="Button that leaves the lobby and goes back to the list of universes"><!-- icon ph:sign-out -->Leave lobby</button>
 				</header>
 				<p id="lobby-notice" class="notice" role="status" hidden></p>
@@ -29,7 +29,7 @@
 					<div class="lobby-side">
 						<aside class="panel characters" aria-labelledby="character-list-heading">
 							<h2 id="character-list-heading" data-message="lobby.characters" data-translation-context="Heading of the list of characters the player has made in this universe">Your characters</h2>
-							<p id="lobby-ghost-note" class="ghost-note" data-message="lobby.ghostNote" data-translation-context="In the lobby, shown above the player's characters while they play none: they are a ghost, whom other players can't see" hidden>You're a ghost: nobody can see you, and you can read the chat but not join in or start a game. Choose or create a character to play.</p>
+							<p id="lobby-ghost-note" class="ghost-note" data-message="lobby.ghostNote" data-translation-context="In the lobby, shown above the player's characters while they play none: they are a ghost, whom other players can't see" hidden>You're a ghost: nobody can see you, and you can read the chat but not join in or start a group. Choose or create a character to play.</p>
 							<ul id="character-list" class="character-list"></ul>
 							<p id="character-none" class="character-none" data-message="lobby.noCharacters" data-translation-context="Shown instead of the list of the player's characters when they haven't made one in this universe" hidden>You haven't made a character in this universe yet.</p>
 							<p id="character-error" class="form-error" role="alert" hidden></p>
@@ -52,14 +52,46 @@
 
 			<section id="group-screen" class="screen" hidden>
 				<header class="toolbar">
-					<h1 data-message="group.title" data-translation-context="Heading of the screen where a group plays">Game</h1>
+					<h1 id="group-title" data-message="group.title" data-translation-context="Heading of the screen where a group plays, until the group's name has loaded, or when it has none">Group</h1>
+					<span class="toolbar-name" data-message="group.playingAs" data-translation-context="In the group's toolbar, the character this window plays; {name} is the character's name">Playing as <strong id="group-character-name" data-argument="name"></strong></span>
 					<span id="group-status" class="toolbar-status" role="status"></span>
-					<button id="share-group" type="button" data-shortcut="Alt+I" data-message="group.share" data-translation-context="Button that copies a link others can use to join the game"><!-- icon ph:share-network -->Share</button>
-					<button id="leave-group" type="button" data-shortcut="Alt+L" data-message="group.leave" data-translation-context="Button that leaves the game and goes back to the lobby"><!-- icon ph:sign-out -->Leave group</button>
+					<button id="invite-group" type="button" data-shortcut="Alt+I" hidden data-message="group.invite" data-translation-context="Button, for the anchor being's player only, that makes a link others can open to join the group"><!-- icon ph:user-plus -->Invite</button>
+					<button id="leave-group" type="button" class="secondary" data-shortcut="Alt+L" data-message="group.leave" data-translation-context="Button that takes the character this window plays out of the group, back to the lobby"><!-- icon ph:sign-out -->Leave group</button>
 				</header>
-				<div id="group-map" class="map" tabindex="0" role="application" aria-label="Map" aria-describedby="group-map-help" data-shortcut="Alt+M" data-message-aria-label="map.label" data-translation-context-aria-label="Name of the game's map for screen readers"></div>
-				<p id="group-map-help" class="visually-hidden" data-message="map.help" data-translation-context="Read by screen readers on the game's map: the keys that play it. The keys are the same in every language; {shortcut} is the keys that read out where the player is, e.g. Alt+P">Arrow keys, W A S D or the number pad move you. E goes through a door or path you stand on. <kbd data-argument="shortcut" data-keys="Alt+P" translate="no">Alt+P</kbd> tells you where you are and who you can see.</p>
+				<div class="lobby-body">
+					<div id="group-map" class="map" tabindex="0" role="application" aria-label="Map" aria-describedby="group-map-help" data-shortcut="Alt+M" data-message-aria-label="map.label" data-translation-context-aria-label="Name of the game's map for screen readers"></div>
+					<p id="group-map-help" class="visually-hidden" data-message="map.help" data-translation-context="Read by screen readers on the game's map: the keys that play it. The keys are the same in every language; {shortcut} is the keys that read out where the player is, e.g. Alt+P">Arrow keys, W A S D or the number pad move you. E goes through a door or path you stand on. <kbd data-argument="shortcut" data-keys="Alt+P" translate="no">Alt+P</kbd> tells you where you are and who you can see.</p>
+					<div class="lobby-side">
+						<aside class="panel characters" aria-labelledby="group-character-heading">
+							<h2 id="group-character-heading" data-message="lobby.characters" data-translation-context="Heading of the list of characters the player has made in this universe">Your characters</h2>
+							<ul id="group-character-list" class="character-list"></ul>
+							<p id="group-character-none" class="character-none" hidden></p>
+						</aside>
+						<aside class="panel members" aria-labelledby="group-member-heading">
+							<h2 id="group-member-heading" data-message="group.members" data-translation-context="Heading of the list of characters in the group; {count} is how many there are">In the group (<span id="group-member-count" data-argument="count">0</span>)</h2>
+							<ul id="group-member-list" class="member-list"></ul>
+						</aside>
+					</div>
+				</div>
 			</section>
+
+			<section id="invite-screen" class="screen" hidden>
+				<header class="toolbar">
+					<h1 id="invite-title" data-message="invite.title" data-translation-context="Heading of the screen an invite link opens, until the group it leads to has loaded">Invite</h1>
+				</header>
+				<div class="panel invite">
+					<p id="invite-summary" class="invite-summary"></p>
+					<p id="invite-error" class="form-error" role="alert" hidden></p>
+					<p id="invite-choose" data-message="invite.choose" data-translation-context="On the screen an invite link opens, above the list of the player's characters: they choose one to join the group with">Choose a character to join the group. Characters already in a group can't join another.</p>
+					<ul id="invite-character-list" class="character-list invite-character-list"></ul>
+					<p id="invite-character-none" class="character-none" data-message="invite.noCharacters" data-translation-context="On the screen an invite link opens, instead of the list of the player's characters when they have none in this universe" hidden>You haven't made a character in this universe yet. Create one to join the group.</p>
+					<div class="dialog-buttons">
+						<button id="invite-lobby" type="button" class="secondary" data-shortcut="Alt+L" data-message="invite.lobby" data-translation-context="Button on the screen an invite link opens that goes to the universe's lobby without joining the group"><!-- icon ph:sign-out -->Go to the lobby</button>
+						<button id="invite-create-character" type="button" data-shortcut="Alt+N" data-message="lobby.createCharacter" data-translation-context="Button that goes to the page for making a new character in this universe"><!-- icon ph:user-plus -->Create Character</button>
+					</div>
+				</div>
+			</section>
+			<!-- include group-dialogs.html -->
 			<!-- include character-sheet.html -->
 		</main>
 		<!-- include footer.html -->

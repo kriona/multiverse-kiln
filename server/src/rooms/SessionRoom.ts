@@ -1,11 +1,11 @@
-import { matchMaker, Room, type AuthContext, type Client, type CloseCode, type Delayed, type IRoomCache } from 'colyseus';
-import { GAME_ROOM_NAME, isReservedName, MAX_GROUP_PLAYERS, NoticeReason, SessionMessageType, SessionServerMessageType, type AccountPayload, type NoticePayload } from '@multiverse-kiln/shared';
+import { Room, type AuthContext, type Client, type CloseCode, type Delayed } from 'colyseus';
+import { isReservedName, NoticeReason, SessionMessageType, SessionServerMessageType, type AccountPayload, type NoticePayload } from '@multiverse-kiln/shared';
 
 import { loadOrCreatePlayerByName, type PlayerProfile } from '../db/playerRepo.js';
 import { readBrowserId } from '../http/browserId.js';
 import { onlinePlayers, type OnlinePlayerChange, type OnlinePlayerRecord } from '../players/onlinePlayers.js';
 import { InvalidMessages } from './invalidMessages.js';
-import { describeInvalidPayload, joinGroupPayload, loginPayload } from './payloads.js';
+import { describeInvalidPayload, loginPayload } from './payloads.js';
 
 /**
  * What onAuth found out about a client, available afterward as client.auth
@@ -40,11 +40,11 @@ function browserIdOf(client: SessionClient): string
 const LOG_OUT_DELAY_MS = 15000;
 
 /**
- * The session: where windows log in, learn who their player is, and join and leave groups
+ * The session: where windows log in and learn who their player is
  *
  * There is one session room, which every window joins as soon as it loads and stays in until it
  * closes, wherever its player is: it is how the server tells all of a browser's windows that the
- * player has logged in or changed group. A browser is logged out once its last window has been gone
+ * player has logged in or out. A browser is logged out once its last window has been gone
  * for logOutDelayMs
  */
 export class SessionRoom extends Room<{ client: SessionClient }>
@@ -127,47 +127,6 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 			{
 				this.sendNoticeIfConnected(client, NoticeReason.NameInUse);
 			}
-		},
-
-		[SessionMessageType.JoinGroup]: async (client: SessionClient, payload: unknown) =>
-		{
-			const result = joinGroupPayload.safeParse(payload);
-
-			if (!result.success)
-			{
-				this.invalidMessages.reject(client, SessionMessageType.JoinGroup, describeInvalidPayload(result.error));
-				return;
-			}
-
-			const { groupId } = result.data;
-			const browserId = browserIdOf(client);
-			const player = onlinePlayers.get(browserId);
-
-			if (!player || (player.groupId === groupId))
-			{
-				return;
-			}
-
-			const room = await matchMaker.getRoomById(groupId) as IRoomCache | undefined;
-
-			if (room?.name !== GAME_ROOM_NAME)
-			{
-				this.sendNotice(client, NoticeReason.GroupNotFound);
-				return;
-			}
-
-			if (onlinePlayers.countInGroup(groupId) >= MAX_GROUP_PLAYERS)
-			{
-				this.sendNotice(client, NoticeReason.GroupFull);
-				return;
-			}
-
-			onlinePlayers.setGroup(browserId, groupId);
-		},
-
-		[SessionMessageType.LeaveGroup]: (client: SessionClient) =>
-		{
-			onlinePlayers.setGroup(browserIdOf(client), undefined);
 		}
 	};
 
@@ -293,8 +252,7 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 		const account: AccountPayload = {
 			player: (player ? {
 				playerId: player.playerId,
-				name: player.name,
-				groupId: player.groupId ?? null
+				name: player.name
 			} : null)
 		};
 

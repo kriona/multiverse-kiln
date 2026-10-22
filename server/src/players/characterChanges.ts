@@ -1,12 +1,13 @@
 /**
- * A change to which of a player's characters can be played, for the lobby they may be playing in
+ * A change to which of a player's characters can be played, for the lobby or group they may be playing in
  *
  * - removed: the character was deleted or given their last rites, so they can't be played
- * - restored: a character given their last rites was restored, so they can be played again
+ * - restored: a character given their last rites was restored, so they can be played again: in the
+ *   lobby, or in their group when inGroup
  */
 export type CharacterChange =
 	| { kind: 'removed'; playerId: string; universeId: string; characterId: string }
-	| { kind: 'restored'; playerId: string; universeId: string; character: { id: string; name: string } };
+	| { kind: 'restored'; playerId: string; universeId: string; character: { id: string; name: string }; inGroup: boolean };
 
 /**
  * Called after every change
@@ -14,8 +15,8 @@ export type CharacterChange =
 export type CharacterChangeListener = (change: CharacterChange) => void;
 
 /**
- * Tells the lobbies about changes to players' characters as they are made, so a player stops playing a
- * character that is deleted
+ * Tells the lobbies and game rooms about changes to players' characters as they are made, so a player
+ * stops playing a character that is deleted
  *
  * Changes are published after they are saved. It lives in memory, so it only reaches rooms in the same
  * server process, like OnlinePlayers
@@ -55,6 +56,6 @@ export class CharacterChanges
 }
 
 /**
- * The server's character changes, published by the character routes and followed by every lobby
+ * The server's character changes, published by the character routes and followed by every lobby and game room
  */
 export const characterChanges = new CharacterChanges();

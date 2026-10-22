@@ -30,8 +30,8 @@ describe('characterRepo', () =>
 		await inTransaction((transaction) => createCharacter({ ...brokk, playerId: otherPlayerId }, transaction));
 
 		assert.deepStrictEqual(await listCharacters(playerId, universeId), [
-			{ id: firstId, name: 'Brokk', raceId: brokk.raceId, classId: brokk.classId, deleteAt: null },
-			{ id: secondId, name: 'Dain', raceId: brokk.raceId, classId: brokk.classId, deleteAt: null }
+			{ id: firstId, name: 'Brokk', raceId: brokk.raceId, classId: brokk.classId, deleteAt: null, groupId: null },
+			{ id: secondId, name: 'Dain', raceId: brokk.raceId, classId: brokk.classId, deleteAt: null, groupId: null }
 		]);
 		assert.strictEqual(await countCharacters(playerId, universeId), 2);
 	});

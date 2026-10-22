@@ -1,13 +1,12 @@
 import { Callbacks } from '@colyseus/sdk';
 import { DISALLOWED_TEXT_CHARACTERS, MAX_CHAT_MESSAGE_LENGTH, type CharacterListPayload, type CharacterSummary, type ChatMessage, type LobbyMember } from '@multiverse-kiln/shared';
-import sheetIcon from 'virtual:icon/ph:scroll';
 
 import { currentLocale, t } from '../localization';
 import type { LobbyConnection } from '../network/serverConnection';
 import { announce } from './announcer';
-import { getElement, setButtonLabel, showMessage } from './dom';
+import { CharacterList } from './CharacterList';
+import { getElement, showMessage } from './dom';
 import type { MapView } from './MapView';
-import { className, raceName } from './raceAndClassNames';
 import { addShortcut } from './shortcuts';
 
 /**
@@ -36,16 +35,19 @@ export interface LobbyScreenActions
 	createCharacter: () => void;
 
 	/**
-	 * Play one of the player's characters
+	 * Play one of the player's characters: here, or in their group when they are in one
 	 */
-	chooseCharacter: (characterId: string) => void;
+	chooseCharacter: (character: CharacterSummary) => void;
 
 	/**
 	 * Show one of the player's characters on their character sheet
 	 */
 	openCharacterSheet: (character: CharacterSummary) => void;
 
-	createGroup: () => void;
+	/**
+	 * Make a group around the character the player is playing
+	 */
+	createGroup: (character: CharacterSummary) => void;
 
 	/**
 	 * Go back to Home
@@ -55,11 +57,11 @@ export interface LobbyScreenActions
 
 /**
  * The lobby screen: the lobby's map, chat, who's here, the player's characters, and the Create
- * Character, Create game and Leave lobby buttons
+ * Character, Create Group and Leave lobby buttons
  *
  * The screen is made once and attached to whichever universe lobby the window is in. Choosing one of
- * the player's characters plays them. A player playing none is a ghost: the screen says so, makes
- * Create Character the main button, and turns off the chat and Create game
+ * the player's characters plays them, here or in their group. A player playing none is a ghost: the
+ * screen says so, makes Create Character the main button, and turns off the chat and Create Group
  */
 export class LobbyScreen
 {
@@ -107,10 +109,7 @@ export class LobbyScreen
 	 */
 	private playingId: string | null | undefined;
 
-	/**
-	 * Whether the player has asked to create a group and the server hasn't answered
-	 */
-	private creatingGroup = false;
+	private readonly characterChoices: CharacterList;
 
 	private ownPlayerId: string | undefined;
 	private lastSentChat = '';
@@ -123,6 +122,17 @@ export class LobbyScreen
 	constructor(private readonly mapView: MapView, private readonly actions: LobbyScreenActions)
 	{
 		this.chatInput.maxLength = MAX_CHAT_MESSAGE_LENGTH;
+		this.characterChoices = new CharacterList(this.characterList, this.characterNone, {
+			choose: (character) =>
+			{
+				this.hideNotice();
+				actions.chooseCharacter(character);
+			},
+			openSheet: (character) =>
+			{
+				actions.openCharacterSheet(character);
+			}
+		});
 
 		this.chatForm.addEventListener('submit', (event) =>
 		{
@@ -148,11 +158,13 @@ export class LobbyScreen
 
 		this.createButton.addEventListener('click', () =>
 		{
-			// Stays disabled until the server answers, which shows the group screen
-			this.creatingGroup = true;
-			this.updatePlayingState();
-			this.hideNotice();
-			actions.createGroup();
+			const character = this.playingCharacter();
+
+			if (character)
+			{
+				this.hideNotice();
+				actions.createGroup(character);
+			}
 		});
 
 		this.leaveButton.addEventListener('click', () =>
@@ -171,7 +183,7 @@ export class LobbyScreen
 			}),
 			run: () =>
 			{
-				const character = this.characters?.characters.find((each) => (each.id === this.playingId));
+				const character = this.playingCharacter();
 
 				if (character)
 				{
@@ -179,6 +191,16 @@ export class LobbyScreen
 				}
 			}
 		});
+	}
+
+	/**
+	 * The character the player is playing here
+	 *
+	 * @return The character, or undefined for a ghost or while the characters load
+	 */
+	private playingCharacter(): CharacterSummary | undefined
+	{
+		return(this.characters?.characters.find((each) => (each.id === this.playingId)));
 	}
 
 	/**
@@ -254,7 +276,6 @@ export class LobbyScreen
 			universe: universeName
 		});
 		this.playerName.textContent = name;
-		this.creatingGroup = false;
 		this.updatePlayingState();
 		this.queueMemberList();
 	}
@@ -371,8 +392,6 @@ export class LobbyScreen
 	{
 		this.notice.textContent = message;
 		this.notice.hidden = false;
-		this.creatingGroup = false;
-		this.updatePlayingState();
 	}
 
 	/**
@@ -395,110 +414,11 @@ export class LobbyScreen
 	}
 
 	/**
-	 * Draws the player's characters, each a button that plays them beside one that shows their sheet,
-	 * marking the one being played
+	 * Draws the player's characters, marking the one being played
 	 */
 	private renderCharacters(): void
 	{
-		const list = this.characters;
-
-		if (!list)
-		{
-			this.characterNone.hidden = true;
-			this.characterList.replaceChildren();
-			return;
-		}
-
-		this.characterNone.hidden = (list.characters.length > 0);
-		this.characterList.replaceChildren(...list.characters.map((character) =>
-		{
-			const item = document.createElement('li');
-			const button = document.createElement('button');
-			const name = document.createElement('strong');
-			const description = document.createElement('span');
-			const isPlaying = (character.id === this.playingId);
-
-			name.textContent = character.name;
-			description.className = 'character-description';
-			description.textContent = t({
-				id: 'lobby.characterDescription',
-				defaultMessage: '{race} {class}',
-				description: 'In the lobby\'s list of the player\'s characters, a character\'s race and class after their name, e.g. "Dwarf Fighter". Reorder them as your language needs'
-			}, {
-				race: raceName(character.race, list.ruleset),
-				class: className(character.characterClass, list.ruleset)
-			});
-
-			button.type = 'button';
-			button.className = 'character-choice';
-			button.setAttribute('aria-pressed', String(isPlaying));
-			button.append(name, ' ', description);
-
-			// Kept focusable, so a screen reader still reads the character and when they go
-			if (character.deleteAt !== null)
-			{
-				const leaving = document.createElement('span');
-
-				leaving.className = 'character-leaving';
-				leaving.textContent = t({
-					id: 'lobby.characterLeaving',
-					defaultMessage: 'To be deleted on {deleteAt, date, medium}',
-					description: 'In the lobby\'s list of the player\'s characters, beside one given their last rites, who can\'t be played until restored from their sheet; {deleteAt} is the day they will be deleted'
-				}, {
-					deleteAt: Date.parse(character.deleteAt)
-				});
-				button.setAttribute('aria-disabled', 'true');
-				button.append(' ', leaving);
-			}
-
-			// Said in words as well as by the outline, for players who can't see it
-			if (isPlaying)
-			{
-				const playing = document.createElement('span');
-
-				playing.className = 'character-playing';
-				playing.textContent = t({
-					id: 'lobby.characterPlaying',
-					defaultMessage: 'Playing',
-					description: 'In the lobby\'s list of the player\'s characters, shown beside the one they are playing now'
-				});
-				button.append(' ', playing);
-			}
-
-			button.addEventListener('click', () =>
-			{
-				if ((character.id !== this.playingId) && (character.deleteAt === null))
-				{
-					this.hideNotice();
-					this.actions.chooseCharacter(character.id);
-				}
-			});
-
-			const sheetButton = document.createElement('button');
-
-			sheetButton.type = 'button';
-			sheetButton.className = 'secondary character-sheet-button';
-			setButtonLabel(sheetButton, sheetIcon, t({
-				id: 'lobby.characterSheet',
-				defaultMessage: 'Sheet',
-				description: 'Short button beside each of the player\'s characters in the lobby that shows the character\'s sheet: their ability scores, money and equipment'
-			}));
-			sheetButton.setAttribute('aria-label', t({
-				id: 'lobby.characterSheetLabel',
-				defaultMessage: 'Character sheet of {name}',
-				description: 'Name for screen readers of the button beside one of the player\'s characters in the lobby that shows their sheet; {name} is the character\'s name'
-			}, {
-				name: character.name
-			}));
-			sheetButton.addEventListener('click', () =>
-			{
-				this.actions.openCharacterSheet(character);
-			});
-
-			item.append(button, sheetButton);
-
-			return(item);
-		}));
+		this.characterChoices.render(this.characters, this.playingId);
 	}
 
 	/**
@@ -512,7 +432,7 @@ export class LobbyScreen
 		this.ghostNote.hidden = !isGhost;
 		this.chatInput.disabled = isGhost;
 		this.chatSendButton.disabled = isGhost;
-		this.createButton.disabled = (this.creatingGroup || (this.playingId === null) || (this.playingId === undefined));
+		this.createButton.disabled = (typeof this.playingId !== 'string');
 		this.createCharacterButton.classList.toggle('secondary', (typeof this.playingId === 'string'));
 
 		for (const control of [this.chatInput, this.chatSendButton, this.createButton])

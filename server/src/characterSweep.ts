@@ -1,9 +1,12 @@
 /**
- * Deletes characters whose last rites' time has come: once as the server starts, then every hour. It
- * runs on its own timer, never in a room's simulation tick. Until a sweep deletes them, the character
- * repository hides them
+ * Deletes characters whose last rites' time has come, and invite links that have expired: once as the
+ * server starts, then every hour. It runs on its own timer, never in a room's simulation tick. Until a
+ * sweep deletes them, the repositories hide them
  */
 import { purgeExpiredCharacters } from './db/characterRepo.js';
+import { listExpiredMemberships, listMembersOfGroups, purgeExpiredInvites } from './db/groupRepo.js';
+import { inTransaction } from './db/transactions.js';
+import { deletionChange, groupChanges, type GroupChange } from './players/groupChanges.js';
 
 /**
  * How often the sweep runs
@@ -11,13 +14,32 @@ import { purgeExpiredCharacters } from './db/characterRepo.js';
 const SWEEP_INTERVAL_MS = 60 * 60 * 1000;
 
 /**
- * Deletes the characters whose time has come, logging what happened
+ * Deletes the characters whose time has come, telling their groups' rooms, then the expired invite
+ * links, logging what happened
  */
 async function sweep(): Promise<void>
 {
 	try
 	{
-		const deleted = await purgeExpiredCharacters();
+		// The groups' members are read before the deletion takes the characters, and whole groups, with it
+		const { deleted, changes } = await inTransaction(async (transaction) =>
+		{
+			const memberships = await listExpiredMemberships(transaction);
+			const members = await listMembersOfGroups(memberships.map(({ groupId }) => groupId), transaction);
+			const groupChangesMade = memberships
+				.map((membership) => deletionChange(membership, membership.character.characterId, members.get(membership.groupId) ?? []))
+				.filter((change): change is GroupChange => (change !== undefined));
+
+			return({
+				deleted: await purgeExpiredCharacters(transaction),
+				changes: groupChangesMade
+			});
+		});
+
+		for (const change of changes)
+		{
+			groupChanges.publish(change);
+		}
 
 		if (deleted > 0)
 		{
@@ -27,6 +49,15 @@ async function sweep(): Promise<void>
 	catch (error)
 	{
 		console.error('Could not delete the characters whose last rites were over:', error);
+	}
+
+	try
+	{
+		await purgeExpiredInvites();
+	}
+	catch (error)
+	{
+		console.error('Could not delete the expired invite links:', error);
 	}
 }
 

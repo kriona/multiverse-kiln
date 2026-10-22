@@ -23,13 +23,45 @@ export const Player = schema({
 export type Player = SchemaType<typeof Player>;
 
 /**
+ * A character in a group, keyed by character ID in GameState.members
+ */
+export const GroupMember = schema({
+	name: t.string(),
+
+	/**
+	 * The character's player, so a window knows which members it can control
+	 */
+	playerId: t.string(),
+
+	/**
+	 * Whether the character is in the room: their player has a window in it. Links that need the whole
+	 * group can't be taken while any member isn't
+	 */
+	present: t.boolean()
+}, 'GroupMember');
+export type GroupMember = SchemaType<typeof GroupMember>;
+
+/**
  * Root state of a group's game room
  *
- * A client sees only the players in the same area as its own player: the server adds each one to the
- * client's view (StateView) as they enter the area and removes them as they leave it
+ * players holds each member who is present, keyed by character ID. A client sees only the players in
+ * the same area as the character it controls: the server adds each one to the client's view (StateView)
+ * as they enter the area and removes them as they leave it. members lists every member, present or not
  */
 export const GameState = schema({
-	players: t.map(Player).view()
+	players: t.map(Player).view(),
+
+	/**
+	 * The group's name; empty when it has none
+	 */
+	name: t.string(),
+
+	/**
+	 * The anchor being's character ID
+	 */
+	anchorId: t.string(),
+
+	members: t.map(GroupMember)
 }, 'GameState');
 export type GameState = SchemaType<typeof GameState>;
 

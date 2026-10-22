@@ -10,9 +10,10 @@ import express, { type Application, type NextFunction, type Request, type Respon
 import { z } from 'zod';
 import { addMoney, canPlayUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, isReservedName, isSf1eClassRules, isSf1eRaceRules, MAX_CHARACTER_NAME_LENGTH, MAX_CHARACTERS_PER_UNIVERSE, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditableUniverse, type EditorClass, type EditorRace, type NewCharacterOptions, type NewCharacterRequest, type OptionName } from '@multiverse-kiln/shared';
 
-import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findPf1eAbilityRoll, keepPf1eAbilityRoll, listCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion } from '../db/characterRepo.js';
+import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findLastPlayedCharacterId, findPf1eAbilityRoll, keepPf1eAbilityRoll, listCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion } from '../db/characterRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
 import type { Executor } from '../db/client.js';
+import { findMembership, listGroupMembers } from '../db/groupRepo.js';
 import { lockPlayer } from '../db/playerRepo.js';
 import { loadEditorItems } from '../db/itemRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
@@ -24,6 +25,7 @@ import { findUniverseRole } from '../db/universeEditorRepo.js';
 import { findEditableUniverse, lockUniverse } from '../db/universeRepo.js';
 import { rollPf1eAbilityScores } from '../logic/abilityRolls.js';
 import { characterChanges } from '../players/characterChanges.js';
+import { deletionChange, groupChanges } from '../players/groupChanges.js';
 import { abilityBonuses, areValidBaseScores, combineStartingItems, finalAbilityScores, isValidFloatingAbility, type ScoreSource } from '../logic/characterCreation.js';
 import { chooseStartingArea } from '../logic/startingArea.js';
 import { displayText } from '../rooms/payloads.js';
@@ -33,7 +35,7 @@ import { errorMessages, sendError, sendInvalidRequest, type Refusal } from './er
 /**
  * The universe a character request is about
  */
-type PlayableUniverse = Omit<EditableUniverse, 'role'>;
+export type PlayableUniverse = Omit<EditableUniverse, 'role'>;
 
 /**
  * A base ability score as sent: no rolled, bought or raised score is outside this
@@ -168,7 +170,7 @@ export function addCharacterRoutes(app: Application, allowedOrigins: Set<string>
  * @param response The response
  * @param next Continues to the next handler
  */
-async function loadPlayableUniverse(request: Request, response: Response, next: NextFunction): Promise<void>
+export async function loadPlayableUniverse(request: Request, response: Response, next: NextFunction): Promise<void>
 {
 	const universeId = z.uuid().safeParse(request.params.universeId);
 
@@ -196,7 +198,7 @@ async function loadPlayableUniverse(request: Request, response: Response, next: 
  * @param request The request
  * @return The universe
  */
-function universeOf(request: Request): PlayableUniverse
+export function universeOf(request: Request): PlayableUniverse
 {
 	const universe = universes.get(request);
 
@@ -217,8 +219,10 @@ function universeOf(request: Request): PlayableUniverse
 async function listRoute(request: Request, response: Response): Promise<void>
 {
 	const universe = universeOf(request);
-	const [characters, races, classes] = await Promise.all([
-		listCharacters(playerIdOf(request), universe.id),
+	const playerId = playerIdOf(request);
+	const [characters, lastPlayedId, races, classes] = await Promise.all([
+		listCharacters(playerId, universe.id),
+		findLastPlayedCharacterId(playerId, universe.id),
 		loadEditorRaces(universe.id, universe.ruleset),
 		loadEditorClasses(universe.id, universe.ruleset)
 	]);
@@ -227,13 +231,15 @@ async function listRoute(request: Request, response: Response): Promise<void>
 	const unnamed: OptionName = { key: null, name: null };
 	const payload: CharacterListPayload = {
 		ruleset: universe.ruleset,
-		characters: characters.map(({ id, name, raceId, classId, deleteAt }) => ({
+		characters: characters.map(({ id, name, raceId, classId, deleteAt, groupId }) => ({
 			id,
 			name,
 			race: (raceNames.get(raceId) ?? unnamed),
 			characterClass: (classNames.get(classId) ?? unnamed),
-			deleteAt: (deleteAt?.toISOString() ?? null)
-		}))
+			deleteAt: (deleteAt?.toISOString() ?? null),
+			groupId
+		})),
+		lastPlayedId: (lastPlayedId ?? null)
 	};
 
 	response.json(payload);
@@ -377,10 +383,31 @@ async function deleteRoute(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	if (!await deleteCharacter(playerId, universeId, characterId))
+	// The group's members are read before the deletion takes the character, or the whole group, with it
+	const deleted = await inTransaction(async (transaction) =>
+	{
+		const membership = await findMembership(characterId, transaction);
+		const members = (membership ? await listGroupMembers(membership.groupId, transaction) : []);
+
+		if (!await deleteCharacter(playerId, universeId, characterId, transaction))
+		{
+			return(undefined);
+		}
+
+		return({
+			groupChange: (membership ? deletionChange(membership, characterId, members) : undefined)
+		});
+	});
+
+	if (!deleted)
 	{
 		sendError(response, 404, messages.noSuchCharacter);
 		return;
+	}
+
+	if (deleted.groupChange)
+	{
+		groupChanges.publish(deleted.groupChange);
 	}
 
 	characterChanges.publish({
@@ -468,7 +495,8 @@ async function restoreRoute(request: Request, response: Response): Promise<void>
 		kind: 'restored',
 		playerId,
 		universeId,
-		character
+		character,
+		inGroup: (await findMembership(characterId) !== undefined)
 	});
 	response.sendStatus(204);
 }

@@ -6,6 +6,7 @@ import { chunksNear, type ChunkAreaMap } from '../logic/chunkArea.js';
 import { cellAt, findFreeCell, NO_PRESS, occupiedCells, stepOnGrid, type Cell, type DirectionPress, type GridStep, type IsCellFree, type Position } from '../logic/movement.js';
 import { CellOccupancy } from '../logic/occupancy.js';
 import { linkAt, type AreaLink } from '../logic/areaGrid.js';
+import { isGroupTogether } from '../logic/groupLinks.js';
 import type { AreaChange } from '../world/areaChanges.js';
 import { InputQueue } from './inputQueue.js';
 import { PlayerSessions } from './playerSessions.js';
@@ -72,21 +73,53 @@ export interface LeftPlayer
 	playerId: string;
 
 	/**
-	 * Whether the client was the player's last, so the player has left the room
+	 * Whether the client was the player's last, so no client controls the player any more
 	 */
 	wasLastClient: boolean;
+}
+
+/**
+ * Where a player is: an area and a cell in it
+ */
+export interface PlayerPosition extends Cell
+{
+	areaId: string;
+}
+
+/**
+ * How a group's room handles links that require the whole group. A room without it (a lobby) treats
+ * them as ordinary links
+ */
+export interface WholeGroupLinks
+{
+	/**
+	 * Every member of the group, present or not
+	 *
+	 * @return Their player IDs
+	 */
+	members(): readonly string[];
+
+	/**
+	 * Called when a player tries to take such a link while the group isn't together
+	 *
+	 * @param playerId The player who tried
+	 */
+	refuse(playerId: string): void;
 }
 
 /**
  * The players on the map of a room with areas (a universe's lobby or a group's game room): which
  * clients control them, which area each is in, how they move, and which of them each client sees
  *
- * Every window of the same browser controls the same player. A room holds every area its players are
- * in; a client sees only the players in its own player's area, through its StateView, and no other
- * player's ghost. Stepping onto an
- * automatic area link, or asking to take the manual link the player stands on, sends the player to
- * the link's target cell once that area has loaded. The room calls update() from its simulation tick
- * and refreshChunks() every CHUNK_REFRESH_INTERVAL_MS
+ * Each client controls one player (see PlayerSessions), and can be switched to another (control()).
+ * Players stay in the room until the room removes them (remove()), so a lobby removes a player once
+ * their last client has left, and a group's room keeps every character of a player who has any window
+ * in it. A room holds every area its players are in; a client sees only the players in its own
+ * player's area, through its StateView, and no other player's ghost. Stepping onto an automatic area
+ * link, or asking to take the manual link the player stands on, sends the player to the link's target
+ * cell once that area has loaded; a link that requires the whole group sends every member (see
+ * WholeGroupLinks). The room calls update() from its simulation tick and refreshChunks() every
+ * CHUNK_REFRESH_INTERVAL_MS
  *
  * Only the chunks of each area's map near its players are loaded, and each player is sent the chunks
  * near them as they move. Changes the world editor makes (applyChange) reach the players straight away
@@ -132,25 +165,62 @@ export class AreaPlayers
 	 * @param players The room's synced players, which this adds to, moves and removes
 	 * @param areas The room's areas
 	 * @param fallbackAreaId The area players go to when the area they are in is deleted
+	 * @param wholeGroupLinks How links that require the whole group work, in a group's room
 	 */
-	constructor(private readonly players: MapSchema<Player>, private readonly areas: AreaCache, private readonly fallbackAreaId: () => string | undefined)
+	constructor(private readonly players: MapSchema<Player>, private readonly areas: AreaCache, private readonly fallbackAreaId: () => string | undefined, private readonly wholeGroupLinks?: WholeGroupLinks)
 	{
 	}
 
 	/**
-	 * Loads the chunks a new player needs to be placed in an area, around its center. Call it before join()
+	 * Loads the chunks a new player needs to be placed in an area, around a cell. Call it before add() or join()
 	 *
 	 * @param area The area
+	 * @param near The cell, the area's center by default
 	 */
-	async prepareStart(area: ActiveArea): Promise<void>
+	async prepareStart(area: ActiveArea, near: Cell = { column: 0, row: 0 }): Promise<void>
 	{
-		await this.areas.loadChunks(area.loaded.area.id, chunksNear([{ column: 0, row: 0 }], CHUNK_LOAD_RADIUS, chunkMapOf(area)));
+		await this.areas.loadChunks(area.loaded.area.id, chunksNear([near], CHUNK_LOAD_RADIUS, chunkMapOf(area)));
 	}
 
 	/**
-	 * Adds a joining client. A player new to the room is placed on the free cell nearest the start
-	 * area's center; a player already here gets another window. Either way the client is told which
-	 * player it controls and which area it is in
+	 * Adds a player to the room, on the free cell nearest a cell of an area, before any client controls
+	 * them. Does nothing for a player already here
+	 *
+	 * @param playerId The player's ID
+	 * @param appearance How they show
+	 * @param area Where they start, with prepareStart() done
+	 * @param near The cell to start nearest
+	 */
+	add(playerId: string, appearance: Appearance, area: ActiveArea, near: Cell): void
+	{
+		if (this.players.has(playerId))
+		{
+			return;
+		}
+
+		// Added before it has a cell, so the search below knows whether the player is a ghost
+		const player = new Player({ x: 0, y: 0, name: appearance.name, ghost: appearance.ghost });
+
+		this.players.set(playerId, player);
+
+		const position = this.findArrivalCell(playerId, area, near);
+
+		if (!position)
+		{
+			this.players.delete(playerId);
+			throw new Error(`No free cell for player ${playerId} in area ${area.loaded.area.id}`);
+		}
+
+		player.x = position.x;
+		player.y = position.y;
+		this.areaIds.set(playerId, area.loaded.area.id);
+		this.showToArea(playerId);
+	}
+
+	/**
+	 * Adds a joining client controlling a player. A player new to the room is first placed on the free
+	 * cell nearest the start area's center; a player already here gets another window. Either way the
+	 * client is told which player it controls and which area it is in
 	 *
 	 * @param client The joining client
 	 * @param playerId The player the client controls
@@ -160,57 +230,50 @@ export class AreaPlayers
 	 */
 	join(client: Client, playerId: string, appearance: Appearance, startArea: ActiveArea): boolean
 	{
-		const isNewPlayer = this.sessions.add(client.sessionId, playerId);
+		const isNewPlayer = !this.players.has(playerId);
 
 		if (isNewPlayer)
 		{
-			// Added before it has a cell, so the search below knows whether the player is a ghost
-			const player = new Player({ x: 0, y: 0, name: appearance.name, ghost: appearance.ghost });
-
-			this.players.set(playerId, player);
-
-			const position = this.findArrivalCell(playerId, startArea, { column: 0, row: 0 });
-
-			if (!position)
-			{
-				this.players.delete(playerId);
-				this.sessions.remove(client.sessionId);
-				throw new Error(`No free cell for player ${playerId} in area ${startArea.loaded.area.id}`);
-			}
-
-			player.x = position.x;
-			player.y = position.y;
-			this.areaIds.set(playerId, startArea.loaded.area.id);
-			this.showToArea(playerId);
+			this.add(playerId, appearance, startArea, { column: 0, row: 0 });
 		}
 
-		const area = this.areaOf(playerId);
-
+		this.sessions.add(client.sessionId, playerId);
 		this.clients.set(client.sessionId, client);
-		client.view = new StateView();
-
-		for (const otherId of this.playersIn(this.areaIds.get(playerId)))
-		{
-			if ((otherId === playerId) || !this.isGhost(otherId))
-			{
-				this.show(otherId, client);
-			}
-		}
-
-		const welcome: WelcomePayload = { playerId };
-
-		client.send(ServerMessageType.Welcome, welcome);
-
-		if (area)
-		{
-			this.sendArea(playerId, area, [client]);
-		}
+		this.attach(client, playerId);
 
 		return(isNewPlayer);
 	}
 
 	/**
-	 * Removes a leaving client, stopping its player, and removes the player once its last client has left
+	 * Switches a client to controlling another player in the room. The player it controlled stops, and
+	 * the client is told which player it controls and which area it is in, as on joining
+	 *
+	 * @param client The client
+	 * @param playerId The player to control
+	 * @return False when the client or the player isn't in the room
+	 */
+	control(client: Client, playerId: string): boolean
+	{
+		const previousId = this.sessions.getPlayerId(client.sessionId);
+
+		if ((previousId === undefined) || !this.players.has(playerId))
+		{
+			return(false);
+		}
+
+		if (previousId !== playerId)
+		{
+			this.stop(previousId);
+			this.sessions.move(client.sessionId, playerId);
+		}
+
+		this.attach(client, playerId);
+
+		return(true);
+	}
+
+	/**
+	 * Removes a leaving client, stopping its player. The player stays in the room until remove()
 	 *
 	 * @param client The leaving client
 	 * @return The client's player, or undefined when the client wasn't added
@@ -221,28 +284,120 @@ export class AreaPlayers
 
 		this.clients.delete(client.sessionId);
 
-		if (!left)
+		if (left)
+		{
+			this.stop(left.playerId);
+		}
+
+		return(left);
+	}
+
+	/**
+	 * Takes a player out of the room, with any clients still controlling them
+	 *
+	 * @param playerId The player's ID
+	 */
+	remove(playerId: string): void
+	{
+		for (const sessionId of this.sessions.removePlayer(playerId))
+		{
+			this.clients.delete(sessionId);
+		}
+
+		this.stop(playerId);
+		this.hideFromArea(playerId);
+		this.players.delete(playerId);
+		this.areaIds.delete(playerId);
+		this.steps.delete(playerId);
+		this.presses.delete(playerId);
+		this.travelling.delete(playerId);
+		this.sentChunks.delete(playerId);
+	}
+
+	/**
+	 * Where a player is
+	 *
+	 * @param playerId The player's ID
+	 * @return Their area and cell, or undefined when they aren't in the room
+	 */
+	getPosition(playerId: string): PlayerPosition | undefined
+	{
+		const area = this.areaOf(playerId);
+		const cell = (area ? this.cellOf(playerId, area) : undefined);
+
+		if (!area || !cell)
 		{
 			return(undefined);
 		}
 
-		// A window can close while its keys are held, and its last Move may still be queued; the player
-		// stops at the end of its current step instead of running on without it
-		this.moveInputs.remove(left.playerId);
-		this.heldDirections.delete(left.playerId);
+		return({
+			areaId: area.loaded.area.id,
+			...cell
+		});
+	}
 
-		if (left.wasLastClient)
+	/**
+	 * Whether a player is in the room
+	 *
+	 * @param playerId The player's ID
+	 * @return True when they are
+	 */
+	has(playerId: string): boolean
+	{
+		return(this.players.has(playerId));
+	}
+
+	/**
+	 * Shows a client the players in its player's area, and only them, and tells it which player it
+	 * controls and which area it is in
+	 *
+	 * @param client The client, already recorded as controlling the player
+	 * @param playerId The player
+	 */
+	private attach(client: Client, playerId: string): void
+	{
+		const area = this.areaOf(playerId);
+		const visible = new Set(this.playersIn(this.areaIds.get(playerId)).filter((otherId) => ((otherId === playerId) || !this.isGhost(otherId))));
+
+		if (!client.view)
 		{
-			this.hideFromArea(left.playerId);
-			this.players.delete(left.playerId);
-			this.areaIds.delete(left.playerId);
-			this.steps.delete(left.playerId);
-			this.presses.delete(left.playerId);
-			this.travelling.delete(left.playerId);
-			this.sentChunks.delete(left.playerId);
+			client.view = new StateView();
 		}
 
-		return(left);
+		// Players who stay in view aren't removed and added again, which would make the client redraw them
+		for (const [otherId, other] of this.players)
+		{
+			if (!visible.has(otherId) && client.view.has(other))
+			{
+				client.view.remove(other);
+			}
+		}
+
+		for (const otherId of visible)
+		{
+			this.show(otherId, client);
+		}
+
+		const welcome: WelcomePayload = { playerId };
+
+		client.send(ServerMessageType.Welcome, welcome);
+
+		if (area)
+		{
+			this.sendArea(playerId, area, [client]);
+		}
+	}
+
+	/**
+	 * Stops a player at the end of their current step: a window can close or switch players while its
+	 * keys are held, and its last Move may still be queued
+	 *
+	 * @param playerId The player's ID
+	 */
+	private stop(playerId: string): void
+	{
+		this.moveInputs.remove(playerId);
+		this.heldDirections.delete(playerId);
 	}
 
 	/**
@@ -288,7 +443,7 @@ export class AreaPlayers
 
 		if (link?.mode === 'manual')
 		{
-			this.travel(playerId, link);
+			this.takeLinkFrom(playerId, link);
 		}
 	}
 
@@ -421,7 +576,7 @@ export class AreaPlayers
 
 			if (link)
 			{
-				this.travel(playerId, link);
+				this.takeLinkFrom(playerId, link);
 			}
 		}
 	}
@@ -668,6 +823,39 @@ export class AreaPlayers
 				mode: 'automatic',
 				requiresWholeGroup: false
 			});
+		}
+	}
+
+	/**
+	 * Sends a player through a link they stand on. A link that requires the whole group sends every
+	 * member of the group with them, or nobody while the group isn't together
+	 *
+	 * @param playerId The player's ID
+	 * @param link The link
+	 */
+	private takeLinkFrom(playerId: string, link: AreaLink): void
+	{
+		if (!link.requiresWholeGroup || !this.wholeGroupLinks)
+		{
+			this.travel(playerId, link);
+			return;
+		}
+
+		const members = this.wholeGroupLinks.members();
+		const together = isGroupTogether(members, playerId, (memberId) => ({
+			areaId: this.areaIds.get(memberId),
+			travelling: this.travelling.has(memberId)
+		}));
+
+		if (!together)
+		{
+			this.wholeGroupLinks.refuse(playerId);
+			return;
+		}
+
+		for (const memberId of members)
+		{
+			this.travel(memberId, link);
 		}
 	}
 
@@ -1037,7 +1225,7 @@ export class AreaPlayers
 	{
 		const player = this.players.get(playerId);
 
-		if (player)
+		if (player && !client.view?.has(player))
 		{
 			client.view?.add(player);
 		}

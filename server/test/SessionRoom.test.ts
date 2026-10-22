@@ -3,13 +3,11 @@ import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { GAME_ROOM_NAME, MAX_GROUP_PLAYERS, MAX_PLAYER_NAME_LENGTH, NoticeReason, SESSION_ROOM_NAME, SessionMessageType, SessionServerMessageType, type AccountPayload, type AccountPlayer, type NoticePayload } from '@multiverse-kiln/shared';
+import { MAX_PLAYER_NAME_LENGTH, NoticeReason, SESSION_ROOM_NAME, SessionMessageType, SessionServerMessageType, type AccountPayload, type AccountPlayer, type NoticePayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
 import { onlinePlayers } from '../src/players/onlinePlayers.js';
-import type { GameRoom } from '../src/rooms/GameRoom.js';
 import { SessionRoom } from '../src/rooms/SessionRoom.js';
-import { addPlayableUniverse } from './db/fixtures.js';
 import { Inbox } from './inbox.js';
 import { getTestServer, logOutEveryone, testServerUrl } from './testServer.js';
 import { waitUntil } from './waitUntil.js';
@@ -95,19 +93,6 @@ describe('SessionRoom', () =>
 		await handled;
 	}
 
-	/**
-	 * Creates a group's game room, as a universe's lobby would
-	 *
-	 * @return The room's ID, which is the group's ID
-	 */
-	async function createGroup(): Promise<string>
-	{
-		const { universeId } = await addPlayableUniverse();
-		const room = await colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, { universeId });
-
-		return(room.roomId);
-	}
-
 	before(async () =>
 	{
 		colyseus = await getTestServer();
@@ -163,7 +148,6 @@ describe('SessionRoom', () =>
 			const player2 = await takeAccount(window2.inbox);
 
 			assert.strictEqual(player1?.name, 'Ada');
-			assert.strictEqual(player1?.groupId, null);
 			assert.deepStrictEqual(player2, player1);
 		});
 
@@ -278,98 +262,6 @@ describe('SessionRoom', () =>
 
 			assert.strictEqual(onlinePlayers.get(browserId)?.playerId, player.playerId);
 			assert.strictEqual(again.inbox.pending(SessionServerMessageType.Account), 0);
-		});
-	});
-
-	describe('groups', () =>
-	{
-		it('puts a player in an existing group, in every window', async () =>
-		{
-			const groupId = await createGroup();
-			const ada = await logInNewBrowser('Ada');
-			const second = await openWindow(ada.browserId);
-
-			ada.room.send(SessionMessageType.JoinGroup, { groupId });
-
-			assert.strictEqual((await takeAccount(ada.inbox))?.groupId, groupId);
-			assert.strictEqual((await takeAccount(second.inbox))?.groupId, groupId);
-		});
-
-		it('moves a player who joins another group out of their first one', async () =>
-		{
-			const firstGroupId = await createGroup();
-			const secondGroupId = await createGroup();
-			const ada = await logInNewBrowser('Ada');
-
-			ada.room.send(SessionMessageType.JoinGroup, { groupId: firstGroupId });
-			await takeAccount(ada.inbox);
-			ada.room.send(SessionMessageType.JoinGroup, { groupId: secondGroupId });
-
-			assert.strictEqual((await takeAccount(ada.inbox))?.groupId, secondGroupId);
-			assert.strictEqual(onlinePlayers.countInGroup(firstGroupId), 0);
-		});
-
-		it('says so when the group does not exist', async () =>
-		{
-			const ada = await logInNewBrowser('Ada');
-
-			ada.room.send(SessionMessageType.JoinGroup, { groupId: 'missing' });
-
-			assert.strictEqual((await ada.inbox.take<NoticePayload>(SessionServerMessageType.Notice)).reason, NoticeReason.GroupNotFound);
-			assert.strictEqual(onlinePlayers.get(ada.browserId)?.groupId, undefined);
-		});
-
-		it('does not treat the session room as a group', async () =>
-		{
-			const ada = await logInNewBrowser('Ada');
-
-			ada.room.send(SessionMessageType.JoinGroup, { groupId: ada.room.roomId });
-
-			assert.strictEqual((await ada.inbox.take<NoticePayload>(SessionServerMessageType.Notice)).reason, NoticeReason.GroupNotFound);
-		});
-
-		it(`says so when the group already has ${MAX_GROUP_PLAYERS} players`, async () =>
-		{
-			const groupId = await createGroup();
-			const players = await Promise.all(Array.from({ length: MAX_GROUP_PLAYERS + 1 }, (_, i) => logInNewBrowser(`Player ${i}`)));
-			const latecomer = players.pop();
-
-			assert.ok(latecomer);
-
-			for (const player of players)
-			{
-				player.room.send(SessionMessageType.JoinGroup, { groupId });
-				await takeAccount(player.inbox);
-			}
-
-			latecomer.room.send(SessionMessageType.JoinGroup, { groupId });
-
-			assert.strictEqual((await latecomer.inbox.take<NoticePayload>(SessionServerMessageType.Notice)).reason, NoticeReason.GroupFull);
-			assert.strictEqual(onlinePlayers.countInGroup(groupId), MAX_GROUP_PLAYERS);
-		});
-
-		it('takes a player out of their group', async () =>
-		{
-			const groupId = await createGroup();
-			const ada = await logInNewBrowser('Ada');
-
-			ada.room.send(SessionMessageType.JoinGroup, { groupId });
-			await takeAccount(ada.inbox);
-			ada.room.send(SessionMessageType.LeaveGroup);
-
-			assert.strictEqual((await takeAccount(ada.inbox))?.groupId, null);
-		});
-
-		it('takes a player out of their group when they log out', async () =>
-		{
-			const groupId = await createGroup();
-			const ada = await logInNewBrowser('Ada');
-
-			ada.room.send(SessionMessageType.JoinGroup, { groupId });
-			await takeAccount(ada.inbox);
-			await ada.room.leave();
-
-			await waitUntil(() => (onlinePlayers.countInGroup(groupId) === 0));
 		});
 	});
 });

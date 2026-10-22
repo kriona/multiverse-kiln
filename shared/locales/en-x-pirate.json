@@ -443,6 +443,38 @@
 		"message": "Marks o' the hand",
 		"source": "Traits"
 	},
+	"characters.inGroup": {
+		"message": "Sailin' with a crew",
+		"source": "In a group"
+	},
+	"characters.inThisGroup": {
+		"message": "In this crew",
+		"source": "In this group"
+	},
+	"createGroup.explanation": {
+		"message": "{name} will be the crew's anchor bein': the voyage turns 'round them. Only {name} can call others aboard. If {name} leaves the crew, it'll be scuttled; though every hand keeps their plunder and coin.",
+		"source": "{name} will be the group's anchor being: the game centers around them. Only {name} can invite others. If {name} leaves the group, it will be disbanded; though every character keeps their items and money."
+	},
+	"createGroup.failed": {
+		"message": "Couldn't raise the crew.",
+		"source": "Could not create the group."
+	},
+	"createGroup.name": {
+		"message": "Crew name (if ye fancy one)",
+		"source": "Group name (optional)"
+	},
+	"createGroup.nameInvalid": {
+		"message": "That name has marks that ain't allowed.",
+		"source": "The name has characters that aren't allowed."
+	},
+	"createGroup.submit": {
+		"message": "Raise a Crew",
+		"source": "Create Group"
+	},
+	"createGroup.title": {
+		"message": "Raise a Crew",
+		"source": "Create Group"
+	},
 	"dialog.cancel": {
 		"message": "Belay that",
 		"source": "Cancel"
@@ -1931,6 +1963,10 @@
 		"message": "Edit {universe}",
 		"source": "Edit {universe}"
 	},
+	"error.alreadyInGroup": {
+		"message": "That hand already sails with a crew. They have to jump ship first.",
+		"source": "That character is already in a group. They have to leave it first."
+	},
 	"error.areaInsideItself": {
 		"message": "An area can't be inside its own hold.",
 		"source": "An area can't be inside itself."
@@ -1979,6 +2015,14 @@
 		"message": "Choose the knack that gets the folk's gift, an' only fer folk that have one.",
 		"source": "Choose the ability that gets the race's bonus, and only for a race that has one."
 	},
+	"error.groupCharacterUnavailable": {
+		"message": "That hand can't do that: they be lost at sea, sail under another flag, or be bound for Davy Jones.",
+		"source": "That character can't do that: they don't exist, aren't yours, or have been given their last rites."
+	},
+	"error.groupFull": {
+		"message": "The crew be full: it already has {max, plural, one {# hand} other {# hands}} aboard.",
+		"source": "The group is full: it already has {max, plural, one {# character} other {# characters}}."
+	},
 	"error.invalidRequest": {
 		"message": "That request be no good ({problem}).",
 		"source": "The request isn't valid ({problem})."
@@ -1986,6 +2030,10 @@
 	"error.invalidScores": {
 		"message": "Them scores won't pass muster: use each rolled score once, or stay within the doubloons ye can spend.",
 		"source": "The ability scores aren't allowed: use each rolled score once, or stay within the points you can spend."
+	},
+	"error.inviteGone": {
+		"message": "This summons has run out, been used up, or be scribbled wrong.",
+		"source": "This invite link has expired, has already been used, or is wrong."
 	},
 	"error.itemCarried": {
 		"message": "Hands carry this booty, so it can't be scuttled. Lock it away instead.",
@@ -2051,6 +2099,10 @@
 		"message": "That callin' be lost at sea.",
 		"source": "The class doesn't exist."
 	},
+	"error.noSuchGroup": {
+		"message": "That crew has sunk, or that hand ain't aboard.",
+		"source": "The group doesn't exist any more, or that character isn't in it."
+	},
 	"error.noSuchItem": {
 		"message": "That booty be lost at sea.",
 		"source": "The item doesn't exist."
@@ -2078,6 +2130,10 @@
 	"error.noThemes": {
 		"message": "This universe's ship's articles have no yarns.",
 		"source": "This universe's ruleset has no themes."
+	},
+	"error.onlyAnchorInvites": {
+		"message": "Only the anchor bein's sailor can call others aboard.",
+		"source": "Only the anchor being's player can invite others to the group."
 	},
 	"error.otherOrigin": {
 		"message": "No changes from that port.",
@@ -2243,6 +2299,10 @@
 		"message": "Give a whole number from {min, number} to {max, number}, matey.",
 		"source": "Enter a whole number from {min, number} to {max, number}."
 	},
+	"game.loadingUniverse": {
+		"message": "Unrollin' the charts...",
+		"source": "Loading the universe..."
+	},
 	"game.outside.title": {
 		"message": "Multiverse Kiln",
 		"source": "Multiverse Kiln"
@@ -2251,49 +2311,93 @@
 		"message": "That universe be lost at sea.",
 		"source": "That universe could not be found."
 	},
+	"group.characterLeft": {
+		"message": "{name} no longer sails with the crew, or can't take the helm.",
+		"source": "{name} is no longer in the group, or can't be played."
+	},
 	"group.connectionLost": {
-		"message": "Lost sight o' the game.",
-		"source": "Lost the connection to the game."
+		"message": "Lost sight o' the crew.",
+		"source": "Lost the connection to the group."
 	},
-	"group.full": {
-		"message": "That ship be full: it already has {max, plural, one {# hand} other {# hands}} aboard.",
-		"source": "That game is full: it already has {max, plural, one {# player} other {# players}}."
+	"group.disband": {
+		"message": "Scuttle Ship",
+		"source": "Disband Group"
 	},
-	"group.gone": {
-		"message": "That ship has sunk, or the map be wrong.",
-		"source": "That game has ended or the link is wrong."
+	"group.disbanded": {
+		"message": "The crew was scuttled.",
+		"source": "The group was disbanded."
 	},
-	"group.joinLink": {
-		"message": "Boardin' link: {link}",
-		"source": "Join link: {link}"
-	},
-	"group.joinLinkCopied": {
-		"message": "Boardin' link copied. Send it to the hands ye want aboard.",
-		"source": "Join link copied. Send it to the players you want to invite."
+	"group.invite": {
+		"message": "Summon",
+		"source": "Invite"
 	},
 	"group.joining": {
 		"message": "Boardin'...",
 		"source": "Joining..."
 	},
+	"group.keys.characterSheet": {
+		"message": "Unroll the papers o' the hand ye be sailin' as",
+		"source": "Open the character sheet of the character you're playing"
+	},
 	"group.leave": {
 		"message": "Abandon ship",
 		"source": "Leave group"
 	},
+	"group.leaveFailed": {
+		"message": "Couldn't jump ship.",
+		"source": "Could not leave the group."
+	},
+	"group.member.anchor": {
+		"message": "anchor",
+		"source": "anchor being"
+	},
+	"group.member.away": {
+		"message": "ashore",
+		"source": "not here"
+	},
+	"group.member.own": {
+		"message": "yers",
+		"source": "yours"
+	},
+	"group.member.withNotes": {
+		"message": "{name} ({notes})",
+		"source": "{name} ({notes})"
+	},
+	"group.members": {
+		"message": "Aboard ({count})",
+		"source": "In the group ({count})"
+	},
 	"group.notJoined": {
-		"message": "Couldn't board that ship. It may have just sunk.",
-		"source": "Could not join that game. It may have just ended."
+		"message": "Couldn't board that crew. It may have been scuttled.",
+		"source": "Could not join that group. It may have been disbanded."
+	},
+	"group.notTogether": {
+		"message": "The whole crew must be aboard to sail that way, the anchor bein' too.",
+		"source": "The whole group has to be here to go that way, the anchor being included."
+	},
+	"group.nowPlaying": {
+		"message": "Ye be sailin' as {name} now.",
+		"source": "You are now playing {name}."
 	},
 	"group.pageTitle": {
-		"message": "Voyage - Multiverse Kiln",
-		"source": "Game - Multiverse Kiln"
+		"message": "{group} - Multiverse Kiln",
+		"source": "{group} - Multiverse Kiln"
 	},
-	"group.share": {
-		"message": "Share",
-		"source": "Share"
+	"group.playingAs": {
+		"message": "Sailin' as {name}",
+		"source": "Playing as {name}"
+	},
+	"group.returning": {
+		"message": "Rowin' back to the tavern...",
+		"source": "Going back to the lobby..."
 	},
 	"group.title": {
-		"message": "Voyage",
-		"source": "Game"
+		"message": "Crew",
+		"source": "Group"
+	},
+	"group.unnamed": {
+		"message": "Crew",
+		"source": "Group"
 	},
 	"home.create.chooseRuleset": {
 		"message": "Choose yer ship's articles",
@@ -2363,6 +2467,126 @@
 		"message": "Universes",
 		"source": "Universes"
 	},
+	"invite.characterInGroup": {
+		"message": "Already in a crew",
+		"source": "Already in a group"
+	},
+	"invite.characterLeaving": {
+		"message": "Bound for Davy Jones",
+		"source": "To be deleted"
+	},
+	"invite.choose": {
+		"message": "Pick a hand to join the crew. Hands already in a crew can't join another.",
+		"source": "Choose a character to join the group. Characters already in a group can't join another."
+	},
+	"invite.failed": {
+		"message": "Couldn't unroll the summons.",
+		"source": "Could not open the invite."
+	},
+	"invite.full": {
+		"message": "Ye can't board: the crew be full.",
+		"source": "You can't join: the group is full."
+	},
+	"invite.joinFailed": {
+		"message": "Couldn't join the crew.",
+		"source": "Could not join the group."
+	},
+	"invite.joinNamed": {
+		"message": "Join {group}",
+		"source": "Join {group}"
+	},
+	"invite.joinUnnamed": {
+		"message": "Join {anchor}'s crew",
+		"source": "Join {anchor}'s group"
+	},
+	"invite.loading": {
+		"message": "Unrollin' the summons...",
+		"source": "Opening the invite..."
+	},
+	"invite.lobby": {
+		"message": "Head to the tavern",
+		"source": "Go to the lobby"
+	},
+	"invite.noCharacters": {
+		"message": "Ye haven't signed on a hand in this universe yet. Sign one on to join the crew.",
+		"source": "You haven't made a character in this universe yet. Create one to join the group."
+	},
+	"invite.pageTitle": {
+		"message": "{title} - {universe} - Multiverse Kiln",
+		"source": "{title} - {universe} - Multiverse Kiln"
+	},
+	"invite.summary": {
+		"message": "Ye be summoned to sail {universe} with a crew gathered by {anchor}. It has {count, number} o' {size, plural, one {# hand} other {# hands}}.",
+		"source": "You're invited to play {universe} in a group centered on {anchor}. It has {count, number} of {size, plural, one {# character} other {# characters}}."
+	},
+	"invite.title": {
+		"message": "Summons",
+		"source": "Invite"
+	},
+	"inviteDialog.copied": {
+		"message": "Summons copied.",
+		"source": "Link copied."
+	},
+	"inviteDialog.copy": {
+		"message": "Copy the Summons",
+		"source": "Copy Link"
+	},
+	"inviteDialog.copyFailed": {
+		"message": "Yer browser wouldn't let us copy. Grab the summons and copy it yerself.",
+		"source": "Your browser didn't allow copying. Select the link and copy it yourself."
+	},
+	"inviteDialog.create": {
+		"message": "Write a Summons",
+		"source": "Create Link"
+	},
+	"inviteDialog.duration": {
+		"message": "Good for",
+		"source": "Valid for"
+	},
+	"inviteDialog.duration.day": {
+		"message": "1 day",
+		"source": "1 day"
+	},
+	"inviteDialog.duration.indefinite": {
+		"message": "Till the crew be scuttled",
+		"source": "Until the group is disbanded"
+	},
+	"inviteDialog.duration.week": {
+		"message": "1 week",
+		"source": "1 week"
+	},
+	"inviteDialog.expires": {
+		"message": "Good till {expiresAt, date, medium} {expiresAt, time, short}. This summons be shown but once: copy it now.",
+		"source": "Works until {expiresAt, date, medium} {expiresAt, time, short}. This link is shown only once: copy it now."
+	},
+	"inviteDialog.failed": {
+		"message": "Couldn't write a summons.",
+		"source": "Could not make an invite link."
+	},
+	"inviteDialog.link": {
+		"message": "Summons",
+		"source": "Invite link"
+	},
+	"inviteDialog.multiUse": {
+		"message": "Any sailor holdin' it (many uses)",
+		"source": "Anyone with the link (multi-use)"
+	},
+	"inviteDialog.neverExpires": {
+		"message": "Good till the crew be scuttled. This summons be shown but once: copy it now.",
+		"source": "Works until the group is disbanded. This link is shown only once: copy it now."
+	},
+	"inviteDialog.singleUse": {
+		"message": "One hand (single use)",
+		"source": "One character (single use)"
+	},
+	"inviteDialog.title": {
+		"message": "Summon to the Crew",
+		"source": "Invite to the Group"
+	},
+	"inviteDialog.uses": {
+		"message": "Who can use the summons",
+		"source": "Who can use the link"
+	},
 	"item.pf1e.dagger": {
 		"message": "dirk",
 		"source": "dagger"
@@ -2386,6 +2610,30 @@
 	"keys.shift": {
 		"message": "Shift",
 		"source": "Shift"
+	},
+	"leaveGroup.confirm": {
+		"message": "Jump Ship",
+		"source": "Leave Group"
+	},
+	"leaveGroup.disband": {
+		"message": "Scuttle",
+		"source": "Disband"
+	},
+	"leaveGroup.disbandQuestion": {
+		"message": "{name} be the anchor bein', so if they leave, the crew be scuttled for all. Every hand keeps their plunder and coin.",
+		"source": "{name} is the anchor being, so if they leave, the group is disbanded for everyone. Every character keeps their items and money."
+	},
+	"leaveGroup.disbandTitle": {
+		"message": "Scuttle the Crew?",
+		"source": "Disband the Group?"
+	},
+	"leaveGroup.question": {
+		"message": "{name} jumps ship and rows to the tavern. To come back aboard, they need a fresh summons.",
+		"source": "{name} leaves the group and goes to the lobby. To come back, they need a new invite."
+	},
+	"leaveGroup.title": {
+		"message": "Jump Ship?",
+		"source": "Leave the Group?"
 	},
 	"license.agpl": {
 		"message": "Multiverse Kiln™ be free software: ye can share it about and/or change it under the terms o' the {license} as published by the Free Software Foundation, either version 3 o' the License, or (at yer choosin') any later version.",
@@ -2536,8 +2784,8 @@
 		"source": "Create Character"
 	},
 	"lobby.createGroup": {
-		"message": "Raise a crew",
-		"source": "Create game"
+		"message": "Raise a Crew",
+		"source": "Create Group"
 	},
 	"lobby.entering": {
 		"message": "Sailin' to {universe}...",
@@ -2545,11 +2793,7 @@
 	},
 	"lobby.ghostNote": {
 		"message": "Ye be a ghost: no soul can see ye, and ye can hear the squawkin' but not join in or raise a crew. Pick or sign on a hand to sail as.",
-		"source": "You're a ghost: nobody can see you, and you can read the chat but not join in or start a game. Choose or create a character to play."
-	},
-	"lobby.groupNotCreated": {
-		"message": "Couldn't raise a crew. Try again in a tick.",
-		"source": "Could not create a game. Try again in a moment."
+		"source": "You're a ghost: nobody can see you, and you can read the chat but not join in or start a group. Choose or create a character to play."
 	},
 	"lobby.here": {
 		"message": "Aboard ({count})",

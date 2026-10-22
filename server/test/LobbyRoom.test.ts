@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { cellIndexInChunk, chunkCoordinate, chunkKey, GAME_ROOM_NAME, GRID_CELL_SIZE, LOBBY_ROOM_NAME, LobbyMessageType, LobbyServerMessageType, LobbyState, MAX_CHAT_MESSAGE_LENGTH, MessageType, NoticeReason, ServerMessageType, type ChatHistoryPayload, type ChatMessage, type ChunksPayload, type LobbyJoinOptions, type NoticePayload, type Player, type PlayingAsPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, chunkCoordinate, chunkKey, GRID_CELL_SIZE, LOBBY_ROOM_NAME, LobbyMessageType, LobbyServerMessageType, LobbyState, MAX_CHAT_MESSAGE_LENGTH, MessageType, NoticeReason, ServerMessageType, type ChatHistoryPayload, type ChatMessage, type ChunksPayload, type LobbyJoinOptions, type NoticePayload, type Player, type PlayingAsPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { listPlayableCharacters } from '../src/db/characterRepo.js';
 import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
@@ -14,6 +14,7 @@ import { deleteArea, editCells, resizeArea } from '../src/db/areaRepo.js';
 import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
 import { cellCenter } from '../src/logic/movement.js';
 import { characterChanges } from '../src/players/characterChanges.js';
+import { groupChanges } from '../src/players/groupChanges.js';
 import { onlinePlayers } from '../src/players/onlinePlayers.js';
 import { CHAT_HISTORY_LENGTH, type LobbyRoom } from '../src/rooms/LobbyRoom.js';
 import { areaChanges } from '../src/world/areaChanges.js';
@@ -397,16 +398,56 @@ describe('LobbyRoom', () =>
 
 	describe('groups', () =>
 	{
-		it('creates a group in the universe and puts the player in it', async () =>
+		it('stops a player playing a character here once the character joins a group, and lets them again once it is disbanded', async () =>
 		{
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
+			const [character] = await listPlayableCharacters(ada.playerId, universe.universeId);
+			const member = {
+				characterId: character.id,
+				playerId: ada.playerId,
+				name: character.name,
+				playable: true
+			};
 
-			ada.room.send(LobbyMessageType.CreateGroup);
-			await waitUntil(() => (onlinePlayers.get(ada.browserId)?.groupId !== undefined));
+			await ada.inbox.take(LobbyServerMessageType.PlayingAs);
+			groupChanges.publish({ kind: 'joined', groupId: randomUUID(), universeId: universe.universeId, character: member });
 
-			const groupId = onlinePlayers.get(ada.browserId)?.groupId as string;
+			assert.strictEqual((await ada.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs)).characterId, null);
+			await ada.inbox.take(LobbyServerMessageType.CharactersChanged);
+			await waitUntil(() => !grace.room.state.members.has(ada.playerId));
 
-			assert.strictEqual(colyseus.getRoomById(groupId).roomName, GAME_ROOM_NAME);
+			// A character in a group can't be chosen here
+			ada.room.send(LobbyMessageType.ChooseCharacter, { characterId: character.id });
+			await lobbyOf(ada).waitForNextMessage();
+			assert.strictEqual(playerOf(ada).ghost, true);
+
+			groupChanges.publish({ kind: 'disbanded', groupId: randomUUID(), universeId: universe.universeId, members: [member] });
+
+			assert.strictEqual((await ada.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs)).characterId, character.id);
+			await waitUntil(() => (grace.room.state.members.get(ada.playerId)?.name === 'Ada'));
+		});
+
+		it('does not give back a character who left a group and can\'t be played', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const [character] = await listPlayableCharacters(ada.playerId, universe.universeId);
+			const member = {
+				characterId: character.id,
+				playerId: ada.playerId,
+				name: character.name,
+				playable: true
+			};
+
+			await ada.inbox.take(LobbyServerMessageType.PlayingAs);
+			groupChanges.publish({ kind: 'joined', groupId: randomUUID(), universeId: universe.universeId, character: member });
+			await ada.inbox.take(LobbyServerMessageType.PlayingAs);
+			groupChanges.publish({ kind: 'left', groupId: randomUUID(), universeId: universe.universeId, character: { ...member, playable: false } });
+			await ada.inbox.take(LobbyServerMessageType.CharactersChanged);
+			await ada.inbox.take(LobbyServerMessageType.CharactersChanged);
+
+			assert.strictEqual(ada.inbox.pending(LobbyServerMessageType.PlayingAs), 0);
+			assert.strictEqual(playerOf(ada).ghost, true);
 		});
 	});
 
@@ -460,18 +501,15 @@ describe('LobbyRoom', () =>
 			assert.ok(!grace.room.state.players.has(ghost.playerId));
 		});
 
-		it('does not let a ghost chat or create a group', async () =>
+		it('does not let a ghost chat', async () =>
 		{
 			const ghost = await joinAsNewPlayer(universe.universeId, 'Casper', { ghost: true });
 
 			ghost.room.send(LobbyMessageType.Chat, { text: 'Boo' });
-			ghost.room.send(LobbyMessageType.CreateGroup);
-			await lobbyOf(ghost).waitForNextMessage();
 			await lobbyOf(ghost).waitForNextMessage();
 			await lobbyOf(ghost).waitForNextPatch();
 
 			assert.strictEqual(ghost.inbox.pending(LobbyServerMessageType.Chat), 0);
-			assert.strictEqual(onlinePlayers.get(ghost.browserId)?.groupId, undefined);
 		});
 
 		it('lets ghosts and other players pass through each other', async () =>
@@ -563,7 +601,8 @@ describe('LobbyRoom', () =>
 				character: {
 					id: lovelaceId,
 					name: 'Lovelace'
-				}
+				},
+				inGroup: false
 			});
 
 			assert.strictEqual((await ada.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs)).characterId, lovelaceId);

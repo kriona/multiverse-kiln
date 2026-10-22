@@ -34,14 +34,17 @@ An engine for making multiplayer browser-based role-playing games.
   src/app.config.ts  define room types, HTTP routes, Express middleware
   src/transport.ts   HTTPS/WSS transport
   src/rooms/         Room classes (lifecycle hooks, message handlers, tick loop): SessionRoom (one, global: login,
-                     account, joining groups), LobbyRoom (one per universe) and GameRoom (one per group). The two
-                     map rooms share AreaPlayers (movement, areas, who sees whom, area links) and AreaCache
-  src/players/       who is logged in and which group each player is in (in memory; accounts are in the database)
+                     account), LobbyRoom (one per universe) and GameRoom (one per group, made from the database
+                     when a member returns). The two map rooms share AreaPlayers (movement, areas, who sees whom,
+                     area links) and AreaCache
+  src/players/       who is logged in, and changes to characters and groups published to the rooms (in memory;
+                     accounts, characters and groups are in the database)
   src/world/         changes the world editor makes, published to the rooms playing in that world (in memory)
   src/logic/         pure game-simulation functions (no I/O)
   src/db/            Drizzle client, schema, and repository modules
   src/auth/          token verification
-  src/http/          REST routes (health, universes for Home, the world editor's API, the admin page's site settings)
+  src/http/          REST routes (health, universes for Home, characters, groups and invite links, the world
+                     editor's API, the admin page's site settings)
   scripts/           development tools run by hand, such as the seed script
 /shared          Code imported by both client and server:
                  message type enums, payload interfaces, close codes, constants,

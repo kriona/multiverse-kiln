@@ -1,14 +1,14 @@
-import { defineMessages, GROUP_QUERY_PARAMETER } from '@multiverse-kiln/shared';
+import { Callbacks } from '@colyseus/sdk';
+import { defineMessages, ServerMessageType, type AreaPayload, type CharacterListPayload, type CharacterSummary, type GroupMember, type WelcomePayload } from '@multiverse-kiln/shared';
+import signOutIcon from 'virtual:icon/ph:sign-out';
 
-import { t } from '../localization';
+import { currentLocale, t } from '../localization';
 import type { GameConnection } from '../network/serverConnection';
-import { getElement } from './dom';
+import { announce } from './announcer';
+import { CharacterList } from './CharacterList';
+import { getElement, setButtonLabel, showMessage } from './dom';
 import type { MapView } from './MapView';
-
-/**
- * How long the Share button's confirmation stays up, in milliseconds
- */
-const SHARE_CONFIRMATION_MS = 3000;
+import { addShortcut } from './shortcuts';
 
 /**
  * Text the group screen shows in more than one place (see src/localization.ts)
@@ -17,52 +17,177 @@ const messages = defineMessages({
 	joining: {
 		id: 'group.joining',
 		defaultMessage: 'Joining...',
-		description: 'Shown in the game\'s toolbar while the player goes into the game'
+		description: 'Shown in the group\'s toolbar while the player goes into the group'
 	}
 });
 
 /**
- * Builds the link that lets another player join a group
- *
- * @param groupId The group's ID
- * @return The page's URL with the group in its query string
+ * What the group screen asks the app to do
  */
-export function buildJoinLink(groupId: string): string
+export interface GroupScreenActions
 {
-	const url = new URL(window.location.pathname, window.location.origin);
+	/**
+	 * Play one of the player's characters: another in this group switches this window to them, and any
+	 * other goes where they are
+	 */
+	chooseCharacter: (character: CharacterSummary) => void;
 
-	url.searchParams.set(GROUP_QUERY_PARAMETER, groupId);
+	/**
+	 * Show one of the player's characters on their character sheet
+	 */
+	openCharacterSheet: (character: CharacterSummary) => void;
 
-	return(url.toString());
+	/**
+	 * Open the Invite dialog, for the anchor being's player
+	 */
+	invite: () => void;
+
+	/**
+	 * List the player's characters again: one of them joined or left the group, from another window
+	 */
+	charactersChanged: () => void;
+
+	/**
+	 * Take the character this window plays out of the group, once the player has said so
+	 *
+	 * @return Resolves once they have left; rejects with the reason, in the player's language, when they couldn't
+	 */
+	leave: (characterId: string) => Promise<void>;
 }
 
 /**
- * The group screen: the game's map, and the Share and Leave group buttons
+ * The group screen: the group's map, its members (who is here, and who the anchor being is), the
+ * player's characters, and the Invite and Leave group buttons
+ *
+ * Each window plays one character. Choosing another of the player's characters in the group switches
+ * the window to them without leaving the room: the room sends Welcome and Area again, and the map
+ * starts over around them. Only the anchor being's player sees Invite. Leaving asks first; the anchor
+ * being leaving disbands the group
  */
 export class GroupScreen
 {
+	private readonly title = getElement('group-title', HTMLElement);
+	private readonly characterName = getElement('group-character-name', HTMLElement);
 	private readonly status = getElement('group-status', HTMLElement);
-	private readonly shareButton = getElement('share-group', HTMLButtonElement);
+	private readonly inviteButton = getElement('invite-group', HTMLButtonElement);
 	private readonly leaveButton = getElement('leave-group', HTMLButtonElement);
 	private readonly map = getElement('group-map', HTMLElement);
-	private groupId?: string;
+	private readonly memberCount = getElement('group-member-count', HTMLElement);
+	private readonly memberList = getElement('group-member-list', HTMLUListElement);
+	private readonly leaveDialog = getElement('leave-group-dialog', HTMLDialogElement);
+	private readonly leaveTitle = getElement('leave-group-title', HTMLElement);
+	private readonly leaveQuestion = getElement('leave-group-question', HTMLElement);
+	private readonly leaveError = getElement('leave-group-error', HTMLElement);
+	private readonly leaveConfirm = getElement('leave-group-confirm', HTMLButtonElement);
+	private readonly characterChoices: CharacterList;
 	private statusTimer?: number;
 
 	/**
-	 * @param mapView The map, shared with the lobby screen
-	 * @param onLeave Called when the player presses Leave group
+	 * The group the window is in, and the character it plays there
 	 */
-	constructor(private readonly mapView: MapView, onLeave: () => void)
+	private groupId: string | undefined;
+	private characterId: string | undefined;
+
+	/**
+	 * The joined room, once the window is in it
+	 */
+	private connection: GameConnection | undefined;
+
+	/**
+	 * The player's ID, which tells their own members apart
+	 */
+	private ownPlayerId: string | undefined;
+
+	private characters: CharacterListPayload | undefined;
+
+	/**
+	 * The group's members, by character ID, from the room's state
+	 */
+	private readonly members = new Map<string, { name: string; playerId: string; present: boolean }>();
+
+	private anchorId = '';
+	private groupName = '';
+
+	/**
+	 * A character the window has just switched to, until the room sends the area they are in
+	 */
+	private switchingTo: string | undefined;
+
+	/**
+	 * Stops following the room
+	 */
+	private readonly unbinds: Array<() => void> = [];
+
+	private renderQueued = false;
+
+	/**
+	 * Whether the player has asked to leave and the server hasn't answered
+	 */
+	private leaving = false;
+
+	/**
+	 * @param mapView The map, shared with the lobby screen
+	 * @param actions What the screen's controls do
+	 */
+	constructor(private readonly mapView: MapView, private readonly actions: GroupScreenActions)
 	{
-		this.shareButton.addEventListener('click', () =>
+		this.characterChoices = new CharacterList(getElement('group-character-list', HTMLUListElement), getElement('group-character-none', HTMLElement), {
+			choose: (character) =>
+			{
+				actions.chooseCharacter(character);
+			},
+			openSheet: (character) =>
+			{
+				actions.openCharacterSheet(character);
+			}
+		});
+
+		this.inviteButton.addEventListener('click', () =>
 		{
-			void this.share();
+			actions.invite();
 		});
 
 		this.leaveButton.addEventListener('click', () =>
 		{
-			this.leaveButton.disabled = true;
-			onLeave();
+			this.askToLeave();
+		});
+
+		getElement('leave-group-cancel', HTMLButtonElement).addEventListener('click', () =>
+		{
+			this.leaveDialog.close();
+		});
+
+		this.leaveConfirm.addEventListener('click', () =>
+		{
+			void this.leave();
+		});
+
+		// Escape doesn't close the question while the answer is being sent
+		this.leaveDialog.addEventListener('cancel', (event) =>
+		{
+			if (this.leaving)
+			{
+				event.preventDefault();
+			}
+		});
+
+		addShortcut({
+			keys: 'Alt+K',
+			scope: getElement('group-screen', HTMLElement),
+			description: () => t({
+				id: 'group.keys.characterSheet',
+				defaultMessage: 'Open the character sheet of the character you\'re playing',
+				description: 'In the list of keyboard shortcuts in a group, what the shortcut that shows the character this window plays does'
+			}),
+			run: () =>
+			{
+				const character = this.characters?.characters.find((each) => (each.id === this.characterId));
+
+				if (character)
+				{
+					actions.openCharacterSheet(character);
+				}
+			}
 		});
 	}
 
@@ -70,26 +195,37 @@ export class GroupScreen
 	 * Gets the screen ready while the group's room is being joined
 	 *
 	 * @param groupId The group's ID
+	 * @param characterId The character the window plays
+	 * @param ownPlayerId The player's ID
 	 */
-	prepare(groupId: string): void
+	prepare(groupId: string, characterId: string, ownPlayerId: string): void
 	{
 		this.groupId = groupId;
+		this.characterId = characterId;
+		this.ownPlayerId = ownPlayerId;
+		this.groupName = '';
+		this.anchorId = '';
+		this.members.clear();
+		this.leaving = false;
 		this.leaveButton.disabled = false;
-		document.title = t({
-			id: 'group.pageTitle',
-			defaultMessage: 'Game - Multiverse Kiln',
-			description: 'The browser tab\'s title while the player is in a group\'s game; Multiverse Kiln is the game engine\'s name'
-		});
+		this.inviteButton.hidden = true;
 		this.setStatus(t(messages.joining));
+		this.render();
 	}
 
 	/**
-	 * Starts drawing a joined group's room
+	 * Starts drawing a joined group's room, and following its members and which character the window plays
 	 *
 	 * @param connection The joined room
 	 */
 	start(connection: GameConnection): void
 	{
+		const { room } = connection;
+		const callbacks = Callbacks.get(room);
+
+		this.connection = connection;
+		this.characterId = connection.playerId;
+
 		// Keeps any message that arrived while joining
 		if (this.status.textContent === t(messages.joining))
 		{
@@ -97,6 +233,65 @@ export class GroupScreen
 		}
 
 		this.mapView.show(this.map, connection);
+
+		this.unbinds.push(callbacks.listen('name', (name: string) =>
+		{
+			this.groupName = name;
+			this.queueRender();
+		}));
+
+		this.unbinds.push(callbacks.listen('anchorId', (anchorId: string) =>
+		{
+			this.anchorId = anchorId;
+			this.queueRender();
+		}));
+
+		// Fires for members already in the group too
+		this.unbinds.push(callbacks.onAdd('members', (member: GroupMember, characterId: string) =>
+		{
+			this.members.set(characterId, { name: member.name, playerId: member.playerId, present: member.present });
+			this.queueRender();
+
+			if ((member.playerId === this.ownPlayerId) && this.isListedOutsideGroup(characterId))
+			{
+				this.actions.charactersChanged();
+			}
+
+			this.unbinds.push(callbacks.listen(member, 'present', (present: boolean) =>
+			{
+				const shown = this.members.get(characterId);
+
+				if (shown)
+				{
+					shown.present = present;
+					this.queueRender();
+				}
+			}));
+		}));
+
+		this.unbinds.push(callbacks.onRemove('members', (member: GroupMember, characterId: string) =>
+		{
+			this.members.delete(characterId);
+			this.queueRender();
+
+			if (member.playerId === this.ownPlayerId)
+			{
+				this.actions.charactersChanged();
+			}
+		}));
+
+		this.unbinds.push(room.onMessage(ServerMessageType.Welcome, (welcome: WelcomePayload) =>
+		{
+			if (welcome.playerId !== this.characterId)
+			{
+				this.switchingTo = welcome.playerId;
+			}
+		}));
+
+		this.unbinds.push(room.onMessage(ServerMessageType.Area, (area: AreaPayload) =>
+		{
+			this.finishSwitch(area);
+		}));
 	}
 
 	/**
@@ -104,44 +299,37 @@ export class GroupScreen
 	 */
 	stop(): void
 	{
+		for (const unbind of this.unbinds.splice(0))
+		{
+			unbind();
+		}
+
+		this.connection = undefined;
 		this.groupId = undefined;
+		this.switchingTo = undefined;
+		this.leaveDialog.close();
 		this.mapView.hide();
 	}
 
 	/**
-	 * Copies the group's join link to the clipboard, or shows it when the browser won't allow that
+	 * The character the window plays
+	 *
+	 * @return The character's ID, or undefined while the window isn't in a group
 	 */
-	private async share(): Promise<void>
+	getCharacterId(): string | undefined
 	{
-		if (this.groupId === undefined)
-		{
-			return;
-		}
+		return(this.characterId);
+	}
 
-		const link = buildJoinLink(this.groupId);
-
-		// Shown first, so the link is there to copy by hand if the browser refuses the clipboard or never answers
-		this.setStatus(t({
-			id: 'group.joinLink',
-			defaultMessage: 'Join link: {link}',
-			description: 'Shown in the game\'s toolbar after pressing Share; {link} is the address others can open to join'
-		}, {
-			link
-		}));
-
-		try
-		{
-			await navigator.clipboard.writeText(link);
-			this.setStatus(t({
-				id: 'group.joinLinkCopied',
-				defaultMessage: 'Join link copied. Send it to the players you want to invite.',
-				description: 'Shown in the game\'s toolbar when Share has copied the join link to the clipboard'
-			}), SHARE_CONFIRMATION_MS);
-		}
-		catch (error)
-		{
-			console.warn('Could not copy the join link:', error);
-		}
+	/**
+	 * Lists the player's characters in the universe
+	 *
+	 * @param list The characters, oldest first, and the universe's ruleset
+	 */
+	showCharacters(list: CharacterListPayload): void
+	{
+		this.characters = list;
+		this.render();
 	}
 
 	/**
@@ -162,5 +350,253 @@ export class GroupScreen
 				this.status.textContent = '';
 			}, durationMs);
 		}
+	}
+
+	/**
+	 * Whether the player's character list, once loaded, doesn't have a character in this group, so it
+	 * needs loading again
+	 *
+	 * @param characterId The character's ID
+	 * @return True when the list says otherwise
+	 */
+	private isListedOutsideGroup(characterId: string): boolean
+	{
+		const listed = this.characters?.characters.find((character) => (character.id === characterId));
+
+		return((this.characters !== undefined) && (listed?.groupId !== this.groupId));
+	}
+
+	/**
+	 * Restarts the map around the character the window has switched to, once the room has sent their area
+	 *
+	 * @param area The area they are in
+	 */
+	private finishSwitch(area: AreaPayload): void
+	{
+		const characterId = this.switchingTo;
+		const connection = this.connection;
+
+		if ((characterId === undefined) || !connection)
+		{
+			return;
+		}
+
+		this.switchingTo = undefined;
+		this.characterId = characterId;
+		this.connection = { room: connection.room, playerId: characterId, area };
+		this.mapView.show(this.map, this.connection);
+		this.render();
+
+		const name = this.members.get(characterId)?.name;
+
+		if (name !== undefined)
+		{
+			announce(t({
+				id: 'group.nowPlaying',
+				defaultMessage: 'You are now playing {name}.',
+				description: 'Read out by screen readers in a group when the window switches to another of the player\'s characters; {name} is the character\'s name'
+			}, {
+				name
+			}));
+		}
+	}
+
+	/**
+	 * Asks whether to leave the group: the anchor being leaving disbands it for everyone
+	 */
+	private askToLeave(): void
+	{
+		const name = (this.members.get(this.characterId ?? '')?.name ?? '');
+		const isAnchor = (this.characterId === this.anchorId);
+
+		this.leaveTitle.textContent = (isAnchor
+			? t({
+				id: 'leaveGroup.disbandTitle',
+				defaultMessage: 'Disband the Group?',
+				description: 'Title of the dialog that asks the anchor being\'s player whether to leave the group, which ends it'
+			})
+			: t({
+				id: 'leaveGroup.title',
+				defaultMessage: 'Leave the Group?',
+				description: 'Title of the dialog that asks whether to take a character out of their group'
+			}));
+		this.leaveQuestion.textContent = (isAnchor
+			? t({
+				id: 'leaveGroup.disbandQuestion',
+				defaultMessage: '{name} is the anchor being, so if they leave, the group is disbanded for everyone. Every character keeps their items and money.',
+				description: 'Asked before the anchor being leaves their group; {name} is the anchor being\'s name'
+			}, {
+				name
+			})
+			: t({
+				id: 'leaveGroup.question',
+				defaultMessage: '{name} leaves the group and goes to the lobby. To come back, they need a new invite.',
+				description: 'Asked before a character leaves their group; {name} is the character\'s name'
+			}, {
+				name
+			}));
+		setButtonLabel(this.leaveConfirm, signOutIcon, (isAnchor
+			? t({
+				id: 'leaveGroup.disband',
+				defaultMessage: 'Disband',
+				description: 'Button that takes the anchor being out of the group, which ends the group for everyone'
+			})
+			: t({
+				id: 'leaveGroup.confirm',
+				defaultMessage: 'Leave Group',
+				description: 'Button that takes the character out of their group'
+			})));
+		this.leaveConfirm.disabled = false;
+		showMessage(this.leaveError, undefined);
+		this.leaveDialog.showModal();
+	}
+
+	/**
+	 * Takes the character out of the group, once the player has said so
+	 */
+	private async leave(): Promise<void>
+	{
+		const characterId = this.characterId;
+
+		if ((characterId === undefined) || this.leaving)
+		{
+			return;
+		}
+
+		this.leaving = true;
+		this.leaveConfirm.disabled = true;
+		this.leaveButton.disabled = true;
+
+		try
+		{
+			await this.actions.leave(characterId);
+			this.leaveDialog.close();
+		}
+		catch (error)
+		{
+			showMessage(this.leaveError, ((error instanceof Error) ? error.message : String(error)));
+			this.leaveConfirm.disabled = false;
+			this.leaveButton.disabled = false;
+		}
+		finally
+		{
+			this.leaving = false;
+		}
+	}
+
+	/**
+	 * Redraws once the current state patch has been applied, however many members it changed
+	 */
+	private queueRender(): void
+	{
+		if (this.renderQueued)
+		{
+			return;
+		}
+
+		this.renderQueued = true;
+
+		queueMicrotask(() =>
+		{
+			this.renderQueued = false;
+			this.render();
+		});
+	}
+
+	/**
+	 * Draws the group's name, the character the window plays, the members, the player's characters,
+	 * Invite for the anchor being's player, and Leave group, which is Disband Group for the anchor being
+	 */
+	private render(): void
+	{
+		const groupName = ((this.groupName !== '') ? this.groupName : t({
+			id: 'group.unnamed',
+			defaultMessage: 'Group',
+			description: 'Heading of a group\'s screen when the group has no name'
+		}));
+		const playing = this.members.get(this.characterId ?? '');
+
+		this.title.textContent = groupName;
+		this.characterName.textContent = (playing?.name ?? '');
+		document.title = t({
+			id: 'group.pageTitle',
+			defaultMessage: '{group} - Multiverse Kiln',
+			description: 'The browser tab\'s title while the player is in a group; {group} is the group\'s name, or "Group", and Multiverse Kiln is the game engine\'s name'
+		}, {
+			group: groupName
+		});
+		this.inviteButton.hidden = (this.members.get(this.anchorId)?.playerId !== this.ownPlayerId);
+		setButtonLabel(this.leaveButton, signOutIcon, ((this.characterId === this.anchorId)
+			? t({
+				id: 'group.disband',
+				defaultMessage: 'Disband Group',
+				description: 'Button, in place of Leave group while the window plays the anchor being, that takes them out of the group, which ends the group for everyone (it asks first)'
+			})
+			: t({
+				id: 'group.leave',
+				defaultMessage: 'Leave group',
+				description: 'Button that takes the character this window plays out of the group, back to the lobby'
+			})));
+		this.characterChoices.render(this.characters, this.characterId, this.groupId);
+		this.renderMembers();
+	}
+
+	/**
+	 * Draws the members, the anchor being first, then by name, saying in words which is the anchor being,
+	 * which are the player's own and which aren't here
+	 */
+	private renderMembers(): void
+	{
+		const sorted = [...this.members]
+			.sort(([aId, a], [bId, b]) => ((Number(bId === this.anchorId) - Number(aId === this.anchorId)) || a.name.localeCompare(b.name, currentLocale())));
+
+		this.memberCount.textContent = String(this.members.size);
+		this.memberList.replaceChildren(...sorted.map(([characterId, member]) =>
+		{
+			const item = document.createElement('li');
+			const notes: string[] = [];
+
+			if (characterId === this.anchorId)
+			{
+				notes.push(t({
+					id: 'group.member.anchor',
+					defaultMessage: 'anchor',
+					description: 'In the list of a group\'s members, beside the character the group is centered on'
+				}));
+			}
+
+			if (member.playerId === this.ownPlayerId)
+			{
+				notes.push(t({
+					id: 'group.member.own',
+					defaultMessage: 'yours',
+					description: 'In the list of a group\'s members, beside the player\'s own characters'
+				}));
+			}
+
+			if (!member.present)
+			{
+				notes.push(t({
+					id: 'group.member.away',
+					defaultMessage: 'not here',
+					description: 'In the list of a group\'s members, beside one whose player isn\'t playing; links that need the whole group can\'t be used until they are'
+				}));
+			}
+
+			item.textContent = ((notes.length > 0)
+				? t({
+					id: 'group.member.withNotes',
+					defaultMessage: '{name} ({notes})',
+					description: 'In the list of a group\'s members, a member\'s name followed by notes about them, such as "anchor being, not here"; {notes} is the notes joined as a list'
+				}, {
+					name: member.name,
+					notes: new Intl.ListFormat(currentLocale(), { style: 'short', type: 'unit' }).format(notes)
+				})
+				: member.name);
+			item.classList.toggle('member-own', (member.playerId === this.ownPlayerId));
+			item.classList.toggle('member-away', !member.present);
+
+			return(item);
+		}));
 	}
 }

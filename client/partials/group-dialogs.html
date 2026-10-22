@@ -1,0 +1,58 @@
+<dialog id="create-group-dialog" class="panel dialog" aria-labelledby="create-group-title" aria-describedby="create-group-explanation">
+	<form id="create-group-form" class="form" novalidate>
+		<h2 id="create-group-title" data-message="createGroup.title" data-translation-context="Title of the dialog that makes a new group (characters who play the universe together)">Create Group</h2>
+		<p id="create-group-explanation"></p>
+		<label data-message="createGroup.name" data-translation-context="Label of the optional field for the new group's name">
+			Group name (optional)
+			<input id="create-group-name" autocomplete="off" />
+		</label>
+		<p id="create-group-error" class="form-error" role="alert" hidden></p>
+		<div class="form-buttons">
+			<button id="create-group-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+			<button id="create-group-submit" type="submit" aria-describedby="create-group-error" data-shortcut="Alt+S" data-message="createGroup.submit" data-translation-context="Button that makes the new group and goes into it"><!-- icon game-icons:crossed-swords -->Create Group</button>
+		</div>
+	</form>
+</dialog>
+<dialog id="invite-dialog" class="panel dialog" aria-labelledby="invite-dialog-title">
+	<form id="invite-form" class="form" novalidate>
+		<h2 id="invite-dialog-title" data-message="inviteDialog.title" data-translation-context="Title of the dialog that makes a link others can open to join the group">Invite to the Group</h2>
+		<fieldset class="choice stacked">
+			<legend data-message="inviteDialog.uses" data-translation-context="Label of the choice of how many characters can join the group with an invite link">Who can use the link</legend>
+			<label class="checkbox" data-message="inviteDialog.singleUse" data-translation-context="Choice for an invite link that works for one character only, then stops working">
+				<input id="invite-single-use" type="radio" name="invite-uses" value="single" checked />
+				One character (single use)
+			</label>
+			<label class="checkbox" data-message="inviteDialog.multiUse" data-translation-context="Choice for an invite link that keeps working for any number of characters until it expires or the group is full">
+				<input id="invite-multi-use" type="radio" name="invite-uses" value="multi" />
+				Anyone with the link (multi-use)
+			</label>
+		</fieldset>
+		<label data-message="inviteDialog.duration" data-translation-context="Label of the choice of how long an invite link works">
+			Valid for
+			<select id="invite-duration"></select>
+		</label>
+		<p id="invite-dialog-error" class="form-error" role="alert" hidden></p>
+		<div id="invite-link-row" class="form-group" hidden>
+			<label data-message="inviteDialog.link" data-translation-context="Label of the field holding the invite link just made, to copy and send to other players">
+				Invite link
+				<input id="invite-link" type="text" readonly data-untracked />
+			</label>
+			<p id="invite-link-expiry" class="hint"></p>
+		</div>
+		<p id="invite-dialog-status" role="status"></p>
+		<div class="form-buttons">
+			<button id="invite-dialog-close" type="button" class="secondary" data-message="dialog.close" data-translation-context="Button that closes a dialog that only shows something, with nothing to change">Close</button>
+			<button id="invite-copy" type="button" aria-describedby="invite-dialog-status" data-shortcut="Alt+C" hidden data-message="inviteDialog.copy" data-translation-context="Button that copies the invite link to the clipboard"><!-- icon ph:copy -->Copy Link</button>
+			<button id="invite-create" type="submit" aria-describedby="invite-dialog-error" data-shortcut="Alt+S" data-message="inviteDialog.create" data-translation-context="Button that makes a new invite link with the options chosen"><!-- icon ph:link -->Create Link</button>
+		</div>
+	</form>
+</dialog>
+<dialog id="leave-group-dialog" class="panel dialog" aria-labelledby="leave-group-title" aria-describedby="leave-group-question">
+	<h2 id="leave-group-title"></h2>
+	<p id="leave-group-question"></p>
+	<p id="leave-group-error" class="form-error" role="alert" hidden></p>
+	<div class="dialog-buttons">
+		<button id="leave-group-cancel" type="button" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+		<button id="leave-group-confirm" type="button" class="danger" aria-describedby="leave-group-error"></button>
+	</div>
+</dialog>

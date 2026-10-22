@@ -3,14 +3,21 @@ import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { GAME_ROOM_NAME, GameState, GRID_CELL_SIZE, MessageType, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, type Player, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
+import { GAME_ROOM_NAME, GameMessageType, GameServerMessageType, GameState, GRID_CELL_SIZE, MessageType, NoticeReason, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, type AreaPayload, type GameJoinOptions, type NoticePayload, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
+import { scheduleCharacterDeletion } from '../src/db/characterRepo.js';
 import { pool } from '../src/db/client.js';
+import { addGroupMember, leaveGroup, listGroupMembers } from '../src/db/groupRepo.js';
+import { createAreaLink } from '../src/db/areaRepo.js';
+import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
+import { inTransaction } from '../src/db/transactions.js';
 import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
 import { cellCenter } from '../src/logic/movement.js';
+import { characterChanges } from '../src/players/characterChanges.js';
+import { groupChanges } from '../src/players/groupChanges.js';
 import { onlinePlayers } from '../src/players/onlinePlayers.js';
 import type { GameRoom } from '../src/rooms/GameRoom.js';
-import { addPlayableUniverse, type PlayableUniverse } from './db/fixtures.js';
+import { addCharacter, addGroup, addPlayableUniverse, type PlayableUniverse } from './db/fixtures.js';
 import { getTestServer, logOutEveryone, testServerUrl } from './testServer.js';
 import { waitUntil } from './waitUntil.js';
 
@@ -23,11 +30,91 @@ const browserIdB = '6a1d2e3f-4b5c-4d6e-8f70-819a2b3c4d5e';
 const grid = { cellSize: GRID_CELL_SIZE };
 
 /**
+ * A character in the test group, and their player
+ */
+interface Member
+{
+	playerId: string;
+	characterId: string;
+	name: string;
+}
+
+/**
+ * A client-side room, and the Welcome and Area payloads once they arrive
+ */
+interface JoinedWindow
+{
+	client: ClientRoom<unknown, GameState>;
+	welcome: Promise<WelcomePayload>;
+	area: Promise<AreaPayload>;
+}
+
+let universe: PlayableUniverse;
+
+/**
+ * The group the tests play in, and its anchor being, whose player hasn't joined unless a test says so
+ */
+let groupId: string;
+let anchor: Member;
+
+/**
+ * The player each browser logs in as, and the first character it played
+ */
+const browserMembers = new Map<string, Member>();
+
+/**
+ * Adds a player with a character to the test universe
+ *
+ * @param name The character's name
+ * @return The player and character
+ */
+async function addPlayerWithCharacter(name: string): Promise<Member>
+{
+	const player = await loadOrCreatePlayerByName(`Player ${randomUUID().slice(0, 8)}`);
+	const characterId = await addCharacter(player.id, universe.universeId, name);
+
+	return({ playerId: player.id, characterId, name });
+}
+
+/**
+ * Puts a character in the test group, as accepting an invite would, telling the group's room
+ *
+ * @param member The character and their player
+ */
+async function joinGroup(member: Member): Promise<void>
+{
+	await inTransaction((transaction) => addGroupMember(groupId, member.characterId, transaction));
+	groupChanges.publish({
+		kind: 'joined',
+		groupId,
+		universeId: universe.universeId,
+		character: { ...member, playable: true }
+	});
+}
+
+/**
+ * Adds another character for a member's player and puts them in the test group
+ *
+ * @param member A member, whose player the character belongs to
+ * @param name The new character's name
+ * @return The new member
+ */
+async function addSecondCharacter(member: Member, name: string): Promise<Member>
+{
+	const characterId = await addCharacter(member.playerId, universe.universeId, name);
+	const second = { playerId: member.playerId, characterId, name };
+
+	await joinGroup(second);
+
+	return(second);
+}
+
+/**
  * The player a client controls, as the server's room records it
  *
  * @param room Server-side room
  * @param client Client-side room of a client still in the room
- * @return The player's ID in state.players
+ * @return The character's ID in state.players
  */
 function playerIdOf(room: GameRoom, client: ClientRoom): string
 {
@@ -95,31 +182,31 @@ async function waitUntilStopped(room: GameRoom, player: Player): Promise<void>
  *
  * @param room Server-side room to join
  * @param browserId Browser ID the window's cookie holds
+ * @param characterId The character the window asks to play
  * @return The client-side room
  */
-function connectFromBrowser(room: GameRoom, browserId: string): Promise<ClientRoom<unknown, GameState>>
+function connectFromBrowser(room: GameRoom, browserId: string, characterId: string): Promise<ClientRoom<unknown, GameState>>
 {
 	const sdk = new SDKClient(testServerUrl.replace(/^http/, 'ws'), { headers: { cookie: `${BROWSER_ID_COOKIE}=${browserId}` } });
+	const options: GameJoinOptions = { groupId, characterId };
 
-	return(sdk.joinById<GameState>(room.roomId, {}, GameState));
+	return(sdk.joinById<GameState>(room.roomId, options, GameState));
 }
 
 /**
- * Logs a browser in and puts its player in a room's group, as the lobby would, then joins the room from
- * one of its windows, listening for its Welcome message
+ * Logs a browser in as a member's player and joins the room from one of its windows to play them,
+ * listening for its Welcome and Area messages
  *
  * @param room Server-side room to join
  * @param browserId Browser ID the window's cookie holds
- * @param name The player's name
- * @return The client-side room, and the Welcome and Area payloads once they arrive
+ * @param member The character to play
+ * @return The window
  */
-async function joinFromBrowser(room: GameRoom, browserId: string, name: string = 'Player'): Promise<{ client: ClientRoom<unknown, GameState>; welcome: Promise<WelcomePayload>; area: Promise<AreaPayload> }>
+async function joinAs(room: GameRoom, browserId: string, member: Member): Promise<JoinedWindow>
 {
-	// A browser stays logged in as its first player, so a second window joins as the same player
-	onlinePlayers.logIn(browserId, randomUUID(), name);
-	onlinePlayers.setGroup(browserId, room.roomId);
+	onlinePlayers.logIn(browserId, member.playerId, 'Player');
 
-	const client = await connectFromBrowser(room, browserId);
+	const client = await connectFromBrowser(room, browserId, member.characterId);
 
 	// Registered straight after joining: the server sends these once the client has acknowledged the join
 	const welcome = new Promise<WelcomePayload>((resolve) =>
@@ -134,6 +221,29 @@ async function joinFromBrowser(room: GameRoom, browserId: string, name: string =
 	await client.waitForInitialState();
 
 	return({ client, welcome, area });
+}
+
+/**
+ * Joins the room from a window of a browser, playing the browser's first character, who is made and
+ * put in the group the first time the browser joins
+ *
+ * @param room Server-side room to join
+ * @param browserId Browser ID the window's cookie holds
+ * @param name The character's name, the first time
+ * @return The window
+ */
+async function joinFromBrowser(room: GameRoom, browserId: string, name: string = 'Player'): Promise<JoinedWindow>
+{
+	let member = browserMembers.get(browserId);
+
+	if (!member)
+	{
+		member = await addPlayerWithCharacter(name);
+		await joinGroup(member);
+		browserMembers.set(browserId, member);
+	}
+
+	return(joinAs(room, browserId, member));
 }
 
 /**
@@ -164,19 +274,39 @@ function waitForLeave(room: ClientRoom): Promise<number>
 	}));
 }
 
+/**
+ * Resolves with the next message of a type a client receives
+ *
+ * @param room Client-side room
+ * @param type The message type
+ * @return The payload
+ */
+function nextMessage<T>(room: ClientRoom, type: string): Promise<T>
+{
+	return(new Promise((resolve) =>
+	{
+		const stop = room.onMessage(type, (payload: T) =>
+		{
+			stop();
+			resolve(payload);
+		});
+	}));
+}
+
 describe('GameRoom', () =>
 {
 	let colyseus: ColyseusTestServer<typeof appConfig>;
-	let universe: PlayableUniverse;
 
 	/**
-	 * Creates a game room for the test universe, as its lobby would
+	 * Creates the test group's room, as its first window would
 	 *
 	 * @return The server-side room
 	 */
 	function createGameRoom(): Promise<GameRoom>
 	{
-		return(colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, { universeId: universe.universeId }));
+		const options: GameJoinOptions = { groupId, characterId: anchor.characterId };
+
+		return(colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, options));
 	}
 
 	before(async () =>
@@ -188,10 +318,13 @@ describe('GameRoom', () =>
 	{
 		await colyseus.cleanup();
 		logOutEveryone();
+		browserMembers.clear();
 		universe = await addPlayableUniverse();
+		anchor = await addPlayerWithCharacter('Anchor');
+		groupId = await addGroup(universe.universeId, anchor.characterId, universe.fieldAreaId, 'The Fellowship');
 	});
 
-	it('adds a player to the universe\'s starting area when a client joins', async () =>
+	it('adds a character to the group\'s starting area when a client joins', async () =>
 	{
 		const room = await createGameRoom();
 		const { client, area } = await joinFromBrowser(room, randomUUID());
@@ -202,9 +335,24 @@ describe('GameRoom', () =>
 		assert.strictEqual((await area).name, 'Field');
 	});
 
-	it('cannot be created for a universe that does not exist, or with no universe', async () =>
+	it('syncs the group\'s name, anchor being and members', async () =>
 	{
-		await assert.rejects(colyseus.createRoom(GAME_ROOM_NAME, { universeId: randomUUID() }));
+		const room = await createGameRoom();
+		const { client } = await joinFromBrowser(room, browserIdA, 'Ada');
+
+		await room.waitForNextPatch();
+
+		const ada = browserMembers.get(browserIdA) as Member;
+
+		assert.strictEqual(client.state.name, 'The Fellowship');
+		assert.strictEqual(client.state.anchorId, anchor.characterId);
+		assert.deepStrictEqual(client.state.members.get(anchor.characterId)?.toJSON(), { name: 'Anchor', playerId: anchor.playerId, present: false });
+		assert.deepStrictEqual(client.state.members.get(ada.characterId)?.toJSON(), { name: 'Ada', playerId: ada.playerId, present: true });
+	});
+
+	it('cannot be created for a group that does not exist, or with no group', async () =>
+	{
+		await assert.rejects(colyseus.createRoom(GAME_ROOM_NAME, { groupId: randomUUID(), characterId: randomUUID() }));
 		await assert.rejects(colyseus.createRoom(GAME_ROOM_NAME, {}));
 	});
 
@@ -322,7 +470,7 @@ describe('GameRoom', () =>
 		assert.ok((GRID_CELL_SIZE / 2) >= PLAYER_RADIUS);
 	});
 
-	it('removes the player when the client leaves', async () =>
+	it('removes the character when their player\'s client leaves', async () =>
 	{
 		const room = await createGameRoom();
 		const client1 = await joinAsNewPlayer(room);
@@ -330,10 +478,10 @@ describe('GameRoom', () =>
 		const playerId1 = playerIdOf(room, client1);
 
 		await client1.leave();
-		await room.waitForNextTimestep();
+		await waitUntil(() => !room.state.players.has(playerId1));
 
-		assert.strictEqual(room.state.players.has(playerId1), false);
 		assert.strictEqual(room.state.players.has(playerIdOf(room, client2)), true);
+		assert.strictEqual(room.state.members.get(playerId1)?.present, false);
 	});
 
 	describe('invalid Move payloads', () =>
@@ -460,11 +608,10 @@ describe('GameRoom', () =>
 		}
 
 		await left;
-
-		assert.strictEqual(room.state.players.has(playerId), false);
+		await waitUntil(() => !room.state.players.has(playerId));
 	});
 
-	describe('windows of the same browser', () =>
+	describe('windows playing the same character', () =>
 	{
 		it('control one shared player', async () =>
 		{
@@ -476,17 +623,17 @@ describe('GameRoom', () =>
 			assert.strictEqual(room.state.players.size, 1);
 		});
 
-		it('are told which player they control', async () =>
+		it('are told which character they control', async () =>
 		{
 			const room = await createGameRoom();
 			const window1 = await joinFromBrowser(room, browserIdA);
 			const window2 = await joinFromBrowser(room, browserIdA);
 
-			assert.deepStrictEqual(await window1.welcome, { playerId: playerIdOf(room, window1.client) });
-			assert.deepStrictEqual(await window2.welcome, { playerId: playerIdOf(room, window1.client) });
+			assert.deepStrictEqual(await window1.welcome, { playerId: browserMembers.get(browserIdA)?.characterId });
+			assert.deepStrictEqual(await window2.welcome, { playerId: browserMembers.get(browserIdA)?.characterId });
 		});
 
-		it('can each move the player', async () =>
+		it('can each move the character', async () =>
 		{
 			const room = await createGameRoom();
 			const window1 = await joinFromBrowser(room, browserIdA);
@@ -502,7 +649,7 @@ describe('GameRoom', () =>
 			assert.ok(player.x > 105, `x = ${player.x}`);
 		});
 
-		it('keep the player until the last one leaves', async () =>
+		it('keep the character until the last one leaves', async () =>
 		{
 			const room = await createGameRoom();
 			const window1 = await joinFromBrowser(room, browserIdA);
@@ -518,7 +665,7 @@ describe('GameRoom', () =>
 			await waitUntil(() => !room.state.players.has(playerId));
 		});
 
-		it('stop the player when one of them leaves', async () =>
+		it('stop the character when one of them leaves', async () =>
 		{
 			const room = await createGameRoom();
 			const window1 = await joinFromBrowser(room, browserIdA);
@@ -539,7 +686,7 @@ describe('GameRoom', () =>
 		});
 	});
 
-	it('gives different browsers different players', async () =>
+	it('gives different players different characters', async () =>
 	{
 		const room = await createGameRoom();
 		const browserA = await joinFromBrowser(room, browserIdA);
@@ -549,86 +696,257 @@ describe('GameRoom', () =>
 		assert.strictEqual(room.state.players.size, 2);
 	});
 
+	describe('a player with several characters in the group', () =>
+	{
+		it('brings every one of them onto the map, controlling the one asked for', async () =>
+		{
+			const room = await createGameRoom();
+			const ada = await addPlayerWithCharacter('Ada');
+
+			await joinGroup(ada);
+
+			const second = await addSecondCharacter(ada, 'Byron');
+			const { client, welcome } = await joinAs(room, browserIdA, second);
+
+			assert.deepStrictEqual(await welcome, { playerId: second.characterId });
+			assert.strictEqual(playerIdOf(room, client), second.characterId);
+			assert.ok(room.state.players.has(ada.characterId));
+			assert.ok(room.state.players.has(second.characterId));
+			assert.strictEqual(room.state.players.get(second.characterId)?.name, 'Byron');
+		});
+
+		it('switches a window to another of them without reconnecting, and only that window', async () =>
+		{
+			const room = await createGameRoom();
+			const ada = await addPlayerWithCharacter('Ada');
+
+			await joinGroup(ada);
+
+			const second = await addSecondCharacter(ada, 'Byron');
+			const window1 = await joinAs(room, browserIdA, ada);
+			const window2 = await joinAs(room, browserIdA, ada);
+			const welcome = nextMessage<WelcomePayload>(window1.client, ServerMessageType.Welcome);
+			const area = nextMessage<AreaPayload>(window1.client, ServerMessageType.Area);
+			const player = room.state.players.get(second.characterId) as Player;
+
+			window1.client.send(GameMessageType.Control, { characterId: second.characterId });
+
+			assert.deepStrictEqual(await welcome, { playerId: second.characterId });
+			assert.strictEqual((await area).areaId, universe.fieldAreaId);
+			assert.strictEqual(playerIdOf(room, window1.client), second.characterId);
+			assert.strictEqual(playerIdOf(room, window2.client), ada.characterId);
+
+			placeOnCell(player, 3, 3);
+			window1.client.send(MessageType.Move, { x: 1, y: 0 });
+			await room.waitForNextMessage();
+			await room.waitForNextTimestep();
+
+			assert.ok(player.x > 105, `x = ${player.x}`);
+		});
+
+		it('ignores switching to a character of another player', async () =>
+		{
+			const room = await createGameRoom();
+			const { client } = await joinFromBrowser(room, browserIdA);
+			const other = await joinFromBrowser(room, browserIdB);
+			const own = playerIdOf(room, client);
+
+			client.send(GameMessageType.Control, { characterId: playerIdOf(room, other.client) });
+			await room.waitForNextMessage();
+
+			assert.strictEqual(playerIdOf(room, client), own);
+		});
+
+		it('takes them all off the map when the player\'s last window leaves', async () =>
+		{
+			const room = await createGameRoom();
+			const ada = await addPlayerWithCharacter('Ada');
+
+			await joinGroup(ada);
+
+			const second = await addSecondCharacter(ada, 'Byron');
+			const { client } = await joinAs(room, browserIdA, ada);
+
+			await joinFromBrowser(room, browserIdB);
+			await client.leave();
+			await waitUntil(() => !room.state.players.has(ada.characterId));
+
+			assert.strictEqual(room.state.players.has(second.characterId), false);
+		});
+	});
+
+	describe('saving where the group is', () =>
+	{
+		it('saves where each character was when their player leaves, and starts them there next time', async () =>
+		{
+			let room = await createGameRoom();
+			const { client } = await joinFromBrowser(room, browserIdA);
+			const characterId = playerIdOf(room, client);
+
+			placeOnCell(room.state.players.get(characterId) as Player, 7, 4);
+			await client.leave();
+
+			await waitUntil(async () => ((await listGroupMembers(groupId)).find((member) => (member.characterId === characterId))?.position !== null));
+
+			const saved = (await listGroupMembers(groupId)).find((member) => (member.characterId === characterId));
+
+			assert.deepStrictEqual(saved?.position, { areaId: universe.fieldAreaId, column: 7, row: 4 });
+
+			// Everyone left, so the room disposes; the group picks up where it was in a new one
+			await waitUntil(() => (colyseus.getRoomById(room.roomId) === undefined));
+			room = await createGameRoom();
+
+			const back = await joinFromBrowser(room, browserIdA);
+			const player = room.state.players.get(playerIdOf(room, back.client)) as Player;
+
+			assert.deepStrictEqual({ x: player.x, y: player.y }, cellCenter({ column: 7, row: 4 }, grid));
+		});
+
+		it('starts a character new to the group beside the anchor being', async () =>
+		{
+			const room = await createGameRoom();
+			const anchorWindow = await joinAs(room, browserIdA, anchor);
+			const anchorPlayer = room.state.players.get(anchor.characterId) as Player;
+
+			placeOnCell(anchorPlayer, 20, 10);
+
+			const { client } = await joinFromBrowser(room, browserIdB);
+			const player = room.state.players.get(playerIdOf(room, client)) as Player;
+			const distance = Math.max(Math.abs(player.x - anchorPlayer.x), Math.abs(player.y - anchorPlayer.y)) / GRID_CELL_SIZE;
+
+			assert.strictEqual(distance, 1);
+			assert.ok(anchorWindow.client.connection.isOpen);
+		});
+	});
+
 	describe('group membership', () =>
 	{
-		it('uses the player ID and name from the login', async () =>
+		it('names the character, not the player', async () =>
 		{
 			const room = await createGameRoom();
 			const { client } = await joinFromBrowser(room, browserIdA, 'Ada');
-			const playerId = playerIdOf(room, client);
 
-			assert.strictEqual(playerId, onlinePlayers.get(browserIdA)?.playerId);
-			assert.strictEqual(room.state.players.get(playerId)?.name, 'Ada');
+			assert.strictEqual(room.state.players.get(playerIdOf(room, client))?.name, 'Ada');
 		});
 
 		it('turns away a browser that is not logged in', async () =>
 		{
 			const room = await createGameRoom();
 
-			await assert.rejects(connectFromBrowser(room, browserIdA));
+			await assert.rejects(connectFromBrowser(room, browserIdA, anchor.characterId));
 		});
 
-		it('turns away a player who is not in the group', async () =>
+		it('turns away a character who is not in the group, or not the player\'s', async () =>
+		{
+			const room = await createGameRoom();
+			const outsider = await addPlayerWithCharacter('Outsider');
+
+			onlinePlayers.logIn(browserIdA, outsider.playerId, 'Outsider');
+			await assert.rejects(connectFromBrowser(room, browserIdA, outsider.characterId));
+			await assert.rejects(connectFromBrowser(room, browserIdA, anchor.characterId));
+		});
+
+		it('turns away a character given their last rites', async () =>
 		{
 			const room = await createGameRoom();
 
-			onlinePlayers.logIn(browserIdA, randomUUID(), 'Ada');
-			await assert.rejects(connectFromBrowser(room, browserIdA));
+			await scheduleCharacterDeletion(anchor.playerId, universe.universeId, anchor.characterId, new Date(Date.now() + 60000));
+			characterChanges.publish({ kind: 'removed', playerId: anchor.playerId, universeId: universe.universeId, characterId: anchor.characterId });
+			onlinePlayers.logIn(browserIdA, anchor.playerId, 'Anchor');
 
-			onlinePlayers.setGroup(browserIdA, 'another-group');
-			await assert.rejects(connectFromBrowser(room, browserIdA));
+			await assert.rejects(connectFromBrowser(room, browserIdA, anchor.characterId));
 		});
 
 		it('turns away a client without a browser ID', async () =>
 		{
 			const room = await createGameRoom();
 
-			await assert.rejects(colyseus.connectTo(room));
+			await assert.rejects(colyseus.connectTo(room, { groupId, characterId: anchor.characterId }));
 		});
 
-		it('disconnects every window of a player who leaves the group', async () =>
+		it('disconnects every window of a character who leaves the group', async () =>
 		{
 			const room = await createGameRoom();
 			const window1 = await joinFromBrowser(room, browserIdA);
 			const window2 = await joinFromBrowser(room, browserIdA);
 			const other = await joinFromBrowser(room, browserIdB);
-			const playerId = playerIdOf(room, window1.client);
+			const member = browserMembers.get(browserIdA) as Member;
 			const left1 = waitForLeave(window1.client);
 			const left2 = waitForLeave(window2.client);
+			const result = await leaveGroup(groupId, member.characterId);
 
-			onlinePlayers.setGroup(browserIdA, undefined);
+			assert.strictEqual(result?.kind, 'left');
+			groupChanges.publish({ kind: 'left', groupId, universeId: universe.universeId, character: { ...member, playable: true } });
 
 			assert.strictEqual(await left1, ServerCloseCode.LeftGroup);
 			assert.strictEqual(await left2, ServerCloseCode.LeftGroup);
-			await waitUntil(() => !room.state.players.has(playerId));
+			await waitUntil(() => !room.state.players.has(member.characterId));
+			assert.strictEqual(room.state.members.has(member.characterId), false);
 			assert.ok(room.state.players.has(playerIdOf(room, other.client)));
 		});
 
-		it('disconnects a player who joins another group', async () =>
+		it('disconnects everyone when the group is disbanded', async () =>
+		{
+			const room = await createGameRoom();
+			const first = await joinFromBrowser(room, browserIdA);
+			const second = await joinAs(room, browserIdB, anchor);
+			const left1 = waitForLeave(first.client);
+			const left2 = waitForLeave(second.client);
+
+			groupChanges.publish({ kind: 'disbanded', groupId, universeId: universe.universeId, members: [] });
+
+			assert.strictEqual(await left1, ServerCloseCode.GroupDisbanded);
+			assert.strictEqual(await left2, ServerCloseCode.GroupDisbanded);
+		});
+
+		it('ignores changes to other groups', async () =>
 		{
 			const room = await createGameRoom();
 			const { client } = await joinFromBrowser(room, browserIdA);
-			await joinFromBrowser(room, browserIdB);
-			const left = waitForLeave(client);
+			const member = browserMembers.get(browserIdA) as Member;
 
-			onlinePlayers.setGroup(browserIdA, 'another-group');
+			groupChanges.publish({ kind: 'left', groupId: randomUUID(), universeId: universe.universeId, character: { ...member, playable: true } });
+			groupChanges.publish({ kind: 'disbanded', groupId: randomUUID(), universeId: universe.universeId, members: [] });
+			await room.waitForNextTimestep();
 
-			assert.strictEqual(await left, ServerCloseCode.LeftGroup);
+			assert.ok(client.connection.isOpen);
+		});
+	});
+
+	describe('links that require the whole group', () =>
+	{
+		beforeEach(async () =>
+		{
+			await createAreaLink({ areaId: universe.fieldAreaId, column: 5, row: 5, targetAreaId: universe.houseAreaId, targetColumn: 2, targetRow: 2, mode: 'manual', requiresWholeGroup: true });
 		});
 
-		it('sends the group back to the lobby when the room is disposed', async () =>
+		it('are refused while the anchor being isn\'t here', async () =>
 		{
 			const room = await createGameRoom();
+			const { client } = await joinFromBrowser(room, browserIdA);
+			const characterId = playerIdOf(room, client);
+			const notice = nextMessage<NoticePayload>(client, GameServerMessageType.Notice);
 
-			onlinePlayers.logIn(browserIdA, randomUUID(), 'Ada');
-			onlinePlayers.setGroup(browserIdA, room.roomId);
-			onlinePlayers.logIn(browserIdB, randomUUID(), 'Grace');
-			onlinePlayers.setGroup(browserIdB, 'another-group');
+			placeOnCell(room.state.players.get(characterId) as Player, 5, 5);
+			client.send(MessageType.TakeLink);
 
-			await room.disconnect();
+			assert.deepStrictEqual(await notice, { reason: NoticeReason.GroupNotTogether });
+			assert.strictEqual(room.getAreaId(characterId), universe.fieldAreaId);
+		});
 
-			assert.strictEqual(onlinePlayers.get(browserIdA)?.groupId, undefined);
-			assert.strictEqual(onlinePlayers.get(browserIdB)?.groupId, 'another-group');
+		it('take every member through together once everyone is here', async () =>
+		{
+			const room = await createGameRoom();
+			const { client } = await joinFromBrowser(room, browserIdA);
+			const characterId = playerIdOf(room, client);
+
+			await joinAs(room, browserIdB, anchor);
+
+			placeOnCell(room.state.players.get(characterId) as Player, 5, 5);
+			placeOnCell(room.state.players.get(anchor.characterId) as Player, 15, 10);
+			client.send(MessageType.TakeLink);
+
+			await waitUntil(() => ((room.getAreaId(characterId) === universe.houseAreaId) && (room.getAreaId(anchor.characterId) === universe.houseAreaId)));
 		});
 	});
 });

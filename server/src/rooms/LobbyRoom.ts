@@ -1,5 +1,5 @@
-import { matchMaker, Room, type AuthContext, type Client, type CloseCode, type IRoomCache } from 'colyseus';
-import { GAME_ROOM_NAME, LobbyMember, LobbyMessageType, LobbyServerMessageType, LobbyState, MessageType, NoticeReason, PATCH_INTERVAL_MS, type ChatHistoryPayload, type ChatMessage, type LobbyJoinOptions, type NoticePayload, type PlayingAsPayload } from '@multiverse-kiln/shared';
+import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
+import { LobbyMember, LobbyMessageType, LobbyServerMessageType, LobbyState, MessageType, NoticeReason, PATCH_INTERVAL_MS, type ChatHistoryPayload, type ChatMessage, type NoticePayload, type PlayingAsPayload } from '@multiverse-kiln/shared';
 
 import { listPlayableCharacters, markCharacterPlayed, type PlayableCharacter } from '../db/characterRepo.js';
 import { findUniverse } from '../db/universeRepo.js';
@@ -7,6 +7,7 @@ import { loadChunksAt, loadArea } from '../db/areaRepo.js';
 import { readBrowserId } from '../http/browserId.js';
 import { onlinePlayers } from '../players/onlinePlayers.js';
 import { characterChanges, type CharacterChange } from '../players/characterChanges.js';
+import { groupChanges, type GroupChange } from '../players/groupChanges.js';
 import { areaChanges } from '../world/areaChanges.js';
 import { InvalidMessages } from './invalidMessages.js';
 import { chatPayload, chooseCharacterPayload, describeInvalidPayload, movePayload, roomOptions } from './payloads.js';
@@ -69,15 +70,16 @@ const CHAT_RATE_LIMIT = 5;
 const CHAT_RATE_WINDOW_MS = 5000;
 
 /**
- * A universe's lobby: its map, its chat, who's here, and creating groups
+ * A universe's lobby: its map, its chat and who's here
  *
  * Clients join with the universe's ID (LobbyJoinOptions), and every client asking for the same universe
  * joins the same room (filterBy in app.config.ts). Only logged-in browsers are admitted. Players start
  * in the universe's lobby area and can walk through its links into other areas (see AreaPlayers)
  *
- * Each player plays one of their characters in the universe, and can switch between them. A player
- * with no character is a ghost: nobody else sees them, they hold no cell, and they can read the chat
- * but not send to it or create a group
+ * Each player plays one of their characters in the universe who isn't in a group (those play in their
+ * group's room), and can switch between them. A player with no such character is a ghost: nobody else
+ * sees them, they hold no cell, and they can read the chat but not send to it. Groups are made through
+ * the group routes (http/groups.ts)
  */
 export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 {
@@ -106,6 +108,8 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	private stopFollowingChanges?: () => void;
 
 	private stopFollowingCharacters?: () => void;
+
+	private stopFollowingGroups?: () => void;
 
 	/**
 	 * The most recent chat messages, oldest first (server-only, not synced)
@@ -198,32 +202,6 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 			{
 				this.play(playerId, character);
 			}
-		},
-
-		[LobbyMessageType.CreateGroup]: async (client: LobbyClient) =>
-		{
-			const { browserId, playerId } = identityOf(client);
-
-			if (!onlinePlayers.get(browserId) || !this.playing.has(playerId))
-			{
-				return;
-			}
-
-			let room: IRoomCache;
-
-			// The new room disposes itself if nobody joins it within its seat reservation time
-			try
-			{
-				room = await matchMaker.createRoom(GAME_ROOM_NAME, { universeId: this.universeId } satisfies LobbyJoinOptions);
-			}
-			catch (error)
-			{
-				console.error(client.sessionId, 'could not create a group:', error);
-				this.sendNotice(client, NoticeReason.GroupNotCreated);
-				return;
-			}
-
-			onlinePlayers.setGroup(browserId, room.roomId);
 		}
 	};
 
@@ -262,15 +240,21 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		{
 			this.applyCharacterChange(change);
 		});
+
+		this.stopFollowingGroups = groupChanges.onChange((change) =>
+		{
+			this.applyGroupChange(change);
+		});
 	}
 
 	/**
-	 * Stops following changes to the world and to players' characters
+	 * Stops following changes to the world, to players' characters and to groups
 	 */
 	onDispose(): void
 	{
 		this.stopFollowingChanges?.();
 		this.stopFollowingCharacters?.();
+		this.stopFollowingGroups?.();
 	}
 
 	/**
@@ -363,6 +347,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 
 		const character = this.playing.get(left.playerId);
 
+		this.areaPlayers.remove(left.playerId);
 		this.state.members.delete(left.playerId);
 		this.chatLimiter.forget(left.playerId);
 		this.characters.delete(left.playerId);
@@ -445,53 +430,130 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	/**
 	 * Follows a change to a player in the room's characters, then has their windows list them again. A
 	 * player whose character can no longer be played switches to the one they played or made most
-	 * recently, or becomes a ghost; a ghost plays a character restored
+	 * recently, or becomes a ghost; a ghost plays a character restored, unless the character is in a group
 	 *
 	 * @param change The change
 	 */
 	private applyCharacterChange(change: CharacterChange): void
 	{
-		const { playerId } = change;
-		const characters = this.characters.get(playerId);
-
-		if ((change.universeId !== this.universeId) || !characters)
+		if ((change.universeId !== this.universeId) || !this.characters.has(change.playerId))
 		{
 			return;
 		}
 
 		if (change.kind === 'removed')
 		{
-			const remaining = characters.filter((character) => (character.id !== change.characterId));
+			this.withdraw(change.playerId, change.characterId);
+		}
+		else if (!change.inGroup)
+		{
+			this.offer(change.playerId, change.character);
+		}
 
-			this.characters.set(playerId, remaining);
+		this.sendCharactersChanged(change.playerId);
+	}
 
-			if (this.playing.get(playerId)?.id === change.characterId)
+	/**
+	 * Follows a character joining or leaving a group, for players in the room: a character who joins a
+	 * group plays there, so they can't be played here, and one who leaves it (or whose group is
+	 * disbanded) can again. Then each player affected has their windows list their characters again
+	 *
+	 * @param change The change
+	 */
+	private applyGroupChange(change: GroupChange): void
+	{
+		if (change.universeId !== this.universeId)
+		{
+			return;
+		}
+
+		const affected = ((change.kind === 'disbanded') ? change.members : [change.character]);
+		const players = new Set<string>();
+
+		for (const { characterId, playerId, name, playable } of affected)
+		{
+			if (!this.characters.has(playerId))
 			{
-				const next = remaining.at(0);
-
-				if (next)
-				{
-					this.play(playerId, next);
-				}
-				else
-				{
-					this.becomeGhost(playerId);
-				}
+				continue;
 			}
+
+			if (change.kind === 'joined')
+			{
+				this.withdraw(playerId, characterId);
+			}
+			else if (playable)
+			{
+				this.offer(playerId, { id: characterId, name });
+			}
+
+			players.add(playerId);
+		}
+
+		for (const playerId of players)
+		{
+			this.sendCharactersChanged(playerId);
+		}
+	}
+
+	/**
+	 * Stops a player in the room from playing one of their characters here. If they were playing them,
+	 * they switch to the one they played or made most recently, or become a ghost
+	 *
+	 * @param playerId The player's ID
+	 * @param characterId The character's ID
+	 */
+	private withdraw(playerId: string, characterId: string): void
+	{
+		const remaining = (this.characters.get(playerId) ?? []).filter((character) => (character.id !== characterId));
+
+		this.characters.set(playerId, remaining);
+
+		if (this.playing.get(playerId)?.id !== characterId)
+		{
+			return;
+		}
+
+		const next = remaining.at(0);
+
+		if (next)
+		{
+			this.play(playerId, next);
 		}
 		else
 		{
-			if (!characters.some((character) => (character.id === change.character.id)))
-			{
-				this.characters.set(playerId, [change.character, ...characters]);
-			}
+			this.becomeGhost(playerId);
+		}
+	}
 
-			if (!this.playing.has(playerId))
-			{
-				this.play(playerId, change.character);
-			}
+	/**
+	 * Lets a player in the room play one of their characters here, playing them straight away if the
+	 * player is a ghost
+	 *
+	 * @param playerId The player's ID
+	 * @param character The character
+	 */
+	private offer(playerId: string, character: PlayableCharacter): void
+	{
+		const characters = (this.characters.get(playerId) ?? []);
+
+		if (!characters.some((each) => (each.id === character.id)))
+		{
+			this.characters.set(playerId, [character, ...characters]);
 		}
 
+		if (!this.playing.has(playerId))
+		{
+			this.play(playerId, character);
+		}
+	}
+
+	/**
+	 * Has a player's windows list their characters again
+	 *
+	 * @param playerId The player's ID
+	 */
+	private sendCharactersChanged(playerId: string): void
+	{
 		for (const client of this.areaPlayers.getClients(playerId))
 		{
 			client.send(LobbyServerMessageType.CharactersChanged);

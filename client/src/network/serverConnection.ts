@@ -1,5 +1,5 @@
 import { Client, type Room } from '@colyseus/sdk';
-import { BROWSER_ID_PATH, GameState, LOBBY_ROOM_NAME, LobbyState, ServerMessageType, SESSION_ROOM_NAME, UNIVERSES_PATH, type LobbyJoinOptions, type UniverseDetails, type UniverseListPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
+import { BROWSER_ID_PATH, GAME_ROOM_NAME, GameState, LOBBY_ROOM_NAME, LobbyState, ServerMessageType, SESSION_ROOM_NAME, UNIVERSES_PATH, type GameJoinOptions, type LobbyJoinOptions, type UniverseDetails, type UniverseListPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
 
 /**
  * How many universes Home asks for at a time
@@ -29,7 +29,8 @@ export interface MapConnection<R extends MapRoom>
 	room: R;
 
 	/**
-	 * Key of this window's player in the room's state.players, shared by every window of this browser
+	 * Key of this window's player in the room's state.players: in a lobby the player's ID, shared by every
+	 * window of this browser; in a group's room the character the window controls
 	 */
 	playerId: string;
 
@@ -190,17 +191,20 @@ export async function joinLobby(client: Client, universeId: string): Promise<Lob
 }
 
 /**
- * Joins a group's game room; the session must already have put this browser's player in the group
+ * Joins a group's game room to play one of the player's characters in it; the server makes the room
+ * from the database when nobody is playing the group
  *
  * Passing the shared GameState class lets the SDK decode state into typed instances
  *
  * @param client Client for the server
- * @param groupId The group's ID (its game room's ID)
- * @return The joined room, this window's player and their area
+ * @param groupId The group's ID
+ * @param characterId The character to play: one of the player's characters in the group
+ * @return The joined room, the character this window controls and their area
  */
-export async function joinGroup(client: Client, groupId: string): Promise<GameConnection>
+export async function joinGroup(client: Client, groupId: string, characterId: string): Promise<GameConnection>
 {
-	const room = await client.joinById<GameState>(groupId, {}, GameState);
+	const options: GameJoinOptions = { groupId, characterId };
+	const room = await client.joinOrCreate<GameState>(GAME_ROOM_NAME, options, GameState);
 
 	return({ room, ...(await waitForArrival(room)) });
 }

@@ -5,10 +5,10 @@ import { t } from '../localization';
 /**
  * The screens the pages have, each an element with the ID "<name>-screen" and the class "screen". Every
  * page has status and login; index.html has home, universe.html has universe and notice, game.html has
- * notice, lobby and group, edit.html has editor, and character.html has character. Exactly one is
- * shown at a time
+ * notice, lobby, group and invite, edit.html has editor, and character.html has character. Exactly one
+ * is shown at a time
  */
-export type ScreenName = 'status' | 'login' | 'home' | 'universe' | 'notice' | 'editor' | 'lobby' | 'group' | 'character';
+export type ScreenName = 'status' | 'login' | 'home' | 'universe' | 'notice' | 'editor' | 'lobby' | 'group' | 'invite' | 'character';
 
 /**
  * Finds an element in the page by ID

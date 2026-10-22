@@ -1,16 +1,11 @@
 import { randomUUID } from 'crypto';
 import { Client, type Room } from '@colyseus/sdk';
 import { cli, type Options } from '@colyseus/loadtest';
-import { LOBBY_ROOM_NAME, LobbyMessageType, MessageType, SESSION_ROOM_NAME, SessionMessageType, SessionServerMessageType, UNIVERSES_PATH, type AccountPayload, type Direction, type LobbyJoinOptions, type LoginPayload, type MovePayload, type UniverseListPayload } from '@multiverse-kiln/shared';
+import { LOBBY_ROOM_NAME, MessageType, SESSION_ROOM_NAME, SessionMessageType, SessionServerMessageType, UNIVERSES_PATH, type AccountPayload, type Direction, type LobbyJoinOptions, type LoginPayload, type MovePayload, type UniverseListPayload } from '@multiverse-kiln/shared';
 
 import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
 
 const directions: Direction[] = [-1, 0, 1];
-
-/**
- * How long each simulated player walks around the lobby before creating a group
- */
-const LOBBY_SECONDS = 5;
 
 /**
  * Picks a random direction on each axis, like a player pressing arrow keys
@@ -26,36 +21,13 @@ function randomMove(): MovePayload
 }
 
 /**
- * Joins a group's room and changes direction every second
+ * Joins the first universe's lobby and changes direction every second
+ *
+ * Bots have no characters, so they walk the lobby as ghosts: groups need a character to play
  *
  * @param client Client for the server
- * @param groupId The group's ID
  */
-async function playInGroup(client: Client, groupId: string): Promise<void>
-{
-	const room: Room = await client.joinById(groupId, {});
-
-	console.log(room.sessionId, 'joined group', groupId);
-
-	const timer = setInterval(() =>
-	{
-		room.send(MessageType.Move, randomMove());
-	}, 1000);
-
-	room.onLeave((code: number) =>
-	{
-		clearInterval(timer);
-		console.log(room.sessionId, 'left group', code);
-	});
-}
-
-/**
- * Joins the first universe's lobby, walks around it for a few seconds, then creates a group of its own
- *
- * @param client Client for the server
- * @return The joined lobby, which the caller leaves once the group exists
- */
-async function playInLobby(client: Client): Promise<Room>
+async function playInLobby(client: Client): Promise<void>
 {
 	const response = await client.http.get(UNIVERSES_PATH);
 	const universe = (response.data as UniverseListPayload).universes[0];
@@ -74,24 +46,15 @@ async function playInLobby(client: Client): Promise<Room>
 
 	console.log(lobby.sessionId, 'joined the lobby of', universe.name);
 
-	setTimeout(() =>
-	{
-		clearInterval(timer);
-		lobby.send(LobbyMessageType.CreateGroup);
-	}, LOBBY_SECONDS * 1000);
-
 	lobby.onLeave((code: number) =>
 	{
 		clearInterval(timer);
 		console.log(lobby.sessionId, 'left the lobby', code);
 	});
-
-	return(lobby);
 }
 
 /**
- * Runs one simulated player: logs in through the session room, walks around a universe's lobby, then
- * creates a group of its own and moves around in it
+ * Runs one simulated player: logs in through the session room, then walks around a universe's lobby
  *
  * Each player is a browser of its own, with a random browser ID cookie
  *
@@ -101,28 +64,19 @@ export async function main(options: Options)
 {
 	const client = new Client(options.endpoint, { headers: { cookie: `${BROWSER_ID_COOKIE}=${randomUUID()}` } });
 	const session: Room = await client.joinOrCreate(SESSION_ROOM_NAME, {});
-	let lobby: Promise<Room> | undefined;
-	let joinedGroupId: string | undefined;
+	let lobby: Promise<void> | undefined;
 
 	session.onMessage(SessionServerMessageType.Account, (account: AccountPayload) =>
 	{
-		const groupId = account.player?.groupId;
-
 		if (!account.player)
 		{
 			const login: LoginPayload = { name: `Bot ${session.sessionId}` };
 
 			session.send(SessionMessageType.Login, login);
 		}
-		else if (!groupId && !lobby)
+		else if (!lobby)
 		{
 			lobby = playInLobby(client);
-		}
-		else if (groupId && (groupId !== joinedGroupId))
-		{
-			joinedGroupId = groupId;
-			void lobby?.then((room) => room.leave());
-			void playInGroup(client, groupId);
 		}
 	});
 
