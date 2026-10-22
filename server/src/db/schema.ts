@@ -5,8 +5,8 @@
  * `npm run db:migrate -w server` to apply it. Never change the database by hand
  */
 import { sql, type SQL } from 'drizzle-orm';
-import { boolean, check, doublePrecision, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHUNK_SIZE, DEFAULT_LOBBY_DAY_HOURS, GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_UNIVERSES_PER_CREATOR, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
+import { boolean, check, customType, doublePrecision, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
+import { CHUNK_SIZE, DEFAULT_LOBBY_DAY_HOURS, GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_UNIVERSES_PER_CREATOR, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SEEN_CHUNK_BYTES, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
 
 export const universeStage = pgEnum('universe_stage', UNIVERSE_STAGES);
 export const universeRole = pgEnum('universe_role', UNIVERSE_ROLES);
@@ -849,6 +849,35 @@ export const groups = pgTable('groups', {
 	unique('groups_anchor_character_id_unique').on(table.anchorCharacterId),
 	index('groups_universe_id_index').on(table.universeId),
 	index('groups_starting_area_id_index').on(table.startingAreaId)
+]);
+
+/**
+ * A column of raw bytes, read as a Uint8Array
+ */
+const bytea = customType<{ data: Uint8Array; driverData: Buffer }>({
+	dataType: () => 'bytea',
+	toDriver: (value) => Buffer.from(value),
+	fromDriver: (value) => new Uint8Array(value)
+});
+
+/**
+ * The cells each group has seen, part of its world state: one row per chunk of an area's map that the
+ * group has seen any cell of. Deleted with the group, so disbanding it forgets what it explored
+ */
+export const groupSeenChunks = pgTable('group_seen_chunks', {
+	groupId: uuid('group_id').notNull().references(() => groups.id, { onDelete: 'cascade' }),
+	areaId: uuid('area_id').notNull().references(() => areas.id, { onDelete: 'cascade' }),
+	chunkColumn: integer('chunk_column').notNull(),
+	chunkRow: integer('chunk_row').notNull(),
+
+	/**
+	 * One bit per cell of the chunk, set once the group has seen it (see shared/src/seen.ts)
+	 */
+	cells: bytea('cells').notNull()
+}, (table) => [
+	primaryKey({ columns: [table.groupId, table.areaId, table.chunkColumn, table.chunkRow] }),
+	index('group_seen_chunks_area_id_index').on(table.areaId),
+	check('group_seen_chunks_cell_count', sql`octet_length(${table.cells}) = ${sql.raw(String(SEEN_CHUNK_BYTES))}`)
 ]);
 
 /**

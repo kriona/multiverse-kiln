@@ -1,9 +1,11 @@
 import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
-import { GameMessageType, GameServerMessageType, GameState, GroupMember, MessageType, NoticeReason, PATCH_INTERVAL_MS, ServerCloseCode, type NoticePayload } from '@multiverse-kiln/shared';
+import { encodeSeenChunk, GameMessageType, GameServerMessageType, GameState, GroupMember, MessageType, NoticeReason, PATCH_INTERVAL_MS, ServerCloseCode, visibleCells, type NoticePayload, type SeenPayload } from '@multiverse-kiln/shared';
 
 import { markCharacterPlayed } from '../db/characterRepo.js';
 import { findGroup, listGroupMembers, saveGroupClock, saveMemberPositions, type GroupMemberRecord, type MemberPosition } from '../db/groupRepo.js';
+import { saveSeenChunks, loadSeenChunks } from '../db/worldStateRepo.js';
 import { GroupClock } from '../logic/gameClock.js';
+import { SeenCells } from '../logic/seenCells.js';
 import { loadRaceDarkvision } from '../db/raceRepo.js';
 import { findUniverse } from '../db/universeRepo.js';
 import { loadChunksAt, loadArea } from '../db/areaRepo.js';
@@ -34,6 +36,12 @@ interface GameIdentity
 }
 
 type GameClient = Client<{ auth: GameIdentity }>;
+
+/**
+ * Milliseconds between saves of what the group has seen while players are in the room; it is saved
+ * when the last of them leaves as well
+ */
+const SEEN_SAVE_INTERVAL_MS = 30 * 1000;
 
 /**
  * Who a game client is
@@ -120,6 +128,16 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	 * Whether each of the universe's races has darkvision, by race ID, as the room found them on starting
 	 */
 	private raceDarkvision = new Map<number, boolean>();
+
+	/**
+	 * The cells the group has seen, part of its world state
+	 */
+	private seen = new SeenCells();
+
+	/**
+	 * Where each member last looked from and how far they saw (see explore), by character ID
+	 */
+	private readonly lastSights = new Map<string, string>();
 
 	/**
 	 * Each player's clients in the room, by player ID
@@ -231,8 +249,25 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			this.addMember(member);
 		}
 
-		this.setTimestep((deltaTime) => this.areaPlayers.update(deltaTime / 1000), 1000 / SIMULATION_TICK_RATE);
+		this.seen = new SeenCells(await loadSeenChunks(group.id));
+		this.areaPlayers.onChunksSent((clients, areaId, chunkKeys) =>
+		{
+			this.sendSeen(clients, areaId, chunkKeys);
+		});
+
+		this.setTimestep((deltaTime) =>
+		{
+			this.areaPlayers.update(deltaTime / 1000);
+			this.explore();
+		}, 1000 / SIMULATION_TICK_RATE);
 		this.clock.setInterval(() => this.areaPlayers.refreshChunks(), CHUNK_REFRESH_INTERVAL_MS);
+		this.clock.setInterval(() =>
+		{
+			this.saveSeen().catch((error: unknown) =>
+			{
+				console.error('Could not save what group', this.groupId, 'has seen', error);
+			});
+		}, SEEN_SAVE_INTERVAL_MS);
 
 		this.stopListening.push(
 			groupChanges.onChange((change) =>
@@ -245,6 +280,11 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			}),
 			areaChanges.onChange((change) =>
 			{
+				if (change.kind === 'deleted')
+				{
+					this.seen.forget(change.areaId);
+				}
+
 				this.areaPlayers.applyChange(change).catch((error: unknown) =>
 				{
 					console.error('Could not apply a world change to the room of group', this.groupId, error);
@@ -355,6 +395,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			{
 				await saveMemberPositions(this.groupId, positions);
 				await saveGroupClock(this.groupId, this.gameClock.seconds);
+				await this.saveSeen();
 			}
 
 			if (left)
@@ -512,6 +553,75 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		}
 
 		return(positions);
+	}
+
+	/**
+	 * Marks what each member on the map sees as seen by the group, working it out again only for those
+	 * who have moved to another cell or whose sight has changed since the last tick
+	 */
+	private explore(): void
+	{
+		for (const { playerId, area, cell, budget } of this.areaPlayers.sights())
+		{
+			const areaId = area.loaded.area.id;
+
+			// A tenth of a square, as the light changes around dawn and dusk, makes too little difference to look again
+			const key = `${areaId};${cell.column},${cell.row};${Math.floor(budget * 10)}`;
+
+			if (this.lastSights.get(playerId) !== key)
+			{
+				this.lastSights.set(playerId, key);
+				this.seen.mark(areaId, visibleCells(cell, budget, area.vision));
+			}
+		}
+	}
+
+	/**
+	 * Sends clients what the group has seen of chunks they have just been sent
+	 *
+	 * @param clients The clients
+	 * @param areaId The chunks' area
+	 * @param chunkKeys The chunks, by chunkKey()
+	 */
+	private sendSeen(clients: readonly Client[], areaId: string, chunkKeys: readonly string[]): void
+	{
+		const payload: SeenPayload = {
+			areaId,
+			chunks: this.seen.get(areaId, chunkKeys).map((chunk) => ({
+				chunkColumn: chunk.chunkColumn,
+				chunkRow: chunk.chunkRow,
+				cells: encodeSeenChunk(chunk.cells)
+			}))
+		};
+
+		for (const client of clients)
+		{
+			client.send(GameServerMessageType.Seen, payload);
+		}
+	}
+
+	/**
+	 * Saves the chunks the group has seen more of since the last save, unless the group is no more.
+	 * Those that couldn't be saved are tried again next time
+	 */
+	private async saveSeen(): Promise<void>
+	{
+		if (this.disbanded)
+		{
+			return;
+		}
+
+		const changed = this.seen.takeChanged();
+
+		try
+		{
+			await saveSeenChunks(this.groupId, changed);
+		}
+		catch (error)
+		{
+			this.seen.putBack(changed);
+			throw error;
+		}
 	}
 
 	/**

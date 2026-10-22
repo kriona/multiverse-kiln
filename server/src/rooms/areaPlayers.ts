@@ -142,6 +142,30 @@ export interface WholeGroupLinks
 export type WalkListener = (playerId: string, seconds: number, time: AreaTime) => void;
 
 /**
+ * Told that clients have been sent chunks of an area's map, with an Area or Chunks message
+ *
+ * @param clients The clients
+ * @param areaId The area's ID
+ * @param chunkKeys The chunks, by chunkKey()
+ */
+export type ChunksSentListener = (clients: readonly Client[], areaId: string, chunkKeys: readonly string[]) => void;
+
+/**
+ * Where a player looks from and how far they see
+ */
+export interface PlayerSight
+{
+	playerId: string;
+	area: ActiveArea;
+	cell: Cell;
+
+	/**
+	 * Their vision budget (see visionBudget)
+	 */
+	budget: number;
+}
+
+/**
  * The players on the map of a room with areas (a universe's lobby or a group's game room): which
  * clients control them, which area each is in, how they move, and which of them each client sees
  *
@@ -202,6 +226,11 @@ export class AreaPlayers
 	private walkListener?: WalkListener;
 
 	/**
+	 * Told of the chunks each client is sent (see onChunksSent)
+	 */
+	private chunksSentListener?: ChunksSentListener;
+
+	/**
 	 * @param players The room's synced players, which this adds to, moves and removes
 	 * @param areas The room's areas
 	 * @param fallbackAreaId The area players go to when the area they are in is deleted
@@ -220,6 +249,46 @@ export class AreaPlayers
 	onWalk(listener: WalkListener): void
 	{
 		this.walkListener = listener;
+	}
+
+	/**
+	 * Listens for the chunks of the map clients are sent, so a group's room can send what the group has
+	 * seen of them
+	 *
+	 * @param listener Called after each Area or Chunks message, with its clients, area and chunks
+	 */
+	onChunksSent(listener: ChunksSentListener): void
+	{
+		this.chunksSentListener = listener;
+	}
+
+	/**
+	 * Where each player on the map who isn't a ghost looks from and how far they see, leaving out those
+	 * on their way to another area
+	 *
+	 * @return Their sights
+	 */
+	sights(): PlayerSight[]
+	{
+		const nowMilliseconds = Date.now();
+		const sights: PlayerSight[] = [];
+
+		for (const playerId of this.players.keys())
+		{
+			const area = this.areaOf(playerId);
+			const sight = ((area && !this.isGhost(playerId) && !this.travelling.has(playerId)) ? this.sightOf(playerId, area, nowMilliseconds) : undefined);
+
+			if (area && sight)
+			{
+				sights.push({
+					playerId,
+					area,
+					...sight
+				});
+			}
+		}
+
+		return(sights);
 	}
 
 	/**
@@ -987,6 +1056,8 @@ export class AreaPlayers
 		{
 			client.send(ServerMessageType.Area, payload);
 		}
+
+		this.chunksSentListener?.(clients, area.loaded.area.id, near);
 	}
 
 	/**
@@ -1046,10 +1117,14 @@ export class AreaPlayers
 
 		this.sentChunks.set(playerId, sent);
 
-		for (const client of this.getClients(playerId))
+		const clients = this.getClients(playerId);
+
+		for (const client of clients)
 		{
 			client.send(ServerMessageType.Chunks, payload);
 		}
+
+		this.chunksSentListener?.(clients, area.loaded.area.id, chunkKeys);
 	}
 
 	/**

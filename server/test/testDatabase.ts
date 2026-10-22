@@ -9,6 +9,16 @@ import pg from 'pg';
 const BASELINE_SCHEMA = 'test_baseline';
 
 /**
+ * Postgres's error code for a deadlock it broke by failing one of the statements in it
+ */
+const DEADLOCK_DETECTED = '40P01';
+
+/**
+ * How many times emptying the database is tried before its error is passed on
+ */
+const MAX_TRUNCATE_ATTEMPTS = 5;
+
+/**
  * The test suite's own connection to its database, as the migration role: it builds the tables and
  * empties them, which the server's role isn't allowed to do
  */
@@ -150,8 +160,24 @@ export async function emptyTestDatabase(): Promise<void>
 		return;
 	}
 
-	// Identity sequences carry on from where they were, so new rows never reuse a baseline row's ID
-	await migrationPool.query(`TRUNCATE ${tables} CASCADE`);
+	// Identity sequences carry on from where they were, so new rows never reuse a baseline row's ID.
+	// A room from the test before may still be saving as it closes; truncating every table can deadlock
+	// with that save, and Postgres may choose the truncate to fail, so it is tried again
+	for (let attempt = 1; ; attempt++)
+	{
+		try
+		{
+			await migrationPool.query(`TRUNCATE ${tables} CASCADE`);
+			break;
+		}
+		catch (error)
+		{
+			if (((error as { code?: string }).code !== DEADLOCK_DETECTED) || (attempt >= MAX_TRUNCATE_ATTEMPTS))
+			{
+				throw error;
+			}
+		}
+	}
 
 	for (const name of baselineTables)
 	{

@@ -2915,6 +2915,10 @@
 		"message": "{count, plural, one {{players} slips out o' sight.} other {{players} slip out o' sight.}}",
 		"source": "{count, plural, one {{players} goes out of view.} other {{players} go out of view.}}"
 	},
+	"map.announce.explored": {
+		"message": "Yer crew has charted {share, number, percent} o' these waters.",
+		"source": "Your group has explored {share, number, percent} of this area."
+	},
 	"map.announce.partOfDay": {
 		"message": "{part, select, dawn {First light breaks.} day {The sun be high.} dusk {Dusk be fallin'.} other {Night falls o'er the sea.}}",
 		"source": "{part, select, dawn {Dawn breaks.} day {The sun is up.} dusk {Dusk falls.} other {Night falls.}}"

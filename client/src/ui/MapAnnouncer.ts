@@ -65,6 +65,11 @@ export interface PlayerPosition
 	 * How many squares the player can see across open ground (visionBudget)
 	 */
 	sightSquares: number;
+
+	/**
+	 * How much of the area the group has seen, from 0 to 1; undefined in a lobby, which remembers nothing
+	 */
+	explored: number | undefined;
 }
 
 /**
@@ -241,6 +246,15 @@ export class MapAnnouncer
 		}, {
 			squares: position.sightSquares
 		});
+		const explored = ((position.explored === undefined)
+			? ''
+			: ` ${t({
+				id: 'map.announce.explored',
+				defaultMessage: 'Your group has explored {share, number, percent} of this area.',
+				description: 'Read out by screen readers when the player asks where they are, after how far they can see: how much of the area\'s map the group has seen, e.g. "45%"; the map shows the rest black'
+			}, {
+				share: position.explored
+			})}`);
 
 		// Each part is whole sentences
 		announce(`${t({
@@ -255,7 +269,7 @@ export class MapAnnouncer
 			tile: (position.tileName ?? ''),
 			count: players.length,
 			players: formatList(players, 'conjunction')
-		})} ${time} ${sight}`, true);
+		})} ${time} ${sight}${explored}`, true);
 	}
 
 	/**

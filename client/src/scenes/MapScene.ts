@@ -4,6 +4,7 @@ import { chunkKey, createVisionMap, daylight, GRID_CELL_SIZE, isInBounds, Messag
 
 import { MovementKeys } from '../input/MovementKeys';
 import { t } from '../localization';
+import type { SeenCellsStore } from '../network/SeenCellsStore';
 import type { GameRoom, MapConnection, MapRoom } from '../network/serverConnection';
 import { PositionBuffer, type Point } from '../rendering/PositionBuffer';
 import { AreaRenderer } from '../rendering/AreaRenderer';
@@ -80,6 +81,11 @@ const FOG_COLOR = 0x000000;
  * How opaque the fog is
  */
 const FOG_ALPHA = 0.55;
+
+/**
+ * How opaque the fog is over cells the group has never seen, in a group's room: they are hidden
+ */
+const UNSEEN_ALPHA = 1;
 
 /**
  * Depth of the fog: over the map, under the players
@@ -189,6 +195,11 @@ export class MapScene extends Phaser.Scene
 	 */
 	private chunkRevision = 0;
 
+	/**
+	 * What the group has seen, in a group's room; undefined in a lobby, which remembers nothing
+	 */
+	private seen?: SeenCellsStore;
+
 	constructor()
 	{
 		super(MAP_SCENE_KEY);
@@ -216,6 +227,7 @@ export class MapScene extends Phaser.Scene
 		this.night = undefined;
 		this.fog = undefined;
 		this.fogKey = '';
+		this.seen = data.connection.seen;
 	}
 
 	/**
@@ -246,6 +258,15 @@ export class MapScene extends Phaser.Scene
 		{
 			this.receiveChunks(payload);
 		}));
+
+		if (this.seen)
+		{
+			// Draws the fog again with what the group saw before
+			this.unbinds.push(this.seen.onChange(() =>
+			{
+				this.fogKey = '';
+			}));
+		}
 
 		if (this.input.keyboard)
 		{
@@ -420,6 +441,14 @@ export class MapScene extends Phaser.Scene
 			}
 		}
 
+		// The server marks the same cells; marking them here too shows them as seen without waiting for it
+		for (const cellKey of visible)
+		{
+			const [column, row] = cellKey.split(',').map(Number);
+
+			this.seen?.mark(this.area.areaId, column, row);
+		}
+
 		this.drawFog(center, visible);
 	}
 
@@ -445,7 +474,6 @@ export class MapScene extends Phaser.Scene
 		const height = (bounds.maxRow - bounds.minRow) + 1;
 
 		fog.clear();
-		fog.fillStyle(FOG_COLOR, FOG_ALPHA);
 
 		for (let row = center.row - halfRows; row <= center.row + halfRows; row++)
 		{
@@ -457,6 +485,10 @@ export class MapScene extends Phaser.Scene
 
 				if (isInBounds(bounds, mapColumn, mapRow) && !visible.has(visionKey(mapColumn, mapRow)))
 				{
+					// A lobby remembers nothing, so it only dims what is out of sight
+					const isSeen = (this.seen?.has(this.area.areaId, mapColumn, mapRow) ?? true);
+
+					fog.fillStyle(FOG_COLOR, (isSeen ? FOG_ALPHA : UNSEEN_ALPHA));
 					fog.fillRect(column * GRID_CELL_SIZE, row * GRID_CELL_SIZE, GRID_CELL_SIZE, GRID_CELL_SIZE);
 				}
 			}
@@ -905,8 +937,29 @@ export class MapScene extends Phaser.Scene
 			row,
 			tileName: (tile ? tileName(tile, this.area.ruleset) : undefined),
 			secondOfDay: seconds,
-			sightSquares: Math.floor(visionBudget(seconds, own.darkvision))
+			sightSquares: Math.floor(visionBudget(seconds, own.darkvision)),
+			explored: this.exploredShare()
 		}, others);
+	}
+
+	/**
+	 * How much of the area the group has seen
+	 *
+	 * @return From 0 to 1, rounded down to a whole percent so an area isn't called fully explored too
+	 * soon; undefined in a lobby, which remembers nothing
+	 */
+	private exploredShare(): number | undefined
+	{
+		if (!this.seen)
+		{
+			return(undefined);
+		}
+
+		const { bounds } = this.area;
+		const cells = ((bounds.maxColumn - bounds.minColumn) + 1) * ((bounds.maxRow - bounds.minRow) + 1);
+		const seen = this.seen.count(this.area.areaId, (column, row) => isInBounds(bounds, column, row));
+
+		return(Math.floor((seen / cells) * 100) / 100);
 	}
 
 	/**

@@ -63,7 +63,30 @@ export enum GameServerMessageType
 	/**
 	 * Something the player asked for didn't happen (payload: NoticePayload)
 	 */
-	Notice = 'notice'
+	Notice = 'notice',
+
+	/**
+	 * The cells the group has seen in chunks the client has just been sent, after the Area or Chunks
+	 * message carrying them (payload: SeenPayload)
+	 */
+	Seen = 'seen'
+}
+
+/**
+ * Payload of GameServerMessageType.Seen
+ */
+export interface SeenPayload
+{
+	areaId: string;
+
+	/**
+	 * The chunks the group has seen any cell of, with the seen cells encoded by encodeSeenChunk()
+	 */
+	chunks: {
+		chunkColumn: number;
+		chunkRow: number;
+		cells: string;
+	}[];
 }
 
 /**

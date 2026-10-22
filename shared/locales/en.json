@@ -2915,6 +2915,10 @@
 		"defaultMessage": "{count, plural, one {{players} goes out of view.} other {{players} go out of view.}}",
 		"description": "Read out by screen readers when other players go out of view on the map or leave; {players} is a list of their names"
 	},
+	"map.announce.explored": {
+		"defaultMessage": "Your group has explored {share, number, percent} of this area.",
+		"description": "Read out by screen readers when the player asks where they are, after how far they can see: how much of the area's map the group has seen, e.g. \"45%\"; the map shows the rest black"
+	},
 	"map.announce.partOfDay": {
 		"defaultMessage": "{part, select, dawn {Dawn breaks.} day {The sun is up.} dusk {Dusk falls.} other {Night falls.}}",
 		"description": "Read out by screen readers as the time of day changes where the player is: dawn begins, full daylight comes, dusk begins, or night comes"

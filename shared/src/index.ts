@@ -17,5 +17,6 @@ export * from './siteSettings.js';
 export * from './state.js';
 export * from './time.js';
 export * from './vision.js';
+export * from './seen.js';
 export * from './universes.js';
 export * from './areaTree.js';

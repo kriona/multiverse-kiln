@@ -197,6 +197,13 @@
       "when": 1792684043677,
       "tag": "0027_time_of_day",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1792697525081,
+      "tag": "0028_group_seen_chunks",
+      "breakpoints": true
     }
   ]
 }

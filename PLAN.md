@@ -200,9 +200,9 @@ Built in three steps: time, vision, then world state.
 	- [✅] Vision as a pure function in `/shared` with tests: vision range, tile vision costs, shorter at night unless the character has darkvision
 	- [✅] The server shows each client only the players its group can see (`StateView`); the client draws fog with the same function
 3. World state
-	- [ ] World state per group, stored as a diff of the universe: the areas explored and the cells seen in them, deleted when the group disbands
-	- [ ] Seen cells drawn dimmed, unseen ones black
-	- [ ] Check the new screens in the pseudo-language, update Pirate, and add screen reader text
+	- [✅] World state per group, stored as a diff of the universe: the areas explored and the cells seen in them, deleted when the group disbands
+	- [✅] Seen cells drawn dimmed, unseen ones black
+	- [✅] Check the new screens in the pseudo-language, update Pirate, and add screen reader text
 
 **Done when:** a group watches day turn to night as it explores, sees less at night unless it has darkvision, can't see past mountains, and its explored areas are remembered after a restart.
 

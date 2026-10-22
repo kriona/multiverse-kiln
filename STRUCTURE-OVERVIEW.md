@@ -549,6 +549,8 @@ Each group has its own world state, stored as a diff of the universe as it was b
 
 Disbanding a group deletes its world state. Characters (items, money, experience) are stored separately and kept.
 
+What a group has explored is kept as the cells it has seen, area by area: a cell is seen once any member has had it in sight (see [Vision](#vision)). The group's room keeps them in memory, saves them every 30 seconds while anyone plays and when the last player leaves, and sends each window what the group has seen of the map near it. In a group's room, cells out of sight that the group has seen are drawn dimmed, and cells it has never seen are black. A lobby remembers nothing, so there everything out of sight is only dimmed. Screen readers are told how much of the area the group has explored when the player asks where they are. Deleting an area deletes what every group has seen of it.
+
 ## Vision
 Each character has a vision budget, in squares. A character looks along straight lines from their cell, and each step along a line spends its length (a diagonal step counts as one and a half squares, as in movement), more when it leaves a tile with a vision cost: 50% spends twice as much, the way a movement cost slows walking. A 100% tile can be seen but not seen past, so a line of mountains blocks your view. It is also seen when open ground next to it is, so the walls lining a tunnel show along its length, while the inside of a thick wall and its far side stay hidden. The character's own cell never gets in the way. Void cells are seen past.
 - The budget is 20 squares in full daylight and 4 at night, changing with the light around dawn and dusk. Darkvision sees at least 12 squares (60 feet), day or night.
