@@ -417,6 +417,17 @@ describe('World editor API', () =>
 			assert.strictEqual(universe.lobbyFaerieMorning, 'west');
 			assert.strictEqual(universe.lobbyDayHours, 6);
 		});
+
+		it('gives the lobby no vision cost until it is turned off', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const path = `/${universeId}`;
+
+			assert.strictEqual((await send<EditableUniverse>(ada, 'GET', path)).body.lobbyNoVisionCost, true);
+			assert.strictEqual((await send(ada, 'PATCH', path, { body: { lobbyNoVisionCost: 'no' } })).status, 400);
+			assert.strictEqual((await send(ada, 'PATCH', path, { body: { lobbyNoVisionCost: false } })).status, 204);
+			assert.strictEqual((await send<EditableUniverse>(ada, 'GET', path)).body.lobbyNoVisionCost, false);
+		});
 	});
 
 	describe('character settings', () =>

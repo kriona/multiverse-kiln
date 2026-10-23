@@ -291,6 +291,7 @@ export async function findEditableUniverse(universeId: string, executor: Executo
 			lobbyPassageOfTime: universes.lobbyPassageOfTime,
 			lobbyDayHours: universes.lobbyDayHours,
 			lobbyFaerieMorning: universes.lobbyFaerieMorning,
+			lobbyNoVisionCost: universes.lobbyNoVisionCost,
 			lobbyAreaId: universes.lobbyAreaId,
 			startingAreaId: universes.startingAreaId,
 			groupSize: universes.groupSize,

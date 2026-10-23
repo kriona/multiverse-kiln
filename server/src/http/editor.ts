@@ -329,6 +329,11 @@ async function updateUniverse(request: Request, response: Response): Promise<voi
 	{
 		areaChanges.publish({ kind: 'time', universeId: universe.id });
 	}
+	// Rooms read the universe's areas again for either change, so one is enough
+	else if (body.data.lobbyNoVisionCost !== undefined)
+	{
+		areaChanges.publish({ kind: 'tiles', universeId: universe.id });
+	}
 
 	response.sendStatus(204);
 }

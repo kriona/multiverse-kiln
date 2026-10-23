@@ -204,7 +204,7 @@ describe('LobbyRoom', () =>
 			const forest = area.tiles.find((tile) => (tile.key === 'forest'));
 
 			assert.strictEqual(area.ruleset, 'pf1e');
-			assert.deepStrictEqual(forest, { id: forest?.id, key: 'forest', name: null, color: 0x00aa11, visionCost: 50 });
+			assert.deepStrictEqual(forest, { id: forest?.id, key: 'forest', name: null, color: 0x00aa11, visionCost: 0 }, 'the lobby has no vision cost unless the universe gives it one');
 			assert.strictEqual(area.tiles.some((tile) => (tile.name !== null)), false, 'default tiles are named by key, not in English');
 		});
 
@@ -303,7 +303,7 @@ describe('LobbyRoom', () =>
 
 		it('shows each window only the players its character can see, not past mountains or beyond their sight', async () =>
 		{
-			await updateUniverseSettings(universe.universeId, { lobbyPassageOfTime: 'always_noon', lobbyFaerieMorning: null });
+			await updateUniverseSettings(universe.universeId, { lobbyPassageOfTime: 'always_noon', lobbyFaerieMorning: null, lobbyNoVisionCost: false });
 
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
 			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
@@ -832,6 +832,20 @@ describe('LobbyRoom', () =>
 			const area = await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
 
 			assert.deepStrictEqual(area.tiles.find((tile) => (tile.id === grass)), { id: grass, key: null, name: 'Autumn Grass', color: 0xc08030, visionCost: 0 });
+		});
+
+		it('sends the lobby again with its tiles\' vision costs once the universe gives it them', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const forest = await defaultTileId('forest');
+
+			await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
+			await updateUniverseSettings(universe.universeId, { lobbyNoVisionCost: false });
+			areaChanges.publish({ kind: 'tiles', universeId: universe.universeId });
+
+			const area = await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
+
+			assert.strictEqual(area.tiles.find((tile) => (tile.id === forest))?.visionCost, 50);
 		});
 
 		it('ignores changes to areas it hasn\'t loaded', async () =>

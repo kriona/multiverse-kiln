@@ -1207,6 +1207,14 @@
 		"defaultMessage": "The lobby is where everyone in the universe meets before joining a group. It is an area like any other, but isn't listed on the Areas tab.",
 		"description": "Explains the lobby on the editor's Lobby tab"
 	},
+	"editor.lobby.noVisionCost": {
+		"defaultMessage": "No vision cost in the lobby",
+		"description": "Checkbox for whether characters in the lobby see past every tile as if none had a vision cost"
+	},
+	"editor.lobby.noVisionCostHint": {
+		"defaultMessage": "Forests, walls and other tiles don't block or shorten anyone's view in the lobby. How far characters see still changes with the time of day.",
+		"description": "Explains the lobby's no vision cost checkbox on the editor's Lobby tab"
+	},
 	"editor.lobby.saveFailed": {
 		"defaultMessage": "Could not save the lobby's settings.",
 		"description": "Shown on the Lobby tab when its settings couldn't be stored"

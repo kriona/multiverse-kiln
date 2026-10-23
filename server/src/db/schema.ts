@@ -103,6 +103,11 @@ export const universes = pgTable('universes', {
 	lobbyFaerieMorning: faerieMorning('lobby_faerie_morning'),
 
 	/**
+	 * Whether the lobby's tiles are seen past as if none had a vision cost
+	 */
+	lobbyNoVisionCost: boolean('lobby_no_vision_cost').notNull().default(true),
+
+	/**
 	 * Where characters start unless their race or class says otherwise
 	 */
 	startingAreaId: uuid('starting_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),

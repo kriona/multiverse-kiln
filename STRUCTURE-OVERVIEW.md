@@ -303,6 +303,7 @@ Money is credits (`cr`), the only coin.
 		- shows an additional option for "how quickly?" with a description of "how long in real-time does it take for 1 day in the lobby to pass?" minimum 1 hour, maximum 240 hours. Default 24. Current time of day is based on the Unix epoch, so a 24-hour day follows the time in UTC
 	- `faerie`, with "where is morning?". The lobby's map can't loop while it is chosen
 	- the lobby's area has no passage of time of its own: the area editor says it is set here
+- a checkbox for "no vision cost in the lobby", checked by default: every tile in the lobby is seen past as if it had a 0% vision cost. The vision budget still changes with the time of day
 - a button for "Edit Map" which takes you to the [area editor](#editor-area) for the lobby
 
 ### Tab: Characters
@@ -554,7 +555,7 @@ What a group has explored is kept as the cells it has seen, area by area: a cell
 ## Vision
 Each character has a vision budget, in squares. A character looks along straight lines from their cell, and each step along a line spends its length (a diagonal step counts as one and a half squares, as in movement), more when it leaves a tile with a vision cost: 50% spends twice as much, the way a movement cost slows walking. A 100% tile can be seen but not seen past, so a line of mountains blocks your view. It is also seen when open ground next to it is, so the walls lining a tunnel show along its length, while the inside of a thick wall and its far side stay hidden. The character's own cell never gets in the way. Void cells are seen past.
 - The budget is 20 squares in full daylight and 4 at night, changing with the light around dawn and dusk. Darkvision sees at least 12 squares (60 feet), day or night.
-- In a group's room, the group sees whatever any of its members in the area sees, so members always see each other. In a lobby each player sees only what they see themselves.
+- In a group's room, the group sees whatever any of its members in the area sees, so members always see each other. In a lobby each player sees only what they see themselves, and unless the universe turns it off on the [Lobby tab](#tab-lobby), its tiles have no vision cost.
 - The server works out what each player can see and only shows them the players in sight. The client runs the same function (`/shared`) to draw fog over the cells out of sight. Screen readers are told how many squares the player can see when they ask where they are.
 - A character's darkvision comes from their race as the universe set it when the room started.
 

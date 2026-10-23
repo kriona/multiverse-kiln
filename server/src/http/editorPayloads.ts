@@ -130,6 +130,7 @@ export const universeSettingsUpdate = byRuleset((ruleset) => z.object({
 	lobbyPassageOfTime: z.enum(LOBBY_PASSAGES_OF_TIME).optional(),
 	lobbyDayHours: z.number().int().min(MIN_LOBBY_DAY_HOURS).max(MAX_LOBBY_DAY_HOURS).optional(),
 	lobbyFaerieMorning: z.enum(FAERIE_MORNINGS).nullable().optional(),
+	lobbyNoVisionCost: z.boolean().optional(),
 	groupSize: z.number().int().min(MIN_GROUP_SIZE).max(MAX_GROUP_PLAYERS).optional(),
 	startingMoney: money(ruleset).optional(),
 	startingItems: startingItemList.optional(),

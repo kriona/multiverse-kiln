@@ -282,6 +282,11 @@ export interface UniverseSettings
 	lobbyFaerieMorning: FaerieMorning | null;
 
 	/**
+	 * Whether every tile in the lobby is seen past as if it had no vision cost
+	 */
+	lobbyNoVisionCost: boolean;
+
+	/**
 	 * Most characters in one group, from MIN_GROUP_SIZE to MAX_GROUP_PLAYERS
 	 */
 	groupSize: number;

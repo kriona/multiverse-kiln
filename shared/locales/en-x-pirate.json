@@ -1207,6 +1207,14 @@
 		"message": "The tavern be where every soul in the universe gathers afore joinin' a crew. It be an area like any other, but it ain't listed on the Areas tab.",
 		"source": "The lobby is where everyone in the universe meets before joining a group. It is an area like any other, but isn't listed on the Areas tab."
 	},
+	"editor.lobby.noVisionCost": {
+		"message": "No spyglass cost in the tavern",
+		"source": "No vision cost in the lobby"
+	},
+	"editor.lobby.noVisionCostHint": {
+		"message": "Forests, walls an' other tiles don't block nor shorten anyone's view in the tavern. How far a soul can spy still changes with the hour.",
+		"source": "Forests, walls and other tiles don't block or shorten anyone's view in the lobby. How far characters see still changes with the time of day."
+	},
 	"editor.lobby.saveFailed": {
 		"message": "Couldn't stow the tavern's settings.",
 		"source": "Could not save the lobby's settings."

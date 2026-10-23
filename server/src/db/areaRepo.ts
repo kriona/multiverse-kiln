@@ -138,7 +138,8 @@ export async function createAreaLink(link: NewAreaLink, executor: Executor = db)
 
 /**
  * Loads an area with everything needed to play in it except its map's cells, which a map up to
- * MAX_MAP_SIDE across has too many of to load at once: load them a piece at a time with loadChunks
+ * MAX_MAP_SIDE across has too many of to load at once: load them a piece at a time with loadChunks.
+ * A lobby's tiles have no vision cost when its universe's lobbyNoVisionCost is set
  *
  * @param areaId The area's ID
  * @param executor The database, or a transaction
@@ -156,7 +157,8 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 				lobbyAreaId: universes.lobbyAreaId,
 				lobbyPassageOfTime: universes.lobbyPassageOfTime,
 				lobbyDayHours: universes.lobbyDayHours,
-				lobbyFaerieMorning: universes.lobbyFaerieMorning
+				lobbyFaerieMorning: universes.lobbyFaerieMorning,
+				lobbyNoVisionCost: universes.lobbyNoVisionCost
 			}
 		})
 		.from(areas)
@@ -175,7 +177,11 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 		.from(areaLinks)
 		.where(eq(areaLinks.areaId, areaId));
 
-	const tiles = await loadUniverseTiles(area.universeId, ruleset, executor);
+	const isLobby = (area.id === universe.lobbyAreaId);
+	const universeTiles = await loadUniverseTiles(area.universeId, ruleset, executor);
+	const tiles = ((isLobby && universe.lobbyNoVisionCost)
+		? universeTiles.map((tile) => ({ ...tile, visionCost: 0 }))
+		: universeTiles);
 
 	return({
 		area: {
@@ -188,7 +194,7 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 			passageOfTime: area.passageOfTime
 		},
 		ruleset,
-		time: ((area.id === universe.lobbyAreaId)
+		time: (isLobby
 			? lobbyAreaTime({
 				passageOfTime: universe.lobbyPassageOfTime,
 				faerieMorning: universe.lobbyFaerieMorning,

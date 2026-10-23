@@ -8,7 +8,8 @@ import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldError
 import { formMessages } from '../formMessages';
 
 /**
- * The Lobby tab's settings: how the time of day changes in the lobby
+ * The Lobby tab's settings: how the time of day changes in the lobby, and whether its tiles have a
+ * vision cost
  */
 export class LobbyTab
 {
@@ -20,6 +21,7 @@ export class LobbyTab
 	private readonly dayHoursHint = getElement('lobby-day-hours-hint', HTMLElement);
 	private readonly faerieField = getElement('lobby-faerie-field', HTMLElement);
 	private readonly faerie = getElement('lobby-faerie', HTMLSelectElement);
+	private readonly noVisionCost = getElement('lobby-no-vision-cost', HTMLInputElement);
 	private readonly error = getElement('lobby-error', HTMLElement);
 	private readonly saved = getElement('lobby-saved', HTMLElement);
 	private readonly saveButton = getElement('lobby-save', HTMLButtonElement);
@@ -88,6 +90,7 @@ export class LobbyTab
 		this.time.value = universe.lobbyPassageOfTime;
 		this.dayHours.value = String(universe.lobbyDayHours);
 		this.faerie.value = (universe.lobbyFaerieMorning ?? FAERIE_MORNINGS[0]);
+		this.noVisionCost.checked = universe.lobbyNoVisionCost;
 		this.showTimeFields();
 		this.fields.disabled = !canEditUniverseSettings(universe.role);
 		this.saveButton.hidden = this.fields.disabled;
@@ -133,9 +136,10 @@ export class LobbyTab
 			return;
 		}
 
-		const update: Required<Pick<UniverseSettingsUpdate, 'lobbyPassageOfTime' | 'lobbyFaerieMorning'>> & Pick<UniverseSettingsUpdate, 'lobbyDayHours'> = {
+		const update: Required<Pick<UniverseSettingsUpdate, 'lobbyPassageOfTime' | 'lobbyFaerieMorning' | 'lobbyNoVisionCost'>> & Pick<UniverseSettingsUpdate, 'lobbyDayHours'> = {
 			lobbyPassageOfTime,
 			lobbyFaerieMorning: ((lobbyPassageOfTime === 'faerie') ? this.faerie.value as FaerieMorning : null),
+			lobbyNoVisionCost: this.noVisionCost.checked,
 			// A day length typed while another passage of time is chosen isn't kept
 			...((lobbyPassageOfTime === 'real_time') ? { lobbyDayHours } : {})
 		};
