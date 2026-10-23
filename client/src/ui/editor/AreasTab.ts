@@ -1,4 +1,4 @@
-import { ancestorAreas, AREA_LIGHT_LEVEL_NAMES, AREA_LIGHT_LEVELS, canEditWorld, childAreas, defineMessages, descendantAreaIds, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_AREA_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, AREA_PASSAGES_OF_TIME, areasTabListing, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary, type FaerieMorning, type AreaListPayload, type AreaLightLevel, type AreaPassageOfTime, type AreaSettings } from '@multiverse-kiln/shared';
+import { ancestorAreas, AREA_LIGHT_LEVEL_NAMES, AREA_LIGHT_LEVELS, canEditWorld, canPaintTile, childAreas, descendantAreaIds, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_AREA_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, AREA_PASSAGES_OF_TIME, areasTabListing, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary, type FaerieMorning, type AreaListPayload, type AreaLightLevel, type AreaPassageOfTime, type AreaSettings } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -9,22 +9,6 @@ import { formMessages } from '../formMessages';
 import { showToast } from '../toast';
 import { tileName } from '../tileNames';
 import { MapEditor } from './MapEditor';
-
-/**
- * Text the area editor shows in more than one place (see src/localization.ts)
- */
-const messages = defineMessages({
-	indoorTiles: {
-		id: 'editor.area.indoorTiles',
-		defaultMessage: 'Indoor tiles',
-		description: 'Heading of a group of choices of default tile'
-	},
-	outdoorTiles: {
-		id: 'editor.area.outdoorTiles',
-		defaultMessage: 'Outdoor tiles',
-		description: 'Heading of a group of choices of default tile'
-	}
-});
 
 /**
  * The Areas tab: the universe's areas, opening the area editor, and adding areas
@@ -158,6 +142,7 @@ export class AreasTab
 			choice.addEventListener('change', () =>
 			{
 				this.fillDefaultTiles(this.indoors.checked, Number(this.defaultTile.value));
+				this.mapEditor.showTilesFor(this.indoors.checked);
 				this.showLightField();
 				this.saved.textContent = '';
 			});
@@ -581,7 +566,9 @@ export class AreasTab
 	}
 
 	/**
-	 * Lists the tiles an area can use by default: outdoor tiles first for an outdoor area, indoor tiles first for an indoor one
+	 * Lists the tiles an area can use by default: the indoor tiles for an indoor area or the outdoor
+	 * tiles for an outdoor one, and the selected tile even when it is for the other kind, so switching
+	 * the area between them doesn't change its default tile
 	 *
 	 * @param indoors Whether the area is indoors
 	 * @param selectedTileId The tile to select
@@ -589,28 +576,13 @@ export class AreasTab
 	private fillDefaultTiles(indoors: boolean, selectedTileId: number): void
 	{
 		const ruleset = this.universe?.ruleset;
-		const groups = [
-			{
-				label: t(indoors ? messages.indoorTiles : messages.outdoorTiles),
-				tiles: this.tiles.filter((tile) => (tile.indoors === indoors))
-			},
-			{
-				label: t(indoors ? messages.outdoorTiles : messages.indoorTiles),
-				tiles: this.tiles.filter((tile) => (tile.indoors !== indoors))
-			}
-		];
 
-		this.defaultTile.replaceChildren(...groups
-			.filter((group) => (group.tiles.length > 0))
-			.map((group) =>
-			{
-				const element = document.createElement('optgroup');
-
-				element.label = group.label;
-				element.append(...group.tiles.map((tile) => new Option(((ruleset === undefined) ? (tile.name ?? '') : tileName(tile, ruleset)), String(tile.id))));
-
-				return(element);
-			}));
+		setOptions(this.defaultTile, this.tiles
+			.filter((tile) => (canPaintTile(tile, indoors) || (tile.id === selectedTileId)))
+			.map((tile) => ({
+				value: String(tile.id),
+				label: ((ruleset === undefined) ? (tile.name ?? '') : tileName(tile, ruleset))
+			})));
 		this.defaultTile.value = String(selectedTileId);
 	}
 

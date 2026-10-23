@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { CHUNK_SIZE, chunkKey, cellIndexInChunk, DEFAULT_TILE_CELL, IMPASSABLE_WALK_SECONDS, VOID_CELL } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, chunkKey, cellIndexInChunk, DEFAULT_INDOOR_WALK_SECONDS, DEFAULT_OUTDOOR_WALK_SECONDS, DEFAULT_TILE_CELL, IMPASSABLE_WALK_SECONDS, VOID_CELL } from '@multiverse-kiln/shared';
 
 import { createAreaGrid, linkAt, type AreaLink, type AreaMap } from '../../src/logic/areaGrid.js';
 
@@ -49,6 +49,7 @@ const map: AreaMap = {
 			[chunkKey(-1, -1), chunkWith([-1, -1, UNKNOWN_TILE])]
 		])
 	},
+	indoors: true,
 	loopsEastWest: true,
 	loopsNorthSouth: false,
 	tileWalkSeconds: new Map([[GRASS, 10], [FOREST, 20]]),
@@ -65,6 +66,12 @@ describe('createAreaGrid', () =>
 		assert.strictEqual(grid.loopsEastWest, true);
 		assert.strictEqual(grid.loopsNorthSouth, false);
 		assert.strictEqual(grid.cellSize, 30);
+	});
+
+	it('crosses the default walk seconds of indoor or outdoor tiles at full speed', () =>
+	{
+		assert.strictEqual(grid.fullSpeedWalkSeconds, DEFAULT_INDOOR_WALK_SECONDS);
+		assert.strictEqual(createAreaGrid({ ...map, indoors: false }, 30).fullSpeedWalkSeconds, DEFAULT_OUTDOOR_WALK_SECONDS);
 	});
 
 	it('gives each cell its tile\'s walk seconds', () =>

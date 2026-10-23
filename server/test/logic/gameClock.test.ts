@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { DEFAULT_WALK_SECONDS, IMPASSABLE_WALK_SECONDS } from '@multiverse-kiln/shared';
+import { DEFAULT_INDOOR_WALK_SECONDS, DEFAULT_OUTDOOR_WALK_SECONDS, IMPASSABLE_WALK_SECONDS } from '@multiverse-kiln/shared';
 
 import { GroupClock, SIMULTANEOUS_STEP_MS, stepSeconds } from '../../src/logic/gameClock.js';
 
@@ -24,18 +24,19 @@ describe('game clock', () =>
 	{
 		it('takes the walk seconds of the cell stepped into', () =>
 		{
-			assert.strictEqual(stepSeconds(east, 10), 10);
-			assert.strictEqual(stepSeconds(east, 25), 25);
+			assert.strictEqual(stepSeconds(east, 10, DEFAULT_INDOOR_WALK_SECONDS), 10);
+			assert.strictEqual(stepSeconds(east, 25, DEFAULT_INDOOR_WALK_SECONDS), 25);
 		});
 
 		it('counts a diagonal step as one and a half squares', () =>
 		{
-			assert.strictEqual(stepSeconds(southeast, 20), 30);
+			assert.strictEqual(stepSeconds(southeast, 20, DEFAULT_INDOOR_WALK_SECONDS), 30);
 		});
 
-		it('counts a cell that can\'t be entered as taking the default walk seconds', () =>
+		it('counts a cell that can\'t be entered as taking the walk seconds crossed at full speed', () =>
 		{
-			assert.strictEqual(stepSeconds(east, IMPASSABLE_WALK_SECONDS), DEFAULT_WALK_SECONDS);
+			assert.strictEqual(stepSeconds(east, IMPASSABLE_WALK_SECONDS, DEFAULT_INDOOR_WALK_SECONDS), DEFAULT_INDOOR_WALK_SECONDS);
+			assert.strictEqual(stepSeconds(east, IMPASSABLE_WALK_SECONDS, DEFAULT_OUTDOOR_WALK_SECONDS), DEFAULT_OUTDOOR_WALK_SECONDS);
 		});
 	});
 

@@ -670,7 +670,7 @@ export class AreaPlayers
 
 				for (const step of mover.finishedSteps)
 				{
-					this.walkListener?.(playerId, stepSeconds(step, area.grid.walkSeconds(wrapCell(step.to, area.grid))), area.loaded.time);
+					this.walkListener?.(playerId, stepSeconds(step, area.grid.walkSeconds(wrapCell(step.to, area.grid)), area.grid.fullSpeedWalkSeconds),area.loaded.time);
 				}
 			}
 

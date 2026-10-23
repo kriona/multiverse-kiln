@@ -365,6 +365,7 @@ function activate(loaded: LoadedArea, chunks: Map<string, number[]>, loadedChunk
 			defaultTileId: loaded.defaultTileId,
 			chunks
 		},
+		indoors: loaded.area.indoors,
 		loopsEastWest: loaded.loopsEastWest,
 		loopsNorthSouth: loaded.loopsNorthSouth,
 		tileWalkSeconds: new Map(loaded.tiles.map((tile) => [tile.id, tile.walkSeconds])),

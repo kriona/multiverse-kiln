@@ -1,11 +1,27 @@
-import { canEditWorld, IMPASSABLE_WALK_SECONDS, MAX_TILES_PER_PAGE, type EditableUniverse, type EditorTile, type TileListPayload, type TileListQuery } from '@multiverse-kiln/shared';
+import { canEditWorld, defineMessages, IMPASSABLE_WALK_SECONDS, MAX_TILES_PER_PAGE, TILE_USED_IN, tileUsedIn, type EditableUniverse, type EditorTile, type TileListPayload, type TileListQuery } from '@multiverse-kiln/shared';
 
-import { formatList, t } from '../../localization';
+import { formatDuration, formatList, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, setOptions, showMessage } from '../dom';
 import { tileName } from '../tileNames';
 import { colorToHex } from './colors';
 import { TileDialog } from './TileDialog';
+
+/**
+ * Text the Tilesets tab shows in more than one place (see src/localization.ts)
+ */
+const messages = defineMessages({
+	any: {
+		id: 'editor.tiles.filterAny',
+		defaultMessage: 'Any',
+		description: 'Choice of a tile filter that shows every tile'
+	},
+	usedIn: {
+		id: 'editor.tiles.usedInValue',
+		defaultMessage: '{usedIn, select, both {Both} indoors {Indoors} outdoors {Outdoors} other {Neither}}',
+		description: 'Whether indoor areas only, outdoor areas only, both or neither can paint with a tile: in the Where column and as the choices of the Where filter'
+	}
+});
 
 /**
  * How long the name filter waits after the last key before searching, in milliseconds
@@ -19,6 +35,7 @@ export class TilesetsTab
 {
 	private readonly nameFilter = getElement('tile-filter-name', HTMLInputElement);
 	private readonly passableFilter = getElement('tile-filter-passable', HTMLSelectElement);
+	private readonly usedInFilter = getElement('tile-filter-used-in', HTMLSelectElement);
 	private readonly customFilter = getElement('tile-filter-custom', HTMLSelectElement);
 	private readonly editedFilter = getElement('tile-filter-edited', HTMLSelectElement);
 	private readonly addButton = getElement('tile-add', HTMLButtonElement);
@@ -50,16 +67,34 @@ export class TilesetsTab
 	{
 		this.dialog = new TileDialog(api);
 
+		setOptions(this.usedInFilter, [
+			{
+				value: '',
+				label: t(messages.any)
+			},
+			...TILE_USED_IN.map((usedIn) => ({
+				value: usedIn,
+				label: t(messages.usedIn, {
+					usedIn
+				})
+			}))
+		]);
+
+		for (const filter of [this.passableFilter, this.usedInFilter, this.customFilter, this.editedFilter])
+		{
+			filter.addEventListener('change', () =>
+			{
+				this.offset = 0;
+				void this.refresh();
+			});
+		}
+
 		for (const filter of [this.passableFilter, this.customFilter, this.editedFilter])
 		{
 			setOptions(filter, [
 				{
 					value: '',
-					label: t({
-						id: 'editor.tiles.filterAny',
-						defaultMessage: 'Any',
-						description: 'Choice of a yes-or-no tile filter that shows every tile'
-					})
+					label: t(messages.any)
 				},
 				{
 					value: 'true',
@@ -78,12 +113,6 @@ export class TilesetsTab
 					})
 				}
 			]);
-
-			filter.addEventListener('change', () =>
-			{
-				this.offset = 0;
-				void this.refresh();
-			});
 		}
 
 		this.nameFilter.addEventListener('input', () =>
@@ -125,6 +154,7 @@ export class TilesetsTab
 		this.offset = 0;
 		this.nameFilter.value = '';
 		this.passableFilter.value = '';
+		this.usedInFilter.value = '';
 		this.customFilter.value = '';
 		this.editedFilter.value = '';
 		this.addButton.hidden = !canEditWorld(universe.role);
@@ -147,6 +177,7 @@ export class TilesetsTab
 		const query: TileListQuery = {
 			name: (this.nameFilter.value.trim() || undefined),
 			passable: filterValue(this.passableFilter),
+			usedIn: TILE_USED_IN.find((usedIn) => (usedIn === this.usedInFilter.value)),
 			custom: filterValue(this.customFilter),
 			edited: filterValue(this.editedFilter),
 			offset: this.offset,
@@ -209,7 +240,7 @@ export class TilesetsTab
 	}
 
 	/**
-	 * A tile's row in the table: its color, name (opening the tile editor), costs, and whether it is custom or edited
+	 * A tile's row in the table: its color, name (opening the tile editor), costs, where it is used, and whether it is custom or edited
 	 *
 	 * @param tile The tile
 	 * @param universe The universe whose tile it is
@@ -245,16 +276,15 @@ export class TilesetsTab
 					defaultMessage: 'impassable',
 					description: 'In the walk time column, for a tile that can\'t be walked into'
 				})
-				: t({
-					id: 'editor.tiles.walkSeconds',
-					defaultMessage: '{seconds, plural, one {# second} other {# seconds}}',
-					description: 'In the walk time column, the seconds of game time walking a square of the tile takes'
-				}, { seconds: tile.walkSeconds })),
+				: formatDuration(tile.walkSeconds)),
 			t({
 				id: 'editor.tiles.percent',
 				defaultMessage: '{cost, number, percent}',
 				description: 'A tile\'s vision cost as a percentage, e.g. 50%. Change only for a language whose percentages the number format gets wrong'
 			}, { cost: tile.visionCost / 100 }),
+			t(messages.usedIn, {
+				usedIn: tileUsedIn(tile)
+			}),
 			formatList(tags)
 		];
 

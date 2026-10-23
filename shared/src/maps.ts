@@ -38,11 +38,30 @@ export const UNSEEN_CELL = -2;
 export const IMPASSABLE_WALK_SECONDS = 0;
 
 /**
- * Seconds of game time walking a square of a new tile takes. A player crosses a tile this quick or
- * quicker on screen at full speed, and a slower one at a matching fraction of it: 20 seconds moves at
- * half speed
+ * Seconds of game time walking a square of a new indoor tile takes. In an indoor area, a player
+ * crosses a tile this quick or quicker on screen at full speed, and a slower one at a matching
+ * fraction of it: 20 seconds moves at half speed
  */
-export const DEFAULT_WALK_SECONDS = 10;
+export const DEFAULT_INDOOR_WALK_SECONDS = 10;
+
+/**
+ * Seconds of game time walking a square of a new outdoor tile takes: 10 minutes. In an outdoor area,
+ * a player crosses a tile this quick or quicker on screen at full speed, and a slower one at a
+ * matching fraction of it: 20 minutes moves at half speed
+ */
+export const DEFAULT_OUTDOOR_WALK_SECONDS = 600;
+
+/**
+ * The walk seconds a player crosses at full speed on screen in an area, which is also what a new tile
+ * for that kind of area takes
+ *
+ * @param indoors Whether the area is indoors
+ * @return DEFAULT_INDOOR_WALK_SECONDS or DEFAULT_OUTDOOR_WALK_SECONDS
+ */
+export function defaultWalkSeconds(indoors: boolean): number
+{
+	return((indoors ? DEFAULT_INDOOR_WALK_SECONDS : DEFAULT_OUTDOOR_WALK_SECONDS));
+}
 
 /**
  * The most seconds of game time walking a square of a tile can take

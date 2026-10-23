@@ -267,6 +267,10 @@
 								Passable
 								<select id="tile-filter-passable"></select>
 							</label>
+							<label data-message="editor.tile.usedIn" data-translation-context="Heading of whether indoor areas, outdoor areas, both or neither can paint with a tile: in the tile editor, and the Tilesets tab's filter and table column">
+								Where
+								<select id="tile-filter-used-in"></select>
+							</label>
 							<label data-message="editor.tiles.custom" data-translation-context="Label of the filter for whether a tile was made for this universe, rather than coming with the ruleset">
 								Custom
 								<select id="tile-filter-custom"></select>
@@ -284,6 +288,7 @@
 									<th scope="col" data-message="editor.tiles.name" data-translation-context="Heading of the table column with each tile's name">Name</th>
 									<th scope="col" data-message="editor.tiles.walkTime" data-translation-context="Heading of the table column with how many seconds of game time walking a square of each tile takes">Walk time</th>
 									<th scope="col" data-message="editor.tiles.visionCost" data-translation-context="Heading of the table column with how much of a character's vision crossing each tile uses">Vision cost</th>
+									<th scope="col" data-message="editor.tile.usedIn" data-translation-context="Heading of whether indoor areas, outdoor areas, both or neither can paint with a tile: in the tile editor, and the Tilesets tab's filter and table column">Where</th>
 									<th scope="col"></th>
 								</tr>
 							</thead>
@@ -687,17 +692,17 @@
 								<input id="tile-name" required />
 							</label>
 							<fieldset class="choice">
-								<legend data-message="form.indoorsOrOutdoors" data-translation-context="Heading of the choice between indoors and outdoors for an area or tile">Indoors or outdoors</legend>
+								<legend data-message="editor.tile.usedIn" data-translation-context="Heading of whether indoor areas, outdoor areas, both or neither can paint with a tile: in the tile editor, and the Tilesets tab's filter and table column">Where</legend>
 								<label class="checkbox" data-message="form.outdoors" data-translation-context="Choice for an area or tile that is outdoors">
-									<input id="tile-outdoors" name="tile-indoors" type="radio" value="outdoors" />
+									<input id="tile-outdoors" type="checkbox" />
 									Outdoors
 								</label>
 								<label class="checkbox" data-message="form.indoors" data-translation-context="Choice for an area or tile that is indoors">
-									<input id="tile-indoors" name="tile-indoors" type="radio" value="indoors" />
+									<input id="tile-indoors" type="checkbox" />
 									Indoors
 								</label>
 							</fieldset>
-							<p class="hint" data-message="editor.tile.indoorsHint" data-translation-context="Explains what choosing indoors or outdoors does for a tile">A preference, not a restriction: outdoor areas list outdoor tiles first.</p>
+							<p class="hint" data-message="editor.tile.usedInHint" data-translation-context="Explains the checkboxes for whether indoor areas, outdoor areas, both or neither can paint with a tile">Areas can only paint with tiles for their kind. A tile for neither can't be painted, but maps that already use it keep it.</p>
 							<label data-message="editor.tile.color" data-translation-context="Label of the field for the color a tile is drawn in">
 								Color
 								<span class="color-field">
@@ -712,9 +717,10 @@
 							<p class="hint" data-message="editor.tile.visionHint" data-translation-context="Explains the vision cost field">100% can't be seen through.</p>
 							<label data-message="editor.tile.walkSeconds" data-translation-context="Label of the field for how many seconds of game time walking a square of the tile takes">
 								Walk time (seconds)
-								<input id="tile-walk" type="number" min="0" max="3600" step="1" required />
+								<input id="tile-walk" type="number" min="0" max="3600" step="1" required aria-describedby="tile-walk-readout" />
 							</label>
-							<p class="hint" data-message="editor.tile.walkHint" data-translation-context="Explains the walk time field">Game time walking a square takes. 10 is normal, 20 takes twice as long, 0 can't be entered.</p>
+							<p id="tile-walk-readout" class="walk-readout"></p>
+							<p class="hint" data-message="editor.tile.walkHint" data-translation-context="Explains the walk time field">Game time walking a square takes. 10 is normal indoors and 600 (10 minutes) outdoors, twice that takes twice as long, and 0 can't be entered.</p>
 							<div class="tile-preview">
 								<figure>
 									<span id="tile-preview-day" class="swatch large"></span>

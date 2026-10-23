@@ -40,6 +40,7 @@ const rightToLeftOverride = String.fromCharCode(0x202e);
 const lava: TileSettings = {
 	name: 'Lava',
 	indoors: false,
+	outdoors: true,
 	color: 0xff4400,
 	visionCost: 0,
 	walkSeconds: 0
@@ -664,15 +665,18 @@ describe('World editor API', () =>
 
 			const custom = (await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?custom=true`)).body;
 			const impassable = (await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?passable=false&name=a`)).body;
+			const indoor = (await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?usedIn=indoors`)).body;
 			const page = (await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?limit=2&offset=1`)).body;
 
-			assert.deepStrictEqual(custom.tiles, [{ id: created.body.id, key: null, ...lava, custom: true, edited: false }]);
+			assert.deepStrictEqual(indoor.tiles.map((tile) => tile.key), ['wood_floor']);
+			assert.deepStrictEqual(custom.tiles,[{ id: created.body.id, key: null, ...lava, custom: true, edited: false }]);
 
 			// Default tiles that keep their names are named by their keys, in the player's language
 			assert.deepStrictEqual(impassable.tiles.map((tile) => (tile.name ?? tile.key)), ['mountains', 'water', 'Lava']);
 			assert.strictEqual(page.total, 7);
 			assert.strictEqual(page.tiles.length, 2);
 			assert.strictEqual((await send(ada, 'GET', `/${universeId}/tiles?passable=yes`)).status, 400);
+			assert.strictEqual((await send(ada, 'GET', `/${universeId}/tiles?usedIn=upstairs`)).status, 400);
 		});
 
 		it('edits a default tile for this universe only, and restores it', async () =>
@@ -680,7 +684,7 @@ describe('World editor API', () =>
 			const universeId = await createUniverse(ada);
 			const otherId = await createUniverse(ada, 'Other');
 			const grassId = await defaultTileId('grass');
-			const autumn = { name: 'Autumn Grass', indoors: false, color: 0xc08030, visionCost: 0, walkSeconds: 10 };
+			const autumn = { name: 'Autumn Grass', indoors: false, outdoors: true, color: 0xc08030, visionCost: 0, walkSeconds: 600 };
 
 			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/tiles/${grassId}`, { body: autumn })).status, 204);
 
@@ -699,7 +703,7 @@ describe('World editor API', () =>
 			const universeId = await createUniverse(ada);
 			const grassId = await defaultTileId('grass');
 			const tileId = (await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/tiles`, { body: lava })).body.id;
-			const darker = { name: null, indoors: false, color: 0x206010, visionCost: 0, walkSeconds: 10 };
+			const darker = { name: null, indoors: false, outdoors: true, color: 0x206010, visionCost: 0, walkSeconds: 600 };
 
 			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/tiles/${grassId}`, { body: darker })).status, 204);
 			assert.deepStrictEqual((await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?edited=true`)).body.tiles, [{ id: grassId, key: 'grass', ...darker, custom: false, edited: true }]);

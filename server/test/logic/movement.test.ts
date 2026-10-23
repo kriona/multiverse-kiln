@@ -1,7 +1,7 @@
 import assert from 'assert';
 import type { MovePayload } from '@multiverse-kiln/shared';
 
-import { DEFAULT_WALK_SECONDS, IMPASSABLE_WALK_SECONDS } from '@multiverse-kiln/shared';
+import { DEFAULT_INDOOR_WALK_SECONDS, DEFAULT_OUTDOOR_WALK_SECONDS, IMPASSABLE_WALK_SECONDS } from '@multiverse-kiln/shared';
 import { cellAt, cellCenter, findFreeCell, NO_PRESS, occupiedCells, PLAYER_SPEED, STEP_REPEAT_DELAY, stepOnGrid, wrapCell, type Cell, type GridMover, type Grid, type GridStep, type IsCellFree } from '../../src/logic/movement.js';
 
 // Cell centers are at x = 5, 15, 25, 35, 45 and y = 5, 15, 25, 35. At the speed of 100 these tests use,
@@ -11,7 +11,8 @@ const grid: Grid = {
 	bounds: { minColumn: 0, minRow: 0, maxColumn: 4, maxRow: 3 },
 	loopsEastWest: false,
 	loopsNorthSouth: false,
-	walkSeconds: () => DEFAULT_WALK_SECONDS,
+	walkSeconds: () => DEFAULT_INDOOR_WALK_SECONDS,
+	fullSpeedWalkSeconds: DEFAULT_INDOOR_WALK_SECONDS,
 	endsMovement: () => false
 };
 
@@ -50,14 +51,14 @@ function gridWith(changes: Partial<Grid>): Grid
 }
 
 /**
- * Walk seconds where the given cells have their own and every other cell takes DEFAULT_WALK_SECONDS
+ * Walk seconds where the given cells have their own and every other cell takes DEFAULT_INDOOR_WALK_SECONDS
  *
  * @param cells Cells and their walk seconds, as [column, row, seconds]
  * @return The walk seconds function for a grid
  */
 function walkSeconds(...cells: [number, number, number][]): Grid['walkSeconds']
 {
-	return((cell) => cells.find(([column, row]) => ((cell.column === column) && (cell.row === row)))?.[2] ?? DEFAULT_WALK_SECONDS);
+	return((cell) => cells.find(([column, row]) => ((cell.column === column) && (cell.row === row)))?.[2] ?? DEFAULT_INDOOR_WALK_SECONDS);
 }
 
 /**
@@ -305,7 +306,7 @@ describe('stepOnGrid', () =>
 	{
 		it('moves at half speed into a cell that takes twice the default walk seconds', () =>
 		{
-			const forest = gridWith({ walkSeconds: walkSeconds([3, 1, DEFAULT_WALK_SECONDS * 2]) });
+			const forest = gridWith({ walkSeconds: walkSeconds([3, 1, DEFAULT_INDOOR_WALK_SECONDS * 2]) });
 
 			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(25, 15), right, 0.1, forest, allFree, 100, repeatDelay)), { x: 30, y: 15, step: step([2, 1], [3, 1]) });
 			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(25, 15), right, 0.2, forest, allFree, 100, repeatDelay)), at(35, 15));
@@ -313,16 +314,24 @@ describe('stepOnGrid', () =>
 
 		it('moves no faster than full speed into a cell quicker to walk than the default', () =>
 		{
-			const road = gridWith({ walkSeconds: walkSeconds([3, 1, DEFAULT_WALK_SECONDS / 2]) });
+			const road = gridWith({ walkSeconds: walkSeconds([3, 1, DEFAULT_INDOOR_WALK_SECONDS / 2]) });
 
 			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(25, 15), right, 0.05, road, allFree, 100, repeatDelay)), { x: 30, y: 15, step: step([2, 1], [3, 1]) });
 		});
 
 		it('moves at full speed out of a slow cell into a normal one', () =>
 		{
-			const forest = gridWith({ walkSeconds: walkSeconds([3, 1, DEFAULT_WALK_SECONDS * 2]) });
+			const forest = gridWith({ walkSeconds: walkSeconds([3, 1, DEFAULT_INDOOR_WALK_SECONDS * 2]) });
 
 			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(35, 15), right, 0.05, forest, allFree, 100, repeatDelay)), { x: 40, y: 15, step: step([3, 1], [4, 1]) });
+		});
+
+		it('moves at full speed outdoors into a cell that takes the outdoor default, and slower into a slower one', () =>
+		{
+			const meadow = gridWith({ fullSpeedWalkSeconds: DEFAULT_OUTDOOR_WALK_SECONDS, walkSeconds: walkSeconds([2, 1, DEFAULT_OUTDOOR_WALK_SECONDS], [3, 1, DEFAULT_OUTDOOR_WALK_SECONDS * 2]) });
+
+			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(15, 15), right, 0.1, meadow, allFree, 100, repeatDelay)), at(25, 15));
+			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(25, 15), right, 0.1, meadow, allFree, 100, repeatDelay)), { x: 30, y: 15, step: step([2, 1], [3, 1]) });
 		});
 
 		it('does not enter an impassable cell', () =>

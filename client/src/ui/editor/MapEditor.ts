@@ -1,6 +1,6 @@
 import exitFullPageIcon from 'virtual:icon/ph:arrows-in';
 import fullPageIcon from 'virtual:icon/ph:arrows-out';
-import { canEditWorld, DEFAULT_TILE_CELL, defineMessages, isInBounds, MAX_BRUSH_SIZE, MAX_CELL_CHANGES, MAX_MAP_SIDE, VOID_CELL, VIEW_HEIGHT, VIEW_WIDTH, type CellChange, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type MapBounds, type MessageDescriptor } from '@multiverse-kiln/shared';
+import { canEditWorld, canPaintTile, DEFAULT_TILE_CELL,defineMessages, isInBounds, MAX_BRUSH_SIZE, MAX_CELL_CHANGES, MAX_MAP_SIDE, VOID_CELL, VIEW_HEIGHT, VIEW_WIDTH, type CellChange, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type MapBounds, type MessageDescriptor } from '@multiverse-kiln/shared';
 
 import { BRUSH_SHAPES, brushCells, type BrushCell, type BrushShape } from '../../editor/brush';
 import { ChunkLoader } from '../../editor/ChunkLoader';
@@ -927,7 +927,23 @@ export class MapEditor
 	}
 
 	/**
-	 * Lists the tiles to paint with, the area's indoor or outdoor tiles first, then Void
+	 * Lists the tiles to paint with for an indoor or outdoor area, as the area editor's choice changes
+	 * before it is saved. Cells already painted keep their tiles
+	 *
+	 * @param indoors Whether the area is indoors
+	 */
+	showTilesFor(indoors: boolean): void
+	{
+		const open = this.open;
+
+		if (open)
+		{
+			this.fillTiles(open.universe, { ...open.area, indoors }, open.tiles);
+		}
+	}
+
+	/**
+	 * Lists the tiles to paint with: the area's indoor or outdoor tiles and its default tile, then Void
 	 *
 	 * @param universe The area's universe
 	 * @param area The area
@@ -936,13 +952,10 @@ export class MapEditor
 	private fillTiles(universe: EditableUniverse, area: EditorArea, tiles: readonly EditorTile[]): void
 	{
 		const chosen = this.tile.value;
-		const ordered = [
-			...tiles.filter((tile) => (tile.indoors === area.indoors)),
-			...tiles.filter((tile) => (tile.indoors !== area.indoors))
-		];
+		const paintable = tiles.filter((tile) => (canPaintTile(tile, area.indoors) || (tile.id === area.defaultTileId)));
 
 		setOptions(this.tile, [
-			...ordered.map((tile) => ({
+			...paintable.map((tile) => ({
 				value: String(tile.id),
 				label: ((tile.id === area.defaultTileId)
 					? t({

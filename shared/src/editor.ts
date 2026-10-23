@@ -361,7 +361,16 @@ export interface TileSettings
 	 */
 	name: string | null;
 
+	/**
+	 * Whether indoor areas can paint with the tile. A tile can be for indoors, outdoors, both or
+	 * neither; one for neither can't be painted anywhere, but maps that already use it keep it
+	 */
 	indoors: boolean;
+
+	/**
+	 * Whether outdoor areas can paint with the tile
+	 */
+	outdoors: boolean;
 
 	/**
 	 * 0xRRGGBB
@@ -408,6 +417,49 @@ export interface EditorTile extends TileSettings
 }
 
 /**
+ * Whether an area can paint with a tile, as its draw tool and default tile choices offer them
+ *
+ * @param tile The tile
+ * @param indoors Whether the area is indoors
+ * @return True when the tile is for that kind of area
+ */
+export function canPaintTile(tile: Pick<TileSettings, 'indoors' | 'outdoors'>, indoors: boolean): boolean
+{
+	return((indoors ? tile.indoors : tile.outdoors));
+}
+
+/**
+ * Which kinds of area can paint with a tile, as the Tilesets tab shows and filters them
+ */
+export const TILE_USED_IN = ['indoors', 'outdoors', 'both', 'neither'] as const;
+
+export type TileUsedIn = typeof TILE_USED_IN[number];
+
+/**
+ * Which kinds of area can paint with a tile
+ *
+ * @param tile The tile
+ * @return indoors or outdoors for a tile for only one, both, or neither
+ */
+export function tileUsedIn(tile: Pick<TileSettings, 'indoors' | 'outdoors'>): TileUsedIn
+{
+	if (tile.indoors && tile.outdoors)
+	{
+		return('both');
+	}
+	else if (tile.indoors)
+	{
+		return('indoors');
+	}
+	else if (tile.outdoors)
+	{
+		return('outdoors');
+	}
+
+	return('neither');
+}
+
+/**
  * Query parameters of GET EDITOR_UNIVERSES_PATH/:universeId/tiles. Each filter left out matches every tile
  */
 export interface TileListQuery
@@ -418,6 +470,7 @@ export interface TileListQuery
 	name?: string;
 
 	passable?: boolean;
+	usedIn?: TileUsedIn;
 	custom?: boolean;
 	edited?: boolean;
 

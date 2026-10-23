@@ -515,10 +515,6 @@
 		"message": "An area where the hours pass the faerie way can't loop.",
 		"source": "An area whose passage of time is faerie can't loop."
 	},
-	"editor.area.indoorTiles": {
-		"message": "Below-decks tiles",
-		"source": "Indoor tiles"
-	},
 	"editor.area.lightLevel": {
 		"message": "Lantern light",
 		"source": "Light level"
@@ -558,10 +554,6 @@
 	"editor.area.openFailed": {
 		"message": "Couldn't open the area.",
 		"source": "Could not open the area."
-	},
-	"editor.area.outdoorTiles": {
-		"message": "Topside tiles",
-		"source": "Outdoor tiles"
 	},
 	"editor.area.parent": {
 		"message": "Mother area",
@@ -1867,10 +1859,6 @@
 		"message": "Edit {tile}",
 		"source": "Edit {tile}"
 	},
-	"editor.tile.indoorsHint": {
-		"message": "A leanin', not a law: outdoor areas list outdoor tiles first.",
-		"source": "A preference, not a restriction: outdoor areas list outdoor tiles first."
-	},
 	"editor.tile.invalidColor": {
 		"message": "Give a hex color, such as #7AFF3D.",
 		"source": "Enter a hex color, such as #7AFF3D."
@@ -1891,6 +1879,14 @@
 		"message": "Couldn't stow the tile.",
 		"source": "Could not save the tile."
 	},
+	"editor.tile.usedIn": {
+		"message": "Fit fer",
+		"source": "Where"
+	},
+	"editor.tile.usedInHint": {
+		"message": "Areas can only be painted with tiles fit fer 'em. A tile fit fer neither can't be painted, but charts that already bear it keep it.",
+		"source": "Areas can only paint with tiles for their kind. A tile for neither can't be painted, but maps that already use it keep it."
+	},
 	"editor.tile.visionCost": {
 		"message": "Spyglass cost (%)",
 		"source": "Vision cost (%)"
@@ -1900,8 +1896,12 @@
 		"source": "100% can't be seen through."
 	},
 	"editor.tile.walkHint": {
-		"message": "Time o' the voyage spent crossin' a square. 10 be plain sailin', 20 takes twice as long, 0 can't be boarded.",
-		"source": "Game time walking a square takes. 10 is normal, 20 takes twice as long, 0 can't be entered."
+		"message": "Time o' the voyage spent crossin' a square. 10 be plain sailin' below decks and 600 (10 minutes) topside, twice that takes twice as long, and 0 can't be boarded.",
+		"source": "Game time walking a square takes. 10 is normal indoors and 600 (10 minutes) outdoors, twice that takes twice as long, and 0 can't be entered."
+	},
+	"editor.tile.walkImpassable": {
+		"message": "Can't be boarded",
+		"source": "Can't be entered"
 	},
 	"editor.tile.walkSeconds": {
 		"message": "Sailin' time (seconds)",
@@ -1975,13 +1975,13 @@
 		"message": "Search tiles by name",
 		"source": "Search tiles by name"
 	},
+	"editor.tiles.usedInValue": {
+		"message": "{usedIn, select, both {Both} indoors {Below decks} outdoors {Topside} other {Neither}}",
+		"source": "{usedIn, select, both {Both} indoors {Indoors} outdoors {Outdoors} other {Neither}}"
+	},
 	"editor.tiles.visionCost": {
 		"message": "Spyglass cost",
 		"source": "Vision cost"
-	},
-	"editor.tiles.walkSeconds": {
-		"message": "{seconds, plural, one {# second o' sailing} other {# seconds o' sailing}}",
-		"source": "{seconds, plural, one {# second} other {# seconds}}"
 	},
 	"editor.tiles.walkTime": {
 		"message": "Sailin' time",

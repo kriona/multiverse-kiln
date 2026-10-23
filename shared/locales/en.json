@@ -515,10 +515,6 @@
 		"defaultMessage": "An area whose passage of time is faerie can't loop.",
 		"description": "Explains why the loop checkboxes are disabled"
 	},
-	"editor.area.indoorTiles": {
-		"defaultMessage": "Indoor tiles",
-		"description": "Heading of a group of choices of default tile"
-	},
 	"editor.area.lightLevel": {
 		"defaultMessage": "Light level",
 		"description": "Label of the field for how light an indoor area is at any time of day: lit or dark"
@@ -558,10 +554,6 @@
 	"editor.area.openFailed": {
 		"defaultMessage": "Could not open the area.",
 		"description": "Shown in the area editor when the area couldn't be loaded"
-	},
-	"editor.area.outdoorTiles": {
-		"defaultMessage": "Outdoor tiles",
-		"description": "Heading of a group of choices of default tile"
 	},
 	"editor.area.parent": {
 		"defaultMessage": "Parent area",
@@ -1867,10 +1859,6 @@
 		"defaultMessage": "Edit {tile}",
 		"description": "Title of the tile editor for a tile the player can change; {tile} is its name"
 	},
-	"editor.tile.indoorsHint": {
-		"defaultMessage": "A preference, not a restriction: outdoor areas list outdoor tiles first.",
-		"description": "Explains what choosing indoors or outdoors does for a tile"
-	},
 	"editor.tile.invalidColor": {
 		"defaultMessage": "Enter a hex color, such as #7AFF3D.",
 		"description": "Shown by the color field when what was typed isn't a hexadecimal color"
@@ -1891,6 +1879,14 @@
 		"defaultMessage": "Could not save the tile.",
 		"description": "Shown in the tile editor when the tile couldn't be stored"
 	},
+	"editor.tile.usedIn": {
+		"defaultMessage": "Where",
+		"description": "Heading of whether indoor areas, outdoor areas, both or neither can paint with a tile: in the tile editor, and the Tilesets tab's filter and table column"
+	},
+	"editor.tile.usedInHint": {
+		"defaultMessage": "Areas can only paint with tiles for their kind. A tile for neither can't be painted, but maps that already use it keep it.",
+		"description": "Explains the checkboxes for whether indoor areas, outdoor areas, both or neither can paint with a tile"
+	},
 	"editor.tile.visionCost": {
 		"defaultMessage": "Vision cost (%)",
 		"description": "Label of the field for how much of a character's vision crossing the tile uses, in percent"
@@ -1900,8 +1896,12 @@
 		"description": "Explains the vision cost field"
 	},
 	"editor.tile.walkHint": {
-		"defaultMessage": "Game time walking a square takes. 10 is normal, 20 takes twice as long, 0 can't be entered.",
+		"defaultMessage": "Game time walking a square takes. 10 is normal indoors and 600 (10 minutes) outdoors, twice that takes twice as long, and 0 can't be entered.",
 		"description": "Explains the walk time field"
+	},
+	"editor.tile.walkImpassable": {
+		"defaultMessage": "Can't be entered",
+		"description": "Under the walk time field of the tile editor when it is 0, which makes the tile impassable"
 	},
 	"editor.tile.walkSeconds": {
 		"defaultMessage": "Walk time (seconds)",
@@ -1933,7 +1933,7 @@
 	},
 	"editor.tiles.filterAny": {
 		"defaultMessage": "Any",
-		"description": "Choice of a yes-or-no tile filter that shows every tile"
+		"description": "Choice of a tile filter that shows every tile"
 	},
 	"editor.tiles.filterNo": {
 		"defaultMessage": "No",
@@ -1975,13 +1975,13 @@
 		"defaultMessage": "Search tiles by name",
 		"description": "Name of the field that filters the tiles by name, for screen readers"
 	},
+	"editor.tiles.usedInValue": {
+		"defaultMessage": "{usedIn, select, both {Both} indoors {Indoors} outdoors {Outdoors} other {Neither}}",
+		"description": "Whether indoor areas only, outdoor areas only, both or neither can paint with a tile: in the Where column and as the choices of the Where filter"
+	},
 	"editor.tiles.visionCost": {
 		"defaultMessage": "Vision cost",
 		"description": "Heading of the table column with how much of a character's vision crossing each tile uses"
-	},
-	"editor.tiles.walkSeconds": {
-		"defaultMessage": "{seconds, plural, one {# second} other {# seconds}}",
-		"description": "In the walk time column, the seconds of game time walking a square of the tile takes"
 	},
 	"editor.tiles.walkTime": {
 		"defaultMessage": "Walk time",

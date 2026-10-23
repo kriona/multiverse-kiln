@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { cellIndexInChunk, DEFAULT_TILE_CELL, DEFAULT_WALK_SECONDS, GAME_ROOM_NAME, GameMessageType, GameServerMessageType, GameState, GRID_CELL_SIZE, GROUP_START_SECONDS, MessageType, NoticeReason, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, UNSEEN_CELL, type AreaPayload, type CellsSeenPayload, type GameJoinOptions, type NoticePayload, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, DEFAULT_OUTDOOR_WALK_SECONDS, DEFAULT_TILE_CELL,GAME_ROOM_NAME, GameMessageType, GameServerMessageType, GameState, GRID_CELL_SIZE, GROUP_START_SECONDS, MessageType, NoticeReason, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, UNSEEN_CELL, type AreaPayload, type CellsSeenPayload, type GameJoinOptions, type NoticePayload, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { scheduleCharacterDeletion } from '../src/db/characterRepo.js';
 import { pool } from '../src/db/client.js';
@@ -430,7 +430,7 @@ describe('GameRoom', () =>
 
 		client.send(MessageType.Move, { x: 1, y: 0 });
 		await room.waitForNextMessage();
-		await waitUntil(() => (room.state.clock >= (GROUP_START_SECONDS + (2 * DEFAULT_WALK_SECONDS))));
+		await waitUntil(() => (room.state.clock >= (GROUP_START_SECONDS + (2 * DEFAULT_OUTDOOR_WALK_SECONDS))));
 		client.send(MessageType.Move, { x: 0, y: 0 });
 		await room.waitForNextMessage();
 		await waitUntilStopped(room, player);

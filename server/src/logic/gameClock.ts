@@ -1,4 +1,4 @@
-import { DEFAULT_WALK_SECONDS, IMPASSABLE_WALK_SECONDS } from '@multiverse-kiln/shared';
+import { IMPASSABLE_WALK_SECONDS } from '@multiverse-kiln/shared';
 
 import type { GridStep } from './movement.js';
 
@@ -20,15 +20,16 @@ export const SIMULTANEOUS_STEP_MS = 500;
  *
  * @param step The step, from one cell to a neighboring one
  * @param walkSeconds The walk seconds of the cell stepped into. A cell that can't be entered counts as
- * taking DEFAULT_WALK_SECONDS, as movement gives it full speed when a player steps back to the center
+ * taking fullSpeedWalkSeconds, as movement gives it full speed when a player steps back to the center
  * of a cell that became impassable under them
+ * @param fullSpeedWalkSeconds The walk seconds the grid crosses at full speed (Grid.fullSpeedWalkSeconds)
  * @return The seconds
  */
-export function stepSeconds(step: GridStep, walkSeconds: number): number
+export function stepSeconds(step: GridStep, walkSeconds: number, fullSpeedWalkSeconds: number): number
 {
 	const isDiagonal = ((step.from.column !== step.to.column) && (step.from.row !== step.to.row));
 	const squares = (isDiagonal ? DIAGONAL_SQUARES : 1);
-	const seconds = ((walkSeconds === IMPASSABLE_WALK_SECONDS) ? DEFAULT_WALK_SECONDS : walkSeconds);
+	const seconds = ((walkSeconds === IMPASSABLE_WALK_SECONDS) ? fullSpeedWalkSeconds : walkSeconds);
 
 	return(seconds * squares);
 }

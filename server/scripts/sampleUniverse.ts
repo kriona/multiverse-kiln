@@ -79,6 +79,7 @@ export const stoneWall = {
 	key: 'stone_wall',
 	name: 'Stone Wall',
 	indoors: true,
+	outdoors: true,
 	color: 0x8a8a8a,
 	visionCost: 100,
 	walkSeconds: IMPASSABLE_WALK_SECONDS

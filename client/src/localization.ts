@@ -149,6 +149,26 @@ export function formatList(items: readonly string[], type: 'conjunction' | 'unit
 }
 
 /**
+ * A length of game time in hours, minutes and seconds, leaving out the ones that are 0, such as
+ * "1 hour, 30 minutes"
+ *
+ * @param seconds Whole seconds, more than 0
+ * @return The length of time in the player's language
+ */
+export function formatDuration(seconds: number): string
+{
+	const parts = [
+		{ unit: 'hour', amount: Math.floor(seconds / 3600) },
+		{ unit: 'minute', amount: Math.floor((seconds % 3600) / 60) },
+		{ unit: 'second', amount: (seconds % 60) }
+	];
+
+	return(formatList(parts
+		.filter((part) => (part.amount > 0))
+		.map((part) => new Intl.NumberFormat(translator.locale, { style: 'unit', unit: part.unit, unitDisplay: 'long' }).format(part.amount))));
+}
+
+/**
  * A time of day in the game, such as 6:30:00 PM
  *
  * @param secondOfDay Seconds since midnight (see secondOfDay in /shared)

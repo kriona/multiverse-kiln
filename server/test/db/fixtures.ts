@@ -227,6 +227,7 @@ export async function loadWholeMap(areaId: string): Promise<AreaMap | undefined>
 			defaultTileId: loaded.defaultTileId,
 			chunks: new Map(chunks.map((chunk) => [chunkKey(chunk.chunkColumn, chunk.chunkRow), chunk.cells]))
 		},
+		indoors: loaded.area.indoors,
 		loopsEastWest: loaded.loopsEastWest,
 		loopsNorthSouth: loaded.loopsNorthSouth,
 		tileWalkSeconds: new Map(loaded.tiles.map((tile) => [tile.id, tile.walkSeconds])),

@@ -437,6 +437,7 @@ shows you a table of all tiles in the game, populated from the default for your 
 It needs a filter control that includes:
 - name search
 - "is passable" toggle
+- "used in" dropdown: any, indoors (only), outdoors (only), both or neither
 - "is custom" toggle
 - "is edited from default" toggle
 - pagination (500 by default)
@@ -446,12 +447,13 @@ the table contains:
 - name, links to the [tile editor](#editor-tile)
 - walk time
 - vision cost
+- used in: indoors, outdoors, indoors and outdoors, or neither
 
 For PF1E, the default tiles are
 - outdoors
-	- Grass, color #7AFF3D, 0% vision cost, 10 second walk time
-	- Forest, color #0A1, 50% vision cost, 20 second walk time
-	- Desert, color #E5E500, 0% vision cost, 20 second walk time
+	- Grass, color #7AFF3D, 0% vision cost, 10 minute walk time
+	- Forest, color #0A1, 50% vision cost, 20 minute walk time
+	- Desert, color #E5E500, 0% vision cost, 20 minute walk time
 	- Mountains, color #777, 100% vision cost, impassable
 	- Water, color #3D97FF, 0% vision cost, impassable
 - indoors
@@ -459,8 +461,8 @@ For PF1E, the default tiles are
 
 For SF1E, the default tiles are
 - outdoors
-	- Grass, color #7AFF3D, 0% vision cost, 10 second walk time
-	- Sand, color #D9C27A, 0% vision cost, 20 second walk time
+	- Grass, color #7AFF3D, 0% vision cost, 10 minute walk time
+	- Sand, color #D9C27A, 0% vision cost, 20 minute walk time
 	- Rock, color #6B6B6B, 100% vision cost, impassable
 	- Water, color #3D97FF, 0% vision cost, impassable
 - indoors
@@ -539,7 +541,7 @@ Combat is turn-based.
 - A square is 5 feet, matching PF1E's movement, reach and spell areas.
 - A PF1E combat round is 6 seconds, so the time combat took is added when it ends.
 
-Outside of combat, time is based on your actions - if you are standing still, no time passes. Walking a square takes the walk time of the tile walked into (10 seconds unless the creator sets another), and a diagonal step counts as one and a half squares. On screen, a player crosses a tile of 10 seconds or less at full speed and a slower one at a matching fraction of it, so a 20 second tile is crossed at half speed.
+Outside of combat, time is based on your actions - if you are standing still, no time passes. Walking a square takes the walk time of the tile walked into (10 seconds for an indoor tile and 10 minutes for an outdoor one, unless the creator sets another), and a diagonal step counts as one and a half squares. On screen, a player crosses a tile at full speed when it takes no longer than the default for the area (10 seconds indoors, 10 minutes outdoors) and a slower one at a matching fraction of it, so a 20 second tile indoors or a 20 minute tile outdoors is crossed at half speed. Outdoor travel takes longer in game time, but not on screen.
 
 Each group has its own clock, which starts at 8 in the morning and is saved with the group. The whole group shares that one time: when one member walks, time passes for everyone, including members standing still. Members walking at the same time don't pass the time twice: a step is left out when another member's step was counted less than half a second (real time) before it, so two members walking side by side pass the time of one. Only walking in an area whose time `flows normally` passes the group's time: in an `always` area or a `faerie` one the time of day doesn't come from the clock, so the clock stands still there. The group's page shows the day and the time of day in the character's area, the way the universe's "display time" setting says: the clock's time to the second (precise), or a word for the time of day such as afternoon (rough). The time is the clock's, or the area's fixed time in an `always` area. In a `faerie` area it is never more than the word, in place of the clock's time. When the universe displays nothing, the group's page shows no clock, and asking where you are leaves the time out.
 
@@ -600,7 +602,7 @@ Lets you edit details about the area
 - parent area. Parent areas mostly give areas a structure; a child area inherits only its passage of time
 - indoors / outdoors
 	- indoors shows "light level": `lit` (the default) is as light as full daylight at any time of day, and `dark` as dark as night. The map is drawn that light and vision follows it (see [vision](#vision)). Outdoor areas follow the time of day; the setting is kept while an area is outdoors but has no effect
-- default tile, which defaults to "grass" if outdoors and "wood floor" if indoors
+- default tile, which defaults to "grass" if outdoors and "wood floor" if indoors. It lists the tiles for the area's kind (see [tile editor](#editor-tile)), plus the area's current default tile, so switching between indoors and outdoors doesn't change it
 - passage of time, the same options as the universe's plus `inherit` (the default). `inherit` uses the parent area's setting, and an area with no parent uses the universe's
 - checkbox for "loops east-west"
 - checkbox for "loops north-south"
@@ -633,20 +635,20 @@ This is a component included in the [area editor](#editor-area). It shows you th
 	- since links are separate from the artwork, you also need to draw a door (or similar) so players know where to walk
 
 ### Tool: Draw
-- lets you select a tile, e.g. "Grass" or "Wood Floor". Also lets you select "Void" which is just black
+- lets you select a tile, e.g. "Grass" or "Wood Floor": the tiles for the area's kind, indoors or outdoors, and the area's default tile. The list follows the area editor's indoors / outdoors choice before it is saved. Switching an area between them leaves the tiles already painted as they are. Also lets you select "Void" which is just black
 - lets you select a size (1 for a single tile, up to 100 tiles)
 - brush shape - circle or square
 
 ## Editor: Tile
 - name
-- indoors / outdoors. This is a preference, not a restriction: any tile can be used in any area, but outdoor areas get the outdoor tileset first
+- "used in": checkboxes for indoors and outdoors; a tile can be for either, both or neither. An area's [draw tool](#tool-draw) and default tile only offer the tiles for its kind. A tile for neither can't be painted anywhere, but maps that already use it keep it
 - color (used if there are no graphics), accepts hex + has a color picker
 - graphic (image)
 	- outdoors uses the Dual-Grid System
 	- indoors uses the 47-Tile Blob Set
 	- or maybe each layer has its own format, e.g. the ground layer is Dual-Grid and another layer is set differently
 - Vision cost - 0% to 100% (cannot see through). See [vision](#vision)
-- Walk time - seconds of game time walking a square takes, 0 to 3600. 10 is the default, 20 takes twice as long (PF1E difficult terrain), 0 is impassable
+- Walk time - seconds of game time walking a square takes, 0 to 3600. A new tile gets 600 (10 minutes) when it is for outdoors and 10 when it is only for indoors, following the checkboxes until another walk time is typed. Twice the default takes twice as long (PF1E difficult terrain), 0 is impassable
 - Has a preview section for day + night
 
 # Localization

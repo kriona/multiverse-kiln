@@ -1,8 +1,8 @@
-import { canEditWorld, DEFAULT_WALK_SECONDS, DISALLOWED_TEXT_CHARACTERS, MAX_TILE_NAME_LENGTH, MAX_WALK_SECONDS, type EditableUniverse, type EditorTile, type MessageDescriptor, type TileSettings } from '@multiverse-kiln/shared';
+import { canEditWorld, defaultWalkSeconds, DISALLOWED_TEXT_CHARACTERS, IMPASSABLE_WALK_SECONDS, MAX_TILE_NAME_LENGTH, MAX_WALK_SECONDS, type EditableUniverse, type EditorTile, type MessageDescriptor, type TileSettings } from '@multiverse-kiln/shared';
 import restoreIcon from 'virtual:icon/ph:arrow-counter-clockwise';
 import trashIcon from 'virtual:icon/ph:trash';
 
-import { t } from '../../localization';
+import { formatDuration, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { ChangeTracker } from '../changeTracker';
 import { getElement, setButtonLabel, showMessage } from '../dom';
@@ -17,13 +17,15 @@ import { colorToHex, nightColor, parseHexColor } from './colors';
 const NEW_TILE: TileSettings = {
 	name: '',
 	indoors: false,
+	outdoors: true,
 	color: 0x808080,
 	visionCost: 0,
-	walkSeconds: DEFAULT_WALK_SECONDS
+	walkSeconds: defaultWalkSeconds(false)
 };
 
 /**
- * The tile editor: a dialog for a tile's name, indoors or outdoors, color, vision cost and walk time
+ * The tile editor: a dialog for a tile's name, whether indoor and outdoor areas use it, color, vision
+ * cost and walk time
  *
  * Saving a default tile stores the universe's edited copy of it. The dialog can also delete a custom
  * tile, or restore an edited default tile
@@ -41,6 +43,7 @@ export class TileDialog
 	private readonly color = getElement('tile-color', HTMLInputElement);
 	private readonly visionCost = getElement('tile-vision', HTMLInputElement);
 	private readonly walkSeconds = getElement('tile-walk', HTMLInputElement);
+	private readonly walkReadout = getElement('tile-walk-readout', HTMLElement);
 	private readonly dayPreview = getElement('tile-preview-day', HTMLElement);
 	private readonly nightPreview = getElement('tile-preview-night', HTMLElement);
 	private readonly error = getElement('tile-error', HTMLElement);
@@ -59,6 +62,11 @@ export class TileDialog
 	 * The tile being edited, or undefined for a new one
 	 */
 	private tile: EditorTile | undefined;
+
+	/**
+	 * The walk seconds a new tile gets for where it is used, while the walk time field still holds it
+	 */
+	private defaultWalk = NEW_TILE.walkSeconds;
 
 	/**
 	 * Called after the tile is saved, deleted or restored
@@ -96,6 +104,19 @@ export class TileDialog
 		this.name.addEventListener('input', () =>
 		{
 			setFieldError(this.name, undefined);
+		});
+
+		for (const choice of [this.outdoors, this.indoors])
+		{
+			choice.addEventListener('change', () =>
+			{
+				this.updateDefaultWalk();
+			});
+		}
+
+		this.walkSeconds.addEventListener('input', () =>
+		{
+			this.updateWalkReadout();
 		});
 
 		this.changes.guardDialog(this.dialog);
@@ -160,12 +181,14 @@ export class TileDialog
 		}
 
 		this.name.value = name;
-		this.outdoors.checked = !settings.indoors;
+		this.outdoors.checked = settings.outdoors;
 		this.indoors.checked = settings.indoors;
 		this.color.value = colorToHex(settings.color);
 		this.colorPicker.value = colorToHex(settings.color);
 		this.visionCost.value = String(settings.visionCost);
 		this.walkSeconds.value = String(settings.walkSeconds);
+		this.defaultWalk = settings.walkSeconds;
+		this.updateWalkReadout();
 		this.fields.disabled = false;
 		this.name.disabled = !editable;
 		this.saveButton.hidden = !editable;
@@ -200,6 +223,48 @@ export class TileDialog
 		this.updatePreview();
 		this.dialog.showModal();
 		this.changes.markSaved();
+	}
+
+	/**
+	 * Gives a new tile the walk time for where it is used: outdoor tiles take minutes and indoor ones
+	 * seconds. A walk time the player typed, and an existing tile's, stay as they are
+	 */
+	private updateDefaultWalk(): void
+	{
+		if (this.tile || (this.walkSeconds.valueAsNumber !== this.defaultWalk))
+		{
+			return;
+		}
+
+		this.defaultWalk = defaultWalkSeconds(!this.outdoors.checked);
+		this.walkSeconds.value = String(this.defaultWalk);
+		this.updateWalkReadout();
+	}
+
+	/**
+	 * Shows the walk time in hours, minutes and seconds under its field, or that the tile can't be
+	 * entered. Shows nothing while the field holds no whole number of seconds the tile can take
+	 */
+	private updateWalkReadout(): void
+	{
+		const seconds = this.walkSeconds.valueAsNumber;
+
+		if (!Number.isInteger(seconds) || (seconds < IMPASSABLE_WALK_SECONDS) || (seconds > MAX_WALK_SECONDS))
+		{
+			this.walkReadout.textContent = '';
+		}
+		else if (seconds === IMPASSABLE_WALK_SECONDS)
+		{
+			this.walkReadout.textContent = t({
+				id: 'editor.tile.walkImpassable',
+				defaultMessage: 'Can\'t be entered',
+				description: 'Under the walk time field of the tile editor when it is 0, which makes the tile impassable'
+			});
+		}
+		else
+		{
+			this.walkReadout.textContent = formatDuration(seconds);
+		}
 	}
 
 	/**
@@ -248,6 +313,7 @@ export class TileDialog
 		const settings: TileSettings = {
 			name: ((name === defaultName) ? null : name),
 			indoors: this.indoors.checked,
+			outdoors: this.outdoors.checked,
 			color,
 			visionCost: this.visionCost.valueAsNumber,
 			walkSeconds: this.walkSeconds.valueAsNumber

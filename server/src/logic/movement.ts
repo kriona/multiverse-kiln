@@ -3,7 +3,7 @@
  *
  * Pure functions: no Colyseus, database, network or timers (CLAUDE.md architecture rule 4)
  */
-import { DEFAULT_WALK_SECONDS, IMPASSABLE_WALK_SECONDS, isInBounds, positiveModulo, type MapBounds, type MovePayload } from '@multiverse-kiln/shared';
+import { IMPASSABLE_WALK_SECONDS, isInBounds, positiveModulo, type MapBounds, type MovePayload } from '@multiverse-kiln/shared';
 
 /**
  * A point in world units
@@ -54,6 +54,12 @@ export interface Grid
 	 * entered
 	 */
 	walkSeconds: (cell: Cell) => number;
+
+	/**
+	 * Walk seconds a player crosses at full speed on screen; a cell slower to walk is crossed at a
+	 * matching fraction of it (defaultWalkSeconds)
+	 */
+	fullSpeedWalkSeconds: number;
 
 	/**
 	 * Whether a player who steps onto a cell inside the bounds stops there, even with a direction still
@@ -131,7 +137,7 @@ export interface StepResult extends GridMover
 export type IsCellFree = (cell: Cell) => boolean;
 
 /**
- * Player movement speed in world units per second, into a cell that takes DEFAULT_WALK_SECONDS or less
+ * Player movement speed in world units per second, into a cell that takes the grid's fullSpeedWalkSeconds or less
  * to walk
  */
 export const PLAYER_SPEED = 200;
@@ -173,7 +179,7 @@ export const NO_PRESS: DirectionPress = {
  * A step only starts into a free cell the player can enter, and a diagonal step also needs both cells
  * beside it free and enterable, so players can't pass through each other or cut past a wall at a
  * corner. When the diagonal step can't be taken, the horizontal and then the vertical part is tried
- * instead; when nothing can, the player waits. A step into a cell slower to walk than DEFAULT_WALK_SECONDS is slower, and
+ * instead; when nothing can, the player waits. A step into a cell slower to walk than the grid's fullSpeedWalkSeconds is slower, and
  * a step onto a cell that ends movement stops the player there
  *
  * @param mover The player's position, current step and press
@@ -181,7 +187,7 @@ export const NO_PRESS: DirectionPress = {
  * @param deltaSeconds Time to move for, in seconds
  * @param grid Grid to move on
  * @param isCellFree Whether another player holds a cell (see occupiedCells)
- * @param speed Speed in world units per second, into a cell that takes DEFAULT_WALK_SECONDS or less to walk
+ * @param speed Speed in world units per second, into a cell that takes the grid's fullSpeedWalkSeconds or less to walk
  * @param repeatDelay How long a direction must be held, in seconds, before its second step starts
  * @return The new position, step and press, and where the player stopped if a cell ended their movement
  */
@@ -446,7 +452,7 @@ function canStandIn(cell: Cell, grid: Grid, isCellFree: IsCellFree): boolean
 }
 
 /**
- * How fast a player moves into a cell: full speed when walking it takes DEFAULT_WALK_SECONDS or less,
+ * How fast a player moves into a cell: full speed when walking it takes the grid's fullSpeedWalkSeconds or less,
  * slowed in proportion when it takes longer
  *
  * @param cell The cell being entered, already wrapped
@@ -459,7 +465,9 @@ function speedInto(cell: Cell, grid: Grid, speed: number): number
 {
 	const seconds = (isInBounds(grid.bounds, cell.column, cell.row) ? grid.walkSeconds(cell) : IMPASSABLE_WALK_SECONDS);
 
-	return(((seconds > DEFAULT_WALK_SECONDS) ? (speed * DEFAULT_WALK_SECONDS) / seconds : speed));
+	const fullSpeedSeconds = grid.fullSpeedWalkSeconds;
+
+	return(((seconds > fullSpeedSeconds) ? (speed * fullSpeedSeconds) / seconds : speed));
 }
 
 /**

@@ -246,6 +246,27 @@
       "when": 1792762971836,
       "tag": "0034_universe_display_time",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1792775736661,
+      "tag": "0035_tile_outdoors",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1792775741948,
+      "tag": "0036_tile_outdoors_from_indoors",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1792775755872,
+      "tag": "0037_tile_outdoors_no_default",
+      "breakpoints": true
     }
   ]
 }

@@ -3,7 +3,7 @@
  *
  * Pure functions: no Colyseus, database, network or timers (CLAUDE.md architecture rule 4)
  */
-import { chunkCoordinate, chunkKey, IMPASSABLE_WALK_SECONDS, tileIdAt, type AreaLinkMode, type AreaTiles } from '@multiverse-kiln/shared';
+import { chunkCoordinate, chunkKey, defaultWalkSeconds, IMPASSABLE_WALK_SECONDS, tileIdAt, type AreaLinkMode, type AreaTiles } from '@multiverse-kiln/shared';
 
 import type { Cell, Grid } from './movement.js';
 
@@ -31,6 +31,12 @@ export interface AreaLink
 export interface AreaMap
 {
 	tiles: AreaTiles;
+
+	/**
+	 * Whether the area is indoors, which sets the walk seconds crossed at full speed (defaultWalkSeconds)
+	 */
+	indoors: boolean;
+
 	loopsEastWest: boolean;
 	loopsNorthSouth: boolean;
 
@@ -68,6 +74,7 @@ export function createAreaGrid(map: AreaMap, cellSize: number): Grid
 		bounds: map.tiles.bounds,
 		loopsEastWest: map.loopsEastWest,
 		loopsNorthSouth: map.loopsNorthSouth,
+		fullSpeedWalkSeconds: defaultWalkSeconds(map.indoors),
 		walkSeconds: (cell) =>
 		{
 			if (map.loadedChunks && !map.loadedChunks.has(chunkKey(chunkCoordinate(cell.column), chunkCoordinate(cell.row))))

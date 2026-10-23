@@ -40,7 +40,7 @@ describe('areaRepo', () =>
 			assert.strictEqual(loaded.defaultTileId, tileIds.get('grass'));
 			assert.strictEqual(loaded.loopsEastWest, false);
 			assert.strictEqual(loaded.tiles.length, 6);
-			assert.strictEqual(loaded.tiles.find((tile) => (tile.id === tileIds.get('forest')))?.walkSeconds, 20);
+			assert.strictEqual(loaded.tiles.find((tile) => (tile.id === tileIds.get('forest')))?.walkSeconds, 1200);
 			assert.deepStrictEqual(loaded.links, []);
 			assert.strictEqual(loaded.displayTime, 'precise');
 		});
