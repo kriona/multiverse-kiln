@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title data-message="page.title" data-translation-context="The browser tab's title for Home, a universe's page and the game's page while they load">Multiverse Kiln</title>
+		<title translate="no">%SITE_NAME%</title>
 		<link rel="stylesheet" href="/src/universe.scss" />
 	</head>
 	<body>
@@ -14,6 +14,7 @@
 
 			<section id="universe-screen" class="screen" hidden>
 				<header class="toolbar">
+					<!-- include site-name.html -->
 					<h1 id="universe-name"></h1>
 					<a class="button secondary toolbar-link" href="/" data-shortcut="Alt+H" data-message="universePage.home" data-translation-context="Link at the top of a universe's page that goes back to the list of universes"><!-- icon ph:house -->Back to Home</a>
 				</header>

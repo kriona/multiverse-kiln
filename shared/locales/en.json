@@ -1997,7 +1997,7 @@
 	},
 	"editor.universeTitle": {
 		"defaultMessage": "Edit {universe}",
-		"description": "Heading of the world editor; {universe} is the universe's name"
+		"description": "Heading of the world editor, linking to the editor's first tab; {universe} is the universe's name"
 	},
 	"error.alreadyInGroup": {
 		"defaultMessage": "That character is already in a group. They have to leave it first.",
@@ -2342,10 +2342,6 @@
 	"game.loadingUniverse": {
 		"defaultMessage": "Loading the universe...",
 		"description": "Shown on the whole page while the game looks up the universe it was opened for"
-	},
-	"game.outside.title": {
-		"defaultMessage": "Multiverse Kiln",
-		"description": "The browser tab's title on the game's page when the player isn't in a universe or game, such as when a join link has expired"
 	},
 	"game.universeNotFound": {
 		"defaultMessage": "That universe could not be found.",
@@ -3115,10 +3111,6 @@
 		"defaultMessage": "GNU Affero General Public License v3 or later",
 		"description": "The name of the game's license, linking to the license page"
 	},
-	"page.name": {
-		"defaultMessage": "Multiverse Kiln",
-		"description": "The game engine's name, shown as a heading"
-	},
 	"page.playingAs": {
 		"defaultMessage": "Playing as {name}",
 		"description": "In the toolbar, the name the player logged in with; {name} is the name"
@@ -3130,10 +3122,6 @@
 	"page.sourceCode": {
 		"defaultMessage": "Source code",
 		"description": "Link at the bottom of every page to where the game engine's source code can be downloaded"
-	},
-	"page.title": {
-		"defaultMessage": "Multiverse Kiln",
-		"description": "The browser tab's title for Home, a universe's page and the game's page while they load"
 	},
 	"pager.next": {
 		"defaultMessage": "Next",

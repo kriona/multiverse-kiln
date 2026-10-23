@@ -480,7 +480,7 @@ function findPageMessages(file: string, root: string, found: FoundMessage[], pro
 
 	for (const node of parsePage(fs.readFileSync(file, 'utf8')))
 	{
-		if (node.kind === 'element')
+		if ((node.kind === 'element') && (node.attributes.get('translate') !== 'no'))
 		{
 			visit(node);
 		}

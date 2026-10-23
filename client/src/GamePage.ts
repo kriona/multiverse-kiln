@@ -1,5 +1,5 @@
 import { CloseCode } from '@colyseus/sdk';
-import { GameMessageType, GameServerMessageType, INVITE_QUERY_PARAMETER, LobbyMessageType, LobbyServerMessageType, NAME_MESSAGES, NoticeReason, ServerCloseCode, SessionMessageType, SessionServerMessageType, type AccountPayload, type AccountPlayer, type CharacterListPayload, type CharacterSummary, type ChatHistoryPayload, type ChatMessage, type ChatPayload, type ChooseCharacterPayload, type ControlPayload, type LoginPayload, type NoticePayload, type PlayingAsPayload, type UniverseSummary } from '@multiverse-kiln/shared';
+import { GameMessageType, GameServerMessageType, INVITE_QUERY_PARAMETER, LobbyMessageType, LobbyServerMessageType, NAME_MESSAGES, NoticeReason, ServerCloseCode, SessionMessageType, SITE_NAME, SessionServerMessageType, type AccountPayload, type AccountPlayer, type CharacterListPayload, type CharacterSummary, type ChatHistoryPayload, type ChatMessage, type ChatPayload, type ChooseCharacterPayload, type ControlPayload, type LoginPayload, type NoticePayload, type PlayingAsPayload, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { t } from './localization';
 import { CharacterApi } from './network/characterApi';
@@ -524,7 +524,7 @@ export class GamePage
 		{
 			if (this.joinedLobby)
 			{
-				this.lobbyScreen.show(universe.name, this.player.playerId, this.player.name);
+				this.lobbyScreen.show(universe, this.player.playerId, this.player.name);
 				showScreen('lobby');
 			}
 			else
@@ -555,11 +555,7 @@ export class GamePage
 	 */
 	private showOutside(message: string): void
 	{
-		showNoticeScreen(message, t({
-			id: 'game.outside.title',
-			defaultMessage: 'Multiverse Kiln',
-			description: 'The browser tab\'s title on the game\'s page when the player isn\'t in a universe or game, such as when a join link has expired'
-		}));
+		showNoticeScreen(message, SITE_NAME);
 	}
 
 	/**

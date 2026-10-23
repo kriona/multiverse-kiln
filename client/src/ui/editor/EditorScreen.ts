@@ -2,8 +2,9 @@ import { UNIVERSE_ROLE_NAMES, type EditableUniverse, type UniverseSummary } from
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
+import { editPageUrl } from '../../pages';
 import type { ChangeTracker } from '../changeTracker';
-import { getElement, showMessage } from '../dom';
+import { getElement, showMessage, titleLink } from '../dom';
 import { CharactersTab } from './CharactersTab';
 import { LobbyTab } from './LobbyTab';
 import { ClassesTab } from './ClassesTab';
@@ -285,13 +286,13 @@ export class EditorScreen
 	private setUniverse(universe: EditableUniverse): void
 	{
 		this.universe = universe;
-		this.title.textContent = t({
+		this.title.replaceChildren(titleLink(t({
 			id: 'editor.universeTitle',
 			defaultMessage: 'Edit {universe}',
-			description: 'Heading of the world editor; {universe} is the universe\'s name'
+			description: 'Heading of the world editor, linking to the editor\'s first tab; {universe} is the universe\'s name'
 		}, {
 			universe: universe.name
-		});
+		}), editPageUrl(universe.id)));
 		document.title = t({
 			id: 'editor.pageTitle',
 			defaultMessage: 'Edit {universe} - Multiverse Kiln',

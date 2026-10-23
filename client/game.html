@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title data-message="page.title" data-translation-context="The browser tab's title for Home, a universe's page and the game's page while they load">Multiverse Kiln</title>
+		<title translate="no">%SITE_NAME%</title>
 		<link rel="stylesheet" href="/src/style.scss" />
 	</head>
 	<body>
@@ -16,6 +16,7 @@
 
 			<section id="lobby-screen" class="screen" hidden>
 				<header class="toolbar">
+					<!-- include site-name.html -->
 					<h1 id="lobby-title" data-message="lobby.title" data-translation-context="Heading of a universe's lobby until its name has loaded">Lobby</h1>
 					<span class="toolbar-name" data-message="page.playingAs" data-translation-context="In the toolbar, the name the player logged in with; {name} is the name">Playing as <strong id="lobby-player-name" data-argument="name"></strong></span>
 					<button id="create-character" type="button" data-shortcut="Alt+N" data-message="lobby.createCharacter" data-translation-context="Button that goes to the page for making a new character in this universe"><!-- icon ph:user-plus -->Create Character</button>
@@ -52,6 +53,7 @@
 
 			<section id="group-screen" class="screen" hidden>
 				<header class="toolbar">
+					<!-- include site-name.html -->
 					<h1 id="group-title" data-message="group.title" data-translation-context="Heading of the screen where a group plays, until the group's name has loaded, or when it has none">Group</h1>
 					<span class="toolbar-name" data-message="group.playingAs" data-translation-context="In the group's toolbar, the character this window plays; {name} is the character's name">Playing as <strong id="group-character-name" data-argument="name"></strong></span>
 					<span id="group-time" class="toolbar-time"></span>
@@ -78,6 +80,7 @@
 
 			<section id="invite-screen" class="screen" hidden>
 				<header class="toolbar">
+					<!-- include site-name.html -->
 					<h1 id="invite-title" data-message="invite.title" data-translation-context="Heading of the screen an invite link opens, until the group it leads to has loaded">Invite</h1>
 				</header>
 				<div class="panel invite">

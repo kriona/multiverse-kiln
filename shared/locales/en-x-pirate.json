@@ -2343,10 +2343,6 @@
 		"message": "Unrollin' the charts...",
 		"source": "Loading the universe..."
 	},
-	"game.outside.title": {
-		"message": "Multiverse Kiln",
-		"source": "Multiverse Kiln"
-	},
 	"game.universeNotFound": {
 		"message": "That universe be lost at sea.",
 		"source": "That universe could not be found."
@@ -3115,10 +3111,6 @@
 		"message": "GNU Affero General Public License v3 or later",
 		"source": "GNU Affero General Public License v3 or later"
 	},
-	"page.name": {
-		"message": "Multiverse Kiln",
-		"source": "Multiverse Kiln"
-	},
 	"page.playingAs": {
 		"message": "Sailin' as {name}",
 		"source": "Playing as {name}"
@@ -3130,10 +3122,6 @@
 	"page.sourceCode": {
 		"message": "Source code",
 		"source": "Source code"
-	},
-	"page.title": {
-		"message": "Multiverse Kiln",
-		"source": "Multiverse Kiln"
 	},
 	"pager.next": {
 		"message": "Onward",

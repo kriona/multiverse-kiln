@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title data-message="page.title" data-translation-context="The browser tab's title for Home, a universe's page and the game's page while they load">Multiverse Kiln</title>
+		<title translate="no">%SITE_NAME%</title>
 		<link rel="stylesheet" href="/src/style.scss" />
 	</head>
 	<body>
@@ -14,7 +14,9 @@
 
 			<section id="home-screen" class="screen" hidden>
 				<header class="toolbar">
-					<h1 data-message="page.name" data-translation-context="The game engine's name, shown as a heading">Multiverse Kiln</h1>
+					<h1>
+						<!-- include site-name.html -->
+					</h1>
 					<span class="toolbar-name" data-message="page.playingAs" data-translation-context="In the toolbar, the name the player logged in with; {name} is the name">Playing as <strong id="home-player-name" data-argument="name"></strong></span>
 					<a class="button secondary toolbar-link" href="/admin" data-message="home.siteSettings" data-translation-context="Link in Home's toolbar to the page where the site's admins change settings for the whole site"><!-- icon ph:gear -->Site Settings</a>				</header>
 				<p id="home-notice" class="notice" role="status" hidden></p>
