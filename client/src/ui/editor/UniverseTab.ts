@@ -7,6 +7,7 @@ import { ChangeTracker } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
+import { showToast } from '../toast';
 import { showMarkdown } from '../markdown';
 
 /**
@@ -213,6 +214,10 @@ export class UniverseTab
 			this.universe = { ...universe, ...update };
 			this.changes.markSaved();
 			this.saved.textContent = t(formMessages.saved);
+			showToast(t(formMessages.savedToast), {
+				kind: 'success',
+				announce: false
+			});
 			this.onSaved(this.universe);
 		}
 		catch (error)

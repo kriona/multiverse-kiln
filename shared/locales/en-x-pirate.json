@@ -2335,6 +2335,10 @@
 		"message": "Stowed",
 		"source": "Saved"
 	},
+	"form.savedToast": {
+		"message": "Changes stowed",
+		"source": "Changes saved"
+	},
 	"form.unsavedChanges": {
 		"message": "Not yet stowed",
 		"source": "Unsaved changes"

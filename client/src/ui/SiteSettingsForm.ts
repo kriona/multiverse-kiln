@@ -7,6 +7,7 @@ import { ChangeTracker } from './changeTracker';
 import { getElement, showMessage } from './dom';
 import { reportFieldError, setFieldError } from './fieldErrors';
 import { formMessages } from './formMessages';
+import { showToast } from './toast';
 
 /**
  * The admin page's form: settings for the whole site, such as whether players can create universes
@@ -126,6 +127,10 @@ export class SiteSettingsForm
 			await this.api.saveSiteSettings(settings);
 			this.changes.markSaved();
 			this.saved.textContent = t(formMessages.saved);
+			showToast(t(formMessages.savedToast), {
+				kind: 'success',
+				announce: false
+			});
 		}
 		catch (error)
 		{

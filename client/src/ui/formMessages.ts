@@ -24,6 +24,11 @@ export const formMessages = defineMessages({
 		defaultMessage: 'Saved',
 		description: 'Shown next to a form\'s Save button once its changes are stored'
 	},
+	savedToast: {
+		id: 'form.savedToast',
+		defaultMessage: 'Changes saved',
+		description: 'Shown for a few seconds in a green message at the top of the page once a form\'s changes are stored'
+	},
 	cancel: {
 		id: 'dialog.cancel',
 		defaultMessage: 'Cancel',

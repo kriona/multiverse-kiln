@@ -6,6 +6,7 @@ import { ChangeTracker } from '../changeTracker';
 import { getElement, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
+import { showToast } from '../toast';
 import { exampleMoney, formatMoney, readMoneyField } from '../moneyField';
 import type { ItemSelectDialog } from './ItemSelectDialog';
 import { StartingItemsField } from './StartingItemsField';
@@ -255,6 +256,10 @@ export class CharactersTab
 			this.startingMoney.value = formatMoney(startingMoney, universe.ruleset);
 			this.changes.markSaved();
 			this.saved.textContent = t(formMessages.saved);
+			showToast(t(formMessages.savedToast), {
+				kind: 'success',
+				announce: false
+			});
 			this.onSaved(this.universe);
 		}
 		catch (error)

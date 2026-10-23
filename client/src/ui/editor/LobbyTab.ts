@@ -6,6 +6,7 @@ import { ChangeTracker } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
+import { showToast } from '../toast';
 
 /**
  * The Lobby tab's settings: how the time of day changes in the lobby, and whether its tiles have a
@@ -154,6 +155,10 @@ export class LobbyTab
 			this.dayHours.value = String(this.universe.lobbyDayHours);
 			this.changes.markSaved();
 			this.saved.textContent = t(formMessages.saved);
+			showToast(t(formMessages.savedToast), {
+				kind: 'success',
+				announce: false
+			});
 			this.onSaved(this.universe);
 		}
 		catch (error)

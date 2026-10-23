@@ -6,6 +6,7 @@ import { ChangeTracker } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
+import { showToast } from '../toast';
 import { tileName } from '../tileNames';
 import { MapEditor } from './MapEditor';
 
@@ -724,6 +725,10 @@ export class AreasTab
 			{
 				this.showArea(universe, { ...area, ...settings });
 				this.saved.textContent = t(formMessages.saved);
+				showToast(t(formMessages.savedToast), {
+					kind: 'success',
+					announce: false
+				});
 			}
 		}
 		catch (error)

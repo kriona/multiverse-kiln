@@ -6,6 +6,7 @@ import { ChangeTracker } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
+import { showToast } from '../toast';
 
 /**
  * The Ruleset tab: how the universe plays under its ruleset. For Pathfinder 1E, how ability scores
@@ -180,6 +181,10 @@ export class RulesetTab
 			await this.api.saveRulesetSettings(universe.id, ruleset);
 			this.changes.markSaved();
 			this.saved.textContent = t(formMessages.saved);
+			showToast(t(formMessages.savedToast), {
+				kind: 'success',
+				announce: false
+			});
 		}
 		catch (error)
 		{

@@ -22,6 +22,12 @@ const closers = new WeakMap<Element, () => void>();
 export interface ToastOptions
 {
 	/**
+	 * What it tells of: info (the default) for news, success for something done, such as changes saved,
+	 * which shows green. Its text says the same, so it isn't told by color alone
+	 */
+	kind?: 'info' | 'success';
+
+	/**
 	 * How long it shows, in milliseconds
 	 */
 	durationMs?: number;
@@ -85,7 +91,7 @@ export function showToast(text: string, options: ToastOptions = {}): void
 		timer = window.setTimeout(close, remainingMs);
 	};
 
-	toast.className = 'toast';
+	toast.className = `toast ${options.kind ?? 'info'}`;
 	toast.textContent = text;
 	toast.addEventListener('click', close);
 

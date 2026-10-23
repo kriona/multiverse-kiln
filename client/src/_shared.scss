@@ -49,6 +49,11 @@ $notice-border: #8d6e1f;
 $notice-background: #3a2f12;
 $notice-text: #f5d58a;
 
+// A success toast: paler than the green buttons, so it doesn't look like one
+$success-toast-border: #81c784;
+$success-toast-background: #334633;
+$success-toast-text: #FFF;
+
 html,
 body
 {
@@ -387,6 +392,13 @@ button.link-button
 	color: $text;
 	cursor: pointer;
 	pointer-events: auto;
+}
+
+.toast.success
+{
+	border-color: $success-toast-border;
+	background: $success-toast-background;
+	color: $success-toast-text;
 }
 
 // A toast fading out can't be clicked or hovered
