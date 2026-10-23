@@ -229,7 +229,7 @@ export async function loadWholeMap(areaId: string): Promise<AreaMap | undefined>
 		},
 		loopsEastWest: loaded.loopsEastWest,
 		loopsNorthSouth: loaded.loopsNorthSouth,
-		tileMovementCosts: new Map(loaded.tiles.map((tile) => [tile.id, tile.movementCost])),
+		tileWalkSeconds: new Map(loaded.tiles.map((tile) => [tile.id, tile.walkSeconds])),
 		links: loaded.links
 	});
 }

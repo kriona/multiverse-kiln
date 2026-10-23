@@ -6,7 +6,7 @@
  */
 import { sql, type SQL } from 'drizzle-orm';
 import { boolean, check, customType, doublePrecision, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHUNK_SIZE, DEFAULT_LOBBY_DAY_HOURS, GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_UNIVERSES_PER_CREATOR, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_WALK_SECONDS, FAERIE_MORNINGS, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
 
 import { SEEN_CHUNK_BYTES } from '../logic/seenCells.js';
 
@@ -17,6 +17,7 @@ export const passageOfTime = pgEnum('passage_of_time', PASSAGES_OF_TIME);
 export const areaPassageOfTime = pgEnum('area_passage_of_time', AREA_PASSAGES_OF_TIME);
 export const faerieMorning = pgEnum('faerie_morning', FAERIE_MORNINGS);
 export const lobbyPassageOfTime = pgEnum('lobby_passage_of_time', LOBBY_PASSAGES_OF_TIME);
+export const displayTime = pgEnum('display_time', DISPLAY_TIMES);
 export const areaLinkMode = pgEnum('area_link_mode', AREA_LINK_MODES);
 export const areaLightLevel = pgEnum('area_light_level', AREA_LIGHT_LEVELS);
 export const pf1eStatMethod = pgEnum('pf1e_stat_method', PF1E_STAT_METHODS);
@@ -85,6 +86,11 @@ export const universes = pgTable('universes', {
 	 * Set when passageOfTime is faerie
 	 */
 	faerieMorning: faerieMorning('faerie_morning'),
+
+	/**
+	 * How players are shown the time of day
+	 */
+	displayTime: displayTime('display_time').notNull().default('precise'),
 
 	lobbyAreaId: uuid('lobby_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
 
@@ -226,9 +232,9 @@ export const tiles = pgTable('tiles', {
 	visionCost: smallint('vision_cost').notNull().default(0),
 
 	/**
-	 * How much harder the tile is to move into, in percent: 50 takes twice as long, 100 can't be entered
+	 * Seconds of game time walking a square of the tile takes; 0 can't be entered
 	 */
-	movementCost: smallint('movement_cost').notNull().default(0),
+	walkSeconds: smallint('walk_seconds').notNull().default(DEFAULT_WALK_SECONDS),
 
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
@@ -239,7 +245,7 @@ export const tiles = pgTable('tiles', {
 	check('tiles_name_required', sql`${table.name} IS NOT NULL OR ${table.overridesTileId} IS NOT NULL`),
 	check('tiles_color_range', sql`${table.color} BETWEEN 0 AND 16777215`),
 	check('tiles_vision_cost_range', sql`${table.visionCost} BETWEEN 0 AND 100`),
-	check('tiles_movement_cost_range', sql`${table.movementCost} BETWEEN 0 AND ${sql.raw(String(IMPASSABLE_COST))}`)
+	check('tiles_walk_seconds_range', sql`${table.walkSeconds} BETWEEN 0 AND ${sql.raw(String(MAX_WALK_SECONDS))}`)
 ]);
 
 /**

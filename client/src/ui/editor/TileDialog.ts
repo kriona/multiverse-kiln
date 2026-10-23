@@ -1,4 +1,4 @@
-import { canEditWorld, DISALLOWED_TEXT_CHARACTERS, IMPASSABLE_COST, MAX_TILE_NAME_LENGTH, type EditableUniverse, type EditorTile, type MessageDescriptor, type TileSettings } from '@multiverse-kiln/shared';
+import { canEditWorld, DEFAULT_WALK_SECONDS, DISALLOWED_TEXT_CHARACTERS, MAX_TILE_NAME_LENGTH, MAX_WALK_SECONDS, type EditableUniverse, type EditorTile, type MessageDescriptor, type TileSettings } from '@multiverse-kiln/shared';
 import restoreIcon from 'virtual:icon/ph:arrow-counter-clockwise';
 import trashIcon from 'virtual:icon/ph:trash';
 
@@ -19,11 +19,11 @@ const NEW_TILE: TileSettings = {
 	indoors: false,
 	color: 0x808080,
 	visionCost: 0,
-	movementCost: 0
+	walkSeconds: DEFAULT_WALK_SECONDS
 };
 
 /**
- * The tile editor: a dialog for a tile's name, indoors or outdoors, color, vision cost and movement cost
+ * The tile editor: a dialog for a tile's name, indoors or outdoors, color, vision cost and walk time
  *
  * Saving a default tile stores the universe's edited copy of it. The dialog can also delete a custom
  * tile, or restore an edited default tile
@@ -40,7 +40,7 @@ export class TileDialog
 	private readonly colorPicker = getElement('tile-color-picker', HTMLInputElement);
 	private readonly color = getElement('tile-color', HTMLInputElement);
 	private readonly visionCost = getElement('tile-vision', HTMLInputElement);
-	private readonly movementCost = getElement('tile-movement', HTMLInputElement);
+	private readonly walkSeconds = getElement('tile-walk', HTMLInputElement);
 	private readonly dayPreview = getElement('tile-preview-day', HTMLElement);
 	private readonly nightPreview = getElement('tile-preview-night', HTMLElement);
 	private readonly error = getElement('tile-error', HTMLElement);
@@ -71,7 +71,7 @@ export class TileDialog
 	constructor(private readonly api: EditorApi)
 	{
 		this.name.maxLength = MAX_TILE_NAME_LENGTH;
-		this.movementCost.max = String(IMPASSABLE_COST);
+		this.walkSeconds.max = String(MAX_WALK_SECONDS);
 
 		this.colorPicker.addEventListener('input', () =>
 		{
@@ -165,7 +165,7 @@ export class TileDialog
 		this.color.value = colorToHex(settings.color);
 		this.colorPicker.value = colorToHex(settings.color);
 		this.visionCost.value = String(settings.visionCost);
-		this.movementCost.value = String(settings.movementCost);
+		this.walkSeconds.value = String(settings.walkSeconds);
 		this.fields.disabled = false;
 		this.name.disabled = !editable;
 		this.saveButton.hidden = !editable;
@@ -173,7 +173,7 @@ export class TileDialog
 		this.cancelButton.textContent = t(editable ? formMessages.cancel : formMessages.close);
 
 		// Only the inputs are locked for a player who can't edit, so Close still works
-		for (const input of [this.outdoors, this.indoors, this.colorPicker, this.color, this.visionCost, this.movementCost])
+		for (const input of [this.outdoors, this.indoors, this.colorPicker, this.color, this.visionCost, this.walkSeconds])
 		{
 			input.disabled = !editable;
 		}
@@ -250,7 +250,7 @@ export class TileDialog
 			indoors: this.indoors.checked,
 			color,
 			visionCost: this.visionCost.valueAsNumber,
-			movementCost: this.movementCost.valueAsNumber
+			walkSeconds: this.walkSeconds.valueAsNumber
 		};
 
 		await this.run({

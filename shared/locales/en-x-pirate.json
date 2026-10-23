@@ -879,6 +879,10 @@
 		"message": "Particulars",
 		"source": "Summary"
 	},
+	"editor.displayTime": {
+		"message": "Show the hour",
+		"source": "Display time"
+	},
 	"editor.error.failedBecause": {
 		"message": "{failure} {reason}",
 		"source": "{failure} {reason}"
@@ -1871,14 +1875,6 @@
 		"message": "Give a hex color, such as #7AFF3D.",
 		"source": "Enter a hex color, such as #7AFF3D."
 	},
-	"editor.tile.movementCost": {
-		"message": "Sailin' cost (%)",
-		"source": "Movement cost (%)"
-	},
-	"editor.tile.movementHint": {
-		"message": "0% be plain sailin', 50% takes twice as long, 100% can't be boarded.",
-		"source": "0% is normal movement, 50% takes twice as long, 100% can't be entered."
-	},
 	"editor.tile.night": {
 		"message": "Night",
 		"source": "Night"
@@ -1902,6 +1898,14 @@
 	"editor.tile.visionHint": {
 		"message": "100% can't be seen through, even with a spyglass.",
 		"source": "100% can't be seen through."
+	},
+	"editor.tile.walkHint": {
+		"message": "Time o' the voyage spent crossin' a square. 10 be plain sailin', 20 takes twice as long, 0 can't be boarded.",
+		"source": "Game time walking a square takes. 10 is normal, 20 takes twice as long, 0 can't be entered."
+	},
+	"editor.tile.walkSeconds": {
+		"message": "Sailin' time (seconds)",
+		"source": "Walk time (seconds)"
 	},
 	"editor.tiles.add": {
 		"message": "Add Tile",
@@ -1947,10 +1951,6 @@
 		"message": "Couldn't list the tiles.",
 		"source": "Could not list the tiles."
 	},
-	"editor.tiles.movementCost": {
-		"message": "Sailin' cost",
-		"source": "Movement cost"
-	},
 	"editor.tiles.name": {
 		"message": "Name",
 		"source": "Name"
@@ -1978,6 +1978,14 @@
 	"editor.tiles.visionCost": {
 		"message": "Spyglass cost",
 		"source": "Vision cost"
+	},
+	"editor.tiles.walkSeconds": {
+		"message": "{seconds, plural, one {# second o' sailing} other {# seconds o' sailing}}",
+		"source": "{seconds, plural, one {# second} other {# seconds}}"
+	},
+	"editor.tiles.walkTime": {
+		"message": "Sailin' time",
+		"source": "Walk time"
 	},
 	"editor.title": {
 		"message": "Edit Universe",
@@ -2366,10 +2374,6 @@
 	"group.clock": {
 		"message": "Day {day, number} o' the voyage, {time}",
 		"source": "Day {day, number}, {time}"
-	},
-	"group.clockFaerie": {
-		"message": "Day {day, number} o' the voyage, {period, select, midnight {the witchin' hour} pre_dawn {afore first light} dawn {first light} early_morning {early mornin''} morning {mornin''} late_morning {late mornin''} noon {high noon} early_afternoon {early afternoon} afternoon {afternoon} late_afternoon {late afternoon} evening {eventide} late_evening {late eventide} other {the dark o' night}}",
-		"source": "Day {day, number}, {period, select, midnight {midnight} pre_dawn {pre-dawn} dawn {dawn} early_morning {early morning} morning {morning} late_morning {late morning} noon {noon} early_afternoon {early afternoon} afternoon {afternoon} late_afternoon {late afternoon} evening {evening} late_evening {late evening} other {night}}"
 	},
 	"group.connectionLost": {
 		"message": "Lost sight o' the crew.",
@@ -2954,6 +2958,10 @@
 	"map.announce.timeOfDay": {
 		"message": "'Tis {time}, {part, select, dawn {first light} day {broad day} dusk {dusk} other {the dark o' night}}.",
 		"source": "It is {time}, {part, select, dawn {dawn} day {day} dusk {dusk} other {night}}."
+	},
+	"map.announce.timeOfDayRough": {
+		"message": "'Tis {time}.",
+		"source": "It is {time}."
 	},
 	"map.ghost": {
 		"message": "Ghost",
@@ -3778,6 +3786,22 @@
 	"tile.sf1e.water": {
 		"message": "Briny Deep",
 		"source": "Water"
+	},
+	"time.periodOfDay": {
+		"message": "{period, select, midnight {the witchin' hour} pre_dawn {afore first light} dawn {first light} early_morning {early mornin''} morning {mornin''} late_morning {late mornin''} noon {high noon} early_afternoon {early afternoon} afternoon {afternoon} late_afternoon {late afternoon} evening {eventide} late_evening {late eventide} other {the dark o' night}}",
+		"source": "{period, select, midnight {midnight} pre_dawn {pre-dawn} dawn {dawn} early_morning {early morning} morning {morning} late_morning {late morning} noon {noon} early_afternoon {early afternoon} afternoon {afternoon} late_afternoon {late afternoon} evening {evening} late_evening {late evening} other {night}}"
+	},
+	"universe.displayTime.none": {
+		"message": "naught",
+		"source": "nothing"
+	},
+	"universe.displayTime.precise": {
+		"message": "true to the ship's bell (to the second)",
+		"source": "precise (to the second)"
+	},
+	"universe.displayTime.rough": {
+		"message": "by the sun (such as afternoon)",
+		"source": "rough (such as afternoon)"
 	},
 	"universe.faerie.center": {
 		"message": "the middle",

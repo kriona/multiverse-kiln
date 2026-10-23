@@ -367,7 +367,7 @@ function activate(loaded: LoadedArea, chunks: Map<string, number[]>, loadedChunk
 		},
 		loopsEastWest: loaded.loopsEastWest,
 		loopsNorthSouth: loaded.loopsNorthSouth,
-		tileMovementCosts: new Map(loaded.tiles.map((tile) => [tile.id, tile.movementCost])),
+		tileWalkSeconds: new Map(loaded.tiles.map((tile) => [tile.id, tile.walkSeconds])),
 		links: loaded.links,
 		loadedChunks
 	};
@@ -429,6 +429,7 @@ export function toAreaPayload(area: ActiveArea, chunkKeys: Iterable<string>, mem
 		ruleset: loaded.ruleset,
 		indoors: loaded.area.indoors,
 		time: loaded.time,
+		displayTime: loaded.displayTime,
 		lightLevel: loaded.lightLevel,
 		fullVision: loaded.fullVision,
 		bounds: loaded.bounds,

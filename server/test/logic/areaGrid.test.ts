@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { CHUNK_SIZE, chunkKey, cellIndexInChunk, DEFAULT_TILE_CELL, IMPASSABLE_COST, VOID_CELL } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, chunkKey, cellIndexInChunk, DEFAULT_TILE_CELL, IMPASSABLE_WALK_SECONDS, VOID_CELL } from '@multiverse-kiln/shared';
 
 import { createAreaGrid, linkAt, type AreaLink, type AreaMap } from '../../src/logic/areaGrid.js';
 
@@ -51,7 +51,7 @@ const map: AreaMap = {
 	},
 	loopsEastWest: true,
 	loopsNorthSouth: false,
-	tileMovementCosts: new Map([[GRASS, 0], [FOREST, 50]]),
+	tileWalkSeconds: new Map([[GRASS, 10], [FOREST, 20]]),
 	links: [link(0, 1, 'automatic'), link(-2, 1, 'manual')]
 };
 
@@ -67,26 +67,26 @@ describe('createAreaGrid', () =>
 		assert.strictEqual(grid.cellSize, 30);
 	});
 
-	it('gives each cell its tile\'s movement cost', () =>
+	it('gives each cell its tile\'s walk seconds', () =>
 	{
-		assert.strictEqual(grid.movementCost({ column: 0, row: 0 }), 0);
-		assert.strictEqual(grid.movementCost({ column: 1, row: 0 }), 50);
+		assert.strictEqual(grid.walkSeconds({ column: 0, row: 0 }), 10);
+		assert.strictEqual(grid.walkSeconds({ column: 1, row: 0 }), 20);
 	});
 
 	it('makes void cells, unknown tiles and cells off the map impassable', () =>
 	{
-		assert.strictEqual(grid.movementCost({ column: 2, row: 0 }), IMPASSABLE_COST);
-		assert.strictEqual(grid.movementCost({ column: -1, row: -1 }), IMPASSABLE_COST);
-		assert.strictEqual(grid.movementCost({ column: 3, row: 0 }), IMPASSABLE_COST);
+		assert.strictEqual(grid.walkSeconds({ column: 2, row: 0 }), IMPASSABLE_WALK_SECONDS);
+		assert.strictEqual(grid.walkSeconds({ column: -1, row: -1 }), IMPASSABLE_WALK_SECONDS);
+		assert.strictEqual(grid.walkSeconds({ column: 3, row: 0 }), IMPASSABLE_WALK_SECONDS);
 	});
 
 	it('makes cells whose chunk has not loaded impassable, when the map is loaded a piece at a time', () =>
 	{
 		const partial = createAreaGrid({ ...map, loadedChunks: new Set([chunkKey(0, 0)]) }, 30);
 
-		assert.strictEqual(partial.movementCost({ column: 1, row: 0 }), 50);
-		assert.strictEqual(partial.movementCost({ column: -2, row: 0 }), IMPASSABLE_COST);
-		assert.strictEqual(grid.movementCost({ column: -2, row: 0 }), 0);
+		assert.strictEqual(partial.walkSeconds({ column: 1, row: 0 }), 20);
+		assert.strictEqual(partial.walkSeconds({ column: -2, row: 0 }), IMPASSABLE_WALK_SECONDS);
+		assert.strictEqual(grid.walkSeconds({ column: -2, row: 0 }), 10);
 	});
 
 	it('ends movement on automatic links only', () =>

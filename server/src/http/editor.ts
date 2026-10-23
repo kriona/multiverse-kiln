@@ -323,7 +323,7 @@ async function updateUniverse(request: Request, response: Response): Promise<voi
 		return;
 	}
 
-	const timeKeys: (keyof UniverseSettingsUpdate)[] = ['passageOfTime', 'faerieMorning', 'lobbyPassageOfTime', 'lobbyDayHours', 'lobbyFaerieMorning'];
+	const timeKeys: (keyof UniverseSettingsUpdate)[] = ['passageOfTime', 'faerieMorning', 'displayTime', 'lobbyPassageOfTime', 'lobbyDayHours', 'lobbyFaerieMorning'];
 
 	if (timeKeys.some((key) => (body.data[key] !== undefined)))
 	{

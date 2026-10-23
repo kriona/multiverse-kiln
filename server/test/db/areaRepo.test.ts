@@ -40,8 +40,19 @@ describe('areaRepo', () =>
 			assert.strictEqual(loaded.defaultTileId, tileIds.get('grass'));
 			assert.strictEqual(loaded.loopsEastWest, false);
 			assert.strictEqual(loaded.tiles.length, 6);
-			assert.strictEqual(loaded.tiles.find((tile) => (tile.id === tileIds.get('forest')))?.movementCost, 50);
+			assert.strictEqual(loaded.tiles.find((tile) => (tile.id === tileIds.get('forest')))?.walkSeconds, 20);
 			assert.deepStrictEqual(loaded.links, []);
+			assert.strictEqual(loaded.displayTime, 'precise');
+		});
+
+		it('loads how the universe shows the time', async () =>
+		{
+			const universeId = await addUniverse();
+			const areaId = await addArea(universeId, 'Meadow');
+
+			await updateUniverseSettings(universeId, { displayTime: 'none' });
+
+			assert.strictEqual((await loadArea(areaId))?.displayTime, 'none');
 		});
 
 		it('loads the area\'s links', async () =>

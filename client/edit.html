@@ -79,6 +79,10 @@
 									Where is morning?
 									<select id="universe-faerie"></select>
 								</label>
+								<label data-message="editor.displayTime" data-translation-context="Label of the field for how players are shown the time of day in a universe">
+									Display time
+									<select id="universe-display-time"></select>
+								</label>
 								<p id="universe-error" class="form-error" role="alert" hidden></p>
 								<div class="form-buttons">
 									<span id="universe-saved" class="form-saved" role="status"></span>
@@ -278,7 +282,7 @@
 								<tr>
 									<th scope="col" data-message="editor.tiles.color" data-translation-context="Heading of the table column showing each tile's color">Color</th>
 									<th scope="col" data-message="editor.tiles.name" data-translation-context="Heading of the table column with each tile's name">Name</th>
-									<th scope="col" data-message="editor.tiles.movementCost" data-translation-context="Heading of the table column with how much harder each tile is to move into">Movement cost</th>
+									<th scope="col" data-message="editor.tiles.walkTime" data-translation-context="Heading of the table column with how many seconds of game time walking a square of each tile takes">Walk time</th>
 									<th scope="col" data-message="editor.tiles.visionCost" data-translation-context="Heading of the table column with how much of a character's vision crossing each tile uses">Vision cost</th>
 									<th scope="col"></th>
 								</tr>
@@ -706,11 +710,11 @@
 								<input id="tile-vision" type="number" min="0" max="100" step="1" required />
 							</label>
 							<p class="hint" data-message="editor.tile.visionHint" data-translation-context="Explains the vision cost field">100% can't be seen through.</p>
-							<label data-message="editor.tile.movementCost" data-translation-context="Label of the field for how much harder the tile is to move into, in percent">
-								Movement cost (%)
-								<input id="tile-movement" type="number" min="0" max="100" step="1" required />
+							<label data-message="editor.tile.walkSeconds" data-translation-context="Label of the field for how many seconds of game time walking a square of the tile takes">
+								Walk time (seconds)
+								<input id="tile-walk" type="number" min="0" max="3600" step="1" required />
 							</label>
-							<p class="hint" data-message="editor.tile.movementHint" data-translation-context="Explains the movement cost field">0% is normal movement, 50% takes twice as long, 100% can't be entered.</p>
+							<p class="hint" data-message="editor.tile.walkHint" data-translation-context="Explains the walk time field">Game time walking a square takes. 10 is normal, 20 takes twice as long, 0 can't be entered.</p>
 							<div class="tile-preview">
 								<figure>
 									<span id="tile-preview-day" class="swatch large"></span>

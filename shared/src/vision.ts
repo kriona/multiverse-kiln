@@ -3,7 +3,7 @@
  *
  * A character looks along straight lines from their cell. Each step along a line spends some of their
  * vision budget: its length in squares (a diagonal step counts as one and a half, as in movement), more
- * when it leaves a cell with a vision cost (50% doubles it, as a movement cost does). A cell with
+ * when it leaves a cell with a vision cost (50% doubles it). A cell with
  * OPAQUE_VISION_COST can be seen but not seen past, so a line of mountains blocks the view; it is also
  * seen when open ground beside it is, so the walls lining a corridor show along its length. The budget
  * is shorter at night and in dark indoor areas unless the character has darkvision. The server uses this to decide which players

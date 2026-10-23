@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, IMPASSABLE_COST, UNSEEN_CELL, visionKey, type AreaChunk } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, IMPASSABLE_WALK_SECONDS, UNSEEN_CELL, visionKey, type AreaChunk } from '@multiverse-kiln/shared';
 
 import type { LoadedArea } from '../src/db/areaRepo.js';
 import { SeenCells } from '../src/logic/seenCells.js';
@@ -30,6 +30,7 @@ function loadedArea(): LoadedArea
 		},
 		ruleset: 'pf1e',
 		time: { passage: 'flows_normally' },
+		displayTime: 'precise',
 		lightLevel: null,
 		fullVision: false,
 		bounds: { minColumn: -100, minRow: -100, maxColumn: 99, maxRow: 99 },
@@ -38,8 +39,8 @@ function loadedArea(): LoadedArea
 		loopsNorthSouth: false,
 		links: [],
 		tiles: [
-			{ id: GRASS, key: 'grass', name: 'Grass', indoors: false, color: 0x00ff00, visionCost: 0, movementCost: 0 },
-			{ id: FOREST, key: 'forest', name: 'Forest', indoors: false, color: 0x008800, visionCost: 50, movementCost: 50 }
+			{ id: GRASS, key: 'grass', name: 'Grass', indoors: false, color: 0x00ff00, visionCost: 0, walkSeconds: 10 },
+			{ id: FOREST, key: 'forest', name: 'Forest', indoors: false, color: 0x008800, visionCost: 50, walkSeconds: 20 }
 		]
 	});
 }
@@ -109,15 +110,15 @@ describe('AreaCache', () =>
 
 		assert.ok(area);
 		assert.strictEqual(area.loadedChunks.size, 0);
-		assert.strictEqual(area.grid.movementCost({ column: 0, row: 0 }), IMPASSABLE_COST);
+		assert.strictEqual(area.grid.walkSeconds({ column: 0, row: 0 }), IMPASSABLE_WALK_SECONDS);
 
 		const loading = database.cache.loadChunks(AREA_ID, [chunkKey(0, 0), chunkKey(1, 0)]);
 
 		database.finishReads();
 
 		assert.deepStrictEqual((await loading).sort(), [chunkKey(0, 0), chunkKey(1, 0)]);
-		assert.strictEqual(area.grid.movementCost({ column: 0, row: 0 }), 50);
-		assert.strictEqual(area.grid.movementCost({ column: 32, row: 0 }), 0);
+		assert.strictEqual(area.grid.walkSeconds({ column: 0, row: 0 }), 20);
+		assert.strictEqual(area.grid.walkSeconds({ column: 32, row: 0 }), 10);
 		assert.deepStrictEqual([...area.chunks.keys()], [chunkKey(0, 0)]);
 	});
 
@@ -177,7 +178,7 @@ describe('AreaCache', () =>
 
 		assert.deepStrictEqual(await reloading, [chunkKey(0, 0)]);
 		assert.strictEqual(area?.chunks.has(chunkKey(0, 0)), false);
-		assert.strictEqual(area.grid.movementCost({ column: 0, row: 0 }), 0);
+		assert.strictEqual(area.grid.walkSeconds({ column: 0, row: 0 }), 10);
 	});
 
 	it('reloads an area, keeping its chunks only when asked to', async () =>

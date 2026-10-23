@@ -218,6 +218,34 @@
       "when": 1792755770270,
       "tag": "0030_area_light_level",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1792762283290,
+      "tag": "0031_tile_walk_seconds",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1792762288148,
+      "tag": "0032_tile_walk_seconds_from_movement_cost",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1792762305554,
+      "tag": "0033_drop_tile_movement_cost",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1792762971836,
+      "tag": "0034_universe_display_time",
+      "breakpoints": true
     }
   ]
 }

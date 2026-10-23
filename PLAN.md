@@ -93,7 +93,7 @@ Built in three steps: data and logic, then rooms, then the client.
 - [✅] Store map cells in chunks of 32 x 32, saving only chunks that differ from the area's default tile: a map can be 50,000 tiles in each direction
 - [✅] PF1E default tiles (Grass, Forest, Desert, Mountains, Water, Wood Floor), added by a migration
 - [✅] Seed script for a sample universe (`npm run db:seed -w server`): a town square lobby with a cottage and a cellar, and a crossroads for groups that loops east-west. Run by hand like migrations, never on startup
-- [✅] Pure logic with tests: movement cost (50% = double, 100% = impassable), map bounds around 0,0, no cutting past impassable corners, wrapping in areas that loop, stopping on automatic links, finding a free cell to arrive in
+- [✅] Pure logic with tests: walk time per tile (twice the default = half speed, 0 = impassable), map bounds around 0,0, no cutting past impassable corners, wrapping in areas that loop, stopping on automatic links, finding a free cell to arrive in
 - [✅] Rename today's global `LobbyRoom` to `SessionRoom` (login, account, group membership), and add a `LobbyRoom` per universe (`filterBy` the universe ID) with the map, chat, who's here and Create game. Groups belong to a universe and start in its starting area
 - [✅] A room holds every area its players are in; each player has an area, and each client only sees the players in its own area (`StateView`, one per client for now)
 - [✅] Rooms load area maps at lifecycle boundaries, and load the next area before a player moves into it, never inside the tick
@@ -113,7 +113,7 @@ Built in four steps: the server API, the editor pages, the map editor, then load
 - [✅] Editor API as REST routes in `server/src/http/` backed by repositories (editing isn't real-time, so it doesn't need a room). Every request checks the user may edit that universe, and validates against the same limits as the UI. Who may edit is stored in `universe_editors` (creator, builder, beta tester; Phase 14 adds the Editors tab), and until logins exist (Phase 13) a request's player is the one its browser ID cookie is logged in as
 - [✅] Create Universe modal (name, 1-sentence description, ruleset), up to 5 per user. Creates a lobby area and a default area as every race's starting area, and makes the user its creator. Home lists the universes the user has a role in, which opens them in the editor
 - [✅] Edit Universe page: name, descriptions (markdown rendered sanitized with `marked` and DOMPurify, also on Home's overview), stage, ruleset, passage of time. Logo and banner wait for image storage (Phase 17). A Lobby tab opens the lobby's area until the rest of the tab arrives (Phase 12)
-- [✅] Tilesets tab (filters for name, passable, custom and edited; pagination) and tile editor (name, indoors, color, vision cost, movement cost)
+- [✅] Tilesets tab (filters for name, passable, custom and edited; pagination) and tile editor (name, indoors, color, vision cost, walk time)
 - [✅] Areas tab with the single-area drill-down, and the area editor's settings. Its map is the next item
 - [✅] Map editor: grid centered on 0,0, expand buttons, edit-size dialog with its warning, draw tool (a tile or Void; size 1-100; circle or square), undo/redo with a drag counted as one step. It loads chunks as the view reaches them, pans with the right or middle mouse button and zooms with the wheel. Undo covers painting; resizing to a smaller map clears the undo history
 - [✅] Area link layer: automatic or manual, "requires the whole group", select destination coordinates with an optional return link (placed in the target area, leading back to the link's cell)
@@ -187,13 +187,13 @@ Alongside it, a basic Starfinder 1E ruleset (see SF1E in `STRUCTURE-OVERVIEW.md`
 
 ## Phase 12: Time, vision and world state
 
-Decided: walking a square takes 1 second of game time (PF1E's walking pace), more on tiles with a movement cost; vision runs on the server, which shows each client only the players it can see, and the client runs the same shared function to draw fog over the tiles it already has; world state remembers the areas a group has explored and the cells it has seen in them; the summoning ring waits for items and NPCs.
+Decided: walking a square takes the tile's walk time in game time (10 seconds by default, 0 is impassable); vision runs on the server, which shows each client only the players it can see, and the client runs the same shared function to draw fog over the tiles it already has; world state remembers the areas a group has explored and the cells it has seen in them; the summoning ring waits for items and NPCs.
 
 Built in three steps: time, vision, then world state.
 
 1. Time
 	- [✅] Time of day as pure functions in `/shared` with tests: fixed times, flowing time from a clock, real time from the Unix epoch, faerie time from map position, daylight, and each area's passage of time resolved through `inherit`
-	- [✅] Game clock per group, saved with the group: standing still passes no time, walking a square takes 1 second (longer on tiles with a movement cost), a combat round is 6 seconds
+	- [✅] Game clock per group, saved with the group: standing still passes no time, walking a square takes the tile's walk time, a combat round is 6 seconds
 	- [✅] Lobby tab: lobby time (fixed, real-time from the Unix epoch with a day of 1-240 hours, or faerie)
 	- [✅] Day and night rendering, and the time of day for screen readers
 2. Vision

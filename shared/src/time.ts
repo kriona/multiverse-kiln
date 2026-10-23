@@ -15,11 +15,6 @@ import type { AreaLightLevel, AreaPassageOfTime, FaerieMorning, LobbyPassageOfTi
 export const DAY_SECONDS = 24 * 60 * 60;
 
 /**
- * Seconds of game time walking a square takes, at PF1E's walking pace (300 feet a minute, 5 feet a square)
- */
-export const WALK_SECONDS_PER_SQUARE = 1;
-
-/**
  * Seconds of game time a combat round takes
  */
 export const COMBAT_ROUND_SECONDS = 6;

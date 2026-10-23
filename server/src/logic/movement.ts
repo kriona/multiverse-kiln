@@ -3,7 +3,7 @@
  *
  * Pure functions: no Colyseus, database, network or timers (CLAUDE.md architecture rule 4)
  */
-import { IMPASSABLE_COST, isInBounds, positiveModulo, type MapBounds, type MovePayload } from '@multiverse-kiln/shared';
+import { DEFAULT_WALK_SECONDS, IMPASSABLE_WALK_SECONDS, isInBounds, positiveModulo, type MapBounds, type MovePayload } from '@multiverse-kiln/shared';
 
 /**
  * A point in world units
@@ -50,10 +50,10 @@ export interface Grid
 	loopsNorthSouth: boolean;
 
 	/**
-	 * How much harder a cell inside the bounds is to move into, in percent: 0 is normal, 50 takes twice
-	 * as long, and IMPASSABLE_COST can't be entered
+	 * Seconds of game time walking into a cell inside the bounds takes; IMPASSABLE_WALK_SECONDS can't be
+	 * entered
 	 */
-	movementCost: (cell: Cell) => number;
+	walkSeconds: (cell: Cell) => number;
 
 	/**
 	 * Whether a player who steps onto a cell inside the bounds stops there, even with a direction still
@@ -131,7 +131,8 @@ export interface StepResult extends GridMover
 export type IsCellFree = (cell: Cell) => boolean;
 
 /**
- * Player movement speed in world units per second, on a cell with no movement cost
+ * Player movement speed in world units per second, into a cell that takes DEFAULT_WALK_SECONDS or less
+ * to walk
  */
 export const PLAYER_SPEED = 200;
 
@@ -172,7 +173,7 @@ export const NO_PRESS: DirectionPress = {
  * A step only starts into a free cell the player can enter, and a diagonal step also needs both cells
  * beside it free and enterable, so players can't pass through each other or cut past a wall at a
  * corner. When the diagonal step can't be taken, the horizontal and then the vertical part is tried
- * instead; when nothing can, the player waits. A step into a cell with a movement cost is slower, and
+ * instead; when nothing can, the player waits. A step into a cell slower to walk than DEFAULT_WALK_SECONDS is slower, and
  * a step onto a cell that ends movement stops the player there
  *
  * @param mover The player's position, current step and press
@@ -180,7 +181,7 @@ export const NO_PRESS: DirectionPress = {
  * @param deltaSeconds Time to move for, in seconds
  * @param grid Grid to move on
  * @param isCellFree Whether another player holds a cell (see occupiedCells)
- * @param speed Speed in world units per second, on a cell with no movement cost
+ * @param speed Speed in world units per second, into a cell that takes DEFAULT_WALK_SECONDS or less to walk
  * @param repeatDelay How long a direction must be held, in seconds, before its second step starts
  * @return The new position, step and press, and where the player stopped if a cell ended their movement
  */
@@ -441,23 +442,24 @@ function canEnter(from: Cell, to: Cell, grid: Grid, isCellFree: IsCellFree): boo
  */
 function canStandIn(cell: Cell, grid: Grid, isCellFree: IsCellFree): boolean
 {
-	return(isInBounds(grid.bounds, cell.column, cell.row) && (grid.movementCost(cell) < IMPASSABLE_COST) && isCellFree(cell));
+	return(isInBounds(grid.bounds, cell.column, cell.row) && (grid.walkSeconds(cell) !== IMPASSABLE_WALK_SECONDS) && isCellFree(cell));
 }
 
 /**
- * How fast a player moves into a cell, slowed by its movement cost
+ * How fast a player moves into a cell: full speed when walking it takes DEFAULT_WALK_SECONDS or less,
+ * slowed in proportion when it takes longer
  *
  * @param cell The cell being entered, already wrapped
  * @param grid The grid
- * @param speed Speed on a cell with no movement cost
+ * @param speed Full speed
  * @return The speed; full speed into a cell that can't be entered, which only happens when a player
  * steps back to the center of a cell that has stopped being enterable under them
  */
 function speedInto(cell: Cell, grid: Grid, speed: number): number
 {
-	const cost = (isInBounds(grid.bounds, cell.column, cell.row) ? grid.movementCost(cell) : 0);
+	const seconds = (isInBounds(grid.bounds, cell.column, cell.row) ? grid.walkSeconds(cell) : IMPASSABLE_WALK_SECONDS);
 
-	return(((cost < IMPASSABLE_COST) ? speed * (1 - (cost / IMPASSABLE_COST)) : speed));
+	return(((seconds > DEFAULT_WALK_SECONDS) ? (speed * DEFAULT_WALK_SECONDS) / seconds : speed));
 }
 
 /**

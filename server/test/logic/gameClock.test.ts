@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { WALK_SECONDS_PER_SQUARE } from '@multiverse-kiln/shared';
+import { DEFAULT_WALK_SECONDS, IMPASSABLE_WALK_SECONDS } from '@multiverse-kiln/shared';
 
 import { GroupClock, SIMULTANEOUS_STEP_MS, stepSeconds } from '../../src/logic/gameClock.js';
 
@@ -22,24 +22,20 @@ describe('game clock', () =>
 {
 	describe('stepSeconds', () =>
 	{
-		it('takes the walking time for a square with no movement cost', () =>
+		it('takes the walk seconds of the cell stepped into', () =>
 		{
-			assert.strictEqual(stepSeconds(east, 0), WALK_SECONDS_PER_SQUARE);
-		});
-
-		it('takes twice as long into a cell with a movement cost of 50', () =>
-		{
-			assert.strictEqual(stepSeconds(east, 50), WALK_SECONDS_PER_SQUARE * 2);
+			assert.strictEqual(stepSeconds(east, 10), 10);
+			assert.strictEqual(stepSeconds(east, 25), 25);
 		});
 
 		it('counts a diagonal step as one and a half squares', () =>
 		{
-			assert.strictEqual(stepSeconds(southeast, 0), WALK_SECONDS_PER_SQUARE * 1.5);
+			assert.strictEqual(stepSeconds(southeast, 20), 30);
 		});
 
-		it('counts a cell that can\'t be entered as having no movement cost', () =>
+		it('counts a cell that can\'t be entered as taking the default walk seconds', () =>
 		{
-			assert.strictEqual(stepSeconds(east, 100), WALK_SECONDS_PER_SQUARE);
+			assert.strictEqual(stepSeconds(east, IMPASSABLE_WALK_SECONDS), DEFAULT_WALK_SECONDS);
 		});
 	});
 

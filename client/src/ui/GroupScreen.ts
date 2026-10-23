@@ -1,14 +1,15 @@
 import { Callbacks } from '@colyseus/sdk';
-import { DAY_SECONDS, defineMessages, GRID_CELL_SIZE, periodOfDay, positiveModulo, secondOfDay, ServerMessageType, type AreaPayload, type CharacterListPayload, type CharacterSummary, type GroupMember, type WelcomePayload } from '@multiverse-kiln/shared';
+import { DAY_SECONDS, defineMessages, GRID_CELL_SIZE, secondOfDay, ServerMessageType, type AreaPayload, type CharacterListPayload, type CharacterSummary, type GroupMember, type WelcomePayload } from '@multiverse-kiln/shared';
 import signOutIcon from 'virtual:icon/ph:sign-out';
 
-import { currentLocale, formatTimeOfDay, t } from '../localization';
+import { currentLocale, t } from '../localization';
 import type { GameConnection } from '../network/serverConnection';
 import { announce } from './announcer';
 import { CharacterList } from './CharacterList';
 import { getElement, setButtonLabel, showMessage } from './dom';
 import type { MapView } from './MapView';
 import { addShortcut } from './shortcuts';
+import { describeTimeOfDay } from './timeOfDay';
 
 /**
  * Text the group screen shows in more than one place (see src/localization.ts)
@@ -346,9 +347,10 @@ export class GroupScreen
 
 	/**
 	 * Shows the group's game clock in the toolbar: the day since its world began, and the time of day in
-	 * the character's area. That is the clock's time where time flows normally and the area's fixed time
-	 * in an always area. In a faerie area, where the time of day comes from where the character stands,
-	 * it is a word for the time of day there, such as afternoon
+	 * the character's area, the way the universe shows it. That is the clock's time where time flows
+	 * normally and the area's fixed time in an always area. In a faerie area, where the time of day comes
+	 * from where the character stands, it is at most a word for the time of day there, such as afternoon.
+	 * A universe that doesn't show the time shows no clock
 	 */
 	private showClock(): void
 	{
@@ -363,30 +365,31 @@ export class GroupScreen
 		const day = Math.floor(clock / DAY_SECONDS) + 1;
 		const area = this.area;
 		const own = ((this.characterId !== undefined) ? connection.room.state.players.get(this.characterId) : undefined);
-		const seconds = (area
-			? secondOfDay(area.time, clock, Date.now(), { column: Math.floor((own?.x ?? 0) / GRID_CELL_SIZE), row: Math.floor((own?.y ?? 0) / GRID_CELL_SIZE) }, area.bounds)
-			: positiveModulo(clock, DAY_SECONDS));
 
-		if ((area?.time.passage === 'faerie') && own)
+		// Until the area arrives, it isn't known whether the universe shows the time
+		if (!area)
 		{
-			this.time.textContent = t({
-				id: 'group.clockFaerie',
-				defaultMessage: 'Day {day, number}, {period, select, midnight {midnight} pre_dawn {pre-dawn} dawn {dawn} early_morning {early morning} morning {morning} late_morning {late morning} noon {noon} early_afternoon {early afternoon} afternoon {afternoon} late_afternoon {late afternoon} evening {evening} late_evening {late evening} other {night}}',
-				description: 'In the group\'s toolbar in a faerie area, where the time of day depends on where the character stands: how many days the group\'s world has run, counting the first as 1, and a word for the time of day there, e.g. "Day 1, afternoon"'
-			}, {
-				day,
-				period: periodOfDay(seconds)
-			});
+			this.time.textContent = '';
+			return;
+		}
+
+		const seconds = secondOfDay(area.time, clock, Date.now(), { column: Math.floor((own?.x ?? 0) / GRID_CELL_SIZE), row: Math.floor((own?.y ?? 0) / GRID_CELL_SIZE) }, area.bounds);
+		const roughOnly = ((area.time.passage === 'faerie') && (area.displayTime === 'precise'));
+		const time = describeTimeOfDay(seconds, (roughOnly ? 'rough' : area.displayTime));
+
+		if (time === undefined)
+		{
+			this.time.textContent = '';
 			return;
 		}
 
 		this.time.textContent = t({
 			id: 'group.clock',
 			defaultMessage: 'Day {day, number}, {time}',
-			description: 'In the group\'s toolbar, the group\'s game clock: how many days its world has run, counting the first as 1, and the time of day, e.g. "Day 1, 8:00 AM"'
+			description: 'In the group\'s toolbar, the group\'s game clock: how many days its world has run, counting the first as 1, and the time of day, e.g. "Day 1, 8:00:00 AM" or "Day 1, afternoon"'
 		}, {
 			day,
-			time: formatTimeOfDay(seconds)
+			time
 		});
 	}
 

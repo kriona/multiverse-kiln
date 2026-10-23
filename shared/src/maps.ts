@@ -33,9 +33,21 @@ export const VOID_CELL = -1;
 export const UNSEEN_CELL = -2;
 
 /**
- * Movement cost of a cell nobody can enter, in percent. 0 is normal movement and 50 takes twice as long
+ * Walk seconds of a tile nobody can enter
  */
-export const IMPASSABLE_COST = 100;
+export const IMPASSABLE_WALK_SECONDS = 0;
+
+/**
+ * Seconds of game time walking a square of a new tile takes. A player crosses a tile this quick or
+ * quicker on screen at full speed, and a slower one at a matching fraction of it: 20 seconds moves at
+ * half speed
+ */
+export const DEFAULT_WALK_SECONDS = 10;
+
+/**
+ * The most seconds of game time walking a square of a tile can take
+ */
+export const MAX_WALK_SECONDS = 3600;
 
 /**
  * The cells a map covers, inclusive at both ends

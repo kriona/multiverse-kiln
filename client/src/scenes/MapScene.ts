@@ -983,6 +983,7 @@ export class MapScene extends Phaser.Scene
 			row,
 			tileName: (tile ? tileName(tile, this.area.ruleset) : undefined),
 			secondOfDay: seconds,
+			displayTime: this.area.displayTime,
 			sightSquares: Math.floor(visionBudget(areaLight(this.area.lightLevel, seconds), own.darkvision, this.area.fullVision))
 		}, others);
 	}

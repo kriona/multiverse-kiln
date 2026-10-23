@@ -149,15 +149,15 @@ export function formatList(items: readonly string[], type: 'conjunction' | 'unit
 }
 
 /**
- * A time of day in the game, such as 6:30 PM
+ * A time of day in the game, such as 6:30:00 PM
  *
  * @param secondOfDay Seconds since midnight (see secondOfDay in /shared)
- * @return The time in the player's language, to the minute
+ * @return The time in the player's language, to the second
  */
 export function formatTimeOfDay(secondOfDay: number): string
 {
 	// Game time has no time zone, so it is formatted as a time in UTC to keep the player's own zone out of it
-	return(new Intl.DateTimeFormat(translator.locale, { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }).format(new Date(Math.floor(secondOfDay) * 1000)));
+	return(new Intl.DateTimeFormat(translator.locale, { hour: 'numeric', minute: '2-digit', second: '2-digit', timeZone: 'UTC' }).format(new Date(Math.floor(secondOfDay) * 1000)));
 }
 
 /**

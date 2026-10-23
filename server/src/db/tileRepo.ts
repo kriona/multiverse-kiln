@@ -2,7 +2,7 @@
  * Tiles: the only module that reads or writes the tiles table
  */
 import { and, count, eq, isNull, or } from 'drizzle-orm';
-import { IMPASSABLE_COST, type EditorTile, type Ruleset, type TileListPayload, type TileListQuery, type TileSettings } from '@multiverse-kiln/shared';
+import { IMPASSABLE_WALK_SECONDS, type EditorTile, type Ruleset, type TileListPayload, type TileListQuery, type TileSettings } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { tiles } from './schema.js';
@@ -33,13 +33,13 @@ export interface TileRecord
 	color: number;
 
 	visionCost: number;
-	movementCost: number;
+	walkSeconds: number;
 }
 
 /**
  * What a new tile needs
  */
-export type NewTile = Pick<typeof tiles.$inferInsert, 'ruleset' | 'universeId' | 'key' | 'name' | 'indoors' | 'color' | 'visionCost' | 'movementCost'>;
+export type NewTile = Pick<typeof tiles.$inferInsert, 'ruleset' | 'universeId' | 'key' | 'name' | 'indoors' | 'color' | 'visionCost' | 'walkSeconds'>;
 
 /**
  * The settings of a tile a universe added, which always has a name of its own
@@ -56,7 +56,7 @@ const settingsColumns = {
 	indoors: tiles.indoors,
 	color: tiles.color,
 	visionCost: tiles.visionCost,
-	movementCost: tiles.movementCost
+	walkSeconds: tiles.walkSeconds
 };
 
 /**
@@ -103,7 +103,7 @@ export async function loadUniverseTiles(universeId: string, ruleset: Ruleset, ex
 		indoors: tile.indoors,
 		color: tile.color,
 		visionCost: tile.visionCost,
-		movementCost: tile.movementCost
+		walkSeconds: tile.walkSeconds
 	})));
 }
 
@@ -167,7 +167,7 @@ async function loadNamedTiles(universeId: string, ruleset: Ruleset, executor: Ex
 				indoors: settings.indoors,
 				color: settings.color,
 				visionCost: settings.visionCost,
-				movementCost: settings.movementCost,
+				walkSeconds: settings.walkSeconds,
 				custom,
 				edited: (copy !== undefined)
 			};
@@ -197,7 +197,7 @@ export async function listEditorTiles(universeId: string, ruleset: Ruleset, quer
 	{
 		return(
 			((name === undefined) || englishName.toLowerCase().includes(name))
-			&& ((query.passable === undefined) || ((tile.movementCost < IMPASSABLE_COST) === query.passable))
+			&& ((query.passable === undefined) || ((tile.walkSeconds !== IMPASSABLE_WALK_SECONDS) === query.passable))
 			&& ((query.custom === undefined) || (tile.custom === query.custom))
 			&& ((query.edited === undefined) || (tile.edited === query.edited))
 		);

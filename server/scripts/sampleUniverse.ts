@@ -11,7 +11,7 @@
  *
  * Digits mark cells that links start from or arrive at. Each area says which tile its digits are
  */
-import type { PassageOfTime, UniverseStage, AreaLinkMode } from '@multiverse-kiln/shared';
+import { IMPASSABLE_WALK_SECONDS, type PassageOfTime, type UniverseStage, type AreaLinkMode } from '@multiverse-kiln/shared';
 
 /**
  * An area to create
@@ -81,7 +81,7 @@ export const stoneWall = {
 	indoors: true,
 	color: 0x8a8a8a,
 	visionCost: 100,
-	movementCost: 100
+	walkSeconds: IMPASSABLE_WALK_SECONDS
 };
 
 export const sampleAreas: SampleArea[] = [

@@ -376,6 +376,7 @@ export function editorAreaPayload(area: EditorArea, tiles: readonly EditorTile[]
 		indoors: area.indoors,
 		// The editor draws the map in daylight
 		time: { passage: 'always_noon' },
+		displayTime: 'none',
 		lightLevel: null,
 		fullVision: false,
 		bounds: area.bounds,

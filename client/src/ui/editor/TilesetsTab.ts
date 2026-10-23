@@ -1,4 +1,4 @@
-import { canEditWorld, defineMessages, IMPASSABLE_COST, MAX_TILES_PER_PAGE, type EditableUniverse, type EditorTile, type TileListPayload, type TileListQuery } from '@multiverse-kiln/shared';
+import { canEditWorld, IMPASSABLE_WALK_SECONDS, MAX_TILES_PER_PAGE, type EditableUniverse, type EditorTile, type TileListPayload, type TileListQuery } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -6,17 +6,6 @@ import { getElement, setOptions, showMessage } from '../dom';
 import { tileName } from '../tileNames';
 import { colorToHex } from './colors';
 import { TileDialog } from './TileDialog';
-
-/**
- * Text the Tilesets tab shows in more than one place (see src/localization.ts)
- */
-const messages = defineMessages({
-	percent: {
-		id: 'editor.tiles.percent',
-		defaultMessage: '{cost, number, percent}',
-		description: 'A tile\'s movement or vision cost as a percentage, e.g. 50%. Change only for a language whose percentages the number format gets wrong'
-	}
-});
 
 /**
  * How long the name filter waits after the last key before searching, in milliseconds
@@ -250,14 +239,22 @@ export class TilesetsTab
 		const cells = [
 			swatch,
 			nameButton,
-			((tile.movementCost >= IMPASSABLE_COST)
+			((tile.walkSeconds === IMPASSABLE_WALK_SECONDS)
 				? t({
 					id: 'editor.tiles.impassable',
 					defaultMessage: 'impassable',
-					description: 'In the movement cost column, for a tile that can\'t be walked into'
+					description: 'In the walk time column, for a tile that can\'t be walked into'
 				})
-				: t(messages.percent, { cost: tile.movementCost / 100 })),
-			t(messages.percent, { cost: tile.visionCost / 100 }),
+				: t({
+					id: 'editor.tiles.walkSeconds',
+					defaultMessage: '{seconds, plural, one {# second} other {# seconds}}',
+					description: 'In the walk time column, the seconds of game time walking a square of the tile takes'
+				}, { seconds: tile.walkSeconds })),
+			t({
+				id: 'editor.tiles.percent',
+				defaultMessage: '{cost, number, percent}',
+				description: 'A tile\'s vision cost as a percentage, e.g. 50%. Change only for a language whose percentages the number format gets wrong'
+			}, { cost: tile.visionCost / 100 }),
 			formatList(tags)
 		];
 

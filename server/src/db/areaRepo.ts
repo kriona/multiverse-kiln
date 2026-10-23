@@ -4,7 +4,7 @@
  */
 import { and, asc, between, count, eq, gt, gte, inArray, lt, lte, or, sql, type SQL } from 'drizzle-orm';
 import type { PgColumn } from 'drizzle-orm/pg-core';
-import { ancestorAreas, chunkCoordinate, chunkKey, isInBounds, lobbyAreaTime, resolveAreaTime, type AreaTime, type PassageOfTimeSetting, type CellChange, type ChunkRange, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type MapBounds, type Ruleset, type AreaChunk, type AreaLightLevel, type AreaLinkTarget, type AreaPassageOfTime, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
+import { ancestorAreas, chunkCoordinate, chunkKey, isInBounds, lobbyAreaTime, resolveAreaTime, type AreaTime, type DisplayTime,type PassageOfTimeSetting, type CellChange, type ChunkRange, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type MapBounds, type Ruleset, type AreaChunk, type AreaLightLevel, type AreaLinkTarget, type AreaPassageOfTime, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { applyCellChanges, chunksOfChanges, clipChunk, isChunkInside, isDefaultChunk } from '../logic/mapEdits.js';
 import type { AreaLink } from '../logic/areaGrid.js';
@@ -50,6 +50,11 @@ export interface LoadedArea
 	time: AreaTime;
 
 	/**
+	 * How the universe shows players the time of day
+	 */
+	displayTime: DisplayTime;
+
+	/**
 	 * How light the area is at any time of day while it is indoors, or null outdoors, where it follows the time of day
 	 */
 	lightLevel: AreaLightLevel | null;
@@ -72,7 +77,7 @@ export interface LoadedArea
 	links: AreaLink[];
 
 	/**
-	 * Every tile the map can use, for drawing it and for its movement costs
+	 * Every tile the map can use, for drawing it and for its walk seconds
 	 */
 	tiles: TileRecord[];
 }
@@ -165,6 +170,7 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 			universe: {
 				passageOfTime: universes.passageOfTime,
 				faerieMorning: universes.faerieMorning,
+				displayTime: universes.displayTime,
 				lobbyAreaId: universes.lobbyAreaId,
 				lobbyPassageOfTime: universes.lobbyPassageOfTime,
 				lobbyDayHours: universes.lobbyDayHours,
@@ -213,6 +219,7 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 				dayHours: universe.lobbyDayHours
 			})
 			: resolveAreaTime(await loadTimeChain(area, executor), universe)),
+		displayTime: universe.displayTime,
 		lightLevel: (area.indoors ? area.lightLevel : null),
 		fullVision,
 		bounds: boundsOf(area),

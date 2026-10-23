@@ -197,6 +197,42 @@ export const MAX_LOBBY_DAY_HOURS = 240;
 export const DEFAULT_LOBBY_DAY_HOURS = 24;
 
 /**
+ * How players are shown the time of day in a universe
+ *
+ * - precise: the time on the clock, to the second
+ * - rough: a word for the time of day, such as afternoon
+ * - none: not at all
+ */
+export const DISPLAY_TIMES = [
+	'precise',
+	'rough',
+	'none'
+] as const;
+
+export type DisplayTime = typeof DISPLAY_TIMES[number];
+
+/**
+ * Each way of showing the time's name
+ */
+export const DISPLAY_TIME_NAMES: Record<DisplayTime, MessageDescriptor> = defineMessages({
+	precise: {
+		id: 'universe.displayTime.precise',
+		defaultMessage: 'precise (to the second)',
+		description: 'Choice for how a universe shows the time of day: the time on the clock, e.g. 8:00:00 AM'
+	},
+	rough: {
+		id: 'universe.displayTime.rough',
+		defaultMessage: 'rough (such as afternoon)',
+		description: 'Choice for how a universe shows the time of day: a word for the time of day, e.g. late morning or afternoon'
+	},
+	none: {
+		id: 'universe.displayTime.none',
+		defaultMessage: 'nothing',
+		description: 'Choice for how a universe shows the time of day: players aren\'t shown the time at all'
+	}
+});
+
+/**
  * Where morning is in faerie time: the time of day runs from sunrise on this side of the map to midnight
  * on the opposite side. horizon puts morning at every edge and night in the center
  */

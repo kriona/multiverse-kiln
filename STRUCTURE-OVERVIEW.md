@@ -218,6 +218,10 @@ This lets you change anything about a universe. It will be a whole suite of tool
 		- `center`
 		- `horizon` (the center is night)
 	- there is no `real-time` option: it would need time to keep running while nobody is logged on, which is expensive. The lobby can use it because only the time of day changes there, and that is calculated from the Unix epoch
+- a dropdown for "display time", how players are shown the time of day in the lobby and the game (see [time and distance](#time-and-distance)):
+	- `precise` (the default): the time on the clock, to the second
+	- `rough`: a word for the time of day, such as afternoon
+	- `nothing`: no time at all
 - Tabs:
 	- [Editors](#tab-editors)
 	- [Ruleset](#tab-ruleset)
@@ -440,27 +444,28 @@ It needs a filter control that includes:
 the table contains:
 - icon (or color)
 - name, links to the [tile editor](#editor-tile)
-- movement cost
+- walk time
+- vision cost
 
 For PF1E, the default tiles are
 - outdoors
-	- Grass, color #7AFF3D, 0% vision cost, 0% movement cost
-	- Forest, color #0A1, 50% vision cost, 50% movement cost
-	- Desert, color #E5E500, 0% vision cost, 50% movement cost
-	- Mountains, color #777, 100% vision cost, 100% movement cost
-	- Water, color #3D97FF, 0% vision cost, 100% movement cost
+	- Grass, color #7AFF3D, 0% vision cost, 10 second walk time
+	- Forest, color #0A1, 50% vision cost, 20 second walk time
+	- Desert, color #E5E500, 0% vision cost, 20 second walk time
+	- Mountains, color #777, 100% vision cost, impassable
+	- Water, color #3D97FF, 0% vision cost, impassable
 - indoors
-	- Wood Floor, color #7A3202, 0% vision cost, 0% movement cost
+	- Wood Floor, color #7A3202, 0% vision cost, 10 second walk time
 
 For SF1E, the default tiles are
 - outdoors
-	- Grass, color #7AFF3D, 0% vision cost, 0% movement cost
-	- Sand, color #D9C27A, 0% vision cost, 50% movement cost
-	- Rock, color #6B6B6B, 100% vision cost, 100% movement cost
-	- Water, color #3D97FF, 0% vision cost, 100% movement cost
+	- Grass, color #7AFF3D, 0% vision cost, 10 second walk time
+	- Sand, color #D9C27A, 0% vision cost, 20 second walk time
+	- Rock, color #6B6B6B, 100% vision cost, impassable
+	- Water, color #3D97FF, 0% vision cost, impassable
 - indoors
-	- Metal Floor, color #9AA4AE, 0% vision cost, 0% movement cost
-	- Bulkhead, color #4A5560, 100% vision cost, 100% movement cost
+	- Metal Floor, color #9AA4AE, 0% vision cost, 10 second walk time
+	- Bulkhead, color #4A5560, 100% vision cost, impassable
 
 ### Tab: Areas
 lists all top-level areas for a universe, excluding the lobby.
@@ -534,9 +539,9 @@ Combat is turn-based.
 - A square is 5 feet, matching PF1E's movement, reach and spell areas.
 - A PF1E combat round is 6 seconds, so the time combat took is added when it ends.
 
-Outside of combat, time is based on your actions - if you are standing still, no time passes. Walking a square takes 1 second (PF1E's walking pace of 300 feet a minute), longer on a tile with a movement cost (50% takes twice as long), and a diagonal step counts as one and a half squares.
+Outside of combat, time is based on your actions - if you are standing still, no time passes. Walking a square takes the walk time of the tile walked into (10 seconds unless the creator sets another), and a diagonal step counts as one and a half squares. On screen, a player crosses a tile of 10 seconds or less at full speed and a slower one at a matching fraction of it, so a 20 second tile is crossed at half speed.
 
-Each group has its own clock, which starts at 8 in the morning and is saved with the group. The whole group shares that one time: when one member walks, time passes for everyone, including members standing still. Members walking at the same time don't pass the time twice: a step is left out when another member's step was counted less than half a second (real time) before it, so two members walking side by side pass the time of one. Only walking in an area whose time `flows normally` passes the group's time: in an `always` area or a `faerie` one the time of day doesn't come from the clock, so the clock stands still there. The group's page shows the day and the time of day in the character's area: the clock's time, or the area's fixed time in an `always` area. In a `faerie` area it shows a word for that time of day, such as afternoon, in place of the clock's time.
+Each group has its own clock, which starts at 8 in the morning and is saved with the group. The whole group shares that one time: when one member walks, time passes for everyone, including members standing still. Members walking at the same time don't pass the time twice: a step is left out when another member's step was counted less than half a second (real time) before it, so two members walking side by side pass the time of one. Only walking in an area whose time `flows normally` passes the group's time: in an `always` area or a `faerie` one the time of day doesn't come from the clock, so the clock stands still there. The group's page shows the day and the time of day in the character's area, the way the universe's "display time" setting says: the clock's time to the second (precise), or a word for the time of day such as afternoon (rough). The time is the clock's, or the area's fixed time in an `always` area. In a `faerie` area it is never more than the word, in place of the clock's time. When the universe displays nothing, the group's page shows no clock, and asking where you are leaves the time out.
 
 The time of day comes from the area's passage of time (see [Edit Universe](#edit-universe)): from the group's clock when time flows normally, fixed for the `always` settings, and from the cell's place on the map for `faerie`. It is light from 7 in the morning to 5 in the evening, dark from 7 in the evening to 5 in the morning, and the light changes over the two hours around dawn (6:00) and dusk (18:00). The map darkens with it, and screen readers are told as dawn breaks or night falls. An indoor area stays as light as its light level instead, and says nothing of dawn or dusk.
 
@@ -553,7 +558,7 @@ Disbanding a group deletes its world state. Characters (items, money, experience
 What a group has explored is kept as the cells it has seen, area by area: a cell is seen once any member has had it in sight (see [Vision](#vision)). The group's room keeps them in memory and saves them every 30 seconds while anyone plays and when the last player leaves. A window in a group's room is only ever sent the tiles of cells the group has seen, and the links on them, so a script in the browser can't uncover the rest: every other cell comes as unseen, and its tile is sent as soon as a member first sees it. The fog follows where players are drawn, a moment behind the server, so those tiles have usually arrived before the fog uncovers them. Cells out of sight that the group has seen are drawn dimmed, and cells it has never seen are black. A lobby remembers nothing, so there everything out of sight is only dimmed. Deleting an area deletes what every group has seen of it.
 
 ## Vision
-Each character has a vision budget, in squares. A character looks along straight lines from their cell, and each step along a line spends its length (a diagonal step counts as one and a half squares, as in movement), more when it leaves a tile with a vision cost: 50% spends twice as much, the way a movement cost slows walking. A 100% tile can be seen but not seen past, so a line of mountains blocks your view. It is also seen when open ground next to it is, so the walls lining a tunnel show along its length, while the inside of a thick wall and its far side stay hidden. The character's own cell never gets in the way. Void cells are seen past.
+Each character has a vision budget, in squares. A character looks along straight lines from their cell, and each step along a line spends its length (a diagonal step counts as one and a half squares, as in movement), more when it leaves a tile with a vision cost: 50% spends twice as much. A 100% tile can be seen but not seen past, so a line of mountains blocks your view. It is also seen when open ground next to it is, so the walls lining a tunnel show along its length, while the inside of a thick wall and its far side stay hidden. The character's own cell never gets in the way. Void cells are seen past.
 - The budget is 20 squares in full daylight and 4 at night, changing with the light around dawn and dusk. An indoor area is lit (20 squares) or dark (4) at any time of day, by its light level. Darkvision sees at least 12 squares (60 feet), day or night.
 - In a group's room, the group sees whatever any of its members in the area sees, so members always see each other. In a lobby each player sees only what they see themselves, and unless the universe turns it off on the [Lobby tab](#tab-lobby), they see as far as in full daylight at any time of day and its tiles have no vision cost.
 - The server works out what each player can see and only shows them the players in sight. The client runs the same function (`/shared`) to draw fog over the cells out of sight. Screen readers are told how many squares the player can see when they ask where they are.
@@ -641,7 +646,7 @@ This is a component included in the [area editor](#editor-area). It shows you th
 	- indoors uses the 47-Tile Blob Set
 	- or maybe each layer has its own format, e.g. the ground layer is Dual-Grid and another layer is set differently
 - Vision cost - 0% to 100% (cannot see through). See [vision](#vision)
-- Movement cost - 0% to 100%. 0% is normal movement, 50% costs double (PF1E difficult terrain), 100% is impassable
+- Walk time - seconds of game time walking a square takes, 0 to 3600. 10 is the default, 20 takes twice as long (PF1E difficult terrain), 0 is impassable
 - Has a preview section for day + night
 
 # Localization

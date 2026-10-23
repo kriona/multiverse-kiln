@@ -879,6 +879,10 @@
 		"defaultMessage": "Summary",
 		"description": "Heading of the table column describing each character class's rules, such as its magic"
 	},
+	"editor.displayTime": {
+		"defaultMessage": "Display time",
+		"description": "Label of the field for how players are shown the time of day in a universe"
+	},
 	"editor.error.failedBecause": {
 		"defaultMessage": "{failure} {reason}",
 		"description": "An editor action that failed, followed by why; {failure} is e.g. \"Could not save the tile.\" and {reason} is the server's explanation. Change only to reorder the two sentences"
@@ -1871,14 +1875,6 @@
 		"defaultMessage": "Enter a hex color, such as #7AFF3D.",
 		"description": "Shown by the color field when what was typed isn't a hexadecimal color"
 	},
-	"editor.tile.movementCost": {
-		"defaultMessage": "Movement cost (%)",
-		"description": "Label of the field for how much harder the tile is to move into, in percent"
-	},
-	"editor.tile.movementHint": {
-		"defaultMessage": "0% is normal movement, 50% takes twice as long, 100% can't be entered.",
-		"description": "Explains the movement cost field"
-	},
 	"editor.tile.night": {
 		"defaultMessage": "Night",
 		"description": "Caption of the preview of the tile at night"
@@ -1902,6 +1898,14 @@
 	"editor.tile.visionHint": {
 		"defaultMessage": "100% can't be seen through.",
 		"description": "Explains the vision cost field"
+	},
+	"editor.tile.walkHint": {
+		"defaultMessage": "Game time walking a square takes. 10 is normal, 20 takes twice as long, 0 can't be entered.",
+		"description": "Explains the walk time field"
+	},
+	"editor.tile.walkSeconds": {
+		"defaultMessage": "Walk time (seconds)",
+		"description": "Label of the field for how many seconds of game time walking a square of the tile takes"
 	},
 	"editor.tiles.add": {
 		"defaultMessage": "Add Tile",
@@ -1941,15 +1945,11 @@
 	},
 	"editor.tiles.impassable": {
 		"defaultMessage": "impassable",
-		"description": "In the movement cost column, for a tile that can't be walked into"
+		"description": "In the walk time column, for a tile that can't be walked into"
 	},
 	"editor.tiles.listFailed": {
 		"defaultMessage": "Could not list the tiles.",
 		"description": "Shown on the Tilesets tab when the tiles couldn't be loaded"
-	},
-	"editor.tiles.movementCost": {
-		"defaultMessage": "Movement cost",
-		"description": "Heading of the table column with how much harder each tile is to move into"
 	},
 	"editor.tiles.name": {
 		"defaultMessage": "Name",
@@ -1965,7 +1965,7 @@
 	},
 	"editor.tiles.percent": {
 		"defaultMessage": "{cost, number, percent}",
-		"description": "A tile's movement or vision cost as a percentage, e.g. 50%. Change only for a language whose percentages the number format gets wrong"
+		"description": "A tile's vision cost as a percentage, e.g. 50%. Change only for a language whose percentages the number format gets wrong"
 	},
 	"editor.tiles.search": {
 		"defaultMessage": "Search by name",
@@ -1978,6 +1978,14 @@
 	"editor.tiles.visionCost": {
 		"defaultMessage": "Vision cost",
 		"description": "Heading of the table column with how much of a character's vision crossing each tile uses"
+	},
+	"editor.tiles.walkSeconds": {
+		"defaultMessage": "{seconds, plural, one {# second} other {# seconds}}",
+		"description": "In the walk time column, the seconds of game time walking a square of the tile takes"
+	},
+	"editor.tiles.walkTime": {
+		"defaultMessage": "Walk time",
+		"description": "Heading of the table column with how many seconds of game time walking a square of each tile takes"
 	},
 	"editor.title": {
 		"defaultMessage": "Edit Universe",
@@ -2365,11 +2373,7 @@
 	},
 	"group.clock": {
 		"defaultMessage": "Day {day, number}, {time}",
-		"description": "In the group's toolbar, the group's game clock: how many days its world has run, counting the first as 1, and the time of day, e.g. \"Day 1, 8:00 AM\""
-	},
-	"group.clockFaerie": {
-		"defaultMessage": "Day {day, number}, {period, select, midnight {midnight} pre_dawn {pre-dawn} dawn {dawn} early_morning {early morning} morning {morning} late_morning {late morning} noon {noon} early_afternoon {early afternoon} afternoon {afternoon} late_afternoon {late afternoon} evening {evening} late_evening {late evening} other {night}}",
-		"description": "In the group's toolbar in a faerie area, where the time of day depends on where the character stands: how many days the group's world has run, counting the first as 1, and a word for the time of day there, e.g. \"Day 1, afternoon\""
+		"description": "In the group's toolbar, the group's game clock: how many days its world has run, counting the first as 1, and the time of day, e.g. \"Day 1, 8:00:00 AM\" or \"Day 1, afternoon\""
 	},
 	"group.connectionLost": {
 		"defaultMessage": "Lost the connection to the group.",
@@ -2953,7 +2957,11 @@
 	},
 	"map.announce.timeOfDay": {
 		"defaultMessage": "It is {time}, {part, select, dawn {dawn} day {day} dusk {dusk} other {night}}.",
-		"description": "Read out by screen readers, and shown at the top of the page, when the player asks where they are, after their position: the time of day in the game, e.g. \"6:30 PM\", and the part of the day it falls in"
+		"description": "Read out by screen readers, and shown at the top of the page, when the player asks where they are, after their position: the time of day in the game, e.g. \"6:30:00 PM\", and the part of the day it falls in"
+	},
+	"map.announce.timeOfDayRough": {
+		"defaultMessage": "It is {time}.",
+		"description": "Read out by screen readers, and shown at the top of the page, when the player asks where they are, after their position, in a universe that shows the time roughly: a word for the time of day in the game, e.g. \"late morning\""
 	},
 	"map.ghost": {
 		"defaultMessage": "Ghost",
@@ -3778,6 +3786,22 @@
 	"tile.sf1e.water": {
 		"defaultMessage": "Water",
 		"description": "Name of a map tile in a science fantasy world: deep water, which can't be walked into"
+	},
+	"time.periodOfDay": {
+		"defaultMessage": "{period, select, midnight {midnight} pre_dawn {pre-dawn} dawn {dawn} early_morning {early morning} morning {morning} late_morning {late morning} noon {noon} early_afternoon {early afternoon} afternoon {afternoon} late_afternoon {late afternoon} evening {evening} late_evening {late evening} other {night}}",
+		"description": "A word for the time of day in the game, shown in place of the time on the clock, e.g. \"late morning\". It follows \"Day 1, \" in the group's toolbar and \"It is \" when the player asks where they are"
+	},
+	"universe.displayTime.none": {
+		"defaultMessage": "nothing",
+		"description": "Choice for how a universe shows the time of day: players aren't shown the time at all"
+	},
+	"universe.displayTime.precise": {
+		"defaultMessage": "precise (to the second)",
+		"description": "Choice for how a universe shows the time of day: the time on the clock, e.g. 8:00:00 AM"
+	},
+	"universe.displayTime.rough": {
+		"defaultMessage": "rough (such as afternoon)",
+		"description": "Choice for how a universe shows the time of day: a word for the time of day, e.g. late morning or afternoon"
 	},
 	"universe.faerie.center": {
 		"defaultMessage": "center",

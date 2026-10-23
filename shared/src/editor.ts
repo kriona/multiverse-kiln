@@ -14,7 +14,7 @@ import type { ClassRules, RaceRules } from './racesAndClasses.js';
 import type { Pf1eSettings } from './rulesets/pf1e/settings.js';
 import type { Sf1eSettings } from './rulesets/sf1e/settings.js';
 import type { Sf1eThemeRules } from './rulesets/sf1e/themes.js';
-import type { FaerieMorning, LobbyPassageOfTime, PassageOfTime, Ruleset, UniverseRole, UniverseStage, AreaLightLevel, AreaLinkMode, AreaPassageOfTime } from './universes.js';
+import type { DisplayTime, FaerieMorning, LobbyPassageOfTime, PassageOfTime, Ruleset, UniverseRole, UniverseStage, AreaLightLevel, AreaLinkMode, AreaPassageOfTime } from './universes.js';
 
 /**
  * Base of every editor route. Under it, with :universeId and :areaId standing for IDs:
@@ -266,6 +266,11 @@ export interface UniverseSettings
 	faerieMorning: FaerieMorning | null;
 
 	/**
+	 * How players are shown the time of day, in the lobby and in the game
+	 */
+	displayTime: DisplayTime;
+
+	/**
 	 * How the time of day changes in the lobby (the Lobby tab)
 	 */
 	lobbyPassageOfTime: LobbyPassageOfTime;
@@ -369,9 +374,10 @@ export interface TileSettings
 	visionCost: number;
 
 	/**
-	 * 0-IMPASSABLE_COST percent; 50 takes twice as long, IMPASSABLE_COST can't be entered
+	 * Seconds of game time walking a square of the tile takes, up to MAX_WALK_SECONDS;
+	 * IMPASSABLE_WALK_SECONDS can't be entered
 	 */
-	movementCost: number;
+	walkSeconds: number;
 }
 
 /**

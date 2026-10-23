@@ -1,7 +1,8 @@
-import { partOfDay, type PartOfDay } from '@multiverse-kiln/shared';
+import { partOfDay, type DisplayTime, type PartOfDay } from '@multiverse-kiln/shared';
 
-import { formatList, formatTimeOfDay, t } from '../localization';
+import { formatList, t } from '../localization';
 import { announce } from './announcer';
+import { describeTimeOfDay } from './timeOfDay';
 import { showToast } from './toast';
 
 /**
@@ -61,6 +62,11 @@ export interface PlayerPosition
 	 * The time of day where the player is, in seconds since midnight
 	 */
 	secondOfDay: number;
+
+	/**
+	 * How the universe shows the time of day
+	 */
+	displayTime: DisplayTime;
 
 	/**
 	 * How many squares the player can see across open ground (visionBudget)
@@ -216,8 +222,8 @@ export class MapAnnouncer
 	}
 
 	/**
-	 * Reads out where the player is, the tile they stand on, the time of day, and the other players they
-	 * can see, nearest first, and shows it in a toast
+	 * Reads out where the player is, the tile they stand on, the time of day when the universe shows it,
+	 * and the other players they can see, nearest first, and shows it in a toast
 	 *
 	 * @param position Where the player is
 	 * @param others The other players they can see
@@ -227,14 +233,7 @@ export class MapAnnouncer
 		const players = [...others]
 			.sort((first, second) => (distance(first) - distance(second)))
 			.map((other) => describePlayer(other));
-		const time = t({
-			id: 'map.announce.timeOfDay',
-			defaultMessage: 'It is {time}, {part, select, dawn {dawn} day {day} dusk {dusk} other {night}}.',
-			description: 'Read out by screen readers, and shown at the top of the page, when the player asks where they are, after their position: the time of day in the game, e.g. "6:30 PM", and the part of the day it falls in'
-		}, {
-			time: formatTimeOfDay(position.secondOfDay),
-			part: partOfDay(position.secondOfDay)
-		});
+		const time = describeTime(position);
 		const sight = t({
 			id: 'map.announce.sight',
 			defaultMessage: 'You can see {squares, plural, one {# square} other {# squares}} across open ground.',
@@ -243,8 +242,7 @@ export class MapAnnouncer
 			squares: position.sightSquares
 		});
 
-		// Each part is whole sentences
-		showToast(`${t({
+		const place = t({
 			id: 'map.announce.position',
 			defaultMessage: '{area}, column {column}, row {row}{onTile, select, yes {, on {tile}} other {}}. {count, plural, =0 {You can\'t see anyone else.} other {You can see {players}.}}',
 			description: 'Read out by screen readers, and shown at the top of the page, when the player asks where they are: the area\'s name, their cell, the tile they stand on (e.g. Grass) when it is known, and the other players they can see; {players} is a list of descriptions such as "Bo, 3 cells northeast"'
@@ -256,7 +254,12 @@ export class MapAnnouncer
 			tile: (position.tileName ?? ''),
 			count: players.length,
 			players: formatList(players, 'conjunction')
-		})} ${time} ${sight}`, { announce: 'urgent' });
+		});
+
+		// Each part is whole sentences
+		showToast([place, time, sight]
+			.filter((part) => (part !== undefined))
+			.join(' '), { announce: 'urgent' });
 	}
 
 	/**
@@ -328,6 +331,42 @@ export class MapAnnouncer
 			announce(lines.join(' '));
 		}
 	}
+}
+
+/**
+ * A sentence giving the time of day where the player is, the way the universe shows it
+ *
+ * @param position Where the player is
+ * @return The sentence, or undefined when the universe doesn't show the time
+ */
+function describeTime(position: PlayerPosition): string | undefined
+{
+	const time = describeTimeOfDay(position.secondOfDay, position.displayTime);
+
+	if (time === undefined)
+	{
+		return(undefined);
+	}
+
+	if (position.displayTime === 'rough')
+	{
+		return(t({
+			id: 'map.announce.timeOfDayRough',
+			defaultMessage: 'It is {time}.',
+			description: 'Read out by screen readers, and shown at the top of the page, when the player asks where they are, after their position, in a universe that shows the time roughly: a word for the time of day in the game, e.g. "late morning"'
+		}, {
+			time
+		}));
+	}
+
+	return(t({
+		id: 'map.announce.timeOfDay',
+		defaultMessage: 'It is {time}, {part, select, dawn {dawn} day {day} dusk {dusk} other {night}}.',
+		description: 'Read out by screen readers, and shown at the top of the page, when the player asks where they are, after their position: the time of day in the game, e.g. "6:30:00 PM", and the part of the day it falls in'
+	}, {
+		time,
+		part: partOfDay(position.secondOfDay)
+	}));
 }
 
 /**

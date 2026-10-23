@@ -1,6 +1,6 @@
 import type { MapBounds } from './maps.js';
 import type { AreaTime } from './time.js';
-import type { Ruleset, AreaLightLevel, AreaLinkMode } from './universes.js';
+import type { DisplayTime, Ruleset, AreaLightLevel, AreaLinkMode } from './universes.js';
 
 /**
  * Message types clients send to the rooms with a map: a universe's lobby and a group's game room
@@ -258,6 +258,11 @@ export interface AreaPayload
 	 * normally
 	 */
 	time: AreaTime;
+
+	/**
+	 * How the universe shows players the time of day
+	 */
+	displayTime: DisplayTime;
 
 	/**
 	 * How light an indoor area is at any time of day, or null for an outdoor area, which follows the time of day (see areaLight)

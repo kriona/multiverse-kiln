@@ -1,4 +1,4 @@
-import { IMPASSABLE_COST, WALK_SECONDS_PER_SQUARE } from '@multiverse-kiln/shared';
+import { DEFAULT_WALK_SECONDS, IMPASSABLE_WALK_SECONDS } from '@multiverse-kiln/shared';
 
 import type { GridStep } from './movement.js';
 
@@ -19,18 +19,18 @@ export const SIMULTANEOUS_STEP_MS = 500;
  * Seconds of game time a step took
  *
  * @param step The step, from one cell to a neighboring one
- * @param movementCost The movement cost of the cell stepped into, in percent; a cost of 50 takes twice
- * as long. A cell that can't be entered counts as having none, as movement does when a player steps
- * back to the center of a cell that became impassable under them
+ * @param walkSeconds The walk seconds of the cell stepped into. A cell that can't be entered counts as
+ * taking DEFAULT_WALK_SECONDS, as movement gives it full speed when a player steps back to the center
+ * of a cell that became impassable under them
  * @return The seconds
  */
-export function stepSeconds(step: GridStep, movementCost: number): number
+export function stepSeconds(step: GridStep, walkSeconds: number): number
 {
 	const isDiagonal = ((step.from.column !== step.to.column) && (step.from.row !== step.to.row));
 	const squares = (isDiagonal ? DIAGONAL_SQUARES : 1);
-	const cost = (((movementCost > 0) && (movementCost < IMPASSABLE_COST)) ? movementCost : 0);
+	const seconds = ((walkSeconds === IMPASSABLE_WALK_SECONDS) ? DEFAULT_WALK_SECONDS : walkSeconds);
 
-	return((WALK_SECONDS_PER_SQUARE * squares * IMPASSABLE_COST) / (IMPASSABLE_COST - cost));
+	return(seconds * squares);
 }
 
 /**

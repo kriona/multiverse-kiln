@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { chunkKey, DEFAULT_LOBBY_DAY_HOURS, MAX_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_TILE_CELL, DEFAULT_TILE_NAMES, EDITOR_UNIVERSES_PATH, emptyMoney, isLocalizedMessage, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_STARTING_ITEMS, NEW_PF1E_CLASS_RULES, NEW_PF1E_RACE_RULES, NEW_AREA_BOUNDS, PF1E_CLASSES, MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_RACES, SF1E_CLASSES, SF1E_MAX_ABILITY_POINTS, SF1E_RACES, SF1E_THEMES, sf1eRaceRules, VOID_CELL, type Ruleset, type ThemeListPayload, type ThemeSettings, type ClassListPayload, type ClassSettings, type CreatedPayload, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorArea, type ItemListPayload, type ItemSettings, type RaceListPayload, type RaceSettings, type ResizeConflictPayload, type RulesetSettings, type TileListPayload, type TileSettings, type UniverseRole, type AreaListPayload } from '@multiverse-kiln/shared';
+import { chunkKey, DEFAULT_LOBBY_DAY_HOURS, MAX_LOBBY_DAY_HOURS, MAX_WALK_SECONDS,DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_TILE_CELL, DEFAULT_TILE_NAMES, EDITOR_UNIVERSES_PATH, emptyMoney, isLocalizedMessage, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_STARTING_ITEMS, NEW_PF1E_CLASS_RULES, NEW_PF1E_RACE_RULES, NEW_AREA_BOUNDS, PF1E_CLASSES, MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_RACES, SF1E_CLASSES, SF1E_MAX_ABILITY_POINTS, SF1E_RACES, SF1E_THEMES, sf1eRaceRules, VOID_CELL, type Ruleset, type ThemeListPayload, type ThemeSettings, type ClassListPayload, type ClassSettings, type CreatedPayload, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorArea, type ItemListPayload, type ItemSettings, type RaceListPayload, type RaceSettings, type ResizeConflictPayload, type RulesetSettings, type TileListPayload, type TileSettings, type UniverseRole, type AreaListPayload } from '@multiverse-kiln/shared';
 
 import { findDefaultItemIds } from '../src/db/itemRepo.js';
 import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
@@ -42,7 +42,7 @@ const lava: TileSettings = {
 	indoors: false,
 	color: 0xff4400,
 	visionCost: 0,
-	movementCost: 100
+	walkSeconds: 0
 };
 
 const torch: ItemSettings = {
@@ -428,6 +428,17 @@ describe('World editor API', () =>
 			assert.strictEqual((await send(ada, 'PATCH', path, { body: { lobbyNoVisionCost: false } })).status, 204);
 			assert.strictEqual((await send<EditableUniverse>(ada, 'GET', path)).body.lobbyNoVisionCost, false);
 		});
+
+		it('shows the time precisely until another way is chosen', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const path = `/${universeId}`;
+
+			assert.strictEqual((await send<EditableUniverse>(ada, 'GET', path)).body.displayTime, 'precise');
+			assert.strictEqual((await send(ada, 'PATCH', path, { body: { displayTime: 'exact' } })).status, 400);
+			assert.strictEqual((await send(ada, 'PATCH', path, { body: { displayTime: 'rough' } })).status, 204);
+			assert.strictEqual((await send<EditableUniverse>(ada, 'GET', path)).body.displayTime, 'rough');
+		});
 	});
 
 	describe('character settings', () =>
@@ -669,7 +680,7 @@ describe('World editor API', () =>
 			const universeId = await createUniverse(ada);
 			const otherId = await createUniverse(ada, 'Other');
 			const grassId = await defaultTileId('grass');
-			const autumn = { name: 'Autumn Grass', indoors: false, color: 0xc08030, visionCost: 0, movementCost: 0 };
+			const autumn = { name: 'Autumn Grass', indoors: false, color: 0xc08030, visionCost: 0, walkSeconds: 10 };
 
 			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/tiles/${grassId}`, { body: autumn })).status, 204);
 
@@ -688,7 +699,7 @@ describe('World editor API', () =>
 			const universeId = await createUniverse(ada);
 			const grassId = await defaultTileId('grass');
 			const tileId = (await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/tiles`, { body: lava })).body.id;
-			const darker = { name: null, indoors: false, color: 0x206010, visionCost: 0, movementCost: 0 };
+			const darker = { name: null, indoors: false, color: 0x206010, visionCost: 0, walkSeconds: 10 };
 
 			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/tiles/${grassId}`, { body: darker })).status, 204);
 			assert.deepStrictEqual((await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?edited=true`)).body.tiles, [{ id: grassId, key: 'grass', ...darker, custom: false, edited: true }]);
@@ -719,7 +730,7 @@ describe('World editor API', () =>
 			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/tiles/${theirTileId}`, { body: lava })).status, 404);
 			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/tiles/abc`, { body: lava })).status, 404);
 
-			for (const body of [{ ...lava, movementCost: 101 }, { ...lava, color: 0x1000000 }, { ...lava, name: '' }, { ...lava, name: null }])
+			for (const body of [{ ...lava, walkSeconds: MAX_WALK_SECONDS + 1 }, { ...lava, walkSeconds: -1 },{ ...lava, color: 0x1000000 }, { ...lava, name: '' }, { ...lava, name: null }])
 			{
 				assert.strictEqual((await send(ada, 'POST', `/${universeId}/tiles`, { body })).status, 400, JSON.stringify(body));
 			}
@@ -1260,7 +1271,7 @@ describe('World editor API', () =>
 
 			await send(ada, 'PUT', `/${universeId}/tiles/${grassId}`, { body: lava });
 			await send(ada, 'DELETE', `/${universeId}/tiles/${grassId}`);
-			await send(ada, 'POST', `/${universeId}/tiles`, { body: { ...lava, movementCost: 101 } });
+			await send(ada, 'POST', `/${universeId}/tiles`, { body: { ...lava, walkSeconds: MAX_WALK_SECONDS + 1 } });
 
 			assert.deepStrictEqual(published, [
 				{ kind: 'tiles', universeId },
