@@ -391,6 +391,24 @@ export class EditorScreen
 	}
 
 	/**
+	 * Shows a tab and area the page's history went back or forward to
+	 *
+	 * @param place The tab and area
+	 * @return False when the player kept the unsaved changes of the area editor, staying where they were
+	 */
+	showPlace(place: EditorPlace): boolean
+	{
+		if ((place.areaId !== this.place.areaId) && !this.areasTab.showPlace(place.areaId))
+		{
+			return(false);
+		}
+
+		this.selectTab(place.tab);
+
+		return(true);
+	}
+
+	/**
 	 * Remembers where the player is in the editor and tells the page
 	 *
 	 * @param place The tab and area

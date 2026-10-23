@@ -6,11 +6,10 @@
  * when it leaves a cell with a vision cost (50% doubles it, as a movement cost does). A cell with
  * OPAQUE_VISION_COST can be seen but not seen past, so a line of mountains blocks the view; it is also
  * seen when open ground beside it is, so the walls lining a corridor show along its length. The budget
- * is shorter at night unless the character has darkvision. The server uses this to decide which players
+ * is shorter at night and in dark indoor areas unless the character has darkvision. The server uses this to decide which players
  * each client is shown, and the client to draw fog over the cells out of sight
  */
 import { isInBounds, nearestCopy, positiveModulo, tileIdAt, type AreaTiles, type MapBounds } from './maps.js';
-import { daylight } from './time.js';
 
 /**
  * How many squares a character can see in full daylight
@@ -87,16 +86,22 @@ export function createVisionMap(tiles: AreaTiles, loopsEastWest: boolean, loopsN
 }
 
 /**
- * How many squares a character can see at a time of day
+ * How many squares a character can see in the light around them
  *
- * @param secondOfDay Seconds since midnight where the character is
+ * @param light How light it is where the character is, from 0 in the dark to 1 in full daylight (see areaLight)
  * @param darkvision Whether the character has darkvision
+ * @param fullVision Whether the area ignores the light (AreaPayload.fullVision)
  * @return The vision budget: NIGHT_VISION_SQUARES in the dark up to DAY_VISION_SQUARES in full
- * daylight, and never under DARKVISION_SQUARES with darkvision
+ * daylight, and never under DARKVISION_SQUARES with darkvision; always DAY_VISION_SQUARES with full vision
  */
-export function visionBudget(secondOfDay: number, darkvision: boolean): number
+export function visionBudget(light: number, darkvision: boolean, fullVision: boolean): number
 {
-	const budget = NIGHT_VISION_SQUARES + ((DAY_VISION_SQUARES - NIGHT_VISION_SQUARES) * daylight(secondOfDay));
+	if (fullVision)
+	{
+		return(DAY_VISION_SQUARES);
+	}
+
+	const budget = NIGHT_VISION_SQUARES + ((DAY_VISION_SQUARES - NIGHT_VISION_SQUARES) * light);
 
 	return((darkvision ? Math.max(budget, DARKVISION_SQUARES) : budget));
 }

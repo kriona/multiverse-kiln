@@ -1,6 +1,6 @@
 import type { Client } from 'colyseus';
 import { StateView, type MapSchema } from '@colyseus/schema';
-import { canSee, CHUNK_SIZE, Player, secondOfDay, ServerMessageType, visionBudget, type AreaTime, type ChunksPayload, type MovePayload, type WelcomePayload } from '@multiverse-kiln/shared';
+import { areaLight, canSee, CHUNK_SIZE, Player, secondOfDay, ServerMessageType, visionBudget, type AreaTime, type ChunksPayload, type MovePayload, type WelcomePayload } from '@multiverse-kiln/shared';
 
 import { chunksNear, type ChunkAreaMap } from '../logic/chunkArea.js';
 import { stepSeconds } from '../logic/gameClock.js';
@@ -1334,7 +1334,7 @@ export class AreaPlayers
 
 		return({
 			cell,
-			budget: visionBudget(second, player.darkvision)
+			budget: visionBudget(areaLight(area.loaded.lightLevel, second), player.darkvision, area.loaded.fullVision)
 		});
 	}
 

@@ -151,11 +151,11 @@
 									Where is morning?
 									<select id="lobby-faerie"></select>
 								</label>
-								<label class="checkbox" data-message="editor.lobby.noVisionCost" data-translation-context="Checkbox for whether characters in the lobby see past every tile as if none had a vision cost">
+								<label class="checkbox" data-message="editor.lobby.noVisionCost" data-translation-context="Checkbox for whether characters in the lobby see as far as in full daylight at any time of day, past every tile as if none had a vision cost">
 									<input id="lobby-no-vision-cost" type="checkbox" />
 									No vision cost in the lobby
 								</label>
-								<p class="hint" data-message="editor.lobby.noVisionCostHint" data-translation-context="Explains the lobby's no vision cost checkbox on the editor's Lobby tab">Forests, walls and other tiles don't block or shorten anyone's view in the lobby. How far characters see still changes with the time of day.</p>
+								<p class="hint" data-message="editor.lobby.noVisionCostHint" data-translation-context="Explains the lobby's no vision cost checkbox on the editor's Lobby tab">Tiles don't block or shorten anyone's view in the lobby, regardless of the tile's vision cost. Characters see as far as in full daylight at any time of day.</p>
 								<p id="lobby-error" class="form-error" role="alert" hidden></p>
 								<div class="form-buttons">
 									<span id="lobby-saved" class="form-saved" role="status"></span>
@@ -333,6 +333,11 @@
 											Indoors
 										</label>
 									</fieldset>
+									<label id="area-light-field" data-message="editor.area.lightLevel" data-translation-context="Label of the field for how light an indoor area is at any time of day: lit or dark" hidden>
+										Light level
+										<select id="area-light"></select>
+									</label>
+									<p id="area-light-hint" class="hint" data-message="editor.area.lightLevelHint" data-translation-context="Explains the light level field of an indoor area" hidden>A lit area is as light as full daylight at any time of day, and a dark one as dark as night. Outdoor areas follow the time of day.</p>
 									<label data-message="editor.area.defaultTile" data-translation-context="Label of the field for the tile an area's map is filled with where nothing else is painted">
 										Default tile
 										<select id="area-default-tile"></select>

@@ -1,6 +1,6 @@
 import type { MapBounds } from './maps.js';
 import type { AreaTime } from './time.js';
-import type { Ruleset, AreaLinkMode } from './universes.js';
+import type { Ruleset, AreaLightLevel, AreaLinkMode } from './universes.js';
 
 /**
  * Message types clients send to the rooms with a map: a universe's lobby and a group's game room
@@ -105,11 +105,6 @@ export interface CellsSeenPayload
 	 * The links on the cells
 	 */
 	links: AreaLinkCell[];
-
-	/**
-	 * How many cells of the area the group has seen now (AreaPayload.exploredCells)
-	 */
-	exploredCells: number;
 }
 
 /**
@@ -264,6 +259,17 @@ export interface AreaPayload
 	 */
 	time: AreaTime;
 
+	/**
+	 * How light an indoor area is at any time of day, or null for an outdoor area, which follows the time of day (see areaLight)
+	 */
+	lightLevel: AreaLightLevel | null;
+
+	/**
+	 * Whether everyone sees DAY_VISION_SQUARES whatever the time of day: a lobby whose universe gives it
+	 * no vision cost, whose tiles have none either
+	 */
+	fullVision: boolean;
+
 	bounds: MapBounds;
 	loopsEastWest: boolean;
 	loopsNorthSouth: boolean;
@@ -282,11 +288,6 @@ export interface AreaPayload
 	chunks: AreaChunk[];
 
 	links: AreaLinkCell[];
-
-	/**
-	 * In a group's room, how many cells of the area the group has seen; null in a lobby, which remembers nothing
-	 */
-	exploredCells: number | null;
 }
 
 /**

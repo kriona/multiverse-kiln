@@ -376,6 +376,8 @@ export function editorAreaPayload(area: EditorArea, tiles: readonly EditorTile[]
 		indoors: area.indoors,
 		// The editor draws the map in daylight
 		time: { passage: 'always_noon' },
+		lightLevel: null,
+		fullVision: false,
 		bounds: area.bounds,
 		loopsEastWest: area.loopsEastWest,
 		loopsNorthSouth: area.loopsNorthSouth,
@@ -388,7 +390,6 @@ export function editorAreaPayload(area: EditorArea, tiles: readonly EditorTile[]
 			visionCost: tile.visionCost
 		})),
 		chunks: [],
-		links: [],
-		exploredCells: null
+		links: []
 	});
 }

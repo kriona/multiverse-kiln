@@ -30,6 +30,8 @@ function loadedArea(): LoadedArea
 		},
 		ruleset: 'pf1e',
 		time: { passage: 'flows_normally' },
+		lightLevel: null,
+		fullVision: false,
 		bounds: { minColumn: -100, minRow: -100, maxColumn: 99, maxRow: 99 },
 		defaultTileId: GRASS,
 		loopsEastWest: false,
@@ -234,7 +236,6 @@ describe('AreaCache', () =>
 
 		assert.deepStrictEqual(payload.chunks.map((chunk) => chunkKey(chunk.chunkColumn, chunk.chunkRow)), [chunkKey(0, 0)]);
 		assert.strictEqual(toAreaPayload(area, []).chunks.length, 0);
-		assert.strictEqual(payload.exploredCells, null);
 	});
 
 	it('puts only the cells and links a group has seen in an area\'s payload', async () =>
@@ -267,6 +268,5 @@ describe('AreaCache', () =>
 		assert.deepStrictEqual(first.cells.slice(0, 3), [FOREST, DEFAULT_TILE_CELL, UNSEEN_CELL]);
 		assert.ok(second.cells.every((value) => (value === UNSEEN_CELL)));
 		assert.deepStrictEqual(payload.links, [{ column: 0, row: 0, mode: 'automatic' }]);
-		assert.strictEqual(payload.exploredCells, 2);
 	});
 });

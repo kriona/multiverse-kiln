@@ -7,7 +7,7 @@
  * comes from where a cell is on the map
  */
 import { positiveModulo, type MapBounds } from './maps.js';
-import type { AreaPassageOfTime, FaerieMorning, LobbyPassageOfTime, PassageOfTime } from './universes.js';
+import type { AreaLightLevel, AreaPassageOfTime, FaerieMorning, LobbyPassageOfTime, PassageOfTime } from './universes.js';
 
 /**
  * Seconds in a day of game time
@@ -327,6 +327,28 @@ export function daylight(seconds: number): number
 	}
 
 	return(((DUSK_SECONDS + half) - time) / TWILIGHT_SECONDS);
+}
+
+/**
+ * How light it is in an area at a time of day
+ *
+ * @param lightLevel The area's light level while it is indoors, or null outdoors (AreaPayload.lightLevel)
+ * @param seconds Seconds since midnight
+ * @return 1 in a lit area, 0 in a dark one, and outdoors the daylight at that time (see daylight)
+ */
+export function areaLight(lightLevel: AreaLightLevel | null, seconds: number): number
+{
+	switch (lightLevel)
+	{
+		case 'lit':
+			return(1);
+
+		case 'dark':
+			return(0);
+
+		case null:
+			return(daylight(seconds));
+	}
 }
 
 /**

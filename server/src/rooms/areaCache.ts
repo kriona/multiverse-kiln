@@ -407,14 +407,6 @@ export interface AreaMemory
 	 * @return True when it has
 	 */
 	has(areaId: string, column: number, row: number): boolean;
-
-	/**
-	 * How many cells of an area the group has seen
-	 *
-	 * @param areaId The area's ID
-	 * @return The number of cells
-	 */
-	count(areaId: string): number;
 }
 
 /**
@@ -437,6 +429,8 @@ export function toAreaPayload(area: ActiveArea, chunkKeys: Iterable<string>, mem
 		ruleset: loaded.ruleset,
 		indoors: loaded.area.indoors,
 		time: loaded.time,
+		lightLevel: loaded.lightLevel,
+		fullVision: loaded.fullVision,
 		bounds: loaded.bounds,
 		loopsEastWest: loaded.loopsEastWest,
 		loopsNorthSouth: loaded.loopsNorthSouth,
@@ -457,8 +451,7 @@ export function toAreaPayload(area: ActiveArea, chunkKeys: Iterable<string>, mem
 				column: link.column,
 				row: link.row,
 				mode: link.mode
-			})),
-		exploredCells: (memory ? memory.count(loaded.area.id) : null)
+			}))
 	});
 }
 

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { Callbacks } from '@colyseus/sdk';
-import { cellIndexInChunk, chunkCoordinate, chunkKey, createVisionMap, daylight, GameServerMessageType, GRID_CELL_SIZE, isInBounds, MessageType, nearestCopy, partOfDay, PATCH_INTERVAL_MS, PLAYER_RADIUS, positiveModulo, secondOfDay, ServerMessageType, tileIdAt, UNSEEN_CELL, VIEW_COLUMNS, VIEW_HEIGHT, VIEW_ROWS, VIEW_WIDTH, visibleCells, visionBudget, visionKey, type CellsSeenPayload, type CellValue, type ChunksPayload, type MovePayload, type Player, type AreaPayload, type VisionMap } from '@multiverse-kiln/shared';
+import { areaLight, cellIndexInChunk, chunkCoordinate, chunkKey, createVisionMap, GameServerMessageType, GRID_CELL_SIZE, isInBounds, MessageType, nearestCopy, partOfDay, PATCH_INTERVAL_MS, PLAYER_RADIUS, positiveModulo, secondOfDay, ServerMessageType, tileIdAt, UNSEEN_CELL, VIEW_COLUMNS, VIEW_HEIGHT, VIEW_ROWS, VIEW_WIDTH, visibleCells, visionBudget, visionKey, type CellsSeenPayload, type CellValue, type ChunksPayload, type MovePayload, type Player, type AreaPayload, type VisionMap } from '@multiverse-kiln/shared';
 
 import { MovementKeys } from '../input/MovementKeys';
 import { t } from '../localization';
@@ -193,11 +193,6 @@ export class MapScene extends Phaser.Scene
 	 * Counts the chunks received, so the fog is drawn again when the map under it changes
 	 */
 	private chunkRevision = 0;
-
-	/**
-	 * How many cells of the area the group has seen, in a group's room; null in a lobby, which remembers nothing
-	 */
-	private exploredCells: number | null = null;
 
 	constructor()
 	{
@@ -395,7 +390,7 @@ export class MapScene extends Phaser.Scene
 
 				sights.push({
 					cell,
-					budget: visionBudget(this.secondOfDayAt(cell), player.darkvision)
+					budget: visionBudget(areaLight(this.area.lightLevel, this.secondOfDayAt(cell)), player.darkvision, this.area.fullVision)
 				});
 			}
 		});
@@ -529,8 +524,9 @@ export class MapScene extends Phaser.Scene
 	}
 
 	/**
-	 * Darkens the map for the time of day where the player is, and tells screen reader users as the part
-	 * of the day changes
+	 * Darkens the map for the light where the player is: the time of day outdoors, or an indoor area's
+	 * light level. Outdoors, tells screen reader users as the part of the day changes; indoors the light
+	 * doesn't change with it
 	 */
 	private updateDaylight(): void
 	{
@@ -541,8 +537,12 @@ export class MapScene extends Phaser.Scene
 			return;
 		}
 
-		this.night?.setAlpha(1 - daylight(seconds));
-		this.announcer.partOfDayChanged(partOfDay(seconds));
+		this.night?.setAlpha(1 - areaLight(this.area.lightLevel, seconds));
+
+		if (this.area.lightLevel === null)
+		{
+			this.announcer.partOfDayChanged(partOfDay(seconds));
+		}
 	}
 
 	/**
@@ -580,7 +580,6 @@ export class MapScene extends Phaser.Scene
 	{
 		this.area = area;
 		this.chunks = new Map(area.chunks.map((chunk) => [chunkKey(chunk.chunkColumn, chunk.chunkRow), chunk.cells]));
-		this.exploredCells = area.exploredCells;
 		this.manualLinks =new Set(area.links.filter((link) => (link.mode === 'manual')).map((link) => `${link.column},${link.row}`));
 		this.visionMap = createVisionMap(
 			{
@@ -666,7 +665,6 @@ export class MapScene extends Phaser.Scene
 			}
 		}
 
-		this.exploredCells = payload.exploredCells;
 		this.chunkRevision++;
 		this.areaRenderer?.refreshCells(changed);
 	}
@@ -985,29 +983,8 @@ export class MapScene extends Phaser.Scene
 			row,
 			tileName: (tile ? tileName(tile, this.area.ruleset) : undefined),
 			secondOfDay: seconds,
-			sightSquares: Math.floor(visionBudget(seconds, own.darkvision)),
-			explored: this.exploredShare()
+			sightSquares: Math.floor(visionBudget(areaLight(this.area.lightLevel, seconds), own.darkvision, this.area.fullVision))
 		}, others);
-	}
-
-	/**
-	 * How much of the area the group has seen
-	 *
-	 * @return From 0 to 1, rounded down to a whole percent so an area isn't called fully explored too
-	 * soon; undefined in a lobby, which remembers nothing
-	 */
-	private exploredShare(): number | undefined
-	{
-		if (this.exploredCells === null)
-		{
-			return(undefined);
-		}
-
-		const { bounds } = this.area;
-		const cells = ((bounds.maxColumn - bounds.minColumn) + 1) * ((bounds.maxRow - bounds.minRow) + 1);
-
-		// Cells seen before a smaller map cut them off still count, so the share can't pass the whole area
-		return(Math.min(Math.floor((this.exploredCells / cells) * 100) / 100, 1));
 	}
 
 	/**

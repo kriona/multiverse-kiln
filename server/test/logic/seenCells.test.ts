@@ -14,10 +14,9 @@ describe('SeenCells', () =>
 		assert.strictEqual(seen.has('area', -1, 33), true);
 		assert.strictEqual(seen.has('area', 31, 1), false, 'the same place in another chunk');
 		assert.strictEqual(seen.has('other', 0, 0), false);
-		assert.strictEqual(seen.count('area'), 3);
 	});
 
-	it('loads what was saved, counting it', () =>
+	it('loads what was saved', () =>
 	{
 		const cells = new Uint8Array(SEEN_CHUNK_BYTES);
 
@@ -27,7 +26,6 @@ describe('SeenCells', () =>
 
 		seen.load([{ areaId: 'area', chunkColumn: 0, chunkRow: 0, cells }]);
 
-		assert.strictEqual(seen.count('area'), 2);
 		assert.strictEqual(seen.has('area', 2, 0), true);
 		assert.deepStrictEqual(seen.mark('area', [visionKey(2, 0)]), []);
 	});
@@ -93,7 +91,6 @@ describe('SeenCells', () =>
 		seen.forget('area');
 
 		assert.strictEqual(seen.has('area', 0, 0), false);
-		assert.strictEqual(seen.count('area'), 0);
 		assert.deepStrictEqual(seen.takeChanged(), []);
 	});
 });

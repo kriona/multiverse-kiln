@@ -145,6 +145,7 @@ describe('areaRepo', () =>
 					parentAreaId: null,
 					enabled: true,
 					indoors: false,
+					lightLevel: 'lit',
 					defaultTileId: grass,
 					passageOfTime: 'inherit',
 					faerieMorning: null,

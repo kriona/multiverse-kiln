@@ -272,6 +272,30 @@ export const FAERIE_MORNING_NAMES: Record<FaerieMorning, MessageDescriptor> = de
 });
 
 /**
+ * How light an indoor area is, whatever the time of day: lit is as light as full daylight, dark as dark
+ * as night. Outdoor areas follow the time of day instead
+ */
+export const AREA_LIGHT_LEVELS = ['lit', 'dark'] as const;
+
+export type AreaLightLevel = typeof AREA_LIGHT_LEVELS[number];
+
+/**
+ * Each light level's name
+ */
+export const AREA_LIGHT_LEVEL_NAMES: Record<AreaLightLevel, MessageDescriptor> = defineMessages({
+	lit: {
+		id: 'universe.lightLevel.lit',
+		defaultMessage: 'lit',
+		description: 'Light level of an indoor area that is as light as full daylight at any time of day'
+	},
+	dark: {
+		id: 'universe.lightLevel.dark',
+		defaultMessage: 'dark',
+		description: 'Light level of an indoor area that is as dark as night at any time of day'
+	}
+});
+
+/**
  * How an area link is taken: automatic links move you as soon as you step onto the cell, manual links
  * offer to
  */

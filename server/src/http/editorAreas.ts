@@ -149,6 +149,7 @@ async function createAreaRoute(request: Request, response: Response): Promise<vo
 		parentAreaId: (body.data.parentAreaId ?? null),
 		enabled: (body.data.enabled ?? (universe.stage === 'in_the_beginning')),
 		indoors,
+		lightLevel: (body.data.lightLevel ?? 'lit'),
 		defaultTileId: (body.data.defaultTileId ?? await defaultAreaTileId(universe.ruleset, indoors)),
 		passageOfTime: (body.data.passageOfTime ?? 'inherit'),
 		faerieMorning: (body.data.faerieMorning ?? null),

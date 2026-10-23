@@ -43,11 +43,6 @@ export class SeenCells
 	private readonly areas = new Map<string, Map<string, Uint8Array>>();
 
 	/**
-	 * How many cells of each area have been seen, by area ID
-	 */
-	private readonly counts = new Map<string, number>();
-
-	/**
 	 * The chunks seen since the last save, by area ID, then by chunkKey()
 	 */
 	private readonly changed = new Map<string, Set<string>>();
@@ -61,10 +56,7 @@ export class SeenCells
 	{
 		for (const chunk of saved)
 		{
-			const bits = Uint8Array.from(chunk.cells);
-
-			this.chunksOf(chunk.areaId).set(chunkKey(chunk.chunkColumn, chunk.chunkRow), bits);
-			this.counts.set(chunk.areaId, this.count(chunk.areaId) + countBits(bits));
+			this.chunksOf(chunk.areaId).set(chunkKey(chunk.chunkColumn, chunk.chunkRow), Uint8Array.from(chunk.cells));
 		}
 	}
 
@@ -101,8 +93,6 @@ export class SeenCells
 			}
 		}
 
-		this.counts.set(areaId, this.count(areaId) + fresh.length);
-
 		return(fresh);
 	}
 
@@ -119,17 +109,6 @@ export class SeenCells
 		const bits = this.areas.get(areaId)?.get(chunkKey(chunkCoordinate(column), chunkCoordinate(row)));
 
 		return((bits !== undefined) && isBitSet(bits, cellIndexInChunk(column, row)));
-	}
-
-	/**
-	 * How many cells of an area have been seen, counting any a smaller map has since cut off
-	 *
-	 * @param areaId The area's ID
-	 * @return The number of cells
-	 */
-	count(areaId: string): number
-	{
-		return(this.counts.get(areaId) ?? 0);
 	}
 
 	/**
@@ -160,7 +139,6 @@ export class SeenCells
 	forget(areaId: string): void
 	{
 		this.areas.delete(areaId);
-		this.counts.delete(areaId);
 		this.changed.delete(areaId);
 	}
 

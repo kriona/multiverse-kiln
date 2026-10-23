@@ -1,4 +1,4 @@
-import { ancestorAreas, canEditWorld, childAreas, defineMessages, descendantAreaIds, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_AREA_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, AREA_PASSAGES_OF_TIME, areasTabListing, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary, type FaerieMorning, type AreaListPayload, type AreaPassageOfTime, type AreaSettings } from '@multiverse-kiln/shared';
+import { ancestorAreas, AREA_LIGHT_LEVEL_NAMES, AREA_LIGHT_LEVELS, canEditWorld, childAreas, defineMessages, descendantAreaIds, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_AREA_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, AREA_PASSAGES_OF_TIME, areasTabListing, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary, type FaerieMorning, type AreaListPayload, type AreaLightLevel, type AreaPassageOfTime, type AreaSettings } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -46,6 +46,9 @@ export class AreasTab
 	private readonly parent = getElement('area-parent', HTMLSelectElement);
 	private readonly outdoors = getElement('area-outdoors', HTMLInputElement);
 	private readonly indoors = getElement('area-indoors', HTMLInputElement);
+	private readonly lightField = getElement('area-light-field', HTMLElement);
+	private readonly lightLevel = getElement('area-light', HTMLSelectElement);
+	private readonly lightHint = getElement('area-light-hint', HTMLElement);
 	private readonly defaultTile = getElement('area-default-tile', HTMLSelectElement);
 	private readonly timeField = getElement('area-time-field', HTMLElement);
 	private readonly time = getElement('area-time', HTMLSelectElement);
@@ -137,6 +140,7 @@ export class AreasTab
 		this.addName.maxLength = MAX_AREA_NAME_LENGTH;
 		setOptions(this.time, namedOptions(AREA_PASSAGES_OF_TIME, PASSAGE_OF_TIME_NAMES));
 		setOptions(this.faerie, namedOptions(FAERIE_MORNINGS, FAERIE_MORNING_NAMES));
+		setOptions(this.lightLevel, namedOptions(AREA_LIGHT_LEVELS, AREA_LIGHT_LEVEL_NAMES));
 
 		this.time.addEventListener('change', () =>
 		{
@@ -153,6 +157,7 @@ export class AreasTab
 			choice.addEventListener('change', () =>
 			{
 				this.fillDefaultTiles(this.indoors.checked, Number(this.defaultTile.value));
+				this.showLightField();
 				this.saved.textContent = '';
 			});
 		}
@@ -256,9 +261,43 @@ export class AreasTab
 	 */
 	async openArea(areaId: string): Promise<void>
 	{
+		if (!this.editorView.hidden && !this.changes.confirmDiscard())
+		{
+			return;
+		}
+
+		await this.loadArea(areaId);
+	}
+
+	/**
+	 * Opens an area, or the list for none, that the page's history went back or forward to, first asking
+	 * whether to discard the unsaved changes of the area the editor shows
+	 *
+	 * @param areaId The area's ID, or undefined for the list
+	 * @return False when the player kept the changes, leaving the tab as it was
+	 */
+	showPlace(areaId: string | undefined): boolean
+	{
+		if (!this.editorView.hidden && !this.changes.confirmDiscard())
+		{
+			return(false);
+		}
+
+		void ((areaId === undefined) ? this.showList() : this.loadArea(areaId));
+
+		return(true);
+	}
+
+	/**
+	 * Opens an area in the area editor, discarding any unsaved changes of the area it shows
+	 *
+	 * @param areaId The area's ID
+	 */
+	private async loadArea(areaId: string): Promise<void>
+	{
 		const universe = this.universe;
 
-		if (!universe || (!this.editorView.hidden && !this.changes.confirmDiscard()))
+		if (!universe)
 		{
 			return;
 		}
@@ -493,6 +532,8 @@ export class AreasTab
 		this.parent.value = (area.parentAreaId ?? '');
 		this.outdoors.checked = !area.indoors;
 		this.indoors.checked = area.indoors;
+		this.lightLevel.value = area.lightLevel;
+		this.showLightField();
 		this.fillDefaultTiles(area.indoors, area.defaultTileId);
 		this.time.value = area.passageOfTime;
 		this.timeField.hidden = isLobby;
@@ -573,6 +614,15 @@ export class AreasTab
 	}
 
 	/**
+	 * Shows the light level while the area is indoors, the only place it has an effect
+	 */
+	private showLightField(): void
+	{
+		this.lightField.hidden = !this.indoors.checked;
+		this.lightHint.hidden = !this.indoors.checked;
+	}
+
+	/**
 	 * Shows "where is morning?" for faerie time, which also can't loop
 	 */
 	private updateTimeFields(): void
@@ -639,6 +689,7 @@ export class AreasTab
 			parentAreaId: ((this.parent.value === '') ? null : this.parent.value),
 			enabled: this.enabled.checked,
 			indoors: this.indoors.checked,
+			lightLevel: this.lightLevel.value as AreaLightLevel,
 			defaultTileId: Number(this.defaultTile.value),
 			passageOfTime,
 			faerieMorning: ((passageOfTime === 'faerie') ? this.faerie.value as FaerieMorning : null),

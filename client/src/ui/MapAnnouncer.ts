@@ -2,6 +2,7 @@ import { partOfDay, type PartOfDay } from '@multiverse-kiln/shared';
 
 import { formatList, formatTimeOfDay, t } from '../localization';
 import { announce } from './announcer';
+import { showToast } from './toast';
 
 /**
  * How long players coming into or going out of view are collected before they are read out together
@@ -65,11 +66,6 @@ export interface PlayerPosition
 	 * How many squares the player can see across open ground (visionBudget)
 	 */
 	sightSquares: number;
-
-	/**
-	 * How much of the area the group has seen, from 0 to 1; undefined in a lobby, which remembers nothing
-	 */
-	explored: number | undefined;
 }
 
 /**
@@ -221,7 +217,7 @@ export class MapAnnouncer
 
 	/**
 	 * Reads out where the player is, the tile they stand on, the time of day, and the other players they
-	 * can see, nearest first
+	 * can see, nearest first, and shows it in a toast
 	 *
 	 * @param position Where the player is
 	 * @param others The other players they can see
@@ -234,7 +230,7 @@ export class MapAnnouncer
 		const time = t({
 			id: 'map.announce.timeOfDay',
 			defaultMessage: 'It is {time}, {part, select, dawn {dawn} day {day} dusk {dusk} other {night}}.',
-			description: 'Read out by screen readers when the player asks where they are, after their position: the time of day in the game, e.g. "6:30 PM", and the part of the day it falls in'
+			description: 'Read out by screen readers, and shown at the top of the page, when the player asks where they are, after their position: the time of day in the game, e.g. "6:30 PM", and the part of the day it falls in'
 		}, {
 			time: formatTimeOfDay(position.secondOfDay),
 			part: partOfDay(position.secondOfDay)
@@ -242,25 +238,16 @@ export class MapAnnouncer
 		const sight = t({
 			id: 'map.announce.sight',
 			defaultMessage: 'You can see {squares, plural, one {# square} other {# squares}} across open ground.',
-			description: 'Read out by screen readers when the player asks where they are, after the time of day: how far they can see, which is less at night unless their character has darkvision, and less past forests and mountains'
+			description: 'Read out by screen readers, and shown at the top of the page, when the player asks where they are, after the time of day: how far they can see, which is less at night unless their character has darkvision, and less past forests and mountains'
 		}, {
 			squares: position.sightSquares
 		});
-		const explored = ((position.explored === undefined)
-			? ''
-			: ` ${t({
-				id: 'map.announce.explored',
-				defaultMessage: 'Your group has explored {share, number, percent} of this area.',
-				description: 'Read out by screen readers when the player asks where they are, after how far they can see: how much of the area\'s map the group has seen, e.g. "45%"; the map shows the rest black'
-			}, {
-				share: position.explored
-			})}`);
 
 		// Each part is whole sentences
-		announce(`${t({
+		showToast(`${t({
 			id: 'map.announce.position',
 			defaultMessage: '{area}, column {column}, row {row}{onTile, select, yes {, on {tile}} other {}}. {count, plural, =0 {You can\'t see anyone else.} other {You can see {players}.}}',
-			description: 'Read out by screen readers when the player asks where they are: the area\'s name, their cell, the tile they stand on (e.g. Grass) when it is known, and the other players they can see; {players} is a list of descriptions such as "Bo, 3 cells northeast"'
+			description: 'Read out by screen readers, and shown at the top of the page, when the player asks where they are: the area\'s name, their cell, the tile they stand on (e.g. Grass) when it is known, and the other players they can see; {players} is a list of descriptions such as "Bo, 3 cells northeast"'
 		}, {
 			area: position.areaName,
 			column: position.column,
@@ -269,7 +256,7 @@ export class MapAnnouncer
 			tile: (position.tileName ?? ''),
 			count: players.length,
 			players: formatList(players, 'conjunction')
-		})} ${time} ${sight}${explored}`, true);
+		})} ${time} ${sight}`, { announce: 'urgent' });
 	}
 
 	/**

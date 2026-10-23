@@ -1019,6 +1019,7 @@ describe('World editor API', () =>
 				parentAreaId: null,
 				enabled: true,
 				indoors: false,
+				lightLevel: 'lit',
 				defaultTileId: await defaultTileId('grass'),
 				passageOfTime: 'inherit',
 				faerieMorning: null,
@@ -1066,6 +1067,17 @@ describe('World editor API', () =>
 			assert.strictEqual((await send(ada, 'PATCH', path, { body: { passageOfTime: 'faerie', faerieMorning: 'east' } })).status, 400);
 			assert.strictEqual((await send(ada, 'PATCH', path, { body: { passageOfTime: 'faerie', faerieMorning: 'east', loopsEastWest: false } })).status, 204);
 			assert.strictEqual((await send(ada, 'PATCH', path, { body: { defaultTileId: theirTileId } })).status, 400);
+		});
+
+		it('changes an area\'s light level', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const areaId = await createArea(ada, universeId, { name: 'Cellar', indoors: true });
+			const path = `/${universeId}/areas/${areaId}`;
+
+			assert.strictEqual((await send(ada, 'PATCH', path, { body: { lightLevel: 'dim' } })).status, 400);
+			assert.strictEqual((await send(ada, 'PATCH', path, { body: { lightLevel: 'dark' } })).status, 204);
+			assert.strictEqual((await send<EditorArea>(ada, 'GET', path)).body.lightLevel, 'dark');
 		});
 
 		it('deletes areas, but not the lobby or starting area', async () =>

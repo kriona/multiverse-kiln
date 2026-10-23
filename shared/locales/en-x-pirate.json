@@ -519,6 +519,14 @@
 		"message": "Below-decks tiles",
 		"source": "Indoor tiles"
 	},
+	"editor.area.lightLevel": {
+		"message": "Lantern light",
+		"source": "Light level"
+	},
+	"editor.area.lightLevelHint": {
+		"message": "A lantern-lit place be bright as broad daylight at any hour, an' a pitch-dark one black as night. Places above decks follow the sun.",
+		"source": "A lit area is as light as full daylight at any time of day, and a dark one as dark as night. Outdoor areas follow the time of day."
+	},
 	"editor.area.loading": {
 		"message": "Hoistin'...",
 		"source": "Loading..."
@@ -1212,8 +1220,8 @@
 		"source": "No vision cost in the lobby"
 	},
 	"editor.lobby.noVisionCostHint": {
-		"message": "Forests, walls an' other tiles don't block nor shorten anyone's view in the tavern. How far a soul can spy still changes with the hour.",
-		"source": "Forests, walls and other tiles don't block or shorten anyone's view in the lobby. How far characters see still changes with the time of day."
+		"message": "Tiles don't block nor shorten anyone's view in the tavern, regardless of the tile's vision cost. A soul can spy as far as in broad daylight at any hour.",
+		"source": "Tiles don't block or shorten anyone's view in the lobby, regardless of the tile's vision cost. Characters see as far as in full daylight at any time of day."
 	},
 	"editor.lobby.saveFailed": {
 		"message": "Couldn't stow the tavern's settings.",
@@ -2919,10 +2927,6 @@
 		"message": "{count, plural, one {{players} slips out o' sight.} other {{players} slip out o' sight.}}",
 		"source": "{count, plural, one {{players} goes out of view.} other {{players} go out of view.}}"
 	},
-	"map.announce.explored": {
-		"message": "Yer crew has charted {share, number, percent} o' these waters.",
-		"source": "Your group has explored {share, number, percent} of this area."
-	},
 	"map.announce.partOfDay": {
 		"message": "{part, select, dawn {First light breaks.} day {The sun be high.} dusk {Dusk be fallin'.} other {Night falls o'er the sea.}}",
 		"source": "{part, select, dawn {Dawn breaks.} day {The sun is up.} dusk {Dusk falls.} other {Night falls.}}"
@@ -3810,6 +3814,14 @@
 	"universe.faerie.west": {
 		"message": "west",
 		"source": "west"
+	},
+	"universe.lightLevel.dark": {
+		"message": "pitch dark",
+		"source": "dark"
+	},
+	"universe.lightLevel.lit": {
+		"message": "lantern-lit",
+		"source": "lit"
 	},
 	"universe.lobbyAreaName": {
 		"message": "Tavern",

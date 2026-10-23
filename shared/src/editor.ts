@@ -14,7 +14,7 @@ import type { ClassRules, RaceRules } from './racesAndClasses.js';
 import type { Pf1eSettings } from './rulesets/pf1e/settings.js';
 import type { Sf1eSettings } from './rulesets/sf1e/settings.js';
 import type { Sf1eThemeRules } from './rulesets/sf1e/themes.js';
-import type { FaerieMorning, LobbyPassageOfTime, PassageOfTime, Ruleset, UniverseRole, UniverseStage, AreaLinkMode, AreaPassageOfTime } from './universes.js';
+import type { FaerieMorning, LobbyPassageOfTime, PassageOfTime, Ruleset, UniverseRole, UniverseStage, AreaLightLevel, AreaLinkMode, AreaPassageOfTime } from './universes.js';
 
 /**
  * Base of every editor route. Under it, with :universeId and :areaId standing for IDs:
@@ -788,6 +788,11 @@ export interface AreaSettings
 
 	enabled: boolean;
 	indoors: boolean;
+
+	/**
+	 * How light the area is while it is indoors; kept while it is outdoors, where it has no effect
+	 */
+	lightLevel: AreaLightLevel;
 
 	/**
 	 * A tile the universe can use (an EditorTile's ID)

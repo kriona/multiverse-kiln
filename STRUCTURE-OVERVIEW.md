@@ -303,7 +303,7 @@ Money is credits (`cr`), the only coin.
 		- shows an additional option for "how quickly?" with a description of "how long in real-time does it take for 1 day in the lobby to pass?" minimum 1 hour, maximum 240 hours. Default 24. Current time of day is based on the Unix epoch, so a 24-hour day follows the time in UTC
 	- `faerie`, with "where is morning?". The lobby's map can't loop while it is chosen
 	- the lobby's area has no passage of time of its own: the area editor says it is set here
-- a checkbox for "no vision cost in the lobby", checked by default: every tile in the lobby is seen past as if it had a 0% vision cost. The vision budget still changes with the time of day
+- a checkbox for "no vision cost in the lobby", checked by default: everyone in the lobby has the full daylight vision budget at any time of day, and every tile is seen past as if it had a 0% vision cost
 - a button for "Edit Map" which takes you to the [area editor](#editor-area) for the lobby
 
 ### Tab: Characters
@@ -538,7 +538,7 @@ Outside of combat, time is based on your actions - if you are standing still, no
 
 Each group has its own clock, which starts at 8 in the morning and is saved with the group. The whole group shares that one time: when one member walks, time passes for everyone, including members standing still. Members walking at the same time don't pass the time twice: a step is left out when another member's step was counted less than half a second (real time) before it, so two members walking side by side pass the time of one. Only walking in an area whose time `flows normally` passes the group's time: in an `always` area or a `faerie` one the time of day doesn't come from the clock, so the clock stands still there. The group's page shows the day and the time of day in the character's area: the clock's time, or the area's fixed time in an `always` area. In a `faerie` area it shows a word for that time of day, such as afternoon, in place of the clock's time.
 
-The time of day comes from the area's passage of time (see [Edit Universe](#edit-universe)): from the group's clock when time flows normally, fixed for the `always` settings, and from the cell's place on the map for `faerie`. It is light from 7 in the morning to 5 in the evening, dark from 7 in the evening to 5 in the morning, and the light changes over the two hours around dawn (6:00) and dusk (18:00). The map darkens with it, and screen readers are told as dawn breaks or night falls.
+The time of day comes from the area's passage of time (see [Edit Universe](#edit-universe)): from the group's clock when time flows normally, fixed for the `always` settings, and from the cell's place on the map for `faerie`. It is light from 7 in the morning to 5 in the evening, dark from 7 in the evening to 5 in the morning, and the light changes over the two hours around dawn (6:00) and dusk (18:00). The map darkens with it, and screen readers are told as dawn breaks or night falls. An indoor area stays as light as its light level instead, and says nothing of dawn or dusk.
 
 On the overworld map, squares are much bigger distances. The scale is not yet defined, but time will pass faster.
 
@@ -550,12 +550,12 @@ Each group has its own world state, stored as a diff of the universe as it was b
 
 Disbanding a group deletes its world state. Characters (items, money, experience) are stored separately and kept.
 
-What a group has explored is kept as the cells it has seen, area by area: a cell is seen once any member has had it in sight (see [Vision](#vision)). The group's room keeps them in memory and saves them every 30 seconds while anyone plays and when the last player leaves. A window in a group's room is only ever sent the tiles of cells the group has seen, and the links on them, so a script in the browser can't uncover the rest: every other cell comes as unseen, and its tile is sent as soon as a member first sees it. The fog follows where players are drawn, a moment behind the server, so those tiles have usually arrived before the fog uncovers them. Cells out of sight that the group has seen are drawn dimmed, and cells it has never seen are black. A lobby remembers nothing, so there everything out of sight is only dimmed. Screen readers are told how much of the area the group has explored when the player asks where they are. Deleting an area deletes what every group has seen of it.
+What a group has explored is kept as the cells it has seen, area by area: a cell is seen once any member has had it in sight (see [Vision](#vision)). The group's room keeps them in memory and saves them every 30 seconds while anyone plays and when the last player leaves. A window in a group's room is only ever sent the tiles of cells the group has seen, and the links on them, so a script in the browser can't uncover the rest: every other cell comes as unseen, and its tile is sent as soon as a member first sees it. The fog follows where players are drawn, a moment behind the server, so those tiles have usually arrived before the fog uncovers them. Cells out of sight that the group has seen are drawn dimmed, and cells it has never seen are black. A lobby remembers nothing, so there everything out of sight is only dimmed. Deleting an area deletes what every group has seen of it.
 
 ## Vision
 Each character has a vision budget, in squares. A character looks along straight lines from their cell, and each step along a line spends its length (a diagonal step counts as one and a half squares, as in movement), more when it leaves a tile with a vision cost: 50% spends twice as much, the way a movement cost slows walking. A 100% tile can be seen but not seen past, so a line of mountains blocks your view. It is also seen when open ground next to it is, so the walls lining a tunnel show along its length, while the inside of a thick wall and its far side stay hidden. The character's own cell never gets in the way. Void cells are seen past.
-- The budget is 20 squares in full daylight and 4 at night, changing with the light around dawn and dusk. Darkvision sees at least 12 squares (60 feet), day or night.
-- In a group's room, the group sees whatever any of its members in the area sees, so members always see each other. In a lobby each player sees only what they see themselves, and unless the universe turns it off on the [Lobby tab](#tab-lobby), its tiles have no vision cost.
+- The budget is 20 squares in full daylight and 4 at night, changing with the light around dawn and dusk. An indoor area is lit (20 squares) or dark (4) at any time of day, by its light level. Darkvision sees at least 12 squares (60 feet), day or night.
+- In a group's room, the group sees whatever any of its members in the area sees, so members always see each other. In a lobby each player sees only what they see themselves, and unless the universe turns it off on the [Lobby tab](#tab-lobby), they see as far as in full daylight at any time of day and its tiles have no vision cost.
 - The server works out what each player can see and only shows them the players in sight. The client runs the same function (`/shared`) to draw fog over the cells out of sight. Screen readers are told how many squares the player can see when they ask where they are.
 - A character's darkvision comes from their race as the universe set it when the room started.
 
@@ -594,6 +594,7 @@ Lets you edit details about the area
 	- if any parent area is not enabled, show a message
 - parent area. Parent areas mostly give areas a structure; a child area inherits only its passage of time
 - indoors / outdoors
+	- indoors shows "light level": `lit` (the default) is as light as full daylight at any time of day, and `dark` as dark as night. The map is drawn that light and vision follows it (see [vision](#vision)). Outdoor areas follow the time of day; the setting is kept while an area is outdoors but has no effect
 - default tile, which defaults to "grass" if outdoors and "wood floor" if indoors
 - passage of time, the same options as the universe's plus `inherit` (the default). `inherit` uses the parent area's setting, and an area with no parent uses the universe's
 - checkbox for "loops east-west"
@@ -691,7 +692,8 @@ Every page, editor and game screen can be used with only a keyboard and with a s
 
 ## Screen readers
 - When a screen changes, focus moves to its heading, so the screen is read out.
-- The game's map is a focusable application with its keys described. A screen reader is told the area the player enters, players coming into and going out of view, a door or path underfoot that E takes, and when something is in the way. Alt+P reads out the player's area and cell, the tile they stand on, and each player they can see with their distance and compass direction.
+- The game's map is a focusable application with its keys described. A screen reader is told the area the player enters, players coming into and going out of view, a door or path underfoot that E takes, and when something is in the way. Alt+P reads out the player's area and cell, the tile they stand on, and each player they can see with their distance and compass direction, and shows the same in a toast at the top of the page.
+- A toast (`showToast()` in `client/src/ui/toast.ts`) shows a short message at the top of the page for a few seconds (longer while the pointer rests on it), and screen readers read it out through the announcer; the toast itself is hidden from them, so it isn't read twice.
 - The map editor's map (and the link dialog's preview) can be focused and worked with a cursor: the arrow keys move it, Space or Enter paints or picks its cell, holding Space while moving paints a stroke, + and - zoom and Home returns to the center cell. Each cell the cursor reaches is read out with what it holds.
 - Colors are never the only way information is shown: the tile table's swatches carry the color's hex code.
 

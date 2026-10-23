@@ -493,7 +493,6 @@ describe('GameRoom', () =>
 		const window = await joinFromBrowser(room, browserIdA, 'Ada');
 		const area = await window.area;
 
-		assert.strictEqual(area.exploredCells, 0);
 		assert.ok(area.chunks[0].cells.every((value) => (value === UNSEEN_CELL)), 'the group hasn\'t seen anything yet');
 
 		placeOnCell(room.state.players.get(playerIdOf(room, window.client)) as Player, 3, 3);
@@ -510,9 +509,8 @@ describe('GameRoom', () =>
 		assert.ok(saved.has(universe.fieldAreaId, 3, 3) && saved.has(universe.fieldAreaId, 20, 3));
 
 		const again = await joinFromBrowser(await createGameRoom(), browserIdA);
-		const { chunks, exploredCells } = await again.area;
+		const { chunks } = await again.area;
 
-		assert.strictEqual(exploredCells, saved.count(universe.fieldAreaId));
 		assert.strictEqual(chunks[0].cells[cellIndexInChunk(20, 3)], DEFAULT_TILE_CELL);
 		assert.strictEqual(chunks[0].cells[cellIndexInChunk(31, 17)], UNSEEN_CELL);
 	});

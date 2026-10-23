@@ -630,8 +630,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 						column: link.column,
 						row: link.row,
 						mode: link.mode
-					})),
-				exploredCells: this.seen.count(areaId)
+					}))
 			};
 
 			client.send(GameServerMessageType.CellsSeen, payload);
