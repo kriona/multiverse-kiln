@@ -222,6 +222,25 @@
 								<tbody id="theme-rows"></tbody>
 							</table>
 						</section>
+
+						<section id="characters-difficulty" class="panel difficulty-levels" aria-labelledby="characters-difficulty-heading">
+							<h2 id="characters-difficulty-heading" data-message="editor.difficulty.heading" data-translation-context="Heading of the part of the editor's Characters tab listing the difficulty levels a new group can choose">Difficulty</h2>
+							<div class="filters">
+								<p class="hint" data-message="editor.difficulty.hint" data-translation-context="Explains the difficulty levels on the editor's Characters tab">The difficulty levels a new group chooses from. Each level makes mobs harder or easier, and can make death permanent.</p>
+								<button id="difficulty-add" type="button" data-shortcut="Alt+I" data-message="editor.difficulty.add" data-translation-context="Button that opens the dialog for making a new difficulty level"><!-- icon ph:plus -->Add Difficulty</button>
+							</div>
+							<p id="difficulty-list-error" class="form-error" role="alert" hidden></p>
+							<table class="item-table">
+								<thead>
+									<tr>
+										<th scope="col" data-message="editor.difficultyLevel.name" data-translation-context="A difficulty level's name, such as Normal or Hard: the label of its field in the difficulty level editor, and the heading of the column of names in the editor's list of levels">Name</th>
+										<th scope="col" data-message="editor.difficulty.summary" data-translation-context="Heading of the table column describing how each difficulty level changes mobs (monsters and enemies)">Summary</th>
+										<th scope="col"></th>
+									</tr>
+								</thead>
+								<tbody id="difficulty-rows"></tbody>
+							</table>
+						</section>
 					</section>
 
 					<section id="editor-panel-races" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-races" hidden>
@@ -679,6 +698,38 @@
 								<button id="theme-remove" type="button" class="danger" aria-describedby="theme-error"></button>
 								<button id="theme-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
 								<button id="theme-save" type="submit" aria-describedby="theme-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+							</div>
+						</fieldset>
+					</form>
+				</dialog>
+				<dialog id="difficulty-dialog" class="panel dialog option-dialog" aria-labelledby="difficulty-dialog-title">
+					<form id="difficulty-form" class="form">
+						<fieldset id="difficulty-fields" class="plain">
+							<h2 id="difficulty-dialog-title"></h2>
+							<label class="checkbox" data-message="editor.difficultyLevel.default" data-translation-context="Checkbox for whether a difficulty level is the one a new group starts on">
+								<input id="difficulty-default" type="checkbox" />
+								Default
+							</label>
+							<p class="hint" data-message="editor.difficultyLevel.defaultHint" data-translation-context="Explains the difficulty level editor's Default checkbox">New groups start on this difficulty.</p>
+							<label data-message="editor.difficultyLevel.name" data-translation-context="A difficulty level's name, such as Normal or Hard: the label of its field in the difficulty level editor, and the heading of the column of names in the editor's list of levels">
+								Name
+								<input id="difficulty-name" required />
+							</label>
+							<label data-message="editor.difficultyLevel.mobScale" data-translation-context="Label of the field for how much harder or easier a difficulty level makes mobs (monsters and enemies), as a percentage">
+								Mob scale (%)
+								<input id="difficulty-mob-scale" type="number" step="1" required />
+							</label>
+							<p id="difficulty-mob-scale-hint" class="hint"></p>
+							<label class="checkbox" data-message="editor.difficultyLevel.permadeath" data-translation-context="Checkbox for whether characters who die at this difficulty level are gone for good">
+								<input id="difficulty-permadeath" type="checkbox" />
+								Permadeath
+							</label>
+							<p class="hint" data-message="editor.difficultyLevel.permadeathHint" data-translation-context="Explains the difficulty level editor's Permadeath checkbox">Characters who die in a group at this level are gone for good.</p>
+							<p id="difficulty-error" class="form-error" role="alert" hidden></p>
+							<div class="form-buttons">
+								<button id="difficulty-remove" type="button" class="danger" aria-describedby="difficulty-error"></button>
+								<button id="difficulty-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+								<button id="difficulty-save" type="submit" aria-describedby="difficulty-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
 							</div>
 						</fieldset>
 					</form>

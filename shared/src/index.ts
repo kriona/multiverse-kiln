@@ -2,6 +2,7 @@ export * from './characters.js';
 export * from './closeCodes.js';
 export * from './constants.js';
 export * from './defaultTiles.js';
+export * from './difficulty.js';
 export * from './editor.js';
 export * from './groups.js';
 export * from './items.js';

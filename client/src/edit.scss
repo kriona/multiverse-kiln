@@ -106,7 +106,7 @@
 	}
 }
 
-// A tab holding cards that save separately, such as the Characters tab's settings and its themes
+// A tab holding cards that save separately, such as the Characters tab's settings, themes and difficulty levels
 .editor-cards
 {
 	display: flex;
@@ -114,8 +114,9 @@
 	gap: 16px;
 }
 
-// The themes card on the Characters tab, in a ruleset with themes
-.themes
+// The themes card on the Characters tab, in a ruleset with themes, and the difficulty levels card
+.themes,
+.difficulty-levels
 {
 	h2
 	{

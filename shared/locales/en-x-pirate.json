@@ -451,6 +451,14 @@
 		"message": "In this crew",
 		"source": "In this group"
 	},
+	"createGroup.difficulty": {
+		"message": "Peril",
+		"source": "Difficulty"
+	},
+	"createGroup.difficultyFailed": {
+		"message": "Couldn't fetch the perils.",
+		"source": "Could not load the difficulty levels."
+	},
 	"createGroup.explanation": {
 		"message": "{name} will be the crew's anchor bein': the voyage turns 'round them. Only {name} can call others aboard. If {name} leaves the crew, it'll be scuttled; though every hand keeps their plunder and coin.",
 		"source": "{name} will be the group's anchor being: the game centers around them. Only {name} can invite others. If {name} leaves the group, it will be disbanded; though every character keeps their items and money."
@@ -482,6 +490,26 @@
 	"dialog.close": {
 		"message": "Batten down",
 		"source": "Close"
+	},
+	"difficulty.hard": {
+		"message": "Rough Seas",
+		"source": "Hard"
+	},
+	"difficulty.hardcore": {
+		"message": "No Quarter",
+		"source": "Hardcore"
+	},
+	"difficulty.mobScale": {
+		"message": "{direction, select, easier {Foes {percent, number, ::percent} softer} harder {Foes {percent, number, ::percent} fiercer} other {Foes as the seas made 'em}}",
+		"source": "{direction, select, easier {Mobs {percent, number, ::percent} easier} harder {Mobs {percent, number, ::percent} harder} other {Mobs as the universe made them}}"
+	},
+	"difficulty.normal": {
+		"message": "Steady Seas",
+		"source": "Normal"
+	},
+	"difficulty.story": {
+		"message": "Tall Tale",
+		"source": "Story"
 	},
 	"editor.area.back": {
 		"message": "Back to Areas",
@@ -870,6 +898,86 @@
 	"editor.classes.summary": {
 		"message": "Particulars",
 		"source": "Summary"
+	},
+	"editor.difficulty.add": {
+		"message": "Add a Peril",
+		"source": "Add Difficulty"
+	},
+	"editor.difficulty.defaultTag": {
+		"message": "the usual",
+		"source": "default"
+	},
+	"editor.difficulty.heading": {
+		"message": "Peril",
+		"source": "Difficulty"
+	},
+	"editor.difficulty.hint": {
+		"message": "The perils a new crew picks from. Each one makes foes fiercer or softer, an' can send the dead to Davy Jones for good.",
+		"source": "The difficulty levels a new group chooses from. Each level makes mobs harder or easier, and can make death permanent."
+	},
+	"editor.difficulty.listFailed": {
+		"message": "Couldn't list the perils.",
+		"source": "Could not list the difficulty levels."
+	},
+	"editor.difficulty.permadeathTag": {
+		"message": "no quarter",
+		"source": "permadeath"
+	},
+	"editor.difficulty.summary": {
+		"message": "Particulars",
+		"source": "Summary"
+	},
+	"editor.difficultyLevel.addTitle": {
+		"message": "Add a Peril",
+		"source": "Add Difficulty"
+	},
+	"editor.difficultyLevel.confirmDelete": {
+		"message": "Scuttle {level}? Crews sailin' it will sail the usual peril instead. There be no bringin' it back.",
+		"source": "Delete {level}? Groups playing at it will play at the default difficulty instead. This can't be undone."
+	},
+	"editor.difficultyLevel.default": {
+		"message": "The usual",
+		"source": "Default"
+	},
+	"editor.difficultyLevel.defaultHint": {
+		"message": "Raise a Crew starts on the usual peril.",
+		"source": "Create Group starts on the default level."
+	},
+	"editor.difficultyLevel.delete": {
+		"message": "Scuttle Peril",
+		"source": "Delete Difficulty"
+	},
+	"editor.difficultyLevel.deleteFailed": {
+		"message": "Couldn't scuttle the peril.",
+		"source": "Could not delete the difficulty level."
+	},
+	"editor.difficultyLevel.editTitle": {
+		"message": "Edit {level}",
+		"source": "Edit {level}"
+	},
+	"editor.difficultyLevel.mobScale": {
+		"message": "Foe fierceness (%)",
+		"source": "Mob scale (%)"
+	},
+	"editor.difficultyLevel.mobScaleHint": {
+		"message": "How much fiercer foes be, from {min, number}% (softer) to {max, number}% (fiercer); 0 leaves 'em as the seas made 'em. It scales their hit points (never below 1) an' how often they land a blow an' take one (a chance to hit of at least {floor, number}% stays at least {floor, number}%).",
+		"source": "How much harder mobs are, from {min, number}% (easier) to {max, number}% (harder); 0 leaves them as the universe made them. It scales their hit points (never below 1) and how often they hit and are hit (a chance to hit of at least {floor, number}% stays at least {floor, number}%)."
+	},
+	"editor.difficultyLevel.name": {
+		"message": "Name",
+		"source": "Name"
+	},
+	"editor.difficultyLevel.permadeath": {
+		"message": "No quarter",
+		"source": "Permadeath"
+	},
+	"editor.difficultyLevel.permadeathHint": {
+		"message": "Hands who die in a crew at this peril go to Davy Jones for good.",
+		"source": "Characters who die in a group at this level are gone for good."
+	},
+	"editor.difficultyLevel.saveFailed": {
+		"message": "Couldn't stow the peril.",
+		"source": "Could not save the difficulty level."
 	},
 	"editor.displayTime": {
 		"message": "Show the hour",
@@ -2055,6 +2163,18 @@
 		"message": "That callin' be off the books now. Choose another.",
 		"source": "That class can't be chosen any more. Choose another."
 	},
+	"error.difficultyLevelLimit": {
+		"message": "A universe can have at most {max, plural, one {# peril} other {# perils}}.",
+		"source": "A universe can have at most {max, plural, one {# difficulty level} other {# difficulty levels}}."
+	},
+	"error.difficultyLevelNeedsDefault": {
+		"message": "A universe needs a usual peril. Make another peril the usual instead.",
+		"source": "A universe needs a default difficulty level. Make another level the default instead."
+	},
+	"error.difficultyLevelNeedsName": {
+		"message": "A peril needs a name.",
+		"source": "A difficulty level needs a name."
+	},
 	"error.faerieCantLoop": {
 		"message": "An area where the hours pass the faerie way can't loop.",
 		"source": "An area whose passage of time is faerie can't loop."
@@ -2154,6 +2274,14 @@
 	"error.noSuchClass": {
 		"message": "That callin' be lost at sea.",
 		"source": "The class doesn't exist."
+	},
+	"error.noSuchDifficultyLevel": {
+		"message": "That peril be lost at sea. Choose another.",
+		"source": "That difficulty doesn't exist any more. Choose another."
+	},
+	"error.noSuchDifficultyLevelToEdit": {
+		"message": "That peril be lost at sea.",
+		"source": "The difficulty level doesn't exist."
 	},
 	"error.noSuchGroup": {
 		"message": "That crew has sunk, or that hand ain't aboard.",
@@ -2443,6 +2571,10 @@
 		"message": "{group} - Multiverse Kiln",
 		"source": "{group} - Multiverse Kiln"
 	},
+	"group.permadeath": {
+		"message": "No quarter: hands who die in this crew go to Davy Jones for eternity.",
+		"source": "Permadeath: characters who die in this group cannot be resurrected."
+	},
 	"group.playingAs": {
 		"message": "Sailin' as {name}",
 		"source": "Playing as {name}"
@@ -2538,6 +2670,10 @@
 	"invite.choose": {
 		"message": "Pick a hand to join the crew. Hands already in a crew can't join another.",
 		"source": "Choose a character to join the group. Characters already in a group can't join another."
+	},
+	"invite.difficulty": {
+		"message": "Peril: {level} ({mobs})",
+		"source": "Difficulty: {level} ({mobs})"
 	},
 	"invite.failed": {
 		"message": "Couldn't unroll the summons.",

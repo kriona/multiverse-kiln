@@ -104,6 +104,23 @@ const TEXT_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
 };
 
 /**
+ * Whether the element with focus needs the keys that move the player: a text field takes letters, and a
+ * select and anything in a modal dialog (radio buttons, a menu) take the arrow keys
+ *
+ * @param element The element with focus
+ * @return True when the game should leave the keyboard to the page
+ */
+function needsMovementKeys(element: Element | null): boolean
+{
+	if (!element)
+	{
+		return(false);
+	}
+
+	return(isTextEntry(element) || (element instanceof HTMLSelectElement) || (element.closest('dialog:modal') !== null));
+}
+
+/**
  * Data the scene is started with
  */
 export interface MapSceneData
@@ -864,10 +881,11 @@ export class MapScene extends Phaser.Scene
 	};
 
 	/**
-	 * Hands the keyboard to a text field while one has focus, and takes it back afterward
+	 * Hands the keyboard to the page while focus is somewhere that needs the movement keys, and takes it
+	 * back afterward
 	 *
 	 * While the game has the keyboard it blocks the movement keys' normal effect on the whole page, which
-	 * would stop W, A, S, D and E being typed into the chat
+	 * would stop W, A, S, D and E being typed into the chat and the arrow keys working a select or a dialog
 	 */
 	private readonly onFocusChange = (): void =>
 	{
@@ -881,15 +899,15 @@ export class MapScene extends Phaser.Scene
 				return;
 			}
 
-			const typing = isTextEntry(document.activeElement);
+			const pageNeedsKeys = needsMovementKeys(document.activeElement);
 
-			if (typing && keyboard.enabled)
+			if (pageNeedsKeys && keyboard.enabled)
 			{
 				this.stopMoving();
 				keyboard.enabled = false;
 				keyboard.disableGlobalCapture();
 			}
-			else if (!typing && !keyboard.enabled)
+			else if (!pageNeedsKeys && !keyboard.enabled)
 			{
 				keyboard.enabled = true;
 				keyboard.enableGlobalCapture();

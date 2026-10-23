@@ -33,6 +33,11 @@ export interface GroupRecord
 	 * The group's game clock, in seconds of game time
 	 */
 	clockSeconds: number;
+
+	/**
+	 * The difficulty level the group plays at
+	 */
+	difficultyLevelId: number;
 }
 
 /**
@@ -53,6 +58,11 @@ export interface NewGroup
 	 * The anchor being's starting area, or null when they have none
 	 */
 	startingAreaId: string | null;
+
+	/**
+	 * One of the universe's difficulty levels
+	 */
+	difficultyLevelId: number;
 }
 
 /**
@@ -163,7 +173,8 @@ const groupColumns = {
 	anchorCharacterId: groups.anchorCharacterId,
 	name: groups.name,
 	startingAreaId: groups.startingAreaId,
-	clockSeconds: groups.clockSeconds
+	clockSeconds: groups.clockSeconds,
+	difficultyLevelId: groups.difficultyLevelId
 };
 
 /**
@@ -182,7 +193,8 @@ export async function createGroup(group: NewGroup, executor: Executor): Promise<
 			universeId: group.universeId,
 			anchorCharacterId: group.anchorCharacterId,
 			name: group.name,
-			startingAreaId: group.startingAreaId
+			startingAreaId: group.startingAreaId,
+			difficultyLevelId: group.difficultyLevelId
 		})
 		.returning({ id: groups.id });
 
@@ -452,6 +464,23 @@ export async function saveGroupClock(groupId: string, clockSeconds: number, exec
 		.update(groups)
 		.set({ clockSeconds })
 		.where(eq(groups.id, groupId));
+}
+
+/**
+ * Moves every group playing at one difficulty level to another, before the first is deleted
+ *
+ * @param fromLevelId The level the groups play at
+ * @param toLevelId The level they move to
+ * @param executor The database, or a transaction
+ */
+export async function moveGroupsToDifficultyLevel(fromLevelId: number, toLevelId: number, executor: Executor = db): Promise<void>
+{
+	await executor
+		.update(groups)
+		.set({
+			difficultyLevelId: toLevelId
+		})
+		.where(eq(groups.difficultyLevelId, fromLevelId));
 }
 
 /**

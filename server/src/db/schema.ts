@@ -6,7 +6,7 @@
  */
 import { sql, type SQL } from 'drizzle-orm';
 import { boolean, check, customType, doublePrecision, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHUNK_SIZE, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_MOB_SCALE, MIN_MOB_SCALE, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
 
 import { SEEN_CHUNK_BYTES } from '../logic/seenCells.js';
 
@@ -839,6 +839,50 @@ export const pf1eAbilityRolls = pgTable('pf1e_ability_rolls', {
 ]);
 
 /**
+ * Each universe's difficulty levels, which its groups choose from. A universe starts with
+ * DEFAULT_DIFFICULTY_LEVELS, and always has exactly one default level
+ */
+export const difficultyLevels = pgTable('difficulty_levels', {
+	id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+	universeId: uuid('universe_id').notNull().references(() => universes.id, { onDelete: 'cascade' }),
+
+	/**
+	 * A default level's key, e.g. normal, which finds its name in DIFFICULTY_LEVEL_NAMES; null for a
+	 * level the universe added
+	 */
+	key: text('key'),
+
+	/**
+	 * The universe's name for the level. Null on a default level that keeps its name, which players read
+	 * in their language
+	 */
+	name: text('name'),
+
+	/**
+	 * Whether Create Group starts on this level
+	 */
+	isDefault: boolean('is_default').notNull().default(false),
+
+	/**
+	 * How much harder mobs are, as a percentage: 50 is 50% harder, -50 is 50% easier
+	 */
+	mobScale: smallint('mob_scale').notNull().default(0),
+
+	/**
+	 * Whether a character who dies is gone for good
+	 */
+	permadeath: boolean('permadeath').notNull().default(false),
+
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	index('difficulty_levels_universe_id_index').on(table.universeId),
+	unique('difficulty_levels_universe_key_unique').on(table.universeId, table.key),
+	uniqueIndex('difficulty_levels_one_default').on(table.universeId).where(sql`${table.isDefault}`),
+	check('difficulty_levels_name_required', sql`${table.name} IS NOT NULL OR ${table.key} IS NOT NULL`),
+	check('difficulty_levels_mob_scale_range', sql`${table.mobScale} BETWEEN ${sql.raw(String(MIN_MOB_SCALE))} AND ${sql.raw(String(MAX_MOB_SCALE))}`)
+]);
+
+/**
  * One row per group: characters playing a universe together, around their anchor being
  *
  * Deleting the anchor being's character disbands the group, deleting its members and invites with it
@@ -869,11 +913,18 @@ export const groups = pgTable('groups', {
 	 */
 	clockSeconds: doublePrecision('clock_seconds').notNull().default(GROUP_START_SECONDS),
 
+	/**
+	 * The difficulty level the group plays at, one of its universe's. Deleting a level moves its groups to
+	 * the universe's default level first
+	 */
+	difficultyLevelId: integer('difficulty_level_id').notNull().references(() => difficultyLevels.id),
+
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	unique('groups_anchor_character_id_unique').on(table.anchorCharacterId),
 	index('groups_universe_id_index').on(table.universeId),
-	index('groups_starting_area_id_index').on(table.startingAreaId)
+	index('groups_starting_area_id_index').on(table.startingAreaId),
+	index('groups_difficulty_level_id_index').on(table.difficultyLevelId)
 ]);
 
 /**

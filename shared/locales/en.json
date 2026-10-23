@@ -451,6 +451,14 @@
 		"defaultMessage": "In this group",
 		"description": "In the list of the player's characters, beside one who is in the group the player is playing now; choosing them switches to them"
 	},
+	"createGroup.difficulty": {
+		"defaultMessage": "Difficulty",
+		"description": "Label of the choice of the new group's difficulty level, such as Normal or Hard"
+	},
+	"createGroup.difficultyFailed": {
+		"defaultMessage": "Could not load the difficulty levels.",
+		"description": "Shown in the Create Group dialog when the difficulty levels to choose from couldn't be loaded"
+	},
 	"createGroup.explanation": {
 		"defaultMessage": "{name} will be the group's anchor being: the game centers around them. Only {name} can invite others. If {name} leaves the group, it will be disbanded; though every character keeps their items and money.",
 		"description": "In the Create Group dialog, what being the anchor being means; {name} is the name of the character the player is playing, who the group is made around"
@@ -482,6 +490,26 @@
 	"dialog.close": {
 		"defaultMessage": "Close",
 		"description": "Button that closes a dialog that only shows something, with nothing to change"
+	},
+	"difficulty.hard": {
+		"defaultMessage": "Hard",
+		"description": "Name of the default difficulty level whose mobs (monsters and enemies) are 50% harder"
+	},
+	"difficulty.hardcore": {
+		"defaultMessage": "Hardcore",
+		"description": "Name of the hardest default difficulty level: mobs (monsters and enemies) are 100% harder, and characters who die are gone for good"
+	},
+	"difficulty.mobScale": {
+		"defaultMessage": "{direction, select, easier {Mobs {percent, number, ::percent} easier} harder {Mobs {percent, number, ::percent} harder} other {Mobs as the universe made them}}",
+		"description": "Summary of how a difficulty level changes mobs (monsters and enemies): their hit points and how often they hit and are hit. {percent} is how much, e.g. 50%; the last choice is for a level that leaves them as they are"
+	},
+	"difficulty.normal": {
+		"defaultMessage": "Normal",
+		"description": "Name of the default difficulty level that plays mobs (monsters and enemies) as their universe made them"
+	},
+	"difficulty.story": {
+		"defaultMessage": "Story",
+		"description": "Name of the easiest default difficulty level, for players who are there for the story: mobs (monsters and enemies) are 50% easier"
 	},
 	"editor.area.back": {
 		"defaultMessage": "Back to Areas",
@@ -870,6 +898,86 @@
 	"editor.classes.summary": {
 		"defaultMessage": "Summary",
 		"description": "Heading of the table column describing each character class's rules, such as its magic"
+	},
+	"editor.difficulty.add": {
+		"defaultMessage": "Add Difficulty",
+		"description": "Button that opens the dialog for making a new difficulty level"
+	},
+	"editor.difficulty.defaultTag": {
+		"defaultMessage": "default",
+		"description": "In the last column of the editor's difficulty level table, for the level Create Group starts on"
+	},
+	"editor.difficulty.heading": {
+		"defaultMessage": "Difficulty",
+		"description": "Heading of the part of the editor's Characters tab listing the difficulty levels a new group can choose"
+	},
+	"editor.difficulty.hint": {
+		"defaultMessage": "The difficulty levels a new group chooses from. Each level makes mobs harder or easier, and can make death permanent.",
+		"description": "Explains the difficulty levels on the editor's Characters tab"
+	},
+	"editor.difficulty.listFailed": {
+		"defaultMessage": "Could not list the difficulty levels.",
+		"description": "Shown on the editor's Characters tab when the difficulty levels couldn't be loaded"
+	},
+	"editor.difficulty.permadeathTag": {
+		"defaultMessage": "permadeath",
+		"description": "In the last column of the editor's difficulty level table, for a level at which characters who die are gone for good"
+	},
+	"editor.difficulty.summary": {
+		"defaultMessage": "Summary",
+		"description": "Heading of the table column describing how each difficulty level changes mobs (monsters and enemies)"
+	},
+	"editor.difficultyLevel.addTitle": {
+		"defaultMessage": "Add Difficulty",
+		"description": "Title of the difficulty level editor when making a new level"
+	},
+	"editor.difficultyLevel.confirmDelete": {
+		"defaultMessage": "Delete {level}? Groups playing at it will play at the default difficulty instead. This can't be undone.",
+		"description": "Asks before deleting a difficulty level; {level} is its name"
+	},
+	"editor.difficultyLevel.default": {
+		"defaultMessage": "Default",
+		"description": "Checkbox for whether a difficulty level is the one a new group starts on"
+	},
+	"editor.difficultyLevel.defaultHint": {
+		"defaultMessage": "New groups start on this difficulty.",
+		"description": "Explains the difficulty level editor's Default checkbox"
+	},
+	"editor.difficultyLevel.delete": {
+		"defaultMessage": "Delete Difficulty",
+		"description": "Button in the difficulty level editor that deletes the level"
+	},
+	"editor.difficultyLevel.deleteFailed": {
+		"defaultMessage": "Could not delete the difficulty level.",
+		"description": "Shown in the difficulty level editor when the level couldn't be deleted"
+	},
+	"editor.difficultyLevel.editTitle": {
+		"defaultMessage": "Edit {level}",
+		"description": "Title of the difficulty level editor for a level the player can change; {level} is its name, e.g. Hard"
+	},
+	"editor.difficultyLevel.mobScale": {
+		"defaultMessage": "Mob scale (%)",
+		"description": "Label of the field for how much harder or easier a difficulty level makes mobs (monsters and enemies), as a percentage"
+	},
+	"editor.difficultyLevel.mobScaleHint": {
+		"defaultMessage": "How much harder mobs are, from {min, number}% (easier) to {max, number}% (harder); 0 leaves them as the universe made them. It scales their hit points (never below 1) and how often they hit and are hit (a chance to hit of at least {floor, number}% stays at least {floor, number}%).",
+		"description": "Explains the difficulty level editor's Mob scale field; {min} and {max} are the lowest and highest percentages allowed, e.g. -1000 and 1000, and {floor} is the lowest a chance to hit can be brought down to, e.g. 5"
+	},
+	"editor.difficultyLevel.name": {
+		"defaultMessage": "Name",
+		"description": "A difficulty level's name, such as Normal or Hard: the label of its field in the difficulty level editor, and the heading of the column of names in the editor's list of levels"
+	},
+	"editor.difficultyLevel.permadeath": {
+		"defaultMessage": "Permadeath",
+		"description": "Checkbox for whether characters who die at this difficulty level are gone for good"
+	},
+	"editor.difficultyLevel.permadeathHint": {
+		"defaultMessage": "Characters who die in a group at this level are gone for good.",
+		"description": "Explains the difficulty level editor's Permadeath checkbox"
+	},
+	"editor.difficultyLevel.saveFailed": {
+		"defaultMessage": "Could not save the difficulty level.",
+		"description": "Shown in the difficulty level editor when the level couldn't be stored"
 	},
 	"editor.displayTime": {
 		"defaultMessage": "Display time",
@@ -2055,6 +2163,18 @@
 		"defaultMessage": "That class can't be chosen any more. Choose another.",
 		"description": "Why a new character wasn't made: the class chosen was deleted or disabled while the player was making the character"
 	},
+	"error.difficultyLevelLimit": {
+		"defaultMessage": "A universe can have at most {max, plural, one {# difficulty level} other {# difficulty levels}}.",
+		"description": "Why a new difficulty level wasn't made: the universe has as many as allowed"
+	},
+	"error.difficultyLevelNeedsDefault": {
+		"defaultMessage": "A universe needs a default difficulty level. Make another level the default instead.",
+		"description": "Why the default difficulty level couldn't be deleted or stop being the default: exactly one level is always the default, so another one has to be made the default"
+	},
+	"error.difficultyLevelNeedsName": {
+		"defaultMessage": "A difficulty level needs a name.",
+		"description": "Why a difficulty level the universe added couldn't be saved: its name was left out"
+	},
 	"error.faerieCantLoop": {
 		"defaultMessage": "An area whose passage of time is faerie can't loop.",
 		"description": "Why an area's settings were refused: faerie time and a map that wraps around can't be combined"
@@ -2154,6 +2274,14 @@
 	"error.noSuchClass": {
 		"defaultMessage": "The class doesn't exist.",
 		"description": "Why a request about a character class (such as fighter or wizard) failed: it was deleted, perhaps by another editor"
+	},
+	"error.noSuchDifficultyLevel": {
+		"defaultMessage": "That difficulty doesn't exist any more. Choose another.",
+		"description": "Why a group wasn't made: the difficulty level chosen for it was deleted by the universe's creators, perhaps while the player was choosing"
+	},
+	"error.noSuchDifficultyLevelToEdit": {
+		"defaultMessage": "The difficulty level doesn't exist.",
+		"description": "Why a request about a difficulty level failed: it was deleted, perhaps by another editor"
 	},
 	"error.noSuchGroup": {
 		"defaultMessage": "The group doesn't exist any more, or that character isn't in it.",
@@ -2443,6 +2571,10 @@
 		"defaultMessage": "{group} - Multiverse Kiln",
 		"description": "The browser tab's title while the player is in a group; {group} is the group's name, or \"Group\", and Multiverse Kiln is the game engine's name"
 	},
+	"group.permadeath": {
+		"defaultMessage": "Permadeath: characters who die in this group cannot be resurrected.",
+		"description": "Warning for a group whose difficulty level has permadeath, shown in the Create Group dialog when such a level is chosen and on the screen an invite link to such a group opens"
+	},
 	"group.playingAs": {
 		"defaultMessage": "Playing as {name}",
 		"description": "In the group's toolbar, the character this window plays; {name} is the character's name"
@@ -2538,6 +2670,10 @@
 	"invite.choose": {
 		"defaultMessage": "Choose a character to join the group. Characters already in a group can't join another.",
 		"description": "On the screen an invite link opens, above the list of the player's characters: they choose one to join the group with"
+	},
+	"invite.difficulty": {
+		"defaultMessage": "Difficulty: {level} ({mobs})",
+		"description": "On the screen an invite link opens, the difficulty level the group plays at; {level} is its name, e.g. Hard, and {mobs} says how it changes mobs (monsters and enemies), e.g. \"Mobs 50% harder\""
 	},
 	"invite.failed": {
 		"defaultMessage": "Could not open the invite.",

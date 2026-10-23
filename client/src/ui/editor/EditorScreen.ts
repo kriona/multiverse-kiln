@@ -8,6 +8,7 @@ import { getElement, showMessage, titleLink } from '../dom';
 import { CharactersTab } from './CharactersTab';
 import { LobbyTab } from './LobbyTab';
 import { ClassesTab } from './ClassesTab';
+import { DifficultySection } from './DifficultySection';
 import { ItemSelectDialog } from './ItemSelectDialog';
 import { ItemsTab } from './ItemsTab';
 import { RacesTab } from './RacesTab';
@@ -77,8 +78,8 @@ export function isEditorTab(value: string | undefined): value is EditorTab
 }
 
 /**
- * Edit Universe: a universe's settings, ruleset, characters (and their themes, in a ruleset with them),
- * races, classes, tiles, areas and items, in tabs
+ * Edit Universe: a universe's settings, ruleset, characters (and their themes, in a ruleset with them,
+ * and the difficulty levels), races, classes, tiles, areas and items, in tabs
  *
  * What the player may change depends on their role in the universe; the server checks it again on
  * every change, so the page only hides controls that would be refused
@@ -95,6 +96,7 @@ export class EditorScreen
 	private readonly racesTab: RacesTab;
 	private readonly classesTab: ClassesTab;
 	private readonly themesSection: ThemesSection;
+	private readonly difficultySection: DifficultySection;
 	private readonly tilesetsTab: TilesetsTab;
 	private readonly areasTab: AreasTab;
 	private readonly itemsTab: ItemsTab;
@@ -137,6 +139,7 @@ export class EditorScreen
 		this.racesTab = new RacesTab(api, areaSelect, itemSelect);
 		this.classesTab = new ClassesTab(api, areaSelect, itemSelect);
 		this.themesSection = new ThemesSection(api);
+		this.difficultySection = new DifficultySection(api);
 		this.tilesetsTab = new TilesetsTab(api);
 		this.areasTab = new AreasTab(api, (areaId) =>
 		{
@@ -252,6 +255,7 @@ export class EditorScreen
 		this.lobbyTab.open(universe);
 		this.charactersTab.open(universe);
 		this.themesSection.open(universe);
+		this.difficultySection.open(universe);
 		this.racesTab.open(universe);
 		this.classesTab.open(universe);
 		this.tilesetsTab.open(universe);

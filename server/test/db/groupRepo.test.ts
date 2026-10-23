@@ -4,6 +4,7 @@ import { GROUP_START_SECONDS } from '@multiverse-kiln/shared';
 
 import { findLastPlayedCharacterId, findOwnCharacter, listPlayableCharacters, markCharacterPlayed, purgeExpiredCharacters, scheduleCharacterDeletion } from '../../src/db/characterRepo.js';
 import { db } from '../../src/db/client.js';
+import { findDefaultDifficultyLevel } from '../../src/db/difficultyRepo.js';
 import { addGroupMember, countGroupMembers, createInvite, deleteInvite, findGroup, findInvite, findMembership, leaveGroup, listExpiredMemberships, listGroupMembers, listMembersOfGroups, listPlayerGroupIds, purgeExpiredInvites, saveGroupClock, saveMemberPositions } from '../../src/db/groupRepo.js';
 import { loadOrCreatePlayerByName } from '../../src/db/playerRepo.js';
 import { characters } from '../../src/db/schema.js';
@@ -36,7 +37,8 @@ describe('groupRepo', () =>
 			anchorCharacterId: anchorId,
 			name: 'The Fellowship',
 			startingAreaId: universe.fieldAreaId,
-			clockSeconds: GROUP_START_SECONDS
+			clockSeconds: GROUP_START_SECONDS,
+			difficultyLevelId: (await findDefaultDifficultyLevel(universe.universeId))?.id
 		});
 		assert.deepStrictEqual(await findMembership(anchorId), { groupId, universeId: universe.universeId, isAnchor: true });
 		assert.deepStrictEqual(await findMembership(memberId), { groupId, universeId: universe.universeId, isAnchor: false });

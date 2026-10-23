@@ -4,6 +4,7 @@ import { CHUNK_SIZE, cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_C
 
 import { createCharacter, type NewCharacter } from '../../src/db/characterRepo.js';
 import { findDefaultClassIds } from '../../src/db/classRepo.js';
+import { findDefaultDifficultyLevel } from '../../src/db/difficultyRepo.js';
 import { createGroup } from '../../src/db/groupRepo.js';
 import { findDefaultItemIds } from '../../src/db/itemRepo.js';
 import { findDefaultRaceIds } from '../../src/db/raceRepo.js';
@@ -104,7 +105,7 @@ export async function addCharacter(playerId: string, universeId: string, name: s
 }
 
 /**
- * Adds a group around a character, starting in an area
+ * Adds a group around a character, starting in an area, at the universe's default difficulty level
  *
  * @param universeId The universe's ID
  * @param anchorCharacterId The anchor being's character ID
@@ -114,7 +115,14 @@ export async function addCharacter(playerId: string, universeId: string, name: s
  */
 export async function addGroup(universeId: string, anchorCharacterId: string, startingAreaId: string | null, name: string = ''): Promise<string>
 {
-	return(inTransaction((transaction) => createGroup({ universeId, anchorCharacterId, name, startingAreaId }, transaction)));
+	const difficultyLevel = await findDefaultDifficultyLevel(universeId);
+
+	if (!difficultyLevel)
+	{
+		throw new Error(`Universe ${universeId} has no default difficulty level`);
+	}
+
+	return(inTransaction((transaction) => createGroup({ universeId, anchorCharacterId, name, startingAreaId, difficultyLevelId: difficultyLevel.id }, transaction)));
 }
 
 /**

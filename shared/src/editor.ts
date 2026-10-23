@@ -45,6 +45,10 @@ import type { DisplayTime, FaerieMorning, LobbyPassageOfTime, PassageOfTime, Rul
  * - POST   /:universeId/themes                     ThemeSettings -> CreatedPayload: a custom theme (creators only)
  * - PUT    /:universeId/themes/:themeId            ThemeSettings: edits a custom theme, or stores an edited copy of a default theme (creators only)
  * - DELETE /:universeId/themes/:themeId            deletes a custom theme, or restores a default theme (creators only)
+ * - GET    /:universeId/difficulty-levels          DifficultyLevelListPayload
+ * - POST   /:universeId/difficulty-levels          DifficultyLevelSettings -> CreatedPayload (creators only)
+ * - PUT    /:universeId/difficulty-levels/:levelId DifficultyLevelSettings (creators only)
+ * - DELETE /:universeId/difficulty-levels/:levelId deletes a level that isn't the default, moving its groups to the default (creators only)
  * - GET    /:universeId/areas                      AreaListPayload
  * - POST   /:universeId/areas                      NewAreaRequest -> CreatedPayload
  * - GET    /:universeId/areas/:areaId              EditorArea

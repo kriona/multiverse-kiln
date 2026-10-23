@@ -6,6 +6,7 @@ import { nameKey, universeSlug, type EditableUniverse, type PassageOfTime, type 
 
 import { db, type Executor } from './client.js';
 import { fromCoinColumns, toCoinColumns } from './coinColumns.js';
+import { addDefaultDifficultyLevels } from './difficultyRepo.js';
 import { universes } from './schema.js';
 import { loadStartingItems, replaceStartingItems } from './startingItemRepo.js';
 
@@ -141,7 +142,7 @@ export interface UniverseRecord
 export type NewUniverse = Pick<typeof universes.$inferInsert, 'id' | 'name' | 'shortDescription' | 'longDescription' | 'stage' | 'ruleset' | 'passageOfTime'>;
 
 /**
- * Adds a universe
+ * Adds a universe, with the default difficulty levels
  *
  * @param universe The universe, whose name must have a letter or digit
  * @param executor The database, or a transaction
@@ -150,15 +151,20 @@ export type NewUniverse = Pick<typeof universes.$inferInsert, 'id' | 'name' | 's
  */
 export async function createUniverse(universe: NewUniverse, executor: Executor = db): Promise<string>
 {
-	const [created] = await settingName(universe.name, undefined, executor, (transaction) => transaction
-		.insert(universes)
-		.values({
-			...universe,
-			slug: universeSlug(universe.name)
-		})
-		.returning({ id: universes.id }));
+	return(settingName(universe.name, undefined, executor, async (transaction) =>
+	{
+		const [created] = await transaction
+			.insert(universes)
+			.values({
+				...universe,
+				slug: universeSlug(universe.name)
+			})
+			.returning({ id: universes.id });
 
-	return(created.id);
+		await addDefaultDifficultyLevels(created.id, transaction);
+
+		return(created.id);
+	}));
 }
 
 /**

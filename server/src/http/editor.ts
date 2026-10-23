@@ -23,6 +23,7 @@ import { addItemRoutes } from './editorItems.js';
 import { newUniverseRequest, rulesetSettings, tileIdParameter, tileListQuery, tileSettings, universeSettingsUpdate } from './editorPayloads.js';
 import { addRaceRoutes } from './editorRaces.js';
 import { addThemeRoutes } from './editorThemes.js';
+import { addDifficultyLevelRoutes } from './editorDifficultyLevels.js';
 import { findStartingProblem } from './editorStartingExtras.js';
 import { addAreaRoutes, DEFAULT_AREA_TILE_KEYS, lobbyTimeProblem, timeSettingsProblem } from './editorAreas.js';
 import { errorMessages, sendError, sendInvalidRequest, type Refusal } from './errors.js';
@@ -101,6 +102,7 @@ function createEditorRouter(allowedOrigins: Set<string>): express.Router
 	addRaceRoutes(universeRouter);
 	addClassRoutes(universeRouter);
 	addThemeRoutes(universeRouter);
+	addDifficultyLevelRoutes(universeRouter);
 	addAreaRoutes(universeRouter);
 
 	router.use(handleEditorError);

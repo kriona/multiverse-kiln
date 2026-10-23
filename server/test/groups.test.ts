@@ -1,8 +1,9 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { characterPath, charactersPath, groupPath, groupsPath, invitePath, type CharacterListPayload, type GroupCreatedPayload, type GroupJoinedPayload, type InviteCreatedPayload, type InviteDetails } from '@multiverse-kiln/shared';
+import { characterPath, charactersPath, difficultyLevelsPath, groupPath, groupsPath, invitePath, type CharacterListPayload, type DifficultyLevelListPayload, type GroupCreatedPayload, type GroupJoinedPayload, type InviteCreatedPayload, type InviteDetails, type NewGroupRequest } from '@multiverse-kiln/shared';
 
 import { listPlayableCharacters, scheduleCharacterDeletion } from '../src/db/characterRepo.js';
+import { findDefaultDifficultyLevel, listDifficultyLevels } from '../src/db/difficultyRepo.js';
 import { findGroup, findMembership, listGroupMembers } from '../src/db/groupRepo.js';
 import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
 import { updateUniverseSettings } from '../src/db/universeRepo.js';
@@ -76,6 +77,11 @@ describe('group routes', () =>
 	let stopListening: () => void;
 
 	/**
+	 * The test universe's default difficulty level
+	 */
+	let defaultLevelId: number;
+
+	/**
 	 * Logs a new browser in as a player with a character in the test universe
 	 *
 	 * @param name The player's and character's name
@@ -93,6 +99,22 @@ describe('group routes', () =>
 	}
 
 	/**
+	 * The body of a request to make a group at the universe's default difficulty level
+	 *
+	 * @param characterId The anchor being
+	 * @param name The group's name
+	 * @return The body
+	 */
+	function groupRequest(characterId: string, name: string = ''): NewGroupRequest
+	{
+		return({
+			characterId,
+			name,
+			difficultyLevelId: defaultLevelId
+		});
+	}
+
+	/**
 	 * Makes a group around a browser's character
 	 *
 	 * @param browser The browser
@@ -101,7 +123,7 @@ describe('group routes', () =>
 	 */
 	async function createGroup(browser: Browser, name: string = ''): Promise<string>
 	{
-		const created = await send<GroupCreatedPayload>(browser, 'POST', groupsPath(universe.universeId), { characterId: browser.characterId, name });
+		const created = await send<GroupCreatedPayload>(browser, 'POST', groupsPath(universe.universeId), groupRequest(browser.characterId, name));
 
 		assert.strictEqual(created.status, 201, JSON.stringify(created.body));
 
@@ -134,6 +156,7 @@ describe('group routes', () =>
 	{
 		logOutEveryone();
 		universe = await addPlayableUniverse();
+		defaultLevelId = (await findDefaultDifficultyLevel(universe.universeId))?.id ?? 0;
 		ada = await logIn('Ada');
 		grace = await logIn('Grace');
 		changes = [];
@@ -150,10 +173,12 @@ describe('group routes', () =>
 
 	it('needs a logged-in browser', async () =>
 	{
-		const answer = await send(undefined, 'POST', groupsPath(universe.universeId), { characterId: ada.characterId, name: '' });
+		const answer = await send(undefined, 'POST', groupsPath(universe.universeId), groupRequest(ada.characterId));
+		const levels = await send(undefined, 'GET', difficultyLevelsPath(universe.universeId));
 		const invite = await send(undefined, 'GET', invitePath('no-such-invite-token'));
 
 		assert.strictEqual(answer.status, 401);
+		assert.strictEqual(levels.status, 401);
 		assert.strictEqual(invite.status, 401);
 	});
 
@@ -166,7 +191,7 @@ describe('group routes', () =>
 				'Content-Type': 'application/json',
 				'Origin': 'https://evil.example'
 			},
-			body: JSON.stringify({ characterId: ada.characterId, name: '' })
+			body: JSON.stringify(groupRequest(ada.characterId))
 		});
 
 		assert.strictEqual(response.status, 403);
@@ -207,29 +232,67 @@ describe('group routes', () =>
 		{
 			await createGroup(ada);
 
-			const again = await send(ada, 'POST', groupsPath(universe.universeId), { characterId: ada.characterId, name: '' });
+			const again = await send(ada, 'POST', groupsPath(universe.universeId), groupRequest(ada.characterId));
 
 			assert.strictEqual(again.status, 409);
 		});
 
 		it('refuses another player\'s character, and one given their last rites', async () =>
 		{
-			const others = await send(ada, 'POST', groupsPath(universe.universeId), { characterId: grace.characterId, name: '' });
+			const others = await send(ada, 'POST', groupsPath(universe.universeId), groupRequest(grace.characterId));
 
 			assert.strictEqual(others.status, 404);
 
 			await scheduleCharacterDeletion(ada.playerId, universe.universeId, ada.characterId, new Date(Date.now() + 60000));
 
-			const leaving = await send(ada, 'POST', groupsPath(universe.universeId), { characterId: ada.characterId, name: '' });
+			const leaving = await send(ada, 'POST', groupsPath(universe.universeId), groupRequest(ada.characterId));
 
 			assert.strictEqual(leaving.status, 404);
 		});
 
 		it('refuses a name that is too long', async () =>
 		{
-			const answer = await send(ada, 'POST', groupsPath(universe.universeId), { characterId: ada.characterId, name: 'x'.repeat(41) });
+			const answer = await send(ada, 'POST', groupsPath(universe.universeId), groupRequest(ada.characterId, 'x'.repeat(41)));
 
 			assert.strictEqual(answer.status, 400);
+		});
+
+		it('lists the universe\'s difficulty levels, easiest first', async () =>
+		{
+			const answer = await send<DifficultyLevelListPayload>(ada, 'GET', difficultyLevelsPath(universe.universeId));
+
+			assert.strictEqual(answer.status, 200);
+			assert.deepStrictEqual(answer.body.difficultyLevels.map(({ id: _id, ...level }) => level), [
+				{ key: 'story', name: null, isDefault: false, mobScale: -50, permadeath: false },
+				{ key: 'normal', name: null, isDefault: true, mobScale: 0, permadeath: false },
+				{ key: 'hard', name: null, isDefault: false, mobScale: 50, permadeath: false },
+				{ key: 'hardcore', name: null, isDefault: false, mobScale: 100, permadeath: true }
+			]);
+			assert.strictEqual(answer.body.difficultyLevels[1].id, defaultLevelId);
+		});
+
+		it('saves the difficulty level chosen to the group', async () =>
+		{
+			const levels = await listDifficultyLevels(universe.universeId);
+			const hardcore = levels.find((level) => (level.key === 'hardcore'));
+			const created = await send<GroupCreatedPayload>(ada, 'POST', groupsPath(universe.universeId), { ...groupRequest(ada.characterId), difficultyLevelId: hardcore?.id });
+
+			assert.strictEqual(created.status, 201);
+			assert.strictEqual((await findGroup(created.body.groupId))?.difficultyLevelId, hardcore?.id);
+		});
+
+		it('refuses a difficulty level of another universe, and a missing one', async () =>
+		{
+			const other = await addPlayableUniverse();
+			const othersLevel = await findDefaultDifficultyLevel(other.universeId);
+			const fromOther = await send(ada, 'POST', groupsPath(universe.universeId), { ...groupRequest(ada.characterId), difficultyLevelId: othersLevel?.id });
+			const missing = await send(ada, 'POST', groupsPath(universe.universeId), { ...groupRequest(ada.characterId), difficultyLevelId: 2147483647 });
+			const none = await send(ada, 'POST', groupsPath(universe.universeId), { characterId: ada.characterId, name: '' });
+
+			assert.strictEqual(fromOther.status, 404);
+			assert.strictEqual(missing.status, 404);
+			assert.strictEqual(none.status, 400);
+			assert.strictEqual(await findMembership(ada.characterId), undefined);
 		});
 	});
 
@@ -267,6 +330,17 @@ describe('group routes', () =>
 			assert.strictEqual(details.body.anchorName, 'Ada');
 			assert.strictEqual(details.body.memberCount, 1);
 			assert.strictEqual(details.body.universeId, universe.universeId);
+			assert.deepStrictEqual(details.body.difficulty, { key: 'normal', name: null, mobScale: 0, permadeath: false });
+		});
+
+		it('say what difficulty the group plays at', async () =>
+		{
+			const hardcore = (await listDifficultyLevels(universe.universeId)).find((level) => (level.key === 'hardcore'));
+			const created = await send<GroupCreatedPayload>(ada, 'POST', groupsPath(universe.universeId), { ...groupRequest(ada.characterId), difficultyLevelId: hardcore?.id });
+			const token = await invite(ada, created.body.groupId);
+			const details = await send<InviteDetails>(grace, 'GET', invitePath(token));
+
+			assert.deepStrictEqual(details.body.difficulty, { key: 'hardcore', name: null, mobScale: 100, permadeath: true });
 		});
 
 		it('answer 404 for a token that was never made', async () =>

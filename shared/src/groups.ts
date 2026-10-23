@@ -4,7 +4,8 @@
  *
  * Every route needs a logged-in browser:
  * - POST groupsPath(universeId): makes a group around one of the player's characters, its anchor being
- *   (NewGroupRequest), answering GroupCreatedPayload
+ *   (NewGroupRequest), answering GroupCreatedPayload. The difficulty levels it offers are at
+ *   difficultyLevelsPath(universeId) (shared/src/difficulty.ts)
  * - POST groupPath(universeId, groupId)/leave: takes one of the player's characters out of the group
  *   (GroupCharacterRequest). The anchor being leaving disbands the group
  * - POST groupPath(universeId, groupId)/invites: makes an invite link (NewInviteRequest), answering
@@ -14,6 +15,7 @@
  *   (GroupCharacterRequest), answering GroupJoinedPayload, or 409 when the group is full
  */
 import { UNIVERSES_PATH } from './constants.js';
+import type { DifficultyLevel } from './difficulty.js';
 
 /**
  * Longest group name, after trimming
@@ -93,6 +95,11 @@ export interface NewGroupRequest
 	 * The group's name; may be empty
 	 */
 	name: string;
+
+	/**
+	 * One of the universe's difficulty levels (see shared/src/difficulty.ts)
+	 */
+	difficultyLevelId: number;
 }
 
 /**
@@ -177,6 +184,11 @@ export interface InviteDetails
 	 * Most characters the group may have: the universe's group size
 	 */
 	groupSize: number;
+
+	/**
+	 * The difficulty level the group plays at
+	 */
+	difficulty: Pick<DifficultyLevel, 'key' | 'name' | 'mobScale' | 'permadeath'>;
 }
 
 /**

@@ -1,15 +1,17 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { chunkKey, DEFAULT_LOBBY_DAY_HOURS, MAX_LOBBY_DAY_HOURS, MAX_WALK_SECONDS,DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_TILE_CELL, DEFAULT_TILE_NAMES, EDITOR_UNIVERSES_PATH, emptyMoney, isLocalizedMessage, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_STARTING_ITEMS, NEW_PF1E_CLASS_RULES, NEW_PF1E_RACE_RULES, NEW_AREA_BOUNDS, PF1E_CLASSES, MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_RACES, SF1E_CLASSES, SF1E_MAX_ABILITY_POINTS, SF1E_RACES, SF1E_THEMES, sf1eRaceRules, VOID_CELL, type Ruleset, type ThemeListPayload, type ThemeSettings, type ClassListPayload, type ClassSettings, type CreatedPayload, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorArea, type ItemListPayload, type ItemSettings, type RaceListPayload, type RaceSettings, type ResizeConflictPayload, type RulesetSettings, type TileListPayload, type TileSettings, type UniverseRole, type AreaListPayload } from '@multiverse-kiln/shared';
+import { chunkKey, DEFAULT_DIFFICULTY_LEVELS, MAX_MOB_SCALE, MIN_MOB_SCALE, type DifficultyLevel, type DifficultyLevelListPayload, type DifficultyLevelSettings, DEFAULT_LOBBY_DAY_HOURS, MAX_LOBBY_DAY_HOURS, MAX_WALK_SECONDS,DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_TILE_CELL, DEFAULT_TILE_NAMES, EDITOR_UNIVERSES_PATH, emptyMoney, isLocalizedMessage, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_STARTING_ITEMS, NEW_PF1E_CLASS_RULES, NEW_PF1E_RACE_RULES, NEW_AREA_BOUNDS, PF1E_CLASSES, MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_RACES, SF1E_CLASSES, SF1E_MAX_ABILITY_POINTS, SF1E_RACES, SF1E_THEMES, sf1eRaceRules, VOID_CELL, type Ruleset, type ThemeListPayload, type ThemeSettings, type ClassListPayload, type ClassSettings, type CreatedPayload, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorArea, type ItemListPayload, type ItemSettings, type RaceListPayload, type RaceSettings, type ResizeConflictPayload, type RulesetSettings, type TileListPayload, type TileSettings, type UniverseRole, type AreaListPayload } from '@multiverse-kiln/shared';
 
+import { createGroup, findGroup } from '../src/db/groupRepo.js';
 import { findDefaultItemIds } from '../src/db/itemRepo.js';
 import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
 import { saveSiteSettings } from '../src/db/siteSettingsRepo.js';
+import { inTransaction } from '../src/db/transactions.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
 import { onlinePlayers } from '../src/players/onlinePlayers.js';
 import { areaChanges, type AreaChange } from '../src/world/areaChanges.js';
-import { defaultTileId } from './db/fixtures.js';
+import { addCharacter, defaultTileId } from './db/fixtures.js';
 import { allowedTestOrigin } from './setup.js';
 import { getTestServer, logOutEveryone, testServerUrl } from './testServer.js';
 
@@ -1015,6 +1017,132 @@ describe('World editor API', () =>
 
 			await send(ada, 'POST', `/${universeId}/classes`, { body: { ...gunslinger, startingItems: [{ itemId: torchId, quantity: 1 }] } });
 			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/items/${torchId}`)).status, 409);
+		});
+	});
+
+	describe('difficulty levels', () =>
+	{
+		const nightmare: DifficultyLevelSettings = {
+			name: 'Nightmare',
+			isDefault: false,
+			mobScale: 300,
+			permadeath: true
+		};
+
+		/**
+		 * A universe's difficulty levels through the API
+		 *
+		 * @param universeId The universe's ID
+		 * @return The levels, easiest first
+		 */
+		async function listLevels(universeId: string): Promise<DifficultyLevel[]>
+		{
+			return((await send<DifficultyLevelListPayload>(ada, 'GET', `/${universeId}/difficulty-levels`)).body.difficultyLevels);
+		}
+
+		it('starts a universe with the default levels, Normal the default', async () =>
+		{
+			const universeId = await createUniverse(ada);
+
+			assert.deepStrictEqual((await listLevels(universeId)).map(({ id: _id, ...level }) => level), DEFAULT_DIFFICULTY_LEVELS.map((level) => ({ ...level, name: null })));
+		});
+
+		it('edits a level, and makes another level the default in place of the old one', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const [story, normal] = await listLevels(universeId);
+			const changed: DifficultyLevelSettings = {
+				name: 'Tale',
+				isDefault: true,
+				mobScale: -75,
+				permadeath: false
+			};
+
+			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/difficulty-levels/${story.id}`, { body: changed })).status, 204);
+
+			const after = await listLevels(universeId);
+
+			assert.deepStrictEqual(after[0], { id: story.id, key: 'story', ...changed });
+			assert.deepStrictEqual(after[1], { ...normal, isDefault: false });
+		});
+
+		it('adds a level, and deleting it moves its groups to the default', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const created = await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/difficulty-levels`, { body: nightmare });
+			const characterId = await addCharacter(ada.playerId, universeId, 'Ada');
+			const groupId = await inTransaction((transaction) => createGroup({ universeId, anchorCharacterId: characterId, name: '', startingAreaId: null, difficultyLevelId: created.body.id }, transaction));
+			const normal = (await listLevels(universeId)).find((level) => level.isDefault);
+
+			assert.strictEqual(created.status, 201);
+			assert.deepStrictEqual((await listLevels(universeId)).at(-1), { id: created.body.id, key: null, ...nightmare });
+			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/difficulty-levels/${created.body.id}`)).status, 204);
+			assert.strictEqual((await findGroup(groupId))?.difficultyLevelId, normal?.id);
+			assert.strictEqual((await listLevels(universeId)).length, DEFAULT_DIFFICULTY_LEVELS.length);
+			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/difficulty-levels/${created.body.id}`)).status, 404);
+		});
+
+		it('makes a new default level the only default', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const created = await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/difficulty-levels`, { body: { ...nightmare, isDefault: true } });
+
+			assert.deepStrictEqual((await listLevels(universeId)).filter((level) => level.isDefault).map((level) => level.id), [created.body.id]);
+		});
+
+		it('keeps a default level: refuses deleting it or making it an ordinary one', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const normal = (await listLevels(universeId)).find((level) => level.isDefault) as DifficultyLevel;
+			const ordinary: DifficultyLevelSettings = {
+				name: normal.name,
+				isDefault: false,
+				mobScale: normal.mobScale,
+				permadeath: normal.permadeath
+			};
+
+			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/difficulty-levels/${normal.id}`)).status, 409);
+			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/difficulty-levels/${normal.id}`, { body: ordinary })).status, 409);
+			assert.deepStrictEqual((await listLevels(universeId)).find((level) => (level.id === normal.id)), normal);
+		});
+
+		it('refuses a level without a name, a mob scale out of range, and another universe\'s level', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const otherId = await createUniverse(ada, 'Other');
+			const [theirs] = await listLevels(otherId);
+			const custom = (await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/difficulty-levels`, { body: nightmare })).body.id;
+			const invalid = [
+				{ ...nightmare, name: '' },
+				{ ...nightmare, mobScale: MAX_MOB_SCALE + 1 },
+				{ ...nightmare, mobScale: MIN_MOB_SCALE - 1 },
+				{ ...nightmare, mobScale: 12.5 }
+			];
+
+			assert.strictEqual((await send(ada, 'POST', `/${universeId}/difficulty-levels`, { body: { ...nightmare, name: null } })).status, 400);
+			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/difficulty-levels/${custom}`, { body: { ...nightmare, name: null } })).status, 400);
+
+			for (const body of invalid)
+			{
+				assert.strictEqual((await send(ada, 'POST', `/${universeId}/difficulty-levels`, { body })).status, 400, JSON.stringify(body));
+			}
+
+			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/difficulty-levels/${theirs.id}`, { body: nightmare })).status, 404);
+			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/difficulty-levels/${theirs.id}`)).status, 404);
+			assert.strictEqual((await listLevels(universeId)).length, DEFAULT_DIFFICULTY_LEVELS.length + 1);
+		});
+
+		it('lets only creators change them', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const grace = await logIn('Grace');
+			const [story] = await listLevels(universeId);
+
+			await setUniverseRole(universeId, grace.playerId, 'builder');
+
+			assert.strictEqual((await send(grace, 'GET', `/${universeId}/difficulty-levels`)).status, 200);
+			assert.strictEqual((await send(grace, 'POST', `/${universeId}/difficulty-levels`, { body: nightmare })).status, 403);
+			assert.strictEqual((await send(grace, 'DELETE', `/${universeId}/difficulty-levels/${story.id}`)).status, 403);
 		});
 	});
 

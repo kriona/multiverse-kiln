@@ -182,6 +182,7 @@ Alongside it, a basic Starfinder 1E ruleset (see SF1E in `STRUCTURE-OVERVIEW.md`
 - [✅] Group rooms are created from the database when a member returns, and save and dispose when everyone has left
 - [✅] Enter Universe: return to your last character's group, or to the lobby as that character if the group is gone
 - [ ] Listing groups in the lobby (once its design is decided)
+- [✅] Difficulty levels on the Characters tab (default, name, mob scale, permadeath), with Story, Normal, Hard and Hardcore in every universe; Create Group chooses one and saves it to the group. The hit point and chance to hit scaling are pure functions with tests, used once combat exists
 
 **Done when:** a player invites friends by link, one player brings several characters into the group, and the group picks up where it was after everyone logs off and back on.
 
@@ -298,7 +299,7 @@ Needed before universes are open to the public.
 
 ## Later (not yet specified)
 
-- Combat, monsters, NPCs and dialog (their results go in world state), and gaining experience
+- Combat, monsters, NPCs and dialog (their results go in world state), and gaining experience. Mobs' hit points and every chance to hit go through the group's difficulty level (`scaleMobHitPoints()` and `scaleHitChance()` in `server/src/logic/difficulty.ts`), and a character who dies in a group with permadeath is gone for good
 - Offline group members: the summoning ring (see Offline group members in `STRUCTURE-OVERVIEW.md`)
 - Money changers: NPCs who change a character's coins into the fewest coins of the same worth (`changePf1eMoney`), perhaps for a fee
 - One-off event messages for effects (hits, explosions)

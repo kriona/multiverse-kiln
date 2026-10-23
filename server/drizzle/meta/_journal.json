@@ -267,6 +267,27 @@
       "when": 1792775755872,
       "tag": "0037_tile_outdoors_no_default",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1792778072102,
+      "tag": "0038_difficulty_levels",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1792778077505,
+      "tag": "0039_default_difficulty_levels",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1792778091103,
+      "tag": "0040_group_difficulty_required",
+      "breakpoints": true
     }
   ]
 }

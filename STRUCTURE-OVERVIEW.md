@@ -138,7 +138,7 @@ The character creating the group is the "anchor being". This shows you a landing
 - If the anchor being is offline, the group can't use [area links](#editor-map) that require the whole group (for example, leaving the city for the wilderness), but can use the ones that don't (entering a shop in the city).
 - A group holds at most the universe's [group size](#tab-characters) characters. A character is in at most one group.
 
-You can give the group a name. Create Group is a dialog in the lobby, made around the character you're playing there.
+You can give the group a name. Create Group is a dialog in the lobby, made around the character you're playing there. It also asks for the group's [difficulty](#difficulty), starting on the universe's default level, and says what the level chosen does to mobs and whether it has permadeath. The group plays at that level from then on.
 
 Only the anchor being's player sees the "Invite" button, which opens a modal dialog.
 - Later, once [messages](#messages) exist: you can pick a user and send them an invite in a private message.
@@ -148,7 +148,7 @@ Only the anchor being's player sees the "Invite" button, which opens a modal dia
 	- there will be a "Copy Link" button
 - The link holds a random token the server keeps only a hash of, so a link is shown once, when it is made.
 
-Opening an invite takes you to a character selection screen with an option to create a character (which comes back to the invite). Characters that are already in a group are grayed out and can't be selected. If the group is full, you get a message saying you can't join because it's full.
+Opening an invite takes you to a character selection screen with an option to create a character (which comes back to the invite). It says the group's [difficulty](#difficulty) and what it does to mobs. A group with permadeath gets a warning that stands out (bold, bordered, with a skull), which Create Group also shows when a level with permadeath is chosen. Characters that are already in a group are grayed out and can't be selected. If the group is full, you get a message saying you can't join because it's full.
 
 A player can have several characters in one group (a player could make a group of 6 of their own characters), and switches between them in the UI without changing browser tabs.
 - Each window plays one character. Choosing another character in the same group switches the window to them; one in another group moves the window to that group; one not in a group moves it to the lobby. Several windows can play different characters of the same player side by side.
@@ -317,6 +317,20 @@ Money is credits (`cr`), the only coin.
 - Starting [area](#selection-area)
 
 Each [race](#tab-races) and [class](#tab-classes) can add to the starting money and equipment, and choose a starting area of its own.
+
+Below the settings, the tab lists the universe's [difficulty](#difficulty) levels, easiest first. Each level has:
+- Default checkbox: the level Create Group starts on. Exactly one level is the default: checking it on another level unchecks the old one, and the default can't be unchecked or deleted
+- Name
+- Mob scale, a percentage from -1000% (easier) to +1000% (harder)
+- Permadeath checkbox
+
+Levels can be added (up to 20) and deleted. Deleting a level moves the groups playing at it to the default level. Changing a level changes it for the groups already playing at it. A new universe starts with:
+- `Story`: mobs are 50% easier
+- `Normal`, the default
+- `Hard`: mobs are 50% harder
+- `Hardcore`: mobs are 100% harder, and permadeath
+
+Their names are shown in the player's language until a creator renames them. Like the rest of the tab, only creators can change them.
 
 A character's starting area is chosen in this order, most specific first: the class's entry for their race, the class, the race, then the universe. A class with an area of its own has no entries for races, so the two never compete.
 
@@ -548,6 +562,11 @@ Each group has its own clock, which starts at 8 in the morning and is saved with
 The time of day comes from the area's passage of time (see [Edit Universe](#edit-universe)): from the group's clock when time flows normally, fixed for the `always` settings, and from the cell's place on the map for `faerie`. It is light from 7 in the morning to 5 in the evening, dark from 7 in the evening to 5 in the morning, and the light changes over the two hours around dawn (6:00) and dusk (18:00). The map darkens with it, and screen readers are told as dawn breaks or night falls. An indoor area stays as light as its light level instead, and says nothing of dawn or dusk.
 
 On the overworld map, squares are much bigger distances. The scale is not yet defined, but time will pass faster.
+
+## Difficulty
+Each group plays at one of its universe's difficulty levels (see [Tab: Characters](#tab-characters)), chosen when it is made. A level's mob scale makes mobs harder or easier by a percentage, and its permadeath setting decides whether a character who dies is gone for good. Neither does anything yet: mobs, hit points, attacks and death come later, and the rules are ready for them as pure functions (`server/src/logic/difficulty.ts`):
+- A mob's hit points are multiplied by 100% plus the mob scale, rounded, and never go below 1. +50% makes 20 hit points 30, -50% makes them 10, and -100% or less leaves 1.
+- A chance to hit is scaled the same way: a mob's chance to hit a character is multiplied by it, and a character's chance to hit a mob is divided by it, so harder mobs hit more often and are hit less often. At +100% a mob's 40% becomes 80%, and a character's 60% becomes 30%. At -100% or less, a character's attack hits whenever it could hit at all. No chance goes above 100%, and a chance that was at least 5% never drops below 5%.
 
 ## Offline group members
 Offline characters don't move. One idea under consideration: every character gets a "ring of 'my friend' summoning". It lets a player unsummon friends who are offline, so their characters don't sit around idle, and when those friends log back in they are teleported to the group for an in-game reason.

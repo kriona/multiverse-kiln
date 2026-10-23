@@ -1,5 +1,5 @@
 import { ServerError, type Client } from '@colyseus/sdk';
-import { EDITOR_UNIVERSES_PATH, isLocalizedMessage, MAX_TILES_PER_PAGE, type CellChange, type ChunkListPayload, type ChunkRange, type ClassListPayload, type ClassSettings, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type NewAreaRequest, type RaceListPayload, type RaceSettings, type ResizeConflictPayload, type RulesetSettings, type EditorTheme, type ThemeListPayload, type ThemeSettings, type TileListPayload, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type AreaLinkListPayload, type AreaLinkTarget, type AreaListPayload, type AreaSettingsUpdate, type MessageSource } from '@multiverse-kiln/shared';
+import { EDITOR_UNIVERSES_PATH, isLocalizedMessage, MAX_TILES_PER_PAGE, type CellChange, type ChunkListPayload, type ChunkRange, type ClassListPayload, type ClassSettings, type CreatedPayload, type DifficultyLevel, type DifficultyLevelListPayload, type DifficultyLevelSettings, type EditableUniverse, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type NewAreaRequest, type RaceListPayload, type RaceSettings, type ResizeConflictPayload, type RulesetSettings, type EditorTheme, type ThemeListPayload, type ThemeSettings, type TileListPayload, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type AreaLinkListPayload, type AreaLinkTarget, type AreaListPayload, type AreaSettingsUpdate, type MessageSource } from '@multiverse-kiln/shared';
 
 import { localizedText, t } from '../localization';
 
@@ -357,6 +357,52 @@ export class EditorApi
 	async deleteTheme(universeId: string, themeId: number): Promise<void>
 	{
 		await this.send('DELETE', `${universePath(universeId)}/themes/${themeId}`);
+	}
+
+	/**
+	 * Every difficulty level of a universe
+	 *
+	 * @param universeId The universe's ID
+	 * @return The levels, easiest first
+	 */
+	async listDifficultyLevels(universeId: string): Promise<DifficultyLevel[]>
+	{
+		return((await this.send<DifficultyLevelListPayload>('GET', `${universePath(universeId)}/difficulty-levels`)).difficultyLevels);
+	}
+
+	/**
+	 * Adds a difficulty level to a universe
+	 *
+	 * @param universeId The universe's ID
+	 * @param settings The level's settings, with a name
+	 * @return The new level's ID
+	 */
+	async createDifficultyLevel(universeId: string, settings: DifficultyLevelSettings): Promise<number>
+	{
+		return((await this.send<CreatedPayload<number>>('POST', `${universePath(universeId)}/difficulty-levels`, settings)).id);
+	}
+
+	/**
+	 * Changes one of a universe's difficulty levels
+	 *
+	 * @param universeId The universe's ID
+	 * @param levelId The level's ID
+	 * @param settings The level's settings
+	 */
+	async saveDifficultyLevel(universeId: string, levelId: number, settings: DifficultyLevelSettings): Promise<void>
+	{
+		await this.send('PUT', `${universePath(universeId)}/difficulty-levels/${levelId}`, settings);
+	}
+
+	/**
+	 * Deletes one of a universe's difficulty levels other than its default, moving its groups to the default
+	 *
+	 * @param universeId The universe's ID
+	 * @param levelId The level's ID
+	 */
+	async deleteDifficultyLevel(universeId: string, levelId: number): Promise<void>
+	{
+		await this.send('DELETE', `${universePath(universeId)}/difficulty-levels/${levelId}`);
 	}
 
 	/**
