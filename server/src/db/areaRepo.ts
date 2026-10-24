@@ -694,6 +694,78 @@ export async function deleteAreaLink(areaId: string, column: number, row: number
 }
 
 /**
+ * The areas of a universe that use a tile, as their default tile or in a cell
+ *
+ * @param universeId The universe's ID
+ * @param tileId The tile's ID
+ * @param executor The database, or a transaction
+ * @return The areas, by name
+ */
+export async function findAreasUsingTile(universeId: string, tileId: number, executor: Executor = db): Promise<{ id: string; name: string }[]>
+{
+	return(executor
+		.select({
+			id: areas.id,
+			name: areas.name
+		})
+		.from(areas)
+		.where(and(
+			eq(areas.universeId, universeId),
+			or(
+				eq(areas.defaultTileId, tileId),
+				sql`EXISTS (SELECT 1 FROM ${mapChunks} WHERE ${mapChunks.areaId} = ${areas.id} AND ${tileId} = ANY(${mapChunks.cells}))`
+			)
+		))
+		.orderBy(asc(areas.name)));
+}
+
+/**
+ * Paints every use of a tile in a universe's maps with another tile: the cells holding it, and the areas
+ * whose default tile it is. Lock the universe first, so painting can't use the tile meanwhile
+ *
+ * @param universeId The universe's ID
+ * @param tileId The tile to replace
+ * @param replacementId The tile to paint in its place
+ * @param executor The database, or a transaction
+ * @return The IDs of the areas that changed
+ */
+export async function replaceTileInMaps(universeId: string, tileId: number, replacementId: number, executor: Executor = db): Promise<string[]>
+{
+	const universeAreas = executor
+		.select({
+			id: areas.id
+		})
+		.from(areas)
+		.where(eq(areas.universeId, universeId));
+	const repainted = await executor
+		.update(mapChunks)
+		.set({
+			cells: sql`array_replace(${mapChunks.cells}, ${tileId}, ${replacementId})`
+		})
+		.where(and(
+			inArray(mapChunks.areaId, universeAreas),
+			sql`${tileId} = ANY(${mapChunks.cells})`
+		))
+		.returning({
+			areaId: mapChunks.areaId
+		});
+	const redefaulted = await executor
+		.update(areas)
+		.set({
+			defaultTileId: replacementId
+		})
+		.where(and(
+			eq(areas.universeId, universeId),
+			eq(areas.defaultTileId, tileId)
+		))
+		.returning({
+			id: areas.id
+		});
+
+	return([...new Set([...repainted.map((chunk) => chunk.areaId), ...redefaulted.map((area) => area.id)])]);
+}
+
+/**
  * Whether any area of a universe uses a tile, as its default tile or in a cell
  *
  * @param universeId The universe's ID

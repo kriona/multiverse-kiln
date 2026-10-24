@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { CHUNK_SIZE, chunkCoordinate, chunkKey, GRID_CELL_SIZE, isInBounds, isTileGraphic, parseChunkKey, positiveModulo, TILE_GRAPHICS, tileIdAt, type AreaPayload, type AreaTile, type AreaTiles } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, chunkCoordinate, chunkKey, GRID_CELL_SIZE, isInBounds, parseChunkKey, positiveModulo, tileIdAt, type AreaPayload, type AreaTile, type AreaTiles } from '@multiverse-kiln/shared';
 
 import { DUAL_GRID_COLUMNS, tileGraphicImage } from './tileGraphics';
 
@@ -392,11 +392,16 @@ export class AreaRenderer
 	private rankDrawables(tiles: readonly AreaTile[]): Drawable[]
 	{
 		const ranked = tiles
-			.map((tile) => ({
-				tile,
-				image: tileGraphicImage(this.scene, tile.graphic),
-				drawOrder: (isTileGraphic(tile.graphic) ? TILE_GRAPHICS[tile.graphic].drawOrder : 0)
-			}))
+			.map((tile) =>
+			{
+				const graphic = tileGraphicImage(this.scene, tile);
+
+				return({
+					tile,
+					image: graphic?.image,
+					drawOrder: (graphic?.drawOrder ?? 0)
+				});
+			})
 			.sort((a, b) => (
 				(Number(a.image !== undefined) - Number(b.image !== undefined))
 				|| (a.drawOrder - b.drawOrder)

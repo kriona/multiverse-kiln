@@ -291,6 +291,14 @@ tr.staged-deleted
 	}
 }
 
+// Under the tile editor's graphic list: uploading a tileset, and deleting the uploaded one chosen
+.graphic-buttons
+{
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
 .walk-readout
 {
 	margin: 0;

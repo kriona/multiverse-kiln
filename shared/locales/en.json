@@ -1703,6 +1703,14 @@
 		"defaultMessage": "Delete Tile",
 		"description": "Button in the tile editor that deletes a tile made for this universe"
 	},
+	"editor.tile.deleteGraphic": {
+		"defaultMessage": "Delete Tileset Image",
+		"description": "Button in the tile editor, shown when an uploaded tileset is chosen, that marks that uploaded picture to delete, after asking; tiles drawn with it go back to their colors"
+	},
+	"editor.tile.deleteGraphicConfirm": {
+		"defaultMessage": "Delete the uploaded tileset \"{name}\"? Every tile drawn with it will be drawn in its color instead.",
+		"description": "Asked before marking an uploaded tileset (a picture tiles can be drawn with) to delete from the tile editor; {name} is the name it was given. Nothing is deleted until the tab is saved"
+	},
 	"editor.tile.editTitle": {
 		"defaultMessage": "Edit {tile}",
 		"description": "Title of the tile editor for a tile the player can change; {tile} is its name"
@@ -1739,6 +1747,14 @@
 		"defaultMessage": "None (use the color)",
 		"description": "First choice in the tile editor's list of graphics: the tile is drawn in its color"
 	},
+	"editor.tile.uploadGraphic": {
+		"defaultMessage": "Upload Tileset Image",
+		"description": "Button in the tile editor that opens the dialog for uploading a tileset (a picture a tile can be drawn with)"
+	},
+	"editor.tile.uploadedGraphic": {
+		"defaultMessage": "{name} (custom)",
+		"description": "A tileset this universe's editors uploaded, in the tile editor's list of graphics; {name} is the name it was given. \"custom\" marks it as made for this universe rather than coming with the game, as the editor tags custom tiles and items"
+	},
 	"editor.tile.usedIn": {
 		"defaultMessage": "Where",
 		"description": "Heading of whether indoor areas, outdoor areas, both or neither can paint with a tile: in the tile editor, and the Tilesets tab's filter and table column"
@@ -1767,9 +1783,89 @@
 		"defaultMessage": "Walk time (seconds)",
 		"description": "Label of the field for how many seconds of game time walking a square of the tile takes"
 	},
+	"editor.tileDelete.checkFailed": {
+		"defaultMessage": "Could not find out which maps use the tile.",
+		"description": "Shown in the dialog before deleting a tile when the areas using it couldn't be loaded"
+	},
+	"editor.tileDelete.checking": {
+		"defaultMessage": "Checking which maps use it...",
+		"description": "Shown in the dialog before deleting a tile while it finds out which areas' maps use the tile"
+	},
+	"editor.tileDelete.chooseReplacement": {
+		"defaultMessage": "Choose a tile",
+		"description": "First choice in the list of tiles to replace a tile being deleted, before one is chosen"
+	},
+	"editor.tileDelete.question": {
+		"defaultMessage": "Delete the tile \"{name}\" when the Tilesets tab is saved?",
+		"description": "Asked in the dialog before deleting a tile; {name} is the tile's name. Nothing is deleted until the tab is saved"
+	},
+	"editor.tileDelete.replaceWith": {
+		"defaultMessage": "Replace it with",
+		"description": "Label of the list of tiles to paint the maps with in place of a tile being deleted"
+	},
+	"editor.tileDelete.submit": {
+		"defaultMessage": "Delete",
+		"description": "Button in the dialog that asks before deleting a tile: marks the tile to delete when the Tilesets tab is saved"
+	},
+	"editor.tileDelete.title": {
+		"defaultMessage": "Delete Tile",
+		"description": "Title of the dialog that asks before deleting a tile"
+	},
+	"editor.tileDelete.usage": {
+		"defaultMessage": "{count, plural, one {The map of {areas} uses it.} other {The maps of {areas} use it.}} Choose a tile to paint {count, plural, one {it} other {them}} with in its place.",
+		"description": "Shown in the dialog before deleting a tile that maps use; {areas} lists the areas' names, and {count} is how many there are"
+	},
+	"editor.tileGraphic.drawOrder": {
+		"defaultMessage": "Draw order",
+		"description": "Label of the field for a tileset's draw order: a number deciding whose edges are drawn on top where two kinds of tile meet"
+	},
+	"editor.tileGraphic.drawOrderExample": {
+		"defaultMessage": "{name} {order, number}",
+		"description": "One of the game's own tilesets with its draw order, in the list under the draw order field, e.g. \"Grass 30\""
+	},
+	"editor.tileGraphic.drawOrderHint": {
+		"defaultMessage": "Where two kinds of tile meet, the higher number's edges are drawn over the other's. The tilesets that come with the game are {orders}.",
+		"description": "Explains the draw order field of the tileset upload dialog; {orders} lists the game's own tilesets with their numbers, e.g. \"Grass 30, Forest 40 and Mountains 50\""
+	},
+	"editor.tileGraphic.file": {
+		"defaultMessage": "Image",
+		"description": "Label of the field for choosing the picture file of a tileset to upload"
+	},
+	"editor.tileGraphic.formatHint": {
+		"defaultMessage": "A PNG of {size, number} by {size, number} pixels, at most {kilobytes, number} KB: {columns, number} frames across and {columns, number} down in the Dual-Grid layout.",
+		"description": "Explains what picture a tileset upload needs; {size} is its width and height in pixels, {kilobytes} the largest file allowed, and {columns} how many frames it has across and down"
+	},
+	"editor.tileGraphic.rights": {
+		"defaultMessage": "I have the rights to use this image",
+		"description": "Checkbox that must be ticked to upload a picture: the uploader confirms they made it, own it or have permission to use it"
+	},
+	"editor.tileGraphic.submit": {
+		"defaultMessage": "Add",
+		"description": "Button that adds the chosen tileset to the Tilesets tab's changes; it is uploaded when the tab is saved"
+	},
+	"editor.tileGraphic.title": {
+		"defaultMessage": "Upload Tileset Image",
+		"description": "Title of the dialog for uploading a tileset: a picture of a terrain that tiles can be drawn with"
+	},
+	"editor.tileGraphic.unreadable": {
+		"defaultMessage": "Could not read the image.",
+		"description": "Shown in the tileset upload dialog when the chosen file couldn't be opened as a picture"
+	},
+	"editor.tileGraphicDelete.submit": {
+		"defaultMessage": "Delete",
+		"description": "Button in the dialog that asks before deleting an uploaded tileset: marks it to delete when the Tilesets tab is saved"
+	},
+	"editor.tileGraphicDelete.title": {
+		"defaultMessage": "Delete Tileset Image",
+		"description": "Title of the dialog that asks before deleting an uploaded tileset (a picture tiles can be drawn with)"
+	},
 	"editor.tiles.add": {
 		"defaultMessage": "Add Tile",
 		"description": "Button that opens the dialog for making a new tile"
+	},
+	"editor.tiles.deleteUploadFailed": {
+		"defaultMessage": "Could not delete the tileset \"{name}\".",
+		"description": "Shown on the Tilesets tab when saving couldn't delete an uploaded tileset; {name} is the name it was given"
 	},
 	"editor.tiles.impassable": {
 		"defaultMessage": "impassable",
@@ -1794,6 +1890,14 @@
 	"editor.tiles.searchLabel": {
 		"defaultMessage": "Search tiles by name",
 		"description": "Name of the field that filters the tiles by name, for screen readers"
+	},
+	"editor.tiles.uploadFailed": {
+		"defaultMessage": "Could not upload the tileset \"{name}\".",
+		"description": "Shown on the Tilesets tab when saving couldn't upload a tileset; {name} is the name it was given"
+	},
+	"editor.tiles.uploadsFailed": {
+		"defaultMessage": "Could not list the uploaded tilesets.",
+		"description": "Shown on the Tilesets tab when the tilesets the universe's editors uploaded couldn't be loaded"
 	},
 	"editor.tiles.usedInValue": {
 		"defaultMessage": "{usedIn, select, both {Both} indoors {Indoors} outdoors {Outdoors} other {Neither}}",
@@ -2011,6 +2115,10 @@
 		"defaultMessage": "The race doesn't exist.",
 		"description": "Why a request about a race (such as elf or dwarf) failed: it was deleted, perhaps by another editor"
 	},
+	"error.noSuchReplacementTile": {
+		"defaultMessage": "The tile chosen to replace it doesn't exist.",
+		"description": "Why a tile couldn't be deleted: the tile chosen to paint the maps with in its place isn't one of the universe's tiles, perhaps because it was deleted"
+	},
 	"error.noSuchTheme": {
 		"defaultMessage": "The theme doesn't exist.",
 		"description": "Why a request about a theme (a character background, such as ace pilot or scholar) failed: it was deleted, perhaps by another editor"
@@ -2019,9 +2127,21 @@
 		"defaultMessage": "The tile doesn't exist.",
 		"description": "Why a request about a tile failed: it was deleted, perhaps by another editor"
 	},
+	"error.noSuchTileGraphic": {
+		"defaultMessage": "The tileset doesn't exist.",
+		"description": "Why an uploaded tileset couldn't be loaded: there is none with that address"
+	},
 	"error.noSuchUniverse": {
 		"defaultMessage": "The universe doesn't exist, or you can't see it.",
 		"description": "Why a request about a universe failed: it was deleted, or the player has no access to it"
+	},
+	"error.noSuchUploadedGraphic": {
+		"defaultMessage": "The uploaded tileset doesn't exist in this universe.",
+		"description": "Why a tile couldn't be saved: the uploaded tileset chosen for it isn't one of this universe's"
+	},
+	"error.noSuchUploadedGraphicToDelete": {
+		"defaultMessage": "The uploaded tileset doesn't exist. It may have been deleted already.",
+		"description": "Why an uploaded tileset couldn't be deleted: there is no such tileset in this universe, perhaps because another editor deleted it"
 	},
 	"error.noThemes": {
 		"defaultMessage": "This universe's ruleset has no themes.",
@@ -2086,6 +2206,22 @@
 	"error.themeUnavailable": {
 		"defaultMessage": "That theme can't be chosen any more. Choose another.",
 		"description": "Why a new character wasn't made: the theme (character background, such as ace pilot) chosen was deleted or disabled while the player was making the character, or none was chosen"
+	},
+	"error.tileGraphicLimit": {
+		"defaultMessage": "A universe can have at most {max, plural, one {# uploaded tileset} other {# uploaded tilesets}}.",
+		"description": "Why a tileset wasn't uploaded: the universe has as many uploaded tilesets as allowed"
+	},
+	"error.tileGraphicNotPng": {
+		"defaultMessage": "The file isn't a PNG image.",
+		"description": "Why an uploaded tileset was refused: it isn't a PNG picture, or is damaged"
+	},
+	"error.tileGraphicTooLarge": {
+		"defaultMessage": "The image can be at most {max, number} KB.",
+		"description": "Why an uploaded tileset was refused: the file is too big; {max} is the most it can be, in kilobytes"
+	},
+	"error.tileGraphicWrongSize": {
+		"defaultMessage": "A tileset must be {size, number} by {size, number} pixels.",
+		"description": "Why an uploaded tileset was refused: the picture is the wrong size; {size} is its width and height in pixels"
 	},
 	"error.tileInUse": {
 		"defaultMessage": "A map uses this tile, so it can't be deleted.",

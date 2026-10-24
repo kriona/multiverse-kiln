@@ -389,6 +389,7 @@ export function editorAreaPayload(area: EditorArea, tiles: readonly EditorTile[]
 			name: tile.name,
 			color: tile.color,
 			graphic: tile.graphic,
+			uploadedGraphic: ((tile.uploadedGraphic === null) ? null : { id: tile.uploadedGraphic.id, drawOrder: tile.uploadedGraphic.drawOrder }),
 			impassable: (tile.walkSeconds === IMPASSABLE_WALK_SECONDS),
 			visionCost: tile.visionCost
 		})),

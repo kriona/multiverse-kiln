@@ -1703,6 +1703,14 @@
 		"message": "Scuttle Tile",
 		"source": "Delete Tile"
 	},
+	"editor.tile.deleteGraphic": {
+		"message": "Scuttle Tileset Paintin'",
+		"source": "Delete Tileset Image"
+	},
+	"editor.tile.deleteGraphicConfirm": {
+		"message": "Scuttle the tileset \"{name}\"? Every tile painted with it will be painted in its color instead.",
+		"source": "Delete the uploaded tileset \"{name}\"? Every tile drawn with it will be drawn in its color instead."
+	},
 	"editor.tile.editTitle": {
 		"message": "Edit {tile}",
 		"source": "Edit {tile}"
@@ -1739,6 +1747,14 @@
 		"message": "None (just the color, matey)",
 		"source": "None (use the color)"
 	},
+	"editor.tile.uploadGraphic": {
+		"message": "Haul Aboard a Tileset Image",
+		"source": "Upload Tileset Image"
+	},
+	"editor.tile.uploadedGraphic": {
+		"message": "{name} (custom)",
+		"source": "{name} (custom)"
+	},
 	"editor.tile.usedIn": {
 		"message": "Fit fer",
 		"source": "Where"
@@ -1767,9 +1783,89 @@
 		"message": "Sailin' time (seconds)",
 		"source": "Walk time (seconds)"
 	},
+	"editor.tileDelete.checkFailed": {
+		"message": "Couldn't find out which charts use the tile.",
+		"source": "Could not find out which maps use the tile."
+	},
+	"editor.tileDelete.checking": {
+		"message": "Searchin' the charts fer it...",
+		"source": "Checking which maps use it..."
+	},
+	"editor.tileDelete.chooseReplacement": {
+		"message": "Pick a tile",
+		"source": "Choose a tile"
+	},
+	"editor.tileDelete.question": {
+		"message": "Scuttle the tile \"{name}\" when the Tilesets tab be saved?",
+		"source": "Delete the tile \"{name}\" when the Tilesets tab is saved?"
+	},
+	"editor.tileDelete.replaceWith": {
+		"message": "Paint over it with",
+		"source": "Replace it with"
+	},
+	"editor.tileDelete.submit": {
+		"message": "Scuttle",
+		"source": "Delete"
+	},
+	"editor.tileDelete.title": {
+		"message": "Scuttle Tile",
+		"source": "Delete Tile"
+	},
+	"editor.tileDelete.usage": {
+		"message": "{count, plural, one {The chart o' {areas} uses it.} other {The charts o' {areas} use it.}} Pick a tile to paint {count, plural, one {it} other {them}} with in its place.",
+		"source": "{count, plural, one {The map of {areas} uses it.} other {The maps of {areas} use it.}} Choose a tile to paint {count, plural, one {it} other {them}} with in its place."
+	},
+	"editor.tileGraphic.drawOrder": {
+		"message": "Stackin' order",
+		"source": "Draw order"
+	},
+	"editor.tileGraphic.drawOrderExample": {
+		"message": "{name} {order, number}",
+		"source": "{name} {order, number}"
+	},
+	"editor.tileGraphic.drawOrderHint": {
+		"message": "Where two kinds o' tile meet, the higher number's edges be painted over the other's. The tilesets that sail with the game be {orders}.",
+		"source": "Where two kinds of tile meet, the higher number's edges are drawn over the other's. The tilesets that come with the game are {orders}."
+	},
+	"editor.tileGraphic.file": {
+		"message": "Paintin'",
+		"source": "Image"
+	},
+	"editor.tileGraphic.formatHint": {
+		"message": "A PNG o' {size, number} by {size, number} pixels, no heavier than {kilobytes, number} KB: {columns, number} frames across an' {columns, number} down in the Dual-Grid layout.",
+		"source": "A PNG of {size, number} by {size, number} pixels, at most {kilobytes, number} KB: {columns, number} frames across and {columns, number} down in the Dual-Grid layout."
+	},
+	"editor.tileGraphic.rights": {
+		"message": "I have the rights to use this paintin', fair an' square",
+		"source": "I have the rights to use this image"
+	},
+	"editor.tileGraphic.submit": {
+		"message": "Stow It",
+		"source": "Add"
+	},
+	"editor.tileGraphic.title": {
+		"message": "Haul Aboard a Tileset Image",
+		"source": "Upload Tileset Image"
+	},
+	"editor.tileGraphic.unreadable": {
+		"message": "Couldn't make out the paintin'.",
+		"source": "Could not read the image."
+	},
+	"editor.tileGraphicDelete.submit": {
+		"message": "Scuttle",
+		"source": "Delete"
+	},
+	"editor.tileGraphicDelete.title": {
+		"message": "Scuttle Tileset Paintin'",
+		"source": "Delete Tileset Image"
+	},
 	"editor.tiles.add": {
 		"message": "Add Tile",
 		"source": "Add Tile"
+	},
+	"editor.tiles.deleteUploadFailed": {
+		"message": "Couldn't scuttle the tileset \"{name}\".",
+		"source": "Could not delete the tileset \"{name}\"."
 	},
 	"editor.tiles.impassable": {
 		"message": "no passage",
@@ -1794,6 +1890,14 @@
 	"editor.tiles.searchLabel": {
 		"message": "Search tiles by name",
 		"source": "Search tiles by name"
+	},
+	"editor.tiles.uploadFailed": {
+		"message": "Couldn't haul the tileset \"{name}\" aboard.",
+		"source": "Could not upload the tileset \"{name}\"."
+	},
+	"editor.tiles.uploadsFailed": {
+		"message": "Couldn't count the tilesets hauled aboard.",
+		"source": "Could not list the uploaded tilesets."
 	},
 	"editor.tiles.usedInValue": {
 		"message": "{usedIn, select, both {Both} indoors {Below decks} outdoors {Topside} other {Neither}}",
@@ -2011,6 +2115,10 @@
 		"message": "Those folk be lost at sea.",
 		"source": "The race doesn't exist."
 	},
+	"error.noSuchReplacementTile": {
+		"message": "The tile picked to paint over it be lost at sea.",
+		"source": "The tile chosen to replace it doesn't exist."
+	},
 	"error.noSuchTheme": {
 		"message": "That yarn be lost at sea.",
 		"source": "The theme doesn't exist."
@@ -2019,9 +2127,21 @@
 		"message": "That tile be lost at sea.",
 		"source": "The tile doesn't exist."
 	},
+	"error.noSuchTileGraphic": {
+		"message": "That tileset be lost at sea.",
+		"source": "The tileset doesn't exist."
+	},
 	"error.noSuchUniverse": {
 		"message": "That universe be lost at sea, or ye can't see it.",
 		"source": "The universe doesn't exist, or you can't see it."
+	},
+	"error.noSuchUploadedGraphic": {
+		"message": "That hauled-aboard tileset ain't in this universe's hold.",
+		"source": "The uploaded tileset doesn't exist in this universe."
+	},
+	"error.noSuchUploadedGraphicToDelete": {
+		"message": "That hauled-aboard tileset be gone. Mayhap it was scuttled already.",
+		"source": "The uploaded tileset doesn't exist. It may have been deleted already."
 	},
 	"error.noThemes": {
 		"message": "This universe's ship's articles have no yarns.",
@@ -2086,6 +2206,22 @@
 	"error.themeUnavailable": {
 		"message": "That yarn be off the books now. Choose another.",
 		"source": "That theme can't be chosen any more. Choose another."
+	},
+	"error.tileGraphicLimit": {
+		"message": "A universe's hold takes at most {max, plural, one {# tileset hauled aboard} other {# tilesets hauled aboard}}.",
+		"source": "A universe can have at most {max, plural, one {# uploaded tileset} other {# uploaded tilesets}}."
+	},
+	"error.tileGraphicNotPng": {
+		"message": "That file ain't a PNG paintin'.",
+		"source": "The file isn't a PNG image."
+	},
+	"error.tileGraphicTooLarge": {
+		"message": "The paintin' can weigh no more than {max, number} KB.",
+		"source": "The image can be at most {max, number} KB."
+	},
+	"error.tileGraphicWrongSize": {
+		"message": "A tileset must be {size, number} by {size, number} pixels, no more, no less.",
+		"source": "A tileset must be {size, number} by {size, number} pixels."
 	},
 	"error.tileInUse": {
 		"message": "A chart uses this tile, so it can't be scuttled.",

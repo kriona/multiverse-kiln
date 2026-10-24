@@ -42,9 +42,11 @@ An engine for making multiplayer browser-based role-playing games.
   src/world/         changes the world editor makes, published to the rooms playing in that world (in memory)
   src/logic/         pure game-simulation functions (no I/O)
   src/db/            Drizzle client, schema, and repository modules
+  src/storage/       object storage for uploads (any S3-compatible service; SeaweedFS locally)
+  src/images/        checking and re-encoding uploaded images, such as tilesets
   src/auth/          token verification
   src/http/          REST routes (health, universes for Home, characters, groups and invite links, the world
-                     editor's API, the admin page's site settings)
+                     editor's API, uploaded tilesets, the admin page's site settings)
   scripts/           development tools run by hand, such as the seed script
 /shared          Code imported by both client and server:
                  message type enums, payload interfaces, close codes, constants,
@@ -59,7 +61,7 @@ An engine for making multiplayer browser-based role-playing games.
                      test language). The client's dev server writes en-XA.json, the pseudo-language's
                      (git-ignored)
   scripts/           the message extractor (extractMessages.ts), run by `npm run messages` and the client's dev server
-docker-compose.yml   local Postgres
+docker-compose.yml   local Postgres and object storage (SeaweedFS)
 ```
 
 npm workspaces are assumed (`client`, `server`, `shared`). Update this section if the package manager changes.
@@ -92,8 +94,8 @@ npm workspaces are assumed (`client`, `server`, `shared`). Update this section i
 ## Configuration
 
 - All environment-specific values come from environment variables. Never hard-code URLs, credentials, or secrets, and never commit `.env` files. The pre-commit hook runs gitleaks on staged changes and blocks commits that contain secrets.
-- Root (`docker-compose.yml`): `POSTGRES_PASSWORD`, `KILN_MIGRATOR_PASSWORD`, `KILN_APP_PASSWORD`, `POSTGRES_PORT`.
-- Server: `DATABASE_URL` (the app role), `MIGRATION_DATABASE_URL` (the migration role; drizzle-kit only, never the running server), `PORT` (default 2567), `ENABLE_DEV_TOOLS` (playground and `/monitor`, never in production), `SSL_KEY_FILE` / `SSL_CERT_FILE`, `ALLOWED_ORIGINS`, `LOADTEST_ENDPOINT`, auth secret(s).
+- Root (`docker-compose.yml`): `POSTGRES_PASSWORD`, `KILN_MIGRATOR_PASSWORD`, `KILN_APP_PASSWORD`, `POSTGRES_PORT`, `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` (the local storage's keys), `STORAGE_PORT`.
+- Server: `DATABASE_URL` (the app role), `MIGRATION_DATABASE_URL` (the migration role; drizzle-kit only, never the running server), `PORT` (default 2567), `ENABLE_DEV_TOOLS` (playground and `/monitor`, never in production), `SSL_KEY_FILE` / `SSL_CERT_FILE`, `ALLOWED_ORIGINS`, `LOADTEST_ENDPOINT`, `STORAGE_ENDPOINT` / `STORAGE_REGION` / `STORAGE_BUCKET` / `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` / `STORAGE_FORCE_PATH_STYLE` (object storage for uploads), `TEST_STORAGE_BUCKET`, auth secret(s).
 - Client: `DEV_HOST`, `DEV_PORT`, `DEV_SSL_KEY_FILE` / `DEV_SSL_CERT_FILE`, `VITE_SERVER_URL` (`wss://www.multiversekiln-dev.com:2567` locally, `wss://...` in production), `VITE_SOURCE_URL` (the source code link in the page footer, required by the AGPL; a fork sets its own repository).
 - Commit `.env.example` files listing every variable with placeholder values, and keep them up to date.
 
@@ -115,7 +117,8 @@ npm workspaces are assumed (`client`, `server`, `shared`). Update this section i
 `start.bat` (starts Docker Desktop and Postgres if needed, runs `npm install`, then `npm run dev`) or `npm run dev` at the root builds `shared`, then runs the shared watcher, server, and client together in one terminal.
 
 ```bash
-docker compose up -d                 # start local Postgres
+docker compose up -d                 # start local Postgres and object storage
+npm run storage:setup -w server      # create the storage bucket (start.bat does it)
 npm run db:generate -w server        # create a migration after changing server/src/db/schema.ts
 npm run db:migrate -w server         # apply Drizzle migrations
 npm run db:seed -w server            # add or replace the sample universe (server/scripts/sampleUniverse.ts); -- --creator "<name>" makes that player its creator
@@ -139,6 +142,7 @@ Test multiplayer with separate browsers or profiles: every tab of one browser is
 	- Read out what changes without the player acting, and what is only drawn on a canvas, with `announce()` (`client/src/ui/announcer.ts`), the way `MapAnnouncer` does for the game's map.
 	- Show a field's problem with `reportFieldError()` (`client/src/ui/fieldErrors.ts`), and point the form's buttons at its error text with `aria-describedby`.
 	- Never show something by color alone, give anything drawn on a canvas a keyboard way to reach it, and set `document.title` when the screen shows.
+- **The universe editor stages every change.** Nothing a universe editor tab or its dialogs change reaches the server until the player clicks the Save button in the editor's bar (see Unsaved changes in `STRUCTURE-OVERVIEW.md`): adding, changing and deleting, uploads and deleting uploads included. Dialogs Apply their changes to the tab, the tab shows what will change, and Save sends it all. Never add a control that changes the universe straight away, even after a confirmation.
 - **Don't let work be lost by accident.** Give a form or dialog that edits something a `ChangeTracker` (`client/src/ui/changeTracker.ts`): call `markSaved()` once it is filled and after it saves, `confirmDiscard()` before closing or replacing it, and `guardDialog()` for a dialog. Anything else holding work not yet saved (such as painting still being sent) registers with `watchUnsavedWork()`. While any of it has unsaved changes, the browser asks before the page is left.
 - Code must pass `npm run lint` (ESLint, `eslint.config.js`); a pre-commit hook enforces it. Run it after making changes, and fix problems with Edit rather than `eslint --fix`. The import restrictions for `server/src/logic/` and `server/src/rooms/` enforce the architecture and database rules above - don't disable them.
 - Colyseus APIs changed substantially in 0.17 and 0.18, and recall of them is usually out of date. **Use the `colyseus` skill** (`.agents/skills/colyseus/SKILL.md`) before writing or changing any Colyseus code: rooms, Schema state, messages, matchmaking, reconnection, the client SDK (`@colyseus/sdk`) or server config. Read the matching file in its `references/` folder before non-trivial work in that area. Check the installed versions in `server/package.json` and `client/package.json` first; the skill is written for `colyseus` 0.18 and `@colyseus/schema` 5.

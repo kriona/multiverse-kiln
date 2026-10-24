@@ -218,6 +218,7 @@ Decided:
 - Impassable tiles with graphics, such as mountains 1.5 cells tall, are drawn again in a layer over players, cut down to what they draw over the cell north of them. No player can stand on them, so this puts a player north of a mountain behind its peaks without the hiding and uncovering that ruled out the forest canopy. The fog is drawn over that layer.
 - Distinctive buildings and lone trees are placed objects, not tiles (see Later).
 - Graphics only change what the client draws: movement, vision and the server don't change.
+- The engine ships default graphics as files in the client (`client/src/assets/tilesets/`), and a universe's editors can upload their own tilesets: PNG Dual-Grid sheets 128x128, each with a name and a draw order. Uploads go to S3-compatible object storage (SeaweedFS locally, any S3-compatible service in production), which pulls image storage forward from Phase 18. Uploading and deleting tilesets wait for the Tilesets tab's Save like every editor change. The server checks and re-encodes each upload, the uploader confirms they have the rights to use it, and the game server serves it to anyone at `/tile-graphics/<ID>.png`, cached for good since an upload never changes.
 
 - [✅] Cells are 32 world units; a step takes 0.16 seconds
 - [✅] A sample Dual-Grid grass sheet (`client/src/assets/tilesets/grass.png`)
@@ -225,7 +226,12 @@ Decided:
 - [ ] Several tiles meeting: each graphic has a draw order in `TILE_GRAPHICS` (which graphic's edges overlap which; tiles drawn in their colors go below every graphic), and one frame is drawn for each combination of 4 corner tiles as it appears, cached in an atlas, so each piece stays one layer
 - [ ] A piece is redrawn when a chunk next to it changes, since its edge cells depend on it; painting a cell redraws the 4 frames touching it
 - [ ] Grid lines drawn as an overlay, not baked into each tile
-- [ ] A tile's graphic chosen from sheets that ship with the engine (uploads wait for image storage, Phase 18), shown in the tile editor with its day and night preview
+- [ ] A tile's graphic chosen from sheets that ship with the engine or the universe's uploaded tilesets, shown in the tile editor with its day and night preview
+- [ ] Uploading tilesets from the tile editor, staged until the Tilesets tab is saved: object storage, checking and re-encoding, the rights confirmation, and drawing maps with them once they load (tiles show their colors until then)
+- [ ] Deleting an uploaded tileset from the tile editor, after asking, staged until the tab is saved; tiles drawn with it go back to their colors
+- [ ] Removing a universe's uploads from storage when the universe is deleted (once universes can be deleted)
+- [ ] The editor's Save saves every tab's changes together, all or nothing, as `STRUCTURE-OVERVIEW.md` describes. Today the save bar saves only the tab showing (`SaveBar.save()`), so changes on other tabs wait for their own Save
+- [ ] The Areas tab's maps, and the area previews in the link and starting area dialogs, draw the Tilesets tab's staged changes: changed colors and graphics, new tiles, staged uploads (from the page's own copy), and tiles staged for deletion drawn as their chosen replacements, including as an area's default tile. The draw tool and the default tile choices stop offering tiles staged for deletion, and painting staged on the Areas tab with such a tile is saved as its replacement
 - [ ] Graphics for the ruleset's default tiles (grass, and PF1E's forest and mountains, so far)
 - [ ] Check the new screens in the pseudo-language, update Pirate, and add screen reader text
 
@@ -272,6 +278,7 @@ Decided:
 Neon and Colyseus Cloud cost money, so this waits until the game is worth testing with outside players.
 The first deploy tends to surface WebSocket, TLS and environment issues, so leave time for it.
 
+- [ ] Choose the S3-compatible service for uploads, make its bucket (private: the game server serves the files), and set the `STORAGE_*` variables in the Colyseus Cloud dashboard
 - [ ] Choose where the production client is hosted (Colyseus Cloud only hosts the game server), and whether QA/staging uses a subdomain or its own domain. The host must serve `<name>.html` for `/<name>` (the pages link to `/edit`, `/license` and so on), and each of `PATH_PAGES` for every address under its path, such as `game.html` for `/game/<slug>`, `universe.html` for `/universe/<slug>` and `edit.html` for `/edit/<universe ID>`; see `client/src/pages.ts`
 - [ ] Create Neon project with `dev` and `prod` branches, in the region nearest the planned Colyseus Cloud location. Use Postgres 18 to match `docker-compose.yml`
 - [ ] Create the migration and app roles on each Neon branch with the same ownership and grants as the scripts in `docker/postgres/init/`, using `docker/postgres/neon/01-roles.sql` and `02-grants.sql` (roles made in the Neon console join `neon_superuser`); the server gets only the app role's pooled connection string
@@ -280,7 +287,7 @@ The first deploy tends to surface WebSocket, TLS and environment issues, so leav
 - [ ] Read the client address from Colyseus Cloud's forwarding header, trusted only from its proxy, so per-network rate limits count clients rather than the proxy
 - [ ] Point a production client build at the `wss://` endpoint
 - [ ] Set security headers on the client host and test them against the production build:
-	- `Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://<game server> wss://<game server>; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests` (Phaser needs `data:`/`blob:` for some textures and audio)
+	- `Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://<game server>; media-src 'self' data: blob:; connect-src 'self' https://<game server> wss://<game server>; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests` (Phaser needs `data:`/`blob:` for some textures and audio; the game server in `img-src` is for uploaded tilesets)
 	- `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: camera=(), microphone=(), geolocation=()`, `Cross-Origin-Opener-Policy: same-origin`
 - [ ] Check whether Colyseus Cloud's proxy sends `Strict-Transport-Security` for the game server; add it if not
 
@@ -304,9 +311,9 @@ The first deploy tends to surface WebSocket, TLS and environment issues, so leav
 
 Needed before universes are open to the public.
 
-- [ ] Choose image storage (object storage, not Postgres). Validate type and size, and re-encode uploads to strip metadata and anything that isn't an image. The CSP's `img-src` will need the storage origin
-- [ ] "I have the rights to use this image" on every upload
-- [ ] Profile photos, universe logos and banners, uploaded tile graphics (in the formats from Phase 13)
+- [✅] Image storage: S3-compatible object storage (`server/src/storage/`), with uploads validated and re-encoded to strip metadata and anything that isn't an image (`server/src/images/`); done for tilesets in Phase 13. The production service is chosen with the deployment (Phase 16)
+- [ ] "I have the rights to use this image" on every upload (tilesets have it)
+- [ ] Profile photos, universe logos and banners (tilesets are uploaded since Phase 13)
 - [ ] Stock graphics for each ruleset
 - [ ] Reporting content and players, copyright infringement reports, and a review queue for server admins
 
@@ -340,7 +347,7 @@ Needed before universes are open to the public.
 - Whether character names must be unique within a universe (Phase 10)
 - How groups are listed in the lobby (Phase 11)
 - Auth approach, account linking, the email sending service, and whether to add a CAPTCHA (Phase 14)
-- Image storage (Phase 18)
+- Which S3-compatible service stores uploads in production, and its bucket (Phase 16)
 - Telling users with the same name apart (Phase 19)
 - Whether a universe can rename engine terms, such as calling gold "crowns" (Phase 15)
 - Fonts for map text in scripts the default font doesn't cover (Phase 17)

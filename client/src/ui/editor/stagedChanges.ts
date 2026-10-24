@@ -455,6 +455,245 @@ export class StagedChanges<S> implements ChangeSource
 }
 
 /**
+ * Things marked to delete when an editor tab is saved, such as uploaded tilesets, which have no other
+ * changes to stage. Marking one again takes the mark back
+ */
+export class StagedDeletions implements ChangeSource
+{
+	private readonly ids = new Set<string>();
+	private readonly listeners = new Set<(unsaved: boolean) => void>();
+
+	constructor()
+	{
+		watchUnsavedWork(this);
+	}
+
+	/**
+	 * Whether anything is marked to delete
+	 *
+	 * @return True when something is
+	 */
+	hasUnsavedChanges(): boolean
+	{
+		return(this.ids.size > 0);
+	}
+
+	/**
+	 * Hears when things are marked to delete, or the marks are taken back
+	 *
+	 * @param listener Called with whether anything is marked
+	 * @return Stops listening
+	 */
+	subscribe(listener: (unsaved: boolean) => void): () => void
+	{
+		this.listeners.add(listener);
+
+		return(() =>
+		{
+			this.listeners.delete(listener);
+		});
+	}
+
+	/**
+	 * Whether a thing is marked to delete
+	 *
+	 * @param id The thing's ID
+	 * @return True when it is
+	 */
+	has(id: string): boolean
+	{
+		return(this.ids.has(id));
+	}
+
+	/**
+	 * The things marked to delete
+	 *
+	 * @return Their IDs, in the order they were marked
+	 */
+	list(): string[]
+	{
+		return([...this.ids]);
+	}
+
+	/**
+	 * Marks a thing to delete, or takes the mark back
+	 *
+	 * @param id The thing's ID
+	 */
+	toggle(id: string): void
+	{
+		if (!this.ids.delete(id))
+		{
+			this.ids.add(id);
+		}
+
+		this.changed();
+	}
+
+	/**
+	 * Takes the mark off a thing once it is deleted
+	 *
+	 * @param id The thing's ID
+	 */
+	done(id: string): void
+	{
+		if (this.ids.delete(id))
+		{
+			this.changed();
+		}
+	}
+
+	/**
+	 * Takes back every mark
+	 */
+	clear(): void
+	{
+		if (this.ids.size > 0)
+		{
+			this.ids.clear();
+			this.changed();
+		}
+	}
+
+	/**
+	 * Tells the listeners and the page that the marks changed
+	 */
+	private changed(): void
+	{
+		const unsaved = this.hasUnsavedChanges();
+
+		refreshUnsavedWork();
+
+		for (const listener of this.listeners)
+		{
+			listener(unsaved);
+		}
+	}
+}
+
+/**
+ * Things added on an editor tab that have nothing else to stage, such as uploaded tilesets, kept until
+ * the tab is saved. Each gets an ID of its own until then, which a staged change can refer to
+ */
+export class StagedAdditions<T> implements ChangeSource
+{
+	private readonly items = new Map<string, T>();
+	private readonly listeners = new Set<(unsaved: boolean) => void>();
+	private nextId = 1;
+
+	/**
+	 * @param prefix Starts each staged ID, so it never matches a saved thing's
+	 */
+	constructor(private readonly prefix: string)
+	{
+		watchUnsavedWork(this);
+	}
+
+	/**
+	 * Whether anything is waiting to be added
+	 *
+	 * @return True when something is
+	 */
+	hasUnsavedChanges(): boolean
+	{
+		return(this.items.size > 0);
+	}
+
+	/**
+	 * Hears when things are added or discarded
+	 *
+	 * @param listener Called with whether anything is waiting
+	 * @return Stops listening
+	 */
+	subscribe(listener: (unsaved: boolean) => void): () => void
+	{
+		this.listeners.add(listener);
+
+		return(() =>
+		{
+			this.listeners.delete(listener);
+		});
+	}
+
+	/**
+	 * Whether an ID is one of these staged things'
+	 *
+	 * @param id The ID
+	 * @return True when it is
+	 */
+	has(id: string): boolean
+	{
+		return(this.items.has(id));
+	}
+
+	/**
+	 * The things waiting to be added, with their staged IDs
+	 *
+	 * @return The things, in the order they were added
+	 */
+	list(): { id: string; item: T }[]
+	{
+		return([...this.items].map(([id, item]) => ({ id, item })));
+	}
+
+	/**
+	 * Stages a thing to add
+	 *
+	 * @param item The thing
+	 * @return Its staged ID
+	 */
+	add(item: T): string
+	{
+		const id = `${this.prefix}${this.nextId++}`;
+
+		this.items.set(id, item);
+		this.changed();
+
+		return(id);
+	}
+
+	/**
+	 * Discards a staged thing, or takes it off once it is saved
+	 *
+	 * @param id Its staged ID
+	 */
+	remove(id: string): void
+	{
+		if (this.items.delete(id))
+		{
+			this.changed();
+		}
+	}
+
+	/**
+	 * Discards every staged thing
+	 */
+	clear(): void
+	{
+		if (this.items.size > 0)
+		{
+			this.items.clear();
+			this.changed();
+		}
+	}
+
+	/**
+	 * Tells the listeners and the page that the staged things changed
+	 */
+	private changed(): void
+	{
+		const unsaved = this.hasUnsavedChanges();
+
+		refreshUnsavedWork();
+
+		for (const listener of this.listeners)
+		{
+			listener(unsaved);
+		}
+	}
+}
+
+/**
  * Whether an ID is a thing's that hasn't been saved yet
  *
  * @param id The ID

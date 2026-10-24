@@ -1,6 +1,7 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { chunkKey, DEFAULT_DIFFICULTY_LEVELS, MAX_MOB_SCALE, MIN_MOB_SCALE, type DifficultyLevel, type DifficultyLevelListPayload, type DifficultyLevelSettings, DEFAULT_LOBBY_DAY_HOURS, MAX_LOBBY_DAY_HOURS, MAX_WALK_SECONDS,DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_TILE_CELL, DEFAULT_TILE_NAMES, EDITOR_UNIVERSES_PATH, emptyMoney, isLocalizedMessage, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_STARTING_ITEMS, NEW_PF1E_CLASS_RULES, NEW_PF1E_RACE_RULES, NEW_AREA_BOUNDS, PF1E_CLASSES, MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_RACES, SF1E_CLASSES, SF1E_MAX_ABILITY_POINTS, SF1E_RACES, SF1E_THEMES, sf1eRaceRules, VOID_CELL, type Ruleset, type ThemeListPayload, type ThemeSettings, type ClassListPayload, type ClassSettings, type CreatedPayload, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorArea, type ItemListPayload, type ItemSettings, type RaceListPayload, type RaceSettings, type ResizeConflictPayload, type RulesetSettings, type TileListPayload, type TileSettings, type UniverseRole, type AreaListPayload } from '@multiverse-kiln/shared';
+import { chunkKey, DEFAULT_DIFFICULTY_LEVELS, MAX_MOB_SCALE, MIN_MOB_SCALE, type DifficultyLevel, type DifficultyLevelListPayload, type DifficultyLevelSettings, DEFAULT_LOBBY_DAY_HOURS, MAX_LOBBY_DAY_HOURS, MAX_WALK_SECONDS,DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_TILE_CELL, DEFAULT_TILE_NAMES, EDITOR_UNIVERSES_PATH, emptyMoney, isLocalizedMessage, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_STARTING_ITEMS, NEW_PF1E_CLASS_RULES, NEW_PF1E_RACE_RULES, NEW_AREA_BOUNDS, PF1E_CLASSES, MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_RACES, SF1E_CLASSES, SF1E_MAX_ABILITY_POINTS, SF1E_RACES, SF1E_THEMES, sf1eRaceRules, VOID_CELL, type Ruleset, type ThemeListPayload, type ThemeSettings, type ClassListPayload, type ClassSettings, type CreatedPayload, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorArea, type ItemListPayload, type ItemSettings, type RaceListPayload, type RaceSettings, type ResizeConflictPayload, type RulesetSettings, TILE_GRAPHIC_SIZE, TILE_GRAPHICS_PATH, type TileGraphicListPayload, type TileListPayload, type TileSettings, type TileUsagePayload, type UniverseRole, type AreaListPayload } from '@multiverse-kiln/shared';
+import sharp from 'sharp';
 
 import { createGroup, findGroup } from '../src/db/groupRepo.js';
 import { findDefaultItemIds } from '../src/db/itemRepo.js';
@@ -45,6 +46,7 @@ const lava: TileSettings = {
 	outdoors: true,
 	color: 0xff4400,
 	graphic: null,
+	uploadedGraphicId: null,
 	visionCost: 0,
 	walkSeconds: 0
 };
@@ -676,7 +678,7 @@ describe('World editor API', () =>
 			const page = (await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?limit=2&offset=1`)).body;
 
 			assert.deepStrictEqual(indoor.tiles.map((tile) => tile.key), ['wood_floor']);
-			assert.deepStrictEqual(custom.tiles,[{ id: created.body.id, key: null, ...lava, custom: true, edited: false }]);
+			assert.deepStrictEqual(custom.tiles,[{ id: created.body.id, key: null, ...lava, custom: true, edited: false, uploadedGraphic: null }]);
 
 			// Default tiles that keep their names are named by their keys, in the player's language
 			assert.deepStrictEqual(impassable.tiles.map((tile) => (tile.name ?? tile.key)), ['mountains', 'water', 'Lava']);
@@ -691,14 +693,14 @@ describe('World editor API', () =>
 			const universeId = await createUniverse(ada);
 			const otherId = await createUniverse(ada, 'Other');
 			const grassId = await defaultTileId('grass');
-			const autumn = { name: 'Autumn Grass', indoors: false, outdoors: true, color: 0xc08030, graphic: null, visionCost: 0, walkSeconds: 600 };
+			const autumn = { name: 'Autumn Grass', indoors: false, outdoors: true, color: 0xc08030, graphic: null, uploadedGraphicId: null, visionCost: 0, walkSeconds: 600 };
 
 			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/tiles/${grassId}`, { body: autumn })).status, 204);
 
 			const edited = (await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?edited=true`)).body;
 			const untouched = (await send<TileListPayload>(ada, 'GET', `/${otherId}/tiles?edited=true`)).body;
 
-			assert.deepStrictEqual(edited.tiles, [{ id: grassId, key: 'grass', ...autumn, custom: false, edited: true }]);
+			assert.deepStrictEqual(edited.tiles, [{ id: grassId, key: 'grass', ...autumn, custom: false, edited: true, uploadedGraphic: null }]);
 			assert.deepStrictEqual(untouched.tiles, []);
 
 			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/tiles/${grassId}`)).status, 204);
@@ -710,10 +712,10 @@ describe('World editor API', () =>
 			const universeId = await createUniverse(ada);
 			const grassId = await defaultTileId('grass');
 			const tileId = (await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/tiles`, { body: lava })).body.id;
-			const darker = { name: null, indoors: false, outdoors: true, color: 0x206010, graphic: 'grass', visionCost: 0, walkSeconds: 600 };
+			const darker = { name: null, indoors: false, outdoors: true, color: 0x206010, graphic: 'grass', uploadedGraphicId: null, visionCost: 0, walkSeconds: 600 };
 
 			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/tiles/${grassId}`, { body: darker })).status, 204);
-			assert.deepStrictEqual((await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?edited=true`)).body.tiles, [{ id: grassId, key: 'grass', ...darker, custom: false, edited: true }]);
+			assert.deepStrictEqual((await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?edited=true`)).body.tiles, [{ id: grassId, key: 'grass', ...darker, custom: false, edited: true, uploadedGraphic: null }]);
 			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/tiles/${tileId}`, { body: darker })).status, 400);
 		});
 
@@ -732,6 +734,53 @@ describe('World editor API', () =>
 			assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/tiles/${tileId}`)).status, 404);
 		});
 
+		it('lists the areas using a tile, and deletes it after painting its maps with a replacement', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const otherId = await createUniverse(ada, 'Other');
+			const universe = (await send<EditableUniverse>(ada, 'GET', `/${universeId}`)).body;
+			const lobbyAreaId = universe.lobbyAreaId as string;
+			const tileId = (await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/tiles`, { body: lava })).body.id;
+			const theirTileId = (await send<CreatedPayload<number>>(ada, 'POST', `/${otherId}/tiles`, { body: lava })).body.id;
+			const meadowId = await createArea(ada, universeId, { defaultTileId: tileId });
+			const grassId = await defaultTileId('grass');
+			const changes: AreaChange[] = [];
+
+			await send(ada, 'PATCH', `/${universeId}/areas/${lobbyAreaId}/cells`, { body: { changes: [[0, 0, tileId]] } });
+
+			const usage = (await send<TileUsagePayload>(ada, 'GET', `/${universeId}/tiles/${tileId}/usage`)).body;
+
+			assert.deepStrictEqual(usage.areas.map((area) => area.id).sort(), [lobbyAreaId, meadowId].sort());
+
+			for (const replaceWith of [tileId, theirTileId, 'abc'])
+			{
+				assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/tiles/${tileId}?replaceWith=${replaceWith}`)).status, 400, String(replaceWith));
+			}
+
+			const stopListening = areaChanges.onChange((change) =>
+			{
+				changes.push(change);
+			});
+
+			try
+			{
+				assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/tiles/${tileId}?replaceWith=${grassId}`)).status, 204);
+			}
+			finally
+			{
+				stopListening();
+			}
+
+			const meadow = (await send<EditorArea>(ada, 'GET', `/${universeId}/areas/${meadowId}`)).body;
+			const grassUsage = (await send<TileUsagePayload>(ada, 'GET', `/${universeId}/tiles/${grassId}/usage`)).body;
+
+			assert.strictEqual(meadow.defaultTileId, grassId);
+			assert.ok(grassUsage.areas.some((area) => (area.id === lobbyAreaId)), 'the lobby\'s painted cell is grass now');
+			assert.strictEqual((await send(ada, 'GET', `/${universeId}/tiles/${tileId}/usage`)).status, 404);
+			assert.deepStrictEqual(changes.filter((change) => (change.kind === 'area')).map((change) => change.areaId).sort(), [lobbyAreaId, meadowId].sort());
+			assert.deepStrictEqual(changes.at(-1), { kind: 'tiles', universeId });
+		});
+
 		it('answers 404 for a tile of another universe, and 400 for invalid settings', async () =>
 		{
 			const universeId = await createUniverse(ada);
@@ -741,9 +790,137 @@ describe('World editor API', () =>
 			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/tiles/${theirTileId}`, { body: lava })).status, 404);
 			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/tiles/abc`, { body: lava })).status, 404);
 
-			for (const body of [{ ...lava, walkSeconds: MAX_WALK_SECONDS + 1 }, { ...lava, walkSeconds: -1 },{ ...lava, color: 0x1000000 }, { ...lava, name: '' }, { ...lava, name: null }, { ...lava, graphic: 'lava' }, { ...lava, graphic: undefined }])
+			for (const body of [{ ...lava, walkSeconds: MAX_WALK_SECONDS + 1 }, { ...lava, walkSeconds: -1 },{ ...lava, color: 0x1000000 }, { ...lava, name: '' }, { ...lava, name: null }, { ...lava, graphic: 'lava' }, { ...lava, graphic: undefined }, { ...lava, uploadedGraphicId: 'abc' }, { ...lava, uploadedGraphicId: undefined }])
 			{
 				assert.strictEqual((await send(ada, 'POST', `/${universeId}/tiles`, { body })).status, 400, JSON.stringify(body));
+			}
+		});
+	});
+
+	describe('tile graphics', () =>
+	{
+		/**
+		 * A PNG filled with one color
+		 *
+		 * @param size Its width and height in pixels
+		 * @param withCopyright Whether to give it metadata, which uploads must not keep
+		 * @return The PNG, base64-encoded as an upload carries it
+		 */
+		async function solidPng(size: number = TILE_GRAPHIC_SIZE, withCopyright: boolean = false): Promise<string>
+		{
+			let image = sharp({
+				create: {
+					width: size,
+					height: size,
+					channels: 4,
+					background: { r: 40, g: 140, b: 60, alpha: 1 }
+				}
+			});
+
+			if (withCopyright)
+			{
+				image = image.withExif({ IFD0: { Copyright: 'hidden-metadata-marker' } });
+			}
+
+			return((await image.png().toBuffer()).toString('base64'));
+		}
+
+		it('uploads a tileset, lists it, serves it without its metadata, and draws tiles with it', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const upload = { name: 'Moss', drawOrder: 35, image: await solidPng(TILE_GRAPHIC_SIZE, true), rightsConfirmed: true };
+			const created = await send<CreatedPayload<string>>(ada, 'POST', `/${universeId}/tile-graphics`, { body: upload });
+
+			assert.strictEqual(created.status, 201, JSON.stringify(created.body));
+
+			const graphicId = created.body.id;
+
+			assert.deepStrictEqual((await send<TileGraphicListPayload>(ada, 'GET', `/${universeId}/tile-graphics`)).body, { graphics: [{ id: graphicId, name: 'Moss', drawOrder: 35 }] });
+
+			const served = await fetch(`${testServerUrl}${TILE_GRAPHICS_PATH}/${graphicId}.png`);
+			const image = Buffer.from(await served.arrayBuffer());
+			const metadata = await sharp(image).metadata();
+
+			assert.strictEqual(served.status, 200);
+			assert.strictEqual(served.headers.get('content-type'), 'image/png');
+			assert.ok(served.headers.get('cache-control')?.includes('immutable'), served.headers.get('cache-control') ?? '');
+			assert.strictEqual(served.headers.get('x-content-type-options'), 'nosniff');
+			assert.deepStrictEqual([metadata.format, metadata.width, metadata.height], ['png', TILE_GRAPHIC_SIZE, TILE_GRAPHIC_SIZE]);
+			assert.ok(!image.includes('hidden-metadata-marker'), 'the upload\'s metadata was stored');
+
+			const tile = { ...lava, uploadedGraphicId: graphicId };
+			const tileId = (await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/tiles`, { body: tile })).body.id;
+			const custom = (await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?custom=true`)).body;
+
+			assert.deepStrictEqual(custom.tiles, [{ id: tileId, key: null, ...tile, custom: true, edited: false, uploadedGraphic: { id: graphicId, name: 'Moss', drawOrder: 35 } }]);
+		});
+
+		it('refuses tilesets that aren\'t PNGs of the right size, or whose rights aren\'t confirmed', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const upload = { name: 'Moss', drawOrder: 35, image: await solidPng(), rightsConfirmed: true };
+			const jpeg = (await sharp(Buffer.from(upload.image, 'base64')).jpeg().toBuffer()).toString('base64');
+
+			for (const body of [{ ...upload, image: await solidPng(64) }, { ...upload, image: jpeg }, { ...upload, image: Buffer.from('not an image').toString('base64') }, { ...upload, image: 'not base64!' }, { ...upload, rightsConfirmed: false }, { ...upload, name: '' }, { ...upload, drawOrder: 0 }, { ...upload, drawOrder: 100 }])
+			{
+				assert.strictEqual((await send(ada, 'POST', `/${universeId}/tile-graphics`, { body })).status, 400, JSON.stringify({ ...body, image: body.image.slice(0, 20) }));
+			}
+
+			assert.deepStrictEqual((await send<TileGraphicListPayload>(ada, 'GET', `/${universeId}/tile-graphics`)).body, { graphics: [] });
+		});
+
+		it('refuses a tile drawn with another universe\'s tileset, or with two graphics', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const otherId = await createUniverse(ada, 'Other');
+			const theirGraphicId = (await send<CreatedPayload<string>>(ada, 'POST', `/${otherId}/tile-graphics`, { body: { name: 'Moss', drawOrder: 35, image: await solidPng(), rightsConfirmed: true } })).body.id;
+			const grassId = await defaultTileId('grass');
+
+			assert.strictEqual((await send(ada, 'POST', `/${universeId}/tiles`, { body: { ...lava, uploadedGraphicId: theirGraphicId } })).status, 400);
+			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/tiles/${grassId}`, { body: { ...lava, uploadedGraphicId: theirGraphicId } })).status, 400);
+			assert.strictEqual((await send(ada, 'POST', `/${otherId}/tiles`, { body: { ...lava, graphic: 'grass', uploadedGraphicId: theirGraphicId } })).status, 400);
+		});
+
+		it('deletes a tileset and its image, drawing the tiles that used it in their colors', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const otherId = await createUniverse(ada, 'Other');
+			const graphicId = (await send<CreatedPayload<string>>(ada, 'POST', `/${universeId}/tile-graphics`, { body: { name: 'Moss', drawOrder: 35, image: await solidPng(), rightsConfirmed: true } })).body.id;
+			const tileId = (await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/tiles`, { body: { ...lava, uploadedGraphicId: graphicId } })).body.id;
+			const changes: AreaChange[] = [];
+			const stopListening = areaChanges.onChange((change) =>
+			{
+				changes.push(change);
+			});
+
+			try
+			{
+				assert.strictEqual((await send(ada, 'DELETE', `/${otherId}/tile-graphics/${graphicId}`)).status, 404, 'another universe\'s tileset');
+				assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/tile-graphics/abc`)).status, 404);
+				assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/tile-graphics/${graphicId}`)).status, 204);
+				assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/tile-graphics/${graphicId}`)).status, 404, 'already deleted');
+			}
+			finally
+			{
+				stopListening();
+			}
+
+			const tile = (await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?custom=true`)).body.tiles.find((listed) => (listed.id === tileId));
+
+			assert.deepStrictEqual((await send<TileGraphicListPayload>(ada, 'GET', `/${universeId}/tile-graphics`)).body, { graphics: [] });
+			assert.deepStrictEqual([tile?.uploadedGraphicId, tile?.uploadedGraphic], [null, null]);
+			assert.strictEqual((await fetch(`${testServerUrl}${TILE_GRAPHICS_PATH}/${graphicId}.png`)).status, 404);
+			assert.deepStrictEqual(changes, [{ kind: 'tiles', universeId }]);
+		});
+
+		it('answers 404 for a tileset that doesn\'t exist', async () =>
+		{
+			for (const file of [`${randomUUID()}.png`, 'nothing', `${randomUUID()}.jpg`])
+			{
+				const response = await fetch(`${testServerUrl}${TILE_GRAPHICS_PATH}/${file}`);
+
+				assert.strictEqual(response.status, 404, file);
+				assert.strictEqual(response.headers.get('x-content-type-options'), 'nosniff', file);
 			}
 		});
 	});

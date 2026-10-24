@@ -41,8 +41,9 @@ goto :waitForDocker
 :dockerReady
 
 rem --wait returns once Postgres passes its healthcheck in docker-compose.yml
-echo Starting Postgres...
+echo Starting Postgres and storage...
 docker compose up -d --wait || goto :error
+call npm run storage:setup -w server || goto :error
 
 rem cmd reads each line of this file in the console's code page, so switch it to UTF-8 to read the title's emoji
 chcp 65001 >nul

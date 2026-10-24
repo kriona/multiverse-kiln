@@ -1,5 +1,5 @@
 import { ServerError, type Client } from '@colyseus/sdk';
-import { EDITOR_UNIVERSES_PATH, isLocalizedMessage, MAX_TILES_PER_PAGE, type CellChange, type ChunkListPayload, type ChunkRange, type ClassListPayload, type ClassSettings, type CreatedPayload, type DifficultyLevel, type DifficultyLevelListPayload, type DifficultyLevelSettings, type EditableUniverse, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type NewAreaRequest, type RaceListPayload, type RaceSettings, type ResizeConflictPayload, type RulesetSettings, type EditorTheme, type ThemeListPayload, type ThemeSettings, type TileListPayload, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type AreaLinkListPayload, type AreaLinkTarget, type AreaListPayload, type AreaSettingsUpdate, type MessageSource, type MessageValues } from '@multiverse-kiln/shared';
+import { EDITOR_UNIVERSES_PATH, isLocalizedMessage, MAX_TILES_PER_PAGE, type CellChange, type ChunkListPayload, type ChunkRange, type ClassListPayload, type ClassSettings, type CreatedPayload, type DifficultyLevel, type DifficultyLevelListPayload, type DifficultyLevelSettings, type EditableUniverse, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type NewAreaRequest, type RaceListPayload, type RaceSettings, type ResizeConflictPayload, type RulesetSettings, type EditorTheme, type ThemeListPayload, type ThemeSettings, type TileGraphicListPayload, type TileGraphicUploadRequest, type TileListPayload, type TileListQuery, type TileUsagePayload, type TileSettings, type UniverseSettingsUpdate, type UploadedTileGraphic, type AreaLinkListPayload, type AreaLinkTarget, type AreaListPayload, type AreaSettingsUpdate, type MessageSource, type MessageValues } from '@multiverse-kiln/shared';
 
 import { localizedText, t } from '../localization';
 
@@ -168,10 +168,59 @@ export class EditorApi
 	 *
 	 * @param universeId The universe's ID
 	 * @param tileId The tile's ID
+	 * @param replaceWith A tile to paint the maps using the deleted tile with, or undefined when no map uses it
 	 */
-	async deleteTile(universeId: string, tileId: number): Promise<void>
+	async deleteTile(universeId: string, tileId: number, replaceWith?: number): Promise<void>
 	{
-		await this.send('DELETE', `${universePath(universeId)}/tiles/${tileId}`);
+		const query = ((replaceWith === undefined) ? '' : `?replaceWith=${replaceWith}`);
+
+		await this.send('DELETE', `${universePath(universeId)}/tiles/${tileId}${query}`);
+	}
+
+	/**
+	 * The areas whose maps use one of a universe's tiles
+	 *
+	 * @param universeId The universe's ID
+	 * @param tileId The tile's ID
+	 * @return The areas, by name
+	 */
+	async tileUsage(universeId: string, tileId: number): Promise<TileUsagePayload['areas']>
+	{
+		return((await this.send<TileUsagePayload>('GET', `${universePath(universeId)}/tiles/${tileId}/usage`)).areas);
+	}
+
+	/**
+	 * The tile graphics a universe's editors uploaded
+	 *
+	 * @param universeId The universe's ID
+	 * @return The graphics, by name
+	 */
+	async listTileGraphics(universeId: string): Promise<UploadedTileGraphic[]>
+	{
+		return((await this.send<TileGraphicListPayload>('GET', `${universePath(universeId)}/tile-graphics`)).graphics);
+	}
+
+	/**
+	 * Uploads a tile graphic to a universe
+	 *
+	 * @param universeId The universe's ID
+	 * @param upload The graphic, and the uploader's confirmation that they have the rights to use it
+	 * @return The new graphic's ID
+	 */
+	async uploadTileGraphic(universeId: string, upload: TileGraphicUploadRequest): Promise<string>
+	{
+		return((await this.send<CreatedPayload<string>>('POST', `${universePath(universeId)}/tile-graphics`, upload)).id);
+	}
+
+	/**
+	 * Deletes one of a universe's uploaded tile graphics and its image; tiles drawn with it go back to their colors
+	 *
+	 * @param universeId The universe's ID
+	 * @param graphicId The graphic's ID
+	 */
+	async deleteTileGraphic(universeId: string, graphicId: string): Promise<void>
+	{
+		await this.send('DELETE', `${universePath(universeId)}/tile-graphics/${graphicId}`);
 	}
 
 	/**

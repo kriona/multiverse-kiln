@@ -7,7 +7,7 @@ import { t } from '../localization';
 import type { GameRoom, MapConnection, MapRoom } from '../network/serverConnection';
 import { PositionBuffer, type Point } from '../rendering/PositionBuffer';
 import { AreaRenderer } from '../rendering/AreaRenderer';
-import { preloadTileGraphics } from '../rendering/tileGraphics';
+import { loadUploadedTileGraphics, preloadTileGraphics } from '../rendering/tileGraphics';
 import { isTextEntry } from '../ui/dom';
 import { MapAnnouncer, type SeenPlayer } from '../ui/MapAnnouncer';
 import { addKeyHelp, addShortcut } from '../ui/shortcuts';
@@ -622,6 +622,16 @@ export class MapScene extends Phaser.Scene
 		this.chunkRevision++;
 		this.areaRenderer?.destroy();
 		this.areaRenderer = new AreaRenderer(this, area, this.chunks);
+
+		// Tiles with uploaded graphics are drawn in their colors until the graphics arrive
+		void loadUploadedTileGraphics(this, area.tiles).then((loaded) =>
+		{
+			if (loaded && (this.area === area) && this.areaRenderer && this.scene.isActive())
+			{
+				this.areaRenderer.destroy();
+				this.areaRenderer = new AreaRenderer(this, area, this.chunks);
+			}
+		});
 	}
 
 	/**

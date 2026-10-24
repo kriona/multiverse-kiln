@@ -5,16 +5,17 @@
  * browser; routes about a universe also need a role in it, and changes need a role that allows them
  */
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
-import { canEditUniverseSettings, canEditWorld, DEFAULT_AREA_TILE_KEYS, defineMessages, EDITOR_UNIVERSES_PATH, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, SOURCE_LOCALE, Translator, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type RulesetSettings, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, canEditWorld, DEFAULT_AREA_TILE_KEYS, defineMessages, EDITOR_UNIVERSES_PATH, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, SOURCE_LOCALE, Translator, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type RulesetSettings, type TileSettings, type TileUsagePayload, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { lockPlayer } from '../db/playerRepo.js';
 import { loadRulesetSettings, storeRulesetSettings } from '../db/rulesetRepo.js';
 import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { countCustomTiles, createCustomTile, deleteCustomTile, findDefaultTileIds, findTileKind, listEditorTiles, restoreDefaultTile, saveEditedDefaultTile, updateCustomTile } from '../db/tileRepo.js';
+import { isUniverseTileGraphic } from '../db/tileGraphicRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { countUniversesWithRole, listEditableUniverses, setUniverseRole } from '../db/universeEditorRepo.js';
 import { createUniverse, lockUniverse, setUniverseAreas, UniverseNameTakenError, updateUniverseSettings } from '../db/universeRepo.js';
-import { createArea, findEditorArea, isTileInUse } from '../db/areaRepo.js';
+import { createArea, findAreasUsingTile, findEditorArea, isTileInUse, replaceTileInMaps } from '../db/areaRepo.js';
 import { areaChanges } from '../world/areaChanges.js';
 import { loadUniverseContext, playerIdOf, refuseWritesFromOtherOrigins, requireLogin, requireRole, universeContextOf } from './editorAccess.js';
 import { addDefaultStartingItems } from '../db/startingItemRepo.js';
@@ -23,6 +24,7 @@ import { addItemRoutes } from './editorItems.js';
 import { newUniverseRequest, rulesetSettings, tileIdParameter, tileListQuery, tileSettings, universeSettingsUpdate } from './editorPayloads.js';
 import { addRaceRoutes } from './editorRaces.js';
 import { addThemeRoutes } from './editorThemes.js';
+import { addTileGraphicRoutes } from './editorTileGraphics.js';
 import { addDifficultyLevelRoutes } from './editorDifficultyLevels.js';
 import { findStartingProblem } from './editorStartingExtras.js';
 import { addAreaRoutes, lobbyTimeProblem, timeSettingsProblem } from './editorAreas.js';
@@ -41,6 +43,11 @@ const messages = defineMessages({
 		id: 'error.tileNeedsName',
 		defaultMessage: 'A tile needs a name.',
 		description: 'Why a tile the universe added couldn\'t be saved: its name was left out'
+	},
+	noSuchUploadedGraphic: {
+		id: 'error.noSuchUploadedGraphic',
+		defaultMessage: 'The uploaded tileset doesn\'t exist in this universe.',
+		description: 'Why a tile couldn\'t be saved: the uploaded tileset chosen for it isn\'t one of this universe\'s'
 	}
 });
 
@@ -98,12 +105,14 @@ function createEditorRouter(allowedOrigins: Set<string>): express.Router
 	universeRouter.post('/tiles', requireRole(canEditWorld), createTileRoute);
 	universeRouter.put('/tiles/:tileId', requireRole(canEditWorld), saveTile);
 	universeRouter.delete('/tiles/:tileId', requireRole(canEditWorld), deleteTile);
+	universeRouter.get('/tiles/:tileId/usage', tileUsage);
 	addItemRoutes(universeRouter);
 	addRaceRoutes(universeRouter);
 	addClassRoutes(universeRouter);
 	addThemeRoutes(universeRouter);
 	addDifficultyLevelRoutes(universeRouter);
 	addAreaRoutes(universeRouter);
+	addTileGraphicRoutes(universeRouter);
 
 	router.use(handleEditorError);
 
@@ -431,6 +440,12 @@ async function createTileRoute(request: Request, response: Response): Promise<vo
 	}
 
 	const { universe } = universeContextOf(request);
+
+	if (!await hasUniverseGraphic(universe.id, body.data, response))
+	{
+		return;
+	}
+
 	const tileId = await inTransaction(async (transaction) =>
 	{
 		await lockUniverse(universe.id, transaction);
@@ -485,6 +500,11 @@ async function saveTile(request: Request, response: Response): Promise<void>
 		return;
 	}
 
+	if (!await hasUniverseGraphic(universe.id, body.data, response))
+	{
+		return;
+	}
+
 	const { name } = body.data;
 
 	if (kind === 'default')
@@ -506,8 +526,54 @@ async function saveTile(request: Request, response: Response): Promise<void>
 }
 
 /**
- * DELETE /:universeId/tiles/:tileId: deletes one of the universe's own tiles if no map uses it, or
- * restores a default tile the universe has edited
+ * Checks that a tile's uploaded graphic, if it has one, is one of the universe's, refusing the request
+ * with 400 when it isn't
+ *
+ * @param universeId The universe's ID
+ * @param settings The tile's settings
+ * @param response The response, for the refusal
+ * @return True when the tile can be saved
+ */
+async function hasUniverseGraphic(universeId: string, settings: TileSettings, response: Response): Promise<boolean>
+{
+	if ((settings.uploadedGraphicId === null) || await isUniverseTileGraphic(universeId, settings.uploadedGraphicId))
+	{
+		return(true);
+	}
+
+	sendError(response, 400, messages.noSuchUploadedGraphic);
+
+	return(false);
+}
+
+/**
+ * GET /:universeId/tiles/:tileId/usage: the areas whose maps use a tile
+ *
+ * @param request The request
+ * @param response The response
+ */
+async function tileUsage(request: Request, response: Response): Promise<void>
+{
+	const tileId = tileIdParameter.safeParse(request.params.tileId);
+	const { universe } = universeContextOf(request);
+
+	if (!tileId.success || (await findTileKind(universe.id, universe.ruleset, tileId.data) === undefined))
+	{
+		sendError(response, 404, messages.noSuchTile);
+		return;
+	}
+
+	const payload: TileUsagePayload = {
+		areas: await findAreasUsingTile(universe.id, tileId.data)
+	};
+
+	response.json(payload);
+}
+
+/**
+ * DELETE /:universeId/tiles/:tileId: deletes one of the universe's own tiles, or restores a default tile
+ * the universe has edited. A tile a map uses is refused, unless ?replaceWith names another of the
+ * universe's tiles: then the maps are painted with that tile in its place first
  *
  * @param request The request
  * @param response The response
@@ -532,22 +598,37 @@ async function deleteTile(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	const deleted = await inTransaction(async (transaction) =>
+	const replaceWith = request.query.replaceWith;
+	const replacement = ((replaceWith === undefined) ? undefined : tileIdParameter.safeParse(replaceWith));
+
+	if (replacement && (!replacement.success || (replacement.data === tileId.data) || (await findTileKind(universe.id, universe.ruleset, replacement.data) === undefined)))
+	{
+		sendError(response, 400, {
+			id: 'error.noSuchReplacementTile',
+			defaultMessage: 'The tile chosen to replace it doesn\'t exist.',
+			description: 'Why a tile couldn\'t be deleted: the tile chosen to paint the maps with in its place isn\'t one of the universe\'s tiles, perhaps because it was deleted'
+		});
+		return;
+	}
+
+	const repainted = await inTransaction(async (transaction) =>
 	{
 		// Painting waits for the universe's lock too, so the tile can't come into use before it is deleted
 		await lockUniverse(universe.id, transaction);
 
+		const changedAreas = (replacement?.success ? await replaceTileInMaps(universe.id, tileId.data, replacement.data, transaction) : []);
+
 		if (await isTileInUse(universe.id, tileId.data, transaction))
 		{
-			return(false);
+			return(undefined);
 		}
 
 		await deleteCustomTile(universe.id, tileId.data, transaction);
 
-		return(true);
+		return(changedAreas);
 	});
 
-	if (!deleted)
+	if (repainted === undefined)
 	{
 		sendError(response, 409, {
 			id: 'error.tileInUse',
@@ -555,6 +636,11 @@ async function deleteTile(request: Request, response: Response): Promise<void>
 			description: 'Why a tile couldn\'t be deleted: some area\'s map is painted with it'
 		});
 		return;
+	}
+
+	for (const areaId of repainted)
+	{
+		areaChanges.publish({ kind: 'area', areaId });
 	}
 
 	areaChanges.publish({ kind: 'tiles', universeId: universe.id });

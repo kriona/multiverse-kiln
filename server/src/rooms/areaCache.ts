@@ -444,6 +444,7 @@ export function toAreaPayload(area: ActiveArea, chunkKeys: Iterable<string>, mem
 			name: ((tile.key === null) ? tile.name : null),
 			color: tile.color,
 			graphic: tile.graphic,
+			uploadedGraphic: tile.uploadedGraphic,
 			impassable: (tile.walkSeconds === IMPASSABLE_WALK_SECONDS),
 			visionCost: tile.visionCost
 		})),

@@ -3,7 +3,7 @@ import { CHUNK_SIZE, chunkCoordinate, GRID_CELL_SIZE, type ChunkRange, type Area
 
 import { brushOrigin, cellsBetween, type BrushCell, type BrushShape } from '../editor/brush';
 import { AreaRenderer } from '../rendering/AreaRenderer';
-import { preloadTileGraphics } from '../rendering/tileGraphics';
+import { loadUploadedTileGraphics, preloadTileGraphics } from '../rendering/tileGraphics';
 
 /**
  * Key the scene is registered under in each editor's game
@@ -245,6 +245,18 @@ export class MapEditorScene extends Phaser.Scene
 	{
 		this.areaRenderer = new AreaRenderer(this, this.area, this.chunks);
 		this.overlay = this.add.graphics().setDepth(1);
+
+		// Tiles with uploaded graphics are drawn in their colors until the graphics arrive
+		const area = this.area;
+
+		void loadUploadedTileGraphics(this, area.tiles).then((loaded) =>
+		{
+			if (loaded && (this.area === area) && this.areaRenderer && this.scene.isActive())
+			{
+				this.areaRenderer.destroy();
+				this.areaRenderer = new AreaRenderer(this, area, this.chunks);
+			}
+		});
 
 		if (this.startCamera)
 		{

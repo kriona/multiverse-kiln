@@ -28,7 +28,12 @@ import type { DisplayTime, FaerieMorning, LobbyPassageOfTime, PassageOfTime, Rul
  * - GET    /:universeId/tiles                      TileListQuery as query parameters -> TileListPayload
  * - POST   /:universeId/tiles                      TileSettings -> CreatedPayload: a custom tile
  * - PUT    /:universeId/tiles/:tileId              TileSettings: edits a custom tile, or stores an edited copy of a default tile
- * - DELETE /:universeId/tiles/:tileId              deletes a custom tile nothing uses, or restores a default tile
+ * - DELETE /:universeId/tiles/:tileId              deletes a custom tile nothing uses, or restores a default tile. With
+ *                                                  ?replaceWith=<tile ID>, the maps using the tile are painted with that tile first
+ * - GET    /:universeId/tiles/:tileId/usage        TileUsagePayload: the areas whose maps use the tile
+ * - GET    /:universeId/tile-graphics              TileGraphicListPayload: the tile graphics the universe's editors uploaded
+ * - POST   /:universeId/tile-graphics              TileGraphicUploadRequest -> CreatedPayload: uploads a tile graphic
+ * - DELETE /:universeId/tile-graphics/:graphicId   deletes an uploaded tile graphic and its image; tiles drawn with it go back to their colors
  * - GET    /:universeId/items                      ItemListQuery as query parameters -> ItemListPayload
  * - POST   /:universeId/items                      ItemSettings -> CreatedPayload: a custom item
  * - PUT    /:universeId/items/:itemId              ItemSettings: edits a custom item, or stores an edited copy of a default item
@@ -100,6 +105,39 @@ export const MAX_CUSTOM_TILES = 1000;
  * Most tiles one page of the Tilesets tab lists
  */
 export const MAX_TILES_PER_PAGE = 500;
+
+/**
+ * Where the server serves uploaded tile graphics, which anyone can load: /tile-graphics/<ID>.png. An
+ * uploaded graphic never changes, so its address can be cached for good
+ */
+export const TILE_GRAPHICS_PATH = '/tile-graphics';
+
+/**
+ * Width and height in pixels of a tile graphic: a Dual-Grid sheet of 4 frames by 4, each a cell
+ */
+export const TILE_GRAPHIC_SIZE = 128;
+
+/**
+ * Most bytes an uploaded tile graphic's PNG may have
+ */
+export const MAX_TILE_GRAPHIC_BYTES = 256 * 1024;
+
+/**
+ * Most tile graphics a universe's editors may upload
+ */
+export const MAX_UPLOADED_TILE_GRAPHICS = 200;
+
+/**
+ * Most characters in an uploaded tile graphic's name
+ */
+export const MAX_TILE_GRAPHIC_NAME_LENGTH = 40;
+
+/**
+ * The draw orders an uploaded tile graphic can have (see TILE_GRAPHICS): where tiles meet, the higher
+ * one's edges are drawn over the lower one's
+ */
+export const MIN_TILE_GRAPHIC_DRAW_ORDER = 1;
+export const MAX_TILE_GRAPHIC_DRAW_ORDER = 99;
 
 /**
  * Most characters in an item's name
@@ -408,9 +446,15 @@ export interface TileSettings
 	color: number;
 
 	/**
-	 * The graphic the tile is drawn with (TILE_GRAPHICS), or null to draw it in its color
+	 * The graphic the tile is drawn with (TILE_GRAPHICS), or null to draw it in its color or uploadedGraphicId
 	 */
 	graphic: string | null;
+
+	/**
+	 * The ID of a graphic the universe's editors uploaded (UploadedTileGraphic) that the tile is drawn
+	 * with, or null. A tile has at most one of graphic and uploadedGraphicId
+	 */
+	uploadedGraphicId: string | null;
 
 	/**
 	 * 0-100 percent; 100 can't be seen through
@@ -449,6 +493,11 @@ export interface EditorTile extends TileSettings
 	 * Whether the tile is a default tile the universe has changed
 	 */
 	edited: boolean;
+
+	/**
+	 * The uploaded graphic uploadedGraphicId names, or null
+	 */
+	uploadedGraphic: UploadedTileGraphic | null;
 }
 
 /**
@@ -531,6 +580,58 @@ export interface TileListPayload
 	 * How many tiles match, on every page
 	 */
 	total: number;
+}
+
+/**
+ * Response of GET EDITOR_UNIVERSES_PATH/:universeId/tiles/:tileId/usage: the areas whose maps use the
+ * tile, in a cell or as their default tile, by name
+ */
+export interface TileUsagePayload
+{
+	areas: { id: string; name: string }[];
+}
+
+/**
+ * A tile graphic a universe's editors uploaded, which its tiles can be drawn with: a Dual-Grid sheet
+ * TILE_GRAPHIC_SIZE pixels square, served at TILE_GRAPHICS_PATH/<id>.png
+ */
+export interface UploadedTileGraphic
+{
+	id: string;
+	name: string;
+
+	/**
+	 * MIN_TILE_GRAPHIC_DRAW_ORDER to MAX_TILE_GRAPHIC_DRAW_ORDER (see TILE_GRAPHICS)
+	 */
+	drawOrder: number;
+}
+
+/**
+ * Response of GET EDITOR_UNIVERSES_PATH/:universeId/tile-graphics: by name
+ */
+export interface TileGraphicListPayload
+{
+	graphics: UploadedTileGraphic[];
+}
+
+/**
+ * Body of POST EDITOR_UNIVERSES_PATH/:universeId/tile-graphics
+ */
+export interface TileGraphicUploadRequest
+{
+	name: string;
+	drawOrder: number;
+
+	/**
+	 * The PNG, base64-encoded: TILE_GRAPHIC_SIZE pixels square and at most MAX_TILE_GRAPHIC_BYTES. The
+	 * server stores it re-encoded, without anything but the picture
+	 */
+	image: string;
+
+	/**
+	 * The uploader confirms they have the rights to use the image
+	 */
+	rightsConfirmed: true;
 }
 
 /**

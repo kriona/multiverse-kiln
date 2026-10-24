@@ -88,7 +88,7 @@ The root `.env` holds the local database passwords (used by `docker-compose.yml`
 node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"
 ```
 
-Then put the same passwords into the connection strings in `server/.env`: `KILN_APP_PASSWORD` goes in `DATABASE_URL`, and `KILN_MIGRATOR_PASSWORD` in `MIGRATION_DATABASE_URL`. Hex passwords don't need escaping in a URL.
+Then put the same passwords into the connection strings in `server/.env`: `KILN_APP_PASSWORD` goes in `DATABASE_URL`, and `KILN_MIGRATOR_PASSWORD` in `MIGRATION_DATABASE_URL`. Hex passwords don't need escaping in a URL. Generate the two storage keys the same way, and put the same pair in both `.env` and `server/.env`.
 
 | Variable | File | Purpose |
 |---|---|---|
@@ -96,6 +96,8 @@ Then put the same passwords into the connection strings in `server/.env`: `KILN_
 | `KILN_MIGRATOR_PASSWORD` | `.env` | Password for `kiln_migrator`, the role migrations run as. |
 | `KILN_APP_PASSWORD` | `.env` | Password for `kiln_app`, the role the game server runs as. |
 | `POSTGRES_PORT` | `.env` | Host port for Postgres, bound to `127.0.0.1` only (default `5432`). |
+| `STORAGE_ACCESS_KEY_ID`, `STORAGE_SECRET_ACCESS_KEY` | `.env` | Keys for the local object storage's S3 API, which refuses requests without them. The same pair goes in `server/.env`. |
+| `STORAGE_PORT` | `.env` | Host port for the local storage's S3 API, bound to `127.0.0.1` only (default `8333`). |
 | `DEV_HOST` | `client/.env` | Hostname for the Vite dev server: `www.multiversekiln-dev.com` (must be in your hosts file; see step 3). |
 | `DEV_PORT` | `client/.env` | Port for the Vite dev server (default `5173`). |
 | `VITE_SERVER_URL` | `client/.env` | WebSocket URL of the Colyseus server: `wss://www.multiversekiln-dev.com:2567`. Use the same hostname as `DEV_HOST` so it matches the certificate. |
@@ -108,6 +110,8 @@ Then put the same passwords into the connection strings in `server/.env`: `KILN_
 | `MIGRATION_DATABASE_URL` | `server/.env` | Postgres connection string for `npm run db:migrate -w server`, as `kiln_migrator`. Never give it to the running server. |
 | `TEST_DATABASE_URL`, `TEST_MIGRATION_DATABASE_URL` | `server/.env` | The same two connection strings for the `kiln_test` database that `npm test` uses. The tests empty it before every test, so they refuse to run against a database whose name doesn't end in `_test`. |
 | `LOADTEST_ENDPOINT` | `server/.env` | Server URL that `npm run loadtest -w server` connects to: `wss://www.multiversekiln-dev.com:2567`. |
+| `STORAGE_ENDPOINT`, `STORAGE_REGION`, `STORAGE_BUCKET`, `STORAGE_ACCESS_KEY_ID`, `STORAGE_SECRET_ACCESS_KEY`, `STORAGE_FORCE_PATH_STYLE` | `server/.env` | Object storage for uploads such as tilesets: any S3-compatible service. Locally the storage container (`http://127.0.0.1:8333`, path-style, the keys from `.env`); in production Cloudflare R2, AWS S3, Backblaze B2 or similar, with a bucket made in its own tools. |
+| `TEST_STORAGE_BUCKET` | `server/.env` | The bucket `npm test` uploads to, on the same storage (`kiln-test`). The tests create it if it doesn't exist. |
 | `DEV_SSL_KEY_FILE`, `DEV_SSL_CERT_FILE` | `client/.env` | Local certificate for the HTTPS dev server (required). The example values point at `certs/` (see step 5). |
 
 `.env` files are git-ignored. Never commit them; when you add a variable, add it to the matching `.env.example` too.
@@ -146,10 +150,13 @@ Neither the Vite dev server nor the Colyseus server will start without the certi
 With Docker Desktop running, from the repository root:
 
 ```bash
-docker compose up -d                 # start Postgres in the background
+docker compose up -d                 # start Postgres and the object storage in the background
+npm run storage:setup -w server      # create the storage bucket, if it doesn't exist yet
 npm run db:migrate -w server         # create or update the tables
 npm run db:seed -w server            # add the sample universe
 ```
+
+The object storage is [SeaweedFS](https://github.com/seaweedfs/seaweedfs), which speaks the S3 API, and keeps uploaded files such as tilesets in a Docker volume. `start.bat` starts it and creates the bucket too. It only answers on `127.0.0.1:8333`, over plain HTTP like Postgres, and only to requests signed with the keys in `.env`.
 
 The seed script (`server/scripts/seed.ts`) adds Kilnhaven, a sample universe drawn in `server/scripts/sampleUniverse.ts`: a town square lobby with a cottage and cellar to walk into, and a crossroads for groups to start in. Running it again replaces Kilnhaven and leaves everything else alone, so run it after changing the sample maps. It refuses to run with `NODE_ENV=production`.
 

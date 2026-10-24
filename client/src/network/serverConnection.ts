@@ -77,6 +77,18 @@ function getServerUrl(): string
 }
 
 /**
+ * The address of one of the server's HTTP routes, for loading from it directly, such as an uploaded tile graphic
+ *
+ * @param path The route's path, starting with /
+ * @return The address, on the server VITE_SERVER_URL names
+ */
+export function serverHttpUrl(path: string): string
+{
+	// wss://host:port becomes https://host:port, and ws:// http://
+	return(`${getServerUrl().replace(/^ws/, 'http').replace(/\/$/, '')}${path}`);
+}
+
+/**
  * A client for the server, for a page that only uses its HTTP routes
  *
  * @return The client

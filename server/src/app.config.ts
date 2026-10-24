@@ -18,6 +18,7 @@ import { addCharacterRoutes } from './http/characters.js';
 import { addEditorRoutes } from './http/editor.js';
 import { addGroupRoutes } from './http/groups.js';
 import { addHealthRoute } from './http/health.js';
+import { addTileGraphicRoute } from './http/tileGraphics.js';
 import { addUniversesRoutes } from './http/universes.js';
 import { createOriginCheck, parseAllowedOrigins } from './http/origins.js';
 import { configureResponseHeaders } from './http/responseHeaders.js';
@@ -70,6 +71,7 @@ const server = defineServer({
 		addCharacterRoutes(app, allowedOrigins);
 		addGroupRoutes(app, allowedOrigins);
 		addEditorRoutes(app, allowedOrigins);
+		addTileGraphicRoute(app);
 		addAdminRoutes(app, allowedOrigins);
 
 		if (isDevToolsEnabled())

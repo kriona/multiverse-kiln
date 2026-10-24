@@ -1,5 +1,5 @@
-# Local Postgres for development (see README "Start the database")
-# Passwords come from the git-ignored .env next to this file (copy .env.example)
+# Local Postgres and object storage for development (see README "Start the database")
+# Passwords and keys come from the git-ignored .env next to this file (copy .env.example)
 services:
   postgres:
     # Matches the Neon project's major version (Neon's default for new projects is 18)
@@ -27,5 +27,22 @@ services:
       start_period: 5m
       start_interval: 2s
 
+  # S3-compatible object storage for uploads such as tile graphics (STORAGE_* in server/.env).
+  # Production uses any S3-compatible service instead
+  storage:
+    # Runs `weed mini` (master, volume, filer and S3 in one process); the S3 API refuses requests
+    # without these keys
+    image: chrislusf/seaweedfs:4.48
+    restart: unless-stopped
+    environment:
+      AWS_ACCESS_KEY_ID: ${STORAGE_ACCESS_KEY_ID:?Set STORAGE_ACCESS_KEY_ID in .env}
+      AWS_SECRET_ACCESS_KEY: ${STORAGE_SECRET_ACCESS_KEY:?Set STORAGE_SECRET_ACCESS_KEY in .env}
+    ports:
+      # The S3 API, only reachable from this machine
+      - "127.0.0.1:${STORAGE_PORT:-8333}:8333"
+    volumes:
+      - storage-data:/data
+
 volumes:
   postgres-data:
+  storage-data:

@@ -1,15 +1,70 @@
-import { canEditWorld, defaultWalkSeconds, DISALLOWED_TEXT_CHARACTERS, IMPASSABLE_WALK_SECONDS, isTileGraphic, MAX_TILE_NAME_LENGTH, MAX_WALK_SECONDS, type EditableUniverse, type EditorTile, type TileSettings } from '@multiverse-kiln/shared';
+import { canEditWorld, defaultWalkSeconds, DISALLOWED_TEXT_CHARACTERS, IMPASSABLE_WALK_SECONDS, MAX_TILE_NAME_LENGTH, MAX_WALK_SECONDS, type EditableUniverse, type EditorTile, type TileSettings } from '@multiverse-kiln/shared';
+import trashIcon from 'virtual:icon/ph:trash';
 
 import { formatDuration, t } from '../../localization';
+import type { EditorApi } from '../../network/editorApi';
 import { ChangeTracker } from '../changeTracker';
-import { getElement, setOptions, showMessage } from '../dom';
+import { askToConfirm } from '../confirmDialog';
+import { getElement, setButtonLabel, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
 import { tileName } from '../tileNames';
 import { colorToHex, parseHexColor } from './colors';
 import { editorMessages } from './editorMessages';
 import { labelRemoveButton, type StagedEdit } from './stagedChanges';
-import { showTileSwatch, tileGraphicOptions } from './tileSwatches';
+import { TileDeleteDialog } from './TileDeleteDialog';
+import { TileGraphicDialog, type StagedUpload } from './TileGraphicDialog';
+import { parseTileGraphicValue, showTileSwatch, tileGraphicOptions, tileGraphicValue, type ShownUpload } from './tileSwatches';
+
+/**
+ * The Tilesets tab's uploaded tilesets and the changes to them waiting for the tab to be saved, as the
+ * tile editor uses them
+ */
+export interface TilesetUploads
+{
+	/**
+	 * The uploaded tilesets, with those that saving the tab will upload or delete
+	 */
+	list(): readonly ShownUpload[];
+
+	/**
+	 * Stages a tileset to upload when the tab is saved
+	 *
+	 * @param upload The tileset
+	 * @return The ID it has until then
+	 */
+	stage(upload: StagedUpload): string;
+
+	/**
+	 * Marks an uploaded tileset to delete when the tab is saved, takes the mark back, or discards one
+	 * that isn't uploaded yet
+	 *
+	 * @param id The tileset's ID
+	 */
+	toggleDelete(id: string): void;
+}
+
+/**
+ * The Tilesets tab's tiles marked to delete, as the tile editor uses them
+ */
+export interface TileDeletions
+{
+	/**
+	 * Whether a tile is marked to delete, so it can't replace another
+	 *
+	 * @param tileId The tile's ID
+	 * @return True when it is
+	 */
+	isRemoved(tileId: number): boolean;
+
+	/**
+	 * Keeps the tile to paint the maps with in place of a tile marked to delete, until the tab is saved
+	 *
+	 * @param tileId The tile marked to delete
+	 * @param replacementId The tile to paint the maps with, or undefined when no map uses it or the mark is taken back
+	 */
+	setReplacement(tileId: number, replacementId: number | undefined): void;
+}
 
 /**
  * Settings a new tile starts with
@@ -20,6 +75,7 @@ const NEW_TILE: TileSettings = {
 	outdoors: true,
 	color: 0x808080,
 	graphic: null,
+	uploadedGraphicId: null,
 	visionCost: 0,
 	walkSeconds: defaultWalkSeconds(false)
 };
@@ -30,7 +86,8 @@ const NEW_TILE: TileSettings = {
  *
  * Applying keeps the changes on the Tilesets tab until it is saved; for a default tile, saving stores the
  * universe's edited copy of it. The dialog can also delete a custom tile, or restore an edited default
- * tile, when the tab is saved
+ * tile, when the tab is saved. Tilesets uploaded from it (TileGraphicDialog), and uploaded tilesets
+ * deleted from it, also wait for the tab to be saved (TilesetUploads)
  */
 export class TileDialog
 {
@@ -43,6 +100,10 @@ export class TileDialog
 	private readonly colorPicker = getElement('tile-color-picker', HTMLInputElement);
 	private readonly color = getElement('tile-color', HTMLInputElement);
 	private readonly graphic = getElement('tile-graphic', HTMLSelectElement);
+	private readonly uploadButton = getElement('tile-graphic-upload', HTMLButtonElement);
+	private readonly deleteGraphicButton = getElement('tile-graphic-delete', HTMLButtonElement);
+	private readonly uploadDialog: TileGraphicDialog;
+	private readonly deleteDialog: TileDeleteDialog;
 	private readonly visionCost = getElement('tile-vision', HTMLInputElement);
 	private readonly walkSeconds = getElement('tile-walk', HTMLInputElement);
 	private readonly walkReadout = getElement('tile-walk-readout', HTMLElement);
@@ -80,10 +141,38 @@ export class TileDialog
 	 */
 	private onChanged: () => void = () => undefined;
 
-	constructor()
+	/**
+	 * Whether the player can change the tile, and so upload and delete tilesets
+	 */
+	private editable = false;
+
+	/**
+	 * @param api The editor's API, for which maps use a tile being deleted
+	 * @param uploads The tab's uploaded tilesets, which the graphic list offers, and their staged changes
+	 * @param deletions The tab's tiles marked to delete, and the tiles chosen to replace them on the maps
+	 */
+	constructor(api: EditorApi, private readonly uploads: TilesetUploads, private readonly deletions: TileDeletions)
 	{
+		this.uploadDialog = new TileGraphicDialog();
+		this.deleteDialog = new TileDeleteDialog(api);
 		this.name.maxLength = MAX_TILE_NAME_LENGTH;
 		this.walkSeconds.max = String(MAX_WALK_SECONDS);
+
+		this.uploadButton.addEventListener('click', () =>
+		{
+			this.uploadGraphic();
+		});
+
+		setButtonLabel(this.deleteGraphicButton, trashIcon, t({
+			id: 'editor.tile.deleteGraphic',
+			defaultMessage: 'Delete Tileset Image',
+			description: 'Button in the tile editor, shown when an uploaded tileset is chosen, that marks that uploaded picture to delete, after asking; tiles drawn with it go back to their colors'
+		}));
+
+		this.deleteGraphicButton.addEventListener('click', () =>
+		{
+			void this.deleteGraphic();
+		});
 
 		this.colorPicker.addEventListener('input', () =>
 		{
@@ -197,14 +286,22 @@ export class TileDialog
 		this.indoors.checked = settings.indoors;
 		this.color.value = colorToHex(settings.color);
 		this.colorPicker.value = colorToHex(settings.color);
-		setOptions(this.graphic, tileGraphicOptions());
-		this.graphic.value = (isTileGraphic(settings.graphic) ? settings.graphic : '');
+		setOptions(this.graphic, tileGraphicOptions(this.uploads.list()));
+		this.graphic.value = tileGraphicValue(settings);
+
+		// A tileset marked to delete isn't offered, so its tiles show as they will once it is: in their colors
+		if (this.graphic.selectedIndex === -1)
+		{
+			this.graphic.value = tileGraphicValue({ graphic: null, uploadedGraphicId: null });
+		}
 		this.visionCost.value = String(settings.visionCost);
 		this.walkSeconds.value = String(settings.walkSeconds);
 		this.defaultWalk = settings.walkSeconds;
 		this.updateWalkReadout();
 		this.name.disabled = !editable;
 		this.saveButton.hidden = !editable;
+		this.uploadButton.hidden = !editable;
+		this.editable = editable;
 		this.cancelButton.textContent = t(editable ? formMessages.cancel : formMessages.close);
 
 		// Only the inputs are locked for a player who can't edit, so Close still works
@@ -277,21 +374,89 @@ export class TileDialog
 	{
 		const tile = {
 			color: (parseHexColor(this.color.value) ?? 0),
-			graphic: this.graphicValue()
+			...parseTileGraphicValue(this.graphic.value)
 		};
 
-		showTileSwatch(this.dayPreview, tile);
-		showTileSwatch(this.nightPreview, tile, true);
+		const uploads = this.uploads.list();
+
+		showTileSwatch(this.dayPreview, tile, uploads);
+		showTileSwatch(this.nightPreview, tile, uploads, true);
+
+		// Only an uploaded tileset can be deleted
+		this.deleteGraphicButton.hidden = (!this.editable || (tile.uploadedGraphicId === null));
 	}
 
 	/**
-	 * The graphic chosen
-	 *
-	 * @return Its key, or null to draw the tile in its color
+	 * Marks the uploaded tileset chosen to delete when the tab is saved, after asking, and takes it off
+	 * the graphic list; the tile goes back to its color. One not uploaded yet is discarded instead. Saving
+	 * deletes its image, and every tile drawn with it is drawn in its color after
 	 */
-	private graphicValue(): string | null
+	private async deleteGraphic(): Promise<void>
 	{
-		return(((this.graphic.value === '') ? null : this.graphic.value));
+		const { uploadedGraphicId } = parseTileGraphicValue(this.graphic.value);
+		const upload = this.uploads.list().find((candidate) => (candidate.id === uploadedGraphicId));
+
+		if (!upload)
+		{
+			return;
+		}
+
+		const confirmed = await askToConfirm({
+			title: t({
+				id: 'editor.tileGraphicDelete.title',
+				defaultMessage: 'Delete Tileset Image',
+				description: 'Title of the dialog that asks before deleting an uploaded tileset (a picture tiles can be drawn with)'
+			}),
+			question: t({
+				id: 'editor.tile.deleteGraphicConfirm',
+				defaultMessage: 'Delete the uploaded tileset "{name}"? Every tile drawn with it will be drawn in its color instead.',
+				description: 'Asked before marking an uploaded tileset (a picture tiles can be drawn with) to delete from the tile editor; {name} is the name it was given. Nothing is deleted until the tab is saved'
+			}, {
+				name: upload.name
+			}),
+			confirmLabel: t({
+				id: 'editor.tileGraphicDelete.submit',
+				defaultMessage: 'Delete',
+				description: 'Button in the dialog that asks before deleting an uploaded tileset: marks it to delete when the Tilesets tab is saved'
+			}),
+			confirmIcon: trashIcon
+		});
+
+		// The tile editor may have closed, or another graphic been chosen, while the dialog was open
+		if (!confirmed || !this.dialog.open || (parseTileGraphicValue(this.graphic.value).uploadedGraphicId !== upload.id))
+		{
+			return;
+		}
+
+		this.uploads.toggleDelete(upload.id);
+		this.refreshGraphicChoices(tileGraphicValue({ graphic: null, uploadedGraphicId: null }));
+	}
+
+	/**
+	 * Opens the dialog for uploading a tileset; once one is chosen, the graphic list offers it, to upload
+	 * when the tab is saved, and chooses it
+	 */
+	private uploadGraphic(): void
+	{
+		this.uploadDialog.open((upload) =>
+		{
+			const id = this.uploads.stage(upload);
+
+			this.refreshGraphicChoices(tileGraphicValue({ graphic: null, uploadedGraphicId: id }));
+		});
+	}
+
+	/**
+	 * Lists the graphics again, after the uploaded tilesets change, and chooses one
+	 *
+	 * @param value The choice's value (tileGraphicValue)
+	 */
+	private refreshGraphicChoices(value: string): void
+	{
+		setOptions(this.graphic, tileGraphicOptions(this.uploads.list()));
+		this.graphic.value = value;
+		this.updatePreview();
+		this.graphic.focus();
 	}
 
 	/**
@@ -331,7 +496,7 @@ export class TileDialog
 			indoors: this.indoors.checked,
 			outdoors: this.outdoors.checked,
 			color,
-			graphic: this.graphicValue(),
+			...parseTileGraphicValue(this.graphic.value),
 			visionCost: this.visionCost.valueAsNumber,
 			walkSeconds: this.walkSeconds.valueAsNumber
 		});
@@ -340,25 +505,42 @@ export class TileDialog
 
 	/**
 	 * Marks a custom tile to delete, or an edited default tile to restore, when the tab is saved; or takes
-	 * that back
+	 * that back. Deleting a custom tile asks first (TileDeleteDialog), and when maps use it, which tile to
+	 * paint them with instead
 	 */
 	private remove(): void
 	{
-		if (!this.edit)
+		const edit = this.edit;
+		const tile = this.tile;
+		const universe = this.universe;
+
+		if (!edit || !tile || !universe)
 		{
 			return;
 		}
 
-		if (this.edit.removed)
+		if (edit.removed)
 		{
-			this.edit.undoRemove();
-		}
-		else
-		{
-			this.edit.remove();
+			edit.undoRemove();
+			this.deletions.setReplacement(tile.id, undefined);
+			this.close();
+			return;
 		}
 
-		this.close();
+		// Restoring an edited default tile loses only the universe's changes to it, and keeps it on the maps
+		if (!tile.custom)
+		{
+			edit.remove();
+			this.close();
+			return;
+		}
+
+		this.deleteDialog.open(universe, tile, (tileId) => this.deletions.isRemoved(tileId), (replacementId) =>
+		{
+			edit.remove();
+			this.deletions.setReplacement(tile.id, replacementId);
+			this.close();
+		});
 	}
 
 	/**

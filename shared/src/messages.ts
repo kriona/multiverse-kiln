@@ -181,9 +181,15 @@ export interface AreaTile
 	color: number;
 
 	/**
-	 * The graphic the tile is drawn with (TILE_GRAPHICS), or null to draw it in its color
+	 * The graphic the tile is drawn with (TILE_GRAPHICS), or null to draw it in its color or uploadedGraphic
 	 */
 	graphic: string | null;
+
+	/**
+	 * A graphic the universe's editors uploaded that the tile is drawn with (served at
+	 * TILE_GRAPHICS_PATH/<id>.png), with its draw order, or null
+	 */
+	uploadedGraphic: { id: string; drawOrder: number } | null;
 
 	/**
 	 * Whether the tile can't be entered (IMPASSABLE_WALK_SECONDS). No player stands on it, so its graphic
