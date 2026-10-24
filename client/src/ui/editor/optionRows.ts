@@ -1,7 +1,7 @@
 import { formatList, t } from '../../localization';
 
 /**
- * What the Races and Classes tabs say about where a race or class comes from and whether it can be chosen
+ * What the lists of races and classes on the Characters tab say about where a race or class comes from and whether it can be chosen
  */
 interface OptionState
 {

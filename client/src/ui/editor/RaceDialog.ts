@@ -19,7 +19,7 @@ import { labelRemoveButton, type StagedEdit } from './stagedChanges';
  * The race editor: a dialog for a race's name, whether it is enabled, its rules, and what its
  * characters start with and where
  *
- * Applying keeps the changes on the Races tab until it is saved; for a default race, saving stores the
+ * Applying keeps the changes on the Characters tab until it is saved; for a default race, saving stores the
  * universe's edited copy of it. The dialog can also delete a custom race, or restore an edited default
  * race, when the tab is saved
  */

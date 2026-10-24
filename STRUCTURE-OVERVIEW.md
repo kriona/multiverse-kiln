@@ -226,9 +226,7 @@ This lets you change anything about a universe. It will be a whole suite of tool
 	- [Editors](#tab-editors)
 	- [Ruleset](#tab-ruleset)
 	- [Lobby](#tab-lobby)
-	- [Characters](#tab-characters), with [themes](#themes) for a ruleset that has them (SF1E)
-	- [Races](#tab-races)
-	- [Classes](#tab-classes)
+	- [Characters](#tab-characters), with [races](#races), [classes](#classes) and, for a ruleset that has them (SF1E), [themes](#themes)
 	- [Tilesets](#tab-tilesets)
 	- [Areas](#tab-areas)
 	- [Items](#tab-items)
@@ -238,7 +236,7 @@ This lets you change anything about a universe. It will be a whole suite of tool
 ### Unsaved changes
 Nothing a tab changes is saved until the Save button (Alt+S) in the bar at the bottom of the editor is pressed. The bar stays in view while the tab scrolls, and above the map in full page. It saves everything changed on the tab showing; reloading the page throws the changes away. Enter in a tab's form saves too.
 - The editor dialogs for races, classes, themes, difficulty levels, items, tiles and area links have Apply rather than Save: it keeps their changes on the tab, where the list shows them, tagging what was added as new and what will be restored "when saved", and striking through (in italics, faded) what will be deleted. One of the ruleset's defaults with changes is tagged edited, saved or not. Deleting or restoring is taken back with Undo Delete or Undo Restore in the dialog until the tab is saved. Saving sends the changes in the order they were made and stops at the first the server refuses, saying which; the rest stay unsaved.
-- The Characters tab saves its settings, themes and difficulty levels together.
+- The Characters tab saves its settings, races, classes and themes together, and the Ruleset tab its settings and difficulty levels.
 - The Areas tab saves the areas added and deleted, then the area open in the area editor: its settings and its map's painting, size and links. A new area is listed tagged new, and can be opened, painted, linked to and chosen as a parent before it is saved; its map is the size every new area starts with. Deleting an area asks first, then strikes it through in the list until the tab is saved; opening it shows it read-only with Undo Delete. Deleting a new area discards it straight away, after asking. Saving deletes areas first, then adds the new ones, then saves the area open, and stops at the first change the server refuses, saying which.
 - Pickers on other tabs (starting equipment, the map's tiles, a class's races) list only what is saved.
 
@@ -272,6 +270,20 @@ A universe can have several creators. If you delete your account and your univer
 
 ### Tab: Ruleset
 What shows up here depends on what ruleset is chosen.
+
+Below the ruleset's settings, the tab lists the universe's [difficulty](#difficulty) levels, easiest first, and saves them with the settings. Each level has:
+- Default checkbox: the level Create Group starts on. Exactly one level is the default: checking it on another level unchecks the old one, and the default can't be unchecked or deleted
+- Name
+- Mob scale, a percentage from -1000% (easier) to +1000% (harder)
+- Permadeath checkbox
+
+Levels can be added (up to 20) and deleted. Deleting a level moves the groups playing at it to the default level. Changing a level changes it for the groups already playing at it. A new universe starts with:
+- `Story`: mobs are 50% easier
+- `Normal`, the default
+- `Hard`: mobs are 50% harder
+- `Hardcore`: mobs are 100% harder, and permadeath
+
+Their names are shown in the player's language until a creator renames them. Like the rest of the tab, only creators can change them.
 
 #### PF1E
 Pathfinder 1E's rules (races, classes, abilities, point buy, sizes and items) are Open Game Content used under the Open Game License 1.0a, and the name "Pathfinder" is used under Paizo's Community Use Policy. Both notices are on the license page. The Community Use Policy only covers a game that is free to play (donations and ads are allowed, a paywall isn't).
@@ -322,28 +334,14 @@ Money is credits (`cr`), the only coin.
 - Starting [money](#field-money)
 - Starting [area](#selection-area)
 
-Each [race](#tab-races) and [class](#tab-classes) can add to the starting money and equipment, and choose a starting area of its own.
-
-Below the settings, the tab lists the universe's [difficulty](#difficulty) levels, easiest first. Each level has:
-- Default checkbox: the level Create Group starts on. Exactly one level is the default: checking it on another level unchecks the old one, and the default can't be unchecked or deleted
-- Name
-- Mob scale, a percentage from -1000% (easier) to +1000% (harder)
-- Permadeath checkbox
-
-Levels can be added (up to 20) and deleted. Deleting a level moves the groups playing at it to the default level. Changing a level changes it for the groups already playing at it. A new universe starts with:
-- `Story`: mobs are 50% easier
-- `Normal`, the default
-- `Hard`: mobs are 50% harder
-- `Hardcore`: mobs are 100% harder, and permadeath
-
-Their names are shown in the player's language until a creator renames them. Like the rest of the tab, only creators can change them.
+Below the settings, the tab lists the [races](#races), the [classes](#classes) and, for a ruleset with them, the [themes](#themes), each in a section of its own, and saves them with the settings. Each race and class can add to the starting money and equipment, and choose a starting area of its own.
 
 A character's starting area is chosen in this order, most specific first: the class's entry for their race, the class, the race, then the universe. A class with an area of its own has no entries for races, so the two never compete.
 
 Races, classes and themes work like default items: the ruleset's defaults are in every universe, an edit applies to that universe only and can be undone to restore the default (losing its starting money, equipment and areas too), and a race, class or theme the universe added can be deleted. Like the Characters tab, only creators can change them.
 
 #### Themes
-Only for a ruleset with themes (SF1E), listed under the Characters tab's settings rather than in a tab of their own, to keep the tabs few. A theme is a character's background, which raises one ability score by 1. It belongs to neither race nor class: any theme goes with any race and class. The list is:
+Only for a ruleset with themes (SF1E), listed on the Characters tab after the races and classes. A theme is a character's background, which raises one ability score by 1. It belongs to neither race nor class: any theme goes with any race and class. The list is:
 - `Ace Pilot` (Dexterity)
 - `Bounty Hunter` (Constitution)
 - `Icon` (Charisma)
@@ -360,7 +358,7 @@ You can add your own themes, and edit each one:
 - Enabled? Checked by default. There must be at least 1 enabled theme in order to save changes
 - the ability it raises
 
-### Tab: Races
+#### Races
 based on the ruleset, show a list of races.
 
 For PF1E that list is:
@@ -403,7 +401,7 @@ You can edit each race:
 - for SF1E: the same ability modifiers, floating ability bonus (humans get +2 to one ability of their choice), darkvision and size, and
 	- hit points: the hit points the race gives on top of the class's, 0 to 99
 
-### Tab: Classes
+#### Classes
 based on the ruleset, show a list of classes.
 
 For PF1E that list is:
@@ -570,7 +568,7 @@ The time of day comes from the area's passage of time (see [Edit Universe](#edit
 On the overworld map, squares are much bigger distances. The scale is not yet defined, but time will pass faster.
 
 ## Difficulty
-Each group plays at one of its universe's difficulty levels (see [Tab: Characters](#tab-characters)), chosen when it is made. A level's mob scale makes mobs harder or easier by a percentage, and its permadeath setting decides whether a character who dies is gone for good. Neither does anything yet: mobs, hit points, attacks and death come later, and the rules are ready for them as pure functions (`server/src/logic/difficulty.ts`):
+Each group plays at one of its universe's difficulty levels (see [Tab: Ruleset](#tab-ruleset)), chosen when it is made. A level's mob scale makes mobs harder or easier by a percentage, and its permadeath setting decides whether a character who dies is gone for good. Neither does anything yet: mobs, hit points, attacks and death come later, and the rules are ready for them as pure functions (`server/src/logic/difficulty.ts`):
 - A mob's hit points are multiplied by 100% plus the mob scale, rounded, and never go below 1. +50% makes 20 hit points 30, -50% makes them 10, and -100% or less leaves 1.
 - A chance to hit is scaled the same way: a mob's chance to hit a character is multiplied by it, and a character's chance to hit a mob is divided by it, so harder mobs hit more often and are hit less often. At +100% a mob's 40% becomes 80%, and a character's 60% becomes 30%. At -100% or less, a character's attack hits whenever it could hit at all. No chance goes above 100%, and a chance that was at least 5% never drops below 5%.
 
@@ -720,7 +718,7 @@ Every page, editor and game screen can be used with only a keyboard and with a s
 - A button's shortcut letter is underlined in its text, preferring the letter at the start of a word (the S of Save); it is pressed with Alt (Option on a Mac). When a translation's text doesn't have the letter, "(S)" is added after it with the letter underlined. Screen readers announce the shortcut through `aria-keyshortcuts`.
 - `?` (when not typing) or the footer's "Keyboard shortcuts" button lists the shortcuts that work on the screen showing, including keys that aren't buttons, such as movement.
 - A shortcut only works while its button can be seen and used, and while a dialog is open only the dialog's shortcuts work, so screens and dialogs reuse keys. The keys are the same in every language. Alt+D, Alt+E and Alt+F aren't used, since browsers take them, and deleting has no shortcut.
-- The keys follow one pattern: Alt+S submits the form or dialog showing (Save, Create, Add, Resize), Alt+A applies an editor dialog's changes to its tab (Apply), Alt+N adds something new, Alt+L leaves (the lobby or group) or picks the Links tool in the map editor, Alt+U enters a universe, Alt+H goes Home, Alt+B goes back, Alt+M moves focus to the map, and Alt+P makes the map editor full page.
+- The keys follow one pattern: Alt+S submits the form or dialog showing (Save, Create, Add, Resize), Alt+A applies an editor dialog's changes to its tab (Apply), Alt+N adds something new (on the Characters tab, which adds races, classes and themes, Alt+R adds a race, Alt+L a class and Alt+N a theme), Alt+L leaves (the lobby or group) or picks the Links tool in the map editor, Alt+U enters a universe, Alt+H goes Home, Alt+B goes back, Alt+M moves focus to the map, and Alt+P makes the map editor full page.
 
 ## Screen readers
 - When a screen changes, focus moves to its heading, so the screen is read out.

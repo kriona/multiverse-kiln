@@ -146,7 +146,7 @@ html:has(.editor-save-bar:not([hidden])) .map-editor.full-page
 	}
 }
 
-// A tab holding cards that save separately, such as the Characters tab's settings, themes and difficulty levels
+// A tab holding cards that save separately, such as the Ruleset tab's settings and difficulty levels
 .editor-cards
 {
 	display: flex;
@@ -186,7 +186,9 @@ tr.staged-deleted
 	}
 }
 
-// The themes card on the Characters tab, in a ruleset with themes, and the difficulty levels card
+// The races, classes and themes cards on the Characters tab (themes in a ruleset with them), and the difficulty levels card on the Ruleset tab
+.races,
+.classes,
 .themes,
 .difficulty-levels
 {

@@ -61,8 +61,8 @@ export function combineChanges(...sources: ChangeSource[]): ChangeSource
 }
 
 /**
- * A tab made of parts that each save their own changes, such as the Characters tab's settings, themes
- * and difficulty levels. Saving saves each part with changes in turn, stopping at the first that fails
+ * A tab made of parts that each save their own changes, such as the Ruleset tab's settings and
+ * difficulty levels. Saving saves each part with changes in turn, stopping at the first that fails
  *
  * @param parts The parts, in the order they save
  * @return The tab

@@ -10,10 +10,10 @@ import { OptionList } from './OptionList';
 import type { AreaSelectDialog } from './AreaSelectDialog';
 
 /**
- * The Classes tab: every class characters of the universe can be, opening the class editor. Changes wait
- * on the page until the tab is saved
+ * The classes on the Characters tab: every class characters of the universe can be, opening the class
+ * editor. Changes wait on the page until the tab is saved
  */
-export class ClassesTab extends OptionList<EditorClass, ClassSettings>
+export class ClassesSection extends OptionList<EditorClass, ClassSettings>
 {
 	/**
 	 * @param api The editor's API
@@ -31,7 +31,7 @@ export class ClassesTab extends OptionList<EditorClass, ClassSettings>
 			listFailed: {
 				id: 'editor.classes.listFailed',
 				defaultMessage: 'Could not list the classes.',
-				description: 'Shown on the Classes tab when the character classes couldn\'t be loaded'
+				description: 'Shown on the editor\'s Characters tab when the character classes couldn\'t be loaded'
 			},
 			canEdit: (universe) => canEditUniverseSettings(universe.role),
 			load: (universeId) => api.listClasses(universeId),
@@ -72,7 +72,7 @@ function describeClass(characterClass: EditorClass, ruleset: Ruleset): string
 		t({
 			id: 'editor.classes.primaryAbility',
 			defaultMessage: 'relies on {ability}',
-			description: 'In a character class\'s summary on the editor\'s Classes tab, the ability the class relies on most; {ability} is its name, e.g. Intelligence'
+			description: 'In a character class\'s summary on the editor\'s Characters tab, the ability the class relies on most; {ability} is its name, e.g. Intelligence'
 		}, {
 			ability: t(ABILITY_NAMES[ruleset][mainAbility(rules)])
 		})
@@ -83,7 +83,7 @@ function describeClass(characterClass: EditorClass, ruleset: Ruleset): string
 		parts.push(t({
 			id: 'editor.classes.points',
 			defaultMessage: '{hitPoints, plural, one {# hit point} other {# hit points}} and {staminaPoints, plural, one {# stamina point} other {# stamina points}} a level',
-			description: 'In a character class\'s summary on the editor\'s Classes tab, in Starfinder, the hit points and stamina points the class gives at each level'
+			description: 'In a character class\'s summary on the editor\'s Characters tab, in Starfinder, the hit points and stamina points the class gives at each level'
 		}, {
 			hitPoints: rules.hitPoints,
 			staminaPoints: rules.staminaPoints

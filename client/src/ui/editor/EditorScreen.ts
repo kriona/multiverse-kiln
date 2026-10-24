@@ -6,11 +6,11 @@ import { editPageUrl } from '../../pages';
 import { getElement, showMessage, titleLink } from '../dom';
 import { CharactersTab } from './CharactersTab';
 import { LobbyTab } from './LobbyTab';
-import { ClassesTab } from './ClassesTab';
+import { ClassesSection } from './ClassesSection';
 import { DifficultySection } from './DifficultySection';
 import { ItemSelectDialog } from './ItemSelectDialog';
 import { ItemsTab } from './ItemsTab';
-import { RacesTab } from './RacesTab';
+import { RacesSection } from './RacesSection';
 import { RulesetTab } from './RulesetTab';
 import { combineTabs, SaveBar, type SavableTab } from './SaveBar';
 import { ThemesSection } from './ThemesSection';
@@ -27,8 +27,6 @@ export const EDITOR_TABS = [
 	'ruleset',
 	'lobby',
 	'characters',
-	'races',
-	'classes',
 	'tilesets',
 	'areas',
 	'items'
@@ -78,8 +76,8 @@ export function isEditorTab(value: string | undefined): value is EditorTab
 }
 
 /**
- * Edit Universe: a universe's settings, ruleset, characters (and their themes, in a ruleset with them,
- * and the difficulty levels), races, classes, tiles, areas and items, in tabs
+ * Edit Universe: a universe's settings, ruleset (and the difficulty levels), lobby, characters (and their
+ * races, classes and, in a ruleset with them, themes), tiles, areas and items, in tabs
  *
  * What the player may change depends on their role in the universe; the server checks it again on
  * every change, so the page only hides controls that would be refused
@@ -93,8 +91,8 @@ export class EditorScreen
 	private readonly rulesetTab: RulesetTab;
 	private readonly lobbyTab: LobbyTab;
 	private readonly charactersTab: CharactersTab;
-	private readonly racesTab: RacesTab;
-	private readonly classesTab: ClassesTab;
+	private readonly racesSection: RacesSection;
+	private readonly classesSection: ClassesSection;
 	private readonly themesSection: ThemesSection;
 	private readonly difficultySection: DifficultySection;
 	private readonly tilesetsTab: TilesetsTab;
@@ -146,8 +144,8 @@ export class EditorScreen
 		{
 			this.setUniverse(universe);
 		});
-		this.racesTab = new RacesTab(api, areaSelect, itemSelect);
-		this.classesTab = new ClassesTab(api, areaSelect, itemSelect);
+		this.racesSection = new RacesSection(api, areaSelect, itemSelect);
+		this.classesSection = new ClassesSection(api, areaSelect, itemSelect);
 		this.themesSection = new ThemesSection(api);
 		this.difficultySection = new DifficultySection(api);
 		this.tilesetsTab = new TilesetsTab(api);
@@ -159,11 +157,9 @@ export class EditorScreen
 
 		this.savableTabs = {
 			universe: this.universeTab,
-			ruleset: this.rulesetTab,
+			ruleset: combineTabs(this.rulesetTab, this.difficultySection),
 			lobby: this.lobbyTab,
-			characters: combineTabs(this.charactersTab, this.themesSection, this.difficultySection),
-			races: this.racesTab,
-			classes: this.classesTab,
+			characters: combineTabs(this.charactersTab, this.racesSection, this.classesSection, this.themesSection),
 			tilesets: this.tilesetsTab,
 			areas: this.areasTab,
 			items: this.itemsTab
@@ -273,8 +269,8 @@ export class EditorScreen
 		this.charactersTab.open(universe);
 		this.themesSection.open(universe);
 		this.difficultySection.open(universe);
-		this.racesTab.open(universe);
-		this.classesTab.open(universe);
+		this.racesSection.open(universe);
+		this.classesSection.open(universe);
 		this.tilesetsTab.open(universe);
 		this.areasTab.open(universe, place.areaId);
 		this.itemsTab.open(universe);

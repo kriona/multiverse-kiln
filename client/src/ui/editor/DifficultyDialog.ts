@@ -10,7 +10,7 @@ import { labelRemoveButton, type StagedEdit } from './stagedChanges';
 
 /**
  * The difficulty level editor: a dialog for a level's name, whether it is the default, how much it
- * changes mobs, and whether death is permanent. Applying keeps the changes on the Characters tab until
+ * changes mobs, and whether death is permanent. Applying keeps the changes on the Ruleset tab until
  * it is saved. It can also mark a level that isn't the default to delete when the tab is saved
  */
 export class DifficultyDialog

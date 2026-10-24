@@ -10,10 +10,10 @@ import { RaceDialog } from './RaceDialog';
 import type { AreaSelectDialog } from './AreaSelectDialog';
 
 /**
- * The Races tab: every race characters of the universe can be, opening the race editor. Changes wait on
- * the page until the tab is saved
+ * The races on the Characters tab: every race characters of the universe can be, opening the race
+ * editor. Changes wait on the page until the tab is saved
  */
-export class RacesTab extends OptionList<EditorRace, RaceSettings>
+export class RacesSection extends OptionList<EditorRace, RaceSettings>
 {
 	/**
 	 * @param api The editor's API
@@ -31,7 +31,7 @@ export class RacesTab extends OptionList<EditorRace, RaceSettings>
 			listFailed: {
 				id: 'editor.races.listFailed',
 				defaultMessage: 'Could not list the races.',
-				description: 'Shown on the Races tab when the races couldn\'t be loaded'
+				description: 'Shown on the editor\'s Characters tab when the races couldn\'t be loaded'
 			},
 			canEdit: (universe) => canEditUniverseSettings(universe.role),
 			load: (universeId) => api.listRaces(universeId),
@@ -76,7 +76,7 @@ function describeRace(race: EditorRace, ruleset: Ruleset): string
 			.map((ability) => t({
 				id: 'editor.races.modifier',
 				defaultMessage: '{ability} {modifier, number, ::sign-always}',
-				description: 'One ability modifier in a race\'s summary on the editor\'s Races tab, e.g. Dexterity +2; {ability} is the ability\'s name'
+				description: 'One ability modifier in a race\'s summary on the editor\'s Characters tab, e.g. Dexterity +2; {ability} is the ability\'s name'
 			}, {
 				ability: t(ABILITY_NAMES[ruleset][ability]),
 				modifier: abilityModifiers[ability]
@@ -88,7 +88,7 @@ function describeRace(race: EditorRace, ruleset: Ruleset): string
 		parts.push(t({
 			id: 'editor.races.floatingBonus',
 			defaultMessage: '{bonus, number, ::sign-always} to one ability',
-			description: 'In a race\'s summary on the editor\'s Races tab, for a race whose players choose one ability to raise; {bonus} is by how much, e.g. +2'
+			description: 'In a race\'s summary on the editor\'s Characters tab, for a race whose players choose one ability to raise; {bonus} is by how much, e.g. +2'
 		}, {
 			bonus: FLOATING_ABILITY_BONUSES[ruleset]
 		}));
@@ -99,7 +99,7 @@ function describeRace(race: EditorRace, ruleset: Ruleset): string
 		parts.push(t({
 			id: 'editor.races.hitPoints',
 			defaultMessage: '{hitPoints, plural, one {# hit point} other {# hit points}}',
-			description: 'In a race\'s summary on the editor\'s Races tab, in Starfinder, the hit points the race gives its characters'
+			description: 'In a race\'s summary on the editor\'s Characters tab, in Starfinder, the hit points the race gives its characters'
 		}, {
 			hitPoints: rules.hitPoints
 		}));
@@ -110,7 +110,7 @@ function describeRace(race: EditorRace, ruleset: Ruleset): string
 		parts.push(t({
 			id: 'editor.races.darkvision',
 			defaultMessage: 'darkvision',
-			description: 'In a race\'s summary on the editor\'s Races tab, for a race that can see in the dark'
+			description: 'In a race\'s summary on the editor\'s Characters tab, for a race that can see in the dark'
 		}));
 	}
 

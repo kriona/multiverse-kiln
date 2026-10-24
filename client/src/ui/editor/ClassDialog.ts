@@ -21,7 +21,7 @@ import { labelRemoveButton, type StagedEdit } from './stagedChanges';
  * The class editor: a dialog for a class's name, whether it is enabled, its rules, and what its
  * characters start with and where, for every race or for each race
  *
- * Applying keeps the changes on the Classes tab until it is saved; for a default class, saving stores
+ * Applying keeps the changes on the Characters tab until it is saved; for a default class, saving stores
  * the universe's edited copy of it. The dialog can also delete a custom class, or restore an edited
  * default class, when the tab is saved
  */

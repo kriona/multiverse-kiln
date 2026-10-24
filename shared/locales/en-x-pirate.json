@@ -871,6 +871,10 @@
 		"message": "Add a Callin'",
 		"source": "Add Class"
 	},
+	"editor.classes.heading": {
+		"message": "Callin's",
+		"source": "Classes"
+	},
 	"editor.classes.hint": {
 		"message": "The callin's new crew can take up. Each callin's startin' coin an' kit be added to what every hand an' their folk set sail with.",
 		"source": "The classes new characters can choose. Each class's starting money and equipment are added to what every character and their race start with."
@@ -1650,6 +1654,10 @@
 	"editor.races.floatingBonus": {
 		"message": "{bonus, number, ::sign-always} to a knack o' choice",
 		"source": "{bonus, number, ::sign-always} to one ability"
+	},
+	"editor.races.heading": {
+		"message": "Folk",
+		"source": "Races"
 	},
 	"editor.races.hint": {
 		"message": "The folk new crew can hail from. Each folk's startin' coin an' kit be added to what every hand sets sail with.",

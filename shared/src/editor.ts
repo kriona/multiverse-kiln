@@ -675,7 +675,7 @@ export interface RaceSettings extends StartingExtras
 }
 
 /**
- * A race as the Races tab lists it
+ * A race as the editor's list of races lists it
  */
 export interface EditorRace extends RaceSettings
 {
@@ -754,7 +754,7 @@ export interface ClassSettings extends StartingExtras
 }
 
 /**
- * A class as the Classes tab lists it
+ * A class as the editor's list of classes lists it
  */
 export interface EditorClass extends ClassSettings
 {

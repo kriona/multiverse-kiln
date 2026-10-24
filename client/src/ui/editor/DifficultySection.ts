@@ -10,7 +10,7 @@ import type { SavableTab } from './SaveBar';
 import { describeCommitFailure, joinTags, markStagedRow, StagedChanges, stagedTag, stagedView, type StagedState } from './stagedChanges';
 
 /**
- * The difficulty levels on the Characters tab: every level a new group can choose, easiest first,
+ * The difficulty levels on the Ruleset tab: every level a new group can choose, easiest first,
  * opening the difficulty level editor. Changes wait on the page until the tab is saved
  */
 export class DifficultySection implements SavableTab
@@ -140,7 +140,7 @@ export class DifficultySection implements SavableTab
 				showMessage(this.error, describeEditorError(error, {
 					id: 'editor.difficulty.listFailed',
 					defaultMessage: 'Could not list the difficulty levels.',
-					description: 'Shown on the editor\'s Characters tab when the difficulty levels couldn\'t be loaded'
+					description: 'Shown on the editor\'s Ruleset tab when the difficulty levels couldn\'t be loaded'
 				}));
 			}
 		}

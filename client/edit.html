@@ -26,8 +26,7 @@
 					<button id="editor-tab-ruleset" type="button" role="tab" aria-controls="editor-panel-ruleset" data-message="editor.tab.ruleset" data-translation-context="Tab of the editor with the settings of the universe's game rules, such as how ability scores are made"><!-- icon game-icons:rule-book -->Ruleset</button>
 					<button id="editor-tab-lobby" type="button" role="tab" aria-controls="editor-panel-lobby" data-message="editor.tab.lobby" data-translation-context="Tab of the editor with the lobby's settings"><!-- icon game-icons:campfire -->Lobby</button>
 					<button id="editor-tab-characters" type="button" role="tab" aria-controls="editor-panel-characters" data-message="editor.tab.characters" data-translation-context="Tab of the editor with what characters start with and how many play together"><!-- icon game-icons:character -->Characters</button>
-					<button id="editor-tab-races" type="button" role="tab" aria-controls="editor-panel-races" data-message="editor.tab.races" data-translation-context="Tab of the editor listing the races characters can be, such as elves and dwarves"><!-- icon game-icons:dwarf-face -->Races</button>
-					<button id="editor-tab-classes" type="button" role="tab" aria-controls="editor-panel-classes" data-message="editor.tab.classes" data-translation-context="Tab of the editor listing the classes characters can be, such as fighters and wizards"><!-- icon game-icons:pointy-hat -->Classes</button>					<button id="editor-tab-tilesets" type="button" role="tab" aria-controls="editor-panel-tilesets" data-message="editor.tab.tilesets" data-translation-context="Tab of the editor listing the tiles maps are painted with"><!-- icon game-icons:stone-block -->Tilesets</button>
+					<button id="editor-tab-tilesets" type="button" role="tab" aria-controls="editor-panel-tilesets" data-message="editor.tab.tilesets" data-translation-context="Tab of the editor listing the tiles maps are painted with"><!-- icon game-icons:stone-block -->Tilesets</button>
 					<button id="editor-tab-areas" type="button" role="tab" aria-controls="editor-panel-areas" data-message="editor.tab.areas" data-translation-context="Tab of the editor listing the universe's areas (places with their own map)"><!-- icon game-icons:treasure-map -->Areas</button>
 					<button id="editor-tab-items" type="button" role="tab" aria-controls="editor-panel-items" data-message="editor.tab.items" data-translation-context="Tab of the editor listing the items characters can be given, such as weapons and gear"><!-- icon game-icons:swap-bag -->Items</button>
 				</div>
@@ -70,7 +69,6 @@
 								<fieldset id="universe-stage" class="choice stacked">
 									<legend data-message="editor.universe.stage" data-translation-context="Heading of the choice of how far along a universe is, from being built to being retired">Stage</legend>
 								</fieldset>
-								<p data-message="editor.universe.ruleset" data-translation-context="Shows the universe's game rules, which can't be changed; {ruleset} is e.g. Pathfinder 1E">Ruleset: <strong id="universe-ruleset-name" data-argument="ruleset"></strong></p>
 								<label data-message="editor.passageOfTime" data-translation-context="Label of the field for how the time of day changes in a universe or area">
 									Passage of time
 									<select id="universe-time"></select>
@@ -88,8 +86,8 @@
 						</form>
 					</section>
 
-					<section id="editor-panel-ruleset" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-ruleset" hidden>
-						<form id="ruleset-form" class="form">
+					<section id="editor-panel-ruleset" class="editor-panel editor-cards" role="tabpanel" aria-labelledby="editor-tab-ruleset" hidden>
+						<form id="ruleset-form" class="panel form">
 							<fieldset id="ruleset-fields" class="plain">
 								<p data-message="editor.ruleset.heading" data-translation-context="At the top of the editor's Ruleset tab, naming the universe's game rules; {ruleset} is e.g. Pathfinder 1E">Settings for <strong id="ruleset-name" data-argument="ruleset"></strong></p>
 								<div id="ruleset-pf1e-stats" class="form-group">
@@ -126,6 +124,25 @@
 								<p id="ruleset-error" class="form-error" role="alert" hidden></p>
 							</fieldset>
 						</form>
+
+						<section id="ruleset-difficulty" class="panel difficulty-levels" aria-labelledby="ruleset-difficulty-heading">
+							<h2 id="ruleset-difficulty-heading" data-message="editor.difficulty.heading" data-translation-context="Heading of the part of the editor's Ruleset tab listing the difficulty levels a new group can choose">Difficulty</h2>
+							<div class="filters">
+								<p class="hint" data-message="editor.difficulty.hint" data-translation-context="Explains the difficulty levels on the editor's Ruleset tab">The difficulty levels a new group chooses from. Each level makes mobs harder or easier, and can make death permanent.</p>
+								<button id="difficulty-add" type="button" data-shortcut="Alt+I" data-message="editor.difficulty.add" data-translation-context="Button that opens the dialog for making a new difficulty level"><!-- icon ph:plus -->Add Difficulty</button>
+							</div>
+							<p id="difficulty-list-error" class="form-error" role="alert" hidden></p>
+							<table class="item-table">
+								<thead>
+									<tr>
+										<th scope="col" data-message="editor.difficultyLevel.name" data-translation-context="A difficulty level's name, such as Normal or Hard: the label of its field in the difficulty level editor, and the heading of the column of names in the editor's list of levels">Name</th>
+										<th scope="col" data-message="editor.difficulty.summary" data-translation-context="Heading of the table column describing how each difficulty level changes mobs (monsters and enemies)">Summary</th>
+										<th scope="col"></th>
+									</tr>
+								</thead>
+								<tbody id="difficulty-rows"></tbody>
+							</table>
+						</section>
 					</section>
 
 					<section id="editor-panel-lobby" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-lobby" hidden>
@@ -188,6 +205,44 @@
 							</fieldset>
 						</form>
 
+						<section id="characters-races" class="panel races" aria-labelledby="characters-races-heading">
+							<h2 id="characters-races-heading" data-message="editor.races.heading" data-translation-context="Heading of the part of the editor's Characters tab listing the races characters can be, such as elves and dwarves">Races</h2>
+							<div class="filters">
+								<p class="hint" data-message="editor.races.hint" data-translation-context="Explains the races on the editor's Characters tab">The races new characters can choose. Each race's starting money and equipment are added to what every character starts with.</p>
+								<button id="race-add" type="button" data-shortcut="Alt+R" data-message="editor.races.add" data-translation-context="Button that opens the dialog for making a new race"><!-- icon ph:plus -->Add Race</button>
+							</div>
+							<p id="race-list-error" class="form-error" role="alert" hidden></p>
+							<table class="item-table">
+								<thead>
+									<tr>
+										<th scope="col" data-message="editor.races.name" data-translation-context="Heading of the table column with each race's name">Name</th>
+										<th scope="col" data-message="editor.races.summary" data-translation-context="Heading of the table column describing each race's rules, such as its size and ability modifiers">Summary</th>
+										<th scope="col"></th>
+									</tr>
+								</thead>
+								<tbody id="race-rows"></tbody>
+							</table>
+						</section>
+
+						<section id="characters-classes" class="panel classes" aria-labelledby="characters-classes-heading">
+							<h2 id="characters-classes-heading" data-message="editor.classes.heading" data-translation-context="Heading of the part of the editor's Characters tab listing the classes characters can be, such as fighters and wizards">Classes</h2>
+							<div class="filters">
+								<p class="hint" data-message="editor.classes.hint" data-translation-context="Explains the classes on the editor's Characters tab">The classes new characters can choose. Each class's starting money and equipment are added to what every character and their race start with.</p>
+								<button id="class-add" type="button" data-shortcut="Alt+L" data-message="editor.classes.add" data-translation-context="Button that opens the dialog for making a new character class"><!-- icon ph:plus -->Add Class</button>
+							</div>
+							<p id="class-list-error" class="form-error" role="alert" hidden></p>
+							<table class="item-table">
+								<thead>
+									<tr>
+										<th scope="col" data-message="editor.classes.name" data-translation-context="Heading of the table column with each character class's name">Name</th>
+										<th scope="col" data-message="editor.classes.summary" data-translation-context="Heading of the table column describing each character class's rules, such as its magic">Summary</th>
+										<th scope="col"></th>
+									</tr>
+								</thead>
+								<tbody id="class-rows"></tbody>
+							</table>
+						</section>
+
 						<section id="characters-themes" class="panel themes" aria-labelledby="characters-themes-heading" hidden>
 							<h2 id="characters-themes-heading" data-message="editor.themes.heading" data-translation-context="Heading of the part of the editor's Characters tab listing the themes characters can have in Starfinder: backgrounds such as ace pilot or scholar">Themes</h2>
 							<div class="filters">
@@ -206,61 +261,6 @@
 								<tbody id="theme-rows"></tbody>
 							</table>
 						</section>
-
-						<section id="characters-difficulty" class="panel difficulty-levels" aria-labelledby="characters-difficulty-heading">
-							<h2 id="characters-difficulty-heading" data-message="editor.difficulty.heading" data-translation-context="Heading of the part of the editor's Characters tab listing the difficulty levels a new group can choose">Difficulty</h2>
-							<div class="filters">
-								<p class="hint" data-message="editor.difficulty.hint" data-translation-context="Explains the difficulty levels on the editor's Characters tab">The difficulty levels a new group chooses from. Each level makes mobs harder or easier, and can make death permanent.</p>
-								<button id="difficulty-add" type="button" data-shortcut="Alt+I" data-message="editor.difficulty.add" data-translation-context="Button that opens the dialog for making a new difficulty level"><!-- icon ph:plus -->Add Difficulty</button>
-							</div>
-							<p id="difficulty-list-error" class="form-error" role="alert" hidden></p>
-							<table class="item-table">
-								<thead>
-									<tr>
-										<th scope="col" data-message="editor.difficultyLevel.name" data-translation-context="A difficulty level's name, such as Normal or Hard: the label of its field in the difficulty level editor, and the heading of the column of names in the editor's list of levels">Name</th>
-										<th scope="col" data-message="editor.difficulty.summary" data-translation-context="Heading of the table column describing how each difficulty level changes mobs (monsters and enemies)">Summary</th>
-										<th scope="col"></th>
-									</tr>
-								</thead>
-								<tbody id="difficulty-rows"></tbody>
-							</table>
-						</section>
-					</section>
-
-					<section id="editor-panel-races" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-races" hidden>
-						<div class="filters">
-							<p class="hint" data-message="editor.races.hint" data-translation-context="Explains the editor's Races tab">The races new characters can choose. Each race's starting money and equipment are added to what every character starts with.</p>
-							<button id="race-add" type="button" data-shortcut="Alt+N" data-message="editor.races.add" data-translation-context="Button that opens the dialog for making a new race"><!-- icon ph:plus -->Add Race</button>
-						</div>
-						<p id="race-list-error" class="form-error" role="alert" hidden></p>
-						<table class="item-table">
-							<thead>
-								<tr>
-									<th scope="col" data-message="editor.races.name" data-translation-context="Heading of the table column with each race's name">Name</th>
-									<th scope="col" data-message="editor.races.summary" data-translation-context="Heading of the table column describing each race's rules, such as its size and ability modifiers">Summary</th>
-									<th scope="col"></th>
-								</tr>
-							</thead>
-							<tbody id="race-rows"></tbody>
-						</table>
-					</section>
-
-					<section id="editor-panel-classes" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-classes" hidden>
-						<div class="filters">
-							<p class="hint" data-message="editor.classes.hint" data-translation-context="Explains the editor's Classes tab">The classes new characters can choose. Each class's starting money and equipment are added to what every character and their race start with.</p>
-							<button id="class-add" type="button" data-shortcut="Alt+N" data-message="editor.classes.add" data-translation-context="Button that opens the dialog for making a new character class"><!-- icon ph:plus -->Add Class</button>
-						</div>
-						<p id="class-list-error" class="form-error" role="alert" hidden></p>
-						<table class="item-table">
-							<thead>
-								<tr>
-									<th scope="col" data-message="editor.classes.name" data-translation-context="Heading of the table column with each character class's name">Name</th>
-									<th scope="col" data-message="editor.classes.summary" data-translation-context="Heading of the table column describing each character class's rules, such as its magic">Summary</th>
-									<th scope="col"></th>
-								</tr>
-							</thead>
-							<tbody id="class-rows"></tbody>
-						</table>
 					</section>
 
 					<section id="editor-panel-tilesets" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-tilesets" hidden>

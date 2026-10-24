@@ -1,5 +1,5 @@
 import '@github/markdown-toolbar-element';
-import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, DISPLAY_TIME_NAMES, DISPLAY_TIMES, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_LONG_DESCRIPTION_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, PASSAGES_OF_TIME, RULESET_NAMES, UNIVERSE_STAGE_DESCRIPTIONS, UNIVERSE_STAGE_NAMES, UNIVERSE_STAGES, universeSlug, type DisplayTime, type EditableUniverse, type FaerieMorning, type PassageOfTime, type UniverseSettingsUpdate, type UniverseStage } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, DISPLAY_TIME_NAMES, DISPLAY_TIMES, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_LONG_DESCRIPTION_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, PASSAGES_OF_TIME, UNIVERSE_STAGE_DESCRIPTIONS, UNIVERSE_STAGE_NAMES, UNIVERSE_STAGES, universeSlug, type DisplayTime, type EditableUniverse, type FaerieMorning, type PassageOfTime, type UniverseSettingsUpdate, type UniverseStage } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -31,7 +31,6 @@ export class UniverseTab implements SavableTab
 	private readonly toolbar = getElement('universe-long-toolbar', HTMLElement);
 	private readonly preview = getElement('universe-long-preview', HTMLElement);
 	private readonly stage = getElement('universe-stage', HTMLFieldSetElement);
-	private readonly ruleset = getElement('universe-ruleset-name', HTMLElement);
 	private readonly time = getElement('universe-time', HTMLSelectElement);
 	private readonly faerieField = getElement('universe-faerie-field', HTMLElement);
 	private readonly faerie = getElement('universe-faerie', HTMLSelectElement);
@@ -107,7 +106,6 @@ export class UniverseTab implements SavableTab
 			input.checked = (stage === universe.stage);
 		}
 
-		this.ruleset.textContent = t(RULESET_NAMES[universe.ruleset]);
 		this.time.value = universe.passageOfTime;
 		this.faerie.value = (universe.faerieMorning ?? FAERIE_MORNINGS[0]);
 		this.faerieField.hidden = (universe.passageOfTime !== 'faerie');
