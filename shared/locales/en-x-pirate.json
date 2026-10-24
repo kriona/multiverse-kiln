@@ -1719,6 +1719,10 @@
 		"message": "Grass",
 		"source": "Grass"
 	},
+	"editor.tile.graphic.mountains": {
+		"message": "Peaks",
+		"source": "Mountains"
+	},
 	"editor.tile.graphicHint": {
 		"message": "Painted where the color would be. Where tiles meet, their edges run together like tides.",
 		"source": "Drawn in place of the color. Where tiles meet, their edges blend."

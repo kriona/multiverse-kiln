@@ -67,6 +67,11 @@ const GROUND_DEPTH = -1;
 const GRID_DEPTH = -0.9;
 
 /**
+ * Depth of the overhang (see Piece): over the players (0), under the map scene's fog and night
+ */
+const OVERHANG_DEPTH = 0.2;
+
+/**
  * Something a cell can be drawn as: a tile, or the void
  */
 interface Drawable
@@ -85,7 +90,34 @@ interface Drawable
 	 * Its Dual-Grid sheet, or undefined to draw it in its color
 	 */
 	image: CanvasImageSource | undefined;
+
+	/**
+	 * Whether its image is drawn over the players north of it too: true for an impassable tile with a
+	 * graphic, which no player stands on, such as mountains whose peaks rise over the cells north of them
+	 */
+	overhangs: boolean;
 }
+
+/**
+ * What a corner's frames are made from
+ */
+interface Corner
+{
+	/**
+	 * What each of its 4 cells is drawn as, by its index in drawables, in CORNER_CELLS order
+	 */
+	drawables: number[];
+
+	/**
+	 * The bits of the quarters past the map's edges, which are cut off
+	 */
+	cutOff: number;
+}
+
+/**
+ * Which of a corner's frames: its tiles, or what of them overhangs the players (see Piece)
+ */
+type FrameLayer = 'ground' | 'overhang';
 
 /**
  * One drawn piece of the map
@@ -98,6 +130,13 @@ interface Piece
 	 * The layer of frames, drawn half a cell up and left of the cells, so single corners can be redrawn in place
 	 */
 	ground: Phaser.Tilemaps.TilemapLayer;
+
+	/**
+	 * The tiles that overhang drawn again over the players, laid out like ground's, when the area has any.
+	 * Only what they draw over the cells north of them is kept, so a player standing north of a mountain is
+	 * behind its peaks, and one beside or south of it is in front
+	 */
+	overhang: Phaser.Tilemaps.TilemapLayer | undefined;
 
 	/**
 	 * The chunks its cells came from, by chunkKey(), so it can be redrawn when one of them changes
@@ -113,6 +152,10 @@ interface Piece
  * sheet's frame for the corners it, or a tile above it, holds (see TILE_GRAPHICS). A tile without a
  * graphic fills its quarter of the frame in its color. Each combination is drawn once into an atlas as
  * it first appears, so a piece is one layer of frames, with the grid's lines in a layer over it
+ *
+ * Impassable tiles with graphics, such as mountains, are drawn again in a layer over the players, cut
+ * down to what they draw over the cells north of them, so their peaks hide the lower part of a player
+ * standing behind them (see Piece)
  *
  * Pieces are laid out in world units the way the camera sees them, and each one is filled from the
  * area's cells: on an area that loops, a piece past an edge is filled from the far side, so the map
@@ -149,6 +192,11 @@ export class AreaRenderer
 	 * Where each tile is in drawables, by tile ID
 	 */
 	private readonly drawableIndexes = new Map<number, number>();
+
+	/**
+	 * Whether any of the area's tiles overhangs, so pieces need a layer for it
+	 */
+	private readonly hasOverhang: boolean;
 
 	/**
 	 * Each frame drawn into the atlas so far, by its corner's tiles and cut-off quarters, with its place in the atlas
@@ -199,6 +247,7 @@ export class AreaRenderer
 		};
 		this.textureKey = `area-tiles-${AreaRenderer.nextTextureId++}`;
 		this.drawables = this.rankDrawables(area.tiles);
+		this.hasOverhang = this.drawables.some((drawable) => drawable.overhangs);
 
 		const atlas = scene.textures.createCanvas(this.textureKey, ATLAS_COLUMNS * GRID_CELL_SIZE, ATLAS_COLUMNS * GRID_CELL_SIZE);
 
@@ -297,7 +346,10 @@ export class AreaRenderer
 				{
 					for (const drawnColumn of copiesIn(column, firstColumn, columns, loopsEastWest))
 					{
-						piece.ground.putTileAt(this.frameAt(drawnColumn, drawnRow, piece.chunks), drawnColumn - firstColumn, drawnRow - firstRow);
+						const corner = this.cornerAt(drawnColumn, drawnRow, piece.chunks);
+
+						piece.ground.putTileAt(this.frameOf(corner, 'ground'), drawnColumn - firstColumn, drawnRow - firstRow);
+						piece.overhang?.putTileAt(this.frameOf(corner, 'overhang'), drawnColumn - firstColumn, drawnRow - firstRow);
 					}
 				}
 			}
@@ -350,7 +402,7 @@ export class AreaRenderer
 				|| (a.drawOrder - b.drawOrder)
 				|| (a.tile.id - b.tile.id)
 			));
-		const drawables: Drawable[] = [{ rank: 0, color: VOID_COLOR, image: undefined }];
+		const drawables: Drawable[] = [{ rank: 0, color: VOID_COLOR, image: undefined, overhangs: false }];
 
 		for (const { tile, image } of ranked)
 		{
@@ -358,7 +410,9 @@ export class AreaRenderer
 			drawables.push({
 				rank: drawables.length,
 				color: tile.color,
-				image
+				image,
+				// A tile in its color fills its own cells exactly, so it has nothing to draw over its neighbors
+				overhangs: (tile.impassable && (image !== undefined))
 			});
 		}
 
@@ -476,7 +530,7 @@ export class AreaRenderer
 	}
 
 	/**
-	 * Draws one piece of the map: its frames, and the grid's lines over the cells under them
+	 * Draws one piece of the map: its frames, the grid's lines over the cells under them, and the overhang
 	 *
 	 * @param pieceColumn The piece's column: its position in world units divided by PIECE_SIZE
 	 * @param pieceRow The piece's row
@@ -495,32 +549,38 @@ export class AreaRenderer
 		const tileset = map.addTilesetImage(this.textureKey, this.textureKey, GRID_CELL_SIZE, GRID_CELL_SIZE, 0, 0);
 		const ground = (tileset ? map.createBlankLayer('ground', tileset, left - HALF_CELL, top - HALF_CELL) : null);
 		const grid = (tileset ? map.createBlankLayer('grid', tileset, left, top) : null);
+		const overhang = ((tileset && this.hasOverhang) ? map.createBlankLayer('overhang', tileset, left - HALF_CELL, top - HALF_CELL) : undefined);
 
-		if (!ground || !grid)
+		if (!ground || !grid || (overhang === null))
 		{
 			map.destroy();
 			throw new Error(`Could not make a tile layer from ${this.textureKey}`);
 		}
 
 		const frames: number[][] = [];
+		const overhangFrames: number[][] = [];
 		const lines: number[][] = [];
 		const chunks = new Set<string>();
 
 		for (let rowOffset = 0; rowOffset < CHUNK_SIZE; rowOffset++)
 		{
 			const frameRow: number[] = [];
+			const overhangRow: number[] = [];
 			const lineRow: number[] = [];
 			const row = (pieceRow * CHUNK_SIZE) + rowOffset;
 
 			for (let columnOffset = 0; columnOffset < CHUNK_SIZE; columnOffset++)
 			{
 				const column = (pieceColumn * CHUNK_SIZE) + columnOffset;
+				const corner = this.cornerAt(column, row, chunks);
 
-				frameRow.push(this.frameAt(column, row, chunks));
+				frameRow.push(this.frameOf(corner, 'ground'));
+				overhangRow.push(this.frameOf(corner, 'overhang'));
 				lineRow.push((this.isOnMap(column, row) ? GRID_FRAME : EMPTY_INDEX));
 			}
 
 			frames.push(frameRow);
+			overhangFrames.push(overhangRow);
 			lines.push(lineRow);
 		}
 
@@ -528,8 +588,10 @@ export class AreaRenderer
 		ground.setDepth(GROUND_DEPTH);
 		grid.putTilesAt(lines, 0, 0);
 		grid.setDepth(GRID_DEPTH);
+		overhang?.putTilesAt(overhangFrames, 0, 0);
+		overhang?.setDepth(OVERHANG_DEPTH);
 
-		return({ map, ground, chunks });
+		return({ map, ground, overhang, chunks });
 	}
 
 	/**
@@ -547,15 +609,14 @@ export class AreaRenderer
 	}
 
 	/**
-	 * The atlas frame drawn on a corner as the camera sees it, drawing it into the atlas the first time
-	 * its combination of tiles appears
+	 * What a corner as the camera sees it is made from
 	 *
 	 * @param column The corner's column: it is the top-left corner of the cell in that column and row
 	 * @param row The corner's row
 	 * @param chunks Collects the keys of the chunks the corner's cells are drawn from
-	 * @return Its index in the atlas, or EMPTY_INDEX for a corner with no cell of the map around it
+	 * @return Its cells' drawables, or undefined for a corner with no cell of the map around it
 	 */
-	private frameAt(column: number, row: number, chunks: Set<string>): number
+	private cornerAt(column: number, row: number, chunks: Set<string>): Corner | undefined
 	{
 		const { bounds } = this.area;
 		const drawables: number[] = [];
@@ -582,12 +643,25 @@ export class AreaRenderer
 			drawables.push(((tileId === undefined) ? 0 : (this.drawableIndexes.get(tileId) ?? 0)));
 		});
 
-		if (cutOff === 0b1111)
+		return(((cutOff === 0b1111) ? undefined : { drawables, cutOff }));
+	}
+
+	/**
+	 * The atlas frame drawn on a corner, drawing it into the atlas the first time its combination of
+	 * tiles appears
+	 *
+	 * @param corner What the corner is made from, from cornerAt()
+	 * @param layer Which of its frames
+	 * @return Its index in the atlas, or EMPTY_INDEX when nothing is drawn there
+	 */
+	private frameOf(corner: Corner | undefined, layer: FrameLayer): number
+	{
+		if (!corner || ((layer === 'overhang') && !corner.drawables.some((index) => this.drawables[index].overhangs)))
 		{
 			return(EMPTY_INDEX);
 		}
 
-		const key = `${drawables.join(',')}/${cutOff}`;
+		const key = `${layer}:${corner.drawables.join(',')}/${corner.cutOff}`;
 		const known = this.frames.get(key);
 
 		if (known !== undefined)
@@ -603,31 +677,36 @@ export class AreaRenderer
 
 		const frame = this.nextFrame++;
 
-		this.drawFrame(frame, drawables, cutOff);
+		this.drawFrame(frame, corner, layer);
 		this.frames.set(key, frame);
 
 		return(frame);
 	}
 
 	/**
-	 * Draws a corner's frame into the atlas: each of its tiles from the lowest-ranked up, over the
-	 * corners it or a higher-ranked tile holds, then cuts off the quarters past the map's edges
+	 * Draws a corner's frame into the atlas, then cuts off the quarters past the map's edges
+	 *
+	 * The ground frame draws each of the corner's tiles from the lowest-ranked up, over the corners it or
+	 * a higher-ranked tile holds. The overhang frame does the same with only the tiles that overhang, and
+	 * keeps only their quarters and what they draw over the quarter north of theirs
 	 *
 	 * @param frame Where it goes in the atlas
-	 * @param corners What each of the corner's 4 cells is drawn as, by its index in drawables, in CORNER_CELLS order
-	 * @param cutOff The bits of the quarters past the map's edges
+	 * @param corner What the corner is made from
+	 * @param layer Which of its frames
 	 */
-	private drawFrame(frame: number, corners: readonly number[], cutOff: number): void
+	private drawFrame(frame: number, corner: Corner, layer: FrameLayer): void
 	{
 		const { left, top } = atlasPosition(frame);
 		const { context } = this.atlas;
-		const ranks = corners.map((index) => this.drawables[index].rank);
-		const layers = [...new Set(corners)].sort((a, b) => (this.drawables[a].rank - this.drawables[b].rank));
+		const drawn = corner.drawables.map((index) => this.drawables[index]);
+		const counts = (drawable: Drawable): boolean => ((layer === 'ground') || drawable.overhangs);
+		const layers = [...new Set(drawn)]
+			.filter(counts)
+			.sort((a, b) => (a.rank - b.rank));
 
-		for (const index of layers)
+		for (const drawable of layers)
 		{
-			const drawable = this.drawables[index];
-			const mask = ranks.reduce((bits, rank, bit) => ((rank >= drawable.rank) ? (bits | (1 << bit)) : bits), 0);
+			const mask = drawn.reduce((bits, other, bit) => (((other.rank >= drawable.rank) && counts(other)) ? (bits | (1 << bit)) : bits), 0);
 
 			if (drawable.image)
 			{
@@ -646,7 +725,24 @@ export class AreaRenderer
 			}
 		}
 
-		forEachQuarter(cutOff, (quarterLeft, quarterTop) =>
+		let cleared = corner.cutOff;
+
+		if (layer === 'overhang')
+		{
+			// A player can stand in any other quarter: in a bottom one, or a top one with no overhanging
+			// tile below it, the player is beside or in front of the tile, so nothing covers them
+			drawn.forEach((drawable, bit) =>
+			{
+				const isTop = (bit < 2);
+
+				if (!drawable.overhangs && (!isTop || !drawn[bit + 2].overhangs))
+				{
+					cleared |= (1 << bit);
+				}
+			});
+		}
+
+		forEachQuarter(cleared, (quarterLeft, quarterTop) =>
 		{
 			context.clearRect(left + quarterLeft, top + quarterTop, HALF_CELL, HALF_CELL);
 		});

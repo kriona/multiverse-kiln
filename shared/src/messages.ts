@@ -186,6 +186,12 @@ export interface AreaTile
 	graphic: string | null;
 
 	/**
+	 * Whether the tile can't be entered (IMPASSABLE_WALK_SECONDS). No player stands on it, so its graphic
+	 * is drawn over the players next to it too, such as a mountain's peaks over a player north of it
+	 */
+	impassable: boolean;
+
+	/**
 	 * How hard the tile is to see past, in percent, which the client's fog follows (see VisionMap)
 	 */
 	visionCost: number;

@@ -215,6 +215,7 @@ Decided:
 - The ground layer uses the Dual-Grid System: each tile's graphic is 16 frames of one cell, drawn on the corners where 4 cells meet, half a cell up and left of the cells (the sheet layout is under the tile editor in `STRUCTURE-OVERVIEW.md`). Phaser has no autotiling, so the client picks the frames.
 - A tile graphic's format is set per layer, never per tile within a layer: Dual-Grid tiles are drawn half a cell off the cells, so they can't meet another format cleanly. Not per area kind either, since a tile can be for both indoors and outdoors. The 47-Tile Blob Set waits for a walls layer, where it suits walls and paths one cell wide.
 - Forests are one Dual-Grid sheet, its treetops drawn over its floor, and players are drawn over the trees. A canopy in a layer over players, see-through around the player's own character, was tried and dropped: hiding players and uncovering them didn't look right. Ordinary 32x32 frames can still draw treetops rising half a cell above the forest's north edge (the frames on that edge cover half of the cells north of it), so trees 1.5 cells tall need no taller frames; taller trees would need taller frames (32x64 for a full cell).
+- Impassable tiles with graphics, such as mountains 1.5 cells tall, are drawn again in a layer over players, cut down to what they draw over the cell north of them. No player can stand on them, so this puts a player north of a mountain behind its peaks without the hiding and uncovering that ruled out the forest canopy. The fog is drawn over that layer.
 - Distinctive buildings and lone trees are placed objects, not tiles (see Later).
 - Graphics only change what the client draws: movement, vision and the server don't change.
 
@@ -225,7 +226,7 @@ Decided:
 - [ ] A piece is redrawn when a chunk next to it changes, since its edge cells depend on it; painting a cell redraws the 4 frames touching it
 - [ ] Grid lines drawn as an overlay, not baked into each tile
 - [ ] A tile's graphic chosen from sheets that ship with the engine (uploads wait for image storage, Phase 18), shown in the tile editor with its day and night preview
-- [ ] Graphics for the ruleset's default tiles (grass, and PF1E's forest, so far)
+- [ ] Graphics for the ruleset's default tiles (grass, and PF1E's forest and mountains, so far)
 - [ ] Check the new screens in the pseudo-language, update Pirate, and add screen reader text
 
 **Done when:** an outdoor area painted with grass, dirt and forest shows smooth edges where they meet, the forest's treetops rise over the cells north of it, and painting in the map editor updates the edges as it paints.

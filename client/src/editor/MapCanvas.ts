@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { EditorTile, EditorArea, MapBounds, Ruleset, AreaPayload } from '@multiverse-kiln/shared';
+import { IMPASSABLE_WALK_SECONDS, type EditorTile, type EditorArea, type MapBounds, type Ruleset, type AreaPayload } from '@multiverse-kiln/shared';
 
 import { MAP_EDITOR_SCENE_KEY, MapEditorScene, type CameraState, type MapEditorHost } from '../scenes/MapEditorScene';
 import { announce } from '../ui/announcer';
@@ -389,6 +389,7 @@ export function editorAreaPayload(area: EditorArea, tiles: readonly EditorTile[]
 			name: tile.name,
 			color: tile.color,
 			graphic: tile.graphic,
+			impassable: (tile.walkSeconds === IMPASSABLE_WALK_SECONDS),
 			visionCost: tile.visionCost
 		})),
 		chunks: [],

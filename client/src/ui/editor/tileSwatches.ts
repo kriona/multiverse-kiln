@@ -23,6 +23,11 @@ const TILE_GRAPHIC_NAMES: Record<TileGraphic, MessageDescriptor> = defineMessage
 		id: 'editor.tile.graphic.forest',
 		defaultMessage: 'Forest',
 		description: 'One of the graphics a tile can be drawn with, in the tile editor\'s list of them and read out for the Tilesets table\'s pictures of tiles: woodland'
+	},
+	mountains: {
+		id: 'editor.tile.graphic.mountains',
+		defaultMessage: 'Mountains',
+		description: 'One of the graphics a tile can be drawn with, in the tile editor\'s list of them and read out for the Tilesets table\'s pictures of tiles: mountains, whose peaks are drawn over players standing just north of them when the tile can\'t be entered'
 	}
 });
 

@@ -88,9 +88,11 @@ const FOG_ALPHA = 0.55;
 const UNSEEN_ALPHA = 1;
 
 /**
- * Depth of the fog: over the map, under the players
+ * Depth of the fog: over the map, the players and what overhangs them, such as mountains' peaks, which
+ * would otherwise show undimmed over cells out of sight; under the night. The players the room shows are
+ * in sight, so the fog doesn't cover them
  */
-const FOG_DEPTH = -0.5;
+const FOG_DEPTH = 0.3;
 
 /**
  * How many cells past the edges of the view the fog is drawn, so it still covers the view while the

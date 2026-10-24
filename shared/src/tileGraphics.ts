@@ -16,6 +16,9 @@ export const TILE_GRAPHICS = {
 	},
 	forest: {
 		drawOrder: 40
+	},
+	mountains: {
+		drawOrder: 50
 	}
 } as const satisfies Record<string, { drawOrder: number }>;
 

@@ -1719,6 +1719,10 @@
 		"defaultMessage": "Grass",
 		"description": "One of the graphics a tile can be drawn with, in the tile editor's list of them and read out for the Tilesets table's pictures of tiles: grass"
 	},
+	"editor.tile.graphic.mountains": {
+		"defaultMessage": "Mountains",
+		"description": "One of the graphics a tile can be drawn with, in the tile editor's list of them and read out for the Tilesets table's pictures of tiles: mountains, whose peaks are drawn over players standing just north of them when the tile can't be entered"
+	},
 	"editor.tile.graphicHint": {
 		"defaultMessage": "Drawn in place of the color. Where tiles meet, their edges blend.",
 		"description": "Explains the tile editor's list of graphics"

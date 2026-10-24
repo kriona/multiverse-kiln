@@ -3,13 +3,15 @@ import { isTileGraphic, TILE_GRAPHIC_KEYS, type TileGraphic } from '@multiverse-
 
 import forestUrl from '../assets/tilesets/forest.png';
 import grassUrl from '../assets/tilesets/grass.png';
+import mountainsUrl from '../assets/tilesets/mountains.png';
 
 /**
  * Each graphic's image, a Dual-Grid sheet (see DUAL_GRID_COLUMNS)
  */
 export const TILE_GRAPHIC_URLS: Record<TileGraphic, string> = {
 	grass: grassUrl,
-	forest: forestUrl
+	forest: forestUrl,
+	mountains: mountainsUrl
 };
 
 /**
