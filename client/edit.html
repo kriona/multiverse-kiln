@@ -247,7 +247,7 @@
 							<h2 id="characters-themes-heading" data-message="editor.themes.heading" data-translation-context="Heading of the part of the editor's Characters tab listing the themes characters can have in Starfinder: backgrounds such as ace pilot or scholar">Themes</h2>
 							<div class="filters">
 								<p class="hint" data-message="editor.themes.hint" data-translation-context="Explains the themes on the editor's Characters tab, in Starfinder: a theme is a character's background, such as ace pilot or scholar">The themes new characters can choose: a background, such as a pilot or a scholar, that raises one ability score.</p>
-								<button id="theme-add" type="button" data-shortcut="Alt+N" data-message="editor.themes.add" data-translation-context="Button that opens the dialog for making a new theme (a character background, such as ace pilot)"><!-- icon ph:plus -->Add Theme</button>
+								<button id="theme-add" type="button" data-shortcut="Alt+T" data-message="editor.themes.add" data-translation-context="Button that opens the dialog for making a new theme (a character background, such as ace pilot)"><!-- icon ph:plus -->Add Theme</button>
 							</div>
 							<p id="theme-list-error" class="form-error" role="alert" hidden></p>
 							<table class="item-table">
@@ -811,8 +811,10 @@
 						<input id="area-select-search" type="search" placeholder="Search by name" aria-label="Search areas by name" autocomplete="off" data-message-placeholder="editor.areaSelect.search" data-translation-context-placeholder="Shown in the empty field that narrows the areas down by name" data-message-aria-label="editor.areaSelect.searchLabel" data-translation-context-aria-label="Name of the field that narrows the areas down by name, for screen readers" />
 						<fieldset id="area-select-results" class="choice stacked area-select-results" aria-label="Areas" data-message-aria-label="editor.areaSelect.results" data-translation-context-aria-label="Name of the list of areas to choose from, for screen readers"></fieldset>
 						<p id="area-select-none" class="universe-empty" data-message="editor.areaSelect.none" data-translation-context="Shown in the dialog for choosing an area when no area's name matches the search" hidden>No areas match.</p>
-						<div id="area-select-preview" class="area-select-preview" aria-hidden="true"></div>
+						<div id="area-select-preview" class="area-select-preview" tabindex="0" role="application" aria-label="Map of the chosen area" aria-describedby="area-select-preview-help" data-message-aria-label="editor.areaSelect.previewLabel" data-translation-context-aria-label="Name of the map in the dialog for choosing a starting area, for screen readers, where clicking chooses the square characters start on"></div>
+						<p id="area-select-preview-help" class="hint" data-message="editor.areaSelect.previewHelp" data-translation-context="Explains how to choose the square characters start on, on the map in the dialog for choosing a starting area; the keys are the same in every language">Click the map to choose the square characters start on. With the map focused, the arrow keys move the cursor, 10 cells at a time with Shift, and Space or Enter chooses the square.</p>
 						<p id="area-select-summary" role="status"></p>
+						<p id="area-select-cell" role="status"></p>
 						<p id="area-select-error" class="form-error" role="alert" hidden></p>
 						<div class="dialog-buttons">
 							<button id="area-select-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>

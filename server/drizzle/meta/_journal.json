@@ -288,6 +288,13 @@
       "when": 1792778091103,
       "tag": "0040_group_difficulty_required",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1792825261163,
+      "tag": "0041_starting_cells",
+      "breakpoints": true
     }
   ]
 }

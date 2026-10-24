@@ -539,10 +539,6 @@
 		"message": "Scuttle Area",
 		"source": "Delete Area"
 	},
-	"editor.area.deleteFailed": {
-		"message": "Couldn't scuttle the area.",
-		"source": "Could not delete the area."
-	},
 	"editor.area.enabled": {
 		"message": "Open to all hands",
 		"source": "Enabled"
@@ -619,6 +615,10 @@
 		"message": "Add Area",
 		"source": "Add Area"
 	},
+	"editor.areaSelect.cell": {
+		"message": "Hands start on {column}, {row}, or the free square nearest it.",
+		"source": "Characters start on {column}, {row}, or the free square nearest it."
+	},
 	"editor.areaSelect.disabled": {
 		"message": "Closed",
 		"source": "Disabled"
@@ -627,6 +627,14 @@
 		"message": "Inside {area}",
 		"source": "Inside {area}"
 	},
+	"editor.areaSelect.keys.cursorDescription": {
+		"message": "Steer the cursor on the chart in hand, 10 cells at a time with Shift",
+		"source": "Move the cursor on the focused map, 10 cells at a time with Shift"
+	},
+	"editor.areaSelect.keys.pickDescription": {
+		"message": "Pick the cursor's square for hands to start on",
+		"source": "Choose the cursor's square for characters to start on"
+	},
 	"editor.areaSelect.loadFailed": {
 		"message": "Couldn't haul up the areas.",
 		"source": "Could not load the areas."
@@ -634,6 +642,14 @@
 	"editor.areaSelect.none": {
 		"message": "No areas be matchin'.",
 		"source": "No areas match."
+	},
+	"editor.areaSelect.previewHelp": {
+		"message": "Click the chart to pick the square hands start on. With the chart in hand, the arrow keys steer the cursor, 10 cells at a time with Shift, and Space or Enter picks the square.",
+		"source": "Click the map to choose the square characters start on. With the map focused, the arrow keys move the cursor, 10 cells at a time with Shift, and Space or Enter chooses the square."
+	},
+	"editor.areaSelect.previewLabel": {
+		"message": "Chart o' the chosen area",
+		"source": "Map of the chosen area"
 	},
 	"editor.areaSelect.results": {
 		"message": "Areas",
@@ -1183,10 +1199,6 @@
 		"message": "Scuttle Passage",
 		"source": "Delete Link"
 	},
-	"editor.link.deleteFailed": {
-		"message": "Couldn't scuttle the passage.",
-		"source": "Could not delete the link."
-	},
 	"editor.link.destination": {
 		"message": "Headed for: {column}, {row}",
 		"source": "Destination: {column}, {row}"
@@ -1250,10 +1262,6 @@
 	"editor.link.returnCellReplacing": {
 		"message": "Return passage at {column}, {row}, sinkin' the passage there",
 		"source": "Return link at {column}, {row}, replacing the link there"
-	},
-	"editor.link.saveFailed": {
-		"message": "Couldn't stow the passage.",
-		"source": "Could not save the link."
 	},
 	"editor.link.showAreaFailed": {
 		"message": "Couldn't sight that area.",
@@ -1422,10 +1430,6 @@
 	"editor.map.label": {
 		"message": "Chart",
 		"source": "Map"
-	},
-	"editor.map.linkNeedsSave": {
-		"message": "Stow the chart's new size before addin' passages there.",
-		"source": "Save the map's new size before adding links there."
 	},
 	"editor.map.links": {
 		"message": "Passages",
@@ -1767,6 +1771,10 @@
 		"message": "Don't Restore",
 		"source": "Undo Restore"
 	},
+	"editor.startingArea.at": {
+		"message": "{area}, from {column}, {row}",
+		"source": "{area}, from {column}, {row}"
+	},
 	"editor.startingArea.loadFailed": {
 		"message": "Couldn't make out the ports' names.",
 		"source": "Could not load the areas' names."
@@ -1795,10 +1803,6 @@
 		"message": "Crew",
 		"source": "Characters"
 	},
-	"editor.tab.classes": {
-		"message": "Callin's",
-		"source": "Classes"
-	},
 	"editor.tab.items": {
 		"message": "Booty",
 		"source": "Items"
@@ -1806,10 +1810,6 @@
 	"editor.tab.lobby": {
 		"message": "Tavern",
 		"source": "Lobby"
-	},
-	"editor.tab.races": {
-		"message": "Folk",
-		"source": "Races"
 	},
 	"editor.tab.ruleset": {
 		"message": "Ship's Articles",
@@ -2050,10 +2050,6 @@
 	"editor.universe.preview": {
 		"message": "Peek",
 		"source": "Preview"
-	},
-	"editor.universe.ruleset": {
-		"message": "Ship's articles: {ruleset}",
-		"source": "Ruleset: {ruleset}"
 	},
 	"editor.universe.saveFailed": {
 		"message": "Couldn't stow the universe.",

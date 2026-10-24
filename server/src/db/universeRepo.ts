@@ -133,6 +133,13 @@ export interface UniverseRecord
 	 * Undefined until the universe's areas exist
 	 */
 	startingAreaId: string | undefined;
+
+	/**
+	 * The cell of the starting area characters start nearest
+	 */
+	startingColumn: number;
+
+	startingRow: number;
 }
 
 /**
@@ -214,7 +221,9 @@ export async function findUniverse(universeId: string, executor: Executor = db):
 		ruleset: row.ruleset,
 		passageOfTime: row.passageOfTime,
 		lobbyAreaId: row.lobbyAreaId ?? undefined,
-		startingAreaId: row.startingAreaId ?? undefined
+		startingAreaId: row.startingAreaId ?? undefined,
+		startingColumn: row.startingColumn,
+		startingRow: row.startingRow
 	});
 }
 
@@ -301,6 +310,8 @@ export async function findEditableUniverse(universeId: string, executor: Executo
 			lobbyNoVisionCost: universes.lobbyNoVisionCost,
 			lobbyAreaId: universes.lobbyAreaId,
 			startingAreaId: universes.startingAreaId,
+			startingColumn: universes.startingColumn,
+			startingRow: universes.startingRow,
 			groupSize: universes.groupSize,
 			startingPlatinum: universes.startingPlatinum,
 			startingGold: universes.startingGold,

@@ -1,4 +1,4 @@
-import { ancestorAreas, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary } from '@multiverse-kiln/shared';
+import { ancestorAreas, isInBounds, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary, type StartingCell } from '@multiverse-kiln/shared';
 
 import { ChunkLoader } from '../../editor/ChunkLoader';
 import { EditorMap } from '../../editor/EditorMap';
@@ -7,6 +7,8 @@ import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import type { MapEditorHost } from '../../scenes/MapEditorScene';
 import { getElement, showMessage } from '../dom';
+import { addKeyHelp } from '../shortcuts';
+import { describeCell } from './cellDescription';
 import { mapMessages } from './mapMessages';
 
 /**
@@ -25,8 +27,28 @@ const PREVIEW_HEIGHT = 240;
 const MAX_RESULTS = 20;
 
 /**
- * Selection: Area (see STRUCTURE-OVERVIEW.md): a dialog for choosing one of the universe's areas by
- * typing part of its name, with a preview of the chosen area's map
+ * Color of the starting square on the preview
+ */
+const STARTING_CELL_COLOR = 0x4caf50;
+
+/**
+ * The square a newly chosen area starts out with: the middle of a new area's map
+ */
+const MIDDLE_CELL: StartingCell = { column: 0, row: 0 };
+
+/**
+ * A starting area and the square of it characters start on
+ */
+export interface AreaSelection
+{
+	area: EditorAreaSummary;
+	cell: StartingCell;
+}
+
+/**
+ * Selection: Area (see STRUCTURE-OVERVIEW.md): a dialog for choosing where characters start: one of the
+ * universe's areas, found by typing part of its name, and the square of it they start on, chosen on a
+ * preview of its map
  *
  * The lobby isn't offered, since nothing an area is chosen for here may be the lobby
  */
@@ -38,9 +60,11 @@ export class AreaSelectDialog
 	private readonly results = getElement('area-select-results', HTMLFieldSetElement);
 	private readonly none = getElement('area-select-none', HTMLElement);
 	private readonly summary = getElement('area-select-summary', HTMLElement);
+	private readonly cellText = getElement('area-select-cell', HTMLElement);
 	private readonly error = getElement('area-select-error', HTMLElement);
 	private readonly submit = getElement('area-select-submit', HTMLButtonElement);
-	private readonly canvas = new MapCanvas(getElement('area-select-preview', HTMLElement), PREVIEW_WIDTH, PREVIEW_HEIGHT);
+	private readonly previewElement = getElement('area-select-preview', HTMLElement);
+	private readonly canvas = new MapCanvas(this.previewElement, PREVIEW_WIDTH, PREVIEW_HEIGHT);
 
 	private universe: EditableUniverse | undefined;
 
@@ -57,14 +81,24 @@ export class AreaSelectDialog
 	private chosenAreaId: string | undefined;
 
 	/**
+	 * The square of the chosen area characters start on
+	 */
+	private chosenCell: StartingCell = MIDDLE_CELL;
+
+	/**
+	 * The area the preview shows, and its map, once they have loaded
+	 */
+	private preview: { area: EditorArea; map: EditorMap } | undefined;
+
+	/**
 	 * Loads the chunks of the area the preview shows
 	 */
 	private previewLoader: ChunkLoader | undefined;
 
 	/**
-	 * Settles the promise open() returned: with the area chosen, or undefined when the dialog closed without one
+	 * Settles the promise open() returned: with the area and square chosen, or undefined when the dialog closed without one
 	 */
-	private settle: ((area: EditorAreaSummary | undefined) => void) | undefined;
+	private settle: ((selection: AreaSelection | undefined) => void) | undefined;
 
 	/**
 	 * Changes every time the dialog opens or the preview switches area, so data that arrives for an earlier one is ignored
@@ -76,6 +110,26 @@ export class AreaSelectDialog
 	 */
 	constructor(private readonly api: EditorApi)
 	{
+		addKeyHelp({
+			scope: this.previewElement,
+			keys: () => t(mapMessages.arrowKeys),
+			description: () => t({
+				id: 'editor.areaSelect.keys.cursorDescription',
+				defaultMessage: 'Move the cursor on the focused map, 10 cells at a time with Shift',
+				description: 'In the list of keyboard shortcuts, what the arrow keys do on the map in the dialog for choosing a starting area'
+			})
+		});
+
+		addKeyHelp({
+			scope: this.previewElement,
+			keys: () => t(mapMessages.spaceOrEnter),
+			description: () => t({
+				id: 'editor.areaSelect.keys.pickDescription',
+				defaultMessage: 'Choose the cursor\'s square for characters to start on',
+				description: 'In the list of keyboard shortcuts, what Space and Enter do on the map in the dialog for choosing a starting area'
+			})
+		});
+
 		this.search.addEventListener('input', () =>
 		{
 			this.showResults();
@@ -100,7 +154,7 @@ export class AreaSelectDialog
 
 			if (area)
 			{
-				this.finish(area);
+				this.finish({ area, cell: this.chosenCell });
 				this.dialog.close();
 			}
 		});
@@ -111,9 +165,10 @@ export class AreaSelectDialog
 	 *
 	 * @param universe The universe whose areas to choose from
 	 * @param areaId The area chosen now, which starts out chosen, if any
-	 * @return The area chosen, or undefined when the dialog was closed without choosing
+	 * @param cell The square of that area chosen now
+	 * @return The area and square chosen, or undefined when the dialog was closed without choosing
 	 */
-	async open(universe: EditableUniverse, areaId: string | null): Promise<EditorAreaSummary | undefined>
+	async open(universe: EditableUniverse, areaId: string | null, cell: StartingCell): Promise<AreaSelection | undefined>
 	{
 		const version = ++this.version;
 
@@ -121,16 +176,18 @@ export class AreaSelectDialog
 		this.universe = universe;
 		this.areas = [];
 		this.chosenAreaId = (areaId ?? undefined);
+		this.chosenCell = ((areaId === null) ? MIDDLE_CELL : cell);
 		this.search.value = '';
 		this.results.replaceChildren();
 		this.none.hidden = true;
 		this.summary.textContent = '';
+		this.cellText.textContent = '';
 		this.submit.disabled = true;
 		showMessage(this.error, undefined);
 		this.dialog.showModal();
 		this.search.focus();
 
-		const chosen = new Promise<EditorAreaSummary | undefined>((resolve) =>
+		const chosen = new Promise<AreaSelection | undefined>((resolve) =>
 		{
 			this.settle = resolve;
 		});
@@ -168,14 +225,14 @@ export class AreaSelectDialog
 	/**
 	 * Settles the promise open() returned, once
 	 *
-	 * @param area The area chosen, or undefined for none
+	 * @param selection The area and square chosen, or undefined for none
 	 */
-	private finish(area: EditorAreaSummary | undefined): void
+	private finish(selection: AreaSelection | undefined): void
 	{
 		const settle = this.settle;
 
 		this.settle = undefined;
-		settle?.(area);
+		settle?.(selection);
 	}
 
 	/**
@@ -246,6 +303,7 @@ export class AreaSelectDialog
 		input.addEventListener('change', () =>
 		{
 			this.chosenAreaId = area.id;
+			this.chosenCell = MIDDLE_CELL;
 			this.submit.disabled = false;
 			void this.showPreview();
 		});
@@ -254,7 +312,8 @@ export class AreaSelectDialog
 	}
 
 	/**
-	 * Shows the chosen area's map in the preview, with its size and whether it is indoors in words
+	 * Shows the chosen area's map in the preview, centered on the starting square, with its size and
+	 * whether it is indoors in words
 	 */
 	private async showPreview(): Promise<void>
 	{
@@ -264,6 +323,7 @@ export class AreaSelectDialog
 
 		this.closePreview();
 		this.summary.textContent = '';
+		this.cellText.textContent = '';
 
 		if (!universe || (areaId === undefined) || !this.areas.some((area) => (area.id === areaId)))
 		{
@@ -313,11 +373,20 @@ export class AreaSelectDialog
 		});
 
 		this.previewLoader = loader;
-		await this.canvas.show(editorAreaPayload(area, this.tiles, universe.ruleset), map.chunks, this.previewHost(loader));
+		this.preview = { area, map };
+
+		const scene = await this.canvas.show(editorAreaPayload(area, this.tiles, universe.ruleset), map.chunks, this.previewHost(loader));
+
+		if (this.preview?.area === area)
+		{
+			this.showCell();
+			scene.centerOnCell(this.chosenCell.column, this.chosenCell.row);
+		}
 	}
 
 	/**
-	 * What the preview does: nothing but look around, loading chunks as they come into view
+	 * What the preview does: clicking a square, or Space or Enter on the keyboard's cursor, chooses it
+	 * for characters to start on, and chunks load as they come into view
 	 *
 	 * @param loader Loads the preview area's chunks
 	 * @return The host
@@ -330,14 +399,54 @@ export class AreaSelectDialog
 			paintStart: () => undefined,
 			paint: () => undefined,
 			paintEnd: () => undefined,
-			pick: () => undefined,
+			pick: (column, row) =>
+			{
+				if (this.preview && isInBounds(this.preview.area.bounds, column, row))
+				{
+					this.chosenCell = { column, row };
+					this.showCell();
+				}
+			},
 			hover: () => undefined,
-			describe: () => '',
+			describe: (cell) =>
+			{
+				const preview = this.preview;
+				const universe = this.universe;
+
+				if (!preview || !universe)
+				{
+					return('');
+				}
+
+				return(describeCell({
+					map: preview.map,
+					defaultTileId: preview.area.defaultTileId,
+					tiles: this.tiles,
+					links: [],
+					ruleset: universe.ruleset
+				}, cell));
+			},
 			viewChanged: (range) =>
 			{
 				loader.request(range);
 			}
 		});
+	}
+
+	/**
+	 * Shows the starting square, in words and highlighted on the preview
+	 */
+	private showCell(): void
+	{
+		this.cellText.textContent = t({
+			id: 'editor.areaSelect.cell',
+			defaultMessage: 'Characters start on {column}, {row}, or the free square nearest it.',
+			description: 'In the dialog for choosing a starting area, under the map: the square characters start on; {column} and {row} are its coordinates'
+		}, {
+			column: this.chosenCell.column,
+			row: this.chosenCell.row
+		});
+		this.canvas.scene?.setHighlights([{ ...this.chosenCell, color: STARTING_CELL_COLOR }]);
 	}
 
 	/**
@@ -347,6 +456,7 @@ export class AreaSelectDialog
 	{
 		this.previewLoader?.stop();
 		this.previewLoader = undefined;
+		this.preview = undefined;
 		this.canvas.stop();
 	}
 }

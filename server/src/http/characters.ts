@@ -733,6 +733,13 @@ async function createRoute(request: Request, response: Response): Promise<void>
 		const enabledItemIds = new Set((await loadEditorItems(universeId, universe.ruleset, transaction))
 			.filter((item) => item.enabled)
 			.map((item) => item.id));
+		const start = chooseStartingArea(((universe.startingAreaId === null)
+			? null
+			: {
+				areaId: universe.startingAreaId,
+				column: universe.startingColumn,
+				row: universe.startingRow
+			}), race, characterClass);
 		const characterId = await createCharacter({
 			playerId,
 			universeId,
@@ -744,7 +751,9 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			abilityScores: finalAbilityScores(universe.ruleset, baseScores, bonuses),
 			money: addMoney([universe.startingMoney, race.startingMoney, characterClass.startingMoney]),
 			items: combineStartingItems([universe.startingItems, race.startingItems, characterClass.startingItems], enabledItemIds),
-			areaId: chooseStartingArea(universe.startingAreaId, race, characterClass)
+			areaId: (start?.areaId ?? null),
+			startingColumn: (start?.column ?? 0),
+			startingRow: (start?.row ?? 0)
 		}, transaction);
 
 		if (source.kind === 'roll')

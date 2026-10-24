@@ -1,4 +1,4 @@
-import { canEditUniverseSettings, MAX_GROUP_PLAYERS, MIN_GROUP_SIZE, type EditableUniverse } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, MAX_GROUP_PLAYERS, MIN_GROUP_SIZE, type EditableUniverse, type StartingCell } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -10,6 +10,7 @@ import { exampleMoney, formatMoney, readMoneyField } from '../moneyField';
 import type { ItemSelectDialog } from './ItemSelectDialog';
 import type { SavableTab } from './SaveBar';
 import { StartingItemsField } from './StartingItemsField';
+import { startingAreaMessages } from './startingAreaMessages';
 import type { AreaSelectDialog } from './AreaSelectDialog';
 
 /**
@@ -34,6 +35,16 @@ export class CharactersTab implements SavableTab
 	 * The starting area the form shows, which may not be saved yet
 	 */
 	private startingAreaId: string | null = null;
+
+	/**
+	 * The square of the starting area characters start on, which may not be saved yet
+	 */
+	private startingCell: StartingCell = { column: 0, row: 0 };
+
+	/**
+	 * The starting area's name, once it has loaded
+	 */
+	private startingAreaName = '';
 
 	/**
 	 * The starting equipment the form shows, which may not be saved yet
@@ -71,7 +82,7 @@ export class CharactersTab implements SavableTab
 		});
 		this.changes = new ChangeTracker({
 			root: this.form,
-			state: () => [this.startingAreaId, this.startingItems.value]
+			state: () => [this.startingAreaId, this.startingCell, this.startingItems.value]
 		});
 		this.groupSize.min = String(MIN_GROUP_SIZE);
 		this.groupSize.max = String(MAX_GROUP_PLAYERS);
@@ -120,22 +131,28 @@ export class CharactersTab implements SavableTab
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.form);
 		// Sets the starting area and equipment straight away, then loads their names
-		void this.showStartingArea(universe.startingAreaId);
+		void this.showStartingArea(universe.startingAreaId, {
+			column: universe.startingColumn,
+			row: universe.startingRow
+		});
 		void this.startingItems.show(universe, universe.startingItems);
 		this.changes.markSaved();
 	}
 
 	/**
-	 * Shows the starting area's name
+	 * Shows the starting area's name and square
 	 *
 	 * @param areaId The area, or null for none
+	 * @param cell The square of it characters start on
 	 */
-	private async showStartingArea(areaId: string | null): Promise<void>
+	private async showStartingArea(areaId: string | null, cell: StartingCell): Promise<void>
 	{
 		const universe = this.universe;
 		const version = ++this.openVersion;
 
 		this.startingAreaId = areaId;
+		this.startingCell = cell;
+		this.startingAreaName = '';
 		this.areaName.textContent = '';
 
 		if (!universe || (areaId === null))
@@ -149,7 +166,8 @@ export class CharactersTab implements SavableTab
 
 			if (version === this.openVersion)
 			{
-				this.areaName.textContent = (areas.find((area) => (area.id === areaId))?.name ?? '');
+				this.startingAreaName = (areas.find((area) => (area.id === areaId))?.name ?? '');
+				this.renderStartingArea();
 			}
 		}
 		catch (error)
@@ -166,7 +184,19 @@ export class CharactersTab implements SavableTab
 	}
 
 	/**
-	 * Lets the player choose another starting area, which the form shows until it is saved
+	 * Shows the starting area's name and the square of it characters start on
+	 */
+	private renderStartingArea(): void
+	{
+		this.areaName.textContent = t(startingAreaMessages.at, {
+			area: this.startingAreaName,
+			column: this.startingCell.column,
+			row: this.startingCell.row
+		});
+	}
+
+	/**
+	 * Lets the player choose another starting area or square, which the form shows until it is saved
 	 */
 	private async chooseArea(): Promise<void>
 	{
@@ -175,15 +205,17 @@ export class CharactersTab implements SavableTab
 			return;
 		}
 
-		const area = await this.areaSelect.open(this.universe, this.startingAreaId);
+		const selection = await this.areaSelect.open(this.universe, this.startingAreaId, this.startingCell);
 
 		this.chooseAreaButton.focus();
 
-		if (area && (area.id !== this.startingAreaId))
+		if (selection)
 		{
 			++this.openVersion;
-			this.startingAreaId = area.id;
-			this.areaName.textContent = area.name;
+			this.startingAreaId = selection.area.id;
+			this.startingCell = selection.cell;
+			this.startingAreaName = selection.area.name;
+			this.renderStartingArea();
 			this.changes.check();
 		}
 	}
@@ -230,6 +262,7 @@ export class CharactersTab implements SavableTab
 		}
 
 		const startingAreaId = this.startingAreaId;
+		const { column: startingColumn, row: startingRow } = this.startingCell;
 		const startingItems = this.startingItems.value;
 
 		showMessage(this.error, undefined);
@@ -241,14 +274,15 @@ export class CharactersTab implements SavableTab
 				groupSize,
 				startingMoney,
 				startingItems,
-				...((startingAreaId === null) ? {} : { startingAreaId })
+				...((startingAreaId === null) ? {} : { startingAreaId, startingColumn, startingRow })
 			});
 			this.universe = {
 				...universe,
 				groupSize,
 				startingMoney,
 				startingItems,
-				startingAreaId
+				startingAreaId,
+				...((startingAreaId === null) ? {} : { startingColumn, startingRow })
 			};
 			this.startingMoney.value = formatMoney(startingMoney, universe.ruleset);
 			this.changes.markSaved();

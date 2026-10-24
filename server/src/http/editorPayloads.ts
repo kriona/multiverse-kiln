@@ -135,7 +135,9 @@ export const universeSettingsUpdate = byRuleset((ruleset) => z.object({
 	groupSize: z.number().int().min(MIN_GROUP_SIZE).max(MAX_GROUP_PLAYERS).optional(),
 	startingMoney: money(ruleset).optional(),
 	startingItems: startingItemList.optional(),
-	startingAreaId: z.uuid().optional()
+	startingAreaId: z.uuid().optional(),
+	startingColumn: cellCoordinate.optional(),
+	startingRow: cellCoordinate.optional()
 }) satisfies z.ZodType<UniverseSettingsUpdate>);
 
 /**
@@ -303,7 +305,9 @@ function startingExtrasFields(ruleset: Ruleset)
 		enabled: z.boolean(),
 		startingMoney: money(ruleset),
 		startingItems: startingItemList,
-		startingAreaId: z.uuid().nullable()
+		startingAreaId: z.uuid().nullable(),
+		startingColumn: cellCoordinate,
+		startingRow: cellCoordinate
 	});
 }
 
@@ -324,7 +328,9 @@ export const classSettings = byRuleset((ruleset) => z.object({
 	name: displayText(MAX_CLASS_NAME_LENGTH).nullable(),
 	raceAreas: z.array(z.object({
 		raceId: raceIdParameter,
-		areaId: z.uuid()
+		areaId: z.uuid(),
+		column: cellCoordinate,
+		row: cellCoordinate
 	}))
 		.max(MAX_CUSTOM_RACES + Object.keys(DEFAULT_RACE_NAMES[ruleset]).length)
 		.refine((entries) => (new Set(entries.map((entry) => entry.raceId)).size === entries.length), 'Each race can be listed only once'),

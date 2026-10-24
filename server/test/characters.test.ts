@@ -461,6 +461,8 @@ describe('Character routes', () =>
 			startingMoney: emptyMoney(),
 			startingItems: [],
 			startingAreaId: null,
+			startingColumn: 0,
+			startingRow: 0,
 			rules: NEW_PF1E_RACE_RULES
 		};
 		const created = await send<CreatedPayload<number>>(ada, 'POST', `${EDITOR_UNIVERSES_PATH}/${universeId}/races`, lizardfolk);
@@ -487,6 +489,8 @@ describe('Character routes', () =>
 			startingMoney: emptyMoney(),
 			startingItems: [],
 			startingAreaId: null,
+			startingColumn: 0,
+			startingRow: 0,
 			rules: NEW_PF1E_RACE_RULES
 		};
 		const race = await send<CreatedPayload<number>>(ada, 'POST', `${EDITOR_UNIVERSES_PATH}/${universeId}/races`, lizardfolk);

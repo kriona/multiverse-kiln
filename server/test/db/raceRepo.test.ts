@@ -13,6 +13,8 @@ const lizardfolk: CustomRaceSettings = {
 	startingMoney: emptyMoney(),
 	startingItems: [],
 	startingAreaId: null,
+	startingColumn: 0,
+	startingRow: 0,
 	rules: {
 		...NEW_PF1E_RACE_RULES,
 		abilityModifiers: {
@@ -76,6 +78,8 @@ describe('raceRepo', () =>
 					startingMoney: emptyMoney(),
 					startingItems: [],
 					startingAreaId: null,
+					startingColumn: 0,
+					startingRow: 0,
 					rules: pf1eRaceRules(PF1E_RACES[key]),
 					custom: false,
 					edited: false
@@ -105,6 +109,8 @@ describe('raceRepo', () =>
 			},
 			startingItems: [{ itemId: daggerId, quantity: 2 }],
 			startingAreaId: areaId,
+			startingColumn: 5,
+			startingRow: -3,
 			rules: {
 				...lizardfolk.rules,
 				darkvision: true,

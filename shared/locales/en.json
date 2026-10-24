@@ -615,6 +615,10 @@
 		"defaultMessage": "Add Area",
 		"description": "Title of the dialog for making a new area"
 	},
+	"editor.areaSelect.cell": {
+		"defaultMessage": "Characters start on {column}, {row}, or the free square nearest it.",
+		"description": "In the dialog for choosing a starting area, under the map: the square characters start on; {column} and {row} are its coordinates"
+	},
 	"editor.areaSelect.disabled": {
 		"defaultMessage": "Disabled",
 		"description": "In the dialog for choosing an area, under the name of an area players can't go into"
@@ -623,6 +627,14 @@
 		"defaultMessage": "Inside {area}",
 		"description": "In the dialog for choosing an area, under an area's name: the area it is inside; {area} is that area's name"
 	},
+	"editor.areaSelect.keys.cursorDescription": {
+		"defaultMessage": "Move the cursor on the focused map, 10 cells at a time with Shift",
+		"description": "In the list of keyboard shortcuts, what the arrow keys do on the map in the dialog for choosing a starting area"
+	},
+	"editor.areaSelect.keys.pickDescription": {
+		"defaultMessage": "Choose the cursor's square for characters to start on",
+		"description": "In the list of keyboard shortcuts, what Space and Enter do on the map in the dialog for choosing a starting area"
+	},
 	"editor.areaSelect.loadFailed": {
 		"defaultMessage": "Could not load the areas.",
 		"description": "Shown in the dialog for choosing an area when the universe's areas couldn't be loaded"
@@ -630,6 +642,14 @@
 	"editor.areaSelect.none": {
 		"defaultMessage": "No areas match.",
 		"description": "Shown in the dialog for choosing an area when no area's name matches the search"
+	},
+	"editor.areaSelect.previewHelp": {
+		"defaultMessage": "Click the map to choose the square characters start on. With the map focused, the arrow keys move the cursor, 10 cells at a time with Shift, and Space or Enter chooses the square.",
+		"description": "Explains how to choose the square characters start on, on the map in the dialog for choosing a starting area; the keys are the same in every language"
+	},
+	"editor.areaSelect.previewLabel": {
+		"defaultMessage": "Map of the chosen area",
+		"description": "Name of the map in the dialog for choosing a starting area, for screen readers, where clicking chooses the square characters start on"
 	},
 	"editor.areaSelect.results": {
 		"defaultMessage": "Areas",
@@ -1750,6 +1770,10 @@
 	"editor.staged.undoRestore": {
 		"defaultMessage": "Undo Restore",
 		"description": "Button in an editor dialog (race, class, theme, item or tile) for one of the ruleset's that will be put back as the ruleset has it when the tab is saved: keeps the universe's changes instead"
+	},
+	"editor.startingArea.at": {
+		"defaultMessage": "{area}, from {column}, {row}",
+		"description": "Shown as a starting area chosen on the Characters tab or in the race or class editor: the area and the square characters start on; {area} is the area's name, {column} and {row} the square's coordinates"
 	},
 	"editor.startingArea.loadFailed": {
 		"defaultMessage": "Could not load the areas' names.",

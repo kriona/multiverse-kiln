@@ -18,7 +18,9 @@ describe('universeRepo', () =>
 			ruleset: 'pf1e',
 			passageOfTime: 'flows_normally',
 			lobbyAreaId: undefined,
-			startingAreaId: undefined
+			startingAreaId: undefined,
+			startingColumn: 0,
+			startingRow: 0
 		});
 	});
 

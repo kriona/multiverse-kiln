@@ -37,6 +37,8 @@ describe('groupRepo', () =>
 			anchorCharacterId: anchorId,
 			name: 'The Fellowship',
 			startingAreaId: universe.fieldAreaId,
+			startingColumn: 0,
+			startingRow: 0,
 			clockSeconds: GROUP_START_SECONDS,
 			difficultyLevelId: (await findDefaultDifficultyLevel(universe.universeId))?.id
 		});
@@ -81,7 +83,7 @@ describe('groupRepo', () =>
 
 		assert.deepStrictEqual((await listPlayableCharacters(playerId, universe.universeId)).map(({ id }) => id), [lonerId]);
 		assert.strictEqual(await findLastPlayedCharacterId(playerId, universe.universeId), anchorId);
-		assert.deepStrictEqual(await findOwnCharacter(playerId, universe.universeId, anchorId), { id: anchorId, name: 'Anchor', raceId: await defaultRaceId('dwarf'), areaId: null, playable: true });
+		assert.deepStrictEqual(await findOwnCharacter(playerId, universe.universeId, anchorId), { id: anchorId, name: 'Anchor', raceId: await defaultRaceId('dwarf'), areaId: null, startingColumn: 0, startingRow: 0, playable: true });
 		assert.strictEqual(await findOwnCharacter(playerId, universe.universeId, randomUUID()), undefined);
 	});
 

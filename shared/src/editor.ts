@@ -169,6 +169,17 @@ export const NEW_AREA_BOUNDS: Readonly<MapBounds> = {
 };
 
 /**
+ * A cell of a starting area. Characters start on the free cell nearest it; one outside the area's map,
+ * which may have been made smaller since the cell was chosen, counts as the nearest cell on it. Column
+ * 0, row 0, the middle of a new area's map, until the editor chooses another
+ */
+export interface StartingCell
+{
+	column: number;
+	row: number;
+}
+
+/**
  * The keys of the default tiles new areas use in each ruleset, outdoors and indoors
  */
 export const DEFAULT_AREA_TILE_KEYS: Record<Ruleset, { outdoors: string; indoors: string }> = {
@@ -324,6 +335,13 @@ export interface UniverseSettings
 	 * other than the lobby's. Null only while the universe is being created
 	 */
 	startingAreaId: string | null;
+
+	/**
+	 * The cell of the starting area characters start nearest (see StartingCell)
+	 */
+	startingColumn: number;
+
+	startingRow: number;
 }
 
 /**
@@ -650,6 +668,13 @@ export interface StartingExtras
 	 * to the next choice down (see chooseStartingArea() in server/src/logic/startingArea.ts)
 	 */
 	startingAreaId: string | null;
+
+	/**
+	 * The cell of the starting area its characters start nearest (see StartingCell); 0 while startingAreaId is null
+	 */
+	startingColumn: number;
+
+	startingRow: number;
 }
 
 /**
@@ -723,6 +748,13 @@ export interface ClassRaceArea
 	 * One of the universe's areas other than the lobby's
 	 */
 	areaId: string;
+
+	/**
+	 * The cell of the area they start nearest (see StartingCell)
+	 */
+	column: number;
+
+	row: number;
 }
 
 /**

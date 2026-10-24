@@ -196,11 +196,15 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			return({ status: 404, message: messages.noSuchDifficulty });
 		}
 
+		// A character whose starting area was deleted starts where the universe's characters do
+		const ownStart = (character.areaId !== null);
 		const groupId = await createGroup({
 			universeId: universe.id,
 			anchorCharacterId: anchorId,
 			name,
 			startingAreaId: (character.areaId ?? universe.startingAreaId),
+			startingColumn: (ownStart ? character.startingColumn : universe.startingColumn),
+			startingRow: (ownStart ? character.startingRow : universe.startingRow),
 			difficultyLevelId
 		}, transaction);
 

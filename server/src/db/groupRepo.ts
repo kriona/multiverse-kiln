@@ -30,6 +30,13 @@ export interface GroupRecord
 	startingAreaId: string | null;
 
 	/**
+	 * The cell of the starting area they start nearest
+	 */
+	startingColumn: number;
+
+	startingRow: number;
+
+	/**
 	 * The group's game clock, in seconds of game time
 	 */
 	clockSeconds: number;
@@ -58,6 +65,13 @@ export interface NewGroup
 	 * The anchor being's starting area, or null when they have none
 	 */
 	startingAreaId: string | null;
+
+	/**
+	 * The cell of the starting area they start nearest
+	 */
+	startingColumn: number;
+
+	startingRow: number;
 
 	/**
 	 * One of the universe's difficulty levels
@@ -173,6 +187,8 @@ const groupColumns = {
 	anchorCharacterId: groups.anchorCharacterId,
 	name: groups.name,
 	startingAreaId: groups.startingAreaId,
+	startingColumn: groups.startingColumn,
+	startingRow: groups.startingRow,
 	clockSeconds: groups.clockSeconds,
 	difficultyLevelId: groups.difficultyLevelId
 };
@@ -194,6 +210,8 @@ export async function createGroup(group: NewGroup, executor: Executor): Promise<
 			anchorCharacterId: group.anchorCharacterId,
 			name: group.name,
 			startingAreaId: group.startingAreaId,
+			startingColumn: group.startingColumn,
+			startingRow: group.startingRow,
 			difficultyLevelId: group.difficultyLevelId
 		})
 		.returning({ id: groups.id });

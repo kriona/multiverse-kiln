@@ -120,6 +120,12 @@ export const universes = pgTable('universes', {
 	startingAreaId: uuid('starting_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
 
 	/**
+	 * The cell of the starting area characters start nearest; column 0, row 0 is the middle of a new area's map
+	 */
+	startingColumn: integer('starting_column').notNull().default(0),
+	startingRow: integer('starting_row').notNull().default(0),
+
+	/**
 	 * Most characters in one group
 	 */
 	groupSize: smallint('group_size').notNull().default(MAX_GROUP_PLAYERS),
@@ -353,6 +359,12 @@ export const races = pgTable('races', {
 	 */
 	startingAreaId: uuid('starting_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
 
+	/**
+	 * The cell of the starting area the race's characters start nearest
+	 */
+	startingColumn: integer('starting_column').notNull().default(0),
+	startingRow: integer('starting_row').notNull().default(0),
+
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	unique('races_ruleset_key_unique').on(table.ruleset, table.key),
@@ -484,6 +496,12 @@ export const classes = pgTable('classes', {
 	 */
 	startingAreaId: uuid('starting_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
 
+	/**
+	 * The cell of the starting area the class's characters start nearest
+	 */
+	startingColumn: integer('starting_column').notNull().default(0),
+	startingRow: integer('starting_row').notNull().default(0),
+
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	unique('classes_ruleset_key_unique').on(table.ruleset, table.key),
@@ -603,7 +621,13 @@ export const classStartingItems = pgTable('class_starting_items', {
 export const classRaceAreas = pgTable('class_race_areas', {
 	classId: integer('class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }),
 	raceId: integer('race_id').notNull().references(() => races.id, { onDelete: 'cascade' }),
-	areaId: uuid('area_id').notNull().references(() => areas.id, { onDelete: 'cascade' })
+	areaId: uuid('area_id').notNull().references(() => areas.id, { onDelete: 'cascade' }),
+
+	/**
+	 * The cell of the area they start nearest
+	 */
+	startingColumn: integer('starting_column').notNull().default(0),
+	startingRow: integer('starting_row').notNull().default(0)
 }, (table) => [
 	primaryKey({ columns: [table.classId, table.raceId] }),
 	index('class_race_areas_race_id_index').on(table.raceId),
@@ -721,6 +745,12 @@ export const characters = pgTable('characters', {
 	 * The area the character is in; null when the area was deleted, or the universe had none to start in
 	 */
 	areaId: uuid('area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
+
+	/**
+	 * The cell of the area the character starts nearest
+	 */
+	startingColumn: integer('starting_column').notNull().default(0),
+	startingRow: integer('starting_row').notNull().default(0),
 
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 
@@ -906,6 +936,12 @@ export const groups = pgTable('groups', {
 	 * there; null when it was deleted, and the universe's starting area is used instead
 	 */
 	startingAreaId: uuid('starting_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
+
+	/**
+	 * The cell of the starting area members with nowhere else to be start nearest
+	 */
+	startingColumn: integer('starting_column').notNull().default(0),
+	startingRow: integer('starting_row').notNull().default(0),
 
 	/**
 	 * The group's game clock: seconds of game time since its world began, which starts in the morning

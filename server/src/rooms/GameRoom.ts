@@ -1,11 +1,12 @@
 import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
-import { cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, GameMessageType, GameServerMessageType, GameState, GroupMember, MessageType, NoticeReason, PATCH_INTERVAL_MS, ServerCloseCode, visibleCells, type CellsSeenPayload, type CellValue, type NoticePayload } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, GameMessageType, GameServerMessageType, GameState, GroupMember, MessageType, NoticeReason, PATCH_INTERVAL_MS, ServerCloseCode, visibleCells, type CellsSeenPayload, type CellValue, type NoticePayload, type StartingCell } from '@multiverse-kiln/shared';
 
 import { markCharacterPlayed } from '../db/characterRepo.js';
 import { findGroup, listGroupMembers, saveGroupClock, saveMemberPositions, type GroupMemberRecord, type MemberPosition } from '../db/groupRepo.js';
 import { saveSeenChunks, loadSeenChunks } from '../db/worldStateRepo.js';
 import { GroupClock } from '../logic/gameClock.js';
 import { SeenCells } from '../logic/seenCells.js';
+import { startingCellOn } from '../logic/startingArea.js';
 import { loadRaceDarkvision } from '../db/raceRepo.js';
 import { findUniverse } from '../db/universeRepo.js';
 import { loadChunksAt, loadArea } from '../db/areaRepo.js';
@@ -122,6 +123,11 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	private startingAreaId!: string;
 
 	/**
+	 * The cell of the starting area they start nearest
+	 */
+	private startingCell: StartingCell = { column: 0, row: 0 };
+
+	/**
 	 * The group's game clock, which state.clock shows. Named apart from Room's clock, which runs timers
 	 */
 	private gameClock!: GroupClock;
@@ -215,8 +221,8 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			throw new Error(`Group ${groupId} doesn't exist`);
 		}
 
-		const startingArea = (((group.startingAreaId !== null) ? await this.areas.load(group.startingAreaId) : undefined)
-			?? ((universe.startingAreaId !== undefined) ? await this.areas.load(universe.startingAreaId) : undefined));
+		const groupArea = ((group.startingAreaId !== null) ? await this.areas.load(group.startingAreaId) : undefined);
+		const startingArea = (groupArea ?? ((universe.startingAreaId !== undefined) ? await this.areas.load(universe.startingAreaId) : undefined));
 
 		if (!startingArea)
 		{
@@ -226,6 +232,9 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		this.groupId = group.id;
 		this.anchorId = group.anchorCharacterId;
 		this.startingAreaId = startingArea.loaded.area.id;
+		this.startingCell = (groupArea
+			? { column: group.startingColumn, row: group.startingRow }
+			: { column: universe.startingColumn, row: universe.startingRow });
 		this.state.name = group.name;
 		this.state.anchorId = group.anchorCharacterId;
 		this.gameClock = new GroupClock(group.clockSeconds);
@@ -476,7 +485,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 
 	/**
 	 * Where a member starts on the map: where they were last, then beside the anchor being (where they
-	 * are now, or were last), then the center of the group's starting area. An area that is gone or
+	 * are now, or were last), then the group's starting cell of its starting area. An area that is gone or
 	 * disabled is passed over
 	 *
 	 * @param member The member
@@ -514,8 +523,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 
 		return({
 			area: startingArea,
-			column: 0,
-			row: 0
+			...startingCellOn(startingArea.loaded.bounds, this.startingCell)
 		});
 	}
 

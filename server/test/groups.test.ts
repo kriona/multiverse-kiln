@@ -218,6 +218,17 @@ describe('group routes', () =>
 			}]);
 		});
 
+		it('starts at the universe\'s starting cell when the character has no starting area of their own', async () =>
+		{
+			await updateUniverseSettings(universe.universeId, { startingColumn: 6, startingRow: 4 });
+
+			const group = await findGroup(await createGroup(ada));
+
+			assert.strictEqual(group?.startingAreaId, universe.fieldAreaId);
+			assert.strictEqual(group?.startingColumn, 6);
+			assert.strictEqual(group?.startingRow, 4);
+		});
+
 		it('lists the character in their group, and no longer plays them in the lobby', async () =>
 		{
 			const groupId = await createGroup(ada);

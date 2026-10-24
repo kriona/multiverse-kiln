@@ -117,7 +117,7 @@ export class RaceDialog
 		});
 		this.changes = new ChangeTracker({
 			root: this.form,
-			state: () => [this.startingItems.value, this.startingArea.value]
+			state: () => [this.startingItems.value, this.startingArea.value, this.startingArea.cell]
 		});
 		this.changes.guardDialog(this.dialog);
 
@@ -210,7 +210,10 @@ export class RaceDialog
 		this.hitPointsField.hidden = !isSf1eRaceRules(rules);
 		this.hitPoints.value = (isSf1eRaceRules(rules) ? String(rules.hitPoints) : '');
 		this.startingMoney.value = formatMoney((race?.startingMoney ?? emptyMoney()), universe.ruleset);
-		this.startingArea.show(universe, (race?.startingAreaId ?? null), editable);
+		this.startingArea.show(universe, (race?.startingAreaId ?? null), {
+			column: (race?.startingColumn ?? 0),
+			row: (race?.startingRow ?? 0)
+		}, editable);
 		this.saveButton.hidden = !editable;
 		this.chooseItemsButton.hidden = !editable;
 		this.cancelButton.textContent = t(editable ? formMessages.cancel : formMessages.close);
@@ -324,6 +327,8 @@ export class RaceDialog
 			startingMoney,
 			startingItems: this.startingItems.value,
 			startingAreaId: this.startingArea.value,
+			startingColumn: this.startingArea.cell.column,
+			startingRow: this.startingArea.cell.row,
 			rules
 		});
 		this.close();

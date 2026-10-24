@@ -60,6 +60,8 @@ const lizardfolk: RaceSettings = {
 	startingMoney: emptyMoney(),
 	startingItems: [],
 	startingAreaId: null,
+	startingColumn: 0,
+	startingRow: 0,
 	rules: NEW_PF1E_RACE_RULES
 };
 
@@ -69,6 +71,8 @@ const gunslinger: ClassSettings = {
 	startingMoney: emptyMoney(),
 	startingItems: [],
 	startingAreaId: null,
+	startingColumn: 0,
+	startingRow: 0,
 	raceAreas: [],
 	rules: NEW_PF1E_CLASS_RULES
 };
@@ -81,9 +85,9 @@ const gunslinger: ClassSettings = {
  */
 function raceSettingsOf(race: EditorRace): RaceSettings
 {
-	const { name, enabled, startingMoney, startingItems, startingAreaId, rules } = race;
+	const { name, enabled, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, rules } = race;
 
-	return({ name, enabled, startingMoney, startingItems, startingAreaId, rules });
+	return({ name, enabled, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, rules });
 }
 
 /**
@@ -94,9 +98,9 @@ function raceSettingsOf(race: EditorRace): RaceSettings
  */
 function classSettingsOf(characterClass: EditorClass): ClassSettings
 {
-	const { name, enabled, startingMoney, startingItems, startingAreaId, raceAreas, rules } = characterClass;
+	const { name, enabled, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, raceAreas, rules } = characterClass;
 
-	return({ name, enabled, startingMoney, startingItems, startingAreaId, raceAreas, rules });
+	return({ name, enabled, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, raceAreas, rules });
 }
 
 /**
@@ -947,7 +951,7 @@ describe('World editor API', () =>
 			const races = (await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races;
 			const settings: ClassSettings = {
 				...gunslinger,
-				raceAreas: [{ raceId: races[0].id, areaId }]
+				raceAreas: [{ raceId: races[0].id, areaId, column: 3, row: -2 }]
 			};
 			const created = await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/classes`, { body: settings });
 			const classes = (await send<ClassListPayload>(ada, 'GET', `/${universeId}/classes`)).body.classes;
@@ -979,18 +983,18 @@ describe('World editor API', () =>
 			const both = {
 				...gunslinger,
 				startingAreaId: areaId,
-				raceAreas: [{ raceId: elfId, areaId }]
+				raceAreas: [{ raceId: elfId, areaId, column: 0, row: 0 }]
 			};
 			const twice = {
 				...gunslinger,
-				raceAreas: [{ raceId: elfId, areaId }, { raceId: elfId, areaId }]
+				raceAreas: [{ raceId: elfId, areaId, column: 0, row: 0 }, { raceId: elfId, areaId, column: 0, row: 0 }]
 			};
 
 			assert.strictEqual((await send(ada, 'POST', `/${universeId}/classes`, { body: both })).status, 400);
 			assert.strictEqual((await send(ada, 'POST', `/${universeId}/classes`, { body: twice })).status, 400);
 			assert.strictEqual((await send(ada, 'POST', `/${universeId}/classes`, { body: { ...gunslinger, rules: { ...gunslinger.rules, tradition: 'psychic' } } })).status, 400);
 
-			const response = await send<ErrorPayload>(ada, 'POST', `/${universeId}/classes`, { body: { ...gunslinger, raceAreas: [{ raceId: theirRaceId, areaId }] } });
+			const response = await send<ErrorPayload>(ada, 'POST', `/${universeId}/classes`, { body: { ...gunslinger, raceAreas: [{ raceId: theirRaceId, areaId, column: 0, row: 0 }] } });
 
 			assert.strictEqual(response.status, 400);
 			assert.strictEqual(response.body.error.id, 'error.unknownRaceArea');
@@ -1071,7 +1075,7 @@ describe('World editor API', () =>
 			const universeId = await createUniverse(ada);
 			const created = await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/difficulty-levels`, { body: nightmare });
 			const characterId = await addCharacter(ada.playerId, universeId, 'Ada');
-			const groupId = await inTransaction((transaction) => createGroup({ universeId, anchorCharacterId: characterId, name: '', startingAreaId: null, difficultyLevelId: created.body.id }, transaction));
+			const groupId = await inTransaction((transaction) => createGroup({ universeId, anchorCharacterId: characterId, name: '', startingAreaId: null, startingColumn: 0, startingRow: 0, difficultyLevelId: created.body.id }, transaction));
 			const normal = (await listLevels(universeId)).find((level) => level.isDefault);
 
 			assert.strictEqual(created.status, 201);

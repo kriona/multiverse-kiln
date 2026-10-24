@@ -559,6 +559,11 @@ html:has(.map-editor.full-page) body
 		align-self: flex-start;
 		line-height: 0;
 		border: 1px solid $border;
+
+		canvas
+		{
+			cursor: crosshair;
+		}
 	}
 }
 

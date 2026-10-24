@@ -53,10 +53,10 @@ export class ClassDialog
 	private readonly startingArea: AreaChoice;
 
 	/**
-	 * The area for each race's members of the class, by race ID, which may not be saved yet. Kept while
-	 * the class has an area for every race, so taking that area away brings them back
+	 * The area and square for each race's members of the class, by race ID, which may not be saved yet.
+	 * Kept while the class has an area for every race, so taking that area away brings them back
 	 */
-	private readonly raceAreas = new Map<number, string>();
+	private readonly raceAreas = new Map<number, ClassRaceArea>();
 
 	/**
 	 * The choice for each race's area, once the races have loaded
@@ -144,7 +144,7 @@ export class ClassDialog
 		});
 		this.changes = new ChangeTracker({
 			root: this.form,
-			state: () => [this.startingItems.value, this.startingArea.value, [...this.raceAreas].sort(([a], [b]) => (a - b))]
+			state: () => [this.startingItems.value, this.startingArea.value, this.startingArea.cell, [...this.raceAreas].sort(([a], [b]) => (a - b))]
 		});
 		this.changes.guardDialog(this.dialog);
 
@@ -224,12 +224,15 @@ export class ClassDialog
 		this.enabled.checked = (characterClass?.enabled ?? true);
 		this.showRules(rules);
 		this.startingMoney.value = formatMoney((characterClass?.startingMoney ?? emptyMoney()), universe.ruleset);
-		this.startingArea.show(universe, (characterClass?.startingAreaId ?? null), editable);
+		this.startingArea.show(universe, (characterClass?.startingAreaId ?? null), {
+			column: (characterClass?.startingColumn ?? 0),
+			row: (characterClass?.startingRow ?? 0)
+		}, editable);
 		this.raceAreas.clear();
 
-		for (const { raceId, areaId } of (characterClass?.raceAreas ?? []))
+		for (const entry of (characterClass?.raceAreas ?? []))
 		{
-			this.raceAreas.set(raceId, areaId);
+			this.raceAreas.set(entry.raceId, entry);
 		}
 
 		this.raceAreaChoices = [];
@@ -338,7 +341,12 @@ export class ClassDialog
 				}
 				else
 				{
-					this.raceAreas.set(race.id, choice.value);
+					this.raceAreas.set(race.id, {
+						raceId: race.id,
+						areaId: choice.value,
+						column: choice.cell.column,
+						row: choice.cell.row
+					});
 				}
 
 				this.changes.check();
@@ -375,7 +383,12 @@ export class ClassDialog
 			}));
 			row.append(label, areaName, choose, clear);
 			this.raceAreaList.append(row);
-			choice.show(universe, (this.raceAreas.get(race.id) ?? null), editable);
+			const entry = this.raceAreas.get(race.id);
+
+			choice.show(universe, (entry?.areaId ?? null), {
+				column: (entry?.column ?? 0),
+				row: (entry?.row ?? 0)
+			}, editable);
 			choice.setAreaNames(this.areaNames);
 
 			return(choice);
@@ -437,15 +450,16 @@ export class ClassDialog
 		const startingAreaId = this.startingArea.value;
 
 		// An area for every race leaves no room for one per race; the server refuses both
-		const raceAreas: ClassRaceArea[] = ((startingAreaId === null)
-			? [...this.raceAreas].map(([raceId, areaId]) => ({ raceId, areaId }))
-			: []);
+		const raceAreas: ClassRaceArea[] = ((startingAreaId === null) ? [...this.raceAreas.values()] : []);
+
 		this.edit.apply({
 			name: ((name === defaultName) ? null : name),
 			enabled: this.enabled.checked,
 			startingMoney,
 			startingItems: this.startingItems.value,
 			startingAreaId,
+			startingColumn: this.startingArea.cell.column,
+			startingRow: this.startingArea.cell.row,
 			raceAreas,
 			rules
 		});

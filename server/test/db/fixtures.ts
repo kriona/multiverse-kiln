@@ -85,7 +85,9 @@ export async function dwarfFighter(playerId: string, universeId: string, name: s
 			itemId: daggerId,
 			quantity: 2
 		}],
-		areaId: null
+		areaId: null,
+		startingColumn: 0,
+		startingRow: 0
 	});
 }
 
@@ -122,7 +124,7 @@ export async function addGroup(universeId: string, anchorCharacterId: string, st
 		throw new Error(`Universe ${universeId} has no default difficulty level`);
 	}
 
-	return(inTransaction((transaction) => createGroup({ universeId, anchorCharacterId, name, startingAreaId, difficultyLevelId: difficultyLevel.id }, transaction)));
+	return(inTransaction((transaction) => createGroup({ universeId, anchorCharacterId, name, startingAreaId, startingColumn: 0, startingRow: 0, difficultyLevelId: difficultyLevel.id }, transaction)));
 }
 
 /**

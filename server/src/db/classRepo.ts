@@ -69,7 +69,9 @@ export async function loadEditorClasses(universeId: string, ruleset: Ruleset, ex
 			startingSilver: classes.startingSilver,
 			startingCopper: classes.startingCopper,
 			startingCredits: classes.startingCredits,
-			startingAreaId: classes.startingAreaId
+			startingAreaId: classes.startingAreaId,
+			startingColumn: classes.startingColumn,
+			startingRow: classes.startingRow
 		})
 		.from(classes)
 		.where(usableClasses(universeId, ruleset))
@@ -103,6 +105,8 @@ export async function loadEditorClasses(universeId: string, ruleset: Ruleset, ex
 				startingMoney: fromCoinColumns(settings),
 				startingItems: (startingItems.get(settings.id) ?? []),
 				startingAreaId: settings.startingAreaId,
+				startingColumn: settings.startingColumn,
+				startingRow: settings.startingRow,
 				raceAreas: (raceAreas.get(settings.id) ?? []),
 				rules: classRules,
 				custom,
@@ -218,7 +222,9 @@ async function loadClassRaceAreas(universeId: string, executor: Executor): Promi
 		.select({
 			classId: classRaceAreas.classId,
 			raceId: classRaceAreas.raceId,
-			areaId: classRaceAreas.areaId
+			areaId: classRaceAreas.areaId,
+			column: classRaceAreas.startingColumn,
+			row: classRaceAreas.startingRow
 		})
 		.from(classRaceAreas)
 		.innerJoin(classes, eq(classes.id, classRaceAreas.classId))
@@ -226,9 +232,9 @@ async function loadClassRaceAreas(universeId: string, executor: Executor): Promi
 		.orderBy(asc(classRaceAreas.raceId));
 	const byClass = new Map<number, ClassRaceArea[]>();
 
-	for (const { classId, raceId, areaId } of rows)
+	for (const { classId, ...entry } of rows)
 	{
-		byClass.set(classId, [...(byClass.get(classId) ?? []), { raceId, areaId }]);
+		byClass.set(classId, [...(byClass.get(classId) ?? []), entry]);
 	}
 
 	return(byClass);
@@ -432,13 +438,17 @@ export async function isClassStartingItem(universeId: string, itemId: number, ex
  * @param settings The settings
  * @return The columns' values
  */
-function classColumns(settings: ClassSettings): Pick<typeof classes.$inferInsert, 'name' | 'enabled' | 'startingPlatinum' | 'startingGold' | 'startingSilver' | 'startingCopper' | 'startingCredits' | 'startingAreaId'>
+function classColumns(settings: ClassSettings): Pick<typeof classes.$inferInsert, 'name' | 'enabled' | 'startingPlatinum' | 'startingGold' | 'startingSilver' | 'startingCopper' | 'startingCredits' | 'startingAreaId' | 'startingColumn' | 'startingRow'>
 {
+	const hasArea = (settings.startingAreaId !== null);
+
 	return({
 		name: settings.name,
 		enabled: settings.enabled,
 		...toCoinColumns(settings.startingMoney),
-		startingAreaId: settings.startingAreaId
+		startingAreaId: settings.startingAreaId,
+		startingColumn: (hasArea ? settings.startingColumn : 0),
+		startingRow: (hasArea ? settings.startingRow : 0)
 	});
 }
 
@@ -520,10 +530,12 @@ async function saveClassDetails(classId: number, ruleset: Ruleset, settings: Cla
 	{
 		await executor
 			.insert(classRaceAreas)
-			.values(settings.raceAreas.map(({ raceId, areaId }) => ({
+			.values(settings.raceAreas.map(({ raceId, areaId, column, row }) => ({
 				classId,
 				raceId,
-				areaId
+				areaId,
+				startingColumn: column,
+				startingRow: row
 			})));
 	}
 }
