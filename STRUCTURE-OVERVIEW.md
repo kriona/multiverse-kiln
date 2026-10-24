@@ -336,7 +336,7 @@ Money is credits (`cr`), the only coin.
 - Starting [money](#field-money)
 - Starting [area](#selection-area)
 
-Below the settings, the tab lists the [races](#races), the [classes](#classes) and, for a ruleset with them, the [themes](#themes), each in a section of its own, and saves them with the settings. Each race and class can add to the starting money and equipment, and choose a starting area of its own.
+Below the settings, the tab lists the [races](#races), the [classes](#classes) and, for a ruleset with them, the [themes](#themes), each in a section of its own, and saves them with the settings. Each list is a table of names, summaries and notes (custom, edited, disabled, and changes not saved yet), sorted by name until the Name or Notes heading is clicked (see [sortable tables](#sortable-tables)); rows that tie are sorted by name. Each race and class can add to the starting money and equipment, and choose a starting area of its own.
 
 A character's starting area is chosen in this order, most specific first: the class's entry for their race, the class, the race, then the universe. A class with an area of its own has no entries for races, so the two never compete. Each starting area comes with the square characters start on (chosen with the [area](#selection-area)), which goes with it: a group starts at its anchor being's square, and its members are placed on the free square nearest it. A square the area's map no longer holds, after it was made smaller, counts as the nearest square on the map.
 
@@ -469,6 +469,8 @@ the table contains:
 - vision cost
 - used in: indoors, outdoors, indoors and outdoors, or neither
 
+The table is sorted by name until another column's heading is clicked (see [sortable tables](#sortable-tables)). Name, walk time, vision cost and used in can sort it; impassable tiles count as the slowest, and used in sorts in the order indoors, outdoors, both, neither. Tiles that tie are sorted by name. The server sorts before paging, by the English names, as the name search matches them.
+
 For PF1E, the default tiles are
 - outdoors
 	- Grass, color #7AFF3D, 0% vision cost, 10 minute walk time
@@ -513,6 +515,9 @@ the table contains:
 - icon
 - name, links to the [item editor](#editor-item)
 - summary (item type, properties, etc)
+- notes: custom, edited, disabled, and changes not saved yet
+
+The table is sorted by name until the Name or Notes heading is clicked (see [sortable tables](#sortable-tables)). The server sorts before paging: names by their English text, as the name search matches them, and notes by the items' flags, with items that have none first, then disabled, edited and custom ones. Items that tie are sorted by name.
 
 For PF1E, the only default item for now is a dagger; for SF1E, a survival knife.
 
@@ -738,6 +743,9 @@ Every page, editor and game screen can be used with only a keyboard and with a s
 - A toast (`showToast()` in `client/src/ui/toast.ts`) shows a short message at the top of the page for a few seconds (longer while the pointer rests on it), and screen readers read it out through the announcer; the toast itself is hidden from them, so it isn't read twice.
 - The map editor's map (and the link dialog's preview) can be focused and worked with a cursor: the arrow keys move it, Space or Enter paints or picks its cell, holding Space while moving paints a stroke, + and - zoom and Home returns to the center cell. Each cell the cursor reaches is read out with what it holds.
 - Colors are never the only way information is shown: the tile table's swatches carry the color's hex code.
+
+## Sortable tables
+A table that can be sorted has a button in each heading that sorts it (`TableSorter` in `client/src/ui/tableSorter.ts`, with `sortRows()` and `SortOrder` in `/shared`). Clicking a heading sorts going up, and clicking it again going down. The heading sorted by has `aria-sort` and an arrow showing which way; the others show an arrow both ways. Screen readers are told how the table is now sorted. A list paged on the server sends the order as the `sort` and `direction` query parameters, and the server sorts before paging; ties are kept in the list's own order.
 
 # Open questions
 - **Time:** the overworld map's scale.

@@ -15,6 +15,7 @@ export * from './racesAndClasses.js';
 export * from './rulesets/pf1e/index.js';
 export * from './rulesets/sf1e/index.js';
 export * from './siteSettings.js';
+export * from './sorting.js';
 export * from './state.js';
 export * from './tileGraphics.js';
 export * from './time.js';

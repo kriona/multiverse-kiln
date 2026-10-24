@@ -265,6 +265,36 @@ button.link-button
 	}
 }
 
+// A table heading's button that sorts the table by its column (see ui/tableSorter.ts), looking like the heading
+button.sort-button
+{
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 0;
+	border: none;
+	background: none;
+	color: inherit;
+	text-align: left;
+
+	&:hover
+	{
+		background: none;
+		text-decoration: underline;
+	}
+
+	.sort-icon
+	{
+		display: inline-flex;
+	}
+
+	// The arrow both ways, on a column the table isn't sorted by
+	.sort-icon.unsorted
+	{
+		opacity: 0.5;
+	}
+}
+
 .screen
 {
 	display: flex;

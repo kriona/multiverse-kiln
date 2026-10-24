@@ -1315,6 +1315,10 @@
 		"message": "Naught more.",
 		"source": "Nothing more."
 	},
+	"editor.notes": {
+		"message": "Scribblings",
+		"source": "Notes"
+	},
 	"editor.openFailed": {
 		"message": "Couldn't open the universe.",
 		"source": "Could not open the universe."
@@ -3698,6 +3702,10 @@
 	"shortcuts.title": {
 		"message": "Keyboard shortcuts",
 		"source": "Keyboard shortcuts"
+	},
+	"table.sorted": {
+		"message": "{direction, select, ascending {Stowed by {column}, low to high} other {Stowed by {column}, high to low}}",
+		"source": "{direction, select, ascending {Sorted by {column}, ascending} other {Sorted by {column}, descending}}"
 	},
 	"tile.pf1e.desert": {
 		"message": "Barren Sands",

@@ -1,8 +1,9 @@
-import { canEditWorld, defineMessages, IMPASSABLE_WALK_SECONDS, MAX_TILES_PER_PAGE, TILE_USED_IN, tileUsedIn, type EditableUniverse, type EditorTile, type TileListPayload, type TileListQuery, type TileSettings, type UploadedTileGraphic } from '@multiverse-kiln/shared';
+import { canEditWorld, defineMessages, IMPASSABLE_WALK_SECONDS, MAX_TILES_PER_PAGE, TILE_SORT_COLUMNS, TILE_USED_IN, tileUsedIn, type EditableUniverse, type EditorTile, type TileListPayload, type TileListQuery, type TileSettings, type TileSortColumn, type UploadedTileGraphic } from '@multiverse-kiln/shared';
 
 import { formatDuration, t } from '../../localization';
 import { describeEditorError, EditorApiError, type EditorApi } from '../../network/editorApi';
 import { getElement, setOptions, showMessage } from '../dom';
+import { TableSorter } from '../tableSorter';
 import { tileName } from '../tileNames';
 import { editorMessages } from './editorMessages';
 import { combineChanges, type SavableTab } from './SaveBar';
@@ -28,7 +29,8 @@ const messages = defineMessages({
 const SEARCH_DELAY_MS = 250;
 
 /**
- * The Tilesets tab: every tile the universe can paint with, filtered and a page at a time, opening the
+ * The Tilesets tab: every tile the universe can paint with, filtered, sorted by a column (by the server,
+ * before paging) and a page at a time, opening the
  * tile editor. Changes wait on the page until the tab is saved: changed tiles show their changes on the
  * page they are on, and tiles added since show at the top of the first page, whatever the filters. Maps
  * paint only with saved tiles
@@ -51,6 +53,7 @@ export class TilesetsTab implements SavableTab
 	private readonly previousButton = getElement('tile-previous', HTMLButtonElement);
 	private readonly nextButton = getElement('tile-next', HTMLButtonElement);
 	private readonly dialog: TileDialog;
+	private readonly sorter: TableSorter<TileSortColumn>;
 
 	/**
 	 * The changes made to the tiles since they were last saved
@@ -155,6 +158,15 @@ export class TilesetsTab implements SavableTab
 			}
 		});
 
+		this.sorter = new TableSorter(getElement('tile-table', HTMLTableElement), TILE_SORT_COLUMNS, {
+			column: 'name',
+			direction: 'ascending'
+		}, () =>
+		{
+			this.offset = 0;
+			void this.refresh();
+		});
+
 		setOptions(this.usedInFilter, [
 			{
 				value: '',
@@ -224,7 +236,7 @@ export class TilesetsTab implements SavableTab
 	}
 
 	/**
-	 * Lists a universe's tiles from the first page, with no filters
+	 * Lists a universe's tiles from the first page by name, with no filters
 	 *
 	 * @param universe The universe
 	 */
@@ -245,6 +257,7 @@ export class TilesetsTab implements SavableTab
 		this.usedInFilter.value = '';
 		this.customFilter.value = '';
 		this.editedFilter.value = '';
+		this.sorter.reset();
 		this.addButton.hidden = !canEditWorld(universe.role);
 		this.savedUploads = [];
 		void this.refresh();
@@ -480,6 +493,8 @@ export class TilesetsTab implements SavableTab
 			usedIn: TILE_USED_IN.find((usedIn) => (usedIn === this.usedInFilter.value)),
 			custom: filterValue(this.customFilter),
 			edited: filterValue(this.editedFilter),
+			sort: this.sorter.order.column,
+			direction: this.sorter.order.direction,
 			offset: this.offset,
 			limit: MAX_TILES_PER_PAGE
 		};

@@ -131,6 +131,25 @@ describe('itemRepo', () =>
 			assert.strictEqual(page.total, 3);
 			assert.deepStrictEqual(page.items.map((item) => item.id), [torchId]);
 		});
+
+		it('sorts by name or notes before paging, breaking ties by name', async () =>
+		{
+			const universeId = await addUniverse();
+			const torchId = await createCustomItem(universeId, 'pf1e', torch);
+			const swordId = await createCustomItem(universeId, 'pf1e', { name: 'Old Sword', type: 'longsword', enabled: false });
+			const axeId = await createCustomItem(universeId, 'pf1e', { name: 'axe', type: 'longsword', enabled: true });
+			const dagger = await daggerId();
+
+			await saveEditedDefaultItem(universeId, 'pf1e', dagger, { name: null, type: 'dagger', enabled: false });
+
+			assert.deepStrictEqual(await listedIds(universeId, { sort: 'name' }), [axeId, dagger, swordId, torchId]);
+			assert.deepStrictEqual(await listedIds(universeId, { sort: 'name', direction: 'descending' }), [torchId, swordId, dagger, axeId]);
+			assert.deepStrictEqual(await listedIds(universeId, { sort: 'name', offset: 1, limit: 2 }), [dagger, swordId]);
+
+			// Edited before custom, disabled after enabled, and items with the same notes by name
+			assert.deepStrictEqual(await listedIds(universeId, { sort: 'notes' }), [dagger, axeId, torchId, swordId]);
+			assert.deepStrictEqual(await listedIds(universeId, { sort: 'notes', direction: 'descending' }), [swordId, axeId, torchId, dagger]);
+		});
 	});
 
 	describe('findItemKind', () =>

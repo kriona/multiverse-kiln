@@ -14,6 +14,7 @@ import type { ClassRules, RaceRules } from './racesAndClasses.js';
 import type { Pf1eSettings } from './rulesets/pf1e/settings.js';
 import type { Sf1eSettings } from './rulesets/sf1e/settings.js';
 import type { Sf1eThemeRules } from './rulesets/sf1e/themes.js';
+import type { SortDirection } from './sorting.js';
 import type { DisplayTime, FaerieMorning, LobbyPassageOfTime, PassageOfTime, Ruleset, UniverseRole, UniverseStage, AreaLightLevel, AreaLinkMode, AreaPassageOfTime } from './universes.js';
 
 /**
@@ -520,6 +521,13 @@ export const TILE_USED_IN = ['indoors', 'outdoors', 'both', 'neither'] as const;
 export type TileUsedIn = typeof TILE_USED_IN[number];
 
 /**
+ * The columns the Tilesets tab can sort its tiles by. Where sorts in TILE_USED_IN's order
+ */
+export const TILE_SORT_COLUMNS = ['name', 'walkTime', 'visionCost', 'usedIn'] as const;
+
+export type TileSortColumn = typeof TILE_SORT_COLUMNS[number];
+
+/**
  * Which kinds of area can paint with a tile
  *
  * @param tile The tile
@@ -557,6 +565,17 @@ export interface TileListQuery
 	usedIn?: TileUsedIn;
 	custom?: boolean;
 	edited?: boolean;
+
+	/**
+	 * The column to sort the matches by before paging, with tiles that tie sorted by name. Names sort in
+	 * English, as the name filter matches them. Left out, the tiles come by ID
+	 */
+	sort?: TileSortColumn;
+
+	/**
+	 * Which way to sort, ascending when left out. Impassable tiles come last going up by walk time
+	 */
+	direction?: SortDirection;
 
 	/**
 	 * How many matching tiles to skip
@@ -684,6 +703,13 @@ export interface EditorItem extends ItemSettings
 }
 
 /**
+ * The columns the Items tab can sort its items by
+ */
+export const ITEM_SORT_COLUMNS = ['name', 'notes'] as const;
+
+export type ItemSortColumn = typeof ITEM_SORT_COLUMNS[number];
+
+/**
  * Query parameters of GET EDITOR_UNIVERSES_PATH/:universeId/items. Each filter left out matches every item
  */
 export interface ItemListQuery
@@ -711,6 +737,18 @@ export interface ItemListQuery
 	 * Only these items, by ID, up to MAX_STARTING_ITEMS of them (a comma-separated list in the query string)
 	 */
 	ids?: number[];
+
+	/**
+	 * The column to sort the matches by before paging, with items that tie sorted by name. Names sort in
+	 * English, as the name filter matches them, and notes by the items' flags: those with none first, then
+	 * disabled, edited and custom ones. Left out, the items come by ID
+	 */
+	sort?: ItemSortColumn;
+
+	/**
+	 * Which way to sort, ascending when left out
+	 */
+	direction?: SortDirection;
 
 	/**
 	 * How many matching items to skip

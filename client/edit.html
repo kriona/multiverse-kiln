@@ -215,9 +215,9 @@
 							<table class="item-table">
 								<thead>
 									<tr>
-										<th scope="col" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</th>
+										<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</button></th>
 										<th scope="col" data-message="editor.summary" data-translation-context="Heading of the table column describing each row's rules, in the editor's lists of races, classes, themes, items and difficulty levels (such as a race's size, an item's type, or how a difficulty level changes monsters and enemies)">Summary</th>
-										<th scope="col"></th>
+										<th scope="col" data-sort="notes"><button type="button" class="sort-button" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet">Notes</button></th>
 									</tr>
 								</thead>
 								<tbody id="race-rows"></tbody>
@@ -234,9 +234,9 @@
 							<table class="item-table">
 								<thead>
 									<tr>
-										<th scope="col" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</th>
+										<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</button></th>
 										<th scope="col" data-message="editor.summary" data-translation-context="Heading of the table column describing each row's rules, in the editor's lists of races, classes, themes, items and difficulty levels (such as a race's size, an item's type, or how a difficulty level changes monsters and enemies)">Summary</th>
-										<th scope="col"></th>
+										<th scope="col" data-sort="notes"><button type="button" class="sort-button" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet">Notes</button></th>
 									</tr>
 								</thead>
 								<tbody id="class-rows"></tbody>
@@ -253,9 +253,9 @@
 							<table class="item-table">
 								<thead>
 									<tr>
-										<th scope="col" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</th>
+										<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</button></th>
 										<th scope="col" data-message="editor.summary" data-translation-context="Heading of the table column describing each row's rules, in the editor's lists of races, classes, themes, items and difficulty levels (such as a race's size, an item's type, or how a difficulty level changes monsters and enemies)">Summary</th>
-										<th scope="col"></th>
+										<th scope="col" data-sort="notes"><button type="button" class="sort-button" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet">Notes</button></th>
 									</tr>
 								</thead>
 								<tbody id="theme-rows"></tbody>
@@ -285,14 +285,14 @@
 							<button id="tile-add" type="button" data-shortcut="Alt+N" data-message="editor.tiles.add" data-translation-context="Button that opens the dialog for making a new tile"><!-- icon ph:plus -->Add Tile</button>
 						</div>
 						<p id="tile-list-error" class="form-error" role="alert" hidden></p>
-						<table class="tile-table">
+						<table id="tile-table" class="tile-table">
 							<thead>
 								<tr>
 									<th scope="col" data-message="editor.tile.color" data-translation-context="The color a tile is drawn in: the label of its field in the tile editor, and the heading of the Tilesets table's column of colors">Color</th>
-									<th scope="col" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</th>
-									<th scope="col" data-message="editor.tiles.walkTime" data-translation-context="Heading of the table column with how many seconds of game time walking a square of each tile takes">Walk time</th>
-									<th scope="col" data-message="editor.tiles.visionCost" data-translation-context="Heading of the table column with how much of a character's vision crossing each tile uses">Vision cost</th>
-									<th scope="col" data-message="editor.tile.usedIn" data-translation-context="Heading of whether indoor areas, outdoor areas, both or neither can paint with a tile: in the tile editor, and the Tilesets tab's filter and table column">Where</th>
+									<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</button></th>
+									<th scope="col" data-sort="walkTime"><button type="button" class="sort-button" data-message="editor.tiles.walkTime" data-translation-context="Heading of the table column with how many seconds of game time walking a square of each tile takes">Walk time</button></th>
+									<th scope="col" data-sort="visionCost"><button type="button" class="sort-button" data-message="editor.tiles.visionCost" data-translation-context="Heading of the table column with how much of a character's vision crossing each tile uses">Vision cost</button></th>
+									<th scope="col" data-sort="usedIn"><button type="button" class="sort-button" data-message="editor.tile.usedIn" data-translation-context="Heading of whether indoor areas, outdoor areas, both or neither can paint with a tile: in the tile editor, and the Tilesets tab's filter and table column">Where</button></th>
 									<th scope="col"></th>
 								</tr>
 							</thead>
@@ -464,13 +464,13 @@
 							<button id="item-add" type="button" data-shortcut="Alt+N" data-message="editor.items.add" data-translation-context="Button that opens the dialog for making a new item"><!-- icon ph:plus -->Add Item</button>
 						</div>
 						<p id="item-list-error" class="form-error" role="alert" hidden></p>
-						<table class="item-table">
+						<table id="item-table" class="item-table">
 							<thead>
 								<tr>
 									<th scope="col" data-message="editor.items.icon" data-translation-context="Heading of the table column showing each item's picture">Icon</th>
-									<th scope="col" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</th>
+									<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</button></th>
 									<th scope="col" data-message="editor.summary" data-translation-context="Heading of the table column describing each row's rules, in the editor's lists of races, classes, themes, items and difficulty levels (such as a race's size, an item's type, or how a difficulty level changes monsters and enemies)">Summary</th>
-									<th scope="col"></th>
+									<th scope="col" data-sort="notes"><button type="button" class="sort-button" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet">Notes</button></th>
 								</tr>
 							</thead>
 							<tbody id="item-rows"></tbody>

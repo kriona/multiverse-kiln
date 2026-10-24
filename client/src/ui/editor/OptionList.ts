@@ -1,7 +1,9 @@
-import type { EditableUniverse, MessageDescriptor, Ruleset } from '@multiverse-kiln/shared';
+import { sortRows, type EditableUniverse, type MessageDescriptor, type RowComparers, type Ruleset } from '@multiverse-kiln/shared';
 
+import { currentLocale } from '../../localization';
 import { describeEditorError } from '../../network/editorApi';
 import { showMessage } from '../dom';
+import { TableSorter } from '../tableSorter';
 import { createOptionRow, optionTags } from './optionRows';
 import type { SavableTab } from './SaveBar';
 import { describeCommitFailure, joinTags, markStagedRow, StagedChanges, stagedTag, stagedView, type StagedApi, type StagedEdit, type StagedState } from './stagedChanges';
@@ -96,8 +98,23 @@ export interface OptionListSetup<T extends EditorOption, S>
 }
 
 /**
- * A list of races, classes or themes on an editor tab, by name, opening the editor dialog of each. Changes
- * made in the dialog wait on the page until the tab is saved
+ * The columns a list of races, classes or themes can be sorted by
+ */
+const OPTION_SORT_COLUMNS = ['name', 'notes'] as const;
+
+type OptionSortColumn = typeof OPTION_SORT_COLUMNS[number];
+
+/**
+ * How the columns compare rows, in the player's language
+ */
+const rowComparers: RowComparers<{ name: string; notes: string }, OptionSortColumn> = {
+	name: (first, second) => first.name.localeCompare(second.name, currentLocale()),
+	notes: (first, second) => first.notes.localeCompare(second.notes, currentLocale())
+};
+
+/**
+ * A list of races, classes or themes on an editor tab, sorted by name or notes (see TableSorter), opening
+ * the editor dialog of each. Changes made in the dialog wait on the page until the tab is saved
  */
 export class OptionList<T extends EditorOption & S, S> implements SavableTab
 {
@@ -107,6 +124,7 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab
 	readonly changes = new StagedChanges<S>();
 
 	private universe: EditableUniverse | undefined;
+	private readonly sorter: TableSorter<OptionSortColumn>;
 
 	/**
 	 * The options as they were last loaded
@@ -123,6 +141,21 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab
 	 */
 	constructor(private readonly setup: OptionListSetup<T, S>)
 	{
+		const table = setup.rows.closest('table');
+
+		if (!table)
+		{
+			throw new Error('An option list\'s rows must be in a table');
+		}
+
+		this.sorter = new TableSorter(table, OPTION_SORT_COLUMNS, {
+			column: 'name',
+			direction: 'ascending'
+		}, () =>
+		{
+			this.render();
+		});
+
 		setup.addButton.addEventListener('click', () =>
 		{
 			this.openOption(undefined);
@@ -140,6 +173,7 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab
 		this.setup.addButton.hidden = (!universe || !this.setup.canEdit(universe));
 		this.options = [];
 		this.changes.clear();
+		this.sorter.reset();
 		this.setup.rows.replaceChildren();
 		showMessage(this.setup.error, undefined);
 		void this.refresh();
@@ -235,7 +269,7 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab
 	}
 
 	/**
-	 * Shows the options, by name
+	 * Shows the options, sorted by the column chosen, with options that tie by name
 	 */
 	private render(): void
 	{
@@ -246,13 +280,18 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab
 			return;
 		}
 
-		this.setup.rows.replaceChildren(...this.view()
-			.map((entry) => ({
-				...entry,
-				name: this.setup.name(entry.item, universe.ruleset)
-			}))
-			.sort((a, b) => a.name.localeCompare(b.name))
-			.map(({ item, state, name }) => markStagedRow(createOptionRow(name, this.setup.describe(item, universe.ruleset), joinTags(optionTags(item), stagedTag(state, !item.custom)), () =>
+		const rows = this.view().map((entry) => ({
+			...entry,
+			name: this.setup.name(entry.item, universe.ruleset),
+			notes: joinTags(optionTags(entry.item), stagedTag(entry.state, !entry.item.custom))
+		}));
+		const byName = sortRows(rows, rowComparers, {
+			column: 'name',
+			direction: 'ascending'
+		});
+
+		this.setup.rows.replaceChildren(...sortRows(byName, rowComparers, this.sorter.order)
+			.map(({ item, state, name, notes }) => markStagedRow(createOptionRow(name, this.setup.describe(item, universe.ruleset), notes, () =>
 			{
 				this.openOption(item);
 			}), state, !item.custom)));

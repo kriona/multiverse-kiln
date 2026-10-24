@@ -1315,6 +1315,10 @@
 		"defaultMessage": "Nothing more.",
 		"description": "Shown in the race or class editor when its characters get no items beyond what every character (and, for a class, their race) starts with"
 	},
+	"editor.notes": {
+		"defaultMessage": "Notes",
+		"description": "Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet"
+	},
 	"editor.openFailed": {
 		"defaultMessage": "Could not open the universe.",
 		"description": "Shown in the editor when the universe couldn't be loaded"
@@ -3698,6 +3702,10 @@
 	"shortcuts.title": {
 		"defaultMessage": "Keyboard shortcuts",
 		"description": "Title of the dialog listing the keyboard shortcuts that work on the screen"
+	},
+	"table.sorted": {
+		"defaultMessage": "{direction, select, ascending {Sorted by {column}, ascending} other {Sorted by {column}, descending}}",
+		"description": "Read out by screen readers when a table's column heading is clicked to sort it; {column} is the heading"
 	},
 	"tile.pf1e.desert": {
 		"defaultMessage": "Desert",

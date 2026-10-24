@@ -1,9 +1,10 @@
-import { canEditWorld, ITEM_KINDS, MAX_ITEMS_PER_PAGE, type EditableUniverse, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type Ruleset } from '@multiverse-kiln/shared';
+import { canEditWorld, ITEM_KINDS, ITEM_SORT_COLUMNS, MAX_ITEMS_PER_PAGE, type EditableUniverse, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type Ruleset } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, setOptions, showMessage, type SelectOption } from '../dom';
 import { createItemIcon, itemCategoryName, itemName, itemTypeName } from '../itemNames';
+import { TableSorter } from '../tableSorter';
 import { editorMessages } from './editorMessages';
 import { ItemDialog } from './ItemDialog';
 import type { SavableTab } from './SaveBar';
@@ -15,8 +16,8 @@ import { describeCommitFailure, joinTags, markStagedRow, StagedChanges, stagedPa
 const SEARCH_DELAY_MS = 250;
 
 /**
- * The Items tab: every item the universe can give characters, filtered and a page at a time, opening the
- * item editor. Changes wait on the page until the tab is saved: changed items show their changes on the
+ * The Items tab: every item the universe can give characters, filtered, sorted by a column (by the
+ * server, before paging) and a page at a time, opening the item editor. Changes wait on the page until the tab is saved: changed items show their changes on the
  * page they are on, and items added since show at the top of the first page, whatever the filters
  */
 export class ItemsTab implements SavableTab
@@ -35,6 +36,7 @@ export class ItemsTab implements SavableTab
 	private readonly previousButton = getElement('item-previous', HTMLButtonElement);
 	private readonly nextButton = getElement('item-next', HTMLButtonElement);
 	private readonly dialog = new ItemDialog();
+	private readonly sorter: TableSorter<ItemSortColumn>;
 
 	/**
 	 * The changes made since the items were last saved
@@ -71,6 +73,15 @@ export class ItemsTab implements SavableTab
 	 */
 	constructor(private readonly api: EditorApi)
 	{
+		this.sorter = new TableSorter(getElement('item-table', HTMLTableElement), ITEM_SORT_COLUMNS, {
+			column: 'name',
+			direction: 'ascending'
+		}, () =>
+		{
+			this.offset = 0;
+			void this.refresh();
+		});
+
 		for (const filter of [this.enabledFilter, this.customFilter, this.editedFilter])
 		{
 			setOptions(filter, [
@@ -165,6 +176,7 @@ export class ItemsTab implements SavableTab
 		this.enabledFilter.value = '';
 		this.customFilter.value = '';
 		this.editedFilter.value = '';
+		this.sorter.reset();
 		this.addButton.hidden = !canEditWorld(universe.role);
 		void this.refresh();
 	}
@@ -259,6 +271,8 @@ export class ItemsTab implements SavableTab
 			enabled: filterValue(this.enabledFilter),
 			custom: filterValue(this.customFilter),
 			edited: filterValue(this.editedFilter),
+			sort: this.sorter.order.column,
+			direction: this.sorter.order.direction,
 			offset: this.offset,
 			limit: MAX_ITEMS_PER_PAGE
 		};

@@ -676,8 +676,10 @@ describe('World editor API', () =>
 			const impassable = (await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?passable=false&name=a`)).body;
 			const indoor = (await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?usedIn=indoors`)).body;
 			const page = (await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?limit=2&offset=1`)).body;
+			const mostOpaque = (await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?sort=visionCost&direction=descending&limit=1`)).body;
 
 			assert.deepStrictEqual(indoor.tiles.map((tile) => tile.key), ['wood_floor']);
+			assert.deepStrictEqual(mostOpaque.tiles.map((tile) => (tile.name ?? tile.key)), ['mountains']);
 			assert.deepStrictEqual(custom.tiles,[{ id: created.body.id, key: null, ...lava, custom: true, edited: false, uploadedGraphic: null }]);
 
 			// Default tiles that keep their names are named by their keys, in the player's language
@@ -686,6 +688,8 @@ describe('World editor API', () =>
 			assert.strictEqual(page.tiles.length, 2);
 			assert.strictEqual((await send(ada, 'GET', `/${universeId}/tiles?passable=yes`)).status, 400);
 			assert.strictEqual((await send(ada, 'GET', `/${universeId}/tiles?usedIn=upstairs`)).status, 400);
+			assert.strictEqual((await send(ada, 'GET', `/${universeId}/tiles?sort=color`)).status, 400);
+			assert.strictEqual((await send(ada, 'GET', `/${universeId}/tiles?sort=name&direction=sideways`)).status, 400);
 		});
 
 		it('edits a default tile for this universe only, and restores it', async () =>
@@ -945,6 +949,8 @@ describe('World editor API', () =>
 			assert.strictEqual(page.total, 2);
 			assert.deepStrictEqual(page.items.map((item) => item.id), [created.body.id]);
 			assert.strictEqual((await send(ada, 'GET', `/${universeId}/items?enabled=yes`)).status, 400);
+			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?sort=name&direction=descending`)).body.items.map((item) => item.id), [created.body.id, (await findDefaultItemIds('pf1e')).get('dagger')]);
+			assert.strictEqual((await send(ada, 'GET', `/${universeId}/items?sort=summary`)).status, 400);
 		});
 
 		it('edits a default item for this universe only, and restores it', async () =>

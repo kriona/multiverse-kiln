@@ -285,5 +285,21 @@ describe('tileRepo', () =>
 			assert.strictEqual(page.total, 8);
 			assert.deepStrictEqual(page.tiles.map((tile) => englishName(tile)), ['Desert', 'Mountains', 'Water']);
 		});
+
+		it('sorts by a column before paging, breaking ties by name', async () =>
+		{
+			const universeId = await addUniverse();
+
+			await createCustomTile(universeId, 'pf1e', { ...lava });
+			await createCustomTile(universeId, 'pf1e', { ...lava, name: 'ash', walkSeconds: 10 });
+
+			const names = async (query: Parameters<typeof listEditorTiles>[2]): Promise<(string | undefined)[]> => (await listEditorTiles(universeId, 'pf1e', query)).tiles.map((tile) => englishName(tile));
+
+			assert.deepStrictEqual(await names({ sort: 'name' }), ['ash', 'Desert', 'Forest', 'Grass', 'Lava', 'Mountains', 'Water', 'Wood Floor']);
+			assert.deepStrictEqual(await names({ sort: 'name', direction: 'descending', limit: 2 }), ['Wood Floor', 'Water']);
+			assert.deepStrictEqual(await names({ sort: 'name', offset: 6 }), ['Water', 'Wood Floor']);
+			assert.deepStrictEqual((await names({ sort: 'walkTime' })).slice(-3), ['Lava', 'Mountains', 'Water']);
+			assert.deepStrictEqual((await names({ sort: 'visionCost', direction: 'descending' })).slice(0, 2), ['Mountains', 'Forest']);
+		});
 	});
 });
