@@ -4,7 +4,7 @@
  */
 import { and, asc, between, count, eq, gt, gte, inArray, lt, lte, or, sql, type SQL } from 'drizzle-orm';
 import type { PgColumn } from 'drizzle-orm/pg-core';
-import { chunkCoordinate, chunkKey, isInBounds, type CellChange, type ChunkRange, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type MapBounds, type Ruleset, type AreaChunk, type AreaLinkTarget, type AreaPassageOfTime, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
+import { ancestorAreas, chunkCoordinate, chunkKey, isInBounds, lobbyAreaTime, resolveAreaTime, type AreaTime, type DisplayTime,type PassageOfTimeSetting, type CellChange, type ChunkRange, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type MapBounds, type Ruleset, type AreaChunk, type AreaLightLevel, type AreaLinkTarget, type AreaPassageOfTime, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { applyCellChanges, chunksOfChanges, clipChunk, isChunkInside, isDefaultChunk } from '../logic/mapEdits.js';
 import type { AreaLink } from '../logic/areaGrid.js';
@@ -43,6 +43,28 @@ export interface LoadedArea
 	 */
 	ruleset: Ruleset;
 
+	/**
+	 * How its time of day is worked out: its passage of time with inherit followed up to the universe's,
+	 * or the universe's lobby time for the lobby's area
+	 */
+	time: AreaTime;
+
+	/**
+	 * How the universe shows players the time of day
+	 */
+	displayTime: DisplayTime;
+
+	/**
+	 * How light the area is at any time of day while it is indoors, or null outdoors, where it follows the time of day
+	 */
+	lightLevel: AreaLightLevel | null;
+
+	/**
+	 * Whether everyone sees DAY_VISION_SQUARES whatever the time of day: the lobby's area while its
+	 * universe gives it no vision cost, when its tiles have none either
+	 */
+	fullVision: boolean;
+
 	bounds: MapBounds;
 
 	/**
@@ -55,7 +77,7 @@ export interface LoadedArea
 	links: AreaLink[];
 
 	/**
-	 * Every tile the map can use, for drawing it and for its movement costs
+	 * Every tile the map can use, for drawing it and for its walk seconds
 	 */
 	tiles: TileRecord[];
 }
@@ -63,7 +85,7 @@ export interface LoadedArea
 /**
  * What a new area needs
  */
-export type NewArea = Pick<typeof areas.$inferInsert, 'universeId' | 'parentAreaId' | 'name' | 'enabled' | 'indoors' | 'defaultTileId' | 'loopsEastWest' | 'loopsNorthSouth' | 'passageOfTime' | 'faerieMorning'> & { bounds: MapBounds };
+export type NewArea = Pick<typeof areas.$inferInsert, 'universeId' | 'parentAreaId' | 'name' | 'enabled' | 'indoors' | 'lightLevel' | 'defaultTileId' | 'loopsEastWest' | 'loopsNorthSouth' | 'passageOfTime' | 'faerieMorning'> & { bounds: MapBounds };
 
 /**
  * What a new area link needs
@@ -132,7 +154,8 @@ export async function createAreaLink(link: NewAreaLink, executor: Executor = db)
 
 /**
  * Loads an area with everything needed to play in it except its map's cells, which a map up to
- * MAX_MAP_SIDE across has too many of to load at once: load them a piece at a time with loadChunks
+ * MAX_MAP_SIDE across has too many of to load at once: load them a piece at a time with loadChunks.
+ * A lobby has full vision and its tiles no vision cost when its universe's lobbyNoVisionCost is set
  *
  * @param areaId The area's ID
  * @param executor The database, or a transaction
@@ -143,7 +166,17 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 	const [row] = await executor
 		.select({
 			area: areas,
-			ruleset: universes.ruleset
+			ruleset: universes.ruleset,
+			universe: {
+				passageOfTime: universes.passageOfTime,
+				faerieMorning: universes.faerieMorning,
+				displayTime: universes.displayTime,
+				lobbyAreaId: universes.lobbyAreaId,
+				lobbyPassageOfTime: universes.lobbyPassageOfTime,
+				lobbyDayHours: universes.lobbyDayHours,
+				lobbyFaerieMorning: universes.lobbyFaerieMorning,
+				lobbyNoVisionCost: universes.lobbyNoVisionCost
+			}
 		})
 		.from(areas)
 		.innerJoin(universes, eq(universes.id, areas.universeId))
@@ -155,13 +188,18 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 		return(undefined);
 	}
 
-	const { area, ruleset } = row;
+	const { area, ruleset, universe } = row;
 	const linkRows = await executor
 		.select()
 		.from(areaLinks)
 		.where(eq(areaLinks.areaId, areaId));
 
-	const tiles = await loadUniverseTiles(area.universeId, ruleset, executor);
+	const isLobby = (area.id === universe.lobbyAreaId);
+	const fullVision = (isLobby && universe.lobbyNoVisionCost);
+	const universeTiles = await loadUniverseTiles(area.universeId, ruleset, executor);
+	const tiles = (fullVision
+		? universeTiles.map((tile) => ({ ...tile, visionCost: 0 }))
+		: universeTiles);
 
 	return({
 		area: {
@@ -174,6 +212,16 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 			passageOfTime: area.passageOfTime
 		},
 		ruleset,
+		time: (isLobby
+			? lobbyAreaTime({
+				passageOfTime: universe.lobbyPassageOfTime,
+				faerieMorning: universe.lobbyFaerieMorning,
+				dayHours: universe.lobbyDayHours
+			})
+			: resolveAreaTime(await loadTimeChain(area, executor), universe)),
+		displayTime: universe.displayTime,
+		lightLevel: (area.indoors ? area.lightLevel : null),
+		fullVision,
 		bounds: boundsOf(area),
 		defaultTileId: area.defaultTileId,
 		loopsEastWest: area.loopsEastWest,
@@ -189,6 +237,34 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 		})),
 		tiles
 	});
+}
+
+/**
+ * The passage of time settings resolveAreaTime() follows for an area: its own, then its parent's, and
+ * so on up to its top-level area, stopping at the first that doesn't inherit
+ *
+ * @param area The area's row
+ * @param executor The database, or a transaction
+ * @return The settings, the area's first
+ */
+async function loadTimeChain(area: typeof areas.$inferSelect, executor: Executor): Promise<PassageOfTimeSetting<AreaPassageOfTime>[]>
+{
+	if ((area.passageOfTime !== 'inherit') || (area.parentAreaId === null))
+	{
+		return([area]);
+	}
+
+	const rows = await executor
+		.select({
+			id: areas.id,
+			parentAreaId: areas.parentAreaId,
+			passageOfTime: areas.passageOfTime,
+			faerieMorning: areas.faerieMorning
+		})
+		.from(areas)
+		.where(eq(areas.universeId, area.universeId));
+
+	return([area, ...ancestorAreas(rows, area.id)]);
 }
 
 /**
@@ -219,6 +295,7 @@ export async function findEditorArea(areaId: string, executor: Executor = db): P
 			parentAreaId: row.parentAreaId,
 			enabled: row.enabled,
 			indoors: row.indoors,
+			lightLevel: row.lightLevel,
 			defaultTileId: row.defaultTileId,
 			passageOfTime: row.passageOfTime,
 			faerieMorning: row.faerieMorning,

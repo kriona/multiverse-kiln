@@ -28,6 +28,23 @@ export interface GroupRecord
 	 * Where members with nowhere else to be go, or null when the area was deleted
 	 */
 	startingAreaId: string | null;
+
+	/**
+	 * The cell of the starting area they start nearest
+	 */
+	startingColumn: number;
+
+	startingRow: number;
+
+	/**
+	 * The group's game clock, in seconds of game time
+	 */
+	clockSeconds: number;
+
+	/**
+	 * The difficulty level the group plays at
+	 */
+	difficultyLevelId: number;
 }
 
 /**
@@ -48,6 +65,18 @@ export interface NewGroup
 	 * The anchor being's starting area, or null when they have none
 	 */
 	startingAreaId: string | null;
+
+	/**
+	 * The cell of the starting area they start nearest
+	 */
+	startingColumn: number;
+
+	startingRow: number;
+
+	/**
+	 * One of the universe's difficulty levels
+	 */
+	difficultyLevelId: number;
 }
 
 /**
@@ -69,6 +98,7 @@ export interface GroupCharacter
 	characterId: string;
 	playerId: string;
 	name: string;
+	raceId: number;
 
 	/**
 	 * False while the character has been given their last rites, so they can't be played
@@ -156,7 +186,11 @@ const groupColumns = {
 	universeId: groups.universeId,
 	anchorCharacterId: groups.anchorCharacterId,
 	name: groups.name,
-	startingAreaId: groups.startingAreaId
+	startingAreaId: groups.startingAreaId,
+	startingColumn: groups.startingColumn,
+	startingRow: groups.startingRow,
+	clockSeconds: groups.clockSeconds,
+	difficultyLevelId: groups.difficultyLevelId
 };
 
 /**
@@ -175,7 +209,10 @@ export async function createGroup(group: NewGroup, executor: Executor): Promise<
 			universeId: group.universeId,
 			anchorCharacterId: group.anchorCharacterId,
 			name: group.name,
-			startingAreaId: group.startingAreaId
+			startingAreaId: group.startingAreaId,
+			startingColumn: group.startingColumn,
+			startingRow: group.startingRow,
+			difficultyLevelId: group.difficultyLevelId
 		})
 		.returning({ id: groups.id });
 
@@ -296,6 +333,7 @@ export async function listGroupMembers(groupId: string, executor: Executor = db)
 			characterId: groupMembers.characterId,
 			playerId: characters.playerId,
 			name: characters.name,
+			raceId: characters.raceId,
 			deleteAt: characters.deleteAt,
 			areaId: groupMembers.areaId,
 			column: groupMembers.column,
@@ -309,10 +347,11 @@ export async function listGroupMembers(groupId: string, executor: Executor = db)
 		))
 		.orderBy(asc(groupMembers.joinedAt), asc(groupMembers.characterId));
 
-	return(rows.map(({ characterId, playerId, name, deleteAt, areaId, column, row }) => ({
+	return(rows.map(({ characterId, playerId, name, raceId, deleteAt, areaId, column, row }) => ({
 		characterId,
 		playerId,
 		name,
+		raceId,
 		playable: (deleteAt === null),
 		position: (((areaId !== null) && (column !== null) && (row !== null)) ? { areaId, column, row } : null)
 	})));
@@ -431,6 +470,38 @@ export async function saveMemberPositions(groupId: string, positions: readonly M
 }
 
 /**
+ * Records a group's game clock
+ *
+ * @param groupId The group's ID
+ * @param clockSeconds The clock, in seconds of game time
+ * @param executor The database, or a transaction
+ */
+export async function saveGroupClock(groupId: string, clockSeconds: number, executor: Executor = db): Promise<void>
+{
+	await executor
+		.update(groups)
+		.set({ clockSeconds })
+		.where(eq(groups.id, groupId));
+}
+
+/**
+ * Moves every group playing at one difficulty level to another, before the first is deleted
+ *
+ * @param fromLevelId The level the groups play at
+ * @param toLevelId The level they move to
+ * @param executor The database, or a transaction
+ */
+export async function moveGroupsToDifficultyLevel(fromLevelId: number, toLevelId: number, executor: Executor = db): Promise<void>
+{
+	await executor
+		.update(groups)
+		.set({
+			difficultyLevelId: toLevelId
+		})
+		.where(eq(groups.difficultyLevelId, fromLevelId));
+}
+
+/**
  * The memberships of the characters whose last rites' time has come, for the sweep to tell the
  * groups' rooms about before deleting them
  *
@@ -446,14 +517,15 @@ export async function listExpiredMemberships(executor: Executor = db): Promise<(
 			anchorCharacterId: groups.anchorCharacterId,
 			characterId: groupMembers.characterId,
 			playerId: characters.playerId,
-			name: characters.name
+			name: characters.name,
+			raceId: characters.raceId
 		})
 		.from(groupMembers)
 		.innerJoin(groups, eq(groups.id, groupMembers.groupId))
 		.innerJoin(characters, eq(characters.id, groupMembers.characterId))
 		.where(lte(characters.deleteAt, sql`now()`));
 
-	return(rows.map(({ groupId, universeId, anchorCharacterId, characterId, playerId, name }) => ({
+	return(rows.map(({ groupId, universeId, anchorCharacterId, characterId, playerId, name, raceId }) => ({
 		groupId,
 		universeId,
 		isAnchor: (anchorCharacterId === characterId),
@@ -461,6 +533,7 @@ export async function listExpiredMemberships(executor: Executor = db): Promise<(
 			characterId,
 			playerId,
 			name,
+			raceId,
 			playable: false
 		}
 	})));
@@ -488,18 +561,20 @@ export async function listMembersOfGroups(groupIds: readonly string[], executor:
 			characterId: groupMembers.characterId,
 			playerId: characters.playerId,
 			name: characters.name,
+			raceId: characters.raceId,
 			deleteAt: characters.deleteAt
 		})
 		.from(groupMembers)
 		.innerJoin(characters, eq(characters.id, groupMembers.characterId))
 		.where(inArray(groupMembers.groupId, [...groupIds]));
 
-	for (const { groupId, characterId, playerId, name, deleteAt } of rows)
+	for (const { groupId, characterId, playerId, name, raceId, deleteAt } of rows)
 	{
 		const character: GroupCharacter = {
 			characterId,
 			playerId,
 			name,
+			raceId,
 			playable: (deleteAt === null)
 		};
 
@@ -587,7 +662,7 @@ export async function purgeExpiredInvites(executor: Executor = db): Promise<numb
  * @param member The member
  * @return The character and their player
  */
-function toGroupCharacter({ characterId, playerId, name, playable }: GroupMemberRecord): GroupCharacter
+function toGroupCharacter({ characterId, playerId, name, raceId, playable }: GroupMemberRecord): GroupCharacter
 {
-	return({ characterId, playerId, name, playable });
+	return({ characterId, playerId, name, raceId, playable });
 }

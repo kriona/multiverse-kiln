@@ -1,4 +1,20 @@
 {
+	"abilities.ability": {
+		"defaultMessage": "Ability",
+		"description": "Heading of the column naming each ability, such as Strength, on a character's sheet and in Create Character"
+	},
+	"abilities.heading": {
+		"defaultMessage": "Ability scores",
+		"description": "Heading of a character's six ability scores: on their sheet, and the part of Create Character where the player sets them"
+	},
+	"abilities.modifier": {
+		"defaultMessage": "Modifier",
+		"description": "Heading of the column of the bonus or penalty each ability score gives, such as +2, on a character's sheet and in Create Character"
+	},
+	"abilities.score": {
+		"defaultMessage": "Score",
+		"description": "Heading of the column of a character's ability scores, such as 16, on their sheet and in Create Character"
+	},
 	"admin.characterDeletionDays": {
 		"defaultMessage": "Days between last rites and deletion",
 		"description": "Label of the field on the site settings page for how many days a character given their last rites waits before being deleted"
@@ -15,17 +31,9 @@
 		"defaultMessage": "Site Settings",
 		"description": "Heading of the page where the site's admins change settings for the whole site"
 	},
-	"admin.home": {
-		"defaultMessage": "Back to Home",
-		"description": "Link at the top of the site settings page that goes back to the list of universes"
-	},
 	"admin.loadFailed": {
 		"defaultMessage": "Could not load the site settings.",
 		"description": "Shown on the site settings page when the settings couldn't be loaded"
-	},
-	"admin.loading": {
-		"defaultMessage": "Loading...",
-		"description": "Shown on the site settings page while the settings load"
 	},
 	"admin.saveFailed": {
 		"defaultMessage": "Could not save the site settings.",
@@ -63,17 +71,9 @@
 		"defaultMessage": "Start over? Your choices so far will be lost. Your rolled ability scores stay the same.",
 		"description": "Asks before the Create Character page throws away the player's choices; the scores the server rolled are kept"
 	},
-	"character.create.abilityColumn": {
-		"defaultMessage": "Ability",
-		"description": "Heading of the column of ability names, such as Strength, in Create Character"
-	},
 	"character.create.abilityPoints": {
 		"defaultMessage": "Every score starts at {base, number}. Spend {points, plural, one {# ability point} other {# ability points}} to raise them, one point for each +1, up to {max, number} with your race's and theme's bonuses.",
 		"description": "Explains the ability scores in Create Character in Starfinder; {base} is the score every ability starts at, {points} how many points the player has, and {max} the highest score points can raise one to"
-	},
-	"character.create.abilityScores": {
-		"defaultMessage": "Ability scores",
-		"description": "Heading of the part of Create Character where the player sets the character's ability scores"
 	},
 	"character.create.baseColumn": {
 		"defaultMessage": "Base",
@@ -110,14 +110,6 @@
 	"character.create.loadFailed": {
 		"defaultMessage": "Could not load the races, classes and ability scores.",
 		"description": "Shown on the Create Character page when what it offers couldn't be loaded"
-	},
-	"character.create.loading": {
-		"defaultMessage": "Loading...",
-		"description": "Shown on the Create Character page while the races, classes and ability scores load"
-	},
-	"character.create.modifierColumn": {
-		"defaultMessage": "Modifier",
-		"description": "Heading of the column of the bonus or penalty each final score gives, such as +2, in Create Character"
 	},
 	"character.create.name": {
 		"defaultMessage": "Name",
@@ -167,10 +159,6 @@
 		"defaultMessage": "{score, number} ({ability})",
 		"description": "One choice of rolled score for an ability in Create Character, naming the other ability that has it now, which choosing it swaps with; {score} is the score and {ability} that ability, e.g. \"15 (Wisdom)\""
 	},
-	"character.create.scoreColumn": {
-		"defaultMessage": "Score",
-		"description": "Heading of the column of the character's final ability scores, in Create Character"
-	},
 	"character.create.submit": {
 		"defaultMessage": "Create",
 		"description": "Button that makes the new character"
@@ -190,6 +178,10 @@
 	"character.create.title": {
 		"defaultMessage": "Create Character",
 		"description": "Heading of the page for making a new character"
+	},
+	"character.darkvision": {
+		"defaultMessage": "Darkvision",
+		"description": "Whether a character can see in the dark: the label on a character's sheet, and the race editor's checkbox for whether the race's characters can"
 	},
 	"character.heading.class": {
 		"defaultMessage": "Choose a class",
@@ -235,6 +227,10 @@
 		"defaultMessage": "No changes to ability scores",
 		"description": "In Create Character, shown for a race that doesn't raise or lower any ability score"
 	},
+	"character.raceAndClass": {
+		"defaultMessage": "{race} {class}",
+		"description": "A character's race and class, e.g. \"Dwarf Fighter\": under the name at the top of their sheet, and after their name in the lists of the player's characters in the lobby, on a universe's page and on an invite. Reorder them as your language needs"
+	},
 	"character.review.class": {
 		"defaultMessage": "Class",
 		"description": "In the review step of Create Character, the label of the character's class"
@@ -270,10 +266,6 @@
 	"character.saved": {
 		"defaultMessage": "Progress saved",
 		"description": "In the toolbar of the Create Character page once the player's progress is saved, so they can leave and come back to it"
-	},
-	"character.saving": {
-		"defaultMessage": "Saving...",
-		"description": "In the toolbar of the Create Character page while the player's progress is being saved"
 	},
 	"character.startOver": {
 		"defaultMessage": "Start Over",
@@ -351,18 +343,6 @@
 		"defaultMessage": "Delete Character",
 		"description": "Title of the dialog that asks whether to delete a character"
 	},
-	"characterSheet.abilities": {
-		"defaultMessage": "Ability scores",
-		"description": "Heading on a character's sheet of their six ability scores"
-	},
-	"characterSheet.ability": {
-		"defaultMessage": "Ability",
-		"description": "Heading on a character's sheet of the column naming each ability, such as Strength"
-	},
-	"characterSheet.darkvision": {
-		"defaultMessage": "Darkvision",
-		"description": "On a character's sheet, the label of whether they can see in the dark"
-	},
 	"characterSheet.darkvisionValue": {
 		"defaultMessage": "{darkvision, select, true {Yes} other {No}}",
 		"description": "On a character's sheet, whether they can see in the dark"
@@ -374,6 +354,10 @@
 	"characterSheet.hitPoints": {
 		"defaultMessage": "Hit points",
 		"description": "On a character's sheet in Starfinder, the label of their hit points"
+	},
+	"characterSheet.inGroup": {
+		"defaultMessage": "{name} is in a group, and has to leave it before they can be deleted.",
+		"description": "On the sheet of a character in a group, in place of the button that deletes them; {name} is the character's name"
 	},
 	"characterSheet.item": {
 		"defaultMessage": "{quantity, plural, =1 {{item}} other {{item} x#}}",
@@ -390,10 +374,6 @@
 	"characterSheet.loading": {
 		"defaultMessage": "Loading the character sheet...",
 		"description": "Shown in a character's sheet while the character loads"
-	},
-	"characterSheet.modifier": {
-		"defaultMessage": "Modifier",
-		"description": "Heading on a character's sheet of the column of the bonus or penalty each ability score gives, such as +3"
 	},
 	"characterSheet.money": {
 		"defaultMessage": "Money",
@@ -419,10 +399,6 @@
 		"defaultMessage": "{name} has been restored.",
 		"description": "Read out by screen readers once a character waiting to be deleted has been restored; {name} is the character's name"
 	},
-	"characterSheet.score": {
-		"defaultMessage": "Score",
-		"description": "Heading on a character's sheet of the column of ability scores, such as 16"
-	},
 	"characterSheet.size": {
 		"defaultMessage": "Size",
 		"description": "On a character's sheet, the label of their size, such as Medium"
@@ -430,10 +406,6 @@
 	"characterSheet.staminaPoints": {
 		"defaultMessage": "Stamina points",
 		"description": "On a character's sheet in Starfinder, the label of their stamina points, which are lost before hit points and come back with rest"
-	},
-	"characterSheet.summary": {
-		"defaultMessage": "{race} {class}",
-		"description": "Under the name at the top of a character's sheet, their race and class, e.g. \"Dwarf Fighter\". Reorder them as your language needs"
 	},
 	"characterSheet.theme": {
 		"defaultMessage": "Theme",
@@ -443,6 +415,10 @@
 		"defaultMessage": "Traits",
 		"description": "Heading on a character's sheet of their size, whether they have darkvision and their money"
 	},
+	"characters.heading": {
+		"defaultMessage": "Your characters",
+		"description": "Heading of the list of characters the player has made in a universe, in its lobby and on its page"
+	},
 	"characters.inGroup": {
 		"defaultMessage": "In a group",
 		"description": "In the list of the player's characters, beside one who is in a group (characters playing together); choosing them goes to that group"
@@ -450,6 +426,26 @@
 	"characters.inThisGroup": {
 		"defaultMessage": "In this group",
 		"description": "In the list of the player's characters, beside one who is in the group the player is playing now; choosing them switches to them"
+	},
+	"characters.leaving": {
+		"defaultMessage": "To be deleted on {deleteAt, date, medium}",
+		"description": "In the list of the player's characters, in a universe's lobby and on its page, beside one given their last rites, who can't be played until restored from their sheet; {deleteAt} is the day they will be deleted"
+	},
+	"characters.loadFailed": {
+		"defaultMessage": "Could not list your characters.",
+		"description": "Shown in a universe's lobby or on its page when the list of the player's characters in the universe couldn't be loaded"
+	},
+	"characters.none": {
+		"defaultMessage": "You haven't made a character in this universe yet.",
+		"description": "Shown instead of the list of the player's characters, in a universe's lobby and on its page, when they haven't made one in the universe"
+	},
+	"createGroup.difficulty": {
+		"defaultMessage": "Difficulty",
+		"description": "Label of the choice of the new group's difficulty level, such as Normal or Hard"
+	},
+	"createGroup.difficultyFailed": {
+		"defaultMessage": "Could not load the difficulty levels.",
+		"description": "Shown in the Create Group dialog when the difficulty levels to choose from couldn't be loaded"
 	},
 	"createGroup.explanation": {
 		"defaultMessage": "{name} will be the group's anchor being: the game centers around them. Only {name} can invite others. If {name} leaves the group, it will be disbanded; though every character keeps their items and money.",
@@ -475,6 +471,10 @@
 		"defaultMessage": "Create Group",
 		"description": "Title of the dialog that makes a new group (characters who play the universe together)"
 	},
+	"dialog.apply": {
+		"defaultMessage": "Apply",
+		"description": "Button in an editor dialog (race, class, theme, difficulty level, item, tile or area link) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"
+	},
 	"dialog.cancel": {
 		"defaultMessage": "Cancel",
 		"description": "Button that closes a dialog without making any changes"
@@ -482,6 +482,26 @@
 	"dialog.close": {
 		"defaultMessage": "Close",
 		"description": "Button that closes a dialog that only shows something, with nothing to change"
+	},
+	"difficulty.hard": {
+		"defaultMessage": "Hard",
+		"description": "Name of the default difficulty level whose mobs (monsters and enemies) are 50% harder"
+	},
+	"difficulty.hardcore": {
+		"defaultMessage": "Hardcore",
+		"description": "Name of the hardest default difficulty level: mobs (monsters and enemies) are 100% harder, and characters who die are gone for good"
+	},
+	"difficulty.mobScale": {
+		"defaultMessage": "{direction, select, easier {Mobs {percent, number, ::percent} easier} harder {Mobs {percent, number, ::percent} harder} other {Mobs at default strength}}",
+		"description": "Summary of how a difficulty level changes mobs (monsters and enemies): their hit points and how often they hit and are hit. {percent} is how much, e.g. 50%; the last choice is for a level that leaves them as they are"
+	},
+	"difficulty.normal": {
+		"defaultMessage": "Normal",
+		"description": "Name of the default difficulty level that plays mobs (monsters and enemies) as their universe made them"
+	},
+	"difficulty.story": {
+		"defaultMessage": "Story",
+		"description": "Name of the easiest default difficulty level, for players who are there for the story: mobs (monsters and enemies) are 50% easier"
 	},
 	"editor.area.back": {
 		"defaultMessage": "Back to Areas",
@@ -492,8 +512,12 @@
 		"description": "Heading of the list of areas inside the area being edited"
 	},
 	"editor.area.confirmDelete": {
-		"defaultMessage": "Delete {area}, its map and every link into it? Areas inside it become top-level areas. This can't be undone.",
-		"description": "Asks before deleting an area; {area} is its name"
+		"defaultMessage": "Delete {area}, its map and every link into it when the Areas tab is saved? Areas inside it become top-level areas.",
+		"description": "Asks before marking an area to be deleted when the Areas tab is saved; {area} is its name"
+	},
+	"editor.area.confirmDeleteNew": {
+		"defaultMessage": "Delete {area}? It hasn't been saved, so its settings, map and links will be lost.",
+		"description": "Asks before deleting an area added since the Areas tab was last saved, which goes straight away; {area} is its name"
 	},
 	"editor.area.defaultTile": {
 		"defaultMessage": "Default tile",
@@ -501,27 +525,19 @@
 	},
 	"editor.area.delete": {
 		"defaultMessage": "Delete Area",
-		"description": "Button that deletes the area being edited"
+		"description": "Button that deletes the area being edited when the Areas tab is saved"
 	},
-	"editor.area.deleteFailed": {
-		"defaultMessage": "Could not delete the area.",
-		"description": "Shown in the area editor when the area couldn't be deleted"
+	"editor.area.lightLevel": {
+		"defaultMessage": "Light level",
+		"description": "Label of the field for how light an indoor area is at any time of day: lit or dark"
 	},
-	"editor.area.enabled": {
-		"defaultMessage": "Enabled",
-		"description": "Checkbox for whether players can go into the area"
+	"editor.area.lightLevelHint": {
+		"defaultMessage": "A lit area is as light as full daylight at any time of day, and a dark one as dark as night. Outdoor areas follow the time of day.",
+		"description": "Explains the light level field of an indoor area"
 	},
-	"editor.area.faerieCantLoop": {
-		"defaultMessage": "An area whose passage of time is faerie can't loop.",
-		"description": "Explains why the loop checkboxes are disabled"
-	},
-	"editor.area.indoorTiles": {
-		"defaultMessage": "Indoor tiles",
-		"description": "Heading of a group of choices of default tile"
-	},
-	"editor.area.loading": {
-		"defaultMessage": "Loading...",
-		"description": "Heading of the area editor while the area loads"
+	"editor.area.lobbyTime": {
+		"defaultMessage": "The lobby's passage of time is set on the Lobby tab.",
+		"description": "Shown in the area editor for the lobby in place of its passage of time, which the Lobby tab sets"
 	},
 	"editor.area.lobbyTitle": {
 		"defaultMessage": "{area} (the lobby)",
@@ -537,7 +553,7 @@
 	},
 	"editor.area.mapSaveFailed": {
 		"defaultMessage": "Could not save the map.",
-		"description": "Shown in the area editor when the painting on the area's map, or its new size, couldn't be stored"
+		"description": "Shown in the area editor when the painting on the area's map, its new size or its links couldn't be stored"
 	},
 	"editor.area.noParent": {
 		"defaultMessage": "None (a top-level area)",
@@ -546,10 +562,6 @@
 	"editor.area.openFailed": {
 		"defaultMessage": "Could not open the area.",
 		"description": "Shown in the area editor when the area couldn't be loaded"
-	},
-	"editor.area.outdoorTiles": {
-		"defaultMessage": "Outdoor tiles",
-		"description": "Heading of a group of choices of default tile"
 	},
 	"editor.area.parent": {
 		"defaultMessage": "Parent area",
@@ -579,13 +591,17 @@
 		"defaultMessage": "Add Area",
 		"description": "Title of the dialog for making a new area"
 	},
-	"editor.areaSelect.disabled": {
-		"defaultMessage": "Disabled",
-		"description": "In the dialog for choosing an area, under the name of an area players can't go into"
+	"editor.areaSelect.cell": {
+		"defaultMessage": "Characters start on {column}, {row}, or the free square nearest it.",
+		"description": "In the dialog for choosing a starting area, under the map: the square characters start on; {column} and {row} are its coordinates"
 	},
 	"editor.areaSelect.inside": {
 		"defaultMessage": "Inside {area}",
 		"description": "In the dialog for choosing an area, under an area's name: the area it is inside; {area} is that area's name"
+	},
+	"editor.areaSelect.keys.pickDescription": {
+		"defaultMessage": "Choose the cursor's square for characters to start on",
+		"description": "In the list of keyboard shortcuts, what Space and Enter do on the map in the dialog for choosing a starting area"
 	},
 	"editor.areaSelect.loadFailed": {
 		"defaultMessage": "Could not load the areas.",
@@ -595,13 +611,17 @@
 		"defaultMessage": "No areas match.",
 		"description": "Shown in the dialog for choosing an area when no area's name matches the search"
 	},
+	"editor.areaSelect.previewHelp": {
+		"defaultMessage": "Click the map to choose the square characters start on. With the map focused, the arrow keys move the cursor, 10 cells at a time with Shift, and Space or Enter chooses the square.",
+		"description": "Explains how to choose the square characters start on, on the map in the dialog for choosing a starting area; the keys are the same in every language"
+	},
+	"editor.areaSelect.previewLabel": {
+		"defaultMessage": "Map of the chosen area",
+		"description": "Name of the map in the dialog for choosing a starting area, for screen readers, where clicking chooses the square characters start on"
+	},
 	"editor.areaSelect.results": {
 		"defaultMessage": "Areas",
 		"description": "Name of the list of areas to choose from, for screen readers"
-	},
-	"editor.areaSelect.search": {
-		"defaultMessage": "Search by name",
-		"description": "Shown in the empty field that narrows the areas down by name"
 	},
 	"editor.areaSelect.searchLabel": {
 		"defaultMessage": "Search areas by name",
@@ -623,9 +643,13 @@
 		"defaultMessage": "Add Area",
 		"description": "Button that opens the dialog for making a new area"
 	},
-	"editor.areas.disabledTag": {
-		"defaultMessage": "disabled",
-		"description": "Under an area in the list of areas, for an area players can't go into"
+	"editor.areas.createFailed": {
+		"defaultMessage": "Could not add {area}.",
+		"description": "Shown on the Areas tab when saving stopped at adding an area the server refused; {area} is its name. Changes after it are kept, not saved"
+	},
+	"editor.areas.deleteFailed": {
+		"defaultMessage": "Could not delete {area}.",
+		"description": "Shown on the Areas tab when saving stopped at deleting an area the server refused; {area} is its name. Changes after it are kept, not saved"
 	},
 	"editor.areas.heading": {
 		"defaultMessage": "Areas",
@@ -679,10 +703,6 @@
 		"defaultMessage": "Could not save the character settings.",
 		"description": "Shown on the Characters tab when its settings couldn't be stored"
 	},
-	"editor.characters.startingArea": {
-		"defaultMessage": "Starting area: {area}",
-		"description": "Shows the area characters start in; {area} is the area's name"
-	},
 	"editor.characters.startingAreaHint": {
 		"defaultMessage": "Where characters start, unless their race or class says otherwise.",
 		"description": "Explains the starting area on the editor's Characters tab"
@@ -703,6 +723,14 @@
 		"defaultMessage": "Amounts of coins, like {example}. Coins stay as they are given; races and classes can add more.",
 		"description": "Explains the starting money field on the editor's Characters tab; {example} is an amount of money, e.g. 1pp 2gp 2sp 4cp or 250cr. Coins are never changed into other coins automatically"
 	},
+	"editor.chooseEquipment": {
+		"defaultMessage": "Choose Equipment",
+		"description": "Button in the race or class editor that opens the dialog for choosing the items its characters also start with"
+	},
+	"editor.chooseStartingArea": {
+		"defaultMessage": "Choose Area",
+		"description": "Button in the race or class editor that opens the dialog for choosing the area its characters start in"
+	},
 	"editor.class.addTitle": {
 		"defaultMessage": "Add Class",
 		"description": "Title of the class editor when making a new character class"
@@ -714,14 +742,6 @@
 	"editor.class.castingStyle": {
 		"defaultMessage": "Spellcasting style",
 		"description": "Label of the field for how a character class casts spells: none, prepared or spontaneous"
-	},
-	"editor.class.chooseArea": {
-		"defaultMessage": "Choose Area",
-		"description": "Button in the class editor that opens the dialog for choosing the area every member of the class starts in"
-	},
-	"editor.class.chooseEquipment": {
-		"defaultMessage": "Choose Equipment",
-		"description": "Button in the class editor that opens the dialog for choosing the items the class's members also start with"
 	},
 	"editor.class.chooseRaceArea": {
 		"defaultMessage": "Choose",
@@ -743,29 +763,13 @@
 		"defaultMessage": "Clear the starting area for {race}",
 		"description": "Name of the button that takes away the class's area for one race, for screen readers; {race} is the race's name"
 	},
-	"editor.class.confirmDelete": {
-		"defaultMessage": "Delete {class}? This can't be undone.",
-		"description": "Asks before deleting a character class made for this universe; {class} is its name"
-	},
-	"editor.class.confirmRestore": {
-		"defaultMessage": "Restore {class} to the ruleset's default? Your changes to it, including its starting money, equipment and areas, will be lost.",
-		"description": "Asks before undoing this universe's changes to one of the ruleset's character classes; {class} is its name"
-	},
 	"editor.class.delete": {
 		"defaultMessage": "Delete Class",
 		"description": "Button in the class editor that deletes a character class made for this universe"
 	},
-	"editor.class.deleteFailed": {
-		"defaultMessage": "Could not delete the class.",
-		"description": "Shown in the class editor when the character class couldn't be deleted"
-	},
 	"editor.class.editTitle": {
 		"defaultMessage": "Edit {class}",
 		"description": "Title of the class editor for a character class the player can change; {class} is its name, e.g. Wizard"
-	},
-	"editor.class.enabled": {
-		"defaultMessage": "Enabled",
-		"description": "Checkbox for whether new characters can choose the character class"
 	},
 	"editor.class.enabledHint": {
 		"defaultMessage": "New characters can only choose enabled classes, and at least one class must be enabled.",
@@ -783,14 +787,6 @@
 		"defaultMessage": "Suggested to players when they spend their ability points.",
 		"description": "Explains the class editor's Key ability field in Starfinder"
 	},
-	"editor.class.name": {
-		"defaultMessage": "Name",
-		"description": "Label of the field for a character class's name"
-	},
-	"editor.class.noStartingEquipment": {
-		"defaultMessage": "Nothing more.",
-		"description": "Shown in the class editor when the class's members get no items beyond what every character and their race start with"
-	},
 	"editor.class.primaryAbility": {
 		"defaultMessage": "Primary ability",
 		"description": "Label of the field for the ability score a character class relies on most"
@@ -807,33 +803,9 @@
 		"defaultMessage": "All members of this class, whatever their race, start in the class's area.",
 		"description": "Shown in the class editor while the class has an area for every race, which turns off the areas for each race"
 	},
-	"editor.class.restore": {
-		"defaultMessage": "Restore Default",
-		"description": "Button in the class editor that undoes this universe's changes to one of the ruleset's character classes"
-	},
-	"editor.class.restoreFailed": {
-		"defaultMessage": "Could not restore the class.",
-		"description": "Shown in the class editor when the ruleset's character class couldn't be restored"
-	},
-	"editor.class.saveFailed": {
-		"defaultMessage": "Could not save the class.",
-		"description": "Shown in the class editor when the character class couldn't be stored"
-	},
 	"editor.class.staminaPoints": {
 		"defaultMessage": "Stamina points per level",
 		"description": "Label of the field for the stamina points a character class gives at each level, in Starfinder; stamina is lost before hit points and comes back with rest"
-	},
-	"editor.class.startingArea": {
-		"defaultMessage": "Starting area: {area}",
-		"description": "Shows the area every member of a character class starts in, whatever their race; {area} is the area's name"
-	},
-	"editor.class.startingEquipment": {
-		"defaultMessage": "Extra starting equipment",
-		"description": "Heading of the list of items a character class's members get on top of what every character and their race start with"
-	},
-	"editor.class.startingMoney": {
-		"defaultMessage": "Extra starting money",
-		"description": "Label of the field for the money a character class's members get on top of what every character and their race start with"
 	},
 	"editor.class.tradition": {
 		"defaultMessage": "Magic tradition",
@@ -843,29 +815,89 @@
 		"defaultMessage": "Add Class",
 		"description": "Button that opens the dialog for making a new character class"
 	},
+	"editor.classes.heading": {
+		"defaultMessage": "Classes",
+		"description": "Heading of the part of the editor's Characters tab listing the classes characters can be, such as fighters and wizards"
+	},
 	"editor.classes.hint": {
 		"defaultMessage": "The classes new characters can choose. Each class's starting money and equipment are added to what every character and their race start with.",
-		"description": "Explains the editor's Classes tab"
+		"description": "Explains the classes on the editor's Characters tab"
 	},
 	"editor.classes.listFailed": {
 		"defaultMessage": "Could not list the classes.",
-		"description": "Shown on the Classes tab when the character classes couldn't be loaded"
-	},
-	"editor.classes.name": {
-		"defaultMessage": "Name",
-		"description": "Heading of the table column with each character class's name"
+		"description": "Shown on the editor's Characters tab when the character classes couldn't be loaded"
 	},
 	"editor.classes.points": {
 		"defaultMessage": "{hitPoints, plural, one {# hit point} other {# hit points}} and {staminaPoints, plural, one {# stamina point} other {# stamina points}} a level",
-		"description": "In a character class's summary on the editor's Classes tab, in Starfinder, the hit points and stamina points the class gives at each level"
+		"description": "In a character class's summary on the editor's Characters tab, in Starfinder, the hit points and stamina points the class gives at each level"
 	},
 	"editor.classes.primaryAbility": {
 		"defaultMessage": "relies on {ability}",
-		"description": "In a character class's summary on the editor's Classes tab, the ability the class relies on most; {ability} is its name, e.g. Intelligence"
+		"description": "In a character class's summary on the editor's Characters tab, the ability the class relies on most; {ability} is its name, e.g. Intelligence"
 	},
-	"editor.classes.summary": {
-		"defaultMessage": "Summary",
-		"description": "Heading of the table column describing each character class's rules, such as its magic"
+	"editor.difficulty.add": {
+		"defaultMessage": "Add Difficulty",
+		"description": "Button that opens the dialog for making a new difficulty level"
+	},
+	"editor.difficulty.defaultTag": {
+		"defaultMessage": "default",
+		"description": "In the last column of the editor's difficulty level table, for the level Create Group starts on"
+	},
+	"editor.difficulty.heading": {
+		"defaultMessage": "Difficulty",
+		"description": "Heading of the part of the editor's Ruleset tab listing the difficulty levels a new group can choose"
+	},
+	"editor.difficulty.hint": {
+		"defaultMessage": "The difficulty levels a new group chooses from. Each level makes mobs harder or easier, and can make death permanent.",
+		"description": "Explains the difficulty levels on the editor's Ruleset tab"
+	},
+	"editor.difficulty.listFailed": {
+		"defaultMessage": "Could not list the difficulty levels.",
+		"description": "Shown on the editor's Ruleset tab when the difficulty levels couldn't be loaded"
+	},
+	"editor.difficulty.permadeathTag": {
+		"defaultMessage": "permadeath",
+		"description": "In the last column of the editor's difficulty level table, for a level at which characters who die are gone for good"
+	},
+	"editor.difficultyLevel.addTitle": {
+		"defaultMessage": "Add Difficulty",
+		"description": "Title of the difficulty level editor when making a new level"
+	},
+	"editor.difficultyLevel.default": {
+		"defaultMessage": "Default",
+		"description": "Checkbox for whether a difficulty level is the one a new group starts on"
+	},
+	"editor.difficultyLevel.defaultHint": {
+		"defaultMessage": "New groups start on this difficulty.",
+		"description": "Explains the difficulty level editor's Default checkbox"
+	},
+	"editor.difficultyLevel.delete": {
+		"defaultMessage": "Delete Difficulty",
+		"description": "Button in the difficulty level editor that deletes the level"
+	},
+	"editor.difficultyLevel.editTitle": {
+		"defaultMessage": "Edit {level}",
+		"description": "Title of the difficulty level editor for a level the player can change; {level} is its name, e.g. Hard"
+	},
+	"editor.difficultyLevel.mobScale": {
+		"defaultMessage": "Mob scale (%)",
+		"description": "Label of the field for how much harder or easier a difficulty level makes mobs (monsters and enemies), as a percentage"
+	},
+	"editor.difficultyLevel.mobScaleHint": {
+		"defaultMessage": "How much harder mobs are, from {min, number}% (easier) to {max, number}% (harder); 0 for normal strength. It scales their hit points (never below 1) and how often they hit and are hit (a chance to hit of at least {floor, number}% stays at least {floor, number}%).",
+		"description": "Explains the difficulty level editor's Mob scale field; {min} and {max} are the lowest and highest percentages allowed, e.g. -1000 and 1000, and {floor} is the lowest a chance to hit can be brought down to, e.g. 5"
+	},
+	"editor.difficultyLevel.permadeath": {
+		"defaultMessage": "Permadeath",
+		"description": "Checkbox for whether characters who die at this difficulty level are gone for good"
+	},
+	"editor.difficultyLevel.permadeathHint": {
+		"defaultMessage": "Characters who die in a group at this level are gone for good.",
+		"description": "Explains the difficulty level editor's Permadeath checkbox"
+	},
+	"editor.displayTime": {
+		"defaultMessage": "Display time",
+		"description": "Label of the field for how players are shown the time of day in a universe"
 	},
 	"editor.error.failedBecause": {
 		"defaultMessage": "{failure} {reason}",
@@ -887,77 +919,41 @@
 		"defaultMessage": "Where is morning?",
 		"description": "Label of the field for which side of the map has morning, when the passage of time is faerie"
 	},
-	"editor.home": {
-		"defaultMessage": "Back to Home",
-		"description": "Button in the editor's toolbar that goes back to the list of universes"
+	"editor.filter.custom": {
+		"defaultMessage": "Custom",
+		"description": "Label of the filter on the Items and Tilesets tabs for whether an item or tile was made for this universe, rather than coming with the ruleset"
+	},
+	"editor.filter.edited": {
+		"defaultMessage": "Edited from default",
+		"description": "Label of the filter on the Items and Tilesets tabs for whether one of the ruleset's items or tiles was changed for this universe"
 	},
 	"editor.item.addTitle": {
 		"defaultMessage": "Add Item",
 		"description": "Title of the item editor when making a new item"
 	},
-	"editor.item.confirmDelete": {
-		"defaultMessage": "Delete {item}? This can't be undone.",
-		"description": "Asks before deleting an item made for this universe; {item} is its name"
-	},
-	"editor.item.confirmRestore": {
-		"defaultMessage": "Restore {item} to the ruleset's default? Your changes to it will be lost.",
-		"description": "Asks before undoing this universe's changes to one of the ruleset's items; {item} is its name"
-	},
 	"editor.item.delete": {
 		"defaultMessage": "Delete Item",
 		"description": "Button in the item editor that deletes an item made for this universe"
-	},
-	"editor.item.deleteFailed": {
-		"defaultMessage": "Could not delete the item.",
-		"description": "Shown in the item editor when the item couldn't be deleted"
 	},
 	"editor.item.editTitle": {
 		"defaultMessage": "Edit {item}",
 		"description": "Title of the item editor for an item the player can change; {item} is its name"
 	},
-	"editor.item.enabled": {
-		"defaultMessage": "Enabled",
-		"description": "Checkbox for whether characters can be given the item"
-	},
 	"editor.item.enabledHint": {
 		"defaultMessage": "Characters can only be given enabled items.",
 		"description": "Explains the item editor's Enabled checkbox"
 	},
-	"editor.item.name": {
-		"defaultMessage": "Name",
-		"description": "Label of the field for an item's name"
-	},
-	"editor.item.restore": {
-		"defaultMessage": "Restore Default",
-		"description": "Button in the item editor that undoes this universe's changes to one of the ruleset's items"
-	},
-	"editor.item.restoreFailed": {
-		"defaultMessage": "Could not restore the item.",
-		"description": "Shown in the item editor when the ruleset's item couldn't be restored"
-	},
-	"editor.item.saveFailed": {
-		"defaultMessage": "Could not save the item.",
-		"description": "Shown in the item editor when the item couldn't be stored"
-	},
 	"editor.item.type": {
 		"defaultMessage": "Type",
-		"description": "Label of the field for an item's type, such as dagger or longsword"
+		"description": "An item's type, such as dagger or longsword: the label of its field in the item editor, and of the Items tab's filter"
 	},
 	"editor.itemSelect.chosen": {
 		"defaultMessage": "Chosen",
 		"description": "Heading of the list of items chosen so far in the dialog for choosing items, each with how many"
 	},
-	"editor.itemSelect.disabled": {
-		"defaultMessage": "Disabled",
-		"description": "In the dialog for choosing items, under the name of an item characters can't be given"
-	},
 	"editor.itemSelect.loadFailed": {
 		"defaultMessage": "Could not load the items.",
 		"description": "Shown in the dialog for choosing items when the universe's items couldn't be loaded"
-	},
-	"editor.itemSelect.none": {
-		"defaultMessage": "No items match.",
-		"description": "Shown in the dialog for choosing items when no item's name matches the search"
 	},
 	"editor.itemSelect.nothing": {
 		"defaultMessage": "No items are chosen.",
@@ -979,14 +975,6 @@
 		"defaultMessage": "Items",
 		"description": "Name of the list of items to choose from, for screen readers"
 	},
-	"editor.itemSelect.search": {
-		"defaultMessage": "Search by name",
-		"description": "Shown in the empty field that narrows the items down by name"
-	},
-	"editor.itemSelect.searchLabel": {
-		"defaultMessage": "Search items by name",
-		"description": "Name of the field that narrows the items down by name, for screen readers"
-	},
 	"editor.itemSelect.submit": {
 		"defaultMessage": "Choose",
 		"description": "Button that chooses the items selected in the dialog, with how many of each"
@@ -999,49 +987,9 @@
 		"defaultMessage": "Add Item",
 		"description": "Button that opens the dialog for making a new item"
 	},
-	"editor.items.anyKind": {
-		"defaultMessage": "Any",
-		"description": "Choice of the item kind or type filter that shows items of every kind or type"
-	},
 	"editor.items.category": {
 		"defaultMessage": "Kind",
 		"description": "Label of the filter for an item's broad kind, such as weapons or armor"
-	},
-	"editor.items.custom": {
-		"defaultMessage": "Custom",
-		"description": "Label of the filter for whether an item was made for this universe, rather than coming with the ruleset"
-	},
-	"editor.items.customTag": {
-		"defaultMessage": "custom",
-		"description": "In the last column of the item table, for an item made for this universe"
-	},
-	"editor.items.disabledTag": {
-		"defaultMessage": "disabled",
-		"description": "In the last column of the item table, for an item characters can't be given"
-	},
-	"editor.items.edited": {
-		"defaultMessage": "Edited from default",
-		"description": "Label of the filter for whether one of the ruleset's items was changed for this universe"
-	},
-	"editor.items.editedTag": {
-		"defaultMessage": "edited",
-		"description": "In the last column of the item table, for one of the ruleset's items that this universe changed"
-	},
-	"editor.items.enabled": {
-		"defaultMessage": "Enabled",
-		"description": "Label of the filter for whether characters can be given an item"
-	},
-	"editor.items.filterAny": {
-		"defaultMessage": "Any",
-		"description": "Choice of a yes-or-no item filter that shows every item"
-	},
-	"editor.items.filterNo": {
-		"defaultMessage": "No",
-		"description": "Choice of a yes-or-no item filter, e.g. Enabled: No"
-	},
-	"editor.items.filterYes": {
-		"defaultMessage": "Yes",
-		"description": "Choice of a yes-or-no item filter, e.g. Enabled: Yes"
 	},
 	"editor.items.icon": {
 		"defaultMessage": "Icon",
@@ -1051,29 +999,13 @@
 		"defaultMessage": "Could not list the items.",
 		"description": "Shown on the Items tab when the items couldn't be loaded"
 	},
-	"editor.items.name": {
-		"defaultMessage": "Name",
-		"description": "Heading of the table column with each item's name"
-	},
 	"editor.items.none": {
 		"defaultMessage": "No items match.",
-		"description": "Shown instead of the table when no item matches the filters"
-	},
-	"editor.items.search": {
-		"defaultMessage": "Search by name",
-		"description": "Shown in the empty field that filters the items by name"
+		"description": "Shown instead of the list of items when no item matches the search or filters: on the Items tab and in the dialog for choosing items"
 	},
 	"editor.items.searchLabel": {
 		"defaultMessage": "Search items by name",
-		"description": "Name of the field that filters the items by name, for screen readers"
-	},
-	"editor.items.summary": {
-		"defaultMessage": "Summary",
-		"description": "Heading of the table column describing each item, such as its type"
-	},
-	"editor.items.type": {
-		"defaultMessage": "Type",
-		"description": "Label of the filter for an item's type, such as dagger or longsword"
+		"description": "Name of the field that narrows the items down by name, on the Items tab and in the dialog for choosing items, for screen readers"
 	},
 	"editor.link.addReturn": {
 		"defaultMessage": "Add a return link that leads back to this cell",
@@ -1099,17 +1031,9 @@
 		"defaultMessage": "Delete Link",
 		"description": "Button that deletes the area link being edited"
 	},
-	"editor.link.deleteFailed": {
-		"defaultMessage": "Could not delete the link.",
-		"description": "Shown in the link dialog when the link couldn't be deleted"
-	},
 	"editor.link.destination": {
 		"defaultMessage": "Destination: {column}, {row}",
 		"description": "The cell the link leads to; {column} and {row} are its coordinates"
-	},
-	"editor.link.keys.cursorDescription": {
-		"defaultMessage": "Move the cursor on the focused map, 10 cells at a time with Shift",
-		"description": "In the list of keyboard shortcuts, what the arrow keys do on the link dialog's map"
 	},
 	"editor.link.keys.pickDescription": {
 		"defaultMessage": "Choose the cursor's cell",
@@ -1125,11 +1049,11 @@
 	},
 	"editor.link.needDestination": {
 		"defaultMessage": "Click the map to choose where the link goes.",
-		"description": "Shown when Save is pressed before the cell the link leads to is chosen"
+		"description": "Shown when Apply is pressed before the cell the link leads to is chosen"
 	},
 	"editor.link.needReturn": {
 		"defaultMessage": "Click the map to place the return link, or don't add one.",
-		"description": "Shown when Save is pressed with a return link asked for but not placed"
+		"description": "Shown when Apply is pressed with a return link asked for but not placed"
 	},
 	"editor.link.noOtherAreas": {
 		"defaultMessage": "Add another area to link to first.",
@@ -1167,10 +1091,6 @@
 		"defaultMessage": "Return link at {column}, {row}, replacing the link there",
 		"description": "The cell where the link leading back will be placed, which already has a link; {column} and {row} are its coordinates"
 	},
-	"editor.link.saveFailed": {
-		"defaultMessage": "Could not save the link.",
-		"description": "Shown in the link dialog when the link couldn't be stored"
-	},
 	"editor.link.showAreaFailed": {
 		"defaultMessage": "Could not show that area.",
 		"description": "Shown in the link dialog when the map of the area the link goes to couldn't be loaded"
@@ -1187,6 +1107,14 @@
 		"defaultMessage": "Requires the whole group",
 		"description": "Checkbox for an area link that can only be used when every member of the group is present"
 	},
+	"editor.lobby.dayHours": {
+		"defaultMessage": "How quickly?",
+		"description": "Label of the field for how many real hours a day in the lobby lasts, shown when the lobby's passage of time is real time"
+	},
+	"editor.lobby.dayHoursHint": {
+		"defaultMessage": "How long in real time it takes for one day in the lobby to pass, from {min, plural, one {# hour} other {# hours}} to {max, plural, one {# hour} other {# hours}}. The time of day is the same for everyone, counted from the start of 1970.",
+		"description": "Explains the lobby's \"How quickly?\" field; {min} and {max} are the fewest and most hours allowed"
+	},
 	"editor.lobby.editArea": {
 		"defaultMessage": "Edit the lobby's area",
 		"description": "Button that opens the lobby in the area editor"
@@ -1194,6 +1122,22 @@
 	"editor.lobby.explanation": {
 		"defaultMessage": "The lobby is where everyone in the universe meets before joining a group. It is an area like any other, but isn't listed on the Areas tab.",
 		"description": "Explains the lobby on the editor's Lobby tab"
+	},
+	"editor.lobby.noVisionCost": {
+		"defaultMessage": "No vision cost in the lobby",
+		"description": "Checkbox for whether characters in the lobby see as far as in full daylight at any time of day, past every tile as if none had a vision cost"
+	},
+	"editor.lobby.noVisionCostHint": {
+		"defaultMessage": "Tiles don't block or shorten anyone's view in the lobby, regardless of the tile's vision cost. Characters see as far as in full daylight at any time of day.",
+		"description": "Explains the lobby's no vision cost checkbox on the editor's Lobby tab"
+	},
+	"editor.lobby.saveFailed": {
+		"defaultMessage": "Could not save the lobby's settings.",
+		"description": "Shown on the Lobby tab when its settings couldn't be stored"
+	},
+	"editor.lobby.timeHint": {
+		"defaultMessage": "Actions take no time in the lobby, so its time of day follows this instead of the universe's passage of time.",
+		"description": "Explains the lobby's passage of time on the editor's Lobby tab"
 	},
 	"editor.map.areaDefault": {
 		"defaultMessage": "{tile} (the area's default)",
@@ -1235,6 +1179,10 @@
 		"defaultMessage": "Draw",
 		"description": "Map tool that paints tiles onto the map"
 	},
+	"editor.map.exitFullPage": {
+		"defaultMessage": "Exit Full Page",
+		"description": "Button that puts the map editor back in the page after it was made to fill the window"
+	},
 	"editor.map.expandBy": {
 		"defaultMessage": "Expand by",
 		"description": "Label of the field for how many cells the buttons around the map add"
@@ -1255,6 +1203,10 @@
 		"defaultMessage": "+ West",
 		"description": "Button left of the map that makes it bigger to the west"
 	},
+	"editor.map.fullPage": {
+		"defaultMessage": "Full Page",
+		"description": "Button that makes the map editor fill the window"
+	},
 	"editor.map.heading": {
 		"defaultMessage": "Map",
 		"description": "Heading of the area's map editor"
@@ -1273,7 +1225,7 @@
 	},
 	"editor.map.keys.cursorDescription": {
 		"defaultMessage": "Move the cursor on the focused map, 10 cells at a time with Shift",
-		"description": "In the list of keyboard shortcuts, what the arrow keys do on the map editor's map"
+		"description": "In the list of keyboard shortcuts, what the arrow keys do on a map in the editor: the map editor's, the link dialog's, or the one in the dialog for choosing a starting area"
 	},
 	"editor.map.keys.home": {
 		"defaultMessage": "Home",
@@ -1307,10 +1259,6 @@
 		"defaultMessage": "Map",
 		"description": "Name of the area's map in the map editor, for screen readers"
 	},
-	"editor.map.linkNeedsSave": {
-		"defaultMessage": "Save the map's new size before adding links there.",
-		"description": "Shown in the map editor when the Links tool is used on a cell the map has grown to include but that hasn't been saved"
-	},
 	"editor.map.links": {
 		"defaultMessage": "Links",
 		"description": "Map tool that adds and changes links to other areas"
@@ -1335,10 +1283,6 @@
 		"defaultMessage": "Edit Size",
 		"description": "Button that opens the dialog for changing the map's size"
 	},
-	"editor.map.saving": {
-		"defaultMessage": "Saving...",
-		"description": "Shown under the map while painting is being stored"
-	},
 	"editor.map.tile": {
 		"defaultMessage": "Tile",
 		"description": "Label of the field for the tile the Draw tool paints"
@@ -1361,27 +1305,19 @@
 	},
 	"editor.map.unsaved": {
 		"defaultMessage": "Map changes not saved yet",
-		"description": "Shown under the map while it has painting or growth that the area editor's Save button hasn't stored yet"
+		"description": "Shown under the map while it has painting, a change of size or links that the editor's Save button hasn't stored yet"
 	},
 	"editor.map.void": {
 		"defaultMessage": "Void",
 		"description": "A cell with nothing in it, drawn black, which can't be walked into; also a choice of what to paint"
 	},
+	"editor.noStartingEquipment": {
+		"defaultMessage": "Nothing more.",
+		"description": "Shown in the race or class editor when its characters get no items beyond what every character (and, for a class, their race) starts with"
+	},
 	"editor.openFailed": {
 		"defaultMessage": "Could not open the universe.",
 		"description": "Shown in the editor when the universe couldn't be loaded"
-	},
-	"editor.options.customTag": {
-		"defaultMessage": "custom",
-		"description": "In the last column of the editor's race or class table, for a race or class made for this universe"
-	},
-	"editor.options.disabledTag": {
-		"defaultMessage": "disabled",
-		"description": "In the last column of the editor's race or class table, for a race or class new characters can't choose"
-	},
-	"editor.options.editedTag": {
-		"defaultMessage": "edited",
-		"description": "In the last column of the editor's race or class table, for one of the ruleset's races or classes that this universe changed"
 	},
 	"editor.pageTitle": {
 		"defaultMessage": "Edit {universe} - Multiverse Kiln",
@@ -1403,45 +1339,17 @@
 		"defaultMessage": "Add Race",
 		"description": "Title of the race editor when making a new race"
 	},
-	"editor.race.chooseArea": {
-		"defaultMessage": "Choose Area",
-		"description": "Button in the race editor that opens the dialog for choosing the area the race's characters start in"
-	},
-	"editor.race.chooseEquipment": {
-		"defaultMessage": "Choose Equipment",
-		"description": "Button in the race editor that opens the dialog for choosing the items the race's characters also start with"
-	},
 	"editor.race.clearArea": {
 		"defaultMessage": "Use the Universe's Area",
 		"description": "Button in the race editor that takes away the race's starting area, so its characters start in the universe's"
-	},
-	"editor.race.confirmDelete": {
-		"defaultMessage": "Delete {race}? This can't be undone.",
-		"description": "Asks before deleting a race made for this universe; {race} is its name"
-	},
-	"editor.race.confirmRestore": {
-		"defaultMessage": "Restore {race} to the ruleset's default? Your changes to it, including its starting money, equipment and area, will be lost.",
-		"description": "Asks before undoing this universe's changes to one of the ruleset's races; {race} is its name"
-	},
-	"editor.race.darkvision": {
-		"defaultMessage": "Darkvision",
-		"description": "Checkbox for whether the race can see in the dark"
 	},
 	"editor.race.delete": {
 		"defaultMessage": "Delete Race",
 		"description": "Button in the race editor that deletes a race made for this universe"
 	},
-	"editor.race.deleteFailed": {
-		"defaultMessage": "Could not delete the race.",
-		"description": "Shown in the race editor when the race couldn't be deleted"
-	},
 	"editor.race.editTitle": {
 		"defaultMessage": "Edit {race}",
 		"description": "Title of the race editor for a race the player can change; {race} is its name, e.g. Dwarf"
-	},
-	"editor.race.enabled": {
-		"defaultMessage": "Enabled",
-		"description": "Checkbox for whether new characters can choose the race"
 	},
 	"editor.race.enabledHint": {
 		"defaultMessage": "New characters can only choose enabled races, and at least one race must be enabled.",
@@ -1463,45 +1371,13 @@
 		"defaultMessage": "Hit points",
 		"description": "Label of the field for the hit points a race gives its characters on top of their class's, in Starfinder"
 	},
-	"editor.race.name": {
-		"defaultMessage": "Name",
-		"description": "Label of the field for a race's name"
-	},
-	"editor.race.noStartingEquipment": {
-		"defaultMessage": "Nothing more.",
-		"description": "Shown in the race editor when the race's characters get no items beyond what every character starts with"
-	},
-	"editor.race.restore": {
-		"defaultMessage": "Restore Default",
-		"description": "Button in the race editor that undoes this universe's changes to one of the ruleset's races"
-	},
-	"editor.race.restoreFailed": {
-		"defaultMessage": "Could not restore the race.",
-		"description": "Shown in the race editor when the ruleset's race couldn't be restored"
-	},
-	"editor.race.saveFailed": {
-		"defaultMessage": "Could not save the race.",
-		"description": "Shown in the race editor when the race couldn't be stored"
-	},
 	"editor.race.size": {
 		"defaultMessage": "Size",
 		"description": "Label of the field for a race's size, such as small or medium"
 	},
-	"editor.race.startingArea": {
-		"defaultMessage": "Starting area: {area}",
-		"description": "Shows the area a race's characters start in; {area} is the area's name"
-	},
 	"editor.race.startingAreaHint": {
 		"defaultMessage": "Where the race's characters start, unless their class says otherwise.",
 		"description": "Explains the race editor's starting area"
-	},
-	"editor.race.startingEquipment": {
-		"defaultMessage": "Extra starting equipment",
-		"description": "Heading of the list of items a race's characters get on top of what every character starts with"
-	},
-	"editor.race.startingMoney": {
-		"defaultMessage": "Extra starting money",
-		"description": "Label of the field for the money a race's characters get on top of what every character starts with"
 	},
 	"editor.races.add": {
 		"defaultMessage": "Add Race",
@@ -1509,35 +1385,31 @@
 	},
 	"editor.races.darkvision": {
 		"defaultMessage": "darkvision",
-		"description": "In a race's summary on the editor's Races tab, for a race that can see in the dark"
+		"description": "In a race's summary on the editor's Characters tab, for a race that can see in the dark"
 	},
 	"editor.races.floatingBonus": {
 		"defaultMessage": "{bonus, number, ::sign-always} to one ability",
-		"description": "In a race's summary on the editor's Races tab, for a race whose players choose one ability to raise; {bonus} is by how much, e.g. +2"
+		"description": "In a race's summary on the editor's Characters tab, for a race whose players choose one ability to raise; {bonus} is by how much, e.g. +2"
+	},
+	"editor.races.heading": {
+		"defaultMessage": "Races",
+		"description": "Heading of the part of the editor's Characters tab listing the races characters can be, such as elves and dwarves"
 	},
 	"editor.races.hint": {
 		"defaultMessage": "The races new characters can choose. Each race's starting money and equipment are added to what every character starts with.",
-		"description": "Explains the editor's Races tab"
+		"description": "Explains the races on the editor's Characters tab"
 	},
 	"editor.races.hitPoints": {
 		"defaultMessage": "{hitPoints, plural, one {# hit point} other {# hit points}}",
-		"description": "In a race's summary on the editor's Races tab, in Starfinder, the hit points the race gives its characters"
+		"description": "In a race's summary on the editor's Characters tab, in Starfinder, the hit points the race gives its characters"
 	},
 	"editor.races.listFailed": {
 		"defaultMessage": "Could not list the races.",
-		"description": "Shown on the Races tab when the races couldn't be loaded"
+		"description": "Shown on the editor's Characters tab when the races couldn't be loaded"
 	},
 	"editor.races.modifier": {
 		"defaultMessage": "{ability} {modifier, number, ::sign-always}",
-		"description": "One ability modifier in a race's summary on the editor's Races tab, e.g. Dexterity +2; {ability} is the ability's name"
-	},
-	"editor.races.name": {
-		"defaultMessage": "Name",
-		"description": "Heading of the table column with each race's name"
-	},
-	"editor.races.summary": {
-		"defaultMessage": "Summary",
-		"description": "Heading of the table column describing each race's rules, such as its size and ability modifiers"
+		"description": "One ability modifier in a race's summary on the editor's Characters tab, e.g. Dexterity +2; {ability} is the ability's name"
 	},
 	"editor.resize.cutOffWarning": {
 		"defaultMessage": "The smaller map cuts off {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# link} other {# links}}. Undo brings the cells back, but the links are deleted when the map is saved. Resize anyway?",
@@ -1582,6 +1454,10 @@
 	"editor.resize.west": {
 		"defaultMessage": "West",
 		"description": "Label of the field for how many cells the map reaches west of its center"
+	},
+	"editor.restore": {
+		"defaultMessage": "Restore Default",
+		"description": "Button in the editor of a tile, item, race, class or theme that undoes this universe's changes to one of the ruleset's"
 	},
 	"editor.role": {
 		"defaultMessage": "Your role: {role}",
@@ -1635,6 +1511,54 @@
 		"defaultMessage": "Track ammunition",
 		"description": "Checkbox for whether arrows and other ammunition are used up when fired"
 	},
+	"editor.searchByName": {
+		"defaultMessage": "Search by name",
+		"description": "Shown in the empty field that narrows a list of tiles, items or areas down by name"
+	},
+	"editor.select.disabled": {
+		"defaultMessage": "Disabled",
+		"description": "In the dialogs for choosing areas or items, under the name of one players can't use: an area they can't go into, or an item characters can't be given"
+	},
+	"editor.staged.deleteFailed": {
+		"defaultMessage": "Could not delete {name}.",
+		"description": "Shown on an editor tab when saving its changes stopped at a deletion the server refused; {name} is the name of the race, class, theme, difficulty level, item or tile. Changes after it are kept, not saved"
+	},
+	"editor.staged.deleted": {
+		"defaultMessage": "(deleted when saved)",
+		"description": "Read out by screen readers after the name of a race, class, theme, difficulty level, item, tile or area in an editor list that will be deleted when the tab is saved; on screen the row is struck through"
+	},
+	"editor.staged.newTag": {
+		"defaultMessage": "new",
+		"description": "In the last column of an editor list (races, classes, themes, difficulty levels, items or tiles), or under an area in the list of areas, for one added since the tab was last saved, which isn't saved yet"
+	},
+	"editor.staged.restoreFailed": {
+		"defaultMessage": "Could not restore {name}.",
+		"description": "Shown on an editor tab when saving its changes stopped at putting one of the ruleset's races, classes, themes, items or tiles back as the ruleset has it; {name} is its name. Changes after it are kept, not saved"
+	},
+	"editor.staged.restoredTag": {
+		"defaultMessage": "restored when saved",
+		"description": "In the last column of an editor list (races, classes, themes, items or tiles), for one of the ruleset's that will be put back as the ruleset has it when the tab is saved"
+	},
+	"editor.staged.saveFailed": {
+		"defaultMessage": "Could not save {name}.",
+		"description": "Shown on an editor tab when saving its changes stopped at one the server refused; {name} is the name of the race, class, theme, difficulty level, item or tile. Changes after it are kept, not saved"
+	},
+	"editor.staged.undoDelete": {
+		"defaultMessage": "Undo Delete",
+		"description": "Button in an editor dialog (race, class, theme, difficulty level, item or tile), or in the area editor, for one that will be deleted when the tab is saved: keeps it instead"
+	},
+	"editor.staged.undoRestore": {
+		"defaultMessage": "Undo Restore",
+		"description": "Button in an editor dialog (race, class, theme, item or tile) for one of the ruleset's that will be put back as the ruleset has it when the tab is saved: keeps the universe's changes instead"
+	},
+	"editor.startingArea.area": {
+		"defaultMessage": "Starting area: {area}",
+		"description": "Shows the area characters start in: every character on the Characters tab, or a race's or class's characters in its editor; {area} is the area's name"
+	},
+	"editor.startingArea.at": {
+		"defaultMessage": "{area}, from {column}, {row}",
+		"description": "Shown as a starting area chosen on the Characters tab or in the race or class editor: the area and the square characters start on; {area} is the area's name, {column} and {row} the square's coordinates"
+	},
 	"editor.startingArea.loadFailed": {
 		"defaultMessage": "Could not load the areas' names.",
 		"description": "Shown in the race or class editor when the names of the areas characters start in couldn't be loaded"
@@ -1647,6 +1571,10 @@
 		"defaultMessage": "{area} (the universe's)",
 		"description": "Shown as a race's or class's starting area when it has none of its own, so its characters start in the universe's; {area} is that area's name"
 	},
+	"editor.startingEquipment": {
+		"defaultMessage": "Extra starting equipment",
+		"description": "Heading in the race or class editor of the list of items its characters get on top of what every character starts with (and, for a class, what their race gives)"
+	},
 	"editor.startingItems.item": {
 		"defaultMessage": "{quantity, number} {item}",
 		"description": "One line of a list of starting equipment in the editor, e.g. 20 Arrows; {item} is the item's name. Change only to reorder the two"
@@ -1654,6 +1582,14 @@
 	"editor.startingItems.loadFailed": {
 		"defaultMessage": "Could not load the starting equipment.",
 		"description": "Shown in the editor when the items characters start with (the universe's, a race's or a class's) couldn't be loaded"
+	},
+	"editor.startingMoney": {
+		"defaultMessage": "Extra starting money",
+		"description": "Label of the field in the race or class editor for the money its characters get on top of what every character starts with (and, for a class, what their race gives)"
+	},
+	"editor.summary": {
+		"defaultMessage": "Summary",
+		"description": "Heading of the table column describing each row's rules, in the editor's lists of races, classes, themes, items and difficulty levels (such as a race's size, an item's type, or how a difficulty level changes monsters and enemies)"
 	},
 	"editor.tab.areas": {
 		"defaultMessage": "Areas",
@@ -1663,10 +1599,6 @@
 		"defaultMessage": "Characters",
 		"description": "Tab of the editor with what characters start with and how many play together"
 	},
-	"editor.tab.classes": {
-		"defaultMessage": "Classes",
-		"description": "Tab of the editor listing the classes characters can be, such as fighters and wizards"
-	},
 	"editor.tab.items": {
 		"defaultMessage": "Items",
 		"description": "Tab of the editor listing the items characters can be given, such as weapons and gear"
@@ -1674,10 +1606,6 @@
 	"editor.tab.lobby": {
 		"defaultMessage": "Lobby",
 		"description": "Tab of the editor with the lobby's settings"
-	},
-	"editor.tab.races": {
-		"defaultMessage": "Races",
-		"description": "Tab of the editor listing the races characters can be, such as elves and dwarves"
 	},
 	"editor.tab.ruleset": {
 		"defaultMessage": "Ruleset",
@@ -1695,6 +1623,18 @@
 		"defaultMessage": "(unsaved changes)",
 		"description": "Read out by screen readers after the name of an editor tab whose form has changes that haven't been saved; a dot shows it on screen"
 	},
+	"editor.tag.custom": {
+		"defaultMessage": "custom",
+		"description": "In the last column of the editor's tables of tiles, items, races and classes, for one made for this universe"
+	},
+	"editor.tag.disabled": {
+		"defaultMessage": "disabled",
+		"description": "Under an area in the list of areas, or in the last column of the editor's tables of items, races and classes, for one players can't use: an area they can't go into, an item characters can't be given, or a race or class new characters can't choose"
+	},
+	"editor.tag.edited": {
+		"defaultMessage": "edited",
+		"description": "In the last column of the editor's tables of tiles, items, races and classes, for one of the ruleset's that this universe changed"
+	},
 	"editor.theme.ability": {
 		"defaultMessage": "Ability raised",
 		"description": "Label of the field for the ability score a theme raises"
@@ -1707,49 +1647,17 @@
 		"defaultMessage": "Add Theme",
 		"description": "Title of the theme editor when making a new theme (a character background, such as ace pilot)"
 	},
-	"editor.theme.confirmDelete": {
-		"defaultMessage": "Delete {theme}? This can't be undone.",
-		"description": "Asks before deleting a theme made for this universe; {theme} is its name"
-	},
-	"editor.theme.confirmRestore": {
-		"defaultMessage": "Restore {theme} to the ruleset's default? Your changes to it will be lost.",
-		"description": "Asks before undoing this universe's changes to one of the ruleset's themes; {theme} is its name"
-	},
 	"editor.theme.delete": {
 		"defaultMessage": "Delete Theme",
 		"description": "Button in the theme editor that deletes a theme made for this universe"
-	},
-	"editor.theme.deleteFailed": {
-		"defaultMessage": "Could not delete the theme.",
-		"description": "Shown in the theme editor when the theme couldn't be deleted"
 	},
 	"editor.theme.editTitle": {
 		"defaultMessage": "Edit {theme}",
 		"description": "Title of the theme editor for a theme the player can change; {theme} is its name, e.g. Ace Pilot"
 	},
-	"editor.theme.enabled": {
-		"defaultMessage": "Enabled",
-		"description": "Checkbox for whether new characters can choose the theme"
-	},
 	"editor.theme.enabledHint": {
 		"defaultMessage": "New characters can only choose enabled themes, and at least one theme must be enabled.",
 		"description": "Explains the theme editor's Enabled checkbox"
-	},
-	"editor.theme.name": {
-		"defaultMessage": "Name",
-		"description": "Label of the field for a theme's name (a character background, such as ace pilot)"
-	},
-	"editor.theme.restore": {
-		"defaultMessage": "Restore Default",
-		"description": "Button in the theme editor that undoes this universe's changes to one of the ruleset's themes"
-	},
-	"editor.theme.restoreFailed": {
-		"defaultMessage": "Could not restore the theme.",
-		"description": "Shown in the theme editor when the ruleset's theme couldn't be restored"
-	},
-	"editor.theme.saveFailed": {
-		"defaultMessage": "Could not save the theme.",
-		"description": "Shown in the theme editor when the theme couldn't be stored"
 	},
 	"editor.themes.ability": {
 		"defaultMessage": "{ability} {bonus, number, ::sign-always}",
@@ -1771,21 +1679,13 @@
 		"defaultMessage": "Could not list the themes.",
 		"description": "Shown on the editor's Characters tab when the themes (character backgrounds, such as ace pilot) couldn't be loaded"
 	},
-	"editor.themes.name": {
-		"defaultMessage": "Name",
-		"description": "Heading of the table column with each theme's name"
-	},
-	"editor.themes.summary": {
-		"defaultMessage": "Summary",
-		"description": "Heading of the table column describing each theme's rules, such as the ability it raises"
-	},
 	"editor.tile.addTitle": {
 		"defaultMessage": "Add Tile",
 		"description": "Title of the tile editor when making a new tile"
 	},
 	"editor.tile.color": {
 		"defaultMessage": "Color",
-		"description": "Label of the field for the color a tile is drawn in"
+		"description": "The color a tile is drawn in: the label of its field in the tile editor, and the heading of the Tilesets table's column of colors"
 	},
 	"editor.tile.colorHex": {
 		"defaultMessage": "Color as hex",
@@ -1795,14 +1695,6 @@
 		"defaultMessage": "Pick a color",
 		"description": "Name of the color picker for a tile's color, for screen readers"
 	},
-	"editor.tile.confirmDelete": {
-		"defaultMessage": "Delete {tile}? This can't be undone.",
-		"description": "Asks before deleting a tile made for this universe; {tile} is its name"
-	},
-	"editor.tile.confirmRestore": {
-		"defaultMessage": "Restore {tile} to the ruleset's default? Your changes to it will be lost.",
-		"description": "Asks before undoing this universe's changes to one of the ruleset's tiles; {tile} is its name"
-	},
 	"editor.tile.day": {
 		"defaultMessage": "Day",
 		"description": "Caption of the preview of the tile in daylight"
@@ -1811,45 +1703,25 @@
 		"defaultMessage": "Delete Tile",
 		"description": "Button in the tile editor that deletes a tile made for this universe"
 	},
-	"editor.tile.deleteFailed": {
-		"defaultMessage": "Could not delete the tile.",
-		"description": "Shown in the tile editor when the tile couldn't be deleted"
-	},
 	"editor.tile.editTitle": {
 		"defaultMessage": "Edit {tile}",
 		"description": "Title of the tile editor for a tile the player can change; {tile} is its name"
-	},
-	"editor.tile.indoorsHint": {
-		"defaultMessage": "A preference, not a restriction: outdoor areas list outdoor tiles first.",
-		"description": "Explains what choosing indoors or outdoors does for a tile"
 	},
 	"editor.tile.invalidColor": {
 		"defaultMessage": "Enter a hex color, such as #7AFF3D.",
 		"description": "Shown by the color field when what was typed isn't a hexadecimal color"
 	},
-	"editor.tile.movementCost": {
-		"defaultMessage": "Movement cost (%)",
-		"description": "Label of the field for how much harder the tile is to move into, in percent"
-	},
-	"editor.tile.movementHint": {
-		"defaultMessage": "0% is normal movement, 50% takes twice as long, 100% can't be entered.",
-		"description": "Explains the movement cost field"
-	},
 	"editor.tile.night": {
 		"defaultMessage": "Night",
 		"description": "Caption of the preview of the tile at night"
 	},
-	"editor.tile.restore": {
-		"defaultMessage": "Restore Default",
-		"description": "Button in the tile editor that undoes this universe's changes to one of the ruleset's tiles"
+	"editor.tile.usedIn": {
+		"defaultMessage": "Where",
+		"description": "Heading of whether indoor areas, outdoor areas, both or neither can paint with a tile: in the tile editor, and the Tilesets tab's filter and table column"
 	},
-	"editor.tile.restoreFailed": {
-		"defaultMessage": "Could not restore the tile.",
-		"description": "Shown in the tile editor when the ruleset's tile couldn't be restored"
-	},
-	"editor.tile.saveFailed": {
-		"defaultMessage": "Could not save the tile.",
-		"description": "Shown in the tile editor when the tile couldn't be stored"
+	"editor.tile.usedInHint": {
+		"defaultMessage": "Areas can only paint with tiles for their kind. A tile for neither can't be painted, but maps that already use it keep it.",
+		"description": "Explains the checkboxes for whether indoor areas, outdoor areas, both or neither can paint with a tile"
 	},
 	"editor.tile.visionCost": {
 		"defaultMessage": "Vision cost (%)",
@@ -1859,57 +1731,29 @@
 		"defaultMessage": "100% can't be seen through.",
 		"description": "Explains the vision cost field"
 	},
+	"editor.tile.walkHint": {
+		"defaultMessage": "Game time walking a square takes. 10 is normal indoors and 600 (10 minutes) outdoors, twice that takes twice as long, and 0 can't be entered.",
+		"description": "Explains the walk time field"
+	},
+	"editor.tile.walkImpassable": {
+		"defaultMessage": "Can't be entered",
+		"description": "Under the walk time field of the tile editor when it is 0, which makes the tile impassable"
+	},
+	"editor.tile.walkSeconds": {
+		"defaultMessage": "Walk time (seconds)",
+		"description": "Label of the field for how many seconds of game time walking a square of the tile takes"
+	},
 	"editor.tiles.add": {
 		"defaultMessage": "Add Tile",
 		"description": "Button that opens the dialog for making a new tile"
 	},
-	"editor.tiles.color": {
-		"defaultMessage": "Color",
-		"description": "Heading of the table column showing each tile's color"
-	},
-	"editor.tiles.custom": {
-		"defaultMessage": "Custom",
-		"description": "Label of the filter for whether a tile was made for this universe, rather than coming with the ruleset"
-	},
-	"editor.tiles.customTag": {
-		"defaultMessage": "custom",
-		"description": "In the last column of the tile table, for a tile made for this universe"
-	},
-	"editor.tiles.edited": {
-		"defaultMessage": "Edited from default",
-		"description": "Label of the filter for whether one of the ruleset's tiles was changed for this universe"
-	},
-	"editor.tiles.editedTag": {
-		"defaultMessage": "edited",
-		"description": "In the last column of the tile table, for one of the ruleset's tiles that this universe changed"
-	},
-	"editor.tiles.filterAny": {
-		"defaultMessage": "Any",
-		"description": "Choice of a yes-or-no tile filter that shows every tile"
-	},
-	"editor.tiles.filterNo": {
-		"defaultMessage": "No",
-		"description": "Choice of a yes-or-no tile filter, e.g. Passable: No"
-	},
-	"editor.tiles.filterYes": {
-		"defaultMessage": "Yes",
-		"description": "Choice of a yes-or-no tile filter, e.g. Passable: Yes"
-	},
 	"editor.tiles.impassable": {
 		"defaultMessage": "impassable",
-		"description": "In the movement cost column, for a tile that can't be walked into"
+		"description": "In the walk time column, for a tile that can't be walked into"
 	},
 	"editor.tiles.listFailed": {
 		"defaultMessage": "Could not list the tiles.",
 		"description": "Shown on the Tilesets tab when the tiles couldn't be loaded"
-	},
-	"editor.tiles.movementCost": {
-		"defaultMessage": "Movement cost",
-		"description": "Heading of the table column with how much harder each tile is to move into"
-	},
-	"editor.tiles.name": {
-		"defaultMessage": "Name",
-		"description": "Heading of the table column with each tile's name"
 	},
 	"editor.tiles.none": {
 		"defaultMessage": "No tiles match.",
@@ -1921,19 +1765,23 @@
 	},
 	"editor.tiles.percent": {
 		"defaultMessage": "{cost, number, percent}",
-		"description": "A tile's movement or vision cost as a percentage, e.g. 50%. Change only for a language whose percentages the number format gets wrong"
-	},
-	"editor.tiles.search": {
-		"defaultMessage": "Search by name",
-		"description": "Shown in the empty field that filters the tiles by name"
+		"description": "A tile's vision cost as a percentage, e.g. 50%. Change only for a language whose percentages the number format gets wrong"
 	},
 	"editor.tiles.searchLabel": {
 		"defaultMessage": "Search tiles by name",
 		"description": "Name of the field that filters the tiles by name, for screen readers"
 	},
+	"editor.tiles.usedInValue": {
+		"defaultMessage": "{usedIn, select, both {Both} indoors {Indoors} outdoors {Outdoors} other {Neither}}",
+		"description": "Whether indoor areas only, outdoor areas only, both or neither can paint with a tile: in the Where column and as the choices of the Where filter"
+	},
 	"editor.tiles.visionCost": {
 		"defaultMessage": "Vision cost",
 		"description": "Heading of the table column with how much of a character's vision crossing each tile uses"
+	},
+	"editor.tiles.walkTime": {
+		"defaultMessage": "Walk time",
+		"description": "Heading of the table column with how many seconds of game time walking a square of each tile takes"
 	},
 	"editor.title": {
 		"defaultMessage": "Edit Universe",
@@ -1947,10 +1795,6 @@
 		"defaultMessage": "Preview",
 		"description": "Heading above the long description as players will see it"
 	},
-	"editor.universe.ruleset": {
-		"defaultMessage": "Ruleset: {ruleset}",
-		"description": "Shows the universe's game rules, which can't be changed; {ruleset} is e.g. Pathfinder 1E"
-	},
 	"editor.universe.saveFailed": {
 		"defaultMessage": "Could not save the universe.",
 		"description": "Shown on the Universe tab when its settings couldn't be stored"
@@ -1961,7 +1805,7 @@
 	},
 	"editor.universeTitle": {
 		"defaultMessage": "Edit {universe}",
-		"description": "Heading of the world editor; {universe} is the universe's name"
+		"description": "Heading of the world editor, linking to the editor's first tab; {universe} is the universe's name"
 	},
 	"error.alreadyInGroup": {
 		"defaultMessage": "That character is already in a group. They have to leave it first.",
@@ -2003,9 +1847,29 @@
 		"defaultMessage": "That class can't be chosen any more. Choose another.",
 		"description": "Why a new character wasn't made: the class chosen was deleted or disabled while the player was making the character"
 	},
+	"error.deleteGroupMember": {
+		"defaultMessage": "That character is in a group. They have to leave it before they can be deleted.",
+		"description": "Why a character wasn't deleted, straight away or after some days: characters in a group can't be deleted"
+	},
+	"error.difficultyLevelLimit": {
+		"defaultMessage": "A universe can have at most {max, plural, one {# difficulty level} other {# difficulty levels}}.",
+		"description": "Why a new difficulty level wasn't made: the universe has as many as allowed"
+	},
+	"error.difficultyLevelNeedsDefault": {
+		"defaultMessage": "A universe needs a default difficulty level. Make another level the default instead.",
+		"description": "Why the default difficulty level couldn't be deleted or stop being the default: exactly one level is always the default, so another one has to be made the default"
+	},
+	"error.difficultyLevelNeedsName": {
+		"defaultMessage": "A difficulty level needs a name.",
+		"description": "Why a difficulty level the universe added couldn't be saved: its name was left out"
+	},
 	"error.faerieCantLoop": {
 		"defaultMessage": "An area whose passage of time is faerie can't loop.",
-		"description": "Why an area's settings were refused: faerie time and a map that wraps around can't be combined"
+		"description": "Why an area can't both have faerie time and a map that wraps around: shown by the area editor's loop checkboxes, and as the reason the server refused an area's settings"
+	},
+	"error.faerieLobbyCantLoop": {
+		"defaultMessage": "The lobby's passage of time can't be faerie while its map loops.",
+		"description": "Why the lobby's settings, or its area's, were refused: faerie time and a map that wraps around can't be combined"
 	},
 	"error.faerieMorningMismatch": {
 		"defaultMessage": "Where morning is must be chosen when, and only when, the passage of time is faerie.",
@@ -2098,6 +1962,14 @@
 	"error.noSuchClass": {
 		"defaultMessage": "The class doesn't exist.",
 		"description": "Why a request about a character class (such as fighter or wizard) failed: it was deleted, perhaps by another editor"
+	},
+	"error.noSuchDifficultyLevel": {
+		"defaultMessage": "That difficulty doesn't exist any more. Choose another.",
+		"description": "Why a group wasn't made: the difficulty level chosen for it was deleted by the universe's creators, perhaps while the player was choosing"
+	},
+	"error.noSuchDifficultyLevelToEdit": {
+		"defaultMessage": "The difficulty level doesn't exist.",
+		"description": "Why a request about a difficulty level failed: it was deleted, perhaps by another editor"
 	},
 	"error.noSuchGroup": {
 		"defaultMessage": "The group doesn't exist any more, or that character isn't in it.",
@@ -2247,9 +2119,25 @@
 		"defaultMessage": "These settings are for a different ruleset than the universe's.",
 		"description": "Why a universe's ruleset settings were refused: they were made for another set of game rules"
 	},
+	"filter.any": {
+		"defaultMessage": "Any",
+		"description": "Choice of a filter on the Items or Tilesets tab that shows everything, such as items of every type, or tiles whether passable or not"
+	},
+	"filter.no": {
+		"defaultMessage": "No",
+		"description": "Choice of a yes-or-no filter on the Items or Tilesets tab, e.g. Passable: No"
+	},
+	"filter.yes": {
+		"defaultMessage": "Yes",
+		"description": "Choice of a yes-or-no filter on the Items or Tilesets tab, e.g. Passable: Yes"
+	},
 	"form.discardChanges": {
 		"defaultMessage": "You have changes that haven't been saved. Discard them?",
 		"description": "Asked before closing a form or dialog that has unsaved changes; the browser's OK discards them and Cancel goes back to the form"
+	},
+	"form.enabled": {
+		"defaultMessage": "Enabled",
+		"description": "Checkbox for whether players can use something: go into an area, give characters an item, or choose a race, class or theme for new characters. Also the label of the Items tab's filter for it"
 	},
 	"form.indoors": {
 		"defaultMessage": "Indoors",
@@ -2273,7 +2161,7 @@
 	},
 	"form.name": {
 		"defaultMessage": "Name",
-		"description": "Label of the field for the name of a universe, area or tile"
+		"description": "Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them"
 	},
 	"form.outdoors": {
 		"defaultMessage": "Outdoors",
@@ -2286,6 +2174,14 @@
 	"form.saved": {
 		"defaultMessage": "Saved",
 		"description": "Shown next to a form's Save button once its changes are stored"
+	},
+	"form.savedToast": {
+		"defaultMessage": "Changes saved",
+		"description": "Shown for a few seconds in a green message at the top of the page once a form's changes are stored"
+	},
+	"form.saving": {
+		"defaultMessage": "Saving...",
+		"description": "Shown while work is being stored, such as painting under the map editor's map, or the player's progress in the toolbar of Create Character"
 	},
 	"form.universeNameNoLetters": {
 		"defaultMessage": "A universe's name needs at least one letter or number.",
@@ -2303,10 +2199,6 @@
 		"defaultMessage": "Loading the universe...",
 		"description": "Shown on the whole page while the game looks up the universe it was opened for"
 	},
-	"game.outside.title": {
-		"defaultMessage": "Multiverse Kiln",
-		"description": "The browser tab's title on the game's page when the player isn't in a universe or game, such as when a join link has expired"
-	},
 	"game.universeNotFound": {
 		"defaultMessage": "That universe could not be found.",
 		"description": "Shown on the game's page when it was opened to enter a universe that doesn't exist or can't be played"
@@ -2314,6 +2206,10 @@
 	"group.characterLeft": {
 		"defaultMessage": "{name} is no longer in the group, or can't be played.",
 		"description": "Shown in the lobby when the character a window played left the group from another window, or was deleted; {name} is the character's name"
+	},
+	"group.clock": {
+		"defaultMessage": "Day {day, number}, {time}",
+		"description": "In the group's toolbar, the group's game clock: how many days its world has run, counting the first as 1, and the time of day, e.g. \"Day 1, 8:00:00 AM\" or \"Day 1, afternoon\""
 	},
 	"group.connectionLost": {
 		"defaultMessage": "Lost the connection to the group.",
@@ -2334,10 +2230,6 @@
 	"group.joining": {
 		"defaultMessage": "Joining...",
 		"description": "Shown in the group's toolbar while the player goes into the group"
-	},
-	"group.keys.characterSheet": {
-		"defaultMessage": "Open the character sheet of the character you're playing",
-		"description": "In the list of keyboard shortcuts in a group, what the shortcut that shows the character this window plays does"
 	},
 	"group.leave": {
 		"defaultMessage": "Leave group",
@@ -2375,13 +2267,13 @@
 		"defaultMessage": "The whole group has to be here to go that way, the anchor being included.",
 		"description": "Shown in a group's toolbar, and read out, when a character tries a door or path that needs every member of the group, and one isn't playing, is in another area, or is on their way somewhere"
 	},
-	"group.nowPlaying": {
-		"defaultMessage": "You are now playing {name}.",
-		"description": "Read out by screen readers in a group when the window switches to another of the player's characters; {name} is the character's name"
-	},
 	"group.pageTitle": {
 		"defaultMessage": "{group} - Multiverse Kiln",
 		"description": "The browser tab's title while the player is in a group; {group} is the group's name, or \"Group\", and Multiverse Kiln is the game engine's name"
+	},
+	"group.permadeath": {
+		"defaultMessage": "Permadeath: characters who die in this group cannot be resurrected.",
+		"description": "Warning for a group whose difficulty level has permadeath, shown in the Create Group dialog when such a level is chosen and on the screen an invite link to such a group opens"
 	},
 	"group.playingAs": {
 		"defaultMessage": "Playing as {name}",
@@ -2478,6 +2370,10 @@
 	"invite.choose": {
 		"defaultMessage": "Choose a character to join the group. Characters already in a group can't join another.",
 		"description": "On the screen an invite link opens, above the list of the player's characters: they choose one to join the group with"
+	},
+	"invite.difficulty": {
+		"defaultMessage": "Difficulty: {level} ({mobs})",
+		"description": "On the screen an invite link opens, the difficulty level the group plays at; {level} is its name, e.g. Hard, and {mobs} says how it changes mobs (monsters and enemies), e.g. \"Mobs 50% harder\""
 	},
 	"invite.failed": {
 		"defaultMessage": "Could not open the invite.",
@@ -2659,10 +2555,6 @@
 		"defaultMessage": "Contents",
 		"description": "Heading of the list of links to each section of the license page"
 	},
-	"license.copyright": {
-		"defaultMessage": "Copyright (C) {year} {holder}.",
-		"description": "The game's copyright notice on the license page; {year} is the year and {holder} is who holds the copyright"
-	},
 	"license.game": {
 		"defaultMessage": "The Game Engine",
 		"description": "Heading of the license page's section about the game's own code, and its link in the page's contents"
@@ -2675,10 +2567,6 @@
 		"defaultMessage": "Licenses",
 		"description": "Heading of the page with the game's license and the licenses of what it uses"
 	},
-	"license.home": {
-		"defaultMessage": "Back to Home",
-		"description": "Link at the top of the license page that goes back to the list of universes"
-	},
 	"license.icons": {
 		"defaultMessage": "Icons",
 		"description": "Heading of the license page's section crediting the icon sets the pages use, and its link in the page's contents"
@@ -2689,19 +2577,11 @@
 	},
 	"license.pathfinder": {
 		"defaultMessage": "Pathfinder First Edition rules",
-		"description": "Heading of the license page's section about the rules of the tabletop role-playing game Pathfinder, first edition, which the game uses, and its link in the page's contents"
-	},
-	"license.pathfinderSectionLink": {
-		"defaultMessage": "Pathfinder First Edition rules",
-		"description": "Link on the license page to its section about the Pathfinder First Edition rules"
+		"description": "Heading of the license page's section about the rules of the tabletop role-playing game Pathfinder, first edition, which the game uses, and the links to that section on the page"
 	},
 	"license.phosphor": {
 		"defaultMessage": "Interface icons are from {phosphor}, used under the MIT License:",
 		"description": "On the license page, crediting the icon set the pages' buttons use; {phosphor} is a link to it, named the same in every language. The license's text follows in English"
-	},
-	"license.sourceCode": {
-		"defaultMessage": "Source code",
-		"description": "Link on the license page to where the game engine's source code can be downloaded"
 	},
 	"license.starfinder": {
 		"defaultMessage": "Starfinder First Edition rules",
@@ -2731,14 +2611,6 @@
 		"defaultMessage": "Multiverse Kiln is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.",
 		"description": "The game's license notice, saying it comes with no warranty"
 	},
-	"lobby.characterDescription": {
-		"defaultMessage": "{race} {class}",
-		"description": "In the lobby's list of the player's characters, a character's race and class after their name, e.g. \"Dwarf Fighter\". Reorder them as your language needs"
-	},
-	"lobby.characterLeaving": {
-		"defaultMessage": "To be deleted on {deleteAt, date, medium}",
-		"description": "In the lobby's list of the player's characters, beside one given their last rites, who can't be played until restored from their sheet; {deleteAt} is the day they will be deleted"
-	},
 	"lobby.characterPlaying": {
 		"defaultMessage": "Playing",
 		"description": "In the lobby's list of the player's characters, shown beside the one they are playing now"
@@ -2750,14 +2622,6 @@
 	"lobby.characterSheetLabel": {
 		"defaultMessage": "Character sheet of {name}",
 		"description": "Name for screen readers of the button beside one of the player's characters in the lobby that shows their sheet; {name} is the character's name"
-	},
-	"lobby.characters": {
-		"defaultMessage": "Your characters",
-		"description": "Heading of the list of characters the player has made in this universe"
-	},
-	"lobby.charactersFailed": {
-		"defaultMessage": "Could not list your characters.",
-		"description": "Shown in the lobby when the list of the player's characters in the universe couldn't be loaded"
 	},
 	"lobby.chat.label": {
 		"defaultMessage": "Chat message",
@@ -2799,10 +2663,6 @@
 		"defaultMessage": "Here ({count})",
 		"description": "Heading of the list of players in the lobby; {count} is how many there are"
 	},
-	"lobby.keys.characterSheet": {
-		"defaultMessage": "Open the character sheet of the character you're playing",
-		"description": "In the list of keyboard shortcuts in the lobby, what the shortcut that shows the character the player is playing does"
-	},
 	"lobby.leave": {
 		"defaultMessage": "Leave lobby",
 		"description": "Button that leaves the lobby and goes back to the list of universes"
@@ -2811,17 +2671,9 @@
 		"defaultMessage": "and {count, number} more",
 		"description": "Under the list of players in the lobby, how many more are here than are listed"
 	},
-	"lobby.noCharacters": {
-		"defaultMessage": "You haven't made a character in this universe yet.",
-		"description": "Shown instead of the list of the player's characters when they haven't made one in this universe"
-	},
 	"lobby.notJoined": {
 		"defaultMessage": "Could not enter {universe}. Try again in a moment.",
 		"description": "Shown on the game's page when the player couldn't go into a universe's lobby; {universe} is its name"
-	},
-	"lobby.nowPlaying": {
-		"defaultMessage": "You are now playing {name}.",
-		"description": "Read out by screen readers in the lobby when the player switches to another of their characters; {name} is the character's name"
 	},
 	"lobby.ownGhost": {
 		"defaultMessage": "You (a ghost)",
@@ -2875,6 +2727,10 @@
 		"defaultMessage": "{count, plural, one {{players} goes out of view.} other {{players} go out of view.}}",
 		"description": "Read out by screen readers when other players go out of view on the map or leave; {players} is a list of their names"
 	},
+	"map.announce.partOfDay": {
+		"defaultMessage": "{part, select, dawn {Dawn breaks.} day {The sun is up.} dusk {Dusk falls.} other {Night falls.}}",
+		"description": "Read out by screen readers as the time of day changes where the player is: dawn begins, full daylight comes, dusk begins, or night comes"
+	},
 	"map.announce.player": {
 		"defaultMessage": "{name}, {cells, plural, one {# cell} other {# cells}} {direction, select, north {north} northeast {northeast} east {east} southeast {southeast} south {south} southwest {southwest} west {west} other {northwest}}",
 		"description": "Read out by screen readers in the list of players the player can see: their name, how many cells away and in which direction, e.g. \"Bo, 3 cells northeast\""
@@ -2885,7 +2741,19 @@
 	},
 	"map.announce.position": {
 		"defaultMessage": "{area}, column {column}, row {row}{onTile, select, yes {, on {tile}} other {}}. {count, plural, =0 {You can't see anyone else.} other {You can see {players}.}}",
-		"description": "Read out by screen readers when the player asks where they are: the area's name, their cell, the tile they stand on (e.g. Grass) when it is known, and the other players they can see; {players} is a list of descriptions such as \"Bo, 3 cells northeast\""
+		"description": "Read out by screen readers, and shown at the top of the page, when the player asks where they are: the area's name, their cell, the tile they stand on (e.g. Grass) when it is known, and the other players they can see; {players} is a list of descriptions such as \"Bo, 3 cells northeast\""
+	},
+	"map.announce.sight": {
+		"defaultMessage": "You can see {squares, plural, one {# square} other {# squares}} across open ground.",
+		"description": "Read out by screen readers, and shown at the top of the page, when the player asks where they are, after the time of day: how far they can see, which is less at night unless their character has darkvision, and less past forests and mountains"
+	},
+	"map.announce.timeOfDay": {
+		"defaultMessage": "It is {time}, {part, select, dawn {dawn} day {day} dusk {dusk} other {night}}.",
+		"description": "Read out by screen readers, and shown at the top of the page, when the player asks where they are, after their position: the time of day in the game, e.g. \"6:30:00 PM\", and the part of the day it falls in"
+	},
+	"map.announce.timeOfDayRough": {
+		"defaultMessage": "It is {time}.",
+		"description": "Read out by screen readers, and shown at the top of the page, when the player asks where they are, after their position, in a universe that shows the time roughly: a word for the time of day in the game, e.g. \"late morning\""
 	},
 	"map.ghost": {
 		"defaultMessage": "Ghost",
@@ -3013,7 +2881,7 @@
 	},
 	"page.backToHome": {
 		"defaultMessage": "Back to Home",
-		"description": "Link below a message filling the page, such as one saying a universe couldn't be found, that goes to the list of universes"
+		"description": "Link or button that goes back to the list of universes (Home): at the top of a page, in the editor's toolbar, or below a message filling the page, such as one saying a universe couldn't be found"
 	},
 	"page.connectFailed": {
 		"defaultMessage": "Could not connect to the server. Reload the page to try again.",
@@ -3025,7 +2893,7 @@
 	},
 	"page.copyright": {
 		"defaultMessage": "Copyright (C) {year} {holder}.",
-		"description": "Copyright notice at the bottom of every page; {year} is the year and {holder} is who holds the copyright"
+		"description": "The game's copyright notice, at the bottom of every page and on the license page; {year} is the year and {holder} is who holds the copyright"
 	},
 	"page.credits": {
 		"defaultMessage": "Credits",
@@ -3051,9 +2919,9 @@
 		"defaultMessage": "GNU Affero General Public License v3 or later",
 		"description": "The name of the game's license, linking to the license page"
 	},
-	"page.name": {
-		"defaultMessage": "Multiverse Kiln",
-		"description": "The game engine's name, shown as a heading"
+	"page.loading": {
+		"defaultMessage": "Loading...",
+		"description": "Shown while a page or part of one loads, such as the site settings, the choices in Create Character, an area in the editor, or a universe's page"
 	},
 	"page.playingAs": {
 		"defaultMessage": "Playing as {name}",
@@ -3065,11 +2933,7 @@
 	},
 	"page.sourceCode": {
 		"defaultMessage": "Source code",
-		"description": "Link at the bottom of every page to where the game engine's source code can be downloaded"
-	},
-	"page.title": {
-		"defaultMessage": "Multiverse Kiln",
-		"description": "The browser tab's title for Home, a universe's page and the game's page while they load"
+		"description": "Link to where the game engine's source code can be downloaded, at the bottom of every page and on the license page"
 	},
 	"pager.next": {
 		"defaultMessage": "Next",
@@ -3423,6 +3287,14 @@
 		"defaultMessage": "none",
 		"description": "Magic tradition of a class in Pathfinder that casts no spells"
 	},
+	"play.keys.characterSheet": {
+		"defaultMessage": "Open the character sheet of the character you're playing",
+		"description": "In the list of keyboard shortcuts in the lobby or a group, what the shortcut that shows the character this window plays does"
+	},
+	"play.nowPlaying": {
+		"defaultMessage": "You are now playing {name}.",
+		"description": "Read out by screen readers in the lobby or a group when the window switches to another of the player's characters; {name} is the character's name"
+	},
 	"sf1e.ability.charisma": {
 		"defaultMessage": "Charisma",
 		"description": "Name of a character's ability score in Starfinder: force of personality"
@@ -3647,10 +3519,6 @@
 		"defaultMessage": "Xenoseeker",
 		"description": "Name of a character theme (background) in Starfinder: seeks out and studies alien life. Used as a label"
 	},
-	"shortcuts.close": {
-		"defaultMessage": "Close",
-		"description": "Button that closes the list of keyboard shortcuts"
-	},
 	"shortcuts.escape": {
 		"defaultMessage": "Esc",
 		"description": "In the list of keyboard shortcuts, the name of the Escape key"
@@ -3719,6 +3587,22 @@
 		"defaultMessage": "Water",
 		"description": "Name of a map tile in a science fantasy world: deep water, which can't be walked into"
 	},
+	"time.periodOfDay": {
+		"defaultMessage": "{period, select, midnight {midnight} pre_dawn {pre-dawn} dawn {dawn} early_morning {early morning} morning {morning} late_morning {late morning} noon {noon} early_afternoon {early afternoon} afternoon {afternoon} late_afternoon {late afternoon} evening {evening} late_evening {late evening} other {night}}",
+		"description": "A word for the time of day in the game, shown in place of the time on the clock, e.g. \"late morning\". It follows \"Day 1, \" in the group's toolbar and \"It is \" when the player asks where they are"
+	},
+	"universe.displayTime.none": {
+		"defaultMessage": "nothing",
+		"description": "Choice for how a universe shows the time of day: players aren't shown the time at all"
+	},
+	"universe.displayTime.precise": {
+		"defaultMessage": "precise (to the second)",
+		"description": "Choice for how a universe shows the time of day: the time on the clock, e.g. 8:00:00 AM"
+	},
+	"universe.displayTime.rough": {
+		"defaultMessage": "rough (such as afternoon)",
+		"description": "Choice for how a universe shows the time of day: a word for the time of day, e.g. late morning or afternoon"
+	},
 	"universe.faerie.center": {
 		"defaultMessage": "center",
 		"description": "Where morning is in faerie time: the center of the map, with midnight at the edges"
@@ -3758,6 +3642,14 @@
 	"universe.faerie.west": {
 		"defaultMessage": "west",
 		"description": "Where morning is in faerie time: the west edge of the map"
+	},
+	"universe.lightLevel.dark": {
+		"defaultMessage": "dark",
+		"description": "Light level of an indoor area that is as dark as night at any time of day"
+	},
+	"universe.lightLevel.lit": {
+		"defaultMessage": "lit",
+		"description": "Light level of an indoor area that is as light as full daylight at any time of day"
 	},
 	"universe.lobbyAreaName": {
 		"defaultMessage": "Lobby",
@@ -3855,41 +3747,17 @@
 		"defaultMessage": "inherit from the parent area",
 		"description": "Passage of time for an area that uses its parent area's setting, or the universe's"
 	},
-	"universePage.characterDescription": {
-		"defaultMessage": "{race} {class}",
-		"description": "On a universe's page, in the list of the player's characters, a character's race and class after their name, e.g. \"Dwarf Fighter\". Reorder them as your language needs"
-	},
-	"universePage.characterLeaving": {
-		"defaultMessage": "To be deleted on {deleteAt, date, medium}",
-		"description": "On a universe's page, in the list of the player's characters, beside one given their last rites, who can be restored from their sheet until then; {deleteAt} is the day they will be deleted"
-	},
-	"universePage.characters": {
-		"defaultMessage": "Your characters",
-		"description": "Heading on a universe's page of the list of characters the player has made in the universe, shown while they are logged in"
-	},
-	"universePage.charactersFailed": {
-		"defaultMessage": "Could not list your characters.",
-		"description": "Shown on a universe's page when the list of the player's characters in the universe couldn't be loaded"
+	"universe.time.real_time": {
+		"defaultMessage": "real time",
+		"description": "Passage of time for a universe's lobby, where the time of day follows the real clock, with a day as long as the universe chooses"
 	},
 	"universePage.enter": {
 		"defaultMessage": "Enter Universe",
 		"description": "Button on a universe's page that takes the player into the universe, starting in its lobby"
 	},
-	"universePage.home": {
-		"defaultMessage": "Back to Home",
-		"description": "Link at the top of a universe's page that goes back to the list of universes"
-	},
 	"universePage.loadFailed": {
 		"defaultMessage": "Could not load the universe. Reload the page to try again.",
 		"description": "Shown on the whole of a universe's page when the universe couldn't be loaded, such as when the server can't be reached"
-	},
-	"universePage.loading": {
-		"defaultMessage": "Loading...",
-		"description": "Shown on the whole of a universe's page while the universe loads"
-	},
-	"universePage.noCharacters": {
-		"defaultMessage": "You haven't made a character in this universe yet.",
-		"description": "Shown on a universe's page instead of the list of the player's characters when they haven't made one in the universe"
 	},
 	"universePage.notFound": {
 		"defaultMessage": "That universe could not be found. It may have been renamed, or it isn't open to everyone yet.",

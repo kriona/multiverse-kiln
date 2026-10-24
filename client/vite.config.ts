@@ -6,6 +6,7 @@ import path from 'path';
 import { defineConfig, loadEnv, type Connect, type Plugin } from 'vite';
 
 import { CATALOG_FILE, catalogText, extractMessages, PAGES, PARTIALS_FOLDER, PSEUDO_CATALOG_FILE, pseudoCatalog, SOURCE_FOLDERS, writeCatalog } from '../shared/scripts/extractMessages.ts';
+import { SITE_NAME } from '../shared/src/constants.ts';
 import { PATH_PAGES } from './src/pages.ts';
 
 /**
@@ -71,6 +72,26 @@ function htmlPartials(): Plugin
 					server.ws.send({ type: 'full-reload' });
 				}
 			});
+		}
+	});
+}
+
+/**
+ * Puts the game engine's name (SITE_NAME in shared/src/constants.ts) in the pages and their partials
+ * wherever they say %SITE_NAME%
+ *
+ * @return The plugin
+ */
+function siteName(): Plugin
+{
+	return({
+		name: 'kiln-site-name',
+		transformIndexHtml: {
+			order: 'pre',
+			handler(html)
+			{
+				return(html.replaceAll('%SITE_NAME%', SITE_NAME));
+			}
 		}
 	});
 }
@@ -352,7 +373,7 @@ export default defineConfig(({ command, mode }) =>
 	} : undefined);
 
 	return({
-		plugins: [pathPages(), htmlPartials(), icons(), messageCatalogs(), stripDescriptions()],
+		plugins: [pathPages(), htmlPartials(), siteName(), icons(), messageCatalogs(), stripDescriptions()],
 		server: {
 			// Bind to the dev hostname (127.0.0.1 via hosts file); the default "localhost" may bind IPv6 only
 			host: devHost,

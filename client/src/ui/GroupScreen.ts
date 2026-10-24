@@ -1,14 +1,16 @@
 import { Callbacks } from '@colyseus/sdk';
-import { defineMessages, ServerMessageType, type AreaPayload, type CharacterListPayload, type CharacterSummary, type GroupMember, type WelcomePayload } from '@multiverse-kiln/shared';
+import { DAY_SECONDS, defineMessages, GRID_CELL_SIZE, secondOfDay, ServerMessageType, type AreaPayload, type CharacterListPayload, type CharacterSummary, type GroupMember, type WelcomePayload } from '@multiverse-kiln/shared';
 import signOutIcon from 'virtual:icon/ph:sign-out';
 
 import { currentLocale, t } from '../localization';
 import type { GameConnection } from '../network/serverConnection';
 import { announce } from './announcer';
 import { CharacterList } from './CharacterList';
+import { characterMessages } from './characterMessages';
 import { getElement, setButtonLabel, showMessage } from './dom';
 import type { MapView } from './MapView';
 import { addShortcut } from './shortcuts';
+import { describeTimeOfDay } from './timeOfDay';
 
 /**
  * Text the group screen shows in more than one place (see src/localization.ts)
@@ -20,6 +22,12 @@ const messages = defineMessages({
 		description: 'Shown in the group\'s toolbar while the player goes into the group'
 	}
 });
+
+/**
+ * Milliseconds between refreshes of the toolbar's clock, which in a faerie area follows the character
+ * as they walk
+ */
+const CLOCK_REFRESH_MS = 500;
 
 /**
  * What the group screen asks the app to do
@@ -36,6 +44,11 @@ export interface GroupScreenActions
 	 * Show one of the player's characters on their character sheet
 	 */
 	openCharacterSheet: (character: CharacterSummary) => void;
+
+	/**
+	 * Go to Create Character
+	 */
+	createCharacter: () => void;
 
 	/**
 	 * Open the Invite dialog, for the anchor being's player
@@ -57,7 +70,7 @@ export interface GroupScreenActions
 
 /**
  * The group screen: the group's map, its members (who is here, and who the anchor being is), the
- * player's characters, and the Invite and Leave group buttons
+ * player's characters with Create Character, and the Invite and Leave group buttons
  *
  * Each window plays one character. Choosing another of the player's characters in the group switches
  * the window to them without leaving the room: the room sends Welcome and Area again, and the map
@@ -69,6 +82,7 @@ export class GroupScreen
 	private readonly title = getElement('group-title', HTMLElement);
 	private readonly characterName = getElement('group-character-name', HTMLElement);
 	private readonly status = getElement('group-status', HTMLElement);
+	private readonly time = getElement('group-time', HTMLElement);
 	private readonly inviteButton = getElement('invite-group', HTMLButtonElement);
 	private readonly leaveButton = getElement('leave-group', HTMLButtonElement);
 	private readonly map = getElement('group-map', HTMLElement);
@@ -92,6 +106,11 @@ export class GroupScreen
 	 * The joined room, once the window is in it
 	 */
 	private connection: GameConnection | undefined;
+
+	/**
+	 * The area the window's character is in, for the toolbar's clock
+	 */
+	private area: AreaPayload | undefined;
 
 	/**
 	 * The player's ID, which tells their own members apart
@@ -142,6 +161,11 @@ export class GroupScreen
 			}
 		});
 
+		getElement('group-create-character', HTMLButtonElement).addEventListener('click', () =>
+		{
+			actions.createCharacter();
+		});
+
 		this.inviteButton.addEventListener('click', () =>
 		{
 			actions.invite();
@@ -174,11 +198,7 @@ export class GroupScreen
 		addShortcut({
 			keys: 'Alt+K',
 			scope: getElement('group-screen', HTMLElement),
-			description: () => t({
-				id: 'group.keys.characterSheet',
-				defaultMessage: 'Open the character sheet of the character you\'re playing',
-				description: 'In the list of keyboard shortcuts in a group, what the shortcut that shows the character this window plays does'
-			}),
+			description: () => t(characterMessages.sheetShortcut),
 			run: () =>
 			{
 				const character = this.characters?.characters.find((each) => (each.id === this.characterId));
@@ -225,6 +245,7 @@ export class GroupScreen
 
 		this.connection = connection;
 		this.characterId = connection.playerId;
+		this.area = connection.area;
 
 		// Keeps any message that arrived while joining
 		if (this.status.textContent === t(messages.joining))
@@ -245,6 +266,22 @@ export class GroupScreen
 			this.anchorId = anchorId;
 			this.queueRender();
 		}));
+
+		this.unbinds.push(callbacks.listen('clock', () =>
+		{
+			this.showClock();
+		}));
+
+		// Faerie time changes as the character walks, without the clock moving
+		const clockTimer = window.setInterval(() =>
+		{
+			this.showClock();
+		}, CLOCK_REFRESH_MS);
+
+		this.unbinds.push(() =>
+		{
+			window.clearInterval(clockTimer);
+		});
 
 		// Fires for members already in the group too
 		this.unbinds.push(callbacks.onAdd('members', (member: GroupMember, characterId: string) =>
@@ -290,7 +327,9 @@ export class GroupScreen
 
 		this.unbinds.push(room.onMessage(ServerMessageType.Area, (area: AreaPayload) =>
 		{
+			this.area = area;
 			this.finishSwitch(area);
+			this.showClock();
 		}));
 	}
 
@@ -305,10 +344,60 @@ export class GroupScreen
 		}
 
 		this.connection = undefined;
+		this.area = undefined;
 		this.groupId = undefined;
 		this.switchingTo = undefined;
+		this.time.textContent = '';
 		this.leaveDialog.close();
 		this.mapView.hide();
+	}
+
+	/**
+	 * Shows the group's game clock in the toolbar: the day since its world began, and the time of day in
+	 * the character's area, the way the universe shows it. That is the clock's time where time flows
+	 * normally and the area's fixed time in an always area. In a faerie area, where the time of day comes
+	 * from where the character stands, it is at most a word for the time of day there, such as afternoon.
+	 * A universe that doesn't show the time shows no clock
+	 */
+	private showClock(): void
+	{
+		const connection = this.connection;
+
+		if (!connection)
+		{
+			return;
+		}
+
+		const clock = connection.room.state.clock;
+		const day = Math.floor(clock / DAY_SECONDS) + 1;
+		const area = this.area;
+		const own = ((this.characterId !== undefined) ? connection.room.state.players.get(this.characterId) : undefined);
+
+		// Until the area arrives, it isn't known whether the universe shows the time
+		if (!area)
+		{
+			this.time.textContent = '';
+			return;
+		}
+
+		const seconds = secondOfDay(area.time, clock, Date.now(), { column: Math.floor((own?.x ?? 0) / GRID_CELL_SIZE), row: Math.floor((own?.y ?? 0) / GRID_CELL_SIZE) }, area.bounds);
+		const roughOnly = ((area.time.passage === 'faerie') && (area.displayTime === 'precise'));
+		const time = describeTimeOfDay(seconds, (roughOnly ? 'rough' : area.displayTime));
+
+		if (time === undefined)
+		{
+			this.time.textContent = '';
+			return;
+		}
+
+		this.time.textContent = t({
+			id: 'group.clock',
+			defaultMessage: 'Day {day, number}, {time}',
+			description: 'In the group\'s toolbar, the group\'s game clock: how many days its world has run, counting the first as 1, and the time of day, e.g. "Day 1, 8:00:00 AM" or "Day 1, afternoon"'
+		}, {
+			day,
+			time
+		});
 	}
 
 	/**
@@ -391,11 +480,7 @@ export class GroupScreen
 
 		if (name !== undefined)
 		{
-			announce(t({
-				id: 'group.nowPlaying',
-				defaultMessage: 'You are now playing {name}.',
-				description: 'Read out by screen readers in a group when the window switches to another of the player\'s characters; {name} is the character\'s name'
-			}, {
+			announce(t(characterMessages.nowPlaying, {
 				name
 			}));
 		}

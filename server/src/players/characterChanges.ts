@@ -7,7 +7,7 @@
  */
 export type CharacterChange =
 	| { kind: 'removed'; playerId: string; universeId: string; characterId: string }
-	| { kind: 'restored'; playerId: string; universeId: string; character: { id: string; name: string }; inGroup: boolean };
+	| { kind: 'restored'; playerId: string; universeId: string; character: { id: string; name: string; raceId: number }; inGroup: boolean };
 
 /**
  * Called after every change

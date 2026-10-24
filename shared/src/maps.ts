@@ -27,9 +27,46 @@ export const DEFAULT_TILE_CELL = 0;
 export const VOID_CELL = -1;
 
 /**
- * Movement cost of a cell nobody can enter, in percent. 0 is normal movement and 50 takes twice as long
+ * Cell value a group's room sends in place of a cell the group hasn't seen, so its tile never reaches
+ * the client before then: drawn black, and seen past as if it were open ground. It is never stored
  */
-export const IMPASSABLE_COST = 100;
+export const UNSEEN_CELL = -2;
+
+/**
+ * Walk seconds of a tile nobody can enter
+ */
+export const IMPASSABLE_WALK_SECONDS = 0;
+
+/**
+ * Seconds of game time walking a square of a new indoor tile takes. In an indoor area, a player
+ * crosses a tile this quick or quicker on screen at full speed, and a slower one at a matching
+ * fraction of it: 20 seconds moves at half speed
+ */
+export const DEFAULT_INDOOR_WALK_SECONDS = 10;
+
+/**
+ * Seconds of game time walking a square of a new outdoor tile takes: 10 minutes. In an outdoor area,
+ * a player crosses a tile this quick or quicker on screen at full speed, and a slower one at a
+ * matching fraction of it: 20 minutes moves at half speed
+ */
+export const DEFAULT_OUTDOOR_WALK_SECONDS = 600;
+
+/**
+ * The walk seconds a player crosses at full speed on screen in an area, which is also what a new tile
+ * for that kind of area takes
+ *
+ * @param indoors Whether the area is indoors
+ * @return DEFAULT_INDOOR_WALK_SECONDS or DEFAULT_OUTDOOR_WALK_SECONDS
+ */
+export function defaultWalkSeconds(indoors: boolean): number
+{
+	return((indoors ? DEFAULT_INDOOR_WALK_SECONDS : DEFAULT_OUTDOOR_WALK_SECONDS));
+}
+
+/**
+ * The most seconds of game time walking a square of a tile can take
+ */
+export const MAX_WALK_SECONDS = 3600;
 
 /**
  * The cells a map covers, inclusive at both ends
@@ -56,7 +93,7 @@ export interface AreaTiles
 
 	/**
 	 * The stored chunks, keyed by chunkKey(). Each holds CHUNK_SIZE * CHUNK_SIZE cell values, row by row:
-	 * a tile ID, DEFAULT_TILE_CELL or VOID_CELL
+	 * a tile ID, DEFAULT_TILE_CELL or VOID_CELL, or on a client in a group's room UNSEEN_CELL
 	 */
 	chunks: ReadonlyMap<string, readonly number[]>;
 }
@@ -128,7 +165,7 @@ export function isInBounds(bounds: MapBounds, column: number, row: number): bool
  * @param tiles The area's tiles
  * @param column The cell's column
  * @param row The cell's row
- * @return The tile's ID, or undefined for a void cell or one outside the map
+ * @return The tile's ID, or undefined for a void or unseen cell or one outside the map
  */
 export function tileIdAt(tiles: AreaTiles, column: number, row: number): number | undefined
 {
@@ -140,7 +177,7 @@ export function tileIdAt(tiles: AreaTiles, column: number, row: number): number 
 	const chunk = tiles.chunks.get(chunkKey(chunkCoordinate(column), chunkCoordinate(row)));
 	const value = (chunk?.[cellIndexInChunk(column, row)] ?? DEFAULT_TILE_CELL);
 
-	if (value === VOID_CELL)
+	if ((value === VOID_CELL) || (value === UNSEEN_CELL))
 	{
 		return(undefined);
 	}

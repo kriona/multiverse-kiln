@@ -1,0 +1,2 @@
+ALTER TABLE "tiles" ADD COLUMN "walk_seconds" smallint DEFAULT 10 NOT NULL;--> statement-breakpoint
+ALTER TABLE "tiles" ADD CONSTRAINT "tiles_walk_seconds_range" CHECK ("tiles"."walk_seconds" BETWEEN 0 AND 3600);

@@ -49,6 +49,11 @@ $notice-border: #8d6e1f;
 $notice-background: #3a2f12;
 $notice-text: #f5d58a;
 
+// A success toast: paler than the green buttons, so it doesn't look like one
+$success-toast-border: #81c784;
+$success-toast-background: #334633;
+$success-toast-text: #FFF;
+
 html,
 body
 {
@@ -308,6 +313,35 @@ button.link-button
 	border-bottom: 1px solid $border;
 }
 
+// The game engine's name at the start of every toolbar, linking to Home. A line sets it apart from the page's own heading
+.site-name
+{
+	color: $text;
+	font-size: 20px;
+	font-weight: bold;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.site-name:hover,
+.title-link:hover
+{
+	text-decoration: underline;
+}
+
+// A link in a toolbar's heading or name that reads as the text around it (titleLink() in src/ui/dom.ts)
+.title-link
+{
+	color: inherit;
+	text-decoration: none;
+}
+
+.toolbar > .site-name
+{
+	padding-inline-end: 12px;
+	border-inline-end: 1px solid $border;
+}
+
 .toolbar-name,
 .toolbar-status
 {
@@ -320,10 +354,89 @@ button.link-button
 	color: $text;
 }
 
+// The group's game clock, in the group's toolbar
+.toolbar-time
+{
+	color: $text-muted;
+	white-space: nowrap;
+}
+
 // A link at the end of a page's toolbar, such as Back to Home
 .toolbar-link
 {
 	margin-inline-start: auto;
+}
+
+// Short messages at the top of the page (src/ui/toast.ts), above even a map editor filling the window
+.toasts
+{
+	position: fixed;
+	top: 16px;
+	left: 50%;
+	z-index: 20;
+	display: flex;
+	flex-direction: column;
+	// Each toast is as wide as its text, up to the container's width
+	align-items: center;
+	gap: 8px;
+	width: min(560px, calc(100% - 32px));
+	transform: translateX(-50%);
+	pointer-events: none;
+}
+
+.toast
+{
+	padding: 10px 14px;
+	border: 1px solid $border-strong;
+	border-radius: 4px;
+	background: $background-panel;
+	box-shadow: 0 4px 12px $backdrop;
+	color: $text;
+	cursor: pointer;
+	pointer-events: auto;
+}
+
+.toast.success
+{
+	border-color: $success-toast-border;
+	background: $success-toast-background;
+	color: $success-toast-text;
+}
+
+// A toast fading out can't be clicked or hovered
+.toast.closing
+{
+	pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference)
+{
+	.toast
+	{
+		animation: toast-in 150ms ease-out;
+	}
+
+	.toast.closing
+	{
+		animation: toast-out 300ms ease-in forwards;
+	}
+}
+
+@keyframes toast-in
+{
+	from
+	{
+		opacity: 0;
+		transform: translateY(-8px);
+	}
+}
+
+@keyframes toast-out
+{
+	to
+	{
+		opacity: 0;
+	}
 }
 
 .notice

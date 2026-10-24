@@ -1,7 +1,5 @@
-import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, emptyMoney, isSf1eClassRules, MAX_CLASS_NAME_LENGTH, NEW_CLASS_RULES, NEW_PF1E_CLASS_RULES, NEW_SF1E_CLASS_RULES, PF1E_ABILITIES, PF1E_ABILITY_NAMES, PF1E_CASTING_STYLE_NAMES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITION_NAMES, PF1E_MAGIC_TRADITIONS, SF1E_ABILITIES, SF1E_ABILITY_NAMES, SF1E_MAX_CLASS_POINTS, SF1E_MIN_CLASS_POINTS, type ClassRaceArea, type ClassRules, type ClassSettings, type EditableUniverse, type EditorClass, type EditorRace, type MessageDescriptor, type Pf1eAbility, type Pf1eCastingStyle, type Pf1eMagicTradition, type Sf1eAbility } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, emptyMoney, isSf1eClassRules, MAX_CLASS_NAME_LENGTH, NEW_CLASS_RULES, NEW_PF1E_CLASS_RULES, NEW_SF1E_CLASS_RULES, PF1E_ABILITIES, PF1E_ABILITY_NAMES, PF1E_CASTING_STYLE_NAMES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITION_NAMES, PF1E_MAGIC_TRADITIONS, SF1E_ABILITIES, SF1E_ABILITY_NAMES, SF1E_MAX_CLASS_POINTS, SF1E_MIN_CLASS_POINTS, type ClassRaceArea, type ClassRules, type ClassSettings, type EditableUniverse, type EditorClass, type EditorRace, type Pf1eAbility, type Pf1eCastingStyle, type Pf1eMagicTradition, type Sf1eAbility } from '@multiverse-kiln/shared';
 import mapPinIcon from 'virtual:icon/ph:map-pin';
-import restoreIcon from 'virtual:icon/ph:arrow-counter-clockwise';
-import trashIcon from 'virtual:icon/ph:trash';
 import clearIcon from 'virtual:icon/ph:x';
 
 import { t } from '../../localization';
@@ -12,24 +10,26 @@ import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldError
 import { formMessages } from '../formMessages';
 import { formatMoney, readMoneyField } from '../moneyField';
 import { className, raceName } from '../raceAndClassNames';
+import { editorMessages } from './editorMessages';
 import type { ItemSelectDialog } from './ItemSelectDialog';
 import { startingAreaMessages } from './startingAreaMessages';
 import { StartingItemsField } from './StartingItemsField';
 import { AreaChoice } from './AreaChoice';
 import type { AreaSelectDialog } from './AreaSelectDialog';
+import { labelRemoveButton, type StagedEdit } from './stagedChanges';
 
 /**
  * The class editor: a dialog for a class's name, whether it is enabled, its rules, and what its
  * characters start with and where, for every race or for each race
  *
- * Saving a default class stores the universe's edited copy of it. The dialog can also delete a custom
- * class, or restore an edited default class
+ * Applying keeps the changes on the Characters tab until it is saved; for a default class, saving stores
+ * the universe's edited copy of it. The dialog can also delete a custom class, or restore an edited
+ * default class, when the tab is saved
  */
 export class ClassDialog
 {
 	private readonly dialog = getElement('class-dialog', HTMLDialogElement);
 	private readonly form = getElement('class-form', HTMLFormElement);
-	private readonly fields = getElement('class-fields', HTMLFieldSetElement);
 	private readonly title = getElement('class-dialog-title', HTMLElement);
 	private readonly name = getElement('class-name', HTMLInputElement);
 	private readonly enabled = getElement('class-enabled', HTMLInputElement);
@@ -54,10 +54,10 @@ export class ClassDialog
 	private readonly startingArea: AreaChoice;
 
 	/**
-	 * The area for each race's members of the class, by race ID, which may not be saved yet. Kept while
-	 * the class has an area for every race, so taking that area away brings them back
+	 * The area and square for each race's members of the class, by race ID, which may not be saved yet.
+	 * Kept while the class has an area for every race, so taking that area away brings them back
 	 */
-	private readonly raceAreas = new Map<number, string>();
+	private readonly raceAreas = new Map<number, ClassRaceArea>();
 
 	/**
 	 * The choice for each race's area, once the races have loaded
@@ -65,7 +65,7 @@ export class ClassDialog
 	private raceAreaChoices: AreaChoice[] = [];
 
 	/**
-	 * Whether the class has changes that haven't been saved
+	 * Whether the class has changes that haven't been applied
 	 */
 	private readonly changes: ChangeTracker;
 
@@ -75,6 +75,11 @@ export class ClassDialog
 	 * The class being edited, or undefined for a new one
 	 */
 	private characterClass: EditorClass | undefined;
+
+	/**
+	 * Where the dialog's changes go
+	 */
+	private edit: StagedEdit<ClassSettings> | undefined;
 
 	/**
 	 * Every area's name, by ID, once they have loaded
@@ -87,7 +92,7 @@ export class ClassDialog
 	private openVersion = 0;
 
 	/**
-	 * Called after the class is saved, deleted or restored
+	 * Called after the class's changes are applied, or it is marked to delete or restore
 	 */
 	private onChanged: () => void = () => undefined;
 
@@ -140,7 +145,7 @@ export class ClassDialog
 		});
 		this.changes = new ChangeTracker({
 			root: this.form,
-			state: () => [this.startingItems.value, this.startingArea.value, [...this.raceAreas].sort(([a], [b]) => (a - b))]
+			state: () => [this.startingItems.value, this.startingArea.value, this.startingArea.cell, [...this.raceAreas].sort(([a], [b]) => (a - b))]
 		});
 		this.changes.guardDialog(this.dialog);
 
@@ -162,13 +167,13 @@ export class ClassDialog
 
 		this.removeButton.addEventListener('click', () =>
 		{
-			void this.remove();
+			this.remove();
 		});
 
 		this.form.addEventListener('submit', (event) =>
 		{
 			event.preventDefault();
-			void this.save();
+			this.apply();
 		});
 	}
 
@@ -177,16 +182,19 @@ export class ClassDialog
 	 *
 	 * @param universe The universe the class belongs to
 	 * @param characterClass The class, or undefined to add one
-	 * @param onChanged Called after the class is saved, deleted or restored
+	 * @param edit Where the dialog's changes go
+	 * @param onChanged Called after the class's changes are applied, or it is marked to delete or restore
 	 */
-	open(universe: EditableUniverse, characterClass: EditorClass | undefined, onChanged: () => void): void
+	open(universe: EditableUniverse, characterClass: EditorClass | undefined, edit: StagedEdit<ClassSettings>, onChanged: () => void): void
 	{
-		const editable = canEditUniverseSettings(universe.role);
+		const canEdit = canEditUniverseSettings(universe.role);
+		const editable = (canEdit && !edit.removed);
 		const name = (characterClass ? className(characterClass, universe.ruleset) : '');
 		const rules = (characterClass?.rules ?? NEW_CLASS_RULES[universe.ruleset]);
 
 		this.universe = universe;
 		this.characterClass = characterClass;
+		this.edit = edit;
 		this.onChanged = onChanged;
 		this.areaNames = new Map();
 
@@ -217,20 +225,21 @@ export class ClassDialog
 		this.enabled.checked = (characterClass?.enabled ?? true);
 		this.showRules(rules);
 		this.startingMoney.value = formatMoney((characterClass?.startingMoney ?? emptyMoney()), universe.ruleset);
-		this.startingArea.show(universe, (characterClass?.startingAreaId ?? null), editable);
+		this.startingArea.show(universe, (characterClass?.startingAreaId ?? null), {
+			column: (characterClass?.startingColumn ?? 0),
+			row: (characterClass?.startingRow ?? 0)
+		}, editable);
 		this.raceAreas.clear();
 
-		for (const { raceId, areaId } of (characterClass?.raceAreas ?? []))
+		for (const entry of (characterClass?.raceAreas ?? []))
 		{
-			this.raceAreas.set(raceId, areaId);
+			this.raceAreas.set(entry.raceId, entry);
 		}
 
 		this.raceAreaChoices = [];
 		this.raceAreaList.replaceChildren();
 		this.showRaceAreasEnabled();
-		this.fields.disabled = false;
 		this.saveButton.hidden = !editable;
-		this.saveButton.disabled = false;
 		this.chooseItemsButton.hidden = !editable;
 		this.cancelButton.textContent = t(editable ? formMessages.cancel : formMessages.close);
 
@@ -240,23 +249,14 @@ export class ClassDialog
 			input.disabled = !editable;
 		}
 
-		this.removeButton.hidden = (!editable || !characterClass || (!characterClass.custom && !characterClass.edited));
-		if (characterClass?.custom)
-		{
-			setButtonLabel(this.removeButton, trashIcon, t({
+		this.removeButton.hidden = (!canEdit || !characterClass || (!characterClass.custom && !characterClass.edited));
+		labelRemoveButton(this.removeButton, edit, !characterClass?.custom, (characterClass?.custom
+			? t({
 				id: 'editor.class.delete',
 				defaultMessage: 'Delete Class',
 				description: 'Button in the class editor that deletes a character class made for this universe'
-			}));
-		}
-		else
-		{
-			setButtonLabel(this.removeButton, restoreIcon, t({
-				id: 'editor.class.restore',
-				defaultMessage: 'Restore Default',
-				description: 'Button in the class editor that undoes this universe\'s changes to one of the ruleset\'s character classes'
-			}));
-		}
+			})
+			: t(editorMessages.restore)));
 
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.dialog);
@@ -338,7 +338,12 @@ export class ClassDialog
 				}
 				else
 				{
-					this.raceAreas.set(race.id, choice.value);
+					this.raceAreas.set(race.id, {
+						raceId: race.id,
+						areaId: choice.value,
+						column: choice.cell.column,
+						row: choice.cell.row
+					});
 				}
 
 				this.changes.check();
@@ -375,7 +380,12 @@ export class ClassDialog
 			}));
 			row.append(label, areaName, choose, clear);
 			this.raceAreaList.append(row);
-			choice.show(universe, (this.raceAreas.get(race.id) ?? null), editable);
+			const entry = this.raceAreas.get(race.id);
+
+			choice.show(universe, (entry?.areaId ?? null), {
+				column: (entry?.column ?? 0),
+				row: (entry?.row ?? 0)
+			}, editable);
 			choice.setAreaNames(this.areaNames);
 
 			return(choice);
@@ -400,14 +410,14 @@ export class ClassDialog
 	}
 
 	/**
-	 * Saves the class as the form shows it
+	 * Keeps the class as the form shows it, until the tab is saved
 	 */
-	private async save(): Promise<void>
+	private apply(): void
 	{
 		const universe = this.universe;
 		const name = this.name.value.trim();
 
-		if (!universe)
+		if (!universe || !this.edit)
 		{
 			return;
 		}
@@ -437,34 +447,20 @@ export class ClassDialog
 		const startingAreaId = this.startingArea.value;
 
 		// An area for every race leaves no room for one per race; the server refuses both
-		const raceAreas: ClassRaceArea[] = ((startingAreaId === null)
-			? [...this.raceAreas].map(([raceId, areaId]) => ({ raceId, areaId }))
-			: []);
-		const settings: ClassSettings = {
+		const raceAreas: ClassRaceArea[] = ((startingAreaId === null) ? [...this.raceAreas.values()] : []);
+
+		this.edit.apply({
 			name: ((name === defaultName) ? null : name),
 			enabled: this.enabled.checked,
 			startingMoney,
 			startingItems: this.startingItems.value,
 			startingAreaId,
+			startingColumn: this.startingArea.cell.column,
+			startingRow: this.startingArea.cell.row,
 			raceAreas,
 			rules
-		};
-
-		await this.run({
-			id: 'editor.class.saveFailed',
-			defaultMessage: 'Could not save the class.',
-			description: 'Shown in the class editor when the character class couldn\'t be stored'
-		}, async () =>
-		{
-			if (this.characterClass)
-			{
-				await this.api.saveClass(universe.id, this.characterClass.id, settings);
-			}
-			else
-			{
-				await this.api.createClass(universe.id, settings);
-			}
 		});
+		this.close();
 	}
 
 	/**
@@ -527,85 +523,35 @@ export class ClassDialog
 	}
 
 	/**
-	 * Deletes a custom class, or restores an edited default class
+	 * Marks a custom class to delete, or an edited default class to restore, when the tab is saved; or
+	 * takes that back
 	 */
-	private async remove(): Promise<void>
+	private remove(): void
 	{
-		const universe = this.universe;
-		const characterClass = this.characterClass;
-
-		if (!universe || !characterClass)
+		if (!this.edit)
 		{
 			return;
 		}
 
-		const name = className(characterClass, universe.ruleset);
-		let question: string;
-		let failure: MessageDescriptor;
-
-		if (characterClass.custom)
+		if (this.edit.removed)
 		{
-			question = t({
-				id: 'editor.class.confirmDelete',
-				defaultMessage: 'Delete {class}? This can\'t be undone.',
-				description: 'Asks before deleting a character class made for this universe; {class} is its name'
-			}, {
-				class: name
-			});
-			failure = {
-				id: 'editor.class.deleteFailed',
-				defaultMessage: 'Could not delete the class.',
-				description: 'Shown in the class editor when the character class couldn\'t be deleted'
-			};
+			this.edit.undoRemove();
 		}
 		else
 		{
-			question = t({
-				id: 'editor.class.confirmRestore',
-				defaultMessage: 'Restore {class} to the ruleset\'s default? Your changes to it, including its starting money, equipment and areas, will be lost.',
-				description: 'Asks before undoing this universe\'s changes to one of the ruleset\'s character classes; {class} is its name'
-			}, {
-				class: name
-			});
-			failure = {
-				id: 'editor.class.restoreFailed',
-				defaultMessage: 'Could not restore the class.',
-				description: 'Shown in the class editor when the ruleset\'s character class couldn\'t be restored'
-			};
+			this.edit.remove();
 		}
 
-		if (!window.confirm(question))
-		{
-			return;
-		}
-
-		await this.run(failure, () => this.api.deleteClass(universe.id, characterClass.id));
+		this.close();
 	}
 
 	/**
-	 * Makes a change, closing the dialog when it succeeds and explaining in it when it doesn't
-	 *
-	 * @param failure What failed, as a sentence, for the error message
-	 * @param change The change
+	 * Closes the dialog once its change is made, and shows the change in the list
 	 */
-	private async run(failure: MessageDescriptor, change: () => Promise<void>): Promise<void>
+	private close(): void
 	{
-		this.fields.disabled = true;
-		showMessage(this.error, undefined);
-
-		try
-		{
-			await change();
-			this.dialog.close();
-			this.onChanged();
-		}
-		catch (error)
-		{
-			showMessage(this.error, describeEditorError(error, failure));
-		}
-		finally
-		{
-			this.fields.disabled = false;
-		}
+		this.changes.markSaved();
+		this.dialog.close();
+		this.onChanged();
 	}
 }

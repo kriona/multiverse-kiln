@@ -2,14 +2,17 @@ import { UNIVERSE_ROLE_NAMES, type EditableUniverse, type UniverseSummary } from
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
-import type { ChangeTracker } from '../changeTracker';
-import { getElement, showMessage } from '../dom';
+import { editPageUrl } from '../../pages';
+import { getElement, showMessage, titleLink } from '../dom';
 import { CharactersTab } from './CharactersTab';
-import { ClassesTab } from './ClassesTab';
+import { LobbyTab } from './LobbyTab';
+import { ClassesSection } from './ClassesSection';
+import { DifficultySection } from './DifficultySection';
 import { ItemSelectDialog } from './ItemSelectDialog';
 import { ItemsTab } from './ItemsTab';
-import { RacesTab } from './RacesTab';
+import { RacesSection } from './RacesSection';
 import { RulesetTab } from './RulesetTab';
+import { combineTabs, SaveBar, type SavableTab } from './SaveBar';
 import { ThemesSection } from './ThemesSection';
 import { TilesetsTab } from './TilesetsTab';
 import { UniverseTab } from './UniverseTab';
@@ -24,8 +27,6 @@ export const EDITOR_TABS = [
 	'ruleset',
 	'lobby',
 	'characters',
-	'races',
-	'classes',
 	'tilesets',
 	'areas',
 	'items'
@@ -75,8 +76,8 @@ export function isEditorTab(value: string | undefined): value is EditorTab
 }
 
 /**
- * Edit Universe: a universe's settings, ruleset, characters (and their themes, in a ruleset with them),
- * races, classes, tiles, areas and items, in tabs
+ * Edit Universe: a universe's settings, ruleset (and the difficulty levels), lobby, characters (and their
+ * races, classes and, in a ruleset with them, themes), tiles, areas and items, in tabs
  *
  * What the player may change depends on their role in the universe; the server checks it again on
  * every change, so the page only hides controls that would be refused
@@ -88,13 +89,25 @@ export class EditorScreen
 	private readonly notice = getElement('editor-notice', HTMLElement);
 	private readonly universeTab: UniverseTab;
 	private readonly rulesetTab: RulesetTab;
+	private readonly lobbyTab: LobbyTab;
 	private readonly charactersTab: CharactersTab;
-	private readonly racesTab: RacesTab;
-	private readonly classesTab: ClassesTab;
+	private readonly racesSection: RacesSection;
+	private readonly classesSection: ClassesSection;
 	private readonly themesSection: ThemesSection;
+	private readonly difficultySection: DifficultySection;
 	private readonly tilesetsTab: TilesetsTab;
 	private readonly areasTab: AreasTab;
 	private readonly itemsTab: ItemsTab;
+
+	/**
+	 * Saves the tab showing, which keeps its changes on the page until then
+	 */
+	private readonly saveBar = new SaveBar();
+
+	/**
+	 * What the save bar saves on each tab
+	 */
+	private readonly savableTabs: Record<EditorTab, SavableTab>;
 
 	/**
 	 * The universe being edited, once it has loaded
@@ -119,6 +132,10 @@ export class EditorScreen
 			this.setUniverse(universe);
 		});
 		this.rulesetTab = new RulesetTab(api);
+		this.lobbyTab = new LobbyTab(api, (universe) =>
+		{
+			this.setUniverse(universe);
+		});
 
 		const areaSelect = new AreaSelectDialog(api);
 		const itemSelect = new ItemSelectDialog(api);
@@ -127,9 +144,10 @@ export class EditorScreen
 		{
 			this.setUniverse(universe);
 		});
-		this.racesTab = new RacesTab(api, areaSelect, itemSelect);
-		this.classesTab = new ClassesTab(api, areaSelect, itemSelect);
+		this.racesSection = new RacesSection(api, areaSelect, itemSelect);
+		this.classesSection = new ClassesSection(api, areaSelect, itemSelect);
 		this.themesSection = new ThemesSection(api);
+		this.difficultySection = new DifficultySection(api);
 		this.tilesetsTab = new TilesetsTab(api);
 		this.areasTab = new AreasTab(api, (areaId) =>
 		{
@@ -137,16 +155,22 @@ export class EditorScreen
 		});
 		this.itemsTab = new ItemsTab(api);
 
-		const trackedTabs: [EditorTab, ChangeTracker][] = [
-			['universe', this.universeTab.changes],
-			['ruleset', this.rulesetTab.changes],
-			['characters', this.charactersTab.changes],
-			['areas', this.areasTab.changes]
-		];
+		this.savableTabs = {
+			universe: this.universeTab,
+			ruleset: combineTabs(this.rulesetTab, this.difficultySection),
+			lobby: this.lobbyTab,
+			characters: combineTabs(this.charactersTab, this.racesSection, this.classesSection, this.themesSection),
+			tilesets: this.tilesetsTab,
+			areas: this.areasTab,
+			items: this.itemsTab
+		};
 
-		for (const [name, changes] of trackedTabs)
+		for (const name of EDITOR_TABS)
 		{
-			changes.subscribe((unsaved) =>
+			const tab = this.savableTabs[name];
+
+			this.saveBar.add(tab, getElement(`editor-panel-${name}`, HTMLElement));
+			tab.changes.subscribe((unsaved) =>
 			{
 				this.markTab(name, unsaved);
 			});
@@ -241,10 +265,12 @@ export class EditorScreen
 		this.setUniverse(universe);
 		this.universeTab.open(universe);
 		void this.rulesetTab.open(universe);
+		this.lobbyTab.open(universe);
 		this.charactersTab.open(universe);
 		this.themesSection.open(universe);
-		this.racesTab.open(universe);
-		this.classesTab.open(universe);
+		this.difficultySection.open(universe);
+		this.racesSection.open(universe);
+		this.classesSection.open(universe);
 		this.tilesetsTab.open(universe);
 		this.areasTab.open(universe, place.areaId);
 		this.itemsTab.open(universe);
@@ -277,13 +303,13 @@ export class EditorScreen
 	private setUniverse(universe: EditableUniverse): void
 	{
 		this.universe = universe;
-		this.title.textContent = t({
+		this.title.replaceChildren(titleLink(t({
 			id: 'editor.universeTitle',
 			defaultMessage: 'Edit {universe}',
-			description: 'Heading of the world editor; {universe} is the universe\'s name'
+			description: 'Heading of the world editor, linking to the editor\'s first tab; {universe} is the universe\'s name'
 		}, {
 			universe: universe.name
-		});
+		}), editPageUrl(universe.id)));
 		document.title = t({
 			id: 'editor.pageTitle',
 			defaultMessage: 'Edit {universe} - Multiverse Kiln',
@@ -378,7 +404,26 @@ export class EditorScreen
 			getElement(`editor-panel-${name}`, HTMLElement).hidden = (name !== selected);
 		}
 
+		this.saveBar.show(this.savableTabs[selected]);
 		this.setPlace({ ...this.place, tab: selected });
+	}
+
+	/**
+	 * Shows a tab and area the page's history went back or forward to
+	 *
+	 * @param place The tab and area
+	 * @return False when the player kept the unsaved changes of the area editor, staying where they were
+	 */
+	showPlace(place: EditorPlace): boolean
+	{
+		if ((place.areaId !== this.place.areaId) && !this.areasTab.showPlace(place.areaId))
+		{
+			return(false);
+		}
+
+		this.selectTab(place.tab);
+
+		return(true);
 	}
 
 	/**

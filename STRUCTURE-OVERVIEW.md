@@ -77,7 +77,7 @@ Opening an invite link (`/game/<slug>?invite=<token>`) shows the [invite](#creat
 The lobby runs the game engine. It will be a small area where many people (more than the 6-player group limit) can connect and chat.
 - Some rules will be similar to the game itself - the graphic tile set, you can move around the space, you can enter houses.
 - Some rules will be different - you cannot use items, time passes based on [lobby settings](#tab-lobby) and not game settings (it's not turn-based).
-- There will be a button for [Create Character](#create-character). You can create multiple characters.
+- A [Create Character](#create-character) button sits under the list of your characters, in the lobby and in a group, so a player whose characters are all in groups can still make another. You can create multiple characters.
 - There will be a chat. You chat as your character.
 - If you have not created a character, you will use a ghost icon and nobody can see you. You can walk around the space. You can read chat but not send messages. Ghosts don't block cells, and pass through other players. Other players aren't shown ghosts in the list of who's here; a ghost sees themself listed as one. The [Create Character](#create-character) button should be more prominent.
 - If you have created a character, chat will be enabled. You will move about the space as your character, starting as the one you played or made most recently. You can switch characters at any time, and every window of yours in the lobby switches with you. Characters in a group play in their group, not the lobby; choosing one in the lobby's list goes to their group.
@@ -129,16 +129,18 @@ The sheet's Delete button asks twice. "Delete Character" asks "Do you want to de
 - **Last Rites (delete in 7 days)** deletes them after the days the [admin](#admin) setting gives (7 by default), and isn't offered when it is 0. Until then they are listed, marked with the day they go, and count toward the 20 characters a universe allows, but can't be played. Their sheet says when they go and has a Restore button. A player playing them switches to their most recent other character, or becomes a ghost; restoring a character while a ghost plays them. A character already given their last rites can still be cremated
 - **I've Made A Terrible Mistake** keeps the character, and is the button focused
 
+A character in a group can't be deleted either way: their sheet says they have to leave the group first, in place of the Delete button, and the server refuses too.
+
 The server deletes characters whose days are over once an hour, and hides them until it does.
 
 ## Create Group
 The character creating the group is the "anchor being". This shows you a landing page for your new group. It explains that your character is the anchor being for this universe, and that the game is centered around them.
 - The group starts in the anchor being's [starting area](#tab-characters).
-- If the anchor being leaves the group, the group is disbanded and its [world state](#world-state) is deleted. Every character keeps their items, money and experience. Deleting the anchor being's character disbands it too.
+- If the anchor being leaves the group, the group is disbanded and its [world state](#world-state) is deleted. Every character keeps their items, money and experience. A character in a group can't be [deleted](#deleting-a-character) until they leave it.
 - If the anchor being is offline, the group can't use [area links](#editor-map) that require the whole group (for example, leaving the city for the wilderness), but can use the ones that don't (entering a shop in the city).
 - A group holds at most the universe's [group size](#tab-characters) characters. A character is in at most one group.
 
-You can give the group a name. Create Group is a dialog in the lobby, made around the character you're playing there.
+You can give the group a name. Create Group is a dialog in the lobby, made around the character you're playing there. It also asks for the group's [difficulty](#difficulty), starting on the universe's default level, and says what the level chosen does to mobs and whether it has permadeath. The group plays at that level from then on.
 
 Only the anchor being's player sees the "Invite" button, which opens a modal dialog.
 - Later, once [messages](#messages) exist: you can pick a user and send them an invite in a private message.
@@ -148,7 +150,7 @@ Only the anchor being's player sees the "Invite" button, which opens a modal dia
 	- there will be a "Copy Link" button
 - The link holds a random token the server keeps only a hash of, so a link is shown once, when it is made.
 
-Opening an invite takes you to a character selection screen with an option to create a character (which comes back to the invite). Characters that are already in a group are grayed out and can't be selected. If the group is full, you get a message saying you can't join because it's full.
+Opening an invite takes you to a character selection screen with an option to create a character (which comes back to the invite). It says the group's [difficulty](#difficulty) and what it does to mobs. A group with permadeath gets a warning that stands out (bold, bordered, with a skull), which Create Group also shows when a level with permadeath is chosen. Characters that are already in a group are grayed out and can't be selected. If the group is full, you get a message saying you can't join because it's full.
 
 A player can have several characters in one group (a player could make a group of 6 of their own characters), and switches between them in the UI without changing browser tabs.
 - Each window plays one character. Choosing another character in the same group switches the window to them; one in another group moves the window to that group; one not in a group moves it to the lobby. Several windows can play different characters of the same player side by side.
@@ -218,13 +220,15 @@ This lets you change anything about a universe. It will be a whole suite of tool
 		- `center`
 		- `horizon` (the center is night)
 	- there is no `real-time` option: it would need time to keep running while nobody is logged on, which is expensive. The lobby can use it because only the time of day changes there, and that is calculated from the Unix epoch
+- a dropdown for "display time", how players are shown the time of day in the lobby and the game (see [time and distance](#time-and-distance)):
+	- `precise` (the default): the time on the clock, to the second
+	- `rough`: a word for the time of day, such as afternoon
+	- `nothing`: no time at all
 - Tabs:
 	- [Editors](#tab-editors)
 	- [Ruleset](#tab-ruleset)
 	- [Lobby](#tab-lobby)
-	- [Characters](#tab-characters), with [themes](#themes) for a ruleset that has them (SF1E)
-	- [Races](#tab-races)
-	- [Classes](#tab-classes)
+	- [Characters](#tab-characters), with [races](#races), [classes](#classes) and, for a ruleset that has them (SF1E), [themes](#themes)
 	- [Tilesets](#tab-tilesets)
 	- [Areas](#tab-areas)
 	- [Items](#tab-items)
@@ -232,7 +236,13 @@ This lets you change anything about a universe. It will be a whole suite of tool
 	- [Translations](#tab-translations)
 
 ### Unsaved changes
-The editor makes it hard to lose work by accident. A form or dialog with changes that haven't been saved says "Unsaved changes" next to its Save button, and its tab gets a dot. Closing a dialog (Cancel or Escape), leaving the area being edited, and leaving or reloading the page all ask first while there are unsaved changes. The area editor's unsaved changes include painting on its map.
+Nothing a tab changes is saved until the Save button (Alt+S) in the bar at the bottom of the editor is pressed. The bar stays in view while the tab scrolls, and above the map in full page. It saves everything changed on the tab showing; reloading the page throws the changes away. Enter in a tab's form saves too.
+- The editor dialogs for races, classes, themes, difficulty levels, items, tiles and area links have Apply rather than Save: it keeps their changes on the tab, where the list shows them, tagging what was added as new and what will be restored "when saved", and striking through (in italics, faded) what will be deleted. One of the ruleset's defaults with changes is tagged edited, saved or not. Deleting or restoring is taken back with Undo Delete or Undo Restore in the dialog until the tab is saved. Saving sends the changes in the order they were made and stops at the first the server refuses, saying which; the rest stay unsaved.
+- The Characters tab saves its settings, races, classes and themes together, and the Ruleset tab its settings and difficulty levels.
+- The Areas tab saves the areas added and deleted, then the area open in the area editor: its settings and its map's painting, size and links. A new area is listed tagged new, and can be opened, painted, linked to and chosen as a parent before it is saved; its map is the size every new area starts with. Deleting an area asks first, then strikes it through in the list until the tab is saved; opening it shows it read-only with Undo Delete. Deleting a new area discards it straight away, after asking. Saving deletes areas first, then adds the new ones, then saves the area open, and stops at the first change the server refuses, saying which.
+- Pickers on other tabs (starting equipment, the map's tiles, a class's races) list only what is saved.
+
+The bar says "Unsaved changes" while the tab has some, and a tab with unsaved changes gets a dot. Closing a dialog (Cancel or Escape), leaving the area being edited, and leaving or reloading the page all ask first while there are unsaved changes.
 
 ### Universe versions
 If a creator makes changes to the current version of the universe, they apply immediately for everyone.
@@ -262,6 +272,20 @@ A universe can have several creators. If you delete your account and your univer
 
 ### Tab: Ruleset
 What shows up here depends on what ruleset is chosen.
+
+Below the ruleset's settings, the tab lists the universe's [difficulty](#difficulty) levels, easiest first, and saves them with the settings. Each level has:
+- Default checkbox: the level Create Group starts on. Exactly one level is the default: checking it on another level unchecks the old one, and the default can't be unchecked or deleted
+- Name
+- Mob scale, a percentage from -1000% (easier) to +1000% (harder)
+- Permadeath checkbox
+
+Levels can be added (up to 20) and deleted. Deleting a level moves the groups playing at it to the default level. Changing a level changes it for the groups already playing at it. A new universe starts with:
+- `Story`: mobs are 50% easier
+- `Normal`, the default
+- `Hard`: mobs are 50% harder
+- `Hardcore`: mobs are 100% harder, and permadeath
+
+Their names are shown in the player's language until a creator renames them. Like the rest of the tab, only creators can change them.
 
 #### PF1E
 Pathfinder 1E's rules (races, classes, abilities, point buy, sizes and items) are Open Game Content used under the Open Game License 1.0a, and the name "Pathfinder" is used under Paizo's Community Use Policy. Both notices are on the license page. The Community Use Policy only covers a game that is free to play (donations and ads are allowed, a paywall isn't).
@@ -299,9 +323,11 @@ Money is credits (`cr`), the only coin.
 	- `always noon`
 	- `always dusk`
 	- `always midnight`
-	- `real-time`
-		- shows an additional option for "how quickly?" with a description of "how long in real-time does it take for 1 day in the lobby to pass?" minimum 1 hour, maximum 240 hours. Default 24. Current time of day is based on the Unix epoch
-	- `faerie`
+	- `real-time` (the default)
+		- shows an additional option for "how quickly?" with a description of "how long in real-time does it take for 1 day in the lobby to pass?" minimum 1 hour, maximum 240 hours. Default 24. Current time of day is based on the Unix epoch, so a 24-hour day follows the time in UTC
+	- `faerie`, with "where is morning?". The lobby's map can't loop while it is chosen
+	- the lobby's area has no passage of time of its own: the area editor says it is set here
+- a checkbox for "no vision cost in the lobby", checked by default: everyone in the lobby has the full daylight vision budget at any time of day, and every tile is seen past as if it had a 0% vision cost
 - a button for "Edit Map" which takes you to the [area editor](#editor-area) for the lobby
 
 ### Tab: Characters
@@ -310,14 +336,14 @@ Money is credits (`cr`), the only coin.
 - Starting [money](#field-money)
 - Starting [area](#selection-area)
 
-Each [race](#tab-races) and [class](#tab-classes) can add to the starting money and equipment, and choose a starting area of its own.
+Below the settings, the tab lists the [races](#races), the [classes](#classes) and, for a ruleset with them, the [themes](#themes), each in a section of its own, and saves them with the settings. Each race and class can add to the starting money and equipment, and choose a starting area of its own.
 
-A character's starting area is chosen in this order, most specific first: the class's entry for their race, the class, the race, then the universe. A class with an area of its own has no entries for races, so the two never compete.
+A character's starting area is chosen in this order, most specific first: the class's entry for their race, the class, the race, then the universe. A class with an area of its own has no entries for races, so the two never compete. Each starting area comes with the square characters start on (chosen with the [area](#selection-area)), which goes with it: a group starts at its anchor being's square, and its members are placed on the free square nearest it. A square the area's map no longer holds, after it was made smaller, counts as the nearest square on the map.
 
 Races, classes and themes work like default items: the ruleset's defaults are in every universe, an edit applies to that universe only and can be undone to restore the default (losing its starting money, equipment and areas too), and a race, class or theme the universe added can be deleted. Like the Characters tab, only creators can change them.
 
 #### Themes
-Only for a ruleset with themes (SF1E), listed under the Characters tab's settings rather than in a tab of their own, to keep the tabs few. A theme is a character's background, which raises one ability score by 1. It belongs to neither race nor class: any theme goes with any race and class. The list is:
+Only for a ruleset with themes (SF1E), listed on the Characters tab after the races and classes. A theme is a character's background, which raises one ability score by 1. It belongs to neither race nor class: any theme goes with any race and class. The list is:
 - `Ace Pilot` (Dexterity)
 - `Bounty Hunter` (Constitution)
 - `Icon` (Charisma)
@@ -334,7 +360,7 @@ You can add your own themes, and edit each one:
 - Enabled? Checked by default. There must be at least 1 enabled theme in order to save changes
 - the ability it raises
 
-### Tab: Races
+#### Races
 based on the ruleset, show a list of races.
 
 For PF1E that list is:
@@ -377,7 +403,7 @@ You can edit each race:
 - for SF1E: the same ability modifiers, floating ability bonus (humans get +2 to one ability of their choice), darkvision and size, and
 	- hit points: the hit points the race gives on top of the class's, 0 to 99
 
-### Tab: Classes
+#### Classes
 based on the ruleset, show a list of classes.
 
 For PF1E that list is:
@@ -431,6 +457,7 @@ shows you a table of all tiles in the game, populated from the default for your 
 It needs a filter control that includes:
 - name search
 - "is passable" toggle
+- "used in" dropdown: any, indoors (only), outdoors (only), both or neither
 - "is custom" toggle
 - "is edited from default" toggle
 - pagination (500 by default)
@@ -438,27 +465,29 @@ It needs a filter control that includes:
 the table contains:
 - icon (or color)
 - name, links to the [tile editor](#editor-tile)
-- movement cost
+- walk time
+- vision cost
+- used in: indoors, outdoors, indoors and outdoors, or neither
 
 For PF1E, the default tiles are
 - outdoors
-	- Grass, color #7AFF3D, 0% vision cost, 0% movement cost
-	- Forest, color #0A1, 50% vision cost, 50% movement cost
-	- Desert, color #E5E500, 0% vision cost, 50% movement cost
-	- Mountains, color #777, 100% vision cost, 100% movement cost
-	- Water, color #3D97FF, 0% vision cost, 100% movement cost
+	- Grass, color #7AFF3D, 0% vision cost, 10 minute walk time
+	- Forest, color #0A1, 50% vision cost, 20 minute walk time
+	- Desert, color #E5E500, 0% vision cost, 20 minute walk time
+	- Mountains, color #777, 100% vision cost, impassable
+	- Water, color #3D97FF, 0% vision cost, impassable
 - indoors
-	- Wood Floor, color #7A3202, 0% vision cost, 0% movement cost
+	- Wood Floor, color #7A3202, 0% vision cost, 10 second walk time
 
 For SF1E, the default tiles are
 - outdoors
-	- Grass, color #7AFF3D, 0% vision cost, 0% movement cost
-	- Sand, color #D9C27A, 0% vision cost, 50% movement cost
-	- Rock, color #6B6B6B, 100% vision cost, 100% movement cost
-	- Water, color #3D97FF, 0% vision cost, 100% movement cost
+	- Grass, color #7AFF3D, 0% vision cost, 10 minute walk time
+	- Sand, color #D9C27A, 0% vision cost, 20 minute walk time
+	- Rock, color #6B6B6B, 100% vision cost, impassable
+	- Water, color #3D97FF, 0% vision cost, impassable
 - indoors
-	- Metal Floor, color #9AA4AE, 0% vision cost, 0% movement cost
-	- Bulkhead, color #4A5560, 100% vision cost, 100% movement cost
+	- Metal Floor, color #9AA4AE, 0% vision cost, 10 second walk time
+	- Bulkhead, color #4A5560, 100% vision cost, impassable
 
 ### Tab: Areas
 lists all top-level areas for a universe, excluding the lobby.
@@ -532,9 +561,18 @@ Combat is turn-based.
 - A square is 5 feet, matching PF1E's movement, reach and spell areas.
 - A PF1E combat round is 6 seconds, so the time combat took is added when it ends.
 
-Outside of combat, time is based on your actions - if you are standing still, no time passes. Walking a square takes a set amount of time (still to be defined - tiles need to be given a size).
+Outside of combat, time is based on your actions - if you are standing still, no time passes. Walking a square takes the walk time of the tile walked into (10 seconds for an indoor tile and 10 minutes for an outdoor one, unless the creator sets another), and a diagonal step counts as one and a half squares. On screen, a player crosses a tile at full speed when it takes no longer than the default for the area (10 seconds indoors, 10 minutes outdoors) and a slower one at a matching fraction of it, so a 20 second tile indoors or a 20 minute tile outdoors is crossed at half speed. Outdoor travel takes longer in game time, but not on screen.
+
+Each group has its own clock, which starts at 8 in the morning and is saved with the group. The whole group shares that one time: when one member walks, time passes for everyone, including members standing still. Members walking at the same time don't pass the time twice: a step is left out when another member's step was counted less than half a second (real time) before it, so two members walking side by side pass the time of one. Only walking in an area whose time `flows normally` passes the group's time: in an `always` area or a `faerie` one the time of day doesn't come from the clock, so the clock stands still there. The group's page shows the day and the time of day in the character's area, the way the universe's "display time" setting says: the clock's time to the second (precise), or a word for the time of day such as afternoon (rough). The time is the clock's, or the area's fixed time in an `always` area. In a `faerie` area it is never more than the word, in place of the clock's time. When the universe displays nothing, the group's page shows no clock, and asking where you are leaves the time out.
+
+The time of day comes from the area's passage of time (see [Edit Universe](#edit-universe)): from the group's clock when time flows normally, fixed for the `always` settings, and from the cell's place on the map for `faerie`. It is light from 7 in the morning to 5 in the evening, dark from 7 in the evening to 5 in the morning, and the light changes over the two hours around dawn (6:00) and dusk (18:00). The map darkens with it, and screen readers are told as dawn breaks or night falls. An indoor area stays as light as its light level instead, and says nothing of dawn or dusk.
 
 On the overworld map, squares are much bigger distances. The scale is not yet defined, but time will pass faster.
+
+## Difficulty
+Each group plays at one of its universe's difficulty levels (see [Tab: Ruleset](#tab-ruleset)), chosen when it is made. A level's mob scale makes mobs harder or easier by a percentage, and its permadeath setting decides whether a character who dies is gone for good. Neither does anything yet: mobs, hit points, attacks and death come later, and the rules are ready for them as pure functions (`server/src/logic/difficulty.ts`):
+- A mob's hit points are multiplied by 100% plus the mob scale, rounded, and never go below 1. +50% makes 20 hit points 30, -50% makes them 10, and -100% or less leaves 1.
+- A chance to hit is scaled the same way: a mob's chance to hit a character is multiplied by it, and a character's chance to hit a mob is divided by it, so harder mobs hit more often and are hit less often. At +100% a mob's 40% becomes 80%, and a character's 60% becomes 30%. At -100% or less, a character's attack hits whenever it could hit at all. No chance goes above 100%, and a chance that was at least 5% never drops below 5%.
 
 ## Offline group members
 Offline characters don't move. One idea under consideration: every character gets a "ring of 'my friend' summoning". It lets a player unsummon friends who are offline, so their characters don't sit around idle, and when those friends log back in they are teleported to the group for an in-game reason.
@@ -544,10 +582,14 @@ Each group has its own world state, stored as a diff of the universe as it was b
 
 Disbanding a group deletes its world state. Characters (items, money, experience) are stored separately and kept.
 
+What a group has explored is kept as the cells it has seen, area by area: a cell is seen once any member has had it in sight (see [Vision](#vision)). The group's room keeps them in memory and saves them every 30 seconds while anyone plays and when the last player leaves. A window in a group's room is only ever sent the tiles of cells the group has seen, and the links on them, so a script in the browser can't uncover the rest: every other cell comes as unseen, and its tile is sent as soon as a member first sees it. The fog follows where players are drawn, a moment behind the server, so those tiles have usually arrived before the fog uncovers them. Cells out of sight that the group has seen are drawn dimmed, and cells it has never seen are black. A lobby remembers nothing, so there everything out of sight is only dimmed. Deleting an area deletes what every group has seen of it.
+
 ## Vision
-Each character has a vision budget. Looking across a tile spends its vision cost, and once the budget runs out you can't see past that tile, so a line of mountains blocks your view.
-- Night lowers the vision budget unless the character has darkvision.
-- Ideally the server works out what each player can see and only sends them that. If that turns out to be too expensive, the client does it. To be decided during implementation.
+Each character has a vision budget, in squares. A character looks along straight lines from their cell, and each step along a line spends its length (a diagonal step counts as one and a half squares, as in movement), more when it leaves a tile with a vision cost: 50% spends twice as much. A 100% tile can be seen but not seen past, so a line of mountains blocks your view. It is also seen when open ground next to it is, so the walls lining a tunnel show along its length, while the inside of a thick wall and its far side stay hidden. The character's own cell never gets in the way. Void cells are seen past.
+- The budget is 20 squares in full daylight and 4 at night, changing with the light around dawn and dusk. An indoor area is lit (20 squares) or dark (4) at any time of day, by its light level. Darkvision sees at least 12 squares (60 feet), day or night.
+- In a group's room, the group sees whatever any of its members in the area sees, so members always see each other. In a lobby each player sees only what they see themselves, and unless the universe turns it off on the [Lobby tab](#tab-lobby), they see as far as in full daylight at any time of day and its tiles have no vision cost.
+- The server works out what each player can see and only shows them the players in sight. The client runs the same function (`/shared`) to draw fog over the cells out of sight. Screen readers are told how many squares the player can see when they ask where they are.
+- A character's darkvision comes from their race as the universe set it when the room started.
 
 ## Moderation
 - Player and character names can't pass as the game's staff: words such as `admin`, `moderator`, `staff` and `system`, and the game's name, are kept back (`isReservedName()` in `/shared`, checked as the player types and again on the server). Names are compared in a reduced form that sees through capitals, accents, look-alike letters from other alphabets, leetspeak, separators, repeated letters and added digits, and words are found at spaces, punctuation and changes of case, so "TheAdm1n" is refused but "Quarterstaff" isn't.
@@ -576,6 +618,8 @@ modal dialog, lets you type to search, shows you the top results, with name + st
 ## Selection: Area
 modal dialog, lets you type to search, shows the top results, shows you a small preview image of the area
 
+Every area chosen here is a starting area (the universe's, a race's, a class's, or a class's for one race), so the preview also chooses the square characters start on: clicking a square, or Space or Enter on the keyboard's cursor, highlights it. A newly chosen area starts on its center (column 0, row 0). The choice shows as e.g. "Town, from 3, -2".
+
 ## Editor: Area
 Lets you edit details about the area
 - name
@@ -584,7 +628,8 @@ Lets you edit details about the area
 	- if any parent area is not enabled, show a message
 - parent area. Parent areas mostly give areas a structure; a child area inherits only its passage of time
 - indoors / outdoors
-- default tile, which defaults to "grass" if outdoors and "wood floor" if indoors
+	- indoors shows "light level": `lit` (the default) is as light as full daylight at any time of day, and `dark` as dark as night. The map is drawn that light and vision follows it (see [vision](#vision)). Outdoor areas follow the time of day; the setting is kept while an area is outdoors but has no effect
+- default tile, which defaults to "grass" if outdoors and "wood floor" if indoors. It lists the tiles for the area's kind (see [tile editor](#editor-tile)), plus the area's current default tile, so switching between indoors and outdoors doesn't change it
 - passage of time, the same options as the universe's plus `inherit` (the default). `inherit` uses the parent area's setting, and an area with no parent uses the universe's
 - checkbox for "loops east-west"
 - checkbox for "loops north-south"
@@ -595,6 +640,7 @@ Lets you edit details about the area
 This is a component included in the [area editor](#editor-area). It shows you the same grid as gameplay.
 - the center of map is x = 0, y = 0
 - Ctrl+wheel zooms the map; the wheel alone scrolls the page
+- a Full Page button (Alt+P) makes the map editor fill the browser window, with the map taking all the space its tools leave; the button, or Escape, puts it back
 - each side of the map (top, right, bottom, left) has a button with an arrow pointing away from the editor. clicking it allows you to add the specified number of grid coordinates in that direction, expanding the map
 - a map can be at most 50,000 tiles in each direction
 - a button to edit size
@@ -605,7 +651,7 @@ This is a component included in the [area editor](#editor-area). It shows you th
 - undo / redo
 	- clicking and dragging counts all changes during that as 1 for the purpose of undo/redo
 	- each use of an expand button or Edit Size is 1 step too. Making the map smaller sets the cells it cuts off to the default tile, so undoing it brings them back, even after it is saved
-- painting and changes to the map's size are kept in the editor until the area editor's Save button saves them along with the area's settings, and the map is read-only while it is being saved. Links are saved as soon as they are made, and a link can't be added in unsaved expansion
+- painting, changes to the map's size and links (and return links placed in other areas) are kept in the editor until the editor's Save button saves them along with the area's settings, and the map is read-only while it is being saved. Links are saved after the map's new size, so a link can go on cells the map has grown to include
 - links on or into cells a smaller map cuts off are deleted when the smaller map is saved, after asking; undo doesn't bring them back
 - maps have multiple layers, such as the ground and objects on it
 - area links, a layer independent of the artwork. Any cell can link to a cell in another area
@@ -616,20 +662,20 @@ This is a component included in the [area editor](#editor-area). It shows you th
 	- since links are separate from the artwork, you also need to draw a door (or similar) so players know where to walk
 
 ### Tool: Draw
-- lets you select a tile, e.g. "Grass" or "Wood Floor". Also lets you select "Void" which is just black
+- lets you select a tile, e.g. "Grass" or "Wood Floor": the tiles for the area's kind, indoors or outdoors, and the area's default tile. The list follows the area editor's indoors / outdoors choice before it is saved. Switching an area between them leaves the tiles already painted as they are. Also lets you select "Void" which is just black
 - lets you select a size (1 for a single tile, up to 100 tiles)
 - brush shape - circle or square
 
 ## Editor: Tile
 - name
-- indoors / outdoors. This is a preference, not a restriction: any tile can be used in any area, but outdoor areas get the outdoor tileset first
+- "used in": checkboxes for indoors and outdoors; a tile can be for either, both or neither. An area's [draw tool](#tool-draw) and default tile only offer the tiles for its kind. A tile for neither can't be painted anywhere, but maps that already use it keep it
 - color (used if there are no graphics), accepts hex + has a color picker
 - graphic (image)
 	- outdoors uses the Dual-Grid System
 	- indoors uses the 47-Tile Blob Set
 	- or maybe each layer has its own format, e.g. the ground layer is Dual-Grid and another layer is set differently
 - Vision cost - 0% to 100% (cannot see through). See [vision](#vision)
-- Movement cost - 0% to 100%. 0% is normal movement, 50% costs double (PF1E difficult terrain), 100% is impassable
+- Walk time - seconds of game time walking a square takes, 0 to 3600. A new tile gets 600 (10 minutes) when it is for outdoors and 10 when it is only for indoors, following the checkboxes until another walk time is typed. Twice the default takes twice as long (PF1E difficult terrain), 0 is impassable
 - Has a preview section for day + night
 
 # Localization
@@ -676,16 +722,17 @@ Every page, editor and game screen can be used with only a keyboard and with a s
 - A button's shortcut letter is underlined in its text, preferring the letter at the start of a word (the S of Save); it is pressed with Alt (Option on a Mac). When a translation's text doesn't have the letter, "(S)" is added after it with the letter underlined. Screen readers announce the shortcut through `aria-keyshortcuts`.
 - `?` (when not typing) or the footer's "Keyboard shortcuts" button lists the shortcuts that work on the screen showing, including keys that aren't buttons, such as movement.
 - A shortcut only works while its button can be seen and used, and while a dialog is open only the dialog's shortcuts work, so screens and dialogs reuse keys. The keys are the same in every language. Alt+D, Alt+E and Alt+F aren't used, since browsers take them, and deleting has no shortcut.
-- The keys follow one pattern: Alt+S submits the form or dialog showing (Save, Create, Add, Resize), Alt+N adds something new, Alt+L leaves (the lobby or group) or picks the Links tool in the map editor, Alt+U enters a universe, Alt+H goes Home, Alt+B goes back, and Alt+M moves focus to the map.
+- The keys follow one pattern: Alt+S submits the form or dialog showing (Save, Create, Add, Resize), Alt+A applies an editor dialog's changes to its tab (Apply), Alt+N adds something new (on the Characters tab, which adds races, classes and themes, Alt+R adds a race, Alt+L a class and Alt+T a theme), Alt+L leaves (the lobby or group) or picks the Links tool in the map editor, Alt+U enters a universe, Alt+H goes Home, Alt+B goes back, Alt+M moves focus to the map, and Alt+P makes the map editor full page.
 
 ## Screen readers
 - When a screen changes, focus moves to its heading, so the screen is read out.
-- The game's map is a focusable application with its keys described. A screen reader is told the area the player enters, players coming into and going out of view, a door or path underfoot that E takes, and when something is in the way. Alt+P reads out the player's area and cell, the tile they stand on, and each player they can see with their distance and compass direction.
+- The game's map is a focusable application with its keys described. A screen reader is told the area the player enters, players coming into and going out of view, a door or path underfoot that E takes, and when something is in the way. Alt+P reads out the player's area and cell, the tile they stand on, and each player they can see with their distance and compass direction, and shows the same in a toast at the top of the page.
+- A toast (`showToast()` in `client/src/ui/toast.ts`) shows a short message at the top of the page for a few seconds (longer while the pointer rests on it), and screen readers read it out through the announcer; the toast itself is hidden from them, so it isn't read twice.
 - The map editor's map (and the link dialog's preview) can be focused and worked with a cursor: the arrow keys move it, Space or Enter paints or picks its cell, holding Space while moving paints a stroke, + and - zoom and Home returns to the center cell. Each cell the cursor reaches is read out with what it holds.
 - Colors are never the only way information is shown: the tile table's swatches carry the color's hex code.
 
 # Open questions
-- **Time:** how long walking a square takes, and the overworld map's scale.
+- **Time:** the overworld map's scale.
 - **Offline group members:** whether to use the summoning ring.
 - **Lobby:** the player limit (from load testing), and how groups manage their lobby listing.
 - **Cross-universe play:** art style, and whether items need a "source universe" setting.
@@ -696,7 +743,6 @@ Every page, editor and game screen can be used with only a keyboard and with a s
 	- whether to add a CAPTCHA. The code limits stop guessing, but someone who knows an address can make 15 wrong guesses and block that address's codes for a day
 - **Messages:** blocking, reporting and who can message whom, before messaging is supported.
 - **Universe versions:** how versions are built and switched.
-- **Vision:** whether the server or the client works out what each player can see.
 - **Tiles:**
 	- Dual-Grid vs. 47-Tile Blob, possibly per layer
 	- how large objects such as trees and houses work, since a player walking behind one should be hidden

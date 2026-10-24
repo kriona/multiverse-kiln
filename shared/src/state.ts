@@ -18,7 +18,12 @@ export const Player = schema({
 	x: t.number(),
 	y: t.number(),
 	name: t.string(),
-	ghost: t.boolean()
+	ghost: t.boolean(),
+
+	/**
+	 * Whether the character sees in the dark, which the client's fog follows (see visionBudget)
+	 */
+	darkvision: t.boolean()
 }, 'Player');
 export type Player = SchemaType<typeof Player>;
 
@@ -61,7 +66,13 @@ export const GameState = schema({
 	 */
 	anchorId: t.string(),
 
-	members: t.map(GroupMember)
+	members: t.map(GroupMember),
+
+	/**
+	 * The group's game clock: seconds of game time since its world began. Areas whose time flows
+	 * normally take their time of day from it (see secondOfDay)
+	 */
+	clock: t.number()
 }, 'GameState');
 export type GameState = SchemaType<typeof GameState>;
 

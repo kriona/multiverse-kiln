@@ -3,21 +3,23 @@ import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { GAME_ROOM_NAME, GameMessageType, GameServerMessageType, GameState, GRID_CELL_SIZE, MessageType, NoticeReason, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, type AreaPayload, type GameJoinOptions, type NoticePayload, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, DEFAULT_OUTDOOR_WALK_SECONDS, DEFAULT_TILE_CELL,GAME_ROOM_NAME, GameMessageType, GameServerMessageType, GameState, GRID_CELL_SIZE, GROUP_START_SECONDS, MessageType, NoticeReason, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, UNSEEN_CELL, type AreaPayload, type CellsSeenPayload, type GameJoinOptions, type NoticePayload, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { scheduleCharacterDeletion } from '../src/db/characterRepo.js';
 import { pool } from '../src/db/client.js';
-import { addGroupMember, leaveGroup, listGroupMembers } from '../src/db/groupRepo.js';
-import { createAreaLink } from '../src/db/areaRepo.js';
+import { addGroupMember, findGroup, leaveGroup, listGroupMembers } from '../src/db/groupRepo.js';
+import { createAreaLink, updateAreaSettings } from '../src/db/areaRepo.js';
 import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
+import { loadSeenChunks } from '../src/db/worldStateRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
 import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
 import { cellCenter } from '../src/logic/movement.js';
+import { SeenCells } from '../src/logic/seenCells.js';
 import { characterChanges } from '../src/players/characterChanges.js';
 import { groupChanges } from '../src/players/groupChanges.js';
 import { onlinePlayers } from '../src/players/onlinePlayers.js';
 import type { GameRoom } from '../src/rooms/GameRoom.js';
-import { addCharacter, addGroup, addPlayableUniverse, type PlayableUniverse } from './db/fixtures.js';
+import { addCharacter, addGroup, addPlayableUniverse, defaultRaceId, type PlayableUniverse } from './db/fixtures.js';
 import { getTestServer, logOutEveryone, testServerUrl } from './testServer.js';
 import { waitUntil } from './waitUntil.js';
 
@@ -37,16 +39,19 @@ interface Member
 	playerId: string;
 	characterId: string;
 	name: string;
+	raceId: number;
 }
 
 /**
- * A client-side room, and the Welcome and Area payloads once they arrive
+ * A client-side room, the Welcome and first Area payloads once they arrive, and the cells the group
+ * has seen for the first time since it joined (GameServerMessageType.CellsSeen), by "column,row"
  */
 interface JoinedWindow
 {
 	client: ClientRoom<unknown, GameState>;
 	welcome: Promise<WelcomePayload>;
 	area: Promise<AreaPayload>;
+	cellsSeen: Map<string, number>;
 }
 
 let universe: PlayableUniverse;
@@ -73,7 +78,7 @@ async function addPlayerWithCharacter(name: string): Promise<Member>
 	const player = await loadOrCreatePlayerByName(`Player ${randomUUID().slice(0, 8)}`);
 	const characterId = await addCharacter(player.id, universe.universeId, name);
 
-	return({ playerId: player.id, characterId, name });
+	return({ playerId: player.id, characterId, name, raceId: await defaultRaceId('dwarf') });
 }
 
 /**
@@ -102,7 +107,7 @@ async function joinGroup(member: Member): Promise<void>
 async function addSecondCharacter(member: Member, name: string): Promise<Member>
 {
 	const characterId = await addCharacter(member.playerId, universe.universeId, name);
-	const second = { playerId: member.playerId, characterId, name };
+	const second = { playerId: member.playerId, characterId, name, raceId: member.raceId };
 
 	await joinGroup(second);
 
@@ -217,10 +222,19 @@ async function joinAs(room: GameRoom, browserId: string, member: Member): Promis
 	{
 		client.onMessage(ServerMessageType.Area, resolve);
 	});
+	const cellsSeen = new Map<string, number>();
+
+	client.onMessage(GameServerMessageType.CellsSeen, (payload: CellsSeenPayload) =>
+	{
+		for (const { column, row, value } of payload.cells)
+		{
+			cellsSeen.set(`${column},${row}`, value);
+		}
+	});
 
 	await client.waitForInitialState();
 
-	return({ client, welcome, area });
+	return({ client, welcome, area, cellsSeen });
 }
 
 /**
@@ -394,6 +408,111 @@ describe('GameRoom', () =>
 		assert.ok(player.x > 105, `x = ${player.x}`);
 		assert.strictEqual(player.y, 105);
 		assertOnCellCenter(player);
+	});
+
+	it('passes game time as players walk, and saves the clock when everyone has left', async () =>
+	{
+		const room = await createGameRoom();
+		const client = await joinAsNewPlayer(room);
+		const player = room.state.players.get(playerIdOf(room, client)) as Player;
+
+		assert.strictEqual(room.state.clock, GROUP_START_SECONDS);
+
+		placeOnCell(player, 3, 3);
+
+		// Standing still passes no time
+		for (let i = 0; i < 10; i++)
+		{
+			await room.waitForNextTimestep();
+		}
+
+		assert.strictEqual(room.state.clock, GROUP_START_SECONDS);
+
+		client.send(MessageType.Move, { x: 1, y: 0 });
+		await room.waitForNextMessage();
+		await waitUntil(() => (room.state.clock >= (GROUP_START_SECONDS + (2 * DEFAULT_OUTDOOR_WALK_SECONDS))));
+		client.send(MessageType.Move, { x: 0, y: 0 });
+		await room.waitForNextMessage();
+		await waitUntilStopped(room, player);
+
+		const clock = room.state.clock;
+
+		await client.leave();
+		await waitUntil(async () => ((await findGroup(groupId))?.clockSeconds === clock));
+	});
+
+	for (const settings of [{ passageOfTime: 'faerie', faerieMorning: 'north' }, { passageOfTime: 'always_noon', faerieMorning: null }] as const)
+	{
+		it(`passes no game time as players walk in an area whose time is ${settings.passageOfTime}`, async () =>
+		{
+			await updateAreaSettings(universe.fieldAreaId, settings);
+
+			const room = await createGameRoom();
+			const client = await joinAsNewPlayer(room);
+			const player = room.state.players.get(playerIdOf(room, client)) as Player;
+			const startX = player.x;
+
+			client.send(MessageType.Move, { x: 1, y: 0 });
+			await room.waitForNextMessage();
+			await waitUntil(() => (player.x >= (startX + (2 * GRID_CELL_SIZE))));
+			client.send(MessageType.Move, { x: 0, y: 0 });
+			await room.waitForNextMessage();
+			await waitUntilStopped(room, player);
+
+			assert.strictEqual(room.state.clock, GROUP_START_SECONDS);
+		});
+	}
+
+	it('shows every member in the area to the whole group, however far apart, and gives each their race\'s darkvision', async () =>
+	{
+		await updateAreaSettings(universe.fieldAreaId, { passageOfTime: 'always_midnight', faerieMorning: null });
+
+		const room = await createGameRoom();
+		const ada = await joinFromBrowser(room, browserIdA, 'Ada');
+		const grace = await joinFromBrowser(room, browserIdB, 'Grace');
+		const adaId = playerIdOf(room, ada.client);
+		const graceId = playerIdOf(room, grace.client);
+
+		placeOnCell(room.state.players.get(adaId) as Player, 0, 0);
+		placeOnCell(room.state.players.get(graceId) as Player, 31, 17);
+
+		for (let i = 0; i < 3; i++)
+		{
+			await room.waitForNextTimestep();
+		}
+
+		await waitUntil(() => ((ada.client.state.players?.has(graceId) ?? false) && (grace.client.state.players?.has(adaId) ?? false)));
+		assert.strictEqual(room.state.players.get(adaId)?.darkvision, true);
+	});
+
+	it('sends only the cells the group has seen, each as it is first seen, and remembers them after everyone has left', async () =>
+	{
+		await updateAreaSettings(universe.fieldAreaId, { passageOfTime: 'always_noon', faerieMorning: null });
+
+		const room = await createGameRoom();
+		const window = await joinFromBrowser(room, browserIdA, 'Ada');
+		const area = await window.area;
+
+		assert.ok(area.chunks[0].cells.every((value) => (value === UNSEEN_CELL)), 'the group hasn\'t seen anything yet');
+
+		placeOnCell(room.state.players.get(playerIdOf(room, window.client)) as Player, 3, 3);
+		await waitUntil(() => window.cellsSeen.has('20,3'));
+		assert.strictEqual(window.cellsSeen.get('3,3'), DEFAULT_TILE_CELL);
+		assert.strictEqual(window.cellsSeen.has('31,17'), false, 'too far to see');
+
+		await window.client.leave();
+		await waitUntil(async () => ((await loadSeenChunks(groupId)).length > 0));
+
+		const saved = new SeenCells();
+
+		saved.load(await loadSeenChunks(groupId));
+		assert.ok(saved.has(universe.fieldAreaId, 3, 3) && saved.has(universe.fieldAreaId, 20, 3));
+
+		const again = await joinFromBrowser(await createGameRoom(), browserIdA);
+		const { chunks } = await again.area;
+
+		assert.strictEqual(chunks[0].cells[cellIndexInChunk(20, 3)], DEFAULT_TILE_CELL);
+		assert.strictEqual(chunks[0].cells[cellIndexInChunk(31, 17)], UNSEEN_CELL);
 	});
 
 	it('does not use the database while players move', async () =>

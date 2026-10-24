@@ -1,7 +1,8 @@
 import assert from 'assert';
-import { CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, IMPASSABLE_COST, type AreaChunk } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, IMPASSABLE_WALK_SECONDS, UNSEEN_CELL, visionKey, type AreaChunk } from '@multiverse-kiln/shared';
 
 import type { LoadedArea } from '../src/db/areaRepo.js';
+import { SeenCells } from '../src/logic/seenCells.js';
 import { toAreaPayload, AreaCache } from '../src/rooms/areaCache.js';
 
 const AREA_ID = 'area';
@@ -28,14 +29,18 @@ function loadedArea(): LoadedArea
 			passageOfTime: 'inherit'
 		},
 		ruleset: 'pf1e',
+		time: { passage: 'flows_normally' },
+		displayTime: 'precise',
+		lightLevel: null,
+		fullVision: false,
 		bounds: { minColumn: -100, minRow: -100, maxColumn: 99, maxRow: 99 },
 		defaultTileId: GRASS,
 		loopsEastWest: false,
 		loopsNorthSouth: false,
 		links: [],
 		tiles: [
-			{ id: GRASS, key: 'grass', name: 'Grass', indoors: false, color: 0x00ff00, visionCost: 0, movementCost: 0 },
-			{ id: FOREST, key: 'forest', name: 'Forest', indoors: false, color: 0x008800, visionCost: 50, movementCost: 50 }
+			{ id: GRASS, key: 'grass', name: 'Grass', indoors: false, outdoors: true, color: 0x00ff00, visionCost: 0, walkSeconds: 10 },
+			{ id: FOREST, key: 'forest', name: 'Forest', indoors: false, outdoors: true, color: 0x008800, visionCost: 50, walkSeconds: 20 }
 		]
 	});
 }
@@ -105,15 +110,15 @@ describe('AreaCache', () =>
 
 		assert.ok(area);
 		assert.strictEqual(area.loadedChunks.size, 0);
-		assert.strictEqual(area.grid.movementCost({ column: 0, row: 0 }), IMPASSABLE_COST);
+		assert.strictEqual(area.grid.walkSeconds({ column: 0, row: 0 }), IMPASSABLE_WALK_SECONDS);
 
 		const loading = database.cache.loadChunks(AREA_ID, [chunkKey(0, 0), chunkKey(1, 0)]);
 
 		database.finishReads();
 
 		assert.deepStrictEqual((await loading).sort(), [chunkKey(0, 0), chunkKey(1, 0)]);
-		assert.strictEqual(area.grid.movementCost({ column: 0, row: 0 }), 50);
-		assert.strictEqual(area.grid.movementCost({ column: 32, row: 0 }), 0);
+		assert.strictEqual(area.grid.walkSeconds({ column: 0, row: 0 }), 20);
+		assert.strictEqual(area.grid.walkSeconds({ column: 32, row: 0 }), 10);
 		assert.deepStrictEqual([...area.chunks.keys()], [chunkKey(0, 0)]);
 	});
 
@@ -173,7 +178,7 @@ describe('AreaCache', () =>
 
 		assert.deepStrictEqual(await reloading, [chunkKey(0, 0)]);
 		assert.strictEqual(area?.chunks.has(chunkKey(0, 0)), false);
-		assert.strictEqual(area.grid.movementCost({ column: 0, row: 0 }), 0);
+		assert.strictEqual(area.grid.walkSeconds({ column: 0, row: 0 }), 10);
 	});
 
 	it('reloads an area, keeping its chunks only when asked to', async () =>
@@ -232,5 +237,37 @@ describe('AreaCache', () =>
 
 		assert.deepStrictEqual(payload.chunks.map((chunk) => chunkKey(chunk.chunkColumn, chunk.chunkRow)), [chunkKey(0, 0)]);
 		assert.strictEqual(toAreaPayload(area, []).chunks.length, 0);
+	});
+
+	it('puts only the cells and links a group has seen in an area\'s payload', async () =>
+	{
+		const database = new FakeDatabase();
+		const loadedArea = await database.cache.load(AREA_ID);
+		const loading = database.cache.loadChunks(AREA_ID, [chunkKey(0, 0), chunkKey(1, 0)]);
+
+		database.finishReads();
+		await loading;
+
+		assert.ok(loadedArea);
+
+		const link = { targetAreaId: 'elsewhere', targetColumn: 0, targetRow: 0, mode: 'automatic' as const, requiresWholeGroup: false };
+		const area = {
+			...loadedArea,
+			loaded: {
+				...loadedArea.loaded,
+				links: [{ ...link, column: 0, row: 0 }, { ...link, column: 5, row: 0 }]
+			}
+		};
+		const seen = new SeenCells();
+
+		seen.mark(AREA_ID, [visionKey(0, 0), visionKey(1, 0)]);
+
+		const payload = toAreaPayload(area, [chunkKey(0, 0), chunkKey(1, 0)], seen);
+		const [first, second] = payload.chunks;
+
+		assert.deepStrictEqual(payload.chunks.map((chunk) => chunkKey(chunk.chunkColumn, chunk.chunkRow)), [chunkKey(0, 0), chunkKey(1, 0)], 'an unseen chunk of the default tile is still sent, as unseen');
+		assert.deepStrictEqual(first.cells.slice(0, 3), [FOREST, DEFAULT_TILE_CELL, UNSEEN_CELL]);
+		assert.ok(second.cells.every((value) => (value === UNSEEN_CELL)));
+		assert.deepStrictEqual(payload.links, [{ column: 0, row: 0, mode: 'automatic' }]);
 	});
 });

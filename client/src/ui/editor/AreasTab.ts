@@ -1,4 +1,4 @@
-import { ancestorAreas, canEditWorld, childAreas, defineMessages, descendantAreaIds, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_AREA_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, AREA_PASSAGES_OF_TIME, areasTabListing, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary, type FaerieMorning, type AreaListPayload, type AreaPassageOfTime, type AreaSettings } from '@multiverse-kiln/shared';
+import { ancestorAreas, AREA_LIGHT_LEVEL_NAMES, AREA_LIGHT_LEVELS, canEditWorld, canPaintTile, childAreas, DEFAULT_AREA_TILE_KEYS, descendantAreaIds, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_AREA_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, AREA_PASSAGES_OF_TIME, areasTabListing, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary, type FaerieMorning, type AreaListPayload, type AreaLightLevel, type AreaPassageOfTime, type AreaSettings } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -6,35 +6,28 @@ import { ChangeTracker } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
+import { pageMessages } from '../pageMessages';
 import { tileName } from '../tileNames';
+import type { AreaSource } from './areaSource';
+import { editorMessages } from './editorMessages';
 import { MapEditor } from './MapEditor';
+import { combineChanges, type SavableTab } from './SaveBar';
+import { isNewAreaId, StagedAreas } from './stagedAreas';
+import { deletedNote, labelRemoveButton, stagedTag } from './stagedChanges';
 
 /**
- * Text the area editor shows in more than one place (see src/localization.ts)
- */
-const messages = defineMessages({
-	indoorTiles: {
-		id: 'editor.area.indoorTiles',
-		defaultMessage: 'Indoor tiles',
-		description: 'Heading of a group of choices of default tile'
-	},
-	outdoorTiles: {
-		id: 'editor.area.outdoorTiles',
-		defaultMessage: 'Outdoor tiles',
-		description: 'Heading of a group of choices of default tile'
-	}
-});
-
-/**
- * The Areas tab: the universe's areas, opening the area editor, and adding areas
+ * The Areas tab: the universe's areas, opening the area editor, and adding and deleting areas
  *
- * The area editor is a view in the tab rather than a dialog, since it holds the area's map
+ * The area editor is a view in the tab rather than a dialog, since it holds the area's map. Areas added
+ * and deleted wait on the page until the tab is saved, as do the changes made to the area open in the
+ * area editor; a new area can be opened, painted and linked to before it is saved
  */
-export class AreasTab
+export class AreasTab implements SavableTab
 {
 	private readonly listView = getElement('area-list-view', HTMLElement);
 	private readonly list = getElement('area-list', HTMLUListElement);
 	private readonly empty = getElement('area-empty', HTMLElement);
+	private readonly listError = getElement('area-list-error', HTMLElement);
 	private readonly addButton = getElement('area-add', HTMLButtonElement);
 	private readonly editorView = getElement('area-editor-view', HTMLElement);
 	private readonly editorTitle = getElement('area-editor-title', HTMLElement);
@@ -46,8 +39,17 @@ export class AreasTab
 	private readonly parent = getElement('area-parent', HTMLSelectElement);
 	private readonly outdoors = getElement('area-outdoors', HTMLInputElement);
 	private readonly indoors = getElement('area-indoors', HTMLInputElement);
+	private readonly lightField = getElement('area-light-field', HTMLElement);
+	private readonly lightLevel = getElement('area-light', HTMLSelectElement);
+	private readonly lightHint = getElement('area-light-hint', HTMLElement);
 	private readonly defaultTile = getElement('area-default-tile', HTMLSelectElement);
+	private readonly timeField = getElement('area-time-field', HTMLElement);
 	private readonly time = getElement('area-time', HTMLSelectElement);
+
+	/**
+	 * Shown in place of the passage of time for the lobby, whose time the Lobby tab sets
+	 */
+	private readonly lobbyTimeHint = getElement('area-lobby-time-hint', HTMLElement);
 	private readonly faerieField = getElement('area-faerie-field', HTMLElement);
 	private readonly faerie = getElement('area-faerie', HTMLSelectElement);
 	private readonly loopsEastWest = getElement('area-loops-east-west', HTMLInputElement);
@@ -55,9 +57,7 @@ export class AreasTab
 	private readonly loopsHint = getElement('area-loops-hint', HTMLElement);
 	private readonly size = getElement('area-size', HTMLElement);
 	private readonly error = getElement('area-error', HTMLElement);
-	private readonly saved = getElement('area-saved', HTMLElement);
 	private readonly deleteButton = getElement('area-delete', HTMLButtonElement);
-	private readonly saveButton = getElement('area-save', HTMLButtonElement);
 	private readonly children = getElement('area-children', HTMLElement);
 	private readonly childList = getElement('area-child-list', HTMLUListElement);
 	private readonly addDialog = getElement('area-add-dialog', HTMLDialogElement);
@@ -69,18 +69,37 @@ export class AreasTab
 	private readonly mapEditor: MapEditor;
 
 	/**
-	 * Whether the map editor has painting or growth that hasn't been saved
+	 * Whether the map editor has painting, a change of size or links that haven't been saved
 	 */
 	private mapUnsaved = false;
 
 	/**
 	 * Whether the area editor's settings or map have changes that haven't been saved
 	 */
-	readonly changes = new ChangeTracker({
+	private readonly areaChanges = new ChangeTracker({
 		root: this.form,
-		state: () => this.mapUnsaved,
-		status: this.saved
+		state: () => this.mapUnsaved
 	});
+
+	/**
+	 * The areas added and deleted since the tab was last saved
+	 */
+	private readonly staged = new StagedAreas();
+
+	/**
+	 * Whether the tab has changes that haven't been saved: areas added or deleted, or changes to the area open
+	 */
+	readonly changes = combineChanges(this.areaChanges, this.staged);
+
+	/**
+	 * Where the map editor gets areas: the page for an area added since the tab was last saved, whose
+	 * map is all its default tile and has no links yet, and the server for the rest
+	 */
+	private readonly source: AreaSource = {
+		getArea: async (areaId) => (this.staged.get(areaId) ?? this.api.getArea(this.universeId(), areaId)),
+		listLinks: async (areaId) => (isNewAreaId(areaId) ? [] : this.api.listLinks(this.universeId(), areaId)),
+		loadChunks: async (areaId, range) => (isNewAreaId(areaId) ? { chunks: [] } : this.api.loadChunks(this.universeId(), areaId, range))
+	};
 
 	/**
 	 * Whether the Add Area dialog has been filled in
@@ -115,7 +134,7 @@ export class AreasTab
 	 */
 	constructor(private readonly api: EditorApi, private readonly onAreaChanged: (areaId: string | undefined) => void)
 	{
-		this.mapEditor = new MapEditor(api, (bounds) =>
+		this.mapEditor = new MapEditor(api, this.source, (bounds) =>
 		{
 			if (this.area)
 			{
@@ -125,54 +144,53 @@ export class AreasTab
 		}, (unsaved) =>
 		{
 			this.mapUnsaved = unsaved;
-			this.changes.check();
+			this.areaChanges.check();
 		});
 		this.name.maxLength = MAX_AREA_NAME_LENGTH;
 		this.addName.maxLength = MAX_AREA_NAME_LENGTH;
 		setOptions(this.time, namedOptions(AREA_PASSAGES_OF_TIME, PASSAGE_OF_TIME_NAMES));
 		setOptions(this.faerie, namedOptions(FAERIE_MORNINGS, FAERIE_MORNING_NAMES));
+		setOptions(this.lightLevel, namedOptions(AREA_LIGHT_LEVELS, AREA_LIGHT_LEVEL_NAMES));
 
 		this.time.addEventListener('change', () =>
 		{
 			this.updateTimeFields();
 		});
 
-		this.enabled.addEventListener('change', () =>
-		{
-			this.saved.textContent = '';
-		});
 
 		for (const choice of [this.outdoors, this.indoors])
 		{
 			choice.addEventListener('change', () =>
 			{
 				this.fillDefaultTiles(this.indoors.checked, Number(this.defaultTile.value));
-				this.saved.textContent = '';
+				this.mapEditor.showTilesFor(this.indoors.checked);
+				this.showLightField();
 			});
 		}
 
 		this.name.addEventListener('input', () =>
 		{
 			setFieldError(this.name, undefined);
-			this.saved.textContent = '';
-		});
-
-		this.form.addEventListener('submit', (event) =>
-		{
-			event.preventDefault();
-			void this.save();
 		});
 
 		this.deleteButton.addEventListener('click', () =>
 		{
-			void this.deleteArea();
+			this.toggleDelete();
 		});
 
 		getElement('area-back', HTMLButtonElement).addEventListener('click', () =>
 		{
-			if (this.changes.confirmDiscard())
+			if (this.areaChanges.confirmDiscard())
 			{
 				void this.showList();
+			}
+		});
+
+		this.staged.subscribe(() =>
+		{
+			if (!this.listView.hidden)
+			{
+				this.renderList();
 			}
 		});
 
@@ -217,6 +235,11 @@ export class AreasTab
 	 */
 	open(universe: EditableUniverse, areaId?: string): void
 	{
+		if (this.universe?.id !== universe.id)
+		{
+			this.staged.clear();
+		}
+
 		this.universe = universe;
 		this.addButton.hidden = !canEditWorld(universe.role);
 
@@ -250,9 +273,43 @@ export class AreasTab
 	 */
 	async openArea(areaId: string): Promise<void>
 	{
+		if (!this.editorView.hidden && !this.areaChanges.confirmDiscard())
+		{
+			return;
+		}
+
+		await this.loadArea(areaId);
+	}
+
+	/**
+	 * Opens an area, or the list for none, that the page's history went back or forward to, first asking
+	 * whether to discard the unsaved changes of the area the editor shows
+	 *
+	 * @param areaId The area's ID, or undefined for the list
+	 * @return False when the player kept the changes, leaving the tab as it was
+	 */
+	showPlace(areaId: string | undefined): boolean
+	{
+		if (!this.editorView.hidden && !this.areaChanges.confirmDiscard())
+		{
+			return(false);
+		}
+
+		void ((areaId === undefined) ? this.showList() : this.loadArea(areaId));
+
+		return(true);
+	}
+
+	/**
+	 * Opens an area in the area editor, discarding any unsaved changes of the area it shows
+	 *
+	 * @param areaId The area's ID
+	 */
+	private async loadArea(areaId: string): Promise<void>
+	{
 		const universe = this.universe;
 
-		if (!universe || (!this.editorView.hidden && !this.changes.confirmDiscard()))
+		if (!universe)
 		{
 			return;
 		}
@@ -261,15 +318,12 @@ export class AreasTab
 
 		// Any unsaved painting has been discarded, so the map loads afresh
 		this.mapEditor.hide();
-		this.changes.markSaved();
-		this.onAreaChanged(areaId);
+		this.areaChanges.markSaved();
+		// A new area has no address until it is saved
+		this.onAreaChanged((isNewAreaId(areaId) ? undefined : areaId));
 		this.listView.hidden = true;
 		this.editorView.hidden = false;
-		this.editorTitle.textContent = t({
-			id: 'editor.area.loading',
-			defaultMessage: 'Loading...',
-			description: 'Heading of the area editor while the area loads'
-		});
+		this.editorTitle.textContent = t(pageMessages.loading);
 		this.fields.disabled = true;
 		showMessage(this.error, undefined);
 
@@ -278,7 +332,7 @@ export class AreasTab
 		try
 		{
 			[area] = await Promise.all([
-				this.api.getArea(universe.id, areaId),
+				this.source.getArea(areaId),
 				this.loadAreas(universe),
 				this.loadTiles(universe)
 			]);
@@ -316,7 +370,7 @@ export class AreasTab
 		this.onAreaChanged(undefined);
 		this.mapEditor.hide();
 		// The hidden area editor is filled afresh when an area opens, so nothing left in it can be saved
-		this.changes.markSaved();
+		this.areaChanges.markSaved();
 		this.listView.hidden = false;
 		this.editorView.hidden = true;
 
@@ -344,12 +398,18 @@ export class AreasTab
 			return;
 		}
 
-		if (version !== this.openVersion)
+		if (version === this.openVersion)
 		{
-			return;
+			this.renderList();
 		}
+	}
 
-		const listing = areasTabListing(this.areas.areas, this.areas.lobbyAreaId);
+	/**
+	 * Shows the list of areas as last loaded, with the areas added and deleted since the tab was last saved
+	 */
+	private renderList(): void
+	{
+		const listing = areasTabListing(this.allAreas(), this.areas.lobbyAreaId);
 
 		// An area the listing passed through is shown above the areas inside it, indented by how deep each is
 		this.list.replaceChildren(
@@ -386,6 +446,34 @@ export class AreasTab
 	}
 
 	/**
+	 * The ID of the universe the tab shows
+	 *
+	 * @return The ID; throws while no universe has opened
+	 */
+	private universeId(): string
+	{
+		if (!this.universe)
+		{
+			throw new Error('The Areas tab has no universe open');
+		}
+
+		return(this.universe.id);
+	}
+
+	/**
+	 * Every area of the universe as last loaded, then the areas added since the tab was last saved
+	 *
+	 * @return The areas, including those that will be deleted
+	 */
+	private allAreas(): EditorAreaSummary[]
+	{
+		return([
+			...this.areas.areas,
+			...this.staged.newAreas().map(({ id, name, parentAreaId, enabled, indoors }) => ({ id, name, parentAreaId, enabled, indoors }))
+		]);
+	}
+
+	/**
 	 * An area's entry in a list, opening it in the area editor
 	 *
 	 * @param area The area
@@ -419,11 +507,8 @@ export class AreasTab
 				: undefined),
 			(area.enabled
 				? undefined
-				: t({
-					id: 'editor.areas.disabledTag',
-					defaultMessage: 'disabled',
-					description: 'Under an area in the list of areas, for an area players can\'t go into'
-				}))
+				: t(editorMessages.disabledTag)),
+			(isNewAreaId(area.id) ? stagedTag('new', false) : undefined)
 		].filter((tag) => (tag !== undefined));
 
 		item.style.paddingLeft = `${depth * 20}px`;
@@ -433,6 +518,12 @@ export class AreasTab
 		details.className = 'universe-ruleset';
 		details.textContent = formatList(tags);
 		button.append(name, details);
+
+		if (this.staged.isDeleted(area.id))
+		{
+			item.classList.add('staged-deleted');
+			name.append(deletedNote());
+		}
 		button.addEventListener('click', () =>
 		{
 			void this.openArea(area.id);
@@ -451,8 +542,10 @@ export class AreasTab
 	 */
 	private showArea(universe: EditableUniverse, area: EditorArea): void
 	{
-		const editable = canEditWorld(universe.role);
-		const excluded = descendantAreaIds(this.areas.areas, area.id).add(area.id);
+		const deleted = this.staged.isDeleted(area.id);
+		const editable = (canEditWorld(universe.role) && !deleted);
+		const areas = this.allAreas();
+		const excluded = descendantAreaIds(areas, area.id).add(area.id);
 		const isLobby = (area.id === this.areas.lobbyAreaId);
 		const isStart = (area.id === this.areas.startingAreaId);
 
@@ -477,8 +570,8 @@ export class AreasTab
 					description: 'Choice of parent area for an area that isn\'t inside another'
 				})
 			},
-			...this.areas.areas
-				.filter((other) => !excluded.has(other.id))
+			...areas
+				.filter((other) => (!excluded.has(other.id) && (!this.staged.isDeleted(other.id) || (other.id === area.parentAreaId))))
 				.map((other) => ({
 					value: other.id,
 					label: other.name
@@ -487,8 +580,12 @@ export class AreasTab
 		this.parent.value = (area.parentAreaId ?? '');
 		this.outdoors.checked = !area.indoors;
 		this.indoors.checked = area.indoors;
+		this.lightLevel.value = area.lightLevel;
+		this.showLightField();
 		this.fillDefaultTiles(area.indoors, area.defaultTileId);
 		this.time.value = area.passageOfTime;
+		this.timeField.hidden = isLobby;
+		this.lobbyTimeHint.hidden = !isLobby;
 		this.faerie.value = (area.faerieMorning ?? FAERIE_MORNINGS[0]);
 		this.loopsEastWest.checked = area.loopsEastWest;
 		this.loopsNorthSouth.checked = area.loopsNorthSouth;
@@ -496,18 +593,21 @@ export class AreasTab
 		this.updateTimeFields();
 		this.updateParentMessage();
 		this.fields.disabled = !editable;
-		this.saveButton.hidden = !editable;
-		this.deleteButton.hidden = (!editable || isLobby || isStart);
-		this.saved.textContent = '';
+		this.deleteButton.hidden = (!canEditWorld(universe.role) || isLobby || isStart);
+		labelRemoveButton(this.deleteButton, { removed: deleted }, false, t({
+			id: 'editor.area.delete',
+			defaultMessage: 'Delete Area',
+			description: 'Button that deletes the area being edited when the Areas tab is saved'
+		}));
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.form);
 
-		const children = childAreas(this.areas.areas, area.id);
+		const children = childAreas(areas, area.id);
 
 		this.childList.replaceChildren(...children.map((child) => this.createItem(child, 0)));
 		this.children.hidden = (children.length === 0);
-		this.changes.markSaved();
-		void this.mapEditor.show(universe, area, this.tiles, this.areas.areas);
+		this.areaChanges.markSaved();
+		void this.mapEditor.show(universe, area, this.tiles, areas.filter((other) => !this.staged.isDeleted(other.id)), editable);
 	}
 
 	/**
@@ -531,7 +631,9 @@ export class AreasTab
 	}
 
 	/**
-	 * Lists the tiles an area can use by default: outdoor tiles first for an outdoor area, indoor tiles first for an indoor one
+	 * Lists the tiles an area can use by default: the indoor tiles for an indoor area or the outdoor
+	 * tiles for an outdoor one, and the selected tile even when it is for the other kind, so switching
+	 * the area between them doesn't change its default tile
 	 *
 	 * @param indoors Whether the area is indoors
 	 * @param selectedTileId The tile to select
@@ -539,29 +641,23 @@ export class AreasTab
 	private fillDefaultTiles(indoors: boolean, selectedTileId: number): void
 	{
 		const ruleset = this.universe?.ruleset;
-		const groups = [
-			{
-				label: t(indoors ? messages.indoorTiles : messages.outdoorTiles),
-				tiles: this.tiles.filter((tile) => (tile.indoors === indoors))
-			},
-			{
-				label: t(indoors ? messages.outdoorTiles : messages.indoorTiles),
-				tiles: this.tiles.filter((tile) => (tile.indoors !== indoors))
-			}
-		];
 
-		this.defaultTile.replaceChildren(...groups
-			.filter((group) => (group.tiles.length > 0))
-			.map((group) =>
-			{
-				const element = document.createElement('optgroup');
-
-				element.label = group.label;
-				element.append(...group.tiles.map((tile) => new Option(((ruleset === undefined) ? (tile.name ?? '') : tileName(tile, ruleset)), String(tile.id))));
-
-				return(element);
-			}));
+		setOptions(this.defaultTile, this.tiles
+			.filter((tile) => (canPaintTile(tile, indoors) || (tile.id === selectedTileId)))
+			.map((tile) => ({
+				value: String(tile.id),
+				label: ((ruleset === undefined) ? (tile.name ?? '') : tileName(tile, ruleset))
+			})));
 		this.defaultTile.value = String(selectedTileId);
+	}
+
+	/**
+	 * Shows the light level while the area is indoors, the only place it has an effect
+	 */
+	private showLightField(): void
+	{
+		this.lightField.hidden = !this.indoors.checked;
+		this.lightHint.hidden = !this.indoors.checked;
 	}
 
 	/**
@@ -581,8 +677,6 @@ export class AreasTab
 			this.loopsEastWest.checked = false;
 			this.loopsNorthSouth.checked = false;
 		}
-
-		this.saved.textContent = '';
 	}
 
 	/**
@@ -591,7 +685,7 @@ export class AreasTab
 	private updateParentMessage(): void
 	{
 		const area = this.area;
-		const disabled = ((area === undefined) ? [] : ancestorAreas(this.areas.areas, area.id).filter((ancestor) => !ancestor.enabled));
+		const disabled = ((area === undefined) ? [] : ancestorAreas(this.allAreas(), area.id).filter((ancestor) => !ancestor.enabled));
 
 		showMessage(this.parentDisabled, ((disabled.length === 0)
 			? undefined
@@ -606,85 +700,320 @@ export class AreasTab
 	}
 
 	/**
-	 * Saves the map's painting, then the area's settings as the form shows them
+	 * Whether the player may change areas
+	 *
+	 * @return True for a creator or builder
 	 */
-	private async save(): Promise<void>
+	canSave(): boolean
 	{
-		const universe = this.universe;
-		const area = this.area;
-		const name = this.name.value.trim();
+		return((this.universe !== undefined) && canEditWorld(this.universe.role));
+	}
 
-		if (!universe || !area)
-		{
-			return;
-		}
+	/**
+	 * The area editor's settings as the form shows them, or why they can't be saved
+	 *
+	 * @return The settings, or undefined after showing what is wrong
+	 */
+	private readSettings(): AreaSettings | undefined
+	{
+		const name = this.name.value.trim();
 
 		if ((name === '') || DISALLOWED_TEXT_CHARACTERS.test(name))
 		{
 			reportFieldError(this.name, t(formMessages.invalidText));
-			return;
+			return(undefined);
 		}
 
 		const passageOfTime = this.time.value as AreaPassageOfTime;
-		const settings: AreaSettings = {
+
+		return({
 			name,
 			parentAreaId: ((this.parent.value === '') ? null : this.parent.value),
 			enabled: this.enabled.checked,
 			indoors: this.indoors.checked,
+			lightLevel: this.lightLevel.value as AreaLightLevel,
 			defaultTileId: Number(this.defaultTile.value),
 			passageOfTime,
 			faerieMorning: ((passageOfTime === 'faerie') ? this.faerie.value as FaerieMorning : null),
 			loopsEastWest: this.loopsEastWest.checked,
 			loopsNorthSouth: this.loopsNorthSouth.checked
+		});
+	}
+
+	/**
+	 * Saves the tab: deletes the areas that were deleted, adds the areas that were added, then saves the
+	 * area open in the area editor, its map first and then its settings as the form shows them. Each
+	 * change stays unsaved until the server has it, so saving again carries on after one that failed
+	 *
+	 * Deleting goes first, so deleting areas can make room for new ones (MAX_AREAS); a new area is added
+	 * after the area it is inside, so it can name its saved ID
+	 *
+	 * @return True when everything was saved
+	 */
+	async save(): Promise<boolean>
+	{
+		const universe = this.universe;
+		const version = this.openVersion;
+		const area = this.area;
+		const error = (area ? this.error : this.listError);
+
+		if (!universe)
+		{
+			return(false);
+		}
+
+		// The area open, unless it is going to be deleted
+		const editing = ((area !== undefined) && !this.staged.isDeleted(area.id));
+		const settings = (editing ? this.readSettings() : undefined);
+
+		if (editing && !settings)
+		{
+			return(false);
+		}
+
+		const settingsChanged = this.areaChanges.hasUnsavedChanges();
+		const deletedIds = new Set<string>();
+
+		/**
+		 * The saved ID of each new area added so far, by the ID it had on the page
+		 */
+		const savedIds = new Map<string, string>();
+
+		/**
+		 * An area's parent as the server knows it: none for a deleted parent, whose areas the server makes
+		 * top-level, and a new parent's saved ID
+		 *
+		 * @param parentAreaId The parent's ID, or null for none
+		 * @return The parent's ID, or null for none
+		 */
+		const parentOf = (parentAreaId: string | null): string | null =>
+		{
+			if ((parentAreaId === null) || deletedIds.has(parentAreaId))
+			{
+				return(null);
+			}
+
+			return(savedIds.get(parentAreaId) ?? parentAreaId);
 		};
 
-		this.saveButton.disabled = true;
-		showMessage(this.error, undefined);
+		showMessage(error, undefined);
+
+		for (const areaId of this.staged.deletedIds())
+		{
+			try
+			{
+				await this.api.deleteArea(universe.id, areaId);
+			}
+			catch (deleteError)
+			{
+				showMessage(error, describeEditorError(deleteError, {
+					id: 'editor.areas.deleteFailed',
+					defaultMessage: 'Could not delete {area}.',
+					description: 'Shown on the Areas tab when saving stopped at deleting an area the server refused; {area} is its name. Changes after it are kept, not saved'
+				}, {
+					area: this.nameOf(areaId)
+				}));
+				return(false);
+			}
+
+			deletedIds.add(areaId);
+			this.staged.markDeleted(areaId);
+		}
+
+		for (const newArea of this.creationOrder(settings))
+		{
+			const fields = (((newArea.id === this.area?.id) && settings) ? settings : newArea);
+			let savedId: string;
+
+			try
+			{
+				savedId = await this.api.createArea(universe.id, {
+					name: fields.name,
+					parentAreaId: parentOf(fields.parentAreaId),
+					enabled: fields.enabled,
+					indoors: fields.indoors,
+					lightLevel: fields.lightLevel,
+					defaultTileId: fields.defaultTileId,
+					passageOfTime: fields.passageOfTime,
+					faerieMorning: fields.faerieMorning,
+					loopsEastWest: fields.loopsEastWest,
+					loopsNorthSouth: fields.loopsNorthSouth
+				});
+			}
+			catch (createError)
+			{
+				showMessage(error, describeEditorError(createError, {
+					id: 'editor.areas.createFailed',
+					defaultMessage: 'Could not add {area}.',
+					description: 'Shown on the Areas tab when saving stopped at adding an area the server refused; {area} is its name. Changes after it are kept, not saved'
+				}, {
+					area: fields.name
+				}));
+				return(false);
+			}
+
+			savedIds.set(newArea.id, savedId);
+			this.areaCreated(newArea.id, savedId, settings);
+		}
+
+		const open = this.area;
+
+		if (!editing || !settings || !open)
+		{
+			await this.refreshAfterSave(universe, version);
+			return(true);
+		}
+
+		const created = (open.id !== area?.id);
+
+		settings.parentAreaId = parentOf(settings.parentAreaId);
 
 		try
 		{
 			await this.mapEditor.save();
 		}
-		catch (error)
+		catch (mapError)
 		{
-			showMessage(this.error, describeEditorError(error, {
+			showMessage(this.error, describeEditorError(mapError, {
 				id: 'editor.area.mapSaveFailed',
 				defaultMessage: 'Could not save the map.',
-				description: 'Shown in the area editor when the painting on the area\'s map, or its new size, couldn\'t be stored'
+				description: 'Shown in the area editor when the painting on the area\'s map, its new size or its links couldn\'t be stored'
 			}));
-			this.saveButton.disabled = false;
+			return(false);
+		}
+
+		try
+		{
+			// A new area was added with the form's settings
+			if (settingsChanged && !created)
+			{
+				await this.api.updateArea(universe.id, open.id, settings);
+			}
+		}
+		catch (updateError)
+		{
+			showMessage(this.error, describeEditorError(updateError, {
+				id: 'editor.area.saveFailed',
+				defaultMessage: 'Could not save the area.',
+				description: 'Shown in the area editor when the area\'s settings couldn\'t be stored'
+			}));
+
+			return(false);
+		}
+
+		await this.refreshAfterSave(universe, version, { ...open, ...settings });
+
+		return(true);
+	}
+
+	/**
+	 * The areas added since the tab was last saved, each after the new area it is inside, so it can name
+	 * that area's saved ID
+	 *
+	 * @param settings The area editor's settings, for the area open, whose parent the form may have changed
+	 * @return The areas
+	 */
+	private creationOrder(settings: AreaSettings | undefined): EditorArea[]
+	{
+		const waiting = this.staged.newAreas().map((area) => (((area.id === this.area?.id) && settings) ? { ...area, parentAreaId: settings.parentAreaId } : area));
+		const order: EditorArea[] = [];
+
+		while (waiting.length > 0)
+		{
+			// The area editor's parent choices leave out an area's own descendants, so there is always one
+			const index = Math.max(0, waiting.findIndex((area) => !waiting.some((other) => (other.id === area.parentAreaId))));
+
+			order.push(...waiting.splice(index, 1));
+		}
+
+		return(order);
+	}
+
+	/**
+	 * Takes a new area as saved: everything that named it by the ID it had on the page names its saved ID
+	 *
+	 * @param areaId The ID it had on the page
+	 * @param savedId The ID the server saved it with
+	 * @param settings The area editor's settings, whose parent may be the new area
+	 */
+	private areaCreated(areaId: string, savedId: string, settings: AreaSettings | undefined): void
+	{
+		this.staged.markCreated(areaId, savedId);
+		this.mapEditor.resolveIds(new Map([[areaId, savedId]]));
+
+		for (const option of this.parent.options)
+		{
+			if (option.value === areaId)
+			{
+				option.value = savedId;
+			}
+		}
+
+		if (settings?.parentAreaId === areaId)
+		{
+			settings.parentAreaId = savedId;
+		}
+
+		if (this.area?.id === areaId)
+		{
+			this.area = { ...this.area, id: savedId };
+			this.onAreaChanged(savedId);
+		}
+	}
+
+	/**
+	 * Shows the tab afresh once it has saved: the list, or the area editor with the area as saved. The
+	 * list of areas is loaded again first, since saving added and deleted areas
+	 *
+	 * @param universe The universe
+	 * @param version The tab's openVersion when saving started; when another area or the list has opened since, it is left alone
+	 * @param area The area open, as saved, or undefined when the area editor isn't showing one to keep
+	 */
+	private async refreshAfterSave(universe: EditableUniverse, version: number, area?: EditorArea): Promise<void>
+	{
+		if (version !== this.openVersion)
+		{
+			return;
+		}
+
+		if (!area)
+		{
+			await this.showList();
 			return;
 		}
 
 		try
 		{
-			await this.api.updateArea(universe.id, area.id, settings);
 			await this.loadAreas(universe);
+		}
+		catch
+		{
+			// The list stays as it was last loaded, with the saved areas it doesn't know yet left out
+		}
 
-			if (this.area === area)
-			{
-				this.showArea(universe, { ...area, ...settings });
-				this.saved.textContent = t(formMessages.saved);
-			}
-		}
-		catch (error)
+		if (version === this.openVersion)
 		{
-			showMessage(this.error, describeEditorError(error, {
-				id: 'editor.area.saveFailed',
-				defaultMessage: 'Could not save the area.',
-				description: 'Shown in the area editor when the area\'s settings couldn\'t be stored'
-			}));
-		}
-		finally
-		{
-			this.saveButton.disabled = false;
+			this.showArea(universe, area);
 		}
 	}
 
 	/**
-	 * Deletes the area after asking, and goes back to the list
+	 * An area's name, for messages
+	 *
+	 * @param areaId The area's ID
+	 * @return Its name, or an empty string when it isn't known
 	 */
-	private async deleteArea(): Promise<void>
+	private nameOf(areaId: string): string
+	{
+		return(this.allAreas().find((area) => (area.id === areaId))?.name ?? '');
+	}
+
+	/**
+	 * Deletes the area open when the tab is saved, after asking, and goes back to the list; or, for an
+	 * area that will be deleted, keeps it after all. A new area is deleted straight away, since it was
+	 * never saved
+	 */
+	private toggleDelete(): void
 	{
 		const universe = this.universe;
 		const area = this.area;
@@ -694,47 +1023,67 @@ export class AreasTab
 			return;
 		}
 
-		const question = t({
-			id: 'editor.area.confirmDelete',
-			defaultMessage: 'Delete {area}, its map and every link into it? Areas inside it become top-level areas. This can\'t be undone.',
-			description: 'Asks before deleting an area; {area} is its name'
-		}, {
-			area: area.name
-		});
+		if (this.staged.isDeleted(area.id))
+		{
+			this.staged.undoDelete(area.id);
+			this.showArea(universe, area);
+			return;
+		}
+
+		const question = (isNewAreaId(area.id)
+			? t({
+				id: 'editor.area.confirmDeleteNew',
+				defaultMessage: 'Delete {area}? It hasn\'t been saved, so its settings, map and links will be lost.',
+				description: 'Asks before deleting an area added since the Areas tab was last saved, which goes straight away; {area} is its name'
+			}, {
+				area: area.name
+			})
+			: t({
+				id: 'editor.area.confirmDelete',
+				defaultMessage: 'Delete {area}, its map and every link into it when the Areas tab is saved? Areas inside it become top-level areas.',
+				description: 'Asks before marking an area to be deleted when the Areas tab is saved; {area} is its name'
+			}, {
+				area: area.name
+			}));
 
 		if (!window.confirm(question))
 		{
 			return;
 		}
 
-		this.deleteButton.disabled = true;
-
-		try
-		{
-			await this.api.deleteArea(universe.id, area.id);
-			await this.showList();
-		}
-		catch (error)
-		{
-			showMessage(this.error, describeEditorError(error, {
-				id: 'editor.area.deleteFailed',
-				defaultMessage: 'Could not delete the area.',
-				description: 'Shown in the area editor when the area couldn\'t be deleted'
-			}));
-		}
-		finally
-		{
-			this.deleteButton.disabled = false;
-		}
+		this.staged.delete(area.id);
+		void this.showList();
 	}
 
 	/**
-	 * Adds the area the Add Area dialog describes, and opens it in the area editor
+	 * The tile a new area uses by default, as the server picks it (DEFAULT_AREA_TILE_KEYS)
+	 *
+	 * @param universe The universe
+	 * @param indoors Whether the area is indoors
+	 * @return The tile's ID, or undefined when the universe has no such tile
+	 */
+	private defaultTileFor(universe: EditableUniverse, indoors: boolean): number | undefined
+	{
+		const keys = DEFAULT_AREA_TILE_KEYS[universe.ruleset];
+		const key = (indoors ? keys.indoors : keys.outdoors);
+
+		return(this.tiles.find((tile) => (tile.key === key))?.id);
+	}
+
+	/**
+	 * Adds the area the Add Area dialog describes, to be saved with the tab, and opens it in the area
+	 * editor. It takes the settings the server gives a new area
 	 */
 	private async addArea(): Promise<void>
 	{
 		const universe = this.universe;
 		const name = this.addName.value.trim();
+		const indoors = this.addIndoors.checked;
+		const failed = {
+			id: 'editor.areaAdd.failed',
+			defaultMessage: 'Could not add the area.',
+			description: 'Shown in the Add Area dialog when the area couldn\'t be made'
+		};
 
 		if (!universe)
 		{
@@ -748,22 +1097,43 @@ export class AreasTab
 		}
 
 		this.addSubmit.disabled = true;
+		showMessage(this.addError, undefined);
 
 		try
 		{
-			const areaId = await this.api.createArea(universe.id, { name, indoors: this.addIndoors.checked });
-
-			this.addDialog.close();
-			await this.openArea(areaId);
+			await this.loadTiles(universe);
 		}
 		catch (error)
 		{
-			showMessage(this.addError, describeEditorError(error, {
-				id: 'editor.areaAdd.failed',
-				defaultMessage: 'Could not add the area.',
-				description: 'Shown in the Add Area dialog when the area couldn\'t be made'
-			}));
+			showMessage(this.addError, describeEditorError(error, failed));
 			this.addSubmit.disabled = false;
+			return;
 		}
+
+		const defaultTileId = this.defaultTileFor(universe, indoors);
+
+		if (defaultTileId === undefined)
+		{
+			showMessage(this.addError, t(failed));
+			this.addSubmit.disabled = false;
+			return;
+		}
+
+		const area = this.staged.create({
+			name,
+			parentAreaId: null,
+			enabled: (universe.stage === 'in_the_beginning'),
+			indoors,
+			lightLevel: 'lit',
+			defaultTileId,
+			passageOfTime: 'inherit',
+			faerieMorning: null,
+			loopsEastWest: false,
+			loopsNorthSouth: false
+		});
+
+		this.addChanges.markSaved();
+		this.addDialog.close();
+		await this.openArea(area.id);
 	}
 }

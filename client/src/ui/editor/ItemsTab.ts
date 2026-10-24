@@ -1,10 +1,13 @@
-import { canEditWorld, ITEM_KINDS, MAX_ITEMS_PER_PAGE, type EditableUniverse, type EditorItem, type ItemListPayload, type ItemListQuery, type Ruleset } from '@multiverse-kiln/shared';
+import { canEditWorld, ITEM_KINDS, MAX_ITEMS_PER_PAGE, type EditableUniverse, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type Ruleset } from '@multiverse-kiln/shared';
 
-import { formatList, t } from '../../localization';
+import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, setOptions, showMessage, type SelectOption } from '../dom';
 import { createItemIcon, itemCategoryName, itemName, itemTypeName } from '../itemNames';
+import { editorMessages } from './editorMessages';
 import { ItemDialog } from './ItemDialog';
+import type { SavableTab } from './SaveBar';
+import { describeCommitFailure, joinTags, markStagedRow, StagedChanges, stagedPage, stagedTag, type StagedState } from './stagedChanges';
 
 /**
  * How long the name filter waits after the last key before searching, in milliseconds
@@ -12,9 +15,11 @@ import { ItemDialog } from './ItemDialog';
 const SEARCH_DELAY_MS = 250;
 
 /**
- * The Items tab: every item the universe can give characters, filtered and a page at a time, opening the item editor
+ * The Items tab: every item the universe can give characters, filtered and a page at a time, opening the
+ * item editor. Changes wait on the page until the tab is saved: changed items show their changes on the
+ * page they are on, and items added since show at the top of the first page, whatever the filters
  */
-export class ItemsTab
+export class ItemsTab implements SavableTab
 {
 	private readonly nameFilter = getElement('item-filter-name', HTMLInputElement);
 	private readonly categoryFilter = getElement('item-filter-category', HTMLSelectElement);
@@ -25,12 +30,29 @@ export class ItemsTab
 	private readonly addButton = getElement('item-add', HTMLButtonElement);
 	private readonly rows = getElement('item-rows', HTMLTableSectionElement);
 	private readonly empty = getElement('item-empty', HTMLElement);
+	private readonly error = getElement('item-list-error', HTMLElement);
 	private readonly page = getElement('item-page', HTMLElement);
 	private readonly previousButton = getElement('item-previous', HTMLButtonElement);
 	private readonly nextButton = getElement('item-next', HTMLButtonElement);
-	private readonly dialog: ItemDialog;
+	private readonly dialog = new ItemDialog();
+
+	/**
+	 * The changes made since the items were last saved
+	 */
+	readonly changes = new StagedChanges<ItemSettings>();
 
 	private universe: EditableUniverse | undefined;
+
+	/**
+	 * The page of items shown, as it was last loaded
+	 */
+	private items: EditorItem[] = [];
+
+	/**
+	 * Every item loaded since the universe was opened, by ID, to name an item whose change failed to save
+	 * when it isn't on the page shown
+	 */
+	private readonly known = new Map<number, EditorItem>();
 
 	/**
 	 * How many matching items come before the page shown
@@ -49,34 +71,20 @@ export class ItemsTab
 	 */
 	constructor(private readonly api: EditorApi)
 	{
-		this.dialog = new ItemDialog(api);
-
 		for (const filter of [this.enabledFilter, this.customFilter, this.editedFilter])
 		{
 			setOptions(filter, [
 				{
 					value: '',
-					label: t({
-						id: 'editor.items.filterAny',
-						defaultMessage: 'Any',
-						description: 'Choice of a yes-or-no item filter that shows every item'
-					})
+					label: t(editorMessages.filterAny)
 				},
 				{
 					value: 'true',
-					label: t({
-						id: 'editor.items.filterYes',
-						defaultMessage: 'Yes',
-						description: 'Choice of a yes-or-no item filter, e.g. Enabled: Yes'
-					})
+					label: t(editorMessages.filterYes)
 				},
 				{
 					value: 'false',
-					label: t({
-						id: 'editor.items.filterNo',
-						defaultMessage: 'No',
-						description: 'Choice of a yes-or-no item filter, e.g. Enabled: No'
-					})
+					label: t(editorMessages.filterNo)
 				}
 			]);
 		}
@@ -140,6 +148,10 @@ export class ItemsTab
 
 		this.universe = universe;
 		this.offset = 0;
+		this.items = [];
+		this.known.clear();
+		this.changes.clear();
+		showMessage(this.error, undefined);
 		this.nameFilter.value = '';
 		setOptions(this.categoryFilter, [
 			anyOption(),
@@ -155,6 +167,52 @@ export class ItemsTab
 		this.editedFilter.value = '';
 		this.addButton.hidden = !canEditWorld(universe.role);
 		void this.refresh();
+	}
+
+	/**
+	 * Whether the player may change the items
+	 *
+	 * @return True for a creator or builder
+	 */
+	canSave(): boolean
+	{
+		return((this.universe !== undefined) && canEditWorld(this.universe.role));
+	}
+
+	/**
+	 * Saves the changes in the order they were made, stopping at the first the server refuses
+	 *
+	 * @return True when every change was saved
+	 */
+	async save(): Promise<boolean>
+	{
+		const universe = this.universe;
+
+		if (!universe)
+		{
+			return(false);
+		}
+
+		showMessage(this.error, undefined);
+
+		const failure = await this.changes.commit({
+			create: (settings) => this.api.createItem(universe.id, settings),
+			save: (itemId, settings) => this.api.saveItem(universe.id, itemId, settings),
+			remove: (itemId) => this.api.deleteItem(universe.id, itemId)
+		});
+
+		await this.refresh();
+
+		if (failure)
+		{
+			const item = this.itemWithChanges(failure.change.id);
+
+			showMessage(this.error, describeCommitFailure(failure, (item ? itemName(item, universe.ruleset) : ''), !item?.custom));
+
+			return(false);
+		}
+
+		return(true);
 	}
 
 	/**
@@ -182,7 +240,7 @@ export class ItemsTab
 	}
 
 	/**
-	 * Loads and shows the page of items the filters and offset ask for
+	 * Loads the page of items the filters and offset ask for, then shows it with the changes made since
 	 */
 	private async refresh(): Promise<void>
 	{
@@ -237,14 +295,14 @@ export class ItemsTab
 			return;
 		}
 
-		this.rows.replaceChildren(...page.items.map((item) => this.createRow(item, universe)));
-		showMessage(this.empty, ((page.items.length === 0)
-			? t({
-				id: 'editor.items.none',
-				defaultMessage: 'No items match.',
-				description: 'Shown instead of the table when no item matches the filters'
-			})
-			: undefined));
+		this.items = page.items;
+
+		for (const item of page.items)
+		{
+			this.known.set(item.id, item);
+		}
+
+		this.render();
 		this.page.textContent = ((page.total === 0)
 			? ''
 			: t({
@@ -261,45 +319,85 @@ export class ItemsTab
 	}
 
 	/**
+	 * Shows the page of items with the changes made since it was loaded, and on the first page the items
+	 * added since, first
+	 */
+	private render(): void
+	{
+		const universe = this.universe;
+
+		if (!universe)
+		{
+			return;
+		}
+
+		const shown = stagedPage(this.items, this.changes, (this.offset === 0), (id, settings) => ({
+			id,
+			key: null,
+			...settings,
+			custom: true,
+			edited: false
+		}));
+
+		this.rows.replaceChildren(...shown.map(({ item, state }) => this.createRow(item, state, universe)));
+		showMessage(this.empty, ((shown.length === 0)
+			? t({
+				id: 'editor.items.none',
+				defaultMessage: 'No items match.',
+				description: 'Shown instead of the list of items when no item matches the search or filters: on the Items tab and in the dialog for choosing items'
+			})
+			: undefined));
+	}
+
+	/**
+	 * An item as the list shows it, with its changes, wherever it is
+	 *
+	 * @param itemId The item's ID
+	 * @return The item, or undefined when it isn't known
+	 */
+	private itemWithChanges(itemId: number): EditorItem | undefined
+	{
+		const known = this.known.get(itemId);
+		const settings = this.changes.settingsOf(itemId);
+
+		if (!known)
+		{
+			return((settings === undefined) ? undefined : { id: itemId, key: null, ...settings, custom: true, edited: false });
+		}
+
+		return({ ...known, ...settings });
+	}
+
+	/**
 	 * An item's row in the table: its icon, name (opening the item editor), type, and whether it is
-	 * custom, edited or disabled
+	 * custom, edited, disabled or not saved yet
 	 *
 	 * @param item The item
+	 * @param state How it differs from what is saved
 	 * @param universe The universe whose item it is
 	 * @return The row
 	 */
-	private createRow(item: EditorItem, universe: EditableUniverse): HTMLTableRowElement
+	private createRow(item: EditorItem, state: StagedState, universe: EditableUniverse): HTMLTableRowElement
 	{
 		const row = document.createElement('tr');
 		const nameButton = document.createElement('button');
 		const tags = [
 			(item.custom
-				? t({
-					id: 'editor.items.customTag',
-					defaultMessage: 'custom',
-					description: 'In the last column of the item table, for an item made for this universe'
-				})
+				? t(editorMessages.customTag)
 				: undefined),
 			(item.edited
-				? t({
-					id: 'editor.items.editedTag',
-					defaultMessage: 'edited',
-					description: 'In the last column of the item table, for one of the ruleset\'s items that this universe changed'
-				})
+				? t(editorMessages.editedTag)
 				: undefined),
 			(item.enabled
 				? undefined
-				: t({
-					id: 'editor.items.disabledTag',
-					defaultMessage: 'disabled',
-					description: 'In the last column of the item table, for an item characters can\'t be given'
-				}))
-		].filter((tag) => (tag !== undefined));
+				: t(editorMessages.disabledTag)),
+			stagedTag(state, !item.custom)
+		];
 		const cells = [
 			createItemIcon(item.type, universe.ruleset),
 			nameButton,
 			itemTypeName(item.type, universe.ruleset),
-			formatList(tags)
+			joinTags(...tags)
 		];
 
 		nameButton.type = 'button';
@@ -318,11 +416,11 @@ export class ItemsTab
 			row.append(cell);
 		}
 
-		return(row);
+		return(markStagedRow(row, state, !item.custom));
 	}
 
 	/**
-	 * Opens the item editor, refreshing the list after a change
+	 * Opens the item editor, showing its changes in the list
 	 *
 	 * @param item The item, or undefined to add one
 	 */
@@ -330,9 +428,9 @@ export class ItemsTab
 	{
 		if (this.universe)
 		{
-			this.dialog.open(this.universe, item, () =>
+			this.dialog.open(this.universe, item, this.changes.edit(item?.id), () =>
 			{
-				void this.refresh();
+				this.render();
 			});
 		}
 	}
@@ -347,11 +445,7 @@ function anyOption(): SelectOption
 {
 	return({
 		value: '',
-		label: t({
-			id: 'editor.items.anyKind',
-			defaultMessage: 'Any',
-			description: 'Choice of the item kind or type filter that shows items of every kind or type'
-		})
+		label: t(editorMessages.filterAny)
 	});
 }
 

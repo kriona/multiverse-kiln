@@ -1,5 +1,5 @@
 import { CloseCode } from '@colyseus/sdk';
-import { GameMessageType, GameServerMessageType, INVITE_QUERY_PARAMETER, LobbyMessageType, LobbyServerMessageType, NAME_MESSAGES, NoticeReason, ServerCloseCode, SessionMessageType, SessionServerMessageType, type AccountPayload, type AccountPlayer, type CharacterListPayload, type CharacterSummary, type ChatHistoryPayload, type ChatMessage, type ChatPayload, type ChooseCharacterPayload, type ControlPayload, type LoginPayload, type NoticePayload, type PlayingAsPayload, type UniverseSummary } from '@multiverse-kiln/shared';
+import { GameMessageType, GameServerMessageType, INVITE_QUERY_PARAMETER, LobbyMessageType, LobbyServerMessageType, NAME_MESSAGES, NoticeReason, ServerCloseCode, SessionMessageType, SITE_NAME, SessionServerMessageType, type AccountPayload, type AccountPlayer, type CharacterListPayload, type CharacterSummary, type ChatHistoryPayload, type ChatMessage, type ChatPayload, type ChooseCharacterPayload, type ControlPayload, type LoginPayload, type NoticePayload, type PlayingAsPayload, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { t } from './localization';
 import { CharacterApi } from './network/characterApi';
@@ -9,6 +9,7 @@ import { getUniverseDetails, joinGroup, joinLobby, type GameConnection, type Lob
 import { isLeavingPage } from './pageLifecycle';
 import { characterPageUrl, gamePageUrl, HOME_PAGE_URL, readGameUniverseKey, readPageParameter, replacePageParameters, replacePagePath } from './pages';
 import { announce } from './ui/announcer';
+import { characterMessages } from './ui/characterMessages';
 import { CharacterSheetDialog } from './ui/CharacterSheetDialog';
 import { CreateGroupDialog } from './ui/CreateGroupDialog';
 import { showNoticeScreen, showScreen, showStatus } from './ui/dom';
@@ -168,10 +169,7 @@ export class GamePage
 			},
 			createCharacter: () =>
 			{
-				if (this.universe)
-				{
-					window.location.assign(characterPageUrl(this.universe.id));
-				}
+				this.goToCreateCharacter();
 			},
 			chooseCharacter: (character) =>
 			{
@@ -202,6 +200,10 @@ export class GamePage
 			openCharacterSheet: (character) =>
 			{
 				this.openCharacterSheet(character);
+			},
+			createCharacter: () =>
+			{
+				this.goToCreateCharacter();
 			},
 			invite: () =>
 			{
@@ -415,11 +417,7 @@ export class GamePage
 		}
 		catch (error)
 		{
-			this.lobbyScreen.showCharacterError(describeEditorError(error, {
-				id: 'lobby.charactersFailed',
-				defaultMessage: 'Could not list your characters.',
-				description: 'Shown in the lobby when the list of the player\'s characters in the universe couldn\'t be loaded'
-			}));
+			this.lobbyScreen.showCharacterError(describeEditorError(error, characterMessages.loadFailed));
 
 			return(undefined);
 		}
@@ -461,6 +459,17 @@ export class GamePage
 		}
 
 		this.goToGroup(character.groupId, character.id);
+	}
+
+	/**
+	 * Goes to Create Character for the universe, from the lobby or a group
+	 */
+	private goToCreateCharacter(): void
+	{
+		if (this.universe)
+		{
+			window.location.assign(characterPageUrl(this.universe.id));
+		}
 	}
 
 	/**
@@ -524,7 +533,7 @@ export class GamePage
 		{
 			if (this.joinedLobby)
 			{
-				this.lobbyScreen.show(universe.name, this.player.playerId, this.player.name);
+				this.lobbyScreen.show(universe, this.player.playerId, this.player.name);
 				showScreen('lobby');
 			}
 			else
@@ -555,11 +564,7 @@ export class GamePage
 	 */
 	private showOutside(message: string): void
 	{
-		showNoticeScreen(message, t({
-			id: 'game.outside.title',
-			defaultMessage: 'Multiverse Kiln',
-			description: 'The browser tab\'s title on the game\'s page when the player isn\'t in a universe or game, such as when a join link has expired'
-		}));
+		showNoticeScreen(message, SITE_NAME);
 	}
 
 	/**

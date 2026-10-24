@@ -14,7 +14,7 @@ import type { ClassRules, RaceRules } from './racesAndClasses.js';
 import type { Pf1eSettings } from './rulesets/pf1e/settings.js';
 import type { Sf1eSettings } from './rulesets/sf1e/settings.js';
 import type { Sf1eThemeRules } from './rulesets/sf1e/themes.js';
-import type { FaerieMorning, PassageOfTime, Ruleset, UniverseRole, UniverseStage, AreaLinkMode, AreaPassageOfTime } from './universes.js';
+import type { DisplayTime, FaerieMorning, LobbyPassageOfTime, PassageOfTime, Ruleset, UniverseRole, UniverseStage, AreaLightLevel, AreaLinkMode, AreaPassageOfTime } from './universes.js';
 
 /**
  * Base of every editor route. Under it, with :universeId and :areaId standing for IDs:
@@ -45,6 +45,10 @@ import type { FaerieMorning, PassageOfTime, Ruleset, UniverseRole, UniverseStage
  * - POST   /:universeId/themes                     ThemeSettings -> CreatedPayload: a custom theme (creators only)
  * - PUT    /:universeId/themes/:themeId            ThemeSettings: edits a custom theme, or stores an edited copy of a default theme (creators only)
  * - DELETE /:universeId/themes/:themeId            deletes a custom theme, or restores a default theme (creators only)
+ * - GET    /:universeId/difficulty-levels          DifficultyLevelListPayload
+ * - POST   /:universeId/difficulty-levels          DifficultyLevelSettings -> CreatedPayload (creators only)
+ * - PUT    /:universeId/difficulty-levels/:levelId DifficultyLevelSettings (creators only)
+ * - DELETE /:universeId/difficulty-levels/:levelId deletes a level that isn't the default, moving its groups to the default (creators only)
  * - GET    /:universeId/areas                      AreaListPayload
  * - POST   /:universeId/areas                      NewAreaRequest -> CreatedPayload
  * - GET    /:universeId/areas/:areaId              EditorArea
@@ -165,6 +169,25 @@ export const NEW_AREA_BOUNDS: Readonly<MapBounds> = {
 };
 
 /**
+ * A cell of a starting area. Characters start on the free cell nearest it; one outside the area's map,
+ * which may have been made smaller since the cell was chosen, counts as the nearest cell on it. Column
+ * 0, row 0, the middle of a new area's map, until the editor chooses another
+ */
+export interface StartingCell
+{
+	column: number;
+	row: number;
+}
+
+/**
+ * The keys of the default tiles new areas use in each ruleset, outdoors and indoors
+ */
+export const DEFAULT_AREA_TILE_KEYS: Record<Ruleset, { outdoors: string; indoors: string }> = {
+	pf1e: { outdoors: 'grass', indoors: 'wood_floor' },
+	sf1e: { outdoors: 'grass', indoors: 'metal_floor' }
+};
+
+/**
  * Most cells one CellEditRequest may change; the editor splits a larger edit into several requests
  */
 export const MAX_CELL_CHANGES = 20000;
@@ -266,6 +289,32 @@ export interface UniverseSettings
 	faerieMorning: FaerieMorning | null;
 
 	/**
+	 * How players are shown the time of day, in the lobby and in the game
+	 */
+	displayTime: DisplayTime;
+
+	/**
+	 * How the time of day changes in the lobby (the Lobby tab)
+	 */
+	lobbyPassageOfTime: LobbyPassageOfTime;
+
+	/**
+	 * How many real hours a lobby day lasts when lobbyPassageOfTime is real_time, from MIN_LOBBY_DAY_HOURS
+	 * to MAX_LOBBY_DAY_HOURS
+	 */
+	lobbyDayHours: number;
+
+	/**
+	 * Set exactly when lobbyPassageOfTime is faerie. The lobby's area can't loop while it is
+	 */
+	lobbyFaerieMorning: FaerieMorning | null;
+
+	/**
+	 * Whether every tile in the lobby is seen past as if it had no vision cost
+	 */
+	lobbyNoVisionCost: boolean;
+
+	/**
 	 * Most characters in one group, from MIN_GROUP_SIZE to MAX_GROUP_PLAYERS
 	 */
 	groupSize: number;
@@ -286,6 +335,13 @@ export interface UniverseSettings
 	 * other than the lobby's. Null only while the universe is being created
 	 */
 	startingAreaId: string | null;
+
+	/**
+	 * The cell of the starting area characters start nearest (see StartingCell)
+	 */
+	startingColumn: number;
+
+	startingRow: number;
 }
 
 /**
@@ -311,7 +367,8 @@ export interface EditableUniverse extends UniverseSettings
 
 /**
  * Body of PATCH EDITOR_UNIVERSES_PATH/:universeId: the settings to change. faerieMorning must be
- * sent with passageOfTime whenever either changes to or from faerie
+ * sent with passageOfTime whenever either changes to or from faerie, and lobbyFaerieMorning with
+ * lobbyPassageOfTime
  */
 export type UniverseSettingsUpdate = Partial<UniverseSettings>;
 
@@ -334,7 +391,16 @@ export interface TileSettings
 	 */
 	name: string | null;
 
+	/**
+	 * Whether indoor areas can paint with the tile. A tile can be for indoors, outdoors, both or
+	 * neither; one for neither can't be painted anywhere, but maps that already use it keep it
+	 */
 	indoors: boolean;
+
+	/**
+	 * Whether outdoor areas can paint with the tile
+	 */
+	outdoors: boolean;
 
 	/**
 	 * 0xRRGGBB
@@ -347,9 +413,10 @@ export interface TileSettings
 	visionCost: number;
 
 	/**
-	 * 0-IMPASSABLE_COST percent; 50 takes twice as long, IMPASSABLE_COST can't be entered
+	 * Seconds of game time walking a square of the tile takes, up to MAX_WALK_SECONDS;
+	 * IMPASSABLE_WALK_SECONDS can't be entered
 	 */
-	movementCost: number;
+	walkSeconds: number;
 }
 
 /**
@@ -380,6 +447,49 @@ export interface EditorTile extends TileSettings
 }
 
 /**
+ * Whether an area can paint with a tile, as its draw tool and default tile choices offer them
+ *
+ * @param tile The tile
+ * @param indoors Whether the area is indoors
+ * @return True when the tile is for that kind of area
+ */
+export function canPaintTile(tile: Pick<TileSettings, 'indoors' | 'outdoors'>, indoors: boolean): boolean
+{
+	return((indoors ? tile.indoors : tile.outdoors));
+}
+
+/**
+ * Which kinds of area can paint with a tile, as the Tilesets tab shows and filters them
+ */
+export const TILE_USED_IN = ['indoors', 'outdoors', 'both', 'neither'] as const;
+
+export type TileUsedIn = typeof TILE_USED_IN[number];
+
+/**
+ * Which kinds of area can paint with a tile
+ *
+ * @param tile The tile
+ * @return indoors or outdoors for a tile for only one, both, or neither
+ */
+export function tileUsedIn(tile: Pick<TileSettings, 'indoors' | 'outdoors'>): TileUsedIn
+{
+	if (tile.indoors && tile.outdoors)
+	{
+		return('both');
+	}
+	else if (tile.indoors)
+	{
+		return('indoors');
+	}
+	else if (tile.outdoors)
+	{
+		return('outdoors');
+	}
+
+	return('neither');
+}
+
+/**
  * Query parameters of GET EDITOR_UNIVERSES_PATH/:universeId/tiles. Each filter left out matches every tile
  */
 export interface TileListQuery
@@ -390,6 +500,7 @@ export interface TileListQuery
 	name?: string;
 
 	passable?: boolean;
+	usedIn?: TileUsedIn;
 	custom?: boolean;
 	edited?: boolean;
 
@@ -557,6 +668,13 @@ export interface StartingExtras
 	 * to the next choice down (see chooseStartingArea() in server/src/logic/startingArea.ts)
 	 */
 	startingAreaId: string | null;
+
+	/**
+	 * The cell of the starting area its characters start nearest (see StartingCell); 0 while startingAreaId is null
+	 */
+	startingColumn: number;
+
+	startingRow: number;
 }
 
 /**
@@ -582,7 +700,7 @@ export interface RaceSettings extends StartingExtras
 }
 
 /**
- * A race as the Races tab lists it
+ * A race as the editor's list of races lists it
  */
 export interface EditorRace extends RaceSettings
 {
@@ -630,6 +748,13 @@ export interface ClassRaceArea
 	 * One of the universe's areas other than the lobby's
 	 */
 	areaId: string;
+
+	/**
+	 * The cell of the area they start nearest (see StartingCell)
+	 */
+	column: number;
+
+	row: number;
 }
 
 /**
@@ -661,7 +786,7 @@ export interface ClassSettings extends StartingExtras
 }
 
 /**
- * A class as the Classes tab lists it
+ * A class as the editor's list of classes lists it
  */
 export interface EditorClass extends ClassSettings
 {
@@ -766,6 +891,11 @@ export interface AreaSettings
 
 	enabled: boolean;
 	indoors: boolean;
+
+	/**
+	 * How light the area is while it is indoors; kept while it is outdoors, where it has no effect
+	 */
+	lightLevel: AreaLightLevel;
 
 	/**
 	 * A tile the universe can use (an EditorTile's ID)

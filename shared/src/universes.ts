@@ -160,6 +160,79 @@ export const PASSAGE_OF_TIME_NAMES: Record<AreaPassageOfTime, MessageDescriptor>
 });
 
 /**
+ * How the time of day changes in a universe's lobby (see Tab: Lobby in STRUCTURE-OVERVIEW.md)
+ *
+ * Actions take no time in the lobby, so time can't flow with them. real_time runs from the Unix epoch
+ * instead, with a day of the universe's lobby day hours
+ */
+export const LOBBY_PASSAGES_OF_TIME = [
+	'always_dawn',
+	'always_noon',
+	'always_dusk',
+	'always_midnight',
+	'real_time',
+	'faerie'
+] as const;
+
+export type LobbyPassageOfTime = typeof LOBBY_PASSAGES_OF_TIME[number];
+
+/**
+ * The name of the lobby's real_time; its other passages of time are named in PASSAGE_OF_TIME_NAMES
+ */
+export const REAL_TIME_NAME: MessageDescriptor = defineMessages({
+	realTime: {
+		id: 'universe.time.real_time',
+		defaultMessage: 'real time',
+		description: 'Passage of time for a universe\'s lobby, where the time of day follows the real clock, with a day as long as the universe chooses'
+	}
+}).realTime;
+
+/**
+ * How many real hours a day in the lobby lasts when its passage of time is real_time
+ */
+export const MIN_LOBBY_DAY_HOURS = 1;
+
+export const MAX_LOBBY_DAY_HOURS = 240;
+
+export const DEFAULT_LOBBY_DAY_HOURS = 24;
+
+/**
+ * How players are shown the time of day in a universe
+ *
+ * - precise: the time on the clock, to the second
+ * - rough: a word for the time of day, such as afternoon
+ * - none: not at all
+ */
+export const DISPLAY_TIMES = [
+	'precise',
+	'rough',
+	'none'
+] as const;
+
+export type DisplayTime = typeof DISPLAY_TIMES[number];
+
+/**
+ * Each way of showing the time's name
+ */
+export const DISPLAY_TIME_NAMES: Record<DisplayTime, MessageDescriptor> = defineMessages({
+	precise: {
+		id: 'universe.displayTime.precise',
+		defaultMessage: 'precise (to the second)',
+		description: 'Choice for how a universe shows the time of day: the time on the clock, e.g. 8:00:00 AM'
+	},
+	rough: {
+		id: 'universe.displayTime.rough',
+		defaultMessage: 'rough (such as afternoon)',
+		description: 'Choice for how a universe shows the time of day: a word for the time of day, e.g. late morning or afternoon'
+	},
+	none: {
+		id: 'universe.displayTime.none',
+		defaultMessage: 'nothing',
+		description: 'Choice for how a universe shows the time of day: players aren\'t shown the time at all'
+	}
+});
+
+/**
  * Where morning is in faerie time: the time of day runs from sunrise on this side of the map to midnight
  * on the opposite side. horizon puts morning at every edge and night in the center
  */
@@ -231,6 +304,30 @@ export const FAERIE_MORNING_NAMES: Record<FaerieMorning, MessageDescriptor> = de
 		id: 'universe.faerie.horizon',
 		defaultMessage: 'horizon',
 		description: 'Where morning is in faerie time: every edge of the map, with night in the center'
+	}
+});
+
+/**
+ * How light an indoor area is, whatever the time of day: lit is as light as full daylight, dark as dark
+ * as night. Outdoor areas follow the time of day instead
+ */
+export const AREA_LIGHT_LEVELS = ['lit', 'dark'] as const;
+
+export type AreaLightLevel = typeof AREA_LIGHT_LEVELS[number];
+
+/**
+ * Each light level's name
+ */
+export const AREA_LIGHT_LEVEL_NAMES: Record<AreaLightLevel, MessageDescriptor> = defineMessages({
+	lit: {
+		id: 'universe.lightLevel.lit',
+		defaultMessage: 'lit',
+		description: 'Light level of an indoor area that is as light as full daylight at any time of day'
+	},
+	dark: {
+		id: 'universe.lightLevel.dark',
+		defaultMessage: 'dark',
+		description: 'Light level of an indoor area that is as dark as night at any time of day'
 	}
 });
 

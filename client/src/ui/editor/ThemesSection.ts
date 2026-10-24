@@ -1,41 +1,57 @@
-import { canEditUniverseSettings, rulesetHasThemes, SF1E_ABILITY_NAMES, SF1E_THEME_ABILITY_BONUS, type EditableUniverse, type EditorTheme } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, rulesetHasThemes, SF1E_ABILITY_NAMES, SF1E_THEME_ABILITY_BONUS, type EditableUniverse, type EditorTheme, type ThemeSettings } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
-import { describeEditorError, type EditorApi } from '../../network/editorApi';
-import { getElement, showMessage } from '../dom';
+import type { EditorApi } from '../../network/editorApi';
+import { getElement } from '../dom';
 import { themeName } from '../raceAndClassNames';
-import { createOptionRow, optionTags } from './optionRows';
+import { OptionList } from './OptionList';
 import { ThemeDialog } from './ThemeDialog';
 
 /**
  * The themes on the Characters tab, in a ruleset with themes: every theme characters of the universe can
- * have, opening the theme editor. Hidden for a ruleset without themes
+ * have, opening the theme editor. Changes wait on the page until the tab is saved. Hidden for a ruleset
+ * without themes
  */
-export class ThemesSection
+export class ThemesSection extends OptionList<EditorTheme, ThemeSettings>
 {
 	private readonly section = getElement('characters-themes', HTMLElement);
-	private readonly addButton = getElement('theme-add', HTMLButtonElement);
-	private readonly rows = getElement('theme-rows', HTMLTableSectionElement);
-	private readonly error = getElement('theme-list-error', HTMLElement);
-	private readonly dialog: ThemeDialog;
-
-	private universe: EditableUniverse | undefined;
-
-	/**
-	 * Changes with every request for the list, so a list that arrives after a newer request is ignored
-	 */
-	private requestVersion = 0;
 
 	/**
 	 * @param api The editor's API
 	 */
-	constructor(private readonly api: EditorApi)
+	constructor(api: EditorApi)
 	{
-		this.dialog = new ThemeDialog(api);
+		const dialog = new ThemeDialog();
 
-		this.addButton.addEventListener('click', () =>
-		{
-			this.openTheme(undefined);
+		super({
+			addButton: getElement('theme-add', HTMLButtonElement),
+			rows: getElement('theme-rows', HTMLTableSectionElement),
+			error: getElement('theme-list-error', HTMLElement),
+			listFailed: {
+				id: 'editor.themes.listFailed',
+				defaultMessage: 'Could not list the themes.',
+				description: 'Shown on the editor\'s Characters tab when the themes (character backgrounds, such as ace pilot) couldn\'t be loaded'
+			},
+			canEdit: (universe) => canEditUniverseSettings(universe.role),
+			load: (universeId) => api.listThemes(universeId),
+			routes: (universeId) => ({
+				create: (settings) => api.createTheme(universeId, settings),
+				save: (themeId, settings) => api.saveTheme(universeId, themeId, settings),
+				remove: (themeId) => api.deleteTheme(universeId, themeId)
+			}),
+			created: (id, settings) => ({
+				id,
+				key: null,
+				...settings,
+				custom: true,
+				edited: false
+			}),
+			name: themeName,
+			describe: describeTheme,
+			openDialog: (universe, theme, edit, onChanged) =>
+			{
+				dialog.open(universe, theme, edit, onChanged);
+			}
 		});
 	}
 
@@ -44,83 +60,12 @@ export class ThemesSection
 	 *
 	 * @param universe The universe
 	 */
-	open(universe: EditableUniverse): void
+	override open(universe: EditableUniverse | undefined): void
 	{
-		const hasThemes = rulesetHasThemes(universe.ruleset);
+		const hasThemes = ((universe !== undefined) && rulesetHasThemes(universe.ruleset));
 
-		this.universe = (hasThemes ? universe : undefined);
 		this.section.hidden = !hasThemes;
-		this.addButton.hidden = !canEditUniverseSettings(universe.role);
-		this.rows.replaceChildren();
-		showMessage(this.error, undefined);
-		void this.refresh();
-	}
-
-	/**
-	 * Loads and shows the themes, by name
-	 */
-	private async refresh(): Promise<void>
-	{
-		const universe = this.universe;
-		const version = ++this.requestVersion;
-
-		if (!universe)
-		{
-			return;
-		}
-
-		let themes: EditorTheme[];
-
-		try
-		{
-			themes = await this.api.listThemes(universe.id);
-		}
-		catch (error)
-		{
-			if (version === this.requestVersion)
-			{
-				showMessage(this.error, describeEditorError(error, {
-					id: 'editor.themes.listFailed',
-					defaultMessage: 'Could not list the themes.',
-					description: 'Shown on the editor\'s Characters tab when the themes (character backgrounds, such as ace pilot) couldn\'t be loaded'
-				}));
-			}
-
-			return;
-		}
-
-		if (version !== this.requestVersion)
-		{
-			return;
-		}
-
-		showMessage(this.error, undefined);
-		this.rows.replaceChildren(...themes
-			.map((theme) => ({
-				theme,
-				name: themeName(theme, universe.ruleset)
-			}))
-			.sort((a, b) => a.name.localeCompare(b.name))
-			.map(({ theme, name }) => createOptionRow(name, describeTheme(theme), optionTags(theme), () =>
-			{
-				this.openTheme(theme);
-			})));
-	}
-
-	/**
-	 * Opens the theme editor, refreshing the list after a change
-	 *
-	 * @param theme The theme, or undefined to add one
-	 */
-	private openTheme(theme: EditorTheme | undefined): void
-	{
-		if (this.universe)
-		{
-			this.dialog.open(this.universe, theme, () =>
-			{
-				void this.refresh();
-			});
-		}
+		super.open(hasThemes ? universe : undefined);
 	}
 }
 

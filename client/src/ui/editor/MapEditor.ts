@@ -1,4 +1,6 @@
-import { canEditWorld, DEFAULT_TILE_CELL, defineMessages, isInBounds, MAX_BRUSH_SIZE, MAX_CELL_CHANGES, MAX_MAP_SIDE, VOID_CELL, VIEW_HEIGHT, VIEW_WIDTH, type CellChange, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type MapBounds, type MessageDescriptor } from '@multiverse-kiln/shared';
+import exitFullPageIcon from 'virtual:icon/ph:arrows-in';
+import fullPageIcon from 'virtual:icon/ph:arrows-out';
+import { canPaintTile, DEFAULT_TILE_CELL, defineMessages, isInBounds, MAX_BRUSH_SIZE, MAX_CELL_CHANGES, MAX_MAP_SIDE, VOID_CELL, VIEW_HEIGHT, VIEW_WIDTH, type CellChange, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type MapBounds, type MessageDescriptor } from '@multiverse-kiln/shared';
 
 import { BRUSH_SHAPES, brushCells, type BrushCell, type BrushShape } from '../../editor/brush';
 import { ChunkLoader } from '../../editor/ChunkLoader';
@@ -8,9 +10,11 @@ import { editorAreaPayload, MapCanvas } from '../../editor/MapCanvas';
 import { t } from '../../localization';
 import { describeEditorError, EditorApiError, type EditorApi } from '../../network/editorApi';
 import type { CameraState, MapEditorHost, PointerMode } from '../../scenes/MapEditorScene';
-import { getElement, namedOptions, setOptions, showMessage } from '../dom';
+import { getElement, namedOptions, setButtonLabel, setOptions, showMessage } from '../dom';
+import { formMessages } from '../formMessages';
 import { addKeyHelp, formatKeys } from '../shortcuts';
 import { tileName } from '../tileNames';
+import type { AreaSource, LinkChange } from './areaSource';
 import { describeCell } from './cellDescription';
 import { LinkDialog } from './LinkDialog';
 import { mapMessages } from './mapMessages';
@@ -71,7 +75,16 @@ interface OpenArea
 	areas: readonly EditorAreaSummary[];
 	map: EditorMap;
 	loader: ChunkLoader;
+
+	/**
+	 * The area's links as saved; the map shows them with the link changes not yet saved (currentLinks)
+	 */
 	links: EditorAreaLink[];
+
+	/**
+	 * Whether the map can be changed
+	 */
+	editable: boolean;
 }
 
 /**
@@ -95,9 +108,8 @@ interface Stroke
  * or Void, 1 to MAX_BRUSH_SIZE cells across, square or circle) with undo and redo, buttons to grow the
  * map on each side, Edit Size, and a tool for the map's area links
  *
- * Painting and changes to the map's size show straight away and are kept until the area editor's Save
- * button calls save(); a click, a drag or a change of size is one step to undo. Links are stored as soon
- * as they are made
+ * Painting, changes to the map's size and links show straight away and are kept until the editor's Save
+ * button calls save(); a click, a drag or a change of size is one step to undo
  */
 export class MapEditor
 {
@@ -109,6 +121,8 @@ export class MapEditor
 	private readonly undoButton = getElement('map-undo', HTMLButtonElement);
 	private readonly redoButton = getElement('map-redo', HTMLButtonElement);
 	private readonly resizeButton = getElement('map-resize', HTMLButtonElement);
+	private readonly section = getElement('map-editor', HTMLElement);
+	private readonly fullPageButton = getElement('map-full-page', HTMLButtonElement);
 	private readonly expandButtons = sides.map((side) => getElement(`map-expand-${side}`, HTMLButtonElement));
 	private readonly expandField = getElement('map-expand-field', HTMLElement);
 	private readonly expandBy = getElement('map-expand-by', HTMLInputElement);
@@ -120,9 +134,18 @@ export class MapEditor
 	private readonly history = new EditHistory();
 	private readonly resizeDialog: ResizeDialog;
 	private readonly linkDialog: LinkDialog;
+	private readonly canvasObserver = new ResizeObserver(() =>
+	{
+		this.fitCanvas();
+	});
 
 	private open: OpenArea | undefined;
 	private stroke: Stroke | undefined;
+
+	/**
+	 * Whether the map editor covers the window (see setFullPage)
+	 */
+	private fullPage = false;
 
 	/**
 	 * The cell under the pointer, while it is over the map
@@ -140,6 +163,12 @@ export class MapEditor
 	private readonly savedValues = new Map<string, number>();
 
 	/**
+	 * Links added, changed or deleted that haven't been saved, in this area and return links in others,
+	 * by linkKey()
+	 */
+	private stagedLinks = new Map<string, LinkChange>();
+
+	/**
 	 * Saves being sent; the map is read-only while there are any
 	 */
 	private pendingSaves = 0;
@@ -151,13 +180,14 @@ export class MapEditor
 
 	/**
 	 * @param api The editor's API
+	 * @param source Where the areas, their links and their maps' chunks come from
 	 * @param onBoundsChanged Called with an area's new bounds after the map editor resizes it
-	 * @param onUnsavedChanged Called with whether the map has painting or growth that hasn't been saved, whenever that may have changed
+	 * @param onUnsavedChanged Called with whether the map has painting, a change of size or links that haven't been saved, whenever that may have changed
 	 */
-	constructor(private readonly api: EditorApi, private readonly onBoundsChanged: (bounds: MapBounds) => void, private readonly onUnsavedChanged: (unsaved: boolean) => void)
+	constructor(private readonly api: EditorApi, private readonly source: AreaSource, private readonly onBoundsChanged: (bounds: MapBounds) => void, private readonly onUnsavedChanged: (unsaved: boolean) => void)
 	{
 		this.resizeDialog = new ResizeDialog();
-		this.linkDialog = new LinkDialog(api);
+		this.linkDialog = new LinkDialog();
 		this.brushSize.max = String(MAX_BRUSH_SIZE);
 		setOptions(this.brushShape, namedOptions(BRUSH_SHAPES, BRUSH_SHAPE_NAMES));
 
@@ -175,6 +205,13 @@ export class MapEditor
 		{
 			this.openResizeDialog();
 		});
+
+		this.fullPageButton.addEventListener('click', () =>
+		{
+			this.setFullPage(!this.fullPage);
+		});
+
+		this.setFullPage(false);
 
 		sides.forEach((side, index) =>
 		{
@@ -217,11 +254,7 @@ export class MapEditor
 		addKeyHelp({
 			scope: this.canvasElement,
 			keys: () => t(mapMessages.arrowKeys),
-			description: () => t({
-				id: 'editor.map.keys.cursorDescription',
-				defaultMessage: 'Move the cursor on the focused map, 10 cells at a time with Shift',
-				description: 'In the list of keyboard shortcuts, what the arrow keys do on the map editor\'s map'
-			})
+			description: () => t(mapMessages.cursorDescription)
 		});
 
 		addKeyHelp({
@@ -260,20 +293,20 @@ export class MapEditor
 	}
 
 	/**
-	 * Shows an area's map, read-only unless the player's role may change the world
+	 * Shows an area's map
 	 *
-	 * Opening the area already shown keeps what has loaded and the undo history, so changing the area's
-	 * other settings doesn't lose them
+	 * Opening the area already shown keeps what has loaded, the undo history and the links not yet saved,
+	 * so changing the area's other settings doesn't lose them
 	 *
 	 * @param universe The area's universe
 	 * @param area The area
 	 * @param tiles Every tile the universe can use
 	 * @param areas Every area of the universe, for the links' targets
+	 * @param editable Whether the map can be changed: false for a player whose role can't change the world, or an area that will be deleted
 	 */
-	async show(universe: EditableUniverse, area: EditorArea, tiles: readonly EditorTile[], areas: readonly EditorAreaSummary[]): Promise<void>
+	async show(universe: EditableUniverse, area: EditorArea, tiles: readonly EditorTile[], areas: readonly EditorAreaSummary[], editable: boolean): Promise<void>
 	{
 		const version = ++this.openVersion;
-		const editable = canEditWorld(universe.role);
 		const same = ((this.open?.area.id === area.id) && sameBounds(this.open.map.bounds, area.bounds));
 
 		this.fillTiles(universe, area, tiles);
@@ -291,7 +324,7 @@ export class MapEditor
 
 		try
 		{
-			links = await this.api.listLinks(universe.id, area.id);
+			links = await this.source.listLinks(area.id);
 		}
 		catch (error)
 		{
@@ -312,13 +345,15 @@ export class MapEditor
 
 		if (same && this.open)
 		{
-			this.open = { ...this.open, universe, area, tiles, areas, links };
+			this.open = { ...this.open, universe, area, tiles, areas, links, editable };
 		}
 		else
 		{
 			this.open?.loader.stop();
 			this.history.clear();
-			this.open = this.openMap(universe, area, tiles, areas, links);
+			this.stagedLinks.clear();
+			this.open = this.openMap(universe, area, tiles, areas, links, editable);
+			this.unsavedChanged();
 		}
 
 		await this.startScene(camera);
@@ -330,6 +365,7 @@ export class MapEditor
 	 */
 	hide(): void
 	{
+		this.setFullPage(false);
 		this.openVersion++;
 		this.open?.loader.stop();
 		this.open = undefined;
@@ -337,18 +373,49 @@ export class MapEditor
 		this.history.clear();
 		this.unsaved.clear();
 		this.savedValues.clear();
+		this.stagedLinks.clear();
 		this.canvas.stop();
 		this.unsavedChanged();
 	}
 
 	/**
-	 * Whether the map has painting or growth that hasn't been saved
+	 * Whether the map has painting, a change of size or links that haven't been saved
 	 *
 	 * @return True while it has
 	 */
 	hasUnsavedChanges(): boolean
 	{
-		return((this.unsaved.size > 0) || this.hasUnsavedBounds());
+		return((this.unsaved.size > 0) || this.hasUnsavedBounds() || (this.stagedLinks.size > 0));
+	}
+
+	/**
+	 * Gives areas added since the Areas tab was last saved the IDs the server saved them with, wherever
+	 * the open area or its links not yet saved name them
+	 *
+	 * @param ids Each new area's saved ID, by the ID it had on the page
+	 */
+	resolveIds(ids: ReadonlyMap<string, string>): void
+	{
+		const open = this.open;
+		const resolve = (areaId: string): string => (ids.get(areaId) ?? areaId);
+
+		if (open)
+		{
+			open.area = { ...open.area, id: resolve(open.area.id) };
+			open.areas = open.areas.map((area) => ({
+				...area,
+				id: resolve(area.id),
+				parentAreaId: ((area.parentAreaId === null) ? null : resolve(area.parentAreaId))
+			}));
+		}
+
+		this.stagedLinks = new Map([...this.stagedLinks.values()]
+			.map((change): LinkChange => ({
+				...change,
+				areaId: resolve(change.areaId),
+				target: ((change.target === null) ? null : { ...change.target, targetAreaId: resolve(change.target.targetAreaId) })
+			}))
+			.map((change) => [linkKey(change.areaId, change.column, change.row), change]));
 	}
 
 	/**
@@ -362,13 +429,13 @@ export class MapEditor
 	}
 
 	/**
-	 * Saves the map's new bounds and the painting not yet saved, in requests of up to MAX_CELL_CHANGES
-	 * cells. The map is read-only until it is done
+	 * Saves the map's new bounds, the painting not yet saved, in requests of up to MAX_CELL_CHANGES
+	 * cells, and the links not yet saved. The map is read-only until it is done
 	 *
-	 * The server refuses painting outside its bounds, so the map first grows to cover both its saved and
-	 * new bounds, then the painting is saved, and last it shrinks to its new bounds. Cells a smaller map
-	 * cuts off are set to the default tile with the painting, so shrinking discards nothing unless links
-	 * are on them, which the player is asked about first
+	 * The server refuses painting and links outside its bounds, so the map first grows to cover both its
+	 * saved and new bounds, then the painting is saved, then it shrinks to its new bounds, and last the
+	 * links are saved. Cells a smaller map cuts off are set to the default tile with the painting, so
+	 * shrinking discards nothing unless saved links are on them, which the player is asked about first
 	 *
 	 * @return Resolves once every request has been stored; rejects with the request's error when one fails
 	 */
@@ -435,11 +502,13 @@ export class MapEditor
 					}
 
 					await this.api.resizeArea(open.universe.id, open.area.id, bounds, true);
-					void this.reloadLinks(open);
 				}
 
 				open.area = { ...open.area, bounds };
 			}
+
+			await this.saveLinks(open);
+			await this.reloadLinks(open);
 		}
 		finally
 		{
@@ -447,6 +516,102 @@ export class MapEditor
 			this.unsavedChanged();
 			this.updateButtons();
 		}
+	}
+
+	/**
+	 * Saves the links not yet saved, in the order they were made. A link on a cell the map no longer has
+	 * is dropped, since the map's size was saved first
+	 *
+	 * @param open The area open when saving started
+	 * @return Resolves once every link has been stored; rejects with the request's error when one fails
+	 */
+	private async saveLinks(open: OpenArea): Promise<void>
+	{
+		for (const [key, change] of [...this.stagedLinks])
+		{
+			const cutOff = ((change.areaId === open.area.id) && !isInBounds(open.area.bounds, change.column, change.row));
+
+			if (!cutOff)
+			{
+				if (change.target === null)
+				{
+					await this.api.deleteLink(open.universe.id, change.areaId, change.column, change.row);
+				}
+				else
+				{
+					await this.api.saveLink(open.universe.id, change.areaId, change.column, change.row, change.target);
+				}
+			}
+
+			this.stagedLinks.delete(key);
+		}
+	}
+
+	/**
+	 * Keeps changes the link dialog made until the map is saved, and shows them on the map. Deleting a
+	 * link that was never saved just forgets it
+	 *
+	 * @param open The area open when the link dialog opened
+	 * @param changes The changes
+	 */
+	private stageLinks(open: OpenArea, changes: readonly LinkChange[]): void
+	{
+		if (this.open !== open)
+		{
+			return;
+		}
+
+		for (const change of changes)
+		{
+			const key = linkKey(change.areaId, change.column, change.row);
+			const saved = ((change.areaId === open.area.id) && open.links.some((link) => ((link.column === change.column) && (link.row === change.row))));
+
+			if ((change.target === null) && !saved)
+			{
+				this.stagedLinks.delete(key);
+			}
+			else
+			{
+				this.stagedLinks.set(key, change);
+			}
+		}
+
+		this.canvas.scene?.setLinks(linksOnMap(open, this.currentLinks(open.area.id, open.links)));
+		this.showHoveredCell();
+		this.unsavedChanged();
+	}
+
+	/**
+	 * An area's links with the changes not yet saved
+	 *
+	 * @param areaId The area's ID
+	 * @param saved The area's links as saved
+	 * @return The links
+	 */
+	private currentLinks(areaId: string, saved: readonly EditorAreaLink[]): EditorAreaLink[]
+	{
+		const changes = [...this.stagedLinks.values()].filter((change) => (change.areaId === areaId));
+		const changed = new Set(changes.map((change) => linkKey(areaId, change.column, change.row)));
+		const added = changes.flatMap((change) => ((change.target === null) ? [] : [{ ...change.target, column: change.column, row: change.row }]));
+
+		return([
+			...saved.filter((link) => !changed.has(linkKey(areaId, link.column, link.row))),
+			...added
+		]);
+	}
+
+	/**
+	 * Where the link dialog gets the areas it previews: the editor's source, with the links not yet saved
+	 *
+	 * @return The source
+	 */
+	private linkSource(): AreaSource
+	{
+		return({
+			getArea: (areaId) => this.source.getArea(areaId),
+			listLinks: async (areaId) => this.currentLinks(areaId, await this.source.listLinks(areaId)),
+			loadChunks: (areaId, range) => this.source.loadChunks(areaId, range)
+		});
 	}
 
 	/**
@@ -518,12 +683,13 @@ export class MapEditor
 	 * @param tiles Every tile the universe can use
 	 * @param areas Every area of the universe
 	 * @param links The area's links
+	 * @param editable Whether the map can be changed
 	 * @return The open area
 	 */
-	private openMap(universe: EditableUniverse, area: EditorArea, tiles: readonly EditorTile[], areas: readonly EditorAreaSummary[], links: EditorAreaLink[]): OpenArea
+	private openMap(universe: EditableUniverse, area: EditorArea, tiles: readonly EditorTile[], areas: readonly EditorAreaSummary[], links: EditorAreaLink[], editable: boolean): OpenArea
 	{
 		const map = new EditorMap(area.bounds);
-		const loader = new ChunkLoader(this.api, universe.id, area.id, map, (chunkKeys) =>
+		const loader = new ChunkLoader((range) => this.source.loadChunks(area.id, range), map, (chunkKeys) =>
 		{
 			this.canvas.scene?.refreshChunks(chunkKeys);
 		}, (error) =>
@@ -531,7 +697,7 @@ export class MapEditor
 			showMessage(this.error, describeEditorError(error, mapMessages.loadFailed));
 		});
 
-		return({ universe, area, tiles, areas, map, loader, links });
+		return({ universe, area, tiles, areas, map, loader, links, editable });
 	}
 
 	/**
@@ -553,7 +719,7 @@ export class MapEditor
 
 		if (this.open === open)
 		{
-			scene.setLinks(linksOnMap(open));
+			scene.setLinks(linksOnMap(open, this.currentLinks(open.area.id, open.links)));
 		}
 	}
 
@@ -603,7 +769,7 @@ export class MapEditor
 	 */
 	private pointerMode(): PointerMode
 	{
-		if (!this.open || !canEditWorld(this.open.universe.role) || (this.pendingSaves > 0))
+		if (!this.open?.editable || (this.pendingSaves > 0))
 		{
 			return('none');
 		}
@@ -836,18 +1002,14 @@ export class MapEditor
 	{
 		if (this.pendingSaves > 0)
 		{
-			this.saveStatus.textContent = t({
-				id: 'editor.map.saving',
-				defaultMessage: 'Saving...',
-				description: 'Shown under the map while painting is being stored'
-			});
+			this.saveStatus.textContent = t(formMessages.saving);
 		}
 		else if (this.hasUnsavedChanges())
 		{
 			this.saveStatus.textContent = t({
 				id: 'editor.map.unsaved',
 				defaultMessage: 'Map changes not saved yet',
-				description: 'Shown under the map while it has painting or growth that the area editor\'s Save button hasn\'t stored yet'
+				description: 'Shown under the map while it has painting, a change of size or links that the editor\'s Save button hasn\'t stored yet'
 			});
 		}
 		else
@@ -900,13 +1062,29 @@ export class MapEditor
 			map: open.map,
 			defaultTileId: open.area.defaultTileId,
 			tiles: open.tiles,
-			links: open.links,
+			links: this.currentLinks(open.area.id, open.links),
 			ruleset: open.universe.ruleset
 		}, cell));
 	}
 
 	/**
-	 * Lists the tiles to paint with, the area's indoor or outdoor tiles first, then Void
+	 * Lists the tiles to paint with for an indoor or outdoor area, as the area editor's choice changes
+	 * before it is saved. Cells already painted keep their tiles
+	 *
+	 * @param indoors Whether the area is indoors
+	 */
+	showTilesFor(indoors: boolean): void
+	{
+		const open = this.open;
+
+		if (open)
+		{
+			this.fillTiles(open.universe, { ...open.area, indoors }, open.tiles);
+		}
+	}
+
+	/**
+	 * Lists the tiles to paint with: the area's indoor or outdoor tiles and its default tile, then Void
 	 *
 	 * @param universe The area's universe
 	 * @param area The area
@@ -915,13 +1093,10 @@ export class MapEditor
 	private fillTiles(universe: EditableUniverse, area: EditorArea, tiles: readonly EditorTile[]): void
 	{
 		const chosen = this.tile.value;
-		const ordered = [
-			...tiles.filter((tile) => (tile.indoors === area.indoors)),
-			...tiles.filter((tile) => (tile.indoors !== area.indoors))
-		];
+		const paintable = tiles.filter((tile) => (canPaintTile(tile, area.indoors) || (tile.id === area.defaultTileId)));
 
 		setOptions(this.tile, [
-			...ordered.map((tile) => ({
+			...paintable.map((tile) => ({
 				value: String(tile.id),
 				label: ((tile.id === area.defaultTileId)
 					? t({
@@ -1026,13 +1201,12 @@ export class MapEditor
 
 		return({
 			cells: open.map.paintedCellsOutside(bounds).length,
-			links: open.links.filter((link) => (isInBounds(open.map.bounds, link.column, link.row) && !isInBounds(bounds, link.column, link.row))).length
+			links: this.currentLinks(open.area.id, open.links).filter((link) => (isInBounds(open.map.bounds, link.column, link.row) && !isInBounds(bounds, link.column, link.row))).length
 		});
 	}
 
 	/**
-	 * Opens the link dialog for a cell of the map. A cell in growth that hasn't been saved can't have a
-	 * link yet, since the server only knows the saved bounds
+	 * Opens the link dialog for a cell of the map
 	 *
 	 * @param column The cell's column
 	 * @param row The cell's row
@@ -1046,47 +1220,37 @@ export class MapEditor
 			return;
 		}
 
-		if (!isInBounds(open.area.bounds, column, row))
-		{
-			showMessage(this.error, t({
-				id: 'editor.map.linkNeedsSave',
-				defaultMessage: 'Save the map\'s new size before adding links there.',
-				description: 'Shown in the map editor when the Links tool is used on a cell the map has grown to include but that hasn\'t been saved'
-			}));
-			return;
-		}
-
 		this.linkDialog.open({
-			universeId: open.universe.id,
+			source: this.linkSource(),
 			area: open.area,
 			column,
 			row,
-			link: open.links.find((link) => ((link.column === column) && (link.row === row))),
+			link: this.currentLinks(open.area.id, open.links).find((link) => ((link.column === column) && (link.row === row))),
 			areas: open.areas,
 			tiles: open.tiles,
 			ruleset: open.universe.ruleset,
-			onChanged: () =>
+			onChanged: (changes) =>
 			{
-				void this.reloadLinks(open);
+				this.stageLinks(open, changes);
 			}
 		});
 	}
 
 	/**
-	 * Loads the area's links again after one has changed
+	 * Loads the area's saved links again after saving
 	 *
-	 * @param open The area open when the link changed
+	 * @param open The area open when saving started
 	 */
 	private async reloadLinks(open: OpenArea): Promise<void>
 	{
 		try
 		{
-			const links = await this.api.listLinks(open.universe.id, open.area.id);
+			const links = await this.source.listLinks(open.area.id);
 
 			if (this.open === open)
 			{
 				open.links = links;
-				this.canvas.scene?.setLinks(linksOnMap(open));
+				this.canvas.scene?.setLinks(linksOnMap(open, this.currentLinks(open.area.id, links)));
 			}
 		}
 		catch (error)
@@ -1096,20 +1260,77 @@ export class MapEditor
 	}
 
 	/**
-	 * Undoes on Ctrl+Z and redoes on Ctrl+Y or Ctrl+Shift+Z, while the map is showing and nothing is being typed
+	 * Shows the map editor over the whole window, with the map filling the space left, or puts it back in the page
+	 *
+	 * @param fullPage True to cover the window
+	 */
+	private setFullPage(fullPage: boolean): void
+	{
+		this.fullPage = fullPage;
+		this.section.classList.toggle('full-page', fullPage);
+
+		if (fullPage)
+		{
+			setButtonLabel(this.fullPageButton, exitFullPageIcon, t({
+				id: 'editor.map.exitFullPage',
+				defaultMessage: 'Exit Full Page',
+				description: 'Button that puts the map editor back in the page after it was made to fill the window'
+			}));
+			this.canvasObserver.observe(this.canvasElement);
+		}
+		else
+		{
+			setButtonLabel(this.fullPageButton, fullPageIcon, t({
+				id: 'editor.map.fullPage',
+				defaultMessage: 'Full Page',
+				description: 'Button that makes the map editor fill the window'
+			}));
+			this.canvasObserver.disconnect();
+			this.canvas.setSize(VIEW_WIDTH, VIEW_HEIGHT);
+		}
+	}
+
+	/**
+	 * Sizes the canvas to fill its element while the map editor is full page
+	 */
+	private fitCanvas(): void
+	{
+		if (this.fullPage)
+		{
+			this.canvas.setSize(this.canvasElement.clientWidth, this.canvasElement.clientHeight);
+		}
+	}
+
+	/**
+	 * Leaves full page on Escape when no dialog is open, and while the map is showing and nothing is
+	 * being typed, undoes on Ctrl+Z and redoes on Ctrl+Y or Ctrl+Shift+Z
 	 *
 	 * @param event The key press
 	 */
 	private readonly onKeyDown = (event: KeyboardEvent): void =>
 	{
+		if (this.fullPage && (event.key === 'Escape') && !document.querySelector('dialog[open]'))
+		{
+			event.preventDefault();
+			this.setFullPage(false);
+			return;
+		}
+
 		const target = event.target;
 		const typing = ((target instanceof HTMLInputElement) || (target instanceof HTMLTextAreaElement) || (target instanceof HTMLSelectElement));
+
+		// Autofill and some extensions send keydown events without a key
+		if (typeof event.key !== 'string')
+		{
+			return;
+		}
+
 		const key = event.key.toLowerCase();
 
 		// offsetParent is null while the map, or anything it is inside, is hidden
 		const showing = (this.canvasElement.offsetParent !== null);
 
-		if (!this.open || typing || !showing || !(event.ctrlKey || event.metaKey) || !canEditWorld(this.open.universe.role) || (this.canvas.scene === undefined))
+		if (!this.open?.editable || typing || !showing || !(event.ctrlKey || event.metaKey) || (this.canvas.scene === undefined))
 		{
 			return;
 		}
@@ -1149,11 +1370,25 @@ function sameBounds(first: MapBounds, second: MapBounds): boolean
  * the size is saved, but aren't shown
  *
  * @param open The open area
+ * @param links The area's links
  * @return The links
  */
-function linksOnMap(open: OpenArea): EditorAreaLink[]
+function linksOnMap(open: OpenArea, links: readonly EditorAreaLink[]): EditorAreaLink[]
 {
-	return(open.links.filter((link) => isInBounds(open.map.bounds, link.column, link.row)));
+	return(links.filter((link) => isInBounds(open.map.bounds, link.column, link.row)));
+}
+
+/**
+ * Identifies a cell's link among the links not yet saved
+ *
+ * @param areaId The area the cell is in
+ * @param column The cell's column
+ * @param row The cell's row
+ * @return The key
+ */
+function linkKey(areaId: string, column: number, row: number): string
+{
+	return(`${areaId}:${column},${row}`);
 }
 
 /**

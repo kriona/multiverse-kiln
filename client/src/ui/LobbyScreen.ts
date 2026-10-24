@@ -1,11 +1,13 @@
 import { Callbacks } from '@colyseus/sdk';
-import { DISALLOWED_TEXT_CHARACTERS, MAX_CHAT_MESSAGE_LENGTH, type CharacterListPayload, type CharacterSummary, type ChatMessage, type LobbyMember } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, MAX_CHAT_MESSAGE_LENGTH, type CharacterListPayload, type CharacterSummary, type ChatMessage, type LobbyMember, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { currentLocale, t } from '../localization';
 import type { LobbyConnection } from '../network/serverConnection';
+import { universePageUrl } from '../pages';
 import { announce } from './announcer';
 import { CharacterList } from './CharacterList';
-import { getElement, showMessage } from './dom';
+import { characterMessages } from './characterMessages';
+import { getElement, showMessage, titleLink } from './dom';
 import type { MapView } from './MapView';
 import { addShortcut } from './shortcuts';
 
@@ -176,11 +178,7 @@ export class LobbyScreen
 		addShortcut({
 			keys: 'Alt+K',
 			scope: getElement('lobby-screen', HTMLElement),
-			description: () => t({
-				id: 'lobby.keys.characterSheet',
-				defaultMessage: 'Open the character sheet of the character you\'re playing',
-				description: 'In the list of keyboard shortcuts in the lobby, what the shortcut that shows the character the player is playing does'
-			}),
+			description: () => t(characterMessages.sheetShortcut),
 			run: () =>
 			{
 				const character = this.playingCharacter();
@@ -260,20 +258,20 @@ export class LobbyScreen
 	/**
 	 * Gets the screen ready to be shown for a player
 	 *
-	 * @param universeName The name of the universe whose lobby it is
+	 * @param universe The universe whose lobby it is
 	 * @param playerId The player's ID
 	 * @param name The player's name
 	 */
-	show(universeName: string, playerId: string, name: string): void
+	show(universe: UniverseSummary, playerId: string, name: string): void
 	{
 		this.ownPlayerId = playerId;
-		this.title.textContent = universeName;
+		this.title.replaceChildren(titleLink(universe.name, universePageUrl(universe.slug)));
 		document.title = t({
 			id: 'lobby.pageTitle',
 			defaultMessage: 'Lobby - {universe} - Multiverse Kiln',
 			description: 'The browser tab\'s title in a universe\'s lobby; {universe} is the universe\'s name and Multiverse Kiln is the game engine\'s name'
 		}, {
-			universe: universeName
+			universe: universe.name
 		});
 		this.playerName.textContent = name;
 		this.updatePlayingState();
@@ -310,11 +308,7 @@ export class LobbyScreen
 
 		if ((previous !== undefined) && (previous !== characterId) && character)
 		{
-			announce(t({
-				id: 'lobby.nowPlaying',
-				defaultMessage: 'You are now playing {name}.',
-				description: 'Read out by screen readers in the lobby when the player switches to another of their characters; {name} is the character\'s name'
-			}, {
+			announce(t(characterMessages.nowPlaying, {
 				name: character.name
 			}));
 		}

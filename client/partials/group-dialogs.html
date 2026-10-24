@@ -6,6 +6,12 @@
 			Group name (optional)
 			<input id="create-group-name" autocomplete="off" />
 		</label>
+		<label data-message="createGroup.difficulty" data-translation-context="Label of the choice of the new group's difficulty level, such as Normal or Hard">
+			Difficulty
+			<select id="create-group-difficulty" aria-describedby="create-group-difficulty-summary" required></select>
+		</label>
+		<p id="create-group-difficulty-summary" class="hint"></p>
+		<p id="create-group-permadeath" class="permadeath-warning" hidden><!-- icon game-icons:skull-crossed-bones --><span data-message="group.permadeath" data-translation-context="Warning for a group whose difficulty level has permadeath, shown in the Create Group dialog when such a level is chosen and on the screen an invite link to such a group opens">Permadeath: characters who die in this group cannot be resurrected.</span></p>
 		<p id="create-group-error" class="form-error" role="alert" hidden></p>
 		<div class="form-buttons">
 			<button id="create-group-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>

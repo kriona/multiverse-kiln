@@ -1,15 +1,14 @@
-import { canEditWorld, DISALLOWED_TEXT_CHARACTERS, IMPASSABLE_COST, MAX_TILE_NAME_LENGTH, type EditableUniverse, type EditorTile, type MessageDescriptor, type TileSettings } from '@multiverse-kiln/shared';
-import restoreIcon from 'virtual:icon/ph:arrow-counter-clockwise';
-import trashIcon from 'virtual:icon/ph:trash';
+import { canEditWorld, defaultWalkSeconds, DISALLOWED_TEXT_CHARACTERS, IMPASSABLE_WALK_SECONDS, MAX_TILE_NAME_LENGTH, MAX_WALK_SECONDS, type EditableUniverse, type EditorTile, type TileSettings } from '@multiverse-kiln/shared';
 
-import { t } from '../../localization';
-import { describeEditorError, type EditorApi } from '../../network/editorApi';
+import { formatDuration, t } from '../../localization';
 import { ChangeTracker } from '../changeTracker';
-import { getElement, setButtonLabel, showMessage } from '../dom';
+import { getElement, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
 import { tileName } from '../tileNames';
 import { colorToHex, nightColor, parseHexColor } from './colors';
+import { editorMessages } from './editorMessages';
+import { labelRemoveButton, type StagedEdit } from './stagedChanges';
 
 /**
  * Settings a new tile starts with
@@ -17,22 +16,24 @@ import { colorToHex, nightColor, parseHexColor } from './colors';
 const NEW_TILE: TileSettings = {
 	name: '',
 	indoors: false,
+	outdoors: true,
 	color: 0x808080,
 	visionCost: 0,
-	movementCost: 0
+	walkSeconds: defaultWalkSeconds(false)
 };
 
 /**
- * The tile editor: a dialog for a tile's name, indoors or outdoors, color, vision cost and movement cost
+ * The tile editor: a dialog for a tile's name, whether indoor and outdoor areas use it, color, vision
+ * cost and walk time
  *
- * Saving a default tile stores the universe's edited copy of it. The dialog can also delete a custom
- * tile, or restore an edited default tile
+ * Applying keeps the changes on the Tilesets tab until it is saved; for a default tile, saving stores the
+ * universe's edited copy of it. The dialog can also delete a custom tile, or restore an edited default
+ * tile, when the tab is saved
  */
 export class TileDialog
 {
 	private readonly dialog = getElement('tile-dialog', HTMLDialogElement);
 	private readonly form = getElement('tile-form', HTMLFormElement);
-	private readonly fields = getElement('tile-fields', HTMLFieldSetElement);
 	private readonly title = getElement('tile-dialog-title', HTMLElement);
 	private readonly name = getElement('tile-name', HTMLInputElement);
 	private readonly outdoors = getElement('tile-outdoors', HTMLInputElement);
@@ -40,7 +41,8 @@ export class TileDialog
 	private readonly colorPicker = getElement('tile-color-picker', HTMLInputElement);
 	private readonly color = getElement('tile-color', HTMLInputElement);
 	private readonly visionCost = getElement('tile-vision', HTMLInputElement);
-	private readonly movementCost = getElement('tile-movement', HTMLInputElement);
+	private readonly walkSeconds = getElement('tile-walk', HTMLInputElement);
+	private readonly walkReadout = getElement('tile-walk-readout', HTMLElement);
 	private readonly dayPreview = getElement('tile-preview-day', HTMLElement);
 	private readonly nightPreview = getElement('tile-preview-night', HTMLElement);
 	private readonly error = getElement('tile-error', HTMLElement);
@@ -49,7 +51,7 @@ export class TileDialog
 	private readonly saveButton = getElement('tile-save', HTMLButtonElement);
 
 	/**
-	 * Whether the tile has changes that haven't been saved
+	 * Whether the tile has changes that haven't been applied
 	 */
 	private readonly changes = new ChangeTracker({ root: this.form });
 
@@ -61,17 +63,24 @@ export class TileDialog
 	private tile: EditorTile | undefined;
 
 	/**
-	 * Called after the tile is saved, deleted or restored
+	 * Where the dialog's changes go
+	 */
+	private edit: StagedEdit<TileSettings> | undefined;
+
+	/**
+	 * The walk seconds a new tile gets for where it is used, while the walk time field still holds it
+	 */
+	private defaultWalk = NEW_TILE.walkSeconds;
+
+	/**
+	 * Called after the tile's changes are applied, or it is marked to delete or restore
 	 */
 	private onChanged: () => void = () => undefined;
 
-	/**
-	 * @param api The editor's API
-	 */
-	constructor(private readonly api: EditorApi)
+	constructor()
 	{
 		this.name.maxLength = MAX_TILE_NAME_LENGTH;
-		this.movementCost.max = String(IMPASSABLE_COST);
+		this.walkSeconds.max = String(MAX_WALK_SECONDS);
 
 		this.colorPicker.addEventListener('input', () =>
 		{
@@ -98,6 +107,19 @@ export class TileDialog
 			setFieldError(this.name, undefined);
 		});
 
+		for (const choice of [this.outdoors, this.indoors])
+		{
+			choice.addEventListener('change', () =>
+			{
+				this.updateDefaultWalk();
+			});
+		}
+
+		this.walkSeconds.addEventListener('input', () =>
+		{
+			this.updateWalkReadout();
+		});
+
 		this.changes.guardDialog(this.dialog);
 
 		this.cancelButton.addEventListener('click', () =>
@@ -110,13 +132,13 @@ export class TileDialog
 
 		this.removeButton.addEventListener('click', () =>
 		{
-			void this.remove();
+			this.remove();
 		});
 
 		this.form.addEventListener('submit', (event) =>
 		{
 			event.preventDefault();
-			void this.save();
+			this.apply();
 		});
 	}
 
@@ -125,16 +147,19 @@ export class TileDialog
 	 *
 	 * @param universe The universe the tile belongs to
 	 * @param tile The tile, or undefined to add one
-	 * @param onChanged Called after the tile is saved, deleted or restored
+	 * @param edit Where the dialog's changes go
+	 * @param onChanged Called after the tile's changes are applied, or it is marked to delete or restore
 	 */
-	open(universe: EditableUniverse, tile: EditorTile | undefined, onChanged: () => void): void
+	open(universe: EditableUniverse, tile: EditorTile | undefined, edit: StagedEdit<TileSettings>, onChanged: () => void): void
 	{
 		const settings = (tile ?? NEW_TILE);
-		const editable = canEditWorld(universe.role);
+		const canEdit = canEditWorld(universe.role);
+		const editable = (canEdit && !edit.removed);
 		const name = (tile ? tileName(tile, universe.ruleset) : '');
 
 		this.universe = universe;
 		this.tile = tile;
+		this.edit = edit;
 		this.onChanged = onChanged;
 		if (!tile)
 		{
@@ -160,46 +185,79 @@ export class TileDialog
 		}
 
 		this.name.value = name;
-		this.outdoors.checked = !settings.indoors;
+		this.outdoors.checked = settings.outdoors;
 		this.indoors.checked = settings.indoors;
 		this.color.value = colorToHex(settings.color);
 		this.colorPicker.value = colorToHex(settings.color);
 		this.visionCost.value = String(settings.visionCost);
-		this.movementCost.value = String(settings.movementCost);
-		this.fields.disabled = false;
+		this.walkSeconds.value = String(settings.walkSeconds);
+		this.defaultWalk = settings.walkSeconds;
+		this.updateWalkReadout();
 		this.name.disabled = !editable;
 		this.saveButton.hidden = !editable;
-		this.saveButton.disabled = false;
 		this.cancelButton.textContent = t(editable ? formMessages.cancel : formMessages.close);
 
 		// Only the inputs are locked for a player who can't edit, so Close still works
-		for (const input of [this.outdoors, this.indoors, this.colorPicker, this.color, this.visionCost, this.movementCost])
+		for (const input of [this.outdoors, this.indoors, this.colorPicker, this.color, this.visionCost, this.walkSeconds])
 		{
 			input.disabled = !editable;
 		}
 
-		this.removeButton.hidden = (!editable || !tile || (!tile.custom && !tile.edited));
-		if (tile?.custom)
-		{
-			setButtonLabel(this.removeButton, trashIcon, t({
+		this.removeButton.hidden = (!canEdit || !tile || (!tile.custom && !tile.edited));
+		labelRemoveButton(this.removeButton, edit, !tile?.custom, (tile?.custom
+			? t({
 				id: 'editor.tile.delete',
 				defaultMessage: 'Delete Tile',
 				description: 'Button in the tile editor that deletes a tile made for this universe'
-			}));
-		}
-		else
-		{
-			setButtonLabel(this.removeButton, restoreIcon, t({
-				id: 'editor.tile.restore',
-				defaultMessage: 'Restore Default',
-				description: 'Button in the tile editor that undoes this universe\'s changes to one of the ruleset\'s tiles'
-			}));
-		}
+			})
+			: t(editorMessages.restore)));
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.dialog);
 		this.updatePreview();
 		this.dialog.showModal();
 		this.changes.markSaved();
+	}
+
+	/**
+	 * Gives a new tile the walk time for where it is used: outdoor tiles take minutes and indoor ones
+	 * seconds. A walk time the player typed, and an existing tile's, stay as they are
+	 */
+	private updateDefaultWalk(): void
+	{
+		if (this.tile || (this.walkSeconds.valueAsNumber !== this.defaultWalk))
+		{
+			return;
+		}
+
+		this.defaultWalk = defaultWalkSeconds(!this.outdoors.checked);
+		this.walkSeconds.value = String(this.defaultWalk);
+		this.updateWalkReadout();
+	}
+
+	/**
+	 * Shows the walk time in hours, minutes and seconds under its field, or that the tile can't be
+	 * entered. Shows nothing while the field holds no whole number of seconds the tile can take
+	 */
+	private updateWalkReadout(): void
+	{
+		const seconds = this.walkSeconds.valueAsNumber;
+
+		if (!Number.isInteger(seconds) || (seconds < IMPASSABLE_WALK_SECONDS) || (seconds > MAX_WALK_SECONDS))
+		{
+			this.walkReadout.textContent = '';
+		}
+		else if (seconds === IMPASSABLE_WALK_SECONDS)
+		{
+			this.walkReadout.textContent = t({
+				id: 'editor.tile.walkImpassable',
+				defaultMessage: 'Can\'t be entered',
+				description: 'Under the walk time field of the tile editor when it is 0, which makes the tile impassable'
+			});
+		}
+		else
+		{
+			this.walkReadout.textContent = formatDuration(seconds);
+		}
 	}
 
 	/**
@@ -214,15 +272,15 @@ export class TileDialog
 	}
 
 	/**
-	 * Saves the tile as the form shows it
+	 * Keeps the tile as the form shows it, until the tab is saved
 	 */
-	private async save(): Promise<void>
+	private apply(): void
 	{
 		const universe = this.universe;
 		const name = this.name.value.trim();
 		const color = parseHexColor(this.color.value);
 
-		if (!universe)
+		if (!universe || !this.edit)
 		{
 			return;
 		}
@@ -245,111 +303,47 @@ export class TileDialog
 
 		// A default tile whose name wasn't changed keeps the ruleset's, which players read in their own language
 		const defaultName = ((this.tile && !this.tile.custom) ? tileName({ key: this.tile.key, name: null }, universe.ruleset) : undefined);
-		const settings: TileSettings = {
+		this.edit.apply({
 			name: ((name === defaultName) ? null : name),
 			indoors: this.indoors.checked,
+			outdoors: this.outdoors.checked,
 			color,
 			visionCost: this.visionCost.valueAsNumber,
-			movementCost: this.movementCost.valueAsNumber
-		};
-
-		await this.run({
-			id: 'editor.tile.saveFailed',
-			defaultMessage: 'Could not save the tile.',
-			description: 'Shown in the tile editor when the tile couldn\'t be stored'
-		}, async () =>
-		{
-			if (this.tile)
-			{
-				await this.api.saveTile(universe.id, this.tile.id, settings);
-			}
-			else
-			{
-				await this.api.createTile(universe.id, settings);
-			}
+			walkSeconds: this.walkSeconds.valueAsNumber
 		});
+		this.close();
 	}
 
 	/**
-	 * Deletes a custom tile, or restores an edited default tile
+	 * Marks a custom tile to delete, or an edited default tile to restore, when the tab is saved; or takes
+	 * that back
 	 */
-	private async remove(): Promise<void>
+	private remove(): void
 	{
-		const universe = this.universe;
-		const tile = this.tile;
-
-		if (!universe || !tile)
+		if (!this.edit)
 		{
 			return;
 		}
 
-		const name = tileName(tile, universe.ruleset);
-		let question: string;
-		let failure: MessageDescriptor;
-
-		if (tile.custom)
+		if (this.edit.removed)
 		{
-			question = t({
-				id: 'editor.tile.confirmDelete',
-				defaultMessage: 'Delete {tile}? This can\'t be undone.',
-				description: 'Asks before deleting a tile made for this universe; {tile} is its name'
-			}, {
-				tile: name
-			});
-			failure = {
-				id: 'editor.tile.deleteFailed',
-				defaultMessage: 'Could not delete the tile.',
-				description: 'Shown in the tile editor when the tile couldn\'t be deleted'
-			};
+			this.edit.undoRemove();
 		}
 		else
 		{
-			question = t({
-				id: 'editor.tile.confirmRestore',
-				defaultMessage: 'Restore {tile} to the ruleset\'s default? Your changes to it will be lost.',
-				description: 'Asks before undoing this universe\'s changes to one of the ruleset\'s tiles; {tile} is its name'
-			}, {
-				tile: name
-			});
-			failure = {
-				id: 'editor.tile.restoreFailed',
-				defaultMessage: 'Could not restore the tile.',
-				description: 'Shown in the tile editor when the ruleset\'s tile couldn\'t be restored'
-			};
+			this.edit.remove();
 		}
 
-		if (!window.confirm(question))
-		{
-			return;
-		}
-
-		await this.run(failure, () => this.api.deleteTile(universe.id, tile.id));
+		this.close();
 	}
 
 	/**
-	 * Makes a change, closing the dialog when it succeeds and explaining in it when it doesn't
-	 *
-	 * @param failure What failed, as a sentence, for the error message
-	 * @param change The change
+	 * Closes the dialog once its change is made, and shows the change in the list
 	 */
-	private async run(failure: MessageDescriptor, change: () => Promise<void>): Promise<void>
+	private close(): void
 	{
-		this.fields.disabled = true;
-		showMessage(this.error, undefined);
-
-		try
-		{
-			await change();
-			this.dialog.close();
-			this.onChanged();
-		}
-		catch (error)
-		{
-			showMessage(this.error, describeEditorError(error, failure));
-		}
-		finally
-		{
-			this.fields.disabled = false;
-		}
+		this.changes.markSaved();
+		this.dialog.close();
+		this.onChanged();
 	}
 }

@@ -51,7 +51,7 @@ export class MapCanvas
 	 * @param width The canvas's width in pixels
 	 * @param height The canvas's height in pixels
 	 */
-	constructor(private readonly parent: HTMLElement, private readonly width: number, private readonly height: number)
+	constructor(private readonly parent: HTMLElement, private width: number, private height: number)
 	{
 		parent.addEventListener('keydown', this.onKeyDown);
 		parent.addEventListener('keyup', this.onKeyUp);
@@ -146,6 +146,47 @@ export class MapCanvas
 		this.current = undefined;
 		this.host = undefined;
 		this.game?.scene.stop(MAP_EDITOR_SCENE_KEY);
+	}
+
+	/**
+	 * Changes the canvas's size, keeping the middle of the view where it is
+	 *
+	 * @param width The canvas's width in pixels
+	 * @param height The canvas's height in pixels
+	 */
+	setSize(width: number, height: number): void
+	{
+		this.width = width;
+		this.height = height;
+
+		const game = this.game;
+
+		if (!game)
+		{
+			return;
+		}
+
+		if (!game.isBooted)
+		{
+			game.events.once(Phaser.Core.Events.READY, () =>
+			{
+				this.setSize(this.width, this.height);
+			});
+			return;
+		}
+
+		if ((game.scale.width === width) && (game.scale.height === height))
+		{
+			return;
+		}
+
+		// The camera zooms around the middle of its view, which is half its size past its scroll
+		const camera = this.current?.cameras.main;
+		const middleX = (camera ? (camera.scrollX + (camera.width / 2)) : 0);
+		const middleY = (camera ? (camera.scrollY + (camera.height / 2)) : 0);
+
+		game.scale.resize(width, height);
+		camera?.setScroll(middleX - (camera.width / 2), middleY - (camera.height / 2));
 	}
 
 	/**
@@ -333,6 +374,11 @@ export function editorAreaPayload(area: EditorArea, tiles: readonly EditorTile[]
 		name: area.name,
 		ruleset,
 		indoors: area.indoors,
+		// The editor draws the map in daylight
+		time: { passage: 'always_noon' },
+		displayTime: 'none',
+		lightLevel: null,
+		fullVision: false,
 		bounds: area.bounds,
 		loopsEastWest: area.loopsEastWest,
 		loopsNorthSouth: area.loopsNorthSouth,
@@ -341,7 +387,8 @@ export function editorAreaPayload(area: EditorArea, tiles: readonly EditorTile[]
 			id: tile.id,
 			key: tile.key,
 			name: tile.name,
-			color: tile.color
+			color: tile.color,
+			visionCost: tile.visionCost
 		})),
 		chunks: [],
 		links: []

@@ -1,20 +1,23 @@
-import { canEditWorld, defineMessages, IMPASSABLE_COST, MAX_TILES_PER_PAGE, type EditableUniverse, type EditorTile, type TileListPayload, type TileListQuery } from '@multiverse-kiln/shared';
+import { canEditWorld, defineMessages, IMPASSABLE_WALK_SECONDS, MAX_TILES_PER_PAGE, TILE_USED_IN, tileUsedIn, type EditableUniverse, type EditorTile, type TileListPayload, type TileListQuery, type TileSettings } from '@multiverse-kiln/shared';
 
-import { formatList, t } from '../../localization';
+import { formatDuration, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, setOptions, showMessage } from '../dom';
 import { tileName } from '../tileNames';
 import { colorToHex } from './colors';
+import { editorMessages } from './editorMessages';
+import type { SavableTab } from './SaveBar';
+import { describeCommitFailure, joinTags, markStagedRow, StagedChanges, stagedPage, stagedTag, type StagedState } from './stagedChanges';
 import { TileDialog } from './TileDialog';
 
 /**
  * Text the Tilesets tab shows in more than one place (see src/localization.ts)
  */
 const messages = defineMessages({
-	percent: {
-		id: 'editor.tiles.percent',
-		defaultMessage: '{cost, number, percent}',
-		description: 'A tile\'s movement or vision cost as a percentage, e.g. 50%. Change only for a language whose percentages the number format gets wrong'
+	usedIn: {
+		id: 'editor.tiles.usedInValue',
+		defaultMessage: '{usedIn, select, both {Both} indoors {Indoors} outdoors {Outdoors} other {Neither}}',
+		description: 'Whether indoor areas only, outdoor areas only, both or neither can paint with a tile: in the Where column and as the choices of the Where filter'
 	}
 });
 
@@ -24,23 +27,44 @@ const messages = defineMessages({
 const SEARCH_DELAY_MS = 250;
 
 /**
- * The Tilesets tab: every tile the universe can paint with, filtered and a page at a time, opening the tile editor
+ * The Tilesets tab: every tile the universe can paint with, filtered and a page at a time, opening the
+ * tile editor. Changes wait on the page until the tab is saved: changed tiles show their changes on the
+ * page they are on, and tiles added since show at the top of the first page, whatever the filters. Maps
+ * paint only with saved tiles
  */
-export class TilesetsTab
+export class TilesetsTab implements SavableTab
 {
 	private readonly nameFilter = getElement('tile-filter-name', HTMLInputElement);
 	private readonly passableFilter = getElement('tile-filter-passable', HTMLSelectElement);
+	private readonly usedInFilter = getElement('tile-filter-used-in', HTMLSelectElement);
 	private readonly customFilter = getElement('tile-filter-custom', HTMLSelectElement);
 	private readonly editedFilter = getElement('tile-filter-edited', HTMLSelectElement);
 	private readonly addButton = getElement('tile-add', HTMLButtonElement);
 	private readonly rows = getElement('tile-rows', HTMLTableSectionElement);
 	private readonly empty = getElement('tile-empty', HTMLElement);
+	private readonly error = getElement('tile-list-error', HTMLElement);
 	private readonly page = getElement('tile-page', HTMLElement);
 	private readonly previousButton = getElement('tile-previous', HTMLButtonElement);
 	private readonly nextButton = getElement('tile-next', HTMLButtonElement);
-	private readonly dialog: TileDialog;
+	private readonly dialog = new TileDialog();
+
+	/**
+	 * The changes made since the tiles were last saved
+	 */
+	readonly changes = new StagedChanges<TileSettings>();
 
 	private universe: EditableUniverse | undefined;
+
+	/**
+	 * The page of tiles shown, as it was last loaded
+	 */
+	private tiles: EditorTile[] = [];
+
+	/**
+	 * Every tile loaded since the universe was opened, by ID, to name a tile whose change failed to save
+	 * when it isn't on the page shown
+	 */
+	private readonly known = new Map<number, EditorTile>();
 
 	/**
 	 * How many matching tiles come before the page shown
@@ -59,42 +83,44 @@ export class TilesetsTab
 	 */
 	constructor(private readonly api: EditorApi)
 	{
-		this.dialog = new TileDialog(api);
+		setOptions(this.usedInFilter, [
+			{
+				value: '',
+				label: t(editorMessages.filterAny)
+			},
+			...TILE_USED_IN.map((usedIn) => ({
+				value: usedIn,
+				label: t(messages.usedIn, {
+					usedIn
+				})
+			}))
+		]);
+
+		for (const filter of [this.passableFilter, this.usedInFilter, this.customFilter, this.editedFilter])
+		{
+			filter.addEventListener('change', () =>
+			{
+				this.offset = 0;
+				void this.refresh();
+			});
+		}
 
 		for (const filter of [this.passableFilter, this.customFilter, this.editedFilter])
 		{
 			setOptions(filter, [
 				{
 					value: '',
-					label: t({
-						id: 'editor.tiles.filterAny',
-						defaultMessage: 'Any',
-						description: 'Choice of a yes-or-no tile filter that shows every tile'
-					})
+					label: t(editorMessages.filterAny)
 				},
 				{
 					value: 'true',
-					label: t({
-						id: 'editor.tiles.filterYes',
-						defaultMessage: 'Yes',
-						description: 'Choice of a yes-or-no tile filter, e.g. Passable: Yes'
-					})
+					label: t(editorMessages.filterYes)
 				},
 				{
 					value: 'false',
-					label: t({
-						id: 'editor.tiles.filterNo',
-						defaultMessage: 'No',
-						description: 'Choice of a yes-or-no tile filter, e.g. Passable: No'
-					})
+					label: t(editorMessages.filterNo)
 				}
 			]);
-
-			filter.addEventListener('change', () =>
-			{
-				this.offset = 0;
-				void this.refresh();
-			});
 		}
 
 		this.nameFilter.addEventListener('input', () =>
@@ -134,8 +160,13 @@ export class TilesetsTab
 	{
 		this.universe = universe;
 		this.offset = 0;
+		this.tiles = [];
+		this.known.clear();
+		this.changes.clear();
+		showMessage(this.error, undefined);
 		this.nameFilter.value = '';
 		this.passableFilter.value = '';
+		this.usedInFilter.value = '';
 		this.customFilter.value = '';
 		this.editedFilter.value = '';
 		this.addButton.hidden = !canEditWorld(universe.role);
@@ -143,7 +174,53 @@ export class TilesetsTab
 	}
 
 	/**
-	 * Loads and shows the page of tiles the filters and offset ask for
+	 * Whether the player may change the tiles
+	 *
+	 * @return True for a creator or builder
+	 */
+	canSave(): boolean
+	{
+		return((this.universe !== undefined) && canEditWorld(this.universe.role));
+	}
+
+	/**
+	 * Saves the changes in the order they were made, stopping at the first the server refuses
+	 *
+	 * @return True when every change was saved
+	 */
+	async save(): Promise<boolean>
+	{
+		const universe = this.universe;
+
+		if (!universe)
+		{
+			return(false);
+		}
+
+		showMessage(this.error, undefined);
+
+		const failure = await this.changes.commit({
+			create: (settings) => this.api.createTile(universe.id, settings),
+			save: (tileId, settings) => this.api.saveTile(universe.id, tileId, settings),
+			remove: (tileId) => this.api.deleteTile(universe.id, tileId)
+		});
+
+		await this.refresh();
+
+		if (failure)
+		{
+			const tile = this.tileWithChanges(failure.change.id);
+
+			showMessage(this.error, describeCommitFailure(failure, (tile ? tileName(tile, universe.ruleset) : ''), !tile?.custom));
+
+			return(false);
+		}
+
+		return(true);
+	}
+
+	/**
+	 * Loads the page of tiles the filters and offset ask for, then shows it with the changes made since
 	 */
 	private async refresh(): Promise<void>
 	{
@@ -158,6 +235,7 @@ export class TilesetsTab
 		const query: TileListQuery = {
 			name: (this.nameFilter.value.trim() || undefined),
 			passable: filterValue(this.passableFilter),
+			usedIn: TILE_USED_IN.find((usedIn) => (usedIn === this.usedInFilter.value)),
 			custom: filterValue(this.customFilter),
 			edited: filterValue(this.editedFilter),
 			offset: this.offset,
@@ -196,14 +274,14 @@ export class TilesetsTab
 			return;
 		}
 
-		this.rows.replaceChildren(...page.tiles.map((tile) => this.createRow(tile, universe)));
-		showMessage(this.empty, ((page.tiles.length === 0)
-			? t({
-				id: 'editor.tiles.none',
-				defaultMessage: 'No tiles match.',
-				description: 'Shown instead of the table when no tile matches the filters'
-			})
-			: undefined));
+		this.tiles = page.tiles;
+
+		for (const tile of page.tiles)
+		{
+			this.known.set(tile.id, tile);
+		}
+
+		this.render();
 		this.page.textContent = ((page.total === 0)
 			? ''
 			: t({
@@ -220,45 +298,97 @@ export class TilesetsTab
 	}
 
 	/**
-	 * A tile's row in the table: its color, name (opening the tile editor), costs, and whether it is custom or edited
+	 * Shows the page of tiles with the changes made since it was loaded, and on the first page the tiles
+	 * added since, first
+	 */
+	private render(): void
+	{
+		const universe = this.universe;
+
+		if (!universe)
+		{
+			return;
+		}
+
+		const shown = stagedPage(this.tiles, this.changes, (this.offset === 0), (id, settings) => ({
+			id,
+			key: null,
+			...settings,
+			custom: true,
+			edited: false
+		}));
+
+		this.rows.replaceChildren(...shown.map(({ item, state }) => this.createRow(item, state, universe)));
+		showMessage(this.empty, ((shown.length === 0)
+			? t({
+				id: 'editor.tiles.none',
+				defaultMessage: 'No tiles match.',
+				description: 'Shown instead of the table when no tile matches the filters'
+			})
+			: undefined));
+	}
+
+	/**
+	 * A tile as the list shows it, with its changes, wherever it is
+	 *
+	 * @param tileId The tile's ID
+	 * @return The tile, or undefined when it isn't known
+	 */
+	private tileWithChanges(tileId: number): EditorTile | undefined
+	{
+		const known = this.known.get(tileId);
+		const settings = this.changes.settingsOf(tileId);
+
+		if (!known)
+		{
+			return((settings === undefined) ? undefined : { id: tileId, key: null, ...settings, custom: true, edited: false });
+		}
+
+		return({ ...known, ...settings });
+	}
+
+	/**
+	 * A tile's row in the table: its color, name (opening the tile editor), costs, where it is used, and
+	 * whether it is custom, edited or not saved yet
 	 *
 	 * @param tile The tile
+	 * @param state How it differs from what is saved
 	 * @param universe The universe whose tile it is
 	 * @return The row
 	 */
-	private createRow(tile: EditorTile, universe: EditableUniverse): HTMLTableRowElement
+	private createRow(tile: EditorTile, state: StagedState, universe: EditableUniverse): HTMLTableRowElement
 	{
 		const row = document.createElement('tr');
 		const swatch = document.createElement('span');
 		const nameButton = document.createElement('button');
 		const tags = [
 			(tile.custom
-				? t({
-					id: 'editor.tiles.customTag',
-					defaultMessage: 'custom',
-					description: 'In the last column of the tile table, for a tile made for this universe'
-				})
+				? t(editorMessages.customTag)
 				: undefined),
 			(tile.edited
-				? t({
-					id: 'editor.tiles.editedTag',
-					defaultMessage: 'edited',
-					description: 'In the last column of the tile table, for one of the ruleset\'s tiles that this universe changed'
-				})
-				: undefined)
-		].filter((tag) => (tag !== undefined));
+				? t(editorMessages.editedTag)
+				: undefined),
+			stagedTag(state, !tile.custom)
+		];
 		const cells = [
 			swatch,
 			nameButton,
-			((tile.movementCost >= IMPASSABLE_COST)
+			((tile.walkSeconds === IMPASSABLE_WALK_SECONDS)
 				? t({
 					id: 'editor.tiles.impassable',
 					defaultMessage: 'impassable',
-					description: 'In the movement cost column, for a tile that can\'t be walked into'
+					description: 'In the walk time column, for a tile that can\'t be walked into'
 				})
-				: t(messages.percent, { cost: tile.movementCost / 100 })),
-			t(messages.percent, { cost: tile.visionCost / 100 }),
-			formatList(tags)
+				: formatDuration(tile.walkSeconds)),
+			t({
+				id: 'editor.tiles.percent',
+				defaultMessage: '{cost, number, percent}',
+				description: 'A tile\'s vision cost as a percentage, e.g. 50%. Change only for a language whose percentages the number format gets wrong'
+			}, { cost: tile.visionCost / 100 }),
+			t(messages.usedIn, {
+				usedIn: tileUsedIn(tile)
+			}),
+			joinTags(...tags)
 		];
 
 		// Screen readers read the color's hex code, which the color picker in the tile dialog also shows
@@ -282,11 +412,11 @@ export class TilesetsTab
 			row.append(cell);
 		}
 
-		return(row);
+		return(markStagedRow(row, state, !tile.custom));
 	}
 
 	/**
-	 * Opens the tile editor, refreshing the list after a change
+	 * Opens the tile editor, showing its changes in the list
 	 *
 	 * @param tile The tile, or undefined to add one
 	 */
@@ -294,9 +424,9 @@ export class TilesetsTab
 	{
 		if (this.universe)
 		{
-			this.dialog.open(this.universe, tile, () =>
+			this.dialog.open(this.universe, tile, this.changes.edit(tile?.id), () =>
 			{
-				void this.refresh();
+				this.render();
 			});
 		}
 	}

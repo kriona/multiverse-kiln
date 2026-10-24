@@ -3,7 +3,7 @@
  *
  * Pure functions: no Colyseus, database, network or timers (CLAUDE.md architecture rule 4)
  */
-import { chunkCoordinate, chunkKey, IMPASSABLE_COST, tileIdAt, type AreaLinkMode, type AreaTiles } from '@multiverse-kiln/shared';
+import { chunkCoordinate, chunkKey, defaultWalkSeconds, IMPASSABLE_WALK_SECONDS, tileIdAt, type AreaLinkMode, type AreaTiles } from '@multiverse-kiln/shared';
 
 import type { Cell, Grid } from './movement.js';
 
@@ -31,13 +31,19 @@ export interface AreaLink
 export interface AreaMap
 {
 	tiles: AreaTiles;
+
+	/**
+	 * Whether the area is indoors, which sets the walk seconds crossed at full speed (defaultWalkSeconds)
+	 */
+	indoors: boolean;
+
 	loopsEastWest: boolean;
 	loopsNorthSouth: boolean;
 
 	/**
-	 * Movement cost of every tile the map can use, by tile ID
+	 * Walk seconds of every tile the map can use, by tile ID
 	 */
-	tileMovementCosts: ReadonlyMap<number, number>;
+	tileWalkSeconds: ReadonlyMap<number, number>;
 
 	links: readonly AreaLink[];
 
@@ -68,16 +74,17 @@ export function createAreaGrid(map: AreaMap, cellSize: number): Grid
 		bounds: map.tiles.bounds,
 		loopsEastWest: map.loopsEastWest,
 		loopsNorthSouth: map.loopsNorthSouth,
-		movementCost: (cell) =>
+		fullSpeedWalkSeconds: defaultWalkSeconds(map.indoors),
+		walkSeconds: (cell) =>
 		{
 			if (map.loadedChunks && !map.loadedChunks.has(chunkKey(chunkCoordinate(cell.column), chunkCoordinate(cell.row))))
 			{
-				return(IMPASSABLE_COST);
+				return(IMPASSABLE_WALK_SECONDS);
 			}
 
 			const tileId = tileIdAt(map.tiles, cell.column, cell.row);
 
-			return(((tileId === undefined) ? IMPASSABLE_COST : (map.tileMovementCosts.get(tileId) ?? IMPASSABLE_COST)));
+			return(((tileId === undefined) ? IMPASSABLE_WALK_SECONDS : (map.tileWalkSeconds.get(tileId) ?? IMPASSABLE_WALK_SECONDS)));
 		},
 		endsMovement: (cell) => automaticLinks.has(linkKey(cell))
 	});

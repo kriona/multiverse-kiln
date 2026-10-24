@@ -3,6 +3,7 @@ import type { CharacterListPayload } from '@multiverse-kiln/shared';
 import { t } from '../localization';
 import type { CharacterApi } from '../network/characterApi';
 import { describeEditorError } from '../network/editorApi';
+import { characterMessages } from './characterMessages';
 import type { CharacterSheetDialog } from './CharacterSheetDialog';
 import { getElement, showMessage } from './dom';
 import { className, raceName } from './raceAndClassNames';
@@ -59,11 +60,7 @@ export class UniverseCharacters
 			{
 				this.list.replaceChildren();
 				this.none.hidden = true;
-				showMessage(this.error, describeEditorError(error, {
-					id: 'universePage.charactersFailed',
-					defaultMessage: 'Could not list your characters.',
-					description: 'Shown on a universe\'s page when the list of the player\'s characters in the universe couldn\'t be loaded'
-				}));
+				showMessage(this.error, describeEditorError(error, characterMessages.loadFailed));
 				this.panel.hidden = false;
 			}
 
@@ -92,11 +89,7 @@ export class UniverseCharacters
 
 			name.textContent = character.name;
 			description.className = 'universe-character-description';
-			description.textContent = t({
-				id: 'universePage.characterDescription',
-				defaultMessage: '{race} {class}',
-				description: 'On a universe\'s page, in the list of the player\'s characters, a character\'s race and class after their name, e.g. "Dwarf Fighter". Reorder them as your language needs'
-			}, {
+			description.textContent = t(characterMessages.raceAndClass, {
 				race: raceName(character.race, characters.ruleset),
 				class: className(character.characterClass, characters.ruleset)
 			});
@@ -109,11 +102,7 @@ export class UniverseCharacters
 				const leaving = document.createElement('span');
 
 				leaving.className = 'universe-character-leaving';
-				leaving.textContent = t({
-					id: 'universePage.characterLeaving',
-					defaultMessage: 'To be deleted on {deleteAt, date, medium}',
-					description: 'On a universe\'s page, in the list of the player\'s characters, beside one given their last rites, who can be restored from their sheet until then; {deleteAt} is the day they will be deleted'
-				}, {
+				leaving.textContent = t(characterMessages.leaving, {
 					deleteAt: Date.parse(character.deleteAt)
 				});
 				button.append(' ', leaving);

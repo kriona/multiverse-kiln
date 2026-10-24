@@ -3,16 +3,17 @@
 	<p id="character-sheet-summary" class="character-sheet-summary"></p>
 	<p id="character-sheet-status" role="status"></p>
 	<p id="character-sheet-error" class="form-error" role="alert" hidden></p>
-	<p id="character-sheet-pending" class="notice character-sheet-pending" hidden></p>
+	<p id="character-sheet-pending" class="notice character-sheet-notice" hidden></p>
+	<p id="character-sheet-in-group" class="notice character-sheet-notice" hidden></p>
 	<div id="character-sheet-body" class="character-sheet" hidden>
 		<section aria-labelledby="character-sheet-abilities-heading">
-			<h3 id="character-sheet-abilities-heading" data-message="characterSheet.abilities" data-translation-context="Heading on a character's sheet of their six ability scores">Ability scores</h3>
+			<h3 id="character-sheet-abilities-heading" data-message="abilities.heading" data-translation-context="Heading of a character's six ability scores: on their sheet, and the part of Create Character where the player sets them">Ability scores</h3>
 			<table class="character-sheet-abilities">
 				<thead>
 					<tr>
-						<th scope="col" data-message="characterSheet.ability" data-translation-context="Heading on a character's sheet of the column naming each ability, such as Strength">Ability</th>
-						<th scope="col" data-message="characterSheet.score" data-translation-context="Heading on a character's sheet of the column of ability scores, such as 16">Score</th>
-						<th scope="col" data-message="characterSheet.modifier" data-translation-context="Heading on a character's sheet of the column of the bonus or penalty each ability score gives, such as +3">Modifier</th>
+						<th scope="col" data-message="abilities.ability" data-translation-context="Heading of the column naming each ability, such as Strength, on a character's sheet and in Create Character">Ability</th>
+						<th scope="col" data-message="abilities.score" data-translation-context="Heading of the column of a character's ability scores, such as 16, on their sheet and in Create Character">Score</th>
+						<th scope="col" data-message="abilities.modifier" data-translation-context="Heading of the column of the bonus or penalty each ability score gives, such as +2, on a character's sheet and in Create Character">Modifier</th>
 					</tr>
 				</thead>
 				<tbody id="character-sheet-ability-rows"></tbody>

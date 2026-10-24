@@ -15,6 +15,8 @@ const gunslinger: CustomClassSettings = {
 	startingMoney: emptyMoney(),
 	startingItems: [],
 	startingAreaId: null,
+	startingColumn: 0,
+	startingRow: 0,
 	raceAreas: [],
 	rules: {
 		...NEW_PF1E_CLASS_RULES,
@@ -76,6 +78,8 @@ describe('classRepo', () =>
 					startingMoney: emptyMoney(),
 					startingItems: [],
 					startingAreaId: null,
+					startingColumn: 0,
+					startingRow: 0,
 					raceAreas: [],
 					rules: { ...PF1E_CLASSES[key] },
 					custom: false,
@@ -105,7 +109,7 @@ describe('classRepo', () =>
 				sp: 30
 			},
 			startingItems: [{ itemId: daggerId, quantity: 1 }],
-			raceAreas: [{ raceId: elfId, areaId }],
+			raceAreas: [{ raceId: elfId, areaId, column: -4, row: 7 }],
 			rules: {
 				primaryAbility: 'wisdom',
 				tradition: 'divine',

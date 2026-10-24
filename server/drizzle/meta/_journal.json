@@ -190,6 +190,111 @@
       "when": 1792647619749,
       "tag": "0026_groups",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1792684043677,
+      "tag": "0027_time_of_day",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1792697525081,
+      "tag": "0028_group_seen_chunks",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1792753717577,
+      "tag": "0029_lobby_no_vision_cost",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1792755770270,
+      "tag": "0030_area_light_level",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1792762283290,
+      "tag": "0031_tile_walk_seconds",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1792762288148,
+      "tag": "0032_tile_walk_seconds_from_movement_cost",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1792762305554,
+      "tag": "0033_drop_tile_movement_cost",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1792762971836,
+      "tag": "0034_universe_display_time",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1792775736661,
+      "tag": "0035_tile_outdoors",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1792775741948,
+      "tag": "0036_tile_outdoors_from_indoors",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1792775755872,
+      "tag": "0037_tile_outdoors_no_default",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1792778072102,
+      "tag": "0038_difficulty_levels",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1792778077505,
+      "tag": "0039_default_difficulty_levels",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1792778091103,
+      "tag": "0040_group_difficulty_required",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1792825261163,
+      "tag": "0041_starting_cells",
+      "breakpoints": true
     }
   ]
 }

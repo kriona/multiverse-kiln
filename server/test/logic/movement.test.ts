@@ -1,7 +1,7 @@
 import assert from 'assert';
 import type { MovePayload } from '@multiverse-kiln/shared';
 
-import { IMPASSABLE_COST } from '@multiverse-kiln/shared';
+import { DEFAULT_INDOOR_WALK_SECONDS, DEFAULT_OUTDOOR_WALK_SECONDS, IMPASSABLE_WALK_SECONDS } from '@multiverse-kiln/shared';
 import { cellAt, cellCenter, findFreeCell, NO_PRESS, occupiedCells, PLAYER_SPEED, STEP_REPEAT_DELAY, stepOnGrid, wrapCell, type Cell, type GridMover, type Grid, type GridStep, type IsCellFree } from '../../src/logic/movement.js';
 
 // Cell centers are at x = 5, 15, 25, 35, 45 and y = 5, 15, 25, 35. At the speed of 100 these tests use,
@@ -11,7 +11,8 @@ const grid: Grid = {
 	bounds: { minColumn: 0, minRow: 0, maxColumn: 4, maxRow: 3 },
 	loopsEastWest: false,
 	loopsNorthSouth: false,
-	movementCost: () => 0,
+	walkSeconds: () => DEFAULT_INDOOR_WALK_SECONDS,
+	fullSpeedWalkSeconds: DEFAULT_INDOOR_WALK_SECONDS,
 	endsMovement: () => false
 };
 
@@ -50,14 +51,14 @@ function gridWith(changes: Partial<Grid>): Grid
 }
 
 /**
- * Movement costs where the given cells cost something and every other cell is free to move into
+ * Walk seconds where the given cells have their own and every other cell takes DEFAULT_INDOOR_WALK_SECONDS
  *
- * @param costs Cells and their costs, as [column, row, cost]
- * @return The movement cost function for a grid
+ * @param cells Cells and their walk seconds, as [column, row, seconds]
+ * @return The walk seconds function for a grid
  */
-function costs(...costs: [number, number, number][]): Grid['movementCost']
+function walkSeconds(...cells: [number, number, number][]): Grid['walkSeconds']
 {
-	return((cell) => costs.find(([column, row]) => ((cell.column === column) && (cell.row === row)))?.[2] ?? 0);
+	return((cell) => cells.find(([column, row]) => ((cell.column === column) && (cell.row === row)))?.[2] ?? DEFAULT_INDOOR_WALK_SECONDS);
 }
 
 /**
@@ -303,31 +304,46 @@ describe('stepOnGrid', () =>
 
 	describe('terrain', () =>
 	{
-		it('moves at half speed into a cell with a movement cost of 50', () =>
+		it('moves at half speed into a cell that takes twice the default walk seconds', () =>
 		{
-			const forest = gridWith({ movementCost: costs([3, 1, 50]) });
+			const forest = gridWith({ walkSeconds: walkSeconds([3, 1, DEFAULT_INDOOR_WALK_SECONDS * 2]) });
 
 			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(25, 15), right, 0.1, forest, allFree, 100, repeatDelay)), { x: 30, y: 15, step: step([2, 1], [3, 1]) });
 			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(25, 15), right, 0.2, forest, allFree, 100, repeatDelay)), at(35, 15));
 		});
 
-		it('moves at full speed out of a costly cell into a free one', () =>
+		it('moves no faster than full speed into a cell quicker to walk than the default', () =>
 		{
-			const forest = gridWith({ movementCost: costs([3, 1, 50]) });
+			const road = gridWith({ walkSeconds: walkSeconds([3, 1, DEFAULT_INDOOR_WALK_SECONDS / 2]) });
+
+			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(25, 15), right, 0.05, road, allFree, 100, repeatDelay)), { x: 30, y: 15, step: step([2, 1], [3, 1]) });
+		});
+
+		it('moves at full speed out of a slow cell into a normal one', () =>
+		{
+			const forest = gridWith({ walkSeconds: walkSeconds([3, 1, DEFAULT_INDOOR_WALK_SECONDS * 2]) });
 
 			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(35, 15), right, 0.05, forest, allFree, 100, repeatDelay)), { x: 40, y: 15, step: step([3, 1], [4, 1]) });
 		});
 
+		it('moves at full speed outdoors into a cell that takes the outdoor default, and slower into a slower one', () =>
+		{
+			const meadow = gridWith({ fullSpeedWalkSeconds: DEFAULT_OUTDOOR_WALK_SECONDS, walkSeconds: walkSeconds([2, 1, DEFAULT_OUTDOOR_WALK_SECONDS], [3, 1, DEFAULT_OUTDOOR_WALK_SECONDS * 2]) });
+
+			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(15, 15), right, 0.1, meadow, allFree, 100, repeatDelay)), at(25, 15));
+			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(25, 15), right, 0.1, meadow, allFree, 100, repeatDelay)), { x: 30, y: 15, step: step([2, 1], [3, 1]) });
+		});
+
 		it('does not enter an impassable cell', () =>
 		{
-			const wall = gridWith({ movementCost: costs([3, 1, IMPASSABLE_COST]) });
+			const wall = gridWith({ walkSeconds: walkSeconds([3, 1, IMPASSABLE_WALK_SECONDS]) });
 
 			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(25, 15), right, 1, wall, allFree, 100, repeatDelay)), at(25, 15));
 		});
 
 		it('does not cut diagonally past an impassable corner, but takes the part of the step it can', () =>
 		{
-			const wall = gridWith({ movementCost: costs([2, 1, IMPASSABLE_COST]) });
+			const wall = gridWith({ walkSeconds: walkSeconds([2, 1, IMPASSABLE_WALK_SECONDS]) });
 
 			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(15, 15), downRight, 0.05, wall, allFree, 100, repeatDelay)), { x: 15, y: 20, step: step([1, 1], [1, 2]) });
 		});
@@ -443,7 +459,7 @@ describe('findFreeCell', () =>
 
 	it('skips cells that are off the map or impassable', () =>
 	{
-		const walls = gridWith({ movementCost: costs([0, 0, IMPASSABLE_COST], [1, 0, IMPASSABLE_COST]) });
+		const walls = gridWith({ walkSeconds: walkSeconds([0, 0, IMPASSABLE_WALK_SECONDS], [1, 0, IMPASSABLE_WALK_SECONDS]) });
 
 		assert.deepStrictEqual(findFreeCell({ column: 0, row: 0 }, walls, allFree, 3), { x: 5, y: 15 });
 	});

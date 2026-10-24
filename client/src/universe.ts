@@ -10,6 +10,7 @@ import { CharacterSheetDialog } from './ui/CharacterSheetDialog';
 import { getElement, showNoticeScreen, showScreen, showStatus } from './ui/dom';
 import { startLanguagePicker } from './ui/languagePicker';
 import { showMarkdown } from './ui/markdown';
+import { pageMessages } from './ui/pageMessages';
 import { startShortcuts } from './ui/shortcuts';
 import { UniverseCharacters } from './ui/UniverseCharacters';
 
@@ -94,11 +95,7 @@ async function start(): Promise<void>
 	await startLocalization();
 	startLanguagePicker();
 	startShortcuts();
-	showStatus(t({
-		id: 'universePage.loading',
-		defaultMessage: 'Loading...',
-		description: 'Shown on the whole of a universe\'s page while the universe loads'
-	}));
+	showStatus(t(pageMessages.loading));
 
 	let universe: UniverseDetails;
 

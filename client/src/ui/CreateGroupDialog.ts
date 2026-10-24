@@ -1,15 +1,17 @@
-import { DISALLOWED_TEXT_CHARACTERS, MAX_GROUP_NAME_LENGTH, type CharacterSummary } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, MAX_GROUP_NAME_LENGTH, type CharacterSummary, type DifficultyLevel } from '@multiverse-kiln/shared';
 
 import { t } from '../localization';
 import { describeEditorError } from '../network/editorApi';
 import type { GroupApi } from '../network/groupApi';
 import { ChangeTracker } from './changeTracker';
-import { getElement, showMessage } from './dom';
+import { describeMobScale, difficultyName } from './difficultyNames';
+import { getElement, setOptions, showMessage } from './dom';
 import { clearFieldErrors, reportFieldError } from './fieldErrors';
 
 /**
  * The Create Group dialog (partials/group-dialogs.html): explains that the character the player is
- * playing becomes the group's anchor being, asks for an optional name, and makes the group
+ * playing becomes the group's anchor being, asks for an optional name and a difficulty level, and makes
+ * the group
  */
 export class CreateGroupDialog
 {
@@ -17,6 +19,9 @@ export class CreateGroupDialog
 	private readonly form = getElement('create-group-form', HTMLFormElement);
 	private readonly explanation = getElement('create-group-explanation', HTMLElement);
 	private readonly nameInput = getElement('create-group-name', HTMLInputElement);
+	private readonly difficulty = getElement('create-group-difficulty', HTMLSelectElement);
+	private readonly difficultySummary = getElement('create-group-difficulty-summary', HTMLElement);
+	private readonly permadeath = getElement('create-group-permadeath', HTMLElement);
 	private readonly error = getElement('create-group-error', HTMLElement);
 	private readonly submitButton = getElement('create-group-submit', HTMLButtonElement);
 	private readonly tracker = new ChangeTracker({ root: this.form });
@@ -27,6 +32,16 @@ export class CreateGroupDialog
 	private current: { universeId: string; character: CharacterSummary } | undefined;
 
 	/**
+	 * The universe's difficulty levels, once they have loaded
+	 */
+	private levels: DifficultyLevel[] = [];
+
+	/**
+	 * Changes every time the dialog opens, so levels that arrive for an earlier opening are ignored
+	 */
+	private openVersion = 0;
+
+	/**
 	 * @param api The group routes
 	 * @param created Called with the new group's ID and its anchor being once it is made
 	 */
@@ -34,6 +49,11 @@ export class CreateGroupDialog
 	{
 		this.nameInput.maxLength = MAX_GROUP_NAME_LENGTH;
 		this.tracker.guardDialog(this.dialog);
+
+		this.difficulty.addEventListener('change', () =>
+		{
+			this.describeLevel();
+		});
 
 		this.form.addEventListener('submit', (event) =>
 		{
@@ -72,12 +92,86 @@ export class CreateGroupDialog
 			name: character.name
 		});
 		this.nameInput.value = '';
-		this.submitButton.disabled = false;
+		this.levels = [];
+		this.difficulty.replaceChildren();
+		this.difficulty.disabled = true;
+		this.describeLevel();
+		this.submitButton.disabled = true;
 		clearFieldErrors(this.form);
 		showMessage(this.error, undefined);
 		this.tracker.markSaved();
 		this.dialog.showModal();
 		this.nameInput.focus();
+		void this.loadLevels(universeId);
+	}
+
+	/**
+	 * Loads the universe's difficulty levels into the choice, starting on the default
+	 *
+	 * @param universeId The universe's ID
+	 */
+	private async loadLevels(universeId: string): Promise<void>
+	{
+		const version = ++this.openVersion;
+		let levels: DifficultyLevel[];
+
+		try
+		{
+			levels = await this.api.listDifficultyLevels(universeId);
+		}
+		catch (error)
+		{
+			if (version === this.openVersion)
+			{
+				showMessage(this.error, describeEditorError(error, {
+					id: 'createGroup.difficultyFailed',
+					defaultMessage: 'Could not load the difficulty levels.',
+					description: 'Shown in the Create Group dialog when the difficulty levels to choose from couldn\'t be loaded'
+				}));
+			}
+
+			return;
+		}
+
+		if ((version !== this.openVersion) || !this.current)
+		{
+			return;
+		}
+
+		this.levels = levels;
+		setOptions(this.difficulty, levels.map((level) => ({
+			value: String(level.id),
+			label: difficultyName(level)
+		})));
+		this.difficulty.value = String(levels.find((level) => level.isDefault)?.id ?? levels[0]?.id ?? '');
+		this.difficulty.disabled = false;
+		this.submitButton.disabled = false;
+		this.describeLevel();
+		// The default level chosen isn't a change of the player's
+		this.tracker.markSaved();
+	}
+
+	/**
+	 * Shows what the chosen difficulty level does
+	 */
+	private describeLevel(): void
+	{
+		const level = this.chosenLevel();
+
+		this.difficultySummary.textContent = ((level === undefined) ? '' : describeMobScale(level.mobScale));
+		this.permadeath.hidden = !level?.permadeath;
+		// A hidden warning would still be read out if the choice pointed at it
+		this.difficulty.setAttribute('aria-describedby', (this.permadeath.hidden ? this.difficultySummary.id : `${this.difficultySummary.id} ${this.permadeath.id}`));
+	}
+
+	/**
+	 * The difficulty level chosen
+	 *
+	 * @return The level, or undefined before the levels have loaded
+	 */
+	private chosenLevel(): DifficultyLevel | undefined
+	{
+		return(this.levels.find((level) => (String(level.id) === this.difficulty.value)));
 	}
 
 	/**
@@ -87,8 +181,9 @@ export class CreateGroupDialog
 	{
 		const current = this.current;
 		const name = this.nameInput.value.trim();
+		const level = this.chosenLevel();
 
-		if (!current || this.submitButton.disabled)
+		if (!current || !level || this.submitButton.disabled)
 		{
 			return;
 		}
@@ -108,7 +203,11 @@ export class CreateGroupDialog
 
 		try
 		{
-			const groupId = await this.api.createGroup(current.universeId, { characterId: current.character.id, name });
+			const groupId = await this.api.createGroup(current.universeId, {
+				characterId: current.character.id,
+				name,
+				difficultyLevelId: level.id
+			});
 
 			this.tracker.markSaved();
 			this.dialog.close();

@@ -5,8 +5,10 @@
  * `npm run db:migrate -w server` to apply it. Never change the database by hand
  */
 import { sql, type SQL } from 'drizzle-orm';
-import { boolean, check, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHUNK_SIZE, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, FAERIE_MORNINGS, IMPASSABLE_COST, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_UNIVERSES_PER_CREATOR, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
+import { boolean, check, customType, doublePrecision, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
+import { CHUNK_SIZE, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_MOB_SCALE, MIN_MOB_SCALE, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
+
+import { SEEN_CHUNK_BYTES } from '../logic/seenCells.js';
 
 export const universeStage = pgEnum('universe_stage', UNIVERSE_STAGES);
 export const universeRole = pgEnum('universe_role', UNIVERSE_ROLES);
@@ -14,7 +16,10 @@ export const ruleset = pgEnum('ruleset', RULESETS);
 export const passageOfTime = pgEnum('passage_of_time', PASSAGES_OF_TIME);
 export const areaPassageOfTime = pgEnum('area_passage_of_time', AREA_PASSAGES_OF_TIME);
 export const faerieMorning = pgEnum('faerie_morning', FAERIE_MORNINGS);
+export const lobbyPassageOfTime = pgEnum('lobby_passage_of_time', LOBBY_PASSAGES_OF_TIME);
+export const displayTime = pgEnum('display_time', DISPLAY_TIMES);
 export const areaLinkMode = pgEnum('area_link_mode', AREA_LINK_MODES);
+export const areaLightLevel = pgEnum('area_light_level', AREA_LIGHT_LEVELS);
 export const pf1eStatMethod = pgEnum('pf1e_stat_method', PF1E_STAT_METHODS);
 export const pf1eAbility = pgEnum('pf1e_ability', PF1E_ABILITIES);
 export const pf1eSize = pgEnum('pf1e_size', PF1E_SIZES);
@@ -82,12 +87,43 @@ export const universes = pgTable('universes', {
 	 */
 	faerieMorning: faerieMorning('faerie_morning'),
 
+	/**
+	 * How players are shown the time of day
+	 */
+	displayTime: displayTime('display_time').notNull().default('precise'),
+
 	lobbyAreaId: uuid('lobby_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
+
+	/**
+	 * How the time of day changes in the lobby, which ignores its area's own passage of time
+	 */
+	lobbyPassageOfTime: lobbyPassageOfTime('lobby_passage_of_time').notNull().default('real_time'),
+
+	/**
+	 * How many real hours a lobby day lasts when lobbyPassageOfTime is real_time
+	 */
+	lobbyDayHours: smallint('lobby_day_hours').notNull().default(DEFAULT_LOBBY_DAY_HOURS),
+
+	/**
+	 * Set when lobbyPassageOfTime is faerie
+	 */
+	lobbyFaerieMorning: faerieMorning('lobby_faerie_morning'),
+
+	/**
+	 * Whether the lobby's tiles are seen past as if none had a vision cost
+	 */
+	lobbyNoVisionCost: boolean('lobby_no_vision_cost').notNull().default(true),
 
 	/**
 	 * Where characters start unless their race or class says otherwise
 	 */
 	startingAreaId: uuid('starting_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
+
+	/**
+	 * The cell of the starting area characters start nearest; column 0, row 0 is the middle of a new area's map
+	 */
+	startingColumn: integer('starting_column').notNull().default(0),
+	startingRow: integer('starting_row').notNull().default(0),
 
 	/**
 	 * Most characters in one group
@@ -107,6 +143,8 @@ export const universes = pgTable('universes', {
 }, (table) => [
 	uniqueIndex('universes_slug_unique').on(table.slug),
 	check('universes_faerie_morning_set', sql`(${table.passageOfTime} = 'faerie') = (${table.faerieMorning} IS NOT NULL)`),
+	check('universes_lobby_faerie_morning_set', sql`(${table.lobbyPassageOfTime} = 'faerie') = (${table.lobbyFaerieMorning} IS NOT NULL)`),
+	check('universes_lobby_day_hours_range', sql`${table.lobbyDayHours} BETWEEN ${sql.raw(String(MIN_LOBBY_DAY_HOURS))} AND ${sql.raw(String(MAX_LOBBY_DAY_HOURS))}`),
 	check('universes_group_size_range', sql`${table.groupSize} BETWEEN ${sql.raw(String(MIN_GROUP_SIZE))} AND ${sql.raw(String(MAX_GROUP_PLAYERS))}`),
 	check('universes_starting_coins_range', sql`${table.startingPlatinum} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))} AND ${table.startingGold} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))} AND ${table.startingSilver} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))} AND ${table.startingCopper} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))}`),
 	check('universes_starting_credits_range', sql`${table.startingCredits} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))}`)
@@ -187,7 +225,12 @@ export const tiles = pgTable('tiles', {
 	 * players read in their language. Null on an edited copy that keeps the default tile's name
 	 */
 	name: text('name'),
+
+	/**
+	 * Whether indoor and outdoor areas can paint with the tile; a tile can be for both or neither
+	 */
 	indoors: boolean('indoors').notNull(),
+	outdoors: boolean('outdoors').notNull(),
 
 	/**
 	 * Drawn when the tile has no graphic, as 0xRRGGBB
@@ -200,9 +243,9 @@ export const tiles = pgTable('tiles', {
 	visionCost: smallint('vision_cost').notNull().default(0),
 
 	/**
-	 * How much harder the tile is to move into, in percent: 50 takes twice as long, 100 can't be entered
+	 * Seconds of game time walking a square of the tile takes; 0 can't be entered
 	 */
-	movementCost: smallint('movement_cost').notNull().default(0),
+	walkSeconds: smallint('walk_seconds').notNull().default(DEFAULT_INDOOR_WALK_SECONDS),
 
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
@@ -213,7 +256,7 @@ export const tiles = pgTable('tiles', {
 	check('tiles_name_required', sql`${table.name} IS NOT NULL OR ${table.overridesTileId} IS NOT NULL`),
 	check('tiles_color_range', sql`${table.color} BETWEEN 0 AND 16777215`),
 	check('tiles_vision_cost_range', sql`${table.visionCost} BETWEEN 0 AND 100`),
-	check('tiles_movement_cost_range', sql`${table.movementCost} BETWEEN 0 AND ${sql.raw(String(IMPASSABLE_COST))}`)
+	check('tiles_walk_seconds_range', sql`${table.walkSeconds} BETWEEN 0 AND ${sql.raw(String(MAX_WALK_SECONDS))}`)
 ]);
 
 /**
@@ -315,6 +358,12 @@ export const races = pgTable('races', {
 	 * Where the race's characters start, unless their class says otherwise; null for the universe's starting area
 	 */
 	startingAreaId: uuid('starting_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
+
+	/**
+	 * The cell of the starting area the race's characters start nearest
+	 */
+	startingColumn: integer('starting_column').notNull().default(0),
+	startingRow: integer('starting_row').notNull().default(0),
 
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
@@ -447,6 +496,12 @@ export const classes = pgTable('classes', {
 	 */
 	startingAreaId: uuid('starting_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
 
+	/**
+	 * The cell of the starting area the class's characters start nearest
+	 */
+	startingColumn: integer('starting_column').notNull().default(0),
+	startingRow: integer('starting_row').notNull().default(0),
+
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	unique('classes_ruleset_key_unique').on(table.ruleset, table.key),
@@ -566,7 +621,13 @@ export const classStartingItems = pgTable('class_starting_items', {
 export const classRaceAreas = pgTable('class_race_areas', {
 	classId: integer('class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }),
 	raceId: integer('race_id').notNull().references(() => races.id, { onDelete: 'cascade' }),
-	areaId: uuid('area_id').notNull().references(() => areas.id, { onDelete: 'cascade' })
+	areaId: uuid('area_id').notNull().references(() => areas.id, { onDelete: 'cascade' }),
+
+	/**
+	 * The cell of the area they start nearest
+	 */
+	startingColumn: integer('starting_column').notNull().default(0),
+	startingRow: integer('starting_row').notNull().default(0)
 }, (table) => [
 	primaryKey({ columns: [table.classId, table.raceId] }),
 	index('class_race_areas_race_id_index').on(table.raceId),
@@ -585,6 +646,12 @@ export const areas = pgTable('areas', {
 	name: text('name').notNull(),
 	enabled: boolean('enabled').notNull().default(true),
 	indoors: boolean('indoors').notNull(),
+
+	/**
+	 * How light the area is at any time of day while it is indoors
+	 */
+	lightLevel: areaLightLevel('light_level').notNull().default('lit'),
+
 	defaultTileId: integer('default_tile_id').notNull().references(() => tiles.id),
 	minColumn: integer('min_column').notNull(),
 	minRow: integer('min_row').notNull(),
@@ -678,6 +745,12 @@ export const characters = pgTable('characters', {
 	 * The area the character is in; null when the area was deleted, or the universe had none to start in
 	 */
 	areaId: uuid('area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
+
+	/**
+	 * The cell of the area the character starts nearest
+	 */
+	startingColumn: integer('starting_column').notNull().default(0),
+	startingRow: integer('starting_row').notNull().default(0),
 
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 
@@ -796,6 +869,50 @@ export const pf1eAbilityRolls = pgTable('pf1e_ability_rolls', {
 ]);
 
 /**
+ * Each universe's difficulty levels, which its groups choose from. A universe starts with
+ * DEFAULT_DIFFICULTY_LEVELS, and always has exactly one default level
+ */
+export const difficultyLevels = pgTable('difficulty_levels', {
+	id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+	universeId: uuid('universe_id').notNull().references(() => universes.id, { onDelete: 'cascade' }),
+
+	/**
+	 * A default level's key, e.g. normal, which finds its name in DIFFICULTY_LEVEL_NAMES; null for a
+	 * level the universe added
+	 */
+	key: text('key'),
+
+	/**
+	 * The universe's name for the level. Null on a default level that keeps its name, which players read
+	 * in their language
+	 */
+	name: text('name'),
+
+	/**
+	 * Whether Create Group starts on this level
+	 */
+	isDefault: boolean('is_default').notNull().default(false),
+
+	/**
+	 * How much harder mobs are, as a percentage: 50 is 50% harder, -50 is 50% easier
+	 */
+	mobScale: smallint('mob_scale').notNull().default(0),
+
+	/**
+	 * Whether a character who dies is gone for good
+	 */
+	permadeath: boolean('permadeath').notNull().default(false),
+
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	index('difficulty_levels_universe_id_index').on(table.universeId),
+	unique('difficulty_levels_universe_key_unique').on(table.universeId, table.key),
+	uniqueIndex('difficulty_levels_one_default').on(table.universeId).where(sql`${table.isDefault}`),
+	check('difficulty_levels_name_required', sql`${table.name} IS NOT NULL OR ${table.key} IS NOT NULL`),
+	check('difficulty_levels_mob_scale_range', sql`${table.mobScale} BETWEEN ${sql.raw(String(MIN_MOB_SCALE))} AND ${sql.raw(String(MAX_MOB_SCALE))}`)
+]);
+
+/**
  * One row per group: characters playing a universe together, around their anchor being
  *
  * Deleting the anchor being's character disbands the group, deleting its members and invites with it
@@ -820,11 +937,59 @@ export const groups = pgTable('groups', {
 	 */
 	startingAreaId: uuid('starting_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
 
+	/**
+	 * The cell of the starting area members with nowhere else to be start nearest
+	 */
+	startingColumn: integer('starting_column').notNull().default(0),
+	startingRow: integer('starting_row').notNull().default(0),
+
+	/**
+	 * The group's game clock: seconds of game time since its world began, which starts in the morning
+	 * (see GroupClock)
+	 */
+	clockSeconds: doublePrecision('clock_seconds').notNull().default(GROUP_START_SECONDS),
+
+	/**
+	 * The difficulty level the group plays at, one of its universe's. Deleting a level moves its groups to
+	 * the universe's default level first
+	 */
+	difficultyLevelId: integer('difficulty_level_id').notNull().references(() => difficultyLevels.id),
+
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	unique('groups_anchor_character_id_unique').on(table.anchorCharacterId),
 	index('groups_universe_id_index').on(table.universeId),
-	index('groups_starting_area_id_index').on(table.startingAreaId)
+	index('groups_starting_area_id_index').on(table.startingAreaId),
+	index('groups_difficulty_level_id_index').on(table.difficultyLevelId)
+]);
+
+/**
+ * A column of raw bytes, read as a Uint8Array
+ */
+const bytea = customType<{ data: Uint8Array; driverData: Buffer }>({
+	dataType: () => 'bytea',
+	toDriver: (value) => Buffer.from(value),
+	fromDriver: (value) => new Uint8Array(value)
+});
+
+/**
+ * The cells each group has seen, part of its world state: one row per chunk of an area's map that the
+ * group has seen any cell of. Deleted with the group, so disbanding it forgets what it explored
+ */
+export const groupSeenChunks = pgTable('group_seen_chunks', {
+	groupId: uuid('group_id').notNull().references(() => groups.id, { onDelete: 'cascade' }),
+	areaId: uuid('area_id').notNull().references(() => areas.id, { onDelete: 'cascade' }),
+	chunkColumn: integer('chunk_column').notNull(),
+	chunkRow: integer('chunk_row').notNull(),
+
+	/**
+	 * One bit per cell of the chunk, set once the group has seen it (see server/src/logic/seenCells.ts)
+	 */
+	cells: bytea('cells').notNull()
+}, (table) => [
+	primaryKey({ columns: [table.groupId, table.areaId, table.chunkColumn, table.chunkRow] }),
+	index('group_seen_chunks_area_id_index').on(table.areaId),
+	check('group_seen_chunks_cell_count', sql`octet_length(${table.cells}) = ${sql.raw(String(SEEN_CHUNK_BYTES))}`)
 ]);
 
 /**

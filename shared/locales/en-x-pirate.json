@@ -1,4 +1,20 @@
 {
+	"abilities.ability": {
+		"message": "Knack",
+		"source": "Ability"
+	},
+	"abilities.heading": {
+		"message": "Knacks",
+		"source": "Ability scores"
+	},
+	"abilities.modifier": {
+		"message": "Edge",
+		"source": "Modifier"
+	},
+	"abilities.score": {
+		"message": "Mark",
+		"source": "Score"
+	},
 	"admin.characterDeletionDays": {
 		"message": "Days 'twixt last rites and Davy Jones",
 		"source": "Days between last rites and deletion"
@@ -15,17 +31,9 @@
 		"message": "The Captain's Orders",
 		"source": "Site Settings"
 	},
-	"admin.home": {
-		"message": "Back to Port",
-		"source": "Back to Home"
-	},
 	"admin.loadFailed": {
 		"message": "Couldn't haul up the captain's orders.",
 		"source": "Could not load the site settings."
-	},
-	"admin.loading": {
-		"message": "Hoistin'...",
-		"source": "Loading..."
 	},
 	"admin.saveFailed": {
 		"message": "Couldn't stow the captain's orders.",
@@ -63,17 +71,9 @@
 		"message": "Start afresh? Yer choices so far go overboard. Yer rolled knacks stay as they be.",
 		"source": "Start over? Your choices so far will be lost. Your rolled ability scores stay the same."
 	},
-	"character.create.abilityColumn": {
-		"message": "Knack",
-		"source": "Ability"
-	},
 	"character.create.abilityPoints": {
 		"message": "Every score starts at {base, number}. Spend {points, plural, one {# doubloon} other {# doubloons}} to raise 'em, one doubloon for each +1, up to {max, number} with yer folk's an' yarn's boons.",
 		"source": "Every score starts at {base, number}. Spend {points, plural, one {# ability point} other {# ability points}} to raise them, one point for each +1, up to {max, number} with your race's and theme's bonuses."
-	},
-	"character.create.abilityScores": {
-		"message": "Knacks",
-		"source": "Ability scores"
 	},
 	"character.create.baseColumn": {
 		"message": "Bare",
@@ -110,14 +110,6 @@
 	"character.create.loadFailed": {
 		"message": "Couldn't haul in the folk, callin's an' knacks.",
 		"source": "Could not load the races, classes and ability scores."
-	},
-	"character.create.loading": {
-		"message": "Hoistin'...",
-		"source": "Loading..."
-	},
-	"character.create.modifierColumn": {
-		"message": "Edge",
-		"source": "Modifier"
 	},
 	"character.create.name": {
 		"message": "Name",
@@ -167,10 +159,6 @@
 		"message": "{score, number} ({ability} has it)",
 		"source": "{score, number} ({ability})"
 	},
-	"character.create.scoreColumn": {
-		"message": "Score",
-		"source": "Score"
-	},
 	"character.create.submit": {
 		"message": "Sign 'em on",
 		"source": "Create"
@@ -190,6 +178,10 @@
 	"character.create.title": {
 		"message": "Sign On a Hand",
 		"source": "Create Character"
+	},
+	"character.darkvision": {
+		"message": "Sees in the dark",
+		"source": "Darkvision"
 	},
 	"character.heading.class": {
 		"message": "Choose a callin'",
@@ -235,6 +227,10 @@
 		"message": "No tweaks to any knack",
 		"source": "No changes to ability scores"
 	},
+	"character.raceAndClass": {
+		"message": "{race} {class}",
+		"source": "{race} {class}"
+	},
 	"character.review.class": {
 		"message": "Callin'",
 		"source": "Class"
@@ -270,10 +266,6 @@
 	"character.saved": {
 		"message": "Progress stowed",
 		"source": "Progress saved"
-	},
-	"character.saving": {
-		"message": "Stowin'...",
-		"source": "Saving..."
 	},
 	"character.startOver": {
 		"message": "Start Afresh",
@@ -351,18 +343,6 @@
 		"message": "Throw Hand Overboard",
 		"source": "Delete Character"
 	},
-	"characterSheet.abilities": {
-		"message": "Knacks",
-		"source": "Ability scores"
-	},
-	"characterSheet.ability": {
-		"message": "Knack",
-		"source": "Ability"
-	},
-	"characterSheet.darkvision": {
-		"message": "Sees in the dark",
-		"source": "Darkvision"
-	},
 	"characterSheet.darkvisionValue": {
 		"message": "{darkvision, select, true {Aye} other {Nay}}",
 		"source": "{darkvision, select, true {Yes} other {No}}"
@@ -374,6 +354,10 @@
 	"characterSheet.hitPoints": {
 		"message": "Lifeblood",
 		"source": "Hit points"
+	},
+	"characterSheet.inGroup": {
+		"message": "{name} sails with a crew, and has to jump ship before they can be sent to Davy Jones.",
+		"source": "{name} is in a group, and has to leave it before they can be deleted."
 	},
 	"characterSheet.item": {
 		"message": "{quantity, plural, =1 {{item}} other {{item} x#}}",
@@ -390,10 +374,6 @@
 	"characterSheet.loading": {
 		"message": "Unrollin' the papers...",
 		"source": "Loading the character sheet..."
-	},
-	"characterSheet.modifier": {
-		"message": "Edge",
-		"source": "Modifier"
 	},
 	"characterSheet.money": {
 		"message": "Purse",
@@ -419,10 +399,6 @@
 		"message": "{name} be back aboard.",
 		"source": "{name} has been restored."
 	},
-	"characterSheet.score": {
-		"message": "Mark",
-		"source": "Score"
-	},
 	"characterSheet.size": {
 		"message": "Heft",
 		"source": "Size"
@@ -430,10 +406,6 @@
 	"characterSheet.staminaPoints": {
 		"message": "Wind",
 		"source": "Stamina points"
-	},
-	"characterSheet.summary": {
-		"message": "{race} {class}",
-		"source": "{race} {class}"
 	},
 	"characterSheet.theme": {
 		"message": "Yarn",
@@ -443,6 +415,10 @@
 		"message": "Marks o' the hand",
 		"source": "Traits"
 	},
+	"characters.heading": {
+		"message": "Yer hands",
+		"source": "Your characters"
+	},
 	"characters.inGroup": {
 		"message": "Sailin' with a crew",
 		"source": "In a group"
@@ -450,6 +426,26 @@
 	"characters.inThisGroup": {
 		"message": "In this crew",
 		"source": "In this group"
+	},
+	"characters.leaving": {
+		"message": "To Davy Jones on {deleteAt, date, medium}",
+		"source": "To be deleted on {deleteAt, date, medium}"
+	},
+	"characters.loadFailed": {
+		"message": "Couldn't muster yer hands.",
+		"source": "Could not list your characters."
+	},
+	"characters.none": {
+		"message": "Ye haven't signed on a hand in this universe yet.",
+		"source": "You haven't made a character in this universe yet."
+	},
+	"createGroup.difficulty": {
+		"message": "Peril",
+		"source": "Difficulty"
+	},
+	"createGroup.difficultyFailed": {
+		"message": "Couldn't fetch the perils.",
+		"source": "Could not load the difficulty levels."
 	},
 	"createGroup.explanation": {
 		"message": "{name} will be the crew's anchor bein': the voyage turns 'round them. Only {name} can call others aboard. If {name} leaves the crew, it'll be scuttled; though every hand keeps their plunder and coin.",
@@ -475,6 +471,10 @@
 		"message": "Raise a Crew",
 		"source": "Create Group"
 	},
+	"dialog.apply": {
+		"message": "Make it so",
+		"source": "Apply"
+	},
 	"dialog.cancel": {
 		"message": "Belay that",
 		"source": "Cancel"
@@ -482,6 +482,26 @@
 	"dialog.close": {
 		"message": "Batten down",
 		"source": "Close"
+	},
+	"difficulty.hard": {
+		"message": "Rough Seas",
+		"source": "Hard"
+	},
+	"difficulty.hardcore": {
+		"message": "No Quarter",
+		"source": "Hardcore"
+	},
+	"difficulty.mobScale": {
+		"message": "{direction, select, easier {Foes {percent, number, ::percent} softer} harder {Foes {percent, number, ::percent} fiercer} other {Foes as the seas made 'em}}",
+		"source": "{direction, select, easier {Mobs {percent, number, ::percent} easier} harder {Mobs {percent, number, ::percent} harder} other {Mobs at default strength}}"
+	},
+	"difficulty.normal": {
+		"message": "Steady Seas",
+		"source": "Normal"
+	},
+	"difficulty.story": {
+		"message": "Tall Tale",
+		"source": "Story"
 	},
 	"editor.area.back": {
 		"message": "Back to Areas",
@@ -492,8 +512,12 @@
 		"source": "Areas inside this one"
 	},
 	"editor.area.confirmDelete": {
-		"message": "Scuttle {area}, its chart and every passage into it? Areas inside it be cast adrift as top-level areas. There be no bringin' it back.",
-		"source": "Delete {area}, its map and every link into it? Areas inside it become top-level areas. This can't be undone."
+		"message": "Scuttle {area}, its chart and every passage into it when the Areas tab be stowed? Areas inside it be cast adrift as top-level areas.",
+		"source": "Delete {area}, its map and every link into it when the Areas tab is saved? Areas inside it become top-level areas."
+	},
+	"editor.area.confirmDeleteNew": {
+		"message": "Scuttle {area}? It ain't been stowed yet, so its settings, chart and passages be lost to the deep.",
+		"source": "Delete {area}? It hasn't been saved, so its settings, map and links will be lost."
 	},
 	"editor.area.defaultTile": {
 		"message": "Usual tile",
@@ -503,25 +527,17 @@
 		"message": "Scuttle Area",
 		"source": "Delete Area"
 	},
-	"editor.area.deleteFailed": {
-		"message": "Couldn't scuttle the area.",
-		"source": "Could not delete the area."
+	"editor.area.lightLevel": {
+		"message": "Lantern light",
+		"source": "Light level"
 	},
-	"editor.area.enabled": {
-		"message": "Open to all hands",
-		"source": "Enabled"
+	"editor.area.lightLevelHint": {
+		"message": "A lantern-lit place be bright as broad daylight at any hour, an' a pitch-dark one black as night. Places above decks follow the sun.",
+		"source": "A lit area is as light as full daylight at any time of day, and a dark one as dark as night. Outdoor areas follow the time of day."
 	},
-	"editor.area.faerieCantLoop": {
-		"message": "An area where the hours pass the faerie way can't loop.",
-		"source": "An area whose passage of time is faerie can't loop."
-	},
-	"editor.area.indoorTiles": {
-		"message": "Below-decks tiles",
-		"source": "Indoor tiles"
-	},
-	"editor.area.loading": {
-		"message": "Hoistin'...",
-		"source": "Loading..."
+	"editor.area.lobbyTime": {
+		"message": "How the hours pass in the tavern be set on the Lobby tab.",
+		"source": "The lobby's passage of time is set on the Lobby tab."
 	},
 	"editor.area.lobbyTitle": {
 		"message": "{area} (the tavern)",
@@ -546,10 +562,6 @@
 	"editor.area.openFailed": {
 		"message": "Couldn't open the area.",
 		"source": "Could not open the area."
-	},
-	"editor.area.outdoorTiles": {
-		"message": "Topside tiles",
-		"source": "Outdoor tiles"
 	},
 	"editor.area.parent": {
 		"message": "Mother area",
@@ -579,13 +591,17 @@
 		"message": "Add Area",
 		"source": "Add Area"
 	},
-	"editor.areaSelect.disabled": {
-		"message": "Closed",
-		"source": "Disabled"
+	"editor.areaSelect.cell": {
+		"message": "Hands start on {column}, {row}, or the free square nearest it.",
+		"source": "Characters start on {column}, {row}, or the free square nearest it."
 	},
 	"editor.areaSelect.inside": {
 		"message": "Inside {area}",
 		"source": "Inside {area}"
+	},
+	"editor.areaSelect.keys.pickDescription": {
+		"message": "Pick the cursor's square for hands to start on",
+		"source": "Choose the cursor's square for characters to start on"
 	},
 	"editor.areaSelect.loadFailed": {
 		"message": "Couldn't haul up the areas.",
@@ -595,13 +611,17 @@
 		"message": "No areas be matchin'.",
 		"source": "No areas match."
 	},
+	"editor.areaSelect.previewHelp": {
+		"message": "Click the chart to pick the square hands start on. With the chart in hand, the arrow keys steer the cursor, 10 cells at a time with Shift, and Space or Enter picks the square.",
+		"source": "Click the map to choose the square characters start on. With the map focused, the arrow keys move the cursor, 10 cells at a time with Shift, and Space or Enter chooses the square."
+	},
+	"editor.areaSelect.previewLabel": {
+		"message": "Chart o' the chosen area",
+		"source": "Map of the chosen area"
+	},
 	"editor.areaSelect.results": {
 		"message": "Areas",
 		"source": "Areas"
-	},
-	"editor.areaSelect.search": {
-		"message": "Search by name",
-		"source": "Search by name"
 	},
 	"editor.areaSelect.searchLabel": {
 		"message": "Search areas by name",
@@ -623,9 +643,13 @@
 		"message": "Add Area",
 		"source": "Add Area"
 	},
-	"editor.areas.disabledTag": {
-		"message": "closed",
-		"source": "disabled"
+	"editor.areas.createFailed": {
+		"message": "Couldn't add {area}.",
+		"source": "Could not add {area}."
+	},
+	"editor.areas.deleteFailed": {
+		"message": "Couldn't scuttle {area}.",
+		"source": "Could not delete {area}."
 	},
 	"editor.areas.heading": {
 		"message": "Areas",
@@ -679,10 +703,6 @@
 		"message": "Couldn't stow the crew's settings.",
 		"source": "Could not save the character settings."
 	},
-	"editor.characters.startingArea": {
-		"message": "Home port: {area}",
-		"source": "Starting area: {area}"
-	},
 	"editor.characters.startingAreaHint": {
 		"message": "Where hands first come ashore, unless their race or class says otherwise.",
 		"source": "Where characters start, unless their race or class says otherwise."
@@ -703,6 +723,14 @@
 		"message": "Heaps o' coins, like {example}. Coins stay as they're given; races an' classes can add more to the purse.",
 		"source": "Amounts of coins, like {example}. Coins stay as they are given; races and classes can add more."
 	},
+	"editor.chooseEquipment": {
+		"message": "Choose Kit",
+		"source": "Choose Equipment"
+	},
+	"editor.chooseStartingArea": {
+		"message": "Choose Port",
+		"source": "Choose Area"
+	},
 	"editor.class.addTitle": {
 		"message": "Add a Callin'",
 		"source": "Add Class"
@@ -714,14 +742,6 @@
 	"editor.class.castingStyle": {
 		"message": "Way o' spellslingin'",
 		"source": "Spellcasting style"
-	},
-	"editor.class.chooseArea": {
-		"message": "Choose Port",
-		"source": "Choose Area"
-	},
-	"editor.class.chooseEquipment": {
-		"message": "Choose Kit",
-		"source": "Choose Equipment"
 	},
 	"editor.class.chooseRaceArea": {
 		"message": "Choose",
@@ -743,29 +763,13 @@
 		"message": "Cast off the home port for {race}",
 		"source": "Clear the starting area for {race}"
 	},
-	"editor.class.confirmDelete": {
-		"message": "Scuttle {class}? There be no bringin' it back.",
-		"source": "Delete {class}? This can't be undone."
-	},
-	"editor.class.confirmRestore": {
-		"message": "Return {class} to the ruleset's way? Yer changes to it, its startin' coin, kit and ports too, will be lost at sea.",
-		"source": "Restore {class} to the ruleset's default? Your changes to it, including its starting money, equipment and areas, will be lost."
-	},
 	"editor.class.delete": {
 		"message": "Scuttle Callin'",
 		"source": "Delete Class"
 	},
-	"editor.class.deleteFailed": {
-		"message": "Couldn't scuttle the callin'.",
-		"source": "Could not delete the class."
-	},
 	"editor.class.editTitle": {
 		"message": "Edit {class}",
 		"source": "Edit {class}"
-	},
-	"editor.class.enabled": {
-		"message": "Open to all hands",
-		"source": "Enabled"
 	},
 	"editor.class.enabledHint": {
 		"message": "New crew can only take up callin's open to all hands, an' at least one must stay open.",
@@ -783,14 +787,6 @@
 		"message": "Whispered to the crew when they be spendin' their doubloons on knacks.",
 		"source": "Suggested to players when they spend their ability points."
 	},
-	"editor.class.name": {
-		"message": "Name",
-		"source": "Name"
-	},
-	"editor.class.noStartingEquipment": {
-		"message": "Naught more.",
-		"source": "Nothing more."
-	},
 	"editor.class.primaryAbility": {
 		"message": "Chief knack",
 		"source": "Primary ability"
@@ -807,33 +803,9 @@
 		"message": "All hands o' this callin', whatever their folk, set sail from the callin's port.",
 		"source": "All members of this class, whatever their race, start in the class's area."
 	},
-	"editor.class.restore": {
-		"message": "Restore the Old Ways",
-		"source": "Restore Default"
-	},
-	"editor.class.restoreFailed": {
-		"message": "Couldn't restore the callin'.",
-		"source": "Could not restore the class."
-	},
-	"editor.class.saveFailed": {
-		"message": "Couldn't stow the callin'.",
-		"source": "Could not save the class."
-	},
 	"editor.class.staminaPoints": {
 		"message": "Wind each rank",
 		"source": "Stamina points per level"
-	},
-	"editor.class.startingArea": {
-		"message": "Home port: {area}",
-		"source": "Starting area: {area}"
-	},
-	"editor.class.startingEquipment": {
-		"message": "Extra startin' kit",
-		"source": "Extra starting equipment"
-	},
-	"editor.class.startingMoney": {
-		"message": "Extra startin' coin",
-		"source": "Extra starting money"
 	},
 	"editor.class.tradition": {
 		"message": "Source o' magic",
@@ -843,6 +815,10 @@
 		"message": "Add a Callin'",
 		"source": "Add Class"
 	},
+	"editor.classes.heading": {
+		"message": "Callin's",
+		"source": "Classes"
+	},
 	"editor.classes.hint": {
 		"message": "The callin's new crew can take up. Each callin's startin' coin an' kit be added to what every hand an' their folk set sail with.",
 		"source": "The classes new characters can choose. Each class's starting money and equipment are added to what every character and their race start with."
@@ -850,10 +826,6 @@
 	"editor.classes.listFailed": {
 		"message": "Couldn't list the callin's.",
 		"source": "Could not list the classes."
-	},
-	"editor.classes.name": {
-		"message": "Name",
-		"source": "Name"
 	},
 	"editor.classes.points": {
 		"message": "{hitPoints, number} lifeblood an' {staminaPoints, number} wind each rank",
@@ -863,9 +835,69 @@
 		"message": "leans on {ability}",
 		"source": "relies on {ability}"
 	},
-	"editor.classes.summary": {
-		"message": "Particulars",
-		"source": "Summary"
+	"editor.difficulty.add": {
+		"message": "Add a Peril",
+		"source": "Add Difficulty"
+	},
+	"editor.difficulty.defaultTag": {
+		"message": "the usual",
+		"source": "default"
+	},
+	"editor.difficulty.heading": {
+		"message": "Peril",
+		"source": "Difficulty"
+	},
+	"editor.difficulty.hint": {
+		"message": "The perils a new crew picks from. Each one makes foes fiercer or softer, an' can send the dead to Davy Jones for good.",
+		"source": "The difficulty levels a new group chooses from. Each level makes mobs harder or easier, and can make death permanent."
+	},
+	"editor.difficulty.listFailed": {
+		"message": "Couldn't list the perils.",
+		"source": "Could not list the difficulty levels."
+	},
+	"editor.difficulty.permadeathTag": {
+		"message": "no quarter",
+		"source": "permadeath"
+	},
+	"editor.difficultyLevel.addTitle": {
+		"message": "Add a Peril",
+		"source": "Add Difficulty"
+	},
+	"editor.difficultyLevel.default": {
+		"message": "The usual",
+		"source": "Default"
+	},
+	"editor.difficultyLevel.defaultHint": {
+		"message": "New crews set sail on this peril.",
+		"source": "New groups start on this difficulty."
+	},
+	"editor.difficultyLevel.delete": {
+		"message": "Scuttle Peril",
+		"source": "Delete Difficulty"
+	},
+	"editor.difficultyLevel.editTitle": {
+		"message": "Edit {level}",
+		"source": "Edit {level}"
+	},
+	"editor.difficultyLevel.mobScale": {
+		"message": "Foe fierceness (%)",
+		"source": "Mob scale (%)"
+	},
+	"editor.difficultyLevel.mobScaleHint": {
+		"message": "How much fiercer foes be, from {min, number}% (softer) to {max, number}% (fiercer); 0 leaves 'em as the seas made 'em. It scales their hit points (never below 1) an' how often they land a blow an' take one (a chance to hit of at least {floor, number}% stays at least {floor, number}%).",
+		"source": "How much harder mobs are, from {min, number}% (easier) to {max, number}% (harder); 0 for normal strength. It scales their hit points (never below 1) and how often they hit and are hit (a chance to hit of at least {floor, number}% stays at least {floor, number}%)."
+	},
+	"editor.difficultyLevel.permadeath": {
+		"message": "No quarter",
+		"source": "Permadeath"
+	},
+	"editor.difficultyLevel.permadeathHint": {
+		"message": "Hands who die in a crew at this peril go to Davy Jones for good.",
+		"source": "Characters who die in a group at this level are gone for good."
+	},
+	"editor.displayTime": {
+		"message": "Show the hour",
+		"source": "Display time"
 	},
 	"editor.error.failedBecause": {
 		"message": "{failure} {reason}",
@@ -887,57 +919,29 @@
 		"message": "Where be the mornin'?",
 		"source": "Where is morning?"
 	},
-	"editor.home": {
-		"message": "Back to Port",
-		"source": "Back to Home"
+	"editor.filter.custom": {
+		"message": "Custom",
+		"source": "Custom"
+	},
+	"editor.filter.edited": {
+		"message": "Changed from the ruleset",
+		"source": "Edited from default"
 	},
 	"editor.item.addTitle": {
 		"message": "Add Booty",
 		"source": "Add Item"
 	},
-	"editor.item.confirmDelete": {
-		"message": "Scuttle {item}? There be no bringin' it back.",
-		"source": "Delete {item}? This can't be undone."
-	},
-	"editor.item.confirmRestore": {
-		"message": "Return {item} to the ruleset's way? Yer changes to it will be lost at sea.",
-		"source": "Restore {item} to the ruleset's default? Your changes to it will be lost."
-	},
 	"editor.item.delete": {
 		"message": "Scuttle Booty",
 		"source": "Delete Item"
-	},
-	"editor.item.deleteFailed": {
-		"message": "Couldn't scuttle the booty.",
-		"source": "Could not delete the item."
 	},
 	"editor.item.editTitle": {
 		"message": "Edit {item}",
 		"source": "Edit {item}"
 	},
-	"editor.item.enabled": {
-		"message": "Open to all hands",
-		"source": "Enabled"
-	},
 	"editor.item.enabledHint": {
 		"message": "Crew can only be handed booty that be open to all hands.",
 		"source": "Characters can only be given enabled items."
-	},
-	"editor.item.name": {
-		"message": "Name",
-		"source": "Name"
-	},
-	"editor.item.restore": {
-		"message": "Restore the Old Ways",
-		"source": "Restore Default"
-	},
-	"editor.item.restoreFailed": {
-		"message": "Couldn't restore the booty.",
-		"source": "Could not restore the item."
-	},
-	"editor.item.saveFailed": {
-		"message": "Couldn't stow the booty.",
-		"source": "Could not save the item."
 	},
 	"editor.item.type": {
 		"message": "Sort",
@@ -947,17 +951,9 @@
 		"message": "In the hold",
 		"source": "Chosen"
 	},
-	"editor.itemSelect.disabled": {
-		"message": "Closed",
-		"source": "Disabled"
-	},
 	"editor.itemSelect.loadFailed": {
 		"message": "Couldn't haul up the booty.",
 		"source": "Could not load the items."
-	},
-	"editor.itemSelect.none": {
-		"message": "No booty be matchin'.",
-		"source": "No items match."
 	},
 	"editor.itemSelect.nothing": {
 		"message": "The hold be empty.",
@@ -979,14 +975,6 @@
 		"message": "Booty",
 		"source": "Items"
 	},
-	"editor.itemSelect.search": {
-		"message": "Search by name",
-		"source": "Search by name"
-	},
-	"editor.itemSelect.searchLabel": {
-		"message": "Search booty by name",
-		"source": "Search items by name"
-	},
 	"editor.itemSelect.submit": {
 		"message": "Aye, these",
 		"source": "Choose"
@@ -999,49 +987,9 @@
 		"message": "Add Booty",
 		"source": "Add Item"
 	},
-	"editor.items.anyKind": {
-		"message": "Any",
-		"source": "Any"
-	},
 	"editor.items.category": {
 		"message": "Kind",
 		"source": "Kind"
-	},
-	"editor.items.custom": {
-		"message": "Custom",
-		"source": "Custom"
-	},
-	"editor.items.customTag": {
-		"message": "custom",
-		"source": "custom"
-	},
-	"editor.items.disabledTag": {
-		"message": "closed",
-		"source": "disabled"
-	},
-	"editor.items.edited": {
-		"message": "Changed from the ruleset",
-		"source": "Edited from default"
-	},
-	"editor.items.editedTag": {
-		"message": "changed",
-		"source": "edited"
-	},
-	"editor.items.enabled": {
-		"message": "Open to all hands",
-		"source": "Enabled"
-	},
-	"editor.items.filterAny": {
-		"message": "Any",
-		"source": "Any"
-	},
-	"editor.items.filterNo": {
-		"message": "Nay",
-		"source": "No"
-	},
-	"editor.items.filterYes": {
-		"message": "Aye",
-		"source": "Yes"
 	},
 	"editor.items.icon": {
 		"message": "Picture",
@@ -1051,29 +999,13 @@
 		"message": "Couldn't list the booty.",
 		"source": "Could not list the items."
 	},
-	"editor.items.name": {
-		"message": "Name",
-		"source": "Name"
-	},
 	"editor.items.none": {
 		"message": "No booty be matchin'.",
 		"source": "No items match."
 	},
-	"editor.items.search": {
-		"message": "Search by name",
-		"source": "Search by name"
-	},
 	"editor.items.searchLabel": {
 		"message": "Search booty by name",
 		"source": "Search items by name"
-	},
-	"editor.items.summary": {
-		"message": "Particulars",
-		"source": "Summary"
-	},
-	"editor.items.type": {
-		"message": "Sort",
-		"source": "Type"
 	},
 	"editor.link.addReturn": {
 		"message": "Add a return passage that leads back to this cell",
@@ -1099,17 +1031,9 @@
 		"message": "Scuttle Passage",
 		"source": "Delete Link"
 	},
-	"editor.link.deleteFailed": {
-		"message": "Couldn't scuttle the passage.",
-		"source": "Could not delete the link."
-	},
 	"editor.link.destination": {
 		"message": "Headed for: {column}, {row}",
 		"source": "Destination: {column}, {row}"
-	},
-	"editor.link.keys.cursorDescription": {
-		"message": "Steer the cursor on the chart in hand, 10 cells at a time with Shift",
-		"source": "Move the cursor on the focused map, 10 cells at a time with Shift"
 	},
 	"editor.link.keys.pickDescription": {
 		"message": "Pick the cursor's cell",
@@ -1167,10 +1091,6 @@
 		"message": "Return passage at {column}, {row}, sinkin' the passage there",
 		"source": "Return link at {column}, {row}, replacing the link there"
 	},
-	"editor.link.saveFailed": {
-		"message": "Couldn't stow the passage.",
-		"source": "Could not save the link."
-	},
 	"editor.link.showAreaFailed": {
 		"message": "Couldn't sight that area.",
 		"source": "Could not show that area."
@@ -1187,6 +1107,14 @@
 		"message": "Needs the whole crew",
 		"source": "Requires the whole group"
 	},
+	"editor.lobby.dayHours": {
+		"message": "How swift?",
+		"source": "How quickly?"
+	},
+	"editor.lobby.dayHoursHint": {
+		"message": "How long a day in the tavern lasts by the real clock, from {min, plural, one {# hour} other {# hours}} to {max, plural, one {# hour} other {# hours}}. Every soul shares the same hour, reckoned from the start o' 1970.",
+		"source": "How long in real time it takes for one day in the lobby to pass, from {min, plural, one {# hour} other {# hours}} to {max, plural, one {# hour} other {# hours}}. The time of day is the same for everyone, counted from the start of 1970."
+	},
 	"editor.lobby.editArea": {
 		"message": "Edit the tavern's area",
 		"source": "Edit the lobby's area"
@@ -1194,6 +1122,22 @@
 	"editor.lobby.explanation": {
 		"message": "The tavern be where every soul in the universe gathers afore joinin' a crew. It be an area like any other, but it ain't listed on the Areas tab.",
 		"source": "The lobby is where everyone in the universe meets before joining a group. It is an area like any other, but isn't listed on the Areas tab."
+	},
+	"editor.lobby.noVisionCost": {
+		"message": "No spyglass cost in the tavern",
+		"source": "No vision cost in the lobby"
+	},
+	"editor.lobby.noVisionCostHint": {
+		"message": "Tiles don't block nor shorten anyone's view in the tavern, regardless of the tile's vision cost. A soul can spy as far as in broad daylight at any hour.",
+		"source": "Tiles don't block or shorten anyone's view in the lobby, regardless of the tile's vision cost. Characters see as far as in full daylight at any time of day."
+	},
+	"editor.lobby.saveFailed": {
+		"message": "Couldn't stow the tavern's settings.",
+		"source": "Could not save the lobby's settings."
+	},
+	"editor.lobby.timeHint": {
+		"message": "Nothin' ye do in the tavern takes any time, so its hours pass by this 'stead o' the universe's way.",
+		"source": "Actions take no time in the lobby, so its time of day follows this instead of the universe's passage of time."
 	},
 	"editor.map.areaDefault": {
 		"message": "{tile} (the area's usual)",
@@ -1235,6 +1179,10 @@
 		"message": "Paint",
 		"source": "Draw"
 	},
+	"editor.map.exitFullPage": {
+		"message": "Furl the Page Back",
+		"source": "Exit Full Page"
+	},
 	"editor.map.expandBy": {
 		"message": "Widen by",
 		"source": "Expand by"
@@ -1254,6 +1202,10 @@
 	"editor.map.expandWest": {
 		"message": "+ West",
 		"source": "+ West"
+	},
+	"editor.map.fullPage": {
+		"message": "Unfurl Full Page",
+		"source": "Full Page"
 	},
 	"editor.map.heading": {
 		"message": "Chart",
@@ -1307,10 +1259,6 @@
 		"message": "Chart",
 		"source": "Map"
 	},
-	"editor.map.linkNeedsSave": {
-		"message": "Stow the chart's new size before addin' passages there.",
-		"source": "Save the map's new size before adding links there."
-	},
 	"editor.map.links": {
 		"message": "Passages",
 		"source": "Links"
@@ -1334,10 +1282,6 @@
 	"editor.map.resize": {
 		"message": "Change Size",
 		"source": "Edit Size"
-	},
-	"editor.map.saving": {
-		"message": "Stowin'...",
-		"source": "Saving..."
 	},
 	"editor.map.tile": {
 		"message": "Tile",
@@ -1366,6 +1310,10 @@
 	"editor.map.void": {
 		"message": "Davy Jones' Locker",
 		"source": "Void"
+	},
+	"editor.noStartingEquipment": {
+		"message": "Naught more.",
+		"source": "Nothing more."
 	},
 	"editor.openFailed": {
 		"message": "Couldn't open the universe.",
@@ -1427,18 +1375,6 @@
 		"message": "West",
 		"source": "West"
 	},
-	"editor.options.customTag": {
-		"message": "custom",
-		"source": "custom"
-	},
-	"editor.options.disabledTag": {
-		"message": "closed",
-		"source": "disabled"
-	},
-	"editor.options.editedTag": {
-		"message": "changed",
-		"source": "edited"
-	},
 	"editor.race.abilityModifiers": {
 		"message": "Knack tweaks",
 		"source": "Ability modifiers"
@@ -1447,45 +1383,17 @@
 		"message": "Add Folk",
 		"source": "Add Race"
 	},
-	"editor.race.chooseArea": {
-		"message": "Choose Port",
-		"source": "Choose Area"
-	},
-	"editor.race.chooseEquipment": {
-		"message": "Choose Kit",
-		"source": "Choose Equipment"
-	},
 	"editor.race.clearArea": {
 		"message": "Use the Universe's Port",
 		"source": "Use the Universe's Area"
-	},
-	"editor.race.confirmDelete": {
-		"message": "Scuttle {race}? There be no bringin' it back.",
-		"source": "Delete {race}? This can't be undone."
-	},
-	"editor.race.confirmRestore": {
-		"message": "Return {race} to the ruleset's way? Yer changes to it, its startin' coin, kit and port too, will be lost at sea.",
-		"source": "Restore {race} to the ruleset's default? Your changes to it, including its starting money, equipment and area, will be lost."
-	},
-	"editor.race.darkvision": {
-		"message": "Sees in the dark",
-		"source": "Darkvision"
 	},
 	"editor.race.delete": {
 		"message": "Scuttle Folk",
 		"source": "Delete Race"
 	},
-	"editor.race.deleteFailed": {
-		"message": "Couldn't scuttle the folk.",
-		"source": "Could not delete the race."
-	},
 	"editor.race.editTitle": {
 		"message": "Edit {race}",
 		"source": "Edit {race}"
-	},
-	"editor.race.enabled": {
-		"message": "Open to all hands",
-		"source": "Enabled"
 	},
 	"editor.race.enabledHint": {
 		"message": "New crew can only hail from folk open to all hands, an' at least one must stay open.",
@@ -1507,45 +1415,13 @@
 		"message": "Lifeblood",
 		"source": "Hit points"
 	},
-	"editor.race.name": {
-		"message": "Name",
-		"source": "Name"
-	},
-	"editor.race.noStartingEquipment": {
-		"message": "Naught more.",
-		"source": "Nothing more."
-	},
-	"editor.race.restore": {
-		"message": "Restore the Old Ways",
-		"source": "Restore Default"
-	},
-	"editor.race.restoreFailed": {
-		"message": "Couldn't restore the folk.",
-		"source": "Could not restore the race."
-	},
-	"editor.race.saveFailed": {
-		"message": "Couldn't stow the folk.",
-		"source": "Could not save the race."
-	},
 	"editor.race.size": {
 		"message": "Heft",
 		"source": "Size"
 	},
-	"editor.race.startingArea": {
-		"message": "Home port: {area}",
-		"source": "Starting area: {area}"
-	},
 	"editor.race.startingAreaHint": {
 		"message": "Where these folk set sail from, unless their callin' says otherwise.",
 		"source": "Where the race's characters start, unless their class says otherwise."
-	},
-	"editor.race.startingEquipment": {
-		"message": "Extra startin' kit",
-		"source": "Extra starting equipment"
-	},
-	"editor.race.startingMoney": {
-		"message": "Extra startin' coin",
-		"source": "Extra starting money"
 	},
 	"editor.races.add": {
 		"message": "Add Folk",
@@ -1558,6 +1434,10 @@
 	"editor.races.floatingBonus": {
 		"message": "{bonus, number, ::sign-always} to a knack o' choice",
 		"source": "{bonus, number, ::sign-always} to one ability"
+	},
+	"editor.races.heading": {
+		"message": "Folk",
+		"source": "Races"
 	},
 	"editor.races.hint": {
 		"message": "The folk new crew can hail from. Each folk's startin' coin an' kit be added to what every hand sets sail with.",
@@ -1575,13 +1455,9 @@
 		"message": "{ability} {modifier, number, ::sign-always}",
 		"source": "{ability} {modifier, number, ::sign-always}"
 	},
-	"editor.races.name": {
-		"message": "Name",
-		"source": "Name"
-	},
-	"editor.races.summary": {
-		"message": "Particulars",
-		"source": "Summary"
+	"editor.restore": {
+		"message": "Restore the Old Ways",
+		"source": "Restore Default"
 	},
 	"editor.role": {
 		"message": "Yer rank: {role}",
@@ -1635,6 +1511,54 @@
 		"message": "Track what arrows get shot",
 		"source": "Track ammunition"
 	},
+	"editor.searchByName": {
+		"message": "Search by name",
+		"source": "Search by name"
+	},
+	"editor.select.disabled": {
+		"message": "Closed",
+		"source": "Disabled"
+	},
+	"editor.staged.deleteFailed": {
+		"message": "Couldn't scuttle {name}.",
+		"source": "Could not delete {name}."
+	},
+	"editor.staged.deleted": {
+		"message": "(scuttled when stowed)",
+		"source": "(deleted when saved)"
+	},
+	"editor.staged.newTag": {
+		"message": "fresh",
+		"source": "new"
+	},
+	"editor.staged.restoreFailed": {
+		"message": "Couldn't restore {name}.",
+		"source": "Could not restore {name}."
+	},
+	"editor.staged.restoredTag": {
+		"message": "restored when stowed",
+		"source": "restored when saved"
+	},
+	"editor.staged.saveFailed": {
+		"message": "Couldn't stow {name}.",
+		"source": "Could not save {name}."
+	},
+	"editor.staged.undoDelete": {
+		"message": "Don't Scuttle",
+		"source": "Undo Delete"
+	},
+	"editor.staged.undoRestore": {
+		"message": "Don't Restore",
+		"source": "Undo Restore"
+	},
+	"editor.startingArea.area": {
+		"message": "Home port: {area}",
+		"source": "Starting area: {area}"
+	},
+	"editor.startingArea.at": {
+		"message": "{area}, from {column}, {row}",
+		"source": "{area}, from {column}, {row}"
+	},
 	"editor.startingArea.loadFailed": {
 		"message": "Couldn't make out the ports' names.",
 		"source": "Could not load the areas' names."
@@ -1647,6 +1571,10 @@
 		"message": "{area} (the universe's)",
 		"source": "{area} (the universe's)"
 	},
+	"editor.startingEquipment": {
+		"message": "Extra startin' kit",
+		"source": "Extra starting equipment"
+	},
 	"editor.startingItems.item": {
 		"message": "{quantity, number} {item}",
 		"source": "{quantity, number} {item}"
@@ -1654,6 +1582,14 @@
 	"editor.startingItems.loadFailed": {
 		"message": "Couldn't haul up the startin' kit.",
 		"source": "Could not load the starting equipment."
+	},
+	"editor.startingMoney": {
+		"message": "Extra startin' coin",
+		"source": "Extra starting money"
+	},
+	"editor.summary": {
+		"message": "Particulars",
+		"source": "Summary"
 	},
 	"editor.tab.areas": {
 		"message": "Areas",
@@ -1663,10 +1599,6 @@
 		"message": "Crew",
 		"source": "Characters"
 	},
-	"editor.tab.classes": {
-		"message": "Callin's",
-		"source": "Classes"
-	},
 	"editor.tab.items": {
 		"message": "Booty",
 		"source": "Items"
@@ -1674,10 +1606,6 @@
 	"editor.tab.lobby": {
 		"message": "Tavern",
 		"source": "Lobby"
-	},
-	"editor.tab.races": {
-		"message": "Folk",
-		"source": "Races"
 	},
 	"editor.tab.ruleset": {
 		"message": "Ship's Articles",
@@ -1695,6 +1623,18 @@
 		"message": "(changes not yet stowed)",
 		"source": "(unsaved changes)"
 	},
+	"editor.tag.custom": {
+		"message": "custom",
+		"source": "custom"
+	},
+	"editor.tag.disabled": {
+		"message": "closed",
+		"source": "disabled"
+	},
+	"editor.tag.edited": {
+		"message": "changed",
+		"source": "edited"
+	},
 	"editor.theme.ability": {
 		"message": "Knack raised",
 		"source": "Ability raised"
@@ -1707,49 +1647,17 @@
 		"message": "Add a Yarn",
 		"source": "Add Theme"
 	},
-	"editor.theme.confirmDelete": {
-		"message": "Scuttle {theme}? There be no bringin' it back.",
-		"source": "Delete {theme}? This can't be undone."
-	},
-	"editor.theme.confirmRestore": {
-		"message": "Return {theme} to the ruleset's way? Yer changes to it will be lost at sea.",
-		"source": "Restore {theme} to the ruleset's default? Your changes to it will be lost."
-	},
 	"editor.theme.delete": {
 		"message": "Scuttle Yarn",
 		"source": "Delete Theme"
-	},
-	"editor.theme.deleteFailed": {
-		"message": "Couldn't scuttle the yarn.",
-		"source": "Could not delete the theme."
 	},
 	"editor.theme.editTitle": {
 		"message": "Edit {theme}",
 		"source": "Edit {theme}"
 	},
-	"editor.theme.enabled": {
-		"message": "Open to all hands",
-		"source": "Enabled"
-	},
 	"editor.theme.enabledHint": {
 		"message": "New crew can only spin yarns open to all hands, an' at least one must stay open.",
 		"source": "New characters can only choose enabled themes, and at least one theme must be enabled."
-	},
-	"editor.theme.name": {
-		"message": "Name",
-		"source": "Name"
-	},
-	"editor.theme.restore": {
-		"message": "Restore the Old Ways",
-		"source": "Restore Default"
-	},
-	"editor.theme.restoreFailed": {
-		"message": "Couldn't restore the yarn.",
-		"source": "Could not restore the theme."
-	},
-	"editor.theme.saveFailed": {
-		"message": "Couldn't stow the yarn.",
-		"source": "Could not save the theme."
 	},
 	"editor.themes.ability": {
 		"message": "{ability} {bonus, number, ::sign-always}",
@@ -1771,14 +1679,6 @@
 		"message": "Couldn't list the yarns.",
 		"source": "Could not list the themes."
 	},
-	"editor.themes.name": {
-		"message": "Name",
-		"source": "Name"
-	},
-	"editor.themes.summary": {
-		"message": "Particulars",
-		"source": "Summary"
-	},
 	"editor.tile.addTitle": {
 		"message": "Add Tile",
 		"source": "Add Tile"
@@ -1795,14 +1695,6 @@
 		"message": "Pick a color",
 		"source": "Pick a color"
 	},
-	"editor.tile.confirmDelete": {
-		"message": "Scuttle {tile}? There be no bringin' it back.",
-		"source": "Delete {tile}? This can't be undone."
-	},
-	"editor.tile.confirmRestore": {
-		"message": "Return {tile} to the ruleset's way? Yer changes to it will be lost at sea.",
-		"source": "Restore {tile} to the ruleset's default? Your changes to it will be lost."
-	},
 	"editor.tile.day": {
 		"message": "Day",
 		"source": "Day"
@@ -1811,45 +1703,25 @@
 		"message": "Scuttle Tile",
 		"source": "Delete Tile"
 	},
-	"editor.tile.deleteFailed": {
-		"message": "Couldn't scuttle the tile.",
-		"source": "Could not delete the tile."
-	},
 	"editor.tile.editTitle": {
 		"message": "Edit {tile}",
 		"source": "Edit {tile}"
-	},
-	"editor.tile.indoorsHint": {
-		"message": "A leanin', not a law: outdoor areas list outdoor tiles first.",
-		"source": "A preference, not a restriction: outdoor areas list outdoor tiles first."
 	},
 	"editor.tile.invalidColor": {
 		"message": "Give a hex color, such as #7AFF3D.",
 		"source": "Enter a hex color, such as #7AFF3D."
 	},
-	"editor.tile.movementCost": {
-		"message": "Sailin' cost (%)",
-		"source": "Movement cost (%)"
-	},
-	"editor.tile.movementHint": {
-		"message": "0% be plain sailin', 50% takes twice as long, 100% can't be boarded.",
-		"source": "0% is normal movement, 50% takes twice as long, 100% can't be entered."
-	},
 	"editor.tile.night": {
 		"message": "Night",
 		"source": "Night"
 	},
-	"editor.tile.restore": {
-		"message": "Restore the Old Ways",
-		"source": "Restore Default"
+	"editor.tile.usedIn": {
+		"message": "Fit fer",
+		"source": "Where"
 	},
-	"editor.tile.restoreFailed": {
-		"message": "Couldn't restore the tile.",
-		"source": "Could not restore the tile."
-	},
-	"editor.tile.saveFailed": {
-		"message": "Couldn't stow the tile.",
-		"source": "Could not save the tile."
+	"editor.tile.usedInHint": {
+		"message": "Areas can only be painted with tiles fit fer 'em. A tile fit fer neither can't be painted, but charts that already bear it keep it.",
+		"source": "Areas can only paint with tiles for their kind. A tile for neither can't be painted, but maps that already use it keep it."
 	},
 	"editor.tile.visionCost": {
 		"message": "Spyglass cost (%)",
@@ -1859,41 +1731,21 @@
 		"message": "100% can't be seen through, even with a spyglass.",
 		"source": "100% can't be seen through."
 	},
+	"editor.tile.walkHint": {
+		"message": "Time o' the voyage spent crossin' a square. 10 be plain sailin' below decks and 600 (10 minutes) topside, twice that takes twice as long, and 0 can't be boarded.",
+		"source": "Game time walking a square takes. 10 is normal indoors and 600 (10 minutes) outdoors, twice that takes twice as long, and 0 can't be entered."
+	},
+	"editor.tile.walkImpassable": {
+		"message": "Can't be boarded",
+		"source": "Can't be entered"
+	},
+	"editor.tile.walkSeconds": {
+		"message": "Sailin' time (seconds)",
+		"source": "Walk time (seconds)"
+	},
 	"editor.tiles.add": {
 		"message": "Add Tile",
 		"source": "Add Tile"
-	},
-	"editor.tiles.color": {
-		"message": "Color",
-		"source": "Color"
-	},
-	"editor.tiles.custom": {
-		"message": "Custom",
-		"source": "Custom"
-	},
-	"editor.tiles.customTag": {
-		"message": "custom",
-		"source": "custom"
-	},
-	"editor.tiles.edited": {
-		"message": "Changed from the ruleset",
-		"source": "Edited from default"
-	},
-	"editor.tiles.editedTag": {
-		"message": "changed",
-		"source": "edited"
-	},
-	"editor.tiles.filterAny": {
-		"message": "Any",
-		"source": "Any"
-	},
-	"editor.tiles.filterNo": {
-		"message": "Nay",
-		"source": "No"
-	},
-	"editor.tiles.filterYes": {
-		"message": "Aye",
-		"source": "Yes"
 	},
 	"editor.tiles.impassable": {
 		"message": "no passage",
@@ -1902,14 +1754,6 @@
 	"editor.tiles.listFailed": {
 		"message": "Couldn't list the tiles.",
 		"source": "Could not list the tiles."
-	},
-	"editor.tiles.movementCost": {
-		"message": "Sailin' cost",
-		"source": "Movement cost"
-	},
-	"editor.tiles.name": {
-		"message": "Name",
-		"source": "Name"
 	},
 	"editor.tiles.none": {
 		"message": "No tiles be matchin'.",
@@ -1923,17 +1767,21 @@
 		"message": "{cost, number, percent}",
 		"source": "{cost, number, percent}"
 	},
-	"editor.tiles.search": {
-		"message": "Search by name",
-		"source": "Search by name"
-	},
 	"editor.tiles.searchLabel": {
 		"message": "Search tiles by name",
 		"source": "Search tiles by name"
 	},
+	"editor.tiles.usedInValue": {
+		"message": "{usedIn, select, both {Both} indoors {Below decks} outdoors {Topside} other {Neither}}",
+		"source": "{usedIn, select, both {Both} indoors {Indoors} outdoors {Outdoors} other {Neither}}"
+	},
 	"editor.tiles.visionCost": {
 		"message": "Spyglass cost",
 		"source": "Vision cost"
+	},
+	"editor.tiles.walkTime": {
+		"message": "Sailin' time",
+		"source": "Walk time"
 	},
 	"editor.title": {
 		"message": "Edit Universe",
@@ -1946,10 +1794,6 @@
 	"editor.universe.preview": {
 		"message": "Peek",
 		"source": "Preview"
-	},
-	"editor.universe.ruleset": {
-		"message": "Ship's articles: {ruleset}",
-		"source": "Ruleset: {ruleset}"
 	},
 	"editor.universe.saveFailed": {
 		"message": "Couldn't stow the universe.",
@@ -2003,9 +1847,29 @@
 		"message": "That callin' be off the books now. Choose another.",
 		"source": "That class can't be chosen any more. Choose another."
 	},
+	"error.deleteGroupMember": {
+		"message": "That hand sails with a crew. They have to jump ship before they can be sent to Davy Jones.",
+		"source": "That character is in a group. They have to leave it before they can be deleted."
+	},
+	"error.difficultyLevelLimit": {
+		"message": "A universe can have at most {max, plural, one {# peril} other {# perils}}.",
+		"source": "A universe can have at most {max, plural, one {# difficulty level} other {# difficulty levels}}."
+	},
+	"error.difficultyLevelNeedsDefault": {
+		"message": "A universe needs a usual peril. Make another peril the usual instead.",
+		"source": "A universe needs a default difficulty level. Make another level the default instead."
+	},
+	"error.difficultyLevelNeedsName": {
+		"message": "A peril needs a name.",
+		"source": "A difficulty level needs a name."
+	},
 	"error.faerieCantLoop": {
 		"message": "An area where the hours pass the faerie way can't loop.",
 		"source": "An area whose passage of time is faerie can't loop."
+	},
+	"error.faerieLobbyCantLoop": {
+		"message": "The tavern's hours can't pass the faerie way while its chart loops.",
+		"source": "The lobby's passage of time can't be faerie while its map loops."
 	},
 	"error.faerieMorningMismatch": {
 		"message": "Where the mornin' be must be chosen when, and only when, the hours pass the faerie way.",
@@ -2098,6 +1962,14 @@
 	"error.noSuchClass": {
 		"message": "That callin' be lost at sea.",
 		"source": "The class doesn't exist."
+	},
+	"error.noSuchDifficultyLevel": {
+		"message": "That peril be lost at sea. Choose another.",
+		"source": "That difficulty doesn't exist any more. Choose another."
+	},
+	"error.noSuchDifficultyLevelToEdit": {
+		"message": "That peril be lost at sea.",
+		"source": "The difficulty level doesn't exist."
 	},
 	"error.noSuchGroup": {
 		"message": "That crew has sunk, or that hand ain't aboard.",
@@ -2247,9 +2119,25 @@
 		"message": "These articles be for a different ship than this universe.",
 		"source": "These settings are for a different ruleset than the universe's."
 	},
+	"filter.any": {
+		"message": "Any",
+		"source": "Any"
+	},
+	"filter.no": {
+		"message": "Nay",
+		"source": "No"
+	},
+	"filter.yes": {
+		"message": "Aye",
+		"source": "Yes"
+	},
 	"form.discardChanges": {
 		"message": "Ye've changes not yet stowed. Toss 'em overboard?",
 		"source": "You have changes that haven't been saved. Discard them?"
+	},
+	"form.enabled": {
+		"message": "Open to all hands",
+		"source": "Enabled"
 	},
 	"form.indoors": {
 		"message": "Below decks",
@@ -2287,6 +2175,14 @@
 		"message": "Stowed",
 		"source": "Saved"
 	},
+	"form.savedToast": {
+		"message": "Changes stowed",
+		"source": "Changes saved"
+	},
+	"form.saving": {
+		"message": "Stowin'...",
+		"source": "Saving..."
+	},
 	"form.unsavedChanges": {
 		"message": "Not yet stowed",
 		"source": "Unsaved changes"
@@ -2303,10 +2199,6 @@
 		"message": "Unrollin' the charts...",
 		"source": "Loading the universe..."
 	},
-	"game.outside.title": {
-		"message": "Multiverse Kiln",
-		"source": "Multiverse Kiln"
-	},
 	"game.universeNotFound": {
 		"message": "That universe be lost at sea.",
 		"source": "That universe could not be found."
@@ -2314,6 +2206,10 @@
 	"group.characterLeft": {
 		"message": "{name} no longer sails with the crew, or can't take the helm.",
 		"source": "{name} is no longer in the group, or can't be played."
+	},
+	"group.clock": {
+		"message": "Day {day, number} o' the voyage, {time}",
+		"source": "Day {day, number}, {time}"
 	},
 	"group.connectionLost": {
 		"message": "Lost sight o' the crew.",
@@ -2335,10 +2231,6 @@
 		"message": "Boardin'...",
 		"source": "Joining..."
 	},
-	"group.keys.characterSheet": {
-		"message": "Unroll the papers o' the hand ye be sailin' as",
-		"source": "Open the character sheet of the character you're playing"
-	},
 	"group.leave": {
 		"message": "Abandon ship",
 		"source": "Leave group"
@@ -2349,7 +2241,7 @@
 	},
 	"group.member.anchor": {
 		"message": "anchor",
-		"source": "anchor being"
+		"source": "anchor"
 	},
 	"group.member.away": {
 		"message": "ashore",
@@ -2375,13 +2267,13 @@
 		"message": "The whole crew must be aboard to sail that way, the anchor bein' too.",
 		"source": "The whole group has to be here to go that way, the anchor being included."
 	},
-	"group.nowPlaying": {
-		"message": "Ye be sailin' as {name} now.",
-		"source": "You are now playing {name}."
-	},
 	"group.pageTitle": {
 		"message": "{group} - Multiverse Kiln",
 		"source": "{group} - Multiverse Kiln"
+	},
+	"group.permadeath": {
+		"message": "No quarter: hands who die in this crew go to Davy Jones for eternity.",
+		"source": "Permadeath: characters who die in this group cannot be resurrected."
 	},
 	"group.playingAs": {
 		"message": "Sailin' as {name}",
@@ -2479,6 +2371,10 @@
 		"message": "Pick a hand to join the crew. Hands already in a crew can't join another.",
 		"source": "Choose a character to join the group. Characters already in a group can't join another."
 	},
+	"invite.difficulty": {
+		"message": "Peril: {level} ({mobs})",
+		"source": "Difficulty: {level} ({mobs})"
+	},
 	"invite.failed": {
 		"message": "Couldn't unroll the summons.",
 		"source": "Could not open the invite."
@@ -2517,7 +2413,7 @@
 	},
 	"invite.summary": {
 		"message": "Ye be summoned to sail {universe} with a crew gathered by {anchor}. It has {count, number} o' {size, plural, one {# hand} other {# hands}}.",
-		"source": "You're invited to play {universe} in a group centered on {anchor}. It has {count, number} of {size, plural, one {# character} other {# characters}}."
+		"source": "You're invited to play {universe} in a group created by {anchor}. It has {count, number} of {size, plural, one {# character} other {# characters}}."
 	},
 	"invite.title": {
 		"message": "Summons",
@@ -2659,10 +2555,6 @@
 		"message": "What's in the hold",
 		"source": "Contents"
 	},
-	"license.copyright": {
-		"message": "Copyright (C) {year} {holder}.",
-		"source": "Copyright (C) {year} {holder}."
-	},
 	"license.game": {
 		"message": "Ye ol' Game Engine",
 		"source": "The Game Engine"
@@ -2674,10 +2566,6 @@
 	"license.heading": {
 		"message": "The Ship's Articles",
 		"source": "Licenses"
-	},
-	"license.home": {
-		"message": "Back to Port",
-		"source": "Back to Home"
 	},
 	"license.icons": {
 		"message": "Sigils",
@@ -2691,17 +2579,9 @@
 		"message": "Pathfinder First Edition rules o' the sea",
 		"source": "Pathfinder First Edition rules"
 	},
-	"license.pathfinderSectionLink": {
-		"message": "Pathfinder First Edition rules o' the sea",
-		"source": "Pathfinder First Edition rules"
-	},
 	"license.phosphor": {
 		"message": "The sigils on yer buttons be from {phosphor}, used under the MIT License:",
 		"source": "Interface icons are from {phosphor}, used under the MIT License:"
-	},
-	"license.sourceCode": {
-		"message": "Source code",
-		"source": "Source code"
 	},
 	"license.starfinder": {
 		"message": "Starfinder First Edition rules o' the stars",
@@ -2731,14 +2611,6 @@
 		"message": "Multiverse Kiln be handed out in the hope that it'll be useful, but WITHOUT ANY WARRANTY; without even the implied warranty o' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.",
 		"source": "Multiverse Kiln is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details."
 	},
-	"lobby.characterDescription": {
-		"message": "{race} {class}",
-		"source": "{race} {class}"
-	},
-	"lobby.characterLeaving": {
-		"message": "To Davy Jones on {deleteAt, date, medium}",
-		"source": "To be deleted on {deleteAt, date, medium}"
-	},
 	"lobby.characterPlaying": {
 		"message": "At the helm",
 		"source": "Playing"
@@ -2750,14 +2622,6 @@
 	"lobby.characterSheetLabel": {
 		"message": "Papers o' {name}",
 		"source": "Character sheet of {name}"
-	},
-	"lobby.characters": {
-		"message": "Yer hands",
-		"source": "Your characters"
-	},
-	"lobby.charactersFailed": {
-		"message": "Couldn't muster yer hands.",
-		"source": "Could not list your characters."
 	},
 	"lobby.chat.label": {
 		"message": "Chat message",
@@ -2799,10 +2663,6 @@
 		"message": "Aboard ({count})",
 		"source": "Here ({count})"
 	},
-	"lobby.keys.characterSheet": {
-		"message": "Unroll the papers o' the hand ye be sailin' as",
-		"source": "Open the character sheet of the character you're playing"
-	},
 	"lobby.leave": {
 		"message": "Leave the tavern",
 		"source": "Leave lobby"
@@ -2811,17 +2671,9 @@
 		"message": "and {count, number} more",
 		"source": "and {count, number} more"
 	},
-	"lobby.noCharacters": {
-		"message": "Ye haven't signed on a hand in this universe yet.",
-		"source": "You haven't made a character in this universe yet."
-	},
 	"lobby.notJoined": {
 		"message": "Couldn't reach {universe}. Try again in a tick.",
 		"source": "Could not enter {universe}. Try again in a moment."
-	},
-	"lobby.nowPlaying": {
-		"message": "Ye be sailin' as {name} now.",
-		"source": "You are now playing {name}."
 	},
 	"lobby.ownGhost": {
 		"message": "Ye (a ghost)",
@@ -2875,6 +2727,10 @@
 		"message": "{count, plural, one {{players} slips out o' sight.} other {{players} slip out o' sight.}}",
 		"source": "{count, plural, one {{players} goes out of view.} other {{players} go out of view.}}"
 	},
+	"map.announce.partOfDay": {
+		"message": "{part, select, dawn {First light breaks.} day {The sun be high.} dusk {Dusk be fallin'.} other {Night falls o'er the sea.}}",
+		"source": "{part, select, dawn {Dawn breaks.} day {The sun is up.} dusk {Dusk falls.} other {Night falls.}}"
+	},
 	"map.announce.player": {
 		"message": "{name}, {cells, plural, one {# cell} other {# cells}} {direction, select, north {north} northeast {nor'east} east {east} southeast {sou'east} south {south} southwest {sou'west} west {west} other {nor'west}}",
 		"source": "{name}, {cells, plural, one {# cell} other {# cells}} {direction, select, north {north} northeast {northeast} east {east} southeast {southeast} south {south} southwest {southwest} west {west} other {northwest}}"
@@ -2886,6 +2742,18 @@
 	"map.announce.position": {
 		"message": "{area}, column {column}, row {row}{onTile, select, yes {, standin' on {tile}} other {}}. {count, plural, =0 {Not a soul in sight.} other {Ye can spy {players}.}}",
 		"source": "{area}, column {column}, row {row}{onTile, select, yes {, on {tile}} other {}}. {count, plural, =0 {You can't see anyone else.} other {You can see {players}.}}"
+	},
+	"map.announce.sight": {
+		"message": "Ye can spy {squares, plural, one {# square} other {# squares}} across open ground.",
+		"source": "You can see {squares, plural, one {# square} other {# squares}} across open ground."
+	},
+	"map.announce.timeOfDay": {
+		"message": "'Tis {time}, {part, select, dawn {first light} day {broad day} dusk {dusk} other {the dark o' night}}.",
+		"source": "It is {time}, {part, select, dawn {dawn} day {day} dusk {dusk} other {night}}."
+	},
+	"map.announce.timeOfDayRough": {
+		"message": "'Tis {time}.",
+		"source": "It is {time}."
 	},
 	"map.ghost": {
 		"message": "Ghost",
@@ -3051,9 +2919,9 @@
 		"message": "GNU Affero General Public License v3 or later",
 		"source": "GNU Affero General Public License v3 or later"
 	},
-	"page.name": {
-		"message": "Multiverse Kiln",
-		"source": "Multiverse Kiln"
+	"page.loading": {
+		"message": "Hoistin'...",
+		"source": "Loading..."
 	},
 	"page.playingAs": {
 		"message": "Sailin' as {name}",
@@ -3066,10 +2934,6 @@
 	"page.sourceCode": {
 		"message": "Source code",
 		"source": "Source code"
-	},
-	"page.title": {
-		"message": "Multiverse Kiln",
-		"source": "Multiverse Kiln"
 	},
 	"pager.next": {
 		"message": "Onward",
@@ -3423,6 +3287,14 @@
 		"message": "none",
 		"source": "none"
 	},
+	"play.keys.characterSheet": {
+		"message": "Unroll the papers o' the hand ye be sailin' as",
+		"source": "Open the character sheet of the character you're playing"
+	},
+	"play.nowPlaying": {
+		"message": "Ye be sailin' as {name} now.",
+		"source": "You are now playing {name}."
+	},
 	"sf1e.ability.charisma": {
 		"message": "Swagger",
 		"source": "Charisma"
@@ -3647,10 +3519,6 @@
 		"message": "Strange-Shore Seeker",
 		"source": "Xenoseeker"
 	},
-	"shortcuts.close": {
-		"message": "Batten down",
-		"source": "Close"
-	},
 	"shortcuts.escape": {
 		"message": "Esc",
 		"source": "Esc"
@@ -3719,6 +3587,22 @@
 		"message": "Briny Deep",
 		"source": "Water"
 	},
+	"time.periodOfDay": {
+		"message": "{period, select, midnight {the witchin' hour} pre_dawn {afore first light} dawn {first light} early_morning {early mornin''} morning {mornin''} late_morning {late mornin''} noon {high noon} early_afternoon {early afternoon} afternoon {afternoon} late_afternoon {late afternoon} evening {eventide} late_evening {late eventide} other {the dark o' night}}",
+		"source": "{period, select, midnight {midnight} pre_dawn {pre-dawn} dawn {dawn} early_morning {early morning} morning {morning} late_morning {late morning} noon {noon} early_afternoon {early afternoon} afternoon {afternoon} late_afternoon {late afternoon} evening {evening} late_evening {late evening} other {night}}"
+	},
+	"universe.displayTime.none": {
+		"message": "naught",
+		"source": "nothing"
+	},
+	"universe.displayTime.precise": {
+		"message": "true to the ship's bell (to the second)",
+		"source": "precise (to the second)"
+	},
+	"universe.displayTime.rough": {
+		"message": "by the sun (such as afternoon)",
+		"source": "rough (such as afternoon)"
+	},
 	"universe.faerie.center": {
 		"message": "the middle",
 		"source": "center"
@@ -3758,6 +3642,14 @@
 	"universe.faerie.west": {
 		"message": "west",
 		"source": "west"
+	},
+	"universe.lightLevel.dark": {
+		"message": "pitch dark",
+		"source": "dark"
+	},
+	"universe.lightLevel.lit": {
+		"message": "lantern-lit",
+		"source": "lit"
 	},
 	"universe.lobbyAreaName": {
 		"message": "Tavern",
@@ -3855,41 +3747,17 @@
 		"message": "same as the mother area",
 		"source": "inherit from the parent area"
 	},
-	"universePage.characterDescription": {
-		"message": "{race} {class}",
-		"source": "{race} {class}"
-	},
-	"universePage.characterLeaving": {
-		"message": "To Davy Jones on {deleteAt, date, medium}",
-		"source": "To be deleted on {deleteAt, date, medium}"
-	},
-	"universePage.characters": {
-		"message": "Yer hands",
-		"source": "Your characters"
-	},
-	"universePage.charactersFailed": {
-		"message": "Couldn't muster yer hands.",
-		"source": "Could not list your characters."
+	"universe.time.real_time": {
+		"message": "by the real clock",
+		"source": "real time"
 	},
 	"universePage.enter": {
 		"message": "Set Sail",
 		"source": "Enter Universe"
 	},
-	"universePage.home": {
-		"message": "Back to Port",
-		"source": "Back to Home"
-	},
 	"universePage.loadFailed": {
 		"message": "Couldn't haul up the universe. Reload the page to try again.",
 		"source": "Could not load the universe. Reload the page to try again."
-	},
-	"universePage.loading": {
-		"message": "Haulin' it aboard...",
-		"source": "Loading..."
-	},
-	"universePage.noCharacters": {
-		"message": "Ye haven't signed on a hand in this universe yet.",
-		"source": "You haven't made a character in this universe yet."
 	},
 	"universePage.notFound": {
 		"message": "That universe be lost at sea. It may sail under a new name, or it ain't open to all hands yet.",

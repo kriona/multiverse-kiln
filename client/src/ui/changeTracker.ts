@@ -3,9 +3,9 @@ import { defineMessages } from '@multiverse-kiln/shared';
 import { t } from '../localization';
 
 /**
- * Text the change tracker shows (see src/localization.ts)
+ * Text the change tracker shows, which the editor's save bar shows too (see src/localization.ts)
  */
-const messages = defineMessages({
+export const changeMessages = defineMessages({
 	unsavedChanges: {
 		id: 'form.unsavedChanges',
 		defaultMessage: 'Unsaved changes',
@@ -197,7 +197,7 @@ export class ChangeTracker implements UnsavedWork
 	{
 		const unsaved = (this.isActive() && (this.read() !== this.saved));
 		const status = this.options.status;
-		const statusText = t(messages.unsavedChanges);
+		const statusText = t(changeMessages.unsavedChanges);
 
 		if (status)
 		{
@@ -255,7 +255,7 @@ export class ChangeTracker implements UnsavedWork
 			return(true);
 		}
 
-		if (!window.confirm(t(messages.discardChanges)))
+		if (!window.confirm(t(changeMessages.discardChanges)))
 		{
 			return(false);
 		}

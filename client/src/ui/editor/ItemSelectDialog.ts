@@ -8,6 +8,7 @@ import { getElement, setButtonLabel, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
 import { createItemIcon, itemName, itemTypeName } from '../itemNames';
+import { editorMessages } from './editorMessages';
 
 /**
  * Most items the dialog lists at once; typing narrows them down
@@ -226,11 +227,7 @@ export class ItemSelectDialog
 
 		if (!item.enabled)
 		{
-			notes.push(t({
-				id: 'editor.itemSelect.disabled',
-				defaultMessage: 'Disabled',
-				description: 'In the dialog for choosing items, under the name of an item characters can\'t be given'
-			}));
+			notes.push(t(editorMessages.disabled));
 		}
 
 		label.className = 'checkbox described-choice';

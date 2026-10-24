@@ -1,13 +1,15 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
+import { GROUP_START_SECONDS } from '@multiverse-kiln/shared';
 
 import { findLastPlayedCharacterId, findOwnCharacter, listPlayableCharacters, markCharacterPlayed, purgeExpiredCharacters, scheduleCharacterDeletion } from '../../src/db/characterRepo.js';
 import { db } from '../../src/db/client.js';
-import { addGroupMember, countGroupMembers, createInvite, deleteInvite, findGroup, findInvite, findMembership, leaveGroup, listExpiredMemberships, listGroupMembers, listMembersOfGroups, listPlayerGroupIds, purgeExpiredInvites, saveMemberPositions } from '../../src/db/groupRepo.js';
+import { findDefaultDifficultyLevel } from '../../src/db/difficultyRepo.js';
+import { addGroupMember, countGroupMembers, createInvite, deleteInvite, findGroup, findInvite, findMembership, leaveGroup, listExpiredMemberships, listGroupMembers, listMembersOfGroups, listPlayerGroupIds, purgeExpiredInvites, saveGroupClock, saveMemberPositions } from '../../src/db/groupRepo.js';
 import { loadOrCreatePlayerByName } from '../../src/db/playerRepo.js';
 import { characters } from '../../src/db/schema.js';
 import { inTransaction } from '../../src/db/transactions.js';
-import { addCharacter, addGroup, addPlayableUniverse, type PlayableUniverse } from './fixtures.js';
+import { addCharacter, addGroup, addPlayableUniverse, defaultRaceId, type PlayableUniverse } from './fixtures.js';
 
 describe('groupRepo', () =>
 {
@@ -34,12 +36,23 @@ describe('groupRepo', () =>
 			universeId: universe.universeId,
 			anchorCharacterId: anchorId,
 			name: 'The Fellowship',
-			startingAreaId: universe.fieldAreaId
+			startingAreaId: universe.fieldAreaId,
+			startingColumn: 0,
+			startingRow: 0,
+			clockSeconds: GROUP_START_SECONDS,
+			difficultyLevelId: (await findDefaultDifficultyLevel(universe.universeId))?.id
 		});
 		assert.deepStrictEqual(await findMembership(anchorId), { groupId, universeId: universe.universeId, isAnchor: true });
 		assert.deepStrictEqual(await findMembership(memberId), { groupId, universeId: universe.universeId, isAnchor: false });
 		assert.strictEqual(await countGroupMembers(groupId), 2);
 		assert.deepStrictEqual(await listPlayerGroupIds(playerId, universe.universeId), new Map([[anchorId, groupId], [memberId, groupId]]));
+	});
+
+	it('saves the group\'s clock', async () =>
+	{
+		await saveGroupClock(groupId, GROUP_START_SECONDS + 1234.5);
+
+		assert.strictEqual((await findGroup(groupId))?.clockSeconds, GROUP_START_SECONDS + 1234.5);
 	});
 
 	it('lists the members, with where they were last', async () =>
@@ -70,7 +83,7 @@ describe('groupRepo', () =>
 
 		assert.deepStrictEqual((await listPlayableCharacters(playerId, universe.universeId)).map(({ id }) => id), [lonerId]);
 		assert.strictEqual(await findLastPlayedCharacterId(playerId, universe.universeId), anchorId);
-		assert.deepStrictEqual(await findOwnCharacter(playerId, universe.universeId, anchorId), { id: anchorId, name: 'Anchor', areaId: null, playable: true });
+		assert.deepStrictEqual(await findOwnCharacter(playerId, universe.universeId, anchorId), { id: anchorId, name: 'Anchor', raceId: await defaultRaceId('dwarf'), areaId: null, startingColumn: 0, startingRow: 0, playable: true });
 		assert.strictEqual(await findOwnCharacter(playerId, universe.universeId, randomUUID()), undefined);
 	});
 
@@ -78,7 +91,7 @@ describe('groupRepo', () =>
 	{
 		const left = await leaveGroup(groupId, memberId);
 
-		assert.deepStrictEqual(left, { kind: 'left', character: { characterId: memberId, playerId, name: 'Member', playable: true } });
+		assert.deepStrictEqual(left, { kind: 'left', character: { characterId: memberId, playerId, name: 'Member', raceId: await defaultRaceId('dwarf'), playable: true } });
 		assert.strictEqual(await findMembership(memberId), undefined);
 		assert.strictEqual(await leaveGroup(groupId, memberId), undefined);
 	});

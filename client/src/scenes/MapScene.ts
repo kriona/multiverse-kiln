@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { Callbacks } from '@colyseus/sdk';
-import { chunkKey, GRID_CELL_SIZE, MessageType, nearestCopy, PATCH_INTERVAL_MS, PLAYER_RADIUS, positiveModulo, ServerMessageType, tileIdAt, type ChunksPayload, type MovePayload, type Player, type AreaPayload } from '@multiverse-kiln/shared';
+import { areaLight, cellIndexInChunk, chunkCoordinate, chunkKey, createVisionMap, GameServerMessageType, GRID_CELL_SIZE, isInBounds, MessageType, nearestCopy, partOfDay, PATCH_INTERVAL_MS, PLAYER_RADIUS, positiveModulo, secondOfDay, ServerMessageType, tileIdAt, UNSEEN_CELL, VIEW_COLUMNS, VIEW_HEIGHT, VIEW_ROWS, VIEW_WIDTH, visibleCells, visionBudget, visionKey, type CellsSeenPayload, type CellValue, type ChunksPayload, type MovePayload, type Player, type AreaPayload, type VisionMap } from '@multiverse-kiln/shared';
 
 import { MovementKeys } from '../input/MovementKeys';
 import { t } from '../localization';
@@ -56,11 +56,69 @@ const NAME_OFFSET = 4;
  */
 const PROMPT_OFFSET = 6;
 
+/**
+ * The color laid over the map at night
+ */
+const NIGHT_COLOR = 0x0a1030;
+
+/**
+ * How opaque the night color is at full dark; the map fades toward it as the light goes
+ */
+const NIGHT_ALPHA = 0.65;
+
+/**
+ * Depth of the night color: over the map and players, under their names and the link prompt
+ */
+const NIGHT_DEPTH = 0.5;
+
+/**
+ * The color laid over cells out of sight
+ */
+const FOG_COLOR = 0x000000;
+
+/**
+ * How opaque the fog is
+ */
+const FOG_ALPHA = 0.55;
+
+/**
+ * How opaque the fog is over cells the group has never seen, in a group's room: they are hidden
+ */
+const UNSEEN_ALPHA = 1;
+
+/**
+ * Depth of the fog: over the map, under the players
+ */
+const FOG_DEPTH = -0.5;
+
+/**
+ * How many cells past the edges of the view the fog is drawn, so it still covers the view while the
+ * camera catches up with the player
+ */
+const FOG_MARGIN = 2;
+
 const TEXT_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
 	fontFamily: 'sans-serif',
 	fontSize: '12px',
 	color: '#ffffff'
 };
+
+/**
+ * Whether the element with focus needs the keys that move the player: a text field takes letters, and a
+ * select and anything in a modal dialog (radio buttons, a menu) take the arrow keys
+ *
+ * @param element The element with focus
+ * @return True when the game should leave the keyboard to the page
+ */
+function needsMovementKeys(element: Element | null): boolean
+{
+	if (!element)
+	{
+		return(false);
+	}
+
+	return(isTextEntry(element) || (element instanceof HTMLSelectElement) || (element.closest('dialog:modal') !== null));
+}
 
 /**
  * Data the scene is started with
@@ -128,6 +186,31 @@ export class MapScene extends Phaser.Scene
 	private lastSentMove?: MovePayload;
 	private announcer!: MapAnnouncer;
 
+	/**
+	 * Darkens the view as the light goes
+	 */
+	private night?: Phaser.GameObjects.Rectangle;
+
+	/**
+	 * The area's map as vision sees it, from the chunks received so far
+	 */
+	private visionMap!: VisionMap;
+
+	/**
+	 * Darkens the cells out of sight
+	 */
+	private fog?: Phaser.GameObjects.Graphics;
+
+	/**
+	 * What the fog was last drawn from (see updateFog), so it is drawn again only when that changes
+	 */
+	private fogKey = '';
+
+	/**
+	 * Counts the chunks received, so the fog is drawn again when the map under it changes
+	 */
+	private chunkRevision = 0;
+
 	constructor()
 	{
 		super(MAP_SCENE_KEY);
@@ -152,6 +235,9 @@ export class MapScene extends Phaser.Scene
 		this.linkPrompt = undefined;
 		this.lastSentMove = undefined;
 		this.announcer = new MapAnnouncer();
+		this.night = undefined;
+		this.fog = undefined;
+		this.fogKey = '';
 	}
 
 	/**
@@ -183,6 +269,12 @@ export class MapScene extends Phaser.Scene
 			this.receiveChunks(payload);
 		}));
 
+		// Only a group's room sends it
+		this.unbinds.push(this.room.onMessage(GameServerMessageType.CellsSeen, (payload: CellsSeenPayload) =>
+		{
+			this.receiveCellsSeen(payload);
+		}));
+
 		if (this.input.keyboard)
 		{
 			this.movementKeys = new MovementKeys(this.input.keyboard);
@@ -196,6 +288,12 @@ export class MapScene extends Phaser.Scene
 		});
 
 		this.linkPrompt = this.add.text(0, 0, prompt, TEXT_STYLE).setOrigin(0.5, 0).setDepth(2).setVisible(false);
+		this.night = this.add.rectangle(0, 0, VIEW_WIDTH, VIEW_HEIGHT, NIGHT_COLOR, NIGHT_ALPHA)
+			.setOrigin(0, 0)
+			.setScrollFactor(0)
+			.setDepth(NIGHT_DEPTH)
+			.setAlpha(0);
+		this.fog = this.add.graphics().setDepth(FOG_DEPTH);
 
 		// Clicking the map takes the keyboard back from a text field, such as the lobby's chat
 		this.input.on(Phaser.Input.Events.POINTER_DOWN, () =>
@@ -280,6 +378,214 @@ export class MapScene extends Phaser.Scene
 
 		this.areaRenderer?.update(this.cameras.main.worldView);
 		this.updateLinkPrompt(own);
+		this.updateDaylight();
+		this.updateFog();
+	}
+
+	/**
+	 * Draws fog over the cells around the player that nobody they see with can see: the player alone in
+	 * a lobby, and in a group's room every member in the area, who are all the players it shows. Looks
+	 * from where each is drawn (drawnCellOf), and draws again only when that, how far they see or the map
+	 * changes
+	 */
+	private updateFog(): void
+	{
+		const own = this.room.state.players?.get(this.ownPlayerId);
+
+		if (!own || !this.fog)
+		{
+			return;
+		}
+
+		const sights: { cell: { column: number; row: number }; budget: number }[] = [];
+
+		this.room.state.players.forEach((player, playerId) =>
+		{
+			if ((playerId === this.ownPlayerId) || (this.sharesVision && !player.ghost))
+			{
+				const cell = this.drawnCellOf(playerId, player);
+
+				sights.push({
+					cell,
+					budget: visionBudget(areaLight(this.area.lightLevel, this.secondOfDayAt(cell)), player.darkvision, this.area.fullVision)
+				});
+			}
+		});
+
+		// The camera follows where the player is drawn: past a looping edge, a whole map away from their
+		// position on the map
+		const center = this.drawnCellOf(this.ownPlayerId, own);
+		const key = [
+			this.area.areaId,
+			this.chunkRevision,
+			center.column,
+			center.row,
+			// The light changes a little every frame around dawn and dusk; a tenth of a square is too little to see
+			...sights.map((sight) => `${sight.cell.column},${sight.cell.row},${Math.floor(sight.budget * 10)}`)
+		].join(';');
+
+		if (key === this.fogKey)
+		{
+			return;
+		}
+
+		this.fogKey = key;
+
+		const visible = new Set<string>();
+
+		for (const sight of sights)
+		{
+			for (const cellKey of visibleCells(sight.cell, sight.budget, this.visionMap))
+			{
+				visible.add(cellKey);
+			}
+		}
+
+		this.drawFog(center, visible);
+	}
+
+	/**
+	 * Draws fog over the cells around the view's center that aren't visible
+	 *
+	 * @param center The cell the player is drawn in, which the camera follows; past a looping edge, off the map
+	 * @param visible The cells in sight, by visionKey()
+	 */
+	private drawFog(center: { column: number; row: number }, visible: ReadonlySet<string>): void
+	{
+		const fog = this.fog;
+
+		if (!fog)
+		{
+			return;
+		}
+
+		const { bounds } = this.area;
+		const halfColumns = Math.ceil(VIEW_COLUMNS / 2) + FOG_MARGIN;
+		const halfRows = Math.ceil(VIEW_ROWS / 2) + FOG_MARGIN;
+		const width = (bounds.maxColumn - bounds.minColumn) + 1;
+		const height = (bounds.maxRow - bounds.minRow) + 1;
+
+		fog.clear();
+
+		for (let row = center.row - halfRows; row <= center.row + halfRows; row++)
+		{
+			for (let column = center.column - halfColumns; column <= center.column + halfColumns; column++)
+			{
+				// Past a looping edge the map carries on from the far side, drawn next to the player
+				const mapColumn = (this.area.loopsEastWest ? bounds.minColumn + positiveModulo(column - bounds.minColumn, width) : column);
+				const mapRow = (this.area.loopsNorthSouth ? bounds.minRow + positiveModulo(row - bounds.minRow, height) : row);
+
+				if (isInBounds(bounds, mapColumn, mapRow) && !visible.has(visionKey(mapColumn, mapRow)))
+				{
+					fog.fillStyle(FOG_COLOR, (this.isUnseen(mapColumn, mapRow) ? UNSEEN_ALPHA : FOG_ALPHA));
+					fog.fillRect(column * GRID_CELL_SIZE, row * GRID_CELL_SIZE, GRID_CELL_SIZE, GRID_CELL_SIZE);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Whether everyone the room shows is in one group, which sees whatever any of its members sees: a
+	 * group's room, whose state has the group's clock, unlike a lobby's
+	 *
+	 * @return True in a group's room
+	 */
+	private get sharesVision(): boolean
+	{
+		return((this.room.state.clock as number | undefined) !== undefined);
+	}
+
+	/**
+	 * The cell a player is drawn in, which trails their position from the server by INTERPOLATION_DELAY_MS.
+	 * The fog follows it, so it stays with the picture, and the tiles of cells the group sees for the first
+	 * time have usually arrived from the server before the fog uncovers them
+	 *
+	 * @param playerId The player's ID
+	 * @param player The player's synced state, for a player not drawn yet
+	 * @return The cell; past a looping edge, off the map, next to the player this window controls
+	 */
+	private drawnCellOf(playerId: string, player: Player): { column: number; row: number }
+	{
+		const drawn = this.players.get(playerId)?.shape ?? player;
+
+		return({
+			column: Math.floor(drawn.x / GRID_CELL_SIZE),
+			row: Math.floor(drawn.y / GRID_CELL_SIZE)
+		});
+	}
+
+	/**
+	 * Whether a cell's tile hasn't been sent because the group hasn't seen it, in a group's room
+	 *
+	 * @param column The cell's column, on the map
+	 * @param row The cell's row, on the map
+	 * @return True when it holds UNSEEN_CELL
+	 */
+	private isUnseen(column: number, row: number): boolean
+	{
+		return(this.chunks.get(chunkKey(chunkCoordinate(column), chunkCoordinate(row)))?.[cellIndexInChunk(column, row)] === UNSEEN_CELL);
+	}
+
+	/**
+	 * The cell a player is in
+	 *
+	 * @param player The player's synced state
+	 * @return The cell
+	 */
+	private cellOf(player: Player): { column: number; row: number }
+	{
+		return({
+			column: Math.floor(player.x / GRID_CELL_SIZE),
+			row: Math.floor(player.y / GRID_CELL_SIZE)
+		});
+	}
+
+	/**
+	 * Darkens the map for the light where the player is: the time of day outdoors, or an indoor area's
+	 * light level. Outdoors, tells screen reader users as the part of the day changes; indoors the light
+	 * doesn't change with it
+	 */
+	private updateDaylight(): void
+	{
+		const seconds = this.currentSecondOfDay();
+
+		if (seconds === undefined)
+		{
+			return;
+		}
+
+		this.night?.setAlpha(1 - areaLight(this.area.lightLevel, seconds));
+
+		if (this.area.lightLevel === null)
+		{
+			this.announcer.partOfDayChanged(partOfDay(seconds));
+		}
+	}
+
+	/**
+	 * The time of day where the player is
+	 *
+	 * @return Seconds since midnight, or undefined before the player is on the map
+	 */
+	private currentSecondOfDay(): number | undefined
+	{
+		const own = this.room.state.players?.get(this.ownPlayerId);
+
+		return((own ? this.secondOfDayAt(this.cellOf(own)) : undefined));
+	}
+
+	/**
+	 * The time of day at a cell of the area
+	 *
+	 * @param cell The cell
+	 * @return Seconds since midnight
+	 */
+	private secondOfDayAt(cell: { column: number; row: number }): number
+	{
+		// A lobby has no clock: its time of day never flows with the players' actions
+		const clock = (this.room.state.clock as number | undefined) ?? 0;
+
+		return(secondOfDay(this.area.time, clock, Date.now(), cell, this.area.bounds));
 	}
 
 	/**
@@ -291,7 +597,18 @@ export class MapScene extends Phaser.Scene
 	{
 		this.area = area;
 		this.chunks = new Map(area.chunks.map((chunk) => [chunkKey(chunk.chunkColumn, chunk.chunkRow), chunk.cells]));
-		this.manualLinks = new Set(area.links.filter((link) => (link.mode === 'manual')).map((link) => `${link.column},${link.row}`));
+		this.manualLinks =new Set(area.links.filter((link) => (link.mode === 'manual')).map((link) => `${link.column},${link.row}`));
+		this.visionMap = createVisionMap(
+			{
+				bounds: area.bounds,
+				defaultTileId: area.defaultTileId,
+				chunks: this.chunks
+			},
+			area.loopsEastWest,
+			area.loopsNorthSouth,
+			new Map(area.tiles.map((tile) => [tile.id, tile.visionCost]))
+		);
+		this.chunkRevision++;
 		this.areaRenderer?.destroy();
 		this.areaRenderer = new AreaRenderer(this, area, this.chunks);
 	}
@@ -327,7 +644,46 @@ export class MapScene extends Phaser.Scene
 			keys.push(key);
 		}
 
+		this.chunkRevision++;
 		this.areaRenderer?.refreshChunks(keys);
+	}
+
+	/**
+	 * Takes in the tiles of cells the group has just seen for the first time, with the links on them, and
+	 * draws them. A cell in a chunk this window doesn't hold is left for the chunk, which carries it
+	 *
+	 * @param payload The cells
+	 */
+	private receiveCellsSeen(payload: CellsSeenPayload): void
+	{
+		if (payload.areaId !== this.area.areaId)
+		{
+			return;
+		}
+
+		const changed: CellValue[] = [];
+
+		for (const cell of payload.cells)
+		{
+			const chunk = this.chunks.get(chunkKey(chunkCoordinate(cell.column), chunkCoordinate(cell.row)));
+
+			if (chunk)
+			{
+				chunk[cellIndexInChunk(cell.column, cell.row)] = cell.value;
+				changed.push(cell);
+			}
+		}
+
+		for (const link of payload.links)
+		{
+			if (link.mode === 'manual')
+			{
+				this.manualLinks.add(`${link.column},${link.row}`);
+			}
+		}
+
+		this.chunkRevision++;
+		this.areaRenderer?.refreshCells(changed);
 	}
 
 	/**
@@ -525,10 +881,11 @@ export class MapScene extends Phaser.Scene
 	};
 
 	/**
-	 * Hands the keyboard to a text field while one has focus, and takes it back afterward
+	 * Hands the keyboard to the page while focus is somewhere that needs the movement keys, and takes it
+	 * back afterward
 	 *
 	 * While the game has the keyboard it blocks the movement keys' normal effect on the whole page, which
-	 * would stop W, A, S, D and E being typed into the chat
+	 * would stop W, A, S, D and E being typed into the chat and the arrow keys working a select or a dialog
 	 */
 	private readonly onFocusChange = (): void =>
 	{
@@ -542,15 +899,15 @@ export class MapScene extends Phaser.Scene
 				return;
 			}
 
-			const typing = isTextEntry(document.activeElement);
+			const pageNeedsKeys = needsMovementKeys(document.activeElement);
 
-			if (typing && keyboard.enabled)
+			if (pageNeedsKeys && keyboard.enabled)
 			{
 				this.stopMoving();
 				keyboard.enabled = false;
 				keyboard.disableGlobalCapture();
 			}
-			else if (!typing && !keyboard.enabled)
+			else if (!pageNeedsKeys && !keyboard.enabled)
 			{
 				keyboard.enabled = true;
 				keyboard.enableGlobalCapture();
@@ -621,6 +978,7 @@ export class MapScene extends Phaser.Scene
 		const row = Math.floor(own.y / GRID_CELL_SIZE);
 		const tileId = tileIdAt({ bounds: this.area.bounds, defaultTileId: this.area.defaultTileId, chunks: this.chunks }, column, row);
 		const tile = this.area.tiles.find((candidate) => (candidate.id === tileId));
+		const seconds = this.secondOfDayAt({ column, row });
 		const others: SeenPlayer[] = [];
 
 		this.room.state.players.forEach((player, playerId) =>
@@ -641,7 +999,10 @@ export class MapScene extends Phaser.Scene
 			areaName: this.area.name,
 			column,
 			row,
-			tileName: (tile ? tileName(tile, this.area.ruleset) : undefined)
+			tileName: (tile ? tileName(tile, this.area.ruleset) : undefined),
+			secondOfDay: seconds,
+			displayTime: this.area.displayTime,
+			sightSquares: Math.floor(visionBudget(areaLight(this.area.lightLevel, seconds), own.darkvision, this.area.fullVision))
 		}, others);
 	}
 

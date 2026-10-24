@@ -5,6 +5,7 @@ import { currentLocale, signedNumber, t } from '../localization';
 import type { CharacterApi } from '../network/characterApi';
 import { describeEditorError } from '../network/editorApi';
 import { announce } from './announcer';
+import { characterMessages } from './characterMessages';
 import { getElement, setButtonLabel, showMessage } from './dom';
 import { createItemIcon, itemName } from './itemNames';
 import { formatMoney } from './moneyField';
@@ -27,6 +28,7 @@ export class CharacterSheetDialog
 	private readonly status = getElement('character-sheet-status', HTMLElement);
 	private readonly error = getElement('character-sheet-error', HTMLElement);
 	private readonly pending = getElement('character-sheet-pending', HTMLElement);
+	private readonly inGroup = getElement('character-sheet-in-group', HTMLElement);
 	private readonly body = getElement('character-sheet-body', HTMLElement);
 	private readonly abilityRows = getElement('character-sheet-ability-rows', HTMLTableSectionElement);
 	private readonly traits = getElement('character-sheet-traits', HTMLDListElement);
@@ -141,6 +143,7 @@ export class CharacterSheetDialog
 		});
 		this.body.hidden = true;
 		this.pending.hidden = true;
+		this.inGroup.hidden = true;
 		this.deleteButton.hidden = true;
 		this.restoreButton.hidden = true;
 		this.current = undefined;
@@ -187,11 +190,7 @@ export class CharacterSheetDialog
 	private show(sheet: CharacterSheet): void
 	{
 		this.title.textContent = sheet.name;
-		this.summary.textContent = t({
-			id: 'characterSheet.summary',
-			defaultMessage: '{race} {class}',
-			description: 'Under the name at the top of a character\'s sheet, their race and class, e.g. "Dwarf Fighter". Reorder them as your language needs'
-		}, {
+		this.summary.textContent = t(characterMessages.raceAndClass, {
 			race: raceName(sheet.race, sheet.ruleset),
 			class: className(sheet.characterClass, sheet.ruleset)
 		});
@@ -205,7 +204,8 @@ export class CharacterSheetDialog
 
 	/**
 	 * Shows whether the character is waiting to be deleted, with Restore for one who is. Delete is
-	 * offered either way, so a character given their last rites can still be cremated
+	 * offered either way, so a character given their last rites can still be cremated, except to a
+	 * character in a group, whose sheet says they have to leave it first
 	 *
 	 * @param sheet The character
 	 */
@@ -225,7 +225,17 @@ export class CharacterSheetDialog
 			: '');
 		this.pending.hidden = !waiting;
 		this.restoreButton.hidden = !waiting;
-		this.deleteButton.hidden = false;
+		this.inGroup.textContent = (sheet.inGroup
+			? t({
+				id: 'characterSheet.inGroup',
+				defaultMessage: '{name} is in a group, and has to leave it before they can be deleted.',
+				description: 'On the sheet of a character in a group, in place of the button that deletes them; {name} is the character\'s name'
+			}, {
+				name: sheet.name
+			})
+			: '');
+		this.inGroup.hidden = !sheet.inGroup;
+		this.deleteButton.hidden = sheet.inGroup;
 	}
 
 	/**
@@ -513,9 +523,9 @@ export class CharacterSheetDialog
 				description: 'On a character\'s sheet, the label of their size, such as Medium'
 			}), t(SIZE_NAMES[sheet.ruleset][sheet.size])],
 			[t({
-				id: 'characterSheet.darkvision',
+				id: 'character.darkvision',
 				defaultMessage: 'Darkvision',
-				description: 'On a character\'s sheet, the label of whether they can see in the dark'
+				description: 'Whether a character can see in the dark: the label on a character\'s sheet, and the race editor\'s checkbox for whether the race\'s characters can'
 			}), t({
 				id: 'characterSheet.darkvisionValue',
 				defaultMessage: '{darkvision, select, true {Yes} other {No}}',

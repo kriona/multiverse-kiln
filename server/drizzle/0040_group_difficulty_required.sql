@@ -1,0 +1,1 @@
+ALTER TABLE "groups" ALTER COLUMN "difficulty_level_id" SET NOT NULL;

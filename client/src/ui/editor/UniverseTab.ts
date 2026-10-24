@@ -1,5 +1,5 @@
 import '@github/markdown-toolbar-element';
-import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_LONG_DESCRIPTION_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, PASSAGES_OF_TIME, RULESET_NAMES, UNIVERSE_STAGE_DESCRIPTIONS, UNIVERSE_STAGE_NAMES, UNIVERSE_STAGES, universeSlug, type EditableUniverse, type FaerieMorning, type PassageOfTime, type UniverseSettingsUpdate, type UniverseStage } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, DISPLAY_TIME_NAMES, DISPLAY_TIMES, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_LONG_DESCRIPTION_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, PASSAGES_OF_TIME, UNIVERSE_STAGE_DESCRIPTIONS, UNIVERSE_STAGE_NAMES, UNIVERSE_STAGES, universeSlug, type DisplayTime, type EditableUniverse, type FaerieMorning, type PassageOfTime, type UniverseSettingsUpdate, type UniverseStage } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -8,6 +8,7 @@ import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
 import { showMarkdown } from '../markdown';
+import type { SavableTab } from './SaveBar';
 
 /**
  * The toolbar button each Ctrl (or Cmd) shortcut in the long description presses, by key
@@ -18,9 +19,9 @@ const FORMAT_SHORTCUTS: Partial<Record<string, string>> = {
 };
 
 /**
- * The Universe tab: the universe's name, descriptions, stage and passage of time
+ * The Universe tab: the universe's name, descriptions, stage, passage of time and how the time is shown
  */
-export class UniverseTab
+export class UniverseTab implements SavableTab
 {
 	private readonly form = getElement('universe-form', HTMLFormElement);
 	private readonly fields = getElement('universe-fields', HTMLFieldSetElement);
@@ -30,13 +31,11 @@ export class UniverseTab
 	private readonly toolbar = getElement('universe-long-toolbar', HTMLElement);
 	private readonly preview = getElement('universe-long-preview', HTMLElement);
 	private readonly stage = getElement('universe-stage', HTMLFieldSetElement);
-	private readonly ruleset = getElement('universe-ruleset-name', HTMLElement);
 	private readonly time = getElement('universe-time', HTMLSelectElement);
 	private readonly faerieField = getElement('universe-faerie-field', HTMLElement);
 	private readonly faerie = getElement('universe-faerie', HTMLSelectElement);
+	private readonly displayTime = getElement('universe-display-time', HTMLSelectElement);
 	private readonly error = getElement('universe-error', HTMLElement);
-	private readonly saved = getElement('universe-saved', HTMLElement);
-	private readonly saveButton = getElement('universe-save', HTMLButtonElement);
 
 	/**
 	 * The stage choices' radio buttons, by stage
@@ -46,10 +45,7 @@ export class UniverseTab
 	/**
 	 * Whether the form has changes that haven't been saved
 	 */
-	readonly changes = new ChangeTracker({
-		root: this.form,
-		status: this.saved
-	});
+	readonly changes = new ChangeTracker({ root: this.form });
 
 	/**
 	 * The universe as it was last loaded or saved
@@ -68,6 +64,7 @@ export class UniverseTab
 		this.stage.append(...UNIVERSE_STAGES.map((stage) => this.createStageChoice(stage)));
 		setOptions(this.time, namedOptions(PASSAGES_OF_TIME, PASSAGE_OF_TIME_NAMES));
 		setOptions(this.faerie, namedOptions(FAERIE_MORNINGS, FAERIE_MORNING_NAMES));
+		setOptions(this.displayTime, namedOptions(DISPLAY_TIMES, DISPLAY_TIME_NAMES));
 
 		this.longDescription.addEventListener('input', () =>
 		{
@@ -89,15 +86,8 @@ export class UniverseTab
 			input.addEventListener('input', () =>
 			{
 				setFieldError(input, undefined);
-				this.saved.textContent = '';
 			});
 		}
-
-		this.form.addEventListener('submit', (event) =>
-		{
-			event.preventDefault();
-			void this.save();
-		});
 	}
 
 	/**
@@ -116,15 +106,13 @@ export class UniverseTab
 			input.checked = (stage === universe.stage);
 		}
 
-		this.ruleset.textContent = t(RULESET_NAMES[universe.ruleset]);
 		this.time.value = universe.passageOfTime;
 		this.faerie.value = (universe.faerieMorning ?? FAERIE_MORNINGS[0]);
 		this.faerieField.hidden = (universe.passageOfTime !== 'faerie');
-		this.fields.disabled = !canEditUniverseSettings(universe.role);
-		this.saveButton.hidden = this.fields.disabled;
+		this.displayTime.value = universe.displayTime;
+		this.fields.disabled = !this.canSave();
 		// A disabled fieldset doesn't disable the toolbar's custom elements, so it's hidden instead
 		this.toolbar.hidden = this.fields.disabled;
-		this.saved.textContent = '';
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.form);
 		showMarkdown(this.preview, universe.longDescription);
@@ -183,28 +171,40 @@ export class UniverseTab
 	}
 
 	/**
-	 * Saves the settings as the form shows them
+	 * Whether the player may change the universe's settings
+	 *
+	 * @return True for a creator
 	 */
-	private async save(): Promise<void>
+	canSave(): boolean
+	{
+		return((this.universe !== undefined) && canEditUniverseSettings(this.universe.role));
+	}
+
+	/**
+	 * Saves the settings as the form shows them
+	 *
+	 * @return True when they were saved
+	 */
+	async save(): Promise<boolean>
 	{
 		const universe = this.universe;
 
 		if (!universe || !this.checkText())
 		{
-			return;
+			return(false);
 		}
 
 		const passageOfTime = this.time.value as PassageOfTime;
-		const update: Required<Pick<UniverseSettingsUpdate, 'name' | 'shortDescription' | 'longDescription' | 'stage' | 'passageOfTime' | 'faerieMorning'>> = {
+		const update: Required<Pick<UniverseSettingsUpdate, 'name' | 'shortDescription' | 'longDescription' | 'stage' | 'passageOfTime' | 'faerieMorning' | 'displayTime'>> = {
 			name: this.name.value.trim(),
 			shortDescription: this.shortDescription.value.trim(),
 			longDescription: this.longDescription.value,
 			stage: (UNIVERSE_STAGES.find((stage) => this.stageInputs.get(stage)?.checked) ?? universe.stage),
 			passageOfTime,
-			faerieMorning: ((passageOfTime === 'faerie') ? this.faerie.value as FaerieMorning : null)
+			faerieMorning: ((passageOfTime === 'faerie') ? this.faerie.value as FaerieMorning : null),
+			displayTime: this.displayTime.value as DisplayTime
 		};
 
-		this.saveButton.disabled = true;
 		showMessage(this.error, undefined);
 
 		try
@@ -212,8 +212,9 @@ export class UniverseTab
 			await this.api.updateUniverse(universe.id, update);
 			this.universe = { ...universe, ...update };
 			this.changes.markSaved();
-			this.saved.textContent = t(formMessages.saved);
 			this.onSaved(this.universe);
+
+			return(true);
 		}
 		catch (error)
 		{
@@ -222,10 +223,8 @@ export class UniverseTab
 				defaultMessage: 'Could not save the universe.',
 				description: 'Shown on the Universe tab when its settings couldn\'t be stored'
 			}));
-		}
-		finally
-		{
-			this.saveButton.disabled = false;
+
+			return(false);
 		}
 	}
 

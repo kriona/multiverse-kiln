@@ -1,5 +1,9 @@
+import { partOfDay, type DisplayTime, type PartOfDay } from '@multiverse-kiln/shared';
+
 import { formatList, t } from '../localization';
 import { announce } from './announcer';
+import { describeTimeOfDay } from './timeOfDay';
+import { showToast } from './toast';
 
 /**
  * How long players coming into or going out of view are collected before they are read out together
@@ -53,6 +57,21 @@ export interface PlayerPosition
 	 * The tile the player stands on, in their language, or undefined when it isn't known
 	 */
 	tileName: string | undefined;
+
+	/**
+	 * The time of day where the player is, in seconds since midnight
+	 */
+	secondOfDay: number;
+
+	/**
+	 * How the universe shows the time of day
+	 */
+	displayTime: DisplayTime;
+
+	/**
+	 * How many squares the player can see across open ground (visionBudget)
+	 */
+	sightSquares: number;
 }
 
 /**
@@ -76,6 +95,11 @@ export class MapAnnouncer
 	private blockedSaid = false;
 
 	/**
+	 * The part of the day last told of, or undefined since entering an area
+	 */
+	private partOfDay: PartOfDay | undefined;
+
+	/**
 	 * The player has come into an area, from another or by joining the room
 	 *
 	 * @param areaName The area's name
@@ -87,6 +111,7 @@ export class MapAnnouncer
 		this.quietUntil = performance.now() + AREA_CHANGE_QUIET_MS;
 		this.onLink = false;
 		this.still = undefined;
+		this.partOfDay = undefined;
 
 		announce(t({
 			id: 'map.announce.area',
@@ -171,7 +196,34 @@ export class MapAnnouncer
 	}
 
 	/**
-	 * Reads out where the player is, the tile they stand on, and the other players they can see, nearest first
+	 * Tells the player as the part of the day changes around them, such as night falling. The first part
+	 * of the day after entering an area isn't read out; describePosition() gives it
+	 *
+	 * @param part The part of the day it is now
+	 */
+	partOfDayChanged(part: PartOfDay): void
+	{
+		const previous = this.partOfDay;
+
+		this.partOfDay = part;
+
+		if ((previous === undefined) || (previous === part))
+		{
+			return;
+		}
+
+		announce(t({
+			id: 'map.announce.partOfDay',
+			defaultMessage: '{part, select, dawn {Dawn breaks.} day {The sun is up.} dusk {Dusk falls.} other {Night falls.}}',
+			description: 'Read out by screen readers as the time of day changes where the player is: dawn begins, full daylight comes, dusk begins, or night comes'
+		}, {
+			part
+		}));
+	}
+
+	/**
+	 * Reads out where the player is, the tile they stand on, the time of day when the universe shows it,
+	 * and the other players they can see, nearest first, and shows it in a toast
 	 *
 	 * @param position Where the player is
 	 * @param others The other players they can see
@@ -181,11 +233,19 @@ export class MapAnnouncer
 		const players = [...others]
 			.sort((first, second) => (distance(first) - distance(second)))
 			.map((other) => describePlayer(other));
+		const time = describeTime(position);
+		const sight = t({
+			id: 'map.announce.sight',
+			defaultMessage: 'You can see {squares, plural, one {# square} other {# squares}} across open ground.',
+			description: 'Read out by screen readers, and shown at the top of the page, when the player asks where they are, after the time of day: how far they can see, which is less at night unless their character has darkvision, and less past forests and mountains'
+		}, {
+			squares: position.sightSquares
+		});
 
-		announce(t({
+		const place = t({
 			id: 'map.announce.position',
 			defaultMessage: '{area}, column {column}, row {row}{onTile, select, yes {, on {tile}} other {}}. {count, plural, =0 {You can\'t see anyone else.} other {You can see {players}.}}',
-			description: 'Read out by screen readers when the player asks where they are: the area\'s name, their cell, the tile they stand on (e.g. Grass) when it is known, and the other players they can see; {players} is a list of descriptions such as "Bo, 3 cells northeast"'
+			description: 'Read out by screen readers, and shown at the top of the page, when the player asks where they are: the area\'s name, their cell, the tile they stand on (e.g. Grass) when it is known, and the other players they can see; {players} is a list of descriptions such as "Bo, 3 cells northeast"'
 		}, {
 			area: position.areaName,
 			column: position.column,
@@ -194,7 +254,12 @@ export class MapAnnouncer
 			tile: (position.tileName ?? ''),
 			count: players.length,
 			players: formatList(players, 'conjunction')
-		}), true);
+		});
+
+		// Each part is whole sentences
+		showToast([place, time, sight]
+			.filter((part) => (part !== undefined))
+			.join(' '), { announce: 'urgent' });
 	}
 
 	/**
@@ -266,6 +331,42 @@ export class MapAnnouncer
 			announce(lines.join(' '));
 		}
 	}
+}
+
+/**
+ * A sentence giving the time of day where the player is, the way the universe shows it
+ *
+ * @param position Where the player is
+ * @return The sentence, or undefined when the universe doesn't show the time
+ */
+function describeTime(position: PlayerPosition): string | undefined
+{
+	const time = describeTimeOfDay(position.secondOfDay, position.displayTime);
+
+	if (time === undefined)
+	{
+		return(undefined);
+	}
+
+	if (position.displayTime === 'rough')
+	{
+		return(t({
+			id: 'map.announce.timeOfDayRough',
+			defaultMessage: 'It is {time}.',
+			description: 'Read out by screen readers, and shown at the top of the page, when the player asks where they are, after their position, in a universe that shows the time roughly: a word for the time of day in the game, e.g. "late morning"'
+		}, {
+			time
+		}));
+	}
+
+	return(t({
+		id: 'map.announce.timeOfDay',
+		defaultMessage: 'It is {time}, {part, select, dawn {dawn} day {day} dusk {dusk} other {night}}.',
+		description: 'Read out by screen readers, and shown at the top of the page, when the player asks where they are, after their position: the time of day in the game, e.g. "6:30:00 PM", and the part of the day it falls in'
+	}, {
+		time,
+		part: partOfDay(position.secondOfDay)
+	}));
 }
 
 /**

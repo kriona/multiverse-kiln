@@ -14,12 +14,13 @@
 
 			<section id="character-screen" class="screen" hidden>
 				<header class="toolbar">
+					<!-- include site-name.html -->
 					<h1 id="character-title" data-message="character.create.title" data-translation-context="Heading of the page for making a new character">Create Character</h1>
 					<span id="character-universe" class="toolbar-name"></span>
 					<span id="character-save-status" class="toolbar-status" role="status"></span>
 					<button id="character-lobby" type="button" class="secondary" data-shortcut="Alt+L" data-message="character.backToLobby" data-translation-context="Button on the Create Character page that goes back to the universe's lobby; progress so far is kept"><!-- icon ph:sign-out -->Back to Lobby</button>
 				</header>
-				<p id="character-loading" class="character-loading" data-message="character.create.loading" data-translation-context="Shown on the Create Character page while the races, classes and ability scores load">Loading...</p>
+				<p id="character-loading" class="character-loading" data-message="page.loading" data-translation-context="Shown while a page or part of one loads, such as the site settings, the choices in Create Character, an area in the editor, or a universe's page">Loading...</p>
 				<p id="character-error" class="notice" role="alert" hidden></p>
 				<div id="character-body" class="character-body" hidden>
 					<nav class="panel character-steps" aria-labelledby="character-steps-heading">
@@ -71,16 +72,16 @@
 								<p id="character-theme-hint" class="hint"></p>
 							</section>
 							<section id="character-step-abilities" class="character-step" aria-labelledby="character-heading-abilities" hidden>
-								<h2 id="character-heading-abilities" data-message="character.create.abilityScores" data-translation-context="Heading of the part of Create Character where the player sets the character's ability scores">Ability scores</h2>
+								<h2 id="character-heading-abilities" data-message="abilities.heading" data-translation-context="Heading of a character's six ability scores: on their sheet, and the part of Create Character where the player sets them">Ability scores</h2>
 								<p id="character-method" class="hint"></p>
 								<table class="ability-table">
 									<thead>
 										<tr>
-											<th scope="col" data-message="character.create.abilityColumn" data-translation-context="Heading of the column of ability names, such as Strength, in Create Character">Ability</th>
+											<th scope="col" data-message="abilities.ability" data-translation-context="Heading of the column naming each ability, such as Strength, on a character's sheet and in Create Character">Ability</th>
 											<th scope="col" data-message="character.create.baseColumn" data-translation-context="Heading of the column of the scores the player rolled or bought, before the race changes them, in Create Character">Base</th>
 											<th id="character-race-column" scope="col" data-message="character.create.raceColumn" data-translation-context="Heading of the column of how much the chosen race adds to or takes from each score, in Create Character">Race</th>
-											<th scope="col" data-message="character.create.scoreColumn" data-translation-context="Heading of the column of the character's final ability scores, in Create Character">Score</th>
-											<th scope="col" data-message="character.create.modifierColumn" data-translation-context="Heading of the column of the bonus or penalty each final score gives, such as +2, in Create Character">Modifier</th>
+											<th scope="col" data-message="abilities.score" data-translation-context="Heading of the column of a character's ability scores, such as 16, on their sheet and in Create Character">Score</th>
+											<th scope="col" data-message="abilities.modifier" data-translation-context="Heading of the column of the bonus or penalty each ability score gives, such as +2, on a character's sheet and in Create Character">Modifier</th>
 										</tr>
 									</thead>
 									<tbody id="character-abilities"></tbody>

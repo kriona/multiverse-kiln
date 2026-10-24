@@ -1,6 +1,8 @@
 import type { CharacterListPayload, CharacterSummary, InviteDetails } from '@multiverse-kiln/shared';
 
 import { t } from '../localization';
+import { characterMessages } from './characterMessages';
+import { describeMobScale, difficultyName } from './difficultyNames';
 import { getElement, showMessage } from './dom';
 import { className, raceName } from './raceAndClassNames';
 
@@ -28,7 +30,8 @@ export interface InviteScreenActions
 }
 
 /**
- * The screen an invite link opens: which group it leads to, and the player's characters in the universe
+ * The screen an invite link opens: which group it leads to and its difficulty (warning of permadeath), and
+ * the player's characters in the universe
  * to join it with. Characters already in a group, or given their last rites, are grayed out and can't
  * be chosen; a full group can't be joined at all
  */
@@ -36,6 +39,8 @@ export class InviteScreen
 {
 	private readonly title = getElement('invite-title', HTMLElement);
 	private readonly summary = getElement('invite-summary', HTMLElement);
+	private readonly difficulty = getElement('invite-difficulty', HTMLElement);
+	private readonly permadeath = getElement('invite-permadeath', HTMLElement);
 	private readonly error = getElement('invite-error', HTMLElement);
 	private readonly choose = getElement('invite-choose', HTMLElement);
 	private readonly list = getElement('invite-character-list', HTMLUListElement);
@@ -108,6 +113,15 @@ export class InviteScreen
 			count: invite.memberCount,
 			size: invite.groupSize
 		});
+		this.difficulty.textContent = t({
+			id: 'invite.difficulty',
+			defaultMessage: 'Difficulty: {level} ({mobs})',
+			description: 'On the screen an invite link opens, the difficulty level the group plays at; {level} is its name, e.g. Hard, and {mobs} says how it changes mobs (monsters and enemies), e.g. "Mobs 50% harder"'
+		}, {
+			level: difficultyName(invite.difficulty),
+			mobs: describeMobScale(invite.difficulty.mobScale)
+		});
+		this.permadeath.hidden = !invite.difficulty.permadeath;
 		showMessage(this.error, (isFull
 			? t({
 				id: 'invite.full',
@@ -135,6 +149,8 @@ export class InviteScreen
 		});
 		document.title = this.title.textContent;
 		this.summary.textContent = '';
+		this.difficulty.textContent = '';
+		this.permadeath.hidden = true;
 		showMessage(this.error, message);
 		this.choose.hidden = true;
 		this.none.hidden = true;
@@ -172,11 +188,7 @@ export class InviteScreen
 
 		name.textContent = character.name;
 		description.className = 'character-description';
-		description.textContent = t({
-			id: 'lobby.characterDescription',
-			defaultMessage: '{race} {class}',
-			description: 'In the lobby\'s list of the player\'s characters, a character\'s race and class after their name, e.g. "Dwarf Fighter". Reorder them as your language needs'
-		}, {
+		description.textContent = t(characterMessages.raceAndClass, {
 			race: raceName(character.race, characters.ruleset),
 			class: className(character.characterClass, characters.ruleset)
 		});

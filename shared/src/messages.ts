@@ -1,5 +1,6 @@
 import type { MapBounds } from './maps.js';
-import type { Ruleset, AreaLinkMode } from './universes.js';
+import type { AreaTime } from './time.js';
+import type { DisplayTime, Ruleset, AreaLightLevel, AreaLinkMode } from './universes.js';
 
 /**
  * Message types clients send to the rooms with a map: a universe's lobby and a group's game room
@@ -62,7 +63,48 @@ export enum GameServerMessageType
 	/**
 	 * Something the player asked for didn't happen (payload: NoticePayload)
 	 */
-	Notice = 'notice'
+	Notice = 'notice',
+
+	/**
+	 * The group has seen cells of the client's area for the first time: their tiles, which were sent as
+	 * UNSEEN_CELL until now (payload: CellsSeenPayload)
+	 */
+	CellsSeen = 'cellsSeen'
+}
+
+/**
+ * A cell of an area's map and what it holds
+ */
+export interface CellValue
+{
+	column: number;
+	row: number;
+
+	/**
+	 * A tile ID, DEFAULT_TILE_CELL or VOID_CELL
+	 */
+	value: number;
+}
+
+/**
+ * Payload of GameServerMessageType.CellsSeen
+ */
+export interface CellsSeenPayload
+{
+	/**
+	 * The area the cells belong to; a client whose player has since moved to another area ignores them
+	 */
+	areaId: string;
+
+	/**
+	 * The cells, leaving out those in chunks not yet loaded on the server, which arrive with their chunk
+	 */
+	cells: CellValue[];
+
+	/**
+	 * The links on the cells
+	 */
+	links: AreaLinkCell[];
 }
 
 /**
@@ -137,6 +179,11 @@ export interface AreaTile
 	 * 0xRRGGBB
 	 */
 	color: number;
+
+	/**
+	 * How hard the tile is to see past, in percent, which the client's fog follows (see VisionMap)
+	 */
+	visionCost: number;
 }
 
 /**
@@ -205,6 +252,29 @@ export interface AreaPayload
 	ruleset: Ruleset;
 
 	indoors: boolean;
+
+	/**
+	 * How the area's time of day is worked out, with the room's clock (GameState.clock) when time flows
+	 * normally
+	 */
+	time: AreaTime;
+
+	/**
+	 * How the universe shows players the time of day
+	 */
+	displayTime: DisplayTime;
+
+	/**
+	 * How light an indoor area is at any time of day, or null for an outdoor area, which follows the time of day (see areaLight)
+	 */
+	lightLevel: AreaLightLevel | null;
+
+	/**
+	 * Whether everyone sees DAY_VISION_SQUARES whatever the time of day: a lobby whose universe gives it
+	 * no vision cost, whose tiles have none either
+	 */
+	fullVision: boolean;
+
 	bounds: MapBounds;
 	loopsEastWest: boolean;
 	loopsNorthSouth: boolean;
@@ -215,7 +285,13 @@ export interface AreaPayload
 	defaultTileId: number;
 
 	tiles: AreaTile[];
+
+	/**
+	 * In a group's room, every cell the group hasn't seen holds UNSEEN_CELL, and links on them are left
+	 * out; they arrive as GameServerMessageType.CellsSeen once the group sees them
+	 */
 	chunks: AreaChunk[];
+
 	links: AreaLinkCell[];
 }
 

@@ -6,6 +6,7 @@ import { nameKey, universeSlug, type EditableUniverse, type PassageOfTime, type 
 
 import { db, type Executor } from './client.js';
 import { fromCoinColumns, toCoinColumns } from './coinColumns.js';
+import { addDefaultDifficultyLevels } from './difficultyRepo.js';
 import { universes } from './schema.js';
 import { loadStartingItems, replaceStartingItems } from './startingItemRepo.js';
 
@@ -132,6 +133,13 @@ export interface UniverseRecord
 	 * Undefined until the universe's areas exist
 	 */
 	startingAreaId: string | undefined;
+
+	/**
+	 * The cell of the starting area characters start nearest
+	 */
+	startingColumn: number;
+
+	startingRow: number;
 }
 
 /**
@@ -141,7 +149,7 @@ export interface UniverseRecord
 export type NewUniverse = Pick<typeof universes.$inferInsert, 'id' | 'name' | 'shortDescription' | 'longDescription' | 'stage' | 'ruleset' | 'passageOfTime'>;
 
 /**
- * Adds a universe
+ * Adds a universe, with the default difficulty levels
  *
  * @param universe The universe, whose name must have a letter or digit
  * @param executor The database, or a transaction
@@ -150,15 +158,20 @@ export type NewUniverse = Pick<typeof universes.$inferInsert, 'id' | 'name' | 's
  */
 export async function createUniverse(universe: NewUniverse, executor: Executor = db): Promise<string>
 {
-	const [created] = await settingName(universe.name, undefined, executor, (transaction) => transaction
-		.insert(universes)
-		.values({
-			...universe,
-			slug: universeSlug(universe.name)
-		})
-		.returning({ id: universes.id }));
+	return(settingName(universe.name, undefined, executor, async (transaction) =>
+	{
+		const [created] = await transaction
+			.insert(universes)
+			.values({
+				...universe,
+				slug: universeSlug(universe.name)
+			})
+			.returning({ id: universes.id });
 
-	return(created.id);
+		await addDefaultDifficultyLevels(created.id, transaction);
+
+		return(created.id);
+	}));
 }
 
 /**
@@ -208,7 +221,9 @@ export async function findUniverse(universeId: string, executor: Executor = db):
 		ruleset: row.ruleset,
 		passageOfTime: row.passageOfTime,
 		lobbyAreaId: row.lobbyAreaId ?? undefined,
-		startingAreaId: row.startingAreaId ?? undefined
+		startingAreaId: row.startingAreaId ?? undefined,
+		startingColumn: row.startingColumn,
+		startingRow: row.startingRow
 	});
 }
 
@@ -288,8 +303,15 @@ export async function findEditableUniverse(universeId: string, executor: Executo
 			ruleset: universes.ruleset,
 			passageOfTime: universes.passageOfTime,
 			faerieMorning: universes.faerieMorning,
+			displayTime: universes.displayTime,
+			lobbyPassageOfTime: universes.lobbyPassageOfTime,
+			lobbyDayHours: universes.lobbyDayHours,
+			lobbyFaerieMorning: universes.lobbyFaerieMorning,
+			lobbyNoVisionCost: universes.lobbyNoVisionCost,
 			lobbyAreaId: universes.lobbyAreaId,
 			startingAreaId: universes.startingAreaId,
+			startingColumn: universes.startingColumn,
+			startingRow: universes.startingRow,
 			groupSize: universes.groupSize,
 			startingPlatinum: universes.startingPlatinum,
 			startingGold: universes.startingGold,
@@ -319,7 +341,8 @@ export async function findEditableUniverse(universeId: string, executor: Executo
  * Changes some of a universe's settings
  *
  * The database refuses a faerie passage of time without a faerie morning, a faerie morning without
- * faerie time, and a group size or starting money out of range. The caller checks that a starting area
+ * faerie time (for the universe and for its lobby), and a lobby day length, group size or starting
+ * money out of range. The caller checks that a starting area
  * is one of the universe's, and that the starting items are items it can use. A new name changes the
  * universe's slug with it
  *

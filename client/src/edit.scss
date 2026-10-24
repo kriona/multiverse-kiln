@@ -67,8 +67,11 @@
 		background: $background-field;
 		color: $text-muted;
 
+		// The tab showing reaches 1px further down, covering the line under the tabs so it opens onto its panel
 		&[aria-selected="true"]
 		{
+			margin-bottom: -1px;
+			padding-bottom: 7px;
 			background: $background-panel;
 			color: $text;
 		}
@@ -96,6 +99,46 @@
 	padding: 16px;
 }
 
+// How tall the save bar is, so the full page map editor can leave room for it
+$save-bar-height: 56px;
+
+// Saves the tab showing; below the scrolling editor body, so it stays at the bottom of the window
+.editor-save-bar
+{
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 12px;
+	box-sizing: border-box;
+	min-height: $save-bar-height;
+	padding: 10px 16px;
+	border-top: 1px solid $border;
+	background: $background-panel;
+	// The page's text size; the footer rule in _shared.scss makes text in every <footer> smaller
+	font-size: medium;
+
+	&[hidden]
+	{
+		display: none;
+	}
+}
+
+// The full page map editor covers the window but the save bar, which stays below it
+html:has(.map-editor.full-page) .editor-save-bar
+{
+	position: fixed;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	z-index: 11;
+}
+
+html:has(.editor-save-bar:not([hidden])) .map-editor.full-page
+{
+	bottom: $save-bar-height;
+}
+
 .editor-panel
 {
 	max-width: 960px;
@@ -106,7 +149,14 @@
 	}
 }
 
-// A tab holding cards that save separately, such as the Characters tab's settings and its themes
+// A choice in a form is as wide as its longest option, up to the form's width
+.form label > select
+{
+	align-self: flex-start;
+	max-width: 100%;
+}
+
+// A tab holding cards that save separately, such as the Ruleset tab's settings and difficulty levels
 .editor-cards
 {
 	display: flex;
@@ -114,8 +164,43 @@
 	gap: 16px;
 }
 
-// The themes card on the Characters tab, in a ruleset with themes
-.themes
+// A row in an editor list that will be deleted when its tab is saved (markStagedRow)
+tr.staged-deleted
+{
+	opacity: 0.6;
+
+	td
+	{
+		font-style: italic;
+		text-decoration: line-through;
+	}
+
+	// Text decoration doesn't reach into buttons, so the name needs its own
+	.link-button
+	{
+		font-style: italic;
+		text-decoration: underline line-through;
+	}
+}
+
+// An area in the list of areas that will be deleted when the tab is saved
+.area-list .staged-deleted
+{
+	opacity: 0.6;
+
+	// Text decoration doesn't reach into buttons, so the name needs its own
+	strong
+	{
+		font-style: italic;
+		text-decoration: line-through;
+	}
+}
+
+// The races, classes and themes cards on the Characters tab (themes in a ruleset with them), and the difficulty levels card on the Ruleset tab
+.races,
+.classes,
+.themes,
+.difficulty-levels
 {
 	h2
 	{
@@ -195,6 +280,13 @@
 		width: 64px;
 		height: 64px;
 	}
+}
+
+.walk-readout
+{
+	margin: 0;
+	font-size: 13px;
+	color: $text;
 }
 
 .tile-preview
@@ -361,6 +453,49 @@
 	{
 		width: 72px;
 	}
+
+	.map-full-page
+	{
+		margin-left: auto;
+	}
+}
+
+// Full page: the map editor covers the window, and MapEditor sizes the canvas to fill the space left
+html:has(.map-editor.full-page),
+html:has(.map-editor.full-page) body
+{
+	overflow: hidden;
+}
+
+.map-editor.full-page
+{
+	position: fixed;
+	inset: 0;
+	z-index: 10;
+	margin: 0;
+	padding: 16px;
+	background: $background-page;
+
+	.hint
+	{
+		display: none;
+	}
+
+	.map-frame
+	{
+		flex: 1;
+		min-height: 0;
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		grid-template-rows: auto minmax(0, 1fr) auto;
+		justify-content: stretch;
+	}
+
+	.map-canvas
+	{
+		align-self: stretch;
+		justify-self: stretch;
+		overflow: hidden;
+	}
 }
 
 .resize-grid
@@ -434,6 +569,11 @@
 		align-self: flex-start;
 		line-height: 0;
 		border: 1px solid $border;
+
+		canvas
+		{
+			cursor: crosshair;
+		}
 	}
 }
 

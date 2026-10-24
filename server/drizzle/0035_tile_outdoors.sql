@@ -1,0 +1,1 @@
+ALTER TABLE "tiles" ADD COLUMN "outdoors" boolean DEFAULT false NOT NULL;

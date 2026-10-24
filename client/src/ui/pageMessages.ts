@@ -1,9 +1,14 @@
 import { defineMessages } from '@multiverse-kiln/shared';
 
 /**
- * Text the pages show about connecting and logging in (see src/localization.ts)
+ * Text the pages show about connecting, logging in and loading (see src/localization.ts)
  */
 export const pageMessages = defineMessages({
+	loading: {
+		id: 'page.loading',
+		defaultMessage: 'Loading...',
+		description: 'Shown while a page or part of one loads, such as the site settings, the choices in Create Character, an area in the editor, or a universe\'s page'
+	},
 	connecting: {
 		id: 'page.connecting',
 		defaultMessage: 'Connecting...',

@@ -1,0 +1,1 @@
+ALTER TABLE "universes" ADD COLUMN "lobby_no_vision_cost" boolean DEFAULT true NOT NULL;

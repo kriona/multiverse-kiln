@@ -1,4 +1,9 @@
 /**
+ * The game engine's name, the same in every language. Pages show it as %SITE_NAME% (client/vite.config.ts)
+ */
+export const SITE_NAME = 'Multiverse Kiln';
+
+/**
  * Name of the game room, registered on the server; each group plays in one
  *
  * Clients join with GameJoinOptions, and every client asking for the same group joins the same room,

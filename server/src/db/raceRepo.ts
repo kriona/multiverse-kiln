@@ -68,7 +68,9 @@ export async function loadEditorRaces(universeId: string, ruleset: Ruleset, exec
 			startingSilver: races.startingSilver,
 			startingCopper: races.startingCopper,
 			startingCredits: races.startingCredits,
-			startingAreaId: races.startingAreaId
+			startingAreaId: races.startingAreaId,
+			startingColumn: races.startingColumn,
+			startingRow: races.startingRow
 		})
 		.from(races)
 		.where(usableRaces(universeId, ruleset))
@@ -101,11 +103,28 @@ export async function loadEditorRaces(universeId: string, ruleset: Ruleset, exec
 				startingMoney: fromCoinColumns(settings),
 				startingItems: (startingItems.get(settings.id) ?? []),
 				startingAreaId: settings.startingAreaId,
+				startingColumn: settings.startingColumn,
+				startingRow: settings.startingRow,
 				rules: raceRules,
 				custom,
 				edited: (copy !== undefined)
 			});
 		}));
+}
+
+/**
+ * Whether each race a universe can use has darkvision, as the universe sets it now
+ *
+ * @param universeId The universe's ID
+ * @param ruleset The universe's ruleset
+ * @param executor The database, or a transaction
+ * @return Whether each race sees in the dark, by the race ID characters hold
+ */
+export async function loadRaceDarkvision(universeId: string, ruleset: Ruleset, executor: Executor = db): Promise<Map<number, boolean>>
+{
+	const editorRaces = await loadEditorRaces(universeId, ruleset, executor);
+
+	return(new Map(editorRaces.map((race) => [race.id, race.rules.darkvision])));
 }
 
 /**
@@ -438,13 +457,17 @@ export async function isRaceStartingItem(universeId: string, itemId: number, exe
  * @param settings The settings
  * @return The columns' values
  */
-function raceColumns(settings: RaceSettings): Pick<typeof races.$inferInsert, 'name' | 'enabled' | 'startingPlatinum' | 'startingGold' | 'startingSilver' | 'startingCopper' | 'startingCredits' | 'startingAreaId'>
+function raceColumns(settings: RaceSettings): Pick<typeof races.$inferInsert, 'name' | 'enabled' | 'startingPlatinum' | 'startingGold' | 'startingSilver' | 'startingCopper' | 'startingCredits' | 'startingAreaId' | 'startingColumn' | 'startingRow'>
 {
+	const hasArea = (settings.startingAreaId !== null);
+
 	return({
 		name: settings.name,
 		enabled: settings.enabled,
 		...toCoinColumns(settings.startingMoney),
-		startingAreaId: settings.startingAreaId
+		startingAreaId: settings.startingAreaId,
+		startingColumn: (hasArea ? settings.startingColumn : 0),
+		startingRow: (hasArea ? settings.startingRow : 0)
 	});
 }
 

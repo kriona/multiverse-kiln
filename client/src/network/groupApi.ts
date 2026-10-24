@@ -1,5 +1,5 @@
 import type { Client } from '@colyseus/sdk';
-import { groupPath, groupsPath, invitePath, type GroupCharacterRequest, type GroupCreatedPayload, type GroupJoinedPayload, type InviteCreatedPayload, type InviteDetails, type NewGroupRequest, type NewInviteRequest } from '@multiverse-kiln/shared';
+import { difficultyLevelsPath, groupPath, groupsPath, invitePath, type DifficultyLevel, type DifficultyLevelListPayload, type GroupCharacterRequest, type GroupCreatedPayload, type GroupJoinedPayload, type InviteCreatedPayload, type InviteDetails, type NewGroupRequest, type NewInviteRequest } from '@multiverse-kiln/shared';
 
 import { sendRequest } from './editorApi';
 
@@ -29,6 +29,17 @@ export class GroupApi
 	async createGroup(universeId: string, request: NewGroupRequest): Promise<string>
 	{
 		return((await sendRequest<GroupCreatedPayload>(this.client, 'POST', groupsPath(universeId), request)).groupId);
+	}
+
+	/**
+	 * A universe's difficulty levels, which a new group chooses from
+	 *
+	 * @param universeId The universe's ID
+	 * @return The levels, easiest first
+	 */
+	async listDifficultyLevels(universeId: string): Promise<DifficultyLevel[]>
+	{
+		return((await sendRequest<DifficultyLevelListPayload>(this.client, 'GET', difficultyLevelsPath(universeId))).difficultyLevels);
 	}
 
 	/**

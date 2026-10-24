@@ -205,6 +205,5 @@ export async function joinGroup(client: Client, groupId: string, characterId: st
 {
 	const options: GameJoinOptions = { groupId, characterId };
 	const room = await client.joinOrCreate<GameState>(GAME_ROOM_NAME, options, GameState);
-
 	return({ room, ...(await waitForArrival(room)) });
 }

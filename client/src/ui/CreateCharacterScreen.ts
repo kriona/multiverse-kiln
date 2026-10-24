@@ -3,9 +3,10 @@ import { ABILITY_NAMES, characterSteps, DISALLOWED_TEXT_CHARACTERS, FLOATING_ABI
 import { currentLocale, formatList, signedNumber, t } from '../localization';
 import type { CharacterApi } from '../network/characterApi';
 import { describeEditorError } from '../network/editorApi';
+import { universePageUrl } from '../pages';
 import { announce } from './announcer';
 import { ChangeTracker } from './changeTracker';
-import { getElement, setOptions, showMessage } from './dom';
+import { getElement, setOptions, showMessage, titleLink } from './dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
 import { formMessages } from './formMessages';
 import { className, raceName, themeName } from './raceAndClassNames';
@@ -279,7 +280,7 @@ export class CreateCharacterScreen
 	 */
 	private setTitle(universeName: string | undefined): void
 	{
-		this.universe.textContent = (universeName ?? '');
+		this.universe.replaceChildren(...((universeName === undefined) ? [] : [titleLink(universeName, universePageUrl(this.universeId))]));
 		document.title = ((universeName === undefined)
 			? t({
 				id: 'character.pageTitleLoading',
@@ -970,11 +971,7 @@ export class CreateCharacterScreen
 			return;
 		}
 
-		this.saveStatus.textContent = t({
-			id: 'character.saving',
-			defaultMessage: 'Saving...',
-			description: 'In the toolbar of the Create Character page while the player\'s progress is being saved'
-		});
+		this.saveStatus.textContent = t(formMessages.saving);
 		this.saving = this.api.saveDraft(this.universeId, draft)
 			.then(() =>
 			{

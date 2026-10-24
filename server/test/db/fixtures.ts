@@ -4,6 +4,7 @@ import { CHUNK_SIZE, cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_C
 
 import { createCharacter, type NewCharacter } from '../../src/db/characterRepo.js';
 import { findDefaultClassIds } from '../../src/db/classRepo.js';
+import { findDefaultDifficultyLevel } from '../../src/db/difficultyRepo.js';
 import { createGroup } from '../../src/db/groupRepo.js';
 import { findDefaultItemIds } from '../../src/db/itemRepo.js';
 import { findDefaultRaceIds } from '../../src/db/raceRepo.js';
@@ -84,7 +85,9 @@ export async function dwarfFighter(playerId: string, universeId: string, name: s
 			itemId: daggerId,
 			quantity: 2
 		}],
-		areaId: null
+		areaId: null,
+		startingColumn: 0,
+		startingRow: 0
 	});
 }
 
@@ -104,7 +107,7 @@ export async function addCharacter(playerId: string, universeId: string, name: s
 }
 
 /**
- * Adds a group around a character, starting in an area
+ * Adds a group around a character, starting in an area, at the universe's default difficulty level
  *
  * @param universeId The universe's ID
  * @param anchorCharacterId The anchor being's character ID
@@ -114,7 +117,14 @@ export async function addCharacter(playerId: string, universeId: string, name: s
  */
 export async function addGroup(universeId: string, anchorCharacterId: string, startingAreaId: string | null, name: string = ''): Promise<string>
 {
-	return(inTransaction((transaction) => createGroup({ universeId, anchorCharacterId, name, startingAreaId }, transaction)));
+	const difficultyLevel = await findDefaultDifficultyLevel(universeId);
+
+	if (!difficultyLevel)
+	{
+		throw new Error(`Universe ${universeId} has no default difficulty level`);
+	}
+
+	return(inTransaction((transaction) => createGroup({ universeId, anchorCharacterId, name, startingAreaId, startingColumn: 0, startingRow: 0, difficultyLevelId: difficultyLevel.id }, transaction)));
 }
 
 /**
@@ -130,6 +140,24 @@ export async function defaultTileId(key: string): Promise<number>
 	if (id === undefined)
 	{
 		throw new Error(`The default tile "${key}" is missing from the test database`);
+	}
+
+	return(id);
+}
+
+/**
+ * The ID of one of the Pathfinder 1E default races
+ *
+ * @param key The race's key
+ * @return Its ID
+ */
+export async function defaultRaceId(key: string): Promise<number>
+{
+	const id = (await findDefaultRaceIds('pf1e')).get(key);
+
+	if (id === undefined)
+	{
+		throw new Error(`The default race "${key}" is missing from the test database`);
 	}
 
 	return(id);
@@ -209,9 +237,10 @@ export async function loadWholeMap(areaId: string): Promise<AreaMap | undefined>
 			defaultTileId: loaded.defaultTileId,
 			chunks: new Map(chunks.map((chunk) => [chunkKey(chunk.chunkColumn, chunk.chunkRow), chunk.cells]))
 		},
+		indoors: loaded.area.indoors,
 		loopsEastWest: loaded.loopsEastWest,
 		loopsNorthSouth: loaded.loopsNorthSouth,
-		tileMovementCosts: new Map(loaded.tiles.map((tile) => [tile.id, tile.movementCost])),
+		tileWalkSeconds: new Map(loaded.tiles.map((tile) => [tile.id, tile.walkSeconds])),
 		links: loaded.links
 	});
 }

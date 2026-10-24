@@ -1,7 +1,11 @@
-import { chunkCoordinate, chunkKey, MAX_CHUNKS_PER_REQUEST, type ChunkRange, type MapBounds } from '@multiverse-kiln/shared';
+import { chunkCoordinate, chunkKey, MAX_CHUNKS_PER_REQUEST, type ChunkListPayload, type ChunkRange, type MapBounds } from '@multiverse-kiln/shared';
 
-import type { EditorApi } from '../network/editorApi';
 import type { EditorMap } from './EditorMap';
+
+/**
+ * Loads the stored chunks in a range of an area's map, such as from the editor's API
+ */
+export type ChunkSource = (range: ChunkRange) => Promise<ChunkListPayload>;
 
 /**
  * Chunks along each side of the blocks the loader asks for: a block is as large as one request may be
@@ -25,17 +29,13 @@ export class ChunkLoader
 	private stopped = false;
 
 	/**
-	 * @param api The editor's API
-	 * @param universeId The area's universe
-	 * @param areaId The area
+	 * @param source Loads the area's stored chunks
 	 * @param map Where the chunks go
 	 * @param onLoaded Called with the keys of the chunks each block newly loaded
 	 * @param onError Called when a block couldn't be loaded; it will be asked for again next time the view reaches it
 	 */
 	constructor(
-		private readonly api: EditorApi,
-		private readonly universeId: string,
-		private readonly areaId: string,
+		private readonly source: ChunkSource,
 		private readonly map: EditorMap,
 		private readonly onLoaded: (chunkKeys: string[]) => void,
 		private readonly onError: (error: unknown) => void
@@ -115,7 +115,7 @@ export class ChunkLoader
 					continue;
 				}
 
-				const { chunks } = await this.api.loadChunks(this.universeId, this.areaId, range);
+				const { chunks } = await this.source(range);
 
 				if (!this.stopped)
 				{
@@ -165,7 +165,7 @@ export class ChunkLoader
 	{
 		try
 		{
-			const { chunks } = await this.api.loadChunks(this.universeId, this.areaId, range);
+			const { chunks } = await this.source(range);
 
 			if (!this.stopped)
 			{

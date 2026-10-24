@@ -2,7 +2,7 @@
  * Tiles: the only module that reads or writes the tiles table
  */
 import { and, count, eq, isNull, or } from 'drizzle-orm';
-import { IMPASSABLE_COST, type EditorTile, type Ruleset, type TileListPayload, type TileListQuery, type TileSettings } from '@multiverse-kiln/shared';
+import { IMPASSABLE_WALK_SECONDS, tileUsedIn,type EditorTile, type Ruleset, type TileListPayload, type TileListQuery, type TileSettings } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { tiles } from './schema.js';
@@ -26,6 +26,7 @@ export interface TileRecord
 	name: string;
 
 	indoors: boolean;
+	outdoors: boolean;
 
 	/**
 	 * 0xRRGGBB
@@ -33,13 +34,13 @@ export interface TileRecord
 	color: number;
 
 	visionCost: number;
-	movementCost: number;
+	walkSeconds: number;
 }
 
 /**
  * What a new tile needs
  */
-export type NewTile = Pick<typeof tiles.$inferInsert, 'ruleset' | 'universeId' | 'key' | 'name' | 'indoors' | 'color' | 'visionCost' | 'movementCost'>;
+export type NewTile = Pick<typeof tiles.$inferInsert, 'ruleset' | 'universeId' | 'key' | 'name' | 'indoors' | 'outdoors' | 'color' | 'visionCost' | 'walkSeconds'>;
 
 /**
  * The settings of a tile a universe added, which always has a name of its own
@@ -54,9 +55,10 @@ export type TileKind = 'default' | 'custom';
 const settingsColumns = {
 	name: tiles.name,
 	indoors: tiles.indoors,
+	outdoors: tiles.outdoors,
 	color: tiles.color,
 	visionCost: tiles.visionCost,
-	movementCost: tiles.movementCost
+	walkSeconds: tiles.walkSeconds
 };
 
 /**
@@ -101,9 +103,10 @@ export async function loadUniverseTiles(universeId: string, ruleset: Ruleset, ex
 		key: ((tile.name === null) ? tile.key : null),
 		name: englishName,
 		indoors: tile.indoors,
+		outdoors: tile.outdoors,
 		color: tile.color,
 		visionCost: tile.visionCost,
-		movementCost: tile.movementCost
+		walkSeconds: tile.walkSeconds
 	})));
 }
 
@@ -165,9 +168,10 @@ async function loadNamedTiles(universeId: string, ruleset: Ruleset, executor: Ex
 				key: (custom ? null : row.key),
 				name: (custom ? row.name : (copy?.name ?? null)),
 				indoors: settings.indoors,
+				outdoors: settings.outdoors,
 				color: settings.color,
 				visionCost: settings.visionCost,
-				movementCost: settings.movementCost,
+				walkSeconds: settings.walkSeconds,
 				custom,
 				edited: (copy !== undefined)
 			};
@@ -197,7 +201,8 @@ export async function listEditorTiles(universeId: string, ruleset: Ruleset, quer
 	{
 		return(
 			((name === undefined) || englishName.toLowerCase().includes(name))
-			&& ((query.passable === undefined) || ((tile.movementCost < IMPASSABLE_COST) === query.passable))
+			&& ((query.passable === undefined) || ((tile.walkSeconds !== IMPASSABLE_WALK_SECONDS) === query.passable))
+			&& ((query.usedIn === undefined) || (tileUsedIn(tile) === query.usedIn))
 			&& ((query.custom === undefined) || (tile.custom === query.custom))
 			&& ((query.edited === undefined) || (tile.edited === query.edited))
 		);

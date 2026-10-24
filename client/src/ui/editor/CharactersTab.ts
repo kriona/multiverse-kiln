@@ -1,4 +1,4 @@
-import { canEditUniverseSettings, MAX_GROUP_PLAYERS, MIN_GROUP_SIZE, type EditableUniverse } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, MAX_GROUP_PLAYERS, MIN_GROUP_SIZE, type EditableUniverse, type StartingCell } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -8,14 +8,16 @@ import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldError
 import { formMessages } from '../formMessages';
 import { exampleMoney, formatMoney, readMoneyField } from '../moneyField';
 import type { ItemSelectDialog } from './ItemSelectDialog';
+import type { SavableTab } from './SaveBar';
 import { StartingItemsField } from './StartingItemsField';
+import { startingAreaMessages } from './startingAreaMessages';
 import type { AreaSelectDialog } from './AreaSelectDialog';
 
 /**
  * The Characters tab: how many characters play together in a group, and the money, equipment and
  * area every character starts with
  */
-export class CharactersTab
+export class CharactersTab implements SavableTab
 {
 	private readonly form = getElement('characters-form', HTMLFormElement);
 	private readonly fields = getElement('characters-fields', HTMLFieldSetElement);
@@ -26,8 +28,6 @@ export class CharactersTab
 	private readonly areaName = getElement('characters-area-name', HTMLElement);
 	private readonly chooseAreaButton = getElement('characters-area-choose', HTMLButtonElement);
 	private readonly error = getElement('characters-error', HTMLElement);
-	private readonly saved = getElement('characters-saved', HTMLElement);
-	private readonly saveButton = getElement('characters-save', HTMLButtonElement);
 
 	private universe: EditableUniverse | undefined;
 
@@ -35,6 +35,16 @@ export class CharactersTab
 	 * The starting area the form shows, which may not be saved yet
 	 */
 	private startingAreaId: string | null = null;
+
+	/**
+	 * The square of the starting area characters start on, which may not be saved yet
+	 */
+	private startingCell: StartingCell = { column: 0, row: 0 };
+
+	/**
+	 * The starting area's name, once it has loaded
+	 */
+	private startingAreaName = '';
 
 	/**
 	 * The starting equipment the form shows, which may not be saved yet
@@ -65,7 +75,6 @@ export class CharactersTab
 			choose: this.chooseItemsButton
 		}, () =>
 		{
-			this.saved.textContent = '';
 			this.changes.check();
 		}, (message) =>
 		{
@@ -73,8 +82,7 @@ export class CharactersTab
 		});
 		this.changes = new ChangeTracker({
 			root: this.form,
-			state: () => [this.startingAreaId, this.startingItems.value],
-			status: this.saved
+			state: () => [this.startingAreaId, this.startingCell, this.startingItems.value]
 		});
 		this.groupSize.min = String(MIN_GROUP_SIZE);
 		this.groupSize.max = String(MAX_GROUP_PLAYERS);
@@ -91,19 +99,12 @@ export class CharactersTab
 			input.addEventListener('input', () =>
 			{
 				setFieldError(input, undefined);
-				this.saved.textContent = '';
 			});
 		}
 
 		this.chooseAreaButton.addEventListener('click', () =>
 		{
 			void this.chooseArea();
-		});
-
-		this.form.addEventListener('submit', (event) =>
-		{
-			event.preventDefault();
-			void this.save();
 		});
 	}
 
@@ -124,30 +125,34 @@ export class CharactersTab
 		}, {
 			example: exampleMoney(universe.ruleset)
 		});
-		this.fields.disabled = !canEditUniverseSettings(universe.role);
-		this.saveButton.hidden = this.fields.disabled;
+		this.fields.disabled = !this.canSave();
 		this.chooseAreaButton.hidden = this.fields.disabled;
 		this.chooseItemsButton.hidden = this.fields.disabled;
-		this.saved.textContent = '';
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.form);
 		// Sets the starting area and equipment straight away, then loads their names
-		void this.showStartingArea(universe.startingAreaId);
+		void this.showStartingArea(universe.startingAreaId, {
+			column: universe.startingColumn,
+			row: universe.startingRow
+		});
 		void this.startingItems.show(universe, universe.startingItems);
 		this.changes.markSaved();
 	}
 
 	/**
-	 * Shows the starting area's name
+	 * Shows the starting area's name and square
 	 *
 	 * @param areaId The area, or null for none
+	 * @param cell The square of it characters start on
 	 */
-	private async showStartingArea(areaId: string | null): Promise<void>
+	private async showStartingArea(areaId: string | null, cell: StartingCell): Promise<void>
 	{
 		const universe = this.universe;
 		const version = ++this.openVersion;
 
 		this.startingAreaId = areaId;
+		this.startingCell = cell;
+		this.startingAreaName = '';
 		this.areaName.textContent = '';
 
 		if (!universe || (areaId === null))
@@ -161,7 +166,8 @@ export class CharactersTab
 
 			if (version === this.openVersion)
 			{
-				this.areaName.textContent = (areas.find((area) => (area.id === areaId))?.name ?? '');
+				this.startingAreaName = (areas.find((area) => (area.id === areaId))?.name ?? '');
+				this.renderStartingArea();
 			}
 		}
 		catch (error)
@@ -178,7 +184,19 @@ export class CharactersTab
 	}
 
 	/**
-	 * Lets the player choose another starting area, which the form shows until it is saved
+	 * Shows the starting area's name and the square of it characters start on
+	 */
+	private renderStartingArea(): void
+	{
+		this.areaName.textContent = t(startingAreaMessages.at, {
+			area: this.startingAreaName,
+			column: this.startingCell.column,
+			row: this.startingCell.row
+		});
+	}
+
+	/**
+	 * Lets the player choose another starting area or square, which the form shows until it is saved
 	 */
 	private async chooseArea(): Promise<void>
 	{
@@ -187,31 +205,44 @@ export class CharactersTab
 			return;
 		}
 
-		const area = await this.areaSelect.open(this.universe, this.startingAreaId);
+		const selection = await this.areaSelect.open(this.universe, this.startingAreaId, this.startingCell);
 
 		this.chooseAreaButton.focus();
 
-		if (area && (area.id !== this.startingAreaId))
+		if (selection)
 		{
 			++this.openVersion;
-			this.startingAreaId = area.id;
-			this.areaName.textContent = area.name;
-			this.saved.textContent = '';
+			this.startingAreaId = selection.area.id;
+			this.startingCell = selection.cell;
+			this.startingAreaName = selection.area.name;
+			this.renderStartingArea();
 			this.changes.check();
 		}
 	}
 
 	/**
-	 * Saves the settings as the form shows them
+	 * Whether the player may change the character settings
+	 *
+	 * @return True for a creator
 	 */
-	private async save(): Promise<void>
+	canSave(): boolean
+	{
+		return((this.universe !== undefined) && canEditUniverseSettings(this.universe.role));
+	}
+
+	/**
+	 * Saves the settings as the form shows them
+	 *
+	 * @return True when they were saved
+	 */
+	async save(): Promise<boolean>
 	{
 		const universe = this.universe;
 		const groupSize = Number(this.groupSize.value);
 
 		if (!universe)
 		{
-			return;
+			return(false);
 		}
 
 		if (!Number.isInteger(groupSize) || (groupSize < MIN_GROUP_SIZE) || (groupSize > MAX_GROUP_PLAYERS) || (this.groupSize.value.trim() === ''))
@@ -220,20 +251,20 @@ export class CharactersTab
 				min: MIN_GROUP_SIZE,
 				max: MAX_GROUP_PLAYERS
 			}));
-			return;
+			return(false);
 		}
 
 		const startingMoney = readMoneyField(this.startingMoney, universe.ruleset);
 
 		if (startingMoney === undefined)
 		{
-			return;
+			return(false);
 		}
 
 		const startingAreaId = this.startingAreaId;
+		const { column: startingColumn, row: startingRow } = this.startingCell;
 		const startingItems = this.startingItems.value;
 
-		this.saveButton.disabled = true;
 		showMessage(this.error, undefined);
 
 		try
@@ -243,19 +274,21 @@ export class CharactersTab
 				groupSize,
 				startingMoney,
 				startingItems,
-				...((startingAreaId === null) ? {} : { startingAreaId })
+				...((startingAreaId === null) ? {} : { startingAreaId, startingColumn, startingRow })
 			});
 			this.universe = {
 				...universe,
 				groupSize,
 				startingMoney,
 				startingItems,
-				startingAreaId
+				startingAreaId,
+				...((startingAreaId === null) ? {} : { startingColumn, startingRow })
 			};
 			this.startingMoney.value = formatMoney(startingMoney, universe.ruleset);
 			this.changes.markSaved();
-			this.saved.textContent = t(formMessages.saved);
 			this.onSaved(this.universe);
+
+			return(true);
 		}
 		catch (error)
 		{
@@ -264,10 +297,8 @@ export class CharactersTab
 				defaultMessage: 'Could not save the character settings.',
 				description: 'Shown on the Characters tab when its settings couldn\'t be stored'
 			}));
-		}
-		finally
-		{
-			this.saveButton.disabled = false;
+
+			return(false);
 		}
 	}
 }

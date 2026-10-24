@@ -38,10 +38,11 @@ export function deletionChange(membership: Membership, characterId: string, memb
 			kind: 'disbanded',
 			groupId,
 			universeId,
-			members: members.map(({ characterId: id, playerId, name, playable }) => ({
+			members: members.map(({ characterId: id, playerId, name, raceId, playable }) => ({
 				characterId: id,
 				playerId,
 				name,
+				raceId,
 				playable: (playable && (id !== characterId))
 			}))
 		});
@@ -55,6 +56,7 @@ export function deletionChange(membership: Membership, characterId: string, memb
 			characterId,
 			playerId: member.playerId,
 			name: member.name,
+			raceId: member.raceId,
 			playable: false
 		}
 	});

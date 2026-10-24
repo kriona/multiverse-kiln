@@ -237,8 +237,32 @@ export function readPageParameter(name: string): string | undefined
  * Sets or removes parameters of the page's query string, without loading the page again or adding to its history
  *
  * @param parameters Each parameter's new value, or undefined to remove it
+ * @param state What the history entry holds for when the browser comes back to it; what it holds already when not given
  */
-export function replacePageParameters(parameters: Record<string, string | undefined>): void
+export function replacePageParameters(parameters: Record<string, string | undefined>, state: unknown = window.history.state): void
+{
+	window.history.replaceState(state, '', pageUrlWith(parameters));
+}
+
+/**
+ * Sets or removes parameters of the page's query string without loading the page again, as a new entry
+ * in its history that the browser's Back button returns from (a popstate event)
+ *
+ * @param parameters Each parameter's new value, or undefined to remove it
+ * @param state What the new history entry holds, for when the browser comes back to it
+ */
+export function pushPageParameters(parameters: Record<string, string | undefined>, state: unknown): void
+{
+	window.history.pushState(state, '', pageUrlWith(parameters));
+}
+
+/**
+ * The page's address with some of its query string's parameters set or removed
+ *
+ * @param parameters Each parameter's new value, or undefined to remove it
+ * @return The address
+ */
+function pageUrlWith(parameters: Record<string, string | undefined>): URL
 {
 	const url = new URL(window.location.href);
 
@@ -254,5 +278,5 @@ export function replacePageParameters(parameters: Record<string, string | undefi
 		}
 	}
 
-	window.history.replaceState(window.history.state, '', url);
+	return(url);
 }

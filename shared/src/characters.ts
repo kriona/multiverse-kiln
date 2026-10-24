@@ -13,11 +13,12 @@
  *   and throws the progress away
  * - GET characterPath(universeId, characterId): one of the player's characters, as their character
  *   sheet shows them (CharacterSheet)
- * - DELETE characterPath(universeId, characterId): deletes the character straight away
+ * - DELETE characterPath(universeId, characterId): deletes the character straight away, or answers 409
+ *   while they are in a group
  * - PUT characterPath(universeId, characterId)/deletion: gives the character their last rites, so they
  *   are deleted the site's characterDeletionDays later (see shared/src/siteSettings.ts), answering
- *   CharacterDeletionPayload, or 409 while the site sets it to 0. Until then they can be restored but
- *   not played
+ *   CharacterDeletionPayload, or 409 while the site sets it to 0 or they are in a group. Until then they
+ *   can be restored but not played
  * - DELETE characterPath(universeId, characterId)/deletion: restores a character given their last rites
  */
 import { UNIVERSES_PATH } from './constants.js';
@@ -329,6 +330,11 @@ export interface CharacterSheet
 	 * 0 when last rites are turned off
 	 */
 	deletionDays: number;
+
+	/**
+	 * Whether the character is in a group, and so can't be deleted until they leave it
+	 */
+	inGroup: boolean;
 
 	/**
 	 * The race's size and darkvision, as the universe sets them now

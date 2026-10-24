@@ -5,12 +5,14 @@
  * - area: an area's settings, bounds or links changed
  * - deleted: an area was deleted
  * - tiles: a universe's tiles changed (an edited, restored, added or deleted tile)
+ * - time: a universe's passage of time, its lobby's, or an area's that others may inherit, changed
  */
 export type AreaChange =
 	| { kind: 'cells'; areaId: string; chunkKeys: string[] }
 	| { kind: 'area'; areaId: string }
 	| { kind: 'deleted'; areaId: string }
-	| { kind: 'tiles'; universeId: string };
+	| { kind: 'tiles'; universeId: string }
+	| { kind: 'time'; universeId: string };
 
 /**
  * Called after every change

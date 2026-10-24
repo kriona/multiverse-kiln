@@ -5,7 +5,7 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 **Current phase** line updated so each new session knows where to pick up.
 `STRUCTURE-OVERVIEW.md` describes the pages, editors and game rules these phases build.
 
-**Current phase:** 11
+**Current phase:** 12
 
 ---
 
@@ -93,7 +93,7 @@ Built in three steps: data and logic, then rooms, then the client.
 - [✅] Store map cells in chunks of 32 x 32, saving only chunks that differ from the area's default tile: a map can be 50,000 tiles in each direction
 - [✅] PF1E default tiles (Grass, Forest, Desert, Mountains, Water, Wood Floor), added by a migration
 - [✅] Seed script for a sample universe (`npm run db:seed -w server`): a town square lobby with a cottage and a cellar, and a crossroads for groups that loops east-west. Run by hand like migrations, never on startup
-- [✅] Pure logic with tests: movement cost (50% = double, 100% = impassable), map bounds around 0,0, no cutting past impassable corners, wrapping in areas that loop, stopping on automatic links, finding a free cell to arrive in
+- [✅] Pure logic with tests: walk time per tile (twice the default = half speed, 0 = impassable), map bounds around 0,0, no cutting past impassable corners, wrapping in areas that loop, stopping on automatic links, finding a free cell to arrive in
 - [✅] Rename today's global `LobbyRoom` to `SessionRoom` (login, account, group membership), and add a `LobbyRoom` per universe (`filterBy` the universe ID) with the map, chat, who's here and Create game. Groups belong to a universe and start in its starting area
 - [✅] A room holds every area its players are in; each player has an area, and each client only sees the players in its own area (`StateView`, one per client for now)
 - [✅] Rooms load area maps at lifecycle boundaries, and load the next area before a player moves into it, never inside the tick
@@ -113,7 +113,7 @@ Built in four steps: the server API, the editor pages, the map editor, then load
 - [✅] Editor API as REST routes in `server/src/http/` backed by repositories (editing isn't real-time, so it doesn't need a room). Every request checks the user may edit that universe, and validates against the same limits as the UI. Who may edit is stored in `universe_editors` (creator, builder, beta tester; Phase 14 adds the Editors tab), and until logins exist (Phase 13) a request's player is the one its browser ID cookie is logged in as
 - [✅] Create Universe modal (name, 1-sentence description, ruleset), up to 5 per user. Creates a lobby area and a default area as every race's starting area, and makes the user its creator. Home lists the universes the user has a role in, which opens them in the editor
 - [✅] Edit Universe page: name, descriptions (markdown rendered sanitized with `marked` and DOMPurify, also on Home's overview), stage, ruleset, passage of time. Logo and banner wait for image storage (Phase 17). A Lobby tab opens the lobby's area until the rest of the tab arrives (Phase 12)
-- [✅] Tilesets tab (filters for name, passable, custom and edited; pagination) and tile editor (name, indoors, color, vision cost, movement cost)
+- [✅] Tilesets tab (filters for name, passable, custom and edited; pagination) and tile editor (name, indoors, color, vision cost, walk time)
 - [✅] Areas tab with the single-area drill-down, and the area editor's settings. Its map is the next item
 - [✅] Map editor: grid centered on 0,0, expand buttons, edit-size dialog with its warning, draw tool (a tile or Void; size 1-100; circle or square), undo/redo with a drag counted as one step. It loads chunks as the view reaches them, pans with the right or middle mouse button and zooms with the wheel. Undo covers painting; resizing to a smaller map clears the undo history
 - [✅] Area link layer: automatic or manual, "requires the whole group", select destination coordinates with an optional return link (placed in the target area, leading back to the link's cell)
@@ -182,19 +182,29 @@ Alongside it, a basic Starfinder 1E ruleset (see SF1E in `STRUCTURE-OVERVIEW.md`
 - [✅] Group rooms are created from the database when a member returns, and save and dispose when everyone has left
 - [✅] Enter Universe: return to your last character's group, or to the lobby as that character if the group is gone
 - [ ] Listing groups in the lobby (once its design is decided)
+- [✅] Difficulty levels on the Characters tab (default, name, mob scale, permadeath), with Story, Normal, Hard and Hardcore in every universe; Create Group chooses one and saves it to the group. The hit point and chance to hit scaling are pure functions with tests, used once combat exists
 
 **Done when:** a player invites friends by link, one player brings several characters into the group, and the group picks up where it was after everyone logs off and back on.
 
 ## Phase 12: Time, vision and world state
 
-- [ ] Game clock per group: standing still passes no time, walking a square takes a set time (to be defined), a combat round is 6 seconds
-- [ ] Passage of time per area with `inherit`; fixed times of day; `faerie` (time of day from map position and "where is morning"; faerie areas can't loop)
-- [ ] Lobby tab: lobby time (fixed, real-time from the Unix epoch with a day of 1-240 hours, or faerie)
-- [ ] Day and night rendering
-- [ ] Vision as a pure function with tests: vision budget, tile vision costs, lower at night unless the character has darkvision
-- [ ] Decide where vision runs. Prefer the server, sending each client only what it can see (Colyseus `StateView`)
-- [ ] World state per group, stored as a diff of the universe: explored areas first. Deleted when the group disbands
-- [ ] Offline group members (the summoning ring, if chosen)
+Decided: walking a square takes the tile's walk time in game time (10 seconds by default indoors and 10 minutes outdoors, crossed at the same speed on screen; 0 is impassable); vision runs on the server, which shows each client only the players it can see, and the client runs the same shared function to draw fog over the tiles it already has; world state remembers the areas a group has explored and the cells it has seen in them; the summoning ring waits for items and NPCs.
+
+Built in three steps: time, vision, then world state.
+
+1. Time
+	- [✅] Time of day as pure functions in `/shared` with tests: fixed times, flowing time from a clock, real time from the Unix epoch, faerie time from map position, daylight, and each area's passage of time resolved through `inherit`
+	- [✅] Game clock per group, saved with the group: standing still passes no time, walking a square takes the tile's walk time, a combat round is 6 seconds
+	- [✅] Tiles are for indoors, outdoors, both or neither, and an area's draw tool and default tile offer only the tiles for its kind. Outdoor tiles default to 10 minutes. The Tilesets tab shows where each tile is used and filters by it
+	- [✅] Lobby tab: lobby time (fixed, real-time from the Unix epoch with a day of 1-240 hours, or faerie)
+	- [✅] Day and night rendering, and the time of day for screen readers
+2. Vision
+	- [✅] Vision as a pure function in `/shared` with tests: vision range, tile vision costs, shorter at night unless the character has darkvision
+	- [✅] The server shows each client only the players its group can see (`StateView`); the client draws fog with the same function
+3. World state
+	- [✅] World state per group, stored as a diff of the universe: the areas explored and the cells seen in them, deleted when the group disbands
+	- [✅] Seen cells drawn dimmed, unseen ones black
+	- [✅] Check the new screens in the pseudo-language, update Pirate, and add screen reader text
 
 **Done when:** a group watches day turn to night as it explores, sees less at night unless it has darkvision, can't see past mountains, and its explored areas are remembered after a restart.
 
@@ -289,7 +299,8 @@ Needed before universes are open to the public.
 
 ## Later (not yet specified)
 
-- Combat, monsters, NPCs and dialog (their results go in world state), and gaining experience
+- Combat, monsters, NPCs and dialog (their results go in world state), and gaining experience. Mobs' hit points and every chance to hit go through the group's difficulty level (`scaleMobHitPoints()` and `scaleHitChance()` in `server/src/logic/difficulty.ts`), and a character who dies in a group with permadeath is gone for good
+- Offline group members: the summoning ring (see Offline group members in `STRUCTURE-OVERVIEW.md`)
 - Money changers: NPCs who change a character's coins into the fewest coins of the same worth (`changePf1eMoney`), perhaps for a fee
 - One-off event messages for effects (hits, explosions)
 - The overworld map and its scale
@@ -303,8 +314,6 @@ Needed before universes are open to the public.
 ## Open decisions
 
 - Whether character names must be unique within a universe (Phase 10)
-- How long walking a square takes (Phase 12)
-- Whether vision runs on the server or the client (Phase 12)
 - How groups are listed in the lobby (Phase 11)
 - Auth approach, account linking, the email sending service, and whether to add a CAPTCHA (Phase 13)
 - Image storage, and the tile graphic formats (Phase 17)

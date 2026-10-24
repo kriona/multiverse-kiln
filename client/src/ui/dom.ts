@@ -30,6 +30,24 @@ export function getElement<T extends HTMLElement>(id: string, type: new () => T)
 }
 
 /**
+ * A link for a page's toolbar that reads as the text around it, such as a universe's name linking to its page
+ *
+ * @param text The link's text
+ * @param url Where it goes
+ * @return The link
+ */
+export function titleLink(text: string, url: string): HTMLAnchorElement
+{
+	const link = document.createElement('a');
+
+	link.className = 'title-link';
+	link.href = url;
+	link.textContent = text;
+
+	return(link);
+}
+
+/**
  * Shows one of the page's screens and hides the others
  *
  * Focus left in a screen that is hidden is lost to keyboards and screen readers, so unless it is

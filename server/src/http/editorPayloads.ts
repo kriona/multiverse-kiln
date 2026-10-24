@@ -6,7 +6,7 @@
  * need the database (such as whether a tile belongs to the universe) are made by the routes
  */
 import { z } from 'zod';
-import { DEFAULT_RACE_NAMES, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNINGS, IMPASSABLE_COST, isRulesetMoney, MAX_CELL_CHANGES, MAX_CHUNKS_PER_REQUEST, MAX_CLASS_NAME_LENGTH, MAX_COINS, MAX_CUSTOM_RACES, MAX_GROUP_PLAYERS, MAX_ITEM_NAME_LENGTH, MAX_ITEM_QUANTITY, MAX_ITEMS_PER_PAGE, MAX_LONG_DESCRIPTION_LENGTH, MAX_MAP_SIDE, MAX_RACE_NAME_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_STARTING_ITEMS, MAX_THEME_NAME_LENGTH, MAX_TILE_NAME_LENGTH, MAX_TILES_PER_PAGE, MAX_UNIVERSE_NAME_LENGTH, MAX_AREA_NAME_LENGTH, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, UNIVERSE_STAGES, universeSlug, VOID_CELL, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, type CellEditRequest, type ChunkRange, type ClassSettings, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type NewAreaRequest, type RaceSettings, type ResizeAreaRequest, type Ruleset, type RulesetSettings, type ThemeSettings, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type AreaLinkTarget, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
+import { DEFAULT_RACE_NAMES, DISALLOWED_TEXT_CHARACTERS, TILE_USED_IN,DISPLAY_TIMES,FAERIE_MORNINGS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, isRulesetMoney, MAX_CELL_CHANGES, MAX_CHUNKS_PER_REQUEST, MAX_CLASS_NAME_LENGTH, MAX_COINS, MAX_CUSTOM_RACES, MAX_DIFFICULTY_NAME_LENGTH, MAX_GROUP_PLAYERS, MAX_ITEM_NAME_LENGTH, MAX_ITEM_QUANTITY, MAX_ITEMS_PER_PAGE, MAX_LONG_DESCRIPTION_LENGTH, MAX_MAP_SIDE, MAX_MOB_SCALE, MIN_MOB_SCALE, MAX_RACE_NAME_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_STARTING_ITEMS, MAX_THEME_NAME_LENGTH, MAX_TILE_NAME_LENGTH, MAX_TILES_PER_PAGE, MAX_WALK_SECONDS,MAX_UNIVERSE_NAME_LENGTH, MAX_AREA_NAME_LENGTH, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, UNIVERSE_STAGES, universeSlug, VOID_CELL, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, type CellEditRequest, type ChunkRange, type ClassSettings, type DifficultyLevelSettings, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type NewAreaRequest, type RaceSettings, type ResizeAreaRequest, type Ruleset, type RulesetSettings, type ThemeSettings, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type AreaLinkTarget, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { displayText } from '../rooms/payloads.js';
 
@@ -127,10 +127,17 @@ export const universeSettingsUpdate = byRuleset((ruleset) => z.object({
 	stage: z.enum(UNIVERSE_STAGES).optional(),
 	passageOfTime: z.enum(PASSAGES_OF_TIME).optional(),
 	faerieMorning: z.enum(FAERIE_MORNINGS).nullable().optional(),
+	displayTime: z.enum(DISPLAY_TIMES).optional(),
+	lobbyPassageOfTime: z.enum(LOBBY_PASSAGES_OF_TIME).optional(),
+	lobbyDayHours: z.number().int().min(MIN_LOBBY_DAY_HOURS).max(MAX_LOBBY_DAY_HOURS).optional(),
+	lobbyFaerieMorning: z.enum(FAERIE_MORNINGS).nullable().optional(),
+	lobbyNoVisionCost: z.boolean().optional(),
 	groupSize: z.number().int().min(MIN_GROUP_SIZE).max(MAX_GROUP_PLAYERS).optional(),
 	startingMoney: money(ruleset).optional(),
 	startingItems: startingItemList.optional(),
-	startingAreaId: z.uuid().optional()
+	startingAreaId: z.uuid().optional(),
+	startingColumn: cellCoordinate.optional(),
+	startingRow: cellCoordinate.optional()
 }) satisfies z.ZodType<UniverseSettingsUpdate>);
 
 /**
@@ -163,9 +170,10 @@ export const rulesetSettings = z.discriminatedUnion('ruleset', [
 export const tileSettings = z.object({
 	name: displayText(MAX_TILE_NAME_LENGTH).nullable(),
 	indoors: z.boolean(),
+	outdoors: z.boolean(),
 	color: z.number().int().min(0).max(0xFFFFFF),
 	visionCost: z.number().int().min(0).max(100),
-	movementCost: z.number().int().min(0).max(IMPASSABLE_COST)
+	walkSeconds: z.number().int().min(0).max(MAX_WALK_SECONDS)
 }) satisfies z.ZodType<TileSettings>;
 
 /**
@@ -174,6 +182,7 @@ export const tileSettings = z.object({
 export const tileListQuery = z.object({
 	name: z.string().trim().max(MAX_TILE_NAME_LENGTH).optional(),
 	passable: booleanText.optional(),
+	usedIn: z.enum(TILE_USED_IN).optional(),
 	custom: booleanText.optional(),
 	edited: booleanText.optional(),
 	offset: z.coerce.number().int().min(0).default(0),
@@ -221,6 +230,11 @@ export const classIdParameter = z.coerce.number().int().min(1).max(2147483647);
  * A theme ID in a path
  */
 export const themeIdParameter = z.coerce.number().int().min(1).max(2147483647);
+
+/**
+ * A difficulty level's ID in a path
+ */
+export const difficultyLevelIdParameter = z.coerce.number().int().min(1).max(2147483647);
 
 /**
  * A modifier for each ability, each a whole number in a range
@@ -291,7 +305,9 @@ function startingExtrasFields(ruleset: Ruleset)
 		enabled: z.boolean(),
 		startingMoney: money(ruleset),
 		startingItems: startingItemList,
-		startingAreaId: z.uuid().nullable()
+		startingAreaId: z.uuid().nullable(),
+		startingColumn: cellCoordinate,
+		startingRow: cellCoordinate
 	});
 }
 
@@ -312,13 +328,25 @@ export const classSettings = byRuleset((ruleset) => z.object({
 	name: displayText(MAX_CLASS_NAME_LENGTH).nullable(),
 	raceAreas: z.array(z.object({
 		raceId: raceIdParameter,
-		areaId: z.uuid()
+		areaId: z.uuid(),
+		column: cellCoordinate,
+		row: cellCoordinate
 	}))
 		.max(MAX_CUSTOM_RACES + Object.keys(DEFAULT_RACE_NAMES[ruleset]).length)
 		.refine((entries) => (new Set(entries.map((entry) => entry.raceId)).size === entries.length), 'Each race can be listed only once'),
 	rules: classRules[ruleset]
 })
 	.refine((settings) => ((settings.startingAreaId === null) || (settings.raceAreas.length === 0)), 'A class with its own starting area can\'t have an area for each race') satisfies z.ZodType<ClassSettings>);
+
+/**
+ * DifficultyLevelSettings
+ */
+export const difficultyLevelSettings = z.object({
+	name: displayText(MAX_DIFFICULTY_NAME_LENGTH).nullable(),
+	isDefault: z.boolean(),
+	mobScale: z.number().int().min(MIN_MOB_SCALE).max(MAX_MOB_SCALE),
+	permadeath: z.boolean()
+}) satisfies z.ZodType<DifficultyLevelSettings>;
 
 /**
  * ThemeSettings
@@ -339,6 +367,7 @@ const areaSettingsFields = {
 	parentAreaId: z.uuid().nullable().optional(),
 	enabled: z.boolean().optional(),
 	indoors: z.boolean().optional(),
+	lightLevel: z.enum(AREA_LIGHT_LEVELS).optional(),
 	defaultTileId: tileIdParameter.optional(),
 	passageOfTime: z.enum(AREA_PASSAGES_OF_TIME).optional(),
 	faerieMorning: z.enum(FAERIE_MORNINGS).nullable().optional(),
