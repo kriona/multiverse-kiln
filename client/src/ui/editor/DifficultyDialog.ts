@@ -1,23 +1,22 @@
-import { canEditUniverseSettings, DIFFICULTY_LEVEL_NAMES, DISALLOWED_TEXT_CHARACTERS, MAX_DIFFICULTY_NAME_LENGTH, MAX_MOB_SCALE, MIN_MOB_SCALE, MIN_SCALED_HIT_CHANCE, type DifficultyLevel, type DifficultyLevelSettings, type EditableUniverse, type MessageDescriptor } from '@multiverse-kiln/shared';
-import trashIcon from 'virtual:icon/ph:trash';
+import { canEditUniverseSettings, DIFFICULTY_LEVEL_NAMES, DISALLOWED_TEXT_CHARACTERS, MAX_DIFFICULTY_NAME_LENGTH, MAX_MOB_SCALE, MIN_MOB_SCALE, MIN_SCALED_HIT_CHANCE, type DifficultyLevel, type DifficultyLevelSettings, type EditableUniverse } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
-import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { ChangeTracker } from '../changeTracker';
 import { difficultyName } from '../difficultyNames';
-import { getElement, setButtonLabel, showMessage } from '../dom';
+import { getElement, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
+import { labelRemoveButton, type StagedEdit } from './stagedChanges';
 
 /**
  * The difficulty level editor: a dialog for a level's name, whether it is the default, how much it
- * changes mobs, and whether death is permanent. It can also delete a level that isn't the default
+ * changes mobs, and whether death is permanent. Applying keeps the changes on the Characters tab until
+ * it is saved. It can also mark a level that isn't the default to delete when the tab is saved
  */
 export class DifficultyDialog
 {
 	private readonly dialog = getElement('difficulty-dialog', HTMLDialogElement);
 	private readonly form = getElement('difficulty-form', HTMLFormElement);
-	private readonly fields = getElement('difficulty-fields', HTMLFieldSetElement);
 	private readonly title = getElement('difficulty-dialog-title', HTMLElement);
 	private readonly isDefault = getElement('difficulty-default', HTMLInputElement);
 	private readonly name = getElement('difficulty-name', HTMLInputElement);
@@ -29,11 +28,9 @@ export class DifficultyDialog
 	private readonly saveButton = getElement('difficulty-save', HTMLButtonElement);
 
 	/**
-	 * Whether the level has changes that haven't been saved
+	 * Whether the level has changes that haven't been applied
 	 */
 	private readonly changes: ChangeTracker;
-
-	private universe: EditableUniverse | undefined;
 
 	/**
 	 * The level being edited, or undefined for a new one
@@ -41,14 +38,16 @@ export class DifficultyDialog
 	private level: DifficultyLevel | undefined;
 
 	/**
-	 * Called after the level is saved or deleted
+	 * Where the dialog's changes go
+	 */
+	private edit: StagedEdit<DifficultyLevelSettings> | undefined;
+
+	/**
+	 * Called after the level's changes are applied, or it is marked to delete
 	 */
 	private onChanged: () => void = () => undefined;
 
-	/**
-	 * @param api The editor's API
-	 */
-	constructor(private readonly api: EditorApi)
+	constructor()
 	{
 		this.name.maxLength = MAX_DIFFICULTY_NAME_LENGTH;
 		this.mobScale.min = String(MIN_MOB_SCALE);
@@ -83,13 +82,13 @@ export class DifficultyDialog
 
 		this.removeButton.addEventListener('click', () =>
 		{
-			void this.remove();
+			this.remove();
 		});
 
 		this.form.addEventListener('submit', (event) =>
 		{
 			event.preventDefault();
-			void this.save();
+			this.apply();
 		});
 	}
 
@@ -98,15 +97,17 @@ export class DifficultyDialog
 	 *
 	 * @param universe The universe the level belongs to
 	 * @param level The level, or undefined to add one
-	 * @param onChanged Called after the level is saved or deleted
+	 * @param edit Where the dialog's changes go
+	 * @param onChanged Called after the level's changes are applied, or it is marked to delete
 	 */
-	open(universe: EditableUniverse, level: DifficultyLevel | undefined, onChanged: () => void): void
+	open(universe: EditableUniverse, level: DifficultyLevel | undefined, edit: StagedEdit<DifficultyLevelSettings>, onChanged: () => void): void
 	{
-		const editable = canEditUniverseSettings(universe.role);
+		const canEdit = canEditUniverseSettings(universe.role);
+		const editable = (canEdit && !edit.removed);
 		const name = (level ? difficultyName(level) : '');
 
-		this.universe = universe;
 		this.level = level;
+		this.edit = edit;
 		this.onChanged = onChanged;
 
 		if (!level)
@@ -136,9 +137,7 @@ export class DifficultyDialog
 		this.isDefault.checked = (level?.isDefault ?? false);
 		this.mobScale.value = String(level?.mobScale ?? 0);
 		this.permadeath.checked = (level?.permadeath ?? false);
-		this.fields.disabled = false;
 		this.saveButton.hidden = !editable;
-		this.saveButton.disabled = false;
 		this.cancelButton.textContent = t(editable ? formMessages.cancel : formMessages.close);
 
 		// Only the inputs are locked for a player who can't edit, so Close still works
@@ -149,8 +148,8 @@ export class DifficultyDialog
 
 		// The default stops being it only when another level becomes the default
 		this.isDefault.disabled = (!editable || (level?.isDefault ?? false));
-		this.removeButton.hidden = (!editable || !level || level.isDefault);
-		setButtonLabel(this.removeButton, trashIcon, t({
+		this.removeButton.hidden = (!canEdit || !level || level.isDefault);
+		labelRemoveButton(this.removeButton, edit, false, t({
 			id: 'editor.difficultyLevel.delete',
 			defaultMessage: 'Delete Difficulty',
 			description: 'Button in the difficulty level editor that deletes the level'
@@ -163,15 +162,14 @@ export class DifficultyDialog
 	}
 
 	/**
-	 * Saves the level as the form shows it
+	 * Keeps the level as the form shows it, until the tab is saved
 	 */
-	private async save(): Promise<void>
+	private apply(): void
 	{
-		const universe = this.universe;
 		const name = this.name.value.trim();
 		const mobScale = Number(this.mobScale.value);
 
-		if (!universe)
+		if (!this.edit)
 		{
 			return;
 		}
@@ -194,87 +192,45 @@ export class DifficultyDialog
 		// A default level whose name wasn't changed keeps it, so players read it in their own language
 		const key = (this.level?.key ?? null);
 		const defaultMessage = ((key === null) ? undefined : DIFFICULTY_LEVEL_NAMES[key]);
-		const settings: DifficultyLevelSettings = {
+
+		this.edit.apply({
 			name: (((defaultMessage !== undefined) && (name === t(defaultMessage))) ? null : name),
 			isDefault: this.isDefault.checked,
 			mobScale,
 			permadeath: this.permadeath.checked
-		};
-
-		await this.run({
-			id: 'editor.difficultyLevel.saveFailed',
-			defaultMessage: 'Could not save the difficulty level.',
-			description: 'Shown in the difficulty level editor when the level couldn\'t be stored'
-		}, async () =>
-		{
-			if (this.level)
-			{
-				await this.api.saveDifficultyLevel(universe.id, this.level.id, settings);
-			}
-			else
-			{
-				await this.api.createDifficultyLevel(universe.id, settings);
-			}
 		});
+		this.close();
 	}
 
 	/**
-	 * Deletes the level, after asking
+	 * Marks the level to delete when the tab is saved, or takes that back
 	 */
-	private async remove(): Promise<void>
+	private remove(): void
 	{
-		const universe = this.universe;
-		const level = this.level;
-
-		if (!universe || !level)
+		if (!this.edit)
 		{
 			return;
 		}
 
-		const question = t({
-			id: 'editor.difficultyLevel.confirmDelete',
-			defaultMessage: 'Delete {level}? Groups playing at it will play at the default difficulty instead. This can\'t be undone.',
-			description: 'Asks before deleting a difficulty level; {level} is its name'
-		}, {
-			level: difficultyName(level)
-		});
-
-		if (!window.confirm(question))
+		if (this.edit.removed)
 		{
-			return;
+			this.edit.undoRemove();
+		}
+		else
+		{
+			this.edit.remove();
 		}
 
-		await this.run({
-			id: 'editor.difficultyLevel.deleteFailed',
-			defaultMessage: 'Could not delete the difficulty level.',
-			description: 'Shown in the difficulty level editor when the level couldn\'t be deleted'
-		}, () => this.api.deleteDifficultyLevel(universe.id, level.id));
+		this.close();
 	}
 
 	/**
-	 * Makes a change, closing the dialog when it succeeds and explaining in it when it doesn't
-	 *
-	 * @param failure What failed, as a sentence, for the error message
-	 * @param change The change
+	 * Closes the dialog once its change is made, and shows the change in the list
 	 */
-	private async run(failure: MessageDescriptor, change: () => Promise<void>): Promise<void>
+	private close(): void
 	{
-		this.fields.disabled = true;
-		showMessage(this.error, undefined);
-
-		try
-		{
-			await change();
-			this.dialog.close();
-			this.onChanged();
-		}
-		catch (error)
-		{
-			showMessage(this.error, describeEditorError(error, failure));
-		}
-		finally
-		{
-			this.fields.disabled = false;
-		}
+		this.changes.markSaved();
+		this.dialog.close();
+		this.onChanged();
 	}
 }

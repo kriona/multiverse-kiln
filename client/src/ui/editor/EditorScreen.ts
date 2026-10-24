@@ -3,7 +3,6 @@ import { UNIVERSE_ROLE_NAMES, type EditableUniverse, type UniverseSummary } from
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { editPageUrl } from '../../pages';
-import type { ChangeTracker } from '../changeTracker';
 import { getElement, showMessage, titleLink } from '../dom';
 import { CharactersTab } from './CharactersTab';
 import { LobbyTab } from './LobbyTab';
@@ -13,6 +12,7 @@ import { ItemSelectDialog } from './ItemSelectDialog';
 import { ItemsTab } from './ItemsTab';
 import { RacesTab } from './RacesTab';
 import { RulesetTab } from './RulesetTab';
+import { combineTabs, SaveBar, type SavableTab } from './SaveBar';
 import { ThemesSection } from './ThemesSection';
 import { TilesetsTab } from './TilesetsTab';
 import { UniverseTab } from './UniverseTab';
@@ -102,6 +102,16 @@ export class EditorScreen
 	private readonly itemsTab: ItemsTab;
 
 	/**
+	 * Saves the tab showing, which keeps its changes on the page until then
+	 */
+	private readonly saveBar = new SaveBar();
+
+	/**
+	 * What the save bar saves on each tab
+	 */
+	private readonly savableTabs: Record<EditorTab, SavableTab>;
+
+	/**
 	 * The universe being edited, once it has loaded
 	 */
 	private universe: EditableUniverse | undefined;
@@ -147,17 +157,24 @@ export class EditorScreen
 		});
 		this.itemsTab = new ItemsTab(api);
 
-		const trackedTabs: [EditorTab, ChangeTracker][] = [
-			['universe', this.universeTab.changes],
-			['ruleset', this.rulesetTab.changes],
-			['lobby', this.lobbyTab.changes],
-			['characters', this.charactersTab.changes],
-			['areas', this.areasTab.changes]
-		];
+		this.savableTabs = {
+			universe: this.universeTab,
+			ruleset: this.rulesetTab,
+			lobby: this.lobbyTab,
+			characters: combineTabs(this.charactersTab, this.themesSection, this.difficultySection),
+			races: this.racesTab,
+			classes: this.classesTab,
+			tilesets: this.tilesetsTab,
+			areas: this.areasTab,
+			items: this.itemsTab
+		};
 
-		for (const [name, changes] of trackedTabs)
+		for (const name of EDITOR_TABS)
 		{
-			changes.subscribe((unsaved) =>
+			const tab = this.savableTabs[name];
+
+			this.saveBar.add(tab, getElement(`editor-panel-${name}`, HTMLElement));
+			tab.changes.subscribe((unsaved) =>
 			{
 				this.markTab(name, unsaved);
 			});
@@ -391,6 +408,7 @@ export class EditorScreen
 			getElement(`editor-panel-${name}`, HTMLElement).hidden = (name !== selected);
 		}
 
+		this.saveBar.show(this.savableTabs[selected]);
 		this.setPlace({ ...this.place, tab: selected });
 	}
 

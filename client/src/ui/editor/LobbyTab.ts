@@ -6,13 +6,13 @@ import { ChangeTracker } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
-import { showToast } from '../toast';
+import type { SavableTab } from './SaveBar';
 
 /**
  * The Lobby tab's settings: how the time of day changes in the lobby, and whether its tiles have a
  * vision cost
  */
-export class LobbyTab
+export class LobbyTab implements SavableTab
 {
 	private readonly form = getElement('lobby-form', HTMLFormElement);
 	private readonly fields = getElement('lobby-fields', HTMLFieldSetElement);
@@ -24,16 +24,11 @@ export class LobbyTab
 	private readonly faerie = getElement('lobby-faerie', HTMLSelectElement);
 	private readonly noVisionCost = getElement('lobby-no-vision-cost', HTMLInputElement);
 	private readonly error = getElement('lobby-error', HTMLElement);
-	private readonly saved = getElement('lobby-saved', HTMLElement);
-	private readonly saveButton = getElement('lobby-save', HTMLButtonElement);
 
 	/**
 	 * Whether the form has changes that haven't been saved
 	 */
-	readonly changes = new ChangeTracker({
-		root: this.form,
-		status: this.saved
-	});
+	readonly changes = new ChangeTracker({ root: this.form });
 
 	/**
 	 * The universe as it was last loaded or saved
@@ -70,13 +65,6 @@ export class LobbyTab
 		this.dayHours.addEventListener('input', () =>
 		{
 			setFieldError(this.dayHours, undefined);
-			this.saved.textContent = '';
-		});
-
-		this.form.addEventListener('submit', (event) =>
-		{
-			event.preventDefault();
-			void this.save();
 		});
 	}
 
@@ -93,12 +81,20 @@ export class LobbyTab
 		this.faerie.value = (universe.lobbyFaerieMorning ?? FAERIE_MORNINGS[0]);
 		this.noVisionCost.checked = universe.lobbyNoVisionCost;
 		this.showTimeFields();
-		this.fields.disabled = !canEditUniverseSettings(universe.role);
-		this.saveButton.hidden = this.fields.disabled;
-		this.saved.textContent = '';
+		this.fields.disabled = !this.canSave();
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.form);
 		this.changes.markSaved();
+	}
+
+	/**
+	 * Whether the player may change the lobby's settings
+	 *
+	 * @return True for a creator
+	 */
+	canSave(): boolean
+	{
+		return((this.universe !== undefined) && canEditUniverseSettings(this.universe.role));
 	}
 
 	/**
@@ -116,8 +112,10 @@ export class LobbyTab
 
 	/**
 	 * Saves the settings as the form shows them
+	 *
+	 * @return True when they were saved
 	 */
-	private async save(): Promise<void>
+	async save(): Promise<boolean>
 	{
 		const universe = this.universe;
 		const lobbyPassageOfTime = this.time.value as LobbyPassageOfTime;
@@ -125,7 +123,7 @@ export class LobbyTab
 
 		if (!universe)
 		{
-			return;
+			return(false);
 		}
 
 		if ((lobbyPassageOfTime === 'real_time') && (!Number.isInteger(lobbyDayHours) || (lobbyDayHours < MIN_LOBBY_DAY_HOURS) || (lobbyDayHours > MAX_LOBBY_DAY_HOURS) || (this.dayHours.value.trim() === '')))
@@ -134,7 +132,7 @@ export class LobbyTab
 				min: MIN_LOBBY_DAY_HOURS,
 				max: MAX_LOBBY_DAY_HOURS
 			}));
-			return;
+			return(false);
 		}
 
 		const update: Required<Pick<UniverseSettingsUpdate, 'lobbyPassageOfTime' | 'lobbyFaerieMorning' | 'lobbyNoVisionCost'>> & Pick<UniverseSettingsUpdate, 'lobbyDayHours'> = {
@@ -145,7 +143,6 @@ export class LobbyTab
 			...((lobbyPassageOfTime === 'real_time') ? { lobbyDayHours } : {})
 		};
 
-		this.saveButton.disabled = true;
 		showMessage(this.error, undefined);
 
 		try
@@ -154,12 +151,9 @@ export class LobbyTab
 			this.universe = { ...universe, ...update };
 			this.dayHours.value = String(this.universe.lobbyDayHours);
 			this.changes.markSaved();
-			this.saved.textContent = t(formMessages.saved);
-			showToast(t(formMessages.savedToast), {
-				kind: 'success',
-				announce: false
-			});
 			this.onSaved(this.universe);
+
+			return(true);
 		}
 		catch (error)
 		{
@@ -168,10 +162,8 @@ export class LobbyTab
 				defaultMessage: 'Could not save the lobby\'s settings.',
 				description: 'Shown on the Lobby tab when its settings couldn\'t be stored'
 			}));
-		}
-		finally
-		{
-			this.saveButton.disabled = false;
+
+			return(false);
 		}
 	}
 }

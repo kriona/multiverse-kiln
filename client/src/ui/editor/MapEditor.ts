@@ -1188,6 +1188,13 @@ export class MapEditor
 
 		const target = event.target;
 		const typing = ((target instanceof HTMLInputElement) || (target instanceof HTMLTextAreaElement) || (target instanceof HTMLSelectElement));
+
+		// Autofill and some extensions send keydown events without a key
+		if (typeof event.key !== 'string')
+		{
+			return;
+		}
+
 		const key = event.key.toLowerCase();
 
 		// offsetParent is null while the map, or anything it is inside, is hidden

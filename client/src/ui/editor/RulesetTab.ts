@@ -6,7 +6,7 @@ import { ChangeTracker } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
-import { showToast } from '../toast';
+import type { SavableTab } from './SaveBar';
 
 /**
  * The Ruleset tab: how the universe plays under its ruleset. For Pathfinder 1E, how ability scores
@@ -14,7 +14,7 @@ import { showToast } from '../toast';
  * Starfinder 1E, how many ability points characters spend, and whether characters need sleep and
  * ammunition is tracked
  */
-export class RulesetTab
+export class RulesetTab implements SavableTab
 {
 	private readonly form = getElement('ruleset-form', HTMLFormElement);
 	private readonly fields = getElement('ruleset-fields', HTMLFieldSetElement);
@@ -30,16 +30,11 @@ export class RulesetTab
 	private readonly coinsHaveWeight = getElement('ruleset-coins-have-weight', HTMLInputElement);
 	private readonly tracksAmmo = getElement('ruleset-tracks-ammo', HTMLInputElement);
 	private readonly error = getElement('ruleset-error', HTMLElement);
-	private readonly saved = getElement('ruleset-saved', HTMLElement);
-	private readonly saveButton = getElement('ruleset-save', HTMLButtonElement);
 
 	/**
 	 * Whether the form has changes that haven't been saved
 	 */
-	readonly changes = new ChangeTracker({
-		root: this.form,
-		status: this.saved
-	});
+	readonly changes = new ChangeTracker({ root: this.form });
 
 	private universe: EditableUniverse | undefined;
 
@@ -62,7 +57,6 @@ export class RulesetTab
 		this.statMethod.addEventListener('change', () =>
 		{
 			this.budgetField.hidden = (this.statMethod.value !== 'point_buy_custom');
-			this.saved.textContent = '';
 		});
 
 		for (const input of [this.budget, this.abilityPoints])
@@ -70,23 +64,8 @@ export class RulesetTab
 			input.addEventListener('input', () =>
 			{
 				setFieldError(input, undefined);
-				this.saved.textContent = '';
 			});
 		}
-
-		for (const checkbox of [this.needsSleep, this.coinsHaveWeight, this.tracksAmmo])
-		{
-			checkbox.addEventListener('change', () =>
-			{
-				this.saved.textContent = '';
-			});
-		}
-
-		this.form.addEventListener('submit', (event) =>
-		{
-			event.preventDefault();
-			void this.save();
-		});
 	}
 
 	/**
@@ -104,8 +83,6 @@ export class RulesetTab
 		this.coinsHaveWeightField.hidden = (universe.ruleset !== 'pf1e');
 		this.sf1eStats.hidden = (universe.ruleset !== 'sf1e');
 		this.fields.disabled = true;
-		this.saveButton.hidden = !canEditUniverseSettings(universe.role);
-		this.saved.textContent = '';
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.form);
 
@@ -155,36 +132,44 @@ export class RulesetTab
 	}
 
 	/**
-	 * Saves the settings as the form shows them
+	 * Whether the player may change the ruleset's settings
+	 *
+	 * @return True for a creator
 	 */
-	private async save(): Promise<void>
+	canSave(): boolean
+	{
+		return((this.universe !== undefined) && canEditUniverseSettings(this.universe.role));
+	}
+
+	/**
+	 * Saves the settings as the form shows them
+	 *
+	 * @return True when they were saved
+	 */
+	async save(): Promise<boolean>
 	{
 		const universe = this.universe;
 
 		if (!universe)
 		{
-			return;
+			return(false);
 		}
 
 		const ruleset = this.readSettings(universe);
 
 		if (ruleset === undefined)
 		{
-			return;
+			return(false);
 		}
 
-		this.saveButton.disabled = true;
 		showMessage(this.error, undefined);
 
 		try
 		{
 			await this.api.saveRulesetSettings(universe.id, ruleset);
 			this.changes.markSaved();
-			this.saved.textContent = t(formMessages.saved);
-			showToast(t(formMessages.savedToast), {
-				kind: 'success',
-				announce: false
-			});
+
+			return(true);
 		}
 		catch (error)
 		{
@@ -193,10 +178,8 @@ export class RulesetTab
 				defaultMessage: 'Could not save the ruleset\'s settings.',
 				description: 'Shown on the Ruleset tab when its settings couldn\'t be stored'
 			}));
-		}
-		finally
-		{
-			this.saveButton.disabled = false;
+
+			return(false);
 		}
 	}
 

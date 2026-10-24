@@ -1,26 +1,24 @@
-import { canEditWorld, DISALLOWED_TEXT_CHARACTERS, ITEM_KINDS, MAX_ITEM_NAME_LENGTH, type EditableUniverse, type EditorItem, type ItemSettings, type MessageDescriptor, type Ruleset } from '@multiverse-kiln/shared';
-import restoreIcon from 'virtual:icon/ph:arrow-counter-clockwise';
-import trashIcon from 'virtual:icon/ph:trash';
+import { canEditWorld, DISALLOWED_TEXT_CHARACTERS, ITEM_KINDS, MAX_ITEM_NAME_LENGTH, type EditableUniverse, type EditorItem, type ItemSettings, type Ruleset } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
-import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { ChangeTracker } from '../changeTracker';
-import { getElement, setButtonLabel, setOptions, showMessage } from '../dom';
+import { getElement, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
 import { itemCategoryName, itemName, itemTypeName } from '../itemNames';
+import { labelRemoveButton, type StagedEdit } from './stagedChanges';
 
 /**
  * The item editor: a dialog for an item's name, type and whether it is enabled
  *
- * Saving a default item stores the universe's edited copy of it. The dialog can also delete a custom
- * item, or restore an edited default item
+ * Applying keeps the changes on the Items tab until it is saved; for a default item, saving stores the
+ * universe's edited copy of it. The dialog can also delete a custom item, or restore an edited default
+ * item, when the tab is saved
  */
 export class ItemDialog
 {
 	private readonly dialog = getElement('item-dialog', HTMLDialogElement);
 	private readonly form = getElement('item-form', HTMLFormElement);
-	private readonly fields = getElement('item-fields', HTMLFieldSetElement);
 	private readonly title = getElement('item-dialog-title', HTMLElement);
 	private readonly name = getElement('item-name', HTMLInputElement);
 	private readonly type = getElement('item-type', HTMLSelectElement);
@@ -31,7 +29,7 @@ export class ItemDialog
 	private readonly saveButton = getElement('item-save', HTMLButtonElement);
 
 	/**
-	 * Whether the item has changes that haven't been saved
+	 * Whether the item has changes that haven't been applied
 	 */
 	private readonly changes = new ChangeTracker({ root: this.form });
 
@@ -43,14 +41,16 @@ export class ItemDialog
 	private item: EditorItem | undefined;
 
 	/**
-	 * Called after the item is saved, deleted or restored
+	 * Where the dialog's changes go
+	 */
+	private edit: StagedEdit<ItemSettings> | undefined;
+
+	/**
+	 * Called after the item's changes are applied, or it is marked to delete or restore
 	 */
 	private onChanged: () => void = () => undefined;
 
-	/**
-	 * @param api The editor's API
-	 */
-	constructor(private readonly api: EditorApi)
+	constructor()
 	{
 		this.name.maxLength = MAX_ITEM_NAME_LENGTH;
 
@@ -71,13 +71,13 @@ export class ItemDialog
 
 		this.removeButton.addEventListener('click', () =>
 		{
-			void this.remove();
+			this.remove();
 		});
 
 		this.form.addEventListener('submit', (event) =>
 		{
 			event.preventDefault();
-			void this.save();
+			this.apply();
 		});
 	}
 
@@ -86,15 +86,18 @@ export class ItemDialog
 	 *
 	 * @param universe The universe the item belongs to
 	 * @param item The item, or undefined to add one
-	 * @param onChanged Called after the item is saved, deleted or restored
+	 * @param edit Where the dialog's changes go
+	 * @param onChanged Called after the item's changes are applied, or it is marked to delete or restore
 	 */
-	open(universe: EditableUniverse, item: EditorItem | undefined, onChanged: () => void): void
+	open(universe: EditableUniverse, item: EditorItem | undefined, edit: StagedEdit<ItemSettings>, onChanged: () => void): void
 	{
-		const editable = canEditWorld(universe.role);
+		const canEdit = canEditWorld(universe.role);
+		const editable = (canEdit && !edit.removed);
 		const name = (item ? itemName(item, universe.ruleset) : '');
 
 		this.universe = universe;
 		this.item = item;
+		this.edit = edit;
 		this.onChanged = onChanged;
 		if (!item)
 		{
@@ -123,9 +126,7 @@ export class ItemDialog
 		this.name.value = name;
 		this.type.value = (item?.type ?? Object.keys(ITEM_KINDS[universe.ruleset].types)[0]);
 		this.enabled.checked = (item?.enabled ?? true);
-		this.fields.disabled = false;
 		this.saveButton.hidden = !editable;
-		this.saveButton.disabled = false;
 		this.cancelButton.textContent = t(editable ? formMessages.cancel : formMessages.close);
 
 		// Only the inputs are locked for a player who can't edit, so Close still works
@@ -134,23 +135,18 @@ export class ItemDialog
 			input.disabled = !editable;
 		}
 
-		this.removeButton.hidden = (!editable || !item || (!item.custom && !item.edited));
-		if (item?.custom)
-		{
-			setButtonLabel(this.removeButton, trashIcon, t({
+		this.removeButton.hidden = (!canEdit || !item || (!item.custom && !item.edited));
+		labelRemoveButton(this.removeButton, edit, !item?.custom, (item?.custom
+			? t({
 				id: 'editor.item.delete',
 				defaultMessage: 'Delete Item',
 				description: 'Button in the item editor that deletes an item made for this universe'
-			}));
-		}
-		else
-		{
-			setButtonLabel(this.removeButton, restoreIcon, t({
+			})
+			: t({
 				id: 'editor.item.restore',
 				defaultMessage: 'Restore Default',
 				description: 'Button in the item editor that undoes this universe\'s changes to one of the ruleset\'s items'
-			}));
-		}
+			})));
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.dialog);
 		this.dialog.showModal();
@@ -181,14 +177,14 @@ export class ItemDialog
 	}
 
 	/**
-	 * Saves the item as the form shows it
+	 * Keeps the item as the form shows it, until the tab is saved
 	 */
-	private async save(): Promise<void>
+	private apply(): void
 	{
 		const universe = this.universe;
 		const name = this.name.value.trim();
 
-		if (!universe)
+		if (!universe || !this.edit)
 		{
 			return;
 		}
@@ -201,109 +197,45 @@ export class ItemDialog
 
 		// A default item whose name wasn't changed keeps the ruleset's, which players read in their own language
 		const defaultName = ((this.item && !this.item.custom) ? itemName({ key: this.item.key, name: null }, universe.ruleset) : undefined);
-		const settings: ItemSettings = {
+
+		this.edit.apply({
 			name: ((name === defaultName) ? null : name),
 			type: this.type.value,
 			enabled: this.enabled.checked
-		};
-
-		await this.run({
-			id: 'editor.item.saveFailed',
-			defaultMessage: 'Could not save the item.',
-			description: 'Shown in the item editor when the item couldn\'t be stored'
-		}, async () =>
-		{
-			if (this.item)
-			{
-				await this.api.saveItem(universe.id, this.item.id, settings);
-			}
-			else
-			{
-				await this.api.createItem(universe.id, settings);
-			}
 		});
+		this.close();
 	}
 
 	/**
-	 * Deletes a custom item, or restores an edited default item
+	 * Marks a custom item to delete, or an edited default item to restore, when the tab is saved; or takes
+	 * that back
 	 */
-	private async remove(): Promise<void>
+	private remove(): void
 	{
-		const universe = this.universe;
-		const item = this.item;
-
-		if (!universe || !item)
+		if (!this.edit)
 		{
 			return;
 		}
 
-		const name = itemName(item, universe.ruleset);
-		let question: string;
-		let failure: MessageDescriptor;
-
-		if (item.custom)
+		if (this.edit.removed)
 		{
-			question = t({
-				id: 'editor.item.confirmDelete',
-				defaultMessage: 'Delete {item}? This can\'t be undone.',
-				description: 'Asks before deleting an item made for this universe; {item} is its name'
-			}, {
-				item: name
-			});
-			failure = {
-				id: 'editor.item.deleteFailed',
-				defaultMessage: 'Could not delete the item.',
-				description: 'Shown in the item editor when the item couldn\'t be deleted'
-			};
+			this.edit.undoRemove();
 		}
 		else
 		{
-			question = t({
-				id: 'editor.item.confirmRestore',
-				defaultMessage: 'Restore {item} to the ruleset\'s default? Your changes to it will be lost.',
-				description: 'Asks before undoing this universe\'s changes to one of the ruleset\'s items; {item} is its name'
-			}, {
-				item: name
-			});
-			failure = {
-				id: 'editor.item.restoreFailed',
-				defaultMessage: 'Could not restore the item.',
-				description: 'Shown in the item editor when the ruleset\'s item couldn\'t be restored'
-			};
+			this.edit.remove();
 		}
 
-		if (!window.confirm(question))
-		{
-			return;
-		}
-
-		await this.run(failure, () => this.api.deleteItem(universe.id, item.id));
+		this.close();
 	}
 
 	/**
-	 * Makes a change, closing the dialog when it succeeds and explaining in it when it doesn't
-	 *
-	 * @param failure What failed, as a sentence, for the error message
-	 * @param change The change
+	 * Closes the dialog once its change is made, and shows the change in the list
 	 */
-	private async run(failure: MessageDescriptor, change: () => Promise<void>): Promise<void>
+	private close(): void
 	{
-		this.fields.disabled = true;
-		showMessage(this.error, undefined);
-
-		try
-		{
-			await change();
-			this.dialog.close();
-			this.onChanged();
-		}
-		catch (error)
-		{
-			showMessage(this.error, describeEditorError(error, failure));
-		}
-		finally
-		{
-			this.fields.disabled = false;
-		}
+		this.changes.markSaved();
+		this.dialog.close();
+		this.onChanged();
 	}
 }

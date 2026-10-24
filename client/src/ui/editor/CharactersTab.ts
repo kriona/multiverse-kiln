@@ -6,9 +6,9 @@ import { ChangeTracker } from '../changeTracker';
 import { getElement, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
-import { showToast } from '../toast';
 import { exampleMoney, formatMoney, readMoneyField } from '../moneyField';
 import type { ItemSelectDialog } from './ItemSelectDialog';
+import type { SavableTab } from './SaveBar';
 import { StartingItemsField } from './StartingItemsField';
 import type { AreaSelectDialog } from './AreaSelectDialog';
 
@@ -16,7 +16,7 @@ import type { AreaSelectDialog } from './AreaSelectDialog';
  * The Characters tab: how many characters play together in a group, and the money, equipment and
  * area every character starts with
  */
-export class CharactersTab
+export class CharactersTab implements SavableTab
 {
 	private readonly form = getElement('characters-form', HTMLFormElement);
 	private readonly fields = getElement('characters-fields', HTMLFieldSetElement);
@@ -27,8 +27,6 @@ export class CharactersTab
 	private readonly areaName = getElement('characters-area-name', HTMLElement);
 	private readonly chooseAreaButton = getElement('characters-area-choose', HTMLButtonElement);
 	private readonly error = getElement('characters-error', HTMLElement);
-	private readonly saved = getElement('characters-saved', HTMLElement);
-	private readonly saveButton = getElement('characters-save', HTMLButtonElement);
 
 	private universe: EditableUniverse | undefined;
 
@@ -66,7 +64,6 @@ export class CharactersTab
 			choose: this.chooseItemsButton
 		}, () =>
 		{
-			this.saved.textContent = '';
 			this.changes.check();
 		}, (message) =>
 		{
@@ -74,8 +71,7 @@ export class CharactersTab
 		});
 		this.changes = new ChangeTracker({
 			root: this.form,
-			state: () => [this.startingAreaId, this.startingItems.value],
-			status: this.saved
+			state: () => [this.startingAreaId, this.startingItems.value]
 		});
 		this.groupSize.min = String(MIN_GROUP_SIZE);
 		this.groupSize.max = String(MAX_GROUP_PLAYERS);
@@ -92,19 +88,12 @@ export class CharactersTab
 			input.addEventListener('input', () =>
 			{
 				setFieldError(input, undefined);
-				this.saved.textContent = '';
 			});
 		}
 
 		this.chooseAreaButton.addEventListener('click', () =>
 		{
 			void this.chooseArea();
-		});
-
-		this.form.addEventListener('submit', (event) =>
-		{
-			event.preventDefault();
-			void this.save();
 		});
 	}
 
@@ -125,11 +114,9 @@ export class CharactersTab
 		}, {
 			example: exampleMoney(universe.ruleset)
 		});
-		this.fields.disabled = !canEditUniverseSettings(universe.role);
-		this.saveButton.hidden = this.fields.disabled;
+		this.fields.disabled = !this.canSave();
 		this.chooseAreaButton.hidden = this.fields.disabled;
 		this.chooseItemsButton.hidden = this.fields.disabled;
-		this.saved.textContent = '';
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.form);
 		// Sets the starting area and equipment straight away, then loads their names
@@ -197,22 +184,33 @@ export class CharactersTab
 			++this.openVersion;
 			this.startingAreaId = area.id;
 			this.areaName.textContent = area.name;
-			this.saved.textContent = '';
 			this.changes.check();
 		}
 	}
 
 	/**
-	 * Saves the settings as the form shows them
+	 * Whether the player may change the character settings
+	 *
+	 * @return True for a creator
 	 */
-	private async save(): Promise<void>
+	canSave(): boolean
+	{
+		return((this.universe !== undefined) && canEditUniverseSettings(this.universe.role));
+	}
+
+	/**
+	 * Saves the settings as the form shows them
+	 *
+	 * @return True when they were saved
+	 */
+	async save(): Promise<boolean>
 	{
 		const universe = this.universe;
 		const groupSize = Number(this.groupSize.value);
 
 		if (!universe)
 		{
-			return;
+			return(false);
 		}
 
 		if (!Number.isInteger(groupSize) || (groupSize < MIN_GROUP_SIZE) || (groupSize > MAX_GROUP_PLAYERS) || (this.groupSize.value.trim() === ''))
@@ -221,20 +219,19 @@ export class CharactersTab
 				min: MIN_GROUP_SIZE,
 				max: MAX_GROUP_PLAYERS
 			}));
-			return;
+			return(false);
 		}
 
 		const startingMoney = readMoneyField(this.startingMoney, universe.ruleset);
 
 		if (startingMoney === undefined)
 		{
-			return;
+			return(false);
 		}
 
 		const startingAreaId = this.startingAreaId;
 		const startingItems = this.startingItems.value;
 
-		this.saveButton.disabled = true;
 		showMessage(this.error, undefined);
 
 		try
@@ -255,12 +252,9 @@ export class CharactersTab
 			};
 			this.startingMoney.value = formatMoney(startingMoney, universe.ruleset);
 			this.changes.markSaved();
-			this.saved.textContent = t(formMessages.saved);
-			showToast(t(formMessages.savedToast), {
-				kind: 'success',
-				announce: false
-			});
 			this.onSaved(this.universe);
+
+			return(true);
 		}
 		catch (error)
 		{
@@ -269,10 +263,8 @@ export class CharactersTab
 				defaultMessage: 'Could not save the character settings.',
 				description: 'Shown on the Characters tab when its settings couldn\'t be stored'
 			}));
-		}
-		finally
-		{
-			this.saveButton.disabled = false;
+
+			return(false);
 		}
 	}
 }

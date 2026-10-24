@@ -1,11 +1,9 @@
-import { ABILITY_NAMES, canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, emptyMoney, emptyPf1eAbilityScores, FLOATING_ABILITY_BONUSES, isSf1eRaceRules, MAX_RACE_NAME_LENGTH, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_RACE_ABILITY_MODIFIER, RULESET_SIZES, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_RACE_HIT_POINTS, SIZE_NAMES, type Ability, type AbilityScores, type EditableUniverse, type EditorRace, type MessageDescriptor, type Pf1eSize, type RaceRules, type RaceSettings, type Sf1eSize } from '@multiverse-kiln/shared';
-import restoreIcon from 'virtual:icon/ph:arrow-counter-clockwise';
-import trashIcon from 'virtual:icon/ph:trash';
+import { ABILITY_NAMES, canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, emptyMoney, emptyPf1eAbilityScores, FLOATING_ABILITY_BONUSES, isSf1eRaceRules, MAX_RACE_NAME_LENGTH, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_RACE_ABILITY_MODIFIER, RULESET_SIZES, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_RACE_HIT_POINTS, SIZE_NAMES, type Ability, type AbilityScores, type EditableUniverse, type EditorRace, type Pf1eSize, type RaceRules, type RaceSettings, type Sf1eSize } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { ChangeTracker } from '../changeTracker';
-import { getElement, namedOptions, setButtonLabel, setOptions, showMessage } from '../dom';
+import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
 import { formatMoney, readMoneyField } from '../moneyField';
@@ -15,19 +13,20 @@ import { startingAreaMessages } from './startingAreaMessages';
 import { StartingItemsField } from './StartingItemsField';
 import { AreaChoice } from './AreaChoice';
 import type { AreaSelectDialog } from './AreaSelectDialog';
+import { labelRemoveButton, type StagedEdit } from './stagedChanges';
 
 /**
  * The race editor: a dialog for a race's name, whether it is enabled, its rules, and what its
  * characters start with and where
  *
- * Saving a default race stores the universe's edited copy of it. The dialog can also delete a custom
- * race, or restore an edited default race
+ * Applying keeps the changes on the Races tab until it is saved; for a default race, saving stores the
+ * universe's edited copy of it. The dialog can also delete a custom race, or restore an edited default
+ * race, when the tab is saved
  */
 export class RaceDialog
 {
 	private readonly dialog = getElement('race-dialog', HTMLDialogElement);
 	private readonly form = getElement('race-form', HTMLFormElement);
-	private readonly fields = getElement('race-fields', HTMLFieldSetElement);
 	private readonly title = getElement('race-dialog-title', HTMLElement);
 	private readonly name = getElement('race-name', HTMLInputElement);
 	private readonly enabled = getElement('race-enabled', HTMLInputElement);
@@ -54,7 +53,7 @@ export class RaceDialog
 	private readonly startingArea: AreaChoice;
 
 	/**
-	 * Whether the race has changes that haven't been saved
+	 * Whether the race has changes that haven't been applied
 	 */
 	private readonly changes: ChangeTracker;
 
@@ -64,6 +63,11 @@ export class RaceDialog
 	 * The race being edited, or undefined for a new one
 	 */
 	private race: EditorRace | undefined;
+
+	/**
+	 * Where the dialog's changes go
+	 */
+	private edit: StagedEdit<RaceSettings> | undefined;
 
 	/**
 	 * The universe's starting area's name, which characters of a race without an area start in
@@ -76,7 +80,7 @@ export class RaceDialog
 	private openVersion = 0;
 
 	/**
-	 * Called after the race is saved, deleted or restored
+	 * Called after the race's changes are applied, or it is marked to delete or restore
 	 */
 	private onChanged: () => void = () => undefined;
 
@@ -135,13 +139,13 @@ export class RaceDialog
 
 		this.removeButton.addEventListener('click', () =>
 		{
-			void this.remove();
+			this.remove();
 		});
 
 		this.form.addEventListener('submit', (event) =>
 		{
 			event.preventDefault();
-			void this.save();
+			this.apply();
 		});
 	}
 
@@ -150,16 +154,19 @@ export class RaceDialog
 	 *
 	 * @param universe The universe the race belongs to
 	 * @param race The race, or undefined to add one
-	 * @param onChanged Called after the race is saved, deleted or restored
+	 * @param edit Where the dialog's changes go
+	 * @param onChanged Called after the race's changes are applied, or it is marked to delete or restore
 	 */
-	open(universe: EditableUniverse, race: EditorRace | undefined, onChanged: () => void): void
+	open(universe: EditableUniverse, race: EditorRace | undefined, edit: StagedEdit<RaceSettings>, onChanged: () => void): void
 	{
-		const editable = canEditUniverseSettings(universe.role);
+		const canEdit = canEditUniverseSettings(universe.role);
+		const editable = (canEdit && !edit.removed);
 		const name = (race ? raceName(race, universe.ruleset) : '');
 		const rules = (race?.rules ?? NEW_RACE_RULES[universe.ruleset]);
 
 		this.universe = universe;
 		this.race = race;
+		this.edit = edit;
 		this.onChanged = onChanged;
 		this.universeAreaName = '';
 
@@ -204,35 +211,31 @@ export class RaceDialog
 		this.hitPoints.value = (isSf1eRaceRules(rules) ? String(rules.hitPoints) : '');
 		this.startingMoney.value = formatMoney((race?.startingMoney ?? emptyMoney()), universe.ruleset);
 		this.startingArea.show(universe, (race?.startingAreaId ?? null), editable);
-		this.fields.disabled = false;
 		this.saveButton.hidden = !editable;
-		this.saveButton.disabled = false;
 		this.chooseItemsButton.hidden = !editable;
 		this.cancelButton.textContent = t(editable ? formMessages.cancel : formMessages.close);
 
 		// Only the inputs are locked for a player who can't edit, so Close still works
-		for (const input of [this.name, this.enabled, this.floatingBonus, this.darkvision, this.size, this.hitPoints, this.startingMoney, ...Object.values(this.modifiers)])
+		for (const input of [this.name, this.enabled, this.floatingBonus, this.darkvision, this.size, this.startingMoney, ...Object.values(this.modifiers)])
 		{
 			input.disabled = !editable;
 		}
 
-		this.removeButton.hidden = (!editable || !race || (!race.custom && !race.edited));
-		if (race?.custom)
-		{
-			setButtonLabel(this.removeButton, trashIcon, t({
+		// The field is hidden and empty in a ruleset without race hit points; disabling it keeps the browser from requiring it
+		this.hitPoints.disabled = (!editable || !isSf1eRaceRules(rules));
+
+		this.removeButton.hidden = (!canEdit || !race || (!race.custom && !race.edited));
+		labelRemoveButton(this.removeButton, edit, !race?.custom, (race?.custom
+			? t({
 				id: 'editor.race.delete',
 				defaultMessage: 'Delete Race',
 				description: 'Button in the race editor that deletes a race made for this universe'
-			}));
-		}
-		else
-		{
-			setButtonLabel(this.removeButton, restoreIcon, t({
+			})
+			: t({
 				id: 'editor.race.restore',
 				defaultMessage: 'Restore Default',
 				description: 'Button in the race editor that undoes this universe\'s changes to one of the ruleset\'s races'
-			}));
-		}
+			})));
 
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.dialog);
@@ -273,14 +276,14 @@ export class RaceDialog
 	}
 
 	/**
-	 * Saves the race as the form shows it
+	 * Keeps the race as the form shows it, until the tab is saved
 	 */
-	private async save(): Promise<void>
+	private apply(): void
 	{
 		const universe = this.universe;
 		const name = this.name.value.trim();
 
-		if (!universe)
+		if (!universe || !this.edit)
 		{
 			return;
 		}
@@ -314,30 +317,16 @@ export class RaceDialog
 
 		// A default race whose name wasn't changed keeps the ruleset's, which players read in their own language
 		const defaultName = ((this.race && !this.race.custom) ? raceName({ key: this.race.key, name: null }, universe.ruleset) : undefined);
-		const settings: RaceSettings = {
+
+		this.edit.apply({
 			name: ((name === defaultName) ? null : name),
 			enabled: this.enabled.checked,
 			startingMoney,
 			startingItems: this.startingItems.value,
 			startingAreaId: this.startingArea.value,
 			rules
-		};
-
-		await this.run({
-			id: 'editor.race.saveFailed',
-			defaultMessage: 'Could not save the race.',
-			description: 'Shown in the race editor when the race couldn\'t be stored'
-		}, async () =>
-		{
-			if (this.race)
-			{
-				await this.api.saveRace(universe.id, this.race.id, settings);
-			}
-			else
-			{
-				await this.api.createRace(universe.id, settings);
-			}
 		});
+		this.close();
 	}
 
 	/**
@@ -382,86 +371,36 @@ export class RaceDialog
 	}
 
 	/**
-	 * Deletes a custom race, or restores an edited default race
+	 * Marks a custom race to delete, or an edited default race to restore, when the tab is saved; or takes
+	 * that back
 	 */
-	private async remove(): Promise<void>
+	private remove(): void
 	{
-		const universe = this.universe;
-		const race = this.race;
-
-		if (!universe || !race)
+		if (!this.edit)
 		{
 			return;
 		}
 
-		const name = raceName(race, universe.ruleset);
-		let question: string;
-		let failure: MessageDescriptor;
-
-		if (race.custom)
+		if (this.edit.removed)
 		{
-			question = t({
-				id: 'editor.race.confirmDelete',
-				defaultMessage: 'Delete {race}? This can\'t be undone.',
-				description: 'Asks before deleting a race made for this universe; {race} is its name'
-			}, {
-				race: name
-			});
-			failure = {
-				id: 'editor.race.deleteFailed',
-				defaultMessage: 'Could not delete the race.',
-				description: 'Shown in the race editor when the race couldn\'t be deleted'
-			};
+			this.edit.undoRemove();
 		}
 		else
 		{
-			question = t({
-				id: 'editor.race.confirmRestore',
-				defaultMessage: 'Restore {race} to the ruleset\'s default? Your changes to it, including its starting money, equipment and area, will be lost.',
-				description: 'Asks before undoing this universe\'s changes to one of the ruleset\'s races; {race} is its name'
-			}, {
-				race: name
-			});
-			failure = {
-				id: 'editor.race.restoreFailed',
-				defaultMessage: 'Could not restore the race.',
-				description: 'Shown in the race editor when the ruleset\'s race couldn\'t be restored'
-			};
+			this.edit.remove();
 		}
 
-		if (!window.confirm(question))
-		{
-			return;
-		}
-
-		await this.run(failure, () => this.api.deleteRace(universe.id, race.id));
+		this.close();
 	}
 
 	/**
-	 * Makes a change, closing the dialog when it succeeds and explaining in it when it doesn't
-	 *
-	 * @param failure What failed, as a sentence, for the error message
-	 * @param change The change
+	 * Closes the dialog once its change is made, and shows the change in the list
 	 */
-	private async run(failure: MessageDescriptor, change: () => Promise<void>): Promise<void>
+	private close(): void
 	{
-		this.fields.disabled = true;
-		showMessage(this.error, undefined);
-
-		try
-		{
-			await change();
-			this.dialog.close();
-			this.onChanged();
-		}
-		catch (error)
-		{
-			showMessage(this.error, describeEditorError(error, failure));
-		}
-		finally
-		{
-			this.fields.disabled = false;
-		}
+		this.changes.markSaved();
+		this.dialog.close();
+		this.onChanged();
 	}
 }
 

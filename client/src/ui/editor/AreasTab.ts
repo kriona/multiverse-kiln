@@ -6,16 +6,16 @@ import { ChangeTracker } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
-import { showToast } from '../toast';
 import { tileName } from '../tileNames';
 import { MapEditor } from './MapEditor';
+import type { SavableTab } from './SaveBar';
 
 /**
  * The Areas tab: the universe's areas, opening the area editor, and adding areas
  *
  * The area editor is a view in the tab rather than a dialog, since it holds the area's map
  */
-export class AreasTab
+export class AreasTab implements SavableTab
 {
 	private readonly listView = getElement('area-list-view', HTMLElement);
 	private readonly list = getElement('area-list', HTMLUListElement);
@@ -49,9 +49,7 @@ export class AreasTab
 	private readonly loopsHint = getElement('area-loops-hint', HTMLElement);
 	private readonly size = getElement('area-size', HTMLElement);
 	private readonly error = getElement('area-error', HTMLElement);
-	private readonly saved = getElement('area-saved', HTMLElement);
 	private readonly deleteButton = getElement('area-delete', HTMLButtonElement);
-	private readonly saveButton = getElement('area-save', HTMLButtonElement);
 	private readonly children = getElement('area-children', HTMLElement);
 	private readonly childList = getElement('area-child-list', HTMLUListElement);
 	private readonly addDialog = getElement('area-add-dialog', HTMLDialogElement);
@@ -72,8 +70,7 @@ export class AreasTab
 	 */
 	readonly changes = new ChangeTracker({
 		root: this.form,
-		state: () => this.mapUnsaved,
-		status: this.saved
+		state: () => this.mapUnsaved
 	});
 
 	/**
@@ -132,10 +129,6 @@ export class AreasTab
 			this.updateTimeFields();
 		});
 
-		this.enabled.addEventListener('change', () =>
-		{
-			this.saved.textContent = '';
-		});
 
 		for (const choice of [this.outdoors, this.indoors])
 		{
@@ -144,20 +137,12 @@ export class AreasTab
 				this.fillDefaultTiles(this.indoors.checked, Number(this.defaultTile.value));
 				this.mapEditor.showTilesFor(this.indoors.checked);
 				this.showLightField();
-				this.saved.textContent = '';
 			});
 		}
 
 		this.name.addEventListener('input', () =>
 		{
 			setFieldError(this.name, undefined);
-			this.saved.textContent = '';
-		});
-
-		this.form.addEventListener('submit', (event) =>
-		{
-			event.preventDefault();
-			void this.save();
 		});
 
 		this.deleteButton.addEventListener('click', () =>
@@ -531,9 +516,7 @@ export class AreasTab
 		this.updateTimeFields();
 		this.updateParentMessage();
 		this.fields.disabled = !editable;
-		this.saveButton.hidden = !editable;
 		this.deleteButton.hidden = (!editable || isLobby || isStart);
-		this.saved.textContent = '';
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.form);
 
@@ -612,8 +595,6 @@ export class AreasTab
 			this.loopsEastWest.checked = false;
 			this.loopsNorthSouth.checked = false;
 		}
-
-		this.saved.textContent = '';
 	}
 
 	/**
@@ -637,9 +618,21 @@ export class AreasTab
 	}
 
 	/**
-	 * Saves the map's painting, then the area's settings as the form shows them
+	 * Whether the player may change areas
+	 *
+	 * @return True for a creator or builder
 	 */
-	private async save(): Promise<void>
+	canSave(): boolean
+	{
+		return((this.universe !== undefined) && canEditWorld(this.universe.role));
+	}
+
+	/**
+	 * Saves the map's painting, then the area's settings as the form shows them
+	 *
+	 * @return True when both were saved
+	 */
+	async save(): Promise<boolean>
 	{
 		const universe = this.universe;
 		const area = this.area;
@@ -647,13 +640,13 @@ export class AreasTab
 
 		if (!universe || !area)
 		{
-			return;
+			return(false);
 		}
 
 		if ((name === '') || DISALLOWED_TEXT_CHARACTERS.test(name))
 		{
 			reportFieldError(this.name, t(formMessages.invalidText));
-			return;
+			return(false);
 		}
 
 		const passageOfTime = this.time.value as AreaPassageOfTime;
@@ -670,7 +663,6 @@ export class AreasTab
 			loopsNorthSouth: this.loopsNorthSouth.checked
 		};
 
-		this.saveButton.disabled = true;
 		showMessage(this.error, undefined);
 
 		try
@@ -684,8 +676,7 @@ export class AreasTab
 				defaultMessage: 'Could not save the map.',
 				description: 'Shown in the area editor when the painting on the area\'s map, or its new size, couldn\'t be stored'
 			}));
-			this.saveButton.disabled = false;
-			return;
+			return(false);
 		}
 
 		try
@@ -696,12 +687,9 @@ export class AreasTab
 			if (this.area === area)
 			{
 				this.showArea(universe, { ...area, ...settings });
-				this.saved.textContent = t(formMessages.saved);
-				showToast(t(formMessages.savedToast), {
-					kind: 'success',
-					announce: false
-				});
 			}
+
+			return(true);
 		}
 		catch (error)
 		{
@@ -710,10 +698,8 @@ export class AreasTab
 				defaultMessage: 'Could not save the area.',
 				description: 'Shown in the area editor when the area\'s settings couldn\'t be stored'
 			}));
-		}
-		finally
-		{
-			this.saveButton.disabled = false;
+
+			return(false);
 		}
 	}
 

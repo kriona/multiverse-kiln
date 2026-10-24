@@ -1,124 +1,59 @@
-import { ABILITY_NAMES, canEditUniverseSettings, isSf1eClassRules, mainAbility, PF1E_CASTING_STYLE_NAMES, PF1E_MAGIC_TRADITION_NAMES, type EditableUniverse, type EditorClass, type Ruleset } from '@multiverse-kiln/shared';
+import { ABILITY_NAMES, canEditUniverseSettings, isSf1eClassRules, mainAbility, PF1E_CASTING_STYLE_NAMES, PF1E_MAGIC_TRADITION_NAMES, type ClassSettings, type EditorClass, type Ruleset } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../../localization';
-import { describeEditorError, type EditorApi } from '../../network/editorApi';
-import { getElement, showMessage } from '../dom';
+import type { EditorApi } from '../../network/editorApi';
+import { getElement } from '../dom';
 import { className } from '../raceAndClassNames';
 import { ClassDialog } from './ClassDialog';
 import type { ItemSelectDialog } from './ItemSelectDialog';
-import { createOptionRow, optionTags } from './optionRows';
+import { OptionList } from './OptionList';
 import type { AreaSelectDialog } from './AreaSelectDialog';
 
 /**
- * The Classes tab: every class characters of the universe can be, opening the class editor
+ * The Classes tab: every class characters of the universe can be, opening the class editor. Changes wait
+ * on the page until the tab is saved
  */
-export class ClassesTab
+export class ClassesTab extends OptionList<EditorClass, ClassSettings>
 {
-	private readonly addButton = getElement('class-add', HTMLButtonElement);
-	private readonly rows = getElement('class-rows', HTMLTableSectionElement);
-	private readonly error = getElement('class-list-error', HTMLElement);
-	private readonly dialog: ClassDialog;
-
-	private universe: EditableUniverse | undefined;
-
-	/**
-	 * Changes with every request for the list, so a list that arrives after a newer request is ignored
-	 */
-	private requestVersion = 0;
-
 	/**
 	 * @param api The editor's API
 	 * @param areaSelect The dialog for choosing a class's starting areas
 	 * @param itemSelect The dialog for choosing a class's starting equipment
 	 */
-	constructor(private readonly api: EditorApi, areaSelect: AreaSelectDialog, itemSelect: ItemSelectDialog)
+	constructor(api: EditorApi, areaSelect: AreaSelectDialog, itemSelect: ItemSelectDialog)
 	{
-		this.dialog = new ClassDialog(api, areaSelect, itemSelect);
+		const dialog = new ClassDialog(api, areaSelect, itemSelect);
 
-		this.addButton.addEventListener('click', () =>
-		{
-			this.openClass(undefined);
-		});
-	}
-
-	/**
-	 * Lists a universe's classes
-	 *
-	 * @param universe The universe
-	 */
-	open(universe: EditableUniverse): void
-	{
-		this.universe = universe;
-		this.addButton.hidden = !canEditUniverseSettings(universe.role);
-		this.rows.replaceChildren();
-		void this.refresh();
-	}
-
-	/**
-	 * Loads and shows the classes, by name
-	 */
-	private async refresh(): Promise<void>
-	{
-		const universe = this.universe;
-		const version = ++this.requestVersion;
-
-		if (!universe)
-		{
-			return;
-		}
-
-		let classes: EditorClass[];
-
-		try
-		{
-			classes = await this.api.listClasses(universe.id);
-		}
-		catch (error)
-		{
-			if (version === this.requestVersion)
+		super({
+			addButton: getElement('class-add', HTMLButtonElement),
+			rows: getElement('class-rows', HTMLTableSectionElement),
+			error: getElement('class-list-error', HTMLElement),
+			listFailed: {
+				id: 'editor.classes.listFailed',
+				defaultMessage: 'Could not list the classes.',
+				description: 'Shown on the Classes tab when the character classes couldn\'t be loaded'
+			},
+			canEdit: (universe) => canEditUniverseSettings(universe.role),
+			load: (universeId) => api.listClasses(universeId),
+			routes: (universeId) => ({
+				create: (settings) => api.createClass(universeId, settings),
+				save: (classId, settings) => api.saveClass(universeId, classId, settings),
+				remove: (classId) => api.deleteClass(universeId, classId)
+			}),
+			created: (id, settings) => ({
+				id,
+				key: null,
+				...settings,
+				custom: true,
+				edited: false
+			}),
+			name: className,
+			describe: describeClass,
+			openDialog: (universe, characterClass, edit, onChanged) =>
 			{
-				showMessage(this.error, describeEditorError(error, {
-					id: 'editor.classes.listFailed',
-					defaultMessage: 'Could not list the classes.',
-					description: 'Shown on the Classes tab when the character classes couldn\'t be loaded'
-				}));
+				dialog.open(universe, characterClass, edit, onChanged);
 			}
-
-			return;
-		}
-
-		if (version !== this.requestVersion)
-		{
-			return;
-		}
-
-		showMessage(this.error, undefined);
-		this.rows.replaceChildren(...classes
-			.map((characterClass) => ({
-				characterClass,
-				name: className(characterClass, universe.ruleset)
-			}))
-			.sort((a, b) => a.name.localeCompare(b.name))
-			.map(({ characterClass, name }) => createOptionRow(name, describeClass(characterClass, universe.ruleset), optionTags(characterClass), () =>
-			{
-				this.openClass(characterClass);
-			})));
-	}
-
-	/**
-	 * Opens the class editor, refreshing the list after a change
-	 *
-	 * @param characterClass The class, or undefined to add one
-	 */
-	private openClass(characterClass: EditorClass | undefined): void
-	{
-		if (this.universe)
-		{
-			this.dialog.open(this.universe, characterClass, () =>
-			{
-				void this.refresh();
-			});
-		}
+		});
 	}
 }
 

@@ -84,10 +84,6 @@
 									<select id="universe-display-time"></select>
 								</label>
 								<p id="universe-error" class="form-error" role="alert" hidden></p>
-								<div class="form-buttons">
-									<span id="universe-saved" class="form-saved" role="status"></span>
-									<button id="universe-save" type="submit" aria-describedby="universe-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
-								</div>
 							</fieldset>
 						</form>
 					</section>
@@ -128,10 +124,6 @@
 								</label>
 								<p class="hint" data-message="editor.ruleset.laterHint" data-translation-context="Explains that the sleep, weight and ammunition checkboxes are stored but have no effect in the game yet">The game doesn't use sleep, weight or ammunition yet. These are kept for when it does.</p>
 								<p id="ruleset-error" class="form-error" role="alert" hidden></p>
-								<div class="form-buttons">
-									<span id="ruleset-saved" class="form-saved" role="status"></span>
-									<button id="ruleset-save" type="submit" aria-describedby="ruleset-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
-								</div>
 							</fieldset>
 						</form>
 					</section>
@@ -161,10 +153,6 @@
 								</label>
 								<p class="hint" data-message="editor.lobby.noVisionCostHint" data-translation-context="Explains the lobby's no vision cost checkbox on the editor's Lobby tab">Tiles don't block or shorten anyone's view in the lobby, regardless of the tile's vision cost. Characters see as far as in full daylight at any time of day.</p>
 								<p id="lobby-error" class="form-error" role="alert" hidden></p>
-								<div class="form-buttons">
-									<span id="lobby-saved" class="form-saved" role="status"></span>
-									<button id="lobby-save" type="submit" aria-describedby="lobby-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
-								</div>
 							</fieldset>
 						</form>
 					</section>
@@ -197,10 +185,6 @@
 									<button id="characters-area-choose" type="button" class="secondary" data-shortcut="Alt+C" data-message="editor.characters.chooseArea" data-translation-context="Button that opens the dialog for choosing the area characters start in"><!-- icon ph:map-pin -->Choose Starting Area</button>
 								</div>
 								<p id="characters-error" class="form-error" role="alert" hidden></p>
-								<div class="form-buttons">
-									<span id="characters-saved" class="form-saved" role="status"></span>
-									<button id="characters-save" type="submit" aria-describedby="characters-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
-								</div>
 							</fieldset>
 						</form>
 
@@ -300,6 +284,7 @@
 							</label>
 							<button id="tile-add" type="button" data-shortcut="Alt+N" data-message="editor.tiles.add" data-translation-context="Button that opens the dialog for making a new tile"><!-- icon ph:plus -->Add Tile</button>
 						</div>
+						<p id="tile-list-error" class="form-error" role="alert" hidden></p>
 						<table class="tile-table">
 							<thead>
 								<tr>
@@ -392,8 +377,6 @@
 									<p id="area-error" class="form-error" role="alert" hidden></p>
 									<div class="form-buttons">
 										<button id="area-delete" type="button" class="danger" aria-describedby="area-error" data-message="editor.area.delete" data-translation-context="Button that deletes the area being edited"><!-- icon ph:trash -->Delete Area</button>
-										<span id="area-saved" class="form-saved" role="status"></span>
-										<button id="area-save" type="submit" aria-describedby="area-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
 									</div>
 								</fieldset>
 							</form>
@@ -479,6 +462,7 @@
 							</label>
 							<button id="item-add" type="button" data-shortcut="Alt+N" data-message="editor.items.add" data-translation-context="Button that opens the dialog for making a new item"><!-- icon ph:plus -->Add Item</button>
 						</div>
+						<p id="item-list-error" class="form-error" role="alert" hidden></p>
 						<table class="item-table">
 							<thead>
 								<tr>
@@ -498,6 +482,10 @@
 						</div>
 					</section>
 				</div>
+				<footer id="editor-save-bar" class="editor-save-bar" hidden>
+					<span id="editor-save-status" class="form-saved" role="status"></span>
+					<button id="editor-save" type="button" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+				</footer>
 				<dialog id="item-dialog" class="panel dialog" aria-labelledby="item-dialog-title">
 					<form id="item-form" class="form">
 						<fieldset id="item-fields" class="plain">
@@ -519,7 +507,7 @@
 							<div class="form-buttons">
 								<button id="item-remove" type="button" class="danger" aria-describedby="item-error"></button>
 								<button id="item-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-								<button id="item-save" type="submit" aria-describedby="item-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+								<button id="item-save" type="submit" aria-describedby="item-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item or tile) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
 							</div>
 						</fieldset>
 					</form>
@@ -596,7 +584,7 @@
 							<div class="form-buttons">
 								<button id="race-remove" type="button" class="danger" aria-describedby="race-error"></button>
 								<button id="race-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-								<button id="race-save" type="submit" aria-describedby="race-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+								<button id="race-save" type="submit" aria-describedby="race-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item or tile) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
 							</div>
 						</fieldset>
 					</form>
@@ -670,7 +658,7 @@
 							<div class="form-buttons">
 								<button id="class-remove" type="button" class="danger" aria-describedby="class-error"></button>
 								<button id="class-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-								<button id="class-save" type="submit" aria-describedby="class-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+								<button id="class-save" type="submit" aria-describedby="class-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item or tile) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
 							</div>
 						</fieldset>
 					</form>
@@ -697,7 +685,7 @@
 							<div class="form-buttons">
 								<button id="theme-remove" type="button" class="danger" aria-describedby="theme-error"></button>
 								<button id="theme-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-								<button id="theme-save" type="submit" aria-describedby="theme-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+								<button id="theme-save" type="submit" aria-describedby="theme-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item or tile) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
 							</div>
 						</fieldset>
 					</form>
@@ -729,7 +717,7 @@
 							<div class="form-buttons">
 								<button id="difficulty-remove" type="button" class="danger" aria-describedby="difficulty-error"></button>
 								<button id="difficulty-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-								<button id="difficulty-save" type="submit" aria-describedby="difficulty-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+								<button id="difficulty-save" type="submit" aria-describedby="difficulty-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item or tile) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
 							</div>
 						</fieldset>
 					</form>
@@ -786,7 +774,7 @@
 							<div class="form-buttons">
 								<button id="tile-remove" type="button" class="danger" aria-describedby="tile-error"></button>
 								<button id="tile-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-								<button id="tile-save" type="submit" aria-describedby="tile-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+								<button id="tile-save" type="submit" aria-describedby="tile-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item or tile) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
 							</div>
 						</fieldset>
 					</form>

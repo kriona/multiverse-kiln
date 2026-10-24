@@ -1,124 +1,59 @@
-import { ABILITY_NAMES, canEditUniverseSettings, FLOATING_ABILITY_BONUSES, isSf1eRaceRules, RULESET_ABILITIES, SIZE_NAMES, type EditableUniverse, type EditorRace, type Ruleset } from '@multiverse-kiln/shared';
+import { ABILITY_NAMES, canEditUniverseSettings, FLOATING_ABILITY_BONUSES, isSf1eRaceRules, RULESET_ABILITIES, SIZE_NAMES, type EditorRace, type RaceSettings, type Ruleset } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../../localization';
-import { describeEditorError, type EditorApi } from '../../network/editorApi';
-import { getElement, showMessage } from '../dom';
+import type { EditorApi } from '../../network/editorApi';
+import { getElement } from '../dom';
 import { raceName } from '../raceAndClassNames';
 import type { ItemSelectDialog } from './ItemSelectDialog';
-import { createOptionRow, optionTags } from './optionRows';
+import { OptionList } from './OptionList';
 import { RaceDialog } from './RaceDialog';
 import type { AreaSelectDialog } from './AreaSelectDialog';
 
 /**
- * The Races tab: every race characters of the universe can be, opening the race editor
+ * The Races tab: every race characters of the universe can be, opening the race editor. Changes wait on
+ * the page until the tab is saved
  */
-export class RacesTab
+export class RacesTab extends OptionList<EditorRace, RaceSettings>
 {
-	private readonly addButton = getElement('race-add', HTMLButtonElement);
-	private readonly rows = getElement('race-rows', HTMLTableSectionElement);
-	private readonly error = getElement('race-list-error', HTMLElement);
-	private readonly dialog: RaceDialog;
-
-	private universe: EditableUniverse | undefined;
-
-	/**
-	 * Changes with every request for the list, so a list that arrives after a newer request is ignored
-	 */
-	private requestVersion = 0;
-
 	/**
 	 * @param api The editor's API
 	 * @param areaSelect The dialog for choosing a race's starting area
 	 * @param itemSelect The dialog for choosing a race's starting equipment
 	 */
-	constructor(private readonly api: EditorApi, areaSelect: AreaSelectDialog, itemSelect: ItemSelectDialog)
+	constructor(api: EditorApi, areaSelect: AreaSelectDialog, itemSelect: ItemSelectDialog)
 	{
-		this.dialog = new RaceDialog(api, areaSelect, itemSelect);
+		const dialog = new RaceDialog(api, areaSelect, itemSelect);
 
-		this.addButton.addEventListener('click', () =>
-		{
-			this.openRace(undefined);
-		});
-	}
-
-	/**
-	 * Lists a universe's races
-	 *
-	 * @param universe The universe
-	 */
-	open(universe: EditableUniverse): void
-	{
-		this.universe = universe;
-		this.addButton.hidden = !canEditUniverseSettings(universe.role);
-		this.rows.replaceChildren();
-		void this.refresh();
-	}
-
-	/**
-	 * Loads and shows the races, by name
-	 */
-	private async refresh(): Promise<void>
-	{
-		const universe = this.universe;
-		const version = ++this.requestVersion;
-
-		if (!universe)
-		{
-			return;
-		}
-
-		let races: EditorRace[];
-
-		try
-		{
-			races = await this.api.listRaces(universe.id);
-		}
-		catch (error)
-		{
-			if (version === this.requestVersion)
+		super({
+			addButton: getElement('race-add', HTMLButtonElement),
+			rows: getElement('race-rows', HTMLTableSectionElement),
+			error: getElement('race-list-error', HTMLElement),
+			listFailed: {
+				id: 'editor.races.listFailed',
+				defaultMessage: 'Could not list the races.',
+				description: 'Shown on the Races tab when the races couldn\'t be loaded'
+			},
+			canEdit: (universe) => canEditUniverseSettings(universe.role),
+			load: (universeId) => api.listRaces(universeId),
+			routes: (universeId) => ({
+				create: (settings) => api.createRace(universeId, settings),
+				save: (raceId, settings) => api.saveRace(universeId, raceId, settings),
+				remove: (raceId) => api.deleteRace(universeId, raceId)
+			}),
+			created: (id, settings) => ({
+				id,
+				key: null,
+				...settings,
+				custom: true,
+				edited: false
+			}),
+			name: raceName,
+			describe: describeRace,
+			openDialog: (universe, race, edit, onChanged) =>
 			{
-				showMessage(this.error, describeEditorError(error, {
-					id: 'editor.races.listFailed',
-					defaultMessage: 'Could not list the races.',
-					description: 'Shown on the Races tab when the races couldn\'t be loaded'
-				}));
+				dialog.open(universe, race, edit, onChanged);
 			}
-
-			return;
-		}
-
-		if (version !== this.requestVersion)
-		{
-			return;
-		}
-
-		showMessage(this.error, undefined);
-		this.rows.replaceChildren(...races
-			.map((race) => ({
-				race,
-				name: raceName(race, universe.ruleset)
-			}))
-			.sort((a, b) => a.name.localeCompare(b.name))
-			.map(({ race, name }) => createOptionRow(name, describeRace(race, universe.ruleset), optionTags(race), () =>
-			{
-				this.openRace(race);
-			})));
-	}
-
-	/**
-	 * Opens the race editor, refreshing the list after a change
-	 *
-	 * @param race The race, or undefined to add one
-	 */
-	private openRace(race: EditorRace | undefined): void
-	{
-		if (this.universe)
-		{
-			this.dialog.open(this.universe, race, () =>
-			{
-				void this.refresh();
-			});
-		}
+		});
 	}
 }
 

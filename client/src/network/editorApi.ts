@@ -1,5 +1,5 @@
 import { ServerError, type Client } from '@colyseus/sdk';
-import { EDITOR_UNIVERSES_PATH, isLocalizedMessage, MAX_TILES_PER_PAGE, type CellChange, type ChunkListPayload, type ChunkRange, type ClassListPayload, type ClassSettings, type CreatedPayload, type DifficultyLevel, type DifficultyLevelListPayload, type DifficultyLevelSettings, type EditableUniverse, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type NewAreaRequest, type RaceListPayload, type RaceSettings, type ResizeConflictPayload, type RulesetSettings, type EditorTheme, type ThemeListPayload, type ThemeSettings, type TileListPayload, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type AreaLinkListPayload, type AreaLinkTarget, type AreaListPayload, type AreaSettingsUpdate, type MessageSource } from '@multiverse-kiln/shared';
+import { EDITOR_UNIVERSES_PATH, isLocalizedMessage, MAX_TILES_PER_PAGE, type CellChange, type ChunkListPayload, type ChunkRange, type ClassListPayload, type ClassSettings, type CreatedPayload, type DifficultyLevel, type DifficultyLevelListPayload, type DifficultyLevelSettings, type EditableUniverse, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type NewAreaRequest, type RaceListPayload, type RaceSettings, type ResizeConflictPayload, type RulesetSettings, type EditorTheme, type ThemeListPayload, type ThemeSettings, type TileListPayload, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type AreaLinkListPayload, type AreaLinkTarget, type AreaListPayload, type AreaSettingsUpdate, type MessageSource, type MessageValues } from '@multiverse-kiln/shared';
 
 import { localizedText, t } from '../localization';
 
@@ -714,9 +714,10 @@ function describeServerError(status: number, data: unknown): string
  *
  * @param error What was thrown
  * @param failure What failed, as a sentence, e.g. "Could not save the tile."
+ * @param values The values of the failure message's arguments, if it has any
  * @return The message
  */
-export function describeEditorError(error: unknown, failure: MessageSource): string
+export function describeEditorError(error: unknown, failure: MessageSource, values?: MessageValues): string
 {
 	if (error instanceof EditorApiError)
 	{
@@ -725,7 +726,7 @@ export function describeEditorError(error: unknown, failure: MessageSource): str
 			defaultMessage: '{failure} {reason}',
 			description: 'An editor action that failed, followed by why; {failure} is e.g. "Could not save the tile." and {reason} is the server\'s explanation. Change only to reorder the two sentences'
 		}, {
-			failure: t(failure),
+			failure: t(failure, values),
 			reason: error.message
 		}));
 	}
@@ -737,6 +738,6 @@ export function describeEditorError(error: unknown, failure: MessageSource): str
 		defaultMessage: '{failure} Try again in a moment.',
 		description: 'An editor action that failed for a reason the player can\'t do anything about; {failure} is e.g. "Could not save the tile."'
 	}, {
-		failure: t(failure)
+		failure: t(failure, values)
 	}));
 }

@@ -483,6 +483,10 @@
 		"message": "Raise a Crew",
 		"source": "Create Group"
 	},
+	"dialog.apply": {
+		"message": "Make it so",
+		"source": "Apply"
+	},
 	"dialog.cancel": {
 		"message": "Belay that",
 		"source": "Cancel"
@@ -775,21 +779,9 @@
 		"message": "Cast off the home port for {race}",
 		"source": "Clear the starting area for {race}"
 	},
-	"editor.class.confirmDelete": {
-		"message": "Scuttle {class}? There be no bringin' it back.",
-		"source": "Delete {class}? This can't be undone."
-	},
-	"editor.class.confirmRestore": {
-		"message": "Return {class} to the ruleset's way? Yer changes to it, its startin' coin, kit and ports too, will be lost at sea.",
-		"source": "Restore {class} to the ruleset's default? Your changes to it, including its starting money, equipment and areas, will be lost."
-	},
 	"editor.class.delete": {
 		"message": "Scuttle Callin'",
 		"source": "Delete Class"
-	},
-	"editor.class.deleteFailed": {
-		"message": "Couldn't scuttle the callin'.",
-		"source": "Could not delete the class."
 	},
 	"editor.class.editTitle": {
 		"message": "Edit {class}",
@@ -842,14 +834,6 @@
 	"editor.class.restore": {
 		"message": "Restore the Old Ways",
 		"source": "Restore Default"
-	},
-	"editor.class.restoreFailed": {
-		"message": "Couldn't restore the callin'.",
-		"source": "Could not restore the class."
-	},
-	"editor.class.saveFailed": {
-		"message": "Couldn't stow the callin'.",
-		"source": "Could not save the class."
 	},
 	"editor.class.staminaPoints": {
 		"message": "Wind each rank",
@@ -931,25 +915,17 @@
 		"message": "Add a Peril",
 		"source": "Add Difficulty"
 	},
-	"editor.difficultyLevel.confirmDelete": {
-		"message": "Scuttle {level}? Crews sailin' it will sail the usual peril instead. There be no bringin' it back.",
-		"source": "Delete {level}? Groups playing at it will play at the default difficulty instead. This can't be undone."
-	},
 	"editor.difficultyLevel.default": {
 		"message": "The usual",
 		"source": "Default"
 	},
 	"editor.difficultyLevel.defaultHint": {
-		"message": "Raise a Crew starts on the usual peril.",
-		"source": "Create Group starts on the default level."
+		"message": "New crews set sail on this peril.",
+		"source": "New groups start on this difficulty."
 	},
 	"editor.difficultyLevel.delete": {
 		"message": "Scuttle Peril",
 		"source": "Delete Difficulty"
-	},
-	"editor.difficultyLevel.deleteFailed": {
-		"message": "Couldn't scuttle the peril.",
-		"source": "Could not delete the difficulty level."
 	},
 	"editor.difficultyLevel.editTitle": {
 		"message": "Edit {level}",
@@ -974,10 +950,6 @@
 	"editor.difficultyLevel.permadeathHint": {
 		"message": "Hands who die in a crew at this peril go to Davy Jones for good.",
 		"source": "Characters who die in a group at this level are gone for good."
-	},
-	"editor.difficultyLevel.saveFailed": {
-		"message": "Couldn't stow the peril.",
-		"source": "Could not save the difficulty level."
 	},
 	"editor.displayTime": {
 		"message": "Show the hour",
@@ -1011,21 +983,9 @@
 		"message": "Add Booty",
 		"source": "Add Item"
 	},
-	"editor.item.confirmDelete": {
-		"message": "Scuttle {item}? There be no bringin' it back.",
-		"source": "Delete {item}? This can't be undone."
-	},
-	"editor.item.confirmRestore": {
-		"message": "Return {item} to the ruleset's way? Yer changes to it will be lost at sea.",
-		"source": "Restore {item} to the ruleset's default? Your changes to it will be lost."
-	},
 	"editor.item.delete": {
 		"message": "Scuttle Booty",
 		"source": "Delete Item"
-	},
-	"editor.item.deleteFailed": {
-		"message": "Couldn't scuttle the booty.",
-		"source": "Could not delete the item."
 	},
 	"editor.item.editTitle": {
 		"message": "Edit {item}",
@@ -1046,14 +1006,6 @@
 	"editor.item.restore": {
 		"message": "Restore the Old Ways",
 		"source": "Restore Default"
-	},
-	"editor.item.restoreFailed": {
-		"message": "Couldn't restore the booty.",
-		"source": "Could not restore the item."
-	},
-	"editor.item.saveFailed": {
-		"message": "Couldn't stow the booty.",
-		"source": "Could not save the item."
 	},
 	"editor.item.type": {
 		"message": "Sort",
@@ -1607,14 +1559,6 @@
 		"message": "Use the Universe's Port",
 		"source": "Use the Universe's Area"
 	},
-	"editor.race.confirmDelete": {
-		"message": "Scuttle {race}? There be no bringin' it back.",
-		"source": "Delete {race}? This can't be undone."
-	},
-	"editor.race.confirmRestore": {
-		"message": "Return {race} to the ruleset's way? Yer changes to it, its startin' coin, kit and port too, will be lost at sea.",
-		"source": "Restore {race} to the ruleset's default? Your changes to it, including its starting money, equipment and area, will be lost."
-	},
 	"editor.race.darkvision": {
 		"message": "Sees in the dark",
 		"source": "Darkvision"
@@ -1622,10 +1566,6 @@
 	"editor.race.delete": {
 		"message": "Scuttle Folk",
 		"source": "Delete Race"
-	},
-	"editor.race.deleteFailed": {
-		"message": "Couldn't scuttle the folk.",
-		"source": "Could not delete the race."
 	},
 	"editor.race.editTitle": {
 		"message": "Edit {race}",
@@ -1666,14 +1606,6 @@
 	"editor.race.restore": {
 		"message": "Restore the Old Ways",
 		"source": "Restore Default"
-	},
-	"editor.race.restoreFailed": {
-		"message": "Couldn't restore the folk.",
-		"source": "Could not restore the race."
-	},
-	"editor.race.saveFailed": {
-		"message": "Couldn't stow the folk.",
-		"source": "Could not save the race."
 	},
 	"editor.race.size": {
 		"message": "Heft",
@@ -1783,6 +1715,38 @@
 		"message": "Track what arrows get shot",
 		"source": "Track ammunition"
 	},
+	"editor.staged.deleteFailed": {
+		"message": "Couldn't scuttle {name}.",
+		"source": "Could not delete {name}."
+	},
+	"editor.staged.deleted": {
+		"message": "(scuttled when stowed)",
+		"source": "(deleted when saved)"
+	},
+	"editor.staged.newTag": {
+		"message": "fresh",
+		"source": "new"
+	},
+	"editor.staged.restoreFailed": {
+		"message": "Couldn't restore {name}.",
+		"source": "Could not restore {name}."
+	},
+	"editor.staged.restoredTag": {
+		"message": "restored when stowed",
+		"source": "restored when saved"
+	},
+	"editor.staged.saveFailed": {
+		"message": "Couldn't stow {name}.",
+		"source": "Could not save {name}."
+	},
+	"editor.staged.undoDelete": {
+		"message": "Don't Scuttle",
+		"source": "Undo Delete"
+	},
+	"editor.staged.undoRestore": {
+		"message": "Don't Restore",
+		"source": "Undo Restore"
+	},
 	"editor.startingArea.loadFailed": {
 		"message": "Couldn't make out the ports' names.",
 		"source": "Could not load the areas' names."
@@ -1855,21 +1819,9 @@
 		"message": "Add a Yarn",
 		"source": "Add Theme"
 	},
-	"editor.theme.confirmDelete": {
-		"message": "Scuttle {theme}? There be no bringin' it back.",
-		"source": "Delete {theme}? This can't be undone."
-	},
-	"editor.theme.confirmRestore": {
-		"message": "Return {theme} to the ruleset's way? Yer changes to it will be lost at sea.",
-		"source": "Restore {theme} to the ruleset's default? Your changes to it will be lost."
-	},
 	"editor.theme.delete": {
 		"message": "Scuttle Yarn",
 		"source": "Delete Theme"
-	},
-	"editor.theme.deleteFailed": {
-		"message": "Couldn't scuttle the yarn.",
-		"source": "Could not delete the theme."
 	},
 	"editor.theme.editTitle": {
 		"message": "Edit {theme}",
@@ -1890,14 +1842,6 @@
 	"editor.theme.restore": {
 		"message": "Restore the Old Ways",
 		"source": "Restore Default"
-	},
-	"editor.theme.restoreFailed": {
-		"message": "Couldn't restore the yarn.",
-		"source": "Could not restore the theme."
-	},
-	"editor.theme.saveFailed": {
-		"message": "Couldn't stow the yarn.",
-		"source": "Could not save the theme."
 	},
 	"editor.themes.ability": {
 		"message": "{ability} {bonus, number, ::sign-always}",
@@ -1943,14 +1887,6 @@
 		"message": "Pick a color",
 		"source": "Pick a color"
 	},
-	"editor.tile.confirmDelete": {
-		"message": "Scuttle {tile}? There be no bringin' it back.",
-		"source": "Delete {tile}? This can't be undone."
-	},
-	"editor.tile.confirmRestore": {
-		"message": "Return {tile} to the ruleset's way? Yer changes to it will be lost at sea.",
-		"source": "Restore {tile} to the ruleset's default? Your changes to it will be lost."
-	},
 	"editor.tile.day": {
 		"message": "Day",
 		"source": "Day"
@@ -1958,10 +1894,6 @@
 	"editor.tile.delete": {
 		"message": "Scuttle Tile",
 		"source": "Delete Tile"
-	},
-	"editor.tile.deleteFailed": {
-		"message": "Couldn't scuttle the tile.",
-		"source": "Could not delete the tile."
 	},
 	"editor.tile.editTitle": {
 		"message": "Edit {tile}",
@@ -1978,14 +1910,6 @@
 	"editor.tile.restore": {
 		"message": "Restore the Old Ways",
 		"source": "Restore Default"
-	},
-	"editor.tile.restoreFailed": {
-		"message": "Couldn't restore the tile.",
-		"source": "Could not restore the tile."
-	},
-	"editor.tile.saveFailed": {
-		"message": "Couldn't stow the tile.",
-		"source": "Could not save the tile."
 	},
 	"editor.tile.usedIn": {
 		"message": "Fit fer",

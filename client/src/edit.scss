@@ -96,6 +96,46 @@
 	padding: 16px;
 }
 
+// How tall the save bar is, so the full page map editor can leave room for it
+$save-bar-height: 56px;
+
+// Saves the tab showing; below the scrolling editor body, so it stays at the bottom of the window
+.editor-save-bar
+{
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 12px;
+	box-sizing: border-box;
+	min-height: $save-bar-height;
+	padding: 10px 16px;
+	border-top: 1px solid $border;
+	background: $background-panel;
+	// The page's text size; the footer rule in _shared.scss makes text in every <footer> smaller
+	font-size: medium;
+
+	&[hidden]
+	{
+		display: none;
+	}
+}
+
+// The full page map editor covers the window but the save bar, which stays below it
+html:has(.map-editor.full-page) .editor-save-bar
+{
+	position: fixed;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	z-index: 11;
+}
+
+html:has(.editor-save-bar:not([hidden])) .map-editor.full-page
+{
+	bottom: $save-bar-height;
+}
+
 .editor-panel
 {
 	max-width: 960px;
@@ -112,6 +152,25 @@
 	display: flex;
 	flex-direction: column;
 	gap: 16px;
+}
+
+// A row in an editor list that will be deleted when its tab is saved (markStagedRow)
+tr.staged-deleted
+{
+	opacity: 0.6;
+
+	td
+	{
+		font-style: italic;
+		text-decoration: line-through;
+	}
+
+	// Text decoration doesn't reach into buttons, so the name needs its own
+	.link-button
+	{
+		font-style: italic;
+		text-decoration: underline line-through;
+	}
 }
 
 // The themes card on the Characters tab, in a ruleset with themes, and the difficulty levels card

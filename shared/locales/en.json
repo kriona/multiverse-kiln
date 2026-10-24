@@ -483,6 +483,10 @@
 		"defaultMessage": "Create Group",
 		"description": "Title of the dialog that makes a new group (characters who play the universe together)"
 	},
+	"dialog.apply": {
+		"defaultMessage": "Apply",
+		"description": "Button in an editor dialog (race, class, theme, difficulty level, item or tile) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"
+	},
 	"dialog.cancel": {
 		"defaultMessage": "Cancel",
 		"description": "Button that closes a dialog without making any changes"
@@ -775,21 +779,9 @@
 		"defaultMessage": "Clear the starting area for {race}",
 		"description": "Name of the button that takes away the class's area for one race, for screen readers; {race} is the race's name"
 	},
-	"editor.class.confirmDelete": {
-		"defaultMessage": "Delete {class}? This can't be undone.",
-		"description": "Asks before deleting a character class made for this universe; {class} is its name"
-	},
-	"editor.class.confirmRestore": {
-		"defaultMessage": "Restore {class} to the ruleset's default? Your changes to it, including its starting money, equipment and areas, will be lost.",
-		"description": "Asks before undoing this universe's changes to one of the ruleset's character classes; {class} is its name"
-	},
 	"editor.class.delete": {
 		"defaultMessage": "Delete Class",
 		"description": "Button in the class editor that deletes a character class made for this universe"
-	},
-	"editor.class.deleteFailed": {
-		"defaultMessage": "Could not delete the class.",
-		"description": "Shown in the class editor when the character class couldn't be deleted"
 	},
 	"editor.class.editTitle": {
 		"defaultMessage": "Edit {class}",
@@ -842,14 +834,6 @@
 	"editor.class.restore": {
 		"defaultMessage": "Restore Default",
 		"description": "Button in the class editor that undoes this universe's changes to one of the ruleset's character classes"
-	},
-	"editor.class.restoreFailed": {
-		"defaultMessage": "Could not restore the class.",
-		"description": "Shown in the class editor when the ruleset's character class couldn't be restored"
-	},
-	"editor.class.saveFailed": {
-		"defaultMessage": "Could not save the class.",
-		"description": "Shown in the class editor when the character class couldn't be stored"
 	},
 	"editor.class.staminaPoints": {
 		"defaultMessage": "Stamina points per level",
@@ -931,10 +915,6 @@
 		"defaultMessage": "Add Difficulty",
 		"description": "Title of the difficulty level editor when making a new level"
 	},
-	"editor.difficultyLevel.confirmDelete": {
-		"defaultMessage": "Delete {level}? Groups playing at it will play at the default difficulty instead. This can't be undone.",
-		"description": "Asks before deleting a difficulty level; {level} is its name"
-	},
 	"editor.difficultyLevel.default": {
 		"defaultMessage": "Default",
 		"description": "Checkbox for whether a difficulty level is the one a new group starts on"
@@ -946,10 +926,6 @@
 	"editor.difficultyLevel.delete": {
 		"defaultMessage": "Delete Difficulty",
 		"description": "Button in the difficulty level editor that deletes the level"
-	},
-	"editor.difficultyLevel.deleteFailed": {
-		"defaultMessage": "Could not delete the difficulty level.",
-		"description": "Shown in the difficulty level editor when the level couldn't be deleted"
 	},
 	"editor.difficultyLevel.editTitle": {
 		"defaultMessage": "Edit {level}",
@@ -974,10 +950,6 @@
 	"editor.difficultyLevel.permadeathHint": {
 		"defaultMessage": "Characters who die in a group at this level are gone for good.",
 		"description": "Explains the difficulty level editor's Permadeath checkbox"
-	},
-	"editor.difficultyLevel.saveFailed": {
-		"defaultMessage": "Could not save the difficulty level.",
-		"description": "Shown in the difficulty level editor when the level couldn't be stored"
 	},
 	"editor.displayTime": {
 		"defaultMessage": "Display time",
@@ -1011,21 +983,9 @@
 		"defaultMessage": "Add Item",
 		"description": "Title of the item editor when making a new item"
 	},
-	"editor.item.confirmDelete": {
-		"defaultMessage": "Delete {item}? This can't be undone.",
-		"description": "Asks before deleting an item made for this universe; {item} is its name"
-	},
-	"editor.item.confirmRestore": {
-		"defaultMessage": "Restore {item} to the ruleset's default? Your changes to it will be lost.",
-		"description": "Asks before undoing this universe's changes to one of the ruleset's items; {item} is its name"
-	},
 	"editor.item.delete": {
 		"defaultMessage": "Delete Item",
 		"description": "Button in the item editor that deletes an item made for this universe"
-	},
-	"editor.item.deleteFailed": {
-		"defaultMessage": "Could not delete the item.",
-		"description": "Shown in the item editor when the item couldn't be deleted"
 	},
 	"editor.item.editTitle": {
 		"defaultMessage": "Edit {item}",
@@ -1046,14 +1006,6 @@
 	"editor.item.restore": {
 		"defaultMessage": "Restore Default",
 		"description": "Button in the item editor that undoes this universe's changes to one of the ruleset's items"
-	},
-	"editor.item.restoreFailed": {
-		"defaultMessage": "Could not restore the item.",
-		"description": "Shown in the item editor when the ruleset's item couldn't be restored"
-	},
-	"editor.item.saveFailed": {
-		"defaultMessage": "Could not save the item.",
-		"description": "Shown in the item editor when the item couldn't be stored"
 	},
 	"editor.item.type": {
 		"defaultMessage": "Type",
@@ -1563,14 +1515,6 @@
 		"defaultMessage": "Use the Universe's Area",
 		"description": "Button in the race editor that takes away the race's starting area, so its characters start in the universe's"
 	},
-	"editor.race.confirmDelete": {
-		"defaultMessage": "Delete {race}? This can't be undone.",
-		"description": "Asks before deleting a race made for this universe; {race} is its name"
-	},
-	"editor.race.confirmRestore": {
-		"defaultMessage": "Restore {race} to the ruleset's default? Your changes to it, including its starting money, equipment and area, will be lost.",
-		"description": "Asks before undoing this universe's changes to one of the ruleset's races; {race} is its name"
-	},
 	"editor.race.darkvision": {
 		"defaultMessage": "Darkvision",
 		"description": "Checkbox for whether the race can see in the dark"
@@ -1578,10 +1522,6 @@
 	"editor.race.delete": {
 		"defaultMessage": "Delete Race",
 		"description": "Button in the race editor that deletes a race made for this universe"
-	},
-	"editor.race.deleteFailed": {
-		"defaultMessage": "Could not delete the race.",
-		"description": "Shown in the race editor when the race couldn't be deleted"
 	},
 	"editor.race.editTitle": {
 		"defaultMessage": "Edit {race}",
@@ -1622,14 +1562,6 @@
 	"editor.race.restore": {
 		"defaultMessage": "Restore Default",
 		"description": "Button in the race editor that undoes this universe's changes to one of the ruleset's races"
-	},
-	"editor.race.restoreFailed": {
-		"defaultMessage": "Could not restore the race.",
-		"description": "Shown in the race editor when the ruleset's race couldn't be restored"
-	},
-	"editor.race.saveFailed": {
-		"defaultMessage": "Could not save the race.",
-		"description": "Shown in the race editor when the race couldn't be stored"
 	},
 	"editor.race.size": {
 		"defaultMessage": "Size",
@@ -1783,6 +1715,38 @@
 		"defaultMessage": "Track ammunition",
 		"description": "Checkbox for whether arrows and other ammunition are used up when fired"
 	},
+	"editor.staged.deleteFailed": {
+		"defaultMessage": "Could not delete {name}.",
+		"description": "Shown on an editor tab when saving its changes stopped at a deletion the server refused; {name} is the name of the race, class, theme, difficulty level, item or tile. Changes after it are kept, not saved"
+	},
+	"editor.staged.deleted": {
+		"defaultMessage": "(deleted when saved)",
+		"description": "Read out by screen readers after the name of a race, class, theme, difficulty level, item or tile in an editor list that will be deleted when the tab is saved; on screen the row is struck through"
+	},
+	"editor.staged.newTag": {
+		"defaultMessage": "new",
+		"description": "In the last column of an editor list (races, classes, themes, difficulty levels, items or tiles), for one added since the tab was last saved, which isn't saved yet"
+	},
+	"editor.staged.restoreFailed": {
+		"defaultMessage": "Could not restore {name}.",
+		"description": "Shown on an editor tab when saving its changes stopped at putting one of the ruleset's races, classes, themes, items or tiles back as the ruleset has it; {name} is its name. Changes after it are kept, not saved"
+	},
+	"editor.staged.restoredTag": {
+		"defaultMessage": "restored when saved",
+		"description": "In the last column of an editor list (races, classes, themes, items or tiles), for one of the ruleset's that will be put back as the ruleset has it when the tab is saved"
+	},
+	"editor.staged.saveFailed": {
+		"defaultMessage": "Could not save {name}.",
+		"description": "Shown on an editor tab when saving its changes stopped at one the server refused; {name} is the name of the race, class, theme, difficulty level, item or tile. Changes after it are kept, not saved"
+	},
+	"editor.staged.undoDelete": {
+		"defaultMessage": "Undo Delete",
+		"description": "Button in an editor dialog (race, class, theme, difficulty level, item or tile) for one that will be deleted when the tab is saved: keeps it instead"
+	},
+	"editor.staged.undoRestore": {
+		"defaultMessage": "Undo Restore",
+		"description": "Button in an editor dialog (race, class, theme, item or tile) for one of the ruleset's that will be put back as the ruleset has it when the tab is saved: keeps the universe's changes instead"
+	},
 	"editor.startingArea.loadFailed": {
 		"defaultMessage": "Could not load the areas' names.",
 		"description": "Shown in the race or class editor when the names of the areas characters start in couldn't be loaded"
@@ -1855,21 +1819,9 @@
 		"defaultMessage": "Add Theme",
 		"description": "Title of the theme editor when making a new theme (a character background, such as ace pilot)"
 	},
-	"editor.theme.confirmDelete": {
-		"defaultMessage": "Delete {theme}? This can't be undone.",
-		"description": "Asks before deleting a theme made for this universe; {theme} is its name"
-	},
-	"editor.theme.confirmRestore": {
-		"defaultMessage": "Restore {theme} to the ruleset's default? Your changes to it will be lost.",
-		"description": "Asks before undoing this universe's changes to one of the ruleset's themes; {theme} is its name"
-	},
 	"editor.theme.delete": {
 		"defaultMessage": "Delete Theme",
 		"description": "Button in the theme editor that deletes a theme made for this universe"
-	},
-	"editor.theme.deleteFailed": {
-		"defaultMessage": "Could not delete the theme.",
-		"description": "Shown in the theme editor when the theme couldn't be deleted"
 	},
 	"editor.theme.editTitle": {
 		"defaultMessage": "Edit {theme}",
@@ -1890,14 +1842,6 @@
 	"editor.theme.restore": {
 		"defaultMessage": "Restore Default",
 		"description": "Button in the theme editor that undoes this universe's changes to one of the ruleset's themes"
-	},
-	"editor.theme.restoreFailed": {
-		"defaultMessage": "Could not restore the theme.",
-		"description": "Shown in the theme editor when the ruleset's theme couldn't be restored"
-	},
-	"editor.theme.saveFailed": {
-		"defaultMessage": "Could not save the theme.",
-		"description": "Shown in the theme editor when the theme couldn't be stored"
 	},
 	"editor.themes.ability": {
 		"defaultMessage": "{ability} {bonus, number, ::sign-always}",
@@ -1943,14 +1887,6 @@
 		"defaultMessage": "Pick a color",
 		"description": "Name of the color picker for a tile's color, for screen readers"
 	},
-	"editor.tile.confirmDelete": {
-		"defaultMessage": "Delete {tile}? This can't be undone.",
-		"description": "Asks before deleting a tile made for this universe; {tile} is its name"
-	},
-	"editor.tile.confirmRestore": {
-		"defaultMessage": "Restore {tile} to the ruleset's default? Your changes to it will be lost.",
-		"description": "Asks before undoing this universe's changes to one of the ruleset's tiles; {tile} is its name"
-	},
 	"editor.tile.day": {
 		"defaultMessage": "Day",
 		"description": "Caption of the preview of the tile in daylight"
@@ -1958,10 +1894,6 @@
 	"editor.tile.delete": {
 		"defaultMessage": "Delete Tile",
 		"description": "Button in the tile editor that deletes a tile made for this universe"
-	},
-	"editor.tile.deleteFailed": {
-		"defaultMessage": "Could not delete the tile.",
-		"description": "Shown in the tile editor when the tile couldn't be deleted"
 	},
 	"editor.tile.editTitle": {
 		"defaultMessage": "Edit {tile}",
@@ -1978,14 +1910,6 @@
 	"editor.tile.restore": {
 		"defaultMessage": "Restore Default",
 		"description": "Button in the tile editor that undoes this universe's changes to one of the ruleset's tiles"
-	},
-	"editor.tile.restoreFailed": {
-		"defaultMessage": "Could not restore the tile.",
-		"description": "Shown in the tile editor when the ruleset's tile couldn't be restored"
-	},
-	"editor.tile.saveFailed": {
-		"defaultMessage": "Could not save the tile.",
-		"description": "Shown in the tile editor when the tile couldn't be stored"
 	},
 	"editor.tile.usedIn": {
 		"defaultMessage": "Where",
