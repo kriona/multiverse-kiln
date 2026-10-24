@@ -5,7 +5,8 @@
  * vision budget: its length in squares (a diagonal step counts as one and a half, as in movement), more
  * when it leaves a cell with a vision cost (50% doubles it). A cell with
  * OPAQUE_VISION_COST can be seen but not seen past, so a line of mountains blocks the view; it is also
- * seen when open ground beside it is, so the walls lining a corridor show along its length. The budget
+ * seen when open ground on one of its sides is, or diagonally beside it at an inside corner, so the walls
+ * lining a corridor show along its length. The budget
  * is shorter at night and in dark indoor areas unless the character has darkvision. The server uses this to decide which players
  * each client is shown, and the client to draw fog over the cells out of sight
  */
@@ -177,7 +178,9 @@ export function visionKey(column: number, row: number): string
  *
  * A straight line to a wall further along a corridor passes through the nearer walls lining it, so
  * without the second rule the sides of a corridor would be hidden while its floor is in sight. The inside
- * of a thick wall stays hidden, since it touches only more wall, and so does the far side of one
+ * of a thick wall stays hidden, since it touches only more wall, and so does the far side of one.
+ * Open ground diagonally beside a wall only counts at an inside corner (isCornerOrSide), so a wall
+ * doesn't show when the open ground on its sides is hidden
  *
  * @param from The cell looked from
  * @param columns How many columns away the other cell is, which may be past a looping edge
@@ -206,7 +209,7 @@ function isSeen(from: VisionCell, columns: number, rows: number, budget: number,
 		{
 			const beside = { column: target.column + columnStep, row: target.row + rowStep };
 
-			if (((columnStep !== 0) || (rowStep !== 0)) && (visionCostAt(beside, map) < OPAQUE_VISION_COST) && isInSight(from, columns + columnStep, rows + rowStep, budget, map))
+			if (((columnStep !== 0) || (rowStep !== 0)) && isCornerOrSide(target, columnStep, rowStep, map) && (visionCostAt(beside, map) < OPAQUE_VISION_COST) && isInSight(from, columns + columnStep, rows + rowStep, budget, map))
 			{
 				return(true);
 			}
@@ -214,6 +217,26 @@ function isSeen(from: VisionCell, columns: number, rows: number, budget: number,
 	}
 
 	return(false);
+}
+
+/**
+ * Whether the cell one step from a wall can show the wall: one on its side, or one diagonally beside it
+ * at an inside corner, where both cells between them can't be seen past either, as in a room's corner
+ *
+ * @param wall The wall's cell
+ * @param columnStep How many columns the other cell is from the wall: -1, 0 or 1
+ * @param rowStep How many rows the other cell is from the wall: -1, 0 or 1
+ * @param map The map
+ * @return True when the other cell is on the wall's side or at an inside corner
+ */
+function isCornerOrSide(wall: VisionCell, columnStep: number, rowStep: number, map: VisionMap): boolean
+{
+	if ((columnStep === 0) || (rowStep === 0))
+	{
+		return(true);
+	}
+
+	return((visionCostAt({ column: wall.column + columnStep, row: wall.row }, map) >= OPAQUE_VISION_COST) && (visionCostAt({ column: wall.column, row: wall.row + rowStep }, map) >= OPAQUE_VISION_COST));
 }
 
 /**

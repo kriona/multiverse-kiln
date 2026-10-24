@@ -149,6 +149,47 @@ describe('vision (shared)', () =>
 			assert.strictEqual(canSee(origin, { column: 15, row: 2 }, 20, mapWith(costs)), true);
 		});
 
+		it('doesn\'t see a wall only open ground diagonally beside it shows', () =>
+		{
+			const costs: Record<string, number> = {};
+
+			// A mountain range whose eastern tip has open ground on every side and hidden from the origin
+			for (const [column, row] of [[0, 1], [1, 1], [-1, 2], [0, 2], [1, 2], [2, 2], [0, 3], [1, 3]])
+			{
+				costs[visionKey(column, row)] = 100;
+			}
+
+			const visible = visibleCells(origin, 20, mapWith(costs));
+
+			assert.ok(visible.has(visionKey(3, 1)));
+			assert.ok(!visible.has(visionKey(2, 1)));
+			assert.ok(!visible.has(visionKey(2, 2)));
+		});
+
+		it('sees the corners of a room', () =>
+		{
+			const costs: Record<string, number> = {};
+
+			// A room from column 1 to 5 and row 1 to 3, walled all round
+			for (let column = 0; column <= 6; column++)
+			{
+				for (let row = 0; row <= 4; row++)
+				{
+					if ((column === 0) || (column === 6) || (row === 0) || (row === 4))
+					{
+						costs[visionKey(column, row)] = 100;
+					}
+				}
+			}
+
+			const map = mapWith(costs);
+			const from = { column: 5, row: 1 };
+
+			assert.strictEqual(canSee(from, { column: 0, row: 0 }, 20, map), true);
+			assert.strictEqual(canSee(from, { column: 0, row: 4 }, 20, map), true);
+			assert.strictEqual(canSee(from, { column: -1, row: 0 }, 20, map), false);
+		});
+
 		it('sees the same mirrored east to west', () =>
 		{
 			const map = mapWith({
