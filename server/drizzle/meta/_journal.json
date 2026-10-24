@@ -309,6 +309,13 @@
       "when": 1792855297585,
       "tag": "0043_default_grass_graphic",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1792856883990,
+      "tag": "0044_default_forest_graphic",
+      "breakpoints": true
     }
   ]
 }

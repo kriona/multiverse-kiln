@@ -205,7 +205,7 @@ describe('LobbyRoom', () =>
 
 			assert.strictEqual(area.ruleset, 'pf1e');
 			assert.strictEqual(area.fullVision, true, 'the lobby sees as far as by day unless the universe gives it a vision cost');
-			assert.deepStrictEqual(forest, { id: forest?.id, key: 'forest', name: null, color: 0x00aa11, graphic: null, visionCost: 0 },'the lobby has no vision cost unless the universe gives it one');
+			assert.deepStrictEqual(forest, { id: forest?.id, key: 'forest', name: null, color: 0x00aa11, graphic: 'forest', visionCost: 0 }, 'the lobby has no vision cost unless the universe gives it one');
 			assert.strictEqual(area.tiles.some((tile) => (tile.name !== null)), false, 'default tiles are named by key, not in English');
 		});
 

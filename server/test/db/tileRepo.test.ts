@@ -79,10 +79,10 @@ describe('tileRepo', () =>
 			const tiles = await loadUniverseTiles(await addUniverse(), 'pf1e');
 			const forest = tiles.find((tile) => (tile.name === 'Forest'));
 
-			assert.deepStrictEqual(forest, { id: forest?.id, key: 'forest', name: 'Forest', indoors: false, outdoors: true, color: 0x00aa11, graphic: null, visionCost: 50, walkSeconds: 1200 });
+			assert.deepStrictEqual(forest, { id: forest?.id, key: 'forest', name: 'Forest', indoors: false, outdoors: true, color: 0x00aa11, graphic: 'forest', visionCost: 50, walkSeconds: 1200 });
 		});
 
-		it('draws each ruleset\'s default grass with the grass graphic', async () =>
+		it('draws each ruleset\'s default grass and forest with their graphics', async () =>
 		{
 			for (const ruleset of ['pf1e', 'sf1e'] as const)
 			{
@@ -90,6 +90,10 @@ describe('tileRepo', () =>
 
 				assert.strictEqual(tiles.find((tile) => (tile.key === 'grass'))?.graphic, 'grass', ruleset);
 			}
+
+			const pf1eTiles = await loadUniverseTiles(await addUniverse(), 'pf1e');
+
+			assert.strictEqual(pf1eTiles.find((tile) => (tile.key === 'forest'))?.graphic, 'forest');
 		});
 
 		it('gives an edited default tile the universe\'s settings under the default tile\'s ID, for that universe only', async () =>

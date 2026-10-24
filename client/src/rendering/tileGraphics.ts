@@ -1,24 +1,21 @@
 import type Phaser from 'phaser';
 import { isTileGraphic, TILE_GRAPHIC_KEYS, type TileGraphic } from '@multiverse-kiln/shared';
 
+import forestUrl from '../assets/tilesets/forest.png';
 import grassUrl from '../assets/tilesets/grass.png';
 
 /**
  * Each graphic's image, a Dual-Grid sheet (see DUAL_GRID_COLUMNS)
  */
 export const TILE_GRAPHIC_URLS: Record<TileGraphic, string> = {
-	grass: grassUrl
+	grass: grassUrl,
+	forest: forestUrl
 };
 
 /**
  * How many frames wide a Dual-Grid sheet is; it is as many tall
  */
 export const DUAL_GRID_COLUMNS = 4;
-
-/**
- * The frame of a Dual-Grid sheet that is the tile on all 4 corners
- */
-export const FULL_FRAME = 15;
 
 /**
  * The key a graphic's image is loaded under in a game's textures

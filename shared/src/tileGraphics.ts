@@ -13,6 +13,9 @@
 export const TILE_GRAPHICS = {
 	grass: {
 		drawOrder: 30
+	},
+	forest: {
+		drawOrder: 40
 	}
 } as const satisfies Record<string, { drawOrder: number }>;
 

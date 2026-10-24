@@ -151,7 +151,7 @@ export class AreaRenderer
 	private readonly drawableIndexes = new Map<number, number>();
 
 	/**
-	 * Each frame drawn into the atlas so far, by frameKey(), with its place in the atlas
+	 * Each frame drawn into the atlas so far, by its corner's tiles and cut-off quarters, with its place in the atlas
 	 */
 	private readonly frames = new Map<string, number>();
 

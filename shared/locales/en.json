@@ -1711,6 +1711,10 @@
 		"defaultMessage": "Graphic",
 		"description": "Label of the tile editor's list of the graphics a tile can be drawn with"
 	},
+	"editor.tile.graphic.forest": {
+		"defaultMessage": "Forest",
+		"description": "One of the graphics a tile can be drawn with, in the tile editor's list of them and read out for the Tilesets table's pictures of tiles: woodland"
+	},
 	"editor.tile.graphic.grass": {
 		"defaultMessage": "Grass",
 		"description": "One of the graphics a tile can be drawn with, in the tile editor's list of them and read out for the Tilesets table's pictures of tiles: grass"

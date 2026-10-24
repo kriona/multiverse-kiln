@@ -1711,6 +1711,10 @@
 		"message": "Paintin'",
 		"source": "Graphic"
 	},
+	"editor.tile.graphic.forest": {
+		"message": "Greenwood",
+		"source": "Forest"
+	},
 	"editor.tile.graphic.grass": {
 		"message": "Grass",
 		"source": "Grass"
