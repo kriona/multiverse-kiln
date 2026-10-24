@@ -24,7 +24,7 @@ const translationFiles = {
 const loaders = new Map(Object.entries(translationFiles).map(([file, load]) => [(file.split('/').pop() ?? '').replace(/\.json$/, ''), load]));
 
 /**
- * Where the browser keeps the language the player chose, until profiles hold it (Phase 13)
+ * Where the browser keeps the language the player chose, until profiles hold it (Phase 14)
  */
 const LOCALE_STORAGE_KEY = 'kiln.locale';
 

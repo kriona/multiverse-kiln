@@ -5,7 +5,7 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 **Current phase** line updated so each new session knows where to pick up.
 `STRUCTURE-OVERVIEW.md` describes the pages, editors and game rules these phases build.
 
-**Current phase:** 12
+**Current phase:** 13
 
 ---
 
@@ -58,7 +58,7 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 
 ## Phase 4: Repository security
 
-- [✅] Move the inline `<style>` in `client/index.html` to a CSS file so the CSP (Phase 15) doesn't need `'unsafe-inline'`
+- [✅] Move the inline `<style>` in `client/index.html` to a CSS file so the CSP (Phase 16) doesn't need `'unsafe-inline'`
 - [✅] In the GitHub repository's Settings > Advanced Security, turn on Dependabot alerts, Dependabot security updates and secret scanning with push protection (`.github/dependabot.yml` already configures version updates, and gitleaks runs in the pre-commit hook)
 - [✅] Add a `docker-compose` entry to `.github/dependabot.yml`
 - [ ] Add a `github-actions` entry to `.github/dependabot.yml` once there are workflows
@@ -68,7 +68,7 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 
 ## Phase 5: Lobby and groups
 
-- [✅] Lobby: name-only login (in memory until Phase 13), chat, who's online, and a Create game button
+- [✅] Lobby: name-only login (in memory until Phase 14), chat, who's online, and a Create game button
 - [✅] Groups of up to 6 players, each in its own game room; a player is in one group at a time and can leave it
 - [✅] Rate limits on room messages (`maxMessagesPerSecond`) and on chat
 
@@ -77,7 +77,7 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 ## Phase 6: Persistence
 
 - [✅] Test database (`kiln_test`) for the test suite: migrated before the tests run and emptied before each test
-- [✅] `playerRepo`: the name-only login loads the player with that name (ignoring capitals) or creates them, so a name is the whole login until Phase 13. A player can be logged in from one browser at a time
+- [✅] `playerRepo`: the name-only login loads the player with that name (ignoring capitals) or creates them, so a name is the whole login until Phase 14. A player can be logged in from one browser at a time
 - [✅] The player is loaded when they log in. Nothing changes during play yet, so there is nothing to save in `onLeave` / `onDispose` until characters exist (Phase 10)
 - [✅] A test that fails if the database is used while players move
 
@@ -98,7 +98,7 @@ Built in three steps: data and logic, then rooms, then the client.
 - [✅] A room holds every area its players are in; each player has an area, and each client only sees the players in its own area (`StateView`, one per client for now)
 - [✅] Rooms load area maps at lifecycle boundaries, and load the next area before a player moves into it, never inside the tick
 - [✅] `GET /universes` lists the universes Home shows, a page at a time
-- [✅] Client draws tiles by color from the area data (graphics come in Phase 17), drawing only the chunks near the camera. The server still sends the whole area (see Phase 8)
+- [✅] Client draws tiles by color from the area data (graphics come in Phase 13), drawing only the chunks near the camera. The server still sends the whole area (see Phase 8)
 - [✅] Looping areas wrap seamlessly: near an edge the client draws the far side's chunks beyond it, players on the far side appear across the edge, and stepping over the edge doesn't jump the camera or the player
 - [✅] Area links: automatic links move you, manual links offer a prompt (press E)
 - [✅] The lobby screen shows the lobby's map next to chat and who's here, so players can walk around it
@@ -110,14 +110,14 @@ Built in three steps: data and logic, then rooms, then the client.
 
 Built in four steps: the server API, the editor pages, the map editor, then loading chunks as players approach them.
 
-- [✅] Editor API as REST routes in `server/src/http/` backed by repositories (editing isn't real-time, so it doesn't need a room). Every request checks the user may edit that universe, and validates against the same limits as the UI. Who may edit is stored in `universe_editors` (creator, builder, beta tester; Phase 14 adds the Editors tab), and until logins exist (Phase 13) a request's player is the one its browser ID cookie is logged in as
+- [✅] Editor API as REST routes in `server/src/http/` backed by repositories (editing isn't real-time, so it doesn't need a room). Every request checks the user may edit that universe, and validates against the same limits as the UI. Who may edit is stored in `universe_editors` (creator, builder, beta tester; Phase 15 adds the Editors tab), and until logins exist (Phase 14) a request's player is the one its browser ID cookie is logged in as
 - [✅] Create Universe modal (name, 1-sentence description, ruleset), up to 5 per user. Creates a lobby area and a default area as every race's starting area, and makes the user its creator. Home lists the universes the user has a role in, which opens them in the editor
-- [✅] Edit Universe page: name, descriptions (markdown rendered sanitized with `marked` and DOMPurify, also on Home's overview), stage, ruleset, passage of time. Logo and banner wait for image storage (Phase 17). A Lobby tab opens the lobby's area until the rest of the tab arrives (Phase 12)
+- [✅] Edit Universe page: name, descriptions (markdown rendered sanitized with `marked` and DOMPurify, also on Home's overview), stage, ruleset, passage of time. Logo and banner wait for image storage (Phase 18). A Lobby tab opens the lobby's area until the rest of the tab arrives (Phase 12)
 - [✅] Tilesets tab (filters for name, passable, custom and edited; pagination) and tile editor (name, indoors, color, vision cost, walk time)
 - [✅] Areas tab with the single-area drill-down, and the area editor's settings. Its map is the next item
 - [✅] Map editor: grid centered on 0,0, expand buttons, edit-size dialog with its warning, draw tool (a tile or Void; size 1-100; circle or square), undo/redo with a drag counted as one step. It loads chunks as the view reaches them, pans with the right or middle mouse button and zooms with the wheel. Undo covers painting; resizing to a smaller map clears the undo history
 - [✅] Area link layer: automatic or manual, "requires the whole group", select destination coordinates with an optional return link (placed in the target area, leading back to the link's cell)
-- [✅] Edits apply immediately (universe versions come in Phase 14): the editor routes tell open rooms in this process about changed cells, areas, links and tiles (`areaChanges`), and the rooms update the areas they have loaded and their clients. Players a smaller map leaves out move to the nearest free cell inside it; players in a deleted area go to the lobby area (lobby) or starting area (group)
+- [✅] Edits apply immediately (universe versions come in Phase 15): the editor routes tell open rooms in this process about changed cells, areas, links and tiles (`areaChanges`), and the rooms update the areas they have loaded and their clients. Players a smaller map leaves out move to the nearest free cell inside it; players in a deleted area go to the lobby area (lobby) or starting area (group)
 - [✅] Rooms load an area's chunks as players come near them and drop chunks nobody is near, instead of loading the whole map (`loadArea` reads only the area's settings, links and tiles), since the editor can make maps up to 50,000 cells per side. Loading stays outside the tick, on a 250 ms interval: a player waits at the edge of a chunk that hasn't arrived yet. Clients are likewise sent only the chunks near their player (`AreaPayload`, then `ChunksPayload` as they move)
 
 **Done when:** a universe can be built from scratch in the browser (tiles, areas, maps and links) and played in its lobby.
@@ -128,7 +128,7 @@ From here on, all text players read can be translated (see Localization in `STRU
 
 - [✅] Messages are written in the code: each has an ID, its English text, and a description for translators saying what it is and where it appears (e.g. "Button that stores the form's changes in the database", so German picks "Speichern" and not "Retten"). Each is an object literal where it's used (`t({ id, defaultMessage, description })`), or declared with `defineMessages()` when it's used in more than one place or looked up from a table; text in the pages' HTML is marked with `data-message` and `data-translation-context` attributes instead, and the client's Vite config strips `data-translation-context` from the pages it serves and builds. The same English in two places gets two IDs, so each can be translated on its own
 - [✅] The extractor (`npm run messages`, `shared/scripts/extractMessages.ts`) writes `shared/locales/en.json`, with the descriptions, from the code and pages. `npm run lint` and the pre-commit hook fail when the catalog isn't current, when a message has no description, when one ID has two different English texts, or when text in a page isn't marked. It uses the TypeScript compiler API rather than `formatjs extract`, whose dependencies have open high-severity advisories. Other languages' catalogs sit beside it
-- [✅] `Translator` in `/shared` over `intl-messageformat` (ICU messages, for plurals and other grammar), and on the client `t()`, `formatList()` and the page's locale for `Intl` formatting. Other languages' catalogs load on demand with `import.meta.glob`. Until profiles exist (Phase 13), the player's language comes from the browser's settings
+- [✅] `Translator` in `/shared` over `intl-messageformat` (ICU messages, for plurals and other grammar), and on the client `t()`, `formatList()` and the page's locale for `Intl` formatting. Other languages' catalogs load on demand with `import.meta.glob`. Until profiles exist (Phase 14), the player's language comes from the browser's settings
 - [✅] Move the client's hard-coded text into messages, along with the enum labels (stages, roles, passage of time, faerie mornings, `RULESET_NAMES`)
 - [✅] The server sends a `LocalizedMessage` (ID, English text and values) instead of English, through `sendError()` for every HTTP error. New universes' area names are messages too, in English until the creator's language is known
 - [✅] Default tiles' names are engine messages (`DEFAULT_TILE_NAMES`) found by their `key`; a universe's edited copy stores a name only when it was renamed. The Tilesets tab's name filter still matches those names in English, since the server has no translations
@@ -208,7 +208,30 @@ Built in three steps: time, vision, then world state.
 
 **Done when:** a group watches day turn to night as it explores, sees less at night unless it has darkvision, can't see past mountains, and its explored areas are remembered after a restart.
 
-## Phase 13: Authentication and accounts
+## Phase 13: Tilesets
+
+Decided:
+- Cells are 32 world units (`GRID_CELL_SIZE`), the size most tile art is drawn at.
+- The ground layer uses the Dual-Grid System: each tile's graphic is 16 frames of one cell, drawn on the corners where 4 cells meet, half a cell up and left of the cells (the sheet layout is under the tile editor in `STRUCTURE-OVERVIEW.md`). Phaser has no autotiling, so the client picks the frames.
+- A tile graphic's format is set per layer, never per tile within a layer: Dual-Grid tiles are drawn half a cell off the cells, so they can't meet another format cleanly. Not per area kind either, since a tile can be for both indoors and outdoors. The 47-Tile Blob Set waits for a walls layer, where it suits walls and paths one cell wide.
+- Forests are two Dual-Grid sheets: a floor drawn below players and a canopy drawn above them. Ordinary 32x32 canopy frames can rise half a cell above the forest's north edge (the frames on that edge cover half of the cells north of it), so trees 1.5 cells tall need no taller frames; taller trees would need taller frames (32x64 for a full cell).
+- Distinctive buildings and lone trees are placed objects, not tiles (see Later).
+- Graphics only change what the client draws: movement, vision and the server don't change.
+
+- [✅] Cells are 32 world units; a step takes 0.16 seconds
+- [✅] A sample Dual-Grid grass sheet (`client/src/assets/tilesets/grass.png`)
+- [ ] `AreaRenderer` draws a tile's Dual-Grid graphic, falling back to its color: frames picked from each corner's 4 cells, wrapping on areas that loop, with void, unseen and out-of-bounds cells counting as another tile
+- [ ] Several tiles meeting: a draw order for tiles (which tile's edges overlap which), and one frame drawn for each combination of 4 corner tiles as it appears, cached in an atlas, so each piece stays one layer
+- [ ] A piece is redrawn when a chunk next to it changes, since its edge cells depend on it; painting a cell redraws the 4 frames touching it
+- [ ] Grid lines drawn as an overlay, not baked into each tile
+- [ ] Canopy: a tile's optional second sheet, drawn in a layer above players and faded around the player's own character
+- [ ] A tile's graphic chosen from sheets that ship with the engine (uploads wait for image storage, Phase 18), shown in the tile editor with its day and night preview
+- [ ] Graphics for the ruleset's default tiles
+- [ ] Check the new screens in the pseudo-language, update Pirate, and add screen reader text
+
+**Done when:** an outdoor area painted with grass, dirt and forest shows smooth edges where they meet, treetops cover a player standing just north of the forest, and painting in the map editor updates the edges as it paints.
+
+## Phase 14: Authentication and accounts
 
 - [ ] Choose an approach (own JWT login route vs. a hosted auth provider). If choosing `@colyseus/auth`, check its `npm audit` findings first
 - [ ] Google and Discord login through OAuth, recommended on the login and register pages
@@ -229,7 +252,7 @@ Built in three steps: time, vision, then world state.
 
 **Done when:** only authenticated players can join, their identity maps to a DB row, and local accounts can register and reset passwords by email.
 
-## Phase 14: Universe management
+## Phase 15: Universe management
 
 - [ ] Editors tab: creators, builders, beta testers and translators (with their languages), with permissions checked on the server
 - [ ] Stages: who can play in each (`in the beginning`: creators and builders; `prologue`: beta testers; `end of time`: view only) and which are listed on Home
@@ -244,7 +267,7 @@ Built in three steps: time, vision, then world state.
 
 **Done when:** a team of editors and beta testers takes a universe from `in the beginning` to `let there be light`, and a creator can disable a race without breaking its existing characters. A translator adds French to the universe, and a French player sees it in French.
 
-## Phase 15: Cloud deployment
+## Phase 16: Cloud deployment
 
 Neon and Colyseus Cloud cost money, so this waits until the game is worth testing with outside players.
 The first deploy tends to surface WebSocket, TLS and environment issues, so leave time for it.
@@ -263,7 +286,7 @@ The first deploy tends to surface WebSocket, TLS and environment issues, so leav
 
 **Done when:** two players on different networks can join the same room in the cloud.
 
-## Phase 16: Robustness and polish
+## Phase 17: Robustness and polish
 
 - [ ] Reconnection with `allowReconnection` for unexpected disconnects
 - [ ] Graceful handling of server restarts during deploys
@@ -277,19 +300,19 @@ The first deploy tends to surface WebSocket, TLS and environment issues, so leav
 
 **Done when:** players survive brief network drops and a redeploy without data loss.
 
-## Phase 17: Images and moderation
+## Phase 18: Images and moderation
 
 Needed before universes are open to the public.
 
 - [ ] Choose image storage (object storage, not Postgres). Validate type and size, and re-encode uploads to strip metadata and anything that isn't an image. The CSP's `img-src` will need the storage origin
 - [ ] "I have the rights to use this image" on every upload
-- [ ] Profile photos, universe logos and banners, tile graphics (Dual-Grid / 47-Tile Blob, possibly per layer)
+- [ ] Profile photos, universe logos and banners, uploaded tile graphics (in the formats from Phase 13)
 - [ ] Stock graphics for each ruleset
 - [ ] Reporting content and players, copyright infringement reports, and a review queue for server admins
 
 **Done when:** universes can use uploaded art, and anything inappropriate can be reported and taken down.
 
-## Phase 18: Messages
+## Phase 19: Messages
 
 - [ ] Private messages with blocking, reporting and rules for who can message whom
 - [ ] Group invites sent by private message
@@ -306,7 +329,8 @@ Needed before universes are open to the public.
 - The overworld map and its scale
 - Cross-universe play: the portal room, the Connect to the Multiverse tab, "[Name] of [Universe]"
 - Character sprites and avatars, and art for each item
-- Large objects such as trees and houses hiding players behind them
+- Placed objects for distinctive buildings and lone trees: made once and placed in any number of areas, each with an image, the cells it covers (each with its own walk time and vision cost, read by the server), the part drawn above players, and door cells for area links. Placements are a list per area, not cells in its chunks. An Objects tab and a place tool in the map editor. Building interiors are indoor areas, as now
+- A walls layer using the 47-Tile Blob Set
 - Exporting and importing a universe's translations (JSON or XLIFF), and a translation service such as Weblate for the engine's catalogs
 
 ---
@@ -315,12 +339,12 @@ Needed before universes are open to the public.
 
 - Whether character names must be unique within a universe (Phase 10)
 - How groups are listed in the lobby (Phase 11)
-- Auth approach, account linking, the email sending service, and whether to add a CAPTCHA (Phase 13)
-- Image storage, and the tile graphic formats (Phase 17)
-- Telling users with the same name apart (Phase 18)
-- Whether a universe can rename engine terms, such as calling gold "crowns" (Phase 14)
-- Fonts for map text in scripts the default font doesn't cover (Phase 16)
+- Auth approach, account linking, the email sending service, and whether to add a CAPTCHA (Phase 14)
+- Image storage (Phase 18)
+- Telling users with the same name apart (Phase 19)
+- Whether a universe can rename engine terms, such as calling gold "crowns" (Phase 15)
+- Fonts for map text in scripts the default font doesn't cover (Phase 17)
 - Whether to offer machine translation of chat (later)
 - Whether to add client-side prediction (after Phase 7, if movement feels laggy)
-- Colyseus Cloud deployment location(s) (Phase 15)
-- Client host, and a subdomain or separate domain for QA/staging (Phase 15)
+- Colyseus Cloud deployment location(s) (Phase 16)
+- Client host, and a subdomain or separate domain for QA/staging (Phase 16)

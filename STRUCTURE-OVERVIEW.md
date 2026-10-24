@@ -670,10 +670,13 @@ This is a component included in the [area editor](#editor-area). It shows you th
 - name
 - "used in": checkboxes for indoors and outdoors; a tile can be for either, both or neither. An area's [draw tool](#tool-draw) and default tile only offer the tiles for its kind. A tile for neither can't be painted anywhere, but maps that already use it keep it
 - color (used if there are no graphics), accepts hex + has a color picker
-- graphic (image)
-	- outdoors uses the Dual-Grid System
-	- indoors uses the 47-Tile Blob Set
-	- or maybe each layer has its own format, e.g. the ground layer is Dual-Grid and another layer is set differently
+- graphic (image). A cell is 32x32 pixels. Graphics only change how the map is drawn; walk time and vision cost still come from the tile
+	- each layer has one format, never a mix within a layer, since formats draw on different grids. The format doesn't depend on whether an area is indoors or outdoors, since a tile can be for both
+	- the ground layer uses the Dual-Grid System. A Dual-Grid graphic is a 128x128 sheet of 16 frames, each 32x32 (one cell), in a 4x4 grid read left to right, top to bottom. Each frame is drawn on a corner where 4 cells meet, half a cell up and left of the cells, and its number is the sum of the corners holding the tile: top-left 1, top-right 2, bottom-left 4, bottom-right 8. Frame 0 is never drawn. `client/src/assets/tilesets/grass.png` is a sample
+	- where different tiles meet, each tile's draw order decides whose edges overlap whose
+	- a tile can have a second Dual-Grid sheet, a canopy, drawn above players and faded around the player's own character, such as a forest's treetops over its floor. Treetops can rise half a cell above the forest's north edge within ordinary 32x32 frames, since the frames on that edge cover half of the cells north of it; taller trees need taller frames
+	- a walls layer will use the 47-Tile Blob Set, which suits walls and paths one cell wide
+	- distinctive buildings and lone trees are placed objects rather than tiles (see [Open questions](#open-questions))
 - Vision cost - 0% to 100% (cannot see through). See [vision](#vision)
 - Walk time - seconds of game time walking a square takes, 0 to 3600. A new tile gets 600 (10 minutes) when it is for outdoors and 10 when it is only for indoors, following the checkboxes until another walk time is typed. Twice the default takes twice as long (PF1E difficult terrain), 0 is impassable
 - Has a preview section for day + night
@@ -743,9 +746,7 @@ Every page, editor and game screen can be used with only a keyboard and with a s
 	- whether to add a CAPTCHA. The code limits stop guessing, but someone who knows an address can make 15 wrong guesses and block that address's codes for a day
 - **Messages:** blocking, reporting and who can message whom, before messaging is supported.
 - **Universe versions:** how versions are built and switched.
-- **Tiles:**
-	- Dual-Grid vs. 47-Tile Blob, possibly per layer
-	- how large objects such as trees and houses work, since a player walking behind one should be hidden
+- **Objects:** how placed objects such as houses and lone trees work. The likely shape: an object is made once and placed in any number of areas, with an image, the cells it covers (each with its own walk time and vision cost, read by the server), the part drawn above players so a player walking behind it is hidden, and door cells for area links into its interior, which is an indoor area
 - **Maps:** a map 50,000 tiles in each direction could hold billions of cells, so maps need to be stored sparsely or in chunks rather than as one full grid.
 - **Characters:** whether character names must be unique within a universe.
 - **Localization:**

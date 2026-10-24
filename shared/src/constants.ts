@@ -83,7 +83,7 @@ export const PLAYER_RADIUS = 12;
  * Players move from cell center to cell center and always stop on one. A cell is a little wider than a
  * player, so a player on a cell center is entirely inside the cell
  */
-export const GRID_CELL_SIZE = 30;
+export const GRID_CELL_SIZE = 32;
 
 /**
  * How many cells across the client's view of the map is
