@@ -39,8 +39,8 @@ function loadedArea(): LoadedArea
 		loopsNorthSouth: false,
 		links: [],
 		tiles: [
-			{ id: GRASS, key: 'grass', name: 'Grass', indoors: false, outdoors: true, color: 0x00ff00, visionCost: 0, walkSeconds: 10 },
-			{ id: FOREST, key: 'forest', name: 'Forest', indoors: false, outdoors: true, color: 0x008800, visionCost: 50, walkSeconds: 20 }
+			{ id: GRASS, key: 'grass', name: 'Grass', indoors: false, outdoors: true, color: 0x00ff00, graphic: 'grass', visionCost: 0, walkSeconds: 10 },
+			{ id: FOREST, key: 'forest', name: 'Forest', indoors: false, outdoors: true, color: 0x008800, graphic: null, visionCost: 50, walkSeconds: 20 }
 		]
 	});
 }

@@ -3,6 +3,7 @@ import { CHUNK_SIZE, chunkCoordinate, GRID_CELL_SIZE, type ChunkRange, type Area
 
 import { brushOrigin, cellsBetween, type BrushCell, type BrushShape } from '../editor/brush';
 import { AreaRenderer } from '../rendering/AreaRenderer';
+import { preloadTileGraphics } from '../rendering/tileGraphics';
 
 /**
  * Key the scene is registered under in each editor's game
@@ -227,6 +228,14 @@ export class MapEditorScene extends Phaser.Scene
 		this.lastDab = undefined;
 		this.panStart = undefined;
 		this.lastViewKey = '';
+	}
+
+	/**
+	 * Loads the tile graphics the map is drawn with
+	 */
+	preload(): void
+	{
+		preloadTileGraphics(this);
 	}
 
 	/**

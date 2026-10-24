@@ -388,6 +388,7 @@ export function editorAreaPayload(area: EditorArea, tiles: readonly EditorTile[]
 			key: tile.key,
 			name: tile.name,
 			color: tile.color,
+			graphic: tile.graphic,
 			visionCost: tile.visionCost
 		})),
 		chunks: [],

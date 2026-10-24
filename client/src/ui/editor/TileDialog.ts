@@ -1,14 +1,15 @@
-import { canEditWorld, defaultWalkSeconds, DISALLOWED_TEXT_CHARACTERS, IMPASSABLE_WALK_SECONDS, MAX_TILE_NAME_LENGTH, MAX_WALK_SECONDS, type EditableUniverse, type EditorTile, type TileSettings } from '@multiverse-kiln/shared';
+import { canEditWorld, defaultWalkSeconds, DISALLOWED_TEXT_CHARACTERS, IMPASSABLE_WALK_SECONDS, isTileGraphic, MAX_TILE_NAME_LENGTH, MAX_WALK_SECONDS, type EditableUniverse, type EditorTile, type TileSettings } from '@multiverse-kiln/shared';
 
 import { formatDuration, t } from '../../localization';
 import { ChangeTracker } from '../changeTracker';
-import { getElement, showMessage } from '../dom';
+import { getElement, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
 import { tileName } from '../tileNames';
-import { colorToHex, nightColor, parseHexColor } from './colors';
+import { colorToHex, parseHexColor } from './colors';
 import { editorMessages } from './editorMessages';
 import { labelRemoveButton, type StagedEdit } from './stagedChanges';
+import { showTileSwatch, tileGraphicOptions } from './tileSwatches';
 
 /**
  * Settings a new tile starts with
@@ -18,13 +19,14 @@ const NEW_TILE: TileSettings = {
 	indoors: false,
 	outdoors: true,
 	color: 0x808080,
+	graphic: null,
 	visionCost: 0,
 	walkSeconds: defaultWalkSeconds(false)
 };
 
 /**
- * The tile editor: a dialog for a tile's name, whether indoor and outdoor areas use it, color, vision
- * cost and walk time
+ * The tile editor: a dialog for a tile's name, whether indoor and outdoor areas use it, color, graphic,
+ * vision cost and walk time
  *
  * Applying keeps the changes on the Tilesets tab until it is saved; for a default tile, saving stores the
  * universe's edited copy of it. The dialog can also delete a custom tile, or restore an edited default
@@ -40,6 +42,7 @@ export class TileDialog
 	private readonly indoors = getElement('tile-indoors', HTMLInputElement);
 	private readonly colorPicker = getElement('tile-color-picker', HTMLInputElement);
 	private readonly color = getElement('tile-color', HTMLInputElement);
+	private readonly graphic = getElement('tile-graphic', HTMLSelectElement);
 	private readonly visionCost = getElement('tile-vision', HTMLInputElement);
 	private readonly walkSeconds = getElement('tile-walk', HTMLInputElement);
 	private readonly walkReadout = getElement('tile-walk-readout', HTMLElement);
@@ -100,6 +103,11 @@ export class TileDialog
 				this.colorPicker.value = colorToHex(color);
 				this.updatePreview();
 			}
+		});
+
+		this.graphic.addEventListener('change', () =>
+		{
+			this.updatePreview();
 		});
 
 		this.name.addEventListener('input', () =>
@@ -189,6 +197,8 @@ export class TileDialog
 		this.indoors.checked = settings.indoors;
 		this.color.value = colorToHex(settings.color);
 		this.colorPicker.value = colorToHex(settings.color);
+		setOptions(this.graphic, tileGraphicOptions());
+		this.graphic.value = (isTileGraphic(settings.graphic) ? settings.graphic : '');
 		this.visionCost.value = String(settings.visionCost);
 		this.walkSeconds.value = String(settings.walkSeconds);
 		this.defaultWalk = settings.walkSeconds;
@@ -198,7 +208,7 @@ export class TileDialog
 		this.cancelButton.textContent = t(editable ? formMessages.cancel : formMessages.close);
 
 		// Only the inputs are locked for a player who can't edit, so Close still works
-		for (const input of [this.outdoors, this.indoors, this.colorPicker, this.color, this.visionCost, this.walkSeconds])
+		for (const input of [this.outdoors, this.indoors, this.colorPicker, this.color, this.graphic, this.visionCost, this.walkSeconds])
 		{
 			input.disabled = !editable;
 		}
@@ -261,14 +271,27 @@ export class TileDialog
 	}
 
 	/**
-	 * Shows the tile's color by day and by night
+	 * Shows the tile by day and by night: its graphic, or its color
 	 */
 	private updatePreview(): void
 	{
-		const color = (parseHexColor(this.color.value) ?? 0);
+		const tile = {
+			color: (parseHexColor(this.color.value) ?? 0),
+			graphic: this.graphicValue()
+		};
 
-		this.dayPreview.style.backgroundColor = colorToHex(color);
-		this.nightPreview.style.backgroundColor = colorToHex(nightColor(color));
+		showTileSwatch(this.dayPreview, tile);
+		showTileSwatch(this.nightPreview, tile, true);
+	}
+
+	/**
+	 * The graphic chosen
+	 *
+	 * @return Its key, or null to draw the tile in its color
+	 */
+	private graphicValue(): string | null
+	{
+		return(((this.graphic.value === '') ? null : this.graphic.value));
 	}
 
 	/**
@@ -308,6 +331,7 @@ export class TileDialog
 			indoors: this.indoors.checked,
 			outdoors: this.outdoors.checked,
 			color,
+			graphic: this.graphicValue(),
 			visionCost: this.visionCost.valueAsNumber,
 			walkSeconds: this.walkSeconds.valueAsNumber
 		});

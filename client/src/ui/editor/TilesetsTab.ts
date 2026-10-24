@@ -4,11 +4,11 @@ import { formatDuration, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, setOptions, showMessage } from '../dom';
 import { tileName } from '../tileNames';
-import { colorToHex } from './colors';
 import { editorMessages } from './editorMessages';
 import type { SavableTab } from './SaveBar';
 import { describeCommitFailure, joinTags, markStagedRow, StagedChanges, stagedPage, stagedTag, type StagedState } from './stagedChanges';
 import { TileDialog } from './TileDialog';
+import { showTileSwatch } from './tileSwatches';
 
 /**
  * Text the Tilesets tab shows in more than one place (see src/localization.ts)
@@ -391,11 +391,7 @@ export class TilesetsTab implements SavableTab
 			joinTags(...tags)
 		];
 
-		// Screen readers read the color's hex code, which the color picker in the tile dialog also shows
-		swatch.className = 'swatch';
-		swatch.style.backgroundColor = colorToHex(tile.color);
-		swatch.setAttribute('role', 'img');
-		swatch.setAttribute('aria-label', colorToHex(tile.color));
+		showTileSwatch(swatch, tile);
 		nameButton.type = 'button';
 		nameButton.className = 'link-button';
 		nameButton.textContent = tileName(tile, universe.ruleset);

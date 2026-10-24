@@ -750,6 +750,11 @@
 									<input id="tile-color" required aria-label="Color as hex" data-message-aria-label="editor.tile.colorHex" data-translation-context-aria-label="Name of the field for a tile's color as a hexadecimal number, for screen readers" />
 								</span>
 							</label>
+							<label data-message="editor.tile.graphic" data-translation-context="Label of the tile editor's list of the graphics a tile can be drawn with">
+								Graphic
+								<select id="tile-graphic"></select>
+							</label>
+							<p class="hint" data-message="editor.tile.graphicHint" data-translation-context="Explains the tile editor's list of graphics">Drawn in place of the color. Where tiles meet, their edges blend.</p>
 							<label data-message="editor.tile.visionCost" data-translation-context="Label of the field for how much of a character's vision crossing the tile uses, in percent">
 								Vision cost (%)
 								<input id="tile-vision" type="number" min="0" max="100" step="1" required />

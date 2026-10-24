@@ -443,6 +443,7 @@ export function toAreaPayload(area: ActiveArea, chunkKeys: Iterable<string>, mem
 			key: tile.key,
 			name: ((tile.key === null) ? tile.name : null),
 			color: tile.color,
+			graphic: tile.graphic,
 			visionCost: tile.visionCost
 		})),
 		chunks: toChunkUpdates(area, chunkKeys, memory)

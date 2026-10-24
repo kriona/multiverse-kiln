@@ -205,7 +205,7 @@ describe('LobbyRoom', () =>
 
 			assert.strictEqual(area.ruleset, 'pf1e');
 			assert.strictEqual(area.fullVision, true, 'the lobby sees as far as by day unless the universe gives it a vision cost');
-			assert.deepStrictEqual(forest, { id: forest?.id, key: 'forest', name: null, color: 0x00aa11, visionCost: 0 }, 'the lobby has no vision cost unless the universe gives it one');
+			assert.deepStrictEqual(forest, { id: forest?.id, key: 'forest', name: null, color: 0x00aa11, graphic: null, visionCost: 0 },'the lobby has no vision cost unless the universe gives it one');
 			assert.strictEqual(area.tiles.some((tile) => (tile.name !== null)), false, 'default tiles are named by key, not in English');
 		});
 
@@ -827,12 +827,12 @@ describe('LobbyRoom', () =>
 			const grass = await defaultTileId('grass');
 
 			await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
-			await saveEditedDefaultTile(universe.universeId, 'pf1e', grass, { name: 'Autumn Grass', indoors: false, outdoors: true, color: 0xc08030, visionCost: 0, walkSeconds: 600 });
+			await saveEditedDefaultTile(universe.universeId, 'pf1e', grass, { name: 'Autumn Grass', indoors: false, outdoors: true, color: 0xc08030, graphic: 'grass', visionCost: 0, walkSeconds: 600 });
 			areaChanges.publish({ kind: 'tiles', universeId: universe.universeId });
 
 			const area = await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
 
-			assert.deepStrictEqual(area.tiles.find((tile) => (tile.id === grass)), { id: grass, key: null, name: 'Autumn Grass', color: 0xc08030, visionCost: 0 });
+			assert.deepStrictEqual(area.tiles.find((tile) => (tile.id === grass)), { id: grass, key: null, name: 'Autumn Grass', color: 0xc08030, graphic: 'grass', visionCost: 0 });
 		});
 
 		it('sends the lobby again with its tiles\' vision costs once the universe gives it them', async () =>

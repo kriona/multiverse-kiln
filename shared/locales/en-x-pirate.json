@@ -1707,6 +1707,18 @@
 		"message": "Edit {tile}",
 		"source": "Edit {tile}"
 	},
+	"editor.tile.graphic": {
+		"message": "Paintin'",
+		"source": "Graphic"
+	},
+	"editor.tile.graphic.grass": {
+		"message": "Grass",
+		"source": "Grass"
+	},
+	"editor.tile.graphicHint": {
+		"message": "Painted where the color would be. Where tiles meet, their edges run together like tides.",
+		"source": "Drawn in place of the color. Where tiles meet, their edges blend."
+	},
 	"editor.tile.invalidColor": {
 		"message": "Give a hex color, such as #7AFF3D.",
 		"source": "Enter a hex color, such as #7AFF3D."
@@ -1714,6 +1726,10 @@
 	"editor.tile.night": {
 		"message": "Night",
 		"source": "Night"
+	},
+	"editor.tile.noGraphic": {
+		"message": "None (just the color, matey)",
+		"source": "None (use the color)"
 	},
 	"editor.tile.usedIn": {
 		"message": "Fit fer",

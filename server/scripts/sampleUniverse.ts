@@ -81,6 +81,7 @@ export const stoneWall = {
 	indoors: true,
 	outdoors: true,
 	color: 0x8a8a8a,
+	graphic: null,
 	visionCost: 100,
 	walkSeconds: IMPASSABLE_WALK_SECONDS
 };

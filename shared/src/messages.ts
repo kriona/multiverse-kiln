@@ -176,9 +176,14 @@ export interface AreaTile
 	name: string | null;
 
 	/**
-	 * 0xRRGGBB
+	 * 0xRRGGBB, drawn when the tile has no graphic
 	 */
 	color: number;
+
+	/**
+	 * The graphic the tile is drawn with (TILE_GRAPHICS), or null to draw it in its color
+	 */
+	graphic: string | null;
 
 	/**
 	 * How hard the tile is to see past, in percent, which the client's fog follows (see VisionMap)

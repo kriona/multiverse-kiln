@@ -238,6 +238,11 @@ export const tiles = pgTable('tiles', {
 	color: integer('color').notNull(),
 
 	/**
+	 * The graphic the tile is drawn with (TILE_GRAPHICS in /shared), or null to draw it in its color
+	 */
+	graphic: text('graphic'),
+
+	/**
 	 * How much of a character's vision crossing the tile uses, in percent; 100 can't be seen through
 	 */
 	visionCost: smallint('vision_cost').notNull().default(0),

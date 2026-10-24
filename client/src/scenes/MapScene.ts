@@ -7,6 +7,7 @@ import { t } from '../localization';
 import type { GameRoom, MapConnection, MapRoom } from '../network/serverConnection';
 import { PositionBuffer, type Point } from '../rendering/PositionBuffer';
 import { AreaRenderer } from '../rendering/AreaRenderer';
+import { preloadTileGraphics } from '../rendering/tileGraphics';
 import { isTextEntry } from '../ui/dom';
 import { MapAnnouncer, type SeenPlayer } from '../ui/MapAnnouncer';
 import { addKeyHelp, addShortcut } from '../ui/shortcuts';
@@ -238,6 +239,14 @@ export class MapScene extends Phaser.Scene
 		this.night = undefined;
 		this.fog = undefined;
 		this.fogKey = '';
+	}
+
+	/**
+	 * Loads the tile graphics the map is drawn with
+	 */
+	preload(): void
+	{
+		preloadTileGraphics(this);
 	}
 
 	/**

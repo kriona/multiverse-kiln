@@ -221,7 +221,7 @@ Decided:
 - [✅] Cells are 32 world units; a step takes 0.16 seconds
 - [✅] A sample Dual-Grid grass sheet (`client/src/assets/tilesets/grass.png`)
 - [ ] `AreaRenderer` draws a tile's Dual-Grid graphic, falling back to its color: frames picked from each corner's 4 cells, wrapping on areas that loop, with void, unseen and out-of-bounds cells counting as another tile
-- [ ] Several tiles meeting: a draw order for tiles (which tile's edges overlap which), and one frame drawn for each combination of 4 corner tiles as it appears, cached in an atlas, so each piece stays one layer
+- [ ] Several tiles meeting: each graphic has a draw order in `TILE_GRAPHICS` (which graphic's edges overlap which; tiles drawn in their colors go below every graphic), and one frame is drawn for each combination of 4 corner tiles as it appears, cached in an atlas, so each piece stays one layer
 - [ ] A piece is redrawn when a chunk next to it changes, since its edge cells depend on it; painting a cell redraws the 4 frames touching it
 - [ ] Grid lines drawn as an overlay, not baked into each tile
 - [ ] Canopy: a tile's optional second sheet, drawn in a layer above players and faded around the player's own character

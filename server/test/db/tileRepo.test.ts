@@ -10,6 +10,7 @@ const autumnGrass: TileSettings = {
 	indoors: false,
 	outdoors: true,
 	color: 0xc08030,
+	graphic: 'grass',
 	visionCost: 10,
 	walkSeconds: 10
 };
@@ -19,6 +20,7 @@ const lava: CustomTileSettings = {
 	indoors: false,
 	outdoors: true,
 	color: 0xff4400,
+	graphic: null,
 	visionCost: 0,
 	walkSeconds: 0
 };
@@ -68,7 +70,7 @@ describe('tileRepo', () =>
 			const tiles = await loadUniverseTiles(universeId, 'pf1e');
 
 			assert.strictEqual(tiles.length, 7);
-			assert.deepStrictEqual(tiles.find((tile) => (tile.id === wallId)), { id: wallId, key: null, name: 'Stone Wall', indoors: true, outdoors: true, color: 0x8a8a8a, visionCost: 100, walkSeconds: 0 });
+			assert.deepStrictEqual(tiles.find((tile) => (tile.id === wallId)), { id: wallId, key: null, name: 'Stone Wall', indoors: true, outdoors: true, color: 0x8a8a8a, graphic: null, visionCost: 100, walkSeconds: 0 });
 			assert.strictEqual(tiles.some((tile) => (tile.name === 'Lava')), false);
 		});
 
@@ -77,7 +79,17 @@ describe('tileRepo', () =>
 			const tiles = await loadUniverseTiles(await addUniverse(), 'pf1e');
 			const forest = tiles.find((tile) => (tile.name === 'Forest'));
 
-			assert.deepStrictEqual(forest, { id: forest?.id, key: 'forest', name: 'Forest', indoors: false, outdoors: true, color: 0x00aa11, visionCost: 50, walkSeconds: 1200 });
+			assert.deepStrictEqual(forest, { id: forest?.id, key: 'forest', name: 'Forest', indoors: false, outdoors: true, color: 0x00aa11, graphic: null, visionCost: 50, walkSeconds: 1200 });
+		});
+
+		it('draws each ruleset\'s default grass with the grass graphic', async () =>
+		{
+			for (const ruleset of ['pf1e', 'sf1e'] as const)
+			{
+				const tiles = await loadUniverseTiles(await addUniverse(), ruleset);
+
+				assert.strictEqual(tiles.find((tile) => (tile.key === 'grass'))?.graphic, 'grass', ruleset);
+			}
 		});
 
 		it('gives an edited default tile the universe\'s settings under the default tile\'s ID, for that universe only', async () =>

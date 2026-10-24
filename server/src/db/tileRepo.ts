@@ -33,6 +33,11 @@ export interface TileRecord
 	 */
 	color: number;
 
+	/**
+	 * The graphic the tile is drawn with (TILE_GRAPHICS), or null for its color
+	 */
+	graphic: string | null;
+
 	visionCost: number;
 	walkSeconds: number;
 }
@@ -40,7 +45,7 @@ export interface TileRecord
 /**
  * What a new tile needs
  */
-export type NewTile = Pick<typeof tiles.$inferInsert, 'ruleset' | 'universeId' | 'key' | 'name' | 'indoors' | 'outdoors' | 'color' | 'visionCost' | 'walkSeconds'>;
+export type NewTile = Pick<typeof tiles.$inferInsert, 'ruleset' | 'universeId' | 'key' | 'name' | 'indoors' | 'outdoors' | 'color' | 'graphic' | 'visionCost' | 'walkSeconds'>;
 
 /**
  * The settings of a tile a universe added, which always has a name of its own
@@ -57,6 +62,7 @@ const settingsColumns = {
 	indoors: tiles.indoors,
 	outdoors: tiles.outdoors,
 	color: tiles.color,
+	graphic: tiles.graphic,
 	visionCost: tiles.visionCost,
 	walkSeconds: tiles.walkSeconds
 };
@@ -105,6 +111,7 @@ export async function loadUniverseTiles(universeId: string, ruleset: Ruleset, ex
 		indoors: tile.indoors,
 		outdoors: tile.outdoors,
 		color: tile.color,
+		graphic: tile.graphic,
 		visionCost: tile.visionCost,
 		walkSeconds: tile.walkSeconds
 	})));
@@ -170,6 +177,7 @@ async function loadNamedTiles(universeId: string, ruleset: Ruleset, executor: Ex
 				indoors: settings.indoors,
 				outdoors: settings.outdoors,
 				color: settings.color,
+				graphic: settings.graphic,
 				visionCost: settings.visionCost,
 				walkSeconds: settings.walkSeconds,
 				custom,

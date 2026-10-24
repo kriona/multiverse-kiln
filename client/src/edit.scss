@@ -280,6 +280,15 @@ tr.staged-deleted
 		width: 64px;
 		height: 64px;
 	}
+
+	// A tile graphic's sheet is 4 frames by 4, and the bottom-right one is the tile on every side. The
+	// first layer is laid over it, such as the night preview's darkening
+	&.graphic
+	{
+		background-size: 100% 100%, 400% 400%;
+		background-position: 0 0, 100% 100%;
+		image-rendering: pixelated;
+	}
 }
 
 .walk-readout

@@ -44,6 +44,7 @@ const lava: TileSettings = {
 	indoors: false,
 	outdoors: true,
 	color: 0xff4400,
+	graphic: null,
 	visionCost: 0,
 	walkSeconds: 0
 };
@@ -690,7 +691,7 @@ describe('World editor API', () =>
 			const universeId = await createUniverse(ada);
 			const otherId = await createUniverse(ada, 'Other');
 			const grassId = await defaultTileId('grass');
-			const autumn = { name: 'Autumn Grass', indoors: false, outdoors: true, color: 0xc08030, visionCost: 0, walkSeconds: 600 };
+			const autumn = { name: 'Autumn Grass', indoors: false, outdoors: true, color: 0xc08030, graphic: null, visionCost: 0, walkSeconds: 600 };
 
 			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/tiles/${grassId}`, { body: autumn })).status, 204);
 
@@ -709,7 +710,7 @@ describe('World editor API', () =>
 			const universeId = await createUniverse(ada);
 			const grassId = await defaultTileId('grass');
 			const tileId = (await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/tiles`, { body: lava })).body.id;
-			const darker = { name: null, indoors: false, outdoors: true, color: 0x206010, visionCost: 0, walkSeconds: 600 };
+			const darker = { name: null, indoors: false, outdoors: true, color: 0x206010, graphic: 'grass', visionCost: 0, walkSeconds: 600 };
 
 			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/tiles/${grassId}`, { body: darker })).status, 204);
 			assert.deepStrictEqual((await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?edited=true`)).body.tiles, [{ id: grassId, key: 'grass', ...darker, custom: false, edited: true }]);
@@ -740,7 +741,7 @@ describe('World editor API', () =>
 			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/tiles/${theirTileId}`, { body: lava })).status, 404);
 			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/tiles/abc`, { body: lava })).status, 404);
 
-			for (const body of [{ ...lava, walkSeconds: MAX_WALK_SECONDS + 1 }, { ...lava, walkSeconds: -1 },{ ...lava, color: 0x1000000 }, { ...lava, name: '' }, { ...lava, name: null }])
+			for (const body of [{ ...lava, walkSeconds: MAX_WALK_SECONDS + 1 }, { ...lava, walkSeconds: -1 },{ ...lava, color: 0x1000000 }, { ...lava, name: '' }, { ...lava, name: null }, { ...lava, graphic: 'lava' }, { ...lava, graphic: undefined }])
 			{
 				assert.strictEqual((await send(ada, 'POST', `/${universeId}/tiles`, { body })).status, 400, JSON.stringify(body));
 			}

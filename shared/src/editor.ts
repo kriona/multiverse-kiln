@@ -408,6 +408,11 @@ export interface TileSettings
 	color: number;
 
 	/**
+	 * The graphic the tile is drawn with (TILE_GRAPHICS), or null to draw it in its color
+	 */
+	graphic: string | null;
+
+	/**
 	 * 0-100 percent; 100 can't be seen through
 	 */
 	visionCost: number;

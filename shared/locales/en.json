@@ -1707,6 +1707,18 @@
 		"defaultMessage": "Edit {tile}",
 		"description": "Title of the tile editor for a tile the player can change; {tile} is its name"
 	},
+	"editor.tile.graphic": {
+		"defaultMessage": "Graphic",
+		"description": "Label of the tile editor's list of the graphics a tile can be drawn with"
+	},
+	"editor.tile.graphic.grass": {
+		"defaultMessage": "Grass",
+		"description": "One of the graphics a tile can be drawn with, in the tile editor's list of them and read out for the Tilesets table's pictures of tiles: grass"
+	},
+	"editor.tile.graphicHint": {
+		"defaultMessage": "Drawn in place of the color. Where tiles meet, their edges blend.",
+		"description": "Explains the tile editor's list of graphics"
+	},
 	"editor.tile.invalidColor": {
 		"defaultMessage": "Enter a hex color, such as #7AFF3D.",
 		"description": "Shown by the color field when what was typed isn't a hexadecimal color"
@@ -1714,6 +1726,10 @@
 	"editor.tile.night": {
 		"defaultMessage": "Night",
 		"description": "Caption of the preview of the tile at night"
+	},
+	"editor.tile.noGraphic": {
+		"defaultMessage": "None (use the color)",
+		"description": "First choice in the tile editor's list of graphics: the tile is drawn in its color"
 	},
 	"editor.tile.usedIn": {
 		"defaultMessage": "Where",
