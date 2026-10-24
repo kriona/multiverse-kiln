@@ -118,12 +118,12 @@ const messages = defineMessages({
 	newTag: {
 		id: 'editor.staged.newTag',
 		defaultMessage: 'new',
-		description: 'In the last column of an editor list (races, classes, themes, difficulty levels, items or tiles), for one added since the tab was last saved, which isn\'t saved yet'
+		description: 'In the last column of an editor list (races, classes, themes, difficulty levels, items or tiles), or under an area in the list of areas, for one added since the tab was last saved, which isn\'t saved yet'
 	},
 	deleted: {
 		id: 'editor.staged.deleted',
 		defaultMessage: '(deleted when saved)',
-		description: 'Read out by screen readers after the name of a race, class, theme, difficulty level, item or tile in an editor list that will be deleted when the tab is saved; on screen the row is struck through'
+		description: 'Read out by screen readers after the name of a race, class, theme, difficulty level, item, tile or area in an editor list that will be deleted when the tab is saved; on screen the row is struck through'
 	},
 	restoredTag: {
 		id: 'editor.staged.restoredTag',
@@ -143,7 +143,7 @@ const messages = defineMessages({
 	undoDelete: {
 		id: 'editor.staged.undoDelete',
 		defaultMessage: 'Undo Delete',
-		description: 'Button in an editor dialog (race, class, theme, difficulty level, item or tile) for one that will be deleted when the tab is saved: keeps it instead'
+		description: 'Button in an editor dialog (race, class, theme, difficulty level, item or tile), or in the area editor, for one that will be deleted when the tab is saved: keeps it instead'
 	},
 	undoRestore: {
 		id: 'editor.staged.undoRestore',
@@ -558,14 +558,26 @@ export function markStagedRow(row: HTMLTableRowElement, state: StagedState, isDe
 		return(row);
 	}
 
+	row.classList.add('staged-deleted');
+	row.querySelector('.link-button')?.append(deletedNote());
+
+	return(row);
+}
+
+/**
+ * Words after the name of a thing that will be deleted when its tab is saved, for screen readers; on
+ * screen it is struck through
+ *
+ * @return The words, to append to the name
+ */
+export function deletedNote(): HTMLSpanElement
+{
 	const note = document.createElement('span');
 
 	note.className = 'visually-hidden';
 	note.textContent = ` ${t(messages.deleted)}`;
-	row.classList.add('staged-deleted');
-	row.querySelector('.link-button')?.append(note);
 
-	return(row);
+	return(note);
 }
 
 /**
@@ -573,11 +585,11 @@ export function markStagedRow(row: HTMLTableRowElement, state: StagedState, isDe
  * default it changed, or takes that back once it has been done
  *
  * @param button The button
- * @param edit The dialog's staged edit
+ * @param edit Whether the thing will be deleted or restored, such as the dialog's staged edit
  * @param isDefault Whether the thing is one of the ruleset's defaults, which the button restores
  * @param removeLabel The button's text before it is pressed, e.g. "Delete Theme" or "Restore Default"
  */
-export function labelRemoveButton<S>(button: HTMLButtonElement, edit: StagedEdit<S>, isDefault: boolean, removeLabel: string): void
+export function labelRemoveButton(button: HTMLButtonElement, edit: { removed: boolean }, isDefault: boolean, removeLabel: string): void
 {
 	if (!edit.removed)
 	{

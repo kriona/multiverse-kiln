@@ -31,6 +31,36 @@ export interface SavableTab
 }
 
 /**
+ * Changes made of several sources, which are unsaved while any of them is
+ *
+ * @param sources The sources
+ * @return The combined changes
+ */
+export function combineChanges(...sources: ChangeSource[]): ChangeSource
+{
+	const hasUnsavedChanges = (): boolean => sources.some((source) => source.hasUnsavedChanges());
+
+	return({
+		hasUnsavedChanges,
+		subscribe: (listener) =>
+		{
+			const unsubscribes = sources.map((source) => source.subscribe(() =>
+			{
+				listener(hasUnsavedChanges());
+			}));
+
+			return(() =>
+			{
+				for (const unsubscribe of unsubscribes)
+				{
+					unsubscribe();
+				}
+			});
+		}
+	});
+}
+
+/**
  * A tab made of parts that each save their own changes, such as the Characters tab's settings, themes
  * and difficulty levels. Saving saves each part with changes in turn, stopping at the first that fails
  *
@@ -39,27 +69,8 @@ export interface SavableTab
  */
 export function combineTabs(...parts: SavableTab[]): SavableTab
 {
-	const hasUnsavedChanges = (): boolean => parts.some((part) => part.changes.hasUnsavedChanges());
-
 	return({
-		changes: {
-			hasUnsavedChanges,
-			subscribe: (listener) =>
-			{
-				const unsubscribes = parts.map((part) => part.changes.subscribe(() =>
-				{
-					listener(hasUnsavedChanges());
-				}));
-
-				return(() =>
-				{
-					for (const unsubscribe of unsubscribes)
-					{
-						unsubscribe();
-					}
-				});
-			}
-		},
+		changes: combineChanges(...parts.map((part) => part.changes)),
 		canSave: () => parts.some((part) => part.canSave()),
 		save: async () =>
 		{
@@ -78,8 +89,8 @@ export function combineTabs(...parts: SavableTab[]): SavableTab
 
 /**
  * The bar at the bottom of the editor that saves the tab showing. Nothing a tab changes is saved until
- * then, except a map's links and adding or deleting an area, which happen as they are made. Submitting a
- * form on a tab (Enter in a field) saves the tab too. Reloading the page throws unsaved changes away
+ * then. Submitting a form on a tab (Enter in a field) saves the tab too. Reloading the page throws
+ * unsaved changes away
  */
 export class SaveBar
 {

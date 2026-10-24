@@ -169,6 +169,14 @@ export const NEW_AREA_BOUNDS: Readonly<MapBounds> = {
 };
 
 /**
+ * The keys of the default tiles new areas use in each ruleset, outdoors and indoors
+ */
+export const DEFAULT_AREA_TILE_KEYS: Record<Ruleset, { outdoors: string; indoors: string }> = {
+	pf1e: { outdoors: 'grass', indoors: 'wood_floor' },
+	sf1e: { outdoors: 'grass', indoors: 'metal_floor' }
+};
+
+/**
  * Most cells one CellEditRequest may change; the editor splits a larger edit into several requests
  */
 export const MAX_CELL_CHANGES = 20000;

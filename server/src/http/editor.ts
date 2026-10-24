@@ -5,7 +5,7 @@
  * browser; routes about a universe also need a role in it, and changes need a role that allows them
  */
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
-import { canEditUniverseSettings, canEditWorld, defineMessages, EDITOR_UNIVERSES_PATH, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, SOURCE_LOCALE, Translator, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type RulesetSettings, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, canEditWorld, DEFAULT_AREA_TILE_KEYS, defineMessages, EDITOR_UNIVERSES_PATH, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, SOURCE_LOCALE, Translator, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type RulesetSettings, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { lockPlayer } from '../db/playerRepo.js';
 import { loadRulesetSettings, storeRulesetSettings } from '../db/rulesetRepo.js';
@@ -25,7 +25,7 @@ import { addRaceRoutes } from './editorRaces.js';
 import { addThemeRoutes } from './editorThemes.js';
 import { addDifficultyLevelRoutes } from './editorDifficultyLevels.js';
 import { findStartingProblem } from './editorStartingExtras.js';
-import { addAreaRoutes, DEFAULT_AREA_TILE_KEYS, lobbyTimeProblem, timeSettingsProblem } from './editorAreas.js';
+import { addAreaRoutes, lobbyTimeProblem, timeSettingsProblem } from './editorAreas.js';
 import { errorMessages, sendError, sendInvalidRequest, type Refusal } from './errors.js';
 
 /**

@@ -314,6 +314,7 @@
 							</div>
 							<ul id="area-list" class="area-list"></ul>
 							<p id="area-empty" class="universe-empty" data-message="editor.areas.none" data-translation-context="Shown instead of the list of areas when the universe only has its lobby" hidden>There are no areas besides the lobby.</p>
+							<p id="area-list-error" class="form-error" role="alert" hidden></p>
 						</div>
 						<div id="area-editor-view" hidden>
 							<div class="panel-heading">
@@ -376,7 +377,7 @@
 									<p id="area-size"></p>
 									<p id="area-error" class="form-error" role="alert" hidden></p>
 									<div class="form-buttons">
-										<button id="area-delete" type="button" class="danger" aria-describedby="area-error" data-message="editor.area.delete" data-translation-context="Button that deletes the area being edited"><!-- icon ph:trash -->Delete Area</button>
+										<button id="area-delete" type="button" class="danger" aria-describedby="area-error"></button>
 									</div>
 								</fieldset>
 							</form>
@@ -507,7 +508,7 @@
 							<div class="form-buttons">
 								<button id="item-remove" type="button" class="danger" aria-describedby="item-error"></button>
 								<button id="item-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-								<button id="item-save" type="submit" aria-describedby="item-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item or tile) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
+								<button id="item-save" type="submit" aria-describedby="item-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile or area link) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
 							</div>
 						</fieldset>
 					</form>
@@ -584,7 +585,7 @@
 							<div class="form-buttons">
 								<button id="race-remove" type="button" class="danger" aria-describedby="race-error"></button>
 								<button id="race-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-								<button id="race-save" type="submit" aria-describedby="race-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item or tile) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
+								<button id="race-save" type="submit" aria-describedby="race-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile or area link) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
 							</div>
 						</fieldset>
 					</form>
@@ -658,7 +659,7 @@
 							<div class="form-buttons">
 								<button id="class-remove" type="button" class="danger" aria-describedby="class-error"></button>
 								<button id="class-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-								<button id="class-save" type="submit" aria-describedby="class-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item or tile) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
+								<button id="class-save" type="submit" aria-describedby="class-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile or area link) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
 							</div>
 						</fieldset>
 					</form>
@@ -685,7 +686,7 @@
 							<div class="form-buttons">
 								<button id="theme-remove" type="button" class="danger" aria-describedby="theme-error"></button>
 								<button id="theme-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-								<button id="theme-save" type="submit" aria-describedby="theme-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item or tile) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
+								<button id="theme-save" type="submit" aria-describedby="theme-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile or area link) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
 							</div>
 						</fieldset>
 					</form>
@@ -717,7 +718,7 @@
 							<div class="form-buttons">
 								<button id="difficulty-remove" type="button" class="danger" aria-describedby="difficulty-error"></button>
 								<button id="difficulty-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-								<button id="difficulty-save" type="submit" aria-describedby="difficulty-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item or tile) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
+								<button id="difficulty-save" type="submit" aria-describedby="difficulty-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile or area link) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
 							</div>
 						</fieldset>
 					</form>
@@ -774,7 +775,7 @@
 							<div class="form-buttons">
 								<button id="tile-remove" type="button" class="danger" aria-describedby="tile-error"></button>
 								<button id="tile-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-								<button id="tile-save" type="submit" aria-describedby="tile-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item or tile) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
+								<button id="tile-save" type="submit" aria-describedby="tile-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile or area link) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
 							</div>
 						</fieldset>
 					</form>
@@ -896,7 +897,7 @@
 							<div class="form-buttons">
 								<button id="link-delete" type="button" class="danger" aria-describedby="link-error" data-message="editor.link.delete" data-translation-context="Button that deletes the area link being edited"><!-- icon ph:trash -->Delete Link</button>
 								<button id="link-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-								<button id="link-save" type="submit" aria-describedby="link-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+								<button id="link-save" type="submit" aria-describedby="link-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile or area link) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
 							</div>
 						</fieldset>
 					</form>

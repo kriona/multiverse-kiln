@@ -173,6 +173,19 @@ tr.staged-deleted
 	}
 }
 
+// An area in the list of areas that will be deleted when the tab is saved
+.area-list .staged-deleted
+{
+	opacity: 0.6;
+
+	// Text decoration doesn't reach into buttons, so the name needs its own
+	strong
+	{
+		font-style: italic;
+		text-decoration: line-through;
+	}
+}
+
 // The themes card on the Characters tab, in a ruleset with themes, and the difficulty levels card
 .themes,
 .difficulty-levels

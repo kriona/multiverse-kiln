@@ -524,8 +524,12 @@
 		"source": "Areas inside this one"
 	},
 	"editor.area.confirmDelete": {
-		"message": "Scuttle {area}, its chart and every passage into it? Areas inside it be cast adrift as top-level areas. There be no bringin' it back.",
-		"source": "Delete {area}, its map and every link into it? Areas inside it become top-level areas. This can't be undone."
+		"message": "Scuttle {area}, its chart and every passage into it when the Areas tab be stowed? Areas inside it be cast adrift as top-level areas.",
+		"source": "Delete {area}, its map and every link into it when the Areas tab is saved? Areas inside it become top-level areas."
+	},
+	"editor.area.confirmDeleteNew": {
+		"message": "Scuttle {area}? It ain't been stowed yet, so its settings, chart and passages be lost to the deep.",
+		"source": "Delete {area}? It hasn't been saved, so its settings, map and links will be lost."
 	},
 	"editor.area.defaultTile": {
 		"message": "Usual tile",
@@ -658,6 +662,14 @@
 	"editor.areas.add": {
 		"message": "Add Area",
 		"source": "Add Area"
+	},
+	"editor.areas.createFailed": {
+		"message": "Couldn't add {area}.",
+		"source": "Could not add {area}."
+	},
+	"editor.areas.deleteFailed": {
+		"message": "Couldn't scuttle {area}.",
+		"source": "Could not delete {area}."
 	},
 	"editor.areas.disabledTag": {
 		"message": "closed",

@@ -304,7 +304,7 @@ export class AreaSelectDialog
 		});
 
 		const map = new EditorMap(bounds);
-		const loader = new ChunkLoader(this.api, universe.id, area.id, map, (chunkKeys) =>
+		const loader = new ChunkLoader((range) => this.api.loadChunks(universe.id, area.id, range), map, (chunkKeys) =>
 		{
 			this.canvas.scene?.refreshChunks(chunkKeys);
 		}, (error) =>

@@ -1,15 +1,16 @@
-import { isInBounds, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type MessageDescriptor, type Ruleset, type AreaLinkMode, type AreaLinkTarget } from '@multiverse-kiln/shared';
+import { isInBounds, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type Ruleset, type AreaLinkMode, type AreaLinkTarget } from '@multiverse-kiln/shared';
 
 import { ChunkLoader } from '../../editor/ChunkLoader';
 import { EditorMap } from '../../editor/EditorMap';
 import { editorAreaPayload, MapCanvas } from '../../editor/MapCanvas';
 import { t } from '../../localization';
-import { describeEditorError, type EditorApi } from '../../network/editorApi';
+import { describeEditorError } from '../../network/editorApi';
 import type { BrushCell } from '../../editor/brush';
 import type { MapEditorHost } from '../../scenes/MapEditorScene';
 import { ChangeTracker } from '../changeTracker';
 import { getElement, setOptions, showMessage } from '../dom';
 import { addKeyHelp } from '../shortcuts';
+import type { AreaSource, LinkChange } from './areaSource';
 import { describeCell } from './cellDescription';
 import { mapMessages } from './mapMessages';
 
@@ -32,7 +33,10 @@ const RETURN_COLOR = 0xe040fb;
  */
 export interface LinkDialogTarget
 {
-	universeId: string;
+	/**
+	 * Where the preview gets the areas it shows, with the link changes not yet saved
+	 */
+	source: AreaSource;
 
 	/**
 	 * The area the link is in
@@ -63,9 +67,10 @@ export interface LinkDialogTarget
 	ruleset: Ruleset;
 
 	/**
-	 * Called after the link is saved or deleted
+	 * Keeps the changes the dialog made until the Areas tab is saved: the link, or its deletion, and any
+	 * return link
 	 */
-	onChanged: () => void;
+	onChanged: (changes: LinkChange[]) => void;
 }
 
 /**
@@ -82,7 +87,8 @@ interface PreviewArea
 /**
  * Adds, changes or deletes a cell's area link: how it is taken, whether it needs the whole group, and
  * where it goes, chosen by clicking a preview of the target area's map. It can also place a return
- * link in the target area that leads back to the cell
+ * link in the target area that leads back to the cell. The changes wait on the page until the Areas
+ * tab is saved
  */
 export class LinkDialog
 {
@@ -122,10 +128,7 @@ export class LinkDialog
 	 */
 	private previewVersion = 0;
 
-	/**
-	 * @param api The editor's API
-	 */
-	constructor(private readonly api: EditorApi)
+	constructor()
 	{
 		const previewElement = getElement('link-preview', HTMLElement);
 
@@ -182,13 +185,13 @@ export class LinkDialog
 
 		this.deleteButton.addEventListener('click', () =>
 		{
-			void this.deleteLink();
+			this.deleteLink();
 		});
 
 		this.form.addEventListener('submit', (event) =>
 		{
 			event.preventDefault();
-			void this.save();
+			this.save();
 		});
 	}
 
@@ -276,8 +279,8 @@ export class LinkDialog
 		try
 		{
 			[area, links] = await Promise.all([
-				this.api.getArea(target.universeId, areaId),
-				this.api.listLinks(target.universeId, areaId)
+				target.source.getArea(areaId),
+				target.source.listLinks(areaId)
 			]);
 		}
 		catch (error)
@@ -300,7 +303,7 @@ export class LinkDialog
 		}
 
 		const map = new EditorMap(area.bounds);
-		const loader = new ChunkLoader(this.api, target.universeId, area.id, map, (chunkKeys) =>
+		const loader = new ChunkLoader((range) => target.source.loadChunks(area.id, range), map, (chunkKeys) =>
 		{
 			this.canvas.scene?.refreshChunks(chunkKeys);
 		}, (error) =>
@@ -440,9 +443,9 @@ export class LinkDialog
 	}
 
 	/**
-	 * Saves the link, and the return link if one was placed
+	 * Keeps the link, and the return link if one was placed, until the Areas tab is saved
 	 */
-	private async save(): Promise<void>
+	private save(): void
 	{
 		const target = this.target;
 		const preview = this.preview;
@@ -458,7 +461,7 @@ export class LinkDialog
 			showMessage(this.error, t({
 				id: 'editor.link.needDestination',
 				defaultMessage: 'Click the map to choose where the link goes.',
-				description: 'Shown when Save is pressed before the cell the link leads to is chosen'
+				description: 'Shown when Apply is pressed before the cell the link leads to is chosen'
 			}));
 			return;
 		}
@@ -468,7 +471,7 @@ export class LinkDialog
 			showMessage(this.error, t({
 				id: 'editor.link.needReturn',
 				defaultMessage: 'Click the map to place the return link, or don\'t add one.',
-				description: 'Shown when Save is pressed with a return link asked for but not placed'
+				description: 'Shown when Apply is pressed with a return link asked for but not placed'
 			}));
 			return;
 		}
@@ -482,32 +485,38 @@ export class LinkDialog
 			requiresWholeGroup: this.wholeGroup.checked
 		};
 		const returnCell = (this.addReturn.checked ? this.returnCell : undefined);
-
-		await this.run({
-			id: 'editor.link.saveFailed',
-			defaultMessage: 'Could not save the link.',
-			description: 'Shown in the link dialog when the link couldn\'t be stored'
-		}, async () =>
-		{
-			await this.api.saveLink(target.universeId, target.area.id, target.column, target.row, link);
-
-			if (returnCell)
+		const changes: LinkChange[] = [
 			{
-				await this.api.saveLink(target.universeId, preview.area.id, returnCell.column, returnCell.row, {
+				areaId: target.area.id,
+				column: target.column,
+				row: target.row,
+				target: link
+			}
+		];
+
+		if (returnCell)
+		{
+			changes.push({
+				areaId: preview.area.id,
+				column: returnCell.column,
+				row: returnCell.row,
+				target: {
 					targetAreaId: target.area.id,
 					targetColumn: target.column,
 					targetRow: target.row,
 					mode,
 					requiresWholeGroup: this.wholeGroup.checked
-				});
-			}
-		});
+				}
+			});
+		}
+
+		this.finish(changes);
 	}
 
 	/**
-	 * Deletes the cell's link after asking
+	 * Deletes the cell's link when the Areas tab is saved, after asking
 	 */
-	private async deleteLink(): Promise<void>
+	private deleteLink(): void
 	{
 		const target = this.target;
 
@@ -530,38 +539,28 @@ export class LinkDialog
 			return;
 		}
 
-		await this.run({
-			id: 'editor.link.deleteFailed',
-			defaultMessage: 'Could not delete the link.',
-			description: 'Shown in the link dialog when the link couldn\'t be deleted'
-		}, () => this.api.deleteLink(target.universeId, target.area.id, target.column, target.row));
+		this.finish([
+			{
+				areaId: target.area.id,
+				column: target.column,
+				row: target.row,
+				target: null
+			}
+		]);
 	}
 
 	/**
-	 * Makes a change, closing the dialog when it succeeds and explaining in it when it doesn't
+	 * Hands the dialog's changes to the map editor and closes it
 	 *
-	 * @param failure What failed, as a sentence, for the error message
-	 * @param change The change
+	 * @param changes The changes
 	 */
-	private async run(failure: MessageDescriptor, change: () => Promise<void>): Promise<void>
+	private finish(changes: LinkChange[]): void
 	{
-		this.fields.disabled = true;
-		showMessage(this.error, undefined);
+		const target = this.target;
 
-		try
-		{
-			await change();
-			this.dialog.close();
-			this.target?.onChanged();
-		}
-		catch (error)
-		{
-			showMessage(this.error, describeEditorError(error, failure));
-		}
-		finally
-		{
-			this.fields.disabled = false;
-		}
+		this.changes.markSaved();
+		this.dialog.close();
+		target?.onChanged(changes);
 	}
 
 	/**

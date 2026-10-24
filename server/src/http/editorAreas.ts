@@ -2,7 +2,7 @@
  * The world editor's routes for a universe's areas, their maps and their links (listed in shared/src/editor.ts)
  */
 import express, { type Request, type Response } from 'express';
-import { canEditWorld, DEFAULT_TILE_CELL, isInBounds, localize, MAX_AREAS, NEW_AREA_BOUNDS, VOID_CELL, type ChunkListPayload, type CreatedPayload, type EditableUniverse, type EditorArea, type FaerieMorning, type UniverseSettings, type MessageDescriptor, type ResizeConflictPayload, type Ruleset, type AreaLinkListPayload, type AreaListPayload, type AreaSettings } from '@multiverse-kiln/shared';
+import { canEditWorld, DEFAULT_AREA_TILE_KEYS, DEFAULT_TILE_CELL, isInBounds, localize, MAX_AREAS, NEW_AREA_BOUNDS, VOID_CELL, type ChunkListPayload, type CreatedPayload, type EditableUniverse, type EditorArea, type FaerieMorning, type UniverseSettings, type MessageDescriptor, type ResizeConflictPayload, type Ruleset, type AreaLinkListPayload, type AreaListPayload, type AreaSettings } from '@multiverse-kiln/shared';
 
 import { findDefaultTileIds, findTileKind, loadUniverseTiles } from '../db/tileRepo.js';
 import { inTransaction } from '../db/transactions.js';
@@ -13,14 +13,6 @@ import { areaChanges } from '../world/areaChanges.js';
 import { loadAreaContext, requireRole, universeContextOf, areaContextOf } from './editorAccess.js';
 import { cellEditRequest, cellParameters, chunkRange, newAreaRequest, resizeAreaRequest, areaLinkTarget, areaSettingsUpdate } from './editorPayloads.js';
 import { errorMessages, sendError, sendInvalidRequest } from './errors.js';
-
-/**
- * The keys of the default tiles new areas use in each ruleset, outdoors and indoors
- */
-export const DEFAULT_AREA_TILE_KEYS: Record<Ruleset, { outdoors: string; indoors: string }> = {
-	pf1e: { outdoors: 'grass', indoors: 'wood_floor' },
-	sf1e: { outdoors: 'grass', indoors: 'metal_floor' }
-};
 
 /**
  * Adds the area routes to a universe's router
