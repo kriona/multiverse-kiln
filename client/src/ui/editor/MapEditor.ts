@@ -11,6 +11,7 @@ import { t } from '../../localization';
 import { describeEditorError, EditorApiError, type EditorApi } from '../../network/editorApi';
 import type { CameraState, MapEditorHost, PointerMode } from '../../scenes/MapEditorScene';
 import { getElement, namedOptions, setButtonLabel, setOptions, showMessage } from '../dom';
+import { formMessages } from '../formMessages';
 import { addKeyHelp, formatKeys } from '../shortcuts';
 import { tileName } from '../tileNames';
 import type { AreaSource, LinkChange } from './areaSource';
@@ -253,11 +254,7 @@ export class MapEditor
 		addKeyHelp({
 			scope: this.canvasElement,
 			keys: () => t(mapMessages.arrowKeys),
-			description: () => t({
-				id: 'editor.map.keys.cursorDescription',
-				defaultMessage: 'Move the cursor on the focused map, 10 cells at a time with Shift',
-				description: 'In the list of keyboard shortcuts, what the arrow keys do on the map editor\'s map'
-			})
+			description: () => t(mapMessages.cursorDescription)
 		});
 
 		addKeyHelp({
@@ -1005,11 +1002,7 @@ export class MapEditor
 	{
 		if (this.pendingSaves > 0)
 		{
-			this.saveStatus.textContent = t({
-				id: 'editor.map.saving',
-				defaultMessage: 'Saving...',
-				description: 'Shown under the map while painting is being stored'
-			});
+			this.saveStatus.textContent = t(formMessages.saving);
 		}
 		else if (this.hasUnsavedChanges())
 		{

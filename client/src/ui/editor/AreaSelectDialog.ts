@@ -9,6 +9,7 @@ import type { MapEditorHost } from '../../scenes/MapEditorScene';
 import { getElement, showMessage } from '../dom';
 import { addKeyHelp } from '../shortcuts';
 import { describeCell } from './cellDescription';
+import { editorMessages } from './editorMessages';
 import { mapMessages } from './mapMessages';
 
 /**
@@ -113,11 +114,7 @@ export class AreaSelectDialog
 		addKeyHelp({
 			scope: this.previewElement,
 			keys: () => t(mapMessages.arrowKeys),
-			description: () => t({
-				id: 'editor.areaSelect.keys.cursorDescription',
-				defaultMessage: 'Move the cursor on the focused map, 10 cells at a time with Shift',
-				description: 'In the list of keyboard shortcuts, what the arrow keys do on the map in the dialog for choosing a starting area'
-			})
+			description: () => t(mapMessages.cursorDescription)
 		});
 
 		addKeyHelp({
@@ -281,11 +278,7 @@ export class AreaSelectDialog
 
 		if (!area.enabled)
 		{
-			notes.push(t({
-				id: 'editor.areaSelect.disabled',
-				defaultMessage: 'Disabled',
-				description: 'In the dialog for choosing an area, under the name of an area players can\'t go into'
-			}));
+			notes.push(t(editorMessages.disabled));
 		}
 
 		label.className = 'checkbox described-choice';

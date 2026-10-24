@@ -67,8 +67,11 @@
 		background: $background-field;
 		color: $text-muted;
 
+		// The tab showing reaches 1px further down, covering the line under the tabs so it opens onto its panel
 		&[aria-selected="true"]
 		{
+			margin-bottom: -1px;
+			padding-bottom: 7px;
 			background: $background-panel;
 			color: $text;
 		}
@@ -144,6 +147,13 @@ html:has(.editor-save-bar:not([hidden])) .map-editor.full-page
 	{
 		margin-top: 0;
 	}
+}
+
+// A choice in a form is as wide as its longest option, up to the form's width
+.form label > select
+{
+	align-self: flex-start;
+	max-width: 100%;
 }
 
 // A tab holding cards that save separately, such as the Ruleset tab's settings and difficulty levels

@@ -5,6 +5,7 @@ import { currentLocale, signedNumber, t } from '../localization';
 import type { CharacterApi } from '../network/characterApi';
 import { describeEditorError } from '../network/editorApi';
 import { announce } from './announcer';
+import { characterMessages } from './characterMessages';
 import { getElement, setButtonLabel, showMessage } from './dom';
 import { createItemIcon, itemName } from './itemNames';
 import { formatMoney } from './moneyField';
@@ -187,11 +188,7 @@ export class CharacterSheetDialog
 	private show(sheet: CharacterSheet): void
 	{
 		this.title.textContent = sheet.name;
-		this.summary.textContent = t({
-			id: 'characterSheet.summary',
-			defaultMessage: '{race} {class}',
-			description: 'Under the name at the top of a character\'s sheet, their race and class, e.g. "Dwarf Fighter". Reorder them as your language needs'
-		}, {
+		this.summary.textContent = t(characterMessages.raceAndClass, {
 			race: raceName(sheet.race, sheet.ruleset),
 			class: className(sheet.characterClass, sheet.ruleset)
 		});
@@ -513,9 +510,9 @@ export class CharacterSheetDialog
 				description: 'On a character\'s sheet, the label of their size, such as Medium'
 			}), t(SIZE_NAMES[sheet.ruleset][sheet.size])],
 			[t({
-				id: 'characterSheet.darkvision',
+				id: 'character.darkvision',
 				defaultMessage: 'Darkvision',
-				description: 'On a character\'s sheet, the label of whether they can see in the dark'
+				description: 'Whether a character can see in the dark: the label on a character\'s sheet, and the race editor\'s checkbox for whether the race\'s characters can'
 			}), t({
 				id: 'characterSheet.darkvisionValue',
 				defaultMessage: '{darkvision, select, true {Yes} other {No}}',

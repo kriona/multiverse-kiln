@@ -19,6 +19,11 @@ export const formMessages = defineMessages({
 		defaultMessage: 'Enter a whole number from {min, number} to {max, number}.',
 		description: 'Shown under a number field when what was typed isn\'t a whole number in the range it allows; {min} and {max} are the smallest and largest allowed'
 	},
+	saving: {
+		id: 'form.saving',
+		defaultMessage: 'Saving...',
+		description: 'Shown while work is being stored, such as painting under the map editor\'s map, or the player\'s progress in the toolbar of Create Character'
+	},
 	saved: {
 		id: 'form.saved',
 		defaultMessage: 'Saved',

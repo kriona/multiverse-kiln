@@ -9,6 +9,11 @@ export const mapMessages = defineMessages({
 		defaultMessage: 'Arrow keys',
 		description: 'In the list of keyboard shortcuts, the name of the arrow keys'
 	},
+	cursorDescription: {
+		id: 'editor.map.keys.cursorDescription',
+		defaultMessage: 'Move the cursor on the focused map, 10 cells at a time with Shift',
+		description: 'In the list of keyboard shortcuts, what the arrow keys do on a map in the editor: the map editor\'s, the link dialog\'s, or the one in the dialog for choosing a starting area'
+	},
 	spaceOrEnter: {
 		id: 'editor.map.keys.paint',
 		defaultMessage: 'Space / Enter',

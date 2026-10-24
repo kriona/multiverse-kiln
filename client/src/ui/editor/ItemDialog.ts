@@ -6,6 +6,7 @@ import { getElement, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
 import { itemCategoryName, itemName, itemTypeName } from '../itemNames';
+import { editorMessages } from './editorMessages';
 import { labelRemoveButton, type StagedEdit } from './stagedChanges';
 
 /**
@@ -142,11 +143,7 @@ export class ItemDialog
 				defaultMessage: 'Delete Item',
 				description: 'Button in the item editor that deletes an item made for this universe'
 			})
-			: t({
-				id: 'editor.item.restore',
-				defaultMessage: 'Restore Default',
-				description: 'Button in the item editor that undoes this universe\'s changes to one of the ruleset\'s items'
-			})));
+			: t(editorMessages.restore)));
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.dialog);
 		this.dialog.showModal();

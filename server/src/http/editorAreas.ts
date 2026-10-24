@@ -62,7 +62,7 @@ export function timeSettingsProblem(settings: { passageOfTime: string; faerieMor
 		return({
 			id: 'error.faerieCantLoop',
 			defaultMessage: 'An area whose passage of time is faerie can\'t loop.',
-			description: 'Why an area\'s settings were refused: faerie time and a map that wraps around can\'t be combined'
+			description: 'Why an area can\'t both have faerie time and a map that wraps around: shown by the area editor\'s loop checkboxes, and as the reason the server refused an area\'s settings'
 		});
 	}
 

@@ -54,7 +54,7 @@ export class DifficultyDialog
 		this.mobScale.max = String(MAX_MOB_SCALE);
 		getElement('difficulty-mob-scale-hint', HTMLElement).textContent = t({
 			id: 'editor.difficultyLevel.mobScaleHint',
-			defaultMessage: 'How much harder mobs are, from {min, number}% (easier) to {max, number}% (harder); 0 leaves them as the universe made them. It scales their hit points (never below 1) and how often they hit and are hit (a chance to hit of at least {floor, number}% stays at least {floor, number}%).',
+			defaultMessage: 'How much harder mobs are, from {min, number}% (easier) to {max, number}% (harder); 0 for normal strength. It scales their hit points (never below 1) and how often they hit and are hit (a chance to hit of at least {floor, number}% stays at least {floor, number}%).',
 			description: 'Explains the difficulty level editor\'s Mob scale field; {min} and {max} are the lowest and highest percentages allowed, e.g. -1000 and 1000, and {floor} is the lowest a chance to hit can be brought down to, e.g. 5'
 		}, {
 			min: MIN_MOB_SCALE,

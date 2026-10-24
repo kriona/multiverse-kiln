@@ -6,8 +6,10 @@ import { ChangeTracker } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
+import { pageMessages } from '../pageMessages';
 import { tileName } from '../tileNames';
 import type { AreaSource } from './areaSource';
+import { editorMessages } from './editorMessages';
 import { MapEditor } from './MapEditor';
 import { combineChanges, type SavableTab } from './SaveBar';
 import { isNewAreaId, StagedAreas } from './stagedAreas';
@@ -321,11 +323,7 @@ export class AreasTab implements SavableTab
 		this.onAreaChanged((isNewAreaId(areaId) ? undefined : areaId));
 		this.listView.hidden = true;
 		this.editorView.hidden = false;
-		this.editorTitle.textContent = t({
-			id: 'editor.area.loading',
-			defaultMessage: 'Loading...',
-			description: 'Heading of the area editor while the area loads'
-		});
+		this.editorTitle.textContent = t(pageMessages.loading);
 		this.fields.disabled = true;
 		showMessage(this.error, undefined);
 
@@ -509,11 +507,7 @@ export class AreasTab implements SavableTab
 				: undefined),
 			(area.enabled
 				? undefined
-				: t({
-					id: 'editor.areas.disabledTag',
-					defaultMessage: 'disabled',
-					description: 'Under an area in the list of areas, for an area players can\'t go into'
-				})),
+				: t(editorMessages.disabledTag)),
 			(isNewAreaId(area.id) ? stagedTag('new', false) : undefined)
 		].filter((tag) => (tag !== undefined));
 

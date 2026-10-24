@@ -1,4 +1,5 @@
 import { formatList, t } from '../../localization';
+import { editorMessages } from './editorMessages';
 
 /**
  * What the lists of races and classes on the Characters tab say about where a race or class comes from and whether it can be chosen
@@ -20,26 +21,14 @@ export function optionTags(option: OptionState): string
 {
 	const tags = [
 		(option.custom
-			? t({
-				id: 'editor.options.customTag',
-				defaultMessage: 'custom',
-				description: 'In the last column of the editor\'s race or class table, for a race or class made for this universe'
-			})
+			? t(editorMessages.customTag)
 			: undefined),
 		(option.edited
-			? t({
-				id: 'editor.options.editedTag',
-				defaultMessage: 'edited',
-				description: 'In the last column of the editor\'s race or class table, for one of the ruleset\'s races or classes that this universe changed'
-			})
+			? t(editorMessages.editedTag)
 			: undefined),
 		(option.enabled
 			? undefined
-			: t({
-				id: 'editor.options.disabledTag',
-				defaultMessage: 'disabled',
-				description: 'In the last column of the editor\'s race or class table, for a race or class new characters can\'t choose'
-			}))
+			: t(editorMessages.disabledTag))
 	].filter((tag) => (tag !== undefined));
 
 	return(formatList(tags));

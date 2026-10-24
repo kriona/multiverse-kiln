@@ -31,7 +31,7 @@ export function describeMobScale(mobScale: number): string
 {
 	return(t({
 		id: 'difficulty.mobScale',
-		defaultMessage: '{direction, select, easier {Mobs {percent, number, ::percent} easier} harder {Mobs {percent, number, ::percent} harder} other {Mobs as the universe made them}}',
+		defaultMessage: '{direction, select, easier {Mobs {percent, number, ::percent} easier} harder {Mobs {percent, number, ::percent} harder} other {Mobs at default strength}}',
 		description: 'Summary of how a difficulty level changes mobs (monsters and enemies): their hit points and how often they hit and are hit. {percent} is how much, e.g. 50%; the last choice is for a level that leaves them as they are'
 	}, {
 		direction: ((mobScale < 0) ? 'easier' : ((mobScale > 0) ? 'harder' : 'unchanged')),

@@ -10,6 +10,7 @@ import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldError
 import { formMessages } from '../formMessages';
 import { formatMoney, readMoneyField } from '../moneyField';
 import { className, raceName } from '../raceAndClassNames';
+import { editorMessages } from './editorMessages';
 import type { ItemSelectDialog } from './ItemSelectDialog';
 import { startingAreaMessages } from './startingAreaMessages';
 import { StartingItemsField } from './StartingItemsField';
@@ -255,11 +256,7 @@ export class ClassDialog
 				defaultMessage: 'Delete Class',
 				description: 'Button in the class editor that deletes a character class made for this universe'
 			})
-			: t({
-				id: 'editor.class.restore',
-				defaultMessage: 'Restore Default',
-				description: 'Button in the class editor that undoes this universe\'s changes to one of the ruleset\'s character classes'
-			})));
+			: t(editorMessages.restore)));
 
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.dialog);

@@ -7,6 +7,7 @@ import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldError
 import { formMessages } from '../formMessages';
 import { tileName } from '../tileNames';
 import { colorToHex, nightColor, parseHexColor } from './colors';
+import { editorMessages } from './editorMessages';
 import { labelRemoveButton, type StagedEdit } from './stagedChanges';
 
 /**
@@ -209,11 +210,7 @@ export class TileDialog
 				defaultMessage: 'Delete Tile',
 				description: 'Button in the tile editor that deletes a tile made for this universe'
 			})
-			: t({
-				id: 'editor.tile.restore',
-				defaultMessage: 'Restore Default',
-				description: 'Button in the tile editor that undoes this universe\'s changes to one of the ruleset\'s tiles'
-			})));
+			: t(editorMessages.restore)));
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.dialog);
 		this.updatePreview();

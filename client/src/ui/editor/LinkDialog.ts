@@ -135,11 +135,7 @@ export class LinkDialog
 		addKeyHelp({
 			scope: previewElement,
 			keys: () => t(mapMessages.arrowKeys),
-			description: () => t({
-				id: 'editor.link.keys.cursorDescription',
-				defaultMessage: 'Move the cursor on the focused map, 10 cells at a time with Shift',
-				description: 'In the list of keyboard shortcuts, what the arrow keys do on the link dialog\'s map'
-			})
+			description: () => t(mapMessages.cursorDescription)
 		});
 
 		addKeyHelp({

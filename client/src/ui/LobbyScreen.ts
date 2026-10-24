@@ -6,6 +6,7 @@ import type { LobbyConnection } from '../network/serverConnection';
 import { universePageUrl } from '../pages';
 import { announce } from './announcer';
 import { CharacterList } from './CharacterList';
+import { characterMessages } from './characterMessages';
 import { getElement, showMessage, titleLink } from './dom';
 import type { MapView } from './MapView';
 import { addShortcut } from './shortcuts';
@@ -177,11 +178,7 @@ export class LobbyScreen
 		addShortcut({
 			keys: 'Alt+K',
 			scope: getElement('lobby-screen', HTMLElement),
-			description: () => t({
-				id: 'lobby.keys.characterSheet',
-				defaultMessage: 'Open the character sheet of the character you\'re playing',
-				description: 'In the list of keyboard shortcuts in the lobby, what the shortcut that shows the character the player is playing does'
-			}),
+			description: () => t(characterMessages.sheetShortcut),
 			run: () =>
 			{
 				const character = this.playingCharacter();
@@ -311,11 +308,7 @@ export class LobbyScreen
 
 		if ((previous !== undefined) && (previous !== characterId) && character)
 		{
-			announce(t({
-				id: 'lobby.nowPlaying',
-				defaultMessage: 'You are now playing {name}.',
-				description: 'Read out by screen readers in the lobby when the player switches to another of their characters; {name} is the character\'s name'
-			}, {
+			announce(t(characterMessages.nowPlaying, {
 				name: character.name
 			}));
 		}

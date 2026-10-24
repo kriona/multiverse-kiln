@@ -9,6 +9,7 @@ import { getUniverseDetails, joinGroup, joinLobby, type GameConnection, type Lob
 import { isLeavingPage } from './pageLifecycle';
 import { characterPageUrl, gamePageUrl, HOME_PAGE_URL, readGameUniverseKey, readPageParameter, replacePageParameters, replacePagePath } from './pages';
 import { announce } from './ui/announcer';
+import { characterMessages } from './ui/characterMessages';
 import { CharacterSheetDialog } from './ui/CharacterSheetDialog';
 import { CreateGroupDialog } from './ui/CreateGroupDialog';
 import { showNoticeScreen, showScreen, showStatus } from './ui/dom';
@@ -415,11 +416,7 @@ export class GamePage
 		}
 		catch (error)
 		{
-			this.lobbyScreen.showCharacterError(describeEditorError(error, {
-				id: 'lobby.charactersFailed',
-				defaultMessage: 'Could not list your characters.',
-				description: 'Shown in the lobby when the list of the player\'s characters in the universe couldn\'t be loaded'
-			}));
+			this.lobbyScreen.showCharacterError(describeEditorError(error, characterMessages.loadFailed));
 
 			return(undefined);
 		}

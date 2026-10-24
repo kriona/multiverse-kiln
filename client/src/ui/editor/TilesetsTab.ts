@@ -5,6 +5,7 @@ import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, setOptions, showMessage } from '../dom';
 import { tileName } from '../tileNames';
 import { colorToHex } from './colors';
+import { editorMessages } from './editorMessages';
 import type { SavableTab } from './SaveBar';
 import { describeCommitFailure, joinTags, markStagedRow, StagedChanges, stagedPage, stagedTag, type StagedState } from './stagedChanges';
 import { TileDialog } from './TileDialog';
@@ -13,11 +14,6 @@ import { TileDialog } from './TileDialog';
  * Text the Tilesets tab shows in more than one place (see src/localization.ts)
  */
 const messages = defineMessages({
-	any: {
-		id: 'editor.tiles.filterAny',
-		defaultMessage: 'Any',
-		description: 'Choice of a tile filter that shows every tile'
-	},
 	usedIn: {
 		id: 'editor.tiles.usedInValue',
 		defaultMessage: '{usedIn, select, both {Both} indoors {Indoors} outdoors {Outdoors} other {Neither}}',
@@ -90,7 +86,7 @@ export class TilesetsTab implements SavableTab
 		setOptions(this.usedInFilter, [
 			{
 				value: '',
-				label: t(messages.any)
+				label: t(editorMessages.filterAny)
 			},
 			...TILE_USED_IN.map((usedIn) => ({
 				value: usedIn,
@@ -114,23 +110,15 @@ export class TilesetsTab implements SavableTab
 			setOptions(filter, [
 				{
 					value: '',
-					label: t(messages.any)
+					label: t(editorMessages.filterAny)
 				},
 				{
 					value: 'true',
-					label: t({
-						id: 'editor.tiles.filterYes',
-						defaultMessage: 'Yes',
-						description: 'Choice of a yes-or-no tile filter, e.g. Passable: Yes'
-					})
+					label: t(editorMessages.filterYes)
 				},
 				{
 					value: 'false',
-					label: t({
-						id: 'editor.tiles.filterNo',
-						defaultMessage: 'No',
-						description: 'Choice of a yes-or-no tile filter, e.g. Passable: No'
-					})
+					label: t(editorMessages.filterNo)
 				}
 			]);
 		}
@@ -375,18 +363,10 @@ export class TilesetsTab implements SavableTab
 		const nameButton = document.createElement('button');
 		const tags = [
 			(tile.custom
-				? t({
-					id: 'editor.tiles.customTag',
-					defaultMessage: 'custom',
-					description: 'In the last column of the tile table, for a tile made for this universe'
-				})
+				? t(editorMessages.customTag)
 				: undefined),
 			(tile.edited
-				? t({
-					id: 'editor.tiles.editedTag',
-					defaultMessage: 'edited',
-					description: 'In the last column of the tile table, for one of the ruleset\'s tiles that this universe changed'
-				})
+				? t(editorMessages.editedTag)
 				: undefined),
 			stagedTag(state, !tile.custom)
 		];

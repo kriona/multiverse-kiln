@@ -4,6 +4,7 @@ import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, setOptions, showMessage, type SelectOption } from '../dom';
 import { createItemIcon, itemCategoryName, itemName, itemTypeName } from '../itemNames';
+import { editorMessages } from './editorMessages';
 import { ItemDialog } from './ItemDialog';
 import type { SavableTab } from './SaveBar';
 import { describeCommitFailure, joinTags, markStagedRow, StagedChanges, stagedPage, stagedTag, type StagedState } from './stagedChanges';
@@ -75,27 +76,15 @@ export class ItemsTab implements SavableTab
 			setOptions(filter, [
 				{
 					value: '',
-					label: t({
-						id: 'editor.items.filterAny',
-						defaultMessage: 'Any',
-						description: 'Choice of a yes-or-no item filter that shows every item'
-					})
+					label: t(editorMessages.filterAny)
 				},
 				{
 					value: 'true',
-					label: t({
-						id: 'editor.items.filterYes',
-						defaultMessage: 'Yes',
-						description: 'Choice of a yes-or-no item filter, e.g. Enabled: Yes'
-					})
+					label: t(editorMessages.filterYes)
 				},
 				{
 					value: 'false',
-					label: t({
-						id: 'editor.items.filterNo',
-						defaultMessage: 'No',
-						description: 'Choice of a yes-or-no item filter, e.g. Enabled: No'
-					})
+					label: t(editorMessages.filterNo)
 				}
 			]);
 		}
@@ -355,7 +344,7 @@ export class ItemsTab implements SavableTab
 			? t({
 				id: 'editor.items.none',
 				defaultMessage: 'No items match.',
-				description: 'Shown instead of the table when no item matches the filters'
+				description: 'Shown instead of the list of items when no item matches the search or filters: on the Items tab and in the dialog for choosing items'
 			})
 			: undefined));
 	}
@@ -394,26 +383,14 @@ export class ItemsTab implements SavableTab
 		const nameButton = document.createElement('button');
 		const tags = [
 			(item.custom
-				? t({
-					id: 'editor.items.customTag',
-					defaultMessage: 'custom',
-					description: 'In the last column of the item table, for an item made for this universe'
-				})
+				? t(editorMessages.customTag)
 				: undefined),
 			(item.edited
-				? t({
-					id: 'editor.items.editedTag',
-					defaultMessage: 'edited',
-					description: 'In the last column of the item table, for one of the ruleset\'s items that this universe changed'
-				})
+				? t(editorMessages.editedTag)
 				: undefined),
 			(item.enabled
 				? undefined
-				: t({
-					id: 'editor.items.disabledTag',
-					defaultMessage: 'disabled',
-					description: 'In the last column of the item table, for an item characters can\'t be given'
-				})),
+				: t(editorMessages.disabledTag)),
 			stagedTag(state, !item.custom)
 		];
 		const cells = [
@@ -468,11 +445,7 @@ function anyOption(): SelectOption
 {
 	return({
 		value: '',
-		label: t({
-			id: 'editor.items.anyKind',
-			defaultMessage: 'Any',
-			description: 'Choice of the item kind or type filter that shows items of every kind or type'
-		})
+		label: t(editorMessages.filterAny)
 	});
 }
 

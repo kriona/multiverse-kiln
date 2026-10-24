@@ -18,7 +18,7 @@
 					<h1 id="editor-title" data-message="editor.title" data-translation-context="Heading of the world editor until the universe's name has loaded">Edit Universe</h1>
 					<span class="toolbar-name" data-message="editor.role" data-translation-context="In the editor's toolbar, the player's role in the universe; {role} is e.g. creator or builder">Your role: <strong id="editor-role" data-argument="role"></strong></span>
 					<button id="editor-play" type="button" data-shortcut="Alt+U" data-message="editor.play" data-translation-context="Button in the editor's toolbar that goes to the universe's lobby to play"><!-- icon game-icons:magic-portal -->Enter Universe</button>
-					<button id="editor-home" type="button" class="secondary" data-shortcut="Alt+H" data-message="editor.home" data-translation-context="Button in the editor's toolbar that goes back to the list of universes"><!-- icon ph:house -->Back to Home</button>
+					<button id="editor-home" type="button" class="secondary" data-shortcut="Alt+H" data-message="page.backToHome" data-translation-context="Link or button that goes back to the list of universes (Home): at the top of a page, in the editor's toolbar, or below a message filling the page, such as one saying a universe couldn't be found"><!-- icon ph:house -->Back to Home</button>
 				</header>
 				<p id="editor-notice" class="notice" role="status" hidden></p>
 				<div class="tabs" role="tablist">
@@ -34,7 +34,7 @@
 					<section id="editor-panel-universe" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-universe">
 						<form id="universe-form" class="form">
 							<fieldset id="universe-fields" class="plain">
-								<label data-message="form.name" data-translation-context="Label of the field for the name of a universe, area or tile">
+								<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">
 									Name
 									<input id="universe-name-input" required />
 								</label>
@@ -135,8 +135,8 @@
 							<table class="item-table">
 								<thead>
 									<tr>
-										<th scope="col" data-message="editor.difficultyLevel.name" data-translation-context="A difficulty level's name, such as Normal or Hard: the label of its field in the difficulty level editor, and the heading of the column of names in the editor's list of levels">Name</th>
-										<th scope="col" data-message="editor.difficulty.summary" data-translation-context="Heading of the table column describing how each difficulty level changes mobs (monsters and enemies)">Summary</th>
+										<th scope="col" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</th>
+										<th scope="col" data-message="editor.summary" data-translation-context="Heading of the table column describing each row's rules, in the editor's lists of races, classes, themes, items and difficulty levels (such as a race's size, an item's type, or how a difficulty level changes monsters and enemies)">Summary</th>
 										<th scope="col"></th>
 									</tr>
 								</thead>
@@ -196,7 +196,7 @@
 										<button id="characters-items-choose" type="button" class="secondary" data-shortcut="Alt+Q" data-message="editor.characters.chooseEquipment" data-translation-context="Button that opens the dialog for choosing the items every character starts with"><!-- icon game-icons:swap-bag -->Choose Starting Equipment</button>
 									</div>
 								</div>
-								<p data-message="editor.characters.startingArea" data-translation-context="Shows the area characters start in; {area} is the area's name">Starting area: <strong id="characters-area-name" data-argument="area"></strong></p>
+								<p data-message="editor.startingArea.area" data-translation-context="Shows the area characters start in: every character on the Characters tab, or a race's or class's characters in its editor; {area} is the area's name">Starting area: <strong id="characters-area-name" data-argument="area"></strong></p>
 								<p class="hint" data-message="editor.characters.startingAreaHint" data-translation-context="Explains the starting area on the editor's Characters tab">Where characters start, unless their race or class says otherwise.</p>
 								<div>
 									<button id="characters-area-choose" type="button" class="secondary" data-shortcut="Alt+C" data-message="editor.characters.chooseArea" data-translation-context="Button that opens the dialog for choosing the area characters start in"><!-- icon ph:map-pin -->Choose Starting Area</button>
@@ -215,8 +215,8 @@
 							<table class="item-table">
 								<thead>
 									<tr>
-										<th scope="col" data-message="editor.races.name" data-translation-context="Heading of the table column with each race's name">Name</th>
-										<th scope="col" data-message="editor.races.summary" data-translation-context="Heading of the table column describing each race's rules, such as its size and ability modifiers">Summary</th>
+										<th scope="col" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</th>
+										<th scope="col" data-message="editor.summary" data-translation-context="Heading of the table column describing each row's rules, in the editor's lists of races, classes, themes, items and difficulty levels (such as a race's size, an item's type, or how a difficulty level changes monsters and enemies)">Summary</th>
 										<th scope="col"></th>
 									</tr>
 								</thead>
@@ -234,8 +234,8 @@
 							<table class="item-table">
 								<thead>
 									<tr>
-										<th scope="col" data-message="editor.classes.name" data-translation-context="Heading of the table column with each character class's name">Name</th>
-										<th scope="col" data-message="editor.classes.summary" data-translation-context="Heading of the table column describing each character class's rules, such as its magic">Summary</th>
+										<th scope="col" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</th>
+										<th scope="col" data-message="editor.summary" data-translation-context="Heading of the table column describing each row's rules, in the editor's lists of races, classes, themes, items and difficulty levels (such as a race's size, an item's type, or how a difficulty level changes monsters and enemies)">Summary</th>
 										<th scope="col"></th>
 									</tr>
 								</thead>
@@ -253,8 +253,8 @@
 							<table class="item-table">
 								<thead>
 									<tr>
-										<th scope="col" data-message="editor.themes.name" data-translation-context="Heading of the table column with each theme's name">Name</th>
-										<th scope="col" data-message="editor.themes.summary" data-translation-context="Heading of the table column describing each theme's rules, such as the ability it raises">Summary</th>
+										<th scope="col" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</th>
+										<th scope="col" data-message="editor.summary" data-translation-context="Heading of the table column describing each row's rules, in the editor's lists of races, classes, themes, items and difficulty levels (such as a race's size, an item's type, or how a difficulty level changes monsters and enemies)">Summary</th>
 										<th scope="col"></th>
 									</tr>
 								</thead>
@@ -265,7 +265,7 @@
 
 					<section id="editor-panel-tilesets" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-tilesets" hidden>
 						<div class="filters">
-							<input id="tile-filter-name" type="search" placeholder="Search by name" aria-label="Search tiles by name" data-message-placeholder="editor.tiles.search" data-translation-context-placeholder="Shown in the empty field that filters the tiles by name" data-message-aria-label="editor.tiles.searchLabel" data-translation-context-aria-label="Name of the field that filters the tiles by name, for screen readers" />
+							<input id="tile-filter-name" type="search" placeholder="Search by name" aria-label="Search tiles by name" data-message-placeholder="editor.searchByName" data-translation-context-placeholder="Shown in the empty field that narrows a list of tiles, items or areas down by name" data-message-aria-label="editor.tiles.searchLabel" data-translation-context-aria-label="Name of the field that filters the tiles by name, for screen readers" />
 							<label data-message="editor.tiles.passable" data-translation-context="Label of the filter for whether a tile can be walked onto">
 								Passable
 								<select id="tile-filter-passable"></select>
@@ -274,11 +274,11 @@
 								Where
 								<select id="tile-filter-used-in"></select>
 							</label>
-							<label data-message="editor.tiles.custom" data-translation-context="Label of the filter for whether a tile was made for this universe, rather than coming with the ruleset">
+							<label data-message="editor.filter.custom" data-translation-context="Label of the filter on the Items and Tilesets tabs for whether an item or tile was made for this universe, rather than coming with the ruleset">
 								Custom
 								<select id="tile-filter-custom"></select>
 							</label>
-							<label data-message="editor.tiles.edited" data-translation-context="Label of the filter for whether one of the ruleset's tiles was changed for this universe">
+							<label data-message="editor.filter.edited" data-translation-context="Label of the filter on the Items and Tilesets tabs for whether one of the ruleset's items or tiles was changed for this universe">
 								Edited from default
 								<select id="tile-filter-edited"></select>
 							</label>
@@ -288,8 +288,8 @@
 						<table class="tile-table">
 							<thead>
 								<tr>
-									<th scope="col" data-message="editor.tiles.color" data-translation-context="Heading of the table column showing each tile's color">Color</th>
-									<th scope="col" data-message="editor.tiles.name" data-translation-context="Heading of the table column with each tile's name">Name</th>
+									<th scope="col" data-message="editor.tile.color" data-translation-context="The color a tile is drawn in: the label of its field in the tile editor, and the heading of the Tilesets table's column of colors">Color</th>
+									<th scope="col" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</th>
 									<th scope="col" data-message="editor.tiles.walkTime" data-translation-context="Heading of the table column with how many seconds of game time walking a square of each tile takes">Walk time</th>
 									<th scope="col" data-message="editor.tiles.visionCost" data-translation-context="Heading of the table column with how much of a character's vision crossing each tile uses">Vision cost</th>
 									<th scope="col" data-message="editor.tile.usedIn" data-translation-context="Heading of whether indoor areas, outdoor areas, both or neither can paint with a tile: in the tile editor, and the Tilesets tab's filter and table column">Where</th>
@@ -323,11 +323,11 @@
 							</div>
 							<form id="area-form" class="form">
 								<fieldset id="area-fields" class="plain">
-									<label data-message="form.name" data-translation-context="Label of the field for the name of a universe, area or tile">
+									<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">
 										Name
 										<input id="area-name" required />
 									</label>
-									<label class="checkbox" data-message="editor.area.enabled" data-translation-context="Checkbox for whether players can go into the area">
+									<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether players can use something: go into an area, give characters an item, or choose a race, class or theme for new characters. Also the label of the Items tab's filter for it">
 										<input id="area-enabled" type="checkbox" />
 										Enabled
 									</label>
@@ -373,7 +373,7 @@
 										<input id="area-loops-north-south" type="checkbox" />
 										Loops north-south
 									</label>
-									<p id="area-loops-hint" class="hint" data-message="editor.area.faerieCantLoop" data-translation-context="Explains why the loop checkboxes are disabled" hidden>An area whose passage of time is faerie can't loop.</p>
+									<p id="area-loops-hint" class="hint" data-message="error.faerieCantLoop" data-translation-context="Why an area can't both have faerie time and a map that wraps around: shown by the area editor's loop checkboxes, and as the reason the server refused an area's settings" hidden>An area whose passage of time is faerie can't loop.</p>
 									<p id="area-size"></p>
 									<p id="area-error" class="form-error" role="alert" hidden></p>
 									<div class="form-buttons">
@@ -440,24 +440,24 @@
 
 					<section id="editor-panel-items" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-items" hidden>
 						<div class="filters">
-							<input id="item-filter-name" type="search" placeholder="Search by name" aria-label="Search items by name" data-message-placeholder="editor.items.search" data-translation-context-placeholder="Shown in the empty field that filters the items by name" data-message-aria-label="editor.items.searchLabel" data-translation-context-aria-label="Name of the field that filters the items by name, for screen readers" />
+							<input id="item-filter-name" type="search" placeholder="Search by name" aria-label="Search items by name" data-message-placeholder="editor.searchByName" data-translation-context-placeholder="Shown in the empty field that narrows a list of tiles, items or areas down by name" data-message-aria-label="editor.items.searchLabel" data-translation-context-aria-label="Name of the field that narrows the items down by name, on the Items tab and in the dialog for choosing items, for screen readers" />
 							<label data-message="editor.items.category" data-translation-context="Label of the filter for an item's broad kind, such as weapons or armor">
 								Kind
 								<select id="item-filter-category"></select>
 							</label>
-							<label data-message="editor.items.type" data-translation-context="Label of the filter for an item's type, such as dagger or longsword">
+							<label data-message="editor.item.type" data-translation-context="An item's type, such as dagger or longsword: the label of its field in the item editor, and of the Items tab's filter">
 								Type
 								<select id="item-filter-type"></select>
 							</label>
-							<label data-message="editor.items.enabled" data-translation-context="Label of the filter for whether characters can be given an item">
+							<label data-message="form.enabled" data-translation-context="Checkbox for whether players can use something: go into an area, give characters an item, or choose a race, class or theme for new characters. Also the label of the Items tab's filter for it">
 								Enabled
 								<select id="item-filter-enabled"></select>
 							</label>
-							<label data-message="editor.items.custom" data-translation-context="Label of the filter for whether an item was made for this universe, rather than coming with the ruleset">
+							<label data-message="editor.filter.custom" data-translation-context="Label of the filter on the Items and Tilesets tabs for whether an item or tile was made for this universe, rather than coming with the ruleset">
 								Custom
 								<select id="item-filter-custom"></select>
 							</label>
-							<label data-message="editor.items.edited" data-translation-context="Label of the filter for whether one of the ruleset's items was changed for this universe">
+							<label data-message="editor.filter.edited" data-translation-context="Label of the filter on the Items and Tilesets tabs for whether one of the ruleset's items or tiles was changed for this universe">
 								Edited from default
 								<select id="item-filter-edited"></select>
 							</label>
@@ -468,14 +468,14 @@
 							<thead>
 								<tr>
 									<th scope="col" data-message="editor.items.icon" data-translation-context="Heading of the table column showing each item's picture">Icon</th>
-									<th scope="col" data-message="editor.items.name" data-translation-context="Heading of the table column with each item's name">Name</th>
-									<th scope="col" data-message="editor.items.summary" data-translation-context="Heading of the table column describing each item, such as its type">Summary</th>
+									<th scope="col" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</th>
+									<th scope="col" data-message="editor.summary" data-translation-context="Heading of the table column describing each row's rules, in the editor's lists of races, classes, themes, items and difficulty levels (such as a race's size, an item's type, or how a difficulty level changes monsters and enemies)">Summary</th>
 									<th scope="col"></th>
 								</tr>
 							</thead>
 							<tbody id="item-rows"></tbody>
 						</table>
-						<p id="item-empty" class="universe-empty" data-message="editor.items.none" data-translation-context="Shown instead of the table when no item matches the filters" hidden>No items match.</p>
+						<p id="item-empty" class="universe-empty" data-message="editor.items.none" data-translation-context="Shown instead of the list of items when no item matches the search or filters: on the Items tab and in the dialog for choosing items" hidden>No items match.</p>
 						<div class="pager">
 							<button id="item-previous" type="button" class="secondary" data-message="pager.previous" data-translation-context="Button that shows the previous page of a list">Previous</button>
 							<span id="item-page"></span>
@@ -491,15 +491,15 @@
 					<form id="item-form" class="form">
 						<fieldset id="item-fields" class="plain">
 							<h2 id="item-dialog-title"></h2>
-							<label data-message="editor.item.name" data-translation-context="Label of the field for an item's name">
+							<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">
 								Name
 								<input id="item-name" required />
 							</label>
-							<label data-message="editor.item.type" data-translation-context="Label of the field for an item's type, such as dagger or longsword">
+							<label data-message="editor.item.type" data-translation-context="An item's type, such as dagger or longsword: the label of its field in the item editor, and of the Items tab's filter">
 								Type
 								<select id="item-type"></select>
 							</label>
-							<label class="checkbox" data-message="editor.item.enabled" data-translation-context="Checkbox for whether characters can be given the item">
+							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether players can use something: go into an area, give characters an item, or choose a race, class or theme for new characters. Also the label of the Items tab's filter for it">
 								<input id="item-enabled" type="checkbox" />
 								Enabled
 							</label>
@@ -516,9 +516,9 @@
 				<dialog id="item-select-dialog" class="panel dialog item-select-dialog" aria-labelledby="item-select-title">
 					<form id="item-select-form" class="form">
 						<h2 id="item-select-title" data-message="editor.itemSelect.title" data-translation-context="Title of the dialog for choosing items and how many of each, e.g. for the equipment characters start with">Choose Items</h2>
-						<input id="item-select-search" type="search" placeholder="Search by name" aria-label="Search items by name" autocomplete="off" data-message-placeholder="editor.itemSelect.search" data-translation-context-placeholder="Shown in the empty field that narrows the items down by name" data-message-aria-label="editor.itemSelect.searchLabel" data-translation-context-aria-label="Name of the field that narrows the items down by name, for screen readers" />
+						<input id="item-select-search" type="search" placeholder="Search by name" aria-label="Search items by name" autocomplete="off" data-message-placeholder="editor.searchByName" data-translation-context-placeholder="Shown in the empty field that narrows a list of tiles, items or areas down by name" data-message-aria-label="editor.items.searchLabel" data-translation-context-aria-label="Name of the field that narrows the items down by name, on the Items tab and in the dialog for choosing items, for screen readers" />
 						<fieldset id="item-select-results" class="choice stacked item-select-results" aria-label="Items" data-message-aria-label="editor.itemSelect.results" data-translation-context-aria-label="Name of the list of items to choose from, for screen readers"></fieldset>
-						<p id="item-select-none" class="universe-empty" data-message="editor.itemSelect.none" data-translation-context="Shown in the dialog for choosing items when no item's name matches the search" hidden>No items match.</p>
+						<p id="item-select-none" class="universe-empty" data-message="editor.items.none" data-translation-context="Shown instead of the list of items when no item matches the search or filters: on the Items tab and in the dialog for choosing items" hidden>No items match.</p>
 						<h3 data-message="editor.itemSelect.chosen" data-translation-context="Heading of the list of items chosen so far in the dialog for choosing items, each with how many">Chosen</h3>
 						<ul id="item-select-chosen" class="item-select-chosen"></ul>
 						<p id="item-select-nothing" class="hint" data-message="editor.itemSelect.nothing" data-translation-context="Shown in the dialog for choosing items while no item is chosen" hidden>No items are chosen.</p>
@@ -533,11 +533,11 @@
 					<form id="race-form" class="form">
 						<fieldset id="race-fields" class="plain">
 							<h2 id="race-dialog-title"></h2>
-							<label data-message="editor.race.name" data-translation-context="Label of the field for a race's name">
+							<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">
 								Name
 								<input id="race-name" required />
 							</label>
-							<label class="checkbox" data-message="editor.race.enabled" data-translation-context="Checkbox for whether new characters can choose the race">
+							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether players can use something: go into an area, give characters an item, or choose a race, class or theme for new characters. Also the label of the Items tab's filter for it">
 								<input id="race-enabled" type="checkbox" />
 								Enabled
 							</label>
@@ -551,7 +551,7 @@
 								Floating ability bonus
 							</label>
 							<p id="race-floating-hint" class="hint"></p>
-							<label class="checkbox" data-message="editor.race.darkvision" data-translation-context="Checkbox for whether the race can see in the dark">
+							<label class="checkbox" data-message="character.darkvision" data-translation-context="Whether a character can see in the dark: the label on a character's sheet, and the race editor's checkbox for whether the race's characters can">
 								<input id="race-darkvision" type="checkbox" />
 								Darkvision
 							</label>
@@ -563,22 +563,22 @@
 								Hit points
 								<input id="race-hit-points" type="number" step="1" required />
 							</label>
-							<label data-message="editor.race.startingMoney" data-translation-context="Label of the field for the money a race's characters get on top of what every character starts with">
+							<label data-message="editor.startingMoney" data-translation-context="Label of the field in the race or class editor for the money its characters get on top of what every character starts with (and, for a class, what their race gives)">
 								Extra starting money
 								<input id="race-money" autocomplete="off" />
 							</label>
 							<div class="starting-equipment">
-								<h3 id="race-items-heading" data-message="editor.race.startingEquipment" data-translation-context="Heading of the list of items a race's characters get on top of what every character starts with">Extra starting equipment</h3>
+								<h3 id="race-items-heading" data-message="editor.startingEquipment" data-translation-context="Heading in the race or class editor of the list of items its characters get on top of what every character starts with (and, for a class, what their race gives)">Extra starting equipment</h3>
 								<ul id="race-items" class="starting-items" aria-labelledby="race-items-heading"></ul>
-								<p id="race-items-none" data-message="editor.race.noStartingEquipment" data-translation-context="Shown in the race editor when the race's characters get no items beyond what every character starts with" hidden>Nothing more.</p>
+								<p id="race-items-none" data-message="editor.noStartingEquipment" data-translation-context="Shown in the race or class editor when its characters get no items beyond what every character (and, for a class, their race) starts with" hidden>Nothing more.</p>
 								<div>
-									<button id="race-items-choose" type="button" class="secondary" data-shortcut="Alt+Q" data-message="editor.race.chooseEquipment" data-translation-context="Button in the race editor that opens the dialog for choosing the items the race's characters also start with"><!-- icon game-icons:swap-bag -->Choose Equipment</button>
+									<button id="race-items-choose" type="button" class="secondary" data-shortcut="Alt+Q" data-message="editor.chooseEquipment" data-translation-context="Button in the race or class editor that opens the dialog for choosing the items its characters also start with"><!-- icon game-icons:swap-bag -->Choose Equipment</button>
 								</div>
 							</div>
-							<p data-message="editor.race.startingArea" data-translation-context="Shows the area a race's characters start in; {area} is the area's name">Starting area: <strong id="race-area-name" data-argument="area"></strong></p>
+							<p data-message="editor.startingArea.area" data-translation-context="Shows the area characters start in: every character on the Characters tab, or a race's or class's characters in its editor; {area} is the area's name">Starting area: <strong id="race-area-name" data-argument="area"></strong></p>
 							<p class="hint" data-message="editor.race.startingAreaHint" data-translation-context="Explains the race editor's starting area">Where the race's characters start, unless their class says otherwise.</p>
 							<div class="area-buttons">
-								<button id="race-area-choose" type="button" class="secondary" data-shortcut="Alt+C" data-message="editor.race.chooseArea" data-translation-context="Button in the race editor that opens the dialog for choosing the area the race's characters start in"><!-- icon ph:map-pin -->Choose Area</button>
+								<button id="race-area-choose" type="button" class="secondary" data-shortcut="Alt+C" data-message="editor.chooseStartingArea" data-translation-context="Button in the race or class editor that opens the dialog for choosing the area its characters start in"><!-- icon ph:map-pin -->Choose Area</button>
 								<button id="race-area-clear" type="button" class="secondary" data-shortcut="Alt+L" data-message="editor.race.clearArea" data-translation-context="Button in the race editor that takes away the race's starting area, so its characters start in the universe's"><!-- icon ph:x -->Use the Universe's Area</button>
 							</div>
 							<p id="race-error" class="form-error" role="alert" hidden></p>
@@ -594,11 +594,11 @@
 					<form id="class-form" class="form">
 						<fieldset id="class-fields" class="plain">
 							<h2 id="class-dialog-title"></h2>
-							<label data-message="editor.class.name" data-translation-context="Label of the field for a character class's name">
+							<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">
 								Name
 								<input id="class-name" required />
 							</label>
-							<label class="checkbox" data-message="editor.class.enabled" data-translation-context="Checkbox for whether new characters can choose the character class">
+							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether players can use something: go into an area, give characters an item, or choose a race, class or theme for new characters. Also the label of the Items tab's filter for it">
 								<input id="class-enabled" type="checkbox" />
 								Enabled
 							</label>
@@ -633,21 +633,21 @@
 									<input id="class-stamina-points" type="number" step="1" required />
 								</label>
 							</div>
-							<label data-message="editor.class.startingMoney" data-translation-context="Label of the field for the money a character class's members get on top of what every character and their race start with">
+							<label data-message="editor.startingMoney" data-translation-context="Label of the field in the race or class editor for the money its characters get on top of what every character starts with (and, for a class, what their race gives)">
 								Extra starting money
 								<input id="class-money" autocomplete="off" />
 							</label>
 							<div class="starting-equipment">
-								<h3 id="class-items-heading" data-message="editor.class.startingEquipment" data-translation-context="Heading of the list of items a character class's members get on top of what every character and their race start with">Extra starting equipment</h3>
+								<h3 id="class-items-heading" data-message="editor.startingEquipment" data-translation-context="Heading in the race or class editor of the list of items its characters get on top of what every character starts with (and, for a class, what their race gives)">Extra starting equipment</h3>
 								<ul id="class-items" class="starting-items" aria-labelledby="class-items-heading"></ul>
-								<p id="class-items-none" data-message="editor.class.noStartingEquipment" data-translation-context="Shown in the class editor when the class's members get no items beyond what every character and their race start with" hidden>Nothing more.</p>
+								<p id="class-items-none" data-message="editor.noStartingEquipment" data-translation-context="Shown in the race or class editor when its characters get no items beyond what every character (and, for a class, their race) starts with" hidden>Nothing more.</p>
 								<div>
-									<button id="class-items-choose" type="button" class="secondary" data-shortcut="Alt+Q" data-message="editor.class.chooseEquipment" data-translation-context="Button in the class editor that opens the dialog for choosing the items the class's members also start with"><!-- icon game-icons:swap-bag -->Choose Equipment</button>
+									<button id="class-items-choose" type="button" class="secondary" data-shortcut="Alt+Q" data-message="editor.chooseEquipment" data-translation-context="Button in the race or class editor that opens the dialog for choosing the items its characters also start with"><!-- icon game-icons:swap-bag -->Choose Equipment</button>
 								</div>
 							</div>
-							<p data-message="editor.class.startingArea" data-translation-context="Shows the area every member of a character class starts in, whatever their race; {area} is the area's name">Starting area: <strong id="class-area-name" data-argument="area"></strong></p>
+							<p data-message="editor.startingArea.area" data-translation-context="Shows the area characters start in: every character on the Characters tab, or a race's or class's characters in its editor; {area} is the area's name">Starting area: <strong id="class-area-name" data-argument="area"></strong></p>
 							<div class="area-buttons">
-								<button id="class-area-choose" type="button" class="secondary" data-shortcut="Alt+C" data-message="editor.class.chooseArea" data-translation-context="Button in the class editor that opens the dialog for choosing the area every member of the class starts in"><!-- icon ph:map-pin -->Choose Area</button>
+								<button id="class-area-choose" type="button" class="secondary" data-shortcut="Alt+C" data-message="editor.chooseStartingArea" data-translation-context="Button in the race or class editor that opens the dialog for choosing the area its characters start in"><!-- icon ph:map-pin -->Choose Area</button>
 								<button id="class-area-clear" type="button" class="secondary" data-shortcut="Alt+L" data-message="editor.class.clearArea" data-translation-context="Button in the class editor that takes away the class's area for every race, so an area can be chosen for each race"><!-- icon ph:x -->Choose by Race</button>
 							</div>
 							<div class="race-areas">
@@ -668,11 +668,11 @@
 					<form id="theme-form" class="form">
 						<fieldset id="theme-fields" class="plain">
 							<h2 id="theme-dialog-title"></h2>
-							<label data-message="editor.theme.name" data-translation-context="Label of the field for a theme's name (a character background, such as ace pilot)">
+							<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">
 								Name
 								<input id="theme-name" required />
 							</label>
-							<label class="checkbox" data-message="editor.theme.enabled" data-translation-context="Checkbox for whether new characters can choose the theme">
+							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether players can use something: go into an area, give characters an item, or choose a race, class or theme for new characters. Also the label of the Items tab's filter for it">
 								<input id="theme-enabled" type="checkbox" />
 								Enabled
 							</label>
@@ -700,7 +700,7 @@
 								Default
 							</label>
 							<p class="hint" data-message="editor.difficultyLevel.defaultHint" data-translation-context="Explains the difficulty level editor's Default checkbox">New groups start on this difficulty.</p>
-							<label data-message="editor.difficultyLevel.name" data-translation-context="A difficulty level's name, such as Normal or Hard: the label of its field in the difficulty level editor, and the heading of the column of names in the editor's list of levels">
+							<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">
 								Name
 								<input id="difficulty-name" required />
 							</label>
@@ -727,7 +727,7 @@
 					<form id="tile-form" class="form">
 						<fieldset id="tile-fields" class="plain">
 							<h2 id="tile-dialog-title"></h2>
-							<label data-message="form.name" data-translation-context="Label of the field for the name of a universe, area or tile">
+							<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">
 								Name
 								<input id="tile-name" required />
 							</label>
@@ -743,7 +743,7 @@
 								</label>
 							</fieldset>
 							<p class="hint" data-message="editor.tile.usedInHint" data-translation-context="Explains the checkboxes for whether indoor areas, outdoor areas, both or neither can paint with a tile">Areas can only paint with tiles for their kind. A tile for neither can't be painted, but maps that already use it keep it.</p>
-							<label data-message="editor.tile.color" data-translation-context="Label of the field for the color a tile is drawn in">
+							<label data-message="editor.tile.color" data-translation-context="The color a tile is drawn in: the label of its field in the tile editor, and the heading of the Tilesets table's column of colors">
 								Color
 								<span class="color-field">
 									<input id="tile-color-picker" type="color" aria-label="Pick a color" data-message-aria-label="editor.tile.colorPicker" data-translation-context-aria-label="Name of the color picker for a tile's color, for screen readers" />
@@ -783,7 +783,7 @@
 				<dialog id="area-add-dialog" class="panel dialog" aria-labelledby="area-add-title">
 					<form id="area-add-form" class="form">
 						<h2 id="area-add-title" data-message="editor.areaAdd.title" data-translation-context="Title of the dialog for making a new area">Add Area</h2>
-						<label data-message="form.name" data-translation-context="Label of the field for the name of a universe, area or tile">
+						<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">
 							Name
 							<input id="area-add-name" required />
 						</label>
@@ -808,7 +808,7 @@
 				<dialog id="area-select-dialog" class="panel dialog area-select-dialog" aria-labelledby="area-select-title">
 					<form id="area-select-form" class="form">
 						<h2 id="area-select-title" data-message="editor.areaSelect.title" data-translation-context="Title of the dialog for choosing one of the universe's areas">Choose an Area</h2>
-						<input id="area-select-search" type="search" placeholder="Search by name" aria-label="Search areas by name" autocomplete="off" data-message-placeholder="editor.areaSelect.search" data-translation-context-placeholder="Shown in the empty field that narrows the areas down by name" data-message-aria-label="editor.areaSelect.searchLabel" data-translation-context-aria-label="Name of the field that narrows the areas down by name, for screen readers" />
+						<input id="area-select-search" type="search" placeholder="Search by name" aria-label="Search areas by name" autocomplete="off" data-message-placeholder="editor.searchByName" data-translation-context-placeholder="Shown in the empty field that narrows a list of tiles, items or areas down by name" data-message-aria-label="editor.areaSelect.searchLabel" data-translation-context-aria-label="Name of the field that narrows the areas down by name, for screen readers" />
 						<fieldset id="area-select-results" class="choice stacked area-select-results" aria-label="Areas" data-message-aria-label="editor.areaSelect.results" data-translation-context-aria-label="Name of the list of areas to choose from, for screen readers"></fieldset>
 						<p id="area-select-none" class="universe-empty" data-message="editor.areaSelect.none" data-translation-context="Shown in the dialog for choosing an area when no area's name matches the search" hidden>No areas match.</p>
 						<div id="area-select-preview" class="area-select-preview" tabindex="0" role="application" aria-label="Map of the chosen area" aria-describedby="area-select-preview-help" data-message-aria-label="editor.areaSelect.previewLabel" data-translation-context-aria-label="Name of the map in the dialog for choosing a starting area, for screen readers, where clicking chooses the square characters start on"></div>

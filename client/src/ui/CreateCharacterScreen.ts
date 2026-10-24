@@ -971,11 +971,7 @@ export class CreateCharacterScreen
 			return;
 		}
 
-		this.saveStatus.textContent = t({
-			id: 'character.saving',
-			defaultMessage: 'Saving...',
-			description: 'In the toolbar of the Create Character page while the player\'s progress is being saved'
-		});
+		this.saveStatus.textContent = t(formMessages.saving);
 		this.saving = this.api.saveDraft(this.universeId, draft)
 			.then(() =>
 			{

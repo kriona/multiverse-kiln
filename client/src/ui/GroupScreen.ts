@@ -6,6 +6,7 @@ import { currentLocale, t } from '../localization';
 import type { GameConnection } from '../network/serverConnection';
 import { announce } from './announcer';
 import { CharacterList } from './CharacterList';
+import { characterMessages } from './characterMessages';
 import { getElement, setButtonLabel, showMessage } from './dom';
 import type { MapView } from './MapView';
 import { addShortcut } from './shortcuts';
@@ -187,11 +188,7 @@ export class GroupScreen
 		addShortcut({
 			keys: 'Alt+K',
 			scope: getElement('group-screen', HTMLElement),
-			description: () => t({
-				id: 'group.keys.characterSheet',
-				defaultMessage: 'Open the character sheet of the character you\'re playing',
-				description: 'In the list of keyboard shortcuts in a group, what the shortcut that shows the character this window plays does'
-			}),
+			description: () => t(characterMessages.sheetShortcut),
 			run: () =>
 			{
 				const character = this.characters?.characters.find((each) => (each.id === this.characterId));
@@ -473,11 +470,7 @@ export class GroupScreen
 
 		if (name !== undefined)
 		{
-			announce(t({
-				id: 'group.nowPlaying',
-				defaultMessage: 'You are now playing {name}.',
-				description: 'Read out by screen readers in a group when the window switches to another of the player\'s characters; {name} is the character\'s name'
-			}, {
+			announce(t(characterMessages.nowPlaying, {
 				name
 			}));
 		}

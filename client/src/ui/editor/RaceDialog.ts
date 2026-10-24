@@ -8,6 +8,7 @@ import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldError
 import { formMessages } from '../formMessages';
 import { formatMoney, readMoneyField } from '../moneyField';
 import { raceName } from '../raceAndClassNames';
+import { editorMessages } from './editorMessages';
 import type { ItemSelectDialog } from './ItemSelectDialog';
 import { startingAreaMessages } from './startingAreaMessages';
 import { StartingItemsField } from './StartingItemsField';
@@ -234,11 +235,7 @@ export class RaceDialog
 				defaultMessage: 'Delete Race',
 				description: 'Button in the race editor that deletes a race made for this universe'
 			})
-			: t({
-				id: 'editor.race.restore',
-				defaultMessage: 'Restore Default',
-				description: 'Button in the race editor that undoes this universe\'s changes to one of the ruleset\'s races'
-			})));
+			: t(editorMessages.restore)));
 
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.dialog);

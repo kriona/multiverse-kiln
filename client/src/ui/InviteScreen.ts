@@ -1,6 +1,7 @@
 import type { CharacterListPayload, CharacterSummary, InviteDetails } from '@multiverse-kiln/shared';
 
 import { t } from '../localization';
+import { characterMessages } from './characterMessages';
 import { describeMobScale, difficultyName } from './difficultyNames';
 import { getElement, showMessage } from './dom';
 import { className, raceName } from './raceAndClassNames';
@@ -187,11 +188,7 @@ export class InviteScreen
 
 		name.textContent = character.name;
 		description.className = 'character-description';
-		description.textContent = t({
-			id: 'lobby.characterDescription',
-			defaultMessage: '{race} {class}',
-			description: 'In the lobby\'s list of the player\'s characters, a character\'s race and class after their name, e.g. "Dwarf Fighter". Reorder them as your language needs'
-		}, {
+		description.textContent = t(characterMessages.raceAndClass, {
 			race: raceName(character.race, characters.ruleset),
 			class: className(character.characterClass, characters.ruleset)
 		});

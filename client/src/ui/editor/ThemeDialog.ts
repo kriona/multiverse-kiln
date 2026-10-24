@@ -6,6 +6,7 @@ import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
 import { themeName } from '../raceAndClassNames';
+import { editorMessages } from './editorMessages';
 import { labelRemoveButton, type StagedEdit } from './stagedChanges';
 
 /**
@@ -150,11 +151,7 @@ export class ThemeDialog
 				defaultMessage: 'Delete Theme',
 				description: 'Button in the theme editor that deletes a theme made for this universe'
 			})
-			: t({
-				id: 'editor.theme.restore',
-				defaultMessage: 'Restore Default',
-				description: 'Button in the theme editor that undoes this universe\'s changes to one of the ruleset\'s themes'
-			})));
+			: t(editorMessages.restore)));
 
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.dialog);

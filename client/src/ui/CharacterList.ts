@@ -2,6 +2,7 @@ import type { CharacterListPayload, CharacterSummary } from '@multiverse-kiln/sh
 import sheetIcon from 'virtual:icon/ph:scroll';
 
 import { t } from '../localization';
+import { characterMessages } from './characterMessages';
 import { setButtonLabel } from './dom';
 import { className, raceName } from './raceAndClassNames';
 
@@ -75,11 +76,7 @@ export class CharacterList
 
 		name.textContent = character.name;
 		description.className = 'character-description';
-		description.textContent = t({
-			id: 'lobby.characterDescription',
-			defaultMessage: '{race} {class}',
-			description: 'In the lobby\'s list of the player\'s characters, a character\'s race and class after their name, e.g. "Dwarf Fighter". Reorder them as your language needs'
-		}, {
+		description.textContent = t(characterMessages.raceAndClass, {
 			race: raceName(character.race, characters.ruleset),
 			class: className(character.characterClass, characters.ruleset)
 		});
@@ -93,11 +90,7 @@ export class CharacterList
 		if (character.deleteAt !== null)
 		{
 			button.setAttribute('aria-disabled', 'true');
-			button.append(' ', this.note('character-leaving', t({
-				id: 'lobby.characterLeaving',
-				defaultMessage: 'To be deleted on {deleteAt, date, medium}',
-				description: 'In the lobby\'s list of the player\'s characters, beside one given their last rites, who can\'t be played until restored from their sheet; {deleteAt} is the day they will be deleted'
-			}, {
+			button.append(' ', this.note('character-leaving', t(characterMessages.leaving, {
 				deleteAt: Date.parse(character.deleteAt)
 			})));
 		}
