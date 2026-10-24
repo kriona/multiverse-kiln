@@ -283,7 +283,8 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab
 		const rows = this.view().map((entry) => ({
 			...entry,
 			name: this.setup.name(entry.item, universe.ruleset),
-			notes: joinTags(optionTags(entry.item), stagedTag(entry.state, !entry.item.custom))
+			// An option added since the last save is already tagged custom
+			notes: joinTags(optionTags(entry.item), ((entry.state === 'new') ? undefined : stagedTag(entry.state, !entry.item.custom)))
 		}));
 		const byName = sortRows(rows, rowComparers, {
 			column: 'name',
@@ -291,10 +292,21 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab
 		});
 
 		this.setup.rows.replaceChildren(...sortRows(byName, rowComparers, this.sorter.order)
-			.map(({ item, state, name, notes }) => markStagedRow(createOptionRow(name, this.setup.describe(item, universe.ruleset), notes, () =>
+			.map(({ item, state, name, notes }) =>
 			{
-				this.openOption(item);
-			}), state, !item.custom)));
+				const row = markStagedRow(createOptionRow(name, this.setup.describe(item, universe.ruleset), notes, () =>
+				{
+					this.openOption(item);
+				}), state, !item.custom);
+
+				// A disabled option is struck through like one being deleted; its notes say it is disabled
+				if (!item.enabled)
+				{
+					row.classList.add('staged-deleted');
+				}
+
+				return(row);
+			}));
 	}
 
 	/**

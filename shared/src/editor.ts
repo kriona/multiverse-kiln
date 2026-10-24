@@ -227,6 +227,20 @@ export const DEFAULT_AREA_TILE_KEYS: Record<Ruleset, { outdoors: string; indoors
 };
 
 /**
+ * Whether a tile is one new areas use (DEFAULT_AREA_TILE_KEYS), which can't be disabled
+ *
+ * @param key The tile's key, or null for a tile the universe added
+ * @param ruleset The universe's ruleset
+ * @return True when new areas use it
+ */
+export function isDefaultAreaTile(key: string | null, ruleset: Ruleset): boolean
+{
+	const keys = DEFAULT_AREA_TILE_KEYS[ruleset];
+
+	return(((key === keys.outdoors) || (key === keys.indoors)));
+}
+
+/**
  * Most cells one CellEditRequest may change; the editor splits a larger edit into several requests
  */
 export const MAX_CELL_CHANGES = 20000;
@@ -467,6 +481,11 @@ export interface TileSettings
 	 * IMPASSABLE_WALK_SECONDS can't be entered
 	 */
 	walkSeconds: number;
+
+	/**
+	 * Whether areas can paint with the tile; maps that already use a disabled tile keep it
+	 */
+	enabled: boolean;
 }
 
 /**
@@ -506,11 +525,11 @@ export interface EditorTile extends TileSettings
  *
  * @param tile The tile
  * @param indoors Whether the area is indoors
- * @return True when the tile is for that kind of area
+ * @return True when the tile is enabled and for that kind of area
  */
-export function canPaintTile(tile: Pick<TileSettings, 'indoors' | 'outdoors'>, indoors: boolean): boolean
+export function canPaintTile(tile: Pick<TileSettings, 'indoors' | 'outdoors' | 'enabled'>, indoors: boolean): boolean
 {
-	return((indoors ? tile.indoors : tile.outdoors));
+	return((tile.enabled && (indoors ? tile.indoors : tile.outdoors)));
 }
 
 /**
@@ -563,6 +582,7 @@ export interface TileListQuery
 
 	passable?: boolean;
 	usedIn?: TileUsedIn;
+	enabled?: boolean;
 	custom?: boolean;
 	edited?: boolean;
 

@@ -1,4 +1,4 @@
-import { canEditWorld, defaultWalkSeconds, DISALLOWED_TEXT_CHARACTERS, IMPASSABLE_WALK_SECONDS, MAX_TILE_NAME_LENGTH, MAX_WALK_SECONDS, type EditableUniverse, type EditorTile, type TileSettings } from '@multiverse-kiln/shared';
+import { canEditWorld, defaultWalkSeconds, DISALLOWED_TEXT_CHARACTERS, IMPASSABLE_WALK_SECONDS, isDefaultAreaTile, MAX_TILE_NAME_LENGTH, MAX_WALK_SECONDS, type EditableUniverse, type EditorTile, type TileSettings } from '@multiverse-kiln/shared';
 import trashIcon from 'virtual:icon/ph:trash';
 
 import { formatDuration, t } from '../../localization';
@@ -77,12 +77,13 @@ const NEW_TILE: TileSettings = {
 	graphic: null,
 	uploadedGraphicId: null,
 	visionCost: 0,
-	walkSeconds: defaultWalkSeconds(false)
+	walkSeconds: defaultWalkSeconds(false),
+	enabled: true
 };
 
 /**
  * The tile editor: a dialog for a tile's name, whether indoor and outdoor areas use it, color, graphic,
- * vision cost and walk time
+ * vision cost, walk time and whether it is enabled
  *
  * Applying keeps the changes on the Tilesets tab until it is saved; for a default tile, saving stores the
  * universe's edited copy of it. The dialog can also delete a custom tile, or restore an edited default
@@ -95,6 +96,8 @@ export class TileDialog
 	private readonly form = getElement('tile-form', HTMLFormElement);
 	private readonly title = getElement('tile-dialog-title', HTMLElement);
 	private readonly name = getElement('tile-name', HTMLInputElement);
+	private readonly enabled = getElement('tile-enabled', HTMLInputElement);
+	private readonly enabledLocked = getElement('tile-enabled-locked', HTMLElement);
 	private readonly outdoors = getElement('tile-outdoors', HTMLInputElement);
 	private readonly indoors = getElement('tile-indoors', HTMLInputElement);
 	private readonly colorPicker = getElement('tile-color-picker', HTMLInputElement);
@@ -298,6 +301,7 @@ export class TileDialog
 		this.walkSeconds.value = String(settings.walkSeconds);
 		this.defaultWalk = settings.walkSeconds;
 		this.updateWalkReadout();
+		this.enabled.checked = settings.enabled;
 		this.name.disabled = !editable;
 		this.saveButton.hidden = !editable;
 		this.uploadButton.hidden = !editable;
@@ -309,6 +313,11 @@ export class TileDialog
 		{
 			input.disabled = !editable;
 		}
+
+		const defaultAreaTile = ((tile !== undefined) && isDefaultAreaTile(tile.key, universe.ruleset));
+
+		this.enabled.disabled = (!editable || defaultAreaTile);
+		this.enabledLocked.hidden = !defaultAreaTile;
 
 		this.removeButton.hidden = (!canEdit || !tile || (!tile.custom && !tile.edited));
 		labelRemoveButton(this.removeButton, edit, !tile?.custom, (tile?.custom
@@ -498,7 +507,8 @@ export class TileDialog
 			color,
 			...parseTileGraphicValue(this.graphic.value),
 			visionCost: this.visionCost.valueAsNumber,
-			walkSeconds: this.walkSeconds.valueAsNumber
+			walkSeconds: this.walkSeconds.valueAsNumber,
+			enabled: this.enabled.checked
 		});
 		this.close();
 	}

@@ -43,6 +43,7 @@ export class TilesetsTab implements SavableTab
 	private readonly nameFilter = getElement('tile-filter-name', HTMLInputElement);
 	private readonly passableFilter = getElement('tile-filter-passable', HTMLSelectElement);
 	private readonly usedInFilter = getElement('tile-filter-used-in', HTMLSelectElement);
+	private readonly enabledFilter = getElement('tile-filter-enabled', HTMLSelectElement);
 	private readonly customFilter = getElement('tile-filter-custom', HTMLSelectElement);
 	private readonly editedFilter = getElement('tile-filter-edited', HTMLSelectElement);
 	private readonly addButton = getElement('tile-add', HTMLButtonElement);
@@ -180,7 +181,7 @@ export class TilesetsTab implements SavableTab
 			}))
 		]);
 
-		for (const filter of [this.passableFilter, this.usedInFilter, this.customFilter, this.editedFilter])
+		for (const filter of [this.passableFilter, this.usedInFilter, this.enabledFilter, this.customFilter, this.editedFilter])
 		{
 			filter.addEventListener('change', () =>
 			{
@@ -189,7 +190,7 @@ export class TilesetsTab implements SavableTab
 			});
 		}
 
-		for (const filter of [this.passableFilter, this.customFilter, this.editedFilter])
+		for (const filter of [this.passableFilter, this.enabledFilter, this.customFilter, this.editedFilter])
 		{
 			setOptions(filter, [
 				{
@@ -255,6 +256,7 @@ export class TilesetsTab implements SavableTab
 		this.nameFilter.value = '';
 		this.passableFilter.value = '';
 		this.usedInFilter.value = '';
+		this.enabledFilter.value = '';
 		this.customFilter.value = '';
 		this.editedFilter.value = '';
 		this.sorter.reset();
@@ -491,6 +493,7 @@ export class TilesetsTab implements SavableTab
 			name: (this.nameFilter.value.trim() || undefined),
 			passable: filterValue(this.passableFilter),
 			usedIn: TILE_USED_IN.find((usedIn) => (usedIn === this.usedInFilter.value)),
+			enabled: filterValue(this.enabledFilter),
 			custom: filterValue(this.customFilter),
 			edited: filterValue(this.editedFilter),
 			sort: this.sorter.order.column,
@@ -639,6 +642,9 @@ export class TilesetsTab implements SavableTab
 			(tile.edited
 				? t(editorMessages.editedTag)
 				: undefined),
+			(tile.enabled
+				? undefined
+				: t(editorMessages.disabledTag)),
 			stagedTag(state, !tile.custom)
 		];
 		const cells = [
@@ -677,6 +683,12 @@ export class TilesetsTab implements SavableTab
 
 			cell.append(content);
 			row.append(cell);
+		}
+
+		// A disabled tile is struck through like one being deleted; its notes say it is disabled
+		if (!tile.enabled)
+		{
+			row.classList.add('staged-deleted');
 		}
 
 		return(markStagedRow(row, state, !tile.custom));

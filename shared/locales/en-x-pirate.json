@@ -1719,6 +1719,10 @@
 		"message": "Edit {tile}",
 		"source": "Edit {tile}"
 	},
+	"editor.tile.enabledLocked": {
+		"message": "New areas be laid down with this tile, so it can't be closed.",
+		"source": "New areas start with this tile, so it can't be disabled."
+	},
 	"editor.tile.graphic": {
 		"message": "Paintin'",
 		"source": "Graphic"
@@ -1978,6 +1982,10 @@
 	"error.classUnavailable": {
 		"message": "That callin' be off the books now. Choose another.",
 		"source": "That class can't be chosen any more. Choose another."
+	},
+	"error.defaultAreaTileDisabled": {
+		"message": "New areas be laid down with this tile, so it can't be closed.",
+		"source": "New areas start with this tile, so it can't be disabled."
 	},
 	"error.deleteGroupMember": {
 		"message": "That hand sails with a crew. They have to jump ship before they can be sent to Davy Jones.",

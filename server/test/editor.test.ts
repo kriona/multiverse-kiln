@@ -48,7 +48,8 @@ const lava: TileSettings = {
 	graphic: null,
 	uploadedGraphicId: null,
 	visionCost: 0,
-	walkSeconds: 0
+	walkSeconds: 0,
+	enabled: true
 };
 
 const torch: ItemSettings = {
@@ -688,6 +689,7 @@ describe('World editor API', () =>
 			assert.strictEqual(page.tiles.length, 2);
 			assert.strictEqual((await send(ada, 'GET', `/${universeId}/tiles?passable=yes`)).status, 400);
 			assert.strictEqual((await send(ada, 'GET', `/${universeId}/tiles?usedIn=upstairs`)).status, 400);
+			assert.strictEqual((await send(ada, 'GET', `/${universeId}/tiles?enabled=maybe`)).status, 400);
 			assert.strictEqual((await send(ada, 'GET', `/${universeId}/tiles?sort=color`)).status, 400);
 			assert.strictEqual((await send(ada, 'GET', `/${universeId}/tiles?sort=name&direction=sideways`)).status, 400);
 		});
@@ -697,7 +699,7 @@ describe('World editor API', () =>
 			const universeId = await createUniverse(ada);
 			const otherId = await createUniverse(ada, 'Other');
 			const grassId = await defaultTileId('grass');
-			const autumn = { name: 'Autumn Grass', indoors: false, outdoors: true, color: 0xc08030, graphic: null, uploadedGraphicId: null, visionCost: 0, walkSeconds: 600 };
+			const autumn = { name: 'Autumn Grass', indoors: false, outdoors: true, color: 0xc08030, graphic: null, uploadedGraphicId: null, visionCost: 0, walkSeconds: 600, enabled: true };
 
 			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/tiles/${grassId}`, { body: autumn })).status, 204);
 
@@ -711,12 +713,49 @@ describe('World editor API', () =>
 			assert.deepStrictEqual((await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?edited=true`)).body.tiles, []);
 		});
 
+		it('disables a default tile for this universe only, but not a tile new areas start with', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const otherId = await createUniverse(ada, 'Other');
+			const tiles = (await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles`)).body.tiles;
+			const disabled = (key: string): TileSettings =>
+			{
+				const tile = tiles.find((candidate) => (candidate.key === key));
+
+				assert.ok(tile);
+
+				return({
+					name: null,
+					indoors: tile.indoors,
+					outdoors: tile.outdoors,
+					color: tile.color,
+					graphic: tile.graphic,
+					uploadedGraphicId: null,
+					visionCost: tile.visionCost,
+					walkSeconds: tile.walkSeconds,
+					enabled: false
+				});
+			};
+			const desertId = await defaultTileId('desert');
+
+			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/tiles/${desertId}`, { body: disabled('desert') })).status, 204);
+			assert.deepStrictEqual((await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?enabled=false`)).body.tiles.map((tile) => tile.id), [desertId]);
+			assert.deepStrictEqual((await send<TileListPayload>(ada, 'GET', `/${otherId}/tiles?enabled=false`)).body.tiles, []);
+
+			for (const key of ['grass', 'wood_floor'])
+			{
+				assert.strictEqual((await send(ada, 'PUT', `/${universeId}/tiles/${await defaultTileId(key)}`, { body: disabled(key) })).status, 400);
+			}
+
+			assert.deepStrictEqual((await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?enabled=false`)).body.tiles.map((tile) => tile.id), [desertId]);
+		});
+
 		it('keeps a default tile\'s own name when an edit leaves the name out, but not a custom tile\'s', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const grassId = await defaultTileId('grass');
 			const tileId = (await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/tiles`, { body: lava })).body.id;
-			const darker = { name: null, indoors: false, outdoors: true, color: 0x206010, graphic: 'grass', uploadedGraphicId: null, visionCost: 0, walkSeconds: 600 };
+			const darker = { name: null, indoors: false, outdoors: true, color: 0x206010, graphic: 'grass', uploadedGraphicId: null, visionCost: 0, walkSeconds: 600, enabled: true };
 
 			assert.strictEqual((await send(ada, 'PUT', `/${universeId}/tiles/${grassId}`, { body: darker })).status, 204);
 			assert.deepStrictEqual((await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?edited=true`)).body.tiles, [{ id: grassId, key: 'grass', ...darker, custom: false, edited: true, uploadedGraphic: null }]);

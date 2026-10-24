@@ -118,7 +118,7 @@ const messages = defineMessages({
 	newTag: {
 		id: 'editor.staged.newTag',
 		defaultMessage: 'new',
-		description: 'In the last column of an editor list (races, classes, themes, difficulty levels, items or tiles), or under an area in the list of areas, for one added since the tab was last saved, which isn\'t saved yet'
+		description: 'In the last column of an editor list (difficulty levels, items or tiles), or under an area in the list of areas, for one added since the tab was last saved, which isn\'t saved yet'
 	},
 	deleted: {
 		id: 'editor.staged.deleted',

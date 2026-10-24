@@ -1084,7 +1084,7 @@ export class MapEditor
 	}
 
 	/**
-	 * Lists the tiles to paint with: the area's indoor or outdoor tiles and its default tile by name, then
+	 * Lists the tiles to paint with: the area's enabled indoor or outdoor tiles and its default tile by name, then
 	 * Void, and chooses the default tile
 	 *
 	 * @param universe The area's universe

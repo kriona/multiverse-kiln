@@ -51,7 +51,7 @@ export interface TileRecord
 /**
  * What a new tile needs
  */
-export type NewTile = Pick<typeof tiles.$inferInsert, 'ruleset' | 'universeId' | 'key' | 'name' | 'indoors' | 'outdoors' | 'color' | 'graphic' | 'uploadedGraphicId' | 'visionCost' | 'walkSeconds'>;
+export type NewTile = Pick<typeof tiles.$inferInsert, 'ruleset' | 'universeId' | 'key' | 'name' | 'indoors' | 'outdoors' | 'color' | 'graphic' | 'uploadedGraphicId' | 'visionCost' | 'walkSeconds' | 'enabled'>;
 
 /**
  * The settings of a tile a universe added, which always has a name of its own
@@ -71,7 +71,8 @@ const settingsColumns = {
 	graphic: tiles.graphic,
 	uploadedGraphicId: tiles.uploadedGraphicId,
 	visionCost: tiles.visionCost,
-	walkSeconds: tiles.walkSeconds
+	walkSeconds: tiles.walkSeconds,
+	enabled: tiles.enabled
 };
 
 /**
@@ -190,6 +191,7 @@ async function loadNamedTiles(universeId: string, ruleset: Ruleset, executor: Ex
 				uploadedGraphicId: settings.uploadedGraphicId,
 				visionCost: settings.visionCost,
 				walkSeconds: settings.walkSeconds,
+				enabled: settings.enabled,
 				custom,
 				edited: (copy !== undefined),
 				uploadedGraphic: (((settings.uploadedGraphicId === null) ? undefined : uploadedGraphics.get(settings.uploadedGraphicId)) ?? null)
@@ -248,6 +250,7 @@ export async function listEditorTiles(universeId: string, ruleset: Ruleset, quer
 			((name === undefined) || englishName.toLowerCase().includes(name))
 			&& ((query.passable === undefined) || ((tile.walkSeconds !== IMPASSABLE_WALK_SECONDS) === query.passable))
 			&& ((query.usedIn === undefined) || (tileUsedIn(tile) === query.usedIn))
+			&& ((query.enabled === undefined) || (tile.enabled === query.enabled))
 			&& ((query.custom === undefined) || (tile.custom === query.custom))
 			&& ((query.edited === undefined) || (tile.edited === query.edited))
 		);

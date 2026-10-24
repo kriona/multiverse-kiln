@@ -274,6 +274,10 @@
 								Where
 								<select id="tile-filter-used-in"></select>
 							</label>
+							<label data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it">
+								Enabled
+								<select id="tile-filter-enabled"></select>
+							</label>
 							<label data-message="editor.filter.custom" data-translation-context="Label of the filter on the Items and Tilesets tabs for whether an item or tile was made for this universe, rather than coming with the ruleset">
 								Custom
 								<select id="tile-filter-custom"></select>
@@ -327,7 +331,7 @@
 										Name
 										<input id="area-name" required />
 									</label>
-									<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether players can use something: go into an area, give characters an item, or choose a race, class or theme for new characters. Also the label of the Items tab's filter for it">
+									<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it">
 										<input id="area-enabled" type="checkbox" />
 										Enabled
 									</label>
@@ -449,7 +453,7 @@
 								Type
 								<select id="item-filter-type"></select>
 							</label>
-							<label data-message="form.enabled" data-translation-context="Checkbox for whether players can use something: go into an area, give characters an item, or choose a race, class or theme for new characters. Also the label of the Items tab's filter for it">
+							<label data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it">
 								Enabled
 								<select id="item-filter-enabled"></select>
 							</label>
@@ -499,7 +503,7 @@
 								Type
 								<select id="item-type"></select>
 							</label>
-							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether players can use something: go into an area, give characters an item, or choose a race, class or theme for new characters. Also the label of the Items tab's filter for it">
+							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it">
 								<input id="item-enabled" type="checkbox" />
 								Enabled
 							</label>
@@ -537,7 +541,7 @@
 								Name
 								<input id="race-name" required />
 							</label>
-							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether players can use something: go into an area, give characters an item, or choose a race, class or theme for new characters. Also the label of the Items tab's filter for it">
+							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it">
 								<input id="race-enabled" type="checkbox" />
 								Enabled
 							</label>
@@ -598,7 +602,7 @@
 								Name
 								<input id="class-name" required />
 							</label>
-							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether players can use something: go into an area, give characters an item, or choose a race, class or theme for new characters. Also the label of the Items tab's filter for it">
+							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it">
 								<input id="class-enabled" type="checkbox" />
 								Enabled
 							</label>
@@ -672,7 +676,7 @@
 								Name
 								<input id="theme-name" required />
 							</label>
-							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether players can use something: go into an area, give characters an item, or choose a race, class or theme for new characters. Also the label of the Items tab's filter for it">
+							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it">
 								<input id="theme-enabled" type="checkbox" />
 								Enabled
 							</label>
@@ -731,6 +735,11 @@
 								Name
 								<input id="tile-name" required />
 							</label>
+							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it">
+								<input id="tile-enabled" type="checkbox" aria-describedby="tile-enabled-locked" />
+								Enabled
+							</label>
+							<p id="tile-enabled-locked" class="hint" hidden data-message="editor.tile.enabledLocked" data-translation-context="Shown under the tile editor's Enabled checkbox, which can't be unchecked, for the tile new outdoor or indoor areas are painted with">New areas start with this tile, so it can't be disabled.</p>
 							<fieldset class="choice">
 								<legend data-message="editor.tile.usedIn" data-translation-context="Heading of whether indoor areas, outdoor areas, both or neither can paint with a tile: in the tile editor, and the Tilesets tab's filter and table column">Where</legend>
 								<label class="checkbox" data-message="form.outdoors" data-translation-context="Choice for an area or tile that is outdoors">

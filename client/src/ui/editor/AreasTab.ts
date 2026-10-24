@@ -631,9 +631,9 @@ export class AreasTab implements SavableTab
 	}
 
 	/**
-	 * Lists the tiles an area can use by default: the indoor tiles for an indoor area or the outdoor
-	 * tiles for an outdoor one, and the selected tile even when it is for the other kind, so switching
-	 * the area between them doesn't change its default tile
+	 * Lists the tiles an area can use by default: the enabled indoor tiles for an indoor area or outdoor
+	 * tiles for an outdoor one, and the selected tile even when it is disabled or for the other kind, so
+	 * switching the area between them doesn't change its default tile
 	 *
 	 * @param indoors Whether the area is indoors
 	 * @param selectedTileId The tile to select

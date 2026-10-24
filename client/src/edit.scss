@@ -167,7 +167,7 @@ html:has(.editor-save-bar:not([hidden])) .map-editor.full-page
 // A row in an editor list that will be deleted when its tab is saved (markStagedRow)
 tr.staged-deleted
 {
-	opacity: 0.6;
+	opacity: 0.3;
 
 	td
 	{
@@ -186,7 +186,7 @@ tr.staged-deleted
 // An area in the list of areas that will be deleted when the tab is saved
 .area-list .staged-deleted
 {
-	opacity: 0.6;
+	opacity: 0.3;
 
 	// Text decoration doesn't reach into buttons, so the name needs its own
 	strong

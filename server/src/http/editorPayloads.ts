@@ -189,7 +189,8 @@ export const tileSettings = z.object({
 	graphic: z.enum(TILE_GRAPHIC_KEYS).nullable(),
 	uploadedGraphicId: z.uuid().nullable(),
 	visionCost: z.number().int().min(0).max(100),
-	walkSeconds: z.number().int().min(0).max(MAX_WALK_SECONDS)
+	walkSeconds: z.number().int().min(0).max(MAX_WALK_SECONDS),
+	enabled: z.boolean()
 }).refine((tile) => ((tile.graphic === null) || (tile.uploadedGraphicId === null)), 'A tile has at most one graphic') satisfies z.ZodType<TileSettings>;
 
 /**
@@ -215,6 +216,7 @@ export const tileListQuery = z.object({
 	name: z.string().trim().max(MAX_TILE_NAME_LENGTH).optional(),
 	passable: booleanText.optional(),
 	usedIn: z.enum(TILE_USED_IN).optional(),
+	enabled: booleanText.optional(),
 	custom: booleanText.optional(),
 	edited: booleanText.optional(),
 	...sortParameters(TILE_SORT_COLUMNS),

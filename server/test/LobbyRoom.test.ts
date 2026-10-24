@@ -828,7 +828,7 @@ describe('LobbyRoom', () =>
 			const grass = await defaultTileId('grass');
 
 			await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
-			await saveEditedDefaultTile(universe.universeId, 'pf1e', grass, { name: 'Autumn Grass', indoors: false, outdoors: true, color: 0xc08030, graphic: 'grass', uploadedGraphicId: null, visionCost: 0, walkSeconds: 600 });
+			await saveEditedDefaultTile(universe.universeId, 'pf1e', grass, { name: 'Autumn Grass', indoors: false, outdoors: true, color: 0xc08030, graphic: 'grass', uploadedGraphicId: null, visionCost: 0, walkSeconds: 600, enabled: true });
 			areaChanges.publish({ kind: 'tiles', universeId: universe.universeId });
 
 			const area = await ada.inbox.take<AreaPayload>(ServerMessageType.Area);

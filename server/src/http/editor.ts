@@ -5,7 +5,7 @@
  * browser; routes about a universe also need a role in it, and changes need a role that allows them
  */
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
-import { canEditUniverseSettings, canEditWorld, DEFAULT_AREA_TILE_KEYS, defineMessages, EDITOR_UNIVERSES_PATH, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, SOURCE_LOCALE, Translator, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type RulesetSettings, type TileSettings, type TileUsagePayload, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, canEditWorld, DEFAULT_AREA_TILE_KEYS, defineMessages, EDITOR_UNIVERSES_PATH, isDefaultAreaTile, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, SOURCE_LOCALE, Translator, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type Ruleset, type RulesetSettings, type TileSettings, type TileUsagePayload, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { lockPlayer } from '../db/playerRepo.js';
 import { loadRulesetSettings, storeRulesetSettings } from '../db/rulesetRepo.js';
@@ -43,6 +43,11 @@ const messages = defineMessages({
 		id: 'error.tileNeedsName',
 		defaultMessage: 'A tile needs a name.',
 		description: 'Why a tile the universe added couldn\'t be saved: its name was left out'
+	},
+	defaultAreaTileDisabled: {
+		id: 'error.defaultAreaTileDisabled',
+		defaultMessage: 'New areas start with this tile, so it can\'t be disabled.',
+		description: 'Why a tile couldn\'t be saved: it was disabled, but it is the tile new outdoor or indoor areas are painted with'
 	},
 	noSuchUploadedGraphic: {
 		id: 'error.noSuchUploadedGraphic',
@@ -507,6 +512,12 @@ async function saveTile(request: Request, response: Response): Promise<void>
 
 	const { name } = body.data;
 
+	if ((kind === 'default') && !body.data.enabled && await isDefaultAreaTileId(universe.ruleset, tileId.data))
+	{
+		sendError(response, 400, messages.defaultAreaTileDisabled);
+		return;
+	}
+
 	if (kind === 'default')
 	{
 		await saveEditedDefaultTile(universe.id, universe.ruleset, tileId.data, body.data);
@@ -523,6 +534,20 @@ async function saveTile(request: Request, response: Response): Promise<void>
 
 	areaChanges.publish({ kind: 'tiles', universeId: universe.id });
 	response.sendStatus(204);
+}
+
+/**
+ * Whether a default tile is one new areas use, which can't be disabled
+ *
+ * @param ruleset The universe's ruleset
+ * @param tileId The tile's ID, from findTileKind() as default
+ * @return True when new areas use it
+ */
+async function isDefaultAreaTileId(ruleset: Ruleset, tileId: number): Promise<boolean>
+{
+	const ids = await findDefaultTileIds(ruleset);
+
+	return([...ids].some(([key, id]) => ((id === tileId) && isDefaultAreaTile(key, ruleset))));
 }
 
 /**

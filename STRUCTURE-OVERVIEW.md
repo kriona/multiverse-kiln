@@ -452,12 +452,13 @@ You can edit each class:
 	- stamina points per level, 0 to 99
 
 ### Tab: Tilesets
-shows you a table of all tiles in the game, populated from the default for your ruleset and any tiles you have created. Default tiles can be edited: the edit applies to your universe only, and can be undone to restore the default. A tile you created can be deleted once no map uses it.
+shows you a table of all tiles in the game, populated from the default for your ruleset and any tiles you have created. Default tiles can be edited: the edit applies to your universe only, and can be undone to restore the default. Disabling a default tile is such an edit, so a universe can leave out the ruleset's tiles it doesn't want. A tile you created can be deleted once no map uses it.
 
 It needs a filter control that includes:
 - name search
 - "is passable" toggle
 - "used in" dropdown: any, indoors (only), outdoors (only), both or neither
+- "is enabled" toggle
 - "is custom" toggle
 - "is edited from default" toggle
 - pagination (500 by default)
@@ -468,6 +469,7 @@ the table contains:
 - walk time
 - vision cost
 - used in: indoors, outdoors, indoors and outdoors, or neither
+- notes: custom, edited, disabled, and whether it is new or restored when saved. A disabled tile's row is struck through
 
 The table is sorted by name until another column's heading is clicked (see [sortable tables](#sortable-tables)). Name, walk time, vision cost and used in can sort it; impassable tiles count as the slowest, and used in sorts in the order indoors, outdoors, both, neither. Tiles that tie are sorted by name. The server sorts before paging, by the English names, as the name search matches them.
 
@@ -667,13 +669,14 @@ This is a component included in the [area editor](#editor-area). It shows you th
 	- since links are separate from the artwork, you also need to draw a door (or similar) so players know where to walk
 
 ### Tool: Draw
-- lets you select a tile, e.g. "Grass" or "Wood Floor": the tiles for the area's kind, indoors or outdoors, and the area's default tile. The list follows the area editor's indoors / outdoors choice before it is saved. Switching an area between them leaves the tiles already painted as they are. Also lets you select "Void" which is just black
+- lets you select a tile, e.g. "Grass" or "Wood Floor": the enabled tiles for the area's kind, indoors or outdoors, and the area's default tile. The list follows the area editor's indoors / outdoors choice before it is saved. Switching an area between them leaves the tiles already painted as they are. Also lets you select "Void" which is just black
 - lets you select a size (1 for a single tile, up to 100 tiles)
 - brush shape - circle or square
 
 ## Editor: Tile
 - Delete Tile (a tile the universe added) asks first in a dialog. When maps use the tile, the dialog names their areas and asks for a tile to replace it with, which must be chosen. The tile is struck through until the Tilesets tab is saved; saving paints every cell holding it, and every area whose default tile it is, with the replacement, then deletes it. Undo Delete takes it back. A default tile the universe edited has Restore instead, which keeps it on the maps
 - name
+- enabled: an area's [draw tool](#tool-draw) and default tile only offer enabled tiles. Maps that already use a disabled tile keep it, and an area whose default tile is disabled keeps it until another is chosen. The tiles new areas start with (`DEFAULT_AREA_TILE_KEYS`: Grass outdoors, and Wood Floor or Metal Floor indoors) can't be disabled
 - "used in": checkboxes for indoors and outdoors; a tile can be for either, both or neither. An area's [draw tool](#tool-draw) and default tile only offer the tiles for its kind. A tile for neither can't be painted anywhere, but maps that already use it keep it
 - color (used if there are no graphics), accepts hex + has a color picker
 - graphic (image). A cell is 32x32 pixels. Graphics only change how the map is drawn; walk time and vision cost still come from the tile

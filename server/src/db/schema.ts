@@ -288,6 +288,11 @@ export const tiles = pgTable('tiles', {
 	 */
 	walkSeconds: smallint('walk_seconds').notNull().default(DEFAULT_INDOOR_WALK_SECONDS),
 
+	/**
+	 * Whether areas can paint with the tile; maps that already use a disabled tile keep it
+	 */
+	enabled: boolean('enabled').notNull().default(true),
+
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	unique('tiles_ruleset_key_unique').on(table.ruleset, table.key),
