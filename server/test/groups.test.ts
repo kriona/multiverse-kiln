@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { characterPath, charactersPath, difficultyLevelsPath, groupPath, groupsPath, invitePath, type CharacterListPayload, type DifficultyLevelListPayload, type GroupCreatedPayload, type GroupJoinedPayload, type InviteCreatedPayload, type InviteDetails, type NewGroupRequest } from '@multiverse-kiln/shared';
+import { characterPath, charactersPath, difficultyLevelsPath, groupPath, groupsPath, invitePath, type CharacterListPayload, type CharacterSheet, type DifficultyLevelListPayload, type GroupCreatedPayload, type GroupJoinedPayload, type InviteCreatedPayload, type InviteDetails, type NewGroupRequest } from '@multiverse-kiln/shared';
 
 import { listPlayableCharacters, scheduleCharacterDeletion } from '../src/db/characterRepo.js';
 import { findDefaultDifficultyLevel, listDifficultyLevels } from '../src/db/difficultyRepo.js';
@@ -463,22 +463,28 @@ describe('group routes', () =>
 			assert.ok(await findGroup(groupId));
 		});
 
-		it('disbands the group when the anchor being is deleted', async () =>
+		it('refuses to delete a member, straight away or with last rites, until they leave', async () =>
 		{
 			const groupId = await createGroup(ada);
 
 			await send(grace, 'POST', invitePath(await invite(ada, groupId)), { characterId: grace.characterId });
 
-			const deleted = await send(ada, 'DELETE', characterPath(universe.universeId, ada.characterId));
+			for (const member of [ada, grace])
+			{
+				const path = characterPath(universe.universeId, member.characterId);
 
-			assert.strictEqual(deleted.status, 204);
-			assert.strictEqual(await findGroup(groupId), undefined);
-			assert.strictEqual(changes.at(-1)?.kind, 'disbanded');
+				assert.strictEqual((await send(member, 'DELETE', path)).status, 409);
+				assert.strictEqual((await send(member, 'PUT', `${path}/deletion`)).status, 409);
+				assert.strictEqual((await send<CharacterSheet>(member, 'GET', path)).body.inGroup, true);
+			}
 
-			const members = (changes.at(-1) as Extract<GroupChange, { kind: 'disbanded' }>).members;
+			assert.ok(await findGroup(groupId));
+			assert.ok(await findMembership(grace.characterId));
 
-			assert.strictEqual(members.find(({ characterId }) => (characterId === ada.characterId))?.playable, false);
-			assert.strictEqual(members.find(({ characterId }) => (characterId === grace.characterId))?.playable, true);
+			await send(grace, 'POST', `${groupPath(universe.universeId, groupId)}/leave`, { characterId: grace.characterId });
+
+			assert.strictEqual((await send(grace, 'DELETE', characterPath(universe.universeId, grace.characterId))).status, 204);
+			assert.ok(await findGroup(groupId));
 		});
 	});
 });

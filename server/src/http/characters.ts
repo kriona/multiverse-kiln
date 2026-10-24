@@ -10,10 +10,10 @@ import express, { type Application, type NextFunction, type Request, type Respon
 import { z } from 'zod';
 import { addMoney, canPlayUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, isReservedName, isSf1eClassRules, isSf1eRaceRules, MAX_CHARACTER_NAME_LENGTH, MAX_CHARACTERS_PER_UNIVERSE, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditableUniverse, type EditorClass, type EditorRace, type NewCharacterOptions, type NewCharacterRequest, type OptionName } from '@multiverse-kiln/shared';
 
-import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findLastPlayedCharacterId, findPf1eAbilityRoll, keepPf1eAbilityRoll, listCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion } from '../db/characterRepo.js';
+import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findLastPlayedCharacterId, findOwnCharacter, findPf1eAbilityRoll, keepPf1eAbilityRoll, listCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion } from '../db/characterRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
 import type { Executor } from '../db/client.js';
-import { findMembership, listGroupMembers } from '../db/groupRepo.js';
+import { findMembership } from '../db/groupRepo.js';
 import { lockPlayer } from '../db/playerRepo.js';
 import { loadEditorItems } from '../db/itemRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
@@ -25,7 +25,6 @@ import { findUniverseRole } from '../db/universeEditorRepo.js';
 import { findEditableUniverse, lockUniverse } from '../db/universeRepo.js';
 import { rollPf1eAbilityScores } from '../logic/abilityRolls.js';
 import { characterChanges } from '../players/characterChanges.js';
-import { deletionChange, groupChanges } from '../players/groupChanges.js';
 import { abilityBonuses, areValidBaseScores, combineStartingItems, finalAbilityScores, isValidFloatingAbility, type ScoreSource } from '../logic/characterCreation.js';
 import { chooseStartingArea } from '../logic/startingArea.js';
 import { displayText } from '../rooms/payloads.js';
@@ -124,6 +123,11 @@ const messages = defineMessages({
 		id: 'error.lastRitesOff',
 		defaultMessage: 'Characters can\'t be given their last rites on this site. They can only be deleted straight away.',
 		description: 'Why a character wasn\'t given their last rites (deleted after some days): the site\'s settings have turned waiting off'
+	},
+	inGroup: {
+		id: 'error.deleteGroupMember',
+		defaultMessage: 'That character is in a group. They have to leave it before they can be deleted.',
+		description: 'Why a character wasn\'t deleted, straight away or after some days: characters in a group can\'t be deleted'
 	}
 });
 
@@ -261,8 +265,9 @@ async function sheetRoute(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	const [character, races, classes, themes, items, siteSettings] = await Promise.all([
+	const [character, membership, races, classes, themes, items, siteSettings] = await Promise.all([
 		findCharacterDetails(playerIdOf(request), universe.id, universe.ruleset, characterId),
+		findMembership(characterId),
 		loadEditorRaces(universe.id, universe.ruleset),
 		loadEditorClasses(universe.id, universe.ruleset),
 		loadEditorThemes(universe.id, universe.ruleset),
@@ -297,6 +302,7 @@ async function sheetRoute(request: Request, response: Response): Promise<void>
 		},
 		deleteAt: (character.deleteAt?.toISOString() ?? null),
 		deletionDays: siteSettings.characterDeletionDays,
+		inGroup: (membership !== undefined),
 		size: (race?.rules.size ?? NEW_RACE_RULES[universe.ruleset].size),
 		darkvision: (race?.rules.darkvision ?? NEW_RACE_RULES[universe.ruleset].darkvision),
 		theme: ((character.themeId === null)
@@ -367,7 +373,34 @@ function characterIdOf(request: Request, response: Response): string | undefined
 }
 
 /**
- * DELETE /:characterId: deletes one of the player's characters straight away
+ * Refuses to delete a character who isn't the player's or is in a group. It locks the player's
+ * characters first, so the character can't join a group before the transaction deletes them
+ *
+ * @param playerId The player's ID
+ * @param universeId The universe's ID
+ * @param characterId The character's ID
+ * @param transaction The transaction that deletes the character
+ * @return Why the character can't be deleted, or undefined when they can
+ */
+async function refuseDeletion(playerId: string, universeId: string, characterId: string, transaction: Executor): Promise<Refusal | undefined>
+{
+	await lockPlayer(playerId, transaction);
+
+	if (!await findOwnCharacter(playerId, universeId, characterId, transaction))
+	{
+		return({ status: 404, message: messages.noSuchCharacter });
+	}
+
+	if (await findMembership(characterId, transaction))
+	{
+		return({ status: 409, message: messages.inGroup });
+	}
+
+	return(undefined);
+}
+
+/**
+ * DELETE /:characterId: deletes one of the player's characters straight away, unless they are in a group
  *
  * @param request The request
  * @param response The response
@@ -383,31 +416,23 @@ async function deleteRoute(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	// The group's members are read before the deletion takes the character, or the whole group, with it
-	const deleted = await inTransaction(async (transaction) =>
+	const refusal = await inTransaction(async (transaction): Promise<Refusal | undefined> =>
 	{
-		const membership = await findMembership(characterId, transaction);
-		const members = (membership ? await listGroupMembers(membership.groupId, transaction) : []);
+		const reason = await refuseDeletion(playerId, universeId, characterId, transaction);
 
-		if (!await deleteCharacter(playerId, universeId, characterId, transaction))
+		if (reason)
 		{
-			return(undefined);
+			return(reason);
 		}
 
-		return({
-			groupChange: (membership ? deletionChange(membership, characterId, members) : undefined)
-		});
+		await deleteCharacter(playerId, universeId, characterId, transaction);
+		return(undefined);
 	});
 
-	if (!deleted)
+	if (refusal)
 	{
-		sendError(response, 404, messages.noSuchCharacter);
+		sendError(response, refusal.status, refusal.message, refusal.values);
 		return;
-	}
-
-	if (deleted.groupChange)
-	{
-		groupChanges.publish(deleted.groupChange);
 	}
 
 	characterChanges.publish({
@@ -421,8 +446,8 @@ async function deleteRoute(request: Request, response: Response): Promise<void>
 
 /**
  * PUT /:characterId/deletion: gives one of the player's characters their last rites, to be deleted the
- * site's characterDeletionDays from now, or refuses while it is 0. A character already given them keeps
- * their time
+ * site's characterDeletionDays from now, or refuses while it is 0 or the character is in a group. A
+ * character already given them keeps their time
  *
  * @param request The request
  * @param response The response
@@ -446,13 +471,27 @@ async function scheduleDeletionRoute(request: Request, response: Response): Prom
 		return;
 	}
 
-	const deleteAt = await scheduleCharacterDeletion(playerId, universeId, characterId, new Date(Date.now() + (characterDeletionDays * 24 * 60 * 60 * 1000)));
-
-	if (!deleteAt)
+	const result = await inTransaction(async (transaction): Promise<Refusal | Date> =>
 	{
-		sendError(response, 404, messages.noSuchCharacter);
+		const reason = await refuseDeletion(playerId, universeId, characterId, transaction);
+
+		if (reason)
+		{
+			return(reason);
+		}
+
+		const scheduled = await scheduleCharacterDeletion(playerId, universeId, characterId, new Date(Date.now() + (characterDeletionDays * 24 * 60 * 60 * 1000)), transaction);
+
+		return(scheduled ?? { status: 404, message: messages.noSuchCharacter });
+	});
+
+	if (!(result instanceof Date))
+	{
+		sendError(response, result.status, result.message, result.values);
 		return;
 	}
+
+	const deleteAt = result;
 
 	characterChanges.publish({
 		kind: 'removed',

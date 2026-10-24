@@ -355,6 +355,10 @@
 		"message": "Lifeblood",
 		"source": "Hit points"
 	},
+	"characterSheet.inGroup": {
+		"message": "{name} sails with a crew, and has to jump ship before they can be sent to Davy Jones.",
+		"source": "{name} is in a group, and has to leave it before they can be deleted."
+	},
 	"characterSheet.item": {
 		"message": "{quantity, plural, =1 {{item}} other {{item} x#}}",
 		"source": "{quantity, plural, =1 {{item}} other {{item} x#}}"
@@ -1842,6 +1846,10 @@
 	"error.classUnavailable": {
 		"message": "That callin' be off the books now. Choose another.",
 		"source": "That class can't be chosen any more. Choose another."
+	},
+	"error.deleteGroupMember": {
+		"message": "That hand sails with a crew. They have to jump ship before they can be sent to Davy Jones.",
+		"source": "That character is in a group. They have to leave it before they can be deleted."
 	},
 	"error.difficultyLevelLimit": {
 		"message": "A universe can have at most {max, plural, one {# peril} other {# perils}}.",

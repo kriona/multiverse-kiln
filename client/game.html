@@ -19,7 +19,6 @@
 					<!-- include site-name.html -->
 					<h1 id="lobby-title" data-message="lobby.title" data-translation-context="Heading of a universe's lobby until its name has loaded">Lobby</h1>
 					<span class="toolbar-name" data-message="page.playingAs" data-translation-context="In the toolbar, the name the player logged in with; {name} is the name">Playing as <strong id="lobby-player-name" data-argument="name"></strong></span>
-					<button id="create-character" type="button" data-shortcut="Alt+N" data-message="lobby.createCharacter" data-translation-context="Button that goes to the page for making a new character in this universe"><!-- icon ph:user-plus -->Create Character</button>
 					<button id="create-group" type="button" data-shortcut="Alt+G" data-message="lobby.createGroup" data-translation-context="Button that makes a new group (characters who play the universe together) around the character the player is playing, which others can be invited to"><!-- icon game-icons:crossed-swords -->Create Group</button>
 					<button id="leave-lobby" type="button" class="secondary" data-shortcut="Alt+L" data-message="lobby.leave" data-translation-context="Button that leaves the lobby and goes back to the list of universes"><!-- icon ph:sign-out -->Leave lobby</button>
 				</header>
@@ -34,6 +33,7 @@
 							<ul id="character-list" class="character-list"></ul>
 							<p id="character-none" class="character-none" data-message="characters.none" data-translation-context="Shown instead of the list of the player's characters, in a universe's lobby and on its page, when they haven't made one in the universe" hidden>You haven't made a character in this universe yet.</p>
 							<p id="character-error" class="form-error" role="alert" hidden></p>
+							<button id="create-character" type="button" class="create-character" data-shortcut="Alt+N" data-message="lobby.createCharacter" data-translation-context="Button that goes to the page for making a new character in this universe"><!-- icon ph:user-plus -->Create Character</button>
 						</aside>
 						<aside class="panel members">
 							<h2 data-message="lobby.here" data-translation-context="Heading of the list of players in the lobby; {count} is how many there are">Here (<span id="member-count" data-argument="count">0</span>)</h2>
@@ -69,6 +69,7 @@
 							<h2 id="group-character-heading" data-message="characters.heading" data-translation-context="Heading of the list of characters the player has made in a universe, in its lobby and on its page">Your characters</h2>
 							<ul id="group-character-list" class="character-list"></ul>
 							<p id="group-character-none" class="character-none" hidden></p>
+							<button id="group-create-character" type="button" class="secondary create-character" data-shortcut="Alt+N" data-message="lobby.createCharacter" data-translation-context="Button that goes to the page for making a new character in this universe"><!-- icon ph:user-plus -->Create Character</button>
 						</aside>
 						<aside class="panel members" aria-labelledby="group-member-heading">
 							<h2 id="group-member-heading" data-message="group.members" data-translation-context="Heading of the list of characters in the group; {count} is how many there are">In the group (<span id="group-member-count" data-argument="count">0</span>)</h2>

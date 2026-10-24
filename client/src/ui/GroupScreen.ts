@@ -46,6 +46,11 @@ export interface GroupScreenActions
 	openCharacterSheet: (character: CharacterSummary) => void;
 
 	/**
+	 * Go to Create Character
+	 */
+	createCharacter: () => void;
+
+	/**
 	 * Open the Invite dialog, for the anchor being's player
 	 */
 	invite: () => void;
@@ -65,7 +70,7 @@ export interface GroupScreenActions
 
 /**
  * The group screen: the group's map, its members (who is here, and who the anchor being is), the
- * player's characters, and the Invite and Leave group buttons
+ * player's characters with Create Character, and the Invite and Leave group buttons
  *
  * Each window plays one character. Choosing another of the player's characters in the group switches
  * the window to them without leaving the room: the room sends Welcome and Area again, and the map
@@ -154,6 +159,11 @@ export class GroupScreen
 			{
 				actions.openCharacterSheet(character);
 			}
+		});
+
+		getElement('group-create-character', HTMLButtonElement).addEventListener('click', () =>
+		{
+			actions.createCharacter();
 		});
 
 		this.inviteButton.addEventListener('click', () =>

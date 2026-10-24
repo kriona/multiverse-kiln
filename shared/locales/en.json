@@ -355,6 +355,10 @@
 		"defaultMessage": "Hit points",
 		"description": "On a character's sheet in Starfinder, the label of their hit points"
 	},
+	"characterSheet.inGroup": {
+		"defaultMessage": "{name} is in a group, and has to leave it before they can be deleted.",
+		"description": "On the sheet of a character in a group, in place of the button that deletes them; {name} is the character's name"
+	},
 	"characterSheet.item": {
 		"defaultMessage": "{quantity, plural, =1 {{item}} other {{item} x#}}",
 		"description": "On a character's sheet, an item they carry, with how many when there is more than one; {item} is the item's name, e.g. \"Arrow x20\""
@@ -1842,6 +1846,10 @@
 	"error.classUnavailable": {
 		"defaultMessage": "That class can't be chosen any more. Choose another.",
 		"description": "Why a new character wasn't made: the class chosen was deleted or disabled while the player was making the character"
+	},
+	"error.deleteGroupMember": {
+		"defaultMessage": "That character is in a group. They have to leave it before they can be deleted.",
+		"description": "Why a character wasn't deleted, straight away or after some days: characters in a group can't be deleted"
 	},
 	"error.difficultyLevelLimit": {
 		"defaultMessage": "A universe can have at most {max, plural, one {# difficulty level} other {# difficulty levels}}.",

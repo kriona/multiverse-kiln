@@ -77,7 +77,7 @@ Opening an invite link (`/game/<slug>?invite=<token>`) shows the [invite](#creat
 The lobby runs the game engine. It will be a small area where many people (more than the 6-player group limit) can connect and chat.
 - Some rules will be similar to the game itself - the graphic tile set, you can move around the space, you can enter houses.
 - Some rules will be different - you cannot use items, time passes based on [lobby settings](#tab-lobby) and not game settings (it's not turn-based).
-- There will be a button for [Create Character](#create-character). You can create multiple characters.
+- A [Create Character](#create-character) button sits under the list of your characters, in the lobby and in a group, so a player whose characters are all in groups can still make another. You can create multiple characters.
 - There will be a chat. You chat as your character.
 - If you have not created a character, you will use a ghost icon and nobody can see you. You can walk around the space. You can read chat but not send messages. Ghosts don't block cells, and pass through other players. Other players aren't shown ghosts in the list of who's here; a ghost sees themself listed as one. The [Create Character](#create-character) button should be more prominent.
 - If you have created a character, chat will be enabled. You will move about the space as your character, starting as the one you played or made most recently. You can switch characters at any time, and every window of yours in the lobby switches with you. Characters in a group play in their group, not the lobby; choosing one in the lobby's list goes to their group.
@@ -129,12 +129,14 @@ The sheet's Delete button asks twice. "Delete Character" asks "Do you want to de
 - **Last Rites (delete in 7 days)** deletes them after the days the [admin](#admin) setting gives (7 by default), and isn't offered when it is 0. Until then they are listed, marked with the day they go, and count toward the 20 characters a universe allows, but can't be played. Their sheet says when they go and has a Restore button. A player playing them switches to their most recent other character, or becomes a ghost; restoring a character while a ghost plays them. A character already given their last rites can still be cremated
 - **I've Made A Terrible Mistake** keeps the character, and is the button focused
 
+A character in a group can't be deleted either way: their sheet says they have to leave the group first, in place of the Delete button, and the server refuses too.
+
 The server deletes characters whose days are over once an hour, and hides them until it does.
 
 ## Create Group
 The character creating the group is the "anchor being". This shows you a landing page for your new group. It explains that your character is the anchor being for this universe, and that the game is centered around them.
 - The group starts in the anchor being's [starting area](#tab-characters).
-- If the anchor being leaves the group, the group is disbanded and its [world state](#world-state) is deleted. Every character keeps their items, money and experience. Deleting the anchor being's character disbands it too.
+- If the anchor being leaves the group, the group is disbanded and its [world state](#world-state) is deleted. Every character keeps their items, money and experience. A character in a group can't be [deleted](#deleting-a-character) until they leave it.
 - If the anchor being is offline, the group can't use [area links](#editor-map) that require the whole group (for example, leaving the city for the wilderness), but can use the ones that don't (entering a shop in the city).
 - A group holds at most the universe's [group size](#tab-characters) characters. A character is in at most one group.
 

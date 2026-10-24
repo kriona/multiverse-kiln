@@ -28,6 +28,7 @@ export class CharacterSheetDialog
 	private readonly status = getElement('character-sheet-status', HTMLElement);
 	private readonly error = getElement('character-sheet-error', HTMLElement);
 	private readonly pending = getElement('character-sheet-pending', HTMLElement);
+	private readonly inGroup = getElement('character-sheet-in-group', HTMLElement);
 	private readonly body = getElement('character-sheet-body', HTMLElement);
 	private readonly abilityRows = getElement('character-sheet-ability-rows', HTMLTableSectionElement);
 	private readonly traits = getElement('character-sheet-traits', HTMLDListElement);
@@ -142,6 +143,7 @@ export class CharacterSheetDialog
 		});
 		this.body.hidden = true;
 		this.pending.hidden = true;
+		this.inGroup.hidden = true;
 		this.deleteButton.hidden = true;
 		this.restoreButton.hidden = true;
 		this.current = undefined;
@@ -202,7 +204,8 @@ export class CharacterSheetDialog
 
 	/**
 	 * Shows whether the character is waiting to be deleted, with Restore for one who is. Delete is
-	 * offered either way, so a character given their last rites can still be cremated
+	 * offered either way, so a character given their last rites can still be cremated, except to a
+	 * character in a group, whose sheet says they have to leave it first
 	 *
 	 * @param sheet The character
 	 */
@@ -222,7 +225,17 @@ export class CharacterSheetDialog
 			: '');
 		this.pending.hidden = !waiting;
 		this.restoreButton.hidden = !waiting;
-		this.deleteButton.hidden = false;
+		this.inGroup.textContent = (sheet.inGroup
+			? t({
+				id: 'characterSheet.inGroup',
+				defaultMessage: '{name} is in a group, and has to leave it before they can be deleted.',
+				description: 'On the sheet of a character in a group, in place of the button that deletes them; {name} is the character\'s name'
+			}, {
+				name: sheet.name
+			})
+			: '');
+		this.inGroup.hidden = !sheet.inGroup;
+		this.deleteButton.hidden = sheet.inGroup;
 	}
 
 	/**

@@ -169,10 +169,7 @@ export class GamePage
 			},
 			createCharacter: () =>
 			{
-				if (this.universe)
-				{
-					window.location.assign(characterPageUrl(this.universe.id));
-				}
+				this.goToCreateCharacter();
 			},
 			chooseCharacter: (character) =>
 			{
@@ -203,6 +200,10 @@ export class GamePage
 			openCharacterSheet: (character) =>
 			{
 				this.openCharacterSheet(character);
+			},
+			createCharacter: () =>
+			{
+				this.goToCreateCharacter();
 			},
 			invite: () =>
 			{
@@ -458,6 +459,17 @@ export class GamePage
 		}
 
 		this.goToGroup(character.groupId, character.id);
+	}
+
+	/**
+	 * Goes to Create Character for the universe, from the lobby or a group
+	 */
+	private goToCreateCharacter(): void
+	{
+		if (this.universe)
+		{
+			window.location.assign(characterPageUrl(this.universe.id));
+		}
 	}
 
 	/**

@@ -296,6 +296,7 @@ describe('Character routes', () =>
 			characterClass: { key: 'fighter', name: null },
 			deleteAt: null,
 			deletionDays: DEFAULT_SITE_SETTINGS.characterDeletionDays,
+			inGroup: false,
 			size: 'medium',
 			darkvision: true,
 			theme: null,
