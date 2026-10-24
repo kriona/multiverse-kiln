@@ -1140,8 +1140,8 @@
 		"source": "Actions take no time in the lobby, so its time of day follows this instead of the universe's passage of time."
 	},
 	"editor.map.areaDefault": {
-		"message": "{tile} (the area's usual)",
-		"source": "{tile} (the area's default)"
+		"message": "{tile} (the usual)",
+		"source": "{tile} (default)"
 	},
 	"editor.map.brush.circle": {
 		"message": "round as a cannonball",
@@ -1308,8 +1308,8 @@
 		"source": "Map changes not saved yet"
 	},
 	"editor.map.void": {
-		"message": "Davy Jones' Locker",
-		"source": "Void"
+		"message": "⚓Davy Jones' Locker",
+		"source": "🌃Void"
 	},
 	"editor.noStartingEquipment": {
 		"message": "Naught more.",

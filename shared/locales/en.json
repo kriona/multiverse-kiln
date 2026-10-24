@@ -1140,7 +1140,7 @@
 		"description": "Explains the lobby's passage of time on the editor's Lobby tab"
 	},
 	"editor.map.areaDefault": {
-		"defaultMessage": "{tile} (the area's default)",
+		"defaultMessage": "{tile} (default)",
 		"description": "A choice of tile to paint that is the area's default tile; {tile} is its name"
 	},
 	"editor.map.brush.circle": {
@@ -1308,7 +1308,7 @@
 		"description": "Shown under the map while it has painting, a change of size or links that the editor's Save button hasn't stored yet"
 	},
 	"editor.map.void": {
-		"defaultMessage": "Void",
+		"defaultMessage": "🌃Void",
 		"description": "A cell with nothing in it, drawn black, which can't be walked into; also a choice of what to paint"
 	},
 	"editor.noStartingEquipment": {

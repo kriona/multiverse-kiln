@@ -7,7 +7,7 @@ import { ChunkLoader } from '../../editor/ChunkLoader';
 import { EditHistory, type EditStep } from '../../editor/EditHistory';
 import { EditorMap } from '../../editor/EditorMap';
 import { editorAreaPayload, MapCanvas } from '../../editor/MapCanvas';
-import { t } from '../../localization';
+import { currentLocale, t } from '../../localization';
 import { describeEditorError, EditorApiError, type EditorApi } from '../../network/editorApi';
 import type { CameraState, MapEditorHost, PointerMode } from '../../scenes/MapEditorScene';
 import { getElement, namedOptions, setButtonLabel, setOptions, showMessage } from '../dom';
@@ -309,7 +309,7 @@ export class MapEditor
 		const version = ++this.openVersion;
 		const same = ((this.open?.area.id === area.id) && sameBounds(this.open.map.bounds, area.bounds));
 
-		this.fillTiles(universe, area, tiles);
+		this.fillTiles(universe, area, tiles, (this.open?.area.id === area.id));
 		this.tools.hidden = !editable;
 		this.expandField.hidden = !editable;
 
@@ -1079,34 +1079,42 @@ export class MapEditor
 
 		if (open)
 		{
-			this.fillTiles(open.universe, { ...open.area, indoors }, open.tiles);
+			this.fillTiles(open.universe, { ...open.area, indoors }, open.tiles, true);
 		}
 	}
 
 	/**
-	 * Lists the tiles to paint with: the area's indoor or outdoor tiles and its default tile, then Void
+	 * Lists the tiles to paint with: the area's indoor or outdoor tiles and its default tile by name, then
+	 * Void, and chooses the default tile
 	 *
 	 * @param universe The area's universe
 	 * @param area The area
 	 * @param tiles Every tile the universe can use
+	 * @param keepChoice Whether to keep the tile chosen before, when it is still listed
 	 */
-	private fillTiles(universe: EditableUniverse, area: EditorArea, tiles: readonly EditorTile[]): void
+	private fillTiles(universe: EditableUniverse, area: EditorArea, tiles: readonly EditorTile[], keepChoice: boolean): void
 	{
-		const chosen = this.tile.value;
-		const paintable = tiles.filter((tile) => (canPaintTile(tile, area.indoors) || (tile.id === area.defaultTileId)));
+		const chosen = (keepChoice ? this.tile.value : String(area.defaultTileId));
+		const paintable = tiles
+			.filter((tile) => (canPaintTile(tile, area.indoors) || (tile.id === area.defaultTileId)))
+			.map((tile) => ({
+				tile,
+				name: tileName(tile, universe.ruleset)
+			}))
+			.sort((a, b) => a.name.localeCompare(b.name, currentLocale()));
 
 		setOptions(this.tile, [
-			...paintable.map((tile) => ({
+			...paintable.map(({ tile, name }) => ({
 				value: String(tile.id),
 				label: ((tile.id === area.defaultTileId)
 					? t({
 						id: 'editor.map.areaDefault',
-						defaultMessage: '{tile} (the area\'s default)',
+						defaultMessage: '{tile} (default)',
 						description: 'A choice of tile to paint that is the area\'s default tile; {tile} is its name'
 					}, {
-						tile: tileName(tile, universe.ruleset)
+						tile: name
 					})
-					: tileName(tile, universe.ruleset))
+					: name)
 			})),
 			{
 				value: VOID_CHOICE,
@@ -1114,10 +1122,7 @@ export class MapEditor
 			}
 		]);
 
-		if ([...this.tile.options].some((option) => (option.value === chosen)))
-		{
-			this.tile.value = chosen;
-		}
+		this.tile.value = ([...this.tile.options].some((option) => (option.value === chosen)) ? chosen : String(area.defaultTileId));
 	}
 
 	/**

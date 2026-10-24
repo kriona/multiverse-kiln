@@ -21,7 +21,7 @@ export const mapMessages = defineMessages({
 	},
 	void: {
 		id: 'editor.map.void',
-		defaultMessage: 'Void',
+		defaultMessage: '🌃Void',
 		description: 'A cell with nothing in it, drawn black, which can\'t be walked into; also a choice of what to paint'
 	},
 	tooLarge: {
