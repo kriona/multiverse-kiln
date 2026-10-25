@@ -38,18 +38,7 @@ export interface OwnCharacter
 	id: string;
 	name: string;
 	raceId: number;
-
-	/**
-	 * The character's starting area, or null when they have none
-	 */
-	areaId: string | null;
-
-	/**
-	 * The cell of the starting area the character starts nearest
-	 */
-	startingColumn: number;
-
-	startingRow: number;
+	classId: number;
 
 	/**
 	 * Whether the character can be played: they haven't been given their last rites
@@ -131,18 +120,6 @@ export interface NewCharacter
 	 * The items the character carries, each listed once by its own ID
 	 */
 	items: readonly ItemQuantity[];
-
-	/**
-	 * Where the character starts, or null when nothing names an area
-	 */
-	areaId: string | null;
-
-	/**
-	 * The cell of the area the character starts nearest
-	 */
-	startingColumn: number;
-
-	startingRow: number;
 }
 
 /**
@@ -418,9 +395,7 @@ export async function findOwnCharacter(playerId: string, universeId: string, cha
 			id: characters.id,
 			name: characters.name,
 			raceId: characters.raceId,
-			areaId: characters.areaId,
-			startingColumn: characters.startingColumn,
-			startingRow: characters.startingRow,
+			classId: characters.classId,
 			deleteAt: characters.deleteAt
 		})
 		.from(characters)
@@ -439,9 +414,7 @@ export async function findOwnCharacter(playerId: string, universeId: string, cha
 		id: row.id,
 		name: row.name,
 		raceId: row.raceId,
-		areaId: row.areaId,
-		startingColumn: row.startingColumn,
-		startingRow: row.startingRow,
+		classId: row.classId,
 		playable: (row.deleteAt === null)
 	});
 }
@@ -603,10 +576,7 @@ export async function createCharacter(character: NewCharacter, executor: Executo
 			gold: money.gp,
 			silver: money.sp,
 			copper: money.cp,
-			credits: money.cr,
-			areaId: character.areaId,
-			startingColumn: character.startingColumn,
-			startingRow: character.startingRow
+			credits: money.cr
 		})
 		.returning({ id: characters.id });
 

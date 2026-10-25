@@ -1,5 +1,6 @@
 /**
- * Where a new character starts (see STRUCTURE-OVERVIEW.md, Tab: Characters)
+ * Where a character starts: a new group starts where its anchor being does, chosen as the group is made
+ * (see STRUCTURE-OVERVIEW.md, Tab: Characters)
  *
  * The most specific choice wins: the class's entry for the character's race, then the class, then the
  * race, then the universe. A class with a starting area of its own has no per-race entries, so every
@@ -63,7 +64,7 @@ export interface StartingAreaClass
 }
 
 /**
- * The place a new character starts
+ * The place a character starts
  *
  * @param universePlace The universe's starting area and cell, or null while it has no area
  * @param race The character's race

@@ -787,18 +787,6 @@ export const characters = pgTable('characters', {
 	silver: integer('silver').notNull().default(0),
 	copper: integer('copper').notNull().default(0),
 	credits: integer('credits').notNull().default(0),
-
-	/**
-	 * The area the character is in; null when the area was deleted, or the universe had none to start in
-	 */
-	areaId: uuid('area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
-
-	/**
-	 * The cell of the area the character starts nearest
-	 */
-	startingColumn: integer('starting_column').notNull().default(0),
-	startingRow: integer('starting_row').notNull().default(0),
-
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 
 	/**
@@ -818,7 +806,6 @@ export const characters = pgTable('characters', {
 	index('characters_universe_id_index').on(table.universeId),
 	index('characters_race_id_index').on(table.raceId),
 	index('characters_class_id_index').on(table.classId),
-	index('characters_area_id_index').on(table.areaId),
 	index('characters_delete_at_index').on(table.deleteAt).where(sql`${table.deleteAt} is not null`),
 	check('characters_coins_range', allInRange([table.platinum, table.gold, table.silver, table.copper], 0, MAX_COINS)),
 	check('characters_credits_range', allInRange([table.credits], 0, MAX_COINS))

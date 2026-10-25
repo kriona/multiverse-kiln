@@ -84,10 +84,7 @@ export async function dwarfFighter(playerId: string, universeId: string, name: s
 		items: [{
 			itemId: daggerId,
 			quantity: 2
-		}],
-		areaId: null,
-		startingColumn: 0,
-		startingRow: 0
+		}]
 	});
 }
 

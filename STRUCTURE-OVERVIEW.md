@@ -107,7 +107,7 @@ Based entirely on the universe's ruleset. It is a page of its own, reached from 
 For PF1E, the server rolls the ability scores (or checks the point buy choices) using the universe's [stat rolling](#pf1e) setting; the client never sends ability scores of its own. The player can rearrange rolled scores among the abilities, with the class's primary ability as a hint.
 - the server keeps a player's rolled scores until they make a character with them, so leaving Create Character or starting over doesn't roll again. If the universe changes how it rolls, the next visit rolls again
 - the player chooses a name, an enabled race and an enabled class. A race with a floating ability bonus asks which ability gets it
-- the character starts with the universe's, race's and class's starting money added coin by coin, their starting equipment added together (enabled items only), and the [starting area](#tab-characters) the precedence picks
+- the character starts with the universe's, race's and class's starting money added coin by coin, and their starting equipment added together (enabled items only). Where they start is chosen when a group is made around them (see [starting area](#tab-characters))
 - the lobby lists the player's characters in the universe
 - a race, class, theme or item that characters have can't be deleted; it can be disabled instead
 
@@ -135,7 +135,7 @@ The server deletes characters whose days are over once an hour, and hides them u
 
 ## Create Group
 The character creating the group is the "anchor being". This shows you a landing page for your new group. It explains that your character is the anchor being for this universe, and that the game is centered around them.
-- The group starts in the anchor being's [starting area](#tab-characters).
+- The group starts in the anchor being's [starting area](#tab-characters), chosen from the universe's, race's and class's settings as they are when the group is made.
 - If the anchor being leaves the group, the group is disbanded and its [world state](#world-state) is deleted. Every character keeps their items, money and experience. A character in a group can't be [deleted](#deleting-a-character) until they leave it.
 - If the anchor being is offline, the group can't use [area links](#editor-map) that require the whole group (for example, leaving the city for the wilderness), but can use the ones that don't (entering a shop in the city).
 - A group holds at most the universe's [group size](#tab-characters) characters. A character is in at most one group.
@@ -338,7 +338,7 @@ Money is credits (`cr`), the only coin.
 
 Below the settings, the tab lists the [races](#races), the [classes](#classes) and, for a ruleset with them, the [themes](#themes), each in a section of its own, and saves them with the settings. Each list is a table of names, summaries and notes (custom, edited, disabled, and changes not saved yet), sorted by name until the Name or Notes heading is clicked (see [sortable tables](#sortable-tables)); rows that tie are sorted by name. Each race and class can add to the starting money and equipment, and choose a starting area of its own.
 
-A character's starting area is chosen in this order, most specific first: the class's entry for their race, the class, the race, then the universe. A class with an area of its own has no entries for races, so the two never compete. Each starting area comes with the square characters start on (chosen with the [area](#selection-area)), which goes with it: a group starts at its anchor being's square, and its members are placed on the free square nearest it. A square the area's map no longer holds, after it was made smaller, counts as the nearest square on the map.
+A character's starting area is chosen each time a group is made around them, so a change to these settings applies to characters already made. It is chosen in this order, most specific first: the class's entry for their race, the class, the race, then the universe. A class with an area of its own has no entries for races, so the two never compete. Each starting area comes with the square characters start on (chosen with the [area](#selection-area)), which goes with it: a group starts at its anchor being's square, and its members are placed on the free square nearest it. A square the area's map no longer holds, after it was made smaller, counts as the nearest square on the map.
 
 Races, classes and themes work like default items: the ruleset's defaults are in every universe, an edit applies to that universe only and can be undone to restore the default (losing its starting money, equipment and areas too), and a race, class or theme the universe added can be deleted. Like the Characters tab, only creators can change them.
 
