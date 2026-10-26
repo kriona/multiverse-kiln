@@ -36,8 +36,8 @@
 		"tsx": "^4.21.0"
 	},
 	"dependencies": {
-		"@colyseus/schema": "^5.0.14",
-		"@colyseus/tools": "^0.18.1",
+		"@colyseus/schema": "^5.0.41",
+		"@colyseus/tools": "^0.18.10",
 		"@multiverse-kiln/shared": "*",
 		"colyseus": "^0.18.2",
 		"drizzle-orm": "^0.45.4",
