@@ -3,7 +3,7 @@ import { DISALLOWED_TEXT_CHARACTERS, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_
 import { t } from '../localization';
 import { describeEditorError } from '../network/editorApi';
 import { universePageUrl } from '../pages';
-import { getElement, namedOptions, setOptions, showMessage } from './dom';
+import { getElement, namedOptions, setOptions, setPageTitle, showMessage } from './dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
 import { formMessages } from './formMessages';
 
@@ -110,11 +110,11 @@ export class HomeScreen
 	 */
 	show(playerName: string): void
 	{
-		document.title = t({
+		setPageTitle(t({
 			id: 'home.pageTitle',
-			defaultMessage: 'Universes - Multiverse Kiln',
-			description: 'The browser tab\'s title while Home lists the universes; Multiverse Kiln is the game engine\'s name'
-		});
+			defaultMessage: 'Universes',
+			description: 'The browser tab\'s title while Home lists the universes, before the game engine\'s name'
+		}));
 		this.playerName.textContent = playerName;
 		this.listed = 0;
 		this.listVersion++;

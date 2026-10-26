@@ -40,8 +40,8 @@
 		"description": "Shown on the site settings page when the settings couldn't be stored"
 	},
 	"admin.title": {
-		"defaultMessage": "Site Settings - Multiverse Kiln",
-		"description": "The browser tab's title for the page where the site's admins change settings for the whole site"
+		"defaultMessage": "Site Settings",
+		"description": "The browser tab's title for the page where the site's admins change settings for the whole site, before the game engine's name"
 	},
 	"admin.universeCreationEnabled": {
 		"defaultMessage": "Players can create universes",
@@ -212,12 +212,12 @@
 		"description": "Button on the Create Character page that goes to the next step"
 	},
 	"character.pageTitle": {
-		"defaultMessage": "Create Character - {universe} - Multiverse Kiln",
-		"description": "The browser tab's title for the Create Character page; {universe} is the universe's name and Multiverse Kiln is the game engine's name"
+		"defaultMessage": "Create Character - {universe}",
+		"description": "The browser tab's title for the Create Character page, before the game engine's name; {universe} is the universe's name"
 	},
 	"character.pageTitleLoading": {
-		"defaultMessage": "Create Character - Multiverse Kiln",
-		"description": "The browser tab's title for the Create Character page until the universe's name has loaded"
+		"defaultMessage": "Create Character",
+		"description": "The browser tab's title for the Create Character page until the universe's name has loaded, before the game engine's name"
 	},
 	"character.race.floatingBonus": {
 		"defaultMessage": "+{bonus, number} to an ability you choose",
@@ -1328,8 +1328,8 @@
 		"description": "Shown in the editor when the universe couldn't be loaded"
 	},
 	"editor.pageTitle": {
-		"defaultMessage": "Edit {universe} - Multiverse Kiln",
-		"description": "The browser tab's title for the world editor; {universe} is the universe's name and Multiverse Kiln is the game engine's name"
+		"defaultMessage": "Edit {universe}",
+		"description": "The browser tab's title for the world editor, before the game engine's name; {universe} is the universe's name"
 	},
 	"editor.passageOfTime": {
 		"defaultMessage": "Passage of time",
@@ -2447,10 +2447,6 @@
 		"defaultMessage": "The whole group has to be here to go that way, the anchor being included.",
 		"description": "Shown in a group's toolbar, and read out, when a character tries a door or path that needs every member of the group, and one isn't playing, is in another area, or is on their way somewhere"
 	},
-	"group.pageTitle": {
-		"defaultMessage": "{group} - Multiverse Kiln",
-		"description": "The browser tab's title while the player is in a group; {group} is the group's name, or \"Group\", and Multiverse Kiln is the game engine's name"
-	},
 	"group.permadeath": {
 		"defaultMessage": "Permadeath: characters who die in this group cannot be resurrected.",
 		"description": "Warning for a group whose difficulty level has permadeath, shown in the Create Group dialog when such a level is chosen and on the screen an invite link to such a group opens"
@@ -2524,8 +2520,8 @@
 		"description": "Heading of the list of universes the player can edit"
 	},
 	"home.pageTitle": {
-		"defaultMessage": "Universes - Multiverse Kiln",
-		"description": "The browser tab's title while Home lists the universes; Multiverse Kiln is the game engine's name"
+		"defaultMessage": "Universes",
+		"description": "The browser tab's title while Home lists the universes, before the game engine's name"
 	},
 	"home.showMore": {
 		"defaultMessage": "Show more",
@@ -2588,8 +2584,8 @@
 		"description": "On the screen an invite link opens, instead of the list of the player's characters when they have none in this universe"
 	},
 	"invite.pageTitle": {
-		"defaultMessage": "{title} - {universe} - Multiverse Kiln",
-		"description": "The browser tab's title on the screen an invite link opens; {title} is its heading, e.g. \"Join The Fellowship\", {universe} is the universe's name, and Multiverse Kiln is the game engine's name"
+		"defaultMessage": "{title} - {universe}",
+		"description": "The browser tab's title on the screen an invite link opens, before the game engine's name; {title} is its heading, e.g. \"Join The Fellowship\", and {universe} is the universe's name"
 	},
 	"invite.summary": {
 		"defaultMessage": "You're invited to play {universe} in a group created by {anchor}. It has {count, number} of {size, plural, one {# character} other {# characters}}.",
@@ -2712,8 +2708,8 @@
 		"description": "Title of the dialog that asks whether to take a character out of their group"
 	},
 	"license.agpl": {
-		"defaultMessage": "Multiverse Kiln™ is free software: you can redistribute it and/or modify it under the terms of the {license} as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.",
-		"description": "The game's license notice; {license} is a link to the license's full text, named by license.agplName, and Multiverse Kiln™ is the game engine's trademarked name"
+		"defaultMessage": "{siteName}™ is free software: you can redistribute it and/or modify it under the terms of the {license} as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.",
+		"description": "The game's license notice; {license} is a link to the license's full text, named by license.agplName, and {siteName} is the game engine's name, followed by the trademark sign"
 	},
 	"license.agplName": {
 		"defaultMessage": "GNU Affero General Public License",
@@ -2728,8 +2724,8 @@
 		"description": "On the license page, explaining that the game's assets aren't free software; {holder} is who holds their copyright"
 	},
 	"license.communityUse": {
-		"defaultMessage": "Multiverse Kiln uses trademarks and/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy ({policy}). We are expressly prohibited from charging you to use or access this content. Multiverse Kiln is not published, endorsed, or specifically approved by Paizo. For more information about Paizo Inc. and Paizo products, visit {paizo}.",
-		"description": "The notice Paizo requires from anyone using its trademarks under its Community Use Policy, which keeps the game free; {policy} is a link to the policy and {paizo} a link to Paizo's website, each the same in every language"
+		"defaultMessage": "{siteName} uses trademarks and/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy ({policy}). We are expressly prohibited from charging you to use or access this content. {siteName} is not published, endorsed, or specifically approved by Paizo. For more information about Paizo Inc. and Paizo products, visit {paizo}.",
+		"description": "The notice Paizo requires from anyone using its trademarks under its Community Use Policy, which keeps the game free; {policy} is a link to the policy and {paizo} a link to Paizo's website, each the same in every language, and {siteName} is the game engine's name"
 	},
 	"license.contents": {
 		"defaultMessage": "Contents",
@@ -2772,24 +2768,24 @@
 		"description": "On the license page, saying the notice about Paizo's Community Use Policy in the Pathfinder section covers Starfinder too; {pathfinder} is a link to that section"
 	},
 	"license.starfinderOpenGameContent": {
-		"defaultMessage": "The Starfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a in the Pathfinder First Edition rules section, whose copyright notice lists the Starfinder Core Rulebook: its abilities, ability points, sizes, races, classes, themes, credits and items, and their names in every language. In the source code, they are in {folder}, and their names in {locales}. Nothing else in Multiverse Kiln is Open Game Content.",
-		"description": "On the license page, saying which part of the game is Open Game Content from Starfinder, as the Open Game License requires; {folder} and {locales} are folders in the game engine's source code"
+		"defaultMessage": "The Starfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a in the Pathfinder First Edition rules section, whose copyright notice lists the Starfinder Core Rulebook: its abilities, ability points, sizes, races, classes, themes, credits and items, and their names in every language. In the source code, they are in {folder}, and their names in {locales}. Nothing else in {siteName} is Open Game Content.",
+		"description": "On the license page, saying which part of the game is Open Game Content from Starfinder, as the Open Game License requires; {folder} and {locales} are folders in the game engine's source code, and {siteName} is the game engine's name"
 	},
 	"license.summary": {
 		"defaultMessage": "In short: you may use, change and share the game engine's code. If you share a changed version, or run one on a server that players connect to, you must offer its source code under the same license.",
 		"description": "On the license page, what the game's license means in plain words"
 	},
 	"license.title": {
-		"defaultMessage": "Licenses - Multiverse Kiln",
-		"description": "The browser tab's title for the page with the game's license and the licenses of what it uses"
+		"defaultMessage": "Licenses",
+		"description": "The browser tab's title for the page with the game's license and the licenses of what it uses, before the game engine's name"
 	},
 	"license.trademark": {
-		"defaultMessage": "Multiverse Kiln is a trademark of {holder}.",
-		"description": "The game's trademark notice on the license page; Multiverse Kiln is the game engine's name and {holder} is who owns the trademark"
+		"defaultMessage": "{siteName} is a trademark of {holder}.",
+		"description": "The game's trademark notice on the license page; {siteName} is the game engine's name and {holder} is who owns the trademark"
 	},
 	"license.warranty": {
-		"defaultMessage": "Multiverse Kiln is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.",
-		"description": "The game's license notice, saying it comes with no warranty"
+		"defaultMessage": "{siteName} is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.",
+		"description": "The game's license notice, saying it comes with no warranty; {siteName} is the game engine's name"
 	},
 	"lobby.characterPlaying": {
 		"defaultMessage": "Playing",
@@ -2864,8 +2860,8 @@
 		"description": "In the list of players in the lobby, the player's own name; {name} is the name"
 	},
 	"lobby.pageTitle": {
-		"defaultMessage": "Lobby - {universe} - Multiverse Kiln",
-		"description": "The browser tab's title in a universe's lobby; {universe} is the universe's name and Multiverse Kiln is the game engine's name"
+		"defaultMessage": "Lobby - {universe}",
+		"description": "The browser tab's title in a universe's lobby, before the game engine's name; {universe} is the universe's name"
 	},
 	"lobby.title": {
 		"defaultMessage": "Lobby",
@@ -3084,16 +3080,16 @@
 		"description": "Shown on the whole page when the connection to the server is lost"
 	},
 	"page.editTitle": {
-		"defaultMessage": "Edit Universe - Multiverse Kiln",
-		"description": "The browser tab's title for the world editor"
+		"defaultMessage": "Edit Universe",
+		"description": "The browser tab's title for the world editor until the universe's name has loaded, before the game engine's name"
 	},
 	"page.language": {
 		"defaultMessage": "Language",
 		"description": "Label of the list of languages at the bottom of every page, which switches the language the game is shown in"
 	},
 	"page.license": {
-		"defaultMessage": "Multiverse Kiln™ is free software under the {license}.",
-		"description": "At the bottom of every page; {license} is a link to the license, named by page.licenseName, and Multiverse Kiln™ is the game engine's trademarked name"
+		"defaultMessage": "{siteName}™ is free software under the {license}.",
+		"description": "At the bottom of every page; {license} is a link to the license, named by page.licenseName, and {siteName} is the game engine's name, followed by the trademark sign"
 	},
 	"page.licenseName": {
 		"defaultMessage": "GNU Affero General Public License v3 or later",
@@ -3947,12 +3943,8 @@
 		"defaultMessage": "That universe could not be found. It may have been renamed, or it isn't open to everyone yet.",
 		"description": "Shown on the whole of a universe's page when the universe its address names doesn't exist or isn't listed on Home"
 	},
-	"universePage.title": {
-		"defaultMessage": "{universe} - Multiverse Kiln",
-		"description": "The browser tab's title on a universe's page; {universe} is the universe's name, and Multiverse Kiln is the game engine's name"
-	},
 	"universePage.unavailableTitle": {
-		"defaultMessage": "Universe - Multiverse Kiln",
-		"description": "The browser tab's title on a universe's page when the universe couldn't be shown; Multiverse Kiln is the game engine's name"
+		"defaultMessage": "Universe",
+		"description": "The browser tab's title on a universe's page when the universe couldn't be shown, before the game engine's name"
 	}
 }

@@ -40,8 +40,8 @@
 		"source": "Could not save the site settings."
 	},
 	"admin.title": {
-		"message": "The Captain's Orders - Multiverse Kiln",
-		"source": "Site Settings - Multiverse Kiln"
+		"message": "The Captain's Orders",
+		"source": "Site Settings"
 	},
 	"admin.universeCreationEnabled": {
 		"message": "Hands can create universes",
@@ -212,12 +212,12 @@
 		"source": "Next"
 	},
 	"character.pageTitle": {
-		"message": "Sign On a Hand - {universe} - Multiverse Kiln",
-		"source": "Create Character - {universe} - Multiverse Kiln"
+		"message": "Sign On a Hand - {universe}",
+		"source": "Create Character - {universe}"
 	},
 	"character.pageTitleLoading": {
-		"message": "Sign On a Hand - Multiverse Kiln",
-		"source": "Create Character - Multiverse Kiln"
+		"message": "Sign On a Hand",
+		"source": "Create Character"
 	},
 	"character.race.floatingBonus": {
 		"message": "+{bonus, number} to a knack o' yer choosin'",
@@ -1328,8 +1328,8 @@
 		"source": "Could not open the universe."
 	},
 	"editor.pageTitle": {
-		"message": "Edit {universe} - Multiverse Kiln",
-		"source": "Edit {universe} - Multiverse Kiln"
+		"message": "Edit {universe}",
+		"source": "Edit {universe}"
 	},
 	"editor.passageOfTime": {
 		"message": "How the hours pass",
@@ -2447,10 +2447,6 @@
 		"message": "The whole crew must be aboard to sail that way, the anchor bein' too.",
 		"source": "The whole group has to be here to go that way, the anchor being included."
 	},
-	"group.pageTitle": {
-		"message": "{group} - Multiverse Kiln",
-		"source": "{group} - Multiverse Kiln"
-	},
 	"group.permadeath": {
 		"message": "No quarter: hands who die in this crew go to Davy Jones for eternity.",
 		"source": "Permadeath: characters who die in this group cannot be resurrected."
@@ -2524,8 +2520,8 @@
 		"source": "Your universes"
 	},
 	"home.pageTitle": {
-		"message": "Universes - Multiverse Kiln",
-		"source": "Universes - Multiverse Kiln"
+		"message": "Universes",
+		"source": "Universes"
 	},
 	"home.showMore": {
 		"message": "Show more",
@@ -2588,8 +2584,8 @@
 		"source": "You haven't made a character in this universe yet. Create one to join the group."
 	},
 	"invite.pageTitle": {
-		"message": "{title} - {universe} - Multiverse Kiln",
-		"source": "{title} - {universe} - Multiverse Kiln"
+		"message": "{title} - {universe}",
+		"source": "{title} - {universe}"
 	},
 	"invite.summary": {
 		"message": "Ye be summoned to sail {universe} with a crew gathered by {anchor}. It has {count, number} o' {size, plural, one {# hand} other {# hands}}.",
@@ -2712,8 +2708,8 @@
 		"source": "Leave the Group?"
 	},
 	"license.agpl": {
-		"message": "Multiverse Kiln™ be free software: ye can share it about and/or change it under the terms o' the {license} as published by the Free Software Foundation, either version 3 o' the License, or (at yer choosin') any later version.",
-		"source": "Multiverse Kiln™ is free software: you can redistribute it and/or modify it under the terms of the {license} as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version."
+		"message": "{siteName}™ be free software: ye can share it about and/or change it under the terms o' the {license} as published by the Free Software Foundation, either version 3 o' the License, or (at yer choosin') any later version.",
+		"source": "{siteName}™ is free software: you can redistribute it and/or modify it under the terms of the {license} as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version."
 	},
 	"license.agplName": {
 		"message": "GNU Affero General Public License",
@@ -2728,8 +2724,8 @@
 		"source": "The game's own art, audio, fonts, characters, setting and story are not covered by the GNU Affero General Public License. They are copyright {holder}, all rights reserved, and may not be reused without written permission. Assets made by others keep their own licenses, listed below."
 	},
 	"license.communityUse": {
-		"message": "Multiverse Kiln uses trademarks an'/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy ({policy}). We be expressly forbidden from chargin' ye to use or reach this content. Multiverse Kiln ain't published, endorsed, or specifically approved by Paizo. For more about Paizo Inc. an' Paizo products, visit {paizo}.",
-		"source": "Multiverse Kiln uses trademarks and/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy ({policy}). We are expressly prohibited from charging you to use or access this content. Multiverse Kiln is not published, endorsed, or specifically approved by Paizo. For more information about Paizo Inc. and Paizo products, visit {paizo}."
+		"message": "{siteName} uses trademarks an'/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy ({policy}). We be expressly forbidden from chargin' ye to use or reach this content. {siteName} ain't published, endorsed, or specifically approved by Paizo. For more about Paizo Inc. an' Paizo products, visit {paizo}.",
+		"source": "{siteName} uses trademarks and/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy ({policy}). We are expressly prohibited from charging you to use or access this content. {siteName} is not published, endorsed, or specifically approved by Paizo. For more information about Paizo Inc. and Paizo products, visit {paizo}."
 	},
 	"license.contents": {
 		"message": "What's in the hold",
@@ -2772,24 +2768,24 @@
 		"source": "Starfinder is a trademark of Paizo Inc., used under the Community Use Policy described in the {pathfinder} section."
 	},
 	"license.starfinderOpenGameContent": {
-		"message": "The game mechanics o' the Starfinder First Edition ruleset be Open Game Content, used under the Open Game License 1.0a in the Pathfinder First Edition rules section, whose copyright notice names the Starfinder Core Rulebook: its abilities, ability points, sizes, races, classes, themes, credits an' items, an' their names in every tongue. In the source code, they be in {folder}, an' their names in {locales}. Nothin' else in Multiverse Kiln be Open Game Content.",
-		"source": "The Starfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a in the Pathfinder First Edition rules section, whose copyright notice lists the Starfinder Core Rulebook: its abilities, ability points, sizes, races, classes, themes, credits and items, and their names in every language. In the source code, they are in {folder}, and their names in {locales}. Nothing else in Multiverse Kiln is Open Game Content."
+		"message": "The game mechanics o' the Starfinder First Edition ruleset be Open Game Content, used under the Open Game License 1.0a in the Pathfinder First Edition rules section, whose copyright notice names the Starfinder Core Rulebook: its abilities, ability points, sizes, races, classes, themes, credits an' items, an' their names in every tongue. In the source code, they be in {folder}, an' their names in {locales}. Nothin' else in {siteName} be Open Game Content.",
+		"source": "The Starfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a in the Pathfinder First Edition rules section, whose copyright notice lists the Starfinder Core Rulebook: its abilities, ability points, sizes, races, classes, themes, credits and items, and their names in every language. In the source code, they are in {folder}, and their names in {locales}. Nothing else in {siteName} is Open Game Content."
 	},
 	"license.summary": {
 		"message": "In plain speak: ye may use, change an' share the game's code. If ye share a changed version, or run one on a server that players connect to, ye must offer its source code under the same license.",
 		"source": "In short: you may use, change and share the game engine's code. If you share a changed version, or run one on a server that players connect to, you must offer its source code under the same license."
 	},
 	"license.title": {
-		"message": "The Ship's Articles - Multiverse Kiln",
-		"source": "Licenses - Multiverse Kiln"
+		"message": "The Ship's Articles",
+		"source": "Licenses"
 	},
 	"license.trademark": {
-		"message": "Multiverse Kiln be a trademark o' {holder}.",
-		"source": "Multiverse Kiln is a trademark of {holder}."
+		"message": "{siteName} be a trademark o' {holder}.",
+		"source": "{siteName} is a trademark of {holder}."
 	},
 	"license.warranty": {
-		"message": "Multiverse Kiln be handed out in the hope that it'll be useful, but WITHOUT ANY WARRANTY; without even the implied warranty o' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.",
-		"source": "Multiverse Kiln is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details."
+		"message": "{siteName} be handed out in the hope that it'll be useful, but WITHOUT ANY WARRANTY; without even the implied warranty o' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.",
+		"source": "{siteName} is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details."
 	},
 	"lobby.characterPlaying": {
 		"message": "At the helm",
@@ -2864,8 +2860,8 @@
 		"source": "{name} (you)"
 	},
 	"lobby.pageTitle": {
-		"message": "Tavern - {universe} - Multiverse Kiln",
-		"source": "Lobby - {universe} - Multiverse Kiln"
+		"message": "Tavern - {universe}",
+		"source": "Lobby - {universe}"
 	},
 	"lobby.title": {
 		"message": "Tavern",
@@ -3084,16 +3080,16 @@
 		"source": "Disconnected from the server. Reload the page to reconnect."
 	},
 	"page.editTitle": {
-		"message": "Edit Universe - Multiverse Kiln",
-		"source": "Edit Universe - Multiverse Kiln"
+		"message": "Edit Universe",
+		"source": "Edit Universe"
 	},
 	"page.language": {
 		"message": "Tongue",
 		"source": "Language"
 	},
 	"page.license": {
-		"message": "Multiverse Kiln™ be free software under the {license}.",
-		"source": "Multiverse Kiln™ is free software under the {license}."
+		"message": "{siteName}™ be free software under the {license}.",
+		"source": "{siteName}™ is free software under the {license}."
 	},
 	"page.licenseName": {
 		"message": "GNU Affero General Public License v3 or later",
@@ -3947,12 +3943,8 @@
 		"message": "That universe be lost at sea. It may sail under a new name, or it ain't open to all hands yet.",
 		"source": "That universe could not be found. It may have been renamed, or it isn't open to everyone yet."
 	},
-	"universePage.title": {
-		"message": "{universe} - Multiverse Kiln",
-		"source": "{universe} - Multiverse Kiln"
-	},
 	"universePage.unavailableTitle": {
-		"message": "Universe - Multiverse Kiln",
-		"source": "Universe - Multiverse Kiln"
+		"message": "Universe",
+		"source": "Universe"
 	}
 }

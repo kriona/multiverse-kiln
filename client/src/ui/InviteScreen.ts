@@ -3,7 +3,7 @@ import type { CharacterListPayload, CharacterSummary, InviteDetails } from '@mul
 import { t } from '../localization';
 import { characterMessages } from './characterMessages';
 import { describeMobScale, difficultyName } from './difficultyNames';
-import { getElement, showMessage } from './dom';
+import { getElement, setPageTitle, showMessage } from './dom';
 import { className, raceName } from './raceAndClassNames';
 
 /**
@@ -95,14 +95,14 @@ export class InviteScreen
 
 		this.joining = false;
 		this.title.textContent = title;
-		document.title = t({
+		setPageTitle(t({
 			id: 'invite.pageTitle',
-			defaultMessage: '{title} - {universe} - Multiverse Kiln',
-			description: 'The browser tab\'s title on the screen an invite link opens; {title} is its heading, e.g. "Join The Fellowship", {universe} is the universe\'s name, and Multiverse Kiln is the game engine\'s name'
+			defaultMessage: '{title} - {universe}',
+			description: 'The browser tab\'s title on the screen an invite link opens, before the game engine\'s name; {title} is its heading, e.g. "Join The Fellowship", and {universe} is the universe\'s name'
 		}, {
 			title,
 			universe: invite.universeName
-		});
+		}));
 		this.summary.textContent = t({
 			id: 'invite.summary',
 			defaultMessage: 'You\'re invited to play {universe} in a group created by {anchor}. It has {count, number} of {size, plural, one {# character} other {# characters}}.',
@@ -147,7 +147,7 @@ export class InviteScreen
 			defaultMessage: 'Invite',
 			description: 'Heading of the screen an invite link opens, until the group it leads to has loaded'
 		});
-		document.title = this.title.textContent;
+		setPageTitle(this.title.textContent);
 		this.summary.textContent = '';
 		this.difficulty.textContent = '';
 		this.permadeath.hidden = true;

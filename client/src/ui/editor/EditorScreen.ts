@@ -3,7 +3,7 @@ import { UNIVERSE_ROLE_NAMES, type EditableUniverse, type UniverseSummary } from
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { editPageUrl } from '../../pages';
-import { getElement, showMessage, titleLink } from '../dom';
+import { getElement, setPageTitle, showMessage, titleLink } from '../dom';
 import { CharactersTab } from './CharactersTab';
 import { LobbyTab } from './LobbyTab';
 import { ClassesSection } from './ClassesSection';
@@ -310,13 +310,13 @@ export class EditorScreen
 		}, {
 			universe: universe.name
 		}), editPageUrl(universe.id)));
-		document.title = t({
+		setPageTitle(t({
 			id: 'editor.pageTitle',
-			defaultMessage: 'Edit {universe} - Multiverse Kiln',
-			description: 'The browser tab\'s title for the world editor; {universe} is the universe\'s name and Multiverse Kiln is the game engine\'s name'
+			defaultMessage: 'Edit {universe}',
+			description: 'The browser tab\'s title for the world editor, before the game engine\'s name; {universe} is the universe\'s name'
 		}, {
 			universe: universe.name
-		});
+		}));
 		this.role.textContent = t(UNIVERSE_ROLE_NAMES[universe.role]);
 		this.areasTab.setUniverse(universe);
 	}

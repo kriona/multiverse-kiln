@@ -7,7 +7,7 @@ import { connectToServer, createClient, getUniverseDetails, type ServerConnectio
 import { startPageLifecycle } from './pageLifecycle';
 import { gamePageUrl, HOME_PAGE_URL, readUniverseKey, replacePagePath, universePageUrl } from './pages';
 import { CharacterSheetDialog } from './ui/CharacterSheetDialog';
-import { getElement, showNoticeScreen, showScreen, showStatus } from './ui/dom';
+import { getElement, setPageTitle, showNoticeScreen, showScreen, showStatus } from './ui/dom';
 import { startLanguagePicker } from './ui/languagePicker';
 import { showMarkdown } from './ui/markdown';
 import { pageMessages } from './ui/pageMessages';
@@ -28,13 +28,7 @@ function showUniverse(universe: UniverseDetails): void
 	showMarkdown(getElement('universe-description', HTMLElement), universe.longDescription);
 	getElement('universe-enter', HTMLAnchorElement).href = gamePageUrl(universe.slug);
 	replacePagePath(universePageUrl(universe.slug));
-	document.title = t({
-		id: 'universePage.title',
-		defaultMessage: '{universe} - Multiverse Kiln',
-		description: 'The browser tab\'s title on a universe\'s page; {universe} is the universe\'s name, and Multiverse Kiln is the game engine\'s name'
-	}, {
-		universe: universe.name
-	});
+	setPageTitle(universe.name);
 	showScreen('universe');
 }
 
@@ -116,8 +110,8 @@ async function start(): Promise<void>
 			description: 'Shown on the whole of a universe\'s page when the universe couldn\'t be loaded, such as when the server can\'t be reached'
 		})), t({
 			id: 'universePage.unavailableTitle',
-			defaultMessage: 'Universe - Multiverse Kiln',
-			description: 'The browser tab\'s title on a universe\'s page when the universe couldn\'t be shown; Multiverse Kiln is the game engine\'s name'
+			defaultMessage: 'Universe',
+			description: 'The browser tab\'s title on a universe\'s page when the universe couldn\'t be shown, before the game engine\'s name'
 		}));
 		return;
 	}
