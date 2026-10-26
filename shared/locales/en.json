@@ -539,10 +539,6 @@
 		"defaultMessage": "The lobby's passage of time is set on the Lobby tab.",
 		"description": "Shown in the area editor for the lobby in place of its passage of time, which the Lobby tab sets"
 	},
-	"editor.area.lobbyTitle": {
-		"defaultMessage": "{area} (the lobby)",
-		"description": "Heading of the area editor for the universe's lobby; {area} is its name"
-	},
 	"editor.area.loopsEastWest": {
 		"defaultMessage": "Loops east-west",
 		"description": "Checkbox for an area whose map wraps around, so walking off the east edge comes back on the west"
@@ -694,10 +690,6 @@
 	"editor.characters.groupSizeHint": {
 		"defaultMessage": "{min, number} is single player game. At most {max, number} characters can play together.",
 		"description": "Explains the group size field on the editor's Characters tab; {min} and {max} are the smallest and largest group sizes"
-	},
-	"editor.characters.noStartingEquipment": {
-		"defaultMessage": "Characters start with nothing.",
-		"description": "Shown on the editor's Characters tab when characters start with no items"
 	},
 	"editor.characters.saveFailed": {
 		"defaultMessage": "Could not save the character settings.",
@@ -1311,10 +1303,6 @@
 		"defaultMessage": "🌃Void",
 		"description": "A cell with nothing in it, drawn black, which can't be walked into; also a choice of what to paint"
 	},
-	"editor.noStartingEquipment": {
-		"defaultMessage": "Nothing more.",
-		"description": "Shown in the race or class editor when its characters get no items beyond what every character (and, for a class, their race) starts with"
-	},
 	"editor.notes": {
 		"defaultMessage": "Notes",
 		"description": "Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet"
@@ -1486,10 +1474,6 @@
 	"editor.ruleset.heading": {
 		"defaultMessage": "Settings for {ruleset}",
 		"description": "At the top of the editor's Ruleset tab, naming the universe's game rules; {ruleset} is e.g. Pathfinder 1E"
-	},
-	"editor.ruleset.laterHint": {
-		"defaultMessage": "The game doesn't use sleep, weight or ammunition yet. These are kept for when it does.",
-		"description": "Explains that the sleep, weight and ammunition checkboxes are stored but have no effect in the game yet"
 	},
 	"editor.ruleset.loadFailed": {
 		"defaultMessage": "Could not load the ruleset's settings.",

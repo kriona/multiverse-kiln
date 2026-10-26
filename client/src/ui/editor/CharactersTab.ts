@@ -71,7 +71,6 @@ export class CharactersTab implements SavableTab
 	{
 		this.startingItems = new StartingItemsField(api, itemSelect, {
 			list: getElement('characters-items', HTMLUListElement),
-			none: getElement('characters-items-none', HTMLElement),
 			choose: this.chooseItemsButton
 		}, () =>
 		{

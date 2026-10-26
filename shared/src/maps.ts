@@ -66,7 +66,7 @@ export function defaultWalkSeconds(indoors: boolean): number
 /**
  * The most seconds of game time walking a square of a tile can take
  */
-export const MAX_WALK_SECONDS = 3600;
+export const MAX_WALK_SECONDS = 36000;
 
 /**
  * The cells a map covers, inclusive at both ends

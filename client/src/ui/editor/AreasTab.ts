@@ -6,7 +6,6 @@ import { ChangeTracker } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
-import { pageMessages } from '../pageMessages';
 import { tileName } from '../tileNames';
 import type { AreaSource } from './areaSource';
 import { editorMessages } from './editorMessages';
@@ -30,7 +29,6 @@ export class AreasTab implements SavableTab
 	private readonly listError = getElement('area-list-error', HTMLElement);
 	private readonly addButton = getElement('area-add', HTMLButtonElement);
 	private readonly editorView = getElement('area-editor-view', HTMLElement);
-	private readonly editorTitle = getElement('area-editor-title', HTMLElement);
 	private readonly form = getElement('area-form', HTMLFormElement);
 	private readonly fields = getElement('area-fields', HTMLFieldSetElement);
 	private readonly name = getElement('area-name', HTMLInputElement);
@@ -323,8 +321,8 @@ export class AreasTab implements SavableTab
 		this.onAreaChanged((isNewAreaId(areaId) ? undefined : areaId));
 		this.listView.hidden = true;
 		this.editorView.hidden = false;
-		this.editorTitle.textContent = t(pageMessages.loading);
 		this.fields.disabled = true;
+		this.name.disabled = true;
 		showMessage(this.error, undefined);
 
 		let area: EditorArea;
@@ -341,7 +339,6 @@ export class AreasTab implements SavableTab
 		{
 			if (version === this.openVersion)
 			{
-				this.editorTitle.textContent = '';
 				showMessage(this.error, describeEditorError(error, {
 					id: 'editor.area.openFailed',
 					defaultMessage: 'Could not open the area.',
@@ -550,15 +547,6 @@ export class AreasTab implements SavableTab
 		const isStart = (area.id === this.areas.startingAreaId);
 
 		this.area = area;
-		this.editorTitle.textContent = (isLobby
-			? t({
-				id: 'editor.area.lobbyTitle',
-				defaultMessage: '{area} (the lobby)',
-				description: 'Heading of the area editor for the universe\'s lobby; {area} is its name'
-			}, {
-				area: area.name
-			})
-			: area.name);
 		this.name.value = area.name;
 		this.enabled.checked = area.enabled;
 		setOptions(this.parent, [
@@ -593,6 +581,7 @@ export class AreasTab implements SavableTab
 		this.updateTimeFields();
 		this.updateParentMessage();
 		this.fields.disabled = !editable;
+		this.name.disabled = !editable;
 		this.deleteButton.hidden = (!canEditWorld(universe.role) || isLobby || isStart);
 		labelRemoveButton(this.deleteButton, { removed: deleted }, false, t({
 			id: 'editor.area.delete',

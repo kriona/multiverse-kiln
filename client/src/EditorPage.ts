@@ -11,7 +11,8 @@ import { LoginScreen } from './ui/LoginScreen';
 import { pageMessages } from './ui/pageMessages';
 
 /**
- * The query string parameters that show a place in the editor
+ * The query string parameters that show a place in the editor. The Universe tab is named whenever an
+ * area is, since an address with an area and no tab opens the Areas tab
  *
  * @param place The tab and area
  * @return Each parameter's value, or undefined to leave it out
@@ -19,7 +20,7 @@ import { pageMessages } from './ui/pageMessages';
 function placeParameters(place: EditorPlace): Record<string, string | undefined>
 {
 	return({
-		[TAB_PARAMETER]: ((place.tab === 'universe') ? undefined : place.tab),
+		[TAB_PARAMETER]: (((place.tab === 'universe') && (place.areaId === undefined)) ? undefined : place.tab),
 		[AREA_PARAMETER]: place.areaId
 	});
 }

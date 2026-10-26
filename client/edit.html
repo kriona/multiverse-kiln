@@ -120,7 +120,6 @@
 									<input id="ruleset-tracks-ammo" type="checkbox" />
 									Track ammunition
 								</label>
-								<p class="hint" data-message="editor.ruleset.laterHint" data-translation-context="Explains that the sleep, weight and ammunition checkboxes are stored but have no effect in the game yet">The game doesn't use sleep, weight or ammunition yet. These are kept for when it does.</p>
 								<p id="ruleset-error" class="form-error" role="alert" hidden></p>
 							</fieldset>
 						</form>
@@ -184,13 +183,12 @@
 								<p id="characters-group-size-hint" class="hint"></p>
 								<label data-message="editor.characters.startingMoney" data-translation-context="Label of the field for the money every character starts with">
 									Starting money
-									<input id="characters-starting-money" autocomplete="off" />
+									<input id="characters-starting-money" class="money" autocomplete="off" />
 								</label>
 								<p id="characters-starting-money-hint" class="hint"></p>
 								<div class="starting-equipment">
 									<h3 id="characters-items-heading" data-message="editor.characters.startingEquipment" data-translation-context="Heading of the list of items every character starts with, on the editor's Characters tab">Starting equipment</h3>
 									<ul id="characters-items" class="starting-items" aria-labelledby="characters-items-heading"></ul>
-									<p id="characters-items-none" data-message="editor.characters.noStartingEquipment" data-translation-context="Shown on the editor's Characters tab when characters start with no items" hidden>Characters start with nothing.</p>
 									<p class="hint" data-message="editor.characters.startingEquipmentHint" data-translation-context="Explains the starting equipment on the editor's Characters tab">What every character starts with. Races and classes can add more.</p>
 									<div>
 										<button id="characters-items-choose" type="button" class="secondary" data-shortcut="Alt+Q" data-message="editor.characters.chooseEquipment" data-translation-context="Button that opens the dialog for choosing the items every character starts with"><!-- icon game-icons:swap-bag -->Choose Starting Equipment</button>
@@ -321,16 +319,16 @@
 							<p id="area-list-error" class="form-error" role="alert" hidden></p>
 						</div>
 						<div id="area-editor-view" hidden>
-							<div class="panel-heading">
-								<button id="area-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="editor.area.back" data-translation-context="Button that closes the area editor and goes back to the list of areas"><!-- icon ph:arrow-left -->Back to Areas</button>
-								<h2 id="area-editor-title"></h2>
-							</div>
 							<form id="area-form" class="form">
-								<fieldset id="area-fields" class="plain">
+								<!-- Outside the fieldset, so disabling the fields leaves the back button working -->
+								<div class="area-editor-top">
+									<button id="area-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="editor.area.back" data-translation-context="Button that closes the area editor and goes back to the list of areas"><!-- icon ph:arrow-left -->Back to Areas</button>
 									<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">
 										Name
 										<input id="area-name" required />
 									</label>
+								</div>
+								<fieldset id="area-fields" class="plain">
 									<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it">
 										<input id="area-enabled" type="checkbox" />
 										Enabled
@@ -340,7 +338,7 @@
 										Parent area
 										<select id="area-parent"></select>
 									</label>
-									<fieldset class="choice">
+									<fieldset class="choice indoor-outdoor">
 										<legend data-message="form.indoorsOrOutdoors" data-translation-context="Heading of the choice between indoors and outdoors for an area or tile">Indoors or outdoors</legend>
 										<label class="checkbox" data-message="form.outdoors" data-translation-context="Choice for an area or tile that is outdoors">
 											<input id="area-outdoors" name="area-indoors" type="radio" value="outdoors" />
@@ -546,7 +544,7 @@
 								Enabled
 							</label>
 							<p class="hint" data-message="editor.race.enabledHint" data-translation-context="Explains the race editor's Enabled checkbox">New characters can only choose enabled races, and at least one race must be enabled.</p>
-							<fieldset class="choice">
+							<fieldset class="choice ability-modifiers">
 								<legend data-message="editor.race.abilityModifiers" data-translation-context="Heading of the race editor's fields for how much the race adds to or takes from each ability score">Ability modifiers</legend>
 								<div id="race-modifiers" class="ability-modifiers"></div>
 							</fieldset>
@@ -569,12 +567,11 @@
 							</label>
 							<label data-message="editor.startingMoney" data-translation-context="Label of the field in the race or class editor for the money its characters get on top of what every character starts with (and, for a class, what their race gives)">
 								Extra starting money
-								<input id="race-money" autocomplete="off" />
+								<input id="race-money" class="money" autocomplete="off" />
 							</label>
 							<div class="starting-equipment">
 								<h3 id="race-items-heading" data-message="editor.startingEquipment" data-translation-context="Heading in the race or class editor of the list of items its characters get on top of what every character starts with (and, for a class, what their race gives)">Extra starting equipment</h3>
 								<ul id="race-items" class="starting-items" aria-labelledby="race-items-heading"></ul>
-								<p id="race-items-none" data-message="editor.noStartingEquipment" data-translation-context="Shown in the race or class editor when its characters get no items beyond what every character (and, for a class, their race) starts with" hidden>Nothing more.</p>
 								<div>
 									<button id="race-items-choose" type="button" class="secondary" data-shortcut="Alt+Q" data-message="editor.chooseEquipment" data-translation-context="Button in the race or class editor that opens the dialog for choosing the items its characters also start with"><!-- icon game-icons:swap-bag -->Choose Equipment</button>
 								</div>
@@ -639,12 +636,11 @@
 							</div>
 							<label data-message="editor.startingMoney" data-translation-context="Label of the field in the race or class editor for the money its characters get on top of what every character starts with (and, for a class, what their race gives)">
 								Extra starting money
-								<input id="class-money" autocomplete="off" />
+								<input id="class-money" class="money" autocomplete="off" />
 							</label>
 							<div class="starting-equipment">
 								<h3 id="class-items-heading" data-message="editor.startingEquipment" data-translation-context="Heading in the race or class editor of the list of items its characters get on top of what every character starts with (and, for a class, what their race gives)">Extra starting equipment</h3>
 								<ul id="class-items" class="starting-items" aria-labelledby="class-items-heading"></ul>
-								<p id="class-items-none" data-message="editor.noStartingEquipment" data-translation-context="Shown in the race or class editor when its characters get no items beyond what every character (and, for a class, their race) starts with" hidden>Nothing more.</p>
 								<div>
 									<button id="class-items-choose" type="button" class="secondary" data-shortcut="Alt+Q" data-message="editor.chooseEquipment" data-translation-context="Button in the race or class editor that opens the dialog for choosing the items its characters also start with"><!-- icon game-icons:swap-bag -->Choose Equipment</button>
 								</div>
@@ -862,7 +858,7 @@
 							Name
 							<input id="area-add-name" required />
 						</label>
-						<fieldset class="choice">
+						<fieldset class="choice indoor-outdoor">
 							<legend data-message="form.indoorsOrOutdoors" data-translation-context="Heading of the choice between indoors and outdoors for an area or tile">Indoors or outdoors</legend>
 							<label class="checkbox" data-message="form.outdoors" data-translation-context="Choice for an area or tile that is outdoors">
 								<input id="area-add-outdoors" name="area-add-indoors" type="radio" value="outdoors" checked />

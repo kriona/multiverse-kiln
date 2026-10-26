@@ -190,6 +190,8 @@ export class MapEditor
 		this.linkDialog = new LinkDialog();
 		this.brushSize.max = String(MAX_BRUSH_SIZE);
 		setOptions(this.brushShape, namedOptions(BRUSH_SHAPES, BRUSH_SHAPE_NAMES));
+		this.canvasElement.style.setProperty('--map-view-width', `${VIEW_WIDTH}px`);
+		this.canvasObserver.observe(this.canvasElement);
 
 		this.undoButton.addEventListener('click', () =>
 		{
@@ -1281,7 +1283,6 @@ export class MapEditor
 				defaultMessage: 'Exit Full Page',
 				description: 'Button that puts the map editor back in the page after it was made to fill the window'
 			}));
-			this.canvasObserver.observe(this.canvasElement);
 		}
 		else
 		{
@@ -1290,19 +1291,32 @@ export class MapEditor
 				defaultMessage: 'Full Page',
 				description: 'Button that makes the map editor fill the window'
 			}));
-			this.canvasObserver.disconnect();
-			this.canvas.setSize(VIEW_WIDTH, VIEW_HEIGHT);
 		}
+
+		this.fitCanvas();
 	}
 
 	/**
-	 * Sizes the canvas to fill its element while the map editor is full page
+	 * Sizes the canvas to fill its element: the space left while the map editor is full page, and in the
+	 * page the view's usual size, or less on a screen too narrow for it
 	 */
 	private fitCanvas(): void
 	{
+		const width = this.canvasElement.clientWidth;
+
+		// A hidden map has no size to fit
+		if (width === 0)
+		{
+			return;
+		}
+
 		if (this.fullPage)
 		{
-			this.canvas.setSize(this.canvasElement.clientWidth, this.canvasElement.clientHeight);
+			this.canvas.setSize(width, this.canvasElement.clientHeight);
+		}
+		else
+		{
+			this.canvas.setSize(Math.min(width, VIEW_WIDTH), VIEW_HEIGHT);
 		}
 	}
 

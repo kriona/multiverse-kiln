@@ -99,7 +99,6 @@ export class RaceDialog
 
 		this.startingItems = new StartingItemsField(api, itemSelect, {
 			list: getElement('race-items', HTMLUListElement),
-			none: getElement('race-items-none', HTMLElement),
 			choose: this.chooseItemsButton
 		}, () =>
 		{

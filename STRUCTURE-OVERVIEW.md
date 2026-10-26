@@ -691,7 +691,7 @@ This is a component included in the [area editor](#editor-area). It shows you th
 	- a walls layer will use the 47-Tile Blob Set, which suits walls and paths one cell wide
 	- distinctive buildings and lone trees are placed objects rather than tiles (see [Open questions](#open-questions))
 - Vision cost - 0% to 100% (cannot see through). See [vision](#vision)
-- Walk time - seconds of game time walking a square takes, 0 to 3600. A new tile gets 600 (10 minutes) when it is for outdoors and 10 when it is only for indoors, following the checkboxes until another walk time is typed. Twice the default takes twice as long (PF1E difficult terrain), 0 is impassable
+- Walk time - seconds of game time walking a square takes, 0 to 36000. A new tile gets 600 (10 minutes) when it is for outdoors and 10 when it is only for indoors, following the checkboxes until another walk time is typed. Twice the default takes twice as long (PF1E difficult terrain), 0 is impassable
 - Has a preview section for day + night
 
 # Localization

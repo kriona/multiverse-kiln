@@ -539,10 +539,6 @@
 		"message": "How the hours pass in the tavern be set on the Lobby tab.",
 		"source": "The lobby's passage of time is set on the Lobby tab."
 	},
-	"editor.area.lobbyTitle": {
-		"message": "{area} (the tavern)",
-		"source": "{area} (the lobby)"
-	},
 	"editor.area.loopsEastWest": {
 		"message": "Wraps east-west",
 		"source": "Loops east-west"
@@ -694,10 +690,6 @@
 	"editor.characters.groupSizeHint": {
 		"message": "{min, number} be sailin' alone. At most {max, number} hands can sail together.",
 		"source": "{min, number} is single player game. At most {max, number} characters can play together."
-	},
-	"editor.characters.noStartingEquipment": {
-		"message": "The crew sets sail empty-handed.",
-		"source": "Characters start with nothing."
 	},
 	"editor.characters.saveFailed": {
 		"message": "Couldn't stow the crew's settings.",
@@ -1311,10 +1303,6 @@
 		"message": "⚓Davy Jones' Locker",
 		"source": "🌃Void"
 	},
-	"editor.noStartingEquipment": {
-		"message": "Naught more.",
-		"source": "Nothing more."
-	},
 	"editor.notes": {
 		"message": "Scribblings",
 		"source": "Notes"
@@ -1486,10 +1474,6 @@
 	"editor.ruleset.heading": {
 		"message": "Articles for {ruleset}",
 		"source": "Settings for {ruleset}"
-	},
-	"editor.ruleset.laterHint": {
-		"message": "The game don't bother with sleep, weight or ammunition yet. These be kept in the hold for when it does.",
-		"source": "The game doesn't use sleep, weight or ammunition yet. These are kept for when it does."
 	},
 	"editor.ruleset.loadFailed": {
 		"message": "Couldn't haul up the ship's articles.",
