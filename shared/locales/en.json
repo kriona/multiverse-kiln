@@ -181,7 +181,7 @@
 	},
 	"character.darkvision": {
 		"defaultMessage": "Darkvision",
-		"description": "Whether a character can see in the dark: the label on a character's sheet, and the race editor's checkbox for whether the race's characters can"
+		"description": "How far a character can see in the dark, if at all: the label on a character's sheet, and of the race editor's field for how far the race's characters can"
 	},
 	"character.heading.class": {
 		"defaultMessage": "Choose a class",
@@ -202,6 +202,10 @@
 	"character.heading.theme": {
 		"defaultMessage": "Choose a theme",
 		"description": "Heading of the Create Character step, in Starfinder, where the player chooses the character's theme (a background, such as ace pilot)"
+	},
+	"character.lightSensitivity": {
+		"defaultMessage": "Light sensitivity",
+		"description": "Whether bright light dazzles a character: the label on a character's sheet, and the race editor's checkbox for whether it dazzles the race's characters"
 	},
 	"character.next": {
 		"defaultMessage": "Next",
@@ -343,10 +347,6 @@
 		"defaultMessage": "Delete Character",
 		"description": "Title of the dialog that asks whether to delete a character"
 	},
-	"characterSheet.darkvisionValue": {
-		"defaultMessage": "{darkvision, select, true {Yes} other {No}}",
-		"description": "On a character's sheet, whether they can see in the dark"
-	},
 	"characterSheet.delete": {
 		"defaultMessage": "Delete",
 		"description": "Button on a character's sheet that starts deleting the character, asking first"
@@ -366,6 +366,10 @@
 	"characterSheet.items": {
 		"defaultMessage": "Equipment",
 		"description": "Heading on a character's sheet of the items they carry"
+	},
+	"characterSheet.lightSensitivityValue": {
+		"defaultMessage": "{lightSensitivity, select, true {Yes} other {No}}",
+		"description": "On a character's sheet, whether bright light dazzles them"
 	},
 	"characterSheet.loadFailed": {
 		"defaultMessage": "Could not load the character sheet.",
@@ -413,7 +417,7 @@
 	},
 	"characterSheet.traits": {
 		"defaultMessage": "Traits",
-		"description": "Heading on a character's sheet of their size, whether they have darkvision and their money"
+		"description": "Heading on a character's sheet of their size, their darkvision and light sensitivity, and their money"
 	},
 	"characters.heading": {
 		"defaultMessage": "Your characters",
@@ -470,6 +474,18 @@
 	"createGroup.title": {
 		"defaultMessage": "Create Group",
 		"description": "Title of the dialog that makes a new group (characters who play the universe together)"
+	},
+	"darkvision.none": {
+		"defaultMessage": "None",
+		"description": "A race that can't see in the dark: a choice in the race editor's Darkvision field, and the Darkvision value on a character's sheet"
+	},
+	"darkvision.normal": {
+		"defaultMessage": "Darkvision (60 feet)",
+		"description": "A race that sees 60 feet in the dark: a choice in the race editor's Darkvision field, and the Darkvision value on a character's sheet"
+	},
+	"darkvision.superior": {
+		"defaultMessage": "Superior darkvision (120 feet)",
+		"description": "A race that sees 120 feet in the dark, such as drow: a choice in the race editor's Darkvision field, and the Darkvision value on a character's sheet"
 	},
 	"dialog.apply": {
 		"defaultMessage": "Apply",
@@ -1363,6 +1379,10 @@
 		"defaultMessage": "Hit points",
 		"description": "Label of the field for the hit points a race gives its characters on top of their class's, in Starfinder"
 	},
+	"editor.race.lightSensitivityHint": {
+		"defaultMessage": "Bright light dazzles the race's characters, so they see only half as far in full daylight.",
+		"description": "Explains the race editor's Light sensitivity checkbox"
+	},
 	"editor.race.size": {
 		"defaultMessage": "Size",
 		"description": "Label of the field for a race's size, such as small or medium"
@@ -1376,8 +1396,8 @@
 		"description": "Button that opens the dialog for making a new race"
 	},
 	"editor.races.darkvision": {
-		"defaultMessage": "darkvision",
-		"description": "In a race's summary on the editor's Characters tab, for a race that can see in the dark"
+		"defaultMessage": "{darkvision, select, superior {superior darkvision} other {darkvision}}",
+		"description": "In a race's summary on the editor's Characters tab, for a race that can see in the dark: superior darkvision sees 120 feet, darkvision 60"
 	},
 	"editor.races.floatingBonus": {
 		"defaultMessage": "{bonus, number, ::sign-always} to one ability",
@@ -1394,6 +1414,10 @@
 	"editor.races.hitPoints": {
 		"defaultMessage": "{hitPoints, plural, one {# hit point} other {# hit points}}",
 		"description": "In a race's summary on the editor's Characters tab, in Starfinder, the hit points the race gives its characters"
+	},
+	"editor.races.lightSensitivity": {
+		"defaultMessage": "light sensitivity",
+		"description": "In a race's summary on the editor's Characters tab, for a race whose characters bright light dazzles"
 	},
 	"editor.races.listFailed": {
 		"defaultMessage": "Could not list the races.",
@@ -2901,7 +2925,7 @@
 	},
 	"map.announce.sight": {
 		"defaultMessage": "You can see {squares, plural, one {# square} other {# squares}} across open ground.",
-		"description": "Read out by screen readers, and shown at the top of the page, when the player asks where they are, after the time of day: how far they can see, which is less at night unless their character has darkvision, and less past forests and mountains"
+		"description": "Read out by screen readers, and shown at the top of the page, when the player asks where they are, after the time of day: how far they can see, which is less at night unless their character has darkvision, less in bright light when they have light sensitivity, and less past forests and mountains"
 	},
 	"map.announce.timeOfDay": {
 		"defaultMessage": "It is {time}, {part, select, dawn {dawn} day {day} dusk {dusk} other {night}}.",

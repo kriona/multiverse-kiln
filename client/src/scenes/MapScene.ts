@@ -418,7 +418,7 @@ export class MapScene extends Phaser.Scene
 
 				sights.push({
 					cell,
-					budget: visionBudget(areaLight(this.area.lightLevel, this.secondOfDayAt(cell)), player.darkvision, this.area.fullVision)
+					budget: visionBudget(areaLight(this.area.lightLevel, this.secondOfDayAt(cell)), player, this.area.fullVision)
 				});
 			}
 		});
@@ -1023,7 +1023,7 @@ export class MapScene extends Phaser.Scene
 			tileName: (tile ? tileName(tile, this.area.ruleset) : undefined),
 			secondOfDay: seconds,
 			displayTime: this.area.displayTime,
-			sightSquares: Math.floor(visionBudget(areaLight(this.area.lightLevel, seconds), own.darkvision, this.area.fullVision))
+			sightSquares: Math.floor(visionBudget(areaLight(this.area.lightLevel, seconds), own, this.area.fullVision))
 		}, others);
 	}
 

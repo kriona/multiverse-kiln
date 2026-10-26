@@ -113,7 +113,8 @@ describe('raceRepo', () =>
 			startingRow: -3,
 			rules: {
 				...lizardfolk.rules,
-				darkvision: true,
+				darkvision: 'superior',
+				lightSensitivity: true,
 				size: 'large'
 			}
 		};

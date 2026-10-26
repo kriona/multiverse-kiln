@@ -344,6 +344,20 @@
       "when": 1792926158838,
       "tag": "0048_drop_character_starting_place",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1793030651003,
+      "tag": "0049_darkvision_and_light_sensitivity",
+      "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1793030689127,
+      "tag": "0050_drow_superior_darkvision",
+      "breakpoints": true
     }
   ]
 }

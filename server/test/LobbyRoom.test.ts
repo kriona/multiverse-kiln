@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { cellIndexInChunk, chunkCoordinate, chunkKey, GRID_CELL_SIZE, LOBBY_ROOM_NAME, LobbyMessageType, LobbyServerMessageType, LobbyState, MAX_CHAT_MESSAGE_LENGTH, MessageType, NoticeReason, ServerMessageType, type ChatHistoryPayload, type ChatMessage, type ChunksPayload, type LobbyJoinOptions, type NoticePayload, type Player, type PlayingAsPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, chunkCoordinate, chunkKey, DARKVISION_SQUARES, GRID_CELL_SIZE, LOBBY_ROOM_NAME, LobbyMessageType, LobbyServerMessageType, LobbyState, MAX_CHAT_MESSAGE_LENGTH, MessageType, NoticeReason, ServerMessageType, type ChatHistoryPayload, type ChatMessage, type ChunksPayload, type LobbyJoinOptions, type NoticePayload, type Player, type PlayingAsPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { listPlayableCharacters } from '../src/db/characterRepo.js';
 import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
@@ -334,7 +334,7 @@ describe('LobbyRoom', () =>
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
 			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
 
-			assert.strictEqual(playerOf(ada).darkvision, true);
+			assert.strictEqual(playerOf(ada).darkvision, DARKVISION_SQUARES);
 
 			placeOnCell(playerOf(ada), 0, 10);
 			placeOnCell(playerOf(grace), 13, 10);

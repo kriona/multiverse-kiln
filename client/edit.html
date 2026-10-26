@@ -553,10 +553,15 @@
 								Floating ability bonus
 							</label>
 							<p id="race-floating-hint" class="hint"></p>
-							<label class="checkbox" data-message="character.darkvision" data-translation-context="Whether a character can see in the dark: the label on a character's sheet, and the race editor's checkbox for whether the race's characters can">
-								<input id="race-darkvision" type="checkbox" />
+							<label data-message="character.darkvision" data-translation-context="How far a character can see in the dark, if at all: the label on a character's sheet, and of the race editor's field for how far the race's characters can">
 								Darkvision
+								<select id="race-darkvision"></select>
 							</label>
+							<label class="checkbox" data-message="character.lightSensitivity" data-translation-context="Whether bright light dazzles a character: the label on a character's sheet, and the race editor's checkbox for whether it dazzles the race's characters">
+								<input id="race-light-sensitivity" type="checkbox" />
+								Light sensitivity
+							</label>
+							<p class="hint" data-message="editor.race.lightSensitivityHint" data-translation-context="Explains the race editor's Light sensitivity checkbox">Bright light dazzles the race's characters, so they see only half as far in full daylight.</p>
 							<label data-message="editor.race.size" data-translation-context="Label of the field for a race's size, such as small or medium">
 								Size
 								<select id="race-size"></select>

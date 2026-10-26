@@ -1,6 +1,6 @@
 import type { Client } from 'colyseus';
 import { StateView, type MapSchema } from '@colyseus/schema';
-import { areaLight, canSee, CHUNK_SIZE, Player, secondOfDay, ServerMessageType, visionBudget, type AreaTime, type ChunksPayload, type MovePayload, type WelcomePayload } from '@multiverse-kiln/shared';
+import { areaLight, canSee, CHUNK_SIZE, Player, secondOfDay, ServerMessageType, visionBudget, type AreaTime, type ChunksPayload, type MovePayload, type Sight, type WelcomePayload } from '@multiverse-kiln/shared';
 
 import { chunksNear, type ChunkAreaMap } from '../logic/chunkArea.js';
 import { stepSeconds } from '../logic/gameClock.js';
@@ -53,9 +53,9 @@ const standingStill: MovePayload = { x: 0, y: 0 };
 const anyCell: IsCellFree = () => true;
 
 /**
- * How a player shows on the map
+ * How a player shows on the map, and how far they see (see visionBudget)
  */
-export interface Appearance
+export interface Appearance extends Sight
 {
 	name: string;
 
@@ -64,11 +64,6 @@ export interface Appearance
 	 * pass through other players and nobody bumps into them
 	 */
 	ghost: boolean;
-
-	/**
-	 * Whether the character sees in the dark (see visionBudget)
-	 */
-	darkvision: boolean;
 }
 
 /**
@@ -316,7 +311,7 @@ export class AreaPlayers
 		}
 
 		// Added before it has a cell, so the search below knows whether the player is a ghost
-		const player = new Player({ x: 0, y: 0, name: appearance.name, ghost: appearance.ghost, darkvision: appearance.darkvision });
+		const player = new Player({ x: 0, y: 0, name: appearance.name, ghost: appearance.ghost, darkvision: appearance.darkvision, lightSensitivity: appearance.lightSensitivity });
 
 		this.players.set(playerId, player);
 
@@ -570,6 +565,7 @@ export class AreaPlayers
 		player.name = appearance.name;
 		player.ghost = appearance.ghost;
 		player.darkvision = appearance.darkvision;
+		player.lightSensitivity = appearance.lightSensitivity;
 
 		if (wasGhost === appearance.ghost)
 		{
@@ -1334,7 +1330,7 @@ export class AreaPlayers
 
 		return({
 			cell,
-			budget: visionBudget(areaLight(area.loaded.lightLevel, second), player.darkvision, area.loaded.fullVision)
+			budget: visionBudget(areaLight(area.loaded.lightLevel, second), player, area.loaded.fullVision)
 		});
 	}
 

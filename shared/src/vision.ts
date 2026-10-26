@@ -7,10 +7,44 @@
  * OPAQUE_VISION_COST can be seen but not seen past, so a line of mountains blocks the view; it is also
  * seen when open ground on one of its sides is, or diagonally beside it at an inside corner, so the walls
  * lining a corridor show along its length. The budget
- * is shorter at night and in dark indoor areas unless the character has darkvision. The server uses this to decide which players
+ * is shorter at night and in dark indoor areas unless the character has darkvision, and shorter in bright light when they
+ * have light sensitivity. The server uses this to decide which players
  * each client is shown, and the client to draw fog over the cells out of sight
  */
+import { defineMessages, type MessageDescriptor } from './localization.js';
 import { isInBounds, nearestCopy, positiveModulo, tileIdAt, type AreaTiles, type MapBounds } from './maps.js';
+
+/**
+ * How well a race sees in the dark: not at all, darkvision (60 feet) or superior darkvision (120 feet)
+ */
+export const DARKVISIONS = [
+	'none',
+	'normal',
+	'superior'
+] as const;
+
+export type Darkvision = typeof DARKVISIONS[number];
+
+/**
+ * Each kind of darkvision's name, the race editor's choices for it and the character sheet's value
+ */
+export const DARKVISION_NAMES: Record<Darkvision, MessageDescriptor> = defineMessages({
+	none: {
+		id: 'darkvision.none',
+		defaultMessage: 'None',
+		description: 'A race that can\'t see in the dark: a choice in the race editor\'s Darkvision field, and the Darkvision value on a character\'s sheet'
+	},
+	normal: {
+		id: 'darkvision.normal',
+		defaultMessage: 'Darkvision (60 feet)',
+		description: 'A race that sees 60 feet in the dark: a choice in the race editor\'s Darkvision field, and the Darkvision value on a character\'s sheet'
+	},
+	superior: {
+		id: 'darkvision.superior',
+		defaultMessage: 'Superior darkvision (120 feet)',
+		description: 'A race that sees 120 feet in the dark, such as drow: a choice in the race editor\'s Darkvision field, and the Darkvision value on a character\'s sheet'
+	}
+});
 
 /**
  * How many squares a character can see in full daylight
@@ -26,6 +60,17 @@ export const NIGHT_VISION_SQUARES = 4;
  * How many squares darkvision sees in the dark: 60 feet, as in PF1E and SF1E
  */
 export const DARKVISION_SQUARES = 12;
+
+/**
+ * How many squares superior darkvision sees in the dark: 120 feet, as in PF1E
+ */
+export const SUPERIOR_DARKVISION_SQUARES = 24;
+
+/**
+ * The share of their vision budget a character with light sensitivity keeps in full daylight, being
+ * dazzled; less light takes less away
+ */
+export const LIGHT_SENSITIVE_VISION_SHARE = 0.5;
 
 /**
  * Vision cost of a cell nobody can see past, in percent
@@ -87,24 +132,70 @@ export function createVisionMap(tiles: AreaTiles, loopsEastWest: boolean, loopsN
 }
 
 /**
+ * How many squares a kind of darkvision sees in the dark
+ *
+ * @param darkvision The darkvision
+ * @return DARKVISION_SQUARES or SUPERIOR_DARKVISION_SQUARES; 0 without darkvision
+ */
+export function darkvisionSquares(darkvision: Darkvision): number
+{
+	switch (darkvision)
+	{
+		case 'none':
+			return(0);
+
+		case 'normal':
+			return(DARKVISION_SQUARES);
+
+		case 'superior':
+			return(SUPERIOR_DARKVISION_SQUARES);
+	}
+}
+
+/**
+ * What a character's race changes about how far they see
+ */
+export interface Sight
+{
+	/**
+	 * How many squares the character sees in the dark (darkvisionSquares); 0 without darkvision
+	 */
+	darkvision: number;
+
+	/**
+	 * Whether bright light dazzles the character
+	 */
+	lightSensitivity: boolean;
+}
+
+/**
+ * The sight of a character with no darkvision or light sensitivity
+ */
+export const PLAIN_SIGHT: Readonly<Sight> = {
+	darkvision: 0,
+	lightSensitivity: false
+};
+
+/**
  * How many squares a character can see in the light around them
  *
  * @param light How light it is where the character is, from 0 in the dark to 1 in full daylight (see areaLight)
- * @param darkvision Whether the character has darkvision
+ * @param sight The character's darkvision and light sensitivity
  * @param fullVision Whether the area ignores the light (AreaPayload.fullVision)
  * @return The vision budget: NIGHT_VISION_SQUARES in the dark up to DAY_VISION_SQUARES in full
- * daylight, and never under DARKVISION_SQUARES with darkvision; always DAY_VISION_SQUARES with full vision
+ * daylight, never under the darkvision's squares, and with light sensitivity down to
+ * LIGHT_SENSITIVE_VISION_SHARE of that in full daylight; always DAY_VISION_SQUARES with full vision
  */
-export function visionBudget(light: number, darkvision: boolean, fullVision: boolean): number
+export function visionBudget(light: number, sight: Sight, fullVision: boolean): number
 {
 	if (fullVision)
 	{
 		return(DAY_VISION_SQUARES);
 	}
 
-	const budget = NIGHT_VISION_SQUARES + ((DAY_VISION_SQUARES - NIGHT_VISION_SQUARES) * light);
+	const budget = Math.max(NIGHT_VISION_SQUARES + ((DAY_VISION_SQUARES - NIGHT_VISION_SQUARES) * light), sight.darkvision);
 
-	return((darkvision ? Math.max(budget, DARKVISION_SQUARES) : budget));
+	return((sight.lightSensitivity ? budget * (1 - ((1 - LIGHT_SENSITIVE_VISION_SHARE) * light)) : budget));
 }
 
 /**

@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { cellIndexInChunk, DEFAULT_OUTDOOR_WALK_SECONDS, DEFAULT_TILE_CELL,GAME_ROOM_NAME, GameMessageType, GameServerMessageType, GameState, GRID_CELL_SIZE, GROUP_START_SECONDS, MessageType, NoticeReason, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, UNSEEN_CELL, type AreaPayload, type CellsSeenPayload, type GameJoinOptions, type NoticePayload, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, DARKVISION_SQUARES, DEFAULT_OUTDOOR_WALK_SECONDS, DEFAULT_TILE_CELL,GAME_ROOM_NAME, GameMessageType, GameServerMessageType, GameState, GRID_CELL_SIZE, GROUP_START_SECONDS, MessageType, NoticeReason, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, UNSEEN_CELL, type AreaPayload, type CellsSeenPayload, type GameJoinOptions, type NoticePayload, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { scheduleCharacterDeletion } from '../src/db/characterRepo.js';
 import { pool } from '../src/db/client.js';
@@ -487,7 +487,7 @@ describe('GameRoom', () =>
 		}
 
 		await waitUntil(() => ((ada.client.state.players?.has(graceId) ?? false) && (grace.client.state.players?.has(adaId) ?? false)));
-		assert.strictEqual(room.state.players.get(adaId)?.darkvision, true);
+		assert.strictEqual(room.state.players.get(adaId)?.darkvision, DARKVISION_SQUARES);
 	});
 
 	it('sends only the cells the group has seen, each as it is first seen, and remembers them after everyone has left', async () =>

@@ -21,9 +21,11 @@ export const Player = schema({
 	ghost: t.boolean(),
 
 	/**
-	 * Whether the character sees in the dark, which the client's fog follows (see visionBudget)
+	 * How many squares the character sees in the dark (darkvisionSquares), and whether bright light
+	 * dazzles them, which the client's fog follows (see visionBudget)
 	 */
-	darkvision: t.boolean()
+	darkvision: t.number(),
+	lightSensitivity: t.boolean()
 }, 'Player');
 export type Player = SchemaType<typeof Player>;
 

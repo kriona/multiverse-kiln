@@ -1,4 +1,4 @@
-import { ABILITY_NAMES, pf1eAbilityModifier, RULESET_ABILITIES, SIZE_NAMES, type CharacterSheet } from '@multiverse-kiln/shared';
+import { ABILITY_NAMES, DARKVISION_NAMES, pf1eAbilityModifier, RULESET_ABILITIES, SIZE_NAMES, type CharacterSheet } from '@multiverse-kiln/shared';
 import lastRitesIcon from 'virtual:icon/game-icons:candle-light';
 
 import { currentLocale, signedNumber, t } from '../localization';
@@ -13,7 +13,7 @@ import { className, raceName, themeName } from './raceAndClassNames';
 
 /**
  * A dialog showing one of the player's characters: their race and class, ability scores, size,
- * darkvision, money and equipment (pages that use it include partials/character-sheet.html)
+ * darkvision, light sensitivity, money and equipment (pages that use it include partials/character-sheet.html)
  *
  * It only shows the character, so there is nothing in it to save. Its Delete button asks twice before
  * deleting the character: the second question cremates them (deletes them straight away) or gives them
@@ -481,7 +481,7 @@ export class CharacterSheetDialog
 
 	/**
 	 * Lists the character's theme, hit points and stamina points in a ruleset that has them, their size,
-	 * whether they have darkvision, and their money
+	 * their darkvision and light sensitivity, and their money
 	 *
 	 * @param sheet The character
 	 */
@@ -525,13 +525,18 @@ export class CharacterSheetDialog
 			[t({
 				id: 'character.darkvision',
 				defaultMessage: 'Darkvision',
-				description: 'Whether a character can see in the dark: the label on a character\'s sheet, and the race editor\'s checkbox for whether the race\'s characters can'
+				description: 'How far a character can see in the dark, if at all: the label on a character\'s sheet, and of the race editor\'s field for how far the race\'s characters can'
+			}), t(DARKVISION_NAMES[sheet.darkvision])],
+			[t({
+				id: 'character.lightSensitivity',
+				defaultMessage: 'Light sensitivity',
+				description: 'Whether bright light dazzles a character: the label on a character\'s sheet, and the race editor\'s checkbox for whether it dazzles the race\'s characters'
 			}), t({
-				id: 'characterSheet.darkvisionValue',
-				defaultMessage: '{darkvision, select, true {Yes} other {No}}',
-				description: 'On a character\'s sheet, whether they can see in the dark'
+				id: 'characterSheet.lightSensitivityValue',
+				defaultMessage: '{lightSensitivity, select, true {Yes} other {No}}',
+				description: 'On a character\'s sheet, whether bright light dazzles them'
 			}, {
-				darkvision: String(sheet.darkvision)
+				lightSensitivity: String(sheet.lightSensitivity)
 			})],
 			[t({
 				id: 'characterSheet.money',

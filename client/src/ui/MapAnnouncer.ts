@@ -237,7 +237,7 @@ export class MapAnnouncer
 		const sight = t({
 			id: 'map.announce.sight',
 			defaultMessage: 'You can see {squares, plural, one {# square} other {# squares}} across open ground.',
-			description: 'Read out by screen readers, and shown at the top of the page, when the player asks where they are, after the time of day: how far they can see, which is less at night unless their character has darkvision, and less past forests and mountains'
+			description: 'Read out by screen readers, and shown at the top of the page, when the player asks where they are, after the time of day: how far they can see, which is less at night unless their character has darkvision, less in bright light when they have light sensitivity, and less past forests and mountains'
 		}, {
 			squares: position.sightSquares
 		});

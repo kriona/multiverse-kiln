@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { areaLight, canSee, chunkKey, createVisionMap, CHUNK_SIZE, DARKVISION_SQUARES, DAY_VISION_SQUARES, MIDNIGHT_SECONDS, NIGHT_VISION_SQUARES, NOON_SECONDS, VOID_CELL, visibleCells, visionBudget, visionKey, type MapBounds, type VisionMap } from '@multiverse-kiln/shared';
+import { areaLight, canSee, chunkKey, createVisionMap, CHUNK_SIZE, DARKVISION_SQUARES, darkvisionSquares, DAY_VISION_SQUARES, LIGHT_SENSITIVE_VISION_SHARE, MIDNIGHT_SECONDS, NIGHT_VISION_SQUARES, NOON_SECONDS, PLAIN_SIGHT, SUPERIOR_DARKVISION_SQUARES, VOID_CELL, visibleCells, visionBudget, visionKey, type MapBounds, type VisionMap } from '@multiverse-kiln/shared';
 
 const bounds: MapBounds = {
 	minColumn: -50,
@@ -31,29 +31,54 @@ describe('vision (shared)', () =>
 {
 	describe('visionBudget', () =>
 	{
+		const darkvision = {
+			darkvision: darkvisionSquares('normal'),
+			lightSensitivity: false
+		};
+		const drow = {
+			darkvision: darkvisionSquares('superior'),
+			lightSensitivity: true
+		};
+
 		it('sees furthest by day and least at night', () =>
 		{
-			assert.strictEqual(visionBudget(areaLight(null, NOON_SECONDS), false, false), DAY_VISION_SQUARES);
-			assert.strictEqual(visionBudget(areaLight(null, MIDNIGHT_SECONDS), false, false), NIGHT_VISION_SQUARES);
+			assert.strictEqual(visionBudget(areaLight(null, NOON_SECONDS), PLAIN_SIGHT, false), DAY_VISION_SQUARES);
+			assert.strictEqual(visionBudget(areaLight(null, MIDNIGHT_SECONDS), PLAIN_SIGHT, false), NIGHT_VISION_SQUARES);
 		});
 
 		it('sees as far as darkvision does in the dark, and no less by day', () =>
 		{
-			assert.strictEqual(visionBudget(areaLight(null, MIDNIGHT_SECONDS), true, false), DARKVISION_SQUARES);
-			assert.strictEqual(visionBudget(areaLight(null, NOON_SECONDS), true, false), DAY_VISION_SQUARES);
+			assert.strictEqual(visionBudget(areaLight(null, MIDNIGHT_SECONDS), darkvision, false), DARKVISION_SQUARES);
+			assert.strictEqual(visionBudget(areaLight(null, NOON_SECONDS), darkvision, false), DAY_VISION_SQUARES);
+		});
+
+		it('sees as far as superior darkvision does in the dark', () =>
+		{
+			assert.strictEqual(darkvisionSquares('none'), 0);
+			assert.strictEqual(visionBudget(areaLight(null, MIDNIGHT_SECONDS), { ...drow, lightSensitivity: false }, false), SUPERIOR_DARKVISION_SQUARES);
+			assert.strictEqual(visionBudget(areaLight(null, NOON_SECONDS), { ...drow, lightSensitivity: false }, false), SUPERIOR_DARKVISION_SQUARES);
+		});
+
+		it('sees less in bright light with light sensitivity, and no less in the dark', () =>
+		{
+			assert.strictEqual(visionBudget(areaLight(null, MIDNIGHT_SECONDS), drow, false), SUPERIOR_DARKVISION_SQUARES);
+			assert.strictEqual(visionBudget(areaLight(null, NOON_SECONDS), drow, false), SUPERIOR_DARKVISION_SQUARES * LIGHT_SENSITIVE_VISION_SHARE);
+			assert.strictEqual(visionBudget(areaLight('lit', MIDNIGHT_SECONDS), drow, false), SUPERIOR_DARKVISION_SQUARES * LIGHT_SENSITIVE_VISION_SHARE);
+			assert.strictEqual(visionBudget(areaLight(null, NOON_SECONDS), { ...PLAIN_SIGHT, lightSensitivity: true }, false), DAY_VISION_SQUARES * LIGHT_SENSITIVE_VISION_SHARE);
 		});
 
 		it('sees as far at night as by day with full vision', () =>
 		{
-			assert.strictEqual(visionBudget(areaLight(null, MIDNIGHT_SECONDS), false, true), DAY_VISION_SQUARES);
-			assert.strictEqual(visionBudget(areaLight(null, MIDNIGHT_SECONDS), true, true), DAY_VISION_SQUARES);
+			assert.strictEqual(visionBudget(areaLight(null, MIDNIGHT_SECONDS), PLAIN_SIGHT, true), DAY_VISION_SQUARES);
+			assert.strictEqual(visionBudget(areaLight(null, MIDNIGHT_SECONDS), darkvision, true), DAY_VISION_SQUARES);
+			assert.strictEqual(visionBudget(areaLight(null, NOON_SECONDS), drow, true), DAY_VISION_SQUARES);
 		});
 
 		it('sees as far as by day in a lit indoor area and as at night in a dark one, whatever the time', () =>
 		{
-			assert.strictEqual(visionBudget(areaLight('lit', MIDNIGHT_SECONDS), false, false), DAY_VISION_SQUARES);
-			assert.strictEqual(visionBudget(areaLight('dark', NOON_SECONDS), false, false), NIGHT_VISION_SQUARES);
-			assert.strictEqual(visionBudget(areaLight('dark', NOON_SECONDS), true, false), DARKVISION_SQUARES);
+			assert.strictEqual(visionBudget(areaLight('lit', MIDNIGHT_SECONDS), PLAIN_SIGHT, false), DAY_VISION_SQUARES);
+			assert.strictEqual(visionBudget(areaLight('dark', NOON_SECONDS), PLAIN_SIGHT, false), NIGHT_VISION_SQUARES);
+			assert.strictEqual(visionBudget(areaLight('dark', NOON_SECONDS), darkvision, false), DARKVISION_SQUARES);
 		});
 	});
 

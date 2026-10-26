@@ -203,6 +203,10 @@
 		"message": "Spin yer yarn",
 		"source": "Choose a theme"
 	},
+	"character.lightSensitivity": {
+		"message": "Blinded by the sun",
+		"source": "Light sensitivity"
+	},
 	"character.next": {
 		"message": "Onward",
 		"source": "Next"
@@ -343,10 +347,6 @@
 		"message": "Throw Hand Overboard",
 		"source": "Delete Character"
 	},
-	"characterSheet.darkvisionValue": {
-		"message": "{darkvision, select, true {Aye} other {Nay}}",
-		"source": "{darkvision, select, true {Yes} other {No}}"
-	},
 	"characterSheet.delete": {
 		"message": "Throw Overboard",
 		"source": "Delete"
@@ -366,6 +366,10 @@
 	"characterSheet.items": {
 		"message": "Kit",
 		"source": "Equipment"
+	},
+	"characterSheet.lightSensitivityValue": {
+		"message": "{lightSensitivity, select, true {Aye} other {Nay}}",
+		"source": "{lightSensitivity, select, true {Yes} other {No}}"
 	},
 	"characterSheet.loadFailed": {
 		"message": "Couldn't unroll this hand's papers.",
@@ -470,6 +474,18 @@
 	"createGroup.title": {
 		"message": "Raise a Crew",
 		"source": "Create Group"
+	},
+	"darkvision.none": {
+		"message": "Blind as a bat",
+		"source": "None"
+	},
+	"darkvision.normal": {
+		"message": "Sees in the dark (60 feet)",
+		"source": "Darkvision (60 feet)"
+	},
+	"darkvision.superior": {
+		"message": "Eyes o' the deep (120 feet)",
+		"source": "Superior darkvision (120 feet)"
 	},
 	"dialog.apply": {
 		"message": "Make it so",
@@ -1407,6 +1423,10 @@
 		"message": "Lifeblood",
 		"source": "Hit points"
 	},
+	"editor.race.lightSensitivityHint": {
+		"message": "Bright light dazzles this folk's hands, so they see but half as far in broad daylight.",
+		"source": "Bright light dazzles the race's characters, so they see only half as far in full daylight."
+	},
 	"editor.race.size": {
 		"message": "Heft",
 		"source": "Size"
@@ -1420,8 +1440,8 @@
 		"source": "Add Race"
 	},
 	"editor.races.darkvision": {
-		"message": "sees in the dark",
-		"source": "darkvision"
+		"message": "{darkvision, select, superior {eyes o' the deep} other {sees in the dark}}",
+		"source": "{darkvision, select, superior {superior darkvision} other {darkvision}}"
 	},
 	"editor.races.floatingBonus": {
 		"message": "{bonus, number, ::sign-always} to a knack o' choice",
@@ -1438,6 +1458,10 @@
 	"editor.races.hitPoints": {
 		"message": "{hitPoints, number} lifeblood",
 		"source": "{hitPoints, plural, one {# hit point} other {# hit points}}"
+	},
+	"editor.races.lightSensitivity": {
+		"message": "blinded by the sun",
+		"source": "light sensitivity"
 	},
 	"editor.races.listFailed": {
 		"message": "Couldn't list the folk.",

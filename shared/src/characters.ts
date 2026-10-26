@@ -27,6 +27,7 @@ import { rulesetHasThemes, type Ability, type AbilityScores, type ClassRules, ty
 import type { Pf1eRollMethod, Pf1eStatMethod } from './rulesets/pf1e/statMethods.js';
 import type { Sf1eThemeRules } from './rulesets/sf1e/themes.js';
 import type { Ruleset } from './universes.js';
+import type { Darkvision } from './vision.js';
 
 /**
  * Most characters a player may have in one universe
@@ -337,10 +338,11 @@ export interface CharacterSheet
 	inGroup: boolean;
 
 	/**
-	 * The race's size and darkvision, as the universe sets them now
+	 * The race's size, darkvision and light sensitivity, as the universe sets them now
 	 */
 	size: Size;
-	darkvision: boolean;
+	darkvision: Darkvision;
+	lightSensitivity: boolean;
 
 	/**
 	 * The character's theme, in a ruleset with themes; null otherwise

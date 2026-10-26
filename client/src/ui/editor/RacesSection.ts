@@ -58,8 +58,8 @@ export class RacesSection extends OptionList<EditorRace, RaceSettings>
 }
 
 /**
- * A race's rules in a few words: its size, ability modifiers, floating bonus, darkvision and, in a
- * ruleset that has them, hit points
+ * A race's rules in a few words: its size, ability modifiers, floating bonus, darkvision, light
+ * sensitivity and, in a ruleset that has them, hit points
  *
  * @param race The race
  * @param ruleset The universe's ruleset
@@ -68,7 +68,7 @@ export class RacesSection extends OptionList<EditorRace, RaceSettings>
 function describeRace(race: EditorRace, ruleset: Ruleset): string
 {
 	const { rules } = race;
-	const { abilityModifiers, floatingBonus, darkvision, size } = rules;
+	const { abilityModifiers, floatingBonus, darkvision, lightSensitivity, size } = rules;
 	const parts = [
 		t(SIZE_NAMES[ruleset][size]),
 		...RULESET_ABILITIES[ruleset]
@@ -105,12 +105,23 @@ function describeRace(race: EditorRace, ruleset: Ruleset): string
 		}));
 	}
 
-	if (darkvision)
+	if (darkvision !== 'none')
 	{
 		parts.push(t({
 			id: 'editor.races.darkvision',
-			defaultMessage: 'darkvision',
-			description: 'In a race\'s summary on the editor\'s Characters tab, for a race that can see in the dark'
+			defaultMessage: '{darkvision, select, superior {superior darkvision} other {darkvision}}',
+			description: 'In a race\'s summary on the editor\'s Characters tab, for a race that can see in the dark: superior darkvision sees 120 feet, darkvision 60'
+		}, {
+			darkvision
+		}));
+	}
+
+	if (lightSensitivity)
+	{
+		parts.push(t({
+			id: 'editor.races.lightSensitivity',
+			defaultMessage: 'light sensitivity',
+			description: 'In a race\'s summary on the editor\'s Characters tab, for a race whose characters bright light dazzles'
 		}));
 	}
 

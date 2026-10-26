@@ -304,6 +304,7 @@ async function sheetRoute(request: Request, response: Response): Promise<void>
 		inGroup: (membership !== undefined),
 		size: (race?.rules.size ?? NEW_RACE_RULES[universe.ruleset].size),
 		darkvision: (race?.rules.darkvision ?? NEW_RACE_RULES[universe.ruleset].darkvision),
+		lightSensitivity: (race?.rules.lightSensitivity ?? NEW_RACE_RULES[universe.ruleset].lightSensitivity),
 		theme: ((character.themeId === null)
 			? null
 			: {

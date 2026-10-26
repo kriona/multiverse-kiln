@@ -117,7 +117,7 @@ For SF1E, every ability score starts at 10, and the player spends the universe's
 A modal dialog showing one of the player's characters, opened from the [lobby](#lobby) and the [universe page](#universe-page) (later the [profile](#profile-edit) too). Only the character's player can see it. For PF1E it shows:
 - the name, race and class
 - each ability score (with the race's modifiers added) and the modifier it gives
-- size and darkvision, from the race as the universe sets it now
+- size, darkvision and light sensitivity, from the race as the universe sets it now
 - money, as a [money field](#field-money) writes it
 - equipment, sorted by name, with how many of each
 
@@ -389,7 +389,8 @@ You can edit each race:
 - for PF1E:
 	- ability modifiers? lists abilities (`strength`, `dexterity`, `constitution`, `intelligence`, `wisdom`, `charisma`) and a number field for each (minimum -99, maximum 99)
 	- floating ability bonus? a checkbox. When checked, the player chooses which ability gets the bonus (in PF1E, humans, half elves and half orcs get +2 to one ability of their choice)
-	- has darkvision? a checkbox
+	- darkvision: `none`, `darkvision (60 feet)` or `superior darkvision (120 feet)`. Drow have superior darkvision; dwarves, goblins, half-orcs, hobgoblins and ratfolk have darkvision
+	- light sensitivity? a checkbox. Bright light dazzles the race's characters (see [Vision](#vision)). Drow have it
 	- size
 		- `fine`
 		- `diminutive`
@@ -400,7 +401,7 @@ You can edit each race:
 		- `huge`
 		- `gargantuan`
 		- `colossal`
-- for SF1E: the same ability modifiers, floating ability bonus (humans get +2 to one ability of their choice), darkvision and size, and
+- for SF1E: the same ability modifiers, floating ability bonus (humans get +2 to one ability of their choice), darkvision, light sensitivity and size, and
 	- hit points: the hit points the race gives on top of the class's, 0 to 99
 
 #### Classes
@@ -593,10 +594,10 @@ What a group has explored is kept as the cells it has seen, area by area: a cell
 
 ## Vision
 Each character has a vision budget, in squares. A character looks along straight lines from their cell, and each step along a line spends its length (a diagonal step counts as one and a half squares, as in movement), more when it leaves a tile with a vision cost: 50% spends twice as much. A 100% tile can be seen but not seen past, so a line of mountains blocks your view. It is also seen when open ground on one of its sides is, so the walls lining a tunnel show along its length, while the inside of a thick wall and its far side stay hidden. Open ground diagonally beside it only counts at an inside corner, where the cells on both sides between them can't be seen past either, so a room's corners show but the tip of a mountain range doesn't light up when the ground around it is out of sight. The character's own cell never gets in the way. Void cells are seen past.
-- The budget is 20 squares in full daylight and 4 at night, changing with the light around dawn and dusk. An indoor area is lit (20 squares) or dark (4) at any time of day, by its light level. Darkvision sees at least 12 squares (60 feet), day or night.
+- The budget is 20 squares in full daylight and 4 at night, changing with the light around dawn and dusk. An indoor area is lit (20 squares) or dark (4) at any time of day, by its light level. Darkvision sees at least 12 squares (60 feet), day or night, and superior darkvision at least 24 (120 feet). Light sensitivity (being dazzled, a house rule standing in for PF1E's penalties until there is combat) halves the budget in full daylight or a lit indoor area, and takes less away as the light fades, so a drow sees 24 squares at night and 12 at noon.
 - In a group's room, the group sees whatever any of its members in the area sees, so members always see each other. In a lobby each player sees only what they see themselves, and unless the universe turns it off on the [Lobby tab](#tab-lobby), they see as far as in full daylight at any time of day and its tiles have no vision cost.
 - The server works out what each player can see and only shows them the players in sight. The client runs the same function (`/shared`) to draw fog over the cells out of sight. Screen readers are told how many squares the player can see when they ask where they are.
-- A character's darkvision comes from their race as the universe set it when the room started.
+- A character's darkvision and light sensitivity come from their race as the universe set it when the room started.
 
 ## Moderation
 - Player and character names can't pass as the game's staff: words such as `admin`, `moderator`, `staff` and `system`, and the game's name, are kept back (`isReservedName()` in `/shared`, checked as the player types and again on the server). Names are compared in a reduced form that sees through capitals, accents, look-alike letters from other alphabets, leetspeak, separators, repeated letters and added digits, and words are found at spaces, punctuation and changes of case, so "TheAdm1n" is refused but "Quarterstaff" isn't.
