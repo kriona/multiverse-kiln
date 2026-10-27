@@ -6,7 +6,7 @@
  *
  *   .  the area's default tile        g  grass        f  forest     d  desert
  *   ^  mountains                      ~  water        =  wood floor
- *   #  stone wall (a tile of this universe's own)
+ *   #  stone wall                     h  hedge      (tiles of this universe's own)
  *   (space)  void
  *
  * Digits mark cells that links start from or arrive at. Each area says which tile its digits are
@@ -73,17 +73,30 @@ export const sampleUniverse = {
 };
 
 /**
- * The universe's own tile, used for the stone walls (`#`)
+ * The universe's own tiles, by the character that stands for each on the maps: stone walls (`#`) and
+ * hedges (`h`)
  */
-export const stoneWall = {
-	key: 'stone_wall',
-	name: 'Stone Wall',
-	indoors: true,
-	outdoors: true,
-	color: 0x8a8a8a,
-	graphic: null,
-	visionCost: 100,
-	walkSeconds: IMPASSABLE_WALK_SECONDS
+export const sampleTiles = {
+	'#': {
+		key: 'stone_wall',
+		name: 'Stone Wall',
+		indoors: true,
+		outdoors: true,
+		color: 0x8a8a8a,
+		graphic: 'stoneWall',
+		visionCost: 100,
+		walkSeconds: IMPASSABLE_WALK_SECONDS
+	},
+	'h': {
+		key: 'hedge',
+		name: 'Hedge',
+		indoors: false,
+		outdoors: true,
+		color: 0x3c7a32,
+		graphic: 'hedge',
+		visionCost: 100,
+		walkSeconds: IMPASSABLE_WALK_SECONDS
+	}
 };
 
 export const sampleAreas: SampleArea[] = [
@@ -103,10 +116,10 @@ export const sampleAreas: SampleArea[] = [
 			'^..fff...####1####....~~~~~....^',
 			'^...f........2.........~~~.....^',
 			'^..............................^',
-			'^.........dddd.................^',
-			'^........dddddd................^',
-			'^.....ff..dddd.........ff......^',
-			'^....ffff.............ffff.....^',
+			'^.........dddd.hhhhhhh.........^',
+			'^........ddddddh.....h.........^',
+			'^.....ff..dddd.h.....h.ff......^',
+			'^....ffff......hhh.hhhffff.....^',
 			'^.....ff...~~..........ff......^',
 			'^.........~~~~.................^',
 			'^..........~~..............^^..^',

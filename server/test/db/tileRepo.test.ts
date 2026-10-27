@@ -89,23 +89,56 @@ describe('tileRepo', () =>
 			assert.deepStrictEqual(forest, { id: forest?.id, key: 'forest', name: 'Forest', indoors: false, outdoors: true, color: 0x00aa11, graphic: 'forest', uploadedGraphic: null, visionCost: 50, walkSeconds: 1200 });
 		});
 
-		it('gives a tile drawn with an uploaded graphic that graphic\'s draw order', async () =>
+		it('gives a tile drawn with an uploaded graphic that graphic\'s format and draw order', async () =>
 		{
 			const universeId = await addUniverse();
-			const graphicId = randomUUID();
+			const uploadedBy = (await loadOrCreatePlayerByName('Ada')).id;
+			const mossId = randomUUID();
+			const wallId = randomUUID();
 
-			await createTileGraphic(graphicId, {
+			await createTileGraphic(mossId, {
 				universeId,
 				name: 'Moss',
+				format: 'dualGrid',
 				drawOrder: 35,
-				storageKey: tileGraphicStorageKey(universeId, graphicId),
-				uploadedBy: (await loadOrCreatePlayerByName('Ada')).id
+				storageKey: tileGraphicStorageKey(universeId, mossId),
+				uploadedBy
+			});
+			await createTileGraphic(wallId, {
+				universeId,
+				name: 'Brick Wall',
+				format: 'blob',
+				drawOrder: null,
+				storageKey: tileGraphicStorageKey(universeId, wallId),
+				uploadedBy
 			});
 
-			const tileId = await createCustomTile(universeId, 'pf1e', { ...lava, uploadedGraphicId: graphicId });
-			const tile = (await loadUniverseTiles(universeId, 'pf1e')).find((loaded) => (loaded.id === tileId));
+			const mossTileId = await createCustomTile(universeId, 'pf1e', { ...lava, uploadedGraphicId: mossId });
+			const wallTileId = await createCustomTile(universeId, 'pf1e', { ...lava, uploadedGraphicId: wallId });
+			const tiles = await loadUniverseTiles(universeId, 'pf1e');
 
-			assert.deepStrictEqual(tile?.uploadedGraphic, { id: graphicId, drawOrder: 35 });
+			assert.deepStrictEqual(tiles.find((loaded) => (loaded.id === mossTileId))?.uploadedGraphic, { id: mossId, format: 'dualGrid', drawOrder: 35 });
+			assert.deepStrictEqual(tiles.find((loaded) => (loaded.id === wallTileId))?.uploadedGraphic, { id: wallId, format: 'blob', drawOrder: null });
+		});
+
+		it('refuses an uploaded graphic whose draw order doesn\'t suit its format', async () =>
+		{
+			const universeId = await addUniverse();
+			const uploadedBy = (await loadOrCreatePlayerByName('Ada')).id;
+
+			for (const [format, drawOrder] of [['dualGrid', null], ['blob', 35]] as const)
+			{
+				const graphicId = randomUUID();
+
+				await assert.rejects(createTileGraphic(graphicId, {
+					universeId,
+					name: 'Moss',
+					format,
+					drawOrder,
+					storageKey: tileGraphicStorageKey(universeId, graphicId),
+					uploadedBy
+				}), format);
+			}
 		});
 
 		it('draws each ruleset\'s default grass, forest and mountains with their graphics', async () =>

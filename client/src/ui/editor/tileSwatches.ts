@@ -1,4 +1,4 @@
-import { defineMessages, isTileGraphic, TILE_GRAPHIC_KEYS, type MessageDescriptor, type TileGraphic, type TileSettings, type UploadedTileGraphic } from '@multiverse-kiln/shared';
+import { defineMessages, isTileGraphic, TILE_GRAPHIC_KEYS, TILE_GRAPHICS, type MessageDescriptor, type TileGraphic, type TileGraphicFormat, type TileSettings, type UploadedTileGraphic } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { TILE_GRAPHIC_URLS, uploadedTileGraphicUrl } from '../../rendering/tileGraphics';
@@ -28,6 +28,16 @@ const TILE_GRAPHIC_NAMES: Record<TileGraphic, MessageDescriptor> = defineMessage
 		id: 'editor.tile.graphic.mountains',
 		defaultMessage: 'Mountains',
 		description: 'One of the graphics a tile can be drawn with, in the tile editor\'s list of them and read out for the Tilesets table\'s pictures of tiles: mountains, whose peaks are drawn over players standing just north of them when the tile can\'t be entered'
+	},
+	stoneWall: {
+		id: 'editor.tile.graphic.stoneWall',
+		defaultMessage: 'Stone Wall',
+		description: 'One of the graphics a tile can be drawn with, in the tile editor\'s list of them and read out for the Tilesets table\'s pictures of tiles: the top of a thick stone wall seen from above, which joins up with the same tile in the cells around it'
+	},
+	hedge: {
+		id: 'editor.tile.graphic.hedge',
+		defaultMessage: 'Hedge',
+		description: 'One of the graphics a tile can be drawn with, in the tile editor\'s list of them and read out for the Tilesets table\'s pictures of tiles: a clipped hedge seen from above, which joins up with the same tile in the cells around it'
 	}
 });
 
@@ -52,6 +62,36 @@ export interface ShownUpload extends UploadedTileGraphic
 	 * The image as a data URL, for a new upload the server doesn't have yet
 	 */
 	previewUrl?: string;
+}
+
+/**
+ * How a tile's graphic is laid out and drawn: its format, and a Dual-Grid graphic's draw order
+ *
+ * @param choice The tile's graphic
+ * @param uploads The universe's uploaded graphics, with those waiting for the tab to be saved
+ * @return The format and draw order (null for a blob graphic), or undefined for no graphic, or an
+ * uploaded one that isn't listed
+ */
+export function tileGraphicLayout(choice: TileGraphicChoice, uploads: readonly ShownUpload[]): { format: TileGraphicFormat; drawOrder: number | null } | undefined
+{
+	if (choice.uploadedGraphicId !== null)
+	{
+		const upload = uploads.find((candidate) => ((candidate.id === choice.uploadedGraphicId) && (candidate.state !== 'deleted')));
+
+		return((upload ? { format: upload.format, drawOrder: upload.drawOrder } : undefined));
+	}
+
+	if (!isTileGraphic(choice.graphic))
+	{
+		return(undefined);
+	}
+
+	const graphic = TILE_GRAPHICS[choice.graphic];
+
+	return({
+		format: graphic.format,
+		drawOrder: ((graphic.format === 'dualGrid') ? graphic.drawOrder : null)
+	});
 }
 
 /**
@@ -154,6 +194,7 @@ export function showTileSwatch(swatch: HTMLElement, tile: Pick<TileSettings, 'co
 	const color = colorToHex((night ? nightColor(tile.color) : tile.color));
 	const overlay = (night ? NIGHT_OVERLAY : 'transparent');
 	let url: string | undefined;
+	let blob = false;
 	let label = colorToHex(tile.color);
 
 	const upload = uploads.find((candidate) => (candidate.id === tile.uploadedGraphicId));
@@ -161,16 +202,19 @@ export function showTileSwatch(swatch: HTMLElement, tile: Pick<TileSettings, 'co
 	if ((tile.uploadedGraphicId !== null) && (upload?.state !== 'deleted'))
 	{
 		url = (upload?.previewUrl ?? uploadedTileGraphicUrl(tile.uploadedGraphicId));
+		blob = (upload?.format === 'blob');
 		label = (upload?.name ?? label);
 	}
 	else if (isTileGraphic(tile.graphic))
 	{
 		url = TILE_GRAPHIC_URLS[tile.graphic];
+		blob = (TILE_GRAPHICS[tile.graphic].format === 'blob');
 		label = tileGraphicName(tile.graphic);
 	}
 
 	swatch.classList.add('swatch');
 	swatch.classList.toggle('graphic', (url !== undefined));
+	swatch.classList.toggle('blob', blob);
 	swatch.style.backgroundColor = color;
 	swatch.style.backgroundImage = ((url === undefined) ? '' : `linear-gradient(${overlay}, ${overlay}), url("${url}")`);
 	swatch.setAttribute('role', 'img');

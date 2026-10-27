@@ -15,6 +15,7 @@ import type { Pf1eSettings } from './rulesets/pf1e/settings.js';
 import type { Sf1eSettings } from './rulesets/sf1e/settings.js';
 import type { Sf1eThemeRules } from './rulesets/sf1e/themes.js';
 import type { SortDirection } from './sorting.js';
+import type { TileGraphicFormat } from './tileGraphics.js';
 import type { DisplayTime, FaerieMorning, LobbyPassageOfTime, PassageOfTime, Ruleset, UniverseRole, UniverseStage, AreaLightLevel, AreaLinkMode, AreaPassageOfTime } from './universes.js';
 
 /**
@@ -112,11 +113,6 @@ export const MAX_TILES_PER_PAGE = 500;
  * uploaded graphic never changes, so its address can be cached for good
  */
 export const TILE_GRAPHICS_PATH = '/tile-graphics';
-
-/**
- * Width and height in pixels of a tile graphic: a Dual-Grid sheet of 4 frames by 4, each a cell
- */
-export const TILE_GRAPHIC_SIZE = 128;
 
 /**
  * Most bytes an uploaded tile graphic's PNG may have
@@ -631,18 +627,20 @@ export interface TileUsagePayload
 }
 
 /**
- * A tile graphic a universe's editors uploaded, which its tiles can be drawn with: a Dual-Grid sheet
- * TILE_GRAPHIC_SIZE pixels square, served at TILE_GRAPHICS_PATH/<id>.png
+ * A tile graphic a universe's editors uploaded, which its tiles can be drawn with: a sheet of its
+ * format's size (TILE_GRAPHIC_SIZES), served at TILE_GRAPHICS_PATH/<id>.png
  */
 export interface UploadedTileGraphic
 {
 	id: string;
 	name: string;
+	format: TileGraphicFormat;
 
 	/**
-	 * MIN_TILE_GRAPHIC_DRAW_ORDER to MAX_TILE_GRAPHIC_DRAW_ORDER (see TILE_GRAPHICS)
+	 * MIN_TILE_GRAPHIC_DRAW_ORDER to MAX_TILE_GRAPHIC_DRAW_ORDER for a Dual-Grid sheet (see
+	 * TILE_GRAPHICS), or null for a blob sheet, which is drawn over the ground
 	 */
-	drawOrder: number;
+	drawOrder: number | null;
 }
 
 /**
@@ -659,11 +657,16 @@ export interface TileGraphicListPayload
 export interface TileGraphicUploadRequest
 {
 	name: string;
-	drawOrder: number;
+	format: TileGraphicFormat;
 
 	/**
-	 * The PNG, base64-encoded: TILE_GRAPHIC_SIZE pixels square and at most MAX_TILE_GRAPHIC_BYTES. The
-	 * server stores it re-encoded, without anything but the picture
+	 * For a Dual-Grid sheet; null for a blob sheet (see UploadedTileGraphic)
+	 */
+	drawOrder: number | null;
+
+	/**
+	 * The PNG, base64-encoded: its format's size (TILE_GRAPHIC_SIZES) and at most MAX_TILE_GRAPHIC_BYTES.
+	 * The server stores it re-encoded, without anything but the picture
 	 */
 	image: string;
 

@@ -1743,13 +1743,29 @@
 		"message": "Grass",
 		"source": "Grass"
 	},
+	"editor.tile.graphic.hedge": {
+		"message": "Hedgerow",
+		"source": "Hedge"
+	},
 	"editor.tile.graphic.mountains": {
 		"message": "Peaks",
 		"source": "Mountains"
 	},
-	"editor.tile.graphicHint": {
-		"message": "Painted where the color would be. Where tiles meet, their edges run together like tides.",
-		"source": "Drawn in place of the color. Where tiles meet, their edges blend."
+	"editor.tile.graphic.stoneWall": {
+		"message": "Stone Rampart",
+		"source": "Stone Wall"
+	},
+	"editor.tile.graphicHint.blob": {
+		"message": "Painted atop the area's default tile, lashed to its neighbors (47-Tile Blob).",
+		"source": "Drawn over the area's default tile, joining up with its neighbors (47-Tile Blob)."
+	},
+	"editor.tile.graphicHint.dualGrid": {
+		"message": "Runs together with neighborin' tiles like tides; higher stackin' order on top. Stackin' order: {order, number} (Dual-Grid).",
+		"source": "Blends with neighboring tiles; higher draw order on top. Draw order: {order, number} (Dual-Grid)."
+	},
+	"editor.tile.graphicHint.none": {
+		"message": "Painted in its color.",
+		"source": "Drawn in its color."
 	},
 	"editor.tile.invalidColor": {
 		"message": "Give a hex color, such as #7AFF3D.",
@@ -1831,6 +1847,10 @@
 		"message": "{count, plural, one {The chart o' {areas} uses it.} other {The charts o' {areas} use it.}} Pick a tile to paint {count, plural, one {it} other {them}} with in its place.",
 		"source": "{count, plural, one {The map of {areas} uses it.} other {The maps of {areas} use it.}} Choose a tile to paint {count, plural, one {it} other {them}} with in its place."
 	},
+	"editor.tileGraphic.blobFormatHint": {
+		"message": "A PNG o' {width, number} by {height, number} pixels, no heavier than {kilobytes, number} KB: {columns, number} frames across an' {rows, number} down in the 47-tile blob layout, with the last berth left empty. These tiles be painted atop the ground, so they need no stackin' order.",
+		"source": "A PNG of {width, number} by {height, number} pixels, at most {kilobytes, number} KB: {columns, number} frames across and {rows, number} down in the 47-tile blob layout, with the last place empty. These tiles are drawn over the ground, so they have no draw order."
+	},
 	"editor.tileGraphic.drawOrder": {
 		"message": "Stackin' order",
 		"source": "Draw order"
@@ -1846,6 +1866,18 @@
 	"editor.tileGraphic.file": {
 		"message": "Paintin'",
 		"source": "Image"
+	},
+	"editor.tileGraphic.format": {
+		"message": "Lay o' the sheet",
+		"source": "Layout"
+	},
+	"editor.tileGraphic.format.blob": {
+		"message": "47 tiles, painted atop the ground",
+		"source": "47 tiles, drawn over the ground"
+	},
+	"editor.tileGraphic.format.dualGrid": {
+		"message": "15 tiles, blendin' with the ground",
+		"source": "15 tiles, blending with the ground"
 	},
 	"editor.tileGraphic.formatHint": {
 		"message": "A PNG o' {size, number} by {size, number} pixels, no heavier than {kilobytes, number} KB: {columns, number} frames across an' {columns, number} down in the Dual-Grid layout.",
@@ -2240,8 +2272,8 @@
 		"source": "The image can be at most {max, number} KB."
 	},
 	"error.tileGraphicWrongSize": {
-		"message": "A tileset must be {size, number} by {size, number} pixels, no more, no less.",
-		"source": "A tileset must be {size, number} by {size, number} pixels."
+		"message": "A tileset o' this lay must be {width, number} by {height, number} pixels, no more, no less.",
+		"source": "A tileset in this layout must be {width, number} by {height, number} pixels."
 	},
 	"error.tileInUse": {
 		"message": "A chart uses this tile, so it can't be scuttled.",

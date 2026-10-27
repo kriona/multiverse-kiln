@@ -25,7 +25,7 @@ import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { describeInvalidPayload, loginPayload } from '../src/rooms/payloads.js';
 import { createUniverse, deleteUniverse, setUniverseAreas } from '../src/db/universeRepo.js';
 import { createArea, createAreaLink, saveGroundChunk } from '../src/db/areaRepo.js';
-import { SAMPLE_UNIVERSE_ID, sampleLinks, sampleUniverse, sampleAreas, stoneWall, type SampleArea } from './sampleUniverse.js';
+import { SAMPLE_UNIVERSE_ID, sampleLinks, sampleTiles, sampleUniverse, sampleAreas, type SampleArea } from './sampleUniverse.js';
 
 /**
  * Which tile each map character stands for, besides `.`, space and an area's digits
@@ -37,7 +37,7 @@ const TILE_CHARACTERS: Record<string, string> = {
 	'^': 'mountains',
 	'~': 'water',
 	'=': 'wood_floor',
-	'#': stoneWall.key
+	...Object.fromEntries(Object.entries(sampleTiles).map(([character, tile]) => [character, tile.key]))
 };
 
 /**
@@ -260,7 +260,10 @@ async function seed(executor: Executor, creator: PlayerProfile | undefined): Pro
 	}, executor);
 
 	await addDefaultStartingItems(universeId, 'pf1e', executor);
-	tileIds.set(stoneWall.key, await createTile({ ...stoneWall, key: null, ruleset: 'pf1e', universeId }, executor));
+	for (const tile of Object.values(sampleTiles))
+	{
+		tileIds.set(tile.key, await createTile({ ...tile, key: null, ruleset: 'pf1e', universeId }, executor));
+	}
 
 	const areaIds = new Map<string, string>();
 	const maps = new Map<string, ParsedMap>();

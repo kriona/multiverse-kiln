@@ -2,7 +2,7 @@
  * Tiles: the only module that reads or writes the tiles table
  */
 import { and, count, eq, isNull, or } from 'drizzle-orm';
-import { compareNumbers, IMPASSABLE_WALK_SECONDS, MAX_WALK_SECONDS, sortRows, TILE_USED_IN, tileUsedIn,type EditorTile, type RowComparers, type Ruleset, type TileListPayload, type TileListQuery, type TileSettings, type TileSortColumn } from '@multiverse-kiln/shared';
+import { compareNumbers, IMPASSABLE_WALK_SECONDS, MAX_WALK_SECONDS, sortRows, TILE_USED_IN, tileUsedIn,type AreaTile, type EditorTile, type RowComparers, type Ruleset, type TileListPayload, type TileListQuery, type TileSettings, type TileSortColumn } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { tiles } from './schema.js';
@@ -40,9 +40,10 @@ export interface TileRecord
 	graphic: string | null;
 
 	/**
-	 * A graphic the universe's editors uploaded that the tile is drawn with, with its draw order, or null
+	 * A graphic the universe's editors uploaded that the tile is drawn with, with its format and draw
+	 * order, or null
 	 */
-	uploadedGraphic: { id: string; drawOrder: number } | null;
+	uploadedGraphic: AreaTile['uploadedGraphic'];
 
 	visionCost: number;
 	walkSeconds: number;
@@ -120,7 +121,7 @@ export async function loadUniverseTiles(universeId: string, ruleset: Ruleset, ex
 		outdoors: tile.outdoors,
 		color: tile.color,
 		graphic: tile.graphic,
-		uploadedGraphic: ((tile.uploadedGraphic === null) ? null : { id: tile.uploadedGraphic.id, drawOrder: tile.uploadedGraphic.drawOrder }),
+		uploadedGraphic: ((tile.uploadedGraphic === null) ? null : { id: tile.uploadedGraphic.id, format: tile.uploadedGraphic.format, drawOrder: tile.uploadedGraphic.drawOrder }),
 		visionCost: tile.visionCost,
 		walkSeconds: tile.walkSeconds
 	})));

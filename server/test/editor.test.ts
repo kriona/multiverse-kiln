@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { chunkKey, DEFAULT_DIFFICULTY_LEVELS, MAX_MOB_SCALE, MIN_MOB_SCALE, type DifficultyLevel, type DifficultyLevelListPayload, type DifficultyLevelSettings, DEFAULT_LOBBY_DAY_HOURS, MAX_LOBBY_DAY_HOURS, MAX_WALK_SECONDS,DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_TILE_CELL, DEFAULT_TILE_NAMES, EDITOR_UNIVERSES_PATH, emptyMoney, isLocalizedMessage, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_STARTING_ITEMS, NEW_PF1E_CLASS_RULES, NEW_PF1E_RACE_RULES, NEW_AREA_BOUNDS, PF1E_CLASSES, MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_RACES, SF1E_CLASSES, SF1E_MAX_ABILITY_POINTS, SF1E_RACES, SF1E_THEMES, sf1eRaceRules, VOID_CELL, type Ruleset, type ThemeListPayload, type ThemeSettings, type ClassListPayload, type ClassSettings, type CreatedPayload, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorArea, type ItemListPayload, type ItemSettings, type RaceListPayload, type RaceSettings, type ResizeConflictPayload, type RulesetSettings, TILE_GRAPHIC_SIZE, TILE_GRAPHICS_PATH, type TileGraphicListPayload, type TileListPayload, type TileSettings, type TileUsagePayload, type UniverseRole, type AreaListPayload } from '@multiverse-kiln/shared';
+import { chunkKey, DEFAULT_DIFFICULTY_LEVELS, MAX_MOB_SCALE, MIN_MOB_SCALE, type DifficultyLevel, type DifficultyLevelListPayload, type DifficultyLevelSettings, DEFAULT_LOBBY_DAY_HOURS, MAX_LOBBY_DAY_HOURS, MAX_WALK_SECONDS,DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_TILE_CELL, DEFAULT_TILE_NAMES, EDITOR_UNIVERSES_PATH, emptyMoney, isLocalizedMessage, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_STARTING_ITEMS, NEW_PF1E_CLASS_RULES, NEW_PF1E_RACE_RULES, NEW_AREA_BOUNDS, PF1E_CLASSES, MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_RACES, SF1E_CLASSES, SF1E_MAX_ABILITY_POINTS, SF1E_RACES, SF1E_THEMES, sf1eRaceRules, VOID_CELL, type Ruleset, type ThemeListPayload, type ThemeSettings, type ClassListPayload, type ClassSettings, type CreatedPayload, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorArea, type ItemListPayload, type ItemSettings, type RaceListPayload, type RaceSettings, type ResizeConflictPayload, type RulesetSettings, TILE_GRAPHIC_SIZES, TILE_GRAPHICS_PATH, type TileGraphicListPayload, type TileListPayload, type TileSettings, type TileUsagePayload, type UniverseRole, type AreaListPayload } from '@multiverse-kiln/shared';
 import sharp from 'sharp';
 
 import { createGroup, findGroup } from '../src/db/groupRepo.js';
@@ -845,16 +845,16 @@ describe('World editor API', () =>
 		/**
 		 * A PNG filled with one color
 		 *
-		 * @param size Its width and height in pixels
+		 * @param size Its width and height in pixels: a Dual-Grid sheet's, unless given
 		 * @param withCopyright Whether to give it metadata, which uploads must not keep
 		 * @return The PNG, base64-encoded as an upload carries it
 		 */
-		async function solidPng(size: number = TILE_GRAPHIC_SIZE, withCopyright: boolean = false): Promise<string>
+		async function solidPng(size: { width: number; height: number } = TILE_GRAPHIC_SIZES.dualGrid, withCopyright: boolean = false): Promise<string>
 		{
 			let image = sharp({
 				create: {
-					width: size,
-					height: size,
+					width: size.width,
+					height: size.height,
 					channels: 4,
 					background: { r: 40, g: 140, b: 60, alpha: 1 }
 				}
@@ -871,14 +871,14 @@ describe('World editor API', () =>
 		it('uploads a tileset, lists it, serves it without its metadata, and draws tiles with it', async () =>
 		{
 			const universeId = await createUniverse(ada);
-			const upload = { name: 'Moss', drawOrder: 35, image: await solidPng(TILE_GRAPHIC_SIZE, true), rightsConfirmed: true };
+			const upload = { name: 'Moss', format: 'dualGrid', drawOrder: 35, image: await solidPng(TILE_GRAPHIC_SIZES.dualGrid, true), rightsConfirmed: true };
 			const created = await send<CreatedPayload<string>>(ada, 'POST', `/${universeId}/tile-graphics`, { body: upload });
 
 			assert.strictEqual(created.status, 201, JSON.stringify(created.body));
 
 			const graphicId = created.body.id;
 
-			assert.deepStrictEqual((await send<TileGraphicListPayload>(ada, 'GET', `/${universeId}/tile-graphics`)).body, { graphics: [{ id: graphicId, name: 'Moss', drawOrder: 35 }] });
+			assert.deepStrictEqual((await send<TileGraphicListPayload>(ada, 'GET', `/${universeId}/tile-graphics`)).body, { graphics: [{ id: graphicId, name: 'Moss', format: 'dualGrid', drawOrder: 35 }] });
 
 			const served = await fetch(`${testServerUrl}${TILE_GRAPHICS_PATH}/${graphicId}.png`);
 			const image = Buffer.from(await served.arrayBuffer());
@@ -888,23 +888,43 @@ describe('World editor API', () =>
 			assert.strictEqual(served.headers.get('content-type'), 'image/png');
 			assert.ok(served.headers.get('cache-control')?.includes('immutable'), served.headers.get('cache-control') ?? '');
 			assert.strictEqual(served.headers.get('x-content-type-options'), 'nosniff');
-			assert.deepStrictEqual([metadata.format, metadata.width, metadata.height], ['png', TILE_GRAPHIC_SIZE, TILE_GRAPHIC_SIZE]);
+			assert.deepStrictEqual([metadata.format, metadata.width, metadata.height], ['png', TILE_GRAPHIC_SIZES.dualGrid.width, TILE_GRAPHIC_SIZES.dualGrid.height]);
 			assert.ok(!image.includes('hidden-metadata-marker'), 'the upload\'s metadata was stored');
 
 			const tile = { ...lava, uploadedGraphicId: graphicId };
 			const tileId = (await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/tiles`, { body: tile })).body.id;
 			const custom = (await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?custom=true`)).body;
 
-			assert.deepStrictEqual(custom.tiles, [{ id: tileId, key: null, ...tile, custom: true, edited: false, uploadedGraphic: { id: graphicId, name: 'Moss', drawOrder: 35 } }]);
+			assert.deepStrictEqual(custom.tiles, [{ id: tileId, key: null, ...tile, custom: true, edited: false, uploadedGraphic: { id: graphicId, name: 'Moss', format: 'dualGrid', drawOrder: 35 } }]);
 		});
 
-		it('refuses tilesets that aren\'t PNGs of the right size, or whose rights aren\'t confirmed', async () =>
+		it('uploads a blob tileset for walls, which has no draw order', async () =>
 		{
 			const universeId = await createUniverse(ada);
-			const upload = { name: 'Moss', drawOrder: 35, image: await solidPng(), rightsConfirmed: true };
-			const jpeg = (await sharp(Buffer.from(upload.image, 'base64')).jpeg().toBuffer()).toString('base64');
+			const upload = { name: 'Brick Wall', format: 'blob', drawOrder: null, image: await solidPng(TILE_GRAPHIC_SIZES.blob), rightsConfirmed: true };
+			const created = await send<CreatedPayload<string>>(ada, 'POST', `/${universeId}/tile-graphics`, { body: upload });
 
-			for (const body of [{ ...upload, image: await solidPng(64) }, { ...upload, image: jpeg }, { ...upload, image: Buffer.from('not an image').toString('base64') }, { ...upload, image: 'not base64!' }, { ...upload, rightsConfirmed: false }, { ...upload, name: '' }, { ...upload, drawOrder: 0 }, { ...upload, drawOrder: 100 }])
+			assert.strictEqual(created.status, 201, JSON.stringify(created.body));
+			assert.deepStrictEqual((await send<TileGraphicListPayload>(ada, 'GET', `/${universeId}/tile-graphics`)).body, { graphics: [{ id: created.body.id, name: 'Brick Wall', format: 'blob', drawOrder: null }] });
+
+			const served = await fetch(`${testServerUrl}${TILE_GRAPHICS_PATH}/${created.body.id}.png`);
+			const metadata = await sharp(Buffer.from(await served.arrayBuffer())).metadata();
+
+			assert.deepStrictEqual([metadata.width, metadata.height], [TILE_GRAPHIC_SIZES.blob.width, TILE_GRAPHIC_SIZES.blob.height]);
+		});
+
+		it('refuses tilesets that aren\'t PNGs of their layout\'s size, or whose rights aren\'t confirmed', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const upload = { name: 'Moss', format: 'dualGrid', drawOrder: 35 as number | null, image: await solidPng(), rightsConfirmed: true };
+			const wall = { ...upload, format: 'blob', drawOrder: null, image: await solidPng(TILE_GRAPHIC_SIZES.blob) };
+			const jpeg = (await sharp(Buffer.from(upload.image, 'base64')).jpeg().toBuffer()).toString('base64');
+			const wrongSize = await send<ErrorPayload>(ada, 'POST', `/${universeId}/tile-graphics`, { body: { ...wall, image: upload.image } });
+
+			assert.strictEqual(wrongSize.status, 400);
+			assert.deepStrictEqual(wrongSize.body.error.values, { width: TILE_GRAPHIC_SIZES.blob.width, height: TILE_GRAPHIC_SIZES.blob.height });
+
+			for (const body of [{ ...upload, image: await solidPng({ width: 64, height: 64 }) }, { ...upload, image: wall.image }, { ...upload, image: jpeg }, { ...upload, image: Buffer.from('not an image').toString('base64') }, { ...upload, image: 'not base64!' }, { ...upload, rightsConfirmed: false }, { ...upload, name: '' }, { ...upload, drawOrder: 0 }, { ...upload, drawOrder: 100 }, { ...upload, drawOrder: null }, { ...wall, drawOrder: 35 }, { ...upload, format: 'walls' }])
 			{
 				assert.strictEqual((await send(ada, 'POST', `/${universeId}/tile-graphics`, { body })).status, 400, JSON.stringify({ ...body, image: body.image.slice(0, 20) }));
 			}
@@ -916,7 +936,7 @@ describe('World editor API', () =>
 		{
 			const universeId = await createUniverse(ada);
 			const otherId = await createUniverse(ada, 'Other');
-			const theirGraphicId = (await send<CreatedPayload<string>>(ada, 'POST', `/${otherId}/tile-graphics`, { body: { name: 'Moss', drawOrder: 35, image: await solidPng(), rightsConfirmed: true } })).body.id;
+			const theirGraphicId = (await send<CreatedPayload<string>>(ada, 'POST', `/${otherId}/tile-graphics`, { body: { name: 'Moss', format: 'dualGrid', drawOrder: 35, image: await solidPng(), rightsConfirmed: true } })).body.id;
 			const grassId = await defaultTileId('grass');
 
 			assert.strictEqual((await send(ada, 'POST', `/${universeId}/tiles`, { body: { ...lava, uploadedGraphicId: theirGraphicId } })).status, 400);
@@ -928,7 +948,7 @@ describe('World editor API', () =>
 		{
 			const universeId = await createUniverse(ada);
 			const otherId = await createUniverse(ada, 'Other');
-			const graphicId = (await send<CreatedPayload<string>>(ada, 'POST', `/${universeId}/tile-graphics`, { body: { name: 'Moss', drawOrder: 35, image: await solidPng(), rightsConfirmed: true } })).body.id;
+			const graphicId = (await send<CreatedPayload<string>>(ada, 'POST', `/${universeId}/tile-graphics`, { body: { name: 'Moss', format: 'dualGrid', drawOrder: 35, image: await solidPng(), rightsConfirmed: true } })).body.id;
 			const tileId = (await send<CreatedPayload<number>>(ada, 'POST', `/${universeId}/tiles`, { body: { ...lava, uploadedGraphicId: graphicId } })).body.id;
 			const changes: AreaChange[] = [];
 			const stopListening = areaChanges.onChange((change) =>

@@ -3,7 +3,7 @@
  * themselves are in object storage (src/storage/)
  */
 import { and, asc, count, eq } from 'drizzle-orm';
-import type { UploadedTileGraphic } from '@multiverse-kiln/shared';
+import type { TileGraphicFormat, UploadedTileGraphic } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { tileGraphics } from './schema.js';
@@ -15,7 +15,13 @@ export interface NewTileGraphic
 {
 	universeId: string;
 	name: string;
-	drawOrder: number;
+	format: TileGraphicFormat;
+
+	/**
+	 * Null for a blob sheet (see UploadedTileGraphic)
+	 */
+	drawOrder: number | null;
+
 	storageKey: string;
 
 	/**
@@ -66,6 +72,7 @@ export async function listTileGraphics(universeId: string, executor: Executor = 
 		.select({
 			id: tileGraphics.id,
 			name: tileGraphics.name,
+			format: tileGraphics.format,
 			drawOrder: tileGraphics.drawOrder
 		})
 		.from(tileGraphics)

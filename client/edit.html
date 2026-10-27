@@ -762,9 +762,9 @@
 							</label>
 							<label data-message="editor.tile.graphic" data-translation-context="Label of the tile editor's list of the graphics a tile can be drawn with">
 								Graphic
-								<select id="tile-graphic"></select>
+								<select id="tile-graphic" aria-describedby="tile-graphic-hint"></select>
 							</label>
-							<p class="hint" data-message="editor.tile.graphicHint" data-translation-context="Explains the tile editor's list of graphics">Drawn in place of the color. Where tiles meet, their edges blend.</p>
+							<p id="tile-graphic-hint" class="hint"></p>
 							<div class="graphic-buttons">
 								<button id="tile-graphic-upload" type="button" class="secondary" data-shortcut="Alt+U" data-message="editor.tile.uploadGraphic" data-translation-context="Button in the tile editor that opens the dialog for uploading a tileset (a picture a tile can be drawn with)"><!-- icon ph:upload-simple -->Upload Tileset Image</button>
 								<button id="tile-graphic-delete" type="button" class="danger" aria-describedby="tile-error"></button>
@@ -831,6 +831,17 @@
 				<dialog id="tile-graphic-dialog" class="panel dialog" aria-labelledby="tile-graphic-title">
 					<form id="tile-graphic-form" class="form">
 						<h2 id="tile-graphic-title" data-message="editor.tileGraphic.title" data-translation-context="Title of the dialog for uploading a tileset: a picture of a terrain that tiles can be drawn with">Upload Tileset Image</h2>
+						<fieldset class="choice">
+							<legend data-message="editor.tileGraphic.format" data-translation-context="Heading of the choice of how an uploaded tileset's picture is laid out: 15 tiles that blend with the ground, or 47 drawn over it">Layout</legend>
+							<label class="checkbox" data-message="editor.tileGraphic.format.dualGrid" data-translation-context="Choice of tileset layout: 15 pictures drawn where kinds of tile meet, blending into each other, for ground such as grass or water and for wall tops">
+								<input id="tile-graphic-format-dual-grid" name="tile-graphic-format" type="radio" value="dualGrid" checked />
+								15 tiles, blending with the ground
+							</label>
+							<label class="checkbox" data-message="editor.tileGraphic.format.blob" data-translation-context="Choice of tileset layout: 47 pictures, one for each way a cell can join up with the same tile around it, drawn over the ground, such as hedges">
+								<input id="tile-graphic-format-blob" name="tile-graphic-format" type="radio" value="blob" />
+								47 tiles, drawn over the ground
+							</label>
+						</fieldset>
 						<label data-message="editor.tileGraphic.file" data-translation-context="Label of the field for choosing the picture file of a tileset to upload">
 							Image
 							<input id="tile-graphic-file" type="file" accept="image/png" required aria-describedby="tile-graphic-format" />
@@ -840,7 +851,7 @@
 							Name
 							<input id="tile-graphic-name" required />
 						</label>
-						<label data-message="editor.tileGraphic.drawOrder" data-translation-context="Label of the field for a tileset's draw order: a number deciding whose edges are drawn on top where two kinds of tile meet">
+						<label id="tile-graphic-draw-order-label" data-message="editor.tileGraphic.drawOrder" data-translation-context="Label of the field for a tileset's draw order: a number deciding whose edges are drawn on top where two kinds of tile meet">
 							Draw order
 							<input id="tile-graphic-draw-order" type="number" step="1" required aria-describedby="tile-graphic-draw-order-hint" />
 						</label>

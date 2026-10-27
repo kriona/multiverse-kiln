@@ -6,7 +6,7 @@
  */
 import { sql, type SQL } from 'drizzle-orm';
 import { boolean, check, customType, doublePrecision, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHUNK_SIZE, DARKVISIONS, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, DARKVISIONS, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
 
 import { SEEN_CHUNK_BYTES } from '../logic/seenCells.js';
 
@@ -28,6 +28,7 @@ export const pf1eCastingStyle = pgEnum('pf1e_casting_style', PF1E_CASTING_STYLES
 export const sf1eAbility = pgEnum('sf1e_ability', SF1E_ABILITIES);
 export const sf1eSize = pgEnum('sf1e_size', SF1E_SIZES);
 export const darkvision = pgEnum('darkvision', DARKVISIONS);
+export const tileGraphicFormat = pgEnum('tile_graphic_format', TILE_GRAPHIC_FORMATS);
 
 /**
  * SQL that checks every one of some columns holds a number in a range
@@ -201,7 +202,8 @@ export const universeEditors = pgTable('universe_editors', {
 ]);
 
 /**
- * One row per tile graphic a universe's editors uploaded: a Dual-Grid sheet its tiles can be drawn with
+ * One row per tile graphic a universe's editors uploaded: a Dual-Grid or blob sheet its tiles can be
+ * drawn with
  *
  * The image itself is in object storage under storageKey (see src/storage/), and never changes; a new
  * upload is a new row
@@ -210,11 +212,13 @@ export const tileGraphics = pgTable('tile_graphics', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	universeId: uuid('universe_id').notNull().references(() => universes.id, { onDelete: 'cascade' }),
 	name: text('name').notNull(),
+	format: tileGraphicFormat('format').notNull().default('dualGrid'),
 
 	/**
-	 * Where tiles meet, the higher draw order's edges are drawn over the lower's (see TILE_GRAPHICS in /shared)
+	 * Where tiles meet, the higher draw order's edges are drawn over the lower's (see TILE_GRAPHICS in
+	 * /shared). Null for a blob sheet, which is drawn over the ground
 	 */
-	drawOrder: smallint('draw_order').notNull(),
+	drawOrder: smallint('draw_order'),
 
 	storageKey: text('storage_key').notNull().unique(),
 
@@ -226,7 +230,8 @@ export const tileGraphics = pgTable('tile_graphics', {
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	index('tile_graphics_universe_id_index').on(table.universeId),
-	check('tile_graphics_draw_order_range', sql`${table.drawOrder} BETWEEN ${sql.raw(String(MIN_TILE_GRAPHIC_DRAW_ORDER))} AND ${sql.raw(String(MAX_TILE_GRAPHIC_DRAW_ORDER))}`)
+	check('tile_graphics_draw_order_range', sql`${table.drawOrder} BETWEEN ${sql.raw(String(MIN_TILE_GRAPHIC_DRAW_ORDER))} AND ${sql.raw(String(MAX_TILE_GRAPHIC_DRAW_ORDER))}`),
+	check('tile_graphics_draw_order_format', sql`(${table.format} = 'blob') = (${table.drawOrder} IS NULL)`)
 ]);
 
 /**

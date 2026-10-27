@@ -1743,13 +1743,29 @@
 		"defaultMessage": "Grass",
 		"description": "One of the graphics a tile can be drawn with, in the tile editor's list of them and read out for the Tilesets table's pictures of tiles: grass"
 	},
+	"editor.tile.graphic.hedge": {
+		"defaultMessage": "Hedge",
+		"description": "One of the graphics a tile can be drawn with, in the tile editor's list of them and read out for the Tilesets table's pictures of tiles: a clipped hedge seen from above, which joins up with the same tile in the cells around it"
+	},
 	"editor.tile.graphic.mountains": {
 		"defaultMessage": "Mountains",
 		"description": "One of the graphics a tile can be drawn with, in the tile editor's list of them and read out for the Tilesets table's pictures of tiles: mountains, whose peaks are drawn over players standing just north of them when the tile can't be entered"
 	},
-	"editor.tile.graphicHint": {
-		"defaultMessage": "Drawn in place of the color. Where tiles meet, their edges blend.",
-		"description": "Explains the tile editor's list of graphics"
+	"editor.tile.graphic.stoneWall": {
+		"defaultMessage": "Stone Wall",
+		"description": "One of the graphics a tile can be drawn with, in the tile editor's list of them and read out for the Tilesets table's pictures of tiles: the top of a thick stone wall seen from above, which joins up with the same tile in the cells around it"
+	},
+	"editor.tile.graphicHint.blob": {
+		"defaultMessage": "Drawn over the area's default tile, joining up with its neighbors (47-Tile Blob).",
+		"description": "Under the tile editor's list of graphics, when the chosen graphic is drawn over the ground, such as a hedge, and joins up with the same tile in the cells around it. \"47-Tile Blob\" is the name of the tile system, in parentheses"
+	},
+	"editor.tile.graphicHint.dualGrid": {
+		"defaultMessage": "Blends with neighboring tiles; higher draw order on top. Draw order: {order, number} (Dual-Grid).",
+		"description": "Under the tile editor's list of graphics, when the chosen graphic blends into the tiles beside it, such as grass: where two meet, the one with the higher draw order has its edges drawn over the other's. {order} is this graphic's draw order. \"Dual-Grid\" is the name of the tile system, in parentheses"
+	},
+	"editor.tile.graphicHint.none": {
+		"defaultMessage": "Drawn in its color.",
+		"description": "Under the tile editor's list of graphics, when the tile has no graphic: it is drawn in the color chosen above"
 	},
 	"editor.tile.invalidColor": {
 		"defaultMessage": "Enter a hex color, such as #7AFF3D.",
@@ -1831,6 +1847,10 @@
 		"defaultMessage": "{count, plural, one {The map of {areas} uses it.} other {The maps of {areas} use it.}} Choose a tile to paint {count, plural, one {it} other {them}} with in its place.",
 		"description": "Shown in the dialog before deleting a tile that maps use; {areas} lists the areas' names, and {count} is how many there are"
 	},
+	"editor.tileGraphic.blobFormatHint": {
+		"defaultMessage": "A PNG of {width, number} by {height, number} pixels, at most {kilobytes, number} KB: {columns, number} frames across and {rows, number} down in the 47-tile blob layout, with the last place empty. These tiles are drawn over the ground, so they have no draw order.",
+		"description": "Explains what picture a tileset upload in the 47-tile layout needs, for things drawn over the ground such as hedges; {width} and {height} are its size in pixels, {kilobytes} the largest file allowed, and {columns} and {rows} how many frames it has across and down"
+	},
 	"editor.tileGraphic.drawOrder": {
 		"defaultMessage": "Draw order",
 		"description": "Label of the field for a tileset's draw order: a number deciding whose edges are drawn on top where two kinds of tile meet"
@@ -1847,9 +1867,21 @@
 		"defaultMessage": "Image",
 		"description": "Label of the field for choosing the picture file of a tileset to upload"
 	},
+	"editor.tileGraphic.format": {
+		"defaultMessage": "Layout",
+		"description": "Heading of the choice of how an uploaded tileset's picture is laid out: 15 tiles that blend with the ground, or 47 drawn over it"
+	},
+	"editor.tileGraphic.format.blob": {
+		"defaultMessage": "47 tiles, drawn over the ground",
+		"description": "Choice of tileset layout: 47 pictures, one for each way a cell can join up with the same tile around it, drawn over the ground, such as hedges"
+	},
+	"editor.tileGraphic.format.dualGrid": {
+		"defaultMessage": "15 tiles, blending with the ground",
+		"description": "Choice of tileset layout: 15 pictures drawn where kinds of tile meet, blending into each other, for ground such as grass or water and for wall tops"
+	},
 	"editor.tileGraphic.formatHint": {
 		"defaultMessage": "A PNG of {size, number} by {size, number} pixels, at most {kilobytes, number} KB: {columns, number} frames across and {columns, number} down in the Dual-Grid layout.",
-		"description": "Explains what picture a tileset upload needs; {size} is its width and height in pixels, {kilobytes} the largest file allowed, and {columns} how many frames it has across and down"
+		"description": "Explains what picture a tileset upload in the 15-tile layout needs, for ground and other tiles that blend with it; {size} is its width and height in pixels, {kilobytes} the largest file allowed, and {columns} how many frames it has across and down"
 	},
 	"editor.tileGraphic.rights": {
 		"defaultMessage": "I have the rights to use this image",
@@ -2240,8 +2272,8 @@
 		"description": "Why an uploaded tileset was refused: the file is too big; {max} is the most it can be, in kilobytes"
 	},
 	"error.tileGraphicWrongSize": {
-		"defaultMessage": "A tileset must be {size, number} by {size, number} pixels.",
-		"description": "Why an uploaded tileset was refused: the picture is the wrong size; {size} is its width and height in pixels"
+		"defaultMessage": "A tileset in this layout must be {width, number} by {height, number} pixels.",
+		"description": "Why an uploaded tileset was refused: the picture is the wrong size for the layout chosen for it (15 tiles for ground, or 47 for walls); {width} and {height} are the size it must be, in pixels"
 	},
 	"error.tileInUse": {
 		"defaultMessage": "A map uses this tile, so it can't be deleted.",

@@ -1,4 +1,5 @@
 import type { MapBounds } from './maps.js';
+import type { TileGraphicFormat } from './tileGraphics.js';
 import type { AreaTime } from './time.js';
 import type { DisplayTime, Ruleset, AreaLightLevel, AreaLinkMode } from './universes.js';
 
@@ -187,9 +188,9 @@ export interface AreaTile
 
 	/**
 	 * A graphic the universe's editors uploaded that the tile is drawn with (served at
-	 * TILE_GRAPHICS_PATH/<id>.png), with its draw order, or null
+	 * TILE_GRAPHICS_PATH/<id>.png), with its format and draw order (UploadedTileGraphic), or null
 	 */
-	uploadedGraphic: { id: string; drawOrder: number } | null;
+	uploadedGraphic: { id: string; format: TileGraphicFormat; drawOrder: number | null } | null;
 
 	/**
 	 * Whether the tile can't be entered (IMPASSABLE_WALK_SECONDS). No player stands on it, so its graphic

@@ -213,7 +213,7 @@ Built in three steps: time, vision, then world state.
 Decided:
 - Cells are 32 world units (`GRID_CELL_SIZE`), the size most tile art is drawn at.
 - The ground layer uses the Dual-Grid System: each tile's graphic is 16 frames of one cell, drawn on the corners where 4 cells meet, half a cell up and left of the cells (the sheet layout is under the tile editor in `STRUCTURE-OVERVIEW.md`). Phaser has no autotiling, so the client picks the frames.
-- A tile graphic's format is set per layer, never per tile within a layer: Dual-Grid tiles are drawn half a cell off the cells, so they can't meet another format cleanly. Not per area kind either, since a tile can be for both indoors and outdoors. The 47-Tile Blob Set waits for a walls layer, where it suits walls and paths one cell wide.
+- A tile graphic's format is set per layer, never per tile within a layer: Dual-Grid tiles are drawn half a cell off the cells, so they can't meet another format cleanly. Not per area kind either, since a tile can be for both indoors and outdoors. Tiles with 47-Tile Blob Set graphics, such as hedges, are drawn in their own layer over the ground. A cell still holds one tile, so the ground under one is drawn as the area's default tile. Stone walls drawn as their tops are Dual-Grid: anything made of edges and corners can be, and then the floor beside a wall shows through its corners.
 - Forests are one Dual-Grid sheet, its treetops drawn over its floor, and players are drawn over the trees. A canopy in a layer over players, see-through around the player's own character, was tried and dropped: hiding players and uncovering them didn't look right. Ordinary 32x32 frames can still draw treetops rising half a cell above the forest's north edge (the frames on that edge cover half of the cells north of it), so trees 1.5 cells tall need no taller frames; taller trees would need taller frames (32x64 for a full cell).
 - Impassable tiles with graphics, such as mountains 1.5 cells tall, are drawn again in a layer over players, cut down to what they draw over the cell north of them. No player can stand on them, so this puts a player north of a mountain behind its peaks without the hiding and uncovering that ruled out the forest canopy. The fog is drawn over that layer.
 - Distinctive buildings and lone trees are placed objects, not tiles (see Later).
@@ -222,6 +222,8 @@ Decided:
 
 - [✅] Cells are 32 world units; a step takes 0.16 seconds
 - [✅] A sample Dual-Grid grass sheet (`client/src/assets/tilesets/grass.png`)
+- [✅] Blob graphics (the 47-Tile Blob Set) drawn in a walls layer over the ground, each cell's frame picked from its 8 neighbors, with a sample hedge sheet (`client/src/assets/tilesets/hedge.png`) used by the sample universe's Hedge; its Stone Wall uses a Dual-Grid sheet of a wall top (`stoneWall.png`)
+- [✅] Uploading blob tilesets: the upload dialog chooses the layout (matched to the image's size), each upload stores its format, and the server checks the image against that format's size; a blob sheet has no draw order
 - [ ] `AreaRenderer` draws a tile's Dual-Grid graphic, falling back to its color: frames picked from each corner's 4 cells, wrapping on areas that loop, with void, unseen and out-of-bounds cells counting as another tile
 - [ ] Several tiles meeting: each graphic has a draw order in `TILE_GRAPHICS` (which graphic's edges overlap which; tiles drawn in their colors go below every graphic), and one frame is drawn for each combination of 4 corner tiles as it appears, cached in an atlas, so each piece stays one layer
 - [ ] A piece is redrawn when a chunk next to it changes, since its edge cells depend on it; painting a cell redraws the 4 frames touching it
@@ -337,7 +339,8 @@ Needed before universes are open to the public.
 - Cross-universe play: the portal room, the Connect to the Multiverse tab, "[Name] of [Universe]"
 - Character sprites and avatars, and art for each item
 - Placed objects for distinctive buildings and lone trees: made once and placed in any number of areas, each with an image, the cells it covers (each with its own walk time and vision cost, read by the server), the part drawn above players, and door cells for area links. Placements are a list per area, not cells in its chunks. An Objects tab and a place tool in the map editor. Building interiors are indoor areas, as now
-- A walls layer using the 47-Tile Blob Set
+- Walls as a layer of their own, so a cell holds a ground tile and a wall over it, rather than walls drawn over the area's default tile
+- Tall walls with a front face: blob frames 32x64 drawn over the row south of the wall, and over players standing there
 - Exporting and importing a universe's translations (JSON or XLIFF), and a translation service such as Weblate for the engine's catalogs
 
 ---

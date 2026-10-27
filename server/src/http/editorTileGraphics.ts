@@ -6,7 +6,7 @@
 import { randomUUID } from 'crypto';
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { canEditWorld, MAX_TILE_GRAPHIC_BYTES, MAX_UPLOADED_TILE_GRAPHICS, TILE_GRAPHIC_SIZE, type CreatedPayload, type TileGraphicListPayload } from '@multiverse-kiln/shared';
+import { canEditWorld, MAX_TILE_GRAPHIC_BYTES, MAX_UPLOADED_TILE_GRAPHICS, TILE_GRAPHIC_SIZES, type CreatedPayload, type TileGraphicListPayload } from '@multiverse-kiln/shared';
 
 import { countTileGraphics, createTileGraphic, deleteTileGraphic, listTileGraphics, tileGraphicStorageKey } from '../db/tileGraphicRepo.js';
 import { inTransaction } from '../db/transactions.js';
@@ -104,7 +104,7 @@ async function uploadTileGraphic(request: Request, response: Response): Promise<
 		return;
 	}
 
-	const sheet = await prepareTileSheet(Buffer.from(body.data.image, 'base64'));
+	const sheet = await prepareTileSheet(Buffer.from(body.data.image, 'base64'), body.data.format);
 
 	if (!sheet.ok)
 	{
@@ -131,10 +131,11 @@ async function uploadTileGraphic(request: Request, response: Response): Promise<
 			case 'wrongSize':
 				sendError(response, 400, {
 					id: 'error.tileGraphicWrongSize',
-					defaultMessage: 'A tileset must be {size, number} by {size, number} pixels.',
-					description: 'Why an uploaded tileset was refused: the picture is the wrong size; {size} is its width and height in pixels'
+					defaultMessage: 'A tileset in this layout must be {width, number} by {height, number} pixels.',
+					description: 'Why an uploaded tileset was refused: the picture is the wrong size for the layout chosen for it (15 tiles for ground, or 47 for walls); {width} and {height} are the size it must be, in pixels'
 				}, {
-					size: TILE_GRAPHIC_SIZE
+					width: TILE_GRAPHIC_SIZES[body.data.format].width,
+					height: TILE_GRAPHIC_SIZES[body.data.format].height
 				});
 				return;
 		}
@@ -162,6 +163,7 @@ async function uploadTileGraphic(request: Request, response: Response): Promise<
 			await createTileGraphic(graphicId, {
 				universeId: universe.id,
 				name: body.data.name,
+				format: body.data.format,
 				drawOrder: body.data.drawOrder,
 				storageKey,
 				uploadedBy: playerIdOf(request)

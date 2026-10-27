@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { CHUNK_SIZE, chunkCoordinate, chunkKey, GRID_CELL_SIZE, isInBounds, parseChunkKey, positiveModulo, tileIdAt, type AreaPayload, type AreaTile, type AreaTiles } from '@multiverse-kiln/shared';
+import { BLOB_NEIGHBORS, BLOB_SHEET_COLUMNS, blobFrame, CHUNK_SIZE, chunkCoordinate, chunkKey, GRID_CELL_SIZE, isInBounds, parseChunkKey, positiveModulo, tileIdAt, type AreaPayload, type AreaTile, type AreaTiles } from '@multiverse-kiln/shared';
 
 import { DUAL_GRID_COLUMNS, tileGraphicImage } from './tileGraphics';
 
@@ -60,6 +60,11 @@ const CORNER_CELLS = [
  * Depth of the map's tiles
  */
 const GROUND_DEPTH = -1;
+
+/**
+ * Depth of the walls (see Piece): over the tiles, under the grid's lines
+ */
+const WALLS_DEPTH = -0.95;
 
 /**
  * Depth of the grid's lines: over the tiles, under the fog
@@ -139,6 +144,11 @@ interface Piece
 	overhang: Phaser.Tilemaps.TilemapLayer | undefined;
 
 	/**
+	 * The tiles with blob graphics, one frame on each of their cells, when the area has any
+	 */
+	walls: Phaser.Tilemaps.TilemapLayer | undefined;
+
+	/**
 	 * The chunks its cells came from, by chunkKey(), so it can be redrawn when one of them changes
 	 */
 	chunks: Set<string>;
@@ -156,6 +166,10 @@ interface Piece
  * Impassable tiles with graphics, such as mountains, are drawn again in a layer over the players, cut
  * down to what they draw over the cells north of them, so their peaks hide the lower part of a player
  * standing behind them (see Piece)
+ *
+ * Tiles with blob graphics, such as hedges, are drawn in a layer over the ground, one frame on each of
+ * their cells picked from which of its 8 neighbors hold the same tile (blobFrame()). The ground under
+ * them is drawn as the area's default tile
  *
  * Pieces are laid out in world units the way the camera sees them, and each one is filled from the
  * area's cells: on an area that loops, a piece past an edge is filled from the far side, so the map
@@ -199,7 +213,13 @@ export class AreaRenderer
 	private readonly hasOverhang: boolean;
 
 	/**
-	 * Each frame drawn into the atlas so far, by its corner's tiles and cut-off quarters, with its place in the atlas
+	 * The blob sheet of each tile drawn in the walls layer, by tile ID
+	 */
+	private readonly wallImages = new Map<number, CanvasImageSource>();
+
+	/**
+	 * Each frame drawn into the atlas so far, by its corner's tiles and cut-off quarters or its wall's
+	 * tile and sheet frame, with its place in the atlas
 	 */
 	private readonly frames = new Map<string, number>();
 
@@ -319,8 +339,9 @@ export class AreaRenderer
 		const columns = (bounds.maxColumn - bounds.minColumn) + 1;
 		const rows = (bounds.maxRow - bounds.minRow) + 1;
 		const corners = new Map<string, { column: number; row: number }>();
+		const wallCells = new Map<string, { column: number; row: number }>();
 
-		// A cell is part of the frames on its 4 corners
+		// A cell is part of the frames on its 4 corners, and of its own and its 8 neighbors' walls
 		for (const { column, row } of cells)
 		{
 			for (const offset of CORNER_CELLS)
@@ -331,6 +352,19 @@ export class AreaRenderer
 				};
 
 				corners.set(`${corner.column},${corner.row}`, corner);
+			}
+
+			if (this.wallImages.size > 0)
+			{
+				for (const offset of [{ column: 0, row: 0 }, ...BLOB_NEIGHBORS])
+				{
+					const cell = {
+						column: column + offset.column,
+						row: row + offset.row
+					};
+
+					wallCells.set(`${cell.column},${cell.row}`, cell);
+				}
 			}
 		}
 
@@ -350,6 +384,17 @@ export class AreaRenderer
 
 						piece.ground.putTileAt(this.frameOf(corner, 'ground'), drawnColumn - firstColumn, drawnRow - firstRow);
 						piece.overhang?.putTileAt(this.frameOf(corner, 'overhang'), drawnColumn - firstColumn, drawnRow - firstRow);
+					}
+				}
+			}
+
+			for (const { column, row } of wallCells.values())
+			{
+				for (const drawnRow of copiesIn(row, firstRow, rows, loopsNorthSouth))
+				{
+					for (const drawnColumn of copiesIn(column, firstColumn, columns, loopsEastWest))
+					{
+						piece.walls?.putTileAt(this.wallFrameAt(drawnColumn, drawnRow, piece.chunks), drawnColumn - firstColumn, drawnRow - firstRow);
 					}
 				}
 			}
@@ -386,6 +431,9 @@ export class AreaRenderer
 	 * What each cell can be drawn as, ranked: the void lowest, then the tiles drawn in their colors, then
 	 * the tiles with graphics by their draw order. Ties go by tile ID, so the ranking is the same each time
 	 *
+	 * A tile with a blob graphic goes in wallImages instead, and its cells are drawn as the area's default
+	 * tile, or as the void when that is a blob tile too
+	 *
 	 * @param tiles The tiles the area's map can use
 	 * @return The void, then each tile, with its index in drawableIndexes
 	 */
@@ -396,12 +444,18 @@ export class AreaRenderer
 			{
 				const graphic = tileGraphicImage(this.scene, tile);
 
+				if (graphic?.format === 'blob')
+				{
+					this.wallImages.set(tile.id, graphic.image);
+				}
+
 				return({
 					tile,
 					image: graphic?.image,
 					drawOrder: (graphic?.drawOrder ?? 0)
 				});
 			})
+			.filter(({ tile }) => !this.wallImages.has(tile.id))
 			.sort((a, b) => (
 				(Number(a.image !== undefined) - Number(b.image !== undefined))
 				|| (a.drawOrder - b.drawOrder)
@@ -419,6 +473,13 @@ export class AreaRenderer
 				// A tile in its color fills its own cells exactly, so it has nothing to draw over its neighbors
 				overhangs: (tile.impassable && (image !== undefined))
 			});
+		}
+
+		const ground = (this.drawableIndexes.get(this.area.defaultTileId) ?? 0);
+
+		for (const tileId of this.wallImages.keys())
+		{
+			this.drawableIndexes.set(tileId, ground);
 		}
 
 		return(drawables);
@@ -535,7 +596,7 @@ export class AreaRenderer
 	}
 
 	/**
-	 * Draws one piece of the map: its frames, the grid's lines over the cells under them, and the overhang
+	 * Draws one piece of the map: its frames, the walls over them, the grid's lines over the cells, and the overhang
 	 *
 	 * @param pieceColumn The piece's column: its position in world units divided by PIECE_SIZE
 	 * @param pieceRow The piece's row
@@ -555,8 +616,9 @@ export class AreaRenderer
 		const ground = (tileset ? map.createBlankLayer('ground', tileset, left - HALF_CELL, top - HALF_CELL) : null);
 		const grid = (tileset ? map.createBlankLayer('grid', tileset, left, top) : null);
 		const overhang = ((tileset && this.hasOverhang) ? map.createBlankLayer('overhang', tileset, left - HALF_CELL, top - HALF_CELL) : undefined);
+		const walls = ((tileset && (this.wallImages.size > 0)) ? map.createBlankLayer('walls', tileset, left, top) : undefined);
 
-		if (!ground || !grid || (overhang === null))
+		if (!ground || !grid || (overhang === null) || (walls === null))
 		{
 			map.destroy();
 			throw new Error(`Could not make a tile layer from ${this.textureKey}`);
@@ -564,6 +626,7 @@ export class AreaRenderer
 
 		const frames: number[][] = [];
 		const overhangFrames: number[][] = [];
+		const wallFrames: number[][] = [];
 		const lines: number[][] = [];
 		const chunks = new Set<string>();
 
@@ -571,6 +634,7 @@ export class AreaRenderer
 		{
 			const frameRow: number[] = [];
 			const overhangRow: number[] = [];
+			const wallRow: number[] = [];
 			const lineRow: number[] = [];
 			const row = (pieceRow * CHUNK_SIZE) + rowOffset;
 
@@ -582,10 +646,16 @@ export class AreaRenderer
 				frameRow.push(this.frameOf(corner, 'ground'));
 				overhangRow.push(this.frameOf(corner, 'overhang'));
 				lineRow.push((this.isOnMap(column, row) ? GRID_FRAME : EMPTY_INDEX));
+
+				if (walls)
+				{
+					wallRow.push(this.wallFrameAt(column, row, chunks));
+				}
 			}
 
 			frames.push(frameRow);
 			overhangFrames.push(overhangRow);
+			wallFrames.push(wallRow);
 			lines.push(lineRow);
 		}
 
@@ -595,8 +665,10 @@ export class AreaRenderer
 		grid.setDepth(GRID_DEPTH);
 		overhang?.putTilesAt(overhangFrames, 0, 0);
 		overhang?.setDepth(OVERHANG_DEPTH);
+		walls?.putTilesAt(wallFrames, 0, 0);
+		walls?.setDepth(WALLS_DEPTH);
 
-		return({ map, ground, overhang, chunks });
+		return({ map, ground, overhang, walls, chunks });
 	}
 
 	/**
@@ -666,7 +738,91 @@ export class AreaRenderer
 			return(EMPTY_INDEX);
 		}
 
-		const key = `${layer}:${corner.drawables.join(',')}/${corner.cutOff}`;
+		return(this.atlasFrame(`${layer}:${corner.drawables.join(',')}/${corner.cutOff}`, (frame) =>
+		{
+			this.drawFrame(frame, corner, layer);
+		}));
+	}
+
+	/**
+	 * The atlas frame drawn in the walls layer on a cell as the camera sees it, drawing it into the atlas
+	 * the first time it appears
+	 *
+	 * Each neighbor holding the same tile joins the wall to it. Past an edge that doesn't loop, the cell
+	 * on the edge carries on, so a wall along the edge runs on off the map
+	 *
+	 * @param column The cell's column, which on a looping area may be past an edge
+	 * @param row The cell's row, likewise
+	 * @param chunks Collects the keys of the chunks the cell and its neighbors are drawn from
+	 * @return Its index in the atlas, or EMPTY_INDEX when the cell isn't on the map or has no blob graphic
+	 */
+	private wallFrameAt(column: number, row: number, chunks: Set<string>): number
+	{
+		if (!this.isOnMap(column, row))
+		{
+			return(EMPTY_INDEX);
+		}
+
+		const tileId = this.tileAt(column, row, chunks);
+		const image = ((tileId === undefined) ? undefined : this.wallImages.get(tileId));
+
+		if (!image)
+		{
+			return(EMPTY_INDEX);
+		}
+
+		let neighbors = 0;
+
+		for (const neighbor of BLOB_NEIGHBORS)
+		{
+			if (this.tileAt(column + neighbor.column, row + neighbor.row, chunks) === tileId)
+			{
+				neighbors |= neighbor.bit;
+			}
+		}
+
+		const sheetFrame = blobFrame(neighbors);
+
+		return(this.atlasFrame(`walls:${tileId}:${sheetFrame}`, (frame) =>
+		{
+			const { left, top } = atlasPosition(frame);
+			const sourceLeft = (sheetFrame % BLOB_SHEET_COLUMNS) * GRID_CELL_SIZE;
+			const sourceTop = Math.floor(sheetFrame / BLOB_SHEET_COLUMNS) * GRID_CELL_SIZE;
+
+			this.atlas.context.drawImage(image, sourceLeft, sourceTop, GRID_CELL_SIZE, GRID_CELL_SIZE, left, top, GRID_CELL_SIZE, GRID_CELL_SIZE);
+			this.atlasChanged = true;
+		}));
+	}
+
+	/**
+	 * The tile in a cell as the camera sees it: wrapped on an area that loops, and past an edge that
+	 * doesn't, the cell on the edge
+	 *
+	 * @param column The cell's column
+	 * @param row The cell's row
+	 * @param chunks Collects the key of the chunk the cell is drawn from
+	 * @return The tile's ID, or undefined for a void or unseen cell
+	 */
+	private tileAt(column: number, row: number, chunks: Set<string>): number | undefined
+	{
+		const { bounds } = this.area;
+		const cellColumn = Phaser.Math.Clamp(this.wrapColumn(column), bounds.minColumn, bounds.maxColumn);
+		const cellRow = Phaser.Math.Clamp(this.wrapRow(row), bounds.minRow, bounds.maxRow);
+
+		chunks.add(chunkKey(chunkCoordinate(cellColumn), chunkCoordinate(cellRow)));
+
+		return(tileIdAt(this.tiles, cellColumn, cellRow));
+	}
+
+	/**
+	 * The atlas frame stored under a key, drawing it into the atlas the first time
+	 *
+	 * @param key What the frame shows
+	 * @param draw Draws the frame into the atlas at the place it is given
+	 * @return Its index in the atlas, or EMPTY_INDEX when the atlas is full
+	 */
+	private atlasFrame(key: string, draw: (frame: number) => void): number
+	{
 		const known = this.frames.get(key);
 
 		if (known !== undefined)
@@ -682,7 +838,7 @@ export class AreaRenderer
 
 		const frame = this.nextFrame++;
 
-		this.drawFrame(frame, corner, layer);
+		draw(frame);
 		this.frames.set(key, frame);
 
 		return(frame);

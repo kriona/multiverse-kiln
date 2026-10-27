@@ -282,6 +282,7 @@ export class TilesetsTab implements SavableTab
 			...this.uploadsToAdd.list().map(({ id, item }) => ({
 				id,
 				name: item.request.name,
+				format: item.request.format,
 				drawOrder: item.request.drawOrder,
 				state: 'new' as const,
 				previewUrl: item.previewUrl
@@ -618,7 +619,7 @@ export class TilesetsTab implements SavableTab
 	{
 		const upload = this.shownUploads().find((candidate) => (candidate.id === graphicId));
 
-		return((upload ? { id: upload.id, name: upload.name, drawOrder: upload.drawOrder } : null));
+		return((upload ? { id: upload.id, name: upload.name, format: upload.format, drawOrder: upload.drawOrder } : null));
 	}
 
 	/**

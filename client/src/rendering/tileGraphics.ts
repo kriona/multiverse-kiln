@@ -1,18 +1,23 @@
 import Phaser from 'phaser';
-import { isTileGraphic, TILE_GRAPHIC_KEYS, TILE_GRAPHICS, TILE_GRAPHICS_PATH, type AreaTile, type TileGraphic } from '@multiverse-kiln/shared';
+import { isTileGraphic, TILE_GRAPHIC_KEYS, TILE_GRAPHICS, TILE_GRAPHICS_PATH, type AreaTile, type TileGraphic, type TileGraphicFormat } from '@multiverse-kiln/shared';
 
 import forestUrl from '../assets/tilesets/forest.png';
 import grassUrl from '../assets/tilesets/grass.png';
+import hedgeUrl from '../assets/tilesets/hedge.png';
 import mountainsUrl from '../assets/tilesets/mountains.png';
+import stoneWallUrl from '../assets/tilesets/stoneWall.png';
 import { serverHttpUrl } from '../network/serverConnection';
 
 /**
- * Each graphic's image, a Dual-Grid sheet (see DUAL_GRID_COLUMNS)
+ * Each graphic's image: a Dual-Grid sheet (see DUAL_GRID_COLUMNS) or a blob sheet (BLOB_SHEET_COLUMNS),
+ * by its format in TILE_GRAPHICS
  */
 export const TILE_GRAPHIC_URLS: Record<TileGraphic, string> = {
 	grass: grassUrl,
 	forest: forestUrl,
-	mountains: mountainsUrl
+	mountains: mountainsUrl,
+	stoneWall: stoneWallUrl,
+	hedge: hedgeUrl
 };
 
 /**
@@ -117,23 +122,32 @@ export function loadUploadedTileGraphics(scene: Phaser.Scene, tiles: readonly Ar
  *
  * @param scene A scene of the game that loaded it
  * @param tile The tile
- * @return The image and its draw order (see TILE_GRAPHICS), or undefined for a tile drawn in its
- * color, or whose graphic hasn't loaded
+ * @return The image, its format and its draw order (see TILE_GRAPHICS; 0 for a blob sheet), or
+ * undefined for a tile drawn in its color, or whose graphic hasn't loaded
  */
-export function tileGraphicImage(scene: Phaser.Scene, tile: Pick<AreaTile, 'graphic' | 'uploadedGraphic'>): { image: CanvasImageSource; drawOrder: number } | undefined
+export function tileGraphicImage(scene: Phaser.Scene, tile: Pick<AreaTile, 'graphic' | 'uploadedGraphic'>): { image: CanvasImageSource; format: TileGraphicFormat; drawOrder: number } | undefined
 {
 	let key: string;
-	let drawOrder: number;
+	let format: TileGraphicFormat;
+	let drawOrder = 0;
 
 	if (tile.uploadedGraphic)
 	{
 		key = uploadedTileGraphicTextureKey(tile.uploadedGraphic.id);
-		drawOrder = tile.uploadedGraphic.drawOrder;
+		format = tile.uploadedGraphic.format;
+		drawOrder = (tile.uploadedGraphic.drawOrder ?? 0);
 	}
 	else if (isTileGraphic(tile.graphic))
 	{
+		const graphic = TILE_GRAPHICS[tile.graphic];
+
 		key = tileGraphicTextureKey(tile.graphic);
-		drawOrder = TILE_GRAPHICS[tile.graphic].drawOrder;
+		format = graphic.format;
+
+		if (graphic.format === 'dualGrid')
+		{
+			drawOrder = graphic.drawOrder;
+		}
 	}
 	else
 	{
@@ -147,6 +161,7 @@ export function tileGraphicImage(scene: Phaser.Scene, tile: Pick<AreaTile, 'grap
 
 	return({
 		image: scene.textures.get(key).getSourceImage() as CanvasImageSource,
+		format,
 		drawOrder
 	});
 }

@@ -14,7 +14,7 @@ import { editorMessages } from './editorMessages';
 import { labelRemoveButton, type StagedEdit } from './stagedChanges';
 import { TileDeleteDialog } from './TileDeleteDialog';
 import { TileGraphicDialog, type StagedUpload } from './TileGraphicDialog';
-import { parseTileGraphicValue, showTileSwatch, tileGraphicOptions, tileGraphicValue, type ShownUpload } from './tileSwatches';
+import { parseTileGraphicValue, showTileSwatch, tileGraphicLayout, tileGraphicOptions, tileGraphicValue, type ShownUpload, type TileGraphicChoice } from './tileSwatches';
 
 /**
  * The Tilesets tab's uploaded tilesets and the changes to them waiting for the tab to be saved, as the
@@ -103,6 +103,7 @@ export class TileDialog
 	private readonly colorPicker = getElement('tile-color-picker', HTMLInputElement);
 	private readonly color = getElement('tile-color', HTMLInputElement);
 	private readonly graphic = getElement('tile-graphic', HTMLSelectElement);
+	private readonly graphicHint = getElement('tile-graphic-hint', HTMLElement);
 	private readonly uploadButton = getElement('tile-graphic-upload', HTMLButtonElement);
 	private readonly deleteGraphicButton = getElement('tile-graphic-delete', HTMLButtonElement);
 	private readonly uploadDialog: TileGraphicDialog;
@@ -377,7 +378,7 @@ export class TileDialog
 	}
 
 	/**
-	 * Shows the tile by day and by night: its graphic, or its color
+	 * Shows the tile by day and by night: its graphic, or its color, with how its graphic is drawn
 	 */
 	private updatePreview(): void
 	{
@@ -390,6 +391,7 @@ export class TileDialog
 
 		showTileSwatch(this.dayPreview, tile, uploads);
 		showTileSwatch(this.nightPreview, tile, uploads, true);
+		this.graphicHint.textContent = graphicHint(tile, uploads);
 
 		// Only an uploaded tileset can be deleted
 		this.deleteGraphicButton.hidden = (!this.editable || (tile.uploadedGraphicId === null));
@@ -562,4 +564,48 @@ export class TileDialog
 		this.dialog.close();
 		this.onChanged();
 	}
+}
+
+/**
+ * What the tile editor says under its graphic list: how the chosen graphic is drawn, and the name of
+ * its tile system
+ *
+ * @param choice The tile's graphic
+ * @param uploads The universe's uploaded graphics, with those waiting for the tab to be saved
+ * @return The hint, or an empty string for an uploaded graphic that isn't listed
+ */
+function graphicHint(choice: TileGraphicChoice, uploads: readonly ShownUpload[]): string
+{
+	if ((choice.graphic === null) && (choice.uploadedGraphicId === null))
+	{
+		return(t({
+			id: 'editor.tile.graphicHint.none',
+			defaultMessage: 'Drawn in its color.',
+			description: 'Under the tile editor\'s list of graphics, when the tile has no graphic: it is drawn in the color chosen above'
+		}));
+	}
+
+	const layout = tileGraphicLayout(choice, uploads);
+
+	if (layout === undefined)
+	{
+		return('');
+	}
+
+	if (layout.format === 'blob')
+	{
+		return(t({
+			id: 'editor.tile.graphicHint.blob',
+			defaultMessage: 'Drawn over the area\'s default tile, joining up with its neighbors (47-Tile Blob).',
+			description: 'Under the tile editor\'s list of graphics, when the chosen graphic is drawn over the ground, such as a hedge, and joins up with the same tile in the cells around it. "47-Tile Blob" is the name of the tile system, in parentheses'
+		}));
+	}
+
+	return(t({
+		id: 'editor.tile.graphicHint.dualGrid',
+		defaultMessage: 'Blends with neighboring tiles; higher draw order on top. Draw order: {order, number} (Dual-Grid).',
+		description: 'Under the tile editor\'s list of graphics, when the chosen graphic blends into the tiles beside it, such as grass: where two meet, the one with the higher draw order has its edges drawn over the other\'s. {order} is this graphic\'s draw order. "Dual-Grid" is the name of the tile system, in parentheses'
+	}, {
+		order: (layout.drawOrder ?? 0)
+	}));
 }

@@ -415,6 +415,13 @@ tr.staged-deleted
 		background-position: 0 0, 100% 100%;
 		image-rendering: pixelated;
 	}
+
+	// A blob sheet is 8 frames by 6, and the 47th, second from the right on the bottom row, is the tile on every side
+	&.graphic.blob
+	{
+		background-size: 100% 100%, 800% 600%;
+		background-position: 0 0, calc(600% / 7) 100%;
+	}
 }
 
 // Under the tile editor's graphic list: uploading a tileset, and deleting the uploaded one chosen
