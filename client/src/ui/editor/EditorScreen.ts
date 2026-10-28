@@ -3,7 +3,7 @@ import { UNIVERSE_ROLE_NAMES, type EditableUniverse, type UniverseSummary } from
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { editPageUrl } from '../../pages';
-import { getElement, setPageTitle, showMessage, titleLink } from '../dom';
+import { closeOpenDialogs, getElement, setPageTitle, showMessage, titleLink } from '../dom';
 import { CharactersTab } from './CharactersTab';
 import { LobbyTab } from './LobbyTab';
 import { ClassesSection } from './ClassesSection';
@@ -409,13 +409,19 @@ export class EditorScreen
 	}
 
 	/**
-	 * Shows a tab and area the page's history went back or forward to
+	 * Shows a tab and area the page's history went back or forward to, closing any dialog open over the
+	 * place being left
 	 *
 	 * @param place The tab and area
-	 * @return False when the player kept the unsaved changes of the area editor, staying where they were
+	 * @return False when the player kept the unsaved changes of a dialog or the area editor, staying where they were
 	 */
 	showPlace(place: EditorPlace): boolean
 	{
+		if (!closeOpenDialogs())
+		{
+			return(false);
+		}
+
 		if ((place.areaId !== this.place.areaId) && !this.areasTab.showPlace(place.areaId))
 		{
 			return(false);
