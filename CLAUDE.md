@@ -24,7 +24,7 @@ An engine for making multiplayer browser-based role-playing games.
                  world editor at /edit/<universe id>; src/edit.ts, src/edit.scss), character.html (Create Character; src/character.ts,
                  src/character.scss), license.html (the game's license and the
                  licenses of what it uses, linked from the footer; src/license.ts, src/license.scss) and
-                 admin.html (settings for the whole site; src/admin.ts, src/admin.scss). HTML the pages share (status, notice and login screens,
+                 admin.html (settings for the whole site; src/admin.ts, src/admin.scss). HTML the pages share (the tags every <head> starts with, status, notice and login screens,
                  footer, the keyboard shortcut list and screen reader live regions) lives in partials/, included with <!-- include footer.html --> (vite.config.ts).
                  Both styles use src/_shared.scss, and
                  src/pages.ts holds the addresses that link the pages. src/localization.ts shows text in the

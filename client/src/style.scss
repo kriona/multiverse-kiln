@@ -3,6 +3,13 @@
 @use 'shared' as *;
 @use 'characterSheet';
 
+// The logo above Home's lists of universes. The toolbar names the game engine, so screen readers skip it
+.home-logo
+{
+	display: block;
+	margin: 16px auto;
+}
+
 .home-body
 {
 	display: flex;
