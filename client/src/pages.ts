@@ -19,6 +19,7 @@
  * - character.html: Create Character for ?universe=<id>, which goes back to that universe's lobby, or to
  *   the invite link in ?invite= when it was opened from one
  * - license.html: the game's license and the licenses of what it uses, linked to from the footer
+ * - privacy.html: the privacy policy, linked to from the footer
  * - admin.html: settings for the whole site, linked to from Home's toolbar. Anyone can use it until
  *   there are server admin accounts
  *

@@ -3139,6 +3139,10 @@
 		"message": "Sailin' as {name}",
 		"source": "Playing as {name}"
 	},
+	"page.privacy": {
+		"message": "Secrets",
+		"source": "Privacy"
+	},
 	"page.shortcuts": {
 		"message": "Keyboard shortcuts",
 		"source": "Keyboard shortcuts"
@@ -3506,6 +3510,266 @@
 	"play.nowPlaying": {
 		"message": "Ye be sailin' as {name} now.",
 		"source": "You are now playing {name}."
+	},
+	"privacy.account": {
+		"message": "Yer account",
+		"source": "Your account"
+	},
+	"privacy.accountEmail": {
+		"message": "Yer email address, used to come aboard an' to send ye letters about yer account.",
+		"source": "Your email address, used to log in and to send you emails about your account."
+	},
+	"privacy.accountNames": {
+		"message": "Yer handle, which be yers alone an' lets other players find ye, an' yer display name, which needn't be yer real name.",
+		"source": "Your handle, which is unique and lets other players find you, and your display name, which needn't be your real name."
+	},
+	"privacy.accountPassword": {
+		"message": "If ye have a local account, yer password, kept only scrambled so it can't be turned back into the password (a one-way hash: Argon2id for passwords an' recovery codes, an' a keyed hash, HMAC, for the codes an' addresses below).",
+		"source": "If you have a local account, your password, kept only in a scrambled form that can't be turned back into the password (a one-way hash: Argon2id for passwords and recovery codes, and a keyed hash, HMAC, for the codes and addresses below)."
+	},
+	"privacy.accountProviders": {
+		"message": "If ye come aboard with Google or Discord, the ID an' email address o' that account, which they send us when ye come aboard.",
+		"source": "If you log in with Google or Discord, the ID and email address of that account, which they send us when you log in."
+	},
+	"privacy.accountTwoFactor": {
+		"message": "If ye turn on two-factor authentication, the secret yer authenticator app shares with us, an' yer recovery codes, kept scrambled like a password.",
+		"source": "If you turn on two-factor authentication, the secret your authenticator app shares with us, and your recovery codes, kept scrambled like a password."
+	},
+	"privacy.changes": {
+		"message": "Changes to these articles",
+		"source": "Changes to this policy"
+	},
+	"privacy.changesText": {
+		"message": "The date atop this page shows when these articles last changed. If they change in a way that matters to ye, we'll send ye a letter afore the change takes hold.",
+		"source": "The date at the top of this page shows when this policy last changed. If it changes in a way that matters to you, we will email you before the change takes effect."
+	},
+	"privacy.children": {
+		"message": "Young'uns",
+		"source": "Children"
+	},
+	"privacy.childrenText": {
+		"message": "Ye must be at least 13 to have an account, or older where the law o' yer country sets a higher age for agreein' to these articles yerself. If we learn an account belongs to someone younger, we delete it.",
+		"source": "You must be at least 13 to have an account, or older where the law of your country sets a higher age for agreeing to this policy yourself. If we learn that an account belongs to someone younger, we delete it."
+	},
+	"privacy.contact": {
+		"message": "For questions about these articles, or to ask about yer information, send a letter to {contact}.",
+		"source": "For questions about this policy, or to ask about your information, email {contact}."
+	},
+	"privacy.contents": {
+		"message": "What's in the hold",
+		"source": "Contents"
+	},
+	"privacy.cookies": {
+		"message": "Cookies an' browser stowage",
+		"source": "Cookies and browser storage"
+	},
+	"privacy.cookiesCharacter": {
+		"message": "The hand each tab last sailed as, so reloadin' the tab sails as 'em again, till the tab closes.",
+		"source": "The character each tab last played, so reloading the tab plays them again, until the tab closes."
+	},
+	"privacy.cookiesCode": {
+		"message": "After ye enter a code we sent ye, a cookie that lets that browser take the next step, such as choosin' a password, for 10 minutes.",
+		"source": "After you enter a code we emailed you, a cookie that lets that browser take the next step, such as choosing a password, for 10 minutes."
+	},
+	"privacy.cookiesIntro": {
+		"message": "We stow only what the ship needs to sail, so we don't ask afore stowin' it. There be no cookies from other ships.",
+		"source": "We store only what the site needs to work, so we don't ask before storing it. There are no cookies from other sites."
+	},
+	"privacy.cookiesLanguage": {
+		"message": "The tongue ye choose at the bottom o' the page.",
+		"source": "The language you choose at the bottom of the page."
+	},
+	"privacy.cookiesSession": {
+		"message": "A cookie that keeps ye aboard. It ends when ye go ashore, after an hour without use, or when ye close yer browser; with \"Remember me\" checked, after 30 days without use.",
+		"source": "A cookie that keeps you logged in. It ends when you log out, after an hour without use, or when you close your browser; with \"Remember me\" checked, after 30 days without use."
+	},
+	"privacy.deleting": {
+		"message": "Deletin' yer account deletes yer profile, yer hands an' yer security records. Crews led by one o' yer hands are scuttled. For each universe ye be the only creator of, ye choose whether to hand it to another o' its editors or delete it; what ye built in universes others edit stays part o' them.",
+		"source": "Deleting your account deletes your profile, your characters and your security records. Groups led by one of your characters disband. For each universe you are the only creator of, you choose whether to hand it to another of its editors or delete it; what you built in universes others edit stays part of them."
+	},
+	"privacy.heading": {
+		"message": "Articles o' Secrecy",
+		"source": "Privacy Policy"
+	},
+	"privacy.howLong": {
+		"message": "How long we keep it",
+		"source": "How long we keep it"
+	},
+	"privacy.howLongAccount": {
+		"message": "Yer account, profile an' hands, till ye delete 'em.",
+		"source": "Your account, profile and characters, until you delete them."
+	},
+	"privacy.howLongBackups": {
+		"message": "Deleted information can linger in our backups a short while, till they be replaced.",
+		"source": "Deleted information can stay in our backups for a short time, until they are replaced."
+	},
+	"privacy.howLongCharacters": {
+		"message": "A hand ye send to Davy Jones, till the days the ship waits afore deletin' hands have passed.",
+		"source": "A character you delete, until the days the site waits before deleting characters have passed."
+	},
+	"privacy.howLongCharactersDays": {
+		"message": "A hand ye send to Davy Jones, for {days, plural, one {# day} other {# days}}, while ye can still haul 'em back.",
+		"source": "A character you delete, for {days, plural, one {# day} other {# days}}, while you can still bring them back."
+	},
+	"privacy.howLongSecurity": {
+		"message": "Security records as long as the list above says: the log for 90 days, codes for 15 minutes, an' counts only while a limit needs 'em.",
+		"source": "Security records as long as the list above says: the log for 90 days, codes for 15 minutes, and counts only while a limit needs them."
+	},
+	"privacy.intro": {
+		"message": "These articles tell what this {siteName} ship keeps about ye when ye sail or build universes here, why it keeps it, who can see it, how long it be kept, an' how ye can haul it down or delete it. We keep as little data as we can.",
+		"source": "This policy explains what this {siteName} site keeps about you when you play or build universes here, why it keeps it, who can see it, how long it is kept, and how you can download or delete it. We keep as little data as we can."
+	},
+	"privacy.keep": {
+		"message": "What we keep in the hold",
+		"source": "What we keep"
+	},
+	"privacy.not": {
+		"message": "What we never do",
+		"source": "What we don't do"
+	},
+	"privacy.notText": {
+		"message": "We show no ads, use no analytics or trackin' services, an' never sell yer information or share it with anyone for their own use. We only send ye letters about yer account, never to sell ye somethin'.",
+		"source": "We don't show ads, don't use analytics or tracking services, and never sell your information or share it with anyone for their own use. We only email you about your account, never to sell you something."
+	},
+	"privacy.play": {
+		"message": "What ye sail an' build",
+		"source": "What you play and build"
+	},
+	"privacy.playCharacters": {
+		"message": "Yer hands, their gear an' progress, the crews they sail with, an' the parts o' each universe yer crews have charted.",
+		"source": "Your characters, their items and progress, the groups they are in, and the parts of each universe your groups have explored."
+	},
+	"privacy.playChat": {
+		"message": "Chatter ain't saved. The game server keeps a tavern's latest messages in memory, so players who arrive can read 'em, till the tavern closes or the server restarts.",
+		"source": "Chat isn't saved. The game server keeps a lobby's most recent messages in memory, so players who arrive can read them, until the lobby closes or the server restarts."
+	},
+	"privacy.playUniverses": {
+		"message": "The universes ye create or help edit, an' what ye upload to 'em, such as tile pictures.",
+		"source": "The universes you create or help edit, and what you upload to them, such as tile images."
+	},
+	"privacy.profile": {
+		"message": "Yer profile",
+		"source": "Your profile"
+	},
+	"privacy.profileText": {
+		"message": "Anythin' ye choose to fill in on yer profile: a likeness, yer pronouns, yer location an' time zone, yer tongue, links to yer social media accounts, an' which o' yer hands others can see. Only yer handle an' display name be required.",
+		"source": "Anything you choose to fill in on your profile: a photo, your pronouns, your location and time zone, your language, links to your social media accounts, and which of your characters others can see. Only your handle and display name are required."
+	},
+	"privacy.rights": {
+		"message": "Yer choices an' rights",
+		"source": "Your choices and rights"
+	},
+	"privacy.rightsCorrect": {
+		"message": "See an' change yer information on yer profile.",
+		"source": "See and change your information on your profile."
+	},
+	"privacy.rightsDelete": {
+		"message": "Delete yer account from yer profile.",
+		"source": "Delete your account from your profile."
+	},
+	"privacy.rightsExport": {
+		"message": "Haul down everythin' we keep about ye, as one file, from yer profile.",
+		"source": "Download everything we keep about you, as one file, from your profile."
+	},
+	"privacy.security": {
+		"message": "Keepin' it safe",
+		"source": "Keeping it safe"
+	},
+	"privacy.securityCodes": {
+		"message": "The codes we send ye, to sign on, reset yer password or change yer email address, kept only scrambled, an' only till they be used or expire 15 minutes later.",
+		"source": "The codes we email you, to register, reset your password or change your email address, kept only in a scrambled form, and only until they are used or expire 15 minutes later."
+	},
+	"privacy.securityLimits": {
+		"message": "To stop scallywags guessin' codes an' passwords, counts o' the tries made for each email address an' from each network, with the addresses kept only scrambled, an' only while a limit still needs 'em.",
+		"source": "To stop people guessing codes and passwords, counts of the attempts made for each email address and from each network, with the addresses kept only in a scrambled form, and only while a limit still needs them."
+	},
+	"privacy.securityLog": {
+		"message": "A log o' boardings, failed boardings an' changes to yer account's security, such as a new password, with yer network scrambled. It never holds passwords or codes, an' be kept for 90 days.",
+		"source": "A log of logins, failed logins and changes to your account's security, such as a new password, with your network in a scrambled form. It never holds passwords or codes, and is kept for 90 days."
+	},
+	"privacy.securityRecords": {
+		"message": "Security records",
+		"source": "Security records"
+	},
+	"privacy.securitySessions": {
+		"message": "A record for each browser ye be aboard on, so ye stay aboard, an' so ye can be put ashore everywhere.",
+		"source": "A record for each browser you are logged in on, so you stay logged in, and so you can be logged out everywhere."
+	},
+	"privacy.securityText": {
+		"message": "Everythin' ye send the ship be encrypted on its way. Passwords an' codes are only kept scrambled, an' ye can turn on two-factor authentication. If yer information ever be exposed, we'll tell ye.",
+		"source": "Everything you send the site is encrypted on its way. Passwords and codes are only kept scrambled, and you can turn on two-factor authentication. If your information is ever exposed, we will tell you."
+	},
+	"privacy.see": {
+		"message": "Who can see it",
+		"source": "Who can see it"
+	},
+	"privacy.seeAdmins": {
+		"message": "The officers who run this ship can see what we keep, an' look at it only to run the ship, keep it safe an' deal with reports o' foul play.",
+		"source": "The people who run this site can see what we keep, and look at it only to run the site, keep it safe and deal with reports of abuse."
+	},
+	"privacy.seeEditors": {
+		"message": "The editors o' a universe can see the hands sailin' in it.",
+		"source": "The editors of a universe can see the characters played in it."
+	},
+	"privacy.seeEmail": {
+		"message": "Other players never see yer email address.",
+		"source": "Other players never see your email address."
+	},
+	"privacy.seePlayers": {
+		"message": "Other players see yer handle, display name an' the profile fields ye fill in, the hands ye let 'em see, an' what yer hands say an' do in the game. Players in a crew with ye can always reach yer profile.",
+		"source": "Other players see your handle, display name and the profile fields you fill in, the characters you let them see, and what your characters say and do in the game. Players in a group with you can always reach your profile."
+	},
+	"privacy.services": {
+		"message": "Services we use",
+		"source": "Services we use"
+	},
+	"privacy.servicesHosting": {
+		"message": "Companies that harbor our database, game server an' uploaded files, an' that carry our letters. They handle yer information only on our orders, an' may stow it in another country than yers.",
+		"source": "Companies that host our database, game server and uploaded files, and that send our emails. They handle your information only on our instructions, and may store it in another country than yours."
+	},
+	"privacy.servicesLogin": {
+		"message": "Google or Discord, if ye come aboard with 'em. They learn ye came aboard here, under their own privacy policies.",
+		"source": "Google or Discord, if you log in with them. They learn that you logged in here, under their own privacy policies."
+	},
+	"privacy.servicesPasswords": {
+		"message": "When ye choose a password, we check it against {service}'s list o' passwords plundered from other sites. We send it only the first 5 characters o' a scrambled form o' yer password, which can't give the password away.",
+		"source": "When you choose a password, we check it against {service}'s list of passwords leaked from other sites. We send it only the first 5 characters of a scrambled form of your password, which can't reveal the password."
+	},
+	"privacy.title": {
+		"message": "Articles o' Secrecy",
+		"source": "Privacy Policy"
+	},
+	"privacy.updated": {
+		"message": "Last changed {date}",
+		"source": "Last changed {date}"
+	},
+	"privacy.who": {
+		"message": "Who we be",
+		"source": "Who we are"
+	},
+	"privacy.whoText": {
+		"message": "This ship runs {siteName}, an engine for multiplayer role-playin' games. The officers who run this ship decide what it does with yer information, an' answer for it.",
+		"source": "This site runs {siteName}, an engine for multiplayer role-playing games. The people who run this site decide what it does with your information, and are responsible for it."
+	},
+	"privacy.why": {
+		"message": "Why we keep it",
+		"source": "Why we keep it"
+	},
+	"privacy.whyAccount": {
+		"message": "Performance of a contract: yer account, yer hands an' crews, the universes ye build, an' the letters about yer account, which we need to give ye the account, the game an' the universe editor ye asked for.",
+		"source": "Performance of a contract: your account, your characters and groups, the universes you build, and the emails about your account, which we need to give you the account, the game and the universe editor you asked for."
+	},
+	"privacy.whyIntro": {
+		"message": "Privacy laws such as the GDPR bid us name the legal basis for each use o' yer information:",
+		"source": "Privacy laws such as the GDPR ask us to name the legal basis for each use of your information:"
+	},
+	"privacy.whyProfile": {
+		"message": "Consent: yer profile's spare fields, which ye chose to share. Ye can take back yer consent by strikin' 'em whenever ye like.",
+		"source": "Consent: your profile's optional fields, which you chose to share. You can withdraw your consent by removing them whenever you like."
+	},
+	"privacy.whySecurity": {
+		"message": "Legitimate interests: the security records an' the check o' new passwords against plundered ones, which keep yer account an' the ship safe an' stop cheatin' an' foul play.",
+		"source": "Legitimate interests: the security records and the check of new passwords against leaked ones, which keep your account and the site safe and stop cheating and abuse."
 	},
 	"sf1e.ability.charisma": {
 		"message": "Swagger",

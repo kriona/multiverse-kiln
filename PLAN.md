@@ -5,7 +5,7 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 **Current phase** line updated so each new session knows where to pick up.
 `STRUCTURE-OVERVIEW.md` describes the pages, editors and game rules these phases build.
 
-**Current phase:** 13
+**Current phase:** 14
 
 ---
 
@@ -242,22 +242,38 @@ Decided:
 
 ## Phase 14: Authentication and accounts
 
-- [ ] Choose an approach (own JWT login route vs. a hosted auth provider). If choosing `@colyseus/auth`, check its `npm audit` findings first
-- [ ] Google and Discord login through OAuth, recommended on the login and register pages
-- [ ] Local accounts: email-based logins, passwords hashed with a modern KDF (e.g. argon2id), and the email code rules from `STRUCTURE-OVERVIEW.md` as pure functions with tests
-- [ ] Email sending service; register, forgot password and change email flows, with notification emails. A password change signs the account out everywhere
-- [ ] Optional 2FA
-- [ ] Account linking when a provider login and a local account share an email
-- [ ] Replace the name-only login
-- [ ] Verify tokens in `onAuth`; reject unauthenticated joins. Tokens are short-lived with a pinned algorithm, and `exp`, `iss` and `aud` are checked
-- [ ] Client login flow passing the token in join options
-- [ ] Rate-limit login, signup and reset routes; use generic error messages that don't reveal whether an account exists
-- [ ] Log auth events (logins, failures, resets) without passwords or tokens
-- [ ] Tests for expired tokens, tokens for deleted users, another user's resource IDs and replayed codes
-- [ ] Profile edit and view, with character visibility and the player's language (used ahead of the browser's settings)
-- [ ] Emails written in the recipient's language
-- [ ] Account deletion (handling universes with no other creator and groups the user anchors), data export and a privacy policy
-- [ ] Review against sections 1-3 and 5 of `SECURITY-PRACTICES.md`
+Decided:
+- Built in-house, not with a hosted provider or `@colyseus/auth`: the email code rules in `STRUCTURE-OVERVIEW.md` are more specific than a provider offers. A small OAuth library (such as `arctic`) handles Google and Discord, and passwords are hashed with Argon2id.
+- Sessions live on the server (a `sessions` table) and reach the browser as an HttpOnly `__Host-` cookie, in place of today's browser ID cookie; there are no JWTs. `onAuth` looks the session up, a lifecycle boundary. Logging out, or changing the password, deletes sessions on the server, so a password change signs the account out everywhere. Production therefore needs the client and game server on the same site (e.g. `play.<domain>` and `api.<domain>`), which Phase 16's hosting choice has to keep.
+- Session lifetimes (see Login in `STRUCTURE-OVERVIEW.md`): 1 hour idle and 24 hours in all without "Remember me"; with it, 30 days idle and 90 days in all. An open connection to a room counts as activity.
+- Every account has a unique handle, for finding users and invites, and a display name that needn't be unique. The name-only login's data is dropped rather than carried over, and the seed script's `--creator` names a handle.
+- Linking: a provider login whose email matches a local account is never linked automatically. The player proves they own the local account (its password, or an email code) to link them; providers can also be linked from the profile.
+- Email is sent over SMTP with `nodemailer`, so the service is configuration (chosen in Phase 16), and caught by Mailpit in `docker-compose.yml` locally. Emails are HTML, with a plain text part, in the recipient's language.
+- Rate limits and the email code counters are Postgres rows updated atomically, so they hold across several server processes. The client's network comes from one function, which Phase 16 teaches to read the proxy's forwarding header.
+- Passwords are at least 8 characters, with no composition rules, and are checked against HaveIBeenPwned's k-anonymity API (only the first 5 characters of the password's SHA-1 hash leave the server).
+- 2FA is TOTP with recovery codes, for local accounts only; provider logins rely on the provider's 2FA. Passkeys can come later. No CAPTCHA for now.
+- Home, universe pages and the license and privacy pages are public; the lobby, game, editor, Create Character and profile edit need a login.
+- Auth events (logins, failures, logouts, resets, email and password changes, 2FA changes, linking) go in an `auth_events` table: the account if known, the kind, the time, and the network as a keyed hash, never passwords, codes or session IDs. They are kept 90 days, and deleted with the account.
+- Deleting an account asks first about each universe the player is the only creator of: hand it to another of its editors as creator, or delete it. Groups the player anchors disband, as when the anchor being leaves. Data export is one JSON file.
+
+Built in two steps: logins (sessions, providers, local accounts, email codes, replacing the name-only login), then accounts (2FA, linking, profile, deletion, export and the security review).
+
+1. Logins
+	- [ ] `sessions` table and session cookie; `onAuth` checks the session and rejects joins without one
+	- [ ] Google and Discord login through OAuth, recommended on the login and register pages
+	- [ ] Local accounts: email-based logins, Argon2id, the HaveIBeenPwned check, and the email code rules from `STRUCTURE-OVERVIEW.md` as pure functions with tests
+	- [ ] Email through `nodemailer`, Mailpit in `docker-compose.yml`; register, forgot password and change email flows, with notification emails in the recipient's language
+	- [ ] Handles and display names; drop the name-only login and its data
+	- [ ] Rate-limit login, signup and reset routes; use generic error messages that don't reveal whether an account exists
+	- [ ] Log auth events to `auth_events`, deleting them after 90 days
+	- [ ] Tests for expired and logged-out sessions, sessions of deleted users, another user's resource IDs and replayed codes
+2. Accounts
+	- [ ] Optional 2FA (TOTP and recovery codes)
+	- [ ] Account linking
+	- [ ] Profile edit and view, with character visibility and the player's language (used ahead of the browser's settings)
+	- [ ] Account deletion and data export
+	- [✅] Privacy policy page (`privacy.html`, linked from the footer), drafted; check it against what was built, and set its date, before players use the site
+	- [ ] Review against sections 1-3 and 5 of `SECURITY-PRACTICES.md`
 
 **Done when:** only authenticated players can join, their identity maps to a DB row, and local accounts can register and reset passwords by email.
 
@@ -272,7 +288,7 @@ Decided:
 - [ ] Translations tab: the table of universe text with its filters, editors' notes for translators, and updating or confirming out-of-date translations
 - [ ] Universe versions: build a new version while players play the current one, then switch to it. A version includes its translations
 - [ ] Server admins: disable universes, and edit universes that have gone dormant
-- [ ] Only server admins can see and use the admin page (`admin.html` and `/admin/settings`), which anyone can use until then
+- [ ] Only server admins can see and use the admin page (`admin.html` and `/admin/settings`), which anyone can use until then. The privacy policy reads the character deletion days from `/admin/settings`, so anyone must still be able to read that setting
 
 **Done when:** a team of editors and beta testers takes a universe from `in the beginning` to `let there be light`, and a creator can disable a race without breaking its existing characters. A translator adds French to the universe, and a French player sees it in French.
 

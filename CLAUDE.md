@@ -17,13 +17,14 @@ An engine for making multiplayer browser-based role-playing games.
 
 ```
 /client          Phaser game (Vite). Uses `@colyseus/sdk` (formerly colyseus.js) to connect to the server.
-                 Seven pages, linked without .html (/game): index.html (Home; src/main.ts, src/style.scss),
+                 Eight pages, linked without .html (/game): index.html (Home; src/main.ts, src/style.scss),
                  universe.html (a universe's page at /universe/<slug or id>; src/universe.ts, src/universe.scss),
                  game.html (lobby and game at /game/<slug or id>, apart from Home so other pages can be open in
                  other tabs while playing; src/game.ts, src/style.scss), edit.html (the
                  world editor at /edit/<universe id>; src/edit.ts, src/edit.scss), character.html (Create Character; src/character.ts,
                  src/character.scss), license.html (the game's license and the
-                 licenses of what it uses, linked from the footer; src/license.ts, src/license.scss) and
+                 licenses of what it uses, linked from the footer; src/license.ts, src/license.scss), privacy.html
+                 (the privacy policy, linked from the footer; src/privacy.ts, src/privacy.scss) and
                  admin.html (settings for the whole site; src/admin.ts, src/admin.scss). HTML the pages share (the tags every <head> starts with, status, notice and login screens,
                  footer, the keyboard shortcut list and screen reader live regions) lives in partials/, included with <!-- include footer.html --> (vite.config.ts).
                  Both styles use src/_shared.scss, and
@@ -98,7 +99,7 @@ npm workspaces are assumed (`client`, `server`, `shared`). Update this section i
 - All environment-specific values come from environment variables. Never hard-code URLs, credentials, or secrets, and never commit `.env` files. The pre-commit hook runs gitleaks on staged changes and blocks commits that contain secrets.
 - Root (`docker-compose.yml`): `POSTGRES_PASSWORD`, `KILN_MIGRATOR_PASSWORD`, `KILN_APP_PASSWORD`, `POSTGRES_PORT`, `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` (the local storage's keys), `STORAGE_PORT`.
 - Server: `DATABASE_URL` (the app role), `MIGRATION_DATABASE_URL` (the migration role; drizzle-kit only, never the running server), `PORT` (default 2567), `ENABLE_DEV_TOOLS` (playground and `/monitor`, never in production), `SSL_KEY_FILE` / `SSL_CERT_FILE`, `ALLOWED_ORIGINS`, `LOADTEST_ENDPOINT`, `STORAGE_ENDPOINT` / `STORAGE_REGION` / `STORAGE_BUCKET` / `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` / `STORAGE_FORCE_PATH_STYLE` (object storage for uploads), `TEST_STORAGE_BUCKET`, auth secret(s).
-- Client: `DEV_HOST`, `DEV_PORT`, `DEV_SSL_KEY_FILE` / `DEV_SSL_CERT_FILE`, `VITE_SERVER_URL` (`wss://www.multiversekiln-dev.com:2567` locally, `wss://...` in production), `VITE_SOURCE_URL` (the source code link in the page footer, required by the AGPL; a fork sets its own repository).
+- Client: `DEV_HOST`, `DEV_PORT`, `DEV_SSL_KEY_FILE` / `DEV_SSL_CERT_FILE`, `VITE_SERVER_URL` (`wss://www.multiversekiln-dev.com:2567` locally, `wss://...` in production), `VITE_SOURCE_URL` (the source code link in the page footer, required by the AGPL; a fork sets its own repository), `VITE_PRIVACY_CONTACT` (the email address the privacy policy gives players; a fork sets its own).
 - Commit `.env.example` files listing every variable with placeholder values, and keep them up to date.
 
 ## HTTPS

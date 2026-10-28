@@ -14,10 +14,24 @@ Universe names are unique, and names that could be mistaken for each other count
 ## About
 Free text. There will be many of these pages (like an FAQ or Help).
 
+## Privacy
+The privacy policy (`privacy.html`), linked from every page's footer and from the login and register pages: what the site keeps about players, why, who sees it, how long it is kept, and how to export or delete it. It names no hosting companies, since each site running the engine chooses its own; a site sets its contact address with `VITE_PRIVACY_CONTACT`. The page shows the date it last changed, and the site emails players when it changes in a way that matters.
+
 ## Login
 You select a login provider like Google or Discord, or you can make a local account. Local logins are based on email, not username (but email can be changed).
 
 Local accounts are supported, but the login and register pages recommend a provider for security reasons.
+
+Home, universe pages and the license and privacy pages don't need a login; the lobby, the game, the editor, Create Character and editing the profile do.
+
+A login starts a session, kept on the server and named by an HttpOnly cookie. A session ends after 1 hour without use, and after 24 hours in all. Checking "Remember me" makes it last 30 days without use and 90 days in all, after which the player logs in again. Being connected to a lobby or game counts as use. Logging out ends the session on the server, and changing the password ends every session of the account.
+
+A Google or Discord login whose email matches a local account isn't joined to it automatically: the player is asked to log in to the local account (with its password, or an email code), which links them. A logged-in player can also link providers from their profile.
+
+Local accounts can turn on 2FA with an authenticator app (TOTP), and get recovery codes for when they lose it. Accounts that log in with a provider use the provider's 2FA.
+
+## Deleting an account
+From the profile. Before deleting, the player decides for each universe they are the only creator of: hand it to another of its editors as creator, or delete it. Groups whose anchor being is one of their characters disband. The account, profile, characters, sessions and auth events are deleted. Before deleting, the player can download their data as one JSON file (also offered on the profile at any time).
 
 ## Register local account
 Enter an email, it sends you an [email code](#email-codes), enter the code to create an account / set your password. Recommend the user use a password manager, link to a couple prominent ones. Emails you when you have a new account. Optional - set up 2FA now.
@@ -46,7 +60,9 @@ Registering, resetting a password and changing an email all send a code by email
 	- a correct code hands the next step (setting the password) to the browser session that entered it, through a new session ID in an httponly cookie, for 10 minutes. Another browser waiting on the same account can't use it
 
 ## Profile edit
-Everything is optional except name.
+Everything is optional except handle and name.
+- handle (required, unique): how other players find you and tell you apart from others with the same name. Letters, digits and underscores, compared ignoring capitals and checked against reserved words like player names
+- the Google and Discord logins linked to the account, with buttons to link another
 - photo (200px square, shown as a circle)
 - email, with a change email button for local accounts. Enter an email, it sends you an [email code](#email-codes), enter the code to change your email. Email both addresses letting them know that the email has changed.
 - if a local account, a change password button. Emails you when the password is changed.
@@ -756,11 +772,9 @@ A table that can be sorted has a button in each heading that sorts it (`TableSor
 - **Offline group members:** whether to use the summoning ring.
 - **Lobby:** the player limit (from load testing), and how groups manage their lobby listing.
 - **Cross-universe play:** art style, and whether items need a "source universe" setting.
-- **Users:** how to tell two users with the same name apart (unique usernames, or showing an immutable user ID), which user search for invites depends on.
 - **Accounts:**
-	- what happens when a provider login and a local account share an email (account linking)
-	- which email sending service to use
-	- whether to add a CAPTCHA. The code limits stop guessing, but someone who knows an address can make 15 wrong guesses and block that address's codes for a day
+	- which email sending service to use in production (email goes out over SMTP, so it's configuration)
+	- whether to add a CAPTCHA (such as Cloudflare Turnstile on sending a code). The code limits stop guessing, but someone who knows an address can make 15 wrong guesses and block that address's codes for a day
 - **Messages:** blocking, reporting and who can message whom, before messaging is supported.
 - **Universe versions:** how versions are built and switched.
 - **Objects:** how placed objects such as houses and lone trees work. The likely shape: an object is made once and placed in any number of areas, with an image, the cells it covers (each with its own walk time and vision cost, read by the server), the part drawn above players so a player walking behind it is hidden, and door cells for area links into its interior, which is an indoor area

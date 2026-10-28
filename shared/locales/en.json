@@ -3139,6 +3139,10 @@
 		"defaultMessage": "Playing as {name}",
 		"description": "In the toolbar, the name the player logged in with; {name} is the name"
 	},
+	"page.privacy": {
+		"defaultMessage": "Privacy",
+		"description": "Link at the bottom of every page to the privacy policy"
+	},
 	"page.shortcuts": {
 		"defaultMessage": "Keyboard shortcuts",
 		"description": "Button at the bottom of every page that lists the keyboard shortcuts"
@@ -3506,6 +3510,266 @@
 	"play.nowPlaying": {
 		"defaultMessage": "You are now playing {name}.",
 		"description": "Read out by screen readers in the lobby or a group when the window switches to another of the player's characters; {name} is the character's name"
+	},
+	"privacy.account": {
+		"defaultMessage": "Your account",
+		"description": "Heading in the privacy policy over the list of what the site keeps about a player's account"
+	},
+	"privacy.accountEmail": {
+		"defaultMessage": "Your email address, used to log in and to send you emails about your account.",
+		"description": "In the privacy policy's list of what the site keeps about a player's account: the email address"
+	},
+	"privacy.accountNames": {
+		"defaultMessage": "Your handle, which is unique and lets other players find you, and your display name, which needn't be your real name.",
+		"description": "In the privacy policy's list of what the site keeps about a player's account: the account's two names"
+	},
+	"privacy.accountPassword": {
+		"defaultMessage": "If you have a local account, your password, kept only in a scrambled form that can't be turned back into the password (a one-way hash: Argon2id for passwords and recovery codes, and a keyed hash, HMAC, for the codes and addresses below).",
+		"description": "In the privacy policy's list of what the site keeps about a player's account: the password, which is kept only as a one-way hash. The first place the policy says scrambled, so the brackets explain the term for the rest of the page: Argon2id and HMAC are the names of the hashing methods, the same in every language"
+	},
+	"privacy.accountProviders": {
+		"defaultMessage": "If you log in with Google or Discord, the ID and email address of that account, which they send us when you log in.",
+		"description": "In the privacy policy's list of what the site keeps about a player's account: what the site gets from Google or Discord when a player logs in with them. Google and Discord are names, the same in every language"
+	},
+	"privacy.accountTwoFactor": {
+		"defaultMessage": "If you turn on two-factor authentication, the secret your authenticator app shares with us, and your recovery codes, kept scrambled like a password.",
+		"description": "In the privacy policy's list of what the site keeps about a player's account: the secret behind two-factor authentication, which links the account to an authenticator app, and the recovery codes"
+	},
+	"privacy.changes": {
+		"defaultMessage": "Changes to this policy",
+		"description": "Heading of the privacy policy's section about how players are told when the policy changes, and its link in the page's contents"
+	},
+	"privacy.changesText": {
+		"defaultMessage": "The date at the top of this page shows when this policy last changed. If it changes in a way that matters to you, we will email you before the change takes effect.",
+		"description": "In the privacy policy, how players learn that it changed"
+	},
+	"privacy.children": {
+		"defaultMessage": "Children",
+		"description": "Heading of the privacy policy's section about the youngest age allowed to have an account, and its link in the page's contents"
+	},
+	"privacy.childrenText": {
+		"defaultMessage": "You must be at least 13 to have an account, or older where the law of your country sets a higher age for agreeing to this policy yourself. If we learn that an account belongs to someone younger, we delete it.",
+		"description": "In the privacy policy, the youngest age allowed to have an account: 13, or older where the player's country requires it"
+	},
+	"privacy.contact": {
+		"defaultMessage": "For questions about this policy, or to ask about your information, email {contact}.",
+		"description": "In the privacy policy, how to reach the people who run the site; {contact} is their email address, as a link"
+	},
+	"privacy.contents": {
+		"defaultMessage": "Contents",
+		"description": "Heading of the list of links to each section of the privacy policy"
+	},
+	"privacy.cookies": {
+		"defaultMessage": "Cookies and browser storage",
+		"description": "Heading of the privacy policy's section about the cookies and browser storage the site uses, and its link in the page's contents"
+	},
+	"privacy.cookiesCharacter": {
+		"defaultMessage": "The character each tab last played, so reloading the tab plays them again, until the tab closes.",
+		"description": "In the privacy policy's list of what the site stores in a player's browser: the character each browser tab last played, so reloading the tab plays them again"
+	},
+	"privacy.cookiesCode": {
+		"defaultMessage": "After you enter a code we emailed you, a cookie that lets that browser take the next step, such as choosing a password, for 10 minutes.",
+		"description": "In the privacy policy's list of what the site stores in a player's browser: a cookie that lasts 10 minutes after a player enters a correct email code, for the next step such as choosing a password"
+	},
+	"privacy.cookiesIntro": {
+		"defaultMessage": "We store only what the site needs to work, so we don't ask before storing it. There are no cookies from other sites.",
+		"description": "In the privacy policy, before the list of what the site stores in a player's browser; there are no tracking cookies, so it asks no permission for them"
+	},
+	"privacy.cookiesLanguage": {
+		"defaultMessage": "The language you choose at the bottom of the page.",
+		"description": "In the privacy policy's list of what the site stores in a player's browser: the language chosen at the bottom of the page"
+	},
+	"privacy.cookiesSession": {
+		"defaultMessage": "A cookie that keeps you logged in. It ends when you log out, after an hour without use, or when you close your browser; with \"Remember me\" checked, after 30 days without use.",
+		"description": "In the privacy policy's list of what the site stores in a player's browser: the login cookie, and how long it lasts"
+	},
+	"privacy.deleting": {
+		"defaultMessage": "Deleting your account deletes your profile, your characters and your security records. Groups led by one of your characters disband. For each universe you are the only creator of, you choose whether to hand it to another of its editors or delete it; what you built in universes others edit stays part of them.",
+		"description": "In the privacy policy, what deleting an account removes, and what happens to the universes the player built"
+	},
+	"privacy.heading": {
+		"defaultMessage": "Privacy Policy",
+		"description": "Heading of the privacy policy page"
+	},
+	"privacy.howLong": {
+		"defaultMessage": "How long we keep it",
+		"description": "Heading of the privacy policy's section saying how long the site keeps each kind of information, and its link in the page's contents"
+	},
+	"privacy.howLongAccount": {
+		"defaultMessage": "Your account, profile and characters, until you delete them.",
+		"description": "In the privacy policy, how long account information is kept"
+	},
+	"privacy.howLongBackups": {
+		"defaultMessage": "Deleted information can stay in our backups for a short time, until they are replaced.",
+		"description": "In the privacy policy, saying deleted information can stay in the database's backups for a while"
+	},
+	"privacy.howLongCharacters": {
+		"defaultMessage": "A character you delete, until the days the site waits before deleting characters have passed.",
+		"description": "In the privacy policy, when a deleted character is removed: after the number of days the site sets (its Last Rites)"
+	},
+	"privacy.howLongCharactersDays": {
+		"defaultMessage": "A character you delete, for {days, plural, one {# day} other {# days}}, while you can still bring them back.",
+		"description": "In the privacy policy, how long a deleted character is kept before it is removed for good, during which the player can restore them; {days} is the number of days the site sets"
+	},
+	"privacy.howLongSecurity": {
+		"defaultMessage": "Security records as long as the list above says: the log for 90 days, codes for 15 minutes, and counts only while a limit needs them.",
+		"description": "In the privacy policy, how long security records are kept"
+	},
+	"privacy.intro": {
+		"defaultMessage": "This policy explains what this {siteName} site keeps about you when you play or build universes here, why it keeps it, who can see it, how long it is kept, and how you can download or delete it. We keep as little data as we can.",
+		"description": "The first paragraph of the privacy policy, saying what it covers; {siteName} is the game engine's name"
+	},
+	"privacy.keep": {
+		"defaultMessage": "What we keep",
+		"description": "Heading of the privacy policy's section listing the information the site keeps about a player, and its link in the page's contents"
+	},
+	"privacy.not": {
+		"defaultMessage": "What we don't do",
+		"description": "Heading of the privacy policy's section listing what the site never does with a player's information, such as selling it, and its link in the page's contents"
+	},
+	"privacy.notText": {
+		"defaultMessage": "We don't show ads, don't use analytics or tracking services, and never sell your information or share it with anyone for their own use. We only email you about your account, never to sell you something.",
+		"description": "In the privacy policy, what the site never does with a player's information"
+	},
+	"privacy.play": {
+		"defaultMessage": "What you play and build",
+		"description": "Heading in the privacy policy over what the site keeps of a player's characters and games, and of the universes they build"
+	},
+	"privacy.playCharacters": {
+		"defaultMessage": "Your characters, their items and progress, the groups they are in, and the parts of each universe your groups have explored.",
+		"description": "In the privacy policy, the game information the site keeps: characters and groups, and what a group has explored"
+	},
+	"privacy.playChat": {
+		"defaultMessage": "Chat isn't saved. The game server keeps a lobby's most recent messages in memory, so players who arrive can read them, until the lobby closes or the server restarts.",
+		"description": "In the privacy policy, how long chat is kept: only in the game server's memory, and only the most recent messages"
+	},
+	"privacy.playUniverses": {
+		"defaultMessage": "The universes you create or help edit, and what you upload to them, such as tile images.",
+		"description": "In the privacy policy, what the site keeps for players who build universes: the universes, and the images they upload to them"
+	},
+	"privacy.profile": {
+		"defaultMessage": "Your profile",
+		"description": "Heading in the privacy policy over the list of what the site keeps of a player's profile"
+	},
+	"privacy.profileText": {
+		"defaultMessage": "Anything you choose to fill in on your profile: a photo, your pronouns, your location and time zone, your language, links to your social media accounts, and which of your characters others can see. Only your handle and display name are required.",
+		"description": "In the privacy policy, what a player's profile holds; only the handle and display name are required"
+	},
+	"privacy.rights": {
+		"defaultMessage": "Your choices and rights",
+		"description": "Heading of the privacy policy's section about what a player can do with their information: see, correct, download and delete it, and its link in the page's contents"
+	},
+	"privacy.rightsCorrect": {
+		"defaultMessage": "See and change your information on your profile.",
+		"description": "In the privacy policy's list of a player's rights: seeing and correcting their information on their profile"
+	},
+	"privacy.rightsDelete": {
+		"defaultMessage": "Delete your account from your profile.",
+		"description": "In the privacy policy's list of a player's rights: deleting their account"
+	},
+	"privacy.rightsExport": {
+		"defaultMessage": "Download everything we keep about you, as one file, from your profile.",
+		"description": "In the privacy policy's list of a player's rights: downloading everything the site keeps about them as one file"
+	},
+	"privacy.security": {
+		"defaultMessage": "Keeping it safe",
+		"description": "Heading of the privacy policy's section about how the site protects a player's information, and its link in the page's contents"
+	},
+	"privacy.securityCodes": {
+		"defaultMessage": "The codes we email you, to register, reset your password or change your email address, kept only in a scrambled form, and only until they are used or expire 15 minutes later.",
+		"description": "In the privacy policy's list of security records: the codes the site emails to register, reset a password or change an email address, kept only as a keyed hash"
+	},
+	"privacy.securityLimits": {
+		"defaultMessage": "To stop people guessing codes and passwords, counts of the attempts made for each email address and from each network, with the addresses kept only in a scrambled form, and only while a limit still needs them.",
+		"description": "In the privacy policy's list of security records: counts kept to stop someone guessing codes or passwords, which store email addresses and internet addresses only as a keyed hash"
+	},
+	"privacy.securityLog": {
+		"defaultMessage": "A log of logins, failed logins and changes to your account's security, such as a new password, with your network in a scrambled form. It never holds passwords or codes, and is kept for 90 days.",
+		"description": "In the privacy policy's list of security records: the log of logins and account changes, kept 90 days, which stores a player's network only as a keyed hash"
+	},
+	"privacy.securityRecords": {
+		"defaultMessage": "Security records",
+		"description": "Heading in the privacy policy over the list of what the site keeps to keep accounts safe and stop abuse"
+	},
+	"privacy.securitySessions": {
+		"defaultMessage": "A record for each browser you are logged in on, so you stay logged in, and so you can be logged out everywhere.",
+		"description": "In the privacy policy's list of security records: the login sessions, one for each browser a player is logged in on"
+	},
+	"privacy.securityText": {
+		"defaultMessage": "Everything you send the site is encrypted on its way. Passwords and codes are only kept scrambled, and you can turn on two-factor authentication. If your information is ever exposed, we will tell you.",
+		"description": "In the privacy policy, how the site protects a player's information, and the promise to tell them if it leaks"
+	},
+	"privacy.see": {
+		"defaultMessage": "Who can see it",
+		"description": "Heading of the privacy policy's section about who can see a player's information: other players, universe editors and the site's admins, and its link in the page's contents"
+	},
+	"privacy.seeAdmins": {
+		"defaultMessage": "The people who run this site can see what we keep, and look at it only to run the site, keep it safe and deal with reports of abuse.",
+		"description": "In the privacy policy, what the people who run the site can see about players"
+	},
+	"privacy.seeEditors": {
+		"defaultMessage": "The editors of a universe can see the characters played in it.",
+		"description": "In the privacy policy, what the editors of a universe can see about the players who play it"
+	},
+	"privacy.seeEmail": {
+		"defaultMessage": "Other players never see your email address.",
+		"description": "In the privacy policy, saying other players never see a player's email address"
+	},
+	"privacy.seePlayers": {
+		"defaultMessage": "Other players see your handle, display name and the profile fields you fill in, the characters you let them see, and what your characters say and do in the game. Players in a group with you can always reach your profile.",
+		"description": "In the privacy policy, what other players can see about a player"
+	},
+	"privacy.services": {
+		"defaultMessage": "Services we use",
+		"description": "Heading of the privacy policy's section about the other companies that handle a player's information for the site, such as its hosting, and its link in the page's contents"
+	},
+	"privacy.servicesHosting": {
+		"defaultMessage": "Companies that host our database, game server and uploaded files, and that send our emails. They handle your information only on our instructions, and may store it in another country than yours.",
+		"description": "In the privacy policy, the companies that host the site's database, game server and files and send its emails, which may be in another country than the player"
+	},
+	"privacy.servicesLogin": {
+		"defaultMessage": "Google or Discord, if you log in with them. They learn that you logged in here, under their own privacy policies.",
+		"description": "In the privacy policy, what Google or Discord learn when a player logs in with them, under their own privacy policies. Google and Discord are names, the same in every language"
+	},
+	"privacy.servicesPasswords": {
+		"defaultMessage": "When you choose a password, we check it against {service}'s list of passwords leaked from other sites. We send it only the first 5 characters of a scrambled form of your password, which can't reveal the password.",
+		"description": "In the privacy policy, the password check against Have I Been Pwned, a free service listing passwords that have leaked from other sites; {service} is its name, the same in every language. The site sends it only the first 5 characters of the password's hash"
+	},
+	"privacy.title": {
+		"defaultMessage": "Privacy Policy",
+		"description": "The browser tab's title for the privacy policy page, before the game engine's name"
+	},
+	"privacy.updated": {
+		"defaultMessage": "Last changed {date}",
+		"description": "At the top of the privacy policy, when it last changed; {date} is the date, written the way the player's language writes dates"
+	},
+	"privacy.who": {
+		"defaultMessage": "Who we are",
+		"description": "Heading of the privacy policy's section saying who runs the site and how to contact them, and its link in the page's contents"
+	},
+	"privacy.whoText": {
+		"defaultMessage": "This site runs {siteName}, an engine for multiplayer role-playing games. The people who run this site decide what it does with your information, and are responsible for it.",
+		"description": "In the privacy policy, who runs the site; {siteName} is the game engine's name"
+	},
+	"privacy.why": {
+		"defaultMessage": "Why we keep it",
+		"description": "Heading of the privacy policy's section giving the reasons (the legal grounds) the site keeps a player's information, and its link in the page's contents"
+	},
+	"privacy.whyAccount": {
+		"defaultMessage": "Performance of a contract: your account, your characters and groups, the universes you build, and the emails about your account, which we need to give you the account, the game and the universe editor you asked for.",
+		"description": "In the privacy policy's list of legal bases for keeping a player's information: performance of a contract, for what is needed to give them the account, game and editor they asked for. Use the GDPR's own term for this legal basis in the target language"
+	},
+	"privacy.whyIntro": {
+		"defaultMessage": "Privacy laws such as the GDPR ask us to name the legal basis for each use of your information:",
+		"description": "In the privacy policy, before the list of legal bases for keeping a player's information; the GDPR is the European Union's and the United Kingdom's data protection law, named by its usual abbreviation in each language"
+	},
+	"privacy.whyProfile": {
+		"defaultMessage": "Consent: your profile's optional fields, which you chose to share. You can withdraw your consent by removing them whenever you like.",
+		"description": "In the privacy policy's list of legal bases for keeping a player's information: consent, for the optional profile fields the player chose to fill in, which they can withdraw by removing them. Use the GDPR's own term for this legal basis in the target language"
+	},
+	"privacy.whySecurity": {
+		"defaultMessage": "Legitimate interests: the security records and the check of new passwords against leaked ones, which keep your account and the site safe and stop cheating and abuse.",
+		"description": "In the privacy policy's list of legal bases for keeping a player's information: legitimate interests, for the security records and the password check that keep accounts safe and stop abuse. Use the GDPR's own term for this legal basis in the target language"
 	},
 	"sf1e.ability.charisma": {
 		"defaultMessage": "Charisma",
