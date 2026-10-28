@@ -19,9 +19,9 @@
 		"messages:check": "tsx scripts/messages.ts --check"
 	},
 	"dependencies": {
-		"@colyseus/schema": "^5.0.39",
-		"@formatjs/icu-messageformat-parser": "^3.5.21",
-		"intl-messageformat": "^12.1.3"
+		"@colyseus/schema": "^5.0.42",
+		"@formatjs/icu-messageformat-parser": "^3.5.22",
+		"intl-messageformat": "^12.1.4"
 	},
 	"devDependencies": {
 		"@types/node": "^24.19.2",

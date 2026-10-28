@@ -38,8 +38,8 @@
 	},
 	"dependencies": {
 		"@aws-sdk/client-s3": "^3.1156.0",
-		"@colyseus/schema": "^5.0.14",
-		"@colyseus/tools": "^0.18.1",
+		"@colyseus/schema": "^5.0.42",
+		"@colyseus/tools": "^0.18.10",
 		"@multiverse-kiln/shared": "*",
 		"colyseus": "^0.18.2",
 		"drizzle-orm": "^0.45.4",
