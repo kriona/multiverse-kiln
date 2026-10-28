@@ -2,12 +2,11 @@
  * Checks the editor's routes make on what characters start with and where: the universe's own
  * settings, and each race's and class's
  */
-import { defineMessages, type MessageDescriptor } from '@multiverse-kiln/shared';
+import { defineMessages } from '@multiverse-kiln/shared';
 
-import type { Executor } from '../db/client.js';
 import { loadEditorItems } from '../db/itemRepo.js';
 import { listAreas } from '../db/areaRepo.js';
-import type { UniverseContext } from './editorAccess.js';
+import { refuse, type ChangeContext } from './editorChangeContext.js';
 
 /**
  * Why starting settings were refused (see shared/src/localization.ts)
@@ -42,39 +41,36 @@ export interface StartingReferences
 }
 
 /**
- * Why starting settings can't be saved: an area that isn't one of the universe's or is its lobby, or
- * an item the universe can't use
+ * Refuses starting settings that name an area that isn't one of the universe's or is its lobby, or an
+ * item the universe can't use
  *
- * @param universe The universe
+ * @param context The save
  * @param references The areas and items the settings name
- * @param executor The database, or a transaction
- * @return The reason, or undefined when they can be saved
  */
-export async function findStartingProblem(universe: UniverseContext['universe'], references: StartingReferences, executor: Executor): Promise<MessageDescriptor | undefined>
+export async function checkStartingReferences(context: ChangeContext, references: StartingReferences): Promise<void>
 {
+	const { universe, transaction } = context;
 	const { areaIds = [], itemIds = [] } = references;
 
 	if (areaIds.length > 0)
 	{
-		const usableAreaIds = new Set((await listAreas(universe.id, executor))
+		const usableAreaIds = new Set((await listAreas(universe.id, transaction))
 			.map((area) => area.id)
 			.filter((areaId) => (areaId !== universe.lobbyAreaId)));
 
 		if (!areaIds.every((areaId) => usableAreaIds.has(areaId)))
 		{
-			return(startingMessages.unusableStartingArea);
+			refuse(400, startingMessages.unusableStartingArea);
 		}
 	}
 
 	if (itemIds.length > 0)
 	{
-		const usableItemIds = new Set((await loadEditorItems(universe.id, universe.ruleset, executor)).map((item) => item.id));
+		const usableItemIds = new Set((await loadEditorItems(universe.id, universe.ruleset, transaction)).map((item) => item.id));
 
 		if (!itemIds.every((itemId) => usableItemIds.has(itemId)))
 		{
-			return(startingMessages.unusableStartingItem);
+			refuse(400, startingMessages.unusableStartingItem);
 		}
 	}
-
-	return(undefined);
 }

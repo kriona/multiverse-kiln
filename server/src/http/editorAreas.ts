@@ -1,18 +1,18 @@
 /**
- * The world editor's routes for a universe's areas, their maps and their links (listed in shared/src/editor.ts)
+ * The world editor's routes for a universe's areas, their maps and their links (listed in
+ * shared/src/editor.ts), and saving changes to them (see editorChanges.ts)
  */
 import express, { type Request, type Response } from 'express';
-import { canEditWorld, DEFAULT_AREA_TILE_KEYS, DEFAULT_TILE_CELL, isInBounds, localize, MAX_AREAS, NEW_AREA_BOUNDS, VOID_CELL, type ChunkListPayload, type CreatedPayload, type EditableUniverse, type EditorArea, type FaerieMorning, type UniverseSettings, type MessageDescriptor, type ResizeConflictPayload, type Ruleset, type AreaLinkListPayload, type AreaListPayload, type AreaSettings } from '@multiverse-kiln/shared';
+import { DEFAULT_AREA_TILE_KEYS, DEFAULT_TILE_CELL, isInBounds, isNewRef, MAX_AREAS, NEW_AREA_BOUNDS, VOID_CELL, type AreaChangeUpdate, type CellChange, type CellChangeRef, type ChunkListPayload, type EditorArea, type FaerieMorning, type MapBounds, type NewAreaChange, type NewRef, type Ruleset, type StringRef, type UniverseSettings, type MessageDescriptor, type AreaLinkListPayload, type AreaLinkTarget, type AreaListPayload, type AreaSettings, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
 
+import type { Executor } from '../db/client.js';
 import { findDefaultTileIds, findTileKind, loadUniverseTiles } from '../db/tileRepo.js';
-import { inTransaction } from '../db/transactions.js';
-import { lockUniverse } from '../db/universeRepo.js';
-import { countAreas, createArea, deleteArea, deleteAreaLink, editCells, listAreaLinks, listAreas, loadChunks, lockAreas, resizeArea, saveAreaLink, updateAreaSettings } from '../db/areaRepo.js';
+import { countAreas, createArea, deleteArea, deleteAreaLink, editCells, findEditorArea, listAreaLinks, listAreas, loadChunks, lockAreas, resizeArea, saveAreaLink, updateAreaSettings } from '../db/areaRepo.js';
 import { chunksOfChanges, wouldCreateCycle } from '../logic/mapEdits.js';
-import { areaChanges } from '../world/areaChanges.js';
-import { loadAreaContext, requireRole, universeContextOf, areaContextOf } from './editorAccess.js';
-import { cellEditRequest, cellParameters, chunkRange, newAreaRequest, resizeAreaRequest, areaLinkTarget, areaSettingsUpdate } from './editorPayloads.js';
-import { errorMessages, sendError, sendInvalidRequest } from './errors.js';
+import { loadAreaContext, universeContextOf, areaContextOf } from './editorAccess.js';
+import { ChangeRefusal, recordRef, refuse, resolveNumberRef, resolveStringRef, type ChangeContext } from './editorChangeContext.js';
+import { chunkRange } from './editorPayloads.js';
+import { errorMessages, sendInvalidRequest } from './errors.js';
 
 /**
  * Adds the area routes to a universe's router
@@ -24,18 +24,11 @@ export function addAreaRoutes(router: express.Router): void
 	const areaRouter = express.Router({ mergeParams: true });
 
 	router.get('/areas', listAreasRoute);
-	router.post('/areas', requireRole(canEditWorld), createAreaRoute);
 	router.use('/areas/:areaId', loadAreaContext, areaRouter);
 
 	areaRouter.get('/', getArea);
-	areaRouter.patch('/', requireRole(canEditWorld), updateArea);
-	areaRouter.delete('/', requireRole(canEditWorld), deleteAreaRoute);
-	areaRouter.put('/bounds', requireRole(canEditWorld), resizeAreaRoute);
 	areaRouter.get('/chunks', getChunks);
-	areaRouter.patch('/cells', requireRole(canEditWorld), editCellsRoute);
 	areaRouter.get('/links', getLinks);
-	areaRouter.put('/links/:column/:row', requireRole(canEditWorld), saveLink);
-	areaRouter.delete('/links/:column/:row', requireRole(canEditWorld), deleteLink);
 }
 
 /**
@@ -119,71 +112,6 @@ async function listAreasRoute(request: Request, response: Response): Promise<voi
 }
 
 /**
- * POST /:universeId/areas: adds an area to the universe
- *
- * @param request The request
- * @param response The response
- */
-async function createAreaRoute(request: Request, response: Response): Promise<void>
-{
-	const body = newAreaRequest.safeParse(request.body);
-
-	if (!body.success)
-	{
-		sendInvalidRequest(response, body.error);
-		return;
-	}
-
-	const { universe } = universeContextOf(request);
-	const indoors = (body.data.indoors ?? false);
-	const settings: AreaSettings = {
-		name: body.data.name,
-		parentAreaId: (body.data.parentAreaId ?? null),
-		enabled: (body.data.enabled ?? (universe.stage === 'in_the_beginning')),
-		indoors,
-		lightLevel: (body.data.lightLevel ?? 'lit'),
-		defaultTileId: (body.data.defaultTileId ?? await defaultAreaTileId(universe.ruleset, indoors)),
-		passageOfTime: (body.data.passageOfTime ?? 'inherit'),
-		faerieMorning: (body.data.faerieMorning ?? null),
-		loopsEastWest: (body.data.loopsEastWest ?? false),
-		loopsNorthSouth: (body.data.loopsNorthSouth ?? false)
-	};
-	const problem = await areaSettingsProblem(universe, undefined, settings);
-
-	if (problem !== undefined)
-	{
-		sendError(response, 400, problem);
-		return;
-	}
-
-	const areaId = await inTransaction(async (transaction) =>
-	{
-		await lockUniverse(universe.id, transaction);
-
-		if (await countAreas(universe.id, transaction) >= MAX_AREAS)
-		{
-			return(undefined);
-		}
-
-		return(createArea({ ...settings, universeId: universe.id, bounds: NEW_AREA_BOUNDS }, transaction));
-	});
-
-	if (areaId === undefined)
-	{
-		sendError(response, 409, {
-			id: 'error.areaLimit',
-			defaultMessage: 'A universe can have at most {max, plural, one {# area} other {# areas}}.',
-			description: 'Why a new area wasn\'t made: the universe has as many areas as allowed'
-		}, { max: MAX_AREAS });
-		return;
-	}
-
-	const payload: CreatedPayload = { id: areaId };
-
-	response.status(201).json(payload);
-}
-
-/**
  * GET /:universeId/areas/:areaId: the area's settings and bounds
  *
  * @param request The request
@@ -194,113 +122,6 @@ function getArea(request: Request, response: Response): void
 	const payload: EditorArea = areaContextOf(request).area;
 
 	response.json(payload);
-}
-
-/**
- * PATCH /:universeId/areas/:areaId: changes the area's settings
- *
- * @param request The request
- * @param response The response
- */
-async function updateArea(request: Request, response: Response): Promise<void>
-{
-	const body = areaSettingsUpdate.safeParse(request.body);
-
-	if (!body.success)
-	{
-		sendInvalidRequest(response, body.error);
-		return;
-	}
-
-	const { universe, area } = areaContextOf(request);
-	const problem = await areaSettingsProblem(universe, area.id, { ...area, ...body.data });
-
-	if (problem !== undefined)
-	{
-		sendError(response, 400, problem);
-		return;
-	}
-
-	await updateAreaSettings(area.id, body.data);
-	areaChanges.publish({ kind: 'area', areaId: area.id });
-
-	// The areas inside it may inherit its passage of time
-	if ((body.data.passageOfTime !== undefined) || (body.data.faerieMorning !== undefined) || (body.data.parentAreaId !== undefined))
-	{
-		areaChanges.publish({ kind: 'time', universeId: universe.id });
-	}
-
-	response.sendStatus(204);
-}
-
-/**
- * DELETE /:universeId/areas/:areaId: deletes the area, unless it is the universe's lobby or starting area
- *
- * @param request The request
- * @param response The response
- */
-async function deleteAreaRoute(request: Request, response: Response): Promise<void>
-{
-	const { universe, area } = areaContextOf(request);
-
-	if ((area.id === universe.lobbyAreaId) || (area.id === universe.startingAreaId))
-	{
-		sendError(response, 409, {
-			id: 'error.cantDeleteArea',
-			defaultMessage: 'The lobby and starting areas can\'t be deleted.',
-			description: 'Why an area couldn\'t be deleted: the universe needs it'
-		});
-		return;
-	}
-
-	await deleteArea(area.id);
-	areaChanges.publish({ kind: 'deleted', areaId: area.id });
-	response.sendStatus(204);
-}
-
-/**
- * PUT /:universeId/areas/:areaId/bounds: gives the area's map new bounds
- *
- * @param request The request
- * @param response The response
- */
-async function resizeAreaRoute(request: Request, response: Response): Promise<void>
-{
-	const body = resizeAreaRequest.safeParse(request.body);
-
-	if (!body.success)
-	{
-		sendInvalidRequest(response, body.error);
-		return;
-	}
-
-	const { area } = areaContextOf(request);
-	const result = await inTransaction((transaction) => resizeArea(area.id, body.data.bounds, body.data.discard, transaction));
-
-	if (!result)
-	{
-		sendError(response, 404, errorMessages.noSuchArea);
-		return;
-	}
-
-	if (!result.resized)
-	{
-		const payload: ResizeConflictPayload = {
-			error: localize({
-				id: 'error.resizeDiscards',
-				defaultMessage: 'Resizing would discard painted cells or links.',
-				description: 'Why a map wasn\'t made smaller without asking: the part it would lose has painting or links'
-			}),
-			discardedCells: result.discardedCells,
-			discardedLinks: result.discardedLinks
-		};
-
-		response.status(409).json(payload);
-		return;
-	}
-
-	areaChanges.publish({ kind: 'area', areaId: area.id });
-	response.sendStatus(204);
 }
 
 /**
@@ -327,67 +148,6 @@ async function getChunks(request: Request, response: Response): Promise<void>
 }
 
 /**
- * PATCH /:universeId/areas/:areaId/cells: changes cells of the area's map
- *
- * @param request The request
- * @param response The response
- */
-async function editCellsRoute(request: Request, response: Response): Promise<void>
-{
-	const body = cellEditRequest.safeParse(request.body);
-
-	if (!body.success)
-	{
-		sendInvalidRequest(response, body.error);
-		return;
-	}
-
-	const { universe, area } = areaContextOf(request);
-	const result = await inTransaction(async (transaction) =>
-	{
-		// Deleting a tile waits for the same lock, so a tile can't be deleted while it is being painted
-		await lockUniverse(universe.id, transaction);
-
-		const usable = new Set((await loadUniverseTiles(universe.id, universe.ruleset, transaction)).map((tile) => tile.id));
-
-		if (body.data.changes.some(([, , value]) => ((value !== DEFAULT_TILE_CELL) && (value !== VOID_CELL) && !usable.has(value))))
-		{
-			return('unusable_tile');
-		}
-
-		return(editCells(area.id, body.data.changes, transaction));
-	});
-
-	switch (result)
-	{
-		case 'edited':
-			areaChanges.publish({ kind: 'cells', areaId: area.id, chunkKeys: [...chunksOfChanges(body.data.changes).keys()] });
-			response.sendStatus(204);
-			break;
-
-		case 'not_found':
-			sendError(response, 404, errorMessages.noSuchArea);
-			break;
-
-		case 'out_of_bounds':
-			sendError(response, 400, {
-				id: 'error.cellOutOfBounds',
-				defaultMessage: 'Every cell must be inside the area\'s map.',
-				description: 'Why painting was refused: some cells are outside the map, perhaps because another editor made it smaller'
-			});
-			break;
-
-		case 'unusable_tile':
-			sendError(response, 400, {
-				id: 'error.unusableTile',
-				defaultMessage: 'One of the tiles painted isn\'t one this universe can use.',
-				description: 'Why painting was refused: a tile was deleted, perhaps by another editor'
-			});
-			break;
-	}
-}
-
-/**
  * GET /:universeId/areas/:areaId/links: the links on the area's cells
  *
  * @param request The request
@@ -403,120 +163,297 @@ async function getLinks(request: Request, response: Response): Promise<void>
 }
 
 /**
- * PUT /:universeId/areas/:areaId/links/:column/:row: adds or replaces the link on a cell
+ * An area of the universe a change names
  *
- * @param request The request
- * @param response The response
+ * @param context The save
+ * @param ref The area's ID, or the ref of one made earlier in the save
+ * @return The area, as the changes before this one left it; a missing area is refused
  */
-async function saveLink(request: Request, response: Response): Promise<void>
+async function areaOf(context: ChangeContext, ref: StringRef): Promise<EditorArea>
 {
-	const cell = cellParameters.safeParse(request.params);
-	const body = areaLinkTarget.safeParse(request.body);
+	const found = await findEditorArea(resolveStringRef(context, ref), context.transaction);
 
-	if (!cell.success)
+	if (!found || (found.universeId !== context.universe.id))
 	{
-		sendInvalidRequest(response, cell.error);
-		return;
+		refuse(404, errorMessages.noSuchArea);
 	}
 
-	if (!body.success)
+	return(found.area);
+}
+
+/**
+ * Area settings in a save with the things they name, as saved
+ *
+ * @param context The save
+ * @param update The settings
+ * @return The settings, naming the default tile and parent by their IDs
+ */
+function resolveAreaUpdate(context: ChangeContext, update: AreaChangeUpdate): AreaSettingsUpdate
+{
+	const { defaultTileId, parentAreaId, ...rest } = update;
+
+	return({
+		...rest,
+		...((defaultTileId === undefined) ? {} : { defaultTileId: resolveNumberRef(context, defaultTileId) }),
+		...((parentAreaId === undefined) ? {} : { parentAreaId: ((parentAreaId === null) ? null : resolveStringRef(context, parentAreaId)) })
+	});
+}
+
+/**
+ * Adds an area to the universe. Settings left out take their defaults (see NewAreaRequest)
+ *
+ * @param context The save
+ * @param ref The area's ref
+ * @param area Its settings
+ */
+export async function createAreaChange(context: ChangeContext, ref: NewRef, area: NewAreaChange): Promise<void>
+{
+	const { universe, transaction } = context;
+	const resolved = resolveAreaUpdate(context, area);
+	const indoors = (resolved.indoors ?? false);
+	const settings: AreaSettings = {
+		name: area.name,
+		parentAreaId: (resolved.parentAreaId ?? null),
+		enabled: (resolved.enabled ?? (universe.stage === 'in_the_beginning')),
+		indoors,
+		lightLevel: (resolved.lightLevel ?? 'lit'),
+		defaultTileId: (resolved.defaultTileId ?? await defaultAreaTileId(universe.ruleset, indoors, transaction)),
+		passageOfTime: (resolved.passageOfTime ?? 'inherit'),
+		faerieMorning: (resolved.faerieMorning ?? null),
+		loopsEastWest: (resolved.loopsEastWest ?? false),
+		loopsNorthSouth: (resolved.loopsNorthSouth ?? false)
+	};
+
+	await checkAreaSettings(context, undefined, settings);
+
+	if (await countAreas(universe.id, transaction) >= MAX_AREAS)
 	{
-		sendInvalidRequest(response, body.error);
-		return;
+		refuse(409, {
+			id: 'error.areaLimit',
+			defaultMessage: 'A universe can have at most {max, plural, one {# area} other {# areas}}.',
+			description: 'Why a new area wasn\'t made: the universe has as many areas as allowed'
+		}, {
+			max: MAX_AREAS
+		});
 	}
 
-	const { universe, area } = areaContextOf(request);
-	const { column, row } = cell.data;
-	const target = body.data;
+	recordRef(context, ref, await createArea({ ...settings, universeId: universe.id, bounds: NEW_AREA_BOUNDS }, transaction));
+}
 
-	if (target.targetAreaId === area.id)
+/**
+ * Changes an area's settings
+ *
+ * @param context The save
+ * @param areaId The area
+ * @param update The settings to change
+ */
+export async function updateAreaChange(context: ChangeContext, areaId: StringRef, update: AreaChangeUpdate): Promise<void>
+{
+	const area = await areaOf(context, areaId);
+	const resolved = resolveAreaUpdate(context, update);
+
+	await checkAreaSettings(context, area.id, { ...area, ...resolved });
+	await updateAreaSettings(area.id, resolved, context.transaction);
+	context.published.push({ kind: 'area', areaId: area.id });
+
+	// The areas inside it may inherit its passage of time
+	if ((resolved.passageOfTime !== undefined) || (resolved.faerieMorning !== undefined) || (resolved.parentAreaId !== undefined))
 	{
-		sendError(response, 400, {
+		context.published.push({ kind: 'time', universeId: context.universe.id });
+	}
+}
+
+/**
+ * Deletes an area, unless it is the universe's lobby or starting area
+ *
+ * @param context The save
+ * @param areaId The area
+ */
+export async function deleteAreaChange(context: ChangeContext, areaId: StringRef): Promise<void>
+{
+	const { universe } = context;
+	const area = await areaOf(context, areaId);
+
+	if ((area.id === universe.lobbyAreaId) || (area.id === universe.startingAreaId))
+	{
+		refuse(409, {
+			id: 'error.cantDeleteArea',
+			defaultMessage: 'The lobby and starting areas can\'t be deleted.',
+			description: 'Why an area couldn\'t be deleted: the universe needs it'
+		});
+	}
+
+	await deleteArea(area.id, context.transaction);
+	context.published.push({ kind: 'deleted', areaId: area.id });
+}
+
+/**
+ * Gives an area's map new bounds
+ *
+ * @param context The save
+ * @param areaId The area
+ * @param bounds The new bounds
+ * @param discard Whether to go ahead when shrinking would discard painted cells or links
+ */
+export async function resizeAreaChange(context: ChangeContext, areaId: StringRef, bounds: MapBounds, discard: boolean): Promise<void>
+{
+	const area = await areaOf(context, areaId);
+	const result = await resizeArea(area.id, bounds, discard, context.transaction);
+
+	if (!result)
+	{
+		refuse(404, errorMessages.noSuchArea);
+	}
+
+	if (!result.resized)
+	{
+		throw new ChangeRefusal({
+			status: 409,
+			message: {
+				id: 'error.resizeDiscards',
+				defaultMessage: 'Resizing would discard painted cells or links.',
+				description: 'Why a map wasn\'t made smaller without asking: the part it would lose has painting or links'
+			}
+		}, {
+			discardedCells: result.discardedCells,
+			discardedLinks: result.discardedLinks
+		});
+	}
+
+	context.published.push({ kind: 'area', areaId: area.id });
+}
+
+/**
+ * Changes cells of an area's map
+ *
+ * @param context The save
+ * @param areaId The area
+ * @param changes The cells and their new values, whose tiles may be made earlier in the save
+ */
+export async function editCellsChange(context: ChangeContext, areaId: StringRef, changes: readonly CellChangeRef[]): Promise<void>
+{
+	const { universe, transaction } = context;
+	const area = await areaOf(context, areaId);
+	const resolved = changes.map(([column, row, value]): CellChange => [column, row, (isNewRef(value) ? resolveNumberRef(context, value) : value)]);
+
+	// Deleting a tile waits for the universe's lock too, so a tile can't be deleted while it is being painted
+	const usable = new Set((await loadUniverseTiles(universe.id, universe.ruleset, transaction)).map((tile) => tile.id));
+
+	if (resolved.some(([, , value]) => ((value !== DEFAULT_TILE_CELL) && (value !== VOID_CELL) && !usable.has(value))))
+	{
+		refuse(400, {
+			id: 'error.unusableTile',
+			defaultMessage: 'One of the tiles painted isn\'t one this universe can use.',
+			description: 'Why painting was refused: a tile was deleted, perhaps by another editor'
+		});
+	}
+
+	const result = await editCells(area.id, resolved, transaction);
+
+	if (result === 'not_found')
+	{
+		refuse(404, errorMessages.noSuchArea);
+	}
+
+	if (result === 'out_of_bounds')
+	{
+		refuse(400, {
+			id: 'error.cellOutOfBounds',
+			defaultMessage: 'Every cell must be inside the area\'s map.',
+			description: 'Why painting was refused: some cells are outside the map, perhaps because another editor made it smaller'
+		});
+	}
+
+	context.published.push({ kind: 'cells', areaId: area.id, chunkKeys: [...chunksOfChanges(resolved).keys()] });
+}
+
+/**
+ * Adds or replaces the link on a cell of an area
+ *
+ * @param context The save
+ * @param areaId The area
+ * @param column The cell's column
+ * @param row The cell's row
+ * @param target Where the link goes, whose area may be made earlier in the save
+ */
+export async function saveLinkChange(context: ChangeContext, areaId: StringRef, column: number, row: number, target: AreaLinkTarget): Promise<void>
+{
+	const { universe, transaction } = context;
+	const area = await areaOf(context, areaId);
+	const targetAreaId = resolveStringRef(context, target.targetAreaId);
+
+	if (targetAreaId === area.id)
+	{
+		refuse(400, {
 			id: 'error.linkToSameArea',
 			defaultMessage: 'A link must go to another area.',
 			description: 'Why an area link was refused: it leads to the area it is in'
 		});
-		return;
 	}
 
-	const problem = await inTransaction(async (transaction): Promise<MessageDescriptor | undefined> =>
+	// Locked so that neither area can shrink away from the link while it is saved
+	const locked = await lockAreas([area.id, targetAreaId], transaction);
+	const source = locked.get(area.id);
+	const destination = locked.get(targetAreaId);
+
+	if (!source)
 	{
-		// Locked so that neither area can shrink away from the link while it is saved
-		const locked = await lockAreas([area.id, target.targetAreaId], transaction);
-		const source = locked.get(area.id);
-		const destination = locked.get(target.targetAreaId);
-
-		if (!source)
-		{
-			return(errorMessages.noSuchArea);
-		}
-
-		if (!destination || (destination.universeId !== universe.id))
-		{
-			return({
-				id: 'error.linkTargetNotInUniverse',
-				defaultMessage: 'A link must go to another area of this universe.',
-				description: 'Why an area link was refused: the area it leads to doesn\'t exist or is in another universe'
-			});
-		}
-
-		if (!isInBounds(source.bounds, column, row))
-		{
-			return({
-				id: 'error.linkOutOfBounds',
-				defaultMessage: 'The link\'s cell must be inside the area\'s map.',
-				description: 'Why an area link was refused: its cell is outside the map, perhaps because another editor made it smaller'
-			});
-		}
-
-		if (!isInBounds(destination.bounds, target.targetColumn, target.targetRow))
-		{
-			return({
-				id: 'error.linkTargetOutOfBounds',
-				defaultMessage: 'Where the link goes must be inside the other area\'s map.',
-				description: 'Why an area link was refused: the cell it leads to is outside the other area\'s map'
-			});
-		}
-
-		await saveAreaLink(area.id, column, row, target, transaction);
-
-		return(undefined);
-	});
-
-	if (problem !== undefined)
-	{
-		sendError(response, 400, problem);
-		return;
+		refuse(400, errorMessages.noSuchArea);
 	}
 
-	areaChanges.publish({ kind: 'area', areaId: area.id });
-	response.sendStatus(204);
+	if (!destination || (destination.universeId !== universe.id))
+	{
+		refuse(400, {
+			id: 'error.linkTargetNotInUniverse',
+			defaultMessage: 'A link must go to another area of this universe.',
+			description: 'Why an area link was refused: the area it leads to doesn\'t exist or is in another universe'
+		});
+	}
+
+	if (!isInBounds(source.bounds, column, row))
+	{
+		refuse(400, {
+			id: 'error.linkOutOfBounds',
+			defaultMessage: 'The link\'s cell must be inside the area\'s map.',
+			description: 'Why an area link was refused: its cell is outside the map, perhaps because another editor made it smaller'
+		});
+	}
+
+	if (!isInBounds(destination.bounds, target.targetColumn, target.targetRow))
+	{
+		refuse(400, {
+			id: 'error.linkTargetOutOfBounds',
+			defaultMessage: 'Where the link goes must be inside the other area\'s map.',
+			description: 'Why an area link was refused: the cell it leads to is outside the other area\'s map'
+		});
+	}
+
+	await saveAreaLink(area.id, column, row, { ...target, targetAreaId }, transaction);
+	context.published.push({ kind: 'area', areaId: area.id });
 }
 
 /**
- * DELETE /:universeId/areas/:areaId/links/:column/:row: deletes the link on a cell
+ * Deletes the link on a cell of an area
  *
- * @param request The request
- * @param response The response
+ * @param context The save
+ * @param areaId The area
+ * @param column The cell's column
+ * @param row The cell's row
  */
-async function deleteLink(request: Request, response: Response): Promise<void>
+export async function deleteLinkChange(context: ChangeContext, areaId: StringRef, column: number, row: number): Promise<void>
 {
-	const cell = cellParameters.safeParse(request.params);
+	const area = await areaOf(context, areaId);
 
-	const { area } = areaContextOf(request);
-
-	if (!cell.success || !(await deleteAreaLink(area.id, cell.data.column, cell.data.row)))
+	if (!(await deleteAreaLink(area.id, column, row, context.transaction)))
 	{
-		sendError(response, 404, {
+		refuse(404, {
 			id: 'error.noSuchLink',
 			defaultMessage: 'There is no link on that cell.',
 			description: 'Why an area link couldn\'t be deleted: it was already gone, perhaps deleted by another editor'
 		});
-		return;
 	}
 
-	areaChanges.publish({ kind: 'area', areaId: area.id });
-	response.sendStatus(204);
+	context.published.push({ kind: 'area', areaId: area.id });
 }
 
 /**
@@ -524,13 +461,14 @@ async function deleteLink(request: Request, response: Response): Promise<void>
  *
  * @param ruleset The universe's ruleset
  * @param indoors Whether the area is indoors
+ * @param executor The save's transaction
  * @return The tile's ID
  */
-async function defaultAreaTileId(ruleset: Ruleset, indoors: boolean): Promise<number>
+async function defaultAreaTileId(ruleset: Ruleset, indoors: boolean, executor: Executor): Promise<number>
 {
 	const keys = DEFAULT_AREA_TILE_KEYS[ruleset];
 	const key = (indoors ? keys.indoors : keys.outdoors);
-	const tileId = (await findDefaultTileIds(ruleset)).get(key);
+	const tileId = (await findDefaultTileIds(ruleset, executor)).get(key);
 
 	if (tileId === undefined)
 	{
@@ -541,30 +479,31 @@ async function defaultAreaTileId(ruleset: Ruleset, indoors: boolean): Promise<nu
 }
 
 /**
- * What is wrong with an area's settings, if anything, beyond what the request validators check
+ * Refuses an area's settings with a time that doesn't fit, a parent that isn't an area of the universe
+ * or is inside the area, or a default tile the universe can't use
  *
- * @param universe The area's universe
+ * @param context The save
  * @param areaId The area's ID, or undefined for an area being created
  * @param settings The settings the area would have
- * @return Why the settings can't be saved, or undefined when they can
  */
-async function areaSettingsProblem(universe: Omit<EditableUniverse, 'role'>, areaId: string | undefined, settings: AreaSettings): Promise<MessageDescriptor | undefined>
+async function checkAreaSettings(context: ChangeContext, areaId: string | undefined, settings: AreaSettings): Promise<void>
 {
+	const { universe, transaction } = context;
 	const timeProblem = (timeSettingsProblem(settings)
 		?? ((areaId === universe.lobbyAreaId) ? lobbyTimeProblem(universe, settings) : undefined));
 
 	if (timeProblem !== undefined)
 	{
-		return(timeProblem);
+		refuse(400, timeProblem);
 	}
 
 	if (settings.parentAreaId !== null)
 	{
-		const parents = new Map((await listAreas(universe.id)).map((area) => [area.id, area.parentAreaId]));
+		const parents = new Map((await listAreas(universe.id, transaction)).map((area) => [area.id, area.parentAreaId]));
 
 		if (!parents.has(settings.parentAreaId))
 		{
-			return({
+			refuse(400, {
 				id: 'error.parentNotInUniverse',
 				defaultMessage: 'The parent area must be an area of this universe.',
 				description: 'Why an area\'s settings were refused: the area chosen to hold it doesn\'t exist'
@@ -573,7 +512,7 @@ async function areaSettingsProblem(universe: Omit<EditableUniverse, 'role'>, are
 
 		if ((areaId !== undefined) && wouldCreateCycle(parents, areaId, settings.parentAreaId))
 		{
-			return({
+			refuse(400, {
 				id: 'error.areaInsideItself',
 				defaultMessage: 'An area can\'t be inside itself.',
 				description: 'Why an area\'s settings were refused: the parent chosen is the area itself or an area inside it'
@@ -581,14 +520,12 @@ async function areaSettingsProblem(universe: Omit<EditableUniverse, 'role'>, are
 		}
 	}
 
-	if (await findTileKind(universe.id, universe.ruleset, settings.defaultTileId) === undefined)
+	if (await findTileKind(universe.id, universe.ruleset, settings.defaultTileId, transaction) === undefined)
 	{
-		return({
+		refuse(400, {
 			id: 'error.unusableDefaultTile',
 			defaultMessage: 'The default tile must be a tile this universe can use.',
 			description: 'Why an area\'s settings were refused: the default tile was deleted, perhaps by another editor'
 		});
 	}
-
-	return(undefined);
 }

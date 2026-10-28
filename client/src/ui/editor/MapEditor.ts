@@ -1,6 +1,6 @@
 import exitFullPageIcon from 'virtual:icon/ph:arrows-in';
 import fullPageIcon from 'virtual:icon/ph:arrows-out';
-import { canPaintTile, DEFAULT_TILE_CELL, defineMessages, isInBounds, MAX_BRUSH_SIZE, MAX_CELL_CHANGES, MAX_MAP_SIDE, VOID_CELL, VIEW_HEIGHT, VIEW_WIDTH, type CellChange, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type MapBounds, type MessageDescriptor } from '@multiverse-kiln/shared';
+import { canPaintTile, DEFAULT_TILE_CELL, defineMessages, isInBounds, MAX_BRUSH_SIZE, MAX_CELL_CHANGES, MAX_MAP_SIDE, VOID_CELL, VIEW_HEIGHT, VIEW_WIDTH, type CellChange, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type MapBounds, type MessageDescriptor, type NumberRef, type StringRef } from '@multiverse-kiln/shared';
 
 import { BRUSH_SHAPES, brushCells, type BrushCell, type BrushShape } from '../../editor/brush';
 import { ChunkLoader } from '../../editor/ChunkLoader';
@@ -8,7 +8,7 @@ import { EditHistory, type EditStep } from '../../editor/EditHistory';
 import { EditorMap } from '../../editor/EditorMap';
 import { editorAreaPayload, MapCanvas } from '../../editor/MapCanvas';
 import { currentLocale, t } from '../../localization';
-import { describeEditorError, EditorApiError, type EditorApi } from '../../network/editorApi';
+import { describeEditorError, EditorApiError } from '../../network/editorApi';
 import type { CameraState, MapEditorHost, PointerMode } from '../../scenes/MapEditorScene';
 import { getElement, namedOptions, setButtonLabel, setOptions, showMessage } from '../dom';
 import { formMessages } from '../formMessages';
@@ -16,6 +16,7 @@ import { addKeyHelp, formatKeys } from '../shortcuts';
 import { tileName } from '../tileNames';
 import type { AreaSource, LinkChange } from './areaSource';
 import { describeCell } from './cellDescription';
+import type { EditorSave, SaveRefusal } from './editorSave';
 import { LinkDialog } from './LinkDialog';
 import { mapMessages } from './mapMessages';
 import { ResizeDialog, type ResizeLoss } from './ResizeDialog';
@@ -174,17 +175,36 @@ export class MapEditor
 	private pendingSaves = 0;
 
 	/**
+	 * What the save being sent holds: the area, its new bounds, the cells painted and the link changes
+	 */
+	private collected: { areaId: string; bounds: MapBounds; cells: CellChange[]; links: [string, LinkChange][] } | undefined;
+
+	/**
+	 * Whether the player agreed to delete the links a smaller map cuts off, for the next save
+	 */
+	private discardOnSave = false;
+
+	/**
+	 * Whether showing the open area again loads its map afresh, after a save made the tiles it is painted with
+	 */
+	private reloadOnShow = false;
+
+	/**
+	 * The tiles the Tilesets tab will delete, which can't be painted with
+	 */
+	private deletedTiles: ReadonlyMap<number, number | undefined> = new Map();
+
+	/**
 	 * Changes every time an area is opened, so data that arrives for an earlier one is ignored
 	 */
 	private openVersion = 0;
 
 	/**
-	 * @param api The editor's API
 	 * @param source Where the areas, their links and their maps' chunks come from
 	 * @param onBoundsChanged Called with an area's new bounds after the map editor resizes it
 	 * @param onUnsavedChanged Called with whether the map has painting, a change of size or links that haven't been saved, whenever that may have changed
 	 */
-	constructor(private readonly api: EditorApi, private readonly source: AreaSource, private readonly onBoundsChanged: (bounds: MapBounds) => void, private readonly onUnsavedChanged: (unsaved: boolean) => void)
+	constructor(private readonly source: AreaSource, private readonly onBoundsChanged: (bounds: MapBounds) => void, private readonly onUnsavedChanged: (unsaved: boolean) => void)
 	{
 		this.resizeDialog = new ResizeDialog();
 		this.linkDialog = new LinkDialog();
@@ -302,16 +322,19 @@ export class MapEditor
 	 *
 	 * @param universe The area's universe
 	 * @param area The area
-	 * @param tiles Every tile the universe can use
+	 * @param tiles Every tile the universe can use, with the Tilesets tab's changes
+	 * @param deletedTiles The tiles the Tilesets tab will delete, which can't be painted with
 	 * @param areas Every area of the universe, for the links' targets
 	 * @param editable Whether the map can be changed: false for a player whose role can't change the world, or an area that will be deleted
 	 */
-	async show(universe: EditableUniverse, area: EditorArea, tiles: readonly EditorTile[], areas: readonly EditorAreaSummary[], editable: boolean): Promise<void>
+	async show(universe: EditableUniverse, area: EditorArea, tiles: readonly EditorTile[], deletedTiles: ReadonlyMap<number, number | undefined>, areas: readonly EditorAreaSummary[], editable: boolean): Promise<void>
 	{
 		const version = ++this.openVersion;
-		const same = ((this.open?.area.id === area.id) && sameBounds(this.open.map.bounds, area.bounds));
+		const sameArea = (this.open?.area.id === area.id);
+		const same = (sameArea && !this.reloadOnShow && (this.open !== undefined) && sameBounds(this.open.map.bounds, area.bounds));
 
-		this.fillTiles(universe, area, tiles, (this.open?.area.id === area.id));
+		this.deletedTiles = deletedTiles;
+		this.fillTiles(universe, area, tiles, sameArea);
 		this.tools.hidden = !editable;
 		this.expandField.hidden = !editable;
 
@@ -343,7 +366,7 @@ export class MapEditor
 			return;
 		}
 
-		const camera = (same ? this.canvas.scene?.cameraState() : undefined);
+		const camera = (sameArea ? this.canvas.scene?.cameraState() : undefined);
 
 		if (same && this.open)
 		{
@@ -351,6 +374,7 @@ export class MapEditor
 		}
 		else
 		{
+			this.reloadOnShow = false;
 			this.open?.loader.stop();
 			this.history.clear();
 			this.stagedLinks.clear();
@@ -431,17 +455,21 @@ export class MapEditor
 	}
 
 	/**
-	 * Saves the map's new bounds, the painting not yet saved, in requests of up to MAX_CELL_CHANGES
-	 * cells, and the links not yet saved. The map is read-only until it is done
+	 * Adds the map's new bounds, the painting not yet saved (in changes of up to MAX_CELL_CHANGES cells)
+	 * and the links not yet saved to a save. The map is read-only until the save is over
 	 *
 	 * The server refuses painting and links outside its bounds, so the map first grows to cover both its
 	 * saved and new bounds, then the painting is saved, then it shrinks to its new bounds, and last the
-	 * links are saved. Cells a smaller map cuts off are set to the default tile with the painting, so
-	 * shrinking discards nothing unless saved links are on them, which the player is asked about first
+	 * links are saved; a link on a cell the smaller map cuts off is dropped. Cells a smaller map cuts off
+	 * are set to the default tile with the painting, so shrinking discards nothing unless saved links are
+	 * on them, which the player is asked about when the server refuses the save for it
 	 *
-	 * @return Resolves once every request has been stored; rejects with the request's error when one fails
+	 * @param save The save
+	 * @param areaRef How the save names an area, from its ID on the page
+	 * @param tileRef How the save names the tile a cell is painted with, from its ID on the page
+	 * @param onRefused Shows why the server refused one of the map's changes
 	 */
-	async save(): Promise<void>
+	collect(save: EditorSave, areaRef: (areaId: string) => StringRef, tileRef: (tileId: number) => NumberRef, onRefused: (refusal: SaveRefusal) => void): void
 	{
 		const open = this.open;
 
@@ -450,103 +478,146 @@ export class MapEditor
 			return;
 		}
 
+		const areaId = areaRef(open.area.id);
 		const bounds = open.map.bounds;
-		const changes = [...this.unsaved.values()];
+		const covering = unionBounds(open.area.bounds, bounds);
+		const cells = [...this.unsaved.values()];
+		const links = [...this.stagedLinks];
 
 		showMessage(this.error, undefined);
+
+		if (!sameBounds(covering, open.area.bounds))
+		{
+			save.add({ kind: 'resizeArea', areaId, bounds: covering, discard: false }, onRefused);
+		}
+
+		for (let start = 0; start < cells.length; start += MAX_CELL_CHANGES)
+		{
+			save.add({
+				kind: 'editCells',
+				areaId,
+				changes: cells
+					.slice(start, start + MAX_CELL_CHANGES)
+					.map(([column, row, value]) => [column, row, (((value === DEFAULT_TILE_CELL) || (value === VOID_CELL)) ? value : tileRef(value))])
+			}, onRefused);
+		}
+
+		if (!sameBounds(bounds, covering))
+		{
+			save.add({ kind: 'resizeArea', areaId, bounds, discard: this.discardOnSave }, (refusal) =>
+			{
+				this.resizeRefused(refusal, onRefused);
+			});
+		}
+
+		for (const [, change] of links)
+		{
+			const cutOff = ((change.areaId === open.area.id) && !isInBounds(bounds, change.column, change.row));
+
+			if (cutOff)
+			{
+				continue;
+			}
+
+			if (change.target === null)
+			{
+				save.add({ kind: 'deleteLink', areaId: areaRef(change.areaId), column: change.column, row: change.row }, onRefused);
+			}
+			else
+			{
+				save.add({ kind: 'saveLink', areaId: areaRef(change.areaId), column: change.column, row: change.row, target: { ...change.target, targetAreaId: areaRef(change.target.targetAreaId) } }, onRefused);
+			}
+		}
+
+		this.collected = { areaId: open.area.id, bounds, cells, links };
 		this.pendingSaves++;
 		this.updateSaveStatus();
 		this.updateButtons();
-
-		try
-		{
-			const covering = unionBounds(open.area.bounds, bounds);
-
-			if (!sameBounds(covering, open.area.bounds))
-			{
-				await this.api.resizeArea(open.universe.id, open.area.id, covering, false);
-				open.area = { ...open.area, bounds: covering };
-			}
-
-			for (let start = 0; start < changes.length; start += MAX_CELL_CHANGES)
-			{
-				const batch = changes.slice(start, start + MAX_CELL_CHANGES);
-
-				await this.api.editCells(open.universe.id, open.area.id, batch);
-
-				if (this.open === open)
-				{
-					this.markCellsSaved(batch);
-				}
-			}
-
-			if (!sameBounds(bounds, open.area.bounds))
-			{
-				const conflict = await this.api.resizeArea(open.universe.id, open.area.id, bounds, false);
-
-				if (conflict)
-				{
-					const question = t({
-						id: 'editor.map.confirmDeleteLinks',
-						defaultMessage: 'Saving the smaller map deletes {links, plural, one {# link} other {# links}} on or into the cells it cuts off. This can\'t be undone. Save anyway?',
-						description: 'Asked while saving a map made smaller, when links are on the cells it cuts off or lead into them; {links} is how many'
-					}, {
-						links: conflict.discardedLinks
-					});
-
-					if (!window.confirm(question))
-					{
-						throw new EditorApiError(t({
-							id: 'editor.map.linksKept',
-							defaultMessage: 'The links were kept, so the map wasn\'t made smaller.',
-							description: 'Why saving the map stopped: the player chose not to delete the links a smaller map would cut off'
-						}), 409, conflict);
-					}
-
-					await this.api.resizeArea(open.universe.id, open.area.id, bounds, true);
-				}
-
-				open.area = { ...open.area, bounds };
-			}
-
-			await this.saveLinks(open);
-			await this.reloadLinks(open);
-		}
-		finally
+		save.onFinished(() =>
 		{
 			this.pendingSaves--;
 			this.unsavedChanged();
 			this.updateButtons();
-		}
+		});
 	}
 
 	/**
-	 * Saves the links not yet saved, in the order they were made. A link on a cell the map no longer has
-	 * is dropped, since the map's size was saved first
+	 * Asks whether to delete the links a smaller map cuts off, when the server refused the save for them,
+	 * and saves again without them when the player agrees
 	 *
-	 * @param open The area open when saving started
-	 * @return Resolves once every link has been stored; rejects with the request's error when one fails
+	 * @param refusal Why the save was refused
+	 * @param onRefused Shows why the map wasn't saved
 	 */
-	private async saveLinks(open: OpenArea): Promise<void>
+	private resizeRefused(refusal: SaveRefusal, onRefused: (refusal: SaveRefusal) => void): void
 	{
-		for (const [key, change] of [...this.stagedLinks])
+		const conflict = refusal.resizeConflict;
+
+		if (!conflict)
 		{
-			const cutOff = ((change.areaId === open.area.id) && !isInBounds(open.area.bounds, change.column, change.row));
-
-			if (!cutOff)
-			{
-				if (change.target === null)
-				{
-					await this.api.deleteLink(open.universe.id, change.areaId, change.column, change.row);
-				}
-				else
-				{
-					await this.api.saveLink(open.universe.id, change.areaId, change.column, change.row, change.target);
-				}
-			}
-
-			this.stagedLinks.delete(key);
+			onRefused(refusal);
+			return;
 		}
+
+		const question = t({
+			id: 'editor.map.confirmDeleteLinks',
+			defaultMessage: 'Saving the smaller map deletes {links, plural, one {# link} other {# links}} on or into the cells it cuts off. This can\'t be undone. Save anyway?',
+			description: 'Asked while saving a map made smaller, when links are on the cells it cuts off or lead into them; {links} is how many'
+		}, {
+			links: conflict.discardedLinks
+		});
+
+		if (window.confirm(question))
+		{
+			this.discardOnSave = true;
+			refusal.retry();
+			return;
+		}
+
+		onRefused({
+			...refusal,
+			error: new EditorApiError(t({
+				id: 'editor.map.linksKept',
+				defaultMessage: 'The links were kept, so the map wasn\'t made smaller.',
+				description: 'Why saving stopped: the player chose not to delete the links a smaller map would cut off; nothing was saved'
+			}), 409, conflict)
+		});
+	}
+
+	/**
+	 * Takes the map's changes as saved, once the save collect() added them to is saved. A map painted
+	 * with tiles the save made, whose IDs on the page are negative, loads afresh when the area editor
+	 * shows it again, so its cells hold the tiles' saved IDs
+	 */
+	saved(): void
+	{
+		const collected = this.collected;
+		const open = this.open;
+
+		this.collected = undefined;
+		this.discardOnSave = false;
+
+		if (!collected || !open || (open.area.id !== collected.areaId))
+		{
+			return;
+		}
+
+		this.markCellsSaved(collected.cells);
+		open.area = { ...open.area, bounds: collected.bounds };
+
+		for (const [key, change] of collected.links)
+		{
+			if (this.stagedLinks.get(key) === change)
+			{
+				this.stagedLinks.delete(key);
+			}
+		}
+
+		if (collected.cells.some(([, , value]) => ((value < 0) && (value !== VOID_CELL))))
+		{
+			this.reloadOnShow = true;
+		}
+
+		this.unsavedChanged();
 	}
 
 	/**
@@ -1086,8 +1157,33 @@ export class MapEditor
 	}
 
 	/**
-	 * Lists the tiles to paint with: the area's enabled indoor or outdoor tiles and its default tile by name, then
-	 * Void, and chooses the default tile
+	 * Lists and draws the tiles as the Tilesets tab's changes make them, keeping the map's unsaved
+	 * painting, undo history, links and camera
+	 *
+	 * @param tiles Every tile the universe can use, with the Tilesets tab's changes
+	 * @param deletedTiles The tiles the Tilesets tab will delete, which can't be painted with
+	 * @param indoors Whether the area is indoors, as the area editor's choice now is
+	 */
+	async setTiles(tiles: readonly EditorTile[], deletedTiles: ReadonlyMap<number, number | undefined>, indoors: boolean): Promise<void>
+	{
+		const open = this.open;
+
+		if (!open)
+		{
+			return;
+		}
+
+		const camera = this.canvas.scene?.cameraState();
+
+		this.deletedTiles = deletedTiles;
+		this.open = { ...open, tiles };
+		this.fillTiles(open.universe, { ...open.area, indoors }, tiles, true);
+		await this.startScene(camera);
+	}
+
+	/**
+	 * Lists the tiles to paint with: the area's enabled indoor or outdoor tiles but those the Tilesets tab
+	 * will delete, and its default tile, by name, then Void, and chooses the default tile
 	 *
 	 * @param universe The area's universe
 	 * @param area The area
@@ -1098,7 +1194,7 @@ export class MapEditor
 	{
 		const chosen = (keepChoice ? this.tile.value : String(area.defaultTileId));
 		const paintable = tiles
-			.filter((tile) => (canPaintTile(tile, area.indoors) || (tile.id === area.defaultTileId)))
+			.filter((tile) => ((canPaintTile(tile, area.indoors) && !this.deletedTiles.has(tile.id)) || (tile.id === area.defaultTileId)))
 			.map((tile) => ({
 				tile,
 				name: tileName(tile, universe.ruleset)

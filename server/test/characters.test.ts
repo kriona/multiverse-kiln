@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { characterPath, charactersPath, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyMoney, MAX_CHARACTERS_PER_UNIVERSE, NEW_PF1E_RACE_RULES, PF1E_ABILITIES, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type NewCharacterOptions, type NewCharacterRequest, type Pf1eAbilityScores, type RaceSettings } from '@multiverse-kiln/shared';
+import { characterPath, charactersPath, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyMoney, MAX_CHARACTERS_PER_UNIVERSE, NEW_PF1E_RACE_RULES, PF1E_ABILITIES, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditorChange, type NewCharacterOptions, type NewCharacterRequest, type Pf1eAbilityScores, type RaceSettings, type SaveChangesPayload } from '@multiverse-kiln/shared';
 
 import { findDefaultClassIds } from '../src/db/classRepo.js';
 import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
@@ -89,6 +89,19 @@ async function send<T = unknown>(browser: Browser | undefined, method: string, p
 		status: response.status,
 		body: ((text === '') ? undefined : JSON.parse(text)) as T
 	});
+}
+
+/**
+ * Saves one change in the world editor
+ *
+ * @param browser The browser saving it
+ * @param universeId The universe's ID
+ * @param change The change
+ * @return The status, and the IDs of what the change made
+ */
+async function saveEditorChange(browser: Browser, universeId: string, change: EditorChange): Promise<Answer<SaveChangesPayload>>
+{
+	return(send<SaveChangesPayload>(browser, 'POST', `${EDITOR_UNIVERSES_PATH}/${universeId}/changes`, { changes: [change] }));
 }
 
 /**
@@ -195,18 +208,21 @@ describe('Character routes', () =>
 	 */
 	async function usePointBuy(): Promise<void>
 	{
-		const answer = await send(ada, 'PUT', `${EDITOR_UNIVERSES_PATH}/${universeId}/ruleset`, {
-			ruleset: 'pf1e',
+		const answer = await saveEditorChange(ada, universeId, {
+			kind: 'ruleset',
 			settings: {
-				statMethod: 'point_buy_standard_fantasy',
-				customPointBuyBudget: 15,
-				needsSleep: false,
-				coinsHaveWeight: false,
-				tracksAmmo: false
+				ruleset: 'pf1e',
+				settings: {
+					statMethod: 'point_buy_standard_fantasy',
+					customPointBuyBudget: 15,
+					needsSleep: false,
+					coinsHaveWeight: false,
+					tracksAmmo: false
+				}
 			}
 		});
 
-		assert.strictEqual(answer.status, 204);
+		assert.strictEqual(answer.status, 200);
 	}
 
 	it('needs a logged-in browser', async () =>
@@ -226,7 +242,7 @@ describe('Character routes', () =>
 		await setUniverseRole(universeId, grace.playerId, 'beta_tester');
 		assert.strictEqual((await send(grace, 'GET', charactersPath(universeId))).status, 404);
 
-		await send(ada, 'PATCH', `${EDITOR_UNIVERSES_PATH}/${universeId}`, { stage: 'prologue' });
+		await saveEditorChange(ada, universeId, { kind: 'universe', update: { stage: 'prologue' } });
 		assert.strictEqual((await send(grace, 'GET', charactersPath(universeId))).status, 200);
 	});
 
@@ -313,7 +329,7 @@ describe('Character routes', () =>
 		assert.deepStrictEqual(Object.keys(money), Object.keys(emptyMoney()));
 		assert.deepStrictEqual(items.map(({ key, type, quantity }) => ({ key, type, quantity })), [{ key: 'dagger', type: 'dagger', quantity: 1 }]);
 
-		await send(ada, 'PATCH', `${EDITOR_UNIVERSES_PATH}/${universeId}`, { stage: 'prologue' });
+		await saveEditorChange(ada, universeId, { kind: 'universe', update: { stage: 'prologue' } });
 
 		const grace = await logIn('Grace');
 
@@ -346,7 +362,7 @@ describe('Character routes', () =>
 		assert.strictEqual((await send(ada, 'DELETE', `${path}/deletion`)).status, 404);
 		assert.strictEqual((await send<CharacterSheet>(ada, 'GET', path)).body.deleteAt, null);
 
-		await send(ada, 'PATCH', `${EDITOR_UNIVERSES_PATH}/${universeId}`, { stage: 'prologue' });
+		await saveEditorChange(ada, universeId, { kind: 'universe', update: { stage: 'prologue' } });
 
 		const grace = await logIn('Grace');
 
@@ -467,10 +483,10 @@ describe('Character routes', () =>
 			startingRow: 0,
 			rules: NEW_PF1E_RACE_RULES
 		};
-		const created = await send<CreatedPayload<number>>(ada, 'POST', `${EDITOR_UNIVERSES_PATH}/${universeId}/races`, lizardfolk);
+		const raceId = (await saveEditorChange(ada, universeId, { kind: 'createRace', ref: 'new:race', settings: lizardfolk })).body.ids['new:race'];
 		const answer = await send(ada, 'POST', charactersPath(universeId), {
 			name: 'Sss',
-			raceId: created.body.id,
+			raceId,
 			classId: fighterId,
 			baseScores: standardBuy,
 			themeId: null,
@@ -478,7 +494,7 @@ describe('Character routes', () =>
 		});
 
 		assert.strictEqual(answer.status, 409);
-		assert.ok(!(await newOptions()).races.some((race) => (race.id === created.body.id)));
+		assert.ok(!(await newOptions()).races.some((race) => (race.id === raceId)));
 	});
 
 	it('won\'t delete a race characters are', async () =>
@@ -495,18 +511,18 @@ describe('Character routes', () =>
 			startingRow: 0,
 			rules: NEW_PF1E_RACE_RULES
 		};
-		const race = await send<CreatedPayload<number>>(ada, 'POST', `${EDITOR_UNIVERSES_PATH}/${universeId}/races`, lizardfolk);
+		const raceId = Number((await saveEditorChange(ada, universeId, { kind: 'createRace', ref: 'new:race', settings: lizardfolk })).body.ids['new:race']);
 
 		await send(ada, 'POST', charactersPath(universeId), {
 			name: 'Sss',
-			raceId: race.body.id,
+			raceId,
 			classId: fighterId,
 			baseScores: standardBuy,
 			themeId: null,
 			floatingAbility: null
 		});
 
-		assert.strictEqual((await send(ada, 'DELETE', `${EDITOR_UNIVERSES_PATH}/${universeId}/races/${race.body.id}`)).status, 409);
+		assert.strictEqual((await saveEditorChange(ada, universeId, { kind: 'removeRace', id: raceId })).status, 409);
 	});
 
 	it('allows at most MAX_CHARACTERS_PER_UNIVERSE characters', async () =>
@@ -674,7 +690,7 @@ describe('Character routes', () =>
 
 		it('makes a character with their race\'s and theme\'s bonuses, hit points, stamina and credits', async () =>
 		{
-			await send(ada, 'PATCH', `${EDITOR_UNIVERSES_PATH}/${starUniverseId}`, { startingMoney: { ...emptyMoney(), cr: 1000 } });
+			await saveEditorChange(ada, starUniverseId, { kind: 'universe', update: { startingMoney: { ...emptyMoney(), cr: 1000 } } });
 
 			const created = await send<CreatedPayload>(ada, 'POST', charactersPath(starUniverseId), request);
 

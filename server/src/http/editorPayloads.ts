@@ -3,10 +3,10 @@
  *
  * Each one must accept exactly the matching interface in /shared; `satisfies` makes the compiler check
  * that. Unknown keys are stripped rather than rejected. These check each value on its own; checks that
- * need the database (such as whether a tile belongs to the universe) are made by the routes
+ * need the database (such as whether a tile belongs to the universe) are made as each change is saved
  */
 import { z } from 'zod';
-import { DARKVISIONS, DEFAULT_RACE_NAMES, DISALLOWED_TEXT_CHARACTERS, TILE_USED_IN,DISPLAY_TIMES,FAERIE_MORNINGS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, isRulesetMoney, ITEM_SORT_COLUMNS, MAX_CELL_CHANGES, MAX_CHUNKS_PER_REQUEST, MAX_CLASS_NAME_LENGTH, MAX_COINS, MAX_CUSTOM_RACES, MAX_DIFFICULTY_NAME_LENGTH, MAX_GROUP_PLAYERS, MAX_ITEM_NAME_LENGTH, MAX_ITEM_QUANTITY, MAX_ITEMS_PER_PAGE, MAX_LONG_DESCRIPTION_LENGTH, MAX_MAP_SIDE, MAX_MOB_SCALE, MIN_MOB_SCALE, MAX_RACE_NAME_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_STARTING_ITEMS, MAX_THEME_NAME_LENGTH, MAX_TILE_GRAPHIC_BYTES, MAX_TILE_GRAPHIC_DRAW_ORDER, MAX_TILE_GRAPHIC_NAME_LENGTH, MAX_TILE_NAME_LENGTH, MAX_TILES_PER_PAGE, MAX_WALK_SECONDS, MIN_TILE_GRAPHIC_DRAW_ORDER,MAX_UNIVERSE_NAME_LENGTH, MAX_AREA_NAME_LENGTH, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, SORT_DIRECTIONS, TILE_GRAPHIC_FORMATS, TILE_GRAPHIC_KEYS, TILE_SORT_COLUMNS, UNIVERSE_STAGES, universeSlug, VOID_CELL, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, type CellEditRequest, type ChunkRange, type ClassSettings, type DifficultyLevelSettings, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type NewAreaRequest, type RaceSettings, type ResizeAreaRequest, type Ruleset, type RulesetSettings, type ThemeSettings, type TileGraphicUploadRequest, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type AreaLinkTarget, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
+import { DARKVISIONS, DEFAULT_RACE_NAMES, DISALLOWED_TEXT_CHARACTERS, TILE_USED_IN,DISPLAY_TIMES,FAERIE_MORNINGS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, isRulesetMoney, ITEM_SORT_COLUMNS, MAX_CELL_CHANGES, MAX_CHUNKS_PER_REQUEST, MAX_CLASS_NAME_LENGTH, MAX_COINS, MAX_CUSTOM_RACES, MAX_DIFFICULTY_NAME_LENGTH, MAX_GROUP_PLAYERS, MAX_ITEM_NAME_LENGTH, MAX_ITEM_QUANTITY, MAX_ITEMS_PER_PAGE, MAX_LONG_DESCRIPTION_LENGTH, MAX_MAP_SIDE, MAX_MOB_SCALE, MIN_MOB_SCALE, MAX_RACE_NAME_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_STARTING_ITEMS, MAX_THEME_NAME_LENGTH, MAX_TILE_GRAPHIC_BYTES, MAX_TILE_GRAPHIC_DRAW_ORDER, MAX_TILE_GRAPHIC_NAME_LENGTH, MAX_TILE_NAME_LENGTH, MAX_TILES_PER_PAGE, MAX_WALK_SECONDS, MIN_TILE_GRAPHIC_DRAW_ORDER,MAX_UNIVERSE_NAME_LENGTH, MAX_AREA_NAME_LENGTH, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, SORT_DIRECTIONS, TILE_GRAPHIC_FORMATS, TILE_GRAPHIC_KEYS, TILE_SORT_COLUMNS, UNIVERSE_STAGES, universeSlug, VOID_CELL, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, MAX_CHANGES_PER_SAVE, type NewRef, type SaveChangesRequest, type TileChangeSettings, type ChunkRange, type ClassSettings, type DifficultyLevelSettings, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type RaceSettings, type Ruleset, type RulesetSettings, type ThemeSettings, type TileGraphicUploadRequest, type TileListQuery, type UniverseSettingsUpdate, type AreaLinkTarget } from '@multiverse-kiln/shared';
 
 import { displayText } from '../rooms/payloads.js';
 
@@ -100,22 +100,9 @@ const startingItemList = z.array(z.object({
 export const tileIdParameter = z.coerce.number().int().min(1).max(2147483647);
 
 /**
- * An item ID in a path
- */
-export const itemIdParameter = z.coerce.number().int().min(1).max(2147483647);
-
-/**
- * The key of an item type or category. Whether the universe's ruleset has it is checked by the route
+ * The key of an item type or category. Whether the universe's ruleset has it is checked as it is saved
  */
 const itemKindKey = z.string().trim().min(1).max(40);
-
-/**
- * A cell in a path: /:column/:row
- */
-export const cellParameters = z.object({
-	column: cellCoordinateText,
-	row: cellCoordinateText
-});
 
 /**
  * A universe's name, which needs a letter or digit for its slug (the part of its page's address that names it)
@@ -134,7 +121,7 @@ export const newUniverseRequest = z.object({
 /**
  * UniverseSettingsUpdate, by the universe's ruleset
  */
-export const universeSettingsUpdate = byRuleset((ruleset) => z.object({
+const universeSettingsUpdate = byRuleset((ruleset) => z.object({
 	name: universeName.optional(),
 	shortDescription: shortDescription.optional(),
 	longDescription: longDescription.optional(),
@@ -157,7 +144,7 @@ export const universeSettingsUpdate = byRuleset((ruleset) => z.object({
 /**
  * RulesetSettings
  */
-export const rulesetSettings = z.discriminatedUnion('ruleset', [
+const rulesetSettings = z.discriminatedUnion('ruleset', [
 	z.object({
 		ruleset: z.literal('pf1e'),
 		settings: z.object({
@@ -179,30 +166,45 @@ export const rulesetSettings = z.discriminatedUnion('ruleset', [
 ]) satisfies z.ZodType<RulesetSettings>;
 
 /**
- * TileSettings
+ * A database ID that is a whole number, in a request body
  */
-export const tileSettings = z.object({
+const numericId = z.number().int().min(1).max(2147483647);
+
+/**
+ * A NewRef: how a change refers to something an earlier change in the same save makes
+ */
+const newRef = z.custom<NewRef>((value) => ((typeof value === 'string') && /^new:[\w-]{1,40}$/.test(value)), 'Not a ref');
+
+/**
+ * A NumberRef: a saved thing's ID, or a NewRef
+ */
+const numberRef = z.union([numericId, newRef]);
+
+/**
+ * A StringRef: a saved area's or tile graphic's ID, or a NewRef
+ */
+const stringRef = z.union([z.uuid(), newRef]);
+
+/**
+ * TileChangeSettings
+ */
+const tileChangeSettings = z.object({
 	name: displayText(MAX_TILE_NAME_LENGTH).nullable(),
 	indoors: z.boolean(),
 	outdoors: z.boolean(),
 	color: z.number().int().min(0).max(0xFFFFFF),
 	graphic: z.enum(TILE_GRAPHIC_KEYS).nullable(),
-	uploadedGraphicId: z.uuid().nullable(),
+	uploadedGraphicId: stringRef.nullable(),
 	visionCost: z.number().int().min(0).max(100),
 	walkSeconds: z.number().int().min(0).max(MAX_WALK_SECONDS),
 	enabled: z.boolean()
-}).refine((tile) => ((tile.graphic === null) || (tile.uploadedGraphicId === null)), 'A tile has at most one graphic') satisfies z.ZodType<TileSettings>;
-
-/**
- * An uploaded tile graphic's ID in a path
- */
-export const tileGraphicIdParameter = z.uuid();
+}).refine((tile) => ((tile.graphic === null) || (tile.uploadedGraphicId === null)), 'A tile has at most one graphic') satisfies z.ZodType<TileChangeSettings>;
 
 /**
  * TileGraphicUploadRequest. The image's base64 is at most what MAX_TILE_GRAPHIC_BYTES encodes to; the
- * route checks the decoded image
+ * decoded image is checked as it is saved
  */
-export const tileGraphicUploadRequest = z.object({
+const tileGraphicUploadRequest = z.object({
 	name: displayText(MAX_TILE_GRAPHIC_NAME_LENGTH),
 	format: z.enum(TILE_GRAPHIC_FORMATS),
 	drawOrder: z.number().int().min(MIN_TILE_GRAPHIC_DRAW_ORDER).max(MAX_TILE_GRAPHIC_DRAW_ORDER).nullable(),
@@ -228,7 +230,7 @@ export const tileListQuery = z.object({
 /**
  * ItemSettings
  */
-export const itemSettings = z.object({
+const itemSettings = z.object({
 	name: displayText(MAX_ITEM_NAME_LENGTH).nullable(),
 	type: itemKindKey,
 	enabled: z.boolean()
@@ -252,26 +254,6 @@ export const itemListQuery = z.object({
 	offset: z.coerce.number().int().min(0).default(0),
 	limit: z.coerce.number().int().min(1).max(MAX_ITEMS_PER_PAGE).default(MAX_ITEMS_PER_PAGE)
 }) satisfies z.ZodType<ItemListQuery, unknown>;
-
-/**
- * A race ID in a path
- */
-export const raceIdParameter = z.coerce.number().int().min(1).max(2147483647);
-
-/**
- * A class ID in a path
- */
-export const classIdParameter = z.coerce.number().int().min(1).max(2147483647);
-
-/**
- * A theme ID in a path
- */
-export const themeIdParameter = z.coerce.number().int().min(1).max(2147483647);
-
-/**
- * A difficulty level's ID in a path
- */
-export const difficultyLevelIdParameter = z.coerce.number().int().min(1).max(2147483647);
 
 /**
  * A modifier for each ability, each a whole number in a range
@@ -353,20 +335,20 @@ function startingExtrasFields(ruleset: Ruleset)
 /**
  * RaceSettings, by the universe's ruleset
  */
-export const raceSettings = byRuleset((ruleset) => z.object({
+const raceSettings = byRuleset((ruleset) => z.object({
 	...startingExtrasFields(ruleset),
 	name: displayText(MAX_RACE_NAME_LENGTH).nullable(),
 	rules: raceRules[ruleset]
 }) satisfies z.ZodType<RaceSettings>);
 
 /**
- * ClassSettings, by the universe's ruleset. Whether each race is one the universe can use is checked by the route
+ * ClassSettings, by the universe's ruleset. Whether each race is one the universe can use is checked as it is saved
  */
-export const classSettings = byRuleset((ruleset) => z.object({
+const classSettings = byRuleset((ruleset) => z.object({
 	...startingExtrasFields(ruleset),
 	name: displayText(MAX_CLASS_NAME_LENGTH).nullable(),
 	raceAreas: z.array(z.object({
-		raceId: raceIdParameter,
+		raceId: numericId,
 		areaId: z.uuid(),
 		column: cellCoordinate,
 		row: cellCoordinate
@@ -380,7 +362,7 @@ export const classSettings = byRuleset((ruleset) => z.object({
 /**
  * DifficultyLevelSettings
  */
-export const difficultyLevelSettings = z.object({
+const difficultyLevelSettings = z.object({
 	name: displayText(MAX_DIFFICULTY_NAME_LENGTH).nullable(),
 	isDefault: z.boolean(),
 	mobScale: z.number().int().min(MIN_MOB_SCALE).max(MAX_MOB_SCALE),
@@ -390,42 +372,13 @@ export const difficultyLevelSettings = z.object({
 /**
  * ThemeSettings
  */
-export const themeSettings = z.object({
+const themeSettings = z.object({
 	name: displayText(MAX_THEME_NAME_LENGTH).nullable(),
 	enabled: z.boolean(),
 	rules: z.object({
 		ability: z.enum(SF1E_ABILITIES)
 	})
 }) satisfies z.ZodType<ThemeSettings>;
-
-/**
- * The settings an area may be created with or changed to, each optional
- */
-const areaSettingsFields = {
-	name: displayText(MAX_AREA_NAME_LENGTH).optional(),
-	parentAreaId: z.uuid().nullable().optional(),
-	enabled: z.boolean().optional(),
-	indoors: z.boolean().optional(),
-	lightLevel: z.enum(AREA_LIGHT_LEVELS).optional(),
-	defaultTileId: tileIdParameter.optional(),
-	passageOfTime: z.enum(AREA_PASSAGES_OF_TIME).optional(),
-	faerieMorning: z.enum(FAERIE_MORNINGS).nullable().optional(),
-	loopsEastWest: z.boolean().optional(),
-	loopsNorthSouth: z.boolean().optional()
-};
-
-/**
- * NewAreaRequest
- */
-export const newAreaRequest = z.object({
-	...areaSettingsFields,
-	name: displayText(MAX_AREA_NAME_LENGTH)
-}) satisfies z.ZodType<NewAreaRequest>;
-
-/**
- * AreaSettingsUpdate
- */
-export const areaSettingsUpdate = z.object(areaSettingsFields) satisfies z.ZodType<AreaSettingsUpdate>;
 
 /**
  * MapBounds a map may have: each side at most MAX_MAP_SIDE cells, holding column 0, row 0
@@ -440,14 +393,6 @@ const mapBounds = z.object({
 	.refine((bounds) => ((bounds.maxRow - bounds.minRow) < MAX_MAP_SIDE), `The map can be at most ${MAX_MAP_SIDE} cells tall`) satisfies z.ZodType<MapBounds>;
 
 /**
- * ResizeAreaRequest
- */
-export const resizeAreaRequest = z.object({
-	bounds: mapBounds,
-	discard: z.boolean()
-}) satisfies z.ZodType<ResizeAreaRequest>;
-
-/**
  * ChunkRange, from query parameters
  */
 export const chunkRange = z.object({
@@ -460,19 +405,143 @@ export const chunkRange = z.object({
 	.refine((range) => (((range.maxChunkColumn - range.minChunkColumn + 1) * (range.maxChunkRow - range.minChunkRow + 1)) <= MAX_CHUNKS_PER_REQUEST), `The range can cover at most ${MAX_CHUNKS_PER_REQUEST} chunks`) satisfies z.ZodType<ChunkRange, unknown>;
 
 /**
- * CellEditRequest. Whether each value is a tile the universe can use is checked by the route
- */
-export const cellEditRequest = z.object({
-	changes: z.array(z.tuple([cellCoordinate, cellCoordinate, z.number().int().min(VOID_CELL).max(2147483647)])).min(1).max(MAX_CELL_CHANGES)
-}) satisfies z.ZodType<CellEditRequest>;
-
-/**
  * AreaLinkTarget
  */
-export const areaLinkTarget = z.object({
+const areaLinkTarget = z.object({
 	targetAreaId: z.uuid(),
 	targetColumn: cellCoordinate,
 	targetRow: cellCoordinate,
 	mode: z.enum(AREA_LINK_MODES),
 	requiresWholeGroup: z.boolean()
 }) satisfies z.ZodType<AreaLinkTarget>;
+
+/**
+ * The area settings a save may create an area with or change, whose default tile and parent may be
+ * made earlier in the same save
+ */
+const areaChangeFields = {
+	name: displayText(MAX_AREA_NAME_LENGTH).optional(),
+	parentAreaId: stringRef.nullable().optional(),
+	enabled: z.boolean().optional(),
+	indoors: z.boolean().optional(),
+	lightLevel: z.enum(AREA_LIGHT_LEVELS).optional(),
+	defaultTileId: numberRef.optional(),
+	passageOfTime: z.enum(AREA_PASSAGES_OF_TIME).optional(),
+	faerieMorning: z.enum(FAERIE_MORNINGS).nullable().optional(),
+	loopsEastWest: z.boolean().optional(),
+	loopsNorthSouth: z.boolean().optional()
+};
+
+/**
+ * The changes to one list of things a save can make: create, save and remove
+ *
+ * @param name The list's name in the changes' kinds, e.g. Item for createItem
+ * @param settings The validator of a thing's settings
+ * @return The changes' validators
+ */
+function listChanges<const Name extends string, Settings extends z.ZodType>(name: Name, settings: Settings)
+{
+	return([
+		z.object({
+			kind: z.literal(`create${name}`),
+			ref: newRef,
+			settings
+		}),
+		z.object({
+			kind: z.literal(`save${name}`),
+			id: numberRef,
+			settings
+		}),
+		z.object({
+			kind: z.literal(`remove${name}`),
+			id: numberRef
+		})
+	] as const);
+}
+
+/**
+ * SaveChangesRequest, by the universe's ruleset. Whether what each change names exists in the universe
+ * is checked as the change is saved
+ */
+export const saveChangesRequest = byRuleset((ruleset) => z.object({
+	changes: z.array(z.discriminatedUnion('kind', [
+		z.object({
+			kind: z.literal('universe'),
+			update: universeSettingsUpdate[ruleset]
+		}),
+		z.object({
+			kind: z.literal('ruleset'),
+			settings: rulesetSettings
+		}),
+		z.object({
+			kind: z.literal('uploadTileGraphic'),
+			ref: newRef,
+			upload: tileGraphicUploadRequest
+		}),
+		z.object({
+			kind: z.literal('deleteTileGraphic'),
+			graphicId: z.uuid()
+		}),
+		z.object({
+			kind: z.literal('createTile'),
+			ref: newRef,
+			settings: tileChangeSettings
+		}),
+		z.object({
+			kind: z.literal('saveTile'),
+			id: numberRef,
+			settings: tileChangeSettings
+		}),
+		z.object({
+			kind: z.literal('removeTile'),
+			id: numberRef,
+			replaceWith: numberRef.nullable()
+		}),
+		...listChanges('Item', itemSettings),
+		...listChanges('Race', raceSettings[ruleset]),
+		...listChanges('Class', classSettings[ruleset]),
+		...listChanges('Theme', themeSettings),
+		...listChanges('DifficultyLevel', difficultyLevelSettings),
+		z.object({
+			kind: z.literal('createArea'),
+			ref: newRef,
+			area: z.object({
+				...areaChangeFields,
+				name: displayText(MAX_AREA_NAME_LENGTH)
+			})
+		}),
+		z.object({
+			kind: z.literal('updateArea'),
+			areaId: stringRef,
+			update: z.object(areaChangeFields)
+		}),
+		z.object({
+			kind: z.literal('deleteArea'),
+			areaId: stringRef
+		}),
+		z.object({
+			kind: z.literal('resizeArea'),
+			areaId: stringRef,
+			bounds: mapBounds,
+			discard: z.boolean()
+		}),
+		z.object({
+			kind: z.literal('editCells'),
+			areaId: stringRef,
+			changes: z.array(z.tuple([cellCoordinate, cellCoordinate, z.union([z.number().int().min(VOID_CELL).max(2147483647), newRef])])).min(1).max(MAX_CELL_CHANGES)
+		}),
+		z.object({
+			kind: z.literal('saveLink'),
+			areaId: stringRef,
+			column: cellCoordinate,
+			row: cellCoordinate,
+			target: areaLinkTarget.extend({ targetAreaId: stringRef })
+		}),
+		z.object({
+			kind: z.literal('deleteLink'),
+			areaId: stringRef,
+			column: cellCoordinate,
+			row: cellCoordinate
+		})
+	])).max(MAX_CHANGES_PER_SAVE)
+}) satisfies z.ZodType<SaveChangesRequest>);

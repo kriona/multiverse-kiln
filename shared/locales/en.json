@@ -565,7 +565,7 @@
 	},
 	"editor.area.mapSaveFailed": {
 		"defaultMessage": "Could not save the map.",
-		"description": "Shown in the area editor when the painting on the area's map, its new size or its links couldn't be stored"
+		"description": "Shown in the area editor when the server refused the painting on the area's map, its new size or its links, followed by why; nothing was saved"
 	},
 	"editor.area.noParent": {
 		"defaultMessage": "None (a top-level area)",
@@ -585,7 +585,7 @@
 	},
 	"editor.area.saveFailed": {
 		"defaultMessage": "Could not save the area.",
-		"description": "Shown in the area editor when the area's settings couldn't be stored"
+		"description": "Shown in the area editor when the server refused the area's settings, followed by why; nothing was saved"
 	},
 	"editor.area.size": {
 		"defaultMessage": "The map is {height, number} tall x {width, number} wide.",
@@ -657,11 +657,11 @@
 	},
 	"editor.areas.createFailed": {
 		"defaultMessage": "Could not add {area}.",
-		"description": "Shown on the Areas tab when saving stopped at adding an area the server refused; {area} is its name. Changes after it are kept, not saved"
+		"description": "Shown on the Areas tab when the server refused an area added on it, followed by why; {area} is its name. Nothing was saved"
 	},
 	"editor.areas.deleteFailed": {
 		"defaultMessage": "Could not delete {area}.",
-		"description": "Shown on the Areas tab when saving stopped at deleting an area the server refused; {area} is its name. Changes after it are kept, not saved"
+		"description": "Shown on the Areas tab when the server refused to delete an area, followed by why; {area} is its name. Nothing was saved"
 	},
 	"editor.areas.heading": {
 		"defaultMessage": "Areas",
@@ -709,7 +709,7 @@
 	},
 	"editor.characters.saveFailed": {
 		"defaultMessage": "Could not save the character settings.",
-		"description": "Shown on the Characters tab when its settings couldn't be stored"
+		"description": "Shown on the Characters tab when the server refused its settings, followed by why; nothing was saved"
 	},
 	"editor.characters.startingAreaHint": {
 		"defaultMessage": "Where characters start, unless their race or class says otherwise.",
@@ -1141,7 +1141,7 @@
 	},
 	"editor.lobby.saveFailed": {
 		"defaultMessage": "Could not save the lobby's settings.",
-		"description": "Shown on the Lobby tab when its settings couldn't be stored"
+		"description": "Shown on the Lobby tab when the server refused its settings, followed by why; nothing was saved"
 	},
 	"editor.lobby.timeHint": {
 		"defaultMessage": "Actions take no time in the lobby, so its time of day follows this instead of the universe's passage of time.",
@@ -1273,7 +1273,7 @@
 	},
 	"editor.map.linksKept": {
 		"defaultMessage": "The links were kept, so the map wasn't made smaller.",
-		"description": "Why saving the map stopped: the player chose not to delete the links a smaller map would cut off"
+		"description": "Why saving stopped: the player chose not to delete the links a smaller map would cut off; nothing was saved"
 	},
 	"editor.map.loadFailed": {
 		"defaultMessage": "Could not load the map.",
@@ -1509,7 +1509,7 @@
 	},
 	"editor.ruleset.saveFailed": {
 		"defaultMessage": "Could not save the ruleset's settings.",
-		"description": "Shown on the Ruleset tab when its settings couldn't be stored"
+		"description": "Shown on the Ruleset tab when the server refused its settings, followed by why; nothing was saved"
 	},
 	"editor.ruleset.statMethod": {
 		"defaultMessage": "Rolling for stats",
@@ -1523,6 +1523,10 @@
 		"defaultMessage": "Track ammunition",
 		"description": "Checkbox for whether arrows and other ammunition are used up when fired"
 	},
+	"editor.save.failed": {
+		"defaultMessage": "Could not save.",
+		"description": "Shown in the editor's save bar when saving failed, followed by why; nothing was saved"
+	},
 	"editor.searchByName": {
 		"defaultMessage": "Search by name",
 		"description": "Shown in the empty field that narrows a list of tiles, items or areas down by name"
@@ -1533,7 +1537,7 @@
 	},
 	"editor.staged.deleteFailed": {
 		"defaultMessage": "Could not delete {name}.",
-		"description": "Shown on an editor tab when saving its changes stopped at a deletion the server refused; {name} is the name of the race, class, theme, difficulty level, item or tile. Changes after it are kept, not saved"
+		"description": "Shown on an editor tab when the server refused to delete one of its things, followed by why; {name} is the name of the race, class, theme, difficulty level, item or tile. Nothing was saved"
 	},
 	"editor.staged.deleted": {
 		"defaultMessage": "(deleted when saved)",
@@ -1545,7 +1549,7 @@
 	},
 	"editor.staged.restoreFailed": {
 		"defaultMessage": "Could not restore {name}.",
-		"description": "Shown on an editor tab when saving its changes stopped at putting one of the ruleset's races, classes, themes, items or tiles back as the ruleset has it; {name} is its name. Changes after it are kept, not saved"
+		"description": "Shown on an editor tab when the server refused to put one of the ruleset's races, classes, themes, items or tiles back as the ruleset has it, followed by why; {name} is its name. Nothing was saved"
 	},
 	"editor.staged.restoredTag": {
 		"defaultMessage": "restored when saved",
@@ -1553,7 +1557,7 @@
 	},
 	"editor.staged.saveFailed": {
 		"defaultMessage": "Could not save {name}.",
-		"description": "Shown on an editor tab when saving its changes stopped at one the server refused; {name} is the name of the race, class, theme, difficulty level, item or tile. Changes after it are kept, not saved"
+		"description": "Shown on an editor tab when the server refused one of its changes, followed by why; {name} is the name of the race, class, theme, difficulty level, item or tile. Nothing was saved"
 	},
 	"editor.staged.undoDelete": {
 		"defaultMessage": "Undo Delete",
@@ -1913,7 +1917,7 @@
 	},
 	"editor.tiles.deleteUploadFailed": {
 		"defaultMessage": "Could not delete the tileset \"{name}\".",
-		"description": "Shown on the Tilesets tab when saving couldn't delete an uploaded tileset; {name} is the name it was given"
+		"description": "Shown on the Tilesets tab when the server refused to delete an uploaded tileset, followed by why; {name} is the name it was given. Nothing was saved"
 	},
 	"editor.tiles.impassable": {
 		"defaultMessage": "impassable",
@@ -1941,7 +1945,7 @@
 	},
 	"editor.tiles.uploadFailed": {
 		"defaultMessage": "Could not upload the tileset \"{name}\".",
-		"description": "Shown on the Tilesets tab when saving couldn't upload a tileset; {name} is the name it was given"
+		"description": "Shown on the Tilesets tab when the server refused a tileset staged to upload, followed by why; {name} is the name it was given. Nothing was saved"
 	},
 	"editor.tiles.uploadsFailed": {
 		"defaultMessage": "Could not list the uploaded tilesets.",
@@ -1973,7 +1977,7 @@
 	},
 	"editor.universe.saveFailed": {
 		"defaultMessage": "Could not save the universe.",
-		"description": "Shown on the Universe tab when its settings couldn't be stored"
+		"description": "Shown on the Universe tab when the server refused its settings, followed by why; nothing was saved"
 	},
 	"editor.universe.stage": {
 		"defaultMessage": "Stage",

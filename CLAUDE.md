@@ -46,7 +46,9 @@ An engine for making multiplayer browser-based role-playing games.
   src/images/        checking and re-encoding uploaded images, such as tilesets
   src/auth/          token verification
   src/http/          REST routes (health, universes for Home, characters, groups and invite links, the world
-                     editor's API, uploaded tilesets, the admin page's site settings)
+                     editor's API, uploaded tilesets, the admin page's site settings). The world editor saves
+                     every change through one route, editorChanges.ts, in one transaction; each kind of
+                     change is checked and saved by its module (editorAreas.ts, editorItems.ts and so on)
   scripts/           development tools run by hand, such as the seed script
 /shared          Code imported by both client and server:
                  message type enums, payload interfaces, close codes, constants,

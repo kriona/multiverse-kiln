@@ -5,8 +5,9 @@ import { describeEditorError } from '../../network/editorApi';
 import { showMessage } from '../dom';
 import { TableSorter } from '../tableSorter';
 import { createOptionRow, optionTags } from './optionRows';
+import type { EditorSave, SavedIds } from './editorSave';
 import type { SavableTab } from './SaveBar';
-import { describeCommitFailure, joinTags, markStagedRow, StagedChanges, stagedTag, stagedView, type StagedApi, type StagedEdit, type StagedState } from './stagedChanges';
+import { describeRefusedChange, joinTags, listChange, listRef, markStagedRow, StagedChanges, stagedTag, stagedView, type StagedChange, type StagedEdit, type StagedState } from './stagedChanges';
 
 /**
  * A race, class or theme as its list shows it: one of the ruleset's defaults, perhaps edited by the
@@ -52,12 +53,9 @@ export interface OptionListSetup<T extends EditorOption, S>
 	load(universeId: string): Promise<T[]>;
 
 	/**
-	 * The routes that save the list's changes
-	 *
-	 * @param universeId The universe's ID
-	 * @return The routes
+	 * Which list the save changes, whose settings are S
 	 */
-	routes(universeId: string): StagedApi<S>;
+	list: 'Race' | 'Class' | 'Theme';
 
 	/**
 	 * An option added since the last save, as the list shows it
@@ -122,6 +120,11 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab
 	 * The changes made since the list was last saved
 	 */
 	readonly changes = new StagedChanges<S>();
+
+	/**
+	 * The changes the save being sent holds
+	 */
+	private collected: readonly StagedChange<S>[] = [];
 
 	private universe: EditableUniverse | undefined;
 	private readonly sorter: TableSorter<OptionSortColumn>;
@@ -190,35 +193,41 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab
 	}
 
 	/**
-	 * Saves the changes in the order they were made, stopping at the first the server refuses
+	 * Adds the changes to a save, in the order they were made
 	 *
-	 * @return True when every change was saved
+	 * @param save The save
+	 * @return True
 	 */
-	async save(): Promise<boolean>
+	collect(save: EditorSave): boolean
 	{
 		const universe = this.universe;
 
-		if (!universe)
-		{
-			return(false);
-		}
-
 		showMessage(this.setup.error, undefined);
 
-		const failure = await this.changes.commit(this.setup.routes(universe.id));
-
-		await this.refresh();
-
-		if (failure)
+		if (universe)
 		{
-			const option = this.view().find(({ item }) => (item.id === failure.change.id))?.item;
+			// The setup's list is the one whose settings S are
+			this.collected = this.changes.collect(save, (change) => listChange(this.setup.list, change as StagedChange<never>), (change, refusal) =>
+			{
+				const option = this.view().find(({ item }) => (item.id === change.id))?.item;
 
-			showMessage(this.setup.error, describeCommitFailure(failure, (option ? this.setup.name(option, universe.ruleset) : ''), !option?.custom));
-
-			return(false);
+				showMessage(this.setup.error, describeRefusedChange(change, refusal, (option ? this.setup.name(option, universe.ruleset) : ''), !option?.custom));
+			});
 		}
 
 		return(true);
+	}
+
+	/**
+	 * Takes the changes as saved, and loads the list afresh
+	 *
+	 * @param ids The IDs the save gave the options it made
+	 */
+	async saved(ids: SavedIds): Promise<void>
+	{
+		this.changes.markSaved(this.collected, (id) => ids.number(listRef(this.setup.list, id)));
+		this.collected = [];
+		await this.refresh();
 	}
 
 	/**

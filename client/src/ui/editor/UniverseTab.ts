@@ -2,12 +2,13 @@ import '@github/markdown-toolbar-element';
 import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, DISPLAY_TIME_NAMES, DISPLAY_TIMES, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_LONG_DESCRIPTION_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, PASSAGES_OF_TIME, UNIVERSE_STAGE_DESCRIPTIONS, UNIVERSE_STAGE_NAMES, UNIVERSE_STAGES, universeSlug, type DisplayTime, type EditableUniverse, type FaerieMorning, type PassageOfTime, type UniverseSettingsUpdate, type UniverseStage } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
-import { describeEditorError, type EditorApi } from '../../network/editorApi';
+import { describeEditorError } from '../../network/editorApi';
 import { ChangeTracker } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
 import { showMarkdown } from '../markdown';
+import type { EditorSave } from './editorSave';
 import type { SavableTab } from './SaveBar';
 
 /**
@@ -53,10 +54,14 @@ export class UniverseTab implements SavableTab
 	private universe: EditableUniverse | undefined;
 
 	/**
-	 * @param api The editor's API
-	 * @param onSaved Called with the universe after its settings are saved
+	 * The settings the save being sent holds
 	 */
-	constructor(private readonly api: EditorApi, private readonly onSaved: (universe: EditableUniverse) => void)
+	private collected: UniverseSettingsUpdate | undefined;
+
+	/**
+	 * @param onSaved Called with the settings saved, once they are
+	 */
+	constructor(private readonly onSaved: (update: UniverseSettingsUpdate) => void)
 	{
 		this.name.maxLength = MAX_UNIVERSE_NAME_LENGTH;
 		this.shortDescription.maxLength = MAX_SHORT_DESCRIPTION_LENGTH;
@@ -181,11 +186,12 @@ export class UniverseTab implements SavableTab
 	}
 
 	/**
-	 * Saves the settings as the form shows them
+	 * Adds the settings as the form shows them to a save
 	 *
-	 * @return True when they were saved
+	 * @param save The save
+	 * @return False when a field is wrong
 	 */
-	async save(): Promise<boolean>
+	collect(save: EditorSave): boolean
 	{
 		const universe = this.universe;
 
@@ -206,25 +212,34 @@ export class UniverseTab implements SavableTab
 		};
 
 		showMessage(this.error, undefined);
-
-		try
+		this.collected = update;
+		save.add({ kind: 'universe', update }, (refusal) =>
 		{
-			await this.api.updateUniverse(universe.id, update);
-			this.universe = { ...universe, ...update };
-			this.changes.markSaved();
-			this.onSaved(this.universe);
-
-			return(true);
-		}
-		catch (error)
-		{
-			showMessage(this.error, describeEditorError(error, {
+			showMessage(this.error, describeEditorError(refusal.error, {
 				id: 'editor.universe.saveFailed',
 				defaultMessage: 'Could not save the universe.',
-				description: 'Shown on the Universe tab when its settings couldn\'t be stored'
+				description: 'Shown on the Universe tab when the server refused its settings, followed by why; nothing was saved'
 			}));
+		});
 
-			return(false);
+		return(true);
+	}
+
+	/**
+	 * Takes the settings as saved
+	 */
+	saved(): void
+	{
+		const universe = this.universe;
+		const update = this.collected;
+
+		this.collected = undefined;
+
+		if (universe && update)
+		{
+			this.universe = { ...universe, ...update };
+			this.changes.markSaved();
+			this.onSaved(update);
 		}
 	}
 

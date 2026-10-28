@@ -34,11 +34,7 @@ export class ThemesSection extends OptionList<EditorTheme, ThemeSettings>
 			},
 			canEdit: (universe) => canEditUniverseSettings(universe.role),
 			load: (universeId) => api.listThemes(universeId),
-			routes: (universeId) => ({
-				create: (settings) => api.createTheme(universeId, settings),
-				save: (themeId, settings) => api.saveTheme(universeId, themeId, settings),
-				remove: (themeId) => api.deleteTheme(universeId, themeId)
-			}),
+			list: 'Theme',
 			created: (id, settings) => ({
 				id,
 				key: null,

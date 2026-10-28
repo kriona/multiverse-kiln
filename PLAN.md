@@ -224,18 +224,19 @@ Decided:
 - [✅] A sample Dual-Grid grass sheet (`client/src/assets/tilesets/grass.png`)
 - [✅] Blob graphics (the 47-Tile Blob Set) drawn in a walls layer over the ground, each cell's frame picked from its 8 neighbors, with a sample hedge sheet (`client/src/assets/tilesets/hedge.png`) used by the sample universe's Hedge; its Stone Wall uses a Dual-Grid sheet of a wall top (`stoneWall.png`)
 - [✅] Uploading blob tilesets: the upload dialog chooses the layout (matched to the image's size), each upload stores its format, and the server checks the image against that format's size; a blob sheet has no draw order
-- [ ] `AreaRenderer` draws a tile's Dual-Grid graphic, falling back to its color: frames picked from each corner's 4 cells, wrapping on areas that loop, with void, unseen and out-of-bounds cells counting as another tile
-- [ ] Several tiles meeting: each graphic has a draw order in `TILE_GRAPHICS` (which graphic's edges overlap which; tiles drawn in their colors go below every graphic), and one frame is drawn for each combination of 4 corner tiles as it appears, cached in an atlas, so each piece stays one layer
-- [ ] A piece is redrawn when a chunk next to it changes, since its edge cells depend on it; painting a cell redraws the 4 frames touching it
-- [ ] Grid lines drawn as an overlay, not baked into each tile
-- [ ] A tile's graphic chosen from sheets that ship with the engine or the universe's uploaded tilesets, shown in the tile editor with its day and night preview
-- [ ] Uploading tilesets from the tile editor, staged until the Tilesets tab is saved: object storage, checking and re-encoding, the rights confirmation, and drawing maps with them once they load (tiles show their colors until then)
-- [ ] Deleting an uploaded tileset from the tile editor, after asking, staged until the tab is saved; tiles drawn with it go back to their colors
+- [✅] `AreaRenderer` draws a tile's Dual-Grid graphic, falling back to its color: frames picked from each corner's 4 cells, wrapping on areas that loop, with void, unseen and out-of-bounds cells counting as another tile
+- [✅] Several tiles meeting: each graphic has a draw order in `TILE_GRAPHICS` (which graphic's edges overlap which; tiles drawn in their colors go below every graphic), and one frame is drawn for each combination of 4 corner tiles as it appears, cached in an atlas, so each piece stays one layer
+- [✅] A piece is redrawn when a chunk next to it changes, since its edge cells depend on it; painting a cell redraws the 4 frames touching it
+- [✅] Grid lines drawn as an overlay, not baked into each tile
+- [✅] A tile's graphic chosen from sheets that ship with the engine or the universe's uploaded tilesets, shown in the tile editor with its day and night preview
+- [✅] Uploading tilesets from the tile editor, staged until the Tilesets tab is saved: object storage, checking and re-encoding, the rights confirmation, and drawing maps with them once they load (tiles show their colors until then)
+- [✅] Deleting an uploaded tileset from the tile editor, after asking, staged until the tab is saved; tiles drawn with it go back to their colors
 - [ ] Removing a universe's uploads from storage when the universe is deleted (once universes can be deleted)
-- [ ] The editor's Save saves every tab's changes together, all or nothing, as `STRUCTURE-OVERVIEW.md` describes. Today the save bar saves only the tab showing (`SaveBar.save()`), so changes on other tabs wait for their own Save
-- [ ] The Areas tab's maps, and the area previews in the link and starting area dialogs, draw the Tilesets tab's staged changes: changed colors and graphics, new tiles, staged uploads (from the page's own copy), and tiles staged for deletion drawn as their chosen replacements, including as an area's default tile. The draw tool and the default tile choices stop offering tiles staged for deletion, and painting staged on the Areas tab with such a tile is saved as its replacement
-- [ ] Graphics for the ruleset's default tiles (grass, and PF1E's forest and mountains, so far)
-- [ ] Check the new screens in the pseudo-language, update Pirate, and add screen reader text
+- [✅] The editor's Save saves every tab's changes together, all or nothing, as `STRUCTURE-OVERVIEW.md` describes: one request (POST `/:universeId/changes`, `server/src/http/editorChanges.ts`) saves them in one transaction, in place of a route for each change, and a change can name what an earlier one in the same save makes
+- [✅] The Areas tab's maps draw the Tilesets tab's staged changes: changed colors and graphics, new tiles, staged uploads (from the page's own copy), and tiles staged for deletion drawn as their chosen replacements, including as an area's default tile. The draw tool and the default tile choices offer new tiles and stop offering tiles staged for deletion, and painting staged on the Areas tab with such a tile is saved as its replacement
+- [✅] The area previews in the link and starting area dialogs draw the Tilesets tab's staged changes too
+- [✅] Graphics for the ruleset's default tiles (grass, and PF1E's forest and mountains, so far)
+- [✅] Check the new screens in the pseudo-language, update Pirate, and add screen reader text
 
 **Done when:** an outdoor area painted with grass, dirt and forest shows smooth edges where they meet, the forest's treetops rise over the cells north of it, and painting in the map editor updates the edges as it paints.
 

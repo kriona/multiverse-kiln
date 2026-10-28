@@ -37,6 +37,11 @@ export const errorMessages = defineMessages({
 		defaultMessage: 'The area doesn\'t exist.',
 		description: 'Why a request about an area failed: it was deleted, perhaps by another editor'
 	},
+	roleNotAllowed: {
+		id: 'error.roleNotAllowed',
+		defaultMessage: 'Your role in this universe doesn\'t allow that.',
+		description: 'Why an editor change was refused: the player\'s role, such as beta tester, can\'t make it'
+	},
 	universeNameTaken: {
 		id: 'error.universeNameTaken',
 		defaultMessage: 'Another universe already has that name, or one too much like it.',

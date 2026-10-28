@@ -1,22 +1,19 @@
 /**
- * The world editor's routes for a universe's races (listed in shared/src/editor.ts)
+ * The world editor's route for a universe's races (listed in shared/src/editor.ts), and saving changes
+ * to them (see editorChanges.ts)
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { canEditUniverseSettings, defineMessages, MAX_CUSTOM_RACES, type CreatedPayload, type RaceListPayload, type RaceSettings } from '@multiverse-kiln/shared';
+import { defineMessages, MAX_CUSTOM_RACES, type NewRef, type NumberRef, type RaceListPayload, type RaceSettings } from '@multiverse-kiln/shared';
 
 import { hasCharactersOfRace } from '../db/characterRepo.js';
-import type { Executor } from '../db/client.js';
 import { countCustomRaces, createCustomRace, deleteCustomRace, findRaceKind, loadEditorRaces, restoreDefaultRace, saveEditedDefaultRace, updateCustomRace } from '../db/raceRepo.js';
-import { inTransaction } from '../db/transactions.js';
-import { lockUniverse } from '../db/universeRepo.js';
-import { requireRole, universeContextOf, type UniverseContext } from './editorAccess.js';
-import { raceIdParameter, raceSettings } from './editorPayloads.js';
-import { findStartingProblem } from './editorStartingExtras.js';
-import { sendError, sendInvalidRequest, type Refusal } from './errors.js';
+import { universeContextOf } from './editorAccess.js';
+import { recordRef, refuse, resolveNumberRef, type ChangeContext } from './editorChangeContext.js';
+import { checkStartingReferences } from './editorStartingExtras.js';
 
 /**
- * Reasons the race routes give in more than one place (see shared/src/localization.ts)
+ * Reasons changes to races give in more than one place (see shared/src/localization.ts)
  */
 const messages = defineMessages({
 	noSuchRace: {
@@ -42,16 +39,13 @@ const messages = defineMessages({
 });
 
 /**
- * Adds the race routes to a universe's router
+ * Adds the race route to a universe's router
  *
  * @param router The router for routes under /:universeId
  */
 export function addRaceRoutes(router: express.Router): void
 {
 	router.get('/races', listRaces);
-	router.post('/races', requireRole(canEditUniverseSettings), createRaceRoute);
-	router.put('/races/:raceId', requireRole(canEditUniverseSettings), saveRace);
-	router.delete('/races/:raceId', requireRole(canEditUniverseSettings), deleteRace);
 }
 
 /**
@@ -69,225 +63,132 @@ async function listRaces(request: Request, response: Response): Promise<void>
 }
 
 /**
- * POST /:universeId/races: adds a race to the universe
+ * Adds a race to the universe
  *
- * @param request The request
- * @param response The response
+ * @param context The save
+ * @param ref The race's ref
+ * @param settings Its settings
  */
-async function createRaceRoute(request: Request, response: Response): Promise<void>
+export async function createRaceChange(context: ChangeContext, ref: NewRef, settings: RaceSettings): Promise<void>
 {
-	const { universe } = universeContextOf(request);
-	const body = raceSettings[universe.ruleset].safeParse(request.body);
-
-	if (!body.success)
-	{
-		sendInvalidRequest(response, body.error);
-		return;
-	}
-
-	const { name } = body.data;
+	const { universe, transaction } = context;
+	const { name } = settings;
 
 	if (name === null)
 	{
-		sendError(response, 400, messages.raceNeedsName);
-		return;
+		refuse(400, messages.raceNeedsName);
 	}
 
-	const result = await inTransaction(async (transaction): Promise<Refusal | number> =>
+	if (await countCustomRaces(universe.id, transaction) >= MAX_CUSTOM_RACES)
 	{
-		await lockUniverse(universe.id, transaction);
-
-		if (await countCustomRaces(universe.id, transaction) >= MAX_CUSTOM_RACES)
-		{
-			return({
-				status: 409,
-				message: {
-					id: 'error.raceLimit',
-					defaultMessage: 'A universe can have at most {max, plural, one {# race} other {# races}} of its own.',
-					description: 'Why a new race wasn\'t made: the universe has as many races of its own as allowed'
-				},
-				values: { max: MAX_CUSTOM_RACES }
-			});
-		}
-
-		const problem = await findRaceProblem(universe, undefined, body.data, transaction);
-
-		if (problem !== undefined)
-		{
-			return(problem);
-		}
-
-		return(createCustomRace(universe.id, universe.ruleset, { ...body.data, name }, transaction));
-	});
-
-	if (typeof result !== 'number')
-	{
-		sendError(response, result.status, result.message, result.values);
-		return;
+		refuse(409, {
+			id: 'error.raceLimit',
+			defaultMessage: 'A universe can have at most {max, plural, one {# race} other {# races}} of its own.',
+			description: 'Why a new race wasn\'t made: the universe has as many races of its own as allowed'
+		}, {
+			max: MAX_CUSTOM_RACES
+		});
 	}
 
-	const payload: CreatedPayload<number> = { id: result };
-
-	response.status(201).json(payload);
+	await checkRace(context, undefined, settings);
+	recordRef(context, ref, await createCustomRace(universe.id, universe.ruleset, { ...settings, name }, transaction));
 }
 
 /**
- * PUT /:universeId/races/:raceId: changes one of the universe's races, or stores its edited copy of a default race
+ * Changes one of the universe's races, or stores its edited copy of a default race
  *
- * @param request The request
- * @param response The response
+ * @param context The save
+ * @param id The race
+ * @param settings Its new settings
  */
-async function saveRace(request: Request, response: Response): Promise<void>
+export async function saveRaceChange(context: ChangeContext, id: NumberRef, settings: RaceSettings): Promise<void>
 {
-	const raceId = raceIdParameter.safeParse(request.params.raceId);
-	const { universe } = universeContextOf(request);
-	const body = raceSettings[universe.ruleset].safeParse(request.body);
+	const { universe, transaction } = context;
+	const raceId = resolveNumberRef(context, id);
+	const kind = await findRaceKind(universe.id, universe.ruleset, raceId, transaction);
+	const { name } = settings;
 
-	if (!body.success)
+	if (kind === undefined)
 	{
-		sendInvalidRequest(response, body.error);
-		return;
+		refuse(404, messages.noSuchRace);
 	}
-
-	const kind = (raceId.success ? await findRaceKind(universe.id, universe.ruleset, raceId.data) : undefined);
-
-	if (!raceId.success || (kind === undefined))
-	{
-		sendError(response, 404, messages.noSuchRace);
-		return;
-	}
-
-	const { name } = body.data;
 
 	if ((kind === 'custom') && (name === null))
 	{
-		sendError(response, 400, messages.raceNeedsName);
-		return;
+		refuse(400, messages.raceNeedsName);
 	}
 
-	const refusal = await inTransaction(async (transaction) =>
+	await checkRace(context, raceId, settings);
+
+	if (kind === 'default')
 	{
-		// Deleting an item waits for the universe's lock too, so an item can't be deleted as it is added here
-		await lockUniverse(universe.id, transaction);
-
-		const problem = await findRaceProblem(universe, raceId.data, body.data, transaction);
-
-		if (problem !== undefined)
-		{
-			return(problem);
-		}
-
-		if (kind === 'default')
-		{
-			await saveEditedDefaultRace(universe.id, universe.ruleset, raceId.data, body.data, transaction);
-		}
-		else if (name !== null)
-		{
-			await updateCustomRace(universe.id, universe.ruleset, raceId.data, { ...body.data, name }, transaction);
-		}
-
-		return(undefined);
-	});
-
-	if (refusal !== undefined)
-	{
-		sendError(response, refusal.status, refusal.message, refusal.values);
-		return;
+		await saveEditedDefaultRace(universe.id, universe.ruleset, raceId, settings, transaction);
 	}
-
-	response.sendStatus(204);
+	else if (name !== null)
+	{
+		await updateCustomRace(universe.id, universe.ruleset, raceId, { ...settings, name }, transaction);
+	}
 }
 
 /**
- * DELETE /:universeId/races/:raceId: deletes one of the universe's own races, or restores a default race
- * the universe has edited
+ * Deletes one of the universe's own races, or restores a default race the universe has edited
  *
- * @param request The request
- * @param response The response
+ * @param context The save
+ * @param id The race
  */
-async function deleteRace(request: Request, response: Response): Promise<void>
+export async function removeRaceChange(context: ChangeContext, id: NumberRef): Promise<void>
 {
-	const raceId = raceIdParameter.safeParse(request.params.raceId);
-	const { universe } = universeContextOf(request);
-	const kind = (raceId.success ? await findRaceKind(universe.id, universe.ruleset, raceId.data) : undefined);
+	const { universe, transaction } = context;
+	const raceId = resolveNumberRef(context, id);
+	const kind = await findRaceKind(universe.id, universe.ruleset, raceId, transaction);
 
-	if (!raceId.success || (kind === undefined))
+	if (kind === undefined)
 	{
-		sendError(response, 404, messages.noSuchRace);
-		return;
+		refuse(404, messages.noSuchRace);
 	}
 
 	// Default races are enabled, so restoring one never leaves the universe without an enabled race
 	if (kind === 'default')
 	{
-		await restoreDefaultRace(universe.id, raceId.data);
-		response.sendStatus(204);
+		await restoreDefaultRace(universe.id, raceId, transaction);
 		return;
 	}
 
-	const refusal = await inTransaction(async (transaction) =>
+	// Making a character waits for the universe's lock too, so nobody becomes the race as it is deleted
+	if (await hasCharactersOfRace(raceId, transaction))
 	{
-		// Making a character waits for the universe's lock too, so nobody becomes the race as it is deleted
-		await lockUniverse(universe.id, transaction);
-
-		if (await hasCharactersOfRace(raceId.data, transaction))
-		{
-			return(messages.raceInUse);
-		}
-
-		const others = (await loadEditorRaces(universe.id, universe.ruleset, transaction)).filter((race) => (race.id !== raceId.data));
-
-		if (!others.some((race) => race.enabled))
-		{
-			return(messages.noEnabledRace);
-		}
-
-		await deleteCustomRace(universe.id, raceId.data, transaction);
-
-		return(undefined);
-	});
-
-	if (refusal !== undefined)
-	{
-		sendError(response, 409, refusal);
-		return;
+		refuse(409, messages.raceInUse);
 	}
 
-	response.sendStatus(204);
+	const others = (await loadEditorRaces(universe.id, universe.ruleset, transaction)).filter((race) => (race.id !== raceId));
+
+	if (!others.some((race) => race.enabled))
+	{
+		refuse(409, messages.noEnabledRace);
+	}
+
+	await deleteCustomRace(universe.id, raceId, transaction);
 }
 
 /**
- * Why a race's settings can't be saved: a starting area or item the universe can't use, or leaving the
+ * Refuses a race's settings with a starting area or item the universe can't use, or that leave the
  * universe without an enabled race
  *
- * @param universe The universe
+ * @param context The save
  * @param raceId The race being changed, or undefined for a new one
  * @param settings The race's new settings
- * @param executor A transaction holding the universe's lock
- * @return Why, or undefined when they can be saved
  */
-async function findRaceProblem(universe: UniverseContext['universe'], raceId: number | undefined, settings: RaceSettings, executor: Executor): Promise<Refusal | undefined>
+async function checkRace(context: ChangeContext, raceId: number | undefined, settings: RaceSettings): Promise<void>
 {
-	const startingProblem = await findStartingProblem(universe, {
+	const { universe, transaction } = context;
+
+	await checkStartingReferences(context, {
 		areaIds: ((settings.startingAreaId === null) ? [] : [settings.startingAreaId]),
 		itemIds: settings.startingItems.map(({ itemId }) => itemId)
-	}, executor);
+	});
 
-	if (startingProblem !== undefined)
+	if (!settings.enabled && !(await loadEditorRaces(universe.id, universe.ruleset, transaction)).some((race) => ((race.id !== raceId) && race.enabled)))
 	{
-		return({
-			status: 400,
-			message: startingProblem
-		});
+		refuse(409, messages.noEnabledRace);
 	}
-
-	if (!settings.enabled && !(await loadEditorRaces(universe.id, universe.ruleset, executor)).some((race) => ((race.id !== raceId) && race.enabled)))
-	{
-		return({
-			status: 409,
-			message: messages.noEnabledRace
-		});
-	}
-
-	return(undefined);
 }

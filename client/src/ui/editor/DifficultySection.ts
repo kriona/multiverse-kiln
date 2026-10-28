@@ -6,8 +6,9 @@ import { describeMobScale, difficultyName } from '../difficultyNames';
 import { getElement, showMessage } from '../dom';
 import { DifficultyDialog } from './DifficultyDialog';
 import { createOptionRow } from './optionRows';
+import type { EditorSave, SavedIds } from './editorSave';
 import type { SavableTab } from './SaveBar';
-import { describeCommitFailure, joinTags, markStagedRow, StagedChanges, stagedTag, stagedView, type StagedState } from './stagedChanges';
+import { describeRefusedChange, joinTags, listChange, listRef, markStagedRow, StagedChanges, stagedTag, stagedView, type StagedChange, type StagedState } from './stagedChanges';
 
 /**
  * The difficulty levels on the Ruleset tab: every level a new group can choose, easiest first,
@@ -24,6 +25,11 @@ export class DifficultySection implements SavableTab
 	 * The changes made since the levels were last saved
 	 */
 	readonly changes = new StagedChanges<DifficultyLevelSettings>();
+
+	/**
+	 * The changes the save being sent holds
+	 */
+	private collected: readonly StagedChange<DifficultyLevelSettings>[] = [];
 
 	private universe: EditableUniverse | undefined;
 
@@ -75,39 +81,34 @@ export class DifficultySection implements SavableTab
 	}
 
 	/**
-	 * Saves the changes in the order they were made, stopping at the first the server refuses
+	 * Adds the changes to a save, in the order they were made
 	 *
-	 * @return True when every change was saved
+	 * @param save The save
+	 * @return True
 	 */
-	async save(): Promise<boolean>
+	collect(save: EditorSave): boolean
 	{
-		const universe = this.universe;
-
-		if (!universe)
-		{
-			return(false);
-		}
-
 		showMessage(this.error, undefined);
+		this.collected = this.changes.collect(save, (change) => listChange('DifficultyLevel', change), (change, refusal) =>
+		{
+			const level = this.view().find(({ item }) => (item.id === change.id))?.item;
 
-		const failure = await this.changes.commit({
-			create: (settings) => this.api.createDifficultyLevel(universe.id, settings),
-			save: (levelId, settings) => this.api.saveDifficultyLevel(universe.id, levelId, settings),
-			remove: (levelId) => this.api.deleteDifficultyLevel(universe.id, levelId)
+			showMessage(this.error, describeRefusedChange(change, refusal, (level ? difficultyName(level) : ''), false));
 		});
 
-		await this.refresh();
-
-		if (failure)
-		{
-			const level = this.view().find(({ item }) => (item.id === failure.change.id))?.item;
-
-			showMessage(this.error, describeCommitFailure(failure, (level ? difficultyName(level) : ''), false));
-
-			return(false);
-		}
-
 		return(true);
+	}
+
+	/**
+	 * Takes the changes as saved, and loads the levels afresh
+	 *
+	 * @param ids The IDs the save gave the levels it made
+	 */
+	async saved(ids: SavedIds): Promise<void>
+	{
+		this.changes.markSaved(this.collected, (id) => ids.number(listRef('DifficultyLevel', id)));
+		this.collected = [];
+		await this.refresh();
 	}
 
 	/**

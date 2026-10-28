@@ -1,22 +1,19 @@
 /**
- * The world editor's routes for a universe's themes (listed in shared/src/editor.ts), in a ruleset with
- * themes. A universe whose ruleset has none answers 404
+ * The world editor's route for a universe's themes (listed in shared/src/editor.ts), in a ruleset with
+ * themes, and saving changes to them (see editorChanges.ts). A universe whose ruleset has none answers 404
  */
 import type express from 'express';
 import type { NextFunction, Request, Response } from 'express';
-import { canEditUniverseSettings, defineMessages, MAX_CUSTOM_THEMES, rulesetHasThemes, type CreatedPayload, type ThemeListPayload, type ThemeSettings } from '@multiverse-kiln/shared';
+import { defineMessages, MAX_CUSTOM_THEMES, rulesetHasThemes, type NewRef, type NumberRef, type ThemeListPayload, type ThemeSettings } from '@multiverse-kiln/shared';
 
 import { hasCharactersOfTheme } from '../db/characterRepo.js';
-import type { Executor } from '../db/client.js';
 import { countCustomThemes, createCustomTheme, deleteCustomTheme, findThemeKind, loadEditorThemes, restoreDefaultTheme, saveEditedDefaultTheme, updateCustomTheme } from '../db/themeRepo.js';
-import { inTransaction } from '../db/transactions.js';
-import { lockUniverse } from '../db/universeRepo.js';
-import { requireRole, universeContextOf, type UniverseContext } from './editorAccess.js';
-import { themeIdParameter, themeSettings } from './editorPayloads.js';
-import { sendError, sendInvalidRequest, type Refusal } from './errors.js';
+import { universeContextOf } from './editorAccess.js';
+import { recordRef, refuse, resolveNumberRef, type ChangeContext } from './editorChangeContext.js';
+import { sendError } from './errors.js';
 
 /**
- * Reasons the theme routes give in more than one place (see shared/src/localization.ts)
+ * Reasons themes are refused in more than one place (see shared/src/localization.ts)
  */
 const messages = defineMessages({
 	noThemes: {
@@ -47,7 +44,7 @@ const messages = defineMessages({
 });
 
 /**
- * Adds the theme routes to a universe's router
+ * Adds the theme route to a universe's router
  *
  * @param router The router for routes under /:universeId
  */
@@ -55,9 +52,6 @@ export function addThemeRoutes(router: express.Router): void
 {
 	router.use('/themes', requireThemes);
 	router.get('/themes', listThemes);
-	router.post('/themes', requireRole(canEditUniverseSettings), createThemeRoute);
-	router.put('/themes/:themeId', requireRole(canEditUniverseSettings), saveTheme);
-	router.delete('/themes/:themeId', requireRole(canEditUniverseSettings), deleteTheme);
 }
 
 /**
@@ -93,211 +87,147 @@ async function listThemes(request: Request, response: Response): Promise<void>
 }
 
 /**
- * POST /:universeId/themes: adds a theme to the universe
+ * Refuses a change to themes in a universe whose ruleset has none
  *
- * @param request The request
- * @param response The response
+ * @param context The save
  */
-async function createThemeRoute(request: Request, response: Response): Promise<void>
+function requireThemesFor(context: ChangeContext): void
 {
-	const body = themeSettings.safeParse(request.body);
-
-	if (!body.success)
+	if (!rulesetHasThemes(context.universe.ruleset))
 	{
-		sendInvalidRequest(response, body.error);
-		return;
+		refuse(404, messages.noThemes);
 	}
+}
 
-	const { universe } = universeContextOf(request);
-	const { name } = body.data;
+/**
+ * Adds a theme to the universe
+ *
+ * @param context The save
+ * @param ref The theme's ref
+ * @param settings Its settings
+ */
+export async function createThemeChange(context: ChangeContext, ref: NewRef, settings: ThemeSettings): Promise<void>
+{
+	const { universe, transaction } = context;
+	const { name } = settings;
+
+	requireThemesFor(context);
 
 	if (name === null)
 	{
-		sendError(response, 400, messages.themeNeedsName);
-		return;
+		refuse(400, messages.themeNeedsName);
 	}
 
-	const result = await inTransaction(async (transaction): Promise<Refusal | number> =>
+	if (await countCustomThemes(universe.id, transaction) >= MAX_CUSTOM_THEMES)
 	{
-		await lockUniverse(universe.id, transaction);
-
-		if (await countCustomThemes(universe.id, transaction) >= MAX_CUSTOM_THEMES)
-		{
-			return({
-				status: 409,
-				message: {
-					id: 'error.themeLimit',
-					defaultMessage: 'A universe can have at most {max, plural, one {# theme} other {# themes}} of its own.',
-					description: 'Why a new theme (character background) wasn\'t made: the universe has as many themes of its own as allowed'
-				},
-				values: { max: MAX_CUSTOM_THEMES }
-			});
-		}
-
-		const problem = await findThemeProblem(universe, undefined, body.data, transaction);
-
-		if (problem !== undefined)
-		{
-			return(problem);
-		}
-
-		return(createCustomTheme(universe.id, universe.ruleset, { ...body.data, name }, transaction));
-	});
-
-	if (typeof result !== 'number')
-	{
-		sendError(response, result.status, result.message, result.values);
-		return;
+		refuse(409, {
+			id: 'error.themeLimit',
+			defaultMessage: 'A universe can have at most {max, plural, one {# theme} other {# themes}} of its own.',
+			description: 'Why a new theme (character background) wasn\'t made: the universe has as many themes of its own as allowed'
+		}, {
+			max: MAX_CUSTOM_THEMES
+		});
 	}
 
-	const payload: CreatedPayload<number> = { id: result };
-
-	response.status(201).json(payload);
+	await checkTheme(context, undefined, settings);
+	recordRef(context, ref, await createCustomTheme(universe.id, universe.ruleset, { ...settings, name }, transaction));
 }
 
 /**
- * PUT /:universeId/themes/:themeId: changes one of the universe's themes, or stores its edited copy of a
- * default theme
+ * Changes one of the universe's themes, or stores its edited copy of a default theme
  *
- * @param request The request
- * @param response The response
+ * @param context The save
+ * @param id The theme
+ * @param settings Its new settings
  */
-async function saveTheme(request: Request, response: Response): Promise<void>
+export async function saveThemeChange(context: ChangeContext, id: NumberRef, settings: ThemeSettings): Promise<void>
 {
-	const themeId = themeIdParameter.safeParse(request.params.themeId);
-	const body = themeSettings.safeParse(request.body);
+	const { universe, transaction } = context;
 
-	if (!body.success)
+	requireThemesFor(context);
+
+	const themeId = resolveNumberRef(context, id);
+	const kind = await findThemeKind(universe.id, universe.ruleset, themeId, transaction);
+	const { name } = settings;
+
+	if (kind === undefined)
 	{
-		sendInvalidRequest(response, body.error);
-		return;
+		refuse(404, messages.noSuchTheme);
 	}
-
-	const { universe } = universeContextOf(request);
-	const kind = (themeId.success ? await findThemeKind(universe.id, universe.ruleset, themeId.data) : undefined);
-
-	if (!themeId.success || (kind === undefined))
-	{
-		sendError(response, 404, messages.noSuchTheme);
-		return;
-	}
-
-	const { name } = body.data;
 
 	if ((kind === 'custom') && (name === null))
 	{
-		sendError(response, 400, messages.themeNeedsName);
-		return;
+		refuse(400, messages.themeNeedsName);
 	}
 
-	const refusal = await inTransaction(async (transaction) =>
+	await checkTheme(context, themeId, settings);
+
+	if (kind === 'default')
 	{
-		await lockUniverse(universe.id, transaction);
-
-		const problem = await findThemeProblem(universe, themeId.data, body.data, transaction);
-
-		if (problem !== undefined)
-		{
-			return(problem);
-		}
-
-		if (kind === 'default')
-		{
-			await saveEditedDefaultTheme(universe.id, universe.ruleset, themeId.data, body.data, transaction);
-		}
-		else if (name !== null)
-		{
-			await updateCustomTheme(universe.id, themeId.data, { ...body.data, name }, transaction);
-		}
-
-		return(undefined);
-	});
-
-	if (refusal !== undefined)
-	{
-		sendError(response, refusal.status, refusal.message, refusal.values);
-		return;
+		await saveEditedDefaultTheme(universe.id, universe.ruleset, themeId, settings, transaction);
 	}
-
-	response.sendStatus(204);
+	else if (name !== null)
+	{
+		await updateCustomTheme(universe.id, themeId, { ...settings, name }, transaction);
+	}
 }
 
 /**
- * DELETE /:universeId/themes/:themeId: deletes one of the universe's own themes, or restores a default
- * theme the universe has edited
+ * Deletes one of the universe's own themes, or restores a default theme the universe has edited
  *
- * @param request The request
- * @param response The response
+ * @param context The save
+ * @param id The theme
  */
-async function deleteTheme(request: Request, response: Response): Promise<void>
+export async function removeThemeChange(context: ChangeContext, id: NumberRef): Promise<void>
 {
-	const themeId = themeIdParameter.safeParse(request.params.themeId);
-	const { universe } = universeContextOf(request);
-	const kind = (themeId.success ? await findThemeKind(universe.id, universe.ruleset, themeId.data) : undefined);
+	const { universe, transaction } = context;
 
-	if (!themeId.success || (kind === undefined))
+	requireThemesFor(context);
+
+	const themeId = resolveNumberRef(context, id);
+	const kind = await findThemeKind(universe.id, universe.ruleset, themeId, transaction);
+
+	if (kind === undefined)
 	{
-		sendError(response, 404, messages.noSuchTheme);
-		return;
+		refuse(404, messages.noSuchTheme);
 	}
 
 	// Default themes are enabled, so restoring one never leaves the universe without an enabled theme
 	if (kind === 'default')
 	{
-		await restoreDefaultTheme(universe.id, themeId.data);
-		response.sendStatus(204);
+		await restoreDefaultTheme(universe.id, themeId, transaction);
 		return;
 	}
 
-	const refusal = await inTransaction(async (transaction) =>
+	// Making a character waits for the universe's lock too, so nobody takes the theme as it is deleted
+	if (await hasCharactersOfTheme(themeId, transaction))
 	{
-		// Making a character waits for the universe's lock too, so nobody takes the theme as it is deleted
-		await lockUniverse(universe.id, transaction);
-
-		if (await hasCharactersOfTheme(themeId.data, transaction))
-		{
-			return(messages.themeInUse);
-		}
-
-		const others = (await loadEditorThemes(universe.id, universe.ruleset, transaction)).filter((theme) => (theme.id !== themeId.data));
-
-		if (!others.some((theme) => theme.enabled))
-		{
-			return(messages.noEnabledTheme);
-		}
-
-		await deleteCustomTheme(universe.id, themeId.data, transaction);
-
-		return(undefined);
-	});
-
-	if (refusal !== undefined)
-	{
-		sendError(response, 409, refusal);
-		return;
+		refuse(409, messages.themeInUse);
 	}
 
-	response.sendStatus(204);
+	const others = (await loadEditorThemes(universe.id, universe.ruleset, transaction)).filter((theme) => (theme.id !== themeId));
+
+	if (!others.some((theme) => theme.enabled))
+	{
+		refuse(409, messages.noEnabledTheme);
+	}
+
+	await deleteCustomTheme(universe.id, themeId, transaction);
 }
 
 /**
- * Why a theme's settings can't be saved: leaving the universe without an enabled theme
+ * Refuses a theme's settings that leave the universe without an enabled theme
  *
- * @param universe The universe
+ * @param context The save
  * @param themeId The theme being changed, or undefined for a new one
  * @param settings The theme's new settings
- * @param executor A transaction holding the universe's lock
- * @return Why, or undefined when they can be saved
  */
-async function findThemeProblem(universe: UniverseContext['universe'], themeId: number | undefined, settings: ThemeSettings, executor: Executor): Promise<Refusal | undefined>
+async function checkTheme(context: ChangeContext, themeId: number | undefined, settings: ThemeSettings): Promise<void>
 {
-	if (!settings.enabled && !(await loadEditorThemes(universe.id, universe.ruleset, executor)).some((theme) => ((theme.id !== themeId) && theme.enabled)))
-	{
-		return({
-			status: 409,
-			message: messages.noEnabledTheme
-		});
-	}
+	const { universe, transaction } = context;
 
-	return(undefined);
+	if (!settings.enabled && !(await loadEditorThemes(universe.id, universe.ruleset, transaction)).some((theme) => ((theme.id !== themeId) && theme.enabled)))
+	{
+		refuse(409, messages.noEnabledTheme);
+	}
 }

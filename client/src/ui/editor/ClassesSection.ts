@@ -35,11 +35,7 @@ export class ClassesSection extends OptionList<EditorClass, ClassSettings>
 			},
 			canEdit: (universe) => canEditUniverseSettings(universe.role),
 			load: (universeId) => api.listClasses(universeId),
-			routes: (universeId) => ({
-				create: (settings) => api.createClass(universeId, settings),
-				save: (classId, settings) => api.saveClass(universeId, classId, settings),
-				remove: (classId) => api.deleteClass(universeId, classId)
-			}),
+			list: 'Class',
 			created: (id, settings) => ({
 				id,
 				key: null,

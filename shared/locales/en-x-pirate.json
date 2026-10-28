@@ -1523,6 +1523,10 @@
 		"message": "Track what arrows get shot",
 		"source": "Track ammunition"
 	},
+	"editor.save.failed": {
+		"message": "Couldn't stow it.",
+		"source": "Could not save."
+	},
 	"editor.searchByName": {
 		"message": "Search by name",
 		"source": "Search by name"

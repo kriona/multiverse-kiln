@@ -35,11 +35,7 @@ export class RacesSection extends OptionList<EditorRace, RaceSettings>
 			},
 			canEdit: (universe) => canEditUniverseSettings(universe.role),
 			load: (universeId) => api.listRaces(universeId),
-			routes: (universeId) => ({
-				create: (settings) => api.createRace(universeId, settings),
-				save: (raceId, settings) => api.saveRace(universeId, raceId, settings),
-				remove: (raceId) => api.deleteRace(universeId, raceId)
-			}),
+			list: 'Race',
 			created: (id, settings) => ({
 				id,
 				key: null,

@@ -24,52 +24,23 @@ import type { DisplayTime, FaerieMorning, LobbyPassageOfTime, PassageOfTime, Rul
  * - GET    /                                       EditableUniverseListPayload: the universes the player has a role in
  * - POST   /                                       NewUniverseRequest -> CreatedPayload: a universe the player creates
  * - GET    /:universeId                            EditableUniverse
- * - PATCH  /:universeId                            UniverseSettingsUpdate (creators only)
+ * - POST   /:universeId/changes                    SaveChangesRequest -> SaveChangesPayload: saves the editor's changes, all or nothing (see editorChanges.ts)
  * - GET    /:universeId/ruleset                    RulesetSettings
- * - PUT    /:universeId/ruleset                    RulesetSettings for the universe's ruleset (creators only)
  * - GET    /:universeId/tiles                      TileListQuery as query parameters -> TileListPayload
- * - POST   /:universeId/tiles                      TileSettings -> CreatedPayload: a custom tile
- * - PUT    /:universeId/tiles/:tileId              TileSettings: edits a custom tile, or stores an edited copy of a default tile
- * - DELETE /:universeId/tiles/:tileId              deletes a custom tile nothing uses, or restores a default tile. With
- *                                                  ?replaceWith=<tile ID>, the maps using the tile are painted with that tile first
  * - GET    /:universeId/tiles/:tileId/usage        TileUsagePayload: the areas whose maps use the tile
  * - GET    /:universeId/tile-graphics              TileGraphicListPayload: the tile graphics the universe's editors uploaded
- * - POST   /:universeId/tile-graphics              TileGraphicUploadRequest -> CreatedPayload: uploads a tile graphic
- * - DELETE /:universeId/tile-graphics/:graphicId   deletes an uploaded tile graphic and its image; tiles drawn with it go back to their colors
  * - GET    /:universeId/items                      ItemListQuery as query parameters -> ItemListPayload
- * - POST   /:universeId/items                      ItemSettings -> CreatedPayload: a custom item
- * - PUT    /:universeId/items/:itemId              ItemSettings: edits a custom item, or stores an edited copy of a default item
- * - DELETE /:universeId/items/:itemId              deletes a custom item no starting equipment holds, or restores a default item
  * - GET    /:universeId/races                      RaceListPayload
- * - POST   /:universeId/races                      RaceSettings -> CreatedPayload: a custom race (creators only)
- * - PUT    /:universeId/races/:raceId              RaceSettings: edits a custom race, or stores an edited copy of a default race (creators only)
- * - DELETE /:universeId/races/:raceId              deletes a custom race, or restores a default race (creators only)
  * - GET    /:universeId/classes                    ClassListPayload
- * - POST   /:universeId/classes                    ClassSettings -> CreatedPayload: a custom class (creators only)
- * - PUT    /:universeId/classes/:classId           ClassSettings: edits a custom class, or stores an edited copy of a default class (creators only)
- * - DELETE /:universeId/classes/:classId           deletes a custom class, or restores a default class (creators only)
  * - GET    /:universeId/themes                     ThemeListPayload (rulesets with themes only, rulesetHasThemes())
- * - POST   /:universeId/themes                     ThemeSettings -> CreatedPayload: a custom theme (creators only)
- * - PUT    /:universeId/themes/:themeId            ThemeSettings: edits a custom theme, or stores an edited copy of a default theme (creators only)
- * - DELETE /:universeId/themes/:themeId            deletes a custom theme, or restores a default theme (creators only)
  * - GET    /:universeId/difficulty-levels          DifficultyLevelListPayload
- * - POST   /:universeId/difficulty-levels          DifficultyLevelSettings -> CreatedPayload (creators only)
- * - PUT    /:universeId/difficulty-levels/:levelId DifficultyLevelSettings (creators only)
- * - DELETE /:universeId/difficulty-levels/:levelId deletes a level that isn't the default, moving its groups to the default (creators only)
  * - GET    /:universeId/areas                      AreaListPayload
- * - POST   /:universeId/areas                      NewAreaRequest -> CreatedPayload
  * - GET    /:universeId/areas/:areaId              EditorArea
- * - PATCH  /:universeId/areas/:areaId              AreaSettingsUpdate
- * - DELETE /:universeId/areas/:areaId              deletes an area that isn't the lobby or starting area
- * - PUT    /:universeId/areas/:areaId/bounds       ResizeAreaRequest; 409 with ResizeConflictPayload when it would discard anything
  * - GET    /:universeId/areas/:areaId/chunks       ChunkRange as query parameters -> ChunkListPayload
- * - PATCH  /:universeId/areas/:areaId/cells        CellEditRequest
  * - GET    /:universeId/areas/:areaId/links        AreaLinkListPayload
- * - PUT    /:universeId/areas/:areaId/links/:column/:row  AreaLinkTarget: adds or replaces the cell's link
- * - DELETE /:universeId/areas/:areaId/links/:column/:row
  *
- * Every route except the list and create needs a role in the universe. Changing the universe's
- * settings needs canEditUniverseSettings(), and everything else that changes it needs canEditWorld()
+ * Every route except the list and create needs a role in the universe. Every change to a universe is
+ * saved through /:universeId/changes, which checks the player's role for each change
  */
 export const EDITOR_UNIVERSES_PATH = '/editor/universes';
 
@@ -237,7 +208,7 @@ export function isDefaultAreaTile(key: string | null, ruleset: Ruleset): boolean
 }
 
 /**
- * Most cells one CellEditRequest may change; the editor splits a larger edit into several requests
+ * Most cells one editCells change may change; the editor splits a larger edit into several changes
  */
 export const MAX_CELL_CHANGES = 20000;
 
@@ -415,15 +386,14 @@ export interface EditableUniverse extends UniverseSettings
 }
 
 /**
- * Body of PATCH EDITOR_UNIVERSES_PATH/:universeId: the settings to change. faerieMorning must be
- * sent with passageOfTime whenever either changes to or from faerie, and lobbyFaerieMorning with
- * lobbyPassageOfTime
+ * A universe's settings to change. faerieMorning must be sent with passageOfTime whenever either
+ * changes to or from faerie, and lobbyFaerieMorning with lobbyPassageOfTime
  */
 export type UniverseSettingsUpdate = Partial<UniverseSettings>;
 
 /**
  * How a universe plays under its ruleset, as the Ruleset tab shows and changes it: response of GET
- * EDITOR_UNIVERSES_PATH/:universeId/ruleset, and body of PUT, whose ruleset must be the universe's
+ * EDITOR_UNIVERSES_PATH/:universeId/ruleset. A ruleset change's must be for the universe's ruleset
  */
 export type RulesetSettings =
 	| { ruleset: 'pf1e'; settings: Pf1eSettings }
@@ -652,7 +622,7 @@ export interface TileGraphicListPayload
 }
 
 /**
- * Body of POST EDITOR_UNIVERSES_PATH/:universeId/tile-graphics
+ * A tileset to upload
  */
 export interface TileGraphicUploadRequest
 {
@@ -1116,38 +1086,22 @@ export interface EditorArea extends AreaSettings
 }
 
 /**
- * Body of POST EDITOR_UNIVERSES_PATH/:universeId/areas. Settings left out take their defaults: enabled
- * while the universe is in_the_beginning, outdoors, the default tile grass outdoors or wood floor indoors,
- * inherit time, not looping, and a map of NEW_AREA_BOUNDS
+ * A new area's settings. Settings left out take their defaults: enabled while the universe is
+ * in_the_beginning, outdoors, the default tile grass outdoors or wood floor indoors, inherit time, not
+ * looping, and a map of NEW_AREA_BOUNDS
  */
 export type NewAreaRequest = Pick<AreaSettings, 'name'> & Partial<AreaSettings>;
 
 /**
- * Body of PATCH EDITOR_UNIVERSES_PATH/:universeId/areas/:areaId: the settings to change. faerieMorning
- * must be sent with passageOfTime whenever either changes to or from faerie
+ * Area settings to change. faerieMorning must be sent with passageOfTime whenever either changes to or
+ * from faerie
  */
 export type AreaSettingsUpdate = Partial<AreaSettings>;
 
 /**
- * Body of PUT EDITOR_UNIVERSES_PATH/:universeId/areas/:areaId/bounds
- *
- * Each side may be at most MAX_MAP_SIDE cells long, and the map must still hold column 0, row 0
+ * What giving an area's map smaller bounds would discard
  */
-export interface ResizeAreaRequest
-{
-	bounds: MapBounds;
-
-	/**
-	 * Whether to go ahead when shrinking the map would discard cells that aren't the default tile, or
-	 * links on or into the cells it loses. When false, such a resize answers 409 and changes nothing
-	 */
-	discard: boolean;
-}
-
-/**
- * Body of the 409 answer to a ResizeAreaRequest that would discard something
- */
-export interface ResizeConflictPayload extends ErrorPayload
+export interface ResizeConflict
 {
 	/**
 	 * Cells outside the new bounds that aren't the default tile
@@ -1186,15 +1140,6 @@ export interface ChunkListPayload
  * DEFAULT_TILE_CELL or VOID_CELL)
  */
 export type CellChange = [column: number, row: number, value: number];
-
-/**
- * Body of PATCH EDITOR_UNIVERSES_PATH/:universeId/areas/:areaId/cells: up to MAX_CELL_CHANGES cells
- * inside the area's bounds. A cell listed twice takes the later value
- */
-export interface CellEditRequest
-{
-	changes: CellChange[];
-}
 
 /**
  * Where an area link goes and how it is taken

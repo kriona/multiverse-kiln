@@ -7,8 +7,9 @@ import { createItemIcon, itemCategoryName, itemName, itemTypeName } from '../ite
 import { TableSorter } from '../tableSorter';
 import { editorMessages } from './editorMessages';
 import { ItemDialog } from './ItemDialog';
+import type { EditorSave, SavedIds } from './editorSave';
 import type { SavableTab } from './SaveBar';
-import { describeCommitFailure, joinTags, markStagedRow, StagedChanges, stagedPage, stagedTag, type StagedState } from './stagedChanges';
+import { describeRefusedChange, joinTags, listChange, listRef, markStagedRow, StagedChanges, stagedPage, stagedTag, type StagedChange, type StagedState } from './stagedChanges';
 
 /**
  * How long the name filter waits after the last key before searching, in milliseconds
@@ -42,6 +43,11 @@ export class ItemsTab implements SavableTab
 	 * The changes made since the items were last saved
 	 */
 	readonly changes = new StagedChanges<ItemSettings>();
+
+	/**
+	 * The changes the save being sent holds
+	 */
+	private collected: readonly StagedChange<ItemSettings>[] = [];
 
 	private universe: EditableUniverse | undefined;
 
@@ -192,39 +198,40 @@ export class ItemsTab implements SavableTab
 	}
 
 	/**
-	 * Saves the changes in the order they were made, stopping at the first the server refuses
+	 * Adds the changes to a save, in the order they were made
 	 *
-	 * @return True when every change was saved
+	 * @param save The save
+	 * @return True
 	 */
-	async save(): Promise<boolean>
+	collect(save: EditorSave): boolean
 	{
 		const universe = this.universe;
 
-		if (!universe)
-		{
-			return(false);
-		}
-
 		showMessage(this.error, undefined);
 
-		const failure = await this.changes.commit({
-			create: (settings) => this.api.createItem(universe.id, settings),
-			save: (itemId, settings) => this.api.saveItem(universe.id, itemId, settings),
-			remove: (itemId) => this.api.deleteItem(universe.id, itemId)
-		});
-
-		await this.refresh();
-
-		if (failure)
+		if (universe)
 		{
-			const item = this.itemWithChanges(failure.change.id);
+			this.collected = this.changes.collect(save, (change) => listChange('Item', change), (change, refusal) =>
+			{
+				const item = this.itemWithChanges(change.id);
 
-			showMessage(this.error, describeCommitFailure(failure, (item ? itemName(item, universe.ruleset) : ''), !item?.custom));
-
-			return(false);
+				showMessage(this.error, describeRefusedChange(change, refusal, (item ? itemName(item, universe.ruleset) : ''), !item?.custom));
+			});
 		}
 
 		return(true);
+	}
+
+	/**
+	 * Takes the changes as saved, and loads the page afresh
+	 *
+	 * @param ids The IDs the save gave the items it made
+	 */
+	async saved(ids: SavedIds): Promise<void>
+	{
+		this.changes.markSaved(this.collected, (id) => ids.number(listRef('Item', id)));
+		this.collected = [];
+		await this.refresh();
 	}
 
 	/**

@@ -1,4 +1,4 @@
-import { UNIVERSE_ROLE_NAMES, type EditableUniverse, type UniverseSummary } from '@multiverse-kiln/shared';
+import { UNIVERSE_ROLE_NAMES, type EditableUniverse, type UniverseSettingsUpdate, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -33,6 +33,20 @@ export const EDITOR_TABS = [
 ] as const;
 
 export type EditorTab = typeof EDITOR_TABS[number];
+
+/**
+ * The order the tabs' changes are saved in: the Areas tab's maps can be painted with tiles the
+ * Tilesets tab adds, so the Tilesets tab goes first and the Areas tab last
+ */
+const SAVE_ORDER: readonly EditorTab[] = [
+	'tilesets',
+	'items',
+	'ruleset',
+	'characters',
+	'universe',
+	'lobby',
+	'areas'
+];
 
 /**
  * Where in the editor the player is: the tab shown, and the area open in the area editor
@@ -100,9 +114,9 @@ export class EditorScreen
 	private readonly itemsTab: ItemsTab;
 
 	/**
-	 * Saves the tab showing, which keeps its changes on the page until then
+	 * Saves every tab, which keep their changes on the page until then
 	 */
-	private readonly saveBar = new SaveBar();
+	private readonly saveBar: SaveBar;
 
 	/**
 	 * What the save bar saves on each tab
@@ -127,33 +141,46 @@ export class EditorScreen
 	 */
 	constructor(private readonly api: EditorApi, private readonly actions: EditorScreenActions)
 	{
-		this.universeTab = new UniverseTab(api, (universe) =>
+		this.universeTab = new UniverseTab((update) =>
 		{
-			this.setUniverse(universe);
+			this.updateUniverse(update);
 		});
 		this.rulesetTab = new RulesetTab(api);
-		this.lobbyTab = new LobbyTab(api, (universe) =>
+		this.lobbyTab = new LobbyTab((update) =>
 		{
-			this.setUniverse(universe);
+			this.updateUniverse(update);
 		});
 
-		const areaSelect = new AreaSelectDialog(api);
+		this.tilesetsTab = new TilesetsTab(api);
+
+		const areaSelect = new AreaSelectDialog(api, this.tilesetsTab);
 		const itemSelect = new ItemSelectDialog(api);
 
-		this.charactersTab = new CharactersTab(api, areaSelect, itemSelect, (universe) =>
+		this.charactersTab = new CharactersTab(api, areaSelect, itemSelect, (update) =>
 		{
-			this.setUniverse(universe);
+			this.updateUniverse(update);
 		});
 		this.racesSection = new RacesSection(api, areaSelect, itemSelect);
 		this.classesSection = new ClassesSection(api, areaSelect, itemSelect);
 		this.themesSection = new ThemesSection(api);
 		this.difficultySection = new DifficultySection(api);
-		this.tilesetsTab = new TilesetsTab(api);
-		this.areasTab = new AreasTab(api, (areaId) =>
+		this.areasTab = new AreasTab(api, this.tilesetsTab, (areaId) =>
 		{
 			this.setPlace({ ...this.place, areaId });
 		});
 		this.itemsTab = new ItemsTab(api);
+		this.saveBar = new SaveBar(api, () => this.universe?.id, (tab) =>
+		{
+			const name = EDITOR_TABS.find((candidate) => (this.savableTabs[candidate] === tab));
+
+			if (name !== undefined)
+			{
+				this.selectTab(name);
+			}
+		}, () =>
+		{
+			void this.areasTab.reloadTiles();
+		});
 
 		this.savableTabs = {
 			universe: this.universeTab,
@@ -165,7 +192,7 @@ export class EditorScreen
 			items: this.itemsTab
 		};
 
-		for (const name of EDITOR_TABS)
+		for (const name of SAVE_ORDER)
 		{
 			const tab = this.savableTabs[name];
 
@@ -293,6 +320,19 @@ export class EditorScreen
 	hideNotice(): void
 	{
 		showMessage(this.notice, undefined);
+	}
+
+	/**
+	 * Takes settings a tab saved as the universe's
+	 *
+	 * @param update The settings saved
+	 */
+	private updateUniverse(update: UniverseSettingsUpdate): void
+	{
+		if (this.universe)
+		{
+			this.setUniverse({ ...this.universe, ...update });
+		}
 	}
 
 	/**

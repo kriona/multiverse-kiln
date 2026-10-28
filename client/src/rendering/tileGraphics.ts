@@ -26,14 +26,32 @@ export const TILE_GRAPHIC_URLS: Record<TileGraphic, string> = {
 export const DUAL_GRID_COLUMNS = 4;
 
 /**
+ * The images of tilesets the editor has staged to upload, which the server doesn't have yet, by the IDs
+ * they have on the page
+ */
+const stagedTileGraphicUrls = new Map<string, string>();
+
+/**
+ * Lets maps draw a tileset staged to upload with the page's own copy of its image. Staged IDs are never
+ * reused, so the image can stay known after the tileset is uploaded or discarded
+ *
+ * @param graphicId The tileset's ID on the page
+ * @param url Its image, as a data URL
+ */
+export function showStagedTileGraphic(graphicId: string, url: string): void
+{
+	stagedTileGraphicUrls.set(graphicId, url);
+}
+
+/**
  * Where to load a graphic the universe's editors uploaded
  *
  * @param graphicId The graphic's ID
- * @return Its address on the server
+ * @return Its address on the server, or the page's own copy of a tileset staged to upload
  */
 export function uploadedTileGraphicUrl(graphicId: string): string
 {
-	return(serverHttpUrl(`${TILE_GRAPHICS_PATH}/${graphicId}.png`));
+	return(stagedTileGraphicUrls.get(graphicId) ?? serverHttpUrl(`${TILE_GRAPHICS_PATH}/${graphicId}.png`));
 }
 
 /**
