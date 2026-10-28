@@ -6,6 +6,10 @@
 *.bat text eol=crlf
 *.cmd text eol=crlf
 
+# Dependabot edits package.json in a checkout made with these rules and commits it through GitHub's API,
+# which stores it as-is, so a CRLF checkout would reach the repository
+package.json text eol=lf
+
 *.png binary
 *.jpg binary
 *.gif binary

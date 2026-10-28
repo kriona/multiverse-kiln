@@ -12,6 +12,12 @@ updates:
     # and pulled first. Security updates ignore this
     cooldown:
       default-days: 7
+    # typescript-eslint supports a limited range of TypeScript versions, so a new TypeScript major
+    # waits until typescript-eslint supports it and is updated by hand
+    ignore:
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
     groups:
       # colyseus and the @colyseus/* packages must stay on matching versions
       colyseus:
