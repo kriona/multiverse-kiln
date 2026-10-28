@@ -168,11 +168,7 @@ export function requireRole(allowed: (role: UniverseRole) => boolean): RequestHa
 	{
 		if (!allowed(universeContextOf(request).role))
 		{
-			sendError(response, 403, {
-				id: 'error.roleNotAllowed',
-				defaultMessage: 'Your role in this universe doesn\'t allow that.',
-				description: 'Why an editor change was refused: the player\'s role, such as beta tester, can\'t make it'
-			});
+			sendError(response, 403, errorMessages.roleNotAllowed);
 			return;
 		}
 

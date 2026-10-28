@@ -11,6 +11,7 @@ import { addKeyHelp } from '../shortcuts';
 import { describeCell } from './cellDescription';
 import { editorMessages } from './editorMessages';
 import { mapMessages } from './mapMessages';
+import type { StagedTiles } from './stagedChanges';
 
 /**
  * Width of the chosen area's preview, in pixels
@@ -75,7 +76,7 @@ export class AreaSelectDialog
 	private areas: EditorAreaSummary[] = [];
 
 	/**
-	 * Every tile the universe can use, for drawing the preview
+	 * Every tile the universe can use, with the Tilesets tab's changes, for drawing the preview
 	 */
 	private tiles: EditorTile[] = [];
 
@@ -108,8 +109,9 @@ export class AreaSelectDialog
 
 	/**
 	 * @param api The editor's API
+	 * @param stagedTiles The Tilesets tab's changes, which the preview is drawn with
 	 */
-	constructor(private readonly api: EditorApi)
+	constructor(private readonly api: EditorApi, private readonly stagedTiles: StagedTiles)
 	{
 		addKeyHelp({
 			scope: this.previewElement,
@@ -199,7 +201,7 @@ export class AreaSelectDialog
 			if (version === this.version)
 			{
 				this.areas = list.areas.filter((area) => (area.id !== list.lobbyAreaId));
-				this.tiles = tiles;
+				this.tiles = this.stagedTiles.withChanges(tiles).tiles;
 				this.showResults();
 				void this.showPreview();
 			}

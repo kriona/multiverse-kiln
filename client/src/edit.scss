@@ -5,12 +5,53 @@
 .markdown-editor
 {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-	gap: 16px;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 4px 16px;
+
+	// The label and toolbar span the editor, and the field sits beside its preview below the Preview
+	// heading, so the field and the preview box start level
+	> div
+	{
+		display: contents;
+	}
+
+	> .field-label > label,
+	.markdown-toolbar
+	{
+		grid-column: 1 / -1;
+	}
+
+	> div:last-child > .field-label
+	{
+		grid-column: 2;
+		grid-row: 3;
+	}
 
 	textarea
 	{
+		grid-column: 1;
+		grid-row: 4;
 		resize: vertical;
+	}
+
+	.markdown-preview
+	{
+		grid-column: 2;
+		grid-row: 4;
+	}
+
+	// One column: everything in order, the preview below the field
+	@media (max-width: 640px)
+	{
+		grid-template-columns: minmax(0, 1fr);
+
+		> div:last-child > .field-label,
+		textarea,
+		.markdown-preview
+		{
+			grid-column: auto;
+			grid-row: auto;
+		}
 	}
 }
 
@@ -156,6 +197,91 @@ html:has(.editor-save-bar:not([hidden])) .map-editor.full-page
 	max-width: 100%;
 }
 
+// The area's name on the left and Back to Areas on the right, or the button above the name on a
+// narrow screen
+.area-editor-top
+{
+	display: flex;
+	flex-direction: row-reverse;
+	align-items: flex-start;
+	gap: 12px;
+
+	label
+	{
+		flex: 1;
+	}
+
+	@media (max-width: 640px)
+	{
+		flex-direction: column;
+		align-items: stretch;
+
+		button
+		{
+			align-self: flex-end;
+		}
+	}
+}
+
+// Max widths
+#universe-name-input,
+#area-name
+{
+	max-width: 450px;
+}
+
+#ruleset-ability-points
+{
+	max-width: 60px;
+}
+
+#lobby-day-hours
+{
+	max-width: 60px;
+}
+
+#difficulty-mob-scale
+{
+	max-width: 70px;
+}
+#tile-vision
+{
+	max-width: 60px;
+}
+
+#characters-group-size
+{
+	max-width: 40px;
+}
+
+#race-name,
+#class-name
+{
+	max-width: 300px;
+}
+
+#tile-color
+{
+	max-width: 70px;
+}
+#tile-walk
+{
+	max-width: 80px;
+}
+
+fieldset
+{
+	&.ability-modifiers
+	{
+		max-width: 300px;
+	}
+
+	&.indoor-outdoor
+	{
+		max-width: 200px;
+	}
+}
+
 // A tab holding cards that save separately, such as the Ruleset tab's settings and difficulty levels
 .editor-cards
 {
@@ -167,7 +293,7 @@ html:has(.editor-save-bar:not([hidden])) .map-editor.full-page
 // A row in an editor list that will be deleted when its tab is saved (markStagedRow)
 tr.staged-deleted
 {
-	opacity: 0.6;
+	opacity: 0.3;
 
 	td
 	{
@@ -186,7 +312,7 @@ tr.staged-deleted
 // An area in the list of areas that will be deleted when the tab is saved
 .area-list .staged-deleted
 {
-	opacity: 0.6;
+	opacity: 0.3;
 
 	// Text decoration doesn't reach into buttons, so the name needs its own
 	strong
@@ -280,6 +406,30 @@ tr.staged-deleted
 		width: 64px;
 		height: 64px;
 	}
+
+	// A tile graphic's sheet is 4 frames by 4, and the bottom-right one is the tile on every side. The
+	// first layer is laid over it, such as the night preview's darkening
+	&.graphic
+	{
+		background-size: 100% 100%, 400% 400%;
+		background-position: 0 0, 100% 100%;
+		image-rendering: pixelated;
+	}
+
+	// A blob sheet is 8 frames by 6, and the 47th, second from the right on the bottom row, is the tile on every side
+	&.graphic.blob
+	{
+		background-size: 100% 100%, 800% 600%;
+		background-position: 0 0, calc(600% / 7) 100%;
+	}
+}
+
+// Under the tile editor's graphic list: uploading a tileset, and deleting the uploaded one chosen
+.graphic-buttons
+{
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
 }
 
 .walk-readout
@@ -395,7 +545,7 @@ tr.staged-deleted
 		". north ."
 		"west canvas east"
 		". south .";
-	grid-template-columns: auto auto auto;
+	grid-template-columns: auto minmax(0, auto) auto;
 	justify-content: start;
 	align-items: center;
 	justify-items: center;
@@ -422,9 +572,14 @@ tr.staged-deleted
 	}
 }
 
+// The map's view, as wide as MapEditor sets --map-view-width or as the page has room for; MapEditor
+// sizes the canvas to fill it
 .map-canvas
 {
 	grid-area: canvas;
+	width: var(--map-view-width);
+	max-width: calc(100% - 2px);
+	overflow: hidden;
 	line-height: 0;
 	border: 1px solid $border;
 
@@ -492,9 +647,10 @@ html:has(.map-editor.full-page) body
 
 	.map-canvas
 	{
+		width: auto;
+		max-width: none;
 		align-self: stretch;
 		justify-self: stretch;
-		overflow: hidden;
 	}
 }
 
@@ -674,7 +830,7 @@ html:has(.map-editor.full-page) body
 }
 
 // A race's six ability modifiers, three to a row
-.ability-modifiers
+div.ability-modifiers
 {
 	display: grid;
 	grid-template-columns: repeat(3, 1fr);
@@ -685,11 +841,6 @@ html:has(.map-editor.full-page) body
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
-	}
-
-	input
-	{
-		width: 100%;
 	}
 }
 

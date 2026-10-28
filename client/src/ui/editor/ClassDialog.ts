@@ -121,7 +121,6 @@ export class ClassDialog
 
 		this.startingItems = new StartingItemsField(api, itemSelect, {
 			list: getElement('class-items', HTMLUListElement),
-			none: getElement('class-items-none', HTMLElement),
 			choose: this.chooseItemsButton
 		}, () =>
 		{

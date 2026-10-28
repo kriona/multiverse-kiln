@@ -10,13 +10,17 @@ import express, { type Application, type NextFunction, type Request, type Respon
 import { z } from 'zod';
 import { canPlayUniverse, defineMessages, DISALLOWED_TEXT_CHARACTERS, INVITE_DURATION_MS, INVITE_DURATIONS, INVITES_PATH, MAX_GROUP_NAME_LENGTH, UNIVERSES_PATH, type DifficultyLevelListPayload, type GroupCharacterRequest, type GroupCreatedPayload, type GroupJoinedPayload, type InviteCreatedPayload, type InviteDetails, type NewGroupRequest, type NewInviteRequest } from '@multiverse-kiln/shared';
 
-import { findOwnCharacter } from '../db/characterRepo.js';
+import { findOwnCharacter, type OwnCharacter } from '../db/characterRepo.js';
+import { loadEditorClasses } from '../db/classRepo.js';
+import type { Executor } from '../db/client.js';
 import { findDifficultyLevel, listDifficultyLevels } from '../db/difficultyRepo.js';
 import { addGroupMember, countGroupMembers, createGroup, createInvite, deleteInvite, findGroup, findInvite, findMembership, leaveGroup, listGroupMembers, lockGroup, type GroupCharacter, type GroupRecord } from '../db/groupRepo.js';
 import { lockPlayer } from '../db/playerRepo.js';
+import { loadEditorRaces } from '../db/raceRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { findUniverseRole } from '../db/universeEditorRepo.js';
 import { findEditableUniverse, lockUniverse } from '../db/universeRepo.js';
+import { chooseStartingArea, type StartingPlace } from '../logic/startingArea.js';
 import { groupChanges } from '../players/groupChanges.js';
 import { loadPlayableUniverse, universeOf, type PlayableUniverse } from './characters.js';
 import { playerIdOf, refuseWritesFromOtherOrigins, requireLogin } from './editorAccess.js';
@@ -153,6 +157,35 @@ async function difficultyLevelsRoute(request: Request, response: Response): Prom
 }
 
 /**
+ * Where a group made around a character starts: the starting area the universe, the character's race
+ * and their class choose now
+ *
+ * @param universe The universe
+ * @param character The group's anchor being
+ * @param executor A transaction
+ * @return The area and cell, or null when nothing names an area
+ */
+async function findStartingPlace(universe: PlayableUniverse, character: OwnCharacter, executor: Executor): Promise<StartingPlace | null>
+{
+	const race = (await loadEditorRaces(universe.id, universe.ruleset, executor)).find((option) => (option.id === character.raceId));
+	const characterClass = (await loadEditorClasses(universe.id, universe.ruleset, executor)).find((option) => (option.id === character.classId));
+
+	// A race or class that characters have can't be deleted
+	if (!race || !characterClass)
+	{
+		throw new Error(`Character ${character.id} has a race or class universe ${universe.id} doesn't have`);
+	}
+
+	return(chooseStartingArea(((universe.startingAreaId === null)
+		? null
+		: {
+			areaId: universe.startingAreaId,
+			column: universe.startingColumn,
+			row: universe.startingRow
+		}), race, characterClass));
+}
+
+/**
  * POST /: makes a group around one of the player's characters who isn't in one, starting in their
  * starting area
  *
@@ -196,15 +229,14 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			return({ status: 404, message: messages.noSuchDifficulty });
 		}
 
-		// A character whose starting area was deleted starts where the universe's characters do
-		const ownStart = (character.areaId !== null);
+		const start = await findStartingPlace(universe, character, transaction);
 		const groupId = await createGroup({
 			universeId: universe.id,
 			anchorCharacterId: anchorId,
 			name,
-			startingAreaId: (character.areaId ?? universe.startingAreaId),
-			startingColumn: (ownStart ? character.startingColumn : universe.startingColumn),
-			startingRow: (ownStart ? character.startingRow : universe.startingRow),
+			startingAreaId: (start?.areaId ?? null),
+			startingColumn: (start?.column ?? 0),
+			startingRow: (start?.row ?? 0),
 			difficultyLevelId
 		}, transaction);
 

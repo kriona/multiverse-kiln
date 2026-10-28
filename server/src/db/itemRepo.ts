@@ -2,7 +2,7 @@
  * Items: the only module that reads or writes the items table
  */
 import { and, count, eq, isNull, or } from 'drizzle-orm';
-import { itemCategory, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type Ruleset } from '@multiverse-kiln/shared';
+import { compareNumbers, itemCategory, sortRows, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type RowComparers, type Ruleset } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { items } from './schema.js';
@@ -120,11 +120,36 @@ async function loadNamedItems(universeId: string, ruleset: Ruleset, executor: Ex
 }
 
 /**
+ * Compares English item names, ignoring capitals and accents
+ */
+const nameCollator = new Intl.Collator('en', { sensitivity: 'base' });
+
+/**
+ * How the Items tab's columns compare items (ItemListQuery.sort)
+ */
+const itemComparers: RowComparers<{ item: EditorItem; englishName: string }, ItemSortColumn> = {
+	name: (first, second) => nameCollator.compare(first.englishName, second.englishName),
+	notes: (first, second) => compareNumbers(notesSortKey(first.item), notesSortKey(second.item))
+};
+
+/**
+ * Where an item's notes put it when the Items tab sorts by them: those with none first, then disabled,
+ * edited and custom ones
+ *
+ * @param item The item
+ * @return The sort key, from 0 to 7
+ */
+function notesSortKey(item: EditorItem): number
+{
+	return((item.custom ? 4 : 0) + (item.edited ? 2 : 0) + (item.enabled ? 0 : 1));
+}
+
+/**
  * A page of a universe's items, as the Items tab lists them
  *
  * @param universeId The universe's ID
  * @param ruleset The universe's ruleset
- * @param query The filters, and which page
+ * @param query The filters, the order, and which page
  * @param executor The database, or a transaction
  * @return The page, and how many items match in all
  */
@@ -147,9 +172,15 @@ export async function listEditorItems(universeId: string, ruleset: Ruleset, quer
 		);
 	});
 	const offset = (query.offset ?? 0);
+	const sorted = ((query.sort === undefined)
+		? matching
+		: sortRows(sortRows(matching, itemComparers, { column: 'name', direction: 'ascending' }), itemComparers, {
+			column: query.sort,
+			direction: (query.direction ?? 'ascending')
+		}));
 
 	return({
-		items: matching
+		items: sorted
 			.slice(offset, offset + (query.limit ?? matching.length))
 			.map(({ item }) => item),
 		total: matching.length

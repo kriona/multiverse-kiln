@@ -6,6 +6,7 @@
  */
 import { defineMessages, type MessageDescriptor } from '../../localization.js';
 import { emptyPf1eAbilityScores, type Pf1eAbilityScores } from './abilities.js';
+import type { Darkvision } from '../../vision.js';
 import type { Pf1eSize } from './sizes.js';
 
 /**
@@ -34,7 +35,13 @@ export interface Pf1eRaceDefaults
 	 */
 	floatingBonus: boolean;
 
-	darkvision: boolean;
+	darkvision: Darkvision;
+
+	/**
+	 * Whether bright light dazzles the race's characters, shortening their vision (see visionBudget)
+	 */
+	lightSensitivity: boolean;
+
 	size: Pf1eSize;
 }
 
@@ -51,12 +58,13 @@ export interface Pf1eRaceRules extends Omit<Pf1eRaceDefaults, 'abilityModifiers'
 }
 
 /**
- * The rules a race the universe adds starts with: no modifiers, no darkvision, medium
+ * The rules a race the universe adds starts with: no modifiers, no darkvision, no light sensitivity, medium
  */
 export const NEW_PF1E_RACE_RULES: Readonly<Pf1eRaceRules> = {
 	abilityModifiers: emptyPf1eAbilityScores(),
 	floatingBonus: false,
-	darkvision: false,
+	darkvision: 'none',
+	lightSensitivity: false,
 	size: 'medium'
 };
 
@@ -89,7 +97,8 @@ export const PF1E_RACES = {
 			wisdom: -2
 		},
 		floatingBonus: false,
-		darkvision: false,
+		darkvision: 'none',
+		lightSensitivity: false,
 		size: 'medium'
 	},
 	drow: {
@@ -99,7 +108,8 @@ export const PF1E_RACES = {
 			constitution: -2
 		},
 		floatingBonus: false,
-		darkvision: true,
+		darkvision: 'superior',
+		lightSensitivity: true,
 		size: 'medium'
 	},
 	dwarf: {
@@ -109,7 +119,8 @@ export const PF1E_RACES = {
 			charisma: -2
 		},
 		floatingBonus: false,
-		darkvision: true,
+		darkvision: 'normal',
+		lightSensitivity: false,
 		size: 'medium'
 	},
 	elf: {
@@ -119,7 +130,8 @@ export const PF1E_RACES = {
 			constitution: -2
 		},
 		floatingBonus: false,
-		darkvision: false,
+		darkvision: 'none',
+		lightSensitivity: false,
 		size: 'medium'
 	},
 	gnome: {
@@ -129,7 +141,8 @@ export const PF1E_RACES = {
 			strength: -2
 		},
 		floatingBonus: false,
-		darkvision: false,
+		darkvision: 'none',
+		lightSensitivity: false,
 		size: 'small'
 	},
 	goblin: {
@@ -139,19 +152,22 @@ export const PF1E_RACES = {
 			charisma: -2
 		},
 		floatingBonus: false,
-		darkvision: true,
+		darkvision: 'normal',
+		lightSensitivity: false,
 		size: 'small'
 	},
 	half_elf: {
 		abilityModifiers: {},
 		floatingBonus: true,
-		darkvision: false,
+		darkvision: 'none',
+		lightSensitivity: false,
 		size: 'medium'
 	},
 	half_orc: {
 		abilityModifiers: {},
 		floatingBonus: true,
-		darkvision: true,
+		darkvision: 'normal',
+		lightSensitivity: false,
 		size: 'medium'
 	},
 	halfling: {
@@ -161,7 +177,8 @@ export const PF1E_RACES = {
 			strength: -2
 		},
 		floatingBonus: false,
-		darkvision: false,
+		darkvision: 'none',
+		lightSensitivity: false,
 		size: 'small'
 	},
 	hobgoblin: {
@@ -170,13 +187,15 @@ export const PF1E_RACES = {
 			constitution: 2
 		},
 		floatingBonus: false,
-		darkvision: true,
+		darkvision: 'normal',
+		lightSensitivity: false,
 		size: 'medium'
 	},
 	human: {
 		abilityModifiers: {},
 		floatingBonus: true,
-		darkvision: false,
+		darkvision: 'none',
+		lightSensitivity: false,
 		size: 'medium'
 	},
 	ratfolk: {
@@ -186,7 +205,8 @@ export const PF1E_RACES = {
 			strength: -2
 		},
 		floatingBonus: false,
-		darkvision: true,
+		darkvision: 'normal',
+		lightSensitivity: false,
 		size: 'small'
 	}
 } as const satisfies Record<string, Pf1eRaceDefaults>;

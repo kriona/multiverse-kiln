@@ -24,7 +24,7 @@ const translationFiles = {
 const loaders = new Map(Object.entries(translationFiles).map(([file, load]) => [(file.split('/').pop() ?? '').replace(/\.json$/, ''), load]));
 
 /**
- * Where the browser keeps the language the player chose, until profiles hold it (Phase 13)
+ * Where the browser keeps the language the player chose, until profiles hold it (Phase 14)
  */
 const LOCALE_STORAGE_KEY = 'kiln.locale';
 
@@ -315,7 +315,23 @@ function localizeText(element: Element, id: string): void
 		part.remove();
 	}
 
-	marker.replaceWith(...[before, ...formatToNodes({ id, defaultMessage: collapseWhitespace(source) }, values), after].filter((node) => (node !== '')));
+	// A message can use an argument more than once, and a node can only be in one place, so later uses get a copy
+	const placed = new Set<Node>();
+	const nodes = formatToNodes({ id, defaultMessage: collapseWhitespace(source) }, values).map((part) =>
+	{
+		if (typeof part === 'string')
+		{
+			return(part);
+		}
+
+		const node = (placed.has(part) ? part.cloneNode(true) : part);
+
+		placed.add(part);
+
+		return(node);
+	});
+
+	marker.replaceWith(...[before, ...nodes, after].filter((node) => (node !== '')));
 }
 
 /**

@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { GROUP_START_SECONDS } from '@multiverse-kiln/shared';
 
 import { findLastPlayedCharacterId, findOwnCharacter, listPlayableCharacters, markCharacterPlayed, purgeExpiredCharacters, scheduleCharacterDeletion } from '../../src/db/characterRepo.js';
+import { findDefaultClassIds } from '../../src/db/classRepo.js';
 import { db } from '../../src/db/client.js';
 import { findDefaultDifficultyLevel } from '../../src/db/difficultyRepo.js';
 import { addGroupMember, countGroupMembers, createInvite, deleteInvite, findGroup, findInvite, findMembership, leaveGroup, listExpiredMemberships, listGroupMembers, listMembersOfGroups, listPlayerGroupIds, purgeExpiredInvites, saveGroupClock, saveMemberPositions } from '../../src/db/groupRepo.js';
@@ -83,7 +84,7 @@ describe('groupRepo', () =>
 
 		assert.deepStrictEqual((await listPlayableCharacters(playerId, universe.universeId)).map(({ id }) => id), [lonerId]);
 		assert.strictEqual(await findLastPlayedCharacterId(playerId, universe.universeId), anchorId);
-		assert.deepStrictEqual(await findOwnCharacter(playerId, universe.universeId, anchorId), { id: anchorId, name: 'Anchor', raceId: await defaultRaceId('dwarf'), areaId: null, startingColumn: 0, startingRow: 0, playable: true });
+		assert.deepStrictEqual(await findOwnCharacter(playerId, universe.universeId, anchorId), { id: anchorId, name: 'Anchor', raceId: await defaultRaceId('dwarf'), classId: (await findDefaultClassIds('pf1e')).get('fighter'), playable: true });
 		assert.strictEqual(await findOwnCharacter(playerId, universe.universeId, randomUUID()), undefined);
 	});
 

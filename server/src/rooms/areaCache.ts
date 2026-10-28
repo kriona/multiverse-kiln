@@ -1,4 +1,4 @@
-import { chunkKey, createVisionMap, GRID_CELL_SIZE, parseChunkKey, type AreaChunk, type AreaChunkUpdate, type AreaPayload, type VisionMap } from '@multiverse-kiln/shared';
+import { chunkKey, createVisionMap, GRID_CELL_SIZE, IMPASSABLE_WALK_SECONDS, parseChunkKey, type AreaChunk, type AreaChunkUpdate, type AreaPayload, type VisionMap } from '@multiverse-kiln/shared';
 
 import type { LoadedArea } from '../db/areaRepo.js';
 import type { Grid } from '../logic/movement.js';
@@ -443,6 +443,9 @@ export function toAreaPayload(area: ActiveArea, chunkKeys: Iterable<string>, mem
 			key: tile.key,
 			name: ((tile.key === null) ? tile.name : null),
 			color: tile.color,
+			graphic: tile.graphic,
+			uploadedGraphic: tile.uploadedGraphic,
+			impassable: (tile.walkSeconds === IMPASSABLE_WALK_SECONDS),
 			visionCost: tile.visionCost
 		})),
 		chunks: toChunkUpdates(area, chunkKeys, memory)

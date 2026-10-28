@@ -2,8 +2,8 @@ import { DISALLOWED_TEXT_CHARACTERS, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_
 
 import { t } from '../localization';
 import { describeEditorError } from '../network/editorApi';
-import { universePageUrl } from '../pages';
-import { getElement, namedOptions, setOptions, showMessage } from './dom';
+import { editPageUrl, universePageUrl } from '../pages';
+import { getElement, namedOptions, setOptions, setPageTitle, showMessage } from './dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
 import { formMessages } from './formMessages';
 
@@ -110,11 +110,11 @@ export class HomeScreen
 	 */
 	show(playerName: string): void
 	{
-		document.title = t({
+		setPageTitle(t({
 			id: 'home.pageTitle',
-			defaultMessage: 'Universes - Multiverse Kiln',
-			description: 'The browser tab\'s title while Home lists the universes; Multiverse Kiln is the game engine\'s name'
-		});
+			defaultMessage: 'Universes',
+			description: 'The browser tab\'s title while Home lists the universes, before the game engine\'s name'
+		}));
 		this.playerName.textContent = playerName;
 		this.listed = 0;
 		this.listVersion++;
@@ -281,7 +281,7 @@ export class HomeScreen
 	}
 
 	/**
-	 * An entry in the player's own universes: its name, description, stage and the player's role, opening the editor
+	 * An entry in the player's own universes: its name, description, stage and the player's role, linking to the editor
 	 *
 	 * @param universe The universe
 	 * @return The list item
@@ -289,13 +289,13 @@ export class HomeScreen
 	private createOwnItem(universe: EditableUniverseSummary): HTMLLIElement
 	{
 		const item = document.createElement('li');
-		const button = document.createElement('button');
+		const link = document.createElement('a');
 		const name = document.createElement('strong');
 		const description = document.createElement('span');
 		const details = document.createElement('span');
 
-		button.type = 'button';
-		button.className = 'universe-item';
+		link.className = 'button universe-item';
+		link.href = editPageUrl(universe.id);
 		name.textContent = universe.name;
 		description.textContent = universe.shortDescription;
 		details.className = 'universe-ruleset';
@@ -309,13 +309,8 @@ export class HomeScreen
 			role: t(UNIVERSE_ROLE_NAMES[universe.role])
 		});
 
-		button.append(name, description, details);
-		button.addEventListener('click', () =>
-		{
-			this.actions.edit(universe.id);
-		});
-
-		item.append(button);
+		link.append(name, description, details);
+		item.append(link);
 
 		return(item);
 	}

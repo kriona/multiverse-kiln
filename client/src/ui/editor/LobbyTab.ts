@@ -1,11 +1,12 @@
 import { canEditUniverseSettings, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, PASSAGE_OF_TIME_NAMES, REAL_TIME_NAME, type EditableUniverse, type FaerieMorning, type LobbyPassageOfTime, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
-import { describeEditorError, type EditorApi } from '../../network/editorApi';
+import { describeEditorError } from '../../network/editorApi';
 import { ChangeTracker } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
+import type { EditorSave } from './editorSave';
 import type { SavableTab } from './SaveBar';
 
 /**
@@ -36,10 +37,14 @@ export class LobbyTab implements SavableTab
 	private universe: EditableUniverse | undefined;
 
 	/**
-	 * @param api The editor's API
-	 * @param onSaved Called with the universe after its lobby settings are saved
+	 * The settings the save being sent holds
 	 */
-	constructor(private readonly api: EditorApi, private readonly onSaved: (universe: EditableUniverse) => void)
+	private collected: UniverseSettingsUpdate | undefined;
+
+	/**
+	 * @param onSaved Called with the lobby settings saved, once they are
+	 */
+	constructor(private readonly onSaved: (update: UniverseSettingsUpdate) => void)
 	{
 		setOptions(this.time, LOBBY_PASSAGES_OF_TIME.map((passage) => ({
 			value: passage,
@@ -111,11 +116,12 @@ export class LobbyTab implements SavableTab
 	}
 
 	/**
-	 * Saves the settings as the form shows them
+	 * Adds the settings as the form shows them to a save
 	 *
-	 * @return True when they were saved
+	 * @param save The save
+	 * @return False when a field is wrong
 	 */
-	async save(): Promise<boolean>
+	collect(save: EditorSave): boolean
 	{
 		const universe = this.universe;
 		const lobbyPassageOfTime = this.time.value as LobbyPassageOfTime;
@@ -144,26 +150,35 @@ export class LobbyTab implements SavableTab
 		};
 
 		showMessage(this.error, undefined);
-
-		try
+		this.collected = update;
+		save.add({ kind: 'universe', update }, (refusal) =>
 		{
-			await this.api.updateUniverse(universe.id, update);
+			showMessage(this.error, describeEditorError(refusal.error, {
+				id: 'editor.lobby.saveFailed',
+				defaultMessage: 'Could not save the lobby\'s settings.',
+				description: 'Shown on the Lobby tab when the server refused its settings, followed by why; nothing was saved'
+			}));
+		});
+
+		return(true);
+	}
+
+	/**
+	 * Takes the settings as saved
+	 */
+	saved(): void
+	{
+		const universe = this.universe;
+		const update = this.collected;
+
+		this.collected = undefined;
+
+		if (universe && update)
+		{
 			this.universe = { ...universe, ...update };
 			this.dayHours.value = String(this.universe.lobbyDayHours);
 			this.changes.markSaved();
-			this.onSaved(this.universe);
-
-			return(true);
-		}
-		catch (error)
-		{
-			showMessage(this.error, describeEditorError(error, {
-				id: 'editor.lobby.saveFailed',
-				defaultMessage: 'Could not save the lobby\'s settings.',
-				description: 'Shown on the Lobby tab when its settings couldn\'t be stored'
-			}));
-
-			return(false);
+			this.onSaved(update);
 		}
 	}
 }

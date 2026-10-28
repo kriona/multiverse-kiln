@@ -1,4 +1,4 @@
-import { canEditUniverseSettings, MAX_GROUP_PLAYERS, MIN_GROUP_SIZE, type EditableUniverse, type StartingCell } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, MAX_GROUP_PLAYERS, MIN_GROUP_SIZE, type EditableUniverse, type StartingCell, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -8,6 +8,7 @@ import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldError
 import { formMessages } from '../formMessages';
 import { exampleMoney, formatMoney, readMoneyField } from '../moneyField';
 import type { ItemSelectDialog } from './ItemSelectDialog';
+import type { EditorSave } from './editorSave';
 import type { SavableTab } from './SaveBar';
 import { StartingItemsField } from './StartingItemsField';
 import { startingAreaMessages } from './startingAreaMessages';
@@ -30,6 +31,11 @@ export class CharactersTab implements SavableTab
 	private readonly error = getElement('characters-error', HTMLElement);
 
 	private universe: EditableUniverse | undefined;
+
+	/**
+	 * The settings the save being sent holds
+	 */
+	private collected: UniverseSettingsUpdate | undefined;
 
 	/**
 	 * The starting area the form shows, which may not be saved yet
@@ -65,13 +71,12 @@ export class CharactersTab implements SavableTab
 	 * @param api The editor's API
 	 * @param areaSelect The dialog for choosing the starting area
 	 * @param itemSelect The dialog for choosing the starting equipment
-	 * @param onSaved Called with the universe after the settings are saved
+	 * @param onSaved Called with the settings saved, once they are
 	 */
-	constructor(private readonly api: EditorApi, private readonly areaSelect: AreaSelectDialog, itemSelect: ItemSelectDialog, private readonly onSaved: (universe: EditableUniverse) => void)
+	constructor(private readonly api: EditorApi, private readonly areaSelect: AreaSelectDialog, itemSelect: ItemSelectDialog, private readonly onSaved: (update: UniverseSettingsUpdate) => void)
 	{
 		this.startingItems = new StartingItemsField(api, itemSelect, {
 			list: getElement('characters-items', HTMLUListElement),
-			none: getElement('characters-items-none', HTMLElement),
 			choose: this.chooseItemsButton
 		}, () =>
 		{
@@ -231,11 +236,12 @@ export class CharactersTab implements SavableTab
 	}
 
 	/**
-	 * Saves the settings as the form shows them
+	 * Adds the settings as the form shows them to a save
 	 *
-	 * @return True when they were saved
+	 * @param save The save
+	 * @return False when a field is wrong
 	 */
-	async save(): Promise<boolean>
+	collect(save: EditorSave): boolean
 	{
 		const universe = this.universe;
 		const groupSize = Number(this.groupSize.value);
@@ -265,40 +271,44 @@ export class CharactersTab implements SavableTab
 		const { column: startingColumn, row: startingRow } = this.startingCell;
 		const startingItems = this.startingItems.value;
 
+		// Only a universe still being created has no starting area, and the server won't take null
+		const update: UniverseSettingsUpdate = {
+			groupSize,
+			startingMoney,
+			startingItems,
+			...((startingAreaId === null) ? {} : { startingAreaId, startingColumn, startingRow })
+		};
+
 		showMessage(this.error, undefined);
-
-		try
+		this.collected = update;
+		save.add({ kind: 'universe', update }, (refusal) =>
 		{
-			// Only a universe still being created has no starting area, and the server won't take null
-			await this.api.updateUniverse(universe.id, {
-				groupSize,
-				startingMoney,
-				startingItems,
-				...((startingAreaId === null) ? {} : { startingAreaId, startingColumn, startingRow })
-			});
-			this.universe = {
-				...universe,
-				groupSize,
-				startingMoney,
-				startingItems,
-				startingAreaId,
-				...((startingAreaId === null) ? {} : { startingColumn, startingRow })
-			};
-			this.startingMoney.value = formatMoney(startingMoney, universe.ruleset);
-			this.changes.markSaved();
-			this.onSaved(this.universe);
-
-			return(true);
-		}
-		catch (error)
-		{
-			showMessage(this.error, describeEditorError(error, {
+			showMessage(this.error, describeEditorError(refusal.error, {
 				id: 'editor.characters.saveFailed',
 				defaultMessage: 'Could not save the character settings.',
-				description: 'Shown on the Characters tab when its settings couldn\'t be stored'
+				description: 'Shown on the Characters tab when the server refused its settings, followed by why; nothing was saved'
 			}));
+		});
 
-			return(false);
+		return(true);
+	}
+
+	/**
+	 * Takes the settings as saved
+	 */
+	saved(): void
+	{
+		const universe = this.universe;
+		const update = this.collected;
+
+		this.collected = undefined;
+
+		if (universe && update)
+		{
+			this.universe = { ...universe, ...update };
+			this.startingMoney.value = formatMoney(this.universe.startingMoney, universe.ruleset);
+			this.changes.markSaved();
+			this.onSaved(update);
 		}
 	}
 }

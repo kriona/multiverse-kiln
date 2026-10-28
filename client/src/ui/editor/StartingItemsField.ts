@@ -16,11 +16,6 @@ export interface StartingItemsElements
 	list: HTMLUListElement;
 
 	/**
-	 * Shown instead of the list when there are no items
-	 */
-	none: HTMLElement;
-
-	/**
 	 * Opens the dialog for choosing the items
 	 */
 	choose: HTMLButtonElement;
@@ -126,16 +121,15 @@ export class StartingItemsField
 	}
 
 	/**
-	 * Lists the items: each one's icon, how many and its name, or a note that there are none
+	 * Lists the items: each one's icon, how many and its name
 	 */
 	private render(): void
 	{
-		const { list, none } = this.elements;
+		const { list } = this.elements;
 		const ruleset = this.universe?.ruleset;
 
 		list.replaceChildren();
 		list.hidden = (this.chosen.length === 0);
-		none.hidden = (this.chosen.length > 0);
 
 		if (ruleset === undefined)
 		{

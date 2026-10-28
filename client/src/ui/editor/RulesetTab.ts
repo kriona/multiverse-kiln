@@ -6,6 +6,7 @@ import { ChangeTracker } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
+import type { EditorSave } from './editorSave';
 import type { SavableTab } from './SaveBar';
 
 /**
@@ -142,20 +143,15 @@ export class RulesetTab implements SavableTab
 	}
 
 	/**
-	 * Saves the settings as the form shows them
+	 * Adds the settings as the form shows them to a save
 	 *
-	 * @return True when they were saved
+	 * @param save The save
+	 * @return False when a field is wrong
 	 */
-	async save(): Promise<boolean>
+	collect(save: EditorSave): boolean
 	{
 		const universe = this.universe;
-
-		if (!universe)
-		{
-			return(false);
-		}
-
-		const ruleset = this.readSettings(universe);
+		const ruleset = (universe ? this.readSettings(universe) : undefined);
 
 		if (ruleset === undefined)
 		{
@@ -163,24 +159,24 @@ export class RulesetTab implements SavableTab
 		}
 
 		showMessage(this.error, undefined);
-
-		try
+		save.add({ kind: 'ruleset', settings: ruleset }, (refusal) =>
 		{
-			await this.api.saveRulesetSettings(universe.id, ruleset);
-			this.changes.markSaved();
-
-			return(true);
-		}
-		catch (error)
-		{
-			showMessage(this.error, describeEditorError(error, {
+			showMessage(this.error, describeEditorError(refusal.error, {
 				id: 'editor.ruleset.saveFailed',
 				defaultMessage: 'Could not save the ruleset\'s settings.',
-				description: 'Shown on the Ruleset tab when its settings couldn\'t be stored'
+				description: 'Shown on the Ruleset tab when the server refused its settings, followed by why; nothing was saved'
 			}));
+		});
 
-			return(false);
-		}
+		return(true);
+	}
+
+	/**
+	 * Takes the settings as saved
+	 */
+	saved(): void
+	{
+		this.changes.markSaved();
 	}
 
 	/**

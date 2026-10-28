@@ -1,8 +1,8 @@
 import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
-import { LobbyMember, LobbyMessageType, LobbyServerMessageType, LobbyState, MessageType, NoticeReason, PATCH_INTERVAL_MS, type ChatHistoryPayload, type ChatMessage, type NoticePayload, type PlayingAsPayload } from '@multiverse-kiln/shared';
+import { LobbyMember, LobbyMessageType, LobbyServerMessageType, LobbyState, MessageType, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, type ChatHistoryPayload, type ChatMessage, type NoticePayload, type PlayingAsPayload, type Sight } from '@multiverse-kiln/shared';
 
 import { listPlayableCharacters, markCharacterPlayed, type PlayableCharacter } from '../db/characterRepo.js';
-import { loadRaceDarkvision } from '../db/raceRepo.js';
+import { loadRaceSight } from '../db/raceRepo.js';
 import { findUniverse } from '../db/universeRepo.js';
 import { loadChunksAt, loadArea } from '../db/areaRepo.js';
 import { readBrowserId } from '../http/browserId.js';
@@ -90,9 +90,10 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	});
 
 	/**
-	 * Whether each of the universe's races has darkvision, by race ID, as the room found them on starting
+	 * Each of the universe's races' darkvision and light sensitivity, by race ID, as the room found them
+	 * on starting
 	 */
-	private raceDarkvision = new Map<number, boolean>();
+	private raceSight = new Map<number, Sight>();
 
 	private universeId!: string;
 
@@ -221,7 +222,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 
 		this.universeId = universeId;
 		this.lobbyAreaId = lobbyArea.loaded.area.id;
-		this.raceDarkvision = await loadRaceDarkvision(universeId, lobbyArea.loaded.ruleset);
+		this.raceSight = await loadRaceSight(universeId, lobbyArea.loaded.ruleset);
 		this.setTimestep((deltaTime) => this.areaPlayers.update(deltaTime / 1000), 1000 / SIMULATION_TICK_RATE);
 		this.clock.setInterval(() => this.areaPlayers.refreshChunks(), CHUNK_REFRESH_INTERVAL_MS);
 
@@ -548,14 +549,14 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	 * How a player shows on the lobby's map
 	 *
 	 * @param character The character they are playing, or undefined for a ghost
-	 * @return The character's name and darkvision, or a ghost with no name
+	 * @return The character's name, darkvision and light sensitivity, or a ghost with no name
 	 */
 	private appearanceOf(character: PlayableCharacter | undefined): Appearance
 	{
 		return({
 			name: character?.name ?? '',
 			ghost: !character,
-			darkvision: ((character !== undefined) && (this.raceDarkvision.get(character.raceId) ?? false))
+			...(((character === undefined) ? undefined : this.raceSight.get(character.raceId)) ?? PLAIN_SIGHT)
 		});
 	}
 

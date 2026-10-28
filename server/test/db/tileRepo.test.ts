@@ -1,7 +1,10 @@
 import assert from 'assert';
+import { randomUUID } from 'crypto';
 
 import { DEFAULT_TILE_NAMES, type EditorTile, type TileSettings } from '@multiverse-kiln/shared';
 
+import { loadOrCreatePlayerByName } from '../../src/db/playerRepo.js';
+import { createTileGraphic, tileGraphicStorageKey } from '../../src/db/tileGraphicRepo.js';
 import { countCustomTiles, createCustomTile, createTile, deleteCustomTile, findDefaultTileIds, findTileKind, listEditorTiles, loadEditorTiles, loadUniverseTiles, restoreDefaultTile, saveEditedDefaultTile, updateCustomTile, type CustomTileSettings } from '../../src/db/tileRepo.js';
 import { addUniverse, defaultTileId } from './fixtures.js';
 
@@ -10,8 +13,11 @@ const autumnGrass: TileSettings = {
 	indoors: false,
 	outdoors: true,
 	color: 0xc08030,
+	graphic: 'grass',
+	uploadedGraphicId: null,
 	visionCost: 10,
-	walkSeconds: 10
+	walkSeconds: 10,
+	enabled: true
 };
 
 const lava: CustomTileSettings = {
@@ -19,8 +25,11 @@ const lava: CustomTileSettings = {
 	indoors: false,
 	outdoors: true,
 	color: 0xff4400,
+	graphic: null,
+	uploadedGraphicId: null,
 	visionCost: 0,
-	walkSeconds: 0
+	walkSeconds: 0,
+	enabled: true
 };
 
 /**
@@ -68,7 +77,7 @@ describe('tileRepo', () =>
 			const tiles = await loadUniverseTiles(universeId, 'pf1e');
 
 			assert.strictEqual(tiles.length, 7);
-			assert.deepStrictEqual(tiles.find((tile) => (tile.id === wallId)), { id: wallId, key: null, name: 'Stone Wall', indoors: true, outdoors: true, color: 0x8a8a8a, visionCost: 100, walkSeconds: 0 });
+			assert.deepStrictEqual(tiles.find((tile) => (tile.id === wallId)), { id: wallId, key: null, name: 'Stone Wall', indoors: true, outdoors: true, color: 0x8a8a8a, graphic: null, uploadedGraphic: null, visionCost: 100, walkSeconds: 0 });
 			assert.strictEqual(tiles.some((tile) => (tile.name === 'Lava')), false);
 		});
 
@@ -77,7 +86,74 @@ describe('tileRepo', () =>
 			const tiles = await loadUniverseTiles(await addUniverse(), 'pf1e');
 			const forest = tiles.find((tile) => (tile.name === 'Forest'));
 
-			assert.deepStrictEqual(forest, { id: forest?.id, key: 'forest', name: 'Forest', indoors: false, outdoors: true, color: 0x00aa11, visionCost: 50, walkSeconds: 1200 });
+			assert.deepStrictEqual(forest, { id: forest?.id, key: 'forest', name: 'Forest', indoors: false, outdoors: true, color: 0x00aa11, graphic: 'forest', uploadedGraphic: null, visionCost: 50, walkSeconds: 1200 });
+		});
+
+		it('gives a tile drawn with an uploaded graphic that graphic\'s format and draw order', async () =>
+		{
+			const universeId = await addUniverse();
+			const uploadedBy = (await loadOrCreatePlayerByName('Ada')).id;
+			const mossId = randomUUID();
+			const wallId = randomUUID();
+
+			await createTileGraphic(mossId, {
+				universeId,
+				name: 'Moss',
+				format: 'dualGrid',
+				drawOrder: 35,
+				storageKey: tileGraphicStorageKey(universeId, mossId),
+				uploadedBy
+			});
+			await createTileGraphic(wallId, {
+				universeId,
+				name: 'Brick Wall',
+				format: 'blob',
+				drawOrder: null,
+				storageKey: tileGraphicStorageKey(universeId, wallId),
+				uploadedBy
+			});
+
+			const mossTileId = await createCustomTile(universeId, 'pf1e', { ...lava, uploadedGraphicId: mossId });
+			const wallTileId = await createCustomTile(universeId, 'pf1e', { ...lava, uploadedGraphicId: wallId });
+			const tiles = await loadUniverseTiles(universeId, 'pf1e');
+
+			assert.deepStrictEqual(tiles.find((loaded) => (loaded.id === mossTileId))?.uploadedGraphic, { id: mossId, format: 'dualGrid', drawOrder: 35 });
+			assert.deepStrictEqual(tiles.find((loaded) => (loaded.id === wallTileId))?.uploadedGraphic, { id: wallId, format: 'blob', drawOrder: null });
+		});
+
+		it('refuses an uploaded graphic whose draw order doesn\'t suit its format', async () =>
+		{
+			const universeId = await addUniverse();
+			const uploadedBy = (await loadOrCreatePlayerByName('Ada')).id;
+
+			for (const [format, drawOrder] of [['dualGrid', null], ['blob', 35]] as const)
+			{
+				const graphicId = randomUUID();
+
+				await assert.rejects(createTileGraphic(graphicId, {
+					universeId,
+					name: 'Moss',
+					format,
+					drawOrder,
+					storageKey: tileGraphicStorageKey(universeId, graphicId),
+					uploadedBy
+				}), format);
+			}
+		});
+
+		it('draws each ruleset\'s default grass, forest and mountains with their graphics', async () =>
+		{
+			for (const ruleset of ['pf1e', 'sf1e'] as const)
+			{
+				const tiles = await loadUniverseTiles(await addUniverse(), ruleset);
+
+				assert.strictEqual(tiles.find((tile) => (tile.key === 'grass'))?.graphic, 'grass', ruleset);
+			}
+
+			const pf1eTiles = await loadUniverseTiles(await addUniverse(), 'pf1e');
+
+			assert.strictEqual(pf1eTiles.find((tile) => (tile.key === 'forest'))?.graphic, 'forest');
+			assert.strictEqual(pf1eTiles.find((tile) => (tile.key === 'mountains'))?.graphic, 'mountains');
 		});
 
 		it('gives an edited default tile the universe\'s settings under the default tile\'s ID, for that universe only', async () =>
@@ -92,7 +168,7 @@ describe('tileRepo', () =>
 			const theirs = await loadUniverseTiles(otherId, 'pf1e');
 
 			assert.strictEqual(mine.length, 6);
-			assert.deepStrictEqual(mine.find((tile) => (tile.id === grassId)), { id: grassId, key: null, ...autumnGrass });
+			assert.deepStrictEqual(mine.find((tile) => (tile.id === grassId)), { id: grassId, key: null, name: 'Autumn Grass', indoors: false, outdoors: true, color: 0xc08030, graphic: 'grass', uploadedGraphic: null, visionCost: 10, walkSeconds: 10 });
 			assert.strictEqual(theirs.find((tile) => (tile.id === grassId))?.name, 'Grass');
 		});
 
@@ -105,7 +181,7 @@ describe('tileRepo', () =>
 
 			const grass = (await loadUniverseTiles(universeId, 'pf1e')).find((tile) => (tile.id === grassId));
 
-			assert.deepStrictEqual(grass, { id: grassId, key: 'grass', ...autumnGrass, name: 'Grass' });
+			assert.deepStrictEqual(grass, { id: grassId, key: 'grass', name: 'Grass', indoors: false, outdoors: true, color: 0xc08030, graphic: 'grass', uploadedGraphic: null, visionCost: 10, walkSeconds: 10 });
 		});
 	});
 
@@ -139,7 +215,7 @@ describe('tileRepo', () =>
 			const grass = tiles.find((tile) => (tile.id === grassId));
 			const forest = tiles.find((tile) => (tile.id === forestId));
 
-			assert.deepStrictEqual(grass, { id: grassId, key: 'grass', ...autumnGrass, name: null, custom: false, edited: true });
+			assert.deepStrictEqual(grass, { id: grassId, key: 'grass', ...autumnGrass, name: null, custom: false, edited: true, uploadedGraphic: null });
 			assert.strictEqual(forest?.name, 'Dark Forest');
 			assert.strictEqual(forest.key, 'forest');
 		});
@@ -168,6 +244,37 @@ describe('tileRepo', () =>
 			assert.strictEqual(grass?.name, null);
 			assert.strictEqual(grass.edited, false);
 		});
+
+		it('disables a default tile for the universe that disabled it only, until it is restored', async () =>
+		{
+			const universeId = await addUniverse();
+			const otherUniverseId = await addUniverse();
+			const desertId = await defaultTileId('desert');
+			const desert = (await loadEditorTiles(universeId, 'pf1e')).find((tile) => (tile.id === desertId));
+
+			assert.strictEqual(desert?.enabled, true);
+
+			await saveEditedDefaultTile(universeId, 'pf1e', desertId, {
+				name: null,
+				indoors: desert.indoors,
+				outdoors: desert.outdoors,
+				color: desert.color,
+				graphic: desert.graphic,
+				uploadedGraphicId: desert.uploadedGraphicId,
+				visionCost: desert.visionCost,
+				walkSeconds: desert.walkSeconds,
+				enabled: false
+			});
+
+			const enabled = async (id: string): Promise<boolean | undefined> => (await loadEditorTiles(id, 'pf1e')).find((tile) => (tile.id === desertId))?.enabled;
+
+			assert.strictEqual(await enabled(universeId), false);
+			assert.strictEqual(await enabled(otherUniverseId), true);
+
+			await restoreDefaultTile(universeId, desertId);
+
+			assert.strictEqual(await enabled(universeId), true);
+		});
 	});
 
 	describe('custom tiles', () =>
@@ -183,7 +290,7 @@ describe('tileRepo', () =>
 
 			const tile = (await loadEditorTiles(universeId, 'pf1e')).find((candidate) => (candidate.id === lavaId));
 
-			assert.deepStrictEqual(tile, { id: lavaId, key: null, ...lava, name: 'Cooled Lava', walkSeconds: 20, custom: true, edited: false });
+			assert.deepStrictEqual(tile, { id: lavaId, key: null, ...lava, name: 'Cooled Lava', walkSeconds: 20, custom: true, edited: false, uploadedGraphic: null });
 
 			await deleteCustomTile(universeId, lavaId);
 
@@ -219,12 +326,12 @@ describe('tileRepo', () =>
 
 	describe('listEditorTiles', () =>
 	{
-		it('filters by name, passable, where tiles are used, custom and edited, and pages through the matches', async () =>
+		it('filters by name, passable, where tiles are used, enabled, custom and edited, and pages through the matches', async () =>
 		{
 			const universeId = await addUniverse();
 
 			await createCustomTile(universeId, 'pf1e', { ...lava });
-			await createCustomTile(universeId, 'pf1e', { ...lava, name: 'Ash', walkSeconds: 10 });
+			await createCustomTile(universeId, 'pf1e', { ...lava, name: 'Ash', walkSeconds: 10, enabled: false });
 			await saveEditedDefaultTile(universeId, 'pf1e', await defaultTileId('forest'), { ...autumnGrass, name: 'Dark Forest' });
 
 			const names = async (query: Parameters<typeof listEditorTiles>[2]): Promise<(string | undefined)[]> => (await listEditorTiles(universeId, 'pf1e', query)).tiles.map((tile) => englishName(tile));
@@ -237,12 +344,30 @@ describe('tileRepo', () =>
 			assert.deepStrictEqual(await names({ usedIn: 'both' }), []);
 			assert.deepStrictEqual(await names({ custom: true }), ['Lava', 'Ash']);
 			assert.deepStrictEqual(await names({ edited: true }), ['Dark Forest']);
+			assert.deepStrictEqual(await names({ enabled: false }), ['Ash']);
+			assert.deepStrictEqual(await names({ custom: true, enabled: true }), ['Lava']);
 			assert.deepStrictEqual(await names({ custom: false, passable: true, edited: false }), ['Grass', 'Desert', 'Wood Floor']);
 
 			const page = await listEditorTiles(universeId, 'pf1e', { offset: 2, limit: 3 });
 
 			assert.strictEqual(page.total, 8);
 			assert.deepStrictEqual(page.tiles.map((tile) => englishName(tile)), ['Desert', 'Mountains', 'Water']);
+		});
+
+		it('sorts by a column before paging, breaking ties by name', async () =>
+		{
+			const universeId = await addUniverse();
+
+			await createCustomTile(universeId, 'pf1e', { ...lava });
+			await createCustomTile(universeId, 'pf1e', { ...lava, name: 'ash', walkSeconds: 10 });
+
+			const names = async (query: Parameters<typeof listEditorTiles>[2]): Promise<(string | undefined)[]> => (await listEditorTiles(universeId, 'pf1e', query)).tiles.map((tile) => englishName(tile));
+
+			assert.deepStrictEqual(await names({ sort: 'name' }), ['ash', 'Desert', 'Forest', 'Grass', 'Lava', 'Mountains', 'Water', 'Wood Floor']);
+			assert.deepStrictEqual(await names({ sort: 'name', direction: 'descending', limit: 2 }), ['Wood Floor', 'Water']);
+			assert.deepStrictEqual(await names({ sort: 'name', offset: 6 }), ['Water', 'Wood Floor']);
+			assert.deepStrictEqual((await names({ sort: 'walkTime' })).slice(-3), ['Lava', 'Mountains', 'Water']);
+			assert.deepStrictEqual((await names({ sort: 'visionCost', direction: 'descending' })).slice(0, 2), ['Mountains', 'Forest']);
 		});
 	});
 });

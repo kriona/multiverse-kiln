@@ -6,6 +6,8 @@ import { listPlayableCharacters, scheduleCharacterDeletion } from '../src/db/cha
 import { findDefaultDifficultyLevel, listDifficultyLevels } from '../src/db/difficultyRepo.js';
 import { findGroup, findMembership, listGroupMembers } from '../src/db/groupRepo.js';
 import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
+import { loadEditorRaces, saveEditedDefaultRace } from '../src/db/raceRepo.js';
+import { inTransaction } from '../src/db/transactions.js';
 import { updateUniverseSettings } from '../src/db/universeRepo.js';
 import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
 import { groupChanges, type GroupChange } from '../src/players/groupChanges.js';
@@ -227,6 +229,26 @@ describe('group routes', () =>
 			assert.strictEqual(group?.startingAreaId, universe.fieldAreaId);
 			assert.strictEqual(group?.startingColumn, 6);
 			assert.strictEqual(group?.startingRow, 4);
+		});
+
+		it('starts where the character\'s race starts as the group is made, not as the character was', async () =>
+		{
+			const dwarfId = await defaultRaceId('dwarf');
+			const dwarf = (await loadEditorRaces(universe.universeId, 'pf1e')).find((race) => (race.id === dwarfId));
+
+			assert.ok(dwarf);
+			await inTransaction((transaction) => saveEditedDefaultRace(universe.universeId, 'pf1e', dwarfId, {
+				...dwarf,
+				startingAreaId: universe.houseAreaId,
+				startingColumn: 3,
+				startingRow: 2
+			}, transaction));
+
+			const group = await findGroup(await createGroup(ada));
+
+			assert.strictEqual(group?.startingAreaId, universe.houseAreaId);
+			assert.strictEqual(group?.startingColumn, 3);
+			assert.strictEqual(group?.startingRow, 2);
 		});
 
 		it('lists the character in their group, and no longer plays them in the lobby', async () =>

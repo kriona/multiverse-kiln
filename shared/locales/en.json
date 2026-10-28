@@ -40,8 +40,8 @@
 		"description": "Shown on the site settings page when the settings couldn't be stored"
 	},
 	"admin.title": {
-		"defaultMessage": "Site Settings - Multiverse Kiln",
-		"description": "The browser tab's title for the page where the site's admins change settings for the whole site"
+		"defaultMessage": "Site Settings",
+		"description": "The browser tab's title for the page where the site's admins change settings for the whole site, before the game engine's name"
 	},
 	"admin.universeCreationEnabled": {
 		"defaultMessage": "Players can create universes",
@@ -181,7 +181,7 @@
 	},
 	"character.darkvision": {
 		"defaultMessage": "Darkvision",
-		"description": "Whether a character can see in the dark: the label on a character's sheet, and the race editor's checkbox for whether the race's characters can"
+		"description": "How far a character can see in the dark, if at all: the label on a character's sheet, and of the race editor's field for how far the race's characters can"
 	},
 	"character.heading.class": {
 		"defaultMessage": "Choose a class",
@@ -203,17 +203,21 @@
 		"defaultMessage": "Choose a theme",
 		"description": "Heading of the Create Character step, in Starfinder, where the player chooses the character's theme (a background, such as ace pilot)"
 	},
+	"character.lightSensitivity": {
+		"defaultMessage": "Light sensitivity",
+		"description": "Whether bright light dazzles a character: the label on a character's sheet, and the race editor's checkbox for whether it dazzles the race's characters"
+	},
 	"character.next": {
 		"defaultMessage": "Next",
 		"description": "Button on the Create Character page that goes to the next step"
 	},
 	"character.pageTitle": {
-		"defaultMessage": "Create Character - {universe} - Multiverse Kiln",
-		"description": "The browser tab's title for the Create Character page; {universe} is the universe's name and Multiverse Kiln is the game engine's name"
+		"defaultMessage": "Create Character - {universe}",
+		"description": "The browser tab's title for the Create Character page, before the game engine's name; {universe} is the universe's name"
 	},
 	"character.pageTitleLoading": {
-		"defaultMessage": "Create Character - Multiverse Kiln",
-		"description": "The browser tab's title for the Create Character page until the universe's name has loaded"
+		"defaultMessage": "Create Character",
+		"description": "The browser tab's title for the Create Character page until the universe's name has loaded, before the game engine's name"
 	},
 	"character.race.floatingBonus": {
 		"defaultMessage": "+{bonus, number} to an ability you choose",
@@ -343,10 +347,6 @@
 		"defaultMessage": "Delete Character",
 		"description": "Title of the dialog that asks whether to delete a character"
 	},
-	"characterSheet.darkvisionValue": {
-		"defaultMessage": "{darkvision, select, true {Yes} other {No}}",
-		"description": "On a character's sheet, whether they can see in the dark"
-	},
 	"characterSheet.delete": {
 		"defaultMessage": "Delete",
 		"description": "Button on a character's sheet that starts deleting the character, asking first"
@@ -366,6 +366,10 @@
 	"characterSheet.items": {
 		"defaultMessage": "Equipment",
 		"description": "Heading on a character's sheet of the items they carry"
+	},
+	"characterSheet.lightSensitivityValue": {
+		"defaultMessage": "{lightSensitivity, select, true {Yes} other {No}}",
+		"description": "On a character's sheet, whether bright light dazzles them"
 	},
 	"characterSheet.loadFailed": {
 		"defaultMessage": "Could not load the character sheet.",
@@ -413,7 +417,7 @@
 	},
 	"characterSheet.traits": {
 		"defaultMessage": "Traits",
-		"description": "Heading on a character's sheet of their size, whether they have darkvision and their money"
+		"description": "Heading on a character's sheet of their size, their darkvision and light sensitivity, and their money"
 	},
 	"characters.heading": {
 		"defaultMessage": "Your characters",
@@ -470,6 +474,18 @@
 	"createGroup.title": {
 		"defaultMessage": "Create Group",
 		"description": "Title of the dialog that makes a new group (characters who play the universe together)"
+	},
+	"darkvision.none": {
+		"defaultMessage": "None",
+		"description": "A race that can't see in the dark: a choice in the race editor's Darkvision field, and the Darkvision value on a character's sheet"
+	},
+	"darkvision.normal": {
+		"defaultMessage": "Darkvision (60 feet)",
+		"description": "A race that sees 60 feet in the dark: a choice in the race editor's Darkvision field, and the Darkvision value on a character's sheet"
+	},
+	"darkvision.superior": {
+		"defaultMessage": "Superior darkvision (120 feet)",
+		"description": "A race that sees 120 feet in the dark, such as drow: a choice in the race editor's Darkvision field, and the Darkvision value on a character's sheet"
 	},
 	"dialog.apply": {
 		"defaultMessage": "Apply",
@@ -539,10 +555,6 @@
 		"defaultMessage": "The lobby's passage of time is set on the Lobby tab.",
 		"description": "Shown in the area editor for the lobby in place of its passage of time, which the Lobby tab sets"
 	},
-	"editor.area.lobbyTitle": {
-		"defaultMessage": "{area} (the lobby)",
-		"description": "Heading of the area editor for the universe's lobby; {area} is its name"
-	},
 	"editor.area.loopsEastWest": {
 		"defaultMessage": "Loops east-west",
 		"description": "Checkbox for an area whose map wraps around, so walking off the east edge comes back on the west"
@@ -553,7 +565,7 @@
 	},
 	"editor.area.mapSaveFailed": {
 		"defaultMessage": "Could not save the map.",
-		"description": "Shown in the area editor when the painting on the area's map, its new size or its links couldn't be stored"
+		"description": "Shown in the area editor when the server refused the painting on the area's map, its new size or its links, followed by why; nothing was saved"
 	},
 	"editor.area.noParent": {
 		"defaultMessage": "None (a top-level area)",
@@ -573,7 +585,7 @@
 	},
 	"editor.area.saveFailed": {
 		"defaultMessage": "Could not save the area.",
-		"description": "Shown in the area editor when the area's settings couldn't be stored"
+		"description": "Shown in the area editor when the server refused the area's settings, followed by why; nothing was saved"
 	},
 	"editor.area.size": {
 		"defaultMessage": "The map is {height, number} tall x {width, number} wide.",
@@ -645,11 +657,11 @@
 	},
 	"editor.areas.createFailed": {
 		"defaultMessage": "Could not add {area}.",
-		"description": "Shown on the Areas tab when saving stopped at adding an area the server refused; {area} is its name. Changes after it are kept, not saved"
+		"description": "Shown on the Areas tab when the server refused an area added on it, followed by why; {area} is its name. Nothing was saved"
 	},
 	"editor.areas.deleteFailed": {
 		"defaultMessage": "Could not delete {area}.",
-		"description": "Shown on the Areas tab when saving stopped at deleting an area the server refused; {area} is its name. Changes after it are kept, not saved"
+		"description": "Shown on the Areas tab when the server refused to delete an area, followed by why; {area} is its name. Nothing was saved"
 	},
 	"editor.areas.heading": {
 		"defaultMessage": "Areas",
@@ -695,13 +707,9 @@
 		"defaultMessage": "{min, number} is single player game. At most {max, number} characters can play together.",
 		"description": "Explains the group size field on the editor's Characters tab; {min} and {max} are the smallest and largest group sizes"
 	},
-	"editor.characters.noStartingEquipment": {
-		"defaultMessage": "Characters start with nothing.",
-		"description": "Shown on the editor's Characters tab when characters start with no items"
-	},
 	"editor.characters.saveFailed": {
 		"defaultMessage": "Could not save the character settings.",
-		"description": "Shown on the Characters tab when its settings couldn't be stored"
+		"description": "Shown on the Characters tab when the server refused its settings, followed by why; nothing was saved"
 	},
 	"editor.characters.startingAreaHint": {
 		"defaultMessage": "Where characters start, unless their race or class says otherwise.",
@@ -1133,14 +1141,14 @@
 	},
 	"editor.lobby.saveFailed": {
 		"defaultMessage": "Could not save the lobby's settings.",
-		"description": "Shown on the Lobby tab when its settings couldn't be stored"
+		"description": "Shown on the Lobby tab when the server refused its settings, followed by why; nothing was saved"
 	},
 	"editor.lobby.timeHint": {
 		"defaultMessage": "Actions take no time in the lobby, so its time of day follows this instead of the universe's passage of time.",
 		"description": "Explains the lobby's passage of time on the editor's Lobby tab"
 	},
 	"editor.map.areaDefault": {
-		"defaultMessage": "{tile} (the area's default)",
+		"defaultMessage": "{tile} (default)",
 		"description": "A choice of tile to paint that is the area's default tile; {tile} is its name"
 	},
 	"editor.map.brush.circle": {
@@ -1265,7 +1273,7 @@
 	},
 	"editor.map.linksKept": {
 		"defaultMessage": "The links were kept, so the map wasn't made smaller.",
-		"description": "Why saving the map stopped: the player chose not to delete the links a smaller map would cut off"
+		"description": "Why saving stopped: the player chose not to delete the links a smaller map would cut off; nothing was saved"
 	},
 	"editor.map.loadFailed": {
 		"defaultMessage": "Could not load the map.",
@@ -1308,20 +1316,20 @@
 		"description": "Shown under the map while it has painting, a change of size or links that the editor's Save button hasn't stored yet"
 	},
 	"editor.map.void": {
-		"defaultMessage": "Void",
+		"defaultMessage": "🌃Void",
 		"description": "A cell with nothing in it, drawn black, which can't be walked into; also a choice of what to paint"
 	},
-	"editor.noStartingEquipment": {
-		"defaultMessage": "Nothing more.",
-		"description": "Shown in the race or class editor when its characters get no items beyond what every character (and, for a class, their race) starts with"
+	"editor.notes": {
+		"defaultMessage": "Notes",
+		"description": "Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet"
 	},
 	"editor.openFailed": {
 		"defaultMessage": "Could not open the universe.",
 		"description": "Shown in the editor when the universe couldn't be loaded"
 	},
 	"editor.pageTitle": {
-		"defaultMessage": "Edit {universe} - Multiverse Kiln",
-		"description": "The browser tab's title for the world editor; {universe} is the universe's name and Multiverse Kiln is the game engine's name"
+		"defaultMessage": "Edit {universe}",
+		"description": "The browser tab's title for the world editor, before the game engine's name; {universe} is the universe's name"
 	},
 	"editor.passageOfTime": {
 		"defaultMessage": "Passage of time",
@@ -1371,6 +1379,10 @@
 		"defaultMessage": "Hit points",
 		"description": "Label of the field for the hit points a race gives its characters on top of their class's, in Starfinder"
 	},
+	"editor.race.lightSensitivityHint": {
+		"defaultMessage": "Bright light dazzles the race's characters, so they see only half as far in full daylight.",
+		"description": "Explains the race editor's Light sensitivity checkbox"
+	},
 	"editor.race.size": {
 		"defaultMessage": "Size",
 		"description": "Label of the field for a race's size, such as small or medium"
@@ -1384,8 +1396,8 @@
 		"description": "Button that opens the dialog for making a new race"
 	},
 	"editor.races.darkvision": {
-		"defaultMessage": "darkvision",
-		"description": "In a race's summary on the editor's Characters tab, for a race that can see in the dark"
+		"defaultMessage": "{darkvision, select, superior {superior darkvision} other {darkvision}}",
+		"description": "In a race's summary on the editor's Characters tab, for a race that can see in the dark: superior darkvision sees 120 feet, darkvision 60"
 	},
 	"editor.races.floatingBonus": {
 		"defaultMessage": "{bonus, number, ::sign-always} to one ability",
@@ -1402,6 +1414,10 @@
 	"editor.races.hitPoints": {
 		"defaultMessage": "{hitPoints, plural, one {# hit point} other {# hit points}}",
 		"description": "In a race's summary on the editor's Characters tab, in Starfinder, the hit points the race gives its characters"
+	},
+	"editor.races.lightSensitivity": {
+		"defaultMessage": "light sensitivity",
+		"description": "In a race's summary on the editor's Characters tab, for a race whose characters bright light dazzles"
 	},
 	"editor.races.listFailed": {
 		"defaultMessage": "Could not list the races.",
@@ -1483,10 +1499,6 @@
 		"defaultMessage": "Settings for {ruleset}",
 		"description": "At the top of the editor's Ruleset tab, naming the universe's game rules; {ruleset} is e.g. Pathfinder 1E"
 	},
-	"editor.ruleset.laterHint": {
-		"defaultMessage": "The game doesn't use sleep, weight or ammunition yet. These are kept for when it does.",
-		"description": "Explains that the sleep, weight and ammunition checkboxes are stored but have no effect in the game yet"
-	},
 	"editor.ruleset.loadFailed": {
 		"defaultMessage": "Could not load the ruleset's settings.",
 		"description": "Shown on the Ruleset tab when its settings couldn't be loaded"
@@ -1497,7 +1509,7 @@
 	},
 	"editor.ruleset.saveFailed": {
 		"defaultMessage": "Could not save the ruleset's settings.",
-		"description": "Shown on the Ruleset tab when its settings couldn't be stored"
+		"description": "Shown on the Ruleset tab when the server refused its settings, followed by why; nothing was saved"
 	},
 	"editor.ruleset.statMethod": {
 		"defaultMessage": "Rolling for stats",
@@ -1511,6 +1523,10 @@
 		"defaultMessage": "Track ammunition",
 		"description": "Checkbox for whether arrows and other ammunition are used up when fired"
 	},
+	"editor.save.failed": {
+		"defaultMessage": "Could not save.",
+		"description": "Shown in the editor's save bar when saving failed, followed by why; nothing was saved"
+	},
 	"editor.searchByName": {
 		"defaultMessage": "Search by name",
 		"description": "Shown in the empty field that narrows a list of tiles, items or areas down by name"
@@ -1521,7 +1537,7 @@
 	},
 	"editor.staged.deleteFailed": {
 		"defaultMessage": "Could not delete {name}.",
-		"description": "Shown on an editor tab when saving its changes stopped at a deletion the server refused; {name} is the name of the race, class, theme, difficulty level, item or tile. Changes after it are kept, not saved"
+		"description": "Shown on an editor tab when the server refused to delete one of its things, followed by why; {name} is the name of the race, class, theme, difficulty level, item or tile. Nothing was saved"
 	},
 	"editor.staged.deleted": {
 		"defaultMessage": "(deleted when saved)",
@@ -1529,11 +1545,11 @@
 	},
 	"editor.staged.newTag": {
 		"defaultMessage": "new",
-		"description": "In the last column of an editor list (races, classes, themes, difficulty levels, items or tiles), or under an area in the list of areas, for one added since the tab was last saved, which isn't saved yet"
+		"description": "In the last column of an editor list (difficulty levels, items or tiles), or under an area in the list of areas, for one added since the tab was last saved, which isn't saved yet"
 	},
 	"editor.staged.restoreFailed": {
 		"defaultMessage": "Could not restore {name}.",
-		"description": "Shown on an editor tab when saving its changes stopped at putting one of the ruleset's races, classes, themes, items or tiles back as the ruleset has it; {name} is its name. Changes after it are kept, not saved"
+		"description": "Shown on an editor tab when the server refused to put one of the ruleset's races, classes, themes, items or tiles back as the ruleset has it, followed by why; {name} is its name. Nothing was saved"
 	},
 	"editor.staged.restoredTag": {
 		"defaultMessage": "restored when saved",
@@ -1541,7 +1557,7 @@
 	},
 	"editor.staged.saveFailed": {
 		"defaultMessage": "Could not save {name}.",
-		"description": "Shown on an editor tab when saving its changes stopped at one the server refused; {name} is the name of the race, class, theme, difficulty level, item or tile. Changes after it are kept, not saved"
+		"description": "Shown on an editor tab when the server refused one of its changes, followed by why; {name} is the name of the race, class, theme, difficulty level, item or tile. Nothing was saved"
 	},
 	"editor.staged.undoDelete": {
 		"defaultMessage": "Undo Delete",
@@ -1629,7 +1645,7 @@
 	},
 	"editor.tag.disabled": {
 		"defaultMessage": "disabled",
-		"description": "Under an area in the list of areas, or in the last column of the editor's tables of items, races and classes, for one players can't use: an area they can't go into, an item characters can't be given, or a race or class new characters can't choose"
+		"description": "Under an area in the list of areas, or in the last column of the editor's tables of items, races, classes, themes and tiles, for one that can't be used: an area players can't go into, an item characters can't be given, a race, class or theme new characters can't choose, or a tile areas can't be painted with"
 	},
 	"editor.tag.edited": {
 		"defaultMessage": "edited",
@@ -1703,9 +1719,57 @@
 		"defaultMessage": "Delete Tile",
 		"description": "Button in the tile editor that deletes a tile made for this universe"
 	},
+	"editor.tile.deleteGraphic": {
+		"defaultMessage": "Delete Tileset Image",
+		"description": "Button in the tile editor, shown when an uploaded tileset is chosen, that marks that uploaded picture to delete, after asking; tiles drawn with it go back to their colors"
+	},
+	"editor.tile.deleteGraphicConfirm": {
+		"defaultMessage": "Delete the uploaded tileset \"{name}\"? Every tile drawn with it will be drawn in its color instead.",
+		"description": "Asked before marking an uploaded tileset (a picture tiles can be drawn with) to delete from the tile editor; {name} is the name it was given. Nothing is deleted until the tab is saved"
+	},
 	"editor.tile.editTitle": {
 		"defaultMessage": "Edit {tile}",
 		"description": "Title of the tile editor for a tile the player can change; {tile} is its name"
+	},
+	"editor.tile.enabledLocked": {
+		"defaultMessage": "New areas start with this tile, so it can't be disabled.",
+		"description": "Shown under the tile editor's Enabled checkbox, which can't be unchecked, for the tile new outdoor or indoor areas are painted with"
+	},
+	"editor.tile.graphic": {
+		"defaultMessage": "Graphic",
+		"description": "Label of the tile editor's list of the graphics a tile can be drawn with"
+	},
+	"editor.tile.graphic.forest": {
+		"defaultMessage": "Forest",
+		"description": "One of the graphics a tile can be drawn with, in the tile editor's list of them and read out for the Tilesets table's pictures of tiles: woodland"
+	},
+	"editor.tile.graphic.grass": {
+		"defaultMessage": "Grass",
+		"description": "One of the graphics a tile can be drawn with, in the tile editor's list of them and read out for the Tilesets table's pictures of tiles: grass"
+	},
+	"editor.tile.graphic.hedge": {
+		"defaultMessage": "Hedge",
+		"description": "One of the graphics a tile can be drawn with, in the tile editor's list of them and read out for the Tilesets table's pictures of tiles: a clipped hedge seen from above, which joins up with the same tile in the cells around it"
+	},
+	"editor.tile.graphic.mountains": {
+		"defaultMessage": "Mountains",
+		"description": "One of the graphics a tile can be drawn with, in the tile editor's list of them and read out for the Tilesets table's pictures of tiles: mountains, whose peaks are drawn over players standing just north of them when the tile can't be entered"
+	},
+	"editor.tile.graphic.stoneWall": {
+		"defaultMessage": "Stone Wall",
+		"description": "One of the graphics a tile can be drawn with, in the tile editor's list of them and read out for the Tilesets table's pictures of tiles: the top of a thick stone wall seen from above, which joins up with the same tile in the cells around it"
+	},
+	"editor.tile.graphicHint.blob": {
+		"defaultMessage": "Drawn over the area's default tile, joining up with its neighbors (47-Tile Blob).",
+		"description": "Under the tile editor's list of graphics, when the chosen graphic is drawn over the ground, such as a hedge, and joins up with the same tile in the cells around it. \"47-Tile Blob\" is the name of the tile system, in parentheses"
+	},
+	"editor.tile.graphicHint.dualGrid": {
+		"defaultMessage": "Blends with neighboring tiles; higher draw order on top. Draw order: {order, number} (Dual-Grid).",
+		"description": "Under the tile editor's list of graphics, when the chosen graphic blends into the tiles beside it, such as grass: where two meet, the one with the higher draw order has its edges drawn over the other's. {order} is this graphic's draw order. \"Dual-Grid\" is the name of the tile system, in parentheses"
+	},
+	"editor.tile.graphicHint.none": {
+		"defaultMessage": "Drawn in its color.",
+		"description": "Under the tile editor's list of graphics, when the tile has no graphic: it is drawn in the color chosen above"
 	},
 	"editor.tile.invalidColor": {
 		"defaultMessage": "Enter a hex color, such as #7AFF3D.",
@@ -1714,6 +1778,18 @@
 	"editor.tile.night": {
 		"defaultMessage": "Night",
 		"description": "Caption of the preview of the tile at night"
+	},
+	"editor.tile.noGraphic": {
+		"defaultMessage": "None (use the color)",
+		"description": "First choice in the tile editor's list of graphics: the tile is drawn in its color"
+	},
+	"editor.tile.uploadGraphic": {
+		"defaultMessage": "Upload Tileset Image",
+		"description": "Button in the tile editor that opens the dialog for uploading a tileset (a picture a tile can be drawn with)"
+	},
+	"editor.tile.uploadedGraphic": {
+		"defaultMessage": "{name} (custom)",
+		"description": "A tileset this universe's editors uploaded, in the tile editor's list of graphics; {name} is the name it was given. \"custom\" marks it as made for this universe rather than coming with the game, as the editor tags custom tiles and items"
 	},
 	"editor.tile.usedIn": {
 		"defaultMessage": "Where",
@@ -1743,9 +1819,105 @@
 		"defaultMessage": "Walk time (seconds)",
 		"description": "Label of the field for how many seconds of game time walking a square of the tile takes"
 	},
+	"editor.tileDelete.checkFailed": {
+		"defaultMessage": "Could not find out which maps use the tile.",
+		"description": "Shown in the dialog before deleting a tile when the areas using it couldn't be loaded"
+	},
+	"editor.tileDelete.checking": {
+		"defaultMessage": "Checking which maps use it...",
+		"description": "Shown in the dialog before deleting a tile while it finds out which areas' maps use the tile"
+	},
+	"editor.tileDelete.chooseReplacement": {
+		"defaultMessage": "Choose a tile",
+		"description": "First choice in the list of tiles to replace a tile being deleted, before one is chosen"
+	},
+	"editor.tileDelete.question": {
+		"defaultMessage": "Delete the tile \"{name}\" when the Tilesets tab is saved?",
+		"description": "Asked in the dialog before deleting a tile; {name} is the tile's name. Nothing is deleted until the tab is saved"
+	},
+	"editor.tileDelete.replaceWith": {
+		"defaultMessage": "Replace it with",
+		"description": "Label of the list of tiles to paint the maps with in place of a tile being deleted"
+	},
+	"editor.tileDelete.submit": {
+		"defaultMessage": "Delete",
+		"description": "Button in the dialog that asks before deleting a tile: marks the tile to delete when the Tilesets tab is saved"
+	},
+	"editor.tileDelete.title": {
+		"defaultMessage": "Delete Tile",
+		"description": "Title of the dialog that asks before deleting a tile"
+	},
+	"editor.tileDelete.usage": {
+		"defaultMessage": "{count, plural, one {The map of {areas} uses it.} other {The maps of {areas} use it.}} Choose a tile to paint {count, plural, one {it} other {them}} with in its place.",
+		"description": "Shown in the dialog before deleting a tile that maps use; {areas} lists the areas' names, and {count} is how many there are"
+	},
+	"editor.tileGraphic.blobFormatHint": {
+		"defaultMessage": "A PNG of {width, number} by {height, number} pixels, at most {kilobytes, number} KB: {columns, number} frames across and {rows, number} down in the 47-tile blob layout, with the last place empty. These tiles are drawn over the ground, so they have no draw order.",
+		"description": "Explains what picture a tileset upload in the 47-tile layout needs, for things drawn over the ground such as hedges; {width} and {height} are its size in pixels, {kilobytes} the largest file allowed, and {columns} and {rows} how many frames it has across and down"
+	},
+	"editor.tileGraphic.drawOrder": {
+		"defaultMessage": "Draw order",
+		"description": "Label of the field for a tileset's draw order: a number deciding whose edges are drawn on top where two kinds of tile meet"
+	},
+	"editor.tileGraphic.drawOrderExample": {
+		"defaultMessage": "{name} {order, number}",
+		"description": "One of the game's own tilesets with its draw order, in the list under the draw order field, e.g. \"Grass 30\""
+	},
+	"editor.tileGraphic.drawOrderHint": {
+		"defaultMessage": "Where two kinds of tile meet, the higher number's edges are drawn over the other's. The tilesets that come with the game are {orders}.",
+		"description": "Explains the draw order field of the tileset upload dialog; {orders} lists the game's own tilesets with their numbers, e.g. \"Grass 30, Forest 40 and Mountains 50\""
+	},
+	"editor.tileGraphic.file": {
+		"defaultMessage": "Image",
+		"description": "Label of the field for choosing the picture file of a tileset to upload"
+	},
+	"editor.tileGraphic.format": {
+		"defaultMessage": "Layout",
+		"description": "Heading of the choice of how an uploaded tileset's picture is laid out: 15 tiles that blend with the ground, or 47 drawn over it"
+	},
+	"editor.tileGraphic.format.blob": {
+		"defaultMessage": "47 tiles, drawn over the ground",
+		"description": "Choice of tileset layout: 47 pictures, one for each way a cell can join up with the same tile around it, drawn over the ground, such as hedges"
+	},
+	"editor.tileGraphic.format.dualGrid": {
+		"defaultMessage": "15 tiles, blending with the ground",
+		"description": "Choice of tileset layout: 15 pictures drawn where kinds of tile meet, blending into each other, for ground such as grass or water and for wall tops"
+	},
+	"editor.tileGraphic.formatHint": {
+		"defaultMessage": "A PNG of {size, number} by {size, number} pixels, at most {kilobytes, number} KB: {columns, number} frames across and {columns, number} down in the Dual-Grid layout.",
+		"description": "Explains what picture a tileset upload in the 15-tile layout needs, for ground and other tiles that blend with it; {size} is its width and height in pixels, {kilobytes} the largest file allowed, and {columns} how many frames it has across and down"
+	},
+	"editor.tileGraphic.rights": {
+		"defaultMessage": "I have the rights to use this image",
+		"description": "Checkbox that must be ticked to upload a picture: the uploader confirms they made it, own it or have permission to use it"
+	},
+	"editor.tileGraphic.submit": {
+		"defaultMessage": "Add",
+		"description": "Button that adds the chosen tileset to the Tilesets tab's changes; it is uploaded when the tab is saved"
+	},
+	"editor.tileGraphic.title": {
+		"defaultMessage": "Upload Tileset Image",
+		"description": "Title of the dialog for uploading a tileset: a picture of a terrain that tiles can be drawn with"
+	},
+	"editor.tileGraphic.unreadable": {
+		"defaultMessage": "Could not read the image.",
+		"description": "Shown in the tileset upload dialog when the chosen file couldn't be opened as a picture"
+	},
+	"editor.tileGraphicDelete.submit": {
+		"defaultMessage": "Delete",
+		"description": "Button in the dialog that asks before deleting an uploaded tileset: marks it to delete when the Tilesets tab is saved"
+	},
+	"editor.tileGraphicDelete.title": {
+		"defaultMessage": "Delete Tileset Image",
+		"description": "Title of the dialog that asks before deleting an uploaded tileset (a picture tiles can be drawn with)"
+	},
 	"editor.tiles.add": {
 		"defaultMessage": "Add Tile",
 		"description": "Button that opens the dialog for making a new tile"
+	},
+	"editor.tiles.deleteUploadFailed": {
+		"defaultMessage": "Could not delete the tileset \"{name}\".",
+		"description": "Shown on the Tilesets tab when the server refused to delete an uploaded tileset, followed by why; {name} is the name it was given. Nothing was saved"
 	},
 	"editor.tiles.impassable": {
 		"defaultMessage": "impassable",
@@ -1770,6 +1942,14 @@
 	"editor.tiles.searchLabel": {
 		"defaultMessage": "Search tiles by name",
 		"description": "Name of the field that filters the tiles by name, for screen readers"
+	},
+	"editor.tiles.uploadFailed": {
+		"defaultMessage": "Could not upload the tileset \"{name}\".",
+		"description": "Shown on the Tilesets tab when the server refused a tileset staged to upload, followed by why; {name} is the name it was given. Nothing was saved"
+	},
+	"editor.tiles.uploadsFailed": {
+		"defaultMessage": "Could not list the uploaded tilesets.",
+		"description": "Shown on the Tilesets tab when the tilesets the universe's editors uploaded couldn't be loaded"
 	},
 	"editor.tiles.usedInValue": {
 		"defaultMessage": "{usedIn, select, both {Both} indoors {Indoors} outdoors {Outdoors} other {Neither}}",
@@ -1797,7 +1977,7 @@
 	},
 	"editor.universe.saveFailed": {
 		"defaultMessage": "Could not save the universe.",
-		"description": "Shown on the Universe tab when its settings couldn't be stored"
+		"description": "Shown on the Universe tab when the server refused its settings, followed by why; nothing was saved"
 	},
 	"editor.universe.stage": {
 		"defaultMessage": "Stage",
@@ -1846,6 +2026,10 @@
 	"error.classUnavailable": {
 		"defaultMessage": "That class can't be chosen any more. Choose another.",
 		"description": "Why a new character wasn't made: the class chosen was deleted or disabled while the player was making the character"
+	},
+	"error.defaultAreaTileDisabled": {
+		"defaultMessage": "New areas start with this tile, so it can't be disabled.",
+		"description": "Why a tile couldn't be saved: it was disabled, but it is the tile new outdoor or indoor areas are painted with"
 	},
 	"error.deleteGroupMember": {
 		"defaultMessage": "That character is in a group. They have to leave it before they can be deleted.",
@@ -1987,6 +2171,10 @@
 		"defaultMessage": "The race doesn't exist.",
 		"description": "Why a request about a race (such as elf or dwarf) failed: it was deleted, perhaps by another editor"
 	},
+	"error.noSuchReplacementTile": {
+		"defaultMessage": "The tile chosen to replace it doesn't exist.",
+		"description": "Why a tile couldn't be deleted: the tile chosen to paint the maps with in its place isn't one of the universe's tiles, perhaps because it was deleted"
+	},
 	"error.noSuchTheme": {
 		"defaultMessage": "The theme doesn't exist.",
 		"description": "Why a request about a theme (a character background, such as ace pilot or scholar) failed: it was deleted, perhaps by another editor"
@@ -1995,9 +2183,21 @@
 		"defaultMessage": "The tile doesn't exist.",
 		"description": "Why a request about a tile failed: it was deleted, perhaps by another editor"
 	},
+	"error.noSuchTileGraphic": {
+		"defaultMessage": "The tileset doesn't exist.",
+		"description": "Why an uploaded tileset couldn't be loaded: there is none with that address"
+	},
 	"error.noSuchUniverse": {
 		"defaultMessage": "The universe doesn't exist, or you can't see it.",
 		"description": "Why a request about a universe failed: it was deleted, or the player has no access to it"
+	},
+	"error.noSuchUploadedGraphic": {
+		"defaultMessage": "The uploaded tileset doesn't exist in this universe.",
+		"description": "Why a tile couldn't be saved: the uploaded tileset chosen for it isn't one of this universe's"
+	},
+	"error.noSuchUploadedGraphicToDelete": {
+		"defaultMessage": "The uploaded tileset doesn't exist. It may have been deleted already.",
+		"description": "Why an uploaded tileset couldn't be deleted: there is no such tileset in this universe, perhaps because another editor deleted it"
 	},
 	"error.noThemes": {
 		"defaultMessage": "This universe's ruleset has no themes.",
@@ -2062,6 +2262,22 @@
 	"error.themeUnavailable": {
 		"defaultMessage": "That theme can't be chosen any more. Choose another.",
 		"description": "Why a new character wasn't made: the theme (character background, such as ace pilot) chosen was deleted or disabled while the player was making the character, or none was chosen"
+	},
+	"error.tileGraphicLimit": {
+		"defaultMessage": "A universe can have at most {max, plural, one {# uploaded tileset} other {# uploaded tilesets}}.",
+		"description": "Why a tileset wasn't uploaded: the universe has as many uploaded tilesets as allowed"
+	},
+	"error.tileGraphicNotPng": {
+		"defaultMessage": "The file isn't a PNG image.",
+		"description": "Why an uploaded tileset was refused: it isn't a PNG picture, or is damaged"
+	},
+	"error.tileGraphicTooLarge": {
+		"defaultMessage": "The image can be at most {max, number} KB.",
+		"description": "Why an uploaded tileset was refused: the file is too big; {max} is the most it can be, in kilobytes"
+	},
+	"error.tileGraphicWrongSize": {
+		"defaultMessage": "A tileset in this layout must be {width, number} by {height, number} pixels.",
+		"description": "Why an uploaded tileset was refused: the picture is the wrong size for the layout chosen for it (15 tiles for ground, or 47 for walls); {width} and {height} are the size it must be, in pixels"
 	},
 	"error.tileInUse": {
 		"defaultMessage": "A map uses this tile, so it can't be deleted.",
@@ -2137,7 +2353,7 @@
 	},
 	"form.enabled": {
 		"defaultMessage": "Enabled",
-		"description": "Checkbox for whether players can use something: go into an area, give characters an item, or choose a race, class or theme for new characters. Also the label of the Items tab's filter for it"
+		"description": "Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it"
 	},
 	"form.indoors": {
 		"defaultMessage": "Indoors",
@@ -2267,10 +2483,6 @@
 		"defaultMessage": "The whole group has to be here to go that way, the anchor being included.",
 		"description": "Shown in a group's toolbar, and read out, when a character tries a door or path that needs every member of the group, and one isn't playing, is in another area, or is on their way somewhere"
 	},
-	"group.pageTitle": {
-		"defaultMessage": "{group} - Multiverse Kiln",
-		"description": "The browser tab's title while the player is in a group; {group} is the group's name, or \"Group\", and Multiverse Kiln is the game engine's name"
-	},
 	"group.permadeath": {
 		"defaultMessage": "Permadeath: characters who die in this group cannot be resurrected.",
 		"description": "Warning for a group whose difficulty level has permadeath, shown in the Create Group dialog when such a level is chosen and on the screen an invite link to such a group opens"
@@ -2344,8 +2556,8 @@
 		"description": "Heading of the list of universes the player can edit"
 	},
 	"home.pageTitle": {
-		"defaultMessage": "Universes - Multiverse Kiln",
-		"description": "The browser tab's title while Home lists the universes; Multiverse Kiln is the game engine's name"
+		"defaultMessage": "Universes",
+		"description": "The browser tab's title while Home lists the universes, before the game engine's name"
 	},
 	"home.showMore": {
 		"defaultMessage": "Show more",
@@ -2408,8 +2620,8 @@
 		"description": "On the screen an invite link opens, instead of the list of the player's characters when they have none in this universe"
 	},
 	"invite.pageTitle": {
-		"defaultMessage": "{title} - {universe} - Multiverse Kiln",
-		"description": "The browser tab's title on the screen an invite link opens; {title} is its heading, e.g. \"Join The Fellowship\", {universe} is the universe's name, and Multiverse Kiln is the game engine's name"
+		"defaultMessage": "{title} - {universe}",
+		"description": "The browser tab's title on the screen an invite link opens, before the game engine's name; {title} is its heading, e.g. \"Join The Fellowship\", and {universe} is the universe's name"
 	},
 	"invite.summary": {
 		"defaultMessage": "You're invited to play {universe} in a group created by {anchor}. It has {count, number} of {size, plural, one {# character} other {# characters}}.",
@@ -2532,8 +2744,8 @@
 		"description": "Title of the dialog that asks whether to take a character out of their group"
 	},
 	"license.agpl": {
-		"defaultMessage": "Multiverse Kiln™ is free software: you can redistribute it and/or modify it under the terms of the {license} as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.",
-		"description": "The game's license notice; {license} is a link to the license's full text, named by license.agplName, and Multiverse Kiln™ is the game engine's trademarked name"
+		"defaultMessage": "{siteName}™ is free software: you can redistribute it and/or modify it under the terms of the {license} as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.",
+		"description": "The game's license notice; {license} is a link to the license's full text, named by license.agplName, and {siteName} is the game engine's name, followed by the trademark sign"
 	},
 	"license.agplName": {
 		"defaultMessage": "GNU Affero General Public License",
@@ -2548,8 +2760,8 @@
 		"description": "On the license page, explaining that the game's assets aren't free software; {holder} is who holds their copyright"
 	},
 	"license.communityUse": {
-		"defaultMessage": "Multiverse Kiln uses trademarks and/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy ({policy}). We are expressly prohibited from charging you to use or access this content. Multiverse Kiln is not published, endorsed, or specifically approved by Paizo. For more information about Paizo Inc. and Paizo products, visit {paizo}.",
-		"description": "The notice Paizo requires from anyone using its trademarks under its Community Use Policy, which keeps the game free; {policy} is a link to the policy and {paizo} a link to Paizo's website, each the same in every language"
+		"defaultMessage": "{siteName} uses trademarks and/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy ({policy}). We are expressly prohibited from charging you to use or access this content. {siteName} is not published, endorsed, or specifically approved by Paizo. For more information about Paizo Inc. and Paizo products, visit {paizo}.",
+		"description": "The notice Paizo requires from anyone using its trademarks under its Community Use Policy, which keeps the game free; {policy} is a link to the policy and {paizo} a link to Paizo's website, each the same in every language, and {siteName} is the game engine's name"
 	},
 	"license.contents": {
 		"defaultMessage": "Contents",
@@ -2592,24 +2804,24 @@
 		"description": "On the license page, saying the notice about Paizo's Community Use Policy in the Pathfinder section covers Starfinder too; {pathfinder} is a link to that section"
 	},
 	"license.starfinderOpenGameContent": {
-		"defaultMessage": "The Starfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a in the Pathfinder First Edition rules section, whose copyright notice lists the Starfinder Core Rulebook: its abilities, ability points, sizes, races, classes, themes, credits and items, and their names in every language. In the source code, they are in {folder}, and their names in {locales}. Nothing else in Multiverse Kiln is Open Game Content.",
-		"description": "On the license page, saying which part of the game is Open Game Content from Starfinder, as the Open Game License requires; {folder} and {locales} are folders in the game engine's source code"
+		"defaultMessage": "The Starfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a in the Pathfinder First Edition rules section, whose copyright notice lists the Starfinder Core Rulebook: its abilities, ability points, sizes, races, classes, themes, credits and items, and their names in every language. In the source code, they are in {folder}, and their names in {locales}. Nothing else in {siteName} is Open Game Content.",
+		"description": "On the license page, saying which part of the game is Open Game Content from Starfinder, as the Open Game License requires; {folder} and {locales} are folders in the game engine's source code, and {siteName} is the game engine's name"
 	},
 	"license.summary": {
 		"defaultMessage": "In short: you may use, change and share the game engine's code. If you share a changed version, or run one on a server that players connect to, you must offer its source code under the same license.",
 		"description": "On the license page, what the game's license means in plain words"
 	},
 	"license.title": {
-		"defaultMessage": "Licenses - Multiverse Kiln",
-		"description": "The browser tab's title for the page with the game's license and the licenses of what it uses"
+		"defaultMessage": "Licenses",
+		"description": "The browser tab's title for the page with the game's license and the licenses of what it uses, before the game engine's name"
 	},
 	"license.trademark": {
-		"defaultMessage": "Multiverse Kiln is a trademark of {holder}.",
-		"description": "The game's trademark notice on the license page; Multiverse Kiln is the game engine's name and {holder} is who owns the trademark"
+		"defaultMessage": "{siteName} is a trademark of {holder}.",
+		"description": "The game's trademark notice on the license page; {siteName} is the game engine's name and {holder} is who owns the trademark"
 	},
 	"license.warranty": {
-		"defaultMessage": "Multiverse Kiln is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.",
-		"description": "The game's license notice, saying it comes with no warranty"
+		"defaultMessage": "{siteName} is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.",
+		"description": "The game's license notice, saying it comes with no warranty; {siteName} is the game engine's name"
 	},
 	"lobby.characterPlaying": {
 		"defaultMessage": "Playing",
@@ -2684,8 +2896,8 @@
 		"description": "In the list of players in the lobby, the player's own name; {name} is the name"
 	},
 	"lobby.pageTitle": {
-		"defaultMessage": "Lobby - {universe} - Multiverse Kiln",
-		"description": "The browser tab's title in a universe's lobby; {universe} is the universe's name and Multiverse Kiln is the game engine's name"
+		"defaultMessage": "Lobby - {universe}",
+		"description": "The browser tab's title in a universe's lobby, before the game engine's name; {universe} is the universe's name"
 	},
 	"lobby.title": {
 		"defaultMessage": "Lobby",
@@ -2745,7 +2957,7 @@
 	},
 	"map.announce.sight": {
 		"defaultMessage": "You can see {squares, plural, one {# square} other {# squares}} across open ground.",
-		"description": "Read out by screen readers, and shown at the top of the page, when the player asks where they are, after the time of day: how far they can see, which is less at night unless their character has darkvision, and less past forests and mountains"
+		"description": "Read out by screen readers, and shown at the top of the page, when the player asks where they are, after the time of day: how far they can see, which is less at night unless their character has darkvision, less in bright light when they have light sensitivity, and less past forests and mountains"
 	},
 	"map.announce.timeOfDay": {
 		"defaultMessage": "It is {time}, {part, select, dawn {dawn} day {day} dusk {dusk} other {night}}.",
@@ -2904,16 +3116,16 @@
 		"description": "Shown on the whole page when the connection to the server is lost"
 	},
 	"page.editTitle": {
-		"defaultMessage": "Edit Universe - Multiverse Kiln",
-		"description": "The browser tab's title for the world editor"
+		"defaultMessage": "Edit Universe",
+		"description": "The browser tab's title for the world editor until the universe's name has loaded, before the game engine's name"
 	},
 	"page.language": {
 		"defaultMessage": "Language",
 		"description": "Label of the list of languages at the bottom of every page, which switches the language the game is shown in"
 	},
 	"page.license": {
-		"defaultMessage": "Multiverse Kiln™ is free software under the {license}.",
-		"description": "At the bottom of every page; {license} is a link to the license, named by page.licenseName, and Multiverse Kiln™ is the game engine's trademarked name"
+		"defaultMessage": "{siteName}™ is free software under the {license}.",
+		"description": "At the bottom of every page; {license} is a link to the license, named by page.licenseName, and {siteName} is the game engine's name, followed by the trademark sign"
 	},
 	"page.licenseName": {
 		"defaultMessage": "GNU Affero General Public License v3 or later",
@@ -3539,6 +3751,10 @@
 		"defaultMessage": "Keyboard shortcuts",
 		"description": "Title of the dialog listing the keyboard shortcuts that work on the screen"
 	},
+	"table.sorted": {
+		"defaultMessage": "{direction, select, ascending {Sorted by {column}, ascending} other {Sorted by {column}, descending}}",
+		"description": "Read out by screen readers when a table's column heading is clicked to sort it; {column} is the heading"
+	},
 	"tile.pf1e.desert": {
 		"defaultMessage": "Desert",
 		"description": "Name of a map tile: sandy desert, which is slow to cross"
@@ -3763,12 +3979,8 @@
 		"defaultMessage": "That universe could not be found. It may have been renamed, or it isn't open to everyone yet.",
 		"description": "Shown on the whole of a universe's page when the universe its address names doesn't exist or isn't listed on Home"
 	},
-	"universePage.title": {
-		"defaultMessage": "{universe} - Multiverse Kiln",
-		"description": "The browser tab's title on a universe's page; {universe} is the universe's name, and Multiverse Kiln is the game engine's name"
-	},
 	"universePage.unavailableTitle": {
-		"defaultMessage": "Universe - Multiverse Kiln",
-		"description": "The browser tab's title on a universe's page when the universe couldn't be shown; Multiverse Kiln is the game engine's name"
+		"defaultMessage": "Universe",
+		"description": "The browser tab's title on a universe's page when the universe couldn't be shown, before the game engine's name"
 	}
 }

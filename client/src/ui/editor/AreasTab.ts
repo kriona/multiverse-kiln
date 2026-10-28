@@ -6,14 +6,25 @@ import { ChangeTracker } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
-import { pageMessages } from '../pageMessages';
 import { tileName } from '../tileNames';
 import type { AreaSource } from './areaSource';
 import { editorMessages } from './editorMessages';
 import { MapEditor } from './MapEditor';
+import { newRef, numberRef, type EditorSave, type SavedIds } from './editorSave';
 import { combineChanges, type SavableTab } from './SaveBar';
 import { isNewAreaId, StagedAreas } from './stagedAreas';
-import { deletedNote, labelRemoveButton, stagedTag } from './stagedChanges';
+import { deletedNote, labelRemoveButton, stagedTag, type StagedTiles } from './stagedChanges';
+
+/**
+ * How a save names an area: a saved one by its ID, and one added since the tab was last saved by its ref
+ *
+ * @param areaId The area's ID on the page
+ * @return The reference
+ */
+function areaRef(areaId: string): string
+{
+	return((isNewAreaId(areaId) ? newRef('', areaId) : areaId));
+}
 
 /**
  * The Areas tab: the universe's areas, opening the area editor, and adding and deleting areas
@@ -30,7 +41,6 @@ export class AreasTab implements SavableTab
 	private readonly listError = getElement('area-list-error', HTMLElement);
 	private readonly addButton = getElement('area-add', HTMLButtonElement);
 	private readonly editorView = getElement('area-editor-view', HTMLElement);
-	private readonly editorTitle = getElement('area-editor-title', HTMLElement);
 	private readonly form = getElement('area-form', HTMLFormElement);
 	private readonly fields = getElement('area-fields', HTMLFieldSetElement);
 	private readonly name = getElement('area-name', HTMLInputElement);
@@ -114,9 +124,26 @@ export class AreasTab implements SavableTab
 	private areas: AreaListPayload = { areas: [], lobbyAreaId: null, startingAreaId: null };
 
 	/**
-	 * Every tile the universe can use, for the default tile choice
+	 * Every tile the universe can use, as last loaded
+	 */
+	private savedTiles: EditorTile[] = [];
+
+	/**
+	 * Every tile the universe can use with the Tilesets tab's changes, for the default tile choice and
+	 * the map editor
 	 */
 	private tiles: EditorTile[] = [];
+
+	/**
+	 * The tiles the Tilesets tab will delete, with the tiles chosen to replace them on the maps
+	 */
+	private deletedTiles: ReadonlyMap<number, number | undefined> = new Map();
+
+	/**
+	 * What the save being sent holds: the areas deleted and added, the area open as it is saved, and
+	 * the openVersion when the save started
+	 */
+	private collected: { deletedIds: string[]; createdIds: string[]; area: EditorArea | undefined; version: number } = { deletedIds: [], createdIds: [], area: undefined, version: -1 };
 
 	/**
 	 * The area the editor is showing
@@ -130,11 +157,17 @@ export class AreasTab implements SavableTab
 
 	/**
 	 * @param api The editor's API
+	 * @param stagedTiles The Tilesets tab's changes, which the maps are drawn and painted with
 	 * @param onAreaChanged Called with the area the area editor opens, or undefined when the tab goes back to the list
 	 */
-	constructor(private readonly api: EditorApi, private readonly onAreaChanged: (areaId: string | undefined) => void)
+	constructor(private readonly api: EditorApi, private readonly stagedTiles: StagedTiles, private readonly onAreaChanged: (areaId: string | undefined) => void)
 	{
-		this.mapEditor = new MapEditor(api, this.source, (bounds) =>
+		stagedTiles.tileChanges.subscribe(() =>
+		{
+			this.showTileChanges();
+		});
+
+		this.mapEditor = new MapEditor(this.source, (bounds) =>
 		{
 			if (this.area)
 			{
@@ -323,8 +356,8 @@ export class AreasTab implements SavableTab
 		this.onAreaChanged((isNewAreaId(areaId) ? undefined : areaId));
 		this.listView.hidden = true;
 		this.editorView.hidden = false;
-		this.editorTitle.textContent = t(pageMessages.loading);
 		this.fields.disabled = true;
+		this.name.disabled = true;
 		showMessage(this.error, undefined);
 
 		let area: EditorArea;
@@ -341,7 +374,6 @@ export class AreasTab implements SavableTab
 		{
 			if (version === this.openVersion)
 			{
-				this.editorTitle.textContent = '';
 				showMessage(this.error, describeEditorError(error, {
 					id: 'editor.area.openFailed',
 					defaultMessage: 'Could not open the area.',
@@ -442,7 +474,72 @@ export class AreasTab implements SavableTab
 	 */
 	private async loadTiles(universe: EditableUniverse): Promise<void>
 	{
-		this.tiles = await this.api.listAllTiles(universe.id);
+		this.savedTiles = await this.api.listAllTiles(universe.id);
+		this.applyTileChanges();
+	}
+
+	/**
+	 * Loads the tiles afresh, keeping the tiles last loaded when they can't be
+	 *
+	 * @param universe The universe
+	 */
+	private async loadTilesQuietly(universe: EditableUniverse): Promise<void>
+	{
+		try
+		{
+			await this.loadTiles(universe);
+		}
+		catch
+		{
+			// The tiles stay as they were last loaded, until the next area opens
+		}
+	}
+
+	/**
+	 * Takes the tiles as the Tilesets tab's changes make them, from the tiles last loaded
+	 */
+	private applyTileChanges(): void
+	{
+		const { tiles, deleted } = this.stagedTiles.withChanges(this.savedTiles);
+
+		this.tiles = tiles;
+		this.deletedTiles = deleted;
+	}
+
+	/**
+	 * Lists the tiles in the area editor's default tile choice and map editor as the Tilesets tab's
+	 * changes make them, keeping the area's unsaved changes
+	 */
+	private showTileChanges(): void
+	{
+		this.applyTileChanges();
+
+		if (this.area)
+		{
+			this.fillDefaultTiles(this.indoors.checked, Number(this.defaultTile.value));
+			void this.mapEditor.setTiles(this.tiles, this.deletedTiles, this.indoors.checked);
+		}
+	}
+
+	/**
+	 * Loads the tiles afresh after a save that may have changed them, and shows them
+	 */
+	async reloadTiles(): Promise<void>
+	{
+		const universe = this.universe;
+		const version = this.openVersion;
+
+		if (!universe || !this.area)
+		{
+			return;
+		}
+
+		await this.loadTilesQuietly(universe);
+
+		if (version === this.openVersion)
+		{
+			this.showTileChanges();
+		}
 	}
 
 	/**
@@ -550,15 +647,6 @@ export class AreasTab implements SavableTab
 		const isStart = (area.id === this.areas.startingAreaId);
 
 		this.area = area;
-		this.editorTitle.textContent = (isLobby
-			? t({
-				id: 'editor.area.lobbyTitle',
-				defaultMessage: '{area} (the lobby)',
-				description: 'Heading of the area editor for the universe\'s lobby; {area} is its name'
-			}, {
-				area: area.name
-			})
-			: area.name);
 		this.name.value = area.name;
 		this.enabled.checked = area.enabled;
 		setOptions(this.parent, [
@@ -593,6 +681,7 @@ export class AreasTab implements SavableTab
 		this.updateTimeFields();
 		this.updateParentMessage();
 		this.fields.disabled = !editable;
+		this.name.disabled = !editable;
 		this.deleteButton.hidden = (!canEditWorld(universe.role) || isLobby || isStart);
 		labelRemoveButton(this.deleteButton, { removed: deleted }, false, t({
 			id: 'editor.area.delete',
@@ -607,7 +696,7 @@ export class AreasTab implements SavableTab
 		this.childList.replaceChildren(...children.map((child) => this.createItem(child, 0)));
 		this.children.hidden = (children.length === 0);
 		this.areaChanges.markSaved();
-		void this.mapEditor.show(universe, area, this.tiles, areas.filter((other) => !this.staged.isDeleted(other.id)), editable);
+		void this.mapEditor.show(universe, area, this.tiles, this.deletedTiles, areas.filter((other) => !this.staged.isDeleted(other.id)), editable);
 	}
 
 	/**
@@ -631,9 +720,10 @@ export class AreasTab implements SavableTab
 	}
 
 	/**
-	 * Lists the tiles an area can use by default: the indoor tiles for an indoor area or the outdoor
-	 * tiles for an outdoor one, and the selected tile even when it is for the other kind, so switching
-	 * the area between them doesn't change its default tile
+	 * Lists the tiles an area can use by default: the enabled indoor tiles for an indoor area or outdoor
+	 * tiles for an outdoor one, leaving out tiles the Tilesets tab will delete, and the selected tile even
+	 * when it is disabled or for the other kind, so switching the area between them doesn't change its
+	 * default tile
 	 *
 	 * @param indoors Whether the area is indoors
 	 * @param selectedTileId The tile to select
@@ -643,7 +733,7 @@ export class AreasTab implements SavableTab
 		const ruleset = this.universe?.ruleset;
 
 		setOptions(this.defaultTile, this.tiles
-			.filter((tile) => (canPaintTile(tile, indoors) || (tile.id === selectedTileId)))
+			.filter((tile) => ((canPaintTile(tile, indoors) && !this.deletedTiles.has(tile.id)) || (tile.id === selectedTileId)))
 			.map((tile) => ({
 				value: String(tile.id),
 				label: ((ruleset === undefined) ? (tile.name ?? '') : tileName(tile, ruleset))
@@ -741,25 +831,25 @@ export class AreasTab implements SavableTab
 	}
 
 	/**
-	 * Saves the tab: deletes the areas that were deleted, adds the areas that were added, then saves the
-	 * area open in the area editor, its map first and then its settings as the form shows them. Each
-	 * change stays unsaved until the server has it, so saving again carries on after one that failed
+	 * Adds the tab's changes to a save: the areas deleted, the areas added, then the area open in the area
+	 * editor, its map first and then its settings as the form shows them
 	 *
 	 * Deleting goes first, so deleting areas can make room for new ones (MAX_AREAS); a new area is added
-	 * after the area it is inside, so it can name its saved ID
+	 * after the area it is inside, so it can name it. Tiles staged for deletion on the Tilesets tab are
+	 * sent as the tiles chosen to replace them, as the Tilesets tab's changes repaint the saved maps
 	 *
-	 * @return True when everything was saved
+	 * @param save The save
+	 * @return False when the area editor's settings have a problem
 	 */
-	async save(): Promise<boolean>
+	collect(save: EditorSave): boolean
 	{
 		const universe = this.universe;
-		const version = this.openVersion;
 		const area = this.area;
 		const error = (area ? this.error : this.listError);
 
 		if (!universe)
 		{
-			return(false);
+			return(true);
 		}
 
 		// The area open, unless it is going to be deleted
@@ -771,139 +861,168 @@ export class AreasTab implements SavableTab
 			return(false);
 		}
 
-		const settingsChanged = this.areaChanges.hasUnsavedChanges();
-		const deletedIds = new Set<string>();
+		const deletedIds = this.staged.deletedIds();
+		const created = this.creationOrder(settings);
 
 		/**
-		 * The saved ID of each new area added so far, by the ID it had on the page
-		 */
-		const savedIds = new Map<string, string>();
-
-		/**
-		 * An area's parent as the server knows it: none for a deleted parent, whose areas the server makes
-		 * top-level, and a new parent's saved ID
+		 * An area's parent as a save names it: none for a deleted parent, whose areas the server makes
+		 * top-level, and a new parent by its ref
 		 *
 		 * @param parentAreaId The parent's ID, or null for none
-		 * @return The parent's ID, or null for none
+		 * @return The parent, or null for none
 		 */
-		const parentOf = (parentAreaId: string | null): string | null =>
-		{
-			if ((parentAreaId === null) || deletedIds.has(parentAreaId))
-			{
-				return(null);
-			}
-
-			return(savedIds.get(parentAreaId) ?? parentAreaId);
-		};
+		const parentOf = (parentAreaId: string | null): string | null => (((parentAreaId === null) || deletedIds.includes(parentAreaId)) ? null : areaRef(parentAreaId));
 
 		showMessage(error, undefined);
 
-		for (const areaId of this.staged.deletedIds())
+		for (const areaId of deletedIds)
 		{
-			try
+			save.add({ kind: 'deleteArea', areaId }, (refusal) =>
 			{
-				await this.api.deleteArea(universe.id, areaId);
-			}
-			catch (deleteError)
-			{
-				showMessage(error, describeEditorError(deleteError, {
+				showMessage(error, describeEditorError(refusal.error, {
 					id: 'editor.areas.deleteFailed',
 					defaultMessage: 'Could not delete {area}.',
-					description: 'Shown on the Areas tab when saving stopped at deleting an area the server refused; {area} is its name. Changes after it are kept, not saved'
+					description: 'Shown on the Areas tab when the server refused to delete an area, followed by why; {area} is its name. Nothing was saved'
 				}, {
 					area: this.nameOf(areaId)
 				}));
-				return(false);
-			}
-
-			deletedIds.add(areaId);
-			this.staged.markDeleted(areaId);
+			});
 		}
 
-		for (const newArea of this.creationOrder(settings))
+		for (const newArea of created)
 		{
-			const fields = (((newArea.id === this.area?.id) && settings) ? settings : newArea);
-			let savedId: string;
+			const fields = (((newArea.id === area?.id) && settings) ? settings : newArea);
 
-			try
-			{
-				savedId = await this.api.createArea(universe.id, {
+			save.add({
+				kind: 'createArea',
+				ref: newRef('', newArea.id),
+				area: {
 					name: fields.name,
 					parentAreaId: parentOf(fields.parentAreaId),
 					enabled: fields.enabled,
 					indoors: fields.indoors,
 					lightLevel: fields.lightLevel,
-					defaultTileId: fields.defaultTileId,
+					defaultTileId: numberRef('tile', this.paintedAs(fields.defaultTileId)),
 					passageOfTime: fields.passageOfTime,
 					faerieMorning: fields.faerieMorning,
 					loopsEastWest: fields.loopsEastWest,
 					loopsNorthSouth: fields.loopsNorthSouth
-				});
-			}
-			catch (createError)
+				}
+			}, (refusal) =>
 			{
-				showMessage(error, describeEditorError(createError, {
+				showMessage(error, describeEditorError(refusal.error, {
 					id: 'editor.areas.createFailed',
 					defaultMessage: 'Could not add {area}.',
-					description: 'Shown on the Areas tab when saving stopped at adding an area the server refused; {area} is its name. Changes after it are kept, not saved'
+					description: 'Shown on the Areas tab when the server refused an area added on it, followed by why; {area} is its name. Nothing was saved'
 				}, {
 					area: fields.name
 				}));
-				return(false);
-			}
-
-			savedIds.set(newArea.id, savedId);
-			this.areaCreated(newArea.id, savedId, settings);
+			});
 		}
 
-		const open = this.area;
+		let saved: EditorArea | undefined;
 
-		if (!editing || !settings || !open)
+		if (area && settings)
 		{
-			await this.refreshAfterSave(universe, version);
-			return(true);
-		}
+			const defaultTileId = this.paintedAs(settings.defaultTileId);
 
-		const created = (open.id !== area?.id);
-
-		settings.parentAreaId = parentOf(settings.parentAreaId);
-
-		try
-		{
-			await this.mapEditor.save();
-		}
-		catch (mapError)
-		{
-			showMessage(this.error, describeEditorError(mapError, {
-				id: 'editor.area.mapSaveFailed',
-				defaultMessage: 'Could not save the map.',
-				description: 'Shown in the area editor when the painting on the area\'s map, its new size or its links couldn\'t be stored'
-			}));
-			return(false);
-		}
-
-		try
-		{
-			// A new area was added with the form's settings
-			if (settingsChanged && !created)
+			this.mapEditor.collect(save, areaRef, (tileId) => numberRef('tile', this.paintedAs(tileId)), (refusal) =>
 			{
-				await this.api.updateArea(universe.id, open.id, settings);
+				showMessage(this.error, describeEditorError(refusal.error, {
+					id: 'editor.area.mapSaveFailed',
+					defaultMessage: 'Could not save the map.',
+					description: 'Shown in the area editor when the server refused the painting on the area\'s map, its new size or its links, followed by why; nothing was saved'
+				}));
+			});
+
+			// A new area is added with the form's settings
+			if (this.areaChanges.hasUnsavedChanges() && !isNewAreaId(area.id))
+			{
+				save.add({
+					kind: 'updateArea',
+					areaId: area.id,
+					update: {
+						...settings,
+						parentAreaId: parentOf(settings.parentAreaId),
+						defaultTileId: numberRef('tile', defaultTileId)
+					}
+				}, (refusal) =>
+				{
+					showMessage(this.error, describeEditorError(refusal.error, {
+						id: 'editor.area.saveFailed',
+						defaultMessage: 'Could not save the area.',
+						description: 'Shown in the area editor when the server refused the area\'s settings, followed by why; nothing was saved'
+					}));
+				});
 			}
-		}
-		catch (updateError)
-		{
-			showMessage(this.error, describeEditorError(updateError, {
-				id: 'editor.area.saveFailed',
-				defaultMessage: 'Could not save the area.',
-				description: 'Shown in the area editor when the area\'s settings couldn\'t be stored'
-			}));
 
-			return(false);
+			saved = { ...area, ...settings, defaultTileId };
 		}
 
-		await this.refreshAfterSave(universe, version, { ...open, ...settings });
+		this.collected = {
+			deletedIds,
+			createdIds: created.map((newArea) => newArea.id),
+			area: saved,
+			version: this.openVersion
+		};
 
 		return(true);
+	}
+
+	/**
+	 * Takes the tab's changes as saved: the new areas get the IDs they were saved with, and the list or
+	 * the area editor shows them as the server has them
+	 *
+	 * @param ids The IDs the save gave the areas and tiles it made
+	 */
+	async saved(ids: SavedIds): Promise<void>
+	{
+		const universe = this.universe;
+		const { deletedIds, createdIds, area, version } = this.collected;
+
+		this.collected = { deletedIds: [], createdIds: [], area: undefined, version: -1 };
+
+		if (!universe)
+		{
+			return;
+		}
+
+		this.mapEditor.saved();
+
+		for (const areaId of deletedIds)
+		{
+			this.staged.markDeleted(areaId);
+		}
+
+		for (const areaId of createdIds)
+		{
+			const savedId = ids.string(areaRef(areaId));
+
+			if (savedId !== undefined)
+			{
+				this.areaCreated(areaId, savedId);
+			}
+		}
+
+		await this.loadTilesQuietly(universe);
+		await this.refreshAfterSave(universe, version, (area && {
+			...area,
+			id: (ids.string(areaRef(area.id)) ?? area.id),
+			parentAreaId: ((area.parentAreaId === null) ? null : (ids.string(areaRef(area.parentAreaId)) ?? null)),
+			defaultTileId: (ids.number(numberRef('tile', area.defaultTileId)) ?? area.defaultTileId)
+		}));
+	}
+
+	/**
+	 * The tile a cell or area's default painted with a tile shows once saved: the tile chosen to replace
+	 * one staged for deletion on the Tilesets tab, or the tile itself
+	 *
+	 * @param tileId The tile's ID
+	 * @return The tile to save
+	 */
+	private paintedAs(tileId: number): number
+	{
+		return(this.deletedTiles.get(tileId) ?? tileId);
 	}
 
 	/**
@@ -934,9 +1053,8 @@ export class AreasTab implements SavableTab
 	 *
 	 * @param areaId The ID it had on the page
 	 * @param savedId The ID the server saved it with
-	 * @param settings The area editor's settings, whose parent may be the new area
 	 */
-	private areaCreated(areaId: string, savedId: string, settings: AreaSettings | undefined): void
+	private areaCreated(areaId: string, savedId: string): void
 	{
 		this.staged.markCreated(areaId, savedId);
 		this.mapEditor.resolveIds(new Map([[areaId, savedId]]));
@@ -947,11 +1065,6 @@ export class AreasTab implements SavableTab
 			{
 				option.value = savedId;
 			}
-		}
-
-		if (settings?.parentAreaId === areaId)
-		{
-			settings.parentAreaId = savedId;
 		}
 
 		if (this.area?.id === areaId)

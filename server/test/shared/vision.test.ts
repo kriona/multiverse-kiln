@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { areaLight, canSee, chunkKey, createVisionMap, CHUNK_SIZE, DARKVISION_SQUARES, DAY_VISION_SQUARES, MIDNIGHT_SECONDS, NIGHT_VISION_SQUARES, NOON_SECONDS, VOID_CELL, visibleCells, visionBudget, visionKey, type MapBounds, type VisionMap } from '@multiverse-kiln/shared';
+import { areaLight, canSee, chunkKey, createVisionMap, CHUNK_SIZE, DARKVISION_SQUARES, darkvisionSquares, DAY_VISION_SQUARES, LIGHT_SENSITIVE_VISION_SHARE, MIDNIGHT_SECONDS, NIGHT_VISION_SQUARES, NOON_SECONDS, PLAIN_SIGHT, SUPERIOR_DARKVISION_SQUARES, VOID_CELL, visibleCells, visionBudget, visionKey, type MapBounds, type VisionMap } from '@multiverse-kiln/shared';
 
 const bounds: MapBounds = {
 	minColumn: -50,
@@ -31,29 +31,54 @@ describe('vision (shared)', () =>
 {
 	describe('visionBudget', () =>
 	{
+		const darkvision = {
+			darkvision: darkvisionSquares('normal'),
+			lightSensitivity: false
+		};
+		const drow = {
+			darkvision: darkvisionSquares('superior'),
+			lightSensitivity: true
+		};
+
 		it('sees furthest by day and least at night', () =>
 		{
-			assert.strictEqual(visionBudget(areaLight(null, NOON_SECONDS), false, false), DAY_VISION_SQUARES);
-			assert.strictEqual(visionBudget(areaLight(null, MIDNIGHT_SECONDS), false, false), NIGHT_VISION_SQUARES);
+			assert.strictEqual(visionBudget(areaLight(null, NOON_SECONDS), PLAIN_SIGHT, false), DAY_VISION_SQUARES);
+			assert.strictEqual(visionBudget(areaLight(null, MIDNIGHT_SECONDS), PLAIN_SIGHT, false), NIGHT_VISION_SQUARES);
 		});
 
 		it('sees as far as darkvision does in the dark, and no less by day', () =>
 		{
-			assert.strictEqual(visionBudget(areaLight(null, MIDNIGHT_SECONDS), true, false), DARKVISION_SQUARES);
-			assert.strictEqual(visionBudget(areaLight(null, NOON_SECONDS), true, false), DAY_VISION_SQUARES);
+			assert.strictEqual(visionBudget(areaLight(null, MIDNIGHT_SECONDS), darkvision, false), DARKVISION_SQUARES);
+			assert.strictEqual(visionBudget(areaLight(null, NOON_SECONDS), darkvision, false), DAY_VISION_SQUARES);
+		});
+
+		it('sees as far as superior darkvision does in the dark', () =>
+		{
+			assert.strictEqual(darkvisionSquares('none'), 0);
+			assert.strictEqual(visionBudget(areaLight(null, MIDNIGHT_SECONDS), { ...drow, lightSensitivity: false }, false), SUPERIOR_DARKVISION_SQUARES);
+			assert.strictEqual(visionBudget(areaLight(null, NOON_SECONDS), { ...drow, lightSensitivity: false }, false), SUPERIOR_DARKVISION_SQUARES);
+		});
+
+		it('sees less in bright light with light sensitivity, and no less in the dark', () =>
+		{
+			assert.strictEqual(visionBudget(areaLight(null, MIDNIGHT_SECONDS), drow, false), SUPERIOR_DARKVISION_SQUARES);
+			assert.strictEqual(visionBudget(areaLight(null, NOON_SECONDS), drow, false), SUPERIOR_DARKVISION_SQUARES * LIGHT_SENSITIVE_VISION_SHARE);
+			assert.strictEqual(visionBudget(areaLight('lit', MIDNIGHT_SECONDS), drow, false), SUPERIOR_DARKVISION_SQUARES * LIGHT_SENSITIVE_VISION_SHARE);
+			assert.strictEqual(visionBudget(areaLight(null, NOON_SECONDS), { ...PLAIN_SIGHT, lightSensitivity: true }, false), DAY_VISION_SQUARES * LIGHT_SENSITIVE_VISION_SHARE);
 		});
 
 		it('sees as far at night as by day with full vision', () =>
 		{
-			assert.strictEqual(visionBudget(areaLight(null, MIDNIGHT_SECONDS), false, true), DAY_VISION_SQUARES);
-			assert.strictEqual(visionBudget(areaLight(null, MIDNIGHT_SECONDS), true, true), DAY_VISION_SQUARES);
+			assert.strictEqual(visionBudget(areaLight(null, MIDNIGHT_SECONDS), PLAIN_SIGHT, true), DAY_VISION_SQUARES);
+			assert.strictEqual(visionBudget(areaLight(null, MIDNIGHT_SECONDS), darkvision, true), DAY_VISION_SQUARES);
+			assert.strictEqual(visionBudget(areaLight(null, NOON_SECONDS), drow, true), DAY_VISION_SQUARES);
 		});
 
 		it('sees as far as by day in a lit indoor area and as at night in a dark one, whatever the time', () =>
 		{
-			assert.strictEqual(visionBudget(areaLight('lit', MIDNIGHT_SECONDS), false, false), DAY_VISION_SQUARES);
-			assert.strictEqual(visionBudget(areaLight('dark', NOON_SECONDS), false, false), NIGHT_VISION_SQUARES);
-			assert.strictEqual(visionBudget(areaLight('dark', NOON_SECONDS), true, false), DARKVISION_SQUARES);
+			assert.strictEqual(visionBudget(areaLight('lit', MIDNIGHT_SECONDS), PLAIN_SIGHT, false), DAY_VISION_SQUARES);
+			assert.strictEqual(visionBudget(areaLight('dark', NOON_SECONDS), PLAIN_SIGHT, false), NIGHT_VISION_SQUARES);
+			assert.strictEqual(visionBudget(areaLight('dark', NOON_SECONDS), darkvision, false), DARKVISION_SQUARES);
 		});
 	});
 
@@ -147,6 +172,47 @@ describe('vision (shared)', () =>
 			assert.ok(!visible.has(visionKey(15, 3)));
 			assert.ok(!visible.has(visionKey(-15, -2)));
 			assert.strictEqual(canSee(origin, { column: 15, row: 2 }, 20, mapWith(costs)), true);
+		});
+
+		it('doesn\'t see a wall only open ground diagonally beside it shows', () =>
+		{
+			const costs: Record<string, number> = {};
+
+			// A mountain range whose eastern tip has open ground on every side and hidden from the origin
+			for (const [column, row] of [[0, 1], [1, 1], [-1, 2], [0, 2], [1, 2], [2, 2], [0, 3], [1, 3]])
+			{
+				costs[visionKey(column, row)] = 100;
+			}
+
+			const visible = visibleCells(origin, 20, mapWith(costs));
+
+			assert.ok(visible.has(visionKey(3, 1)));
+			assert.ok(!visible.has(visionKey(2, 1)));
+			assert.ok(!visible.has(visionKey(2, 2)));
+		});
+
+		it('sees the corners of a room', () =>
+		{
+			const costs: Record<string, number> = {};
+
+			// A room from column 1 to 5 and row 1 to 3, walled all round
+			for (let column = 0; column <= 6; column++)
+			{
+				for (let row = 0; row <= 4; row++)
+				{
+					if ((column === 0) || (column === 6) || (row === 0) || (row === 4))
+					{
+						costs[visionKey(column, row)] = 100;
+					}
+				}
+			}
+
+			const map = mapWith(costs);
+			const from = { column: 5, row: 1 };
+
+			assert.strictEqual(canSee(from, { column: 0, row: 0 }, 20, map), true);
+			assert.strictEqual(canSee(from, { column: 0, row: 4 }, 20, map), true);
+			assert.strictEqual(canSee(from, { column: -1, row: 0 }, 20, map), false);
 		});
 
 		it('sees the same mirrored east to west', () =>

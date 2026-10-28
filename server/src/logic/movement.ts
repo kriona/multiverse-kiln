@@ -145,10 +145,10 @@ export const PLAYER_SPEED = 200;
 /**
  * How long a direction must be held, in seconds, before a second step starts
  *
- * A step takes 0.15 seconds at PLAYER_SPEED. Waiting a little longer than that before repeating means
- * a press held slightly too long moves one cell, not two, like a keyboard's key repeat delay
+ * A step across a GRID_CELL_SIZE cell takes 0.16 seconds at PLAYER_SPEED. Waiting as long as that before
+ * repeating means a press held slightly too long moves one cell, not two, like a keyboard's key repeat delay
  */
-export const STEP_REPEAT_DELAY = 0.15;
+export const STEP_REPEAT_DELAY = 0.16;
 
 /**
  * Allowance for rounding when comparing times

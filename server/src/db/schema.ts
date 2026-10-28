@@ -6,7 +6,7 @@
  */
 import { sql, type SQL } from 'drizzle-orm';
 import { boolean, check, customType, doublePrecision, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHUNK_SIZE, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_MOB_SCALE, MIN_MOB_SCALE, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, DARKVISIONS, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
 
 import { SEEN_CHUNK_BYTES } from '../logic/seenCells.js';
 
@@ -27,6 +27,8 @@ export const pf1eMagicTradition = pgEnum('pf1e_magic_tradition', PF1E_MAGIC_TRAD
 export const pf1eCastingStyle = pgEnum('pf1e_casting_style', PF1E_CASTING_STYLES);
 export const sf1eAbility = pgEnum('sf1e_ability', SF1E_ABILITIES);
 export const sf1eSize = pgEnum('sf1e_size', SF1E_SIZES);
+export const darkvision = pgEnum('darkvision', DARKVISIONS);
+export const tileGraphicFormat = pgEnum('tile_graphic_format', TILE_GRAPHIC_FORMATS);
 
 /**
  * SQL that checks every one of some columns holds a number in a range
@@ -200,6 +202,39 @@ export const universeEditors = pgTable('universe_editors', {
 ]);
 
 /**
+ * One row per tile graphic a universe's editors uploaded: a Dual-Grid or blob sheet its tiles can be
+ * drawn with
+ *
+ * The image itself is in object storage under storageKey (see src/storage/), and never changes; a new
+ * upload is a new row
+ */
+export const tileGraphics = pgTable('tile_graphics', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	universeId: uuid('universe_id').notNull().references(() => universes.id, { onDelete: 'cascade' }),
+	name: text('name').notNull(),
+	format: tileGraphicFormat('format').notNull().default('dualGrid'),
+
+	/**
+	 * Where tiles meet, the higher draw order's edges are drawn over the lower's (see TILE_GRAPHICS in
+	 * /shared). Null for a blob sheet, which is drawn over the ground
+	 */
+	drawOrder: smallint('draw_order'),
+
+	storageKey: text('storage_key').notNull().unique(),
+
+	/**
+	 * Who uploaded it, and confirmed they have the rights to use it, until their account is deleted
+	 */
+	uploadedBy: uuid('uploaded_by').references(() => players.id, { onDelete: 'set null' }),
+
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	index('tile_graphics_universe_id_index').on(table.universeId),
+	check('tile_graphics_draw_order_range', sql`${table.drawOrder} BETWEEN ${sql.raw(String(MIN_TILE_GRAPHIC_DRAW_ORDER))} AND ${sql.raw(String(MAX_TILE_GRAPHIC_DRAW_ORDER))}`),
+	check('tile_graphics_draw_order_format', sql`(${table.format} = 'blob') = (${table.drawOrder} IS NULL)`)
+]);
+
+/**
  * One row per tile a map can be painted with
  *
  * A tile with no universe is one of a ruleset's default tiles, available to every universe with that
@@ -238,6 +273,18 @@ export const tiles = pgTable('tiles', {
 	color: integer('color').notNull(),
 
 	/**
+	 * The graphic the tile is drawn with (TILE_GRAPHICS in /shared), or null to draw it in its color or
+	 * uploadedGraphicId
+	 */
+	graphic: text('graphic'),
+
+	/**
+	 * A graphic the universe's editors uploaded that the tile is drawn with; a tile has at most one of
+	 * graphic and uploadedGraphicId
+	 */
+	uploadedGraphicId: uuid('uploaded_graphic_id').references(() => tileGraphics.id, { onDelete: 'set null' }),
+
+	/**
 	 * How much of a character's vision crossing the tile uses, in percent; 100 can't be seen through
 	 */
 	visionCost: smallint('vision_cost').notNull().default(0),
@@ -247,6 +294,11 @@ export const tiles = pgTable('tiles', {
 	 */
 	walkSeconds: smallint('walk_seconds').notNull().default(DEFAULT_INDOOR_WALK_SECONDS),
 
+	/**
+	 * Whether areas can paint with the tile; maps that already use a disabled tile keep it
+	 */
+	enabled: boolean('enabled').notNull().default(true),
+
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	unique('tiles_ruleset_key_unique').on(table.ruleset, table.key),
@@ -255,6 +307,7 @@ export const tiles = pgTable('tiles', {
 	check('tiles_overrides_belong_to_universe', sql`${table.overridesTileId} IS NULL OR ${table.universeId} IS NOT NULL`),
 	check('tiles_name_required', sql`${table.name} IS NOT NULL OR ${table.overridesTileId} IS NOT NULL`),
 	check('tiles_color_range', sql`${table.color} BETWEEN 0 AND 16777215`),
+	check('tiles_one_graphic', sql`${table.graphic} IS NULL OR ${table.uploadedGraphicId} IS NULL`),
 	check('tiles_vision_cost_range', sql`${table.visionCost} BETWEEN 0 AND 100`),
 	check('tiles_walk_seconds_range', sql`${table.walkSeconds} BETWEEN 0 AND ${sql.raw(String(MAX_WALK_SECONDS))}`)
 ]);
@@ -398,7 +451,13 @@ export const pf1eRaces = pgTable('pf1e_races', {
 	 */
 	floatingBonus: boolean('floating_bonus').notNull().default(false),
 
-	darkvision: boolean('darkvision').notNull().default(false),
+	darkvision: darkvision('darkvision').notNull().default('none'),
+
+	/**
+	 * Whether bright light dazzles the race's characters, shortening their vision
+	 */
+	lightSensitivity: boolean('light_sensitivity').notNull().default(false),
+
 	size: pf1eSize('size').notNull().default('medium')
 }, (table) => [
 	check('pf1e_races_modifiers_range', allInRange([table.strengthModifier, table.dexterityModifier, table.constitutionModifier, table.intelligenceModifier, table.wisdomModifier, table.charismaModifier], PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_MAX_RACE_ABILITY_MODIFIER))
@@ -425,7 +484,13 @@ export const sf1eRaces = pgTable('sf1e_races', {
 	 */
 	floatingBonus: boolean('floating_bonus').notNull().default(false),
 
-	darkvision: boolean('darkvision').notNull().default(false),
+	darkvision: darkvision('darkvision').notNull().default('none'),
+
+	/**
+	 * Whether bright light dazzles the race's characters, shortening their vision
+	 */
+	lightSensitivity: boolean('light_sensitivity').notNull().default(false),
+
 	size: sf1eSize('size').notNull().default('medium'),
 
 	/**
@@ -740,18 +805,6 @@ export const characters = pgTable('characters', {
 	silver: integer('silver').notNull().default(0),
 	copper: integer('copper').notNull().default(0),
 	credits: integer('credits').notNull().default(0),
-
-	/**
-	 * The area the character is in; null when the area was deleted, or the universe had none to start in
-	 */
-	areaId: uuid('area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
-
-	/**
-	 * The cell of the area the character starts nearest
-	 */
-	startingColumn: integer('starting_column').notNull().default(0),
-	startingRow: integer('starting_row').notNull().default(0),
-
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 
 	/**
@@ -771,7 +824,6 @@ export const characters = pgTable('characters', {
 	index('characters_universe_id_index').on(table.universeId),
 	index('characters_race_id_index').on(table.raceId),
 	index('characters_class_id_index').on(table.classId),
-	index('characters_area_id_index').on(table.areaId),
 	index('characters_delete_at_index').on(table.deleteAt).where(sql`${table.deleteAt} is not null`),
 	check('characters_coins_range', allInRange([table.platinum, table.gold, table.silver, table.copper], 0, MAX_COINS)),
 	check('characters_credits_range', allInRange([table.credits], 0, MAX_COINS))

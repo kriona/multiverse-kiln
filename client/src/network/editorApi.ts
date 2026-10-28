@@ -1,5 +1,5 @@
 import { ServerError, type Client } from '@colyseus/sdk';
-import { EDITOR_UNIVERSES_PATH, isLocalizedMessage, MAX_TILES_PER_PAGE, type CellChange, type ChunkListPayload, type ChunkRange, type ClassListPayload, type ClassSettings, type CreatedPayload, type DifficultyLevel, type DifficultyLevelListPayload, type DifficultyLevelSettings, type EditableUniverse, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type NewAreaRequest, type RaceListPayload, type RaceSettings, type ResizeConflictPayload, type RulesetSettings, type EditorTheme, type ThemeListPayload, type ThemeSettings, type TileListPayload, type TileListQuery, type TileSettings, type UniverseSettingsUpdate, type AreaLinkListPayload, type AreaLinkTarget, type AreaListPayload, type AreaSettingsUpdate, type MessageSource, type MessageValues } from '@multiverse-kiln/shared';
+import { EDITOR_UNIVERSES_PATH, isLocalizedMessage, MAX_TILES_PER_PAGE, type ChunkListPayload, type ChunkRange, type ClassListPayload, type CreatedPayload, type DifficultyLevel, type DifficultyLevelListPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type NewUniverseRequest, type RaceListPayload, type RulesetSettings, type EditorTheme, type ThemeListPayload, type TileGraphicListPayload, type TileListPayload, type TileListQuery, type TileUsagePayload, type UploadedTileGraphic, type AreaLinkListPayload, type AreaListPayload, type MessageSource, type MessageValues, type EditorChange, type SaveChangesPayload, type SaveChangesRequest } from '@multiverse-kiln/shared';
 
 import { localizedText, t } from '../localization';
 
@@ -68,17 +68,6 @@ export class EditorApi
 	}
 
 	/**
-	 * Changes a universe's settings
-	 *
-	 * @param universeId The universe's ID
-	 * @param update The settings to change
-	 */
-	async updateUniverse(universeId: string, update: UniverseSettingsUpdate): Promise<void>
-	{
-		await this.send('PATCH', universePath(universeId), update);
-	}
-
-	/**
 	 * How a universe plays under its ruleset
 	 *
 	 * @param universeId The universe's ID
@@ -87,17 +76,6 @@ export class EditorApi
 	async getRulesetSettings(universeId: string): Promise<RulesetSettings>
 	{
 		return(this.send<RulesetSettings>('GET', `${universePath(universeId)}/ruleset`));
-	}
-
-	/**
-	 * Changes how a universe plays under its ruleset
-	 *
-	 * @param universeId The universe's ID
-	 * @param settings The settings, for the universe's ruleset
-	 */
-	async saveRulesetSettings(universeId: string, settings: RulesetSettings): Promise<void>
-	{
-		await this.send('PUT', `${universePath(universeId)}/ruleset`, settings);
 	}
 
 	/**
@@ -140,38 +118,26 @@ export class EditorApi
 	}
 
 	/**
-	 * Adds a tile to a universe
-	 *
-	 * @param universeId The universe's ID
-	 * @param tile The tile's settings
-	 * @return The new tile's ID
-	 */
-	async createTile(universeId: string, tile: TileSettings): Promise<number>
-	{
-		return((await this.send<CreatedPayload<number>>('POST', `${universePath(universeId)}/tiles`, tile)).id);
-	}
-
-	/**
-	 * Changes one of a universe's own tiles, or stores its edited copy of a default tile
+	 * The areas whose maps use one of a universe's tiles
 	 *
 	 * @param universeId The universe's ID
 	 * @param tileId The tile's ID
-	 * @param tile The tile's settings
+	 * @return The areas, by name
 	 */
-	async saveTile(universeId: string, tileId: number, tile: TileSettings): Promise<void>
+	async tileUsage(universeId: string, tileId: number): Promise<TileUsagePayload['areas']>
 	{
-		await this.send('PUT', `${universePath(universeId)}/tiles/${tileId}`, tile);
+		return((await this.send<TileUsagePayload>('GET', `${universePath(universeId)}/tiles/${tileId}/usage`)).areas);
 	}
 
 	/**
-	 * Deletes one of a universe's own tiles, or restores a default tile it has edited
+	 * The tile graphics a universe's editors uploaded
 	 *
 	 * @param universeId The universe's ID
-	 * @param tileId The tile's ID
+	 * @return The graphics, by name
 	 */
-	async deleteTile(universeId: string, tileId: number): Promise<void>
+	async listTileGraphics(universeId: string): Promise<UploadedTileGraphic[]>
 	{
-		await this.send('DELETE', `${universePath(universeId)}/tiles/${tileId}`);
+		return((await this.send<TileGraphicListPayload>('GET', `${universePath(universeId)}/tile-graphics`)).graphics);
 	}
 
 	/**
@@ -187,41 +153,6 @@ export class EditorApi
 	}
 
 	/**
-	 * Adds an item to a universe
-	 *
-	 * @param universeId The universe's ID
-	 * @param item The item's settings
-	 * @return The new item's ID
-	 */
-	async createItem(universeId: string, item: ItemSettings): Promise<number>
-	{
-		return((await this.send<CreatedPayload<number>>('POST', `${universePath(universeId)}/items`, item)).id);
-	}
-
-	/**
-	 * Changes one of a universe's own items, or stores its edited copy of a default item
-	 *
-	 * @param universeId The universe's ID
-	 * @param itemId The item's ID
-	 * @param item The item's settings
-	 */
-	async saveItem(universeId: string, itemId: number, item: ItemSettings): Promise<void>
-	{
-		await this.send('PUT', `${universePath(universeId)}/items/${itemId}`, item);
-	}
-
-	/**
-	 * Deletes one of a universe's own items, or restores a default item it has edited
-	 *
-	 * @param universeId The universe's ID
-	 * @param itemId The item's ID
-	 */
-	async deleteItem(universeId: string, itemId: number): Promise<void>
-	{
-		await this.send('DELETE', `${universePath(universeId)}/items/${itemId}`);
-	}
-
-	/**
 	 * Every race a universe can use
 	 *
 	 * @param universeId The universe's ID
@@ -230,41 +161,6 @@ export class EditorApi
 	async listRaces(universeId: string): Promise<EditorRace[]>
 	{
 		return((await this.send<RaceListPayload>('GET', `${universePath(universeId)}/races`)).races);
-	}
-
-	/**
-	 * Adds a race to a universe
-	 *
-	 * @param universeId The universe's ID
-	 * @param settings The race's settings, with a name
-	 * @return The new race's ID
-	 */
-	async createRace(universeId: string, settings: RaceSettings): Promise<number>
-	{
-		return((await this.send<CreatedPayload<number>>('POST', `${universePath(universeId)}/races`, settings)).id);
-	}
-
-	/**
-	 * Changes one of a universe's races, or stores its edited copy of a default race
-	 *
-	 * @param universeId The universe's ID
-	 * @param raceId The race's ID
-	 * @param settings The race's settings
-	 */
-	async saveRace(universeId: string, raceId: number, settings: RaceSettings): Promise<void>
-	{
-		await this.send('PUT', `${universePath(universeId)}/races/${raceId}`, settings);
-	}
-
-	/**
-	 * Deletes one of a universe's own races, or restores a default race it has edited
-	 *
-	 * @param universeId The universe's ID
-	 * @param raceId The race's ID
-	 */
-	async deleteRace(universeId: string, raceId: number): Promise<void>
-	{
-		await this.send('DELETE', `${universePath(universeId)}/races/${raceId}`);
 	}
 
 	/**
@@ -279,41 +175,6 @@ export class EditorApi
 	}
 
 	/**
-	 * Adds a class to a universe
-	 *
-	 * @param universeId The universe's ID
-	 * @param settings The class's settings, with a name
-	 * @return The new class's ID
-	 */
-	async createClass(universeId: string, settings: ClassSettings): Promise<number>
-	{
-		return((await this.send<CreatedPayload<number>>('POST', `${universePath(universeId)}/classes`, settings)).id);
-	}
-
-	/**
-	 * Changes one of a universe's classes, or stores its edited copy of a default class
-	 *
-	 * @param universeId The universe's ID
-	 * @param classId The class's ID
-	 * @param settings The class's settings
-	 */
-	async saveClass(universeId: string, classId: number, settings: ClassSettings): Promise<void>
-	{
-		await this.send('PUT', `${universePath(universeId)}/classes/${classId}`, settings);
-	}
-
-	/**
-	 * Deletes one of a universe's own classes, or restores a default class it has edited
-	 *
-	 * @param universeId The universe's ID
-	 * @param classId The class's ID
-	 */
-	async deleteClass(universeId: string, classId: number): Promise<void>
-	{
-		await this.send('DELETE', `${universePath(universeId)}/classes/${classId}`);
-	}
-
-	/**
 	 * Every theme a universe can use, in a ruleset with themes
 	 *
 	 * @param universeId The universe's ID
@@ -322,41 +183,6 @@ export class EditorApi
 	async listThemes(universeId: string): Promise<EditorTheme[]>
 	{
 		return((await this.send<ThemeListPayload>('GET', `${universePath(universeId)}/themes`)).themes);
-	}
-
-	/**
-	 * Adds a theme to a universe
-	 *
-	 * @param universeId The universe's ID
-	 * @param settings The theme's settings, with a name
-	 * @return The new theme's ID
-	 */
-	async createTheme(universeId: string, settings: ThemeSettings): Promise<number>
-	{
-		return((await this.send<CreatedPayload<number>>('POST', `${universePath(universeId)}/themes`, settings)).id);
-	}
-
-	/**
-	 * Changes one of a universe's themes, or stores its edited copy of a default theme
-	 *
-	 * @param universeId The universe's ID
-	 * @param themeId The theme's ID
-	 * @param settings The theme's settings
-	 */
-	async saveTheme(universeId: string, themeId: number, settings: ThemeSettings): Promise<void>
-	{
-		await this.send('PUT', `${universePath(universeId)}/themes/${themeId}`, settings);
-	}
-
-	/**
-	 * Deletes one of a universe's own themes, or restores a default theme it has edited
-	 *
-	 * @param universeId The universe's ID
-	 * @param themeId The theme's ID
-	 */
-	async deleteTheme(universeId: string, themeId: number): Promise<void>
-	{
-		await this.send('DELETE', `${universePath(universeId)}/themes/${themeId}`);
 	}
 
 	/**
@@ -371,41 +197,6 @@ export class EditorApi
 	}
 
 	/**
-	 * Adds a difficulty level to a universe
-	 *
-	 * @param universeId The universe's ID
-	 * @param settings The level's settings, with a name
-	 * @return The new level's ID
-	 */
-	async createDifficultyLevel(universeId: string, settings: DifficultyLevelSettings): Promise<number>
-	{
-		return((await this.send<CreatedPayload<number>>('POST', `${universePath(universeId)}/difficulty-levels`, settings)).id);
-	}
-
-	/**
-	 * Changes one of a universe's difficulty levels
-	 *
-	 * @param universeId The universe's ID
-	 * @param levelId The level's ID
-	 * @param settings The level's settings
-	 */
-	async saveDifficultyLevel(universeId: string, levelId: number, settings: DifficultyLevelSettings): Promise<void>
-	{
-		await this.send('PUT', `${universePath(universeId)}/difficulty-levels/${levelId}`, settings);
-	}
-
-	/**
-	 * Deletes one of a universe's difficulty levels other than its default, moving its groups to the default
-	 *
-	 * @param universeId The universe's ID
-	 * @param levelId The level's ID
-	 */
-	async deleteDifficultyLevel(universeId: string, levelId: number): Promise<void>
-	{
-		await this.send('DELETE', `${universePath(universeId)}/difficulty-levels/${levelId}`);
-	}
-
-	/**
 	 * Every area of a universe
 	 *
 	 * @param universeId The universe's ID
@@ -414,18 +205,6 @@ export class EditorApi
 	async listAreas(universeId: string): Promise<AreaListPayload>
 	{
 		return(this.send<AreaListPayload>('GET', `${universePath(universeId)}/areas`));
-	}
-
-	/**
-	 * Adds an area to a universe
-	 *
-	 * @param universeId The universe's ID
-	 * @param area The area's name and any settings that shouldn't take their defaults
-	 * @return The new area's ID
-	 */
-	async createArea(universeId: string, area: NewAreaRequest): Promise<string>
-	{
-		return((await this.send<CreatedPayload>('POST', `${universePath(universeId)}/areas`, area)).id);
 	}
 
 	/**
@@ -438,57 +217,6 @@ export class EditorApi
 	async getArea(universeId: string, areaId: string): Promise<EditorArea>
 	{
 		return(this.send<EditorArea>('GET', areaPath(universeId, areaId)));
-	}
-
-	/**
-	 * Changes an area's settings
-	 *
-	 * @param universeId The universe's ID
-	 * @param areaId The area's ID
-	 * @param update The settings to change
-	 */
-	async updateArea(universeId: string, areaId: string, update: AreaSettingsUpdate): Promise<void>
-	{
-		await this.send('PATCH', areaPath(universeId, areaId), update);
-	}
-
-	/**
-	 * Deletes an area
-	 *
-	 * @param universeId The universe's ID
-	 * @param areaId The area's ID
-	 */
-	async deleteArea(universeId: string, areaId: string): Promise<void>
-	{
-		await this.send('DELETE', areaPath(universeId, areaId));
-	}
-
-	/**
-	 * Gives an area's map new bounds
-	 *
-	 * @param universeId The universe's ID
-	 * @param areaId The area's ID
-	 * @param bounds The new bounds
-	 * @param discard Whether to go ahead when that discards painted cells or links
-	 * @return undefined when the map was resized, or what would be discarded when it wasn't
-	 */
-	async resizeArea(universeId: string, areaId: string, bounds: MapBounds, discard: boolean): Promise<ResizeConflictPayload | undefined>
-	{
-		try
-		{
-			await this.send('PUT', `${areaPath(universeId, areaId)}/bounds`, { bounds, discard });
-		}
-		catch (error)
-		{
-			if ((error instanceof EditorApiError) && (error.status === 409))
-			{
-				return(error.data as ResizeConflictPayload);
-			}
-
-			throw error;
-		}
-
-		return(undefined);
 	}
 
 	/**
@@ -507,18 +235,6 @@ export class EditorApi
 	}
 
 	/**
-	 * Changes cells of an area's map
-	 *
-	 * @param universeId The universe's ID
-	 * @param areaId The area's ID
-	 * @param changes Up to MAX_CELL_CHANGES cells
-	 */
-	async editCells(universeId: string, areaId: string, changes: CellChange[]): Promise<void>
-	{
-		await this.send('PATCH', `${areaPath(universeId, areaId)}/cells`, { changes });
-	}
-
-	/**
 	 * The links on an area's cells
 	 *
 	 * @param universeId The universe's ID
@@ -531,30 +247,18 @@ export class EditorApi
 	}
 
 	/**
-	 * Adds or replaces the link on a cell
+	 * Saves the editor's changes to a universe, all or nothing. A refused save throws an EditorApiError
+	 * whose data is a SaveRefusedPayload naming the change refused
 	 *
 	 * @param universeId The universe's ID
-	 * @param areaId The area's ID
-	 * @param column The cell's column
-	 * @param row The cell's row
-	 * @param target Where the link goes
+	 * @param changes The changes, in the order the server saves them
+	 * @return The ID each thing made was saved with, by its ref
 	 */
-	async saveLink(universeId: string, areaId: string, column: number, row: number, target: AreaLinkTarget): Promise<void>
+	async saveChanges(universeId: string, changes: EditorChange[]): Promise<SaveChangesPayload['ids']>
 	{
-		await this.send('PUT', `${areaPath(universeId, areaId)}/links/${column}/${row}`, target);
-	}
+		const body: SaveChangesRequest = { changes };
 
-	/**
-	 * Deletes the link on a cell
-	 *
-	 * @param universeId The universe's ID
-	 * @param areaId The area's ID
-	 * @param column The cell's column
-	 * @param row The cell's row
-	 */
-	async deleteLink(universeId: string, areaId: string, column: number, row: number): Promise<void>
-	{
-		await this.send('DELETE', `${areaPath(universeId, areaId)}/links/${column}/${row}`);
+		return((await this.send<SaveChangesPayload>('POST', `${universePath(universeId)}/changes`, body)).ids);
 	}
 
 	/**

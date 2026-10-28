@@ -1,13 +1,15 @@
-import { canEditWorld, ITEM_KINDS, MAX_ITEMS_PER_PAGE, type EditableUniverse, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type Ruleset } from '@multiverse-kiln/shared';
+import { canEditWorld, ITEM_KINDS, ITEM_SORT_COLUMNS, MAX_ITEMS_PER_PAGE, type EditableUniverse, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type Ruleset } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, setOptions, showMessage, type SelectOption } from '../dom';
 import { createItemIcon, itemCategoryName, itemName, itemTypeName } from '../itemNames';
+import { TableSorter } from '../tableSorter';
 import { editorMessages } from './editorMessages';
 import { ItemDialog } from './ItemDialog';
+import type { EditorSave, SavedIds } from './editorSave';
 import type { SavableTab } from './SaveBar';
-import { describeCommitFailure, joinTags, markStagedRow, StagedChanges, stagedPage, stagedTag, type StagedState } from './stagedChanges';
+import { describeRefusedChange, joinTags, listChange, listRef, markStagedRow, StagedChanges, stagedPage, stagedTag, type StagedChange, type StagedState } from './stagedChanges';
 
 /**
  * How long the name filter waits after the last key before searching, in milliseconds
@@ -15,8 +17,8 @@ import { describeCommitFailure, joinTags, markStagedRow, StagedChanges, stagedPa
 const SEARCH_DELAY_MS = 250;
 
 /**
- * The Items tab: every item the universe can give characters, filtered and a page at a time, opening the
- * item editor. Changes wait on the page until the tab is saved: changed items show their changes on the
+ * The Items tab: every item the universe can give characters, filtered, sorted by a column (by the
+ * server, before paging) and a page at a time, opening the item editor. Changes wait on the page until the tab is saved: changed items show their changes on the
  * page they are on, and items added since show at the top of the first page, whatever the filters
  */
 export class ItemsTab implements SavableTab
@@ -35,11 +37,17 @@ export class ItemsTab implements SavableTab
 	private readonly previousButton = getElement('item-previous', HTMLButtonElement);
 	private readonly nextButton = getElement('item-next', HTMLButtonElement);
 	private readonly dialog = new ItemDialog();
+	private readonly sorter: TableSorter<ItemSortColumn>;
 
 	/**
 	 * The changes made since the items were last saved
 	 */
 	readonly changes = new StagedChanges<ItemSettings>();
+
+	/**
+	 * The changes the save being sent holds
+	 */
+	private collected: readonly StagedChange<ItemSettings>[] = [];
 
 	private universe: EditableUniverse | undefined;
 
@@ -71,6 +79,15 @@ export class ItemsTab implements SavableTab
 	 */
 	constructor(private readonly api: EditorApi)
 	{
+		this.sorter = new TableSorter(getElement('item-table', HTMLTableElement), ITEM_SORT_COLUMNS, {
+			column: 'name',
+			direction: 'ascending'
+		}, () =>
+		{
+			this.offset = 0;
+			void this.refresh();
+		});
+
 		for (const filter of [this.enabledFilter, this.customFilter, this.editedFilter])
 		{
 			setOptions(filter, [
@@ -165,6 +182,7 @@ export class ItemsTab implements SavableTab
 		this.enabledFilter.value = '';
 		this.customFilter.value = '';
 		this.editedFilter.value = '';
+		this.sorter.reset();
 		this.addButton.hidden = !canEditWorld(universe.role);
 		void this.refresh();
 	}
@@ -180,39 +198,40 @@ export class ItemsTab implements SavableTab
 	}
 
 	/**
-	 * Saves the changes in the order they were made, stopping at the first the server refuses
+	 * Adds the changes to a save, in the order they were made
 	 *
-	 * @return True when every change was saved
+	 * @param save The save
+	 * @return True
 	 */
-	async save(): Promise<boolean>
+	collect(save: EditorSave): boolean
 	{
 		const universe = this.universe;
 
-		if (!universe)
-		{
-			return(false);
-		}
-
 		showMessage(this.error, undefined);
 
-		const failure = await this.changes.commit({
-			create: (settings) => this.api.createItem(universe.id, settings),
-			save: (itemId, settings) => this.api.saveItem(universe.id, itemId, settings),
-			remove: (itemId) => this.api.deleteItem(universe.id, itemId)
-		});
-
-		await this.refresh();
-
-		if (failure)
+		if (universe)
 		{
-			const item = this.itemWithChanges(failure.change.id);
+			this.collected = this.changes.collect(save, (change) => listChange('Item', change), (change, refusal) =>
+			{
+				const item = this.itemWithChanges(change.id);
 
-			showMessage(this.error, describeCommitFailure(failure, (item ? itemName(item, universe.ruleset) : ''), !item?.custom));
-
-			return(false);
+				showMessage(this.error, describeRefusedChange(change, refusal, (item ? itemName(item, universe.ruleset) : ''), !item?.custom));
+			});
 		}
 
 		return(true);
+	}
+
+	/**
+	 * Takes the changes as saved, and loads the page afresh
+	 *
+	 * @param ids The IDs the save gave the items it made
+	 */
+	async saved(ids: SavedIds): Promise<void>
+	{
+		this.changes.markSaved(this.collected, (id) => ids.number(listRef('Item', id)));
+		this.collected = [];
+		await this.refresh();
 	}
 
 	/**
@@ -259,6 +278,8 @@ export class ItemsTab implements SavableTab
 			enabled: filterValue(this.enabledFilter),
 			custom: filterValue(this.customFilter),
 			edited: filterValue(this.editedFilter),
+			sort: this.sorter.order.column,
+			direction: this.sorter.order.direction,
 			offset: this.offset,
 			limit: MAX_ITEMS_PER_PAGE
 		};

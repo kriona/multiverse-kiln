@@ -1,23 +1,20 @@
 /**
- * The world editor's routes for a universe's classes (listed in shared/src/editor.ts)
+ * The world editor's route for a universe's classes (listed in shared/src/editor.ts), and saving
+ * changes to them (see editorChanges.ts)
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { canEditUniverseSettings, defineMessages, MAX_CUSTOM_CLASSES, type ClassListPayload, type ClassSettings, type CreatedPayload } from '@multiverse-kiln/shared';
+import { defineMessages, MAX_CUSTOM_CLASSES, type ClassListPayload, type ClassSettings, type NewRef, type NumberRef } from '@multiverse-kiln/shared';
 
 import { hasCharactersOfClass } from '../db/characterRepo.js';
-import type { Executor } from '../db/client.js';
 import { countCustomClasses, createCustomClass, deleteCustomClass, findClassKind, loadEditorClasses, restoreDefaultClass, saveEditedDefaultClass, updateCustomClass } from '../db/classRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
-import { inTransaction } from '../db/transactions.js';
-import { lockUniverse } from '../db/universeRepo.js';
-import { requireRole, universeContextOf, type UniverseContext } from './editorAccess.js';
-import { classIdParameter, classSettings } from './editorPayloads.js';
-import { findStartingProblem } from './editorStartingExtras.js';
-import { sendError, sendInvalidRequest, type Refusal } from './errors.js';
+import { universeContextOf } from './editorAccess.js';
+import { recordRef, refuse, resolveNumberRef, type ChangeContext } from './editorChangeContext.js';
+import { checkStartingReferences } from './editorStartingExtras.js';
 
 /**
- * Reasons the class routes give in more than one place (see shared/src/localization.ts)
+ * Reasons changes to classes give in more than one place (see shared/src/localization.ts)
  */
 const messages = defineMessages({
 	noSuchClass: {
@@ -43,16 +40,13 @@ const messages = defineMessages({
 });
 
 /**
- * Adds the class routes to a universe's router
+ * Adds the class route to a universe's router
  *
  * @param router The router for routes under /:universeId
  */
 export function addClassRoutes(router: express.Router): void
 {
 	router.get('/classes', listClasses);
-	router.post('/classes', requireRole(canEditUniverseSettings), createClassRoute);
-	router.put('/classes/:classId', requireRole(canEditUniverseSettings), saveClass);
-	router.delete('/classes/:classId', requireRole(canEditUniverseSettings), deleteClass);
 }
 
 /**
@@ -70,246 +64,150 @@ async function listClasses(request: Request, response: Response): Promise<void>
 }
 
 /**
- * POST /:universeId/classes: adds a class to the universe
+ * Adds a class to the universe
  *
- * @param request The request
- * @param response The response
+ * @param context The save
+ * @param ref The class's ref
+ * @param settings Its settings
  */
-async function createClassRoute(request: Request, response: Response): Promise<void>
+export async function createClassChange(context: ChangeContext, ref: NewRef, settings: ClassSettings): Promise<void>
 {
-	const { universe } = universeContextOf(request);
-	const body = classSettings[universe.ruleset].safeParse(request.body);
-
-	if (!body.success)
-	{
-		sendInvalidRequest(response, body.error);
-		return;
-	}
-
-	const { name } = body.data;
+	const { universe, transaction } = context;
+	const { name } = settings;
 
 	if (name === null)
 	{
-		sendError(response, 400, messages.classNeedsName);
-		return;
+		refuse(400, messages.classNeedsName);
 	}
 
-	const result = await inTransaction(async (transaction): Promise<Refusal | number> =>
+	if (await countCustomClasses(universe.id, transaction) >= MAX_CUSTOM_CLASSES)
 	{
-		await lockUniverse(universe.id, transaction);
-
-		if (await countCustomClasses(universe.id, transaction) >= MAX_CUSTOM_CLASSES)
-		{
-			return({
-				status: 409,
-				message: {
-					id: 'error.classLimit',
-					defaultMessage: 'A universe can have at most {max, plural, one {# class} other {# classes}} of its own.',
-					description: 'Why a new character class wasn\'t made: the universe has as many classes of its own as allowed'
-				},
-				values: { max: MAX_CUSTOM_CLASSES }
-			});
-		}
-
-		const problem = await findClassProblem(universe, undefined, body.data, transaction);
-
-		if (problem !== undefined)
-		{
-			return(problem);
-		}
-
-		return(createCustomClass(universe.id, universe.ruleset, { ...body.data, name }, transaction));
-	});
-
-	if (typeof result !== 'number')
-	{
-		sendError(response, result.status, result.message, result.values);
-		return;
+		refuse(409, {
+			id: 'error.classLimit',
+			defaultMessage: 'A universe can have at most {max, plural, one {# class} other {# classes}} of its own.',
+			description: 'Why a new character class wasn\'t made: the universe has as many classes of its own as allowed'
+		}, {
+			max: MAX_CUSTOM_CLASSES
+		});
 	}
 
-	const payload: CreatedPayload<number> = { id: result };
-
-	response.status(201).json(payload);
+	await checkClass(context, undefined, settings);
+	recordRef(context, ref, await createCustomClass(universe.id, universe.ruleset, { ...settings, name }, transaction));
 }
 
 /**
- * PUT /:universeId/classes/:classId: changes one of the universe's classes, or stores its edited copy of
- * a default class
+ * Changes one of the universe's classes, or stores its edited copy of a default class
  *
- * @param request The request
- * @param response The response
+ * @param context The save
+ * @param id The class
+ * @param settings Its new settings
  */
-async function saveClass(request: Request, response: Response): Promise<void>
+export async function saveClassChange(context: ChangeContext, id: NumberRef, settings: ClassSettings): Promise<void>
 {
-	const classId = classIdParameter.safeParse(request.params.classId);
-	const { universe } = universeContextOf(request);
-	const body = classSettings[universe.ruleset].safeParse(request.body);
+	const { universe, transaction } = context;
+	const classId = resolveNumberRef(context, id);
+	const kind = await findClassKind(universe.id, universe.ruleset, classId, transaction);
+	const { name } = settings;
 
-	if (!body.success)
+	if (kind === undefined)
 	{
-		sendInvalidRequest(response, body.error);
-		return;
+		refuse(404, messages.noSuchClass);
 	}
-
-	const kind = (classId.success ? await findClassKind(universe.id, universe.ruleset, classId.data) : undefined);
-
-	if (!classId.success || (kind === undefined))
-	{
-		sendError(response, 404, messages.noSuchClass);
-		return;
-	}
-
-	const { name } = body.data;
 
 	if ((kind === 'custom') && (name === null))
 	{
-		sendError(response, 400, messages.classNeedsName);
-		return;
+		refuse(400, messages.classNeedsName);
 	}
 
-	const refusal = await inTransaction(async (transaction) =>
+	// Deleting an item or a race waits for the universe's lock too, so neither can be deleted as it is added here
+	await checkClass(context, classId, settings);
+
+	if (kind === 'default')
 	{
-		// Deleting an item or a race waits for the universe's lock too, so neither can be deleted as it is added here
-		await lockUniverse(universe.id, transaction);
-
-		const problem = await findClassProblem(universe, classId.data, body.data, transaction);
-
-		if (problem !== undefined)
-		{
-			return(problem);
-		}
-
-		if (kind === 'default')
-		{
-			await saveEditedDefaultClass(universe.id, universe.ruleset, classId.data, body.data, transaction);
-		}
-		else if (name !== null)
-		{
-			await updateCustomClass(universe.id, universe.ruleset, classId.data, { ...body.data, name }, transaction);
-		}
-
-		return(undefined);
-	});
-
-	if (refusal !== undefined)
-	{
-		sendError(response, refusal.status, refusal.message, refusal.values);
-		return;
+		await saveEditedDefaultClass(universe.id, universe.ruleset, classId, settings, transaction);
 	}
-
-	response.sendStatus(204);
+	else if (name !== null)
+	{
+		await updateCustomClass(universe.id, universe.ruleset, classId, { ...settings, name }, transaction);
+	}
 }
 
 /**
- * DELETE /:universeId/classes/:classId: deletes one of the universe's own classes, or restores a default
- * class the universe has edited
+ * Deletes one of the universe's own classes, or restores a default class the universe has edited
  *
- * @param request The request
- * @param response The response
+ * @param context The save
+ * @param id The class
  */
-async function deleteClass(request: Request, response: Response): Promise<void>
+export async function removeClassChange(context: ChangeContext, id: NumberRef): Promise<void>
 {
-	const classId = classIdParameter.safeParse(request.params.classId);
-	const { universe } = universeContextOf(request);
-	const kind = (classId.success ? await findClassKind(universe.id, universe.ruleset, classId.data) : undefined);
+	const { universe, transaction } = context;
+	const classId = resolveNumberRef(context, id);
+	const kind = await findClassKind(universe.id, universe.ruleset, classId, transaction);
 
-	if (!classId.success || (kind === undefined))
+	if (kind === undefined)
 	{
-		sendError(response, 404, messages.noSuchClass);
-		return;
+		refuse(404, messages.noSuchClass);
 	}
 
 	// Default classes are enabled, so restoring one never leaves the universe without an enabled class
 	if (kind === 'default')
 	{
-		await restoreDefaultClass(universe.id, classId.data);
-		response.sendStatus(204);
+		await restoreDefaultClass(universe.id, classId, transaction);
 		return;
 	}
 
-	const refusal = await inTransaction(async (transaction) =>
+	// Making a character waits for the universe's lock too, so nobody becomes the class as it is deleted
+	if (await hasCharactersOfClass(classId, transaction))
 	{
-		// Making a character waits for the universe's lock too, so nobody becomes the class as it is deleted
-		await lockUniverse(universe.id, transaction);
-
-		if (await hasCharactersOfClass(classId.data, transaction))
-		{
-			return(messages.classInUse);
-		}
-
-		const others = (await loadEditorClasses(universe.id, universe.ruleset, transaction)).filter((characterClass) => (characterClass.id !== classId.data));
-
-		if (!others.some((characterClass) => characterClass.enabled))
-		{
-			return(messages.noEnabledClass);
-		}
-
-		await deleteCustomClass(universe.id, classId.data, transaction);
-
-		return(undefined);
-	});
-
-	if (refusal !== undefined)
-	{
-		sendError(response, 409, refusal);
-		return;
+		refuse(409, messages.classInUse);
 	}
 
-	response.sendStatus(204);
+	const others = (await loadEditorClasses(universe.id, universe.ruleset, transaction)).filter((characterClass) => (characterClass.id !== classId));
+
+	if (!others.some((characterClass) => characterClass.enabled))
+	{
+		refuse(409, messages.noEnabledClass);
+	}
+
+	await deleteCustomClass(universe.id, classId, transaction);
 }
 
 /**
- * Why a class's settings can't be saved: a starting area, item or race the universe can't use, or
- * leaving the universe without an enabled class
+ * Refuses a class's settings with a starting area, item or race the universe can't use, or that leave
+ * the universe without an enabled class
  *
- * @param universe The universe
+ * @param context The save
  * @param classId The class being changed, or undefined for a new one
  * @param settings The class's new settings
- * @param executor A transaction holding the universe's lock
- * @return Why, or undefined when they can be saved
  */
-async function findClassProblem(universe: UniverseContext['universe'], classId: number | undefined, settings: ClassSettings, executor: Executor): Promise<Refusal | undefined>
+async function checkClass(context: ChangeContext, classId: number | undefined, settings: ClassSettings): Promise<void>
 {
-	const startingProblem = await findStartingProblem(universe, {
+	const { universe, transaction } = context;
+
+	await checkStartingReferences(context, {
 		areaIds: [
 			...((settings.startingAreaId === null) ? [] : [settings.startingAreaId]),
 			...settings.raceAreas.map(({ areaId }) => areaId)
 		],
 		itemIds: settings.startingItems.map(({ itemId }) => itemId)
-	}, executor);
-
-	if (startingProblem !== undefined)
-	{
-		return({
-			status: 400,
-			message: startingProblem
-		});
-	}
+	});
 
 	if (settings.raceAreas.length > 0)
 	{
-		const raceIds = new Set((await loadEditorRaces(universe.id, universe.ruleset, executor)).map((race) => race.id));
+		const raceIds = new Set((await loadEditorRaces(universe.id, universe.ruleset, transaction)).map((race) => race.id));
 
 		if (!settings.raceAreas.every(({ raceId }) => raceIds.has(raceId)))
 		{
-			return({
-				status: 400,
-				message: {
-					id: 'error.unknownRaceArea',
-					defaultMessage: 'A starting area is chosen for a race this universe doesn\'t have.',
-					description: 'Why a character class\'s settings were refused: one of its areas for a race is for a race that was deleted, perhaps by another editor'
-				}
+			refuse(400, {
+				id: 'error.unknownRaceArea',
+				defaultMessage: 'A starting area is chosen for a race this universe doesn\'t have.',
+				description: 'Why a character class\'s settings were refused: one of its areas for a race is for a race that was deleted, perhaps by another editor'
 			});
 		}
 	}
 
-	if (!settings.enabled && !(await loadEditorClasses(universe.id, universe.ruleset, executor)).some((characterClass) => ((characterClass.id !== classId) && characterClass.enabled)))
+	if (!settings.enabled && !(await loadEditorClasses(universe.id, universe.ruleset, transaction)).some((characterClass) => ((characterClass.id !== classId) && characterClass.enabled)))
 	{
-		return({
-			status: 409,
-			message: messages.noEnabledClass
-		});
+		refuse(409, messages.noEnabledClass);
 	}
-
-	return(undefined);
 }

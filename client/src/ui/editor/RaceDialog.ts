@@ -1,4 +1,4 @@
-import { ABILITY_NAMES, canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, emptyMoney, emptyPf1eAbilityScores, FLOATING_ABILITY_BONUSES, isSf1eRaceRules, MAX_RACE_NAME_LENGTH, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_RACE_ABILITY_MODIFIER, RULESET_SIZES, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_RACE_HIT_POINTS, SIZE_NAMES, type Ability, type AbilityScores, type EditableUniverse, type EditorRace, type Pf1eSize, type RaceRules, type RaceSettings, type Sf1eSize } from '@multiverse-kiln/shared';
+import { ABILITY_NAMES, canEditUniverseSettings, DARKVISION_NAMES, DARKVISIONS, DISALLOWED_TEXT_CHARACTERS, emptyMoney, emptyPf1eAbilityScores, FLOATING_ABILITY_BONUSES, isSf1eRaceRules, MAX_RACE_NAME_LENGTH, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_RACE_ABILITY_MODIFIER, RULESET_SIZES, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_RACE_HIT_POINTS, SIZE_NAMES, type Ability, type AbilityScores, type Darkvision, type EditableUniverse, type EditorRace, type Pf1eSize, type RaceRules, type RaceSettings, type Sf1eSize } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -32,7 +32,8 @@ export class RaceDialog
 	private readonly name = getElement('race-name', HTMLInputElement);
 	private readonly enabled = getElement('race-enabled', HTMLInputElement);
 	private readonly floatingBonus = getElement('race-floating', HTMLInputElement);
-	private readonly darkvision = getElement('race-darkvision', HTMLInputElement);
+	private readonly darkvision = getElement('race-darkvision', HTMLSelectElement);
+	private readonly lightSensitivity = getElement('race-light-sensitivity', HTMLInputElement);
 	private readonly size = getElement('race-size', HTMLSelectElement);
 	private readonly hitPointsField = getElement('race-hit-points-field', HTMLElement);
 	private readonly hitPoints = getElement('race-hit-points', HTMLInputElement);
@@ -99,7 +100,6 @@ export class RaceDialog
 
 		this.startingItems = new StartingItemsField(api, itemSelect, {
 			list: getElement('race-items', HTMLUListElement),
-			none: getElement('race-items-none', HTMLElement),
 			choose: this.chooseItemsButton
 		}, () =>
 		{
@@ -205,7 +205,9 @@ export class RaceDialog
 
 		this.floatingBonus.checked = rules.floatingBonus;
 		this.floatingHint.textContent = floatingBonusHint(universe);
-		this.darkvision.checked = rules.darkvision;
+		setOptions(this.darkvision, namedOptions(DARKVISIONS, DARKVISION_NAMES));
+		this.darkvision.value = rules.darkvision;
+		this.lightSensitivity.checked = rules.lightSensitivity;
 		setOptions(this.size, namedOptions(RULESET_SIZES[universe.ruleset], SIZE_NAMES[universe.ruleset]));
 		this.size.value = rules.size;
 		this.hitPointsField.hidden = !isSf1eRaceRules(rules);
@@ -220,7 +222,7 @@ export class RaceDialog
 		this.cancelButton.textContent = t(editable ? formMessages.cancel : formMessages.close);
 
 		// Only the inputs are locked for a player who can't edit, so Close still works
-		for (const input of [this.name, this.enabled, this.floatingBonus, this.darkvision, this.size, this.startingMoney, ...Object.values(this.modifiers)])
+		for (const input of [this.name, this.enabled, this.floatingBonus, this.darkvision, this.lightSensitivity, this.size, this.startingMoney, ...Object.values(this.modifiers)])
 		{
 			input.disabled = !editable;
 		}
@@ -343,7 +345,8 @@ export class RaceDialog
 		const common = {
 			abilityModifiers,
 			floatingBonus: this.floatingBonus.checked,
-			darkvision: this.darkvision.checked
+			darkvision: this.darkvision.value as Darkvision,
+			lightSensitivity: this.lightSensitivity.checked
 		};
 
 		if (universe.ruleset === 'pf1e')

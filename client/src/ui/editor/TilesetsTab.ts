@@ -1,14 +1,18 @@
-import { canEditWorld, defineMessages, IMPASSABLE_WALK_SECONDS, MAX_TILES_PER_PAGE, TILE_USED_IN, tileUsedIn, type EditableUniverse, type EditorTile, type TileListPayload, type TileListQuery, type TileSettings } from '@multiverse-kiln/shared';
+import { canEditWorld, defineMessages, IMPASSABLE_WALK_SECONDS, MAX_TILES_PER_PAGE, TILE_SORT_COLUMNS, TILE_USED_IN, tileUsedIn, type EditableUniverse, type EditorChange, type EditorTile, type NewRef, type TileChangeSettings, type TileListPayload, type TileListQuery, type TileSettings, type TileSortColumn, type UploadedTileGraphic } from '@multiverse-kiln/shared';
 
 import { formatDuration, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
+import { showStagedTileGraphic } from '../../rendering/tileGraphics';
 import { getElement, setOptions, showMessage } from '../dom';
+import { TableSorter } from '../tableSorter';
 import { tileName } from '../tileNames';
-import { colorToHex } from './colors';
 import { editorMessages } from './editorMessages';
-import type { SavableTab } from './SaveBar';
-import { describeCommitFailure, joinTags, markStagedRow, StagedChanges, stagedPage, stagedTag, type StagedState } from './stagedChanges';
+import { newRef, numberRef, type EditorSave, type SavedIds } from './editorSave';
+import { combineChanges, type SavableTab } from './SaveBar';
+import { describeRefusedChange, joinTags, markStagedRow, StagedAdditions, StagedChanges, StagedDeletions, stagedPage, stagedTag, stagedView, type StagedChange, type StagedState } from './stagedChanges';
 import { TileDialog } from './TileDialog';
+import type { StagedUpload } from './TileGraphicDialog';
+import { showTileSwatch, type ShownUpload } from './tileSwatches';
 
 /**
  * Text the Tilesets tab shows in more than one place (see src/localization.ts)
@@ -27,16 +31,42 @@ const messages = defineMessages({
 const SEARCH_DELAY_MS = 250;
 
 /**
- * The Tilesets tab: every tile the universe can paint with, filtered and a page at a time, opening the
+ * The ID the first tile added on the page gets, well clear of VOID_CELL and UNSEEN_CELL
+ */
+const FIRST_NEW_TILE_ID = -1000;
+
+/**
+ * How the ID a tileset staged to upload has on the page starts
+ */
+const STAGED_UPLOAD_PREFIX = 'new-upload-';
+
+/**
+ * The ref a save sends a tileset staged to upload with
+ *
+ * @param stagedId Its ID on the page
+ * @return The ref
+ */
+function uploadRef(stagedId: string): NewRef
+{
+	return(newRef('', stagedId));
+}
+
+/**
+ * The Tilesets tab: every tile the universe can paint with, filtered, sorted by a column (by the server,
+ * before paging) and a page at a time, opening the
  * tile editor. Changes wait on the page until the tab is saved: changed tiles show their changes on the
- * page they are on, and tiles added since show at the top of the first page, whatever the filters. Maps
- * paint only with saved tiles
+ * page they are on, and tiles added since show at the top of the first page, whatever the filters. The
+ * Areas tab's maps draw and paint with the tiles as they will be once saved (withChanges)
+ *
+ * Tilesets uploaded and deleted from the tile editor wait too. Saving uploads the new ones first, so the
+ * tiles staged to use them can name them, then saves the tiles, then deletes the tilesets marked to delete
  */
 export class TilesetsTab implements SavableTab
 {
 	private readonly nameFilter = getElement('tile-filter-name', HTMLInputElement);
 	private readonly passableFilter = getElement('tile-filter-passable', HTMLSelectElement);
 	private readonly usedInFilter = getElement('tile-filter-used-in', HTMLSelectElement);
+	private readonly enabledFilter = getElement('tile-filter-enabled', HTMLSelectElement);
 	private readonly customFilter = getElement('tile-filter-custom', HTMLSelectElement);
 	private readonly editedFilter = getElement('tile-filter-edited', HTMLSelectElement);
 	private readonly addButton = getElement('tile-add', HTMLButtonElement);
@@ -46,12 +76,49 @@ export class TilesetsTab implements SavableTab
 	private readonly page = getElement('tile-page', HTMLElement);
 	private readonly previousButton = getElement('tile-previous', HTMLButtonElement);
 	private readonly nextButton = getElement('tile-next', HTMLButtonElement);
-	private readonly dialog = new TileDialog();
+	private readonly dialog: TileDialog;
+	private readonly sorter: TableSorter<TileSortColumn>;
 
 	/**
-	 * The changes made since the tiles were last saved
+	 * The changes made to the tiles since they were last saved. Maps can be painted with a tile added
+	 * since, so its ID stays clear of the values cells hold for void and unseen cells
 	 */
-	readonly changes = new StagedChanges<TileSettings>();
+	private readonly staged = new StagedChanges<TileSettings>(FIRST_NEW_TILE_ID);
+
+	/**
+	 * Tilesets chosen in the upload dialog, uploaded when the tab is saved. Until then tiles refer to
+	 * them by their staged IDs
+	 */
+	private readonly uploadsToAdd = new StagedAdditions<StagedUpload>(STAGED_UPLOAD_PREFIX);
+
+	/**
+	 * Uploaded tilesets to delete when the tab is saved
+	 */
+	private readonly uploadsToDelete = new StagedDeletions();
+
+	readonly changes = combineChanges(this.staged, this.uploadsToAdd, this.uploadsToDelete);
+
+	/**
+	 * Whether the tiles maps are drawn with have changed since they were last saved; for the Areas tab
+	 */
+	readonly tileChanges = combineChanges(this.staged, this.uploadsToAdd);
+
+	/**
+	 * The ID each staged upload got once it was uploaded, by its staged ID, for tiles changed while the
+	 * save uploading it was being sent
+	 */
+	private readonly uploadedIds = new Map<string, string>();
+
+	/**
+	 * What the save being sent holds: the tilesets uploaded, the tiles' changes, and the tilesets deleted
+	 */
+	private collected: { uploads: string[]; tiles: readonly StagedChange<TileSettings>[]; deletions: string[] } = { uploads: [], tiles: [], deletions: [] };
+
+	/**
+	 * The tile to paint the maps with in place of each tile marked to delete that maps use, by the
+	 * deleted tile's ID
+	 */
+	private readonly replacements = new Map<number, number>();
 
 	private universe: EditableUniverse | undefined;
 
@@ -79,10 +146,63 @@ export class TilesetsTab implements SavableTab
 	private searchTimer: number | undefined;
 
 	/**
+	 * The tile graphics the universe's editors have uploaded, as last loaded
+	 */
+	private savedUploads: UploadedTileGraphic[] = [];
+
+	/**
 	 * @param api The editor's API
 	 */
 	constructor(private readonly api: EditorApi)
 	{
+		this.dialog = new TileDialog(api, {
+			list: () => this.shownUploads(),
+			stage: (upload) =>
+			{
+				const id = this.uploadsToAdd.add(upload);
+
+				showStagedTileGraphic(id, upload.previewUrl);
+				this.render();
+
+				return(id);
+			},
+			toggleDelete: (id) =>
+			{
+				if (this.uploadsToAdd.has(id))
+				{
+					this.uploadsToAdd.remove(id);
+				}
+				else
+				{
+					this.uploadsToDelete.toggle(id);
+				}
+
+				this.render();
+			}
+		}, {
+			isRemoved: (tileId) => this.staged.isRemoved(tileId),
+			setReplacement: (tileId, replacementId) =>
+			{
+				if (replacementId === undefined)
+				{
+					this.replacements.delete(tileId);
+				}
+				else
+				{
+					this.replacements.set(tileId, replacementId);
+				}
+			}
+		});
+
+		this.sorter = new TableSorter(getElement('tile-table', HTMLTableElement), TILE_SORT_COLUMNS, {
+			column: 'name',
+			direction: 'ascending'
+		}, () =>
+		{
+			this.offset = 0;
+			void this.refresh();
+		});
+
 		setOptions(this.usedInFilter, [
 			{
 				value: '',
@@ -96,7 +216,7 @@ export class TilesetsTab implements SavableTab
 			}))
 		]);
 
-		for (const filter of [this.passableFilter, this.usedInFilter, this.customFilter, this.editedFilter])
+		for (const filter of [this.passableFilter, this.usedInFilter, this.enabledFilter, this.customFilter, this.editedFilter])
 		{
 			filter.addEventListener('change', () =>
 			{
@@ -105,7 +225,7 @@ export class TilesetsTab implements SavableTab
 			});
 		}
 
-		for (const filter of [this.passableFilter, this.customFilter, this.editedFilter])
+		for (const filter of [this.passableFilter, this.enabledFilter, this.customFilter, this.editedFilter])
 		{
 			setOptions(filter, [
 				{
@@ -152,7 +272,7 @@ export class TilesetsTab implements SavableTab
 	}
 
 	/**
-	 * Lists a universe's tiles from the first page, with no filters
+	 * Lists a universe's tiles from the first page by name, with no filters
 	 *
 	 * @param universe The universe
 	 */
@@ -162,15 +282,114 @@ export class TilesetsTab implements SavableTab
 		this.offset = 0;
 		this.tiles = [];
 		this.known.clear();
-		this.changes.clear();
+		this.staged.clear();
+		this.uploadsToAdd.clear();
+		this.uploadsToDelete.clear();
+		this.uploadedIds.clear();
+		this.replacements.clear();
 		showMessage(this.error, undefined);
 		this.nameFilter.value = '';
 		this.passableFilter.value = '';
 		this.usedInFilter.value = '';
+		this.enabledFilter.value = '';
 		this.customFilter.value = '';
 		this.editedFilter.value = '';
+		this.sorter.reset();
 		this.addButton.hidden = !canEditWorld(universe.role);
+		this.savedUploads = [];
 		void this.refresh();
+		void this.loadUploads(universe);
+	}
+
+	/**
+	 * The uploaded tilesets with the changes waiting for the tab to be saved: those marked to delete, then
+	 * those to upload
+	 *
+	 * @return The tilesets, for the tile editor and the tiles' pictures
+	 */
+	private shownUploads(): ShownUpload[]
+	{
+		return([
+			...this.savedUploads.map((upload) => ({
+				...upload,
+				state: (this.uploadsToDelete.has(upload.id) ? 'deleted' as const : 'saved' as const)
+			})),
+			...this.uploadsToAdd.list().map(({ id, item }) => ({
+				id,
+				name: item.request.name,
+				format: item.request.format,
+				drawOrder: item.request.drawOrder,
+				state: 'new' as const,
+				previewUrl: item.previewUrl
+			}))
+		]);
+	}
+
+	/**
+	 * A tile's settings as a save sends them: a tileset staged to upload is named by its ref, one uploaded
+	 * by an earlier save by the ID it was uploaded under, and one discarded since becomes none
+	 *
+	 * @param settings The tile's staged settings
+	 * @return The settings to send
+	 */
+	private resolveUpload(settings: TileSettings): TileChangeSettings
+	{
+		const { uploadedGraphicId } = settings;
+
+		if ((uploadedGraphicId === null) || !this.isStagedUploadId(uploadedGraphicId))
+		{
+			return(settings);
+		}
+
+		return({
+			...settings,
+			uploadedGraphicId: (this.uploadsToAdd.has(uploadedGraphicId) ? uploadRef(uploadedGraphicId) : (this.uploadedIds.get(uploadedGraphicId) ?? null))
+		});
+	}
+
+	/**
+	 * Whether a tileset ID is one a tileset staged to upload had on the page
+	 *
+	 * @param graphicId The ID
+	 * @return True when it is
+	 */
+	private isStagedUploadId(graphicId: string): boolean
+	{
+		return(graphicId.startsWith(STAGED_UPLOAD_PREFIX));
+	}
+
+	/**
+	 * Loads the tile graphics the universe's editors uploaded, then shows the tiles drawn with them
+	 *
+	 * @param universe The universe
+	 */
+	private async loadUploads(universe: EditableUniverse): Promise<void>
+	{
+		let uploads: UploadedTileGraphic[];
+
+		try
+		{
+			uploads = await this.api.listTileGraphics(universe.id);
+		}
+		catch (error)
+		{
+			if (this.universe === universe)
+			{
+				showMessage(this.error, describeEditorError(error, {
+					id: 'editor.tiles.uploadsFailed',
+					defaultMessage: 'Could not list the uploaded tilesets.',
+					description: 'Shown on the Tilesets tab when the tilesets the universe\'s editors uploaded couldn\'t be loaded'
+				}));
+			}
+
+			return;
+		}
+
+		if (this.universe === universe)
+		{
+			this.savedUploads = uploads;
+			this.render();
+		}
 	}
 
 	/**
@@ -184,39 +403,198 @@ export class TilesetsTab implements SavableTab
 	}
 
 	/**
-	 * Saves the changes in the order they were made, stopping at the first the server refuses
+	 * Adds the changes to a save: the tilesets staged to upload first, so the tiles staged to use them can
+	 * name them, then the tiles' changes in the order they were made, then the tilesets marked to delete
 	 *
-	 * @return True when every change was saved
+	 * @param save The save
+	 * @return True
 	 */
-	async save(): Promise<boolean>
+	collect(save: EditorSave): boolean
 	{
 		const universe = this.universe;
 
-		if (!universe)
-		{
-			return(false);
-		}
-
 		showMessage(this.error, undefined);
 
-		const failure = await this.changes.commit({
-			create: (settings) => this.api.createTile(universe.id, settings),
-			save: (tileId, settings) => this.api.saveTile(universe.id, tileId, settings),
-			remove: (tileId) => this.api.deleteTile(universe.id, tileId)
-		});
-
-		await this.refresh();
-
-		if (failure)
+		if (!universe)
 		{
-			const tile = this.tileWithChanges(failure.change.id);
+			return(true);
+		}
 
-			showMessage(this.error, describeCommitFailure(failure, (tile ? tileName(tile, universe.ruleset) : ''), !tile?.custom));
+		const uploads = this.uploadsToAdd.list();
 
-			return(false);
+		for (const { id, item } of uploads)
+		{
+			save.add({ kind: 'uploadTileGraphic', ref: uploadRef(id), upload: item.request }, (refusal) =>
+			{
+				showMessage(this.error, describeEditorError(refusal.error, {
+					id: 'editor.tiles.uploadFailed',
+					defaultMessage: 'Could not upload the tileset "{name}".',
+					description: 'Shown on the Tilesets tab when the server refused a tileset staged to upload, followed by why; {name} is the name it was given. Nothing was saved'
+				}, {
+					name: item.request.name
+				}));
+			});
+		}
+
+		this.collected = {
+			uploads: uploads.map(({ id }) => id),
+			tiles: this.staged.collect(save, (change) => this.tileChange(change), (change, refusal) =>
+			{
+				const tile = this.tileWithChanges(change.id);
+
+				showMessage(this.error, describeRefusedChange(change, refusal, (tile ? tileName(tile, universe.ruleset) : ''), !tile?.custom));
+			}),
+			deletions: this.uploadsToDelete.list()
+		};
+
+		for (const id of this.collected.deletions)
+		{
+			save.add({ kind: 'deleteTileGraphic', graphicId: id }, (refusal) =>
+			{
+				// One already gone, perhaps deleted by another editor, counts as deleted
+				if (refusal.error.status === 404)
+				{
+					this.uploadsToDelete.done(id);
+					refusal.retry();
+					return;
+				}
+
+				showMessage(this.error, describeEditorError(refusal.error, {
+					id: 'editor.tiles.deleteUploadFailed',
+					defaultMessage: 'Could not delete the tileset "{name}".',
+					description: 'Shown on the Tilesets tab when the server refused to delete an uploaded tileset, followed by why; {name} is the name it was given. Nothing was saved'
+				}, {
+					name: (this.savedUploads.find((upload) => (upload.id === id))?.name ?? '')
+				}));
+			});
 		}
 
 		return(true);
+	}
+
+	/**
+	 * The change a save sends for a change to a tile, naming tiles and tilesets not saved yet by their refs
+	 *
+	 * @param change The change
+	 * @return The change to send
+	 */
+	private tileChange(change: StagedChange<TileSettings>): EditorChange
+	{
+		switch (change.kind)
+		{
+			case 'create':
+				return({ kind: 'createTile', ref: newRef('tile', change.id), settings: this.resolveUpload(change.settings) });
+			case 'save':
+				return({ kind: 'saveTile', id: numberRef('tile', change.id), settings: this.resolveUpload(change.settings) });
+			case 'remove':
+			{
+				const replacement = this.replacements.get(change.id);
+
+				return({ kind: 'removeTile', id: numberRef('tile', change.id), replaceWith: ((replacement === undefined) ? null : numberRef('tile', replacement)) });
+			}
+		}
+	}
+
+	/**
+	 * Takes the changes as saved, and loads the tiles and tilesets afresh
+	 *
+	 * @param ids The IDs the save gave the tiles and tilesets it made
+	 */
+	async saved(ids: SavedIds): Promise<void>
+	{
+		const universe = this.universe;
+		const { uploads, tiles, deletions } = this.collected;
+		const savedTileId = (id: number): number | undefined => ids.number(newRef('tile', id));
+
+		this.collected = { uploads: [], tiles: [], deletions: [] };
+
+		for (const id of uploads)
+		{
+			const savedId = ids.string(uploadRef(id));
+
+			if (savedId !== undefined)
+			{
+				this.uploadedIds.set(id, savedId);
+			}
+
+			this.uploadsToAdd.remove(id);
+		}
+
+		for (const change of tiles)
+		{
+			if (change.kind === 'remove')
+			{
+				this.replacements.delete(change.id);
+			}
+		}
+
+		for (const [tileId, replacementId] of this.replacements)
+		{
+			this.replacements.set(tileId, (savedTileId(replacementId) ?? replacementId));
+		}
+
+		this.staged.markSaved(tiles, savedTileId);
+
+		for (const id of deletions)
+		{
+			this.uploadsToDelete.done(id);
+		}
+
+		if (universe)
+		{
+			await Promise.all([this.refresh(), this.loadUploads(universe)]);
+		}
+	}
+
+	/**
+	 * Every tile as it will be once the tab is saved, for the maps: the saved tiles with their changes,
+	 * then the tiles added since. A tile staged for deletion is drawn as the tile chosen to replace it
+	 *
+	 * @param saved Every tile the universe can use, as saved
+	 * @return The tiles, and the tiles staged for deletion with their replacements
+	 */
+	withChanges(saved: readonly EditorTile[]): { tiles: EditorTile[]; deleted: Map<number, number | undefined> }
+	{
+		const view = stagedView(saved, this.staged, (tile, settings) => ({
+			...tile,
+			...settings,
+			edited: (tile.custom ? tile.edited : true),
+			uploadedGraphic: this.uploadNamed(settings.uploadedGraphicId)
+		}), (id, settings) => this.createdTile(id, settings));
+		const deleted = new Map(view
+			.filter(({ item, state }) => ((state === 'removed') && item.custom))
+			.map(({ item }) => [item.id, this.replacements.get(item.id)]));
+		const tiles = view.map(({ item }) => item);
+		const byId = new Map(tiles.map((tile) => [tile.id, tile]));
+
+		return({
+			tiles: tiles.map((tile) =>
+			{
+				const replacement = byId.get(deleted.get(tile.id) ?? NaN);
+
+				return((replacement ? { ...tile, color: replacement.color, graphic: replacement.graphic, uploadedGraphic: replacement.uploadedGraphic } : tile));
+			}),
+			deleted
+		});
+	}
+
+	/**
+	 * A tile added since the tab was last saved, as the list shows it
+	 *
+	 * @param id Its negative ID
+	 * @param settings Its settings
+	 * @return The tile
+	 */
+	private createdTile(id: number, settings: TileSettings): EditorTile
+	{
+		return({
+			id,
+			key: null,
+			...settings,
+			custom: true,
+			edited: false,
+			uploadedGraphic: this.uploadNamed(settings.uploadedGraphicId)
+		});
 	}
 
 	/**
@@ -236,8 +614,11 @@ export class TilesetsTab implements SavableTab
 			name: (this.nameFilter.value.trim() || undefined),
 			passable: filterValue(this.passableFilter),
 			usedIn: TILE_USED_IN.find((usedIn) => (usedIn === this.usedInFilter.value)),
+			enabled: filterValue(this.enabledFilter),
 			custom: filterValue(this.customFilter),
 			edited: filterValue(this.editedFilter),
+			sort: this.sorter.order.column,
+			direction: this.sorter.order.direction,
 			offset: this.offset,
 			limit: MAX_TILES_PER_PAGE
 		};
@@ -310,13 +691,7 @@ export class TilesetsTab implements SavableTab
 			return;
 		}
 
-		const shown = stagedPage(this.tiles, this.changes, (this.offset === 0), (id, settings) => ({
-			id,
-			key: null,
-			...settings,
-			custom: true,
-			edited: false
-		}));
+		const shown = stagedPage(this.tiles, this.staged, (this.offset === 0), (id, settings) => this.createdTile(id, settings));
 
 		this.rows.replaceChildren(...shown.map(({ item, state }) => this.createRow(item, state, universe)));
 		showMessage(this.empty, ((shown.length === 0)
@@ -337,14 +712,27 @@ export class TilesetsTab implements SavableTab
 	private tileWithChanges(tileId: number): EditorTile | undefined
 	{
 		const known = this.known.get(tileId);
-		const settings = this.changes.settingsOf(tileId);
+		const settings = this.staged.settingsOf(tileId);
 
 		if (!known)
 		{
-			return((settings === undefined) ? undefined : { id: tileId, key: null, ...settings, custom: true, edited: false });
+			return((settings === undefined) ? undefined : this.createdTile(tileId, settings));
 		}
 
 		return({ ...known, ...settings });
+	}
+
+	/**
+	 * One of the universe's uploaded tile graphics, or one staged to upload
+	 *
+	 * @param graphicId The graphic's ID, or null
+	 * @return The graphic, or null when there is none with that ID
+	 */
+	private uploadNamed(graphicId: string | null): UploadedTileGraphic | null
+	{
+		const upload = this.shownUploads().find((candidate) => (candidate.id === graphicId));
+
+		return((upload ? { id: upload.id, name: upload.name, format: upload.format, drawOrder: upload.drawOrder } : null));
 	}
 
 	/**
@@ -368,6 +756,9 @@ export class TilesetsTab implements SavableTab
 			(tile.edited
 				? t(editorMessages.editedTag)
 				: undefined),
+			(tile.enabled
+				? undefined
+				: t(editorMessages.disabledTag)),
 			stagedTag(state, !tile.custom)
 		];
 		const cells = [
@@ -391,11 +782,7 @@ export class TilesetsTab implements SavableTab
 			joinTags(...tags)
 		];
 
-		// Screen readers read the color's hex code, which the color picker in the tile dialog also shows
-		swatch.className = 'swatch';
-		swatch.style.backgroundColor = colorToHex(tile.color);
-		swatch.setAttribute('role', 'img');
-		swatch.setAttribute('aria-label', colorToHex(tile.color));
+		showTileSwatch(swatch, tile, this.shownUploads());
 		nameButton.type = 'button';
 		nameButton.className = 'link-button';
 		nameButton.textContent = tileName(tile, universe.ruleset);
@@ -412,6 +799,12 @@ export class TilesetsTab implements SavableTab
 			row.append(cell);
 		}
 
+		// A disabled tile is struck through like one being deleted; its notes say it is disabled
+		if (!tile.enabled)
+		{
+			row.classList.add('staged-deleted');
+		}
+
 		return(markStagedRow(row, state, !tile.custom));
 	}
 
@@ -424,7 +817,7 @@ export class TilesetsTab implements SavableTab
 	{
 		if (this.universe)
 		{
-			this.dialog.open(this.universe, tile, this.changes.edit(tile?.id), () =>
+			this.dialog.open(this.universe, tile, this.staged.edit(tile?.id), () =>
 			{
 				this.render();
 			});

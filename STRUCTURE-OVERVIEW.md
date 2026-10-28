@@ -107,7 +107,7 @@ Based entirely on the universe's ruleset. It is a page of its own, reached from 
 For PF1E, the server rolls the ability scores (or checks the point buy choices) using the universe's [stat rolling](#pf1e) setting; the client never sends ability scores of its own. The player can rearrange rolled scores among the abilities, with the class's primary ability as a hint.
 - the server keeps a player's rolled scores until they make a character with them, so leaving Create Character or starting over doesn't roll again. If the universe changes how it rolls, the next visit rolls again
 - the player chooses a name, an enabled race and an enabled class. A race with a floating ability bonus asks which ability gets it
-- the character starts with the universe's, race's and class's starting money added coin by coin, their starting equipment added together (enabled items only), and the [starting area](#tab-characters) the precedence picks
+- the character starts with the universe's, race's and class's starting money added coin by coin, and their starting equipment added together (enabled items only). Where they start is chosen when a group is made around them (see [starting area](#tab-characters))
 - the lobby lists the player's characters in the universe
 - a race, class, theme or item that characters have can't be deleted; it can be disabled instead
 
@@ -117,7 +117,7 @@ For SF1E, every ability score starts at 10, and the player spends the universe's
 A modal dialog showing one of the player's characters, opened from the [lobby](#lobby) and the [universe page](#universe-page) (later the [profile](#profile-edit) too). Only the character's player can see it. For PF1E it shows:
 - the name, race and class
 - each ability score (with the race's modifiers added) and the modifier it gives
-- size and darkvision, from the race as the universe sets it now
+- size, darkvision and light sensitivity, from the race as the universe sets it now
 - money, as a [money field](#field-money) writes it
 - equipment, sorted by name, with how many of each
 
@@ -135,7 +135,7 @@ The server deletes characters whose days are over once an hour, and hides them u
 
 ## Create Group
 The character creating the group is the "anchor being". This shows you a landing page for your new group. It explains that your character is the anchor being for this universe, and that the game is centered around them.
-- The group starts in the anchor being's [starting area](#tab-characters).
+- The group starts in the anchor being's [starting area](#tab-characters), chosen from the universe's, race's and class's settings as they are when the group is made.
 - If the anchor being leaves the group, the group is disbanded and its [world state](#world-state) is deleted. Every character keeps their items, money and experience. A character in a group can't be [deleted](#deleting-a-character) until they leave it.
 - If the anchor being is offline, the group can't use [area links](#editor-map) that require the whole group (for example, leaving the city for the wilderness), but can use the ones that don't (entering a shop in the city).
 - A group holds at most the universe's [group size](#tab-characters) characters. A character is in at most one group.
@@ -236,13 +236,13 @@ This lets you change anything about a universe. It will be a whole suite of tool
 	- [Translations](#tab-translations)
 
 ### Unsaved changes
-Nothing a tab changes is saved until the Save button (Alt+S) in the bar at the bottom of the editor is pressed. The bar stays in view while the tab scrolls, and above the map in full page. It saves everything changed on the tab showing; reloading the page throws the changes away. Enter in a tab's form saves too.
-- The editor dialogs for races, classes, themes, difficulty levels, items, tiles and area links have Apply rather than Save: it keeps their changes on the tab, where the list shows them, tagging what was added as new and what will be restored "when saved", and striking through (in italics, faded) what will be deleted. One of the ruleset's defaults with changes is tagged edited, saved or not. Deleting or restoring is taken back with Undo Delete or Undo Restore in the dialog until the tab is saved. Saving sends the changes in the order they were made and stops at the first the server refuses, saying which; the rest stay unsaved.
-- The Characters tab saves its settings, races, classes and themes together, and the Ruleset tab its settings and difficulty levels.
-- The Areas tab saves the areas added and deleted, then the area open in the area editor: its settings and its map's painting, size and links. A new area is listed tagged new, and can be opened, painted, linked to and chosen as a parent before it is saved; its map is the size every new area starts with. Deleting an area asks first, then strikes it through in the list until the tab is saved; opening it shows it read-only with Undo Delete. Deleting a new area discards it straight away, after asking. Saving deletes areas first, then adds the new ones, then saves the area open, and stops at the first change the server refuses, saying which.
-- Pickers on other tabs (starting equipment, the map's tiles, a class's races) list only what is saved.
+Every change in the universe editor is staged: nothing a tab or its dialogs change (adding, changing or deleting anything, uploading a tileset or deleting one) is saved until the Save button (Alt+S) in the bar at the bottom of the editor is pressed. The bar stays in view while the tab scrolls, and above the map in full page. It saves every tab's changes together, all or nothing, in one request (POST `/:universeId/changes`, see `shared/src/editorChanges.ts`); reloading the page throws the changes away. When the server refuses a change it saves none of them: the editor shows the tab whose change it was, with the reason on that tab, and keeps every change. A field with a problem stops the save before it is sent, the same way. Each tab shows its changes as they will be once saved, including changes made on other tabs: the Areas tab's maps draw the Tilesets tab's unsaved tile changes (new and changed tiles, and tilesets staged to upload, from the page's own copy), with tiles staged for deletion drawn as their replacements. Enter in a tab's form saves too.
+- The editor dialogs for races, classes, themes, difficulty levels, items, tiles and area links have Apply rather than Save: it keeps their changes on the tab, where the list shows them, tagging what was added as new and what will be restored "when saved", and striking through (in italics, faded) what will be deleted. One of the ruleset's defaults with changes is tagged edited, saved or not. Deleting or restoring is taken back with Undo Delete or Undo Restore in the dialog until the tab is saved. Saving sends each list's changes in the order they were made.
+- The tabs save in this order, so a change can name something an earlier one adds: Tilesets (new tilesets, then tiles, then deleted tilesets), Items, Ruleset, Characters, Universe, Lobby, Areas. The Characters tab saves its settings, races, classes and themes, and the Ruleset tab its settings and difficulty levels.
+- The Areas tab saves the areas deleted, then the areas added, then the area open in the area editor: its map's size, painting and links, then its settings. A new area is listed tagged new, and can be opened, painted, linked to and chosen as a parent before it is saved; its map is the size every new area starts with. Deleting an area asks first, then strikes it through in the list until the tab is saved; opening it shows it read-only with Undo Delete. Deleting a new area discards it straight away, after asking. Painting with, or a default tile of, a tile staged for deletion is saved as the tile chosen to replace it.
+- The map editor's tile choices and an area's default tile choices list the Tilesets tab's unsaved new tiles and leave out tiles staged for deletion, and the area previews in the link and starting area dialogs draw the Tilesets tab's unsaved changes like the maps do. Other pickers (starting equipment, a class's races) list only what is saved.
 
-The bar says "Unsaved changes" while the tab has some, and a tab with unsaved changes gets a dot. Closing a dialog (Cancel or Escape), leaving the area being edited, and leaving or reloading the page all ask first while there are unsaved changes.
+The bar says "Unsaved changes" while any tab has some, and a tab with unsaved changes gets a dot. Closing a dialog (Cancel or Escape), leaving the area being edited, and leaving or reloading the page all ask first while there are unsaved changes.
 
 ### Universe versions
 If a creator makes changes to the current version of the universe, they apply immediately for everyone.
@@ -336,9 +336,9 @@ Money is credits (`cr`), the only coin.
 - Starting [money](#field-money)
 - Starting [area](#selection-area)
 
-Below the settings, the tab lists the [races](#races), the [classes](#classes) and, for a ruleset with them, the [themes](#themes), each in a section of its own, and saves them with the settings. Each race and class can add to the starting money and equipment, and choose a starting area of its own.
+Below the settings, the tab lists the [races](#races), the [classes](#classes) and, for a ruleset with them, the [themes](#themes), each in a section of its own, and saves them with the settings. Each list is a table of names, summaries and notes (custom, edited, disabled, and changes not saved yet), sorted by name until the Name or Notes heading is clicked (see [sortable tables](#sortable-tables)); rows that tie are sorted by name. Each race and class can add to the starting money and equipment, and choose a starting area of its own.
 
-A character's starting area is chosen in this order, most specific first: the class's entry for their race, the class, the race, then the universe. A class with an area of its own has no entries for races, so the two never compete. Each starting area comes with the square characters start on (chosen with the [area](#selection-area)), which goes with it: a group starts at its anchor being's square, and its members are placed on the free square nearest it. A square the area's map no longer holds, after it was made smaller, counts as the nearest square on the map.
+A character's starting area is chosen each time a group is made around them, so a change to these settings applies to characters already made. It is chosen in this order, most specific first: the class's entry for their race, the class, the race, then the universe. A class with an area of its own has no entries for races, so the two never compete. Each starting area comes with the square characters start on (chosen with the [area](#selection-area)), which goes with it: a group starts at its anchor being's square, and its members are placed on the free square nearest it. A square the area's map no longer holds, after it was made smaller, counts as the nearest square on the map.
 
 Races, classes and themes work like default items: the ruleset's defaults are in every universe, an edit applies to that universe only and can be undone to restore the default (losing its starting money, equipment and areas too), and a race, class or theme the universe added can be deleted. Like the Characters tab, only creators can change them.
 
@@ -389,7 +389,8 @@ You can edit each race:
 - for PF1E:
 	- ability modifiers? lists abilities (`strength`, `dexterity`, `constitution`, `intelligence`, `wisdom`, `charisma`) and a number field for each (minimum -99, maximum 99)
 	- floating ability bonus? a checkbox. When checked, the player chooses which ability gets the bonus (in PF1E, humans, half elves and half orcs get +2 to one ability of their choice)
-	- has darkvision? a checkbox
+	- darkvision: `none`, `darkvision (60 feet)` or `superior darkvision (120 feet)`. Drow have superior darkvision; dwarves, goblins, half-orcs, hobgoblins and ratfolk have darkvision
+	- light sensitivity? a checkbox. Bright light dazzles the race's characters (see [Vision](#vision)). Drow have it
 	- size
 		- `fine`
 		- `diminutive`
@@ -400,7 +401,7 @@ You can edit each race:
 		- `huge`
 		- `gargantuan`
 		- `colossal`
-- for SF1E: the same ability modifiers, floating ability bonus (humans get +2 to one ability of their choice), darkvision and size, and
+- for SF1E: the same ability modifiers, floating ability bonus (humans get +2 to one ability of their choice), darkvision, light sensitivity and size, and
 	- hit points: the hit points the race gives on top of the class's, 0 to 99
 
 #### Classes
@@ -452,12 +453,13 @@ You can edit each class:
 	- stamina points per level, 0 to 99
 
 ### Tab: Tilesets
-shows you a table of all tiles in the game, populated from the default for your ruleset and any tiles you have created. Default tiles can be edited: the edit applies to your universe only, and can be undone to restore the default. A tile you created can be deleted once no map uses it.
+shows you a table of all tiles in the game, populated from the default for your ruleset and any tiles you have created. Default tiles can be edited: the edit applies to your universe only, and can be undone to restore the default. Disabling a default tile is such an edit, so a universe can leave out the ruleset's tiles it doesn't want. A tile you created can be deleted once no map uses it.
 
 It needs a filter control that includes:
 - name search
 - "is passable" toggle
 - "used in" dropdown: any, indoors (only), outdoors (only), both or neither
+- "is enabled" toggle
 - "is custom" toggle
 - "is edited from default" toggle
 - pagination (500 by default)
@@ -468,6 +470,9 @@ the table contains:
 - walk time
 - vision cost
 - used in: indoors, outdoors, indoors and outdoors, or neither
+- notes: custom, edited, disabled, and whether it is new or restored when saved. A disabled tile's row is struck through
+
+The table is sorted by name until another column's heading is clicked (see [sortable tables](#sortable-tables)). Name, walk time, vision cost and used in can sort it; impassable tiles count as the slowest, and used in sorts in the order indoors, outdoors, both, neither. Tiles that tie are sorted by name. The server sorts before paging, by the English names, as the name search matches them.
 
 For PF1E, the default tiles are
 - outdoors
@@ -513,6 +518,9 @@ the table contains:
 - icon
 - name, links to the [item editor](#editor-item)
 - summary (item type, properties, etc)
+- notes: custom, edited, disabled, and changes not saved yet
+
+The table is sorted by name until the Name or Notes heading is clicked (see [sortable tables](#sortable-tables)). The server sorts before paging: names by their English text, as the name search matches them, and notes by the items' flags, with items that have none first, then disabled, edited and custom ones. Items that tie are sorted by name.
 
 For PF1E, the only default item for now is a dagger; for SF1E, a survival knife.
 
@@ -585,11 +593,11 @@ Disbanding a group deletes its world state. Characters (items, money, experience
 What a group has explored is kept as the cells it has seen, area by area: a cell is seen once any member has had it in sight (see [Vision](#vision)). The group's room keeps them in memory and saves them every 30 seconds while anyone plays and when the last player leaves. A window in a group's room is only ever sent the tiles of cells the group has seen, and the links on them, so a script in the browser can't uncover the rest: every other cell comes as unseen, and its tile is sent as soon as a member first sees it. The fog follows where players are drawn, a moment behind the server, so those tiles have usually arrived before the fog uncovers them. Cells out of sight that the group has seen are drawn dimmed, and cells it has never seen are black. A lobby remembers nothing, so there everything out of sight is only dimmed. Deleting an area deletes what every group has seen of it.
 
 ## Vision
-Each character has a vision budget, in squares. A character looks along straight lines from their cell, and each step along a line spends its length (a diagonal step counts as one and a half squares, as in movement), more when it leaves a tile with a vision cost: 50% spends twice as much. A 100% tile can be seen but not seen past, so a line of mountains blocks your view. It is also seen when open ground next to it is, so the walls lining a tunnel show along its length, while the inside of a thick wall and its far side stay hidden. The character's own cell never gets in the way. Void cells are seen past.
-- The budget is 20 squares in full daylight and 4 at night, changing with the light around dawn and dusk. An indoor area is lit (20 squares) or dark (4) at any time of day, by its light level. Darkvision sees at least 12 squares (60 feet), day or night.
+Each character has a vision budget, in squares. A character looks along straight lines from their cell, and each step along a line spends its length (a diagonal step counts as one and a half squares, as in movement), more when it leaves a tile with a vision cost: 50% spends twice as much. A 100% tile can be seen but not seen past, so a line of mountains blocks your view. It is also seen when open ground on one of its sides is, so the walls lining a tunnel show along its length, while the inside of a thick wall and its far side stay hidden. Open ground diagonally beside it only counts at an inside corner, where the cells on both sides between them can't be seen past either, so a room's corners show but the tip of a mountain range doesn't light up when the ground around it is out of sight. The character's own cell never gets in the way. Void cells are seen past.
+- The budget is 20 squares in full daylight and 4 at night, changing with the light around dawn and dusk. An indoor area is lit (20 squares) or dark (4) at any time of day, by its light level. Darkvision sees at least 12 squares (60 feet), day or night, and superior darkvision at least 24 (120 feet). Light sensitivity (being dazzled, a house rule standing in for PF1E's penalties until there is combat) halves the budget in full daylight or a lit indoor area, and takes less away as the light fades, so a drow sees 24 squares at night and 12 at noon.
 - In a group's room, the group sees whatever any of its members in the area sees, so members always see each other. In a lobby each player sees only what they see themselves, and unless the universe turns it off on the [Lobby tab](#tab-lobby), they see as far as in full daylight at any time of day and its tiles have no vision cost.
 - The server works out what each player can see and only shows them the players in sight. The client runs the same function (`/shared`) to draw fog over the cells out of sight. Screen readers are told how many squares the player can see when they ask where they are.
-- A character's darkvision comes from their race as the universe set it when the room started.
+- A character's darkvision and light sensitivity come from their race as the universe set it when the room started.
 
 ## Moderation
 - Player and character names can't pass as the game's staff: words such as `admin`, `moderator`, `staff` and `system`, and the game's name, are kept back (`isReservedName()` in `/shared`, checked as the player types and again on the server). Names are compared in a reduced form that sees through capitals, accents, look-alike letters from other alphabets, leetspeak, separators, repeated letters and added digits, and words are found at spaces, punctuation and changes of case, so "TheAdm1n" is refused but "Quarterstaff" isn't.
@@ -662,20 +670,29 @@ This is a component included in the [area editor](#editor-area). It shows you th
 	- since links are separate from the artwork, you also need to draw a door (or similar) so players know where to walk
 
 ### Tool: Draw
-- lets you select a tile, e.g. "Grass" or "Wood Floor": the tiles for the area's kind, indoors or outdoors, and the area's default tile. The list follows the area editor's indoors / outdoors choice before it is saved. Switching an area between them leaves the tiles already painted as they are. Also lets you select "Void" which is just black
+- lets you select a tile, e.g. "Grass" or "Wood Floor": the enabled tiles for the area's kind, indoors or outdoors, and the area's default tile. The list follows the area editor's indoors / outdoors choice before it is saved. Switching an area between them leaves the tiles already painted as they are. Also lets you select "Void" which is just black
 - lets you select a size (1 for a single tile, up to 100 tiles)
 - brush shape - circle or square
 
 ## Editor: Tile
+- Delete Tile (a tile the universe added) asks first in a dialog. When maps use the tile, the dialog names their areas and asks for a tile to replace it with, which must be chosen. The tile is struck through until the Tilesets tab is saved; saving paints every cell holding it, and every area whose default tile it is, with the replacement, then deletes it. Undo Delete takes it back. A default tile the universe edited has Restore instead, which keeps it on the maps
 - name
+- enabled: an area's [draw tool](#tool-draw) and default tile only offer enabled tiles. Maps that already use a disabled tile keep it, and an area whose default tile is disabled keeps it until another is chosen. The tiles new areas start with (`DEFAULT_AREA_TILE_KEYS`: Grass outdoors, and Wood Floor or Metal Floor indoors) can't be disabled
 - "used in": checkboxes for indoors and outdoors; a tile can be for either, both or neither. An area's [draw tool](#tool-draw) and default tile only offer the tiles for its kind. A tile for neither can't be painted anywhere, but maps that already use it keep it
 - color (used if there are no graphics), accepts hex + has a color picker
-- graphic (image)
-	- outdoors uses the Dual-Grid System
-	- indoors uses the 47-Tile Blob Set
-	- or maybe each layer has its own format, e.g. the ground layer is Dual-Grid and another layer is set differently
+- graphic (image). A cell is 32x32 pixels. Graphics only change how the map is drawn; walk time and vision cost still come from the tile
+	- each layer has one format, never a mix within a layer, since formats draw on different grids. The format doesn't depend on whether an area is indoors or outdoors, since a tile can be for both
+	- the ground layer uses the Dual-Grid System. A Dual-Grid graphic is a 128x128 sheet of 16 frames, each 32x32 (one cell), in a 4x4 grid read left to right, top to bottom. Each frame is drawn on a corner where 4 cells meet, half a cell up and left of the cells, and its number is the sum of the corners holding the tile: top-left 1, top-right 2, bottom-left 4, bottom-right 8. Frame 0 is never drawn. `client/src/assets/tilesets/grass.png` is a sample
+	- the tile editor picks a graphic that ships with the engine (`TILE_GRAPHICS` in `/shared`), one of the universe's uploaded tilesets, or none. The hint under the list says how the chosen one is drawn, ending with its tile system: "Blends with neighboring tiles; higher draw order on top. Draw order: 60 (Dual-Grid).", "Drawn over the area's default tile, joining up with its neighbors (47-Tile Blob).", or with none "Drawn in its color."
+	- "Upload Tileset Image" (Alt+U) in the tile editor opens a dialog: the layout ("15 tiles, blending with the ground", a Dual-Grid sheet, or "47 tiles, drawn over the ground", a blob sheet; choosing an image of the other layout's size switches to it), the image (a PNG of the layout's size, 128x128 or 256x192 pixels, at most 256 KB), a name, for a Dual-Grid sheet a draw order from 1 to 99 (the engine's own are listed: Grass 30, Forest 40, Mountains 50, Stone Wall 60), and "I have the rights to use this image", which must be checked. The dialog checks the image in the browser and chooses it for the tile, and the graphic list shows it like any uploaded tileset; saving the Tilesets tab uploads it (the server checks it again and stores it re-encoded, without its metadata) before saving the tiles that use it. A universe can have at most 200 uploaded tilesets. Maps draw a tile with an uploaded tileset in its color until the tileset has loaded
+	- with an uploaded tileset chosen, "Delete Tileset Image" asks first in a dialog, then takes it off the graphic list and puts the tile back to its color. Tiles drawn with it show their colors on the tab from then on. Saving the Tilesets tab deletes it after saving the tiles, and every tile drawn with it is drawn in its color after; leaving the tab without saving keeps it. One not uploaded yet is simply discarded
+	- where different tiles meet, each graphic's draw order decides whose edges overlap whose, since a sheet's edges are drawn for the ground below it; tiles drawn in their colors go below every graphic. Past an edge of a map that doesn't loop, the map ends square
+	- players are drawn over the tiles they can walk on. A forest is one sheet, its treetops drawn over its floor; the treetops can rise half a cell above the forest's north edge within ordinary 32x32 frames, since the frames on that edge cover half of the cells north of it, and taller trees need taller frames
+	- an impassable tile's graphic, such as mountains whose peaks rise half a cell over the cells north of them, is also drawn over the players standing in the cell just north of it, so they are behind it. No player stands on the tile, and nothing of it is drawn over a player beside or south of it
+	- tiles drawn over the ground can use the 47-Tile Blob Set, for things seen from straight above such as hedges, rooftops and rugs. Each quarter of a blob frame depends only on the 4 cells around that corner, as a Dual-Grid frame does, so anything whose look is made of edges and corners can be drawn either way; the blob layout is needed only for art centered on a cell or tied to whole cells. Walls are drawn as their tops, with no front face (which would need more than a cell of height, and reads as a raised floor). A blob graphic is a 256x192 sheet of 47 frames, each 32x32, in 8 columns and 6 rows read left to right, top to bottom; the last place is empty. Each cell holding the tile gets one frame, picked from which of its 8 neighbors hold the same tile: north 1, north-east 2, east 4, south-east 8, south 16, south-west 32, west 64, north-west 128, with a diagonal counting only when both neighbors beside it hold the tile too. The 47 masks that leaves are the frames in ascending order (`BLOB_FRAME_MASKS` in `/shared`), so frame 0 is a cell alone and frame 46 (mask 255) is the tile on every side. Past an edge of a map that doesn't loop, the cell on the edge carries on, so a wall along it runs off the map. Blob tiles are drawn in a walls layer over the ground, under the players, and the ground under them is drawn as the area's default tile. `client/src/assets/tilesets/hedge.png` is a sample; the stone wall (`stoneWall.png`, rubble with cut stones along its edges) is a Dual-Grid sheet with draw order 60, over every ground graphic. An uploaded tileset is either format, as its uploader chose; a blob sheet has no draw order
+	- distinctive buildings and lone trees are placed objects rather than tiles (see [Open questions](#open-questions))
 - Vision cost - 0% to 100% (cannot see through). See [vision](#vision)
-- Walk time - seconds of game time walking a square takes, 0 to 3600. A new tile gets 600 (10 minutes) when it is for outdoors and 10 when it is only for indoors, following the checkboxes until another walk time is typed. Twice the default takes twice as long (PF1E difficult terrain), 0 is impassable
+- Walk time - seconds of game time walking a square takes, 0 to 36000. A new tile gets 600 (10 minutes) when it is for outdoors and 10 when it is only for indoors, following the checkboxes until another walk time is typed. Twice the default takes twice as long (PF1E difficult terrain), 0 is impassable
 - Has a preview section for day + night
 
 # Localization
@@ -731,6 +748,9 @@ Every page, editor and game screen can be used with only a keyboard and with a s
 - The map editor's map (and the link dialog's preview) can be focused and worked with a cursor: the arrow keys move it, Space or Enter paints or picks its cell, holding Space while moving paints a stroke, + and - zoom and Home returns to the center cell. Each cell the cursor reaches is read out with what it holds.
 - Colors are never the only way information is shown: the tile table's swatches carry the color's hex code.
 
+## Sortable tables
+A table that can be sorted has a button in each heading that sorts it (`TableSorter` in `client/src/ui/tableSorter.ts`, with `sortRows()` and `SortOrder` in `/shared`). Clicking a heading sorts going up, and clicking it again going down. The heading sorted by has `aria-sort` and an arrow showing which way; the others show an arrow both ways. Screen readers are told how the table is now sorted. A list paged on the server sends the order as the `sort` and `direction` query parameters, and the server sorts before paging; ties are kept in the list's own order.
+
 # Open questions
 - **Time:** the overworld map's scale.
 - **Offline group members:** whether to use the summoning ring.
@@ -743,9 +763,7 @@ Every page, editor and game screen can be used with only a keyboard and with a s
 	- whether to add a CAPTCHA. The code limits stop guessing, but someone who knows an address can make 15 wrong guesses and block that address's codes for a day
 - **Messages:** blocking, reporting and who can message whom, before messaging is supported.
 - **Universe versions:** how versions are built and switched.
-- **Tiles:**
-	- Dual-Grid vs. 47-Tile Blob, possibly per layer
-	- how large objects such as trees and houses work, since a player walking behind one should be hidden
+- **Objects:** how placed objects such as houses and lone trees work. The likely shape: an object is made once and placed in any number of areas, with an image, the cells it covers (each with its own walk time and vision cost, read by the server), the part drawn above players so a player walking behind it is hidden, and door cells for area links into its interior, which is an indoor area
 - **Maps:** a map 50,000 tiles in each direction could hold billions of cells, so maps need to be stored sparsely or in chunks rather than as one full grid.
 - **Characters:** whether character names must be unique within a universe.
 - **Localization:**

@@ -4,7 +4,7 @@ import { connectToServer } from './network/serverConnection';
 import { startPageLifecycle } from './pageLifecycle';
 import { HOME_PAGE_URL, readEditUniverseId, readPageParameter, TAB_PARAMETER, AREA_PARAMETER } from './pages';
 import { isEditorTab } from './ui/editor/EditorScreen';
-import { showStatus } from './ui/dom';
+import { setPageTitle, showStatus } from './ui/dom';
 import { startLanguagePicker } from './ui/languagePicker';
 import { pageMessages } from './ui/pageMessages';
 import { startShortcuts } from './ui/shortcuts';
@@ -26,6 +26,7 @@ async function start(): Promise<void>
 
 	startPageLifecycle();
 	await startLocalization();
+	setPageTitle(document.title);
 	startLanguagePicker();
 	startShortcuts();
 	showStatus(t(pageMessages.connecting));

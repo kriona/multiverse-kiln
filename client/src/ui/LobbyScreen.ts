@@ -7,7 +7,7 @@ import { universePageUrl } from '../pages';
 import { announce } from './announcer';
 import { CharacterList } from './CharacterList';
 import { characterMessages } from './characterMessages';
-import { getElement, showMessage, titleLink } from './dom';
+import { getElement, setPageTitle, showMessage, titleLink } from './dom';
 import type { MapView } from './MapView';
 import { addShortcut } from './shortcuts';
 
@@ -266,13 +266,13 @@ export class LobbyScreen
 	{
 		this.ownPlayerId = playerId;
 		this.title.replaceChildren(titleLink(universe.name, universePageUrl(universe.slug)));
-		document.title = t({
+		setPageTitle(t({
 			id: 'lobby.pageTitle',
-			defaultMessage: 'Lobby - {universe} - Multiverse Kiln',
-			description: 'The browser tab\'s title in a universe\'s lobby; {universe} is the universe\'s name and Multiverse Kiln is the game engine\'s name'
+			defaultMessage: 'Lobby - {universe}',
+			description: 'The browser tab\'s title in a universe\'s lobby, before the game engine\'s name; {universe} is the universe\'s name'
 		}, {
 			universe: universe.name
-		});
+		}));
 		this.playerName.textContent = name;
 		this.updatePlayingState();
 		this.queueMemberList();

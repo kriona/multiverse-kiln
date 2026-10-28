@@ -1,4 +1,4 @@
-import type { MessageSource } from '@multiverse-kiln/shared';
+import { SITE_NAME, type MessageSource } from '@multiverse-kiln/shared';
 
 import { t } from '../localization';
 
@@ -293,14 +293,47 @@ export function showStatus(message: string): void
 }
 
 /**
+ * Sets the browser tab's title, followed by the game engine's name, which messages leave out
+ *
+ * @param title The title in the player's language, or undefined for the engine's name alone
+ */
+export function setPageTitle(title?: string): void
+{
+	document.title = ((title === undefined) ? SITE_NAME : `${title} - ${SITE_NAME}`);
+}
+
+/**
+ * Closes every open dialog, the latest first, as Escape would: a dialog's cancel listeners run first,
+ * so one with unsaved changes asks before it closes
+ *
+ * @return False when a dialog stayed open, such as one whose changes the player kept
+ */
+export function closeOpenDialogs(): boolean
+{
+	const dialogs = [...document.querySelectorAll<HTMLDialogElement>('dialog[open]')].reverse();
+
+	for (const dialog of dialogs)
+	{
+		if (!dialog.dispatchEvent(new Event('cancel', { cancelable: true })))
+		{
+			return(false);
+		}
+
+		dialog.close();
+	}
+
+	return(true);
+}
+
+/**
  * Shows a full-page message with a link to Home (partials/notice.html), e.g. when a universe can't be found
  *
  * @param message Text to show
- * @param title The browser tab's title
+ * @param title The browser tab's title (see setPageTitle), or undefined for the engine's name alone
  */
-export function showNoticeScreen(message: string, title: string): void
+export function showNoticeScreen(message: string, title?: string): void
 {
 	getElement('notice-message', HTMLElement).textContent = message;
-	document.title = title;
+	setPageTitle(title);
 	showScreen('notice');
 }

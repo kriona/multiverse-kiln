@@ -7,6 +7,7 @@ import { t } from '../localization';
 import type { GameRoom, MapConnection, MapRoom } from '../network/serverConnection';
 import { PositionBuffer, type Point } from '../rendering/PositionBuffer';
 import { AreaRenderer } from '../rendering/AreaRenderer';
+import { loadUploadedTileGraphics, preloadTileGraphics } from '../rendering/tileGraphics';
 import { isTextEntry } from '../ui/dom';
 import { MapAnnouncer, type SeenPlayer } from '../ui/MapAnnouncer';
 import { addKeyHelp, addShortcut } from '../ui/shortcuts';
@@ -87,9 +88,11 @@ const FOG_ALPHA = 0.55;
 const UNSEEN_ALPHA = 1;
 
 /**
- * Depth of the fog: over the map, under the players
+ * Depth of the fog: over the map, the players and what overhangs them, such as mountains' peaks, which
+ * would otherwise show undimmed over cells out of sight; under the night. The players the room shows are
+ * in sight, so the fog doesn't cover them
  */
-const FOG_DEPTH = -0.5;
+const FOG_DEPTH = 0.3;
 
 /**
  * How many cells past the edges of the view the fog is drawn, so it still covers the view while the
@@ -238,6 +241,14 @@ export class MapScene extends Phaser.Scene
 		this.night = undefined;
 		this.fog = undefined;
 		this.fogKey = '';
+	}
+
+	/**
+	 * Loads the tile graphics the map is drawn with
+	 */
+	preload(): void
+	{
+		preloadTileGraphics(this);
 	}
 
 	/**
@@ -407,7 +418,7 @@ export class MapScene extends Phaser.Scene
 
 				sights.push({
 					cell,
-					budget: visionBudget(areaLight(this.area.lightLevel, this.secondOfDayAt(cell)), player.darkvision, this.area.fullVision)
+					budget: visionBudget(areaLight(this.area.lightLevel, this.secondOfDayAt(cell)), player, this.area.fullVision)
 				});
 			}
 		});
@@ -611,6 +622,16 @@ export class MapScene extends Phaser.Scene
 		this.chunkRevision++;
 		this.areaRenderer?.destroy();
 		this.areaRenderer = new AreaRenderer(this, area, this.chunks);
+
+		// Tiles with uploaded graphics are drawn in their colors until the graphics arrive
+		void loadUploadedTileGraphics(this, area.tiles).then((loaded) =>
+		{
+			if (loaded && (this.area === area) && this.areaRenderer && this.scene.isActive())
+			{
+				this.areaRenderer.destroy();
+				this.areaRenderer = new AreaRenderer(this, area, this.chunks);
+			}
+		});
 	}
 
 	/**
@@ -1002,7 +1023,7 @@ export class MapScene extends Phaser.Scene
 			tileName: (tile ? tileName(tile, this.area.ruleset) : undefined),
 			secondOfDay: seconds,
 			displayTime: this.area.displayTime,
-			sightSquares: Math.floor(visionBudget(areaLight(this.area.lightLevel, seconds), own.darkvision, this.area.fullVision))
+			sightSquares: Math.floor(visionBudget(areaLight(this.area.lightLevel, seconds), own, this.area.fullVision))
 		}, others);
 	}
 

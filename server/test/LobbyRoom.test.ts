@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { cellIndexInChunk, chunkCoordinate, chunkKey, GRID_CELL_SIZE, LOBBY_ROOM_NAME, LobbyMessageType, LobbyServerMessageType, LobbyState, MAX_CHAT_MESSAGE_LENGTH, MessageType, NoticeReason, ServerMessageType, type ChatHistoryPayload, type ChatMessage, type ChunksPayload, type LobbyJoinOptions, type NoticePayload, type Player, type PlayingAsPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, chunkCoordinate, chunkKey, DARKVISION_SQUARES, GRID_CELL_SIZE, LOBBY_ROOM_NAME, LobbyMessageType, LobbyServerMessageType, LobbyState, MAX_CHAT_MESSAGE_LENGTH, MessageType, NoticeReason, ServerMessageType, type ChatHistoryPayload, type ChatMessage, type ChunksPayload, type LobbyJoinOptions, type NoticePayload, type Player, type PlayingAsPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { listPlayableCharacters } from '../src/db/characterRepo.js';
 import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
@@ -205,7 +205,8 @@ describe('LobbyRoom', () =>
 
 			assert.strictEqual(area.ruleset, 'pf1e');
 			assert.strictEqual(area.fullVision, true, 'the lobby sees as far as by day unless the universe gives it a vision cost');
-			assert.deepStrictEqual(forest, { id: forest?.id, key: 'forest', name: null, color: 0x00aa11, visionCost: 0 }, 'the lobby has no vision cost unless the universe gives it one');
+			assert.deepStrictEqual(forest, { id: forest?.id, key: 'forest', name: null, color: 0x00aa11, graphic: 'forest', uploadedGraphic: null, impassable: false, visionCost: 0 },'the lobby has no vision cost unless the universe gives it one');
+			assert.strictEqual(area.tiles.find((tile) => (tile.key === 'mountains'))?.impassable, true, 'mountains can\'t be entered, so the client draws their peaks over players');
 			assert.strictEqual(area.tiles.some((tile) => (tile.name !== null)), false, 'default tiles are named by key, not in English');
 		});
 
@@ -333,7 +334,7 @@ describe('LobbyRoom', () =>
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
 			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
 
-			assert.strictEqual(playerOf(ada).darkvision, true);
+			assert.strictEqual(playerOf(ada).darkvision, DARKVISION_SQUARES);
 
 			placeOnCell(playerOf(ada), 0, 10);
 			placeOnCell(playerOf(grace), 13, 10);
@@ -827,12 +828,12 @@ describe('LobbyRoom', () =>
 			const grass = await defaultTileId('grass');
 
 			await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
-			await saveEditedDefaultTile(universe.universeId, 'pf1e', grass, { name: 'Autumn Grass', indoors: false, outdoors: true, color: 0xc08030, visionCost: 0, walkSeconds: 600 });
+			await saveEditedDefaultTile(universe.universeId, 'pf1e', grass, { name: 'Autumn Grass', indoors: false, outdoors: true, color: 0xc08030, graphic: 'grass', uploadedGraphicId: null, visionCost: 0, walkSeconds: 600, enabled: true });
 			areaChanges.publish({ kind: 'tiles', universeId: universe.universeId });
 
 			const area = await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
 
-			assert.deepStrictEqual(area.tiles.find((tile) => (tile.id === grass)), { id: grass, key: null, name: 'Autumn Grass', color: 0xc08030, visionCost: 0 });
+			assert.deepStrictEqual(area.tiles.find((tile) => (tile.id === grass)), { id: grass, key: null, name: 'Autumn Grass', color: 0xc08030, graphic: 'grass', uploadedGraphic: null, impassable: false, visionCost: 0 });
 		});
 
 		it('sends the lobby again with its tiles\' vision costs once the universe gives it them', async () =>

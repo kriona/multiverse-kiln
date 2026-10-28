@@ -40,8 +40,8 @@
 		"source": "Could not save the site settings."
 	},
 	"admin.title": {
-		"message": "The Captain's Orders - Multiverse Kiln",
-		"source": "Site Settings - Multiverse Kiln"
+		"message": "The Captain's Orders",
+		"source": "Site Settings"
 	},
 	"admin.universeCreationEnabled": {
 		"message": "Hands can create universes",
@@ -203,17 +203,21 @@
 		"message": "Spin yer yarn",
 		"source": "Choose a theme"
 	},
+	"character.lightSensitivity": {
+		"message": "Blinded by the sun",
+		"source": "Light sensitivity"
+	},
 	"character.next": {
 		"message": "Onward",
 		"source": "Next"
 	},
 	"character.pageTitle": {
-		"message": "Sign On a Hand - {universe} - Multiverse Kiln",
-		"source": "Create Character - {universe} - Multiverse Kiln"
+		"message": "Sign On a Hand - {universe}",
+		"source": "Create Character - {universe}"
 	},
 	"character.pageTitleLoading": {
-		"message": "Sign On a Hand - Multiverse Kiln",
-		"source": "Create Character - Multiverse Kiln"
+		"message": "Sign On a Hand",
+		"source": "Create Character"
 	},
 	"character.race.floatingBonus": {
 		"message": "+{bonus, number} to a knack o' yer choosin'",
@@ -343,10 +347,6 @@
 		"message": "Throw Hand Overboard",
 		"source": "Delete Character"
 	},
-	"characterSheet.darkvisionValue": {
-		"message": "{darkvision, select, true {Aye} other {Nay}}",
-		"source": "{darkvision, select, true {Yes} other {No}}"
-	},
 	"characterSheet.delete": {
 		"message": "Throw Overboard",
 		"source": "Delete"
@@ -366,6 +366,10 @@
 	"characterSheet.items": {
 		"message": "Kit",
 		"source": "Equipment"
+	},
+	"characterSheet.lightSensitivityValue": {
+		"message": "{lightSensitivity, select, true {Aye} other {Nay}}",
+		"source": "{lightSensitivity, select, true {Yes} other {No}}"
 	},
 	"characterSheet.loadFailed": {
 		"message": "Couldn't unroll this hand's papers.",
@@ -471,6 +475,18 @@
 		"message": "Raise a Crew",
 		"source": "Create Group"
 	},
+	"darkvision.none": {
+		"message": "Blind as a bat",
+		"source": "None"
+	},
+	"darkvision.normal": {
+		"message": "Sees in the dark (60 feet)",
+		"source": "Darkvision (60 feet)"
+	},
+	"darkvision.superior": {
+		"message": "Eyes o' the deep (120 feet)",
+		"source": "Superior darkvision (120 feet)"
+	},
 	"dialog.apply": {
 		"message": "Make it so",
 		"source": "Apply"
@@ -538,10 +554,6 @@
 	"editor.area.lobbyTime": {
 		"message": "How the hours pass in the tavern be set on the Lobby tab.",
 		"source": "The lobby's passage of time is set on the Lobby tab."
-	},
-	"editor.area.lobbyTitle": {
-		"message": "{area} (the tavern)",
-		"source": "{area} (the lobby)"
 	},
 	"editor.area.loopsEastWest": {
 		"message": "Wraps east-west",
@@ -694,10 +706,6 @@
 	"editor.characters.groupSizeHint": {
 		"message": "{min, number} be sailin' alone. At most {max, number} hands can sail together.",
 		"source": "{min, number} is single player game. At most {max, number} characters can play together."
-	},
-	"editor.characters.noStartingEquipment": {
-		"message": "The crew sets sail empty-handed.",
-		"source": "Characters start with nothing."
 	},
 	"editor.characters.saveFailed": {
 		"message": "Couldn't stow the crew's settings.",
@@ -1140,8 +1148,8 @@
 		"source": "Actions take no time in the lobby, so its time of day follows this instead of the universe's passage of time."
 	},
 	"editor.map.areaDefault": {
-		"message": "{tile} (the area's usual)",
-		"source": "{tile} (the area's default)"
+		"message": "{tile} (the usual)",
+		"source": "{tile} (default)"
 	},
 	"editor.map.brush.circle": {
 		"message": "round as a cannonball",
@@ -1308,20 +1316,20 @@
 		"source": "Map changes not saved yet"
 	},
 	"editor.map.void": {
-		"message": "Davy Jones' Locker",
-		"source": "Void"
+		"message": "⚓Davy Jones' Locker",
+		"source": "🌃Void"
 	},
-	"editor.noStartingEquipment": {
-		"message": "Naught more.",
-		"source": "Nothing more."
+	"editor.notes": {
+		"message": "Scribblings",
+		"source": "Notes"
 	},
 	"editor.openFailed": {
 		"message": "Couldn't open the universe.",
 		"source": "Could not open the universe."
 	},
 	"editor.pageTitle": {
-		"message": "Edit {universe} - Multiverse Kiln",
-		"source": "Edit {universe} - Multiverse Kiln"
+		"message": "Edit {universe}",
+		"source": "Edit {universe}"
 	},
 	"editor.passageOfTime": {
 		"message": "How the hours pass",
@@ -1415,6 +1423,10 @@
 		"message": "Lifeblood",
 		"source": "Hit points"
 	},
+	"editor.race.lightSensitivityHint": {
+		"message": "Bright light dazzles this folk's hands, so they see but half as far in broad daylight.",
+		"source": "Bright light dazzles the race's characters, so they see only half as far in full daylight."
+	},
 	"editor.race.size": {
 		"message": "Heft",
 		"source": "Size"
@@ -1428,8 +1440,8 @@
 		"source": "Add Race"
 	},
 	"editor.races.darkvision": {
-		"message": "sees in the dark",
-		"source": "darkvision"
+		"message": "{darkvision, select, superior {eyes o' the deep} other {sees in the dark}}",
+		"source": "{darkvision, select, superior {superior darkvision} other {darkvision}}"
 	},
 	"editor.races.floatingBonus": {
 		"message": "{bonus, number, ::sign-always} to a knack o' choice",
@@ -1446,6 +1458,10 @@
 	"editor.races.hitPoints": {
 		"message": "{hitPoints, number} lifeblood",
 		"source": "{hitPoints, plural, one {# hit point} other {# hit points}}"
+	},
+	"editor.races.lightSensitivity": {
+		"message": "blinded by the sun",
+		"source": "light sensitivity"
 	},
 	"editor.races.listFailed": {
 		"message": "Couldn't list the folk.",
@@ -1483,10 +1499,6 @@
 		"message": "Articles for {ruleset}",
 		"source": "Settings for {ruleset}"
 	},
-	"editor.ruleset.laterHint": {
-		"message": "The game don't bother with sleep, weight or ammunition yet. These be kept in the hold for when it does.",
-		"source": "The game doesn't use sleep, weight or ammunition yet. These are kept for when it does."
-	},
 	"editor.ruleset.loadFailed": {
 		"message": "Couldn't haul up the ship's articles.",
 		"source": "Could not load the ruleset's settings."
@@ -1510,6 +1522,10 @@
 	"editor.ruleset.tracksAmmo": {
 		"message": "Track what arrows get shot",
 		"source": "Track ammunition"
+	},
+	"editor.save.failed": {
+		"message": "Couldn't stow it.",
+		"source": "Could not save."
 	},
 	"editor.searchByName": {
 		"message": "Search by name",
@@ -1703,9 +1719,57 @@
 		"message": "Scuttle Tile",
 		"source": "Delete Tile"
 	},
+	"editor.tile.deleteGraphic": {
+		"message": "Scuttle Tileset Paintin'",
+		"source": "Delete Tileset Image"
+	},
+	"editor.tile.deleteGraphicConfirm": {
+		"message": "Scuttle the tileset \"{name}\"? Every tile painted with it will be painted in its color instead.",
+		"source": "Delete the uploaded tileset \"{name}\"? Every tile drawn with it will be drawn in its color instead."
+	},
 	"editor.tile.editTitle": {
 		"message": "Edit {tile}",
 		"source": "Edit {tile}"
+	},
+	"editor.tile.enabledLocked": {
+		"message": "New areas be laid down with this tile, so it can't be closed.",
+		"source": "New areas start with this tile, so it can't be disabled."
+	},
+	"editor.tile.graphic": {
+		"message": "Paintin'",
+		"source": "Graphic"
+	},
+	"editor.tile.graphic.forest": {
+		"message": "Greenwood",
+		"source": "Forest"
+	},
+	"editor.tile.graphic.grass": {
+		"message": "Grass",
+		"source": "Grass"
+	},
+	"editor.tile.graphic.hedge": {
+		"message": "Hedgerow",
+		"source": "Hedge"
+	},
+	"editor.tile.graphic.mountains": {
+		"message": "Peaks",
+		"source": "Mountains"
+	},
+	"editor.tile.graphic.stoneWall": {
+		"message": "Stone Rampart",
+		"source": "Stone Wall"
+	},
+	"editor.tile.graphicHint.blob": {
+		"message": "Painted atop the area's default tile, lashed to its neighbors (47-Tile Blob).",
+		"source": "Drawn over the area's default tile, joining up with its neighbors (47-Tile Blob)."
+	},
+	"editor.tile.graphicHint.dualGrid": {
+		"message": "Runs together with neighborin' tiles like tides; higher stackin' order on top. Stackin' order: {order, number} (Dual-Grid).",
+		"source": "Blends with neighboring tiles; higher draw order on top. Draw order: {order, number} (Dual-Grid)."
+	},
+	"editor.tile.graphicHint.none": {
+		"message": "Painted in its color.",
+		"source": "Drawn in its color."
 	},
 	"editor.tile.invalidColor": {
 		"message": "Give a hex color, such as #7AFF3D.",
@@ -1714,6 +1778,18 @@
 	"editor.tile.night": {
 		"message": "Night",
 		"source": "Night"
+	},
+	"editor.tile.noGraphic": {
+		"message": "None (just the color, matey)",
+		"source": "None (use the color)"
+	},
+	"editor.tile.uploadGraphic": {
+		"message": "Haul Aboard a Tileset Image",
+		"source": "Upload Tileset Image"
+	},
+	"editor.tile.uploadedGraphic": {
+		"message": "{name} (custom)",
+		"source": "{name} (custom)"
 	},
 	"editor.tile.usedIn": {
 		"message": "Fit fer",
@@ -1743,9 +1819,105 @@
 		"message": "Sailin' time (seconds)",
 		"source": "Walk time (seconds)"
 	},
+	"editor.tileDelete.checkFailed": {
+		"message": "Couldn't find out which charts use the tile.",
+		"source": "Could not find out which maps use the tile."
+	},
+	"editor.tileDelete.checking": {
+		"message": "Searchin' the charts fer it...",
+		"source": "Checking which maps use it..."
+	},
+	"editor.tileDelete.chooseReplacement": {
+		"message": "Pick a tile",
+		"source": "Choose a tile"
+	},
+	"editor.tileDelete.question": {
+		"message": "Scuttle the tile \"{name}\" when the Tilesets tab be saved?",
+		"source": "Delete the tile \"{name}\" when the Tilesets tab is saved?"
+	},
+	"editor.tileDelete.replaceWith": {
+		"message": "Paint over it with",
+		"source": "Replace it with"
+	},
+	"editor.tileDelete.submit": {
+		"message": "Scuttle",
+		"source": "Delete"
+	},
+	"editor.tileDelete.title": {
+		"message": "Scuttle Tile",
+		"source": "Delete Tile"
+	},
+	"editor.tileDelete.usage": {
+		"message": "{count, plural, one {The chart o' {areas} uses it.} other {The charts o' {areas} use it.}} Pick a tile to paint {count, plural, one {it} other {them}} with in its place.",
+		"source": "{count, plural, one {The map of {areas} uses it.} other {The maps of {areas} use it.}} Choose a tile to paint {count, plural, one {it} other {them}} with in its place."
+	},
+	"editor.tileGraphic.blobFormatHint": {
+		"message": "A PNG o' {width, number} by {height, number} pixels, no heavier than {kilobytes, number} KB: {columns, number} frames across an' {rows, number} down in the 47-tile blob layout, with the last berth left empty. These tiles be painted atop the ground, so they need no stackin' order.",
+		"source": "A PNG of {width, number} by {height, number} pixels, at most {kilobytes, number} KB: {columns, number} frames across and {rows, number} down in the 47-tile blob layout, with the last place empty. These tiles are drawn over the ground, so they have no draw order."
+	},
+	"editor.tileGraphic.drawOrder": {
+		"message": "Stackin' order",
+		"source": "Draw order"
+	},
+	"editor.tileGraphic.drawOrderExample": {
+		"message": "{name} {order, number}",
+		"source": "{name} {order, number}"
+	},
+	"editor.tileGraphic.drawOrderHint": {
+		"message": "Where two kinds o' tile meet, the higher number's edges be painted over the other's. The tilesets that sail with the game be {orders}.",
+		"source": "Where two kinds of tile meet, the higher number's edges are drawn over the other's. The tilesets that come with the game are {orders}."
+	},
+	"editor.tileGraphic.file": {
+		"message": "Paintin'",
+		"source": "Image"
+	},
+	"editor.tileGraphic.format": {
+		"message": "Lay o' the sheet",
+		"source": "Layout"
+	},
+	"editor.tileGraphic.format.blob": {
+		"message": "47 tiles, painted atop the ground",
+		"source": "47 tiles, drawn over the ground"
+	},
+	"editor.tileGraphic.format.dualGrid": {
+		"message": "15 tiles, blendin' with the ground",
+		"source": "15 tiles, blending with the ground"
+	},
+	"editor.tileGraphic.formatHint": {
+		"message": "A PNG o' {size, number} by {size, number} pixels, no heavier than {kilobytes, number} KB: {columns, number} frames across an' {columns, number} down in the Dual-Grid layout.",
+		"source": "A PNG of {size, number} by {size, number} pixels, at most {kilobytes, number} KB: {columns, number} frames across and {columns, number} down in the Dual-Grid layout."
+	},
+	"editor.tileGraphic.rights": {
+		"message": "I have the rights to use this paintin', fair an' square",
+		"source": "I have the rights to use this image"
+	},
+	"editor.tileGraphic.submit": {
+		"message": "Stow It",
+		"source": "Add"
+	},
+	"editor.tileGraphic.title": {
+		"message": "Haul Aboard a Tileset Image",
+		"source": "Upload Tileset Image"
+	},
+	"editor.tileGraphic.unreadable": {
+		"message": "Couldn't make out the paintin'.",
+		"source": "Could not read the image."
+	},
+	"editor.tileGraphicDelete.submit": {
+		"message": "Scuttle",
+		"source": "Delete"
+	},
+	"editor.tileGraphicDelete.title": {
+		"message": "Scuttle Tileset Paintin'",
+		"source": "Delete Tileset Image"
+	},
 	"editor.tiles.add": {
 		"message": "Add Tile",
 		"source": "Add Tile"
+	},
+	"editor.tiles.deleteUploadFailed": {
+		"message": "Couldn't scuttle the tileset \"{name}\".",
+		"source": "Could not delete the tileset \"{name}\"."
 	},
 	"editor.tiles.impassable": {
 		"message": "no passage",
@@ -1770,6 +1942,14 @@
 	"editor.tiles.searchLabel": {
 		"message": "Search tiles by name",
 		"source": "Search tiles by name"
+	},
+	"editor.tiles.uploadFailed": {
+		"message": "Couldn't haul the tileset \"{name}\" aboard.",
+		"source": "Could not upload the tileset \"{name}\"."
+	},
+	"editor.tiles.uploadsFailed": {
+		"message": "Couldn't count the tilesets hauled aboard.",
+		"source": "Could not list the uploaded tilesets."
 	},
 	"editor.tiles.usedInValue": {
 		"message": "{usedIn, select, both {Both} indoors {Below decks} outdoors {Topside} other {Neither}}",
@@ -1846,6 +2026,10 @@
 	"error.classUnavailable": {
 		"message": "That callin' be off the books now. Choose another.",
 		"source": "That class can't be chosen any more. Choose another."
+	},
+	"error.defaultAreaTileDisabled": {
+		"message": "New areas be laid down with this tile, so it can't be closed.",
+		"source": "New areas start with this tile, so it can't be disabled."
 	},
 	"error.deleteGroupMember": {
 		"message": "That hand sails with a crew. They have to jump ship before they can be sent to Davy Jones.",
@@ -1987,6 +2171,10 @@
 		"message": "Those folk be lost at sea.",
 		"source": "The race doesn't exist."
 	},
+	"error.noSuchReplacementTile": {
+		"message": "The tile picked to paint over it be lost at sea.",
+		"source": "The tile chosen to replace it doesn't exist."
+	},
 	"error.noSuchTheme": {
 		"message": "That yarn be lost at sea.",
 		"source": "The theme doesn't exist."
@@ -1995,9 +2183,21 @@
 		"message": "That tile be lost at sea.",
 		"source": "The tile doesn't exist."
 	},
+	"error.noSuchTileGraphic": {
+		"message": "That tileset be lost at sea.",
+		"source": "The tileset doesn't exist."
+	},
 	"error.noSuchUniverse": {
 		"message": "That universe be lost at sea, or ye can't see it.",
 		"source": "The universe doesn't exist, or you can't see it."
+	},
+	"error.noSuchUploadedGraphic": {
+		"message": "That hauled-aboard tileset ain't in this universe's hold.",
+		"source": "The uploaded tileset doesn't exist in this universe."
+	},
+	"error.noSuchUploadedGraphicToDelete": {
+		"message": "That hauled-aboard tileset be gone. Mayhap it was scuttled already.",
+		"source": "The uploaded tileset doesn't exist. It may have been deleted already."
 	},
 	"error.noThemes": {
 		"message": "This universe's ship's articles have no yarns.",
@@ -2062,6 +2262,22 @@
 	"error.themeUnavailable": {
 		"message": "That yarn be off the books now. Choose another.",
 		"source": "That theme can't be chosen any more. Choose another."
+	},
+	"error.tileGraphicLimit": {
+		"message": "A universe's hold takes at most {max, plural, one {# tileset hauled aboard} other {# tilesets hauled aboard}}.",
+		"source": "A universe can have at most {max, plural, one {# uploaded tileset} other {# uploaded tilesets}}."
+	},
+	"error.tileGraphicNotPng": {
+		"message": "That file ain't a PNG paintin'.",
+		"source": "The file isn't a PNG image."
+	},
+	"error.tileGraphicTooLarge": {
+		"message": "The paintin' can weigh no more than {max, number} KB.",
+		"source": "The image can be at most {max, number} KB."
+	},
+	"error.tileGraphicWrongSize": {
+		"message": "A tileset o' this lay must be {width, number} by {height, number} pixels, no more, no less.",
+		"source": "A tileset in this layout must be {width, number} by {height, number} pixels."
 	},
 	"error.tileInUse": {
 		"message": "A chart uses this tile, so it can't be scuttled.",
@@ -2267,10 +2483,6 @@
 		"message": "The whole crew must be aboard to sail that way, the anchor bein' too.",
 		"source": "The whole group has to be here to go that way, the anchor being included."
 	},
-	"group.pageTitle": {
-		"message": "{group} - Multiverse Kiln",
-		"source": "{group} - Multiverse Kiln"
-	},
 	"group.permadeath": {
 		"message": "No quarter: hands who die in this crew go to Davy Jones for eternity.",
 		"source": "Permadeath: characters who die in this group cannot be resurrected."
@@ -2344,8 +2556,8 @@
 		"source": "Your universes"
 	},
 	"home.pageTitle": {
-		"message": "Universes - Multiverse Kiln",
-		"source": "Universes - Multiverse Kiln"
+		"message": "Universes",
+		"source": "Universes"
 	},
 	"home.showMore": {
 		"message": "Show more",
@@ -2408,8 +2620,8 @@
 		"source": "You haven't made a character in this universe yet. Create one to join the group."
 	},
 	"invite.pageTitle": {
-		"message": "{title} - {universe} - Multiverse Kiln",
-		"source": "{title} - {universe} - Multiverse Kiln"
+		"message": "{title} - {universe}",
+		"source": "{title} - {universe}"
 	},
 	"invite.summary": {
 		"message": "Ye be summoned to sail {universe} with a crew gathered by {anchor}. It has {count, number} o' {size, plural, one {# hand} other {# hands}}.",
@@ -2532,8 +2744,8 @@
 		"source": "Leave the Group?"
 	},
 	"license.agpl": {
-		"message": "Multiverse Kiln™ be free software: ye can share it about and/or change it under the terms o' the {license} as published by the Free Software Foundation, either version 3 o' the License, or (at yer choosin') any later version.",
-		"source": "Multiverse Kiln™ is free software: you can redistribute it and/or modify it under the terms of the {license} as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version."
+		"message": "{siteName}™ be free software: ye can share it about and/or change it under the terms o' the {license} as published by the Free Software Foundation, either version 3 o' the License, or (at yer choosin') any later version.",
+		"source": "{siteName}™ is free software: you can redistribute it and/or modify it under the terms of the {license} as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version."
 	},
 	"license.agplName": {
 		"message": "GNU Affero General Public License",
@@ -2548,8 +2760,8 @@
 		"source": "The game's own art, audio, fonts, characters, setting and story are not covered by the GNU Affero General Public License. They are copyright {holder}, all rights reserved, and may not be reused without written permission. Assets made by others keep their own licenses, listed below."
 	},
 	"license.communityUse": {
-		"message": "Multiverse Kiln uses trademarks an'/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy ({policy}). We be expressly forbidden from chargin' ye to use or reach this content. Multiverse Kiln ain't published, endorsed, or specifically approved by Paizo. For more about Paizo Inc. an' Paizo products, visit {paizo}.",
-		"source": "Multiverse Kiln uses trademarks and/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy ({policy}). We are expressly prohibited from charging you to use or access this content. Multiverse Kiln is not published, endorsed, or specifically approved by Paizo. For more information about Paizo Inc. and Paizo products, visit {paizo}."
+		"message": "{siteName} uses trademarks an'/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy ({policy}). We be expressly forbidden from chargin' ye to use or reach this content. {siteName} ain't published, endorsed, or specifically approved by Paizo. For more about Paizo Inc. an' Paizo products, visit {paizo}.",
+		"source": "{siteName} uses trademarks and/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy ({policy}). We are expressly prohibited from charging you to use or access this content. {siteName} is not published, endorsed, or specifically approved by Paizo. For more information about Paizo Inc. and Paizo products, visit {paizo}."
 	},
 	"license.contents": {
 		"message": "What's in the hold",
@@ -2592,24 +2804,24 @@
 		"source": "Starfinder is a trademark of Paizo Inc., used under the Community Use Policy described in the {pathfinder} section."
 	},
 	"license.starfinderOpenGameContent": {
-		"message": "The game mechanics o' the Starfinder First Edition ruleset be Open Game Content, used under the Open Game License 1.0a in the Pathfinder First Edition rules section, whose copyright notice names the Starfinder Core Rulebook: its abilities, ability points, sizes, races, classes, themes, credits an' items, an' their names in every tongue. In the source code, they be in {folder}, an' their names in {locales}. Nothin' else in Multiverse Kiln be Open Game Content.",
-		"source": "The Starfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a in the Pathfinder First Edition rules section, whose copyright notice lists the Starfinder Core Rulebook: its abilities, ability points, sizes, races, classes, themes, credits and items, and their names in every language. In the source code, they are in {folder}, and their names in {locales}. Nothing else in Multiverse Kiln is Open Game Content."
+		"message": "The game mechanics o' the Starfinder First Edition ruleset be Open Game Content, used under the Open Game License 1.0a in the Pathfinder First Edition rules section, whose copyright notice names the Starfinder Core Rulebook: its abilities, ability points, sizes, races, classes, themes, credits an' items, an' their names in every tongue. In the source code, they be in {folder}, an' their names in {locales}. Nothin' else in {siteName} be Open Game Content.",
+		"source": "The Starfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a in the Pathfinder First Edition rules section, whose copyright notice lists the Starfinder Core Rulebook: its abilities, ability points, sizes, races, classes, themes, credits and items, and their names in every language. In the source code, they are in {folder}, and their names in {locales}. Nothing else in {siteName} is Open Game Content."
 	},
 	"license.summary": {
 		"message": "In plain speak: ye may use, change an' share the game's code. If ye share a changed version, or run one on a server that players connect to, ye must offer its source code under the same license.",
 		"source": "In short: you may use, change and share the game engine's code. If you share a changed version, or run one on a server that players connect to, you must offer its source code under the same license."
 	},
 	"license.title": {
-		"message": "The Ship's Articles - Multiverse Kiln",
-		"source": "Licenses - Multiverse Kiln"
+		"message": "The Ship's Articles",
+		"source": "Licenses"
 	},
 	"license.trademark": {
-		"message": "Multiverse Kiln be a trademark o' {holder}.",
-		"source": "Multiverse Kiln is a trademark of {holder}."
+		"message": "{siteName} be a trademark o' {holder}.",
+		"source": "{siteName} is a trademark of {holder}."
 	},
 	"license.warranty": {
-		"message": "Multiverse Kiln be handed out in the hope that it'll be useful, but WITHOUT ANY WARRANTY; without even the implied warranty o' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.",
-		"source": "Multiverse Kiln is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details."
+		"message": "{siteName} be handed out in the hope that it'll be useful, but WITHOUT ANY WARRANTY; without even the implied warranty o' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.",
+		"source": "{siteName} is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details."
 	},
 	"lobby.characterPlaying": {
 		"message": "At the helm",
@@ -2684,8 +2896,8 @@
 		"source": "{name} (you)"
 	},
 	"lobby.pageTitle": {
-		"message": "Tavern - {universe} - Multiverse Kiln",
-		"source": "Lobby - {universe} - Multiverse Kiln"
+		"message": "Tavern - {universe}",
+		"source": "Lobby - {universe}"
 	},
 	"lobby.title": {
 		"message": "Tavern",
@@ -2904,16 +3116,16 @@
 		"source": "Disconnected from the server. Reload the page to reconnect."
 	},
 	"page.editTitle": {
-		"message": "Edit Universe - Multiverse Kiln",
-		"source": "Edit Universe - Multiverse Kiln"
+		"message": "Edit Universe",
+		"source": "Edit Universe"
 	},
 	"page.language": {
 		"message": "Tongue",
 		"source": "Language"
 	},
 	"page.license": {
-		"message": "Multiverse Kiln™ be free software under the {license}.",
-		"source": "Multiverse Kiln™ is free software under the {license}."
+		"message": "{siteName}™ be free software under the {license}.",
+		"source": "{siteName}™ is free software under the {license}."
 	},
 	"page.licenseName": {
 		"message": "GNU Affero General Public License v3 or later",
@@ -3539,6 +3751,10 @@
 		"message": "Keyboard shortcuts",
 		"source": "Keyboard shortcuts"
 	},
+	"table.sorted": {
+		"message": "{direction, select, ascending {Stowed by {column}, low to high} other {Stowed by {column}, high to low}}",
+		"source": "{direction, select, ascending {Sorted by {column}, ascending} other {Sorted by {column}, descending}}"
+	},
 	"tile.pf1e.desert": {
 		"message": "Barren Sands",
 		"source": "Desert"
@@ -3763,12 +3979,8 @@
 		"message": "That universe be lost at sea. It may sail under a new name, or it ain't open to all hands yet.",
 		"source": "That universe could not be found. It may have been renamed, or it isn't open to everyone yet."
 	},
-	"universePage.title": {
-		"message": "{universe} - Multiverse Kiln",
-		"source": "{universe} - Multiverse Kiln"
-	},
 	"universePage.unavailableTitle": {
-		"message": "Universe - Multiverse Kiln",
-		"source": "Universe - Multiverse Kiln"
+		"message": "Universe",
+		"source": "Universe"
 	}
 }

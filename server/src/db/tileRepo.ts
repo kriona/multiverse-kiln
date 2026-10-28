@@ -2,10 +2,11 @@
  * Tiles: the only module that reads or writes the tiles table
  */
 import { and, count, eq, isNull, or } from 'drizzle-orm';
-import { IMPASSABLE_WALK_SECONDS, tileUsedIn,type EditorTile, type Ruleset, type TileListPayload, type TileListQuery, type TileSettings } from '@multiverse-kiln/shared';
+import { compareNumbers, IMPASSABLE_WALK_SECONDS, MAX_WALK_SECONDS, sortRows, TILE_USED_IN, tileUsedIn,type AreaTile, type EditorTile, type RowComparers, type Ruleset, type TileListPayload, type TileListQuery, type TileSettings, type TileSortColumn } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { tiles } from './schema.js';
+import { listTileGraphics } from './tileGraphicRepo.js';
 
 /**
  * A tile as the rest of the server sees it
@@ -33,6 +34,17 @@ export interface TileRecord
 	 */
 	color: number;
 
+	/**
+	 * The graphic the tile is drawn with (TILE_GRAPHICS), or null for its color or uploadedGraphic
+	 */
+	graphic: string | null;
+
+	/**
+	 * A graphic the universe's editors uploaded that the tile is drawn with, with its format and draw
+	 * order, or null
+	 */
+	uploadedGraphic: AreaTile['uploadedGraphic'];
+
 	visionCost: number;
 	walkSeconds: number;
 }
@@ -40,7 +52,7 @@ export interface TileRecord
 /**
  * What a new tile needs
  */
-export type NewTile = Pick<typeof tiles.$inferInsert, 'ruleset' | 'universeId' | 'key' | 'name' | 'indoors' | 'outdoors' | 'color' | 'visionCost' | 'walkSeconds'>;
+export type NewTile = Pick<typeof tiles.$inferInsert, 'ruleset' | 'universeId' | 'key' | 'name' | 'indoors' | 'outdoors' | 'color' | 'graphic' | 'uploadedGraphicId' | 'visionCost' | 'walkSeconds' | 'enabled'>;
 
 /**
  * The settings of a tile a universe added, which always has a name of its own
@@ -57,8 +69,11 @@ const settingsColumns = {
 	indoors: tiles.indoors,
 	outdoors: tiles.outdoors,
 	color: tiles.color,
+	graphic: tiles.graphic,
+	uploadedGraphicId: tiles.uploadedGraphicId,
 	visionCost: tiles.visionCost,
-	walkSeconds: tiles.walkSeconds
+	walkSeconds: tiles.walkSeconds,
+	enabled: tiles.enabled
 };
 
 /**
@@ -105,6 +120,8 @@ export async function loadUniverseTiles(universeId: string, ruleset: Ruleset, ex
 		indoors: tile.indoors,
 		outdoors: tile.outdoors,
 		color: tile.color,
+		graphic: tile.graphic,
+		uploadedGraphic: ((tile.uploadedGraphic === null) ? null : { id: tile.uploadedGraphic.id, format: tile.uploadedGraphic.format, drawOrder: tile.uploadedGraphic.drawOrder }),
 		visionCost: tile.visionCost,
 		walkSeconds: tile.walkSeconds
 	})));
@@ -155,6 +172,7 @@ async function loadNamedTiles(universeId: string, ruleset: Ruleset, executor: Ex
 	const copies = new Map(rows
 		.filter((row) => (row.overridesTileId !== null))
 		.map((row) => [row.overridesTileId, row]));
+	const uploadedGraphics = new Map((await listTileGraphics(universeId, executor)).map((graphic) => [graphic.id, graphic]));
 
 	return(rows
 		.filter((row) => (row.overridesTileId === null))
@@ -170,10 +188,14 @@ async function loadNamedTiles(universeId: string, ruleset: Ruleset, executor: Ex
 				indoors: settings.indoors,
 				outdoors: settings.outdoors,
 				color: settings.color,
+				graphic: settings.graphic,
+				uploadedGraphicId: settings.uploadedGraphicId,
 				visionCost: settings.visionCost,
 				walkSeconds: settings.walkSeconds,
+				enabled: settings.enabled,
 				custom,
-				edited: (copy !== undefined)
+				edited: (copy !== undefined),
+				uploadedGraphic: (((settings.uploadedGraphicId === null) ? undefined : uploadedGraphics.get(settings.uploadedGraphicId)) ?? null)
 			};
 
 			return({
@@ -184,11 +206,37 @@ async function loadNamedTiles(universeId: string, ruleset: Ruleset, executor: Ex
 }
 
 /**
+ * Compares English tile names, ignoring capitals and accents
+ */
+const nameCollator = new Intl.Collator('en', { sensitivity: 'base' });
+
+/**
+ * How the Tilesets tab's columns compare tiles (TileListQuery.sort)
+ */
+const tileComparers: RowComparers<{ tile: EditorTile; englishName: string }, TileSortColumn> = {
+	name: (first, second) => nameCollator.compare(first.englishName, second.englishName),
+	walkTime: (first, second) => compareNumbers(walkSortKey(first.tile), walkSortKey(second.tile)),
+	visionCost: (first, second) => compareNumbers(first.tile.visionCost, second.tile.visionCost),
+	usedIn: (first, second) => compareNumbers(TILE_USED_IN.indexOf(tileUsedIn(first.tile)), TILE_USED_IN.indexOf(tileUsedIn(second.tile)))
+};
+
+/**
+ * A tile's walk time for sorting, with an impassable tile slower than any other
+ *
+ * @param tile The tile
+ * @return Its walk time in seconds, or more than MAX_WALK_SECONDS when it is impassable
+ */
+function walkSortKey(tile: EditorTile): number
+{
+	return(((tile.walkSeconds === IMPASSABLE_WALK_SECONDS) ? (MAX_WALK_SECONDS + 1) : tile.walkSeconds));
+}
+
+/**
  * A page of a universe's tiles, as the Tilesets tab lists them
  *
  * @param universeId The universe's ID
  * @param ruleset The universe's ruleset
- * @param query The filters, and which page
+ * @param query The filters, the order, and which page
  * @param executor The database, or a transaction
  * @return The page, and how many tiles match in all
  */
@@ -203,14 +251,21 @@ export async function listEditorTiles(universeId: string, ruleset: Ruleset, quer
 			((name === undefined) || englishName.toLowerCase().includes(name))
 			&& ((query.passable === undefined) || ((tile.walkSeconds !== IMPASSABLE_WALK_SECONDS) === query.passable))
 			&& ((query.usedIn === undefined) || (tileUsedIn(tile) === query.usedIn))
+			&& ((query.enabled === undefined) || (tile.enabled === query.enabled))
 			&& ((query.custom === undefined) || (tile.custom === query.custom))
 			&& ((query.edited === undefined) || (tile.edited === query.edited))
 		);
 	});
 	const offset = (query.offset ?? 0);
+	const sorted = ((query.sort === undefined)
+		? matching
+		: sortRows(sortRows(matching, tileComparers, { column: 'name', direction: 'ascending' }), tileComparers, {
+			column: query.sort,
+			direction: (query.direction ?? 'ascending')
+		}));
 
 	return({
-		tiles: matching
+		tiles: sorted
 			.slice(offset, offset + (query.limit ?? matching.length))
 			.map(({ tile }) => tile),
 		total: matching.length

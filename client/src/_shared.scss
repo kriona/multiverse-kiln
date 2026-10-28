@@ -265,6 +265,36 @@ button.link-button
 	}
 }
 
+// A table heading's button that sorts the table by its column (see ui/tableSorter.ts), looking like the heading
+button.sort-button
+{
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 0;
+	border: none;
+	background: none;
+	color: inherit;
+	text-align: left;
+
+	&:hover
+	{
+		background: none;
+		text-decoration: underline;
+	}
+
+	.sort-icon
+	{
+		display: inline-flex;
+	}
+
+	// The arrow both ways, on a column the table isn't sorted by
+	.sort-icon.unsorted
+	{
+		opacity: 0.5;
+	}
+}
+
 .screen
 {
 	display: flex;
@@ -302,6 +332,12 @@ button.link-button
 	flex-direction: column;
 	gap: 12px;
 	width: 280px;
+}
+
+.login-logo
+{
+	align-self: center;
+	line-height: 0;
 }
 
 .toolbar
@@ -439,6 +475,11 @@ button.link-button
 	}
 }
 
+input.money
+{
+	max-width: 170px;
+}
+
 .notice
 {
 	margin: 12px 16px 0;
@@ -483,7 +524,7 @@ a.button.secondary
 	list-style: none;
 }
 
-// A universe in a list: a link to its page, or a button that opens it in the editor
+// An entry in a list: a universe linking to its page or its editor, or a button, such as an area in the editor
 button.universe-item,
 a.button.universe-item
 {

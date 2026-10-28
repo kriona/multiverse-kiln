@@ -7,7 +7,7 @@ import type { GameConnection } from '../network/serverConnection';
 import { announce } from './announcer';
 import { CharacterList } from './CharacterList';
 import { characterMessages } from './characterMessages';
-import { getElement, setButtonLabel, showMessage } from './dom';
+import { getElement, setButtonLabel, setPageTitle, showMessage } from './dom';
 import type { MapView } from './MapView';
 import { addShortcut } from './shortcuts';
 import { describeTimeOfDay } from './timeOfDay';
@@ -603,13 +603,7 @@ export class GroupScreen
 
 		this.title.textContent = groupName;
 		this.characterName.textContent = (playing?.name ?? '');
-		document.title = t({
-			id: 'group.pageTitle',
-			defaultMessage: '{group} - Multiverse Kiln',
-			description: 'The browser tab\'s title while the player is in a group; {group} is the group\'s name, or "Group", and Multiverse Kiln is the game engine\'s name'
-		}, {
-			group: groupName
-		});
+		setPageTitle(groupName);
 		this.inviteButton.hidden = (this.members.get(this.anchorId)?.playerId !== this.ownPlayerId);
 		setButtonLabel(this.leaveButton, signOutIcon, ((this.characterId === this.anchorId)
 			? t({

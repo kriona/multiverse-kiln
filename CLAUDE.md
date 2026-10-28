@@ -24,7 +24,7 @@ An engine for making multiplayer browser-based role-playing games.
                  world editor at /edit/<universe id>; src/edit.ts, src/edit.scss), character.html (Create Character; src/character.ts,
                  src/character.scss), license.html (the game's license and the
                  licenses of what it uses, linked from the footer; src/license.ts, src/license.scss) and
-                 admin.html (settings for the whole site; src/admin.ts, src/admin.scss). HTML the pages share (status, notice and login screens,
+                 admin.html (settings for the whole site; src/admin.ts, src/admin.scss). HTML the pages share (the tags every <head> starts with, status, notice and login screens,
                  footer, the keyboard shortcut list and screen reader live regions) lives in partials/, included with <!-- include footer.html --> (vite.config.ts).
                  Both styles use src/_shared.scss, and
                  src/pages.ts holds the addresses that link the pages. src/localization.ts shows text in the
@@ -42,9 +42,13 @@ An engine for making multiplayer browser-based role-playing games.
   src/world/         changes the world editor makes, published to the rooms playing in that world (in memory)
   src/logic/         pure game-simulation functions (no I/O)
   src/db/            Drizzle client, schema, and repository modules
+  src/storage/       object storage for uploads (any S3-compatible service; SeaweedFS locally)
+  src/images/        checking and re-encoding uploaded images, such as tilesets
   src/auth/          token verification
   src/http/          REST routes (health, universes for Home, characters, groups and invite links, the world
-                     editor's API, the admin page's site settings)
+                     editor's API, uploaded tilesets, the admin page's site settings). The world editor saves
+                     every change through one route, editorChanges.ts, in one transaction; each kind of
+                     change is checked and saved by its module (editorAreas.ts, editorItems.ts and so on)
   scripts/           development tools run by hand, such as the seed script
 /shared          Code imported by both client and server:
                  message type enums, payload interfaces, close codes, constants,
@@ -59,7 +63,7 @@ An engine for making multiplayer browser-based role-playing games.
                      test language). The client's dev server writes en-XA.json, the pseudo-language's
                      (git-ignored)
   scripts/           the message extractor (extractMessages.ts), run by `npm run messages` and the client's dev server
-docker-compose.yml   local Postgres
+docker-compose.yml   local Postgres and object storage (SeaweedFS)
 ```
 
 npm workspaces are assumed (`client`, `server`, `shared`). Update this section if the package manager changes.
@@ -92,8 +96,8 @@ npm workspaces are assumed (`client`, `server`, `shared`). Update this section i
 ## Configuration
 
 - All environment-specific values come from environment variables. Never hard-code URLs, credentials, or secrets, and never commit `.env` files. The pre-commit hook runs gitleaks on staged changes and blocks commits that contain secrets.
-- Root (`docker-compose.yml`): `POSTGRES_PASSWORD`, `KILN_MIGRATOR_PASSWORD`, `KILN_APP_PASSWORD`, `POSTGRES_PORT`.
-- Server: `DATABASE_URL` (the app role), `MIGRATION_DATABASE_URL` (the migration role; drizzle-kit only, never the running server), `PORT` (default 2567), `ENABLE_DEV_TOOLS` (playground and `/monitor`, never in production), `SSL_KEY_FILE` / `SSL_CERT_FILE`, `ALLOWED_ORIGINS`, `LOADTEST_ENDPOINT`, auth secret(s).
+- Root (`docker-compose.yml`): `POSTGRES_PASSWORD`, `KILN_MIGRATOR_PASSWORD`, `KILN_APP_PASSWORD`, `POSTGRES_PORT`, `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` (the local storage's keys), `STORAGE_PORT`.
+- Server: `DATABASE_URL` (the app role), `MIGRATION_DATABASE_URL` (the migration role; drizzle-kit only, never the running server), `PORT` (default 2567), `ENABLE_DEV_TOOLS` (playground and `/monitor`, never in production), `SSL_KEY_FILE` / `SSL_CERT_FILE`, `ALLOWED_ORIGINS`, `LOADTEST_ENDPOINT`, `STORAGE_ENDPOINT` / `STORAGE_REGION` / `STORAGE_BUCKET` / `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` / `STORAGE_FORCE_PATH_STYLE` (object storage for uploads), `TEST_STORAGE_BUCKET`, auth secret(s).
 - Client: `DEV_HOST`, `DEV_PORT`, `DEV_SSL_KEY_FILE` / `DEV_SSL_CERT_FILE`, `VITE_SERVER_URL` (`wss://www.multiversekiln-dev.com:2567` locally, `wss://...` in production), `VITE_SOURCE_URL` (the source code link in the page footer, required by the AGPL; a fork sets its own repository).
 - Commit `.env.example` files listing every variable with placeholder values, and keep them up to date.
 
@@ -115,7 +119,8 @@ npm workspaces are assumed (`client`, `server`, `shared`). Update this section i
 `start.bat` (starts Docker Desktop and Postgres if needed, runs `npm install`, then `npm run dev`) or `npm run dev` at the root builds `shared`, then runs the shared watcher, server, and client together in one terminal.
 
 ```bash
-docker compose up -d                 # start local Postgres
+docker compose up -d                 # start local Postgres and object storage
+npm run storage:setup -w server      # create the storage bucket (start.bat does it)
 npm run db:generate -w server        # create a migration after changing server/src/db/schema.ts
 npm run db:migrate -w server         # apply Drizzle migrations
 npm run db:seed -w server            # add or replace the sample universe (server/scripts/sampleUniverse.ts); -- --creator "<name>" makes that player its creator
@@ -133,12 +138,14 @@ Test multiplayer with separate browsers or profiles: every tab of one browser is
 - Prefer small, focused modules. Room classes orchestrate; logic lives elsewhere.
 - Write unit tests for `server/src/logic/` and repository modules.
 - **Text players read is a message** (see Localization in `STRUCTURE-OVERVIEW.md`): an ID, its English text and a description that tells translators what it is and where it appears, written as an object literal where it's used, e.g. `t({ id, defaultMessage, description })` with `t()` from `client/src/localization.ts`, so the English reads in place. Declare a message with `defineMessages()` from `/shared` only when it's used in more than one place or looked up from a table (such as `UNIVERSE_STAGE_NAMES`), and put the declaration as close to its uses as possible. Give the same English used for two purposes two IDs, and one concept shown in several places (a setting's heading in its editor, filter and table column; a value shown as filter choices and in a column) one ID: each ID is separate work for translators, so look for an existing message before adding one, and write its description to cover every place it appears. In a page's HTML, repeat the same `data-message` ID with the same text and `data-translation-context`. Build sentences with ICU arguments and plurals (`'{count, plural, one {# area} other {# areas}}'`), never by joining pieces. Text in a page's HTML gets `data-message` and `data-translation-context` attributes (see `shared/scripts/extractMessages.ts`); the client's Vite config strips `data-translation-context` from the pages it serves and builds. The server never sends English: HTTP errors go through `sendError()` (`server/src/http/errors.ts`) as a `LocalizedMessage`. Text players write (names, chat) and universe text (names and descriptions creators write) aren't messages. The client's dev server keeps `shared/locales/en.json` current as files are saved; without it, run `npm run messages`, since lint fails until the catalog is current. When it or lint warns that a translation is missing messages or out of date, update it with the `translate` skill (`.agents/skills/translate/SKILL.md`): Pirate (`en-x-pirate`) right away, a real language only when asked. Check new pages in the pseudo-language with `?locale=en-XA`.
+- **The game engine's name is only ever `SITE_NAME`** (`shared/src/constants.ts`), never written into a message or page. Code uses the constant; a page's HTML writes `%SITE_NAME%`, which `client/vite.config.ts` fills in. A message that names it takes it as an argument, `{siteName}`, which in a page's HTML is `<span data-argument="siteName" translate="no">%SITE_NAME%</span>`. Browser tab titles leave it out: set them with `setPageTitle()` (`client/src/ui/dom.ts`), which adds ` - ${SITE_NAME}`.
 - **Icons** come from Phosphor's Regular icons (`ph:<name>`, https://phosphoricons.com) for interface actions and game-icons.net (`game-icons:<name>`, https://game-icons.net) for game concepts. A page marks one with `<!-- icon ph:floppy-disk -->` before a button's text; code imports one with `import trashIcon from 'virtual:icon/ph:trash'` and shows it with `setButtonLabel()` (`client/src/ui/dom.ts`). The icons plugin in `client/vite.config.ts` inlines them as SVG at build time. Both are credited, with their licenses, on `client/license.html`; credit any new third-party code or assets the pages use there too.
 - **Every screen works with only a keyboard and with a screen reader** (see Accessibility in `STRUCTURE-OVERVIEW.md`). When adding a screen, dialog or game feature:
 	- Give its main buttons shortcuts with `data-shortcut="Alt+<letter>"`, following the pattern there (Alt+S submits, Alt+N adds, and so on). `client/src/ui/shortcuts.ts` underlines the letter, sets `aria-keyshortcuts` and lists it under `?`. Use `addShortcut()` for a shortcut that isn't a button, and `addKeyHelp()` to list keys the code handles itself. Don't use Alt+D, Alt+E or Alt+F, and don't give deleting a shortcut.
 	- Read out what changes without the player acting, and what is only drawn on a canvas, with `announce()` (`client/src/ui/announcer.ts`), the way `MapAnnouncer` does for the game's map.
 	- Show a field's problem with `reportFieldError()` (`client/src/ui/fieldErrors.ts`), and point the form's buttons at its error text with `aria-describedby`.
 	- Never show something by color alone, give anything drawn on a canvas a keyboard way to reach it, and set `document.title` when the screen shows.
+- **The universe editor stages every change.** Nothing a universe editor tab or its dialogs change reaches the server until the player clicks the Save button in the editor's bar (see Unsaved changes in `STRUCTURE-OVERVIEW.md`): adding, changing and deleting, uploads and deleting uploads included. Dialogs Apply their changes to the tab, the tab shows what will change, and Save sends it all. Never add a control that changes the universe straight away, even after a confirmation.
 - **Don't let work be lost by accident.** Give a form or dialog that edits something a `ChangeTracker` (`client/src/ui/changeTracker.ts`): call `markSaved()` once it is filled and after it saves, `confirmDiscard()` before closing or replacing it, and `guardDialog()` for a dialog. Anything else holding work not yet saved (such as painting still being sent) registers with `watchUnsavedWork()`. While any of it has unsaved changes, the browser asks before the page is left.
 - Code must pass `npm run lint` (ESLint, `eslint.config.js`); a pre-commit hook enforces it. Run it after making changes, and fix problems with Edit rather than `eslint --fix`. The import restrictions for `server/src/logic/` and `server/src/rooms/` enforce the architecture and database rules above - don't disable them.
 - Colyseus APIs changed substantially in 0.17 and 0.18, and recall of them is usually out of date. **Use the `colyseus` skill** (`.agents/skills/colyseus/SKILL.md`) before writing or changing any Colyseus code: rooms, Schema state, messages, matchmaking, reconnection, the client SDK (`@colyseus/sdk`) or server config. Read the matching file in its `references/` folder before non-trivial work in that area. Check the installed versions in `server/package.json` and `client/package.json` first; the skill is written for `colyseus` 0.18 and `@colyseus/schema` 5.

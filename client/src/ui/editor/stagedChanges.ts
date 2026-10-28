@@ -1,4 +1,4 @@
-import { defineMessages } from '@multiverse-kiln/shared';
+import { defineMessages, type ClassSettings, type DifficultyLevelSettings, type EditorChange, type EditorTile, type ItemSettings, type NewRef, type RaceSettings, type ThemeSettings } from '@multiverse-kiln/shared';
 import restoreIcon from 'virtual:icon/ph:arrow-counter-clockwise';
 import undoIcon from 'virtual:icon/ph:arrow-u-up-left';
 import trashIcon from 'virtual:icon/ph:trash';
@@ -7,6 +7,7 @@ import { formatList, t } from '../../localization';
 import { describeEditorError } from '../../network/editorApi';
 import { refreshUnsavedWork, watchUnsavedWork, type UnsavedWork } from '../changeTracker';
 import { setButtonLabel } from '../dom';
+import { newRef, numberRef, type EditorSave, type SaveRefusal } from './editorSave';
 
 /**
  * Something on an editor tab that may hold changes not yet saved, and says when that changes, such as a
@@ -24,6 +25,26 @@ export interface ChangeSource extends UnsavedWork
 }
 
 /**
+ * The Tilesets tab's tiles as its changes make them (see TilesetsTab.withChanges), for the maps other
+ * tabs and dialogs draw
+ */
+export interface StagedTiles
+{
+	/**
+	 * Says when the tiles' changes change
+	 */
+	readonly tileChanges: ChangeSource;
+
+	/**
+	 * Every tile as it will be once saved
+	 *
+	 * @param saved Every tile the universe can use, as saved
+	 * @return The tiles, and the tiles staged for deletion with the tiles chosen to replace them
+	 */
+	withChanges(saved: readonly EditorTile[]): { tiles: EditorTile[]; deleted: Map<number, number | undefined> };
+}
+
+/**
  * One change to a list made in the editor and kept on the page until its tab is saved. A new thing has a
  * negative ID until it is saved
  *
@@ -37,41 +58,50 @@ export type StagedChange<S> =
 	| { kind: 'remove'; id: number };
 
 /**
- * The routes that save a list's changes
+ * The lists a save changes with create, save and remove changes of their own kinds, and their settings
  */
-export interface StagedApi<S>
+interface ListSettings
 {
-	/**
-	 * Adds a thing
-	 *
-	 * @param settings Its settings
-	 * @return Its ID
-	 */
-	create(settings: S): Promise<number>;
-
-	/**
-	 * Changes a thing's settings
-	 *
-	 * @param id Its ID
-	 * @param settings Its settings
-	 */
-	save(id: number, settings: S): Promise<void>;
-
-	/**
-	 * Deletes a thing the universe added, or restores a default it changed
-	 *
-	 * @param id Its ID
-	 */
-	remove(id: number): Promise<void>;
+	Item: ItemSettings;
+	Race: RaceSettings;
+	Class: ClassSettings;
+	Theme: ThemeSettings;
+	DifficultyLevel: DifficultyLevelSettings;
 }
 
 /**
- * The change the server refused while saving, and why
+ * The change a save sends for one change to a list
+ *
+ * @param list Which list, e.g. Item
+ * @param change The change, naming a new thing by its negative ID
+ * @return The change to send, naming a new thing by its ref
  */
-export interface CommitFailure<S>
+export function listChange<List extends keyof ListSettings>(list: List, change: StagedChange<ListSettings[List]>): EditorChange
 {
-	change: StagedChange<S>;
-	error: unknown;
+	const kind = list.toLowerCase();
+
+	// The kinds are built from the list's name, which TypeScript can't match to one member of EditorChange
+	switch (change.kind)
+	{
+		case 'create':
+			return({ kind: `create${list}`, ref: newRef(kind, change.id), settings: change.settings } as EditorChange);
+		case 'save':
+			return({ kind: `save${list}`, id: numberRef(kind, change.id), settings: change.settings } as EditorChange);
+		case 'remove':
+			return({ kind: `remove${list}`, id: numberRef(kind, change.id) } as EditorChange);
+	}
+}
+
+/**
+ * The ref a save sends a new thing of a list with
+ *
+ * @param list Which list, e.g. Item
+ * @param id The thing's negative ID
+ * @return The ref, as listChange() sends it
+ */
+export function listRef(list: keyof ListSettings, id: number): NewRef
+{
+	return(newRef(list.toLowerCase(), id));
 }
 
 /**
@@ -118,7 +148,7 @@ const messages = defineMessages({
 	newTag: {
 		id: 'editor.staged.newTag',
 		defaultMessage: 'new',
-		description: 'In the last column of an editor list (races, classes, themes, difficulty levels, items or tiles), or under an area in the list of areas, for one added since the tab was last saved, which isn\'t saved yet'
+		description: 'In the last column of an editor list (difficulty levels, items or tiles), or under an area in the list of areas, for one added since the tab was last saved, which isn\'t saved yet'
 	},
 	deleted: {
 		id: 'editor.staged.deleted',
@@ -133,12 +163,12 @@ const messages = defineMessages({
 	saveFailed: {
 		id: 'editor.staged.saveFailed',
 		defaultMessage: 'Could not save {name}.',
-		description: 'Shown on an editor tab when saving its changes stopped at one the server refused; {name} is the name of the race, class, theme, difficulty level, item or tile. Changes after it are kept, not saved'
+		description: 'Shown on an editor tab when the server refused one of its changes, followed by why; {name} is the name of the race, class, theme, difficulty level, item or tile. Nothing was saved'
 	},
 	deleteFailed: {
 		id: 'editor.staged.deleteFailed',
 		defaultMessage: 'Could not delete {name}.',
-		description: 'Shown on an editor tab when saving its changes stopped at a deletion the server refused; {name} is the name of the race, class, theme, difficulty level, item or tile. Changes after it are kept, not saved'
+		description: 'Shown on an editor tab when the server refused to delete one of its things, followed by why; {name} is the name of the race, class, theme, difficulty level, item or tile. Nothing was saved'
 	},
 	undoDelete: {
 		id: 'editor.staged.undoDelete',
@@ -153,7 +183,7 @@ const messages = defineMessages({
 	restoreFailed: {
 		id: 'editor.staged.restoreFailed',
 		defaultMessage: 'Could not restore {name}.',
-		description: 'Shown on an editor tab when saving its changes stopped at putting one of the ruleset\'s races, classes, themes, items or tiles back as the ruleset has it; {name} is its name. Changes after it are kept, not saved'
+		description: 'Shown on an editor tab when the server refused to put one of the ruleset\'s races, classes, themes, items or tiles back as the ruleset has it, followed by why; {name} is its name. Nothing was saved'
 	}
 });
 
@@ -169,12 +199,16 @@ export class StagedChanges<S> implements ChangeSource
 	/**
 	 * The ID the next new thing gets: negative, so it never matches a saved one
 	 */
-	private nextNewId = -1;
+	private nextNewId: number;
 
 	private readonly listeners = new Set<(unsaved: boolean) => void>();
 
-	constructor()
+	/**
+	 * @param firstNewId The ID the first new thing gets, which must be negative
+	 */
+	constructor(firstNewId = -1)
 	{
+		this.nextNewId = firstNewId;
 		watchUnsavedWork(this);
 	}
 
@@ -388,58 +422,287 @@ export class StagedChanges<S> implements ChangeSource
 	}
 
 	/**
-	 * Sends the changes to the server in the order they were made, stopping at the first one it refuses.
-	 * The ones it took are no longer unsaved; the rest are kept
+	 * Adds the changes to a save, in the order they were made, so each one meets the list as it was when
+	 * it was made
 	 *
-	 * @param api The routes that save them
-	 * @return The change it refused and why, or undefined when every change was saved
+	 * @param save The save
+	 * @param toChange The change the save sends for each one
+	 * @param onRefused Shows on the tab why the server refused one
+	 * @return The changes added, for markSaved() once the save is saved
 	 */
-	async commit(api: StagedApi<S>): Promise<CommitFailure<S> | undefined>
+	collect(save: EditorSave, toChange: (change: StagedChange<S>) => EditorChange, onRefused: (change: StagedChange<S>, refusal: SaveRefusal) => void): readonly StagedChange<S>[]
 	{
-		try
+		const collected = [...this.changes];
+
+		for (const change of collected)
 		{
-			while (this.changes.length > 0)
+			save.add(toChange(change), (refusal) =>
 			{
-				const [change, ...rest] = this.changes;
-
-				try
-				{
-					if (change.kind === 'create')
-					{
-						const savedId = await api.create(change.settings);
-
-						// Later changes to the new thing go to the ID it was saved with
-						this.changes = rest.map((later) => ((later.id === change.id) ? { ...later, id: savedId } : later));
-						continue;
-					}
-
-					if (change.kind === 'save')
-					{
-						await api.save(change.id, change.settings);
-					}
-					else
-					{
-						await api.remove(change.id);
-					}
-
-					this.changes = rest;
-				}
-				catch (error)
-				{
-					return({ change, error });
-				}
-			}
-
-			return(undefined);
+				onRefused(change, refusal);
+			});
 		}
-		finally
+
+		return(collected);
+	}
+
+	/**
+	 * Takes changes as saved. Changes made since they were collected stay unsaved, naming a thing the
+	 * save made by the ID it was saved with
+	 *
+	 * @param collected The changes collect() added to the save
+	 * @param savedId The ID a new thing was saved with, from its negative ID
+	 */
+	markSaved(collected: readonly StagedChange<S>[], savedId: (id: number) => number | undefined): void
+	{
+		const done = new Set(collected);
+
+		this.changes = this.changes
+			.filter((change) => !done.has(change))
+			.map((change) => (isNewId(change.id) ? { ...change, id: (savedId(change.id) ?? change.id) } : change));
+		this.changed();
+	}
+
+	/**
+	 * Tells the listeners and the page that the changes changed
+	 */
+	private changed(): void
+	{
+		const unsaved = this.hasUnsavedChanges();
+
+		refreshUnsavedWork();
+
+		for (const listener of this.listeners)
+		{
+			listener(unsaved);
+		}
+	}
+}
+
+/**
+ * Things marked to delete when an editor tab is saved, such as uploaded tilesets, which have no other
+ * changes to stage. Marking one again takes the mark back
+ */
+export class StagedDeletions implements ChangeSource
+{
+	private readonly ids = new Set<string>();
+	private readonly listeners = new Set<(unsaved: boolean) => void>();
+
+	constructor()
+	{
+		watchUnsavedWork(this);
+	}
+
+	/**
+	 * Whether anything is marked to delete
+	 *
+	 * @return True when something is
+	 */
+	hasUnsavedChanges(): boolean
+	{
+		return(this.ids.size > 0);
+	}
+
+	/**
+	 * Hears when things are marked to delete, or the marks are taken back
+	 *
+	 * @param listener Called with whether anything is marked
+	 * @return Stops listening
+	 */
+	subscribe(listener: (unsaved: boolean) => void): () => void
+	{
+		this.listeners.add(listener);
+
+		return(() =>
+		{
+			this.listeners.delete(listener);
+		});
+	}
+
+	/**
+	 * Whether a thing is marked to delete
+	 *
+	 * @param id The thing's ID
+	 * @return True when it is
+	 */
+	has(id: string): boolean
+	{
+		return(this.ids.has(id));
+	}
+
+	/**
+	 * The things marked to delete
+	 *
+	 * @return Their IDs, in the order they were marked
+	 */
+	list(): string[]
+	{
+		return([...this.ids]);
+	}
+
+	/**
+	 * Marks a thing to delete, or takes the mark back
+	 *
+	 * @param id The thing's ID
+	 */
+	toggle(id: string): void
+	{
+		if (!this.ids.delete(id))
+		{
+			this.ids.add(id);
+		}
+
+		this.changed();
+	}
+
+	/**
+	 * Takes the mark off a thing once it is deleted
+	 *
+	 * @param id The thing's ID
+	 */
+	done(id: string): void
+	{
+		if (this.ids.delete(id))
 		{
 			this.changed();
 		}
 	}
 
 	/**
-	 * Tells the listeners and the page that the changes changed
+	 * Takes back every mark
+	 */
+	clear(): void
+	{
+		if (this.ids.size > 0)
+		{
+			this.ids.clear();
+			this.changed();
+		}
+	}
+
+	/**
+	 * Tells the listeners and the page that the marks changed
+	 */
+	private changed(): void
+	{
+		const unsaved = this.hasUnsavedChanges();
+
+		refreshUnsavedWork();
+
+		for (const listener of this.listeners)
+		{
+			listener(unsaved);
+		}
+	}
+}
+
+/**
+ * Things added on an editor tab that have nothing else to stage, such as uploaded tilesets, kept until
+ * the tab is saved. Each gets an ID of its own until then, which a staged change can refer to
+ */
+export class StagedAdditions<T> implements ChangeSource
+{
+	private readonly items = new Map<string, T>();
+	private readonly listeners = new Set<(unsaved: boolean) => void>();
+	private nextId = 1;
+
+	/**
+	 * @param prefix Starts each staged ID, so it never matches a saved thing's
+	 */
+	constructor(private readonly prefix: string)
+	{
+		watchUnsavedWork(this);
+	}
+
+	/**
+	 * Whether anything is waiting to be added
+	 *
+	 * @return True when something is
+	 */
+	hasUnsavedChanges(): boolean
+	{
+		return(this.items.size > 0);
+	}
+
+	/**
+	 * Hears when things are added or discarded
+	 *
+	 * @param listener Called with whether anything is waiting
+	 * @return Stops listening
+	 */
+	subscribe(listener: (unsaved: boolean) => void): () => void
+	{
+		this.listeners.add(listener);
+
+		return(() =>
+		{
+			this.listeners.delete(listener);
+		});
+	}
+
+	/**
+	 * Whether an ID is one of these staged things'
+	 *
+	 * @param id The ID
+	 * @return True when it is
+	 */
+	has(id: string): boolean
+	{
+		return(this.items.has(id));
+	}
+
+	/**
+	 * The things waiting to be added, with their staged IDs
+	 *
+	 * @return The things, in the order they were added
+	 */
+	list(): { id: string; item: T }[]
+	{
+		return([...this.items].map(([id, item]) => ({ id, item })));
+	}
+
+	/**
+	 * Stages a thing to add
+	 *
+	 * @param item The thing
+	 * @return Its staged ID
+	 */
+	add(item: T): string
+	{
+		const id = `${this.prefix}${this.nextId++}`;
+
+		this.items.set(id, item);
+		this.changed();
+
+		return(id);
+	}
+
+	/**
+	 * Discards a staged thing, or takes it off once it is saved
+	 *
+	 * @param id Its staged ID
+	 */
+	remove(id: string): void
+	{
+		if (this.items.delete(id))
+		{
+			this.changed();
+		}
+	}
+
+	/**
+	 * Discards every staged thing
+	 */
+	clear(): void
+	{
+		if (this.items.size > 0)
+		{
+			this.items.clear();
+			this.changed();
+		}
+	}
+
+	/**
+	 * Tells the listeners and the page that the staged things changed
 	 */
 	private changed(): void
 	{
@@ -614,21 +877,22 @@ export function joinTags(...tags: (string | undefined)[]): string
 }
 
 /**
- * Why saving a list's changes stopped
+ * Why a save was refused at a change to a list
  *
- * @param failure The change the server refused, and why
+ * @param change The change the server refused
+ * @param refusal Why
  * @param name The name of the thing it changed
  * @param isDefault Whether the thing is one of the ruleset's defaults, which removing restores
  * @return The message
  */
-export function describeCommitFailure<S>(failure: CommitFailure<S>, name: string, isDefault: boolean): string
+export function describeRefusedChange<S>(change: StagedChange<S>, refusal: SaveRefusal, name: string, isDefault: boolean): string
 {
 	let message = messages.saveFailed;
 
-	if (failure.change.kind === 'remove')
+	if (change.kind === 'remove')
 	{
 		message = (isDefault ? messages.restoreFailed : messages.deleteFailed);
 	}
 
-	return(describeEditorError(failure.error, message, { name }));
+	return(describeEditorError(refusal.error, message, { name }));
 }

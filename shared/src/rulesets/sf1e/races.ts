@@ -6,6 +6,7 @@
  */
 import { defineMessages, type MessageDescriptor } from '../../localization.js';
 import { emptySf1eAbilityScores, type Sf1eAbilityScores } from './abilities.js';
+import type { Darkvision } from '../../vision.js';
 import type { Sf1eSize } from './sizes.js';
 
 /**
@@ -40,7 +41,13 @@ export interface Sf1eRaceDefaults
 	 */
 	floatingBonus: boolean;
 
-	darkvision: boolean;
+	darkvision: Darkvision;
+
+	/**
+	 * Whether bright light dazzles the race's characters, shortening their vision (see visionBudget)
+	 */
+	lightSensitivity: boolean;
+
 	size: Sf1eSize;
 
 	/**
@@ -62,12 +69,14 @@ export interface Sf1eRaceRules extends Omit<Sf1eRaceDefaults, 'abilityModifiers'
 }
 
 /**
- * The rules a race the universe adds starts with: no modifiers, no darkvision, medium, 4 hit points
+ * The rules a race the universe adds starts with: no modifiers, no darkvision, no light sensitivity,
+ * medium, 4 hit points
  */
 export const NEW_SF1E_RACE_RULES: Readonly<Sf1eRaceRules> = {
 	abilityModifiers: emptySf1eAbilityScores(),
 	floatingBonus: false,
-	darkvision: false,
+	darkvision: 'none',
+	lightSensitivity: false,
 	size: 'medium',
 	hitPoints: 4
 };
@@ -102,14 +111,16 @@ export const SF1E_RACES = {
 			charisma: -2
 		},
 		floatingBonus: false,
-		darkvision: true,
+		darkvision: 'normal',
+		lightSensitivity: false,
 		size: 'medium',
 		hitPoints: 4
 	},
 	human: {
 		abilityModifiers: {},
 		floatingBonus: true,
-		darkvision: false,
+		darkvision: 'none',
+		lightSensitivity: false,
 		size: 'medium',
 		hitPoints: 4
 	},
@@ -120,7 +131,8 @@ export const SF1E_RACES = {
 			intelligence: -2
 		},
 		floatingBonus: false,
-		darkvision: false,
+		darkvision: 'none',
+		lightSensitivity: false,
 		size: 'medium',
 		hitPoints: 4
 	},
@@ -129,7 +141,8 @@ export const SF1E_RACES = {
 			charisma: 2
 		},
 		floatingBonus: false,
-		darkvision: false,
+		darkvision: 'none',
+		lightSensitivity: false,
 		size: 'medium',
 		hitPoints: 4
 	},
@@ -140,7 +153,8 @@ export const SF1E_RACES = {
 			charisma: -2
 		},
 		floatingBonus: false,
-		darkvision: false,
+		darkvision: 'none',
+		lightSensitivity: false,
 		size: 'medium',
 		hitPoints: 6
 	},
@@ -151,7 +165,8 @@ export const SF1E_RACES = {
 			intelligence: -2
 		},
 		floatingBonus: false,
-		darkvision: false,
+		darkvision: 'none',
+		lightSensitivity: false,
 		size: 'medium',
 		hitPoints: 6
 	},
@@ -162,7 +177,8 @@ export const SF1E_RACES = {
 			strength: -2
 		},
 		floatingBonus: false,
-		darkvision: true,
+		darkvision: 'normal',
+		lightSensitivity: false,
 		size: 'small',
 		hitPoints: 2
 	}

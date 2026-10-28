@@ -6,7 +6,7 @@ import { describeEditorError } from '../network/editorApi';
 import { universePageUrl } from '../pages';
 import { announce } from './announcer';
 import { ChangeTracker } from './changeTracker';
-import { getElement, setOptions, showMessage, titleLink } from './dom';
+import { getElement, setOptions, setPageTitle, showMessage, titleLink } from './dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
 import { formMessages } from './formMessages';
 import { className, raceName, themeName } from './raceAndClassNames';
@@ -281,16 +281,16 @@ export class CreateCharacterScreen
 	private setTitle(universeName: string | undefined): void
 	{
 		this.universe.replaceChildren(...((universeName === undefined) ? [] : [titleLink(universeName, universePageUrl(this.universeId))]));
-		document.title = ((universeName === undefined)
+		setPageTitle((universeName === undefined)
 			? t({
 				id: 'character.pageTitleLoading',
-				defaultMessage: 'Create Character - Multiverse Kiln',
-				description: 'The browser tab\'s title for the Create Character page until the universe\'s name has loaded'
+				defaultMessage: 'Create Character',
+				description: 'The browser tab\'s title for the Create Character page until the universe\'s name has loaded, before the game engine\'s name'
 			})
 			: t({
 				id: 'character.pageTitle',
-				defaultMessage: 'Create Character - {universe} - Multiverse Kiln',
-				description: 'The browser tab\'s title for the Create Character page; {universe} is the universe\'s name and Multiverse Kiln is the game engine\'s name'
+				defaultMessage: 'Create Character - {universe}',
+				description: 'The browser tab\'s title for the Create Character page, before the game engine\'s name; {universe} is the universe\'s name'
 			}, {
 				universe: universeName
 			}));

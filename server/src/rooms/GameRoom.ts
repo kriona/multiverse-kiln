@@ -1,5 +1,5 @@
 import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
-import { cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, GameMessageType, GameServerMessageType, GameState, GroupMember, MessageType, NoticeReason, PATCH_INTERVAL_MS, ServerCloseCode, visibleCells, type CellsSeenPayload, type CellValue, type NoticePayload, type StartingCell } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, GameMessageType, GameServerMessageType, GameState, GroupMember, MessageType, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, ServerCloseCode, visibleCells, type CellsSeenPayload, type CellValue, type NoticePayload, type Sight, type StartingCell } from '@multiverse-kiln/shared';
 
 import { markCharacterPlayed } from '../db/characterRepo.js';
 import { findGroup, listGroupMembers, saveGroupClock, saveMemberPositions, type GroupMemberRecord, type MemberPosition } from '../db/groupRepo.js';
@@ -7,7 +7,7 @@ import { saveSeenChunks, loadSeenChunks } from '../db/worldStateRepo.js';
 import { GroupClock } from '../logic/gameClock.js';
 import { SeenCells } from '../logic/seenCells.js';
 import { startingCellOn } from '../logic/startingArea.js';
-import { loadRaceDarkvision } from '../db/raceRepo.js';
+import { loadRaceSight } from '../db/raceRepo.js';
 import { findUniverse } from '../db/universeRepo.js';
 import { loadChunksAt, loadArea } from '../db/areaRepo.js';
 import { readBrowserId } from '../http/browserId.js';
@@ -138,9 +138,10 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	private readonly members = new Map<string, GroupMemberRecord>();
 
 	/**
-	 * Whether each of the universe's races has darkvision, by race ID, as the room found them on starting
+	 * Each of the universe's races' darkvision and light sensitivity, by race ID, as the room found them
+	 * on starting
 	 */
-	private raceDarkvision = new Map<number, boolean>();
+	private raceSight = new Map<number, Sight>();
 
 	/**
 	 * Where each member last looked from and how far they saw (see explore), by character ID
@@ -239,7 +240,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		this.state.anchorId = group.anchorCharacterId;
 		this.gameClock = new GroupClock(group.clockSeconds);
 		this.state.clock = this.gameClock.seconds;
-		this.raceDarkvision = await loadRaceDarkvision(universe.id, universe.ruleset);
+		this.raceSight = await loadRaceSight(universe.id, universe.ruleset);
 
 		this.areaPlayers.onWalk((characterId, seconds, time) =>
 		{
@@ -673,14 +674,14 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	 * How a member shows on the map
 	 *
 	 * @param member The member, or undefined when they have left the group
-	 * @return Their name and darkvision
+	 * @return Their name, darkvision and light sensitivity
 	 */
 	private appearanceOf(member: GroupMemberRecord | undefined): Appearance
 	{
 		return({
 			name: member?.name ?? '',
 			ghost: false,
-			darkvision: ((member !== undefined) && (this.raceDarkvision.get(member.raceId) ?? false))
+			...(((member === undefined) ? undefined : this.raceSight.get(member.raceId)) ?? PLAIN_SIGHT)
 		});
 	}
 

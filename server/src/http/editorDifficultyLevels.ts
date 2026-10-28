@@ -1,20 +1,18 @@
 /**
- * The world editor's routes for a universe's difficulty levels (listed in shared/src/editor.ts)
+ * The world editor's route for a universe's difficulty levels (listed in shared/src/editor.ts), and
+ * saving changes to them (see editorChanges.ts)
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { canEditUniverseSettings, defineMessages, MAX_DIFFICULTY_LEVELS, type CreatedPayload, type DifficultyLevelListPayload } from '@multiverse-kiln/shared';
+import { defineMessages, MAX_DIFFICULTY_LEVELS, type DifficultyLevelListPayload, type DifficultyLevelSettings, type NewRef, type NumberRef } from '@multiverse-kiln/shared';
 
 import { countDifficultyLevels, createDifficultyLevel, deleteDifficultyLevel, findDefaultDifficultyLevel, findDifficultyLevel, listDifficultyLevels, updateDifficultyLevel } from '../db/difficultyRepo.js';
 import { moveGroupsToDifficultyLevel } from '../db/groupRepo.js';
-import { inTransaction } from '../db/transactions.js';
-import { lockUniverse } from '../db/universeRepo.js';
-import { requireRole, universeContextOf } from './editorAccess.js';
-import { difficultyLevelIdParameter, difficultyLevelSettings } from './editorPayloads.js';
-import { sendError, sendInvalidRequest, type Refusal } from './errors.js';
+import { universeContextOf } from './editorAccess.js';
+import { recordRef, refuse, resolveNumberRef, type ChangeContext } from './editorChangeContext.js';
 
 /**
- * Reasons the difficulty level routes give in more than one place (see shared/src/localization.ts)
+ * Reasons changes to difficulty levels give in more than one place (see shared/src/localization.ts)
  */
 const messages = defineMessages({
 	noSuchLevel: {
@@ -35,16 +33,13 @@ const messages = defineMessages({
 });
 
 /**
- * Adds the difficulty level routes to a universe's router
+ * Adds the difficulty level route to a universe's router
  *
  * @param router The router for routes under /:universeId
  */
 export function addDifficultyLevelRoutes(router: express.Router): void
 {
 	router.get('/difficulty-levels', listLevels);
-	router.post('/difficulty-levels', requireRole(canEditUniverseSettings), createLevel);
-	router.put('/difficulty-levels/:levelId', requireRole(canEditUniverseSettings), saveLevel);
-	router.delete('/difficulty-levels/:levelId', requireRole(canEditUniverseSettings), deleteLevel);
 }
 
 /**
@@ -61,157 +56,91 @@ async function listLevels(request: Request, response: Response): Promise<void>
 }
 
 /**
- * POST /:universeId/difficulty-levels: adds a difficulty level to the universe
+ * Adds a difficulty level to the universe
  *
- * @param request The request
- * @param response The response
+ * @param context The save
+ * @param ref The level's ref
+ * @param settings Its settings
  */
-async function createLevel(request: Request, response: Response): Promise<void>
+export async function createDifficultyLevelChange(context: ChangeContext, ref: NewRef, settings: DifficultyLevelSettings): Promise<void>
 {
-	const body = difficultyLevelSettings.safeParse(request.body);
-
-	if (!body.success)
-	{
-		sendInvalidRequest(response, body.error);
-		return;
-	}
-
-	const { universe } = universeContextOf(request);
-	const { name } = body.data;
+	const { universe, transaction } = context;
+	const { name } = settings;
 
 	if (name === null)
 	{
-		sendError(response, 400, messages.levelNeedsName);
-		return;
+		refuse(400, messages.levelNeedsName);
 	}
 
-	const result = await inTransaction(async (transaction): Promise<Refusal | number> =>
+	if (await countDifficultyLevels(universe.id, transaction) >= MAX_DIFFICULTY_LEVELS)
 	{
-		await lockUniverse(universe.id, transaction);
-
-		if (await countDifficultyLevels(universe.id, transaction) >= MAX_DIFFICULTY_LEVELS)
-		{
-			return({
-				status: 409,
-				message: {
-					id: 'error.difficultyLevelLimit',
-					defaultMessage: 'A universe can have at most {max, plural, one {# difficulty level} other {# difficulty levels}}.',
-					description: 'Why a new difficulty level wasn\'t made: the universe has as many as allowed'
-				},
-				values: {
-					max: MAX_DIFFICULTY_LEVELS
-				}
-			});
-		}
-
-		return(createDifficultyLevel(universe.id, { ...body.data, name }, transaction));
-	});
-
-	if (typeof result !== 'number')
-	{
-		sendError(response, result.status, result.message, result.values);
-		return;
+		refuse(409, {
+			id: 'error.difficultyLevelLimit',
+			defaultMessage: 'A universe can have at most {max, plural, one {# difficulty level} other {# difficulty levels}}.',
+			description: 'Why a new difficulty level wasn\'t made: the universe has as many as allowed'
+		}, {
+			max: MAX_DIFFICULTY_LEVELS
+		});
 	}
 
-	const payload: CreatedPayload<number> = { id: result };
-
-	response.status(201).json(payload);
+	recordRef(context, ref, await createDifficultyLevel(universe.id, { ...settings, name }, transaction));
 }
 
 /**
- * PUT /:universeId/difficulty-levels/:levelId: changes one of the universe's difficulty levels
+ * Changes one of the universe's difficulty levels
  *
- * @param request The request
- * @param response The response
+ * @param context The save
+ * @param id The level
+ * @param settings Its new settings
  */
-async function saveLevel(request: Request, response: Response): Promise<void>
+export async function saveDifficultyLevelChange(context: ChangeContext, id: NumberRef, settings: DifficultyLevelSettings): Promise<void>
 {
-	const levelId = difficultyLevelIdParameter.safeParse(request.params.levelId);
-	const body = difficultyLevelSettings.safeParse(request.body);
+	const { universe, transaction } = context;
+	const level = await findDifficultyLevel(universe.id, resolveNumberRef(context, id), transaction);
 
-	if (!body.success)
+	if (!level)
 	{
-		sendInvalidRequest(response, body.error);
-		return;
+		refuse(404, messages.noSuchLevel);
 	}
 
-	const { universe } = universeContextOf(request);
-	const refusal = await inTransaction(async (transaction): Promise<Refusal | undefined> =>
+	if ((settings.name === null) && (level.key === null))
 	{
-		await lockUniverse(universe.id, transaction);
-
-		const level = (levelId.success ? await findDifficultyLevel(universe.id, levelId.data, transaction) : undefined);
-
-		if (!level)
-		{
-			return({ status: 404, message: messages.noSuchLevel });
-		}
-
-		if ((body.data.name === null) && (level.key === null))
-		{
-			return({ status: 400, message: messages.levelNeedsName });
-		}
-
-		if (level.isDefault && !body.data.isDefault)
-		{
-			return({ status: 409, message: messages.needsDefault });
-		}
-
-		await updateDifficultyLevel(universe.id, level.id, body.data, transaction);
-
-		return(undefined);
-	});
-
-	if (refusal !== undefined)
-	{
-		sendError(response, refusal.status, refusal.message, refusal.values);
-		return;
+		refuse(400, messages.levelNeedsName);
 	}
 
-	response.sendStatus(204);
+	if (level.isDefault && !settings.isDefault)
+	{
+		refuse(409, messages.needsDefault);
+	}
+
+	await updateDifficultyLevel(universe.id, level.id, settings, transaction);
 }
 
 /**
- * DELETE /:universeId/difficulty-levels/:levelId: deletes a difficulty level that isn't the universe's
- * default, moving the groups playing at it to the default
+ * Deletes a difficulty level that isn't the universe's default, moving the groups playing at it to the default
  *
- * @param request The request
- * @param response The response
+ * @param context The save
+ * @param id The level
  */
-async function deleteLevel(request: Request, response: Response): Promise<void>
+export async function removeDifficultyLevelChange(context: ChangeContext, id: NumberRef): Promise<void>
 {
-	const levelId = difficultyLevelIdParameter.safeParse(request.params.levelId);
-	const { universe } = universeContextOf(request);
-	const refusal = await inTransaction(async (transaction): Promise<Refusal | undefined> =>
+	const { universe, transaction } = context;
+
+	// Making a group waits for the universe's lock too, so nobody takes the level as it is deleted
+	const level = await findDifficultyLevel(universe.id, resolveNumberRef(context, id), transaction);
+
+	if (!level)
 	{
-		// Making a group waits for the universe's lock too, so nobody takes the level as it is deleted
-		await lockUniverse(universe.id, transaction);
-
-		const level = (levelId.success ? await findDifficultyLevel(universe.id, levelId.data, transaction) : undefined);
-
-		if (!level)
-		{
-			return({ status: 404, message: messages.noSuchLevel });
-		}
-
-		const defaultLevel = await findDefaultDifficultyLevel(universe.id, transaction);
-
-		if (!defaultLevel || (defaultLevel.id === level.id))
-		{
-			return({ status: 409, message: messages.needsDefault });
-		}
-
-		await moveGroupsToDifficultyLevel(level.id, defaultLevel.id, transaction);
-		await deleteDifficultyLevel(universe.id, level.id, transaction);
-
-		return(undefined);
-	});
-
-	if (refusal !== undefined)
-	{
-		sendError(response, refusal.status, refusal.message, refusal.values);
-		return;
+		refuse(404, messages.noSuchLevel);
 	}
 
-	response.sendStatus(204);
+	const defaultLevel = await findDefaultDifficultyLevel(universe.id, transaction);
+
+	if (!defaultLevel || (defaultLevel.id === level.id))
+	{
+		refuse(409, messages.needsDefault);
+	}
+
+	await moveGroupsToDifficultyLevel(level.id, defaultLevel.id, transaction);
+	await deleteDifficultyLevel(universe.id, level.id, transaction);
 }

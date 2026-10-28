@@ -10,6 +10,9 @@
  *
  * The server connects to the test database (TEST_DATABASE_URL) instead of DATABASE_URL. This runs
  * before anything imports src/db/client.ts, which reads DATABASE_URL when it is first imported
+ *
+ * Uploads go to the test bucket (TEST_STORAGE_BUCKET) on the same storage as development, made if it
+ * doesn't exist. Every upload has a key of its own, so it isn't emptied between tests
  */
 import { existsSync } from 'fs';
 
@@ -34,6 +37,13 @@ process.env.ENABLE_DEV_TOOLS = '';
 process.env.ALLOWED_ORIGINS = allowedTestOrigin;
 process.env.DATABASE_URL = requireTestDatabaseUrl('TEST_DATABASE_URL');
 
+if (!process.env.TEST_STORAGE_BUCKET)
+{
+	throw new Error('TEST_STORAGE_BUCKET is not set. See server/.env.example');
+}
+
+process.env.STORAGE_BUCKET = process.env.TEST_STORAGE_BUCKET;
+
 const migrationDatabaseUrl = requireTestDatabaseUrl('TEST_MIGRATION_DATABASE_URL');
 
 /**
@@ -43,7 +53,10 @@ const migrationDatabaseUrl = requireTestDatabaseUrl('TEST_MIGRATION_DATABASE_URL
 export const mochaHooks = {
 	async beforeAll(): Promise<void>
 	{
+		const { ensureBucket } = await import('../src/storage/objectStorage.js');
+
 		await buildTestDatabase(migrationDatabaseUrl);
+		await ensureBucket();
 	},
 
 	async beforeEach(): Promise<void>

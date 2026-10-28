@@ -1,10 +1,13 @@
-import type { EditableUniverse, MessageDescriptor, Ruleset } from '@multiverse-kiln/shared';
+import { sortRows, type EditableUniverse, type MessageDescriptor, type RowComparers, type Ruleset } from '@multiverse-kiln/shared';
 
+import { currentLocale } from '../../localization';
 import { describeEditorError } from '../../network/editorApi';
 import { showMessage } from '../dom';
+import { TableSorter } from '../tableSorter';
 import { createOptionRow, optionTags } from './optionRows';
+import type { EditorSave, SavedIds } from './editorSave';
 import type { SavableTab } from './SaveBar';
-import { describeCommitFailure, joinTags, markStagedRow, StagedChanges, stagedTag, stagedView, type StagedApi, type StagedEdit, type StagedState } from './stagedChanges';
+import { describeRefusedChange, joinTags, listChange, listRef, markStagedRow, StagedChanges, stagedTag, stagedView, type StagedChange, type StagedEdit, type StagedState } from './stagedChanges';
 
 /**
  * A race, class or theme as its list shows it: one of the ruleset's defaults, perhaps edited by the
@@ -50,12 +53,9 @@ export interface OptionListSetup<T extends EditorOption, S>
 	load(universeId: string): Promise<T[]>;
 
 	/**
-	 * The routes that save the list's changes
-	 *
-	 * @param universeId The universe's ID
-	 * @return The routes
+	 * Which list the save changes, whose settings are S
 	 */
-	routes(universeId: string): StagedApi<S>;
+	list: 'Race' | 'Class' | 'Theme';
 
 	/**
 	 * An option added since the last save, as the list shows it
@@ -96,8 +96,23 @@ export interface OptionListSetup<T extends EditorOption, S>
 }
 
 /**
- * A list of races, classes or themes on an editor tab, by name, opening the editor dialog of each. Changes
- * made in the dialog wait on the page until the tab is saved
+ * The columns a list of races, classes or themes can be sorted by
+ */
+const OPTION_SORT_COLUMNS = ['name', 'notes'] as const;
+
+type OptionSortColumn = typeof OPTION_SORT_COLUMNS[number];
+
+/**
+ * How the columns compare rows, in the player's language
+ */
+const rowComparers: RowComparers<{ name: string; notes: string }, OptionSortColumn> = {
+	name: (first, second) => first.name.localeCompare(second.name, currentLocale()),
+	notes: (first, second) => first.notes.localeCompare(second.notes, currentLocale())
+};
+
+/**
+ * A list of races, classes or themes on an editor tab, sorted by name or notes (see TableSorter), opening
+ * the editor dialog of each. Changes made in the dialog wait on the page until the tab is saved
  */
 export class OptionList<T extends EditorOption & S, S> implements SavableTab
 {
@@ -106,7 +121,13 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab
 	 */
 	readonly changes = new StagedChanges<S>();
 
+	/**
+	 * The changes the save being sent holds
+	 */
+	private collected: readonly StagedChange<S>[] = [];
+
 	private universe: EditableUniverse | undefined;
+	private readonly sorter: TableSorter<OptionSortColumn>;
 
 	/**
 	 * The options as they were last loaded
@@ -123,6 +144,21 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab
 	 */
 	constructor(private readonly setup: OptionListSetup<T, S>)
 	{
+		const table = setup.rows.closest('table');
+
+		if (!table)
+		{
+			throw new Error('An option list\'s rows must be in a table');
+		}
+
+		this.sorter = new TableSorter(table, OPTION_SORT_COLUMNS, {
+			column: 'name',
+			direction: 'ascending'
+		}, () =>
+		{
+			this.render();
+		});
+
 		setup.addButton.addEventListener('click', () =>
 		{
 			this.openOption(undefined);
@@ -140,6 +176,7 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab
 		this.setup.addButton.hidden = (!universe || !this.setup.canEdit(universe));
 		this.options = [];
 		this.changes.clear();
+		this.sorter.reset();
 		this.setup.rows.replaceChildren();
 		showMessage(this.setup.error, undefined);
 		void this.refresh();
@@ -156,35 +193,41 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab
 	}
 
 	/**
-	 * Saves the changes in the order they were made, stopping at the first the server refuses
+	 * Adds the changes to a save, in the order they were made
 	 *
-	 * @return True when every change was saved
+	 * @param save The save
+	 * @return True
 	 */
-	async save(): Promise<boolean>
+	collect(save: EditorSave): boolean
 	{
 		const universe = this.universe;
 
-		if (!universe)
-		{
-			return(false);
-		}
-
 		showMessage(this.setup.error, undefined);
 
-		const failure = await this.changes.commit(this.setup.routes(universe.id));
-
-		await this.refresh();
-
-		if (failure)
+		if (universe)
 		{
-			const option = this.view().find(({ item }) => (item.id === failure.change.id))?.item;
+			// The setup's list is the one whose settings S are
+			this.collected = this.changes.collect(save, (change) => listChange(this.setup.list, change as StagedChange<never>), (change, refusal) =>
+			{
+				const option = this.view().find(({ item }) => (item.id === change.id))?.item;
 
-			showMessage(this.setup.error, describeCommitFailure(failure, (option ? this.setup.name(option, universe.ruleset) : ''), !option?.custom));
-
-			return(false);
+				showMessage(this.setup.error, describeRefusedChange(change, refusal, (option ? this.setup.name(option, universe.ruleset) : ''), !option?.custom));
+			});
 		}
 
 		return(true);
+	}
+
+	/**
+	 * Takes the changes as saved, and loads the list afresh
+	 *
+	 * @param ids The IDs the save gave the options it made
+	 */
+	async saved(ids: SavedIds): Promise<void>
+	{
+		this.changes.markSaved(this.collected, (id) => ids.number(listRef(this.setup.list, id)));
+		this.collected = [];
+		await this.refresh();
 	}
 
 	/**
@@ -235,7 +278,7 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab
 	}
 
 	/**
-	 * Shows the options, by name
+	 * Shows the options, sorted by the column chosen, with options that tie by name
 	 */
 	private render(): void
 	{
@@ -246,16 +289,33 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab
 			return;
 		}
 
-		this.setup.rows.replaceChildren(...this.view()
-			.map((entry) => ({
-				...entry,
-				name: this.setup.name(entry.item, universe.ruleset)
-			}))
-			.sort((a, b) => a.name.localeCompare(b.name))
-			.map(({ item, state, name }) => markStagedRow(createOptionRow(name, this.setup.describe(item, universe.ruleset), joinTags(optionTags(item), stagedTag(state, !item.custom)), () =>
+		const rows = this.view().map((entry) => ({
+			...entry,
+			name: this.setup.name(entry.item, universe.ruleset),
+			// An option added since the last save is already tagged custom
+			notes: joinTags(optionTags(entry.item), ((entry.state === 'new') ? undefined : stagedTag(entry.state, !entry.item.custom)))
+		}));
+		const byName = sortRows(rows, rowComparers, {
+			column: 'name',
+			direction: 'ascending'
+		});
+
+		this.setup.rows.replaceChildren(...sortRows(byName, rowComparers, this.sorter.order)
+			.map(({ item, state, name, notes }) =>
 			{
-				this.openOption(item);
-			}), state, !item.custom)));
+				const row = markStagedRow(createOptionRow(name, this.setup.describe(item, universe.ruleset), notes, () =>
+				{
+					this.openOption(item);
+				}), state, !item.custom);
+
+				// A disabled option is struck through like one being deleted; its notes say it is disabled
+				if (!item.enabled)
+				{
+					row.classList.add('staged-deleted');
+				}
+
+				return(row);
+			}));
 	}
 
 	/**

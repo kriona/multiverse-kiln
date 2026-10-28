@@ -1,4 +1,5 @@
 import type { MapBounds } from './maps.js';
+import type { TileGraphicFormat } from './tileGraphics.js';
 import type { AreaTime } from './time.js';
 import type { DisplayTime, Ruleset, AreaLightLevel, AreaLinkMode } from './universes.js';
 
@@ -176,9 +177,26 @@ export interface AreaTile
 	name: string | null;
 
 	/**
-	 * 0xRRGGBB
+	 * 0xRRGGBB, drawn when the tile has no graphic
 	 */
 	color: number;
+
+	/**
+	 * The graphic the tile is drawn with (TILE_GRAPHICS), or null to draw it in its color or uploadedGraphic
+	 */
+	graphic: string | null;
+
+	/**
+	 * A graphic the universe's editors uploaded that the tile is drawn with (served at
+	 * TILE_GRAPHICS_PATH/<id>.png), with its format and draw order (UploadedTileGraphic), or null
+	 */
+	uploadedGraphic: { id: string; format: TileGraphicFormat; drawOrder: number | null } | null;
+
+	/**
+	 * Whether the tile can't be entered (IMPASSABLE_WALK_SECONDS). No player stands on it, so its graphic
+	 * is drawn over the players next to it too, such as a mountain's peaks over a player north of it
+	 */
+	impassable: boolean;
 
 	/**
 	 * How hard the tile is to see past, in percent, which the client's fog follows (see VisionMap)

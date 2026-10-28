@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { cellIndexInChunk, DEFAULT_OUTDOOR_WALK_SECONDS, DEFAULT_TILE_CELL,GAME_ROOM_NAME, GameMessageType, GameServerMessageType, GameState, GRID_CELL_SIZE, GROUP_START_SECONDS, MessageType, NoticeReason, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, UNSEEN_CELL, type AreaPayload, type CellsSeenPayload, type GameJoinOptions, type NoticePayload, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, DARKVISION_SQUARES, DEFAULT_OUTDOOR_WALK_SECONDS, DEFAULT_TILE_CELL,GAME_ROOM_NAME, GameMessageType, GameServerMessageType, GameState, GRID_CELL_SIZE, GROUP_START_SECONDS, MessageType, NoticeReason, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, UNSEEN_CELL, type AreaPayload, type CellsSeenPayload, type GameJoinOptions, type NoticePayload, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { scheduleCharacterDeletion } from '../src/db/characterRepo.js';
 import { pool } from '../src/db/client.js';
@@ -30,6 +30,11 @@ const browserIdB = '6a1d2e3f-4b5c-4d6e-8f70-819a2b3c4d5e';
  * The grid's cell size, for cellCenter
  */
 const grid = { cellSize: GRID_CELL_SIZE };
+
+/**
+ * Center of cell (3, 3), where the movement tests place players
+ */
+const startCenter = cellCenter({ column: 3, row: 3 }, grid);
 
 /**
  * A character in the test group, and their player
@@ -398,15 +403,15 @@ describe('GameRoom', () =>
 		await room.waitForNextTimestep();
 		await room.waitForNextTimestep();
 
-		assert.ok(player.x > 105, `x = ${player.x}`);
-		assert.strictEqual(player.y, 105);
+		assert.ok(player.x > startCenter.x,`x = ${player.x}`);
+		assert.strictEqual(player.y, startCenter.y);
 
 		client.send(MessageType.Move, { x: 0, y: 0 });
 		await room.waitForNextMessage();
 		await waitUntilStopped(room, player);
 
-		assert.ok(player.x > 105, `x = ${player.x}`);
-		assert.strictEqual(player.y, 105);
+		assert.ok(player.x > startCenter.x,`x = ${player.x}`);
+		assert.strictEqual(player.y, startCenter.y);
 		assertOnCellCenter(player);
 	});
 
@@ -482,7 +487,7 @@ describe('GameRoom', () =>
 		}
 
 		await waitUntil(() => ((ada.client.state.players?.has(graceId) ?? false) && (grace.client.state.players?.has(adaId) ?? false)));
-		assert.strictEqual(room.state.players.get(adaId)?.darkvision, true);
+		assert.strictEqual(room.state.players.get(adaId)?.darkvision, DARKVISION_SQUARES);
 	});
 
 	it('sends only the cells the group has seen, each as it is first seen, and remembers them after everyone has left', async () =>
@@ -546,7 +551,7 @@ describe('GameRoom', () =>
 			pool.off('acquire', countCheckout);
 		}
 
-		assert.ok(player.x > 105, `x = ${player.x}`);
+		assert.ok(player.x > startCenter.x,`x = ${player.x}`);
 		assert.strictEqual(checkouts, 0);
 	});
 
@@ -647,8 +652,8 @@ describe('GameRoom', () =>
 				await room.waitForNextMessage();
 				await room.waitForNextTimestep();
 
-				assert.strictEqual(player.x, 105);
-				assert.strictEqual(player.y, 105);
+				assert.strictEqual(player.x, startCenter.x);
+				assert.strictEqual(player.y, startCenter.y);
 				assert.strictEqual(warnings.length, 1);
 				assert.ok(warnings[0].startsWith(`${client.sessionId} sent an invalid move message (1 of 10), ignored: `), warnings[0]);
 
@@ -657,7 +662,7 @@ describe('GameRoom', () =>
 				await room.waitForNextMessage();
 				await room.waitForNextTimestep();
 
-				assert.ok(player.x > 105, `x = ${player.x}`);
+				assert.ok(player.x > startCenter.x,`x = ${player.x}`);
 				assert.ok(room.state.players.has(playerIdOf(room, client)));
 			});
 		}
@@ -709,7 +714,7 @@ describe('GameRoom', () =>
 			await room.waitForNextMessage();
 			await room.waitForNextTimestep();
 
-			assert.ok((player.x > 105) && (player.x < 150), `x = ${player.x}`);
+			assert.ok((player.x > startCenter.x) && (player.x < (startCenter.x + GRID_CELL_SIZE)), `x = ${player.x}`);
 			assert.strictEqual(warnings.length, 0);
 		});
 	});
@@ -765,7 +770,7 @@ describe('GameRoom', () =>
 			await room.waitForNextMessage();
 			await room.waitForNextTimestep();
 
-			assert.ok(player.x > 105, `x = ${player.x}`);
+			assert.ok(player.x > startCenter.x,`x = ${player.x}`);
 		});
 
 		it('keep the character until the last one leaves', async () =>
@@ -800,7 +805,7 @@ describe('GameRoom', () =>
 			await waitUntilStopped(room, player);
 
 			// At most one step, finished on the next cell's center
-			assert.ok(player.x <= 135, `x = ${player.x}`);
+			assert.ok(player.x <= (startCenter.x + GRID_CELL_SIZE), `x = ${player.x}`);
 			assertOnCellCenter(player);
 		});
 	});
@@ -860,7 +865,7 @@ describe('GameRoom', () =>
 			await room.waitForNextMessage();
 			await room.waitForNextTimestep();
 
-			assert.ok(player.x > 105, `x = ${player.x}`);
+			assert.ok(player.x > startCenter.x,`x = ${player.x}`);
 		});
 
 		it('ignores switching to a character of another player', async () =>

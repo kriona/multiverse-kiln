@@ -295,6 +295,76 @@
       "when": 1792825261163,
       "tag": "0041_starting_cells",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1792855295813,
+      "tag": "0042_tile_graphic",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1792855297585,
+      "tag": "0043_default_grass_graphic",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1792856883990,
+      "tag": "0044_default_forest_graphic",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1792858419525,
+      "tag": "0045_default_mountains_graphic",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1792859126036,
+      "tag": "0046_uploaded_tile_graphics",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1792876302218,
+      "tag": "0047_tile_enabled",
+      "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1792926158838,
+      "tag": "0048_drop_character_starting_place",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1793030651003,
+      "tag": "0049_darkvision_and_light_sensitivity",
+      "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1793030689127,
+      "tag": "0050_drow_superior_darkvision",
+      "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1793129694590,
+      "tag": "0051_tile_graphic_format",
+      "breakpoints": true
     }
   ]
 }

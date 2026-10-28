@@ -2,7 +2,7 @@
  * Races: the only module that reads or writes the races, pf1e_races, sf1e_races and race_starting_items tables
  */
 import { and, asc, count, eq, isNull, or, type SQL } from 'drizzle-orm';
-import { isSf1eRaceRules, type EditorRace, type ItemQuantity, type Pf1eRaceRules, type RaceRules, type RaceSettings, type Ruleset, type Sf1eRaceRules } from '@multiverse-kiln/shared';
+import { darkvisionSquares, isSf1eRaceRules, type EditorRace, type Sight, type ItemQuantity, type Pf1eRaceRules, type RaceRules, type RaceSettings, type Ruleset, type Sf1eRaceRules } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { fromCoinColumns, toCoinColumns } from './coinColumns.js';
@@ -113,18 +113,21 @@ export async function loadEditorRaces(universeId: string, ruleset: Ruleset, exec
 }
 
 /**
- * Whether each race a universe can use has darkvision, as the universe sets it now
+ * The darkvision and light sensitivity of each race a universe can use, as the universe sets them now
  *
  * @param universeId The universe's ID
  * @param ruleset The universe's ruleset
  * @param executor The database, or a transaction
- * @return Whether each race sees in the dark, by the race ID characters hold
+ * @return Each race's sight, by the race ID characters hold
  */
-export async function loadRaceDarkvision(universeId: string, ruleset: Ruleset, executor: Executor = db): Promise<Map<number, boolean>>
+export async function loadRaceSight(universeId: string, ruleset: Ruleset, executor: Executor = db): Promise<Map<number, Sight>>
 {
 	const editorRaces = await loadEditorRaces(universeId, ruleset, executor);
 
-	return(new Map(editorRaces.map((race) => [race.id, race.rules.darkvision])));
+	return(new Map(editorRaces.map((race) => [race.id, {
+		darkvision: darkvisionSquares(race.rules.darkvision),
+		lightSensitivity: race.rules.lightSensitivity
+	}])));
 }
 
 /**
@@ -171,6 +174,7 @@ async function loadRaceRules(universeId: string, ruleset: Ruleset, executor: Exe
 					charisma: pf1eRaces.charismaModifier,
 					floatingBonus: pf1eRaces.floatingBonus,
 					darkvision: pf1eRaces.darkvision,
+					lightSensitivity: pf1eRaces.lightSensitivity,
 					size: pf1eRaces.size
 				})
 				.from(pf1eRaces)
@@ -188,6 +192,7 @@ async function loadRaceRules(universeId: string, ruleset: Ruleset, executor: Exe
 				},
 				floatingBonus: row.floatingBonus,
 				darkvision: row.darkvision,
+				lightSensitivity: row.lightSensitivity,
 				size: row.size
 			}])));
 		}
@@ -205,6 +210,7 @@ async function loadRaceRules(universeId: string, ruleset: Ruleset, executor: Exe
 					charisma: sf1eRaces.charismaModifier,
 					floatingBonus: sf1eRaces.floatingBonus,
 					darkvision: sf1eRaces.darkvision,
+					lightSensitivity: sf1eRaces.lightSensitivity,
 					size: sf1eRaces.size,
 					hitPoints: sf1eRaces.hitPoints
 				})
@@ -223,6 +229,7 @@ async function loadRaceRules(universeId: string, ruleset: Ruleset, executor: Exe
 				},
 				floatingBonus: row.floatingBonus,
 				darkvision: row.darkvision,
+				lightSensitivity: row.lightSensitivity,
 				size: row.size,
 				hitPoints: row.hitPoints
 			}])));
@@ -553,6 +560,7 @@ function pf1eRaceColumns(rules: Pf1eRaceRules): Omit<typeof pf1eRaces.$inferInse
 		charismaModifier: abilityModifiers.charisma,
 		floatingBonus: rules.floatingBonus,
 		darkvision: rules.darkvision,
+		lightSensitivity: rules.lightSensitivity,
 		size: rules.size
 	});
 }
@@ -576,6 +584,7 @@ function sf1eRaceColumns(rules: Sf1eRaceRules): Omit<typeof sf1eRaces.$inferInse
 		charismaModifier: abilityModifiers.charisma,
 		floatingBonus: rules.floatingBonus,
 		darkvision: rules.darkvision,
+		lightSensitivity: rules.lightSensitivity,
 		size: rules.size,
 		hitPoints: rules.hitPoints
 	});

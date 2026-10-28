@@ -1,9 +1,8 @@
 <!doctype html>
 <html lang="en">
 	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title data-message="page.editTitle" data-translation-context="The browser tab's title for the world editor">Edit Universe - Multiverse Kiln</title>
+		<!-- include head.html -->
+		<title data-message="page.editTitle" data-translation-context="The browser tab's title for the world editor until the universe's name has loaded, before the game engine's name">Edit Universe</title>
 		<link rel="stylesheet" href="/src/edit.scss" />
 	</head>
 	<body>
@@ -120,7 +119,6 @@
 									<input id="ruleset-tracks-ammo" type="checkbox" />
 									Track ammunition
 								</label>
-								<p class="hint" data-message="editor.ruleset.laterHint" data-translation-context="Explains that the sleep, weight and ammunition checkboxes are stored but have no effect in the game yet">The game doesn't use sleep, weight or ammunition yet. These are kept for when it does.</p>
 								<p id="ruleset-error" class="form-error" role="alert" hidden></p>
 							</fieldset>
 						</form>
@@ -184,13 +182,12 @@
 								<p id="characters-group-size-hint" class="hint"></p>
 								<label data-message="editor.characters.startingMoney" data-translation-context="Label of the field for the money every character starts with">
 									Starting money
-									<input id="characters-starting-money" autocomplete="off" />
+									<input id="characters-starting-money" class="money" autocomplete="off" />
 								</label>
 								<p id="characters-starting-money-hint" class="hint"></p>
 								<div class="starting-equipment">
 									<h3 id="characters-items-heading" data-message="editor.characters.startingEquipment" data-translation-context="Heading of the list of items every character starts with, on the editor's Characters tab">Starting equipment</h3>
 									<ul id="characters-items" class="starting-items" aria-labelledby="characters-items-heading"></ul>
-									<p id="characters-items-none" data-message="editor.characters.noStartingEquipment" data-translation-context="Shown on the editor's Characters tab when characters start with no items" hidden>Characters start with nothing.</p>
 									<p class="hint" data-message="editor.characters.startingEquipmentHint" data-translation-context="Explains the starting equipment on the editor's Characters tab">What every character starts with. Races and classes can add more.</p>
 									<div>
 										<button id="characters-items-choose" type="button" class="secondary" data-shortcut="Alt+Q" data-message="editor.characters.chooseEquipment" data-translation-context="Button that opens the dialog for choosing the items every character starts with"><!-- icon game-icons:swap-bag -->Choose Starting Equipment</button>
@@ -215,9 +212,9 @@
 							<table class="item-table">
 								<thead>
 									<tr>
-										<th scope="col" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</th>
+										<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</button></th>
 										<th scope="col" data-message="editor.summary" data-translation-context="Heading of the table column describing each row's rules, in the editor's lists of races, classes, themes, items and difficulty levels (such as a race's size, an item's type, or how a difficulty level changes monsters and enemies)">Summary</th>
-										<th scope="col"></th>
+										<th scope="col" data-sort="notes"><button type="button" class="sort-button" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet">Notes</button></th>
 									</tr>
 								</thead>
 								<tbody id="race-rows"></tbody>
@@ -234,9 +231,9 @@
 							<table class="item-table">
 								<thead>
 									<tr>
-										<th scope="col" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</th>
+										<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</button></th>
 										<th scope="col" data-message="editor.summary" data-translation-context="Heading of the table column describing each row's rules, in the editor's lists of races, classes, themes, items and difficulty levels (such as a race's size, an item's type, or how a difficulty level changes monsters and enemies)">Summary</th>
-										<th scope="col"></th>
+										<th scope="col" data-sort="notes"><button type="button" class="sort-button" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet">Notes</button></th>
 									</tr>
 								</thead>
 								<tbody id="class-rows"></tbody>
@@ -253,9 +250,9 @@
 							<table class="item-table">
 								<thead>
 									<tr>
-										<th scope="col" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</th>
+										<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</button></th>
 										<th scope="col" data-message="editor.summary" data-translation-context="Heading of the table column describing each row's rules, in the editor's lists of races, classes, themes, items and difficulty levels (such as a race's size, an item's type, or how a difficulty level changes monsters and enemies)">Summary</th>
-										<th scope="col"></th>
+										<th scope="col" data-sort="notes"><button type="button" class="sort-button" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet">Notes</button></th>
 									</tr>
 								</thead>
 								<tbody id="theme-rows"></tbody>
@@ -274,6 +271,10 @@
 								Where
 								<select id="tile-filter-used-in"></select>
 							</label>
+							<label data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it">
+								Enabled
+								<select id="tile-filter-enabled"></select>
+							</label>
 							<label data-message="editor.filter.custom" data-translation-context="Label of the filter on the Items and Tilesets tabs for whether an item or tile was made for this universe, rather than coming with the ruleset">
 								Custom
 								<select id="tile-filter-custom"></select>
@@ -285,14 +286,14 @@
 							<button id="tile-add" type="button" data-shortcut="Alt+N" data-message="editor.tiles.add" data-translation-context="Button that opens the dialog for making a new tile"><!-- icon ph:plus -->Add Tile</button>
 						</div>
 						<p id="tile-list-error" class="form-error" role="alert" hidden></p>
-						<table class="tile-table">
+						<table id="tile-table" class="tile-table">
 							<thead>
 								<tr>
 									<th scope="col" data-message="editor.tile.color" data-translation-context="The color a tile is drawn in: the label of its field in the tile editor, and the heading of the Tilesets table's column of colors">Color</th>
-									<th scope="col" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</th>
-									<th scope="col" data-message="editor.tiles.walkTime" data-translation-context="Heading of the table column with how many seconds of game time walking a square of each tile takes">Walk time</th>
-									<th scope="col" data-message="editor.tiles.visionCost" data-translation-context="Heading of the table column with how much of a character's vision crossing each tile uses">Vision cost</th>
-									<th scope="col" data-message="editor.tile.usedIn" data-translation-context="Heading of whether indoor areas, outdoor areas, both or neither can paint with a tile: in the tile editor, and the Tilesets tab's filter and table column">Where</th>
+									<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</button></th>
+									<th scope="col" data-sort="walkTime"><button type="button" class="sort-button" data-message="editor.tiles.walkTime" data-translation-context="Heading of the table column with how many seconds of game time walking a square of each tile takes">Walk time</button></th>
+									<th scope="col" data-sort="visionCost"><button type="button" class="sort-button" data-message="editor.tiles.visionCost" data-translation-context="Heading of the table column with how much of a character's vision crossing each tile uses">Vision cost</button></th>
+									<th scope="col" data-sort="usedIn"><button type="button" class="sort-button" data-message="editor.tile.usedIn" data-translation-context="Heading of whether indoor areas, outdoor areas, both or neither can paint with a tile: in the tile editor, and the Tilesets tab's filter and table column">Where</button></th>
 									<th scope="col"></th>
 								</tr>
 							</thead>
@@ -317,17 +318,17 @@
 							<p id="area-list-error" class="form-error" role="alert" hidden></p>
 						</div>
 						<div id="area-editor-view" hidden>
-							<div class="panel-heading">
-								<button id="area-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="editor.area.back" data-translation-context="Button that closes the area editor and goes back to the list of areas"><!-- icon ph:arrow-left -->Back to Areas</button>
-								<h2 id="area-editor-title"></h2>
-							</div>
 							<form id="area-form" class="form">
-								<fieldset id="area-fields" class="plain">
+								<!-- Outside the fieldset, so disabling the fields leaves the back button working -->
+								<div class="area-editor-top">
+									<button id="area-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="editor.area.back" data-translation-context="Button that closes the area editor and goes back to the list of areas"><!-- icon ph:arrow-left -->Back to Areas</button>
 									<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">
 										Name
 										<input id="area-name" required />
 									</label>
-									<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether players can use something: go into an area, give characters an item, or choose a race, class or theme for new characters. Also the label of the Items tab's filter for it">
+								</div>
+								<fieldset id="area-fields" class="plain">
+									<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it">
 										<input id="area-enabled" type="checkbox" />
 										Enabled
 									</label>
@@ -336,7 +337,7 @@
 										Parent area
 										<select id="area-parent"></select>
 									</label>
-									<fieldset class="choice">
+									<fieldset class="choice indoor-outdoor">
 										<legend data-message="form.indoorsOrOutdoors" data-translation-context="Heading of the choice between indoors and outdoors for an area or tile">Indoors or outdoors</legend>
 										<label class="checkbox" data-message="form.outdoors" data-translation-context="Choice for an area or tile that is outdoors">
 											<input id="area-outdoors" name="area-indoors" type="radio" value="outdoors" />
@@ -449,7 +450,7 @@
 								Type
 								<select id="item-filter-type"></select>
 							</label>
-							<label data-message="form.enabled" data-translation-context="Checkbox for whether players can use something: go into an area, give characters an item, or choose a race, class or theme for new characters. Also the label of the Items tab's filter for it">
+							<label data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it">
 								Enabled
 								<select id="item-filter-enabled"></select>
 							</label>
@@ -464,13 +465,13 @@
 							<button id="item-add" type="button" data-shortcut="Alt+N" data-message="editor.items.add" data-translation-context="Button that opens the dialog for making a new item"><!-- icon ph:plus -->Add Item</button>
 						</div>
 						<p id="item-list-error" class="form-error" role="alert" hidden></p>
-						<table class="item-table">
+						<table id="item-table" class="item-table">
 							<thead>
 								<tr>
 									<th scope="col" data-message="editor.items.icon" data-translation-context="Heading of the table column showing each item's picture">Icon</th>
-									<th scope="col" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</th>
+									<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</button></th>
 									<th scope="col" data-message="editor.summary" data-translation-context="Heading of the table column describing each row's rules, in the editor's lists of races, classes, themes, items and difficulty levels (such as a race's size, an item's type, or how a difficulty level changes monsters and enemies)">Summary</th>
-									<th scope="col"></th>
+									<th scope="col" data-sort="notes"><button type="button" class="sort-button" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet">Notes</button></th>
 								</tr>
 							</thead>
 							<tbody id="item-rows"></tbody>
@@ -499,7 +500,7 @@
 								Type
 								<select id="item-type"></select>
 							</label>
-							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether players can use something: go into an area, give characters an item, or choose a race, class or theme for new characters. Also the label of the Items tab's filter for it">
+							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it">
 								<input id="item-enabled" type="checkbox" />
 								Enabled
 							</label>
@@ -537,12 +538,12 @@
 								Name
 								<input id="race-name" required />
 							</label>
-							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether players can use something: go into an area, give characters an item, or choose a race, class or theme for new characters. Also the label of the Items tab's filter for it">
+							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it">
 								<input id="race-enabled" type="checkbox" />
 								Enabled
 							</label>
 							<p class="hint" data-message="editor.race.enabledHint" data-translation-context="Explains the race editor's Enabled checkbox">New characters can only choose enabled races, and at least one race must be enabled.</p>
-							<fieldset class="choice">
+							<fieldset class="choice ability-modifiers">
 								<legend data-message="editor.race.abilityModifiers" data-translation-context="Heading of the race editor's fields for how much the race adds to or takes from each ability score">Ability modifiers</legend>
 								<div id="race-modifiers" class="ability-modifiers"></div>
 							</fieldset>
@@ -551,10 +552,15 @@
 								Floating ability bonus
 							</label>
 							<p id="race-floating-hint" class="hint"></p>
-							<label class="checkbox" data-message="character.darkvision" data-translation-context="Whether a character can see in the dark: the label on a character's sheet, and the race editor's checkbox for whether the race's characters can">
-								<input id="race-darkvision" type="checkbox" />
+							<label data-message="character.darkvision" data-translation-context="How far a character can see in the dark, if at all: the label on a character's sheet, and of the race editor's field for how far the race's characters can">
 								Darkvision
+								<select id="race-darkvision"></select>
 							</label>
+							<label class="checkbox" data-message="character.lightSensitivity" data-translation-context="Whether bright light dazzles a character: the label on a character's sheet, and the race editor's checkbox for whether it dazzles the race's characters">
+								<input id="race-light-sensitivity" type="checkbox" />
+								Light sensitivity
+							</label>
+							<p class="hint" data-message="editor.race.lightSensitivityHint" data-translation-context="Explains the race editor's Light sensitivity checkbox">Bright light dazzles the race's characters, so they see only half as far in full daylight.</p>
 							<label data-message="editor.race.size" data-translation-context="Label of the field for a race's size, such as small or medium">
 								Size
 								<select id="race-size"></select>
@@ -565,12 +571,11 @@
 							</label>
 							<label data-message="editor.startingMoney" data-translation-context="Label of the field in the race or class editor for the money its characters get on top of what every character starts with (and, for a class, what their race gives)">
 								Extra starting money
-								<input id="race-money" autocomplete="off" />
+								<input id="race-money" class="money" autocomplete="off" />
 							</label>
 							<div class="starting-equipment">
 								<h3 id="race-items-heading" data-message="editor.startingEquipment" data-translation-context="Heading in the race or class editor of the list of items its characters get on top of what every character starts with (and, for a class, what their race gives)">Extra starting equipment</h3>
 								<ul id="race-items" class="starting-items" aria-labelledby="race-items-heading"></ul>
-								<p id="race-items-none" data-message="editor.noStartingEquipment" data-translation-context="Shown in the race or class editor when its characters get no items beyond what every character (and, for a class, their race) starts with" hidden>Nothing more.</p>
 								<div>
 									<button id="race-items-choose" type="button" class="secondary" data-shortcut="Alt+Q" data-message="editor.chooseEquipment" data-translation-context="Button in the race or class editor that opens the dialog for choosing the items its characters also start with"><!-- icon game-icons:swap-bag -->Choose Equipment</button>
 								</div>
@@ -598,7 +603,7 @@
 								Name
 								<input id="class-name" required />
 							</label>
-							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether players can use something: go into an area, give characters an item, or choose a race, class or theme for new characters. Also the label of the Items tab's filter for it">
+							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it">
 								<input id="class-enabled" type="checkbox" />
 								Enabled
 							</label>
@@ -635,12 +640,11 @@
 							</div>
 							<label data-message="editor.startingMoney" data-translation-context="Label of the field in the race or class editor for the money its characters get on top of what every character starts with (and, for a class, what their race gives)">
 								Extra starting money
-								<input id="class-money" autocomplete="off" />
+								<input id="class-money" class="money" autocomplete="off" />
 							</label>
 							<div class="starting-equipment">
 								<h3 id="class-items-heading" data-message="editor.startingEquipment" data-translation-context="Heading in the race or class editor of the list of items its characters get on top of what every character starts with (and, for a class, what their race gives)">Extra starting equipment</h3>
 								<ul id="class-items" class="starting-items" aria-labelledby="class-items-heading"></ul>
-								<p id="class-items-none" data-message="editor.noStartingEquipment" data-translation-context="Shown in the race or class editor when its characters get no items beyond what every character (and, for a class, their race) starts with" hidden>Nothing more.</p>
 								<div>
 									<button id="class-items-choose" type="button" class="secondary" data-shortcut="Alt+Q" data-message="editor.chooseEquipment" data-translation-context="Button in the race or class editor that opens the dialog for choosing the items its characters also start with"><!-- icon game-icons:swap-bag -->Choose Equipment</button>
 								</div>
@@ -672,7 +676,7 @@
 								Name
 								<input id="theme-name" required />
 							</label>
-							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether players can use something: go into an area, give characters an item, or choose a race, class or theme for new characters. Also the label of the Items tab's filter for it">
+							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it">
 								<input id="theme-enabled" type="checkbox" />
 								Enabled
 							</label>
@@ -731,6 +735,11 @@
 								Name
 								<input id="tile-name" required />
 							</label>
+							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it">
+								<input id="tile-enabled" type="checkbox" aria-describedby="tile-enabled-locked" />
+								Enabled
+							</label>
+							<p id="tile-enabled-locked" class="hint" hidden data-message="editor.tile.enabledLocked" data-translation-context="Shown under the tile editor's Enabled checkbox, which can't be unchecked, for the tile new outdoor or indoor areas are painted with">New areas start with this tile, so it can't be disabled.</p>
 							<fieldset class="choice">
 								<legend data-message="editor.tile.usedIn" data-translation-context="Heading of whether indoor areas, outdoor areas, both or neither can paint with a tile: in the tile editor, and the Tilesets tab's filter and table column">Where</legend>
 								<label class="checkbox" data-message="form.outdoors" data-translation-context="Choice for an area or tile that is outdoors">
@@ -750,6 +759,15 @@
 									<input id="tile-color" required aria-label="Color as hex" data-message-aria-label="editor.tile.colorHex" data-translation-context-aria-label="Name of the field for a tile's color as a hexadecimal number, for screen readers" />
 								</span>
 							</label>
+							<label data-message="editor.tile.graphic" data-translation-context="Label of the tile editor's list of the graphics a tile can be drawn with">
+								Graphic
+								<select id="tile-graphic" aria-describedby="tile-graphic-hint"></select>
+							</label>
+							<p id="tile-graphic-hint" class="hint"></p>
+							<div class="graphic-buttons">
+								<button id="tile-graphic-upload" type="button" class="secondary" data-shortcut="Alt+U" data-message="editor.tile.uploadGraphic" data-translation-context="Button in the tile editor that opens the dialog for uploading a tileset (a picture a tile can be drawn with)"><!-- icon ph:upload-simple -->Upload Tileset Image</button>
+								<button id="tile-graphic-delete" type="button" class="danger" aria-describedby="tile-error"></button>
+							</div>
 							<label data-message="editor.tile.visionCost" data-translation-context="Label of the field for how much of a character's vision crossing the tile uses, in percent">
 								Vision cost (%)
 								<input id="tile-vision" type="number" min="0" max="100" step="1" required />
@@ -780,6 +798,74 @@
 						</fieldset>
 					</form>
 				</dialog>
+				<dialog id="confirm-dialog" class="panel dialog" aria-labelledby="confirm-title" aria-describedby="confirm-question">
+					<form id="confirm-form" class="form">
+						<h2 id="confirm-title"></h2>
+						<p id="confirm-question"></p>
+						<div class="dialog-buttons">
+							<button id="confirm-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="confirm-submit" type="submit" class="danger"></button>
+						</div>
+					</form>
+				</dialog>
+				<dialog id="tile-delete-dialog" class="panel dialog" aria-labelledby="tile-delete-title" aria-describedby="tile-delete-question">
+					<form id="tile-delete-form" class="form">
+						<h2 id="tile-delete-title" data-message="editor.tileDelete.title" data-translation-context="Title of the dialog that asks before deleting a tile">Delete Tile</h2>
+						<p id="tile-delete-question"></p>
+						<p id="tile-delete-status" class="hint" role="status"></p>
+						<div id="tile-delete-replacement-field" hidden>
+							<p id="tile-delete-usage"></p>
+							<label data-message="editor.tileDelete.replaceWith" data-translation-context="Label of the list of tiles to paint the maps with in place of a tile being deleted">
+								Replace it with
+								<select id="tile-delete-replacement" required></select>
+							</label>
+						</div>
+						<p id="tile-delete-error" class="form-error" role="alert" hidden></p>
+						<div class="dialog-buttons">
+							<button id="tile-delete-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="tile-delete-submit" type="submit" class="danger" aria-describedby="tile-delete-error" data-message="editor.tileDelete.submit" data-translation-context="Button in the dialog that asks before deleting a tile: marks the tile to delete when the Tilesets tab is saved"><!-- icon ph:trash -->Delete</button>
+						</div>
+					</form>
+				</dialog>
+				<dialog id="tile-graphic-dialog" class="panel dialog" aria-labelledby="tile-graphic-title">
+					<form id="tile-graphic-form" class="form">
+						<h2 id="tile-graphic-title" data-message="editor.tileGraphic.title" data-translation-context="Title of the dialog for uploading a tileset: a picture of a terrain that tiles can be drawn with">Upload Tileset Image</h2>
+						<fieldset class="choice">
+							<legend data-message="editor.tileGraphic.format" data-translation-context="Heading of the choice of how an uploaded tileset's picture is laid out: 15 tiles that blend with the ground, or 47 drawn over it">Layout</legend>
+							<label class="checkbox" data-message="editor.tileGraphic.format.dualGrid" data-translation-context="Choice of tileset layout: 15 pictures drawn where kinds of tile meet, blending into each other, for ground such as grass or water and for wall tops">
+								<input id="tile-graphic-format-dual-grid" name="tile-graphic-format" type="radio" value="dualGrid" checked />
+								15 tiles, blending with the ground
+							</label>
+							<label class="checkbox" data-message="editor.tileGraphic.format.blob" data-translation-context="Choice of tileset layout: 47 pictures, one for each way a cell can join up with the same tile around it, drawn over the ground, such as hedges">
+								<input id="tile-graphic-format-blob" name="tile-graphic-format" type="radio" value="blob" />
+								47 tiles, drawn over the ground
+							</label>
+						</fieldset>
+						<label data-message="editor.tileGraphic.file" data-translation-context="Label of the field for choosing the picture file of a tileset to upload">
+							Image
+							<input id="tile-graphic-file" type="file" accept="image/png" required aria-describedby="tile-graphic-format" />
+						</label>
+						<p id="tile-graphic-format" class="hint"></p>
+						<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">
+							Name
+							<input id="tile-graphic-name" required />
+						</label>
+						<label id="tile-graphic-draw-order-label" data-message="editor.tileGraphic.drawOrder" data-translation-context="Label of the field for a tileset's draw order: a number deciding whose edges are drawn on top where two kinds of tile meet">
+							Draw order
+							<input id="tile-graphic-draw-order" type="number" step="1" required aria-describedby="tile-graphic-draw-order-hint" />
+						</label>
+						<p id="tile-graphic-draw-order-hint" class="hint"></p>
+						<label class="checkbox" data-message="editor.tileGraphic.rights" data-translation-context="Checkbox that must be ticked to upload a picture: the uploader confirms they made it, own it or have permission to use it">
+							<input id="tile-graphic-rights" type="checkbox" required />
+							I have the rights to use this image
+						</label>
+						<p id="tile-graphic-error" class="form-error" role="alert" hidden></p>
+						<div class="dialog-buttons">
+							<button id="tile-graphic-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="tile-graphic-submit" type="submit" aria-describedby="tile-graphic-error" data-shortcut="Alt+A" data-message="editor.tileGraphic.submit" data-translation-context="Button that adds the chosen tileset to the Tilesets tab's changes; it is uploaded when the tab is saved"><!-- icon ph:check -->Add</button>
+						</div>
+					</form>
+				</dialog>
 				<dialog id="area-add-dialog" class="panel dialog" aria-labelledby="area-add-title">
 					<form id="area-add-form" class="form">
 						<h2 id="area-add-title" data-message="editor.areaAdd.title" data-translation-context="Title of the dialog for making a new area">Add Area</h2>
@@ -787,7 +873,7 @@
 							Name
 							<input id="area-add-name" required />
 						</label>
-						<fieldset class="choice">
+						<fieldset class="choice indoor-outdoor">
 							<legend data-message="form.indoorsOrOutdoors" data-translation-context="Heading of the choice between indoors and outdoors for an area or tile">Indoors or outdoors</legend>
 							<label class="checkbox" data-message="form.outdoors" data-translation-context="Choice for an area or tile that is outdoors">
 								<input id="area-add-outdoors" name="area-add-indoors" type="radio" value="outdoors" checked />

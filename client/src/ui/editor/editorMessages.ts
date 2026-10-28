@@ -32,7 +32,7 @@ export const editorMessages = defineMessages({
 	disabledTag: {
 		id: 'editor.tag.disabled',
 		defaultMessage: 'disabled',
-		description: 'Under an area in the list of areas, or in the last column of the editor\'s tables of items, races and classes, for one players can\'t use: an area they can\'t go into, an item characters can\'t be given, or a race or class new characters can\'t choose'
+		description: 'Under an area in the list of areas, or in the last column of the editor\'s tables of items, races, classes, themes and tiles, for one that can\'t be used: an area players can\'t go into, an item characters can\'t be given, a race, class or theme new characters can\'t choose, or a tile areas can\'t be painted with'
 	},
 	disabled: {
 		id: 'editor.select.disabled',
