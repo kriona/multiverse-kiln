@@ -15,6 +15,10 @@ trim_trailing_whitespace = false
 [{*.sh,.husky/**}]
 end_of_line = lf
 
+# package.json is LF (matches .gitattributes) so Dependabot's updates keep the line endings stored in the repository
+[package.json]
+end_of_line = lf
+
 # YAML doesn't allow tabs (docker-compose.yml)
 [*.{yml,yaml}]
 indent_style = space
