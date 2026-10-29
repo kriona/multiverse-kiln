@@ -1,0 +1,50 @@
+// The login page (login.html): logging in, creating an account and resetting a password
+
+@use 'shared' as *;
+
+// The toolbar goes above whichever screen is showing
+main
+{
+	flex-direction: column;
+}
+
+.auth-screen
+{
+	align-items: center;
+	overflow-y: auto;
+	padding: 24px 16px;
+}
+
+.auth-panel
+{
+	width: min(460px, 100%);
+}
+
+.auth-panel h1
+{
+	margin: 0;
+	font-size: 22px;
+}
+
+.auth-panel a
+{
+	color: $link;
+
+	&:hover
+	{
+		color: $link-hover;
+	}
+}
+
+.auth-logo
+{
+	align-self: center;
+}
+
+.auth-links
+{
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	gap: 8px;
+}

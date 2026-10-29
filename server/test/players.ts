@@ -2,18 +2,18 @@
  * Players and logged-in browsers for tests
  */
 import { createToken, hashToken } from '../src/auth/tokens.js';
-import { createPlayer, findPlayerByHandle, type PlayerProfile } from '../src/db/playerRepo.js';
+import { createPlayer, findPlayerByUsername, type PlayerProfile } from '../src/db/playerRepo.js';
 import { createSession } from '../src/db/sessionRepo.js';
 import { SESSION_COOKIE } from '../src/http/cookies.js';
 
 /**
- * A handle made from a name: its letters, digits and underscores, with other characters as
- * underscores, padded or cut to a length handles allow
+ * A username made from a name: its letters, digits and underscores, with other characters as
+ * underscores, padded or cut to a length usernames allow
  *
  * @param name The name
- * @return The handle
+ * @return The username
  */
-export function handleFor(name: string): string
+export function usernameFor(name: string): string
 {
 	return(name
 		.replace(/[^A-Za-z0-9_]/g, '_')
@@ -22,18 +22,18 @@ export function handleFor(name: string): string
 }
 
 /**
- * The player with a name, made if the test hasn't made them yet. The handle comes from the name
- * (handleFor()), and the account has no email or password
+ * The player with a name, made if the test hasn't made them yet. The username comes from the name
+ * (usernameFor()), and the account has no email or password
  *
  * @param name The player's display name
  * @return The player
  */
 export async function addPlayer(name: string): Promise<PlayerProfile>
 {
-	const handle = handleFor(name);
+	const username = usernameFor(name);
 
-	return((await findPlayerByHandle(handle)) ?? await createPlayer({
-		handle,
+	return((await findPlayerByUsername(username)) ?? await createPlayer({
+		username,
 		displayName: name,
 		email: null,
 		passwordHash: null

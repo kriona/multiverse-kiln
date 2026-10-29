@@ -29,7 +29,7 @@ describe('sessionRepo', () =>
 
 		assert.deepStrictEqual(await findSessionWithPlayer(tokenHash), {
 			...session,
-			handle: 'Ada_Lovelace',
+			username: 'Ada_Lovelace',
 			displayName: 'Ada Lovelace'
 		});
 		assert.strictEqual(await findSessionWithPlayer(hashToken(createToken())), undefined);

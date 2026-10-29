@@ -2,7 +2,7 @@ This document describes the UI + game structure for the Multiverse Kiln. It desc
 
 # Pages
 ## Home
-Lists all universes. In the beginning there will only be a few, but in the future there may be thousands, so we should be forward-thinking about the UI (even if advanced search filters don't exist yet). Each universe should show name, 1-sentence description, ruleset, and [languages](#tab-translations). Only universes in the `prologue` or `let there be light` [stage](#edit-universe) are listed. Shows a button for [Create Universe](#create-universe).
+Lists all universes. In the beginning there will only be a few, but in the future there may be thousands, so we should be forward-thinking about the UI (even if advanced search filters don't exist yet). Each universe should show name, 1-sentence description, ruleset, and [languages](#tab-translations). Only universes in the `prologue` or `let there be light` [stage](#edit-universe) are listed. Anyone can see it; its toolbar links to the [login page](#login), or once logged in shows the player's name and a Log out button. A logged-in player also sees the universes they work on, and a button for [Create Universe](#create-universe).
 
 Each universe links to its [page](#universe-page).
 
@@ -22,7 +22,7 @@ You select a login provider like Google or Discord, or you can make a local acco
 
 Local accounts are supported, but the login and register pages recommend a provider for security reasons.
 
-Home, universe pages and the license and privacy pages don't need a login; the lobby, the game, the editor, Create Character and editing the profile do.
+Home, universe pages and the license and privacy pages don't need a login; the lobby, the game, the editor, Create Character and editing the profile do. Those send a browser that isn't logged in to the login page (`/login`), which goes back to them once it is. Logging in in one tab reloads the browser's other logged-out pages, so they are logged in too, and logging out takes every window of that browser out with it.
 
 A login starts a session, kept on the server and named by an HttpOnly cookie. A session ends after 1 hour without use, and after 24 hours in all. Checking "Remember me" makes it last 30 days without use and 90 days in all, after which the player logs in again. Being connected to a lobby or game counts as use. Logging out ends the session on the server, and changing the password ends every session of the account.
 
@@ -36,7 +36,7 @@ Local accounts can turn on 2FA with an authenticator app (TOTP), and get recover
 From the profile. Before deleting, the player decides for each universe they are the only creator of: hand it to another of its editors as creator, or delete it. Groups whose anchor being is one of their characters disband. The account, profile, characters, sessions and auth events are deleted. Before deleting, the player can download their data as one JSON file (also offered on the profile at any time).
 
 ## Register local account
-Enter an email, it sends you an [email code](#email-codes), enter the code, then the email again with a password, handle and name to create the account (the server keeps only a keyed hash of the address while it waits, so it asks for the address again). Recommend the user use a password manager, link to a couple prominent ones. Emails you when you have a new account. Optional - set up 2FA now.
+Enter an email, it sends you an [email code](#email-codes), enter the code, then the email again with a password, username and name to create the account (the server keeps only a keyed hash of the address while it waits, so it asks for the address again). Recommend the user use a password manager, link to a couple prominent ones. Emails you when you have a new account. Optional - set up 2FA now.
 
 If the address already has an account, the page answers the same as for a new one, and the address is emailed a note saying it has an account and how to log in or reset the password, in place of a code.
 
@@ -64,8 +64,8 @@ Registering, resetting a password and changing an email all send a code by email
 	- a correct code hands the next step (setting the password) to the browser session that entered it, through a new session ID in an httponly cookie, for 10 minutes. Another browser waiting on the same account can't use it
 
 ## Profile edit
-Everything is optional except handle and name.
-- handle (required, unique): how other players find you and tell you apart from others with the same name. 3 to 20 letters (a to z only, so no handle can pass for another with look-alike letters from other alphabets), digits and underscores, compared ignoring capitals and checked against reserved words like player names
+Everything is optional except username and name.
+- username (required, unique): how other players find you and tell you apart from others with the same name. 3 to 20 letters (a to z only, so no username can pass for another with look-alike letters from other alphabets), digits and underscores, compared ignoring capitals and checked against reserved words like player names
 - the Google and Discord logins linked to the account, with buttons to link another
 - photo (200px square, shown as a circle)
 - email, with a change email button for local accounts. Enter an email, it sends you an [email code](#email-codes), enter the code to change your email. Email both addresses letting them know that the email has changed.
@@ -759,7 +759,7 @@ Every page, editor and game screen can be used with only a keyboard and with a s
 - A button's shortcut letter is underlined in its text, preferring the letter at the start of a word (the S of Save); it is pressed with Alt (Option on a Mac). When a translation's text doesn't have the letter, "(S)" is added after it with the letter underlined. Screen readers announce the shortcut through `aria-keyshortcuts`.
 - `?` (when not typing) or the footer's "Keyboard shortcuts" button lists the shortcuts that work on the screen showing, including keys that aren't buttons, such as movement.
 - A shortcut only works while its button can be seen and used, and while a dialog is open only the dialog's shortcuts work, so screens and dialogs reuse keys. The keys are the same in every language. Alt+D, Alt+E and Alt+F aren't used, since browsers take them, and deleting has no shortcut.
-- The keys follow one pattern: Alt+S submits the form or dialog showing (Save, Create, Add, Resize), Alt+A applies an editor dialog's changes to its tab (Apply), Alt+N adds something new (on the Characters tab, which adds races, classes and themes, Alt+R adds a race, Alt+L a class and Alt+T a theme), Alt+L leaves (the lobby or group) or picks the Links tool in the map editor, Alt+U enters a universe, Alt+H goes Home, Alt+B goes back, Alt+M moves focus to the map, and Alt+P makes the map editor full page.
+- A shortcut's letter is in its button's English text, so it can be underlined there. The keys follow one pattern: Alt+S submits the form or dialog showing when its button has an S (Save, Send code, Resize); one without takes a letter of its own word, preferably its first (Alt+C for Create, Choose and Continue, Alt+L for Log in and Create Link, Alt+A for Add). Alt+A applies an editor dialog's changes to its tab (Apply), Alt+N adds something new (on the Characters tab, which adds races, classes and themes, Alt+R adds a race, Alt+L a class and Alt+T a theme), Alt+L leaves (the lobby or group) or picks the Links tool in the map editor, Alt+U enters a universe, Alt+H goes Home, Alt+B goes back, Alt+M moves focus to the map, and Alt+P makes the map editor full page.
 
 ## Screen readers
 - When a screen changes, focus moves to its heading, so the screen is read out.

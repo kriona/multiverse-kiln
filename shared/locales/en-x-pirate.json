@@ -1988,8 +1988,8 @@
 		"source": "Edit {universe}"
 	},
 	"email.accountCreated.body": {
-		"message": "Yer account on {siteName} be ready, tied to this email address.",
-		"source": "Your account on {siteName} has been created, with this email address."
+		"message": "Yer account on {siteName} be ready.",
+		"source": "Your account on {siteName} has been created."
 	},
 	"email.accountCreated.notYou": {
 		"message": "If ye didn't make it, some scallywag can read yer letters. Change yer email password, then reset the account's password on {siteName}.",
@@ -2099,14 +2099,6 @@
 		"message": "Enter the code from the letter first, or ask for a new one if it's been more than a few minutes.",
 		"source": "Enter the code from the email first, or ask for a new one if it has been more than a few minutes."
 	},
-	"error.auth.handleForm": {
-		"message": "Use {min} to {max} letters (a to z), digits an' underscores.",
-		"source": "Use {min} to {max} letters (a to z), digits and underscores."
-	},
-	"error.auth.handleTaken": {
-		"message": "Another account already flies that handle. Choose another.",
-		"source": "Another account already has that handle. Choose another."
-	},
 	"error.auth.passwordBreached": {
 		"message": "This password washed up in a data breach, so scallywags try it. Choose another.",
 		"source": "This password has turned up in a data breach, so attackers try it. Choose another."
@@ -2118,6 +2110,14 @@
 	"error.auth.tooManyAttempts": {
 		"message": "Too many tries. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
 		"source": "Too many tries. Try again in {minutes, plural, one {# minute} other {# minutes}}."
+	},
+	"error.auth.usernameForm": {
+		"message": "Use {min} to {max} letters (a to z), digits an' underscores.",
+		"source": "Use {min} to {max} letters (a to z), digits and underscores."
+	},
+	"error.auth.usernameTaken": {
+		"message": "Another account already sails under that username. Choose another.",
+		"source": "Another account already has that username. Choose another."
 	},
 	"error.auth.wrongCode": {
 		"message": "That code ain't right, or it's gone stale. Check the latest letter, or ask for a new code.",
@@ -2663,6 +2663,18 @@
 		"message": "Couldn't list the universes. Reload the page to try again.",
 		"source": "Could not list the universes. Reload the page to try again."
 	},
+	"home.logIn": {
+		"message": "Come aboard",
+		"source": "Log in"
+	},
+	"home.logOut": {
+		"message": "Go ashore",
+		"source": "Log out"
+	},
+	"home.logOutFailed": {
+		"message": "Couldn't go ashore.",
+		"source": "Could not log out."
+	},
 	"home.noOwnUniverses": {
 		"message": "Ye haven't made a universe yet.",
 		"source": "You haven't made a universe yet."
@@ -3031,25 +3043,141 @@
 		"message": "Tavern",
 		"source": "Lobby"
 	},
-	"login.failed": {
-		"message": "Couldn't come aboard. Try again in a tick.",
-		"source": "Could not log in. Try again in a moment."
+	"login.back": {
+		"message": "Astern",
+		"source": "Back"
 	},
-	"login.invalidName": {
-		"message": "Give a name o' letters, numbers, spaces or punctuation.",
-		"source": "Enter a name of letters, numbers, spaces or punctuation."
+	"login.checkEmail": {
+		"message": "Check yer letters",
+		"source": "Check your email"
 	},
-	"login.nameInUse": {
-		"message": "That pirate be already aboard from another browser.",
-		"source": "That player is already logged in from another browser."
+	"login.code": {
+		"message": "Code",
+		"source": "Code"
 	},
-	"login.nameLabel": {
-		"message": "What be yer name, sailor?",
-		"source": "What should we call you?"
+	"login.codeResent": {
+		"message": "Sent a fresh code. The one afore it no longer works.",
+		"source": "Sent a new code. The one before no longer works."
 	},
-	"login.submit": {
+	"login.codeSentRegister": {
+		"message": "We've sent a letter to {email}. Enter the code from it. It works but once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"source": "We've emailed {email}. Enter the code from the email. It works once, for {minutes, plural, one {# minute} other {# minutes}}."
+	},
+	"login.codeSentReset": {
+		"message": "If {email} belongs to an account, we've sent it a letter with a code. Enter the code from it. It works but once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"source": "If {email} belongs to an account, we've emailed it a code. Enter the code from the email. It works once, for {minutes, plural, one {# minute} other {# minutes}}."
+	},
+	"login.continue": {
+		"message": "Onward",
+		"source": "Continue"
+	},
+	"login.displayName": {
+		"message": "Name",
+		"source": "Name"
+	},
+	"login.displayNameHint": {
+		"message": "The name other sailors see. It needn't be yer real name, nor yers alone.",
+		"source": "The name other players see. It doesn't have to be your real name, or unique."
+	},
+	"login.email": {
+		"message": "Email address",
+		"source": "Email address"
+	},
+	"login.forgotPassword": {
+		"message": "Forgot yer password?",
+		"source": "Forgot your password?"
+	},
+	"login.newPassword": {
+		"message": "Password",
+		"source": "Password"
+	},
+	"login.password": {
+		"message": "Password",
+		"source": "Password"
+	},
+	"login.passwordHint": {
+		"message": "At least {min} characters. A few words strung together be easy to remember an' hard to guess.",
+		"source": "At least {min} characters. A few words strung together are easy to remember and hard to guess."
+	},
+	"login.passwordManager": {
+		"message": "A password keeper, such as {bitwarden} or {onePassword}, can forge a strong password an' remember it for ye.",
+		"source": "A password manager, such as {bitwarden} or {onePassword}, can make a strong password and remember it for you."
+	},
+	"login.privacy": {
+		"message": "Read how we guard yer information in our {privacy}.",
+		"source": "Read how we look after your information in our {privacy}."
+	},
+	"login.register": {
+		"message": "Sign the articles",
+		"source": "Create an account"
+	},
+	"login.registerHeading": {
+		"message": "Sign the articles",
+		"source": "Create an account"
+	},
+	"login.registerIntro": {
+		"message": "Enter yer email address, an' we'll send ye a code to prove it be yers.",
+		"source": "Enter your email address, and we'll send you a code to check it's yours."
+	},
+	"login.registerSubmit": {
+		"message": "Sign the articles",
+		"source": "Create account"
+	},
+	"login.registerTitle": {
+		"message": "Sign yer articles",
+		"source": "Create your account"
+	},
+	"login.rememberMe": {
+		"message": "Remember me",
+		"source": "Remember me"
+	},
+	"login.resendCode": {
+		"message": "Send a fresh code",
+		"source": "Send a new code"
+	},
+	"login.resetEmailIntro": {
+		"message": "Enter yer account's email address, an' we'll send ye a code to choose a new password.",
+		"source": "Enter your account's email address, and we'll send you a code to choose a new password."
+	},
+	"login.resetHeading": {
+		"message": "Reset yer password",
+		"source": "Reset your password"
+	},
+	"login.resetIntro": {
+		"message": "Every browser aboard yer account goes ashore when the password changes.",
+		"source": "Every browser logged in to your account is logged out when the password changes."
+	},
+	"login.resetSubmit": {
+		"message": "Stow the password",
+		"source": "Save password"
+	},
+	"login.resetTitle": {
+		"message": "Choose a new password",
+		"source": "Choose a new password"
+	},
+	"login.sendCode": {
+		"message": "Send the code",
+		"source": "Send code"
+	},
+	"login.showPassword": {
+		"message": "Show me password",
+		"source": "Show password"
+	},
+	"login.title": {
 		"message": "Come aboard",
-		"source": "Enter"
+		"source": "Log in"
+	},
+	"login.unreachable": {
+		"message": "Couldn't reach the server. Check yer connection an' try again.",
+		"source": "Could not reach the server. Check your connection and try again."
+	},
+	"login.username": {
+		"message": "Username",
+		"source": "Username"
+	},
+	"login.usernameHint": {
+		"message": "How other sailors find ye, an' tell ye apart from others with the same name. {min} to {max} letters (a to z), digits an' underscores.",
+		"source": "How other players find you, and tell you apart from others with the same name. {min} to {max} letters (a to z), digits and underscores."
 	},
 	"map.announce.appeared": {
 		"message": "{count, plural, one {{players} heaves into view.} other {{players} heave into view.}}",
@@ -3270,6 +3398,10 @@
 	"page.privacy": {
 		"message": "Secrets",
 		"source": "Privacy"
+	},
+	"page.privacyPolicy": {
+		"message": "Articles o' Secrecy",
+		"source": "privacy policy"
 	},
 	"page.shortcuts": {
 		"message": "Keyboard shortcuts",
@@ -3648,8 +3780,8 @@
 		"source": "Your email address, used to log in and to send you emails about your account."
 	},
 	"privacy.accountNames": {
-		"message": "Yer handle, which be yers alone an' lets other players find ye, an' yer display name, which needn't be yer real name.",
-		"source": "Your handle, which is unique and lets other players find you, and your display name, which needn't be your real name."
+		"message": "Yer username, which be yers alone an' lets other players find ye, an' yer display name, which needn't be yer real name.",
+		"source": "Your username, which is unique and lets other players find you, and your display name, which needn't be your real name."
 	},
 	"privacy.accountPassword": {
 		"message": "If ye have a local account, yer password, kept only scrambled so it can't be turned back into the password (a one-way hash: Argon2id for passwords an' recovery codes, an' a keyed hash, HMAC, for the codes an' addresses below).",
@@ -3780,8 +3912,8 @@
 		"source": "Your profile"
 	},
 	"privacy.profileText": {
-		"message": "Anythin' ye choose to fill in on yer profile: a likeness, yer pronouns, yer location an' time zone, yer tongue, links to yer social media accounts, an' which o' yer hands others can see. Only yer handle an' display name be required.",
-		"source": "Anything you choose to fill in on your profile: a photo, your pronouns, your location and time zone, your language, links to your social media accounts, and which of your characters others can see. Only your handle and display name are required."
+		"message": "Anythin' ye choose to fill in on yer profile: a likeness, yer pronouns, yer location an' time zone, yer tongue, links to yer social media accounts, an' which o' yer hands others can see. Only yer username an' display name be required.",
+		"source": "Anything you choose to fill in on your profile: a photo, your pronouns, your location and time zone, your language, links to your social media accounts, and which of your characters others can see. Only your username and display name are required."
 	},
 	"privacy.rights": {
 		"message": "Yer choices an' rights",
@@ -3844,8 +3976,8 @@
 		"source": "Other players never see your email address."
 	},
 	"privacy.seePlayers": {
-		"message": "Other players see yer handle, display name an' the profile fields ye fill in, the hands ye let 'em see, an' what yer hands say an' do in the game. Players in a crew with ye can always reach yer profile.",
-		"source": "Other players see your handle, display name and the profile fields you fill in, the characters you let them see, and what your characters say and do in the game. Players in a group with you can always reach your profile."
+		"message": "Other players see yer username, display name an' the profile fields ye fill in, the hands ye let 'em see, an' what yer hands say an' do in the game. Players in a crew with ye can always reach yer profile.",
+		"source": "Other players see your username, display name and the profile fields you fill in, the characters you let them see, and what your characters say and do in the game. Players in a group with you can always reach your profile."
 	},
 	"privacy.services": {
 		"message": "Services we use",

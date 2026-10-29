@@ -1,5 +1,5 @@
 /**
- * Accounts and logins: the rules for handles and passwords, and the auth routes the client calls
+ * Accounts and logins: the rules for usernames and passwords, and the auth routes the client calls
  * (see Login and Email codes in STRUCTURE-OVERVIEW.md)
  */
 import type { LocalizedMessage } from './localization.js';
@@ -51,13 +51,13 @@ export const AUTH_PASSWORD_RESET_PATH = `${AUTH_PATH}/password-reset`;
 export const AUTH_EMAIL_CHANGE_PATH = `${AUTH_PATH}/email`;
 
 /**
- * Handles: how players find each other and tell apart players with the same display name. Letters
- * a-z, digits and underscores only, so no handle can pass for another with look-alike letters from
+ * Usernames: how players find each other and tell apart players with the same display name. Letters
+ * a-z, digits and underscores only, so no username can pass for another with look-alike letters from
  * other alphabets. Compared ignoring capitals, and checked against reserved words like player names
  */
-export const MIN_HANDLE_LENGTH = 3;
-export const MAX_HANDLE_LENGTH = 20;
-export const HANDLE_PATTERN = /^[A-Za-z0-9_]+$/;
+export const MIN_USERNAME_LENGTH = 3;
+export const MAX_USERNAME_LENGTH = 20;
+export const USERNAME_PATTERN = /^[A-Za-z0-9_]+$/;
 
 /**
  * Passwords have no rules about which characters they use: only a length, and a check against
@@ -67,6 +67,11 @@ export const HANDLE_PATTERN = /^[A-Za-z0-9_]+$/;
  */
 export const MIN_PASSWORD_LENGTH = 15;
 export const MAX_PASSWORD_LENGTH = 256;
+
+/**
+ * How long an emailed code works after it is sent
+ */
+export const EMAIL_CODE_LIFETIME_MINUTES = 15;
 
 /**
  * The longest email address (RFC 5321's limit on a path)
@@ -91,7 +96,7 @@ export type EmailCodePurpose = (typeof EMAIL_CODE_PURPOSES)[number];
 export interface SessionPlayer
 {
 	playerId: string;
-	handle: string;
+	username: string;
 	name: string;
 }
 
@@ -163,7 +168,7 @@ export interface RegisterRequest
 	email: string;
 
 	password: string;
-	handle: string;
+	username: string;
 	displayName: string;
 	rememberMe: boolean;
 	locale: string;
@@ -195,7 +200,7 @@ export interface EmailChangeRequest
 /**
  * The fields of the auth routes' requests that an error can be about
  */
-export type AuthField = 'email' | 'password' | 'handle' | 'displayName' | 'code';
+export type AuthField = 'email' | 'password' | 'username' | 'displayName' | 'code';
 
 /**
  * Why an auth route refused a request, and which field it is about, if one

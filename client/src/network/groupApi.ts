@@ -7,7 +7,7 @@ import { sendRequest } from './editorApi';
  * The routes that make groups, invite characters to them and take characters out of them (see
  * shared/src/groups.ts), for one browser
  *
- * Requests carry the browser ID cookie, so the server knows which player is asking. Every method
+ * Requests carry the session cookie, so the server knows which player is asking. Every method
  * throws EditorApiError when the server refuses the request
  */
 export class GroupApi

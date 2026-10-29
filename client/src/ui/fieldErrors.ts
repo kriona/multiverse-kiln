@@ -61,7 +61,8 @@ export function setFieldError(field: TextField, message: string | undefined): vo
 		error = document.createElement('p');
 		error.id = errorId;
 		error.className = 'field-error';
-		(field.closest('label') ?? field).after(error);
+		// A password field's label shares a row with its show password button (see passwordToggles.ts)
+		(field.closest('.password-field') ?? field.closest('label') ?? field).after(error);
 	}
 
 	error.textContent = message;

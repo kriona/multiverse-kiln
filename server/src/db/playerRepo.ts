@@ -16,7 +16,7 @@ export interface PlayerProfile
 	 */
 	id: string;
 
-	handle: string;
+	username: string;
 	displayName: string;
 }
 
@@ -25,7 +25,7 @@ export interface PlayerProfile
  */
 export interface NewPlayer
 {
-	handle: string;
+	username: string;
 	displayName: string;
 
 	/**
@@ -49,14 +49,14 @@ export interface LocalLogin
 }
 
 /**
- * Thrown when a new account would take a handle or email address another account has, ignoring capitals
+ * Thrown when a new account would take a username or email address another account has, ignoring capitals
  */
 export class AccountTakenError extends Error
 {
 	/**
 	 * @param field Which of the two is taken
 	 */
-	constructor(readonly field: 'handle' | 'email')
+	constructor(readonly field: 'username' | 'email')
 	{
 		super(`Another account has that ${field}`);
 		this.name = 'AccountTakenError';
@@ -71,14 +71,14 @@ const UNIQUE_VIOLATION = '23505';
 /**
  * Which taken field each unique index on players stands for
  */
-const UNIQUE_INDEX_FIELDS: Readonly<Record<string, 'handle' | 'email'>> = {
-	players_handle_lower_unique: 'handle',
+const UNIQUE_INDEX_FIELDS: Readonly<Record<string, 'username' | 'email'>> = {
+	players_username_lower_unique: 'username',
 	players_email_lower_unique: 'email'
 };
 
 const profileColumns = {
 	id: players.id,
-	handle: players.handle,
+	username: players.username,
 	displayName: players.displayName
 };
 
@@ -88,7 +88,7 @@ const profileColumns = {
  * @param error What a query threw
  * @return The field, or undefined for any other error
  */
-function takenField(error: unknown): 'handle' | 'email' | undefined
+function takenField(error: unknown): 'username' | 'email' | undefined
 {
 	// Drizzle wraps the driver's error, which it keeps as the cause
 	const cause = ((error instanceof Error) ? (error.cause ?? error) : error);
@@ -107,7 +107,7 @@ function takenField(error: unknown): 'handle' | 'email' | undefined
  * @param player The account
  * @param executor The database, or a transaction
  * @return The account
- * @throws AccountTakenError when another account has the handle or email address
+ * @throws AccountTakenError when another account has the username or email address
  */
 export async function createPlayer(player: NewPlayer, executor: Executor = db): Promise<PlayerProfile>
 {
@@ -152,18 +152,18 @@ export async function findPlayer(playerId: string, executor: Executor = db): Pro
 }
 
 /**
- * Finds an account by handle, ignoring capitals
+ * Finds an account by username, ignoring capitals
  *
- * @param handle The handle
+ * @param username The username
  * @param executor The database, or a transaction
  * @return The account, or undefined when no account has it
  */
-export async function findPlayerByHandle(handle: string, executor: Executor = db): Promise<PlayerProfile | undefined>
+export async function findPlayerByUsername(username: string, executor: Executor = db): Promise<PlayerProfile | undefined>
 {
 	const [row] = await executor
 		.select(profileColumns)
 		.from(players)
-		.where(sql`lower(${players.handle}) = lower(${handle})`)
+		.where(sql`lower(${players.username}) = lower(${username})`)
 		.limit(1);
 
 	return(row);

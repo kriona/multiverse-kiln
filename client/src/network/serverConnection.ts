@@ -1,5 +1,5 @@
 import { Client, type Room } from '@colyseus/sdk';
-import { BROWSER_ID_PATH, GAME_ROOM_NAME, GameState, LOBBY_ROOM_NAME, LobbyState, ServerMessageType, SESSION_ROOM_NAME, UNIVERSES_PATH, type GameJoinOptions, type LobbyJoinOptions, type UniverseDetails, type UniverseListPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
+import { GAME_ROOM_NAME, GameState, LOBBY_ROOM_NAME, LobbyState, ServerMessageType, SESSION_ROOM_NAME, UNIVERSES_PATH, type GameJoinOptions, type LobbyJoinOptions, type UniverseDetails, type UniverseListPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
 
 /**
  * How many universes Home asks for at a time
@@ -140,20 +140,17 @@ function waitForArrival(room: MapRoom): Promise<{ playerId: string; area: AreaPa
 }
 
 /**
- * Connects to the server and joins the session room
+ * Connects to the server and joins the session room, which says whether the browser is logged in
  *
- * First asks the server for a browser ID cookie, which the browser then sends when joining a room:
- * every window of this browser sends the same cookie, so they are all the same player. The server
- * turns away windows without one
+ * The browser sends its session cookie, if it has one, when joining a room: every window of this
+ * browser sends the same cookie, so they are all the same player. The session room admits windows
+ * that aren't logged in too
  *
  * @return The client and the joined session room
  */
 export async function connectToServer(): Promise<ServerConnection>
 {
 	const client = createClient();
-
-	await client.http.post(BROWSER_ID_PATH);
-
 	const session = await client.joinOrCreate(SESSION_ROOM_NAME);
 
 	return({ client, session });

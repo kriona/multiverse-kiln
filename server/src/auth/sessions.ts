@@ -28,7 +28,7 @@ export interface SessionIdentity
 	 */
 	playerId: string;
 
-	handle: string;
+	username: string;
 	name: string;
 }
 
@@ -71,7 +71,7 @@ export async function resolveSession(cookieHeader: string | null | undefined, no
 	return({
 		sessionId: session.id,
 		playerId: session.playerId,
-		handle: session.handle,
+		username: session.username,
 		name: session.displayName
 	});
 }

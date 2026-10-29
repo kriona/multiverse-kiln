@@ -9,15 +9,16 @@
 		<main>
 			<!-- include status.html -->
 
-			<!-- include login.html -->
-
 			<section id="home-screen" class="screen" hidden>
 				<header class="toolbar">
 					<h1>
 						<!-- include site-name.html -->
 					</h1>
-					<span class="toolbar-name" data-message="page.playingAs" data-translation-context="In the toolbar, the name the player logged in with; {name} is the name">Playing as <strong id="home-player-name" data-argument="name"></strong></span>
-					<a class="button secondary toolbar-link" href="/admin" data-message="home.siteSettings" data-translation-context="Link in Home's toolbar to the page where the site's admins change settings for the whole site"><!-- icon ph:gear -->Site Settings</a>				</header>
+					<span id="home-playing-as" class="toolbar-name" data-message="page.playingAs" data-translation-context="In the toolbar, the name the player logged in with; {name} is the name" hidden>Playing as <strong id="home-player-name" data-argument="name"></strong></span>
+					<a class="button secondary toolbar-link" href="/admin" data-message="home.siteSettings" data-translation-context="Link in Home's toolbar to the page where the site's admins change settings for the whole site"><!-- icon ph:gear -->Site Settings</a>
+					<button id="home-log-out" type="button" class="secondary" data-message="home.logOut" data-translation-context="Button in Home's toolbar that logs the browser out, in every tab" hidden><!-- icon ph:sign-out -->Log out</button>
+					<a id="home-log-in" class="button toolbar-link" href="/login" data-message="home.logIn" data-translation-context="Link in Home's toolbar to the page for logging in or creating an account" hidden><!-- icon ph:sign-in -->Log in</a>
+				</header>
 				<p id="home-notice" class="notice" role="status" hidden></p>
 				<img class="home-logo" src="/src/assets/layout/multiverse-kiln.png" alt="" width="256" height="256" />
 				<div class="home-body">
@@ -27,7 +28,7 @@
 						<p id="universe-empty" class="universe-empty" data-message="home.noUniverses" data-translation-context="Shown instead of the list of universes when there are none to play" hidden>There are no universes to play in yet.</p>
 						<button id="universe-more" type="button" data-message="home.showMore" data-translation-context="Button that adds the next page of universes to the list" hidden>Show more</button>
 					</div>
-					<div class="panel universes">
+					<div id="own-universes" class="panel universes" hidden>
 						<div class="panel-heading">
 							<h2 data-message="home.ownUniverses" data-translation-context="Heading of the list of universes the player can edit">Your universes</h2>
 							<button id="create-universe" type="button" data-shortcut="Alt+N" data-message="home.createUniverse" data-translation-context="Button that opens the dialog for making a new universe"><!-- icon ph:plus -->Create Universe</button>
@@ -54,7 +55,7 @@
 						<p id="create-universe-error" class="form-error" role="alert" hidden></p>
 						<div class="dialog-buttons">
 							<button id="create-universe-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-							<button id="create-universe-submit" type="submit" aria-describedby="create-universe-error" data-shortcut="Alt+S" data-message="home.create.submit" data-translation-context="Button that makes the new universe">Create</button>
+							<button id="create-universe-submit" type="submit" aria-describedby="create-universe-error" data-shortcut="Alt+C" data-message="home.create.submit" data-translation-context="Button that makes the new universe">Create</button>
 						</div>
 					</form>
 				</dialog>

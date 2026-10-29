@@ -1,20 +1,20 @@
 import assert from 'assert';
 
 import { pool } from '../../src/db/client.js';
-import { AccountTakenError, createPlayer, findLocalLogin, findPlayer, findPlayerByHandle, findPlayerEmail, findPlayerIdByEmail, saveEmail, savePasswordHash, type NewPlayer } from '../../src/db/playerRepo.js';
+import { AccountTakenError, createPlayer, findLocalLogin, findPlayer, findPlayerByUsername, findPlayerEmail, findPlayerIdByEmail, saveEmail, savePasswordHash, type NewPlayer } from '../../src/db/playerRepo.js';
 
 /**
  * A local account with an email address and password
  *
- * @param handle The account's handle
+ * @param username The account's username
  * @param email Its address
  * @return The account to create
  */
-function localAccount(handle: string, email: string): NewPlayer
+function localAccount(username: string, email: string): NewPlayer
 {
 	return({
-		handle,
-		displayName: handle,
+		username,
+		displayName: username,
 		email,
 		passwordHash: '$argon2id$v=19$m=19456,p=1,t=2$c2FsdA$aGFzaA'
 	});
@@ -31,16 +31,16 @@ describe('playerRepo', () =>
 			assert.match(player.id, /^[0-9a-f-]{36}$/);
 			assert.deepStrictEqual(await findPlayer(player.id), {
 				id: player.id,
-				handle: 'Ada',
+				username: 'Ada',
 				displayName: 'Ada'
 			});
 		});
 
-		it('refuses a handle another account has, ignoring capitals', async () =>
+		it('refuses a username another account has, ignoring capitals', async () =>
 		{
 			await createPlayer(localAccount('Ada', 'ada@example.com'));
 
-			await assert.rejects(createPlayer(localAccount('ADA', 'other@example.com')), (error) => ((error instanceof AccountTakenError) && (error.field === 'handle')));
+			await assert.rejects(createPlayer(localAccount('ADA', 'other@example.com')), (error) => ((error instanceof AccountTakenError) && (error.field === 'username')));
 		});
 
 		it('refuses an email address another account has, ignoring capitals', async () =>
@@ -53,20 +53,20 @@ describe('playerRepo', () =>
 		it('lets two accounts share a display name, and have no email address', async () =>
 		{
 			await createPlayer({
-				handle: 'ada_one',
+				username: 'ada_one',
 				displayName: 'Ada',
 				email: null,
 				passwordHash: null
 			});
 			await createPlayer({
-				handle: 'ada_two',
+				username: 'ada_two',
 				displayName: 'Ada',
 				email: null,
 				passwordHash: null
 			});
 		});
 
-		it('refuses a handle the database doesn\'t allow', async () =>
+		it('refuses a username the database doesn\'t allow', async () =>
 		{
 			await assert.rejects(createPlayer(localAccount('a b', 'ada@example.com')));
 			await assert.rejects(createPlayer(localAccount('ab', 'ada@example.com')));
@@ -75,12 +75,12 @@ describe('playerRepo', () =>
 
 	describe('finding accounts', () =>
 	{
-		it('finds an account by handle, ignoring capitals', async () =>
+		it('finds an account by username, ignoring capitals', async () =>
 		{
 			const player = await createPlayer(localAccount('Ada', 'ada@example.com'));
 
-			assert.deepStrictEqual(await findPlayerByHandle('aDA'), player);
-			assert.strictEqual(await findPlayerByHandle('Grace'), undefined);
+			assert.deepStrictEqual(await findPlayerByUsername('aDA'), player);
+			assert.strictEqual(await findPlayerByUsername('Grace'), undefined);
 		});
 
 		it('finds an account by email address, ignoring capitals and surrounding spaces', async () =>
@@ -97,7 +97,7 @@ describe('playerRepo', () =>
 			const player = await createPlayer(localAccount('Ada', 'ada@example.com'));
 
 			await createPlayer({
-				handle: 'Grace',
+				username: 'Grace',
 				displayName: 'Grace',
 				email: 'grace@example.com',
 				passwordHash: null

@@ -10,7 +10,7 @@
 import { randomBytes } from 'crypto';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_EMAIL_CHANGE_PATH, AUTH_LOGIN_PATH, AUTH_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_REGISTER_PATH, AUTH_SESSION_PATH, defineMessages, EMAIL_CODE_PURPOSES, HANDLE_PATTERN, isReservedName, localize, MAX_EMAIL_LENGTH, MAX_HANDLE_LENGTH, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_PLAYER_NAME_LENGTH, MIN_HANDLE_LENGTH, MIN_PASSWORD_LENGTH, NAME_MESSAGES, type AuthErrorPayload, type AuthField, type EmailChangeRequest, type EmailCodeCheckRequest, type EmailCodeRequest, type LoginRequest, type MessageDescriptor, type MessageValues, type PasswordResetRequest, type RegisterRequest, type SessionPayload } from '@multiverse-kiln/shared';
+import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_EMAIL_CHANGE_PATH, AUTH_LOGIN_PATH, AUTH_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_REGISTER_PATH, AUTH_SESSION_PATH, defineMessages, EMAIL_CODE_PURPOSES, isReservedName, localize, MAX_EMAIL_LENGTH, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_USERNAME_LENGTH, MIN_PASSWORD_LENGTH, MIN_USERNAME_LENGTH, NAME_MESSAGES, USERNAME_PATTERN, type AuthErrorPayload, type AuthField, type EmailChangeRequest, type EmailCodeCheckRequest, type EmailCodeRequest, type LoginRequest, type MessageDescriptor, type MessageValues, type PasswordResetRequest, type RegisterRequest, type SessionPayload } from '@multiverse-kiln/shared';
 
 import { hashAddress, hashesMatch, keyedHash } from '../auth/keyedHashes.js';
 import { checkLoginPassword, checkPasswordForMissingAccount, hashPassword } from '../auth/passwords.js';
@@ -124,7 +124,7 @@ const emailCodeCheckRequest = z.object({
 const registerRequest = z.object({
 	email: emailAddress,
 	password: z.string().max(MAX_PASSWORD_LENGTH * 4),
-	handle: z.string().trim().max(MAX_HANDLE_LENGTH * 4),
+	username: z.string().trim().max(MAX_USERNAME_LENGTH * 4),
 	displayName: displayText(MAX_PLAYER_NAME_LENGTH),
 	rememberMe: z.boolean(),
 	locale
@@ -337,7 +337,7 @@ async function sessionRoute(request: Request, response: Response): Promise<void>
 	const payload: SessionPayload = {
 		player: (session ? {
 			playerId: session.playerId,
-			handle: session.handle,
+			username: session.username,
 			name: session.name
 		} : null)
 	};
@@ -683,36 +683,36 @@ async function checkCodeRoute(request: Request, response: Response): Promise<voi
 }
 
 /**
- * Checks a new handle's form
+ * Checks a new username's form
  *
- * @param handle The handle, trimmed
+ * @param username The username, trimmed
  * @return The refusal when it can't be taken
  */
-function checkHandle(handle: string): AuthRefusal | undefined
+function checkUsername(username: string): AuthRefusal | undefined
 {
-	if ((handle.length < MIN_HANDLE_LENGTH) || (handle.length > MAX_HANDLE_LENGTH) || !HANDLE_PATTERN.test(handle))
+	if ((username.length < MIN_USERNAME_LENGTH) || (username.length > MAX_USERNAME_LENGTH) || !USERNAME_PATTERN.test(username))
 	{
 		return({
 			status: 400,
 			message: {
-				id: 'error.auth.handleForm',
+				id: 'error.auth.usernameForm',
 				defaultMessage: 'Use {min} to {max} letters (a to z), digits and underscores.',
-				description: 'Shown under the handle field when the handle has other characters, or is too short or too long; {min} and {max} are numbers'
+				description: 'Shown under the username field when the username has other characters, or is too short or too long; {min} and {max} are numbers'
 			},
 			values: {
-				min: MIN_HANDLE_LENGTH,
-				max: MAX_HANDLE_LENGTH
+				min: MIN_USERNAME_LENGTH,
+				max: MAX_USERNAME_LENGTH
 			},
-			field: 'handle'
+			field: 'username'
 		});
 	}
 
-	if (isReservedName(handle))
+	if (isReservedName(username))
 	{
 		return({
 			status: 400,
 			message: NAME_MESSAGES.reserved,
-			field: 'handle'
+			field: 'username'
 		});
 	}
 
@@ -736,9 +736,9 @@ async function registerRoute(request: Request, response: Response): Promise<void
 		return;
 	}
 
-	const { email, password, handle, displayName, rememberMe, locale: emailLocale } = body.data;
+	const { email, password, username, displayName, rememberMe, locale: emailLocale } = body.data;
 	const continuationHash = continuationHashOf(request);
-	const problem = (checkHandle(handle)
+	const problem = (checkUsername(username)
 		?? (isReservedName(displayName) ? { status: 400, message: NAME_MESSAGES.reserved, field: 'displayName' as const } : undefined)
 		?? checkPasswordLength(password)
 		?? ((continuationHash === undefined) ? { status: 403, message: authMessages.enterCodeFirst } : undefined)
@@ -778,7 +778,7 @@ async function registerRoute(request: Request, response: Response): Promise<void
 		try
 		{
 			playerId = (await createPlayer({
-				handle,
+				username,
 				displayName,
 				email,
 				passwordHash
@@ -791,16 +791,16 @@ async function registerRoute(request: Request, response: Response): Promise<void
 				throw error;
 			}
 
-			if (error.field === 'handle')
+			if (error.field === 'username')
 			{
 				return({
 					status: 409,
 					message: {
-						id: 'error.auth.handleTaken',
-						defaultMessage: 'Another account already has that handle. Choose another.',
-						description: 'Shown under the handle field when creating an account: handles are unique, ignoring capitals'
+						id: 'error.auth.usernameTaken',
+						defaultMessage: 'Another account already has that username. Choose another.',
+						description: 'Shown under the username field when creating an account: usernames are unique, ignoring capitals'
 					},
-					field: 'handle'
+					field: 'username'
 				});
 			}
 

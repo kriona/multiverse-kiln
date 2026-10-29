@@ -6,7 +6,7 @@
  * Unknown keys are stripped rather than rejected
  */
 import { z } from 'zod';
-import { DISALLOWED_TEXT_CHARACTERS, MAX_CHAT_MESSAGE_LENGTH, MAX_PLAYER_NAME_LENGTH, type ChatPayload, type ChooseCharacterPayload, type ControlPayload, type GameJoinOptions, type LobbyJoinOptions, type LoginPayload, type MovePayload } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, MAX_CHAT_MESSAGE_LENGTH, type ChatPayload, type ChooseCharacterPayload, type ControlPayload, type GameJoinOptions, type LobbyJoinOptions, type MovePayload } from '@multiverse-kiln/shared';
 
 const direction = z.literal([-1, 0, 1]);
 
@@ -28,13 +28,6 @@ export const movePayload = z.object({
 	x: direction,
 	y: direction
 }) satisfies z.ZodType<MovePayload>;
-
-/**
- * LoginPayload: the player's name
- */
-export const loginPayload = z.object({
-	name: displayText(MAX_PLAYER_NAME_LENGTH)
-}) satisfies z.ZodType<LoginPayload>;
 
 /**
  * ChatPayload: one line of chat

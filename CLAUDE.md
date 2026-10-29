@@ -17,15 +17,17 @@ An engine for making multiplayer browser-based role-playing games.
 
 ```
 /client          Phaser game (Vite). Uses `@colyseus/sdk` (formerly colyseus.js) to connect to the server.
-                 Eight pages, linked without .html (/game): index.html (Home; src/main.ts, src/style.scss),
+                 Nine pages, linked without .html (/game): index.html (Home; src/main.ts, src/style.scss),
                  universe.html (a universe's page at /universe/<slug or id>; src/universe.ts, src/universe.scss),
                  game.html (lobby and game at /game/<slug or id>, apart from Home so other pages can be open in
                  other tabs while playing; src/game.ts, src/style.scss), edit.html (the
                  world editor at /edit/<universe id>; src/edit.ts, src/edit.scss), character.html (Create Character; src/character.ts,
                  src/character.scss), license.html (the game's license and the
                  licenses of what it uses, linked from the footer; src/license.ts, src/license.scss), privacy.html
-                 (the privacy policy, linked from the footer; src/privacy.ts, src/privacy.scss) and
-                 admin.html (settings for the whole site; src/admin.ts, src/admin.scss). HTML the pages share (the tags every <head> starts with, status, notice and login screens,
+                 (the privacy policy, linked from the footer; src/privacy.ts, src/privacy.scss),
+                 admin.html (settings for the whole site; src/admin.ts, src/admin.scss) and login.html (logging
+                 in, creating an account and resetting a password, at /login?next=<page to go back to>; src/login.ts,
+                 src/LoginPage.ts, src/login.scss). HTML the pages share (the tags every <head> starts with, status and notice screens,
                  footer, the keyboard shortcut list and screen reader live regions) lives in partials/, included with <!-- include footer.html --> (vite.config.ts).
                  Both styles use src/_shared.scss, and
                  src/pages.ts holds the addresses that link the pages. src/localization.ts shows text in the
@@ -127,7 +129,7 @@ docker compose up -d                 # start local Postgres and object storage
 npm run storage:setup -w server      # create the storage bucket (start.bat does it)
 npm run db:generate -w server        # create a migration after changing server/src/db/schema.ts
 npm run db:migrate -w server         # apply Drizzle migrations
-npm run db:seed -w server            # add or replace the sample universe (server/scripts/sampleUniverse.ts); -- --creator <handle> makes that account its creator
+npm run db:seed -w server            # add or replace the sample universe (server/scripts/sampleUniverse.ts); -- --creator <username> makes that account its creator
 npm run messages                     # update shared/locales/en.json after changing messages (the client's dev server does it as you save), and list each translation's missing and out-of-date messages
 npm run dev -w server                # Colyseus on wss://www.multiversekiln-dev.com:2567
 npm run dev -w client                # Vite on https://www.multiversekiln-dev.com:5173
@@ -145,7 +147,7 @@ Test multiplayer with separate browsers or profiles: every tab of one browser is
 - **The game engine's name is only ever `SITE_NAME`** (`shared/src/constants.ts`), never written into a message or page. Code uses the constant; a page's HTML writes `%SITE_NAME%`, which `client/vite.config.ts` fills in. A message that names it takes it as an argument, `{siteName}`, which in a page's HTML is `<span data-argument="siteName" translate="no">%SITE_NAME%</span>`. Browser tab titles leave it out: set them with `setPageTitle()` (`client/src/ui/dom.ts`), which adds ` - ${SITE_NAME}`.
 - **Icons** come from Phosphor's Regular icons (`ph:<name>`, https://phosphoricons.com) for interface actions and game-icons.net (`game-icons:<name>`, https://game-icons.net) for game concepts. A page marks one with `<!-- icon ph:floppy-disk -->` before a button's text; code imports one with `import trashIcon from 'virtual:icon/ph:trash'` and shows it with `setButtonLabel()` (`client/src/ui/dom.ts`). The icons plugin in `client/vite.config.ts` inlines them as SVG at build time. Both are credited, with their licenses, on `client/license.html`; credit any new third-party code or assets the pages use there too.
 - **Every screen works with only a keyboard and with a screen reader** (see Accessibility in `STRUCTURE-OVERVIEW.md`). When adding a screen, dialog or game feature:
-	- Give its main buttons shortcuts with `data-shortcut="Alt+<letter>"`, following the pattern there (Alt+S submits, Alt+N adds, and so on). `client/src/ui/shortcuts.ts` underlines the letter, sets `aria-keyshortcuts` and lists it under `?`. Use `addShortcut()` for a shortcut that isn't a button, and `addKeyHelp()` to list keys the code handles itself. Don't use Alt+D, Alt+E or Alt+F, and don't give deleting a shortcut.
+	- Give its main buttons shortcuts with `data-shortcut="Alt+<letter>"`, following the pattern there (Alt+S submits, Alt+N adds, and so on). The letter must be in the button's English text: a submit button without an S, such as Create or Log in, takes a letter of its own word instead (Alt+C, Alt+L). `client/src/ui/shortcuts.ts` underlines the letter, sets `aria-keyshortcuts` and lists it under `?`. Use `addShortcut()` for a shortcut that isn't a button, and `addKeyHelp()` to list keys the code handles itself. Don't use Alt+D, Alt+E or Alt+F, and don't give deleting a shortcut.
 	- Read out what changes without the player acting, and what is only drawn on a canvas, with `announce()` (`client/src/ui/announcer.ts`), the way `MapAnnouncer` does for the game's map.
 	- Show a field's problem with `reportFieldError()` (`client/src/ui/fieldErrors.ts`), and point the form's buttons at its error text with `aria-describedby`.
 	- Never show something by color alone, give anything drawn on a canvas a keyboard way to reach it, and set `document.title` when the screen shows.

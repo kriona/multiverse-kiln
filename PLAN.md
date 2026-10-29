@@ -248,7 +248,7 @@ Decided:
 - Session lifetimes (see Login in `STRUCTURE-OVERVIEW.md`): 1 hour idle and 24 hours in all without "Remember me"; with it, 30 days idle and 90 days in all. An open connection to a room counts as activity.
 - An account can be logged in from several browsers at once, each with its own session; every window of the player, in any browser, acts as that player.
 - Sessions arrive with the first real login (local accounts, then Google and Discord), so the name-only login never starts one.
-- Every account has a unique handle, for finding users and invites, and a display name that needn't be unique. The name-only login's data is dropped rather than carried over, and the seed script's `--creator` names a handle.
+- Every account has a unique username, for finding users and invites, and a display name that needn't be unique. The name-only login's data is dropped rather than carried over, and the seed script's `--creator` names a username.
 - Linking: a provider login whose email matches a local account is never linked automatically. The player proves they own the local account (its password, or an email code) to link them; providers can also be linked from the profile.
 - Email is sent over SMTP with `nodemailer`, so the service is configuration (chosen in Phase 16), and caught by Mailpit in `docker-compose.yml` locally. Emails are HTML, with a plain text part, in the recipient's language.
 - Rate limits and the email code counters are Postgres rows updated atomically, so they hold across several server processes. The client's network comes from one function, which Phase 16 teaches to read the proxy's forwarding header.
@@ -266,16 +266,16 @@ Built in two steps: logins (sessions, providers, local accounts, email codes, re
 	- [ ] Google and Discord login through OAuth, recommended on the login and register pages
 	- [✅] Local accounts: email-based logins, Argon2id, the HaveIBeenPwned check, and the email code rules from `STRUCTURE-OVERVIEW.md` as pure functions with tests
 	- [✅] Email through `nodemailer`, Mailpit in `docker-compose.yml`; register, forgot password and change email flows (the routes in `server/src/http/auth.ts`), with notification emails in the recipient's language
-	- [✅] Handles and display names; drop the name-only login's data and its server side
+	- [✅] Usernames and display names; drop the name-only login's data and its server side
 	- [✅] Rate-limit login, signup and reset routes; use generic error messages that don't reveal whether an account exists
 	- [✅] Log auth events to `auth_events`, deleting them after 90 days
 	- [✅] Tests for expired and logged-out sessions, sessions of deleted users, another user's resource IDs and replayed codes
-	- [ ] Login, register, forgot password and change email pages, replacing the name-only login form on every page; then remove what only the name form used (`SessionMessageType.Login`, `LoginPayload`, the name notices and `BROWSER_ID_PATH` in `/shared`)
+	- [✅] The login page (`/login`: log in, create an account, forgot password), replacing the name-only login form on every page and what only it used; Home is public, with Log in and Log out in its toolbar
 	- [ ] Links back to the site in the emails, which needs the client's address as a server setting
 2. Accounts
 	- [ ] Optional 2FA (TOTP and recovery codes)
 	- [ ] Account linking
-	- [ ] Profile edit and view, with character visibility and the player's language (used ahead of the browser's settings)
+	- [ ] Profile edit and view, with character visibility and the player's language (used ahead of the browser's settings), changing the email address (the routes exist) and logging out from any page
 	- [ ] Account deletion and data export
 	- [✅] Privacy policy page (`privacy.html`, linked from the footer), drafted; check it against what was built, and set its date, before players use the site
 	- [ ] Review against sections 1-3 and 5 of `SECURITY-PRACTICES.md`

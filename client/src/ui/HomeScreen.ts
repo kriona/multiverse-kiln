@@ -2,7 +2,7 @@ import { DISALLOWED_TEXT_CHARACTERS, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_
 
 import { t } from '../localization';
 import { describeEditorError } from '../network/editorApi';
-import { editPageUrl, universePageUrl } from '../pages';
+import { editPageUrl, loginPageUrl, universePageUrl } from '../pages';
 import { getElement, namedOptions, setOptions, setPageTitle, showMessage } from './dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
 import { formMessages } from './formMessages';
@@ -31,6 +31,11 @@ export interface HomeScreenActions
 	 * Opens a universe in the editor
 	 */
 	edit: (universeId: string) => void;
+
+	/**
+	 * Logs the browser out. The session room then says so, which shows the screen again logged out
+	 */
+	logOut: () => Promise<void>;
 }
 
 /**
@@ -50,6 +55,10 @@ export class HomeScreen
 	private readonly createError = getElement('create-universe-error', HTMLElement);
 	private readonly createSubmit = getElement('create-universe-submit', HTMLButtonElement);
 	private readonly playerName = getElement('home-player-name', HTMLElement);
+	private readonly playingAs = getElement('home-playing-as', HTMLElement);
+	private readonly logOutButton = getElement('home-log-out', HTMLButtonElement);
+	private readonly logInLink = getElement('home-log-in', HTMLAnchorElement);
+	private readonly ownUniverses = getElement('own-universes', HTMLElement);
 	private readonly notice = getElement('home-notice', HTMLElement);
 	private readonly list = getElement('universe-list', HTMLUListElement);
 	private readonly empty = getElement('universe-empty', HTMLElement);
@@ -73,6 +82,13 @@ export class HomeScreen
 		this.moreButton.addEventListener('click', () =>
 		{
 			void this.loadPage();
+		});
+
+		this.logInLink.href = loginPageUrl();
+
+		this.logOutButton.addEventListener('click', () =>
+		{
+			void this.logOut();
 		});
 
 		this.createName.maxLength = MAX_UNIVERSE_NAME_LENGTH;
@@ -104,18 +120,26 @@ export class HomeScreen
 	}
 
 	/**
-	 * Gets the screen ready to be shown, listing the universes afresh
+	 * Gets the screen ready to be shown, listing the universes afresh. A player who is logged in sees
+	 * their own universes too, and can log out; anyone else is offered the login page
 	 *
-	 * @param playerName The player's name
+	 * @param playerName The player's name, or null when the browser isn't logged in
 	 */
-	show(playerName: string): void
+	show(playerName: string | null): void
 	{
+		const loggedIn = (playerName !== null);
+
 		setPageTitle(t({
 			id: 'home.pageTitle',
 			defaultMessage: 'Universes',
 			description: 'The browser tab\'s title while Home lists the universes, before the game engine\'s name'
 		}));
-		this.playerName.textContent = playerName;
+		this.playerName.textContent = (playerName ?? '');
+		this.playingAs.hidden = !loggedIn;
+		this.logOutButton.hidden = !loggedIn;
+		this.logOutButton.disabled = false;
+		this.logInLink.hidden = loggedIn;
+		this.ownUniverses.hidden = !loggedIn;
 		this.listed = 0;
 		this.listVersion++;
 		this.list.replaceChildren();
@@ -124,7 +148,33 @@ export class HomeScreen
 		this.ownList.replaceChildren();
 		this.ownEmpty.hidden = true;
 		void this.loadPage();
-		void this.loadOwnUniverses(this.listVersion);
+
+		if (loggedIn)
+		{
+			void this.loadOwnUniverses(this.listVersion);
+		}
+	}
+
+	/**
+	 * Logs out, explaining above the list when it couldn't
+	 */
+	private async logOut(): Promise<void>
+	{
+		this.logOutButton.disabled = true;
+
+		try
+		{
+			await this.actions.logOut();
+		}
+		catch (error)
+		{
+			this.logOutButton.disabled = false;
+			this.showNotice(describeEditorError(error, {
+				id: 'home.logOutFailed',
+				defaultMessage: 'Could not log out.',
+				description: 'Shown above the list of universes when the Log out button didn\'t work'
+			}));
+		}
 	}
 
 	/**

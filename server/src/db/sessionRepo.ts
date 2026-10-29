@@ -21,7 +21,7 @@ export interface SessionRecord extends SessionTimes
  */
 export interface SessionWithPlayer extends SessionRecord
 {
-	handle: string;
+	username: string;
 	displayName: string;
 }
 
@@ -94,7 +94,7 @@ export async function findSessionWithPlayer(tokenHash: Uint8Array, executor: Exe
 			rememberMe: sessions.rememberMe,
 			createdAt: sessions.createdAt,
 			lastUsedAt: sessions.lastUsedAt,
-			handle: players.handle,
+			username: players.username,
 			displayName: players.displayName
 		})
 		.from(sessions)

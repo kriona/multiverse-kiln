@@ -83,11 +83,11 @@ class Browser
 	/**
 	 * Who the browser is logged in as
 	 *
-	 * @return The player's handle, or null when it isn't logged in
+	 * @return The player's username, or null when it isn't logged in
 	 */
-	async handle(): Promise<string | null>
+	async username(): Promise<string | null>
 	{
-		return((await this.send<SessionPayload>('GET', AUTH_SESSION_PATH)).body.player?.handle ?? null);
+		return((await this.send<SessionPayload>('GET', AUTH_SESSION_PATH)).body.player?.username ?? null);
 	}
 }
 
@@ -133,10 +133,10 @@ describe('auth routes', () =>
 	 * Registers an account from a new browser
 	 *
 	 * @param email Its address
-	 * @param handle Its handle
+	 * @param username Its username
 	 * @return The browser, logged in
 	 */
-	async function register(email: string, handle: string): Promise<Browser>
+	async function register(email: string, username: string): Promise<Browser>
 	{
 		const browser = new Browser();
 
@@ -145,7 +145,7 @@ describe('auth routes', () =>
 		const answer = await browser.send('POST', AUTH_REGISTER_PATH, {
 			email,
 			password: PASSWORD,
-			handle,
+			username,
 			displayName: 'Ada',
 			rememberMe: false,
 			locale: 'en'
@@ -160,12 +160,12 @@ describe('auth routes', () =>
 	 * The kinds of an account's auth events, oldest first, and those at the same time in the order
 	 * AUTH_EVENT_KINDS lists them
 	 *
-	 * @param handle The account's handle
+	 * @param username The account's username
 	 * @return The kinds
 	 */
-	async function eventKinds(handle: string): Promise<string[]>
+	async function eventKinds(username: string): Promise<string[]>
 	{
-		const result = await pool.query<{ kind: string }>('SELECT e.kind FROM auth_events e JOIN players p ON p.id = e.player_id WHERE p.handle = $1 ORDER BY e.occurred_at, e.kind', [handle]);
+		const result = await pool.query<{ kind: string }>('SELECT e.kind FROM auth_events e JOIN players p ON p.id = e.player_id WHERE p.username = $1 ORDER BY e.occurred_at, e.kind', [username]);
 
 		return(result.rows.map((row) => row.kind));
 	}
@@ -213,7 +213,7 @@ describe('auth routes', () =>
 		{
 			const browser = await register('ada@example.com', 'ada');
 
-			assert.strictEqual(await browser.handle(), 'ada');
+			assert.strictEqual(await browser.username(), 'ada');
 			assert.ok(!browser.cookies.has('__Host-kiln-continue'));
 			await waitUntil(() => emails.some((email) => /^Welcome/.test(email.subject)));
 			assert.deepStrictEqual(await eventKinds('ada'), ['registered', 'loggedIn']);
@@ -257,7 +257,7 @@ describe('auth routes', () =>
 			const other = await new Browser().send('POST', AUTH_REGISTER_PATH, {
 				email: 'ada@example.com',
 				password: PASSWORD,
-				handle: 'ada',
+				username: 'ada',
 				displayName: 'Ada',
 				rememberMe: false,
 				locale: 'en'
@@ -275,7 +275,7 @@ describe('auth routes', () =>
 			const answer = await browser.send('POST', AUTH_REGISTER_PATH, {
 				email: 'grace@example.com',
 				password: PASSWORD,
-				handle: 'ada',
+				username: 'ada',
 				displayName: 'Ada',
 				rememberMe: false,
 				locale: 'en'
@@ -285,7 +285,7 @@ describe('auth routes', () =>
 			assert.strictEqual(answer.body.field, 'email');
 		});
 
-		it('refuses short and breached passwords, bad and taken handles, and reserved names', async () =>
+		it('refuses short and breached passwords, bad and taken usernames, and reserved names', async () =>
 		{
 			await register('grace@example.com', 'grace');
 
@@ -296,7 +296,7 @@ describe('auth routes', () =>
 			const attempt = (changes: object): Promise<{ status: number; body: AuthErrorPayload }> => browser.send('POST', AUTH_REGISTER_PATH, {
 				email: 'ada@example.com',
 				password: PASSWORD,
-				handle: 'ada',
+				username: 'ada',
 				displayName: 'Ada',
 				rememberMe: false,
 				locale: 'en',
@@ -305,14 +305,14 @@ describe('auth routes', () =>
 
 			assert.strictEqual((await attempt({ password: 'fourteen chars' })).body.field, 'password');
 			assert.strictEqual((await attempt({ password: BREACHED_PASSWORD })).body.field, 'password');
-			assert.strictEqual((await attempt({ handle: 'a b' })).body.field, 'handle');
-			assert.strictEqual((await attempt({ handle: 'Admin_1' })).body.field, 'handle');
+			assert.strictEqual((await attempt({ username: 'a b' })).body.field, 'username');
+			assert.strictEqual((await attempt({ username: 'Admin_1' })).body.field, 'username');
 			assert.strictEqual((await attempt({ displayName: 'The Admin' })).body.field, 'displayName');
 
-			const taken = await attempt({ handle: 'GRACE' });
+			const taken = await attempt({ username: 'GRACE' });
 
 			assert.strictEqual(taken.status, 409);
-			assert.strictEqual(taken.body.field, 'handle');
+			assert.strictEqual(taken.body.field, 'username');
 
 			// The code still lets the browser register, once what was wrong is put right
 			assert.strictEqual((await attempt({})).status, 204);
@@ -392,7 +392,7 @@ describe('auth routes', () =>
 			const answer = await browser.send('POST', AUTH_LOGIN_PATH, { email: 'Ada@Example.com', password: PASSWORD, rememberMe: true });
 
 			assert.strictEqual(answer.status, 204);
-			assert.strictEqual(await browser.handle(), 'ada');
+			assert.strictEqual(await browser.username(), 'ada');
 		});
 
 		it('answers a wrong password and an unknown address the same way', async () =>
@@ -429,7 +429,7 @@ describe('auth routes', () =>
 				parallelism: 1
 			});
 			const player = await createPlayer({
-				handle: 'ada',
+				username: 'ada',
 				displayName: 'Ada',
 				email: 'ada@example.com',
 				passwordHash: oldHash
@@ -454,19 +454,19 @@ describe('auth routes', () =>
 			const sessionCookie = browser.cookies.get('__Host-kiln-session');
 
 			assert.strictEqual((await browser.send('POST', AUTH_LOGOUT_PATH)).status, 204);
-			assert.strictEqual(await browser.handle(), null);
+			assert.strictEqual(await browser.username(), null);
 			assert.ok(!browser.cookies.has('__Host-kiln-session'));
-			assert.strictEqual(await other.handle(), 'ada');
+			assert.strictEqual(await other.username(), 'ada');
 
 			// The old cookie no longer works, even if a browser kept it
 			browser.cookies.set('__Host-kiln-session', sessionCookie ?? '');
-			assert.strictEqual(await browser.handle(), null);
+			assert.strictEqual(await browser.username(), null);
 		});
 
 		it('doesn\'t know the session of an account that was deleted', async () =>
 		{
 			const player = await createPlayer({
-				handle: 'ada',
+				username: 'ada',
 				displayName: 'Ada',
 				email: 'ada@example.com',
 				passwordHash: await hashPassword(PASSWORD)
@@ -475,10 +475,10 @@ describe('auth routes', () =>
 			const browser = new Browser();
 
 			browser.cookies.set('__Host-kiln-session', cookie.split('=')[1]);
-			assert.strictEqual(await browser.handle(), 'ada');
+			assert.strictEqual(await browser.username(), 'ada');
 
 			await pool.query('DELETE FROM players WHERE id = $1', [player.id]);
-			assert.strictEqual(await browser.handle(), null);
+			assert.strictEqual(await browser.username(), null);
 		});
 	});
 
@@ -496,8 +496,8 @@ describe('auth routes', () =>
 			const answer = await browser.send('POST', AUTH_PASSWORD_RESET_PATH, { password: 'a new passphrase', rememberMe: false, locale: 'en' });
 
 			assert.strictEqual(answer.status, 204);
-			assert.strictEqual(await browser.handle(), 'ada');
-			assert.strictEqual(await first.handle(), null);
+			assert.strictEqual(await browser.username(), 'ada');
+			assert.strictEqual(await first.username(), null);
 			await waitUntil(() => emails.some((email) => /password .* was changed/.test(email.subject)));
 			assert.strictEqual((await new Browser().send('POST', AUTH_LOGIN_PATH, { email: 'ada@example.com', password: PASSWORD, rememberMe: false })).status, 401);
 			assert.strictEqual((await new Browser().send('POST', AUTH_LOGIN_PATH, { email: 'ada@example.com', password: 'a new passphrase', rememberMe: false })).status, 204);

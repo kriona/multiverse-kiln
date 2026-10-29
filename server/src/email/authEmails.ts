@@ -229,7 +229,7 @@ export function accountCreatedEmail(locale: string): EmailContent
 		paragraphs: [
 			translator.format({
 				id: 'email.accountCreated.body',
-				defaultMessage: 'Your account on {siteName} has been created, with this email address.',
+				defaultMessage: 'Your account on {siteName} has been created.',
 				description: 'Paragraph of the email sent when a new account is created; {siteName} is the site\'s name'
 			}, values),
 			translator.format({

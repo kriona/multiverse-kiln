@@ -1,13 +1,12 @@
-import { NAME_MESSAGES, NoticeReason, SessionMessageType, SessionServerMessageType, type AccountPayload, type LoginPayload, type NoticePayload } from '@multiverse-kiln/shared';
+import { SessionServerMessageType, type AccountPayload } from '@multiverse-kiln/shared';
 
 import { t } from './localization';
 import { EditorApi } from './network/editorApi';
 import type { ServerConnection } from './network/serverConnection';
 import { isLeavingPage } from './pageLifecycle';
-import { gamePageUrl, HOME_PAGE_URL, pushPageParameters, replacePageParameters, TAB_PARAMETER, AREA_PARAMETER } from './pages';
+import { currentPageAddress, gamePageUrl, HOME_PAGE_URL, loginPageUrl, pushPageParameters, replacePageParameters, TAB_PARAMETER, AREA_PARAMETER } from './pages';
 import { showScreen, showStatus } from './ui/dom';
 import { EditorScreen, isEditorTab, type EditorPlace } from './ui/editor/EditorScreen';
-import { LoginScreen } from './ui/LoginScreen';
 import { pageMessages } from './ui/pageMessages';
 
 /**
@@ -44,15 +43,14 @@ function isEditorPlace(state: unknown): state is EditorPlace
 }
 
 /**
- * Runs the world editor's page (edit.html): logs the browser in, then edits one universe
+ * Runs the world editor's page (edit.html): edits one universe. A browser that isn't logged in goes to
+ * the login page, which comes back here
  *
- * The editor's requests need the browser to be logged in, and a browser is only logged in while one
- * of its windows is in the session room, so this page joins it too. When the game is open in another
- * tab, the browser is logged in already and the editor opens straight away
+ * The page joins the session room, which says whether the browser is logged in and tells it when its
+ * session ends. Being open counts as using the session
  */
 export class EditorPage
 {
-	private readonly loginScreen: LoginScreen;
 	private readonly editorScreen: EditorScreen;
 
 	/**
@@ -85,13 +83,6 @@ export class EditorPage
 	{
 		const { client, session } = server;
 
-		this.loginScreen = new LoginScreen((name) =>
-		{
-			const login: LoginPayload = { name };
-
-			session.send(SessionMessageType.Login, login);
-		});
-
 		this.editorScreen = new EditorScreen(new EditorApi(client), {
 			goHome: () =>
 			{
@@ -117,11 +108,6 @@ export class EditorPage
 			this.onAccount(account);
 		});
 
-		session.onMessage(SessionServerMessageType.Notice, (notice: NoticePayload) =>
-		{
-			this.onNotice(notice.reason);
-		});
-
 		session.onLeave(() =>
 		{
 			if (!isLeavingPage())
@@ -132,7 +118,8 @@ export class EditorPage
 	}
 
 	/**
-	 * Shows the login screen while the browser is logged out, and the editor once it is logged in
+	 * Shows the editor while the browser is logged in, and goes to the login page when it isn't. Changes
+	 * not yet saved make the browser ask before leaving
 	 *
 	 * @param account The browser's player
 	 */
@@ -140,8 +127,7 @@ export class EditorPage
 	{
 		if (!account.player)
 		{
-			this.loginScreen.reset();
-			showScreen('login');
+			window.location.replace(loginPageUrl(currentPageAddress()));
 			return;
 		}
 
@@ -225,27 +211,6 @@ export class EditorPage
 		else
 		{
 			pushPageParameters(placeParameters(place), place);
-		}
-	}
-
-	/**
-	 * Explains why logging in didn't work. The editor ignores the session's other notices, which are about groups
-	 *
-	 * @param reason Why
-	 */
-	private onNotice(reason: NoticeReason): void
-	{
-		if (reason === NoticeReason.NameInUse)
-		{
-			this.loginScreen.showError(t(pageMessages.nameInUse));
-		}
-		else if (reason === NoticeReason.NameReserved)
-		{
-			this.loginScreen.showError(t(NAME_MESSAGES.reserved));
-		}
-		else if (reason === NoticeReason.LoginFailed)
-		{
-			this.loginScreen.showError(t(pageMessages.loginFailed));
 		}
 	}
 }

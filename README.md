@@ -165,7 +165,7 @@ The object storage is [SeaweedFS](https://github.com/seaweedfs/seaweedfs), which
 
 The seed script (`server/scripts/seed.ts`) adds Kilnhaven, a sample universe drawn in `server/scripts/sampleUniverse.ts`: a town square lobby with a cottage and cellar to walk into, and a crossroads for groups to start in. Running it again replaces Kilnhaven and leaves everything else alone, so run it after changing the sample maps. It refuses to run with `NODE_ENV=production`.
 
-Nobody can open Kilnhaven in the world editor unless you name its creator: `npm run db:seed -w server -- --creator your_handle` makes the account with that handle its creator. Register the account first; the script won't create one. Replacing Kilnhaven also removes its editors, so pass `--creator` every time you seed.
+Nobody can open Kilnhaven in the world editor unless you name its creator: `npm run db:seed -w server -- --creator your_username` makes the account with that username its creator. Register the account first; the script won't create one. Replacing Kilnhaven also removes its editors, so pass `--creator` every time you seed.
 
 Postgres listens on `127.0.0.1:5432` (only reachable from your machine) and keeps its data in a Docker volume, so it survives restarts. It keeps running in the background until you run `docker compose stop`.
 
@@ -248,7 +248,7 @@ All commands run from the repository root.
 | `docker compose up -d` / `docker compose stop` | Start / stop the local Postgres |
 | `npm run db:generate -w server` | Create a migration from changes to `server/src/db/schema.ts` |
 | `npm run db:migrate -w server` | Apply pending migrations (as `MIGRATION_DATABASE_URL`) |
-| `npm run db:seed -w server` | Add or replace the sample universe (as `DATABASE_URL`); add `-- --creator <handle>` to make that account its creator |
+| `npm run db:seed -w server` | Add or replace the sample universe (as `DATABASE_URL`); add `-- --creator <username>` to make that account its creator |
 | `npm run loadtest -w server` | Connect simulated clients to a running server (`LOADTEST_ENDPOINT`), each logging in as a new bot account, which needs `ENABLE_DEV_TOOLS=true` |
 | `npm run <script> -w <package>` | Run one package's script, e.g. `npm run dev -w server` |
 | `npm install <pkg> -w <package>` | Add a dependency to one package, e.g. `npm install drizzle-orm -w server` |

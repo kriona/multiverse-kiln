@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<!-- include head.html -->
+		<title data-message="login.title" data-translation-context="The browser tab's title for the login page, and the heading and button that log in with an email address and password">Log in</title>
+		<link rel="stylesheet" href="/src/login.scss" />
+	</head>
+	<body>
+		<main>
+			<header class="toolbar">
+				<!-- include site-name.html -->
+				<a class="button secondary toolbar-link" href="/" data-message="page.backToHome" data-translation-context="Link or button that goes back to the list of universes (Home): at the top of a page, in the editor's toolbar, or below a message filling the page, such as one saying a universe couldn't be found"><!-- icon ph:house -->Back to Home</a>
+			</header>
+
+			<!-- include status.html -->
+
+			<section id="login-screen" class="screen auth-screen" hidden>
+				<form id="login-form" class="panel form auth-panel">
+					<img class="auth-logo" src="/src/assets/layout/multiverse-kiln.png" alt="" width="256" height="256" />
+					<h1 data-message="login.title" data-translation-context="The browser tab's title for the login page, and the heading and button that log in with an email address and password">Log in</h1>
+					<label data-message="login.email" data-translation-context="Label of the email address field on the login, create account and forgot password screens">
+						Email address
+						<input id="login-email" type="email" autocomplete="username" spellcheck="false" required />
+					</label>
+					<div class="password-field">
+						<label data-message="login.password" data-translation-context="Label of the password field when logging in">
+							Password
+							<input id="login-password" type="password" autocomplete="current-password" required />
+						</label>
+						<button id="login-password-toggle" type="button" class="secondary password-toggle" aria-controls="login-password" aria-pressed="false" aria-label="Show password" title="Show password" data-message-aria-label="login.showPassword" data-translation-context-aria-label="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed" data-message-title="login.showPassword" data-translation-context-title="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"><span class="password-hidden-icon"><!-- icon ph:eye --></span><span class="password-shown-icon"><!-- icon ph:eye-slash --></span></button>
+					</div>
+					<label class="checkbox" data-message="login.rememberMe" data-translation-context="Checkbox when logging in, creating an account or choosing a new password: keeps the browser logged in for up to 30 days without use, rather than an hour">
+						<input id="login-remember" type="checkbox" />
+						Remember me
+					</label>
+					<p id="login-error" class="form-error" role="alert" hidden></p>
+					<button id="login-submit" type="submit" aria-describedby="login-error" data-shortcut="Alt+L" data-message="login.title" data-translation-context="The browser tab's title for the login page, and the heading and button that log in with an email address and password"><!-- icon ph:sign-in -->Log in</button>
+					<div class="auth-links">
+						<button id="login-forgot" type="button" class="link-button" data-shortcut="Alt+P" data-message="login.forgotPassword" data-translation-context="Button on the login screen that starts resetting a forgotten password">Forgot your password?</button>
+						<button id="login-register" type="button" class="link-button" data-shortcut="Alt+N" data-message="login.register" data-translation-context="Button on the login screen that starts creating a new account">Create an account</button>
+					</div>
+				</form>
+			</section>
+
+			<section id="email-screen" class="screen auth-screen" hidden>
+				<form id="email-form" class="panel form auth-panel">
+					<h1 id="email-heading"></h1>
+					<p id="email-intro"></p>
+					<label data-message="login.email" data-translation-context="Label of the email address field on the login, create account and forgot password screens">
+						Email address
+						<input id="email-address" type="email" autocomplete="email" spellcheck="false" required />
+					</label>
+					<p id="email-error" class="form-error" role="alert" hidden></p>
+					<div class="form-buttons">
+						<button id="email-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="login.back" data-translation-context="Button that goes back a step while logging in, creating an account or resetting a password"><!-- icon ph:arrow-left -->Back</button>
+						<button id="email-submit" type="submit" aria-describedby="email-error" data-shortcut="Alt+S" data-message="login.sendCode" data-translation-context="Button that emails a code to the address typed, to create an account or reset a password"><!-- icon ph:paper-plane-right -->Send code</button>
+					</div>
+				</form>
+			</section>
+
+			<section id="code-screen" class="screen auth-screen" hidden>
+				<form id="code-form" class="panel form auth-panel">
+					<h1 data-message="login.checkEmail" data-translation-context="Heading of the screen where the player types the code that was emailed to them">Check your email</h1>
+					<p id="code-intro"></p>
+					<label data-message="login.code" data-translation-context="Label of the field for the code that was emailed to the player">
+						Code
+						<input id="code-input" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" maxlength="24" required />
+					</label>
+					<p id="code-status" class="hint" role="status"></p>
+					<p id="code-error" class="form-error" role="alert" hidden></p>
+					<div class="form-buttons">
+						<button id="code-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="login.back" data-translation-context="Button that goes back a step while logging in, creating an account or resetting a password"><!-- icon ph:arrow-left -->Back</button>
+						<button id="code-resend" type="button" class="secondary" aria-describedby="code-status" data-shortcut="Alt+N" data-message="login.resendCode" data-translation-context="Button that emails another code, replacing the one sent before"><!-- icon ph:arrow-clockwise -->Send a new code</button>
+						<button id="code-submit" type="submit" aria-describedby="code-error" data-shortcut="Alt+C" data-message="login.continue" data-translation-context="Button that checks the emailed code and goes on to the next step"><!-- icon ph:arrow-right -->Continue</button>
+					</div>
+				</form>
+			</section>
+
+			<section id="register-screen" class="screen auth-screen" hidden>
+				<form id="register-form" class="panel form auth-panel">
+					<h1 data-message="login.registerTitle" data-translation-context="Heading of the screen where a new account's username, name and password are chosen">Create your account</h1>
+					<label data-message="login.email" data-translation-context="Label of the email address field on the login, create account and forgot password screens">
+						Email address
+						<input id="register-email" type="email" autocomplete="username" readonly />
+					</label>
+					<label data-message="login.username" data-translation-context="Label of the field for a new account's username: a unique name of letters, digits and underscores that other players find them by">
+						Username
+						<input id="register-username" autocomplete="off" autocapitalize="none" spellcheck="false" required aria-describedby="register-username-hint" />
+					</label>
+					<p id="register-username-hint" class="hint" data-message="login.usernameHint" data-translation-context="Under the username field when creating an account; {min} and {max} are numbers">How other players find you, and tell you apart from others with the same name. <span id="register-username-min" data-argument="min" translate="no">3</span> to <span id="register-username-max" data-argument="max" translate="no">20</span> letters (a to z), digits and underscores.</p>
+					<label data-message="login.displayName" data-translation-context="Label of the field for the name other players see, when creating an account">
+						Name
+						<input id="register-name" autocomplete="nickname" required aria-describedby="register-name-hint" />
+					</label>
+					<p id="register-name-hint" class="hint" data-message="login.displayNameHint" data-translation-context="Under the name field when creating an account">The name other players see. It doesn't have to be your real name, or unique.</p>
+					<div class="password-field">
+						<label data-message="login.newPassword" data-translation-context="Label of the field for a new password, when creating an account or resetting a password">
+							Password
+							<input id="register-password" type="password" autocomplete="new-password" required aria-describedby="register-password-hint register-password-manager" />
+						</label>
+						<button id="register-password-toggle" type="button" class="secondary password-toggle" aria-controls="register-password" aria-pressed="false" aria-label="Show password" title="Show password" data-message-aria-label="login.showPassword" data-translation-context-aria-label="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed" data-message-title="login.showPassword" data-translation-context-title="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"><span class="password-hidden-icon"><!-- icon ph:eye --></span><span class="password-shown-icon"><!-- icon ph:eye-slash --></span></button>
+					</div>
+					<p id="register-password-hint" class="hint" data-message="login.passwordHint" data-translation-context="Under the new password field when creating an account or resetting a password; {min} is a number">At least <span id="register-password-min" data-argument="min" translate="no">15</span> characters. A few words strung together are easy to remember and hard to guess.</p>
+					<p id="register-password-manager" class="hint" data-message="login.passwordManager" data-translation-context="Under the new password field when creating an account or resetting a password, recommending a password manager; {bitwarden} and {onePassword} are links to two of them">A password manager, such as <a href="https://bitwarden.com/" data-argument="bitwarden" translate="no" target="_blank" rel="noopener">Bitwarden</a> or <a href="https://1password.com/" data-argument="onePassword" translate="no" target="_blank" rel="noopener">1Password</a>, can make a strong password and remember it for you.</p>
+					<label class="checkbox" data-message="login.rememberMe" data-translation-context="Checkbox when logging in, creating an account or choosing a new password: keeps the browser logged in for up to 30 days without use, rather than an hour">
+						<input id="register-remember" type="checkbox" />
+						Remember me
+					</label>
+					<p class="hint" data-message="login.privacy" data-translation-context="On the create account screen; {privacy} is a link to the privacy policy, named by page.privacyPolicy">Read how we look after your information in our <a href="/privacy" target="_blank" data-argument="privacy" data-message="page.privacyPolicy" data-translation-context="The name of the privacy policy, as a link to it">privacy policy</a>.</p>
+					<p id="register-error" class="form-error" role="alert" hidden></p>
+					<div class="form-buttons">
+						<button id="register-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="login.back" data-translation-context="Button that goes back a step while logging in, creating an account or resetting a password"><!-- icon ph:arrow-left -->Back</button>
+						<button id="register-submit" type="submit" aria-describedby="register-error" data-shortcut="Alt+C" data-message="login.registerSubmit" data-translation-context="Button that creates the new account and logs in"><!-- icon ph:user-plus -->Create account</button>
+					</div>
+				</form>
+			</section>
+
+			<section id="reset-screen" class="screen auth-screen" hidden>
+				<form id="reset-form" class="panel form auth-panel">
+					<h1 data-message="login.resetTitle" data-translation-context="Heading of the screen where a new password is chosen, after a forgotten one">Choose a new password</h1>
+					<p data-message="login.resetIntro" data-translation-context="On the screen where a new password is chosen, after a forgotten one">Every browser logged in to your account is logged out when the password changes.</p>
+					<!-- Not shown: tells password managers which account the new password is for -->
+					<input id="reset-email" type="email" autocomplete="username" hidden />
+					<div class="password-field">
+						<label data-message="login.newPassword" data-translation-context="Label of the field for a new password, when creating an account or resetting a password">
+							Password
+							<input id="reset-password" type="password" autocomplete="new-password" required aria-describedby="reset-password-hint reset-password-manager" />
+						</label>
+						<button id="reset-password-toggle" type="button" class="secondary password-toggle" aria-controls="reset-password" aria-pressed="false" aria-label="Show password" title="Show password" data-message-aria-label="login.showPassword" data-translation-context-aria-label="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed" data-message-title="login.showPassword" data-translation-context-title="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"><span class="password-hidden-icon"><!-- icon ph:eye --></span><span class="password-shown-icon"><!-- icon ph:eye-slash --></span></button>
+					</div>
+					<p id="reset-password-hint" class="hint" data-message="login.passwordHint" data-translation-context="Under the new password field when creating an account or resetting a password; {min} is a number">At least <span id="reset-password-min" data-argument="min" translate="no">15</span> characters. A few words strung together are easy to remember and hard to guess.</p>
+					<p id="reset-password-manager" class="hint" data-message="login.passwordManager" data-translation-context="Under the new password field when creating an account or resetting a password, recommending a password manager; {bitwarden} and {onePassword} are links to two of them">A password manager, such as <a href="https://bitwarden.com/" data-argument="bitwarden" translate="no" target="_blank" rel="noopener">Bitwarden</a> or <a href="https://1password.com/" data-argument="onePassword" translate="no" target="_blank" rel="noopener">1Password</a>, can make a strong password and remember it for you.</p>
+					<label class="checkbox" data-message="login.rememberMe" data-translation-context="Checkbox when logging in, creating an account or choosing a new password: keeps the browser logged in for up to 30 days without use, rather than an hour">
+						<input id="reset-remember" type="checkbox" />
+						Remember me
+					</label>
+					<p id="reset-error" class="form-error" role="alert" hidden></p>
+					<div class="form-buttons">
+						<button id="reset-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="login.back" data-translation-context="Button that goes back a step while logging in, creating an account or resetting a password"><!-- icon ph:arrow-left -->Back</button>
+						<button id="reset-submit" type="submit" aria-describedby="reset-error" data-shortcut="Alt+S" data-message="login.resetSubmit" data-translation-context="Button that saves the new password and logs in"><!-- icon ph:key -->Save password</button>
+					</div>
+				</form>
+			</section>
+		</main>
+		<!-- include footer.html -->
+		<!-- include accessibility.html -->
+		<script type="module" src="/src/login.ts"></script>
+	</body>
+</html>

@@ -28,7 +28,7 @@ export interface BotLoginPayload
 }
 
 /**
- * Adds POST DEV_BOT_LOGIN_PATH, which makes a new account with a random handle, without an email or
+ * Adds POST DEV_BOT_LOGIN_PATH, which makes a new account with a random username, without an email or
  * password, and answers with a session token for it
  *
  * @param app Express app to add the route to
@@ -39,7 +39,7 @@ export function addDevBotLoginRoute(app: Application): void
 	{
 		const suffix = randomBytes(6).toString('hex');
 		const player = await createPlayer({
-			handle: `bot_${suffix}`,
+			username: `bot_${suffix}`,
 			displayName: `Bot ${suffix.slice(0, 4)}`,
 			email: null,
 			passwordHash: null

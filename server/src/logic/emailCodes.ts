@@ -5,6 +5,7 @@
  * The callers keep the counts these functions decide from, updating them atomically, and supply the
  * random bytes and the time, so these stay pure
  */
+import { EMAIL_CODE_LIFETIME_MINUTES } from '@multiverse-kiln/shared';
 
 /**
  * Crockford's base32 alphabet: the digits and the capital letters except I, L, O and U
@@ -19,7 +20,7 @@ export const EMAIL_CODE_LENGTH = 6;
 /**
  * How long a code works after it is sent, in milliseconds
  */
-export const EMAIL_CODE_LIFETIME_MS = (15 * 60 * 1000);
+export const EMAIL_CODE_LIFETIME_MS = (EMAIL_CODE_LIFETIME_MINUTES * 60 * 1000);
 
 /**
  * How long the browser that entered a code has to take the next step, such as choosing a password, in milliseconds

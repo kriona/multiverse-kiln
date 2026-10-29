@@ -7,7 +7,7 @@
  * replaces the sample universe if it is already there, and leaves everything else alone. It refuses
  * to run when NODE_ENV is production
  *
- * To make a player the sample universe's creator, so they can open it in the editor, give their handle:
+ * To make a player the sample universe's creator, so they can open it in the editor, give their username:
  *
  *   npm run db:seed -w server -- --creator ada
  *
@@ -18,7 +18,7 @@ import { parseArgs } from 'node:util';
 import { CHUNK_SIZE, DEFAULT_TILE_CELL, VOID_CELL, cellIndexInChunk, chunkCoordinate, chunkKey, type MapBounds } from '@multiverse-kiln/shared';
 
 import { db, pool, type Executor } from '../src/db/client.js';
-import { findPlayerByHandle, type PlayerProfile } from '../src/db/playerRepo.js';
+import { findPlayerByUsername, type PlayerProfile } from '../src/db/playerRepo.js';
 import { addDefaultStartingItems } from '../src/db/startingItemRepo.js';
 import { createTile, findDefaultTileIds } from '../src/db/tileRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
@@ -211,7 +211,7 @@ function requireArea(areaIds: Map<string, string>, key: string): string
 }
 
 /**
- * Finds the account whose handle was given with --creator
+ * Finds the account whose username was given with --creator
  *
  * @return The account, or undefined when --creator wasn't given
  */
@@ -224,11 +224,11 @@ async function findCreator(): Promise<PlayerProfile | undefined>
 		return(undefined);
 	}
 
-	const creator = await findPlayerByHandle(values.creator.trim());
+	const creator = await findPlayerByUsername(values.creator.trim());
 
 	if (!creator)
 	{
-		throw new Error(`No account has the handle "${values.creator}". Register it first, then seed again`);
+		throw new Error(`No account has the username "${values.creator}". Register it first, then seed again`);
 	}
 
 	return(creator);
@@ -316,11 +316,11 @@ async function seed(executor: Executor, creator: PlayerProfile | undefined): Pro
 	if (creator)
 	{
 		await setUniverseRole(universeId, creator.id, 'creator', executor);
-		console.log(`${creator.displayName} (${creator.handle}) is its creator`);
+		console.log(`${creator.displayName} (${creator.username}) is its creator`);
 	}
 	else
 	{
-		console.log('Nobody can edit it. Pass --creator <handle> to make an account its creator');
+		console.log('Nobody can edit it. Pass --creator <username> to make an account its creator');
 	}
 }
 

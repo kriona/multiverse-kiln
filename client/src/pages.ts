@@ -22,6 +22,9 @@
  * - privacy.html: the privacy policy, linked to from the footer
  * - admin.html: settings for the whole site, linked to from Home's toolbar. Anyone can use it until
  *   there are server admin accounts
+ * - login.html: logging in, creating an account and resetting a forgotten password, linked to from
+ *   Home's toolbar. The game, the world editor and Create Character send a browser that isn't logged in
+ *   here with ?next=<their address>, and it goes back there once logged in
  *
  * Every page takes ?locale= to choose a language, as the language picker in the footer does (see src/localization.ts)
  */
@@ -47,6 +50,16 @@ export const TAB_PARAMETER = 'tab';
  * Query string parameter of the editor naming the area open in the area editor
  */
 export const AREA_PARAMETER = 'area';
+
+/**
+ * Query string parameter of the login page naming the page to go back to once logged in
+ */
+const NEXT_PARAMETER = 'next';
+
+/**
+ * Path of the login page
+ */
+const LOGIN_PAGE = '/login';
 
 /**
  * Path of the world editor's page, followed by /<universe ID>
@@ -136,6 +149,65 @@ export function gamePageUrl(key?: string, inviteToken?: string): string
 export function inviteLinkUrl(universeSlug: string, inviteToken: string): string
 {
 	return(new URL(gamePageUrl(universeSlug, inviteToken), window.location.origin).toString());
+}
+
+/**
+ * The address of the login page, keeping the language the page was chosen in
+ *
+ * @param next The address to go back to once logged in, such as the page sending the player there; Home when not given
+ * @return The address
+ */
+export function loginPageUrl(next?: string): string
+{
+	const parameters = new URLSearchParams();
+	const locale = readPageParameter(LOCALE_PARAMETER);
+
+	if (next !== undefined)
+	{
+		parameters.set(NEXT_PARAMETER, next);
+	}
+
+	if (locale !== undefined)
+	{
+		parameters.set(LOCALE_PARAMETER, locale);
+	}
+
+	const query = parameters.toString();
+
+	return(((query === '') ? LOGIN_PAGE : `${LOGIN_PAGE}?${query}`));
+}
+
+/**
+ * The address of the page being shown, as the login page's next parameter takes it
+ *
+ * @return The path, query string and fragment
+ */
+export function currentPageAddress(): string
+{
+	const { pathname, search, hash } = window.location;
+
+	return(`${pathname}${search}${hash}`);
+}
+
+/**
+ * Where the login page goes once logged in: the address its next parameter names, when that is a page
+ * of this site, or Home. Only a path is taken, so a link can't send a player to another site after
+ * they log in
+ *
+ * @return The address
+ */
+export function readNextPage(): string
+{
+	const next = readPageParameter(NEXT_PARAMETER);
+
+	if ((next === undefined) || !next.startsWith('/') || next.startsWith('//') || next.startsWith('/\\'))
+	{
+		return(HOME_PAGE_URL);
+	}
+
+	const url = new URL(next, window.location.origin);
+
+	return(((url.origin === window.location.origin) && (url.pathname !== LOGIN_PAGE)) ? `${url.pathname}${url.search}${url.hash}` : HOME_PAGE_URL);
 }
 
 /**

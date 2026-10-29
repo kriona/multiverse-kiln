@@ -1988,7 +1988,7 @@
 		"description": "Heading of the world editor, linking to the editor's first tab; {universe} is the universe's name"
 	},
 	"email.accountCreated.body": {
-		"defaultMessage": "Your account on {siteName} has been created, with this email address.",
+		"defaultMessage": "Your account on {siteName} has been created.",
 		"description": "Paragraph of the email sent when a new account is created; {siteName} is the site's name"
 	},
 	"email.accountCreated.notYou": {
@@ -2099,14 +2099,6 @@
 		"defaultMessage": "Enter the code from the email first, or ask for a new one if it has been more than a few minutes.",
 		"description": "Why creating an account, choosing a new password or changing an email address was refused: this browser hasn't entered the email code, or entered it too long ago"
 	},
-	"error.auth.handleForm": {
-		"defaultMessage": "Use {min} to {max} letters (a to z), digits and underscores.",
-		"description": "Shown under the handle field when the handle has other characters, or is too short or too long; {min} and {max} are numbers"
-	},
-	"error.auth.handleTaken": {
-		"defaultMessage": "Another account already has that handle. Choose another.",
-		"description": "Shown under the handle field when creating an account: handles are unique, ignoring capitals"
-	},
 	"error.auth.passwordBreached": {
 		"defaultMessage": "This password has turned up in a data breach, so attackers try it. Choose another.",
 		"description": "Shown under a new password field when the password is on HaveIBeenPwned's list of passwords leaked in data breaches"
@@ -2118,6 +2110,14 @@
 	"error.auth.tooManyAttempts": {
 		"defaultMessage": "Too many tries. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
 		"description": "Why a login wasn't tried, an email code wasn't sent, or a code wasn't checked: too many were tried or asked for from this network or for this address in the past hour, or a code was sent to the address less than a minute ago"
+	},
+	"error.auth.usernameForm": {
+		"defaultMessage": "Use {min} to {max} letters (a to z), digits and underscores.",
+		"description": "Shown under the username field when the username has other characters, or is too short or too long; {min} and {max} are numbers"
+	},
+	"error.auth.usernameTaken": {
+		"defaultMessage": "Another account already has that username. Choose another.",
+		"description": "Shown under the username field when creating an account: usernames are unique, ignoring capitals"
 	},
 	"error.auth.wrongCode": {
 		"defaultMessage": "That code isn't right, or it has expired. Check the latest email, or ask for a new code.",
@@ -2663,6 +2663,18 @@
 		"defaultMessage": "Could not list the universes. Reload the page to try again.",
 		"description": "Shown on Home when the list of universes couldn't be loaded"
 	},
+	"home.logIn": {
+		"defaultMessage": "Log in",
+		"description": "Link in Home's toolbar to the page for logging in or creating an account"
+	},
+	"home.logOut": {
+		"defaultMessage": "Log out",
+		"description": "Button in Home's toolbar that logs the browser out, in every tab"
+	},
+	"home.logOutFailed": {
+		"defaultMessage": "Could not log out.",
+		"description": "Shown above the list of universes when the Log out button didn't work"
+	},
 	"home.noOwnUniverses": {
 		"defaultMessage": "You haven't made a universe yet.",
 		"description": "Shown instead of the list of universes the player can edit when there are none"
@@ -3031,25 +3043,141 @@
 		"defaultMessage": "Lobby",
 		"description": "Heading of a universe's lobby until its name has loaded"
 	},
-	"login.failed": {
-		"defaultMessage": "Could not log in. Try again in a moment.",
-		"description": "Shown on the login screen when the server couldn't log the player in"
+	"login.back": {
+		"defaultMessage": "Back",
+		"description": "Button that goes back a step while logging in, creating an account or resetting a password"
 	},
-	"login.invalidName": {
-		"defaultMessage": "Enter a name of letters, numbers, spaces or punctuation.",
-		"description": "Shown by the login field when the name typed is empty or has characters that aren't allowed"
+	"login.checkEmail": {
+		"defaultMessage": "Check your email",
+		"description": "Heading of the screen where the player types the code that was emailed to them"
 	},
-	"login.nameInUse": {
-		"defaultMessage": "That player is already logged in from another browser.",
-		"description": "Shown on the login screen when someone using the name typed is logged in elsewhere"
+	"login.code": {
+		"defaultMessage": "Code",
+		"description": "Label of the field for the code that was emailed to the player"
 	},
-	"login.nameLabel": {
-		"defaultMessage": "What should we call you?",
-		"description": "Label of the login field where players type the name others will see"
+	"login.codeResent": {
+		"defaultMessage": "Sent a new code. The one before no longer works.",
+		"description": "Shown under the code field after another code was emailed"
 	},
-	"login.submit": {
-		"defaultMessage": "Enter",
-		"description": "Button that logs in with the name typed"
+	"login.codeSentRegister": {
+		"defaultMessage": "We've emailed {email}. Enter the code from the email. It works once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"description": "On the screen for the emailed code when creating an account; {email} is the address it was sent to"
+	},
+	"login.codeSentReset": {
+		"defaultMessage": "If {email} belongs to an account, we've emailed it a code. Enter the code from the email. It works once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"description": "On the screen for the emailed code when resetting a password; {email} is the address typed. The page can't say whether the address has an account, so it can't say a code was sent"
+	},
+	"login.continue": {
+		"defaultMessage": "Continue",
+		"description": "Button that checks the emailed code and goes on to the next step"
+	},
+	"login.displayName": {
+		"defaultMessage": "Name",
+		"description": "Label of the field for the name other players see, when creating an account"
+	},
+	"login.displayNameHint": {
+		"defaultMessage": "The name other players see. It doesn't have to be your real name, or unique.",
+		"description": "Under the name field when creating an account"
+	},
+	"login.email": {
+		"defaultMessage": "Email address",
+		"description": "Label of the email address field on the login, create account and forgot password screens"
+	},
+	"login.forgotPassword": {
+		"defaultMessage": "Forgot your password?",
+		"description": "Button on the login screen that starts resetting a forgotten password"
+	},
+	"login.newPassword": {
+		"defaultMessage": "Password",
+		"description": "Label of the field for a new password, when creating an account or resetting a password"
+	},
+	"login.password": {
+		"defaultMessage": "Password",
+		"description": "Label of the password field when logging in"
+	},
+	"login.passwordHint": {
+		"defaultMessage": "At least {min} characters. A few words strung together are easy to remember and hard to guess.",
+		"description": "Under the new password field when creating an account or resetting a password; {min} is a number"
+	},
+	"login.passwordManager": {
+		"defaultMessage": "A password manager, such as {bitwarden} or {onePassword}, can make a strong password and remember it for you.",
+		"description": "Under the new password field when creating an account or resetting a password, recommending a password manager; {bitwarden} and {onePassword} are links to two of them"
+	},
+	"login.privacy": {
+		"defaultMessage": "Read how we look after your information in our {privacy}.",
+		"description": "On the create account screen; {privacy} is a link to the privacy policy, named by page.privacyPolicy"
+	},
+	"login.register": {
+		"defaultMessage": "Create an account",
+		"description": "Button on the login screen that starts creating a new account"
+	},
+	"login.registerHeading": {
+		"defaultMessage": "Create an account",
+		"description": "Heading of the screen that asks for the email address of a new account, and the browser tab's title while it shows"
+	},
+	"login.registerIntro": {
+		"defaultMessage": "Enter your email address, and we'll send you a code to check it's yours.",
+		"description": "On the screen that asks for the email address of a new account"
+	},
+	"login.registerSubmit": {
+		"defaultMessage": "Create account",
+		"description": "Button that creates the new account and logs in"
+	},
+	"login.registerTitle": {
+		"defaultMessage": "Create your account",
+		"description": "Heading of the screen where a new account's username, name and password are chosen"
+	},
+	"login.rememberMe": {
+		"defaultMessage": "Remember me",
+		"description": "Checkbox when logging in, creating an account or choosing a new password: keeps the browser logged in for up to 30 days without use, rather than an hour"
+	},
+	"login.resendCode": {
+		"defaultMessage": "Send a new code",
+		"description": "Button that emails another code, replacing the one sent before"
+	},
+	"login.resetEmailIntro": {
+		"defaultMessage": "Enter your account's email address, and we'll send you a code to choose a new password.",
+		"description": "On the screen that asks for the email address of an account whose password was forgotten"
+	},
+	"login.resetHeading": {
+		"defaultMessage": "Reset your password",
+		"description": "Heading of the screen that asks for the email address of an account whose password was forgotten, and the browser tab's title while it shows"
+	},
+	"login.resetIntro": {
+		"defaultMessage": "Every browser logged in to your account is logged out when the password changes.",
+		"description": "On the screen where a new password is chosen, after a forgotten one"
+	},
+	"login.resetSubmit": {
+		"defaultMessage": "Save password",
+		"description": "Button that saves the new password and logs in"
+	},
+	"login.resetTitle": {
+		"defaultMessage": "Choose a new password",
+		"description": "Heading of the screen where a new password is chosen, after a forgotten one"
+	},
+	"login.sendCode": {
+		"defaultMessage": "Send code",
+		"description": "Button that emails a code to the address typed, to create an account or reset a password"
+	},
+	"login.showPassword": {
+		"defaultMessage": "Show password",
+		"description": "Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"
+	},
+	"login.title": {
+		"defaultMessage": "Log in",
+		"description": "The browser tab's title for the login page, and the heading and button that log in with an email address and password"
+	},
+	"login.unreachable": {
+		"defaultMessage": "Could not reach the server. Check your connection and try again.",
+		"description": "Shown under a form on the login page when the server couldn't be reached"
+	},
+	"login.username": {
+		"defaultMessage": "Username",
+		"description": "Label of the field for a new account's username: a unique name of letters, digits and underscores that other players find them by"
+	},
+	"login.usernameHint": {
+		"defaultMessage": "How other players find you, and tell you apart from others with the same name. {min} to {max} letters (a to z), digits and underscores.",
+		"description": "Under the username field when creating an account; {min} and {max} are numbers"
 	},
 	"map.announce.appeared": {
 		"defaultMessage": "{count, plural, one {{players} comes into view.} other {{players} come into view.}}",
@@ -3270,6 +3398,10 @@
 	"page.privacy": {
 		"defaultMessage": "Privacy",
 		"description": "Link at the bottom of every page to the privacy policy"
+	},
+	"page.privacyPolicy": {
+		"defaultMessage": "privacy policy",
+		"description": "The name of the privacy policy, as a link to it"
 	},
 	"page.shortcuts": {
 		"defaultMessage": "Keyboard shortcuts",
@@ -3648,7 +3780,7 @@
 		"description": "In the privacy policy's list of what the site keeps about a player's account: the email address"
 	},
 	"privacy.accountNames": {
-		"defaultMessage": "Your handle, which is unique and lets other players find you, and your display name, which needn't be your real name.",
+		"defaultMessage": "Your username, which is unique and lets other players find you, and your display name, which needn't be your real name.",
 		"description": "In the privacy policy's list of what the site keeps about a player's account: the account's two names"
 	},
 	"privacy.accountPassword": {
@@ -3780,8 +3912,8 @@
 		"description": "Heading in the privacy policy over the list of what the site keeps of a player's profile"
 	},
 	"privacy.profileText": {
-		"defaultMessage": "Anything you choose to fill in on your profile: a photo, your pronouns, your location and time zone, your language, links to your social media accounts, and which of your characters others can see. Only your handle and display name are required.",
-		"description": "In the privacy policy, what a player's profile holds; only the handle and display name are required"
+		"defaultMessage": "Anything you choose to fill in on your profile: a photo, your pronouns, your location and time zone, your language, links to your social media accounts, and which of your characters others can see. Only your username and display name are required.",
+		"description": "In the privacy policy, what a player's profile holds; only the username and display name are required"
 	},
 	"privacy.rights": {
 		"defaultMessage": "Your choices and rights",
@@ -3844,7 +3976,7 @@
 		"description": "In the privacy policy, saying other players never see a player's email address"
 	},
 	"privacy.seePlayers": {
-		"defaultMessage": "Other players see your handle, display name and the profile fields you fill in, the characters you let them see, and what your characters say and do in the game. Players in a group with you can always reach your profile.",
+		"defaultMessage": "Other players see your username, display name and the profile fields you fill in, the characters you let them see, and what your characters say and do in the game. Players in a group with you can always reach your profile.",
 		"description": "In the privacy policy, what other players can see about a player"
 	},
 	"privacy.services": {

@@ -311,8 +311,7 @@ button.sort-button
 	background: $background-panel;
 }
 
-#status-screen,
-#login-screen
+#status-screen
 {
 	align-items: center;
 	justify-content: center;
@@ -326,19 +325,6 @@ button.sort-button
 	gap: 12px;
 }
 
-.login-panel
-{
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-	width: 280px;
-}
-
-.login-logo
-{
-	align-self: center;
-	line-height: 0;
-}
 
 .toolbar
 {
@@ -651,6 +637,42 @@ fieldset.choice.stacked
 	flex-direction: column;
 	gap: 4px;
 	color: $text-muted;
+
+	// Password managers put an empty element after the field with focus, to hang their button on. The
+	// gap before it would push the rest of the form down whenever focus moved, so it is taken back
+	> div:empty
+	{
+		margin-top: -4px;
+	}
+}
+
+// A password field's label beside its show password button (see ui/passwordToggles.ts)
+.password-field
+{
+	display: flex;
+	align-items: flex-end;
+	gap: 8px;
+
+	label
+	{
+		flex: 1;
+	}
+}
+
+button.password-toggle
+{
+	padding: 6px 10px;
+
+	.icon
+	{
+		margin-inline-end: 0;
+	}
+
+	&[aria-pressed="false"] .password-shown-icon,
+	&[aria-pressed="true"] .password-hidden-icon
+	{
+		display: none;
+	}
 }
 
 .form label.checkbox
