@@ -3015,6 +3015,14 @@
 		"defaultMessage": "GNU Affero General Public License",
 		"description": "The name of the game's license, linking to its full text"
 	},
+	"license.artwork": {
+		"defaultMessage": "Logo and tilesets",
+		"description": "Heading of the license page's section crediting the artist who made the game's logo and default tilesets, and its link in the page's contents"
+	},
+	"license.artworkCredit": {
+		"defaultMessage": "The logo and the default tilesets were drawn by {artist}.",
+		"description": "On the license page, crediting the artist who made the game's logo and the default tilesets (the tile images new maps are drawn with); {artist} is the artist's name, linking to their portfolio, the same in every language"
+	},
 	"license.assets": {
 		"defaultMessage": "Art and other assets",
 		"description": "Heading of the license page's section about the game's art, audio and story, and its link in the page's contents"
@@ -3541,7 +3549,7 @@
 	},
 	"page.credits": {
 		"defaultMessage": "Credits",
-		"description": "Link at the bottom of every page to the license page's credits for the icons the pages use"
+		"description": "Link at the bottom of every page to the license page's credits for the artist of the logo and tilesets and for the icons the pages use"
 	},
 	"page.disconnected": {
 		"defaultMessage": "Disconnected from the server. Reload the page to reconnect.",

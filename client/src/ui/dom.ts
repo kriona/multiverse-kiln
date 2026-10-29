@@ -303,6 +303,22 @@ export function setPageTitle(title?: string): void
 }
 
 /**
+ * Scrolls to the element the address's fragment names, such as #artwork
+ *
+ * Pages that scroll inside an element rather than the document need this on a reload: the browser
+ * restores the document's scroll position there instead of going to the fragment
+ */
+export function scrollToFragment(): void
+{
+	if (location.hash.length <= 1)
+	{
+		return;
+	}
+
+	document.getElementById(decodeURIComponent(location.hash.slice(1)))?.scrollIntoView();
+}
+
+/**
  * Closes every open dialog, the latest first, as Escape would: a dialog's cancel listeners run first,
  * so one with unsaved changes asks before it closes
  *

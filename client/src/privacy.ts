@@ -2,7 +2,7 @@ import { currentLocale, startLocalization, t } from './localization';
 import { AdminApi } from './network/adminApi';
 import { createClient } from './network/serverConnection';
 import { startAccountMenu } from './ui/accountMenu';
-import { setPageTitle } from './ui/dom';
+import { scrollToFragment, setPageTitle } from './ui/dom';
 import { startLanguagePicker } from './ui/languagePicker';
 import { startShortcuts } from './ui/shortcuts';
 
@@ -17,6 +17,7 @@ async function start(): Promise<void>
 	formatDate();
 	startLanguagePicker();
 	startShortcuts();
+	scrollToFragment();
 	await showCharacterDeletionDays();
 }
 

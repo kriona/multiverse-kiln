@@ -1,6 +1,6 @@
 import { startLocalization } from './localization';
 import { startAccountMenu } from './ui/accountMenu';
-import { setPageTitle } from './ui/dom';
+import { scrollToFragment, setPageTitle } from './ui/dom';
 import { startLanguagePicker } from './ui/languagePicker';
 import { startShortcuts } from './ui/shortcuts';
 
@@ -14,6 +14,7 @@ async function start(): Promise<void>
 	void startAccountMenu();
 	startLanguagePicker();
 	startShortcuts();
+	scrollToFragment();
 }
 
 void start();

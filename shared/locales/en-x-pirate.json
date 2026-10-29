@@ -3015,6 +3015,14 @@
 		"message": "GNU Affero General Public License",
 		"source": "GNU Affero General Public License"
 	},
+	"license.artwork": {
+		"message": "Flag an' tile charts",
+		"source": "Logo and tilesets"
+	},
+	"license.artworkCredit": {
+		"message": "The flag an' the ship's own tile charts be the handiwork o' {artist}.",
+		"source": "The logo and the default tilesets were drawn by {artist}."
+	},
 	"license.assets": {
 		"message": "Art an' other treasures",
 		"source": "Art and other assets"
