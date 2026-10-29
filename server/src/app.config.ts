@@ -24,11 +24,15 @@ import { addTileGraphicRoute } from './http/tileGraphics.js';
 import { addUniversesRoutes } from './http/universes.js';
 import { createOriginCheck, parseAllowedOrigins } from './http/origins.js';
 import { configureResponseHeaders } from './http/responseHeaders.js';
+import { siteUrl } from './siteUrl.js';
 
 // Origins allowed to use the server from a browser; startup fails if ALLOWED_ORIGINS is missing
 const allowedOrigins = parseAllowedOrigins(process.env.ALLOWED_ORIGINS);
 
 configureResponseHeaders(allowedOrigins);
+
+// The client's address, which emails link to; startup fails if SITE_URL is missing or isn't an https:// origin
+siteUrl();
 
 const server = defineServer({
 

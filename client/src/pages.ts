@@ -29,7 +29,7 @@
  * Every page takes ?locale= to choose a language, as the language picker in the footer does (see src/localization.ts)
  */
 
-import { INVITE_QUERY_PARAMETER, PROVIDER_RETURN_PATH } from '@multiverse-kiln/shared';
+import { INVITE_QUERY_PARAMETER, LOGIN_PAGE_PATH } from '@multiverse-kiln/shared';
 
 /**
  * Query string parameter choosing the language, e.g. en-x-pirate, or en-XA for the pseudo-language in development
@@ -59,7 +59,7 @@ const NEXT_PARAMETER = 'next';
 /**
  * Path of the login page, which Google and Discord also send the browser back to
  */
-const LOGIN_PAGE = PROVIDER_RETURN_PATH;
+const LOGIN_PAGE = LOGIN_PAGE_PATH;
 
 /**
  * Where the login page keeps its own address (with the page to go back to and its language) in the

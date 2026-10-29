@@ -79,10 +79,20 @@ export const AUTH_PROVIDER_REGISTER_PATH = `${AUTH_PATH}/providers/register`;
 export const AUTH_PROVIDER_LINK_PATH = `${AUTH_PATH}/providers/link`;
 
 /**
+ * The client's login page, which emails link to
+ */
+export const LOGIN_PAGE_PATH = '/login';
+
+/**
+ * Query string parameter that opens the login page on resetting a forgotten password, as in /login?reset
+ */
+export const PASSWORD_RESET_PARAMETER = 'reset';
+
+/**
  * The client's page a provider sends the browser back to, with the code and state in its query string:
  * the login page. Each provider is told this address, under the site's own (the server's SITE_URL)
  */
-export const PROVIDER_RETURN_PATH = '/login';
+export const PROVIDER_RETURN_PATH = LOGIN_PAGE_PATH;
 
 /**
  * Usernames: how players find each other and tell apart players with the same display name. Letters

@@ -6,7 +6,7 @@
  * before app.config.ts creates its transport. Empty values also stop .env from filling them in
  *
  * Dev tools are cleared too, so tests see the production routes whatever server/.env says, and
- * ALLOWED_ORIGINS is set to a fixed test origin
+ * ALLOWED_ORIGINS and SITE_URL are set to fixed test origins
  *
  * The server connects to the test database (TEST_DATABASE_URL) instead of DATABASE_URL. This runs
  * before anything imports src/db/client.ts, which reads DATABASE_URL when it is first imported
@@ -25,6 +25,11 @@ import { buildTestDatabase, closeTestDatabase, emptyTestDatabase, requireTestDat
  */
 export const allowedTestOrigin = 'https://allowed.example';
 
+/**
+ * The client's address in tests, which emails link to
+ */
+export const testSiteUrl = 'https://site.example';
+
 // Colyseus loads .env too, but only once the server is imported, which is too late for the test
 // database settings. Neither load replaces a variable that is already set
 if (existsSync('.env'))
@@ -37,6 +42,7 @@ process.env.SSL_KEY_FILE = '';
 process.env.SSL_CERT_FILE = '';
 process.env.ENABLE_DEV_TOOLS = '';
 process.env.ALLOWED_ORIGINS = allowedTestOrigin;
+process.env.SITE_URL = testSiteUrl;
 process.env.DATABASE_URL = requireTestDatabaseUrl('TEST_DATABASE_URL');
 
 // A fixed key, so tests don't depend on the developer's own (32 bytes of 0x2a in base64)

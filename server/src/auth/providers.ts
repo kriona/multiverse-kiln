@@ -5,7 +5,9 @@
  */
 import { ArcticFetchError, decodeIdToken, Discord, Google, OAuth2RequestError } from 'arctic';
 import { z } from 'zod';
-import { LOGIN_PROVIDER_NAMES, LOGIN_PROVIDERS, MAX_PLAYER_NAME_LENGTH, PROVIDER_RETURN_PATH, type LoginProvider } from '@multiverse-kiln/shared';
+import { LOGIN_PROVIDERS, MAX_PLAYER_NAME_LENGTH, PROVIDER_RETURN_PATH, type LoginProvider } from '@multiverse-kiln/shared';
+
+import { sitePageUrl } from '../siteUrl.js';
 
 /**
  * The player a provider logged in, as it describes them
@@ -250,14 +252,7 @@ function createClients(): Map<LoginProvider, ProviderClient>
 			throw new Error(`Set both ${prefix}_CLIENT_ID and ${prefix}_CLIENT_SECRET, or neither. See server/.env.example`);
 		}
 
-		const siteUrl = process.env.SITE_URL;
-
-		if (!siteUrl)
-		{
-			throw new Error(`SITE_URL is not set, and ${LOGIN_PROVIDER_NAMES[provider]} logins need it. See server/.env.example`);
-		}
-
-		created.set(provider, factories[provider](clientId, clientSecret, new URL(PROVIDER_RETURN_PATH, siteUrl).toString()));
+		created.set(provider, factories[provider](clientId, clientSecret, sitePageUrl(PROVIDER_RETURN_PATH)));
 	}
 
 	return(created);

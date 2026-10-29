@@ -1,10 +1,10 @@
-import { EMAIL_CODE_LIFETIME_MINUTES, LOGIN_PROVIDER_NAMES, MAX_EMAIL_LENGTH, MAX_USERNAME_LENGTH, MAX_PASSWORD_LENGTH, MAX_PLAYER_NAME_LENGTH, MIN_USERNAME_LENGTH, MIN_PASSWORD_LENGTH, type AuthField, type LoginProvider } from '@multiverse-kiln/shared';
+import { EMAIL_CODE_LIFETIME_MINUTES, LOGIN_PROVIDER_NAMES, MAX_EMAIL_LENGTH, PASSWORD_RESET_PARAMETER, MAX_USERNAME_LENGTH, MAX_PASSWORD_LENGTH, MAX_PLAYER_NAME_LENGTH, MIN_USERNAME_LENGTH, MIN_PASSWORD_LENGTH, type AuthField, type LoginProvider } from '@multiverse-kiln/shared';
 
 import { currentLocale, t } from './localization';
 import { authFieldOf, type AuthApi } from './network/authApi';
 import { EditorApiError } from './network/editorApi';
 import { announceLogin } from './network/sessionBroadcast';
-import { readNextPage, rememberLoginAddress } from './pages';
+import { readNextPage, readPageParameter, rememberLoginAddress } from './pages';
 import { announce } from './ui/announcer';
 import { getElement, setPageTitle, showMessage, showScreen, type ScreenName } from './ui/dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from './ui/fieldErrors';
@@ -256,7 +256,7 @@ export class LoginPage
 
 	/**
 	 * Offers the providers the site has, then finishes a login with one when it sent the browser back,
-	 * or shows the login screen
+	 * or shows the login screen (or the forgot password screen, when the address asks for it)
 	 *
 	 * @param providerReturn What a provider sent the browser back with (takeProviderReturn()), if it did
 	 */
@@ -282,6 +282,11 @@ export class LoginPage
 		if (providerReturn)
 		{
 			await this.finishProviderLogin(providerReturn);
+		}
+		else if (readPageParameter(PASSWORD_RESET_PARAMETER) !== undefined)
+		{
+			// Emails that tell of a change to the account link here, for someone who didn't make it
+			this.askForEmail('resetPassword');
 		}
 		else
 		{

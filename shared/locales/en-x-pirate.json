@@ -2011,6 +2011,18 @@
 		"message": "Ye already have an account on {siteName}",
 		"source": "You already have an account on {siteName}"
 	},
+	"email.action.logIn": {
+		"message": "Come aboard {siteName}",
+		"source": "Log in to {siteName}"
+	},
+	"email.action.resetPassword": {
+		"message": "Reset yer password",
+		"source": "Reset your password"
+	},
+	"email.action.visit": {
+		"message": "Set sail for {siteName}",
+		"source": "Go to {siteName}"
+	},
 	"email.code.changeEmail.intro": {
 		"message": "Enter this code on {siteName} to make this yer account's email address:",
 		"source": "Enter this code on {siteName} to make this your account's email address:"
@@ -2066,6 +2078,10 @@
 	"email.emailChanged.subject": {
 		"message": "Yer email address on {siteName} was changed",
 		"source": "Your email address on {siteName} was changed"
+	},
+	"email.footer": {
+		"message": "This letter was sent by {siteName}:",
+		"source": "This email was sent by {siteName}:"
 	},
 	"email.passwordChanged.body": {
 		"message": "The password o' yer account on {siteName} was just changed, an' every browser aboard it was put ashore.",

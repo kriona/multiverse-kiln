@@ -2,13 +2,24 @@
  * The emails logins send (see Email codes in STRUCTURE-OVERVIEW.md): codes for registering, resetting
  * a password, changing an email address and linking a provider login, and the notices sent when an
  * account is created, its password or email address changes or a provider login is linked to it, or
- * someone tries to register an address that already has an account. Each is written in its recipient's language, as HTML with a plain text part
+ * someone tries to register an address that already has an account. Each is written in its recipient's
+ * language, as HTML with a plain text part, and ends with a link to the site (SITE_URL)
  */
-import { SITE_NAME, type EmailCodePurpose, type Translator } from '@multiverse-kiln/shared';
+import { LOGIN_PAGE_PATH, PASSWORD_RESET_PARAMETER, SITE_NAME, type EmailCodePurpose, type Translator } from '@multiverse-kiln/shared';
 
 import { EMAIL_CODE_LIFETIME_MS } from '../logic/emailCodes.js';
+import { sitePageUrl, siteUrl } from '../siteUrl.js';
 import { emailTranslator } from './emailLocales.js';
 import type { EmailContent } from './mailer.js';
+
+/**
+ * A link to one of the site's pages, for what the email asks its reader to do
+ */
+interface EmailAction
+{
+	label: string;
+	url: string;
+}
 
 /**
  * What an email says, before it is laid out
@@ -22,6 +33,11 @@ interface EmailParts
 	 * An email code, shown large after the first paragraph
 	 */
 	code?: string;
+
+	/**
+	 * A link shown as a button after the paragraphs
+	 */
+	action?: EmailAction;
 }
 
 /**
@@ -56,11 +72,30 @@ function escapeHtml(text: string): string
 function layOut(translator: Translator, parts: EmailParts): EmailContent
 {
 	const [first, ...rest] = parts.paragraphs;
-	const textBlocks = [first, ...((parts.code !== undefined) ? [parts.code] : []), ...rest];
+	const site = siteUrl();
+	const footer = translator.format({
+		id: 'email.footer',
+		defaultMessage: 'This email was sent by {siteName}:',
+		description: 'At the end of every email the site sends, followed by the site\'s address on a line of its own; {siteName} is the site\'s name'
+	}, {
+		siteName: SITE_NAME
+	});
+	const action = parts.action;
+	const textBlocks = [
+		first,
+		...((parts.code !== undefined) ? [parts.code] : []),
+		...rest,
+		...(action ? [`${action.label}:\r\n${action.url}`] : []),
+		`${footer}\r\n${site}`
+	];
 	const paragraphHtml = (paragraph: string): string => `<p style="margin: 0 0 16px;">${escapeHtml(paragraph)}</p>`;
 	const codeHtml = ((parts.code !== undefined)
 		? `<p style="margin: 0 0 16px; font-family: Consolas, Menlo, monospace; font-size: 32px; font-weight: bold; letter-spacing: 6px;">${escapeHtml(parts.code)}</p>`
 		: '');
+	const actionHtml = (action
+		? `<p style="margin: 24px 0;"><a href="${escapeHtml(action.url)}" style="display: inline-block; padding: 10px 20px; border-radius: 4px; background: #2e7d32; color: #ffffff; font-weight: bold; text-decoration: none;">${escapeHtml(action.label)}</a></p>`
+		: '');
+	const footerHtml = `<p style="margin: 32px 0 0; font-size: 13px; color: #666666;">${escapeHtml(footer)}<br><a href="${escapeHtml(site)}" style="color: #666666;">${escapeHtml(site)}</a></p>`;
 	const html = [
 		'<!doctype html>',
 		`<html lang="${escapeHtml(translator.locale)}">`,
@@ -73,6 +108,8 @@ function layOut(translator: Translator, parts: EmailParts): EmailContent
 		paragraphHtml(first),
 		codeHtml,
 		...rest.map(paragraphHtml),
+		actionHtml,
+		footerHtml,
 		'</div>',
 		'</body>',
 		'</html>'
@@ -82,6 +119,24 @@ function layOut(translator: Translator, parts: EmailParts): EmailContent
 		subject: parts.subject,
 		text: `${textBlocks.join('\r\n\r\n')}\r\n`,
 		html
+	});
+}
+
+/**
+ * The link to the forgot password screen, for notices of changes the reader may not have made
+ *
+ * @param translator The recipient's language
+ * @return The link
+ */
+function resetPasswordAction(translator: Translator): EmailAction
+{
+	return({
+		label: translator.format({
+			id: 'email.action.resetPassword',
+			defaultMessage: 'Reset your password',
+			description: 'Link at the end of the emails sent when an account\'s password, email address or linked logins change, for someone who didn\'t make the change; opens the forgot password screen'
+		}),
+		url: sitePageUrl(`${LOGIN_PAGE_PATH}?${PASSWORD_RESET_PARAMETER}`)
 	});
 }
 
@@ -216,7 +271,15 @@ export function accountExistsEmail(locale: string): EmailContent
 				defaultMessage: 'If you didn\'t ask, you can ignore this email. Nothing about your account has changed.',
 				description: 'Last paragraph of the email sent when someone asks to create an account with an address that already has one, for someone who didn\'t ask'
 			})
-		]
+		],
+		action: {
+			label: translator.format({
+				id: 'email.action.logIn',
+				defaultMessage: 'Log in to {siteName}',
+				description: 'Link at the end of the email sent when someone asks to create an account with an address that already has one; opens the login page. {siteName} is the site\'s name'
+			}, values),
+			url: sitePageUrl(LOGIN_PAGE_PATH)
+		}
 	}));
 }
 
@@ -250,7 +313,15 @@ export function accountCreatedEmail(locale: string): EmailContent
 				defaultMessage: 'If you didn\'t create it, someone else can read your email. Change your email password, then reset the account\'s password on {siteName}.',
 				description: 'Last paragraph of the email sent when a new account is created, for someone who didn\'t create it; {siteName} is the site\'s name'
 			}, values)
-		]
+		],
+		action: {
+			label: translator.format({
+				id: 'email.action.visit',
+				defaultMessage: 'Go to {siteName}',
+				description: 'Link at the end of the email sent when a new account is created; opens the site\'s first page. {siteName} is the site\'s name'
+			}, values),
+			url: sitePageUrl('/')
+		}
 	}));
 }
 
@@ -284,7 +355,8 @@ export function passwordChangedEmail(locale: string): EmailContent
 				defaultMessage: 'If you didn\'t change it, reset your password on {siteName} straight away.',
 				description: 'Last paragraph of the email sent when an account\'s password is changed or reset, for someone who didn\'t change it; {siteName} is the site\'s name'
 			}, values)
-		]
+		],
+		action: resetPasswordAction(translator)
 	}));
 }
 
@@ -320,7 +392,8 @@ export function providerLinkedEmail(provider: string, locale: string): EmailCont
 				defaultMessage: 'If you didn\'t link it, someone else may be using your account on {siteName}. Reset its password straight away.',
 				description: 'Last paragraph of the email sent when a Google or Discord login is linked to an account, for someone who didn\'t link it; {siteName} is the site\'s name'
 			}, values)
-		]
+		],
+		action: resetPasswordAction(translator)
 	}));
 }
 
@@ -370,6 +443,7 @@ export function emailChangedEmail(recipient: ChangedEmailRecipient, locale: stri
 				defaultMessage: 'If you didn\'t change it, someone else may be using your account on {siteName}. Reset its password straight away.',
 				description: 'Last paragraph of the emails sent to both the old and the new address when an account\'s email address is changed, for someone who didn\'t change it; {siteName} is the site\'s name'
 			}, values)
-		]
+		],
+		action: resetPasswordAction(translator)
 	}));
 }

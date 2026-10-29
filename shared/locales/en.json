@@ -2011,6 +2011,18 @@
 		"defaultMessage": "You already have an account on {siteName}",
 		"description": "Subject of the email sent, in place of a code, when someone asks to create an account with an address that already has one; {siteName} is the site's name"
 	},
+	"email.action.logIn": {
+		"defaultMessage": "Log in to {siteName}",
+		"description": "Link at the end of the email sent when someone asks to create an account with an address that already has one; opens the login page. {siteName} is the site's name"
+	},
+	"email.action.resetPassword": {
+		"defaultMessage": "Reset your password",
+		"description": "Link at the end of the emails sent when an account's password, email address or linked logins change, for someone who didn't make the change; opens the forgot password screen"
+	},
+	"email.action.visit": {
+		"defaultMessage": "Go to {siteName}",
+		"description": "Link at the end of the email sent when a new account is created; opens the site's first page. {siteName} is the site's name"
+	},
 	"email.code.changeEmail.intro": {
 		"defaultMessage": "Enter this code on {siteName} to make this your account's email address:",
 		"description": "First paragraph of the email, sent to the new address, with the code for changing an account's email address, shown just above the code; {siteName} is the site's name"
@@ -2066,6 +2078,10 @@
 	"email.emailChanged.subject": {
 		"defaultMessage": "Your email address on {siteName} was changed",
 		"description": "Subject of the emails sent to both the old and the new address when an account's email address is changed; {siteName} is the site's name"
+	},
+	"email.footer": {
+		"defaultMessage": "This email was sent by {siteName}:",
+		"description": "At the end of every email the site sends, followed by the site's address on a line of its own; {siteName} is the site's name"
 	},
 	"email.passwordChanged.body": {
 		"defaultMessage": "The password of your account on {siteName} was just changed, and every browser logged in to it was logged out.",

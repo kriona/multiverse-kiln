@@ -1,9 +1,10 @@
 import assert from 'assert';
 import { SITE_NAME } from '@multiverse-kiln/shared';
 
-import { accountCreatedEmail, emailChangedEmail, emailCodeEmail, passwordChangedEmail } from '../../src/email/authEmails.js';
+import { accountCreatedEmail, accountExistsEmail, emailChangedEmail, emailCodeEmail, passwordChangedEmail, providerLinkedEmail } from '../../src/email/authEmails.js';
 import { emailTranslator } from '../../src/email/emailLocales.js';
 import { sendEmail, setEmailSender, type Email } from '../../src/email/mailer.js';
+import { testSiteUrl } from '../setup.js';
 
 describe('authEmails', () =>
 {
@@ -28,6 +29,31 @@ describe('authEmails', () =>
 		assert.strictEqual(accountCreatedEmail('en').subject, `Welcome to ${SITE_NAME}`);
 		assert.match(passwordChangedEmail('en').text, /every browser logged in to it was logged out/);
 		assert.match(emailChangedEmail({ address: 'new' }, 'en').text, /This is now the email address/);
+	});
+
+	it('ends every email with the site\'s address', () =>
+	{
+		for (const email of [emailCodeEmail('register', 'AB3X9Z', 'en'), accountCreatedEmail('en'), accountExistsEmail('en')])
+		{
+			assert.match(email.text, new RegExp(`sent by .+:\\r\\n${testSiteUrl}\\r\\n$`));
+			assert.ok(email.html.includes(`<a href="${testSiteUrl}"`));
+		}
+	});
+
+	it('links to the page each notice asks its reader to go to', () =>
+	{
+		const reset = `${testSiteUrl}/login?reset`;
+
+		assert.match(accountExistsEmail('en').text, new RegExp(`Log in to .+:\\r\\n${testSiteUrl}/login\\r\\n`));
+		assert.match(accountCreatedEmail('en').text, new RegExp(`Go to .+:\\r\\n${testSiteUrl}/\\r\\n`));
+
+		for (const email of [passwordChangedEmail('en'), emailChangedEmail({ address: 'new' }, 'en'), providerLinkedEmail('Google', 'en')])
+		{
+			assert.ok(email.text.includes(`Reset your password:\r\n${reset}\r\n`), email.subject);
+			assert.ok(email.html.includes(`<a href="${reset}"`), email.subject);
+		}
+
+		assert.ok(!emailCodeEmail('register', 'AB3X9Z', 'en').text.includes('/login'));
 	});
 
 	it('escapes text in the HTML, but not in the plain text', () =>

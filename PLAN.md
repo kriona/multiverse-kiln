@@ -271,7 +271,7 @@ Built in two steps: logins (sessions, providers, local accounts, email codes, re
 	- [✅] Log auth events to `auth_events`, deleting them after 90 days
 	- [✅] Tests for expired and logged-out sessions, sessions of deleted users, another user's resource IDs and replayed codes
 	- [✅] The login page (`/login`: log in, create an account, forgot password), replacing the name-only login form on every page and what only it used; Home is public, with Log in and Log out in its toolbar
-	- [ ] Links back to the site in the emails, which needs the client's address as a server setting
+	- [✅] Links back to the site in the emails, which needs the client's address as a server setting
 2. Accounts
 	- [ ] Optional 2FA (TOTP and recovery codes)
 	- [ ] Account linking
