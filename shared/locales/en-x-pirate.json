@@ -1999,6 +1999,18 @@
 		"message": "Welcome aboard {siteName}",
 		"source": "Welcome to {siteName}"
 	},
+	"email.accountExists.body": {
+		"message": "Someone asked to make an account on {siteName} with this email address, but it already has one. Come aboard instead, or reset yer password if ye've forgotten it.",
+		"source": "Someone asked to create an account on {siteName} with this email address, but it already has one. Log in instead, or reset your password if you've forgotten it."
+	},
+	"email.accountExists.notYou": {
+		"message": "If ye didn't ask, pay this letter no mind. Nothin' about yer account has changed.",
+		"source": "If you didn't ask, you can ignore this email. Nothing about your account has changed."
+	},
+	"email.accountExists.subject": {
+		"message": "Ye already have an account on {siteName}",
+		"source": "You already have an account on {siteName}"
+	},
 	"email.code.changeEmail.intro": {
 		"message": "Enter this code on {siteName} to make this yer account's email address:",
 		"source": "Enter this code on {siteName} to make this your account's email address:"
@@ -2070,6 +2082,50 @@
 	"error.areaLimit": {
 		"message": "A universe can have at most {max, plural, one {# area} other {# areas}}.",
 		"source": "A universe can have at most {max, plural, one {# area} other {# areas}}."
+	},
+	"error.auth.emailForm": {
+		"message": "Enter an email address, like name@example.com.",
+		"source": "Enter an email address, like name@example.com."
+	},
+	"error.auth.emailMismatch": {
+		"message": "That ain't the address the code was sent to.",
+		"source": "That isn't the address the code was sent to."
+	},
+	"error.auth.emailTaken": {
+		"message": "Another account already sails under that address.",
+		"source": "Another account already uses that address."
+	},
+	"error.auth.enterCodeFirst": {
+		"message": "Enter the code from the letter first, or ask for a new one if it's been more than a few minutes.",
+		"source": "Enter the code from the email first, or ask for a new one if it has been more than a few minutes."
+	},
+	"error.auth.handleForm": {
+		"message": "Use {min} to {max} letters (a to z), digits an' underscores.",
+		"source": "Use {min} to {max} letters (a to z), digits and underscores."
+	},
+	"error.auth.handleTaken": {
+		"message": "Another account already flies that handle. Choose another.",
+		"source": "Another account already has that handle. Choose another."
+	},
+	"error.auth.passwordBreached": {
+		"message": "This password washed up in a data breach, so scallywags try it. Choose another.",
+		"source": "This password has turned up in a data breach, so attackers try it. Choose another."
+	},
+	"error.auth.passwordLength": {
+		"message": "Use a password o' {min} to {max} characters.",
+		"source": "Use a password of {min} to {max} characters."
+	},
+	"error.auth.tooManyAttempts": {
+		"message": "Too many tries. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
+		"source": "Too many tries. Try again in {minutes, plural, one {# minute} other {# minutes}}."
+	},
+	"error.auth.wrongCode": {
+		"message": "That code ain't right, or it's gone stale. Check the latest letter, or ask for a new code.",
+		"source": "That code isn't right, or it has expired. Check the latest email, or ask for a new code."
+	},
+	"error.auth.wrongLogin": {
+		"message": "That email address an' password don't match any account.",
+		"source": "That email address and password don't match an account."
 	},
 	"error.cantDeleteArea": {
 		"message": "The tavern and home port can't be scuttled.",

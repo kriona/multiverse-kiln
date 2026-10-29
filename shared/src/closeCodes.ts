@@ -18,5 +18,10 @@ export enum ServerCloseCode
 	/**
 	 * The group's anchor being left it, so the group is no more
 	 */
-	GroupDisbanded = 4013
+	GroupDisbanded = 4013,
+
+	/**
+	 * The window's login session ended: the player logged out, changed their password, or the session expired
+	 */
+	LoggedOut = 4014
 }

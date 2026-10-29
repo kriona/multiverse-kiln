@@ -372,6 +372,20 @@
       "when": 1793257941952,
       "tag": "0052_sessions_and_local_accounts",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1793260671553,
+      "tag": "0053_drop_name_only_players",
+      "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1793260718389,
+      "tag": "0054_player_handles",
+      "breakpoints": true
     }
   ]
 }

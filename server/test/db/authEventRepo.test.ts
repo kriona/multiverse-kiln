@@ -2,7 +2,7 @@ import assert from 'assert';
 
 import { keyedHash } from '../../src/auth/keyedHashes.js';
 import { deleteAuthEventsBefore, findPlayerAuthEvents, recordAuthEvent } from '../../src/db/authEventRepo.js';
-import { loadOrCreatePlayerByName } from '../../src/db/playerRepo.js';
+import { addPlayer } from '../players.js';
 
 const NOW = new Date('2026-10-29T12:00:00Z');
 const DAY_MS = (24 * 60 * 60 * 1000);
@@ -11,7 +11,7 @@ describe('authEventRepo', () =>
 {
 	it('records an account\'s events, oldest first', async () =>
 	{
-		const player = await loadOrCreatePlayerByName('Ada');
+		const player = await addPlayer('Ada');
 		const networkHash = keyedHash('network', '192.0.2.1');
 		const later = new Date(NOW.getTime() + 1000);
 
@@ -43,7 +43,7 @@ describe('authEventRepo', () =>
 
 	it('deletes events older than a time', async () =>
 	{
-		const player = await loadOrCreatePlayerByName('Ada');
+		const player = await addPlayer('Ada');
 
 		await recordAuthEvent({
 			playerId: player.id,

@@ -94,6 +94,20 @@ export async function sendEmail(email: Email): Promise<void>
 }
 
 /**
+ * Sends an email without waiting for it, such as after answering a request, so how long the answer
+ * takes doesn't depend on whether an email was sent. A failure is logged
+ *
+ * @param email The email
+ */
+export function sendEmailInBackground(email: Email): void
+{
+	sendEmail(email).catch((error: unknown) =>
+	{
+		console.error('Could not send an email:', error);
+	});
+}
+
+/**
  * Replaces how email is sent, for tests
  *
  * @param replacement The sender to use, or undefined to go back to SMTP_URL

@@ -1,11 +1,11 @@
 /**
  * Login sessions: the only module that reads or writes the sessions table
  */
-import { and, eq, lte, or } from 'drizzle-orm';
+import { and, eq, inArray, lte, or } from 'drizzle-orm';
 
 import { SESSION_LIFETIMES, type SessionTimes } from '../logic/sessionLifetimes.js';
 import { db, type Executor } from './client.js';
-import { sessions } from './schema.js';
+import { players, sessions } from './schema.js';
 
 /**
  * A session as the rest of the server sees it
@@ -14,6 +14,15 @@ export interface SessionRecord extends SessionTimes
 {
 	id: string;
 	playerId: string;
+}
+
+/**
+ * A session and its player's names
+ */
+export interface SessionWithPlayer extends SessionRecord
+{
+	handle: string;
+	displayName: string;
 }
 
 /**
@@ -70,6 +79,33 @@ export async function findSessionByTokenHash(tokenHash: Uint8Array, executor: Ex
 }
 
 /**
+ * Finds the session a browser's token belongs to, with its player's names, whether or not it has expired
+ *
+ * @param tokenHash Hash of the token in the browser's cookie
+ * @param executor The database, or a transaction
+ * @return The session and its player, or undefined when there is none
+ */
+export async function findSessionWithPlayer(tokenHash: Uint8Array, executor: Executor = db): Promise<SessionWithPlayer | undefined>
+{
+	const [row] = await executor
+		.select({
+			id: sessions.id,
+			playerId: sessions.playerId,
+			rememberMe: sessions.rememberMe,
+			createdAt: sessions.createdAt,
+			lastUsedAt: sessions.lastUsedAt,
+			handle: players.handle,
+			displayName: players.displayName
+		})
+		.from(sessions)
+		.innerJoin(players, eq(players.id, sessions.playerId))
+		.where(eq(sessions.tokenHash, tokenHash))
+		.limit(1);
+
+	return(row);
+}
+
+/**
  * Records that a session was used
  *
  * @param sessionId The session
@@ -78,12 +114,29 @@ export async function findSessionByTokenHash(tokenHash: Uint8Array, executor: Ex
  */
 export async function touchSession(sessionId: string, now: Date, executor: Executor = db): Promise<void>
 {
+	await touchSessions([sessionId], now, executor);
+}
+
+/**
+ * Records that sessions were used, such as every session with a window connected to a room
+ *
+ * @param sessionIds The sessions
+ * @param now The time they were used
+ * @param executor The database, or a transaction
+ */
+export async function touchSessions(sessionIds: readonly string[], now: Date, executor: Executor = db): Promise<void>
+{
+	if (sessionIds.length === 0)
+	{
+		return;
+	}
+
 	await executor
 		.update(sessions)
 		.set({
 			lastUsedAt: now
 		})
-		.where(eq(sessions.id, sessionId));
+		.where(inArray(sessions.id, [...sessionIds]));
 }
 
 /**
@@ -123,9 +176,9 @@ export async function deletePlayerSessions(playerId: string, executor: Executor 
  *
  * @param now The time now
  * @param executor The database, or a transaction
- * @return How many were deleted
+ * @return The IDs of the sessions deleted, so the rooms can turn away their windows
  */
-export async function deleteExpiredSessions(now: Date, executor: Executor = db): Promise<number>
+export async function deleteExpiredSessions(now: Date, executor: Executor = db): Promise<string[]>
 {
 	const conditions = ([true, false] as const).map((rememberMe) =>
 	{
@@ -146,5 +199,5 @@ export async function deleteExpiredSessions(now: Date, executor: Executor = db):
 			id: sessions.id
 		});
 
-	return(rows.length);
+	return(rows.map((row) => row.id));
 }

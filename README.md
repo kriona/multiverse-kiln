@@ -104,7 +104,7 @@ Then put the same passwords into the connection strings in `server/.env`: `KILN_
 | `VITE_SERVER_URL` | `client/.env` | WebSocket URL of the Colyseus server: `wss://www.multiversekiln-dev.com:2567`. Use the same hostname as `DEV_HOST` so it matches the certificate. |
 | `VITE_SOURCE_URL` | `client/.env` | Where players can get the game engine's source code, linked from the page footer (required). The AGPL requires offering the source to players of a modified version, so a fork sets its own repository. |
 | `PORT` | `server/.env` | Port the Colyseus server listens on (default `2567`). |
-| `ENABLE_DEV_TOOLS` | `server/.env` | Set to `true` to enable `/monitor` and the playground. Off when unset, and always off when `NODE_ENV=production`. Never set it in production. |
+| `ENABLE_DEV_TOOLS` | `server/.env` | Set to `true` to enable `/monitor`, the playground, and the bot login the load test uses (`POST /dev/bot-login`, which makes an account without email and logs it in). Off when unset, and always off when `NODE_ENV=production`. Never set it in production. |
 | `SSL_KEY_FILE`, `SSL_CERT_FILE` | `server/.env` | Certificate for HTTPS/WSS (required). The example values point at `certs/` (see step 5). Leave unset on Colyseus Cloud, which handles TLS itself. |
 | `ALLOWED_ORIGINS` | `server/.env` | Comma-separated origins allowed to use the server from a browser (CORS and WebSocket connections). Required. Locally: the client and the server itself (for the playground). |
 | `DATABASE_URL` | `server/.env` | Postgres connection string for the game server, as `kiln_app`. In production: Neon's pooled connection string. |
@@ -165,7 +165,7 @@ The object storage is [SeaweedFS](https://github.com/seaweedfs/seaweedfs), which
 
 The seed script (`server/scripts/seed.ts`) adds Kilnhaven, a sample universe drawn in `server/scripts/sampleUniverse.ts`: a town square lobby with a cottage and cellar to walk into, and a crossroads for groups to start in. Running it again replaces Kilnhaven and leaves everything else alone, so run it after changing the sample maps. It refuses to run with `NODE_ENV=production`.
 
-Nobody can open Kilnhaven in the world editor unless you name its creator: `npm run db:seed -w server -- --creator "Your Name"` makes the player who logs in with that name its creator, creating the player if the name is new. Replacing Kilnhaven also removes its editors, so pass `--creator` every time you seed.
+Nobody can open Kilnhaven in the world editor unless you name its creator: `npm run db:seed -w server -- --creator your_handle` makes the account with that handle its creator. Register the account first; the script won't create one. Replacing Kilnhaven also removes its editors, so pass `--creator` every time you seed.
 
 Postgres listens on `127.0.0.1:5432` (only reachable from your machine) and keeps its data in a Docker volume, so it survives restarts. It keeps running in the background until you run `docker compose stop`.
 
@@ -248,8 +248,8 @@ All commands run from the repository root.
 | `docker compose up -d` / `docker compose stop` | Start / stop the local Postgres |
 | `npm run db:generate -w server` | Create a migration from changes to `server/src/db/schema.ts` |
 | `npm run db:migrate -w server` | Apply pending migrations (as `MIGRATION_DATABASE_URL`) |
-| `npm run db:seed -w server` | Add or replace the sample universe (as `DATABASE_URL`); add `-- --creator "<name>"` to make that player its creator |
-| `npm run loadtest -w server` | Connect simulated clients to a running server (`LOADTEST_ENDPOINT`) |
+| `npm run db:seed -w server` | Add or replace the sample universe (as `DATABASE_URL`); add `-- --creator <handle>` to make that account its creator |
+| `npm run loadtest -w server` | Connect simulated clients to a running server (`LOADTEST_ENDPOINT`), each logging in as a new bot account, which needs `ENABLE_DEV_TOOLS=true` |
 | `npm run <script> -w <package>` | Run one package's script, e.g. `npm run dev -w server` |
 | `npm install <pkg> -w <package>` | Add a dependency to one package, e.g. `npm install drizzle-orm -w server` |
 | `npm install -D <pkg> -w <package>` | Add a dev dependency to one package |

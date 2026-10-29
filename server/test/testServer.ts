@@ -1,7 +1,6 @@
 import { type ColyseusTestServer, boot } from '@colyseus/testing';
 
 import appConfig from '../src/app.config.js';
-import { onlinePlayers } from '../src/players/onlinePlayers.js';
 
 /**
  * Base URL of the test server for plain HTTP requests (the port @colyseus/testing's boot() uses)
@@ -24,17 +23,6 @@ export async function getTestServer(): Promise<ColyseusTestServer<typeof appConf
 	testServer ??= (await boot(appConfig)) as ColyseusTestServer<typeof appConfig>;
 
 	return(testServer);
-}
-
-/**
- * Logs every browser out of the server's shared OnlinePlayers, so each test starts with nobody logged in
- */
-export function logOutEveryone(): void
-{
-	for (const browserId of [...onlinePlayers.all().keys()])
-	{
-		onlinePlayers.logOut(browserId);
-	}
 }
 
 // Root-level hook: registered once (this module is only evaluated once) and runs after all tests

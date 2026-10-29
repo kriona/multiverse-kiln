@@ -1,8 +1,8 @@
 import assert from 'assert';
 
 import { createToken, hashToken } from '../../src/auth/tokens.js';
-import { loadOrCreatePlayerByName } from '../../src/db/playerRepo.js';
-import { createSession, deleteExpiredSessions, deletePlayerSessions, deleteSession, findSessionByTokenHash, touchSession } from '../../src/db/sessionRepo.js';
+import { createSession, deleteExpiredSessions, deletePlayerSessions, deleteSession, findSessionByTokenHash, findSessionWithPlayer, touchSession, touchSessions } from '../../src/db/sessionRepo.js';
+import { addPlayer } from '../players.js';
 
 const HOUR_MS = (60 * 60 * 1000);
 const DAY_MS = (24 * HOUR_MS);
@@ -11,7 +11,7 @@ describe('sessionRepo', () =>
 {
 	it('finds a session by its token\'s hash', async () =>
 	{
-		const player = await loadOrCreatePlayerByName('Ada');
+		const player = await addPlayer('Ada');
 		const token = createToken();
 		const created = await createSession(player.id, hashToken(token), true);
 		const found = await findSessionByTokenHash(hashToken(token));
@@ -21,6 +21,35 @@ describe('sessionRepo', () =>
 		assert.strictEqual(found?.rememberMe, true);
 	});
 
+	it('finds a session with its player\'s names', async () =>
+	{
+		const player = await addPlayer('Ada Lovelace');
+		const tokenHash = hashToken(createToken());
+		const session = await createSession(player.id, tokenHash, false);
+
+		assert.deepStrictEqual(await findSessionWithPlayer(tokenHash), {
+			...session,
+			handle: 'Ada_Lovelace',
+			displayName: 'Ada Lovelace'
+		});
+		assert.strictEqual(await findSessionWithPlayer(hashToken(createToken())), undefined);
+	});
+
+	it('records the use of several sessions at once', async () =>
+	{
+		const player = await addPlayer('Ada');
+		const first = hashToken(createToken());
+		const second = hashToken(createToken());
+		const sessions = [await createSession(player.id, first, false), await createSession(player.id, second, false)];
+		const later = new Date(sessions[0].lastUsedAt.getTime() + 60000);
+
+		await touchSessions(sessions.map((session) => session.id), later);
+		await touchSessions([], later);
+
+		assert.deepStrictEqual((await findSessionByTokenHash(first))?.lastUsedAt, later);
+		assert.deepStrictEqual((await findSessionByTokenHash(second))?.lastUsedAt, later);
+	});
+
 	it('finds nothing for an unknown token', async () =>
 	{
 		assert.strictEqual(await findSessionByTokenHash(hashToken(createToken())), undefined);
@@ -28,7 +57,7 @@ describe('sessionRepo', () =>
 
 	it('records a use', async () =>
 	{
-		const player = await loadOrCreatePlayerByName('Ada');
+		const player = await addPlayer('Ada');
 		const tokenHash = hashToken(createToken());
 		const session = await createSession(player.id, tokenHash, false);
 		const later = new Date(session.lastUsedAt.getTime() + 60000);
@@ -40,7 +69,7 @@ describe('sessionRepo', () =>
 
 	it('ends one session, leaving the account\'s others', async () =>
 	{
-		const player = await loadOrCreatePlayerByName('Ada');
+		const player = await addPlayer('Ada');
 		const first = hashToken(createToken());
 		const second = hashToken(createToken());
 		const session = await createSession(player.id, first, false);
@@ -54,8 +83,8 @@ describe('sessionRepo', () =>
 
 	it('ends every session of an account, leaving other accounts\'', async () =>
 	{
-		const ada = await loadOrCreatePlayerByName('Ada');
-		const grace = await loadOrCreatePlayerByName('Grace');
+		const ada = await addPlayer('Ada');
+		const grace = await addPlayer('Grace');
 		const graceToken = hashToken(createToken());
 		const adaSessions = [await createSession(ada.id, hashToken(createToken()), false), await createSession(ada.id, hashToken(createToken()), true)];
 
@@ -69,7 +98,7 @@ describe('sessionRepo', () =>
 
 	it('deletes expired sessions by their idle and total limits', async () =>
 	{
-		const player = await loadOrCreatePlayerByName('Ada');
+		const player = await addPlayer('Ada');
 		const shortIdle = hashToken(createToken());
 		const shortFresh = hashToken(createToken());
 		const rememberedIdle = hashToken(createToken());
@@ -94,7 +123,7 @@ describe('sessionRepo', () =>
 		const twoHoursOn = new Date(shortSession.createdAt.getTime() + (2 * HOUR_MS));
 
 		await touchSession(shortSession.id, new Date(twoHoursOn.getTime() - HOUR_MS + 1000));
-		assert.strictEqual(await deleteExpiredSessions(twoHoursOn), 1);
+		assert.strictEqual((await deleteExpiredSessions(twoHoursOn)).length, 1);
 		assert.strictEqual(await findSessionByTokenHash(shortIdle), undefined);
 		assert.ok(await findSessionByTokenHash(shortFresh));
 
@@ -103,7 +132,7 @@ describe('sessionRepo', () =>
 		const monthOn = new Date(rememberedSession.createdAt.getTime() + (31 * DAY_MS));
 
 		await touchSession(rememberedSession.id, new Date(monthOn.getTime() - DAY_MS));
-		assert.strictEqual(await deleteExpiredSessions(monthOn), 2);
+		assert.strictEqual((await deleteExpiredSessions(monthOn)).length, 2);
 		assert.strictEqual(await findSessionByTokenHash(shortFresh), undefined);
 		assert.strictEqual(await findSessionByTokenHash(rememberedIdle), undefined);
 		assert.ok(await findSessionByTokenHash(rememberedFresh));
@@ -113,6 +142,6 @@ describe('sessionRepo', () =>
 		const ninetyDaysOn = new Date(rememberedSession.createdAt.getTime() + (90 * DAY_MS) + 1);
 
 		await touchSession(rememberedSession.id, ninetyDaysOn);
-		assert.strictEqual(await deleteExpiredSessions(ninetyDaysOn), 1);
+		assert.deepStrictEqual(await deleteExpiredSessions(ninetyDaysOn), [rememberedSession.id]);
 	});
 });

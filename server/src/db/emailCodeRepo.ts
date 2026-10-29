@@ -4,15 +4,11 @@
  * The rules a code follows are in server/src/logic/emailCodes.ts; this module only stores codes
  */
 import { and, eq, gt, isNull, lte, or, sql } from 'drizzle-orm';
+import type { EmailCodePurpose } from '@multiverse-kiln/shared';
 
 import { EMAIL_CODE_LIFETIME_MS } from '../logic/emailCodes.js';
 import { db, type Executor } from './client.js';
-import { emailCodes, type EMAIL_CODE_PURPOSES } from './schema.js';
-
-/**
- * What an email code is for
- */
-export type EmailCodePurpose = (typeof EMAIL_CODE_PURPOSES)[number];
+import { emailCodes } from './schema.js';
 
 /**
  * A code as stored

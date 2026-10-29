@@ -18,17 +18,32 @@ const TIMEOUT_MS = 3000;
 export type PwnedCheck = boolean | 'unknown';
 
 /**
+ * How ranges are fetched when the caller doesn't say: the network, unless tests replace it
+ */
+let defaultFetchRange: typeof fetch = fetch;
+
+/**
+ * Replaces how ranges are fetched, so tests that register accounts don't reach the service
+ *
+ * @param fetchRange The stand-in, or undefined to go back to the network
+ */
+export function setPwnedRangeFetch(fetchRange: typeof fetch | undefined): void
+{
+	defaultFetchRange = (fetchRange ?? fetch);
+}
+
+/**
  * Checks whether a password has been seen in a data breach
  *
  * The answer is padded with made-up hashes (Add-Padding), so its size doesn't hint at which range was
  * asked for. The padding hashes have a count of 0
  *
  * @param password The password
- * @param fetchRange Fetches the range; tests replace it
+ * @param fetchRange Fetches the range
  * @return Whether it is breached, or 'unknown' when the service didn't answer, so registering isn't
  * blocked while it is down
  */
-export async function checkPwnedPassword(password: string, fetchRange: typeof fetch = fetch): Promise<PwnedCheck>
+export async function checkPwnedPassword(password: string, fetchRange: typeof fetch = defaultFetchRange): Promise<PwnedCheck>
 {
 	const sha1 = createHash('sha1')
 		.update(password)

@@ -252,7 +252,7 @@ Decided:
 - Linking: a provider login whose email matches a local account is never linked automatically. The player proves they own the local account (its password, or an email code) to link them; providers can also be linked from the profile.
 - Email is sent over SMTP with `nodemailer`, so the service is configuration (chosen in Phase 16), and caught by Mailpit in `docker-compose.yml` locally. Emails are HTML, with a plain text part, in the recipient's language.
 - Rate limits and the email code counters are Postgres rows updated atomically, so they hold across several server processes. The client's network comes from one function, which Phase 16 teaches to read the proxy's forwarding header.
-- Passwords are at least 8 characters, with no composition rules, and are checked against HaveIBeenPwned's k-anonymity API (only the first 5 characters of the password's SHA-1 hash leave the server).
+- Passwords are 15 to 256 characters (NIST SP 800-63B rev. 4's minimum for a password that is the only factor, which it is without 2FA; the same for every account, so turning 2FA off never leaves a shorter one), with no composition rules, and are checked against HaveIBeenPwned's k-anonymity API (only the first 5 characters of the password's SHA-1 hash leave the server).
 - Password hashes are stored as self-describing strings (`$argon2id$v=19$m=...,p=...,t=...$<salt>$<hash>`), and one module (`server/src/auth/passwords.ts`) holds the current algorithm and settings, starting at OWASP's Argon2id minimum (19 MiB, 2 iterations, 1 thread). After a correct password, a hash made with older settings or an older algorithm is replaced with a current one, and the replacement is logged without ending the account's sessions. `verifyPassword()` picks the checker by the hash's prefix, so old hashes keep working when the algorithm changes. If an old algorithm is ever found weak, hashes of accounts that don't log in can be wrapped in the new one (`newAlgorithm(oldHash)`, marked by its prefix). Tests: a hash with old settings still verifies, and is replaced at login.
 - 2FA is TOTP with recovery codes, for local accounts only; provider logins rely on the provider's 2FA. Passkeys can come later. No CAPTCHA for now.
 - Home, universe pages and the license and privacy pages are public; the lobby, game, editor, Create Character and profile edit need a login.
@@ -262,14 +262,16 @@ Decided:
 Built in two steps: logins (sessions, providers, local accounts, email codes, replacing the name-only login), then accounts (2FA, linking, profile, deletion, export and the security review).
 
 1. Logins
-	- [ ] `sessions` table and session cookie; `onAuth` checks the session and rejects joins without one
+	- [✅] `sessions` table and session cookie; `onAuth` checks the session and rejects joins without one, and a session's windows are turned away when it ends
 	- [ ] Google and Discord login through OAuth, recommended on the login and register pages
-	- [ ] Local accounts: email-based logins, Argon2id, the HaveIBeenPwned check, and the email code rules from `STRUCTURE-OVERVIEW.md` as pure functions with tests
-	- [ ] Email through `nodemailer`, Mailpit in `docker-compose.yml`; register, forgot password and change email flows, with notification emails in the recipient's language
-	- [ ] Handles and display names; drop the name-only login and its data
-	- [ ] Rate-limit login, signup and reset routes; use generic error messages that don't reveal whether an account exists
-	- [ ] Log auth events to `auth_events`, deleting them after 90 days
-	- [ ] Tests for expired and logged-out sessions, sessions of deleted users, another user's resource IDs and replayed codes
+	- [✅] Local accounts: email-based logins, Argon2id, the HaveIBeenPwned check, and the email code rules from `STRUCTURE-OVERVIEW.md` as pure functions with tests
+	- [✅] Email through `nodemailer`, Mailpit in `docker-compose.yml`; register, forgot password and change email flows (the routes in `server/src/http/auth.ts`), with notification emails in the recipient's language
+	- [✅] Handles and display names; drop the name-only login's data and its server side
+	- [✅] Rate-limit login, signup and reset routes; use generic error messages that don't reveal whether an account exists
+	- [✅] Log auth events to `auth_events`, deleting them after 90 days
+	- [✅] Tests for expired and logged-out sessions, sessions of deleted users, another user's resource IDs and replayed codes
+	- [ ] Login, register, forgot password and change email pages, replacing the name-only login form on every page; then remove what only the name form used (`SessionMessageType.Login`, `LoginPayload`, the name notices and `BROWSER_ID_PATH` in `/shared`)
+	- [ ] Links back to the site in the emails, which needs the client's address as a server setting
 2. Accounts
 	- [ ] Optional 2FA (TOTP and recovery codes)
 	- [ ] Account linking

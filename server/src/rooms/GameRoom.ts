@@ -1,6 +1,7 @@
 import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
 import { cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, GameMessageType, GameServerMessageType, GameState, GroupMember, MessageType, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, ServerCloseCode, visibleCells, type CellsSeenPayload, type CellValue, type NoticePayload, type Sight, type StartingCell } from '@multiverse-kiln/shared';
 
+import { resolveSession } from '../auth/sessions.js';
 import { markCharacterPlayed } from '../db/characterRepo.js';
 import { findGroup, listGroupMembers, saveGroupClock, saveMemberPositions, type GroupMemberRecord, type MemberPosition } from '../db/groupRepo.js';
 import { saveSeenChunks, loadSeenChunks } from '../db/worldStateRepo.js';
@@ -10,10 +11,9 @@ import { startingCellOn } from '../logic/startingArea.js';
 import { loadRaceSight } from '../db/raceRepo.js';
 import { findUniverse } from '../db/universeRepo.js';
 import { loadChunksAt, loadArea } from '../db/areaRepo.js';
-import { readBrowserId } from '../http/browserId.js';
 import { characterChanges, type CharacterChange } from '../players/characterChanges.js';
+import { connectedSessions } from '../players/connectedSessions.js';
 import { groupChanges, type GroupChange } from '../players/groupChanges.js';
-import { onlinePlayers } from '../players/onlinePlayers.js';
 import { areaChanges } from '../world/areaChanges.js';
 import { InvalidMessages } from './invalidMessages.js';
 import { controlPayload, describeInvalidPayload, gameJoinOptions, movePayload } from './payloads.js';
@@ -25,6 +25,11 @@ import { CHUNK_REFRESH_INTERVAL_MS, SIMULATION_TICK_RATE, AreaPlayers, type Appe
  */
 interface GameIdentity
 {
+	/**
+	 * The login session the client connected with
+	 */
+	sessionId: string;
+
 	/**
 	 * The client's player, from the browser's login
 	 */
@@ -297,6 +302,10 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 				{
 					console.error('Could not apply a world change to the room of group', this.groupId, error);
 				});
+			}),
+			connectedSessions.onEnd((sessionIds) =>
+			{
+				this.turnAwaySessions(sessionIds);
 			})
 		);
 	}
@@ -307,29 +316,29 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	 *
 	 * @param _client The joining client
 	 * @param options The client's GameJoinOptions
-	 * @param context The connection's request headers, which carry the browser ID cookie
+	 * @param context The connection's request headers, which carry the session cookie
 	 * @return The client's identity, stored as client.auth; false to turn the client away
 	 */
-	onAuth(_client: Client, options: unknown, context: AuthContext): GameIdentity | false
+	async onAuth(_client: Client, options: unknown, context: AuthContext): Promise<GameIdentity | false>
 	{
 		const joinOptions = gameJoinOptions.safeParse(options);
-		const browserId = readBrowserId(context.headers.get('cookie'));
-		const player = ((browserId !== undefined) ? onlinePlayers.get(browserId) : undefined);
 
-		if (!joinOptions.success || !player || (joinOptions.data.groupId !== this.groupId))
+		if (!joinOptions.success || (joinOptions.data.groupId !== this.groupId))
 		{
 			return(false);
 		}
 
+		const session = await resolveSession(context.headers.get('cookie'));
 		const member = this.members.get(joinOptions.data.characterId);
 
-		if ((member?.playerId !== player.playerId) || !member.playable)
+		if (!session || (member?.playerId !== session.playerId) || !member.playable)
 		{
 			return(false);
 		}
 
 		return({
-			playerId: player.playerId,
+			sessionId: session.sessionId,
+			playerId: session.playerId,
 			characterId: member.characterId
 		});
 	}
@@ -366,6 +375,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		const member = this.members.get(characterId);
 
 		this.areaPlayers.join(client, characterId, this.appearanceOf(member), startingArea);
+		connectedSessions.connect(identityOf(client).sessionId);
 
 		console.log(client.sessionId, 'joined group', this.groupId, 'as character', characterId);
 	}
@@ -380,10 +390,11 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	 */
 	async onLeave(client: GameClient, code: CloseCode): Promise<void>
 	{
-		const { playerId } = identityOf(client);
+		const { sessionId, playerId } = identityOf(client);
 		const left = this.areaPlayers.leave(client);
 		const clients = this.windows.get(playerId);
 
+		connectedSessions.disconnect(sessionId);
 		this.invalidMessages.forget(client.sessionId);
 		clients?.delete(client);
 		console.log(client.sessionId, 'left group', this.groupId, code);
@@ -821,6 +832,22 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			{
 				console.error('Could not bring character', characterId, 'back into group', this.groupId, error);
 			});
+		}
+	}
+
+	/**
+	 * Turns away the windows of sessions that ended
+	 *
+	 * @param sessionIds The sessions that ended
+	 */
+	private turnAwaySessions(sessionIds: ReadonlySet<string>): void
+	{
+		for (const client of this.clients)
+		{
+			if (sessionIds.has(identityOf(client).sessionId))
+			{
+				client.leave(ServerCloseCode.LoggedOut);
+			}
 		}
 	}
 

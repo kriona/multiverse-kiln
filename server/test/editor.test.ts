@@ -12,7 +12,7 @@ import { areaChanges, type AreaChange } from '../src/world/areaChanges.js';
 import { addCharacter, defaultTileId } from './db/fixtures.js';
 import { allowedTestOrigin } from './setup.js';
 import { createArea, createUniverse, logIn, saveChange, send, solidPng, type Editor, type SaveAnswer } from './editorRequests.js';
-import { getTestServer, logOutEveryone, testServerUrl } from './testServer.js';
+import { getTestServer, testServerUrl } from './testServer.js';
 
 /**
  * A bidirectional override, one of the characters names may not contain
@@ -213,7 +213,6 @@ describe('World editor API', () =>
 
 	beforeEach(async () =>
 	{
-		logOutEveryone();
 		ada = await logIn('Ada');
 	});
 

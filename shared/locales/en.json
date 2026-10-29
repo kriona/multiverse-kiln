@@ -1999,6 +1999,18 @@
 		"defaultMessage": "Welcome to {siteName}",
 		"description": "Subject of the email sent when a new account is created; {siteName} is the site's name"
 	},
+	"email.accountExists.body": {
+		"defaultMessage": "Someone asked to create an account on {siteName} with this email address, but it already has one. Log in instead, or reset your password if you've forgotten it.",
+		"description": "Paragraph of the email sent, in place of a code, when someone asks to create an account with an address that already has one; {siteName} is the site's name"
+	},
+	"email.accountExists.notYou": {
+		"defaultMessage": "If you didn't ask, you can ignore this email. Nothing about your account has changed.",
+		"description": "Last paragraph of the email sent when someone asks to create an account with an address that already has one, for someone who didn't ask"
+	},
+	"email.accountExists.subject": {
+		"defaultMessage": "You already have an account on {siteName}",
+		"description": "Subject of the email sent, in place of a code, when someone asks to create an account with an address that already has one; {siteName} is the site's name"
+	},
 	"email.code.changeEmail.intro": {
 		"defaultMessage": "Enter this code on {siteName} to make this your account's email address:",
 		"description": "First paragraph of the email, sent to the new address, with the code for changing an account's email address, shown just above the code; {siteName} is the site's name"
@@ -2070,6 +2082,50 @@
 	"error.areaLimit": {
 		"defaultMessage": "A universe can have at most {max, plural, one {# area} other {# areas}}.",
 		"description": "Why a new area wasn't made: the universe has as many areas as allowed"
+	},
+	"error.auth.emailForm": {
+		"defaultMessage": "Enter an email address, like name@example.com.",
+		"description": "Shown under an email field when what was typed isn't an email address"
+	},
+	"error.auth.emailMismatch": {
+		"defaultMessage": "That isn't the address the code was sent to.",
+		"description": "Shown under the email field when creating an account or changing an email address: the address typed differs from the one the code was sent to"
+	},
+	"error.auth.emailTaken": {
+		"defaultMessage": "Another account already uses that address.",
+		"description": "Why an account wasn't created, or its email address wasn't changed: the address belongs to another account. Only shown after the player proved they can read that address's email"
+	},
+	"error.auth.enterCodeFirst": {
+		"defaultMessage": "Enter the code from the email first, or ask for a new one if it has been more than a few minutes.",
+		"description": "Why creating an account, choosing a new password or changing an email address was refused: this browser hasn't entered the email code, or entered it too long ago"
+	},
+	"error.auth.handleForm": {
+		"defaultMessage": "Use {min} to {max} letters (a to z), digits and underscores.",
+		"description": "Shown under the handle field when the handle has other characters, or is too short or too long; {min} and {max} are numbers"
+	},
+	"error.auth.handleTaken": {
+		"defaultMessage": "Another account already has that handle. Choose another.",
+		"description": "Shown under the handle field when creating an account: handles are unique, ignoring capitals"
+	},
+	"error.auth.passwordBreached": {
+		"defaultMessage": "This password has turned up in a data breach, so attackers try it. Choose another.",
+		"description": "Shown under a new password field when the password is on HaveIBeenPwned's list of passwords leaked in data breaches"
+	},
+	"error.auth.passwordLength": {
+		"defaultMessage": "Use a password of {min} to {max} characters.",
+		"description": "Shown under a new password field when the password is too short or too long; {min} and {max} are numbers"
+	},
+	"error.auth.tooManyAttempts": {
+		"defaultMessage": "Too many tries. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
+		"description": "Why a login wasn't tried, an email code wasn't sent, or a code wasn't checked: too many were tried or asked for from this network or for this address in the past hour, or a code was sent to the address less than a minute ago"
+	},
+	"error.auth.wrongCode": {
+		"defaultMessage": "That code isn't right, or it has expired. Check the latest email, or ask for a new code.",
+		"description": "Shown under the code field when an email code is wrong, was already used, or is too old"
+	},
+	"error.auth.wrongLogin": {
+		"defaultMessage": "That email address and password don't match an account.",
+		"description": "Why a login failed: no account has that address, or the password is wrong (the message doesn't say which, so it doesn't reveal who has an account)"
 	},
 	"error.cantDeleteArea": {
 		"defaultMessage": "The lobby and starting areas can't be deleted.",
@@ -2193,7 +2249,7 @@
 	},
 	"error.logInFirst": {
 		"defaultMessage": "Log in first.",
-		"description": "Why an editor request was refused: the browser isn't logged in"
+		"description": "Why a request was refused, such as one to the editor or to change the account's email address: the browser isn't logged in"
 	},
 	"error.noEnabledClass": {
 		"defaultMessage": "A universe needs at least one enabled class, so new characters have one to be.",

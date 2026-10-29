@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 
 import { DEFAULT_TILE_NAMES, type EditorTile, type TileSettings } from '@multiverse-kiln/shared';
 
-import { loadOrCreatePlayerByName } from '../../src/db/playerRepo.js';
+import { addPlayer } from '../players.js';
 import { createTileGraphic, tileGraphicStorageKey } from '../../src/db/tileGraphicRepo.js';
 import { countCustomTiles, createCustomTile, createTile, deleteCustomTile, findDefaultTileIds, findTileKind, listEditorTiles, loadEditorTiles, loadUniverseTiles, restoreDefaultTile, saveEditedDefaultTile, updateCustomTile, type CustomTileSettings } from '../../src/db/tileRepo.js';
 import { addUniverse, defaultTileId } from './fixtures.js';
@@ -92,7 +92,7 @@ describe('tileRepo', () =>
 		it('gives a tile drawn with an uploaded graphic that graphic\'s format and draw order', async () =>
 		{
 			const universeId = await addUniverse();
-			const uploadedBy = (await loadOrCreatePlayerByName('Ada')).id;
+			const uploadedBy = (await addPlayer('Ada')).id;
 			const mossId = randomUUID();
 			const wallId = randomUUID();
 
@@ -124,7 +124,7 @@ describe('tileRepo', () =>
 		it('refuses an uploaded graphic whose draw order doesn\'t suit its format', async () =>
 		{
 			const universeId = await addUniverse();
-			const uploadedBy = (await loadOrCreatePlayerByName('Ada')).id;
+			const uploadedBy = (await addPlayer('Ada')).id;
 
 			for (const [format, drawOrder] of [['dualGrid', null], ['blob', 35]] as const)
 			{

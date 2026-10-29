@@ -1,12 +1,11 @@
 /**
  * The emails logins send (see Email codes in STRUCTURE-OVERVIEW.md): codes for registering, resetting
  * a password and changing an email address, and the notices sent when an account is created or its
- * password or email address changes. Each is written in its recipient's language, as HTML with a plain
- * text part
+ * password or email address changes, or someone tries to register an address that already has an
+ * account. Each is written in its recipient's language, as HTML with a plain text part
  */
-import { SITE_NAME, type Translator } from '@multiverse-kiln/shared';
+import { SITE_NAME, type EmailCodePurpose, type Translator } from '@multiverse-kiln/shared';
 
-import type { EmailCodePurpose } from '../db/emailCodeRepo.js';
 import { EMAIL_CODE_LIFETIME_MS } from '../logic/emailCodes.js';
 import { emailTranslator } from './emailLocales.js';
 import type { EmailContent } from './mailer.js';
@@ -169,6 +168,42 @@ export function emailCodeEmail(purpose: EmailCodePurpose, code: string, locale: 
 		subject,
 		paragraphs: [intro, lifetime, unaskedCodeParagraph(translator)],
 		code
+	}));
+}
+
+/**
+ * The email sent in place of a code when someone asks to register an address that already has an
+ * account. The page says the same whether or not the address has one, so only the address's owner
+ * learns it does
+ *
+ * @param locale The language the recipient asked in
+ * @return The email
+ */
+export function accountExistsEmail(locale: string): EmailContent
+{
+	const translator = emailTranslator(locale);
+	const values = {
+		siteName: SITE_NAME
+	};
+
+	return(layOut(translator, {
+		subject: translator.format({
+			id: 'email.accountExists.subject',
+			defaultMessage: 'You already have an account on {siteName}',
+			description: 'Subject of the email sent, in place of a code, when someone asks to create an account with an address that already has one; {siteName} is the site\'s name'
+		}, values),
+		paragraphs: [
+			translator.format({
+				id: 'email.accountExists.body',
+				defaultMessage: 'Someone asked to create an account on {siteName} with this email address, but it already has one. Log in instead, or reset your password if you\'ve forgotten it.',
+				description: 'Paragraph of the email sent, in place of a code, when someone asks to create an account with an address that already has one; {siteName} is the site\'s name'
+			}, values),
+			translator.format({
+				id: 'email.accountExists.notYou',
+				defaultMessage: 'If you didn\'t ask, you can ignore this email. Nothing about your account has changed.',
+				description: 'Last paragraph of the email sent when someone asks to create an account with an address that already has one, for someone who didn\'t ask'
+			})
+		]
 	}));
 }
 

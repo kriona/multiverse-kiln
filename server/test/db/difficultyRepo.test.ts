@@ -3,7 +3,7 @@ import { DEFAULT_DIFFICULTY_LEVELS, type DifficultyLevelSettings } from '@multiv
 
 import { countDifficultyLevels, createDifficultyLevel, deleteDifficultyLevel, findDefaultDifficultyLevel, findDifficultyLevel, listDifficultyLevels, updateDifficultyLevel } from '../../src/db/difficultyRepo.js';
 import { findGroup, moveGroupsToDifficultyLevel } from '../../src/db/groupRepo.js';
-import { loadOrCreatePlayerByName } from '../../src/db/playerRepo.js';
+import { addPlayer } from '../players.js';
 import { inTransaction } from '../../src/db/transactions.js';
 import { createUniverse } from '../../src/db/universeRepo.js';
 import { addCharacter, addGroup } from './fixtures.js';
@@ -58,7 +58,7 @@ describe('difficultyRepo', () =>
 
 	it('deletes a level once its groups are moved to another', async () =>
 	{
-		const { id: playerId } = await loadOrCreatePlayerByName('Ada');
+		const { id: playerId } = await addPlayer('Ada');
 		const characterId = await addCharacter(playerId, universeId, 'Ada');
 		const groupId = await addGroup(universeId, characterId, null);
 		const normal = await findDefaultDifficultyLevel(universeId);

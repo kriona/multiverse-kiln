@@ -1,3 +1,4 @@
+export * from './accounts.js';
 export * from './characters.js';
 export * from './closeCodes.js';
 export * from './constants.js';

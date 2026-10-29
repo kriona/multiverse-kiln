@@ -3,7 +3,7 @@ import assert from 'assert';
 import { hashAddress, keyedHash } from '../../src/auth/keyedHashes.js';
 import { createToken, hashToken } from '../../src/auth/tokens.js';
 import { deleteEmailCode, deleteStaleEmailCodes, lockContinuation, lockEmailCode, recordWrongEmailCodeGuess, replaceEmailCode, useEmailCode } from '../../src/db/emailCodeRepo.js';
-import { loadOrCreatePlayerByName } from '../../src/db/playerRepo.js';
+import { addPlayer } from '../players.js';
 import { inTransaction } from '../../src/db/transactions.js';
 import { EMAIL_CODE_LIFETIME_MS } from '../../src/logic/emailCodes.js';
 
@@ -76,7 +76,7 @@ describe('emailCodeRepo', () =>
 
 	it('requires an account for a password reset, and none for registering', async () =>
 	{
-		const player = await loadOrCreatePlayerByName('Ada');
+		const player = await addPlayer('Ada');
 
 		await assert.rejects(replaceEmailCode({
 			purpose: 'resetPassword',
@@ -118,7 +118,7 @@ describe('emailCodeRepo', () =>
 
 	it('deletes codes that can no longer be entered, keeping ones whose next step is open', async () =>
 	{
-		const player = await loadOrCreatePlayerByName('Ada');
+		const player = await addPlayer('Ada');
 
 		await sendRegisterCode('AB12CD');
 		await replaceEmailCode({

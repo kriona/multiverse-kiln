@@ -1,6 +1,6 @@
 import assert from 'assert';
 
-import { loadOrCreatePlayerByName } from '../../src/db/playerRepo.js';
+import { addPlayer } from '../players.js';
 import { countUniversesWithRole, findUniverseRole, listEditableUniverses, setUniverseRole } from '../../src/db/universeEditorRepo.js';
 import { addUniverse } from './fixtures.js';
 
@@ -9,7 +9,7 @@ describe('universeEditorRepo', () =>
 	it('gives a player a role, and replaces it', async () =>
 	{
 		const universeId = await addUniverse();
-		const { id: playerId } = await loadOrCreatePlayerByName('Ada');
+		const { id: playerId } = await addPlayer('Ada');
 
 		assert.strictEqual(await findUniverseRole(universeId, playerId), undefined);
 
@@ -22,8 +22,8 @@ describe('universeEditorRepo', () =>
 
 	it('counts and lists the universes a player has a role in, by name', async () =>
 	{
-		const { id: playerId } = await loadOrCreatePlayerByName('Ada');
-		const { id: otherId } = await loadOrCreatePlayerByName('Grace');
+		const { id: playerId } = await addPlayer('Ada');
+		const { id: otherId } = await addPlayer('Grace');
 		const zebraId = await addUniverse('Zebra');
 		const appleId = await addUniverse('Apple');
 		const theirsId = await addUniverse('Theirs');

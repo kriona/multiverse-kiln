@@ -1,12 +1,12 @@
 import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
-import { LobbyMember, LobbyMessageType, LobbyServerMessageType, LobbyState, MessageType, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, type ChatHistoryPayload, type ChatMessage, type NoticePayload, type PlayingAsPayload, type Sight } from '@multiverse-kiln/shared';
+import { LobbyMember, LobbyMessageType, LobbyServerMessageType, LobbyState, MessageType, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, ServerCloseCode, type ChatHistoryPayload, type ChatMessage, type NoticePayload, type PlayingAsPayload, type Sight } from '@multiverse-kiln/shared';
 
+import { resolveSession } from '../auth/sessions.js';
 import { listPlayableCharacters, markCharacterPlayed, type PlayableCharacter } from '../db/characterRepo.js';
 import { loadRaceSight } from '../db/raceRepo.js';
 import { findUniverse } from '../db/universeRepo.js';
 import { loadChunksAt, loadArea } from '../db/areaRepo.js';
-import { readBrowserId } from '../http/browserId.js';
-import { onlinePlayers } from '../players/onlinePlayers.js';
+import { connectedSessions } from '../players/connectedSessions.js';
 import { characterChanges, type CharacterChange } from '../players/characterChanges.js';
 import { groupChanges, type GroupChange } from '../players/groupChanges.js';
 import { areaChanges } from '../world/areaChanges.js';
@@ -21,7 +21,11 @@ import { CHUNK_REFRESH_INTERVAL_MS, SIMULATION_TICK_RATE, AreaPlayers, type Appe
  */
 interface LobbyIdentity
 {
-	browserId: string;
+	/**
+	 * The login session the client connected with
+	 */
+	sessionId: string;
+
 	playerId: string;
 	name: string;
 }
@@ -60,7 +64,8 @@ const CHAT_RATE_WINDOW_MS = 5000;
  * A universe's lobby: its map, its chat and who's here
  *
  * Clients join with the universe's ID (LobbyJoinOptions), and every client asking for the same universe
- * joins the same room (filterBy in app.config.ts). Only logged-in browsers are admitted. Players start
+ * joins the same room (filterBy in app.config.ts). Only logged-in browsers are admitted, and a window
+ * whose session ends is turned away (ServerCloseCode.LoggedOut). Players start
  * in the universe's lobby area and can walk through its links into other areas (see AreaPlayers)
  *
  * Each player plays one of their characters in the universe who isn't in a group (those play in their
@@ -107,6 +112,8 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	private stopFollowingCharacters?: () => void;
 
 	private stopFollowingGroups?: () => void;
+
+	private stopFollowingSessions?: () => void;
 
 	/**
 	 * The most recent chat messages, oldest first (server-only, not synced)
@@ -243,16 +250,22 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		{
 			this.applyGroupChange(change);
 		});
+
+		this.stopFollowingSessions = connectedSessions.onEnd((sessionIds) =>
+		{
+			this.turnAwaySessions(sessionIds);
+		});
 	}
 
 	/**
-	 * Stops following changes to the world, to players' characters and to groups
+	 * Stops following changes to the world, to players' characters, to groups and to sessions
 	 */
 	onDispose(): void
 	{
 		this.stopFollowingChanges?.();
 		this.stopFollowingCharacters?.();
 		this.stopFollowingGroups?.();
+		this.stopFollowingSessions?.();
 	}
 
 	/**
@@ -260,23 +273,22 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	 *
 	 * @param _client The joining client
 	 * @param _options Join options from the client (already used to pick this room)
-	 * @param context The connection's request headers, which carry the browser ID cookie
+	 * @param context The connection's request headers, which carry the session cookie
 	 * @return The client's identity, stored as client.auth; false to turn the client away
 	 */
-	onAuth(_client: Client, _options: unknown, context: AuthContext): LobbyIdentity | false
+	async onAuth(_client: Client, _options: unknown, context: AuthContext): Promise<LobbyIdentity | false>
 	{
-		const browserId = readBrowserId(context.headers.get('cookie'));
-		const player = ((browserId !== undefined) ? onlinePlayers.get(browserId) : undefined);
+		const session = await resolveSession(context.headers.get('cookie'));
 
-		if ((browserId === undefined) || !player)
+		if (!session)
 		{
 			return(false);
 		}
 
 		return({
-			browserId,
-			playerId: player.playerId,
-			name: player.name
+			sessionId: session.sessionId,
+			playerId: session.playerId,
+			name: session.name
 		});
 	}
 
@@ -322,6 +334,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 
 		client.send(LobbyServerMessageType.PlayingAs, playingAs);
 		client.send(LobbyServerMessageType.ChatHistory, history);
+		connectedSessions.connect(identityOf(client).sessionId);
 	}
 
 	/**
@@ -334,6 +347,8 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	async onLeave(client: LobbyClient, code: CloseCode): Promise<void>
 	{
 		const left = this.areaPlayers.leave(client);
+
+		connectedSessions.disconnect(identityOf(client).sessionId);
 
 		this.invalidMessages.forget(client.sessionId);
 		console.log(client.sessionId, 'left the lobby of universe', this.universeId, code);
@@ -570,6 +585,22 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		for (const client of this.areaPlayers.getClients(playerId))
 		{
 			client.send(LobbyServerMessageType.CharactersChanged);
+		}
+	}
+
+	/**
+	 * Turns away the windows of sessions that ended
+	 *
+	 * @param sessionIds The sessions that ended
+	 */
+	private turnAwaySessions(sessionIds: ReadonlySet<string>): void
+	{
+		for (const client of this.clients)
+		{
+			if (sessionIds.has(identityOf(client).sessionId))
+			{
+				client.leave(ServerCloseCode.LoggedOut);
+			}
 		}
 	}
 

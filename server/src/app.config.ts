@@ -10,11 +10,13 @@ import { GameRoom } from './rooms/GameRoom.js';
 import { LobbyRoom } from './rooms/LobbyRoom.js';
 import { SessionRoom } from './rooms/SessionRoom.js';
 import { createTransport } from './transport.js';
+import { startAuthSweep } from './authSweep.js';
 import { startCharacterSweep } from './characterSweep.js';
 import { isDevToolsEnabled } from './devTools.js';
 import { addAdminRoutes } from './http/admin.js';
-import { addBrowserIdRoute } from './http/browserId.js';
+import { addAuthRoutes } from './http/auth.js';
 import { addCharacterRoutes } from './http/characters.js';
+import { addDevBotLoginRoute } from './http/devLogin.js';
 import { addEditorRoutes } from './http/editor.js';
 import { addGroupRoutes } from './http/groups.js';
 import { addHealthRoute } from './http/health.js';
@@ -37,11 +39,13 @@ const server = defineServer({
 	transport: createTransport({ beforeUpgrade: createOriginCheck(allowedOrigins) }),
 
 	/**
-	 * Deletes characters whose last rites are over, now and every hour
+	 * Deletes characters whose last rites are over, now and every hour, and tidies the login records
+	 * (expired sessions, old email codes and rate limit records) now and every few minutes
 	 */
 	beforeListen: () =>
 	{
 		startCharacterSweep();
+		startAuthSweep();
 	},
 
 	/**
@@ -66,7 +70,7 @@ const server = defineServer({
 		app.disable('x-powered-by');
 
 		addHealthRoute(app);
-		addBrowserIdRoute(app);
+		addAuthRoutes(app, allowedOrigins);
 		addUniversesRoutes(app);
 		addCharacterRoutes(app, allowedOrigins);
 		addGroupRoutes(app, allowedOrigins);
@@ -78,6 +82,9 @@ const server = defineServer({
 		{
 			// @colyseus/monitor can inspect and dispose rooms; never expose it unauthenticated
 			app.use('/monitor', monitor());
+
+			// Bots, such as the load test's, log in without email
+			addDevBotLoginRoute(app);
 
 			// @colyseus/playground lets anyone join rooms with arbitrary options
 			app.use('/', playground());

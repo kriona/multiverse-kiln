@@ -2,9 +2,10 @@ import assert from 'assert';
 import { randomBytes, randomUUID } from 'crypto';
 import http from 'http';
 
-import { invitePath, MAX_UNIVERSES_PER_PAGE, UNIVERSES_PATH, type UniverseDetails, type UniverseListPayload, type UniverseStage } from '@multiverse-kiln/shared';
+import { AUTH_SESSION_PATH, invitePath, MAX_UNIVERSES_PER_PAGE, UNIVERSES_PATH, type UniverseDetails, type UniverseListPayload, type UniverseStage } from '@multiverse-kiln/shared';
 
 import { createUniverse } from '../src/db/universeRepo.js';
+import { DEV_BOT_LOGIN_PATH } from '../src/http/devLogin.js';
 import { HEALTH_PATH } from '../src/http/health.js';
 import { allowedTestOrigin } from './setup.js';
 import { getTestServer, testServerUrl } from './testServer.js';
@@ -78,7 +79,7 @@ describe('HTTP responses', () =>
 
 	it('sends nosniff on Express routes, Colyseus routes and 404s', async () =>
 	{
-		for (const route of [HEALTH_PATH, '/__healthcheck', '/nothing-here', invitePath('no-such-invite-token')])
+		for (const route of [HEALTH_PATH, AUTH_SESSION_PATH, '/__healthcheck', '/nothing-here', invitePath('no-such-invite-token')])
 		{
 			const response = await fetch(`${testServerUrl}${route}`);
 
@@ -94,6 +95,30 @@ describe('HTTP responses', () =>
 
 			assert.strictEqual(response.status, 404, route);
 		}
+	});
+
+	it('does not serve the bot login without dev tools', async () =>
+	{
+		const response = await fetch(`${testServerUrl}${DEV_BOT_LOGIN_PATH}`, { method: 'POST' });
+
+		assert.strictEqual(response.status, 404);
+	});
+});
+
+describe('Session', () =>
+{
+	before(async () =>
+	{
+		await getTestServer();
+	});
+
+	it('answers that a browser without a session isn\'t logged in, uncached', async () =>
+	{
+		const response = await fetch(`${testServerUrl}${AUTH_SESSION_PATH}`);
+
+		assert.strictEqual(response.status, 200);
+		assert.strictEqual(response.headers.get('cache-control'), 'no-store');
+		assert.deepStrictEqual(await response.json(), { player: null });
 	});
 });
 

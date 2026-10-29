@@ -22,6 +22,11 @@ export const EMAIL_CODE_LENGTH = 6;
 export const EMAIL_CODE_LIFETIME_MS = (15 * 60 * 1000);
 
 /**
+ * How long the browser that entered a code has to take the next step, such as choosing a password, in milliseconds
+ */
+export const CONTINUATION_LIFETIME_MS = (10 * 60 * 1000);
+
+/**
  * How long after sending a code another may be sent to the same address, in milliseconds
  */
 export const EMAIL_CODE_RESEND_MS = (60 * 1000);

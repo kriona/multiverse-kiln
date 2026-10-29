@@ -8,8 +8,7 @@ import type { EditableUniverse, EditorArea, UniverseRole } from '@multiverse-kil
 import { findUniverseRole } from '../db/universeEditorRepo.js';
 import { findEditableUniverse } from '../db/universeRepo.js';
 import { findEditorArea } from '../db/areaRepo.js';
-import { onlinePlayers } from '../players/onlinePlayers.js';
-import { readBrowserId } from './browserId.js';
+import { resolveSession } from '../auth/sessions.js';
 import { errorMessages, sendError } from './errors.js';
 import { isOriginAllowed } from './origins.js';
 
@@ -43,7 +42,7 @@ const areaContexts = new WeakMap<Request, AreaContext>();
 /**
  * Middleware that refuses writes from browsers on origins outside ALLOWED_ORIGINS
  *
- * The browser ID cookie is SameSite=Strict, but other origins on the same site (another port or
+ * The session cookie is SameSite=Strict, but other origins on the same site (another port or
  * subdomain) would still send it. Requests without an Origin header come from non-browser clients,
  * which can't borrow a browser's cookie, so they are let through
  *
@@ -77,18 +76,13 @@ export function refuseWritesFromOtherOrigins(allowedOrigins: Set<string>): Reque
  * @param response The response
  * @param next Continues to the next handler
  */
-export function requireLogin(request: Request, response: Response, next: NextFunction): void
+export async function requireLogin(request: Request, response: Response, next: NextFunction): Promise<void>
 {
-	const browserId = readBrowserId(request.headers.cookie);
-	const player = ((browserId === undefined) ? undefined : onlinePlayers.get(browserId));
+	const player = await resolveSession(request.headers.cookie);
 
 	if (!player)
 	{
-		sendError(response, 401, {
-			id: 'error.logInFirst',
-			defaultMessage: 'Log in first.',
-			description: 'Why an editor request was refused: the browser isn\'t logged in'
-		});
+		sendError(response, 401, errorMessages.logInFirst);
 		return;
 	}
 

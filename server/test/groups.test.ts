@@ -1,27 +1,22 @@
 import assert from 'assert';
-import { randomUUID } from 'crypto';
 import { characterPath, charactersPath, difficultyLevelsPath, groupPath, groupsPath, invitePath, type CharacterListPayload, type CharacterSheet, type DifficultyLevelListPayload, type GroupCreatedPayload, type GroupJoinedPayload, type InviteCreatedPayload, type InviteDetails, type NewGroupRequest } from '@multiverse-kiln/shared';
 
 import { listPlayableCharacters, scheduleCharacterDeletion } from '../src/db/characterRepo.js';
 import { findDefaultDifficultyLevel, listDifficultyLevels } from '../src/db/difficultyRepo.js';
 import { findGroup, findMembership, listGroupMembers } from '../src/db/groupRepo.js';
-import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
 import { loadEditorRaces, saveEditedDefaultRace } from '../src/db/raceRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
 import { updateUniverseSettings } from '../src/db/universeRepo.js';
-import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
 import { groupChanges, type GroupChange } from '../src/players/groupChanges.js';
-import { onlinePlayers } from '../src/players/onlinePlayers.js';
 import { addCharacter, addPlayableUniverse, defaultRaceId, type PlayableUniverse } from './db/fixtures.js';
-import { getTestServer, logOutEveryone, testServerUrl } from './testServer.js';
+import { addPlayer, logInBrowser, type TestBrowser } from './players.js';
+import { getTestServer, testServerUrl } from './testServer.js';
 
 /**
  * A logged-in browser, and a character its player has in the test universe
  */
-interface Browser
+interface Browser extends TestBrowser
 {
-	browserId: string;
-	playerId: string;
 	characterId: string;
 }
 
@@ -49,7 +44,7 @@ async function send<T = unknown>(browser: Browser | undefined, method: string, p
 
 	if (browser)
 	{
-		headers['Cookie'] = `${BROWSER_ID_COOKIE}=${browser.browserId}`;
+		headers['Cookie'] = browser.cookie;
 	}
 
 	if (body !== undefined)
@@ -91,13 +86,13 @@ describe('group routes', () =>
 	 */
 	async function logIn(name: string): Promise<Browser>
 	{
-		const browserId = randomUUID();
-		const { id: playerId } = await loadOrCreatePlayerByName(name);
+		const { id: playerId } = await addPlayer(name);
 		const characterId = await addCharacter(playerId, universe.universeId, name);
 
-		onlinePlayers.logIn(browserId, playerId, name);
-
-		return({ browserId, playerId, characterId });
+		return({
+			...(await logInBrowser(playerId)),
+			characterId
+		});
 	}
 
 	/**
@@ -156,7 +151,6 @@ describe('group routes', () =>
 
 	beforeEach(async () =>
 	{
-		logOutEveryone();
 		universe = await addPlayableUniverse();
 		defaultLevelId = (await findDefaultDifficultyLevel(universe.universeId))?.id ?? 0;
 		ada = await logIn('Ada');
@@ -189,7 +183,7 @@ describe('group routes', () =>
 		const response = await fetch(`${testServerUrl}${groupsPath(universe.universeId)}`, {
 			method: 'POST',
 			headers: {
-				'Cookie': `${BROWSER_ID_COOKIE}=${ada.browserId}`,
+				'Cookie': ada.cookie,
 				'Content-Type': 'application/json',
 				'Origin': 'https://evil.example'
 			},

@@ -2,7 +2,7 @@ import assert from 'assert';
 import type { CharacterDraft } from '@multiverse-kiln/shared';
 
 import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findPf1eAbilityRoll, hasCharactersOfClass, hasCharactersOfRace, isCarriedItem, keepPf1eAbilityRoll, listCharacters, listPlayableCharacters, markCharacterPlayed, purgeExpiredCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion } from '../../src/db/characterRepo.js';
-import { loadOrCreatePlayerByName } from '../../src/db/playerRepo.js';
+import { addPlayer } from '../players.js';
 import { findDefaultRaceIds } from '../../src/db/raceRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
 import { addUniverse, dwarfFighter } from './fixtures.js';
@@ -14,14 +14,14 @@ describe('characterRepo', () =>
 
 	beforeEach(async () =>
 	{
-		playerId = (await loadOrCreatePlayerByName('Ada')).id;
+		playerId = (await addPlayer('Ada')).id;
 		universeId = await addUniverse();
 	});
 
 	it('lists a player\'s characters in a universe, oldest first', async () =>
 	{
 		const otherUniverseId = await addUniverse('Elsewhere');
-		const otherPlayerId = (await loadOrCreatePlayerByName('Grace')).id;
+		const otherPlayerId = (await addPlayer('Grace')).id;
 		const brokk = await dwarfFighter(playerId, universeId);
 		const firstId = await inTransaction((transaction) => createCharacter(brokk, transaction));
 		const secondId = await inTransaction((transaction) => createCharacter({ ...brokk, name: 'Dain' }, transaction));
@@ -79,7 +79,7 @@ describe('characterRepo', () =>
 
 	it('finds one of a player\'s characters with their scores, money and items', async () =>
 	{
-		const otherPlayerId = (await loadOrCreatePlayerByName('Grace')).id;
+		const otherPlayerId = (await addPlayer('Grace')).id;
 		const otherUniverseId = await addUniverse('Elsewhere');
 		const brokk = await dwarfFighter(playerId, universeId);
 		const characterId = await inTransaction((transaction) => createCharacter(brokk, transaction));
@@ -114,7 +114,7 @@ describe('characterRepo', () =>
 
 		it('deletes only the player\'s own character, with their items', async () =>
 		{
-			const otherPlayerId = (await loadOrCreatePlayerByName('Grace')).id;
+			const otherPlayerId = (await addPlayer('Grace')).id;
 			const brokk = await dwarfFighter(playerId, universeId);
 			const characterId = await inTransaction((transaction) => createCharacter(brokk, transaction));
 

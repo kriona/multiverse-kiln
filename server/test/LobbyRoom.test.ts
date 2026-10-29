@@ -3,24 +3,24 @@ import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { cellIndexInChunk, chunkCoordinate, chunkKey, DARKVISION_SQUARES, GRID_CELL_SIZE, LOBBY_ROOM_NAME, LobbyMessageType, LobbyServerMessageType, LobbyState, MAX_CHAT_MESSAGE_LENGTH, MessageType, NoticeReason, ServerMessageType, type ChatHistoryPayload, type ChatMessage, type ChunksPayload, type LobbyJoinOptions, type NoticePayload, type Player, type PlayingAsPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, chunkCoordinate, chunkKey, DARKVISION_SQUARES, GRID_CELL_SIZE, LOBBY_ROOM_NAME, LobbyMessageType, LobbyServerMessageType, LobbyState, MAX_CHAT_MESSAGE_LENGTH, MessageType, NoticeReason, ServerCloseCode, ServerMessageType, type ChatHistoryPayload, type ChatMessage, type ChunksPayload, type LobbyJoinOptions, type NoticePayload, type Player, type PlayingAsPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { listPlayableCharacters } from '../src/db/characterRepo.js';
-import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
+import { pool } from '../src/db/client.js';
 import { saveEditedDefaultTile } from '../src/db/tileRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
 import { createUniverse, setUniverseAreas, updateUniverseSettings } from '../src/db/universeRepo.js';
 import { deleteArea, editCells, resizeArea } from '../src/db/areaRepo.js';
-import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
 import { cellCenter } from '../src/logic/movement.js';
 import { characterChanges } from '../src/players/characterChanges.js';
+import { connectedSessions } from '../src/players/connectedSessions.js';
 import { groupChanges } from '../src/players/groupChanges.js';
-import { onlinePlayers } from '../src/players/onlinePlayers.js';
 import { CHAT_HISTORY_LENGTH, type LobbyRoom } from '../src/rooms/LobbyRoom.js';
 import { areaChanges } from '../src/world/areaChanges.js';
 import { addCharacter, addPlayableUniverse, addArea, defaultRaceId, defaultTileId, type PlayableUniverse } from './db/fixtures.js';
 import { Inbox } from './inbox.js';
-import { getTestServer, logOutEveryone, testServerUrl } from './testServer.js';
+import { addPlayer, logInBrowser } from './players.js';
+import { getTestServer, testServerUrl } from './testServer.js';
 import { waitUntil } from './waitUntil.js';
 
 type LobbyMessage = LobbyServerMessageType | ServerMessageType;
@@ -32,26 +32,31 @@ interface LobbyWindow
 {
 	room: ClientRoom<unknown, LobbyState>;
 	inbox: Inbox<LobbyMessage>;
-	browserId: string;
+
+	/**
+	 * The Cookie header of the window's browser, holding its session cookie
+	 */
+	cookie: string;
+
 	playerId: string;
 }
 
 /**
- * Connects to a universe's lobby like a browser window holding a browser ID cookie
+ * Connects to a universe's lobby like a browser window holding its browser's session cookie
  *
- * @param browserId Browser ID the window's cookie holds
+ * @param cookie The Cookie header the window sends
  * @param options The join options
  * @return The client-side room
  */
-function connect(browserId: string, options: unknown): Promise<ClientRoom<unknown, LobbyState>>
+function connect(cookie: string, options: unknown): Promise<ClientRoom<unknown, LobbyState>>
 {
-	const sdk = new SDKClient(testServerUrl.replace(/^http/, 'ws'), { headers: { cookie: `${BROWSER_ID_COOKIE}=${browserId}` } });
+	const sdk = new SDKClient(testServerUrl.replace(/^http/, 'ws'), { headers: { cookie } });
 
 	return(sdk.joinOrCreate<LobbyState>(LOBBY_ROOM_NAME, options, LobbyState));
 }
 
 /**
- * Logs a new browser in, as the session room would, and opens a window of it in a universe's lobby
+ * Logs a new browser in, as logging in would, and opens a window of it in a universe's lobby
  *
  * @param universeId The universe whose lobby to join
  * @param name The player's name, and their character's unless they are a ghost
@@ -60,34 +65,31 @@ function connect(browserId: string, options: unknown): Promise<ClientRoom<unknow
  */
 async function joinAsNewPlayer(universeId: string, name: string, options: { ghost?: boolean } = {}): Promise<LobbyWindow>
 {
-	const browserId = randomUUID();
-	const playerId = (await loadOrCreatePlayerByName(name)).id;
+	const playerId = (await addPlayer(name)).id;
 
 	if (!options.ghost)
 	{
 		await addCharacter(playerId, universeId, name);
 	}
 
-	onlinePlayers.logIn(browserId, playerId, name);
-
-	return(openWindow(browserId, universeId));
+	return(openWindow((await logInBrowser(playerId)).cookie, universeId));
 }
 
 /**
  * Opens a window of an already logged-in browser in a universe's lobby
  *
- * @param browserId The browser's ID
+ * @param cookie The Cookie header of the browser, holding its session cookie
  * @param universeId The universe whose lobby to join
  * @return The window, with its Welcome message already taken
  */
-async function openWindow(browserId: string, universeId: string): Promise<LobbyWindow>
+async function openWindow(cookie: string, universeId: string): Promise<LobbyWindow>
 {
 	const options: LobbyJoinOptions = { universeId };
-	const room = await connect(browserId, options);
+	const room = await connect(cookie, options);
 	const inbox = new Inbox<LobbyMessage>(room, [...Object.values(LobbyServerMessageType), ...Object.values(ServerMessageType)]);
 	const welcome = await inbox.take<WelcomePayload>(ServerMessageType.Welcome);
 
-	return({ room, inbox, browserId, playerId: welcome.playerId });
+	return({ room, inbox, cookie, playerId: welcome.playerId });
 }
 
 /**
@@ -157,7 +159,6 @@ describe('LobbyRoom', () =>
 	beforeEach(async () =>
 	{
 		await colyseus.cleanup();
-		logOutEveryone();
 		universe = await addPlayableUniverse();
 	});
 
@@ -165,17 +166,47 @@ describe('LobbyRoom', () =>
 	{
 		it('turns away a browser that is not logged in', async () =>
 		{
-			await assert.rejects(connect(randomUUID(), { universeId: universe.universeId }));
+			await assert.rejects(connect('', { universeId: universe.universeId }));
+			await assert.rejects(connect('__Host-kiln-session=not-a-token', { universeId: universe.universeId }));
 		});
 
 		it('turns away a client asking for a universe that does not exist, or no universe', async () =>
 		{
-			const browserId = randomUUID();
+			const { cookie } = await logInBrowser((await addPlayer('Ada')).id);
 
-			onlinePlayers.logIn(browserId, randomUUID(), 'Ada');
+			await assert.rejects(connect(cookie, { universeId: randomUUID() }));
+			await assert.rejects(connect(cookie, {}));
+		});
 
-			await assert.rejects(connect(browserId, { universeId: randomUUID() }));
-			await assert.rejects(connect(browserId, {}));
+		it('turns away a browser whose session was logged out or has expired', async () =>
+		{
+			const playerId = (await addPlayer('Ada')).id;
+			const loggedOut = await logInBrowser(playerId);
+			const expired = await logInBrowser(playerId, true);
+
+			await pool.query('DELETE FROM sessions WHERE id = $1', [loggedOut.sessionId]);
+			await pool.query('UPDATE sessions SET last_used_at = now() - interval \'31 days\' WHERE id = $1', [expired.sessionId]);
+
+			await assert.rejects(connect(loggedOut.cookie, { universeId: universe.universeId }));
+			await assert.rejects(connect(expired.cookie, { universeId: universe.universeId }));
+		});
+
+		it('disconnects a browser\'s windows when its session ends', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
+			const room = lobbyOf(ada);
+			const sessionId = (await pool.query<{ id: string }>('SELECT id FROM sessions WHERE player_id = $1', [ada.playerId])).rows[0].id;
+			const left = new Promise<number>((resolve) =>
+			{
+				ada.room.onLeave(resolve);
+			});
+
+			connectedSessions.end([sessionId]);
+
+			assert.strictEqual(await left, ServerCloseCode.LoggedOut);
+			await waitUntil(() => (room.clients.length === 1));
+			assert.strictEqual(room.clients[0].sessionId, grace.room.sessionId);
 		});
 
 		it('is one room per universe', async () =>
@@ -225,7 +256,7 @@ describe('LobbyRoom', () =>
 		it('gives every window of a browser the same player', async () =>
 		{
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
-			const second = await openWindow(ada.browserId, universe.universeId);
+			const second = await openWindow(ada.cookie, universe.universeId);
 
 			assert.strictEqual(second.playerId, ada.playerId);
 			assert.strictEqual(lobbyOf(ada).state.members.size, 1);
@@ -575,10 +606,10 @@ describe('LobbyRoom', () =>
 		it('switches every window of a player to the character they choose, and chats as them', async () =>
 		{
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
-			const second = await openWindow(ada.browserId, universe.universeId);
+			const second = await openWindow(ada.cookie, universe.universeId);
 			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
 			const lovelaceId = await addCharacter(ada.playerId, universe.universeId, 'Lovelace');
-			const third = await openWindow(ada.browserId, universe.universeId);
+			const third = await openWindow(ada.cookie, universe.universeId);
 
 			await ada.inbox.take(LobbyServerMessageType.PlayingAs);
 			await second.inbox.take(LobbyServerMessageType.PlayingAs);
@@ -604,7 +635,7 @@ describe('LobbyRoom', () =>
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
 			const [adaCharacter] = await listPlayableCharacters(ada.playerId, universe.universeId);
 			const lovelaceId = await addCharacter(ada.playerId, universe.universeId, 'Lovelace');
-			const second = await openWindow(ada.browserId, universe.universeId);
+			const second = await openWindow(ada.cookie, universe.universeId);
 			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
 
 			await ada.inbox.take(LobbyServerMessageType.PlayingAs);
@@ -696,7 +727,7 @@ describe('LobbyRoom', () =>
 
 			const characterId = await addCharacter(ghost.playerId, universe.universeId, 'Casper');
 
-			await openWindow(ghost.browserId, universe.universeId);
+			await openWindow(ghost.cookie, universe.universeId);
 
 			assert.strictEqual((await ghost.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs)).characterId, characterId);
 			assert.strictEqual(playerOf(ghost).ghost, false);
@@ -712,7 +743,7 @@ describe('LobbyRoom', () =>
 			placeOnCell(playerOf(ghost), 3, 3);
 
 			await addCharacter(ghost.playerId, universe.universeId, 'Casper');
-			await openWindow(ghost.browserId, universe.universeId);
+			await openWindow(ghost.cookie, universe.universeId);
 			await waitUntil(() => grace.room.state.players.has(ghost.playerId));
 
 			assert.notDeepStrictEqual({ x: playerOf(ghost).x, y: playerOf(ghost).y }, { x: playerOf(grace).x, y: playerOf(grace).y });
@@ -734,7 +765,7 @@ describe('LobbyRoom', () =>
 				await new Promise((resolve) => setTimeout(resolve, 10));
 			}
 
-			const again = await openWindow(ada.browserId, universe.universeId);
+			const again = await openWindow(ada.cookie, universe.universeId);
 
 			assert.strictEqual((await again.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs)).characterId, characterId);
 		});

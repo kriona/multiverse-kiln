@@ -6,7 +6,7 @@
  */
 import { sql, type SQL } from 'drizzle-orm';
 import { boolean, check, customType, doublePrecision, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHUNK_SIZE, DARKVISIONS, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, DARKVISIONS, EMAIL_CODE_PURPOSES, MAX_HANDLE_LENGTH, MIN_HANDLE_LENGTH, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
 
 import { SEEN_CHUNK_BYTES } from '../logic/seenCells.js';
 
@@ -45,12 +45,19 @@ function allInRange(columns: AnyPgColumn[], min: number, max: number): SQL
 
 /**
  * One row per player account
- *
- * Until there are real logins, a player is found by name, so no two players may have the same name
- * in any mix of capitals
  */
 export const players = pgTable('players', {
 	id: uuid('id').primaryKey().defaultRandom(),
+
+	/**
+	 * How other players find this one and tell them apart from others with the same name
+	 * (HANDLE_PATTERN). Unique ignoring capitals
+	 */
+	handle: text('handle').notNull(),
+
+	/**
+	 * The name shown for the player, which needn't be unique
+	 */
 	displayName: text('display_name').notNull(),
 
 	/**
@@ -68,8 +75,9 @@ export const players = pgTable('players', {
 
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
-	uniqueIndex('players_display_name_lower_unique').on(sql`lower(${table.displayName})`),
-	uniqueIndex('players_email_lower_unique').on(sql`lower(${table.email})`)
+	uniqueIndex('players_handle_lower_unique').on(sql`lower(${table.handle})`),
+	uniqueIndex('players_email_lower_unique').on(sql`lower(${table.email})`),
+	check('players_handle_form', sql`${table.handle} ~ ${sql.raw(`'^[A-Za-z0-9_]{${MIN_HANDLE_LENGTH},${MAX_HANDLE_LENGTH}}$'`)}`)
 ]);
 
 /**
@@ -1178,10 +1186,6 @@ export const sessions = pgTable('sessions', {
 	check('sessions_token_hash_length', authHashLength(table.tokenHash))
 ]);
 
-/**
- * What an email code is for
- */
-export const EMAIL_CODE_PURPOSES = ['register', 'resetPassword', 'changeEmail'] as const;
 export const emailCodePurpose = pgEnum('email_code_purpose', EMAIL_CODE_PURPOSES);
 
 /**
@@ -1240,10 +1244,10 @@ export const emailCodes = pgTable('email_codes', {
 ]);
 
 /**
- * What a rate limit counts: codes sent to an address and wrong guesses for it, and the codes asked for
- * and guesses made from a network
+ * What a rate limit counts: codes sent to an address and wrong guesses for it, the codes asked for and
+ * guesses made from a network, and login attempts for an address and from a network
  */
-export const RATE_LIMIT_KINDS = ['addressCodeSent', 'addressWrongGuess', 'networkCodeRequest', 'networkGuess'] as const;
+export const RATE_LIMIT_KINDS = ['addressCodeSent', 'addressWrongGuess', 'networkCodeRequest', 'networkGuess', 'addressLoginAttempt', 'networkLoginAttempt'] as const;
 export const rateLimitKind = pgEnum('rate_limit_kind', RATE_LIMIT_KINDS);
 
 /**

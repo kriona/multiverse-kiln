@@ -26,6 +26,8 @@ Home, universe pages and the license and privacy pages don't need a login; the l
 
 A login starts a session, kept on the server and named by an HttpOnly cookie. A session ends after 1 hour without use, and after 24 hours in all. Checking "Remember me" makes it last 30 days without use and 90 days in all, after which the player logs in again. Being connected to a lobby or game counts as use. Logging out ends the session on the server, and changing the password ends every session of the account.
 
+A player can be logged in from several browsers at once, each with a session of its own; every window of theirs, in any browser, is that player. Logging out ends only that browser's session, and its open windows are logged out with it.
+
 A Google or Discord login whose email matches a local account isn't joined to it automatically: the player is asked to log in to the local account (with its password, or an email code), which links them. A logged-in player can also link providers from their profile.
 
 Local accounts can turn on 2FA with an authenticator app (TOTP), and get recovery codes for when they lose it. Accounts that log in with a provider use the provider's 2FA.
@@ -34,7 +36,9 @@ Local accounts can turn on 2FA with an authenticator app (TOTP), and get recover
 From the profile. Before deleting, the player decides for each universe they are the only creator of: hand it to another of its editors as creator, or delete it. Groups whose anchor being is one of their characters disband. The account, profile, characters, sessions and auth events are deleted. Before deleting, the player can download their data as one JSON file (also offered on the profile at any time).
 
 ## Register local account
-Enter an email, it sends you an [email code](#email-codes), enter the code to create an account / set your password. Recommend the user use a password manager, link to a couple prominent ones. Emails you when you have a new account. Optional - set up 2FA now.
+Enter an email, it sends you an [email code](#email-codes), enter the code, then the email again with a password, handle and name to create the account (the server keeps only a keyed hash of the address while it waits, so it asks for the address again). Recommend the user use a password manager, link to a couple prominent ones. Emails you when you have a new account. Optional - set up 2FA now.
+
+If the address already has an account, the page answers the same as for a new one, and the address is emailed a note saying it has an account and how to log in or reset the password, in place of a code.
 
 ## Forgot your password
 Enter an email, it sends you an [email code](#email-codes), enter the code to change your password. Emails you when the password is changed, and signs the account out everywhere.
@@ -61,7 +65,7 @@ Registering, resetting a password and changing an email all send a code by email
 
 ## Profile edit
 Everything is optional except handle and name.
-- handle (required, unique): how other players find you and tell you apart from others with the same name. Letters, digits and underscores, compared ignoring capitals and checked against reserved words like player names
+- handle (required, unique): how other players find you and tell you apart from others with the same name. 3 to 20 letters (a to z only, so no handle can pass for another with look-alike letters from other alphabets), digits and underscores, compared ignoring capitals and checked against reserved words like player names
 - the Google and Discord logins linked to the account, with buttons to link another
 - photo (200px square, shown as a circle)
 - email, with a change email button for local accounts. Enter an email, it sends you an [email code](#email-codes), enter the code to change your email. Email both addresses letting them know that the email has changed.
