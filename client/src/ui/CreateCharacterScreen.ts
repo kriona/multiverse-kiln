@@ -131,7 +131,7 @@ export class CreateCharacterScreen
 			});
 		}
 
-		// Says straight away when a name can't be taken; the server checks it again
+		// Says immediately when a name can't be taken; the server checks it again
 		this.name.addEventListener('input', () =>
 		{
 			setFieldError(this.name, (isReservedName(this.name.value) ? t(NAME_MESSAGES.reserved) : undefined));

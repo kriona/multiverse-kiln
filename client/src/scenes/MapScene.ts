@@ -708,7 +708,7 @@ export class MapScene extends Phaser.Scene
 	}
 
 	/**
-	 * Makes the player's next position from the server be drawn straight away, rather than reached
+	 * Makes the player's next position from the server be drawn immediately, rather than reached
 	 * smoothly from where they were in the area they have just left
 	 *
 	 * Players in the old area are removed and those in the new one added through the state, like any

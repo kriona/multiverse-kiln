@@ -13,7 +13,7 @@
  *   and throws the progress away
  * - GET characterPath(universeId, characterId): one of the player's characters, as their character
  *   sheet shows them (CharacterSheet)
- * - DELETE characterPath(universeId, characterId): deletes the character straight away, or answers 409
+ * - DELETE characterPath(universeId, characterId): deletes the character immediately, or answers 409
  *   while they are in a group
  * - PUT characterPath(universeId, characterId)/deletion: gives the character their last rites, so they
  *   are deleted the site's characterDeletionDays later (see shared/src/siteSettings.ts), answering

@@ -539,7 +539,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	}
 
 	/**
-	 * Lets a player in the room play one of their characters here, playing them straight away if the
+	 * Lets a player in the room play one of their characters here, playing them immediately if the
 	 * player is a ghost
 	 *
 	 * @param playerId The player's ID

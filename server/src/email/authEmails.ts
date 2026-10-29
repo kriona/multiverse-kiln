@@ -352,7 +352,7 @@ export function passwordChangedEmail(locale: string): EmailContent
 			}, values),
 			translator.format({
 				id: 'email.passwordChanged.notYou',
-				defaultMessage: 'If you didn\'t change it, reset your password on {siteName} straight away.',
+				defaultMessage: 'If you didn\'t change it, reset your password on {siteName} immediately.',
 				description: 'Last paragraph of the email sent when an account\'s password is changed or reset, for someone who didn\'t change it; {siteName} is the site\'s name'
 			}, values)
 		],
@@ -389,7 +389,7 @@ export function providerLinkedEmail(provider: string, locale: string): EmailCont
 			}, values),
 			translator.format({
 				id: 'email.providerLinked.notYou',
-				defaultMessage: 'If you didn\'t link it, someone else may be using your account on {siteName}. Reset its password straight away.',
+				defaultMessage: 'If you didn\'t link it, someone else may be using your account on {siteName}. Reset its password immediately.',
 				description: 'Last paragraph of the email sent when a Google or Discord login is linked to an account, for someone who didn\'t link it; {siteName} is the site\'s name'
 			}, values)
 		],
@@ -440,7 +440,7 @@ export function emailChangedEmail(recipient: ChangedEmailRecipient, locale: stri
 			body,
 			translator.format({
 				id: 'email.emailChanged.notYou',
-				defaultMessage: 'If you didn\'t change it, someone else may be using your account on {siteName}. Reset its password straight away.',
+				defaultMessage: 'If you didn\'t change it, someone else may be using your account on {siteName}. Reset its password immediately.',
 				description: 'Last paragraph of the emails sent to both the old and the new address when an account\'s email address is changed, for someone who didn\'t change it; {siteName} is the site\'s name'
 			}, values)
 		],
@@ -475,7 +475,7 @@ export function twoFactorEnabledEmail(locale: string): EmailContent
 			}, values),
 			translator.format({
 				id: 'email.twoFactorEnabled.notYou',
-				defaultMessage: 'If you didn\'t turn it on, someone else may be using your account on {siteName}. Reset its password straight away.',
+				defaultMessage: 'If you didn\'t turn it on, someone else may be using your account on {siteName}. Reset its password immediately.',
 				description: 'Last paragraph of the email sent when two-factor authentication is turned on for an account, for someone who didn\'t turn it on; {siteName} is the site\'s name'
 			}, values)
 		],
@@ -510,7 +510,7 @@ export function twoFactorDisabledEmail(locale: string): EmailContent
 			}, values),
 			translator.format({
 				id: 'email.twoFactorDisabled.notYou',
-				defaultMessage: 'If you didn\'t turn it off, someone else may be using your account on {siteName}. Reset its password straight away, then turn two-factor authentication on again.',
+				defaultMessage: 'If you didn\'t turn it off, someone else may be using your account on {siteName}. Reset its password immediately, then turn two-factor authentication on again.',
 				description: 'Last paragraph of the email sent when two-factor authentication is turned off for an account, for someone who didn\'t turn it off; {siteName} is the site\'s name'
 			}, values)
 		],
@@ -549,7 +549,7 @@ export function recoveryCodeUsedEmail(codesLeft: number, locale: string): EmailC
 			}),
 			translator.format({
 				id: 'email.recoveryCodeUsed.notYou',
-				defaultMessage: 'If you didn\'t use it, someone else has your password and recovery codes. Reset your password straight away, and make new recovery codes on your profile.',
+				defaultMessage: 'If you didn\'t use it, someone else has your password and recovery codes. Reset your password immediately, and make new recovery codes on your profile.',
 				description: 'Last paragraph of the email sent when one of an account\'s recovery codes is used, for someone who didn\'t use it'
 			})
 		],

@@ -65,7 +65,7 @@ export class PositionBuffer
 	}
 
 	/**
-	 * Forgets every position, so the next one is drawn straight away instead of being reached smoothly,
+	 * Forgets every position, so the next one is drawn immediately instead of being reached smoothly,
 	 * as when the entity moves to another area
 	 */
 	clear(): void

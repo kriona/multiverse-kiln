@@ -357,11 +357,11 @@
 	},
 	"characterDelete.cremate": {
 		"defaultMessage": "Cremate (delete immediately)",
-		"description": "Button that deletes a character straight away, for good. Cremate is a playful way of saying it (their body is burned); the words in parentheses say plainly what it does"
+		"description": "Button that deletes a character immediately, for good. Cremate is a playful way of saying it (their body is burned); the words in parentheses say plainly what it does"
 	},
 	"characterDelete.cremated": {
 		"defaultMessage": "{name} has been deleted.",
-		"description": "Read out by screen readers once a character has been deleted straight away; {name} is the character's name"
+		"description": "Read out by screen readers once a character has been deleted immediately; {name} is the character's name"
 	},
 	"characterDelete.failed": {
 		"defaultMessage": "Could not delete the character.",
@@ -593,7 +593,7 @@
 	},
 	"editor.area.confirmDeleteNew": {
 		"defaultMessage": "Delete {area}? It hasn't been saved, so its settings, map and links will be lost.",
-		"description": "Asks before deleting an area added since the Areas tab was last saved, which goes straight away; {area} is its name"
+		"description": "Asks before deleting an area added since the Areas tab was last saved, which goes immediately; {area} is its name"
 	},
 	"editor.area.defaultTile": {
 		"defaultMessage": "Default tile",
@@ -2128,7 +2128,7 @@
 		"description": "Paragraph of the email sent to an account's new address when its email address is changed; {siteName} is the site's name"
 	},
 	"email.emailChanged.notYou": {
-		"defaultMessage": "If you didn't change it, someone else may be using your account on {siteName}. Reset its password straight away.",
+		"defaultMessage": "If you didn't change it, someone else may be using your account on {siteName}. Reset its password immediately.",
 		"description": "Last paragraph of the emails sent to both the old and the new address when an account's email address is changed, for someone who didn't change it; {siteName} is the site's name"
 	},
 	"email.emailChanged.oldAddress": {
@@ -2148,7 +2148,7 @@
 		"description": "Paragraph of the email sent when an account's password is changed or reset; {siteName} is the site's name"
 	},
 	"email.passwordChanged.notYou": {
-		"defaultMessage": "If you didn't change it, reset your password on {siteName} straight away.",
+		"defaultMessage": "If you didn't change it, reset your password on {siteName} immediately.",
 		"description": "Last paragraph of the email sent when an account's password is changed or reset, for someone who didn't change it; {siteName} is the site's name"
 	},
 	"email.passwordChanged.subject": {
@@ -2160,7 +2160,7 @@
 		"description": "Paragraph of the email sent when a Google or Discord login is linked to an account; {siteName} is the site's name and {provider} is Google or Discord"
 	},
 	"email.providerLinked.notYou": {
-		"defaultMessage": "If you didn't link it, someone else may be using your account on {siteName}. Reset its password straight away.",
+		"defaultMessage": "If you didn't link it, someone else may be using your account on {siteName}. Reset its password immediately.",
 		"description": "Last paragraph of the email sent when a Google or Discord login is linked to an account, for someone who didn't link it; {siteName} is the site's name"
 	},
 	"email.providerLinked.subject": {
@@ -2172,7 +2172,7 @@
 		"description": "Paragraph of the email sent when one of an account's recovery codes is used; {siteName} is the site's name, and {count} how many recovery codes the account has left"
 	},
 	"email.recoveryCodeUsed.notYou": {
-		"defaultMessage": "If you didn't use it, someone else has your password and recovery codes. Reset your password straight away, and make new recovery codes on your profile.",
+		"defaultMessage": "If you didn't use it, someone else has your password and recovery codes. Reset your password immediately, and make new recovery codes on your profile.",
 		"description": "Last paragraph of the email sent when one of an account's recovery codes is used, for someone who didn't use it"
 	},
 	"email.recoveryCodeUsed.subject": {
@@ -2184,7 +2184,7 @@
 		"description": "Paragraph of the email sent when two-factor authentication is turned off for an account; {siteName} is the site's name"
 	},
 	"email.twoFactorDisabled.notYou": {
-		"defaultMessage": "If you didn't turn it off, someone else may be using your account on {siteName}. Reset its password straight away, then turn two-factor authentication on again.",
+		"defaultMessage": "If you didn't turn it off, someone else may be using your account on {siteName}. Reset its password immediately, then turn two-factor authentication on again.",
 		"description": "Last paragraph of the email sent when two-factor authentication is turned off for an account, for someone who didn't turn it off; {siteName} is the site's name"
 	},
 	"email.twoFactorDisabled.subject": {
@@ -2196,7 +2196,7 @@
 		"description": "Paragraph of the email sent when two-factor authentication is turned on for an account; {siteName} is the site's name"
 	},
 	"email.twoFactorEnabled.notYou": {
-		"defaultMessage": "If you didn't turn it on, someone else may be using your account on {siteName}. Reset its password straight away.",
+		"defaultMessage": "If you didn't turn it on, someone else may be using your account on {siteName}. Reset its password immediately.",
 		"description": "Last paragraph of the email sent when two-factor authentication is turned on for an account, for someone who didn't turn it on; {siteName} is the site's name"
 	},
 	"email.twoFactorEnabled.subject": {
@@ -2369,7 +2369,7 @@
 	},
 	"error.deleteGroupMember": {
 		"defaultMessage": "That character is in a group. They have to leave it before they can be deleted.",
-		"description": "Why a character wasn't deleted, straight away or after some days: characters in a group can't be deleted"
+		"description": "Why a character wasn't deleted, immediately or after some days: characters in a group can't be deleted"
 	},
 	"error.difficultyLevelLimit": {
 		"defaultMessage": "A universe can have at most {max, plural, one {# difficulty level} other {# difficulty levels}}.",
@@ -2436,7 +2436,7 @@
 		"description": "Why an item the universe added couldn't be saved: its name was left out"
 	},
 	"error.lastRitesOff": {
-		"defaultMessage": "Characters can't be given their last rites on this site. They can only be deleted straight away.",
+		"defaultMessage": "Characters can't be given their last rites on this site. They can only be deleted immediately.",
 		"description": "Why a character wasn't given their last rites (deleted after some days): the site's settings have turned waiting off"
 	},
 	"error.linkOutOfBounds": {

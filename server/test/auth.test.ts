@@ -102,7 +102,7 @@ describe('auth routes', () =>
 
 	/**
 	 * Forgets every attempt the rate limits count, as an hour passing would, so a test can send another
-	 * code to an address straight away
+	 * code to an address immediately
 	 */
 	async function forgetRateLimits(): Promise<void>
 	{

@@ -20,7 +20,7 @@ export type AreaChange =
 export type AreaChangeListener = (change: AreaChange) => void;
 
 /**
- * Tells the rooms about changes to the world as they are made, so edits apply to players straight away
+ * Tells the rooms about changes to the world as they are made, so edits apply to players immediately
  *
  * Changes are published after they are saved. It lives in memory, so it only reaches rooms in the same
  * server process, like OnlinePlayers

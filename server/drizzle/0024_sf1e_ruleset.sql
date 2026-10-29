@@ -2,7 +2,7 @@ CREATE TYPE "public"."sf1e_ability" AS ENUM('strength', 'dexterity', 'constituti
 CREATE TYPE "public"."sf1e_size" AS ENUM('fine', 'diminutive', 'tiny', 'small', 'medium', 'large', 'huge', 'gargantuan', 'colossal');--> statement-breakpoint
 -- A value added with ADD VALUE can't be used until its transaction commits, and the migrations run in
 -- one transaction, so the next migration couldn't add the sf1e defaults. The columns move to a new type
--- holding both values instead, which can be used straight away
+-- holding both values instead, which can be used immediately
 ALTER TYPE "public"."ruleset" RENAME TO "ruleset_old";--> statement-breakpoint
 CREATE TYPE "public"."ruleset" AS ENUM('pf1e', 'sf1e');--> statement-breakpoint
 ALTER TABLE "universes" ALTER COLUMN "ruleset" SET DATA TYPE "public"."ruleset" USING "ruleset"::text::"public"."ruleset";--> statement-breakpoint

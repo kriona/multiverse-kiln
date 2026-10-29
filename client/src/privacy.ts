@@ -69,7 +69,7 @@ function showContact(address: string | null): void
 
 /**
  * Writes how many days a deleted character is kept, or removes the line when the site deletes
- * characters straight away
+ * characters immediately
  *
  * @param days The days the site keeps them
  */

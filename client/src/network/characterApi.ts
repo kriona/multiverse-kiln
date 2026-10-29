@@ -86,7 +86,7 @@ export class CharacterApi
 	}
 
 	/**
-	 * Deletes one of the player's characters straight away
+	 * Deletes one of the player's characters immediately
 	 *
 	 * @param universeId The universe's ID
 	 * @param characterId The character's ID

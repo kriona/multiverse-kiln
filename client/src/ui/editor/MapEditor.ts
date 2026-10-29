@@ -109,7 +109,7 @@ interface Stroke
  * or Void, 1 to MAX_BRUSH_SIZE cells across, square or circle) with undo and redo, buttons to grow the
  * map on each side, Edit Size, and a tool for the map's area links
  *
- * Painting, changes to the map's size and links show straight away and are kept until the editor's Save
+ * Painting, changes to the map's size and links show immediately and are kept until the editor's Save
  * button calls save(); a click, a drag or a change of size is one step to undo
  */
 export class MapEditor

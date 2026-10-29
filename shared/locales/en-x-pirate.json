@@ -2128,8 +2128,8 @@
 		"source": "This is now the email address of your account on {siteName}."
 	},
 	"email.emailChanged.notYou": {
-		"message": "If ye didn't change it, some scallywag may be sailin' yer account on {siteName}. Reset its password straight away.",
-		"source": "If you didn't change it, someone else may be using your account on {siteName}. Reset its password straight away."
+		"message": "If ye didn't change it, some scallywag may be sailin' yer account on {siteName}. Reset its password this very instant.",
+		"source": "If you didn't change it, someone else may be using your account on {siteName}. Reset its password immediately."
 	},
 	"email.emailChanged.oldAddress": {
 		"message": "The email address o' yer account on {siteName} was changed to {newAddress}. Letters about the account will sail there from now on.",
@@ -2148,8 +2148,8 @@
 		"source": "The password of your account on {siteName} was just changed, and every browser logged in to it was logged out."
 	},
 	"email.passwordChanged.notYou": {
-		"message": "If ye didn't change it, reset yer password on {siteName} straight away.",
-		"source": "If you didn't change it, reset your password on {siteName} straight away."
+		"message": "If ye didn't change it, reset yer password on {siteName} this very instant.",
+		"source": "If you didn't change it, reset your password on {siteName} immediately."
 	},
 	"email.passwordChanged.subject": {
 		"message": "Yer password on {siteName} was changed",
@@ -2160,8 +2160,8 @@
 		"source": "A {provider} login was linked to your account on {siteName}, so it can log in to the account from now on."
 	},
 	"email.providerLinked.notYou": {
-		"message": "If ye didn't lash it on, some other scallywag may be sailin' yer account on {siteName}. Reset its password straight away.",
-		"source": "If you didn't link it, someone else may be using your account on {siteName}. Reset its password straight away."
+		"message": "If ye didn't lash it on, some other scallywag may be sailin' yer account on {siteName}. Reset its password this very instant.",
+		"source": "If you didn't link it, someone else may be using your account on {siteName}. Reset its password immediately."
 	},
 	"email.providerLinked.subject": {
 		"message": "Ye can now board {siteName} with {provider}",
@@ -2172,8 +2172,8 @@
 		"source": "One of the recovery codes of your account on {siteName} was just used in place of a code from your authenticator app. It won't work again. {count, plural, =0 {You have no recovery codes left: make new ones on your profile.} one {You have # left.} other {You have # left.}}"
 	},
 	"email.recoveryCodeUsed.notYou": {
-		"message": "If ye didn't spend it, some scallywag has yer password an' recovery codes. Reset yer password straight away, an' forge new recovery codes on yer profile.",
-		"source": "If you didn't use it, someone else has your password and recovery codes. Reset your password straight away, and make new recovery codes on your profile."
+		"message": "If ye didn't spend it, some scallywag has yer password an' recovery codes. Reset yer password this very instant, an' forge new recovery codes on yer profile.",
+		"source": "If you didn't use it, someone else has your password and recovery codes. Reset your password immediately, and make new recovery codes on your profile."
 	},
 	"email.recoveryCodeUsed.subject": {
 		"message": "A recovery code was spent on {siteName}",
@@ -2184,8 +2184,8 @@
 		"source": "Two-factor authentication was turned off for your account on {siteName}. Logging in now needs only your password, and your recovery codes no longer work."
 	},
 	"email.twoFactorDisabled.notYou": {
-		"message": "If ye didn't strike it, some scallywag may be usin' yer account on {siteName}. Reset its password straight away, then raise two-factor authentication again.",
-		"source": "If you didn't turn it off, someone else may be using your account on {siteName}. Reset its password straight away, then turn two-factor authentication on again."
+		"message": "If ye didn't strike it, some scallywag may be usin' yer account on {siteName}. Reset its password this very instant, then raise two-factor authentication again.",
+		"source": "If you didn't turn it off, someone else may be using your account on {siteName}. Reset its password immediately, then turn two-factor authentication on again."
 	},
 	"email.twoFactorDisabled.subject": {
 		"message": "Two-factor authentication be off for yer account on {siteName}",
@@ -2196,8 +2196,8 @@
 		"source": "Two-factor authentication was turned on for your account on {siteName}. Logging in with your password now asks for a code from your authenticator app too. Keep your recovery codes somewhere safe: they are the only way in if you lose the app."
 	},
 	"email.twoFactorEnabled.notYou": {
-		"message": "If ye didn't raise it, some scallywag may be usin' yer account on {siteName}. Reset its password straight away.",
-		"source": "If you didn't turn it on, someone else may be using your account on {siteName}. Reset its password straight away."
+		"message": "If ye didn't raise it, some scallywag may be usin' yer account on {siteName}. Reset its password this very instant.",
+		"source": "If you didn't turn it on, someone else may be using your account on {siteName}. Reset its password immediately."
 	},
 	"email.twoFactorEnabled.subject": {
 		"message": "Two-factor authentication be on for yer account on {siteName}",
@@ -2437,7 +2437,7 @@
 	},
 	"error.lastRitesOff": {
 		"message": "There be no last rites on this ship. Hands can only be thrown overboard on the spot.",
-		"source": "Characters can't be given their last rites on this site. They can only be deleted straight away."
+		"source": "Characters can't be given their last rites on this site. They can only be deleted immediately."
 	},
 	"error.linkOutOfBounds": {
 		"message": "The passage's cell must be inside the area's chart.",

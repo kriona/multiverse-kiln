@@ -479,7 +479,7 @@ describe('group routes', () =>
 			assert.ok(await findGroup(groupId));
 		});
 
-		it('refuses to delete a member, straight away or with last rites, until they leave', async () =>
+		it('refuses to delete a member, immediately or with last rites, until they leave', async () =>
 		{
 			const groupId = await createGroup(ada);
 

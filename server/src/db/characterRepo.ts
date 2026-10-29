@@ -540,7 +540,7 @@ export async function countCharacters(playerId: string, universeId: string, exec
 }
 
 /**
- * Deletes one of a player's characters, with their ability scores and items, straight away
+ * Deletes one of a player's characters, with their ability scores and items, immediately
  *
  * @param playerId The player's ID
  * @param universeId The universe's ID
