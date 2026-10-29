@@ -5,7 +5,7 @@
  */
 import { ArcticFetchError, decodeIdToken, Discord, Google, OAuth2RequestError } from 'arctic';
 import { z } from 'zod';
-import { LOGIN_PROVIDERS, MAX_PLAYER_NAME_LENGTH, PROVIDER_RETURN_PATH, type LoginProvider } from '@multiverse-kiln/shared';
+import { LOGIN_PROVIDER_NAMES, LOGIN_PROVIDERS, MAX_PLAYER_NAME_LENGTH, PROVIDER_RETURN_PATH, type LoginProvider } from '@multiverse-kiln/shared';
 
 /**
  * The player a provider logged in, as it describes them
@@ -73,14 +73,6 @@ export class ProviderLoginError extends Error
 		this.name = 'ProviderLoginError';
 	}
 }
-
-/**
- * Each provider's name, as players know it
- */
-export const PROVIDER_NAMES: Readonly<Record<LoginProvider, string>> = {
-	google: 'Google',
-	discord: 'Discord'
-};
 
 /**
  * The claims of a Google ID token that a login uses
@@ -262,7 +254,7 @@ function createClients(): Map<LoginProvider, ProviderClient>
 
 		if (!siteUrl)
 		{
-			throw new Error(`SITE_URL is not set, and ${PROVIDER_NAMES[provider]} logins need it. See server/.env.example`);
+			throw new Error(`SITE_URL is not set, and ${LOGIN_PROVIDER_NAMES[provider]} logins need it. See server/.env.example`);
 		}
 
 		created.set(provider, factories[provider](clientId, clientSecret, new URL(PROVIDER_RETURN_PATH, siteUrl).toString()));

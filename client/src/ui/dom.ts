@@ -8,7 +8,7 @@ import { t } from '../localization';
  * lobby, group and invite, edit.html has editor, character.html has character, and login.html has login,
  * email, code, register and reset. Exactly one is shown at a time
  */
-export type ScreenName = 'status' | 'home' | 'universe' | 'notice' | 'editor' | 'lobby' | 'group' | 'invite' | 'character' | 'login' | 'email' | 'code' | 'register' | 'reset';
+export type ScreenName = 'status' | 'home' | 'universe' | 'notice' | 'editor' | 'lobby' | 'group' | 'invite' | 'character' | 'login' | 'email' | 'code' | 'register' | 'reset' | 'provider-register' | 'provider-link';
 
 /**
  * Finds an element in the page by ID

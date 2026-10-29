@@ -3115,6 +3115,10 @@
 		"defaultMessage": "Sent a new code. The one before no longer works.",
 		"description": "Shown under the code field after another code was emailed"
 	},
+	"login.codeSentLink": {
+		"defaultMessage": "We've emailed {email}. Enter the code from the email to link your login. It works once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"description": "On the screen for the emailed code when linking a Google or Discord login to the account with the same email address; {email} is the address it was sent to"
+	},
 	"login.codeSentRegister": {
 		"defaultMessage": "We've emailed {email}. Enter the code from the email. It works once, for {minutes, plural, one {# minute} other {# minutes}}.",
 		"description": "On the screen for the emailed code when creating an account; {email} is the address it was sent to"
@@ -3143,9 +3147,33 @@
 		"defaultMessage": "Forgot your password?",
 		"description": "Button on the login screen that starts resetting a forgotten password"
 	},
+	"login.linkIntro": {
+		"defaultMessage": "You already have an account here with {email}. Log in to it once to link your {provider} login, and you can use either from then on.",
+		"description": "On the screen that links a Google or Discord login to the account with the same email address, when that account has a password; {provider} is Google or Discord, and {email} the address"
+	},
+	"login.linkIntroCode": {
+		"defaultMessage": "You already have an account here with {email}. We'll email it a code to link your {provider} login, and you can use either from then on.",
+		"description": "On the screen that links a Google or Discord login to the account with the same email address, when that account has no password, so only an emailed code links it; {provider} is Google or Discord, and {email} the address"
+	},
+	"login.linkSubmit": {
+		"defaultMessage": "Link account",
+		"description": "Button that logs in to the account with its password, linking the Google or Discord login to it"
+	},
+	"login.linkTitle": {
+		"defaultMessage": "Link your account",
+		"description": "Heading of the screen, after logging in with Google or Discord, that asks the player to log in to the account here with the same email address so the two can be linked"
+	},
+	"login.linkWithCode": {
+		"defaultMessage": "Email me a code",
+		"description": "Button on the screen that links a Google or Discord login to an account: emails a code to the account's address, to use instead of its password"
+	},
 	"login.newPassword": {
 		"defaultMessage": "Password",
 		"description": "Label of the field for a new password, when creating an account or resetting a password"
+	},
+	"login.orEmail": {
+		"defaultMessage": "or use your email address",
+		"description": "On the login screen, between the buttons that log in with Google or Discord and the email address and password fields"
 	},
 	"login.password": {
 		"defaultMessage": "Password",
@@ -3163,6 +3191,18 @@
 		"defaultMessage": "Read how we look after your information in our {privacy}.",
 		"description": "On the create account screen; {privacy} is a link to the privacy policy, named by page.privacyPolicy"
 	},
+	"login.providerCanceled": {
+		"defaultMessage": "Logging in with Google or Discord was canceled. Try again, or use your email address.",
+		"description": "Shown on the login screen when Google or Discord sends the player back without logging them in, such as when they chose not to allow it"
+	},
+	"login.providerRegisterIntro": {
+		"defaultMessage": "You're logging in with {provider} as {email}, which is new here. Choose how other players find and see you to create your account.",
+		"description": "On the screen where a new account's username and name are chosen after logging in with Google or Discord; {provider} is Google or Discord, and {email} the address it gave"
+	},
+	"login.providersRecommended": {
+		"defaultMessage": "Logging in with one of these is safest: there's no password here to forget or have stolen.",
+		"description": "On the login screen, above the buttons that log in with Google or Discord (which also create an account the first time)"
+	},
 	"login.register": {
 		"defaultMessage": "Create an account",
 		"description": "Button on the login screen that starts creating a new account"
@@ -3175,13 +3215,17 @@
 		"defaultMessage": "Enter your email address, and we'll send you a code to check it's yours.",
 		"description": "On the screen that asks for the email address of a new account"
 	},
+	"login.registerProvidersHint": {
+		"defaultMessage": "Logging in with Google or Discord on the login screen creates an account too, and is safest: there's no password here to forget or have stolen.",
+		"description": "On the screen that asks for the email address of a new account, when the site offers logging in with Google or Discord"
+	},
 	"login.registerSubmit": {
 		"defaultMessage": "Create account",
 		"description": "Button that creates the new account and logs in"
 	},
 	"login.registerTitle": {
 		"defaultMessage": "Create your account",
-		"description": "Heading of the screen where a new account's username, name and password are chosen"
+		"description": "Heading of the screen where a new account's username, name and password are chosen, and of the one where a new account's username and name are chosen after logging in with Google or Discord"
 	},
 	"login.rememberMe": {
 		"defaultMessage": "Remember me",
@@ -3234,6 +3278,14 @@
 	"login.usernameHint": {
 		"defaultMessage": "How other players find you, and tell you apart from others with the same name. {min} to {max} letters (a to z), digits and underscores.",
 		"description": "Under the username field when creating an account; {min} and {max} are numbers"
+	},
+	"login.withDiscord": {
+		"defaultMessage": "Log in with Discord",
+		"description": "Button on the login screen that logs in with a Discord account, creating an account here the first time"
+	},
+	"login.withGoogle": {
+		"defaultMessage": "Log in with Google",
+		"description": "Button on the login screen that logs in with a Google account, creating an account here the first time"
 	},
 	"map.announce.appeared": {
 		"defaultMessage": "{count, plural, one {{players} comes into view.} other {{players} come into view.}}",

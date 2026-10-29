@@ -12,11 +12,11 @@
 import type { Request, Response, Router } from 'express';
 import { generateCodeVerifier, generateState } from 'arctic';
 import { z } from 'zod';
-import { AUTH_PROVIDER_CALLBACK_PATH, AUTH_PROVIDER_LINK_PATH, AUTH_PROVIDER_REGISTER_PATH, AUTH_PROVIDER_START_PATH, AUTH_PROVIDERS_PATH, defineMessages, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_USERNAME_LENGTH, type LoginProvider, type ProviderCallbackPayload, type ProviderCallbackRequest, type ProviderLinkRequest, type ProviderRegisterRequest, type ProvidersPayload, type ProviderStartPayload, type ProviderStartRequest } from '@multiverse-kiln/shared';
+import { AUTH_PROVIDER_CALLBACK_PATH, AUTH_PROVIDER_LINK_PATH, AUTH_PROVIDER_REGISTER_PATH, AUTH_PROVIDER_START_PATH, AUTH_PROVIDERS_PATH, defineMessages, LOGIN_PROVIDER_NAMES, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_USERNAME_LENGTH, type LoginProvider, type ProviderCallbackPayload, type ProviderCallbackRequest, type ProviderLinkRequest, type ProviderRegisterRequest, type ProvidersPayload, type ProviderStartPayload, type ProviderStartRequest } from '@multiverse-kiln/shared';
 
 import { hashAddress, hashesMatch } from '../auth/keyedHashes.js';
 import { checkLoginPassword } from '../auth/passwords.js';
-import { enabledProviders, PROVIDER_NAMES, providerClient, ProviderLoginError, type ProviderUser } from '../auth/providers.js';
+import { enabledProviders, providerClient, ProviderLoginError, type ProviderUser } from '../auth/providers.js';
 import { MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR, MAX_LOGIN_ATTEMPTS_PER_NETWORK_HOUR, takeAttempt } from '../auth/rateLimits.js';
 import { startSession } from '../auth/sessions.js';
 import { createToken, hashToken } from '../auth/tokens.js';
@@ -160,7 +160,7 @@ function providerFailed(provider: LoginProvider): AuthRefusal
 		status: 400,
 		message: providerMessages.failed,
 		values: {
-			provider: PROVIDER_NAMES[provider]
+			provider: LOGIN_PROVIDER_NAMES[provider]
 		}
 	});
 }
@@ -178,7 +178,7 @@ function loginTaken(error: ProviderLoginTakenError, provider: LoginProvider): Au
 		status: 409,
 		message: ((error.by === 'otherAccount') ? providerMessages.otherAccount : providerMessages.otherLogin),
 		values: {
-			provider: PROVIDER_NAMES[provider]
+			provider: LOGIN_PROVIDER_NAMES[provider]
 		}
 	});
 }
@@ -269,7 +269,7 @@ function startRoute(request: Request, response: Response): void
 			status: 404,
 			message: providerMessages.notOffered,
 			values: {
-				provider: PROVIDER_NAMES[provider]
+				provider: LOGIN_PROVIDER_NAMES[provider]
 			}
 		});
 		return;
@@ -358,14 +358,14 @@ async function callbackRoute(request: Request, response: Response): Promise<void
 
 		if (error.reason === 'unavailable')
 		{
-			console.error(`Could not finish a ${PROVIDER_NAMES[provider]} login:`, error.cause);
+			console.error(`Could not finish a ${LOGIN_PROVIDER_NAMES[provider]} login:`, error.cause);
 		}
 
 		sendRefusal(response, ((error.reason === 'refused') ? providerFailed(provider) : {
 			status: 502,
 			message: providerMessages.unavailable,
 			values: {
-				provider: PROVIDER_NAMES[provider]
+				provider: LOGIN_PROVIDER_NAMES[provider]
 			}
 		}));
 		return;
@@ -379,7 +379,7 @@ async function callbackRoute(request: Request, response: Response): Promise<void
 			status: 400,
 			message: providerMessages.noVerifiedEmail,
 			values: {
-				provider: PROVIDER_NAMES[provider]
+				provider: LOGIN_PROVIDER_NAMES[provider]
 			}
 		});
 		return;
@@ -687,7 +687,7 @@ async function linkRoute(request: Request, response: Response): Promise<void>
 	{
 		sendEmailInBackground({
 			to: outcome.email,
-			...providerLinkedEmail(PROVIDER_NAMES[outcome.provider], emailLocale)
+			...providerLinkedEmail(LOGIN_PROVIDER_NAMES[outcome.provider], emailLocale)
 		});
 	}
 }

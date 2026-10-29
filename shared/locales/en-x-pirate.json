@@ -3115,6 +3115,10 @@
 		"message": "Sent a fresh code. The one afore it no longer works.",
 		"source": "Sent a new code. The one before no longer works."
 	},
+	"login.codeSentLink": {
+		"message": "We've sent a letter to {email}. Enter the code from it to lash yer login on. It works but once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"source": "We've emailed {email}. Enter the code from the email to link your login. It works once, for {minutes, plural, one {# minute} other {# minutes}}."
+	},
 	"login.codeSentRegister": {
 		"message": "We've sent a letter to {email}. Enter the code from it. It works but once, for {minutes, plural, one {# minute} other {# minutes}}.",
 		"source": "We've emailed {email}. Enter the code from the email. It works once, for {minutes, plural, one {# minute} other {# minutes}}."
@@ -3143,9 +3147,33 @@
 		"message": "Forgot yer password?",
 		"source": "Forgot your password?"
 	},
+	"login.linkIntro": {
+		"message": "Ye already have an account here with {email}. Come aboard it once to lash yer {provider} login on, an' ye can use either from then on.",
+		"source": "You already have an account here with {email}. Log in to it once to link your {provider} login, and you can use either from then on."
+	},
+	"login.linkIntroCode": {
+		"message": "Ye already have an account here with {email}. We'll send it a letter with a code to lash yer {provider} login on, an' ye can use either from then on.",
+		"source": "You already have an account here with {email}. We'll email it a code to link your {provider} login, and you can use either from then on."
+	},
+	"login.linkSubmit": {
+		"message": "Lash the accounts",
+		"source": "Link account"
+	},
+	"login.linkTitle": {
+		"message": "Lash yer accounts together",
+		"source": "Link your account"
+	},
+	"login.linkWithCode": {
+		"message": "Send me a code by letter",
+		"source": "Email me a code"
+	},
 	"login.newPassword": {
 		"message": "Password",
 		"source": "Password"
+	},
+	"login.orEmail": {
+		"message": "or use yer email address",
+		"source": "or use your email address"
 	},
 	"login.password": {
 		"message": "Password",
@@ -3163,6 +3191,18 @@
 		"message": "Read how we guard yer information in our {privacy}.",
 		"source": "Read how we look after your information in our {privacy}."
 	},
+	"login.providerCanceled": {
+		"message": "Boardin' with Google or Discord was called off. Try again, or use yer email address.",
+		"source": "Logging in with Google or Discord was canceled. Try again, or use your email address."
+	},
+	"login.providerRegisterIntro": {
+		"message": "Ye're comin' aboard with {provider} as {email}, which be new to these waters. Choose how other sailors find an' see ye to sign yer articles.",
+		"source": "You're logging in with {provider} as {email}, which is new here. Choose how other players find and see you to create your account."
+	},
+	"login.providersRecommended": {
+		"message": "Boardin' with one o' these be safest: there's no password here to forget or have plundered.",
+		"source": "Logging in with one of these is safest: there's no password here to forget or have stolen."
+	},
 	"login.register": {
 		"message": "Sign the articles",
 		"source": "Create an account"
@@ -3174,6 +3214,10 @@
 	"login.registerIntro": {
 		"message": "Enter yer email address, an' we'll send ye a code to prove it be yers.",
 		"source": "Enter your email address, and we'll send you a code to check it's yours."
+	},
+	"login.registerProvidersHint": {
+		"message": "Boardin' with Google or Discord on the boardin' screen signs yer articles too, an' be safest: there's no password here to forget or have plundered.",
+		"source": "Logging in with Google or Discord on the login screen creates an account too, and is safest: there's no password here to forget or have stolen."
 	},
 	"login.registerSubmit": {
 		"message": "Sign the articles",
@@ -3234,6 +3278,14 @@
 	"login.usernameHint": {
 		"message": "How other sailors find ye, an' tell ye apart from others with the same name. {min} to {max} letters (a to z), digits an' underscores.",
 		"source": "How other players find you, and tell you apart from others with the same name. {min} to {max} letters (a to z), digits and underscores."
+	},
+	"login.withDiscord": {
+		"message": "Come aboard with Discord",
+		"source": "Log in with Discord"
+	},
+	"login.withGoogle": {
+		"message": "Come aboard with Google",
+		"source": "Log in with Google"
 	},
 	"map.announce.appeared": {
 		"message": "{count, plural, one {{players} heaves into view.} other {{players} heave into view.}}",

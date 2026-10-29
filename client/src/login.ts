@@ -3,7 +3,7 @@ import { startLocalization, t } from './localization';
 import { AuthApi } from './network/authApi';
 import { createClient } from './network/serverConnection';
 import { onLoginElsewhere } from './network/sessionBroadcast';
-import { readNextPage } from './pages';
+import { readNextPage, takeProviderReturn } from './pages';
 import { showStatus } from './ui/dom';
 import { startLanguagePicker } from './ui/languagePicker';
 import { pageMessages } from './ui/pageMessages';
@@ -16,6 +16,9 @@ import { startShortcuts } from './ui/shortcuts';
  */
 async function start(): Promise<void>
 {
+	// Before anything reads the address: it holds the language and the page to go back to
+	const providerReturn = takeProviderReturn();
+
 	await startLocalization();
 	startLanguagePicker();
 	startShortcuts();
@@ -44,7 +47,7 @@ async function start(): Promise<void>
 		window.location.replace(readNextPage());
 	});
 
-	new LoginPage(api).showLogin();
+	await new LoginPage(api).start(providerReturn);
 }
 
 void start();

@@ -29,7 +29,7 @@
  * Every page takes ?locale= to choose a language, as the language picker in the footer does (see src/localization.ts)
  */
 
-import { INVITE_QUERY_PARAMETER } from '@multiverse-kiln/shared';
+import { INVITE_QUERY_PARAMETER, PROVIDER_RETURN_PATH } from '@multiverse-kiln/shared';
 
 /**
  * Query string parameter choosing the language, e.g. en-x-pirate, or en-XA for the pseudo-language in development
@@ -57,9 +57,16 @@ export const AREA_PARAMETER = 'area';
 const NEXT_PARAMETER = 'next';
 
 /**
- * Path of the login page
+ * Path of the login page, which Google and Discord also send the browser back to
  */
-const LOGIN_PAGE = '/login';
+const LOGIN_PAGE = PROVIDER_RETURN_PATH;
+
+/**
+ * Where the login page keeps its own address (with the page to go back to and its language) in the
+ * tab's session storage while the player is at Google or Discord, which send the browser back to the
+ * login page without it
+ */
+const LOGIN_ADDRESS_KEY = 'kiln-login-address';
 
 /**
  * Path of the world editor's page, followed by /<universe ID>
@@ -187,6 +194,58 @@ export function currentPageAddress(): string
 	const { pathname, search, hash } = window.location;
 
 	return(`${pathname}${search}${hash}`);
+}
+
+/**
+ * Keeps the login page's address while the player goes to Google or Discord, for
+ * takeProviderReturn() to put back. Without session storage, the page goes back to Home afterwards
+ */
+export function rememberLoginAddress(): void
+{
+	try
+	{
+		sessionStorage.setItem(LOGIN_ADDRESS_KEY, currentPageAddress());
+	}
+	catch
+	{
+		// Session storage is blocked: the login still works
+	}
+}
+
+/**
+ * Takes what Google or Discord sent the browser back to the login page with out of its address, and
+ * puts back the address the page had before the player went there (rememberLoginAddress()), so its
+ * language and the page to go back to are as they were
+ *
+ * @return The provider's query string parameters (code and state, or error), or undefined when the page wasn't opened by a provider
+ */
+export function takeProviderReturn(): URLSearchParams | undefined
+{
+	const parameters = new URLSearchParams(window.location.search);
+
+	if ((window.location.pathname !== LOGIN_PAGE) || (!parameters.has('code') && !parameters.has('error')))
+	{
+		return(undefined);
+	}
+
+	let address: string | null = null;
+
+	try
+	{
+		address = sessionStorage.getItem(LOGIN_ADDRESS_KEY);
+		sessionStorage.removeItem(LOGIN_ADDRESS_KEY);
+	}
+	catch
+	{
+		// Session storage is blocked: the page goes back to Home once logged in
+	}
+
+	const restored = new URL((address ?? LOGIN_PAGE), window.location.origin);
+	const sameLoginPage = ((restored.origin === window.location.origin) && (restored.pathname === LOGIN_PAGE));
+
+	window.history.replaceState(null, '', (sameLoginPage ? `${restored.pathname}${restored.search}` : LOGIN_PAGE));
+
+	return(parameters);
 }
 
 /**

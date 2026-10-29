@@ -18,6 +18,12 @@
 				<form id="login-form" class="panel form auth-panel">
 					<img class="auth-logo" src="/src/assets/layout/multiverse-kiln.png" alt="" width="256" height="256" />
 					<h1 data-message="login.title" data-translation-context="The browser tab's title for the login page, and the heading and button that log in with an email address and password">Log in</h1>
+					<div id="provider-logins" class="provider-logins" hidden>
+						<p class="hint" data-message="login.providersRecommended" data-translation-context="On the login screen, above the buttons that log in with Google or Discord (which also create an account the first time)">Logging in with one of these is safest: there's no password here to forget or have stolen.</p>
+						<button id="login-google" type="button" class="secondary" data-shortcut="Alt+G" data-message="login.withGoogle" data-translation-context="Button on the login screen that logs in with a Google account, creating an account here the first time"><!-- icon ph:google-logo -->Log in with Google</button>
+						<button id="login-discord" type="button" class="secondary" data-shortcut="Alt+R" data-message="login.withDiscord" data-translation-context="Button on the login screen that logs in with a Discord account, creating an account here the first time"><!-- icon ph:discord-logo -->Log in with Discord</button>
+						<p class="auth-divider" data-message="login.orEmail" data-translation-context="On the login screen, between the buttons that log in with Google or Discord and the email address and password fields">or use your email address</p>
+					</div>
 					<label data-message="login.email" data-translation-context="Label of the email address field on the login, create account and forgot password screens">
 						Email address
 						<input id="login-email" type="email" autocomplete="username" spellcheck="false" required />
@@ -46,6 +52,7 @@
 				<form id="email-form" class="panel form auth-panel">
 					<h1 id="email-heading"></h1>
 					<p id="email-intro"></p>
+					<p id="email-providers-hint" class="hint" data-message="login.registerProvidersHint" data-translation-context="On the screen that asks for the email address of a new account, when the site offers logging in with Google or Discord" hidden>Logging in with Google or Discord on the login screen creates an account too, and is safest: there's no password here to forget or have stolen.</p>
 					<label data-message="login.email" data-translation-context="Label of the email address field on the login, create account and forgot password screens">
 						Email address
 						<input id="email-address" type="email" autocomplete="email" spellcheck="false" required />
@@ -78,7 +85,7 @@
 
 			<section id="register-screen" class="screen auth-screen" hidden>
 				<form id="register-form" class="panel form auth-panel">
-					<h1 data-message="login.registerTitle" data-translation-context="Heading of the screen where a new account's username, name and password are chosen">Create your account</h1>
+					<h1 data-message="login.registerTitle" data-translation-context="Heading of the screen where a new account's username, name and password are chosen, and of the one where a new account's username and name are chosen after logging in with Google or Discord">Create your account</h1>
 					<label data-message="login.email" data-translation-context="Label of the email address field on the login, create account and forgot password screens">
 						Email address
 						<input id="register-email" type="email" autocomplete="username" readonly />
@@ -138,6 +145,51 @@
 					<div class="form-buttons">
 						<button id="reset-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="login.back" data-translation-context="Button that goes back a step while logging in, creating an account or resetting a password"><!-- icon ph:arrow-left -->Back</button>
 						<button id="reset-submit" type="submit" aria-describedby="reset-error" data-shortcut="Alt+S" data-message="login.resetSubmit" data-translation-context="Button that saves the new password and logs in"><!-- icon ph:key -->Save password</button>
+					</div>
+				</form>
+			</section>
+
+			<section id="provider-register-screen" class="screen auth-screen" hidden>
+				<form id="provider-register-form" class="panel form auth-panel">
+					<h1 data-message="login.registerTitle" data-translation-context="Heading of the screen where a new account's username, name and password are chosen, and of the one where a new account's username and name are chosen after logging in with Google or Discord">Create your account</h1>
+					<p id="provider-register-intro"></p>
+					<label data-message="login.username" data-translation-context="Label of the field for a new account's username: a unique name of letters, digits and underscores that other players find them by">
+						Username
+						<input id="provider-register-username" autocomplete="off" autocapitalize="none" spellcheck="false" required aria-describedby="provider-register-username-hint" />
+					</label>
+					<p id="provider-register-username-hint" class="hint" data-message="login.usernameHint" data-translation-context="Under the username field when creating an account; {min} and {max} are numbers">How other players find you, and tell you apart from others with the same name. <span id="provider-register-username-min" data-argument="min" translate="no">3</span> to <span id="provider-register-username-max" data-argument="max" translate="no">20</span> letters (a to z), digits and underscores.</p>
+					<label data-message="login.displayName" data-translation-context="Label of the field for the name other players see, when creating an account">
+						Name
+						<input id="provider-register-name" autocomplete="nickname" required aria-describedby="provider-register-name-hint" />
+					</label>
+					<p id="provider-register-name-hint" class="hint" data-message="login.displayNameHint" data-translation-context="Under the name field when creating an account">The name other players see. It doesn't have to be your real name, or unique.</p>
+					<p class="hint" data-message="login.privacy" data-translation-context="On the create account screen; {privacy} is a link to the privacy policy, named by page.privacyPolicy">Read how we look after your information in our <a href="/privacy" target="_blank" data-argument="privacy" data-message="page.privacyPolicy" data-translation-context="The name of the privacy policy, as a link to it">privacy policy</a>.</p>
+					<p id="provider-register-error" class="form-error" role="alert" hidden></p>
+					<div class="form-buttons">
+						<button id="provider-register-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="login.back" data-translation-context="Button that goes back a step while logging in, creating an account or resetting a password"><!-- icon ph:arrow-left -->Back</button>
+						<button id="provider-register-submit" type="submit" aria-describedby="provider-register-error" data-shortcut="Alt+C" data-message="login.registerSubmit" data-translation-context="Button that creates the new account and logs in"><!-- icon ph:user-plus -->Create account</button>
+					</div>
+				</form>
+			</section>
+
+			<section id="provider-link-screen" class="screen auth-screen" hidden>
+				<form id="provider-link-form" class="panel form auth-panel">
+					<h1 data-message="login.linkTitle" data-translation-context="Heading of the screen, after logging in with Google or Discord, that asks the player to log in to the account here with the same email address so the two can be linked">Link your account</h1>
+					<p id="provider-link-intro"></p>
+					<!-- Not shown: tells password managers which account the password is for -->
+					<input id="provider-link-email" type="email" autocomplete="username" hidden />
+					<div id="provider-link-password-field" class="password-field">
+						<label data-message="login.password" data-translation-context="Label of the password field when logging in">
+							Password
+							<input id="provider-link-password" type="password" autocomplete="current-password" />
+						</label>
+						<button id="provider-link-password-toggle" type="button" class="secondary password-toggle" aria-controls="provider-link-password" aria-pressed="false" aria-label="Show password" title="Show password" data-message-aria-label="login.showPassword" data-translation-context-aria-label="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed" data-message-title="login.showPassword" data-translation-context-title="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"><span class="password-hidden-icon"><!-- icon ph:eye --></span><span class="password-shown-icon"><!-- icon ph:eye-slash --></span></button>
+					</div>
+					<p id="provider-link-error" class="form-error" role="alert" hidden></p>
+					<div class="form-buttons">
+						<button id="provider-link-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="login.back" data-translation-context="Button that goes back a step while logging in, creating an account or resetting a password"><!-- icon ph:arrow-left -->Back</button>
+						<button id="provider-link-code" type="button" class="secondary" data-shortcut="Alt+C" data-message="login.linkWithCode" data-translation-context="Button on the screen that links a Google or Discord login to an account: emails a code to the account's address, to use instead of its password"><!-- icon ph:paper-plane-right -->Email me a code</button>
+						<button id="provider-link-submit" type="submit" aria-describedby="provider-link-error" data-shortcut="Alt+L" data-message="login.linkSubmit" data-translation-context="Button that logs in to the account with its password, linking the Google or Discord login to it"><!-- icon ph:link -->Link account</button>
 					</div>
 				</form>
 			</section>

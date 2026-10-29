@@ -41,6 +41,25 @@ main
 	align-self: center;
 }
 
+// Logging in with Google or Discord, above the email address and password
+.provider-logins
+{
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+
+	p
+	{
+		margin: 0;
+	}
+}
+
+.auth-divider
+{
+	color: $text-faint;
+	text-align: center;
+}
+
 .auth-links
 {
 	display: flex;

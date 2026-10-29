@@ -132,6 +132,14 @@ export const LOGIN_PROVIDERS = ['google', 'discord'] as const;
 export type LoginProvider = (typeof LOGIN_PROVIDERS)[number];
 
 /**
+ * Each provider's name, as players know it, which messages take as an argument
+ */
+export const LOGIN_PROVIDER_NAMES: Readonly<Record<LoginProvider, string>> = {
+	google: 'Google',
+	discord: 'Discord'
+};
+
+/**
  * A logged-in player, as their own pages see them
  */
 export interface SessionPlayer

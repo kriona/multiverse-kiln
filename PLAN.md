@@ -263,7 +263,7 @@ Built in two steps: logins (sessions, providers, local accounts, email codes, re
 
 1. Logins
 	- [✅] `sessions` table and session cookie; `onAuth` checks the session and rejects joins without one, and a session's windows are turned away when it ends
-	- [ ] Google and Discord login through OAuth, recommended on the login and register pages
+	- [✅] Google and Discord login through OAuth, recommended on the login and register pages
 	- [✅] Local accounts: email-based logins, Argon2id, the HaveIBeenPwned check, and the email code rules from `STRUCTURE-OVERVIEW.md` as pure functions with tests
 	- [✅] Email through `nodemailer`, Mailpit in `docker-compose.yml`; register, forgot password and change email flows (the routes in `server/src/http/auth.ts`), with notification emails in the recipient's language
 	- [✅] Usernames and display names; drop the name-only login's data and its server side
