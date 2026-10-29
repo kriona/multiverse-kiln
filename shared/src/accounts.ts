@@ -91,6 +91,13 @@ export const EMAIL_CODE_PURPOSES = ['register', 'resetPassword', 'changeEmail'] 
 export type EmailCodePurpose = (typeof EMAIL_CODE_PURPOSES)[number];
 
 /**
+ * The services a player can log in with instead of a password (see Login in STRUCTURE-OVERVIEW.md)
+ */
+export const LOGIN_PROVIDERS = ['google', 'discord'] as const;
+
+export type LoginProvider = (typeof LOGIN_PROVIDERS)[number];
+
+/**
  * A logged-in player, as their own pages see them
  */
 export interface SessionPlayer

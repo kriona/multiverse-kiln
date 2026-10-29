@@ -6,7 +6,7 @@
  */
 import { sql, type SQL } from 'drizzle-orm';
 import { boolean, check, customType, doublePrecision, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHUNK_SIZE, DARKVISIONS, EMAIL_CODE_PURPOSES, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, DARKVISIONS, EMAIL_CODE_PURPOSES, LOGIN_PROVIDERS, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
 
 import { SEEN_CHUNK_BYTES } from '../logic/seenCells.js';
 
@@ -1186,6 +1186,74 @@ export const sessions = pgTable('sessions', {
 	check('sessions_token_hash_length', authHashLength(table.tokenHash))
 ]);
 
+export const loginProvider = pgEnum('login_provider', LOGIN_PROVIDERS);
+
+/**
+ * The Google and Discord logins linked to accounts: one row per provider account, and at most one of
+ * each provider per player. Deleted with the account
+ */
+export const providerLogins = pgTable('provider_logins', {
+	provider: loginProvider('provider').notNull(),
+
+	/**
+	 * The provider's ID for its user (Google's sub, Discord's user ID), which never changes, unlike
+	 * their email address
+	 */
+	providerUserId: text('provider_user_id').notNull(),
+
+	playerId: uuid('player_id').notNull().references(() => players.id, { onDelete: 'cascade' }),
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	primaryKey({ columns: [table.provider, table.providerUserId] }),
+	unique('provider_logins_player_provider_unique').on(table.playerId, table.provider)
+]);
+
+/**
+ * Provider logins waiting on the player's next step, for at most 10 minutes: choosing a username for a
+ * new account, or logging in to the local account with the same email address to link them. Only the
+ * browser that came back from the provider can take it, through its continuation cookie. Deleted once
+ * used or expired
+ */
+export const pendingProviderLogins = pgTable('pending_provider_logins', {
+	id: uuid('id').primaryKey().defaultRandom(),
+
+	/**
+	 * SHA-256 of the token in the browser's continuation cookie
+	 */
+	continuationHash: bytea('continuation_hash').notNull(),
+
+	provider: loginProvider('provider').notNull(),
+	providerUserId: text('provider_user_id').notNull(),
+
+	/**
+	 * The address the provider verified, which a new account is created with
+	 */
+	email: text('email').notNull(),
+
+	/**
+	 * The provider's name for the player, suggested as a new account's name
+	 */
+	displayName: text('display_name').notNull(),
+
+	/**
+	 * The local account with the same address, which the player logs in to to link; null for a new
+	 * account
+	 */
+	playerId: uuid('player_id').references(() => players.id, { onDelete: 'cascade' }),
+
+	/**
+	 * Whether the player checked "Remember me" before going to the provider
+	 */
+	rememberMe: boolean('remember_me').notNull(),
+
+	expiresAt: timestamp('expires_at', { withTimezone: true }).notNull()
+}, (table) => [
+	uniqueIndex('pending_provider_logins_continuation_hash_unique').on(table.continuationHash),
+	index('pending_provider_logins_player_id_index').on(table.playerId),
+	index('pending_provider_logins_expires_at_index').on(table.expiresAt),
+	check('pending_provider_logins_continuation_hash_length', authHashLength(table.continuationHash))
+]);
+
 export const emailCodePurpose = pgEnum('email_code_purpose', EMAIL_CODE_PURPOSES);
 
 /**
@@ -1274,7 +1342,7 @@ export const rateLimitEvents = pgTable('rate_limit_events', {
 /**
  * What happened in an auth event
  */
-export const AUTH_EVENT_KINDS = ['registered', 'loggedIn', 'loginFailed', 'loggedOut', 'passwordReset', 'passwordChanged', 'passwordRehashed', 'emailChanged'] as const;
+export const AUTH_EVENT_KINDS = ['registered', 'loggedIn', 'loginFailed', 'loggedOut', 'passwordReset', 'passwordChanged', 'passwordRehashed', 'emailChanged', 'providerLinked'] as const;
 export const authEventKind = pgEnum('auth_event_kind', AUTH_EVENT_KINDS);
 
 /**
