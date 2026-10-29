@@ -3985,7 +3985,7 @@
 	},
 	"player.timeZoneValue": {
 		"defaultMessage": "{city} ({zoneName}), where it's {time} now",
-		"description": "A player's time zone on their profile, as other players see it; {city} is the city the time zone is named after, such as Paris, {zoneName} its name, such as Central European Time, or its offset from UTC, such as GMT+1, and {time} the time of day there when the page was opened"
+		"description": "A player's time zone on their profile, as other players see it; {city} is the city the time zone is named after, such as Paris, {zoneName} its name, such as Central European Time, or its offset from UTC, such as GMT+1, and {time} the time of day there, kept up to date while the page is open"
 	},
 	"privacy.account": {
 		"defaultMessage": "Your account",

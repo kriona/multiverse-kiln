@@ -63,6 +63,41 @@ function languageList(languages: readonly string[]): Node[]
 }
 
 /**
+ * A time zone, with the time of day there now
+ *
+ * @param timeZone The time zone's IANA name
+ * @return Its city and name, and the time there
+ */
+function timeZoneText(timeZone: string): string
+{
+	const now = new Date();
+	const { city, name, offset } = describeTimeZone(timeZone, currentLocale(), now);
+
+	return(t({
+		id: 'player.timeZoneValue',
+		defaultMessage: '{city} ({zoneName}), where it\'s {time} now',
+		description: 'A player\'s time zone on their profile, as other players see it; {city} is the city the time zone is named after, such as Paris, {zoneName} its name, such as Central European Time, or its offset from UTC, such as GMT+1, and {time} the time of day there, kept up to date while the page is open'
+	}, {
+		city,
+		zoneName: (name ?? offset ?? timeZone),
+		time: new Intl.DateTimeFormat(currentLocale(), {
+			timeStyle: 'short',
+			timeZone
+		}).format(now)
+	}));
+}
+
+/**
+ * How long until the clock next turns to a new minute
+ *
+ * @return The time in milliseconds
+ */
+function untilNextMinute(): number
+{
+	return(60000 - (Date.now() % 60000));
+}
+
+/**
  * A player's profile as other players see it (the player screen of profile.html): what they filled in,
  * and the characters they let others see
  */
@@ -74,6 +109,7 @@ export class PlayerProfileScreen
 	private readonly socials = getElement('player-socials', HTMLUListElement);
 	private readonly characterList = getElement('player-character-list', HTMLElement);
 	private readonly noCharacters = getElement('player-character-none', HTMLElement);
+	private clockTimer: number | undefined;
 
 	/**
 	 * Shows a profile
@@ -127,27 +163,24 @@ export class PlayerProfileScreen
 			}), profile.location]);
 		}
 
+		window.clearTimeout(this.clockTimer);
+
 		if (profile.timeZone !== null)
 		{
-			const now = new Date();
-			const { city, name, offset } = describeTimeZone(profile.timeZone, currentLocale(), now);
+			const timeZone = profile.timeZone;
+			const value = document.createTextNode(timeZoneText(timeZone));
+			const tick = (): void =>
+			{
+				value.data = timeZoneText(timeZone);
+				this.clockTimer = window.setTimeout(tick, untilNextMinute());
+			};
 
+			this.clockTimer = window.setTimeout(tick, untilNextMinute());
 			rows.push([t({
 				id: 'player.timeZone',
 				defaultMessage: 'Time zone',
 				description: 'Label of a player\'s time zone on their profile, as other players see it'
-			}), t({
-				id: 'player.timeZoneValue',
-				defaultMessage: '{city} ({zoneName}), where it\'s {time} now',
-				description: 'A player\'s time zone on their profile, as other players see it; {city} is the city the time zone is named after, such as Paris, {zoneName} its name, such as Central European Time, or its offset from UTC, such as GMT+1, and {time} the time of day there when the page was opened'
-			}, {
-				city,
-				zoneName: (name ?? offset ?? profile.timeZone),
-				time: new Intl.DateTimeFormat(currentLocale(), {
-					timeStyle: 'short',
-					timeZone: profile.timeZone
-				}).format(now)
-			})]);
+			}), [value]]);
 		}
 
 		if (profile.languages.length > 0)
