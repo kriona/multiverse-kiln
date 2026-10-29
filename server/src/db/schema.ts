@@ -52,9 +52,24 @@ function allInRange(columns: AnyPgColumn[], min: number, max: number): SQL
 export const players = pgTable('players', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	displayName: text('display_name').notNull(),
+
+	/**
+	 * The address a local account logs in with and is emailed at, as the player typed it. Unique
+	 * ignoring capitals. Null for an account without one
+	 */
+	email: text('email'),
+
+	/**
+	 * A local account's password hash, as a self-describing string naming its algorithm and settings
+	 * ($argon2id$v=19$m=...), so hashes made with older settings can be found and replaced. Null for an
+	 * account that only logs in with a provider
+	 */
+	passwordHash: text('password_hash'),
+
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
-	uniqueIndex('players_display_name_lower_unique').on(sql`lower(${table.displayName})`)
+	uniqueIndex('players_display_name_lower_unique').on(sql`lower(${table.displayName})`),
+	uniqueIndex('players_email_lower_unique').on(sql`lower(${table.email})`)
 ]);
 
 /**
@@ -1111,4 +1126,175 @@ export const siteSettings = pgTable('site_settings', {
 	check('site_settings_one_row', sql`${table.id}`),
 	check('site_settings_universes_per_creator_range', sql`${table.universesPerCreator} BETWEEN ${sql.raw(String(MIN_UNIVERSES_PER_CREATOR))} AND ${sql.raw(String(MAX_UNIVERSES_PER_CREATOR))}`),
 	check('site_settings_character_deletion_days_range', sql`${table.characterDeletionDays} BETWEEN 0 AND ${sql.raw(String(MAX_CHARACTER_DELETION_DAYS))}`)
+]);
+
+/**
+ * How many bytes a hash stored for logins has: SHA-256 for session tokens, HMAC-SHA256 for keyed hashes
+ */
+const AUTH_HASH_BYTES = 32;
+
+/**
+ * SQL that checks a hash column holds AUTH_HASH_BYTES bytes
+ *
+ * @param column The column
+ * @return The condition, true for null
+ */
+function authHashLength(column: AnyPgColumn): SQL
+{
+	return(sql`octet_length(${column}) = ${sql.raw(String(AUTH_HASH_BYTES))}`);
+}
+
+/**
+ * Login sessions: one row per browser logged in to an account (see Login in STRUCTURE-OVERVIEW.md).
+ * Deleted when the player logs out, when the password changes (every session of the account), and
+ * with the account
+ */
+export const sessions = pgTable('sessions', {
+	id: uuid('id').primaryKey().defaultRandom(),
+
+	/**
+	 * SHA-256 of the token in the browser's session cookie. The token itself is never stored, so the
+	 * table can't be used to log in
+	 */
+	tokenHash: bytea('token_hash').notNull(),
+
+	playerId: uuid('player_id').notNull().references(() => players.id, { onDelete: 'cascade' }),
+
+	/**
+	 * Whether the player checked "Remember me", which makes the session last longer
+	 * (server/src/logic/sessionLifetimes.ts)
+	 */
+	rememberMe: boolean('remember_me').notNull(),
+
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+
+	/**
+	 * When the session was last used, recorded at most every few minutes
+	 */
+	lastUsedAt: timestamp('last_used_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	uniqueIndex('sessions_token_hash_unique').on(table.tokenHash),
+	index('sessions_player_id_index').on(table.playerId),
+	check('sessions_token_hash_length', authHashLength(table.tokenHash))
+]);
+
+/**
+ * What an email code is for
+ */
+export const EMAIL_CODE_PURPOSES = ['register', 'resetPassword', 'changeEmail'] as const;
+export const emailCodePurpose = pgEnum('email_code_purpose', EMAIL_CODE_PURPOSES);
+
+/**
+ * The email codes waiting to be entered (see Email codes in STRUCTURE-OVERVIEW.md): at most one per
+ * purpose and address, since a new code replaces the old one. The address and the code are stored only
+ * as keyed hashes. Deleted once they can no longer be used
+ */
+export const emailCodes = pgTable('email_codes', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	purpose: emailCodePurpose('purpose').notNull(),
+
+	/**
+	 * Keyed hash of the address the code was sent to, in lowercase. The address itself isn't stored, so
+	 * registering asks for it again with the password and checks it against this
+	 */
+	addressHash: bytea('address_hash').notNull(),
+
+	/**
+	 * The account a password reset or email change is for; null when registering
+	 */
+	playerId: uuid('player_id').references(() => players.id, { onDelete: 'cascade' }),
+
+	/**
+	 * Keyed hash of the code
+	 */
+	codeHash: bytea('code_hash').notNull(),
+
+	sentAt: timestamp('sent_at', { withTimezone: true }).notNull().defaultNow(),
+	wrongGuesses: smallint('wrong_guesses').notNull().default(0),
+
+	/**
+	 * When the code was entered correctly; null until then
+	 */
+	usedAt: timestamp('used_at', { withTimezone: true }),
+
+	/**
+	 * SHA-256 of the token in the cookie given to the browser that entered the code, which lets only that
+	 * browser take the next step (such as setting the password). Set with the code's use
+	 */
+	continuationHash: bytea('continuation_hash'),
+
+	/**
+	 * When the next step must be taken by
+	 */
+	continuationExpiresAt: timestamp('continuation_expires_at', { withTimezone: true })
+}, (table) => [
+	uniqueIndex('email_codes_purpose_address_unique').on(table.purpose, table.addressHash),
+	uniqueIndex('email_codes_continuation_hash_unique').on(table.continuationHash),
+	index('email_codes_player_id_index').on(table.playerId),
+	check('email_codes_address_hash_length', authHashLength(table.addressHash)),
+	check('email_codes_code_hash_length', authHashLength(table.codeHash)),
+	check('email_codes_continuation_hash_length', authHashLength(table.continuationHash)),
+	check('email_codes_wrong_guesses_range', sql`${table.wrongGuesses} >= 0`),
+	check('email_codes_player_purpose', sql`(${table.purpose} = 'register') = (${table.playerId} IS NULL)`),
+	check('email_codes_continuation', sql`(${table.continuationHash} IS NULL) = (${table.continuationExpiresAt} IS NULL) AND (${table.continuationHash} IS NULL OR ${table.usedAt} IS NOT NULL)`)
+]);
+
+/**
+ * What a rate limit counts: codes sent to an address and wrong guesses for it, and the codes asked for
+ * and guesses made from a network
+ */
+export const RATE_LIMIT_KINDS = ['addressCodeSent', 'addressWrongGuess', 'networkCodeRequest', 'networkGuess'] as const;
+export const rateLimitKind = pgEnum('rate_limit_kind', RATE_LIMIT_KINDS);
+
+/**
+ * One row per attempt a rate limit counts. The rows for a subject are counted and added in one
+ * transaction, so requests sent at once can't each slip under a limit. Deleted once no limit counts
+ * them (the longest window is a day)
+ */
+export const rateLimitEvents = pgTable('rate_limit_events', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	kind: rateLimitKind('kind').notNull(),
+
+	/**
+	 * Keyed hash of what is limited: an address or a network (server/src/logic/networks.ts)
+	 */
+	subjectHash: bytea('subject_hash').notNull(),
+
+	occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	index('rate_limit_events_subject_index').on(table.kind, table.subjectHash, table.occurredAt),
+	index('rate_limit_events_occurred_at_index').on(table.occurredAt),
+	check('rate_limit_events_subject_hash_length', authHashLength(table.subjectHash))
+]);
+
+/**
+ * What happened in an auth event
+ */
+export const AUTH_EVENT_KINDS = ['registered', 'loggedIn', 'loginFailed', 'loggedOut', 'passwordReset', 'passwordChanged', 'passwordRehashed', 'emailChanged'] as const;
+export const authEventKind = pgEnum('auth_event_kind', AUTH_EVENT_KINDS);
+
+/**
+ * A record of logins, failures, logouts and changes to how an account logs in. Never holds passwords,
+ * codes or session tokens. Kept 90 days, and deleted with the account
+ */
+export const authEvents = pgTable('auth_events', {
+	id: uuid('id').primaryKey().defaultRandom(),
+
+	/**
+	 * The account, or null when it isn't known (such as a failed login for an address with no account)
+	 */
+	playerId: uuid('player_id').references(() => players.id, { onDelete: 'cascade' }),
+
+	kind: authEventKind('kind').notNull(),
+
+	/**
+	 * Keyed hash of the network the request came from, or null when it isn't known
+	 */
+	networkHash: bytea('network_hash'),
+
+	occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	index('auth_events_player_id_index').on(table.playerId),
+	index('auth_events_occurred_at_index').on(table.occurredAt),
+	check('auth_events_network_hash_length', authHashLength(table.networkHash))
 ]);

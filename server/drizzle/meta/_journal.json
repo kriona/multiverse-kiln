@@ -365,6 +365,13 @@
       "when": 1793129694590,
       "tag": "0051_tile_graphic_format",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1793257941952,
+      "tag": "0052_sessions_and_local_accounts",
+      "breakpoints": true
     }
   ]
 }
