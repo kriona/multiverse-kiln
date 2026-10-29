@@ -1,4 +1,5 @@
 import { startLocalization } from './localization';
+import { startAccountMenu } from './ui/accountMenu';
 import { setPageTitle } from './ui/dom';
 import { startLanguagePicker } from './ui/languagePicker';
 import { startShortcuts } from './ui/shortcuts';
@@ -10,6 +11,7 @@ async function start(): Promise<void>
 {
 	await startLocalization();
 	setPageTitle(document.title);
+	void startAccountMenu();
 	startLanguagePicker();
 	startShortcuts();
 }

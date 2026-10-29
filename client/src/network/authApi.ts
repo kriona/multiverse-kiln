@@ -1,5 +1,5 @@
 import type { Client } from '@colyseus/sdk';
-import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_PROVIDER_CALLBACK_PATH, AUTH_PROVIDER_LINK_PATH, AUTH_PROVIDER_REGISTER_PATH, AUTH_PROVIDER_START_PATH, AUTH_PROVIDERS_PATH, AUTH_REGISTER_PATH, AUTH_SESSION_PATH, type AuthField, type EmailCodeCheckRequest, type EmailCodeRequest, type LoginProvider, type LoginRequest, type PasswordResetRequest, type ProviderCallbackPayload, type ProviderCallbackRequest, type ProviderLinkRequest, type ProviderRegisterRequest, type ProvidersPayload, type ProviderStartPayload, type ProviderStartRequest, type RegisterRequest, type SessionPayload, type SessionPlayer } from '@multiverse-kiln/shared';
+import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_EMAIL_CHANGE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_CHANGE_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_PROVIDER_CALLBACK_PATH, AUTH_PROVIDER_LINK_PATH, AUTH_PROVIDER_REGISTER_PATH, AUTH_PROVIDER_START_PATH, AUTH_PROVIDERS_PATH, AUTH_REGISTER_PATH, AUTH_SESSION_PATH, type AuthField, type EmailChangeRequest, type EmailCodeCheckRequest, type EmailCodeRequest, type LoginProvider, type LoginRequest, type PasswordChangeRequest, type PasswordResetRequest, type ProviderCallbackPayload, type ProviderCallbackRequest, type ProviderLinkRequest, type ProviderRegisterRequest, type ProvidersPayload, type ProviderStartPayload, type ProviderStartRequest, type RegisterRequest, type SessionPayload, type SessionPlayer } from '@multiverse-kiln/shared';
 
 import { EditorApiError, sendRequest } from './editorApi';
 
@@ -85,6 +85,26 @@ export class AuthApi
 	async resetPassword(request: PasswordResetRequest): Promise<void>
 	{
 		await sendRequest(this.client, 'POST', AUTH_PASSWORD_RESET_PATH, request);
+	}
+
+	/**
+	 * Changes the logged-in account's email address, once the code sent to the new address has been entered
+	 *
+	 * @param request The new address
+	 */
+	async changeEmail(request: EmailChangeRequest): Promise<void>
+	{
+		await sendRequest(this.client, 'POST', AUTH_EMAIL_CHANGE_PATH, request);
+	}
+
+	/**
+	 * Changes the logged-in account's password, logging out every other browser
+	 *
+	 * @param request The current password and the new one
+	 */
+	async changePassword(request: PasswordChangeRequest): Promise<void>
+	{
+		await sendRequest(this.client, 'POST', AUTH_PASSWORD_CHANGE_PATH, request);
 	}
 
 	/**

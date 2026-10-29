@@ -89,13 +89,29 @@ const GAME_PAGE = '/game';
 const UNIVERSE_PAGE = '/universe';
 
 /**
+ * Path of the player's own profile, where they change it
+ */
+const PROFILE_PAGE = '/profile';
+
+/**
+ * Path of a player's profile as others see it, followed by /<username>. The same page as PROFILE_PAGE
+ */
+const PLAYER_PAGE = '/player';
+
+/**
  * The pages that name what they show with the rest of their address, by their path, and the file each serves
  */
 export const PATH_PAGES: Record<string, string> = {
 	[GAME_PAGE]: 'game.html',
 	[UNIVERSE_PAGE]: 'universe.html',
-	[EDIT_PAGE]: 'edit.html'
+	[EDIT_PAGE]: 'edit.html',
+	[PLAYER_PAGE]: 'profile.html'
 };
+
+/**
+ * The address of the player's own profile
+ */
+export const PROFILE_PAGE_URL = PROFILE_PAGE;
 
 /**
  * The address of Home
@@ -288,6 +304,27 @@ export function universePageUrl(key: string): string
 export function readGameUniverseKey(): string | undefined
 {
 	return(readPathKey(GAME_PAGE));
+}
+
+/**
+ * The address of a player's profile as others see it
+ *
+ * @param username The player's username
+ * @return The address
+ */
+export function playerPageUrl(username: string): string
+{
+	return(`${PLAYER_PAGE}/${encodeURIComponent(username)}`);
+}
+
+/**
+ * The player a profile page's address names, as in /player/<username>
+ *
+ * @return The username, or undefined when the address is the player's own profile
+ */
+export function readPlayerUsername(): string | undefined
+{
+	return(readPathKey(PLAYER_PAGE));
 }
 
 /**

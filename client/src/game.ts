@@ -2,6 +2,7 @@ import { GamePage } from './GamePage';
 import { startLocalization, t } from './localization';
 import { connectToServer } from './network/serverConnection';
 import { startPageLifecycle } from './pageLifecycle';
+import { startAccountMenu } from './ui/accountMenu';
 import { showStatus } from './ui/dom';
 import { startLanguagePicker } from './ui/languagePicker';
 import { pageMessages } from './ui/pageMessages';
@@ -15,6 +16,7 @@ async function start(): Promise<void>
 {
 	startPageLifecycle();
 	await startLocalization();
+	void startAccountMenu();
 	startLanguagePicker();
 	startShortcuts();
 	showStatus(t(pageMessages.connecting));

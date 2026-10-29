@@ -414,6 +414,20 @@
       "when": 1793273648510,
       "tag": "0058_player_profiles",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1793281108827,
+      "tag": "0059_add_profile_languages",
+      "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1793281487065,
+      "tag": "0060_profile_languages_list",
+      "breakpoints": true
     }
   ]
 }

@@ -15,6 +15,22 @@
 		"defaultMessage": "Score",
 		"description": "Heading of the column of a character's ability scores, such as 16, on their sheet and in Create Character"
 	},
+	"account.editProfile": {
+		"defaultMessage": "Edit profile",
+		"description": "Item in the menu that opens from the player's name at the end of every page's toolbar: goes to their own profile, where they change it"
+	},
+	"account.logOut": {
+		"defaultMessage": "Log out",
+		"description": "Item in the menu that opens from the player's name at the end of every page's toolbar: logs the browser out, in every tab"
+	},
+	"account.logOutFailed": {
+		"defaultMessage": "Could not log out. Try again in a moment.",
+		"description": "Shown when Log out, in the menu that opens from the player's name in the toolbar, didn't work"
+	},
+	"account.menu": {
+		"defaultMessage": "Your account: {name}",
+		"description": "Name for screen readers, and tooltip, of the player's name at the end of every page's toolbar, which opens a menu with Edit profile and Log out; {name} is their name"
+	},
 	"admin.characterDeletionDays": {
 		"defaultMessage": "Days between last rites and deletion",
 		"description": "Label of the field on the site settings page for how many days a character given their last rites waits before being deleted"
@@ -233,7 +249,7 @@
 	},
 	"character.raceAndClass": {
 		"defaultMessage": "{race} {class}",
-		"description": "A character's race and class, e.g. \"Dwarf Fighter\": under the name at the top of their sheet, and after their name in the lists of the player's characters in the lobby, on a universe's page and on an invite. Reorder them as your language needs"
+		"description": "A character's race and class, e.g. \"Dwarf Fighter\": under the name at the top of their sheet, and after their name in the lists of the player's characters in the lobby, on a universe's page, on an invite and on profiles. Reorder them as your language needs"
 	},
 	"character.review.class": {
 		"defaultMessage": "Class",
@@ -442,6 +458,22 @@
 	"characters.none": {
 		"defaultMessage": "You haven't made a character in this universe yet.",
 		"description": "Shown instead of the list of the player's characters, in a universe's lobby and on its page, when they haven't made one in the universe"
+	},
+	"chips.added": {
+		"defaultMessage": "{name} added",
+		"description": "Read out by screen readers after the player chooses something from a search field that adds choices as chips, such as a language on the profile page; {name} is what was chosen"
+	},
+	"chips.remove": {
+		"defaultMessage": "Remove {name}",
+		"description": "Name of the button on a chip that takes it out, for screen readers, in a search field that adds choices as chips, such as the languages on the profile page; {name} is the chip's text"
+	},
+	"chips.removed": {
+		"defaultMessage": "{name} removed",
+		"description": "Read out by screen readers after the player takes a chip out of a search field that adds choices as chips, such as a language on the profile page; {name} is what was taken out"
+	},
+	"combobox.noMatches": {
+		"defaultMessage": "Nothing matches",
+		"description": "Shown in the list under a search field, such as the time zone or the languages on the profile page, when nothing matches what was typed"
 	},
 	"createGroup.difficulty": {
 		"defaultMessage": "Difficulty",
@@ -2436,7 +2468,7 @@
 		"description": "Why showing or hiding a character on the player's profile was refused: the character isn't theirs, or was deleted"
 	},
 	"error.profile.socialUsername": {
-		"defaultMessage": "That isn't a {site} username. Enter the username alone, not a link.",
+		"defaultMessage": "That isn't a username on {site}. Enter the username alone, not a link.",
 		"description": "Shown under one of the profile's social site fields when what was typed can't be a username there; {site} is Discord, Facebook, Instagram or TikTok"
 	},
 	"error.profile.timeZone": {
@@ -2766,14 +2798,6 @@
 	"home.logIn": {
 		"defaultMessage": "Log in",
 		"description": "Link in Home's toolbar to the page for logging in or creating an account"
-	},
-	"home.logOut": {
-		"defaultMessage": "Log out",
-		"description": "Button in Home's toolbar that logs the browser out, in every tab"
-	},
-	"home.logOutFailed": {
-		"defaultMessage": "Could not log out.",
-		"description": "Shown above the list of universes when the Log out button didn't work"
 	},
 	"home.noOwnUniverses": {
 		"defaultMessage": "You haven't made a universe yet.",
@@ -3225,7 +3249,7 @@
 	},
 	"login.passwordHint": {
 		"defaultMessage": "At least {min} characters. A few words strung together are easy to remember and hard to guess.",
-		"description": "Under the new password field when creating an account or resetting a password; {min} is a number"
+		"description": "Under the new password field when creating an account, resetting a password or changing it on the profile; {min} is a number"
 	},
 	"login.passwordManager": {
 		"defaultMessage": "A password manager, such as {bitwarden} or {onePassword}, can make a strong password and remember it for you.",
@@ -3301,7 +3325,7 @@
 	},
 	"login.sendCode": {
 		"defaultMessage": "Send code",
-		"description": "Button that emails a code to the address typed, to create an account or reset a password"
+		"description": "Button that emails a code to the address typed, to create an account, reset a password or change the account's email address"
 	},
 	"login.showPassword": {
 		"defaultMessage": "Show password",
@@ -3501,7 +3525,7 @@
 	},
 	"page.backToHome": {
 		"defaultMessage": "Back to Home",
-		"description": "Link or button that goes back to the list of universes (Home): at the top of a page, in the editor's toolbar, or below a message filling the page, such as one saying a universe couldn't be found"
+		"description": "Link that goes back to the list of universes (Home), below a message filling the page, such as one saying a universe couldn't be found"
 	},
 	"page.connectFailed": {
 		"defaultMessage": "Could not connect to the server. Reload the page to try again.",
@@ -3542,10 +3566,6 @@
 	"page.loading": {
 		"defaultMessage": "Loading...",
 		"description": "Shown while a page or part of one loads, such as the site settings, the choices in Create Character, an area in the editor, or a universe's page"
-	},
-	"page.playingAs": {
-		"defaultMessage": "Playing as {name}",
-		"description": "In the toolbar, the name the player logged in with; {name} is the name"
 	},
 	"page.privacy": {
 		"defaultMessage": "Privacy",
@@ -3923,6 +3943,42 @@
 		"defaultMessage": "You are now playing {name}.",
 		"description": "Read out by screen readers in the lobby or a group when the window switches to another of the player's characters; {name} is the character's name"
 	},
+	"player.characters": {
+		"defaultMessage": "Characters",
+		"description": "Heading of the list of a player's characters on their profile, as other players see it"
+	},
+	"player.heading": {
+		"defaultMessage": "Profile",
+		"description": "Heading in the toolbar of a player's profile, as other players see it, above their name"
+	},
+	"player.languages": {
+		"defaultMessage": "Languages",
+		"description": "Label of the languages a player knows, each named in itself, on their profile as other players see it"
+	},
+	"player.location": {
+		"defaultMessage": "Location",
+		"description": "Label of where a player is, as they wrote it, on their profile as other players see it"
+	},
+	"player.noCharacters": {
+		"defaultMessage": "No characters to show.",
+		"description": "Shown on a player's profile, as other players see it, instead of their characters, when none are shown"
+	},
+	"player.pronouns": {
+		"defaultMessage": "Pronouns",
+		"description": "Label of a player's pronouns on their profile, as other players see it"
+	},
+	"player.social": {
+		"defaultMessage": "{site}: {username}",
+		"description": "A player's username on a social site, on their profile as other players see it; {site} is Discord, Facebook, Instagram or TikTok"
+	},
+	"player.timeZone": {
+		"defaultMessage": "Time zone",
+		"description": "Label of a player's time zone on their profile, as other players see it"
+	},
+	"player.timeZoneValue": {
+		"defaultMessage": "{city} ({zoneName}), where it's {time} now",
+		"description": "A player's time zone on their profile, as other players see it; {city} is the city the time zone is named after, such as Paris, {zoneName} its name, such as Central European Time, or its offset from UTC, such as GMT+1, and {time} the time of day there when the page was opened"
+	},
 	"privacy.account": {
 		"defaultMessage": "Your account",
 		"description": "Heading in the privacy policy over the list of what the site keeps about a player's account"
@@ -4064,7 +4120,7 @@
 		"description": "Heading in the privacy policy over the list of what the site keeps of a player's profile"
 	},
 	"privacy.profileText": {
-		"defaultMessage": "Anything you choose to fill in on your profile: a photo, your pronouns, your location and time zone, your language, links to your social media accounts, and which of your characters others can see. Only your username and display name are required.",
+		"defaultMessage": "Anything you choose to fill in on your profile: a photo, your pronouns, your location and time zone, the languages you know, your language for the site, links to your social media accounts, and which of your characters others can see. Only your username and display name are required.",
 		"description": "In the privacy policy, what a player's profile holds; only the username and display name are required"
 	},
 	"privacy.rights": {
@@ -4182,6 +4238,242 @@
 	"privacy.whySecurity": {
 		"defaultMessage": "Legitimate interests: the security records and the check of new passwords against leaked ones, which keep your account and the site safe and stop cheating and abuse.",
 		"description": "In the privacy policy's list of legal bases for keeping a player's information: legitimate interests, for the security records and the password check that keep accounts safe and stop abuse. Use the GDPR's own term for this legal basis in the target language"
+	},
+	"profile.aboutYou": {
+		"defaultMessage": "About you",
+		"description": "Heading of the part of the player's own profile page with what other players see about them"
+	},
+	"profile.account": {
+		"defaultMessage": "Logging in",
+		"description": "Heading of the part of the player's own profile page with how they log in: email address, password and linked Google or Discord logins"
+	},
+	"profile.browserLanguage": {
+		"defaultMessage": "Your browser's language",
+		"description": "The first choice of language on the player's own profile page, which leaves the pages in whatever language the browser asks for"
+	},
+	"profile.changeEmail": {
+		"defaultMessage": "Change email",
+		"description": "Button on the player's own profile page that opens the dialog for changing their email address"
+	},
+	"profile.changeEmailCodeSent": {
+		"defaultMessage": "If {email} isn't another account's address, we've emailed it a code. Enter the code from the email. It works once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"description": "In the dialog that changes the player's email address, once a code was sent to the new address; {email} is that address. The page can't say whether it belongs to another account, so it can't say a code was sent"
+	},
+	"profile.changeEmailFailed": {
+		"defaultMessage": "Could not change your email address.",
+		"description": "Shown in the dialog that changes the player's email address when sending the code or changing the address failed"
+	},
+	"profile.changeEmailIntro": {
+		"defaultMessage": "Your email address is {email}. Enter the new one, and we'll send it a code to check it's yours.",
+		"description": "In the dialog that changes the player's email address; {email} is the address the account has now"
+	},
+	"profile.changeEmailIntroNone": {
+		"defaultMessage": "Enter an email address, and we'll send it a code to check it's yours.",
+		"description": "In the dialog that changes the player's email address, when the account has none yet"
+	},
+	"profile.changeEmailSubmit": {
+		"defaultMessage": "Change email",
+		"description": "Button in the dialog that changes the player's email address: checks the emailed code and makes the new address the account's"
+	},
+	"profile.changeEmailTitle": {
+		"defaultMessage": "Change your email address",
+		"description": "Title of the dialog that changes the player's email address"
+	},
+	"profile.changePassword": {
+		"defaultMessage": "Change password",
+		"description": "Button on the player's own profile page that opens the dialog for changing their password"
+	},
+	"profile.changePasswordFailed": {
+		"defaultMessage": "Could not change your password.",
+		"description": "Shown in the dialog that changes the player's password when it couldn't be changed"
+	},
+	"profile.changePasswordIntro": {
+		"defaultMessage": "Every other browser logged in to your account is logged out when the password changes.",
+		"description": "In the dialog that changes the player's password"
+	},
+	"profile.changePasswordTitle": {
+		"defaultMessage": "Change your password",
+		"description": "Title of the dialog that changes the player's password"
+	},
+	"profile.characterVisibilityFailed": {
+		"defaultMessage": "Could not change whether your profile shows {name}.",
+		"description": "Shown on the player's own profile page when showing or hiding one of their characters failed; {name} is the character's name"
+	},
+	"profile.characterVisible": {
+		"defaultMessage": "Show on my profile",
+		"description": "Checkbox beside each of the player's characters on their own profile page, shown when Show my characters is unchecked: whether other players see this character"
+	},
+	"profile.characters": {
+		"defaultMessage": "Your characters",
+		"description": "Heading of the list of the player's characters in every universe, on their own profile page"
+	},
+	"profile.charactersFailed": {
+		"defaultMessage": "Could not list your characters.",
+		"description": "Shown on the player's own profile page when their characters couldn't be loaded again"
+	},
+	"profile.currentPassword": {
+		"defaultMessage": "Current password",
+		"description": "Label of the field for the player's current password, in the dialog that changes it"
+	},
+	"profile.displayName": {
+		"defaultMessage": "Name",
+		"description": "Label of the field for the name other players see, on the player's own profile page"
+	},
+	"profile.displayNameHint": {
+		"defaultMessage": "The name other players see. It doesn't have to be your real name, or unique.",
+		"description": "Under the name field on the player's own profile page"
+	},
+	"profile.email": {
+		"defaultMessage": "Email address",
+		"description": "Label of the player's email address, on their own profile page"
+	},
+	"profile.emailChanged": {
+		"defaultMessage": "Email address changed. We've told both addresses.",
+		"description": "Shown once the player has changed their email address from their profile"
+	},
+	"profile.hasPassword": {
+		"defaultMessage": "Set",
+		"description": "Shown on the player's own profile page in place of their password, which is never shown, when the account has one"
+	},
+	"profile.language": {
+		"defaultMessage": "Language",
+		"description": "Label of the choice of the language the site's pages and emails are in, on the player's own profile page"
+	},
+	"profile.languageHint": {
+		"defaultMessage": "The pages and the emails we send you are in this language, on any browser you log in from.",
+		"description": "Under the language choice on the player's own profile page"
+	},
+	"profile.languagesHint": {
+		"defaultMessage": "Used to match you with other players who speak your language.",
+		"description": "Under the field for choosing the languages the player knows, on their own profile page"
+	},
+	"profile.languagesSearch": {
+		"defaultMessage": "Search languages",
+		"description": "Shown in the empty search field for choosing the languages the player knows, on their own profile page"
+	},
+	"profile.languagesSpoken": {
+		"defaultMessage": "Languages you know",
+		"description": "Label of the optional field for choosing the languages the player knows, on their own profile page"
+	},
+	"profile.languagesTooMany": {
+		"defaultMessage": "You can choose up to {max, plural, one {# language} other {# languages}}.",
+		"description": "Shown under the field for choosing the languages the player knows, on their own profile page, when they try to choose more than {max}, a number"
+	},
+	"profile.loadFailed": {
+		"defaultMessage": "Could not load the profile. Reload the page to try again.",
+		"description": "Shown on the whole of a profile page when the profile couldn't be loaded, such as when the server can't be reached"
+	},
+	"profile.location": {
+		"defaultMessage": "Location",
+		"description": "Label of the optional field for where the player is, written however they like, on their own profile page"
+	},
+	"profile.newEmail": {
+		"defaultMessage": "New email address",
+		"description": "Label of the field for the new email address, in the dialog that changes it"
+	},
+	"profile.newEmailMissing": {
+		"defaultMessage": "Enter the new email address.",
+		"description": "Shown under the new email address field, in the dialog that changes it, when it is empty"
+	},
+	"profile.newPassword": {
+		"defaultMessage": "New password",
+		"description": "Label of the field for the player's new password, in the dialog that changes it"
+	},
+	"profile.noCharacters": {
+		"defaultMessage": "You haven't made a character yet.",
+		"description": "Shown on the player's own profile page instead of their characters, when they haven't made any"
+	},
+	"profile.noEmail": {
+		"defaultMessage": "None",
+		"description": "Shown on the player's own profile page in place of their email address, or of their linked logins, when they have none"
+	},
+	"profile.noPassword": {
+		"defaultMessage": "None: you log in with Google or Discord. To add a password, log out and use \"Forgot your password?\" on the login page.",
+		"description": "Shown on the player's own profile page in place of their password when the account has none, since it logs in only with Google or Discord"
+	},
+	"profile.noTimeZone": {
+		"defaultMessage": "Not shown",
+		"description": "The first choice of time zone on the player's own profile page, which shows no time zone to other players"
+	},
+	"profile.notFound": {
+		"defaultMessage": "No player has that username. They may have changed it.",
+		"description": "Shown on the whole of a player's profile page when no player has the username its address names"
+	},
+	"profile.password": {
+		"defaultMessage": "Password",
+		"description": "Label of the player's password, shown hidden, on their own profile page"
+	},
+	"profile.passwordChanged": {
+		"defaultMessage": "Password changed. Every other browser logged in to your account was logged out.",
+		"description": "Shown once the player has changed their password from their profile"
+	},
+	"profile.pronouns": {
+		"defaultMessage": "Pronouns",
+		"description": "Label of the optional field for the player's pronouns, such as she/her or they/them, on their own profile page"
+	},
+	"profile.pronounsPlaceholder": {
+		"defaultMessage": "e.g. she/her, they/them, any",
+		"description": "Shown in the empty pronouns field on the player's own profile page, as examples of what to write. Give the forms people commonly write in your language, rather than translating these ones"
+	},
+	"profile.providers": {
+		"defaultMessage": "Linked logins",
+		"description": "Label of the Google and Discord logins linked to the player's account, on their own profile page"
+	},
+	"profile.saveFailed": {
+		"defaultMessage": "Could not save your profile.",
+		"description": "Shown on the player's own profile page when the profile couldn't be saved"
+	},
+	"profile.savePassword": {
+		"defaultMessage": "Save password",
+		"description": "Button in the dialog that changes the player's password: saves the new one"
+	},
+	"profile.showCharacters": {
+		"defaultMessage": "Show my characters",
+		"description": "Checkbox on the player's own profile page: whether other players see all of the player's characters on their profile"
+	},
+	"profile.showCharactersHint": {
+		"defaultMessage": "Unchecked, your profile shows only the characters you mark below. Other players in your group can always find your profile from your character.",
+		"description": "Under the Show my characters checkbox on the player's own profile page, explaining what unchecking it does"
+	},
+	"profile.socials": {
+		"defaultMessage": "Social sites",
+		"description": "Heading of the optional fields for the player's usernames on social sites (Discord, Facebook, Instagram and TikTok), on their own profile page"
+	},
+	"profile.socialsHint": {
+		"defaultMessage": "Your username on each site, without a link. Other players see them on your profile.",
+		"description": "Under the heading of the social site fields on the player's own profile page"
+	},
+	"profile.timeZone": {
+		"defaultMessage": "Time zone",
+		"description": "Label of the optional choice of the player's time zone, on their own profile page"
+	},
+	"profile.timeZoneHint": {
+		"defaultMessage": "Used to match you with other players in time zones near yours.",
+		"description": "Under the time zone choice on the player's own profile page"
+	},
+	"profile.timeZoneSearch": {
+		"defaultMessage": "Search by city or time zone",
+		"description": "Shown in the empty time zone field on the player's own profile page, where typing a city or a time zone's name finds it"
+	},
+	"profile.title": {
+		"defaultMessage": "Your profile",
+		"description": "The browser tab's title on the page where the player changes their own profile, and that page's heading"
+	},
+	"profile.unavailableTitle": {
+		"defaultMessage": "Profile",
+		"description": "The browser tab's title on a profile page when the profile couldn't be shown, before the game engine's name"
+	},
+	"profile.username": {
+		"defaultMessage": "Username",
+		"description": "Label of the username field on the player's own profile page"
+	},
+	"profile.usernameHint": {
+		"defaultMessage": "How other players find you, and tell you apart from others with the same name. {min} to {max} letters (a to z), digits and underscores.",
+		"description": "Under the username field on the player's own profile page; {min} and {max} are numbers"
+	},
+	"profile.viewOwn": {
+		"defaultMessage": "View your profile",
+		"description": "Link on the player's own profile page to their profile as other players see it"
 	},
 	"sf1e.ability.charisma": {
 		"defaultMessage": "Charisma",

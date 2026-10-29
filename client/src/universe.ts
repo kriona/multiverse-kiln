@@ -6,6 +6,7 @@ import { CharacterApi } from './network/characterApi';
 import { connectToServer, createClient, getUniverseDetails, type ServerConnection } from './network/serverConnection';
 import { startPageLifecycle } from './pageLifecycle';
 import { gamePageUrl, HOME_PAGE_URL, readUniverseKey, replacePagePath, universePageUrl } from './pages';
+import { startAccountMenu } from './ui/accountMenu';
 import { CharacterSheetDialog } from './ui/CharacterSheetDialog';
 import { getElement, setPageTitle, showNoticeScreen, showScreen, showStatus } from './ui/dom';
 import { startLanguagePicker } from './ui/languagePicker';
@@ -87,6 +88,7 @@ async function start(): Promise<void>
 
 	startPageLifecycle();
 	await startLocalization();
+	void startAccountMenu();
 	startLanguagePicker();
 	startShortcuts();
 	showStatus(t(pageMessages.loading));

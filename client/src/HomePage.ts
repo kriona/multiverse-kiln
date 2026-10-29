@@ -1,7 +1,6 @@
 import { SessionServerMessageType, type AccountPayload } from '@multiverse-kiln/shared';
 
 import { t } from './localization';
-import { AuthApi } from './network/authApi';
 import { EditorApi } from './network/editorApi';
 import { listUniverses, type ServerConnection } from './network/serverConnection';
 import { onLoginElsewhere } from './network/sessionBroadcast';
@@ -35,7 +34,6 @@ export class HomePage
 	{
 		const { client, session } = server;
 		const editorApi = new EditorApi(client);
-		const authApi = new AuthApi(client);
 
 		this.homeScreen = new HomeScreen({
 			loadPage: (offset) => listUniverses(client, offset),
@@ -44,8 +42,7 @@ export class HomePage
 			edit: (universeId) =>
 			{
 				window.location.assign(editPageUrl(universeId));
-			},
-			logOut: () => authApi.logOut()
+			}
 		});
 
 		session.onMessage(SessionServerMessageType.Account, (account: AccountPayload) =>
@@ -87,7 +84,7 @@ export class HomePage
 		}
 
 		this.playerId = playerId;
-		this.homeScreen.show(account.player?.name ?? null);
+		this.homeScreen.show(account.player !== null);
 		showScreen('home');
 	}
 }

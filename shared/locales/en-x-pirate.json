@@ -15,6 +15,22 @@
 		"message": "Mark",
 		"source": "Score"
 	},
+	"account.editProfile": {
+		"message": "Mend yer profile",
+		"source": "Edit profile"
+	},
+	"account.logOut": {
+		"message": "Go ashore",
+		"source": "Log out"
+	},
+	"account.logOutFailed": {
+		"message": "Couldn't go ashore. Try again in a moment.",
+		"source": "Could not log out. Try again in a moment."
+	},
+	"account.menu": {
+		"message": "Yer account: {name}",
+		"source": "Your account: {name}"
+	},
 	"admin.characterDeletionDays": {
 		"message": "Days 'twixt last rites and Davy Jones",
 		"source": "Days between last rites and deletion"
@@ -442,6 +458,22 @@
 	"characters.none": {
 		"message": "Ye haven't signed on a hand in this universe yet.",
 		"source": "You haven't made a character in this universe yet."
+	},
+	"chips.added": {
+		"message": "{name} brought aboard",
+		"source": "{name} added"
+	},
+	"chips.remove": {
+		"message": "Toss {name} overboard",
+		"source": "Remove {name}"
+	},
+	"chips.removed": {
+		"message": "{name} tossed overboard",
+		"source": "{name} removed"
+	},
+	"combobox.noMatches": {
+		"message": "Nary a match",
+		"source": "Nothing matches"
 	},
 	"createGroup.difficulty": {
 		"message": "Peril",
@@ -2436,8 +2468,8 @@
 		"source": "You have no such character."
 	},
 	"error.profile.socialUsername": {
-		"message": "That ain't a {site} username. Enter the username alone, not a link.",
-		"source": "That isn't a {site} username. Enter the username alone, not a link."
+		"message": "That ain't a username on {site}. Enter the username alone, not a link.",
+		"source": "That isn't a username on {site}. Enter the username alone, not a link."
 	},
 	"error.profile.timeZone": {
 		"message": "Choose a time zone from the chart.",
@@ -2766,14 +2798,6 @@
 	"home.logIn": {
 		"message": "Come aboard",
 		"source": "Log in"
-	},
-	"home.logOut": {
-		"message": "Go ashore",
-		"source": "Log out"
-	},
-	"home.logOutFailed": {
-		"message": "Couldn't go ashore.",
-		"source": "Could not log out."
 	},
 	"home.noOwnUniverses": {
 		"message": "Ye haven't made a universe yet.",
@@ -3543,10 +3567,6 @@
 		"message": "Hoistin'...",
 		"source": "Loading..."
 	},
-	"page.playingAs": {
-		"message": "Sailin' as {name}",
-		"source": "Playing as {name}"
-	},
 	"page.privacy": {
 		"message": "Secrets",
 		"source": "Privacy"
@@ -3923,6 +3943,42 @@
 		"message": "Ye be sailin' as {name} now.",
 		"source": "You are now playing {name}."
 	},
+	"player.characters": {
+		"message": "Hands",
+		"source": "Characters"
+	},
+	"player.heading": {
+		"message": "Profile",
+		"source": "Profile"
+	},
+	"player.languages": {
+		"message": "Tongues",
+		"source": "Languages"
+	},
+	"player.location": {
+		"message": "Port o' call",
+		"source": "Location"
+	},
+	"player.noCharacters": {
+		"message": "No hands to show.",
+		"source": "No characters to show."
+	},
+	"player.pronouns": {
+		"message": "Pronouns",
+		"source": "Pronouns"
+	},
+	"player.social": {
+		"message": "{site}: {username}",
+		"source": "{site}: {username}"
+	},
+	"player.timeZone": {
+		"message": "Time zone",
+		"source": "Time zone"
+	},
+	"player.timeZoneValue": {
+		"message": "{city} ({zoneName}), where the ship's bell says {time}",
+		"source": "{city} ({zoneName}), where it's {time} now"
+	},
 	"privacy.account": {
 		"message": "Yer account",
 		"source": "Your account"
@@ -4064,8 +4120,8 @@
 		"source": "Your profile"
 	},
 	"privacy.profileText": {
-		"message": "Anythin' ye choose to fill in on yer profile: a likeness, yer pronouns, yer location an' time zone, yer tongue, links to yer social media accounts, an' which o' yer hands others can see. Only yer username an' display name be required.",
-		"source": "Anything you choose to fill in on your profile: a photo, your pronouns, your location and time zone, your language, links to your social media accounts, and which of your characters others can see. Only your username and display name are required."
+		"message": "Anythin' ye choose to fill in on yer profile: a likeness, yer pronouns, yer location an' time zone, the tongues ye speak, yer tongue for the site, links to yer social media accounts, an' which o' yer hands others can see. Only yer username an' display name be required.",
+		"source": "Anything you choose to fill in on your profile: a photo, your pronouns, your location and time zone, the languages you know, your language for the site, links to your social media accounts, and which of your characters others can see. Only your username and display name are required."
 	},
 	"privacy.rights": {
 		"message": "Yer choices an' rights",
@@ -4182,6 +4238,242 @@
 	"privacy.whySecurity": {
 		"message": "Legitimate interests: the security records an' the check o' new passwords against plundered ones, which keep yer account an' the ship safe an' stop cheatin' an' foul play.",
 		"source": "Legitimate interests: the security records and the check of new passwords against leaked ones, which keep your account and the site safe and stop cheating and abuse."
+	},
+	"profile.aboutYou": {
+		"message": "About ye",
+		"source": "About you"
+	},
+	"profile.account": {
+		"message": "Comin' aboard",
+		"source": "Logging in"
+	},
+	"profile.browserLanguage": {
+		"message": "Yer browser's tongue",
+		"source": "Your browser's language"
+	},
+	"profile.changeEmail": {
+		"message": "Change email",
+		"source": "Change email"
+	},
+	"profile.changeEmailCodeSent": {
+		"message": "If {email} ain't another account's address, we've sent it a letter with a code. Enter the code from it. It works but once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"source": "If {email} isn't another account's address, we've emailed it a code. Enter the code from the email. It works once, for {minutes, plural, one {# minute} other {# minutes}}."
+	},
+	"profile.changeEmailFailed": {
+		"message": "Couldn't change yer email address.",
+		"source": "Could not change your email address."
+	},
+	"profile.changeEmailIntro": {
+		"message": "Yer email address be {email}. Enter the new one, an' we'll send it a code to prove it be yers.",
+		"source": "Your email address is {email}. Enter the new one, and we'll send it a code to check it's yours."
+	},
+	"profile.changeEmailIntroNone": {
+		"message": "Enter an email address, an' we'll send it a code to prove it be yers.",
+		"source": "Enter an email address, and we'll send it a code to check it's yours."
+	},
+	"profile.changeEmailSubmit": {
+		"message": "Change email",
+		"source": "Change email"
+	},
+	"profile.changeEmailTitle": {
+		"message": "Change yer email address",
+		"source": "Change your email address"
+	},
+	"profile.changePassword": {
+		"message": "Change password",
+		"source": "Change password"
+	},
+	"profile.changePasswordFailed": {
+		"message": "Couldn't change yer password.",
+		"source": "Could not change your password."
+	},
+	"profile.changePasswordIntro": {
+		"message": "Every other browser aboard yer account goes ashore when the password changes.",
+		"source": "Every other browser logged in to your account is logged out when the password changes."
+	},
+	"profile.changePasswordTitle": {
+		"message": "Change yer password",
+		"source": "Change your password"
+	},
+	"profile.characterVisibilityFailed": {
+		"message": "Couldn't change whether yer profile shows {name}.",
+		"source": "Could not change whether your profile shows {name}."
+	},
+	"profile.characterVisible": {
+		"message": "Show on me profile",
+		"source": "Show on my profile"
+	},
+	"profile.characters": {
+		"message": "Yer hands",
+		"source": "Your characters"
+	},
+	"profile.charactersFailed": {
+		"message": "Couldn't muster yer hands.",
+		"source": "Could not list your characters."
+	},
+	"profile.currentPassword": {
+		"message": "Current password",
+		"source": "Current password"
+	},
+	"profile.displayName": {
+		"message": "Name",
+		"source": "Name"
+	},
+	"profile.displayNameHint": {
+		"message": "The name other sailors see. It needn't be yer real name, nor yers alone.",
+		"source": "The name other players see. It doesn't have to be your real name, or unique."
+	},
+	"profile.email": {
+		"message": "Email address",
+		"source": "Email address"
+	},
+	"profile.emailChanged": {
+		"message": "Email address changed. We've sent word to both addresses.",
+		"source": "Email address changed. We've told both addresses."
+	},
+	"profile.hasPassword": {
+		"message": "Set",
+		"source": "Set"
+	},
+	"profile.language": {
+		"message": "Tongue",
+		"source": "Language"
+	},
+	"profile.languageHint": {
+		"message": "The pages an' the letters we send ye be in this tongue, on any browser ye come aboard from.",
+		"source": "The pages and the emails we send you are in this language, on any browser you log in from."
+	},
+	"profile.languagesHint": {
+		"message": "Used to pair ye with other hands who speak yer tongue.",
+		"source": "Used to match you with other players who speak your language."
+	},
+	"profile.languagesSearch": {
+		"message": "Search the tongues",
+		"source": "Search languages"
+	},
+	"profile.languagesSpoken": {
+		"message": "Tongues ye speak",
+		"source": "Languages you know"
+	},
+	"profile.languagesTooMany": {
+		"message": "Ye can pick no more than {max, plural, one {# tongue} other {# tongues}}.",
+		"source": "You can choose up to {max, plural, one {# language} other {# languages}}."
+	},
+	"profile.loadFailed": {
+		"message": "Couldn't fetch the profile. Reload the page to try again.",
+		"source": "Could not load the profile. Reload the page to try again."
+	},
+	"profile.location": {
+		"message": "Port o' call",
+		"source": "Location"
+	},
+	"profile.newEmail": {
+		"message": "New email address",
+		"source": "New email address"
+	},
+	"profile.newEmailMissing": {
+		"message": "Enter the new email address.",
+		"source": "Enter the new email address."
+	},
+	"profile.newPassword": {
+		"message": "New password",
+		"source": "New password"
+	},
+	"profile.noCharacters": {
+		"message": "Ye haven't signed on a hand yet.",
+		"source": "You haven't made a character yet."
+	},
+	"profile.noEmail": {
+		"message": "None",
+		"source": "None"
+	},
+	"profile.noPassword": {
+		"message": "None: ye come aboard with Google or Discord. To add a password, go ashore an' use \"Forgot yer password?\" on the boardin' page.",
+		"source": "None: you log in with Google or Discord. To add a password, log out and use \"Forgot your password?\" on the login page."
+	},
+	"profile.noTimeZone": {
+		"message": "Not shown",
+		"source": "Not shown"
+	},
+	"profile.notFound": {
+		"message": "No sailor goes by that username. Mayhap they changed it.",
+		"source": "No player has that username. They may have changed it."
+	},
+	"profile.password": {
+		"message": "Password",
+		"source": "Password"
+	},
+	"profile.passwordChanged": {
+		"message": "Password changed. Every other browser aboard yer account went ashore.",
+		"source": "Password changed. Every other browser logged in to your account was logged out."
+	},
+	"profile.pronouns": {
+		"message": "Pronouns",
+		"source": "Pronouns"
+	},
+	"profile.pronounsPlaceholder": {
+		"message": "say, she/her, they/them, any",
+		"source": "e.g. she/her, they/them, any"
+	},
+	"profile.providers": {
+		"message": "Lashed logins",
+		"source": "Linked logins"
+	},
+	"profile.saveFailed": {
+		"message": "Couldn't stow yer profile.",
+		"source": "Could not save your profile."
+	},
+	"profile.savePassword": {
+		"message": "Stow the password",
+		"source": "Save password"
+	},
+	"profile.showCharacters": {
+		"message": "Show me hands",
+		"source": "Show my characters"
+	},
+	"profile.showCharactersHint": {
+		"message": "Unchecked, yer profile shows only the hands ye mark below. Other sailors in yer crew can always find yer profile from yer hand.",
+		"source": "Unchecked, your profile shows only the characters you mark below. Other players in your group can always find your profile from your character."
+	},
+	"profile.socials": {
+		"message": "Social ports",
+		"source": "Social sites"
+	},
+	"profile.socialsHint": {
+		"message": "Yer username at each port, without a link. Other sailors see 'em on yer profile.",
+		"source": "Your username on each site, without a link. Other players see them on your profile."
+	},
+	"profile.timeZone": {
+		"message": "Time zone",
+		"source": "Time zone"
+	},
+	"profile.timeZoneHint": {
+		"message": "Used to pair ye with other hands in time zones near yer own.",
+		"source": "Used to match you with other players in time zones near yours."
+	},
+	"profile.timeZoneSearch": {
+		"message": "Search by port or time zone",
+		"source": "Search by city or time zone"
+	},
+	"profile.title": {
+		"message": "Yer profile",
+		"source": "Your profile"
+	},
+	"profile.unavailableTitle": {
+		"message": "Profile",
+		"source": "Profile"
+	},
+	"profile.username": {
+		"message": "Username",
+		"source": "Username"
+	},
+	"profile.usernameHint": {
+		"message": "How other sailors find ye, an' tell ye apart from others with the same name. {min} to {max} letters (a to z), digits an' underscores.",
+		"source": "How other players find you, and tell you apart from others with the same name. {min} to {max} letters (a to z), digits and underscores."
+	},
+	"profile.viewOwn": {
+		"message": "View yer profile",
+		"source": "View your profile"
 	},
 	"sf1e.ability.charisma": {
 		"message": "Swagger",

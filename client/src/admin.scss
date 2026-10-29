@@ -15,14 +15,17 @@
 	padding: 16px;
 }
 
+// Each number field as wide as its largest number, plus room for its arrows
 #site-universes-per-creator
 {
-	max-width: 70px;
+	// Up to MAX_UNIVERSES_PER_CREATOR
+	max-width: 8ch;
 }
 
 #site-character-deletion-days
 {
-	max-width: 60px;
+	// Up to MAX_CHARACTER_DELETION_DAYS
+	max-width: 7ch;
 }
 
 .admin-loading

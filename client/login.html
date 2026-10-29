@@ -9,7 +9,6 @@
 		<main>
 			<header class="toolbar">
 				<!-- include site-name.html -->
-				<a class="button secondary toolbar-link" href="/" data-message="page.backToHome" data-translation-context="Link or button that goes back to the list of universes (Home): at the top of a page, in the editor's toolbar, or below a message filling the page, such as one saying a universe couldn't be found"><!-- icon ph:house -->Back to Home</a>
 			</header>
 
 			<!-- include status.html -->
@@ -60,7 +59,7 @@
 					<p id="email-error" class="form-error" role="alert" hidden></p>
 					<div class="form-buttons">
 						<button id="email-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="login.back" data-translation-context="Button that goes back a step while logging in, creating an account or resetting a password"><!-- icon ph:arrow-left -->Back</button>
-						<button id="email-submit" type="submit" aria-describedby="email-error" data-shortcut="Alt+S" data-message="login.sendCode" data-translation-context="Button that emails a code to the address typed, to create an account or reset a password"><!-- icon ph:paper-plane-right -->Send code</button>
+						<button id="email-submit" type="submit" aria-describedby="email-error" data-shortcut="Alt+S" data-message="login.sendCode" data-translation-context="Button that emails a code to the address typed, to create an account, reset a password or change the account's email address"><!-- icon ph:paper-plane-right -->Send code</button>
 					</div>
 				</form>
 			</section>
@@ -107,7 +106,7 @@
 						</label>
 						<button id="register-password-toggle" type="button" class="secondary password-toggle" aria-controls="register-password" aria-pressed="false" aria-label="Show password" title="Show password" data-message-aria-label="login.showPassword" data-translation-context-aria-label="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed" data-message-title="login.showPassword" data-translation-context-title="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"><span class="password-hidden-icon"><!-- icon ph:eye --></span><span class="password-shown-icon"><!-- icon ph:eye-slash --></span></button>
 					</div>
-					<p id="register-password-hint" class="hint" data-message="login.passwordHint" data-translation-context="Under the new password field when creating an account or resetting a password; {min} is a number">At least <span id="register-password-min" data-argument="min" translate="no">15</span> characters. A few words strung together are easy to remember and hard to guess.</p>
+					<p id="register-password-hint" class="hint" data-message="login.passwordHint" data-translation-context="Under the new password field when creating an account, resetting a password or changing it on the profile; {min} is a number">At least <span id="register-password-min" data-argument="min" translate="no">15</span> characters. A few words strung together are easy to remember and hard to guess.</p>
 					<p id="register-password-manager" class="hint" data-message="login.passwordManager" data-translation-context="Under the new password field when creating an account or resetting a password, recommending a password manager; {bitwarden} and {onePassword} are links to two of them">A password manager, such as <a href="https://bitwarden.com/" data-argument="bitwarden" translate="no" target="_blank" rel="noopener">Bitwarden</a> or <a href="https://1password.com/" data-argument="onePassword" translate="no" target="_blank" rel="noopener">1Password</a>, can make a strong password and remember it for you.</p>
 					<label class="checkbox" data-message="login.rememberMe" data-translation-context="Checkbox when logging in, creating an account or choosing a new password: keeps the browser logged in for up to 30 days without use, rather than an hour">
 						<input id="register-remember" type="checkbox" />
@@ -135,7 +134,7 @@
 						</label>
 						<button id="reset-password-toggle" type="button" class="secondary password-toggle" aria-controls="reset-password" aria-pressed="false" aria-label="Show password" title="Show password" data-message-aria-label="login.showPassword" data-translation-context-aria-label="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed" data-message-title="login.showPassword" data-translation-context-title="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"><span class="password-hidden-icon"><!-- icon ph:eye --></span><span class="password-shown-icon"><!-- icon ph:eye-slash --></span></button>
 					</div>
-					<p id="reset-password-hint" class="hint" data-message="login.passwordHint" data-translation-context="Under the new password field when creating an account or resetting a password; {min} is a number">At least <span id="reset-password-min" data-argument="min" translate="no">15</span> characters. A few words strung together are easy to remember and hard to guess.</p>
+					<p id="reset-password-hint" class="hint" data-message="login.passwordHint" data-translation-context="Under the new password field when creating an account, resetting a password or changing it on the profile; {min} is a number">At least <span id="reset-password-min" data-argument="min" translate="no">15</span> characters. A few words strung together are easy to remember and hard to guess.</p>
 					<p id="reset-password-manager" class="hint" data-message="login.passwordManager" data-translation-context="Under the new password field when creating an account or resetting a password, recommending a password manager; {bitwarden} and {onePassword} are links to two of them">A password manager, such as <a href="https://bitwarden.com/" data-argument="bitwarden" translate="no" target="_blank" rel="noopener">Bitwarden</a> or <a href="https://1password.com/" data-argument="onePassword" translate="no" target="_blank" rel="noopener">1Password</a>, can make a strong password and remember it for you.</p>
 					<label class="checkbox" data-message="login.rememberMe" data-translation-context="Checkbox when logging in, creating an account or choosing a new password: keeps the browser logged in for up to 30 days without use, rather than an hour">
 						<input id="reset-remember" type="checkbox" />

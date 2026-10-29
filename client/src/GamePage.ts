@@ -519,7 +519,7 @@ export class GamePage
 		{
 			if (this.joinedLobby)
 			{
-				this.lobbyScreen.show(universe, this.player.playerId, this.player.name);
+				this.lobbyScreen.show(universe, this.player.playerId);
 				showScreen('lobby');
 			}
 			else

@@ -1,9 +1,9 @@
 import { announce } from './announcer';
 
 /**
- * A field that takes typed text
+ * A field the player fills in: one that takes typed text, or a choice
  */
-type TextField = HTMLInputElement | HTMLTextAreaElement;
+type TextField = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
 
 /**
  * Shows what is wrong with what was typed in a field, in a message under the field, and takes the
@@ -77,7 +77,7 @@ export function setFieldError(field: TextField, message: string | undefined): vo
  */
 export function clearFieldErrors(container: HTMLElement): void
 {
-	for (const field of container.querySelectorAll<TextField>('input[aria-invalid], textarea[aria-invalid]'))
+	for (const field of container.querySelectorAll<TextField>('input[aria-invalid], textarea[aria-invalid], select[aria-invalid]'))
 	{
 		setFieldError(field, undefined);
 	}

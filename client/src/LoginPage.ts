@@ -5,6 +5,7 @@ import { authFieldOf, type AuthApi } from './network/authApi';
 import { EditorApiError } from './network/editorApi';
 import { announceLogin } from './network/sessionBroadcast';
 import { readNextPage, readPageParameter, rememberLoginAddress } from './pages';
+import { forgetAccountName } from './ui/accountMenu';
 import { announce } from './ui/announcer';
 import { getElement, setPageTitle, showMessage, showScreen, type ScreenName } from './ui/dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from './ui/fieldErrors';
@@ -391,6 +392,7 @@ export class LoginPage
 	 */
 	private finishLogin(): void
 	{
+		forgetAccountName();
 		announceLogin();
 		window.location.replace(readNextPage());
 	}

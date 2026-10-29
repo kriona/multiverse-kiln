@@ -190,5 +190,13 @@ export default defineConfig(
 		languageOptions: {
 			globals: globals.node
 		}
+	},
+
+	// Scripts the client serves as they are (client/public), which run in the browser
+	{
+		files: ['client/public/**/*.js'],
+		languageOptions: {
+			globals: globals.browser
+		}
 	}
 );

@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { AUTH_SESSION_PATH, playerProfilePath, PROFILE_PATH, profileCharacterPath, type OwnProfilePayload, type PlayerProfilePayload, type ProfileErrorPayload, type ProfileUpdateRequest, type SessionPayload } from '@multiverse-kiln/shared';
+import { AUTH_SESSION_PATH, MAX_PROFILE_LANGUAGES, playerProfilePath, PROFILE_LANGUAGES, PROFILE_PATH, profileCharacterPath, type OwnProfilePayload, type PlayerProfilePayload, type ProfileErrorPayload, type ProfileUpdateRequest, type SessionPayload } from '@multiverse-kiln/shared';
 
 import { pool } from '../src/db/client.js';
 import { scheduleCharacterDeletion } from '../src/db/characterRepo.js';
@@ -19,6 +19,7 @@ const ADA_PROFILE: ProfileUpdateRequest = {
 	pronouns: 'she/her',
 	location: 'London',
 	timeZone: 'Europe/London',
+	languages: ['en', 'fr'],
 	locale: 'en-x-pirate',
 	socials: {
 		discord: 'ada.lovelace',
@@ -89,6 +90,7 @@ describe('profile routes', () =>
 			pronouns: null,
 			location: null,
 			timeZone: null,
+			languages: [],
 			socials: {
 				discord: null,
 				facebook: null,
@@ -124,6 +126,7 @@ describe('profile routes', () =>
 			pronouns: ADA_PROFILE.pronouns,
 			location: ADA_PROFILE.location,
 			timeZone: ADA_PROFILE.timeZone,
+			languages: ADA_PROFILE.languages,
 			socials: ADA_PROFILE.socials
 		};
 
@@ -136,6 +139,7 @@ describe('profile routes', () =>
 		});
 		assert.deepStrictEqual((await (await logIn('Grace')).browser.send<PlayerProfilePayload>('GET', playerProfilePath('ada_l'))).body, {
 			...fields,
+			pronounsLanguage: ADA_PROFILE.locale,
 			characters: []
 		});
 		assert.strictEqual((await browser.send<SessionPayload>('GET', AUTH_SESSION_PATH)).body.player?.locale, 'en-x-pirate');
@@ -150,6 +154,7 @@ describe('profile routes', () =>
 			pronouns: '   ',
 			location: '',
 			timeZone: null,
+			languages: ['fr', 'en', 'fr'],
 			locale: 'PT-br',
 			socials: {
 				discord: '',
@@ -163,6 +168,7 @@ describe('profile routes', () =>
 
 		assert.strictEqual(own.pronouns, null);
 		assert.strictEqual(own.location, null);
+		assert.deepStrictEqual(own.languages, ['fr', 'en']);
 		assert.strictEqual(own.socials.discord, null);
 		assert.strictEqual(own.locale, 'pt-BR');
 	});
@@ -191,6 +197,8 @@ describe('profile routes', () =>
 		}
 
 		assert.strictEqual((await browser.send('PUT', PROFILE_PATH, { ...ADA_PROFILE, pronouns: 'x'.repeat(41) })).status, 400);
+		assert.strictEqual((await browser.send('PUT', PROFILE_PATH, { ...ADA_PROFILE, languages: ['en', 'xx'] })).status, 400);
+		assert.strictEqual((await browser.send('PUT', PROFILE_PATH, { ...ADA_PROFILE, languages: PROFILE_LANGUAGES.slice(0, MAX_PROFILE_LANGUAGES + 1) })).status, 400);
 		assert.strictEqual((await browser.send<OwnProfilePayload>('GET', PROFILE_PATH)).body.username, 'Ada');
 	});
 

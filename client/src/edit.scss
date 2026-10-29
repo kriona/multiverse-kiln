@@ -223,62 +223,74 @@ html:has(.editor-save-bar:not([hidden])) .map-editor.full-page
 	}
 }
 
-// Max widths
+// Max widths: each field about as wide as the longest text it takes, and a number field as its
+// largest number plus room for its arrows
 #universe-name-input,
 #area-name
 {
-	max-width: 450px;
+	// MAX_UNIVERSE_NAME_LENGTH and MAX_AREA_NAME_LENGTH
+	max-width: 62ch
 }
 
 #ruleset-ability-points
 {
-	max-width: 60px;
+	// Two digits
+	max-width: 6ch;
 }
 
 #lobby-day-hours
 {
-	max-width: 60px;
+	// Up to MAX_LOBBY_DAY_HOURS
+	max-width: 7ch;
 }
 
 #difficulty-mob-scale
 {
-	max-width: 70px;
+	// MIN_MOB_SCALE to MAX_MOB_SCALE, with a minus sign
+	max-width: 9ch;
 }
+
 #tile-vision
 {
-	max-width: 60px;
+	// Up to 100
+	max-width: 7ch;
 }
 
 #characters-group-size
 {
-	max-width: 40px;
+	// Up to MAX_GROUP_PLAYERS
+	max-width: 5ch;
 }
 
 #race-name,
 #class-name
 {
-	max-width: 300px;
+	// MAX_RACE_NAME_LENGTH and MAX_CLASS_NAME_LENGTH
+	max-width: 42ch;
 }
 
 #tile-color
 {
-	max-width: 70px;
+	// #rrggbb
+	max-width: 9ch;
 }
+
 #tile-walk
 {
-	max-width: 80px;
+	// Up to 3600
+	max-width: 8ch;
 }
 
 fieldset
 {
 	&.ability-modifiers
 	{
-		max-width: 300px;
+		max-width: 38ch;
 	}
 
 	&.indoor-outdoor
 	{
-		max-width: 200px;
+		max-width: 25ch;
 	}
 }
 

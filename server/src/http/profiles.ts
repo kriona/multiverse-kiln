@@ -7,7 +7,7 @@
  */
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { canPlayUniverse, defineMessages, DISALLOWED_TEXT_CHARACTERS, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_PRONOUNS_LENGTH, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, PLAYERS_PATH, PROFILE_PATH, SOCIAL_SITES, SOCIAL_USERNAME_PATTERNS, UNIVERSE_STAGES, type CharacterVisibilityRequest, type OptionName, type OwnProfilePayload, type PlayerProfilePayload, type ProfileCharacter, type ProfileField, type ProfileUpdateRequest, type SocialSite, type SocialUsernames } from '@multiverse-kiln/shared';
+import { canPlayUniverse, defineMessages, DISALLOWED_TEXT_CHARACTERS, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, PLAYERS_PATH, PROFILE_LANGUAGES, PROFILE_PATH, SOCIAL_SITES, SOCIAL_USERNAME_PATTERNS, UNIVERSE_STAGES, type CharacterVisibilityRequest, type OptionName, type OwnProfilePayload, type PlayerProfilePayload, type ProfileCharacter, type ProfileField, type ProfileUpdateRequest, type SocialSite, type SocialUsernames } from '@multiverse-kiln/shared';
 
 import { listProfileCharacters, setCharacterVisibility, type ProfileCharacterRecord } from '../db/characterRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
@@ -45,7 +45,7 @@ const profileMessages = defineMessages({
 	},
 	socialUsername: {
 		id: 'error.profile.socialUsername',
-		defaultMessage: 'That isn\'t a {site} username. Enter the username alone, not a link.',
+		defaultMessage: 'That isn\'t a username on {site}. Enter the username alone, not a link.',
 		description: 'Shown under one of the profile\'s social site fields when what was typed can\'t be a username there; {site} is Discord, Facebook, Instagram or TikTok'
 	}
 });
@@ -96,6 +96,9 @@ const profileUpdateRequest = z.object({
 	pronouns: optionalText(MAX_PRONOUNS_LENGTH),
 	location: optionalText(MAX_LOCATION_LENGTH),
 	timeZone: z.string().max(100).nullable(),
+	languages: z.array(z.enum(PROFILE_LANGUAGES))
+		.max(MAX_PROFILE_LANGUAGES)
+		.transform((languages) => [...new Set(languages)]),
 	locale: z.string().max(MAX_LOCALE_LENGTH).nullable(),
 	socials: z.object({
 		discord: socialUsername,
@@ -244,8 +247,10 @@ async function playerProfileRoute(request: Request, response: Response): Promise
 		username: profile.username,
 		displayName: profile.displayName,
 		pronouns: profile.pronouns,
+		pronounsLanguage: ((profile.pronouns === null) ? null : profile.locale),
 		location: profile.location,
 		timeZone: profile.timeZone,
+		languages: profile.languages,
 		socials: profile.socials,
 		characters: characters.map(({ visibleOnProfile: _visible, ...character }) => character)
 	};
@@ -280,11 +285,12 @@ async function ownProfileRoute(request: Request, response: Response): Promise<vo
 		pronouns: profile.pronouns,
 		location: profile.location,
 		timeZone: profile.timeZone,
+		languages: profile.languages,
+		locale: profile.locale,
 		socials: profile.socials,
 		email: profile.email,
 		hasPassword: profile.hasPassword,
 		providers,
-		locale: profile.locale,
 		showCharacters: profile.showCharacters,
 		characters: await nameCharacters(records)
 	};

@@ -15,9 +15,9 @@
 				<header class="toolbar">
 					<!-- include site-name.html -->
 					<h1 id="lobby-title" data-message="lobby.title" data-translation-context="Heading of a universe's lobby until its name has loaded">Lobby</h1>
-					<span class="toolbar-name" data-message="page.playingAs" data-translation-context="In the toolbar, the name the player logged in with; {name} is the name">Playing as <strong id="lobby-player-name" data-argument="name"></strong></span>
-					<button id="create-group" type="button" data-shortcut="Alt+G" data-message="lobby.createGroup" data-translation-context="Button that makes a new group (characters who play the universe together) around the character the player is playing, which others can be invited to"><!-- icon game-icons:crossed-swords -->Create Group</button>
+					<button id="create-group" type="button" class="toolbar-link" data-shortcut="Alt+G" data-message="lobby.createGroup" data-translation-context="Button that makes a new group (characters who play the universe together) around the character the player is playing, which others can be invited to"><!-- icon game-icons:crossed-swords -->Create Group</button>
 					<button id="leave-lobby" type="button" class="secondary" data-shortcut="Alt+L" data-message="lobby.leave" data-translation-context="Button that leaves the lobby and goes back to the list of universes"><!-- icon ph:sign-out -->Leave lobby</button>
+					<!-- include account.html -->
 				</header>
 				<p id="lobby-notice" class="notice" role="status" hidden></p>
 				<div class="lobby-body">
@@ -57,6 +57,7 @@
 					<span id="group-status" class="toolbar-status" role="status"></span>
 					<button id="invite-group" type="button" data-shortcut="Alt+I" hidden data-message="group.invite" data-translation-context="Button, for the anchor being's player only, that makes a link others can open to join the group"><!-- icon ph:user-plus -->Invite</button>
 					<button id="leave-group" type="button" class="secondary" data-shortcut="Alt+L" data-message="group.leave" data-translation-context="Button that takes the character this window plays out of the group, back to the lobby"><!-- icon ph:sign-out -->Leave group</button>
+					<!-- include account.html -->
 				</header>
 				<div class="lobby-body">
 					<div id="group-map" class="map" tabindex="0" role="application" aria-label="Map" aria-describedby="group-map-help" data-shortcut="Alt+M" data-message-aria-label="map.label" data-translation-context-aria-label="Name of the game's map for screen readers"></div>
@@ -80,6 +81,7 @@
 				<header class="toolbar">
 					<!-- include site-name.html -->
 					<h1 id="invite-title" data-message="invite.title" data-translation-context="Heading of the screen an invite link opens, until the group it leads to has loaded">Invite</h1>
+					<!-- include account.html -->
 				</header>
 				<div class="panel invite">
 					<p id="invite-summary" class="invite-summary"></p>

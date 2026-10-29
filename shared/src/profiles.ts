@@ -18,6 +18,30 @@ export const MAX_PRONOUNS_LENGTH = 40;
 export const MAX_LOCATION_LENGTH = 100;
 
 /**
+ * The languages a profile can say the player knows: every ISO 639-1 code, which the pages name in
+ * each language's own words
+ */
+export const PROFILE_LANGUAGES = [
+	'aa', 'ab', 'ae', 'af', 'ak', 'am', 'an', 'ar', 'as', 'av', 'ay', 'az', 'ba', 'be', 'bg', 'bi', 'bm', 'bn', 'bo', 'br',
+	'bs', 'ca', 'ce', 'ch', 'co', 'cr', 'cs', 'cu', 'cv', 'cy', 'da', 'de', 'dv', 'dz', 'ee', 'el', 'en', 'eo', 'es', 'et',
+	'eu', 'fa', 'ff', 'fi', 'fj', 'fo', 'fr', 'fy', 'ga', 'gd', 'gl', 'gn', 'gu', 'gv', 'ha', 'he', 'hi', 'ho', 'hr', 'ht',
+	'hu', 'hy', 'hz', 'ia', 'id', 'ie', 'ig', 'ii', 'ik', 'io', 'is', 'it', 'iu', 'ja', 'jv', 'ka', 'kg', 'ki', 'kj', 'kk',
+	'kl', 'km', 'kn', 'ko', 'kr', 'ks', 'ku', 'kv', 'kw', 'ky', 'la', 'lb', 'lg', 'li', 'ln', 'lo', 'lt', 'lu', 'lv', 'mg',
+	'mh', 'mi', 'mk', 'ml', 'mn', 'mr', 'ms', 'mt', 'my', 'na', 'nb', 'nd', 'ne', 'ng', 'nl', 'nn', 'no', 'nr', 'nv', 'ny',
+	'oc', 'oj', 'om', 'or', 'os', 'pa', 'pi', 'pl', 'ps', 'pt', 'qu', 'rm', 'rn', 'ro', 'ru', 'rw', 'sa', 'sc', 'sd', 'se',
+	'sg', 'si', 'sk', 'sl', 'sm', 'sn', 'so', 'sq', 'sr', 'ss', 'st', 'su', 'sv', 'sw', 'ta', 'te', 'tg', 'th', 'ti', 'tk',
+	'tl', 'tn', 'to', 'tr', 'ts', 'tt', 'tw', 'ty', 'ug', 'uk', 'ur', 'uz', 've', 'vi', 'vo', 'wa', 'wo', 'xh', 'yi', 'yo',
+	'za', 'zh', 'zu'
+] as const;
+
+export type ProfileLanguage = (typeof PROFILE_LANGUAGES)[number];
+
+/**
+ * Most languages a profile can say the player knows
+ */
+export const MAX_PROFILE_LANGUAGES = 20;
+
+/**
  * The sites a profile can link to the player's account on
  */
 export const SOCIAL_SITES = ['discord', 'facebook', 'instagram', 'tiktok'] as const;
@@ -127,6 +151,12 @@ export interface ProfileFields
 	 */
 	timeZone: string | null;
 
+	/**
+	 * The languages the player knows, which match them with players who speak the same, in the order
+	 * they added them; empty when they haven't said
+	 */
+	languages: ProfileLanguage[];
+
 	socials: SocialUsernames;
 }
 
@@ -135,6 +165,12 @@ export interface ProfileFields
  */
 export interface PlayerProfilePayload extends ProfileFields
 {
+	/**
+	 * The language the player chose, which their pronouns are marked as being written in, or null when
+	 * they chose none or have no pronouns
+	 */
+	pronounsLanguage: string | null;
+
 	/**
 	 * The characters the player lets others see, in universes anyone can play, by universe name and
 	 * then character name

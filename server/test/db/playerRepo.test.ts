@@ -154,6 +154,7 @@ describe('playerRepo', () =>
 			pronouns: 'she/her',
 			location: 'London',
 			timeZone: 'Europe/London',
+			languages: ['en', 'fr'],
 			socials: {
 				discord: 'ada.lovelace',
 				facebook: null,
@@ -184,7 +185,9 @@ describe('playerRepo', () =>
 				pronouns: own.pronouns,
 				location: own.location,
 				timeZone: own.timeZone,
+				languages: own.languages,
 				socials: own.socials,
+				locale: own.locale,
 				showCharacters: own.showCharacters
 			});
 			assert.strictEqual(await findProfileByUsername('Ada'), undefined);

@@ -68,7 +68,6 @@ export interface LobbyScreenActions
 export class LobbyScreen
 {
 	private readonly title = getElement('lobby-title', HTMLElement);
-	private readonly playerName = getElement('lobby-player-name', HTMLElement);
 	private readonly createCharacterButton = getElement('create-character', HTMLButtonElement);
 	private readonly ghostNote = getElement('lobby-ghost-note', HTMLElement);
 	private readonly characterList = getElement('character-list', HTMLUListElement);
@@ -260,9 +259,8 @@ export class LobbyScreen
 	 *
 	 * @param universe The universe whose lobby it is
 	 * @param playerId The player's ID
-	 * @param name The player's name
 	 */
-	show(universe: UniverseSummary, playerId: string, name: string): void
+	show(universe: UniverseSummary, playerId: string): void
 	{
 		this.ownPlayerId = playerId;
 		this.title.replaceChildren(titleLink(universe.name, universePageUrl(universe.slug)));
@@ -273,7 +271,6 @@ export class LobbyScreen
 		}, {
 			universe: universe.name
 		}));
-		this.playerName.textContent = name;
 		this.updatePlayingState();
 		this.queueMemberList();
 	}

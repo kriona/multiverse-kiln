@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<!-- include head.html -->
+		<title data-message="profile.title" data-translation-context="The browser tab's title on the page where the player changes their own profile, and that page's heading">Your profile</title>
+		<link rel="stylesheet" href="/src/profile.scss" />
+	</head>
+	<body>
+		<main>
+			<!-- include status.html -->
+
+			<!-- include notice.html -->
+
+			<section id="profile-screen" class="screen" hidden>
+				<header class="toolbar">
+					<!-- include site-name.html -->
+					<h1 data-message="profile.title" data-translation-context="The browser tab's title on the page where the player changes their own profile, and that page's heading">Your profile</h1>
+					<a id="profile-view-link" class="button secondary toolbar-link" href="/player" data-shortcut="Alt+V" data-message="profile.viewOwn" data-translation-context="Link on the player's own profile page to their profile as other players see it"><!-- icon ph:eye -->View your profile</a>
+					<!-- include account.html -->
+				</header>
+				<div class="profile-page">
+					<form id="profile-form" class="profile-form" novalidate>
+						<section class="panel form profile-panel" aria-labelledby="profile-about-heading">
+							<h2 id="profile-about-heading" data-message="profile.aboutYou" data-translation-context="Heading of the part of the player's own profile page with what other players see about them">About you</h2>
+							<label data-message="profile.username" data-translation-context="Label of the username field on the player's own profile page">
+								Username
+								<input id="profile-username" autocomplete="off" autocapitalize="none" spellcheck="false" required aria-describedby="profile-username-hint" />
+							</label>
+							<p id="profile-username-hint" class="hint" data-message="profile.usernameHint" data-translation-context="Under the username field on the player's own profile page; {min} and {max} are numbers">How other players find you, and tell you apart from others with the same name. <span id="profile-username-min" data-argument="min" translate="no">3</span> to <span id="profile-username-max" data-argument="max" translate="no">20</span> letters (a to z), digits and underscores.</p>
+							<label data-message="profile.displayName" data-translation-context="Label of the field for the name other players see, on the player's own profile page">
+								Name
+								<input id="profile-name" autocomplete="nickname" required aria-describedby="profile-name-hint" />
+							</label>
+							<p id="profile-name-hint" class="hint" data-message="profile.displayNameHint" data-translation-context="Under the name field on the player's own profile page">The name other players see. It doesn't have to be your real name, or unique.</p>
+							<label data-message="profile.pronouns" data-translation-context="Label of the optional field for the player's pronouns, such as she/her or they/them, on their own profile page">
+								Pronouns
+								<input id="profile-pronouns" autocomplete="off" placeholder="e.g. she/her, they/them, any" data-message-placeholder="profile.pronounsPlaceholder" data-translation-context-placeholder="Shown in the empty pronouns field on the player's own profile page, as examples of what to write. Give the forms people commonly write in your language, rather than translating these ones" />
+							</label>
+							<label data-message="profile.location" data-translation-context="Label of the optional field for where the player is, written however they like, on their own profile page">
+								Location
+								<input id="profile-location" autocomplete="off" />
+							</label>
+							<div class="field-label">
+								<span id="profile-time-zone-label" data-message="profile.timeZone" data-translation-context="Label of the optional choice of the player's time zone, on their own profile page">Time zone</span>
+								<div class="combobox-field">
+									<input id="profile-time-zone" type="text" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="profile-time-zone-options" aria-labelledby="profile-time-zone-label" aria-describedby="profile-time-zone-hint" data-untracked placeholder="Search by city or time zone" data-message-placeholder="profile.timeZoneSearch" data-translation-context-placeholder="Shown in the empty time zone field on the player's own profile page, where typing a city or a time zone's name finds it" />
+									<ul id="profile-time-zone-options" class="combobox-options" role="listbox" aria-labelledby="profile-time-zone-label" hidden></ul>
+								</div>
+							</div>
+							<p id="profile-time-zone-hint" class="hint" data-message="profile.timeZoneHint" data-translation-context="Under the time zone choice on the player's own profile page">Used to match you with other players in time zones near yours.</p>
+							<div class="field-label">
+								<span id="profile-languages-label" data-message="profile.languagesSpoken" data-translation-context="Label of the optional field for choosing the languages the player knows, on their own profile page">Languages you know</span>
+								<ul id="profile-languages-chosen" class="chips" aria-labelledby="profile-languages-label" hidden></ul>
+								<div class="combobox-field">
+									<input id="profile-languages-search" type="text" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="profile-languages-options" aria-labelledby="profile-languages-label" aria-describedby="profile-languages-hint" data-untracked placeholder="Search languages" data-message-placeholder="profile.languagesSearch" data-translation-context-placeholder="Shown in the empty search field for choosing the languages the player knows, on their own profile page" />
+									<ul id="profile-languages-options" class="combobox-options" role="listbox" aria-labelledby="profile-languages-label" hidden></ul>
+								</div>
+							</div>
+							<p id="profile-languages-hint" class="hint" data-message="profile.languagesHint" data-translation-context="Under the field for choosing the languages the player knows, on their own profile page">Used to match you with other players who speak your language.</p>
+							<label data-message="profile.language" data-translation-context="Label of the choice of the language the site's pages and emails are in, on the player's own profile page">
+								Language
+								<select id="profile-locale" aria-describedby="profile-locale-hint"></select>
+							</label>
+							<p id="profile-locale-hint" class="hint" data-message="profile.languageHint" data-translation-context="Under the language choice on the player's own profile page">The pages and the emails we send you are in this language, on any browser you log in from.</p>
+							<label class="checkbox" data-message="profile.showCharacters" data-translation-context="Checkbox on the player's own profile page: whether other players see all of the player's characters on their profile">
+								<input id="profile-show-characters" type="checkbox" aria-describedby="profile-show-characters-hint" />
+								Show my characters
+							</label>
+							<p id="profile-show-characters-hint" class="hint" data-message="profile.showCharactersHint" data-translation-context="Under the Show my characters checkbox on the player's own profile page, explaining what unchecking it does">Unchecked, your profile shows only the characters you mark below. Other players in your group can always find your profile from your character.</p>
+						</section>
+
+						<section class="panel form profile-panel" aria-labelledby="profile-socials-heading">
+							<h2 id="profile-socials-heading" data-message="profile.socials" data-translation-context="Heading of the optional fields for the player's usernames on social sites (Discord, Facebook, Instagram and TikTok), on their own profile page">Social sites</h2>
+							<p class="hint" data-message="profile.socialsHint" data-translation-context="Under the heading of the social site fields on the player's own profile page">Your username on each site, without a link. Other players see them on your profile.</p>
+							<label translate="no">
+								Discord
+								<input id="profile-discord" autocomplete="off" autocapitalize="none" spellcheck="false" />
+							</label>
+							<label translate="no">
+								Facebook
+								<input id="profile-facebook" autocomplete="off" autocapitalize="none" spellcheck="false" />
+							</label>
+							<label translate="no">
+								Instagram
+								<input id="profile-instagram" autocomplete="off" autocapitalize="none" spellcheck="false" />
+							</label>
+							<label translate="no">
+								TikTok
+								<input id="profile-tiktok" autocomplete="off" autocapitalize="none" spellcheck="false" />
+							</label>
+						</section>
+
+						<!-- One Save for both sections above -->
+						<div class="profile-save">
+							<p id="profile-error" class="form-error" role="alert" hidden></p>
+							<div class="form-buttons">
+								<span id="profile-saved" class="form-saved" role="status"></span>
+								<button id="profile-save" type="submit" aria-describedby="profile-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+							</div>
+						</div>
+					</form>
+
+					<section class="panel profile-panel" aria-labelledby="profile-account-heading">
+						<h2 id="profile-account-heading" data-message="profile.account" data-translation-context="Heading of the part of the player's own profile page with how they log in: email address, password and linked Google or Discord logins">Logging in</h2>
+						<dl class="profile-account">
+							<dt data-message="profile.email" data-translation-context="Label of the player's email address, on their own profile page">Email address</dt>
+							<dd>
+								<span id="profile-email"></span>
+								<button id="profile-change-email" type="button" class="secondary" data-shortcut="Alt+M" data-message="profile.changeEmail" data-translation-context="Button on the player's own profile page that opens the dialog for changing their email address"><!-- icon ph:envelope-simple -->Change email</button>
+							</dd>
+							<dt data-message="profile.password" data-translation-context="Label of the player's password, shown hidden, on their own profile page">Password</dt>
+							<dd>
+								<span id="profile-password-state"></span>
+								<button id="profile-change-password" type="button" class="secondary" data-shortcut="Alt+P" data-message="profile.changePassword" data-translation-context="Button on the player's own profile page that opens the dialog for changing their password"><!-- icon ph:key -->Change password</button>
+							</dd>
+							<dt data-message="profile.providers" data-translation-context="Label of the Google and Discord logins linked to the player's account, on their own profile page">Linked logins</dt>
+							<dd id="profile-providers"></dd>
+						</dl>
+					</section>
+
+					<section class="panel profile-panel" aria-labelledby="profile-characters-heading">
+						<h2 id="profile-characters-heading" data-message="profile.characters" data-translation-context="Heading of the list of the player's characters in every universe, on their own profile page">Your characters</h2>
+						<div id="profile-character-list" class="profile-character-list"></div>
+						<p id="profile-character-none" class="hint" data-message="profile.noCharacters" data-translation-context="Shown on the player's own profile page instead of their characters, when they haven't made any" hidden>You haven't made a character yet.</p>
+						<p id="profile-character-error" class="form-error" role="alert" hidden></p>
+					</section>
+				</div>
+			</section>
+
+			<section id="player-screen" class="screen" hidden>
+				<header class="toolbar">
+					<!-- include site-name.html -->
+					<h1 data-message="player.heading" data-translation-context="Heading in the toolbar of a player's profile, as other players see it, above their name">Profile</h1>
+					<!-- include account.html -->
+				</header>
+				<div class="profile-page">
+					<article class="panel profile-panel" aria-labelledby="player-name">
+						<h2 id="player-name" class="player-display-name"></h2>
+						<p id="player-username" class="player-username" translate="no"></p>
+						<dl id="player-details" class="player-details"></dl>
+						<ul id="player-socials" class="player-socials"></ul>
+					</article>
+					<section id="player-characters" class="panel profile-panel" aria-labelledby="player-characters-heading">
+						<h2 id="player-characters-heading" data-message="player.characters" data-translation-context="Heading of the list of a player's characters on their profile, as other players see it">Characters</h2>
+						<div id="player-character-list" class="profile-character-list"></div>
+						<p id="player-character-none" class="hint" data-message="player.noCharacters" data-translation-context="Shown on a player's profile, as other players see it, instead of their characters, when none are shown" hidden>No characters to show.</p>
+					</section>
+				</div>
+			</section>
+
+			<dialog id="email-dialog" class="panel dialog" aria-labelledby="email-dialog-title">
+				<form id="email-dialog-form" class="form" novalidate>
+					<h2 id="email-dialog-title" data-message="profile.changeEmailTitle" data-translation-context="Title of the dialog that changes the player's email address">Change your email address</h2>
+					<p id="email-dialog-intro"></p>
+					<label id="email-dialog-address-label" data-message="profile.newEmail" data-translation-context="Label of the field for the new email address, in the dialog that changes it">
+						New email address
+						<input id="email-dialog-address" type="email" autocomplete="email" spellcheck="false" required />
+					</label>
+					<label id="email-dialog-code-label" data-message="login.code" data-translation-context="Label of the field for the code that was emailed to the player" hidden>
+						Code
+						<input id="email-dialog-code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" maxlength="24" />
+					</label>
+					<p id="email-dialog-error" class="form-error" role="alert" hidden></p>
+					<div class="form-buttons">
+						<button id="email-dialog-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+						<button id="email-dialog-send" type="submit" aria-describedby="email-dialog-error" data-shortcut="Alt+S" data-message="login.sendCode" data-translation-context="Button that emails a code to the address typed, to create an account, reset a password or change the account's email address"><!-- icon ph:paper-plane-right -->Send code</button>
+						<button id="email-dialog-confirm" type="submit" aria-describedby="email-dialog-error" data-shortcut="Alt+C" data-message="profile.changeEmailSubmit" data-translation-context="Button in the dialog that changes the player's email address: checks the emailed code and makes the new address the account's" hidden><!-- icon ph:check -->Change email</button>
+					</div>
+				</form>
+			</dialog>
+
+			<dialog id="password-dialog" class="panel dialog" aria-labelledby="password-dialog-title">
+				<form id="password-dialog-form" class="form" novalidate>
+					<h2 id="password-dialog-title" data-message="profile.changePasswordTitle" data-translation-context="Title of the dialog that changes the player's password">Change your password</h2>
+					<p data-message="profile.changePasswordIntro" data-translation-context="In the dialog that changes the player's password">Every other browser logged in to your account is logged out when the password changes.</p>
+					<!-- Not shown: tells password managers which account the new password is for -->
+					<input id="password-dialog-email" type="email" autocomplete="username" hidden />
+					<div class="password-field">
+						<label data-message="profile.currentPassword" data-translation-context="Label of the field for the player's current password, in the dialog that changes it">
+							Current password
+							<input id="password-dialog-current" type="password" autocomplete="current-password" required />
+						</label>
+						<button id="password-dialog-current-toggle" type="button" class="secondary password-toggle" aria-controls="password-dialog-current" aria-pressed="false" aria-label="Show password" title="Show password" data-message-aria-label="login.showPassword" data-translation-context-aria-label="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed" data-message-title="login.showPassword" data-translation-context-title="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"><span class="password-hidden-icon"><!-- icon ph:eye --></span><span class="password-shown-icon"><!-- icon ph:eye-slash --></span></button>
+					</div>
+					<div class="password-field">
+						<label data-message="profile.newPassword" data-translation-context="Label of the field for the player's new password, in the dialog that changes it">
+							New password
+							<input id="password-dialog-new" type="password" autocomplete="new-password" required aria-describedby="password-dialog-hint" />
+						</label>
+						<button id="password-dialog-new-toggle" type="button" class="secondary password-toggle" aria-controls="password-dialog-new" aria-pressed="false" aria-label="Show password" title="Show password" data-message-aria-label="login.showPassword" data-translation-context-aria-label="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed" data-message-title="login.showPassword" data-translation-context-title="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"><span class="password-hidden-icon"><!-- icon ph:eye --></span><span class="password-shown-icon"><!-- icon ph:eye-slash --></span></button>
+					</div>
+					<p id="password-dialog-hint" class="hint" data-message="login.passwordHint" data-translation-context="Under the new password field when creating an account, resetting a password or changing it on the profile; {min} is a number">At least <span id="password-dialog-min" data-argument="min" translate="no">15</span> characters. A few words strung together are easy to remember and hard to guess.</p>
+					<p id="password-dialog-error" class="form-error" role="alert" hidden></p>
+					<div class="form-buttons">
+						<button id="password-dialog-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+						<button id="password-dialog-submit" type="submit" aria-describedby="password-dialog-error" data-shortcut="Alt+S" data-message="profile.savePassword" data-translation-context="Button in the dialog that changes the player's password: saves the new one"><!-- icon ph:key -->Save password</button>
+					</div>
+				</form>
+			</dialog>
+
+			<!-- include character-sheet.html -->
+		</main>
+		<!-- include footer.html -->
+		<!-- include accessibility.html -->
+		<script type="module" src="/src/profile.ts"></script>
+	</body>
+</html>

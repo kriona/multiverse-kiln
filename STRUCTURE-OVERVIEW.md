@@ -77,7 +77,9 @@ Everything is optional except username and name.
 - Optional - set up 2FA
 - name (required, but it doesn't need to be your real name)
 - pronouns
-- location / time zone
+- location
+- time zone, found by typing its city, its name (Pacific Time) or a major city in it (Seattle), and used to match you with players in time zones near yours
+- languages you know, chosen from every ISO 639-1 language (up to 20) by searching and shown as chips, used to match you with other players who speak your language
 - language, used for the pages and for universes translated into it (see [Localization](#localization))
 - link to socials (Discord, Facebook, Insta, TikTok)
 - "show my characters", checked by default. if unchecked, a "other players in your group will always be able to see a link to your profile, even if your character isn't shown on your profile".
@@ -86,7 +88,7 @@ Everything is optional except username and name.
 	- clicking on a character will show a modal dialog with their character sheet and a [Enter Universe](#enter-universe) button.
 
 ## Profile view
-Shows every profile field the user has filled in (name, photo, pronouns, location, time zone, socials) and their visible characters in universes anyone can play. Only logged-in players can see profiles. Fields are optional, so users control what others see by leaving them blank.
+Shows every profile field the user has filled in (name, photo, pronouns, location, time zone, languages they know, socials) and their visible characters in universes anyone can play. Only logged-in players can see profiles. Fields are optional, so users control what others see by leaving them blank.
 
 ## Enter Universe
 The lobby and the game are on a page of their own (`/game/<slug>`, or `/game/<universe ID>`, which changes to the slug), apart from Home, so a player can keep Home, their profile or the editor open in other tabs while they play.
@@ -763,7 +765,7 @@ Every page, editor and game screen can be used with only a keyboard and with a s
 - A button's shortcut letter is underlined in its text, preferring the letter at the start of a word (the S of Save); it is pressed with Alt (Option on a Mac). When a translation's text doesn't have the letter, "(S)" is added after it with the letter underlined. Screen readers announce the shortcut through `aria-keyshortcuts`.
 - `?` (when not typing) or the footer's "Keyboard shortcuts" button lists the shortcuts that work on the screen showing, including keys that aren't buttons, such as movement.
 - A shortcut only works while its button can be seen and used, and while a dialog is open only the dialog's shortcuts work, so screens and dialogs reuse keys. The keys are the same in every language. Alt+D, Alt+E and Alt+F aren't used, since browsers take them, and deleting has no shortcut.
-- A shortcut's letter is in its button's English text, so it can be underlined there. The keys follow one pattern: Alt+S submits the form or dialog showing when its button has an S (Save, Send code, Resize); one without takes a letter of its own word, preferably its first (Alt+C for Create, Choose and Continue, Alt+L for Log in and Create Link, Alt+A for Add). Alt+A applies an editor dialog's changes to its tab (Apply), Alt+N adds something new (on the Characters tab, which adds races, classes and themes, Alt+R adds a race, Alt+L a class and Alt+T a theme), Alt+L leaves (the lobby or group) or picks the Links tool in the map editor, Alt+U enters a universe, Alt+H goes Home, Alt+B goes back, Alt+M moves focus to the map, and Alt+P makes the map editor full page.
+- A shortcut's letter is in its button's English text, so it can be underlined there. The keys follow one pattern: Alt+S submits the form or dialog showing when its button has an S (Save, Send code, Resize); one without takes a letter of its own word, preferably its first (Alt+C for Create, Choose and Continue, Alt+L for Log in and Create Link, Alt+A for Add). Alt+A applies an editor dialog's changes to its tab (Apply), Alt+N adds something new (on the Characters tab, which adds races, classes and themes, Alt+R adds a race, Alt+L a class and Alt+T a theme), Alt+L leaves (the lobby or group) or picks the Links tool in the map editor, Alt+U enters a universe, Alt+H goes Home from a message filling the page, Alt+B goes back, Alt+M moves focus to the map, and Alt+P makes the map editor full page.
 
 ## Screen readers
 - When a screen changes, focus moves to its heading, so the screen is read out.

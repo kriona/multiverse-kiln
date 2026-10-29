@@ -2,7 +2,7 @@
  * Player accounts: the only module that reads or writes the players table
  */
 import { eq, sql } from 'drizzle-orm';
-import type { SocialSite, SocialUsernames } from '@multiverse-kiln/shared';
+import type { ProfileLanguage, SocialSite, SocialUsernames } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { players } from './schema.js';
@@ -60,7 +60,14 @@ export interface ProfileDetails
 	pronouns: string | null;
 	location: string | null;
 	timeZone: string | null;
+	languages: ProfileLanguage[];
 	socials: SocialUsernames;
+
+	/**
+	 * The language the player chose, or null when the pages follow the browser's settings. Other
+	 * players see it only as the language of their pronouns
+	 */
+	locale: string | null;
 
 	/**
 	 * Whether the profile lists all of the player's characters, or only those marked visible
@@ -75,11 +82,6 @@ export interface OwnProfileDetails extends ProfileDetails
 {
 	email: string | null;
 	hasPassword: boolean;
-
-	/**
-	 * The language the player chose, or null when they haven't
-	 */
-	locale: string | null;
 }
 
 /**
@@ -307,10 +309,12 @@ const publicProfileColumns = {
 	pronouns: players.pronouns,
 	location: players.location,
 	timeZone: players.timeZone,
+	languages: players.languages,
 	discord: players.discordUsername,
 	facebook: players.facebookUsername,
 	instagram: players.instagramUsername,
 	tiktok: players.tiktokUsername,
+	locale: players.locale,
 	showCharacters: players.showCharacters
 };
 
@@ -361,8 +365,7 @@ export async function findOwnProfile(playerId: string, executor: Executor = db):
 		.select({
 			...publicProfileColumns,
 			email: players.email,
-			hasPassword: sql<boolean>`${players.passwordHash} IS NOT NULL`,
-			locale: players.locale
+			hasPassword: sql<boolean>`${players.passwordHash} IS NOT NULL`
 		})
 		.from(players)
 		.where(eq(players.id, playerId))

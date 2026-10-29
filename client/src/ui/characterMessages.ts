@@ -7,7 +7,7 @@ export const characterMessages = defineMessages({
 	raceAndClass: {
 		id: 'character.raceAndClass',
 		defaultMessage: '{race} {class}',
-		description: 'A character\'s race and class, e.g. "Dwarf Fighter": under the name at the top of their sheet, and after their name in the lists of the player\'s characters in the lobby, on a universe\'s page and on an invite. Reorder them as your language needs'
+		description: 'A character\'s race and class, e.g. "Dwarf Fighter": under the name at the top of their sheet, and after their name in the lists of the player\'s characters in the lobby, on a universe\'s page, on an invite and on profiles. Reorder them as your language needs'
 	},
 	leaving: {
 		id: 'characters.leaving',
