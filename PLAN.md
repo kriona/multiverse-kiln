@@ -275,8 +275,8 @@ Built in two steps: logins (sessions, providers, local accounts, email codes, re
 	- [✅] The login page (`/login`: log in, create an account, forgot password), replacing the name-only login form on every page and what only it used; Home is public, with Log in and Log out in its toolbar
 	- [✅] Links back to the site in the emails, which needs the client's address as a server setting
 2. Accounts (the profile first, since 2FA, linking and deletion are done from it)
-	- [ ] Profile edit and view, with character visibility and the player's language (used ahead of the browser's settings), changing the email address (the routes exist) and logging out from any page
-	- [ ] Optional 2FA (TOTP and recovery codes)
+	- [✅] Profile edit and view, with character visibility and the player's language (used ahead of the browser's settings), changing the email address (the routes exist) and logging out from any page
+	- [✅] Optional 2FA (TOTP and recovery codes), with trusted browsers that skip the code for 30 days
 	- [ ] Account linking
 	- [ ] Account deletion and data export
 	- [✅] Privacy policy page (`privacy.html`, linked from the footer), drafted; check it against what was built, and set its date, before players use the site

@@ -1,12 +1,13 @@
-import { EMAIL_CODE_LIFETIME_MINUTES, LOGIN_PROVIDER_NAMES, MAX_EMAIL_LENGTH, PASSWORD_RESET_PARAMETER, MAX_USERNAME_LENGTH, MAX_PASSWORD_LENGTH, MAX_PLAYER_NAME_LENGTH, MIN_USERNAME_LENGTH, MIN_PASSWORD_LENGTH, type AuthField, type LoginProvider } from '@multiverse-kiln/shared';
+import { EMAIL_CODE_LIFETIME_MINUTES, LOGIN_PROVIDER_NAMES, MAX_EMAIL_LENGTH, PASSWORD_RESET_PARAMETER, MAX_USERNAME_LENGTH, MAX_PASSWORD_LENGTH, MAX_PLAYER_NAME_LENGTH, MIN_USERNAME_LENGTH, MIN_PASSWORD_LENGTH, TRUSTED_BROWSER_DAYS, type AuthField, type LoginProvider } from '@multiverse-kiln/shared';
 
 import { currentLocale, t } from './localization';
 import { authFieldOf, type AuthApi } from './network/authApi';
 import { EditorApiError } from './network/editorApi';
 import { announceLogin } from './network/sessionBroadcast';
-import { readNextPage, readPageParameter, rememberLoginAddress } from './pages';
+import { readNextPage, readPageParameter, rememberLoginAddress, TWO_FACTOR_SETUP_PAGE_URL } from './pages';
 import { forgetAccountName } from './ui/accountMenu';
 import { announce } from './ui/announcer';
+import { resetCodeInput } from './ui/codeInputs';
 import { getElement, setPageTitle, showMessage, showScreen, type ScreenName } from './ui/dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from './ui/fieldErrors';
 
@@ -29,7 +30,18 @@ interface PendingLink
 	provider: LoginProvider;
 	email: string;
 	hasPassword: boolean;
+
+	/**
+	 * Whether linking needs the account's authenticator or recovery code too
+	 */
+	twoFactor: boolean;
 }
+
+/**
+ * What the authenticator code screen finishes: a login whose password was right, or linking a provider
+ * login once the code emailed to the account was entered
+ */
+type TwoFactorStep = 'login' | 'linkLogin';
 
 /**
  * A form on the page: its error text, the button that submits it, and the fields the server's
@@ -68,8 +80,10 @@ function findForm(name: ScreenName, fields: Partial<Record<AuthField, HTMLInputE
  * Creating an account and resetting a password each email a code: the player types their address, then
  * the code, then the rest. Google and Discord send the browser back to this page, which finishes the
  * login, or asks for a username for a new account, or for the password of the account with the same
- * address (or a code sent to it) to link them. Once logged in, the page tells the browser's other tabs
- * and goes back to the page that sent the player here (readNextPage())
+ * address (or a code sent to it) to link them. An account with 2FA is asked for its authenticator or
+ * recovery code too: after the password, with the new password, or with the link. Once logged in, the
+ * page tells the browser's other tabs and goes back to the page that sent the player here
+ * (readNextPage()); a new account is first offered setting up 2FA
  */
 export class LoginPage
 {
@@ -105,8 +119,10 @@ export class LoginPage
 
 	private readonly resetEmail = getElement('reset-email', HTMLInputElement);
 	private readonly resetPassword = getElement('reset-password', HTMLInputElement);
+	private readonly resetTwoFactorField = getElement('reset-two-factor-field', HTMLElement);
+	private readonly resetTwoFactorCode = getElement('reset-two-factor-code', HTMLInputElement);
 	private readonly resetRemember = getElement('reset-remember', HTMLInputElement);
-	private readonly resetForm = findForm('reset', { password: this.resetPassword });
+	private readonly resetForm = findForm('reset', { password: this.resetPassword, twoFactorCode: this.resetTwoFactorCode });
 
 	private readonly providerRegisterIntro = getElement('provider-register-intro', HTMLElement);
 	private readonly providerRegisterUsername = getElement('provider-register-username', HTMLInputElement);
@@ -117,8 +133,20 @@ export class LoginPage
 	private readonly providerLinkEmail = getElement('provider-link-email', HTMLInputElement);
 	private readonly providerLinkPasswordField = getElement('provider-link-password-field', HTMLElement);
 	private readonly providerLinkPassword = getElement('provider-link-password', HTMLInputElement);
+	private readonly providerLinkTwoFactorField = getElement('provider-link-two-factor-field', HTMLElement);
+	private readonly providerLinkTwoFactorCode = getElement('provider-link-two-factor-code', HTMLInputElement);
 	private readonly providerLinkCode = getElement('provider-link-code', HTMLButtonElement);
-	private readonly providerLinkForm = findForm('provider-link', { password: this.providerLinkPassword });
+	private readonly providerLinkForm = findForm('provider-link', { password: this.providerLinkPassword, twoFactorCode: this.providerLinkTwoFactorCode });
+
+	private readonly twoFactorCode = getElement('two-factor-code', HTMLInputElement);
+	private readonly twoFactorTrustField = getElement('two-factor-trust-field', HTMLElement);
+	private readonly twoFactorTrust = getElement('two-factor-trust', HTMLInputElement);
+	private readonly twoFactorForm = findForm('two-factor', { twoFactorCode: this.twoFactorCode });
+
+	/**
+	 * What the authenticator code screen finishes, while it shows
+	 */
+	private twoFactorStep: TwoFactorStep = 'login';
 
 	/**
 	 * What the code being asked for is for
@@ -179,7 +207,16 @@ export class LoginPage
 			field.maxLength = MAX_PLAYER_NAME_LENGTH;
 		}
 
-		for (const field of [this.loginEmail, this.loginPassword, this.emailAddress, this.codeInput, this.registerUsername, this.registerName, this.registerPassword, this.resetPassword, this.providerRegisterUsername, this.providerRegisterName, this.providerLinkPassword])
+		getElement('two-factor-trust-label', HTMLElement).textContent = t({
+			id: 'login.trustBrowser',
+			defaultMessage: 'Don\'t ask again on this browser for {days, plural, one {# day} other {# days}}',
+			description: 'Checkbox on the screen that asks for the code from the player\'s authenticator app at login: this browser won\'t ask for the code again for a number of days'
+		}, {
+			days: TRUSTED_BROWSER_DAYS
+		});
+		getElement('registered-two-factor', HTMLAnchorElement).href = TWO_FACTOR_SETUP_PAGE_URL;
+
+		for (const field of [this.loginEmail, this.loginPassword, this.emailAddress, this.codeInput, this.registerUsername, this.registerName, this.registerPassword, this.resetPassword, this.resetTwoFactorCode, this.providerRegisterUsername, this.providerRegisterName, this.providerLinkPassword, this.providerLinkTwoFactorCode, this.twoFactorCode])
 		{
 			field.addEventListener('input', () =>
 			{
@@ -194,6 +231,24 @@ export class LoginPage
 		this.onSubmit(this.resetForm, () => this.saveNewPassword());
 		this.onSubmit(this.providerRegisterForm, () => this.registerWithProvider());
 		this.onSubmit(this.providerLinkForm, () => this.linkWithPassword());
+		this.onSubmit(this.twoFactorForm, () => this.submitTwoFactorCode());
+
+		getElement('two-factor-back', HTMLButtonElement).addEventListener('click', () =>
+		{
+			if (this.twoFactorStep === 'linkLogin')
+			{
+				this.showProviderLink();
+			}
+			else
+			{
+				this.showLogin();
+			}
+		});
+
+		getElement('registered-continue', HTMLButtonElement).addEventListener('click', () =>
+		{
+			window.location.replace(readNextPage());
+		});
 
 		for (const [provider, button] of Object.entries(this.providerButtons) as [LoginProvider, HTMLButtonElement][])
 		{
@@ -388,25 +443,85 @@ export class LoginPage
 	}
 
 	/**
+	 * Tells the browser's other tabs it is logged in
+	 */
+	private announceLoggedIn(): void
+	{
+		forgetAccountName();
+		announceLogin();
+	}
+
+	/**
 	 * Goes back to the page that sent the player here, once logged in, telling the browser's other tabs
 	 */
 	private finishLogin(): void
 	{
-		forgetAccountName();
-		announceLogin();
+		this.announceLoggedIn();
 		window.location.replace(readNextPage());
 	}
 
 	/**
-	 * Logs in with the address and password typed
+	 * Logs in with the address and password typed, then asks for the authenticator code if the account
+	 * has 2FA
 	 */
 	private async logIn(): Promise<void>
 	{
-		await this.api.logIn({
+		const outcome = await this.api.logIn({
 			email: this.loginEmail.value.trim(),
 			password: this.loginPassword.value,
 			rememberMe: this.loginRemember.checked
 		});
+
+		if (outcome === 'twoFactor')
+		{
+			this.askForTwoFactorCode('login');
+		}
+		else
+		{
+			this.finishLogin();
+		}
+	}
+
+	/**
+	 * Asks for the code from the player's authenticator app, or a recovery code
+	 *
+	 * @param step What the code finishes
+	 */
+	private askForTwoFactorCode(step: TwoFactorStep): void
+	{
+		this.twoFactorStep = step;
+		resetCodeInput(this.twoFactorCode);
+		this.twoFactorTrust.checked = false;
+
+		// Trusting a browser is for logging in, not for linking a login once
+		this.twoFactorTrustField.hidden = (step !== 'login');
+		getElement('two-factor-trust-hint', HTMLElement).hidden = (step !== 'login');
+		this.show('two-factor', this.twoFactorForm);
+		this.twoFactorCode.focus();
+	}
+
+	/**
+	 * Finishes the login, or links the provider login, with the code typed
+	 */
+	private async submitTwoFactorCode(): Promise<void>
+	{
+		if (this.twoFactorStep === 'login')
+		{
+			await this.api.finishTwoFactorLogin({
+				code: this.twoFactorCode.value,
+				trustBrowser: this.twoFactorTrust.checked,
+				locale: currentLocale()
+			});
+		}
+		else
+		{
+			await this.api.linkProvider({
+				password: null,
+				locale: currentLocale(),
+				twoFactorCode: this.twoFactorCode.value
+			});
+		}
+
 		this.finishLogin();
 	}
 
@@ -507,7 +622,8 @@ export class LoginPage
 			this.pendingLink = {
 				provider: result.provider,
 				email: result.email,
-				hasPassword: result.hasPassword
+				hasPassword: result.hasPassword,
+				twoFactor: result.twoFactor
 			};
 			this.showProviderLink();
 		}
@@ -547,6 +663,11 @@ export class LoginPage
 		this.providerLinkPassword.value = '';
 		this.providerLinkPassword.required = link.hasPassword;
 		this.providerLinkPasswordField.hidden = !link.hasPassword;
+
+		// With an emailed code instead, the authenticator code is asked for once that is entered
+		resetCodeInput(this.providerLinkTwoFactorCode);
+		this.providerLinkTwoFactorCode.required = (link.hasPassword && link.twoFactor);
+		this.providerLinkTwoFactorField.hidden = !this.providerLinkTwoFactorCode.required;
 		this.providerLinkForm.submit.hidden = !link.hasPassword;
 		this.providerLinkCode.classList.toggle('secondary', link.hasPassword);
 		this.show('provider-link', this.providerLinkForm);
@@ -573,7 +694,8 @@ export class LoginPage
 	{
 		await this.api.linkProvider({
 			password: this.providerLinkPassword.value,
-			locale: currentLocale()
+			locale: currentLocale(),
+			twoFactorCode: (this.providerLinkTwoFactorField.hidden ? null : this.providerLinkTwoFactorCode.value)
 		});
 		this.finishLogin();
 	}
@@ -713,7 +835,7 @@ export class LoginPage
 			}, values);
 		}
 
-		this.codeInput.value = '';
+		resetCodeInput(this.codeInput);
 		this.codeStatus.textContent = '';
 		this.show('code', this.codeForm);
 		announce(this.codeIntro.textContent);
@@ -736,6 +858,8 @@ export class LoginPage
 				email: this.email,
 				locale: currentLocale()
 			});
+			resetCodeInput(this.codeInput);
+			this.codeInput.focus();
 			this.codeStatus.textContent = t({
 				id: 'login.codeResent',
 				defaultMessage: 'Sent a new code. The one before no longer works.',
@@ -758,7 +882,7 @@ export class LoginPage
 	 */
 	private async checkCode(): Promise<void>
 	{
-		await this.api.checkCode({
+		const twoFactor = await this.api.checkCode({
 			purpose: this.purpose,
 			email: this.email,
 			code: this.codeInput.value
@@ -772,22 +896,32 @@ export class LoginPage
 		}
 		else if (this.purpose === 'linkLogin')
 		{
+			if (this.pendingLink?.twoFactor)
+			{
+				this.askForTwoFactorCode('linkLogin');
+				return;
+			}
+
 			await this.api.linkProvider({
 				password: null,
-				locale: currentLocale()
+				locale: currentLocale(),
+				twoFactorCode: null
 			});
 			this.finishLogin();
 		}
 		else
 		{
 			this.resetEmail.value = this.email;
+			resetCodeInput(this.resetTwoFactorCode);
+			this.resetTwoFactorCode.required = twoFactor;
+			this.resetTwoFactorField.hidden = !twoFactor;
 			this.show('reset', this.resetForm);
 			this.resetPassword.focus();
 		}
 	}
 
 	/**
-	 * Creates the account and logs in
+	 * Creates the account and logs in, then offers to set up 2FA
 	 */
 	private async register(): Promise<void>
 	{
@@ -799,7 +933,14 @@ export class LoginPage
 			rememberMe: this.registerRemember.checked,
 			locale: currentLocale()
 		});
-		this.finishLogin();
+		this.announceLoggedIn();
+
+		const heading = getElement('registered-screen', HTMLElement).querySelector('h1');
+
+		showScreen('registered');
+		setPageTitle(heading?.textContent ?? undefined);
+		announce(heading?.textContent ?? '');
+		getElement('registered-two-factor', HTMLAnchorElement).focus();
 	}
 
 	/**
@@ -810,7 +951,8 @@ export class LoginPage
 		await this.api.resetPassword({
 			password: this.resetPassword.value,
 			rememberMe: this.resetRemember.checked,
-			locale: currentLocale()
+			locale: currentLocale(),
+			twoFactorCode: (this.resetTwoFactorField.hidden ? null : this.resetTwoFactorCode.value)
 		});
 		this.finishLogin();
 	}

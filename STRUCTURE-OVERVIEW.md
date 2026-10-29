@@ -35,17 +35,22 @@ Google and Discord logins use OAuth with PKCE, and the provider sends the browse
 A logged-in player can also link providers from their profile. A site offers a provider once its OAuth client is set up (`server/.env.example`).
 
 Local accounts can turn on 2FA with an authenticator app (TOTP), and get recovery codes for when they lose it. Accounts that log in with a provider use the provider's 2FA.
+- Turning it on, from the profile, asks for the password, then shows a QR code for the app (drawn in the page, and the secret as text for typing in by hand; the secret is never put in an address), then asks for the code the app shows. Then it shows 10 recovery codes, once, to copy or save as a text file. The server keeps the secret encrypted (AES-256-GCM, with `TOTP_ENCRYPTION_KEY`, kept apart from the database) and the recovery codes as keyed hashes.
+- With it on, logging in with the password asks for the app's code next, from the same browser, within 10 minutes. A recovery code works in place of the app's code, once, and the account is emailed how many are left. 5 wrong codes end the login, and an account can try 10 codes an hour wherever they are typed. Each app code works once.
+- At the code, "Don't ask again on this browser for 30 days" trusts the browser: its logins skip the code until then. The profile shows how many browsers are trusted, and can stop trusting them all.
+- Resetting a forgotten password and linking a Google or Discord login (with the password or an email code) ask for the app's code too, unless the browser is trusted, so someone who gets into the player's email still can't take the account.
+- Turning it off and making new recovery codes ask for the password and a code. Turning it on or off emails the account. A player who loses the app and every recovery code can't get back in on their own: only the site's contact can help.
 
 ## Deleting an account
 From the profile. Before deleting, the player decides for each universe they are the only creator of: hand it to another of its editors as creator, or delete it. Groups whose anchor being is one of their characters disband. The account, profile, characters, sessions and auth events are deleted. Before deleting, the player can download their data as one JSON file (also offered on the profile at any time).
 
 ## Register local account
-Enter an email, it sends you an [email code](#email-codes), enter the code, then the email again with a password, username and name to create the account (the server keeps only a keyed hash of the address while it waits, so it asks for the address again). Recommend the user use a password manager, link to a couple prominent ones. Emails you when you have a new account. Optional - set up 2FA now.
+Enter an email, it sends you an [email code](#email-codes), enter the code, then the email again with a password, username and name to create the account (the server keeps only a keyed hash of the address while it waits, so it asks for the address again). Recommend the user use a password manager, link to a couple prominent ones. Emails you when you have a new account. Then offers to set up 2FA now, which opens its dialog on the profile, or to go on to the page the player came from.
 
 If the address already has an account, the page answers the same as for a new one, and the address is emailed a note saying it has an account and how to log in or reset the password, in place of a code.
 
 ## Forgot your password
-Enter an email, it sends you an [email code](#email-codes), enter the code to change your password. Emails you when the password is changed, and signs the account out everywhere.
+Enter an email, it sends you an [email code](#email-codes), enter the code to change your password (with an authenticator or recovery code too, when the account has 2FA). Emails you when the password is changed, and signs the account out everywhere.
 
 ## Email codes
 Registering, resetting a password, changing an email and linking a Google or Discord login all send a code by email. Every code follows these rules:
@@ -74,7 +79,7 @@ Everything is optional except username and name.
 - photo (200px square, shown as a circle)
 - email, with a change email button for local accounts. Enter an email, it sends you an [email code](#email-codes), enter the code to change your email. Email both addresses letting them know that the email has changed.
 - if a local account, a change password button. Emails you when the password is changed.
-- Optional - set up 2FA
+- if a local account, two-factor authentication: turn it on, or turn it off and make new recovery codes, with how many recovery codes are left and how many browsers are trusted (see [Login](#login))
 - name (required, but it doesn't need to be your real name)
 - pronouns
 - location

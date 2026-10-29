@@ -199,6 +199,11 @@ export interface OwnProfilePayload extends ProfileFields
 	providers: LoginProvider[];
 
 	/**
+	 * The account's 2FA, or null when it is off
+	 */
+	twoFactor: TwoFactorState | null;
+
+	/**
 	 * The language the player chose, or null when the pages follow the browser's settings
 	 */
 	locale: string | null;
@@ -212,6 +217,22 @@ export interface OwnProfilePayload extends ProfileFields
 	 * Every character the player has, in any universe, by universe name and then character name
 	 */
 	characters: OwnProfileCharacter[];
+}
+
+/**
+ * An account's 2FA, as its own profile shows it
+ */
+export interface TwoFactorState
+{
+	/**
+	 * How many of the account's recovery codes haven't been used
+	 */
+	recoveryCodesLeft: number;
+
+	/**
+	 * How many browsers skip the authenticator code at login
+	 */
+	trustedBrowsers: number;
 }
 
 /**

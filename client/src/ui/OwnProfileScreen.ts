@@ -1,10 +1,10 @@
-import { LOGIN_PROVIDER_NAMES, MAX_LOCATION_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, PROFILE_LANGUAGES, SOCIAL_SITES, type OwnProfileCharacter, type OwnProfilePayload, type ProfileField, type ProfileLanguage, type ProfileUpdateRequest, type SocialSite } from '@multiverse-kiln/shared';
+import { LOGIN_PROVIDER_NAMES, MAX_LOCATION_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, PROFILE_LANGUAGES, SOCIAL_SITES, type OwnProfileCharacter, type OwnProfilePayload, type ProfileField, type ProfileLanguage, type ProfileUpdateRequest, type SocialSite, type TwoFactorState } from '@multiverse-kiln/shared';
 
 import { availableLocales, chooseLocale, currentLocale, formatList, t } from '../localization';
 import type { AuthApi } from '../network/authApi';
 import { describeEditorError, EditorApiError } from '../network/editorApi';
 import { profileFieldOf, type ProfileApi } from '../network/profileApi';
-import { playerPageUrl } from '../pages';
+import { playerPageUrl, readPageParameter, replacePageParameters, TWO_FACTOR_SETUP_PARAMETER } from '../pages';
 import { showAccountName } from './accountMenu';
 import { ChangeTracker } from './changeTracker';
 import type { CharacterSheetDialog } from './CharacterSheetDialog';
@@ -17,9 +17,12 @@ import { formMessages } from './formMessages';
 import { languageName } from './languagePicker';
 import { PasswordChangeDialog } from './PasswordChangeDialog';
 import { characterLabel, showProfileCharacters } from './profileCharacters';
+import { RecoveryCodesDialog } from './RecoveryCodesDialog';
 import { SearchSelect } from './SearchSelect';
 import { timeZoneChoices } from './timeZones';
 import { showToast } from './toast';
+import { TwoFactorConfirmDialog } from './TwoFactorConfirmDialog';
+import { TwoFactorSetupDialog } from './TwoFactorSetupDialog';
 
 /**
  * The languages a profile can say the player knows, each named in itself, with its name in the page's
@@ -50,8 +53,8 @@ function profileLanguageChoices(): ComboboxChoice[]
 
 /**
  * The player's own profile (the profile screen of profile.html): what others see about them, which they
- * change and save, how they log in, and all of their characters, each of which they can show or hide
- * when the profile doesn't show them all
+ * change and save, how they log in (with their 2FA), and all of their characters, each of which they can
+ * show or hide when the profile doesn't show them all
  */
 export class OwnProfileScreen
 {
@@ -110,7 +113,18 @@ export class OwnProfileScreen
 	private readonly changeEmailButton = getElement('profile-change-email', HTMLButtonElement);
 	private readonly passwordState = getElement('profile-password-state', HTMLElement);
 	private readonly changePasswordButton = getElement('profile-change-password', HTMLButtonElement);
+	private readonly twoFactorLabel = getElement('profile-two-factor-label', HTMLElement);
+	private readonly twoFactorRow = getElement('profile-two-factor', HTMLElement);
+	private readonly twoFactorState = getElement('profile-two-factor-state', HTMLElement);
+	private readonly twoFactorOnButton = getElement('profile-two-factor-on', HTMLButtonElement);
+	private readonly twoFactorCodesButton = getElement('profile-two-factor-codes', HTMLButtonElement);
+	private readonly twoFactorOffButton = getElement('profile-two-factor-off', HTMLButtonElement);
+	private readonly trustedBrowsersLabel = getElement('profile-trusted-browsers-label', HTMLElement);
+	private readonly trustedBrowsersRow = getElement('profile-trusted-browsers', HTMLElement);
+	private readonly trustedBrowsersState = getElement('profile-trusted-browsers-state', HTMLElement);
+	private readonly forgetBrowsersButton = getElement('profile-forget-browsers', HTMLButtonElement);
 	private readonly providers = getElement('profile-providers', HTMLElement);
+	private readonly accountError = getElement('profile-account-error', HTMLElement);
 	private readonly characterList = getElement('profile-character-list', HTMLElement);
 	private readonly noCharacters = getElement('profile-character-none', HTMLElement);
 	private readonly characterError = getElement('profile-character-error', HTMLElement);
@@ -121,6 +135,9 @@ export class OwnProfileScreen
 	});
 	private readonly emailDialog: EmailChangeDialog;
 	private readonly passwordDialog: PasswordChangeDialog;
+	private readonly twoFactorDialog: TwoFactorSetupDialog;
+	private readonly twoFactorConfirmDialog: TwoFactorConfirmDialog;
+	private readonly recoveryCodesDialog = new RecoveryCodesDialog();
 
 	/**
 	 * Each field the server can refuse, by the name it gives it
@@ -145,7 +162,7 @@ export class OwnProfileScreen
 	 * @param authApi The auth routes, which change the email address and password
 	 * @param sheet The character sheet dialog, for the player's characters
 	 */
-	constructor(private readonly api: ProfileApi, authApi: AuthApi, private readonly sheet: CharacterSheetDialog)
+	constructor(private readonly api: ProfileApi, private readonly authApi: AuthApi, private readonly sheet: CharacterSheetDialog)
 	{
 		const numbers = new Intl.NumberFormat(currentLocale());
 
@@ -211,6 +228,137 @@ export class OwnProfileScreen
 		{
 			this.passwordDialog.open((this.profile?.email ?? null));
 		});
+
+		this.twoFactorDialog = new TwoFactorSetupDialog(authApi, (codes) =>
+		{
+			this.setTwoFactor({
+				recoveryCodesLeft: codes.length,
+				trustedBrowsers: 0
+			});
+			showToast(t({
+				id: 'profile.twoFactorEnabled',
+				defaultMessage: 'Two-factor authentication is on.',
+				description: 'Shown once the player has turned on two-factor authentication from their profile'
+			}), {
+				kind: 'success'
+			});
+			this.recoveryCodesDialog.open(codes, (this.profile?.username ?? ''));
+		});
+		this.twoFactorConfirmDialog = new TwoFactorConfirmDialog(authApi, () =>
+		{
+			this.setTwoFactor(null);
+			showToast(t({
+				id: 'profile.twoFactorDisabled',
+				defaultMessage: 'Two-factor authentication is off.',
+				description: 'Shown once the player has turned off two-factor authentication from their profile'
+			}), {
+				kind: 'success'
+			});
+		}, (codes) =>
+		{
+			this.setTwoFactor({
+				recoveryCodesLeft: codes.length,
+				trustedBrowsers: (this.profile?.twoFactor?.trustedBrowsers ?? 0)
+			});
+			this.recoveryCodesDialog.open(codes, (this.profile?.username ?? ''));
+		});
+
+		this.twoFactorOnButton.addEventListener('click', () =>
+		{
+			this.twoFactorDialog.open((this.profile?.email ?? null));
+		});
+
+		this.twoFactorOffButton.addEventListener('click', () =>
+		{
+			this.twoFactorConfirmDialog.open('turnOff', (this.profile?.email ?? null));
+		});
+
+		this.twoFactorCodesButton.addEventListener('click', () =>
+		{
+			this.twoFactorConfirmDialog.open('newCodes', (this.profile?.email ?? null));
+		});
+
+		this.forgetBrowsersButton.addEventListener('click', () =>
+		{
+			void this.forgetTrustedBrowsers();
+		});
+	}
+
+	/**
+	 * Opens the dialog setting up 2FA, when the address asks for it (as the page after creating an
+	 * account links to) and the account can have it, then takes the request out of the address
+	 */
+	private openRequestedSetup(): void
+	{
+		if (readPageParameter(TWO_FACTOR_SETUP_PARAMETER) === undefined)
+		{
+			return;
+		}
+
+		replacePageParameters({
+			[TWO_FACTOR_SETUP_PARAMETER]: undefined
+		});
+
+		if (this.profile?.hasPassword && (this.profile.twoFactor === null))
+		{
+			this.twoFactorDialog.open(this.profile.email);
+		}
+	}
+
+	/**
+	 * Shows a change to the account's 2FA
+	 *
+	 * @param twoFactor The account's 2FA, or null when it is off
+	 */
+	private setTwoFactor(twoFactor: TwoFactorState | null): void
+	{
+		if (this.profile)
+		{
+			this.profile.twoFactor = twoFactor;
+			this.showAccount(this.profile);
+		}
+	}
+
+	/**
+	 * Stops trusting every browser that skipped the authenticator code
+	 */
+	private async forgetTrustedBrowsers(): Promise<void>
+	{
+		this.forgetBrowsersButton.disabled = true;
+		showMessage(this.accountError, undefined);
+
+		try
+		{
+			await this.authApi.forgetTrustedBrowsers();
+
+			if (this.profile?.twoFactor)
+			{
+				this.setTwoFactor({
+					...this.profile.twoFactor,
+					trustedBrowsers: 0
+				});
+			}
+
+			showToast(t({
+				id: 'profile.browsersForgotten',
+				defaultMessage: 'Every browser will ask for the authenticator code at its next login.',
+				description: 'Shown once the player has stopped trusting the browsers that skipped the authenticator code at login'
+			}), {
+				kind: 'success'
+			});
+		}
+		catch (error)
+		{
+			showMessage(this.accountError, describeEditorError(error, {
+				id: 'profile.forgetBrowsersFailed',
+				defaultMessage: 'Could not stop trusting your browsers.',
+				description: 'Shown on the player\'s own profile page when stopping trusting the browsers that skip the authenticator code failed'
+			}));
+		}
+		finally
+		{
+			this.forgetBrowsersButton.disabled = false;
+		}
 	}
 
 	/**
@@ -226,6 +374,7 @@ export class OwnProfileScreen
 		this.showCharacterList(profile.characters);
 		setPageTitle(document.title);
 		showScreen('profile');
+		this.openRequestedSetup();
 	}
 
 	/**
@@ -332,6 +481,7 @@ export class OwnProfileScreen
 				description: 'Shown on the player\'s own profile page in place of their password when the account has none, since it logs in only with Google or Discord'
 			}));
 		this.changePasswordButton.hidden = !profile.hasPassword;
+		this.showTwoFactor(profile);
 		this.providers.textContent = ((profile.providers.length === 0)
 			? t({
 				id: 'profile.noEmail',
@@ -339,6 +489,57 @@ export class OwnProfileScreen
 				description: 'Shown on the player\'s own profile page in place of their email address, or of their linked logins, when they have none'
 			})
 			: formatList(profile.providers.map((provider) => LOGIN_PROVIDER_NAMES[provider]), 'conjunction'));
+	}
+
+	/**
+	 * Shows whether the account has 2FA, with its recovery codes and trusted browsers. Only an account
+	 * with a password has it: Google and Discord logins rely on the provider's own
+	 *
+	 * @param profile The profile
+	 */
+	private showTwoFactor(profile: OwnProfilePayload): void
+	{
+		const twoFactor = profile.twoFactor;
+
+		for (const element of [this.twoFactorLabel, this.twoFactorRow])
+		{
+			element.hidden = !profile.hasPassword;
+		}
+
+		for (const element of [this.trustedBrowsersLabel, this.trustedBrowsersRow])
+		{
+			element.hidden = !twoFactor;
+		}
+
+		this.twoFactorOnButton.hidden = (twoFactor !== null);
+		this.twoFactorOffButton.hidden = (twoFactor === null);
+		this.twoFactorCodesButton.hidden = (twoFactor === null);
+
+		if (!twoFactor)
+		{
+			this.twoFactorState.textContent = t({
+				id: 'profile.twoFactorOff',
+				defaultMessage: 'Off',
+				description: 'Shown on the player\'s own profile page beside Two-factor authentication when it is off'
+			});
+			return;
+		}
+
+		this.twoFactorState.textContent = t({
+			id: 'profile.twoFactorOn',
+			defaultMessage: 'On, with {count, plural, =0 {no recovery codes left} one {# recovery code left} other {# recovery codes left}}',
+			description: 'Shown on the player\'s own profile page beside Two-factor authentication when it is on; {count} is how many of their recovery codes haven\'t been used'
+		}, {
+			count: twoFactor.recoveryCodesLeft
+		});
+		this.trustedBrowsersState.textContent = t({
+			id: 'profile.trustedBrowserCount',
+			defaultMessage: '{count, plural, =0 {None: every login asks for the code} one {# browser skips the code at login} other {# browsers skip the code at login}}',
+			description: 'Shown on the player\'s own profile page beside Trusted browsers; {count} is how many browsers skip the authenticator code at login'
+		}, {
+			count: twoFactor.trustedBrowsers
+		});
+		this.forgetBrowsersButton.hidden = (twoFactor.trustedBrowsers === 0);
 	}
 
 	/**

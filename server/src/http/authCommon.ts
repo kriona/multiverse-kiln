@@ -55,6 +55,11 @@ export const authMessages = defineMessages({
 		id: 'error.auth.usernameTaken',
 		defaultMessage: 'Another account already has that username. Choose another.',
 		description: 'Shown under the username field when creating an account: usernames are unique, ignoring capitals'
+	},
+	wrongPassword: {
+		id: 'error.auth.wrongPassword',
+		defaultMessage: 'That password isn\'t right.',
+		description: 'Shown under the password field when logging in to an account to link a Google or Discord login to it, or when turning two-factor authentication on or off or making new recovery codes, and the password is wrong'
 	}
 });
 

@@ -113,9 +113,22 @@
 								<span id="profile-password-state"></span>
 								<button id="profile-change-password" type="button" class="secondary" data-shortcut="Alt+P" data-message="profile.changePassword" data-translation-context="Button on the player's own profile page that opens the dialog for changing their password"><!-- icon ph:key -->Change password</button>
 							</dd>
+							<dt id="profile-two-factor-label" data-message="profile.twoFactor" data-translation-context="Label of whether the player's account has two-factor authentication (a code from an authenticator app asked for at login, after the password), on their own profile page">Two-factor authentication</dt>
+							<dd id="profile-two-factor">
+								<span id="profile-two-factor-state"></span>
+								<button id="profile-two-factor-on" type="button" class="secondary" aria-describedby="profile-two-factor-label" data-shortcut="Alt+T" data-message="profile.twoFactorTurnOn" data-translation-context="Button on the player's own profile page that opens the dialog setting up two-factor authentication"><!-- icon ph:shield-check -->Turn on</button>
+								<button id="profile-two-factor-codes" type="button" class="secondary" data-shortcut="Alt+W" data-message="profile.newRecoveryCodes" data-translation-context="Button on the player's own profile page that opens the dialog making new recovery codes for two-factor authentication, in place of the old ones"><!-- icon ph:list-numbers -->New recovery codes</button>
+								<button id="profile-two-factor-off" type="button" class="secondary" aria-describedby="profile-two-factor-label" data-shortcut="Alt+O" data-message="profile.twoFactorTurnOff" data-translation-context="Button on the player's own profile page that opens the dialog turning off two-factor authentication"><!-- icon ph:shield-slash -->Turn off</button>
+							</dd>
+							<dt id="profile-trusted-browsers-label" data-message="profile.trustedBrowsers" data-translation-context="Label of how many browsers skip the authenticator code at login, on the player's own profile page, when the account has two-factor authentication">Trusted browsers</dt>
+							<dd id="profile-trusted-browsers">
+								<span id="profile-trusted-browsers-state"></span>
+								<button id="profile-forget-browsers" type="button" class="secondary" data-shortcut="Alt+U" data-message="profile.forgetBrowsers" data-translation-context="Button on the player's own profile page: every browser that skipped the authenticator code at login asks for it again"><!-- icon ph:x-circle -->Stop trusting them</button>
+							</dd>
 							<dt data-message="profile.providers" data-translation-context="Label of the Google and Discord logins linked to the player's account, on their own profile page">Linked logins</dt>
 							<dd id="profile-providers"></dd>
 						</dl>
+						<p id="profile-account-error" class="form-error" role="alert" hidden></p>
 					</section>
 
 					<section class="panel profile-panel" aria-labelledby="profile-characters-heading">
@@ -158,7 +171,7 @@
 					</label>
 					<label id="email-dialog-code-label" data-message="login.code" data-translation-context="Label of the field for the code that was emailed to the player" hidden>
 						Code
-						<input id="email-dialog-code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" maxlength="24" />
+						<input id="email-dialog-code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" data-code="email" data-auto-submit />
 					</label>
 					<p id="email-dialog-error" class="form-error" role="alert" hidden></p>
 					<div class="form-buttons">
@@ -194,6 +207,85 @@
 					<div class="form-buttons">
 						<button id="password-dialog-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
 						<button id="password-dialog-submit" type="submit" aria-describedby="password-dialog-error" data-shortcut="Alt+S" data-message="profile.savePassword" data-translation-context="Button in the dialog that changes the player's password: saves the new one"><!-- icon ph:key -->Save password</button>
+					</div>
+				</form>
+			</dialog>
+
+			<dialog id="two-factor-dialog" class="panel dialog" aria-labelledby="two-factor-dialog-title">
+				<form id="two-factor-dialog-form" class="form" novalidate>
+					<h2 id="two-factor-dialog-title" data-message="profile.twoFactorSetupTitle" data-translation-context="Title of the dialog that sets up two-factor authentication">Turn on two-factor authentication</h2>
+					<div id="two-factor-dialog-password-step" class="form-group">
+						<p data-message="profile.twoFactorSetupIntro" data-translation-context="First paragraph of the dialog that sets up two-factor authentication, which asks for the player's password first">With two-factor authentication, logging in with your password also asks for a code from an app on your phone, so someone who learns your password still can't get in. First, enter your password.</p>
+						<!-- Not shown: tells password managers which account the password is for -->
+						<input id="two-factor-dialog-email" type="email" autocomplete="username" hidden />
+						<div class="password-field">
+							<label data-message="login.password" data-translation-context="Label of the password field when logging in, and when turning two-factor authentication on or off or making new recovery codes on the profile">
+								Password
+								<input id="two-factor-dialog-password" type="password" autocomplete="current-password" />
+							</label>
+							<button id="two-factor-dialog-password-toggle" type="button" class="secondary password-toggle" aria-controls="two-factor-dialog-password" aria-pressed="false" aria-label="Show password" title="Show password" data-message-aria-label="login.showPassword" data-translation-context-aria-label="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed" data-message-title="login.showPassword" data-translation-context-title="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"><span class="password-hidden-icon"><!-- icon ph:eye --></span><span class="password-shown-icon"><!-- icon ph:eye-slash --></span></button>
+						</div>
+					</div>
+					<div id="two-factor-dialog-scan-step" class="form-group" hidden>
+						<p data-message="profile.twoFactorScan" data-translation-context="In the dialog that sets up two-factor authentication, above the QR code; the app names are examples of authenticator apps and stay as they are">Scan this QR code with an authenticator app, such as Google Authenticator, Microsoft Authenticator, Aegis or 2FAS. Then enter the 6-digit code the app shows.</p>
+						<div id="two-factor-dialog-qr" class="qr-code-frame"></div>
+						<p class="hint" data-message="profile.twoFactorManual" data-translation-context="In the dialog that sets up two-factor authentication, above the secret key shown as text, for players who can't scan the QR code">Can't scan it? Add the account in the app by hand, with this key:</p>
+						<div class="two-factor-secret">
+							<code id="two-factor-dialog-secret" translate="no"></code>
+							<button id="two-factor-dialog-copy" type="button" class="secondary" aria-describedby="two-factor-dialog-copy-status" data-shortcut="Alt+Y" data-message="profile.copyKey" data-translation-context="Button in the dialog that sets up two-factor authentication: copies the secret key, for typing into an authenticator app"><!-- icon ph:copy -->Copy key</button>
+						</div>
+						<p id="two-factor-dialog-copy-status" class="hint" role="status"></p>
+						<label data-message="profile.twoFactorAppCode" data-translation-context="Label of the field for the 6-digit code the authenticator app shows, in the dialog that sets up two-factor authentication">
+							Code from the app
+							<input id="two-factor-dialog-code" autocomplete="one-time-code" inputmode="numeric" spellcheck="false" data-code="authenticator" data-auto-submit />
+						</label>
+					</div>
+					<p id="two-factor-dialog-error" class="form-error" role="alert" hidden></p>
+					<div class="form-buttons">
+						<button id="two-factor-dialog-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+						<button id="two-factor-dialog-continue" type="submit" aria-describedby="two-factor-dialog-error" data-shortcut="Alt+C" data-message="profile.twoFactorContinue" data-translation-context="Button in the dialog that sets up two-factor authentication: checks the password and shows the QR code"><!-- icon ph:arrow-right -->Continue</button>
+						<button id="two-factor-dialog-enable" type="submit" aria-describedby="two-factor-dialog-error" data-shortcut="Alt+T" data-message="profile.twoFactorEnable" data-translation-context="Button in the dialog that sets up two-factor authentication: checks the code from the authenticator app and turns two-factor authentication on" hidden><!-- icon ph:shield-check -->Turn on</button>
+					</div>
+				</form>
+			</dialog>
+
+			<dialog id="recovery-codes-dialog" class="panel dialog" aria-labelledby="recovery-codes-dialog-title">
+				<div class="form">
+					<h2 id="recovery-codes-dialog-title" data-message="profile.recoveryCodesTitle" data-translation-context="Title of the dialog that shows the player's new recovery codes for two-factor authentication">Save your recovery codes</h2>
+					<p id="recovery-codes-dialog-intro" data-message="profile.recoveryCodesIntro" data-translation-context="In the dialog that shows the player's new recovery codes for two-factor authentication">If you lose your phone, each of these codes logs you in once in place of a code from the app. Keep them somewhere safe, such as your password manager. This is the only time they're shown.</p>
+					<ol id="recovery-codes-list" class="recovery-codes" translate="no" aria-describedby="recovery-codes-dialog-intro"></ol>
+					<p id="recovery-codes-status" class="hint" role="status"></p>
+					<div class="form-buttons">
+						<button id="recovery-codes-copy" type="button" class="secondary" aria-describedby="recovery-codes-status" data-shortcut="Alt+Y" data-message="profile.copyRecoveryCodes" data-translation-context="Button in the dialog that shows the player's new recovery codes: copies them all"><!-- icon ph:copy -->Copy</button>
+						<button id="recovery-codes-download" type="button" class="secondary" data-shortcut="Alt+W" data-message="profile.downloadRecoveryCodes" data-translation-context="Button in the dialog that shows the player's new recovery codes: saves them as a text file"><!-- icon ph:download-simple -->Download</button>
+						<button id="recovery-codes-done" type="button" data-shortcut="Alt+V" data-message="profile.recoveryCodesSaved" data-translation-context="Button that closes the dialog showing the player's new recovery codes, once they have saved them"><!-- icon ph:check -->I've saved them</button>
+					</div>
+				</div>
+			</dialog>
+
+			<dialog id="two-factor-confirm-dialog" class="panel dialog" aria-labelledby="two-factor-confirm-title">
+				<form id="two-factor-confirm-form" class="form" novalidate>
+					<h2 id="two-factor-confirm-title"></h2>
+					<p id="two-factor-confirm-intro"></p>
+					<!-- Not shown: tells password managers which account the password is for -->
+					<input id="two-factor-confirm-email" type="email" autocomplete="username" hidden />
+					<div class="password-field">
+						<label data-message="login.password" data-translation-context="Label of the password field when logging in, and when turning two-factor authentication on or off or making new recovery codes on the profile">
+							Password
+							<input id="two-factor-confirm-password" type="password" autocomplete="current-password" required />
+						</label>
+						<button id="two-factor-confirm-password-toggle" type="button" class="secondary password-toggle" aria-controls="two-factor-confirm-password" aria-pressed="false" aria-label="Show password" title="Show password" data-message-aria-label="login.showPassword" data-translation-context-aria-label="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed" data-message-title="login.showPassword" data-translation-context-title="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"><span class="password-hidden-icon"><!-- icon ph:eye --></span><span class="password-shown-icon"><!-- icon ph:eye-slash --></span></button>
+					</div>
+					<label data-message="login.twoFactorCode" data-translation-context="Label of the field for the 6-digit code from the player's authenticator app, or one of their recovery codes, when logging in, resetting a password or linking a Google or Discord login to an account with two-factor authentication, and when turning it off or making new recovery codes on the profile">
+						Authenticator code
+						<input id="two-factor-confirm-code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" required aria-describedby="two-factor-confirm-hint" data-code="twoFactor" />
+					</label>
+					<p id="two-factor-confirm-hint" class="hint" data-message="login.twoFactorCodeHint" data-translation-context="Under the authenticator code field when logging in or linking a Google or Discord login to an account with two-factor authentication, and when turning it off or making new recovery codes on the profile">The 6-digit code from your authenticator app, or one of your recovery codes.</p>
+					<p id="two-factor-confirm-error" class="form-error" role="alert" hidden></p>
+					<div class="form-buttons">
+						<button id="two-factor-confirm-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+						<button id="two-factor-confirm-off" type="submit" aria-describedby="two-factor-confirm-error" data-shortcut="Alt+O" data-message="profile.twoFactorDisable" data-translation-context="Button in the dialog that turns off two-factor authentication: checks the password and code and turns it off"><!-- icon ph:shield-slash -->Turn off</button>
+						<button id="two-factor-confirm-codes" type="submit" aria-describedby="two-factor-confirm-error" data-shortcut="Alt+M" data-message="profile.makeRecoveryCodes" data-translation-context="Button in the dialog that makes new recovery codes: checks the password and code, and replaces the old codes with new ones"><!-- icon ph:list-numbers -->Make new codes</button>
 					</div>
 				</form>
 			</dialog>

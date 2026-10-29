@@ -2,7 +2,7 @@
  * The auth routes (listed in shared/src/accounts.ts): the browser's session, logging in and out, and
  * the email code flows for registering, resetting a password, changing an email address and linking a
  * provider login (see Login and Email codes in STRUCTURE-OVERVIEW.md). Logging in with Google or
- * Discord is in providerAuth.ts
+ * Discord is in providerAuth.ts, and 2FA in twoFactorAuth.ts
  *
  * Nothing these routes answer tells whether an account exists for an address: logins fail with the
  * same message either way, and sending a code answers the same whether or not one was sent. Emails go
@@ -11,7 +11,7 @@
 import { randomBytes } from 'crypto';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_EMAIL_CHANGE_PATH, AUTH_LOGIN_PATH, AUTH_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_CHANGE_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_REGISTER_PATH, AUTH_SESSION_PATH, EMAIL_CODE_PURPOSES, MAX_EMAIL_LENGTH, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_USERNAME_LENGTH, MIN_PASSWORD_LENGTH, type EmailChangeRequest, type EmailCodeCheckRequest, type EmailCodeRequest, type LoginRequest, type PasswordChangeRequest, type PasswordResetRequest, type RegisterRequest, type SessionPayload } from '@multiverse-kiln/shared';
+import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_EMAIL_CHANGE_PATH, AUTH_LOGIN_PATH, AUTH_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_CHANGE_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_REGISTER_PATH, AUTH_SESSION_PATH, EMAIL_CODE_PURPOSES, MAX_EMAIL_LENGTH, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_TWO_FACTOR_CODE_INPUT_LENGTH, MAX_USERNAME_LENGTH, MIN_PASSWORD_LENGTH, type EmailChangeRequest, type EmailCodeCheckPayload, type EmailCodeCheckRequest, type EmailCodeRequest, type LoginPayload, type LoginRequest, type PasswordChangeRequest, type PasswordResetRequest, type RegisterRequest, type SessionPayload } from '@multiverse-kiln/shared';
 
 import { hashAddress, hashesMatch, keyedHash } from '../auth/keyedHashes.js';
 import { checkLoginPassword, checkPasswordForMissingAccount, hashPassword } from '../auth/passwords.js';
@@ -25,6 +25,7 @@ import { lockPendingProviderLogin } from '../db/providerLoginRepo.js';
 import { findRateLimitTimes, lockRateLimitSubject, recordRateLimitEvent } from '../db/rateLimitRepo.js';
 import { deletePlayerSessions } from '../db/sessionRepo.js';
 import { inTransaction } from '../db/transactions.js';
+import { savePendingTwoFactorLogin } from '../db/twoFactorRepo.js';
 import { accountCreatedEmail, accountExistsEmail, emailChangedEmail, emailCodeEmail, passwordChangedEmail } from '../email/authEmails.js';
 import { sendEmailInBackground, type EmailContent } from '../email/mailer.js';
 import { CONTINUATION_LIFETIME_MS, DAY_MS, decideEmailCodeSend, emailCodeFromBytes, emailCodeState, EMAIL_CODE_LENGTH, HOUR_MS, MAX_EMAIL_CODES_PER_NETWORK_HOUR, MAX_GUESSES_PER_NETWORK_HOUR, normalizeEmailCode } from '../logic/emailCodes.js';
@@ -32,10 +33,11 @@ import { connectedSessions } from '../players/connectedSessions.js';
 import { displayText } from '../rooms/payloads.js';
 import { authMessages, checkDisplayName, checkUsername, cookieTokenHash, recordEvent, sendRefusal, tooManyAttempts, type AuthRefusal } from './authCommon.js';
 import { clientNetworkHash } from './clientNetwork.js';
-import { clearCookie, CONTINUATION_COOKIE, PROVIDER_LOGIN_COOKIE, setCookie } from './cookies.js';
+import { clearCookie, CONTINUATION_COOKIE, PROVIDER_LOGIN_COOKIE, setCookie, TWO_FACTOR_LOGIN_COOKIE } from './cookies.js';
 import { refuseWritesFromOtherOrigins } from './editorAccess.js';
 import { errorMessages, sendInvalidRequest } from './errors.js';
 import { addProviderRoutes } from './providerAuth.js';
+import { addTwoFactorRoutes, checkSecondFactor, needsSecondFactor, reportRecoveryCodeUse, type SecondFactorOutcome } from './twoFactorAuth.js';
 
 /**
  * The largest request body the auth routes read
@@ -83,7 +85,8 @@ const registerRequest = z.object({
 const passwordResetRequest = z.object({
 	password: z.string().max(MAX_PASSWORD_LENGTH * 4),
 	rememberMe: z.boolean(),
-	locale
+	locale,
+	twoFactorCode: z.string().max(MAX_TWO_FACTOR_CODE_INPUT_LENGTH).nullable()
 }) satisfies z.ZodType<PasswordResetRequest>;
 
 const emailChangeRequest = z.object({
@@ -127,6 +130,7 @@ export function addAuthRoutes(app: Application, allowedOrigins: Set<string>): vo
 	router.post(underAuthPath(AUTH_EMAIL_CHANGE_PATH), emailChangeRoute);
 	router.post(underAuthPath(AUTH_PASSWORD_CHANGE_PATH), passwordChangeRoute);
 	addProviderRoutes(router, underAuthPath);
+	addTwoFactorRoutes(router, underAuthPath);
 	router.use(handleAuthError);
 
 	app.use(AUTH_PATH, router);
@@ -244,10 +248,12 @@ async function sessionRoute(request: Request, response: Response): Promise<void>
 
 /**
  * POST AUTH_LOGIN_PATH: logs in to a local account with its email address and password. A wrong
- * address and a wrong password get the same answer, in about the same time
+ * address and a wrong password get the same answer, in about the same time. An account with 2FA, on a
+ * browser it doesn't trust, then waits for its authenticator or recovery code (twoFactorAuth.ts)
  *
  * @param request The request, with a LoginRequest
- * @param response The response: 204 with the session cookie
+ * @param response The response: a LoginPayload, with the session cookie, or the cookie that lets this
+ * browser give the code
  */
 async function loginRoute(request: Request, response: Response): Promise<void>
 {
@@ -302,7 +308,7 @@ async function loginRoute(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	await inTransaction(async (executor) =>
+	const payload = await inTransaction(async (executor): Promise<LoginPayload> =>
 	{
 		if (check.newHash !== undefined)
 		{
@@ -310,11 +316,28 @@ async function loginRoute(request: Request, response: Response): Promise<void>
 			await recordEvent(request, login.id, 'passwordRehashed', now, executor);
 		}
 
+		if (await needsSecondFactor(request, login.id, now, executor))
+		{
+			const token = createToken();
+
+			await savePendingTwoFactorLogin({
+				continuationHash: hashToken(token),
+				playerId: login.id,
+				rememberMe,
+				expiresAt: new Date(now.getTime() + CONTINUATION_LIFETIME_MS)
+			}, executor);
+			setCookie(response, TWO_FACTOR_LOGIN_COOKIE, token, CONTINUATION_LIFETIME_MS);
+
+			return({ outcome: 'twoFactor' });
+		}
+
 		await startSession(response, login.id, rememberMe, executor);
 		await recordEvent(request, login.id, 'loggedIn', now, executor);
+
+		return({ outcome: 'loggedIn' });
 	});
 
-	response.sendStatus(204);
+	response.json(payload);
 }
 
 /**
@@ -514,11 +537,12 @@ async function sendCodeRoute(request: Request, response: Response): Promise<void
 
 /**
  * POST AUTH_CODE_CHECK_PATH: checks an email code. A right one gives this browser, and only this one,
- * a cookie that lets it take the next step for CONTINUATION_LIFETIME_MS. A missing, expired, used or
- * wrong code gets the same answer
+ * a cookie that lets it take the next step for CONTINUATION_LIFETIME_MS, and says whether that step
+ * needs the account's authenticator or recovery code. A missing, expired, used or wrong code gets the
+ * same answer
  *
  * @param request The request, with an EmailCodeCheckRequest
- * @param response The response: 204 with the continuation cookie
+ * @param response The response: an EmailCodeCheckPayload, with the continuation cookie
  */
 async function checkCodeRoute(request: Request, response: Response): Promise<void>
 {
@@ -536,7 +560,7 @@ async function checkCodeRoute(request: Request, response: Response): Promise<voi
 	const now = new Date();
 	const addressHash = hashAddress(email);
 	const networkHash = clientNetworkHash(request);
-	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | string> =>
+	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { token: string; twoFactor: boolean }> =>
 	{
 		const network = await takeAttempt([
 			{
@@ -582,17 +606,23 @@ async function checkCodeRoute(request: Request, response: Response): Promise<voi
 
 		await useEmailCode(code.id, hashToken(token), now, new Date(now.getTime() + CONTINUATION_LIFETIME_MS), executor);
 
-		return(token);
+		return({
+			token,
+			// Only a password reset asks here: linking is told by the provider's answer (providerAuth.ts)
+			twoFactor: ((purpose === 'resetPassword') && (code.playerId !== null) && await needsSecondFactor(request, code.playerId, now, executor))
+		});
 	});
 
-	if (typeof outcome !== 'string')
+	if ('status' in outcome)
 	{
 		sendRefusal(response, outcome);
 		return;
 	}
 
-	setCookie(response, CONTINUATION_COOKIE, outcome, CONTINUATION_LIFETIME_MS);
-	response.sendStatus(204);
+	const payload: EmailCodeCheckPayload = { twoFactor: outcome.twoFactor };
+
+	setCookie(response, CONTINUATION_COOKIE, outcome.token, CONTINUATION_LIFETIME_MS);
+	response.json(payload);
 }
 
 /**
@@ -707,7 +737,9 @@ async function registerRoute(request: Request, response: Response): Promise<void
 
 /**
  * POST AUTH_PASSWORD_RESET_PATH: sets a new password, once this browser has entered the code sent to
- * the account's address. Every session of the account ends, and this browser is logged in afresh
+ * the account's address, and for an account with 2FA, given its authenticator or recovery code too, so
+ * someone who gets into the player's email still can't take the account. Every session of the account
+ * ends, and this browser is logged in afresh
  *
  * @param request The request, with a PasswordResetRequest
  * @param response The response: 204 with the session cookie
@@ -722,7 +754,7 @@ async function passwordResetRoute(request: Request, response: Response): Promise
 		return;
 	}
 
-	const { password, rememberMe, locale: emailLocale } = body.data;
+	const { password, rememberMe, locale: emailLocale, twoFactorCode } = body.data;
 	const continuationHash = continuationHashOf(request);
 	const problem = (checkPasswordLength(password)
 		?? ((continuationHash === undefined) ? { status: 403, message: authMessages.enterCodeFirst } : undefined)
@@ -736,7 +768,7 @@ async function passwordResetRoute(request: Request, response: Response): Promise
 
 	const passwordHash = await hashPassword(password);
 	const now = new Date();
-	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { ended: string[]; email: string | null }> =>
+	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { playerId: string; ended: string[]; email: string | null; check: SecondFactorOutcome }> =>
 	{
 		const code = await lockContinuation('resetPassword', continuationHash as Buffer, now, executor);
 
@@ -749,6 +781,12 @@ async function passwordResetRoute(request: Request, response: Response): Promise
 		}
 
 		const playerId = code.playerId;
+		const check = await checkSecondFactor(request, response, playerId, twoFactorCode, now, executor, { trustedBrowserSkips: true });
+
+		if ((check.kind === 'wrong') || (check.kind === 'refused'))
+		{
+			return(check.refusal);
+		}
 
 		await savePasswordHash(playerId, passwordHash, executor);
 
@@ -760,8 +798,10 @@ async function passwordResetRoute(request: Request, response: Response): Promise
 		await recordEvent(request, playerId, 'loggedIn', now, executor);
 
 		return({
+			playerId,
 			ended,
-			email: await findPlayerEmail(playerId, executor)
+			email: await findPlayerEmail(playerId, executor),
+			check
 		});
 	});
 
@@ -782,6 +822,8 @@ async function passwordResetRoute(request: Request, response: Response): Promise
 			...passwordChangedEmail(emailLocale)
 		});
 	}
+
+	await reportRecoveryCodeUse(outcome.playerId, outcome.check, emailLocale);
 }
 
 /**

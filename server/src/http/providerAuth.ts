@@ -6,13 +6,13 @@
  * (AUTH_PROVIDER_CALLBACK_PATH), and a provider login an account has logs the browser in. Otherwise the
  * login waits a few minutes for one more step from that browser: choosing a username for a new account
  * (AUTH_PROVIDER_REGISTER_PATH), or, when a local account has the same email address, logging in to it
- * to link them (AUTH_PROVIDER_LINK_PATH). A provider login is never linked to an account by its email
- * address alone
+ * to link them (AUTH_PROVIDER_LINK_PATH), with its authenticator or recovery code too when it has 2FA.
+ * A provider login is never linked to an account by its email address alone
  */
 import type { Request, Response, Router } from 'express';
 import { generateCodeVerifier, generateState } from 'arctic';
 import { z } from 'zod';
-import { AUTH_PROVIDER_CALLBACK_PATH, AUTH_PROVIDER_LINK_PATH, AUTH_PROVIDER_REGISTER_PATH, AUTH_PROVIDER_START_PATH, AUTH_PROVIDERS_PATH, defineMessages, LOGIN_PROVIDER_NAMES, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_USERNAME_LENGTH, type LoginProvider, type ProviderCallbackPayload, type ProviderCallbackRequest, type ProviderLinkRequest, type ProviderRegisterRequest, type ProvidersPayload, type ProviderStartPayload, type ProviderStartRequest } from '@multiverse-kiln/shared';
+import { AUTH_PROVIDER_CALLBACK_PATH, AUTH_PROVIDER_LINK_PATH, AUTH_PROVIDER_REGISTER_PATH, AUTH_PROVIDER_START_PATH, AUTH_PROVIDERS_PATH, defineMessages, LOGIN_PROVIDER_NAMES, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_TWO_FACTOR_CODE_INPUT_LENGTH, MAX_USERNAME_LENGTH, type LoginProvider, type ProviderCallbackPayload, type ProviderCallbackRequest, type ProviderLinkRequest, type ProviderRegisterRequest, type ProvidersPayload, type ProviderStartPayload, type ProviderStartRequest } from '@multiverse-kiln/shared';
 
 import { hashAddress, hashesMatch } from '../auth/keyedHashes.js';
 import { checkLoginPassword } from '../auth/passwords.js';
@@ -33,6 +33,7 @@ import { authMessages, checkDisplayName, checkUsername, cookieTokenHash, recordE
 import { clientNetworkHash } from './clientNetwork.js';
 import { clearCookie, CONTINUATION_COOKIE, PROVIDER_LOGIN_COOKIE, PROVIDER_START_COOKIE, readCookie, setCookie } from './cookies.js';
 import { sendInvalidRequest } from './errors.js';
+import { checkSecondFactor, needsSecondFactor, reportRecoveryCodeUse, type SecondFactorOutcome } from './twoFactorAuth.js';
 
 /**
  * How long a player has at the provider before the login must start again
@@ -87,11 +88,6 @@ const providerMessages = defineMessages({
 		id: 'error.auth.providerOtherLogin',
 		defaultMessage: 'Your account already has a different {provider} login. Log in with that one, or with your password.',
 		description: 'Why linking a Google or Discord login was refused: the account already has a login with the same provider, from another account there; {provider} is Google or Discord'
-	},
-	wrongPassword: {
-		id: 'error.auth.wrongPassword',
-		defaultMessage: 'That password isn\'t right.',
-		description: 'Shown under the password field when logging in to an account to link a Google or Discord login to it, and the password is wrong'
 	}
 });
 
@@ -130,7 +126,8 @@ const providerRegisterRequest = z.object({
 
 const providerLinkRequest = z.object({
 	password: z.string().max(MAX_PASSWORD_LENGTH * 4).nullable(),
-	locale
+	locale,
+	twoFactorCode: z.string().max(MAX_TWO_FACTOR_CODE_INPUT_LENGTH).nullable()
 }) satisfies z.ZodType<ProviderLinkRequest>;
 
 /**
@@ -425,7 +422,8 @@ async function callbackRoute(request: Request, response: Response): Promise<void
 			outcome: 'link',
 			provider,
 			email,
-			hasPassword: ((await findLocalLogin(email, executor))?.id === ownerId)
+			hasPassword: ((await findLocalLogin(email, executor))?.id === ownerId),
+			twoFactor: await needsSecondFactor(request, ownerId, now, executor)
 		});
 	});
 
@@ -561,7 +559,7 @@ async function linkRoute(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	const { password, locale: emailLocale } = body.data;
+	const { password, locale: emailLocale, twoFactorCode } = body.data;
 	const now = new Date();
 	const pending = await inTransaction((executor) => lockBrowserLogin(request, now, executor));
 
@@ -602,7 +600,7 @@ async function linkRoute(request: Request, response: Response): Promise<void>
 			await recordEvent(request, pending.playerId, 'loginFailed', now);
 			sendRefusal(response, {
 				status: 401,
-				message: providerMessages.wrongPassword,
+				message: authMessages.wrongPassword,
 				field: 'password'
 			});
 			return;
@@ -611,7 +609,7 @@ async function linkRoute(request: Request, response: Response): Promise<void>
 		newHash = check.newHash;
 	}
 
-	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { playerId: string; provider: LoginProvider; email: string | null }> =>
+	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { playerId: string; provider: LoginProvider; email: string | null; check: SecondFactorOutcome }> =>
 	{
 		const locked = await lockBrowserLogin(request, now, executor);
 
@@ -624,6 +622,7 @@ async function linkRoute(request: Request, response: Response): Promise<void>
 		}
 
 		const playerId = locked.playerId;
+		let codeId: string | undefined;
 
 		if (password === null)
 		{
@@ -638,7 +637,20 @@ async function linkRoute(request: Request, response: Response): Promise<void>
 				});
 			}
 
-			await deleteEmailCode(code.id, executor);
+			codeId = code.id;
+		}
+
+		// Checked before anything is used up, so a wrong code can be typed again
+		const check = await checkSecondFactor(request, response, playerId, twoFactorCode, now, executor, { trustedBrowserSkips: true });
+
+		if ((check.kind === 'wrong') || (check.kind === 'refused'))
+		{
+			return(check.refusal);
+		}
+
+		if (codeId !== undefined)
+		{
+			await deleteEmailCode(codeId, executor);
 		}
 
 		try
@@ -669,7 +681,8 @@ async function linkRoute(request: Request, response: Response): Promise<void>
 		return({
 			playerId,
 			provider: locked.provider,
-			email: await findPlayerEmail(playerId, executor)
+			email: await findPlayerEmail(playerId, executor),
+			check
 		});
 	});
 
@@ -690,4 +703,6 @@ async function linkRoute(request: Request, response: Response): Promise<void>
 			...providerLinkedEmail(LOGIN_PROVIDER_NAMES[outcome.provider], emailLocale)
 		});
 	}
+
+	await reportRecoveryCodeUse(outcome.playerId, outcome.check, emailLocale);
 }

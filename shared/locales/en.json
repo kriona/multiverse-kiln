@@ -2139,6 +2139,42 @@
 		"defaultMessage": "You can now log in to {siteName} with {provider}",
 		"description": "Subject of the email sent when a Google or Discord login is linked to an account; {siteName} is the site's name and {provider} is Google or Discord"
 	},
+	"email.recoveryCodeUsed.body": {
+		"defaultMessage": "One of the recovery codes of your account on {siteName} was just used in place of a code from your authenticator app. It won't work again. {count, plural, =0 {You have no recovery codes left: make new ones on your profile.} one {You have # left.} other {You have # left.}}",
+		"description": "Paragraph of the email sent when one of an account's recovery codes is used; {siteName} is the site's name, and {count} how many recovery codes the account has left"
+	},
+	"email.recoveryCodeUsed.notYou": {
+		"defaultMessage": "If you didn't use it, someone else has your password and recovery codes. Reset your password straight away, and make new recovery codes on your profile.",
+		"description": "Last paragraph of the email sent when one of an account's recovery codes is used, for someone who didn't use it"
+	},
+	"email.recoveryCodeUsed.subject": {
+		"defaultMessage": "A recovery code was used on {siteName}",
+		"description": "Subject of the email sent when one of an account's recovery codes (used in place of an authenticator app code) is used; {siteName} is the site's name"
+	},
+	"email.twoFactorDisabled.body": {
+		"defaultMessage": "Two-factor authentication was turned off for your account on {siteName}. Logging in now needs only your password, and your recovery codes no longer work.",
+		"description": "Paragraph of the email sent when two-factor authentication is turned off for an account; {siteName} is the site's name"
+	},
+	"email.twoFactorDisabled.notYou": {
+		"defaultMessage": "If you didn't turn it off, someone else may be using your account on {siteName}. Reset its password straight away, then turn two-factor authentication on again.",
+		"description": "Last paragraph of the email sent when two-factor authentication is turned off for an account, for someone who didn't turn it off; {siteName} is the site's name"
+	},
+	"email.twoFactorDisabled.subject": {
+		"defaultMessage": "Two-factor authentication is off for your account on {siteName}",
+		"description": "Subject of the email sent when two-factor authentication (an authenticator app code asked for at login) is turned off for an account; {siteName} is the site's name"
+	},
+	"email.twoFactorEnabled.body": {
+		"defaultMessage": "Two-factor authentication was turned on for your account on {siteName}. Logging in with your password now asks for a code from your authenticator app too. Keep your recovery codes somewhere safe: they are the only way in if you lose the app.",
+		"description": "Paragraph of the email sent when two-factor authentication is turned on for an account; {siteName} is the site's name"
+	},
+	"email.twoFactorEnabled.notYou": {
+		"defaultMessage": "If you didn't turn it on, someone else may be using your account on {siteName}. Reset its password straight away.",
+		"description": "Last paragraph of the email sent when two-factor authentication is turned on for an account, for someone who didn't turn it on; {siteName} is the site's name"
+	},
+	"email.twoFactorEnabled.subject": {
+		"defaultMessage": "Two-factor authentication is on for your account on {siteName}",
+		"description": "Subject of the email sent when two-factor authentication (an authenticator app code asked for at login) is turned on for an account; {siteName} is the site's name"
+	},
 	"error.alreadyInGroup": {
 		"defaultMessage": "That character is already in a group. They have to leave it first.",
 		"description": "Why a character couldn't make or join a group: a character can be in only one group at a time"
@@ -2215,6 +2251,30 @@
 		"defaultMessage": "Too many tries. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
 		"description": "Why a login wasn't tried, an email code wasn't sent, or a code wasn't checked: too many were tried or asked for from this network or for this address in the past hour, or a code was sent to the address less than a minute ago"
 	},
+	"error.auth.twoFactorAlreadyOn": {
+		"defaultMessage": "Two-factor authentication is already on for your account.",
+		"description": "Why setting up two-factor authentication was refused: it is already on, perhaps from another tab"
+	},
+	"error.auth.twoFactorCodeNeeded": {
+		"defaultMessage": "Enter the code from your authenticator app, or one of your recovery codes.",
+		"description": "Shown under the two-factor code field when it was left empty, or what was typed can't be an authenticator code (6 digits) or a recovery code"
+	},
+	"error.auth.twoFactorLoginAgain": {
+		"defaultMessage": "It has been too long since you typed your password, or too many codes were wrong. Log in with your password again.",
+		"description": "Why finishing a login with an authenticator or recovery code was refused: the password was typed more than a few minutes ago, in another browser, or too many wrong codes were typed since"
+	},
+	"error.auth.twoFactorNoPassword": {
+		"defaultMessage": "Two-factor authentication is for logging in with a password, and your account has none. Google and Discord ask for their own.",
+		"description": "Why setting up two-factor authentication was refused: the account logs in only with Google or Discord, whose own two-factor authentication protects it"
+	},
+	"error.auth.twoFactorNotOn": {
+		"defaultMessage": "Two-factor authentication isn't on for your account.",
+		"description": "Why turning off two-factor authentication or making new recovery codes was refused: it isn't on, perhaps turned off from another tab"
+	},
+	"error.auth.twoFactorSetUpAgain": {
+		"defaultMessage": "Start setting up two-factor authentication again: it has been too long since it started.",
+		"description": "Why turning on two-factor authentication was refused: the player didn't start setting it up, or started more than a few minutes ago"
+	},
 	"error.auth.usernameForm": {
 		"defaultMessage": "Use {min} to {max} letters (a to z), digits and underscores.",
 		"description": "Shown under the username field when the username has other characters, or is too short or too long; {min} and {max} are numbers"
@@ -2237,7 +2297,15 @@
 	},
 	"error.auth.wrongPassword": {
 		"defaultMessage": "That password isn't right.",
-		"description": "Shown under the password field when logging in to an account to link a Google or Discord login to it, and the password is wrong"
+		"description": "Shown under the password field when logging in to an account to link a Google or Discord login to it, or when turning two-factor authentication on or off or making new recovery codes, and the password is wrong"
+	},
+	"error.auth.wrongSetupCode": {
+		"defaultMessage": "That code isn't right. Check that your device's clock is right, and enter the newest code your authenticator app shows for this site.",
+		"description": "Shown under the code field while turning on two-factor authentication, when the code from the authenticator app just set up is wrong"
+	},
+	"error.auth.wrongTwoFactorCode": {
+		"defaultMessage": "That code isn't right, or was already used. Check that your device's clock is right, and enter the newest code, or use a recovery code.",
+		"description": "Shown under the two-factor code field when the authenticator or recovery code is wrong, or was already used"
 	},
 	"error.cantDeleteArea": {
 		"defaultMessage": "The lobby and starting areas can't be deleted.",
@@ -3031,6 +3099,10 @@
 		"defaultMessage": "The game's own art, audio, fonts, characters, setting and story are not covered by the GNU Affero General Public License. They are copyright {holder}, all rights reserved, and may not be reused without written permission. Assets made by others keep their own licenses, listed below.",
 		"description": "On the license page, explaining that the game's assets aren't free software; {holder} is who holds their copyright"
 	},
+	"license.code": {
+		"defaultMessage": "Code by others",
+		"description": "Heading of the license page's section crediting code by others that the pages include, and its link in the page's contents"
+	},
 	"license.communityUse": {
 		"defaultMessage": "{siteName} uses trademarks and/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy ({policy}). We are expressly prohibited from charging you to use or access this content. {siteName} is not published, endorsed, or specifically approved by Paizo. For more information about Paizo Inc. and Paizo products, visit {paizo}.",
 		"description": "The notice Paizo requires from anyone using its trademarks under its Community Use Policy, which keeps the game free; {policy} is a link to the policy and {paizo} a link to Paizo's website, each the same in every language, and {siteName} is the game engine's name"
@@ -3066,6 +3138,10 @@
 	"license.phosphor": {
 		"defaultMessage": "Interface icons are from {phosphor}, used under the MIT License:",
 		"description": "On the license page, crediting the icon set the pages' buttons use; {phosphor} is a link to it, named the same in every language. The license's text follows in English"
+	},
+	"license.qrCode": {
+		"defaultMessage": "The QR code for setting up two-factor authentication is drawn by {qrCode}, used under the MIT License:",
+		"description": "On the license page, crediting the code that draws the QR code for setting up two-factor authentication; {qrCode} is a link to it, named the same in every language. The license's text follows in English"
 	},
 	"license.starfinder": {
 		"defaultMessage": "Starfinder First Edition rules",
@@ -3205,7 +3281,7 @@
 	},
 	"login.continue": {
 		"defaultMessage": "Continue",
-		"description": "Button that checks the emailed code and goes on to the next step"
+		"description": "Button that checks the emailed code, or the code from the authenticator app, and goes on to the next step"
 	},
 	"login.displayName": {
 		"defaultMessage": "Name",
@@ -3247,13 +3323,17 @@
 		"defaultMessage": "Password",
 		"description": "Label of the field for a new password, when creating an account or resetting a password"
 	},
+	"login.notNow": {
+		"defaultMessage": "Not now",
+		"description": "Button on the screen shown once a new account is created: skips setting up two-factor authentication for now and goes on"
+	},
 	"login.orEmail": {
 		"defaultMessage": "or use your email address",
 		"description": "On the login screen, between the buttons that log in with Google or Discord and the email address and password fields"
 	},
 	"login.password": {
 		"defaultMessage": "Password",
-		"description": "Label of the password field when logging in"
+		"description": "Label of the password field when logging in, and when turning two-factor authentication on or off or making new recovery codes on the profile"
 	},
 	"login.passwordHint": {
 		"defaultMessage": "At least {min} characters. A few words strung together are easy to remember and hard to guess.",
@@ -3303,6 +3383,14 @@
 		"defaultMessage": "Create your account",
 		"description": "Heading of the screen where a new account's username, name and password are chosen, and of the one where a new account's username and name are chosen after logging in with Google or Discord"
 	},
+	"login.registeredIntro": {
+		"defaultMessage": "Two-factor authentication keeps your account safe even if someone learns your password: logging in asks for a code from an app on your phone too. You can set it up now, or any time from your profile.",
+		"description": "On the screen shown once a new account is created with a password"
+	},
+	"login.registeredTitle": {
+		"defaultMessage": "Your account is ready",
+		"description": "Heading of the screen shown once a new account is created, offering to set up two-factor authentication"
+	},
 	"login.rememberMe": {
 		"defaultMessage": "Remember me",
 		"description": "Checkbox when logging in, creating an account or choosing a new password: keeps the browser logged in for up to 30 days without use, rather than an hour"
@@ -3335,6 +3423,10 @@
 		"defaultMessage": "Send code",
 		"description": "Button that emails a code to the address typed, to create an account, reset a password or change the account's email address"
 	},
+	"login.setUpTwoFactor": {
+		"defaultMessage": "Set up two-factor authentication",
+		"description": "Link on the screen shown once a new account is created: goes to the player's profile to set up two-factor authentication"
+	},
 	"login.showPassword": {
 		"defaultMessage": "Show password",
 		"description": "Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"
@@ -3342,6 +3434,38 @@
 	"login.title": {
 		"defaultMessage": "Log in",
 		"description": "The browser tab's title for the login page, and the heading and button that log in with an email address and password"
+	},
+	"login.trustBrowser": {
+		"defaultMessage": "Don't ask again on this browser for {days, plural, one {# day} other {# days}}",
+		"description": "Checkbox on the screen that asks for the code from the player's authenticator app at login: this browser won't ask for the code again for a number of days"
+	},
+	"login.trustBrowserHint": {
+		"defaultMessage": "Only on a browser that no one else uses. Your password is still asked for.",
+		"description": "Under the checkbox that stops this browser asking for the authenticator code at login"
+	},
+	"login.twoFactorCode": {
+		"defaultMessage": "Authenticator code",
+		"description": "Label of the field for the 6-digit code from the player's authenticator app, or one of their recovery codes, when logging in, resetting a password or linking a Google or Discord login to an account with two-factor authentication, and when turning it off or making new recovery codes on the profile"
+	},
+	"login.twoFactorCodeHint": {
+		"defaultMessage": "The 6-digit code from your authenticator app, or one of your recovery codes.",
+		"description": "Under the authenticator code field when logging in or linking a Google or Discord login to an account with two-factor authentication, and when turning it off or making new recovery codes on the profile"
+	},
+	"login.twoFactorIntro": {
+		"defaultMessage": "Your account has two-factor authentication. Open your authenticator app and enter the 6-digit code it shows for this site.",
+		"description": "On the screen that asks for the code from the player's authenticator app, when their account has two-factor authentication"
+	},
+	"login.twoFactorLostHint": {
+		"defaultMessage": "Lost your phone? Enter one of your recovery codes instead. Each works once.",
+		"description": "Under the authenticator code field on the screen that asks for it"
+	},
+	"login.twoFactorResetHint": {
+		"defaultMessage": "Your account has two-factor authentication, so the email code isn't enough on its own. Enter the 6-digit code from your authenticator app, or one of your recovery codes.",
+		"description": "Under the authenticator code field when resetting the password of an account with two-factor authentication"
+	},
+	"login.twoFactorTitle": {
+		"defaultMessage": "Enter your authenticator code",
+		"description": "Heading of the screen that asks for the code from the player's authenticator app after their password, or after the emailed code when linking a Google or Discord login"
 	},
 	"login.unreachable": {
 		"defaultMessage": "Could not reach the server. Check your connection and try again.",
@@ -4000,7 +4124,7 @@
 		"description": "In the privacy policy's list of what the site keeps about a player's account: the account's two names"
 	},
 	"privacy.accountPassword": {
-		"defaultMessage": "If you have a local account, your password, kept only in a scrambled form that can't be turned back into the password (a one-way hash: Argon2id for passwords and recovery codes, and a keyed hash, HMAC, for the codes and addresses below).",
+		"defaultMessage": "If you have a local account, your password, kept only in a scrambled form that can't be turned back into the password (a one-way hash: Argon2id for passwords, and a keyed hash, HMAC, for recovery codes and the codes and addresses below).",
 		"description": "In the privacy policy's list of what the site keeps about a player's account: the password, which is kept only as a one-way hash. The first place the policy says scrambled, so the brackets explain the term for the rest of the page: Argon2id and HMAC are the names of the hashing methods, the same in every language"
 	},
 	"privacy.accountProviders": {
@@ -4008,8 +4132,8 @@
 		"description": "In the privacy policy's list of what the site keeps about a player's account: what the site gets from Google or Discord when a player logs in with them. Google and Discord are names, the same in every language"
 	},
 	"privacy.accountTwoFactor": {
-		"defaultMessage": "If you turn on two-factor authentication, the secret your authenticator app shares with us, and your recovery codes, kept scrambled like a password.",
-		"description": "In the privacy policy's list of what the site keeps about a player's account: the secret behind two-factor authentication, which links the account to an authenticator app, and the recovery codes"
+		"defaultMessage": "If you turn on two-factor authentication, the secret your authenticator app shares with us, encrypted with a key kept apart from our database, and your recovery codes, kept only in a scrambled form.",
+		"description": "In the privacy policy's list of what the site keeps about a player's account: the secret behind two-factor authentication, which links the account to an authenticator app and is stored encrypted, and the recovery codes, stored scrambled"
 	},
 	"privacy.changes": {
 		"defaultMessage": "Changes to this policy",
@@ -4058,6 +4182,10 @@
 	"privacy.cookiesSession": {
 		"defaultMessage": "A cookie that keeps you logged in. It ends when you log out, after an hour without use, or when you close your browser; with \"Remember me\" checked, after 30 days without use.",
 		"description": "In the privacy policy's list of what the site stores in a player's browser: the login cookie, and how long it lasts"
+	},
+	"privacy.cookiesTwoFactor": {
+		"defaultMessage": "With two-factor authentication on, a cookie that lets the browser where you typed your password enter your authenticator code, for 10 minutes. If you choose not to be asked again on a browser, a cookie that lets it skip the code for 30 days, until you stop trusting it on your profile.",
+		"description": "In the privacy policy's list of what the site stores in a player's browser: the cookies two-factor authentication uses, one while the login waits for the authenticator code, and one for a browser the player chose to trust"
 	},
 	"privacy.deleting": {
 		"defaultMessage": "Deleting your account deletes your profile, your characters and your security records. Groups led by one of your characters disband. For each universe you are the only creator of, you choose whether to hand it to another of its editors or delete it; what you built in universes others edit stays part of them.",
@@ -4172,7 +4300,7 @@
 		"description": "In the privacy policy's list of security records: the login sessions, one for each browser a player is logged in on"
 	},
 	"privacy.securityText": {
-		"defaultMessage": "Everything you send the site is encrypted on its way. Passwords and codes are only kept scrambled, and you can turn on two-factor authentication. If your information is ever exposed, we will tell you.",
+		"defaultMessage": "Everything you send the site is encrypted on its way (using HTTPS). Passwords and codes are only kept scrambled, and you can turn on two-factor authentication. If your information is ever exposed, we will tell you.",
 		"description": "In the privacy policy, how the site protects a player's information, and the promise to tell them if it leaks"
 	},
 	"privacy.see": {
@@ -4259,6 +4387,10 @@
 		"defaultMessage": "Your browser's language",
 		"description": "The first choice of language on the player's own profile page, which leaves the pages in whatever language the browser asks for"
 	},
+	"profile.browsersForgotten": {
+		"defaultMessage": "Every browser will ask for the authenticator code at its next login.",
+		"description": "Shown once the player has stopped trusting the browsers that skipped the authenticator code at login"
+	},
 	"profile.changeEmail": {
 		"defaultMessage": "Change email",
 		"description": "Button on the player's own profile page that opens the dialog for changing their email address"
@@ -4319,6 +4451,14 @@
 		"defaultMessage": "Could not list your characters.",
 		"description": "Shown on the player's own profile page when their characters couldn't be loaded again"
 	},
+	"profile.copyKey": {
+		"defaultMessage": "Copy key",
+		"description": "Button in the dialog that sets up two-factor authentication: copies the secret key, for typing into an authenticator app"
+	},
+	"profile.copyRecoveryCodes": {
+		"defaultMessage": "Copy",
+		"description": "Button in the dialog that shows the player's new recovery codes: copies them all"
+	},
 	"profile.currentPassword": {
 		"defaultMessage": "Current password",
 		"description": "Label of the field for the player's current password, in the dialog that changes it"
@@ -4331,6 +4471,10 @@
 		"defaultMessage": "The name other players see. It doesn't have to be your real name, or unique.",
 		"description": "Under the name field on the player's own profile page"
 	},
+	"profile.downloadRecoveryCodes": {
+		"defaultMessage": "Download",
+		"description": "Button in the dialog that shows the player's new recovery codes: saves them as a text file"
+	},
 	"profile.email": {
 		"defaultMessage": "Email address",
 		"description": "Label of the player's email address, on their own profile page"
@@ -4339,9 +4483,25 @@
 		"defaultMessage": "Email address changed. We've told both addresses.",
 		"description": "Shown once the player has changed their email address from their profile"
 	},
+	"profile.forgetBrowsers": {
+		"defaultMessage": "Stop trusting them",
+		"description": "Button on the player's own profile page: every browser that skipped the authenticator code at login asks for it again"
+	},
+	"profile.forgetBrowsersFailed": {
+		"defaultMessage": "Could not stop trusting your browsers.",
+		"description": "Shown on the player's own profile page when stopping trusting the browsers that skip the authenticator code failed"
+	},
 	"profile.hasPassword": {
 		"defaultMessage": "Set",
 		"description": "Shown on the player's own profile page in place of their password, which is never shown, when the account has one"
+	},
+	"profile.keyCopied": {
+		"defaultMessage": "Key copied.",
+		"description": "Shown in the dialog that sets up two-factor authentication once Copy key has copied the secret key"
+	},
+	"profile.keyCopyFailed": {
+		"defaultMessage": "Your browser didn't allow copying. Select the key and copy it yourself.",
+		"description": "Shown in the dialog that sets up two-factor authentication when the browser refused to copy the secret key"
 	},
 	"profile.language": {
 		"defaultMessage": "Language",
@@ -4375,6 +4535,10 @@
 		"defaultMessage": "Location",
 		"description": "Label of the optional field for where the player is, written however they like, on their own profile page"
 	},
+	"profile.makeRecoveryCodes": {
+		"defaultMessage": "Make new codes",
+		"description": "Button in the dialog that makes new recovery codes: checks the password and code, and replaces the old codes with new ones"
+	},
 	"profile.newEmail": {
 		"defaultMessage": "New email address",
 		"description": "Label of the field for the new email address, in the dialog that changes it"
@@ -4386,6 +4550,10 @@
 	"profile.newPassword": {
 		"defaultMessage": "New password",
 		"description": "Label of the field for the player's new password, in the dialog that changes it"
+	},
+	"profile.newRecoveryCodes": {
+		"defaultMessage": "New recovery codes",
+		"description": "Button on the player's own profile page that opens the dialog making new recovery codes for two-factor authentication, in place of the old ones"
 	},
 	"profile.noCharacters": {
 		"defaultMessage": "You haven't made a character yet.",
@@ -4427,6 +4595,42 @@
 		"defaultMessage": "Linked logins",
 		"description": "Label of the Google and Discord logins linked to the player's account, on their own profile page"
 	},
+	"profile.recoveryCodesCopied": {
+		"defaultMessage": "Codes copied.",
+		"description": "Shown in the dialog with the player's new recovery codes once Copy has copied them to the clipboard"
+	},
+	"profile.recoveryCodesCopyFailed": {
+		"defaultMessage": "Your browser didn't allow copying. Select the codes and copy them yourself.",
+		"description": "Shown in the dialog with the player's new recovery codes when the browser refused to copy them"
+	},
+	"profile.recoveryCodesFailed": {
+		"defaultMessage": "Could not make new recovery codes.",
+		"description": "Shown in the dialog that makes new recovery codes when they couldn't be made"
+	},
+	"profile.recoveryCodesFileHeading": {
+		"defaultMessage": "Recovery codes for {username} on {siteName}. Each works once.",
+		"description": "First line of the text copied or saved from the dialog showing the player's new recovery codes, above the codes; {username} is the player's username and {siteName} the site's name"
+	},
+	"profile.recoveryCodesIntro": {
+		"defaultMessage": "If you lose your phone, each of these codes logs you in once in place of a code from the app. Keep them somewhere safe, such as your password manager. This is the only time they're shown.",
+		"description": "In the dialog that shows the player's new recovery codes for two-factor authentication"
+	},
+	"profile.recoveryCodesNewIntro": {
+		"defaultMessage": "Your old recovery codes stop working once the new ones are made.",
+		"description": "In the dialog that makes new recovery codes for two-factor authentication"
+	},
+	"profile.recoveryCodesNewTitle": {
+		"defaultMessage": "Make new recovery codes",
+		"description": "Title of the dialog that makes new recovery codes for two-factor authentication"
+	},
+	"profile.recoveryCodesSaved": {
+		"defaultMessage": "I've saved them",
+		"description": "Button that closes the dialog showing the player's new recovery codes, once they have saved them"
+	},
+	"profile.recoveryCodesTitle": {
+		"defaultMessage": "Save your recovery codes",
+		"description": "Title of the dialog that shows the player's new recovery codes for two-factor authentication"
+	},
 	"profile.saveFailed": {
 		"defaultMessage": "Could not save your profile.",
 		"description": "Shown on the player's own profile page when the profile couldn't be saved"
@@ -4466,6 +4670,94 @@
 	"profile.title": {
 		"defaultMessage": "Your profile",
 		"description": "The browser tab's title on the page where the player changes their own profile, and that page's heading"
+	},
+	"profile.trustedBrowserCount": {
+		"defaultMessage": "{count, plural, =0 {None: every login asks for the code} one {# browser skips the code at login} other {# browsers skip the code at login}}",
+		"description": "Shown on the player's own profile page beside Trusted browsers; {count} is how many browsers skip the authenticator code at login"
+	},
+	"profile.trustedBrowsers": {
+		"defaultMessage": "Trusted browsers",
+		"description": "Label of how many browsers skip the authenticator code at login, on the player's own profile page, when the account has two-factor authentication"
+	},
+	"profile.twoFactor": {
+		"defaultMessage": "Two-factor authentication",
+		"description": "Label of whether the player's account has two-factor authentication (a code from an authenticator app asked for at login, after the password), on their own profile page"
+	},
+	"profile.twoFactorAppCode": {
+		"defaultMessage": "Code from the app",
+		"description": "Label of the field for the 6-digit code the authenticator app shows, in the dialog that sets up two-factor authentication"
+	},
+	"profile.twoFactorContinue": {
+		"defaultMessage": "Continue",
+		"description": "Button in the dialog that sets up two-factor authentication: checks the password and shows the QR code"
+	},
+	"profile.twoFactorDisable": {
+		"defaultMessage": "Turn off",
+		"description": "Button in the dialog that turns off two-factor authentication: checks the password and code and turns it off"
+	},
+	"profile.twoFactorDisableFailed": {
+		"defaultMessage": "Could not turn off two-factor authentication.",
+		"description": "Shown in the dialog that turns off two-factor authentication when it couldn't be turned off"
+	},
+	"profile.twoFactorDisableIntro": {
+		"defaultMessage": "Logging in will need only your password again. Your recovery codes stop working, and every trusted browser is forgotten.",
+		"description": "In the dialog that turns off two-factor authentication"
+	},
+	"profile.twoFactorDisableTitle": {
+		"defaultMessage": "Turn off two-factor authentication",
+		"description": "Title of the dialog that turns off two-factor authentication"
+	},
+	"profile.twoFactorDisabled": {
+		"defaultMessage": "Two-factor authentication is off.",
+		"description": "Shown once the player has turned off two-factor authentication from their profile"
+	},
+	"profile.twoFactorEnable": {
+		"defaultMessage": "Turn on",
+		"description": "Button in the dialog that sets up two-factor authentication: checks the code from the authenticator app and turns two-factor authentication on"
+	},
+	"profile.twoFactorEnabled": {
+		"defaultMessage": "Two-factor authentication is on.",
+		"description": "Shown once the player has turned on two-factor authentication from their profile"
+	},
+	"profile.twoFactorManual": {
+		"defaultMessage": "Can't scan it? Add the account in the app by hand, with this key:",
+		"description": "In the dialog that sets up two-factor authentication, above the secret key shown as text, for players who can't scan the QR code"
+	},
+	"profile.twoFactorOff": {
+		"defaultMessage": "Off",
+		"description": "Shown on the player's own profile page beside Two-factor authentication when it is off"
+	},
+	"profile.twoFactorOn": {
+		"defaultMessage": "On, with {count, plural, =0 {no recovery codes left} one {# recovery code left} other {# recovery codes left}}",
+		"description": "Shown on the player's own profile page beside Two-factor authentication when it is on; {count} is how many of their recovery codes haven't been used"
+	},
+	"profile.twoFactorQrLabel": {
+		"defaultMessage": "QR code for your authenticator app. If you can't scan it, use the key below it.",
+		"description": "What screen readers say for the QR code in the dialog that sets up two-factor authentication"
+	},
+	"profile.twoFactorScan": {
+		"defaultMessage": "Scan this QR code with an authenticator app, such as Google Authenticator, Microsoft Authenticator, Aegis or 2FAS. Then enter the 6-digit code the app shows.",
+		"description": "In the dialog that sets up two-factor authentication, above the QR code; the app names are examples of authenticator apps and stay as they are"
+	},
+	"profile.twoFactorSetupFailed": {
+		"defaultMessage": "Could not turn on two-factor authentication.",
+		"description": "Shown in the dialog that sets up two-factor authentication when it couldn't be set up"
+	},
+	"profile.twoFactorSetupIntro": {
+		"defaultMessage": "With two-factor authentication, logging in with your password also asks for a code from an app on your phone, so someone who learns your password still can't get in. First, enter your password.",
+		"description": "First paragraph of the dialog that sets up two-factor authentication, which asks for the player's password first"
+	},
+	"profile.twoFactorSetupTitle": {
+		"defaultMessage": "Turn on two-factor authentication",
+		"description": "Title of the dialog that sets up two-factor authentication"
+	},
+	"profile.twoFactorTurnOff": {
+		"defaultMessage": "Turn off",
+		"description": "Button on the player's own profile page that opens the dialog turning off two-factor authentication"
+	},
+	"profile.twoFactorTurnOn": {
+		"defaultMessage": "Turn on",
+		"description": "Button on the player's own profile page that opens the dialog setting up two-factor authentication"
 	},
 	"profile.unavailableTitle": {
 		"defaultMessage": "Profile",

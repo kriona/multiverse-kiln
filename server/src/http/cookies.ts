@@ -28,6 +28,18 @@ export const PROVIDER_START_COOKIE = '__Host-kiln-provider-start';
 export const PROVIDER_LOGIN_COOKIE = '__Host-kiln-provider-login';
 
 /**
+ * The token that lets the browser whose password was right finish the login with an authenticator or
+ * recovery code
+ */
+export const TWO_FACTOR_LOGIN_COOKIE = '__Host-kiln-two-factor';
+
+/**
+ * The token of a browser the player chose to trust, which skips the authenticator code for the accounts
+ * that trust it
+ */
+export const TRUSTED_BROWSER_COOKIE = '__Host-kiln-trusted';
+
+/**
  * Reads a cookie from a Cookie header
  *
  * @param cookieHeader Cookie header value, or null/undefined when the request has none

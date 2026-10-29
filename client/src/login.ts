@@ -4,6 +4,7 @@ import { AuthApi } from './network/authApi';
 import { createClient } from './network/serverConnection';
 import { onLoginElsewhere } from './network/sessionBroadcast';
 import { readNextPage, takeProviderReturn } from './pages';
+import { startCodeInputs } from './ui/codeInputs';
 import { showStatus } from './ui/dom';
 import { startLanguagePicker } from './ui/languagePicker';
 import { pageMessages } from './ui/pageMessages';
@@ -23,6 +24,7 @@ async function start(): Promise<void>
 	startLanguagePicker();
 	startShortcuts();
 	startPasswordToggles();
+	startCodeInputs();
 	showStatus(t(pageMessages.connecting));
 
 	const api = new AuthApi(createClient());

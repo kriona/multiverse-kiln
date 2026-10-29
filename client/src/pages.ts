@@ -52,6 +52,12 @@ export const TAB_PARAMETER = 'tab';
 export const AREA_PARAMETER = 'area';
 
 /**
+ * Query string parameter of the player's own profile that opens the dialog setting up two-factor
+ * authentication, as in /profile?setUpTwoFactor
+ */
+export const TWO_FACTOR_SETUP_PARAMETER = 'setUpTwoFactor';
+
+/**
  * Query string parameter of the login page naming the page to go back to once logged in
  */
 const NEXT_PARAMETER = 'next';
@@ -112,6 +118,11 @@ export const PATH_PAGES: Record<string, string> = {
  * The address of the player's own profile
  */
 export const PROFILE_PAGE_URL = PROFILE_PAGE;
+
+/**
+ * The address of the player's own profile with the dialog setting up two-factor authentication open
+ */
+export const TWO_FACTOR_SETUP_PAGE_URL = `${PROFILE_PAGE}?${TWO_FACTOR_SETUP_PARAMETER}`;
 
 /**
  * The address of Home

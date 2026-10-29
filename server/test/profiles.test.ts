@@ -100,6 +100,7 @@ describe('profile routes', () =>
 			email: null,
 			hasPassword: false,
 			providers: [],
+			twoFactor: null,
 			locale: null,
 			showCharacters: true,
 			characters: []
@@ -130,11 +131,12 @@ describe('profile routes', () =>
 			socials: ADA_PROFILE.socials
 		};
 
-		assert.deepStrictEqual({ ...own.body, email: undefined, hasPassword: undefined, providers: undefined, characters: undefined }, {
+		assert.deepStrictEqual({ ...own.body, email: undefined, hasPassword: undefined, providers: undefined, twoFactor: undefined, characters: undefined }, {
 			...ADA_PROFILE,
 			email: undefined,
 			hasPassword: undefined,
 			providers: undefined,
+			twoFactor: undefined,
 			characters: undefined
 		});
 		assert.deepStrictEqual((await (await logIn('Grace')).browser.send<PlayerProfilePayload>('GET', playerProfilePath('ada_l'))).body, {

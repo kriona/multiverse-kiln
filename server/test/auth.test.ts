@@ -56,7 +56,7 @@ describe('auth routes', () =>
 
 		const code = await codeSentTo(email);
 
-		assert.strictEqual((await browser.send('POST', AUTH_CODE_CHECK_PATH, { purpose, email, code })).status, 204);
+		assert.strictEqual((await browser.send('POST', AUTH_CODE_CHECK_PATH, { purpose, email, code })).status, 200);
 	}
 
 	/**
@@ -262,7 +262,7 @@ describe('auth routes', () =>
 
 			assert.strictEqual(wrong.status, 400);
 			assert.strictEqual(wrong.body.field, 'code');
-			assert.strictEqual((await browser.send('POST', AUTH_CODE_CHECK_PATH, { purpose: 'register', email: 'ada@example.com', code: code.toLowerCase() })).status, 204);
+			assert.strictEqual((await browser.send('POST', AUTH_CODE_CHECK_PATH, { purpose: 'register', email: 'ada@example.com', code: code.toLowerCase() })).status, 200);
 			assert.strictEqual((await browser.send('POST', AUTH_CODE_CHECK_PATH, { purpose: 'register', email: 'ada@example.com', code })).status, 400);
 		});
 
@@ -321,7 +321,8 @@ describe('auth routes', () =>
 			const browser = new Browser();
 			const answer = await browser.send('POST', AUTH_LOGIN_PATH, { email: 'Ada@Example.com', password: PASSWORD, rememberMe: true });
 
-			assert.strictEqual(answer.status, 204);
+			assert.strictEqual(answer.status, 200);
+			assert.deepStrictEqual(answer.body, { outcome: 'loggedIn' });
 			assert.strictEqual(await browser.username(), 'ada');
 		});
 
@@ -365,7 +366,7 @@ describe('auth routes', () =>
 				passwordHash: oldHash
 			});
 
-			assert.strictEqual((await new Browser().send('POST', AUTH_LOGIN_PATH, { email: 'ada@example.com', password: PASSWORD, rememberMe: false })).status, 204);
+			assert.strictEqual((await new Browser().send('POST', AUTH_LOGIN_PATH, { email: 'ada@example.com', password: PASSWORD, rememberMe: false })).status, 200);
 
 			const stored = (await pool.query<{ password_hash: string }>('SELECT password_hash FROM players WHERE id = $1', [player.id])).rows[0].password_hash;
 
@@ -423,14 +424,14 @@ describe('auth routes', () =>
 			emails = [];
 			await enterCode(browser, 'resetPassword', 'ada@example.com');
 
-			const answer = await browser.send('POST', AUTH_PASSWORD_RESET_PATH, { password: 'a new passphrase', rememberMe: false, locale: 'en' });
+			const answer = await browser.send('POST', AUTH_PASSWORD_RESET_PATH, { password: 'a new passphrase', rememberMe: false, locale: 'en', twoFactorCode: null });
 
 			assert.strictEqual(answer.status, 204);
 			assert.strictEqual(await browser.username(), 'ada');
 			assert.strictEqual(await first.username(), null);
 			await waitUntil(() => emails.some((email) => /password .* was changed/.test(email.subject)));
 			assert.strictEqual((await new Browser().send('POST', AUTH_LOGIN_PATH, { email: 'ada@example.com', password: PASSWORD, rememberMe: false })).status, 401);
-			assert.strictEqual((await new Browser().send('POST', AUTH_LOGIN_PATH, { email: 'ada@example.com', password: 'a new passphrase', rememberMe: false })).status, 204);
+			assert.strictEqual((await new Browser().send('POST', AUTH_LOGIN_PATH, { email: 'ada@example.com', password: 'a new passphrase', rememberMe: false })).status, 200);
 		});
 
 		it('can\'t replay the code\'s next step', async () =>
@@ -444,10 +445,10 @@ describe('auth routes', () =>
 
 			const continuation = browser.cookies.get('__Host-kiln-continue');
 
-			assert.strictEqual((await browser.send('POST', AUTH_PASSWORD_RESET_PATH, { password: 'a new passphrase', rememberMe: false, locale: 'en' })).status, 204);
+			assert.strictEqual((await browser.send('POST', AUTH_PASSWORD_RESET_PATH, { password: 'a new passphrase', rememberMe: false, locale: 'en', twoFactorCode: null })).status, 204);
 
 			browser.cookies.set('__Host-kiln-continue', continuation ?? '');
-			assert.strictEqual((await browser.send('POST', AUTH_PASSWORD_RESET_PATH, { password: 'another passphrase', rememberMe: false, locale: 'en' })).status, 403);
+			assert.strictEqual((await browser.send('POST', AUTH_PASSWORD_RESET_PATH, { password: 'another passphrase', rememberMe: false, locale: 'en', twoFactorCode: null })).status, 403);
 		});
 	});
 
@@ -463,7 +464,7 @@ describe('auth routes', () =>
 			const browser = await register('ada@example.com', 'ada');
 			const other = new Browser();
 
-			assert.strictEqual((await other.send('POST', AUTH_LOGIN_PATH, { email: 'ada@example.com', password: PASSWORD, rememberMe: false })).status, 204);
+			assert.strictEqual((await other.send('POST', AUTH_LOGIN_PATH, { email: 'ada@example.com', password: PASSWORD, rememberMe: false })).status, 200);
 			emails = [];
 
 			const wrong = await browser.send('POST', AUTH_PASSWORD_CHANGE_PATH, { currentPassword: 'not my password at all', newPassword: 'a new passphrase', locale: 'en' });
@@ -478,7 +479,7 @@ describe('auth routes', () =>
 			assert.strictEqual(await browser.username(), 'ada');
 			assert.strictEqual(await other.username(), null);
 			await waitUntil(() => emails.some((email) => /password .* was changed/.test(email.subject)));
-			assert.strictEqual((await new Browser().send('POST', AUTH_LOGIN_PATH, { email: 'ada@example.com', password: 'a new passphrase', rememberMe: false })).status, 204);
+			assert.strictEqual((await new Browser().send('POST', AUTH_LOGIN_PATH, { email: 'ada@example.com', password: 'a new passphrase', rememberMe: false })).status, 200);
 			assert.deepStrictEqual((await eventKinds('ada')).filter((kind) => kind.startsWith('password')), ['passwordChanged']);
 		});
 
@@ -523,7 +524,7 @@ describe('auth routes', () =>
 			assert.strictEqual(answer.status, 204);
 			await waitUntil(() => (emails.filter((email) => /address .* was changed/.test(email.subject)).length === 2));
 			assert.deepStrictEqual(emails.filter((email) => /address .* was changed/.test(email.subject)).map((email) => email.to).sort(), ['ada@example.com', 'lovelace@example.com']);
-			assert.strictEqual((await new Browser().send('POST', AUTH_LOGIN_PATH, { email: 'lovelace@example.com', password: PASSWORD, rememberMe: false })).status, 204);
+			assert.strictEqual((await new Browser().send('POST', AUTH_LOGIN_PATH, { email: 'lovelace@example.com', password: PASSWORD, rememberMe: false })).status, 200);
 		});
 
 		it('sends nothing to an address another account has', async () =>

@@ -1,5 +1,5 @@
 import type { Client } from '@colyseus/sdk';
-import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_EMAIL_CHANGE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_CHANGE_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_PROVIDER_CALLBACK_PATH, AUTH_PROVIDER_LINK_PATH, AUTH_PROVIDER_REGISTER_PATH, AUTH_PROVIDER_START_PATH, AUTH_PROVIDERS_PATH, AUTH_REGISTER_PATH, AUTH_SESSION_PATH, type AuthField, type EmailChangeRequest, type EmailCodeCheckRequest, type EmailCodeRequest, type LoginProvider, type LoginRequest, type PasswordChangeRequest, type PasswordResetRequest, type ProviderCallbackPayload, type ProviderCallbackRequest, type ProviderLinkRequest, type ProviderRegisterRequest, type ProvidersPayload, type ProviderStartPayload, type ProviderStartRequest, type RegisterRequest, type SessionPayload, type SessionPlayer } from '@multiverse-kiln/shared';
+import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_EMAIL_CHANGE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_CHANGE_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_PROVIDER_CALLBACK_PATH, AUTH_PROVIDER_LINK_PATH, AUTH_PROVIDER_REGISTER_PATH, AUTH_PROVIDER_START_PATH, AUTH_PROVIDERS_PATH, AUTH_RECOVERY_CODES_PATH, AUTH_REGISTER_PATH, AUTH_SESSION_PATH, AUTH_TRUSTED_BROWSERS_FORGET_PATH, AUTH_TWO_FACTOR_DISABLE_PATH, AUTH_TWO_FACTOR_ENABLE_PATH, AUTH_TWO_FACTOR_LOGIN_PATH, AUTH_TWO_FACTOR_SETUP_PATH, type AuthField, type EmailChangeRequest, type EmailCodeCheckPayload, type EmailCodeCheckRequest, type EmailCodeRequest, type LoginPayload, type LoginProvider, type LoginRequest, type PasswordChangeRequest, type PasswordResetRequest, type ProviderCallbackPayload, type ProviderCallbackRequest, type ProviderLinkRequest, type ProviderRegisterRequest, type ProvidersPayload, type ProviderStartPayload, type ProviderStartRequest, type RecoveryCodesPayload, type RecoveryCodesRequest, type RegisterRequest, type SessionPayload, type SessionPlayer, type TwoFactorDisableRequest, type TwoFactorEnableRequest, type TwoFactorLoginRequest, type TwoFactorSetupPayload, type TwoFactorSetupRequest } from '@multiverse-kiln/shared';
 
 import { EditorApiError, sendRequest } from './editorApi';
 
@@ -33,10 +33,72 @@ export class AuthApi
 	 * Logs in to a local account
 	 *
 	 * @param login The address, password and whether to remember the browser
+	 * @return Whether the browser is logged in, or the login waits for the account's authenticator code
 	 */
-	async logIn(login: LoginRequest): Promise<void>
+	async logIn(login: LoginRequest): Promise<LoginPayload['outcome']>
 	{
-		await sendRequest(this.client, 'POST', AUTH_LOGIN_PATH, login);
+		return((await sendRequest<LoginPayload>(this.client, 'POST', AUTH_LOGIN_PATH, login)).outcome);
+	}
+
+	/**
+	 * Finishes a login that waits for the account's authenticator or recovery code
+	 *
+	 * @param request The code, and whether to trust the browser
+	 */
+	async finishTwoFactorLogin(request: TwoFactorLoginRequest): Promise<void>
+	{
+		await sendRequest(this.client, 'POST', AUTH_TWO_FACTOR_LOGIN_PATH, request);
+	}
+
+	/**
+	 * Starts turning on 2FA for the logged-in account
+	 *
+	 * @param request The account's password
+	 * @return The secret for the authenticator app
+	 */
+	async setUpTwoFactor(request: TwoFactorSetupRequest): Promise<TwoFactorSetupPayload>
+	{
+		return(await sendRequest<TwoFactorSetupPayload>(this.client, 'POST', AUTH_TWO_FACTOR_SETUP_PATH, request));
+	}
+
+	/**
+	 * Turns on 2FA, with a code from the authenticator app just set up
+	 *
+	 * @param request The code
+	 * @return The account's recovery codes
+	 */
+	async enableTwoFactor(request: TwoFactorEnableRequest): Promise<string[]>
+	{
+		return((await sendRequest<RecoveryCodesPayload>(this.client, 'POST', AUTH_TWO_FACTOR_ENABLE_PATH, request)).recoveryCodes);
+	}
+
+	/**
+	 * Turns off 2FA
+	 *
+	 * @param request The password, and an authenticator or recovery code
+	 */
+	async disableTwoFactor(request: TwoFactorDisableRequest): Promise<void>
+	{
+		await sendRequest(this.client, 'POST', AUTH_TWO_FACTOR_DISABLE_PATH, request);
+	}
+
+	/**
+	 * Replaces the account's recovery codes
+	 *
+	 * @param request The password, and an authenticator or recovery code
+	 * @return The new codes
+	 */
+	async replaceRecoveryCodes(request: RecoveryCodesRequest): Promise<string[]>
+	{
+		return((await sendRequest<RecoveryCodesPayload>(this.client, 'POST', AUTH_RECOVERY_CODES_PATH, request)).recoveryCodes);
+	}
+
+	/**
+	 * Stops trusting every browser the account trusted to skip the authenticator code
+	 */
+	async forgetTrustedBrowsers(): Promise<void>
+	{
+		await sendRequest(this.client, 'POST', AUTH_TRUSTED_BROWSERS_FORGET_PATH);
 	}
 
 	/**
@@ -61,10 +123,11 @@ export class AuthApi
 	 * Enters a code, which lets this browser take the next step
 	 *
 	 * @param request What the code is for, the address and the code as typed
+	 * @return Whether the next step needs the account's authenticator or recovery code too
 	 */
-	async checkCode(request: EmailCodeCheckRequest): Promise<void>
+	async checkCode(request: EmailCodeCheckRequest): Promise<boolean>
 	{
-		await sendRequest(this.client, 'POST', AUTH_CODE_CHECK_PATH, request);
+		return((await sendRequest<EmailCodeCheckPayload>(this.client, 'POST', AUTH_CODE_CHECK_PATH, request)).twoFactor);
 	}
 
 	/**
@@ -176,5 +239,5 @@ export function authFieldOf(error: unknown): AuthField | undefined
 
 	const field = error.data.field;
 
-	return((((field === 'email') || (field === 'password') || (field === 'currentPassword') || (field === 'username') || (field === 'displayName') || (field === 'code')) ? field : undefined));
+	return((((field === 'email') || (field === 'password') || (field === 'currentPassword') || (field === 'username') || (field === 'displayName') || (field === 'code') || (field === 'twoFactorCode')) ? field : undefined));
 }

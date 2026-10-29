@@ -5,6 +5,7 @@ import { authFieldOf, type AuthApi } from '../network/authApi';
 import { describeEditorError, EditorApiError } from '../network/editorApi';
 import { announce } from './announcer';
 import { ChangeTracker } from './changeTracker';
+import { resetCodeInput } from './codeInputs';
 import { getElement, showMessage } from './dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
 
@@ -85,7 +86,7 @@ export class EmailChangeDialog
 			}));
 		this.sentTo = undefined;
 		this.address.value = '';
-		this.code.value = '';
+		resetCodeInput(this.code);
 		this.showStep('address');
 		clearFieldErrors(this.form);
 		showMessage(this.error, undefined);

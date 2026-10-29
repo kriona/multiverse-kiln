@@ -111,6 +111,62 @@
 	}
 }
 
+// Setting up two-factor authentication: the QR code for the authenticator app, white whatever the
+// theme so it scans, and the same secret as text for typing in by hand
+.qr-code-frame
+{
+	align-self: center;
+	width: min(240px, 100%);
+
+	.qr-code
+	{
+		display: block;
+		width: 100%;
+		height: auto;
+		border-radius: 4px;
+	}
+}
+
+.two-factor-secret
+{
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 12px;
+
+	code
+	{
+		padding: 4px 8px;
+		border-radius: 4px;
+		background: $background-code;
+		font-size: 16px;
+		letter-spacing: 1px;
+		overflow-wrap: anywhere;
+		user-select: all;
+	}
+}
+
+// New recovery codes, shown once
+.recovery-codes
+{
+	display: grid;
+	grid-template-columns: repeat(2, max-content);
+	justify-content: center;
+	gap: 8px 64px;
+	margin: 0;
+	padding: 12px 16px 12px 40px;
+	border-radius: 4px;
+	background: $background-code;
+	font-family: Consolas, Menlo, monospace;
+	font-size: 18px;
+	user-select: all;
+
+	@media (max-width: 420px)
+	{
+		grid-template-columns: max-content;
+	}
+}
+
 // Another player's profile: their name and username, then what they filled in
 .profile-panel .player-display-name
 {

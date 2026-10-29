@@ -14,6 +14,7 @@ import { loadEditorClasses } from '../db/classRepo.js';
 import { AccountTakenError, findOwnProfile, findProfileByUsername, saveProfile } from '../db/playerRepo.js';
 import { listProviderLogins } from '../db/providerLoginRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
+import { findTwoFactorState } from '../db/twoFactorRepo.js';
 import { displayText } from '../rooms/payloads.js';
 import { authMessages, checkDisplayName, checkUsername, sendRefusal, type AuthRefusal } from './authCommon.js';
 import { playerIdOf, refuseWritesFromOtherOrigins, requireLogin } from './editorAccess.js';
@@ -267,9 +268,10 @@ async function playerProfileRoute(request: Request, response: Response): Promise
 async function ownProfileRoute(request: Request, response: Response): Promise<void>
 {
 	const playerId = playerIdOf(request);
-	const [profile, providers, records] = await Promise.all([
+	const [profile, providers, twoFactor, records] = await Promise.all([
 		findOwnProfile(playerId),
 		listProviderLogins(playerId),
+		findTwoFactorState(playerId, new Date()),
 		listProfileCharacters(playerId, {})
 	]);
 
@@ -291,6 +293,7 @@ async function ownProfileRoute(request: Request, response: Response): Promise<vo
 		email: profile.email,
 		hasPassword: profile.hasPassword,
 		providers,
+		twoFactor,
 		showCharacters: profile.showCharacters,
 		characters: await nameCharacters(records)
 	};

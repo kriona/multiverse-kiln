@@ -447,3 +447,112 @@ export function emailChangedEmail(recipient: ChangedEmailRecipient, locale: stri
 		action: resetPasswordAction(translator)
 	}));
 }
+
+/**
+ * The email sent when 2FA is turned on for an account
+ *
+ * @param locale The language the recipient asked in
+ * @return The email
+ */
+export function twoFactorEnabledEmail(locale: string): EmailContent
+{
+	const translator = emailTranslator(locale);
+	const values = {
+		siteName: SITE_NAME
+	};
+
+	return(layOut(translator, {
+		subject: translator.format({
+			id: 'email.twoFactorEnabled.subject',
+			defaultMessage: 'Two-factor authentication is on for your account on {siteName}',
+			description: 'Subject of the email sent when two-factor authentication (an authenticator app code asked for at login) is turned on for an account; {siteName} is the site\'s name'
+		}, values),
+		paragraphs: [
+			translator.format({
+				id: 'email.twoFactorEnabled.body',
+				defaultMessage: 'Two-factor authentication was turned on for your account on {siteName}. Logging in with your password now asks for a code from your authenticator app too. Keep your recovery codes somewhere safe: they are the only way in if you lose the app.',
+				description: 'Paragraph of the email sent when two-factor authentication is turned on for an account; {siteName} is the site\'s name'
+			}, values),
+			translator.format({
+				id: 'email.twoFactorEnabled.notYou',
+				defaultMessage: 'If you didn\'t turn it on, someone else may be using your account on {siteName}. Reset its password straight away.',
+				description: 'Last paragraph of the email sent when two-factor authentication is turned on for an account, for someone who didn\'t turn it on; {siteName} is the site\'s name'
+			}, values)
+		],
+		action: resetPasswordAction(translator)
+	}));
+}
+
+/**
+ * The email sent when 2FA is turned off for an account
+ *
+ * @param locale The language the recipient asked in
+ * @return The email
+ */
+export function twoFactorDisabledEmail(locale: string): EmailContent
+{
+	const translator = emailTranslator(locale);
+	const values = {
+		siteName: SITE_NAME
+	};
+
+	return(layOut(translator, {
+		subject: translator.format({
+			id: 'email.twoFactorDisabled.subject',
+			defaultMessage: 'Two-factor authentication is off for your account on {siteName}',
+			description: 'Subject of the email sent when two-factor authentication (an authenticator app code asked for at login) is turned off for an account; {siteName} is the site\'s name'
+		}, values),
+		paragraphs: [
+			translator.format({
+				id: 'email.twoFactorDisabled.body',
+				defaultMessage: 'Two-factor authentication was turned off for your account on {siteName}. Logging in now needs only your password, and your recovery codes no longer work.',
+				description: 'Paragraph of the email sent when two-factor authentication is turned off for an account; {siteName} is the site\'s name'
+			}, values),
+			translator.format({
+				id: 'email.twoFactorDisabled.notYou',
+				defaultMessage: 'If you didn\'t turn it off, someone else may be using your account on {siteName}. Reset its password straight away, then turn two-factor authentication on again.',
+				description: 'Last paragraph of the email sent when two-factor authentication is turned off for an account, for someone who didn\'t turn it off; {siteName} is the site\'s name'
+			}, values)
+		],
+		action: resetPasswordAction(translator)
+	}));
+}
+
+/**
+ * The email sent when one of an account's recovery codes is used
+ *
+ * @param codesLeft How many recovery codes the account has left
+ * @param locale The language the recipient asked in
+ * @return The email
+ */
+export function recoveryCodeUsedEmail(codesLeft: number, locale: string): EmailContent
+{
+	const translator = emailTranslator(locale);
+	const values = {
+		siteName: SITE_NAME
+	};
+
+	return(layOut(translator, {
+		subject: translator.format({
+			id: 'email.recoveryCodeUsed.subject',
+			defaultMessage: 'A recovery code was used on {siteName}',
+			description: 'Subject of the email sent when one of an account\'s recovery codes (used in place of an authenticator app code) is used; {siteName} is the site\'s name'
+		}, values),
+		paragraphs: [
+			translator.format({
+				id: 'email.recoveryCodeUsed.body',
+				defaultMessage: 'One of the recovery codes of your account on {siteName} was just used in place of a code from your authenticator app. It won\'t work again. {count, plural, =0 {You have no recovery codes left: make new ones on your profile.} one {You have # left.} other {You have # left.}}',
+				description: 'Paragraph of the email sent when one of an account\'s recovery codes is used; {siteName} is the site\'s name, and {count} how many recovery codes the account has left'
+			}, {
+				...values,
+				count: codesLeft
+			}),
+			translator.format({
+				id: 'email.recoveryCodeUsed.notYou',
+				defaultMessage: 'If you didn\'t use it, someone else has your password and recovery codes. Reset your password straight away, and make new recovery codes on your profile.',
+				description: 'Last paragraph of the email sent when one of an account\'s recovery codes is used, for someone who didn\'t use it'
+			})
+		],
+		action: resetPasswordAction(translator)
+	}));
+}

@@ -5,17 +5,9 @@
  * The callers keep the counts these functions decide from, updating them atomically, and supply the
  * random bytes and the time, so these stay pure
  */
-import { EMAIL_CODE_LIFETIME_MINUTES } from '@multiverse-kiln/shared';
+import { EMAIL_CODE_ALPHABET, EMAIL_CODE_LENGTH, EMAIL_CODE_LIFETIME_MINUTES } from '@multiverse-kiln/shared';
 
-/**
- * Crockford's base32 alphabet: the digits and the capital letters except I, L, O and U
- */
-export const EMAIL_CODE_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
-
-/**
- * How many characters a code has: 32^6, a little over a billion possible codes
- */
-export const EMAIL_CODE_LENGTH = 6;
+export { EMAIL_CODE_ALPHABET, EMAIL_CODE_LENGTH };
 
 /**
  * How long a code works after it is sent, in milliseconds
@@ -104,11 +96,24 @@ export function emailCodeFromBytes(randomBytes: Uint8Array): string
  */
 export function normalizeEmailCode(typed: string): string | undefined
 {
+	return(normalizeAlphabetCode(typed, EMAIL_CODE_LENGTH));
+}
+
+/**
+ * Reads a code of EMAIL_CODE_ALPHABET's characters as the player typed it, the way normalizeEmailCode()
+ * does, for codes of any length (such as recovery codes)
+ *
+ * @param typed What the player typed
+ * @param length How many characters the code has
+ * @return The code, or undefined when what was typed can't be a code of that length
+ */
+export function normalizeAlphabetCode(typed: string, length: number): string | undefined
+{
 	const code = [...typed.toUpperCase().replace(/[\s-]/g, '')]
 		.map((character) => (LOOKALIKES[character] ?? character))
 		.join('');
 
-	if (code.length !== EMAIL_CODE_LENGTH)
+	if (code.length !== length)
 	{
 		return(undefined);
 	}

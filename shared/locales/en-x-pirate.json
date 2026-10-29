@@ -2139,6 +2139,42 @@
 		"message": "Ye can now board {siteName} with {provider}",
 		"source": "You can now log in to {siteName} with {provider}"
 	},
+	"email.recoveryCodeUsed.body": {
+		"message": "One o' the recovery codes o' yer account on {siteName} was just spent in place o' a code from yer authenticator app. It won't work again. {count, plural, =0 {Ye have no recovery codes left: forge new ones on yer profile.} one {Ye have # left.} other {Ye have # left.}}",
+		"source": "One of the recovery codes of your account on {siteName} was just used in place of a code from your authenticator app. It won't work again. {count, plural, =0 {You have no recovery codes left: make new ones on your profile.} one {You have # left.} other {You have # left.}}"
+	},
+	"email.recoveryCodeUsed.notYou": {
+		"message": "If ye didn't spend it, some scallywag has yer password an' recovery codes. Reset yer password straight away, an' forge new recovery codes on yer profile.",
+		"source": "If you didn't use it, someone else has your password and recovery codes. Reset your password straight away, and make new recovery codes on your profile."
+	},
+	"email.recoveryCodeUsed.subject": {
+		"message": "A recovery code was spent on {siteName}",
+		"source": "A recovery code was used on {siteName}"
+	},
+	"email.twoFactorDisabled.body": {
+		"message": "Two-factor authentication was struck from yer account on {siteName}. Comin' aboard now needs only yer password, an' yer recovery codes be worthless.",
+		"source": "Two-factor authentication was turned off for your account on {siteName}. Logging in now needs only your password, and your recovery codes no longer work."
+	},
+	"email.twoFactorDisabled.notYou": {
+		"message": "If ye didn't strike it, some scallywag may be usin' yer account on {siteName}. Reset its password straight away, then raise two-factor authentication again.",
+		"source": "If you didn't turn it off, someone else may be using your account on {siteName}. Reset its password straight away, then turn two-factor authentication on again."
+	},
+	"email.twoFactorDisabled.subject": {
+		"message": "Two-factor authentication be off for yer account on {siteName}",
+		"source": "Two-factor authentication is off for your account on {siteName}"
+	},
+	"email.twoFactorEnabled.body": {
+		"message": "Two-factor authentication was raised on yer account on {siteName}. Comin' aboard with yer password now asks for a code from yer authenticator app too. Stow yer recovery codes somewhere safe: they be the only way aboard if ye lose the app.",
+		"source": "Two-factor authentication was turned on for your account on {siteName}. Logging in with your password now asks for a code from your authenticator app too. Keep your recovery codes somewhere safe: they are the only way in if you lose the app."
+	},
+	"email.twoFactorEnabled.notYou": {
+		"message": "If ye didn't raise it, some scallywag may be usin' yer account on {siteName}. Reset its password straight away.",
+		"source": "If you didn't turn it on, someone else may be using your account on {siteName}. Reset its password straight away."
+	},
+	"email.twoFactorEnabled.subject": {
+		"message": "Two-factor authentication be on for yer account on {siteName}",
+		"source": "Two-factor authentication is on for your account on {siteName}"
+	},
 	"error.alreadyInGroup": {
 		"message": "That hand already sails with a crew. They have to jump ship first.",
 		"source": "That character is already in a group. They have to leave it first."
@@ -2215,6 +2251,30 @@
 		"message": "Too many tries. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
 		"source": "Too many tries. Try again in {minutes, plural, one {# minute} other {# minutes}}."
 	},
+	"error.auth.twoFactorAlreadyOn": {
+		"message": "Two-factor authentication be already raised on yer account.",
+		"source": "Two-factor authentication is already on for your account."
+	},
+	"error.auth.twoFactorCodeNeeded": {
+		"message": "Enter the code from yer authenticator app, or one o' yer recovery codes.",
+		"source": "Enter the code from your authenticator app, or one of your recovery codes."
+	},
+	"error.auth.twoFactorLoginAgain": {
+		"message": "Too long has passed since ye gave yer password, or too many codes were wrong. Come aboard with yer password again.",
+		"source": "It has been too long since you typed your password, or too many codes were wrong. Log in with your password again."
+	},
+	"error.auth.twoFactorNoPassword": {
+		"message": "Two-factor authentication be for comin' aboard with a password, an' yer account has none. Google an' Discord ask for their own.",
+		"source": "Two-factor authentication is for logging in with a password, and your account has none. Google and Discord ask for their own."
+	},
+	"error.auth.twoFactorNotOn": {
+		"message": "Two-factor authentication ain't raised on yer account.",
+		"source": "Two-factor authentication isn't on for your account."
+	},
+	"error.auth.twoFactorSetUpAgain": {
+		"message": "Start riggin' two-factor authentication again: too long has passed since ye began.",
+		"source": "Start setting up two-factor authentication again: it has been too long since it started."
+	},
 	"error.auth.usernameForm": {
 		"message": "Use {min} to {max} letters (a to z), digits an' underscores.",
 		"source": "Use {min} to {max} letters (a to z), digits and underscores."
@@ -2238,6 +2298,14 @@
 	"error.auth.wrongPassword": {
 		"message": "That password ain't right.",
 		"source": "That password isn't right."
+	},
+	"error.auth.wrongSetupCode": {
+		"message": "That code ain't right. Check yer device's clock keeps true time, an' enter the newest code yer authenticator app shows for this port.",
+		"source": "That code isn't right. Check that your device's clock is right, and enter the newest code your authenticator app shows for this site."
+	},
+	"error.auth.wrongTwoFactorCode": {
+		"message": "That code ain't right, or was already spent. Check yer device's clock keeps true time, an' enter the newest code, or use a recovery code.",
+		"source": "That code isn't right, or was already used. Check that your device's clock is right, and enter the newest code, or use a recovery code."
 	},
 	"error.cantDeleteArea": {
 		"message": "The tavern and home port can't be scuttled.",
@@ -3031,6 +3099,10 @@
 		"message": "The game's own art, sounds, fonts, characters, settin' and tale ain't covered by the GNU Affero General Public License. They be copyright {holder}, all rights reserved, an' may not be plundered for reuse without written permission. Treasures made by other hands keep their own licenses, listed below.",
 		"source": "The game's own art, audio, fonts, characters, setting and story are not covered by the GNU Affero General Public License. They are copyright {holder}, all rights reserved, and may not be reused without written permission. Assets made by others keep their own licenses, listed below."
 	},
+	"license.code": {
+		"message": "Code from other hands",
+		"source": "Code by others"
+	},
 	"license.communityUse": {
 		"message": "{siteName} uses trademarks an'/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy ({policy}). We be expressly forbidden from chargin' ye to use or reach this content. {siteName} ain't published, endorsed, or specifically approved by Paizo. For more about Paizo Inc. an' Paizo products, visit {paizo}.",
 		"source": "{siteName} uses trademarks and/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy ({policy}). We are expressly prohibited from charging you to use or access this content. {siteName} is not published, endorsed, or specifically approved by Paizo. For more information about Paizo Inc. and Paizo products, visit {paizo}."
@@ -3066,6 +3138,10 @@
 	"license.phosphor": {
 		"message": "The sigils on yer buttons be from {phosphor}, used under the MIT License:",
 		"source": "Interface icons are from {phosphor}, used under the MIT License:"
+	},
+	"license.qrCode": {
+		"message": "The QR code for riggin' two-factor authentication be drawn by {qrCode}, used under the MIT License:",
+		"source": "The QR code for setting up two-factor authentication is drawn by {qrCode}, used under the MIT License:"
 	},
 	"license.starfinder": {
 		"message": "Starfinder First Edition rules o' the stars",
@@ -3247,6 +3323,10 @@
 		"message": "Password",
 		"source": "Password"
 	},
+	"login.notNow": {
+		"message": "Not now",
+		"source": "Not now"
+	},
 	"login.orEmail": {
 		"message": "or use yer email address",
 		"source": "or use your email address"
@@ -3303,6 +3383,14 @@
 		"message": "Sign yer articles",
 		"source": "Create your account"
 	},
+	"login.registeredIntro": {
+		"message": "Two-factor authentication keeps yer account safe even if some scallywag learns yer password: comin' aboard asks for a code from an app on yer phone too. Ye can rig it now, or any time from yer profile.",
+		"source": "Two-factor authentication keeps your account safe even if someone learns your password: logging in asks for a code from an app on your phone too. You can set it up now, or any time from your profile."
+	},
+	"login.registeredTitle": {
+		"message": "Yer articles be signed",
+		"source": "Your account is ready"
+	},
 	"login.rememberMe": {
 		"message": "Remember me",
 		"source": "Remember me"
@@ -3335,6 +3423,10 @@
 		"message": "Send the code",
 		"source": "Send code"
 	},
+	"login.setUpTwoFactor": {
+		"message": "Rig two-factor authentication",
+		"source": "Set up two-factor authentication"
+	},
 	"login.showPassword": {
 		"message": "Show me password",
 		"source": "Show password"
@@ -3342,6 +3434,38 @@
 	"login.title": {
 		"message": "Come aboard",
 		"source": "Log in"
+	},
+	"login.trustBrowser": {
+		"message": "Don't ask again on this browser for {days, plural, one {# day} other {# days}}",
+		"source": "Don't ask again on this browser for {days, plural, one {# day} other {# days}}"
+	},
+	"login.trustBrowserHint": {
+		"message": "Only on a browser no other soul uses. Yer password be still asked for.",
+		"source": "Only on a browser that no one else uses. Your password is still asked for."
+	},
+	"login.twoFactorCode": {
+		"message": "Authenticator code",
+		"source": "Authenticator code"
+	},
+	"login.twoFactorCodeHint": {
+		"message": "The 6-digit code from yer authenticator app, or one o' yer recovery codes.",
+		"source": "The 6-digit code from your authenticator app, or one of your recovery codes."
+	},
+	"login.twoFactorIntro": {
+		"message": "Yer account has two-factor authentication. Open yer authenticator app an' enter the 6-digit code it shows for this port.",
+		"source": "Your account has two-factor authentication. Open your authenticator app and enter the 6-digit code it shows for this site."
+	},
+	"login.twoFactorLostHint": {
+		"message": "Lost yer phone overboard? Enter one o' yer recovery codes instead. Each works once.",
+		"source": "Lost your phone? Enter one of your recovery codes instead. Each works once."
+	},
+	"login.twoFactorResetHint": {
+		"message": "Yer account has two-factor authentication, so the email code ain't enough on its own. Enter the 6-digit code from yer authenticator app, or one o' yer recovery codes.",
+		"source": "Your account has two-factor authentication, so the email code isn't enough on its own. Enter the 6-digit code from your authenticator app, or one of your recovery codes."
+	},
+	"login.twoFactorTitle": {
+		"message": "Enter yer authenticator code",
+		"source": "Enter your authenticator code"
 	},
 	"login.unreachable": {
 		"message": "Couldn't reach the server. Check yer connection an' try again.",
@@ -4000,16 +4124,16 @@
 		"source": "Your username, which is unique and lets other players find you, and your display name, which needn't be your real name."
 	},
 	"privacy.accountPassword": {
-		"message": "If ye have a local account, yer password, kept only scrambled so it can't be turned back into the password (a one-way hash: Argon2id for passwords an' recovery codes, an' a keyed hash, HMAC, for the codes an' addresses below).",
-		"source": "If you have a local account, your password, kept only in a scrambled form that can't be turned back into the password (a one-way hash: Argon2id for passwords and recovery codes, and a keyed hash, HMAC, for the codes and addresses below)."
+		"message": "If ye have a local account, yer password, kept only scrambled so it can't be turned back into the password (a one-way hash: Argon2id for passwords, an' a keyed hash, HMAC, for recovery codes an' the codes an' addresses below).",
+		"source": "If you have a local account, your password, kept only in a scrambled form that can't be turned back into the password (a one-way hash: Argon2id for passwords, and a keyed hash, HMAC, for recovery codes and the codes and addresses below)."
 	},
 	"privacy.accountProviders": {
 		"message": "If ye come aboard with Google or Discord, the ID an' email address o' that account, which they send us when ye come aboard.",
 		"source": "If you log in with Google or Discord, the ID and email address of that account, which they send us when you log in."
 	},
 	"privacy.accountTwoFactor": {
-		"message": "If ye turn on two-factor authentication, the secret yer authenticator app shares with us, an' yer recovery codes, kept scrambled like a password.",
-		"source": "If you turn on two-factor authentication, the secret your authenticator app shares with us, and your recovery codes, kept scrambled like a password."
+		"message": "If ye turn on two-factor authentication, the secret yer authenticator app shares with us, locked away with a key kept apart from our database, an' yer recovery codes, kept only scrambled.",
+		"source": "If you turn on two-factor authentication, the secret your authenticator app shares with us, encrypted with a key kept apart from our database, and your recovery codes, kept only in a scrambled form."
 	},
 	"privacy.changes": {
 		"message": "Changes to these articles",
@@ -4058,6 +4182,10 @@
 	"privacy.cookiesSession": {
 		"message": "A cookie that keeps ye aboard. It ends when ye go ashore, after an hour without use, or when ye close yer browser; with \"Remember me\" checked, after 30 days without use.",
 		"source": "A cookie that keeps you logged in. It ends when you log out, after an hour without use, or when you close your browser; with \"Remember me\" checked, after 30 days without use."
+	},
+	"privacy.cookiesTwoFactor": {
+		"message": "With two-factor authentication on, a cookie that lets the browser where ye gave yer password enter yer authenticator code, for 10 minutes. If ye choose not to be asked again on a browser, a cookie that lets it skip the code for 30 days, till ye stop trustin' it on yer profile.",
+		"source": "With two-factor authentication on, a cookie that lets the browser where you typed your password enter your authenticator code, for 10 minutes. If you choose not to be asked again on a browser, a cookie that lets it skip the code for 30 days, until you stop trusting it on your profile."
 	},
 	"privacy.deleting": {
 		"message": "Deletin' yer account deletes yer profile, yer hands an' yer security records. Crews led by one o' yer hands are scuttled. For each universe ye be the only creator of, ye choose whether to hand it to another o' its editors or delete it; what ye built in universes others edit stays part o' them.",
@@ -4172,8 +4300,8 @@
 		"source": "A record for each browser you are logged in on, so you stay logged in, and so you can be logged out everywhere."
 	},
 	"privacy.securityText": {
-		"message": "Everythin' ye send the ship be encrypted on its way. Passwords an' codes are only kept scrambled, an' ye can turn on two-factor authentication. If yer information ever be exposed, we'll tell ye.",
-		"source": "Everything you send the site is encrypted on its way. Passwords and codes are only kept scrambled, and you can turn on two-factor authentication. If your information is ever exposed, we will tell you."
+		"message": "Everythin' ye send the ship be encrypted on its way (using HTTPS). Passwords an' codes are only kept scrambled, an' ye can turn on two-factor authentication. If yer information ever be exposed, we'll tell ye.",
+		"source": "Everything you send the site is encrypted on its way (using HTTPS). Passwords and codes are only kept scrambled, and you can turn on two-factor authentication. If your information is ever exposed, we will tell you."
 	},
 	"privacy.see": {
 		"message": "Who can see it",
@@ -4259,6 +4387,10 @@
 		"message": "Yer browser's tongue",
 		"source": "Your browser's language"
 	},
+	"profile.browsersForgotten": {
+		"message": "Every browser will ask for the authenticator code next time it comes aboard.",
+		"source": "Every browser will ask for the authenticator code at its next login."
+	},
 	"profile.changeEmail": {
 		"message": "Change email",
 		"source": "Change email"
@@ -4319,6 +4451,14 @@
 		"message": "Couldn't muster yer hands.",
 		"source": "Could not list your characters."
 	},
+	"profile.copyKey": {
+		"message": "Copy the key",
+		"source": "Copy key"
+	},
+	"profile.copyRecoveryCodes": {
+		"message": "Copy",
+		"source": "Copy"
+	},
 	"profile.currentPassword": {
 		"message": "Current password",
 		"source": "Current password"
@@ -4331,6 +4471,10 @@
 		"message": "The name other sailors see. It needn't be yer real name, nor yers alone.",
 		"source": "The name other players see. It doesn't have to be your real name, or unique."
 	},
+	"profile.downloadRecoveryCodes": {
+		"message": "Stow as a file",
+		"source": "Download"
+	},
 	"profile.email": {
 		"message": "Email address",
 		"source": "Email address"
@@ -4339,9 +4483,25 @@
 		"message": "Email address changed. We've sent word to both addresses.",
 		"source": "Email address changed. We've told both addresses."
 	},
+	"profile.forgetBrowsers": {
+		"message": "Stop trustin' them",
+		"source": "Stop trusting them"
+	},
+	"profile.forgetBrowsersFailed": {
+		"message": "Couldn't stop trustin' yer browsers.",
+		"source": "Could not stop trusting your browsers."
+	},
 	"profile.hasPassword": {
 		"message": "Set",
 		"source": "Set"
+	},
+	"profile.keyCopied": {
+		"message": "Key copied.",
+		"source": "Key copied."
+	},
+	"profile.keyCopyFailed": {
+		"message": "Yer browser wouldn't allow copyin'. Select the key an' copy it yerself.",
+		"source": "Your browser didn't allow copying. Select the key and copy it yourself."
 	},
 	"profile.language": {
 		"message": "Tongue",
@@ -4375,6 +4535,10 @@
 		"message": "Port o' call",
 		"source": "Location"
 	},
+	"profile.makeRecoveryCodes": {
+		"message": "Forge new codes",
+		"source": "Make new codes"
+	},
 	"profile.newEmail": {
 		"message": "New email address",
 		"source": "New email address"
@@ -4386,6 +4550,10 @@
 	"profile.newPassword": {
 		"message": "New password",
 		"source": "New password"
+	},
+	"profile.newRecoveryCodes": {
+		"message": "New recovery codes",
+		"source": "New recovery codes"
 	},
 	"profile.noCharacters": {
 		"message": "Ye haven't signed on a hand yet.",
@@ -4427,6 +4595,42 @@
 		"message": "Lashed logins",
 		"source": "Linked logins"
 	},
+	"profile.recoveryCodesCopied": {
+		"message": "Codes copied.",
+		"source": "Codes copied."
+	},
+	"profile.recoveryCodesCopyFailed": {
+		"message": "Yer browser wouldn't allow copyin'. Select the codes an' copy them yerself.",
+		"source": "Your browser didn't allow copying. Select the codes and copy them yourself."
+	},
+	"profile.recoveryCodesFailed": {
+		"message": "Couldn't forge new recovery codes.",
+		"source": "Could not make new recovery codes."
+	},
+	"profile.recoveryCodesFileHeading": {
+		"message": "Recovery codes for {username} on {siteName}. Each works once.",
+		"source": "Recovery codes for {username} on {siteName}. Each works once."
+	},
+	"profile.recoveryCodesIntro": {
+		"message": "If ye lose yer phone overboard, each o' these codes brings ye aboard once in place o' a code from the app. Stow them somewhere safe, such as yer password manager. This be the only time they're shown.",
+		"source": "If you lose your phone, each of these codes logs you in once in place of a code from the app. Keep them somewhere safe, such as your password manager. This is the only time they're shown."
+	},
+	"profile.recoveryCodesNewIntro": {
+		"message": "Yer old recovery codes be worthless once the new ones are forged.",
+		"source": "Your old recovery codes stop working once the new ones are made."
+	},
+	"profile.recoveryCodesNewTitle": {
+		"message": "Forge new recovery codes",
+		"source": "Make new recovery codes"
+	},
+	"profile.recoveryCodesSaved": {
+		"message": "I've stowed them",
+		"source": "I've saved them"
+	},
+	"profile.recoveryCodesTitle": {
+		"message": "Stow yer recovery codes",
+		"source": "Save your recovery codes"
+	},
 	"profile.saveFailed": {
 		"message": "Couldn't stow yer profile.",
 		"source": "Could not save your profile."
@@ -4466,6 +4670,94 @@
 	"profile.title": {
 		"message": "Yer profile",
 		"source": "Your profile"
+	},
+	"profile.trustedBrowserCount": {
+		"message": "{count, plural, =0 {None: every boardin' asks for the code} one {# browser skips the code when comin' aboard} other {# browsers skip the code when comin' aboard}}",
+		"source": "{count, plural, =0 {None: every login asks for the code} one {# browser skips the code at login} other {# browsers skip the code at login}}"
+	},
+	"profile.trustedBrowsers": {
+		"message": "Trusted browsers",
+		"source": "Trusted browsers"
+	},
+	"profile.twoFactor": {
+		"message": "Two-factor authentication",
+		"source": "Two-factor authentication"
+	},
+	"profile.twoFactorAppCode": {
+		"message": "Code from the app",
+		"source": "Code from the app"
+	},
+	"profile.twoFactorContinue": {
+		"message": "Onward",
+		"source": "Continue"
+	},
+	"profile.twoFactorDisable": {
+		"message": "Strike it",
+		"source": "Turn off"
+	},
+	"profile.twoFactorDisableFailed": {
+		"message": "Couldn't strike two-factor authentication.",
+		"source": "Could not turn off two-factor authentication."
+	},
+	"profile.twoFactorDisableIntro": {
+		"message": "Comin' aboard will need only yer password again. Yer recovery codes be worthless, an' every trusted browser be forgotten.",
+		"source": "Logging in will need only your password again. Your recovery codes stop working, and every trusted browser is forgotten."
+	},
+	"profile.twoFactorDisableTitle": {
+		"message": "Strike two-factor authentication",
+		"source": "Turn off two-factor authentication"
+	},
+	"profile.twoFactorDisabled": {
+		"message": "Two-factor authentication be struck.",
+		"source": "Two-factor authentication is off."
+	},
+	"profile.twoFactorEnable": {
+		"message": "Raise it",
+		"source": "Turn on"
+	},
+	"profile.twoFactorEnabled": {
+		"message": "Two-factor authentication be raised.",
+		"source": "Two-factor authentication is on."
+	},
+	"profile.twoFactorManual": {
+		"message": "Can't scan it? Add the account in the app by hand, with this key:",
+		"source": "Can't scan it? Add the account in the app by hand, with this key:"
+	},
+	"profile.twoFactorOff": {
+		"message": "Struck",
+		"source": "Off"
+	},
+	"profile.twoFactorOn": {
+		"message": "Raised, with {count, plural, =0 {no recovery codes left} one {# recovery code left} other {# recovery codes left}}",
+		"source": "On, with {count, plural, =0 {no recovery codes left} one {# recovery code left} other {# recovery codes left}}"
+	},
+	"profile.twoFactorQrLabel": {
+		"message": "QR code for yer authenticator app. If ye can't scan it, use the key below it.",
+		"source": "QR code for your authenticator app. If you can't scan it, use the key below it."
+	},
+	"profile.twoFactorScan": {
+		"message": "Scan this QR code with an authenticator app, such as Google Authenticator, Microsoft Authenticator, Aegis or 2FAS. Then enter the 6-digit code the app shows.",
+		"source": "Scan this QR code with an authenticator app, such as Google Authenticator, Microsoft Authenticator, Aegis or 2FAS. Then enter the 6-digit code the app shows."
+	},
+	"profile.twoFactorSetupFailed": {
+		"message": "Couldn't raise two-factor authentication.",
+		"source": "Could not turn on two-factor authentication."
+	},
+	"profile.twoFactorSetupIntro": {
+		"message": "With two-factor authentication, comin' aboard with yer password also asks for a code from an app on yer phone, so a scallywag who learns yer password still can't board. First, enter yer password.",
+		"source": "With two-factor authentication, logging in with your password also asks for a code from an app on your phone, so someone who learns your password still can't get in. First, enter your password."
+	},
+	"profile.twoFactorSetupTitle": {
+		"message": "Raise two-factor authentication",
+		"source": "Turn on two-factor authentication"
+	},
+	"profile.twoFactorTurnOff": {
+		"message": "Strike it",
+		"source": "Turn off"
+	},
+	"profile.twoFactorTurnOn": {
+		"message": "Raise it",
+		"source": "Turn on"
 	},
 	"profile.unavailableTitle": {
 		"message": "Profile",

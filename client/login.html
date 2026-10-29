@@ -28,7 +28,7 @@
 						<input id="login-email" type="email" autocomplete="username" spellcheck="false" required />
 					</label>
 					<div class="password-field">
-						<label data-message="login.password" data-translation-context="Label of the password field when logging in">
+						<label data-message="login.password" data-translation-context="Label of the password field when logging in, and when turning two-factor authentication on or off or making new recovery codes on the profile">
 							Password
 							<input id="login-password" type="password" autocomplete="current-password" required />
 						</label>
@@ -70,14 +70,14 @@
 					<p id="code-intro"></p>
 					<label data-message="login.code" data-translation-context="Label of the field for the code that was emailed to the player">
 						Code
-						<input id="code-input" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" maxlength="24" required />
+						<input id="code-input" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" required data-code="email" data-auto-submit />
 					</label>
 					<p id="code-status" class="hint" role="status"></p>
 					<p id="code-error" class="form-error" role="alert" hidden></p>
 					<div class="form-buttons">
 						<button id="code-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="login.back" data-translation-context="Button that goes back a step while logging in, creating an account or resetting a password"><!-- icon ph:arrow-left -->Back</button>
 						<button id="code-resend" type="button" class="secondary" aria-describedby="code-status" data-shortcut="Alt+N" data-message="login.resendCode" data-translation-context="Button that emails another code, replacing the one sent before"><!-- icon ph:arrow-clockwise -->Send a new code</button>
-						<button id="code-submit" type="submit" aria-describedby="code-error" data-shortcut="Alt+C" data-message="login.continue" data-translation-context="Button that checks the emailed code and goes on to the next step"><!-- icon ph:arrow-right -->Continue</button>
+						<button id="code-submit" type="submit" aria-describedby="code-error" data-shortcut="Alt+C" data-message="login.continue" data-translation-context="Button that checks the emailed code, or the code from the authenticator app, and goes on to the next step"><!-- icon ph:arrow-right -->Continue</button>
 					</div>
 				</form>
 			</section>
@@ -136,6 +136,13 @@
 					</div>
 					<p id="reset-password-hint" class="hint" data-message="login.passwordHint" data-translation-context="Under the new password field when creating an account, resetting a password or changing it on the profile; {min} is a number">At least <span id="reset-password-min" data-argument="min" translate="no">15</span> characters. A few words strung together are easy to remember and hard to guess.</p>
 					<p id="reset-password-manager" class="hint" data-message="login.passwordManager" data-translation-context="Under the new password field when creating an account or resetting a password, recommending a password manager; {bitwarden} and {onePassword} are links to two of them">A password manager, such as <a href="https://bitwarden.com/" data-argument="bitwarden" translate="no" target="_blank" rel="noopener">Bitwarden</a> or <a href="https://1password.com/" data-argument="onePassword" translate="no" target="_blank" rel="noopener">1Password</a>, can make a strong password and remember it for you.</p>
+					<div id="reset-two-factor-field" hidden>
+						<label data-message="login.twoFactorCode" data-translation-context="Label of the field for the 6-digit code from the player's authenticator app, or one of their recovery codes, when logging in, resetting a password or linking a Google or Discord login to an account with two-factor authentication, and when turning it off or making new recovery codes on the profile">
+							Authenticator code
+							<input id="reset-two-factor-code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" aria-describedby="reset-two-factor-hint" data-code="twoFactor" />
+						</label>
+						<p id="reset-two-factor-hint" class="hint" data-message="login.twoFactorResetHint" data-translation-context="Under the authenticator code field when resetting the password of an account with two-factor authentication">Your account has two-factor authentication, so the email code isn't enough on its own. Enter the 6-digit code from your authenticator app, or one of your recovery codes.</p>
+					</div>
 					<label class="checkbox" data-message="login.rememberMe" data-translation-context="Checkbox when logging in, creating an account or choosing a new password: keeps the browser logged in for up to 30 days without use, rather than an hour">
 						<input id="reset-remember" type="checkbox" />
 						Remember me
@@ -178,11 +185,18 @@
 					<!-- Not shown: tells password managers which account the password is for -->
 					<input id="provider-link-email" type="email" autocomplete="username" hidden />
 					<div id="provider-link-password-field" class="password-field">
-						<label data-message="login.password" data-translation-context="Label of the password field when logging in">
+						<label data-message="login.password" data-translation-context="Label of the password field when logging in, and when turning two-factor authentication on or off or making new recovery codes on the profile">
 							Password
 							<input id="provider-link-password" type="password" autocomplete="current-password" />
 						</label>
 						<button id="provider-link-password-toggle" type="button" class="secondary password-toggle" aria-controls="provider-link-password" aria-pressed="false" aria-label="Show password" title="Show password" data-message-aria-label="login.showPassword" data-translation-context-aria-label="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed" data-message-title="login.showPassword" data-translation-context-title="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"><span class="password-hidden-icon"><!-- icon ph:eye --></span><span class="password-shown-icon"><!-- icon ph:eye-slash --></span></button>
+					</div>
+					<div id="provider-link-two-factor-field" hidden>
+						<label data-message="login.twoFactorCode" data-translation-context="Label of the field for the 6-digit code from the player's authenticator app, or one of their recovery codes, when logging in, resetting a password or linking a Google or Discord login to an account with two-factor authentication, and when turning it off or making new recovery codes on the profile">
+							Authenticator code
+							<input id="provider-link-two-factor-code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" aria-describedby="provider-link-two-factor-hint" data-code="twoFactor" />
+						</label>
+						<p id="provider-link-two-factor-hint" class="hint" data-message="login.twoFactorCodeHint" data-translation-context="Under the authenticator code field when logging in or linking a Google or Discord login to an account with two-factor authentication, and when turning it off or making new recovery codes on the profile">The 6-digit code from your authenticator app, or one of your recovery codes.</p>
 					</div>
 					<p id="provider-link-error" class="form-error" role="alert" hidden></p>
 					<div class="form-buttons">
@@ -191,6 +205,39 @@
 						<button id="provider-link-submit" type="submit" aria-describedby="provider-link-error" data-shortcut="Alt+L" data-message="login.linkSubmit" data-translation-context="Button that logs in to the account with its password, linking the Google or Discord login to it"><!-- icon ph:link -->Link account</button>
 					</div>
 				</form>
+			</section>
+
+			<section id="two-factor-screen" class="screen auth-screen" hidden>
+				<form id="two-factor-form" class="panel form auth-panel">
+					<h1 data-message="login.twoFactorTitle" data-translation-context="Heading of the screen that asks for the code from the player's authenticator app after their password, or after the emailed code when linking a Google or Discord login">Enter your authenticator code</h1>
+					<p id="two-factor-intro" data-message="login.twoFactorIntro" data-translation-context="On the screen that asks for the code from the player's authenticator app, when their account has two-factor authentication">Your account has two-factor authentication. Open your authenticator app and enter the 6-digit code it shows for this site.</p>
+					<label data-message="login.twoFactorCode" data-translation-context="Label of the field for the 6-digit code from the player's authenticator app, or one of their recovery codes, when logging in, resetting a password or linking a Google or Discord login to an account with two-factor authentication, and when turning it off or making new recovery codes on the profile">
+						Authenticator code
+						<input id="two-factor-code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" required aria-describedby="two-factor-hint" data-code="twoFactor" data-auto-submit />
+					</label>
+					<p id="two-factor-hint" class="hint" data-message="login.twoFactorLostHint" data-translation-context="Under the authenticator code field on the screen that asks for it">Lost your phone? Enter one of your recovery codes instead. Each works once.</p>
+					<label id="two-factor-trust-field" class="checkbox">
+						<input id="two-factor-trust" type="checkbox" aria-describedby="two-factor-trust-hint" />
+						<span id="two-factor-trust-label"></span>
+					</label>
+					<p id="two-factor-trust-hint" class="hint" data-message="login.trustBrowserHint" data-translation-context="Under the checkbox that stops this browser asking for the authenticator code at login">Only on a browser that no one else uses. Your password is still asked for.</p>
+					<p id="two-factor-error" class="form-error" role="alert" hidden></p>
+					<div class="form-buttons">
+						<button id="two-factor-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="login.back" data-translation-context="Button that goes back a step while logging in, creating an account or resetting a password"><!-- icon ph:arrow-left -->Back</button>
+						<button id="two-factor-submit" type="submit" aria-describedby="two-factor-error" data-shortcut="Alt+C" data-message="login.continue" data-translation-context="Button that checks the emailed code, or the code from the authenticator app, and goes on to the next step"><!-- icon ph:arrow-right -->Continue</button>
+					</div>
+				</form>
+			</section>
+
+			<section id="registered-screen" class="screen auth-screen" hidden>
+				<div class="panel form auth-panel">
+					<h1 data-message="login.registeredTitle" data-translation-context="Heading of the screen shown once a new account is created, offering to set up two-factor authentication">Your account is ready</h1>
+					<p data-message="login.registeredIntro" data-translation-context="On the screen shown once a new account is created with a password">Two-factor authentication keeps your account safe even if someone learns your password: logging in asks for a code from an app on your phone too. You can set it up now, or any time from your profile.</p>
+					<div class="form-buttons">
+						<button id="registered-continue" type="button" class="secondary" data-shortcut="Alt+N" data-message="login.notNow" data-translation-context="Button on the screen shown once a new account is created: skips setting up two-factor authentication for now and goes on"><!-- icon ph:arrow-right -->Not now</button>
+						<a id="registered-two-factor" class="button" href="/profile" data-shortcut="Alt+T" data-message="login.setUpTwoFactor" data-translation-context="Link on the screen shown once a new account is created: goes to the player's profile to set up two-factor authentication"><!-- icon ph:shield-check -->Set up two-factor authentication</a>
+					</div>
+				</div>
 			</section>
 		</main>
 		<!-- include footer.html -->

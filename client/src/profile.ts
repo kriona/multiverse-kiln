@@ -4,6 +4,7 @@ import { startPageLifecycle } from './pageLifecycle';
 import { readPlayerUsername } from './pages';
 import { ProfilePage } from './ProfilePage';
 import { startAccountMenu } from './ui/accountMenu';
+import { startCodeInputs } from './ui/codeInputs';
 import { showStatus } from './ui/dom';
 import { startLanguagePicker } from './ui/languagePicker';
 import { pageMessages } from './ui/pageMessages';
@@ -22,6 +23,7 @@ async function start(): Promise<void>
 	startLanguagePicker();
 	startShortcuts();
 	startPasswordToggles();
+	startCodeInputs();
 	showStatus(t(pageMessages.connecting));
 
 	try

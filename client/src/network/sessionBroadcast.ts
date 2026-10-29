@@ -18,10 +18,18 @@ const CHANNEL_NAME = 'kiln-session';
 const LOGGED_IN = 'loggedIn';
 
 /**
+ * Whether this tab logged the browser in. A channel hears the messages of other channels in its own
+ * tab too, so this tab ignores its own announcement
+ */
+let loggedInHere = false;
+
+/**
  * Tells the browser's other tabs that it has logged in
  */
 export function announceLogin(): void
 {
+	loggedInHere = true;
+
 	const channel = new BroadcastChannel(CHANNEL_NAME);
 
 	channel.postMessage(LOGGED_IN);
@@ -40,7 +48,7 @@ export function onLoginElsewhere(listener: () => void): () => void
 
 	channel.addEventListener('message', (event: MessageEvent) =>
 	{
-		if (event.data === LOGGED_IN)
+		if ((event.data === LOGGED_IN) && !loggedInHere)
 		{
 			listener();
 		}

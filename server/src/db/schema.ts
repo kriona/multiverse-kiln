@@ -1299,6 +1299,101 @@ export const pendingProviderLogins = pgTable('pending_provider_logins', {
 	check('pending_provider_logins_continuation_hash_length', authHashLength(table.continuationHash))
 ]);
 
+/**
+ * Authenticator apps set up for 2FA: at most one per account. A row whose enabledAt is null is a setup
+ * waiting for its first code, which doesn't change how the account logs in. Deleted when 2FA is turned
+ * off, and with the account
+ */
+export const authenticators = pgTable('authenticators', {
+	playerId: uuid('player_id').primaryKey().references(() => players.id, { onDelete: 'cascade' }),
+
+	/**
+	 * The TOTP secret, encrypted with TOTP_ENCRYPTION_KEY (server/src/auth/totpSecrets.ts)
+	 */
+	encryptedSecret: bytea('encrypted_secret').notNull(),
+
+	/**
+	 * The time step of the last code used, so each code works once; null until one is used
+	 */
+	lastUsedStep: integer('last_used_step'),
+
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+
+	/**
+	 * When 2FA was turned on, once the first code was entered; null while setting up
+	 */
+	enabledAt: timestamp('enabled_at', { withTimezone: true })
+});
+
+/**
+ * The recovery codes of accounts with 2FA, each working once in place of an authenticator code. Stored
+ * only as keyed hashes. Deleted once used, when they are replaced or 2FA is turned off, and with the account
+ */
+export const recoveryCodes = pgTable('recovery_codes', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	playerId: uuid('player_id').notNull().references(() => players.id, { onDelete: 'cascade' }),
+
+	/**
+	 * Keyed hash of the code
+	 */
+	codeHash: bytea('code_hash').notNull()
+}, (table) => [
+	index('recovery_codes_player_id_index').on(table.playerId),
+	check('recovery_codes_code_hash_length', authHashLength(table.codeHash))
+]);
+
+/**
+ * Logins whose password was right, waiting at most 10 minutes for the account's authenticator or
+ * recovery code. Only the browser that gave the password can finish one, through its continuation
+ * cookie. Deleted once used, expired or guessed wrong too often
+ */
+export const pendingTwoFactorLogins = pgTable('pending_two_factor_logins', {
+	id: uuid('id').primaryKey().defaultRandom(),
+
+	/**
+	 * SHA-256 of the token in the browser's continuation cookie
+	 */
+	continuationHash: bytea('continuation_hash').notNull(),
+
+	playerId: uuid('player_id').notNull().references(() => players.id, { onDelete: 'cascade' }),
+
+	/**
+	 * Whether the player checked "Remember me" with their password
+	 */
+	rememberMe: boolean('remember_me').notNull(),
+
+	wrongGuesses: smallint('wrong_guesses').notNull().default(0),
+	expiresAt: timestamp('expires_at', { withTimezone: true }).notNull()
+}, (table) => [
+	uniqueIndex('pending_two_factor_logins_continuation_hash_unique').on(table.continuationHash),
+	index('pending_two_factor_logins_player_id_index').on(table.playerId),
+	index('pending_two_factor_logins_expires_at_index').on(table.expiresAt),
+	check('pending_two_factor_logins_continuation_hash_length', authHashLength(table.continuationHash)),
+	check('pending_two_factor_logins_wrong_guesses_range', sql`${table.wrongGuesses} >= 0`)
+]);
+
+/**
+ * Browsers a player chose to trust, which skip the authenticator code for TRUSTED_BROWSER_DAYS. A
+ * browser holds one token in its trust cookie, which every account it trusts shares. Deleted once
+ * expired, when 2FA is turned off or the player stops trusting every browser, and with the account
+ */
+export const trustedBrowsers = pgTable('trusted_browsers', {
+	id: uuid('id').primaryKey().defaultRandom(),
+
+	/**
+	 * SHA-256 of the token in the browser's trust cookie
+	 */
+	tokenHash: bytea('token_hash').notNull(),
+
+	playerId: uuid('player_id').notNull().references(() => players.id, { onDelete: 'cascade' }),
+	expiresAt: timestamp('expires_at', { withTimezone: true }).notNull()
+}, (table) => [
+	uniqueIndex('trusted_browsers_token_player_unique').on(table.tokenHash, table.playerId),
+	index('trusted_browsers_player_id_index').on(table.playerId),
+	index('trusted_browsers_expires_at_index').on(table.expiresAt),
+	check('trusted_browsers_token_hash_length', authHashLength(table.tokenHash))
+]);
+
 export const emailCodePurpose = pgEnum('email_code_purpose', EMAIL_CODE_PURPOSES);
 
 /**
@@ -1358,9 +1453,10 @@ export const emailCodes = pgTable('email_codes', {
 
 /**
  * What a rate limit counts: codes sent to an address and wrong guesses for it, the codes asked for and
- * guesses made from a network, and login attempts for an address and from a network
+ * guesses made from a network, login attempts for an address and from a network, and authenticator or
+ * recovery codes tried for an account
  */
-export const RATE_LIMIT_KINDS = ['addressCodeSent', 'addressWrongGuess', 'networkCodeRequest', 'networkGuess', 'addressLoginAttempt', 'networkLoginAttempt'] as const;
+export const RATE_LIMIT_KINDS = ['addressCodeSent', 'addressWrongGuess', 'networkCodeRequest', 'networkGuess', 'addressLoginAttempt', 'networkLoginAttempt', 'accountTwoFactorAttempt'] as const;
 export const rateLimitKind = pgEnum('rate_limit_kind', RATE_LIMIT_KINDS);
 
 /**
@@ -1387,7 +1483,7 @@ export const rateLimitEvents = pgTable('rate_limit_events', {
 /**
  * What happened in an auth event
  */
-export const AUTH_EVENT_KINDS = ['registered', 'loggedIn', 'loginFailed', 'loggedOut', 'passwordReset', 'passwordChanged', 'passwordRehashed', 'emailChanged', 'providerLinked'] as const;
+export const AUTH_EVENT_KINDS = ['registered', 'loggedIn', 'loginFailed', 'loggedOut', 'passwordReset', 'passwordChanged', 'passwordRehashed', 'emailChanged', 'providerLinked', 'twoFactorEnabled', 'twoFactorDisabled', 'twoFactorFailed', 'recoveryCodeUsed', 'recoveryCodesReplaced', 'browserTrusted', 'trustedBrowsersForgotten'] as const;
 export const authEventKind = pgEnum('auth_event_kind', AUTH_EVENT_KINDS);
 
 /**

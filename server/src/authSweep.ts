@@ -4,7 +4,8 @@
  *
  * - Sessions with a window connected to a room are recorded as used, since an open connection counts as use
  * - Expired sessions are deleted, and their windows turned away
- * - Email codes that can no longer be used are deleted, and provider logins left waiting too long
+ * - Email codes that can no longer be used are deleted, provider logins and logins waiting on an
+ *   authenticator code left waiting too long, and browsers whose trust has ended
  * - Rate limit records are deleted once no limit counts them, and auth events after 90 days
  */
 import { deleteAuthEventsBefore } from './db/authEventRepo.js';
@@ -12,6 +13,7 @@ import { deleteStaleEmailCodes } from './db/emailCodeRepo.js';
 import { deleteExpiredPendingProviderLogins } from './db/providerLoginRepo.js';
 import { deleteRateLimitEventsBefore } from './db/rateLimitRepo.js';
 import { deleteExpiredSessions, touchSessions } from './db/sessionRepo.js';
+import { deleteExpiredPendingTwoFactorLogins, deleteExpiredTrustedBrowsers } from './db/twoFactorRepo.js';
 import { DAY_MS, HOUR_MS } from './logic/emailCodes.js';
 import { SESSION_TOUCH_INTERVAL_MS } from './logic/sessionLifetimes.js';
 import { connectedSessions } from './players/connectedSessions.js';
@@ -48,13 +50,15 @@ export async function sweepAuth(now: Date = new Date()): Promise<void>
 	{
 		await deleteStaleEmailCodes(now);
 		await deleteExpiredPendingProviderLogins(now);
-		await deleteRateLimitEventsBefore(['addressCodeSent', 'networkCodeRequest', 'networkGuess', 'addressLoginAttempt', 'networkLoginAttempt'], new Date(now.getTime() - HOUR_MS));
+		await deleteExpiredPendingTwoFactorLogins(now);
+		await deleteExpiredTrustedBrowsers(now);
+		await deleteRateLimitEventsBefore(['addressCodeSent', 'networkCodeRequest', 'networkGuess', 'addressLoginAttempt', 'networkLoginAttempt', 'accountTwoFactorAttempt'], new Date(now.getTime() - HOUR_MS));
 		await deleteRateLimitEventsBefore(['addressWrongGuess'], new Date(now.getTime() - DAY_MS));
 		await deleteAuthEventsBefore(new Date(now.getTime() - (AUTH_EVENT_DAYS * DAY_MS)));
 	}
 	catch (error)
 	{
-		console.error('Could not delete old email codes, provider logins, rate limit records and auth events:', error);
+		console.error('Could not delete old email codes, waiting logins, trusted browsers, rate limit records and auth events:', error);
 	}
 }
 

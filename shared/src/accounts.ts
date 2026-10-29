@@ -57,6 +57,40 @@ export const AUTH_EMAIL_CHANGE_PATH = `${AUTH_PATH}/email`;
 export const AUTH_PASSWORD_CHANGE_PATH = `${AUTH_PATH}/password`;
 
 /**
+ * POST: finish a login that is waiting on the account's second factor, with an authenticator or recovery
+ * code (TwoFactorLoginRequest)
+ */
+export const AUTH_TWO_FACTOR_LOGIN_PATH = `${AUTH_PATH}/two-factor/login`;
+
+/**
+ * POST: start turning on 2FA for the logged-in account, giving its password (TwoFactorSetupRequest),
+ * answered with the secret for the authenticator app (TwoFactorSetupPayload)
+ */
+export const AUTH_TWO_FACTOR_SETUP_PATH = `${AUTH_PATH}/two-factor/setup`;
+
+/**
+ * POST: turn on 2FA, with a code from the authenticator app just set up (TwoFactorEnableRequest),
+ * answered with the account's recovery codes (RecoveryCodesPayload)
+ */
+export const AUTH_TWO_FACTOR_ENABLE_PATH = `${AUTH_PATH}/two-factor/enable`;
+
+/**
+ * POST: turn off 2FA, giving the password and an authenticator or recovery code (TwoFactorDisableRequest)
+ */
+export const AUTH_TWO_FACTOR_DISABLE_PATH = `${AUTH_PATH}/two-factor/disable`;
+
+/**
+ * POST: replace the account's recovery codes, giving the password and an authenticator or recovery code
+ * (RecoveryCodesRequest), answered with the new ones (RecoveryCodesPayload)
+ */
+export const AUTH_RECOVERY_CODES_PATH = `${AUTH_PATH}/two-factor/recovery-codes`;
+
+/**
+ * POST: stop trusting every browser the account trusted to skip the authenticator code
+ */
+export const AUTH_TRUSTED_BROWSERS_FORGET_PATH = `${AUTH_PATH}/two-factor/trusted-browsers/forget`;
+
+/**
  * GET: the login providers this site offers (ProvidersPayload)
  */
 export const AUTH_PROVIDERS_PATH = `${AUTH_PATH}/providers`;
@@ -134,6 +168,43 @@ export const MAX_EMAIL_LENGTH = 254;
 export const MAX_LOCALE_LENGTH = 35;
 
 /**
+ * The characters of email and recovery codes: Crockford's base32 alphabet, the digits and the capital
+ * letters except I, L, O and U. Typing is forgiving: O, I and L are read as 0, 1 and 1
+ */
+export const EMAIL_CODE_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+
+/**
+ * How many characters an email code has: 32^6, a little over a billion possible codes
+ */
+export const EMAIL_CODE_LENGTH = 6;
+
+/**
+ * How many characters a recovery code has, from EMAIL_CODE_ALPHABET: 50 bits. Shown with a dash in the
+ * middle, which typing may leave out
+ */
+export const RECOVERY_CODE_LENGTH = 10;
+
+/**
+ * How many digits an authenticator app's codes have (TOTP, RFC 6238)
+ */
+export const TWO_FACTOR_CODE_LENGTH = 6;
+
+/**
+ * How many recovery codes an account with 2FA gets: each works once, in place of an authenticator code
+ */
+export const RECOVERY_CODE_COUNT = 10;
+
+/**
+ * How long a browser the player chose to trust skips the authenticator code at login
+ */
+export const TRUSTED_BROWSER_DAYS = 30;
+
+/**
+ * The longest authenticator or recovery code read from a request, before spaces and dashes are removed
+ */
+export const MAX_TWO_FACTOR_CODE_INPUT_LENGTH = 32;
+
+/**
  * What an email code is for
  */
 export const EMAIL_CODE_PURPOSES = ['register', 'resetPassword', 'changeEmail', 'linkLogin'] as const;
@@ -197,6 +268,108 @@ export interface LoginRequest
 }
 
 /**
+ * Response of POST AUTH_LOGIN_PATH: the browser is logged in, or the account has 2FA and the login waits
+ * a few minutes for its code (AUTH_TWO_FACTOR_LOGIN_PATH), from this browser
+ */
+export interface LoginPayload
+{
+	outcome: 'loggedIn' | 'twoFactor';
+}
+
+/**
+ * Body of POST AUTH_TWO_FACTOR_LOGIN_PATH
+ */
+export interface TwoFactorLoginRequest
+{
+	/**
+	 * A code from the authenticator app, or one of the account's recovery codes, as typed
+	 */
+	code: string;
+
+	/**
+	 * Whether this browser skips the authenticator code at login for TRUSTED_BROWSER_DAYS
+	 */
+	trustBrowser: boolean;
+
+	locale: string;
+}
+
+/**
+ * Body of POST AUTH_TWO_FACTOR_SETUP_PATH
+ */
+export interface TwoFactorSetupRequest
+{
+	password: string;
+}
+
+/**
+ * Response of POST AUTH_TWO_FACTOR_SETUP_PATH: the secret the authenticator app makes its codes from
+ */
+export interface TwoFactorSetupPayload
+{
+	/**
+	 * The secret in base32, for typing into the app by hand
+	 */
+	secret: string;
+
+	/**
+	 * The otpauth:// URI the client draws as a QR code for the app to scan. It holds the secret, so it is
+	 * only ever drawn, never used as a link or sent anywhere
+	 */
+	uri: string;
+}
+
+/**
+ * Body of POST AUTH_TWO_FACTOR_ENABLE_PATH
+ */
+export interface TwoFactorEnableRequest
+{
+	/**
+	 * A code from the authenticator app just set up
+	 */
+	code: string;
+
+	locale: string;
+}
+
+/**
+ * Body of POST AUTH_TWO_FACTOR_DISABLE_PATH
+ */
+export interface TwoFactorDisableRequest
+{
+	password: string;
+
+	/**
+	 * An authenticator or recovery code
+	 */
+	code: string;
+
+	locale: string;
+}
+
+/**
+ * Body of POST AUTH_RECOVERY_CODES_PATH
+ */
+export interface RecoveryCodesRequest
+{
+	password: string;
+
+	/**
+	 * An authenticator or recovery code
+	 */
+	code: string;
+}
+
+/**
+ * Response of POST AUTH_TWO_FACTOR_ENABLE_PATH and AUTH_RECOVERY_CODES_PATH: the account's recovery
+ * codes, shown once. The server keeps only their keyed hashes
+ */
+export interface RecoveryCodesPayload
+{
+	recoveryCodes: string[];
+}
+
+/**
  * Body of POST AUTH_CODE_PATH
  */
 export interface EmailCodeRequest
@@ -229,6 +402,18 @@ export interface EmailCodeCheckRequest
 }
 
 /**
+ * Response of POST AUTH_CODE_CHECK_PATH
+ */
+export interface EmailCodeCheckPayload
+{
+	/**
+	 * Whether the next step needs the account's authenticator or recovery code too: resetting the
+	 * password of an account with 2FA, from a browser it doesn't trust
+	 */
+	twoFactor: boolean;
+}
+
+/**
  * Body of POST AUTH_REGISTER_PATH
  */
 export interface RegisterRequest
@@ -253,6 +438,11 @@ export interface PasswordResetRequest
 	password: string;
 	rememberMe: boolean;
 	locale: string;
+
+	/**
+	 * An authenticator or recovery code, when the code check said one is needed; otherwise null
+	 */
+	twoFactorCode: string | null;
 }
 
 /**
@@ -352,6 +542,12 @@ export type ProviderCallbackPayload =
 		 * Whether the account has a password; without one, only an email code links it
 		 */
 		hasPassword: boolean;
+
+		/**
+		 * Whether linking needs the account's authenticator or recovery code too, since the account has
+		 * 2FA and this browser isn't trusted
+		 */
+		twoFactor: boolean;
 	};
 
 /**
@@ -376,12 +572,17 @@ export interface ProviderLinkRequest
 	password: string | null;
 
 	locale: string;
+
+	/**
+	 * An authenticator or recovery code, when the callback said one is needed; otherwise null
+	 */
+	twoFactorCode: string | null;
 }
 
 /**
  * The fields of the auth routes' requests that an error can be about
  */
-export type AuthField = 'email' | 'password' | 'currentPassword' | 'username' | 'displayName' | 'code';
+export type AuthField = 'email' | 'password' | 'currentPassword' | 'username' | 'displayName' | 'code' | 'twoFactorCode';
 
 /**
  * Why an auth route refused a request, and which field it is about, if one

@@ -238,6 +238,47 @@ textarea
 	}
 }
 
+// A field for a code (ui/codeInputs.ts): large, in the font the emails show codes in, with a line under
+// each character's cell. The text starts at the left so each character sits over its line, and the
+// field is centered instead
+input[data-code]
+{
+	--code-cells: 6;
+	--code-gap: 0.7ch;
+
+	box-sizing: content-box;
+	align-self: center;
+	width: calc(var(--code-cells) * (1ch + var(--code-gap)));
+	max-width: calc(100% - 32px);
+
+	// Each character is followed by the gap, so the right takes the gap off to look even
+	padding: 8px calc(16px - var(--code-gap)) 14px 16px;
+	font-family: Consolas, Menlo, monospace;
+	font-size: 28px;
+	font-weight: bold;
+	letter-spacing: var(--code-gap);
+	text-transform: uppercase;
+	background-image: repeating-linear-gradient(to right, $border-stronger 0 1ch, transparent 1ch calc(1ch + var(--code-gap)));
+	background-origin: content-box;
+	background-repeat: no-repeat;
+	background-size: calc((var(--code-cells) * (1ch + var(--code-gap))) - var(--code-gap)) 2px;
+	background-position: left 0 bottom -6px;
+
+	// A recovery code, which is longer than the cells drawn for an authenticator code
+	&.code-long
+	{
+		--code-cells: 11;
+		--code-gap: 0.1ch;
+
+		background-image: none;
+	}
+}
+
+.form label:has(> input[data-code])
+{
+	align-items: center;
+}
+
 button.danger
 {
 	border-color: $danger;

@@ -9,6 +9,7 @@ import { setEmailSender, type Email } from '../src/email/mailer.js';
 import { PROVIDER_LOGIN_COOKIE, PROVIDER_START_COOKIE } from '../src/http/cookies.js';
 import { Browser } from './browser.js';
 import { getTestServer } from './testServer.js';
+import { authenticatorCode, turnOnTwoFactor } from './twoFactorAccounts.js';
 import { waitUntil } from './waitUntil.js';
 
 const PASSWORD = 'correct horse battery staple';
@@ -318,19 +319,20 @@ describe('provider login routes', () =>
 			outcome: 'link',
 			provider: 'google',
 			email: 'ada@example.com',
-			hasPassword: true
+			hasPassword: true,
+			twoFactor: false
 		});
 
 		// Choosing a username would make a second account with the address
 		assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_REGISTER_PATH, { username: 'ada2', displayName: 'Ada', locale: 'en' })).status, 403);
 
-		const wrong = await browser.send('POST', AUTH_PROVIDER_LINK_PATH, { password: 'not the password at all', locale: 'en' });
+		const wrong = await browser.send('POST', AUTH_PROVIDER_LINK_PATH, { password: 'not the password at all', locale: 'en', twoFactorCode: null });
 
 		assert.strictEqual(wrong.status, 401);
 		assert.strictEqual(wrong.body.field, 'password');
 		assert.strictEqual(await browser.username(), null);
 
-		assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_LINK_PATH, { password: PASSWORD, locale: 'en' })).status, 204);
+		assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_LINK_PATH, { password: PASSWORD, locale: 'en', twoFactorCode: null })).status, 204);
 		assert.strictEqual(await browser.username(), 'ada');
 		assert.deepStrictEqual((await pool.query('SELECT remember_me FROM sessions')).rows, [{ remember_me: true }]);
 		await waitUntil(() => (emails.length === 1));
@@ -355,8 +357,8 @@ describe('provider login routes', () =>
 		assert.strictEqual((callback.body.outcome === 'link') && callback.body.hasPassword, false);
 
 		// A code is no use without entering it, and a password never matches an account without one
-		assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_LINK_PATH, { password: null, locale: 'en' })).status, 403);
-		assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_LINK_PATH, { password: PASSWORD, locale: 'en' })).status, 401);
+		assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_LINK_PATH, { password: null, locale: 'en', twoFactorCode: null })).status, 403);
+		assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_LINK_PATH, { password: PASSWORD, locale: 'en', twoFactorCode: null })).status, 401);
 
 		assert.strictEqual((await browser.send('POST', AUTH_CODE_PATH, { purpose: 'linkLogin', email: 'ada@example.com', locale: 'en' })).status, 204);
 		await waitUntil(() => (emails.length === 1));
@@ -365,11 +367,38 @@ describe('provider login routes', () =>
 
 		assert.ok(code);
 		assert.match(emails[0].subject, /link a login/);
-		assert.strictEqual((await browser.send('POST', AUTH_CODE_CHECK_PATH, { purpose: 'linkLogin', email: 'ada@example.com', code })).status, 204);
-		assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_LINK_PATH, { password: null, locale: 'en' })).status, 204);
+		assert.strictEqual((await browser.send('POST', AUTH_CODE_CHECK_PATH, { purpose: 'linkLogin', email: 'ada@example.com', code })).status, 200);
+		assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_LINK_PATH, { password: null, locale: 'en', twoFactorCode: null })).status, 204);
 		assert.strictEqual(await browser.username(), 'ada');
 		assert.strictEqual((await pool.query('SELECT * FROM email_codes')).rowCount, 0);
 		assert.deepStrictEqual((await pool.query('SELECT provider FROM provider_logins')).rows, [{ provider: 'discord' }]);
+	});
+
+	it('needs the authenticator code of an account with 2FA to link to it', async () =>
+	{
+		const authenticator = await turnOnTwoFactor(await addLocalAccount('ada@example.com', 'ada'));
+		const browser = new Browser();
+		const callback = await logInWith(browser, GOOGLE_ADA);
+
+		assert.strictEqual((callback.body.outcome === 'link') && callback.body.twoFactor, true);
+
+		const missing = await browser.send('POST', AUTH_PROVIDER_LINK_PATH, { password: PASSWORD, locale: 'en', twoFactorCode: null });
+
+		assert.strictEqual(missing.status, 401);
+		assert.strictEqual(missing.body.field, 'twoFactorCode');
+		assert.strictEqual((await pool.query('SELECT * FROM provider_logins')).rowCount, 0);
+
+		// An emailed code isn't enough either
+		assert.strictEqual((await browser.send('POST', AUTH_CODE_PATH, { purpose: 'linkLogin', email: 'ada@example.com', locale: 'en' })).status, 204);
+		await waitUntil(() => (emails.length === 1));
+
+		const code = /\r\n\r\n([0-9A-Z]{6})\r\n\r\n/.exec(emails[0].text)?.[1];
+
+		assert.strictEqual((await browser.send('POST', AUTH_CODE_CHECK_PATH, { purpose: 'linkLogin', email: 'ada@example.com', code })).status, 200);
+		assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_LINK_PATH, { password: null, locale: 'en', twoFactorCode: null })).status, 401);
+		assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_LINK_PATH, { password: null, locale: 'en', twoFactorCode: authenticatorCode(authenticator.secret) })).status, 204);
+		assert.strictEqual(await browser.username(), 'ada');
+		assert.deepStrictEqual((await pool.query('SELECT provider FROM provider_logins')).rows, [{ provider: 'google' }]);
 	});
 
 	it('sends a link code only to the account a browser\'s provider login would link to', async () =>
@@ -395,7 +424,7 @@ describe('provider login routes', () =>
 		const first = new Browser();
 
 		await logInWith(first, GOOGLE_ADA);
-		assert.strictEqual((await first.send('POST', AUTH_PROVIDER_LINK_PATH, { password: PASSWORD, locale: 'en' })).status, 204);
+		assert.strictEqual((await first.send('POST', AUTH_PROVIDER_LINK_PATH, { password: PASSWORD, locale: 'en', twoFactorCode: null })).status, 204);
 
 		const second = new Browser();
 
@@ -404,7 +433,7 @@ describe('provider login routes', () =>
 			providerUserId: 'google-ada-work'
 		});
 
-		const refused = await second.send('POST', AUTH_PROVIDER_LINK_PATH, { password: PASSWORD, locale: 'en' });
+		const refused = await second.send('POST', AUTH_PROVIDER_LINK_PATH, { password: PASSWORD, locale: 'en', twoFactorCode: null });
 
 		assert.strictEqual(refused.status, 409);
 		assert.strictEqual(refused.body.error.values?.provider, 'Google');
