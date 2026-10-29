@@ -1,7 +1,7 @@
 import assert from 'assert';
 
 import { pool } from '../../src/db/client.js';
-import { AccountTakenError, createPlayer, findLocalLogin, findPlayer, findPlayerByUsername, findPlayerEmail, findPlayerIdByEmail, saveEmail, savePasswordHash, type NewPlayer } from '../../src/db/playerRepo.js';
+import { AccountTakenError, createPlayer, findLocalLogin, findOwnProfile, findPasswordHash, findPlayer, findPlayerByUsername, findPlayerEmail, findPlayerIdByEmail, findProfileByUsername, saveEmail, savePasswordHash, saveProfile, type NewPlayer, type ProfileChanges } from '../../src/db/playerRepo.js';
 
 /**
  * A local account with an email address and password
@@ -142,6 +142,69 @@ describe('playerRepo', () =>
 			await pool.query('DELETE FROM players WHERE id = $1', [player.id]);
 
 			assert.strictEqual((await pool.query('SELECT id FROM sessions WHERE player_id = $1', [player.id])).rowCount, 0);
+		});
+	});
+
+	describe('profiles', () =>
+	{
+		const changes: ProfileChanges = {
+			username: 'Ada_L',
+			displayName: 'Ada',
+			locale: 'fr',
+			pronouns: 'she/her',
+			location: 'London',
+			timeZone: 'Europe/London',
+			socials: {
+				discord: 'ada.lovelace',
+				facebook: null,
+				instagram: 'ada_lovelace',
+				tiktok: null
+			},
+			showCharacters: false
+		};
+
+		it('saves a profile, and finds it by ID and by username in any capitals', async () =>
+		{
+			const ada = await createPlayer(localAccount('Ada', 'ada@example.com'));
+
+			await saveProfile(ada.id, changes);
+
+			const own = await findOwnProfile(ada.id);
+
+			assert.deepStrictEqual(own, {
+				id: ada.id,
+				...changes,
+				email: 'ada@example.com',
+				hasPassword: true
+			});
+			assert.deepStrictEqual(await findProfileByUsername('ADA_L'), {
+				id: ada.id,
+				username: own.username,
+				displayName: own.displayName,
+				pronouns: own.pronouns,
+				location: own.location,
+				timeZone: own.timeZone,
+				socials: own.socials,
+				showCharacters: own.showCharacters
+			});
+			assert.strictEqual(await findProfileByUsername('Ada'), undefined);
+			assert.strictEqual(await findPasswordHash(ada.id), '$argon2id$v=19$m=19456,p=1,t=2$c2FsdA$aGFzaA');
+		});
+
+		it('refuses a username another account has', async () =>
+		{
+			const ada = await createPlayer(localAccount('Ada', 'ada@example.com'));
+
+			await createPlayer(localAccount('Grace', 'grace@example.com'));
+			await assert.rejects(saveProfile(ada.id, { ...changes, username: 'GRACE' }), (error) => ((error instanceof AccountTakenError) && (error.field === 'username')));
+		});
+
+		it('checks each field\'s length in the database too', async () =>
+		{
+			const ada = await createPlayer(localAccount('Ada', 'ada@example.com'));
+
+			await assert.rejects(saveProfile(ada.id, { ...changes, pronouns: 'x'.repeat(41) }));
+			await assert.rejects(saveProfile(ada.id, { ...changes, socials: { ...changes.socials, tiktok: 'x'.repeat(51) } }));
 		});
 	});
 });

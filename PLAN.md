@@ -257,7 +257,7 @@ Decided:
 - 2FA is TOTP with recovery codes, for local accounts only; provider logins rely on the provider's 2FA. Passkeys can come later. No CAPTCHA for now.
 - With 2FA on, resetting a forgotten password asks for an authenticator or recovery code as well as the email code, so someone who gets into the player's email still can't take the account. TOTP secrets are stored encrypted (AES-256-GCM) with a key from a server setting, apart from the database.
 - Profiles store the player's usernames on social sites rather than addresses, so a link always goes to the site it names.
-- Home, universe pages and the license and privacy pages are public; the lobby, game, editor, Create Character and profile edit need a login.
+- Home, universe pages and the license and privacy pages are public; the lobby, game, editor, Create Character and profiles (editing your own, and viewing anyone's) need a login.
 - Auth events (logins, failures, logouts, resets, email and password changes, 2FA changes, linking) go in an `auth_events` table: the account if known, the kind, the time, and the network as a keyed hash, never passwords, codes or session IDs. They are kept 90 days, and deleted with the account.
 - Deleting an account asks first about each universe the player is the only creator of: hand it to another of its editors as creator, or delete it. Groups the player anchors disband, as when the anchor being leaves. Data export is one JSON file.
 

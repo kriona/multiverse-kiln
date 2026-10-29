@@ -22,7 +22,7 @@ You select a login provider like Google or Discord, or you can make a local acco
 
 Local accounts are supported, but the login and register pages recommend a provider for security reasons.
 
-Home, universe pages and the license and privacy pages don't need a login; the lobby, the game, the editor, Create Character and editing the profile do. Those send a browser that isn't logged in to the login page (`/login`), which goes back to them once it is. Logging in in one tab reloads the browser's other logged-out pages, so they are logged in too, and logging out takes every window of that browser out with it.
+Home, universe pages and the license and privacy pages don't need a login; the lobby, the game, the editor, Create Character and profiles (your own and other players') do. Those send a browser that isn't logged in to the login page (`/login`), which goes back to them once it is. Logging in in one tab reloads the browser's other logged-out pages, so they are logged in too, and logging out takes every window of that browser out with it.
 
 A login starts a session, kept on the server and named by an HttpOnly cookie. A session ends after 1 hour without use, and after 24 hours in all. Checking "Remember me" makes it last 30 days without use and 90 days in all, after which the player logs in again. Being connected to a lobby or game counts as use. Logging out ends the session on the server, and changing the password ends every session of the account.
 
@@ -86,7 +86,7 @@ Everything is optional except username and name.
 	- clicking on a character will show a modal dialog with their character sheet and a [Enter Universe](#enter-universe) button.
 
 ## Profile view
-Shows every profile field the user has filled in (name, photo, pronouns, location, time zone, socials) and their visible characters. Fields are optional, so users control what others see by leaving them blank.
+Shows every profile field the user has filled in (name, photo, pronouns, location, time zone, socials) and their visible characters in universes anyone can play. Only logged-in players can see profiles. Fields are optional, so users control what others see by leaving them blank.
 
 ## Enter Universe
 The lobby and the game are on a page of their own (`/game/<slug>`, or `/game/<universe ID>`, which changes to the slug), apart from Home, so a player can keep Home, their profile or the editor open in other tabs while they play.

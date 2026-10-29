@@ -21,7 +21,7 @@ describe('sessionRepo', () =>
 		assert.strictEqual(found?.rememberMe, true);
 	});
 
-	it('finds a session with its player\'s names', async () =>
+	it('finds a session with its player\'s names and language', async () =>
 	{
 		const player = await addPlayer('Ada Lovelace');
 		const tokenHash = hashToken(createToken());
@@ -30,7 +30,8 @@ describe('sessionRepo', () =>
 		assert.deepStrictEqual(await findSessionWithPlayer(tokenHash), {
 			...session,
 			username: 'Ada_Lovelace',
-			displayName: 'Ada Lovelace'
+			displayName: 'Ada Lovelace',
+			locale: null
 		});
 		assert.strictEqual(await findSessionWithPlayer(hashToken(createToken())), undefined);
 	});

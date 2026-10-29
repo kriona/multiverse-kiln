@@ -2135,6 +2135,10 @@
 		"defaultMessage": "Enter the code from the email first, or ask for a new one if it has been more than a few minutes.",
 		"description": "Why creating an account, choosing a new password, changing an email address or linking a Google or Discord login with an email code was refused: this browser hasn't entered the email code, or entered it too long ago"
 	},
+	"error.auth.noPassword": {
+		"defaultMessage": "Your account has no password to change. To give it one, log out and use \"Forgot your password?\" on the login page.",
+		"description": "Why changing the password was refused: the account logs in only with Google or Discord, so it has no password yet"
+	},
 	"error.auth.passwordBreached": {
 		"defaultMessage": "This password has turned up in a data breach, so attackers try it. Choose another.",
 		"description": "Shown under a new password field when the password is on HaveIBeenPwned's list of passwords leaked in data breaches"
@@ -2190,6 +2194,10 @@
 	"error.auth.wrongCode": {
 		"defaultMessage": "That code isn't right, or it has expired. Check the latest email, or ask for a new code.",
 		"description": "Shown under the code field when an email code is wrong, was already used, or is too old"
+	},
+	"error.auth.wrongCurrentPassword": {
+		"defaultMessage": "That isn't your current password.",
+		"description": "Shown under the current password field when changing the password, and the password typed is wrong"
 	},
 	"error.auth.wrongLogin": {
 		"defaultMessage": "That email address and password don't match an account.",
@@ -2367,6 +2375,10 @@
 		"defaultMessage": "There is no link on that cell.",
 		"description": "Why an area link couldn't be deleted: it was already gone, perhaps deleted by another editor"
 	},
+	"error.noSuchPlayer": {
+		"defaultMessage": "No player has that username.",
+		"description": "Why a player's profile couldn't be shown: no account has the username in its address"
+	},
 	"error.noSuchRace": {
 		"defaultMessage": "The race doesn't exist.",
 		"description": "Why a request about a race (such as elf or dwarf) failed: it was deleted, perhaps by another editor"
@@ -2414,6 +2426,22 @@
 	"error.parentNotInUniverse": {
 		"defaultMessage": "The parent area must be an area of this universe.",
 		"description": "Why an area's settings were refused: the area chosen to hold it doesn't exist"
+	},
+	"error.profile.locale": {
+		"defaultMessage": "Choose a language from the list.",
+		"description": "Shown under the language field on the profile when what was sent isn't a language tag"
+	},
+	"error.profile.noSuchCharacter": {
+		"defaultMessage": "You have no such character.",
+		"description": "Why showing or hiding a character on the player's profile was refused: the character isn't theirs, or was deleted"
+	},
+	"error.profile.socialUsername": {
+		"defaultMessage": "That isn't a {site} username. Enter the username alone, not a link.",
+		"description": "Shown under one of the profile's social site fields when what was typed can't be a username there; {site} is Discord, Facebook, Instagram or TikTok"
+	},
+	"error.profile.timeZone": {
+		"defaultMessage": "Choose a time zone from the list.",
+		"description": "Shown under the time zone field on the profile when what was sent isn't a time zone the server knows"
 	},
 	"error.raceInUse": {
 		"defaultMessage": "Characters are this race, so it can't be deleted. Disable it instead.",

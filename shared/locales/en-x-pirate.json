@@ -2135,6 +2135,10 @@
 		"message": "Enter the code from the letter first, or ask for a new one if it's been more than a few minutes.",
 		"source": "Enter the code from the email first, or ask for a new one if it has been more than a few minutes."
 	},
+	"error.auth.noPassword": {
+		"message": "Yer account has no password to change. To give it one, go ashore an' use \"Forgot yer password?\" on the boardin' page.",
+		"source": "Your account has no password to change. To give it one, log out and use \"Forgot your password?\" on the login page."
+	},
 	"error.auth.passwordBreached": {
 		"message": "This password washed up in a data breach, so scallywags try it. Choose another.",
 		"source": "This password has turned up in a data breach, so attackers try it. Choose another."
@@ -2190,6 +2194,10 @@
 	"error.auth.wrongCode": {
 		"message": "That code ain't right, or it's gone stale. Check the latest letter, or ask for a new code.",
 		"source": "That code isn't right, or it has expired. Check the latest email, or ask for a new code."
+	},
+	"error.auth.wrongCurrentPassword": {
+		"message": "That ain't yer current password.",
+		"source": "That isn't your current password."
 	},
 	"error.auth.wrongLogin": {
 		"message": "That email address an' password don't match any account.",
@@ -2367,6 +2375,10 @@
 		"message": "There be no passage on that cell.",
 		"source": "There is no link on that cell."
 	},
+	"error.noSuchPlayer": {
+		"message": "No sailor goes by that username.",
+		"source": "No player has that username."
+	},
 	"error.noSuchRace": {
 		"message": "Those folk be lost at sea.",
 		"source": "The race doesn't exist."
@@ -2414,6 +2426,22 @@
 	"error.parentNotInUniverse": {
 		"message": "The mother area must be an area of this universe.",
 		"source": "The parent area must be an area of this universe."
+	},
+	"error.profile.locale": {
+		"message": "Choose a tongue from the list.",
+		"source": "Choose a language from the list."
+	},
+	"error.profile.noSuchCharacter": {
+		"message": "Ye have no such hand.",
+		"source": "You have no such character."
+	},
+	"error.profile.socialUsername": {
+		"message": "That ain't a {site} username. Enter the username alone, not a link.",
+		"source": "That isn't a {site} username. Enter the username alone, not a link."
+	},
+	"error.profile.timeZone": {
+		"message": "Choose a time zone from the chart.",
+		"source": "Choose a time zone from the list."
 	},
 	"error.raceInUse": {
 		"message": "Hands hail from these folk, so they can't be scuttled. Lock 'em away instead.",

@@ -30,6 +30,11 @@ export interface SessionIdentity
 
 	username: string;
 	name: string;
+
+	/**
+	 * The language the player chose on their profile, or null when they haven't
+	 */
+	locale: string | null;
 }
 
 /**
@@ -72,7 +77,8 @@ export async function resolveSession(cookieHeader: string | null | undefined, no
 		sessionId: session.id,
 		playerId: session.playerId,
 		username: session.username,
-		name: session.displayName
+		name: session.displayName,
+		locale: session.locale
 	});
 }
 

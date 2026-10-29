@@ -3,7 +3,7 @@
  * pending_provider_logins tables
  */
 import { and, eq, gt, lte } from 'drizzle-orm';
-import type { LoginProvider } from '@multiverse-kiln/shared';
+import { LOGIN_PROVIDERS, type LoginProvider } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { pendingProviderLogins, providerLogins } from './schema.js';
@@ -83,6 +83,26 @@ export async function findProviderLoginPlayer(provider: LoginProvider, providerU
 		.limit(1);
 
 	return(row?.playerId);
+}
+
+/**
+ * The providers an account has logins with
+ *
+ * @param playerId The account
+ * @param executor The database, or a transaction
+ * @return The providers, in LOGIN_PROVIDERS's order
+ */
+export async function listProviderLogins(playerId: string, executor: Executor = db): Promise<LoginProvider[]>
+{
+	const rows = await executor
+		.select({
+			provider: providerLogins.provider
+		})
+		.from(providerLogins)
+		.where(eq(providerLogins.playerId, playerId));
+	const linked = new Set(rows.map((row) => row.provider));
+
+	return(LOGIN_PROVIDERS.filter((provider) => linked.has(provider)));
 }
 
 /**

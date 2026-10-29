@@ -1,7 +1,7 @@
 /**
  * Login sessions: the only module that reads or writes the sessions table
  */
-import { and, eq, inArray, lte, or } from 'drizzle-orm';
+import { and, eq, inArray, lte, ne, or } from 'drizzle-orm';
 
 import { SESSION_LIFETIMES, type SessionTimes } from '../logic/sessionLifetimes.js';
 import { db, type Executor } from './client.js';
@@ -23,6 +23,11 @@ export interface SessionWithPlayer extends SessionRecord
 {
 	username: string;
 	displayName: string;
+
+	/**
+	 * The language the player chose, or null when they haven't
+	 */
+	locale: string | null;
 }
 
 /**
@@ -95,7 +100,8 @@ export async function findSessionWithPlayer(tokenHash: Uint8Array, executor: Exe
 			createdAt: sessions.createdAt,
 			lastUsedAt: sessions.lastUsedAt,
 			username: players.username,
-			displayName: players.displayName
+			displayName: players.displayName,
+			locale: players.locale
 		})
 		.from(sessions)
 		.innerJoin(players, eq(players.id, sessions.playerId))
@@ -157,13 +163,17 @@ export async function deleteSession(sessionId: string, executor: Executor = db):
  *
  * @param playerId The account
  * @param executor The database, or a transaction
+ * @param keepSessionId A session to leave going, such as that of the browser changing the password
  * @return The IDs of the sessions ended, so the rooms can turn away their windows
  */
-export async function deletePlayerSessions(playerId: string, executor: Executor = db): Promise<string[]>
+export async function deletePlayerSessions(playerId: string, executor: Executor = db, keepSessionId?: string): Promise<string[]>
 {
 	const rows = await executor
 		.delete(sessions)
-		.where(eq(sessions.playerId, playerId))
+		.where(and(
+			eq(sessions.playerId, playerId),
+			((keepSessionId === undefined) ? undefined : ne(sessions.id, keepSessionId))
+		))
 		.returning({
 			id: sessions.id
 		});

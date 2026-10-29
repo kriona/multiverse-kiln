@@ -51,6 +51,12 @@ export const AUTH_PASSWORD_RESET_PATH = `${AUTH_PATH}/password-reset`;
 export const AUTH_EMAIL_CHANGE_PATH = `${AUTH_PATH}/email`;
 
 /**
+ * POST: change the logged-in account's password, giving the current one (PasswordChangeRequest). Every
+ * other browser logged in to the account is logged out
+ */
+export const AUTH_PASSWORD_CHANGE_PATH = `${AUTH_PATH}/password`;
+
+/**
  * GET: the login providers this site offers (ProvidersPayload)
  */
 export const AUTH_PROVIDERS_PATH = `${AUTH_PATH}/providers`;
@@ -157,6 +163,12 @@ export interface SessionPlayer
 	playerId: string;
 	username: string;
 	name: string;
+
+	/**
+	 * The language the player chose on their profile, which pages use ahead of the browser's settings;
+	 * null when they haven't chosen one
+	 */
+	locale: string | null;
 }
 
 /**
@@ -253,6 +265,16 @@ export interface EmailChangeRequest
 	 */
 	email: string;
 
+	locale: string;
+}
+
+/**
+ * Body of POST AUTH_PASSWORD_CHANGE_PATH
+ */
+export interface PasswordChangeRequest
+{
+	currentPassword: string;
+	newPassword: string;
 	locale: string;
 }
 
@@ -359,7 +381,7 @@ export interface ProviderLinkRequest
 /**
  * The fields of the auth routes' requests that an error can be about
  */
-export type AuthField = 'email' | 'password' | 'username' | 'displayName' | 'code';
+export type AuthField = 'email' | 'password' | 'currentPassword' | 'username' | 'displayName' | 'code';
 
 /**
  * Why an auth route refused a request, and which field it is about, if one

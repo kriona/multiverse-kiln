@@ -1,13 +1,13 @@
 /**
  * Characters: the only module that reads or writes the characters, pf1e_characters, sf1e_characters,
  * character_items, character_drafts and pf1e_ability_rolls tables. It reads group_members only to
- * tell which characters are in a group
+ * tell which characters are in a group, and universes only to name a profile's characters' universes
  */
-import { and, asc, count, desc, eq, gt, isNotNull, isNull, lte, ne, or, sql, type SQL } from 'drizzle-orm';
-import { isPf1eRollMethod, type AbilityScores, type CharacterDraft, type ItemQuantity, type Money, type Pf1eRollMethod, type Ruleset } from '@multiverse-kiln/shared';
+import { and, asc, count, desc, eq, gt, inArray, isNotNull, isNull, lte, ne, or, sql, type SQL } from 'drizzle-orm';
+import { isPf1eRollMethod, type AbilityScores, type CharacterDraft, type ItemQuantity, type Money, type Pf1eRollMethod, type Ruleset, type UniverseStage } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
-import { characterDrafts, characterItems, characters, groupMembers, pf1eAbilityRolls, pf1eCharacters, sf1eCharacters } from './schema.js';
+import { characterDrafts, characterItems, characters, groupMembers, pf1eAbilityRolls, pf1eCharacters, sf1eCharacters, universes } from './schema.js';
 
 /**
  * A character as the lobby lists it
@@ -28,6 +28,22 @@ export interface CharacterRecord
 	 * The group the character is in, or null when they are in none
 	 */
 	groupId: string | null;
+}
+
+/**
+ * A character as a profile lists them, with their universe
+ */
+export interface ProfileCharacterRecord
+{
+	id: string;
+	name: string;
+	raceId: number;
+	classId: number;
+	visibleOnProfile: boolean;
+	universeId: string;
+	universeSlug: string;
+	universeName: string;
+	ruleset: Ruleset;
 }
 
 /**
@@ -191,6 +207,68 @@ export async function listCharacters(playerId: string, universeId: string, execu
 			notExpired
 		))
 		.orderBy(asc(characters.createdAt), asc(characters.id)));
+}
+
+/**
+ * A player's characters in every universe, as their profile lists them: those not given their last
+ * rites, by universe name and then character name
+ *
+ * @param playerId The player's ID
+ * @param filter Which to list: only those in universes at some stages (for others to see), and only those marked visible
+ * @param executor The database, or a transaction
+ * @return The characters
+ */
+export async function listProfileCharacters(playerId: string, filter: { stages?: UniverseStage[]; onlyVisible?: boolean }, executor: Executor = db): Promise<ProfileCharacterRecord[]>
+{
+	return(executor
+		.select({
+			id: characters.id,
+			name: characters.name,
+			raceId: characters.raceId,
+			classId: characters.classId,
+			visibleOnProfile: characters.visibleOnProfile,
+			universeId: universes.id,
+			universeSlug: universes.slug,
+			universeName: universes.name,
+			ruleset: universes.ruleset
+		})
+		.from(characters)
+		.innerJoin(universes, eq(universes.id, characters.universeId))
+		.where(and(
+			eq(characters.playerId, playerId),
+			isNull(characters.deleteAt),
+			((filter.stages === undefined) ? undefined : inArray(universes.stage, filter.stages)),
+			(filter.onlyVisible ? eq(characters.visibleOnProfile, true) : undefined)
+		))
+		.orderBy(asc(universes.name), asc(universes.id), asc(characters.name), asc(characters.id)));
+}
+
+/**
+ * Sets whether a player's profile lists one of their characters when it doesn't list them all
+ *
+ * @param playerId The player's ID
+ * @param characterId The character's ID
+ * @param visibleOnProfile Whether the profile lists them
+ * @param executor The database, or a transaction
+ * @return Whether the player has such a character
+ */
+export async function setCharacterVisibility(playerId: string, characterId: string, visibleOnProfile: boolean, executor: Executor = db): Promise<boolean>
+{
+	const rows = await executor
+		.update(characters)
+		.set({
+			visibleOnProfile
+		})
+		.where(and(
+			eq(characters.id, characterId),
+			eq(characters.playerId, playerId),
+			isNull(characters.deleteAt)
+		))
+		.returning({
+			id: characters.id
+		});
+
+	return(rows.length > 0);
 }
 
 /**

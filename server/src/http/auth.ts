@@ -11,7 +11,7 @@
 import { randomBytes } from 'crypto';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_EMAIL_CHANGE_PATH, AUTH_LOGIN_PATH, AUTH_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_REGISTER_PATH, AUTH_SESSION_PATH, EMAIL_CODE_PURPOSES, MAX_EMAIL_LENGTH, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_USERNAME_LENGTH, MIN_PASSWORD_LENGTH, type EmailChangeRequest, type EmailCodeCheckRequest, type EmailCodeRequest, type LoginRequest, type PasswordResetRequest, type RegisterRequest, type SessionPayload } from '@multiverse-kiln/shared';
+import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_EMAIL_CHANGE_PATH, AUTH_LOGIN_PATH, AUTH_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_CHANGE_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_REGISTER_PATH, AUTH_SESSION_PATH, EMAIL_CODE_PURPOSES, MAX_EMAIL_LENGTH, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_USERNAME_LENGTH, MIN_PASSWORD_LENGTH, type EmailChangeRequest, type EmailCodeCheckRequest, type EmailCodeRequest, type LoginRequest, type PasswordChangeRequest, type PasswordResetRequest, type RegisterRequest, type SessionPayload } from '@multiverse-kiln/shared';
 
 import { hashAddress, hashesMatch, keyedHash } from '../auth/keyedHashes.js';
 import { checkLoginPassword, checkPasswordForMissingAccount, hashPassword } from '../auth/passwords.js';
@@ -20,7 +20,7 @@ import { MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR, MAX_LOGIN_ATTEMPTS_PER_NETWORK_HOU
 import { endSession, resolveSession, startSession, type SessionIdentity } from '../auth/sessions.js';
 import { createToken, hashToken } from '../auth/tokens.js';
 import { deleteEmailCode, lockContinuation, lockEmailCode, recordWrongEmailCodeGuess, replaceEmailCode, useEmailCode } from '../db/emailCodeRepo.js';
-import { AccountTakenError, createPlayer, findLocalLogin, findPlayerEmail, findPlayerIdByEmail, saveEmail, savePasswordHash } from '../db/playerRepo.js';
+import { AccountTakenError, createPlayer, findLocalLogin, findPasswordHash, findPlayerEmail, findPlayerIdByEmail, saveEmail, savePasswordHash } from '../db/playerRepo.js';
 import { lockPendingProviderLogin } from '../db/providerLoginRepo.js';
 import { findRateLimitTimes, lockRateLimitSubject, recordRateLimitEvent } from '../db/rateLimitRepo.js';
 import { deletePlayerSessions } from '../db/sessionRepo.js';
@@ -91,6 +91,12 @@ const emailChangeRequest = z.object({
 	locale
 }) satisfies z.ZodType<EmailChangeRequest>;
 
+const passwordChangeRequest = z.object({
+	currentPassword: z.string().max(MAX_PASSWORD_LENGTH * 4),
+	newPassword: z.string().max(MAX_PASSWORD_LENGTH * 4),
+	locale
+}) satisfies z.ZodType<PasswordChangeRequest>;
+
 /**
  * Adds the auth routes under AUTH_PATH
  *
@@ -119,6 +125,7 @@ export function addAuthRoutes(app: Application, allowedOrigins: Set<string>): vo
 	router.post(underAuthPath(AUTH_REGISTER_PATH), registerRoute);
 	router.post(underAuthPath(AUTH_PASSWORD_RESET_PATH), passwordResetRoute);
 	router.post(underAuthPath(AUTH_EMAIL_CHANGE_PATH), emailChangeRoute);
+	router.post(underAuthPath(AUTH_PASSWORD_CHANGE_PATH), passwordChangeRoute);
 	addProviderRoutes(router, underAuthPath);
 	router.use(handleAuthError);
 
@@ -227,7 +234,8 @@ async function sessionRoute(request: Request, response: Response): Promise<void>
 		player: (session ? {
 			playerId: session.playerId,
 			username: session.username,
-			name: session.name
+			name: session.name,
+			locale: session.locale
 		} : null)
 	};
 
@@ -887,6 +895,115 @@ async function emailChangeRoute(request: Request, response: Response): Promise<v
 		to: email,
 		...emailChangedEmail({ address: 'new' }, emailLocale)
 	});
+}
+
+/**
+ * POST AUTH_PASSWORD_CHANGE_PATH: changes the logged-in account's password, once the current one is
+ * given. Every other browser logged in to the account is logged out, and the account is told
+ *
+ * @param request The request, with a PasswordChangeRequest
+ * @param response The response: 204
+ */
+async function passwordChangeRoute(request: Request, response: Response): Promise<void>
+{
+	const body = passwordChangeRequest.safeParse(request.body);
+
+	if (!body.success)
+	{
+		sendInvalidRequest(response, body.error);
+		return;
+	}
+
+	const { currentPassword, newPassword, locale: emailLocale } = body.data;
+	const session = await resolveSession(request.headers.cookie);
+
+	if (!session)
+	{
+		sendRefusal(response, {
+			status: 401,
+			message: errorMessages.logInFirst
+		});
+		return;
+	}
+
+	const problem = (checkPasswordLength(newPassword) ?? await checkBreachedPassword(newPassword));
+
+	if (problem)
+	{
+		sendRefusal(response, problem);
+		return;
+	}
+
+	const now = new Date();
+	const attempt = await inTransaction((executor) => takeAttempt([
+		{
+			kind: 'networkLoginAttempt',
+			subjectHash: clientNetworkHash(request),
+			limit: MAX_LOGIN_ATTEMPTS_PER_NETWORK_HOUR
+		}
+	], now, executor));
+
+	if (!attempt.allowed)
+	{
+		sendRefusal(response, tooManyAttempts(attempt, now, response));
+		return;
+	}
+
+	const passwordHash = await findPasswordHash(session.playerId);
+
+	if (passwordHash === null)
+	{
+		sendRefusal(response, {
+			status: 400,
+			message: {
+				id: 'error.auth.noPassword',
+				defaultMessage: 'Your account has no password to change. To give it one, log out and use "Forgot your password?" on the login page.',
+				description: 'Why changing the password was refused: the account logs in only with Google or Discord, so it has no password yet'
+			}
+		});
+		return;
+	}
+
+	if (!(await checkLoginPassword(passwordHash, currentPassword)).correct)
+	{
+		await recordEvent(request, session.playerId, 'loginFailed', now);
+		sendRefusal(response, {
+			status: 401,
+			message: {
+				id: 'error.auth.wrongCurrentPassword',
+				defaultMessage: 'That isn\'t your current password.',
+				description: 'Shown under the current password field when changing the password, and the password typed is wrong'
+			},
+			field: 'currentPassword'
+		});
+		return;
+	}
+
+	const newHash = await hashPassword(newPassword);
+	const outcome = await inTransaction(async (executor) =>
+	{
+		await savePasswordHash(session.playerId, newHash, executor);
+
+		const ended = await deletePlayerSessions(session.playerId, executor, session.sessionId);
+
+		await recordEvent(request, session.playerId, 'passwordChanged', now, executor);
+
+		return({
+			ended,
+			email: await findPlayerEmail(session.playerId, executor)
+		});
+	});
+
+	connectedSessions.end(outcome.ended);
+	response.sendStatus(204);
+
+	if (outcome.email !== null)
+	{
+		sendEmailInBackground({
+			to: outcome.email,
+			...passwordChangedEmail(emailLocale)
+		});
+	}
 }
 
 /**

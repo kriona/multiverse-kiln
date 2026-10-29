@@ -156,5 +156,5 @@ export function authFieldOf(error: unknown): AuthField | undefined
 
 	const field = error.data.field;
 
-	return((((field === 'email') || (field === 'password') || (field === 'username') || (field === 'displayName') || (field === 'code')) ? field : undefined));
+	return((((field === 'email') || (field === 'password') || (field === 'currentPassword') || (field === 'username') || (field === 'displayName') || (field === 'code')) ? field : undefined));
 }

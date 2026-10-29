@@ -20,6 +20,7 @@ import { addDevBotLoginRoute } from './http/devLogin.js';
 import { addEditorRoutes } from './http/editor.js';
 import { addGroupRoutes } from './http/groups.js';
 import { addHealthRoute } from './http/health.js';
+import { addProfileRoutes } from './http/profiles.js';
 import { addTileGraphicRoute } from './http/tileGraphics.js';
 import { addUniversesRoutes } from './http/universes.js';
 import { createOriginCheck, parseAllowedOrigins } from './http/origins.js';
@@ -81,6 +82,7 @@ const server = defineServer({
 		addEditorRoutes(app, allowedOrigins);
 		addTileGraphicRoute(app);
 		addAdminRoutes(app, allowedOrigins);
+		addProfileRoutes(app, allowedOrigins);
 
 		if (isDevToolsEnabled())
 		{

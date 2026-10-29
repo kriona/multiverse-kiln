@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { createHash } from 'crypto';
-import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_EMAIL_CHANGE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_REGISTER_PATH, type AuthErrorPayload, type EmailCodePurpose } from '@multiverse-kiln/shared';
+import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_EMAIL_CHANGE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_CHANGE_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_REGISTER_PATH, type AuthErrorPayload, type EmailCodePurpose } from '@multiverse-kiln/shared';
 
 import { hashPassword } from '../src/auth/passwords.js';
 import { setPwnedRangeFetch } from '../src/auth/pwnedPasswords.js';
@@ -448,6 +448,57 @@ describe('auth routes', () =>
 
 			browser.cookies.set('__Host-kiln-continue', continuation ?? '');
 			assert.strictEqual((await browser.send('POST', AUTH_PASSWORD_RESET_PATH, { password: 'another passphrase', rememberMe: false, locale: 'en' })).status, 403);
+		});
+	});
+
+	describe('changing the password', () =>
+	{
+		it('needs a login', async () =>
+		{
+			assert.strictEqual((await new Browser().send('POST', AUTH_PASSWORD_CHANGE_PATH, { currentPassword: PASSWORD, newPassword: 'a new passphrase', locale: 'en' })).status, 401);
+		});
+
+		it('sets the new password once the current one is given, logging out every other browser', async () =>
+		{
+			const browser = await register('ada@example.com', 'ada');
+			const other = new Browser();
+
+			assert.strictEqual((await other.send('POST', AUTH_LOGIN_PATH, { email: 'ada@example.com', password: PASSWORD, rememberMe: false })).status, 204);
+			emails = [];
+
+			const wrong = await browser.send('POST', AUTH_PASSWORD_CHANGE_PATH, { currentPassword: 'not my password at all', newPassword: 'a new passphrase', locale: 'en' });
+
+			assert.strictEqual(wrong.status, 401);
+			assert.strictEqual(wrong.body.field, 'currentPassword');
+			assert.strictEqual((await browser.send('POST', AUTH_PASSWORD_CHANGE_PATH, { currentPassword: PASSWORD, newPassword: 'too short', locale: 'en' })).body.field, 'password');
+			assert.strictEqual((await browser.send('POST', AUTH_PASSWORD_CHANGE_PATH, { currentPassword: PASSWORD, newPassword: BREACHED_PASSWORD, locale: 'en' })).body.field, 'password');
+			assert.strictEqual(await other.username(), 'ada');
+
+			assert.strictEqual((await browser.send('POST', AUTH_PASSWORD_CHANGE_PATH, { currentPassword: PASSWORD, newPassword: 'a new passphrase', locale: 'en' })).status, 204);
+			assert.strictEqual(await browser.username(), 'ada');
+			assert.strictEqual(await other.username(), null);
+			await waitUntil(() => emails.some((email) => /password .* was changed/.test(email.subject)));
+			assert.strictEqual((await new Browser().send('POST', AUTH_LOGIN_PATH, { email: 'ada@example.com', password: 'a new passphrase', rememberMe: false })).status, 204);
+			assert.deepStrictEqual((await eventKinds('ada')).filter((kind) => kind.startsWith('password')), ['passwordChanged']);
+		});
+
+		it('refuses an account without a password', async () =>
+		{
+			const player = await createPlayer({
+				username: 'grace',
+				displayName: 'Grace',
+				email: 'grace@example.com',
+				passwordHash: null
+			});
+			const browser = new Browser();
+			const { cookie } = await logInBrowser(player.id);
+
+			browser.cookies.set('__Host-kiln-session', cookie.split('=')[1]);
+
+			const answer = await browser.send('POST', AUTH_PASSWORD_CHANGE_PATH, { currentPassword: '', newPassword: 'a new passphrase', locale: 'en' });
+
+			assert.strictEqual(answer.status, 400);
+			assert.match(answer.body.error.defaultMessage, /no password/);
 		});
 	});
 

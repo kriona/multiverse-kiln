@@ -3,7 +3,7 @@
  * messages they give, checks of what players choose, auth events and the tokens in cookies
  */
 import type { Request, Response } from 'express';
-import { defineMessages, isReservedName, localize, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, NAME_MESSAGES, USERNAME_PATTERN, type AuthErrorPayload, type AuthField, type MessageDescriptor, type MessageValues } from '@multiverse-kiln/shared';
+import { defineMessages, isReservedName, localize, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, NAME_MESSAGES, USERNAME_PATTERN, type AuthErrorPayload, type AuthField, type MessageDescriptor, type MessageValues, type ProfileErrorPayload, type ProfileField } from '@multiverse-kiln/shared';
 
 import { hashToken, isTokenForm } from '../auth/tokens.js';
 import { recordAuthEvent, type AuthEventKind } from '../db/authEventRepo.js';
@@ -59,14 +59,15 @@ export const authMessages = defineMessages({
 });
 
 /**
- * Why a request is refused, decided inside a transaction where the response isn't at hand
+ * Why a request is refused, decided inside a transaction where the response isn't at hand, and the
+ * field of the form it is about (an auth route's AuthField, or the profile's ProfileField)
  */
-export interface AuthRefusal
+export interface AuthRefusal<Field extends string = AuthField>
 {
 	status: number;
 	message: MessageDescriptor;
 	values?: MessageValues;
-	field?: AuthField;
+	field?: Field;
 }
 
 /**
@@ -75,9 +76,9 @@ export interface AuthRefusal
  * @param response The response
  * @param refusal Why the request was refused
  */
-export function sendRefusal(response: Response, refusal: AuthRefusal): void
+export function sendRefusal<Field extends AuthField | ProfileField>(response: Response, refusal: AuthRefusal<Field>): void
 {
-	const payload: AuthErrorPayload = { error: localize(refusal.message, refusal.values) };
+	const payload: AuthErrorPayload | ProfileErrorPayload = { error: localize(refusal.message, refusal.values) };
 
 	if (refusal.field !== undefined)
 	{
@@ -116,7 +117,7 @@ export function tooManyAttempts(decision: SendDecision & { allowed: false }, now
  * @param username The username, trimmed
  * @return The refusal when it can't be taken
  */
-export function checkUsername(username: string): AuthRefusal | undefined
+export function checkUsername(username: string): AuthRefusal<'username'> | undefined
 {
 	if ((username.length < MIN_USERNAME_LENGTH) || (username.length > MAX_USERNAME_LENGTH) || !USERNAME_PATTERN.test(username))
 	{
@@ -153,7 +154,7 @@ export function checkUsername(username: string): AuthRefusal | undefined
  * @param displayName The name, as displayText() reads it
  * @return The refusal when it is reserved
  */
-export function checkDisplayName(displayName: string): AuthRefusal | undefined
+export function checkDisplayName(displayName: string): AuthRefusal<'displayName'> | undefined
 {
 	if (!isReservedName(displayName))
 	{
