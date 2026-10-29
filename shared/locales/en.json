@@ -2267,6 +2267,10 @@
 		"defaultMessage": "Your account already has a different {provider} login. Log in with that one, or with your password.",
 		"description": "Why linking a Google or Discord login was refused: the account already has a login with the same provider, from another account there; {provider} is Google or Discord"
 	},
+	"error.auth.providerOtherLoginLinked": {
+		"defaultMessage": "Your account already has a different {provider} login.",
+		"description": "Why linking a Google or Discord login from the player's own profile was refused: the account already has a login with the same provider, from another account there; {provider} is Google or Discord"
+	},
 	"error.auth.providerStartAgain": {
 		"defaultMessage": "It has been more than a few minutes since you logged in with Google or Discord. Log in with it again.",
 		"description": "Why creating an account or linking a login after logging in with Google or Discord was refused: this browser came back from the provider too long ago, or not at all"
@@ -4563,6 +4567,18 @@
 		"defaultMessage": "You can choose up to {max, plural, one {# language} other {# languages}}.",
 		"description": "Shown under the field for choosing the languages the player knows, on their own profile page, when they try to choose more than {max}, a number"
 	},
+	"profile.linkDiscord": {
+		"defaultMessage": "Link Discord",
+		"description": "Button on the player's own profile page that goes to Discord to link a Discord login to their account, so it can log in with it"
+	},
+	"profile.linkFailed": {
+		"defaultMessage": "Could not link the login.",
+		"description": "Shown on the player's own profile page when going to Google or Discord to link a login failed"
+	},
+	"profile.linkGoogle": {
+		"defaultMessage": "Link Google",
+		"description": "Button on the player's own profile page that goes to Google to link a Google login to their account, so it can log in with it"
+	},
 	"profile.loadFailed": {
 		"defaultMessage": "Could not load the profile. Reload the page to try again.",
 		"description": "Shown on the whole of a profile page when the profile couldn't be loaded, such as when the server can't be reached"
@@ -4626,6 +4642,10 @@
 	"profile.pronounsPlaceholder": {
 		"defaultMessage": "e.g. she/her, they/them, any",
 		"description": "Shown in the empty pronouns field on the player's own profile page, as examples of what to write. Give the forms people commonly write in your language, rather than translating these ones"
+	},
+	"profile.providerLinked": {
+		"defaultMessage": "You can now log in with {provider}.",
+		"description": "Shown once the player has linked a Google or Discord login to their account from their profile; {provider} is Google or Discord"
 	},
 	"profile.providers": {
 		"defaultMessage": "Linked logins",

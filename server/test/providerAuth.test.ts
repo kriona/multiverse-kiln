@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_PROVIDER_CALLBACK_PATH, AUTH_PROVIDER_LINK_PATH, AUTH_PROVIDER_REGISTER_PATH, AUTH_PROVIDER_START_PATH, AUTH_PROVIDERS_PATH, type AuthErrorPayload, type LoginProvider, type ProviderCallbackPayload, type ProvidersPayload, type ProviderStartPayload } from '@multiverse-kiln/shared';
+import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH, AUTH_PROVIDER_CALLBACK_PATH, AUTH_PROVIDER_LINK_PATH, AUTH_PROVIDER_REGISTER_PATH, AUTH_PROVIDER_START_PATH, AUTH_PROVIDERS_PATH, type AuthErrorPayload, type LoginProvider, type ProviderCallbackPayload, type ProvidersPayload, type ProviderStartPayload } from '@multiverse-kiln/shared';
 
 import { hashPassword } from '../src/auth/passwords.js';
 import { ProviderLoginError, setProviderClients, type ProviderClient, type ProviderUser } from '../src/auth/providers.js';
@@ -91,11 +91,12 @@ describe('provider login routes', () =>
 	 * @param browser The browser
 	 * @param provider The provider
 	 * @param rememberMe Whether the player checked Remember me
+	 * @param link Whether it links the provider login to the account the browser is logged in to
 	 * @return The state the provider sends back
 	 */
-	async function startLogin(browser: Browser, provider: LoginProvider, rememberMe: boolean = false): Promise<string>
+	async function startLogin(browser: Browser, provider: LoginProvider, rememberMe: boolean = false, link: boolean = false): Promise<string>
 	{
-		const answer = await browser.send<ProviderStartPayload>('POST', AUTH_PROVIDER_START_PATH, { provider, rememberMe });
+		const answer = await browser.send<ProviderStartPayload>('POST', AUTH_PROVIDER_START_PATH, { provider, rememberMe, link });
 
 		assert.strictEqual(answer.status, 200, JSON.stringify(answer.body));
 
@@ -118,11 +119,53 @@ describe('provider login routes', () =>
 	async function logInWith(browser: Browser, user: ProviderUser, provider: LoginProvider = 'google', rememberMe: boolean = false): Promise<{ status: number; body: ProviderCallbackPayload & AuthErrorPayload }>
 	{
 		const state = await startLogin(browser, provider, rememberMe);
+
+		return(comeBack(browser, user, state));
+	}
+
+	/**
+	 * Comes back from a provider to a browser, with a code for a player
+	 *
+	 * @param browser The browser
+	 * @param user The player as the provider knows them
+	 * @param state The state the login started with
+	 * @return The callback's answer
+	 */
+	function comeBack(browser: Browser, user: ProviderUser, state: string): Promise<{ status: number; body: ProviderCallbackPayload & AuthErrorPayload }>
+	{
 		const code = `${state}:${++codes}`;
 
 		users.set(code, user);
 
-		return(browser.send('POST', AUTH_PROVIDER_CALLBACK_PATH, { code, state }));
+		return(browser.send('POST', AUTH_PROVIDER_CALLBACK_PATH, { code, state, locale: 'en' }));
+	}
+
+	/**
+	 * Links a provider login to the account a browser is logged in to, as the profile does
+	 *
+	 * @param browser The browser
+	 * @param user The player as the provider knows them
+	 * @param provider The provider
+	 * @return The callback's answer
+	 */
+	async function linkFromProfile(browser: Browser, user: ProviderUser, provider: LoginProvider = 'google'): Promise<{ status: number; body: ProviderCallbackPayload & AuthErrorPayload }>
+	{
+		return(comeBack(browser, user, await startLogin(browser, provider, false, true)));
+	}
+
+	/**
+	 * Logs a browser in to a local account with its password
+	 *
+	 * @param email The account's address
+	 * @return The browser
+	 */
+	async function logInWithPassword(email: string): Promise<Browser>
+	{
+		const browser = new Browser();
+
+		assert.strictEqual((await browser.send('POST', AUTH_LOGIN_PATH, { email, password: PASSWORD, rememberMe: false })).status, 200);
+
+		return(browser);
 	}
 
 	/**
@@ -191,8 +234,8 @@ describe('provider login routes', () =>
 			const browser = new Browser();
 
 			assert.deepStrictEqual((await browser.send<ProvidersPayload>('GET', AUTH_PROVIDERS_PATH)).body, { providers: ['discord'] });
-			assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_START_PATH, { provider: 'google', rememberMe: false })).status, 404);
-			assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_START_PATH, { provider: 'github', rememberMe: false })).status, 400);
+			assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_START_PATH, { provider: 'google', rememberMe: false, link: false })).status, 404);
+			assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_START_PATH, { provider: 'github', rememberMe: false, link: false })).status, 400);
 		}
 		finally
 		{
@@ -249,11 +292,11 @@ describe('provider login routes', () =>
 
 		users.set(code, GOOGLE_ADA);
 
-		assert.strictEqual((await new Browser().send('POST', AUTH_PROVIDER_CALLBACK_PATH, { code, state })).status, 400);
-		assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_CALLBACK_PATH, { code, state: `${state}x` })).status, 400);
+		assert.strictEqual((await new Browser().send('POST', AUTH_PROVIDER_CALLBACK_PATH, { code, state, locale: 'en' })).status, 400);
+		assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_CALLBACK_PATH, { code, state: `${state}x`, locale: 'en' })).status, 400);
 
 		// The wrong state used up the start
-		assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_CALLBACK_PATH, { code, state })).status, 400);
+		assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_CALLBACK_PATH, { code, state, locale: 'en' })).status, 400);
 		assert.strictEqual((await pool.query('SELECT * FROM pending_provider_logins')).rowCount, 0);
 	});
 
@@ -264,7 +307,7 @@ describe('provider login routes', () =>
 		for (const [code, status] of [[REFUSED_CODE, 400], [UNAVAILABLE_CODE, 502]] as const)
 		{
 			const state = await startLogin(browser, 'discord');
-			const answer = await browser.send('POST', AUTH_PROVIDER_CALLBACK_PATH, { code, state });
+			const answer = await browser.send('POST', AUTH_PROVIDER_CALLBACK_PATH, { code, state, locale: 'en' });
 
 			assert.strictEqual(answer.status, status);
 			assert.match(answer.body.error.defaultMessage, /\{provider\}/);
@@ -438,5 +481,104 @@ describe('provider login routes', () =>
 		assert.strictEqual(refused.status, 409);
 		assert.strictEqual(refused.body.error.values?.provider, 'Google');
 		assert.strictEqual(await second.username(), null);
+	});
+
+	it('links a login from the profile to the account the browser is logged in to, whatever its address', async () =>
+	{
+		await addLocalAccount('ada@example.com', 'ada');
+
+		const browser = await logInWithPassword('ada@example.com');
+		const discordAda: ProviderUser = {
+			providerUserId: 'discord-ada',
+			email: 'countess@example.org',
+			emailVerified: true,
+			displayName: 'Ada'
+		};
+
+		// A login that could never log in isn't linked
+		assert.strictEqual((await linkFromProfile(browser, {
+			...discordAda,
+			emailVerified: false
+		}, 'discord')).status, 400);
+
+		const linked = await linkFromProfile(browser, discordAda, 'discord');
+
+		assert.strictEqual(linked.status, 200, JSON.stringify(linked.body));
+		assert.deepStrictEqual(linked.body, {
+			outcome: 'linked',
+			provider: 'discord'
+		});
+		assert.ok(!browser.cookies.has(PROVIDER_LOGIN_COOKIE));
+		assert.strictEqual(await browser.username(), 'ada');
+		await waitUntil(() => (emails.length === 1));
+		assert.strictEqual(emails[0].to, 'ada@example.com');
+		assert.match(emails[0].subject, /log in to .* with Discord/);
+		assert.deepStrictEqual(await eventKinds('ada'), ['loggedIn', 'providerLinked']);
+
+		// Linking it again changes nothing, and tells no one
+		assert.deepStrictEqual((await linkFromProfile(browser, discordAda, 'discord')).body, {
+			outcome: 'linked',
+			provider: 'discord'
+		});
+		await new Promise((resolve) => setTimeout(resolve, 50));
+		assert.strictEqual(emails.length, 1);
+
+		const other = new Browser();
+
+		assert.deepStrictEqual((await logInWith(other, discordAda, 'discord')).body, { outcome: 'loggedIn' });
+		assert.strictEqual(await other.username(), 'ada');
+	});
+
+	it('links from the profile only while the browser is logged in to the account it started from', async () =>
+	{
+		await addLocalAccount('ada@example.com', 'ada');
+		await addLocalAccount('grace@example.com', 'grace');
+
+		assert.strictEqual((await new Browser().send('POST', AUTH_PROVIDER_START_PATH, { provider: 'google', rememberMe: false, link: true })).status, 401);
+
+		const loggedOut = await logInWithPassword('ada@example.com');
+		const loggedOutState = await startLogin(loggedOut, 'google', false, true);
+
+		assert.strictEqual((await loggedOut.send('POST', AUTH_LOGOUT_PATH)).status, 204);
+		assert.strictEqual((await comeBack(loggedOut, GOOGLE_ADA, loggedOutState)).status, 401);
+
+		// Logging in to another account while at the provider doesn't link the login to it
+		const switched = await logInWithPassword('ada@example.com');
+		const switchedState = await startLogin(switched, 'google', false, true);
+
+		assert.strictEqual((await switched.send('POST', AUTH_LOGIN_PATH, { email: 'grace@example.com', password: PASSWORD, rememberMe: false })).status, 200);
+		assert.strictEqual((await comeBack(switched, GOOGLE_ADA, switchedState)).status, 401);
+		assert.strictEqual((await pool.query('SELECT * FROM provider_logins')).rowCount, 0);
+	});
+
+	it('refuses to link from the profile a login another account has, or a second one with a provider', async () =>
+	{
+		await addLocalAccount('grace@example.com', 'grace');
+
+		const graceBrowser = await logInWithPassword('grace@example.com');
+
+		assert.strictEqual((await linkFromProfile(graceBrowser, GOOGLE_ADA)).status, 200);
+
+		await addLocalAccount('ada@example.com', 'ada');
+
+		const browser = await logInWithPassword('ada@example.com');
+		const taken = await linkFromProfile(browser, GOOGLE_ADA);
+
+		assert.strictEqual(taken.status, 409);
+		assert.match(taken.body.error.defaultMessage, /another account/);
+
+		assert.strictEqual((await linkFromProfile(browser, {
+			...GOOGLE_ADA,
+			providerUserId: 'google-ada-home'
+		})).status, 200);
+
+		const second = await linkFromProfile(browser, {
+			...GOOGLE_ADA,
+			providerUserId: 'google-ada-work'
+		});
+
+		assert.strictEqual(second.status, 409);
+		assert.strictEqual(second.body.error.id, 'error.auth.providerOtherLoginLinked');
+		assert.deepStrictEqual((await pool.query('SELECT provider_user_id FROM provider_logins ORDER BY provider_user_id')).rows, [{ provider_user_id: 'google-ada' }, { provider_user_id: 'google-ada-home' }]);
 	});
 });

@@ -58,6 +58,12 @@ export const AREA_PARAMETER = 'area';
 export const TWO_FACTOR_SETUP_PARAMETER = 'setUpTwoFactor';
 
 /**
+ * Query string parameter of the player's own profile naming the Google or Discord login just linked
+ * from it, as in /profile?linked=google, which the profile announces
+ */
+export const PROVIDER_LINKED_PARAMETER = 'linked';
+
+/**
  * Query string parameter of the login page naming the page to go back to once logged in
  */
 const NEXT_PARAMETER = 'next';
@@ -73,6 +79,12 @@ const LOGIN_PAGE = LOGIN_PAGE_PATH;
  * login page without it
  */
 const LOGIN_ADDRESS_KEY = 'kiln-login-address';
+
+/**
+ * Where the login page keeps why linking a Google or Discord login from the profile failed, in the
+ * tab's session storage, for the profile to show once the browser goes back there
+ */
+const PROVIDER_LINK_ERROR_KEY = 'kiln-provider-link-error';
 
 /**
  * Path of the world editor's page, followed by /<universe ID>
@@ -226,16 +238,76 @@ export function currentPageAddress(): string
 /**
  * Keeps the login page's address while the player goes to Google or Discord, for
  * takeProviderReturn() to put back. Without session storage, the page goes back to Home afterwards
+ *
+ * @param address The login page's address, when the player goes there from another page (loginPageUrl()); the page being shown when not given
  */
-export function rememberLoginAddress(): void
+export function rememberLoginAddress(address: string = currentPageAddress()): void
 {
 	try
 	{
-		sessionStorage.setItem(LOGIN_ADDRESS_KEY, currentPageAddress());
+		sessionStorage.setItem(LOGIN_ADDRESS_KEY, address);
 	}
 	catch
 	{
 		// Session storage is blocked: the login still works
+	}
+}
+
+/**
+ * The address the login page goes back to once a Google or Discord login is linked from the profile,
+ * naming the provider for the profile to announce
+ *
+ * @param next The page to go back to (readNextPage())
+ * @param provider The provider linked
+ * @return The address
+ */
+export function providerLinkedPageUrl(next: string, provider: string): string
+{
+	const url = new URL(next, window.location.origin);
+
+	url.searchParams.set(PROVIDER_LINKED_PARAMETER, provider);
+
+	return(`${url.pathname}${url.search}${url.hash}`);
+}
+
+/**
+ * Keeps why linking a Google or Discord login failed, for takeProviderLinkError() on the profile
+ *
+ * @param message Why, in the player's language
+ * @return Whether it was kept; it isn't when session storage is blocked
+ */
+export function keepProviderLinkError(message: string): boolean
+{
+	try
+	{
+		sessionStorage.setItem(PROVIDER_LINK_ERROR_KEY, message);
+
+		return(true);
+	}
+	catch
+	{
+		return(false);
+	}
+}
+
+/**
+ * Takes why linking a Google or Discord login failed, which the login page kept (keepProviderLinkError())
+ *
+ * @return Why, or undefined when there's nothing kept
+ */
+export function takeProviderLinkError(): string | undefined
+{
+	try
+	{
+		const message = sessionStorage.getItem(PROVIDER_LINK_ERROR_KEY);
+
+		sessionStorage.removeItem(PROVIDER_LINK_ERROR_KEY);
+
+		return((message ?? undefined));
+	}
+	catch
+	{
+		return(undefined);
 	}
 }
 

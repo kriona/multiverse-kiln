@@ -1,10 +1,10 @@
-import { LOGIN_PROVIDER_NAMES, MAX_LOCATION_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, PROFILE_LANGUAGES, SOCIAL_SITES, type OwnProfileCharacter, type OwnProfilePayload, type ProfileField, type ProfileLanguage, type ProfileUpdateRequest, type SocialSite, type TwoFactorState } from '@multiverse-kiln/shared';
+import { LOGIN_PROVIDER_NAMES, LOGIN_PROVIDERS, MAX_LOCATION_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, PROFILE_LANGUAGES, SOCIAL_SITES, type OwnProfileCharacter, type OwnProfilePayload, type ProfileField, type ProfileLanguage, type ProfileUpdateRequest, type SocialSite, type TwoFactorState, type LoginProvider } from '@multiverse-kiln/shared';
 
 import { availableLocales, chooseLocale, currentLocale, formatList, t } from '../localization';
 import type { AuthApi } from '../network/authApi';
 import { describeEditorError, EditorApiError } from '../network/editorApi';
 import { profileFieldOf, type ProfileApi } from '../network/profileApi';
-import { playerPageUrl, readPageParameter, replacePageParameters, TWO_FACTOR_SETUP_PARAMETER } from '../pages';
+import { currentPageAddress, loginPageUrl, playerPageUrl, PROVIDER_LINKED_PARAMETER, readPageParameter, rememberLoginAddress, replacePageParameters, takeProviderLinkError, TWO_FACTOR_SETUP_PARAMETER } from '../pages';
 import { showAccountName } from './accountMenu';
 import { ChangeTracker } from './changeTracker';
 import type { CharacterSheetDialog } from './CharacterSheetDialog';
@@ -124,6 +124,10 @@ export class OwnProfileScreen
 	private readonly trustedBrowsersState = getElement('profile-trusted-browsers-state', HTMLElement);
 	private readonly forgetBrowsersButton = getElement('profile-forget-browsers', HTMLButtonElement);
 	private readonly providers = getElement('profile-providers', HTMLElement);
+	private readonly linkButtons: Readonly<Record<LoginProvider, HTMLButtonElement>> = {
+		google: getElement('profile-link-google', HTMLButtonElement),
+		discord: getElement('profile-link-discord', HTMLButtonElement)
+	};
 	private readonly accountError = getElement('profile-account-error', HTMLElement);
 	private readonly characterList = getElement('profile-character-list', HTMLElement);
 	private readonly noCharacters = getElement('profile-character-none', HTMLElement);
@@ -156,6 +160,11 @@ export class OwnProfileScreen
 	 * The profile as last loaded or saved
 	 */
 	private profile: OwnProfilePayload | undefined;
+
+	/**
+	 * The providers the site offers, which the account can link
+	 */
+	private offeredProviders: LoginProvider[] = [];
 
 	/**
 	 * @param api The profile routes
@@ -282,6 +291,110 @@ export class OwnProfileScreen
 		{
 			void this.forgetTrustedBrowsers();
 		});
+
+		for (const [provider, button] of Object.entries(this.linkButtons) as [LoginProvider, HTMLButtonElement][])
+		{
+			button.addEventListener('click', () =>
+			{
+				void this.startLink(provider);
+			});
+		}
+	}
+
+	/**
+	 * Sends the browser to a provider to link a login with it to the account. The provider sends the
+	 * browser back to the login page, which finishes the link and comes back here
+	 *
+	 * @param provider The provider
+	 */
+	private async startLink(provider: LoginProvider): Promise<void>
+	{
+		const buttons = Object.values(this.linkButtons);
+
+		for (const button of buttons)
+		{
+			button.disabled = true;
+		}
+
+		showMessage(this.accountError, undefined);
+
+		try
+		{
+			const url = await this.authApi.startProviderLogin({
+				provider,
+				rememberMe: false,
+				link: true
+			});
+
+			rememberLoginAddress(loginPageUrl(currentPageAddress()));
+			window.location.assign(url);
+		}
+		catch (error)
+		{
+			showMessage(this.accountError, describeEditorError(error, {
+				id: 'profile.linkFailed',
+				defaultMessage: 'Could not link the login.',
+				description: 'Shown on the player\'s own profile page when going to Google or Discord to link a login failed'
+			}));
+
+			for (const button of buttons)
+			{
+				button.disabled = false;
+			}
+		}
+	}
+
+	/**
+	 * Says how linking a Google or Discord login went, when the login page came back here from one,
+	 * then takes it out of the address
+	 */
+	private showLinkResult(): void
+	{
+		const linked = readPageParameter(PROVIDER_LINKED_PARAMETER);
+		const provider = LOGIN_PROVIDERS.find((each) => (each === linked));
+		const error = takeProviderLinkError();
+
+		if (linked !== undefined)
+		{
+			replacePageParameters({
+				[PROVIDER_LINKED_PARAMETER]: undefined
+			});
+		}
+
+		if (error !== undefined)
+		{
+			showMessage(this.accountError, error);
+		}
+		else if (provider !== undefined)
+		{
+			showToast(t({
+				id: 'profile.providerLinked',
+				defaultMessage: 'You can now log in with {provider}.',
+				description: 'Shown once the player has linked a Google or Discord login to their account from their profile; {provider} is Google or Discord'
+			}, {
+				provider: LOGIN_PROVIDER_NAMES[provider]
+			}), {
+				kind: 'success'
+			});
+		}
+	}
+
+	/**
+	 * The providers the site offers
+	 *
+	 * @return The providers, or none when they couldn't be listed
+	 */
+	private async loadProviders(): Promise<LoginProvider[]>
+	{
+		try
+		{
+			return(await this.authApi.getProviders());
+		}
+		catch (error)
+		{
+			console.error('Could not list the login providers:', error);
+			return([]);
+		}
 	}
 
 	/**
@@ -366,15 +479,20 @@ export class OwnProfileScreen
 	 */
 	async load(): Promise<void>
 	{
-		const profile = await this.api.getOwnProfile();
+		const [profile, providers] = await Promise.all([
+			this.api.getOwnProfile(),
+			this.loadProviders()
+		]);
 
 		this.profile = profile;
+		this.offeredProviders = providers;
 		this.fillForm(profile);
 		this.showAccount(profile);
 		this.showCharacterList(profile.characters);
 		setPageTitle(document.title);
 		showScreen('profile');
 		this.openRequestedSetup();
+		this.showLinkResult();
 	}
 
 	/**
@@ -489,6 +607,11 @@ export class OwnProfileScreen
 				description: 'Shown on the player\'s own profile page in place of their email address, or of their linked logins, when they have none'
 			})
 			: formatList(profile.providers.map((provider) => LOGIN_PROVIDER_NAMES[provider]), 'conjunction'));
+
+		for (const [provider, button] of Object.entries(this.linkButtons) as [LoginProvider, HTMLButtonElement][])
+		{
+			button.hidden = (!this.offeredProviders.includes(provider) || profile.providers.includes(provider));
+		}
 	}
 
 	/**

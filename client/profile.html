@@ -126,7 +126,11 @@
 								<button id="profile-forget-browsers" type="button" class="secondary" data-shortcut="Alt+U" data-message="profile.forgetBrowsers" data-translation-context="Button on the player's own profile page: every browser that skipped the authenticator code at login asks for it again"><!-- icon ph:x-circle -->Stop trusting them</button>
 							</dd>
 							<dt data-message="profile.providers" data-translation-context="Label of the Google and Discord logins linked to the player's account, on their own profile page">Linked logins</dt>
-							<dd id="profile-providers"></dd>
+							<dd>
+								<span id="profile-providers"></span>
+								<button id="profile-link-google" type="button" class="secondary" data-shortcut="Alt+G" data-message="profile.linkGoogle" data-translation-context="Button on the player's own profile page that goes to Google to link a Google login to their account, so it can log in with it" hidden><!-- icon ph:google-logo -->Link Google</button>
+								<button id="profile-link-discord" type="button" class="secondary" data-shortcut="Alt+R" data-message="profile.linkDiscord" data-translation-context="Button on the player's own profile page that goes to Discord to link a Discord login to their account, so it can log in with it" hidden><!-- icon ph:discord-logo -->Link Discord</button>
+							</dd>
 						</dl>
 						<p id="profile-account-error" class="form-error" role="alert" hidden></p>
 					</section>

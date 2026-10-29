@@ -545,7 +545,8 @@ export class LoginPage
 		{
 			const url = await this.api.startProviderLogin({
 				provider,
-				rememberMe: this.loginRemember.checked
+				rememberMe: this.loginRemember.checked,
+				link: false
 			});
 
 			rememberLoginAddress();
@@ -589,7 +590,11 @@ export class LoginPage
 
 		try
 		{
-			result = await this.api.finishProviderLogin({ code, state });
+			result = await this.api.finishProviderLogin({
+				code,
+				state,
+				locale: currentLocale()
+			});
 		}
 		catch (error)
 		{
@@ -598,7 +603,7 @@ export class LoginPage
 			return;
 		}
 
-		if (result.outcome === 'loggedIn')
+		if ((result.outcome === 'loggedIn') || (result.outcome === 'linked'))
 		{
 			this.finishLogin();
 		}

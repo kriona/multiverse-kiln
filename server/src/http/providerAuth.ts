@@ -8,6 +8,9 @@
  * (AUTH_PROVIDER_REGISTER_PATH), or, when a local account has the same email address, logging in to it
  * to link them (AUTH_PROVIDER_LINK_PATH), with its authenticator or recovery code too when it has 2FA.
  * A provider login is never linked to an account by its email address alone
+ *
+ * A logged-in player links a provider from their profile the same way: the start says so, and the
+ * callback links the provider login to the account the browser is still logged in to
  */
 import type { Request, Response, Router } from 'express';
 import { generateCodeVerifier, generateState } from 'arctic';
@@ -18,7 +21,7 @@ import { hashAddress, hashesMatch } from '../auth/keyedHashes.js';
 import { checkLoginPassword } from '../auth/passwords.js';
 import { enabledProviders, providerClient, ProviderLoginError, type ProviderUser } from '../auth/providers.js';
 import { MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR, MAX_LOGIN_ATTEMPTS_PER_NETWORK_HOUR, takeAttempt } from '../auth/rateLimits.js';
-import { startSession } from '../auth/sessions.js';
+import { resolveSession, startSession } from '../auth/sessions.js';
 import { createToken, hashToken } from '../auth/tokens.js';
 import type { Executor } from '../db/client.js';
 import { deleteEmailCode, lockContinuation } from '../db/emailCodeRepo.js';
@@ -32,7 +35,7 @@ import { displayText } from '../rooms/payloads.js';
 import { authMessages, checkDisplayName, checkUsername, cookieTokenHash, recordEvent, sendRefusal, tooManyAttempts, type AuthRefusal } from './authCommon.js';
 import { clientNetworkHash } from './clientNetwork.js';
 import { clearCookie, CONTINUATION_COOKIE, PROVIDER_LOGIN_COOKIE, PROVIDER_START_COOKIE, readCookie, setCookie } from './cookies.js';
-import { sendInvalidRequest } from './errors.js';
+import { errorMessages, sendInvalidRequest } from './errors.js';
 import { checkSecondFactor, needsSecondFactor, reportRecoveryCodeUse, type SecondFactorOutcome } from './twoFactorAuth.js';
 
 /**
@@ -88,6 +91,11 @@ const providerMessages = defineMessages({
 		id: 'error.auth.providerOtherLogin',
 		defaultMessage: 'Your account already has a different {provider} login. Log in with that one, or with your password.',
 		description: 'Why linking a Google or Discord login was refused: the account already has a login with the same provider, from another account there; {provider} is Google or Discord'
+	},
+	otherLoginLinked: {
+		id: 'error.auth.providerOtherLoginLinked',
+		defaultMessage: 'Your account already has a different {provider} login.',
+		description: 'Why linking a Google or Discord login from the player\'s own profile was refused: the account already has a login with the same provider, from another account there; {provider} is Google or Discord'
 	}
 });
 
@@ -98,7 +106,10 @@ const providerStart = z.object({
 	provider: z.enum(LOGIN_PROVIDERS),
 	state: z.string(),
 	codeVerifier: z.string(),
-	rememberMe: z.boolean()
+	rememberMe: z.boolean(),
+
+	// The account a link is for, which the browser must still be logged in to when it comes back; null for a login
+	playerId: z.string().nullable()
 });
 
 type ProviderStart = z.infer<typeof providerStart>;
@@ -110,12 +121,14 @@ const locale = z.string().max(MAX_LOCALE_LENGTH).regex(/^[A-Za-z0-9-]+$/);
 
 const providerStartRequest = z.object({
 	provider: z.enum(LOGIN_PROVIDERS),
-	rememberMe: z.boolean()
+	rememberMe: z.boolean(),
+	link: z.boolean()
 }) satisfies z.ZodType<ProviderStartRequest>;
 
 const providerCallbackRequest = z.object({
 	code: z.string().min(1).max(MAX_PROVIDER_VALUE_LENGTH),
-	state: z.string().min(1).max(MAX_PROVIDER_VALUE_LENGTH)
+	state: z.string().min(1).max(MAX_PROVIDER_VALUE_LENGTH),
+	locale
 }) satisfies z.ZodType<ProviderCallbackRequest>;
 
 const providerRegisterRequest = z.object({
@@ -167,13 +180,16 @@ function providerFailed(provider: LoginProvider): AuthRefusal
  *
  * @param error Why
  * @param provider The provider
+ * @param loggedIn Whether the player is logged in to the account, linking from its profile
  * @return The refusal
  */
-function loginTaken(error: ProviderLoginTakenError, provider: LoginProvider): AuthRefusal
+function loginTaken(error: ProviderLoginTakenError, provider: LoginProvider, loggedIn: boolean = false): AuthRefusal
 {
+	const otherLogin = (loggedIn ? providerMessages.otherLoginLinked : providerMessages.otherLogin);
+
 	return({
 		status: 409,
-		message: ((error.by === 'otherAccount') ? providerMessages.otherAccount : providerMessages.otherLogin),
+		message: ((error.by === 'otherAccount') ? providerMessages.otherAccount : otherLogin),
 		values: {
 			provider: LOGIN_PROVIDER_NAMES[provider]
 		}
@@ -241,13 +257,13 @@ function providersRoute(_request: Request, response: Response): void
 }
 
 /**
- * POST AUTH_PROVIDER_START_PATH: starts a login with a provider. The browser keeps the state and PKCE
- * secret in a cookie, so only it can finish the login
+ * POST AUTH_PROVIDER_START_PATH: starts a login with a provider, or a link to the account the browser
+ * is logged in to. The browser keeps the state and PKCE secret in a cookie, so only it can finish
  *
  * @param request The request, with a ProviderStartRequest
  * @param response The response: a ProviderStartPayload, with the start cookie
  */
-function startRoute(request: Request, response: Response): void
+async function startRoute(request: Request, response: Response): Promise<void>
 {
 	const body = providerStartRequest.safeParse(request.body);
 
@@ -257,7 +273,18 @@ function startRoute(request: Request, response: Response): void
 		return;
 	}
 
-	const { provider, rememberMe } = body.data;
+	const { provider, rememberMe, link } = body.data;
+	const session = (link ? await resolveSession(request.headers.cookie) : undefined);
+
+	if (link && !session)
+	{
+		sendRefusal(response, {
+			status: 401,
+			message: errorMessages.logInFirst
+		});
+		return;
+	}
+
 	const client = providerClient(provider);
 
 	if (!client)
@@ -276,7 +303,8 @@ function startRoute(request: Request, response: Response): void
 		provider,
 		state: generateState(),
 		codeVerifier: generateCodeVerifier(),
-		rememberMe
+		rememberMe,
+		playerId: (session?.playerId ?? null)
 	};
 	const payload: ProviderStartPayload = { url: client.authorizationUrl(start.state, start.codeVerifier).toString() };
 
@@ -287,7 +315,8 @@ function startRoute(request: Request, response: Response): void
 /**
  * POST AUTH_PROVIDER_CALLBACK_PATH: finishes a login with a provider, from the browser that started it.
  * A provider login an account has logs the browser in; otherwise the browser gets a cookie that lets it
- * take the next step for CONTINUATION_LIFETIME_MS
+ * take the next step for CONTINUATION_LIFETIME_MS. A link links the provider login to the account
+ * instead (linkToSession())
  *
  * @param request The request, with a ProviderCallbackRequest
  * @param response The response: a ProviderCallbackPayload, with the session cookie or the provider login cookie
@@ -322,6 +351,18 @@ async function callbackRoute(request: Request, response: Response): Promise<void
 	if (!client)
 	{
 		sendRefusal(response, providerFailed(provider));
+		return;
+	}
+
+	const session = ((start.playerId === null) ? undefined : await resolveSession(request.headers.cookie));
+
+	// The player logged out, or in to another account, while at the provider
+	if ((start.playerId !== null) && (session?.playerId !== start.playerId))
+	{
+		sendRefusal(response, {
+			status: 401,
+			message: errorMessages.logInFirst
+		});
 		return;
 	}
 
@@ -370,6 +411,7 @@ async function callbackRoute(request: Request, response: Response): Promise<void
 
 	const email = user.email;
 
+	// Checked for a link too, since the login it links could never log in without one
 	if ((email === null) || !user.emailVerified)
 	{
 		sendRefusal(response, {
@@ -379,6 +421,12 @@ async function callbackRoute(request: Request, response: Response): Promise<void
 				provider: LOGIN_PROVIDER_NAMES[provider]
 			}
 		});
+		return;
+	}
+
+	if (start.playerId !== null)
+	{
+		await linkToSession(request, response, start.playerId, provider, user, body.data.locale, now);
 		return;
 	}
 
@@ -433,6 +481,70 @@ async function callbackRoute(request: Request, response: Response): Promise<void
 	}
 
 	response.json(payload);
+}
+
+/**
+ * Finishes a link from the profile: links the provider login to the account the browser is logged in
+ * to, and emails the account. The account's email address needn't match the provider's, since the
+ * player is logged in to the account already
+ *
+ * @param request The callback's request
+ * @param response The response: a ProviderCallbackPayload
+ * @param playerId The account
+ * @param provider The provider
+ * @param user The player as the provider knows them
+ * @param emailLocale The language of the email
+ * @param now The time now
+ */
+async function linkToSession(request: Request, response: Response, playerId: string, provider: LoginProvider, user: ProviderUser, emailLocale: string, now: Date): Promise<void>
+{
+	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { email: string | null }> =>
+	{
+		// Linking a login the account has already changes nothing
+		if (await findProviderLoginPlayer(provider, user.providerUserId, executor) === playerId)
+		{
+			return({ email: null });
+		}
+
+		try
+		{
+			await addProviderLogin(provider, user.providerUserId, playerId, executor);
+		}
+		catch (error)
+		{
+			if (!(error instanceof ProviderLoginTakenError))
+			{
+				throw error;
+			}
+
+			return(loginTaken(error, provider, true));
+		}
+
+		await recordEvent(request, playerId, 'providerLinked', now, executor);
+
+		return({ email: await findPlayerEmail(playerId, executor) });
+	});
+
+	if ('status' in outcome)
+	{
+		sendRefusal(response, outcome);
+		return;
+	}
+
+	const payload: ProviderCallbackPayload = {
+		outcome: 'linked',
+		provider
+	};
+
+	response.json(payload);
+
+	if (outcome.email !== null)
+	{
+		sendEmailInBackground({
+			to: outcome.email,
+			...providerLinkedEmail(LOGIN_PROVIDER_NAMES[provider], emailLocale)
+		});
+	}
 }
 
 /**

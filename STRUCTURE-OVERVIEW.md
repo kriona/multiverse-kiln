@@ -32,7 +32,7 @@ Google and Discord logins use OAuth with PKCE, and the provider sends the browse
 - if no account has its email address, the player chooses a username and name (the provider's name suggested) to create one. Emails them when they have a new account
 - if a local account has it, the login isn't joined to the account automatically: the player is asked to log in to the local account (with its password, or an [email code](#email-codes)), which links them and emails the account. An account has at most one login from each provider
 
-A logged-in player can also link providers from their profile. A site offers a provider once its OAuth client is set up (`server/.env.example`).
+A logged-in player can also link providers from their profile. The provider sends the browser back to the login page, which links the provider login to the account the browser is still logged in to (its email address needn't match the account's, but it must be verified, as for logging in), emails the account, and goes back to the profile. A site offers a provider once its OAuth client is set up (`server/.env.example`).
 
 Local accounts can turn on 2FA with an authenticator app (TOTP), and get recovery codes for when they lose it. Accounts that log in with a provider use the provider's 2FA.
 - Turning it on, from the profile, asks for the password, then shows a QR code for the app (drawn in the page, and the secret as text for typing in by hand; the secret is never put in an address), then asks for the code the app shows. Then it shows 10 recovery codes, once, to copy or save as a text file. The server keeps the secret encrypted (AES-256-GCM, with `TOTP_ENCRYPTION_KEY`, kept apart from the database) and the recovery codes as keyed hashes.

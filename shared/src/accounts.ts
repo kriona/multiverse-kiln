@@ -96,8 +96,9 @@ export const AUTH_TRUSTED_BROWSERS_FORGET_PATH = `${AUTH_PATH}/two-factor/truste
 export const AUTH_PROVIDERS_PATH = `${AUTH_PATH}/providers`;
 
 /**
- * POST: start logging in with a provider (ProviderStartRequest), answered with the provider's page to
- * send the browser to (ProviderStartPayload)
+ * POST: start logging in with a provider, or linking it to the logged-in account
+ * (ProviderStartRequest), answered with the provider's page to send the browser to
+ * (ProviderStartPayload)
  */
 export const AUTH_PROVIDER_START_PATH = `${AUTH_PATH}/providers/start`;
 
@@ -485,7 +486,17 @@ export interface ProvidersPayload
 export interface ProviderStartRequest
 {
 	provider: LoginProvider;
+
+	/**
+	 * Whether the session lasts longer; a link keeps the session the browser has
+	 */
 	rememberMe: boolean;
+
+	/**
+	 * Whether the provider login is linked to the account the browser is logged in to, from its
+	 * profile, rather than logging in
+	 */
+	link: boolean;
 }
 
 /**
@@ -507,14 +518,28 @@ export interface ProviderCallbackRequest
 {
 	code: string;
 	state: string;
+
+	/**
+	 * The language of the email telling the account a login was linked to it
+	 */
+	locale: string;
 }
 
 /**
- * Response of POST AUTH_PROVIDER_CALLBACK_PATH: the browser is logged in, or the player takes one more
- * step within a few minutes, from this browser
+ * Response of POST AUTH_PROVIDER_CALLBACK_PATH: the browser is logged in, the provider login is linked
+ * to the account the browser is logged in to, or the player takes one more step within a few minutes,
+ * from this browser
  */
 export type ProviderCallbackPayload =
 	| { outcome: 'loggedIn' }
+	| {
+		/**
+		 * The login started as a link (ProviderStartRequest's link), and the account has the provider
+		 * login now
+		 */
+		outcome: 'linked';
+		provider: LoginProvider;
+	}
 	| {
 		/**
 		 * No account has the provider login or its email address: choose a username
