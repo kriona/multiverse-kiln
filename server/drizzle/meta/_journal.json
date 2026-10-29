@@ -407,6 +407,13 @@
       "when": 1793271167912,
       "tag": "0057_link_login_codes",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1793273648510,
+      "tag": "0058_player_profiles",
+      "breakpoints": true
     }
   ]
 }

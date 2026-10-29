@@ -6,7 +6,7 @@
  */
 import { sql, type SQL } from 'drizzle-orm';
 import { boolean, check, customType, doublePrecision, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHUNK_SIZE, DARKVISIONS, EMAIL_CODE_PURPOSES, LOGIN_PROVIDERS, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, DARKVISIONS, EMAIL_CODE_PURPOSES, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PRONOUNS_LENGTH, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
 
 import { SEEN_CHUNK_BYTES } from '../logic/seenCells.js';
 
@@ -73,11 +73,43 @@ export const players = pgTable('players', {
 	 */
 	passwordHash: text('password_hash'),
 
+	/**
+	 * The language the player chose for the pages and emails, as a BCP 47 tag, used ahead of the
+	 * browser's settings; null when they haven't chosen one
+	 */
+	locale: text('locale'),
+
+	/**
+	 * What the profile says about the player, each null when left blank (see Profile edit in
+	 * STRUCTURE-OVERVIEW.md). The time zone is an IANA name, such as Europe/Paris
+	 */
+	pronouns: text('pronouns'),
+	location: text('location'),
+	timeZone: text('time_zone'),
+
+	/**
+	 * The player's usernames on social sites (SOCIAL_SITES), which the profile links to
+	 */
+	discordUsername: text('discord_username'),
+	facebookUsername: text('facebook_username'),
+	instagramUsername: text('instagram_username'),
+	tiktokUsername: text('tiktok_username'),
+
+	/**
+	 * Whether the profile lists the player's characters. When it doesn't, it lists only the characters
+	 * marked visibleOnProfile
+	 */
+	showCharacters: boolean('show_characters').notNull().default(true),
+
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	uniqueIndex('players_username_lower_unique').on(sql`lower(${table.username})`),
 	uniqueIndex('players_email_lower_unique').on(sql`lower(${table.email})`),
-	check('players_username_form', sql`${table.username} ~ ${sql.raw(`'^[A-Za-z0-9_]{${MIN_USERNAME_LENGTH},${MAX_USERNAME_LENGTH}}$'`)}`)
+	check('players_username_form', sql`${table.username} ~ ${sql.raw(`'^[A-Za-z0-9_]{${MIN_USERNAME_LENGTH},${MAX_USERNAME_LENGTH}}$'`)}`),
+	check('players_locale_length', sql`char_length(${table.locale}) <= ${sql.raw(String(MAX_LOCALE_LENGTH))}`),
+	check('players_pronouns_length', sql`char_length(${table.pronouns}) <= ${sql.raw(String(MAX_PRONOUNS_LENGTH))}`),
+	check('players_location_length', sql`char_length(${table.location}) <= ${sql.raw(String(MAX_LOCATION_LENGTH))}`),
+	check('players_social_usernames_length', sql.join([table.discordUsername, table.facebookUsername, table.instagramUsername, table.tiktokUsername].map((column) => sql`char_length(${column}) <= ${sql.raw(String(MAX_SOCIAL_USERNAME_LENGTH))}`), sql` AND `))
 ]);
 
 /**
@@ -841,7 +873,13 @@ export const characters = pgTable('characters', {
 	 * Until then the player can restore them, but not play them. The server sweeps away characters
 	 * past it, and hides them until it does
 	 */
-	deleteAt: timestamp('delete_at', { withTimezone: true })
+	deleteAt: timestamp('delete_at', { withTimezone: true }),
+
+	/**
+	 * Whether the player's profile lists the character when the player chose not to list all of them
+	 * (players.showCharacters)
+	 */
+	visibleOnProfile: boolean('visible_on_profile').notNull().default(true)
 }, (table) => [
 	index('characters_player_universe_index').on(table.playerId, table.universeId),
 	index('characters_universe_id_index').on(table.universeId),
