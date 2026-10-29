@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { createHash } from 'crypto';
-import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_EMAIL_CHANGE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_REGISTER_PATH, AUTH_SESSION_PATH, type AuthErrorPayload, type EmailCodePurpose, type SessionPayload } from '@multiverse-kiln/shared';
+import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_EMAIL_CHANGE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_REGISTER_PATH, type AuthErrorPayload, type EmailCodePurpose } from '@multiverse-kiln/shared';
 
 import { hashPassword } from '../src/auth/passwords.js';
 import { setPwnedRangeFetch } from '../src/auth/pwnedPasswords.js';
@@ -9,6 +9,7 @@ import { pool } from '../src/db/client.js';
 import { createPlayer } from '../src/db/playerRepo.js';
 import { setEmailSender, type Email } from '../src/email/mailer.js';
 import { MAX_WRONG_GUESSES_PER_CODE } from '../src/logic/emailCodes.js';
+import { Browser } from './browser.js';
 import { logInBrowser } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
 import { waitUntil } from './waitUntil.js';
@@ -19,77 +20,6 @@ const PASSWORD = 'correct horse battery staple';
  * A breached password, which the stand-in for HaveIBeenPwned lists
  */
 const BREACHED_PASSWORD = 'password1234567890';
-
-/**
- * A browser's cookies, kept between requests like a browser keeps them
- */
-class Browser
-{
-	readonly cookies = new Map<string, string>();
-
-	/**
-	 * Sends a JSON request, sending the browser's cookies and keeping the ones the answer sets
-	 *
-	 * @param method The HTTP method
-	 * @param path The path
-	 * @param body The JSON body, if any
-	 * @return The status and the parsed body
-	 */
-	async send<T = AuthErrorPayload>(method: string, path: string, body?: unknown): Promise<{ status: number; body: T }>
-	{
-		const headers: Record<string, string> = {};
-
-		if (this.cookies.size > 0)
-		{
-			headers['Cookie'] = [...this.cookies].map(([name, value]) => `${name}=${value}`).join('; ');
-		}
-
-		if (body !== undefined)
-		{
-			headers['Content-Type'] = 'application/json';
-		}
-
-		const response = await fetch(`${testServerUrl}${path}`, {
-			method,
-			headers,
-			body: ((body === undefined) ? undefined : JSON.stringify(body))
-		});
-
-		for (const cookie of response.headers.getSetCookie())
-		{
-			const [pair] = cookie.split(';');
-			const separator = pair.indexOf('=');
-			const name = pair.slice(0, separator);
-			const value = pair.slice(separator + 1);
-
-			if ((value === '') || /Expires=Thu, 01 Jan 1970/i.test(cookie))
-			{
-				this.cookies.delete(name);
-			}
-			else
-			{
-				this.cookies.set(name, value);
-			}
-		}
-
-		const text = await response.text();
-
-		return({
-			status: response.status,
-			body: ((text === '') ? undefined : JSON.parse(text)) as T
-		});
-	}
-
-	/**
-	 * Who the browser is logged in as
-	 *
-	 * @return The player's username, or null when it isn't logged in
-	 */
-	async username(): Promise<string | null>
-	{
-		return((await this.send<SessionPayload>('GET', AUTH_SESSION_PATH)).body.player?.username ?? null);
-	}
-}
 
 describe('auth routes', () =>
 {

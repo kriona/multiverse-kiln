@@ -1,9 +1,11 @@
 import assert from 'assert';
 
 import { keyedHash } from '../src/auth/keyedHashes.js';
+import { createToken, hashToken } from '../src/auth/tokens.js';
 import { sweepAuth } from '../src/authSweep.js';
 import { recordAuthEvent } from '../src/db/authEventRepo.js';
 import { pool } from '../src/db/client.js';
+import { savePendingProviderLogin } from '../src/db/providerLoginRepo.js';
 import { recordRateLimitEvent } from '../src/db/rateLimitRepo.js';
 import { connectedSessions } from '../src/players/connectedSessions.js';
 import { addPlayer, logInBrowser } from './players.js';
@@ -95,5 +97,28 @@ describe('sweepAuth', () =>
 
 		assert.strictEqual(await countRows('rate_limit_events'), 2);
 		assert.strictEqual(await countRows('auth_events'), 1);
+	});
+
+	it('deletes provider logins left waiting too long', async () =>
+	{
+		const now = new Date();
+
+		for (const expiresAt of [now, new Date(now.getTime() + HOUR_MS)])
+		{
+			await savePendingProviderLogin({
+				continuationHash: hashToken(createToken()),
+				provider: 'google',
+				providerUserId: 'google-ada',
+				email: 'ada@example.com',
+				displayName: 'Ada',
+				playerId: null,
+				rememberMe: false,
+				expiresAt
+			});
+		}
+
+		await sweepAuth(now);
+
+		assert.strictEqual(await countRows('pending_provider_logins'), 1);
 	});
 });

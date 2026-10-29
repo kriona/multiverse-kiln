@@ -2023,6 +2023,14 @@
 		"defaultMessage": "The code works once, for {minutes, plural, one {# minute} other {# minutes}}.",
 		"description": "In every email that sends a code, after the code: how long it can be used"
 	},
+	"email.code.linkLogin.intro": {
+		"defaultMessage": "Enter this code on {siteName} to log in to your account with Google or Discord from now on:",
+		"description": "First paragraph of the email that sends the code for linking a Google or Discord login to the account with the same email address, shown just above the code; {siteName} is the site's name"
+	},
+	"email.code.linkLogin.subject": {
+		"defaultMessage": "Your code to link a login to your account on {siteName}",
+		"description": "Subject of the email that sends the code for linking a Google or Discord login to the account with the same email address; {siteName} is the site's name"
+	},
 	"email.code.notYou": {
 		"defaultMessage": "If you didn't ask for this code, you can ignore this email. Nobody can use the code without reading your email.",
 		"description": "Last paragraph of every email that sends a code (to create an account, reset a password or change an email address), for someone who didn't ask for it"
@@ -2071,6 +2079,18 @@
 		"defaultMessage": "Your password on {siteName} was changed",
 		"description": "Subject of the email sent when an account's password is changed or reset; {siteName} is the site's name"
 	},
+	"email.providerLinked.body": {
+		"defaultMessage": "A {provider} login was linked to your account on {siteName}, so it can log in to the account from now on.",
+		"description": "Paragraph of the email sent when a Google or Discord login is linked to an account; {siteName} is the site's name and {provider} is Google or Discord"
+	},
+	"email.providerLinked.notYou": {
+		"defaultMessage": "If you didn't link it, someone else may be using your account on {siteName}. Reset its password straight away.",
+		"description": "Last paragraph of the email sent when a Google or Discord login is linked to an account, for someone who didn't link it; {siteName} is the site's name"
+	},
+	"email.providerLinked.subject": {
+		"defaultMessage": "You can now log in to {siteName} with {provider}",
+		"description": "Subject of the email sent when a Google or Discord login is linked to an account; {siteName} is the site's name and {provider} is Google or Discord"
+	},
 	"error.alreadyInGroup": {
 		"defaultMessage": "That character is already in a group. They have to leave it first.",
 		"description": "Why a character couldn't make or join a group: a character can be in only one group at a time"
@@ -2093,11 +2113,11 @@
 	},
 	"error.auth.emailTaken": {
 		"defaultMessage": "Another account already uses that address.",
-		"description": "Why an account wasn't created, or its email address wasn't changed: the address belongs to another account. Only shown after the player proved they can read that address's email"
+		"description": "Why an account wasn't created, or its email address wasn't changed: the address belongs to another account. Only shown after the player proved they can read that address's email, or logged in with Google or Discord"
 	},
 	"error.auth.enterCodeFirst": {
 		"defaultMessage": "Enter the code from the email first, or ask for a new one if it has been more than a few minutes.",
-		"description": "Why creating an account, choosing a new password or changing an email address was refused: this browser hasn't entered the email code, or entered it too long ago"
+		"description": "Why creating an account, choosing a new password, changing an email address or linking a Google or Discord login with an email code was refused: this browser hasn't entered the email code, or entered it too long ago"
 	},
 	"error.auth.passwordBreached": {
 		"defaultMessage": "This password has turned up in a data breach, so attackers try it. Choose another.",
@@ -2106,6 +2126,38 @@
 	"error.auth.passwordLength": {
 		"defaultMessage": "Use a password of {min} to {max} characters.",
 		"description": "Shown under a new password field when the password is too short or too long; {min} and {max} are numbers"
+	},
+	"error.auth.providerFailed": {
+		"defaultMessage": "Logging in with {provider} didn't finish. Try again.",
+		"description": "Why logging in with Google or Discord failed after coming back from it: the login took too long, was started in another browser, or the provider refused it; {provider} is Google or Discord"
+	},
+	"error.auth.providerNoVerifiedEmail": {
+		"defaultMessage": "Your {provider} account has no verified email address. Verify one with {provider} first, or create an account with your email address.",
+		"description": "Why logging in with Google or Discord failed: the provider has no email address for the player that it checked they can read, and every account needs one; {provider} is Google or Discord"
+	},
+	"error.auth.providerNotFinished": {
+		"defaultMessage": "Logging in with Google or Discord didn't finish. Try again.",
+		"description": "Why logging in with Google or Discord failed after coming back from it, when it isn't known which: this browser didn't start the login, or started it too long ago"
+	},
+	"error.auth.providerNotOffered": {
+		"defaultMessage": "This site doesn't offer logging in with {provider}.",
+		"description": "Why logging in with Google or Discord didn't start: the site isn't set up for it; {provider} is Google or Discord"
+	},
+	"error.auth.providerOtherAccount": {
+		"defaultMessage": "That {provider} account is already linked to another account here.",
+		"description": "Why linking a Google or Discord login, or creating an account with it, was refused: another account has that provider login; {provider} is Google or Discord"
+	},
+	"error.auth.providerOtherLogin": {
+		"defaultMessage": "Your account already has a different {provider} login. Log in with that one, or with your password.",
+		"description": "Why linking a Google or Discord login was refused: the account already has a login with the same provider, from another account there; {provider} is Google or Discord"
+	},
+	"error.auth.providerStartAgain": {
+		"defaultMessage": "It has been more than a few minutes since you logged in with Google or Discord. Log in with it again.",
+		"description": "Why creating an account or linking a login after logging in with Google or Discord was refused: this browser came back from the provider too long ago, or not at all"
+	},
+	"error.auth.providerUnavailable": {
+		"defaultMessage": "{provider} didn't answer. Try again in a few minutes.",
+		"description": "Why logging in with Google or Discord failed: the server couldn't reach it, or it answered with something unexpected; {provider} is Google or Discord"
 	},
 	"error.auth.tooManyAttempts": {
 		"defaultMessage": "Too many tries. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
@@ -2126,6 +2178,10 @@
 	"error.auth.wrongLogin": {
 		"defaultMessage": "That email address and password don't match an account.",
 		"description": "Why a login failed: no account has that address, or the password is wrong (the message doesn't say which, so it doesn't reveal who has an account)"
+	},
+	"error.auth.wrongPassword": {
+		"defaultMessage": "That password isn't right.",
+		"description": "Shown under the password field when logging in to an account to link a Google or Discord login to it, and the password is wrong"
 	},
 	"error.cantDeleteArea": {
 		"defaultMessage": "The lobby and starting areas can't be deleted.",

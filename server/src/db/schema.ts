@@ -1272,7 +1272,7 @@ export const emailCodes = pgTable('email_codes', {
 	addressHash: bytea('address_hash').notNull(),
 
 	/**
-	 * The account a password reset or email change is for; null when registering
+	 * The account a password reset, email change or provider link is for; null when registering
 	 */
 	playerId: uuid('player_id').references(() => players.id, { onDelete: 'cascade' }),
 

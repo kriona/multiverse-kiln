@@ -28,7 +28,11 @@ A login starts a session, kept on the server and named by an HttpOnly cookie. A 
 
 A player can be logged in from several browsers at once, each with a session of its own; every window of theirs, in any browser, is that player. Logging out ends only that browser's session, and its open windows are logged out with it.
 
-A Google or Discord login whose email matches a local account isn't joined to it automatically: the player is asked to log in to the local account (with its password, or an email code), which links them. A logged-in player can also link providers from their profile.
+Google and Discord logins use OAuth with PKCE, and the provider sends the browser back to the login page, which finishes the login. Only a provider account with a verified email address can log in, since every account has one. The first time, the login waits up to 10 minutes for one more step, from that browser only:
+- if no account has its email address, the player chooses a username and name (the provider's name suggested) to create one. Emails them when they have a new account
+- if a local account has it, the login isn't joined to the account automatically: the player is asked to log in to the local account (with its password, or an [email code](#email-codes)), which links them and emails the account. An account has at most one login from each provider
+
+A logged-in player can also link providers from their profile. A site offers a provider once its OAuth client is set up (`server/.env.example`).
 
 Local accounts can turn on 2FA with an authenticator app (TOTP), and get recovery codes for when they lose it. Accounts that log in with a provider use the provider's 2FA.
 
@@ -44,7 +48,7 @@ If the address already has an account, the page answers the same as for a new on
 Enter an email, it sends you an [email code](#email-codes), enter the code to change your password. Emails you when the password is changed, and signs the account out everywhere.
 
 ## Email codes
-Registering, resetting a password and changing an email all send a code by email. Every code follows these rules:
+Registering, resetting a password, changing an email and linking a Google or Discord login all send a code by email. Every code follows these rules:
 - Sending
 	- generated with a cryptographically secure random number generator
 	- 6 characters from Crockford's base32 alphabet (the digits and capital letters except I, L, O and U), a little over a billion possible codes

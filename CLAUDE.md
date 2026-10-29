@@ -49,9 +49,10 @@ An engine for making multiplayer browser-based role-playing games.
   src/storage/       object storage for uploads (any S3-compatible service; SeaweedFS locally)
   src/images/        checking and re-encoding uploaded images, such as tilesets
   src/auth/          logins: sessions (the session cookie to a player, sessions.ts), password hashing, keyed
-                     hashes, tokens, rate limits and the breached password check
+                     hashes, tokens, rate limits, the breached password check and the Google and Discord
+                     clients (providers.ts)
   src/email/         sending email (SMTP; Mailpit locally) and the emails logins send, in each player's language
-  src/http/          REST routes (health, logins and accounts (auth.ts), universes for Home, characters, groups and
+  src/http/          REST routes (health, logins and accounts (auth.ts, and providerAuth.ts for Google and Discord), universes for Home, characters, groups and
                      invite links, the world editor's API, uploaded tilesets, the admin page's site settings). The world editor saves
                      every change through one route, editorChanges.ts, in one transaction; each kind of
                      change is checked and saved by its module (editorAreas.ts, editorItems.ts and so on)
@@ -103,7 +104,7 @@ npm workspaces are assumed (`client`, `server`, `shared`). Update this section i
 
 - All environment-specific values come from environment variables. Never hard-code URLs, credentials, or secrets, and never commit `.env` files. The pre-commit hook runs gitleaks on staged changes and blocks commits that contain secrets.
 - Root (`docker-compose.yml`): `POSTGRES_PASSWORD`, `KILN_MIGRATOR_PASSWORD`, `KILN_APP_PASSWORD`, `POSTGRES_PORT`, `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` (the local storage's keys), `STORAGE_PORT`.
-- Server: `DATABASE_URL` (the app role), `MIGRATION_DATABASE_URL` (the migration role; drizzle-kit only, never the running server), `PORT` (default 2567), `ENABLE_DEV_TOOLS` (playground, `/monitor` and the load test's bot login, never in production), `SSL_KEY_FILE` / `SSL_CERT_FILE`, `ALLOWED_ORIGINS`, `LOADTEST_ENDPOINT`, `STORAGE_ENDPOINT` / `STORAGE_REGION` / `STORAGE_BUCKET` / `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` / `STORAGE_FORCE_PATH_STYLE` (object storage for uploads), `TEST_STORAGE_BUCKET`, `AUTH_HMAC_KEY` (the key for the keyed hashes of addresses, email codes and networks; `server/src/auth/keyedHashes.ts`), `SMTP_URL` / `EMAIL_FROM` (where email is sent, and the address it comes from).
+- Server: `DATABASE_URL` (the app role), `MIGRATION_DATABASE_URL` (the migration role; drizzle-kit only, never the running server), `PORT` (default 2567), `ENABLE_DEV_TOOLS` (playground, `/monitor` and the load test's bot login, never in production), `SSL_KEY_FILE` / `SSL_CERT_FILE`, `ALLOWED_ORIGINS`, `LOADTEST_ENDPOINT`, `STORAGE_ENDPOINT` / `STORAGE_REGION` / `STORAGE_BUCKET` / `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` / `STORAGE_FORCE_PATH_STYLE` (object storage for uploads), `TEST_STORAGE_BUCKET`, `AUTH_HMAC_KEY` (the key for the keyed hashes of addresses, email codes and networks; `server/src/auth/keyedHashes.ts`), `SMTP_URL` / `EMAIL_FROM` (where email is sent, and the address it comes from), `SITE_URL` (the client's address, which Google and Discord send players back to), `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` and `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` (each provider is offered once both are set; `server/src/auth/providers.ts`).
 - Client: `DEV_HOST`, `DEV_PORT`, `DEV_SSL_KEY_FILE` / `DEV_SSL_CERT_FILE`, `VITE_SERVER_URL` (`wss://www.multiversekiln-dev.com:2567` locally, `wss://...` in production), `VITE_SOURCE_URL` (the source code link in the page footer, required by the AGPL; a fork sets its own repository), `VITE_PRIVACY_CONTACT` (the email address the privacy policy gives players; a fork sets its own).
 - Commit `.env.example` files listing every variable with placeholder values, and keep them up to date.
 

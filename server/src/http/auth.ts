@@ -1,7 +1,8 @@
 /**
  * The auth routes (listed in shared/src/accounts.ts): the browser's session, logging in and out, and
- * the email code flows for registering, resetting a password and changing an email address (see Login
- * and Email codes in STRUCTURE-OVERVIEW.md)
+ * the email code flows for registering, resetting a password, changing an email address and linking a
+ * provider login (see Login and Email codes in STRUCTURE-OVERVIEW.md). Logging in with Google or
+ * Discord is in providerAuth.ts
  *
  * Nothing these routes answer tells whether an account exists for an address: logins fail with the
  * same message either way, and sending a code answers the same whether or not one was sent. Emails go
@@ -10,87 +11,36 @@
 import { randomBytes } from 'crypto';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_EMAIL_CHANGE_PATH, AUTH_LOGIN_PATH, AUTH_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_REGISTER_PATH, AUTH_SESSION_PATH, defineMessages, EMAIL_CODE_PURPOSES, isReservedName, localize, MAX_EMAIL_LENGTH, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_USERNAME_LENGTH, MIN_PASSWORD_LENGTH, MIN_USERNAME_LENGTH, NAME_MESSAGES, USERNAME_PATTERN, type AuthErrorPayload, type AuthField, type EmailChangeRequest, type EmailCodeCheckRequest, type EmailCodeRequest, type LoginRequest, type MessageDescriptor, type MessageValues, type PasswordResetRequest, type RegisterRequest, type SessionPayload } from '@multiverse-kiln/shared';
+import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_EMAIL_CHANGE_PATH, AUTH_LOGIN_PATH, AUTH_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_REGISTER_PATH, AUTH_SESSION_PATH, EMAIL_CODE_PURPOSES, MAX_EMAIL_LENGTH, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_USERNAME_LENGTH, MIN_PASSWORD_LENGTH, type EmailChangeRequest, type EmailCodeCheckRequest, type EmailCodeRequest, type LoginRequest, type PasswordResetRequest, type RegisterRequest, type SessionPayload } from '@multiverse-kiln/shared';
 
 import { hashAddress, hashesMatch, keyedHash } from '../auth/keyedHashes.js';
 import { checkLoginPassword, checkPasswordForMissingAccount, hashPassword } from '../auth/passwords.js';
 import { checkPwnedPassword } from '../auth/pwnedPasswords.js';
 import { MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR, MAX_LOGIN_ATTEMPTS_PER_NETWORK_HOUR, takeAttempt } from '../auth/rateLimits.js';
 import { endSession, resolveSession, startSession, type SessionIdentity } from '../auth/sessions.js';
-import { createToken, hashToken, isTokenForm } from '../auth/tokens.js';
-import { recordAuthEvent, type AuthEventKind } from '../db/authEventRepo.js';
-import type { Executor } from '../db/client.js';
+import { createToken, hashToken } from '../auth/tokens.js';
 import { deleteEmailCode, lockContinuation, lockEmailCode, recordWrongEmailCodeGuess, replaceEmailCode, useEmailCode } from '../db/emailCodeRepo.js';
 import { AccountTakenError, createPlayer, findLocalLogin, findPlayerEmail, findPlayerIdByEmail, saveEmail, savePasswordHash } from '../db/playerRepo.js';
+import { lockPendingProviderLogin } from '../db/providerLoginRepo.js';
 import { findRateLimitTimes, lockRateLimitSubject, recordRateLimitEvent } from '../db/rateLimitRepo.js';
 import { deletePlayerSessions } from '../db/sessionRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { accountCreatedEmail, accountExistsEmail, emailChangedEmail, emailCodeEmail, passwordChangedEmail } from '../email/authEmails.js';
 import { sendEmailInBackground, type EmailContent } from '../email/mailer.js';
-import { CONTINUATION_LIFETIME_MS, DAY_MS, decideEmailCodeSend, emailCodeFromBytes, emailCodeState, EMAIL_CODE_LENGTH, HOUR_MS, MAX_EMAIL_CODES_PER_NETWORK_HOUR, MAX_GUESSES_PER_NETWORK_HOUR, normalizeEmailCode, type SendDecision } from '../logic/emailCodes.js';
+import { CONTINUATION_LIFETIME_MS, DAY_MS, decideEmailCodeSend, emailCodeFromBytes, emailCodeState, EMAIL_CODE_LENGTH, HOUR_MS, MAX_EMAIL_CODES_PER_NETWORK_HOUR, MAX_GUESSES_PER_NETWORK_HOUR, normalizeEmailCode } from '../logic/emailCodes.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { displayText } from '../rooms/payloads.js';
+import { authMessages, checkDisplayName, checkUsername, cookieTokenHash, recordEvent, sendRefusal, tooManyAttempts, type AuthRefusal } from './authCommon.js';
 import { clientNetworkHash } from './clientNetwork.js';
-import { clearCookie, CONTINUATION_COOKIE, readCookie, setCookie } from './cookies.js';
+import { clearCookie, CONTINUATION_COOKIE, PROVIDER_LOGIN_COOKIE, setCookie } from './cookies.js';
 import { refuseWritesFromOtherOrigins } from './editorAccess.js';
 import { errorMessages, sendInvalidRequest } from './errors.js';
+import { addProviderRoutes } from './providerAuth.js';
 
 /**
  * The largest request body the auth routes read
  */
 const MAX_BODY_SIZE = '4kb';
-
-/**
- * Reasons the auth routes give in more than one place (see shared/src/localization.ts)
- */
-const authMessages = defineMessages({
-	tooManyAttempts: {
-		id: 'error.auth.tooManyAttempts',
-		defaultMessage: 'Too many tries. Try again in {minutes, plural, one {# minute} other {# minutes}}.',
-		description: 'Why a login wasn\'t tried, an email code wasn\'t sent, or a code wasn\'t checked: too many were tried or asked for from this network or for this address in the past hour, or a code was sent to the address less than a minute ago'
-	},
-	enterCodeFirst: {
-		id: 'error.auth.enterCodeFirst',
-		defaultMessage: 'Enter the code from the email first, or ask for a new one if it has been more than a few minutes.',
-		description: 'Why creating an account, choosing a new password or changing an email address was refused: this browser hasn\'t entered the email code, or entered it too long ago'
-	},
-	emailMismatch: {
-		id: 'error.auth.emailMismatch',
-		defaultMessage: 'That isn\'t the address the code was sent to.',
-		description: 'Shown under the email field when creating an account or changing an email address: the address typed differs from the one the code was sent to'
-	},
-	emailForm: {
-		id: 'error.auth.emailForm',
-		defaultMessage: 'Enter an email address, like name@example.com.',
-		description: 'Shown under an email field when what was typed isn\'t an email address'
-	},
-	passwordLength: {
-		id: 'error.auth.passwordLength',
-		defaultMessage: 'Use a password of {min} to {max} characters.',
-		description: 'Shown under a new password field when the password is too short or too long; {min} and {max} are numbers'
-	},
-	passwordBreached: {
-		id: 'error.auth.passwordBreached',
-		defaultMessage: 'This password has turned up in a data breach, so attackers try it. Choose another.',
-		description: 'Shown under a new password field when the password is on HaveIBeenPwned\'s list of passwords leaked in data breaches'
-	},
-	emailTaken: {
-		id: 'error.auth.emailTaken',
-		defaultMessage: 'Another account already uses that address.',
-		description: 'Why an account wasn\'t created, or its email address wasn\'t changed: the address belongs to another account. Only shown after the player proved they can read that address\'s email'
-	}
-});
-
-/**
- * Why a request is refused, decided inside a transaction where the response isn't at hand
- */
-interface AuthRefusal
-{
-	status: number;
-	message: MessageDescriptor;
-	values?: MessageValues;
-	field?: AuthField;
-}
 
 /**
  * An email address as typed: trimmed, at most MAX_EMAIL_LENGTH characters, with one @ and no spaces.
@@ -169,6 +119,7 @@ export function addAuthRoutes(app: Application, allowedOrigins: Set<string>): vo
 	router.post(underAuthPath(AUTH_REGISTER_PATH), registerRoute);
 	router.post(underAuthPath(AUTH_PASSWORD_RESET_PATH), passwordResetRoute);
 	router.post(underAuthPath(AUTH_EMAIL_CHANGE_PATH), emailChangeRoute);
+	addProviderRoutes(router, underAuthPath);
 	router.use(handleAuthError);
 
 	app.use(AUTH_PATH, router);
@@ -183,47 +134,6 @@ export function addAuthRoutes(app: Application, allowedOrigins: Set<string>): vo
 function underAuthPath(path: string): string
 {
 	return(path.slice(AUTH_PATH.length));
-}
-
-/**
- * Answers a request with an error, and the field it is about
- *
- * @param response The response
- * @param refusal Why the request was refused
- */
-function sendRefusal(response: Response, refusal: AuthRefusal): void
-{
-	const payload: AuthErrorPayload = { error: localize(refusal.message, refusal.values) };
-
-	if (refusal.field !== undefined)
-	{
-		payload.field = refusal.field;
-	}
-
-	response.status(refusal.status).json(payload);
-}
-
-/**
- * The refusal for an attempt over a rate limit, saying how long to wait
- *
- * @param decision The limit's decision
- * @param now The time now
- * @param response The response, which gets a Retry-After header
- * @return The refusal
- */
-function tooManyAttempts(decision: SendDecision & { allowed: false }, now: Date, response: Response): AuthRefusal
-{
-	const seconds = Math.max(1, Math.ceil((decision.retryAt.getTime() - now.getTime()) / 1000));
-
-	response.set('Retry-After', String(seconds));
-
-	return({
-		status: 429,
-		message: authMessages.tooManyAttempts,
-		values: {
-			minutes: Math.ceil(seconds / 60)
-		}
-	});
 }
 
 /**
@@ -294,25 +204,6 @@ async function checkBreachedPassword(password: string): Promise<AuthRefusal | un
 }
 
 /**
- * Records an auth event for a request
- *
- * @param request The request
- * @param playerId The account, or null when it isn't known
- * @param kind What happened
- * @param now When
- * @param executor The database, or a transaction
- */
-async function recordEvent(request: Request, playerId: string | null, kind: AuthEventKind, now: Date, executor?: Executor): Promise<void>
-{
-	await recordAuthEvent({
-		playerId,
-		kind,
-		networkHash: clientNetworkHash(request),
-		occurredAt: now
-	}, executor);
-}
-
-/**
  * The continuation token the browser holds after entering an email code
  *
  * @param request The request
@@ -320,9 +211,7 @@ async function recordEvent(request: Request, playerId: string | null, kind: Auth
  */
 function continuationHashOf(request: Request): Buffer | undefined
 {
-	const token = readCookie(request.headers.cookie, CONTINUATION_COOKIE);
-
-	return((((token !== undefined) && isTokenForm(token)) ? hashToken(token) : undefined));
+	return(cookieTokenHash(request, CONTINUATION_COOKIE));
 }
 
 /**
@@ -553,6 +442,22 @@ async function sendCodeRoute(request: Request, response: Response): Promise<void
 
 			playerId = ownerId;
 		}
+		else if (purpose === 'linkLogin')
+		{
+			// Only the account that a provider login waiting in this browser would be linked to
+			const pendingHash = cookieTokenHash(request, PROVIDER_LOGIN_COOKIE);
+			const pending = ((pendingHash === undefined) ? undefined : await lockPendingProviderLogin(pendingHash, now, executor));
+
+			if ((ownerId === undefined) || (pending?.playerId !== ownerId))
+			{
+				return({
+					kind: 'send',
+					email: undefined
+				});
+			}
+
+			playerId = ownerId;
+		}
 		else
 		{
 			// An address another account has gets nothing, and the account's own address needs no change
@@ -683,43 +588,6 @@ async function checkCodeRoute(request: Request, response: Response): Promise<voi
 }
 
 /**
- * Checks a new username's form
- *
- * @param username The username, trimmed
- * @return The refusal when it can't be taken
- */
-function checkUsername(username: string): AuthRefusal | undefined
-{
-	if ((username.length < MIN_USERNAME_LENGTH) || (username.length > MAX_USERNAME_LENGTH) || !USERNAME_PATTERN.test(username))
-	{
-		return({
-			status: 400,
-			message: {
-				id: 'error.auth.usernameForm',
-				defaultMessage: 'Use {min} to {max} letters (a to z), digits and underscores.',
-				description: 'Shown under the username field when the username has other characters, or is too short or too long; {min} and {max} are numbers'
-			},
-			values: {
-				min: MIN_USERNAME_LENGTH,
-				max: MAX_USERNAME_LENGTH
-			},
-			field: 'username'
-		});
-	}
-
-	if (isReservedName(username))
-	{
-		return({
-			status: 400,
-			message: NAME_MESSAGES.reserved,
-			field: 'username'
-		});
-	}
-
-	return(undefined);
-}
-
-/**
  * POST AUTH_REGISTER_PATH: creates a local account, once this browser has entered the code sent to its
  * address, and logs the browser in
  *
@@ -739,7 +607,7 @@ async function registerRoute(request: Request, response: Response): Promise<void
 	const { email, password, username, displayName, rememberMe, locale: emailLocale } = body.data;
 	const continuationHash = continuationHashOf(request);
 	const problem = (checkUsername(username)
-		?? (isReservedName(displayName) ? { status: 400, message: NAME_MESSAGES.reserved, field: 'displayName' as const } : undefined)
+		?? checkDisplayName(displayName)
 		?? checkPasswordLength(password)
 		?? ((continuationHash === undefined) ? { status: 403, message: authMessages.enterCodeFirst } : undefined)
 		?? await checkBreachedPassword(password));
@@ -795,11 +663,7 @@ async function registerRoute(request: Request, response: Response): Promise<void
 			{
 				return({
 					status: 409,
-					message: {
-						id: 'error.auth.usernameTaken',
-						defaultMessage: 'Another account already has that username. Choose another.',
-						description: 'Shown under the username field when creating an account: usernames are unique, ignoring capitals'
-					},
+					message: authMessages.usernameTaken,
 					field: 'username'
 				});
 			}

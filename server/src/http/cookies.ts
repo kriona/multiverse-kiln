@@ -16,6 +16,18 @@ export const SESSION_COOKIE = '__Host-kiln-session';
 export const CONTINUATION_COOKIE = '__Host-kiln-continue';
 
 /**
+ * What a login with Google or Discord started with (the provider, the state and the PKCE secret), kept
+ * while the player is at the provider (http/providerAuth.ts)
+ */
+export const PROVIDER_START_COOKIE = '__Host-kiln-provider-start';
+
+/**
+ * The token that lets the browser that came back from a provider take the next step, such as choosing
+ * a username
+ */
+export const PROVIDER_LOGIN_COOKIE = '__Host-kiln-provider-login';
+
+/**
  * Reads a cookie from a Cookie header
  *
  * @param cookieHeader Cookie header value, or null/undefined when the request has none

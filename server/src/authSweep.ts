@@ -4,11 +4,12 @@
  *
  * - Sessions with a window connected to a room are recorded as used, since an open connection counts as use
  * - Expired sessions are deleted, and their windows turned away
- * - Email codes that can no longer be used are deleted
+ * - Email codes that can no longer be used are deleted, and provider logins left waiting too long
  * - Rate limit records are deleted once no limit counts them, and auth events after 90 days
  */
 import { deleteAuthEventsBefore } from './db/authEventRepo.js';
 import { deleteStaleEmailCodes } from './db/emailCodeRepo.js';
+import { deleteExpiredPendingProviderLogins } from './db/providerLoginRepo.js';
 import { deleteRateLimitEventsBefore } from './db/rateLimitRepo.js';
 import { deleteExpiredSessions, touchSessions } from './db/sessionRepo.js';
 import { DAY_MS, HOUR_MS } from './logic/emailCodes.js';
@@ -46,13 +47,14 @@ export async function sweepAuth(now: Date = new Date()): Promise<void>
 	try
 	{
 		await deleteStaleEmailCodes(now);
+		await deleteExpiredPendingProviderLogins(now);
 		await deleteRateLimitEventsBefore(['addressCodeSent', 'networkCodeRequest', 'networkGuess', 'addressLoginAttempt', 'networkLoginAttempt'], new Date(now.getTime() - HOUR_MS));
 		await deleteRateLimitEventsBefore(['addressWrongGuess'], new Date(now.getTime() - DAY_MS));
 		await deleteAuthEventsBefore(new Date(now.getTime() - (AUTH_EVENT_DAYS * DAY_MS)));
 	}
 	catch (error)
 	{
-		console.error('Could not delete old email codes, rate limit records and auth events:', error);
+		console.error('Could not delete old email codes, provider logins, rate limit records and auth events:', error);
 	}
 }
 

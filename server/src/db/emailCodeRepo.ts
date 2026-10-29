@@ -20,7 +20,7 @@ export interface EmailCodeRecord
 	addressHash: Uint8Array;
 
 	/**
-	 * The account a password reset or email change is for; null when registering
+	 * The account a password reset, email change or provider link is for; null when registering
 	 */
 	playerId: string | null;
 

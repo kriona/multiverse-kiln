@@ -2023,6 +2023,14 @@
 		"message": "The code works but once, for {minutes, plural, one {# minute} other {# minutes}}.",
 		"source": "The code works once, for {minutes, plural, one {# minute} other {# minutes}}."
 	},
+	"email.code.linkLogin.intro": {
+		"message": "Enter this code on {siteName} to board yer account with Google or Discord from now on:",
+		"source": "Enter this code on {siteName} to log in to your account with Google or Discord from now on:"
+	},
+	"email.code.linkLogin.subject": {
+		"message": "Yer code to lash a login to yer account on {siteName}",
+		"source": "Your code to link a login to your account on {siteName}"
+	},
 	"email.code.notYou": {
 		"message": "If ye didn't ask for this code, pay this letter no mind. No one can use the code without readin' yer letters.",
 		"source": "If you didn't ask for this code, you can ignore this email. Nobody can use the code without reading your email."
@@ -2071,6 +2079,18 @@
 		"message": "Yer password on {siteName} was changed",
 		"source": "Your password on {siteName} was changed"
 	},
+	"email.providerLinked.body": {
+		"message": "A {provider} login was lashed to yer account on {siteName}, so it can board the account from now on.",
+		"source": "A {provider} login was linked to your account on {siteName}, so it can log in to the account from now on."
+	},
+	"email.providerLinked.notYou": {
+		"message": "If ye didn't lash it on, some other scallywag may be sailin' yer account on {siteName}. Reset its password straight away.",
+		"source": "If you didn't link it, someone else may be using your account on {siteName}. Reset its password straight away."
+	},
+	"email.providerLinked.subject": {
+		"message": "Ye can now board {siteName} with {provider}",
+		"source": "You can now log in to {siteName} with {provider}"
+	},
 	"error.alreadyInGroup": {
 		"message": "That hand already sails with a crew. They have to jump ship first.",
 		"source": "That character is already in a group. They have to leave it first."
@@ -2107,6 +2127,38 @@
 		"message": "Use a password o' {min} to {max} characters.",
 		"source": "Use a password of {min} to {max} characters."
 	},
+	"error.auth.providerFailed": {
+		"message": "Boardin' with {provider} never made port. Try again.",
+		"source": "Logging in with {provider} didn't finish. Try again."
+	},
+	"error.auth.providerNoVerifiedEmail": {
+		"message": "Yer {provider} account has no proven email address. Prove one with {provider} first, or make an account with yer email address.",
+		"source": "Your {provider} account has no verified email address. Verify one with {provider} first, or create an account with your email address."
+	},
+	"error.auth.providerNotFinished": {
+		"message": "Boardin' with Google or Discord never made port. Try again.",
+		"source": "Logging in with Google or Discord didn't finish. Try again."
+	},
+	"error.auth.providerNotOffered": {
+		"message": "This port don't let ye board with {provider}.",
+		"source": "This site doesn't offer logging in with {provider}."
+	},
+	"error.auth.providerOtherAccount": {
+		"message": "That {provider} account be already lashed to another account here.",
+		"source": "That {provider} account is already linked to another account here."
+	},
+	"error.auth.providerOtherLogin": {
+		"message": "Yer account already has a different {provider} login. Board with that one, or with yer password.",
+		"source": "Your account already has a different {provider} login. Log in with that one, or with your password."
+	},
+	"error.auth.providerStartAgain": {
+		"message": "It's been more than a few minutes since ye boarded with Google or Discord. Board with it again.",
+		"source": "It has been more than a few minutes since you logged in with Google or Discord. Log in with it again."
+	},
+	"error.auth.providerUnavailable": {
+		"message": "{provider} didn't answer the hail. Try again in a few minutes.",
+		"source": "{provider} didn't answer. Try again in a few minutes."
+	},
 	"error.auth.tooManyAttempts": {
 		"message": "Too many tries. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
 		"source": "Too many tries. Try again in {minutes, plural, one {# minute} other {# minutes}}."
@@ -2126,6 +2178,10 @@
 	"error.auth.wrongLogin": {
 		"message": "That email address an' password don't match any account.",
 		"source": "That email address and password don't match an account."
+	},
+	"error.auth.wrongPassword": {
+		"message": "That password ain't right.",
+		"source": "That password isn't right."
 	},
 	"error.cantDeleteArea": {
 		"message": "The tavern and home port can't be scuttled.",

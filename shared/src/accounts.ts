@@ -51,6 +51,40 @@ export const AUTH_PASSWORD_RESET_PATH = `${AUTH_PATH}/password-reset`;
 export const AUTH_EMAIL_CHANGE_PATH = `${AUTH_PATH}/email`;
 
 /**
+ * GET: the login providers this site offers (ProvidersPayload)
+ */
+export const AUTH_PROVIDERS_PATH = `${AUTH_PATH}/providers`;
+
+/**
+ * POST: start logging in with a provider (ProviderStartRequest), answered with the provider's page to
+ * send the browser to (ProviderStartPayload)
+ */
+export const AUTH_PROVIDER_START_PATH = `${AUTH_PATH}/providers/start`;
+
+/**
+ * POST: finish logging in with a provider, once it sends the browser back to PROVIDER_RETURN_PATH
+ * (ProviderCallbackRequest), answered with what happens next (ProviderCallbackPayload)
+ */
+export const AUTH_PROVIDER_CALLBACK_PATH = `${AUTH_PATH}/providers/callback`;
+
+/**
+ * POST: create an account for a provider login that has none (ProviderRegisterRequest)
+ */
+export const AUTH_PROVIDER_REGISTER_PATH = `${AUTH_PATH}/providers/register`;
+
+/**
+ * POST: link a provider login to the local account with the same email address, by logging in to it
+ * (ProviderLinkRequest)
+ */
+export const AUTH_PROVIDER_LINK_PATH = `${AUTH_PATH}/providers/link`;
+
+/**
+ * The client's page a provider sends the browser back to, with the code and state in its query string:
+ * the login page. Each provider is told this address, under the site's own (the server's SITE_URL)
+ */
+export const PROVIDER_RETURN_PATH = '/login';
+
+/**
  * Usernames: how players find each other and tell apart players with the same display name. Letters
  * a-z, digits and underscores only, so no username can pass for another with look-alike letters from
  * other alphabets. Compared ignoring capitals, and checked against reserved words like player names
@@ -86,7 +120,7 @@ export const MAX_LOCALE_LENGTH = 35;
 /**
  * What an email code is for
  */
-export const EMAIL_CODE_PURPOSES = ['register', 'resetPassword', 'changeEmail'] as const;
+export const EMAIL_CODE_PURPOSES = ['register', 'resetPassword', 'changeEmail', 'linkLogin'] as const;
 
 export type EmailCodePurpose = (typeof EMAIL_CODE_PURPOSES)[number];
 
@@ -200,6 +234,106 @@ export interface EmailChangeRequest
 	 * The new address, which the code was sent to
 	 */
 	email: string;
+
+	locale: string;
+}
+
+/**
+ * Response of GET AUTH_PROVIDERS_PATH
+ */
+export interface ProvidersPayload
+{
+	/**
+	 * The providers the site is set up for, which the login page offers
+	 */
+	providers: LoginProvider[];
+}
+
+/**
+ * Body of POST AUTH_PROVIDER_START_PATH
+ */
+export interface ProviderStartRequest
+{
+	provider: LoginProvider;
+	rememberMe: boolean;
+}
+
+/**
+ * Response of POST AUTH_PROVIDER_START_PATH
+ */
+export interface ProviderStartPayload
+{
+	/**
+	 * The provider's page that asks the player to log in, which sends them back to
+	 * PROVIDER_RETURN_PATH
+	 */
+	url: string;
+}
+
+/**
+ * Body of POST AUTH_PROVIDER_CALLBACK_PATH: what the provider put in PROVIDER_RETURN_PATH's query string
+ */
+export interface ProviderCallbackRequest
+{
+	code: string;
+	state: string;
+}
+
+/**
+ * Response of POST AUTH_PROVIDER_CALLBACK_PATH: the browser is logged in, or the player takes one more
+ * step within a few minutes, from this browser
+ */
+export type ProviderCallbackPayload =
+	| { outcome: 'loggedIn' }
+	| {
+		/**
+		 * No account has the provider login or its email address: choose a username
+		 * (AUTH_PROVIDER_REGISTER_PATH)
+		 */
+		outcome: 'register';
+		provider: LoginProvider;
+		email: string;
+
+		/**
+		 * The provider's name for the player, to suggest as their name
+		 */
+		displayName: string;
+	}
+	| {
+		/**
+		 * A local account has the provider login's email address: log in to it to link them
+		 * (AUTH_PROVIDER_LINK_PATH), with its password or a code sent to the address
+		 */
+		outcome: 'link';
+		provider: LoginProvider;
+		email: string;
+
+		/**
+		 * Whether the account has a password; without one, only an email code links it
+		 */
+		hasPassword: boolean;
+	};
+
+/**
+ * Body of POST AUTH_PROVIDER_REGISTER_PATH
+ */
+export interface ProviderRegisterRequest
+{
+	username: string;
+	displayName: string;
+	locale: string;
+}
+
+/**
+ * Body of POST AUTH_PROVIDER_LINK_PATH
+ */
+export interface ProviderLinkRequest
+{
+	/**
+	 * The account's password, or null when this browser has entered a code sent to its address
+	 * (purpose 'linkLogin') instead
+	 */
+	password: string | null;
 
 	locale: string;
 }

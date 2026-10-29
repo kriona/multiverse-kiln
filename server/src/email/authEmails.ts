@@ -1,8 +1,8 @@
 /**
  * The emails logins send (see Email codes in STRUCTURE-OVERVIEW.md): codes for registering, resetting
- * a password and changing an email address, and the notices sent when an account is created or its
- * password or email address changes, or someone tries to register an address that already has an
- * account. Each is written in its recipient's language, as HTML with a plain text part
+ * a password, changing an email address and linking a provider login, and the notices sent when an
+ * account is created, its password or email address changes or a provider login is linked to it, or
+ * someone tries to register an address that already has an account. Each is written in its recipient's language, as HTML with a plain text part
  */
 import { SITE_NAME, type EmailCodePurpose, type Translator } from '@multiverse-kiln/shared';
 
@@ -150,6 +150,19 @@ export function emailCodeEmail(purpose: EmailCodePurpose, code: string, locale: 
 			description: 'First paragraph of the email that sends the code for resetting a forgotten password, shown just above the code; {siteName} is the site\'s name'
 		}, values);
 	}
+	else if (purpose === 'linkLogin')
+	{
+		subject = translator.format({
+			id: 'email.code.linkLogin.subject',
+			defaultMessage: 'Your code to link a login to your account on {siteName}',
+			description: 'Subject of the email that sends the code for linking a Google or Discord login to the account with the same email address; {siteName} is the site\'s name'
+		}, values);
+		intro = translator.format({
+			id: 'email.code.linkLogin.intro',
+			defaultMessage: 'Enter this code on {siteName} to log in to your account with Google or Discord from now on:',
+			description: 'First paragraph of the email that sends the code for linking a Google or Discord login to the account with the same email address, shown just above the code; {siteName} is the site\'s name'
+		}, values);
+	}
 	else
 	{
 		subject = translator.format({
@@ -270,6 +283,42 @@ export function passwordChangedEmail(locale: string): EmailContent
 				id: 'email.passwordChanged.notYou',
 				defaultMessage: 'If you didn\'t change it, reset your password on {siteName} straight away.',
 				description: 'Last paragraph of the email sent when an account\'s password is changed or reset, for someone who didn\'t change it; {siteName} is the site\'s name'
+			}, values)
+		]
+	}));
+}
+
+/**
+ * The email sent when a Google or Discord login is linked to an account
+ *
+ * @param provider The provider's name, such as Google
+ * @param locale The language the recipient asked in
+ * @return The email
+ */
+export function providerLinkedEmail(provider: string, locale: string): EmailContent
+{
+	const translator = emailTranslator(locale);
+	const values = {
+		siteName: SITE_NAME,
+		provider
+	};
+
+	return(layOut(translator, {
+		subject: translator.format({
+			id: 'email.providerLinked.subject',
+			defaultMessage: 'You can now log in to {siteName} with {provider}',
+			description: 'Subject of the email sent when a Google or Discord login is linked to an account; {siteName} is the site\'s name and {provider} is Google or Discord'
+		}, values),
+		paragraphs: [
+			translator.format({
+				id: 'email.providerLinked.body',
+				defaultMessage: 'A {provider} login was linked to your account on {siteName}, so it can log in to the account from now on.',
+				description: 'Paragraph of the email sent when a Google or Discord login is linked to an account; {siteName} is the site\'s name and {provider} is Google or Discord'
+			}, values),
+			translator.format({
+				id: 'email.providerLinked.notYou',
+				defaultMessage: 'If you didn\'t link it, someone else may be using your account on {siteName}. Reset its password straight away.',
+				description: 'Last paragraph of the email sent when a Google or Discord login is linked to an account, for someone who didn\'t link it; {siteName} is the site\'s name'
 			}, values)
 		]
 	}));

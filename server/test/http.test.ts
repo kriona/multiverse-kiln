@@ -2,7 +2,7 @@ import assert from 'assert';
 import { randomBytes, randomUUID } from 'crypto';
 import http from 'http';
 
-import { AUTH_SESSION_PATH, invitePath, MAX_UNIVERSES_PER_PAGE, UNIVERSES_PATH, type UniverseDetails, type UniverseListPayload, type UniverseStage } from '@multiverse-kiln/shared';
+import { AUTH_PROVIDERS_PATH, AUTH_SESSION_PATH, invitePath, MAX_UNIVERSES_PER_PAGE, UNIVERSES_PATH, type UniverseDetails, type UniverseListPayload, type UniverseStage } from '@multiverse-kiln/shared';
 
 import { createUniverse } from '../src/db/universeRepo.js';
 import { DEV_BOT_LOGIN_PATH } from '../src/http/devLogin.js';
@@ -79,7 +79,7 @@ describe('HTTP responses', () =>
 
 	it('sends nosniff on Express routes, Colyseus routes and 404s', async () =>
 	{
-		for (const route of [HEALTH_PATH, AUTH_SESSION_PATH, '/__healthcheck', '/nothing-here', invitePath('no-such-invite-token')])
+		for (const route of [HEALTH_PATH, AUTH_SESSION_PATH, AUTH_PROVIDERS_PATH, '/__healthcheck', '/nothing-here', invitePath('no-such-invite-token')])
 		{
 			const response = await fetch(`${testServerUrl}${route}`);
 
