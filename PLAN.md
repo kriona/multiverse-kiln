@@ -301,6 +301,8 @@ Neon and Colyseus Cloud cost money, so this waits until the game is worth testin
 The first deploy tends to surface WebSocket, TLS and environment issues, so leave time for it.
 
 - [ ] Choose the S3-compatible service for uploads, make its bucket (private: the game server serves the files), and set the `STORAGE_*` variables in the Colyseus Cloud dashboard
+- [ ] Choose the email service, set up its sending domain (SPF, DKIM and DMARC), and set `SMTP_URL` (over TLS) and `EMAIL_FROM` in the Colyseus Cloud dashboard, with an `AUTH_HMAC_KEY` of its own
+- [ ] Check the deploy includes `shared/locales/`: the server reads the translations from it to write emails in each player's language
 - [ ] Choose where the production client is hosted (Colyseus Cloud only hosts the game server), and whether QA/staging uses a subdomain or its own domain. The host must serve `<name>.html` for `/<name>` (the pages link to `/edit`, `/license` and so on), and each of `PATH_PAGES` for every address under its path, such as `game.html` for `/game/<slug>`, `universe.html` for `/universe/<slug>` and `edit.html` for `/edit/<universe ID>`; see `client/src/pages.ts`
 - [ ] Create Neon project with `dev` and `prod` branches, in the region nearest the planned Colyseus Cloud location. Use Postgres 18 to match `docker-compose.yml`
 - [ ] Create the migration and app roles on each Neon branch with the same ownership and grants as the scripts in `docker/postgres/init/`, using `docker/postgres/neon/01-roles.sql` and `02-grants.sql` (roles made in the Neon console join `neon_superuser`); the server gets only the app role's pooled connection string

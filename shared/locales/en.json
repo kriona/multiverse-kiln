@@ -1987,6 +1987,78 @@
 		"defaultMessage": "Edit {universe}",
 		"description": "Heading of the world editor, linking to the editor's first tab; {universe} is the universe's name"
 	},
+	"email.accountCreated.body": {
+		"defaultMessage": "Your account on {siteName} has been created, with this email address.",
+		"description": "Paragraph of the email sent when a new account is created; {siteName} is the site's name"
+	},
+	"email.accountCreated.notYou": {
+		"defaultMessage": "If you didn't create it, someone else can read your email. Change your email password, then reset the account's password on {siteName}.",
+		"description": "Last paragraph of the email sent when a new account is created, for someone who didn't create it; {siteName} is the site's name"
+	},
+	"email.accountCreated.subject": {
+		"defaultMessage": "Welcome to {siteName}",
+		"description": "Subject of the email sent when a new account is created; {siteName} is the site's name"
+	},
+	"email.code.changeEmail.intro": {
+		"defaultMessage": "Enter this code on {siteName} to make this your account's email address:",
+		"description": "First paragraph of the email, sent to the new address, with the code for changing an account's email address, shown just above the code; {siteName} is the site's name"
+	},
+	"email.code.changeEmail.subject": {
+		"defaultMessage": "Your code to change your email address on {siteName}",
+		"description": "Subject of the email, sent to the new address, with the code for changing an account's email address; {siteName} is the site's name"
+	},
+	"email.code.lifetime": {
+		"defaultMessage": "The code works once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"description": "In every email that sends a code, after the code: how long it can be used"
+	},
+	"email.code.notYou": {
+		"defaultMessage": "If you didn't ask for this code, you can ignore this email. Nobody can use the code without reading your email.",
+		"description": "Last paragraph of every email that sends a code (to create an account, reset a password or change an email address), for someone who didn't ask for it"
+	},
+	"email.code.register.intro": {
+		"defaultMessage": "Enter this code on {siteName} to create your account:",
+		"description": "First paragraph of the email that sends the code for creating a new account, shown just above the code; {siteName} is the site's name"
+	},
+	"email.code.register.subject": {
+		"defaultMessage": "Your code to create an account on {siteName}",
+		"description": "Subject of the email that sends the code for creating a new account; {siteName} is the site's name"
+	},
+	"email.code.resetPassword.intro": {
+		"defaultMessage": "Enter this code on {siteName} to choose a new password:",
+		"description": "First paragraph of the email that sends the code for resetting a forgotten password, shown just above the code; {siteName} is the site's name"
+	},
+	"email.code.resetPassword.subject": {
+		"defaultMessage": "Your code to reset your password on {siteName}",
+		"description": "Subject of the email that sends the code for resetting a forgotten password; {siteName} is the site's name"
+	},
+	"email.emailChanged.newAddress": {
+		"defaultMessage": "This is now the email address of your account on {siteName}.",
+		"description": "Paragraph of the email sent to an account's new address when its email address is changed; {siteName} is the site's name"
+	},
+	"email.emailChanged.notYou": {
+		"defaultMessage": "If you didn't change it, someone else may be using your account on {siteName}. Reset its password straight away.",
+		"description": "Last paragraph of the emails sent to both the old and the new address when an account's email address is changed, for someone who didn't change it; {siteName} is the site's name"
+	},
+	"email.emailChanged.oldAddress": {
+		"defaultMessage": "The email address of your account on {siteName} was changed to {newAddress}. Emails about the account will go there from now on.",
+		"description": "Paragraph of the email sent to an account's old address when its email address is changed; {siteName} is the site's name and {newAddress} the new email address"
+	},
+	"email.emailChanged.subject": {
+		"defaultMessage": "Your email address on {siteName} was changed",
+		"description": "Subject of the emails sent to both the old and the new address when an account's email address is changed; {siteName} is the site's name"
+	},
+	"email.passwordChanged.body": {
+		"defaultMessage": "The password of your account on {siteName} was just changed, and every browser logged in to it was logged out.",
+		"description": "Paragraph of the email sent when an account's password is changed or reset; {siteName} is the site's name"
+	},
+	"email.passwordChanged.notYou": {
+		"defaultMessage": "If you didn't change it, reset your password on {siteName} straight away.",
+		"description": "Last paragraph of the email sent when an account's password is changed or reset, for someone who didn't change it; {siteName} is the site's name"
+	},
+	"email.passwordChanged.subject": {
+		"defaultMessage": "Your password on {siteName} was changed",
+		"description": "Subject of the email sent when an account's password is changed or reset; {siteName} is the site's name"
+	},
 	"error.alreadyInGroup": {
 		"defaultMessage": "That character is already in a group. They have to leave it first.",
 		"description": "Why a character couldn't make or join a group: a character can be in only one group at a time"

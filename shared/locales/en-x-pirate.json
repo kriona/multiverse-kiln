@@ -1987,6 +1987,78 @@
 		"message": "Edit {universe}",
 		"source": "Edit {universe}"
 	},
+	"email.accountCreated.body": {
+		"message": "Yer account on {siteName} be ready, tied to this email address.",
+		"source": "Your account on {siteName} has been created, with this email address."
+	},
+	"email.accountCreated.notYou": {
+		"message": "If ye didn't make it, some scallywag can read yer letters. Change yer email password, then reset the account's password on {siteName}.",
+		"source": "If you didn't create it, someone else can read your email. Change your email password, then reset the account's password on {siteName}."
+	},
+	"email.accountCreated.subject": {
+		"message": "Welcome aboard {siteName}",
+		"source": "Welcome to {siteName}"
+	},
+	"email.code.changeEmail.intro": {
+		"message": "Enter this code on {siteName} to make this yer account's email address:",
+		"source": "Enter this code on {siteName} to make this your account's email address:"
+	},
+	"email.code.changeEmail.subject": {
+		"message": "Yer code to change yer email address on {siteName}",
+		"source": "Your code to change your email address on {siteName}"
+	},
+	"email.code.lifetime": {
+		"message": "The code works but once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"source": "The code works once, for {minutes, plural, one {# minute} other {# minutes}}."
+	},
+	"email.code.notYou": {
+		"message": "If ye didn't ask for this code, pay this letter no mind. No one can use the code without readin' yer letters.",
+		"source": "If you didn't ask for this code, you can ignore this email. Nobody can use the code without reading your email."
+	},
+	"email.code.register.intro": {
+		"message": "Enter this code on {siteName} to sign the articles an' make yer account:",
+		"source": "Enter this code on {siteName} to create your account:"
+	},
+	"email.code.register.subject": {
+		"message": "Yer code to make an account on {siteName}",
+		"source": "Your code to create an account on {siteName}"
+	},
+	"email.code.resetPassword.intro": {
+		"message": "Enter this code on {siteName} to choose a new password:",
+		"source": "Enter this code on {siteName} to choose a new password:"
+	},
+	"email.code.resetPassword.subject": {
+		"message": "Yer code to reset yer password on {siteName}",
+		"source": "Your code to reset your password on {siteName}"
+	},
+	"email.emailChanged.newAddress": {
+		"message": "This be the email address o' yer account on {siteName} now.",
+		"source": "This is now the email address of your account on {siteName}."
+	},
+	"email.emailChanged.notYou": {
+		"message": "If ye didn't change it, some scallywag may be sailin' yer account on {siteName}. Reset its password straight away.",
+		"source": "If you didn't change it, someone else may be using your account on {siteName}. Reset its password straight away."
+	},
+	"email.emailChanged.oldAddress": {
+		"message": "The email address o' yer account on {siteName} was changed to {newAddress}. Letters about the account will sail there from now on.",
+		"source": "The email address of your account on {siteName} was changed to {newAddress}. Emails about the account will go there from now on."
+	},
+	"email.emailChanged.subject": {
+		"message": "Yer email address on {siteName} was changed",
+		"source": "Your email address on {siteName} was changed"
+	},
+	"email.passwordChanged.body": {
+		"message": "The password o' yer account on {siteName} was just changed, an' every browser aboard it was put ashore.",
+		"source": "The password of your account on {siteName} was just changed, and every browser logged in to it was logged out."
+	},
+	"email.passwordChanged.notYou": {
+		"message": "If ye didn't change it, reset yer password on {siteName} straight away.",
+		"source": "If you didn't change it, reset your password on {siteName} straight away."
+	},
+	"email.passwordChanged.subject": {
+		"message": "Yer password on {siteName} was changed",
+		"source": "Your password on {siteName} was changed"
+	},
 	"error.alreadyInGroup": {
 		"message": "That hand already sails with a crew. They have to jump ship first.",
 		"source": "That character is already in a group. They have to leave it first."
