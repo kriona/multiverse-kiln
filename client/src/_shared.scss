@@ -792,6 +792,12 @@ fieldset.choice.stacked
 	}
 }
 
+// A social site's name with its logo, above its field
+.social-label .icon
+{
+	margin-inline-end: 6px;
+}
+
 // A password field's label beside its show password button (see ui/passwordToggles.ts)
 .password-field
 {
@@ -1069,6 +1075,11 @@ footer
 	.link-button
 	{
 		color: $text-footer-link;
+
+		&:hover
+		{
+			color: $link-hover;
+		}
 	}
 
 	.link-button
@@ -1080,8 +1091,32 @@ footer
 	{
 		select
 		{
+			// The top margin keeps it off the line above
+			margin-top: 4px;
 			margin-left: 4px;
 			padding: 2px 4px;
+		}
+	}
+
+	// Logos linking to the site's pages on social sites (ui/siteSocials.ts), at the end of the line
+	.site-socials
+	{
+		display: inline-flex;
+		gap: 8px;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		vertical-align: middle;
+
+		a
+		{
+			display: inline-flex;
+		}
+
+		.icon
+		{
+			width: 16px;
+			height: 16px;
 		}
 	}
 }

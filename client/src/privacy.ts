@@ -1,3 +1,5 @@
+import type { SiteSettings } from '@multiverse-kiln/shared';
+
 import { currentLocale, startLocalization, t } from './localization';
 import { AdminApi } from './network/adminApi';
 import { createClient } from './network/serverConnection';
@@ -5,6 +7,7 @@ import { startAccountMenu } from './ui/accountMenu';
 import { scrollToFragment, setPageTitle } from './ui/dom';
 import { startLanguagePicker } from './ui/languagePicker';
 import { startShortcuts } from './ui/shortcuts';
+import { startSiteSocials } from './ui/siteSocials';
 
 /**
  * Shows the privacy policy in the player's language
@@ -16,33 +19,65 @@ async function start(): Promise<void>
 	void startAccountMenu();
 	formatDate();
 	startLanguagePicker();
+	void startSiteSocials();
 	startShortcuts();
 	scrollToFragment();
-	await showCharacterDeletionDays();
+	await showSiteSettings();
 }
 
 /**
- * Writes how many days a deleted character is kept, from the site's settings, or removes the line
- * when the site deletes characters straight away
- *
- * The page keeps its general wording when the settings can't be loaded
+ * Fills in the parts of the policy that come from the site's settings. The page keeps its general
+ * wording, and leaves out the contact line, when the settings can't be loaded
  */
-async function showCharacterDeletionDays(): Promise<void>
+async function showSiteSettings(): Promise<void>
 {
-	const element = document.getElementById('privacy-character-deletion');
+	let settings: SiteSettings;
 
-	if (!element)
+	try
+	{
+		settings = await new AdminApi(createClient()).getSiteSettings();
+	}
+	catch
 	{
 		return;
 	}
 
-	let days: number;
+	showContact(settings.privacyContact);
+	showCharacterDeletionDays(settings.characterDeletionDays);
+}
 
-	try
+/**
+ * Shows the email address players write to about their information, or leaves the line out when the
+ * site has none
+ *
+ * @param address The address, or null
+ */
+function showContact(address: string | null): void
+{
+	const element = document.getElementById('privacy-contact');
+	const link = document.getElementById('privacy-contact-link');
+
+	if (!element || !(link instanceof HTMLAnchorElement) || (address === null))
 	{
-		({ characterDeletionDays: days } = await new AdminApi(createClient()).getSiteSettings());
+		return;
 	}
-	catch
+
+	link.href = `mailto:${address}`;
+	link.textContent = address;
+	element.hidden = false;
+}
+
+/**
+ * Writes how many days a deleted character is kept, or removes the line when the site deletes
+ * characters straight away
+ *
+ * @param days The days the site keeps them
+ */
+function showCharacterDeletionDays(days: number): void
+{
+	const element = document.getElementById('privacy-character-deletion');
+
+	if (!element)
 	{
 		return;
 	}

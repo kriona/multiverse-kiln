@@ -1,7 +1,7 @@
 <footer>
 	<span data-message="page.copyright" data-translation-context="The game's copyright notice, at the bottom of every page and on the license page; {year} is the year and {holder} is who holds the copyright">Copyright (C) <span data-argument="year" translate="no">2026</span> <span data-argument="holder" translate="no">Kriona Hagen</span>.</span>
 	<span data-message="page.license" data-translation-context="At the bottom of every page; {license} is a link to the license, named by page.licenseName, and {siteName} is the game engine's name, followed by the trademark sign"><span data-argument="siteName" translate="no">%SITE_NAME%</span>™ is free software under the <a href="/license" data-argument="license" data-message="page.licenseName" data-translation-context="The name of the game's license, linking to the license page">GNU Affero General Public License v3 or later</a>.</span>
-	&middot;
+	<br />
 	<a href="/privacy" data-message="page.privacy" data-translation-context="Link at the bottom of every page to the privacy policy">Privacy</a>
 	&middot;
 	<a href="/license#artwork" data-message="page.credits" data-translation-context="Link at the bottom of every page to the license page's credits for the artist of the logo and tilesets and for the icons the pages use">Credits</a>
@@ -14,4 +14,8 @@
 		Language
 		<select id="language-select"></select>
 	</label>
+	<span id="site-socials" hidden>
+		&middot;
+		<ul id="site-socials-list" class="site-socials"></ul>
+	</span>
 </footer>

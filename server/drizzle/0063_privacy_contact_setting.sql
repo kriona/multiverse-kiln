@@ -1,0 +1,2 @@
+ALTER TABLE "site_settings" ADD COLUMN "privacy_contact" text;--> statement-breakpoint
+ALTER TABLE "site_settings" ADD CONSTRAINT "site_settings_privacy_contact_length" CHECK (char_length("site_settings"."privacy_contact") <= 254);

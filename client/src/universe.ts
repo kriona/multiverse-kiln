@@ -13,6 +13,7 @@ import { startLanguagePicker } from './ui/languagePicker';
 import { showMarkdown } from './ui/markdown';
 import { pageMessages } from './ui/pageMessages';
 import { startShortcuts } from './ui/shortcuts';
+import { startSiteSocials } from './ui/siteSocials';
 import { UniverseCharacters } from './ui/UniverseCharacters';
 
 /**
@@ -90,6 +91,7 @@ async function start(): Promise<void>
 	await startLocalization();
 	void startAccountMenu();
 	startLanguagePicker();
+	void startSiteSocials();
 	startShortcuts();
 	showStatus(t(pageMessages.loading));
 

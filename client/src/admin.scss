@@ -15,6 +15,44 @@
 	padding: 16px;
 }
 
+// The settings' cards, with one Save under them all
+.admin-form
+{
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+
+	h2
+	{
+		margin: 0;
+		font-size: 16px;
+
+		// A second heading in a card, such as Characters under Universes
+		&:not(:first-child)
+		{
+			margin-top: 8px;
+		}
+	}
+}
+
+.admin-save
+{
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+
+	p
+	{
+		margin: 0;
+	}
+}
+
+#site-privacy-contact
+{
+	// MAX_EMAIL_LENGTH is far longer, but few addresses are
+	max-width: 40ch;
+}
+
 // Each number field as wide as its largest number, plus room for its arrows
 #site-universes-per-creator
 {

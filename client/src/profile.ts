@@ -10,6 +10,7 @@ import { startLanguagePicker } from './ui/languagePicker';
 import { pageMessages } from './ui/pageMessages';
 import { startPasswordToggles } from './ui/passwordToggles';
 import { startShortcuts } from './ui/shortcuts';
+import { startSiteSocials } from './ui/siteSocials';
 
 /**
  * Starts the profile page in the player's language: the player's own profile, or the one of the player
@@ -21,6 +22,7 @@ async function start(): Promise<void>
 	await startLocalization();
 	void startAccountMenu();
 	startLanguagePicker();
+	void startSiteSocials();
 	startShortcuts();
 	startPasswordToggles();
 	startCodeInputs();

@@ -205,6 +205,11 @@
 	padding: 0;
 	list-style: none;
 
+	.icon
+	{
+		margin-inline-end: 6px;
+	}
+
 	a
 	{
 		color: $link;

@@ -51,9 +51,37 @@
 		"message": "Couldn't haul up the captain's orders.",
 		"source": "Could not load the site settings."
 	},
+	"admin.privacy": {
+		"message": "Articles o' Secrecy",
+		"source": "Privacy policy"
+	},
+	"admin.privacyContact": {
+		"message": "Address fer message bottles",
+		"source": "Contact email address"
+	},
+	"admin.privacyContactHint": {
+		"message": "The Articles o' Secrecy tell hands to send word here about what we keep on 'em. Leave it empty to leave that line off the articles.",
+		"source": "The privacy policy tells players to write here with questions about their information. Leave it empty to leave the line out of the policy."
+	},
+	"admin.privacyContactInvalid": {
+		"message": "Give an email address, such as privacy@example.com.",
+		"source": "Enter an email address, such as privacy@example.com."
+	},
 	"admin.saveFailed": {
 		"message": "Couldn't stow the captain's orders.",
 		"source": "Could not save the site settings."
+	},
+	"admin.socials": {
+		"message": "Social ports",
+		"source": "Social sites"
+	},
+	"admin.socialsHint": {
+		"message": "The bottom o' every page flies the flag o' each port charted here, with a passage to it. Passages must start with https:// and sail to that port. Leave a port empty to leave it off the chart.",
+		"source": "The footer of every page links to each site given here, showing its logo. Links must start with https:// and go to that site. Leave a site empty to leave it out."
+	},
+	"admin.socialUrlInvalid": {
+		"message": "Give a passage to {site} that starts with https://.",
+		"source": "Enter a link to {site} that starts with https://."
 	},
 	"admin.title": {
 		"message": "The Captain's Orders",
@@ -3710,6 +3738,14 @@
 	"page.shortcuts": {
 		"message": "Keyboard shortcuts",
 		"source": "Keyboard shortcuts"
+	},
+	"page.socialLink": {
+		"message": "{siteName} in port at {site}",
+		"source": "{siteName} on {site}"
+	},
+	"page.socials": {
+		"message": "Social ports",
+		"source": "Social sites"
 	},
 	"page.sourceCode": {
 		"message": "Source code",

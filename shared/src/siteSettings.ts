@@ -1,3 +1,5 @@
+import { MAX_EMAIL_LENGTH } from './accounts.js';
+
 /**
  * Settings for the whole site, changed on the admin page (client/admin.html)
  *
@@ -26,6 +28,67 @@ export const MAX_UNIVERSES_PER_CREATOR = 1000;
 export const MAX_CHARACTER_DELETION_DAYS = 365;
 
 /**
+ * The social sites the footer can link to the site's own pages on
+ */
+export const SITE_SOCIAL_SITES = ['discord', 'facebook', 'instagram', 'tiktok', 'x', 'youtube'] as const;
+
+export type SiteSocialSite = (typeof SITE_SOCIAL_SITES)[number];
+
+/**
+ * The hosts a link to each social site may name, so a link always goes to the site it says
+ */
+export const SITE_SOCIAL_HOSTS: Readonly<Record<SiteSocialSite, readonly string[]>> = {
+	discord: ['discord.gg', 'discord.com', 'www.discord.com'],
+	facebook: ['facebook.com', 'www.facebook.com'],
+	instagram: ['instagram.com', 'www.instagram.com'],
+	tiktok: ['tiktok.com', 'www.tiktok.com'],
+	x: ['x.com', 'www.x.com', 'twitter.com', 'www.twitter.com'],
+	youtube: ['youtube.com', 'www.youtube.com', 'youtu.be']
+};
+
+/**
+ * Most characters in a link to one of the site's social pages
+ */
+export const MAX_SITE_SOCIAL_URL_LENGTH = 500;
+
+/**
+ * A link to the site's page on each social site, or null where it has none
+ */
+export type SiteSocialLinks = Record<SiteSocialSite, string | null>;
+
+/**
+ * Whether a link can be the site's link to a social site: an https address on one of the site's hosts
+ * (SITE_SOCIAL_HOSTS), without a port or login, of at most MAX_SITE_SOCIAL_URL_LENGTH characters
+ *
+ * @param site The social site
+ * @param url The link
+ * @return Whether it can be
+ */
+export function isSiteSocialUrl(site: SiteSocialSite, url: string): boolean
+{
+	if ((url.length > MAX_SITE_SOCIAL_URL_LENGTH) || !URL.canParse(url))
+	{
+		return(false);
+	}
+
+	const parsed = new URL(url);
+
+	return((parsed.protocol === 'https:') && (parsed.port === '') && (parsed.username === '') && (parsed.password === '') && SITE_SOCIAL_HOSTS[site].includes(parsed.hostname));
+}
+
+/**
+ * Whether an address can be the privacy policy's contact: at most MAX_EMAIL_LENGTH characters, with
+ * one @ that has text on both sides, and no spaces. Whether it receives email is only known by sending one
+ *
+ * @param address The address
+ * @return Whether it can be
+ */
+export function isPrivacyContact(address: string): boolean
+{
+	return((address.length <= MAX_EMAIL_LENGTH) && /^[^\s@]+@[^\s@]+$/.test(address));
+}
+
+/**
  * Settings for the whole site
  */
 export interface SiteSettings
@@ -46,6 +109,17 @@ export interface SiteSettings
 	 * their last rites keep the day they were given
 	 */
 	characterDeletionDays: number;
+
+	/**
+	 * The site's own pages on social sites, which every page's footer links to
+	 */
+	socials: SiteSocialLinks;
+
+	/**
+	 * The email address the privacy policy tells players to write to about their information
+	 * (isPrivacyContact), or null to leave that line out of the policy
+	 */
+	privacyContact: string | null;
 }
 
 /**
@@ -54,5 +128,14 @@ export interface SiteSettings
 export const DEFAULT_SITE_SETTINGS: Readonly<SiteSettings> = {
 	universeCreationEnabled: true,
 	universesPerCreator: 5,
-	characterDeletionDays: 7
+	characterDeletionDays: 7,
+	socials: {
+		discord: null,
+		facebook: null,
+		instagram: null,
+		tiktok: null,
+		x: null,
+		youtube: null
+	},
+	privacyContact: null
 };

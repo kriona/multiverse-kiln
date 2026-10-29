@@ -51,9 +51,37 @@
 		"defaultMessage": "Could not load the site settings.",
 		"description": "Shown on the site settings page when the settings couldn't be loaded"
 	},
+	"admin.privacy": {
+		"defaultMessage": "Privacy policy",
+		"description": "Heading of the site settings for the privacy policy"
+	},
+	"admin.privacyContact": {
+		"defaultMessage": "Contact email address",
+		"description": "Label of the field on the site settings page for the email address the privacy policy tells players to write to"
+	},
+	"admin.privacyContactHint": {
+		"defaultMessage": "The privacy policy tells players to write here with questions about their information. Leave it empty to leave the line out of the policy.",
+		"description": "Under the privacy contact field on the site settings page"
+	},
+	"admin.privacyContactInvalid": {
+		"defaultMessage": "Enter an email address, such as privacy@example.com.",
+		"description": "Shown under the privacy contact field on the site settings page when what was typed isn't an email address"
+	},
 	"admin.saveFailed": {
 		"defaultMessage": "Could not save the site settings.",
 		"description": "Shown on the site settings page when the settings couldn't be stored"
+	},
+	"admin.socialUrlInvalid": {
+		"defaultMessage": "Enter a link to {site} that starts with https://.",
+		"description": "Shown under a social site's field on the site settings page when what was typed isn't a link to that site; {site} is the site's name, such as Discord or Facebook"
+	},
+	"admin.socials": {
+		"defaultMessage": "Social sites",
+		"description": "Heading of the site settings for links to the site's own pages on social sites such as Discord and Facebook"
+	},
+	"admin.socialsHint": {
+		"defaultMessage": "The footer of every page links to each site given here, showing its logo. Links must start with https:// and go to that site. Leave a site empty to leave it out.",
+		"description": "Under the heading of the social site links on the site settings page"
 	},
 	"admin.title": {
 		"defaultMessage": "Site Settings",
@@ -3710,6 +3738,14 @@
 	"page.shortcuts": {
 		"defaultMessage": "Keyboard shortcuts",
 		"description": "Button at the bottom of every page that lists the keyboard shortcuts"
+	},
+	"page.socialLink": {
+		"defaultMessage": "{siteName} on {site}",
+		"description": "Name of a logo at the bottom of every page that links to the site's own page on a social site, read by screen readers and shown when pointed at; {siteName} is the game engine's name and {site} is the social site, such as Discord or Facebook"
+	},
+	"page.socials": {
+		"defaultMessage": "Social sites",
+		"description": "Name, read by screen readers, of the list of logos at the bottom of every page that link to the site's own pages on social sites"
 	},
 	"page.sourceCode": {
 		"defaultMessage": "Source code",

@@ -357,21 +357,6 @@ function requireSourceUrl(url: string | undefined): void
 	}
 }
 
-/**
- * Checks that the privacy contact is set, since the privacy policy tells players to email it
- *
- * Each site running the game answers for its own players' information, so a fork sets its own
- *
- * @param address Value of VITE_PRIVACY_CONTACT
- */
-function requirePrivacyContact(address: string | undefined): void
-{
-	if (!address)
-	{
-		throw new Error('VITE_PRIVACY_CONTACT is not set in client/.env. Set it to the email address players write to about their information; see client/.env.example');
-	}
-}
-
 export default defineConfig(({ command, mode }) =>
 {
 	// Load all variables (not just VITE_*) so DEV_HOST stays out of the client bundle
@@ -380,9 +365,6 @@ export default defineConfig(({ command, mode }) =>
 
 	// Every page links to it as %VITE_SOURCE_URL%
 	requireSourceUrl(env.VITE_SOURCE_URL);
-
-	// The privacy policy writes it as %VITE_PRIVACY_CONTACT%
-	requirePrivacyContact(env.VITE_PRIVACY_CONTACT);
 
 	// The dev server always uses HTTPS; production builds don't need a certificate
 	const https = ((command === 'serve') ? {

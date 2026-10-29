@@ -1,13 +1,22 @@
 import assert from 'assert';
 
-import { DEFAULT_SITE_SETTINGS, MAX_CHARACTER_DELETION_DAYS, MAX_UNIVERSES_PER_CREATOR, MIN_UNIVERSES_PER_CREATOR, type SiteSettings } from '@multiverse-kiln/shared';
+import { DEFAULT_SITE_SETTINGS, MAX_CHARACTER_DELETION_DAYS, MAX_SITE_SOCIAL_URL_LENGTH, MAX_UNIVERSES_PER_CREATOR, MIN_UNIVERSES_PER_CREATOR, type SiteSettings } from '@multiverse-kiln/shared';
 
 import { findSiteSettings, saveSiteSettings } from '../../src/db/siteSettingsRepo.js';
 
 const closed: SiteSettings = {
 	universeCreationEnabled: false,
 	universesPerCreator: 12,
-	characterDeletionDays: 0
+	characterDeletionDays: 0,
+	socials: {
+		discord: 'https://discord.gg/example',
+		facebook: 'https://www.facebook.com/example',
+		instagram: 'https://www.instagram.com/example/',
+		tiktok: 'https://www.tiktok.com/@example',
+		x: 'https://x.com/example',
+		youtube: 'https://www.youtube.com/@example'
+	},
+	privacyContact: 'privacy@example.com'
 };
 
 describe('siteSettingsRepo', () =>
@@ -43,5 +52,13 @@ describe('siteSettingsRepo', () =>
 				characterDeletionDays
 			}));
 		}
+
+		await assert.rejects(saveSiteSettings({
+			...closed,
+			socials: {
+				...closed.socials,
+				x: `https://x.com/${'a'.repeat(MAX_SITE_SOCIAL_URL_LENGTH)}`
+			}
+		}));
 	});
 });

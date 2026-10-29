@@ -15,7 +15,7 @@ Universe names are unique, and names that could be mistaken for each other count
 Free text. There will be many of these pages (like an FAQ or Help).
 
 ## Privacy
-The privacy policy (`privacy.html`), linked from every page's footer and from the login and register pages: what the site keeps about players, why, who sees it, how long it is kept, and how to export or delete it. It names no hosting companies, since each site running the engine chooses its own; a site sets its contact address with `VITE_PRIVACY_CONTACT`. The page shows the date it last changed, and the site emails players when it changes in a way that matters.
+The privacy policy (`privacy.html`), linked from every page's footer and from the login and register pages: what the site keeps about players, why, who sees it, how long it is kept, and how to export or delete it. It names no hosting companies, since each site running the engine chooses its own; a site sets its contact address on the [admin page](#admin), and the policy leaves the contact line out until it does. The page shows the date it last changed, and the site emails players when it changes in a way that matters.
 
 ## Login
 You select a login provider like Google or Discord, or you can make a local account. Local logins are based on email, not username (but email can be changed).
@@ -217,6 +217,8 @@ Settings for the whole site (`admin.html`), stored in one row of the `site_setti
 - universe creation enabled: whether players can create universes
 - universes per creator: the most universes one player may create, from 1 to 1000
 - character deletion days: how many days [Last Rites](#deleting-a-character) waits before deleting a character, from 0 to 365 (7 by default). 0 turns Last Rites off. Characters already given their last rites keep their day
+- social sites: links to the site's own pages on Discord, Facebook, Instagram, TikTok, X and YouTube, each optional. Every page's footer shows each one's logo, linking to it. A link must be https and on that site's hosts (`SITE_SOCIAL_HOSTS`), so it always goes to the site its logo says
+- privacy contact: the email address the [privacy policy](#privacy) tells players to write to about their information. Empty leaves the line out of the policy
 
 The universe settings don't change universes that already exist.
 

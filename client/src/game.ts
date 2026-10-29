@@ -7,6 +7,7 @@ import { showStatus } from './ui/dom';
 import { startLanguagePicker } from './ui/languagePicker';
 import { pageMessages } from './ui/pageMessages';
 import { startShortcuts } from './ui/shortcuts';
+import { startSiteSocials } from './ui/siteSocials';
 
 /**
  * Shows the game's page in the player's language, connects to the server and starts the lobby and game,
@@ -18,6 +19,7 @@ async function start(): Promise<void>
 	await startLocalization();
 	void startAccountMenu();
 	startLanguagePicker();
+	void startSiteSocials();
 	startShortcuts();
 	showStatus(t(pageMessages.connecting));
 

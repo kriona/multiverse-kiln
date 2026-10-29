@@ -9,6 +9,7 @@ import { setPageTitle, showStatus } from './ui/dom';
 import { startLanguagePicker } from './ui/languagePicker';
 import { pageMessages } from './ui/pageMessages';
 import { startShortcuts } from './ui/shortcuts';
+import { startSiteSocials } from './ui/siteSocials';
 
 /**
  * Starts the world editor's page in the player's language for the universe its address names, or goes
@@ -30,6 +31,7 @@ async function start(): Promise<void>
 	setPageTitle(document.title);
 	void startAccountMenu();
 	startLanguagePicker();
+	void startSiteSocials();
 	startShortcuts();
 	showStatus(t(pageMessages.connecting));
 

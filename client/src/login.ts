@@ -10,6 +10,7 @@ import { startLanguagePicker } from './ui/languagePicker';
 import { pageMessages } from './ui/pageMessages';
 import { startPasswordToggles } from './ui/passwordToggles';
 import { startShortcuts } from './ui/shortcuts';
+import { startSiteSocials } from './ui/siteSocials';
 
 /**
  * Starts the login page in the player's language. A browser that is logged in already goes straight
@@ -22,6 +23,7 @@ async function start(): Promise<void>
 
 	await startLocalization();
 	startLanguagePicker();
+	void startSiteSocials();
 	startShortcuts();
 	startPasswordToggles();
 	startCodeInputs();

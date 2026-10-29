@@ -1,20 +1,11 @@
-import type { PlayerProfilePayload, SocialSite } from '@multiverse-kiln/shared';
+import { SOCIAL_SITES, type PlayerProfilePayload, type SocialSite } from '@multiverse-kiln/shared';
 
 import { currentLocale, t } from '../localization';
 import { getElement, setPageTitle, showScreen } from './dom';
 import { languageName } from './languagePicker';
+import { SOCIAL_SITE_NAMES, socialSiteIcon } from './socialSites';
 import { describeTimeZone } from './timeZones';
 import { characterLabel, showProfileCharacters } from './profileCharacters';
-
-/**
- * Each social site's name, as players know it
- */
-const SOCIAL_SITE_NAMES: Readonly<Record<SocialSite, string>> = {
-	discord: 'Discord',
-	facebook: 'Facebook',
-	instagram: 'Instagram',
-	tiktok: 'TikTok'
-};
 
 /**
  * The address of a player's page on a social site, built from their username so it can only go to that
@@ -212,7 +203,7 @@ export class PlayerProfileScreen
 	 */
 	private showSocials(profile: PlayerProfilePayload): void
 	{
-		const items = (Object.keys(SOCIAL_SITE_NAMES) as SocialSite[]).flatMap((site) =>
+		const items = SOCIAL_SITES.flatMap((site) =>
 		{
 			const username = profile.socials[site];
 
@@ -234,7 +225,7 @@ export class PlayerProfileScreen
 
 			if (url === undefined)
 			{
-				item.textContent = text;
+				item.append(socialSiteIcon(site), text);
 			}
 			else
 			{
@@ -243,7 +234,7 @@ export class PlayerProfileScreen
 				link.href = url;
 				link.target = '_blank';
 				link.rel = 'noopener noreferrer';
-				link.textContent = text;
+				link.append(socialSiteIcon(site), text);
 				item.append(link);
 			}
 

@@ -1,4 +1,4 @@
-import { MAX_CHARACTER_DELETION_DAYS, MAX_UNIVERSES_PER_CREATOR, MIN_UNIVERSES_PER_CREATOR, type SiteSettings } from '@multiverse-kiln/shared';
+import { isPrivacyContact, isSiteSocialUrl, MAX_CHARACTER_DELETION_DAYS, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_UNIVERSES_PER_CREATOR, MIN_UNIVERSES_PER_CREATOR, SITE_SOCIAL_SITES, type SiteSettings, type SiteSocialLinks, type SiteSocialSite } from '@multiverse-kiln/shared';
 
 import { t } from '../localization';
 import type { AdminApi } from '../network/adminApi';
@@ -7,11 +7,13 @@ import { ChangeTracker } from './changeTracker';
 import { getElement, showMessage } from './dom';
 import { reportFieldError, setFieldError } from './fieldErrors';
 import { formMessages } from './formMessages';
+import { SOCIAL_SITE_NAMES } from './socialSites';
 import { showToast } from './toast';
 
 /**
- * The admin page's form: settings for the whole site, such as whether players can create universes
- * and how long last rites wait before deleting a character
+ * The admin page's form: settings for the whole site, such as whether players can create universes,
+ * how long last rites wait before deleting a character, the social sites the footer links to and the
+ * privacy policy's contact
  */
 export class SiteSettingsForm
 {
@@ -21,6 +23,15 @@ export class SiteSettingsForm
 	private readonly universeCreation = getElement('site-universe-creation', HTMLInputElement);
 	private readonly universesPerCreator = getElement('site-universes-per-creator', HTMLInputElement);
 	private readonly characterDeletionDays = getElement('site-character-deletion-days', HTMLInputElement);
+	private readonly socials: Readonly<Record<SiteSocialSite, HTMLInputElement>> = {
+		discord: getElement('site-social-discord', HTMLInputElement),
+		facebook: getElement('site-social-facebook', HTMLInputElement),
+		instagram: getElement('site-social-instagram', HTMLInputElement),
+		tiktok: getElement('site-social-tiktok', HTMLInputElement),
+		x: getElement('site-social-x', HTMLInputElement),
+		youtube: getElement('site-social-youtube', HTMLInputElement)
+	};
+	private readonly privacyContact = getElement('site-privacy-contact', HTMLInputElement);
 	private readonly error = getElement('site-settings-error', HTMLElement);
 	private readonly saved = getElement('site-settings-saved', HTMLElement);
 	private readonly saveButton = getElement('site-settings-save', HTMLButtonElement);
@@ -43,7 +54,14 @@ export class SiteSettingsForm
 		this.characterDeletionDays.min = '0';
 		this.characterDeletionDays.max = String(MAX_CHARACTER_DELETION_DAYS);
 
-		for (const field of [this.universesPerCreator, this.characterDeletionDays])
+		for (const field of Object.values(this.socials))
+		{
+			field.maxLength = MAX_SITE_SOCIAL_URL_LENGTH;
+		}
+
+		this.privacyContact.maxLength = MAX_EMAIL_LENGTH;
+
+		for (const field of [this.universesPerCreator, this.characterDeletionDays, ...Object.values(this.socials), this.privacyContact])
 		{
 			field.addEventListener('input', () =>
 			{
@@ -89,6 +107,14 @@ export class SiteSettingsForm
 		this.universeCreation.checked = settings.universeCreationEnabled;
 		this.universesPerCreator.value = String(settings.universesPerCreator);
 		this.characterDeletionDays.value = String(settings.characterDeletionDays);
+
+		for (const site of SITE_SOCIAL_SITES)
+		{
+			this.socials[site].value = (settings.socials[site] ?? '');
+		}
+
+		this.privacyContact.value = (settings.privacyContact ?? '');
+
 		this.loading.hidden = true;
 		this.form.hidden = false;
 		this.changes.markSaved();
@@ -113,10 +139,31 @@ export class SiteSettingsForm
 			return;
 		}
 
+		const socials = this.readSocials();
+
+		if (socials === undefined)
+		{
+			return;
+		}
+
+		const privacyContact = this.privacyContact.value.trim();
+
+		if ((privacyContact !== '') && !isPrivacyContact(privacyContact))
+		{
+			reportFieldError(this.privacyContact, t({
+				id: 'admin.privacyContactInvalid',
+				defaultMessage: 'Enter an email address, such as privacy@example.com.',
+				description: 'Shown under the privacy contact field on the site settings page when what was typed isn\'t an email address'
+			}));
+			return;
+		}
+
 		const settings: SiteSettings = {
 			universeCreationEnabled: this.universeCreation.checked,
 			universesPerCreator,
-			characterDeletionDays
+			characterDeletionDays,
+			socials,
+			privacyContact: ((privacyContact === '') ? null : privacyContact)
 		};
 
 		this.saveButton.disabled = true;
@@ -144,6 +191,37 @@ export class SiteSettingsForm
 		{
 			this.saveButton.disabled = false;
 		}
+	}
+
+	/**
+	 * Reads the links to the site's social pages. When one isn't a link to its site, shows what is wrong
+	 * under it and takes the player there
+	 *
+	 * @return The links, or undefined when a field shows a problem
+	 */
+	private readSocials(): SiteSocialLinks | undefined
+	{
+		const socials: Partial<SiteSocialLinks> = {};
+
+		for (const site of SITE_SOCIAL_SITES)
+		{
+			const field = this.socials[site];
+			const url = field.value.trim();
+
+			if ((url !== '') && !isSiteSocialUrl(site, url))
+			{
+				reportFieldError(field, t({
+					id: 'admin.socialUrlInvalid',
+					defaultMessage: 'Enter a link to {site} that starts with https://.',
+					description: 'Shown under a social site\'s field on the site settings page when what was typed isn\'t a link to that site; {site} is the site\'s name, such as Discord or Facebook'
+				}, { site: SOCIAL_SITE_NAMES[site] }));
+				return(undefined);
+			}
+
+			socials[site] = ((url === '') ? null : url);
+		}
+
+		return(socials as SiteSocialLinks);
 	}
 }
 
