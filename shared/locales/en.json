@@ -2059,6 +2059,18 @@
 		"defaultMessage": "Welcome to {siteName}",
 		"description": "Subject of the email sent when a new account is created; {siteName} is the site's name"
 	},
+	"email.accountDeleted.body": {
+		"defaultMessage": "Your account on {siteName} was deleted, with your profile and characters. Thanks for playing.",
+		"description": "Paragraph of the email sent when a player deletes their account; {siteName} is the site's name"
+	},
+	"email.accountDeleted.notYou": {
+		"defaultMessage": "If you didn't delete it, someone else was using your account. It can't be brought back, but you can contact the site about it.",
+		"description": "Last paragraph of the email sent when a player deletes their account, for someone who didn't delete it"
+	},
+	"email.accountDeleted.subject": {
+		"defaultMessage": "Your account on {siteName} was deleted",
+		"description": "Subject of the email sent when a player deletes their account; {siteName} is the site's name"
+	},
 	"email.accountExists.body": {
 		"defaultMessage": "Someone asked to create an account on {siteName} with this email address, but it already has one. Log in instead, or reset your password if you've forgotten it.",
 		"description": "Paragraph of the email sent, in place of a code, when someone asks to create an account with an address that already has one; {siteName} is the site's name"
@@ -2214,6 +2226,14 @@
 	"error.areaLimit": {
 		"defaultMessage": "A universe can have at most {max, plural, one {# area} other {# areas}}.",
 		"description": "Why a new area wasn't made: the universe has as many areas as allowed"
+	},
+	"error.auth.deleteUniversesChanged": {
+		"defaultMessage": "The universes you alone create have changed. Look at them again before deleting your account.",
+		"description": "Why deleting an account was refused: the universes the player is the only creator of, or their editors, changed since the deletion dialog listed them"
+	},
+	"error.auth.deleteWrongUsername": {
+		"defaultMessage": "Type your username exactly as it is to confirm.",
+		"description": "Shown under the username field when deleting an account that has no password: what was typed isn't the account's username"
 	},
 	"error.auth.emailForm": {
 		"defaultMessage": "Enter an email address, like name@example.com.",
@@ -2774,6 +2794,10 @@
 	"game.loadingUniverse": {
 		"defaultMessage": "Loading the universe...",
 		"description": "Shown on the whole page while the game looks up the universe it was opened for"
+	},
+	"game.universeDeleted": {
+		"defaultMessage": "{universe} was deleted, with everything in it.",
+		"description": "Shown on the game's page when the universe being played was deleted, along with its creator's account; {universe} is its name"
 	},
 	"game.universeNotFound": {
 		"defaultMessage": "That universe could not be found.",
@@ -3365,7 +3389,7 @@
 	},
 	"login.password": {
 		"defaultMessage": "Password",
-		"description": "Label of the password field when logging in, and when turning two-factor authentication on or off or making new recovery codes on the profile"
+		"description": "Label of the password field when logging in, and when turning two-factor authentication on or off, making new recovery codes or deleting the account on the profile"
 	},
 	"login.passwordHint": {
 		"defaultMessage": "At least {min} characters. A few words strung together are easy to remember and hard to guess.",
@@ -3477,11 +3501,11 @@
 	},
 	"login.twoFactorCode": {
 		"defaultMessage": "Authenticator code",
-		"description": "Label of the field for the 6-digit code from the player's authenticator app, or one of their recovery codes, when logging in, resetting a password or linking a Google or Discord login to an account with two-factor authentication, and when turning it off or making new recovery codes on the profile"
+		"description": "Label of the field for the 6-digit code from the player's authenticator app, or one of their recovery codes, when logging in, resetting a password or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes or deleting the account on the profile"
 	},
 	"login.twoFactorCodeHint": {
 		"defaultMessage": "The 6-digit code from your authenticator app, or one of your recovery codes.",
-		"description": "Under the authenticator code field when logging in or linking a Google or Discord login to an account with two-factor authentication, and when turning it off or making new recovery codes on the profile"
+		"description": "Under the authenticator code field when logging in or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes or deleting the account on the profile"
 	},
 	"login.twoFactorIntro": {
 		"defaultMessage": "Your account has two-factor authentication. Open your authenticator app and enter the 6-digit code it shows for this site.",
@@ -4423,6 +4447,14 @@
 		"defaultMessage": "Logging in",
 		"description": "Heading of the part of the player's own profile page with how they log in: email address, password and linked Google or Discord logins"
 	},
+	"profile.accountDeleted": {
+		"defaultMessage": "Your account was deleted. Thanks for playing.",
+		"description": "Shown on the whole of the profile page once the player has deleted their account, above a link to Home"
+	},
+	"profile.accountDeletedTitle": {
+		"defaultMessage": "Account deleted",
+		"description": "The browser tab's title once the player has deleted their account, before the game engine's name"
+	},
 	"profile.browserLanguage": {
 		"defaultMessage": "Your browser's language",
 		"description": "The first choice of language on the player's own profile page, which leaves the pages in whatever language the browser asks for"
@@ -4503,6 +4535,58 @@
 		"defaultMessage": "Current password",
 		"description": "Label of the field for the player's current password, in the dialog that changes it"
 	},
+	"profile.deleteAccount": {
+		"defaultMessage": "Delete account",
+		"description": "Button on the player's own profile page that opens the dialog deleting their account"
+	},
+	"profile.deleteAccountConfirm": {
+		"defaultMessage": "Delete my account",
+		"description": "Button in the dialog that deletes the player's account: checks what was typed and deletes the account for good"
+	},
+	"profile.deleteAccountIntro": {
+		"defaultMessage": "Your profile and characters are deleted, and can't be brought back. Groups whose anchor being is one of your characters are disbanded. Download your data first to keep a copy.",
+		"description": "In the dialog that deletes the player's account, before what it asks"
+	},
+	"profile.deleteAccountTitle": {
+		"defaultMessage": "Delete your account",
+		"description": "Title of the dialog that deletes the player's account"
+	},
+	"profile.deleteFailed": {
+		"defaultMessage": "Could not delete your account.",
+		"description": "Shown in the dialog that deletes the player's account when it couldn't be deleted"
+	},
+	"profile.deleteLoadFailed": {
+		"defaultMessage": "Could not check what deleting your account needs. Close this and try again.",
+		"description": "Shown in the dialog that deletes the player's account when the universes they alone create couldn't be loaded"
+	},
+	"profile.deleteTypeUsername": {
+		"defaultMessage": "Type your username to confirm",
+		"description": "Label of the field in the dialog deleting an account without a password, where the player types their username to confirm"
+	},
+	"profile.deleteUniverseChoose": {
+		"defaultMessage": "Choose...",
+		"description": "The first choice for a universe in the dialog that deletes the player's account, before they choose what becomes of it"
+	},
+	"profile.deleteUniverseDelete": {
+		"defaultMessage": "Delete it",
+		"description": "A choice for a universe in the dialog that deletes the player's account: the universe is deleted, with its world and every character in it"
+	},
+	"profile.deleteUniverseHandTo": {
+		"defaultMessage": "Make {name} (@{username}, {role}) its creator",
+		"description": "A choice for a universe in the dialog that deletes the player's account: another of its editors becomes its creator; {name} and {username} are theirs, and {role} their role in it now, such as Builder"
+	},
+	"profile.deleteUniverseUnchosen": {
+		"defaultMessage": "Choose what becomes of {universe}.",
+		"description": "Shown under a universe's choice in the dialog that deletes the player's account when nothing was chosen for it; {universe} is its name"
+	},
+	"profile.deleteUniverses": {
+		"defaultMessage": "Universes only you create",
+		"description": "In the dialog that deletes the player's account: heading of the universes the player is the only creator of"
+	},
+	"profile.deleteUniversesHint": {
+		"defaultMessage": "Choose who creates each one from now on, or delete it, with its world and everyone's characters in it.",
+		"description": "In the dialog that deletes the player's account, under the heading of the universes only they create: each needs a choice"
+	},
 	"profile.displayName": {
 		"defaultMessage": "Name",
 		"description": "Label of the field for the name other players see, on the player's own profile page"
@@ -4510,6 +4594,14 @@
 	"profile.displayNameHint": {
 		"defaultMessage": "The name other players see. It doesn't have to be your real name, or unique.",
 		"description": "Under the name field on the player's own profile page"
+	},
+	"profile.downloadData": {
+		"defaultMessage": "Download your data",
+		"description": "Button on the player's own profile page that saves everything the site keeps about them as a JSON file"
+	},
+	"profile.downloadFailed": {
+		"defaultMessage": "Could not download your data.",
+		"description": "Shown on the player's own profile page when downloading everything the site keeps about them failed"
 	},
 	"profile.downloadRecoveryCodes": {
 		"defaultMessage": "Download",
@@ -4830,6 +4922,14 @@
 	"profile.viewOwn": {
 		"defaultMessage": "View your profile",
 		"description": "Link on the player's own profile page to their profile as other players see it"
+	},
+	"profile.yourData": {
+		"defaultMessage": "Your data",
+		"description": "Heading of the part of the player's own profile page where they download their data or delete their account"
+	},
+	"profile.yourDataHint": {
+		"defaultMessage": "Download everything kept about you as a file, or delete your account and everything in it.",
+		"description": "Under the Your data heading on the player's own profile page, above the buttons that download their data and delete their account"
 	},
 	"sf1e.ability.charisma": {
 		"defaultMessage": "Charisma",

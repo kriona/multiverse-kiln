@@ -556,3 +556,37 @@ export function recoveryCodeUsedEmail(codesLeft: number, locale: string): EmailC
 		action: resetPasswordAction(translator)
 	}));
 }
+
+/**
+ * The email sent when an account is deleted, to the address it had
+ *
+ * @param locale The language the recipient asked in
+ * @return The email
+ */
+export function accountDeletedEmail(locale: string): EmailContent
+{
+	const translator = emailTranslator(locale);
+	const values = {
+		siteName: SITE_NAME
+	};
+
+	return(layOut(translator, {
+		subject: translator.format({
+			id: 'email.accountDeleted.subject',
+			defaultMessage: 'Your account on {siteName} was deleted',
+			description: 'Subject of the email sent when a player deletes their account; {siteName} is the site\'s name'
+		}, values),
+		paragraphs: [
+			translator.format({
+				id: 'email.accountDeleted.body',
+				defaultMessage: 'Your account on {siteName} was deleted, with your profile and characters. Thanks for playing.',
+				description: 'Paragraph of the email sent when a player deletes their account; {siteName} is the site\'s name'
+			}, values),
+			translator.format({
+				id: 'email.accountDeleted.notYou',
+				defaultMessage: 'If you didn\'t delete it, someone else was using your account. It can\'t be brought back, but you can contact the site about it.',
+				description: 'Last paragraph of the email sent when a player deletes their account, for someone who didn\'t delete it'
+			})
+		]
+	}));
+}

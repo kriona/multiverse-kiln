@@ -209,6 +209,25 @@ describe('LobbyRoom', () =>
 			assert.strictEqual(room.clients[0].sessionId, grace.room.sessionId);
 		});
 
+		it('turns every window away when its universe is deleted, and ignores another universe\'s deletion', async () =>
+		{
+			const other = await addPlayableUniverse();
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const alan = await joinAsNewPlayer(other.universeId, 'Alan');
+			const left = new Promise<number>((resolve) =>
+			{
+				ada.room.onLeave(resolve);
+			});
+
+			areaChanges.publish({
+				kind: 'universeDeleted',
+				universeId: universe.universeId
+			});
+
+			assert.strictEqual(await left, ServerCloseCode.UniverseDeleted);
+			assert.strictEqual(lobbyOf(alan).clients.length, 1);
+		});
+
 		it('is one room per universe', async () =>
 		{
 			const other = await addPlayableUniverse();

@@ -235,6 +235,16 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 
 		this.stopFollowingChanges = areaChanges.onChange((change) =>
 		{
+			if ((change.kind === 'universeDeleted') && (change.universeId === this.universeId))
+			{
+				for (const client of this.clients)
+				{
+					client.leave(ServerCloseCode.UniverseDeleted);
+				}
+
+				return;
+			}
+
 			this.areaPlayers.applyChange(change).catch((error: unknown) =>
 			{
 				console.error('Could not apply a world change to the lobby of universe', this.universeId, error);

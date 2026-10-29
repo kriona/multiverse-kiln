@@ -1,10 +1,11 @@
-import { LOGIN_PROVIDER_NAMES, LOGIN_PROVIDERS, MAX_LOCATION_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, PROFILE_LANGUAGES, SOCIAL_SITES, type OwnProfileCharacter, type OwnProfilePayload, type ProfileField, type ProfileLanguage, type ProfileUpdateRequest, type SocialSite, type TwoFactorState, type LoginProvider } from '@multiverse-kiln/shared';
+import { accountExportFileName, LOGIN_PROVIDER_NAMES, LOGIN_PROVIDERS, MAX_LOCATION_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, PROFILE_LANGUAGES, SOCIAL_SITES, type OwnProfileCharacter, type OwnProfilePayload, type ProfileField, type ProfileLanguage, type ProfileUpdateRequest, type SocialSite, type TwoFactorState, type LoginProvider } from '@multiverse-kiln/shared';
 
 import { availableLocales, chooseLocale, currentLocale, formatList, t } from '../localization';
 import type { AuthApi } from '../network/authApi';
 import { describeEditorError, EditorApiError } from '../network/editorApi';
 import { profileFieldOf, type ProfileApi } from '../network/profileApi';
 import { currentPageAddress, loginPageUrl, playerPageUrl, PROVIDER_LINKED_PARAMETER, readPageParameter, rememberLoginAddress, replacePageParameters, takeProviderLinkError, TWO_FACTOR_SETUP_PARAMETER } from '../pages';
+import { AccountDeleteDialog } from './AccountDeleteDialog';
 import { showAccountName } from './accountMenu';
 import { ChangeTracker } from './changeTracker';
 import type { CharacterSheetDialog } from './CharacterSheetDialog';
@@ -142,6 +143,9 @@ export class OwnProfileScreen
 	private readonly twoFactorDialog: TwoFactorSetupDialog;
 	private readonly twoFactorConfirmDialog: TwoFactorConfirmDialog;
 	private readonly recoveryCodesDialog = new RecoveryCodesDialog();
+	private readonly exportButton = getElement('profile-export', HTMLButtonElement);
+	private readonly dataError = getElement('profile-data-error', HTMLElement);
+	private readonly deleteDialog: AccountDeleteDialog;
 
 	/**
 	 * Each field the server can refuse, by the name it gives it
@@ -168,12 +172,30 @@ export class OwnProfileScreen
 
 	/**
 	 * @param api The profile routes
-	 * @param authApi The auth routes, which change the email address and password
+	 * @param authApi The auth routes, which change the email address and password, and delete the account
 	 * @param sheet The character sheet dialog, for the player's characters
+	 * @param accountDeleted Called once the player has deleted their account
 	 */
-	constructor(private readonly api: ProfileApi, private readonly authApi: AuthApi, private readonly sheet: CharacterSheetDialog)
+	constructor(private readonly api: ProfileApi, private readonly authApi: AuthApi, private readonly sheet: CharacterSheetDialog, accountDeleted: () => void)
 	{
 		const numbers = new Intl.NumberFormat(currentLocale());
+
+		this.deleteDialog = new AccountDeleteDialog(api, authApi, () =>
+		{
+			// Nothing on the page is worth keeping once the account is gone
+			this.changes.markSaved();
+			accountDeleted();
+		});
+
+		this.exportButton.addEventListener('click', () =>
+		{
+			void this.downloadData();
+		});
+
+		getElement('profile-delete', HTMLButtonElement).addEventListener('click', () =>
+		{
+			this.deleteDialog.open((this.profile?.email ?? null));
+		});
 
 		getElement('profile-username-min', HTMLElement).textContent = numbers.format(MIN_USERNAME_LENGTH);
 		getElement('profile-username-max', HTMLElement).textContent = numbers.format(MAX_USERNAME_LENGTH);
@@ -341,6 +363,39 @@ export class OwnProfileScreen
 			{
 				button.disabled = false;
 			}
+		}
+	}
+
+	/**
+	 * Saves everything the site keeps about the player as a JSON file
+	 */
+	private async downloadData(): Promise<void>
+	{
+		this.exportButton.disabled = true;
+		showMessage(this.dataError, undefined);
+
+		try
+		{
+			const data = await this.api.getAccountExport(currentLocale());
+			const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, '\t')], { type: 'application/json' }));
+			const link = document.createElement('a');
+
+			link.href = url;
+			link.download = accountExportFileName(data.account.username);
+			link.click();
+			URL.revokeObjectURL(url);
+		}
+		catch (error)
+		{
+			showMessage(this.dataError, describeEditorError(error, {
+				id: 'profile.downloadFailed',
+				defaultMessage: 'Could not download your data.',
+				description: 'Shown on the player\'s own profile page when downloading everything the site keeps about them failed'
+			}));
+		}
+		finally
+		{
+			this.exportButton.disabled = false;
 		}
 	}
 

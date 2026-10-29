@@ -118,6 +118,11 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	private groupId!: string;
 
 	/**
+	 * The universe the group plays in
+	 */
+	private universeId!: string;
+
+	/**
 	 * The anchor being's character ID
 	 */
 	private anchorId!: string;
@@ -236,6 +241,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		}
 
 		this.groupId = group.id;
+		this.universeId = group.universeId;
 		this.anchorId = group.anchorCharacterId;
 		this.startingAreaId = startingArea.loaded.area.id;
 		this.startingCell = (groupArea
@@ -293,6 +299,16 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			}),
 			areaChanges.onChange((change) =>
 			{
+				if ((change.kind === 'universeDeleted') && (change.universeId === this.universeId))
+				{
+					for (const client of this.clients)
+					{
+						client.leave(ServerCloseCode.UniverseDeleted);
+					}
+
+					return;
+				}
+
 				if (change.kind === 'deleted')
 				{
 					this.seen.forget(change.areaId);

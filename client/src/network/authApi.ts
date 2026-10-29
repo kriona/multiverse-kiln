@@ -1,5 +1,5 @@
 import type { Client } from '@colyseus/sdk';
-import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_EMAIL_CHANGE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_CHANGE_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_PROVIDER_CALLBACK_PATH, AUTH_PROVIDER_LINK_PATH, AUTH_PROVIDER_REGISTER_PATH, AUTH_PROVIDER_START_PATH, AUTH_PROVIDERS_PATH, AUTH_RECOVERY_CODES_PATH, AUTH_REGISTER_PATH, AUTH_SESSION_PATH, AUTH_TRUSTED_BROWSERS_FORGET_PATH, AUTH_TWO_FACTOR_DISABLE_PATH, AUTH_TWO_FACTOR_ENABLE_PATH, AUTH_TWO_FACTOR_LOGIN_PATH, AUTH_TWO_FACTOR_SETUP_PATH, type AuthField, type EmailChangeRequest, type EmailCodeCheckPayload, type EmailCodeCheckRequest, type EmailCodeRequest, type LoginPayload, type LoginProvider, type LoginRequest, type PasswordChangeRequest, type PasswordResetRequest, type ProviderCallbackPayload, type ProviderCallbackRequest, type ProviderLinkRequest, type ProviderRegisterRequest, type ProvidersPayload, type ProviderStartPayload, type ProviderStartRequest, type RecoveryCodesPayload, type RecoveryCodesRequest, type RegisterRequest, type SessionPayload, type SessionPlayer, type TwoFactorDisableRequest, type TwoFactorEnableRequest, type TwoFactorLoginRequest, type TwoFactorSetupPayload, type TwoFactorSetupRequest } from '@multiverse-kiln/shared';
+import { AUTH_ACCOUNT_DELETE_PATH, AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_EMAIL_CHANGE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_CHANGE_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_PROVIDER_CALLBACK_PATH, AUTH_PROVIDER_LINK_PATH, AUTH_PROVIDER_REGISTER_PATH, AUTH_PROVIDER_START_PATH, AUTH_PROVIDERS_PATH, AUTH_RECOVERY_CODES_PATH, AUTH_REGISTER_PATH, AUTH_SESSION_PATH, AUTH_TRUSTED_BROWSERS_FORGET_PATH, AUTH_TWO_FACTOR_DISABLE_PATH, AUTH_TWO_FACTOR_ENABLE_PATH, AUTH_TWO_FACTOR_LOGIN_PATH, AUTH_TWO_FACTOR_SETUP_PATH, type AccountDeleteRequest, type AuthField, type EmailChangeRequest, type EmailCodeCheckPayload, type EmailCodeCheckRequest, type EmailCodeRequest, type LoginPayload, type LoginProvider, type LoginRequest, type PasswordChangeRequest, type PasswordResetRequest, type ProviderCallbackPayload, type ProviderCallbackRequest, type ProviderLinkRequest, type ProviderRegisterRequest, type ProvidersPayload, type ProviderStartPayload, type ProviderStartRequest, type RecoveryCodesPayload, type RecoveryCodesRequest, type RegisterRequest, type SessionPayload, type SessionPlayer, type TwoFactorDisableRequest, type TwoFactorEnableRequest, type TwoFactorLoginRequest, type TwoFactorSetupPayload, type TwoFactorSetupRequest } from '@multiverse-kiln/shared';
 
 import { EditorApiError, sendRequest } from './editorApi';
 
@@ -221,6 +221,16 @@ export class AuthApi
 	async linkProvider(request: ProviderLinkRequest): Promise<void>
 	{
 		await sendRequest(this.client, 'POST', AUTH_PROVIDER_LINK_PATH, request);
+	}
+
+	/**
+	 * Deletes the logged-in account, logging out every browser logged in to it
+	 *
+	 * @param request How the player confirms, and what becomes of each universe they are the only creator of
+	 */
+	async deleteAccount(request: AccountDeleteRequest): Promise<void>
+	{
+		await sendRequest(this.client, 'POST', AUTH_ACCOUNT_DELETE_PATH, request);
 	}
 }
 

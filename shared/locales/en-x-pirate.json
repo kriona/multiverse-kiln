@@ -2059,6 +2059,18 @@
 		"message": "Welcome aboard {siteName}",
 		"source": "Welcome to {siteName}"
 	},
+	"email.accountDeleted.body": {
+		"message": "Yer account on {siteName} was scuttled, with yer profile and yer hands. Thanks for sailin' with us.",
+		"source": "Your account on {siteName} was deleted, with your profile and characters. Thanks for playing."
+	},
+	"email.accountDeleted.notYou": {
+		"message": "If ye didn't scuttle it, some scallywag was usin' yer account. It can't be raised from the deep, but ye can hail the site about it.",
+		"source": "If you didn't delete it, someone else was using your account. It can't be brought back, but you can contact the site about it."
+	},
+	"email.accountDeleted.subject": {
+		"message": "Yer account on {siteName} was scuttled",
+		"source": "Your account on {siteName} was deleted"
+	},
 	"email.accountExists.body": {
 		"message": "Someone asked to make an account on {siteName} with this email address, but it already has one. Come aboard instead, or reset yer password if ye've forgotten it.",
 		"source": "Someone asked to create an account on {siteName} with this email address, but it already has one. Log in instead, or reset your password if you've forgotten it."
@@ -2214,6 +2226,14 @@
 	"error.areaLimit": {
 		"message": "A universe can have at most {max, plural, one {# area} other {# areas}}.",
 		"source": "A universe can have at most {max, plural, one {# area} other {# areas}}."
+	},
+	"error.auth.deleteUniversesChanged": {
+		"message": "The universes ye captain alone have changed. Look 'em over again afore scuttlin' yer account.",
+		"source": "The universes you alone create have changed. Look at them again before deleting your account."
+	},
+	"error.auth.deleteWrongUsername": {
+		"message": "Write yer username exactly as it be to swear to it.",
+		"source": "Type your username exactly as it is to confirm."
 	},
 	"error.auth.emailForm": {
 		"message": "Enter an email address, like name@example.com.",
@@ -2774,6 +2794,10 @@
 	"game.loadingUniverse": {
 		"message": "Unrollin' the charts...",
 		"source": "Loading the universe..."
+	},
+	"game.universeDeleted": {
+		"message": "{universe} was sent to the deep, with all aboard.",
+		"source": "{universe} was deleted, with everything in it."
 	},
 	"game.universeNotFound": {
 		"message": "That universe be lost at sea.",
@@ -4423,6 +4447,14 @@
 		"message": "Comin' aboard",
 		"source": "Logging in"
 	},
+	"profile.accountDeleted": {
+		"message": "Yer account was scuttled. Thanks for sailin' with us.",
+		"source": "Your account was deleted. Thanks for playing."
+	},
+	"profile.accountDeletedTitle": {
+		"message": "Account scuttled",
+		"source": "Account deleted"
+	},
 	"profile.browserLanguage": {
 		"message": "Yer browser's tongue",
 		"source": "Your browser's language"
@@ -4503,6 +4535,58 @@
 		"message": "Current password",
 		"source": "Current password"
 	},
+	"profile.deleteAccount": {
+		"message": "Scuttle account",
+		"source": "Delete account"
+	},
+	"profile.deleteAccountConfirm": {
+		"message": "Scuttle my account",
+		"source": "Delete my account"
+	},
+	"profile.deleteAccountIntro": {
+		"message": "Yer profile and hands go to the deep, never to be raised. Crews whose anchor be one of yer hands are disbanded. Haul yer data ashore first to keep a copy.",
+		"source": "Your profile and characters are deleted, and can't be brought back. Groups whose anchor being is one of your characters are disbanded. Download your data first to keep a copy."
+	},
+	"profile.deleteAccountTitle": {
+		"message": "Scuttle yer account",
+		"source": "Delete your account"
+	},
+	"profile.deleteFailed": {
+		"message": "Couldn't scuttle yer account.",
+		"source": "Could not delete your account."
+	},
+	"profile.deleteLoadFailed": {
+		"message": "Couldn't see what scuttlin' yer account needs. Close this and try again.",
+		"source": "Could not check what deleting your account needs. Close this and try again."
+	},
+	"profile.deleteTypeUsername": {
+		"message": "Write yer username to swear to it",
+		"source": "Type your username to confirm"
+	},
+	"profile.deleteUniverseChoose": {
+		"message": "Choose...",
+		"source": "Choose..."
+	},
+	"profile.deleteUniverseDelete": {
+		"message": "Send it to the deep",
+		"source": "Delete it"
+	},
+	"profile.deleteUniverseHandTo": {
+		"message": "Make {name} (@{username}, {role}) its captain",
+		"source": "Make {name} (@{username}, {role}) its creator"
+	},
+	"profile.deleteUniverseUnchosen": {
+		"message": "Choose what becomes o' {universe}.",
+		"source": "Choose what becomes of {universe}."
+	},
+	"profile.deleteUniverses": {
+		"message": "Universes only ye captain",
+		"source": "Universes only you create"
+	},
+	"profile.deleteUniversesHint": {
+		"message": "Choose who captains each one from now on, or send it to the deep, with its charts and every sailor's hands in it.",
+		"source": "Choose who creates each one from now on, or delete it, with its world and everyone's characters in it."
+	},
 	"profile.displayName": {
 		"message": "Name",
 		"source": "Name"
@@ -4510,6 +4594,14 @@
 	"profile.displayNameHint": {
 		"message": "The name other sailors see. It needn't be yer real name, nor yers alone.",
 		"source": "The name other players see. It doesn't have to be your real name, or unique."
+	},
+	"profile.downloadData": {
+		"message": "Haul yer data ashore",
+		"source": "Download your data"
+	},
+	"profile.downloadFailed": {
+		"message": "Couldn't haul yer data ashore.",
+		"source": "Could not download your data."
 	},
 	"profile.downloadRecoveryCodes": {
 		"message": "Stow as a file",
@@ -4830,6 +4922,14 @@
 	"profile.viewOwn": {
 		"message": "View yer profile",
 		"source": "View your profile"
+	},
+	"profile.yourData": {
+		"message": "Yer data",
+		"source": "Your data"
+	},
+	"profile.yourDataHint": {
+		"message": "Haul everything kept about ye ashore as a file, or scuttle yer account and all in it.",
+		"source": "Download everything kept about you as a file, or delete your account and everything in it."
 	},
 	"sf1e.ability.charisma": {
 		"message": "Swagger",

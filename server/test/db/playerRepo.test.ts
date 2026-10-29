@@ -172,11 +172,13 @@ describe('playerRepo', () =>
 
 			const own = await findOwnProfile(ada.id);
 
+			assert.ok(own?.createdAt instanceof Date);
 			assert.deepStrictEqual(own, {
 				id: ada.id,
 				...changes,
 				email: 'ada@example.com',
-				hasPassword: true
+				hasPassword: true,
+				createdAt: own.createdAt
 			});
 			assert.deepStrictEqual(await findProfileByUsername('ADA_L'), {
 				id: ada.id,

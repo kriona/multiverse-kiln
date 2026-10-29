@@ -804,6 +804,25 @@ export async function findCharacterDraft(playerId: string, universeId: string, e
 }
 
 /**
+ * A player's saved progress in Create Character in every universe, for their data export
+ *
+ * @param playerId The player's ID
+ * @param executor The database, or a transaction
+ * @return The progress in each universe, as it was stored
+ */
+export async function listCharacterDrafts(playerId: string, executor: Executor = db): Promise<{ universeId: string; draft: unknown }[]>
+{
+	return(executor
+		.select({
+			universeId: characterDrafts.universeId,
+			draft: characterDrafts.draft
+		})
+		.from(characterDrafts)
+		.where(eq(characterDrafts.playerId, playerId))
+		.orderBy(characterDrafts.updatedAt));
+}
+
+/**
  * Stores a player's progress in Create Character in a universe, replacing what was saved
  *
  * @param playerId The player's ID

@@ -4,8 +4,11 @@
  */
 import type { LoginProvider } from './accounts.js';
 import type { OptionName } from './characters.js';
+import { SITE_NAME } from './constants.js';
 import type { LocalizedMessage } from './localization.js';
-import type { Ruleset } from './universes.js';
+import type { Money } from './money.js';
+import type { AbilityScores } from './racesAndClasses.js';
+import type { Ruleset, UniverseRole } from './universes.js';
 
 /**
  * Most characters in a profile's pronouns, such as "she/her" or "they/them"
@@ -85,6 +88,18 @@ export function profileCharacterPath(characterId: string): string
 {
 	return(`${PROFILE_PATH}/characters/${encodeURIComponent(characterId)}`);
 }
+
+/**
+ * GET: everything the site keeps about the logged-in player, to download as one JSON file
+ * (AccountExport), with ?locale= naming the language of the default races', classes' and items' names
+ */
+export const PROFILE_EXPORT_PATH = `${PROFILE_PATH}/export`;
+
+/**
+ * GET: what deleting the logged-in player's account has to decide first (AccountDeletionPayload). The
+ * account is deleted with AUTH_ACCOUNT_DELETE_PATH
+ */
+export const PROFILE_DELETION_PATH = `${PROFILE_PATH}/deletion`;
 
 /**
  * Where players' profiles are, by username (playerProfilePath())
@@ -264,4 +279,173 @@ export interface ProfileErrorPayload
 export interface CharacterVisibilityRequest
 {
 	visibleOnProfile: boolean;
+}
+
+/**
+ * Someone with a role in a universe, who can be made its creator
+ */
+export interface UniverseEditorChoice
+{
+	playerId: string;
+	username: string;
+	displayName: string;
+	role: UniverseRole;
+}
+
+/**
+ * A universe the player is the only creator of, which deleting their account hands to another of its
+ * editors or deletes
+ */
+export interface SoleCreatedUniversePayload
+{
+	id: string;
+	name: string;
+
+	/**
+	 * Everyone else with a role in it, by username; empty when there is no one to hand it to
+	 */
+	editors: UniverseEditorChoice[];
+}
+
+/**
+ * Response of GET PROFILE_DELETION_PATH
+ */
+export interface AccountDeletionPayload
+{
+	/**
+	 * The universes the player is the only creator of, by name
+	 */
+	universes: SoleCreatedUniversePayload[];
+
+	/**
+	 * Whether the account has a password, which deleting it asks for; an account without one confirms
+	 * with its username instead
+	 */
+	hasPassword: boolean;
+
+	/**
+	 * Whether deleting the account asks for its authenticator or recovery code too
+	 */
+	twoFactor: boolean;
+}
+
+/**
+ * A character in the data export
+ */
+export interface ExportedCharacter
+{
+	id: string;
+	name: string;
+	universe: {
+		id: string;
+		name: string;
+	};
+
+	/**
+	 * The names of the character's race, class and theme (null in a ruleset without themes), as the
+	 * universe calls them
+	 */
+	race: string;
+	characterClass: string;
+	theme: string | null;
+
+	abilityScores: AbilityScores;
+	money: Money;
+	items: {
+		name: string;
+		quantity: number;
+	}[];
+
+	/**
+	 * The group the character is in, or null when they are in none
+	 */
+	group: {
+		id: string;
+		anchorBeing: boolean;
+	} | null;
+
+	visibleOnProfile: boolean;
+
+	/**
+	 * When the character is deleted (ISO 8601), once given their last rites; null otherwise
+	 */
+	deleteAt: string | null;
+}
+
+/**
+ * The name of the file the data export downloads as: the game engine's name, then the player's
+ * username, such as MultiverseKiln.ada.json. Only letters, digits, underscores and hyphens of the
+ * engine's name are kept, so a fork's name can't put characters in it that file names don't allow
+ *
+ * @param username The player's username
+ * @return The file name
+ */
+export function accountExportFileName(username: string): string
+{
+	const site = SITE_NAME.replace(/[^\p{L}\p{N}_-]+/gu, '');
+
+	return(((site === '') ? `${username}.json` : `${site}.${username}.json`));
+}
+
+/**
+ * Response of GET PROFILE_EXPORT_PATH: everything the site keeps about the player. Times are ISO 8601
+ */
+export interface AccountExport
+{
+	exportedAt: string;
+	account: ProfileFields & {
+		id: string;
+		email: string | null;
+		hasPassword: boolean;
+		locale: string | null;
+		showCharacters: boolean;
+		createdAt: string;
+	};
+
+	/**
+	 * The Google and Discord logins linked to the account
+	 */
+	providers: LoginProvider[];
+
+	/**
+	 * The account's 2FA, or null when it is off. The authenticator's secret and the recovery codes
+	 * themselves are never given out
+	 */
+	twoFactor: TwoFactorState | null;
+
+	/**
+	 * The browsers logged in to the account
+	 */
+	sessions: {
+		createdAt: string;
+		lastUsedAt: string;
+		rememberMe: boolean;
+	}[];
+
+	/**
+	 * Logins and changes to how the account logs in, from the last 90 days, oldest first
+	 */
+	authEvents: {
+		kind: string;
+		occurredAt: string;
+	}[];
+
+	/**
+	 * The universes the player has a role in, by name
+	 */
+	universes: {
+		id: string;
+		name: string;
+		role: UniverseRole;
+	}[];
+
+	characters: ExportedCharacter[];
+
+	/**
+	 * Create Character's progress in each universe where the player hasn't finished a character
+	 */
+	characterDrafts: {
+		universeId: string;
+		draft: unknown;
+	}[];
 }

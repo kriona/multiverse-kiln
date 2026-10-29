@@ -159,6 +159,26 @@ export async function deleteSession(sessionId: string, executor: Executor = db):
 }
 
 /**
+ * An account's sessions, for its data export
+ *
+ * @param playerId The account
+ * @param executor The database, or a transaction
+ * @return When each started and was last used, and whether it was remembered, oldest first
+ */
+export async function listPlayerSessions(playerId: string, executor: Executor = db): Promise<{ createdAt: Date; lastUsedAt: Date; rememberMe: boolean }[]>
+{
+	return(executor
+		.select({
+			createdAt: sessions.createdAt,
+			lastUsedAt: sessions.lastUsedAt,
+			rememberMe: sessions.rememberMe
+		})
+		.from(sessions)
+		.where(eq(sessions.playerId, playerId))
+		.orderBy(sessions.createdAt));
+}
+
+/**
  * Ends every session of an account, as changing its password does
  *
  * @param playerId The account

@@ -1,5 +1,5 @@
 import type { Client } from '@colyseus/sdk';
-import { playerProfilePath, PROFILE_PATH, profileCharacterPath, type OwnProfilePayload, type PlayerProfilePayload, type ProfileField, type ProfileUpdateRequest } from '@multiverse-kiln/shared';
+import { playerProfilePath, PROFILE_DELETION_PATH, PROFILE_EXPORT_PATH, PROFILE_PATH, profileCharacterPath, type AccountDeletionPayload, type AccountExport, type OwnProfilePayload, type PlayerProfilePayload, type ProfileField, type ProfileUpdateRequest } from '@multiverse-kiln/shared';
 
 import { EditorApiError, sendRequest } from './editorApi';
 
@@ -46,6 +46,27 @@ export class ProfileApi
 	async setCharacterVisibility(characterId: string, visibleOnProfile: boolean): Promise<void>
 	{
 		await sendRequest(this.client, 'PUT', profileCharacterPath(characterId), { visibleOnProfile });
+	}
+
+	/**
+	 * Everything the site keeps about the logged-in player
+	 *
+	 * @param locale The language to name default races, classes, themes and items in
+	 * @return The data
+	 */
+	async getAccountExport(locale: string): Promise<AccountExport>
+	{
+		return(await sendRequest<AccountExport>(this.client, 'GET', `${PROFILE_EXPORT_PATH}?locale=${encodeURIComponent(locale)}`));
+	}
+
+	/**
+	 * What deleting the logged-in player's account asks them to decide
+	 *
+	 * @return The universes they are the only creator of, and how they confirm
+	 */
+	async getAccountDeletion(): Promise<AccountDeletionPayload>
+	{
+		return(await sendRequest<AccountDeletionPayload>(this.client, 'GET', PROFILE_DELETION_PATH));
 	}
 
 	/**

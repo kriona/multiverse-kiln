@@ -338,7 +338,7 @@ async function makeRecoveryCodes(playerId: string, executor: Executor): Promise<
  * @param response The response
  * @return The session, or undefined when the request was refused
  */
-async function requireSession(request: Request, response: Response): Promise<SessionIdentity | undefined>
+export async function requireSession(request: Request, response: Response): Promise<SessionIdentity | undefined>
 {
 	const session = await resolveSession(request.headers.cookie);
 
@@ -354,8 +354,8 @@ async function requireSession(request: Request, response: Response): Promise<Ses
 }
 
 /**
- * Checks the logged-in account's password, which changing its 2FA asks for again. Tries count against
- * the network's login limit
+ * Checks the logged-in account's password, which changing its 2FA or deleting it asks for again. Tries
+ * count against the network's login limit
  *
  * @param request The request
  * @param response The response, which gets a Retry-After header when there were too many tries
@@ -364,7 +364,7 @@ async function requireSession(request: Request, response: Response): Promise<Ses
  * @param now The time now
  * @return The refusal when the password isn't right, or the account has none
  */
-async function checkAccountPassword(request: Request, response: Response, playerId: string, typed: string, now: Date): Promise<AuthRefusal | undefined>
+export async function checkAccountPassword(request: Request, response: Response, playerId: string, typed: string, now: Date): Promise<AuthRefusal | undefined>
 {
 	const attempt = await inTransaction((executor) => takeAttempt([
 		{

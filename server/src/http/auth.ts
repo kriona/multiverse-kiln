@@ -2,7 +2,7 @@
  * The auth routes (listed in shared/src/accounts.ts): the browser's session, logging in and out, and
  * the email code flows for registering, resetting a password, changing an email address and linking a
  * provider login (see Login and Email codes in STRUCTURE-OVERVIEW.md). Logging in with Google or
- * Discord is in providerAuth.ts, and 2FA in twoFactorAuth.ts
+ * Discord is in providerAuth.ts, 2FA in twoFactorAuth.ts and deleting an account in accountDeletion.ts
  *
  * Nothing these routes answer tells whether an account exists for an address: logins fail with the
  * same message either way, and sending a code answers the same whether or not one was sent. Emails go
@@ -31,6 +31,7 @@ import { sendEmailInBackground, type EmailContent } from '../email/mailer.js';
 import { CONTINUATION_LIFETIME_MS, DAY_MS, decideEmailCodeSend, emailCodeFromBytes, emailCodeState, EMAIL_CODE_LENGTH, HOUR_MS, MAX_EMAIL_CODES_PER_NETWORK_HOUR, MAX_GUESSES_PER_NETWORK_HOUR, normalizeEmailCode } from '../logic/emailCodes.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { displayText } from '../rooms/payloads.js';
+import { addAccountDeletionRoutes } from './accountDeletion.js';
 import { authMessages, checkDisplayName, checkUsername, cookieTokenHash, recordEvent, sendRefusal, tooManyAttempts, type AuthRefusal } from './authCommon.js';
 import { clientNetworkHash } from './clientNetwork.js';
 import { clearCookie, CONTINUATION_COOKIE, PROVIDER_LOGIN_COOKIE, setCookie, TWO_FACTOR_LOGIN_COOKIE } from './cookies.js';
@@ -131,6 +132,7 @@ export function addAuthRoutes(app: Application, allowedOrigins: Set<string>): vo
 	router.post(underAuthPath(AUTH_PASSWORD_CHANGE_PATH), passwordChangeRoute);
 	addProviderRoutes(router, underAuthPath);
 	addTwoFactorRoutes(router, underAuthPath);
+	addAccountDeletionRoutes(router, underAuthPath);
 	router.use(handleAuthError);
 
 	app.use(AUTH_PATH, router);

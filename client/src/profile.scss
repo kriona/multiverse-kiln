@@ -111,6 +111,52 @@
 	}
 }
 
+// Downloading the player's data and deleting their account
+.profile-data-buttons
+{
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 12px;
+}
+
+// Deleting the account: each universe only the player creates, and what becomes of it
+.account-delete-universes
+{
+	margin: 0;
+	padding: 12px;
+	border: 1px solid $border;
+	border-radius: 4px;
+
+	legend
+	{
+		padding: 0 4px;
+	}
+
+	.hint
+	{
+		margin: 0 0 12px;
+	}
+}
+
+.account-delete-universe-list
+{
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+
+	label
+	{
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	select
+	{
+		max-width: 100%;
+	}
+}
+
 // Setting up two-factor authentication: the QR code for the authenticator app, white whatever the
 // theme so it scans, and the same secret as text for typing in by hand
 .qr-code-frame

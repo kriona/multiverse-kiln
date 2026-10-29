@@ -1,6 +1,7 @@
 /**
  * Player profiles (see Profile edit and Profile view in STRUCTURE-OVERVIEW.md): the logged-in player's
- * own profile, which they can change (PROFILE_PATH), and anyone's profile by username (PLAYERS_PATH)
+ * own profile, which they can change (PROFILE_PATH), and anyone's profile by username (PLAYERS_PATH).
+ * The own profile's data export and what deleting the account asks are in accountData.ts
  *
  * Any logged-in player can read a profile. It shows only what the player filled in, and only the
  * characters they let others see, in universes anyone can play
@@ -16,6 +17,7 @@ import { listProviderLogins } from '../db/providerLoginRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
 import { findTwoFactorState } from '../db/twoFactorRepo.js';
 import { displayText } from '../rooms/payloads.js';
+import { deletionRoute, exportRoute } from './accountData.js';
 import { authMessages, checkDisplayName, checkUsername, sendRefusal, type AuthRefusal } from './authCommon.js';
 import { playerIdOf, refuseWritesFromOtherOrigins, requireLogin } from './editorAccess.js';
 import { errorMessages, sendError, sendInvalidRequest } from './errors.js';
@@ -168,6 +170,8 @@ export function addProfileRoutes(app: Application, allowedOrigins: Set<string>):
 	own.get('/', ownProfileRoute);
 	own.put('/', updateProfileRoute);
 	own.put('/characters/:characterId', characterVisibilityRoute);
+	own.get('/export', exportRoute);
+	own.get('/deletion', deletionRoute);
 	own.use(handleProfileError);
 
 	const players = express.Router();

@@ -120,6 +120,12 @@ export const AUTH_PROVIDER_REGISTER_PATH = `${AUTH_PATH}/providers/register`;
 export const AUTH_PROVIDER_LINK_PATH = `${AUTH_PATH}/providers/link`;
 
 /**
+ * POST: delete the logged-in account (AccountDeleteRequest), after GET PROFILE_DELETION_PATH says what
+ * to decide first
+ */
+export const AUTH_ACCOUNT_DELETE_PATH = `${AUTH_PATH}/account/delete`;
+
+/**
  * The client's login page, which emails link to
  */
 export const LOGIN_PAGE_PATH = '/login';
@@ -602,6 +608,50 @@ export interface ProviderLinkRequest
 	 * An authenticator or recovery code, when the callback said one is needed; otherwise null
 	 */
 	twoFactorCode: string | null;
+}
+
+/**
+ * What becomes of a universe the player is the only creator of when their account is deleted
+ */
+export interface UniverseDecision
+{
+	universeId: string;
+
+	/**
+	 * Another of its editors, who becomes its creator; null deletes the universe
+	 */
+	newCreatorId: string | null;
+}
+
+/**
+ * Body of POST AUTH_ACCOUNT_DELETE_PATH
+ */
+export interface AccountDeleteRequest
+{
+	/**
+	 * The account's password, or null for an account without one
+	 */
+	password: string | null;
+
+	/**
+	 * An authenticator or recovery code when the account has 2FA; otherwise null
+	 */
+	twoFactorCode: string | null;
+
+	/**
+	 * The account's username, typed to confirm, for an account without a password; otherwise null
+	 */
+	username: string | null;
+
+	/**
+	 * A decision for each universe the player is the only creator of
+	 */
+	universes: UniverseDecision[];
+
+	/**
+	 * The language of the email saying the account was deleted
+	 */
+	locale: string;
 }
 
 /**

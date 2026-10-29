@@ -82,12 +82,13 @@ export interface OwnProfileDetails extends ProfileDetails
 {
 	email: string | null;
 	hasPassword: boolean;
+	createdAt: Date;
 }
 
 /**
  * What a player can change on their profile
  */
-export type ProfileChanges = Omit<OwnProfileDetails, 'id' | 'email' | 'hasPassword'>;
+export type ProfileChanges = Omit<OwnProfileDetails, 'id' | 'email' | 'hasPassword' | 'createdAt'>;
 
 /**
  * Thrown when a new account would take a username or email address another account has, ignoring capitals
@@ -365,7 +366,8 @@ export async function findOwnProfile(playerId: string, executor: Executor = db):
 		.select({
 			...publicProfileColumns,
 			email: players.email,
-			hasPassword: sql<boolean>`${players.passwordHash} IS NOT NULL`
+			hasPassword: sql<boolean>`${players.passwordHash} IS NOT NULL`,
+			createdAt: players.createdAt
 		})
 		.from(players)
 		.where(eq(players.id, playerId))
@@ -480,4 +482,22 @@ export async function lockPlayer(playerId: string, executor: Executor): Promise<
 		.for('update');
 
 	return(rows.length > 0);
+}
+
+/**
+ * Deletes a player's account, and with it their profile, characters, sessions, logins, 2FA, auth events
+ * and roles in universes. Groups whose anchor being was one of their characters go with them
+ *
+ * @param playerId The player's ID
+ * @param executor The database, or a transaction
+ * @return Whether there was an account to delete
+ */
+export async function deletePlayer(playerId: string, executor: Executor = db): Promise<boolean>
+{
+	const deleted = await executor
+		.delete(players)
+		.where(eq(players.id, playerId))
+		.returning({ id: players.id });
+
+	return(deleted.length > 0);
 }

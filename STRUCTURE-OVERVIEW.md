@@ -42,7 +42,7 @@ Local accounts can turn on 2FA with an authenticator app (TOTP), and get recover
 - Turning it off and making new recovery codes ask for the password and a code. Turning it on or off emails the account. A player who loses the app and every recovery code can't get back in on their own: only the site's contact can help.
 
 ## Deleting an account
-From the profile. Before deleting, the player decides for each universe they are the only creator of: hand it to another of its editors as creator, or delete it. Groups whose anchor being is one of their characters disband. The account, profile, characters, sessions and auth events are deleted. Before deleting, the player can download their data as one JSON file (also offered on the profile at any time).
+From the profile. Before deleting, the player decides for each universe they are the only creator of: hand it to another of its editors (whatever their role) as creator, or delete it, with its world, uploads and everyone's characters in it; nothing is chosen for them. They confirm with their password, and an authenticator or recovery code when the account has 2FA (a trusted browser still asks), or by typing their username when the account has no password. Groups whose anchor being is one of their characters disband, and their other characters leave the groups they were in. The account, profile, characters, sessions and auth events are deleted, every window of the player is logged out, windows playing in a deleted universe are told it is gone, and the address the account had is emailed. Before deleting, the player can download their data as one JSON file (also offered on the profile at any time): the account and profile, linked logins, whether 2FA is on, sessions and auth events (without tokens or networks), roles in universes, characters with their sheets, and Create Character's progress.
 
 ## Register local account
 Enter an email, it sends you an [email code](#email-codes), enter the code, then the email again with a password, username and name to create the account (the server keeps only a keyed hash of the address while it waits, so it asks for the address again). Recommend the user use a password manager, link to a couple prominent ones. Emails you when you have a new account. Then offers to set up 2FA now, which opens its dialog on the profile, or to go on to the page the player came from.
@@ -299,9 +299,7 @@ Lists the users who can work on the universe, and lets you add them with a role:
 - `beta tester`: can create characters and play while the universe is in `prologue`
 - `translator`: can [translate](#tab-translations) the universe's text into the languages they are assigned, and can't change anything else
 
-A universe can have several creators. If you delete your account and your universe has no other creator, you choose what happens to it:
-- promote a builder to creator
-- the universe goes dormant: people can keep playing, but only server admins can edit it
+A universe can have several creators. If you delete your account and your universe has no other creator, you choose what happens to it (see [Deleting an account](#deleting-an-account)): make another of its editors its creator, or delete it.
 
 ### Tab: Ruleset
 What shows up here depends on what ruleset is chosen.

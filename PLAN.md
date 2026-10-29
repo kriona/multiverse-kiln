@@ -278,7 +278,7 @@ Built in two steps: logins (sessions, providers, local accounts, email codes, re
 	- [✅] Profile edit and view, with character visibility and the player's language (used ahead of the browser's settings), changing the email address (the routes exist) and logging out from any page
 	- [✅] Optional 2FA (TOTP and recovery codes), with trusted browsers that skip the code for 30 days
 	- [✅] Account linking
-	- [ ] Account deletion and data export
+	- [✅] Account deletion and data export
 	- [✅] Privacy policy page (`privacy.html`, linked from the footer), drafted; check it against what was built, and set its date, before players use the site
 	- [ ] Review against sections 1-3 and 5 of `SECURITY-PRACTICES.md`
 

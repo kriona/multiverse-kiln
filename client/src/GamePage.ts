@@ -554,6 +554,23 @@ export class GamePage
 	}
 
 	/**
+	 * Says the universe the window was playing in was deleted, so there's nowhere left to play
+	 *
+	 * @param universe The universe's name
+	 */
+	private showUniverseDeleted(universe: string): void
+	{
+		this.destination = { kind: 'none' };
+		this.showOutside(t({
+			id: 'game.universeDeleted',
+			defaultMessage: '{universe} was deleted, with everything in it.',
+			description: 'Shown on the game\'s page when the universe being played was deleted, along with its creator\'s account; {universe} is its name'
+		}, {
+			universe
+		}));
+	}
+
+	/**
 	 * Explains to the player why something they asked for didn't happen
 	 *
 	 * @param reason Why
@@ -914,6 +931,12 @@ export class GamePage
 			return;
 		}
 
+		if (code === ServerCloseCode.UniverseDeleted.valueOf())
+		{
+			this.showUniverseDeleted(joined.universe.name);
+			return;
+		}
+
 		console.error(`Disconnected from the lobby (code ${code})`);
 		this.destination = { kind: 'none' };
 		this.showOutside(t({
@@ -1006,7 +1029,7 @@ export class GamePage
 	/**
 	 * Handles the group's room closing when the window didn't leave it itself: the character left the
 	 * group (from another window, or by being deleted), the group was disbanded, or the connection was
-	 * lost. The window goes back to the lobby
+	 * lost. The window goes back to the lobby, unless the universe was deleted
 	 *
 	 * @param connection The room that closed
 	 * @param code WebSocket close code
@@ -1028,6 +1051,12 @@ export class GamePage
 		// A session that ended goes to the login page when the session room says so
 		if ((code === CloseCode.CONSENTED) || (code === ServerCloseCode.LoggedOut.valueOf()))
 		{
+			return;
+		}
+
+		if (code === ServerCloseCode.UniverseDeleted.valueOf())
+		{
+			this.showUniverseDeleted((this.universe?.name ?? ''));
 			return;
 		}
 

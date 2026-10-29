@@ -39,6 +39,11 @@ export class ProfilePage
 	private loaded = false;
 
 	/**
+	 * Whether the player deleted their account from this page, which then stays on the notice saying so
+	 */
+	private deleted = false;
+
+	/**
 	 * @param server The connection to the server and the joined session room
 	 * @param username The player whose profile the address names, or undefined for the player's own
 	 */
@@ -57,7 +62,7 @@ export class ProfilePage
 
 		session.onLeave(() =>
 		{
-			if (!isLeavingPage())
+			if (!isLeavingPage() && !this.deleted)
 			{
 				showStatus(t(pageMessages.disconnected));
 			}
@@ -71,6 +76,11 @@ export class ProfilePage
 	 */
 	private onAccount(account: AccountPayload): void
 	{
+		if (this.deleted)
+		{
+			return;
+		}
+
 		if (!account.player)
 		{
 			window.location.replace(loginPageUrl(currentPageAddress()));
@@ -100,7 +110,19 @@ export class ProfilePage
 					void this.ownScreen?.reloadCharacters();
 				});
 
-				this.ownScreen = new OwnProfileScreen(this.profileApi, this.authApi, sheet);
+				this.ownScreen = new OwnProfileScreen(this.profileApi, this.authApi, sheet, () =>
+				{
+					this.deleted = true;
+					showNoticeScreen(t({
+						id: 'profile.accountDeleted',
+						defaultMessage: 'Your account was deleted. Thanks for playing.',
+						description: 'Shown on the whole of the profile page once the player has deleted their account, above a link to Home'
+					}), t({
+						id: 'profile.accountDeletedTitle',
+						defaultMessage: 'Account deleted',
+						description: 'The browser tab\'s title once the player has deleted their account, before the game engine\'s name'
+					}));
+				});
 				await this.ownScreen.load();
 			}
 			else
