@@ -40,6 +40,12 @@ export const TWO_FACTOR_LOGIN_COOKIE = '__Host-kiln-two-factor';
 export const TRUSTED_BROWSER_COOKIE = '__Host-kiln-trusted';
 
 /**
+ * Marks a browser that has logged in to an account, so its own login tries are counted apart from
+ * others' guesses at the account's address (server/src/auth/knownBrowsers.ts)
+ */
+export const KNOWN_BROWSER_COOKIE = '__Host-kiln-known';
+
+/**
  * Reads a cookie from a Cookie header
  *
  * @param cookieHeader Cookie header value, or null/undefined when the request has none

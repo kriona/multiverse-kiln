@@ -16,9 +16,14 @@
  *
  * Uploads go to the test bucket (TEST_STORAGE_BUCKET) on the same storage as development, made if it
  * doesn't exist. Every upload has a key of its own, so it isn't emptied between tests
+ *
+ * Email is discarded unless a test replaces the sender, and test files go back to discardEmail when
+ * they finish. Routes send some emails after answering, so one can be sent after its test is done,
+ * and it must never reach SMTP_URL
  */
 import { existsSync } from 'fs';
 
+import type { EmailSender } from '../src/email/mailer.js';
 import { buildTestDatabase, closeTestDatabase, emptyTestDatabase, requireTestDatabaseUrl } from './testDatabase.js';
 
 /**
@@ -60,14 +65,26 @@ process.env.STORAGE_BUCKET = process.env.TEST_STORAGE_BUCKET;
 const migrationDatabaseUrl = requireTestDatabaseUrl('TEST_MIGRATION_DATABASE_URL');
 
 /**
- * Root hooks for every test file: build the test database once, empty it before each test, and
- * close both connections at the end
+ * Sends email nowhere, the sender for every test that doesn't watch the emails it sends
+ *
+ * @return A promise that resolves at once
+ */
+export const discardEmail: EmailSender = () =>
+{
+	return(Promise.resolve());
+};
+
+/**
+ * Root hooks for every test file: discard email, build the test database once, empty it before
+ * each test, and close both connections at the end
  */
 export const mochaHooks = {
 	async beforeAll(): Promise<void>
 	{
 		const { ensureBucket } = await import('../src/storage/objectStorage.js');
+		const { setEmailSender } = await import('../src/email/mailer.js');
 
+		setEmailSender(discardEmail);
 		await buildTestDatabase(migrationDatabaseUrl);
 		await ensureBucket();
 	},

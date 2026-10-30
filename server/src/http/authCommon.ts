@@ -5,6 +5,8 @@
 import type { Request, Response } from 'express';
 import { defineMessages, isReservedName, localize, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, NAME_MESSAGES, USERNAME_PATTERN, type AuthErrorPayload, type AuthField, type MessageDescriptor, type MessageValues, type ProfileErrorPayload, type ProfileField } from '@multiverse-kiln/shared';
 
+import { hashAddress } from '../auth/keyedHashes.js';
+import { MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR, MAX_LOGIN_ATTEMPTS_PER_NETWORK_HOUR, type HourlyLimit } from '../auth/rateLimits.js';
 import { hashToken, isTokenForm } from '../auth/tokens.js';
 import { recordAuthEvent, type AuthEventKind } from '../db/authEventRepo.js';
 import type { Executor } from '../db/client.js';
@@ -114,6 +116,31 @@ export function tooManyAttempts(decision: SendDecision & { allowed: false }, now
 			minutes: Math.ceil(seconds / 60)
 		}
 	});
+}
+
+/**
+ * The limits a logged-in player's password counts against when it is asked for again, such as to
+ * change it or turn 2FA off: the network's logins, and logins to the account's address, so someone
+ * with a stolen session can't guess the password faster than logging in would let them
+ *
+ * @param request The request
+ * @param email The account's email address, or null when it has none
+ * @return The limits
+ */
+export function accountPasswordLimits(request: Request, email: string | null): HourlyLimit[]
+{
+	return([
+		{
+			kind: 'networkLoginAttempt',
+			subjectHash: clientNetworkHash(request),
+			limit: MAX_LOGIN_ATTEMPTS_PER_NETWORK_HOUR
+		},
+		{
+			kind: 'addressLoginAttempt',
+			subjectHash: ((email !== null) ? hashAddress(email) : null),
+			limit: MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR
+		}
+	]);
 }
 
 /**

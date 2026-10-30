@@ -1,9 +1,10 @@
-import { MAX_PASSWORD_LENGTH, UNIVERSE_ROLE_NAMES, type AccountDeletionPayload, type UniverseDecision } from '@multiverse-kiln/shared';
+import { EMAIL_CODE_LIFETIME_MINUTES, MAX_PASSWORD_LENGTH, UNIVERSE_ROLE_NAMES, type AccountDeletionPayload, type UniverseDecision } from '@multiverse-kiln/shared';
 
 import { currentLocale, t } from '../localization';
 import { authFieldOf, type AuthApi } from '../network/authApi';
 import { describeEditorError, EditorApiError } from '../network/editorApi';
 import type { ProfileApi } from '../network/profileApi';
+import { announce } from './announcer';
 import { resetCodeInput } from './codeInputs';
 import { getElement, showMessage } from './dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
@@ -17,7 +18,8 @@ const DELETE_UNIVERSE = 'delete';
 /**
  * The dialog that deletes the player's account (profile.html; see Deleting an account in
  * STRUCTURE-OVERVIEW.md). It asks what becomes of each universe the player is the only creator of, then
- * for the password (and authenticator code with 2FA), or the username for an account without a password
+ * for the password (and authenticator code with 2FA), or for an account without a password, a code
+ * emailed to its address (when it has one) and the username
  */
 export class AccountDeleteDialog
 {
@@ -31,6 +33,11 @@ export class AccountDeleteDialog
 	private readonly password = getElement('account-delete-password', HTMLInputElement);
 	private readonly codeField = getElement('account-delete-code-field', HTMLElement);
 	private readonly code = getElement('account-delete-code', HTMLInputElement);
+	private readonly emailCodeField = getElement('account-delete-email-code-field', HTMLElement);
+	private readonly emailCodeIntro = getElement('account-delete-email-code-intro', HTMLElement);
+	private readonly sendCodeButton = getElement('account-delete-send-code', HTMLButtonElement);
+	private readonly emailCodeLabel = getElement('account-delete-email-code-label', HTMLElement);
+	private readonly emailCode = getElement('account-delete-email-code', HTMLInputElement);
 	private readonly usernameField = getElement('account-delete-username-field', HTMLElement);
 	private readonly username = getElement('account-delete-username', HTMLInputElement);
 	private readonly error = getElement('account-delete-error', HTMLElement);
@@ -40,6 +47,18 @@ export class AccountDeleteDialog
 	 * What deleting the account asks, once loaded
 	 */
 	private deletion: AccountDeletionPayload | undefined;
+
+	/**
+	 * The account's address, while the dialog is open
+	 */
+	private accountEmail: string | null = null;
+
+	/**
+	 * Whether the code was emailed, and whether it was found right, for an account without a password.
+	 * A right code works once, so it isn't checked again when something else is wrong
+	 */
+	private codeSent = false;
+	private codeChecked = false;
 
 	/**
 	 * Each universe's choice, by universe ID
@@ -55,13 +74,18 @@ export class AccountDeleteDialog
 	{
 		this.password.maxLength = MAX_PASSWORD_LENGTH;
 
-		for (const field of [this.password, this.code, this.username])
+		for (const field of [this.password, this.code, this.emailCode, this.username])
 		{
 			field.addEventListener('input', () =>
 			{
 				setFieldError(field, undefined);
 			});
 		}
+
+		this.sendCodeButton.addEventListener('click', () =>
+		{
+			void this.sendCode();
+		});
 
 		this.form.addEventListener('submit', (event) =>
 		{
@@ -87,10 +111,17 @@ export class AccountDeleteDialog
 	 */
 	open(email: string | null): void
 	{
+		this.accountEmail = email;
+		this.codeSent = false;
+		this.codeChecked = false;
 		this.email.value = (email ?? '');
 		this.password.value = '';
 		this.username.value = '';
 		resetCodeInput(this.code);
+		resetCodeInput(this.emailCode);
+		this.emailCode.disabled = false;
+		this.emailCodeLabel.hidden = true;
+		this.sendCodeButton.hidden = false;
 		clearFieldErrors(this.form);
 		showMessage(this.error, undefined);
 		this.dialog.showModal();
@@ -106,7 +137,7 @@ export class AccountDeleteDialog
 		this.submitButton.disabled = true;
 		this.universes.hidden = true;
 
-		for (const element of [this.passwordField, this.codeField, this.usernameField])
+		for (const element of [this.passwordField, this.codeField, this.emailCodeField, this.usernameField])
 		{
 			element.hidden = true;
 		}
@@ -134,9 +165,83 @@ export class AccountDeleteDialog
 		this.showUniverses(deletion);
 		this.passwordField.hidden = !deletion.hasPassword;
 		this.codeField.hidden = !deletion.twoFactor;
+		this.emailCodeField.hidden = !this.needsEmailCode();
 		this.usernameField.hidden = deletion.hasPassword;
+
+		if (!this.codeSent)
+		{
+			this.emailCodeIntro.textContent = t({
+				id: 'profile.deleteCodeIntro',
+				defaultMessage: 'To check it\'s you, we\'ll email a code to {email}.',
+				description: 'In the dialog that deletes an account without a password, above the button that emails a code to the account\'s address; {email} is that address'
+			}, {
+				email: (this.accountEmail ?? '')
+			});
+		}
+
 		this.submitButton.disabled = false;
-		(this.choices.values().next().value ?? (deletion.hasPassword ? this.password : this.username)).focus();
+		(this.choices.values().next().value ?? (deletion.hasPassword ? this.password : ((this.needsEmailCode() && !this.codeSent) ? this.sendCodeButton : this.username))).focus();
+	}
+
+	/**
+	 * Whether the account checks it's the player with a code emailed to its address: it has no password,
+	 * but has an address
+	 *
+	 * @return Whether it does
+	 */
+	private needsEmailCode(): boolean
+	{
+		return((this.deletion !== undefined) && !this.deletion.hasPassword && (this.accountEmail !== null));
+	}
+
+	/**
+	 * Emails a code to the account's address, then asks for it
+	 */
+	private async sendCode(): Promise<void>
+	{
+		const email = (this.accountEmail ?? '');
+
+		if (this.sendCodeButton.disabled)
+		{
+			return;
+		}
+
+		this.sendCodeButton.disabled = true;
+		showMessage(this.error, undefined);
+
+		try
+		{
+			await this.authApi.sendCode({
+				purpose: 'deleteAccount',
+				email,
+				locale: currentLocale()
+			});
+			this.codeSent = true;
+			this.emailCodeIntro.textContent = t({
+				id: 'profile.deleteCodeSent',
+				defaultMessage: 'We\'ve emailed a code to {email}. Enter it to delete your account. It works once, for {minutes, plural, one {# minute} other {# minutes}}.',
+				description: 'In the dialog that deletes an account without a password, once a code was sent to the account\'s address; {email} is that address'
+			}, {
+				email,
+				minutes: EMAIL_CODE_LIFETIME_MINUTES
+			});
+			this.sendCodeButton.hidden = true;
+			this.emailCodeLabel.hidden = false;
+			announce(this.emailCodeIntro.textContent);
+			this.emailCode.focus();
+		}
+		catch (error)
+		{
+			showMessage(this.error, describeEditorError(error, {
+				id: 'profile.deleteCodeFailed',
+				defaultMessage: 'Could not email you a code.',
+				description: 'Shown in the dialog that deletes an account without a password when the code couldn\'t be emailed to the account\'s address'
+			}));
+		}
+		finally
+		{
+			this.sendCodeButton.disabled = false;
+		}
 	}
 
 	/**
@@ -253,6 +358,17 @@ export class AccountDeleteDialog
 
 		try
 		{
+			if (this.needsEmailCode() && this.codeSent && !this.codeChecked)
+			{
+				await this.authApi.checkCode({
+					purpose: 'deleteAccount',
+					email: (this.accountEmail ?? ''),
+					code: this.emailCode.value
+				});
+				this.codeChecked = true;
+				this.emailCode.disabled = true;
+			}
+
 			await this.authApi.deleteAccount({
 				password: (deletion.hasPassword ? this.password.value : null),
 				twoFactorCode: (deletion.twoFactor ? this.code.value : null),
@@ -267,9 +383,9 @@ export class AccountDeleteDialog
 		catch (error)
 		{
 			const field = authFieldOf(error);
-			const input = ((field === 'password') ? this.password : ((field === 'twoFactorCode') ? this.code : ((field === 'username') ? this.username : undefined)));
+			const input = ((field === 'password') ? this.password : ((field === 'twoFactorCode') ? this.code : ((field === 'username') ? this.username : ((field === 'code') ? this.emailCode : undefined))));
 
-			if (input && (error instanceof EditorApiError))
+			if (input && !input.disabled && (error instanceof EditorApiError))
 			{
 				reportFieldError(input, error.message);
 			}

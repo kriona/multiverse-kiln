@@ -1,17 +1,19 @@
 import assert from 'assert';
 import { createHash } from 'crypto';
-import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_EMAIL_CHANGE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_CHANGE_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_REGISTER_PATH, type AuthErrorPayload, type EmailCodePurpose } from '@multiverse-kiln/shared';
+import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_EMAIL_CHANGE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_CHANGE_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_REGISTER_PATH, AUTH_USERNAME_CHECK_PATH, type AuthErrorPayload, type EmailCodePurpose } from '@multiverse-kiln/shared';
 
 import { hashPassword } from '../src/auth/passwords.js';
 import { setPwnedRangeFetch } from '../src/auth/pwnedPasswords.js';
-import { MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR } from '../src/auth/rateLimits.js';
+import { MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR, MAX_LOGIN_ATTEMPTS_PER_BROWSER_HOUR, MAX_USERNAME_CHECKS_PER_NETWORK_HOUR } from '../src/auth/rateLimits.js';
 import { pool } from '../src/db/client.js';
 import { createPlayer } from '../src/db/playerRepo.js';
 import { setEmailSender, type Email } from '../src/email/mailer.js';
 import { MAX_WRONG_GUESSES_PER_CODE } from '../src/logic/emailCodes.js';
 import { Browser } from './browser.js';
 import { logInBrowser } from './players.js';
+import { discardEmail } from './setup.js';
 import { getTestServer, testServerUrl } from './testServer.js';
+import { authenticatorCode, turnOnTwoFactor } from './twoFactorAccounts.js';
 import { waitUntil } from './waitUntil.js';
 
 const PASSWORD = 'correct horse battery staple';
@@ -24,6 +26,11 @@ const BREACHED_PASSWORD = 'password1234567890';
 describe('auth routes', () =>
 {
 	let emails: Email[];
+
+	/**
+	 * How many times the stand-in for HaveIBeenPwned was asked about a password
+	 */
+	let breachChecks = 0;
 
 	/**
 	 * The code in the latest email sent to an address
@@ -118,13 +125,18 @@ describe('auth routes', () =>
 			.digest('hex')
 			.toUpperCase();
 
-		setPwnedRangeFetch(((url: string) => Promise.resolve(new Response(url.endsWith(breachedSha1.slice(0, 5)) ? `${breachedSha1.slice(5)}:42` : ''))) as typeof fetch);
+		setPwnedRangeFetch(((url: string) =>
+		{
+			breachChecks++;
+
+			return(Promise.resolve(new Response(url.endsWith(breachedSha1.slice(0, 5)) ? `${breachedSha1.slice(5)}:42` : '')));
+		}) as typeof fetch);
 	});
 
 	after(() =>
 	{
 		setPwnedRangeFetch(undefined);
-		setEmailSender(undefined);
+		setEmailSender(discardEmail);
 	});
 
 	beforeEach(() =>
@@ -249,6 +261,48 @@ describe('auth routes', () =>
 		});
 	});
 
+	describe('checking a username', () =>
+	{
+		it('answers only a browser that entered a code to register', async () =>
+		{
+			const grace = await register('grace@example.com', 'grace');
+			const stranger = new Browser();
+
+			assert.strictEqual((await stranger.send('POST', AUTH_USERNAME_CHECK_PATH, { username: 'grace' })).status, 403);
+
+			// Nor a browser logged in, or one that entered a code for something else
+			assert.strictEqual((await grace.send('POST', AUTH_USERNAME_CHECK_PATH, { username: 'grace' })).status, 403);
+			await forgetRateLimits();
+			await enterCode(stranger, 'resetPassword', 'grace@example.com');
+			assert.strictEqual((await stranger.send('POST', AUTH_USERNAME_CHECK_PATH, { username: 'grace' })).status, 403);
+
+			const browser = new Browser();
+
+			await enterCode(browser, 'register', 'ada@example.com');
+
+			const taken = await browser.send('POST', AUTH_USERNAME_CHECK_PATH, { username: 'GRACE' });
+
+			assert.strictEqual(taken.status, 409);
+			assert.strictEqual(taken.body.field, 'username');
+			assert.strictEqual((await browser.send('POST', AUTH_USERNAME_CHECK_PATH, { username: 'ada' })).status, 204);
+			assert.strictEqual((await browser.send('POST', AUTH_USERNAME_CHECK_PATH, { username: 'a!' })).body.field, 'username');
+		});
+
+		it('limits how many usernames a network checks', async () =>
+		{
+			const browser = new Browser();
+
+			await enterCode(browser, 'register', 'ada@example.com');
+
+			for (let check = 0; check < MAX_USERNAME_CHECKS_PER_NETWORK_HOUR; check++)
+			{
+				assert.strictEqual((await browser.send('POST', AUTH_USERNAME_CHECK_PATH, { username: `ada_${check}` })).status, 204);
+			}
+
+			assert.strictEqual((await browser.send('POST', AUTH_USERNAME_CHECK_PATH, { username: 'ada' })).status, 429);
+		});
+	});
+
 	describe('email codes', () =>
 	{
 		it('refuse a wrong code, and work once', async () =>
@@ -326,6 +380,19 @@ describe('auth routes', () =>
 			assert.strictEqual(await browser.username(), 'ada');
 		});
 
+		it('ends the session a browser was already logged in with when it logs in again', async () =>
+		{
+			const browser = await register('ada@example.com', 'ada');
+			const copy = new Browser();
+
+			// A copy of the browser's old session cookie, as if it had been stolen
+			copy.cookies.set('__Host-kiln-session', browser.cookies.get('__Host-kiln-session') ?? '');
+			assert.strictEqual(await copy.username(), 'ada');
+			assert.strictEqual((await browser.send('POST', AUTH_LOGIN_PATH, { email: 'ada@example.com', password: PASSWORD, rememberMe: false })).status, 200);
+			assert.strictEqual(await browser.username(), 'ada');
+			assert.strictEqual(await copy.username(), null);
+		});
+
 		it('answers a wrong password and an unknown address the same way', async () =>
 		{
 			await register('ada@example.com', 'ada');
@@ -348,6 +415,49 @@ describe('auth routes', () =>
 			const answer = await new Browser().send('POST', AUTH_LOGIN_PATH, { email: 'ada@example.com', password: 'guess', rememberMe: false });
 
 			assert.strictEqual(answer.status, 429);
+		});
+
+		it('lets a browser that has logged in to the account in while others\' guesses have used up its address\'s tries', async () =>
+		{
+			const ada = await register('ada@example.com', 'ada');
+			const grace = await register('grace@example.com', 'grace');
+
+			/**
+			 * Tries logging in to Ada's account from a browser
+			 *
+			 * @param browser The browser
+			 * @param password The password typed
+			 * @return The answer
+			 */
+			const logIn = (browser: Browser, password: string): Promise<{ status: number; body: AuthErrorPayload }> => browser.send('POST', AUTH_LOGIN_PATH, { email: 'ada@example.com', password, rememberMe: false });
+
+			await forgetRateLimits();
+
+			for (let attempt = 0; attempt < MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR; attempt++)
+			{
+				assert.strictEqual((await logIn(new Browser(), 'guess')).status, 401);
+			}
+
+			assert.strictEqual((await logIn(new Browser(), PASSWORD)).status, 429);
+
+			// Known to another account, or with a cookie the server didn't make
+			assert.strictEqual((await logIn(grace, PASSWORD)).status, 429);
+
+			const forged = new Browser();
+			const [id, expires] = (ada.cookies.get('__Host-kiln-known') ?? '').split('.');
+
+			forged.cookies.set('__Host-kiln-known', `${id}.${expires}.${'A'.repeat(43)}`);
+			assert.strictEqual((await logIn(forged, PASSWORD)).status, 429);
+
+			assert.strictEqual((await logIn(ada, PASSWORD)).status, 200);
+
+			// The known browser's own tries are limited too
+			for (let attempt = 0; attempt < MAX_LOGIN_ATTEMPTS_PER_BROWSER_HOUR; attempt++)
+			{
+				assert.strictEqual((await logIn(ada, 'guess')).status, 401);
+			}
+
+			assert.strictEqual((await logIn(ada, PASSWORD)).status, 429);
 		});
 
 		it('replaces a password hash made with older settings at login', async () =>
@@ -415,6 +525,29 @@ describe('auth routes', () =>
 
 	describe('resetting a password', () =>
 	{
+		it('refuses a browser that entered no code before checking or hashing the password', async () =>
+		{
+			const browser = new Browser();
+
+			// Any token of the right form, which no code was entered with
+			browser.cookies.set('__Host-kiln-continue', 'A'.repeat(43));
+
+			const checksBefore = breachChecks;
+			const reset = await browser.send('POST', AUTH_PASSWORD_RESET_PATH, { password: 'a new passphrase', rememberMe: false, locale: 'en', twoFactorCode: null });
+			const registered = await browser.send('POST', AUTH_REGISTER_PATH, {
+				email: 'ada@example.com',
+				password: 'a new passphrase',
+				username: 'ada',
+				displayName: 'Ada',
+				rememberMe: false,
+				locale: 'en'
+			});
+
+			assert.strictEqual(reset.status, 403);
+			assert.strictEqual(registered.status, 403);
+			assert.strictEqual(breachChecks, checksBefore);
+		});
+
 		it('sets the new password, logs out every other browser, and emails the account', async () =>
 		{
 			const first = await register('ada@example.com', 'ada');
@@ -483,6 +616,30 @@ describe('auth routes', () =>
 			assert.deepStrictEqual((await eventKinds('ada')).filter((kind) => kind.startsWith('password')), ['passwordChanged']);
 		});
 
+		it('ends a password reset asked for before it', async () =>
+		{
+			const browser = await register('ada@example.com', 'ada');
+			const other = new Browser();
+
+			await forgetRateLimits();
+			await enterCode(other, 'resetPassword', 'ada@example.com');
+			assert.strictEqual((await browser.send('POST', AUTH_PASSWORD_CHANGE_PATH, { currentPassword: PASSWORD, newPassword: 'a new passphrase', locale: 'en' })).status, 204);
+			assert.strictEqual((await other.send('POST', AUTH_PASSWORD_RESET_PATH, { password: 'another passphrase', rememberMe: false, locale: 'en', twoFactorCode: null })).status, 403);
+		});
+
+		it('limits the tries at the current password as logins to the account\'s address are limited', async () =>
+		{
+			const browser = await register('ada@example.com', 'ada');
+
+			for (let attempt = 0; attempt < MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR; attempt++)
+			{
+				assert.strictEqual((await browser.send('POST', AUTH_PASSWORD_CHANGE_PATH, { currentPassword: 'not my password at all', newPassword: 'a new passphrase', locale: 'en' })).status, 401);
+			}
+
+			assert.strictEqual((await browser.send('POST', AUTH_PASSWORD_CHANGE_PATH, { currentPassword: PASSWORD, newPassword: 'a new passphrase', locale: 'en' })).status, 429);
+			assert.strictEqual((await new Browser().send('POST', AUTH_LOGIN_PATH, { email: 'ada@example.com', password: PASSWORD, rememberMe: false })).status, 429);
+		});
+
 		it('refuses an account without a password', async () =>
 		{
 			const player = await createPlayer({
@@ -519,12 +676,28 @@ describe('auth routes', () =>
 			emails = [];
 			await enterCode(browser, 'changeEmail', 'lovelace@example.com');
 
-			const answer = await browser.send('POST', AUTH_EMAIL_CHANGE_PATH, { email: 'lovelace@example.com', locale: 'en' });
+			const answer = await browser.send('POST', AUTH_EMAIL_CHANGE_PATH, { email: 'lovelace@example.com', locale: 'en', currentPassword: PASSWORD, twoFactorCode: null });
 
 			assert.strictEqual(answer.status, 204);
 			await waitUntil(() => (emails.filter((email) => /address .* was changed/.test(email.subject)).length === 2));
 			assert.deepStrictEqual(emails.filter((email) => /address .* was changed/.test(email.subject)).map((email) => email.to).sort(), ['ada@example.com', 'lovelace@example.com']);
 			assert.strictEqual((await new Browser().send('POST', AUTH_LOGIN_PATH, { email: 'lovelace@example.com', password: PASSWORD, rememberMe: false })).status, 200);
+		});
+
+		it('ends a password reset sent to the old address', async () =>
+		{
+			const browser = await register('ada@example.com', 'ada');
+			const other = new Browser();
+
+			await forgetRateLimits();
+			emails = [];
+			assert.strictEqual((await other.send('POST', AUTH_CODE_PATH, { purpose: 'resetPassword', email: 'ada@example.com', locale: 'en' })).status, 204);
+
+			const code = await codeSentTo('ada@example.com');
+
+			await enterCode(browser, 'changeEmail', 'lovelace@example.com');
+			assert.strictEqual((await browser.send('POST', AUTH_EMAIL_CHANGE_PATH, { email: 'lovelace@example.com', locale: 'en', currentPassword: PASSWORD, twoFactorCode: null })).status, 204);
+			assert.strictEqual((await other.send('POST', AUTH_CODE_CHECK_PATH, { purpose: 'resetPassword', email: 'ada@example.com', code })).status, 400);
 		});
 
 		it('sends nothing to an address another account has', async () =>
@@ -549,6 +722,101 @@ describe('auth routes', () =>
 			const code = await codeSentTo('lovelace@example.com');
 
 			assert.strictEqual((await grace.send('POST', AUTH_CODE_CHECK_PATH, { purpose: 'changeEmail', email: 'lovelace@example.com', code })).status, 400);
+		});
+
+		it('needs the password, and logs out every other browser', async () =>
+		{
+			const browser = await register('ada@example.com', 'ada');
+			const other = new Browser();
+
+			assert.strictEqual((await other.send('POST', AUTH_LOGIN_PATH, { email: 'ada@example.com', password: PASSWORD, rememberMe: false })).status, 200);
+			await enterCode(browser, 'changeEmail', 'lovelace@example.com');
+
+			for (const currentPassword of [null, 'not my password at all'])
+			{
+				const refused = await browser.send('POST', AUTH_EMAIL_CHANGE_PATH, { email: 'lovelace@example.com', locale: 'en', currentPassword, twoFactorCode: null });
+
+				assert.strictEqual(refused.status, 401);
+				assert.strictEqual(refused.body.field, 'password');
+			}
+
+			assert.strictEqual((await browser.send('POST', AUTH_EMAIL_CHANGE_PATH, { email: 'lovelace@example.com', locale: 'en', currentPassword: PASSWORD, twoFactorCode: null })).status, 204);
+			assert.strictEqual(await browser.username(), 'ada');
+			assert.strictEqual(await other.username(), null);
+		});
+
+		it('needs the authenticator code of an account with 2FA, even from a trusted browser', async () =>
+		{
+			const browser = await register('ada@example.com', 'ada');
+			const playerId = (await pool.query<{ id: string }>('SELECT id FROM players WHERE username = $1', ['ada'])).rows[0].id;
+			const authenticator = await turnOnTwoFactor(playerId);
+
+			await enterCode(browser, 'changeEmail', 'lovelace@example.com');
+
+			const noCode = await browser.send('POST', AUTH_EMAIL_CHANGE_PATH, { email: 'lovelace@example.com', locale: 'en', currentPassword: PASSWORD, twoFactorCode: null });
+
+			assert.strictEqual(noCode.status, 401);
+			assert.strictEqual(noCode.body.field, 'twoFactorCode');
+			assert.strictEqual((await browser.send('POST', AUTH_EMAIL_CHANGE_PATH, { email: 'lovelace@example.com', locale: 'en', currentPassword: PASSWORD, twoFactorCode: authenticatorCode(authenticator.secret) })).status, 204);
+		});
+
+		it('needs a code sent to the current address of an account without a password, entered first', async () =>
+		{
+			const player = await createPlayer({
+				username: 'grace',
+				displayName: 'Grace',
+				email: 'grace@example.com',
+				passwordHash: null
+			});
+
+			/**
+			 * A browser logged in to Grace's account
+			 *
+			 * @return The browser
+			 */
+			async function graceBrowser(): Promise<Browser>
+			{
+				const browser = new Browser();
+				const { cookie } = await logInBrowser(player.id);
+
+				browser.cookies.set('__Host-kiln-session', cookie.split('=')[1]);
+
+				return(browser);
+			}
+
+			const change = { email: 'hopper@example.com', locale: 'en', currentPassword: null, twoFactorCode: null };
+
+			// Only the new address's code
+			const newOnly = await graceBrowser();
+
+			await enterCode(newOnly, 'changeEmail', 'hopper@example.com');
+			assert.strictEqual((await newOnly.send('POST', AUTH_EMAIL_CHANGE_PATH, change)).status, 403);
+
+			// A confirmation code is sent only to the address of the account the browser is logged in to
+			await forgetRateLimits();
+			emails = [];
+			assert.strictEqual((await newOnly.send('POST', AUTH_CODE_PATH, { purpose: 'confirmEmailChange', email: 'someone@example.com', locale: 'en' })).status, 204);
+			assert.strictEqual((await new Browser().send('POST', AUTH_CODE_PATH, { purpose: 'confirmEmailChange', email: 'grace@example.com', locale: 'en' })).status, 401);
+			await new Promise((resolve) => setTimeout(resolve, 50));
+			assert.strictEqual(emails.length, 0);
+
+			// Both codes, the new address's entered before the current address's
+			const wrongOrder = await graceBrowser();
+
+			await forgetRateLimits();
+			await enterCode(wrongOrder, 'changeEmail', 'hopper@example.com');
+			await enterCode(wrongOrder, 'confirmEmailChange', 'grace@example.com');
+			assert.strictEqual((await wrongOrder.send('POST', AUTH_EMAIL_CHANGE_PATH, change)).status, 403);
+
+			const browser = await graceBrowser();
+
+			await forgetRateLimits();
+			emails = [];
+			await enterCode(browser, 'confirmEmailChange', 'grace@example.com');
+			assert.match(emails[0].subject, /change your email address/);
+			await enterCode(browser, 'changeEmail', 'hopper@example.com');
+			assert.strictEqual((await browser.send('POST', AUTH_EMAIL_CHANGE_PATH, change)).status, 204);
+			assert.deepStrictEqual((await pool.query('SELECT email FROM players WHERE id = $1', [player.id])).rows, [{ email: 'hopper@example.com' }]);
 		});
 	});
 

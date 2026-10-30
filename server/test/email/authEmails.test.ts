@@ -1,10 +1,10 @@
 import assert from 'assert';
 import { SITE_NAME } from '@multiverse-kiln/shared';
 
-import { accountCreatedEmail, accountExistsEmail, emailChangedEmail, emailCodeEmail, passwordChangedEmail, providerLinkedEmail } from '../../src/email/authEmails.js';
+import { accountCreatedEmail, accountExistsEmail, emailChangedEmail, emailCodeEmail, passwordChangedEmail, providerLinkedEmail, wrongAuthenticatorCodesEmail } from '../../src/email/authEmails.js';
 import { emailTranslator } from '../../src/email/emailLocales.js';
 import { sendEmail, setEmailSender, type Email } from '../../src/email/mailer.js';
-import { testSiteUrl } from '../setup.js';
+import { discardEmail, testSiteUrl } from '../setup.js';
 
 describe('authEmails', () =>
 {
@@ -22,6 +22,7 @@ describe('authEmails', () =>
 	{
 		assert.match(emailCodeEmail('resetPassword', 'AB3X9Z', 'en').subject, /reset your password/);
 		assert.match(emailCodeEmail('changeEmail', 'AB3X9Z', 'en').subject, /change your email address/);
+		assert.match(emailCodeEmail('confirmEmailChange', 'AB3X9Z', 'en').text, /move your account .* to another email address/);
 	});
 
 	it('writes the notices', () =>
@@ -54,6 +55,7 @@ describe('authEmails', () =>
 		}
 
 		assert.ok(!emailCodeEmail('register', 'AB3X9Z', 'en').text.includes('/login'));
+		assert.ok(wrongAuthenticatorCodesEmail(10, 'en').text.includes(`Change your password:\r\n${testSiteUrl}/profile\r\n`));
 	});
 
 	it('escapes text in the HTML, but not in the plain text', () =>
@@ -82,7 +84,7 @@ describe('mailer', () =>
 {
 	afterEach(() =>
 	{
-		setEmailSender(undefined);
+		setEmailSender(discardEmail);
 	});
 
 	it('hands emails to the sender', async () =>

@@ -150,7 +150,8 @@ export class TwoFactorConfirmDialog
 			{
 				const codes = await this.api.replaceRecoveryCodes({
 					password: this.password.value,
-					code: this.code.value
+					code: this.code.value,
+					locale: currentLocale()
 				});
 
 				this.tracker.markSaved();

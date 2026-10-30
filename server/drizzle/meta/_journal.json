@@ -449,6 +449,48 @@
       "when": 1793302582484,
       "tag": "0063_privacy_contact_setting",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1793309292133,
+      "tag": "0064_confirm_email_change_code",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1793309439459,
+      "tag": "0065_email_code_continuation_per_purpose",
+      "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1793380614397,
+      "tag": "0066_browser_login_attempt_limit",
+      "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1793381488995,
+      "tag": "0067_delete_account_code",
+      "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1793382708657,
+      "tag": "0068_username_check_limit",
+      "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1793386929120,
+      "tag": "0069_wrong_authenticator_code_limit",
+      "breakpoints": true
     }
   ]
 }

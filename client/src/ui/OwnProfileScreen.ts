@@ -18,6 +18,7 @@ import { formMessages } from './formMessages';
 import { languageName } from './languagePicker';
 import { PasswordChangeDialog } from './PasswordChangeDialog';
 import { characterLabel, showProfileCharacters } from './profileCharacters';
+import { ProviderLinkDialog } from './ProviderLinkDialog';
 import { RecoveryCodesDialog } from './RecoveryCodesDialog';
 import { SearchSelect } from './SearchSelect';
 import { timeZoneChoices } from './timeZones';
@@ -143,6 +144,7 @@ export class OwnProfileScreen
 	private readonly twoFactorDialog: TwoFactorSetupDialog;
 	private readonly twoFactorConfirmDialog: TwoFactorConfirmDialog;
 	private readonly recoveryCodesDialog = new RecoveryCodesDialog();
+	private readonly linkDialog: ProviderLinkDialog;
 	private readonly exportButton = getElement('profile-export', HTMLButtonElement);
 	private readonly dataError = getElement('profile-data-error', HTMLElement);
 	private readonly deleteDialog: AccountDeleteDialog;
@@ -249,10 +251,18 @@ export class OwnProfileScreen
 			});
 		});
 		this.passwordDialog = new PasswordChangeDialog(authApi);
+		this.linkDialog = new ProviderLinkDialog(authApi, (url) =>
+		{
+			this.goToProvider(url);
+		});
 
 		this.changeEmailButton.addEventListener('click', () =>
 		{
-			this.emailDialog.open((this.profile?.email ?? null));
+			this.emailDialog.open({
+				email: (this.profile?.email ?? null),
+				hasPassword: (this.profile?.hasPassword ?? true),
+				twoFactor: ((this.profile?.twoFactor ?? null) !== null)
+			});
 		});
 
 		this.changePasswordButton.addEventListener('click', () =>
@@ -318,52 +328,27 @@ export class OwnProfileScreen
 		{
 			button.addEventListener('click', () =>
 			{
-				void this.startLink(provider);
+				showMessage(this.accountError, undefined);
+				this.linkDialog.open(provider, {
+					email: (this.profile?.email ?? null),
+					hasPassword: (this.profile?.hasPassword ?? true),
+					twoFactor: ((this.profile?.twoFactor ?? null) !== null)
+				});
 			});
 		}
 	}
 
 	/**
-	 * Sends the browser to a provider to link a login with it to the account. The provider sends the
-	 * browser back to the login page, which finishes the link and comes back here
+	 * Sends the browser to a provider to link a login with it to the account, once the link dialog has
+	 * checked it's the player. The provider sends the browser back to the login page, which finishes the
+	 * link and comes back here
 	 *
-	 * @param provider The provider
+	 * @param url The provider's page
 	 */
-	private async startLink(provider: LoginProvider): Promise<void>
+	private goToProvider(url: string): void
 	{
-		const buttons = Object.values(this.linkButtons);
-
-		for (const button of buttons)
-		{
-			button.disabled = true;
-		}
-
-		showMessage(this.accountError, undefined);
-
-		try
-		{
-			const url = await this.authApi.startProviderLogin({
-				provider,
-				rememberMe: false,
-				link: true
-			});
-
-			rememberLoginAddress(loginPageUrl(currentPageAddress()));
-			window.location.assign(url);
-		}
-		catch (error)
-		{
-			showMessage(this.accountError, describeEditorError(error, {
-				id: 'profile.linkFailed',
-				defaultMessage: 'Could not link the login.',
-				description: 'Shown on the player\'s own profile page when going to Google or Discord to link a login failed'
-			}));
-
-			for (const button of buttons)
-			{
-				button.disabled = false;
-			}
-		}
+		rememberLoginAddress(loginPageUrl(currentPageAddress()));
+		window.location.assign(url);
 	}
 
 	/**

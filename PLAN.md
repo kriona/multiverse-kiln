@@ -251,7 +251,7 @@ Decided:
 - Every account has a unique username, for finding users and invites, and a display name that needn't be unique. The name-only login's data is dropped rather than carried over, and the seed script's `--creator` names a username.
 - Linking: a provider login whose email matches a local account is never linked automatically. The player proves they own the local account (its password, or an email code) to link them; providers can also be linked from the profile.
 - Email is sent over SMTP with `nodemailer`, so the service is configuration (chosen in Phase 16), and caught by Mailpit in `docker-compose.yml` locally. Emails are HTML, with a plain text part, in the recipient's language.
-- Rate limits and the email code counters are Postgres rows updated atomically, so they hold across several server processes. The client's network comes from one function, which Phase 16 teaches to read the proxy's forwarding header.
+- Rate limits and the email code counters are Postgres rows updated atomically, so they hold across several server processes. The client's network comes from one function, which reads the connection's address, or behind a proxy the one forwarding header configured as trusted (`CLIENT_ADDRESS_HEADER`, `TRUSTED_PROXY_HOPS`); Phase 16 sets them for the host.
 - Passwords are 15 to 256 characters (NIST SP 800-63B rev. 4's minimum for a password that is the only factor, which it is without 2FA; the same for every account, so turning 2FA off never leaves a shorter one), with no composition rules, and are checked against HaveIBeenPwned's k-anonymity API (only the first 5 characters of the password's SHA-1 hash leave the server).
 - Password hashes are stored as self-describing strings (`$argon2id$v=19$m=...,p=...,t=...$<salt>$<hash>`), and one module (`server/src/auth/passwords.ts`) holds the current algorithm and settings, starting at OWASP's Argon2id minimum (19 MiB, 2 iterations, 1 thread). After a correct password, a hash made with older settings or an older algorithm is replaced with a current one, and the replacement is logged without ending the account's sessions. `verifyPassword()` picks the checker by the hash's prefix, so old hashes keep working when the algorithm changes. If an old algorithm is ever found weak, hashes of accounts that don't log in can be wrapped in the new one (`newAlgorithm(oldHash)`, marked by its prefix). Tests: a hash with old settings still verifies, and is replaced at login.
 - 2FA is TOTP with recovery codes, for local accounts only; provider logins rely on the provider's 2FA. Passkeys can come later. No CAPTCHA for now.
@@ -280,7 +280,7 @@ Built in two steps: logins (sessions, providers, local accounts, email codes, re
 	- [✅] Account linking
 	- [✅] Account deletion and data export
 	- [✅] Privacy policy page (`privacy.html`, linked from the footer), drafted; check it against what was built, and set its date, before players use the site
-	- [ ] Review against sections 1-3 and 5 of `SECURITY-PRACTICES.md`
+	- [✅] Review against sections 1-3 and 5 of `SECURITY-PRACTICES.md`
 
 **Done when:** only authenticated players can join, their identity maps to a DB row, and local accounts can register and reset passwords by email.
 
@@ -312,7 +312,7 @@ The first deploy tends to surface WebSocket, TLS and environment issues, so leav
 - [ ] Create the migration and app roles on each Neon branch with the same ownership and grants as the scripts in `docker/postgres/init/`, using `docker/postgres/neon/01-roles.sql` and `02-grants.sql` (roles made in the Neon console join `neon_superuser`); the server gets only the app role's pooled connection string
 - [ ] Run migrations against Neon `prod`
 - [ ] Deploy server with `npx @colyseus/cloud deploy`; set env vars in the dashboard (pooled Neon URL, `ALLOWED_ORIGINS` = the production client origin)
-- [ ] Read the client address from Colyseus Cloud's forwarding header, trusted only from its proxy, so per-network rate limits count clients rather than the proxy
+- [ ] Set `CLIENT_ADDRESS_HEADER` (and `TRUSTED_PROXY_HOPS` for X-Forwarded-For) for the game server's host, then check it once deployed (see TODO at the end of this file)
 - [ ] Point a production client build at the `wss://` endpoint
 - [ ] Set security headers on the client host and test them against the production build:
 	- `Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://<game server>; media-src 'self' data: blob:; connect-src 'self' https://<game server> wss://<game server>; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests` (Phaser needs `data:`/`blob:` for some textures and audio; the game server in `img-src` is for uploaded tilesets)
@@ -382,5 +382,15 @@ Needed before universes are open to the public.
 - Fonts for map text in scripts the default font doesn't cover (Phase 17)
 - Whether to offer machine translation of chat (later)
 - Whether to add client-side prediction (after Phase 7, if movement feels laggy)
-- Colyseus Cloud deployment location(s) (Phase 16)
+- Game server host (Colyseus Cloud or another), and its deployment location(s) (Phase 16). The host's proxies decide which forwarding header the server trusts for clients' addresses
 - Client host, and a subdomain or separate domain for QA/staging (Phase 16)
+
+---
+
+## TODO
+
+- [ ] Confirm the client address header on the game server's host (Phase 16; finding 4 in `SECURITY-FINDINGS.md`). The code trusts only the header `CLIENT_ADDRESS_HEADER` names, but which one is safe depends on the host's proxies, which aren't chosen yet:
+	- Find out which header the host's proxy sets, and whether it overwrites X-Real-IP or only adds to X-Forwarded-For. Prefer X-Forwarded-For unless the proxy is known to overwrite X-Real-IP
+	- Count the proxies that add to X-Forwarded-For (a load balancer or CDN in front of the host's proxy is a second one) and set `TRUSTED_PROXY_HOPS`
+	- Once deployed, log in from one network twice: once plainly, and once with a forged `X-Real-IP` and a padded `X-Forwarded-For` (`X-Forwarded-For: 203.0.113.9, 198.51.100.8`). Both auth events should have the same network hash; a different one means the server trusted the forged header
+	- Log in from two different networks: new rows in the auth events should each have a network hash, a different one for each network, and the server log shouldn't show "A request's client address could not be read"

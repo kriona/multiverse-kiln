@@ -1,0 +1,1 @@
+ALTER TYPE "public"."rate_limit_kind" ADD VALUE 'browserLoginAttempt';

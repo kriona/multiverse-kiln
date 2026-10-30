@@ -29,7 +29,7 @@
 						<input id="login-email" type="email" autocomplete="username" spellcheck="false" required />
 					</label>
 					<div class="password-field">
-						<label data-message="login.password" data-translation-context="Label of the password field when logging in, and when turning two-factor authentication on or off, making new recovery codes or deleting the account on the profile">
+						<label data-message="login.password" data-translation-context="Label of the password field when logging in, and when turning two-factor authentication on or off, making new recovery codes, linking a Google or Discord login, changing the email address or deleting the account on the profile">
 							Password
 							<input id="login-password" type="password" autocomplete="current-password" required />
 						</label>
@@ -94,6 +94,7 @@
 						Username
 						<input id="register-username" autocomplete="off" autocapitalize="none" spellcheck="false" required aria-describedby="register-username-hint" />
 					</label>
+					<p id="register-username-error" class="field-error field-message-slot"></p>
 					<p id="register-username-hint" class="hint" data-message="login.usernameHint" data-translation-context="Under the username field when creating an account; {min} and {max} are numbers">How other players find you, and tell you apart from others with the same name. <span id="register-username-min" data-argument="min" translate="no">3</span> to <span id="register-username-max" data-argument="max" translate="no">20</span> letters (a to z), digits and underscores.</p>
 					<label data-message="login.displayName" data-translation-context="Label of the field for the name other players see, when creating an account">
 						Name
@@ -138,7 +139,7 @@
 					<p id="reset-password-hint" class="hint" data-message="login.passwordHint" data-translation-context="Under the new password field when creating an account, resetting a password or changing it on the profile; {min} is a number">At least <span id="reset-password-min" data-argument="min" translate="no">15</span> characters. A few words strung together are easy to remember and hard to guess.</p>
 					<p id="reset-password-manager" class="hint" data-message="login.passwordManager" data-translation-context="Under the new password field when creating an account or resetting a password, recommending a password manager; {bitwarden} and {onePassword} are links to two of them">A password manager, such as <a href="https://bitwarden.com/" data-argument="bitwarden" translate="no" target="_blank" rel="noopener">Bitwarden</a> or <a href="https://1password.com/" data-argument="onePassword" translate="no" target="_blank" rel="noopener">1Password</a>, can make a strong password and remember it for you.</p>
 					<div id="reset-two-factor-field" hidden>
-						<label data-message="login.twoFactorCode" data-translation-context="Label of the field for the 6-digit code from the player's authenticator app, or one of their recovery codes, when logging in, resetting a password or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes or deleting the account on the profile">
+						<label data-message="login.twoFactorCode" data-translation-context="Label of the field for the 6-digit code from the player's authenticator app, or one of their recovery codes, when logging in, resetting a password or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes, changing the email address or deleting the account on the profile">
 							Authenticator code
 							<input id="reset-two-factor-code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" aria-describedby="reset-two-factor-hint" data-code="twoFactor" />
 						</label>
@@ -164,6 +165,7 @@
 						Username
 						<input id="provider-register-username" autocomplete="off" autocapitalize="none" spellcheck="false" required aria-describedby="provider-register-username-hint" />
 					</label>
+					<p id="provider-register-username-error" class="field-error field-message-slot"></p>
 					<p id="provider-register-username-hint" class="hint" data-message="login.usernameHint" data-translation-context="Under the username field when creating an account; {min} and {max} are numbers">How other players find you, and tell you apart from others with the same name. <span id="provider-register-username-min" data-argument="min" translate="no">3</span> to <span id="provider-register-username-max" data-argument="max" translate="no">20</span> letters (a to z), digits and underscores.</p>
 					<label data-message="login.displayName" data-translation-context="Label of the field for the name other players see, when creating an account">
 						Name
@@ -186,23 +188,23 @@
 					<!-- Not shown: tells password managers which account the password is for -->
 					<input id="provider-link-email" type="email" autocomplete="username" hidden />
 					<div id="provider-link-password-field" class="password-field">
-						<label data-message="login.password" data-translation-context="Label of the password field when logging in, and when turning two-factor authentication on or off, making new recovery codes or deleting the account on the profile">
+						<label data-message="login.password" data-translation-context="Label of the password field when logging in, and when turning two-factor authentication on or off, making new recovery codes, linking a Google or Discord login, changing the email address or deleting the account on the profile">
 							Password
 							<input id="provider-link-password" type="password" autocomplete="current-password" />
 						</label>
 						<button id="provider-link-password-toggle" type="button" class="secondary password-toggle" aria-controls="provider-link-password" aria-pressed="false" aria-label="Show password" title="Show password" data-message-aria-label="login.showPassword" data-translation-context-aria-label="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed" data-message-title="login.showPassword" data-translation-context-title="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"><span class="password-hidden-icon"><!-- icon ph:eye --></span><span class="password-shown-icon"><!-- icon ph:eye-slash --></span></button>
 					</div>
 					<div id="provider-link-two-factor-field" hidden>
-						<label data-message="login.twoFactorCode" data-translation-context="Label of the field for the 6-digit code from the player's authenticator app, or one of their recovery codes, when logging in, resetting a password or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes or deleting the account on the profile">
+						<label data-message="login.twoFactorCode" data-translation-context="Label of the field for the 6-digit code from the player's authenticator app, or one of their recovery codes, when logging in, resetting a password or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes, changing the email address or deleting the account on the profile">
 							Authenticator code
 							<input id="provider-link-two-factor-code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" aria-describedby="provider-link-two-factor-hint" data-code="twoFactor" />
 						</label>
-						<p id="provider-link-two-factor-hint" class="hint" data-message="login.twoFactorCodeHint" data-translation-context="Under the authenticator code field when logging in or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes or deleting the account on the profile">The 6-digit code from your authenticator app, or one of your recovery codes.</p>
+						<p id="provider-link-two-factor-hint" class="hint" data-message="login.twoFactorCodeHint" data-translation-context="Under the authenticator code field when logging in or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes, changing the email address or deleting the account on the profile">The 6-digit code from your authenticator app, or one of your recovery codes.</p>
 					</div>
 					<p id="provider-link-error" class="form-error" role="alert" hidden></p>
 					<div class="form-buttons">
 						<button id="provider-link-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="login.back" data-translation-context="Button that goes back a step while logging in, creating an account or resetting a password"><!-- icon ph:arrow-left -->Back</button>
-						<button id="provider-link-code" type="button" class="secondary" data-shortcut="Alt+C" data-message="login.linkWithCode" data-translation-context="Button on the screen that links a Google or Discord login to an account: emails a code to the account's address, to use instead of its password"><!-- icon ph:paper-plane-right -->Email me a code</button>
+						<button id="provider-link-code" type="button" class="secondary" data-shortcut="Alt+C" data-message="login.linkWithCode" data-translation-context="Button that emails a code to the account's address: on the login page, when linking a Google or Discord login to the account, to use instead of its password, and on the profile, for an account without a password, to check it's the player linking a login, changing the email address or deleting the account"><!-- icon ph:paper-plane-right -->Email me a code</button>
 						<button id="provider-link-submit" type="submit" aria-describedby="provider-link-error" data-shortcut="Alt+L" data-message="login.linkSubmit" data-translation-context="Button that logs in to the account with its password, linking the Google or Discord login to it"><!-- icon ph:link -->Link account</button>
 					</div>
 				</form>
@@ -210,9 +212,9 @@
 
 			<section id="two-factor-screen" class="screen auth-screen" hidden>
 				<form id="two-factor-form" class="panel form auth-panel">
-					<h1 data-message="login.twoFactorTitle" data-translation-context="Heading of the screen that asks for the code from the player's authenticator app after their password, or after the emailed code when linking a Google or Discord login">Enter your authenticator code</h1>
+					<h1 data-message="login.twoFactorTitle" data-translation-context="Heading of the screen that asks for the code from the player's authenticator app after their password or logging in with Google or Discord, or after the emailed code when linking a Google or Discord login">Enter your authenticator code</h1>
 					<p id="two-factor-intro" data-message="login.twoFactorIntro" data-translation-context="On the screen that asks for the code from the player's authenticator app, when their account has two-factor authentication">Your account has two-factor authentication. Open your authenticator app and enter the 6-digit code it shows for this site.</p>
-					<label data-message="login.twoFactorCode" data-translation-context="Label of the field for the 6-digit code from the player's authenticator app, or one of their recovery codes, when logging in, resetting a password or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes or deleting the account on the profile">
+					<label data-message="login.twoFactorCode" data-translation-context="Label of the field for the 6-digit code from the player's authenticator app, or one of their recovery codes, when logging in, resetting a password or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes, changing the email address or deleting the account on the profile">
 						Authenticator code
 						<input id="two-factor-code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" required aria-describedby="two-factor-hint" data-code="twoFactor" data-auto-submit />
 					</label>

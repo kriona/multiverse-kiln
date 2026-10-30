@@ -12,6 +12,18 @@ import { decideHourlyLimit, HOUR_MS, type SendDecision } from '../logic/emailCod
 export const MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR = 10;
 
 /**
+ * How many times a browser that has logged in to an account may try logging in to it again in an hour.
+ * Its tries are counted in place of the address's, so others' guesses at the address can't lock it out
+ */
+export const MAX_LOGIN_ATTEMPTS_PER_BROWSER_HOUR = 10;
+
+/**
+ * How many usernames one network may check in an hour while creating accounts. Enough for a player
+ * trying names as they type, too few to list who has an account
+ */
+export const MAX_USERNAME_CHECKS_PER_NETWORK_HOUR = 60;
+
+/**
  * How many logins one network may try in an hour, whatever addresses they are for
  */
 export const MAX_LOGIN_ATTEMPTS_PER_NETWORK_HOUR = 30;
