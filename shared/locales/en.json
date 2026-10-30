@@ -2083,6 +2083,10 @@
 		"defaultMessage": "You already have an account on {siteName}",
 		"description": "Subject of the email sent, in place of a code, when someone asks to create an account with an address that already has one; {siteName} is the site's name"
 	},
+	"email.action.changePassword": {
+		"defaultMessage": "Change your password",
+		"description": "Link at the end of the email sent when many wrong authenticator app codes were typed for an account; opens the profile, after logging in, where the password is changed"
+	},
 	"email.action.logIn": {
 		"defaultMessage": "Log in to {siteName}",
 		"description": "Link at the end of the email sent when someone asks to create an account with an address that already has one; opens the login page. {siteName} is the site's name"
@@ -2103,17 +2107,33 @@
 		"defaultMessage": "Your code to change your email address on {siteName}",
 		"description": "Subject of the email, sent to the new address, with the code for changing an account's email address; {siteName} is the site's name"
 	},
+	"email.code.confirmEmailChange.intro": {
+		"defaultMessage": "Someone asked to move your account on {siteName} to another email address. If it was you, enter this code to go on:",
+		"description": "First paragraph of the email, sent to an account's current address, with the code that checks it's the owner changing the account's email address, for an account without a password, shown just above the code; {siteName} is the site's name"
+	},
+	"email.code.confirmEmailChange.subject": {
+		"defaultMessage": "Your code to change your email address on {siteName}",
+		"description": "Subject of the email, sent to an account's current address, with the code that checks it's the owner changing the account's email address, for an account without a password; {siteName} is the site's name"
+	},
+	"email.code.deleteAccount.intro": {
+		"defaultMessage": "Someone asked to delete your account on {siteName}, which can't be undone. If it was you, enter this code to go on:",
+		"description": "First paragraph of the email with the code that checks it's the owner deleting an account without a password, shown just above the code; {siteName} is the site's name"
+	},
+	"email.code.deleteAccount.subject": {
+		"defaultMessage": "Your code to delete your account on {siteName}",
+		"description": "Subject of the email with the code that checks it's the owner deleting an account without a password; {siteName} is the site's name"
+	},
 	"email.code.lifetime": {
 		"defaultMessage": "The code works once, for {minutes, plural, one {# minute} other {# minutes}}.",
 		"description": "In every email that sends a code, after the code: how long it can be used"
 	},
 	"email.code.linkLogin.intro": {
 		"defaultMessage": "Enter this code on {siteName} to log in to your account with Google or Discord from now on:",
-		"description": "First paragraph of the email that sends the code for linking a Google or Discord login to the account with the same email address, shown just above the code; {siteName} is the site's name"
+		"description": "First paragraph of the email that sends the code for linking a Google or Discord login to the account with the same email address, or, for an account without a password, to the account the player is logged in to from their profile, shown just above the code; {siteName} is the site's name"
 	},
 	"email.code.linkLogin.subject": {
 		"defaultMessage": "Your code to link a login to your account on {siteName}",
-		"description": "Subject of the email that sends the code for linking a Google or Discord login to the account with the same email address; {siteName} is the site's name"
+		"description": "Subject of the email that sends the code for linking a Google or Discord login to the account with the same email address, or, for an account without a password, to the account the player is logged in to from their profile; {siteName} is the site's name"
 	},
 	"email.code.notYou": {
 		"defaultMessage": "If you didn't ask for this code, you can ignore this email. Nobody can use the code without reading your email.",
@@ -2215,6 +2235,18 @@
 		"defaultMessage": "Two-factor authentication is on for your account on {siteName}",
 		"description": "Subject of the email sent when two-factor authentication (an authenticator app code asked for at login) is turned on for an account; {siteName} is the site's name"
 	},
+	"email.wrongAuthenticatorCodes.body": {
+		"defaultMessage": "{count} wrong codes from an authenticator app were typed for your account on {siteName} today.",
+		"description": "Paragraph of the email sent when many wrong authenticator app codes were typed for an account in a day; {siteName} is the site's name, and {count} how many (always more than one)"
+	},
+	"email.wrongAuthenticatorCodes.notYou": {
+		"defaultMessage": "If this wasn't you, log in and change your password.",
+		"description": "Last paragraph of the email sent when many wrong authenticator app codes were typed for an account, for someone who didn't type them"
+	},
+	"email.wrongAuthenticatorCodes.subject": {
+		"defaultMessage": "Wrong codes were typed for your account on {siteName}",
+		"description": "Subject of the email sent when many wrong authenticator app codes were typed for an account in a day; {siteName} is the site's name"
+	},
 	"error.alreadyInGroup": {
 		"defaultMessage": "That character is already in a group. They have to leave it first.",
 		"description": "Why a character couldn't make or join a group: a character can be in only one group at a time"
@@ -2302,6 +2334,10 @@
 	"error.auth.tooManyAttempts": {
 		"defaultMessage": "Too many tries. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
 		"description": "Why a login wasn't tried, an email code wasn't sent, or a code wasn't checked: too many were tried or asked for from this network or for this address in the past hour, or a code was sent to the address less than a minute ago"
+	},
+	"error.auth.tooManyWrongAuthenticatorCodes": {
+		"defaultMessage": "Too many wrong codes from an authenticator app were typed for your account today. Use one of your recovery codes, or try again in {hours, plural, one {# hour} other {# hours}}.",
+		"description": "Shown under the two-factor code field when the account had too many wrong authenticator app codes in the past day, so only recovery codes are taken for now; {hours} is how long until an authenticator code is taken again"
 	},
 	"error.auth.twoFactorAlreadyOn": {
 		"defaultMessage": "Two-factor authentication is already on for your account.",
@@ -3373,7 +3409,7 @@
 	},
 	"login.linkWithCode": {
 		"defaultMessage": "Email me a code",
-		"description": "Button on the screen that links a Google or Discord login to an account: emails a code to the account's address, to use instead of its password"
+		"description": "Button that emails a code to the account's address: on the login page, when linking a Google or Discord login to the account, to use instead of its password, and on the profile, for an account without a password, to check it's the player linking a login, changing the email address or deleting the account"
 	},
 	"login.newPassword": {
 		"defaultMessage": "Password",
@@ -3389,7 +3425,7 @@
 	},
 	"login.password": {
 		"defaultMessage": "Password",
-		"description": "Label of the password field when logging in, and when turning two-factor authentication on or off, making new recovery codes or deleting the account on the profile"
+		"description": "Label of the password field when logging in, and when turning two-factor authentication on or off, making new recovery codes, linking a Google or Discord login, changing the email address or deleting the account on the profile"
 	},
 	"login.passwordHint": {
 		"defaultMessage": "At least {min} characters. A few words strung together are easy to remember and hard to guess.",
@@ -3501,11 +3537,11 @@
 	},
 	"login.twoFactorCode": {
 		"defaultMessage": "Authenticator code",
-		"description": "Label of the field for the 6-digit code from the player's authenticator app, or one of their recovery codes, when logging in, resetting a password or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes or deleting the account on the profile"
+		"description": "Label of the field for the 6-digit code from the player's authenticator app, or one of their recovery codes, when logging in, resetting a password or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes, changing the email address or deleting the account on the profile"
 	},
 	"login.twoFactorCodeHint": {
 		"defaultMessage": "The 6-digit code from your authenticator app, or one of your recovery codes.",
-		"description": "Under the authenticator code field when logging in or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes or deleting the account on the profile"
+		"description": "Under the authenticator code field when logging in or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes, changing the email address or deleting the account on the profile"
 	},
 	"login.twoFactorIntro": {
 		"defaultMessage": "Your account has two-factor authentication. Open your authenticator app and enter the 6-digit code it shows for this site.",
@@ -3521,7 +3557,7 @@
 	},
 	"login.twoFactorTitle": {
 		"defaultMessage": "Enter your authenticator code",
-		"description": "Heading of the screen that asks for the code from the player's authenticator app after their password, or after the emailed code when linking a Google or Discord login"
+		"description": "Heading of the screen that asks for the code from the player's authenticator app after their password or logging in with Google or Discord, or after the emailed code when linking a Google or Discord login"
 	},
 	"login.unreachable": {
 		"defaultMessage": "Could not reach the server. Check your connection and try again.",
@@ -3530,6 +3566,10 @@
 	"login.username": {
 		"defaultMessage": "Username",
 		"description": "Label of the field for a new account's username: a unique name of letters, digits and underscores that other players find them by"
+	},
+	"login.usernameAvailable": {
+		"defaultMessage": "That username is available.",
+		"description": "Shown under the username field when creating an account, once the site has checked that no other account has the username typed"
 	},
 	"login.usernameHint": {
 		"defaultMessage": "How other players find you, and tell you apart from others with the same name. {min} to {max} letters (a to z), digits and underscores.",
@@ -4239,6 +4279,10 @@
 		"defaultMessage": "We store only what the site needs to work, so we don't ask before storing it. There are no cookies from other sites.",
 		"description": "In the privacy policy, before the list of what the site stores in a player's browser; there are no tracking cookies, so it asks no permission for them"
 	},
+	"privacy.cookiesKnownBrowser": {
+		"defaultMessage": "A cookie that shows a browser has logged in to your account, so other people's wrong password guesses can't stop it from logging in. It doesn't say which account it is, and lasts 180 days after you last log in.",
+		"description": "In the privacy policy's list of what the site stores in a player's browser: a cookie that marks a browser as one that has logged in to the account, so other people's wrong password guesses for the account can't stop that browser logging in"
+	},
 	"privacy.cookiesLanguage": {
 		"defaultMessage": "The language you choose at the bottom of the page.",
 		"description": "In the privacy policy's list of what the site stores in a player's browser: the language chosen at the bottom of the page"
@@ -4248,7 +4292,7 @@
 		"description": "In the privacy policy's list of what the site stores in a player's browser: the login cookie, and how long it lasts"
 	},
 	"privacy.cookiesTwoFactor": {
-		"defaultMessage": "With two-factor authentication on, a cookie that lets the browser where you typed your password enter your authenticator code, for 10 minutes. If you choose not to be asked again on a browser, a cookie that lets it skip the code for 30 days, until you stop trusting it on your profile.",
+		"defaultMessage": "With two-factor authentication on, a cookie that lets the browser where you typed your password, or logged in with Google or Discord, enter your authenticator code, for 10 minutes. If you choose not to be asked again on a browser, a cookie that lets it skip the code for 30 days, until you stop trusting it on your profile.",
 		"description": "In the privacy policy's list of what the site stores in a player's browser: the cookies two-factor authentication uses, one while the login waits for the authenticator code, and one for a browser the player chose to trust"
 	},
 	"privacy.deleting": {
@@ -4471,13 +4515,21 @@
 		"defaultMessage": "If {email} isn't another account's address, we've emailed it a code. Enter the code from the email. It works once, for {minutes, plural, one {# minute} other {# minutes}}.",
 		"description": "In the dialog that changes the player's email address, once a code was sent to the new address; {email} is that address. The page can't say whether it belongs to another account, so it can't say a code was sent"
 	},
+	"profile.changeEmailConfirmSent": {
+		"defaultMessage": "We've emailed a code to {email}. Enter it, and the new address, and we'll send that a code too. It works once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"description": "In the dialog that changes the email address of an account without a password, once a code was sent to its current address; {email} is that address"
+	},
 	"profile.changeEmailFailed": {
 		"defaultMessage": "Could not change your email address.",
 		"description": "Shown in the dialog that changes the player's email address when sending the code or changing the address failed"
 	},
 	"profile.changeEmailIntro": {
-		"defaultMessage": "Your email address is {email}. Enter the new one, and we'll send it a code to check it's yours.",
+		"defaultMessage": "Your email address is {email}. Enter the new one, and we'll send it a code to check it's yours. Every other browser logged in to your account is logged out when the address changes.",
 		"description": "In the dialog that changes the player's email address; {email} is the address the account has now"
+	},
+	"profile.changeEmailIntroConfirm": {
+		"defaultMessage": "Your email address is {email}. To check it's you, we'll email it a code first. Every other browser logged in to your account is logged out when the address changes.",
+		"description": "In the dialog that changes the player's email address, for an account without a password, before a code is sent to its current address; {email} is that address"
 	},
 	"profile.changeEmailIntroNone": {
 		"defaultMessage": "Enter an email address, and we'll send it a code to check it's yours.",
@@ -4531,6 +4583,10 @@
 		"defaultMessage": "Copy",
 		"description": "Button in the dialog that shows the player's new recovery codes: copies them all"
 	},
+	"profile.currentEmailCode": {
+		"defaultMessage": "Code sent to your current address",
+		"description": "Label of the field for the code emailed to the account's current address, in the dialog that changes the email address of an account without a password"
+	},
 	"profile.currentPassword": {
 		"defaultMessage": "Current password",
 		"description": "Label of the field for the player's current password, in the dialog that changes it"
@@ -4550,6 +4606,18 @@
 	"profile.deleteAccountTitle": {
 		"defaultMessage": "Delete your account",
 		"description": "Title of the dialog that deletes the player's account"
+	},
+	"profile.deleteCodeFailed": {
+		"defaultMessage": "Could not email you a code.",
+		"description": "Shown in the dialog that deletes an account without a password when the code couldn't be emailed to the account's address"
+	},
+	"profile.deleteCodeIntro": {
+		"defaultMessage": "To check it's you, we'll email a code to {email}.",
+		"description": "In the dialog that deletes an account without a password, above the button that emails a code to the account's address; {email} is that address"
+	},
+	"profile.deleteCodeSent": {
+		"defaultMessage": "We've emailed a code to {email}. Enter it to delete your account. It works once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"description": "In the dialog that deletes an account without a password, once a code was sent to the account's address; {email} is that address"
 	},
 	"profile.deleteFailed": {
 		"defaultMessage": "Could not delete your account.",
@@ -4659,17 +4727,37 @@
 		"defaultMessage": "You can choose up to {max, plural, one {# language} other {# languages}}.",
 		"description": "Shown under the field for choosing the languages the player knows, on their own profile page, when they try to choose more than {max}, a number"
 	},
+	"profile.linkCodeSent": {
+		"defaultMessage": "We've emailed a code to {email}. Enter it to go on. It works once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"description": "In the dialog on the player's own profile that links a Google or Discord login, once a code was sent to the account's address; {email} is that address"
+	},
+	"profile.linkContinue": {
+		"defaultMessage": "Continue",
+		"description": "Button in the dialog that links a Google or Discord login from the player's own profile: checks the password, or the emailed code, and the authenticator code, then goes to Google or Discord to choose the account to link"
+	},
 	"profile.linkDiscord": {
 		"defaultMessage": "Link Discord",
 		"description": "Button on the player's own profile page that goes to Discord to link a Discord login to their account, so it can log in with it"
 	},
 	"profile.linkFailed": {
 		"defaultMessage": "Could not link the login.",
-		"description": "Shown on the player's own profile page when going to Google or Discord to link a login failed"
+		"description": "Shown on the player's own profile page, or in its dialog that links a Google or Discord login, when checking it's the player or going to Google or Discord failed"
 	},
 	"profile.linkGoogle": {
 		"defaultMessage": "Link Google",
 		"description": "Button on the player's own profile page that goes to Google to link a Google login to their account, so it can log in with it"
+	},
+	"profile.linkIntroCode": {
+		"defaultMessage": "To check it's you, we'll email a code to {email}. Then you'll go to {provider} to choose the account to link.",
+		"description": "In the dialog on the player's own profile that links a Google or Discord login, for an account without a password; {email} is the account's address, and {provider} is Google or Discord"
+	},
+	"profile.linkIntroPassword": {
+		"defaultMessage": "To check it's you, enter your password. Then you'll go to {provider} to choose the account to link.",
+		"description": "In the dialog on the player's own profile that links a Google or Discord login, for an account with a password; {provider} is Google or Discord"
+	},
+	"profile.linkTitle": {
+		"defaultMessage": "Link a {provider} login",
+		"description": "Title of the dialog on the player's own profile that links a Google or Discord login to their account; {provider} is Google or Discord"
 	},
 	"profile.loadFailed": {
 		"defaultMessage": "Could not load the profile. Reload the page to try again.",
@@ -4892,7 +4980,7 @@
 		"description": "Shown in the dialog that sets up two-factor authentication when it couldn't be set up"
 	},
 	"profile.twoFactorSetupIntro": {
-		"defaultMessage": "With two-factor authentication, logging in with your password also asks for a code from an app on your phone, so someone who learns your password still can't get in. First, enter your password.",
+		"defaultMessage": "With two-factor authentication, logging in also asks for a code from an app on your phone, so someone who learns your password still can't get in. Every other browser logged in to your account is logged out when it turns on. First, enter your password.",
 		"description": "First paragraph of the dialog that sets up two-factor authentication, which asks for the player's password first"
 	},
 	"profile.twoFactorSetupTitle": {

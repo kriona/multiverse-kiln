@@ -35,6 +35,13 @@ export const AUTH_CODE_PATH = `${AUTH_PATH}/code`;
 export const AUTH_CODE_CHECK_PATH = `${AUTH_PATH}/code/check`;
 
 /**
+ * POST: check whether a new account could take a username (UsernameCheckRequest), answered with 204
+ * when it could, or the refusal registering would give. Only for a browser creating an account: one
+ * that entered a code to register, or came back from a provider with a login that has no account yet
+ */
+export const AUTH_USERNAME_CHECK_PATH = `${AUTH_PATH}/username/check`;
+
+/**
  * POST: create a local account, after its code was checked (RegisterRequest)
  */
 export const AUTH_REGISTER_PATH = `${AUTH_PATH}/register`;
@@ -46,7 +53,9 @@ export const AUTH_PASSWORD_RESET_PATH = `${AUTH_PATH}/password-reset`;
 
 /**
  * POST: change the logged-in account's email address, after the code sent to the new address was
- * checked (EmailChangeRequest)
+ * checked, giving the password (or for an account without one, after the code sent to its current
+ * address was checked) and the 2FA code (EmailChangeRequest). Every other browser logged in to the
+ * account is logged out
  */
 export const AUTH_EMAIL_CHANGE_PATH = `${AUTH_PATH}/email`;
 
@@ -212,9 +221,11 @@ export const TRUSTED_BROWSER_DAYS = 30;
 export const MAX_TWO_FACTOR_CODE_INPUT_LENGTH = 32;
 
 /**
- * What an email code is for
+ * What an email code is for. 'changeEmail' is sent to the new address, and 'confirmEmailChange' to the
+ * current address of an account without a password, to check it's the owner changing it.
+ * 'deleteAccount' checks it's the owner deleting an account without a password
  */
-export const EMAIL_CODE_PURPOSES = ['register', 'resetPassword', 'changeEmail', 'linkLogin'] as const;
+export const EMAIL_CODE_PURPOSES = ['register', 'resetPassword', 'changeEmail', 'linkLogin', 'confirmEmailChange', 'deleteAccount'] as const;
 
 export type EmailCodePurpose = (typeof EMAIL_CODE_PURPOSES)[number];
 
@@ -365,6 +376,8 @@ export interface RecoveryCodesRequest
 	 * An authenticator or recovery code
 	 */
 	code: string;
+
+	locale: string;
 }
 
 /**
@@ -421,6 +434,14 @@ export interface EmailCodeCheckPayload
 }
 
 /**
+ * Body of POST AUTH_USERNAME_CHECK_PATH
+ */
+export interface UsernameCheckRequest
+{
+	username: string;
+}
+
+/**
  * Body of POST AUTH_REGISTER_PATH
  */
 export interface RegisterRequest
@@ -463,6 +484,17 @@ export interface EmailChangeRequest
 	email: string;
 
 	locale: string;
+
+	/**
+	 * The account's password, or null for an account without one, which enters a code sent to its
+	 * current address (purpose 'confirmEmailChange') instead
+	 */
+	currentPassword: string | null;
+
+	/**
+	 * The authenticator or recovery code, for an account with 2FA; otherwise null
+	 */
+	twoFactorCode: string | null;
 }
 
 /**
@@ -499,10 +531,33 @@ export interface ProviderStartRequest
 	rememberMe: boolean;
 
 	/**
-	 * Whether the provider login is linked to the account the browser is logged in to, from its
-	 * profile, rather than logging in
+	 * How the player confirms linking the provider login to the account the browser is logged in to,
+	 * from its profile; null to log in instead
 	 */
-	link: boolean;
+	link: ProviderLinkConfirmation | null;
+}
+
+/**
+ * What linking a provider login from the profile asks for, so a session alone can't add a login to the
+ * account: its password, or for an account without one, a code sent to its address (purpose
+ * 'linkLogin') that this browser entered. With 2FA, its authenticator or recovery code too
+ */
+export interface ProviderLinkConfirmation
+{
+	/**
+	 * The account's password, or null when it has none
+	 */
+	password: string | null;
+
+	/**
+	 * An authenticator or recovery code, when the account has 2FA; otherwise null
+	 */
+	twoFactorCode: string | null;
+
+	/**
+	 * The language to write an email in, such as telling the player a recovery code was used
+	 */
+	locale: string;
 }
 
 /**
@@ -538,6 +593,13 @@ export interface ProviderCallbackRequest
  */
 export type ProviderCallbackPayload =
 	| { outcome: 'loggedIn' }
+	| {
+		/**
+		 * The provider login is an account's that has 2FA, and the browser isn't trusted: enter the
+		 * authenticator or recovery code (AUTH_TWO_FACTOR_LOGIN_PATH), as after a password
+		 */
+		outcome: 'twoFactor';
+	}
 	| {
 		/**
 		 * The login started as a link (ProviderStartRequest's link), and the account has the provider
@@ -639,7 +701,9 @@ export interface AccountDeleteRequest
 	twoFactorCode: string | null;
 
 	/**
-	 * The account's username, typed to confirm, for an account without a password; otherwise null
+	 * The account's username, typed to confirm, for an account without a password; otherwise null. An
+	 * account without a password that has an address also enters a code sent to it first (purpose
+	 * 'deleteAccount')
 	 */
 	username: string | null;
 

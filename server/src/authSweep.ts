@@ -52,8 +52,8 @@ export async function sweepAuth(now: Date = new Date()): Promise<void>
 		await deleteExpiredPendingProviderLogins(now);
 		await deleteExpiredPendingTwoFactorLogins(now);
 		await deleteExpiredTrustedBrowsers(now);
-		await deleteRateLimitEventsBefore(['addressCodeSent', 'networkCodeRequest', 'networkGuess', 'addressLoginAttempt', 'networkLoginAttempt', 'accountTwoFactorAttempt'], new Date(now.getTime() - HOUR_MS));
-		await deleteRateLimitEventsBefore(['addressWrongGuess'], new Date(now.getTime() - DAY_MS));
+		await deleteRateLimitEventsBefore(['addressCodeSent', 'networkCodeRequest', 'networkGuess', 'addressLoginAttempt', 'networkLoginAttempt', 'accountTwoFactorAttempt', 'browserLoginAttempt', 'networkUsernameCheck'], new Date(now.getTime() - HOUR_MS));
+		await deleteRateLimitEventsBefore(['addressWrongGuess', 'accountWrongAuthenticatorCode'], new Date(now.getTime() - DAY_MS));
 		await deleteAuthEventsBefore(new Date(now.getTime() - (AUTH_EVENT_DAYS * DAY_MS)));
 	}
 	catch (error)

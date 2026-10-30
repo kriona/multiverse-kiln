@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { accountExportFileName, AUTH_ACCOUNT_DELETE_PATH, AUTH_LOGIN_PATH, PROFILE_DELETION_PATH, PROFILE_EXPORT_PATH, type AccountDeletionPayload, type AccountExport, type AuthErrorPayload } from '@multiverse-kiln/shared';
+import { accountExportFileName, AUTH_ACCOUNT_DELETE_PATH, AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_LOGIN_PATH, PROFILE_DELETION_PATH, PROFILE_EXPORT_PATH, type AccountDeletionPayload, type AccountExport, type AuthErrorPayload } from '@multiverse-kiln/shared';
 
 import { hashPassword } from '../src/auth/passwords.js';
 import { pool } from '../src/db/client.js';
@@ -14,6 +14,7 @@ import { areaChanges, type AreaChange } from '../src/world/areaChanges.js';
 import { Browser } from './browser.js';
 import { addCharacter, addGroup, addPlayableUniverse, addUniverse } from './db/fixtures.js';
 import { addPlayer, logInBrowser } from './players.js';
+import { discardEmail } from './setup.js';
 import { getTestServer, testServerUrl } from './testServer.js';
 import { authenticatorCode, turnOnTwoFactor } from './twoFactorAccounts.js';
 import { waitUntil } from './waitUntil.js';
@@ -137,7 +138,7 @@ describe('account deletion and data export', () =>
 
 	after(() =>
 	{
-		setEmailSender(undefined);
+		setEmailSender(discardEmail);
 	});
 
 	it('exports the account\'s data without its secrets', async () =>
@@ -235,7 +236,34 @@ describe('account deletion and data export', () =>
 		assert.match(emails[0].subject, /was deleted/);
 	});
 
-	it('asks an account without a password to type its username', async () =>
+	it('asks an account without a password, but with an address, for its username and a code sent to the address', async () =>
+	{
+		const grace = await createPlayer({
+			username: 'grace',
+			displayName: 'Grace',
+			email: 'grace@example.com',
+			passwordHash: null
+		});
+		const browser = await browserFor(grace.id);
+
+		assert.strictEqual((await deleteAccount(browser, { username: 'grace' })).status, 403);
+
+		// Sent only to the address of the account the browser is logged in to
+		assert.strictEqual((await browser.send('POST', AUTH_CODE_PATH, { purpose: 'deleteAccount', email: 'someone@example.com', locale: 'en' })).status, 204);
+		assert.strictEqual((await browser.send('POST', AUTH_CODE_PATH, { purpose: 'deleteAccount', email: 'grace@example.com', locale: 'en' })).status, 204);
+		await waitUntil(() => (emails.length > 0));
+		assert.deepStrictEqual(emails.map((email) => email.to), ['grace@example.com']);
+		assert.match(emails[0].subject, /delete your account/);
+
+		const code = /\r\n\r\n([0-9A-Z]{6})\r\n\r\n/.exec(emails[0].text)?.[1];
+
+		assert.strictEqual((await browser.send('POST', AUTH_CODE_CHECK_PATH, { purpose: 'deleteAccount', email: 'grace@example.com', code })).status, 200);
+		assert.strictEqual((await deleteAccount(browser, { username: 'someone' })).status, 400);
+		assert.strictEqual((await deleteAccount(browser, { username: 'grace' })).status, 204);
+		assert.ok(!await accountExists(grace.id));
+	});
+
+	it('asks an account without a password or an address to type its username', async () =>
 	{
 		const ada = await addPlayer('Ada');
 		const browser = await browserFor(ada.id);

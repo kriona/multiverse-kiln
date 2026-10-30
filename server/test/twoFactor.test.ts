@@ -1,14 +1,18 @@
 import assert from 'assert';
 import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_RECOVERY_CODES_PATH, AUTH_TRUSTED_BROWSERS_FORGET_PATH, AUTH_TWO_FACTOR_DISABLE_PATH, AUTH_TWO_FACTOR_ENABLE_PATH, AUTH_TWO_FACTOR_LOGIN_PATH, AUTH_TWO_FACTOR_SETUP_PATH, PROFILE_PATH, RECOVERY_CODE_COUNT, type AuthErrorPayload, type EmailCodeCheckPayload, type LoginPayload, type OwnProfilePayload, type RecoveryCodesPayload, type TwoFactorSetupPayload } from '@multiverse-kiln/shared';
 
+import { keyedHash } from '../src/auth/keyedHashes.js';
 import { hashPassword } from '../src/auth/passwords.js';
 import { decryptTotpSecret } from '../src/auth/totpSecrets.js';
 import { pool } from '../src/db/client.js';
 import { createPlayer } from '../src/db/playerRepo.js';
+import { recordRateLimitEvent } from '../src/db/rateLimitRepo.js';
 import { setEmailSender, type Email } from '../src/email/mailer.js';
-import { MAX_TWO_FACTOR_ATTEMPTS_PER_ACCOUNT_HOUR, MAX_WRONG_TWO_FACTOR_CODES_PER_LOGIN } from '../src/logic/twoFactor.js';
+import { HOUR_MS } from '../src/logic/emailCodes.js';
+import { MAX_TWO_FACTOR_ATTEMPTS_PER_ACCOUNT_HOUR, MAX_WRONG_AUTHENTICATOR_CODES_PER_ACCOUNT_DAY, MAX_WRONG_TWO_FACTOR_CODES_PER_LOGIN, WRONG_AUTHENTICATOR_CODES_BEFORE_WARNING } from '../src/logic/twoFactor.js';
 import { Browser } from './browser.js';
 import { logInBrowser } from './players.js';
+import { discardEmail } from './setup.js';
 import { getTestServer } from './testServer.js';
 import { authenticatorCode, turnOnTwoFactor, type TestAuthenticator } from './twoFactorAccounts.js';
 import { waitUntil } from './waitUntil.js';
@@ -75,6 +79,23 @@ describe('2FA routes', () =>
 	}
 
 	/**
+	 * Records wrong authenticator codes for an account, as if typed a couple of hours ago, so the
+	 * hourly limits don't count them
+	 *
+	 * @param playerId The account
+	 * @param count How many
+	 */
+	async function addEarlierWrongCodes(playerId: string, count: number): Promise<void>
+	{
+		const earlier = new Date(Date.now() - (2 * HOUR_MS));
+
+		for (let i = 0; i < count; i++)
+		{
+			await recordRateLimitEvent('accountWrongAuthenticatorCode', keyedHash('account', playerId), earlier);
+		}
+	}
+
+	/**
 	 * The kinds of Ada's auth events, oldest first
 	 *
 	 * @return The kinds
@@ -93,7 +114,7 @@ describe('2FA routes', () =>
 
 	after(() =>
 	{
-		setEmailSender(undefined);
+		setEmailSender(discardEmail);
 	});
 
 	beforeEach(() =>
@@ -138,7 +159,9 @@ describe('2FA routes', () =>
 			assert.strictEqual(stored.rows[0].encrypted_secret.includes(secret), false);
 
 			// Set up but not on yet, so logging in doesn't ask for a code
-			assert.deepStrictEqual(await logIn(new Browser()), { outcome: 'loggedIn' });
+			const other = new Browser();
+
+			assert.deepStrictEqual(await logIn(other), { outcome: 'loggedIn' });
 
 			const wrong = await browser.send('POST', AUTH_TWO_FACTOR_ENABLE_PATH, { code: wrongCode({ secret, recoveryCodes: [] }), locale: 'en' });
 
@@ -150,6 +173,10 @@ describe('2FA routes', () =>
 			assert.strictEqual(enabled.status, 200);
 			assert.strictEqual(enabled.body.recoveryCodes.length, RECOVERY_CODE_COUNT);
 			assert.ok(enabled.body.recoveryCodes.every((code) => /^[0-9A-Z]{5}-[0-9A-Z]{5}$/.test(code)));
+
+			// Every other browser is logged out
+			assert.strictEqual(await browser.username(), 'ada');
+			assert.strictEqual(await other.username(), null);
 			await waitUntil(() => emails.some((email) => /Two-factor authentication is on/.test(email.subject)));
 
 			const profile = await browser.send<OwnProfilePayload>('GET', PROFILE_PATH);
@@ -266,6 +293,44 @@ describe('2FA routes', () =>
 			assert.strictEqual((await sendCode(browser, authenticatorCode(authenticator.secret))).status, 429);
 		});
 
+		it('takes only recovery codes after too many wrong authenticator codes in a day', async () =>
+		{
+			const playerId = await addAda();
+			const authenticator = await turnOnTwoFactor(playerId);
+			const browser = new Browser();
+
+			await addEarlierWrongCodes(playerId, MAX_WRONG_AUTHENTICATOR_CODES_PER_ACCOUNT_DAY);
+			await logIn(browser);
+
+			const refused = await sendCode(browser, authenticatorCode(authenticator.secret));
+
+			assert.strictEqual(refused.status, 429);
+			assert.strictEqual(refused.body.field, 'twoFactorCode');
+			assert.strictEqual(refused.body.error.id, 'error.auth.tooManyWrongAuthenticatorCodes');
+			assert.strictEqual((await sendCode(browser, authenticator.recoveryCodes[0])).status, 204);
+			assert.strictEqual(await browser.username(), 'ada');
+		});
+
+		it('emails the account once it has had several wrong authenticator codes in a day', async () =>
+		{
+			const playerId = await addAda();
+			const authenticator = await turnOnTwoFactor(playerId);
+			const browser = new Browser();
+
+			await addEarlierWrongCodes(playerId, WRONG_AUTHENTICATOR_CODES_BEFORE_WARNING - 1);
+			await logIn(browser);
+			assert.strictEqual((await sendCode(browser, wrongCode(authenticator))).status, 401);
+			await waitUntil(() => (emails.length === 1));
+			assert.strictEqual(emails[0].to, EMAIL);
+			assert.match(emails[0].text, new RegExp(`${WRONG_AUTHENTICATOR_CODES_BEFORE_WARNING} wrong codes`));
+			assert.match(emails[0].text, /change your password/);
+
+			// Only the code that reaches the count sends it
+			assert.strictEqual((await sendCode(browser, wrongCode(authenticator))).status, 401);
+			assert.strictEqual((await sendCode(browser, authenticatorCode(authenticator.secret))).status, 204);
+			assert.strictEqual(emails.length, 1);
+		});
+
 		it('takes each recovery code once, emailing the account how many are left', async () =>
 		{
 			const authenticator = await turnOnTwoFactor(await addAda());
@@ -365,6 +430,21 @@ describe('2FA routes', () =>
 			assert.strictEqual(await browser.username(), 'ada');
 		});
 
+		it('stops trusting every browser the account trusted', async () =>
+		{
+			const authenticator = await turnOnTwoFactor(await addAda());
+			const trusted = new Browser();
+
+			await logIn(trusted);
+			assert.strictEqual((await sendCode(trusted, authenticatorCode(authenticator.secret), true)).status, 204);
+
+			const browser = new Browser();
+
+			await enterResetCode(browser);
+			assert.strictEqual((await browser.send('POST', AUTH_PASSWORD_RESET_PATH, { password: 'a new passphrase', rememberMe: false, locale: 'en', twoFactorCode: authenticator.recoveryCodes[0] })).status, 204);
+			assert.deepStrictEqual((await trusted.send('POST', AUTH_LOGIN_PATH, { email: EMAIL, password: 'a new passphrase', rememberMe: false })).body, { outcome: 'twoFactor' });
+		});
+
 		it('needs no authenticator code for an account without 2FA', async () =>
 		{
 			await addAda();
@@ -409,7 +489,7 @@ describe('2FA routes', () =>
 			await logIn(browser);
 			assert.strictEqual((await sendCode(browser, authenticatorCode(authenticator.secret))).status, 204);
 
-			const replaced = await browser.send<RecoveryCodesPayload>('POST', AUTH_RECOVERY_CODES_PATH, { password: PASSWORD, code: authenticator.recoveryCodes[0] });
+			const replaced = await browser.send<RecoveryCodesPayload>('POST', AUTH_RECOVERY_CODES_PATH, { password: PASSWORD, code: authenticator.recoveryCodes[0], locale: 'en' });
 
 			assert.strictEqual(replaced.status, 200);
 			assert.strictEqual(replaced.body.recoveryCodes.length, RECOVERY_CODE_COUNT);

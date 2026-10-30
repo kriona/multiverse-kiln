@@ -210,12 +210,38 @@ export function emailCodeEmail(purpose: EmailCodePurpose, code: string, locale: 
 		subject = translator.format({
 			id: 'email.code.linkLogin.subject',
 			defaultMessage: 'Your code to link a login to your account on {siteName}',
-			description: 'Subject of the email that sends the code for linking a Google or Discord login to the account with the same email address; {siteName} is the site\'s name'
+			description: 'Subject of the email that sends the code for linking a Google or Discord login to the account with the same email address, or, for an account without a password, to the account the player is logged in to from their profile; {siteName} is the site\'s name'
 		}, values);
 		intro = translator.format({
 			id: 'email.code.linkLogin.intro',
 			defaultMessage: 'Enter this code on {siteName} to log in to your account with Google or Discord from now on:',
-			description: 'First paragraph of the email that sends the code for linking a Google or Discord login to the account with the same email address, shown just above the code; {siteName} is the site\'s name'
+			description: 'First paragraph of the email that sends the code for linking a Google or Discord login to the account with the same email address, or, for an account without a password, to the account the player is logged in to from their profile, shown just above the code; {siteName} is the site\'s name'
+		}, values);
+	}
+	else if (purpose === 'deleteAccount')
+	{
+		subject = translator.format({
+			id: 'email.code.deleteAccount.subject',
+			defaultMessage: 'Your code to delete your account on {siteName}',
+			description: 'Subject of the email with the code that checks it\'s the owner deleting an account without a password; {siteName} is the site\'s name'
+		}, values);
+		intro = translator.format({
+			id: 'email.code.deleteAccount.intro',
+			defaultMessage: 'Someone asked to delete your account on {siteName}, which can\'t be undone. If it was you, enter this code to go on:',
+			description: 'First paragraph of the email with the code that checks it\'s the owner deleting an account without a password, shown just above the code; {siteName} is the site\'s name'
+		}, values);
+	}
+	else if (purpose === 'confirmEmailChange')
+	{
+		subject = translator.format({
+			id: 'email.code.confirmEmailChange.subject',
+			defaultMessage: 'Your code to change your email address on {siteName}',
+			description: 'Subject of the email, sent to an account\'s current address, with the code that checks it\'s the owner changing the account\'s email address, for an account without a password; {siteName} is the site\'s name'
+		}, values);
+		intro = translator.format({
+			id: 'email.code.confirmEmailChange.intro',
+			defaultMessage: 'Someone asked to move your account on {siteName} to another email address. If it was you, enter this code to go on:',
+			description: 'First paragraph of the email, sent to an account\'s current address, with the code that checks it\'s the owner changing the account\'s email address, for an account without a password, shown just above the code; {siteName} is the site\'s name'
 		}, values);
 	}
 	else
@@ -554,6 +580,57 @@ export function recoveryCodeUsedEmail(codesLeft: number, locale: string): EmailC
 			})
 		],
 		action: resetPasswordAction(translator)
+	}));
+}
+
+/**
+ * The page a player changes their password on, which asks them to log in first
+ */
+const PROFILE_PAGE_PATH = '/profile';
+
+/**
+ * The email sent when an account has had many wrong authenticator codes typed for it in a day
+ *
+ * @param count How many wrong codes were typed
+ * @param locale The language the recipient asked in
+ * @return The email
+ */
+export function wrongAuthenticatorCodesEmail(count: number, locale: string): EmailContent
+{
+	const translator = emailTranslator(locale);
+	const values = {
+		siteName: SITE_NAME
+	};
+
+	return(layOut(translator, {
+		subject: translator.format({
+			id: 'email.wrongAuthenticatorCodes.subject',
+			defaultMessage: 'Wrong codes were typed for your account on {siteName}',
+			description: 'Subject of the email sent when many wrong authenticator app codes were typed for an account in a day; {siteName} is the site\'s name'
+		}, values),
+		paragraphs: [
+			translator.format({
+				id: 'email.wrongAuthenticatorCodes.body',
+				defaultMessage: '{count} wrong codes from an authenticator app were typed for your account on {siteName} today.',
+				description: 'Paragraph of the email sent when many wrong authenticator app codes were typed for an account in a day; {siteName} is the site\'s name, and {count} how many (always more than one)'
+			}, {
+				...values,
+				count
+			}),
+			translator.format({
+				id: 'email.wrongAuthenticatorCodes.notYou',
+				defaultMessage: 'If this wasn\'t you, log in and change your password.',
+				description: 'Last paragraph of the email sent when many wrong authenticator app codes were typed for an account, for someone who didn\'t type them'
+			})
+		],
+		action: {
+			label: translator.format({
+				id: 'email.action.changePassword',
+				defaultMessage: 'Change your password',
+				description: 'Link at the end of the email sent when many wrong authenticator app codes were typed for an account; opens the profile, after logging in, where the password is changed'
+			}),
+			url: sitePageUrl(PROFILE_PAGE_PATH)
+		}
 	}));
 }
 

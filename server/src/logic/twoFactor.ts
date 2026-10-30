@@ -41,6 +41,18 @@ export const MAX_WRONG_TWO_FACTOR_CODES_PER_LOGIN = 5;
 export const MAX_TWO_FACTOR_ATTEMPTS_PER_ACCOUNT_HOUR = 10;
 
 /**
+ * How many wrong authenticator codes one account may have in a day before only its recovery codes are
+ * taken. With about 3 of the million codes right at any time, a year of guessing at this rate has
+ * about a 2% chance of a right one
+ */
+export const MAX_WRONG_AUTHENTICATOR_CODES_PER_ACCOUNT_DAY = 20;
+
+/**
+ * How many wrong authenticator codes an account has in a day when it is emailed about them
+ */
+export const WRONG_AUTHENTICATOR_CODES_BEFORE_WARNING = 10;
+
+/**
  * The letters of RFC 4648's base32, which authenticator apps read secrets in
  */
 const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';

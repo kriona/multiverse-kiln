@@ -9,7 +9,7 @@ import { forgetAccountName } from './ui/accountMenu';
 import { announce } from './ui/announcer';
 import { resetCodeInput } from './ui/codeInputs';
 import { getElement, setPageTitle, showMessage, showScreen, type ScreenName } from './ui/dom';
-import { clearFieldErrors, reportFieldError, setFieldError } from './ui/fieldErrors';
+import { clearFieldErrors, reportFieldError, setFieldError, setFieldSuccess } from './ui/fieldErrors';
 
 /**
  * What an emailed code is for on this page
@@ -21,6 +21,16 @@ type CodePurpose = 'register' | 'resetPassword' | 'linkLogin';
  * account the provider login matched
  */
 type EmailPurpose = Exclude<CodePurpose, 'linkLogin'>;
+
+/**
+ * How long a pause in typing a new username lasts before it is checked
+ */
+const USERNAME_CHECK_DELAY_MS = 2000;
+
+/**
+ * How long a username check waits for the server's answer before showing a spinner in the field
+ */
+const USERNAME_CHECK_SPINNER_DELAY_MS = 200;
 
 /**
  * A provider login waiting to be linked to the account with its email address
@@ -154,6 +164,11 @@ export class LoginPage
 	private purpose: CodePurpose = 'register';
 
 	/**
+	 * Each username field's last check: the username, and what was wrong with it, if anything
+	 */
+	private readonly usernameChecks = new Map<HTMLInputElement, { username: string; problem: string | undefined }>();
+
+	/**
 	 * The providers the site offers
 	 */
 	private providers: LoginProvider[] = [];
@@ -200,6 +215,7 @@ export class LoginPage
 		for (const field of [this.registerUsername, this.providerRegisterUsername])
 		{
 			field.maxLength = MAX_USERNAME_LENGTH;
+			this.watchUsername(field);
 		}
 
 		for (const field of [this.registerName, this.providerRegisterName])
@@ -483,6 +499,117 @@ export class LoginPage
 	}
 
 	/**
+	 * Checks a new username as the player chooses it: when they leave the field, or pause typing
+	 *
+	 * @param field The username field
+	 */
+	private watchUsername(field: HTMLInputElement): void
+	{
+		let timer: number | undefined;
+
+		field.addEventListener('input', () =>
+		{
+			window.clearTimeout(timer);
+			timer = window.setTimeout(() =>
+			{
+				void this.checkUsername(field);
+			}, USERNAME_CHECK_DELAY_MS);
+		});
+		field.addEventListener('blur', () =>
+		{
+			window.clearTimeout(timer);
+			void this.checkUsername(field);
+		});
+	}
+
+	/**
+	 * Asks the server whether a new account could take the username typed, and shows under the field
+	 * that it can, or why not. A username already checked isn't asked about again, since the server
+	 * limits how often a network can ask
+	 *
+	 * @param field The username field
+	 */
+	private async checkUsername(field: HTMLInputElement): Promise<void>
+	{
+		const username = field.value.trim();
+		const last = this.usernameChecks.get(field);
+
+		if ((username === '') || (field.closest('[hidden]') !== null))
+		{
+			return;
+		}
+
+		if (last?.username === username)
+		{
+			// Typing clears the message, so typing the same username back shows it again
+			this.showUsernameCheck(field, last.problem);
+			return;
+		}
+
+		let problem: string | undefined;
+
+		// A quick answer doesn't flash the spinner
+		const spinnerTimer = window.setTimeout(() =>
+		{
+			field.classList.add('field-checking');
+		}, USERNAME_CHECK_SPINNER_DELAY_MS);
+
+		try
+		{
+			await this.api.checkUsername({ username });
+		}
+		catch (error)
+		{
+			// Anything but a problem with the username, such as too many checks, waits for the account to be created
+			if (!(error instanceof EditorApiError) || (authFieldOf(error) !== 'username'))
+			{
+				return;
+			}
+
+			problem = error.message;
+		}
+		finally
+		{
+			window.clearTimeout(spinnerTimer);
+			field.classList.remove('field-checking');
+		}
+
+		this.usernameChecks.set(field, {
+			username,
+			problem
+		});
+
+		// The player may have typed on while the server answered
+		if (field.value.trim() === username)
+		{
+			this.showUsernameCheck(field, problem);
+		}
+	}
+
+	/**
+	 * Shows under a username field what its check found, and reads it out
+	 *
+	 * @param field The username field
+	 * @param problem Why a new account can't take the username, or undefined when it can
+	 */
+	private showUsernameCheck(field: HTMLInputElement, problem: string | undefined): void
+	{
+		if (problem === undefined)
+		{
+			setFieldSuccess(field, t({
+				id: 'login.usernameAvailable',
+				defaultMessage: 'That username is available.',
+				description: 'Shown under the username field when creating an account, once the site has checked that no other account has the username typed'
+			}));
+		}
+		else
+		{
+			setFieldError(field, problem);
+			announce(problem);
+		}
+	}
+
+	/**
 	 * Asks for the code from the player's authenticator app, or a recovery code
 	 *
 	 * @param step What the code finishes
@@ -546,7 +673,7 @@ export class LoginPage
 			const url = await this.api.startProviderLogin({
 				provider,
 				rememberMe: this.loginRemember.checked,
-				link: false
+				link: null
 			});
 
 			rememberLoginAddress();
@@ -606,6 +733,10 @@ export class LoginPage
 		if ((result.outcome === 'loggedIn') || (result.outcome === 'linked'))
 		{
 			this.finishLogin();
+		}
+		else if (result.outcome === 'twoFactor')
+		{
+			this.askForTwoFactorCode('login');
 		}
 		else if (result.outcome === 'register')
 		{

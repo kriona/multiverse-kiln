@@ -26,7 +26,8 @@ main
 	font-size: 22px;
 }
 
-.auth-panel a
+// Links styled as buttons keep the button's colors (a.button in _shared.scss)
+.auth-panel a:not(.button)
 {
 	color: $link;
 

@@ -1,7 +1,8 @@
 /**
  * Keyed hashes (HMAC-SHA256) of what the server must recognize again but not keep: email addresses
  * waiting on a code, the codes themselves, recovery codes, and networks and accounts that rate limits
- * count (see Email codes in STRUCTURE-OVERVIEW.md)
+ * count (see Email codes in STRUCTURE-OVERVIEW.md). They also sign what the server keeps in a cookie
+ * and must read back unchanged, such as a provider login's start
  *
  * The key is AUTH_HMAC_KEY, so someone with a copy of the database but not the key can't test guesses
  * against the hashes. Changing the key makes every code waiting to be entered stop working and resets
@@ -19,7 +20,7 @@ const MIN_KEY_BYTES = 32;
  * What a keyed hash is of. Each kind is hashed with its own label, so the same text hashed as two kinds
  * gives two unrelated hashes
  */
-export type KeyedHashKind = 'address' | 'emailCode' | 'network' | 'recoveryCode' | 'account';
+export type KeyedHashKind = 'address' | 'emailCode' | 'network' | 'recoveryCode' | 'account' | 'providerStart' | 'knownBrowser';
 
 let key: Buffer | undefined;
 

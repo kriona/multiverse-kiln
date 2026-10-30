@@ -284,7 +284,21 @@ export function emailCodeState(code: SentEmailCode, now: Date): EmailCodeState
  */
 export function decideHourlyLimit(attemptsAt: readonly Date[], limit: number, now: Date): SendDecision
 {
-	const recent = within(attemptsAt, now, HOUR_MS).sort((a, b) => (a.getTime() - b.getTime()));
+	return(decideLimit(attemptsAt, limit, HOUR_MS, now));
+}
+
+/**
+ * Decides whether a limit on attempts in a rolling window lets another attempt through
+ *
+ * @param attemptsAt When each attempt was made in the window
+ * @param limit How many attempts may be made in the window
+ * @param windowMs How long the window is
+ * @param now The time now
+ * @return Whether the attempt may be made
+ */
+export function decideLimit(attemptsAt: readonly Date[], limit: number, windowMs: number, now: Date): SendDecision
+{
+	const recent = within(attemptsAt, now, windowMs).sort((a, b) => (a.getTime() - b.getTime()));
 
 	if (recent.length < limit)
 	{
@@ -293,6 +307,6 @@ export function decideHourlyLimit(attemptsAt: readonly Date[], limit: number, no
 
 	return({
 		allowed: false,
-		retryAt: new Date(recent[recent.length - limit].getTime() + HOUR_MS)
+		retryAt: new Date(recent[recent.length - limit].getTime() + windowMs)
 	});
 }

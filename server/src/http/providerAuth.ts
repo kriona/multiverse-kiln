@@ -3,21 +3,23 @@
  *
  * The login page starts a login (AUTH_PROVIDER_START_PATH) and sends the browser to the provider, which
  * sends it back to the login page with a code. The page hands the code over
- * (AUTH_PROVIDER_CALLBACK_PATH), and a provider login an account has logs the browser in. Otherwise the
+ * (AUTH_PROVIDER_CALLBACK_PATH), and a provider login an account has logs the browser in, after the
+ * authenticator code when the account has 2FA and doesn't trust the browser. Otherwise the
  * login waits a few minutes for one more step from that browser: choosing a username for a new account
  * (AUTH_PROVIDER_REGISTER_PATH), or, when a local account has the same email address, logging in to it
  * to link them (AUTH_PROVIDER_LINK_PATH), with its authenticator or recovery code too when it has 2FA.
  * A provider login is never linked to an account by its email address alone
  *
- * A logged-in player links a provider from their profile the same way: the start says so, and the
- * callback links the provider login to the account the browser is still logged in to
+ * A logged-in player links a provider from their profile the same way: the start says so, with the
+ * account's password (or an emailed code) and 2FA code, and the callback links the provider login to
+ * the account the browser is still logged in to
  */
 import type { Request, Response, Router } from 'express';
 import { generateCodeVerifier, generateState } from 'arctic';
 import { z } from 'zod';
-import { AUTH_PROVIDER_CALLBACK_PATH, AUTH_PROVIDER_LINK_PATH, AUTH_PROVIDER_REGISTER_PATH, AUTH_PROVIDER_START_PATH, AUTH_PROVIDERS_PATH, defineMessages, LOGIN_PROVIDER_NAMES, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_TWO_FACTOR_CODE_INPUT_LENGTH, MAX_USERNAME_LENGTH, type LoginProvider, type ProviderCallbackPayload, type ProviderCallbackRequest, type ProviderLinkRequest, type ProviderRegisterRequest, type ProvidersPayload, type ProviderStartPayload, type ProviderStartRequest } from '@multiverse-kiln/shared';
+import { AUTH_PROVIDER_CALLBACK_PATH, AUTH_PROVIDER_LINK_PATH, AUTH_PROVIDER_REGISTER_PATH, AUTH_PROVIDER_START_PATH, AUTH_PROVIDERS_PATH, defineMessages, LOGIN_PROVIDER_NAMES, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_TWO_FACTOR_CODE_INPUT_LENGTH, MAX_USERNAME_LENGTH, type LoginProvider, type ProviderCallbackPayload, type ProviderCallbackRequest, type ProviderLinkConfirmation, type ProviderLinkRequest, type ProviderRegisterRequest, type ProvidersPayload, type ProviderStartPayload, type ProviderStartRequest } from '@multiverse-kiln/shared';
 
-import { hashAddress, hashesMatch } from '../auth/keyedHashes.js';
+import { hashAddress, hashesMatch, keyedHash } from '../auth/keyedHashes.js';
 import { checkLoginPassword } from '../auth/passwords.js';
 import { enabledProviders, providerClient, ProviderLoginError, type ProviderUser } from '../auth/providers.js';
 import { MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR, MAX_LOGIN_ATTEMPTS_PER_NETWORK_HOUR, takeAttempt } from '../auth/rateLimits.js';
@@ -25,18 +27,19 @@ import { resolveSession, startSession } from '../auth/sessions.js';
 import { createToken, hashToken } from '../auth/tokens.js';
 import type { Executor } from '../db/client.js';
 import { deleteEmailCode, lockContinuation } from '../db/emailCodeRepo.js';
-import { AccountTakenError, createPlayer, findLocalLogin, findPlayerEmail, findPlayerIdByEmail, savePasswordHash } from '../db/playerRepo.js';
+import { AccountTakenError, createPlayer, findLocalLogin, findPasswordHash, findPlayerEmail, findPlayerIdByEmail, savePasswordHash } from '../db/playerRepo.js';
 import { addProviderLogin, deletePendingProviderLogin, findProviderLoginPlayer, lockPendingProviderLogin, ProviderLoginTakenError, savePendingProviderLogin, type PendingProviderLogin } from '../db/providerLoginRepo.js';
 import { inTransaction } from '../db/transactions.js';
+import { savePendingTwoFactorLogin } from '../db/twoFactorRepo.js';
 import { accountCreatedEmail, providerLinkedEmail } from '../email/authEmails.js';
 import { sendEmailInBackground } from '../email/mailer.js';
 import { CONTINUATION_LIFETIME_MS } from '../logic/emailCodes.js';
 import { displayText } from '../rooms/payloads.js';
 import { authMessages, checkDisplayName, checkUsername, cookieTokenHash, recordEvent, sendRefusal, tooManyAttempts, type AuthRefusal } from './authCommon.js';
 import { clientNetworkHash } from './clientNetwork.js';
-import { clearCookie, CONTINUATION_COOKIE, PROVIDER_LOGIN_COOKIE, PROVIDER_START_COOKIE, readCookie, setCookie } from './cookies.js';
+import { clearCookie, CONTINUATION_COOKIE, PROVIDER_LOGIN_COOKIE, PROVIDER_START_COOKIE, readCookie, setCookie, TWO_FACTOR_LOGIN_COOKIE } from './cookies.js';
 import { errorMessages, sendInvalidRequest } from './errors.js';
-import { checkSecondFactor, needsSecondFactor, reportRecoveryCodeUse, type SecondFactorOutcome } from './twoFactorAuth.js';
+import { checkAccountPassword, checkSecondFactor, needsSecondFactor, reportRecoveryCodeUse, requireSession, type SecondFactorOutcome } from './twoFactorAuth.js';
 
 /**
  * How long a player has at the provider before the login must start again
@@ -122,7 +125,11 @@ const locale = z.string().max(MAX_LOCALE_LENGTH).regex(/^[A-Za-z0-9-]+$/);
 const providerStartRequest = z.object({
 	provider: z.enum(LOGIN_PROVIDERS),
 	rememberMe: z.boolean(),
-	link: z.boolean()
+	link: z.object({
+		password: z.string().max(MAX_PASSWORD_LENGTH * 4).nullable(),
+		twoFactorCode: z.string().max(MAX_TWO_FACTOR_CODE_INPUT_LENGTH).nullable(),
+		locale
+	}).nullable()
 }) satisfies z.ZodType<ProviderStartRequest>;
 
 const providerCallbackRequest = z.object({
@@ -197,23 +204,40 @@ function loginTaken(error: ProviderLoginTakenError, provider: LoginProvider, log
 }
 
 /**
+ * The start cookie's value: the start as base64url JSON, then a keyed hash of it, so the server reads
+ * back only a start it wrote. The browser can't change which account a login links to, or skip the
+ * check confirmLink() makes before a link starts
+ *
+ * @param start What the login started with
+ * @return The cookie's value
+ */
+function encodeProviderStart(start: ProviderStart): string
+{
+	const body = Buffer.from(JSON.stringify(start)).toString('base64url');
+
+	return(`${body}.${keyedHash('providerStart', body).toString('base64url')}`);
+}
+
+/**
  * Reads the start cookie
  *
  * @param request The request
- * @return What the login started with, or undefined when the browser has no start cookie or it is unreadable
+ * @return What the login started with, or undefined when the browser has no start cookie, or it is
+ * unreadable or wasn't written by this server
  */
 function readProviderStart(request: Request): ProviderStart | undefined
 {
 	const value = readCookie(request.headers.cookie, PROVIDER_START_COOKIE);
+	const [body, mac, extra] = (value ?? '').split('.');
 
-	if (value === undefined)
+	if (!body || !mac || (extra !== undefined) || !hashesMatch(keyedHash('providerStart', body), Buffer.from(mac, 'base64url')))
 	{
 		return(undefined);
 	}
 
 	try
 	{
-		const parsed = providerStart.safeParse(JSON.parse(Buffer.from(value, 'base64url').toString('utf8')));
+		const parsed = providerStart.safeParse(JSON.parse(Buffer.from(body, 'base64url').toString('utf8')));
 
 		return((parsed.success ? parsed.data : undefined));
 	}
@@ -258,7 +282,8 @@ function providersRoute(_request: Request, response: Response): void
 
 /**
  * POST AUTH_PROVIDER_START_PATH: starts a login with a provider, or a link to the account the browser
- * is logged in to. The browser keeps the state and PKCE secret in a cookie, so only it can finish
+ * is logged in to, once the player confirms it (confirmLink()). The browser keeps the state and PKCE
+ * secret in a cookie, so only it can finish
  *
  * @param request The request, with a ProviderStartRequest
  * @param response The response: a ProviderStartPayload, with the start cookie
@@ -274,14 +299,10 @@ async function startRoute(request: Request, response: Response): Promise<void>
 	}
 
 	const { provider, rememberMe, link } = body.data;
-	const session = (link ? await resolveSession(request.headers.cookie) : undefined);
+	const session = ((link !== null) ? await requireSession(request, response) : undefined);
 
-	if (link && !session)
+	if ((link !== null) && !session)
 	{
-		sendRefusal(response, {
-			status: 401,
-			message: errorMessages.logInFirst
-		});
 		return;
 	}
 
@@ -299,6 +320,11 @@ async function startRoute(request: Request, response: Response): Promise<void>
 		return;
 	}
 
+	if (session && (link !== null) && !(await confirmLink(request, response, session.playerId, link)))
+	{
+		return;
+	}
+
 	const start: ProviderStart = {
 		provider,
 		state: generateState(),
@@ -308,18 +334,98 @@ async function startRoute(request: Request, response: Response): Promise<void>
 	};
 	const payload: ProviderStartPayload = { url: client.authorizationUrl(start.state, start.codeVerifier).toString() };
 
-	setCookie(response, PROVIDER_START_COOKIE, Buffer.from(JSON.stringify(start)).toString('base64url'), PROVIDER_START_LIFETIME_MS);
+	setCookie(response, PROVIDER_START_COOKIE, encodeProviderStart(start), PROVIDER_START_LIFETIME_MS);
 	response.json(payload);
 }
 
 /**
+ * Checks that the player linking a provider login from their profile is the account's owner, not just
+ * someone with its session: its password, or for an account without one, a code sent to its address
+ * that this browser entered, which is used up. With 2FA, its authenticator or recovery code too, even
+ * from a trusted browser
+ *
+ * @param request The request
+ * @param response The response, answered with the refusal when the check fails
+ * @param playerId The account the browser is logged in to
+ * @param link What the player gave
+ * @return Whether the link may start
+ */
+async function confirmLink(request: Request, response: Response, playerId: string, link: ProviderLinkConfirmation): Promise<boolean>
+{
+	const now = new Date();
+	const hasPassword = ((await findPasswordHash(playerId)) !== null);
+
+	if (hasPassword)
+	{
+		const problem = await checkAccountPassword(request, response, playerId, (link.password ?? ''), now);
+
+		if (problem)
+		{
+			sendRefusal(response, problem);
+			return(false);
+		}
+	}
+
+	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | SecondFactorOutcome> =>
+	{
+		let codeId: string | undefined;
+
+		if (!hasPassword)
+		{
+			const continuationHash = cookieTokenHash(request, CONTINUATION_COOKIE);
+			const code = ((continuationHash === undefined) ? undefined : await lockContinuation('linkLogin', continuationHash, now, executor));
+
+			if (!code || (code.playerId !== playerId))
+			{
+				return({
+					status: 403,
+					message: authMessages.enterCodeFirst
+				});
+			}
+
+			codeId = code.id;
+		}
+
+		// Checked before the email code is used up, so a wrong code can be typed again
+		const check = await checkSecondFactor(request, response, playerId, link.twoFactorCode, now, executor, {
+			trustedBrowserSkips: false,
+			emailLocale: link.locale
+		});
+
+		if ((check.kind === 'wrong') || (check.kind === 'refused'))
+		{
+			return(check.refusal);
+		}
+
+		if (codeId !== undefined)
+		{
+			await deleteEmailCode(codeId, executor);
+		}
+
+		return(check);
+	});
+
+	if ('status' in outcome)
+	{
+		sendRefusal(response, outcome);
+		return(false);
+	}
+
+	clearCookie(response, CONTINUATION_COOKIE);
+	await reportRecoveryCodeUse(playerId, outcome, link.locale);
+
+	return(true);
+}
+
+/**
  * POST AUTH_PROVIDER_CALLBACK_PATH: finishes a login with a provider, from the browser that started it.
- * A provider login an account has logs the browser in; otherwise the browser gets a cookie that lets it
- * take the next step for CONTINUATION_LIFETIME_MS. A link links the provider login to the account
- * instead (linkToSession())
+ * A provider login an account has logs the browser in, or for an account with 2FA from a browser it
+ * doesn't trust, waits for the authenticator code as a password login does. Otherwise the browser gets
+ * a cookie that lets it take the next step for CONTINUATION_LIFETIME_MS. A link links the provider
+ * login to the account instead (linkToSession())
  *
  * @param request The request, with a ProviderCallbackRequest
- * @param response The response: a ProviderCallbackPayload, with the session cookie or the provider login cookie
+ * @param response The response: a ProviderCallbackPayload, with the session cookie, the 2FA login cookie or the provider login cookie
  */
 async function callbackRoute(request: Request, response: Response): Promise<void>
 {
@@ -437,7 +543,20 @@ async function callbackRoute(request: Request, response: Response): Promise<void
 
 		if (playerId !== undefined)
 		{
-			await startSession(response, playerId, rememberMe, executor);
+			// The account's 2FA covers every way in, not only its password
+			if (await needsSecondFactor(request, playerId, now, executor))
+			{
+				await savePendingTwoFactorLogin({
+					continuationHash: hashToken(token),
+					playerId,
+					rememberMe,
+					expiresAt: new Date(now.getTime() + CONTINUATION_LIFETIME_MS)
+				}, executor);
+
+				return({ outcome: 'twoFactor' });
+			}
+
+			await startSession(request, response, playerId, rememberMe, executor);
 			await recordEvent(request, playerId, 'loggedIn', now, executor);
 
 			return({ outcome: 'loggedIn' });
@@ -475,7 +594,11 @@ async function callbackRoute(request: Request, response: Response): Promise<void
 		});
 	});
 
-	if (payload.outcome !== 'loggedIn')
+	if (payload.outcome === 'twoFactor')
+	{
+		setCookie(response, TWO_FACTOR_LOGIN_COOKIE, token, CONTINUATION_LIFETIME_MS);
+	}
+	else if (payload.outcome !== 'loggedIn')
 	{
 		setCookie(response, PROVIDER_LOGIN_COOKIE, token, CONTINUATION_LIFETIME_MS);
 	}
@@ -632,7 +755,7 @@ async function registerRoute(request: Request, response: Response): Promise<void
 		}
 
 		await deletePendingProviderLogin(pending.id, executor);
-		await startSession(response, playerId, pending.rememberMe, executor);
+		await startSession(request, response, playerId, pending.rememberMe, executor);
 		await recordEvent(request, playerId, 'registered', now, executor);
 		await recordEvent(request, playerId, 'loggedIn', now, executor);
 
@@ -753,7 +876,10 @@ async function linkRoute(request: Request, response: Response): Promise<void>
 		}
 
 		// Checked before anything is used up, so a wrong code can be typed again
-		const check = await checkSecondFactor(request, response, playerId, twoFactorCode, now, executor, { trustedBrowserSkips: true });
+		const check = await checkSecondFactor(request, response, playerId, twoFactorCode, now, executor, {
+			trustedBrowserSkips: true,
+			emailLocale
+		});
 
 		if ((check.kind === 'wrong') || (check.kind === 'refused'))
 		{
@@ -786,7 +912,7 @@ async function linkRoute(request: Request, response: Response): Promise<void>
 		}
 
 		await deletePendingProviderLogin(locked.id, executor);
-		await startSession(response, playerId, locked.rememberMe, executor);
+		await startSession(request, response, playerId, locked.rememberMe, executor);
 		await recordEvent(request, playerId, 'providerLinked', now, executor);
 		await recordEvent(request, playerId, 'loggedIn', now, executor);
 

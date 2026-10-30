@@ -1,5 +1,5 @@
 import type { Client } from '@colyseus/sdk';
-import { AUTH_ACCOUNT_DELETE_PATH, AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_EMAIL_CHANGE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_CHANGE_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_PROVIDER_CALLBACK_PATH, AUTH_PROVIDER_LINK_PATH, AUTH_PROVIDER_REGISTER_PATH, AUTH_PROVIDER_START_PATH, AUTH_PROVIDERS_PATH, AUTH_RECOVERY_CODES_PATH, AUTH_REGISTER_PATH, AUTH_SESSION_PATH, AUTH_TRUSTED_BROWSERS_FORGET_PATH, AUTH_TWO_FACTOR_DISABLE_PATH, AUTH_TWO_FACTOR_ENABLE_PATH, AUTH_TWO_FACTOR_LOGIN_PATH, AUTH_TWO_FACTOR_SETUP_PATH, type AccountDeleteRequest, type AuthField, type EmailChangeRequest, type EmailCodeCheckPayload, type EmailCodeCheckRequest, type EmailCodeRequest, type LoginPayload, type LoginProvider, type LoginRequest, type PasswordChangeRequest, type PasswordResetRequest, type ProviderCallbackPayload, type ProviderCallbackRequest, type ProviderLinkRequest, type ProviderRegisterRequest, type ProvidersPayload, type ProviderStartPayload, type ProviderStartRequest, type RecoveryCodesPayload, type RecoveryCodesRequest, type RegisterRequest, type SessionPayload, type SessionPlayer, type TwoFactorDisableRequest, type TwoFactorEnableRequest, type TwoFactorLoginRequest, type TwoFactorSetupPayload, type TwoFactorSetupRequest } from '@multiverse-kiln/shared';
+import { AUTH_ACCOUNT_DELETE_PATH, AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_EMAIL_CHANGE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_CHANGE_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_PROVIDER_CALLBACK_PATH, AUTH_PROVIDER_LINK_PATH, AUTH_PROVIDER_REGISTER_PATH, AUTH_PROVIDER_START_PATH, AUTH_PROVIDERS_PATH, AUTH_RECOVERY_CODES_PATH, AUTH_REGISTER_PATH, AUTH_SESSION_PATH, AUTH_TRUSTED_BROWSERS_FORGET_PATH, AUTH_TWO_FACTOR_DISABLE_PATH, AUTH_TWO_FACTOR_ENABLE_PATH, AUTH_TWO_FACTOR_LOGIN_PATH, AUTH_TWO_FACTOR_SETUP_PATH, AUTH_USERNAME_CHECK_PATH, type AccountDeleteRequest, type AuthField, type EmailChangeRequest, type EmailCodeCheckPayload, type EmailCodeCheckRequest, type EmailCodeRequest, type LoginPayload, type LoginProvider, type LoginRequest, type PasswordChangeRequest, type PasswordResetRequest, type ProviderCallbackPayload, type ProviderCallbackRequest, type ProviderLinkRequest, type ProviderRegisterRequest, type ProvidersPayload, type ProviderStartPayload, type ProviderStartRequest, type RecoveryCodesPayload, type RecoveryCodesRequest, type RegisterRequest, type SessionPayload, type SessionPlayer, type TwoFactorDisableRequest, type TwoFactorEnableRequest, type TwoFactorLoginRequest, type TwoFactorSetupPayload, type TwoFactorSetupRequest, type UsernameCheckRequest } from '@multiverse-kiln/shared';
 
 import { EditorApiError, sendRequest } from './editorApi';
 
@@ -128,6 +128,17 @@ export class AuthApi
 	async checkCode(request: EmailCodeCheckRequest): Promise<boolean>
 	{
 		return((await sendRequest<EmailCodeCheckPayload>(this.client, 'POST', AUTH_CODE_CHECK_PATH, request)).twoFactor);
+	}
+
+	/**
+	 * Checks whether a new account could take a username, from a browser creating one
+	 *
+	 * @param request The username
+	 * @throws EditorApiError saying why it can't, such as another account having it
+	 */
+	async checkUsername(request: UsernameCheckRequest): Promise<void>
+	{
+		await sendRequest(this.client, 'POST', AUTH_USERNAME_CHECK_PATH, request);
 	}
 
 	/**

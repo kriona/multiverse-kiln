@@ -17,6 +17,7 @@ import { addAdminRoutes } from './http/admin.js';
 import { addAuthRoutes } from './http/auth.js';
 import { addCharacterRoutes } from './http/characters.js';
 import { addDevBotLoginRoute } from './http/devLogin.js';
+import { clientAddressSource } from './http/clientNetwork.js';
 import { addEditorRoutes } from './http/editor.js';
 import { addGroupRoutes } from './http/groups.js';
 import { addHealthRoute } from './http/health.js';
@@ -34,6 +35,9 @@ configureResponseHeaders(allowedOrigins);
 
 // The client's address, which emails link to; startup fails if SITE_URL is missing or isn't an https:// origin
 siteUrl();
+
+// Where clients' addresses come from, for limits per network; startup fails if the settings are invalid
+clientAddressSource();
 
 const server = defineServer({
 

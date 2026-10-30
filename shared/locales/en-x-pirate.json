@@ -2083,6 +2083,10 @@
 		"message": "Ye already have an account on {siteName}",
 		"source": "You already have an account on {siteName}"
 	},
+	"email.action.changePassword": {
+		"message": "Change yer password",
+		"source": "Change your password"
+	},
 	"email.action.logIn": {
 		"message": "Come aboard {siteName}",
 		"source": "Log in to {siteName}"
@@ -2102,6 +2106,22 @@
 	"email.code.changeEmail.subject": {
 		"message": "Yer code to change yer email address on {siteName}",
 		"source": "Your code to change your email address on {siteName}"
+	},
+	"email.code.confirmEmailChange.intro": {
+		"message": "Some scallywag asked to move yer account on {siteName} to another email address. If 'twas ye, enter this code to sail on:",
+		"source": "Someone asked to move your account on {siteName} to another email address. If it was you, enter this code to go on:"
+	},
+	"email.code.confirmEmailChange.subject": {
+		"message": "Yer code to change yer email address on {siteName}",
+		"source": "Your code to change your email address on {siteName}"
+	},
+	"email.code.deleteAccount.intro": {
+		"message": "Some scallywag asked to scuttle yer account on {siteName}, an' there be no raisin' it after. If 'twas ye, enter this code to sail on:",
+		"source": "Someone asked to delete your account on {siteName}, which can't be undone. If it was you, enter this code to go on:"
+	},
+	"email.code.deleteAccount.subject": {
+		"message": "Yer code to scuttle yer account on {siteName}",
+		"source": "Your code to delete your account on {siteName}"
 	},
 	"email.code.lifetime": {
 		"message": "The code works but once, for {minutes, plural, one {# minute} other {# minutes}}.",
@@ -2215,6 +2235,18 @@
 		"message": "Two-factor authentication be on for yer account on {siteName}",
 		"source": "Two-factor authentication is on for your account on {siteName}"
 	},
+	"email.wrongAuthenticatorCodes.body": {
+		"message": "{count} wrong codes from an authenticator app were tried on yer account on {siteName} this day.",
+		"source": "{count} wrong codes from an authenticator app were typed for your account on {siteName} today."
+	},
+	"email.wrongAuthenticatorCodes.notYou": {
+		"message": "If that weren't ye, come aboard an' change yer password.",
+		"source": "If this wasn't you, log in and change your password."
+	},
+	"email.wrongAuthenticatorCodes.subject": {
+		"message": "Wrong codes were tried on yer account on {siteName}",
+		"source": "Wrong codes were typed for your account on {siteName}"
+	},
 	"error.alreadyInGroup": {
 		"message": "That hand already sails with a crew. They have to jump ship first.",
 		"source": "That character is already in a group. They have to leave it first."
@@ -2302,6 +2334,10 @@
 	"error.auth.tooManyAttempts": {
 		"message": "Too many tries. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
 		"source": "Too many tries. Try again in {minutes, plural, one {# minute} other {# minutes}}."
+	},
+	"error.auth.tooManyWrongAuthenticatorCodes": {
+		"message": "Too many wrong codes from an authenticator app were tried on yer account this day. Use one o' yer recovery codes, or try again in {hours, plural, one {# hour} other {# hours}}.",
+		"source": "Too many wrong codes from an authenticator app were typed for your account today. Use one of your recovery codes, or try again in {hours, plural, one {# hour} other {# hours}}."
 	},
 	"error.auth.twoFactorAlreadyOn": {
 		"message": "Two-factor authentication be already raised on yer account.",
@@ -3531,6 +3567,10 @@
 		"message": "Username",
 		"source": "Username"
 	},
+	"login.usernameAvailable": {
+		"message": "That username be free for the takin'.",
+		"source": "That username is available."
+	},
 	"login.usernameHint": {
 		"message": "How other sailors find ye, an' tell ye apart from others with the same name. {min} to {max} letters (a to z), digits an' underscores.",
 		"source": "How other players find you, and tell you apart from others with the same name. {min} to {max} letters (a to z), digits and underscores."
@@ -4239,6 +4279,10 @@
 		"message": "We stow only what the ship needs to sail, so we don't ask afore stowin' it. There be no cookies from other ships.",
 		"source": "We store only what the site needs to work, so we don't ask before storing it. There are no cookies from other sites."
 	},
+	"privacy.cookiesKnownBrowser": {
+		"message": "A cookie that shows a browser has come aboard yer account afore, so other scallywags' wrong password guesses can't keep it from boardin'. It don't say which account it be, an' lasts 180 days after ye last come aboard.",
+		"source": "A cookie that shows a browser has logged in to your account, so other people's wrong password guesses can't stop it from logging in. It doesn't say which account it is, and lasts 180 days after you last log in."
+	},
 	"privacy.cookiesLanguage": {
 		"message": "The tongue ye choose at the bottom o' the page.",
 		"source": "The language you choose at the bottom of the page."
@@ -4248,8 +4292,8 @@
 		"source": "A cookie that keeps you logged in. It ends when you log out, after an hour without use, or when you close your browser; with \"Remember me\" checked, after 30 days without use."
 	},
 	"privacy.cookiesTwoFactor": {
-		"message": "With two-factor authentication on, a cookie that lets the browser where ye gave yer password enter yer authenticator code, for 10 minutes. If ye choose not to be asked again on a browser, a cookie that lets it skip the code for 30 days, till ye stop trustin' it on yer profile.",
-		"source": "With two-factor authentication on, a cookie that lets the browser where you typed your password enter your authenticator code, for 10 minutes. If you choose not to be asked again on a browser, a cookie that lets it skip the code for 30 days, until you stop trusting it on your profile."
+		"message": "With two-factor authentication on, a cookie that lets the browser where ye gave yer password, or came aboard with Google or Discord, enter yer authenticator code, for 10 minutes. If ye choose not to be asked again on a browser, a cookie that lets it skip the code for 30 days, till ye stop trustin' it on yer profile.",
+		"source": "With two-factor authentication on, a cookie that lets the browser where you typed your password, or logged in with Google or Discord, enter your authenticator code, for 10 minutes. If you choose not to be asked again on a browser, a cookie that lets it skip the code for 30 days, until you stop trusting it on your profile."
 	},
 	"privacy.deleting": {
 		"message": "Deletin' yer account deletes yer profile, yer hands an' yer security records. Crews led by one o' yer hands are scuttled. For each universe ye be the only creator of, ye choose whether to hand it to another o' its editors or delete it; what ye built in universes others edit stays part o' them.",
@@ -4467,6 +4511,10 @@
 		"message": "Change email",
 		"source": "Change email"
 	},
+	"profile.changeEmailConfirmSent": {
+		"message": "We've sent a letter with a code to {email}. Enter it, an' the new address, an' we'll send that one a code too. It works but once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"source": "We've emailed a code to {email}. Enter it, and the new address, and we'll send that a code too. It works once, for {minutes, plural, one {# minute} other {# minutes}}."
+	},
 	"profile.changeEmailCodeSent": {
 		"message": "If {email} ain't another account's address, we've sent it a letter with a code. Enter the code from it. It works but once, for {minutes, plural, one {# minute} other {# minutes}}.",
 		"source": "If {email} isn't another account's address, we've emailed it a code. Enter the code from the email. It works once, for {minutes, plural, one {# minute} other {# minutes}}."
@@ -4476,8 +4524,12 @@
 		"source": "Could not change your email address."
 	},
 	"profile.changeEmailIntro": {
-		"message": "Yer email address be {email}. Enter the new one, an' we'll send it a code to prove it be yers.",
-		"source": "Your email address is {email}. Enter the new one, and we'll send it a code to check it's yours."
+		"message": "Yer email address be {email}. Enter the new one, an' we'll send it a code to prove it be yers. Every other browser aboard yer account goes ashore when the address changes.",
+		"source": "Your email address is {email}. Enter the new one, and we'll send it a code to check it's yours. Every other browser logged in to your account is logged out when the address changes."
+	},
+	"profile.changeEmailIntroConfirm": {
+		"message": "Yer email address be {email}. To prove it be ye, we'll send it a code first. Every other browser aboard yer account goes ashore when the address changes.",
+		"source": "Your email address is {email}. To check it's you, we'll email it a code first. Every other browser logged in to your account is logged out when the address changes."
 	},
 	"profile.changeEmailIntroNone": {
 		"message": "Enter an email address, an' we'll send it a code to prove it be yers.",
@@ -4531,6 +4583,10 @@
 		"message": "Copy",
 		"source": "Copy"
 	},
+	"profile.currentEmailCode": {
+		"message": "Code sent to yer current address",
+		"source": "Code sent to your current address"
+	},
 	"profile.currentPassword": {
 		"message": "Current password",
 		"source": "Current password"
@@ -4550,6 +4606,18 @@
 	"profile.deleteAccountTitle": {
 		"message": "Scuttle yer account",
 		"source": "Delete your account"
+	},
+	"profile.deleteCodeFailed": {
+		"message": "Couldn't send ye a letter with a code.",
+		"source": "Could not email you a code."
+	},
+	"profile.deleteCodeIntro": {
+		"message": "To prove it be ye, we'll send a letter with a code to {email}.",
+		"source": "To check it's you, we'll email a code to {email}."
+	},
+	"profile.deleteCodeSent": {
+		"message": "We've sent a letter with a code to {email}. Enter it to scuttle yer account. It works but once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"source": "We've emailed a code to {email}. Enter it to delete your account. It works once, for {minutes, plural, one {# minute} other {# minutes}}."
 	},
 	"profile.deleteFailed": {
 		"message": "Couldn't scuttle yer account.",
@@ -4659,6 +4727,14 @@
 		"message": "Ye can pick no more than {max, plural, one {# tongue} other {# tongues}}.",
 		"source": "You can choose up to {max, plural, one {# language} other {# languages}}."
 	},
+	"profile.linkCodeSent": {
+		"message": "We've sent a letter with a code to {email}. Enter it to sail on. It works but once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"source": "We've emailed a code to {email}. Enter it to go on. It works once, for {minutes, plural, one {# minute} other {# minutes}}."
+	},
+	"profile.linkContinue": {
+		"message": "Onward",
+		"source": "Continue"
+	},
 	"profile.linkDiscord": {
 		"message": "Lash Discord",
 		"source": "Link Discord"
@@ -4670,6 +4746,18 @@
 	"profile.linkGoogle": {
 		"message": "Lash Google",
 		"source": "Link Google"
+	},
+	"profile.linkIntroCode": {
+		"message": "To be sure it be ye, we'll send a letter with a code to {email}. Then ye'll sail to {provider} to pick the account to lash.",
+		"source": "To check it's you, we'll email a code to {email}. Then you'll go to {provider} to choose the account to link."
+	},
+	"profile.linkIntroPassword": {
+		"message": "To be sure it be ye, give yer password. Then ye'll sail to {provider} to pick the account to lash.",
+		"source": "To check it's you, enter your password. Then you'll go to {provider} to choose the account to link."
+	},
+	"profile.linkTitle": {
+		"message": "Lash a {provider} login",
+		"source": "Link a {provider} login"
 	},
 	"profile.loadFailed": {
 		"message": "Couldn't fetch the profile. Reload the page to try again.",
@@ -4892,8 +4980,8 @@
 		"source": "Could not turn on two-factor authentication."
 	},
 	"profile.twoFactorSetupIntro": {
-		"message": "With two-factor authentication, comin' aboard with yer password also asks for a code from an app on yer phone, so a scallywag who learns yer password still can't board. First, enter yer password.",
-		"source": "With two-factor authentication, logging in with your password also asks for a code from an app on your phone, so someone who learns your password still can't get in. First, enter your password."
+		"message": "With two-factor authentication, comin' aboard also asks for a code from an app on yer phone, so a scallywag who learns yer password still can't board. Every other browser aboard yer account goes ashore when it be turned on. First, enter yer password.",
+		"source": "With two-factor authentication, logging in also asks for a code from an app on your phone, so someone who learns your password still can't get in. Every other browser logged in to your account is logged out when it turns on. First, enter your password."
 	},
 	"profile.twoFactorSetupTitle": {
 		"message": "Raise two-factor authentication",

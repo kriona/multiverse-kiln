@@ -11,34 +11,36 @@
 import { randomBytes } from 'crypto';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_EMAIL_CHANGE_PATH, AUTH_LOGIN_PATH, AUTH_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_CHANGE_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_REGISTER_PATH, AUTH_SESSION_PATH, EMAIL_CODE_PURPOSES, MAX_EMAIL_LENGTH, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_TWO_FACTOR_CODE_INPUT_LENGTH, MAX_USERNAME_LENGTH, MIN_PASSWORD_LENGTH, type EmailChangeRequest, type EmailCodeCheckPayload, type EmailCodeCheckRequest, type EmailCodeRequest, type LoginPayload, type LoginRequest, type PasswordChangeRequest, type PasswordResetRequest, type RegisterRequest, type SessionPayload } from '@multiverse-kiln/shared';
+import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_EMAIL_CHANGE_PATH, AUTH_LOGIN_PATH, AUTH_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_CHANGE_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_REGISTER_PATH, AUTH_SESSION_PATH, AUTH_USERNAME_CHECK_PATH, EMAIL_CODE_PURPOSES, MAX_EMAIL_LENGTH, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_TWO_FACTOR_CODE_INPUT_LENGTH, MAX_USERNAME_LENGTH, MIN_PASSWORD_LENGTH, type EmailChangeRequest, type EmailCodeCheckPayload, type EmailCodeCheckRequest, type EmailCodePurpose, type EmailCodeRequest, type LoginPayload, type LoginRequest, type PasswordChangeRequest, type PasswordResetRequest, type RegisterRequest, type SessionPayload, type UsernameCheckRequest } from '@multiverse-kiln/shared';
 
 import { hashAddress, hashesMatch, keyedHash } from '../auth/keyedHashes.js';
 import { checkLoginPassword, checkPasswordForMissingAccount, hashPassword } from '../auth/passwords.js';
 import { checkPwnedPassword } from '../auth/pwnedPasswords.js';
-import { MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR, MAX_LOGIN_ATTEMPTS_PER_NETWORK_HOUR, takeAttempt } from '../auth/rateLimits.js';
+import { hasKnownBrowserCookie, knownBrowserHash } from '../auth/knownBrowsers.js';
+import { MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR, MAX_LOGIN_ATTEMPTS_PER_BROWSER_HOUR, MAX_LOGIN_ATTEMPTS_PER_NETWORK_HOUR, MAX_USERNAME_CHECKS_PER_NETWORK_HOUR, takeAttempt } from '../auth/rateLimits.js';
 import { endSession, resolveSession, startSession, type SessionIdentity } from '../auth/sessions.js';
-import { createToken, hashToken } from '../auth/tokens.js';
-import { deleteEmailCode, lockContinuation, lockEmailCode, recordWrongEmailCodeGuess, replaceEmailCode, useEmailCode } from '../db/emailCodeRepo.js';
-import { AccountTakenError, createPlayer, findLocalLogin, findPasswordHash, findPlayerEmail, findPlayerIdByEmail, saveEmail, savePasswordHash } from '../db/playerRepo.js';
+import { createToken, hashToken, isTokenForm } from '../auth/tokens.js';
+import type { Executor } from '../db/client.js';
+import { deleteEmailCode, deletePlayerEmailCodes, lockContinuation, lockEmailCode, recordWrongEmailCodeGuess, replaceEmailCode, useEmailCode } from '../db/emailCodeRepo.js';
+import { AccountTakenError, createPlayer, findLocalLogin, findPasswordHash, findPlayerByUsername, findPlayerEmail, findPlayerIdByEmail, saveEmail, savePasswordHash } from '../db/playerRepo.js';
 import { lockPendingProviderLogin } from '../db/providerLoginRepo.js';
 import { findRateLimitTimes, lockRateLimitSubject, recordRateLimitEvent } from '../db/rateLimitRepo.js';
 import { deletePlayerSessions } from '../db/sessionRepo.js';
 import { inTransaction } from '../db/transactions.js';
-import { savePendingTwoFactorLogin } from '../db/twoFactorRepo.js';
+import { deleteTrustedBrowsers, savePendingTwoFactorLogin } from '../db/twoFactorRepo.js';
 import { accountCreatedEmail, accountExistsEmail, emailChangedEmail, emailCodeEmail, passwordChangedEmail } from '../email/authEmails.js';
 import { sendEmailInBackground, type EmailContent } from '../email/mailer.js';
 import { CONTINUATION_LIFETIME_MS, DAY_MS, decideEmailCodeSend, emailCodeFromBytes, emailCodeState, EMAIL_CODE_LENGTH, HOUR_MS, MAX_EMAIL_CODES_PER_NETWORK_HOUR, MAX_GUESSES_PER_NETWORK_HOUR, normalizeEmailCode } from '../logic/emailCodes.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { displayText } from '../rooms/payloads.js';
 import { addAccountDeletionRoutes } from './accountDeletion.js';
-import { authMessages, checkDisplayName, checkUsername, cookieTokenHash, recordEvent, sendRefusal, tooManyAttempts, type AuthRefusal } from './authCommon.js';
+import { accountPasswordLimits, authMessages, checkDisplayName, checkUsername, cookieTokenHash, recordEvent, sendRefusal, tooManyAttempts, type AuthRefusal } from './authCommon.js';
 import { clientNetworkHash } from './clientNetwork.js';
-import { clearCookie, CONTINUATION_COOKIE, PROVIDER_LOGIN_COOKIE, setCookie, TWO_FACTOR_LOGIN_COOKIE } from './cookies.js';
+import { clearCookie, CONTINUATION_COOKIE, PROVIDER_LOGIN_COOKIE, readCookie, setCookie, TWO_FACTOR_LOGIN_COOKIE } from './cookies.js';
 import { refuseWritesFromOtherOrigins } from './editorAccess.js';
 import { errorMessages, sendInvalidRequest } from './errors.js';
 import { addProviderRoutes } from './providerAuth.js';
-import { addTwoFactorRoutes, checkSecondFactor, needsSecondFactor, reportRecoveryCodeUse, type SecondFactorOutcome } from './twoFactorAuth.js';
+import { addTwoFactorRoutes, checkAccountPassword, checkSecondFactor, needsSecondFactor, reportRecoveryCodeUse, type SecondFactorOutcome } from './twoFactorAuth.js';
 
 /**
  * The largest request body the auth routes read
@@ -74,6 +76,10 @@ const emailCodeCheckRequest = z.object({
 	code: z.string().max(EMAIL_CODE_LENGTH * 4)
 }) satisfies z.ZodType<EmailCodeCheckRequest>;
 
+const usernameCheckRequest = z.object({
+	username: z.string().trim().max(MAX_USERNAME_LENGTH * 4)
+}) satisfies z.ZodType<UsernameCheckRequest>;
+
 const registerRequest = z.object({
 	email: emailAddress,
 	password: z.string().max(MAX_PASSWORD_LENGTH * 4),
@@ -92,7 +98,9 @@ const passwordResetRequest = z.object({
 
 const emailChangeRequest = z.object({
 	email: emailAddress,
-	locale
+	locale,
+	currentPassword: z.string().max(MAX_PASSWORD_LENGTH * 4).nullable(),
+	twoFactorCode: z.string().max(MAX_TWO_FACTOR_CODE_INPUT_LENGTH).nullable()
 }) satisfies z.ZodType<EmailChangeRequest>;
 
 const passwordChangeRequest = z.object({
@@ -126,6 +134,7 @@ export function addAuthRoutes(app: Application, allowedOrigins: Set<string>): vo
 	router.post(underAuthPath(AUTH_LOGOUT_PATH), logoutRoute);
 	router.post(underAuthPath(AUTH_CODE_PATH), sendCodeRoute);
 	router.post(underAuthPath(AUTH_CODE_CHECK_PATH), checkCodeRoute);
+	router.post(underAuthPath(AUTH_USERNAME_CHECK_PATH), usernameCheckRoute);
 	router.post(underAuthPath(AUTH_REGISTER_PATH), registerRoute);
 	router.post(underAuthPath(AUTH_PASSWORD_RESET_PATH), passwordResetRoute);
 	router.post(underAuthPath(AUTH_EMAIL_CHANGE_PATH), emailChangeRoute);
@@ -228,6 +237,51 @@ function continuationHashOf(request: Request): Buffer | undefined
 }
 
 /**
+ * Whether this browser entered a code for a purpose and can still take its next step. Checked before
+ * the breach check and hashing the password, so a request without one costs only a lookup; the step's
+ * transaction checks again
+ *
+ * @param purpose What the code was for
+ * @param continuationHash The hash of the browser's continuation token, if it has one
+ * @param now The time now
+ * @return Whether it can
+ */
+async function codeWasEntered(purpose: EmailCodePurpose, continuationHash: Buffer | undefined, now: Date): Promise<boolean>
+{
+	if (continuationHash === undefined)
+	{
+		return(false);
+	}
+
+	return((await inTransaction((executor) => lockContinuation(purpose, continuationHash, now, executor))) !== undefined);
+}
+
+/**
+ * The browser's continuation token, when it names a code this browser entered that was sent to the
+ * current address of the account changing its email address (purpose 'confirmEmailChange'). The code
+ * sent to the new address takes the same token, so the change finds both
+ *
+ * @param request The request
+ * @param playerId The account changing its address
+ * @param now The time now
+ * @param executor The transaction
+ * @return The token, or undefined when the browser has none, or it names no such code
+ */
+async function confirmedChangeToken(request: Request, playerId: string, now: Date, executor: Executor): Promise<string | undefined>
+{
+	const token = readCookie(request.headers.cookie, CONTINUATION_COOKIE);
+
+	if ((token === undefined) || !isTokenForm(token))
+	{
+		return(undefined);
+	}
+
+	const confirmation = await lockContinuation('confirmEmailChange', hashToken(token), now, executor);
+
+	return(((confirmation?.playerId === playerId) ? token : undefined));
+}
+
+/**
  * GET AUTH_SESSION_PATH: who the browser is logged in as
  *
  * @param request The request
@@ -269,17 +323,27 @@ async function loginRoute(request: Request, response: Response): Promise<void>
 
 	const { email, password, rememberMe } = body.data;
 	const now = new Date();
+
+	// A browser that has logged in to the account counts its own tries, so others' guesses at the address can't lock it out
+	const ownerId = (hasKnownBrowserCookie(request) ? await findPlayerIdByEmail(email) : undefined);
+	const browserHash = ((ownerId !== undefined) ? knownBrowserHash(request, ownerId, now) : undefined);
 	const attempt = await inTransaction((executor) => takeAttempt([
 		{
 			kind: 'networkLoginAttempt',
 			subjectHash: clientNetworkHash(request),
 			limit: MAX_LOGIN_ATTEMPTS_PER_NETWORK_HOUR
 		},
-		{
-			kind: 'addressLoginAttempt',
-			subjectHash: hashAddress(email),
-			limit: MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR
-		}
+		((browserHash !== undefined)
+			? {
+				kind: 'browserLoginAttempt',
+				subjectHash: browserHash,
+				limit: MAX_LOGIN_ATTEMPTS_PER_BROWSER_HOUR
+			}
+			: {
+				kind: 'addressLoginAttempt',
+				subjectHash: hashAddress(email),
+				limit: MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR
+			})
 	], now, executor));
 
 	if (!attempt.allowed)
@@ -333,7 +397,7 @@ async function loginRoute(request: Request, response: Response): Promise<void>
 			return({ outcome: 'twoFactor' });
 		}
 
-		await startSession(response, login.id, rememberMe, executor);
+		await startSession(request, response, login.id, rememberMe, executor);
 		await recordEvent(request, login.id, 'loggedIn', now, executor);
 
 		return({ outcome: 'loggedIn' });
@@ -395,7 +459,12 @@ async function sendCodeRoute(request: Request, response: Response): Promise<void
 
 	let session: SessionIdentity | undefined;
 
-	if (purpose === 'changeEmail')
+	if (purpose === 'linkLogin')
+	{
+		// Linking from the profile, which needn't be logged in when linking from the login page
+		session = await resolveSession(request.headers.cookie);
+	}
+	else if ((purpose === 'changeEmail') || (purpose === 'confirmEmailChange') || (purpose === 'deleteAccount'))
 	{
 		session = await resolveSession(request.headers.cookie);
 
@@ -477,11 +546,25 @@ async function sendCodeRoute(request: Request, response: Response): Promise<void
 		}
 		else if (purpose === 'linkLogin')
 		{
-			// Only the account that a provider login waiting in this browser would be linked to
+			// Only the account that a provider login waiting in this browser would be linked to, or the
+			// one the browser is logged in to, linking from its profile
 			const pendingHash = cookieTokenHash(request, PROVIDER_LOGIN_COOKIE);
 			const pending = ((pendingHash === undefined) ? undefined : await lockPendingProviderLogin(pendingHash, now, executor));
 
-			if ((ownerId === undefined) || (pending?.playerId !== ownerId))
+			if ((ownerId === undefined) || ((pending?.playerId !== ownerId) && (session?.playerId !== ownerId)))
+			{
+				return({
+					kind: 'send',
+					email: undefined
+				});
+			}
+
+			playerId = ownerId;
+		}
+		else if ((purpose === 'confirmEmailChange') || (purpose === 'deleteAccount'))
+		{
+			// Only the address of the account the browser is logged in to
+			if ((ownerId === undefined) || (session?.playerId !== ownerId))
 			{
 				return({
 					kind: 'send',
@@ -558,7 +641,8 @@ async function checkCodeRoute(request: Request, response: Response): Promise<voi
 
 	const { purpose, email } = body.data;
 	const typed = normalizeEmailCode(body.data.code);
-	const session = ((purpose === 'changeEmail') ? await resolveSession(request.headers.cookie) : undefined);
+	const forAccount = ((purpose === 'changeEmail') || (purpose === 'confirmEmailChange') || (purpose === 'deleteAccount'));
+	const session = (forAccount ? await resolveSession(request.headers.cookie) : undefined);
 	const now = new Date();
 	const addressHash = hashAddress(email);
 	const networkHash = clientNetworkHash(request);
@@ -580,7 +664,7 @@ async function checkCodeRoute(request: Request, response: Response): Promise<voi
 		const code = await lockEmailCode(purpose, addressHash, executor);
 		const right = ((code !== undefined)
 			&& (emailCodeState(code, now) === 'open')
-			&& ((purpose !== 'changeEmail') || (code.playerId === session?.playerId))
+			&& (!forAccount || (code.playerId === session?.playerId))
 			&& (typed !== undefined)
 			&& hashesMatch(keyedHash('emailCode', typed), code.codeHash));
 
@@ -604,7 +688,8 @@ async function checkCodeRoute(request: Request, response: Response): Promise<voi
 			});
 		}
 
-		const token = createToken();
+		// Changing the email address of an account without a password needs both codes, entered by one browser
+		const token = ((((purpose === 'changeEmail') && (code.playerId !== null)) ? await confirmedChangeToken(request, code.playerId, now, executor) : undefined) ?? createToken());
 
 		await useEmailCode(code.id, hashToken(token), now, new Date(now.getTime() + CONTINUATION_LIFETIME_MS), executor);
 
@@ -628,6 +713,84 @@ async function checkCodeRoute(request: Request, response: Response): Promise<voi
 }
 
 /**
+ * POST AUTH_USERNAME_CHECK_PATH: says whether a new account could take a username, so the page can say
+ * so before the account is created. Only a browser creating an account may ask: one that entered a
+ * code to register, or has a provider login waiting for a username. Its network can ask
+ * MAX_USERNAME_CHECKS_PER_NETWORK_HOUR times an hour, so usernames can't be listed by asking
+ *
+ * @param request The request, with a UsernameCheckRequest
+ * @param response The response: 204 when the username could be taken, or the refusal registering would give
+ */
+async function usernameCheckRoute(request: Request, response: Response): Promise<void>
+{
+	const body = usernameCheckRequest.safeParse(request.body);
+
+	if (!body.success)
+	{
+		sendInvalidRequest(response, body.error);
+		return;
+	}
+
+	const { username } = body.data;
+	const formProblem = checkUsername(username);
+
+	if (formProblem)
+	{
+		sendRefusal(response, formProblem);
+		return;
+	}
+
+	const now = new Date();
+	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | undefined> =>
+	{
+		const continuationHash = continuationHashOf(request);
+		const pendingHash = cookieTokenHash(request, PROVIDER_LOGIN_COOKIE);
+		const registering = (((continuationHash !== undefined) && ((await lockContinuation('register', continuationHash, now, executor)) !== undefined))
+			|| ((pendingHash !== undefined) && ((await lockPendingProviderLogin(pendingHash, now, executor))?.playerId === null)));
+
+		if (!registering)
+		{
+			return({
+				status: 403,
+				message: authMessages.enterCodeFirst
+			});
+		}
+
+		const attempt = await takeAttempt([
+			{
+				kind: 'networkUsernameCheck',
+				subjectHash: clientNetworkHash(request),
+				limit: MAX_USERNAME_CHECKS_PER_NETWORK_HOUR
+			}
+		], now, executor);
+
+		if (!attempt.allowed)
+		{
+			return(tooManyAttempts(attempt, now, response));
+		}
+
+		if ((await findPlayerByUsername(username, executor)) !== undefined)
+		{
+			return({
+				status: 409,
+				message: authMessages.usernameTaken,
+				field: 'username'
+			});
+		}
+
+		return(undefined);
+	});
+
+	if (outcome)
+	{
+		sendRefusal(response, outcome);
+		return;
+	}
+
+	response.sendStatus(204);
+}
+
+/**
  * POST AUTH_REGISTER_PATH: creates a local account, once this browser has entered the code sent to its
  * address, and logs the browser in
  *
@@ -646,10 +809,11 @@ async function registerRoute(request: Request, response: Response): Promise<void
 
 	const { email, password, username, displayName, rememberMe, locale: emailLocale } = body.data;
 	const continuationHash = continuationHashOf(request);
+	const now = new Date();
 	const problem = (checkUsername(username)
 		?? checkDisplayName(displayName)
 		?? checkPasswordLength(password)
-		?? ((continuationHash === undefined) ? { status: 403, message: authMessages.enterCodeFirst } : undefined)
+		?? (!(await codeWasEntered('register', continuationHash, now)) ? { status: 403, message: authMessages.enterCodeFirst } : undefined)
 		?? await checkBreachedPassword(password));
 
 	if (problem)
@@ -659,7 +823,6 @@ async function registerRoute(request: Request, response: Response): Promise<void
 	}
 
 	const passwordHash = await hashPassword(password);
-	const now = new Date();
 	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | undefined> =>
 	{
 		const code = await lockContinuation('register', continuationHash as Buffer, now, executor);
@@ -716,7 +879,7 @@ async function registerRoute(request: Request, response: Response): Promise<void
 		}
 
 		await deleteEmailCode(code.id, executor);
-		await startSession(response, playerId, rememberMe, executor);
+		await startSession(request, response, playerId, rememberMe, executor);
 		await recordEvent(request, playerId, 'registered', now, executor);
 		await recordEvent(request, playerId, 'loggedIn', now, executor);
 
@@ -741,7 +904,8 @@ async function registerRoute(request: Request, response: Response): Promise<void
  * POST AUTH_PASSWORD_RESET_PATH: sets a new password, once this browser has entered the code sent to
  * the account's address, and for an account with 2FA, given its authenticator or recovery code too, so
  * someone who gets into the player's email still can't take the account. Every session of the account
- * ends, and this browser is logged in afresh
+ * ends, every browser it trusts must give the authenticator code again, and this browser is logged in
+ * afresh
  *
  * @param request The request, with a PasswordResetRequest
  * @param response The response: 204 with the session cookie
@@ -758,8 +922,9 @@ async function passwordResetRoute(request: Request, response: Response): Promise
 
 	const { password, rememberMe, locale: emailLocale, twoFactorCode } = body.data;
 	const continuationHash = continuationHashOf(request);
+	const now = new Date();
 	const problem = (checkPasswordLength(password)
-		?? ((continuationHash === undefined) ? { status: 403, message: authMessages.enterCodeFirst } : undefined)
+		?? (!(await codeWasEntered('resetPassword', continuationHash, now)) ? { status: 403, message: authMessages.enterCodeFirst } : undefined)
 		?? await checkBreachedPassword(password));
 
 	if (problem)
@@ -769,7 +934,6 @@ async function passwordResetRoute(request: Request, response: Response): Promise
 	}
 
 	const passwordHash = await hashPassword(password);
-	const now = new Date();
 	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { playerId: string; ended: string[]; email: string | null; check: SecondFactorOutcome }> =>
 	{
 		const code = await lockContinuation('resetPassword', continuationHash as Buffer, now, executor);
@@ -783,7 +947,10 @@ async function passwordResetRoute(request: Request, response: Response): Promise
 		}
 
 		const playerId = code.playerId;
-		const check = await checkSecondFactor(request, response, playerId, twoFactorCode, now, executor, { trustedBrowserSkips: true });
+		const check = await checkSecondFactor(request, response, playerId, twoFactorCode, now, executor, {
+			trustedBrowserSkips: true,
+			emailLocale
+		});
 
 		if ((check.kind === 'wrong') || (check.kind === 'refused'))
 		{
@@ -794,8 +961,10 @@ async function passwordResetRoute(request: Request, response: Response): Promise
 
 		const ended = await deletePlayerSessions(playerId, executor);
 
-		await deleteEmailCode(code.id, executor);
-		await startSession(response, playerId, rememberMe, executor);
+		// A reset is how a player takes back an account, so no browser keeps skipping its 2FA
+		await deleteTrustedBrowsers(playerId, executor);
+		await deletePlayerEmailCodes(playerId, executor);
+		await startSession(request, response, playerId, rememberMe, executor);
 		await recordEvent(request, playerId, 'passwordReset', now, executor);
 		await recordEvent(request, playerId, 'loggedIn', now, executor);
 
@@ -830,7 +999,11 @@ async function passwordResetRoute(request: Request, response: Response): Promise
 
 /**
  * POST AUTH_EMAIL_CHANGE_PATH: changes the logged-in account's email address, once this browser has
- * entered the code sent to the new address. Both addresses are told
+ * entered the code sent to the new address. The player shows it's the owner, not just someone with the
+ * session, since the new address can reset the password: with the account's password, or for an
+ * account without one, the code sent to its current address that this browser entered, and with 2FA,
+ * its authenticator or recovery code, even from a trusted browser. Every other browser logged in to
+ * the account is logged out, and both addresses are told
  *
  * @param request The request, with an EmailChangeRequest
  * @param response The response: 204
@@ -845,7 +1018,7 @@ async function emailChangeRoute(request: Request, response: Response): Promise<v
 		return;
 	}
 
-	const { email, locale: emailLocale } = body.data;
+	const { email, locale: emailLocale, currentPassword, twoFactorCode } = body.data;
 	const session = await resolveSession(request.headers.cookie);
 	const continuationHash = continuationHashOf(request);
 
@@ -868,7 +1041,20 @@ async function emailChangeRoute(request: Request, response: Response): Promise<v
 	}
 
 	const now = new Date();
-	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { oldEmail: string | null }> =>
+	const hasPassword = ((await findPasswordHash(session.playerId)) !== null);
+
+	if (hasPassword)
+	{
+		const problem = await checkAccountPassword(request, response, session.playerId, (currentPassword ?? ''), now);
+
+		if (problem)
+		{
+			sendRefusal(response, problem);
+			return;
+		}
+	}
+
+	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { oldEmail: string | null; ended: string[]; check: SecondFactorOutcome }> =>
 	{
 		const code = await lockContinuation('changeEmail', continuationHash, now, executor);
 
@@ -891,6 +1077,30 @@ async function emailChangeRoute(request: Request, response: Response): Promise<v
 
 		const oldEmail = await findPlayerEmail(session.playerId, executor);
 
+		// An account without a password or an address has nothing else to check it's the owner with
+		if (!hasPassword && (oldEmail !== null))
+		{
+			const confirmation = await lockContinuation('confirmEmailChange', continuationHash, now, executor);
+
+			if (!confirmation || (confirmation.playerId !== session.playerId))
+			{
+				return({
+					status: 403,
+					message: authMessages.enterCodeFirst
+				});
+			}
+		}
+
+		const check = await checkSecondFactor(request, response, session.playerId, twoFactorCode, now, executor, {
+			trustedBrowserSkips: false,
+			emailLocale
+		});
+
+		if ((check.kind === 'wrong') || (check.kind === 'refused'))
+		{
+			return(check.refusal);
+		}
+
 		try
 		{
 			await saveEmail(session.playerId, email, executor);
@@ -909,10 +1119,18 @@ async function emailChangeRoute(request: Request, response: Response): Promise<v
 			});
 		}
 
-		await deleteEmailCode(code.id, executor);
+		// Codes sent to the old address, such as for a password reset, no longer act for the account
+		await deletePlayerEmailCodes(session.playerId, executor);
+
+		const ended = await deletePlayerSessions(session.playerId, executor, session.sessionId);
+
 		await recordEvent(request, session.playerId, 'emailChanged', now, executor);
 
-		return({ oldEmail });
+		return({
+			oldEmail,
+			ended,
+			check
+		});
 	});
 
 	if ('status' in outcome)
@@ -921,8 +1139,10 @@ async function emailChangeRoute(request: Request, response: Response): Promise<v
 		return;
 	}
 
+	connectedSessions.end(outcome.ended);
 	clearCookie(response, CONTINUATION_COOKIE);
 	response.sendStatus(204);
+	await reportRecoveryCodeUse(session.playerId, outcome.check, emailLocale);
 
 	if (outcome.oldEmail !== null)
 	{
@@ -979,13 +1199,8 @@ async function passwordChangeRoute(request: Request, response: Response): Promis
 	}
 
 	const now = new Date();
-	const attempt = await inTransaction((executor) => takeAttempt([
-		{
-			kind: 'networkLoginAttempt',
-			subjectHash: clientNetworkHash(request),
-			limit: MAX_LOGIN_ATTEMPTS_PER_NETWORK_HOUR
-		}
-	], now, executor));
+	const email = await findPlayerEmail(session.playerId);
+	const attempt = await inTransaction((executor) => takeAttempt(accountPasswordLimits(request, email), now, executor));
 
 	if (!attempt.allowed)
 	{
@@ -1024,27 +1239,26 @@ async function passwordChangeRoute(request: Request, response: Response): Promis
 	}
 
 	const newHash = await hashPassword(newPassword);
-	const outcome = await inTransaction(async (executor) =>
+	const ended = await inTransaction(async (executor) =>
 	{
 		await savePasswordHash(session.playerId, newHash, executor);
 
 		const ended = await deletePlayerSessions(session.playerId, executor, session.sessionId);
 
+		// A password reset asked for before the change can't undo it
+		await deletePlayerEmailCodes(session.playerId, executor);
 		await recordEvent(request, session.playerId, 'passwordChanged', now, executor);
 
-		return({
-			ended,
-			email: await findPlayerEmail(session.playerId, executor)
-		});
+		return(ended);
 	});
 
-	connectedSessions.end(outcome.ended);
+	connectedSessions.end(ended);
 	response.sendStatus(204);
 
-	if (outcome.email !== null)
+	if (email !== null)
 	{
 		sendEmailInBackground({
-			to: outcome.email,
+			to: email,
 			...passwordChangedEmail(emailLocale)
 		});
 	}

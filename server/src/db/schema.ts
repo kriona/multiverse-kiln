@@ -1449,7 +1449,9 @@ export const emailCodes = pgTable('email_codes', {
 
 	/**
 	 * SHA-256 of the token in the cookie given to the browser that entered the code, which lets only that
-	 * browser take the next step (such as setting the password). Set with the code's use
+	 * browser take the next step (such as setting the password). Set with the code's use. Unique for each
+	 * purpose: a step that needs two codes, such as changing the email address of an account without a
+	 * password, gives both the same token
 	 */
 	continuationHash: bytea('continuation_hash'),
 
@@ -1459,7 +1461,7 @@ export const emailCodes = pgTable('email_codes', {
 	continuationExpiresAt: timestamp('continuation_expires_at', { withTimezone: true })
 }, (table) => [
 	uniqueIndex('email_codes_purpose_address_unique').on(table.purpose, table.addressHash),
-	uniqueIndex('email_codes_continuation_hash_unique').on(table.continuationHash),
+	uniqueIndex('email_codes_purpose_continuation_hash_unique').on(table.purpose, table.continuationHash),
 	index('email_codes_player_id_index').on(table.playerId),
 	check('email_codes_address_hash_length', authHashLength(table.addressHash)),
 	check('email_codes_code_hash_length', authHashLength(table.codeHash)),
@@ -1471,10 +1473,11 @@ export const emailCodes = pgTable('email_codes', {
 
 /**
  * What a rate limit counts: codes sent to an address and wrong guesses for it, the codes asked for and
- * guesses made from a network, login attempts for an address and from a network, and authenticator or
- * recovery codes tried for an account
+ * guesses made from a network, login attempts for an address and from a network, authenticator or
+ * recovery codes tried for an account and its wrong authenticator codes, login attempts from a browser
+ * that has logged in to an account, and usernames checked from a network
  */
-export const RATE_LIMIT_KINDS = ['addressCodeSent', 'addressWrongGuess', 'networkCodeRequest', 'networkGuess', 'addressLoginAttempt', 'networkLoginAttempt', 'accountTwoFactorAttempt'] as const;
+export const RATE_LIMIT_KINDS = ['addressCodeSent', 'addressWrongGuess', 'networkCodeRequest', 'networkGuess', 'addressLoginAttempt', 'networkLoginAttempt', 'accountTwoFactorAttempt', 'browserLoginAttempt', 'networkUsernameCheck', 'accountWrongAuthenticatorCode'] as const;
 export const rateLimitKind = pgEnum('rate_limit_kind', RATE_LIMIT_KINDS);
 
 /**
@@ -1487,7 +1490,8 @@ export const rateLimitEvents = pgTable('rate_limit_events', {
 	kind: rateLimitKind('kind').notNull(),
 
 	/**
-	 * Keyed hash of what is limited: an address or a network (server/src/logic/networks.ts)
+	 * Keyed hash of what is limited: an address, a network (server/src/logic/networks.ts), an account,
+	 * or a browser that has logged in to an account (server/src/auth/knownBrowsers.ts)
 	 */
 	subjectHash: bytea('subject_hash').notNull(),
 

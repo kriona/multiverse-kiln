@@ -180,6 +180,20 @@ export async function deleteEmailCode(codeId: string, executor: Executor = db): 
 }
 
 /**
+ * Deletes every code sent for an account, whether or not it has been entered, once the account's
+ * password or address changes
+ *
+ * @param playerId The account
+ * @param executor The database, or a transaction
+ */
+export async function deletePlayerEmailCodes(playerId: string, executor: Executor = db): Promise<void>
+{
+	await executor
+		.delete(emailCodes)
+		.where(eq(emailCodes.playerId, playerId));
+}
+
+/**
  * Deletes every code that can no longer be entered and whose next step, if any, has expired
  *
  * @param now The time now

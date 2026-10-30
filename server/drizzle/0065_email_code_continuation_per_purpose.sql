@@ -1,0 +1,2 @@
+DROP INDEX "email_codes_continuation_hash_unique";--> statement-breakpoint
+CREATE UNIQUE INDEX "email_codes_purpose_continuation_hash_unique" ON "email_codes" USING btree ("purpose","continuation_hash");

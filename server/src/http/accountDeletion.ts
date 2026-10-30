@@ -12,6 +12,7 @@ import { z } from 'zod';
 import { AUTH_ACCOUNT_DELETE_PATH, defineMessages, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_TWO_FACTOR_CODE_INPUT_LENGTH, MAX_USERNAME_LENGTH, type AccountDeleteRequest } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
+import { lockContinuation } from '../db/emailCodeRepo.js';
 import { listMembersOfGroups, listPlayerMemberships } from '../db/groupRepo.js';
 import { deletePlayer, findPasswordHash, findPlayerEmail, lockPlayer } from '../db/playerRepo.js';
 import { deletePlayerSessions } from '../db/sessionRepo.js';
@@ -25,8 +26,8 @@ import { connectedSessions } from '../players/connectedSessions.js';
 import { accountDeletionChanges, groupChanges, type GroupChange } from '../players/groupChanges.js';
 import { deleteObject } from '../storage/objectStorage.js';
 import { areaChanges } from '../world/areaChanges.js';
-import { sendRefusal, type AuthRefusal } from './authCommon.js';
-import { clearCookie, SESSION_COOKIE } from './cookies.js';
+import { authMessages, cookieTokenHash, sendRefusal, type AuthRefusal } from './authCommon.js';
+import { clearCookie, CONTINUATION_COOKIE, SESSION_COOKIE } from './cookies.js';
 import { sendInvalidRequest } from './errors.js';
 import { checkAccountPassword, checkSecondFactor, requireSession } from './twoFactorAuth.js';
 
@@ -82,8 +83,9 @@ export function addAccountDeletionRoutes(router: Router, underAuthPath: (path: s
 
 /**
  * POST AUTH_ACCOUNT_DELETE_PATH: deletes the logged-in account, once the player confirms it and has
- * decided what becomes of each universe they are the only creator of. Ends every session of the
- * account, and emails the address it had
+ * decided what becomes of each universe they are the only creator of. The player confirms with the
+ * password and 2FA code, or for an account without a password, the username and a code sent to its
+ * address that this browser entered. Ends every session of the account, and emails the address it had
  *
  * @param request The request, with an AccountDeleteRequest
  * @param response The response: 204, clearing the session cookie
@@ -135,8 +137,27 @@ async function deleteAccountRoute(request: Request, response: Response): Promise
 	{
 		await lockPlayer(playerId, executor);
 
+		// The session alone isn't enough: without a password, a code sent to the account's address that this
+		// browser entered, unless it has no address either. The code goes with the account
+		if (!hasPassword && ((await findPlayerEmail(playerId, executor)) !== null))
+		{
+			const continuationHash = cookieTokenHash(request, CONTINUATION_COOKIE);
+			const code = ((continuationHash === undefined) ? undefined : await lockContinuation('deleteAccount', continuationHash, now, executor));
+
+			if (!code || (code.playerId !== playerId))
+			{
+				return({
+					status: 403,
+					message: authMessages.enterCodeFirst
+				});
+			}
+		}
+
 		// Checked before anything changes, and committed even when wrong, so the try counts
-		const check = await checkSecondFactor(request, response, playerId, twoFactorCode, now, executor, { trustedBrowserSkips: false });
+		const check = await checkSecondFactor(request, response, playerId, twoFactorCode, now, executor, {
+			trustedBrowserSkips: false,
+			emailLocale
+		});
 
 		if ((check.kind === 'wrong') || (check.kind === 'refused'))
 		{
@@ -153,6 +174,7 @@ async function deleteAccountRoute(request: Request, response: Response): Promise
 	}
 
 	clearCookie(response, SESSION_COOKIE);
+	clearCookie(response, CONTINUATION_COOKIE);
 	response.sendStatus(204);
 	connectedSessions.end(outcome.sessionIds);
 

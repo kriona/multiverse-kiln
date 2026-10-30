@@ -1,13 +1,15 @@
 import assert from 'assert';
-import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH, AUTH_PROVIDER_CALLBACK_PATH, AUTH_PROVIDER_LINK_PATH, AUTH_PROVIDER_REGISTER_PATH, AUTH_PROVIDER_START_PATH, AUTH_PROVIDERS_PATH, type AuthErrorPayload, type LoginProvider, type ProviderCallbackPayload, type ProvidersPayload, type ProviderStartPayload } from '@multiverse-kiln/shared';
+import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH, AUTH_PROVIDER_CALLBACK_PATH, AUTH_PROVIDER_LINK_PATH, AUTH_PROVIDER_REGISTER_PATH, AUTH_PROVIDER_START_PATH, AUTH_PROVIDERS_PATH, AUTH_TWO_FACTOR_LOGIN_PATH, AUTH_USERNAME_CHECK_PATH, type AuthErrorPayload, type LoginProvider, type ProviderCallbackPayload, type ProviderLinkConfirmation, type ProvidersPayload, type ProviderStartPayload } from '@multiverse-kiln/shared';
 
 import { hashPassword } from '../src/auth/passwords.js';
 import { ProviderLoginError, setProviderClients, type ProviderClient, type ProviderUser } from '../src/auth/providers.js';
 import { pool } from '../src/db/client.js';
 import { createPlayer } from '../src/db/playerRepo.js';
+import { addProviderLogin } from '../src/db/providerLoginRepo.js';
 import { setEmailSender, type Email } from '../src/email/mailer.js';
 import { PROVIDER_LOGIN_COOKIE, PROVIDER_START_COOKIE } from '../src/http/cookies.js';
 import { Browser } from './browser.js';
+import { discardEmail } from './setup.js';
 import { getTestServer } from './testServer.js';
 import { authenticatorCode, turnOnTwoFactor } from './twoFactorAccounts.js';
 import { waitUntil } from './waitUntil.js';
@@ -91,10 +93,10 @@ describe('provider login routes', () =>
 	 * @param browser The browser
 	 * @param provider The provider
 	 * @param rememberMe Whether the player checked Remember me
-	 * @param link Whether it links the provider login to the account the browser is logged in to
+	 * @param link How the player confirms linking the provider login to the account the browser is logged in to, or null to log in
 	 * @return The state the provider sends back
 	 */
-	async function startLogin(browser: Browser, provider: LoginProvider, rememberMe: boolean = false, link: boolean = false): Promise<string>
+	async function startLogin(browser: Browser, provider: LoginProvider, rememberMe: boolean = false, link: ProviderLinkConfirmation | null = null): Promise<string>
 	{
 		const answer = await browser.send<ProviderStartPayload>('POST', AUTH_PROVIDER_START_PATH, { provider, rememberMe, link });
 
@@ -141,7 +143,8 @@ describe('provider login routes', () =>
 	}
 
 	/**
-	 * Links a provider login to the account a browser is logged in to, as the profile does
+	 * Links a provider login to the account a browser is logged in to, as the profile does, with the
+	 * account's password
 	 *
 	 * @param browser The browser
 	 * @param user The player as the provider knows them
@@ -150,7 +153,38 @@ describe('provider login routes', () =>
 	 */
 	async function linkFromProfile(browser: Browser, user: ProviderUser, provider: LoginProvider = 'google'): Promise<{ status: number; body: ProviderCallbackPayload & AuthErrorPayload }>
 	{
-		return(comeBack(browser, user, await startLogin(browser, provider, false, true)));
+		return(comeBack(browser, user, await startLogin(browser, provider, false, withPassword())));
+	}
+
+	/**
+	 * What the profile sends to confirm a link with the account's password
+	 *
+	 * @param twoFactorCode The authenticator or recovery code, for an account with 2FA
+	 * @return The confirmation
+	 */
+	function withPassword(twoFactorCode: string | null = null): ProviderLinkConfirmation
+	{
+		return({
+			password: PASSWORD,
+			twoFactorCode,
+			locale: 'en'
+		});
+	}
+
+	/**
+	 * Starts a link from the profile, without checking the answer
+	 *
+	 * @param browser The browser
+	 * @param link How the player confirms it
+	 * @return The answer
+	 */
+	function startLink(browser: Browser, link: ProviderLinkConfirmation): Promise<{ status: number; body: ProviderStartPayload & AuthErrorPayload }>
+	{
+		return(browser.send('POST', AUTH_PROVIDER_START_PATH, {
+			provider: 'google',
+			rememberMe: false,
+			link
+		}));
 	}
 
 	/**
@@ -212,7 +246,7 @@ describe('provider login routes', () =>
 	after(() =>
 	{
 		setProviderClients(undefined);
-		setEmailSender(undefined);
+		setEmailSender(discardEmail);
 	});
 
 	beforeEach(() =>
@@ -234,8 +268,8 @@ describe('provider login routes', () =>
 			const browser = new Browser();
 
 			assert.deepStrictEqual((await browser.send<ProvidersPayload>('GET', AUTH_PROVIDERS_PATH)).body, { providers: ['discord'] });
-			assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_START_PATH, { provider: 'google', rememberMe: false, link: false })).status, 404);
-			assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_START_PATH, { provider: 'github', rememberMe: false, link: false })).status, 400);
+			assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_START_PATH, { provider: 'google', rememberMe: false, link: null })).status, 404);
+			assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_START_PATH, { provider: 'github', rememberMe: false, link: null })).status, 400);
 		}
 		finally
 		{
@@ -261,6 +295,9 @@ describe('provider login routes', () =>
 		assert.ok(!browser.cookies.has(PROVIDER_START_COOKIE));
 		assert.ok(browser.cookies.has(PROVIDER_LOGIN_COOKIE));
 		assert.strictEqual(await browser.username(), null);
+
+		// The browser waiting to choose a username can check one
+		assert.strictEqual((await browser.send('POST', AUTH_USERNAME_CHECK_PATH, { username: 'ada' })).status, 204);
 
 		const registered = await browser.send('POST', AUTH_PROVIDER_REGISTER_PATH, { username: 'ada', displayName: 'Ada', locale: 'en' });
 
@@ -366,6 +403,9 @@ describe('provider login routes', () =>
 			twoFactor: false
 		});
 
+		// A login waiting to be linked to an account chooses no username, so it can't check one
+		assert.strictEqual((await browser.send('POST', AUTH_USERNAME_CHECK_PATH, { username: 'ada' })).status, 403);
+
 		// Choosing a username would make a second account with the address
 		assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_REGISTER_PATH, { username: 'ada2', displayName: 'Ada', locale: 'en' })).status, 403);
 
@@ -442,6 +482,34 @@ describe('provider login routes', () =>
 		assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_LINK_PATH, { password: null, locale: 'en', twoFactorCode: authenticatorCode(authenticator.secret) })).status, 204);
 		assert.strictEqual(await browser.username(), 'ada');
 		assert.deepStrictEqual((await pool.query('SELECT provider FROM provider_logins')).rows, [{ provider: 'google' }]);
+	});
+
+	it('asks for the authenticator code when a provider login is an account\'s with 2FA, unless the browser is trusted', async () =>
+	{
+		const playerId = await addLocalAccount('ada@example.com', 'ada');
+		const authenticator = await turnOnTwoFactor(playerId);
+
+		await addProviderLogin('google', GOOGLE_ADA.providerUserId, playerId);
+
+		const browser = new Browser();
+
+		assert.deepStrictEqual((await logInWith(browser, GOOGLE_ADA)).body, { outcome: 'twoFactor' });
+		assert.ok(!browser.cookies.has(PROVIDER_LOGIN_COOKIE));
+		assert.strictEqual(await browser.username(), null);
+
+		const finished = await browser.send('POST', AUTH_TWO_FACTOR_LOGIN_PATH, {
+			code: authenticatorCode(authenticator.secret),
+			trustBrowser: true,
+			locale: 'en'
+		});
+
+		assert.strictEqual(finished.status, 204, JSON.stringify(finished.body));
+		assert.strictEqual(await browser.username(), 'ada');
+
+		// A trusted browser skips the code, as a password login does
+		assert.strictEqual((await browser.send('POST', AUTH_LOGOUT_PATH)).status, 204);
+		assert.deepStrictEqual((await logInWith(browser, GOOGLE_ADA)).body, { outcome: 'loggedIn' });
+		assert.strictEqual(await browser.username(), 'ada');
 	});
 
 	it('sends a link code only to the account a browser\'s provider login would link to', async () =>
@@ -534,20 +602,60 @@ describe('provider login routes', () =>
 		await addLocalAccount('ada@example.com', 'ada');
 		await addLocalAccount('grace@example.com', 'grace');
 
-		assert.strictEqual((await new Browser().send('POST', AUTH_PROVIDER_START_PATH, { provider: 'google', rememberMe: false, link: true })).status, 401);
+		assert.strictEqual((await startLink(new Browser(), withPassword())).status, 401);
 
 		const loggedOut = await logInWithPassword('ada@example.com');
-		const loggedOutState = await startLogin(loggedOut, 'google', false, true);
+		const loggedOutState = await startLogin(loggedOut, 'google', false, withPassword());
 
 		assert.strictEqual((await loggedOut.send('POST', AUTH_LOGOUT_PATH)).status, 204);
 		assert.strictEqual((await comeBack(loggedOut, GOOGLE_ADA, loggedOutState)).status, 401);
 
 		// Logging in to another account while at the provider doesn't link the login to it
 		const switched = await logInWithPassword('ada@example.com');
-		const switchedState = await startLogin(switched, 'google', false, true);
+		const switchedState = await startLogin(switched, 'google', false, withPassword());
 
 		assert.strictEqual((await switched.send('POST', AUTH_LOGIN_PATH, { email: 'grace@example.com', password: PASSWORD, rememberMe: false })).status, 200);
 		assert.strictEqual((await comeBack(switched, GOOGLE_ADA, switchedState)).status, 401);
+		assert.strictEqual((await pool.query('SELECT * FROM provider_logins')).rowCount, 0);
+	});
+
+	it('refuses a start cookie the browser changed, so a login can\'t become a link without confirming it', async () =>
+	{
+		const playerId = await addLocalAccount('ada@example.com', 'ada');
+		const browser = await logInWithPassword('ada@example.com');
+
+		/**
+		 * Starts a login from the browser, then changes its start cookie to link to Ada's account
+		 *
+		 * @param keepMac Whether the changed cookie keeps the original's keyed hash
+		 * @return The state the provider sends back
+		 */
+		async function startForged(keepMac: boolean): Promise<string>
+		{
+			const state = await startLogin(browser, 'google');
+			const [body, mac] = (browser.cookies.get(PROVIDER_START_COOKIE) ?? '').split('.');
+			const start = JSON.parse(Buffer.from(body, 'base64url').toString('utf8')) as { playerId: string | null };
+
+			assert.strictEqual(start.playerId, null);
+
+			const forged = Buffer.from(JSON.stringify({
+				...start,
+				playerId
+			})).toString('base64url');
+
+			browser.cookies.set(PROVIDER_START_COOKIE, (keepMac ? `${forged}.${mac}` : forged));
+
+			return(state);
+		}
+
+		for (const keepMac of [true, false])
+		{
+			const answer = await comeBack(browser, GOOGLE_ADA, await startForged(keepMac));
+
+			assert.strictEqual(answer.status, 400);
+			assert.strictEqual(answer.body.error.id, 'error.auth.providerNotFinished');
+		}
+
 		assert.strictEqual((await pool.query('SELECT * FROM provider_logins')).rowCount, 0);
 	});
 
@@ -580,5 +688,82 @@ describe('provider login routes', () =>
 		assert.strictEqual(second.status, 409);
 		assert.strictEqual(second.body.error.id, 'error.auth.providerOtherLoginLinked');
 		assert.deepStrictEqual((await pool.query('SELECT provider_user_id FROM provider_logins ORDER BY provider_user_id')).rows, [{ provider_user_id: 'google-ada' }, { provider_user_id: 'google-ada-home' }]);
+	});
+
+	it('needs the password, and the authenticator code with 2FA, to start a link from the profile', async () =>
+	{
+		const playerId = await addLocalAccount('ada@example.com', 'ada');
+		const browser = await logInWithPassword('ada@example.com');
+		const authenticator = await turnOnTwoFactor(playerId);
+
+		const wrongPassword = await startLink(browser, {
+			...withPassword(authenticatorCode(authenticator.secret)),
+			password: 'not the password at all'
+		});
+
+		assert.strictEqual(wrongPassword.status, 401);
+		assert.strictEqual(wrongPassword.body.field, 'password');
+
+		const noCode = await startLink(browser, withPassword());
+
+		assert.strictEqual(noCode.status, 401);
+		assert.strictEqual(noCode.body.field, 'twoFactorCode');
+		assert.ok(!browser.cookies.has(PROVIDER_START_COOKIE));
+
+		const state = await startLogin(browser, 'google', false, withPassword(authenticatorCode(authenticator.secret)));
+
+		assert.strictEqual((await comeBack(browser, GOOGLE_ADA, state)).status, 200);
+		assert.deepStrictEqual((await pool.query('SELECT provider FROM provider_logins')).rows, [{ provider: 'google' }]);
+	});
+
+	it('needs a code sent to the address of an account without a password to start a link from the profile', async () =>
+	{
+		const playerId = await addLocalAccount('ada@example.com', 'ada', false);
+
+		await addLocalAccount('grace@example.com', 'grace');
+		await addProviderLogin('discord', 'discord-ada', playerId);
+
+		const browser = new Browser();
+
+		assert.deepStrictEqual((await logInWith(browser, {
+			...GOOGLE_ADA,
+			providerUserId: 'discord-ada'
+		}, 'discord')).body, { outcome: 'loggedIn' });
+
+		// A session alone isn't enough, and a password never matches an account without one
+		assert.strictEqual((await startLink(browser, {
+			password: null,
+			twoFactorCode: null,
+			locale: 'en'
+		})).status, 403);
+		assert.strictEqual((await startLink(browser, withPassword())).status, 403);
+
+		// Only the account's own address gets a code
+		assert.strictEqual((await browser.send('POST', AUTH_CODE_PATH, { purpose: 'linkLogin', email: 'grace@example.com', locale: 'en' })).status, 204);
+		assert.strictEqual((await browser.send('POST', AUTH_CODE_PATH, { purpose: 'linkLogin', email: 'ada@example.com', locale: 'en' })).status, 204);
+		await waitUntil(() => (emails.length === 1));
+		assert.strictEqual(emails[0].to, 'ada@example.com');
+
+		const code = /\r\n\r\n([0-9A-Z]{6})\r\n\r\n/.exec(emails[0].text)?.[1];
+
+		assert.ok(code);
+		assert.strictEqual((await browser.send('POST', AUTH_CODE_CHECK_PATH, { purpose: 'linkLogin', email: 'ada@example.com', code })).status, 200);
+
+		const state = await startLogin(browser, 'google', false, {
+			password: null,
+			twoFactorCode: null,
+			locale: 'en'
+		});
+
+		assert.strictEqual((await pool.query('SELECT * FROM email_codes')).rowCount, 0);
+		assert.strictEqual((await comeBack(browser, GOOGLE_ADA, state)).status, 200);
+		assert.deepStrictEqual((await pool.query('SELECT provider FROM provider_logins ORDER BY provider::text')).rows, [{ provider: 'discord' }, { provider: 'google' }]);
+
+		// The code is used up
+		assert.strictEqual((await startLink(browser, {
+			password: null,
+			twoFactorCode: null,
+			locale: 'en'
+		})).status, 403);
 	});
 });
