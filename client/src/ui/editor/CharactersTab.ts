@@ -135,7 +135,7 @@ export class CharactersTab implements SavableTab
 		this.chooseItemsButton.hidden = this.fields.disabled;
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.form);
-		// Sets the starting area and equipment straight away, then loads their names
+		// Sets the starting area and equipment immediately, then loads their names
 		void this.showStartingArea(universe.startingAreaId, {
 			column: universe.startingColumn,
 			row: universe.startingRow

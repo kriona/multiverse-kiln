@@ -5,11 +5,22 @@
  */
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { MAX_CHARACTER_DELETION_DAYS, MAX_UNIVERSES_PER_CREATOR, MIN_UNIVERSES_PER_CREATOR, SITE_SETTINGS_PATH, type SiteSettings } from '@multiverse-kiln/shared';
+import { isPrivacyContact, isSiteSocialUrl,MAX_CHARACTER_DELETION_DAYS, MAX_UNIVERSES_PER_CREATOR, MIN_UNIVERSES_PER_CREATOR, SITE_SETTINGS_PATH, type SiteSettings, type SiteSocialSite } from '@multiverse-kiln/shared';
 
 import { findSiteSettings, saveSiteSettings } from '../db/siteSettingsRepo.js';
 import { refuseWritesFromOtherOrigins } from './editorAccess.js';
 import { errorMessages, sendError, sendInvalidRequest } from './errors.js';
+
+/**
+ * A link to the site's page on a social site, or null for none
+ *
+ * @param site The social site
+ * @return The schema
+ */
+function socialUrl(site: SiteSocialSite): z.ZodType<string | null>
+{
+	return(z.string().refine((url) => isSiteSocialUrl(site, url)).nullable());
+}
 
 /**
  * Body of PUT SITE_SETTINGS_PATH
@@ -17,7 +28,16 @@ import { errorMessages, sendError, sendInvalidRequest } from './errors.js';
 const siteSettingsBody: z.ZodType<SiteSettings> = z.strictObject({
 	universeCreationEnabled: z.boolean(),
 	universesPerCreator: z.number().int().min(MIN_UNIVERSES_PER_CREATOR).max(MAX_UNIVERSES_PER_CREATOR),
-	characterDeletionDays: z.number().int().min(0).max(MAX_CHARACTER_DELETION_DAYS)
+	characterDeletionDays: z.number().int().min(0).max(MAX_CHARACTER_DELETION_DAYS),
+	socials: z.strictObject({
+		discord: socialUrl('discord'),
+		facebook: socialUrl('facebook'),
+		instagram: socialUrl('instagram'),
+		tiktok: socialUrl('tiktok'),
+		x: socialUrl('x'),
+		youtube: socialUrl('youtube')
+	}),
+	privacyContact: z.string().refine(isPrivacyContact).nullable()
 });
 
 /**

@@ -19,13 +19,17 @@
  * - character.html: Create Character for ?universe=<id>, which goes back to that universe's lobby, or to
  *   the invite link in ?invite= when it was opened from one
  * - license.html: the game's license and the licenses of what it uses, linked to from the footer
+ * - privacy.html: the privacy policy, linked to from the footer
  * - admin.html: settings for the whole site, linked to from Home's toolbar. Anyone can use it until
  *   there are server admin accounts
+ * - login.html: logging in, creating an account and resetting a forgotten password, linked to from
+ *   Home's toolbar. The game, the world editor and Create Character send a browser that isn't logged in
+ *   here with ?next=<their address>, and it goes back there once logged in
  *
  * Every page takes ?locale= to choose a language, as the language picker in the footer does (see src/localization.ts)
  */
 
-import { INVITE_QUERY_PARAMETER } from '@multiverse-kiln/shared';
+import { INVITE_QUERY_PARAMETER, LOGIN_PAGE_PATH } from '@multiverse-kiln/shared';
 
 /**
  * Query string parameter choosing the language, e.g. en-x-pirate, or en-XA for the pseudo-language in development
@@ -48,6 +52,41 @@ export const TAB_PARAMETER = 'tab';
 export const AREA_PARAMETER = 'area';
 
 /**
+ * Query string parameter of the player's own profile that opens the dialog setting up two-factor
+ * authentication, as in /profile?setUpTwoFactor
+ */
+export const TWO_FACTOR_SETUP_PARAMETER = 'setUpTwoFactor';
+
+/**
+ * Query string parameter of the player's own profile naming the Google or Discord login just linked
+ * from it, as in /profile?linked=google, which the profile announces
+ */
+export const PROVIDER_LINKED_PARAMETER = 'linked';
+
+/**
+ * Query string parameter of the login page naming the page to go back to once logged in
+ */
+const NEXT_PARAMETER = 'next';
+
+/**
+ * Path of the login page, which Google and Discord also send the browser back to
+ */
+const LOGIN_PAGE = LOGIN_PAGE_PATH;
+
+/**
+ * Where the login page keeps its own address (with the page to go back to and its language) in the
+ * tab's session storage while the player is at Google or Discord, which send the browser back to the
+ * login page without it
+ */
+const LOGIN_ADDRESS_KEY = 'kiln-login-address';
+
+/**
+ * Where the login page keeps why linking a Google or Discord login from the profile failed, in the
+ * tab's session storage, for the profile to show once the browser goes back there
+ */
+const PROVIDER_LINK_ERROR_KEY = 'kiln-provider-link-error';
+
+/**
  * Path of the world editor's page, followed by /<universe ID>
  */
 const EDIT_PAGE = '/edit';
@@ -68,13 +107,34 @@ const GAME_PAGE = '/game';
 const UNIVERSE_PAGE = '/universe';
 
 /**
+ * Path of the player's own profile, where they change it
+ */
+const PROFILE_PAGE = '/profile';
+
+/**
+ * Path of a player's profile as others see it, followed by /<username>. The same page as PROFILE_PAGE
+ */
+const PLAYER_PAGE = '/player';
+
+/**
  * The pages that name what they show with the rest of their address, by their path, and the file each serves
  */
 export const PATH_PAGES: Record<string, string> = {
 	[GAME_PAGE]: 'game.html',
 	[UNIVERSE_PAGE]: 'universe.html',
-	[EDIT_PAGE]: 'edit.html'
+	[EDIT_PAGE]: 'edit.html',
+	[PLAYER_PAGE]: 'profile.html'
 };
+
+/**
+ * The address of the player's own profile
+ */
+export const PROFILE_PAGE_URL = PROFILE_PAGE;
+
+/**
+ * The address of the player's own profile with the dialog setting up two-factor authentication open
+ */
+export const TWO_FACTOR_SETUP_PAGE_URL = `${PROFILE_PAGE}?${TWO_FACTOR_SETUP_PARAMETER}`;
 
 /**
  * The address of Home
@@ -138,6 +198,177 @@ export function inviteLinkUrl(universeSlug: string, inviteToken: string): string
 }
 
 /**
+ * The address of the login page, keeping the language the page was chosen in
+ *
+ * @param next The address to go back to once logged in, such as the page sending the player there; Home when not given
+ * @return The address
+ */
+export function loginPageUrl(next?: string): string
+{
+	const parameters = new URLSearchParams();
+	const locale = readPageParameter(LOCALE_PARAMETER);
+
+	if (next !== undefined)
+	{
+		parameters.set(NEXT_PARAMETER, next);
+	}
+
+	if (locale !== undefined)
+	{
+		parameters.set(LOCALE_PARAMETER, locale);
+	}
+
+	const query = parameters.toString();
+
+	return(((query === '') ? LOGIN_PAGE : `${LOGIN_PAGE}?${query}`));
+}
+
+/**
+ * The address of the page being shown, as the login page's next parameter takes it
+ *
+ * @return The path, query string and fragment
+ */
+export function currentPageAddress(): string
+{
+	const { pathname, search, hash } = window.location;
+
+	return(`${pathname}${search}${hash}`);
+}
+
+/**
+ * Keeps the login page's address while the player goes to Google or Discord, for
+ * takeProviderReturn() to put back. Without session storage, the page goes back to Home afterwards
+ *
+ * @param address The login page's address, when the player goes there from another page (loginPageUrl()); the page being shown when not given
+ */
+export function rememberLoginAddress(address: string = currentPageAddress()): void
+{
+	try
+	{
+		sessionStorage.setItem(LOGIN_ADDRESS_KEY, address);
+	}
+	catch
+	{
+		// Session storage is blocked: the login still works
+	}
+}
+
+/**
+ * The address the login page goes back to once a Google or Discord login is linked from the profile,
+ * naming the provider for the profile to announce
+ *
+ * @param next The page to go back to (readNextPage())
+ * @param provider The provider linked
+ * @return The address
+ */
+export function providerLinkedPageUrl(next: string, provider: string): string
+{
+	const url = new URL(next, window.location.origin);
+
+	url.searchParams.set(PROVIDER_LINKED_PARAMETER, provider);
+
+	return(`${url.pathname}${url.search}${url.hash}`);
+}
+
+/**
+ * Keeps why linking a Google or Discord login failed, for takeProviderLinkError() on the profile
+ *
+ * @param message Why, in the player's language
+ * @return Whether it was kept; it isn't when session storage is blocked
+ */
+export function keepProviderLinkError(message: string): boolean
+{
+	try
+	{
+		sessionStorage.setItem(PROVIDER_LINK_ERROR_KEY, message);
+
+		return(true);
+	}
+	catch
+	{
+		return(false);
+	}
+}
+
+/**
+ * Takes why linking a Google or Discord login failed, which the login page kept (keepProviderLinkError())
+ *
+ * @return Why, or undefined when there's nothing kept
+ */
+export function takeProviderLinkError(): string | undefined
+{
+	try
+	{
+		const message = sessionStorage.getItem(PROVIDER_LINK_ERROR_KEY);
+
+		sessionStorage.removeItem(PROVIDER_LINK_ERROR_KEY);
+
+		return((message ?? undefined));
+	}
+	catch
+	{
+		return(undefined);
+	}
+}
+
+/**
+ * Takes what Google or Discord sent the browser back to the login page with out of its address, and
+ * puts back the address the page had before the player went there (rememberLoginAddress()), so its
+ * language and the page to go back to are as they were
+ *
+ * @return The provider's query string parameters (code and state, or error), or undefined when the page wasn't opened by a provider
+ */
+export function takeProviderReturn(): URLSearchParams | undefined
+{
+	const parameters = new URLSearchParams(window.location.search);
+
+	if ((window.location.pathname !== LOGIN_PAGE) || (!parameters.has('code') && !parameters.has('error')))
+	{
+		return(undefined);
+	}
+
+	let address: string | null = null;
+
+	try
+	{
+		address = sessionStorage.getItem(LOGIN_ADDRESS_KEY);
+		sessionStorage.removeItem(LOGIN_ADDRESS_KEY);
+	}
+	catch
+	{
+		// Session storage is blocked: the page goes back to Home once logged in
+	}
+
+	const restored = new URL((address ?? LOGIN_PAGE), window.location.origin);
+	const sameLoginPage = ((restored.origin === window.location.origin) && (restored.pathname === LOGIN_PAGE));
+
+	window.history.replaceState(null, '', (sameLoginPage ? `${restored.pathname}${restored.search}` : LOGIN_PAGE));
+
+	return(parameters);
+}
+
+/**
+ * Where the login page goes once logged in: the address its next parameter names, when that is a page
+ * of this site, or Home. Only a path is taken, so a link can't send a player to another site after
+ * they log in
+ *
+ * @return The address
+ */
+export function readNextPage(): string
+{
+	const next = readPageParameter(NEXT_PARAMETER);
+
+	if ((next === undefined) || !next.startsWith('/') || next.startsWith('//') || next.startsWith('/\\'))
+	{
+		return(HOME_PAGE_URL);
+	}
+
+	const url = new URL(next, window.location.origin);
+
+	return(((url.origin === window.location.origin) && (url.pathname !== LOGIN_PAGE)) ? `${url.pathname}${url.search}${url.hash}` : HOME_PAGE_URL);
+}
+
+/**
  * The address of a universe's page
  *
  * @param key The universe's slug, or its ID
@@ -156,6 +387,27 @@ export function universePageUrl(key: string): string
 export function readGameUniverseKey(): string | undefined
 {
 	return(readPathKey(GAME_PAGE));
+}
+
+/**
+ * The address of a player's profile as others see it
+ *
+ * @param username The player's username
+ * @return The address
+ */
+export function playerPageUrl(username: string): string
+{
+	return(`${PLAYER_PAGE}/${encodeURIComponent(username)}`);
+}
+
+/**
+ * The player a profile page's address names, as in /player/<username>
+ *
+ * @return The username, or undefined when the address is the player's own profile
+ */
+export function readPlayerUsername(): string | undefined
+{
+	return(readPathKey(PLAYER_PAGE));
 }
 
 /**

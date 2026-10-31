@@ -11,14 +11,14 @@
 				<header class="toolbar">
 					<!-- include site-name.html -->
 					<h1 data-message="admin.heading" data-translation-context="Heading of the page where the site's admins change settings for the whole site">Site Settings</h1>
-					<a class="button secondary toolbar-link" href="/" data-message="page.backToHome" data-translation-context="Link or button that goes back to the list of universes (Home): at the top of a page, in the editor's toolbar, or below a message filling the page, such as one saying a universe couldn't be found"><!-- icon ph:house -->Back to Home</a>
+					<!-- include account.html -->
 				</header>
 				<div class="admin-body">
 					<p id="site-settings-loading" class="admin-loading" data-message="page.loading" data-translation-context="Shown while a page or part of one loads, such as the site settings, the choices in Create Character, an area in the editor, or a universe's page">Loading...</p>
 					<p id="site-settings-load-error" class="notice" role="alert" hidden></p>
-					<form id="site-settings-form" class="panel form" hidden>
-						<fieldset id="site-settings-fields" class="plain">
-							<h2 data-message="admin.universes" data-translation-context="Heading of the site settings about creating universes">Universes</h2>
+					<form id="site-settings-form" class="admin-form" novalidate hidden>
+						<section class="panel form" aria-labelledby="admin-universes-heading">
+							<h2 id="admin-universes-heading" data-message="admin.universes" data-translation-context="Heading of the site settings about creating universes">Universes</h2>
 							<label class="checkbox" data-message="admin.universeCreationEnabled" data-translation-context="Checkbox on the site settings page for whether players can create new universes">
 								<input id="site-universe-creation" type="checkbox" />
 								Players can create universes
@@ -34,12 +34,50 @@
 								<input id="site-character-deletion-days" type="number" step="1" required aria-describedby="site-character-deletion-hint" />
 							</label>
 							<p id="site-character-deletion-hint" class="hint" data-message="admin.characterDeletionHint" data-translation-context="Explains the field on the site settings page for how many days last rites wait. Last Rites is the name of the button players use to delete a character after those days">Last Rites deletes a character after this many days, and players can restore them until then. 0 turns Last Rites off, so characters can only be deleted. Characters already given their last rites keep their day.</p>
+						</section>
+						<section class="panel form" aria-labelledby="admin-socials-heading">
+							<h2 id="admin-socials-heading" data-message="admin.socials" data-translation-context="Heading of the site settings for links to the site's own pages on social sites such as Discord and Facebook">Social sites</h2>
+							<p id="site-socials-hint" class="hint" data-message="admin.socialsHint" data-translation-context="Under the heading of the social site links on the site settings page">The footer of every page links to each site given here, showing its logo. Links must start with https:// and go to that site. Leave a site empty to leave it out.</p>
+							<label translate="no">
+								<span class="social-label"><!-- icon ph:discord-logo -->Discord</span>
+								<input id="site-social-discord" type="url" autocomplete="off" spellcheck="false" placeholder="https://discord.gg/..." aria-describedby="site-socials-hint" />
+							</label>
+							<label translate="no">
+								<span class="social-label"><!-- icon ph:facebook-logo -->Facebook</span>
+								<input id="site-social-facebook" type="url" autocomplete="off" spellcheck="false" placeholder="https://www.facebook.com/..." aria-describedby="site-socials-hint" />
+							</label>
+							<label translate="no">
+								<span class="social-label"><!-- icon ph:instagram-logo -->Instagram</span>
+								<input id="site-social-instagram" type="url" autocomplete="off" spellcheck="false" placeholder="https://www.instagram.com/..." aria-describedby="site-socials-hint" />
+							</label>
+							<label translate="no">
+								<span class="social-label"><!-- icon ph:tiktok-logo -->TikTok</span>
+								<input id="site-social-tiktok" type="url" autocomplete="off" spellcheck="false" placeholder="https://www.tiktok.com/@..." aria-describedby="site-socials-hint" />
+							</label>
+							<label translate="no">
+								<span class="social-label"><!-- icon ph:x-logo -->X</span>
+								<input id="site-social-x" type="url" autocomplete="off" spellcheck="false" placeholder="https://x.com/..." aria-describedby="site-socials-hint" />
+							</label>
+							<label translate="no">
+								<span class="social-label"><!-- icon ph:youtube-logo -->YouTube</span>
+								<input id="site-social-youtube" type="url" autocomplete="off" spellcheck="false" placeholder="https://www.youtube.com/@..." aria-describedby="site-socials-hint" />
+							</label>
+						</section>
+						<section class="panel form" aria-labelledby="admin-privacy-heading">
+							<h2 id="admin-privacy-heading" data-message="admin.privacy" data-translation-context="Heading of the site settings for the privacy policy">Privacy policy</h2>
+							<label data-message="admin.privacyContact" data-translation-context="Label of the field on the site settings page for the email address the privacy policy tells players to write to">
+								Contact email address
+								<input id="site-privacy-contact" type="email" autocomplete="off" spellcheck="false" aria-describedby="site-privacy-contact-hint" />
+							</label>
+							<p id="site-privacy-contact-hint" class="hint" data-message="admin.privacyContactHint" data-translation-context="Under the privacy contact field on the site settings page">The privacy policy tells players to write here with questions about their information. Leave it empty to leave the line out of the policy.</p>
+						</section>
+						<div class="admin-save">
 							<p id="site-settings-error" class="form-error" role="alert" hidden></p>
 							<div class="form-buttons">
 								<span id="site-settings-saved" class="form-saved" role="status"></span>
 								<button id="site-settings-save" type="submit" aria-describedby="site-settings-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
 							</div>
-						</fieldset>
+						</div>
 					</form>
 				</div>
 			</section>

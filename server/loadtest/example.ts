@@ -1,9 +1,9 @@
-import { randomUUID } from 'crypto';
 import { Client, type Room } from '@colyseus/sdk';
 import { cli, type Options } from '@colyseus/loadtest';
-import { LOBBY_ROOM_NAME, MessageType, SESSION_ROOM_NAME, SessionMessageType, SessionServerMessageType, UNIVERSES_PATH, type AccountPayload, type Direction, type LobbyJoinOptions, type LoginPayload, type MovePayload, type UniverseListPayload } from '@multiverse-kiln/shared';
+import { LOBBY_ROOM_NAME, MessageType, SESSION_ROOM_NAME, UNIVERSES_PATH, type Direction, type LobbyJoinOptions, type MovePayload, type UniverseListPayload } from '@multiverse-kiln/shared';
 
-import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
+import { SESSION_COOKIE } from '../src/http/cookies.js';
+import { DEV_BOT_LOGIN_PATH, type BotLoginPayload } from '../src/http/devLogin.js';
 
 const directions: Direction[] = [-1, 0, 1];
 
@@ -54,36 +54,27 @@ async function playInLobby(client: Client): Promise<void>
 }
 
 /**
- * Runs one simulated player: logs in through the session room, then walks around a universe's lobby
+ * Runs one simulated player: logs in as a new bot account, joins the session room like a page does,
+ * then walks around a universe's lobby
  *
- * Each player is a browser of its own, with a random browser ID cookie
+ * Bots log in through the dev tools' bot login, since they can't read email, so the server must have
+ * ENABLE_DEV_TOOLS=true. Each bot is an account and a browser of its own
  *
  * @param options Load test options from the command line
  */
 export async function main(options: Options)
 {
-	const client = new Client(options.endpoint, { headers: { cookie: `${BROWSER_ID_COOKIE}=${randomUUID()}` } });
+	const login = await new Client(options.endpoint).http.post(DEV_BOT_LOGIN_PATH);
+	const { token } = login.data as BotLoginPayload;
+	const client = new Client(options.endpoint, { headers: { cookie: `${SESSION_COOKIE}=${token}` } });
 	const session: Room = await client.joinOrCreate(SESSION_ROOM_NAME, {});
-	let lobby: Promise<void> | undefined;
-
-	session.onMessage(SessionServerMessageType.Account, (account: AccountPayload) =>
-	{
-		if (!account.player)
-		{
-			const login: LoginPayload = { name: `Bot ${session.sessionId}` };
-
-			session.send(SessionMessageType.Login, login);
-		}
-		else if (!lobby)
-		{
-			lobby = playInLobby(client);
-		}
-	});
 
 	session.onLeave((code: number) =>
 	{
 		console.log(session.sessionId, 'left the session', code);
 	});
+
+	await playInLobby(client);
 }
 
 // Default the endpoint from LOADTEST_ENDPOINT (server/.env); an explicit --endpoint argument wins

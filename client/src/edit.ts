@@ -3,11 +3,13 @@ import { startLocalization, t } from './localization';
 import { connectToServer } from './network/serverConnection';
 import { startPageLifecycle } from './pageLifecycle';
 import { HOME_PAGE_URL, readEditUniverseId, readPageParameter, TAB_PARAMETER, AREA_PARAMETER } from './pages';
+import { startAccountMenu } from './ui/accountMenu';
 import { isEditorTab } from './ui/editor/EditorScreen';
 import { setPageTitle, showStatus } from './ui/dom';
 import { startLanguagePicker } from './ui/languagePicker';
 import { pageMessages } from './ui/pageMessages';
 import { startShortcuts } from './ui/shortcuts';
+import { startSiteSocials } from './ui/siteSocials';
 
 /**
  * Starts the world editor's page in the player's language for the universe its address names, or goes
@@ -27,7 +29,9 @@ async function start(): Promise<void>
 	startPageLifecycle();
 	await startLocalization();
 	setPageTitle(document.title);
+	void startAccountMenu();
 	startLanguagePicker();
+	void startSiteSocials();
 	startShortcuts();
 	showStatus(t(pageMessages.connecting));
 

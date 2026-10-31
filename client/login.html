@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<!-- include head.html -->
+		<title data-message="login.title" data-translation-context="The browser tab's title for the login page, and the heading and button that log in with an email address and password">Log in</title>
+		<link rel="stylesheet" href="/src/login.scss" />
+	</head>
+	<body>
+		<main>
+			<header class="toolbar">
+				<!-- include site-name.html -->
+			</header>
+
+			<!-- include status.html -->
+			<!-- include notice.html -->
+
+			<section id="login-screen" class="screen auth-screen" hidden>
+				<form id="login-form" class="panel form auth-panel">
+					<img class="auth-logo" src="/src/assets/layout/multiverse-kiln.png" alt="" width="256" height="256" />
+					<h1 data-message="login.title" data-translation-context="The browser tab's title for the login page, and the heading and button that log in with an email address and password">Log in</h1>
+					<div id="provider-logins" class="provider-logins" hidden>
+						<p class="hint" data-message="login.providersRecommended" data-translation-context="On the login screen, above the buttons that log in with Google or Discord (which also create an account the first time)">Logging in with one of these is safest: there's no password here to forget or have stolen.</p>
+						<button id="login-google" type="button" class="secondary" data-shortcut="Alt+G" data-message="login.withGoogle" data-translation-context="Button on the login screen that logs in with a Google account, creating an account here the first time"><!-- icon ph:google-logo -->Log in with Google</button>
+						<button id="login-discord" type="button" class="secondary" data-shortcut="Alt+R" data-message="login.withDiscord" data-translation-context="Button on the login screen that logs in with a Discord account, creating an account here the first time"><!-- icon ph:discord-logo -->Log in with Discord</button>
+						<p class="auth-divider" data-message="login.orEmail" data-translation-context="On the login screen, between the buttons that log in with Google or Discord and the email address and password fields">or use your email address</p>
+					</div>
+					<label data-message="login.email" data-translation-context="Label of the email address field on the login, create account and forgot password screens">
+						Email address
+						<input id="login-email" type="email" autocomplete="username" spellcheck="false" required />
+					</label>
+					<div class="password-field">
+						<label data-message="login.password" data-translation-context="Label of the password field when logging in, and when turning two-factor authentication on or off, making new recovery codes, linking a Google or Discord login, changing the email address or deleting the account on the profile">
+							Password
+							<input id="login-password" type="password" autocomplete="current-password" required />
+						</label>
+						<button id="login-password-toggle" type="button" class="secondary password-toggle" aria-controls="login-password" aria-pressed="false" aria-label="Show password" title="Show password" data-message-aria-label="login.showPassword" data-translation-context-aria-label="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed" data-message-title="login.showPassword" data-translation-context-title="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"><span class="password-hidden-icon"><!-- icon ph:eye --></span><span class="password-shown-icon"><!-- icon ph:eye-slash --></span></button>
+					</div>
+					<label class="checkbox" data-message="login.rememberMe" data-translation-context="Checkbox when logging in, creating an account or choosing a new password: keeps the browser logged in for up to 30 days without use, rather than an hour">
+						<input id="login-remember" type="checkbox" />
+						Remember me
+					</label>
+					<p id="login-error" class="form-error" role="alert" hidden></p>
+					<button id="login-submit" type="submit" aria-describedby="login-error" data-shortcut="Alt+L" data-message="login.title" data-translation-context="The browser tab's title for the login page, and the heading and button that log in with an email address and password"><!-- icon ph:sign-in -->Log in</button>
+					<div class="auth-links">
+						<button id="login-forgot" type="button" class="link-button" data-shortcut="Alt+P" data-message="login.forgotPassword" data-translation-context="Button on the login screen that starts resetting a forgotten password">Forgot your password?</button>
+						<button id="login-register" type="button" class="link-button" data-shortcut="Alt+N" data-message="login.register" data-translation-context="Button on the login screen that starts creating a new account">Create an account</button>
+					</div>
+				</form>
+			</section>
+
+			<section id="email-screen" class="screen auth-screen" hidden>
+				<form id="email-form" class="panel form auth-panel">
+					<h1 id="email-heading"></h1>
+					<p id="email-intro"></p>
+					<p id="email-providers-hint" class="hint" data-message="login.registerProvidersHint" data-translation-context="On the screen that asks for the email address of a new account, when the site offers logging in with Google or Discord" hidden>Logging in with Google or Discord on the login screen creates an account too, and is safest: there's no password here to forget or have stolen.</p>
+					<label data-message="login.email" data-translation-context="Label of the email address field on the login, create account and forgot password screens">
+						Email address
+						<input id="email-address" type="email" autocomplete="email" spellcheck="false" required />
+					</label>
+					<p id="email-error" class="form-error" role="alert" hidden></p>
+					<div class="form-buttons">
+						<button id="email-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="login.back" data-translation-context="Button that goes back a step while logging in, creating an account or resetting a password"><!-- icon ph:arrow-left -->Back</button>
+						<button id="email-submit" type="submit" aria-describedby="email-error" data-shortcut="Alt+S" data-message="login.sendCode" data-translation-context="Button that emails a code to the address typed, to create an account, reset a password or change the account's email address"><!-- icon ph:paper-plane-right -->Send code</button>
+					</div>
+				</form>
+			</section>
+
+			<section id="code-screen" class="screen auth-screen" hidden>
+				<form id="code-form" class="panel form auth-panel">
+					<h1 data-message="login.checkEmail" data-translation-context="Heading of the screen where the player types the code that was emailed to them">Check your email</h1>
+					<p id="code-intro"></p>
+					<label data-message="login.code" data-translation-context="Label of the field for the code that was emailed to the player">
+						Code
+						<input id="code-input" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" required data-code="email" data-auto-submit />
+					</label>
+					<p id="code-status" class="hint" role="status"></p>
+					<p id="code-error" class="form-error" role="alert" hidden></p>
+					<div class="form-buttons">
+						<button id="code-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="login.back" data-translation-context="Button that goes back a step while logging in, creating an account or resetting a password"><!-- icon ph:arrow-left -->Back</button>
+						<button id="code-resend" type="button" class="secondary" aria-describedby="code-status" data-shortcut="Alt+N" data-message="login.resendCode" data-translation-context="Button that emails another code, replacing the one sent before"><!-- icon ph:arrow-clockwise -->Send a new code</button>
+						<button id="code-submit" type="submit" aria-describedby="code-error" data-shortcut="Alt+C" data-message="login.continue" data-translation-context="Button that checks the emailed code, or the code from the authenticator app, and goes on to the next step"><!-- icon ph:arrow-right -->Continue</button>
+					</div>
+				</form>
+			</section>
+
+			<section id="register-screen" class="screen auth-screen" hidden>
+				<form id="register-form" class="panel form auth-panel">
+					<h1 data-message="login.registerTitle" data-translation-context="Heading of the screen where a new account's username, name and password are chosen, and of the one where a new account's username and name are chosen after logging in with Google or Discord">Create your account</h1>
+					<label data-message="login.email" data-translation-context="Label of the email address field on the login, create account and forgot password screens">
+						Email address
+						<input id="register-email" type="email" autocomplete="username" readonly />
+					</label>
+					<label data-message="login.username" data-translation-context="Label of the field for a new account's username: a unique name of letters, digits and underscores that other players find them by">
+						Username
+						<input id="register-username" autocomplete="off" autocapitalize="none" spellcheck="false" required aria-describedby="register-username-hint" />
+					</label>
+					<p id="register-username-error" class="field-error field-message-slot"></p>
+					<p id="register-username-hint" class="hint" data-message="login.usernameHint" data-translation-context="Under the username field when creating an account; {min} and {max} are numbers">How other players find you, and tell you apart from others with the same name. <span id="register-username-min" data-argument="min" translate="no">3</span> to <span id="register-username-max" data-argument="max" translate="no">20</span> letters (a to z), digits and underscores.</p>
+					<label data-message="login.displayName" data-translation-context="Label of the field for the name other players see, when creating an account">
+						Name
+						<input id="register-name" autocomplete="nickname" required aria-describedby="register-name-hint" />
+					</label>
+					<p id="register-name-hint" class="hint" data-message="login.displayNameHint" data-translation-context="Under the name field when creating an account">The name other players see. It doesn't have to be your real name, or unique.</p>
+					<div class="password-field">
+						<label data-message="login.newPassword" data-translation-context="Label of the field for a new password, when creating an account or resetting a password">
+							Password
+							<input id="register-password" type="password" autocomplete="new-password" required aria-describedby="register-password-hint register-password-manager" />
+						</label>
+						<button id="register-password-toggle" type="button" class="secondary password-toggle" aria-controls="register-password" aria-pressed="false" aria-label="Show password" title="Show password" data-message-aria-label="login.showPassword" data-translation-context-aria-label="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed" data-message-title="login.showPassword" data-translation-context-title="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"><span class="password-hidden-icon"><!-- icon ph:eye --></span><span class="password-shown-icon"><!-- icon ph:eye-slash --></span></button>
+					</div>
+					<p id="register-password-hint" class="hint" data-message="login.passwordHint" data-translation-context="Under the new password field when creating an account, resetting a password or changing it on the profile; {min} is a number">At least <span id="register-password-min" data-argument="min" translate="no">15</span> characters. A few words strung together are easy to remember and hard to guess.</p>
+					<p id="register-password-manager" class="hint" data-message="login.passwordManager" data-translation-context="Under the new password field when creating an account or resetting a password, recommending a password manager; {bitwarden} and {onePassword} are links to two of them">A password manager, such as <a href="https://bitwarden.com/" data-argument="bitwarden" translate="no" target="_blank" rel="noopener">Bitwarden</a> or <a href="https://1password.com/" data-argument="onePassword" translate="no" target="_blank" rel="noopener">1Password</a>, can make a strong password and remember it for you.</p>
+					<label class="checkbox" data-message="login.rememberMe" data-translation-context="Checkbox when logging in, creating an account or choosing a new password: keeps the browser logged in for up to 30 days without use, rather than an hour">
+						<input id="register-remember" type="checkbox" />
+						Remember me
+					</label>
+					<p class="hint" data-message="login.privacy" data-translation-context="On the create account screen; {privacy} is a link to the privacy policy, named by page.privacyPolicy">Read how we look after your information in our <a href="/privacy" target="_blank" data-argument="privacy" data-message="page.privacyPolicy" data-translation-context="The name of the privacy policy, as a link to it">privacy policy</a>.</p>
+					<p id="register-error" class="form-error" role="alert" hidden></p>
+					<div class="form-buttons">
+						<button id="register-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="login.back" data-translation-context="Button that goes back a step while logging in, creating an account or resetting a password"><!-- icon ph:arrow-left -->Back</button>
+						<button id="register-submit" type="submit" aria-describedby="register-error" data-shortcut="Alt+C" data-message="login.registerSubmit" data-translation-context="Button that creates the new account and logs in"><!-- icon ph:user-plus -->Create account</button>
+					</div>
+				</form>
+			</section>
+
+			<section id="reset-screen" class="screen auth-screen" hidden>
+				<form id="reset-form" class="panel form auth-panel">
+					<h1 data-message="login.resetTitle" data-translation-context="Heading of the screen where a new password is chosen, after a forgotten one">Choose a new password</h1>
+					<p data-message="login.resetIntro" data-translation-context="On the screen where a new password is chosen, after a forgotten one">Every browser logged in to your account is logged out when the password changes.</p>
+					<!-- Not shown: tells password managers which account the new password is for -->
+					<input id="reset-email" type="email" autocomplete="username" hidden />
+					<div class="password-field">
+						<label data-message="login.newPassword" data-translation-context="Label of the field for a new password, when creating an account or resetting a password">
+							Password
+							<input id="reset-password" type="password" autocomplete="new-password" required aria-describedby="reset-password-hint reset-password-manager" />
+						</label>
+						<button id="reset-password-toggle" type="button" class="secondary password-toggle" aria-controls="reset-password" aria-pressed="false" aria-label="Show password" title="Show password" data-message-aria-label="login.showPassword" data-translation-context-aria-label="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed" data-message-title="login.showPassword" data-translation-context-title="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"><span class="password-hidden-icon"><!-- icon ph:eye --></span><span class="password-shown-icon"><!-- icon ph:eye-slash --></span></button>
+					</div>
+					<p id="reset-password-hint" class="hint" data-message="login.passwordHint" data-translation-context="Under the new password field when creating an account, resetting a password or changing it on the profile; {min} is a number">At least <span id="reset-password-min" data-argument="min" translate="no">15</span> characters. A few words strung together are easy to remember and hard to guess.</p>
+					<p id="reset-password-manager" class="hint" data-message="login.passwordManager" data-translation-context="Under the new password field when creating an account or resetting a password, recommending a password manager; {bitwarden} and {onePassword} are links to two of them">A password manager, such as <a href="https://bitwarden.com/" data-argument="bitwarden" translate="no" target="_blank" rel="noopener">Bitwarden</a> or <a href="https://1password.com/" data-argument="onePassword" translate="no" target="_blank" rel="noopener">1Password</a>, can make a strong password and remember it for you.</p>
+					<div id="reset-two-factor-field" hidden>
+						<label data-message="login.twoFactorCode" data-translation-context="Label of the field for the 6-digit code from the player's authenticator app, or one of their recovery codes, when logging in, resetting a password or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes, changing the email address or deleting the account on the profile">
+							Authenticator code
+							<input id="reset-two-factor-code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" aria-describedby="reset-two-factor-hint" data-code="twoFactor" />
+						</label>
+						<p id="reset-two-factor-hint" class="hint" data-message="login.twoFactorResetHint" data-translation-context="Under the authenticator code field when resetting the password of an account with two-factor authentication">Your account has two-factor authentication, so the email code isn't enough on its own. Enter the 6-digit code from your authenticator app, or one of your recovery codes.</p>
+					</div>
+					<label class="checkbox" data-message="login.rememberMe" data-translation-context="Checkbox when logging in, creating an account or choosing a new password: keeps the browser logged in for up to 30 days without use, rather than an hour">
+						<input id="reset-remember" type="checkbox" />
+						Remember me
+					</label>
+					<p id="reset-error" class="form-error" role="alert" hidden></p>
+					<div class="form-buttons">
+						<button id="reset-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="login.back" data-translation-context="Button that goes back a step while logging in, creating an account or resetting a password"><!-- icon ph:arrow-left -->Back</button>
+						<button id="reset-submit" type="submit" aria-describedby="reset-error" data-shortcut="Alt+S" data-message="login.resetSubmit" data-translation-context="Button that saves the new password and logs in"><!-- icon ph:key -->Save password</button>
+					</div>
+				</form>
+			</section>
+
+			<section id="provider-register-screen" class="screen auth-screen" hidden>
+				<form id="provider-register-form" class="panel form auth-panel">
+					<h1 data-message="login.registerTitle" data-translation-context="Heading of the screen where a new account's username, name and password are chosen, and of the one where a new account's username and name are chosen after logging in with Google or Discord">Create your account</h1>
+					<p id="provider-register-intro"></p>
+					<label data-message="login.username" data-translation-context="Label of the field for a new account's username: a unique name of letters, digits and underscores that other players find them by">
+						Username
+						<input id="provider-register-username" autocomplete="off" autocapitalize="none" spellcheck="false" required aria-describedby="provider-register-username-hint" />
+					</label>
+					<p id="provider-register-username-error" class="field-error field-message-slot"></p>
+					<p id="provider-register-username-hint" class="hint" data-message="login.usernameHint" data-translation-context="Under the username field when creating an account; {min} and {max} are numbers">How other players find you, and tell you apart from others with the same name. <span id="provider-register-username-min" data-argument="min" translate="no">3</span> to <span id="provider-register-username-max" data-argument="max" translate="no">20</span> letters (a to z), digits and underscores.</p>
+					<label data-message="login.displayName" data-translation-context="Label of the field for the name other players see, when creating an account">
+						Name
+						<input id="provider-register-name" autocomplete="nickname" required aria-describedby="provider-register-name-hint" />
+					</label>
+					<p id="provider-register-name-hint" class="hint" data-message="login.displayNameHint" data-translation-context="Under the name field when creating an account">The name other players see. It doesn't have to be your real name, or unique.</p>
+					<p class="hint" data-message="login.privacy" data-translation-context="On the create account screen; {privacy} is a link to the privacy policy, named by page.privacyPolicy">Read how we look after your information in our <a href="/privacy" target="_blank" data-argument="privacy" data-message="page.privacyPolicy" data-translation-context="The name of the privacy policy, as a link to it">privacy policy</a>.</p>
+					<p id="provider-register-error" class="form-error" role="alert" hidden></p>
+					<div class="form-buttons">
+						<button id="provider-register-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="login.back" data-translation-context="Button that goes back a step while logging in, creating an account or resetting a password"><!-- icon ph:arrow-left -->Back</button>
+						<button id="provider-register-submit" type="submit" aria-describedby="provider-register-error" data-shortcut="Alt+C" data-message="login.registerSubmit" data-translation-context="Button that creates the new account and logs in"><!-- icon ph:user-plus -->Create account</button>
+					</div>
+				</form>
+			</section>
+
+			<section id="provider-link-screen" class="screen auth-screen" hidden>
+				<form id="provider-link-form" class="panel form auth-panel">
+					<h1 data-message="login.linkTitle" data-translation-context="Heading of the screen, after logging in with Google or Discord, that asks the player to log in to the account here with the same email address so the two can be linked">Link your account</h1>
+					<p id="provider-link-intro"></p>
+					<!-- Not shown: tells password managers which account the password is for -->
+					<input id="provider-link-email" type="email" autocomplete="username" hidden />
+					<div id="provider-link-password-field" class="password-field">
+						<label data-message="login.password" data-translation-context="Label of the password field when logging in, and when turning two-factor authentication on or off, making new recovery codes, linking a Google or Discord login, changing the email address or deleting the account on the profile">
+							Password
+							<input id="provider-link-password" type="password" autocomplete="current-password" />
+						</label>
+						<button id="provider-link-password-toggle" type="button" class="secondary password-toggle" aria-controls="provider-link-password" aria-pressed="false" aria-label="Show password" title="Show password" data-message-aria-label="login.showPassword" data-translation-context-aria-label="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed" data-message-title="login.showPassword" data-translation-context-title="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"><span class="password-hidden-icon"><!-- icon ph:eye --></span><span class="password-shown-icon"><!-- icon ph:eye-slash --></span></button>
+					</div>
+					<div id="provider-link-two-factor-field" hidden>
+						<label data-message="login.twoFactorCode" data-translation-context="Label of the field for the 6-digit code from the player's authenticator app, or one of their recovery codes, when logging in, resetting a password or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes, changing the email address or deleting the account on the profile">
+							Authenticator code
+							<input id="provider-link-two-factor-code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" aria-describedby="provider-link-two-factor-hint" data-code="twoFactor" />
+						</label>
+						<p id="provider-link-two-factor-hint" class="hint" data-message="login.twoFactorCodeHint" data-translation-context="Under the authenticator code field when logging in or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes, changing the email address or deleting the account on the profile">The 6-digit code from your authenticator app, or one of your recovery codes.</p>
+					</div>
+					<p id="provider-link-error" class="form-error" role="alert" hidden></p>
+					<div class="form-buttons">
+						<button id="provider-link-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="login.back" data-translation-context="Button that goes back a step while logging in, creating an account or resetting a password"><!-- icon ph:arrow-left -->Back</button>
+						<button id="provider-link-code" type="button" class="secondary" data-shortcut="Alt+C" data-message="login.linkWithCode" data-translation-context="Button that emails a code to the account's address: on the login page, when linking a Google or Discord login to the account, to use instead of its password, and on the profile, for an account without a password, to check it's the player linking a login, changing the email address or deleting the account"><!-- icon ph:paper-plane-right -->Email me a code</button>
+						<button id="provider-link-submit" type="submit" aria-describedby="provider-link-error" data-shortcut="Alt+L" data-message="login.linkSubmit" data-translation-context="Button that logs in to the account with its password, linking the Google or Discord login to it"><!-- icon ph:link -->Link account</button>
+					</div>
+				</form>
+			</section>
+
+			<section id="two-factor-screen" class="screen auth-screen" hidden>
+				<form id="two-factor-form" class="panel form auth-panel">
+					<h1 data-message="login.twoFactorTitle" data-translation-context="Heading of the screen that asks for the code from the player's authenticator app after their password or logging in with Google or Discord, or after the emailed code when linking a Google or Discord login">Enter your authenticator code</h1>
+					<p id="two-factor-intro" data-message="login.twoFactorIntro" data-translation-context="On the screen that asks for the code from the player's authenticator app, when their account has two-factor authentication">Your account has two-factor authentication. Open your authenticator app and enter the 6-digit code it shows for this site.</p>
+					<label data-message="login.twoFactorCode" data-translation-context="Label of the field for the 6-digit code from the player's authenticator app, or one of their recovery codes, when logging in, resetting a password or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes, changing the email address or deleting the account on the profile">
+						Authenticator code
+						<input id="two-factor-code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" required aria-describedby="two-factor-hint" data-code="twoFactor" data-auto-submit />
+					</label>
+					<p id="two-factor-hint" class="hint" data-message="login.twoFactorLostHint" data-translation-context="Under the authenticator code field on the screen that asks for it">Lost your phone? Enter one of your recovery codes instead. Each works once.</p>
+					<label id="two-factor-trust-field" class="checkbox">
+						<input id="two-factor-trust" type="checkbox" aria-describedby="two-factor-trust-hint" />
+						<span id="two-factor-trust-label"></span>
+					</label>
+					<p id="two-factor-trust-hint" class="hint" data-message="login.trustBrowserHint" data-translation-context="Under the checkbox that stops this browser asking for the authenticator code at login">Only on a browser that no one else uses. Your password is still asked for.</p>
+					<p id="two-factor-error" class="form-error" role="alert" hidden></p>
+					<div class="form-buttons">
+						<button id="two-factor-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="login.back" data-translation-context="Button that goes back a step while logging in, creating an account or resetting a password"><!-- icon ph:arrow-left -->Back</button>
+						<button id="two-factor-submit" type="submit" aria-describedby="two-factor-error" data-shortcut="Alt+C" data-message="login.continue" data-translation-context="Button that checks the emailed code, or the code from the authenticator app, and goes on to the next step"><!-- icon ph:arrow-right -->Continue</button>
+					</div>
+				</form>
+			</section>
+
+			<section id="registered-screen" class="screen auth-screen" hidden>
+				<div class="panel form auth-panel">
+					<h1 data-message="login.registeredTitle" data-translation-context="Heading of the screen shown once a new account is created, offering to set up two-factor authentication">Your account is ready</h1>
+					<p data-message="login.registeredIntro" data-translation-context="On the screen shown once a new account is created with a password">Two-factor authentication keeps your account safe even if someone learns your password: logging in asks for a code from an app on your phone too. You can set it up now, or any time from your profile.</p>
+					<div class="form-buttons">
+						<button id="registered-continue" type="button" class="secondary" data-shortcut="Alt+N" data-message="login.notNow" data-translation-context="Button on the screen shown once a new account is created: skips setting up two-factor authentication for now and goes on"><!-- icon ph:arrow-right -->Not now</button>
+						<a id="registered-two-factor" class="button" href="/profile" data-shortcut="Alt+T" data-message="login.setUpTwoFactor" data-translation-context="Link on the screen shown once a new account is created: goes to the player's profile to set up two-factor authentication"><!-- icon ph:shield-check -->Set up two-factor authentication</a>
+					</div>
+				</div>
+			</section>
+		</main>
+		<!-- include footer.html -->
+		<!-- include accessibility.html -->
+		<script type="module" src="/src/login.ts"></script>
+	</body>
+</html>

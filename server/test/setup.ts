@@ -6,22 +6,35 @@
  * before app.config.ts creates its transport. Empty values also stop .env from filling them in
  *
  * Dev tools are cleared too, so tests see the production routes whatever server/.env says, and
- * ALLOWED_ORIGINS is set to a fixed test origin
+ * ALLOWED_ORIGINS and SITE_URL are set to fixed test origins
  *
  * The server connects to the test database (TEST_DATABASE_URL) instead of DATABASE_URL. This runs
  * before anything imports src/db/client.ts, which reads DATABASE_URL when it is first imported
  *
+ * Keyed hashes and authenticator secrets use fixed test keys (AUTH_HMAC_KEY, TOTP_ENCRYPTION_KEY),
+ * whatever server/.env says
+ *
  * Uploads go to the test bucket (TEST_STORAGE_BUCKET) on the same storage as development, made if it
  * doesn't exist. Every upload has a key of its own, so it isn't emptied between tests
+ *
+ * Email is discarded unless a test replaces the sender, and test files go back to discardEmail when
+ * they finish. Routes send some emails after answering, so one can be sent after its test is done,
+ * and it must never reach SMTP_URL
  */
 import { existsSync } from 'fs';
 
+import type { EmailSender } from '../src/email/mailer.js';
 import { buildTestDatabase, closeTestDatabase, emptyTestDatabase, requireTestDatabaseUrl } from './testDatabase.js';
 
 /**
  * The only origin the test server allows
  */
 export const allowedTestOrigin = 'https://allowed.example';
+
+/**
+ * The client's address in tests, which emails link to
+ */
+export const testSiteUrl = 'https://site.example';
 
 // Colyseus loads .env too, but only once the server is imported, which is too late for the test
 // database settings. Neither load replaces a variable that is already set
@@ -35,7 +48,12 @@ process.env.SSL_KEY_FILE = '';
 process.env.SSL_CERT_FILE = '';
 process.env.ENABLE_DEV_TOOLS = '';
 process.env.ALLOWED_ORIGINS = allowedTestOrigin;
+process.env.SITE_URL = testSiteUrl;
 process.env.DATABASE_URL = requireTestDatabaseUrl('TEST_DATABASE_URL');
+
+// Fixed keys, so tests don't depend on the developer's own (32 bytes of 0x2a and of 0x2b in base64)
+process.env.AUTH_HMAC_KEY = Buffer.alloc(32, 0x2a).toString('base64');
+process.env.TOTP_ENCRYPTION_KEY = Buffer.alloc(32, 0x2b).toString('base64');
 
 if (!process.env.TEST_STORAGE_BUCKET)
 {
@@ -47,14 +65,26 @@ process.env.STORAGE_BUCKET = process.env.TEST_STORAGE_BUCKET;
 const migrationDatabaseUrl = requireTestDatabaseUrl('TEST_MIGRATION_DATABASE_URL');
 
 /**
- * Root hooks for every test file: build the test database once, empty it before each test, and
- * close both connections at the end
+ * Sends email nowhere, the sender for every test that doesn't watch the emails it sends
+ *
+ * @return A promise that resolves at once
+ */
+export const discardEmail: EmailSender = () =>
+{
+	return(Promise.resolve());
+};
+
+/**
+ * Root hooks for every test file: discard email, build the test database once, empty it before
+ * each test, and close both connections at the end
  */
 export const mochaHooks = {
 	async beforeAll(): Promise<void>
 	{
 		const { ensureBucket } = await import('../src/storage/objectStorage.js');
+		const { setEmailSender } = await import('../src/email/mailer.js');
 
+		setEmailSender(discardEmail);
 		await buildTestDatabase(migrationDatabaseUrl);
 		await ensureBucket();
 	},

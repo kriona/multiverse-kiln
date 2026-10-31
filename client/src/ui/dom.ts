@@ -4,11 +4,11 @@ import { t } from '../localization';
 
 /**
  * The screens the pages have, each an element with the ID "<name>-screen" and the class "screen". Every
- * page has status and login; index.html has home, universe.html has universe and notice, game.html has
- * notice, lobby, group and invite, edit.html has editor, and character.html has character. Exactly one
- * is shown at a time
+ * page has status; index.html has home, universe.html has universe and notice, game.html has notice,
+ * lobby, group and invite, edit.html has editor, character.html has character, and login.html has login,
+ * email, code, register and reset. Exactly one is shown at a time
  */
-export type ScreenName = 'status' | 'login' | 'home' | 'universe' | 'notice' | 'editor' | 'lobby' | 'group' | 'invite' | 'character';
+export type ScreenName = 'status' | 'home' | 'universe' | 'notice' | 'editor' | 'lobby' | 'group' | 'invite' | 'character' | 'login' | 'email' | 'code' | 'register' | 'reset' | 'provider-register' | 'provider-link' | 'two-factor' | 'registered' | 'profile' | 'player';
 
 /**
  * Finds an element in the page by ID
@@ -300,6 +300,22 @@ export function showStatus(message: string): void
 export function setPageTitle(title?: string): void
 {
 	document.title = ((title === undefined) ? SITE_NAME : `${title} - ${SITE_NAME}`);
+}
+
+/**
+ * Scrolls to the element the address's fragment names, such as #artwork
+ *
+ * Pages that scroll inside an element rather than the document need this on a reload: the browser
+ * restores the document's scroll position there instead of going to the fragment
+ */
+export function scrollToFragment(): void
+{
+	if (location.hash.length <= 1)
+	{
+		return;
+	}
+
+	document.getElementById(decodeURIComponent(location.hash.slice(1)))?.scrollIntoView();
 }
 
 /**

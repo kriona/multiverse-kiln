@@ -1,62 +1,51 @@
-import { Room, type AuthContext, type Client, type CloseCode, type Delayed } from 'colyseus';
-import { isReservedName, NoticeReason, SessionMessageType, SessionServerMessageType, type AccountPayload, type NoticePayload } from '@multiverse-kiln/shared';
+import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
+import { SessionServerMessageType, type AccountPayload } from '@multiverse-kiln/shared';
 
-import { loadOrCreatePlayerByName, type PlayerProfile } from '../db/playerRepo.js';
-import { readBrowserId } from '../http/browserId.js';
-import { onlinePlayers, type OnlinePlayerChange, type OnlinePlayerRecord } from '../players/onlinePlayers.js';
-import { InvalidMessages } from './invalidMessages.js';
-import { describeInvalidPayload, loginPayload } from './payloads.js';
+import { resolveSession, type SessionIdentity } from '../auth/sessions.js';
+import { connectedSessions } from '../players/connectedSessions.js';
 
 /**
  * What onAuth found out about a client, available afterward as client.auth
  */
-interface SessionIdentity
+interface SessionWindow
 {
-	browserId: string;
+	/**
+	 * The window's login session, or null when its browser isn't logged in or the session has ended
+	 */
+	session: SessionIdentity | null;
 }
 
-type SessionClient = Client<{ auth: SessionIdentity }>;
+type SessionClient = Client<{ auth: SessionWindow }>;
 
 /**
- * The browser a session client belongs to
+ * Who a session client is
  *
  * @param client A client that has passed onAuth
- * @return Its browser ID
+ * @return Its identity
  */
-function browserIdOf(client: SessionClient): string
+function windowOf(client: SessionClient): SessionWindow
 {
 	if (!client.auth)
 	{
 		throw new Error(`Session client ${client.sessionId} has no identity`);
 	}
 
-	return(client.auth.browserId);
+	return(client.auth);
 }
 
 /**
- * How long a browser stays logged in after its last window leaves, in milliseconds, so that reloading
- * a page or moving to another page of the client doesn't log the player out
- */
-const LOG_OUT_DELAY_MS = 15000;
-
-/**
- * The session: where windows log in and learn who their player is
+ * The session: where windows learn who their player is
  *
- * There is one session room, which every window joins as soon as it loads and stays in until it
- * closes, wherever its player is: it is how the server tells all of a browser's windows that the
- * player has logged in or out. A browser is logged out once its last window has been gone
- * for logOutDelayMs
+ * There is one session room, which every window of every page joins as soon as it loads and stays in
+ * until it closes, logged in or not. It tells each window who its player is, from its session cookie,
+ * and tells a session's windows when the session ends. Being connected counts as using the session, so
+ * an open page keeps it from ending for want of use
  */
 export class SessionRoom extends Room<{ client: SessionClient }>
 {
-	/**
-	 * How long a browser stays logged in after its last window leaves; tests shorten it
-	 */
-	static logOutDelayMs = LOG_OUT_DELAY_MS;
-
 	autoDispose = false;
 
-	// Clients send a message only when the player does something, so an honest client stays far below this
+	// Clients send no messages, so an honest client stays far below this
 	maxMessagesPerSecond = 10;
 
 	/**
@@ -65,70 +54,13 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 	private static current: SessionRoom | undefined;
 
 	/**
-	 * The clients of each browser in the room (server-only)
+	 * The logged-in clients of each session in the room, by session ID (server-only)
 	 */
 	private readonly windows = new Map<string, Set<SessionClient>>();
 
-	/**
-	 * The logouts waiting for a browser's windows to come back, by browser ID
-	 */
-	private readonly pendingLogOuts = new Map<string, Delayed>();
-
-	private readonly invalidMessages = new InvalidMessages();
-
 	private stopListening?: () => void;
 
-	messages = {
-		// Logging in is when a player's account is loaded, so this is the room's one database call
-		[SessionMessageType.Login]: async (client: SessionClient, payload: unknown) =>
-		{
-			const result = loginPayload.safeParse(payload);
-
-			if (!result.success)
-			{
-				this.invalidMessages.reject(client, SessionMessageType.Login, describeInvalidPayload(result.error));
-				return;
-			}
-
-			const browserId = browserIdOf(client);
-
-			if (onlinePlayers.get(browserId))
-			{
-				return;
-			}
-
-			if (isReservedName(result.data.name))
-			{
-				this.sendNotice(client, NoticeReason.NameReserved);
-				return;
-			}
-
-			let profile: PlayerProfile;
-
-			try
-			{
-				profile = await loadOrCreatePlayerByName(result.data.name);
-			}
-			catch (error)
-			{
-				console.error(client.sessionId, 'could not log in:', error);
-				this.sendNoticeIfConnected(client, NoticeReason.LoginFailed);
-				return;
-			}
-
-			// Every window of the browser may have closed while the player was loading, and nothing
-			// would log the browser out again
-			if (!this.windows.has(browserId))
-			{
-				return;
-			}
-
-			if (!onlinePlayers.logIn(browserId, profile.id, profile.displayName))
-			{
-				this.sendNoticeIfConnected(client, NoticeReason.NameInUse);
-			}
-		}
-	};
+	messages = {};
 
 	/**
 	 * Makes this the one session room
@@ -142,81 +74,80 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 
 		SessionRoom.current = this;
 
-		this.stopListening = onlinePlayers.onChange((change) =>
+		this.stopListening = connectedSessions.onEnd((sessionIds) =>
 		{
-			this.onPlayerChange(change);
+			this.onSessionsEnd(sessionIds);
 		});
 	}
 
 	/**
-	 * Admits only clients with a valid browser ID cookie, since a browser is what logs in
+	 * Admits every window, finding out from its session cookie whether its browser is logged in
 	 *
 	 * @param _client The joining client
 	 * @param _options Join options from the client (unused)
-	 * @param context The connection's request headers
-	 * @return The client's identity, stored as client.auth; false to turn the client away
+	 * @param context The connection's request headers, which carry the session cookie
+	 * @return The window's identity, stored as client.auth
 	 */
-	onAuth(_client: Client, _options: unknown, context: AuthContext): SessionIdentity | false
+	async onAuth(_client: Client, _options: unknown, context: AuthContext): Promise<SessionWindow>
 	{
-		const browserId = readBrowserId(context.headers.get('cookie'));
-
-		return(((browserId !== undefined) ? { browserId } : false));
+		return({ session: ((await resolveSession(context.headers.get('cookie'))) ?? null) });
 	}
 
 	/**
-	 * Records the window, keeps its browser logged in if it was about to be logged out, and tells the
-	 * window who its player is
+	 * Records the window and tells it who its player is
 	 *
 	 * @param client The joining client
 	 */
 	onJoin(client: SessionClient): void
 	{
-		const browserId = browserIdOf(client);
-		let clients = this.windows.get(browserId);
+		const { session } = windowOf(client);
 
-		this.pendingLogOuts.get(browserId)?.clear();
-		this.pendingLogOuts.delete(browserId);
-
-		if (!clients)
+		if (session)
 		{
-			clients = new Set();
-			this.windows.set(browserId, clients);
+			let clients = this.windows.get(session.sessionId);
+
+			if (!clients)
+			{
+				clients = new Set();
+				this.windows.set(session.sessionId, clients);
+			}
+
+			clients.add(client);
+			connectedSessions.connect(session.sessionId);
 		}
 
-		clients.add(client);
-		this.sendAccount(client, onlinePlayers.get(browserId));
+		this.sendAccount(client, session);
 	}
 
 	/**
-	 * Forgets the window. Once its browser has no windows left, logs the browser out after
-	 * logOutDelayMs unless a window of it joins again first
+	 * Forgets the window
 	 *
 	 * @param client The leaving client
 	 * @param code WebSocket close code
 	 */
 	onLeave(client: SessionClient, code: CloseCode): void
 	{
-		const browserId = browserIdOf(client);
-		const clients = this.windows.get(browserId);
+		const { session } = windowOf(client);
 
-		this.invalidMessages.forget(client.sessionId);
-		clients?.delete(client);
-
-		if (clients?.size === 0)
+		if (session)
 		{
-			this.windows.delete(browserId);
-			this.pendingLogOuts.set(browserId, this.clock.setTimeout(() =>
+			const clients = this.windows.get(session.sessionId);
+
+			clients?.delete(client);
+
+			if (clients?.size === 0)
 			{
-				this.pendingLogOuts.delete(browserId);
-				onlinePlayers.logOut(browserId);
-			}, SessionRoom.logOutDelayMs));
+				this.windows.delete(session.sessionId);
+			}
+
+			connectedSessions.disconnect(session.sessionId);
 		}
 
 		console.log(client.sessionId, 'left the session', code);
 	}
 
 	/**
-	 * Stops following the online players
+	 * Stops following the sessions
 	 */
 	onDispose(): void
 	{
@@ -229,15 +160,22 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 	}
 
 	/**
-	 * Tells the browser's windows about their player
+	 * Tells the windows of sessions that ended that they are logged out. They stay in the room, as
+	 * windows of a browser that isn't logged in
 	 *
-	 * @param change What changed
+	 * @param sessionIds The sessions that ended
 	 */
-	private onPlayerChange({ browserId, after }: OnlinePlayerChange): void
+	private onSessionsEnd(sessionIds: ReadonlySet<string>): void
 	{
-		for (const client of this.windows.get(browserId) ?? [])
+		for (const sessionId of sessionIds)
 		{
-			this.sendAccount(client, after);
+			for (const client of this.windows.get(sessionId) ?? [])
+			{
+				windowOf(client).session = null;
+				this.sendAccount(client, null);
+			}
+
+			this.windows.delete(sessionId);
 		}
 	}
 
@@ -245,44 +183,17 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 	 * Tells a window who its player is
 	 *
 	 * @param client The window
-	 * @param player The browser's player, or undefined when it isn't logged in
+	 * @param session Its session, or null when it isn't logged in
 	 */
-	private sendAccount(client: SessionClient, player: OnlinePlayerRecord | undefined): void
+	private sendAccount(client: SessionClient, session: SessionIdentity | null): void
 	{
 		const account: AccountPayload = {
-			player: (player ? {
-				playerId: player.playerId,
-				name: player.name
+			player: (session ? {
+				playerId: session.playerId,
+				name: session.name
 			} : null)
 		};
 
 		client.send(SessionServerMessageType.Account, account);
-	}
-
-	/**
-	 * Tells a window that something its player asked for didn't happen
-	 *
-	 * @param client The window
-	 * @param reason Why
-	 */
-	private sendNotice(client: SessionClient, reason: NoticeReason): void
-	{
-		const notice: NoticePayload = { reason };
-
-		client.send(SessionServerMessageType.Notice, notice);
-	}
-
-	/**
-	 * Sends a notice to a window that may have left while its request was waiting on the database
-	 *
-	 * @param client The window
-	 * @param reason Why
-	 */
-	private sendNoticeIfConnected(client: SessionClient, reason: NoticeReason): void
-	{
-		if (this.windows.get(browserIdOf(client))?.has(client))
-		{
-			this.sendNotice(client, reason);
-		}
 	}
 }

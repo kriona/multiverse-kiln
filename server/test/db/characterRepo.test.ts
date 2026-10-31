@@ -1,10 +1,11 @@
 import assert from 'assert';
 import type { CharacterDraft } from '@multiverse-kiln/shared';
 
-import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findPf1eAbilityRoll, hasCharactersOfClass, hasCharactersOfRace, isCarriedItem, keepPf1eAbilityRoll, listCharacters, listPlayableCharacters, markCharacterPlayed, purgeExpiredCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion } from '../../src/db/characterRepo.js';
-import { loadOrCreatePlayerByName } from '../../src/db/playerRepo.js';
+import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findPf1eAbilityRoll, hasCharactersOfClass, hasCharactersOfRace, isCarriedItem, keepPf1eAbilityRoll, listCharacters, listPlayableCharacters, listProfileCharacters, markCharacterPlayed, purgeExpiredCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion, setCharacterVisibility } from '../../src/db/characterRepo.js';
+import { addPlayer } from '../players.js';
 import { findDefaultRaceIds } from '../../src/db/raceRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
+import { createUniverse } from '../../src/db/universeRepo.js';
 import { addUniverse, dwarfFighter } from './fixtures.js';
 
 describe('characterRepo', () =>
@@ -14,14 +15,14 @@ describe('characterRepo', () =>
 
 	beforeEach(async () =>
 	{
-		playerId = (await loadOrCreatePlayerByName('Ada')).id;
+		playerId = (await addPlayer('Ada')).id;
 		universeId = await addUniverse();
 	});
 
 	it('lists a player\'s characters in a universe, oldest first', async () =>
 	{
 		const otherUniverseId = await addUniverse('Elsewhere');
-		const otherPlayerId = (await loadOrCreatePlayerByName('Grace')).id;
+		const otherPlayerId = (await addPlayer('Grace')).id;
 		const brokk = await dwarfFighter(playerId, universeId);
 		const firstId = await inTransaction((transaction) => createCharacter(brokk, transaction));
 		const secondId = await inTransaction((transaction) => createCharacter({ ...brokk, name: 'Dain' }, transaction));
@@ -79,7 +80,7 @@ describe('characterRepo', () =>
 
 	it('finds one of a player\'s characters with their scores, money and items', async () =>
 	{
-		const otherPlayerId = (await loadOrCreatePlayerByName('Grace')).id;
+		const otherPlayerId = (await addPlayer('Grace')).id;
 		const otherUniverseId = await addUniverse('Elsewhere');
 		const brokk = await dwarfFighter(playerId, universeId);
 		const characterId = await inTransaction((transaction) => createCharacter(brokk, transaction));
@@ -114,7 +115,7 @@ describe('characterRepo', () =>
 
 		it('deletes only the player\'s own character, with their items', async () =>
 		{
-			const otherPlayerId = (await loadOrCreatePlayerByName('Grace')).id;
+			const otherPlayerId = (await addPlayer('Grace')).id;
 			const brokk = await dwarfFighter(playerId, universeId);
 			const characterId = await inTransaction((transaction) => createCharacter(brokk, transaction));
 
@@ -216,6 +217,39 @@ describe('characterRepo', () =>
 			await deletePf1eAbilityRoll(playerId, universeId);
 
 			assert.strictEqual(await findPf1eAbilityRoll(playerId, universeId), undefined);
+		});
+	});
+
+	describe('profiles', () =>
+	{
+		it('lists a player\'s characters in every universe, by universe and then name, leaving out those given their last rites', async () =>
+		{
+			const otherUniverseId = await createUniverse({ name: 'Brightwater', ruleset: 'pf1e', stage: 'let_there_be_light' });
+			const zedId = await inTransaction(async (transaction) => createCharacter(await dwarfFighter(playerId, otherUniverseId, 'Zed'), transaction));
+
+			await inTransaction(async (transaction) => createCharacter(await dwarfFighter(playerId, otherUniverseId, 'Brokk'), transaction));
+			await inTransaction(async (transaction) => createCharacter(await dwarfFighter(playerId, universeId, 'Dain'), transaction));
+
+			const goneId = await inTransaction(async (transaction) => createCharacter(await dwarfFighter(playerId, universeId, 'Gimli'), transaction));
+
+			await scheduleCharacterDeletion(playerId, universeId, goneId, new Date(Date.now() + 60000));
+
+			const all = await listProfileCharacters(playerId, {});
+
+			assert.deepStrictEqual(all.map((character) => [character.universeName, character.name]), [['Brightwater', 'Brokk'], ['Brightwater', 'Zed'], [all[2].universeName, 'Dain']]);
+			assert.deepStrictEqual((await listProfileCharacters(playerId, { stages: ['let_there_be_light'] })).map((character) => character.name), ['Brokk', 'Zed']);
+
+			assert.strictEqual(await setCharacterVisibility(playerId, zedId, false), true);
+			assert.deepStrictEqual((await listProfileCharacters(playerId, { onlyVisible: true })).map((character) => character.name), ['Brokk', 'Dain']);
+		});
+
+		it('changes the visibility of the player\'s own characters only', async () =>
+		{
+			const graceId = (await addPlayer('Grace')).id;
+			const characterId = await inTransaction(async (transaction) => createCharacter(await dwarfFighter(graceId, universeId), transaction));
+
+			assert.strictEqual(await setCharacterVisibility(playerId, characterId, false), false);
+			assert.strictEqual((await listProfileCharacters(graceId, { onlyVisible: true })).length, 1);
 		});
 	});
 });

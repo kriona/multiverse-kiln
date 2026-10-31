@@ -23,7 +23,7 @@ export class EditorApiError extends Error
 /**
  * The world editor's REST API (see shared/src/editor.ts), for one browser
  *
- * Requests carry the browser ID cookie, so the server knows which player is asking. Every method
+ * Requests carry the session cookie, so the server knows which player is asking. Every method
  * throws EditorApiError when the server refuses the request
  */
 export class EditorApi
@@ -281,7 +281,7 @@ export class EditorApi
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 /**
- * Sends a request to one of the server's REST routes, with the browser ID cookie
+ * Sends a request to one of the server's REST routes, with the session cookie
  *
  * @param client Client for the server
  * @param method The HTTP method

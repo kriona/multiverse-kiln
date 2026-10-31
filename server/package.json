@@ -41,9 +41,12 @@
 		"@colyseus/schema": "^5.0.42",
 		"@colyseus/tools": "^0.18.10",
 		"@multiverse-kiln/shared": "*",
+		"arctic": "^3.7.0",
+		"argon2": "^0.45.1",
 		"colyseus": "^0.18.2",
 		"drizzle-orm": "^0.45.4",
 		"express": "^5.2.1",
+		"nodemailer": "^10.1.1",
 		"pg": "^8.23.1",
 		"sharp": "^0.35.5",
 		"zod": "^4.6.7"

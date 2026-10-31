@@ -15,6 +15,22 @@
 		"defaultMessage": "Score",
 		"description": "Heading of the column of a character's ability scores, such as 16, on their sheet and in Create Character"
 	},
+	"account.editProfile": {
+		"defaultMessage": "Edit profile",
+		"description": "Item in the menu that opens from the player's name at the end of every page's toolbar: goes to their own profile, where they change it"
+	},
+	"account.logOut": {
+		"defaultMessage": "Log out",
+		"description": "Item in the menu that opens from the player's name at the end of every page's toolbar: logs the browser out, in every tab"
+	},
+	"account.logOutFailed": {
+		"defaultMessage": "Could not log out. Try again in a moment.",
+		"description": "Shown when Log out, in the menu that opens from the player's name in the toolbar, didn't work"
+	},
+	"account.menu": {
+		"defaultMessage": "Your account: {name}",
+		"description": "Name for screen readers, and tooltip, of the player's name at the end of every page's toolbar, which opens a menu with Edit profile and Log out; {name} is their name"
+	},
 	"admin.characterDeletionDays": {
 		"defaultMessage": "Days between last rites and deletion",
 		"description": "Label of the field on the site settings page for how many days a character given their last rites waits before being deleted"
@@ -35,9 +51,37 @@
 		"defaultMessage": "Could not load the site settings.",
 		"description": "Shown on the site settings page when the settings couldn't be loaded"
 	},
+	"admin.privacy": {
+		"defaultMessage": "Privacy policy",
+		"description": "Heading of the site settings for the privacy policy"
+	},
+	"admin.privacyContact": {
+		"defaultMessage": "Contact email address",
+		"description": "Label of the field on the site settings page for the email address the privacy policy tells players to write to"
+	},
+	"admin.privacyContactHint": {
+		"defaultMessage": "The privacy policy tells players to write here with questions about their information. Leave it empty to leave the line out of the policy.",
+		"description": "Under the privacy contact field on the site settings page"
+	},
+	"admin.privacyContactInvalid": {
+		"defaultMessage": "Enter an email address, such as privacy@example.com.",
+		"description": "Shown under the privacy contact field on the site settings page when what was typed isn't an email address"
+	},
 	"admin.saveFailed": {
 		"defaultMessage": "Could not save the site settings.",
 		"description": "Shown on the site settings page when the settings couldn't be stored"
+	},
+	"admin.socialUrlInvalid": {
+		"defaultMessage": "Enter a link to {site} that starts with https://.",
+		"description": "Shown under a social site's field on the site settings page when what was typed isn't a link to that site; {site} is the site's name, such as Discord or Facebook"
+	},
+	"admin.socials": {
+		"defaultMessage": "Social sites",
+		"description": "Heading of the site settings for links to the site's own pages on social sites such as Discord and Facebook"
+	},
+	"admin.socialsHint": {
+		"defaultMessage": "The footer of every page links to each site given here, showing its logo. Links must start with https:// and go to that site. Leave a site empty to leave it out.",
+		"description": "Under the heading of the social site links on the site settings page"
 	},
 	"admin.title": {
 		"defaultMessage": "Site Settings",
@@ -233,7 +277,7 @@
 	},
 	"character.raceAndClass": {
 		"defaultMessage": "{race} {class}",
-		"description": "A character's race and class, e.g. \"Dwarf Fighter\": under the name at the top of their sheet, and after their name in the lists of the player's characters in the lobby, on a universe's page and on an invite. Reorder them as your language needs"
+		"description": "A character's race and class, e.g. \"Dwarf Fighter\": under the name at the top of their sheet, and after their name in the lists of the player's characters in the lobby, on a universe's page, on an invite and on profiles. Reorder them as your language needs"
 	},
 	"character.review.class": {
 		"defaultMessage": "Class",
@@ -313,11 +357,11 @@
 	},
 	"characterDelete.cremate": {
 		"defaultMessage": "Cremate (delete immediately)",
-		"description": "Button that deletes a character straight away, for good. Cremate is a playful way of saying it (their body is burned); the words in parentheses say plainly what it does"
+		"description": "Button that deletes a character immediately, for good. Cremate is a playful way of saying it (their body is burned); the words in parentheses say plainly what it does"
 	},
 	"characterDelete.cremated": {
 		"defaultMessage": "{name} has been deleted.",
-		"description": "Read out by screen readers once a character has been deleted straight away; {name} is the character's name"
+		"description": "Read out by screen readers once a character has been deleted immediately; {name} is the character's name"
 	},
 	"characterDelete.failed": {
 		"defaultMessage": "Could not delete the character.",
@@ -443,6 +487,22 @@
 		"defaultMessage": "You haven't made a character in this universe yet.",
 		"description": "Shown instead of the list of the player's characters, in a universe's lobby and on its page, when they haven't made one in the universe"
 	},
+	"chips.added": {
+		"defaultMessage": "{name} added",
+		"description": "Read out by screen readers after the player chooses something from a search field that adds choices as chips, such as a language on the profile page; {name} is what was chosen"
+	},
+	"chips.remove": {
+		"defaultMessage": "Remove {name}",
+		"description": "Name of the button on a chip that takes it out, for screen readers, in a search field that adds choices as chips, such as the languages on the profile page; {name} is the chip's text"
+	},
+	"chips.removed": {
+		"defaultMessage": "{name} removed",
+		"description": "Read out by screen readers after the player takes a chip out of a search field that adds choices as chips, such as a language on the profile page; {name} is what was taken out"
+	},
+	"combobox.noMatches": {
+		"defaultMessage": "Nothing matches",
+		"description": "Shown in the list under a search field, such as the time zone or the languages on the profile page, when nothing matches what was typed"
+	},
 	"createGroup.difficulty": {
 		"defaultMessage": "Difficulty",
 		"description": "Label of the choice of the new group's difficulty level, such as Normal or Hard"
@@ -533,7 +593,7 @@
 	},
 	"editor.area.confirmDeleteNew": {
 		"defaultMessage": "Delete {area}? It hasn't been saved, so its settings, map and links will be lost.",
-		"description": "Asks before deleting an area added since the Areas tab was last saved, which goes straight away; {area} is its name"
+		"description": "Asks before deleting an area added since the Areas tab was last saved, which goes immediately; {area} is its name"
 	},
 	"editor.area.defaultTile": {
 		"defaultMessage": "Default tile",
@@ -1987,6 +2047,206 @@
 		"defaultMessage": "Edit {universe}",
 		"description": "Heading of the world editor, linking to the editor's first tab; {universe} is the universe's name"
 	},
+	"email.accountCreated.body": {
+		"defaultMessage": "Your account on {siteName} has been created.",
+		"description": "Paragraph of the email sent when a new account is created; {siteName} is the site's name"
+	},
+	"email.accountCreated.notYou": {
+		"defaultMessage": "If you didn't create it, someone else can read your email. Change your email password, then reset the account's password on {siteName}.",
+		"description": "Last paragraph of the email sent when a new account is created, for someone who didn't create it; {siteName} is the site's name"
+	},
+	"email.accountCreated.subject": {
+		"defaultMessage": "Welcome to {siteName}",
+		"description": "Subject of the email sent when a new account is created; {siteName} is the site's name"
+	},
+	"email.accountDeleted.body": {
+		"defaultMessage": "Your account on {siteName} was deleted, with your profile and characters. Thanks for playing.",
+		"description": "Paragraph of the email sent when a player deletes their account; {siteName} is the site's name"
+	},
+	"email.accountDeleted.notYou": {
+		"defaultMessage": "If you didn't delete it, someone else was using your account. It can't be brought back, but you can contact the site about it.",
+		"description": "Last paragraph of the email sent when a player deletes their account, for someone who didn't delete it"
+	},
+	"email.accountDeleted.subject": {
+		"defaultMessage": "Your account on {siteName} was deleted",
+		"description": "Subject of the email sent when a player deletes their account; {siteName} is the site's name"
+	},
+	"email.accountExists.body": {
+		"defaultMessage": "Someone asked to create an account on {siteName} with this email address, but it already has one. Log in instead, or reset your password if you've forgotten it.",
+		"description": "Paragraph of the email sent, in place of a code, when someone asks to create an account with an address that already has one; {siteName} is the site's name"
+	},
+	"email.accountExists.notYou": {
+		"defaultMessage": "If you didn't ask, you can ignore this email. Nothing about your account has changed.",
+		"description": "Last paragraph of the email sent when someone asks to create an account with an address that already has one, for someone who didn't ask"
+	},
+	"email.accountExists.subject": {
+		"defaultMessage": "You already have an account on {siteName}",
+		"description": "Subject of the email sent, in place of a code, when someone asks to create an account with an address that already has one; {siteName} is the site's name"
+	},
+	"email.action.changePassword": {
+		"defaultMessage": "Change your password",
+		"description": "Link at the end of the email sent when many wrong authenticator app codes were typed for an account; opens the profile, after logging in, where the password is changed"
+	},
+	"email.action.logIn": {
+		"defaultMessage": "Log in to {siteName}",
+		"description": "Link at the end of the email sent when someone asks to create an account with an address that already has one; opens the login page. {siteName} is the site's name"
+	},
+	"email.action.resetPassword": {
+		"defaultMessage": "Reset your password",
+		"description": "Link at the end of the emails sent when an account's password, email address or linked logins change, for someone who didn't make the change; opens the forgot password screen"
+	},
+	"email.action.visit": {
+		"defaultMessage": "Go to {siteName}",
+		"description": "Link at the end of the email sent when a new account is created; opens the site's first page. {siteName} is the site's name"
+	},
+	"email.code.changeEmail.intro": {
+		"defaultMessage": "Enter this code on {siteName} to make this your account's email address:",
+		"description": "First paragraph of the email, sent to the new address, with the code for changing an account's email address, shown just above the code; {siteName} is the site's name"
+	},
+	"email.code.changeEmail.subject": {
+		"defaultMessage": "Your code to change your email address on {siteName}",
+		"description": "Subject of the email, sent to the new address, with the code for changing an account's email address; {siteName} is the site's name"
+	},
+	"email.code.confirmEmailChange.intro": {
+		"defaultMessage": "Someone asked to move your account on {siteName} to another email address. If it was you, enter this code to go on:",
+		"description": "First paragraph of the email, sent to an account's current address, with the code that checks it's the owner changing the account's email address, for an account without a password, shown just above the code; {siteName} is the site's name"
+	},
+	"email.code.confirmEmailChange.subject": {
+		"defaultMessage": "Your code to change your email address on {siteName}",
+		"description": "Subject of the email, sent to an account's current address, with the code that checks it's the owner changing the account's email address, for an account without a password; {siteName} is the site's name"
+	},
+	"email.code.deleteAccount.intro": {
+		"defaultMessage": "Someone asked to delete your account on {siteName}, which can't be undone. If it was you, enter this code to go on:",
+		"description": "First paragraph of the email with the code that checks it's the owner deleting an account without a password, shown just above the code; {siteName} is the site's name"
+	},
+	"email.code.deleteAccount.subject": {
+		"defaultMessage": "Your code to delete your account on {siteName}",
+		"description": "Subject of the email with the code that checks it's the owner deleting an account without a password; {siteName} is the site's name"
+	},
+	"email.code.lifetime": {
+		"defaultMessage": "The code works once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"description": "In every email that sends a code, after the code: how long it can be used"
+	},
+	"email.code.linkLogin.intro": {
+		"defaultMessage": "Enter this code on {siteName} to log in to your account with Google or Discord from now on:",
+		"description": "First paragraph of the email that sends the code for linking a Google or Discord login to the account with the same email address, or, for an account without a password, to the account the player is logged in to from their profile, shown just above the code; {siteName} is the site's name"
+	},
+	"email.code.linkLogin.subject": {
+		"defaultMessage": "Your code to link a login to your account on {siteName}",
+		"description": "Subject of the email that sends the code for linking a Google or Discord login to the account with the same email address, or, for an account without a password, to the account the player is logged in to from their profile; {siteName} is the site's name"
+	},
+	"email.code.notYou": {
+		"defaultMessage": "If you didn't ask for this code, you can ignore this email. Nobody can use the code without reading your email.",
+		"description": "Last paragraph of every email that sends a code (to create an account, reset a password or change an email address), for someone who didn't ask for it"
+	},
+	"email.code.register.intro": {
+		"defaultMessage": "Enter this code on {siteName} to create your account:",
+		"description": "First paragraph of the email that sends the code for creating a new account, shown just above the code; {siteName} is the site's name"
+	},
+	"email.code.register.subject": {
+		"defaultMessage": "Your code to create an account on {siteName}",
+		"description": "Subject of the email that sends the code for creating a new account; {siteName} is the site's name"
+	},
+	"email.code.resetPassword.intro": {
+		"defaultMessage": "Enter this code on {siteName} to choose a new password:",
+		"description": "First paragraph of the email that sends the code for resetting a forgotten password, shown just above the code; {siteName} is the site's name"
+	},
+	"email.code.resetPassword.subject": {
+		"defaultMessage": "Your code to reset your password on {siteName}",
+		"description": "Subject of the email that sends the code for resetting a forgotten password; {siteName} is the site's name"
+	},
+	"email.emailChanged.newAddress": {
+		"defaultMessage": "This is now the email address of your account on {siteName}.",
+		"description": "Paragraph of the email sent to an account's new address when its email address is changed; {siteName} is the site's name"
+	},
+	"email.emailChanged.notYou": {
+		"defaultMessage": "If you didn't change it, someone else may be using your account on {siteName}. Reset its password immediately.",
+		"description": "Last paragraph of the emails sent to both the old and the new address when an account's email address is changed, for someone who didn't change it; {siteName} is the site's name"
+	},
+	"email.emailChanged.oldAddress": {
+		"defaultMessage": "The email address of your account on {siteName} was changed to {newAddress}. Emails about the account will go there from now on.",
+		"description": "Paragraph of the email sent to an account's old address when its email address is changed; {siteName} is the site's name and {newAddress} the new email address"
+	},
+	"email.emailChanged.subject": {
+		"defaultMessage": "Your email address on {siteName} was changed",
+		"description": "Subject of the emails sent to both the old and the new address when an account's email address is changed; {siteName} is the site's name"
+	},
+	"email.footer": {
+		"defaultMessage": "This email was sent by {siteName}:",
+		"description": "At the end of every email the site sends, followed by the site's address on a line of its own; {siteName} is the site's name"
+	},
+	"email.passwordChanged.body": {
+		"defaultMessage": "The password of your account on {siteName} was just changed, and every browser logged in to it was logged out.",
+		"description": "Paragraph of the email sent when an account's password is changed or reset; {siteName} is the site's name"
+	},
+	"email.passwordChanged.notYou": {
+		"defaultMessage": "If you didn't change it, reset your password on {siteName} immediately.",
+		"description": "Last paragraph of the email sent when an account's password is changed or reset, for someone who didn't change it; {siteName} is the site's name"
+	},
+	"email.passwordChanged.subject": {
+		"defaultMessage": "Your password on {siteName} was changed",
+		"description": "Subject of the email sent when an account's password is changed or reset; {siteName} is the site's name"
+	},
+	"email.providerLinked.body": {
+		"defaultMessage": "A {provider} login was linked to your account on {siteName}, so it can log in to the account from now on.",
+		"description": "Paragraph of the email sent when a Google or Discord login is linked to an account; {siteName} is the site's name and {provider} is Google or Discord"
+	},
+	"email.providerLinked.notYou": {
+		"defaultMessage": "If you didn't link it, someone else may be using your account on {siteName}. Reset its password immediately.",
+		"description": "Last paragraph of the email sent when a Google or Discord login is linked to an account, for someone who didn't link it; {siteName} is the site's name"
+	},
+	"email.providerLinked.subject": {
+		"defaultMessage": "You can now log in to {siteName} with {provider}",
+		"description": "Subject of the email sent when a Google or Discord login is linked to an account; {siteName} is the site's name and {provider} is Google or Discord"
+	},
+	"email.recoveryCodeUsed.body": {
+		"defaultMessage": "One of the recovery codes of your account on {siteName} was just used in place of a code from your authenticator app. It won't work again. {count, plural, =0 {You have no recovery codes left: make new ones on your profile.} one {You have # left.} other {You have # left.}}",
+		"description": "Paragraph of the email sent when one of an account's recovery codes is used; {siteName} is the site's name, and {count} how many recovery codes the account has left"
+	},
+	"email.recoveryCodeUsed.notYou": {
+		"defaultMessage": "If you didn't use it, someone else has your password and recovery codes. Reset your password immediately, and make new recovery codes on your profile.",
+		"description": "Last paragraph of the email sent when one of an account's recovery codes is used, for someone who didn't use it"
+	},
+	"email.recoveryCodeUsed.subject": {
+		"defaultMessage": "A recovery code was used on {siteName}",
+		"description": "Subject of the email sent when one of an account's recovery codes (used in place of an authenticator app code) is used; {siteName} is the site's name"
+	},
+	"email.twoFactorDisabled.body": {
+		"defaultMessage": "Two-factor authentication was turned off for your account on {siteName}. Logging in now needs only your password, and your recovery codes no longer work.",
+		"description": "Paragraph of the email sent when two-factor authentication is turned off for an account; {siteName} is the site's name"
+	},
+	"email.twoFactorDisabled.notYou": {
+		"defaultMessage": "If you didn't turn it off, someone else may be using your account on {siteName}. Reset its password immediately, then turn two-factor authentication on again.",
+		"description": "Last paragraph of the email sent when two-factor authentication is turned off for an account, for someone who didn't turn it off; {siteName} is the site's name"
+	},
+	"email.twoFactorDisabled.subject": {
+		"defaultMessage": "Two-factor authentication is off for your account on {siteName}",
+		"description": "Subject of the email sent when two-factor authentication (an authenticator app code asked for at login) is turned off for an account; {siteName} is the site's name"
+	},
+	"email.twoFactorEnabled.body": {
+		"defaultMessage": "Two-factor authentication was turned on for your account on {siteName}. Logging in with your password now asks for a code from your authenticator app too. Keep your recovery codes somewhere safe: they are the only way in if you lose the app.",
+		"description": "Paragraph of the email sent when two-factor authentication is turned on for an account; {siteName} is the site's name"
+	},
+	"email.twoFactorEnabled.notYou": {
+		"defaultMessage": "If you didn't turn it on, someone else may be using your account on {siteName}. Reset its password immediately.",
+		"description": "Last paragraph of the email sent when two-factor authentication is turned on for an account, for someone who didn't turn it on; {siteName} is the site's name"
+	},
+	"email.twoFactorEnabled.subject": {
+		"defaultMessage": "Two-factor authentication is on for your account on {siteName}",
+		"description": "Subject of the email sent when two-factor authentication (an authenticator app code asked for at login) is turned on for an account; {siteName} is the site's name"
+	},
+	"email.wrongAuthenticatorCodes.body": {
+		"defaultMessage": "{count} wrong codes from an authenticator app were typed for your account on {siteName} today.",
+		"description": "Paragraph of the email sent when many wrong authenticator app codes were typed for an account in a day; {siteName} is the site's name, and {count} how many (always more than one)"
+	},
+	"email.wrongAuthenticatorCodes.notYou": {
+		"defaultMessage": "If this wasn't you, log in and change your password.",
+		"description": "Last paragraph of the email sent when many wrong authenticator app codes were typed for an account, for someone who didn't type them"
+	},
+	"email.wrongAuthenticatorCodes.subject": {
+		"defaultMessage": "Wrong codes were typed for your account on {siteName}",
+		"description": "Subject of the email sent when many wrong authenticator app codes were typed for an account in a day; {siteName} is the site's name"
+	},
 	"error.alreadyInGroup": {
 		"defaultMessage": "That character is already in a group. They have to leave it first.",
 		"description": "Why a character couldn't make or join a group: a character can be in only one group at a time"
@@ -1998,6 +2258,142 @@
 	"error.areaLimit": {
 		"defaultMessage": "A universe can have at most {max, plural, one {# area} other {# areas}}.",
 		"description": "Why a new area wasn't made: the universe has as many areas as allowed"
+	},
+	"error.auth.deleteUniversesChanged": {
+		"defaultMessage": "The universes you alone create have changed. Look at them again before deleting your account.",
+		"description": "Why deleting an account was refused: the universes the player is the only creator of, or their editors, changed since the deletion dialog listed them"
+	},
+	"error.auth.deleteWrongUsername": {
+		"defaultMessage": "Type your username exactly as it is to confirm.",
+		"description": "Shown under the username field when deleting an account that has no password: what was typed isn't the account's username"
+	},
+	"error.auth.emailForm": {
+		"defaultMessage": "Enter an email address, like name@example.com.",
+		"description": "Shown under an email field when what was typed isn't an email address"
+	},
+	"error.auth.emailMismatch": {
+		"defaultMessage": "That isn't the address the code was sent to.",
+		"description": "Shown under the email field when creating an account or changing an email address: the address typed differs from the one the code was sent to"
+	},
+	"error.auth.emailTaken": {
+		"defaultMessage": "Another account already uses that address.",
+		"description": "Why an account wasn't created, or its email address wasn't changed: the address belongs to another account. Only shown after the player proved they can read that address's email, or logged in with Google or Discord"
+	},
+	"error.auth.enterCodeFirst": {
+		"defaultMessage": "Enter the code from the email first, or ask for a new one if it has been more than a few minutes.",
+		"description": "Why creating an account, choosing a new password, changing an email address or linking a Google or Discord login with an email code was refused: this browser hasn't entered the email code, or entered it too long ago"
+	},
+	"error.auth.noPassword": {
+		"defaultMessage": "Your account has no password to change. To give it one, log out and use \"Forgot your password?\" on the login page.",
+		"description": "Why changing the password was refused: the account logs in only with Google or Discord, so it has no password yet"
+	},
+	"error.auth.passwordBreached": {
+		"defaultMessage": "This password has turned up in a data breach, so attackers try it. Choose another.",
+		"description": "Shown under a new password field when the password is on HaveIBeenPwned's list of passwords leaked in data breaches"
+	},
+	"error.auth.passwordLength": {
+		"defaultMessage": "Use a password of {min} to {max} characters.",
+		"description": "Shown under a new password field when the password is too short or too long; {min} and {max} are numbers"
+	},
+	"error.auth.providerFailed": {
+		"defaultMessage": "Logging in with {provider} didn't finish. Try again.",
+		"description": "Why logging in with Google or Discord failed after coming back from it: the login took too long, was started in another browser, or the provider refused it; {provider} is Google or Discord"
+	},
+	"error.auth.providerNoVerifiedEmail": {
+		"defaultMessage": "Your {provider} account has no verified email address. Verify one with {provider} first, or create an account with your email address.",
+		"description": "Why logging in with Google or Discord failed: the provider has no email address for the player that it checked they can read, and every account needs one; {provider} is Google or Discord"
+	},
+	"error.auth.providerNotFinished": {
+		"defaultMessage": "Logging in with Google or Discord didn't finish. Try again.",
+		"description": "Why logging in with Google or Discord failed after coming back from it, when it isn't known which: this browser didn't start the login, or started it too long ago"
+	},
+	"error.auth.providerNotOffered": {
+		"defaultMessage": "This site doesn't offer logging in with {provider}.",
+		"description": "Why logging in with Google or Discord didn't start: the site isn't set up for it; {provider} is Google or Discord"
+	},
+	"error.auth.providerOtherAccount": {
+		"defaultMessage": "That {provider} account is already linked to another account here.",
+		"description": "Why linking a Google or Discord login, or creating an account with it, was refused: another account has that provider login; {provider} is Google or Discord"
+	},
+	"error.auth.providerOtherLogin": {
+		"defaultMessage": "Your account already has a different {provider} login. Log in with that one, or with your password.",
+		"description": "Why linking a Google or Discord login was refused: the account already has a login with the same provider, from another account there; {provider} is Google or Discord"
+	},
+	"error.auth.providerOtherLoginLinked": {
+		"defaultMessage": "Your account already has a different {provider} login.",
+		"description": "Why linking a Google or Discord login from the player's own profile was refused: the account already has a login with the same provider, from another account there; {provider} is Google or Discord"
+	},
+	"error.auth.providerStartAgain": {
+		"defaultMessage": "It has been more than a few minutes since you logged in with Google or Discord. Log in with it again.",
+		"description": "Why creating an account or linking a login after logging in with Google or Discord was refused: this browser came back from the provider too long ago, or not at all"
+	},
+	"error.auth.providerUnavailable": {
+		"defaultMessage": "{provider} didn't answer. Try again in a few minutes.",
+		"description": "Why logging in with Google or Discord failed: the server couldn't reach it, or it answered with something unexpected; {provider} is Google or Discord"
+	},
+	"error.auth.tooManyAttempts": {
+		"defaultMessage": "Too many tries. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
+		"description": "Why a login wasn't tried, an email code wasn't sent, or a code wasn't checked: too many were tried or asked for from this network or for this address in the past hour, or a code was sent to the address less than a minute ago"
+	},
+	"error.auth.tooManyWrongAuthenticatorCodes": {
+		"defaultMessage": "Too many wrong codes from an authenticator app were typed for your account today. Use one of your recovery codes, or try again in {hours, plural, one {# hour} other {# hours}}.",
+		"description": "Shown under the two-factor code field when the account had too many wrong authenticator app codes in the past day, so only recovery codes are taken for now; {hours} is how long until an authenticator code is taken again"
+	},
+	"error.auth.twoFactorAlreadyOn": {
+		"defaultMessage": "Two-factor authentication is already on for your account.",
+		"description": "Why setting up two-factor authentication was refused: it is already on, perhaps from another tab"
+	},
+	"error.auth.twoFactorCodeNeeded": {
+		"defaultMessage": "Enter the code from your authenticator app, or one of your recovery codes.",
+		"description": "Shown under the two-factor code field when it was left empty, or what was typed can't be an authenticator code (6 digits) or a recovery code"
+	},
+	"error.auth.twoFactorLoginAgain": {
+		"defaultMessage": "It has been too long since you typed your password, or too many codes were wrong. Log in with your password again.",
+		"description": "Why finishing a login with an authenticator or recovery code was refused: the password was typed more than a few minutes ago, in another browser, or too many wrong codes were typed since"
+	},
+	"error.auth.twoFactorNoPassword": {
+		"defaultMessage": "Two-factor authentication is for logging in with a password, and your account has none. Google and Discord ask for their own.",
+		"description": "Why setting up two-factor authentication was refused: the account logs in only with Google or Discord, whose own two-factor authentication protects it"
+	},
+	"error.auth.twoFactorNotOn": {
+		"defaultMessage": "Two-factor authentication isn't on for your account.",
+		"description": "Why turning off two-factor authentication or making new recovery codes was refused: it isn't on, perhaps turned off from another tab"
+	},
+	"error.auth.twoFactorSetUpAgain": {
+		"defaultMessage": "Start setting up two-factor authentication again: it has been too long since it started.",
+		"description": "Why turning on two-factor authentication was refused: the player didn't start setting it up, or started more than a few minutes ago"
+	},
+	"error.auth.usernameForm": {
+		"defaultMessage": "Use {min} to {max} letters (a to z), digits and underscores.",
+		"description": "Shown under the username field when the username has other characters, or is too short or too long; {min} and {max} are numbers"
+	},
+	"error.auth.usernameTaken": {
+		"defaultMessage": "Another account already has that username. Choose another.",
+		"description": "Shown under the username field when creating an account: usernames are unique, ignoring capitals"
+	},
+	"error.auth.wrongCode": {
+		"defaultMessage": "That code isn't right, or it has expired. Check the latest email, or ask for a new code.",
+		"description": "Shown under the code field when an email code is wrong, was already used, or is too old"
+	},
+	"error.auth.wrongCurrentPassword": {
+		"defaultMessage": "That isn't your current password.",
+		"description": "Shown under the current password field when changing the password, and the password typed is wrong"
+	},
+	"error.auth.wrongLogin": {
+		"defaultMessage": "That email address and password don't match an account.",
+		"description": "Why a login failed: no account has that address, or the password is wrong (the message doesn't say which, so it doesn't reveal who has an account)"
+	},
+	"error.auth.wrongPassword": {
+		"defaultMessage": "That password isn't right.",
+		"description": "Shown under the password field when logging in to an account to link a Google or Discord login to it, or when turning two-factor authentication on or off or making new recovery codes, and the password is wrong"
+	},
+	"error.auth.wrongSetupCode": {
+		"defaultMessage": "That code isn't right. Check that your device's clock is right, and enter the newest code your authenticator app shows for this site.",
+		"description": "Shown under the code field while turning on two-factor authentication, when the code from the authenticator app just set up is wrong"
+	},
+	"error.auth.wrongTwoFactorCode": {
+		"defaultMessage": "That code isn't right, or was already used. Check that your device's clock is right, and enter the newest code, or use a recovery code.",
+		"description": "Shown under the two-factor code field when the authenticator or recovery code is wrong, or was already used"
 	},
 	"error.cantDeleteArea": {
 		"defaultMessage": "The lobby and starting areas can't be deleted.",
@@ -2033,7 +2429,7 @@
 	},
 	"error.deleteGroupMember": {
 		"defaultMessage": "That character is in a group. They have to leave it before they can be deleted.",
-		"description": "Why a character wasn't deleted, straight away or after some days: characters in a group can't be deleted"
+		"description": "Why a character wasn't deleted, immediately or after some days: characters in a group can't be deleted"
 	},
 	"error.difficultyLevelLimit": {
 		"defaultMessage": "A universe can have at most {max, plural, one {# difficulty level} other {# difficulty levels}}.",
@@ -2100,7 +2496,7 @@
 		"description": "Why an item the universe added couldn't be saved: its name was left out"
 	},
 	"error.lastRitesOff": {
-		"defaultMessage": "Characters can't be given their last rites on this site. They can only be deleted straight away.",
+		"defaultMessage": "Characters can't be given their last rites on this site. They can only be deleted immediately.",
 		"description": "Why a character wasn't given their last rites (deleted after some days): the site's settings have turned waiting off"
 	},
 	"error.linkOutOfBounds": {
@@ -2121,7 +2517,7 @@
 	},
 	"error.logInFirst": {
 		"defaultMessage": "Log in first.",
-		"description": "Why an editor request was refused: the browser isn't logged in"
+		"description": "Why a request was refused, such as one to the editor or to change the account's email address: the browser isn't logged in"
 	},
 	"error.noEnabledClass": {
 		"defaultMessage": "A universe needs at least one enabled class, so new characters have one to be.",
@@ -2166,6 +2562,10 @@
 	"error.noSuchLink": {
 		"defaultMessage": "There is no link on that cell.",
 		"description": "Why an area link couldn't be deleted: it was already gone, perhaps deleted by another editor"
+	},
+	"error.noSuchPlayer": {
+		"defaultMessage": "No player has that username.",
+		"description": "Why a player's profile couldn't be shown: no account has the username in its address"
 	},
 	"error.noSuchRace": {
 		"defaultMessage": "The race doesn't exist.",
@@ -2214,6 +2614,22 @@
 	"error.parentNotInUniverse": {
 		"defaultMessage": "The parent area must be an area of this universe.",
 		"description": "Why an area's settings were refused: the area chosen to hold it doesn't exist"
+	},
+	"error.profile.locale": {
+		"defaultMessage": "Choose a language from the list.",
+		"description": "Shown under the language field on the profile when what was sent isn't a language tag"
+	},
+	"error.profile.noSuchCharacter": {
+		"defaultMessage": "You have no such character.",
+		"description": "Why showing or hiding a character on the player's profile was refused: the character isn't theirs, or was deleted"
+	},
+	"error.profile.socialUsername": {
+		"defaultMessage": "That isn't a username on {site}. Enter the username alone, not a link.",
+		"description": "Shown under one of the profile's social site fields when what was typed can't be a username there; {site} is Discord, Facebook, Instagram or TikTok"
+	},
+	"error.profile.timeZone": {
+		"defaultMessage": "Choose a time zone from the list.",
+		"description": "Shown under the time zone field on the profile when what was sent isn't a time zone the server knows"
 	},
 	"error.raceInUse": {
 		"defaultMessage": "Characters are this race, so it can't be deleted. Disable it instead.",
@@ -2415,6 +2831,10 @@
 		"defaultMessage": "Loading the universe...",
 		"description": "Shown on the whole page while the game looks up the universe it was opened for"
 	},
+	"game.universeDeleted": {
+		"defaultMessage": "{universe} was deleted, with everything in it.",
+		"description": "Shown on the game's page when the universe being played was deleted, along with its creator's account; {universe} is its name"
+	},
 	"game.universeNotFound": {
 		"defaultMessage": "That universe could not be found.",
 		"description": "Shown on the game's page when it was opened to enter a universe that doesn't exist or can't be played"
@@ -2534,6 +2954,10 @@
 	"home.listFailed": {
 		"defaultMessage": "Could not list the universes. Reload the page to try again.",
 		"description": "Shown on Home when the list of universes couldn't be loaded"
+	},
+	"home.logIn": {
+		"defaultMessage": "Log in",
+		"description": "Link in Home's toolbar to the page for logging in or creating an account"
 	},
 	"home.noOwnUniverses": {
 		"defaultMessage": "You haven't made a universe yet.",
@@ -2751,6 +3175,14 @@
 		"defaultMessage": "GNU Affero General Public License",
 		"description": "The name of the game's license, linking to its full text"
 	},
+	"license.artwork": {
+		"defaultMessage": "Logo and tilesets",
+		"description": "Heading of the license page's section crediting the artist who made the game's logo and default tilesets, and its link in the page's contents"
+	},
+	"license.artworkCredit": {
+		"defaultMessage": "The logo and the default tilesets were drawn by {artist}.",
+		"description": "On the license page, crediting the artist who made the game's logo and the default tilesets (the tile images new maps are drawn with); {artist} is the artist's name, linking to their portfolio, the same in every language"
+	},
 	"license.assets": {
 		"defaultMessage": "Art and other assets",
 		"description": "Heading of the license page's section about the game's art, audio and story, and its link in the page's contents"
@@ -2758,6 +3190,10 @@
 	"license.assetsNotice": {
 		"defaultMessage": "The game's own art, audio, fonts, characters, setting and story are not covered by the GNU Affero General Public License. They are copyright {holder}, all rights reserved, and may not be reused without written permission. Assets made by others keep their own licenses, listed below.",
 		"description": "On the license page, explaining that the game's assets aren't free software; {holder} is who holds their copyright"
+	},
+	"license.code": {
+		"defaultMessage": "Code by others",
+		"description": "Heading of the license page's section crediting code by others that the pages include, and its link in the page's contents"
 	},
 	"license.communityUse": {
 		"defaultMessage": "{siteName} uses trademarks and/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy ({policy}). We are expressly prohibited from charging you to use or access this content. {siteName} is not published, endorsed, or specifically approved by Paizo. For more information about Paizo Inc. and Paizo products, visit {paizo}.",
@@ -2794,6 +3230,10 @@
 	"license.phosphor": {
 		"defaultMessage": "Interface icons are from {phosphor}, used under the MIT License:",
 		"description": "On the license page, crediting the icon set the pages' buttons use; {phosphor} is a link to it, named the same in every language. The license's text follows in English"
+	},
+	"license.qrCode": {
+		"defaultMessage": "The QR code for setting up two-factor authentication is drawn by {qrCode}, used under the MIT License:",
+		"description": "On the license page, crediting the code that draws the QR code for setting up two-factor authentication; {qrCode} is a link to it, named the same in every language. The license's text follows in English"
 	},
 	"license.starfinder": {
 		"defaultMessage": "Starfinder First Edition rules",
@@ -2903,25 +3343,245 @@
 		"defaultMessage": "Lobby",
 		"description": "Heading of a universe's lobby until its name has loaded"
 	},
-	"login.failed": {
-		"defaultMessage": "Could not log in. Try again in a moment.",
-		"description": "Shown on the login screen when the server couldn't log the player in"
+	"login.back": {
+		"defaultMessage": "Back",
+		"description": "Button that goes back a step while logging in, creating an account or resetting a password"
 	},
-	"login.invalidName": {
-		"defaultMessage": "Enter a name of letters, numbers, spaces or punctuation.",
-		"description": "Shown by the login field when the name typed is empty or has characters that aren't allowed"
+	"login.checkEmail": {
+		"defaultMessage": "Check your email",
+		"description": "Heading of the screen where the player types the code that was emailed to them"
 	},
-	"login.nameInUse": {
-		"defaultMessage": "That player is already logged in from another browser.",
-		"description": "Shown on the login screen when someone using the name typed is logged in elsewhere"
+	"login.code": {
+		"defaultMessage": "Code",
+		"description": "Label of the field for the code that was emailed to the player"
 	},
-	"login.nameLabel": {
-		"defaultMessage": "What should we call you?",
-		"description": "Label of the login field where players type the name others will see"
+	"login.codeResent": {
+		"defaultMessage": "Sent a new code. The one before no longer works.",
+		"description": "Shown under the code field after another code was emailed"
 	},
-	"login.submit": {
-		"defaultMessage": "Enter",
-		"description": "Button that logs in with the name typed"
+	"login.codeSentLink": {
+		"defaultMessage": "We've emailed {email}. Enter the code from the email to link your login. It works once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"description": "On the screen for the emailed code when linking a Google or Discord login to the account with the same email address; {email} is the address it was sent to"
+	},
+	"login.codeSentRegister": {
+		"defaultMessage": "We've emailed {email}. Enter the code from the email. It works once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"description": "On the screen for the emailed code when creating an account; {email} is the address it was sent to"
+	},
+	"login.codeSentReset": {
+		"defaultMessage": "If {email} belongs to an account, we've emailed it a code. Enter the code from the email. It works once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"description": "On the screen for the emailed code when resetting a password; {email} is the address typed. The page can't say whether the address has an account, so it can't say a code was sent"
+	},
+	"login.continue": {
+		"defaultMessage": "Continue",
+		"description": "Button that checks the emailed code, or the code from the authenticator app, and goes on to the next step"
+	},
+	"login.displayName": {
+		"defaultMessage": "Name",
+		"description": "Label of the field for the name other players see, when creating an account"
+	},
+	"login.displayNameHint": {
+		"defaultMessage": "The name other players see. It doesn't have to be your real name, or unique.",
+		"description": "Under the name field when creating an account"
+	},
+	"login.email": {
+		"defaultMessage": "Email address",
+		"description": "Label of the email address field on the login, create account and forgot password screens"
+	},
+	"login.forgotPassword": {
+		"defaultMessage": "Forgot your password?",
+		"description": "Button on the login screen that starts resetting a forgotten password"
+	},
+	"login.linkIntro": {
+		"defaultMessage": "You already have an account here with {email}. Log in to it once to link your {provider} login, and you can use either from then on.",
+		"description": "On the screen that links a Google or Discord login to the account with the same email address, when that account has a password; {provider} is Google or Discord, and {email} the address"
+	},
+	"login.linkIntroCode": {
+		"defaultMessage": "You already have an account here with {email}. We'll email it a code to link your {provider} login, and you can use either from then on.",
+		"description": "On the screen that links a Google or Discord login to the account with the same email address, when that account has no password, so only an emailed code links it; {provider} is Google or Discord, and {email} the address"
+	},
+	"login.linkSubmit": {
+		"defaultMessage": "Link account",
+		"description": "Button that logs in to the account with its password, linking the Google or Discord login to it"
+	},
+	"login.linkTitle": {
+		"defaultMessage": "Link your account",
+		"description": "Heading of the screen, after logging in with Google or Discord, that asks the player to log in to the account here with the same email address so the two can be linked"
+	},
+	"login.linkWithCode": {
+		"defaultMessage": "Email me a code",
+		"description": "Button that emails a code to the account's address: on the login page, when linking a Google or Discord login to the account, to use instead of its password, and on the profile, for an account without a password, to check it's the player linking a login, changing the email address or deleting the account"
+	},
+	"login.newPassword": {
+		"defaultMessage": "Password",
+		"description": "Label of the field for a new password, when creating an account or resetting a password"
+	},
+	"login.notNow": {
+		"defaultMessage": "Not now",
+		"description": "Button on the screen shown once a new account is created: skips setting up two-factor authentication for now and goes on"
+	},
+	"login.orEmail": {
+		"defaultMessage": "or use your email address",
+		"description": "On the login screen, between the buttons that log in with Google or Discord and the email address and password fields"
+	},
+	"login.password": {
+		"defaultMessage": "Password",
+		"description": "Label of the password field when logging in, and when turning two-factor authentication on or off, making new recovery codes, linking a Google or Discord login, changing the email address or deleting the account on the profile"
+	},
+	"login.passwordHint": {
+		"defaultMessage": "At least {min} characters. A few words strung together are easy to remember and hard to guess.",
+		"description": "Under the new password field when creating an account, resetting a password or changing it on the profile; {min} is a number"
+	},
+	"login.passwordManager": {
+		"defaultMessage": "A password manager, such as {bitwarden} or {onePassword}, can make a strong password and remember it for you.",
+		"description": "Under the new password field when creating an account or resetting a password, recommending a password manager; {bitwarden} and {onePassword} are links to two of them"
+	},
+	"login.privacy": {
+		"defaultMessage": "Read how we look after your information in our {privacy}.",
+		"description": "On the create account screen; {privacy} is a link to the privacy policy, named by page.privacyPolicy"
+	},
+	"login.providerCanceled": {
+		"defaultMessage": "Logging in with Google or Discord was canceled. Try again, or use your email address.",
+		"description": "Shown on the login screen when Google or Discord sends the player back without logging them in, such as when they chose not to allow it"
+	},
+	"login.providerRegisterIntro": {
+		"defaultMessage": "You're logging in with {provider} as {email}, which is new here. Choose how other players find and see you to create your account.",
+		"description": "On the screen where a new account's username and name are chosen after logging in with Google or Discord; {provider} is Google or Discord, and {email} the address it gave"
+	},
+	"login.providersRecommended": {
+		"defaultMessage": "Logging in with one of these is safest: there's no password here to forget or have stolen.",
+		"description": "On the login screen, above the buttons that log in with Google or Discord (which also create an account the first time)"
+	},
+	"login.register": {
+		"defaultMessage": "Create an account",
+		"description": "Button on the login screen that starts creating a new account"
+	},
+	"login.registerHeading": {
+		"defaultMessage": "Create an account",
+		"description": "Heading of the screen that asks for the email address of a new account, and the browser tab's title while it shows"
+	},
+	"login.registerIntro": {
+		"defaultMessage": "Enter your email address, and we'll send you a code to check it's yours.",
+		"description": "On the screen that asks for the email address of a new account"
+	},
+	"login.registerProvidersHint": {
+		"defaultMessage": "Logging in with Google or Discord on the login screen creates an account too, and is safest: there's no password here to forget or have stolen.",
+		"description": "On the screen that asks for the email address of a new account, when the site offers logging in with Google or Discord"
+	},
+	"login.registerSubmit": {
+		"defaultMessage": "Create account",
+		"description": "Button that creates the new account and logs in"
+	},
+	"login.registerTitle": {
+		"defaultMessage": "Create your account",
+		"description": "Heading of the screen where a new account's username, name and password are chosen, and of the one where a new account's username and name are chosen after logging in with Google or Discord"
+	},
+	"login.registeredIntro": {
+		"defaultMessage": "Two-factor authentication keeps your account safe even if someone learns your password: logging in asks for a code from an app on your phone too. You can set it up now, or any time from your profile.",
+		"description": "On the screen shown once a new account is created with a password"
+	},
+	"login.registeredTitle": {
+		"defaultMessage": "Your account is ready",
+		"description": "Heading of the screen shown once a new account is created, offering to set up two-factor authentication"
+	},
+	"login.rememberMe": {
+		"defaultMessage": "Remember me",
+		"description": "Checkbox when logging in, creating an account or choosing a new password: keeps the browser logged in for up to 30 days without use, rather than an hour"
+	},
+	"login.resendCode": {
+		"defaultMessage": "Send a new code",
+		"description": "Button that emails another code, replacing the one sent before"
+	},
+	"login.resetEmailIntro": {
+		"defaultMessage": "Enter your account's email address, and we'll send you a code to choose a new password.",
+		"description": "On the screen that asks for the email address of an account whose password was forgotten"
+	},
+	"login.resetHeading": {
+		"defaultMessage": "Reset your password",
+		"description": "Heading of the screen that asks for the email address of an account whose password was forgotten, and the browser tab's title while it shows"
+	},
+	"login.resetIntro": {
+		"defaultMessage": "Every browser logged in to your account is logged out when the password changes.",
+		"description": "On the screen where a new password is chosen, after a forgotten one"
+	},
+	"login.resetSubmit": {
+		"defaultMessage": "Save password",
+		"description": "Button that saves the new password and logs in"
+	},
+	"login.resetTitle": {
+		"defaultMessage": "Choose a new password",
+		"description": "Heading of the screen where a new password is chosen, after a forgotten one"
+	},
+	"login.sendCode": {
+		"defaultMessage": "Send code",
+		"description": "Button that emails a code to the address typed, to create an account, reset a password or change the account's email address"
+	},
+	"login.setUpTwoFactor": {
+		"defaultMessage": "Set up two-factor authentication",
+		"description": "Link on the screen shown once a new account is created: goes to the player's profile to set up two-factor authentication"
+	},
+	"login.showPassword": {
+		"defaultMessage": "Show password",
+		"description": "Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"
+	},
+	"login.title": {
+		"defaultMessage": "Log in",
+		"description": "The browser tab's title for the login page, and the heading and button that log in with an email address and password"
+	},
+	"login.trustBrowser": {
+		"defaultMessage": "Don't ask again on this browser for {days, plural, one {# day} other {# days}}",
+		"description": "Checkbox on the screen that asks for the code from the player's authenticator app at login: this browser won't ask for the code again for a number of days"
+	},
+	"login.trustBrowserHint": {
+		"defaultMessage": "Only on a browser that no one else uses. Your password is still asked for.",
+		"description": "Under the checkbox that stops this browser asking for the authenticator code at login"
+	},
+	"login.twoFactorCode": {
+		"defaultMessage": "Authenticator code",
+		"description": "Label of the field for the 6-digit code from the player's authenticator app, or one of their recovery codes, when logging in, resetting a password or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes, changing the email address or deleting the account on the profile"
+	},
+	"login.twoFactorCodeHint": {
+		"defaultMessage": "The 6-digit code from your authenticator app, or one of your recovery codes.",
+		"description": "Under the authenticator code field when logging in or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes, changing the email address or deleting the account on the profile"
+	},
+	"login.twoFactorIntro": {
+		"defaultMessage": "Your account has two-factor authentication. Open your authenticator app and enter the 6-digit code it shows for this site.",
+		"description": "On the screen that asks for the code from the player's authenticator app, when their account has two-factor authentication"
+	},
+	"login.twoFactorLostHint": {
+		"defaultMessage": "Lost your phone? Enter one of your recovery codes instead. Each works once.",
+		"description": "Under the authenticator code field on the screen that asks for it"
+	},
+	"login.twoFactorResetHint": {
+		"defaultMessage": "Your account has two-factor authentication, so the email code isn't enough on its own. Enter the 6-digit code from your authenticator app, or one of your recovery codes.",
+		"description": "Under the authenticator code field when resetting the password of an account with two-factor authentication"
+	},
+	"login.twoFactorTitle": {
+		"defaultMessage": "Enter your authenticator code",
+		"description": "Heading of the screen that asks for the code from the player's authenticator app after their password or logging in with Google or Discord, or after the emailed code when linking a Google or Discord login"
+	},
+	"login.unreachable": {
+		"defaultMessage": "Could not reach the server. Check your connection and try again.",
+		"description": "Shown under a form on the login page when the server couldn't be reached"
+	},
+	"login.username": {
+		"defaultMessage": "Username",
+		"description": "Label of the field for a new account's username: a unique name of letters, digits and underscores that other players find them by"
+	},
+	"login.usernameAvailable": {
+		"defaultMessage": "That username is available.",
+		"description": "Shown under the username field when creating an account, once the site has checked that no other account has the username typed"
+	},
+	"login.usernameHint": {
+		"defaultMessage": "How other players find you, and tell you apart from others with the same name. {min} to {max} letters (a to z), digits and underscores.",
+		"description": "Under the username field when creating an account; {min} and {max} are numbers"
+	},
+	"login.withDiscord": {
+		"defaultMessage": "Log in with Discord",
+		"description": "Button on the login screen that logs in with a Discord account, creating an account here the first time"
+	},
+	"login.withGoogle": {
+		"defaultMessage": "Log in with Google",
+		"description": "Button on the login screen that logs in with a Google account, creating an account here the first time"
 	},
 	"map.announce.appeared": {
 		"defaultMessage": "{count, plural, one {{players} comes into view.} other {{players} come into view.}}",
@@ -3093,7 +3753,7 @@
 	},
 	"page.backToHome": {
 		"defaultMessage": "Back to Home",
-		"description": "Link or button that goes back to the list of universes (Home): at the top of a page, in the editor's toolbar, or below a message filling the page, such as one saying a universe couldn't be found"
+		"description": "Link that goes back to the list of universes (Home), below a message filling the page, such as one saying a universe couldn't be found"
 	},
 	"page.connectFailed": {
 		"defaultMessage": "Could not connect to the server. Reload the page to try again.",
@@ -3109,7 +3769,7 @@
 	},
 	"page.credits": {
 		"defaultMessage": "Credits",
-		"description": "Link at the bottom of every page to the license page's credits for the icons the pages use"
+		"description": "Link at the bottom of every page to the license page's credits for the artist of the logo and tilesets and for the icons the pages use"
 	},
 	"page.disconnected": {
 		"defaultMessage": "Disconnected from the server. Reload the page to reconnect.",
@@ -3135,13 +3795,25 @@
 		"defaultMessage": "Loading...",
 		"description": "Shown while a page or part of one loads, such as the site settings, the choices in Create Character, an area in the editor, or a universe's page"
 	},
-	"page.playingAs": {
-		"defaultMessage": "Playing as {name}",
-		"description": "In the toolbar, the name the player logged in with; {name} is the name"
+	"page.privacy": {
+		"defaultMessage": "Privacy",
+		"description": "Link at the bottom of every page to the privacy policy"
+	},
+	"page.privacyPolicy": {
+		"defaultMessage": "privacy policy",
+		"description": "The name of the privacy policy, as a link to it"
 	},
 	"page.shortcuts": {
 		"defaultMessage": "Keyboard shortcuts",
 		"description": "Button at the bottom of every page that lists the keyboard shortcuts"
+	},
+	"page.socialLink": {
+		"defaultMessage": "{siteName} on {site}",
+		"description": "Name of a logo at the bottom of every page that links to the site's own page on a social site, read by screen readers and shown when pointed at; {siteName} is the game engine's name and {site} is the social site, such as Discord or Facebook"
+	},
+	"page.socials": {
+		"defaultMessage": "Social sites",
+		"description": "Name, read by screen readers, of the list of logos at the bottom of every page that link to the site's own pages on social sites"
 	},
 	"page.sourceCode": {
 		"defaultMessage": "Source code",
@@ -3506,6 +4178,846 @@
 	"play.nowPlaying": {
 		"defaultMessage": "You are now playing {name}.",
 		"description": "Read out by screen readers in the lobby or a group when the window switches to another of the player's characters; {name} is the character's name"
+	},
+	"player.characters": {
+		"defaultMessage": "Characters",
+		"description": "Heading of the list of a player's characters on their profile, as other players see it"
+	},
+	"player.heading": {
+		"defaultMessage": "Profile",
+		"description": "Heading in the toolbar of a player's profile, as other players see it, above their name"
+	},
+	"player.languages": {
+		"defaultMessage": "Languages",
+		"description": "Label of the languages a player knows, each named in itself, on their profile as other players see it"
+	},
+	"player.location": {
+		"defaultMessage": "Location",
+		"description": "Label of where a player is, as they wrote it, on their profile as other players see it"
+	},
+	"player.noCharacters": {
+		"defaultMessage": "No characters to show.",
+		"description": "Shown on a player's profile, as other players see it, instead of their characters, when none are shown"
+	},
+	"player.pronouns": {
+		"defaultMessage": "Pronouns",
+		"description": "Label of a player's pronouns on their profile, as other players see it"
+	},
+	"player.social": {
+		"defaultMessage": "{site}: {username}",
+		"description": "A player's username on a social site, on their profile as other players see it; {site} is Discord, Facebook, Instagram or TikTok"
+	},
+	"player.timeZone": {
+		"defaultMessage": "Time zone",
+		"description": "Label of a player's time zone on their profile, as other players see it"
+	},
+	"player.timeZoneValue": {
+		"defaultMessage": "{city} ({zoneName}), where it's {time} now",
+		"description": "A player's time zone on their profile, as other players see it; {city} is the city the time zone is named after, such as Paris, {zoneName} its name, such as Central European Time, or its offset from UTC, such as GMT+1, and {time} the time of day there, kept up to date while the page is open"
+	},
+	"privacy.account": {
+		"defaultMessage": "Your account",
+		"description": "Heading in the privacy policy over the list of what the site keeps about a player's account"
+	},
+	"privacy.accountEmail": {
+		"defaultMessage": "Your email address, used to log in and to send you emails about your account.",
+		"description": "In the privacy policy's list of what the site keeps about a player's account: the email address"
+	},
+	"privacy.accountNames": {
+		"defaultMessage": "Your username, which is unique and lets other players find you, and your display name, which needn't be your real name.",
+		"description": "In the privacy policy's list of what the site keeps about a player's account: the account's two names"
+	},
+	"privacy.accountPassword": {
+		"defaultMessage": "If you have a local account, your password, kept only in a scrambled form that can't be turned back into the password (a one-way hash: Argon2id for passwords, and a keyed hash, HMAC, for recovery codes and the codes and addresses below).",
+		"description": "In the privacy policy's list of what the site keeps about a player's account: the password, which is kept only as a one-way hash. The first place the policy says scrambled, so the brackets explain the term for the rest of the page: Argon2id and HMAC are the names of the hashing methods, the same in every language"
+	},
+	"privacy.accountProviders": {
+		"defaultMessage": "If you log in with Google or Discord, the ID and email address of that account, which they send us when you log in.",
+		"description": "In the privacy policy's list of what the site keeps about a player's account: what the site gets from Google or Discord when a player logs in with them. Google and Discord are names, the same in every language"
+	},
+	"privacy.accountTwoFactor": {
+		"defaultMessage": "If you turn on two-factor authentication, the secret your authenticator app shares with us, encrypted with a key kept apart from our database, and your recovery codes, kept only in a scrambled form.",
+		"description": "In the privacy policy's list of what the site keeps about a player's account: the secret behind two-factor authentication, which links the account to an authenticator app and is stored encrypted, and the recovery codes, stored scrambled"
+	},
+	"privacy.changes": {
+		"defaultMessage": "Changes to this policy",
+		"description": "Heading of the privacy policy's section about how players are told when the policy changes, and its link in the page's contents"
+	},
+	"privacy.changesText": {
+		"defaultMessage": "The date at the top of this page shows when this policy last changed. If it changes in a way that matters to you, we will email you before the change takes effect.",
+		"description": "In the privacy policy, how players learn that it changed"
+	},
+	"privacy.children": {
+		"defaultMessage": "Children",
+		"description": "Heading of the privacy policy's section about the youngest age allowed to have an account, and its link in the page's contents"
+	},
+	"privacy.childrenText": {
+		"defaultMessage": "You must be at least 13 to have an account, or older where the law of your country sets a higher age for agreeing to this policy yourself. If we learn that an account belongs to someone younger, we delete it.",
+		"description": "In the privacy policy, the youngest age allowed to have an account: 13, or older where the player's country requires it"
+	},
+	"privacy.contact": {
+		"defaultMessage": "For questions about this policy, or to ask about your information, email {contact}.",
+		"description": "In the privacy policy, how to reach the people who run the site; {contact} is their email address, as a link"
+	},
+	"privacy.contents": {
+		"defaultMessage": "Contents",
+		"description": "Heading of the list of links to each section of the privacy policy"
+	},
+	"privacy.cookies": {
+		"defaultMessage": "Cookies and browser storage",
+		"description": "Heading of the privacy policy's section about the cookies and browser storage the site uses, and its link in the page's contents"
+	},
+	"privacy.cookiesCharacter": {
+		"defaultMessage": "The character each tab last played, so reloading the tab plays them again, until the tab closes.",
+		"description": "In the privacy policy's list of what the site stores in a player's browser: the character each browser tab last played, so reloading the tab plays them again"
+	},
+	"privacy.cookiesCode": {
+		"defaultMessage": "After you enter a code we emailed you, a cookie that lets that browser take the next step, such as choosing a password, for 10 minutes.",
+		"description": "In the privacy policy's list of what the site stores in a player's browser: a cookie that lasts 10 minutes after a player enters a correct email code, for the next step such as choosing a password"
+	},
+	"privacy.cookiesIntro": {
+		"defaultMessage": "We store only what the site needs to work, so we don't ask before storing it. There are no cookies from other sites.",
+		"description": "In the privacy policy, before the list of what the site stores in a player's browser; there are no tracking cookies, so it asks no permission for them"
+	},
+	"privacy.cookiesKnownBrowser": {
+		"defaultMessage": "A cookie that shows a browser has logged in to your account, so other people's wrong password guesses can't stop it from logging in. It doesn't say which account it is, and lasts 180 days after you last log in.",
+		"description": "In the privacy policy's list of what the site stores in a player's browser: a cookie that marks a browser as one that has logged in to the account, so other people's wrong password guesses for the account can't stop that browser logging in"
+	},
+	"privacy.cookiesLanguage": {
+		"defaultMessage": "The language you choose at the bottom of the page.",
+		"description": "In the privacy policy's list of what the site stores in a player's browser: the language chosen at the bottom of the page"
+	},
+	"privacy.cookiesSession": {
+		"defaultMessage": "A cookie that keeps you logged in. It ends when you log out, after an hour without use, or when you close your browser; with \"Remember me\" checked, after 30 days without use.",
+		"description": "In the privacy policy's list of what the site stores in a player's browser: the login cookie, and how long it lasts"
+	},
+	"privacy.cookiesTwoFactor": {
+		"defaultMessage": "With two-factor authentication on, a cookie that lets the browser where you typed your password, or logged in with Google or Discord, enter your authenticator code, for 10 minutes. If you choose not to be asked again on a browser, a cookie that lets it skip the code for 30 days, until you stop trusting it on your profile.",
+		"description": "In the privacy policy's list of what the site stores in a player's browser: the cookies two-factor authentication uses, one while the login waits for the authenticator code, and one for a browser the player chose to trust"
+	},
+	"privacy.deleting": {
+		"defaultMessage": "Deleting your account deletes your profile, your characters and your security records. Groups led by one of your characters disband. For each universe you are the only creator of, you choose whether to hand it to another of its editors or delete it; what you built in universes others edit stays part of them.",
+		"description": "In the privacy policy, what deleting an account removes, and what happens to the universes the player built"
+	},
+	"privacy.heading": {
+		"defaultMessage": "Privacy Policy",
+		"description": "Heading of the privacy policy page"
+	},
+	"privacy.howLong": {
+		"defaultMessage": "How long we keep it",
+		"description": "Heading of the privacy policy's section saying how long the site keeps each kind of information, and its link in the page's contents"
+	},
+	"privacy.howLongAccount": {
+		"defaultMessage": "Your account, profile and characters, until you delete them.",
+		"description": "In the privacy policy, how long account information is kept"
+	},
+	"privacy.howLongBackups": {
+		"defaultMessage": "Deleted information can stay in our backups for a short time, until they are replaced.",
+		"description": "In the privacy policy, saying deleted information can stay in the database's backups for a while"
+	},
+	"privacy.howLongCharacters": {
+		"defaultMessage": "A character you delete, until the days the site waits before deleting characters have passed.",
+		"description": "In the privacy policy, when a deleted character is removed: after the number of days the site sets (its Last Rites)"
+	},
+	"privacy.howLongCharactersDays": {
+		"defaultMessage": "A character you delete, for {days, plural, one {# day} other {# days}}, while you can still bring them back.",
+		"description": "In the privacy policy, how long a deleted character is kept before it is removed for good, during which the player can restore them; {days} is the number of days the site sets"
+	},
+	"privacy.howLongSecurity": {
+		"defaultMessage": "Security records as long as the list above says: the log for 90 days, codes for 15 minutes, and counts only while a limit needs them.",
+		"description": "In the privacy policy, how long security records are kept"
+	},
+	"privacy.intro": {
+		"defaultMessage": "This policy explains what this {siteName} site keeps about you when you play or build universes here, why it keeps it, who can see it, how long it is kept, and how you can download or delete it. We keep as little data as we can.",
+		"description": "The first paragraph of the privacy policy, saying what it covers; {siteName} is the game engine's name"
+	},
+	"privacy.keep": {
+		"defaultMessage": "What we keep",
+		"description": "Heading of the privacy policy's section listing the information the site keeps about a player, and its link in the page's contents"
+	},
+	"privacy.not": {
+		"defaultMessage": "What we don't do",
+		"description": "Heading of the privacy policy's section listing what the site never does with a player's information, such as selling it, and its link in the page's contents"
+	},
+	"privacy.notText": {
+		"defaultMessage": "We don't show ads, don't use analytics or tracking services, and never sell your information or share it with anyone for their own use. We only email you about your account, never to sell you something.",
+		"description": "In the privacy policy, what the site never does with a player's information"
+	},
+	"privacy.play": {
+		"defaultMessage": "What you play and build",
+		"description": "Heading in the privacy policy over what the site keeps of a player's characters and games, and of the universes they build"
+	},
+	"privacy.playCharacters": {
+		"defaultMessage": "Your characters, their items and progress, the groups they are in, and the parts of each universe your groups have explored.",
+		"description": "In the privacy policy, the game information the site keeps: characters and groups, and what a group has explored"
+	},
+	"privacy.playChat": {
+		"defaultMessage": "Chat isn't saved. The game server keeps a lobby's most recent messages in memory, so players who arrive can read them, until the lobby closes or the server restarts.",
+		"description": "In the privacy policy, how long chat is kept: only in the game server's memory, and only the most recent messages"
+	},
+	"privacy.playUniverses": {
+		"defaultMessage": "The universes you create or help edit, and what you upload to them, such as tile images.",
+		"description": "In the privacy policy, what the site keeps for players who build universes: the universes, and the images they upload to them"
+	},
+	"privacy.profile": {
+		"defaultMessage": "Your profile",
+		"description": "Heading in the privacy policy over the list of what the site keeps of a player's profile"
+	},
+	"privacy.profileText": {
+		"defaultMessage": "Anything you choose to fill in on your profile: a photo, your pronouns, your location and time zone, the languages you know, your language for the site, links to your social media accounts, and which of your characters others can see. Only your username and display name are required.",
+		"description": "In the privacy policy, what a player's profile holds; only the username and display name are required"
+	},
+	"privacy.rights": {
+		"defaultMessage": "Your choices and rights",
+		"description": "Heading of the privacy policy's section about what a player can do with their information: see, correct, download and delete it, and its link in the page's contents"
+	},
+	"privacy.rightsCorrect": {
+		"defaultMessage": "See and change your information on your profile.",
+		"description": "In the privacy policy's list of a player's rights: seeing and correcting their information on their profile"
+	},
+	"privacy.rightsDelete": {
+		"defaultMessage": "Delete your account from your profile.",
+		"description": "In the privacy policy's list of a player's rights: deleting their account"
+	},
+	"privacy.rightsExport": {
+		"defaultMessage": "Download everything we keep about you, as one file, from your profile.",
+		"description": "In the privacy policy's list of a player's rights: downloading everything the site keeps about them as one file"
+	},
+	"privacy.security": {
+		"defaultMessage": "Keeping it safe",
+		"description": "Heading of the privacy policy's section about how the site protects a player's information, and its link in the page's contents"
+	},
+	"privacy.securityCodes": {
+		"defaultMessage": "The codes we email you, to register, reset your password or change your email address, kept only in a scrambled form, and only until they are used or expire 15 minutes later.",
+		"description": "In the privacy policy's list of security records: the codes the site emails to register, reset a password or change an email address, kept only as a keyed hash"
+	},
+	"privacy.securityLimits": {
+		"defaultMessage": "To stop people guessing codes and passwords, counts of the attempts made for each email address and from each network, with the addresses kept only in a scrambled form, and only while a limit still needs them.",
+		"description": "In the privacy policy's list of security records: counts kept to stop someone guessing codes or passwords, which store email addresses and internet addresses only as a keyed hash"
+	},
+	"privacy.securityLog": {
+		"defaultMessage": "A log of logins, failed logins and changes to your account's security, such as a new password, with your network in a scrambled form. It never holds passwords or codes, and is kept for 90 days.",
+		"description": "In the privacy policy's list of security records: the log of logins and account changes, kept 90 days, which stores a player's network only as a keyed hash"
+	},
+	"privacy.securityRecords": {
+		"defaultMessage": "Security records",
+		"description": "Heading in the privacy policy over the list of what the site keeps to keep accounts safe and stop abuse"
+	},
+	"privacy.securitySessions": {
+		"defaultMessage": "A record for each browser you are logged in on, so you stay logged in, and so you can be logged out everywhere.",
+		"description": "In the privacy policy's list of security records: the login sessions, one for each browser a player is logged in on"
+	},
+	"privacy.securityText": {
+		"defaultMessage": "Everything you send the site is encrypted on its way (using HTTPS). Passwords and codes are only kept scrambled, and you can turn on two-factor authentication. If your information is ever exposed, we will tell you.",
+		"description": "In the privacy policy, how the site protects a player's information, and the promise to tell them if it leaks"
+	},
+	"privacy.see": {
+		"defaultMessage": "Who can see it",
+		"description": "Heading of the privacy policy's section about who can see a player's information: other players, universe editors and the site's admins, and its link in the page's contents"
+	},
+	"privacy.seeAdmins": {
+		"defaultMessage": "The people who run this site can see what we keep, and look at it only to run the site, keep it safe and deal with reports of abuse.",
+		"description": "In the privacy policy, what the people who run the site can see about players"
+	},
+	"privacy.seeEditors": {
+		"defaultMessage": "The editors of a universe can see the characters played in it.",
+		"description": "In the privacy policy, what the editors of a universe can see about the players who play it"
+	},
+	"privacy.seeEmail": {
+		"defaultMessage": "Other players never see your email address.",
+		"description": "In the privacy policy, saying other players never see a player's email address"
+	},
+	"privacy.seePlayers": {
+		"defaultMessage": "Other players see your username, display name and the profile fields you fill in, the characters you let them see, and what your characters say and do in the game. Players in a group with you can always reach your profile.",
+		"description": "In the privacy policy, what other players can see about a player"
+	},
+	"privacy.services": {
+		"defaultMessage": "Services we use",
+		"description": "Heading of the privacy policy's section about the other companies that handle a player's information for the site, such as its hosting, and its link in the page's contents"
+	},
+	"privacy.servicesHosting": {
+		"defaultMessage": "Companies that host our database, game server and uploaded files, and that send our emails. They handle your information only on our instructions, and may store it in another country than yours.",
+		"description": "In the privacy policy, the companies that host the site's database, game server and files and send its emails, which may be in another country than the player"
+	},
+	"privacy.servicesLogin": {
+		"defaultMessage": "Google or Discord, if you log in with them. They learn that you logged in here, under their own privacy policies.",
+		"description": "In the privacy policy, what Google or Discord learn when a player logs in with them, under their own privacy policies. Google and Discord are names, the same in every language"
+	},
+	"privacy.servicesPasswords": {
+		"defaultMessage": "When you choose a password, we check it against {service}'s list of passwords leaked from other sites. We send it only the first 5 characters of a scrambled form of your password, which can't reveal the password.",
+		"description": "In the privacy policy, the password check against Have I Been Pwned, a free service listing passwords that have leaked from other sites; {service} is its name, the same in every language. The site sends it only the first 5 characters of the password's hash"
+	},
+	"privacy.title": {
+		"defaultMessage": "Privacy Policy",
+		"description": "The browser tab's title for the privacy policy page, before the game engine's name"
+	},
+	"privacy.updated": {
+		"defaultMessage": "Last changed {date}",
+		"description": "At the top of the privacy policy, when it last changed; {date} is the date, written the way the player's language writes dates"
+	},
+	"privacy.who": {
+		"defaultMessage": "Who we are",
+		"description": "Heading of the privacy policy's section saying who runs the site and how to contact them, and its link in the page's contents"
+	},
+	"privacy.whoText": {
+		"defaultMessage": "This site runs {siteName}, an engine for multiplayer role-playing games. The people who run this site decide what it does with your information, and are responsible for it.",
+		"description": "In the privacy policy, who runs the site; {siteName} is the game engine's name"
+	},
+	"privacy.why": {
+		"defaultMessage": "Why we keep it",
+		"description": "Heading of the privacy policy's section giving the reasons (the legal grounds) the site keeps a player's information, and its link in the page's contents"
+	},
+	"privacy.whyAccount": {
+		"defaultMessage": "Performance of a contract: your account, your characters and groups, the universes you build, and the emails about your account, which we need to give you the account, the game and the universe editor you asked for.",
+		"description": "In the privacy policy's list of legal bases for keeping a player's information: performance of a contract, for what is needed to give them the account, game and editor they asked for. Use the GDPR's own term for this legal basis in the target language"
+	},
+	"privacy.whyIntro": {
+		"defaultMessage": "Privacy laws such as the GDPR ask us to name the legal basis for each use of your information:",
+		"description": "In the privacy policy, before the list of legal bases for keeping a player's information; the GDPR is the European Union's and the United Kingdom's data protection law, named by its usual abbreviation in each language"
+	},
+	"privacy.whyProfile": {
+		"defaultMessage": "Consent: your profile's optional fields, which you chose to share. You can withdraw your consent by removing them whenever you like.",
+		"description": "In the privacy policy's list of legal bases for keeping a player's information: consent, for the optional profile fields the player chose to fill in, which they can withdraw by removing them. Use the GDPR's own term for this legal basis in the target language"
+	},
+	"privacy.whySecurity": {
+		"defaultMessage": "Legitimate interests: the security records and the check of new passwords against leaked ones, which keep your account and the site safe and stop cheating and abuse.",
+		"description": "In the privacy policy's list of legal bases for keeping a player's information: legitimate interests, for the security records and the password check that keep accounts safe and stop abuse. Use the GDPR's own term for this legal basis in the target language"
+	},
+	"profile.aboutYou": {
+		"defaultMessage": "About you",
+		"description": "Heading of the part of the player's own profile page with what other players see about them"
+	},
+	"profile.account": {
+		"defaultMessage": "Logging in",
+		"description": "Heading of the part of the player's own profile page with how they log in: email address, password and linked Google or Discord logins"
+	},
+	"profile.accountDeleted": {
+		"defaultMessage": "Your account was deleted. Thanks for playing.",
+		"description": "Shown on the whole of the profile page once the player has deleted their account, above a link to Home"
+	},
+	"profile.accountDeletedTitle": {
+		"defaultMessage": "Account deleted",
+		"description": "The browser tab's title once the player has deleted their account, before the game engine's name"
+	},
+	"profile.browserLanguage": {
+		"defaultMessage": "Your browser's language",
+		"description": "The first choice of language on the player's own profile page, which leaves the pages in whatever language the browser asks for"
+	},
+	"profile.browsersForgotten": {
+		"defaultMessage": "Every browser will ask for the authenticator code at its next login.",
+		"description": "Shown once the player has stopped trusting the browsers that skipped the authenticator code at login"
+	},
+	"profile.changeEmail": {
+		"defaultMessage": "Change email",
+		"description": "Button on the player's own profile page that opens the dialog for changing their email address"
+	},
+	"profile.changeEmailCodeSent": {
+		"defaultMessage": "If {email} isn't another account's address, we've emailed it a code. Enter the code from the email. It works once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"description": "In the dialog that changes the player's email address, once a code was sent to the new address; {email} is that address. The page can't say whether it belongs to another account, so it can't say a code was sent"
+	},
+	"profile.changeEmailConfirmSent": {
+		"defaultMessage": "We've emailed a code to {email}. Enter it, and the new address, and we'll send that a code too. It works once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"description": "In the dialog that changes the email address of an account without a password, once a code was sent to its current address; {email} is that address"
+	},
+	"profile.changeEmailFailed": {
+		"defaultMessage": "Could not change your email address.",
+		"description": "Shown in the dialog that changes the player's email address when sending the code or changing the address failed"
+	},
+	"profile.changeEmailIntro": {
+		"defaultMessage": "Your email address is {email}. Enter the new one, and we'll send it a code to check it's yours. Every other browser logged in to your account is logged out when the address changes.",
+		"description": "In the dialog that changes the player's email address; {email} is the address the account has now"
+	},
+	"profile.changeEmailIntroConfirm": {
+		"defaultMessage": "Your email address is {email}. To check it's you, we'll email it a code first. Every other browser logged in to your account is logged out when the address changes.",
+		"description": "In the dialog that changes the player's email address, for an account without a password, before a code is sent to its current address; {email} is that address"
+	},
+	"profile.changeEmailIntroNone": {
+		"defaultMessage": "Enter an email address, and we'll send it a code to check it's yours.",
+		"description": "In the dialog that changes the player's email address, when the account has none yet"
+	},
+	"profile.changeEmailSubmit": {
+		"defaultMessage": "Change email",
+		"description": "Button in the dialog that changes the player's email address: checks the emailed code and makes the new address the account's"
+	},
+	"profile.changeEmailTitle": {
+		"defaultMessage": "Change your email address",
+		"description": "Title of the dialog that changes the player's email address"
+	},
+	"profile.changePassword": {
+		"defaultMessage": "Change password",
+		"description": "Button on the player's own profile page that opens the dialog for changing their password"
+	},
+	"profile.changePasswordFailed": {
+		"defaultMessage": "Could not change your password.",
+		"description": "Shown in the dialog that changes the player's password when it couldn't be changed"
+	},
+	"profile.changePasswordIntro": {
+		"defaultMessage": "Every other browser logged in to your account is logged out when the password changes.",
+		"description": "In the dialog that changes the player's password"
+	},
+	"profile.changePasswordTitle": {
+		"defaultMessage": "Change your password",
+		"description": "Title of the dialog that changes the player's password"
+	},
+	"profile.characterVisibilityFailed": {
+		"defaultMessage": "Could not change whether your profile shows {name}.",
+		"description": "Shown on the player's own profile page when showing or hiding one of their characters failed; {name} is the character's name"
+	},
+	"profile.characterVisible": {
+		"defaultMessage": "Show on my profile",
+		"description": "Checkbox beside each of the player's characters on their own profile page, shown when Show my characters is unchecked: whether other players see this character"
+	},
+	"profile.characters": {
+		"defaultMessage": "Your characters",
+		"description": "Heading of the list of the player's characters in every universe, on their own profile page"
+	},
+	"profile.charactersFailed": {
+		"defaultMessage": "Could not list your characters.",
+		"description": "Shown on the player's own profile page when their characters couldn't be loaded again"
+	},
+	"profile.copyKey": {
+		"defaultMessage": "Copy key",
+		"description": "Button in the dialog that sets up two-factor authentication: copies the secret key, for typing into an authenticator app"
+	},
+	"profile.copyRecoveryCodes": {
+		"defaultMessage": "Copy",
+		"description": "Button in the dialog that shows the player's new recovery codes: copies them all"
+	},
+	"profile.currentEmailCode": {
+		"defaultMessage": "Code sent to your current address",
+		"description": "Label of the field for the code emailed to the account's current address, in the dialog that changes the email address of an account without a password"
+	},
+	"profile.currentPassword": {
+		"defaultMessage": "Current password",
+		"description": "Label of the field for the player's current password, in the dialog that changes it"
+	},
+	"profile.deleteAccount": {
+		"defaultMessage": "Delete account",
+		"description": "Button on the player's own profile page that opens the dialog deleting their account"
+	},
+	"profile.deleteAccountConfirm": {
+		"defaultMessage": "Delete my account",
+		"description": "Button in the dialog that deletes the player's account: checks what was typed and deletes the account for good"
+	},
+	"profile.deleteAccountIntro": {
+		"defaultMessage": "Your profile and characters are deleted, and can't be brought back. Groups whose anchor being is one of your characters are disbanded. Download your data first to keep a copy.",
+		"description": "In the dialog that deletes the player's account, before what it asks"
+	},
+	"profile.deleteAccountTitle": {
+		"defaultMessage": "Delete your account",
+		"description": "Title of the dialog that deletes the player's account"
+	},
+	"profile.deleteCodeFailed": {
+		"defaultMessage": "Could not email you a code.",
+		"description": "Shown in the dialog that deletes an account without a password when the code couldn't be emailed to the account's address"
+	},
+	"profile.deleteCodeIntro": {
+		"defaultMessage": "To check it's you, we'll email a code to {email}.",
+		"description": "In the dialog that deletes an account without a password, above the button that emails a code to the account's address; {email} is that address"
+	},
+	"profile.deleteCodeSent": {
+		"defaultMessage": "We've emailed a code to {email}. Enter it to delete your account. It works once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"description": "In the dialog that deletes an account without a password, once a code was sent to the account's address; {email} is that address"
+	},
+	"profile.deleteFailed": {
+		"defaultMessage": "Could not delete your account.",
+		"description": "Shown in the dialog that deletes the player's account when it couldn't be deleted"
+	},
+	"profile.deleteLoadFailed": {
+		"defaultMessage": "Could not check what deleting your account needs. Close this and try again.",
+		"description": "Shown in the dialog that deletes the player's account when the universes they alone create couldn't be loaded"
+	},
+	"profile.deleteTypeUsername": {
+		"defaultMessage": "Type your username to confirm",
+		"description": "Label of the field in the dialog deleting an account without a password, where the player types their username to confirm"
+	},
+	"profile.deleteUniverseChoose": {
+		"defaultMessage": "Choose...",
+		"description": "The first choice for a universe in the dialog that deletes the player's account, before they choose what becomes of it"
+	},
+	"profile.deleteUniverseDelete": {
+		"defaultMessage": "Delete it",
+		"description": "A choice for a universe in the dialog that deletes the player's account: the universe is deleted, with its world and every character in it"
+	},
+	"profile.deleteUniverseHandTo": {
+		"defaultMessage": "Make {name} (@{username}, {role}) its creator",
+		"description": "A choice for a universe in the dialog that deletes the player's account: another of its editors becomes its creator; {name} and {username} are theirs, and {role} their role in it now, such as Builder"
+	},
+	"profile.deleteUniverseUnchosen": {
+		"defaultMessage": "Choose what becomes of {universe}.",
+		"description": "Shown under a universe's choice in the dialog that deletes the player's account when nothing was chosen for it; {universe} is its name"
+	},
+	"profile.deleteUniverses": {
+		"defaultMessage": "Universes only you create",
+		"description": "In the dialog that deletes the player's account: heading of the universes the player is the only creator of"
+	},
+	"profile.deleteUniversesHint": {
+		"defaultMessage": "Choose who creates each one from now on, or delete it, with its world and everyone's characters in it.",
+		"description": "In the dialog that deletes the player's account, under the heading of the universes only they create: each needs a choice"
+	},
+	"profile.displayName": {
+		"defaultMessage": "Name",
+		"description": "Label of the field for the name other players see, on the player's own profile page"
+	},
+	"profile.displayNameHint": {
+		"defaultMessage": "The name other players see. It doesn't have to be your real name, or unique.",
+		"description": "Under the name field on the player's own profile page"
+	},
+	"profile.downloadData": {
+		"defaultMessage": "Download your data",
+		"description": "Button on the player's own profile page that saves everything the site keeps about them as a JSON file"
+	},
+	"profile.downloadFailed": {
+		"defaultMessage": "Could not download your data.",
+		"description": "Shown on the player's own profile page when downloading everything the site keeps about them failed"
+	},
+	"profile.downloadRecoveryCodes": {
+		"defaultMessage": "Download",
+		"description": "Button in the dialog that shows the player's new recovery codes: saves them as a text file"
+	},
+	"profile.email": {
+		"defaultMessage": "Email address",
+		"description": "Label of the player's email address, on their own profile page"
+	},
+	"profile.emailChanged": {
+		"defaultMessage": "Email address changed. We've told both addresses.",
+		"description": "Shown once the player has changed their email address from their profile"
+	},
+	"profile.forgetBrowsers": {
+		"defaultMessage": "Stop trusting them",
+		"description": "Button on the player's own profile page: every browser that skipped the authenticator code at login asks for it again"
+	},
+	"profile.forgetBrowsersFailed": {
+		"defaultMessage": "Could not stop trusting your browsers.",
+		"description": "Shown on the player's own profile page when stopping trusting the browsers that skip the authenticator code failed"
+	},
+	"profile.hasPassword": {
+		"defaultMessage": "Set",
+		"description": "Shown on the player's own profile page in place of their password, which is never shown, when the account has one"
+	},
+	"profile.keyCopied": {
+		"defaultMessage": "Key copied.",
+		"description": "Shown in the dialog that sets up two-factor authentication once Copy key has copied the secret key"
+	},
+	"profile.keyCopyFailed": {
+		"defaultMessage": "Your browser didn't allow copying. Select the key and copy it yourself.",
+		"description": "Shown in the dialog that sets up two-factor authentication when the browser refused to copy the secret key"
+	},
+	"profile.language": {
+		"defaultMessage": "Language",
+		"description": "Label of the choice of the language the site's pages and emails are in, on the player's own profile page"
+	},
+	"profile.languageHint": {
+		"defaultMessage": "The pages and the emails we send you are in this language, on any browser you log in from.",
+		"description": "Under the language choice on the player's own profile page"
+	},
+	"profile.languagesHint": {
+		"defaultMessage": "Used to match you with other players who speak your language.",
+		"description": "Under the field for choosing the languages the player knows, on their own profile page"
+	},
+	"profile.languagesSearch": {
+		"defaultMessage": "Search languages",
+		"description": "Shown in the empty search field for choosing the languages the player knows, on their own profile page"
+	},
+	"profile.languagesSpoken": {
+		"defaultMessage": "Languages you know",
+		"description": "Label of the optional field for choosing the languages the player knows, on their own profile page"
+	},
+	"profile.languagesTooMany": {
+		"defaultMessage": "You can choose up to {max, plural, one {# language} other {# languages}}.",
+		"description": "Shown under the field for choosing the languages the player knows, on their own profile page, when they try to choose more than {max}, a number"
+	},
+	"profile.linkCodeSent": {
+		"defaultMessage": "We've emailed a code to {email}. Enter it to go on. It works once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"description": "In the dialog on the player's own profile that links a Google or Discord login, once a code was sent to the account's address; {email} is that address"
+	},
+	"profile.linkContinue": {
+		"defaultMessage": "Continue",
+		"description": "Button in the dialog that links a Google or Discord login from the player's own profile: checks the password, or the emailed code, and the authenticator code, then goes to Google or Discord to choose the account to link"
+	},
+	"profile.linkDiscord": {
+		"defaultMessage": "Link Discord",
+		"description": "Button on the player's own profile page that goes to Discord to link a Discord login to their account, so it can log in with it"
+	},
+	"profile.linkFailed": {
+		"defaultMessage": "Could not link the login.",
+		"description": "Shown on the player's own profile page, or in its dialog that links a Google or Discord login, when checking it's the player or going to Google or Discord failed"
+	},
+	"profile.linkGoogle": {
+		"defaultMessage": "Link Google",
+		"description": "Button on the player's own profile page that goes to Google to link a Google login to their account, so it can log in with it"
+	},
+	"profile.linkIntroCode": {
+		"defaultMessage": "To check it's you, we'll email a code to {email}. Then you'll go to {provider} to choose the account to link.",
+		"description": "In the dialog on the player's own profile that links a Google or Discord login, for an account without a password; {email} is the account's address, and {provider} is Google or Discord"
+	},
+	"profile.linkIntroPassword": {
+		"defaultMessage": "To check it's you, enter your password. Then you'll go to {provider} to choose the account to link.",
+		"description": "In the dialog on the player's own profile that links a Google or Discord login, for an account with a password; {provider} is Google or Discord"
+	},
+	"profile.linkTitle": {
+		"defaultMessage": "Link a {provider} login",
+		"description": "Title of the dialog on the player's own profile that links a Google or Discord login to their account; {provider} is Google or Discord"
+	},
+	"profile.loadFailed": {
+		"defaultMessage": "Could not load the profile. Reload the page to try again.",
+		"description": "Shown on the whole of a profile page when the profile couldn't be loaded, such as when the server can't be reached"
+	},
+	"profile.location": {
+		"defaultMessage": "Location",
+		"description": "Label of the optional field for where the player is, written however they like, on their own profile page"
+	},
+	"profile.makeRecoveryCodes": {
+		"defaultMessage": "Make new codes",
+		"description": "Button in the dialog that makes new recovery codes: checks the password and code, and replaces the old codes with new ones"
+	},
+	"profile.newEmail": {
+		"defaultMessage": "New email address",
+		"description": "Label of the field for the new email address, in the dialog that changes it"
+	},
+	"profile.newEmailMissing": {
+		"defaultMessage": "Enter the new email address.",
+		"description": "Shown under the new email address field, in the dialog that changes it, when it is empty"
+	},
+	"profile.newPassword": {
+		"defaultMessage": "New password",
+		"description": "Label of the field for the player's new password, in the dialog that changes it"
+	},
+	"profile.newRecoveryCodes": {
+		"defaultMessage": "New recovery codes",
+		"description": "Button on the player's own profile page that opens the dialog making new recovery codes for two-factor authentication, in place of the old ones"
+	},
+	"profile.noCharacters": {
+		"defaultMessage": "You haven't made a character yet.",
+		"description": "Shown on the player's own profile page instead of their characters, when they haven't made any"
+	},
+	"profile.noEmail": {
+		"defaultMessage": "None",
+		"description": "Shown on the player's own profile page in place of their email address, or of their linked logins, when they have none"
+	},
+	"profile.noPassword": {
+		"defaultMessage": "None: you log in with Google or Discord. To add a password, log out and use \"Forgot your password?\" on the login page.",
+		"description": "Shown on the player's own profile page in place of their password when the account has none, since it logs in only with Google or Discord"
+	},
+	"profile.noTimeZone": {
+		"defaultMessage": "Not shown",
+		"description": "The first choice of time zone on the player's own profile page, which shows no time zone to other players"
+	},
+	"profile.notFound": {
+		"defaultMessage": "No player has that username. They may have changed it.",
+		"description": "Shown on the whole of a player's profile page when no player has the username its address names"
+	},
+	"profile.password": {
+		"defaultMessage": "Password",
+		"description": "Label of the player's password, shown hidden, on their own profile page"
+	},
+	"profile.passwordChanged": {
+		"defaultMessage": "Password changed. Every other browser logged in to your account was logged out.",
+		"description": "Shown once the player has changed their password from their profile"
+	},
+	"profile.pronouns": {
+		"defaultMessage": "Pronouns",
+		"description": "Label of the optional field for the player's pronouns, such as she/her or they/them, on their own profile page"
+	},
+	"profile.pronounsPlaceholder": {
+		"defaultMessage": "e.g. she/her, they/them, any",
+		"description": "Shown in the empty pronouns field on the player's own profile page, as examples of what to write. Give the forms people commonly write in your language, rather than translating these ones"
+	},
+	"profile.providerLinked": {
+		"defaultMessage": "You can now log in with {provider}.",
+		"description": "Shown once the player has linked a Google or Discord login to their account from their profile; {provider} is Google or Discord"
+	},
+	"profile.providers": {
+		"defaultMessage": "Linked logins",
+		"description": "Label of the Google and Discord logins linked to the player's account, on their own profile page"
+	},
+	"profile.recoveryCodesCopied": {
+		"defaultMessage": "Codes copied.",
+		"description": "Shown in the dialog with the player's new recovery codes once Copy has copied them to the clipboard"
+	},
+	"profile.recoveryCodesCopyFailed": {
+		"defaultMessage": "Your browser didn't allow copying. Select the codes and copy them yourself.",
+		"description": "Shown in the dialog with the player's new recovery codes when the browser refused to copy them"
+	},
+	"profile.recoveryCodesFailed": {
+		"defaultMessage": "Could not make new recovery codes.",
+		"description": "Shown in the dialog that makes new recovery codes when they couldn't be made"
+	},
+	"profile.recoveryCodesFileHeading": {
+		"defaultMessage": "Recovery codes for {username} on {siteName}. Each works once.",
+		"description": "First line of the text copied or saved from the dialog showing the player's new recovery codes, above the codes; {username} is the player's username and {siteName} the site's name"
+	},
+	"profile.recoveryCodesIntro": {
+		"defaultMessage": "If you lose your phone, each of these codes logs you in once in place of a code from the app. Keep them somewhere safe, such as your password manager. This is the only time they're shown.",
+		"description": "In the dialog that shows the player's new recovery codes for two-factor authentication"
+	},
+	"profile.recoveryCodesNewIntro": {
+		"defaultMessage": "Your old recovery codes stop working once the new ones are made.",
+		"description": "In the dialog that makes new recovery codes for two-factor authentication"
+	},
+	"profile.recoveryCodesNewTitle": {
+		"defaultMessage": "Make new recovery codes",
+		"description": "Title of the dialog that makes new recovery codes for two-factor authentication"
+	},
+	"profile.recoveryCodesSaved": {
+		"defaultMessage": "I've saved them",
+		"description": "Button that closes the dialog showing the player's new recovery codes, once they have saved them"
+	},
+	"profile.recoveryCodesTitle": {
+		"defaultMessage": "Save your recovery codes",
+		"description": "Title of the dialog that shows the player's new recovery codes for two-factor authentication"
+	},
+	"profile.saveFailed": {
+		"defaultMessage": "Could not save your profile.",
+		"description": "Shown on the player's own profile page when the profile couldn't be saved"
+	},
+	"profile.savePassword": {
+		"defaultMessage": "Save password",
+		"description": "Button in the dialog that changes the player's password: saves the new one"
+	},
+	"profile.showCharacters": {
+		"defaultMessage": "Show my characters",
+		"description": "Checkbox on the player's own profile page: whether other players see all of the player's characters on their profile"
+	},
+	"profile.showCharactersHint": {
+		"defaultMessage": "Unchecked, your profile shows only the characters you mark below. Other players in your group can always find your profile from your character.",
+		"description": "Under the Show my characters checkbox on the player's own profile page, explaining what unchecking it does"
+	},
+	"profile.socials": {
+		"defaultMessage": "Social sites",
+		"description": "Heading of the optional fields for the player's usernames on social sites (Discord, Facebook, Instagram and TikTok), on their own profile page"
+	},
+	"profile.socialsHint": {
+		"defaultMessage": "Your username on each site, without a link. Other players see them on your profile.",
+		"description": "Under the heading of the social site fields on the player's own profile page"
+	},
+	"profile.timeZone": {
+		"defaultMessage": "Time zone",
+		"description": "Label of the optional choice of the player's time zone, on their own profile page"
+	},
+	"profile.timeZoneHint": {
+		"defaultMessage": "Used to match you with other players in time zones near yours.",
+		"description": "Under the time zone choice on the player's own profile page"
+	},
+	"profile.timeZoneSearch": {
+		"defaultMessage": "Search by city or time zone",
+		"description": "Shown in the empty time zone field on the player's own profile page, where typing a city or a time zone's name finds it"
+	},
+	"profile.title": {
+		"defaultMessage": "Your profile",
+		"description": "The browser tab's title on the page where the player changes their own profile, and that page's heading"
+	},
+	"profile.trustedBrowserCount": {
+		"defaultMessage": "{count, plural, =0 {None: every login asks for the code} one {# browser skips the code at login} other {# browsers skip the code at login}}",
+		"description": "Shown on the player's own profile page beside Trusted browsers; {count} is how many browsers skip the authenticator code at login"
+	},
+	"profile.trustedBrowsers": {
+		"defaultMessage": "Trusted browsers",
+		"description": "Label of how many browsers skip the authenticator code at login, on the player's own profile page, when the account has two-factor authentication"
+	},
+	"profile.twoFactor": {
+		"defaultMessage": "Two-factor authentication",
+		"description": "Label of whether the player's account has two-factor authentication (a code from an authenticator app asked for at login, after the password), on their own profile page"
+	},
+	"profile.twoFactorAppCode": {
+		"defaultMessage": "Code from the app",
+		"description": "Label of the field for the 6-digit code the authenticator app shows, in the dialog that sets up two-factor authentication"
+	},
+	"profile.twoFactorContinue": {
+		"defaultMessage": "Continue",
+		"description": "Button in the dialog that sets up two-factor authentication: checks the password and shows the QR code"
+	},
+	"profile.twoFactorDisable": {
+		"defaultMessage": "Turn off",
+		"description": "Button in the dialog that turns off two-factor authentication: checks the password and code and turns it off"
+	},
+	"profile.twoFactorDisableFailed": {
+		"defaultMessage": "Could not turn off two-factor authentication.",
+		"description": "Shown in the dialog that turns off two-factor authentication when it couldn't be turned off"
+	},
+	"profile.twoFactorDisableIntro": {
+		"defaultMessage": "Logging in will need only your password again. Your recovery codes stop working, and every trusted browser is forgotten.",
+		"description": "In the dialog that turns off two-factor authentication"
+	},
+	"profile.twoFactorDisableTitle": {
+		"defaultMessage": "Turn off two-factor authentication",
+		"description": "Title of the dialog that turns off two-factor authentication"
+	},
+	"profile.twoFactorDisabled": {
+		"defaultMessage": "Two-factor authentication is off.",
+		"description": "Shown once the player has turned off two-factor authentication from their profile"
+	},
+	"profile.twoFactorEnable": {
+		"defaultMessage": "Turn on",
+		"description": "Button in the dialog that sets up two-factor authentication: checks the code from the authenticator app and turns two-factor authentication on"
+	},
+	"profile.twoFactorEnabled": {
+		"defaultMessage": "Two-factor authentication is on.",
+		"description": "Shown once the player has turned on two-factor authentication from their profile"
+	},
+	"profile.twoFactorManual": {
+		"defaultMessage": "Can't scan it? Add the account in the app by hand, with this key:",
+		"description": "In the dialog that sets up two-factor authentication, above the secret key shown as text, for players who can't scan the QR code"
+	},
+	"profile.twoFactorOff": {
+		"defaultMessage": "Off",
+		"description": "Shown on the player's own profile page beside Two-factor authentication when it is off"
+	},
+	"profile.twoFactorOn": {
+		"defaultMessage": "On, with {count, plural, =0 {no recovery codes left} one {# recovery code left} other {# recovery codes left}}",
+		"description": "Shown on the player's own profile page beside Two-factor authentication when it is on; {count} is how many of their recovery codes haven't been used"
+	},
+	"profile.twoFactorQrLabel": {
+		"defaultMessage": "QR code for your authenticator app. If you can't scan it, use the key below it.",
+		"description": "What screen readers say for the QR code in the dialog that sets up two-factor authentication"
+	},
+	"profile.twoFactorScan": {
+		"defaultMessage": "Scan this QR code with an authenticator app, such as Google Authenticator, Microsoft Authenticator, Aegis or 2FAS. Then enter the 6-digit code the app shows.",
+		"description": "In the dialog that sets up two-factor authentication, above the QR code; the app names are examples of authenticator apps and stay as they are"
+	},
+	"profile.twoFactorSetupFailed": {
+		"defaultMessage": "Could not turn on two-factor authentication.",
+		"description": "Shown in the dialog that sets up two-factor authentication when it couldn't be set up"
+	},
+	"profile.twoFactorSetupIntro": {
+		"defaultMessage": "With two-factor authentication, logging in also asks for a code from an app on your phone, so someone who learns your password still can't get in. Every other browser logged in to your account is logged out when it turns on. First, enter your password.",
+		"description": "First paragraph of the dialog that sets up two-factor authentication, which asks for the player's password first"
+	},
+	"profile.twoFactorSetupTitle": {
+		"defaultMessage": "Turn on two-factor authentication",
+		"description": "Title of the dialog that sets up two-factor authentication"
+	},
+	"profile.twoFactorTurnOff": {
+		"defaultMessage": "Turn off",
+		"description": "Button on the player's own profile page that opens the dialog turning off two-factor authentication"
+	},
+	"profile.twoFactorTurnOn": {
+		"defaultMessage": "Turn on",
+		"description": "Button on the player's own profile page that opens the dialog setting up two-factor authentication"
+	},
+	"profile.unavailableTitle": {
+		"defaultMessage": "Profile",
+		"description": "The browser tab's title on a profile page when the profile couldn't be shown, before the game engine's name"
+	},
+	"profile.username": {
+		"defaultMessage": "Username",
+		"description": "Label of the username field on the player's own profile page"
+	},
+	"profile.usernameHint": {
+		"defaultMessage": "How other players find you, and tell you apart from others with the same name. {min} to {max} letters (a to z), digits and underscores.",
+		"description": "Under the username field on the player's own profile page; {min} and {max} are numbers"
+	},
+	"profile.viewOwn": {
+		"defaultMessage": "View your profile",
+		"description": "Link on the player's own profile page to their profile as other players see it"
+	},
+	"profile.yourData": {
+		"defaultMessage": "Your data",
+		"description": "Heading of the part of the player's own profile page where they download their data or delete their account"
+	},
+	"profile.yourDataHint": {
+		"defaultMessage": "Download everything kept about you as a file, or delete your account and everything in it.",
+		"description": "Under the Your data heading on the player's own profile page, above the buttons that download their data and delete their account"
 	},
 	"sf1e.ability.charisma": {
 		"defaultMessage": "Charisma",

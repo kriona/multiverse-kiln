@@ -2,6 +2,7 @@
  * Player accounts: the only module that reads or writes the players table
  */
 import { eq, sql } from 'drizzle-orm';
+import type { ProfileLanguage, SocialSite, SocialUsernames } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { players } from './schema.js';
@@ -16,62 +17,450 @@ export interface PlayerProfile
 	 */
 	id: string;
 
-	/**
-	 * The name as it was first typed, whatever capitals later logins use
-	 */
+	username: string;
 	displayName: string;
 }
 
+/**
+ * A new account
+ */
+export interface NewPlayer
+{
+	username: string;
+	displayName: string;
+
+	/**
+	 * The address a local account logs in with, or null for one that doesn't have one
+	 */
+	email: string | null;
+
+	/**
+	 * A local account's password hash (server/src/auth/passwords.ts), or null for one without a password
+	 */
+	passwordHash: string | null;
+}
+
+/**
+ * What a local account's login needs
+ */
+export interface LocalLogin
+{
+	id: string;
+	passwordHash: string;
+}
+
+/**
+ * What other players can read of a player's profile
+ */
+export interface ProfileDetails
+{
+	id: string;
+	username: string;
+	displayName: string;
+	pronouns: string | null;
+	location: string | null;
+	timeZone: string | null;
+	languages: ProfileLanguage[];
+	socials: SocialUsernames;
+
+	/**
+	 * The language the player chose, or null when the pages follow the browser's settings. Other
+	 * players see it only as the language of their pronouns
+	 */
+	locale: string | null;
+
+	/**
+	 * Whether the profile lists all of the player's characters, or only those marked visible
+	 */
+	showCharacters: boolean;
+}
+
+/**
+ * A player's profile as they see it themselves
+ */
+export interface OwnProfileDetails extends ProfileDetails
+{
+	email: string | null;
+	hasPassword: boolean;
+	createdAt: Date;
+}
+
+/**
+ * What a player can change on their profile
+ */
+export type ProfileChanges = Omit<OwnProfileDetails, 'id' | 'email' | 'hasPassword' | 'createdAt'>;
+
+/**
+ * Thrown when a new account would take a username or email address another account has, ignoring capitals
+ */
+export class AccountTakenError extends Error
+{
+	/**
+	 * @param field Which of the two is taken
+	 */
+	constructor(readonly field: 'username' | 'email')
+	{
+		super(`Another account has that ${field}`);
+		this.name = 'AccountTakenError';
+	}
+}
+
+/**
+ * Postgres's code for a row that breaks a unique index
+ */
+const UNIQUE_VIOLATION = '23505';
+
+/**
+ * Which taken field each unique index on players stands for
+ */
+const UNIQUE_INDEX_FIELDS: Readonly<Record<string, 'username' | 'email'>> = {
+	players_username_lower_unique: 'username',
+	players_email_lower_unique: 'email'
+};
+
 const profileColumns = {
 	id: players.id,
+	username: players.username,
 	displayName: players.displayName
 };
 
 /**
- * Finds the player with a name, ignoring capitals
+ * Which field an error says is taken, when it is a unique violation on players
  *
- * @param name The name, already validated and trimmed
- * @return The player, or undefined when nobody has the name
+ * @param error What a query threw
+ * @return The field, or undefined for any other error
  */
-async function findPlayerByName(name: string): Promise<PlayerProfile | undefined>
+function takenField(error: unknown): 'username' | 'email' | undefined
 {
-	const rows = await db.select(profileColumns).from(players).where(sql`lower(${players.displayName}) = lower(${name})`).limit(1);
+	// Drizzle wraps the driver's error, which it keeps as the cause
+	const cause = ((error instanceof Error) ? (error.cause ?? error) : error);
 
-	return(rows[0]);
+	if ((typeof cause !== 'object') || (cause === null) || !('code' in cause) || (cause.code !== UNIQUE_VIOLATION) || !('constraint' in cause) || (typeof cause.constraint !== 'string'))
+	{
+		return(undefined);
+	}
+
+	return(UNIQUE_INDEX_FIELDS[cause.constraint]);
 }
 
 /**
- * Loads the player with a name, creating them if the name is new. This is the whole of the name-only
- * login, so whoever types a name is that player
+ * Creates an account
  *
- * @param name The name, already validated and trimmed
- * @return The player
+ * @param player The account
+ * @param executor The database, or a transaction
+ * @return The account
+ * @throws AccountTakenError when another account has the username or email address
  */
-export async function loadOrCreatePlayerByName(name: string): Promise<PlayerProfile>
+export async function createPlayer(player: NewPlayer, executor: Executor = db): Promise<PlayerProfile>
 {
-	const existing = await findPlayerByName(name);
-
-	if (existing)
+	try
 	{
-		return(existing);
+		const [created] = await executor
+			.insert(players)
+			.values(player)
+			.returning(profileColumns);
+
+		return(created);
+	}
+	catch (error)
+	{
+		const field = takenField(error);
+
+		if (field !== undefined)
+		{
+			throw new AccountTakenError(field);
+		}
+
+		throw error;
+	}
+}
+
+/**
+ * Finds an account by ID
+ *
+ * @param playerId The account's ID
+ * @param executor The database, or a transaction
+ * @return The account, or undefined when it doesn't exist
+ */
+export async function findPlayer(playerId: string, executor: Executor = db): Promise<PlayerProfile | undefined>
+{
+	const [row] = await executor
+		.select(profileColumns)
+		.from(players)
+		.where(eq(players.id, playerId))
+		.limit(1);
+
+	return(row);
+}
+
+/**
+ * Finds an account by username, ignoring capitals
+ *
+ * @param username The username
+ * @param executor The database, or a transaction
+ * @return The account, or undefined when no account has it
+ */
+export async function findPlayerByUsername(username: string, executor: Executor = db): Promise<PlayerProfile | undefined>
+{
+	const [row] = await executor
+		.select(profileColumns)
+		.from(players)
+		.where(sql`lower(${players.username}) = lower(${username})`)
+		.limit(1);
+
+	return(row);
+}
+
+/**
+ * Finds the account with an email address, ignoring capitals
+ *
+ * @param email The address
+ * @param executor The database, or a transaction
+ * @return The account's ID, or undefined when no account has it
+ */
+export async function findPlayerIdByEmail(email: string, executor: Executor = db): Promise<string | undefined>
+{
+	const [row] = await executor
+		.select({
+			id: players.id
+		})
+		.from(players)
+		.where(sql`lower(${players.email}) = lower(${email.trim()})`)
+		.limit(1);
+
+	return(row?.id);
+}
+
+/**
+ * Finds the local account that logs in with an email address, ignoring capitals
+ *
+ * @param email The address
+ * @param executor The database, or a transaction
+ * @return The account's ID and password hash, or undefined when no account with a password has it
+ */
+export async function findLocalLogin(email: string, executor: Executor = db): Promise<LocalLogin | undefined>
+{
+	const [row] = await executor
+		.select({
+			id: players.id,
+			passwordHash: players.passwordHash
+		})
+		.from(players)
+		.where(sql`lower(${players.email}) = lower(${email.trim()})`)
+		.limit(1);
+
+	if (!row || (row.passwordHash === null))
+	{
+		return(undefined);
 	}
 
-	const created = await db.insert(players).values({ displayName: name }).onConflictDoNothing().returning(profileColumns);
+	return({
+		id: row.id,
+		passwordHash: row.passwordHash
+	});
+}
 
-	if (created[0])
+/**
+ * An account's email address
+ *
+ * @param playerId The account's ID
+ * @param executor The database, or a transaction
+ * @return The address, or null when the account has none or doesn't exist
+ */
+export async function findPlayerEmail(playerId: string, executor: Executor = db): Promise<string | null>
+{
+	const [row] = await executor
+		.select({
+			email: players.email
+		})
+		.from(players)
+		.where(eq(players.id, playerId))
+		.limit(1);
+
+	return((row?.email ?? null));
+}
+
+/**
+ * An account's password hash
+ *
+ * @param playerId The account's ID
+ * @param executor The database, or a transaction
+ * @return The hash, or null when the account has no password or doesn't exist
+ */
+export async function findPasswordHash(playerId: string, executor: Executor = db): Promise<string | null>
+{
+	const [row] = await executor
+		.select({
+			passwordHash: players.passwordHash
+		})
+		.from(players)
+		.where(eq(players.id, playerId))
+		.limit(1);
+
+	return((row?.passwordHash ?? null));
+}
+
+/**
+ * The columns of a profile other players can read
+ */
+const publicProfileColumns = {
+	id: players.id,
+	username: players.username,
+	displayName: players.displayName,
+	pronouns: players.pronouns,
+	location: players.location,
+	timeZone: players.timeZone,
+	languages: players.languages,
+	discord: players.discordUsername,
+	facebook: players.facebookUsername,
+	instagram: players.instagramUsername,
+	tiktok: players.tiktokUsername,
+	locale: players.locale,
+	showCharacters: players.showCharacters
+};
+
+/**
+ * A profile's row with its social usernames gathered together
+ *
+ * @param row The row, with a column for each social site
+ * @return The profile
+ */
+function toProfile<T extends Record<SocialSite, string | null>>(row: T): Omit<T, SocialSite> & { socials: SocialUsernames }
+{
+	const { discord, facebook, instagram, tiktok, ...rest } = row;
+
+	return({
+		...rest,
+		socials: { discord, facebook, instagram, tiktok }
+	});
+}
+
+/**
+ * Finds a profile by its username, ignoring capitals
+ *
+ * @param username The username
+ * @param executor The database, or a transaction
+ * @return What other players can read of it, or undefined when no account has the username
+ */
+export async function findProfileByUsername(username: string, executor: Executor = db): Promise<ProfileDetails | undefined>
+{
+	const [row] = await executor
+		.select(publicProfileColumns)
+		.from(players)
+		.where(sql`lower(${players.username}) = lower(${username})`)
+		.limit(1);
+
+	return((row ? toProfile(row) : undefined));
+}
+
+/**
+ * A player's own profile, with what only they see of their account
+ *
+ * @param playerId The account's ID
+ * @param executor The database, or a transaction
+ * @return The profile, or undefined when the account doesn't exist
+ */
+export async function findOwnProfile(playerId: string, executor: Executor = db): Promise<OwnProfileDetails | undefined>
+{
+	const [row] = await executor
+		.select({
+			...publicProfileColumns,
+			email: players.email,
+			hasPassword: sql<boolean>`${players.passwordHash} IS NOT NULL`,
+			createdAt: players.createdAt
+		})
+		.from(players)
+		.where(eq(players.id, playerId))
+		.limit(1);
+
+	return((row ? toProfile(row) : undefined));
+}
+
+/**
+ * Saves the changes a player made to their profile
+ *
+ * @param playerId The account's ID
+ * @param changes The profile's new values
+ * @param executor The database, or a transaction
+ * @throws AccountTakenError when another account has the username
+ */
+export async function saveProfile(playerId: string, changes: ProfileChanges, executor: Executor = db): Promise<void>
+{
+	const { socials, ...rest } = changes;
+
+	try
 	{
-		return(created[0]);
+		await executor
+			.update(players)
+			.set({
+				...rest,
+				discordUsername: socials.discord,
+				facebookUsername: socials.facebook,
+				instagramUsername: socials.instagram,
+				tiktokUsername: socials.tiktok
+			})
+			.where(eq(players.id, playerId));
 	}
-
-	// Another login created the same name between the two queries
-	const raced = await findPlayerByName(name);
-
-	if (!raced)
+	catch (error)
 	{
-		throw new Error('A new player could not be created, but no player has the name either');
-	}
+		const field = takenField(error);
 
-	return(raced);
+		if (field !== undefined)
+		{
+			throw new AccountTakenError(field);
+		}
+
+		throw error;
+	}
+}
+
+/**
+ * Stores an account's new password hash
+ *
+ * @param playerId The account's ID
+ * @param passwordHash The hash
+ * @param executor The database, or a transaction
+ */
+export async function savePasswordHash(playerId: string, passwordHash: string, executor: Executor = db): Promise<void>
+{
+	await executor
+		.update(players)
+		.set({
+			passwordHash
+		})
+		.where(eq(players.id, playerId));
+}
+
+/**
+ * Changes an account's email address
+ *
+ * @param playerId The account's ID
+ * @param email The new address
+ * @param executor The database, or a transaction
+ * @throws AccountTakenError when another account has the address
+ */
+export async function saveEmail(playerId: string, email: string, executor: Executor = db): Promise<void>
+{
+	try
+	{
+		await executor
+			.update(players)
+			.set({
+				email
+			})
+			.where(eq(players.id, playerId));
+	}
+	catch (error)
+	{
+		const field = takenField(error);
+
+		if (field !== undefined)
+		{
+			throw new AccountTakenError(field);
+		}
+
+		throw error;
+	}
 }
 
 /**
@@ -93,4 +482,22 @@ export async function lockPlayer(playerId: string, executor: Executor): Promise<
 		.for('update');
 
 	return(rows.length > 0);
+}
+
+/**
+ * Deletes a player's account, and with it their profile, characters, sessions, logins, 2FA, auth events
+ * and roles in universes. Groups whose anchor being was one of their characters go with them
+ *
+ * @param playerId The player's ID
+ * @param executor The database, or a transaction
+ * @return Whether there was an account to delete
+ */
+export async function deletePlayer(playerId: string, executor: Executor = db): Promise<boolean>
+{
+	const deleted = await executor
+		.delete(players)
+		.where(eq(players.id, playerId))
+		.returning({ id: players.id });
+
+	return(deleted.length > 0);
 }

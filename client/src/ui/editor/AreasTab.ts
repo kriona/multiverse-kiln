@@ -1123,7 +1123,7 @@ export class AreasTab implements SavableTab
 
 	/**
 	 * Deletes the area open when the tab is saved, after asking, and goes back to the list; or, for an
-	 * area that will be deleted, keeps it after all. A new area is deleted straight away, since it was
+	 * area that will be deleted, keeps it after all. A new area is deleted immediately, since it was
 	 * never saved
 	 */
 	private toggleDelete(): void
@@ -1147,7 +1147,7 @@ export class AreasTab implements SavableTab
 			? t({
 				id: 'editor.area.confirmDeleteNew',
 				defaultMessage: 'Delete {area}? It hasn\'t been saved, so its settings, map and links will be lost.',
-				description: 'Asks before deleting an area added since the Areas tab was last saved, which goes straight away; {area} is its name'
+				description: 'Asks before deleting an area added since the Areas tab was last saved, which goes immediately; {area} is its name'
 			}, {
 				area: area.name
 			})

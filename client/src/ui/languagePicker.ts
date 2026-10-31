@@ -46,7 +46,7 @@ export function startLanguagePicker(): void
  * @param locale The language tag
  * @return The name
  */
-function languageName(locale: string): string
+export function languageName(locale: string): string
 {
 	return(LANGUAGE_NAMES[locale] ?? new Intl.DisplayNames([locale], { type: 'language' }).of(locale) ?? locale);
 }

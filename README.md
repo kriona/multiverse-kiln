@@ -98,12 +98,13 @@ Then put the same passwords into the connection strings in `server/.env`: `KILN_
 | `POSTGRES_PORT` | `.env` | Host port for Postgres, bound to `127.0.0.1` only (default `5432`). |
 | `STORAGE_ACCESS_KEY_ID`, `STORAGE_SECRET_ACCESS_KEY` | `.env` | Keys for the local object storage's S3 API, which refuses requests without them. The same pair goes in `server/.env`. |
 | `STORAGE_PORT` | `.env` | Host port for the local storage's S3 API, bound to `127.0.0.1` only (default `8333`). |
+| `MAILPIT_SMTP_PORT`, `MAILPIT_WEB_PORT` | `.env` | Host ports for Mailpit, which catches the server's emails, bound to `127.0.0.1` only: SMTP (default `1025`) and its web inbox (default `8025`). |
 | `DEV_HOST` | `client/.env` | Hostname for the Vite dev server: `www.multiversekiln-dev.com` (must be in your hosts file; see step 3). |
 | `DEV_PORT` | `client/.env` | Port for the Vite dev server (default `5173`). |
 | `VITE_SERVER_URL` | `client/.env` | WebSocket URL of the Colyseus server: `wss://www.multiversekiln-dev.com:2567`. Use the same hostname as `DEV_HOST` so it matches the certificate. |
 | `VITE_SOURCE_URL` | `client/.env` | Where players can get the game engine's source code, linked from the page footer (required). The AGPL requires offering the source to players of a modified version, so a fork sets its own repository. |
 | `PORT` | `server/.env` | Port the Colyseus server listens on (default `2567`). |
-| `ENABLE_DEV_TOOLS` | `server/.env` | Set to `true` to enable `/monitor` and the playground. Off when unset, and always off when `NODE_ENV=production`. Never set it in production. |
+| `ENABLE_DEV_TOOLS` | `server/.env` | Set to `true` to enable `/monitor`, the playground, and the bot login the load test uses (`POST /dev/bot-login`, which makes an account without email and logs it in). Off when unset, and always off when `NODE_ENV=production`. Never set it in production. |
 | `SSL_KEY_FILE`, `SSL_CERT_FILE` | `server/.env` | Certificate for HTTPS/WSS (required). The example values point at `certs/` (see step 5). Leave unset on Colyseus Cloud, which handles TLS itself. |
 | `ALLOWED_ORIGINS` | `server/.env` | Comma-separated origins allowed to use the server from a browser (CORS and WebSocket connections). Required. Locally: the client and the server itself (for the playground). |
 | `DATABASE_URL` | `server/.env` | Postgres connection string for the game server, as `kiln_app`. In production: Neon's pooled connection string. |
@@ -112,6 +113,11 @@ Then put the same passwords into the connection strings in `server/.env`: `KILN_
 | `LOADTEST_ENDPOINT` | `server/.env` | Server URL that `npm run loadtest -w server` connects to: `wss://www.multiversekiln-dev.com:2567`. |
 | `STORAGE_ENDPOINT`, `STORAGE_REGION`, `STORAGE_BUCKET`, `STORAGE_ACCESS_KEY_ID`, `STORAGE_SECRET_ACCESS_KEY`, `STORAGE_FORCE_PATH_STYLE` | `server/.env` | Object storage for uploads such as tilesets: any S3-compatible service. Locally the storage container (`http://127.0.0.1:8333`, path-style, the keys from `.env`); in production Cloudflare R2, AWS S3, Backblaze B2 or similar, with a bucket made in its own tools. |
 | `TEST_STORAGE_BUCKET` | `server/.env` | The bucket `npm test` uploads to, on the same storage (`kiln-test`). The tests create it if it doesn't exist. |
+| `AUTH_HMAC_KEY` | `server/.env` | Secret key for the keyed hashes stored in place of email addresses waiting on a code, the codes themselves, recovery codes and networks: at least 32 random bytes in base64 (`node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`). Use a different key in each environment. |
+| `TOTP_ENCRYPTION_KEY` | `server/.env` | Secret key that encrypts the authenticator app secrets of accounts with two-factor authentication: exactly 32 random bytes in base64, made the same way. Keep it outside the database and its backups, and keep it as long as the database: changing it leaves every stored secret unreadable. |
+| `SMTP_URL`, `EMAIL_FROM` | `server/.env` | Where the server sends email, and the address it comes from. Locally Mailpit (`smtp://127.0.0.1:1025`); in production a real SMTP service, over TLS (`smtps://user:password@host:465`). |
+| `SITE_URL` | `server/.env` | The client's address, `https://` with nothing after the host and port: `https://www.multiversekiln-dev.com:5173` locally. Required: emails link to its pages, and Google and Discord send players back to `<SITE_URL>/login`. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` | `server/.env` | Logging in with Google and Discord, each offered once both its values are set. Make a Google OAuth client (web application) at https://console.cloud.google.com/apis/credentials and a Discord application at https://discord.com/developers/applications, each with `<SITE_URL>/login` as a redirect URI. Leave them empty to offer only email logins. |
 | `DEV_SSL_KEY_FILE`, `DEV_SSL_CERT_FILE` | `client/.env` | Local certificate for the HTTPS dev server (required). The example values point at `certs/` (see step 5). |
 
 `.env` files are git-ignored. Never commit them; when you add a variable, add it to the matching `.env.example` too.
@@ -150,7 +156,7 @@ Neither the Vite dev server nor the Colyseus server will start without the certi
 With Docker Desktop running, from the repository root:
 
 ```bash
-docker compose up -d                 # start Postgres and the object storage in the background
+docker compose up -d                 # start Postgres, the object storage and Mailpit in the background
 npm run storage:setup -w server      # create the storage bucket, if it doesn't exist yet
 npm run db:migrate -w server         # create or update the tables
 npm run db:seed -w server            # add the sample universe
@@ -158,9 +164,11 @@ npm run db:seed -w server            # add the sample universe
 
 The object storage is [SeaweedFS](https://github.com/seaweedfs/seaweedfs), which speaks the S3 API, and keeps uploaded files such as tilesets in a Docker volume. `start.bat` starts it and creates the bucket too. It only answers on `127.0.0.1:8333`, over plain HTTP like Postgres, and only to requests signed with the keys in `.env`.
 
+[Mailpit](https://mailpit.axllent.org/) catches every email the server sends, such as login codes, so none reaches a real inbox. Read them in its web inbox at http://127.0.0.1:8025.
+
 The seed script (`server/scripts/seed.ts`) adds Kilnhaven, a sample universe drawn in `server/scripts/sampleUniverse.ts`: a town square lobby with a cottage and cellar to walk into, and a crossroads for groups to start in. Running it again replaces Kilnhaven and leaves everything else alone, so run it after changing the sample maps. It refuses to run with `NODE_ENV=production`.
 
-Nobody can open Kilnhaven in the world editor unless you name its creator: `npm run db:seed -w server -- --creator "Your Name"` makes the player who logs in with that name its creator, creating the player if the name is new. Replacing Kilnhaven also removes its editors, so pass `--creator` every time you seed.
+Nobody can open Kilnhaven in the world editor unless you name its creator: `npm run db:seed -w server -- --creator your_username` makes the account with that username its creator. Register the account first; the script won't create one. Replacing Kilnhaven also removes its editors, so pass `--creator` every time you seed.
 
 Postgres listens on `127.0.0.1:5432` (only reachable from your machine) and keeps its data in a Docker volume, so it survives restarts. It keeps running in the background until you run `docker compose stop`.
 
@@ -243,8 +251,8 @@ All commands run from the repository root.
 | `docker compose up -d` / `docker compose stop` | Start / stop the local Postgres |
 | `npm run db:generate -w server` | Create a migration from changes to `server/src/db/schema.ts` |
 | `npm run db:migrate -w server` | Apply pending migrations (as `MIGRATION_DATABASE_URL`) |
-| `npm run db:seed -w server` | Add or replace the sample universe (as `DATABASE_URL`); add `-- --creator "<name>"` to make that player its creator |
-| `npm run loadtest -w server` | Connect simulated clients to a running server (`LOADTEST_ENDPOINT`) |
+| `npm run db:seed -w server` | Add or replace the sample universe (as `DATABASE_URL`); add `-- --creator <username>` to make that account its creator |
+| `npm run loadtest -w server` | Connect simulated clients to a running server (`LOADTEST_ENDPOINT`), each logging in as a new bot account, which needs `ENABLE_DEV_TOOLS=true` |
 | `npm run <script> -w <package>` | Run one package's script, e.g. `npm run dev -w server` |
 | `npm install <pkg> -w <package>` | Add a dependency to one package, e.g. `npm install drizzle-orm -w server` |
 | `npm install -D <pkg> -w <package>` | Add a dev dependency to one package |

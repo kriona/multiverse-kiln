@@ -314,30 +314,15 @@ export interface AreaPayload
 }
 
 /**
- * Message types clients send to the session room
- */
-export enum SessionMessageType
-{
-	/**
-	 * Log in with a name; every window of the browser is logged in (payload: LoginPayload)
-	 */
-	Login = 'login'
-}
-
-/**
- * Message types the session room sends to clients
+ * Message types the session room sends to clients. Clients send it none: logging in and out are HTTP
+ * routes (shared/src/accounts.ts), since only an HTTP response can set the session cookie
  */
 export enum SessionServerMessageType
 {
 	/**
-	 * Who the window's player is, sent on joining and whenever it changes (payload: AccountPayload)
+	 * Who the window's player is, sent on joining and when the window's session ends (payload: AccountPayload)
 	 */
-	Account = 'account',
-
-	/**
-	 * Something the player asked for didn't happen (payload: NoticePayload)
-	 */
-	Notice = 'notice'
+	Account = 'account'
 }
 
 /**
@@ -396,14 +381,6 @@ export enum LobbyServerMessageType
 export interface LobbyJoinOptions
 {
 	universeId: string;
-}
-
-/**
- * Payload of SessionMessageType.Login
- */
-export interface LoginPayload
-{
-	name: string;
 }
 
 /**
@@ -490,7 +467,7 @@ export interface ChatHistoryPayload
 }
 
 /**
- * Why a request to the session, a lobby or a group's room was turned down
+ * Why a request to a lobby or a group's room was turned down
  */
 export enum NoticeReason
 {
@@ -503,26 +480,11 @@ export enum NoticeReason
 	/**
 	 * The player sent chat messages faster than the lobby allows; the message was dropped
 	 */
-	ChatTooFast = 'chatTooFast',
-
-	/**
-	 * The player with that name is already logged in from another browser
-	 */
-	NameInUse = 'nameInUse',
-
-	/**
-	 * The name could pass as the game's staff (isReservedName), so the browser wasn't logged in
-	 */
-	NameReserved = 'nameReserved',
-
-	/**
-	 * The server couldn't load or create the player, so the browser wasn't logged in
-	 */
-	LoginFailed = 'loginFailed'
+	ChatTooFast = 'chatTooFast'
 }
 
 /**
- * Payload of SessionServerMessageType.Notice and LobbyServerMessageType.Notice
+ * Payload of LobbyServerMessageType.Notice and GameServerMessageType.Notice
  */
 export interface NoticePayload
 {

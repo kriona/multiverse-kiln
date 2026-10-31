@@ -1,5 +1,5 @@
 import { CloseCode } from '@colyseus/sdk';
-import { GameMessageType, GameServerMessageType, INVITE_QUERY_PARAMETER, LobbyMessageType, LobbyServerMessageType, NAME_MESSAGES, NoticeReason, ServerCloseCode, SessionMessageType, SessionServerMessageType, type AccountPayload, type AccountPlayer, type CharacterListPayload, type CharacterSummary, type ChatHistoryPayload, type ChatMessage, type ChatPayload, type ChooseCharacterPayload, type ControlPayload, type LoginPayload, type NoticePayload, type PlayingAsPayload, type UniverseSummary } from '@multiverse-kiln/shared';
+import { GameMessageType, GameServerMessageType, INVITE_QUERY_PARAMETER, LobbyMessageType, LobbyServerMessageType, NoticeReason, ServerCloseCode, SessionServerMessageType, type AccountPayload, type AccountPlayer, type CharacterListPayload, type CharacterSummary, type ChatHistoryPayload, type ChatMessage, type ChatPayload, type ChooseCharacterPayload, type ControlPayload, type NoticePayload, type PlayingAsPayload, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { t } from './localization';
 import { CharacterApi } from './network/characterApi';
@@ -7,7 +7,7 @@ import { describeEditorError, EditorApi } from './network/editorApi';
 import { GroupApi } from './network/groupApi';
 import { getUniverseDetails, joinGroup, joinLobby, type GameConnection, type LobbyConnection, type ServerConnection } from './network/serverConnection';
 import { isLeavingPage } from './pageLifecycle';
-import { characterPageUrl, gamePageUrl, HOME_PAGE_URL, readGameUniverseKey, readPageParameter, replacePageParameters, replacePagePath } from './pages';
+import { characterPageUrl, currentPageAddress, gamePageUrl, HOME_PAGE_URL, loginPageUrl, readGameUniverseKey, readPageParameter, replacePageParameters, replacePagePath } from './pages';
 import { announce } from './ui/announcer';
 import { characterMessages } from './ui/characterMessages';
 import { CharacterSheetDialog } from './ui/CharacterSheetDialog';
@@ -17,7 +17,6 @@ import { GroupScreen } from './ui/GroupScreen';
 import { InviteDialog } from './ui/InviteDialog';
 import { InviteScreen } from './ui/InviteScreen';
 import { LobbyScreen } from './ui/LobbyScreen';
-import { LoginScreen } from './ui/LoginScreen';
 import { MapView } from './ui/MapView';
 import { pageMessages } from './ui/pageMessages';
 
@@ -59,11 +58,12 @@ interface JoinedLobby
 }
 
 /**
- * Runs the game's page (game.html) for the universe its address names: shows the login, lobby, group
- * or invite screen, and keeps the window in the room that goes with it
+ * Runs the game's page (game.html) for the universe its address names: shows the lobby, group or
+ * invite screen, and keeps the window in the room that goes with it. A browser that isn't logged in
+ * goes to the login page, which comes back here
  *
- * The server decides who the player is, and tells every window of the browser through the session
- * room. Each window plays one of the player's characters: the one it played last (remembered for the
+ * The server decides who the player is, from the browser's session cookie, and tells every window of
+ * the browser through the session room. Each window plays one of the player's characters: the one it played last (remembered for the
  * tab), or the player's most recent. A character in a group plays in the group's room; any other plays
  * in the lobby, where every window of the player plays the same one (or none, as a ghost). Choosing a
  * character in another group, or one who isn't in a group, moves the window there; choosing another in
@@ -77,7 +77,6 @@ export class GamePage
 	private readonly characterSheet: CharacterSheetDialog;
 	private readonly createGroupDialog: CreateGroupDialog;
 	private readonly inviteDialog: InviteDialog;
-	private readonly loginScreen: LoginScreen;
 	private readonly lobbyScreen: LobbyScreen;
 	private readonly groupScreen: GroupScreen;
 	private readonly inviteScreen: InviteScreen;
@@ -152,13 +151,6 @@ export class GamePage
 		});
 
 		this.inviteDialog = new InviteDialog(this.groupApi);
-
-		this.loginScreen = new LoginScreen((name) =>
-		{
-			const login: LoginPayload = { name };
-
-			session.send(SessionMessageType.Login, login);
-		});
 
 		this.lobbyScreen = new LobbyScreen(mapView, {
 			sendChat: (text) =>
@@ -247,11 +239,6 @@ export class GamePage
 			this.onAccount(account.player);
 		});
 
-		session.onMessage(SessionServerMessageType.Notice, (notice: NoticePayload) =>
-		{
-			this.onNotice(notice.reason);
-		});
-
 		session.onLeave(() =>
 		{
 			this.player = null;
@@ -265,8 +252,8 @@ export class GamePage
 	}
 
 	/**
-	 * Shows the login screen while the browser is logged out, and enters the page's universe once it has
-	 * logged in
+	 * Enters the page's universe once the browser is logged in, and goes to the login page when it isn't,
+	 * such as when its session ends
 	 *
 	 * @param player The player, or null when the browser isn't logged in
 	 */
@@ -278,8 +265,7 @@ export class GamePage
 
 		if (!player)
 		{
-			this.loginScreen.reset();
-			showScreen('login');
+			window.location.replace(loginPageUrl(currentPageAddress()));
 		}
 		else if (!wasLoggedIn)
 		{
@@ -533,7 +519,7 @@ export class GamePage
 		{
 			if (this.joinedLobby)
 			{
-				this.lobbyScreen.show(universe, this.player.playerId, this.player.name);
+				this.lobbyScreen.show(universe, this.player.playerId);
 				showScreen('lobby');
 			}
 			else
@@ -568,6 +554,23 @@ export class GamePage
 	}
 
 	/**
+	 * Says the universe the window was playing in was deleted, so there's nowhere left to play
+	 *
+	 * @param universe The universe's name
+	 */
+	private showUniverseDeleted(universe: string): void
+	{
+		this.destination = { kind: 'none' };
+		this.showOutside(t({
+			id: 'game.universeDeleted',
+			defaultMessage: '{universe} was deleted, with everything in it.',
+			description: 'Shown on the game\'s page when the universe being played was deleted, along with its creator\'s account; {universe} is its name'
+		}, {
+			universe
+		}));
+	}
+
+	/**
 	 * Explains to the player why something they asked for didn't happen
 	 *
 	 * @param reason Why
@@ -582,18 +585,6 @@ export class GamePage
 				defaultMessage: 'You are sending messages too quickly. Wait a moment and try again.',
 				description: 'Shown in the lobby when the player sends chat messages faster than allowed'
 			}));
-		}
-		else if (reason === NoticeReason.NameInUse)
-		{
-			this.loginScreen.showError(t(pageMessages.nameInUse));
-		}
-		else if (reason === NoticeReason.NameReserved)
-		{
-			this.loginScreen.showError(t(NAME_MESSAGES.reserved));
-		}
-		else if (reason === NoticeReason.LoginFailed)
-		{
-			this.loginScreen.showError(t(pageMessages.loginFailed));
 		}
 		else if (reason === NoticeReason.GroupNotTogether)
 		{
@@ -934,8 +925,15 @@ export class GamePage
 		this.joinedLobby = undefined;
 		this.lobbyScreen.detach();
 
-		if (code === CloseCode.CONSENTED)
+		// A session that ended goes to the login page when the session room says so
+		if ((code === CloseCode.CONSENTED) || (code === ServerCloseCode.LoggedOut.valueOf()))
 		{
+			return;
+		}
+
+		if (code === ServerCloseCode.UniverseDeleted.valueOf())
+		{
+			this.showUniverseDeleted(joined.universe.name);
 			return;
 		}
 
@@ -1031,7 +1029,7 @@ export class GamePage
 	/**
 	 * Handles the group's room closing when the window didn't leave it itself: the character left the
 	 * group (from another window, or by being deleted), the group was disbanded, or the connection was
-	 * lost. The window goes back to the lobby
+	 * lost. The window goes back to the lobby, unless the universe was deleted
 	 *
 	 * @param connection The room that closed
 	 * @param code WebSocket close code
@@ -1050,8 +1048,15 @@ export class GamePage
 		this.joinedGroup = undefined;
 		this.groupScreen.stop();
 
-		if (code === CloseCode.CONSENTED)
+		// A session that ended goes to the login page when the session room says so
+		if ((code === CloseCode.CONSENTED) || (code === ServerCloseCode.LoggedOut.valueOf()))
 		{
+			return;
+		}
+
+		if (code === ServerCloseCode.UniverseDeleted.valueOf())
+		{
+			this.showUniverseDeleted((this.universe?.name ?? ''));
 			return;
 		}
 

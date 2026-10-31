@@ -2,7 +2,7 @@ import { DISALLOWED_TEXT_CHARACTERS, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_
 
 import { t } from '../localization';
 import { describeEditorError } from '../network/editorApi';
-import { editPageUrl, universePageUrl } from '../pages';
+import { editPageUrl, loginPageUrl, universePageUrl } from '../pages';
 import { getElement, namedOptions, setOptions, setPageTitle, showMessage } from './dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
 import { formMessages } from './formMessages';
@@ -49,7 +49,8 @@ export class HomeScreen
 	private readonly createRuleset = getElement('create-universe-ruleset', HTMLSelectElement);
 	private readonly createError = getElement('create-universe-error', HTMLElement);
 	private readonly createSubmit = getElement('create-universe-submit', HTMLButtonElement);
-	private readonly playerName = getElement('home-player-name', HTMLElement);
+	private readonly logInLink = getElement('home-log-in', HTMLAnchorElement);
+	private readonly ownUniverses = getElement('own-universes', HTMLElement);
 	private readonly notice = getElement('home-notice', HTMLElement);
 	private readonly list = getElement('universe-list', HTMLUListElement);
 	private readonly empty = getElement('universe-empty', HTMLElement);
@@ -74,6 +75,8 @@ export class HomeScreen
 		{
 			void this.loadPage();
 		});
+
+		this.logInLink.href = loginPageUrl();
 
 		this.createName.maxLength = MAX_UNIVERSE_NAME_LENGTH;
 		this.createDescription.maxLength = MAX_SHORT_DESCRIPTION_LENGTH;
@@ -104,18 +107,20 @@ export class HomeScreen
 	}
 
 	/**
-	 * Gets the screen ready to be shown, listing the universes afresh
+	 * Gets the screen ready to be shown, listing the universes afresh. A player who is logged in sees
+	 * their own universes too; anyone else is offered the login page
 	 *
-	 * @param playerName The player's name
+	 * @param loggedIn Whether the browser is logged in
 	 */
-	show(playerName: string): void
+	show(loggedIn: boolean): void
 	{
 		setPageTitle(t({
 			id: 'home.pageTitle',
 			defaultMessage: 'Universes',
 			description: 'The browser tab\'s title while Home lists the universes, before the game engine\'s name'
 		}));
-		this.playerName.textContent = playerName;
+		this.logInLink.hidden = loggedIn;
+		this.ownUniverses.hidden = !loggedIn;
 		this.listed = 0;
 		this.listVersion++;
 		this.list.replaceChildren();
@@ -124,7 +129,11 @@ export class HomeScreen
 		this.ownList.replaceChildren();
 		this.ownEmpty.hidden = true;
 		void this.loadPage();
-		void this.loadOwnUniverses(this.listVersion);
+
+		if (loggedIn)
+		{
+			void this.loadOwnUniverses(this.listVersion);
+		}
 	}
 
 	/**

@@ -1,30 +1,31 @@
-import { NAME_MESSAGES, NoticeReason, SessionMessageType, SessionServerMessageType, type AccountPayload, type LoginPayload, type NoticePayload } from '@multiverse-kiln/shared';
+import { SessionServerMessageType, type AccountPayload } from '@multiverse-kiln/shared';
 
 import { t } from './localization';
 import { EditorApi } from './network/editorApi';
 import { listUniverses, type ServerConnection } from './network/serverConnection';
+import { onLoginElsewhere } from './network/sessionBroadcast';
 import { isLeavingPage } from './pageLifecycle';
 import { editPageUrl } from './pages';
 import { showScreen, showStatus } from './ui/dom';
 import { HomeScreen } from './ui/HomeScreen';
-import { LoginScreen } from './ui/LoginScreen';
 import { pageMessages } from './ui/pageMessages';
 
 /**
- * Runs Home (index.html): logs the browser in, then lists the universes to play and the player's own
+ * Runs Home (index.html): lists the universes to play, and once the browser is logged in, the player's
+ * own universes too. Anyone can see it; its toolbar links to the login page
  *
  * Each universe links to its page, which enters it on the game's page. Home stays usable while the game
  * is open in another tab
  */
 export class HomePage
 {
-	private readonly loginScreen: LoginScreen;
 	private readonly homeScreen: HomeScreen;
 
 	/**
-	 * Whether the browser was logged in at the last Account message
+	 * The player's ID at the last Account message, or null while the browser isn't logged in, or
+	 * undefined before the first
 	 */
-	private loggedIn = false;
+	private playerId: string | null | undefined;
 
 	/**
 	 * @param server The connection to the server and the joined session room
@@ -33,13 +34,6 @@ export class HomePage
 	{
 		const { client, session } = server;
 		const editorApi = new EditorApi(client);
-
-		this.loginScreen = new LoginScreen((name) =>
-		{
-			const login: LoginPayload = { name };
-
-			session.send(SessionMessageType.Login, login);
-		});
 
 		this.homeScreen = new HomeScreen({
 			loadPage: (offset) => listUniverses(client, offset),
@@ -56,9 +50,13 @@ export class HomePage
 			this.onAccount(account);
 		});
 
-		session.onMessage(SessionServerMessageType.Notice, (notice: NoticePayload) =>
+		// This window joined the session room logged out, so it loads again to be logged in too
+		onLoginElsewhere(() =>
 		{
-			this.onNotice(notice.reason);
+			if (this.playerId === null)
+			{
+				window.location.reload();
+			}
 		});
 
 		session.onLeave(() =>
@@ -71,51 +69,22 @@ export class HomePage
 	}
 
 	/**
-	 * Shows the login screen while the browser is logged out, and Home once it logs in. Home lists the
-	 * universes when it is shown, and only then, so a change of group doesn't reload the lists or close
-	 * a dialog
+	 * Shows Home, logged in or not, listing the universes again when that changes. The lists aren't
+	 * reloaded otherwise, so a change of group doesn't reload them or close a dialog
 	 *
 	 * @param account The browser's player
 	 */
 	private onAccount(account: AccountPayload): void
 	{
-		const { player } = account;
-		const wasLoggedIn = this.loggedIn;
+		const playerId = (account.player?.playerId ?? null);
 
-		this.loggedIn = (player !== null);
-
-		if (!player)
+		if (playerId === this.playerId)
 		{
-			this.loginScreen.reset();
-			showScreen('login');
 			return;
 		}
 
-		if (!wasLoggedIn)
-		{
-			this.homeScreen.show(player.name);
-			showScreen('home');
-		}
-	}
-
-	/**
-	 * Explains why logging in didn't work. Home ignores the session's other notices, which are about groups
-	 *
-	 * @param reason Why
-	 */
-	private onNotice(reason: NoticeReason): void
-	{
-		if (reason === NoticeReason.NameInUse)
-		{
-			this.loginScreen.showError(t(pageMessages.nameInUse));
-		}
-		else if (reason === NoticeReason.NameReserved)
-		{
-			this.loginScreen.showError(t(NAME_MESSAGES.reserved));
-		}
-		else if (reason === NoticeReason.LoginFailed)
-		{
-			this.loginScreen.showError(t(pageMessages.loginFailed));
-		}
+		this.playerId = playerId;
+		this.homeScreen.show(account.player !== null);
+		showScreen('home');
 	}
 }

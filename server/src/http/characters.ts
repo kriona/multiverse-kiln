@@ -120,13 +120,13 @@ const messages = defineMessages({
 	},
 	lastRitesOff: {
 		id: 'error.lastRitesOff',
-		defaultMessage: 'Characters can\'t be given their last rites on this site. They can only be deleted straight away.',
+		defaultMessage: 'Characters can\'t be given their last rites on this site. They can only be deleted immediately.',
 		description: 'Why a character wasn\'t given their last rites (deleted after some days): the site\'s settings have turned waiting off'
 	},
 	inGroup: {
 		id: 'error.deleteGroupMember',
 		defaultMessage: 'That character is in a group. They have to leave it before they can be deleted.',
-		description: 'Why a character wasn\'t deleted, straight away or after some days: characters in a group can\'t be deleted'
+		description: 'Why a character wasn\'t deleted, immediately or after some days: characters in a group can\'t be deleted'
 	}
 });
 
@@ -400,7 +400,7 @@ async function refuseDeletion(playerId: string, universeId: string, characterId:
 }
 
 /**
- * DELETE /:characterId: deletes one of the player's characters straight away, unless they are in a group
+ * DELETE /:characterId: deletes one of the player's characters immediately, unless they are in a group
  *
  * @param request The request
  * @param response The response

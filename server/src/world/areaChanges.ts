@@ -6,13 +6,16 @@
  * - deleted: an area was deleted
  * - tiles: a universe's tiles changed (an edited, restored, added or deleted tile)
  * - time: a universe's passage of time, its lobby's, or an area's that others may inherit, changed
+ * - universeDeleted: the universe was deleted, with its world, groups and characters, so its rooms
+ *   turn every window away
  */
 export type AreaChange =
 	| { kind: 'cells'; areaId: string; chunkKeys: string[] }
 	| { kind: 'area'; areaId: string }
 	| { kind: 'deleted'; areaId: string }
 	| { kind: 'tiles'; universeId: string }
-	| { kind: 'time'; universeId: string };
+	| { kind: 'time'; universeId: string }
+	| { kind: 'universeDeleted'; universeId: string };
 
 /**
  * Called after every change
@@ -20,7 +23,7 @@ export type AreaChange =
 export type AreaChangeListener = (change: AreaChange) => void;
 
 /**
- * Tells the rooms about changes to the world as they are made, so edits apply to players straight away
+ * Tells the rooms about changes to the world as they are made, so edits apply to players immediately
  *
  * Changes are published after they are saved. It lives in memory, so it only reaches rooms in the same
  * server process, like OnlinePlayers

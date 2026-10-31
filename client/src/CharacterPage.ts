@@ -1,24 +1,22 @@
-import { INVITE_QUERY_PARAMETER, NAME_MESSAGES, NoticeReason, SessionMessageType, SessionServerMessageType, type AccountPayload, type LoginPayload, type NoticePayload } from '@multiverse-kiln/shared';
+import { INVITE_QUERY_PARAMETER, SessionServerMessageType, type AccountPayload } from '@multiverse-kiln/shared';
 
 import { t } from './localization';
 import { CharacterApi } from './network/characterApi';
 import type { ServerConnection } from './network/serverConnection';
 import { isLeavingPage } from './pageLifecycle';
-import { gamePageUrl, readPageParameter } from './pages';
+import { currentPageAddress, gamePageUrl, loginPageUrl, readPageParameter } from './pages';
 import { CreateCharacterScreen } from './ui/CreateCharacterScreen';
 import { showScreen, showStatus } from './ui/dom';
-import { LoginScreen } from './ui/LoginScreen';
 import { pageMessages } from './ui/pageMessages';
 
 /**
- * Runs the Create Character page (character.html): logs the browser in, then makes a character in one
- * universe, going back to its lobby when done
+ * Runs the Create Character page (character.html): makes a character in one universe, going back to
+ * its lobby when done. A browser that isn't logged in goes to the login page, which comes back here
  *
- * Like the world editor, the page joins the session room so the browser stays logged in while it is open
+ * Like the world editor, the page joins the session room, so being open counts as using the session
  */
 export class CharacterPage
 {
-	private readonly loginScreen: LoginScreen;
 	private readonly characterScreen: CreateCharacterScreen;
 
 	/**
@@ -34,13 +32,6 @@ export class CharacterPage
 	{
 		const { client, session } = server;
 
-		this.loginScreen = new LoginScreen((name) =>
-		{
-			const login: LoginPayload = { name };
-
-			session.send(SessionMessageType.Login, login);
-		});
-
 		// Opened from an invite link, it goes back to the invite to choose the new character
 		this.characterScreen = new CreateCharacterScreen(new CharacterApi(client), () =>
 		{
@@ -50,11 +41,6 @@ export class CharacterPage
 		session.onMessage(SessionServerMessageType.Account, (account: AccountPayload) =>
 		{
 			this.onAccount(account);
-		});
-
-		session.onMessage(SessionServerMessageType.Notice, (notice: NoticePayload) =>
-		{
-			this.onNotice(notice.reason);
 		});
 
 		session.onLeave(() =>
@@ -67,7 +53,7 @@ export class CharacterPage
 	}
 
 	/**
-	 * Shows the login screen while the browser is logged out, and Create Character once it is logged in
+	 * Shows Create Character while the browser is logged in, and goes to the login page when it isn't
 	 *
 	 * @param account The browser's player
 	 */
@@ -75,8 +61,7 @@ export class CharacterPage
 	{
 		if (!account.player)
 		{
-			this.loginScreen.reset();
-			showScreen('login');
+			window.location.replace(loginPageUrl(currentPageAddress()));
 			return;
 		}
 
@@ -86,27 +71,6 @@ export class CharacterPage
 		{
 			this.opened = true;
 			void this.characterScreen.open(this.universeId);
-		}
-	}
-
-	/**
-	 * Explains why logging in didn't work. The page ignores the session's other notices, which are about groups
-	 *
-	 * @param reason Why
-	 */
-	private onNotice(reason: NoticeReason): void
-	{
-		if (reason === NoticeReason.NameInUse)
-		{
-			this.loginScreen.showError(t(pageMessages.nameInUse));
-		}
-		else if (reason === NoticeReason.NameReserved)
-		{
-			this.loginScreen.showError(t(NAME_MESSAGES.reserved));
-		}
-		else if (reason === NoticeReason.LoginFailed)
-		{
-			this.loginScreen.showError(t(pageMessages.loginFailed));
 		}
 	}
 }

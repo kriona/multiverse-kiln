@@ -9,7 +9,8 @@
  *
  * A shortcut works while its control can be seen and used. While a dialog is open only the dialog's
  * shortcuts work, and otherwise only those outside dialogs, so screens and dialogs can reuse a key:
- * Alt+S submits whichever form is showing. The keys are the same in every language. Letters taken by
+ * Alt+S submits whichever form is showing whose button has an S, such as Save. The keys are the same
+ * in every language. Letters taken by
  * the browsers (Alt+D, Alt+E and Alt+F) aren't used
  */
 import { defineMessages } from '@multiverse-kiln/shared';

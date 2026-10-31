@@ -15,15 +15,32 @@ import { siteSettings } from './schema.js';
 export async function findSiteSettings(executor: Executor = db): Promise<SiteSettings>
 {
 	const [row] = await executor
-		.select({
-			universeCreationEnabled: siteSettings.universeCreationEnabled,
-			universesPerCreator: siteSettings.universesPerCreator,
-			characterDeletionDays: siteSettings.characterDeletionDays
-		})
+		.select()
 		.from(siteSettings)
 		.limit(1);
 
-	return((row ?? { ...DEFAULT_SITE_SETTINGS }));
+	if (row === undefined)
+	{
+		return({
+			...DEFAULT_SITE_SETTINGS,
+			socials: { ...DEFAULT_SITE_SETTINGS.socials }
+		});
+	}
+
+	return({
+		universeCreationEnabled: row.universeCreationEnabled,
+		universesPerCreator: row.universesPerCreator,
+		characterDeletionDays: row.characterDeletionDays,
+		socials: {
+			discord: row.discordUrl,
+			facebook: row.facebookUrl,
+			instagram: row.instagramUrl,
+			tiktok: row.tiktokUrl,
+			x: row.xUrl,
+			youtube: row.youtubeUrl
+		},
+		privacyContact: row.privacyContact
+	});
 }
 
 /**
@@ -34,11 +51,24 @@ export async function findSiteSettings(executor: Executor = db): Promise<SiteSet
  */
 export async function saveSiteSettings(settings: SiteSettings, executor: Executor = db): Promise<void>
 {
+	const values = {
+		universeCreationEnabled: settings.universeCreationEnabled,
+		universesPerCreator: settings.universesPerCreator,
+		characterDeletionDays: settings.characterDeletionDays,
+		discordUrl: settings.socials.discord,
+		facebookUrl: settings.socials.facebook,
+		instagramUrl: settings.socials.instagram,
+		tiktokUrl: settings.socials.tiktok,
+		xUrl: settings.socials.x,
+		youtubeUrl: settings.socials.youtube,
+		privacyContact: settings.privacyContact
+	};
+
 	await executor
 		.insert(siteSettings)
-		.values(settings)
+		.values(values)
 		.onConflictDoUpdate({
 			target: siteSettings.id,
-			set: settings
+			set: values
 		});
 }

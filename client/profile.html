@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<!-- include head.html -->
+		<title data-message="profile.title" data-translation-context="The browser tab's title on the page where the player changes their own profile, and that page's heading">Your profile</title>
+		<link rel="stylesheet" href="/src/profile.scss" />
+	</head>
+	<body>
+		<main>
+			<!-- include status.html -->
+
+			<!-- include notice.html -->
+
+			<section id="profile-screen" class="screen" hidden>
+				<header class="toolbar">
+					<!-- include site-name.html -->
+					<h1 data-message="profile.title" data-translation-context="The browser tab's title on the page where the player changes their own profile, and that page's heading">Your profile</h1>
+					<a id="profile-view-link" class="button secondary toolbar-link" href="/player" data-shortcut="Alt+V" data-message="profile.viewOwn" data-translation-context="Link on the player's own profile page to their profile as other players see it"><!-- icon ph:eye -->View your profile</a>
+					<!-- include account.html -->
+				</header>
+				<div class="profile-page">
+					<form id="profile-form" class="profile-form" novalidate>
+						<section class="panel form profile-panel" aria-labelledby="profile-about-heading">
+							<h2 id="profile-about-heading" data-message="profile.aboutYou" data-translation-context="Heading of the part of the player's own profile page with what other players see about them">About you</h2>
+							<label data-message="profile.username" data-translation-context="Label of the username field on the player's own profile page">
+								Username
+								<input id="profile-username" autocomplete="off" autocapitalize="none" spellcheck="false" required aria-describedby="profile-username-hint" />
+							</label>
+							<p id="profile-username-hint" class="hint" data-message="profile.usernameHint" data-translation-context="Under the username field on the player's own profile page; {min} and {max} are numbers">How other players find you, and tell you apart from others with the same name. <span id="profile-username-min" data-argument="min" translate="no">3</span> to <span id="profile-username-max" data-argument="max" translate="no">20</span> letters (a to z), digits and underscores.</p>
+							<label data-message="profile.displayName" data-translation-context="Label of the field for the name other players see, on the player's own profile page">
+								Name
+								<input id="profile-name" autocomplete="nickname" required aria-describedby="profile-name-hint" />
+							</label>
+							<p id="profile-name-hint" class="hint" data-message="profile.displayNameHint" data-translation-context="Under the name field on the player's own profile page">The name other players see. It doesn't have to be your real name, or unique.</p>
+							<label data-message="profile.pronouns" data-translation-context="Label of the optional field for the player's pronouns, such as she/her or they/them, on their own profile page">
+								Pronouns
+								<input id="profile-pronouns" autocomplete="off" placeholder="e.g. she/her, they/them, any" data-message-placeholder="profile.pronounsPlaceholder" data-translation-context-placeholder="Shown in the empty pronouns field on the player's own profile page, as examples of what to write. Give the forms people commonly write in your language, rather than translating these ones" />
+							</label>
+							<label data-message="profile.location" data-translation-context="Label of the optional field for where the player is, written however they like, on their own profile page">
+								Location
+								<input id="profile-location" autocomplete="off" />
+							</label>
+							<div class="field-label">
+								<span id="profile-time-zone-label" data-message="profile.timeZone" data-translation-context="Label of the optional choice of the player's time zone, on their own profile page">Time zone</span>
+								<div class="combobox-field">
+									<input id="profile-time-zone" type="text" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="profile-time-zone-options" aria-labelledby="profile-time-zone-label" aria-describedby="profile-time-zone-hint" data-untracked placeholder="Search by city or time zone" data-message-placeholder="profile.timeZoneSearch" data-translation-context-placeholder="Shown in the empty time zone field on the player's own profile page, where typing a city or a time zone's name finds it" />
+									<ul id="profile-time-zone-options" class="combobox-options" role="listbox" aria-labelledby="profile-time-zone-label" hidden></ul>
+								</div>
+							</div>
+							<p id="profile-time-zone-hint" class="hint" data-message="profile.timeZoneHint" data-translation-context="Under the time zone choice on the player's own profile page">Used to match you with other players in time zones near yours.</p>
+							<div class="field-label">
+								<span id="profile-languages-label" data-message="profile.languagesSpoken" data-translation-context="Label of the optional field for choosing the languages the player knows, on their own profile page">Languages you know</span>
+								<ul id="profile-languages-chosen" class="chips" aria-labelledby="profile-languages-label" hidden></ul>
+								<div class="combobox-field">
+									<input id="profile-languages-search" type="text" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="profile-languages-options" aria-labelledby="profile-languages-label" aria-describedby="profile-languages-hint" data-untracked placeholder="Search languages" data-message-placeholder="profile.languagesSearch" data-translation-context-placeholder="Shown in the empty search field for choosing the languages the player knows, on their own profile page" />
+									<ul id="profile-languages-options" class="combobox-options" role="listbox" aria-labelledby="profile-languages-label" hidden></ul>
+								</div>
+							</div>
+							<p id="profile-languages-hint" class="hint" data-message="profile.languagesHint" data-translation-context="Under the field for choosing the languages the player knows, on their own profile page">Used to match you with other players who speak your language.</p>
+							<label data-message="profile.language" data-translation-context="Label of the choice of the language the site's pages and emails are in, on the player's own profile page">
+								Language
+								<select id="profile-locale" aria-describedby="profile-locale-hint"></select>
+							</label>
+							<p id="profile-locale-hint" class="hint" data-message="profile.languageHint" data-translation-context="Under the language choice on the player's own profile page">The pages and the emails we send you are in this language, on any browser you log in from.</p>
+							<label class="checkbox" data-message="profile.showCharacters" data-translation-context="Checkbox on the player's own profile page: whether other players see all of the player's characters on their profile">
+								<input id="profile-show-characters" type="checkbox" aria-describedby="profile-show-characters-hint" />
+								Show my characters
+							</label>
+							<p id="profile-show-characters-hint" class="hint" data-message="profile.showCharactersHint" data-translation-context="Under the Show my characters checkbox on the player's own profile page, explaining what unchecking it does">Unchecked, your profile shows only the characters you mark below. Other players in your group can always find your profile from your character.</p>
+						</section>
+
+						<section class="panel form profile-panel" aria-labelledby="profile-socials-heading">
+							<h2 id="profile-socials-heading" data-message="profile.socials" data-translation-context="Heading of the optional fields for the player's usernames on social sites (Discord, Facebook, Instagram and TikTok), on their own profile page">Social sites</h2>
+							<p class="hint" data-message="profile.socialsHint" data-translation-context="Under the heading of the social site fields on the player's own profile page">Your username on each site, without a link. Other players see them on your profile.</p>
+							<label translate="no">
+								<span class="social-label"><!-- icon ph:discord-logo -->Discord</span>
+								<input id="profile-discord" autocomplete="off" autocapitalize="none" spellcheck="false" />
+							</label>
+							<label translate="no">
+								<span class="social-label"><!-- icon ph:facebook-logo -->Facebook</span>
+								<input id="profile-facebook" autocomplete="off" autocapitalize="none" spellcheck="false" />
+							</label>
+							<label translate="no">
+								<span class="social-label"><!-- icon ph:instagram-logo -->Instagram</span>
+								<input id="profile-instagram" autocomplete="off" autocapitalize="none" spellcheck="false" />
+							</label>
+							<label translate="no">
+								<span class="social-label"><!-- icon ph:tiktok-logo -->TikTok</span>
+								<input id="profile-tiktok" autocomplete="off" autocapitalize="none" spellcheck="false" />
+							</label>
+						</section>
+
+						<!-- One Save for both sections above -->
+						<div class="profile-save">
+							<p id="profile-error" class="form-error" role="alert" hidden></p>
+							<div class="form-buttons">
+								<span id="profile-saved" class="form-saved" role="status"></span>
+								<button id="profile-save" type="submit" aria-describedby="profile-error" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+							</div>
+						</div>
+					</form>
+
+					<section class="panel profile-panel" aria-labelledby="profile-account-heading">
+						<h2 id="profile-account-heading" data-message="profile.account" data-translation-context="Heading of the part of the player's own profile page with how they log in: email address, password and linked Google or Discord logins">Logging in</h2>
+						<dl class="profile-account">
+							<dt data-message="profile.email" data-translation-context="Label of the player's email address, on their own profile page">Email address</dt>
+							<dd>
+								<span id="profile-email"></span>
+								<button id="profile-change-email" type="button" class="secondary" data-shortcut="Alt+M" data-message="profile.changeEmail" data-translation-context="Button on the player's own profile page that opens the dialog for changing their email address"><!-- icon ph:envelope-simple -->Change email</button>
+							</dd>
+							<dt data-message="profile.password" data-translation-context="Label of the player's password, shown hidden, on their own profile page">Password</dt>
+							<dd>
+								<span id="profile-password-state"></span>
+								<button id="profile-change-password" type="button" class="secondary" data-shortcut="Alt+P" data-message="profile.changePassword" data-translation-context="Button on the player's own profile page that opens the dialog for changing their password"><!-- icon ph:key -->Change password</button>
+							</dd>
+							<dt id="profile-two-factor-label" data-message="profile.twoFactor" data-translation-context="Label of whether the player's account has two-factor authentication (a code from an authenticator app asked for at login, after the password), on their own profile page">Two-factor authentication</dt>
+							<dd id="profile-two-factor">
+								<span id="profile-two-factor-state"></span>
+								<button id="profile-two-factor-on" type="button" class="secondary" aria-describedby="profile-two-factor-label" data-shortcut="Alt+T" data-message="profile.twoFactorTurnOn" data-translation-context="Button on the player's own profile page that opens the dialog setting up two-factor authentication"><!-- icon ph:shield-check -->Turn on</button>
+								<button id="profile-two-factor-codes" type="button" class="secondary" data-shortcut="Alt+W" data-message="profile.newRecoveryCodes" data-translation-context="Button on the player's own profile page that opens the dialog making new recovery codes for two-factor authentication, in place of the old ones"><!-- icon ph:list-numbers -->New recovery codes</button>
+								<button id="profile-two-factor-off" type="button" class="secondary" aria-describedby="profile-two-factor-label" data-shortcut="Alt+O" data-message="profile.twoFactorTurnOff" data-translation-context="Button on the player's own profile page that opens the dialog turning off two-factor authentication"><!-- icon ph:shield-slash -->Turn off</button>
+							</dd>
+							<dt id="profile-trusted-browsers-label" data-message="profile.trustedBrowsers" data-translation-context="Label of how many browsers skip the authenticator code at login, on the player's own profile page, when the account has two-factor authentication">Trusted browsers</dt>
+							<dd id="profile-trusted-browsers">
+								<span id="profile-trusted-browsers-state"></span>
+								<button id="profile-forget-browsers" type="button" class="secondary" data-shortcut="Alt+U" data-message="profile.forgetBrowsers" data-translation-context="Button on the player's own profile page: every browser that skipped the authenticator code at login asks for it again"><!-- icon ph:x-circle -->Stop trusting them</button>
+							</dd>
+							<dt data-message="profile.providers" data-translation-context="Label of the Google and Discord logins linked to the player's account, on their own profile page">Linked logins</dt>
+							<dd>
+								<span id="profile-providers"></span>
+								<button id="profile-link-google" type="button" class="secondary" data-shortcut="Alt+G" data-message="profile.linkGoogle" data-translation-context="Button on the player's own profile page that goes to Google to link a Google login to their account, so it can log in with it" hidden><!-- icon ph:google-logo -->Link Google</button>
+								<button id="profile-link-discord" type="button" class="secondary" data-shortcut="Alt+R" data-message="profile.linkDiscord" data-translation-context="Button on the player's own profile page that goes to Discord to link a Discord login to their account, so it can log in with it" hidden><!-- icon ph:discord-logo -->Link Discord</button>
+							</dd>
+						</dl>
+						<p id="profile-account-error" class="form-error" role="alert" hidden></p>
+					</section>
+
+					<section class="panel profile-panel" aria-labelledby="profile-characters-heading">
+						<h2 id="profile-characters-heading" data-message="profile.characters" data-translation-context="Heading of the list of the player's characters in every universe, on their own profile page">Your characters</h2>
+						<div id="profile-character-list" class="profile-character-list"></div>
+						<p id="profile-character-none" class="hint" data-message="profile.noCharacters" data-translation-context="Shown on the player's own profile page instead of their characters, when they haven't made any" hidden>You haven't made a character yet.</p>
+						<p id="profile-character-error" class="form-error" role="alert" hidden></p>
+					</section>
+
+					<section class="panel profile-panel" aria-labelledby="profile-data-heading">
+						<h2 id="profile-data-heading" data-message="profile.yourData" data-translation-context="Heading of the part of the player's own profile page where they download their data or delete their account">Your data</h2>
+						<p class="hint" data-message="profile.yourDataHint" data-translation-context="Under the Your data heading on the player's own profile page, above the buttons that download their data and delete their account">Download everything kept about you as a file, or delete your account and everything in it.</p>
+						<div class="profile-data-buttons">
+							<button id="profile-export" type="button" class="secondary" data-shortcut="Alt+L" data-message="profile.downloadData" data-translation-context="Button on the player's own profile page that saves everything the site keeps about them as a JSON file"><!-- icon ph:download-simple -->Download your data</button>
+							<button id="profile-delete" type="button" class="danger" data-message="profile.deleteAccount" data-translation-context="Button on the player's own profile page that opens the dialog deleting their account"><!-- icon ph:trash -->Delete account</button>
+						</div>
+						<p id="profile-data-error" class="form-error" role="alert" hidden></p>
+					</section>
+				</div>
+			</section>
+
+			<section id="player-screen" class="screen" hidden>
+				<header class="toolbar">
+					<!-- include site-name.html -->
+					<h1 data-message="player.heading" data-translation-context="Heading in the toolbar of a player's profile, as other players see it, above their name">Profile</h1>
+					<!-- include account.html -->
+				</header>
+				<div class="profile-page">
+					<article class="panel profile-panel" aria-labelledby="player-name">
+						<h2 id="player-name" class="player-display-name"></h2>
+						<p id="player-username" class="player-username" translate="no"></p>
+						<dl id="player-details" class="player-details"></dl>
+						<ul id="player-socials" class="player-socials"></ul>
+					</article>
+					<section id="player-characters" class="panel profile-panel" aria-labelledby="player-characters-heading">
+						<h2 id="player-characters-heading" data-message="player.characters" data-translation-context="Heading of the list of a player's characters on their profile, as other players see it">Characters</h2>
+						<div id="player-character-list" class="profile-character-list"></div>
+						<p id="player-character-none" class="hint" data-message="player.noCharacters" data-translation-context="Shown on a player's profile, as other players see it, instead of their characters, when none are shown" hidden>No characters to show.</p>
+					</section>
+				</div>
+			</section>
+
+			<dialog id="email-dialog" class="panel dialog" aria-labelledby="email-dialog-title">
+				<form id="email-dialog-form" class="form" novalidate>
+					<h2 id="email-dialog-title" data-message="profile.changeEmailTitle" data-translation-context="Title of the dialog that changes the player's email address">Change your email address</h2>
+					<p id="email-dialog-intro"></p>
+					<!-- Not shown: tells password managers which account the password is for -->
+					<input id="email-dialog-username" type="email" autocomplete="username" hidden />
+					<label id="email-dialog-current-code-label" data-message="profile.currentEmailCode" data-translation-context="Label of the field for the code emailed to the account's current address, in the dialog that changes the email address of an account without a password" hidden>
+						Code sent to your current address
+						<input id="email-dialog-current-code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" data-code="email" />
+					</label>
+					<label id="email-dialog-address-label" data-message="profile.newEmail" data-translation-context="Label of the field for the new email address, in the dialog that changes it">
+						New email address
+						<input id="email-dialog-address" type="email" autocomplete="email" spellcheck="false" required />
+					</label>
+					<label id="email-dialog-code-label" data-message="login.code" data-translation-context="Label of the field for the code that was emailed to the player" hidden>
+						Code
+						<input id="email-dialog-code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" data-code="email" />
+					</label>
+					<div id="email-dialog-password-field" class="password-field" hidden>
+						<label data-message="login.password" data-translation-context="Label of the password field when logging in, and when turning two-factor authentication on or off, making new recovery codes, linking a Google or Discord login, changing the email address or deleting the account on the profile">
+							Password
+							<input id="email-dialog-password" type="password" autocomplete="current-password" />
+						</label>
+						<button id="email-dialog-password-toggle" type="button" class="secondary password-toggle" aria-controls="email-dialog-password" aria-pressed="false" aria-label="Show password" title="Show password" data-message-aria-label="login.showPassword" data-translation-context-aria-label="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed" data-message-title="login.showPassword" data-translation-context-title="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"><span class="password-hidden-icon"><!-- icon ph:eye --></span><span class="password-shown-icon"><!-- icon ph:eye-slash --></span></button>
+					</div>
+					<div id="email-dialog-two-factor-field" hidden>
+						<label data-message="login.twoFactorCode" data-translation-context="Label of the field for the 6-digit code from the player's authenticator app, or one of their recovery codes, when logging in, resetting a password or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes, changing the email address or deleting the account on the profile">
+							Authenticator code
+							<input id="email-dialog-two-factor-code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" aria-describedby="email-dialog-two-factor-hint" data-code="twoFactor" />
+						</label>
+						<p id="email-dialog-two-factor-hint" class="hint" data-message="login.twoFactorCodeHint" data-translation-context="Under the authenticator code field when logging in or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes, changing the email address or deleting the account on the profile">The 6-digit code from your authenticator app, or one of your recovery codes.</p>
+					</div>
+					<p id="email-dialog-error" class="form-error" role="alert" hidden></p>
+					<div class="form-buttons">
+						<button id="email-dialog-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+						<button id="email-dialog-email-me" type="submit" aria-describedby="email-dialog-error" data-shortcut="Alt+M" data-message="login.linkWithCode" data-translation-context="Button that emails a code to the account's address: on the login page, when linking a Google or Discord login to the account, to use instead of its password, and on the profile, for an account without a password, to check it's the player linking a login, changing the email address or deleting the account" hidden><!-- icon ph:paper-plane-right -->Email me a code</button>
+						<button id="email-dialog-send" type="submit" aria-describedby="email-dialog-error" data-shortcut="Alt+S" data-message="login.sendCode" data-translation-context="Button that emails a code to the address typed, to create an account, reset a password or change the account's email address"><!-- icon ph:paper-plane-right -->Send code</button>
+						<button id="email-dialog-confirm" type="submit" aria-describedby="email-dialog-error" data-shortcut="Alt+C" data-message="profile.changeEmailSubmit" data-translation-context="Button in the dialog that changes the player's email address: checks the emailed code and makes the new address the account's" hidden><!-- icon ph:check -->Change email</button>
+					</div>
+				</form>
+			</dialog>
+
+			<dialog id="password-dialog" class="panel dialog" aria-labelledby="password-dialog-title">
+				<form id="password-dialog-form" class="form" novalidate>
+					<h2 id="password-dialog-title" data-message="profile.changePasswordTitle" data-translation-context="Title of the dialog that changes the player's password">Change your password</h2>
+					<p data-message="profile.changePasswordIntro" data-translation-context="In the dialog that changes the player's password">Every other browser logged in to your account is logged out when the password changes.</p>
+					<!-- Not shown: tells password managers which account the new password is for -->
+					<input id="password-dialog-email" type="email" autocomplete="username" hidden />
+					<div class="password-field">
+						<label data-message="profile.currentPassword" data-translation-context="Label of the field for the player's current password, in the dialog that changes it">
+							Current password
+							<input id="password-dialog-current" type="password" autocomplete="current-password" required />
+						</label>
+						<button id="password-dialog-current-toggle" type="button" class="secondary password-toggle" aria-controls="password-dialog-current" aria-pressed="false" aria-label="Show password" title="Show password" data-message-aria-label="login.showPassword" data-translation-context-aria-label="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed" data-message-title="login.showPassword" data-translation-context-title="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"><span class="password-hidden-icon"><!-- icon ph:eye --></span><span class="password-shown-icon"><!-- icon ph:eye-slash --></span></button>
+					</div>
+					<div class="password-field">
+						<label data-message="profile.newPassword" data-translation-context="Label of the field for the player's new password, in the dialog that changes it">
+							New password
+							<input id="password-dialog-new" type="password" autocomplete="new-password" required aria-describedby="password-dialog-hint" />
+						</label>
+						<button id="password-dialog-new-toggle" type="button" class="secondary password-toggle" aria-controls="password-dialog-new" aria-pressed="false" aria-label="Show password" title="Show password" data-message-aria-label="login.showPassword" data-translation-context-aria-label="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed" data-message-title="login.showPassword" data-translation-context-title="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"><span class="password-hidden-icon"><!-- icon ph:eye --></span><span class="password-shown-icon"><!-- icon ph:eye-slash --></span></button>
+					</div>
+					<p id="password-dialog-hint" class="hint" data-message="login.passwordHint" data-translation-context="Under the new password field when creating an account, resetting a password or changing it on the profile; {min} is a number">At least <span id="password-dialog-min" data-argument="min" translate="no">15</span> characters. A few words strung together are easy to remember and hard to guess.</p>
+					<p id="password-dialog-error" class="form-error" role="alert" hidden></p>
+					<div class="form-buttons">
+						<button id="password-dialog-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+						<button id="password-dialog-submit" type="submit" aria-describedby="password-dialog-error" data-shortcut="Alt+S" data-message="profile.savePassword" data-translation-context="Button in the dialog that changes the player's password: saves the new one"><!-- icon ph:key -->Save password</button>
+					</div>
+				</form>
+			</dialog>
+
+			<dialog id="two-factor-dialog" class="panel dialog" aria-labelledby="two-factor-dialog-title">
+				<form id="two-factor-dialog-form" class="form" novalidate>
+					<h2 id="two-factor-dialog-title" data-message="profile.twoFactorSetupTitle" data-translation-context="Title of the dialog that sets up two-factor authentication">Turn on two-factor authentication</h2>
+					<div id="two-factor-dialog-password-step" class="form-group">
+						<p data-message="profile.twoFactorSetupIntro" data-translation-context="First paragraph of the dialog that sets up two-factor authentication, which asks for the player's password first">With two-factor authentication, logging in also asks for a code from an app on your phone, so someone who learns your password still can't get in. Every other browser logged in to your account is logged out when it turns on. First, enter your password.</p>
+						<!-- Not shown: tells password managers which account the password is for -->
+						<input id="two-factor-dialog-email" type="email" autocomplete="username" hidden />
+						<div class="password-field">
+							<label data-message="login.password" data-translation-context="Label of the password field when logging in, and when turning two-factor authentication on or off, making new recovery codes, linking a Google or Discord login, changing the email address or deleting the account on the profile">
+								Password
+								<input id="two-factor-dialog-password" type="password" autocomplete="current-password" />
+							</label>
+							<button id="two-factor-dialog-password-toggle" type="button" class="secondary password-toggle" aria-controls="two-factor-dialog-password" aria-pressed="false" aria-label="Show password" title="Show password" data-message-aria-label="login.showPassword" data-translation-context-aria-label="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed" data-message-title="login.showPassword" data-translation-context-title="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"><span class="password-hidden-icon"><!-- icon ph:eye --></span><span class="password-shown-icon"><!-- icon ph:eye-slash --></span></button>
+						</div>
+					</div>
+					<div id="two-factor-dialog-scan-step" class="form-group" hidden>
+						<p data-message="profile.twoFactorScan" data-translation-context="In the dialog that sets up two-factor authentication, above the QR code; the app names are examples of authenticator apps and stay as they are">Scan this QR code with an authenticator app, such as Google Authenticator, Microsoft Authenticator, Aegis or 2FAS. Then enter the 6-digit code the app shows.</p>
+						<div id="two-factor-dialog-qr" class="qr-code-frame"></div>
+						<p class="hint" data-message="profile.twoFactorManual" data-translation-context="In the dialog that sets up two-factor authentication, above the secret key shown as text, for players who can't scan the QR code">Can't scan it? Add the account in the app by hand, with this key:</p>
+						<div class="two-factor-secret">
+							<code id="two-factor-dialog-secret" translate="no"></code>
+							<button id="two-factor-dialog-copy" type="button" class="secondary" aria-describedby="two-factor-dialog-copy-status" data-shortcut="Alt+Y" data-message="profile.copyKey" data-translation-context="Button in the dialog that sets up two-factor authentication: copies the secret key, for typing into an authenticator app"><!-- icon ph:copy -->Copy key</button>
+						</div>
+						<p id="two-factor-dialog-copy-status" class="hint" role="status"></p>
+						<label data-message="profile.twoFactorAppCode" data-translation-context="Label of the field for the 6-digit code the authenticator app shows, in the dialog that sets up two-factor authentication">
+							Code from the app
+							<input id="two-factor-dialog-code" autocomplete="one-time-code" inputmode="numeric" spellcheck="false" data-code="authenticator" data-auto-submit />
+						</label>
+					</div>
+					<p id="two-factor-dialog-error" class="form-error" role="alert" hidden></p>
+					<div class="form-buttons">
+						<button id="two-factor-dialog-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+						<button id="two-factor-dialog-continue" type="submit" aria-describedby="two-factor-dialog-error" data-shortcut="Alt+C" data-message="profile.twoFactorContinue" data-translation-context="Button in the dialog that sets up two-factor authentication: checks the password and shows the QR code"><!-- icon ph:arrow-right -->Continue</button>
+						<button id="two-factor-dialog-enable" type="submit" aria-describedby="two-factor-dialog-error" data-shortcut="Alt+T" data-message="profile.twoFactorEnable" data-translation-context="Button in the dialog that sets up two-factor authentication: checks the code from the authenticator app and turns two-factor authentication on" hidden><!-- icon ph:shield-check -->Turn on</button>
+					</div>
+				</form>
+			</dialog>
+
+			<dialog id="recovery-codes-dialog" class="panel dialog" aria-labelledby="recovery-codes-dialog-title">
+				<div class="form">
+					<h2 id="recovery-codes-dialog-title" data-message="profile.recoveryCodesTitle" data-translation-context="Title of the dialog that shows the player's new recovery codes for two-factor authentication">Save your recovery codes</h2>
+					<p id="recovery-codes-dialog-intro" data-message="profile.recoveryCodesIntro" data-translation-context="In the dialog that shows the player's new recovery codes for two-factor authentication">If you lose your phone, each of these codes logs you in once in place of a code from the app. Keep them somewhere safe, such as your password manager. This is the only time they're shown.</p>
+					<ol id="recovery-codes-list" class="recovery-codes" translate="no" aria-describedby="recovery-codes-dialog-intro"></ol>
+					<p id="recovery-codes-status" class="hint" role="status"></p>
+					<div class="form-buttons">
+						<button id="recovery-codes-copy" type="button" class="secondary" aria-describedby="recovery-codes-status" data-shortcut="Alt+Y" data-message="profile.copyRecoveryCodes" data-translation-context="Button in the dialog that shows the player's new recovery codes: copies them all"><!-- icon ph:copy -->Copy</button>
+						<button id="recovery-codes-download" type="button" class="secondary" data-shortcut="Alt+W" data-message="profile.downloadRecoveryCodes" data-translation-context="Button in the dialog that shows the player's new recovery codes: saves them as a text file"><!-- icon ph:download-simple -->Download</button>
+						<button id="recovery-codes-done" type="button" data-shortcut="Alt+V" data-message="profile.recoveryCodesSaved" data-translation-context="Button that closes the dialog showing the player's new recovery codes, once they have saved them"><!-- icon ph:check -->I've saved them</button>
+					</div>
+				</div>
+			</dialog>
+
+			<dialog id="two-factor-confirm-dialog" class="panel dialog" aria-labelledby="two-factor-confirm-title">
+				<form id="two-factor-confirm-form" class="form" novalidate>
+					<h2 id="two-factor-confirm-title"></h2>
+					<p id="two-factor-confirm-intro"></p>
+					<!-- Not shown: tells password managers which account the password is for -->
+					<input id="two-factor-confirm-email" type="email" autocomplete="username" hidden />
+					<div class="password-field">
+						<label data-message="login.password" data-translation-context="Label of the password field when logging in, and when turning two-factor authentication on or off, making new recovery codes, linking a Google or Discord login, changing the email address or deleting the account on the profile">
+							Password
+							<input id="two-factor-confirm-password" type="password" autocomplete="current-password" required />
+						</label>
+						<button id="two-factor-confirm-password-toggle" type="button" class="secondary password-toggle" aria-controls="two-factor-confirm-password" aria-pressed="false" aria-label="Show password" title="Show password" data-message-aria-label="login.showPassword" data-translation-context-aria-label="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed" data-message-title="login.showPassword" data-translation-context-title="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"><span class="password-hidden-icon"><!-- icon ph:eye --></span><span class="password-shown-icon"><!-- icon ph:eye-slash --></span></button>
+					</div>
+					<label data-message="login.twoFactorCode" data-translation-context="Label of the field for the 6-digit code from the player's authenticator app, or one of their recovery codes, when logging in, resetting a password or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes, changing the email address or deleting the account on the profile">
+						Authenticator code
+						<input id="two-factor-confirm-code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" required aria-describedby="two-factor-confirm-hint" data-code="twoFactor" />
+					</label>
+					<p id="two-factor-confirm-hint" class="hint" data-message="login.twoFactorCodeHint" data-translation-context="Under the authenticator code field when logging in or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes, changing the email address or deleting the account on the profile">The 6-digit code from your authenticator app, or one of your recovery codes.</p>
+					<p id="two-factor-confirm-error" class="form-error" role="alert" hidden></p>
+					<div class="form-buttons">
+						<button id="two-factor-confirm-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+						<button id="two-factor-confirm-off" type="submit" aria-describedby="two-factor-confirm-error" data-shortcut="Alt+O" data-message="profile.twoFactorDisable" data-translation-context="Button in the dialog that turns off two-factor authentication: checks the password and code and turns it off"><!-- icon ph:shield-slash -->Turn off</button>
+						<button id="two-factor-confirm-codes" type="submit" aria-describedby="two-factor-confirm-error" data-shortcut="Alt+M" data-message="profile.makeRecoveryCodes" data-translation-context="Button in the dialog that makes new recovery codes: checks the password and code, and replaces the old codes with new ones"><!-- icon ph:list-numbers -->Make new codes</button>
+					</div>
+				</form>
+			</dialog>
+
+			<dialog id="provider-link-dialog" class="panel dialog" aria-labelledby="provider-link-dialog-title">
+				<form id="provider-link-dialog-form" class="form" novalidate>
+					<h2 id="provider-link-dialog-title"></h2>
+					<p id="provider-link-dialog-intro"></p>
+					<!-- Not shown: tells password managers which account the password is for -->
+					<input id="provider-link-dialog-email" type="email" autocomplete="username" hidden />
+					<div id="provider-link-dialog-password-field" class="password-field" hidden>
+						<label data-message="login.password" data-translation-context="Label of the password field when logging in, and when turning two-factor authentication on or off, making new recovery codes, linking a Google or Discord login, changing the email address or deleting the account on the profile">
+							Password
+							<input id="provider-link-dialog-password" type="password" autocomplete="current-password" />
+						</label>
+						<button id="provider-link-dialog-password-toggle" type="button" class="secondary password-toggle" aria-controls="provider-link-dialog-password" aria-pressed="false" aria-label="Show password" title="Show password" data-message-aria-label="login.showPassword" data-translation-context-aria-label="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed" data-message-title="login.showPassword" data-translation-context-title="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"><span class="password-hidden-icon"><!-- icon ph:eye --></span><span class="password-shown-icon"><!-- icon ph:eye-slash --></span></button>
+					</div>
+					<label id="provider-link-dialog-email-code-label" data-message="login.code" data-translation-context="Label of the field for the code that was emailed to the player" hidden>
+						Code
+						<input id="provider-link-dialog-email-code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" data-code="email" />
+					</label>
+					<div id="provider-link-dialog-code-field" hidden>
+						<label data-message="login.twoFactorCode" data-translation-context="Label of the field for the 6-digit code from the player's authenticator app, or one of their recovery codes, when logging in, resetting a password or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes, changing the email address or deleting the account on the profile">
+							Authenticator code
+							<input id="provider-link-dialog-code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" aria-describedby="provider-link-dialog-code-hint" data-code="twoFactor" />
+						</label>
+						<p id="provider-link-dialog-code-hint" class="hint" data-message="login.twoFactorCodeHint" data-translation-context="Under the authenticator code field when logging in or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes, changing the email address or deleting the account on the profile">The 6-digit code from your authenticator app, or one of your recovery codes.</p>
+					</div>
+					<p id="provider-link-dialog-error" class="form-error" role="alert" hidden></p>
+					<div class="form-buttons">
+						<button id="provider-link-dialog-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+						<button id="provider-link-dialog-send" type="submit" aria-describedby="provider-link-dialog-error" data-shortcut="Alt+M" data-message="login.linkWithCode" data-translation-context="Button that emails a code to the account's address: on the login page, when linking a Google or Discord login to the account, to use instead of its password, and on the profile, for an account without a password, to check it's the player linking a login, changing the email address or deleting the account" hidden><!-- icon ph:paper-plane-right -->Email me a code</button>
+						<button id="provider-link-dialog-submit" type="submit" aria-describedby="provider-link-dialog-error" data-shortcut="Alt+C" data-message="profile.linkContinue" data-translation-context="Button in the dialog that links a Google or Discord login from the player's own profile: checks the password, or the emailed code, and the authenticator code, then goes to Google or Discord to choose the account to link"><!-- icon ph:link -->Continue</button>
+					</div>
+				</form>
+			</dialog>
+
+			<dialog id="account-delete-dialog" class="panel dialog" aria-labelledby="account-delete-title">
+				<form id="account-delete-form" class="form" novalidate>
+					<h2 id="account-delete-title" data-message="profile.deleteAccountTitle" data-translation-context="Title of the dialog that deletes the player's account">Delete your account</h2>
+					<p data-message="profile.deleteAccountIntro" data-translation-context="In the dialog that deletes the player's account, before what it asks">Your profile and characters are deleted, and can't be brought back. Groups whose anchor being is one of your characters are disbanded. Download your data first to keep a copy.</p>
+					<p id="account-delete-status" role="status"></p>
+					<fieldset id="account-delete-universes" class="account-delete-universes" hidden>
+						<legend data-message="profile.deleteUniverses" data-translation-context="In the dialog that deletes the player's account: heading of the universes the player is the only creator of">Universes only you create</legend>
+						<p class="hint" data-message="profile.deleteUniversesHint" data-translation-context="In the dialog that deletes the player's account, under the heading of the universes only they create: each needs a choice">Choose who creates each one from now on, or delete it, with its world and everyone's characters in it.</p>
+						<div id="account-delete-universe-list" class="account-delete-universe-list"></div>
+					</fieldset>
+					<!-- Not shown: tells password managers which account the password is for -->
+					<input id="account-delete-email" type="email" autocomplete="username" hidden />
+					<div id="account-delete-password-field" class="password-field" hidden>
+						<label data-message="login.password" data-translation-context="Label of the password field when logging in, and when turning two-factor authentication on or off, making new recovery codes, linking a Google or Discord login, changing the email address or deleting the account on the profile">
+							Password
+							<input id="account-delete-password" type="password" autocomplete="current-password" />
+						</label>
+						<button id="account-delete-password-toggle" type="button" class="secondary password-toggle" aria-controls="account-delete-password" aria-pressed="false" aria-label="Show password" title="Show password" data-message-aria-label="login.showPassword" data-translation-context-aria-label="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed" data-message-title="login.showPassword" data-translation-context-title="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"><span class="password-hidden-icon"><!-- icon ph:eye --></span><span class="password-shown-icon"><!-- icon ph:eye-slash --></span></button>
+					</div>
+					<div id="account-delete-code-field" hidden>
+						<label data-message="login.twoFactorCode" data-translation-context="Label of the field for the 6-digit code from the player's authenticator app, or one of their recovery codes, when logging in, resetting a password or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes, changing the email address or deleting the account on the profile">
+							Authenticator code
+							<input id="account-delete-code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" aria-describedby="account-delete-code-hint" data-code="twoFactor" />
+						</label>
+						<p id="account-delete-code-hint" class="hint" data-message="login.twoFactorCodeHint" data-translation-context="Under the authenticator code field when logging in or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes, changing the email address or deleting the account on the profile">The 6-digit code from your authenticator app, or one of your recovery codes.</p>
+					</div>
+					<div id="account-delete-email-code-field" hidden>
+						<p id="account-delete-email-code-intro"></p>
+						<button id="account-delete-send-code" type="button" class="secondary" data-shortcut="Alt+M" data-message="login.linkWithCode" data-translation-context="Button that emails a code to the account's address: on the login page, when linking a Google or Discord login to the account, to use instead of its password, and on the profile, for an account without a password, to check it's the player linking a login, changing the email address or deleting the account"><!-- icon ph:paper-plane-right -->Email me a code</button>
+						<label id="account-delete-email-code-label" data-message="login.code" data-translation-context="Label of the field for the code that was emailed to the player" hidden>
+							Code
+							<input id="account-delete-email-code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" data-code="email" />
+						</label>
+					</div>
+					<label id="account-delete-username-field" hidden>
+						<span data-message="profile.deleteTypeUsername" data-translation-context="Label of the field in the dialog deleting an account without a password, where the player types their username to confirm">Type your username to confirm</span>
+						<input id="account-delete-username" autocomplete="off" autocapitalize="none" spellcheck="false" />
+					</label>
+					<p id="account-delete-error" class="form-error" role="alert" hidden></p>
+					<div class="form-buttons">
+						<button id="account-delete-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+						<button id="account-delete-submit" type="submit" class="danger" aria-describedby="account-delete-error" disabled data-message="profile.deleteAccountConfirm" data-translation-context="Button in the dialog that deletes the player's account: checks what was typed and deletes the account for good"><!-- icon ph:trash -->Delete my account</button>
+					</div>
+				</form>
+			</dialog>
+
+			<!-- include character-sheet.html -->
+		</main>
+		<!-- include footer.html -->
+		<!-- include accessibility.html -->
+		<script type="module" src="/src/profile.ts"></script>
+	</body>
+</html>

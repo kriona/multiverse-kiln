@@ -63,6 +63,49 @@ export function deletionChange(membership: Membership, characterId: string, memb
 }
 
 /**
+ * The changes deleting an account makes to the groups its characters were in: a group whose anchor
+ * being was one of them disbands, and from any other group they each leave
+ *
+ * @param memberships The memberships of the account's characters
+ * @param members Each of those groups' members before the account was deleted, by group ID
+ * @return One change for each group disbanded, and one for each character leaving a group
+ */
+export function accountDeletionChanges(memberships: readonly (Membership & { character: GroupCharacter })[], members: ReadonlyMap<string, readonly GroupCharacter[]>): GroupChange[]
+{
+	const groupIds = [...new Set(memberships.map((membership) => membership.groupId))];
+
+	return(groupIds.flatMap((groupId): GroupChange[] =>
+	{
+		const own = memberships.filter((membership) => (membership.groupId === groupId));
+		const ownIds = new Set(own.map((membership) => membership.character.characterId));
+		const universeId = own[0].universeId;
+
+		if (own.some((membership) => membership.isAnchor))
+		{
+			return([{
+				kind: 'disbanded',
+				groupId,
+				universeId,
+				members: (members.get(groupId) ?? []).map((member) => ({
+					...member,
+					playable: (member.playable && !ownIds.has(member.characterId))
+				}))
+			}]);
+		}
+
+		return(own.map((membership) => ({
+			kind: 'left',
+			groupId,
+			universeId,
+			character: {
+				...membership.character,
+				playable: false
+			}
+		})));
+	}));
+}
+
+/**
  * Called after every change
  */
 export type GroupChangeListener = (change: GroupChange) => void;

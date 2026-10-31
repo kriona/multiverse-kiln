@@ -1,0 +1,56 @@
+// The privacy policy page (privacy.html)
+
+@use 'shared' as *;
+
+.privacy-page
+{
+	flex: 1;
+	overflow-y: auto;
+}
+
+.privacy-body
+{
+	max-width: 760px;
+	margin: 0 auto;
+	padding: 0 16px 16px;
+	line-height: 1.5;
+
+	h2
+	{
+		margin: 24px 0 8px;
+		font-size: 18px;
+		border-bottom: 1px solid #666;
+	}
+
+	h3
+	{
+		margin: 16px 0 4px;
+		font-size: 15px;
+	}
+
+	a
+	{
+		color: $link;
+
+		&:hover
+		{
+			color: $link-hover;
+		}
+	}
+
+	ul
+	{
+		margin: 0;
+		padding-left: 24px;
+	}
+
+	li
+	{
+		margin-bottom: 4px;
+	}
+
+	.privacy-updated
+	{
+		color: $text-muted;
+	}
+}

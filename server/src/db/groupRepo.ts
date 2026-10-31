@@ -1,7 +1,7 @@
 /**
  * Groups: the only module that reads or writes the groups, group_members and group_invites tables
  */
-import { and, asc, count, eq, gt, inArray, isNull, lte, or, sql } from 'drizzle-orm';
+import { and, asc, count, eq, gt, inArray, isNull, lte, or, sql, type SQL } from 'drizzle-orm';
 
 import { db, type Executor } from './client.js';
 import { characters, groupInvites, groupMembers, groups } from './schema.js';
@@ -510,6 +510,31 @@ export async function moveGroupsToDifficultyLevel(fromLevelId: number, toLevelId
  */
 export async function listExpiredMemberships(executor: Executor = db): Promise<(Membership & { character: GroupCharacter })[]>
 {
+	return(listMembershipsWhere(lte(characters.deleteAt, sql`now()`), executor));
+}
+
+/**
+ * The memberships of a player's characters, for telling the groups' rooms before deleting the player's
+ * account
+ *
+ * @param playerId The player's ID
+ * @param executor The database, or a transaction
+ * @return Each membership, with the character
+ */
+export async function listPlayerMemberships(playerId: string, executor: Executor = db): Promise<(Membership & { character: GroupCharacter })[]>
+{
+	return(listMembershipsWhere(eq(characters.playerId, playerId), executor));
+}
+
+/**
+ * The memberships of the characters a condition picks
+ *
+ * @param condition Which characters, on the characters table
+ * @param executor The database, or a transaction
+ * @return Each membership, with the character, who can't be played since they are going
+ */
+async function listMembershipsWhere(condition: SQL, executor: Executor): Promise<(Membership & { character: GroupCharacter })[]>
+{
 	const rows = await executor
 		.select({
 			groupId: groups.id,
@@ -523,7 +548,7 @@ export async function listExpiredMemberships(executor: Executor = db): Promise<(
 		.from(groupMembers)
 		.innerJoin(groups, eq(groups.id, groupMembers.groupId))
 		.innerJoin(characters, eq(characters.id, groupMembers.characterId))
-		.where(lte(characters.deleteAt, sql`now()`));
+		.where(condition);
 
 	return(rows.map(({ groupId, universeId, anchorCharacterId, characterId, playerId, name, raceId }) => ({
 		groupId,

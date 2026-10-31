@@ -1,0 +1,1 @@
+ALTER TYPE "public"."email_code_purpose" ADD VALUE 'deleteAccount';

@@ -15,6 +15,22 @@
 		"message": "Mark",
 		"source": "Score"
 	},
+	"account.editProfile": {
+		"message": "Mend yer profile",
+		"source": "Edit profile"
+	},
+	"account.logOut": {
+		"message": "Go ashore",
+		"source": "Log out"
+	},
+	"account.logOutFailed": {
+		"message": "Couldn't go ashore. Try again in a moment.",
+		"source": "Could not log out. Try again in a moment."
+	},
+	"account.menu": {
+		"message": "Yer account: {name}",
+		"source": "Your account: {name}"
+	},
 	"admin.characterDeletionDays": {
 		"message": "Days 'twixt last rites and Davy Jones",
 		"source": "Days between last rites and deletion"
@@ -35,9 +51,37 @@
 		"message": "Couldn't haul up the captain's orders.",
 		"source": "Could not load the site settings."
 	},
+	"admin.privacy": {
+		"message": "Articles o' Secrecy",
+		"source": "Privacy policy"
+	},
+	"admin.privacyContact": {
+		"message": "Address fer message bottles",
+		"source": "Contact email address"
+	},
+	"admin.privacyContactHint": {
+		"message": "The Articles o' Secrecy tell hands to send word here about what we keep on 'em. Leave it empty to leave that line off the articles.",
+		"source": "The privacy policy tells players to write here with questions about their information. Leave it empty to leave the line out of the policy."
+	},
+	"admin.privacyContactInvalid": {
+		"message": "Give an email address, such as privacy@example.com.",
+		"source": "Enter an email address, such as privacy@example.com."
+	},
 	"admin.saveFailed": {
 		"message": "Couldn't stow the captain's orders.",
 		"source": "Could not save the site settings."
+	},
+	"admin.socials": {
+		"message": "Social ports",
+		"source": "Social sites"
+	},
+	"admin.socialsHint": {
+		"message": "The bottom o' every page flies the flag o' each port charted here, with a passage to it. Passages must start with https:// and sail to that port. Leave a port empty to leave it off the chart.",
+		"source": "The footer of every page links to each site given here, showing its logo. Links must start with https:// and go to that site. Leave a site empty to leave it out."
+	},
+	"admin.socialUrlInvalid": {
+		"message": "Give a passage to {site} that starts with https://.",
+		"source": "Enter a link to {site} that starts with https://."
 	},
 	"admin.title": {
 		"message": "The Captain's Orders",
@@ -442,6 +486,22 @@
 	"characters.none": {
 		"message": "Ye haven't signed on a hand in this universe yet.",
 		"source": "You haven't made a character in this universe yet."
+	},
+	"chips.added": {
+		"message": "{name} brought aboard",
+		"source": "{name} added"
+	},
+	"chips.remove": {
+		"message": "Toss {name} overboard",
+		"source": "Remove {name}"
+	},
+	"chips.removed": {
+		"message": "{name} tossed overboard",
+		"source": "{name} removed"
+	},
+	"combobox.noMatches": {
+		"message": "Nary a match",
+		"source": "Nothing matches"
 	},
 	"createGroup.difficulty": {
 		"message": "Peril",
@@ -1987,6 +2047,206 @@
 		"message": "Edit {universe}",
 		"source": "Edit {universe}"
 	},
+	"email.accountCreated.body": {
+		"message": "Yer account on {siteName} be ready.",
+		"source": "Your account on {siteName} has been created."
+	},
+	"email.accountCreated.notYou": {
+		"message": "If ye didn't make it, some scallywag can read yer letters. Change yer email password, then reset the account's password on {siteName}.",
+		"source": "If you didn't create it, someone else can read your email. Change your email password, then reset the account's password on {siteName}."
+	},
+	"email.accountCreated.subject": {
+		"message": "Welcome aboard {siteName}",
+		"source": "Welcome to {siteName}"
+	},
+	"email.accountDeleted.body": {
+		"message": "Yer account on {siteName} was scuttled, with yer profile and yer hands. Thanks for sailin' with us.",
+		"source": "Your account on {siteName} was deleted, with your profile and characters. Thanks for playing."
+	},
+	"email.accountDeleted.notYou": {
+		"message": "If ye didn't scuttle it, some scallywag was usin' yer account. It can't be raised from the deep, but ye can hail the site about it.",
+		"source": "If you didn't delete it, someone else was using your account. It can't be brought back, but you can contact the site about it."
+	},
+	"email.accountDeleted.subject": {
+		"message": "Yer account on {siteName} was scuttled",
+		"source": "Your account on {siteName} was deleted"
+	},
+	"email.accountExists.body": {
+		"message": "Someone asked to make an account on {siteName} with this email address, but it already has one. Come aboard instead, or reset yer password if ye've forgotten it.",
+		"source": "Someone asked to create an account on {siteName} with this email address, but it already has one. Log in instead, or reset your password if you've forgotten it."
+	},
+	"email.accountExists.notYou": {
+		"message": "If ye didn't ask, pay this letter no mind. Nothin' about yer account has changed.",
+		"source": "If you didn't ask, you can ignore this email. Nothing about your account has changed."
+	},
+	"email.accountExists.subject": {
+		"message": "Ye already have an account on {siteName}",
+		"source": "You already have an account on {siteName}"
+	},
+	"email.action.changePassword": {
+		"message": "Change yer password",
+		"source": "Change your password"
+	},
+	"email.action.logIn": {
+		"message": "Come aboard {siteName}",
+		"source": "Log in to {siteName}"
+	},
+	"email.action.resetPassword": {
+		"message": "Reset yer password",
+		"source": "Reset your password"
+	},
+	"email.action.visit": {
+		"message": "Set sail for {siteName}",
+		"source": "Go to {siteName}"
+	},
+	"email.code.changeEmail.intro": {
+		"message": "Enter this code on {siteName} to make this yer account's email address:",
+		"source": "Enter this code on {siteName} to make this your account's email address:"
+	},
+	"email.code.changeEmail.subject": {
+		"message": "Yer code to change yer email address on {siteName}",
+		"source": "Your code to change your email address on {siteName}"
+	},
+	"email.code.confirmEmailChange.intro": {
+		"message": "Some scallywag asked to move yer account on {siteName} to another email address. If 'twas ye, enter this code to sail on:",
+		"source": "Someone asked to move your account on {siteName} to another email address. If it was you, enter this code to go on:"
+	},
+	"email.code.confirmEmailChange.subject": {
+		"message": "Yer code to change yer email address on {siteName}",
+		"source": "Your code to change your email address on {siteName}"
+	},
+	"email.code.deleteAccount.intro": {
+		"message": "Some scallywag asked to scuttle yer account on {siteName}, an' there be no raisin' it after. If 'twas ye, enter this code to sail on:",
+		"source": "Someone asked to delete your account on {siteName}, which can't be undone. If it was you, enter this code to go on:"
+	},
+	"email.code.deleteAccount.subject": {
+		"message": "Yer code to scuttle yer account on {siteName}",
+		"source": "Your code to delete your account on {siteName}"
+	},
+	"email.code.lifetime": {
+		"message": "The code works but once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"source": "The code works once, for {minutes, plural, one {# minute} other {# minutes}}."
+	},
+	"email.code.linkLogin.intro": {
+		"message": "Enter this code on {siteName} to board yer account with Google or Discord from now on:",
+		"source": "Enter this code on {siteName} to log in to your account with Google or Discord from now on:"
+	},
+	"email.code.linkLogin.subject": {
+		"message": "Yer code to lash a login to yer account on {siteName}",
+		"source": "Your code to link a login to your account on {siteName}"
+	},
+	"email.code.notYou": {
+		"message": "If ye didn't ask for this code, pay this letter no mind. No one can use the code without readin' yer letters.",
+		"source": "If you didn't ask for this code, you can ignore this email. Nobody can use the code without reading your email."
+	},
+	"email.code.register.intro": {
+		"message": "Enter this code on {siteName} to sign the articles an' make yer account:",
+		"source": "Enter this code on {siteName} to create your account:"
+	},
+	"email.code.register.subject": {
+		"message": "Yer code to make an account on {siteName}",
+		"source": "Your code to create an account on {siteName}"
+	},
+	"email.code.resetPassword.intro": {
+		"message": "Enter this code on {siteName} to choose a new password:",
+		"source": "Enter this code on {siteName} to choose a new password:"
+	},
+	"email.code.resetPassword.subject": {
+		"message": "Yer code to reset yer password on {siteName}",
+		"source": "Your code to reset your password on {siteName}"
+	},
+	"email.emailChanged.newAddress": {
+		"message": "This be the email address o' yer account on {siteName} now.",
+		"source": "This is now the email address of your account on {siteName}."
+	},
+	"email.emailChanged.notYou": {
+		"message": "If ye didn't change it, some scallywag may be sailin' yer account on {siteName}. Reset its password this very instant.",
+		"source": "If you didn't change it, someone else may be using your account on {siteName}. Reset its password immediately."
+	},
+	"email.emailChanged.oldAddress": {
+		"message": "The email address o' yer account on {siteName} was changed to {newAddress}. Letters about the account will sail there from now on.",
+		"source": "The email address of your account on {siteName} was changed to {newAddress}. Emails about the account will go there from now on."
+	},
+	"email.emailChanged.subject": {
+		"message": "Yer email address on {siteName} was changed",
+		"source": "Your email address on {siteName} was changed"
+	},
+	"email.footer": {
+		"message": "This letter was sent by {siteName}:",
+		"source": "This email was sent by {siteName}:"
+	},
+	"email.passwordChanged.body": {
+		"message": "The password o' yer account on {siteName} was just changed, an' every browser aboard it was put ashore.",
+		"source": "The password of your account on {siteName} was just changed, and every browser logged in to it was logged out."
+	},
+	"email.passwordChanged.notYou": {
+		"message": "If ye didn't change it, reset yer password on {siteName} this very instant.",
+		"source": "If you didn't change it, reset your password on {siteName} immediately."
+	},
+	"email.passwordChanged.subject": {
+		"message": "Yer password on {siteName} was changed",
+		"source": "Your password on {siteName} was changed"
+	},
+	"email.providerLinked.body": {
+		"message": "A {provider} login was lashed to yer account on {siteName}, so it can board the account from now on.",
+		"source": "A {provider} login was linked to your account on {siteName}, so it can log in to the account from now on."
+	},
+	"email.providerLinked.notYou": {
+		"message": "If ye didn't lash it on, some other scallywag may be sailin' yer account on {siteName}. Reset its password this very instant.",
+		"source": "If you didn't link it, someone else may be using your account on {siteName}. Reset its password immediately."
+	},
+	"email.providerLinked.subject": {
+		"message": "Ye can now board {siteName} with {provider}",
+		"source": "You can now log in to {siteName} with {provider}"
+	},
+	"email.recoveryCodeUsed.body": {
+		"message": "One o' the recovery codes o' yer account on {siteName} was just spent in place o' a code from yer authenticator app. It won't work again. {count, plural, =0 {Ye have no recovery codes left: forge new ones on yer profile.} one {Ye have # left.} other {Ye have # left.}}",
+		"source": "One of the recovery codes of your account on {siteName} was just used in place of a code from your authenticator app. It won't work again. {count, plural, =0 {You have no recovery codes left: make new ones on your profile.} one {You have # left.} other {You have # left.}}"
+	},
+	"email.recoveryCodeUsed.notYou": {
+		"message": "If ye didn't spend it, some scallywag has yer password an' recovery codes. Reset yer password this very instant, an' forge new recovery codes on yer profile.",
+		"source": "If you didn't use it, someone else has your password and recovery codes. Reset your password immediately, and make new recovery codes on your profile."
+	},
+	"email.recoveryCodeUsed.subject": {
+		"message": "A recovery code was spent on {siteName}",
+		"source": "A recovery code was used on {siteName}"
+	},
+	"email.twoFactorDisabled.body": {
+		"message": "Two-factor authentication was struck from yer account on {siteName}. Comin' aboard now needs only yer password, an' yer recovery codes be worthless.",
+		"source": "Two-factor authentication was turned off for your account on {siteName}. Logging in now needs only your password, and your recovery codes no longer work."
+	},
+	"email.twoFactorDisabled.notYou": {
+		"message": "If ye didn't strike it, some scallywag may be usin' yer account on {siteName}. Reset its password this very instant, then raise two-factor authentication again.",
+		"source": "If you didn't turn it off, someone else may be using your account on {siteName}. Reset its password immediately, then turn two-factor authentication on again."
+	},
+	"email.twoFactorDisabled.subject": {
+		"message": "Two-factor authentication be off for yer account on {siteName}",
+		"source": "Two-factor authentication is off for your account on {siteName}"
+	},
+	"email.twoFactorEnabled.body": {
+		"message": "Two-factor authentication was raised on yer account on {siteName}. Comin' aboard with yer password now asks for a code from yer authenticator app too. Stow yer recovery codes somewhere safe: they be the only way aboard if ye lose the app.",
+		"source": "Two-factor authentication was turned on for your account on {siteName}. Logging in with your password now asks for a code from your authenticator app too. Keep your recovery codes somewhere safe: they are the only way in if you lose the app."
+	},
+	"email.twoFactorEnabled.notYou": {
+		"message": "If ye didn't raise it, some scallywag may be usin' yer account on {siteName}. Reset its password this very instant.",
+		"source": "If you didn't turn it on, someone else may be using your account on {siteName}. Reset its password immediately."
+	},
+	"email.twoFactorEnabled.subject": {
+		"message": "Two-factor authentication be on for yer account on {siteName}",
+		"source": "Two-factor authentication is on for your account on {siteName}"
+	},
+	"email.wrongAuthenticatorCodes.body": {
+		"message": "{count} wrong codes from an authenticator app were tried on yer account on {siteName} this day.",
+		"source": "{count} wrong codes from an authenticator app were typed for your account on {siteName} today."
+	},
+	"email.wrongAuthenticatorCodes.notYou": {
+		"message": "If that weren't ye, come aboard an' change yer password.",
+		"source": "If this wasn't you, log in and change your password."
+	},
+	"email.wrongAuthenticatorCodes.subject": {
+		"message": "Wrong codes were tried on yer account on {siteName}",
+		"source": "Wrong codes were typed for your account on {siteName}"
+	},
 	"error.alreadyInGroup": {
 		"message": "That hand already sails with a crew. They have to jump ship first.",
 		"source": "That character is already in a group. They have to leave it first."
@@ -1998,6 +2258,142 @@
 	"error.areaLimit": {
 		"message": "A universe can have at most {max, plural, one {# area} other {# areas}}.",
 		"source": "A universe can have at most {max, plural, one {# area} other {# areas}}."
+	},
+	"error.auth.deleteUniversesChanged": {
+		"message": "The universes ye captain alone have changed. Look 'em over again afore scuttlin' yer account.",
+		"source": "The universes you alone create have changed. Look at them again before deleting your account."
+	},
+	"error.auth.deleteWrongUsername": {
+		"message": "Write yer username exactly as it be to swear to it.",
+		"source": "Type your username exactly as it is to confirm."
+	},
+	"error.auth.emailForm": {
+		"message": "Enter an email address, like name@example.com.",
+		"source": "Enter an email address, like name@example.com."
+	},
+	"error.auth.emailMismatch": {
+		"message": "That ain't the address the code was sent to.",
+		"source": "That isn't the address the code was sent to."
+	},
+	"error.auth.emailTaken": {
+		"message": "Another account already sails under that address.",
+		"source": "Another account already uses that address."
+	},
+	"error.auth.enterCodeFirst": {
+		"message": "Enter the code from the letter first, or ask for a new one if it's been more than a few minutes.",
+		"source": "Enter the code from the email first, or ask for a new one if it has been more than a few minutes."
+	},
+	"error.auth.noPassword": {
+		"message": "Yer account has no password to change. To give it one, go ashore an' use \"Forgot yer password?\" on the boardin' page.",
+		"source": "Your account has no password to change. To give it one, log out and use \"Forgot your password?\" on the login page."
+	},
+	"error.auth.passwordBreached": {
+		"message": "This password washed up in a data breach, so scallywags try it. Choose another.",
+		"source": "This password has turned up in a data breach, so attackers try it. Choose another."
+	},
+	"error.auth.passwordLength": {
+		"message": "Use a password o' {min} to {max} characters.",
+		"source": "Use a password of {min} to {max} characters."
+	},
+	"error.auth.providerFailed": {
+		"message": "Boardin' with {provider} never made port. Try again.",
+		"source": "Logging in with {provider} didn't finish. Try again."
+	},
+	"error.auth.providerNoVerifiedEmail": {
+		"message": "Yer {provider} account has no proven email address. Prove one with {provider} first, or make an account with yer email address.",
+		"source": "Your {provider} account has no verified email address. Verify one with {provider} first, or create an account with your email address."
+	},
+	"error.auth.providerNotFinished": {
+		"message": "Boardin' with Google or Discord never made port. Try again.",
+		"source": "Logging in with Google or Discord didn't finish. Try again."
+	},
+	"error.auth.providerNotOffered": {
+		"message": "This port don't let ye board with {provider}.",
+		"source": "This site doesn't offer logging in with {provider}."
+	},
+	"error.auth.providerOtherAccount": {
+		"message": "That {provider} account be already lashed to another account here.",
+		"source": "That {provider} account is already linked to another account here."
+	},
+	"error.auth.providerOtherLogin": {
+		"message": "Yer account already has a different {provider} login. Board with that one, or with yer password.",
+		"source": "Your account already has a different {provider} login. Log in with that one, or with your password."
+	},
+	"error.auth.providerOtherLoginLinked": {
+		"message": "Yer account already has a different {provider} login lashed to it.",
+		"source": "Your account already has a different {provider} login."
+	},
+	"error.auth.providerStartAgain": {
+		"message": "It's been more than a few minutes since ye boarded with Google or Discord. Board with it again.",
+		"source": "It has been more than a few minutes since you logged in with Google or Discord. Log in with it again."
+	},
+	"error.auth.providerUnavailable": {
+		"message": "{provider} didn't answer the hail. Try again in a few minutes.",
+		"source": "{provider} didn't answer. Try again in a few minutes."
+	},
+	"error.auth.tooManyAttempts": {
+		"message": "Too many tries. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
+		"source": "Too many tries. Try again in {minutes, plural, one {# minute} other {# minutes}}."
+	},
+	"error.auth.tooManyWrongAuthenticatorCodes": {
+		"message": "Too many wrong codes from an authenticator app were tried on yer account this day. Use one o' yer recovery codes, or try again in {hours, plural, one {# hour} other {# hours}}.",
+		"source": "Too many wrong codes from an authenticator app were typed for your account today. Use one of your recovery codes, or try again in {hours, plural, one {# hour} other {# hours}}."
+	},
+	"error.auth.twoFactorAlreadyOn": {
+		"message": "Two-factor authentication be already raised on yer account.",
+		"source": "Two-factor authentication is already on for your account."
+	},
+	"error.auth.twoFactorCodeNeeded": {
+		"message": "Enter the code from yer authenticator app, or one o' yer recovery codes.",
+		"source": "Enter the code from your authenticator app, or one of your recovery codes."
+	},
+	"error.auth.twoFactorLoginAgain": {
+		"message": "Too long has passed since ye gave yer password, or too many codes were wrong. Come aboard with yer password again.",
+		"source": "It has been too long since you typed your password, or too many codes were wrong. Log in with your password again."
+	},
+	"error.auth.twoFactorNoPassword": {
+		"message": "Two-factor authentication be for comin' aboard with a password, an' yer account has none. Google an' Discord ask for their own.",
+		"source": "Two-factor authentication is for logging in with a password, and your account has none. Google and Discord ask for their own."
+	},
+	"error.auth.twoFactorNotOn": {
+		"message": "Two-factor authentication ain't raised on yer account.",
+		"source": "Two-factor authentication isn't on for your account."
+	},
+	"error.auth.twoFactorSetUpAgain": {
+		"message": "Start riggin' two-factor authentication again: too long has passed since ye began.",
+		"source": "Start setting up two-factor authentication again: it has been too long since it started."
+	},
+	"error.auth.usernameForm": {
+		"message": "Use {min} to {max} letters (a to z), digits an' underscores.",
+		"source": "Use {min} to {max} letters (a to z), digits and underscores."
+	},
+	"error.auth.usernameTaken": {
+		"message": "Another account already sails under that username. Choose another.",
+		"source": "Another account already has that username. Choose another."
+	},
+	"error.auth.wrongCode": {
+		"message": "That code ain't right, or it's gone stale. Check the latest letter, or ask for a new code.",
+		"source": "That code isn't right, or it has expired. Check the latest email, or ask for a new code."
+	},
+	"error.auth.wrongCurrentPassword": {
+		"message": "That ain't yer current password.",
+		"source": "That isn't your current password."
+	},
+	"error.auth.wrongLogin": {
+		"message": "That email address an' password don't match any account.",
+		"source": "That email address and password don't match an account."
+	},
+	"error.auth.wrongPassword": {
+		"message": "That password ain't right.",
+		"source": "That password isn't right."
+	},
+	"error.auth.wrongSetupCode": {
+		"message": "That code ain't right. Check yer device's clock keeps true time, an' enter the newest code yer authenticator app shows for this port.",
+		"source": "That code isn't right. Check that your device's clock is right, and enter the newest code your authenticator app shows for this site."
+	},
+	"error.auth.wrongTwoFactorCode": {
+		"message": "That code ain't right, or was already spent. Check yer device's clock keeps true time, an' enter the newest code, or use a recovery code.",
+		"source": "That code isn't right, or was already used. Check that your device's clock is right, and enter the newest code, or use a recovery code."
 	},
 	"error.cantDeleteArea": {
 		"message": "The tavern and home port can't be scuttled.",
@@ -2101,7 +2497,7 @@
 	},
 	"error.lastRitesOff": {
 		"message": "There be no last rites on this ship. Hands can only be thrown overboard on the spot.",
-		"source": "Characters can't be given their last rites on this site. They can only be deleted straight away."
+		"source": "Characters can't be given their last rites on this site. They can only be deleted immediately."
 	},
 	"error.linkOutOfBounds": {
 		"message": "The passage's cell must be inside the area's chart.",
@@ -2167,6 +2563,10 @@
 		"message": "There be no passage on that cell.",
 		"source": "There is no link on that cell."
 	},
+	"error.noSuchPlayer": {
+		"message": "No sailor goes by that username.",
+		"source": "No player has that username."
+	},
 	"error.noSuchRace": {
 		"message": "Those folk be lost at sea.",
 		"source": "The race doesn't exist."
@@ -2214,6 +2614,22 @@
 	"error.parentNotInUniverse": {
 		"message": "The mother area must be an area of this universe.",
 		"source": "The parent area must be an area of this universe."
+	},
+	"error.profile.locale": {
+		"message": "Choose a tongue from the list.",
+		"source": "Choose a language from the list."
+	},
+	"error.profile.noSuchCharacter": {
+		"message": "Ye have no such hand.",
+		"source": "You have no such character."
+	},
+	"error.profile.socialUsername": {
+		"message": "That ain't a username on {site}. Enter the username alone, not a link.",
+		"source": "That isn't a username on {site}. Enter the username alone, not a link."
+	},
+	"error.profile.timeZone": {
+		"message": "Choose a time zone from the chart.",
+		"source": "Choose a time zone from the list."
 	},
 	"error.raceInUse": {
 		"message": "Hands hail from these folk, so they can't be scuttled. Lock 'em away instead.",
@@ -2415,6 +2831,10 @@
 		"message": "Unrollin' the charts...",
 		"source": "Loading the universe..."
 	},
+	"game.universeDeleted": {
+		"message": "{universe} was sent to the deep, with all aboard.",
+		"source": "{universe} was deleted, with everything in it."
+	},
 	"game.universeNotFound": {
 		"message": "That universe be lost at sea.",
 		"source": "That universe could not be found."
@@ -2534,6 +2954,10 @@
 	"home.listFailed": {
 		"message": "Couldn't list the universes. Reload the page to try again.",
 		"source": "Could not list the universes. Reload the page to try again."
+	},
+	"home.logIn": {
+		"message": "Come aboard",
+		"source": "Log in"
 	},
 	"home.noOwnUniverses": {
 		"message": "Ye haven't made a universe yet.",
@@ -2751,6 +3175,14 @@
 		"message": "GNU Affero General Public License",
 		"source": "GNU Affero General Public License"
 	},
+	"license.artwork": {
+		"message": "Flag an' tile charts",
+		"source": "Logo and tilesets"
+	},
+	"license.artworkCredit": {
+		"message": "The flag an' the ship's own tile charts be the handiwork o' {artist}.",
+		"source": "The logo and the default tilesets were drawn by {artist}."
+	},
 	"license.assets": {
 		"message": "Art an' other treasures",
 		"source": "Art and other assets"
@@ -2758,6 +3190,10 @@
 	"license.assetsNotice": {
 		"message": "The game's own art, sounds, fonts, characters, settin' and tale ain't covered by the GNU Affero General Public License. They be copyright {holder}, all rights reserved, an' may not be plundered for reuse without written permission. Treasures made by other hands keep their own licenses, listed below.",
 		"source": "The game's own art, audio, fonts, characters, setting and story are not covered by the GNU Affero General Public License. They are copyright {holder}, all rights reserved, and may not be reused without written permission. Assets made by others keep their own licenses, listed below."
+	},
+	"license.code": {
+		"message": "Code from other hands",
+		"source": "Code by others"
 	},
 	"license.communityUse": {
 		"message": "{siteName} uses trademarks an'/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy ({policy}). We be expressly forbidden from chargin' ye to use or reach this content. {siteName} ain't published, endorsed, or specifically approved by Paizo. For more about Paizo Inc. an' Paizo products, visit {paizo}.",
@@ -2794,6 +3230,10 @@
 	"license.phosphor": {
 		"message": "The sigils on yer buttons be from {phosphor}, used under the MIT License:",
 		"source": "Interface icons are from {phosphor}, used under the MIT License:"
+	},
+	"license.qrCode": {
+		"message": "The QR code for riggin' two-factor authentication be drawn by {qrCode}, used under the MIT License:",
+		"source": "The QR code for setting up two-factor authentication is drawn by {qrCode}, used under the MIT License:"
 	},
 	"license.starfinder": {
 		"message": "Starfinder First Edition rules o' the stars",
@@ -2903,25 +3343,245 @@
 		"message": "Tavern",
 		"source": "Lobby"
 	},
-	"login.failed": {
-		"message": "Couldn't come aboard. Try again in a tick.",
-		"source": "Could not log in. Try again in a moment."
+	"login.back": {
+		"message": "Astern",
+		"source": "Back"
 	},
-	"login.invalidName": {
-		"message": "Give a name o' letters, numbers, spaces or punctuation.",
-		"source": "Enter a name of letters, numbers, spaces or punctuation."
+	"login.checkEmail": {
+		"message": "Check yer letters",
+		"source": "Check your email"
 	},
-	"login.nameInUse": {
-		"message": "That pirate be already aboard from another browser.",
-		"source": "That player is already logged in from another browser."
+	"login.code": {
+		"message": "Code",
+		"source": "Code"
 	},
-	"login.nameLabel": {
-		"message": "What be yer name, sailor?",
-		"source": "What should we call you?"
+	"login.codeResent": {
+		"message": "Sent a fresh code. The one afore it no longer works.",
+		"source": "Sent a new code. The one before no longer works."
 	},
-	"login.submit": {
+	"login.codeSentLink": {
+		"message": "We've sent a letter to {email}. Enter the code from it to lash yer login on. It works but once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"source": "We've emailed {email}. Enter the code from the email to link your login. It works once, for {minutes, plural, one {# minute} other {# minutes}}."
+	},
+	"login.codeSentRegister": {
+		"message": "We've sent a letter to {email}. Enter the code from it. It works but once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"source": "We've emailed {email}. Enter the code from the email. It works once, for {minutes, plural, one {# minute} other {# minutes}}."
+	},
+	"login.codeSentReset": {
+		"message": "If {email} belongs to an account, we've sent it a letter with a code. Enter the code from it. It works but once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"source": "If {email} belongs to an account, we've emailed it a code. Enter the code from the email. It works once, for {minutes, plural, one {# minute} other {# minutes}}."
+	},
+	"login.continue": {
+		"message": "Onward",
+		"source": "Continue"
+	},
+	"login.displayName": {
+		"message": "Name",
+		"source": "Name"
+	},
+	"login.displayNameHint": {
+		"message": "The name other sailors see. It needn't be yer real name, nor yers alone.",
+		"source": "The name other players see. It doesn't have to be your real name, or unique."
+	},
+	"login.email": {
+		"message": "Email address",
+		"source": "Email address"
+	},
+	"login.forgotPassword": {
+		"message": "Forgot yer password?",
+		"source": "Forgot your password?"
+	},
+	"login.linkIntro": {
+		"message": "Ye already have an account here with {email}. Come aboard it once to lash yer {provider} login on, an' ye can use either from then on.",
+		"source": "You already have an account here with {email}. Log in to it once to link your {provider} login, and you can use either from then on."
+	},
+	"login.linkIntroCode": {
+		"message": "Ye already have an account here with {email}. We'll send it a letter with a code to lash yer {provider} login on, an' ye can use either from then on.",
+		"source": "You already have an account here with {email}. We'll email it a code to link your {provider} login, and you can use either from then on."
+	},
+	"login.linkSubmit": {
+		"message": "Lash the accounts",
+		"source": "Link account"
+	},
+	"login.linkTitle": {
+		"message": "Lash yer accounts together",
+		"source": "Link your account"
+	},
+	"login.linkWithCode": {
+		"message": "Send me a code by letter",
+		"source": "Email me a code"
+	},
+	"login.newPassword": {
+		"message": "Password",
+		"source": "Password"
+	},
+	"login.notNow": {
+		"message": "Not now",
+		"source": "Not now"
+	},
+	"login.orEmail": {
+		"message": "or use yer email address",
+		"source": "or use your email address"
+	},
+	"login.password": {
+		"message": "Password",
+		"source": "Password"
+	},
+	"login.passwordHint": {
+		"message": "At least {min} characters. A few words strung together be easy to remember an' hard to guess.",
+		"source": "At least {min} characters. A few words strung together are easy to remember and hard to guess."
+	},
+	"login.passwordManager": {
+		"message": "A password keeper, such as {bitwarden} or {onePassword}, can forge a strong password an' remember it for ye.",
+		"source": "A password manager, such as {bitwarden} or {onePassword}, can make a strong password and remember it for you."
+	},
+	"login.privacy": {
+		"message": "Read how we guard yer information in our {privacy}.",
+		"source": "Read how we look after your information in our {privacy}."
+	},
+	"login.providerCanceled": {
+		"message": "Boardin' with Google or Discord was called off. Try again, or use yer email address.",
+		"source": "Logging in with Google or Discord was canceled. Try again, or use your email address."
+	},
+	"login.providerRegisterIntro": {
+		"message": "Ye're comin' aboard with {provider} as {email}, which be new to these waters. Choose how other sailors find an' see ye to sign yer articles.",
+		"source": "You're logging in with {provider} as {email}, which is new here. Choose how other players find and see you to create your account."
+	},
+	"login.providersRecommended": {
+		"message": "Boardin' with one o' these be safest: there's no password here to forget or have plundered.",
+		"source": "Logging in with one of these is safest: there's no password here to forget or have stolen."
+	},
+	"login.register": {
+		"message": "Sign the articles",
+		"source": "Create an account"
+	},
+	"login.registerHeading": {
+		"message": "Sign the articles",
+		"source": "Create an account"
+	},
+	"login.registerIntro": {
+		"message": "Enter yer email address, an' we'll send ye a code to prove it be yers.",
+		"source": "Enter your email address, and we'll send you a code to check it's yours."
+	},
+	"login.registerProvidersHint": {
+		"message": "Boardin' with Google or Discord on the boardin' screen signs yer articles too, an' be safest: there's no password here to forget or have plundered.",
+		"source": "Logging in with Google or Discord on the login screen creates an account too, and is safest: there's no password here to forget or have stolen."
+	},
+	"login.registerSubmit": {
+		"message": "Sign the articles",
+		"source": "Create account"
+	},
+	"login.registerTitle": {
+		"message": "Sign yer articles",
+		"source": "Create your account"
+	},
+	"login.registeredIntro": {
+		"message": "Two-factor authentication keeps yer account safe even if some scallywag learns yer password: comin' aboard asks for a code from an app on yer phone too. Ye can rig it now, or any time from yer profile.",
+		"source": "Two-factor authentication keeps your account safe even if someone learns your password: logging in asks for a code from an app on your phone too. You can set it up now, or any time from your profile."
+	},
+	"login.registeredTitle": {
+		"message": "Yer articles be signed",
+		"source": "Your account is ready"
+	},
+	"login.rememberMe": {
+		"message": "Remember me",
+		"source": "Remember me"
+	},
+	"login.resendCode": {
+		"message": "Send a fresh code",
+		"source": "Send a new code"
+	},
+	"login.resetEmailIntro": {
+		"message": "Enter yer account's email address, an' we'll send ye a code to choose a new password.",
+		"source": "Enter your account's email address, and we'll send you a code to choose a new password."
+	},
+	"login.resetHeading": {
+		"message": "Reset yer password",
+		"source": "Reset your password"
+	},
+	"login.resetIntro": {
+		"message": "Every browser aboard yer account goes ashore when the password changes.",
+		"source": "Every browser logged in to your account is logged out when the password changes."
+	},
+	"login.resetSubmit": {
+		"message": "Stow the password",
+		"source": "Save password"
+	},
+	"login.resetTitle": {
+		"message": "Choose a new password",
+		"source": "Choose a new password"
+	},
+	"login.sendCode": {
+		"message": "Send the code",
+		"source": "Send code"
+	},
+	"login.setUpTwoFactor": {
+		"message": "Rig two-factor authentication",
+		"source": "Set up two-factor authentication"
+	},
+	"login.showPassword": {
+		"message": "Show me password",
+		"source": "Show password"
+	},
+	"login.title": {
 		"message": "Come aboard",
-		"source": "Enter"
+		"source": "Log in"
+	},
+	"login.trustBrowser": {
+		"message": "Don't ask again on this browser for {days, plural, one {# day} other {# days}}",
+		"source": "Don't ask again on this browser for {days, plural, one {# day} other {# days}}"
+	},
+	"login.trustBrowserHint": {
+		"message": "Only on a browser no other soul uses. Yer password be still asked for.",
+		"source": "Only on a browser that no one else uses. Your password is still asked for."
+	},
+	"login.twoFactorCode": {
+		"message": "Authenticator code",
+		"source": "Authenticator code"
+	},
+	"login.twoFactorCodeHint": {
+		"message": "The 6-digit code from yer authenticator app, or one o' yer recovery codes.",
+		"source": "The 6-digit code from your authenticator app, or one of your recovery codes."
+	},
+	"login.twoFactorIntro": {
+		"message": "Yer account has two-factor authentication. Open yer authenticator app an' enter the 6-digit code it shows for this port.",
+		"source": "Your account has two-factor authentication. Open your authenticator app and enter the 6-digit code it shows for this site."
+	},
+	"login.twoFactorLostHint": {
+		"message": "Lost yer phone overboard? Enter one o' yer recovery codes instead. Each works once.",
+		"source": "Lost your phone? Enter one of your recovery codes instead. Each works once."
+	},
+	"login.twoFactorResetHint": {
+		"message": "Yer account has two-factor authentication, so the email code ain't enough on its own. Enter the 6-digit code from yer authenticator app, or one o' yer recovery codes.",
+		"source": "Your account has two-factor authentication, so the email code isn't enough on its own. Enter the 6-digit code from your authenticator app, or one of your recovery codes."
+	},
+	"login.twoFactorTitle": {
+		"message": "Enter yer authenticator code",
+		"source": "Enter your authenticator code"
+	},
+	"login.unreachable": {
+		"message": "Couldn't reach the server. Check yer connection an' try again.",
+		"source": "Could not reach the server. Check your connection and try again."
+	},
+	"login.username": {
+		"message": "Username",
+		"source": "Username"
+	},
+	"login.usernameAvailable": {
+		"message": "That username be free for the takin'.",
+		"source": "That username is available."
+	},
+	"login.usernameHint": {
+		"message": "How other sailors find ye, an' tell ye apart from others with the same name. {min} to {max} letters (a to z), digits an' underscores.",
+		"source": "How other players find you, and tell you apart from others with the same name. {min} to {max} letters (a to z), digits and underscores."
+	},
+	"login.withDiscord": {
+		"message": "Come aboard with Discord",
+		"source": "Log in with Discord"
+	},
+	"login.withGoogle": {
+		"message": "Come aboard with Google",
+		"source": "Log in with Google"
 	},
 	"map.announce.appeared": {
 		"message": "{count, plural, one {{players} heaves into view.} other {{players} heave into view.}}",
@@ -3135,13 +3795,25 @@
 		"message": "Hoistin'...",
 		"source": "Loading..."
 	},
-	"page.playingAs": {
-		"message": "Sailin' as {name}",
-		"source": "Playing as {name}"
+	"page.privacy": {
+		"message": "Secrets",
+		"source": "Privacy"
+	},
+	"page.privacyPolicy": {
+		"message": "Articles o' Secrecy",
+		"source": "privacy policy"
 	},
 	"page.shortcuts": {
 		"message": "Keyboard shortcuts",
 		"source": "Keyboard shortcuts"
+	},
+	"page.socialLink": {
+		"message": "{siteName} in port at {site}",
+		"source": "{siteName} on {site}"
+	},
+	"page.socials": {
+		"message": "Social ports",
+		"source": "Social sites"
 	},
 	"page.sourceCode": {
 		"message": "Source code",
@@ -3506,6 +4178,846 @@
 	"play.nowPlaying": {
 		"message": "Ye be sailin' as {name} now.",
 		"source": "You are now playing {name}."
+	},
+	"player.characters": {
+		"message": "Hands",
+		"source": "Characters"
+	},
+	"player.heading": {
+		"message": "Profile",
+		"source": "Profile"
+	},
+	"player.languages": {
+		"message": "Tongues",
+		"source": "Languages"
+	},
+	"player.location": {
+		"message": "Port o' call",
+		"source": "Location"
+	},
+	"player.noCharacters": {
+		"message": "No hands to show.",
+		"source": "No characters to show."
+	},
+	"player.pronouns": {
+		"message": "Pronouns",
+		"source": "Pronouns"
+	},
+	"player.social": {
+		"message": "{site}: {username}",
+		"source": "{site}: {username}"
+	},
+	"player.timeZone": {
+		"message": "Time zone",
+		"source": "Time zone"
+	},
+	"player.timeZoneValue": {
+		"message": "{city} ({zoneName}), where the ship's bell says {time}",
+		"source": "{city} ({zoneName}), where it's {time} now"
+	},
+	"privacy.account": {
+		"message": "Yer account",
+		"source": "Your account"
+	},
+	"privacy.accountEmail": {
+		"message": "Yer email address, used to come aboard an' to send ye letters about yer account.",
+		"source": "Your email address, used to log in and to send you emails about your account."
+	},
+	"privacy.accountNames": {
+		"message": "Yer username, which be yers alone an' lets other players find ye, an' yer display name, which needn't be yer real name.",
+		"source": "Your username, which is unique and lets other players find you, and your display name, which needn't be your real name."
+	},
+	"privacy.accountPassword": {
+		"message": "If ye have a local account, yer password, kept only scrambled so it can't be turned back into the password (a one-way hash: Argon2id for passwords, an' a keyed hash, HMAC, for recovery codes an' the codes an' addresses below).",
+		"source": "If you have a local account, your password, kept only in a scrambled form that can't be turned back into the password (a one-way hash: Argon2id for passwords, and a keyed hash, HMAC, for recovery codes and the codes and addresses below)."
+	},
+	"privacy.accountProviders": {
+		"message": "If ye come aboard with Google or Discord, the ID an' email address o' that account, which they send us when ye come aboard.",
+		"source": "If you log in with Google or Discord, the ID and email address of that account, which they send us when you log in."
+	},
+	"privacy.accountTwoFactor": {
+		"message": "If ye turn on two-factor authentication, the secret yer authenticator app shares with us, locked away with a key kept apart from our database, an' yer recovery codes, kept only scrambled.",
+		"source": "If you turn on two-factor authentication, the secret your authenticator app shares with us, encrypted with a key kept apart from our database, and your recovery codes, kept only in a scrambled form."
+	},
+	"privacy.changes": {
+		"message": "Changes to these articles",
+		"source": "Changes to this policy"
+	},
+	"privacy.changesText": {
+		"message": "The date atop this page shows when these articles last changed. If they change in a way that matters to ye, we'll send ye a letter afore the change takes hold.",
+		"source": "The date at the top of this page shows when this policy last changed. If it changes in a way that matters to you, we will email you before the change takes effect."
+	},
+	"privacy.children": {
+		"message": "Young'uns",
+		"source": "Children"
+	},
+	"privacy.childrenText": {
+		"message": "Ye must be at least 13 to have an account, or older where the law o' yer country sets a higher age for agreein' to these articles yerself. If we learn an account belongs to someone younger, we delete it.",
+		"source": "You must be at least 13 to have an account, or older where the law of your country sets a higher age for agreeing to this policy yourself. If we learn that an account belongs to someone younger, we delete it."
+	},
+	"privacy.contact": {
+		"message": "For questions about these articles, or to ask about yer information, send a letter to {contact}.",
+		"source": "For questions about this policy, or to ask about your information, email {contact}."
+	},
+	"privacy.contents": {
+		"message": "What's in the hold",
+		"source": "Contents"
+	},
+	"privacy.cookies": {
+		"message": "Cookies an' browser stowage",
+		"source": "Cookies and browser storage"
+	},
+	"privacy.cookiesCharacter": {
+		"message": "The hand each tab last sailed as, so reloadin' the tab sails as 'em again, till the tab closes.",
+		"source": "The character each tab last played, so reloading the tab plays them again, until the tab closes."
+	},
+	"privacy.cookiesCode": {
+		"message": "After ye enter a code we sent ye, a cookie that lets that browser take the next step, such as choosin' a password, for 10 minutes.",
+		"source": "After you enter a code we emailed you, a cookie that lets that browser take the next step, such as choosing a password, for 10 minutes."
+	},
+	"privacy.cookiesIntro": {
+		"message": "We stow only what the ship needs to sail, so we don't ask afore stowin' it. There be no cookies from other ships.",
+		"source": "We store only what the site needs to work, so we don't ask before storing it. There are no cookies from other sites."
+	},
+	"privacy.cookiesKnownBrowser": {
+		"message": "A cookie that shows a browser has come aboard yer account afore, so other scallywags' wrong password guesses can't keep it from boardin'. It don't say which account it be, an' lasts 180 days after ye last come aboard.",
+		"source": "A cookie that shows a browser has logged in to your account, so other people's wrong password guesses can't stop it from logging in. It doesn't say which account it is, and lasts 180 days after you last log in."
+	},
+	"privacy.cookiesLanguage": {
+		"message": "The tongue ye choose at the bottom o' the page.",
+		"source": "The language you choose at the bottom of the page."
+	},
+	"privacy.cookiesSession": {
+		"message": "A cookie that keeps ye aboard. It ends when ye go ashore, after an hour without use, or when ye close yer browser; with \"Remember me\" checked, after 30 days without use.",
+		"source": "A cookie that keeps you logged in. It ends when you log out, after an hour without use, or when you close your browser; with \"Remember me\" checked, after 30 days without use."
+	},
+	"privacy.cookiesTwoFactor": {
+		"message": "With two-factor authentication on, a cookie that lets the browser where ye gave yer password, or came aboard with Google or Discord, enter yer authenticator code, for 10 minutes. If ye choose not to be asked again on a browser, a cookie that lets it skip the code for 30 days, till ye stop trustin' it on yer profile.",
+		"source": "With two-factor authentication on, a cookie that lets the browser where you typed your password, or logged in with Google or Discord, enter your authenticator code, for 10 minutes. If you choose not to be asked again on a browser, a cookie that lets it skip the code for 30 days, until you stop trusting it on your profile."
+	},
+	"privacy.deleting": {
+		"message": "Deletin' yer account deletes yer profile, yer hands an' yer security records. Crews led by one o' yer hands are scuttled. For each universe ye be the only creator of, ye choose whether to hand it to another o' its editors or delete it; what ye built in universes others edit stays part o' them.",
+		"source": "Deleting your account deletes your profile, your characters and your security records. Groups led by one of your characters disband. For each universe you are the only creator of, you choose whether to hand it to another of its editors or delete it; what you built in universes others edit stays part of them."
+	},
+	"privacy.heading": {
+		"message": "Articles o' Secrecy",
+		"source": "Privacy Policy"
+	},
+	"privacy.howLong": {
+		"message": "How long we keep it",
+		"source": "How long we keep it"
+	},
+	"privacy.howLongAccount": {
+		"message": "Yer account, profile an' hands, till ye delete 'em.",
+		"source": "Your account, profile and characters, until you delete them."
+	},
+	"privacy.howLongBackups": {
+		"message": "Deleted information can linger in our backups a short while, till they be replaced.",
+		"source": "Deleted information can stay in our backups for a short time, until they are replaced."
+	},
+	"privacy.howLongCharacters": {
+		"message": "A hand ye send to Davy Jones, till the days the ship waits afore deletin' hands have passed.",
+		"source": "A character you delete, until the days the site waits before deleting characters have passed."
+	},
+	"privacy.howLongCharactersDays": {
+		"message": "A hand ye send to Davy Jones, for {days, plural, one {# day} other {# days}}, while ye can still haul 'em back.",
+		"source": "A character you delete, for {days, plural, one {# day} other {# days}}, while you can still bring them back."
+	},
+	"privacy.howLongSecurity": {
+		"message": "Security records as long as the list above says: the log for 90 days, codes for 15 minutes, an' counts only while a limit needs 'em.",
+		"source": "Security records as long as the list above says: the log for 90 days, codes for 15 minutes, and counts only while a limit needs them."
+	},
+	"privacy.intro": {
+		"message": "These articles tell what this {siteName} ship keeps about ye when ye sail or build universes here, why it keeps it, who can see it, how long it be kept, an' how ye can haul it down or delete it. We keep as little data as we can.",
+		"source": "This policy explains what this {siteName} site keeps about you when you play or build universes here, why it keeps it, who can see it, how long it is kept, and how you can download or delete it. We keep as little data as we can."
+	},
+	"privacy.keep": {
+		"message": "What we keep in the hold",
+		"source": "What we keep"
+	},
+	"privacy.not": {
+		"message": "What we never do",
+		"source": "What we don't do"
+	},
+	"privacy.notText": {
+		"message": "We show no ads, use no analytics or trackin' services, an' never sell yer information or share it with anyone for their own use. We only send ye letters about yer account, never to sell ye somethin'.",
+		"source": "We don't show ads, don't use analytics or tracking services, and never sell your information or share it with anyone for their own use. We only email you about your account, never to sell you something."
+	},
+	"privacy.play": {
+		"message": "What ye sail an' build",
+		"source": "What you play and build"
+	},
+	"privacy.playCharacters": {
+		"message": "Yer hands, their gear an' progress, the crews they sail with, an' the parts o' each universe yer crews have charted.",
+		"source": "Your characters, their items and progress, the groups they are in, and the parts of each universe your groups have explored."
+	},
+	"privacy.playChat": {
+		"message": "Chatter ain't saved. The game server keeps a tavern's latest messages in memory, so players who arrive can read 'em, till the tavern closes or the server restarts.",
+		"source": "Chat isn't saved. The game server keeps a lobby's most recent messages in memory, so players who arrive can read them, until the lobby closes or the server restarts."
+	},
+	"privacy.playUniverses": {
+		"message": "The universes ye create or help edit, an' what ye upload to 'em, such as tile pictures.",
+		"source": "The universes you create or help edit, and what you upload to them, such as tile images."
+	},
+	"privacy.profile": {
+		"message": "Yer profile",
+		"source": "Your profile"
+	},
+	"privacy.profileText": {
+		"message": "Anythin' ye choose to fill in on yer profile: a likeness, yer pronouns, yer location an' time zone, the tongues ye speak, yer tongue for the site, links to yer social media accounts, an' which o' yer hands others can see. Only yer username an' display name be required.",
+		"source": "Anything you choose to fill in on your profile: a photo, your pronouns, your location and time zone, the languages you know, your language for the site, links to your social media accounts, and which of your characters others can see. Only your username and display name are required."
+	},
+	"privacy.rights": {
+		"message": "Yer choices an' rights",
+		"source": "Your choices and rights"
+	},
+	"privacy.rightsCorrect": {
+		"message": "See an' change yer information on yer profile.",
+		"source": "See and change your information on your profile."
+	},
+	"privacy.rightsDelete": {
+		"message": "Delete yer account from yer profile.",
+		"source": "Delete your account from your profile."
+	},
+	"privacy.rightsExport": {
+		"message": "Haul down everythin' we keep about ye, as one file, from yer profile.",
+		"source": "Download everything we keep about you, as one file, from your profile."
+	},
+	"privacy.security": {
+		"message": "Keepin' it safe",
+		"source": "Keeping it safe"
+	},
+	"privacy.securityCodes": {
+		"message": "The codes we send ye, to sign on, reset yer password or change yer email address, kept only scrambled, an' only till they be used or expire 15 minutes later.",
+		"source": "The codes we email you, to register, reset your password or change your email address, kept only in a scrambled form, and only until they are used or expire 15 minutes later."
+	},
+	"privacy.securityLimits": {
+		"message": "To stop scallywags guessin' codes an' passwords, counts o' the tries made for each email address an' from each network, with the addresses kept only scrambled, an' only while a limit still needs 'em.",
+		"source": "To stop people guessing codes and passwords, counts of the attempts made for each email address and from each network, with the addresses kept only in a scrambled form, and only while a limit still needs them."
+	},
+	"privacy.securityLog": {
+		"message": "A log o' boardings, failed boardings an' changes to yer account's security, such as a new password, with yer network scrambled. It never holds passwords or codes, an' be kept for 90 days.",
+		"source": "A log of logins, failed logins and changes to your account's security, such as a new password, with your network in a scrambled form. It never holds passwords or codes, and is kept for 90 days."
+	},
+	"privacy.securityRecords": {
+		"message": "Security records",
+		"source": "Security records"
+	},
+	"privacy.securitySessions": {
+		"message": "A record for each browser ye be aboard on, so ye stay aboard, an' so ye can be put ashore everywhere.",
+		"source": "A record for each browser you are logged in on, so you stay logged in, and so you can be logged out everywhere."
+	},
+	"privacy.securityText": {
+		"message": "Everythin' ye send the ship be encrypted on its way (using HTTPS). Passwords an' codes are only kept scrambled, an' ye can turn on two-factor authentication. If yer information ever be exposed, we'll tell ye.",
+		"source": "Everything you send the site is encrypted on its way (using HTTPS). Passwords and codes are only kept scrambled, and you can turn on two-factor authentication. If your information is ever exposed, we will tell you."
+	},
+	"privacy.see": {
+		"message": "Who can see it",
+		"source": "Who can see it"
+	},
+	"privacy.seeAdmins": {
+		"message": "The officers who run this ship can see what we keep, an' look at it only to run the ship, keep it safe an' deal with reports o' foul play.",
+		"source": "The people who run this site can see what we keep, and look at it only to run the site, keep it safe and deal with reports of abuse."
+	},
+	"privacy.seeEditors": {
+		"message": "The editors o' a universe can see the hands sailin' in it.",
+		"source": "The editors of a universe can see the characters played in it."
+	},
+	"privacy.seeEmail": {
+		"message": "Other players never see yer email address.",
+		"source": "Other players never see your email address."
+	},
+	"privacy.seePlayers": {
+		"message": "Other players see yer username, display name an' the profile fields ye fill in, the hands ye let 'em see, an' what yer hands say an' do in the game. Players in a crew with ye can always reach yer profile.",
+		"source": "Other players see your username, display name and the profile fields you fill in, the characters you let them see, and what your characters say and do in the game. Players in a group with you can always reach your profile."
+	},
+	"privacy.services": {
+		"message": "Services we use",
+		"source": "Services we use"
+	},
+	"privacy.servicesHosting": {
+		"message": "Companies that harbor our database, game server an' uploaded files, an' that carry our letters. They handle yer information only on our orders, an' may stow it in another country than yers.",
+		"source": "Companies that host our database, game server and uploaded files, and that send our emails. They handle your information only on our instructions, and may store it in another country than yours."
+	},
+	"privacy.servicesLogin": {
+		"message": "Google or Discord, if ye come aboard with 'em. They learn ye came aboard here, under their own privacy policies.",
+		"source": "Google or Discord, if you log in with them. They learn that you logged in here, under their own privacy policies."
+	},
+	"privacy.servicesPasswords": {
+		"message": "When ye choose a password, we check it against {service}'s list o' passwords plundered from other sites. We send it only the first 5 characters o' a scrambled form o' yer password, which can't give the password away.",
+		"source": "When you choose a password, we check it against {service}'s list of passwords leaked from other sites. We send it only the first 5 characters of a scrambled form of your password, which can't reveal the password."
+	},
+	"privacy.title": {
+		"message": "Articles o' Secrecy",
+		"source": "Privacy Policy"
+	},
+	"privacy.updated": {
+		"message": "Last changed {date}",
+		"source": "Last changed {date}"
+	},
+	"privacy.who": {
+		"message": "Who we be",
+		"source": "Who we are"
+	},
+	"privacy.whoText": {
+		"message": "This ship runs {siteName}, an engine for multiplayer role-playin' games. The officers who run this ship decide what it does with yer information, an' answer for it.",
+		"source": "This site runs {siteName}, an engine for multiplayer role-playing games. The people who run this site decide what it does with your information, and are responsible for it."
+	},
+	"privacy.why": {
+		"message": "Why we keep it",
+		"source": "Why we keep it"
+	},
+	"privacy.whyAccount": {
+		"message": "Performance of a contract: yer account, yer hands an' crews, the universes ye build, an' the letters about yer account, which we need to give ye the account, the game an' the universe editor ye asked for.",
+		"source": "Performance of a contract: your account, your characters and groups, the universes you build, and the emails about your account, which we need to give you the account, the game and the universe editor you asked for."
+	},
+	"privacy.whyIntro": {
+		"message": "Privacy laws such as the GDPR bid us name the legal basis for each use o' yer information:",
+		"source": "Privacy laws such as the GDPR ask us to name the legal basis for each use of your information:"
+	},
+	"privacy.whyProfile": {
+		"message": "Consent: yer profile's spare fields, which ye chose to share. Ye can take back yer consent by strikin' 'em whenever ye like.",
+		"source": "Consent: your profile's optional fields, which you chose to share. You can withdraw your consent by removing them whenever you like."
+	},
+	"privacy.whySecurity": {
+		"message": "Legitimate interests: the security records an' the check o' new passwords against plundered ones, which keep yer account an' the ship safe an' stop cheatin' an' foul play.",
+		"source": "Legitimate interests: the security records and the check of new passwords against leaked ones, which keep your account and the site safe and stop cheating and abuse."
+	},
+	"profile.aboutYou": {
+		"message": "About ye",
+		"source": "About you"
+	},
+	"profile.account": {
+		"message": "Comin' aboard",
+		"source": "Logging in"
+	},
+	"profile.accountDeleted": {
+		"message": "Yer account was scuttled. Thanks for sailin' with us.",
+		"source": "Your account was deleted. Thanks for playing."
+	},
+	"profile.accountDeletedTitle": {
+		"message": "Account scuttled",
+		"source": "Account deleted"
+	},
+	"profile.browserLanguage": {
+		"message": "Yer browser's tongue",
+		"source": "Your browser's language"
+	},
+	"profile.browsersForgotten": {
+		"message": "Every browser will ask for the authenticator code next time it comes aboard.",
+		"source": "Every browser will ask for the authenticator code at its next login."
+	},
+	"profile.changeEmail": {
+		"message": "Change email",
+		"source": "Change email"
+	},
+	"profile.changeEmailConfirmSent": {
+		"message": "We've sent a letter with a code to {email}. Enter it, an' the new address, an' we'll send that one a code too. It works but once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"source": "We've emailed a code to {email}. Enter it, and the new address, and we'll send that a code too. It works once, for {minutes, plural, one {# minute} other {# minutes}}."
+	},
+	"profile.changeEmailCodeSent": {
+		"message": "If {email} ain't another account's address, we've sent it a letter with a code. Enter the code from it. It works but once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"source": "If {email} isn't another account's address, we've emailed it a code. Enter the code from the email. It works once, for {minutes, plural, one {# minute} other {# minutes}}."
+	},
+	"profile.changeEmailFailed": {
+		"message": "Couldn't change yer email address.",
+		"source": "Could not change your email address."
+	},
+	"profile.changeEmailIntro": {
+		"message": "Yer email address be {email}. Enter the new one, an' we'll send it a code to prove it be yers. Every other browser aboard yer account goes ashore when the address changes.",
+		"source": "Your email address is {email}. Enter the new one, and we'll send it a code to check it's yours. Every other browser logged in to your account is logged out when the address changes."
+	},
+	"profile.changeEmailIntroConfirm": {
+		"message": "Yer email address be {email}. To prove it be ye, we'll send it a code first. Every other browser aboard yer account goes ashore when the address changes.",
+		"source": "Your email address is {email}. To check it's you, we'll email it a code first. Every other browser logged in to your account is logged out when the address changes."
+	},
+	"profile.changeEmailIntroNone": {
+		"message": "Enter an email address, an' we'll send it a code to prove it be yers.",
+		"source": "Enter an email address, and we'll send it a code to check it's yours."
+	},
+	"profile.changeEmailSubmit": {
+		"message": "Change email",
+		"source": "Change email"
+	},
+	"profile.changeEmailTitle": {
+		"message": "Change yer email address",
+		"source": "Change your email address"
+	},
+	"profile.changePassword": {
+		"message": "Change password",
+		"source": "Change password"
+	},
+	"profile.changePasswordFailed": {
+		"message": "Couldn't change yer password.",
+		"source": "Could not change your password."
+	},
+	"profile.changePasswordIntro": {
+		"message": "Every other browser aboard yer account goes ashore when the password changes.",
+		"source": "Every other browser logged in to your account is logged out when the password changes."
+	},
+	"profile.changePasswordTitle": {
+		"message": "Change yer password",
+		"source": "Change your password"
+	},
+	"profile.characterVisibilityFailed": {
+		"message": "Couldn't change whether yer profile shows {name}.",
+		"source": "Could not change whether your profile shows {name}."
+	},
+	"profile.characterVisible": {
+		"message": "Show on me profile",
+		"source": "Show on my profile"
+	},
+	"profile.characters": {
+		"message": "Yer hands",
+		"source": "Your characters"
+	},
+	"profile.charactersFailed": {
+		"message": "Couldn't muster yer hands.",
+		"source": "Could not list your characters."
+	},
+	"profile.copyKey": {
+		"message": "Copy the key",
+		"source": "Copy key"
+	},
+	"profile.copyRecoveryCodes": {
+		"message": "Copy",
+		"source": "Copy"
+	},
+	"profile.currentEmailCode": {
+		"message": "Code sent to yer current address",
+		"source": "Code sent to your current address"
+	},
+	"profile.currentPassword": {
+		"message": "Current password",
+		"source": "Current password"
+	},
+	"profile.deleteAccount": {
+		"message": "Scuttle account",
+		"source": "Delete account"
+	},
+	"profile.deleteAccountConfirm": {
+		"message": "Scuttle my account",
+		"source": "Delete my account"
+	},
+	"profile.deleteAccountIntro": {
+		"message": "Yer profile and hands go to the deep, never to be raised. Crews whose anchor be one of yer hands are disbanded. Haul yer data ashore first to keep a copy.",
+		"source": "Your profile and characters are deleted, and can't be brought back. Groups whose anchor being is one of your characters are disbanded. Download your data first to keep a copy."
+	},
+	"profile.deleteAccountTitle": {
+		"message": "Scuttle yer account",
+		"source": "Delete your account"
+	},
+	"profile.deleteCodeFailed": {
+		"message": "Couldn't send ye a letter with a code.",
+		"source": "Could not email you a code."
+	},
+	"profile.deleteCodeIntro": {
+		"message": "To prove it be ye, we'll send a letter with a code to {email}.",
+		"source": "To check it's you, we'll email a code to {email}."
+	},
+	"profile.deleteCodeSent": {
+		"message": "We've sent a letter with a code to {email}. Enter it to scuttle yer account. It works but once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"source": "We've emailed a code to {email}. Enter it to delete your account. It works once, for {minutes, plural, one {# minute} other {# minutes}}."
+	},
+	"profile.deleteFailed": {
+		"message": "Couldn't scuttle yer account.",
+		"source": "Could not delete your account."
+	},
+	"profile.deleteLoadFailed": {
+		"message": "Couldn't see what scuttlin' yer account needs. Close this and try again.",
+		"source": "Could not check what deleting your account needs. Close this and try again."
+	},
+	"profile.deleteTypeUsername": {
+		"message": "Write yer username to swear to it",
+		"source": "Type your username to confirm"
+	},
+	"profile.deleteUniverseChoose": {
+		"message": "Choose...",
+		"source": "Choose..."
+	},
+	"profile.deleteUniverseDelete": {
+		"message": "Send it to the deep",
+		"source": "Delete it"
+	},
+	"profile.deleteUniverseHandTo": {
+		"message": "Make {name} (@{username}, {role}) its captain",
+		"source": "Make {name} (@{username}, {role}) its creator"
+	},
+	"profile.deleteUniverseUnchosen": {
+		"message": "Choose what becomes o' {universe}.",
+		"source": "Choose what becomes of {universe}."
+	},
+	"profile.deleteUniverses": {
+		"message": "Universes only ye captain",
+		"source": "Universes only you create"
+	},
+	"profile.deleteUniversesHint": {
+		"message": "Choose who captains each one from now on, or send it to the deep, with its charts and every sailor's hands in it.",
+		"source": "Choose who creates each one from now on, or delete it, with its world and everyone's characters in it."
+	},
+	"profile.displayName": {
+		"message": "Name",
+		"source": "Name"
+	},
+	"profile.displayNameHint": {
+		"message": "The name other sailors see. It needn't be yer real name, nor yers alone.",
+		"source": "The name other players see. It doesn't have to be your real name, or unique."
+	},
+	"profile.downloadData": {
+		"message": "Haul yer data ashore",
+		"source": "Download your data"
+	},
+	"profile.downloadFailed": {
+		"message": "Couldn't haul yer data ashore.",
+		"source": "Could not download your data."
+	},
+	"profile.downloadRecoveryCodes": {
+		"message": "Stow as a file",
+		"source": "Download"
+	},
+	"profile.email": {
+		"message": "Email address",
+		"source": "Email address"
+	},
+	"profile.emailChanged": {
+		"message": "Email address changed. We've sent word to both addresses.",
+		"source": "Email address changed. We've told both addresses."
+	},
+	"profile.forgetBrowsers": {
+		"message": "Stop trustin' them",
+		"source": "Stop trusting them"
+	},
+	"profile.forgetBrowsersFailed": {
+		"message": "Couldn't stop trustin' yer browsers.",
+		"source": "Could not stop trusting your browsers."
+	},
+	"profile.hasPassword": {
+		"message": "Set",
+		"source": "Set"
+	},
+	"profile.keyCopied": {
+		"message": "Key copied.",
+		"source": "Key copied."
+	},
+	"profile.keyCopyFailed": {
+		"message": "Yer browser wouldn't allow copyin'. Select the key an' copy it yerself.",
+		"source": "Your browser didn't allow copying. Select the key and copy it yourself."
+	},
+	"profile.language": {
+		"message": "Tongue",
+		"source": "Language"
+	},
+	"profile.languageHint": {
+		"message": "The pages an' the letters we send ye be in this tongue, on any browser ye come aboard from.",
+		"source": "The pages and the emails we send you are in this language, on any browser you log in from."
+	},
+	"profile.languagesHint": {
+		"message": "Used to pair ye with other hands who speak yer tongue.",
+		"source": "Used to match you with other players who speak your language."
+	},
+	"profile.languagesSearch": {
+		"message": "Search the tongues",
+		"source": "Search languages"
+	},
+	"profile.languagesSpoken": {
+		"message": "Tongues ye speak",
+		"source": "Languages you know"
+	},
+	"profile.languagesTooMany": {
+		"message": "Ye can pick no more than {max, plural, one {# tongue} other {# tongues}}.",
+		"source": "You can choose up to {max, plural, one {# language} other {# languages}}."
+	},
+	"profile.linkCodeSent": {
+		"message": "We've sent a letter with a code to {email}. Enter it to sail on. It works but once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"source": "We've emailed a code to {email}. Enter it to go on. It works once, for {minutes, plural, one {# minute} other {# minutes}}."
+	},
+	"profile.linkContinue": {
+		"message": "Onward",
+		"source": "Continue"
+	},
+	"profile.linkDiscord": {
+		"message": "Lash Discord",
+		"source": "Link Discord"
+	},
+	"profile.linkFailed": {
+		"message": "Couldn't lash the login.",
+		"source": "Could not link the login."
+	},
+	"profile.linkGoogle": {
+		"message": "Lash Google",
+		"source": "Link Google"
+	},
+	"profile.linkIntroCode": {
+		"message": "To be sure it be ye, we'll send a letter with a code to {email}. Then ye'll sail to {provider} to pick the account to lash.",
+		"source": "To check it's you, we'll email a code to {email}. Then you'll go to {provider} to choose the account to link."
+	},
+	"profile.linkIntroPassword": {
+		"message": "To be sure it be ye, give yer password. Then ye'll sail to {provider} to pick the account to lash.",
+		"source": "To check it's you, enter your password. Then you'll go to {provider} to choose the account to link."
+	},
+	"profile.linkTitle": {
+		"message": "Lash a {provider} login",
+		"source": "Link a {provider} login"
+	},
+	"profile.loadFailed": {
+		"message": "Couldn't fetch the profile. Reload the page to try again.",
+		"source": "Could not load the profile. Reload the page to try again."
+	},
+	"profile.location": {
+		"message": "Port o' call",
+		"source": "Location"
+	},
+	"profile.makeRecoveryCodes": {
+		"message": "Forge new codes",
+		"source": "Make new codes"
+	},
+	"profile.newEmail": {
+		"message": "New email address",
+		"source": "New email address"
+	},
+	"profile.newEmailMissing": {
+		"message": "Enter the new email address.",
+		"source": "Enter the new email address."
+	},
+	"profile.newPassword": {
+		"message": "New password",
+		"source": "New password"
+	},
+	"profile.newRecoveryCodes": {
+		"message": "New recovery codes",
+		"source": "New recovery codes"
+	},
+	"profile.noCharacters": {
+		"message": "Ye haven't signed on a hand yet.",
+		"source": "You haven't made a character yet."
+	},
+	"profile.noEmail": {
+		"message": "None",
+		"source": "None"
+	},
+	"profile.noPassword": {
+		"message": "None: ye come aboard with Google or Discord. To add a password, go ashore an' use \"Forgot yer password?\" on the boardin' page.",
+		"source": "None: you log in with Google or Discord. To add a password, log out and use \"Forgot your password?\" on the login page."
+	},
+	"profile.noTimeZone": {
+		"message": "Not shown",
+		"source": "Not shown"
+	},
+	"profile.notFound": {
+		"message": "No sailor goes by that username. Mayhap they changed it.",
+		"source": "No player has that username. They may have changed it."
+	},
+	"profile.password": {
+		"message": "Password",
+		"source": "Password"
+	},
+	"profile.passwordChanged": {
+		"message": "Password changed. Every other browser aboard yer account went ashore.",
+		"source": "Password changed. Every other browser logged in to your account was logged out."
+	},
+	"profile.pronouns": {
+		"message": "Pronouns",
+		"source": "Pronouns"
+	},
+	"profile.pronounsPlaceholder": {
+		"message": "say, she/her, they/them, any",
+		"source": "e.g. she/her, they/them, any"
+	},
+	"profile.providerLinked": {
+		"message": "Ye can now come aboard with {provider}.",
+		"source": "You can now log in with {provider}."
+	},
+	"profile.providers": {
+		"message": "Lashed logins",
+		"source": "Linked logins"
+	},
+	"profile.recoveryCodesCopied": {
+		"message": "Codes copied.",
+		"source": "Codes copied."
+	},
+	"profile.recoveryCodesCopyFailed": {
+		"message": "Yer browser wouldn't allow copyin'. Select the codes an' copy them yerself.",
+		"source": "Your browser didn't allow copying. Select the codes and copy them yourself."
+	},
+	"profile.recoveryCodesFailed": {
+		"message": "Couldn't forge new recovery codes.",
+		"source": "Could not make new recovery codes."
+	},
+	"profile.recoveryCodesFileHeading": {
+		"message": "Recovery codes for {username} on {siteName}. Each works once.",
+		"source": "Recovery codes for {username} on {siteName}. Each works once."
+	},
+	"profile.recoveryCodesIntro": {
+		"message": "If ye lose yer phone overboard, each o' these codes brings ye aboard once in place o' a code from the app. Stow them somewhere safe, such as yer password manager. This be the only time they're shown.",
+		"source": "If you lose your phone, each of these codes logs you in once in place of a code from the app. Keep them somewhere safe, such as your password manager. This is the only time they're shown."
+	},
+	"profile.recoveryCodesNewIntro": {
+		"message": "Yer old recovery codes be worthless once the new ones are forged.",
+		"source": "Your old recovery codes stop working once the new ones are made."
+	},
+	"profile.recoveryCodesNewTitle": {
+		"message": "Forge new recovery codes",
+		"source": "Make new recovery codes"
+	},
+	"profile.recoveryCodesSaved": {
+		"message": "I've stowed them",
+		"source": "I've saved them"
+	},
+	"profile.recoveryCodesTitle": {
+		"message": "Stow yer recovery codes",
+		"source": "Save your recovery codes"
+	},
+	"profile.saveFailed": {
+		"message": "Couldn't stow yer profile.",
+		"source": "Could not save your profile."
+	},
+	"profile.savePassword": {
+		"message": "Stow the password",
+		"source": "Save password"
+	},
+	"profile.showCharacters": {
+		"message": "Show me hands",
+		"source": "Show my characters"
+	},
+	"profile.showCharactersHint": {
+		"message": "Unchecked, yer profile shows only the hands ye mark below. Other sailors in yer crew can always find yer profile from yer hand.",
+		"source": "Unchecked, your profile shows only the characters you mark below. Other players in your group can always find your profile from your character."
+	},
+	"profile.socials": {
+		"message": "Social ports",
+		"source": "Social sites"
+	},
+	"profile.socialsHint": {
+		"message": "Yer username at each port, without a link. Other sailors see 'em on yer profile.",
+		"source": "Your username on each site, without a link. Other players see them on your profile."
+	},
+	"profile.timeZone": {
+		"message": "Time zone",
+		"source": "Time zone"
+	},
+	"profile.timeZoneHint": {
+		"message": "Used to pair ye with other hands in time zones near yer own.",
+		"source": "Used to match you with other players in time zones near yours."
+	},
+	"profile.timeZoneSearch": {
+		"message": "Search by port or time zone",
+		"source": "Search by city or time zone"
+	},
+	"profile.title": {
+		"message": "Yer profile",
+		"source": "Your profile"
+	},
+	"profile.trustedBrowserCount": {
+		"message": "{count, plural, =0 {None: every boardin' asks for the code} one {# browser skips the code when comin' aboard} other {# browsers skip the code when comin' aboard}}",
+		"source": "{count, plural, =0 {None: every login asks for the code} one {# browser skips the code at login} other {# browsers skip the code at login}}"
+	},
+	"profile.trustedBrowsers": {
+		"message": "Trusted browsers",
+		"source": "Trusted browsers"
+	},
+	"profile.twoFactor": {
+		"message": "Two-factor authentication",
+		"source": "Two-factor authentication"
+	},
+	"profile.twoFactorAppCode": {
+		"message": "Code from the app",
+		"source": "Code from the app"
+	},
+	"profile.twoFactorContinue": {
+		"message": "Onward",
+		"source": "Continue"
+	},
+	"profile.twoFactorDisable": {
+		"message": "Strike it",
+		"source": "Turn off"
+	},
+	"profile.twoFactorDisableFailed": {
+		"message": "Couldn't strike two-factor authentication.",
+		"source": "Could not turn off two-factor authentication."
+	},
+	"profile.twoFactorDisableIntro": {
+		"message": "Comin' aboard will need only yer password again. Yer recovery codes be worthless, an' every trusted browser be forgotten.",
+		"source": "Logging in will need only your password again. Your recovery codes stop working, and every trusted browser is forgotten."
+	},
+	"profile.twoFactorDisableTitle": {
+		"message": "Strike two-factor authentication",
+		"source": "Turn off two-factor authentication"
+	},
+	"profile.twoFactorDisabled": {
+		"message": "Two-factor authentication be struck.",
+		"source": "Two-factor authentication is off."
+	},
+	"profile.twoFactorEnable": {
+		"message": "Raise it",
+		"source": "Turn on"
+	},
+	"profile.twoFactorEnabled": {
+		"message": "Two-factor authentication be raised.",
+		"source": "Two-factor authentication is on."
+	},
+	"profile.twoFactorManual": {
+		"message": "Can't scan it? Add the account in the app by hand, with this key:",
+		"source": "Can't scan it? Add the account in the app by hand, with this key:"
+	},
+	"profile.twoFactorOff": {
+		"message": "Struck",
+		"source": "Off"
+	},
+	"profile.twoFactorOn": {
+		"message": "Raised, with {count, plural, =0 {no recovery codes left} one {# recovery code left} other {# recovery codes left}}",
+		"source": "On, with {count, plural, =0 {no recovery codes left} one {# recovery code left} other {# recovery codes left}}"
+	},
+	"profile.twoFactorQrLabel": {
+		"message": "QR code for yer authenticator app. If ye can't scan it, use the key below it.",
+		"source": "QR code for your authenticator app. If you can't scan it, use the key below it."
+	},
+	"profile.twoFactorScan": {
+		"message": "Scan this QR code with an authenticator app, such as Google Authenticator, Microsoft Authenticator, Aegis or 2FAS. Then enter the 6-digit code the app shows.",
+		"source": "Scan this QR code with an authenticator app, such as Google Authenticator, Microsoft Authenticator, Aegis or 2FAS. Then enter the 6-digit code the app shows."
+	},
+	"profile.twoFactorSetupFailed": {
+		"message": "Couldn't raise two-factor authentication.",
+		"source": "Could not turn on two-factor authentication."
+	},
+	"profile.twoFactorSetupIntro": {
+		"message": "With two-factor authentication, comin' aboard also asks for a code from an app on yer phone, so a scallywag who learns yer password still can't board. Every other browser aboard yer account goes ashore when it be turned on. First, enter yer password.",
+		"source": "With two-factor authentication, logging in also asks for a code from an app on your phone, so someone who learns your password still can't get in. Every other browser logged in to your account is logged out when it turns on. First, enter your password."
+	},
+	"profile.twoFactorSetupTitle": {
+		"message": "Raise two-factor authentication",
+		"source": "Turn on two-factor authentication"
+	},
+	"profile.twoFactorTurnOff": {
+		"message": "Strike it",
+		"source": "Turn off"
+	},
+	"profile.twoFactorTurnOn": {
+		"message": "Raise it",
+		"source": "Turn on"
+	},
+	"profile.unavailableTitle": {
+		"message": "Profile",
+		"source": "Profile"
+	},
+	"profile.username": {
+		"message": "Username",
+		"source": "Username"
+	},
+	"profile.usernameHint": {
+		"message": "How other sailors find ye, an' tell ye apart from others with the same name. {min} to {max} letters (a to z), digits an' underscores.",
+		"source": "How other players find you, and tell you apart from others with the same name. {min} to {max} letters (a to z), digits and underscores."
+	},
+	"profile.viewOwn": {
+		"message": "View yer profile",
+		"source": "View your profile"
+	},
+	"profile.yourData": {
+		"message": "Yer data",
+		"source": "Your data"
+	},
+	"profile.yourDataHint": {
+		"message": "Haul everything kept about ye ashore as a file, or scuttle yer account and all in it.",
+		"source": "Download everything kept about you as a file, or delete your account and everything in it."
 	},
 	"sf1e.ability.charisma": {
 		"message": "Swagger",

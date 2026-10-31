@@ -2,7 +2,7 @@ This document describes the UI + game structure for the Multiverse Kiln. It desc
 
 # Pages
 ## Home
-Lists all universes. In the beginning there will only be a few, but in the future there may be thousands, so we should be forward-thinking about the UI (even if advanced search filters don't exist yet). Each universe should show name, 1-sentence description, ruleset, and [languages](#tab-translations). Only universes in the `prologue` or `let there be light` [stage](#edit-universe) are listed. Shows a button for [Create Universe](#create-universe).
+Lists all universes. In the beginning there will only be a few, but in the future there may be thousands, so we should be forward-thinking about the UI (even if advanced search filters don't exist yet). Each universe should show name, 1-sentence description, ruleset, and [languages](#tab-translations). Only universes in the `prologue` or `let there be light` [stage](#edit-universe) are listed. Anyone can see it; its toolbar links to the [login page](#login), or once logged in shows the player's name and a Log out button. A logged-in player also sees the universes they work on, and a button for [Create Universe](#create-universe).
 
 Each universe links to its [page](#universe-page).
 
@@ -14,19 +14,49 @@ Universe names are unique, and names that could be mistaken for each other count
 ## About
 Free text. There will be many of these pages (like an FAQ or Help).
 
+## Privacy
+The privacy policy (`privacy.html`), linked from every page's footer and from the login and register pages: what the site keeps about players, why, who sees it, how long it is kept, and how to export or delete it. It names no hosting companies, since each site running the engine chooses its own; a site sets its contact address on the [admin page](#admin), and the policy leaves the contact line out until it does. The page shows the date it last changed, and the site emails players when it changes in a way that matters.
+
 ## Login
 You select a login provider like Google or Discord, or you can make a local account. Local logins are based on email, not username (but email can be changed).
 
 Local accounts are supported, but the login and register pages recommend a provider for security reasons.
 
+Home, universe pages and the license and privacy pages don't need a login; the lobby, the game, the editor, Create Character and profiles (your own and other players') do. Those send a browser that isn't logged in to the login page (`/login`), which goes back to them once it is. Logging in in one tab reloads the browser's other logged-out pages, so they are logged in too, and logging out takes every window of that browser out with it.
+
+A login starts a session, kept on the server and named by an HttpOnly cookie. A session ends after 1 hour without use, and after 24 hours in all. Checking "Remember me" makes it last 30 days without use and 90 days in all, after which the player logs in again. Being connected to a lobby or game counts as use. Logging out ends the session on the server. Changing the password or email address, or turning 2FA on, ends every other session of the account, and resetting the password ends all of them. Logging in again from a browser that's already logged in ends its old session, so a copy of its old cookie stops working. A password asked for again while logged in (to change it or the account's 2FA, or to delete the account) counts against the same limits as logging in to the account's address, so a stolen session can't guess it faster.
+
+A player can be logged in from several browsers at once, each with a session of its own; every window of theirs, in any browser, is that player. Logging out ends only that browser's session, and its open windows are logged out with it.
+
+Google and Discord logins use OAuth with PKCE, and the provider sends the browser back to the login page, which finishes the login. Only a provider account with a verified email address can log in, since every account has one. The first time, the login waits up to 10 minutes for one more step, from that browser only:
+- if no account has its email address, the player chooses a username and name (the provider's name suggested) to create one. Emails them when they have a new account
+- if a local account has it, the login isn't joined to the account automatically: the player is asked to log in to the local account (with its password, or an [email code](#email-codes)), which links them and emails the account. An account has at most one login from each provider
+
+A logged-in player can also link providers from their profile. So a stolen session alone can't add a login that outlives a password change, they first confirm it's them with their password, or by entering a code emailed to the account's address when it has no password, and an authenticator or recovery code when the account has 2FA (a trusted browser still asks). The provider sends the browser back to the login page, which links the provider login to the account the browser is still logged in to (its email address needn't match the account's, but it must be verified, as for logging in), emails the account, and goes back to the profile. A site offers a provider once its OAuth client is set up (`server/.env.example`).
+
+Local accounts can turn on 2FA with an authenticator app (TOTP), and get recovery codes for when they lose it. Accounts that only log in with a provider use the provider's 2FA. An account with 2FA asks for its code after a Google or Discord login too, so 2FA guards every way in, not only the password: a provider account without its own 2FA, or a provider login linked with a stolen session, still can't get past it.
+- Turning it on, from the profile, asks for the password, then shows a QR code for the app (drawn in the page, and the secret as text for typing in by hand; the secret is never put in an address), then asks for the code the app shows. Then it shows 10 recovery codes, once, to copy or save as a text file. Every other browser logged in to the account is logged out, so one the player didn't know of has to log in again, with the code. The server keeps the secret encrypted (AES-256-GCM, with `TOTP_ENCRYPTION_KEY`, kept apart from the database) and the recovery codes as keyed hashes.
+- With it on, logging in with the password, or with a linked Google or Discord login, asks for the app's code next, from the same browser, within 10 minutes. A recovery code works in place of the app's code, once, and the account is emailed how many are left. 5 wrong codes end the login, and an account can try 10 codes an hour wherever they are typed. After 20 wrong app codes in a day, only recovery codes are taken until the day's count drops, so guessing app codes stays slow without locking the owner out. The account is emailed at its 10th wrong app code of the day, saying so and, if it wasn't them, to log in and change the password. Each app code works once.
+- At the code, "Don't ask again on this browser for 30 days" trusts the browser: its logins skip the code until then. The profile shows how many browsers are trusted, and can stop trusting them all.
+- Resetting a forgotten password and linking a Google or Discord login (with the password or an email code) ask for the app's code too, unless the browser is trusted, so someone who gets into the player's email still can't take the account.
+- Turning it off and making new recovery codes ask for the password and a code. Turning it on or off emails the account. A player who loses the app and every recovery code can't get back in on their own: only the site's contact can help.
+
+### Login limits
+An address can be tried 10 times an hour at login, and a network 30 times, so passwords can't be guessed quickly. Wrong passwords typed while logged in (changing the password or 2FA, deleting the account) count against the same limits. Anyone can use up an address's tries, so a browser that has logged in to the account (marked by a signed cookie that lasts 180 days after its last login and doesn't name the account) counts its own 10 tries an hour instead, and can still log in while others' guesses have used up the address's.
+
+## Deleting an account
+From the profile. Before deleting, the player decides for each universe they are the only creator of: hand it to another of its editors (whatever their role) as creator, or delete it, with its world, uploads and everyone's characters in it; nothing is chosen for them. They confirm with their password, and an authenticator or recovery code when the account has 2FA (a trusted browser still asks), or, when the account has no password, by typing their username and entering a code emailed to the account's address, so a stolen session alone can't delete it (an account with neither a password nor an address has only the username to check). Groups whose anchor being is one of their characters disband, and their other characters leave the groups they were in. The account, profile, characters, sessions and auth events are deleted, every window of the player is logged out, windows playing in a deleted universe are told it is gone, and the address the account had is emailed. Before deleting, the player can download their data as one JSON file (also offered on the profile at any time): the account and profile, linked logins, whether 2FA is on, sessions and auth events (without tokens or networks), roles in universes, characters with their sheets, and Create Character's progress.
+
 ## Register local account
-Enter an email, it sends you an [email code](#email-codes), enter the code to create an account / set your password. Recommend the user use a password manager, link to a couple prominent ones. Emails you when you have a new account. Optional - set up 2FA now.
+Enter an email, it sends you an [email code](#email-codes), enter the code, then the email again with a password, username and name to create the account (the server keeps only a keyed hash of the address while it waits, so it asks for the address again). The username is checked as it's chosen, when the player leaves the field or pauses typing for 2 seconds. A circle turns at the right of the field while the server checks (it stays still for players who ask for less motion), and the line under the field says whether it's available or why not. The line keeps its space while empty, so the form doesn't move as it changes. Only a browser creating an account can ask (one that entered the code to register, or came back from Google or Discord with a login that has no account), at most 60 times an hour from one network, so the public can't ask which usernames exist. Choosing a username after a Google or Discord login checks it the same way. Recommend the user use a password manager, link to a couple prominent ones. Emails you when you have a new account. Then offers to set up 2FA now, which opens its dialog on the profile, or to go on to the page the player came from.
+
+If the address already has an account, the page answers the same as for a new one, and the address is emailed a note saying it has an account and how to log in or reset the password, in place of a code.
 
 ## Forgot your password
-Enter an email, it sends you an [email code](#email-codes), enter the code to change your password. Emails you when the password is changed, and signs the account out everywhere.
+Enter an email, it sends you an [email code](#email-codes), enter the code to change your password (with an authenticator or recovery code too, when the account has 2FA). Emails you when the password is changed, signs the account out everywhere, and stops trusting every browser that skipped the 2FA code.
 
 ## Email codes
-Registering, resetting a password and changing an email all send a code by email. Every code follows these rules:
+Registering, resetting a password, changing an email and linking a Google or Discord login all send a code by email. Every code follows these rules:
 - Sending
 	- generated with a cryptographically secure random number generator
 	- 6 characters from Crockford's base32 alphabet (the digits and capital letters except I, L, O and U), a little over a billion possible codes
@@ -37,23 +67,28 @@ Registering, resetting a password and changing an email all send a code by email
 - Guessing
 	- 5 wrong guesses end a code
 	- 15 wrong guesses in a day, across every code for that address, stop new codes from being sent to it until the oldest guess is a day old
-	- one network may ask for 10 codes and make 30 guesses an hour, whatever addresses they are for. A network is an IPv4 address or an IPv6 /64. Behind a proxy (such as Colyseus Cloud's), the client address comes from the proxy's forwarding header, trusted only from the proxy
+	- one network may ask for 10 codes and make 30 guesses an hour, whatever addresses they are for. A network is an IPv4 address or an IPv6 /64. Behind a proxy (such as Colyseus Cloud's), the client address comes from the one forwarding header the server is configured to trust, and from X-Forwarded-For only the entry the first trusted proxy added, since anything else can come from the client
 	- counters are updated atomically, so many requests sent at once can't each slip under a limit
 - Privacy
 	- the response is the same whether or not an account exists for the address, and takes the same time (the email is sent after the response)
 	- what was typed and the network address are stored as keyed hashes, and only for as long as a limit still needs them
 - Finishing
-	- a correct code hands the next step (setting the password) to the browser session that entered it, through a new session ID in an httponly cookie, for 10 minutes. Another browser waiting on the same account can't use it
+	- a correct code hands the next step (setting the password) to the browser session that entered it, through a new session ID in an httponly cookie, for 10 minutes. Another browser waiting on the same account can't use it. A step that needs two codes (changing the email address of an account without a password) gives the second the first's session ID, so it finds both
+	- changing the account's password or email address, or resetting its password, ends every code sent for it and every next step waiting on one, so a reset sent to an old address can't undo the change
 
 ## Profile edit
-Everything is optional except name.
+Everything is optional except username and name.
+- username (required, unique): how other players find you and tell you apart from others with the same name. 3 to 20 letters (a to z only, so no username can pass for another with look-alike letters from other alphabets), digits and underscores, compared ignoring capitals and checked against reserved words like player names
+- the Google and Discord logins linked to the account, with buttons to link another
 - photo (200px square, shown as a circle)
-- email, with a change email button for local accounts. Enter an email, it sends you an [email code](#email-codes), enter the code to change your email. Email both addresses letting them know that the email has changed.
+- email, with a change email button for local accounts. Enter an email, it sends you an [email code](#email-codes), enter the code to change your email. Since the new address can reset the password, a stolen session alone can't change it: the player also gives their password, or for an account without one, first enters a code emailed to the current address, and an authenticator or recovery code when the account has 2FA (a trusted browser still asks). Logs out every other browser, and emails both addresses letting them know that the email has changed.
 - if a local account, a change password button. Emails you when the password is changed.
-- Optional - set up 2FA
+- if a local account, two-factor authentication: turn it on, or turn it off and make new recovery codes, with how many recovery codes are left and how many browsers are trusted (see [Login](#login))
 - name (required, but it doesn't need to be your real name)
 - pronouns
-- location / time zone
+- location
+- time zone, found by typing its city, its name (Pacific Time) or a major city in it (Seattle), and used to match you with players in time zones near yours
+- languages you know, chosen from every ISO 639-1 language (up to 20) by searching and shown as chips, used to match you with other players who speak your language
 - language, used for the pages and for universes translated into it (see [Localization](#localization))
 - link to socials (Discord, Facebook, Insta, TikTok)
 - "show my characters", checked by default. if unchecked, a "other players in your group will always be able to see a link to your profile, even if your character isn't shown on your profile".
@@ -62,7 +97,7 @@ Everything is optional except name.
 	- clicking on a character will show a modal dialog with their character sheet and a [Enter Universe](#enter-universe) button.
 
 ## Profile view
-Shows every profile field the user has filled in (name, photo, pronouns, location, time zone, socials) and their visible characters. Fields are optional, so users control what others see by leaving them blank.
+Shows every profile field the user has filled in (name, photo, pronouns, location, time zone, languages they know, socials) and their visible characters in universes anyone can play. Only logged-in players can see profiles. Fields are optional, so users control what others see by leaving them blank.
 
 ## Enter Universe
 The lobby and the game are on a page of their own (`/game/<slug>`, or `/game/<universe ID>`, which changes to the slug), apart from Home, so a player can keep Home, their profile or the editor open in other tabs while they play.
@@ -125,7 +160,7 @@ For SF1E it also shows the theme, hit points (the race's and the class's) and st
 
 ### Deleting a character
 The sheet's Delete button asks twice. "Delete Character" asks "Do you want to delete [character]?" (Cancel / Delete), then a second dialog asks "Are you absolutely sure you want to delete [character]? This is permanent (a very long time!) and cannot be undone.", with three buttons:
-- **Cremate (delete immediately)** deletes the character straight away
+- **Cremate (delete immediately)** deletes the character immediately
 - **Last Rites (delete in 7 days)** deletes them after the days the [admin](#admin) setting gives (7 by default), and isn't offered when it is 0. Until then they are listed, marked with the day they go, and count toward the 20 characters a universe allows, but can't be played. Their sheet says when they go and has a Restore button. A player playing them switches to their most recent other character, or becomes a ghost; restoring a character while a ghost plays them. A character already given their last rites can still be cremated
 - **I've Made A Terrible Mistake** keeps the character, and is the button focused
 
@@ -186,6 +221,8 @@ Settings for the whole site (`admin.html`), stored in one row of the `site_setti
 - universe creation enabled: whether players can create universes
 - universes per creator: the most universes one player may create, from 1 to 1000
 - character deletion days: how many days [Last Rites](#deleting-a-character) waits before deleting a character, from 0 to 365 (7 by default). 0 turns Last Rites off. Characters already given their last rites keep their day
+- social sites: links to the site's own pages on Discord, Facebook, Instagram, TikTok, X and YouTube, each optional. Every page's footer shows each one's logo, linking to it. A link must be https and on that site's hosts (`SITE_SOCIAL_HOSTS`), so it always goes to the site its logo says
+- privacy contact: the email address the [privacy policy](#privacy) tells players to write to about their information. Empty leaves the line out of the policy
 
 The universe settings don't change universes that already exist.
 
@@ -239,7 +276,7 @@ This lets you change anything about a universe. It will be a whole suite of tool
 Every change in the universe editor is staged: nothing a tab or its dialogs change (adding, changing or deleting anything, uploading a tileset or deleting one) is saved until the Save button (Alt+S) in the bar at the bottom of the editor is pressed. The bar stays in view while the tab scrolls, and above the map in full page. It saves every tab's changes together, all or nothing, in one request (POST `/:universeId/changes`, see `shared/src/editorChanges.ts`); reloading the page throws the changes away. When the server refuses a change it saves none of them: the editor shows the tab whose change it was, with the reason on that tab, and keeps every change. A field with a problem stops the save before it is sent, the same way. Each tab shows its changes as they will be once saved, including changes made on other tabs: the Areas tab's maps draw the Tilesets tab's unsaved tile changes (new and changed tiles, and tilesets staged to upload, from the page's own copy), with tiles staged for deletion drawn as their replacements. Enter in a tab's form saves too.
 - The editor dialogs for races, classes, themes, difficulty levels, items, tiles and area links have Apply rather than Save: it keeps their changes on the tab, where the list shows them, tagging what was added as new and what will be restored "when saved", and striking through (in italics, faded) what will be deleted. One of the ruleset's defaults with changes is tagged edited, saved or not. Deleting or restoring is taken back with Undo Delete or Undo Restore in the dialog until the tab is saved. Saving sends each list's changes in the order they were made.
 - The tabs save in this order, so a change can name something an earlier one adds: Tilesets (new tilesets, then tiles, then deleted tilesets), Items, Ruleset, Characters, Universe, Lobby, Areas. The Characters tab saves its settings, races, classes and themes, and the Ruleset tab its settings and difficulty levels.
-- The Areas tab saves the areas deleted, then the areas added, then the area open in the area editor: its map's size, painting and links, then its settings. A new area is listed tagged new, and can be opened, painted, linked to and chosen as a parent before it is saved; its map is the size every new area starts with. Deleting an area asks first, then strikes it through in the list until the tab is saved; opening it shows it read-only with Undo Delete. Deleting a new area discards it straight away, after asking. Painting with, or a default tile of, a tile staged for deletion is saved as the tile chosen to replace it.
+- The Areas tab saves the areas deleted, then the areas added, then the area open in the area editor: its map's size, painting and links, then its settings. A new area is listed tagged new, and can be opened, painted, linked to and chosen as a parent before it is saved; its map is the size every new area starts with. Deleting an area asks first, then strikes it through in the list until the tab is saved; opening it shows it read-only with Undo Delete. Deleting a new area discards it immediately, after asking. Painting with, or a default tile of, a tile staged for deletion is saved as the tile chosen to replace it.
 - The map editor's tile choices and an area's default tile choices list the Tilesets tab's unsaved new tiles and leave out tiles staged for deletion, and the area previews in the link and starting area dialogs draw the Tilesets tab's unsaved changes like the maps do. Other pickers (starting equipment, a class's races) list only what is saved.
 
 The bar says "Unsaved changes" while any tab has some, and a tab with unsaved changes gets a dot. Closing a dialog (Cancel or Escape), leaving the area being edited, and leaving or reloading the page all ask first while there are unsaved changes.
@@ -266,9 +303,7 @@ Lists the users who can work on the universe, and lets you add them with a role:
 - `beta tester`: can create characters and play while the universe is in `prologue`
 - `translator`: can [translate](#tab-translations) the universe's text into the languages they are assigned, and can't change anything else
 
-A universe can have several creators. If you delete your account and your universe has no other creator, you choose what happens to it:
-- promote a builder to creator
-- the universe goes dormant: people can keep playing, but only server admins can edit it
+A universe can have several creators. If you delete your account and your universe has no other creator, you choose what happens to it (see [Deleting an account](#deleting-an-account)): make another of its editors its creator, or delete it.
 
 ### Tab: Ruleset
 What shows up here depends on what ruleset is chosen.
@@ -739,7 +774,7 @@ Every page, editor and game screen can be used with only a keyboard and with a s
 - A button's shortcut letter is underlined in its text, preferring the letter at the start of a word (the S of Save); it is pressed with Alt (Option on a Mac). When a translation's text doesn't have the letter, "(S)" is added after it with the letter underlined. Screen readers announce the shortcut through `aria-keyshortcuts`.
 - `?` (when not typing) or the footer's "Keyboard shortcuts" button lists the shortcuts that work on the screen showing, including keys that aren't buttons, such as movement.
 - A shortcut only works while its button can be seen and used, and while a dialog is open only the dialog's shortcuts work, so screens and dialogs reuse keys. The keys are the same in every language. Alt+D, Alt+E and Alt+F aren't used, since browsers take them, and deleting has no shortcut.
-- The keys follow one pattern: Alt+S submits the form or dialog showing (Save, Create, Add, Resize), Alt+A applies an editor dialog's changes to its tab (Apply), Alt+N adds something new (on the Characters tab, which adds races, classes and themes, Alt+R adds a race, Alt+L a class and Alt+T a theme), Alt+L leaves (the lobby or group) or picks the Links tool in the map editor, Alt+U enters a universe, Alt+H goes Home, Alt+B goes back, Alt+M moves focus to the map, and Alt+P makes the map editor full page.
+- A shortcut's letter is in its button's English text, so it can be underlined there. The keys follow one pattern: Alt+S submits the form or dialog showing when its button has an S (Save, Send code, Resize); one without takes a letter of its own word, preferably its first (Alt+C for Create, Choose and Continue, Alt+L for Log in and Create Link, Alt+A for Add). Alt+A applies an editor dialog's changes to its tab (Apply), Alt+N adds something new (on the Characters tab, which adds races, classes and themes, Alt+R adds a race, Alt+L a class and Alt+T a theme), Alt+L leaves (the lobby or group) or picks the Links tool in the map editor, Alt+U enters a universe, Alt+H goes Home from a message filling the page, Alt+B goes back, Alt+M moves focus to the map, and Alt+P makes the map editor full page.
 
 ## Screen readers
 - When a screen changes, focus moves to its heading, so the screen is read out.
@@ -756,11 +791,9 @@ A table that can be sorted has a button in each heading that sorts it (`TableSor
 - **Offline group members:** whether to use the summoning ring.
 - **Lobby:** the player limit (from load testing), and how groups manage their lobby listing.
 - **Cross-universe play:** art style, and whether items need a "source universe" setting.
-- **Users:** how to tell two users with the same name apart (unique usernames, or showing an immutable user ID), which user search for invites depends on.
 - **Accounts:**
-	- what happens when a provider login and a local account share an email (account linking)
-	- which email sending service to use
-	- whether to add a CAPTCHA. The code limits stop guessing, but someone who knows an address can make 15 wrong guesses and block that address's codes for a day
+	- which email sending service to use in production (email goes out over SMTP, so it's configuration)
+	- whether to add a CAPTCHA (such as Cloudflare Turnstile on sending a code). The code limits stop guessing, but someone who knows an address can make 15 wrong guesses and block that address's codes for a day
 - **Messages:** blocking, reporting and who can message whom, before messaging is supported.
 - **Universe versions:** how versions are built and switched.
 - **Objects:** how placed objects such as houses and lone trees work. The likely shape: an object is made once and placed in any number of areas, with an image, the cells it covers (each with its own walk time and vision cost, read by the server), the part drawn above players so a player walking behind it is hidden, and door cells for area links into its interior, which is an indoor area

@@ -18,5 +18,16 @@ export enum ServerCloseCode
 	/**
 	 * The group's anchor being left it, so the group is no more
 	 */
-	GroupDisbanded = 4013
+	GroupDisbanded = 4013,
+
+	/**
+	 * The window's login session ended: the player logged out, changed their password, deleted their
+	 * account, or the session expired
+	 */
+	LoggedOut = 4014,
+
+	/**
+	 * The universe was deleted, along with its creator's account
+	 */
+	UniverseDeleted = 4015
 }

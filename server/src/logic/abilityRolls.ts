@@ -54,7 +54,7 @@ export function rollPf1eAbilityScore(method: Pf1eRollMethod, random: RandomSourc
 	const diceCount = (((method === 'roll_4d6_drop_lowest') || (method === 'roll_4d6_reroll_ones_drop_lowest')) ? 4 : 3);
 	const rolls: number[] = [];
 
-	for (let index = 0; index < diceCount; index++)
+	for (let i = 0; i < diceCount; i++)
 	{
 		rolls.push(rollD6(rerollOnes, random));
 	}

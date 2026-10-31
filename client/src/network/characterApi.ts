@@ -6,7 +6,7 @@ import { sendRequest } from './editorApi';
 /**
  * The routes for the player's characters (see shared/src/characters.ts), for one browser
  *
- * Requests carry the browser ID cookie, so the server knows which player is asking. Every method
+ * Requests carry the session cookie, so the server knows which player is asking. Every method
  * throws EditorApiError when the server refuses the request
  */
 export class CharacterApi
@@ -86,7 +86,7 @@ export class CharacterApi
 	}
 
 	/**
-	 * Deletes one of the player's characters straight away
+	 * Deletes one of the player's characters immediately
 	 *
 	 * @param universeId The universe's ID
 	 * @param characterId The character's ID

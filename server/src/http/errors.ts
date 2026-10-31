@@ -27,6 +27,11 @@ export const errorMessages = defineMessages({
 		defaultMessage: 'Something went wrong on the server.',
 		description: 'Why a request failed when the server had an unexpected problem'
 	},
+	logInFirst: {
+		id: 'error.logInFirst',
+		defaultMessage: 'Log in first.',
+		description: 'Why a request was refused, such as one to the editor or to change the account\'s email address: the browser isn\'t logged in'
+	},
 	noSuchUniverse: {
 		id: 'error.noSuchUniverse',
 		defaultMessage: 'The universe doesn\'t exist, or you can\'t see it.',

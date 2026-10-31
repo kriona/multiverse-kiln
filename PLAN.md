@@ -5,7 +5,7 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 **Current phase** line updated so each new session knows where to pick up.
 `STRUCTURE-OVERVIEW.md` describes the pages, editors and game rules these phases build.
 
-**Current phase:** 13
+**Current phase:** 14
 
 ---
 
@@ -242,22 +242,45 @@ Decided:
 
 ## Phase 14: Authentication and accounts
 
-- [ ] Choose an approach (own JWT login route vs. a hosted auth provider). If choosing `@colyseus/auth`, check its `npm audit` findings first
-- [ ] Google and Discord login through OAuth, recommended on the login and register pages
-- [ ] Local accounts: email-based logins, passwords hashed with a modern KDF (e.g. argon2id), and the email code rules from `STRUCTURE-OVERVIEW.md` as pure functions with tests
-- [ ] Email sending service; register, forgot password and change email flows, with notification emails. A password change signs the account out everywhere
-- [ ] Optional 2FA
-- [ ] Account linking when a provider login and a local account share an email
-- [ ] Replace the name-only login
-- [ ] Verify tokens in `onAuth`; reject unauthenticated joins. Tokens are short-lived with a pinned algorithm, and `exp`, `iss` and `aud` are checked
-- [ ] Client login flow passing the token in join options
-- [ ] Rate-limit login, signup and reset routes; use generic error messages that don't reveal whether an account exists
-- [ ] Log auth events (logins, failures, resets) without passwords or tokens
-- [ ] Tests for expired tokens, tokens for deleted users, another user's resource IDs and replayed codes
-- [ ] Profile edit and view, with character visibility and the player's language (used ahead of the browser's settings)
-- [ ] Emails written in the recipient's language
-- [ ] Account deletion (handling universes with no other creator and groups the user anchors), data export and a privacy policy
-- [ ] Review against sections 1-3 and 5 of `SECURITY-PRACTICES.md`
+Decided:
+- Built in-house, not with a hosted provider or `@colyseus/auth`: the email code rules in `STRUCTURE-OVERVIEW.md` are more specific than a provider offers. A small OAuth library (such as `arctic`) handles Google and Discord, and passwords are hashed with Argon2id.
+- Sessions live on the server (a `sessions` table) and reach the browser as an HttpOnly `__Host-` cookie, in place of today's browser ID cookie; there are no JWTs. `onAuth` looks the session up, a lifecycle boundary. Logging out, or changing the password, deletes sessions on the server, so a password change signs the account out everywhere. Production therefore needs the client and game server on the same site (e.g. `play.<domain>` and `api.<domain>`), which Phase 16's hosting choice has to keep.
+- Session lifetimes (see Login in `STRUCTURE-OVERVIEW.md`): 1 hour idle and 24 hours in all without "Remember me"; with it, 30 days idle and 90 days in all. An open connection to a room counts as activity.
+- An account can be logged in from several browsers at once, each with its own session; every window of the player, in any browser, acts as that player.
+- Sessions arrive with the first real login (local accounts, then Google and Discord), so the name-only login never starts one.
+- Every account has a unique username, for finding users and invites, and a display name that needn't be unique. The name-only login's data is dropped rather than carried over, and the seed script's `--creator` names a username.
+- Linking: a provider login whose email matches a local account is never linked automatically. The player proves they own the local account (its password, or an email code) to link them; providers can also be linked from the profile.
+- Email is sent over SMTP with `nodemailer`, so the service is configuration (chosen in Phase 16), and caught by Mailpit in `docker-compose.yml` locally. Emails are HTML, with a plain text part, in the recipient's language.
+- Rate limits and the email code counters are Postgres rows updated atomically, so they hold across several server processes. The client's network comes from one function, which reads the connection's address, or behind a proxy the one forwarding header configured as trusted (`CLIENT_ADDRESS_HEADER`, `TRUSTED_PROXY_HOPS`); Phase 16 sets them for the host.
+- Passwords are 15 to 256 characters (NIST SP 800-63B rev. 4's minimum for a password that is the only factor, which it is without 2FA; the same for every account, so turning 2FA off never leaves a shorter one), with no composition rules, and are checked against HaveIBeenPwned's k-anonymity API (only the first 5 characters of the password's SHA-1 hash leave the server).
+- Password hashes are stored as self-describing strings (`$argon2id$v=19$m=...,p=...,t=...$<salt>$<hash>`), and one module (`server/src/auth/passwords.ts`) holds the current algorithm and settings, starting at OWASP's Argon2id minimum (19 MiB, 2 iterations, 1 thread). After a correct password, a hash made with older settings or an older algorithm is replaced with a current one, and the replacement is logged without ending the account's sessions. `verifyPassword()` picks the checker by the hash's prefix, so old hashes keep working when the algorithm changes. If an old algorithm is ever found weak, hashes of accounts that don't log in can be wrapped in the new one (`newAlgorithm(oldHash)`, marked by its prefix). Tests: a hash with old settings still verifies, and is replaced at login.
+- 2FA is TOTP with recovery codes, for local accounts only; provider logins rely on the provider's 2FA. Passkeys can come later. No CAPTCHA for now.
+- With 2FA on, resetting a forgotten password asks for an authenticator or recovery code as well as the email code, so someone who gets into the player's email still can't take the account. TOTP secrets are stored encrypted (AES-256-GCM) with a key from a server setting, apart from the database.
+- Profiles store the player's usernames on social sites rather than addresses, so a link always goes to the site it names.
+- Home, universe pages and the license and privacy pages are public; the lobby, game, editor, Create Character and profiles (editing your own, and viewing anyone's) need a login.
+- Auth events (logins, failures, logouts, resets, email and password changes, 2FA changes, linking) go in an `auth_events` table: the account if known, the kind, the time, and the network as a keyed hash, never passwords, codes or session IDs. They are kept 90 days, and deleted with the account.
+- Deleting an account asks first about each universe the player is the only creator of: hand it to another of its editors as creator, or delete it. Groups the player anchors disband, as when the anchor being leaves. Data export is one JSON file.
+
+Built in two steps: logins (sessions, providers, local accounts, email codes, replacing the name-only login), then accounts (2FA, linking, profile, deletion, export and the security review).
+
+1. Logins
+	- [✅] `sessions` table and session cookie; `onAuth` checks the session and rejects joins without one, and a session's windows are turned away when it ends
+	- [✅] Google and Discord login through OAuth, recommended on the login and register pages
+	- [✅] Local accounts: email-based logins, Argon2id, the HaveIBeenPwned check, and the email code rules from `STRUCTURE-OVERVIEW.md` as pure functions with tests
+	- [✅] Email through `nodemailer`, Mailpit in `docker-compose.yml`; register, forgot password and change email flows (the routes in `server/src/http/auth.ts`), with notification emails in the recipient's language
+	- [✅] Usernames and display names; drop the name-only login's data and its server side
+	- [✅] Rate-limit login, signup and reset routes; use generic error messages that don't reveal whether an account exists
+	- [✅] Log auth events to `auth_events`, deleting them after 90 days
+	- [✅] Tests for expired and logged-out sessions, sessions of deleted users, another user's resource IDs and replayed codes
+	- [✅] The login page (`/login`: log in, create an account, forgot password), replacing the name-only login form on every page and what only it used; Home is public, with Log in and Log out in its toolbar
+	- [✅] Links back to the site in the emails, which needs the client's address as a server setting
+2. Accounts (the profile first, since 2FA, linking and deletion are done from it)
+	- [✅] Profile edit and view, with character visibility and the player's language (used ahead of the browser's settings), changing the email address (the routes exist) and logging out from any page
+	- [✅] Optional 2FA (TOTP and recovery codes), with trusted browsers that skip the code for 30 days
+	- [✅] Account linking
+	- [✅] Account deletion and data export
+	- [✅] Privacy policy page (`privacy.html`, linked from the footer), drafted; check it against what was built, and set its date, before players use the site
+	- [✅] Review against sections 1-3 and 5 of `SECURITY-PRACTICES.md`
 
 **Done when:** only authenticated players can join, their identity maps to a DB row, and local accounts can register and reset passwords by email.
 
@@ -272,7 +295,7 @@ Decided:
 - [ ] Translations tab: the table of universe text with its filters, editors' notes for translators, and updating or confirming out-of-date translations
 - [ ] Universe versions: build a new version while players play the current one, then switch to it. A version includes its translations
 - [ ] Server admins: disable universes, and edit universes that have gone dormant
-- [ ] Only server admins can see and use the admin page (`admin.html` and `/admin/settings`), which anyone can use until then
+- [ ] Only server admins can see and use the admin page (`admin.html` and `/admin/settings`), which anyone can use until then. The privacy policy reads the character deletion days from `/admin/settings`, so anyone must still be able to read that setting
 
 **Done when:** a team of editors and beta testers takes a universe from `in the beginning` to `let there be light`, and a creator can disable a race without breaking its existing characters. A translator adds French to the universe, and a French player sees it in French.
 
@@ -282,12 +305,14 @@ Neon and Colyseus Cloud cost money, so this waits until the game is worth testin
 The first deploy tends to surface WebSocket, TLS and environment issues, so leave time for it.
 
 - [ ] Choose the S3-compatible service for uploads, make its bucket (private: the game server serves the files), and set the `STORAGE_*` variables in the Colyseus Cloud dashboard
+- [ ] Choose the email service, set up its sending domain (SPF, DKIM and DMARC), and set `SMTP_URL` (over TLS) and `EMAIL_FROM` in the Colyseus Cloud dashboard, with an `AUTH_HMAC_KEY` of its own
+- [ ] Check the deploy includes `shared/locales/`: the server reads the translations from it to write emails in each player's language
 - [ ] Choose where the production client is hosted (Colyseus Cloud only hosts the game server), and whether QA/staging uses a subdomain or its own domain. The host must serve `<name>.html` for `/<name>` (the pages link to `/edit`, `/license` and so on), and each of `PATH_PAGES` for every address under its path, such as `game.html` for `/game/<slug>`, `universe.html` for `/universe/<slug>` and `edit.html` for `/edit/<universe ID>`; see `client/src/pages.ts`
 - [ ] Create Neon project with `dev` and `prod` branches, in the region nearest the planned Colyseus Cloud location. Use Postgres 18 to match `docker-compose.yml`
 - [ ] Create the migration and app roles on each Neon branch with the same ownership and grants as the scripts in `docker/postgres/init/`, using `docker/postgres/neon/01-roles.sql` and `02-grants.sql` (roles made in the Neon console join `neon_superuser`); the server gets only the app role's pooled connection string
 - [ ] Run migrations against Neon `prod`
 - [ ] Deploy server with `npx @colyseus/cloud deploy`; set env vars in the dashboard (pooled Neon URL, `ALLOWED_ORIGINS` = the production client origin)
-- [ ] Read the client address from Colyseus Cloud's forwarding header, trusted only from its proxy, so per-network rate limits count clients rather than the proxy
+- [ ] Set `CLIENT_ADDRESS_HEADER` (and `TRUSTED_PROXY_HOPS` for X-Forwarded-For) for the game server's host, then check it once deployed (see TODO at the end of this file)
 - [ ] Point a production client build at the `wss://` endpoint
 - [ ] Set security headers on the client host and test them against the production build:
 	- `Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://<game server>; media-src 'self' data: blob:; connect-src 'self' https://<game server> wss://<game server>; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests` (Phaser needs `data:`/`blob:` for some textures and audio; the game server in `img-src` is for uploaded tilesets)
@@ -357,5 +382,15 @@ Needed before universes are open to the public.
 - Fonts for map text in scripts the default font doesn't cover (Phase 17)
 - Whether to offer machine translation of chat (later)
 - Whether to add client-side prediction (after Phase 7, if movement feels laggy)
-- Colyseus Cloud deployment location(s) (Phase 16)
+- Game server host (Colyseus Cloud or another), and its deployment location(s) (Phase 16). The host's proxies decide which forwarding header the server trusts for clients' addresses
 - Client host, and a subdomain or separate domain for QA/staging (Phase 16)
+
+---
+
+## TODO
+
+- [ ] Confirm the client address header on the game server's host (Phase 16; finding 4 in `SECURITY-FINDINGS.md`). The code trusts only the header `CLIENT_ADDRESS_HEADER` names, but which one is safe depends on the host's proxies, which aren't chosen yet:
+	- Find out which header the host's proxy sets, and whether it overwrites X-Real-IP or only adds to X-Forwarded-For. Prefer X-Forwarded-For unless the proxy is known to overwrite X-Real-IP
+	- Count the proxies that add to X-Forwarded-For (a load balancer or CDN in front of the host's proxy is a second one) and set `TRUSTED_PROXY_HOPS`
+	- Once deployed, log in from one network twice: once plainly, and once with a forged `X-Real-IP` and a padded `X-Forwarded-For` (`X-Forwarded-For: 203.0.113.9, 198.51.100.8`). Both auth events should have the same network hash; a different one means the server trusted the forged header
+	- Log in from two different networks: new rows in the auth events should each have a network hash, a different one for each network, and the server log shouldn't show "A request's client address could not be read"

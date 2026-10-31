@@ -3,23 +3,16 @@
  * universes and areas a test starts from
  */
 import assert from 'assert';
-import { randomUUID } from 'crypto';
 import { EDITOR_UNIVERSES_PATH, TILE_GRAPHIC_SIZES, type CreatedPayload, type EditorChange, type NewRef, type Ruleset, type SaveChangesPayload, type SaveRefusedPayload } from '@multiverse-kiln/shared';
 import sharp from 'sharp';
 
-import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
-import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
-import { onlinePlayers } from '../src/players/onlinePlayers.js';
+import { addPlayer, logInBrowser, type TestBrowser } from './players.js';
 import { testServerUrl } from './testServer.js';
 
 /**
  * A logged-in browser to make editor requests from
  */
-export interface Editor
-{
-	browserId: string;
-	playerId: string;
-}
+export type Editor = TestBrowser;
 
 /**
  * What an editor request answered
@@ -39,12 +32,7 @@ export interface EditorResponse<T>
  */
 export async function logIn(name: string): Promise<Editor>
 {
-	const browserId = randomUUID();
-	const { id: playerId } = await loadOrCreatePlayerByName(name);
-
-	onlinePlayers.logIn(browserId, playerId, name);
-
-	return({ browserId, playerId });
+	return(await logInBrowser((await addPlayer(name)).id));
 }
 
 /**
@@ -62,7 +50,7 @@ export async function send<T = unknown>(editor: Editor | undefined, method: stri
 
 	if (editor)
 	{
-		headers['Cookie'] = `${BROWSER_ID_COOKIE}=${editor.browserId}`;
+		headers['Cookie'] = editor.cookie;
 	}
 
 	if (options.origin !== undefined)

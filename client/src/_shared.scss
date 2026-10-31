@@ -238,6 +238,47 @@ textarea
 	}
 }
 
+// A field for a code (ui/codeInputs.ts): large, in the font the emails show codes in, with a line under
+// each character's cell. The text starts at the left so each character sits over its line, and the
+// field is centered instead
+input[data-code]
+{
+	--code-cells: 6;
+	--code-gap: 0.7ch;
+
+	box-sizing: content-box;
+	align-self: center;
+	width: calc(var(--code-cells) * (1ch + var(--code-gap)));
+	max-width: calc(100% - 32px);
+
+	// Each character is followed by the gap, so the right takes the gap off to look even
+	padding: 8px calc(16px - var(--code-gap)) 14px 16px;
+	font-family: Consolas, Menlo, monospace;
+	font-size: 28px;
+	font-weight: bold;
+	letter-spacing: var(--code-gap);
+	text-transform: uppercase;
+	background-image: repeating-linear-gradient(to right, $border-stronger 0 1ch, transparent 1ch calc(1ch + var(--code-gap)));
+	background-origin: content-box;
+	background-repeat: no-repeat;
+	background-size: calc((var(--code-cells) * (1ch + var(--code-gap))) - var(--code-gap)) 2px;
+	background-position: left 0 bottom -6px;
+
+	// A recovery code, which is longer than the cells drawn for an authenticator code
+	&.code-long
+	{
+		--code-cells: 11;
+		--code-gap: 0.1ch;
+
+		background-image: none;
+	}
+}
+
+.form label:has(> input[data-code])
+{
+	align-items: center;
+}
+
 button.danger
 {
 	border-color: $danger;
@@ -311,8 +352,7 @@ button.sort-button
 	background: $background-panel;
 }
 
-#status-screen,
-#login-screen
+#status-screen
 {
 	align-items: center;
 	justify-content: center;
@@ -326,19 +366,6 @@ button.sort-button
 	gap: 12px;
 }
 
-.login-panel
-{
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-	width: 280px;
-}
-
-.login-logo
-{
-	align-self: center;
-	line-height: 0;
-}
 
 .toolbar
 {
@@ -390,6 +417,105 @@ button.sort-button
 	color: $text;
 }
 
+// The logged-in player's name at the end of the toolbar, opening a menu with Edit profile and Log out
+// (partials/account.html, ui/accountMenu.ts)
+.account-menu
+{
+	position: relative;
+	margin-inline-start: auto;
+
+	&[hidden]
+	{
+		display: none;
+	}
+}
+
+.toolbar-link ~ .account-menu
+{
+	margin-inline-start: 0;
+}
+
+// Until the page's scripts take over, the name the last page remembered (public/remembered-account.js)
+// draws the menu in its place, so nothing moves when they do
+:root[data-account-name] .account-menu[hidden]
+{
+	// Over [hidden]'s own !important rule above
+	display: block !important;
+}
+
+:root[data-account-name] .account-menu-name:empty::before
+{
+	content: var(--account-name);
+}
+
+.account-menu-button
+{
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 8px;
+	border-color: transparent;
+	background: none;
+	color: $text-muted;
+	white-space: nowrap;
+
+	&:hover,
+	&[aria-expanded="true"]
+	{
+		background: $background-control-hover;
+		color: $text;
+	}
+
+	.icon
+	{
+		margin-inline-end: 0;
+	}
+}
+
+.account-menu-list
+{
+	position: absolute;
+	inset-inline-end: 0;
+	top: calc(100% + 4px);
+	z-index: 10;
+	min-width: 180px;
+	margin: 0;
+	padding: 4px;
+	border: 1px solid $border;
+	border-radius: 6px;
+	background: $background-panel;
+	list-style: none;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.account-menu-item
+{
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	box-sizing: border-box;
+	width: 100%;
+	padding: 8px 10px;
+	border: none;
+	border-radius: 4px;
+	background: none;
+	color: $text;
+	text-align: left;
+	text-decoration: none;
+	white-space: nowrap;
+
+	&:hover,
+	&:focus
+	{
+		background: $background-control-hover;
+	}
+
+	.icon
+	{
+		margin-inline-end: 0;
+	}
+}
+
 // The group's game clock, in the group's toolbar
 .toolbar-time
 {
@@ -397,10 +523,16 @@ button.sort-button
 	white-space: nowrap;
 }
 
-// A link at the end of a page's toolbar, such as Back to Home
+// The first of the links and buttons at the end of a page's toolbar, such as Back to Home, pushing them
+// there. Several links sit together
 .toolbar-link
 {
 	margin-inline-start: auto;
+}
+
+.toolbar-link + .toolbar-link
+{
+	margin-inline-start: 0;
 }
 
 // Short messages at the top of the page (src/ui/toast.ts), above even a map editor filling the window
@@ -477,7 +609,7 @@ button.sort-button
 
 input.money
 {
-	max-width: 170px;
+	max-width: 20ch;
 }
 
 .notice
@@ -651,6 +783,143 @@ fieldset.choice.stacked
 	flex-direction: column;
 	gap: 4px;
 	color: $text-muted;
+
+	// Password managers put an empty element after the field with focus, to hang their button on. The
+	// gap before it would push the rest of the form down whenever focus moved, so it is taken back
+	> div:empty
+	{
+		margin-top: -4px;
+	}
+}
+
+// A social site's name with its logo, above its field
+.social-label .icon
+{
+	margin-inline-end: 6px;
+}
+
+// A password field's label beside its show password button (see ui/passwordToggles.ts)
+.password-field
+{
+	display: flex;
+	align-items: flex-end;
+	gap: 8px;
+
+	label
+	{
+		flex: 1;
+	}
+}
+
+button.password-toggle
+{
+	padding: 6px 10px;
+
+	.icon
+	{
+		margin-inline-end: 0;
+	}
+
+	&[aria-pressed="false"] .password-shown-icon,
+	&[aria-pressed="true"] .password-hidden-icon
+	{
+		display: none;
+	}
+}
+
+// The choices a search field added as chips above it (see ui/ChipCombobox.ts)
+.chips
+{
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.chip
+{
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 2px 4px 2px 10px;
+	border: 1px solid $border-strong;
+	border-radius: 999px;
+	background: $background-secondary;
+	color: $text;
+}
+
+button.chip-remove
+{
+	display: flex;
+	padding: 2px;
+	border: none;
+	border-radius: 999px;
+	background: transparent;
+	color: $text-muted;
+
+	&:hover
+	{
+		background: $background-secondary-hover;
+		color: $text;
+	}
+
+	.icon
+	{
+		margin-inline-end: 0;
+	}
+}
+
+// A search field with a list of choices under it (see ui/ComboboxList.ts)
+.combobox-field
+{
+	position: relative;
+	display: flex;
+	flex-direction: column;
+}
+
+.combobox-options
+{
+	position: absolute;
+	top: 100%;
+	inset-inline: 0;
+	z-index: 10;
+	max-height: 240px;
+	margin: 2px 0 0;
+	padding: 4px 0;
+	overflow-y: auto;
+	border: 1px solid $border-strong;
+	border-radius: 4px;
+	background: $background-field;
+	list-style: none;
+
+	[role="option"]
+	{
+		padding: 4px 8px;
+		color: $text;
+		cursor: pointer;
+	}
+
+	// The option Enter chooses, outlined as well as shaded so it doesn't show by color alone
+	[aria-selected="true"]
+	{
+		outline: 1px solid $focus;
+		outline-offset: -1px;
+		background: $background-field-hover;
+	}
+
+	.combobox-empty
+	{
+		color: $text-faint;
+		cursor: default;
+	}
+}
+
+.combobox-detail
+{
+	font-size: 12px;
+	color: $text-faint;
 }
 
 .form label.checkbox
@@ -683,6 +952,40 @@ fieldset.choice.stacked
 	margin: 0;
 	font-size: 12px;
 	color: $error;
+}
+
+// A field's own message line, which keeps a line's space while empty so messages don't move the page
+.field-message-slot
+{
+	min-height: 1lh;
+}
+
+// That what was typed in a field is fine, on its message line
+.field-error.field-success
+{
+	color: $success;
+}
+
+// A field whose value the server is checking, such as a new username: Phosphor's circle-notch at the
+// right of the field, turning unless the player asked for less motion
+$checking-icon-path: "M232 128a104 104 0 0 1-208 0c0-41 23.81-78.36 60.66-95.27a8 8 0 0 1 6.68 14.54C60.15 61.59 40 93.27 40 128a88 88 0 0 0 176 0c0-34.73-20.15-66.41-51.34-80.73a8 8 0 0 1 6.68-14.54C208.19 49.64 232 87 232 128";
+$checking-icon-color: "%23" + str-slice(inspect($text-muted), 2);
+
+input.field-checking
+{
+	padding-inline-end: calc(8px + 1.2em + 6px);
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath fill='#{$checking-icon-color}' d='#{$checking-icon-path}'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 8px center;
+	background-size: 1.2em;
+}
+
+@media (prefers-reduced-motion: no-preference)
+{
+	input.field-checking
+	{
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath fill='#{$checking-icon-color}' d='#{$checking-icon-path}'%3E%3CanimateTransform attributeName='transform' type='rotate' from='0 128 128' to='360 128 128' dur='0.8s' repeatCount='indefinite'/%3E%3C/path%3E%3C/svg%3E");
+	}
 }
 
 [aria-invalid="true"]
@@ -806,22 +1109,48 @@ footer
 	.link-button
 	{
 		color: $text-footer-link;
+
+		&:hover
+		{
+			color: $link-hover;
+		}
 	}
 
 	.link-button
 	{
-		margin-left: 12px;
 		font-size: inherit;
 	}
 
 	.language-picker
 	{
-		margin-left: 12px;
-
 		select
 		{
+			// The top margin keeps it off the line above
+			margin-top: 4px;
 			margin-left: 4px;
 			padding: 2px 4px;
+		}
+	}
+
+	// Logos linking to the site's pages on social sites (ui/siteSocials.ts), at the end of the line
+	.site-socials
+	{
+		display: inline-flex;
+		gap: 8px;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		vertical-align: middle;
+
+		a
+		{
+			display: inline-flex;
+		}
+
+		.icon
+		{
+			width: 16px;
+			height: 16px;
 		}
 	}
 }

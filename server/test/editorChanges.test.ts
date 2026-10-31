@@ -6,7 +6,7 @@ import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { areaChanges, type AreaChange } from '../src/world/areaChanges.js';
 import { createArea, createUniverse, logIn, saveAll, saveChanges, send, solidPng, type Editor } from './editorRequests.js';
 import { allowedTestOrigin } from './setup.js';
-import { getTestServer, logOutEveryone, testServerUrl } from './testServer.js';
+import { getTestServer, testServerUrl } from './testServer.js';
 
 const lava: TileSettings = {
 	name: 'Lava',
@@ -61,7 +61,6 @@ describe('Saving editor changes', () =>
 
 	beforeEach(async () =>
 	{
-		logOutEveryone();
 		ada = await logIn('Ada');
 	});
 

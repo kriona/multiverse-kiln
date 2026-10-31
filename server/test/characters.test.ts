@@ -3,22 +3,16 @@ import { randomUUID } from 'crypto';
 import { characterPath, charactersPath, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyMoney, MAX_CHARACTERS_PER_UNIVERSE, NEW_PF1E_RACE_RULES, PF1E_ABILITIES, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditorChange, type NewCharacterOptions, type NewCharacterRequest, type Pf1eAbilityScores, type RaceSettings, type SaveChangesPayload } from '@multiverse-kiln/shared';
 
 import { findDefaultClassIds } from '../src/db/classRepo.js';
-import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
 import { findDefaultRaceIds } from '../src/db/raceRepo.js';
 import { saveSiteSettings } from '../src/db/siteSettingsRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
-import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
-import { onlinePlayers } from '../src/players/onlinePlayers.js';
-import { getTestServer, logOutEveryone, testServerUrl } from './testServer.js';
+import { addPlayer, logInBrowser, type TestBrowser } from './players.js';
+import { getTestServer, testServerUrl } from './testServer.js';
 
 /**
  * A logged-in browser
  */
-interface Browser
-{
-	browserId: string;
-	playerId: string;
-}
+type Browser = TestBrowser;
 
 /**
  * What a request answered
@@ -47,12 +41,7 @@ const standardBuy: Pf1eAbilityScores = {
  */
 async function logIn(name: string): Promise<Browser>
 {
-	const browserId = randomUUID();
-	const { id: playerId } = await loadOrCreatePlayerByName(name);
-
-	onlinePlayers.logIn(browserId, playerId, name);
-
-	return({ browserId, playerId });
+	return(await logInBrowser((await addPlayer(name)).id));
 }
 
 /**
@@ -70,7 +59,7 @@ async function send<T = unknown>(browser: Browser | undefined, method: string, p
 
 	if (browser)
 	{
-		headers['Cookie'] = `${BROWSER_ID_COOKIE}=${browser.browserId}`;
+		headers['Cookie'] = browser.cookie;
 	}
 
 	if (body !== undefined)
@@ -149,7 +138,6 @@ describe('Character routes', () =>
 
 	beforeEach(async () =>
 	{
-		logOutEveryone();
 		ada = await logIn('Ada');
 
 		const created = await send<CreatedPayload>(ada, 'POST', EDITOR_UNIVERSES_PATH, {

@@ -1,11 +1,32 @@
 /**
  * Who may work on each universe: the only module that reads or writes the universe_editors table
  */
-import { and, count, eq } from 'drizzle-orm';
+import { and, count, eq, ne, notExists } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import type { EditableUniverseSummary, UniverseRole } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
-import { universeEditors, universes } from './schema.js';
+import { players, universeEditors, universes } from './schema.js';
+
+/**
+ * A universe a player is the only creator of
+ */
+export interface SoleCreatedUniverse
+{
+	id: string;
+	name: string;
+}
+
+/**
+ * Someone with a role in a universe
+ */
+export interface UniverseEditor
+{
+	playerId: string;
+	username: string;
+	displayName: string;
+	role: UniverseRole;
+}
 
 /**
  * Gives a player a role in a universe, replacing any role they had
@@ -100,4 +121,66 @@ export async function listEditableUniverses(playerId: string, executor: Executor
 		.innerJoin(universes, eq(universes.id, universeEditors.universeId))
 		.where(eq(universeEditors.playerId, playerId))
 		.orderBy(universes.name, universes.id));
+}
+
+/**
+ * The universes a player is a creator of that have no other creator, which deleting the player's
+ * account has to hand on or delete
+ *
+ * @param playerId The player's ID
+ * @param executor The database, or a transaction
+ * @return The universes, by name
+ */
+export async function listSoleCreatedUniverses(playerId: string, executor: Executor = db): Promise<SoleCreatedUniverse[]>
+{
+	const otherCreators = alias(universeEditors, 'other_creators');
+
+	return(executor
+		.select({
+			id: universes.id,
+			name: universes.name
+		})
+		.from(universeEditors)
+		.innerJoin(universes, eq(universes.id, universeEditors.universeId))
+		.where(and(
+			eq(universeEditors.playerId, playerId),
+			eq(universeEditors.role, 'creator'),
+			notExists(executor
+				.select({
+					playerId: otherCreators.playerId
+				})
+				.from(otherCreators)
+				.where(and(
+					eq(otherCreators.universeId, universeEditors.universeId),
+					eq(otherCreators.role, 'creator'),
+					ne(otherCreators.playerId, playerId)
+				)))
+		))
+		.orderBy(universes.name, universes.id));
+}
+
+/**
+ * Everyone with a role in a universe, but one player
+ *
+ * @param universeId The universe's ID
+ * @param exceptPlayerId The player left out
+ * @param executor The database, or a transaction
+ * @return The editors, by username
+ */
+export async function listOtherUniverseEditors(universeId: string, exceptPlayerId: string, executor: Executor = db): Promise<UniverseEditor[]>
+{
+	return(executor
+		.select({
+			playerId: universeEditors.playerId,
+			username: players.username,
+			displayName: players.displayName,
+			role: universeEditors.role
+		})
+		.from(universeEditors)
+		.innerJoin(players, eq(players.id, universeEditors.playerId))
+		.where(and(
+			eq(universeEditors.universeId, universeId),
+			ne(universeEditors.playerId, exceptPlayerId)
+		))
+		.orderBy(players.username));
 }

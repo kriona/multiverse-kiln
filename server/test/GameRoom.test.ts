@@ -9,22 +9,26 @@ import { scheduleCharacterDeletion } from '../src/db/characterRepo.js';
 import { pool } from '../src/db/client.js';
 import { addGroupMember, findGroup, leaveGroup, listGroupMembers } from '../src/db/groupRepo.js';
 import { createAreaLink, updateAreaSettings } from '../src/db/areaRepo.js';
-import { loadOrCreatePlayerByName } from '../src/db/playerRepo.js';
 import { loadSeenChunks } from '../src/db/worldStateRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
-import { BROWSER_ID_COOKIE } from '../src/http/browserId.js';
 import { cellCenter } from '../src/logic/movement.js';
 import { SeenCells } from '../src/logic/seenCells.js';
 import { characterChanges } from '../src/players/characterChanges.js';
+import { connectedSessions } from '../src/players/connectedSessions.js';
 import { groupChanges } from '../src/players/groupChanges.js';
-import { onlinePlayers } from '../src/players/onlinePlayers.js';
 import type { GameRoom } from '../src/rooms/GameRoom.js';
 import { addCharacter, addGroup, addPlayableUniverse, defaultRaceId, type PlayableUniverse } from './db/fixtures.js';
-import { getTestServer, logOutEveryone, testServerUrl } from './testServer.js';
+import { addPlayer, TestBrowsers } from './players.js';
+import { getTestServer, testServerUrl } from './testServer.js';
 import { waitUntil } from './waitUntil.js';
 
-const browserIdA = '0b6f4c1e-8d2a-4f3b-9c5d-7e1a2b3c4d5e';
-const browserIdB = '6a1d2e3f-4b5c-4d6e-8f70-819a2b3c4d5e';
+const browserIdA = 'A';
+const browserIdB = 'B';
+
+/**
+ * The browsers the tests join from, each logged in as a player
+ */
+const browsers = new TestBrowsers();
 
 /**
  * The grid's cell size, for cellCenter
@@ -80,7 +84,7 @@ const browserMembers = new Map<string, Member>();
  */
 async function addPlayerWithCharacter(name: string): Promise<Member>
 {
-	const player = await loadOrCreatePlayerByName(`Player ${randomUUID().slice(0, 8)}`);
+	const player = await addPlayer(`Player ${randomUUID().slice(0, 8)}`);
 	const characterId = await addCharacter(player.id, universe.universeId, name);
 
 	return({ playerId: player.id, characterId, name, raceId: await defaultRaceId('dwarf') });
@@ -188,16 +192,16 @@ async function waitUntilStopped(room: GameRoom, player: Player): Promise<void>
 }
 
 /**
- * Connects to a room like a browser window holding a browser ID cookie
+ * Connects to a room like a browser window holding the browser's session cookie
  *
  * @param room Server-side room to join
- * @param browserId Browser ID the window's cookie holds
+ * @param browserId The browser's name in the test
  * @param characterId The character the window asks to play
  * @return The client-side room
  */
 function connectFromBrowser(room: GameRoom, browserId: string, characterId: string): Promise<ClientRoom<unknown, GameState>>
 {
-	const sdk = new SDKClient(testServerUrl.replace(/^http/, 'ws'), { headers: { cookie: `${BROWSER_ID_COOKIE}=${browserId}` } });
+	const sdk = new SDKClient(testServerUrl.replace(/^http/, 'ws'), { headers: { cookie: browsers.cookieOf(browserId) } });
 	const options: GameJoinOptions = { groupId, characterId };
 
 	return(sdk.joinById<GameState>(room.roomId, options, GameState));
@@ -208,13 +212,13 @@ function connectFromBrowser(room: GameRoom, browserId: string, characterId: stri
  * listening for its Welcome and Area messages
  *
  * @param room Server-side room to join
- * @param browserId Browser ID the window's cookie holds
+ * @param browserId The browser's name in the test
  * @param member The character to play
  * @return The window
  */
 async function joinAs(room: GameRoom, browserId: string, member: Member): Promise<JoinedWindow>
 {
-	onlinePlayers.logIn(browserId, member.playerId, 'Player');
+	await browsers.logIn(browserId, member.playerId);
 
 	const client = await connectFromBrowser(room, browserId, member.characterId);
 
@@ -247,7 +251,7 @@ async function joinAs(room: GameRoom, browserId: string, member: Member): Promis
  * put in the group the first time the browser joins
  *
  * @param room Server-side room to join
- * @param browserId Browser ID the window's cookie holds
+ * @param browserId The browser's name in the test
  * @param name The character's name, the first time
  * @return The window
  */
@@ -336,7 +340,7 @@ describe('GameRoom', () =>
 	beforeEach(async () =>
 	{
 		await colyseus.cleanup();
-		logOutEveryone();
+		browsers.clear();
 		browserMembers.clear();
 		universe = await addPlayableUniverse();
 		anchor = await addPlayerWithCharacter('Anchor');
@@ -965,7 +969,7 @@ describe('GameRoom', () =>
 			const room = await createGameRoom();
 			const outsider = await addPlayerWithCharacter('Outsider');
 
-			onlinePlayers.logIn(browserIdA, outsider.playerId, 'Outsider');
+			await browsers.logIn(browserIdA, outsider.playerId);
 			await assert.rejects(connectFromBrowser(room, browserIdA, outsider.characterId));
 			await assert.rejects(connectFromBrowser(room, browserIdA, anchor.characterId));
 		});
@@ -976,16 +980,49 @@ describe('GameRoom', () =>
 
 			await scheduleCharacterDeletion(anchor.playerId, universe.universeId, anchor.characterId, new Date(Date.now() + 60000));
 			characterChanges.publish({ kind: 'removed', playerId: anchor.playerId, universeId: universe.universeId, characterId: anchor.characterId });
-			onlinePlayers.logIn(browserIdA, anchor.playerId, 'Anchor');
+			await browsers.logIn(browserIdA, anchor.playerId);
 
 			await assert.rejects(connectFromBrowser(room, browserIdA, anchor.characterId));
 		});
 
-		it('turns away a client without a browser ID', async () =>
+		it('turns away a client without a session cookie', async () =>
 		{
 			const room = await createGameRoom();
 
 			await assert.rejects(colyseus.connectTo(room, { groupId, characterId: anchor.characterId }));
+		});
+
+		it('turns away a browser whose session has ended', async () =>
+		{
+			const room = await createGameRoom();
+			const browser = await browsers.logIn(browserIdA, anchor.playerId);
+
+			await pool.query('DELETE FROM sessions WHERE id = $1', [browser.sessionId]);
+			await assert.rejects(connectFromBrowser(room, browserIdA, anchor.characterId));
+		});
+
+		it('turns away a browser whose session has expired', async () =>
+		{
+			const room = await createGameRoom();
+			const browser = await browsers.logIn(browserIdA, anchor.playerId);
+
+			await pool.query('UPDATE sessions SET created_at = now() - interval \'25 hours\', last_used_at = now() - interval \'2 hours\' WHERE id = $1', [browser.sessionId]);
+			await assert.rejects(connectFromBrowser(room, browserIdA, anchor.characterId));
+		});
+
+		it('disconnects the windows of a session when it ends, leaving the player\'s other browsers', async () =>
+		{
+			const room = await createGameRoom();
+			const window1 = await joinAs(room, browserIdA, anchor);
+			const window2 = await joinAs(room, browserIdA, anchor);
+			const other = await joinAs(room, browserIdB, anchor);
+			const left = [waitForLeave(window1.client), waitForLeave(window2.client)];
+
+			connectedSessions.end([(await browsers.logIn(browserIdA, anchor.playerId)).sessionId]);
+
+			assert.deepStrictEqual(await Promise.all(left), [ServerCloseCode.LoggedOut, ServerCloseCode.LoggedOut]);
+			await waitUntil(() => (room.clients.length === 1));
+			assert.strictEqual(room.clients[0].sessionId, other.client.sessionId);
 		});
 
 		it('disconnects every window of a character who leaves the group', async () =>

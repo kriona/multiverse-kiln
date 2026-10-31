@@ -6,7 +6,7 @@
  */
 import { sql, type SQL } from 'drizzle-orm';
 import { boolean, check, customType, doublePrecision, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHUNK_SIZE, DARKVISIONS, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, DARKVISIONS, EMAIL_CODE_PURPOSES, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, PROFILE_LANGUAGES, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, type ProfileLanguage } from '@multiverse-kiln/shared';
 
 import { SEEN_CHUNK_BYTES } from '../logic/seenCells.js';
 
@@ -45,16 +45,78 @@ function allInRange(columns: AnyPgColumn[], min: number, max: number): SQL
 
 /**
  * One row per player account
- *
- * Until there are real logins, a player is found by name, so no two players may have the same name
- * in any mix of capitals
  */
 export const players = pgTable('players', {
 	id: uuid('id').primaryKey().defaultRandom(),
+
+	/**
+	 * How other players find this one and tell them apart from others with the same name
+	 * (USERNAME_PATTERN). Unique ignoring capitals
+	 */
+	username: text('username').notNull(),
+
+	/**
+	 * The name shown for the player, which needn't be unique
+	 */
 	displayName: text('display_name').notNull(),
+
+	/**
+	 * The address a local account logs in with and is emailed at, as the player typed it. Unique
+	 * ignoring capitals. Null for an account without one
+	 */
+	email: text('email'),
+
+	/**
+	 * A local account's password hash, as a self-describing string naming its algorithm and settings
+	 * ($argon2id$v=19$m=...), so hashes made with older settings can be found and replaced. Null for an
+	 * account that only logs in with a provider
+	 */
+	passwordHash: text('password_hash'),
+
+	/**
+	 * The language the player chose for the pages and emails, as a BCP 47 tag, used ahead of the
+	 * browser's settings; null when they haven't chosen one
+	 */
+	locale: text('locale'),
+
+	/**
+	 * What the profile says about the player, each null when left blank (see Profile edit in
+	 * STRUCTURE-OVERVIEW.md). The time zone is an IANA name, such as Europe/Paris
+	 */
+	pronouns: text('pronouns'),
+	location: text('location'),
+	timeZone: text('time_zone'),
+
+	/**
+	 * The languages the player knows (PROFILE_LANGUAGES), in the order they added them
+	 */
+	languages: text('languages').array().$type<ProfileLanguage[]>().notNull().default(sql`'{}'`),
+
+	/**
+	 * The player's usernames on social sites (SOCIAL_SITES), which the profile links to
+	 */
+	discordUsername: text('discord_username'),
+	facebookUsername: text('facebook_username'),
+	instagramUsername: text('instagram_username'),
+	tiktokUsername: text('tiktok_username'),
+
+	/**
+	 * Whether the profile lists the player's characters. When it doesn't, it lists only the characters
+	 * marked visibleOnProfile
+	 */
+	showCharacters: boolean('show_characters').notNull().default(true),
+
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
-	uniqueIndex('players_display_name_lower_unique').on(sql`lower(${table.displayName})`)
+	uniqueIndex('players_username_lower_unique').on(sql`lower(${table.username})`),
+	uniqueIndex('players_email_lower_unique').on(sql`lower(${table.email})`),
+	check('players_username_form', sql`${table.username} ~ ${sql.raw(`'^[A-Za-z0-9_]{${MIN_USERNAME_LENGTH},${MAX_USERNAME_LENGTH}}$'`)}`),
+	check('players_locale_length', sql`char_length(${table.locale}) <= ${sql.raw(String(MAX_LOCALE_LENGTH))}`),
+	check('players_pronouns_length', sql`char_length(${table.pronouns}) <= ${sql.raw(String(MAX_PRONOUNS_LENGTH))}`),
+	check('players_location_length', sql`char_length(${table.location}) <= ${sql.raw(String(MAX_LOCATION_LENGTH))}`),
+	check('players_languages_count', sql`cardinality(${table.languages}) <= ${sql.raw(String(MAX_PROFILE_LANGUAGES))}`),
+	check('players_languages_known', sql`${table.languages} <@ ARRAY[${sql.raw(PROFILE_LANGUAGES.map((language) => `'${language}'`).join(', '))}]::text[]`),
+	check('players_social_usernames_length', sql.join([table.discordUsername, table.facebookUsername, table.instagramUsername, table.tiktokUsername].map((column) => sql`char_length(${column}) <= ${sql.raw(String(MAX_SOCIAL_USERNAME_LENGTH))}`), sql` AND `))
 ]);
 
 /**
@@ -818,7 +880,13 @@ export const characters = pgTable('characters', {
 	 * Until then the player can restore them, but not play them. The server sweeps away characters
 	 * past it, and hides them until it does
 	 */
-	deleteAt: timestamp('delete_at', { withTimezone: true })
+	deleteAt: timestamp('delete_at', { withTimezone: true }),
+
+	/**
+	 * Whether the player's profile lists the character when the player chose not to list all of them
+	 * (players.showCharacters)
+	 */
+	visibleOnProfile: boolean('visible_on_profile').notNull().default(true)
 }, (table) => [
 	index('characters_player_universe_index').on(table.playerId, table.universeId),
 	index('characters_universe_id_index').on(table.universeId),
@@ -1106,9 +1174,362 @@ export const siteSettings = pgTable('site_settings', {
 
 	universeCreationEnabled: boolean('universe_creation_enabled').notNull().default(DEFAULT_SITE_SETTINGS.universeCreationEnabled),
 	universesPerCreator: integer('universes_per_creator').notNull().default(DEFAULT_SITE_SETTINGS.universesPerCreator),
-	characterDeletionDays: integer('character_deletion_days').notNull().default(DEFAULT_SITE_SETTINGS.characterDeletionDays)
+	characterDeletionDays: integer('character_deletion_days').notNull().default(DEFAULT_SITE_SETTINGS.characterDeletionDays),
+
+	/**
+	 * Links to the site's own pages on social sites (SITE_SOCIAL_SITES), which every page's footer
+	 * links to
+	 */
+	discordUrl: text('discord_url'),
+	facebookUrl: text('facebook_url'),
+	instagramUrl: text('instagram_url'),
+	tiktokUrl: text('tiktok_url'),
+	xUrl: text('x_url'),
+	youtubeUrl: text('youtube_url'),
+
+	/**
+	 * The email address the privacy policy tells players to write to, or null to leave that line out
+	 */
+	privacyContact: text('privacy_contact')
 }, (table) => [
 	check('site_settings_one_row', sql`${table.id}`),
 	check('site_settings_universes_per_creator_range', sql`${table.universesPerCreator} BETWEEN ${sql.raw(String(MIN_UNIVERSES_PER_CREATOR))} AND ${sql.raw(String(MAX_UNIVERSES_PER_CREATOR))}`),
-	check('site_settings_character_deletion_days_range', sql`${table.characterDeletionDays} BETWEEN 0 AND ${sql.raw(String(MAX_CHARACTER_DELETION_DAYS))}`)
+	check('site_settings_character_deletion_days_range', sql`${table.characterDeletionDays} BETWEEN 0 AND ${sql.raw(String(MAX_CHARACTER_DELETION_DAYS))}`),
+	check('site_settings_social_urls_length', sql.join([table.discordUrl, table.facebookUrl, table.instagramUrl, table.tiktokUrl, table.xUrl, table.youtubeUrl].map((column) => sql`char_length(${column}) <= ${sql.raw(String(MAX_SITE_SOCIAL_URL_LENGTH))}`), sql` AND `)),
+	check('site_settings_privacy_contact_length', sql`char_length(${table.privacyContact}) <= ${sql.raw(String(MAX_EMAIL_LENGTH))}`)
+]);
+
+/**
+ * How many bytes a hash stored for logins has: SHA-256 for session tokens, HMAC-SHA256 for keyed hashes
+ */
+const AUTH_HASH_BYTES = 32;
+
+/**
+ * SQL that checks a hash column holds AUTH_HASH_BYTES bytes
+ *
+ * @param column The column
+ * @return The condition, true for null
+ */
+function authHashLength(column: AnyPgColumn): SQL
+{
+	return(sql`octet_length(${column}) = ${sql.raw(String(AUTH_HASH_BYTES))}`);
+}
+
+/**
+ * Login sessions: one row per browser logged in to an account (see Login in STRUCTURE-OVERVIEW.md).
+ * Deleted when the player logs out, when the password changes (every session of the account), and
+ * with the account
+ */
+export const sessions = pgTable('sessions', {
+	id: uuid('id').primaryKey().defaultRandom(),
+
+	/**
+	 * SHA-256 of the token in the browser's session cookie. The token itself is never stored, so the
+	 * table can't be used to log in
+	 */
+	tokenHash: bytea('token_hash').notNull(),
+
+	playerId: uuid('player_id').notNull().references(() => players.id, { onDelete: 'cascade' }),
+
+	/**
+	 * Whether the player checked "Remember me", which makes the session last longer
+	 * (server/src/logic/sessionLifetimes.ts)
+	 */
+	rememberMe: boolean('remember_me').notNull(),
+
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+
+	/**
+	 * When the session was last used, recorded at most every few minutes
+	 */
+	lastUsedAt: timestamp('last_used_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	uniqueIndex('sessions_token_hash_unique').on(table.tokenHash),
+	index('sessions_player_id_index').on(table.playerId),
+	check('sessions_token_hash_length', authHashLength(table.tokenHash))
+]);
+
+export const loginProvider = pgEnum('login_provider', LOGIN_PROVIDERS);
+
+/**
+ * The Google and Discord logins linked to accounts: one row per provider account, and at most one of
+ * each provider per player. Deleted with the account
+ */
+export const providerLogins = pgTable('provider_logins', {
+	provider: loginProvider('provider').notNull(),
+
+	/**
+	 * The provider's ID for its user (Google's sub, Discord's user ID), which never changes, unlike
+	 * their email address
+	 */
+	providerUserId: text('provider_user_id').notNull(),
+
+	playerId: uuid('player_id').notNull().references(() => players.id, { onDelete: 'cascade' }),
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	primaryKey({ columns: [table.provider, table.providerUserId] }),
+	unique('provider_logins_player_provider_unique').on(table.playerId, table.provider)
+]);
+
+/**
+ * Provider logins waiting on the player's next step, for at most 10 minutes: choosing a username for a
+ * new account, or logging in to the local account with the same email address to link them. Only the
+ * browser that came back from the provider can take it, through its continuation cookie. Deleted once
+ * used or expired
+ */
+export const pendingProviderLogins = pgTable('pending_provider_logins', {
+	id: uuid('id').primaryKey().defaultRandom(),
+
+	/**
+	 * SHA-256 of the token in the browser's continuation cookie
+	 */
+	continuationHash: bytea('continuation_hash').notNull(),
+
+	provider: loginProvider('provider').notNull(),
+	providerUserId: text('provider_user_id').notNull(),
+
+	/**
+	 * The address the provider verified, which a new account is created with
+	 */
+	email: text('email').notNull(),
+
+	/**
+	 * The provider's name for the player, suggested as a new account's name
+	 */
+	displayName: text('display_name').notNull(),
+
+	/**
+	 * The local account with the same address, which the player logs in to to link; null for a new
+	 * account
+	 */
+	playerId: uuid('player_id').references(() => players.id, { onDelete: 'cascade' }),
+
+	/**
+	 * Whether the player checked "Remember me" before going to the provider
+	 */
+	rememberMe: boolean('remember_me').notNull(),
+
+	expiresAt: timestamp('expires_at', { withTimezone: true }).notNull()
+}, (table) => [
+	uniqueIndex('pending_provider_logins_continuation_hash_unique').on(table.continuationHash),
+	index('pending_provider_logins_player_id_index').on(table.playerId),
+	index('pending_provider_logins_expires_at_index').on(table.expiresAt),
+	check('pending_provider_logins_continuation_hash_length', authHashLength(table.continuationHash))
+]);
+
+/**
+ * Authenticator apps set up for 2FA: at most one per account. A row whose enabledAt is null is a setup
+ * waiting for its first code, which doesn't change how the account logs in. Deleted when 2FA is turned
+ * off, and with the account
+ */
+export const authenticators = pgTable('authenticators', {
+	playerId: uuid('player_id').primaryKey().references(() => players.id, { onDelete: 'cascade' }),
+
+	/**
+	 * The TOTP secret, encrypted with TOTP_ENCRYPTION_KEY (server/src/auth/totpSecrets.ts)
+	 */
+	encryptedSecret: bytea('encrypted_secret').notNull(),
+
+	/**
+	 * The time step of the last code used, so each code works once; null until one is used
+	 */
+	lastUsedStep: integer('last_used_step'),
+
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+
+	/**
+	 * When 2FA was turned on, once the first code was entered; null while setting up
+	 */
+	enabledAt: timestamp('enabled_at', { withTimezone: true })
+});
+
+/**
+ * The recovery codes of accounts with 2FA, each working once in place of an authenticator code. Stored
+ * only as keyed hashes. Deleted once used, when they are replaced or 2FA is turned off, and with the account
+ */
+export const recoveryCodes = pgTable('recovery_codes', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	playerId: uuid('player_id').notNull().references(() => players.id, { onDelete: 'cascade' }),
+
+	/**
+	 * Keyed hash of the code
+	 */
+	codeHash: bytea('code_hash').notNull()
+}, (table) => [
+	index('recovery_codes_player_id_index').on(table.playerId),
+	check('recovery_codes_code_hash_length', authHashLength(table.codeHash))
+]);
+
+/**
+ * Logins whose password was right, waiting at most 10 minutes for the account's authenticator or
+ * recovery code. Only the browser that gave the password can finish one, through its continuation
+ * cookie. Deleted once used, expired or guessed wrong too often
+ */
+export const pendingTwoFactorLogins = pgTable('pending_two_factor_logins', {
+	id: uuid('id').primaryKey().defaultRandom(),
+
+	/**
+	 * SHA-256 of the token in the browser's continuation cookie
+	 */
+	continuationHash: bytea('continuation_hash').notNull(),
+
+	playerId: uuid('player_id').notNull().references(() => players.id, { onDelete: 'cascade' }),
+
+	/**
+	 * Whether the player checked "Remember me" with their password
+	 */
+	rememberMe: boolean('remember_me').notNull(),
+
+	wrongGuesses: smallint('wrong_guesses').notNull().default(0),
+	expiresAt: timestamp('expires_at', { withTimezone: true }).notNull()
+}, (table) => [
+	uniqueIndex('pending_two_factor_logins_continuation_hash_unique').on(table.continuationHash),
+	index('pending_two_factor_logins_player_id_index').on(table.playerId),
+	index('pending_two_factor_logins_expires_at_index').on(table.expiresAt),
+	check('pending_two_factor_logins_continuation_hash_length', authHashLength(table.continuationHash)),
+	check('pending_two_factor_logins_wrong_guesses_range', sql`${table.wrongGuesses} >= 0`)
+]);
+
+/**
+ * Browsers a player chose to trust, which skip the authenticator code for TRUSTED_BROWSER_DAYS. A
+ * browser holds one token in its trust cookie, which every account it trusts shares. Deleted once
+ * expired, when 2FA is turned off or the player stops trusting every browser, and with the account
+ */
+export const trustedBrowsers = pgTable('trusted_browsers', {
+	id: uuid('id').primaryKey().defaultRandom(),
+
+	/**
+	 * SHA-256 of the token in the browser's trust cookie
+	 */
+	tokenHash: bytea('token_hash').notNull(),
+
+	playerId: uuid('player_id').notNull().references(() => players.id, { onDelete: 'cascade' }),
+	expiresAt: timestamp('expires_at', { withTimezone: true }).notNull()
+}, (table) => [
+	uniqueIndex('trusted_browsers_token_player_unique').on(table.tokenHash, table.playerId),
+	index('trusted_browsers_player_id_index').on(table.playerId),
+	index('trusted_browsers_expires_at_index').on(table.expiresAt),
+	check('trusted_browsers_token_hash_length', authHashLength(table.tokenHash))
+]);
+
+export const emailCodePurpose = pgEnum('email_code_purpose', EMAIL_CODE_PURPOSES);
+
+/**
+ * The email codes waiting to be entered (see Email codes in STRUCTURE-OVERVIEW.md): at most one per
+ * purpose and address, since a new code replaces the old one. The address and the code are stored only
+ * as keyed hashes. Deleted once they can no longer be used
+ */
+export const emailCodes = pgTable('email_codes', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	purpose: emailCodePurpose('purpose').notNull(),
+
+	/**
+	 * Keyed hash of the address the code was sent to, in lowercase. The address itself isn't stored, so
+	 * registering asks for it again with the password and checks it against this
+	 */
+	addressHash: bytea('address_hash').notNull(),
+
+	/**
+	 * The account a password reset, email change or provider link is for; null when registering
+	 */
+	playerId: uuid('player_id').references(() => players.id, { onDelete: 'cascade' }),
+
+	/**
+	 * Keyed hash of the code
+	 */
+	codeHash: bytea('code_hash').notNull(),
+
+	sentAt: timestamp('sent_at', { withTimezone: true }).notNull().defaultNow(),
+	wrongGuesses: smallint('wrong_guesses').notNull().default(0),
+
+	/**
+	 * When the code was entered correctly; null until then
+	 */
+	usedAt: timestamp('used_at', { withTimezone: true }),
+
+	/**
+	 * SHA-256 of the token in the cookie given to the browser that entered the code, which lets only that
+	 * browser take the next step (such as setting the password). Set with the code's use. Unique for each
+	 * purpose: a step that needs two codes, such as changing the email address of an account without a
+	 * password, gives both the same token
+	 */
+	continuationHash: bytea('continuation_hash'),
+
+	/**
+	 * When the next step must be taken by
+	 */
+	continuationExpiresAt: timestamp('continuation_expires_at', { withTimezone: true })
+}, (table) => [
+	uniqueIndex('email_codes_purpose_address_unique').on(table.purpose, table.addressHash),
+	uniqueIndex('email_codes_purpose_continuation_hash_unique').on(table.purpose, table.continuationHash),
+	index('email_codes_player_id_index').on(table.playerId),
+	check('email_codes_address_hash_length', authHashLength(table.addressHash)),
+	check('email_codes_code_hash_length', authHashLength(table.codeHash)),
+	check('email_codes_continuation_hash_length', authHashLength(table.continuationHash)),
+	check('email_codes_wrong_guesses_range', sql`${table.wrongGuesses} >= 0`),
+	check('email_codes_player_purpose', sql`(${table.purpose} = 'register') = (${table.playerId} IS NULL)`),
+	check('email_codes_continuation', sql`(${table.continuationHash} IS NULL) = (${table.continuationExpiresAt} IS NULL) AND (${table.continuationHash} IS NULL OR ${table.usedAt} IS NOT NULL)`)
+]);
+
+/**
+ * What a rate limit counts: codes sent to an address and wrong guesses for it, the codes asked for and
+ * guesses made from a network, login attempts for an address and from a network, authenticator or
+ * recovery codes tried for an account and its wrong authenticator codes, login attempts from a browser
+ * that has logged in to an account, and usernames checked from a network
+ */
+export const RATE_LIMIT_KINDS = ['addressCodeSent', 'addressWrongGuess', 'networkCodeRequest', 'networkGuess', 'addressLoginAttempt', 'networkLoginAttempt', 'accountTwoFactorAttempt', 'browserLoginAttempt', 'networkUsernameCheck', 'accountWrongAuthenticatorCode'] as const;
+export const rateLimitKind = pgEnum('rate_limit_kind', RATE_LIMIT_KINDS);
+
+/**
+ * One row per attempt a rate limit counts. The rows for a subject are counted and added in one
+ * transaction, so requests sent at once can't each slip under a limit. Deleted once no limit counts
+ * them (the longest window is a day)
+ */
+export const rateLimitEvents = pgTable('rate_limit_events', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	kind: rateLimitKind('kind').notNull(),
+
+	/**
+	 * Keyed hash of what is limited: an address, a network (server/src/logic/networks.ts), an account,
+	 * or a browser that has logged in to an account (server/src/auth/knownBrowsers.ts)
+	 */
+	subjectHash: bytea('subject_hash').notNull(),
+
+	occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	index('rate_limit_events_subject_index').on(table.kind, table.subjectHash, table.occurredAt),
+	index('rate_limit_events_occurred_at_index').on(table.occurredAt),
+	check('rate_limit_events_subject_hash_length', authHashLength(table.subjectHash))
+]);
+
+/**
+ * What happened in an auth event
+ */
+export const AUTH_EVENT_KINDS = ['registered', 'loggedIn', 'loginFailed', 'loggedOut', 'passwordReset', 'passwordChanged', 'passwordRehashed', 'emailChanged', 'providerLinked', 'twoFactorEnabled', 'twoFactorDisabled', 'twoFactorFailed', 'recoveryCodeUsed', 'recoveryCodesReplaced', 'browserTrusted', 'trustedBrowsersForgotten'] as const;
+export const authEventKind = pgEnum('auth_event_kind', AUTH_EVENT_KINDS);
+
+/**
+ * A record of logins, failures, logouts and changes to how an account logs in. Never holds passwords,
+ * codes or session tokens. Kept 90 days, and deleted with the account
+ */
+export const authEvents = pgTable('auth_events', {
+	id: uuid('id').primaryKey().defaultRandom(),
+
+	/**
+	 * The account, or null when it isn't known (such as a failed login for an address with no account)
+	 */
+	playerId: uuid('player_id').references(() => players.id, { onDelete: 'cascade' }),
+
+	kind: authEventKind('kind').notNull(),
+
+	/**
+	 * Keyed hash of the network the request came from, or null when it isn't known
+	 */
+	networkHash: bytea('network_hash'),
+
+	occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	index('auth_events_player_id_index').on(table.playerId),
+	index('auth_events_occurred_at_index').on(table.occurredAt),
+	check('auth_events_network_hash_length', authHashLength(table.networkHash))
 ]);

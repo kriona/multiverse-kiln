@@ -63,11 +63,6 @@ export interface EditorPlace
 export interface EditorScreenActions
 {
 	/**
-	 * Goes back to Home
-	 */
-	goHome: () => void;
-
-	/**
 	 * Goes into the universe's lobby to play it
 	 */
 	play: (universe: UniverseSummary) => void;
@@ -217,11 +212,6 @@ export class EditorScreen
 				this.moveBetweenTabs(event, name);
 			});
 		}
-
-		getElement('editor-home', HTMLButtonElement).addEventListener('click', () =>
-		{
-			actions.goHome();
-		});
 
 		getElement('editor-play', HTMLButtonElement).addEventListener('click', () =>
 		{

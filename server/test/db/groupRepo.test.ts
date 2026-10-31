@@ -7,7 +7,7 @@ import { findDefaultClassIds } from '../../src/db/classRepo.js';
 import { db } from '../../src/db/client.js';
 import { findDefaultDifficultyLevel } from '../../src/db/difficultyRepo.js';
 import { addGroupMember, countGroupMembers, createInvite, deleteInvite, findGroup, findInvite, findMembership, leaveGroup, listExpiredMemberships, listGroupMembers, listMembersOfGroups, listPlayerGroupIds, purgeExpiredInvites, saveGroupClock, saveMemberPositions } from '../../src/db/groupRepo.js';
-import { loadOrCreatePlayerByName } from '../../src/db/playerRepo.js';
+import { addPlayer } from '../players.js';
 import { characters } from '../../src/db/schema.js';
 import { inTransaction } from '../../src/db/transactions.js';
 import { addCharacter, addGroup, addPlayableUniverse, defaultRaceId, type PlayableUniverse } from './fixtures.js';
@@ -23,7 +23,7 @@ describe('groupRepo', () =>
 	beforeEach(async () =>
 	{
 		universe = await addPlayableUniverse();
-		playerId = (await loadOrCreatePlayerByName('Ada')).id;
+		playerId = (await addPlayer('Ada')).id;
 		anchorId = await addCharacter(playerId, universe.universeId, 'Anchor');
 		memberId = await addCharacter(playerId, universe.universeId, 'Member');
 		groupId = await addGroup(universe.universeId, anchorId, universe.fieldAreaId, 'The Fellowship');

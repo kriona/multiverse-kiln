@@ -144,6 +144,26 @@ export async function findTileGraphicStorageKey(graphicId: string, executor: Exe
 }
 
 /**
+ * Where every one of a universe's uploaded tile graphics is stored, for deleting the images along with
+ * the universe
+ *
+ * @param universeId The universe's ID
+ * @param executor The database, or a transaction
+ * @return Their keys in object storage
+ */
+export async function listTileGraphicStorageKeys(universeId: string, executor: Executor = db): Promise<string[]>
+{
+	const rows = await executor
+		.select({
+			storageKey: tileGraphics.storageKey
+		})
+		.from(tileGraphics)
+		.where(eq(tileGraphics.universeId, universeId));
+
+	return(rows.map((row) => row.storageKey));
+}
+
+/**
  * Deletes one of a universe's uploaded tile graphics. Tiles drawn with it are drawn in their colors
  * after (the tiles table sets their uploaded_graphic_id to null); delete its image from storage too
  *

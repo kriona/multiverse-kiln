@@ -2,7 +2,7 @@ import assert from 'assert';
 
 import { deleteArea } from '../../src/db/areaRepo.js';
 import { leaveGroup } from '../../src/db/groupRepo.js';
-import { loadOrCreatePlayerByName } from '../../src/db/playerRepo.js';
+import { addPlayer } from '../players.js';
 import { loadSeenChunks, saveSeenChunks } from '../../src/db/worldStateRepo.js';
 import { SEEN_CHUNK_BYTES } from '../../src/logic/seenCells.js';
 import { addCharacter, addGroup, addPlayableUniverse, type PlayableUniverse } from './fixtures.js';
@@ -35,7 +35,7 @@ describe('worldStateRepo', () =>
 	{
 		universe = await addPlayableUniverse();
 
-		const playerId = (await loadOrCreatePlayerByName('Ada')).id;
+		const playerId = (await addPlayer('Ada')).id;
 
 		anchorId = await addCharacter(playerId, universe.universeId, 'Anchor');
 		groupId = await addGroup(universe.universeId, anchorId, universe.fieldAreaId);

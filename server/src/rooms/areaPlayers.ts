@@ -173,7 +173,7 @@ export interface PlayerSight
  * CHUNK_REFRESH_INTERVAL_MS
  *
  * Only the chunks of each area's map near its players are loaded, and each player is sent the chunks
- * near them as they move. Changes the world editor makes (applyChange) reach the players straight away
+ * near them as they move. Changes the world editor makes (applyChange) reach the players immediately
  */
 export class AreaPlayers
 {
@@ -742,7 +742,7 @@ export class AreaPlayers
 				await this.applyAreaChange(area.loaded.area.id, true);
 			}
 		}
-		else
+		else if (change.kind !== 'universeDeleted')
 		{
 			await this.applyAreaChange(change.areaId, false);
 		}
@@ -1212,7 +1212,7 @@ export class AreaPlayers
 	/**
 	 * Shows every client the players its player sees, and only them
 	 *
-	 * Runs every tick, and straight away when players come, go, change area or stop being a ghost
+	 * Runs every tick, and immediately when players come, go, change area or stop being a ghost
 	 */
 	private refreshViews(): void
 	{

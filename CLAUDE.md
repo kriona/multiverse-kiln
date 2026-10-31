@@ -17,14 +17,18 @@ An engine for making multiplayer browser-based role-playing games.
 
 ```
 /client          Phaser game (Vite). Uses `@colyseus/sdk` (formerly colyseus.js) to connect to the server.
-                 Seven pages, linked without .html (/game): index.html (Home; src/main.ts, src/style.scss),
+                 Ten pages, linked without .html (/game): index.html (Home; src/main.ts, src/style.scss),
                  universe.html (a universe's page at /universe/<slug or id>; src/universe.ts, src/universe.scss),
                  game.html (lobby and game at /game/<slug or id>, apart from Home so other pages can be open in
                  other tabs while playing; src/game.ts, src/style.scss), edit.html (the
                  world editor at /edit/<universe id>; src/edit.ts, src/edit.scss), character.html (Create Character; src/character.ts,
                  src/character.scss), license.html (the game's license and the
-                 licenses of what it uses, linked from the footer; src/license.ts, src/license.scss) and
-                 admin.html (settings for the whole site; src/admin.ts, src/admin.scss). HTML the pages share (the tags every <head> starts with, status, notice and login screens,
+                 licenses of what it uses, linked from the footer; src/license.ts, src/license.scss), privacy.html
+                 (the privacy policy, linked from the footer; src/privacy.ts, src/privacy.scss),
+                 admin.html (settings for the whole site; src/admin.ts, src/admin.scss), login.html (logging
+                 in, creating an account and resetting a password, at /login?next=<page to go back to>; src/login.ts,
+                 src/LoginPage.ts, src/login.scss) and profile.html (the player's own profile at /profile, and
+                 other players' at /player/<username>; src/profile.ts, src/ProfilePage.ts, src/profile.scss). HTML the pages share (the tags every <head> starts with, the logged-in player's name at the end of each toolbar, opening a menu with Edit profile and Log out, status and notice screens,
                  footer, the keyboard shortcut list and screen reader live regions) lives in partials/, included with <!-- include footer.html --> (vite.config.ts).
                  Both styles use src/_shared.scss, and
                  src/pages.ts holds the addresses that link the pages. src/localization.ts shows text in the
@@ -33,20 +37,24 @@ An engine for making multiplayer browser-based role-playing games.
   src/index.ts       Colyseus Cloud entry point - never modify it (Colyseus's rule for Cloud deploys)
   src/app.config.ts  define room types, HTTP routes, Express middleware
   src/transport.ts   HTTPS/WSS transport
-  src/rooms/         Room classes (lifecycle hooks, message handlers, tick loop): SessionRoom (one, global: login,
-                     account), LobbyRoom (one per universe) and GameRoom (one per group, made from the database
-                     when a member returns). The two map rooms share AreaPlayers (movement, areas, who sees whom,
-                     area links) and AreaCache
-  src/players/       who is logged in, and changes to characters and groups published to the rooms (in memory;
-                     accounts, characters and groups are in the database)
+  src/rooms/         Room classes (lifecycle hooks, message handlers, tick loop): SessionRoom (one, global: tells
+                     every window who its player is, and when its session ends), LobbyRoom (one per universe)
+                     and GameRoom (one per group, made from the database when a member returns). Every room
+                     finds its clients' players from their session cookie in onAuth. The two map rooms share
+                     AreaPlayers (movement, areas, who sees whom, area links) and AreaCache
+  src/players/       which login sessions have windows connected, and changes to characters and groups, published
+                     to the rooms (in memory; accounts, sessions, characters and groups are in the database)
   src/world/         changes the world editor makes, published to the rooms playing in that world (in memory)
   src/logic/         pure game-simulation functions (no I/O)
   src/db/            Drizzle client, schema, and repository modules
   src/storage/       object storage for uploads (any S3-compatible service; SeaweedFS locally)
   src/images/        checking and re-encoding uploaded images, such as tilesets
-  src/auth/          token verification
-  src/http/          REST routes (health, universes for Home, characters, groups and invite links, the world
-                     editor's API, uploaded tilesets, the admin page's site settings). The world editor saves
+  src/auth/          logins: sessions (the session cookie to a player, sessions.ts), password hashing, keyed
+                     hashes, tokens, rate limits, the breached password check and the Google and Discord
+                     clients (providers.ts)
+  src/email/         sending email (SMTP; Mailpit locally) and the emails logins send, in each player's language
+  src/http/          REST routes (health, logins and accounts (auth.ts, and providerAuth.ts for Google and Discord), profiles, universes for Home, characters, groups and
+                     invite links, the world editor's API, uploaded tilesets, the admin page's site settings). The world editor saves
                      every change through one route, editorChanges.ts, in one transaction; each kind of
                      change is checked and saved by its module (editorAreas.ts, editorItems.ts and so on)
   scripts/           development tools run by hand, such as the seed script
@@ -97,7 +105,7 @@ npm workspaces are assumed (`client`, `server`, `shared`). Update this section i
 
 - All environment-specific values come from environment variables. Never hard-code URLs, credentials, or secrets, and never commit `.env` files. The pre-commit hook runs gitleaks on staged changes and blocks commits that contain secrets.
 - Root (`docker-compose.yml`): `POSTGRES_PASSWORD`, `KILN_MIGRATOR_PASSWORD`, `KILN_APP_PASSWORD`, `POSTGRES_PORT`, `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` (the local storage's keys), `STORAGE_PORT`.
-- Server: `DATABASE_URL` (the app role), `MIGRATION_DATABASE_URL` (the migration role; drizzle-kit only, never the running server), `PORT` (default 2567), `ENABLE_DEV_TOOLS` (playground and `/monitor`, never in production), `SSL_KEY_FILE` / `SSL_CERT_FILE`, `ALLOWED_ORIGINS`, `LOADTEST_ENDPOINT`, `STORAGE_ENDPOINT` / `STORAGE_REGION` / `STORAGE_BUCKET` / `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` / `STORAGE_FORCE_PATH_STYLE` (object storage for uploads), `TEST_STORAGE_BUCKET`, auth secret(s).
+- Server: `DATABASE_URL` (the app role), `MIGRATION_DATABASE_URL` (the migration role; drizzle-kit only, never the running server), `PORT` (default 2567), `ENABLE_DEV_TOOLS` (playground, `/monitor` and the load test's bot login, never in production), `SSL_KEY_FILE` / `SSL_CERT_FILE`, `ALLOWED_ORIGINS`, `CLIENT_ADDRESS_HEADER` / `TRUSTED_PROXY_HOPS` (the one forwarding header a proxy in front of the server sets, and how many proxies add to X-Forwarded-For; unset uses the connection's address, and Colyseus Cloud requires them; `server/src/http/clientNetwork.ts`), `LOADTEST_ENDPOINT`, `STORAGE_ENDPOINT` / `STORAGE_REGION` / `STORAGE_BUCKET` / `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` / `STORAGE_FORCE_PATH_STYLE` (object storage for uploads), `TEST_STORAGE_BUCKET`, `AUTH_HMAC_KEY` (the key for the keyed hashes of addresses, email codes, recovery codes and networks; `server/src/auth/keyedHashes.ts`), `TOTP_ENCRYPTION_KEY` (encrypts authenticator secrets for 2FA, kept apart from the database; `server/src/auth/totpSecrets.ts`), `SMTP_URL` / `EMAIL_FROM` (where email is sent, and the address it comes from), `SITE_URL` (the client's address, which emails link to and Google and Discord send players back to; the server refuses to start without it, `server/src/siteUrl.ts`), `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` and `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` (each provider is offered once both are set; `server/src/auth/providers.ts`).
 - Client: `DEV_HOST`, `DEV_PORT`, `DEV_SSL_KEY_FILE` / `DEV_SSL_CERT_FILE`, `VITE_SERVER_URL` (`wss://www.multiversekiln-dev.com:2567` locally, `wss://...` in production), `VITE_SOURCE_URL` (the source code link in the page footer, required by the AGPL; a fork sets its own repository).
 - Commit `.env.example` files listing every variable with placeholder values, and keep them up to date.
 
@@ -123,7 +131,7 @@ docker compose up -d                 # start local Postgres and object storage
 npm run storage:setup -w server      # create the storage bucket (start.bat does it)
 npm run db:generate -w server        # create a migration after changing server/src/db/schema.ts
 npm run db:migrate -w server         # apply Drizzle migrations
-npm run db:seed -w server            # add or replace the sample universe (server/scripts/sampleUniverse.ts); -- --creator "<name>" makes that player its creator
+npm run db:seed -w server            # add or replace the sample universe (server/scripts/sampleUniverse.ts); -- --creator <username> makes that account its creator
 npm run messages                     # update shared/locales/en.json after changing messages (the client's dev server does it as you save), and list each translation's missing and out-of-date messages
 npm run dev -w server                # Colyseus on wss://www.multiversekiln-dev.com:2567
 npm run dev -w client                # Vite on https://www.multiversekiln-dev.com:5173
@@ -141,11 +149,11 @@ Test multiplayer with separate browsers or profiles: every tab of one browser is
 - **The game engine's name is only ever `SITE_NAME`** (`shared/src/constants.ts`), never written into a message or page. Code uses the constant; a page's HTML writes `%SITE_NAME%`, which `client/vite.config.ts` fills in. A message that names it takes it as an argument, `{siteName}`, which in a page's HTML is `<span data-argument="siteName" translate="no">%SITE_NAME%</span>`. Browser tab titles leave it out: set them with `setPageTitle()` (`client/src/ui/dom.ts`), which adds ` - ${SITE_NAME}`.
 - **Icons** come from Phosphor's Regular icons (`ph:<name>`, https://phosphoricons.com) for interface actions and game-icons.net (`game-icons:<name>`, https://game-icons.net) for game concepts. A page marks one with `<!-- icon ph:floppy-disk -->` before a button's text; code imports one with `import trashIcon from 'virtual:icon/ph:trash'` and shows it with `setButtonLabel()` (`client/src/ui/dom.ts`). The icons plugin in `client/vite.config.ts` inlines them as SVG at build time. Both are credited, with their licenses, on `client/license.html`; credit any new third-party code or assets the pages use there too.
 - **Every screen works with only a keyboard and with a screen reader** (see Accessibility in `STRUCTURE-OVERVIEW.md`). When adding a screen, dialog or game feature:
-	- Give its main buttons shortcuts with `data-shortcut="Alt+<letter>"`, following the pattern there (Alt+S submits, Alt+N adds, and so on). `client/src/ui/shortcuts.ts` underlines the letter, sets `aria-keyshortcuts` and lists it under `?`. Use `addShortcut()` for a shortcut that isn't a button, and `addKeyHelp()` to list keys the code handles itself. Don't use Alt+D, Alt+E or Alt+F, and don't give deleting a shortcut.
+	- Give its main buttons shortcuts with `data-shortcut="Alt+<letter>"`, following the pattern there (Alt+S submits, Alt+N adds, and so on). The letter must be in the button's English text: a submit button without an S, such as Create or Log in, takes a letter of its own word instead (Alt+C, Alt+L). `client/src/ui/shortcuts.ts` underlines the letter, sets `aria-keyshortcuts` and lists it under `?`. Use `addShortcut()` for a shortcut that isn't a button, and `addKeyHelp()` to list keys the code handles itself. Don't use Alt+D, Alt+E or Alt+F, and don't give deleting a shortcut.
 	- Read out what changes without the player acting, and what is only drawn on a canvas, with `announce()` (`client/src/ui/announcer.ts`), the way `MapAnnouncer` does for the game's map.
 	- Show a field's problem with `reportFieldError()` (`client/src/ui/fieldErrors.ts`), and point the form's buttons at its error text with `aria-describedby`.
 	- Never show something by color alone, give anything drawn on a canvas a keyboard way to reach it, and set `document.title` when the screen shows.
-- **The universe editor stages every change.** Nothing a universe editor tab or its dialogs change reaches the server until the player clicks the Save button in the editor's bar (see Unsaved changes in `STRUCTURE-OVERVIEW.md`): adding, changing and deleting, uploads and deleting uploads included. Dialogs Apply their changes to the tab, the tab shows what will change, and Save sends it all. Never add a control that changes the universe straight away, even after a confirmation.
+- **The universe editor stages every change.** Nothing a universe editor tab or its dialogs change reaches the server until the player clicks the Save button in the editor's bar (see Unsaved changes in `STRUCTURE-OVERVIEW.md`): adding, changing and deleting, uploads and deleting uploads included. Dialogs Apply their changes to the tab, the tab shows what will change, and Save sends it all. Never add a control that changes the universe immediately, even after a confirmation.
 - **Don't let work be lost by accident.** Give a form or dialog that edits something a `ChangeTracker` (`client/src/ui/changeTracker.ts`): call `markSaved()` once it is filled and after it saves, `confirmDiscard()` before closing or replacing it, and `guardDialog()` for a dialog. Anything else holding work not yet saved (such as painting still being sent) registers with `watchUnsavedWork()`. While any of it has unsaved changes, the browser asks before the page is left.
 - Code must pass `npm run lint` (ESLint, `eslint.config.js`); a pre-commit hook enforces it. Run it after making changes, and fix problems with Edit rather than `eslint --fix`. The import restrictions for `server/src/logic/` and `server/src/rooms/` enforce the architecture and database rules above - don't disable them.
 - Colyseus APIs changed substantially in 0.17 and 0.18, and recall of them is usually out of date. **Use the `colyseus` skill** (`.agents/skills/colyseus/SKILL.md`) before writing or changing any Colyseus code: rooms, Schema state, messages, matchmaking, reconnection, the client SDK (`@colyseus/sdk`) or server config. Read the matching file in its `references/` folder before non-trivial work in that area. Check the installed versions in `server/package.json` and `client/package.json` first; the skill is written for `colyseus` 0.18 and `@colyseus/schema` 5.

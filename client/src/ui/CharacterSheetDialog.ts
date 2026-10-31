@@ -16,7 +16,7 @@ import { className, raceName, themeName } from './raceAndClassNames';
  * darkvision, light sensitivity, money and equipment (pages that use it include partials/character-sheet.html)
  *
  * It only shows the character, so there is nothing in it to save. Its Delete button asks twice before
- * deleting the character: the second question cremates them (deletes them straight away) or gives them
+ * deleting the character: the second question cremates them (deletes them immediately) or gives them
  * their last rites (deletes them the site's characterDeletionDays later, and isn't offered while that
  * is 0). A character given their last rites can be restored from their sheet until then
  */
@@ -297,7 +297,7 @@ export class CharacterSheetDialog
 	}
 
 	/**
-	 * Deletes the character shown straight away, then closes the sheet
+	 * Deletes the character shown immediately, then closes the sheet
 	 */
 	private async cremate(): Promise<void>
 	{
@@ -331,7 +331,7 @@ export class CharacterSheetDialog
 		announce(t({
 			id: 'characterDelete.cremated',
 			defaultMessage: '{name} has been deleted.',
-			description: 'Read out by screen readers once a character has been deleted straight away; {name} is the character\'s name'
+			description: 'Read out by screen readers once a character has been deleted immediately; {name} is the character\'s name'
 		}, {
 			name: current.sheet.name
 		}));

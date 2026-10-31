@@ -10,23 +10,34 @@ import { GameRoom } from './rooms/GameRoom.js';
 import { LobbyRoom } from './rooms/LobbyRoom.js';
 import { SessionRoom } from './rooms/SessionRoom.js';
 import { createTransport } from './transport.js';
+import { startAuthSweep } from './authSweep.js';
 import { startCharacterSweep } from './characterSweep.js';
 import { isDevToolsEnabled } from './devTools.js';
 import { addAdminRoutes } from './http/admin.js';
-import { addBrowserIdRoute } from './http/browserId.js';
+import { addAuthRoutes } from './http/auth.js';
 import { addCharacterRoutes } from './http/characters.js';
+import { addDevBotLoginRoute } from './http/devLogin.js';
+import { clientAddressSource } from './http/clientNetwork.js';
 import { addEditorRoutes } from './http/editor.js';
 import { addGroupRoutes } from './http/groups.js';
 import { addHealthRoute } from './http/health.js';
+import { addProfileRoutes } from './http/profiles.js';
 import { addTileGraphicRoute } from './http/tileGraphics.js';
 import { addUniversesRoutes } from './http/universes.js';
 import { createOriginCheck, parseAllowedOrigins } from './http/origins.js';
 import { configureResponseHeaders } from './http/responseHeaders.js';
+import { siteUrl } from './siteUrl.js';
 
 // Origins allowed to use the server from a browser; startup fails if ALLOWED_ORIGINS is missing
 const allowedOrigins = parseAllowedOrigins(process.env.ALLOWED_ORIGINS);
 
 configureResponseHeaders(allowedOrigins);
+
+// The client's address, which emails link to; startup fails if SITE_URL is missing or isn't an https:// origin
+siteUrl();
+
+// Where clients' addresses come from, for limits per network; startup fails if the settings are invalid
+clientAddressSource();
 
 const server = defineServer({
 
@@ -37,11 +48,13 @@ const server = defineServer({
 	transport: createTransport({ beforeUpgrade: createOriginCheck(allowedOrigins) }),
 
 	/**
-	 * Deletes characters whose last rites are over, now and every hour
+	 * Deletes characters whose last rites are over, now and every hour, and tidies the login records
+	 * (expired sessions, old email codes and rate limit records) now and every few minutes
 	 */
 	beforeListen: () =>
 	{
 		startCharacterSweep();
+		startAuthSweep();
 	},
 
 	/**
@@ -66,18 +79,22 @@ const server = defineServer({
 		app.disable('x-powered-by');
 
 		addHealthRoute(app);
-		addBrowserIdRoute(app);
+		addAuthRoutes(app, allowedOrigins);
 		addUniversesRoutes(app);
 		addCharacterRoutes(app, allowedOrigins);
 		addGroupRoutes(app, allowedOrigins);
 		addEditorRoutes(app, allowedOrigins);
 		addTileGraphicRoute(app);
 		addAdminRoutes(app, allowedOrigins);
+		addProfileRoutes(app, allowedOrigins);
 
 		if (isDevToolsEnabled())
 		{
 			// @colyseus/monitor can inspect and dispose rooms; never expose it unauthenticated
 			app.use('/monitor', monitor());
+
+			// Bots, such as the load test's, log in without email
+			addDevBotLoginRoute(app);
 
 			// @colyseus/playground lets anyone join rooms with arbitrary options
 			app.use('/', playground());
