@@ -2,7 +2,7 @@ This document describes the UI + game structure for the Multiverse Kiln. It desc
 
 # Pages
 ## Home
-Lists all universes. In the beginning there will only be a few, but in the future there may be thousands, so we should be forward-thinking about the UI (even if advanced search filters don't exist yet). Each universe should show name, 1-sentence description, ruleset, and [languages](#tab-translations). Only universes in the `prologue` or `let there be light` [stage](#edit-universe) are listed. Anyone can see it; its toolbar links to the [login page](#login), or once logged in shows the player's name and a Log out button. A logged-in player also sees the universes they work on, and a button for [Create Universe](#create-universe).
+Lists all universes. In the beginning there will only be a few, but in the future there may be thousands, so we should be forward-thinking about the UI (even if advanced search filters don't exist yet). Each universe should show name, 1-sentence description, ruleset, and [languages](#tab-translations). Only universes in the `let there be light` [stage](#edit-universe) are listed for everyone. Anyone can see it; its toolbar links to the [login page](#login), or once logged in shows the player's name and a Log out button. A logged-in player also sees the universes they work on, and a button for [Create Universe](#create-universe). A player with a role in any universe in `prologue` sees those in a section of their own, for testing, which isn't shown to anyone else.
 
 Each universe links to its [page](#universe-page).
 
@@ -217,7 +217,9 @@ Creating a universe
 The [admin page](#admin) decides how many universes a user can create. The admin page can also turn off creating universes for everyone, which disables the Create Universe button.
 
 ## Admin
-Settings for the whole site (`admin.html`), stored in one row of the `site_settings` table. Home's toolbar links to it, and anyone can use it until there are server admin accounts.
+Settings for the whole site (`admin.html`), stored in one row of the `site_settings` table. Only server admins can see and use it, and only they see its link in Home's toolbar.
+
+Whether a player is a server admin is stored in the database. The first admin is made by hand with a script run on the server; after that, admins add and remove other admins on this page. An admin must have 2FA on to use any of it.
 - universe creation enabled: whether players can create universes
 - universes per creator: the most universes one player may create, from 1 to 1000
 - character deletion days: how many days [Last Rites](#deleting-a-character) waits before deleting a character, from 0 to 365 (7 by default). 0 turns Last Rites off. Characters already given their last rites keep their day
@@ -235,9 +237,13 @@ This lets you change anything about a universe. It will be a whole suite of tool
 - long description, written in markdown
 - dropdown for "Stage"
 	- `in the beginning` - still being created. Only creators and builders can play. Not listed on [Home](#home)
-	- `prologue` - open for beta testers. Not listed on [Home](#home)
+	- `prologue` - open for beta testers. Not listed on [Home](#home) for everyone: its editors, beta testers included, see it in Home's section for universes in testing
 	- `let there be light` - (ready for people to join. Listed on [Home](#home)
 	- `end of time` - retired. Locked and view only. Not listed on [Home](#home)
+		- the universe page can still be reached, and says the universe is locked
+		- only creators can still edit it
+		- the lobby can't be entered
+		- groups can still be opened, read-only: their members can look at the map and chat in the group, but nothing in the game changes
 - a dropdown for ruleset - no default, Pathfinder 1E or Starfinder 1E
 - a dropdown for "passage of time", the default for every [area](#editor-area)
 	- `flows normally` (based on character actions, see [time and distance](#time-and-distance))
