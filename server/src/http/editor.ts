@@ -604,6 +604,6 @@ function handleEditorError(error: unknown, request: Request, response: Response,
 		return;
 	}
 
-	console.error(`Editor request ${request.method} ${request.originalUrl} failed:`, error);
+	console.error('Editor request %s %s failed:', request.method, request.originalUrl, error);
 	sendError(response, 500, errorMessages.somethingWentWrong);
 }

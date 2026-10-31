@@ -123,6 +123,6 @@ function handleAdminError(error: unknown, request: Request, response: Response, 
 		return;
 	}
 
-	console.error(`Admin request ${request.method} ${request.originalUrl} failed:`, error);
+	console.error('Admin request %s %s failed:', request.method, request.originalUrl, error);
 	sendError(response, 500, errorMessages.somethingWentWrong);
 }

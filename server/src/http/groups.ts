@@ -617,6 +617,6 @@ function handleGroupError(error: unknown, request: Request, response: Response, 
 		return;
 	}
 
-	console.error(`Group request ${request.method} ${request.originalUrl} failed:`, error);
+	console.error('Group request %s %s failed:', request.method, request.originalUrl, error);
 	sendError(response, 500, errorMessages.somethingWentWrong);
 }
