@@ -1291,7 +1291,7 @@ function handleAuthError(error: unknown, request: Request, response: Response, n
 		return;
 	}
 
-	console.error(`Auth request ${request.method} ${request.originalUrl} failed:`, error);
+	console.error('Auth request %s %s failed:', request.method, request.originalUrl, error);
 	sendRefusal(response, {
 		status: 500,
 		message: errorMessages.somethingWentWrong

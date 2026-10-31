@@ -884,6 +884,6 @@ function handleCharacterError(error: unknown, request: Request, response: Respon
 		return;
 	}
 
-	console.error(`Character request ${request.method} ${request.originalUrl} failed:`, error);
+	console.error('Character request %s %s failed:', request.method, request.originalUrl, error);
 	sendError(response, 500, errorMessages.somethingWentWrong);
 }
