@@ -2,6 +2,9 @@
 // universes, dialogs, forms and rendered Markdown. Each page's stylesheet uses this with
 // `@use 'shared' as *;` and adds its own rules
 
+@use 'sass:meta';
+@use 'sass:string';
+
 // Backgrounds, darkest first
 $background-page: #111;
 $background-panel: #181a20;
@@ -969,7 +972,7 @@ button.chip-remove
 // A field whose value the server is checking, such as a new username: Phosphor's circle-notch at the
 // right of the field, turning unless the player asked for less motion
 $checking-icon-path: "M232 128a104 104 0 0 1-208 0c0-41 23.81-78.36 60.66-95.27a8 8 0 0 1 6.68 14.54C60.15 61.59 40 93.27 40 128a88 88 0 0 0 176 0c0-34.73-20.15-66.41-51.34-80.73a8 8 0 0 1 6.68-14.54C208.19 49.64 232 87 232 128";
-$checking-icon-color: "%23" + str-slice(inspect($text-muted), 2);
+$checking-icon-color: "%23" + string.slice(meta.inspect($text-muted), 2);
 
 input.field-checking
 {

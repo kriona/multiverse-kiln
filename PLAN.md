@@ -231,7 +231,7 @@ Decided:
 - [✅] A tile's graphic chosen from sheets that ship with the engine or the universe's uploaded tilesets, shown in the tile editor with its day and night preview
 - [✅] Uploading tilesets from the tile editor, staged until the Tilesets tab is saved: object storage, checking and re-encoding, the rights confirmation, and drawing maps with them once they load (tiles show their colors until then)
 - [✅] Deleting an uploaded tileset from the tile editor, after asking, staged until the tab is saved; tiles drawn with it go back to their colors
-- [ ] Removing a universe's uploads from storage when the universe is deleted (once universes can be deleted)
+- [✅] Removing a universe's uploads from storage when the universe is deleted (deleting an account deletes the universes it chose to, `server/src/http/accountDeletion.ts`)
 - [✅] The editor's Save saves every tab's changes together, all or nothing, as `STRUCTURE-OVERVIEW.md` describes: one request (POST `/:universeId/changes`, `server/src/http/editorChanges.ts`) saves them in one transaction, in place of a route for each change, and a change can name what an earlier one in the same save makes
 - [✅] The Areas tab's maps draw the Tilesets tab's staged changes: changed colors and graphics, new tiles, staged uploads (from the page's own copy), and tiles staged for deletion drawn as their chosen replacements, including as an area's default tile. The draw tool and the default tile choices offer new tiles and stop offering tiles staged for deletion, and painting staged on the Areas tab with such a tile is saved as its replacement
 - [✅] The area previews in the link and starting area dialogs draw the Tilesets tab's staged changes too
@@ -286,16 +286,78 @@ Built in two steps: logins (sessions, providers, local accounts, email codes, re
 
 ## Phase 15: Universe management
 
-- [ ] Editors tab: creators, builders, beta testers and translators (with their languages), with permissions checked on the server
-- [ ] Stages: who can play in each (`in the beginning`: creators and builders; `prologue`: beta testers; `end of time`: view only) and which are listed on Home
-- [ ] Disabling things players are using: the warnings and options for races, classes, areas, items and group size
-- [ ] Universe languages: a source language and the languages it's translated into, shown on Home
-- [ ] Translations stored in one table (universe, what the text belongs to, field, language, text, and a hash of the source text it was made from) through a repository, with the fallback order from `STRUCTURE-OVERVIEW.md` as a pure function with tests
-- [ ] Universe text reaches each client in its own language outside the Schema (which sends the same state to everyone in a room): synced state carries IDs, and the client fetches the universe's text in its language once, cached with an ETag
-- [ ] Translations tab: the table of universe text with its filters, editors' notes for translators, and updating or confirming out-of-date translations
-- [ ] Universe versions: build a new version while players play the current one, then switch to it. A version includes its translations
-- [ ] Server admins: disable universes, and edit universes that have gone dormant
-- [ ] Only server admins can see and use the admin page (`admin.html` and `/admin/settings`), which anyone can use until then. The privacy policy reads the character deletion days from `/admin/settings`, so anyone must still be able to read that setting
+Already in place: the `creator`, `builder` and `beta_tester` roles in `universe_editors`, who may play in each stage (`canPlayUniverse()` in `shared/src/universes.ts`, checked by Create Character and the rooms), Home and the universe page showing only `let there be light`, and removing a universe's uploads from storage when deleting an account deletes it.
+
+Decided (see `STRUCTURE-OVERVIEW.md`):
+- Every change made in the editor, the Editors and Translations tabs included, is staged until Save, and saved through `POST /:universeId/changes` in one transaction like the other tabs.
+- Universe text is the universe's name and descriptions and the names of its areas, tiles, items, races, classes, themes and difficulty levels. A ruleset default the universe hasn't renamed stays engine text. Character, group and player names and chat are never translated.
+- A translation is found in the player's language, then that language without its region, then the source text. Each translation keeps a hash of the source text it was made from; when the source changes it is still shown, marked out of date on the Translations tab.
+- Server admins are site-wide and separate from universe roles. Who is one is stored in the database; a script run by hand makes the first, and admins add and remove other admins on the admin page. Admins must have 2FA on.
+- `prologue` universes aren't listed on Home for everyone: a player with a role in any sees them in a section of Home of their own.
+- `end of time`: the universe page can be reached and says the universe is locked, only creators can edit it, the lobby can't be entered, and groups can be opened read-only, with group chat still working.
+
+To decide, before the step that needs it:
+- How versions are built and switched (the open question in `STRUCTURE-OVERVIEW.md`): a draft that copies the universe's content tables, or a draft stored as the editor's staged changes (`EditorChange` lists, which a save already applies in one transaction) that the editor replays over the current version and switching applies at once. Either way, what happens to a change made to the current version while a draft is open (step 8)
+- Whether a universe can rename engine terms, such as calling gold "crowns" (step 7, or move to Later)
+
+Built in nine steps: roles, stages, server admins, disabling things in use, then translations (storage, delivery, the tab), versions, and finishing.
+
+1. Editors tab and roles
+	- [ ] A `translator` role, and the languages each translator may translate into (a column or table beside `universe_editors`)
+	- [ ] What each role may do as pure functions in `/shared`, beside `canEditWorld()`: managing editors (creators), the universe's settings (creators), the world (creators and builders), translating (creators, and translators in their languages), and playing (by stage, as now). The editor routes check them through `requireRole()`, and each `EditorChange` kind names the check it needs
+	- [ ] Editors tab: lists each editor's username, display name, role and languages; adds a player by username with a role (checked as typed, like Register's username); changes a role; removes an editor. Staged until Save, as `EditorChange` kinds. A universe always keeps at least one creator, and the server refuses a save that leaves none
+	- [ ] Leaving a universe: any editor can remove themself, except its last creator
+	- [ ] The editor shows only the tabs a role may use (a translator sees the Translations tab, read-only settings and nothing else), and refuses changes it may not make, server-side as well
+	- [ ] Losing a role takes effect at once: an open editor's next save is refused, and a player who may no longer play the universe in its stage is turned out of its lobby and groups (published through `server/src/players/`, like a session ending), with a message saying why
+	- [ ] Tests: each role's checks, the last creator, adding a username that doesn't exist, a translator saving another language or a world change
+2. Stages
+	- [ ] Home's section for universes in `prologue`, shown only to players with a role in one, and the universe page for those players
+	- [ ] Changing the stage takes effect at once in open rooms: players who may no longer play are turned out with a message, as when losing a role
+	- [ ] `end of time`: the universe page says the universe is locked; the editor refuses saves from anyone but creators; the lobby refuses players, and Enter Universe without a group says why; groups open read-only (moving, links and every other input refused on the server, the client saying it's locked) while group chat still works. Create Character, Create Group and invites are refused
+	- [ ] Moving out of `in the beginning` warns that new areas will start disabled (the area editor's rule)
+	- [ ] Tests for each stage's listing and play rules, and for players turned out when the stage changes
+3. Server admins
+	- [ ] Who is a server admin, stored in the database (a migration), and a script that makes a player one by username (`npm run admin:add -w server -- <username>`), run by hand like the seed script
+	- [ ] Only server admins with 2FA on can see and use the admin page (`admin.html` and `/admin/settings`), and only they see its link in the toolbar; an admin without 2FA is told to turn it on. Anyone can still read the character deletion days, which the privacy policy shows, through a public route of its own
+	- [ ] Admins add other admins by username and remove them on the admin page; the last admin can't be removed. Turning 2FA off asks an admin to confirm they'll lose the admin page until it's back on
+	- [ ] Disabling a universe: a list of universes on the admin page (searchable and paged, since there may be thousands) with Disable and Enable and a reason. A disabled universe isn't listed or playable, its editors see why and can't save, and its open rooms turn their players out
+	- [ ] Admin actions (adding and removing admins, disabling and enabling universes) are logged, like auth events
+	- [ ] Tests: the admin routes refuse other players and admins without 2FA, the last admin can't be removed, the public setting stays readable, a disabled universe can't be joined or saved
+4. Disabling things players are using
+	- [ ] Counting what a change affects, for the editor's warnings: characters of a race or class, characters holding an item, characters (playing or saved) in an area, groups larger than a new group size. A route the editor asks before Save, through repositories
+	- [ ] Races and classes: "only for new characters" or "prevent them from playing", stored with the race or class. The lobby, groups and character choice refuse characters who can't play, saying why, and those playing are turned out
+	- [ ] Areas: "move everyone to the parent area" or "move everyone back to their start area", for players in open rooms and the saved positions of groups no one is playing
+	- [ ] Items: "keep using it, no new copies" or "remove it from characters, re-added when re-enabled": removed items are hidden rather than deleted, so re-enabling brings them back
+	- [ ] Group size: "keep those groups", "disband larger groups" or "remove members, most recently joined first" (`group_members.joined_at`); never the anchor being
+	- [ ] Each warning's choice travels with its `EditorChange` and is applied in the save's transaction, then published to the rooms. Who moves, leaves or is hidden is worked out by pure functions in `server/src/logic/`, with tests
+5. Universe languages and translation storage
+	- [ ] A source language (the creator's language when the universe is made) and the languages it's translated into, on the Translations tab, staged like everything else
+	- [ ] Home and the universe page show the source language and the translations
+	- [ ] `universe_translations`: universe, what the text belongs to (kind and ID), field, language, text, and the hash of the source text it was made from, through a repository. Deleting what a translation belongs to deletes its translations in the same transaction, and deleting a language deletes its translations, after asking
+	- [ ] Notes for translators, one per piece of universe text, in a table beside it
+	- [ ] Finding the translation (the fallback order) and whether one is out of date as pure functions in `/shared`, with tests
+6. Universe text in the player's language
+	- [ ] The server finds a request's language (the profile's, then what the client sends), and Home, the universe page, Create Character, the character sheet and profiles show universe text in it
+	- [ ] In the rooms, synced state carries IDs rather than universe text, since the Schema sends the same state to everyone. The client fetches the universe's text in its language once (`GET` a universe's text, cached with an ETag that changes when the text does) and looks names up by ID; a change saved in the editor tells clients to fetch again
+	- [ ] The editor always shows the source text, and the Translations tab the translation being made
+	- [ ] Tests: the fallback through the route, the ETag changing with the text and the translations
+7. Translations tab
+	- [ ] The table of universe text for a chosen language: where it comes from ("Area: Waterdeep, name"), the source text, the note and the translation, paged on the server with search, "is missing" and "is out of date" filters, and sortable like other tables
+	- [ ] Editing translations and notes, staged until Save; updating an out-of-date translation, or confirming it's still correct (which stores the current source hash)
+	- [ ] Long descriptions translated as markdown, with a preview sanitized like the source's
+	- [ ] Translators see only their languages; creators see every language
+	- [ ] Renaming engine terms, if decided
+8. Universe versions
+	- [ ] Write the design into `STRUCTURE-OVERVIEW.md` (Universe versions) once decided, and close its open question
+	- [ ] Starting a draft version (e.g. 1.1) from the current one; who can see it and play it (creators and builders, and beta testers?), and the editor showing which version is open
+	- [ ] Saving to the draft leaves the current version, and the rooms playing it, unchanged; a version includes its translations
+	- [ ] Switching to the draft applies it all at once, in one transaction, and publishes it to open rooms as the editor's saves do now, with the warnings from step 4 asked before switching
+	- [ ] Discarding a draft
+	- [ ] Tests: players see nothing of the draft until the switch, a switch that is refused changes nothing
+9. Finishing
+	- [ ] Check the new screens in the pseudo-language, update Pirate, and add keyboard shortcuts and screen reader text for the new tabs and dialogs
+	- [ ] Update `STRUCTURE-OVERVIEW.md` where the decisions above changed it (stages, admins, versions)
+	- [ ] Review the new routes against `SECURITY-PRACTICES.md`, and cover them in `server/test/http.test.ts`
 
 **Done when:** a team of editors and beta testers takes a universe from `in the beginning` to `let there be light`, and a creator can disable a race without breaking its existing characters. A translator adds French to the universe, and a French player sees it in French.
 
@@ -379,6 +441,7 @@ Needed before universes are open to the public.
 - Which S3-compatible service stores uploads in production, and its bucket (Phase 16)
 - Telling users with the same name apart (Phase 19)
 - Whether a universe can rename engine terms, such as calling gold "crowns" (Phase 15)
+- How universe versions are built and switched (Phase 15)
 - Fonts for map text in scripts the default font doesn't cover (Phase 17)
 - Whether to offer machine translation of chat (later)
 - Whether to add client-side prediction (after Phase 7, if movement feels laggy)
