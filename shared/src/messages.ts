@@ -427,6 +427,11 @@ export interface AccountPlayer
 	name: string;
 
 	/**
+	 * Whether the player is a server admin, as of when the window joined (SessionPlayer.serverAdmin)
+	 */
+	serverAdmin: boolean;
+
+	/**
 	 * How long until the browser's session ends if it isn't used again, in milliseconds, as of when the
 	 * window joined (SessionPlayer.sessionExpiresInMs)
 	 */

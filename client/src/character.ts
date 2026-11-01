@@ -1,14 +1,9 @@
 import { CharacterPage } from './CharacterPage';
-import { startLocalization, t } from './localization';
-import { connectToServer } from './network/serverConnection';
-import { startPageLifecycle } from './pageLifecycle';
+import { t } from './localization';
+import { startPage } from './pageStart';
 import { HOME_PAGE_URL, readPageParameter, UNIVERSE_PARAMETER } from './pages';
-import { startAccountMenu } from './ui/accountMenu';
 import { setPageTitle, showStatus } from './ui/dom';
-import { startLanguagePicker } from './ui/languagePicker';
 import { pageMessages } from './ui/pageMessages';
-import { startShortcuts } from './ui/shortcuts';
-import { startSiteSocials } from './ui/siteSocials';
 
 /**
  * Starts the Create Character page in the player's language for the universe its address names, or goes
@@ -24,18 +19,14 @@ async function start(): Promise<void>
 		return;
 	}
 
-	startPageLifecycle();
-	await startLocalization();
+	const { server } = await startPage();
+
 	setPageTitle(document.title);
-	void startAccountMenu();
-	startLanguagePicker();
-	void startSiteSocials();
-	startShortcuts();
 	showStatus(t(pageMessages.connecting));
 
 	try
 	{
-		new CharacterPage(await connectToServer(), universeId);
+		new CharacterPage(await server, universeId);
 	}
 	catch (error)
 	{

@@ -24,7 +24,7 @@ Local accounts are supported, but the login and register pages recommend a provi
 
 Home, universe pages and the license and privacy pages don't need a login; the lobby, the game, the editor, Create Character and profiles (your own and other players') do. Those send a browser that isn't logged in to the login page (`/login`), which goes back to them once it is. Logging in in one tab reloads the browser's other logged-out pages, so they are logged in too, and logging out takes every window of that browser out with it.
 
-A login starts a session, kept on the server and named by an HttpOnly cookie. A session ends after 1 hour without use, and after 24 hours in all. Checking "Remember me" makes it last 30 days without use and 90 days in all, after which the player logs in again. Being connected to a lobby or game counts as use. Logging out ends the session on the server. Changing the password or email address, or turning 2FA on, ends every other session of the account, and resetting the password ends all of them. Logging in again from a browser that's already logged in ends its old session, so a copy of its old cookie stops working. A password asked for again while logged in (to change it or the account's 2FA, or to delete the account) counts against the same limits as logging in to the account's address, so a stolen session can't guess it faster.
+A login starts a session, kept on the server and named by an HttpOnly cookie. A session ends after 1 hour without use, and after 24 hours in all. Checking "Remember me" makes it last 30 days without use and 90 days in all, after which the player logs in again. Having any page of the site open counts as use: every page but the login page joins the session room as it loads. Logging out ends the session on the server. Changing the password or email address, or turning 2FA on, ends every other session of the account, and resetting the password ends all of them. Logging in again from a browser that's already logged in ends its old session, so a copy of its old cookie stops working. A password asked for again while logged in (to change it or the account's 2FA, or to delete the account) counts against the same limits as logging in to the account's address, so a stolen session can't guess it faster.
 
 A player can be logged in from several browsers at once, each with a session of its own; every window of theirs, in any browser, is that player. Logging out ends only that browser's session, and its open windows are logged out with it.
 
@@ -200,6 +200,8 @@ A link that requires the whole group works only while every member who can be pl
 ## Messages
 You can send messages to other users (or yourself).
 
+Messages reach a player on whatever page they have open, through the session room, which every page but the login page joins. They are kept apart from chat in a lobby or group, which is in character and stays with those rooms. A message goes to every window of the player it's for, as a one-off message rather than synced state (the session room is shared by every window), and is saved in the database. Each page joins the session room as it loads, so a page asks for recent messages and unread counts once it has joined.
+
 Before messaging is supported, it needs:
 - blocking
 - reporting
@@ -232,7 +234,7 @@ Settings for the whole site (`/admin/settings`), stored in one row of the `site_
 The universe settings don't change universes that already exist.
 
 ### Sessions
-The login sessions still going (`/admin/sessions`), most recently used first, 50 to a page: each one's player (name and username, linking to their profile), when it logged in, when it was last used and when it ends if it isn't used again, and notes: This browser, Connected (a window has a game, lobby or profile open now) and Remembered ("Remember me"). A search narrows them by the player's name or username, and a filter to those connected or not.
+The login sessions still going (`/admin/sessions`), most recently used first, 50 to a page: each one's player (name and username, linking to their profile), when it logged in, when it was last used and when it ends if it isn't used again, and notes: This browser, Connected (a window of the site is open now) and Remembered ("Remember me"). A search narrows them by the player's name or username, and a filter to those connected or not.
 
 ### Players
 Every player account (`/admin/players`), by username, 50 to a page: name and username (linking to their profile), email address, when they joined, when they last logged in (`players.last_login_at`, set whenever a session starts), how they log in (Password, Google, Discord), and notes: Active (a window of the site open right now), Server admin and 2FA. A search narrows them by name, username or email address, and a filter to server admins or other players.

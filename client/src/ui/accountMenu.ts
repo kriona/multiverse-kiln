@@ -1,9 +1,9 @@
-import type { SessionPlayer } from '@multiverse-kiln/shared';
+import { SessionServerMessageType, type AccountPayload, type AccountPlayer } from '@multiverse-kiln/shared';
 
 import { t } from '../localization';
 import { AuthApi } from '../network/authApi';
-import { createClient } from '../network/serverConnection';
-import { forgetPlayerValues, playerStorageKey, readPlayerValue, rememberPlayerSession, rememberPlayerValue } from '../rememberedValues';
+import { createClient, type ServerConnection } from '../network/serverConnection';
+import { forgetPlayerValues, playerStorageKey, readPlayerValue, rememberPlayerValue } from '../rememberedValues';
 import { showToast } from './toast';
 
 /**
@@ -13,14 +13,16 @@ import { showToast } from './toast';
  *
  * The name the server last gave is remembered in the browser, and public/remembered-account.js draws the
  * menus with it before the page's scripts run, so nothing in the toolbars moves once the server answers.
- * This takes over from it, and the server's answer then corrects the name, or hides the menus when the
- * browser is no longer logged in
+ * This takes over from it, and the session room's Account messages then correct the name, or hide the
+ * menus when the browser isn't logged in, including when it logs out in another window
  *
  * The menu follows the WAI-ARIA menu button pattern: Enter, Space or the down arrow opens it on its first
  * item and the up arrow on its last, the arrows, Home and End move between items, and Escape closes it
  * and goes back to the button
+ *
+ * @param server The page's connection to the server (startPage())
  */
-export async function startAccountMenu(): Promise<void>
+export function startAccountMenu(server: Promise<ServerConnection>): void
 {
 	const api = new AuthApi(createClient());
 
@@ -48,33 +50,35 @@ export async function startAccountMenu(): Promise<void>
 		}
 	});
 
-	let player: SessionPlayer | null;
-
-	try
+	void server.then(({ session }) =>
 	{
-		player = await api.getSession();
-	}
-	catch (error)
+		session.onMessage(SessionServerMessageType.Account, (account: AccountPayload) =>
+		{
+			showAccount(account.player);
+		});
+	}, (error: unknown) =>
 	{
 		console.error('Could not find who is logged in:', error);
-		return;
-	}
+	});
+}
 
-	const name = (player?.name ?? null);
-
+/**
+ * Shows who the session room says the window's player is in the page's account menus, remembering
+ * their name for the next page. connectToServer() remembers the session, and forgets the player's
+ * values once the browser isn't logged in
+ *
+ * @param player The player, or null when the browser isn't logged in
+ */
+function showAccount(player: AccountPlayer | null): void
+{
 	if (player)
 	{
-		rememberPlayerSession(player.playerId, player.sessionExpiresInMs);
 		rememberPlayerValue(NAME_KEY, player.name);
-	}
-	else
-	{
-		forgetPlayerValues();
 	}
 
 	for (const menu of menus)
 	{
-		menu.showName(name);
+		menu.showName(player?.name ?? null);
 		menu.showAdminLink(player?.serverAdmin ?? false);
 	}
 }

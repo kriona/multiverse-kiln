@@ -65,7 +65,7 @@ function sessionRow(session: AdminSession): HTMLTableRowElement
 			text: t({
 				id: 'admin.sessions.connectedNote',
 				defaultMessage: 'Connected',
-				description: 'Note in the admin page\'s list of sessions on a session with a game, lobby or profile open now'
+				description: 'Note in the admin page\'s list of sessions on a session with a window of the site open now'
 			}),
 			tone: 'online'
 		});

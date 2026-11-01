@@ -2,6 +2,7 @@ import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
 import { SessionServerMessageType, type AccountPayload } from '@multiverse-kiln/shared';
 
 import { resolveSession, type SessionIdentity } from '../auth/sessions.js';
+import { isServerAdmin } from '../db/serverAdminRepo.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 
 /**
@@ -13,6 +14,11 @@ interface SessionWindow
 	 * The window's login session, or null when its browser isn't logged in or the session has ended
 	 */
 	session: SessionIdentity | null;
+
+	/**
+	 * Whether the session's player is a server admin, as of when the window joined
+	 */
+	serverAdmin: boolean;
 }
 
 type SessionClient = Client<{ auth: SessionWindow }>;
@@ -36,8 +42,8 @@ function windowOf(client: SessionClient): SessionWindow
 /**
  * The session: where windows learn who their player is
  *
- * There is one session room, which every window of every page joins as soon as it loads and stays in
- * until it closes, logged in or not. It tells each window who its player is, from its session cookie,
+ * There is one session room, which every window of every page but the login page joins as soon as it
+ * loads (client/src/pageStart.ts) and stays in until it closes, logged in or not. It tells each window who its player is, from its session cookie,
  * and tells a session's windows when the session ends. Being connected counts as using the session, so
  * an open page keeps it from ending for want of use
  */
@@ -81,7 +87,8 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 	}
 
 	/**
-	 * Admits every window, finding out from its session cookie whether its browser is logged in
+	 * Admits every window, finding out from its session cookie whether its browser is logged in, and
+	 * whether its player is a server admin
 	 *
 	 * @param _client The joining client
 	 * @param _options Join options from the client (unused)
@@ -90,7 +97,12 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 	 */
 	async onAuth(_client: Client, _options: unknown, context: AuthContext): Promise<SessionWindow>
 	{
-		return({ session: ((await resolveSession(context.headers.get('cookie'))) ?? null) });
+		const session = ((await resolveSession(context.headers.get('cookie'))) ?? null);
+
+		return({
+			session,
+			serverAdmin: (session ? await isServerAdmin(session.playerId) : false)
+		});
 	}
 
 	/**
@@ -100,7 +112,7 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 	 */
 	onJoin(client: SessionClient): void
 	{
-		const { session } = windowOf(client);
+		const { session, serverAdmin } = windowOf(client);
 
 		if (session)
 		{
@@ -116,7 +128,7 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 			connectedSessions.connect(session.sessionId);
 		}
 
-		this.sendAccount(client, session);
+		this.sendAccount(client, session, serverAdmin);
 	}
 
 	/**
@@ -172,7 +184,8 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 			for (const client of this.windows.get(sessionId) ?? [])
 			{
 				windowOf(client).session = null;
-				this.sendAccount(client, null);
+				windowOf(client).serverAdmin = false;
+				this.sendAccount(client, null, false);
 			}
 
 			this.windows.delete(sessionId);
@@ -184,13 +197,15 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 	 *
 	 * @param client The window
 	 * @param session Its session, or null when it isn't logged in
+	 * @param serverAdmin Whether its player is a server admin
 	 */
-	private sendAccount(client: SessionClient, session: SessionIdentity | null): void
+	private sendAccount(client: SessionClient, session: SessionIdentity | null, serverAdmin: boolean): void
 	{
 		const account: AccountPayload = {
 			player: (session ? {
 				playerId: session.playerId,
 				name: session.name,
+				serverAdmin,
 				sessionExpiresInMs: Math.max(0, (session.expiresAt.getTime() - Date.now()))
 			} : null)
 		};
