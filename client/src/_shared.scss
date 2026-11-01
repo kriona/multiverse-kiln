@@ -41,9 +41,9 @@ $danger: #c62828;
 $danger-background: #8e1c1c;
 $danger-background-hover: #a52222;
 
-$link: #64b5f6;
+$link: #00B2EE;
 $focus: #ffd54f;
-$link-hover: #90caf9;
+$link-hover: #ffd54f;
 $chat-name: #42a5f5;
 $error: #ef9a9a;
 $success: #81c784;
@@ -1128,7 +1128,7 @@ footer
 
 		&:hover
 		{
-			color: $link-hover;
+			color: $link;
 		}
 	}
 
