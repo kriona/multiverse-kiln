@@ -155,20 +155,28 @@ export class EditorsTab implements SavableTab, ChangeSource
 			}),
 			question: t({
 				id: 'editor.editors.leaveQuestion',
-				defaultMessage: 'Once you save, you lose your role ({role}) in {universe} and can no longer open it in the editor. {play, select, yes {You can still play it, since it is open to everyone.} other {You can\'t play it until it opens to everyone, and you will be turned out of its lobby and your groups there.}} {lastCreator, select, yes {You are its only creator, so make another editor a creator first, or the save will be refused.} other {Only a creator can give you a role again.}} Until you save, Undo Leave keeps your role.',
-				description: 'Asked before the player leaves a universe from the editor\'s Editors tab; {role} is their role, e.g. builder, and {universe} the universe\'s name. {play} is yes when the universe is open to everyone, so they can still play it without a role; {lastCreator} is yes when they are its only creator, who can\'t leave until someone else is one'
+				defaultMessage: 'Once you save, you lose your role ({role}) in {universe} and can no longer open it in the editor. {play, select, yes {You can still play it, since it is open to everyone.} other {You can\'t play it until it opens to everyone, and you will be turned out of its lobby and your groups there.}}{lastCreator, select, yes {} other { Only a creator can give you a role again.}}',
+				description: 'Asked before the player leaves a universe from the editor\'s Editors tab; {role} is their role, e.g. builder, and {universe} the universe\'s name. {play} is yes when the universe is open to everyone, so they can still play it without a role; {lastCreator} is yes when they are its only creator, who can\'t leave until someone else is one: a line of its own then says so'
 			}, {
 				role: t(UNIVERSE_ROLE_NAMES[universe.role]),
 				universe: universe.name,
 				play: (canPlayUniverse(universe.stage, undefined) ? 'yes' : 'no'),
 				lastCreator: (lastCreator ? 'yes' : 'no')
 			}),
+			note: (lastCreator
+				? t({
+					id: 'editor.editors.leaveLastCreator',
+					defaultMessage: 'You are its only creator, so you can\'t leave until you make another editor a creator.',
+					description: 'On a line of its own in the dialog asking the player to confirm leaving a universe from the editor\'s Editors tab, when they are its only creator; the dialog\'s Leave Universe button is disabled'
+				})
+				: undefined),
 			confirmLabel: t({
 				id: 'editor.editors.leave',
 				defaultMessage: 'Leave Universe',
 				description: 'Button on the editor\'s Editors tab that gives up the player\'s own role in the universe when the tab is saved'
 			}),
-			confirmIcon: leaveIcon
+			confirmIcon: leaveIcon,
+			confirmDisabled: lastCreator
 		});
 	}
 

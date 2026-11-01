@@ -1011,9 +1011,13 @@
 		"message": "Jump Ship",
 		"source": "Leave Universe"
 	},
+	"editor.editors.leaveLastCreator": {
+		"message": "Ye be its only captain, so ye can't jump ship till ye make another hand a captain.",
+		"source": "You are its only creator, so you can't leave until you make another editor a creator."
+	},
 	"editor.editors.leaveQuestion": {
-		"message": "Once ye save, ye give up yer post ({role}) in {universe} and can no longer open it in the editor. {play, select, yes {Ye can still sail it, since it be open to all.} other {Ye can't sail it till it opens to all, and ye'll be put ashore from its tavern and yer crews there.}} {lastCreator, select, yes {Ye be its only captain, so make another hand a captain first, or the save will be refused.} other {Only a captain can give ye a post again.}} Till ye save, Stay Aboard keeps yer post.",
-		"source": "Once you save, you lose your role ({role}) in {universe} and can no longer open it in the editor. {play, select, yes {You can still play it, since it is open to everyone.} other {You can't play it until it opens to everyone, and you will be turned out of its lobby and your groups there.}} {lastCreator, select, yes {You are its only creator, so make another editor a creator first, or the save will be refused.} other {Only a creator can give you a role again.}} Until you save, Undo Leave keeps your role."
+		"message": "Once ye save, ye give up yer post ({role}) in {universe} and can no longer open it in the editor. {play, select, yes {Ye can still sail it, since it be open to all.} other {Ye can't sail it till it opens to all, and ye'll be put ashore from its tavern and yer crews there.}}{lastCreator, select, yes {} other { Only a captain can give ye a post again.}}",
+		"source": "Once you save, you lose your role ({role}) in {universe} and can no longer open it in the editor. {play, select, yes {You can still play it, since it is open to everyone.} other {You can't play it until it opens to everyone, and you will be turned out of its lobby and your groups there.}}{lastCreator, select, yes {} other { Only a creator can give you a role again.}}"
 	},
 	"editor.editors.leaveTitle": {
 		"message": "Jump ship from {universe}?",
