@@ -377,7 +377,7 @@ function universePath(universeId: string): string
  * @param query The filters, and which page
  * @return The query string, without the ?
  */
-function queryString(query: object): string
+export function queryString(query: object): string
 {
 	const parameters = new URLSearchParams();
 

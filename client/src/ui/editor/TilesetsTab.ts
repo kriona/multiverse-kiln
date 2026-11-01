@@ -4,6 +4,7 @@ import { formatDuration, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { showStagedTileGraphic } from '../../rendering/tileGraphics';
 import { getElement, setOptions, showMessage } from '../dom';
+import { formMessages } from '../formMessages';
 import { TableSorter } from '../tableSorter';
 import { tileName } from '../tileNames';
 import { editorMessages } from './editorMessages';
@@ -206,7 +207,7 @@ export class TilesetsTab implements SavableTab
 		setOptions(this.usedInFilter, [
 			{
 				value: '',
-				label: t(editorMessages.filterAny)
+				label: t(formMessages.filterAny)
 			},
 			...TILE_USED_IN.map((usedIn) => ({
 				value: usedIn,
@@ -230,15 +231,15 @@ export class TilesetsTab implements SavableTab
 			setOptions(filter, [
 				{
 					value: '',
-					label: t(editorMessages.filterAny)
+					label: t(formMessages.filterAny)
 				},
 				{
 					value: 'true',
-					label: t(editorMessages.filterYes)
+					label: t(formMessages.filterYes)
 				},
 				{
 					value: 'false',
-					label: t(editorMessages.filterNo)
+					label: t(formMessages.filterNo)
 				}
 			]);
 		}

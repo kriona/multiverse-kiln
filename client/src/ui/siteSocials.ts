@@ -18,7 +18,7 @@ export async function startSiteSocials(): Promise<void>
 
 	try
 	{
-		({ socials } = await new AdminApi(createClient()).getSiteSettings());
+		({ socials } = await new AdminApi(createClient()).getPublicSiteSettings());
 	}
 	catch
 	{

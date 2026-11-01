@@ -1,4 +1,5 @@
-// The admin page (admin.html): settings for the whole site
+// The admin pages: admin.html, which links to the tools, and the tools (admin/settings.html,
+// admin/sessions.html and admin/players.html): settings for the whole site, its login sessions and its players
 
 @use 'shared' as *;
 
@@ -13,6 +14,87 @@
 	max-width: 560px;
 	margin: 0 auto;
 	padding: 16px;
+}
+
+// The lists, which need room for their columns
+.admin-body-wide
+{
+	max-width: 1100px;
+}
+
+// Site Admin in each tool's toolbar, between the game engine's name and the tool's heading, set apart
+// from the heading by a line as the name is
+.toolbar > .admin-crumb
+{
+	padding-inline-end: 12px;
+	border-inline-end: 1px solid $border;
+	font-size: 20px;
+	font-weight: bold;
+	white-space: nowrap;
+}
+
+// The admin page's links to the admin tools, each a card with what the tool does
+.admin-tools
+{
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+
+	&[hidden]
+	{
+		display: none;
+	}
+}
+
+.admin-tool
+{
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	color: $text;
+	text-decoration: none;
+
+	.hint
+	{
+		margin: 0;
+	}
+
+	&:hover .admin-tool-name
+	{
+		color: $link-hover;
+	}
+}
+
+.admin-tool-name
+{
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 16px;
+	color: $link;
+	text-decoration: underline;
+}
+
+// Why the page can't be used, shown in place of its content
+.admin-refusal
+{
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 12px;
+
+	&[hidden]
+	{
+		display: none;
+	}
+
+	p
+	{
+		margin: 0;
+	}
 }
 
 // The settings' cards, with one Save under them all
@@ -69,4 +151,63 @@
 .admin-loading
 {
 	color: $text-faint;
+}
+
+// A list's table scrolls sideways on its own when the window is too narrow for its columns
+.admin-table-scroll
+{
+	overflow-x: auto;
+}
+
+.admin-table
+{
+	width: 100%;
+	border-collapse: collapse;
+
+	th
+	{
+		font-weight: normal;
+		text-align: left;
+		color: $text-muted;
+		white-space: nowrap;
+	}
+
+	th,
+	td
+	{
+		padding: 6px 8px;
+		border-bottom: 1px solid $border-subtle;
+		vertical-align: top;
+	}
+
+	// A player's name, linking to their profile
+	a
+	{
+		color: $link;
+
+		&:hover
+		{
+			color: $link-hover;
+		}
+	}
+}
+
+// A player's username after their name
+.admin-username
+{
+	color: $text-faint;
+	white-space: nowrap;
+}
+
+// One of a row's notes, such as Server admin
+.admin-tag
+{
+	display: inline-block;
+	margin: 0 4px 4px 0;
+	padding: 1px 8px;
+	border: 1px solid $border-strong;
+	border-radius: 10px;
+	font-size: 12px;
+	color: $text-muted;
+	white-space: nowrap;
 }

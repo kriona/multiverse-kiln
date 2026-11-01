@@ -347,29 +347,6 @@ tr.staged-deleted
 	}
 }
 
-.filters
-{
-	display: flex;
-	flex-wrap: wrap;
-	align-items: flex-end;
-	gap: 12px;
-	margin-bottom: 12px;
-
-	label
-	{
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-		color: $text-muted;
-	}
-
-	input[type="search"]
-	{
-		flex: 1;
-		min-width: 180px;
-	}
-}
-
 .tile-table,
 .item-table
 {
@@ -484,16 +461,6 @@ tr.staged-deleted
 	{
 		flex: 1;
 	}
-}
-
-.pager
-{
-	display: flex;
-	align-items: center;
-	justify-content: flex-end;
-	gap: 12px;
-	margin-top: 12px;
-	color: $text-muted;
 }
 
 .area-list

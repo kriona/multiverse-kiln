@@ -33,7 +33,7 @@ export const SOURCE_FOLDERS = ['client/src', 'server/src', 'shared/src'];
 /**
  * The client's pages
  */
-export const PAGES = ['client/index.html', 'client/universe.html', 'client/game.html', 'client/edit.html', 'client/character.html', 'client/license.html', 'client/privacy.html', 'client/admin.html', 'client/login.html', 'client/profile.html'];
+export const PAGES = ['client/index.html', 'client/universe.html', 'client/game.html', 'client/edit.html', 'client/character.html', 'client/license.html', 'client/privacy.html', 'client/admin.html', 'client/admin/settings.html', 'client/admin/sessions.html', 'client/admin/players.html', 'client/login.html', 'client/profile.html'];
 
 /**
  * The folder of HTML pieces the pages share, which a page includes with a comment such as

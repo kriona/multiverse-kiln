@@ -18,6 +18,7 @@
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",
 		"db:seed": "tsx --env-file-if-exists=.env scripts/seed.ts",
+		"admin:add": "tsx --env-file-if-exists=.env scripts/addAdmin.ts",
 		"storage:setup": "tsx --env-file-if-exists=.env scripts/setupStorage.ts",
 		"secrets": "tsx scripts/generateSecrets.ts",
 		"test": "mocha -r tsx -r ./test/setup.ts \"test/**/*.test.ts\" --timeout 15000"

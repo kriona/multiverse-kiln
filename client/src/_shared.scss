@@ -433,7 +433,7 @@ button.sort-button
 	}
 }
 
-.toolbar-link ~ .account-menu
+.toolbar-link:not([hidden]) ~ .account-menu
 {
 	margin-inline-start: 0;
 }
@@ -689,6 +689,41 @@ a.button.universe-item
 .universe-empty
 {
 	color: $text-faint;
+}
+
+// The search and filters above a list, such as the editor's Items tab or the admin pages' lists
+.filters
+{
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 12px;
+	margin-bottom: 12px;
+
+	label
+	{
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		color: $text-muted;
+	}
+
+	input[type="search"]
+	{
+		flex: 1;
+		min-width: 180px;
+	}
+}
+
+// Previous, which rows are shown, and Next, under a list shown a page at a time
+.pager
+{
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 12px;
+	margin-top: 12px;
+	color: $text-muted;
 }
 
 .dialog

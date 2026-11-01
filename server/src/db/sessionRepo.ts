@@ -1,11 +1,12 @@
 /**
  * Login sessions: the only module that reads or writes the sessions table
  */
-import { and, eq, inArray, lte, ne, or } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, lte, ne, not, notInArray, or, sql, type SQL } from 'drizzle-orm';
 
 import { SESSION_LIFETIMES, type SessionTimes } from '../logic/sessionLifetimes.js';
 import { db, type Executor } from './client.js';
 import { players, sessions } from './schema.js';
+import { anyColumnContains } from './textSearch.js';
 
 /**
  * A session as the rest of the server sees it
@@ -210,6 +211,24 @@ export async function deletePlayerSessions(playerId: string, executor: Executor 
  */
 export async function deleteExpiredSessions(now: Date, executor: Executor = db): Promise<string[]>
 {
+	const rows = await executor
+		.delete(sessions)
+		.where(expiredCondition(now))
+		.returning({
+			id: sessions.id
+		});
+
+	return(rows.map((row) => row.id));
+}
+
+/**
+ * A condition that a session has expired (isSessionExpired())
+ *
+ * @param now The time now
+ * @return The condition
+ */
+function expiredCondition(now: Date): SQL
+{
 	const conditions = ([true, false] as const).map((rememberMe) =>
 	{
 		const lifetime = (rememberMe ? SESSION_LIFETIMES.remembered : SESSION_LIFETIMES.short);
@@ -222,12 +241,84 @@ export async function deleteExpiredSessions(now: Date, executor: Executor = db):
 			)
 		));
 	});
-	const rows = await executor
-		.delete(sessions)
-		.where(or(...conditions))
-		.returning({
-			id: sessions.id
-		});
 
-	return(rows.map((row) => row.id));
+	return((or(...conditions) ?? sql`false`));
+}
+
+/**
+ * What a list of the sessions still going is narrowed to
+ */
+export interface ActiveSessionFilter
+{
+	/**
+	 * Text the player's username or name holds, ignoring capitals
+	 */
+	search?: string;
+
+	/**
+	 * Only these sessions (connected: true) or only the others (false), such as those with a window connected
+	 */
+	connected?: {
+		ids: readonly string[];
+		connected: boolean;
+	};
+}
+
+/**
+ * A session still going, with its player's names
+ */
+export interface ActiveSession extends SessionRecord
+{
+	username: string;
+	displayName: string;
+}
+
+/**
+ * A page of the sessions that haven't expired, for the admin pages
+ *
+ * @param filter What to narrow the list to
+ * @param page How many matching sessions to skip, and the most to return
+ * @param now The time now
+ * @param executor The database, or a transaction
+ * @return The sessions, most recently used first (then newest, then by ID), and how many match in all
+ */
+export async function listActiveSessions(filter: ActiveSessionFilter, page: { offset: number; limit: number }, now: Date, executor: Executor = db): Promise<{ sessions: ActiveSession[]; total: number }>
+{
+	const where = and(
+		not(expiredCondition(now)),
+		((filter.search === undefined) ? undefined : anyColumnContains([players.username, players.displayName], filter.search)),
+		((filter.connected === undefined)
+			? undefined
+			: (filter.connected.connected ? inArray(sessions.id, [...filter.connected.ids]) : notInArray(sessions.id, [...filter.connected.ids])))
+	);
+	const [rows, [counted]] = await Promise.all([
+		executor
+			.select({
+				id: sessions.id,
+				playerId: sessions.playerId,
+				rememberMe: sessions.rememberMe,
+				createdAt: sessions.createdAt,
+				lastUsedAt: sessions.lastUsedAt,
+				username: players.username,
+				displayName: players.displayName
+			})
+			.from(sessions)
+			.innerJoin(players, eq(players.id, sessions.playerId))
+			.where(where)
+			.orderBy(desc(sessions.lastUsedAt), desc(sessions.createdAt), sessions.id)
+			.offset(page.offset)
+			.limit(page.limit),
+		executor
+			.select({
+				total: count()
+			})
+			.from(sessions)
+			.innerJoin(players, eq(players.id, sessions.playerId))
+			.where(where)
+	]);
+
+	return({
+		sessions: rows,
+		total: counted.total
+	});
 }

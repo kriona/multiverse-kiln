@@ -31,6 +31,14 @@
 		"defaultMessage": "Your account: {name}",
 		"description": "Name for screen readers, and tooltip, of the player's name at the end of every page's toolbar, which opens a menu with Edit profile and Log out; {name} is their name"
 	},
+	"account.siteAdmin": {
+		"defaultMessage": "Site admin",
+		"description": "Item in the menu that opens from the player's name at the end of every page's toolbar, shown only to the site's admins: goes to the admin page, which links to the site's settings, its login sessions and its players"
+	},
+	"admin.back": {
+		"defaultMessage": "Site Admin",
+		"description": "In the toolbar of each admin tool (the site settings, the list of sessions and the list of players), between the game engine's name and the tool's heading: links back to the admin page that links to them all"
+	},
 	"admin.characterDeletionDays": {
 		"defaultMessage": "Days between last rites and deletion",
 		"description": "Label of the field on the site settings page for how many days a character given their last rites waits before being deleted"
@@ -43,13 +51,97 @@
 		"defaultMessage": "Characters",
 		"description": "Heading of the site settings about players' characters"
 	},
+	"admin.column.notes": {
+		"defaultMessage": "Notes",
+		"description": "Heading of the column in the admin pages' lists of sessions and players that says more about each, such as whether a session is connected now or a player is a server admin"
+	},
+	"admin.column.player": {
+		"defaultMessage": "Player",
+		"description": "Heading of the column of players' names and usernames in the admin pages' lists of sessions and players"
+	},
 	"admin.heading": {
-		"defaultMessage": "Site Settings",
-		"description": "Heading of the page where the site's admins change settings for the whole site"
+		"defaultMessage": "Settings",
+		"description": "Heading of the page where the site's admins change settings for the whole site, after a link back to the admin page"
+	},
+	"admin.home.heading": {
+		"defaultMessage": "Site Admin",
+		"description": "Heading of the admin page that links to the site admins' tools: the site settings, the list of sessions and the list of players"
+	},
+	"admin.home.loadFailed": {
+		"defaultMessage": "Could not load the admin page. Try again in a moment.",
+		"description": "Shown on the admin page that links to the admin tools when the server couldn't be asked whether the player may use them"
+	},
+	"admin.home.title": {
+		"defaultMessage": "Site Admin",
+		"description": "The browser tab's title for the admin page that links to the site admins' tools, before the game engine's name"
 	},
 	"admin.loadFailed": {
 		"defaultMessage": "Could not load the site settings.",
 		"description": "Shown on the site settings page when the settings couldn't be loaded"
+	},
+	"admin.matches": {
+		"defaultMessage": "{total, plural, =0 {Nothing matches} one {# match} other {# matches}}",
+		"description": "Read out by screen readers once an admin page's list of sessions or players has been narrowed by its search or filter: how many rows match"
+	},
+	"admin.players.email": {
+		"defaultMessage": "Email",
+		"description": "Heading of the column in the admin page's list of players for the email address each account logs in with"
+	},
+	"admin.players.heading": {
+		"defaultMessage": "Players",
+		"description": "Heading of the admin page listing every player account"
+	},
+	"admin.players.joined": {
+		"defaultMessage": "Joined",
+		"description": "Heading of the column in the admin page's list of players for when each account was made"
+	},
+	"admin.players.lastLogin": {
+		"defaultMessage": "Last login",
+		"description": "Heading of the column in the admin page's list of players for when each account last logged in"
+	},
+	"admin.players.loadFailed": {
+		"defaultMessage": "Could not load the players.",
+		"description": "Shown on the admin page listing player accounts when the list couldn't be loaded"
+	},
+	"admin.players.logsInWith": {
+		"defaultMessage": "Logs in with",
+		"description": "Heading of the column in the admin page's list of players for how each account logs in: a password, Google or Discord"
+	},
+	"admin.players.neverLoggedIn": {
+		"defaultMessage": "Never",
+		"description": "In the admin page's list of players, under Last login, for an account that has never logged in"
+	},
+	"admin.players.none": {
+		"defaultMessage": "No players match.",
+		"description": "Shown instead of the admin page's list of players when none match the search and filter"
+	},
+	"admin.players.password": {
+		"defaultMessage": "Password",
+		"description": "In the admin page's list of players, under Logs in with: the account logs in with an email address and password"
+	},
+	"admin.players.search": {
+		"defaultMessage": "Search by name, username or email",
+		"description": "Shown in the empty field that narrows the admin page's list of players down by name, username or email address"
+	},
+	"admin.players.searchLabel": {
+		"defaultMessage": "Search players by name, username or email address",
+		"description": "Name of the field that narrows the admin page's list of players down by name, username or email address, for screen readers"
+	},
+	"admin.players.serverAdmin": {
+		"defaultMessage": "Server admin",
+		"description": "Label of the filter on the admin page's list of players for whether a player is one of the site's admins"
+	},
+	"admin.players.serverAdminNote": {
+		"defaultMessage": "Server admin",
+		"description": "Note in the admin page's list of players on a player who is one of the site's admins"
+	},
+	"admin.players.title": {
+		"defaultMessage": "Players",
+		"description": "The browser tab's title for the admin page listing every player account, before the game engine's name"
+	},
+	"admin.players.twoFactor": {
+		"defaultMessage": "2FA",
+		"description": "Note in the admin page's list of players on an account with two-factor authentication on"
 	},
 	"admin.privacy": {
 		"defaultMessage": "Privacy policy",
@@ -71,6 +163,62 @@
 		"defaultMessage": "Could not save the site settings.",
 		"description": "Shown on the site settings page when the settings couldn't be stored"
 	},
+	"admin.sessions.connected": {
+		"defaultMessage": "Connected",
+		"description": "Label of the filter on the admin page's list of sessions for whether a session has a game, lobby or profile open now"
+	},
+	"admin.sessions.connectedNote": {
+		"defaultMessage": "Connected",
+		"description": "Note in the admin page's list of sessions on a session with a game, lobby or profile open now"
+	},
+	"admin.sessions.current": {
+		"defaultMessage": "This browser",
+		"description": "Note in the admin page's list of sessions on the session of the browser the admin is using"
+	},
+	"admin.sessions.ends": {
+		"defaultMessage": "Ends",
+		"description": "Heading of the column in the admin page's list of sessions for when the login ends if the browser doesn't use the site again"
+	},
+	"admin.sessions.heading": {
+		"defaultMessage": "Sessions",
+		"description": "Heading of the admin page listing the browsers logged in to the site"
+	},
+	"admin.sessions.hint": {
+		"defaultMessage": "Each browser logged in to the site.",
+		"description": "Explains the admin page listing login sessions, above the list"
+	},
+	"admin.sessions.lastUsed": {
+		"defaultMessage": "Last used",
+		"description": "Heading of the column in the admin page's list of sessions for when the browser last used the site"
+	},
+	"admin.sessions.loadFailed": {
+		"defaultMessage": "Could not load the sessions.",
+		"description": "Shown on the admin page listing login sessions when the list couldn't be loaded"
+	},
+	"admin.sessions.none": {
+		"defaultMessage": "No sessions match.",
+		"description": "Shown instead of the admin page's list of sessions when none match the search and filter"
+	},
+	"admin.sessions.remembered": {
+		"defaultMessage": "Remembered",
+		"description": "Note in the admin page's list of sessions on a session whose player checked \"Remember me\" when logging in, so it lasts longer"
+	},
+	"admin.sessions.search": {
+		"defaultMessage": "Search by name or username",
+		"description": "Shown in the empty field that narrows the admin page's list of sessions down by the player's name or username"
+	},
+	"admin.sessions.searchLabel": {
+		"defaultMessage": "Search sessions by player name or username",
+		"description": "Name of the field that narrows the admin page's list of sessions down by the player's name or username, for screen readers"
+	},
+	"admin.sessions.started": {
+		"defaultMessage": "Logged in",
+		"description": "Heading of the column in the admin page's list of sessions for when the browser logged in"
+	},
+	"admin.sessions.title": {
+		"defaultMessage": "Sessions",
+		"description": "The browser tab's title for the admin page listing the browsers logged in to the site, before the game engine's name"
+	},
 	"admin.socialUrlInvalid": {
 		"defaultMessage": "Enter a link to {site} that starts with https://.",
 		"description": "Shown under a social site's field on the site settings page when what was typed isn't a link to that site; {site} is the site's name, such as Discord or Facebook"
@@ -86,6 +234,34 @@
 	"admin.title": {
 		"defaultMessage": "Site Settings",
 		"description": "The browser tab's title for the page where the site's admins change settings for the whole site, before the game engine's name"
+	},
+	"admin.tools.players": {
+		"defaultMessage": "Players",
+		"description": "Link on the admin page to the list of every player account"
+	},
+	"admin.tools.playersHint": {
+		"defaultMessage": "Every account: how it logs in, when it last did, and who is a server admin.",
+		"description": "Under the link to the list of player accounts on the admin page"
+	},
+	"admin.tools.sessions": {
+		"defaultMessage": "Sessions",
+		"description": "Link on the admin page to the list of login sessions"
+	},
+	"admin.tools.sessionsHint": {
+		"defaultMessage": "Every browser logged in to the site, and which are connected now.",
+		"description": "Under the link to the list of login sessions on the admin page"
+	},
+	"admin.tools.settings": {
+		"defaultMessage": "Settings",
+		"description": "Link on the admin page to the site settings, such as whether players can create universes"
+	},
+	"admin.tools.settingsHint": {
+		"defaultMessage": "Creating universes, last rites, the footer's social sites and the privacy policy's contact.",
+		"description": "Under the link to the site settings on the admin page"
+	},
+	"admin.turnOnTwoFactor": {
+		"defaultMessage": "Turn on two-factor authentication",
+		"description": "Link on the admin pages, shown to an admin who doesn't have two-factor authentication on, that goes to their profile to set it up"
 	},
 	"admin.universeCreationEnabled": {
 		"defaultMessage": "Players can create universes",
@@ -2351,6 +2527,10 @@
 		"defaultMessage": "Wrong codes were typed for your account on {siteName}",
 		"description": "Subject of the email sent when many wrong authenticator app codes were typed for an account in a day; {siteName} is the site's name"
 	},
+	"error.adminNeedsTwoFactor": {
+		"defaultMessage": "Turn on two-factor authentication to use the admin pages.",
+		"description": "Why an admin page was refused to one of the site's admins: admins must have two-factor authentication on. The page offers a link to turn it on"
+	},
 	"error.alreadyEditor": {
 		"defaultMessage": "{username} already has a role in this universe.",
 		"description": "Why a player couldn't be added to a universe's editors: they are one already; {username} is their username"
@@ -2727,6 +2907,10 @@
 		"defaultMessage": "This universe's ruleset has no themes.",
 		"description": "Why a request about themes (character backgrounds, such as ace pilot or scholar) failed: the universe's game rules don't use them"
 	},
+	"error.notServerAdmin": {
+		"defaultMessage": "Only the site's admins can use this page.",
+		"description": "Why an admin page, such as the site settings or the list of players, was refused: the player isn't one of the site's admins"
+	},
 	"error.onlyAnchorInvites": {
 		"defaultMessage": "Only the anchor being's player can invite others to the group.",
 		"description": "Why an invite link wasn't made: only the player of the character the group is centered on (its \"anchor being\") may make one"
@@ -2877,15 +3061,15 @@
 	},
 	"filter.any": {
 		"defaultMessage": "Any",
-		"description": "Choice of a filter on the Items or Tilesets tab that shows everything, such as items of every type, or tiles whether passable or not"
+		"description": "Choice of a filter that shows everything: on the editor's Items or Tilesets tab (such as items of every type, or tiles whether passable or not), or on the admin pages' lists of sessions and players (such as players whether server admins or not)"
 	},
 	"filter.no": {
 		"defaultMessage": "No",
-		"description": "Choice of a yes-or-no filter on the Items or Tilesets tab, e.g. Passable: No"
+		"description": "Choice of a yes-or-no filter on the editor's Items or Tilesets tab, e.g. Passable: No, or on the admin pages' lists, e.g. Server admin: No"
 	},
 	"filter.yes": {
 		"defaultMessage": "Yes",
-		"description": "Choice of a yes-or-no filter on the Items or Tilesets tab, e.g. Passable: Yes"
+		"description": "Choice of a yes-or-no filter on the editor's Items or Tilesets tab, e.g. Passable: Yes, or on the admin pages' lists, e.g. Server admin: Yes"
 	},
 	"form.discardChanges": {
 		"defaultMessage": "You have changes that haven't been saved. Discard them?",
@@ -3114,10 +3298,6 @@
 	"home.showMore": {
 		"defaultMessage": "Show more",
 		"description": "Button that adds the next page of universes to the list"
-	},
-	"home.siteSettings": {
-		"defaultMessage": "Site Settings",
-		"description": "Link in Home's toolbar to the page where the site's admins change settings for the whole site"
 	},
 	"home.universes": {
 		"defaultMessage": "Universes",

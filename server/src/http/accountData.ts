@@ -206,7 +206,8 @@ export async function exportRoute(request: Request, response: Response): Promise
 			locale: profile.locale,
 			socials: profile.socials,
 			showCharacters: profile.showCharacters,
-			createdAt: profile.createdAt.toISOString()
+			createdAt: profile.createdAt.toISOString(),
+			lastLoginAt: (profile.lastLoginAt?.toISOString() ?? null)
 		},
 		providers,
 		twoFactor,

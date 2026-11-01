@@ -498,6 +498,27 @@
       "when": 1793501711119,
       "tag": "0070_translator_role",
       "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1793548938053,
+      "tag": "0071_server_admins",
+      "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1793550905727,
+      "tag": "0072_player_last_login",
+      "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1793550907466,
+      "tag": "0073_backfill_player_last_login",
+      "breakpoints": true
     }
   ]
 }

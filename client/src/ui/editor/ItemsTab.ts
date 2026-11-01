@@ -3,6 +3,7 @@ import { canEditWorld, ITEM_KINDS, ITEM_SORT_COLUMNS, MAX_ITEMS_PER_PAGE, type E
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, setOptions, showMessage, type SelectOption } from '../dom';
+import { formMessages } from '../formMessages';
 import { createItemIcon, itemCategoryName, itemName, itemTypeName } from '../itemNames';
 import { TableSorter } from '../tableSorter';
 import { editorMessages } from './editorMessages';
@@ -93,15 +94,15 @@ export class ItemsTab implements SavableTab
 			setOptions(filter, [
 				{
 					value: '',
-					label: t(editorMessages.filterAny)
+					label: t(formMessages.filterAny)
 				},
 				{
 					value: 'true',
-					label: t(editorMessages.filterYes)
+					label: t(formMessages.filterYes)
 				},
 				{
 					value: 'false',
-					label: t(editorMessages.filterNo)
+					label: t(formMessages.filterNo)
 				}
 			]);
 		}
@@ -466,7 +467,7 @@ function anyOption(): SelectOption
 {
 	return({
 		value: '',
-		label: t(editorMessages.filterAny)
+		label: t(formMessages.filterAny)
 	});
 }
 

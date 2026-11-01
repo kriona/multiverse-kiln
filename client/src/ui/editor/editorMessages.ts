@@ -4,21 +4,6 @@ import { defineMessages } from '@multiverse-kiln/shared';
  * Text the editor's tabs and dialogs share (see src/localization.ts)
  */
 export const editorMessages = defineMessages({
-	filterAny: {
-		id: 'filter.any',
-		defaultMessage: 'Any',
-		description: 'Choice of a filter on the Items or Tilesets tab that shows everything, such as items of every type, or tiles whether passable or not'
-	},
-	filterYes: {
-		id: 'filter.yes',
-		defaultMessage: 'Yes',
-		description: 'Choice of a yes-or-no filter on the Items or Tilesets tab, e.g. Passable: Yes'
-	},
-	filterNo: {
-		id: 'filter.no',
-		defaultMessage: 'No',
-		description: 'Choice of a yes-or-no filter on the Items or Tilesets tab, e.g. Passable: No'
-	},
 	customTag: {
 		id: 'editor.tag.custom',
 		defaultMessage: 'custom',
