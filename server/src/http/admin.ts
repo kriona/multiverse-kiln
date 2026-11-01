@@ -10,7 +10,7 @@ import { ADMIN_PATH, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, isPrivacyContact, 
 import { resolveSession } from '../auth/sessions.js';
 import { listPlayersForAdmin } from '../db/playerRepo.js';
 import { isServerAdmin } from '../db/serverAdminRepo.js';
-import { listActiveSessions } from '../db/sessionRepo.js';
+import { findPlayersWithSessions, listActiveSessions } from '../db/sessionRepo.js';
 import { findSiteSettings, saveSiteSettings } from '../db/siteSettingsRepo.js';
 import { hasTwoFactor } from '../db/twoFactorRepo.js';
 import { sessionExpiresAt } from '../logic/sessionLifetimes.js';
@@ -316,6 +316,7 @@ async function listPlayers(request: Request, response: Response): Promise<void>
 		offset,
 		limit
 	});
+	const active = await findPlayersWithSessions(page.players.map((player) => player.id), connectedSessions.ids());
 	const payload: AdminPlayerListPayload = {
 		players: page.players.map((player) => ({
 			username: player.username,
@@ -326,7 +327,8 @@ async function listPlayers(request: Request, response: Response): Promise<void>
 			password: player.hasPassword,
 			providers: player.providers,
 			twoFactor: player.twoFactor,
-			serverAdmin: player.serverAdmin
+			serverAdmin: player.serverAdmin,
+			active: active.has(player.id)
 		})),
 		total: page.total
 	};

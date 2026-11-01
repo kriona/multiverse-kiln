@@ -167,10 +167,15 @@ export interface AdminPlayer
 
 	twoFactor: boolean;
 	serverAdmin: boolean;
+
+	/**
+	 * Whether the account has a window connected to the server
+	 */
+	active: boolean;
 }
 
 /**
- * Response of GET ADMIN_PLAYERS_PATH: a page of the matching players, newest first
+ * Response of GET ADMIN_PLAYERS_PATH: a page of the matching players, by username ignoring case
  */
 export interface AdminPlayerListPayload
 {

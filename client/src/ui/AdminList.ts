@@ -283,12 +283,31 @@ export function playerCell(displayName: string, username: string): HTMLTableCell
 }
 
 /**
- * A table cell of short notes about a row, such as Server admin, each a tag of its own
+ * What kind of note a tag is, which picks its color (.admin-tag-<tone> in admin.scss). Notes that mean the
+ * same thing on different pages, such as Active and Connected, share one
+ */
+export type AdminNoteTone = 'online' | 'current' | 'remembered' | 'serverAdmin' | 'twoFactor' | 'password' | 'google' | 'discord';
+
+/**
+ * A short note about a row, such as Server admin
+ */
+export interface AdminNote
+{
+	/**
+	 * The note, in the player's language
+	 */
+	text: string;
+
+	tone: AdminNoteTone;
+}
+
+/**
+ * A table cell of short notes about a row, each a tag of its own
  *
- * @param notes The notes, in the player's language
+ * @param notes The notes
  * @return The cell
  */
-export function notesCell(notes: readonly string[]): HTMLTableCellElement
+export function notesCell(notes: readonly AdminNote[]): HTMLTableCellElement
 {
 	const cell = document.createElement('td');
 
@@ -296,8 +315,8 @@ export function notesCell(notes: readonly string[]): HTMLTableCellElement
 	{
 		const tag = document.createElement('span');
 
-		tag.className = 'admin-tag';
-		tag.textContent = note;
+		tag.className = `admin-tag admin-tag-${note.tone}`;
+		tag.textContent = note.text;
 
 		return(tag);
 	}));

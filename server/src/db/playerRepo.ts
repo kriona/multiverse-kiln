@@ -1,7 +1,7 @@
 /**
  * Player accounts: the only module that reads or writes the players table
  */
-import { and, count, desc, eq, exists, isNotNull, not, sql } from 'drizzle-orm';
+import { and, count, eq, exists, isNotNull, not, sql } from 'drizzle-orm';
 import type { LoginProvider, ProfileLanguage, SocialSite, SocialUsernames } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
@@ -531,6 +531,7 @@ export async function deletePlayer(playerId: string, executor: Executor = db): P
  */
 export interface AdminPlayerRecord
 {
+	id: string;
 	username: string;
 	displayName: string;
 	email: string | null;
@@ -570,7 +571,7 @@ export interface AdminPlayerFilter
  * @param filter What to narrow the list to
  * @param page How many matching accounts to skip, and the most to return
  * @param executor The database, or a transaction
- * @return The accounts, newest first (then by username), and how many match in all
+ * @return The accounts, by username ignoring case, and how many match in all
  */
 export async function listPlayersForAdmin(filter: AdminPlayerFilter, page: { offset: number; limit: number }, executor: Executor = db): Promise<{ players: AdminPlayerRecord[]; total: number }>
 {
@@ -587,6 +588,7 @@ export async function listPlayersForAdmin(filter: AdminPlayerFilter, page: { off
 	const [rows, [counted]] = await Promise.all([
 		executor
 			.select({
+				id: players.id,
 				username: players.username,
 				displayName: players.displayName,
 				email: players.email,
@@ -607,7 +609,7 @@ export async function listPlayersForAdmin(filter: AdminPlayerFilter, page: { off
 			})
 			.from(players)
 			.where(where)
-			.orderBy(desc(players.createdAt), players.username)
+			.orderBy(sql`lower(${players.username})`)
 			.offset(page.offset)
 			.limit(page.limit),
 		executor
