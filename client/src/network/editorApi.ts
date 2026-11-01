@@ -1,5 +1,5 @@
 import { ServerError, type Client } from '@colyseus/sdk';
-import { EDITOR_UNIVERSES_PATH, isLocalizedMessage, MAX_TILES_PER_PAGE, type ChunkListPayload, type ChunkRange, type ClassListPayload, type CreatedPayload, type DifficultyLevel, type DifficultyLevelListPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type NewUniverseRequest, type RaceListPayload, type RulesetSettings, type EditorTheme, type ThemeListPayload, type TileGraphicListPayload, type TileListPayload, type TileListQuery, type TileUsagePayload, type UploadedTileGraphic, type AreaLinkListPayload, type AreaListPayload, type MessageSource, type MessageValues, type EditorChange, type SaveChangesPayload, type SaveChangesRequest } from '@multiverse-kiln/shared';
+import { EDITOR_UNIVERSES_PATH, isLocalizedMessage, MAX_TILES_PER_PAGE, type ChunkListPayload, type ChunkRange, type ClassListPayload, type CreatedPayload, type DifficultyLevel, type DifficultyLevelListPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type NewUniverseRequest, type RaceListPayload, type RulesetSettings, type EditorTheme, type ThemeListPayload, type TileGraphicListPayload, type TileListPayload, type TileListQuery, type TileUsagePayload, type UploadedTileGraphic, type AreaLinkListPayload, type AreaListPayload, type MessageSource, type MessageValues, type EditorChange, type SaveChangesPayload, type SaveChangesRequest, type PlayerMatch, type PlayerSearchPayload, type PlayerSearchQuery, type UniverseEditorListPayload, type UniverseEditorSummary } from '@multiverse-kiln/shared';
 
 import { localizedText, t } from '../localization';
 
@@ -194,6 +194,29 @@ export class EditorApi
 	async listDifficultyLevels(universeId: string): Promise<DifficultyLevel[]>
 	{
 		return((await this.send<DifficultyLevelListPayload>('GET', `${universePath(universeId)}/difficulty-levels`)).difficultyLevels);
+	}
+
+	/**
+	 * Everyone with a role in a universe
+	 *
+	 * @param universeId The universe's ID
+	 * @return The editors, by username
+	 */
+	async listEditors(universeId: string): Promise<UniverseEditorSummary[]>
+	{
+		return((await this.send<UniverseEditorListPayload>('GET', `${universePath(universeId)}/editors`)).editors);
+	}
+
+	/**
+	 * Players who could be added to a universe's editors, by username or name
+	 *
+	 * @param universeId The universe's ID
+	 * @param query What was typed; starting with @, usernames only
+	 * @return The players, best matches first
+	 */
+	async searchPlayers(universeId: string, query: PlayerSearchQuery): Promise<PlayerMatch[]>
+	{
+		return((await this.send<PlayerSearchPayload>('GET', `${universePath(universeId)}/editors/search?${queryString(query)}`)).players);
 	}
 
 	/**

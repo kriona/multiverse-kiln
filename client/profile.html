@@ -24,7 +24,7 @@
 							<h2 id="profile-about-heading" data-message="profile.aboutYou" data-translation-context="Heading of the part of the player's own profile page with what other players see about them">About you</h2>
 							<label data-message="profile.username" data-translation-context="Label of the username field on the player's own profile page">
 								Username
-								<input id="profile-username" autocomplete="off" autocapitalize="none" spellcheck="false" required aria-describedby="profile-username-hint" />
+								<input id="profile-username" class="username-input" autocomplete="off" autocapitalize="none" spellcheck="false" required aria-describedby="profile-username-hint" />
 							</label>
 							<p id="profile-username-hint" class="hint" data-message="profile.usernameHint" data-translation-context="Under the username field on the player's own profile page; {min} and {max} are numbers">How other players find you, and tell you apart from others with the same name. <span id="profile-username-min" data-argument="min" translate="no">3</span> to <span id="profile-username-max" data-argument="max" translate="no">20</span> letters (a to z), digits and underscores.</p>
 							<label data-message="profile.displayName" data-translation-context="Label of the field for the name other players see, on the player's own profile page">
@@ -394,7 +394,7 @@
 					</div>
 					<label id="account-delete-username-field" hidden>
 						<span data-message="profile.deleteTypeUsername" data-translation-context="Label of the field in the dialog deleting an account without a password, where the player types their username to confirm">Type your username to confirm</span>
-						<input id="account-delete-username" autocomplete="off" autocapitalize="none" spellcheck="false" />
+						<input id="account-delete-username" class="username-input" autocomplete="off" autocapitalize="none" spellcheck="false" />
 					</label>
 					<p id="account-delete-error" class="form-error" role="alert" hidden></p>
 					<div class="form-buttons">

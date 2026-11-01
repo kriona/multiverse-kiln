@@ -944,6 +944,19 @@ button.chip-remove
 	color: $text-faint;
 }
 
+// A username field, about as wide as the longest username (MAX_USERNAME_LENGTH)
+input.username-input
+{
+	max-width: 22ch;
+}
+
+// One made a search field to keep password managers out keeps the right of the field for the
+// checking spinner (field-checking) rather than the browser's clear button
+input.username-input[type="search"]::-webkit-search-cancel-button
+{
+	appearance: none;
+}
+
 .form-error
 {
 	color: $error;

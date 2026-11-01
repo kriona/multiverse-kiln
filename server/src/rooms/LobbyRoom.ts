@@ -9,8 +9,10 @@ import { loadChunksAt, loadArea } from '../db/areaRepo.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { characterChanges, type CharacterChange } from '../players/characterChanges.js';
 import { groupChanges, type GroupChange } from '../players/groupChanges.js';
+import { universeAccessChanges } from '../players/universeAccess.js';
 import { areaChanges } from '../world/areaChanges.js';
 import { InvalidMessages } from './invalidMessages.js';
+import { mayPlayUniverse } from './universePlay.js';
 import { chatPayload, chooseCharacterPayload, describeInvalidPayload, movePayload, roomOptions } from './payloads.js';
 import { RateLimiter } from './rateLimiter.js';
 import { AreaCache } from './areaCache.js';
@@ -114,6 +116,8 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	private stopFollowingGroups?: () => void;
 
 	private stopFollowingSessions?: () => void;
+
+	private stopFollowingAccess?: () => void;
 
 	/**
 	 * The most recent chat messages, oldest first (server-only, not synced)
@@ -265,6 +269,14 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		{
 			this.turnAwaySessions(sessionIds);
 		});
+
+		this.stopFollowingAccess = universeAccessChanges.onLost((change) =>
+		{
+			if (change.universeId === this.universeId)
+			{
+				this.turnAwayPlayers(change.playerIds);
+			}
+		});
 	}
 
 	/**
@@ -276,6 +288,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		this.stopFollowingCharacters?.();
 		this.stopFollowingGroups?.();
 		this.stopFollowingSessions?.();
+		this.stopFollowingAccess?.();
 	}
 
 	/**
@@ -290,7 +303,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	{
 		const session = await resolveSession(context.headers.get('cookie'));
 
-		if (!session)
+		if (!session || !await mayPlayUniverse(this.universeId, session.playerId))
 		{
 			return(false);
 		}
@@ -610,6 +623,22 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 			if (sessionIds.has(identityOf(client).sessionId))
 			{
 				client.leave(ServerCloseCode.LoggedOut);
+			}
+		}
+	}
+
+	/**
+	 * Turns away the windows of players who may no longer play the universe
+	 *
+	 * @param playerIds The players
+	 */
+	private turnAwayPlayers(playerIds: ReadonlySet<string>): void
+	{
+		for (const client of this.clients)
+		{
+			if (playerIds.has(identityOf(client).playerId))
+			{
+				client.leave(ServerCloseCode.AccessLost);
 			}
 		}
 	}

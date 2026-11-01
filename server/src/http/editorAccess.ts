@@ -3,9 +3,9 @@
  */
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import { z } from 'zod';
-import type { EditableUniverse, EditorArea, UniverseRole } from '@multiverse-kiln/shared';
+import type { EditableUniverseDetails, EditorArea, UniverseRole } from '@multiverse-kiln/shared';
 
-import { findUniverseRole } from '../db/universeEditorRepo.js';
+import { findUniverseAccess } from '../db/universeEditorRepo.js';
 import { findEditableUniverse } from '../db/universeRepo.js';
 import { findEditorArea } from '../db/areaRepo.js';
 import { resolveSession } from '../auth/sessions.js';
@@ -18,8 +18,13 @@ import { isOriginAllowed } from './origins.js';
 export interface UniverseContext
 {
 	playerId: string;
-	universe: Omit<EditableUniverse, 'role'>;
+	universe: EditableUniverseDetails;
 	role: UniverseRole;
+
+	/**
+	 * The languages the player may translate into, as a translator
+	 */
+	languages: readonly string[];
 }
 
 /**
@@ -107,14 +112,19 @@ export async function loadUniverseContext(request: Request, response: Response, 
 
 	if (universeId.success)
 	{
-		const [universe, role] = await Promise.all([
+		const [universe, access] = await Promise.all([
 			findEditableUniverse(universeId.data),
-			findUniverseRole(universeId.data, playerId)
+			findUniverseAccess(universeId.data, playerId)
 		]);
 
-		if (universe && role)
+		if (universe && access)
 		{
-			universeContexts.set(request, { playerId, universe, role });
+			universeContexts.set(request, {
+				playerId,
+				universe,
+				role: access.role,
+				languages: access.languages
+			});
 			next();
 			return;
 		}

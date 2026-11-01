@@ -345,11 +345,13 @@ export type AreaLinkMode = typeof AREA_LINK_MODES[number];
  * - creator: change everything
  * - builder: change the world: tiles, areas, maps and links
  * - beta_tester: play while the universe is in prologue
+ * - translator: translate the universe's text into the languages they are given
  */
 export const UNIVERSE_ROLES = [
 	'creator',
 	'builder',
-	'beta_tester'
+	'beta_tester',
+	'translator'
 ] as const;
 
 export type UniverseRole = typeof UNIVERSE_ROLES[number];
@@ -372,8 +374,42 @@ export const UNIVERSE_ROLE_NAMES: Record<UniverseRole, MessageDescriptor> = defi
 		id: 'universe.role.beta_tester',
 		defaultMessage: 'beta tester',
 		description: 'Role of someone who can play a universe before it opens to everyone'
+	},
+	translator: {
+		id: 'universe.role.translator',
+		defaultMessage: 'translator',
+		description: 'Role of someone who can translate a universe\'s text, such as the names of its areas and items, into the languages they are given, and change nothing else'
 	}
 });
+
+/**
+ * Most languages one translator may be given
+ */
+export const MAX_TRANSLATOR_LANGUAGES = 20;
+
+/**
+ * Someone's place in a universe: their role, and the languages a translator may translate into
+ */
+export interface UniverseAccess
+{
+	role: UniverseRole;
+
+	/**
+	 * Language tags, such as de or pt-BR; empty for every role but translator
+	 */
+	languages: readonly string[];
+}
+
+/**
+ * Whether a role may add, change and remove a universe's editors
+ *
+ * @param role The user's role in the universe
+ * @return True when the role may
+ */
+export function canManageEditors(role: UniverseRole): boolean
+{
+	return(role === 'creator');
+}
 
 /**
  * Whether a role may change a universe's settings: its name, descriptions, stage and passage of time
@@ -395,6 +431,24 @@ export function canEditUniverseSettings(role: UniverseRole): boolean
 export function canEditWorld(role: UniverseRole): boolean
 {
 	return((role === 'creator') || (role === 'builder'));
+}
+
+/**
+ * Whether someone may translate a universe's text into a language: creators into any, translators into
+ * the languages they are given
+ *
+ * @param access The user's role in the universe, and their languages
+ * @param language The language's tag
+ * @return True when they may
+ */
+export function canTranslate(access: UniverseAccess, language: string): boolean
+{
+	if (access.role === 'creator')
+	{
+		return(true);
+	}
+
+	return((access.role === 'translator') && access.languages.some((each) => (each.toLowerCase() === language.toLowerCase())));
 }
 
 /**

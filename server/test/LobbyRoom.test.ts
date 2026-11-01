@@ -15,6 +15,8 @@ import { cellCenter } from '../src/logic/movement.js';
 import { characterChanges } from '../src/players/characterChanges.js';
 import { connectedSessions } from '../src/players/connectedSessions.js';
 import { groupChanges } from '../src/players/groupChanges.js';
+import { universeAccessChanges } from '../src/players/universeAccess.js';
+import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { CHAT_HISTORY_LENGTH, type LobbyRoom } from '../src/rooms/LobbyRoom.js';
 import { areaChanges } from '../src/world/areaChanges.js';
 import { addCharacter, addPlayableUniverse, addArea, defaultRaceId, defaultTileId, type PlayableUniverse } from './db/fixtures.js';
@@ -226,6 +228,38 @@ describe('LobbyRoom', () =>
 
 			assert.strictEqual(await left, ServerCloseCode.UniverseDeleted);
 			assert.strictEqual(lobbyOf(alan).clients.length, 1);
+		});
+
+		it('turns away the windows of players who may no longer play the universe', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
+			const room = lobbyOf(ada);
+			const left = new Promise<number>((resolve) =>
+			{
+				ada.room.onLeave(resolve);
+			});
+
+			universeAccessChanges.publish({
+				universeId: universe.universeId,
+				playerIds: new Set([ada.playerId])
+			});
+
+			assert.strictEqual(await left, ServerCloseCode.AccessLost);
+			await waitUntil(() => (room.clients.length === 1));
+			assert.strictEqual(room.clients[0].sessionId, grace.room.sessionId);
+		});
+
+		it('refuses players the universe\'s stage and their role don\'t let play', async () =>
+		{
+			const playerId = (await addPlayer('Ada')).id;
+			const { cookie } = await logInBrowser(playerId);
+
+			await updateUniverseSettings(universe.universeId, { stage: 'prologue' });
+			await assert.rejects(connect(cookie, { universeId: universe.universeId }));
+
+			await setUniverseRole(universe.universeId, playerId, 'beta_tester');
+			await openWindow(cookie, universe.universeId);
 		});
 
 		it('is one room per universe', async () =>

@@ -42,8 +42,9 @@ An engine for making multiplayer browser-based role-playing games.
                      and GameRoom (one per group, made from the database when a member returns). Every room
                      finds its clients' players from their session cookie in onAuth. The two map rooms share
                      AreaPlayers (movement, areas, who sees whom, area links) and AreaCache
-  src/players/       which login sessions have windows connected, and changes to characters and groups, published
-                     to the rooms (in memory; accounts, sessions, characters and groups are in the database)
+  src/players/       which login sessions have windows connected, changes to characters and groups, and players who
+                     may no longer play a universe, published to the rooms (in memory; accounts, sessions,
+                     characters, groups and roles are in the database)
   src/world/         changes the world editor makes, published to the rooms playing in that world (in memory)
   src/logic/         pure game-simulation functions (no I/O)
   src/db/            Drizzle client, schema, and repository modules

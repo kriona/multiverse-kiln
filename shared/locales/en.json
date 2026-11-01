@@ -501,7 +501,7 @@
 	},
 	"combobox.noMatches": {
 		"defaultMessage": "Nothing matches",
-		"description": "Shown in the list under a search field, such as the time zone or the languages on the profile page, when nothing matches what was typed"
+		"description": "Shown in the list under a search field, such as the time zone or the languages on the profile page, or the players to add on the editor's Editors tab, when nothing matches what was typed"
 	},
 	"createGroup.difficulty": {
 		"defaultMessage": "Difficulty",
@@ -966,6 +966,102 @@
 	"editor.displayTime": {
 		"defaultMessage": "Display time",
 		"description": "Label of the field for how players are shown the time of day in a universe"
+	},
+	"editor.editors.add": {
+		"defaultMessage": "Add Editor",
+		"description": "Button on the editor's Editors tab that opens the dialog for giving a player a role in the universe"
+	},
+	"editor.editors.addTitle": {
+		"defaultMessage": "Add Editor",
+		"description": "Title of the dialog on the editor's Editors tab for giving a player a role in the universe"
+	},
+	"editor.editors.choosePlayer": {
+		"defaultMessage": "Search for the player by name or username, and choose them from the list.",
+		"description": "Shown under the field for finding a player in the dialog for adding an editor on the editor's Editors tab, when Apply is pressed before a player is chosen from the list"
+	},
+	"editor.editors.editTitle": {
+		"defaultMessage": "Edit {username}",
+		"description": "Title of the dialog on the editor's Editors tab for changing an editor's role; {username} is their username"
+	},
+	"editor.editors.hint": {
+		"defaultMessage": "Creators can change everything, builders can change the world, beta testers can play the universe before it opens to everyone, and translators can translate it into their languages.",
+		"description": "Explains the roles on the editor's Editors tab"
+	},
+	"editor.editors.languages": {
+		"defaultMessage": "Languages",
+		"description": "Heading of the column on the editor's Editors tab listing the languages each translator may translate the universe into, and the label of that field in its dialog"
+	},
+	"editor.editors.languagesHint": {
+		"defaultMessage": "The languages they may translate the universe's text into.",
+		"description": "Under the languages field in the dialog on the editor's Editors tab, shown when the role chosen is translator"
+	},
+	"editor.editors.languagesNeeded": {
+		"defaultMessage": "Choose the languages they may translate into.",
+		"description": "Shown under the languages field in the dialog on the editor's Editors tab when the role chosen is translator but no language is"
+	},
+	"editor.editors.languagesSearch": {
+		"defaultMessage": "Search languages",
+		"description": "Shown in the empty search field for choosing the languages a translator may translate a universe into, in the dialog on the editor's Editors tab"
+	},
+	"editor.editors.languagesTooMany": {
+		"defaultMessage": "A translator can have up to {max, plural, one {# language} other {# languages}}.",
+		"description": "Shown under the field for choosing the languages a translator may translate a universe into, in the editor dialog on the editor's Editors tab, when more than {max}, a number, are chosen"
+	},
+	"editor.editors.leave": {
+		"defaultMessage": "Leave Universe",
+		"description": "Button on the editor's Editors tab that gives up the player's own role in the universe when the tab is saved"
+	},
+	"editor.editors.leaveQuestion": {
+		"defaultMessage": "Once you save, you lose your role ({role}) in {universe} and can no longer open it in the editor. {play, select, yes {You can still play it, since it is open to everyone.} other {You can't play it until it opens to everyone, and you will be turned out of its lobby and your groups there.}} {lastCreator, select, yes {You are its only creator, so make another editor a creator first, or the save will be refused.} other {Only a creator can give you a role again.}} Until you save, Undo Leave keeps your role.",
+		"description": "Asked before the player leaves a universe from the editor's Editors tab; {role} is their role, e.g. builder, and {universe} the universe's name. {play} is yes when the universe is open to everyone, so they can still play it without a role; {lastCreator} is yes when they are its only creator, who can't leave until someone else is one"
+	},
+	"editor.editors.leaveTitle": {
+		"defaultMessage": "Leave {universe}?",
+		"description": "Title of the dialog asking the player to confirm leaving a universe from the editor's Editors tab; {universe} is its name"
+	},
+	"editor.editors.listFailed": {
+		"defaultMessage": "Could not list the editors.",
+		"description": "Shown on the editor's Editors tab when the universe's editors couldn't be loaded"
+	},
+	"editor.editors.player": {
+		"defaultMessage": "Player",
+		"description": "Label of the field in the dialog for adding an editor on the editor's Editors tab that finds the player to add by name or username"
+	},
+	"editor.editors.playerHint": {
+		"defaultMessage": "Type their name, or @ and their username, then choose them from the list.",
+		"description": "Under the field in the dialog for adding an editor on the editor's Editors tab that finds the player to add"
+	},
+	"editor.editors.remove": {
+		"defaultMessage": "Remove Editor",
+		"description": "Button in the dialog on the editor's Editors tab that takes the editor's role in the universe away when the tab is saved"
+	},
+	"editor.editors.removedNote": {
+		"defaultMessage": "(loses their role when saved)",
+		"description": "Read out by screen readers after the username of an editor on the editor's Editors tab who will be removed, or is leaving, when the tab is saved; on screen the row is struck through"
+	},
+	"editor.editors.role": {
+		"defaultMessage": "Role",
+		"description": "Heading of the column of roles (such as creator or builder) on the editor's Editors tab, and the label of the role field in its dialog"
+	},
+	"editor.editors.saveFailed": {
+		"defaultMessage": "Could not save the changes to {username}.",
+		"description": "Shown on the editor's Editors tab when the server refused a change to one of the universe's editors, followed by why; {username} is their username. Nothing was saved"
+	},
+	"editor.editors.undoLeave": {
+		"defaultMessage": "Undo Leave",
+		"description": "Button on the editor's Editors tab once the player has chosen to leave the universe, before saving: keeps their role instead"
+	},
+	"editor.editors.undoRemove": {
+		"defaultMessage": "Undo Remove",
+		"description": "Button in the dialog on the editor's Editors tab for an editor who will lose their role when the tab is saved: keeps them instead"
+	},
+	"editor.editors.username": {
+		"defaultMessage": "Username",
+		"description": "Heading of the column of usernames on the editor's Editors tab"
+	},
+	"editor.editors.youTag": {
+		"defaultMessage": "you",
+		"description": "In the last column of the editor's Editors table, for the row of the player using the editor"
 	},
 	"editor.error.failedBecause": {
 		"defaultMessage": "{failure} {reason}",
@@ -1675,6 +1771,10 @@
 		"defaultMessage": "Characters",
 		"description": "Tab of the editor with what characters start with and how many play together"
 	},
+	"editor.tab.editors": {
+		"defaultMessage": "Editors",
+		"description": "Tab of the editor listing the players who can work on or test the universe, and their roles"
+	},
 	"editor.tab.items": {
 		"defaultMessage": "Items",
 		"description": "Tab of the editor listing the items characters can be given, such as weapons and gear"
@@ -2247,6 +2347,10 @@
 		"defaultMessage": "Wrong codes were typed for your account on {siteName}",
 		"description": "Subject of the email sent when many wrong authenticator app codes were typed for an account in a day; {siteName} is the site's name"
 	},
+	"error.alreadyEditor": {
+		"defaultMessage": "{username} already has a role in this universe.",
+		"description": "Why a player couldn't be added to a universe's editors: they are one already; {username} is their username"
+	},
 	"error.alreadyInGroup": {
 		"defaultMessage": "That character is already in a group. They have to leave it first.",
 		"description": "Why a character couldn't make or join a group: a character can be in only one group at a time"
@@ -2495,6 +2599,10 @@
 		"defaultMessage": "An item needs a name.",
 		"description": "Why an item the universe added couldn't be saved: its name was left out"
 	},
+	"error.lastCreator": {
+		"defaultMessage": "A universe needs at least one creator. Make another editor a creator first.",
+		"description": "Why changes to a universe's editors couldn't be saved: they would take the role of creator from its last creator, whether by changing their role, removing them or them leaving"
+	},
 	"error.lastRitesOff": {
 		"defaultMessage": "Characters can't be given their last rites on this site. They can only be deleted immediately.",
 		"description": "Why a character wasn't given their last rites (deleted after some days): the site's settings have turned waiting off"
@@ -2531,6 +2639,10 @@
 		"defaultMessage": "A universe needs at least one enabled theme, so new characters have one to choose.",
 		"description": "Why a theme couldn't be disabled or deleted: it is the last theme new characters can choose"
 	},
+	"error.noLongerEditor": {
+		"defaultMessage": "You no longer have a role in this universe, so your changes can't be saved.",
+		"description": "Why the world editor couldn't save: the player's role in the universe was taken away while they were editing it"
+	},
 	"error.noSuchArea": {
 		"defaultMessage": "The area doesn't exist.",
 		"description": "Why a request about an area failed: it was deleted, perhaps by another editor"
@@ -2551,6 +2663,10 @@
 		"defaultMessage": "The difficulty level doesn't exist.",
 		"description": "Why a request about a difficulty level failed: it was deleted, perhaps by another editor"
 	},
+	"error.noSuchEditor": {
+		"defaultMessage": "They are no longer one of the universe's editors.",
+		"description": "Why a change to one of a universe's editors couldn't be saved: someone else took their role away, or they left the universe"
+	},
 	"error.noSuchGroup": {
 		"defaultMessage": "The group doesn't exist any more, or that character isn't in it.",
 		"description": "Why a character couldn't leave a group or an invite link couldn't be made: the group was disbanded, or the character had already left"
@@ -2566,6 +2682,10 @@
 	"error.noSuchPlayer": {
 		"defaultMessage": "No player has that username.",
 		"description": "Why a player's profile couldn't be shown: no account has the username in its address"
+	},
+	"error.noSuchPlayerToAdd": {
+		"defaultMessage": "No player has that username.",
+		"description": "Why a player couldn't be added to a universe's editors, shown on the editor's Editors tab: no account has the username chosen, perhaps because the player changed it or deleted their account"
 	},
 	"error.noSuchRace": {
 		"defaultMessage": "The race doesn't exist.",
@@ -2826,6 +2946,10 @@
 	"form.wholeNumber": {
 		"defaultMessage": "Enter a whole number from {min, number} to {max, number}.",
 		"description": "Shown under a number field when what was typed isn't a whole number in the range it allows; {min} and {max} are the smallest and largest allowed"
+	},
+	"game.accessLost": {
+		"defaultMessage": "Your role in {universe} was changed or taken away, so you can't play it while it is in its current stage.",
+		"description": "Shown on the game's page when the player was turned out of a universe they were playing because one of its creators changed or removed their role, or they left it; {universe} is its name"
 	},
 	"game.loadingUniverse": {
 		"defaultMessage": "Loading the universe...",
@@ -4215,6 +4339,22 @@
 		"defaultMessage": "{city} ({zoneName}), where it's {time} now",
 		"description": "A player's time zone on their profile, as other players see it; {city} is the city the time zone is named after, such as Paris, {zoneName} its name, such as Central European Time, or its offset from UTC, such as GMT+1, and {time} the time of day there, kept up to date while the page is open"
 	},
+	"playerSearch.chosen": {
+		"defaultMessage": "{name} (@{username})",
+		"description": "Shown under a field that finds a player, such as the one for adding an editor on the editor's Editors tab, once one is chosen; {name} is their name and {username} their username"
+	},
+	"playerSearch.noMatches": {
+		"defaultMessage": "No players match",
+		"description": "Shown in the list under a field that finds a player, such as the one for adding an editor on the editor's Editors tab, when no player's name or username matches what was typed (or none who can be added)"
+	},
+	"playerSearch.searching": {
+		"defaultMessage": "Searching...",
+		"description": "Shown in the list under a field that finds a player, such as the one for adding an editor on the editor's Editors tab, while the site looks for players matching what was typed"
+	},
+	"playerSearch.typeToSearch": {
+		"defaultMessage": "Type at least {min, plural, one {# character} other {# characters}} of a name, or @ and a username",
+		"description": "Shown in the list under a field that finds a player, such as the one for adding an editor on the editor's Editors tab, until enough is typed to search; {min} is the fewest characters, e.g. 3, not counting the @ that starts a username"
+	},
 	"privacy.account": {
 		"defaultMessage": "Your account",
 		"description": "Heading in the privacy policy over the list of what the site keeps about a player's account"
@@ -5394,6 +5534,10 @@
 	"universe.role.creator": {
 		"defaultMessage": "creator",
 		"description": "Role of someone who can change everything about a universe"
+	},
+	"universe.role.translator": {
+		"defaultMessage": "translator",
+		"description": "Role of someone who can translate a universe's text, such as the names of its areas and items, into the languages they are given, and change nothing else"
 	},
 	"universe.ruleset": {
 		"defaultMessage": "Ruleset",

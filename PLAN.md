@@ -303,13 +303,13 @@ To decide, before the step that needs it:
 Built in nine steps: roles, stages, server admins, disabling things in use, then translations (storage, delivery, the tab), versions, and finishing.
 
 1. Editors tab and roles
-	- [ ] A `translator` role, and the languages each translator may translate into (a column or table beside `universe_editors`)
-	- [ ] What each role may do as pure functions in `/shared`, beside `canEditWorld()`: managing editors (creators), the universe's settings (creators), the world (creators and builders), translating (creators, and translators in their languages), and playing (by stage, as now). The editor routes check them through `requireRole()`, and each `EditorChange` kind names the check it needs
-	- [ ] Editors tab: lists each editor's username, display name, role and languages; adds a player by username with a role (checked as typed, like Register's username); changes a role; removes an editor. Staged until Save, as `EditorChange` kinds. A universe always keeps at least one creator, and the server refuses a save that leaves none
-	- [ ] Leaving a universe: any editor can remove themself, except its last creator
-	- [ ] The editor shows only the tabs a role may use (a translator sees the Translations tab, read-only settings and nothing else), and refuses changes it may not make, server-side as well
-	- [ ] Losing a role takes effect at once: an open editor's next save is refused, and a player who may no longer play the universe in its stage is turned out of its lobby and groups (published through `server/src/players/`, like a session ending), with a message saying why
-	- [ ] Tests: each role's checks, the last creator, adding a username that doesn't exist, a translator saving another language or a world change
+	- [✅] A `translator` role, and the languages each translator may translate into (`universe_editors.languages`)
+	- [✅] What each role may do as pure functions in `/shared`, beside `canEditWorld()`: managing editors (creators), the universe's settings (creators), the world (creators and builders), translating (creators, and translators in their languages), and playing (by stage, as now). The editor routes check them through `requireRole()`, and each `EditorChange` kind names the check it needs (`EDITOR_CHANGE_CHECKS`)
+	- [✅] Editors tab: lists each editor's username, display name, role and languages; adds a player with a role, found by searching names and usernames (`@` for usernames only) with the reusable `PlayerSearch` control; changes a role; removes an editor. Staged until Save, as `EditorChange` kinds. A universe always keeps at least one creator, and the server refuses a save that leaves none
+	- [✅] Leaving a universe: any editor can remove themself, except its last creator (Leave Universe on the Editors tab, staged like the rest)
+	- [✅] The editor shows only the tabs a role may use (beta testers and translators see the Editors tab and read-only settings; the Translations tab comes in step 7), and refuses changes it may not make, server-side as well
+	- [✅] Losing a role takes effect at once: an open editor's next save is refused, and a player who may no longer play the universe in its stage is turned out of its lobby and groups (published through `server/src/players/universeAccess.ts`, like a session ending), with a message saying why. The rooms also check that a joining player may play
+	- [✅] Tests: each role's checks, the last creator, adding a username that doesn't exist, a translator saving a world change (saving another language waits for translations, step 5; `canTranslate()` is tested)
 2. Stages
 	- [ ] Home's section for universes in `prologue`, shown only to players with a role in one, and the universe page for those players
 	- [ ] Changing the stage takes effect at once in open rooms: players who may no longer play are turned out with a message, as when losing a role

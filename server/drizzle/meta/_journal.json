@@ -491,6 +491,13 @@
       "when": 1793386929120,
       "tag": "0069_wrong_authenticator_code_limit",
       "breakpoints": true
+    },
+    {
+      "idx": 70,
+      "version": "7",
+      "when": 1793501711119,
+      "tag": "0070_translator_role",
+      "breakpoints": true
     }
   ]
 }
