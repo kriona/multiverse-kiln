@@ -82,13 +82,31 @@ cp client/.env.example client/.env
 cp server/.env.example server/.env
 ```
 
-The root `.env` holds the local database passwords (used by `docker-compose.yml`). Replace each `replace-me` with a generated password:
+Each `replace-me` needs a generated secret. The quickest way is to let a script make `.env` and `server/.env` for you:
+
+```bash
+npm run secrets -w server
+```
+
+It copies each `.env.example` with a new secret in place of each placeholder, each value the two files share already the same in both. It never replaces a file that exists: it writes the new version next to it as `.env.generated` instead (git-ignored), for you to copy settings from. `client/.env` has no secrets, so copy it from its example as above.
+
+To make them by hand instead, use one of two formats. Use the right one for each setting: a base64 value in a hex setting breaks it.
+
+**Hex** - the database passwords and storage keys: `POSTGRES_PASSWORD`, `KILN_MIGRATOR_PASSWORD`, `KILN_APP_PASSWORD`, `STORAGE_ACCESS_KEY_ID` and `STORAGE_SECRET_ACCESS_KEY`, in the root `.env`:
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"
 ```
 
-Then put the same passwords into the connection strings in `server/.env`: `KILN_APP_PASSWORD` goes in `DATABASE_URL`, and `KILN_MIGRATOR_PASSWORD` in `MIGRATION_DATABASE_URL`. Hex passwords don't need escaping in a URL. Generate the two storage keys the same way, and put the same pair in both `.env` and `server/.env`.
+Hex has only letters and digits, which these settings need: the passwords go in connection strings, where `/`, `+` and `=` would need escaping, and the storage's request signing splits the access key ID on `/`.
+
+**Base64** - the server's secret keys: `AUTH_HMAC_KEY` and `TOTP_ENCRYPTION_KEY`, in `server/.env`:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```
+
+Then copy the hex values the root `.env` shares with `server/.env`: put `KILN_APP_PASSWORD` in `DATABASE_URL` and `KILN_MIGRATOR_PASSWORD` in `MIGRATION_DATABASE_URL` (and the same passwords in `TEST_DATABASE_URL` and `TEST_MIGRATION_DATABASE_URL`), and the same `STORAGE_ACCESS_KEY_ID` and `STORAGE_SECRET_ACCESS_KEY` pair in both files.
 
 | Variable | File | Purpose |
 |---|---|---|
@@ -249,6 +267,7 @@ All commands run from the repository root.
 | `npm run lint` | Lint everything |
 | `npm run lint:fix` | Lint everything and fix what can be fixed automatically |
 | `docker compose up -d` / `docker compose stop` | Start / stop the local Postgres |
+| `npm run secrets -w server` | Make `.env` and `server/.env` from their examples with new secrets; a file that exists is left alone and the new one written as `.env.generated` |
 | `npm run db:generate -w server` | Create a migration from changes to `server/src/db/schema.ts` |
 | `npm run db:migrate -w server` | Apply pending migrations (as `MIGRATION_DATABASE_URL`) |
 | `npm run db:seed -w server` | Add or replace the sample universe (as `DATABASE_URL`); add `-- --creator <username>` to make that account its creator |
