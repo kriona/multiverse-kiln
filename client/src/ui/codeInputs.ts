@@ -1,4 +1,4 @@
-import { EMAIL_CODE_ALPHABET, EMAIL_CODE_LENGTH, RECOVERY_CODE_LENGTH, TWO_FACTOR_CODE_LENGTH } from '@multiverse-kiln/shared';
+import { devCode, EMAIL_CODE_ALPHABET, EMAIL_CODE_LENGTH, RECOVERY_CODE_LENGTH, TWO_FACTOR_CODE_LENGTH } from '@multiverse-kiln/shared';
 
 /**
  * What a code field takes: a code emailed to the player, a code from their authenticator app, or either
@@ -93,7 +93,50 @@ export function startCodeInputs(): void
 				input.form?.requestSubmit();
 			}
 		});
+
+		if (import.meta.env.DEV)
+		{
+			addDevCode(input, kind);
+		}
 	}
+}
+
+/**
+ * Adds a line under a code field in development builds showing the dev code (all 1s), which a local
+ * development server takes for any email or authenticator code (server/src/auth/devCodes.ts).
+ * Clicking the code fills it in and submits the form. Players never see it, so it isn't a message
+ *
+ * @param input The field
+ * @param kind What the field takes
+ */
+function addDevCode(input: HTMLInputElement, kind: CodeKind): void
+{
+	const code = devCode((kind === 'email') ? EMAIL_CODE_LENGTH : TWO_FACTOR_CODE_LENGTH);
+	const line = document.createElement('span');
+	const button = document.createElement('button');
+
+	button.type = 'button';
+	button.className = 'link-button';
+	button.textContent = code;
+	button.addEventListener('click', () =>
+	{
+		const couldAutoSubmit = (input.hasAttribute('data-auto-submit') && !autoSubmitted.has(input));
+
+		input.value = code;
+		input.dispatchEvent(new Event('input', { bubbles: true }));
+
+		// The input event submits a field marked data-auto-submit the first time
+		if (!couldAutoSubmit)
+		{
+			input.form?.requestSubmit();
+		}
+	});
+
+	line.className = 'hint dev-code';
+	line.translate = false;
+	// eslint-disable-next-line no-restricted-syntax -- only development builds show it
+	line.append('Dev code: ', button);
+	input.after(line);
 }
 
 /**
