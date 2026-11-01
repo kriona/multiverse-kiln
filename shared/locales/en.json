@@ -83,6 +83,10 @@
 		"defaultMessage": "{total, plural, =0 {Nothing matches} one {# match} other {# matches}}",
 		"description": "Read out by screen readers once an admin page's list of sessions or players has been narrowed by its search or filter: how many rows match"
 	},
+	"admin.players.active": {
+		"defaultMessage": "Active",
+		"description": "Note in the admin page's list of players on an account with a window of the site open right now"
+	},
 	"admin.players.email": {
 		"defaultMessage": "Email",
 		"description": "Heading of the column in the admin page's list of players for the email address each account logs in with"

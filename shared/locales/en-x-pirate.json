@@ -83,6 +83,10 @@
 		"message": "{total, plural, =0 {Not a soul matches} one {# match} other {# matches}}",
 		"source": "{total, plural, =0 {Nothing matches} one {# match} other {# matches}}"
 	},
+	"admin.players.active": {
+		"message": "Aboard",
+		"source": "Active"
+	},
 	"admin.players.email": {
 		"message": "Message bottle",
 		"source": "Email"

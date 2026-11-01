@@ -2,7 +2,7 @@ import type { AdminSession } from '@multiverse-kiln/shared';
 
 import { startAdminPage } from './AdminPage';
 import { formatDateTime, t } from './localization';
-import { AdminList, notesCell, playerCell, textCell } from './ui/AdminList';
+import { AdminList, notesCell, playerCell, textCell, type AdminNote } from './ui/AdminList';
 
 /**
  * Starts the admin page listing the login sessions still going (admin/sessions.html)
@@ -45,33 +45,42 @@ void startAdminPage(async (api) =>
 function sessionRow(session: AdminSession): HTMLTableRowElement
 {
 	const row = document.createElement('tr');
-	const notes: string[] = [];
+	const notes: AdminNote[] = [];
 
 	if (session.current)
 	{
-		notes.push(t({
-			id: 'admin.sessions.current',
-			defaultMessage: 'This browser',
-			description: 'Note in the admin page\'s list of sessions on the session of the browser the admin is using'
-		}));
+		notes.push({
+			text: t({
+				id: 'admin.sessions.current',
+				defaultMessage: 'This browser',
+				description: 'Note in the admin page\'s list of sessions on the session of the browser the admin is using'
+			}),
+			tone: 'current'
+		});
 	}
 
 	if (session.connected)
 	{
-		notes.push(t({
-			id: 'admin.sessions.connectedNote',
-			defaultMessage: 'Connected',
-			description: 'Note in the admin page\'s list of sessions on a session with a game, lobby or profile open now'
-		}));
+		notes.push({
+			text: t({
+				id: 'admin.sessions.connectedNote',
+				defaultMessage: 'Connected',
+				description: 'Note in the admin page\'s list of sessions on a session with a game, lobby or profile open now'
+			}),
+			tone: 'online'
+		});
 	}
 
 	if (session.rememberMe)
 	{
-		notes.push(t({
-			id: 'admin.sessions.remembered',
-			defaultMessage: 'Remembered',
-			description: 'Note in the admin page\'s list of sessions on a session whose player checked "Remember me" when logging in, so it lasts longer'
-		}));
+		notes.push({
+			text: t({
+				id: 'admin.sessions.remembered',
+				defaultMessage: 'Remembered',
+				description: 'Note in the admin page\'s list of sessions on a session whose player checked "Remember me" when logging in, so it lasts longer'
+			}),
+			tone: 'remembered'
+		});
 	}
 
 	row.append(

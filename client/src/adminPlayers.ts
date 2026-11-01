@@ -2,7 +2,7 @@ import { LOGIN_PROVIDER_NAMES, type AdminPlayer } from '@multiverse-kiln/shared'
 
 import { startAdminPage } from './AdminPage';
 import { formatDateTime, t } from './localization';
-import { AdminList, notesCell, playerCell, textCell } from './ui/AdminList';
+import { AdminList, notesCell, playerCell, textCell, type AdminNote } from './ui/AdminList';
 
 /**
  * Starts the admin page listing every player account (admin/players.html)
@@ -46,36 +46,63 @@ function playerRow(player: AdminPlayer): HTMLTableRowElement
 {
 	const row = document.createElement('tr');
 	const email = textCell((player.email ?? ''));
-	const logins = (player.password
-		? [t({
-			id: 'admin.players.password',
-			defaultMessage: 'Password',
-			description: 'In the admin page\'s list of players, under Logs in with: the account logs in with an email address and password'
-		})]
-		: []);
-	const notes: string[] = [];
+	const logins: AdminNote[] = [];
+	const notes: AdminNote[] = [];
+
+	if (player.password)
+	{
+		logins.push({
+			text: t({
+				id: 'admin.players.password',
+				defaultMessage: 'Password',
+				description: 'In the admin page\'s list of players, under Logs in with: the account logs in with an email address and password'
+			}),
+			tone: 'password'
+		});
+	}
 
 	for (const provider of player.providers)
 	{
-		logins.push(LOGIN_PROVIDER_NAMES[provider]);
+		logins.push({
+			text: LOGIN_PROVIDER_NAMES[provider],
+			tone: provider
+		});
+	}
+
+	if (player.active)
+	{
+		notes.push({
+			text: t({
+				id: 'admin.players.active',
+				defaultMessage: 'Active',
+				description: 'Note in the admin page\'s list of players on an account with a window of the site open right now'
+			}),
+			tone: 'online'
+		});
 	}
 
 	if (player.serverAdmin)
 	{
-		notes.push(t({
-			id: 'admin.players.serverAdminNote',
-			defaultMessage: 'Server admin',
-			description: 'Note in the admin page\'s list of players on a player who is one of the site\'s admins'
-		}));
+		notes.push({
+			text: t({
+				id: 'admin.players.serverAdminNote',
+				defaultMessage: 'Server admin',
+				description: 'Note in the admin page\'s list of players on a player who is one of the site\'s admins'
+			}),
+			tone: 'serverAdmin'
+		});
 	}
 
 	if (player.twoFactor)
 	{
-		notes.push(t({
-			id: 'admin.players.twoFactor',
-			defaultMessage: '2FA',
-			description: 'Note in the admin page\'s list of players on an account with two-factor authentication on'
-		}));
+		notes.push({
+			text: t({
+				id: 'admin.players.twoFactor',
+				defaultMessage: '2FA',
+				description: 'Note in the admin page\'s list of players on an account with two-factor authentication on'
+			}),
+			tone: 'twoFactor'
+		});
 	}
 
 	email.translate = false;

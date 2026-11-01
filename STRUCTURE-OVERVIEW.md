@@ -235,7 +235,7 @@ The universe settings don't change universes that already exist.
 The login sessions still going (`/admin/sessions`), most recently used first, 50 to a page: each one's player (name and username, linking to their profile), when it logged in, when it was last used and when it ends if it isn't used again, and notes: This browser, Connected (a window has a game, lobby or profile open now) and Remembered ("Remember me"). A search narrows them by the player's name or username, and a filter to those connected or not.
 
 ### Players
-Every player account (`/admin/players`), newest first, 50 to a page: name and username (linking to their profile), email address, when they joined, when they last logged in (`players.last_login_at`, set whenever a session starts), how they log in (Password, Google, Discord), and notes: Server admin and 2FA. A search narrows them by name, username or email address, and a filter to server admins or other players.
+Every player account (`/admin/players`), by username, 50 to a page: name and username (linking to their profile), email address, when they joined, when they last logged in (`players.last_login_at`, set whenever a session starts), how they log in (Password, Google, Discord), and notes: Active (a window of the site open right now), Server admin and 2FA. A search narrows them by name, username or email address, and a filter to server admins or other players.
 
 ## Edit Universe
 This lets you change anything about a universe. It will be a whole suite of tools unrelated to playing the game.

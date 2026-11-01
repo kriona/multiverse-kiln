@@ -391,19 +391,18 @@ describe('Admin player list', () =>
 		return((await response.json()) as AdminPlayerListPayload);
 	}
 
-	it('lists every account, newest first, with how each logs in', async () =>
+	it('lists every account by username ignoring case, with how each logs in', async () =>
 	{
-		const local = await createPlayer({
+		const linked = await addPlayer('Grace Hopper');
+
+		await createPlayer({
 			username: 'ada',
 			displayName: 'Ada Lovelace',
 			email: 'ada@example.com',
 			passwordHash: 'not a real hash'
 		});
-		const linked = await addPlayer('Grace Hopper');
-
 		await addProviderLogin('google', 'google-grace', linked.id);
 		await addProviderLogin('discord', 'discord-grace', linked.id);
-		await pool.query('UPDATE players SET created_at = now() - interval \'1 day\' WHERE id = $1', [local.id]);
 
 		const page = await listPlayers();
 
@@ -416,6 +415,14 @@ describe('Admin player list', () =>
 			twoFactor: player.twoFactor,
 			serverAdmin: player.serverAdmin
 		})), [
+			{
+				username: 'ada',
+				email: 'ada@example.com',
+				password: true,
+				providers: [],
+				twoFactor: false,
+				serverAdmin: false
+			},
 			{
 				username: 'Grace_Hopper',
 				email: null,
@@ -431,14 +438,6 @@ describe('Admin player list', () =>
 				providers: [],
 				twoFactor: true,
 				serverAdmin: true
-			},
-			{
-				username: 'ada',
-				email: 'ada@example.com',
-				password: true,
-				providers: [],
-				twoFactor: false,
-				serverAdmin: false
 			}
 		]);
 	});
@@ -455,6 +454,31 @@ describe('Admin player list', () =>
 
 		assert.strictEqual(logins.get('Ada_Lovelace'), latest.toISOString());
 		assert.strictEqual(logins.get('Grace_Hopper'), null);
+	});
+
+	it('says which accounts have a window connected', async () =>
+	{
+		const ada = await addPlayer('Ada Lovelace');
+		const grace = await addPlayer('Grace Hopper');
+		const playing = await logInBrowser(grace.id);
+
+		await addPlayer('Alan Turing');
+		await logInBrowser(ada.id);
+		connectedSessions.connect(playing.sessionId);
+
+		try
+		{
+			assert.deepStrictEqual((await listPlayers()).players.map((player) => [player.username, player.active]), [
+				['Ada_Lovelace', false],
+				['Alan_Turing', false],
+				['Grace_Hopper', true],
+				['Player_Admin', false]
+			]);
+		}
+		finally
+		{
+			connectedSessions.disconnect(playing.sessionId);
+		}
 	});
 
 	it('searches usernames, names and email addresses, and narrows the list to server admins or others', async () =>

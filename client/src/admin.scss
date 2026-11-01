@@ -211,3 +211,26 @@
 	color: $text-muted;
 	white-space: nowrap;
 }
+
+// Each kind of note's color (AdminNoteTone in ui/AdminList.ts): its text and border, over a faint
+// background of the same color. The note's text says what it is, so the color only helps tell them apart
+$admin-tag-tones: (
+	'online': #81c784,
+	'current': #64b5f6,
+	'remembered': #4db6ac,
+	'serverAdmin': #f5d58a,
+	'twoFactor': #ce93d8,
+	'password': $text-muted,
+	'google': #ffb74d,
+	'discord': #9fa8da
+);
+
+@each $tone, $color in $admin-tag-tones
+{
+	.admin-tag-#{$tone}
+	{
+		border-color: rgba($color, 0.6);
+		background: rgba($color, 0.12);
+		color: $color;
+	}
+}

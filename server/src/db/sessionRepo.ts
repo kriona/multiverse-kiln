@@ -222,6 +222,34 @@ export async function deleteExpiredSessions(now: Date, executor: Executor = db):
 }
 
 /**
+ * Which of some players have one of some sessions, such as those with windows connected
+ *
+ * @param playerIds The players' IDs
+ * @param sessionIds The sessions' IDs
+ * @param executor The database, or a transaction
+ * @return The IDs of the players with one
+ */
+export async function findPlayersWithSessions(playerIds: readonly string[], sessionIds: readonly string[], executor: Executor = db): Promise<Set<string>>
+{
+	if ((playerIds.length === 0) || (sessionIds.length === 0))
+	{
+		return(new Set());
+	}
+
+	const rows = await executor
+		.selectDistinct({
+			playerId: sessions.playerId
+		})
+		.from(sessions)
+		.where(and(
+			inArray(sessions.playerId, [...playerIds]),
+			inArray(sessions.id, [...sessionIds])
+		));
+
+	return(new Set(rows.map((row) => row.playerId)));
+}
+
+/**
  * A condition that a session has expired (isSessionExpired())
  *
  * @param now The time now
