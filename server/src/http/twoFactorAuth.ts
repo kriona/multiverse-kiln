@@ -12,8 +12,9 @@
 import { randomBytes } from 'crypto';
 import type { Request, Response, Router } from 'express';
 import { z } from 'zod';
-import { AUTH_RECOVERY_CODES_PATH, AUTH_TRUSTED_BROWSERS_FORGET_PATH, AUTH_TWO_FACTOR_DISABLE_PATH, AUTH_TWO_FACTOR_ENABLE_PATH, AUTH_TWO_FACTOR_LOGIN_PATH, AUTH_TWO_FACTOR_SETUP_PATH, defineMessages, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_TWO_FACTOR_CODE_INPUT_LENGTH, RECOVERY_CODE_COUNT, SITE_NAME, TRUSTED_BROWSER_DAYS, type RecoveryCodesPayload, type RecoveryCodesRequest, type TwoFactorDisableRequest, type TwoFactorEnableRequest, type TwoFactorLoginRequest, type TwoFactorSetupPayload, type TwoFactorSetupRequest } from '@multiverse-kiln/shared';
+import { AUTH_RECOVERY_CODES_PATH, AUTH_TRUSTED_BROWSERS_FORGET_PATH, AUTH_TWO_FACTOR_DISABLE_PATH, AUTH_TWO_FACTOR_ENABLE_PATH, AUTH_TWO_FACTOR_LOGIN_PATH, AUTH_TWO_FACTOR_SETUP_PATH, defineMessages, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_TWO_FACTOR_CODE_INPUT_LENGTH, RECOVERY_CODE_COUNT, SITE_NAME, TRUSTED_BROWSER_DAYS, TWO_FACTOR_CODE_LENGTH, type RecoveryCodesPayload, type RecoveryCodesRequest, type TwoFactorDisableRequest, type TwoFactorEnableRequest, type TwoFactorLoginRequest, type TwoFactorSetupPayload, type TwoFactorSetupRequest } from '@multiverse-kiln/shared';
 
+import { isDevCode } from '../auth/devCodes.js';
 import { keyedHash } from '../auth/keyedHashes.js';
 import { checkLoginPassword } from '../auth/passwords.js';
 import { takeAttempt } from '../auth/rateLimits.js';
@@ -30,7 +31,7 @@ import { recoveryCodeUsedEmail, twoFactorDisabledEmail, twoFactorEnabledEmail, w
 import { sendEmailInBackground } from '../email/mailer.js';
 import { DAY_MS, decideLimit, MAX_GUESSES_PER_NETWORK_HOUR, type SendDecision } from '../logic/emailCodes.js';
 import { connectedSessions } from '../players/connectedSessions.js';
-import { encodeBase32, formatRecoveryCode, matchTotpCode, MAX_TWO_FACTOR_ATTEMPTS_PER_ACCOUNT_HOUR, MAX_WRONG_AUTHENTICATOR_CODES_PER_ACCOUNT_DAY, MAX_WRONG_TWO_FACTOR_CODES_PER_LOGIN, readTwoFactorCode, RECOVERY_CODE_LENGTH, recoveryCodeFromBytes, TOTP_SECRET_BYTES, totpUri, TWO_FACTOR_SETUP_LIFETIME_MS, WRONG_AUTHENTICATOR_CODES_BEFORE_WARNING } from '../logic/twoFactor.js';
+import { encodeBase32, formatRecoveryCode, matchTotpCode, MAX_TWO_FACTOR_ATTEMPTS_PER_ACCOUNT_HOUR, MAX_WRONG_AUTHENTICATOR_CODES_PER_ACCOUNT_DAY, MAX_WRONG_TWO_FACTOR_CODES_PER_LOGIN, readTwoFactorCode, RECOVERY_CODE_LENGTH, recoveryCodeFromBytes, TOTP_SECRET_BYTES, totpStep, totpUri, TWO_FACTOR_SETUP_LIFETIME_MS, WRONG_AUTHENTICATOR_CODES_BEFORE_WARNING } from '../logic/twoFactor.js';
 import { accountPasswordLimits, authMessages, cookieTokenHash, recordEvent, sendRefusal, tooManyAttempts, type AuthRefusal } from './authCommon.js';
 import { clientNetworkHash } from './clientNetwork.js';
 import { clearCookie, readCookie, setCookie, TRUSTED_BROWSER_COOKIE, TWO_FACTOR_LOGIN_COOKIE } from './cookies.js';
@@ -275,6 +276,11 @@ export async function checkSecondFactor(request: Request, response: Response, pl
 			kind: 'refused',
 			refusal: tooManyAttempts(attempt, now, response)
 		});
+	}
+
+	if ((code.kind === 'totp') && isDevCode(code.code, TWO_FACTOR_CODE_LENGTH))
+	{
+		return({ kind: 'right' });
 	}
 
 	if (code.kind === 'totp')
@@ -674,7 +680,12 @@ async function enableRoute(request: Request, response: Response): Promise<void>
 		}
 
 		const code = readTwoFactorCode(typed);
-		const step = ((code?.kind === 'totp') ? matchTotpCode(decryptTotpSecret(authenticator.encryptedSecret, playerId), code.code, now, null) : undefined);
+		let step: number | undefined;
+
+		if (code?.kind === 'totp')
+		{
+			step = (isDevCode(code.code, TWO_FACTOR_CODE_LENGTH) ? totpStep(now) : matchTotpCode(decryptTotpSecret(authenticator.encryptedSecret, playerId), code.code, now, null));
+		}
 
 		if (step === undefined)
 		{
