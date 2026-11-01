@@ -5,6 +5,7 @@ import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 import { SESSION_ROOM_NAME, SessionServerMessageType, type AccountPayload, type AccountPlayer } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { pool } from '../src/db/client.js';
+import { addServerAdmin } from '../src/db/serverAdminRepo.js';
 import { SESSION_LIFETIMES } from '../src/logic/sessionLifetimes.js';
 import { connectedSessions } from '../src/players/connectedSessions.js';
 import { Inbox } from './inbox.js';
@@ -102,9 +103,19 @@ describe('SessionRoom', () =>
 
 		assert.deepStrictEqual(player, {
 			playerId: browser.playerId,
-			name: 'Ada'
+			name: 'Ada',
+			serverAdmin: false
 		});
 		assert.ok((sessionExpiresInMs > (SESSION_LIFETIMES.short.idleMs - 60000)) && (sessionExpiresInMs <= SESSION_LIFETIMES.short.idleMs));
+	});
+
+	it('tells a server admin\'s window that they are one', async () =>
+	{
+		const browser = await logInNewBrowser('Ada');
+
+		await addServerAdmin(browser.playerId);
+
+		assert.strictEqual((await openWindow(browser.cookie)).account?.serverAdmin, true);
 	});
 
 	it('treats a session token it doesn\'t know as not logged in', async () =>

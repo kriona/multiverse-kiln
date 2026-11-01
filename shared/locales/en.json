@@ -173,7 +173,7 @@
 	},
 	"admin.sessions.connectedNote": {
 		"defaultMessage": "Connected",
-		"description": "Note in the admin page's list of sessions on a session with a game, lobby or profile open now"
+		"description": "Note in the admin page's list of sessions on a session with a window of the site open now"
 	},
 	"admin.sessions.current": {
 		"defaultMessage": "This browser",

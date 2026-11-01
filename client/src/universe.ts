@@ -1,19 +1,15 @@
 import { ServerError } from '@colyseus/sdk';
 import { RULESET_NAMES, SessionServerMessageType, type AccountPayload, type UniverseDetails } from '@multiverse-kiln/shared';
 
-import { startLocalization, t } from './localization';
+import { t } from './localization';
 import { CharacterApi } from './network/characterApi';
-import { connectToServer, createClient, getUniverseDetails, type ServerConnection } from './network/serverConnection';
-import { startPageLifecycle } from './pageLifecycle';
+import { createClient, getUniverseDetails, type ServerConnection } from './network/serverConnection';
+import { startPage } from './pageStart';
 import { gamePageUrl, HOME_PAGE_URL, readUniverseKey, replacePagePath, universePageUrl } from './pages';
-import { startAccountMenu } from './ui/accountMenu';
 import { CharacterSheetDialog } from './ui/CharacterSheetDialog';
 import { getElement, setPageTitle, showNoticeScreen, showScreen, showStatus } from './ui/dom';
-import { startLanguagePicker } from './ui/languagePicker';
 import { showMarkdown } from './ui/markdown';
 import { pageMessages } from './ui/pageMessages';
-import { startShortcuts } from './ui/shortcuts';
-import { startSiteSocials } from './ui/siteSocials';
 import { UniverseCharacters } from './ui/UniverseCharacters';
 
 /**
@@ -40,14 +36,15 @@ function showUniverse(universe: UniverseDetails): void
  * leaves the list hidden
  *
  * @param universe The universe
+ * @param connection The page's connection to the server (startPage())
  */
-async function followPlayer(universe: UniverseDetails): Promise<void>
+async function followPlayer(universe: UniverseDetails, connection: Promise<ServerConnection>): Promise<void>
 {
 	let server: ServerConnection;
 
 	try
 	{
-		server = await connectToServer();
+		server = await connection;
 	}
 	catch (error)
 	{
@@ -87,12 +84,8 @@ async function start(): Promise<void>
 		return;
 	}
 
-	startPageLifecycle();
-	await startLocalization();
-	void startAccountMenu();
-	startLanguagePicker();
-	void startSiteSocials();
-	startShortcuts();
+	const { server } = await startPage();
+
 	showStatus(t(pageMessages.loading));
 
 	let universe: UniverseDetails;
@@ -121,7 +114,7 @@ async function start(): Promise<void>
 	}
 
 	showUniverse(universe);
-	void followPlayer(universe);
+	void followPlayer(universe, server);
 }
 
 void start();
