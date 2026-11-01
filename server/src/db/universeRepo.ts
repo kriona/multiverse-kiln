@@ -2,7 +2,7 @@
  * Universes: the only module that reads or writes the universes table
  */
 import { and, eq, or, sql } from 'drizzle-orm';
-import { nameKey, universeSlug, type EditableUniverse, type PassageOfTime, type Ruleset, type UniverseDetails, type UniverseSettingsUpdate, type UniverseStage, type UniverseSummary } from '@multiverse-kiln/shared';
+import { nameKey, universeSlug, type EditableUniverseDetails, type PassageOfTime, type Ruleset, type UniverseDetails, type UniverseSettingsUpdate, type UniverseStage, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { fromCoinColumns, toCoinColumns } from './coinColumns.js';
@@ -290,7 +290,7 @@ export async function findUniverseDetails(key: string, stage: UniverseStage, exe
  * @param executor The database, or a transaction
  * @return The universe without the player's role, or undefined when there is none with that ID
  */
-export async function findEditableUniverse(universeId: string, executor: Executor = db): Promise<Omit<EditableUniverse, 'role'> | undefined>
+export async function findEditableUniverse(universeId: string, executor: Executor = db): Promise<EditableUniverseDetails | undefined>
 {
 	const [row] = await executor
 		.select({

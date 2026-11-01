@@ -9,45 +9,28 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { canEditUniverseSettings, canEditWorld, localize, type EditorChange, type EditorChangeKind, type NewRef, type SaveChangesPayload, type SaveRefusedPayload, type UniverseRole } from '@multiverse-kiln/shared';
+import { EDITOR_CHANGE_CHECKS, localize, mayMakeChange, type EditorChange, type NewRef, type SaveChangesPayload, type SaveRefusedPayload, type UniverseAccess } from '@multiverse-kiln/shared';
 
 import { inTransaction } from '../db/transactions.js';
+import { findUniverseAccess } from '../db/universeEditorRepo.js';
 import { findEditableUniverse, lockUniverse, UniverseNameTakenError } from '../db/universeRepo.js';
+import { universeAccessChanges } from '../players/universeAccess.js';
 import { describeInvalidPayload } from '../rooms/payloads.js';
 import { deleteObject } from '../storage/objectStorage.js';
 import { areaChanges } from '../world/areaChanges.js';
 import { applyRulesetChange, applyUniverseChange, createTileChange, removeTileChange, saveTileChange } from './editor.js';
 import { universeContextOf, type UniverseContext } from './editorAccess.js';
 import { createAreaChange, deleteAreaChange, deleteLinkChange, editCellsChange, resizeAreaChange, saveLinkChange, updateAreaChange } from './editorAreas.js';
-import { ChangeRefusal, type ChangeContext, type PreparedUpload } from './editorChangeContext.js';
+import { ChangeRefusal, refuse, type ChangeContext, type PreparedUpload } from './editorChangeContext.js';
 import { createClassChange, removeClassChange, saveClassChange } from './editorClasses.js';
 import { createDifficultyLevelChange, removeDifficultyLevelChange, saveDifficultyLevelChange } from './editorDifficultyLevels.js';
+import { addEditorChange, checkCreatorKept, playersLosingAccess, removeEditorChange, saveEditorChange } from './editorEditors.js';
 import { createItemChange, removeItemChange, saveItemChange } from './editorItems.js';
 import { saveChangesRequest } from './editorPayloads.js';
 import { createRaceChange, removeRaceChange, saveRaceChange } from './editorRaces.js';
 import { createThemeChange, removeThemeChange, saveThemeChange } from './editorThemes.js';
 import { deleteTileGraphicChange, prepareUpload, uploadTileGraphicChange } from './editorTileGraphics.js';
 import { errorMessages, type Refusal } from './errors.js';
-
-/**
- * The changes that need canEditUniverseSettings(); the rest need canEditWorld()
- */
-const SETTINGS_CHANGES = new Set<EditorChangeKind>([
-	'universe',
-	'ruleset',
-	'createRace',
-	'saveRace',
-	'removeRace',
-	'createClass',
-	'saveClass',
-	'removeClass',
-	'createTheme',
-	'saveTheme',
-	'removeTheme',
-	'createDifficultyLevel',
-	'saveDifficultyLevel',
-	'removeDifficultyLevel'
-]);
 
 /**
  * How a save went: the ID each thing made was saved with, or the change refused and why
@@ -137,7 +120,7 @@ function sendRefused(response: Response, changeIndex: number | null, refusal: Ch
  */
 export async function saveChanges(base: UniverseContext, changes: readonly EditorChange[]): Promise<SaveOutcome>
 {
-	const roleIndex = changes.findIndex((change) => !isAllowed(base.role, change));
+	const roleIndex = refusedIndex(base, base.playerId, changes);
 
 	if (roleIndex >= 0)
 	{
@@ -151,6 +134,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 		});
 	}
 
+	const lastEditorChange = changes.findLastIndex((change) => (EDITOR_CHANGE_CHECKS[change.kind] === 'manageEditors'));
 	const uploads = new Map<NewRef, PreparedUpload>();
 	let current = 0;
 	let context: ChangeContext;
@@ -185,10 +169,31 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 		{
 			await lockUniverse(base.universe.id, transaction);
 
+			// The role may have changed since the request was let in, by a save that held the lock
+			const access = await findUniverseAccess(base.universe.id, base.playerId, transaction);
+
+			if (!access)
+			{
+				refuse(403, {
+					id: 'error.noLongerEditor',
+					defaultMessage: 'You no longer have a role in this universe, so your changes can\'t be saved.',
+					description: 'Why the world editor couldn\'t save: the player\'s role in the universe was taken away while they were editing it'
+				});
+			}
+
+			const allowedIndex = refusedIndex(access, base.playerId, changes);
+
+			if (allowedIndex >= 0)
+			{
+				current = allowedIndex;
+				refuse(403, errorMessages.roleNotAllowed);
+			}
+
 			const saving: ChangeContext = {
 				playerId: base.playerId,
 				universe: base.universe,
-				role: base.role,
+				role: access.role,
+				editorRoles: new Map(),
 				transaction,
 				ids: new Map(),
 				uploads,
@@ -200,6 +205,9 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 			{
 				await applyChange(saving, changes[current]);
 			}
+
+			current = lastEditorChange;
+			await checkCreatorKept(saving);
 
 			return(saving);
 		});
@@ -224,15 +232,16 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 }
 
 /**
- * Whether a role may make a change
+ * The first change a player's role doesn't let them make
  *
- * @param role The player's role in the universe
- * @param change The change
- * @return True when it may
+ * @param access The player's role in the universe, and their languages
+ * @param playerId The player's ID
+ * @param changes The changes
+ * @return The change's place in the list, or -1 when the role allows every one
  */
-function isAllowed(role: UniverseRole, change: EditorChange): boolean
+function refusedIndex(access: UniverseAccess, playerId: string, changes: readonly EditorChange[]): number
 {
-	return((SETTINGS_CHANGES.has(change.kind) ? canEditUniverseSettings : canEditWorld)(role));
+	return(changes.findIndex((change) => !mayMakeChange(change, access, playerId)));
 }
 
 /**
@@ -271,6 +280,12 @@ async function applyChange(context: ChangeContext, change: EditorChange): Promis
 {
 	switch (change.kind)
 	{
+		case 'addEditor':
+			return(addEditorChange(context, change.username, change.settings));
+		case 'saveEditor':
+			return(saveEditorChange(context, change.playerId, change.settings));
+		case 'removeEditor':
+			return(removeEditorChange(context, change.playerId));
 		case 'universe':
 			await applyUniverseChange(context, change.update);
 			context.universe = (await findEditableUniverse(context.universe.id, context.transaction) ?? context.universe);
@@ -336,13 +351,18 @@ async function applyChange(context: ChangeContext, change: EditorChange): Promis
 
 /**
  * Finishes a save that has committed: removes the deleted tilesets' images, and tells the rooms what
- * changed, each change once
+ * changed, each change once, and who may no longer play there
  *
  * @param context The save
  */
 async function afterCommit(context: ChangeContext): Promise<void>
 {
 	await deleteImages(context.deletedImages);
+
+	universeAccessChanges.publish({
+		universeId: context.universe.id,
+		playerIds: playersLosingAccess(context)
+	});
 
 	const told = new Set<string>();
 

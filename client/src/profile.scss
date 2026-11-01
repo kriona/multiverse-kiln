@@ -22,9 +22,8 @@
 	}
 }
 
-// Each field about as wide as the longest text it takes (shared/src/profiles.ts and accounts.ts); the
-// location takes more than fits, so it keeps the panel's width
-#profile-username,
+// Each field about as wide as the longest text it takes (shared/src/profiles.ts and accounts.ts), like
+// the username (username-input); the location takes more than fits, so it keeps the panel's width
 #profile-name
 {
 	max-width: 22ch;

@@ -1,8 +1,9 @@
-import { UNIVERSE_ROLE_NAMES, type EditableUniverse, type UniverseSettingsUpdate, type UniverseSummary } from '@multiverse-kiln/shared';
+import { canEditWorld, UNIVERSE_ROLE_NAMES, type EditableUniverse, type UniverseSettingsUpdate, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
-import { editPageUrl } from '../../pages';
+import { editPageUrl, HOME_PAGE_URL } from '../../pages';
+import { EditorsTab } from './EditorsTab';
 import { closeOpenDialogs, getElement, setPageTitle, showMessage, titleLink } from '../dom';
 import { CharactersTab } from './CharactersTab';
 import { LobbyTab } from './LobbyTab';
@@ -24,6 +25,7 @@ import { AreasTab } from './AreasTab';
  */
 export const EDITOR_TABS = [
 	'universe',
+	'editors',
 	'ruleset',
 	'lobby',
 	'characters',
@@ -36,7 +38,9 @@ export type EditorTab = typeof EDITOR_TABS[number];
 
 /**
  * The order the tabs' changes are saved in: the Areas tab's maps can be painted with tiles the
- * Tilesets tab adds, so the Tilesets tab goes first and the Areas tab last
+ * Tilesets tab adds, so the Tilesets tab goes first and the Areas tab after it. The server checks every
+ * change against the role the player had when the save began, so the Editors tab's changes to roles
+ * can go anywhere
  */
 const SAVE_ORDER: readonly EditorTab[] = [
 	'tilesets',
@@ -45,8 +49,14 @@ const SAVE_ORDER: readonly EditorTab[] = [
 	'characters',
 	'universe',
 	'lobby',
-	'areas'
+	'areas',
+	'editors'
 ];
+
+/**
+ * The tabs every role sees; the others are for roles that may change the world (canEditWorld())
+ */
+const SHARED_TABS: ReadonlySet<EditorTab> = new Set(['editors', 'universe']);
 
 /**
  * Where in the editor the player is: the tab shown, and the area open in the area editor
@@ -85,11 +95,11 @@ export function isEditorTab(value: string | undefined): value is EditorTab
 }
 
 /**
- * Edit Universe: a universe's settings, ruleset (and the difficulty levels), lobby, characters (and their
- * races, classes and, in a ruleset with them, themes), tiles, areas and items, in tabs
+ * Edit Universe: a universe's editors, settings, ruleset (and the difficulty levels), lobby, characters
+ * (and their races, classes and, in a ruleset with them, themes), tiles, areas and items, in tabs
  *
- * What the player may change depends on their role in the universe; the server checks it again on
- * every change, so the page only hides controls that would be refused
+ * What the player may see and change depends on their role in the universe; the server checks it again
+ * on every change, so the page only hides controls that would be refused
  */
 export class EditorScreen
 {
@@ -107,6 +117,7 @@ export class EditorScreen
 	private readonly tilesetsTab: TilesetsTab;
 	private readonly areasTab: AreasTab;
 	private readonly itemsTab: ItemsTab;
+	private readonly editorsTab: EditorsTab;
 
 	/**
 	 * Saves every tab, which keep their changes on the page until then
@@ -164,6 +175,19 @@ export class EditorScreen
 			this.setPlace({ ...this.place, areaId });
 		});
 		this.itemsTab = new ItemsTab(api);
+		this.editorsTab = new EditorsTab(api, {
+			ownRoleChanged: () =>
+			{
+				if (this.universe)
+				{
+					void this.open(this.universe.id, this.place);
+				}
+			},
+			left: () =>
+			{
+				window.location.assign(HOME_PAGE_URL);
+			}
+		});
 		this.saveBar = new SaveBar(api, () => this.universe?.id, (tab) =>
 		{
 			const name = EDITOR_TABS.find((candidate) => (this.savableTabs[candidate] === tab));
@@ -178,6 +202,7 @@ export class EditorScreen
 		});
 
 		this.savableTabs = {
+			editors: this.editorsTab,
 			universe: this.universeTab,
 			ruleset: combineTabs(this.rulesetTab, this.difficultySection),
 			lobby: this.lobbyTab,
@@ -291,7 +316,36 @@ export class EditorScreen
 		this.tilesetsTab.open(universe);
 		this.areasTab.open(universe, place.areaId);
 		this.itemsTab.open(universe);
+		this.editorsTab.open(universe);
+
+		for (const name of EDITOR_TABS)
+		{
+			getElement(`editor-tab-${name}`, HTMLButtonElement).hidden = !this.canSeeTab(name);
+		}
+
 		this.selectTab(this.place.tab);
+	}
+
+	/**
+	 * Whether the player's role shows a tab: beta testers and translators see only the editors and the
+	 * universe's settings
+	 *
+	 * @param name The tab
+	 * @return True when it does
+	 */
+	private canSeeTab(name: EditorTab): boolean
+	{
+		return(SHARED_TABS.has(name) || ((this.universe !== undefined) && canEditWorld(this.universe.role)));
+	}
+
+	/**
+	 * The tabs the player's role shows, in order
+	 *
+	 * @return The tabs
+	 */
+	private visibleTabs(): EditorTab[]
+	{
+		return(EDITOR_TABS.filter((name) => this.canSeeTab(name)));
 	}
 
 	/**
@@ -397,8 +451,9 @@ export class EditorScreen
 	 */
 	private moveBetweenTabs(event: KeyboardEvent, current: EditorTab): void
 	{
-		const index = EDITOR_TABS.indexOf(current);
-		const last = EDITOR_TABS.length - 1;
+		const tabs = this.visibleTabs();
+		const index = tabs.indexOf(current);
+		const last = tabs.length - 1;
 		const targets: Record<string, number> = {
 			ArrowLeft: ((index === 0) ? last : (index - 1)),
 			ArrowRight: ((index === last) ? 0 : (index + 1)),
@@ -413,18 +468,21 @@ export class EditorScreen
 		}
 
 		event.preventDefault();
-		this.selectTab(EDITOR_TABS[target]);
-		getElement(`editor-tab-${EDITOR_TABS[target]}`, HTMLButtonElement).focus();
+		this.selectTab(tabs[target]);
+		getElement(`editor-tab-${tabs[target]}`, HTMLButtonElement).focus();
 	}
 
 	/**
 	 * Shows one tab and hides the others. Only the tab shown is in the Tab key's order; the arrow keys
-	 * move between tabs (see moveBetweenTabs)
+	 * move between tabs (see moveBetweenTabs). A tab the player's role doesn't show gives way to the
+	 * Universe tab
 	 *
-	 * @param selected The tab to show
+	 * @param tab The tab to show
 	 */
-	private selectTab(selected: EditorTab): void
+	private selectTab(tab: EditorTab): void
 	{
+		const selected = (this.canSeeTab(tab) ? tab : 'universe');
+
 		for (const name of EDITOR_TABS)
 		{
 			const tab = getElement(`editor-tab-${name}`, HTMLButtonElement);

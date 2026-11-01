@@ -29,6 +29,7 @@ import { addRaceRoutes } from './editorRaces.js';
 import { addThemeRoutes } from './editorThemes.js';
 import { addTileGraphicRoutes } from './editorTileGraphics.js';
 import { addDifficultyLevelRoutes } from './editorDifficultyLevels.js';
+import { addEditorListRoutes } from './editorEditors.js';
 import { checkStartingReferences } from './editorStartingExtras.js';
 import { addAreaRoutes, lobbyTimeProblem, timeSettingsProblem } from './editorAreas.js';
 import { errorMessages, sendError, sendInvalidRequest, type Refusal } from './errors.js';
@@ -113,6 +114,7 @@ function createEditorRouter(allowedOrigins: Set<string>): express.Router
 
 	universeRouter.get('/', getUniverse);
 	addChangeRoutes(universeRouter);
+	addEditorListRoutes(universeRouter);
 	universeRouter.get('/ruleset', getRulesetSettings);
 	universeRouter.get('/tiles', listTiles);
 	universeRouter.get('/tiles/:tileId/usage', tileUsage);
@@ -281,8 +283,13 @@ async function createUniverseRoute(request: Request, response: Response): Promis
  */
 function getUniverse(request: Request, response: Response): void
 {
-	const { universe, role } = universeContextOf(request);
-	const payload: EditableUniverse = { ...universe, role };
+	const { playerId, universe, role, languages } = universeContextOf(request);
+	const payload: EditableUniverse = {
+		...universe,
+		role,
+		languages: [...languages],
+		playerId
+	};
 
 	response.json(payload);
 }

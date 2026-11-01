@@ -20,6 +20,7 @@
 				<p id="editor-notice" class="notice" role="status" hidden></p>
 				<div class="tabs" role="tablist">
 					<button id="editor-tab-universe" type="button" role="tab" aria-controls="editor-panel-universe" data-message="editor.tab.universe" data-translation-context="Tab of the editor with the universe's own settings"><!-- icon game-icons:galaxy -->Universe</button>
+					<button id="editor-tab-editors" type="button" role="tab" aria-controls="editor-panel-editors" data-message="editor.tab.editors" data-translation-context="Tab of the editor listing the players who can work on or test the universe, and their roles"><!-- icon ph:users -->Editors</button>
 					<button id="editor-tab-ruleset" type="button" role="tab" aria-controls="editor-panel-ruleset" data-message="editor.tab.ruleset" data-translation-context="Tab of the editor with the settings of the universe's game rules, such as how ability scores are made"><!-- icon game-icons:rule-book -->Ruleset</button>
 					<button id="editor-tab-lobby" type="button" role="tab" aria-controls="editor-panel-lobby" data-message="editor.tab.lobby" data-translation-context="Tab of the editor with the lobby's settings"><!-- icon game-icons:campfire -->Lobby</button>
 					<button id="editor-tab-characters" type="button" role="tab" aria-controls="editor-panel-characters" data-message="editor.tab.characters" data-translation-context="Tab of the editor with what characters start with and how many play together"><!-- icon game-icons:character -->Characters</button>
@@ -81,6 +82,27 @@
 								<p id="universe-error" class="form-error" role="alert" hidden></p>
 							</fieldset>
 						</form>
+					</section>
+
+					<section id="editor-panel-editors" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-editors" hidden>
+						<div class="filters">
+							<p class="hint" data-message="editor.editors.hint" data-translation-context="Explains the roles on the editor's Editors tab">Creators can change everything, builders can change the world, beta testers can play the universe before it opens to everyone, and translators can translate it into their languages.</p>
+							<button id="editors-add" type="button" data-shortcut="Alt+N" data-message="editor.editors.add" data-translation-context="Button on the editor's Editors tab that opens the dialog for giving a player a role in the universe"><!-- icon ph:user-plus -->Add Editor</button>
+							<button id="editors-leave" type="button" class="secondary" data-shortcut="Alt+L" data-message="editor.editors.leave" data-translation-context="Button on the editor's Editors tab that gives up the player's own role in the universe when the tab is saved" hidden><!-- icon ph:sign-out -->Leave Universe</button>
+						</div>
+						<p id="editors-error" class="form-error" role="alert" hidden></p>
+						<table class="item-table">
+							<thead>
+								<tr>
+									<th scope="col" data-message="editor.editors.username" data-translation-context="Heading of the column of usernames on the editor's Editors tab">Username</th>
+									<th scope="col" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</th>
+									<th scope="col" data-message="editor.editors.role" data-translation-context="Heading of the column of roles (such as creator or builder) on the editor's Editors tab, and the label of the role field in its dialog">Role</th>
+									<th scope="col" data-message="editor.editors.languages" data-translation-context="Heading of the column on the editor's Editors tab listing the languages each translator may translate the universe into, and the label of that field in its dialog">Languages</th>
+									<th scope="col" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet">Notes</th>
+								</tr>
+							</thead>
+							<tbody id="editors-rows"></tbody>
+						</table>
 					</section>
 
 					<section id="editor-panel-ruleset" class="editor-panel editor-cards" role="tabpanel" aria-labelledby="editor-tab-ruleset" hidden>
@@ -486,6 +508,44 @@
 					<span id="editor-save-status" class="form-saved" role="status"></span>
 					<button id="editor-save" type="button" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
 				</footer>
+				<dialog id="editor-dialog" class="panel dialog option-dialog" aria-labelledby="editor-dialog-title">
+					<form id="editor-form" class="form">
+						<fieldset class="plain">
+							<h2 id="editor-dialog-title"></h2>
+							<div id="editor-player-field" class="form-group">
+								<div class="field-label">
+									<span id="editor-player-label" data-message="editor.editors.player" data-translation-context="Label of the field in the dialog for adding an editor on the editor's Editors tab that finds the player to add by name or username">Player</span>
+									<div class="combobox-field">
+										<!-- Another player's username, which password managers must leave alone. They ignore autocomplete="off" and decide what to fill from the field's ID and type, so it is a search field without "username" in its IDs, with each manager's own opt-out as well -->
+										<input id="editor-player" type="search" class="username-input" role="combobox" autocomplete="off" autocapitalize="none" spellcheck="false" aria-autocomplete="list" aria-expanded="false" aria-controls="editor-player-options" aria-labelledby="editor-player-label" aria-describedby="editor-player-hint" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other" />
+										<ul id="editor-player-options" class="combobox-options" role="listbox" aria-labelledby="editor-player-label" hidden></ul>
+									</div>
+								</div>
+								<p id="editor-player-error" class="field-error field-message-slot"></p>
+								<p id="editor-player-hint" class="hint" data-message="editor.editors.playerHint" data-translation-context="Under the field in the dialog for adding an editor on the editor's Editors tab that finds the player to add">Type their name, or @ and their username, then choose them from the list.</p>
+							</div>
+							<label data-message="editor.editors.role" data-translation-context="Heading of the column of roles (such as creator or builder) on the editor's Editors tab, and the label of the role field in its dialog">
+								Role
+								<select id="editor-role-select"></select>
+							</label>
+							<div id="editor-languages-field" class="field-label" hidden>
+								<span id="editor-languages-label" data-message="editor.editors.languages" data-translation-context="Heading of the column on the editor's Editors tab listing the languages each translator may translate the universe into, and the label of that field in its dialog">Languages</span>
+								<ul id="editor-languages-chosen" class="chips" aria-labelledby="editor-languages-label" hidden></ul>
+								<div class="combobox-field">
+									<input id="editor-languages-search" type="text" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="editor-languages-options" aria-labelledby="editor-languages-label" aria-describedby="editor-languages-hint" data-untracked placeholder="Search languages" data-message-placeholder="editor.editors.languagesSearch" data-translation-context-placeholder="Shown in the empty search field for choosing the languages a translator may translate a universe into, in the dialog on the editor's Editors tab" />
+									<ul id="editor-languages-options" class="combobox-options" role="listbox" aria-labelledby="editor-languages-label" hidden></ul>
+								</div>
+								<p id="editor-languages-hint" class="hint" data-message="editor.editors.languagesHint" data-translation-context="Under the languages field in the dialog on the editor's Editors tab, shown when the role chosen is translator">The languages they may translate the universe's text into.</p>
+							</div>
+							<p id="editor-dialog-error" class="form-error" role="alert" hidden></p>
+							<div class="form-buttons">
+								<button id="editor-remove" type="button" class="danger" aria-describedby="editor-dialog-error"></button>
+								<button id="editor-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+								<button id="editor-apply" type="submit" aria-describedby="editor-dialog-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile or area link) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
+							</div>
+						</fieldset>
+					</form>
+				</dialog>
 				<dialog id="item-dialog" class="panel dialog" aria-labelledby="item-dialog-title">
 					<form id="item-form" class="form">
 						<fieldset id="item-fields" class="plain">

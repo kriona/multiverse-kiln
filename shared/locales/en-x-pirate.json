@@ -967,6 +967,102 @@
 		"message": "Show the hour",
 		"source": "Display time"
 	},
+	"editor.editors.add": {
+		"message": "Sign On a Hand",
+		"source": "Add Editor"
+	},
+	"editor.editors.addTitle": {
+		"message": "Sign On a Hand",
+		"source": "Add Editor"
+	},
+	"editor.editors.choosePlayer": {
+		"message": "Search for the sailor by name or username, and pick them from the list.",
+		"source": "Search for the player by name or username, and choose them from the list."
+	},
+	"editor.editors.editTitle": {
+		"message": "Reassign {username}",
+		"source": "Edit {username}"
+	},
+	"editor.editors.hint": {
+		"message": "Captains can change anything, shipwrights can build the world, deckhands can sail the universe before it opens to all, and translators can turn its words into their tongues.",
+		"source": "Creators can change everything, builders can change the world, beta testers can play the universe before it opens to everyone, and translators can translate it into their languages."
+	},
+	"editor.editors.languages": {
+		"message": "Tongues",
+		"source": "Languages"
+	},
+	"editor.editors.languagesHint": {
+		"message": "The tongues they may turn the universe's words into.",
+		"source": "The languages they may translate the universe's text into."
+	},
+	"editor.editors.languagesNeeded": {
+		"message": "Pick the tongues they may translate into, matey.",
+		"source": "Choose the languages they may translate into."
+	},
+	"editor.editors.languagesSearch": {
+		"message": "Search the tongues",
+		"source": "Search languages"
+	},
+	"editor.editors.languagesTooMany": {
+		"message": "A translator can speak up to {max, plural, one {# tongue} other {# tongues}}.",
+		"source": "A translator can have up to {max, plural, one {# language} other {# languages}}."
+	},
+	"editor.editors.leave": {
+		"message": "Jump Ship",
+		"source": "Leave Universe"
+	},
+	"editor.editors.leaveQuestion": {
+		"message": "Once ye save, ye give up yer post ({role}) in {universe} and can no longer open it in the editor. {play, select, yes {Ye can still sail it, since it be open to all.} other {Ye can't sail it till it opens to all, and ye'll be put ashore from its tavern and yer crews there.}} {lastCreator, select, yes {Ye be its only captain, so make another hand a captain first, or the save will be refused.} other {Only a captain can give ye a post again.}} Till ye save, Stay Aboard keeps yer post.",
+		"source": "Once you save, you lose your role ({role}) in {universe} and can no longer open it in the editor. {play, select, yes {You can still play it, since it is open to everyone.} other {You can't play it until it opens to everyone, and you will be turned out of its lobby and your groups there.}} {lastCreator, select, yes {You are its only creator, so make another editor a creator first, or the save will be refused.} other {Only a creator can give you a role again.}} Until you save, Undo Leave keeps your role."
+	},
+	"editor.editors.leaveTitle": {
+		"message": "Jump ship from {universe}?",
+		"source": "Leave {universe}?"
+	},
+	"editor.editors.listFailed": {
+		"message": "Couldn't muster the crew list.",
+		"source": "Could not list the editors."
+	},
+	"editor.editors.player": {
+		"message": "Sailor",
+		"source": "Player"
+	},
+	"editor.editors.playerHint": {
+		"message": "Type their name, or @ and their username, then pick them from the list.",
+		"source": "Type their name, or @ and their username, then choose them from the list."
+	},
+	"editor.editors.remove": {
+		"message": "Put Ashore",
+		"source": "Remove Editor"
+	},
+	"editor.editors.removedNote": {
+		"message": "(put ashore when saved)",
+		"source": "(loses their role when saved)"
+	},
+	"editor.editors.role": {
+		"message": "Post",
+		"source": "Role"
+	},
+	"editor.editors.saveFailed": {
+		"message": "Couldn't stow the changes to {username}.",
+		"source": "Could not save the changes to {username}."
+	},
+	"editor.editors.undoLeave": {
+		"message": "Stay Aboard",
+		"source": "Undo Leave"
+	},
+	"editor.editors.undoRemove": {
+		"message": "Keep Aboard",
+		"source": "Undo Remove"
+	},
+	"editor.editors.username": {
+		"message": "Username",
+		"source": "Username"
+	},
+	"editor.editors.youTag": {
+		"message": "ye",
+		"source": "you"
+	},
 	"editor.error.failedBecause": {
 		"message": "{failure} {reason}",
 		"source": "{failure} {reason}"
@@ -1675,6 +1771,10 @@
 		"message": "Crew",
 		"source": "Characters"
 	},
+	"editor.tab.editors": {
+		"message": "Officers",
+		"source": "Editors"
+	},
 	"editor.tab.items": {
 		"message": "Booty",
 		"source": "Items"
@@ -2247,6 +2347,10 @@
 		"message": "Wrong codes were tried on yer account on {siteName}",
 		"source": "Wrong codes were typed for your account on {siteName}"
 	},
+	"error.alreadyEditor": {
+		"message": "{username} already serves aboard this universe.",
+		"source": "{username} already has a role in this universe."
+	},
 	"error.alreadyInGroup": {
 		"message": "That hand already sails with a crew. They have to jump ship first.",
 		"source": "That character is already in a group. They have to leave it first."
@@ -2495,6 +2599,10 @@
 		"message": "Booty needs a name.",
 		"source": "An item needs a name."
 	},
+	"error.lastCreator": {
+		"message": "Every universe needs a captain. Make another hand a captain first.",
+		"source": "A universe needs at least one creator. Make another editor a creator first."
+	},
 	"error.lastRitesOff": {
 		"message": "There be no last rites on this ship. Hands can only be thrown overboard on the spot.",
 		"source": "Characters can't be given their last rites on this site. They can only be deleted immediately."
@@ -2531,6 +2639,10 @@
 		"message": "A universe needs at least one yarn open to all hands, so new crew have one to spin.",
 		"source": "A universe needs at least one enabled theme, so new characters have one to choose."
 	},
+	"error.noLongerEditor": {
+		"message": "Ye no longer serve aboard this universe, so yer changes can't be stowed.",
+		"source": "You no longer have a role in this universe, so your changes can't be saved."
+	},
 	"error.noSuchArea": {
 		"message": "That area be lost at sea.",
 		"source": "The area doesn't exist."
@@ -2551,6 +2663,10 @@
 		"message": "That peril be lost at sea.",
 		"source": "The difficulty level doesn't exist."
 	},
+	"error.noSuchEditor": {
+		"message": "That hand no longer serves aboard this universe.",
+		"source": "They are no longer one of the universe's editors."
+	},
 	"error.noSuchGroup": {
 		"message": "That crew has sunk, or that hand ain't aboard.",
 		"source": "The group doesn't exist any more, or that character isn't in it."
@@ -2564,6 +2680,10 @@
 		"source": "There is no link on that cell."
 	},
 	"error.noSuchPlayer": {
+		"message": "No sailor goes by that username.",
+		"source": "No player has that username."
+	},
+	"error.noSuchPlayerToAdd": {
 		"message": "No sailor goes by that username.",
 		"source": "No player has that username."
 	},
@@ -2826,6 +2946,10 @@
 	"form.wholeNumber": {
 		"message": "Give a whole number from {min, number} to {max, number}, matey.",
 		"source": "Enter a whole number from {min, number} to {max, number}."
+	},
+	"game.accessLost": {
+		"message": "Yer post in {universe} was changed or stripped, so ye can't sail it while it stands at its current stage.",
+		"source": "Your role in {universe} was changed or taken away, so you can't play it while it is in its current stage."
 	},
 	"game.loadingUniverse": {
 		"message": "Unrollin' the charts...",
@@ -4215,6 +4339,22 @@
 		"message": "{city} ({zoneName}), where the ship's bell says {time}",
 		"source": "{city} ({zoneName}), where it's {time} now"
 	},
+	"playerSearch.chosen": {
+		"message": "{name} (@{username})",
+		"source": "{name} (@{username})"
+	},
+	"playerSearch.noMatches": {
+		"message": "No sailors answer to that",
+		"source": "No players match"
+	},
+	"playerSearch.searching": {
+		"message": "Scanning the horizon...",
+		"source": "Searching..."
+	},
+	"playerSearch.typeToSearch": {
+		"message": "Scrawl at least {min, plural, one {# letter} other {# letters}} of a name, or @ and a username",
+		"source": "Type at least {min, plural, one {# character} other {# characters}} of a name, or @ and a username"
+	},
 	"privacy.account": {
 		"message": "Yer account",
 		"source": "Your account"
@@ -5394,6 +5534,10 @@
 	"universe.role.creator": {
 		"message": "captain",
 		"source": "creator"
+	},
+	"universe.role.translator": {
+		"message": "translator",
+		"source": "translator"
 	},
 	"universe.ruleset": {
 		"message": "Ship's articles",

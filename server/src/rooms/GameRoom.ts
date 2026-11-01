@@ -14,8 +14,10 @@ import { loadChunksAt, loadArea } from '../db/areaRepo.js';
 import { characterChanges, type CharacterChange } from '../players/characterChanges.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { groupChanges, type GroupChange } from '../players/groupChanges.js';
+import { universeAccessChanges } from '../players/universeAccess.js';
 import { areaChanges } from '../world/areaChanges.js';
 import { InvalidMessages } from './invalidMessages.js';
+import { mayPlayUniverse } from './universePlay.js';
 import { controlPayload, describeInvalidPayload, gameJoinOptions, movePayload } from './payloads.js';
 import { AreaCache, type ActiveArea } from './areaCache.js';
 import { CHUNK_REFRESH_INTERVAL_MS, SIMULATION_TICK_RATE, AreaPlayers, type Appearance, type PlayerPosition } from './areaPlayers.js';
@@ -322,6 +324,13 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			connectedSessions.onEnd((sessionIds) =>
 			{
 				this.turnAwaySessions(sessionIds);
+			}),
+			universeAccessChanges.onLost((change) =>
+			{
+				if (change.universeId === this.universeId)
+				{
+					this.turnAwayPlayers(change.playerIds);
+				}
 			})
 		);
 	}
@@ -347,7 +356,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		const session = await resolveSession(context.headers.get('cookie'));
 		const member = this.members.get(joinOptions.data.characterId);
 
-		if (!session || (member?.playerId !== session.playerId) || !member.playable)
+		if (!session || (member?.playerId !== session.playerId) || !member.playable || !await mayPlayUniverse(this.universeId, session.playerId))
 		{
 			return(false);
 		}
@@ -863,6 +872,22 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			if (sessionIds.has(identityOf(client).sessionId))
 			{
 				client.leave(ServerCloseCode.LoggedOut);
+			}
+		}
+	}
+
+	/**
+	 * Turns away the windows of players who may no longer play the universe
+	 *
+	 * @param playerIds The players
+	 */
+	private turnAwayPlayers(playerIds: ReadonlySet<string>): void
+	{
+		for (const client of this.clients)
+		{
+			if (playerIds.has(identityOf(client).playerId))
+			{
+				client.leave(ServerCloseCode.AccessLost);
 			}
 		}
 	}

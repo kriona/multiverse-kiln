@@ -25,6 +25,8 @@ import type { DisplayTime, FaerieMorning, LobbyPassageOfTime, PassageOfTime, Rul
  * - POST   /                                       NewUniverseRequest -> CreatedPayload: a universe the player creates
  * - GET    /:universeId                            EditableUniverse
  * - POST   /:universeId/changes                    SaveChangesRequest -> SaveChangesPayload: saves the editor's changes, all or nothing (see editorChanges.ts)
+ * - GET    /:universeId/editors                    UniverseEditorListPayload: everyone with a role in the universe
+ * - GET    /:universeId/editors/search             PlayerSearchQuery as query parameters -> PlayerSearchPayload: players to add, by username or name (canManageEditors())
  * - GET    /:universeId/ruleset                    RulesetSettings
  * - GET    /:universeId/tiles                      TileListQuery as query parameters -> TileListPayload
  * - GET    /:universeId/tiles/:tileId/usage        TileUsagePayload: the areas whose maps use the tile
@@ -383,6 +385,106 @@ export interface EditableUniverse extends UniverseSettings
 	 * The player's role, which decides what they may change
 	 */
 	role: UniverseRole;
+
+	/**
+	 * The languages the player may translate the universe into, as a translator; empty for other roles
+	 */
+	languages: string[];
+
+	/**
+	 * The player's own ID, which the Editors tab finds them by
+	 */
+	playerId: string;
+}
+
+/**
+ * A universe as the server reads it, before it is told whose editor it is for
+ */
+export type EditableUniverseDetails = Omit<EditableUniverse, 'role' | 'languages' | 'playerId'>;
+
+/**
+ * Someone with a role in a universe, as the Editors tab lists them
+ */
+export interface UniverseEditorSummary
+{
+	playerId: string;
+	username: string;
+	displayName: string;
+	role: UniverseRole;
+
+	/**
+	 * The languages a translator may translate into, by tag; empty for other roles
+	 */
+	languages: string[];
+}
+
+/**
+ * Response of GET EDITOR_UNIVERSES_PATH/:universeId/editors, by username
+ */
+export interface UniverseEditorListPayload
+{
+	editors: UniverseEditorSummary[];
+}
+
+/**
+ * Most players one search for players returns
+ */
+export const MAX_PLAYER_SEARCH_RESULTS = 10;
+
+/**
+ * Fewest characters a search for players needs, not counting a leading @, so a search narrows the
+ * players down rather than listing them
+ */
+export const MIN_PLAYER_SEARCH_LENGTH = 3;
+
+/**
+ * Query parameters of GET EDITOR_UNIVERSES_PATH/:universeId/editors/search: what was typed, matched
+ * against usernames and names, ignoring capitals. Text starting with @ is matched against usernames
+ * only, without the @ (see parsePlayerSearch())
+ */
+export interface PlayerSearchQuery
+{
+	query: string;
+}
+
+/**
+ * A player a search found
+ */
+export interface PlayerMatch
+{
+	playerId: string;
+	username: string;
+	displayName: string;
+}
+
+/**
+ * Response of GET EDITOR_UNIVERSES_PATH/:universeId/editors/search, which answers 400 for a query with
+ * fewer than MIN_PLAYER_SEARCH_LENGTH characters besides a leading @: up to MAX_PLAYER_SEARCH_RESULTS
+ * players whose username or name holds what was typed, other than the universe's editors. The player
+ * with exactly that username comes first, then those whose username starts with it, then the rest, each
+ * by username
+ */
+export interface PlayerSearchPayload
+{
+	players: PlayerMatch[];
+}
+
+/**
+ * What a search for players looks for: text typed starting with @ is a username, and anything else
+ * a username or a name
+ *
+ * @param query What was typed
+ * @return The text to match, trimmed and without the @, and whether only usernames are matched
+ */
+export function parsePlayerSearch(query: string): { text: string; usernameOnly: boolean }
+{
+	const trimmed = query.trim();
+	const usernameOnly = trimmed.startsWith('@');
+
+	return({
+		text: (usernameOnly ? trimmed.slice(1).trim() : trimmed),
+		usernameOnly
+	});
 }
 
 /**

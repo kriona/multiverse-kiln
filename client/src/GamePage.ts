@@ -571,6 +571,23 @@ export class GamePage
 	}
 
 	/**
+	 * Says the player was turned out of the universe because their role in it changed
+	 *
+	 * @param universe The universe's name
+	 */
+	private showAccessLost(universe: string): void
+	{
+		this.destination = { kind: 'none' };
+		this.showOutside(t({
+			id: 'game.accessLost',
+			defaultMessage: 'Your role in {universe} was changed or taken away, so you can\'t play it while it is in its current stage.',
+			description: 'Shown on the game\'s page when the player was turned out of a universe they were playing because one of its creators changed or removed their role, or they left it; {universe} is its name'
+		}, {
+			universe
+		}));
+	}
+
+	/**
 	 * Explains to the player why something they asked for didn't happen
 	 *
 	 * @param reason Why
@@ -937,6 +954,12 @@ export class GamePage
 			return;
 		}
 
+		if (code === ServerCloseCode.AccessLost.valueOf())
+		{
+			this.showAccessLost(joined.universe.name);
+			return;
+		}
+
 		console.error(`Disconnected from the lobby (code ${code})`);
 		this.destination = { kind: 'none' };
 		this.showOutside(t({
@@ -1057,6 +1080,12 @@ export class GamePage
 		if (code === ServerCloseCode.UniverseDeleted.valueOf())
 		{
 			this.showUniverseDeleted((this.universe?.name ?? ''));
+			return;
+		}
+
+		if (code === ServerCloseCode.AccessLost.valueOf())
+		{
+			this.showAccessLost((this.universe?.name ?? ''));
 			return;
 		}
 

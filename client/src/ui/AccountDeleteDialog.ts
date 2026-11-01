@@ -1,4 +1,4 @@
-import { EMAIL_CODE_LIFETIME_MINUTES, MAX_PASSWORD_LENGTH, UNIVERSE_ROLE_NAMES, type AccountDeletionPayload, type UniverseDecision } from '@multiverse-kiln/shared';
+import { EMAIL_CODE_LIFETIME_MINUTES, MAX_PASSWORD_LENGTH, MAX_USERNAME_LENGTH, UNIVERSE_ROLE_NAMES, type AccountDeletionPayload, type UniverseDecision } from '@multiverse-kiln/shared';
 
 import { currentLocale, t } from '../localization';
 import { authFieldOf, type AuthApi } from '../network/authApi';
@@ -73,6 +73,7 @@ export class AccountDeleteDialog
 	constructor(private readonly profileApi: ProfileApi, private readonly authApi: AuthApi, private readonly deleted: () => void)
 	{
 		this.password.maxLength = MAX_PASSWORD_LENGTH;
+		this.username.maxLength = MAX_USERNAME_LENGTH;
 
 		for (const field of [this.password, this.code, this.emailCode, this.username])
 		{
