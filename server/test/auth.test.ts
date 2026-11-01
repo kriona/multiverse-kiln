@@ -380,6 +380,20 @@ describe('auth routes', () =>
 			assert.strictEqual(await browser.username(), 'ada');
 		});
 
+		it('records when the account last logged in', async () =>
+		{
+			await register('ada@example.com', 'ada');
+			await pool.query('UPDATE players SET last_login_at = NULL WHERE username = $1', ['ada']);
+
+			const before = Date.now();
+
+			await new Browser().send('POST', AUTH_LOGIN_PATH, { email: 'ada@example.com', password: PASSWORD, rememberMe: false });
+
+			const [row] = (await pool.query<{ last_login_at: Date | null }>('SELECT last_login_at FROM players WHERE username = $1', ['ada'])).rows;
+
+			assert.ok((row.last_login_at !== null) && (row.last_login_at.getTime() >= before));
+		});
+
 		it('ends the session a browser was already logged in with when it logs in again', async () =>
 		{
 			const browser = await register('ada@example.com', 'ada');

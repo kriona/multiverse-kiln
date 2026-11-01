@@ -178,7 +178,8 @@ describe('playerRepo', () =>
 				...changes,
 				email: 'ada@example.com',
 				hasPassword: true,
-				createdAt: own.createdAt
+				createdAt: own.createdAt,
+				lastLoginAt: null
 			});
 			assert.deepStrictEqual(await findProfileByUsername('ADA_L'), {
 				id: ada.id,

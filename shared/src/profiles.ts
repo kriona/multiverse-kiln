@@ -400,6 +400,11 @@ export interface AccountExport
 		locale: string | null;
 		showCharacters: boolean;
 		createdAt: string;
+
+		/**
+		 * When the player last logged in, or null when they never have
+		 */
+		lastLoginAt: string | null;
 	};
 
 	/**

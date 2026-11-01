@@ -258,6 +258,12 @@ export interface SessionPlayer
 	 * null when they haven't chosen one
 	 */
 	locale: string | null;
+
+	/**
+	 * Whether the player is a server admin, who sees the link to the admin pages. They can use them only
+	 * with 2FA on
+	 */
+	serverAdmin: boolean;
 }
 
 /**

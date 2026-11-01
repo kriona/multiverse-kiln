@@ -25,6 +25,7 @@ import { deleteEmailCode, deletePlayerEmailCodes, lockContinuation, lockEmailCod
 import { AccountTakenError, createPlayer, findLocalLogin, findPasswordHash, findPlayerByUsername, findPlayerEmail, findPlayerIdByEmail, saveEmail, savePasswordHash } from '../db/playerRepo.js';
 import { lockPendingProviderLogin } from '../db/providerLoginRepo.js';
 import { findRateLimitTimes, lockRateLimitSubject, recordRateLimitEvent } from '../db/rateLimitRepo.js';
+import { isServerAdmin } from '../db/serverAdminRepo.js';
 import { deletePlayerSessions } from '../db/sessionRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { deleteTrustedBrowsers, savePendingTwoFactorLogin } from '../db/twoFactorRepo.js';
@@ -295,7 +296,8 @@ async function sessionRoute(request: Request, response: Response): Promise<void>
 			playerId: session.playerId,
 			username: session.username,
 			name: session.name,
-			locale: session.locale
+			locale: session.locale,
+			serverAdmin: await isServerAdmin(session.playerId)
 		} : null)
 	};
 

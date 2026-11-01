@@ -1,3 +1,5 @@
+import type { SessionPlayer } from '@multiverse-kiln/shared';
+
 import { t } from '../localization';
 import { AuthApi } from '../network/authApi';
 import { createClient } from '../network/serverConnection';
@@ -5,7 +7,7 @@ import { showToast } from './toast';
 
 /**
  * Shows the logged-in player's name at the end of each of the page's toolbars (partials/account.html),
- * as a button that opens a menu: Edit profile, and Log out. The menus stay hidden while the browser
+ * as a button that opens a menu: Edit profile, Site admin for server admins, and Log out. The menus stay hidden while the browser
  * isn't logged in, or when the server can't be reached
  *
  * The name the server last gave is remembered in the browser, and public/remembered-account.js draws the
@@ -45,11 +47,11 @@ export async function startAccountMenu(): Promise<void>
 		}
 	});
 
-	let name: string | null;
+	let player: SessionPlayer | null;
 
 	try
 	{
-		name = ((await api.getSession())?.name ?? null);
+		player = await api.getSession();
 	}
 	catch (error)
 	{
@@ -57,11 +59,14 @@ export async function startAccountMenu(): Promise<void>
 		return;
 	}
 
+	const name = (player?.name ?? null);
+
 	rememberName(name);
 
 	for (const menu of menus)
 	{
 		menu.showName(name);
+		menu.showAdminLink(player?.serverAdmin ?? false);
 	}
 }
 
@@ -149,7 +154,7 @@ class AccountMenu
 {
 	private readonly button: HTMLButtonElement;
 	private readonly list: HTMLElement;
-	private readonly items: HTMLElement[];
+	private readonly adminItem: HTMLElement;
 
 	private readonly name: HTMLElement;
 
@@ -165,7 +170,7 @@ class AccountMenu
 		this.button = requireChild(menu, '.account-menu-button', HTMLButtonElement);
 		this.list = requireChild(menu, '.account-menu-list', HTMLElement);
 		this.name = requireChild(menu, '.account-menu-name', HTMLElement);
-		this.items = [...this.list.querySelectorAll<HTMLElement>('[role="menuitem"]')];
+		this.adminItem = requireChild(menu, '.account-menu-admin', HTMLElement);
 		this.list.id = `account-menu-${index}`;
 		this.button.setAttribute('aria-controls', this.list.id);
 
@@ -244,6 +249,26 @@ class AccountMenu
 		this.button.setAttribute('aria-label', label);
 		this.button.title = label;
 		this.menu.hidden = false;
+	}
+
+	/**
+	 * Shows or hides the Site admin item
+	 *
+	 * @param shown Whether the player is a server admin
+	 */
+	showAdminLink(shown: boolean): void
+	{
+		this.adminItem.hidden = !shown;
+	}
+
+	/**
+	 * The menu's items that are shown, in order
+	 *
+	 * @return The items
+	 */
+	private get items(): HTMLElement[]
+	{
+		return([...this.list.querySelectorAll<HTMLElement>('li:not([hidden]) > [role="menuitem"]')]);
 	}
 
 	/**

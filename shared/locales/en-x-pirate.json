@@ -31,6 +31,14 @@
 		"message": "Yer account: {name}",
 		"source": "Your account: {name}"
 	},
+	"account.siteAdmin": {
+		"message": "Captain's quarters",
+		"source": "Site admin"
+	},
+	"admin.back": {
+		"message": "The Captain's Quarters",
+		"source": "Site Admin"
+	},
 	"admin.characterDeletionDays": {
 		"message": "Days 'twixt last rites and Davy Jones",
 		"source": "Days between last rites and deletion"
@@ -43,13 +51,97 @@
 		"message": "Hands",
 		"source": "Characters"
 	},
+	"admin.column.notes": {
+		"message": "Scribblings",
+		"source": "Notes"
+	},
+	"admin.column.player": {
+		"message": "Sailor",
+		"source": "Player"
+	},
 	"admin.heading": {
-		"message": "The Captain's Orders",
-		"source": "Site Settings"
+		"message": "Orders",
+		"source": "Settings"
+	},
+	"admin.home.heading": {
+		"message": "The Captain's Quarters",
+		"source": "Site Admin"
+	},
+	"admin.home.loadFailed": {
+		"message": "Couldn't open the captain's quarters. Try again in a moment.",
+		"source": "Could not load the admin page. Try again in a moment."
+	},
+	"admin.home.title": {
+		"message": "The Captain's Quarters",
+		"source": "Site Admin"
 	},
 	"admin.loadFailed": {
 		"message": "Couldn't haul up the captain's orders.",
 		"source": "Could not load the site settings."
+	},
+	"admin.matches": {
+		"message": "{total, plural, =0 {Not a soul matches} one {# match} other {# matches}}",
+		"source": "{total, plural, =0 {Nothing matches} one {# match} other {# matches}}"
+	},
+	"admin.players.email": {
+		"message": "Message bottle",
+		"source": "Email"
+	},
+	"admin.players.heading": {
+		"message": "The Crew Roll",
+		"source": "Players"
+	},
+	"admin.players.joined": {
+		"message": "Signed on",
+		"source": "Joined"
+	},
+	"admin.players.lastLogin": {
+		"message": "Last came aboard",
+		"source": "Last login"
+	},
+	"admin.players.loadFailed": {
+		"message": "Couldn't haul up the crew roll.",
+		"source": "Could not load the players."
+	},
+	"admin.players.logsInWith": {
+		"message": "Comes aboard with",
+		"source": "Logs in with"
+	},
+	"admin.players.neverLoggedIn": {
+		"message": "Never set foot aboard",
+		"source": "Never"
+	},
+	"admin.players.none": {
+		"message": "No sailors match.",
+		"source": "No players match."
+	},
+	"admin.players.password": {
+		"message": "Secret word",
+		"source": "Password"
+	},
+	"admin.players.search": {
+		"message": "Search by name, username or message bottle",
+		"source": "Search by name, username or email"
+	},
+	"admin.players.searchLabel": {
+		"message": "Search the crew by name, username or message bottle address",
+		"source": "Search players by name, username or email address"
+	},
+	"admin.players.serverAdmin": {
+		"message": "Officer",
+		"source": "Server admin"
+	},
+	"admin.players.serverAdminNote": {
+		"message": "Officer",
+		"source": "Server admin"
+	},
+	"admin.players.title": {
+		"message": "The Crew Roll",
+		"source": "Players"
+	},
+	"admin.players.twoFactor": {
+		"message": "2FA",
+		"source": "2FA"
 	},
 	"admin.privacy": {
 		"message": "Articles o' Secrecy",
@@ -71,6 +163,62 @@
 		"message": "Couldn't stow the captain's orders.",
 		"source": "Could not save the site settings."
 	},
+	"admin.sessions.connected": {
+		"message": "Aboard now",
+		"source": "Connected"
+	},
+	"admin.sessions.connectedNote": {
+		"message": "Aboard now",
+		"source": "Connected"
+	},
+	"admin.sessions.current": {
+		"message": "This spyglass",
+		"source": "This browser"
+	},
+	"admin.sessions.ends": {
+		"message": "Plank raised",
+		"source": "Ends"
+	},
+	"admin.sessions.heading": {
+		"message": "Gangplanks",
+		"source": "Sessions"
+	},
+	"admin.sessions.hint": {
+		"message": "Each spyglass come aboard the ship.",
+		"source": "Each browser logged in to the site."
+	},
+	"admin.sessions.lastUsed": {
+		"message": "Last seen",
+		"source": "Last used"
+	},
+	"admin.sessions.loadFailed": {
+		"message": "Couldn't haul up the gangplanks.",
+		"source": "Could not load the sessions."
+	},
+	"admin.sessions.none": {
+		"message": "No gangplanks match.",
+		"source": "No sessions match."
+	},
+	"admin.sessions.remembered": {
+		"message": "Remembered",
+		"source": "Remembered"
+	},
+	"admin.sessions.search": {
+		"message": "Search by name or username",
+		"source": "Search by name or username"
+	},
+	"admin.sessions.searchLabel": {
+		"message": "Search the gangplanks by sailor's name or username",
+		"source": "Search sessions by player name or username"
+	},
+	"admin.sessions.started": {
+		"message": "Came aboard",
+		"source": "Logged in"
+	},
+	"admin.sessions.title": {
+		"message": "Gangplanks",
+		"source": "Sessions"
+	},
 	"admin.socials": {
 		"message": "Social ports",
 		"source": "Social sites"
@@ -86,6 +234,34 @@
 	"admin.title": {
 		"message": "The Captain's Orders",
 		"source": "Site Settings"
+	},
+	"admin.tools.players": {
+		"message": "The Crew Roll",
+		"source": "Players"
+	},
+	"admin.tools.playersHint": {
+		"message": "Every sailor: how they come aboard, when they last did, and who be an officer.",
+		"source": "Every account: how it logs in, when it last did, and who is a server admin."
+	},
+	"admin.tools.sessions": {
+		"message": "Gangplanks",
+		"source": "Sessions"
+	},
+	"admin.tools.sessionsHint": {
+		"message": "Every spyglass come aboard the ship, and which be aboard now.",
+		"source": "Every browser logged in to the site, and which are connected now."
+	},
+	"admin.tools.settings": {
+		"message": "The Captain's Orders",
+		"source": "Settings"
+	},
+	"admin.tools.settingsHint": {
+		"message": "Launchin' universes, last rites, the social ports at the bottom o' the page and the Articles o' Secrecy's address.",
+		"source": "Creating universes, last rites, the footer's social sites and the privacy policy's contact."
+	},
+	"admin.turnOnTwoFactor": {
+		"message": "Raise two-factor authentication",
+		"source": "Turn on two-factor authentication"
 	},
 	"admin.universeCreationEnabled": {
 		"message": "Hands can create universes",
@@ -2351,6 +2527,10 @@
 		"message": "Wrong codes were tried on yer account on {siteName}",
 		"source": "Wrong codes were typed for your account on {siteName}"
 	},
+	"error.adminNeedsTwoFactor": {
+		"message": "Raise two-factor authentication afore ye set foot in the captain's quarters.",
+		"source": "Turn on two-factor authentication to use the admin pages."
+	},
 	"error.alreadyEditor": {
 		"message": "{username} already serves aboard this universe.",
 		"source": "{username} already has a role in this universe."
@@ -2726,6 +2906,10 @@
 	"error.noThemes": {
 		"message": "This universe's ship's articles have no yarns.",
 		"source": "This universe's ruleset has no themes."
+	},
+	"error.notServerAdmin": {
+		"message": "Only the ship's officers can set foot here.",
+		"source": "Only the site's admins can use this page."
 	},
 	"error.onlyAnchorInvites": {
 		"message": "Only the anchor bein's sailor can call others aboard.",
@@ -3114,10 +3298,6 @@
 	"home.showMore": {
 		"message": "Show more",
 		"source": "Show more"
-	},
-	"home.siteSettings": {
-		"message": "The Captain's Orders",
-		"source": "Site Settings"
 	},
 	"home.universes": {
 		"message": "Universes",

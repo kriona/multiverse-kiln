@@ -181,6 +181,17 @@ export function formatTimeOfDay(secondOfDay: number): string
 }
 
 /**
+ * A moment in real time, such as when a player logged in, in the browser's time zone
+ *
+ * @param time The moment, as ISO 8601
+ * @return The date and time in the player's language, such as Nov 1, 2026, 6:30 PM
+ */
+export function formatDateTime(time: string): string
+{
+	return(new Intl.DateTimeFormat(translator.locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(time)));
+}
+
+/**
  * A number with its sign, such as +2, -1 or 0
  *
  * @param value The number

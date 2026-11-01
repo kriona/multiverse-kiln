@@ -43,5 +43,20 @@ export const formMessages = defineMessages({
 		id: 'dialog.close',
 		defaultMessage: 'Close',
 		description: 'Button that closes a dialog that only shows something, with nothing to change'
+	},
+	filterAny: {
+		id: 'filter.any',
+		defaultMessage: 'Any',
+		description: 'Choice of a filter that shows everything: on the editor\'s Items or Tilesets tab (such as items of every type, or tiles whether passable or not), or on the admin pages\' lists of sessions and players (such as players whether server admins or not)'
+	},
+	filterYes: {
+		id: 'filter.yes',
+		defaultMessage: 'Yes',
+		description: 'Choice of a yes-or-no filter on the editor\'s Items or Tilesets tab, e.g. Passable: Yes, or on the admin pages\' lists, e.g. Server admin: Yes'
+	},
+	filterNo: {
+		id: 'filter.no',
+		defaultMessage: 'No',
+		description: 'Choice of a yes-or-no filter on the editor\'s Items or Tilesets tab, e.g. Passable: No, or on the admin pages\' lists, e.g. Server admin: No'
 	}
 });

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<!-- include head.html -->
+		<title data-message="admin.players.title" data-translation-context="The browser tab's title for the admin page listing every player account, before the game engine's name">Players</title>
+		<link rel="stylesheet" href="/src/admin.scss" />
+	</head>
+	<body>
+		<main>
+			<section class="admin-page">
+				<header class="toolbar">
+					<!-- include site-name.html -->
+					<!-- include admin-crumb.html -->
+					<h1 data-message="admin.players.heading" data-translation-context="Heading of the admin page listing every player account">Players</h1>
+					<!-- include account.html -->
+				</header>
+				<div class="admin-body admin-body-wide">
+					<!-- include admin-refusal.html -->
+					<div id="admin-content" class="panel">
+						<div class="filters">
+							<input id="player-search" type="search" placeholder="Search by name, username or email" aria-label="Search players by name, username or email address" data-message-placeholder="admin.players.search" data-translation-context-placeholder="Shown in the empty field that narrows the admin page's list of players down by name, username or email address" data-message-aria-label="admin.players.searchLabel" data-translation-context-aria-label="Name of the field that narrows the admin page's list of players down by name, username or email address, for screen readers" />
+							<label data-message="admin.players.serverAdmin" data-translation-context="Label of the filter on the admin page's list of players for whether a player is one of the site's admins">
+								Server admin
+								<select id="player-filter"></select>
+							</label>
+						</div>
+						<p id="player-list-error" class="form-error" role="alert" hidden></p>
+						<div class="admin-table-scroll">
+							<table class="admin-table">
+								<thead>
+									<tr>
+										<th scope="col" data-message="admin.column.player" data-translation-context="Heading of the column of players' names and usernames in the admin pages' lists of sessions and players">Player</th>
+										<th scope="col" data-message="admin.players.email" data-translation-context="Heading of the column in the admin page's list of players for the email address each account logs in with">Email</th>
+										<th scope="col" data-message="admin.players.joined" data-translation-context="Heading of the column in the admin page's list of players for when each account was made">Joined</th>
+										<th scope="col" data-message="admin.players.lastLogin" data-translation-context="Heading of the column in the admin page's list of players for when each account last logged in">Last login</th>
+										<th scope="col" data-message="admin.players.logsInWith" data-translation-context="Heading of the column in the admin page's list of players for how each account logs in: a password, Google or Discord">Logs in with</th>
+										<th scope="col" data-message="admin.column.notes" data-translation-context="Heading of the column in the admin pages' lists of sessions and players that says more about each, such as whether a session is connected now or a player is a server admin">Notes</th>
+									</tr>
+								</thead>
+								<tbody id="player-rows"></tbody>
+							</table>
+						</div>
+						<p id="player-loading" class="admin-loading" data-message="page.loading" data-translation-context="Shown while a page or part of one loads, such as the site settings, the choices in Create Character, an area in the editor, or a universe's page">Loading...</p>
+						<p id="player-empty" class="universe-empty" data-message="admin.players.none" data-translation-context="Shown instead of the admin page's list of players when none match the search and filter" hidden>No players match.</p>
+						<div class="pager">
+							<button id="player-previous" type="button" class="secondary" data-message="pager.previous" data-translation-context="Button that shows the previous page of a list">Previous</button>
+							<span id="player-page"></span>
+							<button id="player-next" type="button" class="secondary" data-message="pager.next" data-translation-context="Button that shows the next page of a list">Next</button>
+						</div>
+					</div>
+				</div>
+			</section>
+		</main>
+		<!-- include footer.html -->
+		<!-- include accessibility.html -->
+		<script type="module" src="/src/adminPlayers.ts"></script>
+	</body>
+</html>

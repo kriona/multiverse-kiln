@@ -17,7 +17,7 @@ An engine for making multiplayer browser-based role-playing games.
 
 ```
 /client          Phaser game (Vite). Uses `@colyseus/sdk` (formerly colyseus.js) to connect to the server.
-                 Ten pages, linked without .html (/game): index.html (Home; src/main.ts, src/style.scss),
+                 Thirteen pages, linked without .html (/game): index.html (Home; src/main.ts, src/style.scss),
                  universe.html (a universe's page at /universe/<slug or id>; src/universe.ts, src/universe.scss),
                  game.html (lobby and game at /game/<slug or id>, apart from Home so other pages can be open in
                  other tabs while playing; src/game.ts, src/style.scss), edit.html (the
@@ -25,10 +25,13 @@ An engine for making multiplayer browser-based role-playing games.
                  src/character.scss), license.html (the game's license and the
                  licenses of what it uses, linked from the footer; src/license.ts, src/license.scss), privacy.html
                  (the privacy policy, linked from the footer; src/privacy.ts, src/privacy.scss),
-                 admin.html (settings for the whole site; src/admin.ts, src/admin.scss), login.html (logging
+                 the admin pages for server admins: admin.html (/admin, linking to the tools; src/admin.ts) and the
+                 tools in admin/ (settings.html, sessions.html and players.html at /admin/settings, /admin/sessions
+                 and /admin/players: the site's settings, its login sessions and its players; src/adminSettings.ts,
+                 src/adminSessions.ts, src/adminPlayers.ts), sharing src/AdminPage.ts and src/admin.scss, login.html (logging
                  in, creating an account and resetting a password, at /login?next=<page to go back to>; src/login.ts,
                  src/LoginPage.ts, src/login.scss) and profile.html (the player's own profile at /profile, and
-                 other players' at /player/<username>; src/profile.ts, src/ProfilePage.ts, src/profile.scss). HTML the pages share (the tags every <head> starts with, the logged-in player's name at the end of each toolbar, opening a menu with Edit profile and Log out, status and notice screens,
+                 other players' at /player/<username>; src/profile.ts, src/ProfilePage.ts, src/profile.scss). HTML the pages share (the tags every <head> starts with, the logged-in player's name at the end of each toolbar, opening a menu with Edit profile, Site admin for server admins and Log out, Site Admin in the admin tools' toolbars and their refusal notice, status and notice screens,
                  footer, the keyboard shortcut list and screen reader live regions) lives in partials/, included with <!-- include footer.html --> (vite.config.ts).
                  Both styles use src/_shared.scss, and
                  src/pages.ts holds the addresses that link the pages. src/localization.ts shows text in the
@@ -133,6 +136,7 @@ npm run storage:setup -w server      # create the storage bucket (start.bat does
 npm run db:generate -w server        # create a migration after changing server/src/db/schema.ts
 npm run db:migrate -w server         # apply Drizzle migrations
 npm run db:seed -w server            # add or replace the sample universe (server/scripts/sampleUniverse.ts); -- --creator <username> makes that account its creator
+npm run admin:add -w server -- <username>  # make an account a server admin (it needs 2FA on to use the admin pages)
 npm run messages                     # update shared/locales/en.json after changing messages (the client's dev server does it as you save), and list each translation's missing and out-of-date messages
 npm run dev -w server                # Colyseus on wss://www.multiversekiln-dev.com:2567
 npm run dev -w client                # Vite on https://www.multiversekiln-dev.com:5173

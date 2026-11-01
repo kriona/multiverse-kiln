@@ -1,16 +1,23 @@
 import { MAX_EMAIL_LENGTH } from './accounts.js';
+import { ADMIN_PATH } from './admin.js';
 
 /**
- * Settings for the whole site, changed on the admin page (client/admin.html)
+ * Settings for the whole site, changed on the admin settings page (client/admin/settings.html)
  *
  * - GET SITE_SETTINGS_PATH answers SiteSettings
  * - PUT SITE_SETTINGS_PATH takes SiteSettings, and answers 204, or 400 with an ErrorPayload for
  *   settings that fail validation
+ * - GET PUBLIC_SITE_SETTINGS_PATH answers PublicSiteSettings, to anyone
  *
- * Anyone can read and change them until there are server admin accounts. Writes from a browser must
- * come from an origin in the server's ALLOWED_ORIGINS
+ * Only server admins with 2FA on can use SITE_SETTINGS_PATH (see shared/src/admin.ts). Writes from a
+ * browser must come from an origin in the server's ALLOWED_ORIGINS
  */
-export const SITE_SETTINGS_PATH = '/admin/settings';
+export const SITE_SETTINGS_PATH = `${ADMIN_PATH}/settings`;
+
+/**
+ * The settings every page may read, such as the footer's social links and the privacy policy's contact
+ */
+export const PUBLIC_SITE_SETTINGS_PATH = '/site-settings';
 
 /**
  * Fewest universes the site can let each player create
@@ -121,6 +128,11 @@ export interface SiteSettings
 	 */
 	privacyContact: string | null;
 }
+
+/**
+ * The settings any page may read (GET PUBLIC_SITE_SETTINGS_PATH): what the footer and the privacy policy show
+ */
+export type PublicSiteSettings = Pick<SiteSettings, 'characterDeletionDays' | 'socials' | 'privacyContact'>;
 
 /**
  * The settings of a site that has never saved any

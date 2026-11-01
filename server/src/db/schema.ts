@@ -106,7 +106,12 @@ export const players = pgTable('players', {
 	 */
 	showCharacters: boolean('show_characters').notNull().default(true),
 
-	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+
+	/**
+	 * When the player last logged in (a session started, as registering also does), or null when they never have
+	 */
+	lastLoginAt: timestamp('last_login_at', { withTimezone: true })
 }, (table) => [
 	uniqueIndex('players_username_lower_unique').on(sql`lower(${table.username})`),
 	uniqueIndex('players_email_lower_unique').on(sql`lower(${table.email})`),
@@ -1206,6 +1211,16 @@ export const siteSettings = pgTable('site_settings', {
 	check('site_settings_social_urls_length', sql.join([table.discordUrl, table.facebookUrl, table.instagramUrl, table.tiktokUrl, table.xUrl, table.youtubeUrl].map((column) => sql`char_length(${column}) <= ${sql.raw(String(MAX_SITE_SOCIAL_URL_LENGTH))}`), sql` AND `)),
 	check('site_settings_privacy_contact_length', sql`char_length(${table.privacyContact}) <= ${sql.raw(String(MAX_EMAIL_LENGTH))}`)
 ]);
+
+/**
+ * The site's server admins, who may use the admin pages once they have 2FA on (see Admin in
+ * STRUCTURE-OVERVIEW.md). Separate from universe roles. The first is added by hand with
+ * `npm run admin:add -w server -- <username>`. Deleted with the account
+ */
+export const serverAdmins = pgTable('server_admins', {
+	playerId: uuid('player_id').primaryKey().references(() => players.id, { onDelete: 'cascade' }),
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+});
 
 /**
  * How many bytes a hash stored for logins has: SHA-256 for session tokens, HMAC-SHA256 for keyed hashes

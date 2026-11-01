@@ -20,8 +20,11 @@
  *   the invite link in ?invite= when it was opened from one
  * - license.html: the game's license and the licenses of what it uses, linked to from the footer
  * - privacy.html: the privacy policy, linked to from the footer
- * - admin.html: settings for the whole site, linked to from Home's toolbar. Anyone can use it until
- *   there are server admin accounts
+ * - admin.html: the admin page at /admin, linking to the admin tools, and linked to from the account menu
+ *   (Site admin) for server admins. Only those with 2FA on can use it and the tools
+ * - admin/settings.html, admin/sessions.html and admin/players.html: the admin tools at /admin/settings,
+ *   /admin/sessions and /admin/players, with settings for the whole site, the login sessions still going
+ *   and every player account, each linking back to admin.html
  * - login.html: logging in, creating an account and resetting a forgotten password, linked to from
  *   Home's toolbar. The game, the world editor and Create Character send a browser that isn't logged in
  *   here with ?next=<their address>, and it goes back there once logged in

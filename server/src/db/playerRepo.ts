@@ -1,11 +1,12 @@
 /**
  * Player accounts: the only module that reads or writes the players table
  */
-import { eq, sql } from 'drizzle-orm';
-import type { ProfileLanguage, SocialSite, SocialUsernames } from '@multiverse-kiln/shared';
+import { and, count, desc, eq, exists, isNotNull, not, sql } from 'drizzle-orm';
+import type { LoginProvider, ProfileLanguage, SocialSite, SocialUsernames } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
-import { players } from './schema.js';
+import { authenticators, players, providerLogins, serverAdmins } from './schema.js';
+import { anyColumnContains } from './textSearch.js';
 
 /**
  * A player account as the rest of the server sees it
@@ -83,12 +84,17 @@ export interface OwnProfileDetails extends ProfileDetails
 	email: string | null;
 	hasPassword: boolean;
 	createdAt: Date;
+
+	/**
+	 * When the player last logged in, or null when they never have
+	 */
+	lastLoginAt: Date | null;
 }
 
 /**
  * What a player can change on their profile
  */
-export type ProfileChanges = Omit<OwnProfileDetails, 'id' | 'email' | 'hasPassword' | 'createdAt'>;
+export type ProfileChanges = Omit<OwnProfileDetails, 'id' | 'email' | 'hasPassword' | 'createdAt' | 'lastLoginAt'>;
 
 /**
  * Thrown when a new account would take a username or email address another account has, ignoring capitals
@@ -367,7 +373,8 @@ export async function findOwnProfile(playerId: string, executor: Executor = db):
 			...publicProfileColumns,
 			email: players.email,
 			hasPassword: sql<boolean>`${players.passwordHash} IS NOT NULL`,
-			createdAt: players.createdAt
+			createdAt: players.createdAt,
+			lastLoginAt: players.lastLoginAt
 		})
 		.from(players)
 		.where(eq(players.id, playerId))
@@ -464,6 +471,23 @@ export async function saveEmail(playerId: string, email: string, executor: Execu
 }
 
 /**
+ * Records that a player logged in
+ *
+ * @param playerId The player's ID
+ * @param now When they logged in
+ * @param executor The database, or a transaction
+ */
+export async function saveLastLogin(playerId: string, now: Date, executor: Executor = db): Promise<void>
+{
+	await executor
+		.update(players)
+		.set({
+			lastLoginAt: now
+		})
+		.where(eq(players.id, playerId));
+}
+
+/**
  * Locks a player's row until the transaction ends, so checks and changes made for that player in
  * concurrent transactions happen one after another
  *
@@ -500,4 +524,102 @@ export async function deletePlayer(playerId: string, executor: Executor = db): P
 		.returning({ id: players.id });
 
 	return(deleted.length > 0);
+}
+
+/**
+ * A player account as the admin pages list it
+ */
+export interface AdminPlayerRecord
+{
+	username: string;
+	displayName: string;
+	email: string | null;
+	createdAt: Date;
+
+	/**
+	 * When the account last logged in, or null when it never has
+	 */
+	lastLoginAt: Date | null;
+
+	hasPassword: boolean;
+	providers: LoginProvider[];
+	twoFactor: boolean;
+	serverAdmin: boolean;
+}
+
+/**
+ * What a list of accounts for the admin pages is narrowed to
+ */
+export interface AdminPlayerFilter
+{
+	/**
+	 * Text the username, name or email address holds, ignoring capitals
+	 */
+	search?: string;
+
+	/**
+	 * Only server admins (true), or only other players (false)
+	 */
+	serverAdmin?: boolean;
+}
+
+/**
+ * A page of the player accounts, for the admin pages, with how each logs in and whether it is a server
+ * admin. Reads the provider_logins, authenticators and server_admins tables for that
+ *
+ * @param filter What to narrow the list to
+ * @param page How many matching accounts to skip, and the most to return
+ * @param executor The database, or a transaction
+ * @return The accounts, newest first (then by username), and how many match in all
+ */
+export async function listPlayersForAdmin(filter: AdminPlayerFilter, page: { offset: number; limit: number }, executor: Executor = db): Promise<{ players: AdminPlayerRecord[]; total: number }>
+{
+	const isAdmin = exists(executor
+		.select({
+			playerId: serverAdmins.playerId
+		})
+		.from(serverAdmins)
+		.where(eq(serverAdmins.playerId, players.id)));
+	const where = and(
+		((filter.search === undefined) ? undefined : anyColumnContains([players.username, players.displayName, players.email], filter.search)),
+		((filter.serverAdmin === undefined) ? undefined : (filter.serverAdmin ? isAdmin : not(isAdmin)))
+	);
+	const [rows, [counted]] = await Promise.all([
+		executor
+			.select({
+				username: players.username,
+				displayName: players.displayName,
+				email: players.email,
+				createdAt: players.createdAt,
+				lastLoginAt: players.lastLoginAt,
+				hasPassword: sql<boolean>`(${players.passwordHash} IS NOT NULL)`,
+				providers: sql<LoginProvider[]>`coalesce((SELECT array_agg(${providerLogins.provider}::text ORDER BY ${providerLogins.provider}) FROM ${providerLogins} WHERE ${providerLogins.playerId} = ${players.id}), '{}'::text[])`,
+				twoFactor: sql<boolean>`${exists(executor
+					.select({
+						playerId: authenticators.playerId
+					})
+					.from(authenticators)
+					.where(and(
+						eq(authenticators.playerId, players.id),
+						isNotNull(authenticators.enabledAt)
+					)))}`,
+				serverAdmin: sql<boolean>`${isAdmin}`
+			})
+			.from(players)
+			.where(where)
+			.orderBy(desc(players.createdAt), players.username)
+			.offset(page.offset)
+			.limit(page.limit),
+		executor
+			.select({
+				total: count()
+			})
+			.from(players)
+			.where(where)
+	]);
+
+	return({
+		players: rows,
+		total: counted.total
+	});
 }

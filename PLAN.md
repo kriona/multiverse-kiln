@@ -317,8 +317,9 @@ Built in nine steps: roles, stages, server admins, disabling things in use, then
 	- [ ] Moving out of `in the beginning` warns that new areas will start disabled (the area editor's rule)
 	- [ ] Tests for each stage's listing and play rules, and for players turned out when the stage changes
 3. Server admins
-	- [ ] Who is a server admin, stored in the database (a migration), and a script that makes a player one by username (`npm run admin:add -w server -- <username>`), run by hand like the seed script
-	- [ ] Only server admins with 2FA on can see and use the admin page (`admin.html` and `/admin/settings`), and only they see its link in the toolbar; an admin without 2FA is told to turn it on. Anyone can still read the character deletion days, which the privacy policy shows, through a public route of its own
+	- [✅] Who is a server admin, stored in the database (a migration), and a script that makes a player one by username (`npm run admin:add -w server -- <username>`), run by hand like the seed script
+	- [✅] Only server admins with 2FA on can see and use the admin pages (`/admin`, linking to the tools in `client/admin/`, the settings at `/admin/settings`), and only they see its link in the toolbar (Site admin in the account menu); an admin without 2FA is told to turn it on. Anyone can still read the character deletion days, social sites and privacy contact, which the footer and privacy policy show, through a public route of their own (`PUBLIC_SITE_SETTINGS_PATH`)
+	- [✅] Admin pages listing the login sessions still going (`/admin/sessions`) and every player account (`/admin/players`), each searchable, filtered and paged
 	- [ ] Admins add other admins by username and remove them on the admin page; the last admin can't be removed. Turning 2FA off asks an admin to confirm they'll lose the admin page until it's back on
 	- [ ] Disabling a universe: a list of universes on the admin page (searchable and paged, since there may be thousands) with Disable and Enable and a reason. A disabled universe isn't listed or playable, its editors see why and can't save, and its open rooms turn their players out
 	- [ ] Admin actions (adding and removing admins, disabling and enabling universes) are logged, like auth events

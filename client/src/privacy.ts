@@ -1,4 +1,4 @@
-import type { SiteSettings } from '@multiverse-kiln/shared';
+import type { PublicSiteSettings } from '@multiverse-kiln/shared';
 
 import { currentLocale, startLocalization, t } from './localization';
 import { AdminApi } from './network/adminApi';
@@ -31,11 +31,11 @@ async function start(): Promise<void>
  */
 async function showSiteSettings(): Promise<void>
 {
-	let settings: SiteSettings;
+	let settings: PublicSiteSettings;
 
 	try
 	{
-		settings = await new AdminApi(createClient()).getSiteSettings();
+		settings = await new AdminApi(createClient()).getPublicSiteSettings();
 	}
 	catch
 	{

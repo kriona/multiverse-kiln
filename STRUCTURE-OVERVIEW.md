@@ -217,9 +217,12 @@ Creating a universe
 The [admin page](#admin) decides how many universes a user can create. The admin page can also turn off creating universes for everyone, which disables the Create Universe button.
 
 ## Admin
-Settings for the whole site (`admin.html`), stored in one row of the `site_settings` table. Only server admins can see and use it, and only they see its link in Home's toolbar.
+Pages for the site's server admins. The admin page (`/admin`, `client/admin.html`) links to the tools (`client/admin/`): Settings, Sessions and Players, each a card saying what it does. Each tool's toolbar reads like a path back to it, such as Multiverse Kiln | Site Admin | Settings, with Site Admin linking to the admin page. Only server admins can see and use them, and only they see Site admin in the account menu at the end of every toolbar, which goes to the admin page.
 
-Whether a player is a server admin is stored in the database. The first admin is made by hand with a script run on the server; after that, admins add and remove other admins on this page. An admin must have 2FA on to use any of it.
+Whether a player is a server admin is stored in the database (`server_admins`). The first admin is made by hand with a script run on the server (`npm run admin:add -w server -- <username>`); after that, admins add and remove other admins on the admin pages. An admin must have 2FA on to use any of them: one without it is told so, with a link to turn it on. A player who isn't an admin is told the pages are only for admins, and a browser that isn't logged in goes to the login page.
+
+### Settings
+Settings for the whole site (`/admin/settings`), stored in one row of the `site_settings` table. Anyone can read the ones the pages show (the character deletion days, the social sites and the privacy contact) through a public route of their own.
 - universe creation enabled: whether players can create universes
 - universes per creator: the most universes one player may create, from 1 to 1000
 - character deletion days: how many days [Last Rites](#deleting-a-character) waits before deleting a character, from 0 to 365 (7 by default). 0 turns Last Rites off. Characters already given their last rites keep their day
@@ -227,6 +230,12 @@ Whether a player is a server admin is stored in the database. The first admin is
 - privacy contact: the email address the [privacy policy](#privacy) tells players to write to about their information. Empty leaves the line out of the policy
 
 The universe settings don't change universes that already exist.
+
+### Sessions
+The login sessions still going (`/admin/sessions`), most recently used first, 50 to a page: each one's player (name and username, linking to their profile), when it logged in, when it was last used and when it ends if it isn't used again, and notes: This browser, Connected (a window has a game, lobby or profile open now) and Remembered ("Remember me"). A search narrows them by the player's name or username, and a filter to those connected or not.
+
+### Players
+Every player account (`/admin/players`), newest first, 50 to a page: name and username (linking to their profile), email address, when they joined, when they last logged in (`players.last_login_at`, set whenever a session starts), how they log in (Password, Google, Discord), and notes: Server admin and 2FA. A search narrows them by name, username or email address, and a filter to server admins or other players.
 
 ## Edit Universe
 This lets you change anything about a universe. It will be a whole suite of tools unrelated to playing the game.
