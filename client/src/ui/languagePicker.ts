@@ -1,20 +1,14 @@
-import { PSEUDO_LOCALE } from '@multiverse-kiln/shared';
+import { languageName } from '@multiverse-kiln/shared';
 
 import { availableLocales, chooseLocale, currentLocale } from '../localization';
 import type { ComboboxChoice } from './ComboboxList';
 import { getElement } from './dom';
 
 /**
- * Names of languages Intl.DisplayNames doesn't know, as each calls itself
- */
-const LANGUAGE_NAMES: Record<string, string> = {
-	'en-x-pirate': 'Pirate',
-	[PSEUDO_LOCALE]: 'Gibberish'
-};
-
-/**
  * Fills the language picker in the footer with the languages there are translations for, each named
- * in its own language, and switches language when the player picks one
+ * in its own language and sorted in the page's language, and switches language when the player picks
+ * one. The build writes the same languages into the footer's HTML (client/vite.config.ts), so the
+ * picker has its width before this runs
  */
 export function startLanguagePicker(): void
 {
@@ -67,15 +61,4 @@ export function languageChoices(languages: readonly string[]): ComboboxChoice[]
 			});
 		})
 		.sort((first, second) => first.name.localeCompare(second.name, current)));
-}
-
-/**
- * A language's name in that language, e.g. Deutsch for de
- *
- * @param locale The language tag
- * @return The name
- */
-export function languageName(locale: string): string
-{
-	return(LANGUAGE_NAMES[locale] ?? new Intl.DisplayNames([locale], { type: 'language' }).of(locale) ?? locale);
 }

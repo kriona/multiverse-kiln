@@ -26,6 +26,26 @@ export const SOURCE_LOCALE = 'en';
 export const PSEUDO_LOCALE = 'en-XA';
 
 /**
+ * Names of languages Intl.DisplayNames doesn't know, as each calls itself
+ */
+const LANGUAGE_NAMES: Readonly<Record<string, string>> = {
+	'en-x-pirate': 'Pirate',
+	[PSEUDO_LOCALE]: 'Gibberish'
+};
+
+/**
+ * A language's name in that language, e.g. Deutsch for de. The client's build uses it too, to write the
+ * footer's language picker (client/vite.config.ts)
+ *
+ * @param locale The language tag
+ * @return The name
+ */
+export function languageName(locale: string): string
+{
+	return(LANGUAGE_NAMES[locale] ?? new Intl.DisplayNames([locale], { type: 'language' }).of(locale) ?? locale);
+}
+
+/**
  * A message as the code declares it
  */
 export interface MessageDescriptor

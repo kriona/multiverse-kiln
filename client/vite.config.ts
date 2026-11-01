@@ -7,6 +7,7 @@ import { defineConfig, loadEnv, type Connect, type Plugin } from 'vite';
 
 import { CATALOG_FILE, catalogText, extractMessages, PAGES, PARTIALS_FOLDER, PSEUDO_CATALOG_FILE, pseudoCatalog, SOURCE_FOLDERS, writeCatalog } from '../shared/scripts/extractMessages.ts';
 import { SITE_NAME } from '../shared/src/constants.ts';
+import { languageName, PSEUDO_LOCALE, SOURCE_LOCALE } from '../shared/src/localization.ts';
 import { PATH_PAGES } from './src/pages.ts';
 
 /**
@@ -94,6 +95,72 @@ function siteName(): Plugin
 			}
 		}
 	});
+}
+
+/**
+ * The comment in the footer's language picker that languageOptions() replaces, with the indentation
+ * before it
+ */
+const LANGUAGE_OPTIONS_PATTERN = /^([ \t]*)<!--\s*language options\s*-->/m;
+
+/**
+ * Writes the languages there are translations for into the footer's language picker
+ * (partials/footer.html), each named in its own language, with English chosen. The page's script fills
+ * the picker again with the same languages (src/ui/languagePicker.ts), sorted in the page's language
+ * and with the player's chosen; having them in the HTML gives the picker its width from the start, so
+ * nothing in the footer moves when that runs. The languages match src/localization.ts's: every file in
+ * shared/locales but the English catalog, and the pseudo-language's only on the dev server
+ *
+ * @param serving Whether this is the dev server rather than a build
+ * @return The plugin
+ */
+function languageOptions(serving: boolean): Plugin
+{
+	/**
+	 * The language picker's options
+	 *
+	 * @param indent The indentation before each
+	 * @return Their HTML
+	 */
+	function optionsHtml(indent: string): string
+	{
+		const translations = fs.readdirSync(path.join(ROOT, 'shared/locales'))
+			.filter((file) => file.endsWith('.json'))
+			.map((file) => file.replace(/\.json$/, ''))
+			.filter((locale) => ((locale !== SOURCE_LOCALE) && (serving || (locale !== PSEUDO_LOCALE))));
+
+		return([SOURCE_LOCALE, ...translations]
+			.map((locale) => ({ locale, name: languageName(locale) }))
+			.sort((first, second) => first.name.localeCompare(second.name, SOURCE_LOCALE))
+			.map(({ locale, name }) => `${indent}<option value="${escapeHtml(locale)}" lang="${escapeHtml(locale)}" translate="no"${((locale === SOURCE_LOCALE) ? ' selected' : '')}>${escapeHtml(name)}</option>`)
+			.join('\n'));
+	}
+
+	return({
+		name: 'kiln-language-options',
+		transformIndexHtml: {
+			order: 'pre',
+			handler(html)
+			{
+				return(html.replace(LANGUAGE_OPTIONS_PATTERN, (_comment, indent: string) => optionsHtml(indent)));
+			}
+		}
+	});
+}
+
+/**
+ * Text made safe to put in HTML, inside an element or a quoted attribute
+ *
+ * @param text The text
+ * @return The text with &, <, > and " escaped
+ */
+function escapeHtml(text: string): string
+{
+	return(text
+		.replaceAll('&', '&amp;')
+		.replaceAll('<', '&lt;')
+		.replaceAll('>', '&gt;')
+		.replaceAll('"', '&quot;'));
 }
 
 /**
@@ -373,7 +440,7 @@ export default defineConfig(({ command, mode }) =>
 	} : undefined);
 
 	return({
-		plugins: [pathPages(), htmlPartials(), siteName(), icons(), messageCatalogs(), stripDescriptions()],
+		plugins: [pathPages(), htmlPartials(), siteName(), languageOptions(command === 'serve'), icons(), messageCatalogs(), stripDescriptions()],
 		server: {
 			// Bind to the dev hostname (127.0.0.1 via hosts file); the default "localhost" may bind IPv6 only
 			host: devHost,

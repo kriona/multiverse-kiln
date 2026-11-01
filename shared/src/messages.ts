@@ -425,6 +425,12 @@ export interface AccountPlayer
 	playerId: string;
 
 	name: string;
+
+	/**
+	 * How long until the browser's session ends if it isn't used again, in milliseconds, as of when the
+	 * window joined (SessionPlayer.sessionExpiresInMs)
+	 */
+	sessionExpiresInMs: number;
 }
 
 /**

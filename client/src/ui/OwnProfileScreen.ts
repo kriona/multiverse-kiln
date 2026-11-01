@@ -1,4 +1,4 @@
-import { accountExportFileName, LOGIN_PROVIDER_NAMES, LOGIN_PROVIDERS, MAX_LOCATION_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, PROFILE_LANGUAGES, SOCIAL_SITES, type OwnProfileCharacter, type OwnProfilePayload, type ProfileField, type ProfileLanguage, type ProfileUpdateRequest, type SocialSite, type TwoFactorState, type LoginProvider } from '@multiverse-kiln/shared';
+import { accountExportFileName, languageName, LOGIN_PROVIDER_NAMES, LOGIN_PROVIDERS, MAX_LOCATION_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, PROFILE_LANGUAGES, SOCIAL_SITES, type OwnProfileCharacter, type OwnProfilePayload, type ProfileField, type ProfileLanguage, type ProfileUpdateRequest, type SocialSite, type TwoFactorState, type LoginProvider } from '@multiverse-kiln/shared';
 
 import { availableLocales, chooseLocale, currentLocale, formatList, t } from '../localization';
 import type { AuthApi } from '../network/authApi';
@@ -14,7 +14,7 @@ import { getElement, setPageTitle, showMessage, showScreen } from './dom';
 import { EmailChangeDialog } from './EmailChangeDialog';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
 import { formMessages } from './formMessages';
-import { languageChoices, languageName } from './languagePicker';
+import { languageChoices } from './languagePicker';
 import { PasswordChangeDialog } from './PasswordChangeDialog';
 import { characterLabel, showProfileCharacters } from './profileCharacters';
 import { ProviderLinkDialog } from './ProviderLinkDialog';

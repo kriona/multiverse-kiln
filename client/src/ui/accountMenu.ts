@@ -3,6 +3,7 @@ import type { SessionPlayer } from '@multiverse-kiln/shared';
 import { t } from '../localization';
 import { AuthApi } from '../network/authApi';
 import { createClient } from '../network/serverConnection';
+import { forgetPlayerValues, playerStorageKey, readPlayerValue, rememberPlayerSession, rememberPlayerValue } from '../rememberedValues';
 import { showToast } from './toast';
 
 /**
@@ -27,7 +28,7 @@ export async function startAccountMenu(): Promise<void>
 
 	for (const menu of menus)
 	{
-		menu.showName(readRememberedName());
+		menu.showName(readPlayerValue(NAME_KEY));
 	}
 
 	// The menus show the name themselves now, so the head script's stand-in stops
@@ -38,7 +39,7 @@ export async function startAccountMenu(): Promise<void>
 	// (logging in or out) is left to the session, which tells this window itself
 	window.addEventListener('storage', (event) =>
 	{
-		if ((event.key === NAME_STORAGE_KEY) && (event.newValue !== null))
+		if ((event.key === playerStorageKey(NAME_KEY)) && (event.newValue !== null))
 		{
 			for (const menu of menus)
 			{
@@ -61,7 +62,15 @@ export async function startAccountMenu(): Promise<void>
 
 	const name = (player?.name ?? null);
 
-	rememberName(name);
+	if (player)
+	{
+		rememberPlayerSession(player.playerId, player.sessionExpiresInMs);
+		rememberPlayerValue(NAME_KEY, player.name);
+	}
+	else
+	{
+		forgetPlayerValues();
+	}
 
 	for (const menu of menus)
 	{
@@ -83,7 +92,7 @@ let menus: AccountMenu[] = [];
  */
 export function showAccountName(name: string): void
 {
-	rememberName(name);
+	rememberPlayerValue(NAME_KEY, name);
 
 	for (const menu of menus)
 	{
@@ -92,60 +101,10 @@ export function showAccountName(name: string): void
 }
 
 /**
- * Where the browser keeps the logged-in player's name between pages, which public/remembered-account.js
- * reads too
+ * The key the browser keeps the logged-in player's name under between pages (a player value, see
+ * rememberedValues.ts), which public/remembered-account.js reads too
  */
-const NAME_STORAGE_KEY = 'kiln-account-name';
-
-/**
- * The name the server last gave for the logged-in player
- *
- * @return The name, or null when there is none, or the browser won't keep it
- */
-function readRememberedName(): string | null
-{
-	try
-	{
-		return(localStorage.getItem(NAME_STORAGE_KEY));
-	}
-	catch
-	{
-		return(null);
-	}
-}
-
-/**
- * Forgets the remembered name, as logging in does, so the next page doesn't show another player's
- * while it waits for the server
- */
-export function forgetAccountName(): void
-{
-	rememberName(null);
-}
-
-/**
- * Keeps the logged-in player's name for the next page, or forgets it
- *
- * @param name The name, or null when the browser isn't logged in
- */
-function rememberName(name: string | null): void
-{
-	try
-	{
-		if (name === null)
-		{
-			localStorage.removeItem(NAME_STORAGE_KEY);
-		}
-		else
-		{
-			localStorage.setItem(NAME_STORAGE_KEY, name);
-		}
-	}
-	catch
-	{
-		// Without storage, the menus show once the server answers
-	}
-}
+const NAME_KEY = 'name';
 
 /**
  * One toolbar's account menu
@@ -372,7 +331,7 @@ class AccountMenu
 			return;
 		}
 
-		rememberName(null);
+		forgetPlayerValues();
 		window.location.reload();
 	}
 }

@@ -4592,8 +4592,8 @@
 		"description": "Heading of the privacy policy's section about the cookies and browser storage the site uses, and its link in the page's contents"
 	},
 	"privacy.cookiesCharacter": {
-		"defaultMessage": "The character each tab last played, so reloading the tab plays them again, until the tab closes.",
-		"description": "In the privacy policy's list of what the site stores in a player's browser: the character each browser tab last played, so reloading the tab plays them again"
+		"defaultMessage": "The character each tab last played, so reloading the tab plays them again, until the tab closes, you log out or your login ends.",
+		"description": "In the privacy policy's list of what the site stores in a player's browser: the character each browser tab last played, so reloading the tab plays them again, forgotten when the tab closes, the player logs out or their login session ends"
 	},
 	"privacy.cookiesCode": {
 		"defaultMessage": "After you enter a code we emailed you, a cookie that lets that browser take the next step, such as choosing a password, for 10 minutes.",
@@ -4610,6 +4610,10 @@
 	"privacy.cookiesLanguage": {
 		"defaultMessage": "The language you choose at the bottom of the page.",
 		"description": "In the privacy policy's list of what the site stores in a player's browser: the language chosen at the bottom of the page"
+	},
+	"privacy.cookiesName": {
+		"defaultMessage": "Your display name, so each page shows it at once, until you log out or your login ends.",
+		"description": "In the privacy policy's list of what the site stores in a player's browser: the player's display name, so each page shows it in the toolbar at once, forgotten when they log out or their login session ends"
 	},
 	"privacy.cookiesSession": {
 		"defaultMessage": "A cookie that keeps you logged in. It ends when you log out, after an hour without use, or when you close your browser; with \"Remember me\" checked, after 30 days without use.",

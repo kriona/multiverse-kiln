@@ -298,7 +298,8 @@ async function sessionRoute(request: Request, response: Response): Promise<void>
 			username: session.username,
 			name: session.name,
 			locale: session.locale,
-			serverAdmin: await isServerAdmin(session.playerId)
+			serverAdmin: await isServerAdmin(session.playerId),
+			sessionExpiresInMs: Math.max(0, (session.expiresAt.getTime() - Date.now()))
 		} : null)
 	};
 

@@ -74,6 +74,23 @@ body
 	color: $text;
 }
 
+// While a page shown in another language waits to be translated (public/remembered-language.js), it
+// stays hidden rather than showing its HTML's English. After a second it shows regardless, so a page whose
+// scripts fail is never left blank
+:root[data-translating] body
+{
+	visibility: hidden;
+	animation: show-untranslated 0s 1s forwards;
+}
+
+@keyframes show-untranslated
+{
+	to
+	{
+		visibility: visible;
+	}
+}
+
 [hidden]
 {
 	display: none !important;
