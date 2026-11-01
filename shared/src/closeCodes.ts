@@ -29,5 +29,10 @@ export enum ServerCloseCode
 	/**
 	 * The universe was deleted, along with its creator's account
 	 */
-	UniverseDeleted = 4015
+	UniverseDeleted = 4015,
+
+	/**
+	 * The player's role in the universe was changed or taken away, and they may no longer play it in its stage
+	 */
+	AccessLost = 4016
 }

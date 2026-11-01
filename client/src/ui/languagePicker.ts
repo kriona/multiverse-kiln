@@ -1,6 +1,7 @@
 import { PSEUDO_LOCALE } from '@multiverse-kiln/shared';
 
 import { availableLocales, chooseLocale, currentLocale } from '../localization';
+import type { ComboboxChoice } from './ComboboxList';
 import { getElement } from './dom';
 
 /**
@@ -38,6 +39,34 @@ export function startLanguagePicker(): void
 	{
 		chooseLocale(select.value);
 	});
+}
+
+/**
+ * Languages to choose from in a ChipCombobox, each named in itself, with its name in the page's
+ * language after it when that differs, sorted by name
+ *
+ * @param languages The languages' tags
+ * @return The choices
+ */
+export function languageChoices(languages: readonly string[]): ComboboxChoice[]
+{
+	const current = currentLocale();
+	const pageNames = new Intl.DisplayNames([current], { type: 'language' });
+
+	return(languages
+		.map((language) =>
+		{
+			const name = languageName(language);
+			const pageName = pageNames.of(language);
+
+			return({
+				value: language,
+				name,
+				lang: language,
+				detail: (((pageName === undefined) || (pageName === name)) ? undefined : pageName)
+			});
+		})
+		.sort((first, second) => first.name.localeCompare(second.name, current)));
 }
 
 /**

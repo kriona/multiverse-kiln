@@ -8,6 +8,7 @@
 import type { DifficultyLevelSettings } from './difficulty.js';
 import type { AreaSettingsUpdate, AreaLinkTarget, CellChange, ClassSettings, ErrorPayload, ItemSettings, NewAreaRequest, RaceSettings, ResizeConflict, RulesetSettings, ThemeSettings, TileGraphicUploadRequest, TileSettings, UniverseSettingsUpdate } from './editor.js';
 import type { MapBounds } from './maps.js';
+import { canEditUniverseSettings, canEditWorld, canManageEditors, type UniverseAccess, type UniverseRole } from './universes.js';
 
 /**
  * Most changes one save can hold
@@ -60,10 +61,21 @@ type ListChanges<Name extends string, Settings> =
 	| { kind: `remove${Name}`; id: NumberRef };
 
 /**
- * One change in a save. Creating, changing and deleting the universe's settings, ruleset settings, races,
- * classes, themes and difficulty levels needs canEditUniverseSettings(); everything else needs
- * canEditWorld(). Themes are only for rulesets with them (rulesetHasThemes())
+ * An editor's role and languages in a save. languages is for translators only, and empty for other roles
+ */
+export interface EditorRoleSettings
+{
+	role: UniverseRole;
+	languages: string[];
+}
+
+/**
+ * One change in a save. Each kind needs the check EDITOR_CHANGE_CHECKS names for it (see
+ * mayMakeChange()). Themes are only for rulesets with them (rulesetHasThemes())
  *
+ * - addEditor, saveEditor, removeEditor: give a player a role, by username, change an editor's role, or
+ *   take it away. Anyone may remove themself, leaving the universe; a save that would leave the universe
+ *   without a creator is refused
  * - universe, ruleset: change the universe's settings, or how it plays under its ruleset
  * - uploadTileGraphic, deleteTileGraphic: upload a tileset, or delete one and its image
  * - tiles: removeTile with replaceWith paints the maps using the tile with that one first
@@ -75,6 +87,9 @@ type ListChanges<Name extends string, Settings> =
  * - saveLink, deleteLink: add or replace a cell's link, or delete it
  */
 export type EditorChange =
+	| { kind: 'addEditor'; username: string; settings: EditorRoleSettings }
+	| { kind: 'saveEditor'; playerId: string; settings: EditorRoleSettings }
+	| { kind: 'removeEditor'; playerId: string }
 	| { kind: 'universe'; update: UniverseSettingsUpdate }
 	| { kind: 'ruleset'; settings: RulesetSettings }
 	| { kind: 'uploadTileGraphic'; ref: NewRef; upload: TileGraphicUploadRequest }
@@ -99,6 +114,76 @@ export type EditorChange =
  * Every kind of change
  */
 export type EditorChangeKind = EditorChange['kind'];
+
+/**
+ * What a change needs the player's role to allow
+ *
+ * - manageEditors: canManageEditors(), except a player removing themself
+ * - editSettings: canEditUniverseSettings()
+ * - editWorld: canEditWorld()
+ */
+export type EditorChangeCheck = 'manageEditors' | 'editSettings' | 'editWorld';
+
+/**
+ * The check each kind of change needs
+ */
+export const EDITOR_CHANGE_CHECKS: Readonly<Record<EditorChangeKind, EditorChangeCheck>> = {
+	addEditor: 'manageEditors',
+	saveEditor: 'manageEditors',
+	removeEditor: 'manageEditors',
+	universe: 'editSettings',
+	ruleset: 'editSettings',
+	uploadTileGraphic: 'editWorld',
+	deleteTileGraphic: 'editWorld',
+	createTile: 'editWorld',
+	saveTile: 'editWorld',
+	removeTile: 'editWorld',
+	createItem: 'editWorld',
+	saveItem: 'editWorld',
+	removeItem: 'editWorld',
+	createRace: 'editSettings',
+	saveRace: 'editSettings',
+	removeRace: 'editSettings',
+	createClass: 'editSettings',
+	saveClass: 'editSettings',
+	removeClass: 'editSettings',
+	createTheme: 'editSettings',
+	saveTheme: 'editSettings',
+	removeTheme: 'editSettings',
+	createDifficultyLevel: 'editSettings',
+	saveDifficultyLevel: 'editSettings',
+	removeDifficultyLevel: 'editSettings',
+	createArea: 'editWorld',
+	updateArea: 'editWorld',
+	deleteArea: 'editWorld',
+	resizeArea: 'editWorld',
+	editCells: 'editWorld',
+	saveLink: 'editWorld',
+	deleteLink: 'editWorld'
+};
+
+/**
+ * Whether a player's role lets them make a change
+ *
+ * @param change The change
+ * @param access The player's role in the universe, and their languages
+ * @param playerId The player's ID, since anyone may remove themself
+ * @return True when it does
+ */
+export function mayMakeChange(change: EditorChange, access: UniverseAccess, playerId: string): boolean
+{
+	switch (EDITOR_CHANGE_CHECKS[change.kind])
+	{
+		case 'manageEditors':
+			return(canManageEditors(access.role) || ((change.kind === 'removeEditor') && (change.playerId === playerId)));
+
+		case 'editSettings':
+			return(canEditUniverseSettings(access.role));
+
+		case 'editWorld':
+			return(canEditWorld(access.role));
+	}
+}
 
 /**
  * Body of POST EDITOR_UNIVERSES_PATH/:universeId/changes: up to MAX_CHANGES_PER_SAVE changes, saved in

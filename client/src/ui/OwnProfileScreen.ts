@@ -10,12 +10,11 @@ import { showAccountName } from './accountMenu';
 import { ChangeTracker } from './changeTracker';
 import type { CharacterSheetDialog } from './CharacterSheetDialog';
 import { ChipCombobox } from './ChipCombobox';
-import type { ComboboxChoice } from './ComboboxList';
 import { getElement, setPageTitle, showMessage, showScreen } from './dom';
 import { EmailChangeDialog } from './EmailChangeDialog';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
 import { formMessages } from './formMessages';
-import { languageName } from './languagePicker';
+import { languageChoices, languageName } from './languagePicker';
 import { PasswordChangeDialog } from './PasswordChangeDialog';
 import { characterLabel, showProfileCharacters } from './profileCharacters';
 import { ProviderLinkDialog } from './ProviderLinkDialog';
@@ -25,33 +24,6 @@ import { timeZoneChoices } from './timeZones';
 import { showToast } from './toast';
 import { TwoFactorConfirmDialog } from './TwoFactorConfirmDialog';
 import { TwoFactorSetupDialog } from './TwoFactorSetupDialog';
-
-/**
- * The languages a profile can say the player knows, each named in itself, with its name in the page's
- * language after it when that differs, sorted by name
- *
- * @return The choices
- */
-function profileLanguageChoices(): ComboboxChoice[]
-{
-	const current = currentLocale();
-	const pageNames = new Intl.DisplayNames([current], { type: 'language' });
-
-	return(PROFILE_LANGUAGES
-		.map((language) =>
-		{
-			const name = languageName(language);
-			const pageName = pageNames.of(language);
-
-			return({
-				value: language,
-				name,
-				lang: language,
-				detail: (((pageName === undefined) || (pageName === name)) ? undefined : pageName)
-			});
-		})
-		.sort((first, second) => first.name.localeCompare(second.name, current)));
-}
 
 /**
  * The player's own profile (the profile screen of profile.html): what others see about them, which they
@@ -86,7 +58,7 @@ export class OwnProfileScreen
 		searchId: 'profile-languages-search',
 		listboxId: 'profile-languages-options',
 		chosenId: 'profile-languages-chosen',
-		choices: profileLanguageChoices(),
+		choices: languageChoices(PROFILE_LANGUAGES),
 		max: MAX_PROFILE_LANGUAGES,
 		tooMany: t({
 			id: 'profile.languagesTooMany',

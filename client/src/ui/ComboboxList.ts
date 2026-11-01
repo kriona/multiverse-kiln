@@ -47,6 +47,12 @@ export interface ComboboxListOptions
 	 * Hears when the player chooses one
 	 */
 	onChoose: (choice: ComboboxChoice) => void;
+
+	/**
+	 * What the list says when nothing matches, such as that the choices are still being found; by
+	 * default, that nothing matches
+	 */
+	emptyText?: () => string | undefined;
 }
 
 /**
@@ -150,11 +156,11 @@ export class ComboboxList
 			empty.className = 'combobox-empty';
 			empty.setAttribute('role', 'option');
 			empty.setAttribute('aria-disabled', 'true');
-			empty.textContent = t({
+			empty.textContent = (this.options.emptyText?.() ?? t({
 				id: 'combobox.noMatches',
 				defaultMessage: 'Nothing matches',
-				description: 'Shown in the list under a search field, such as the time zone or the languages on the profile page, when nothing matches what was typed'
-			});
+				description: 'Shown in the list under a search field, such as the time zone or the languages on the profile page, or the players to add on the editor\'s Editors tab, when nothing matches what was typed'
+			}));
 			this.listbox.append(empty);
 		}
 
