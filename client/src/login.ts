@@ -5,6 +5,7 @@ import { EditorApiError } from './network/editorApi';
 import { createClient } from './network/serverConnection';
 import { onLoginElsewhere } from './network/sessionBroadcast';
 import { keepProviderLinkError, providerLinkedPageUrl, readNextPage, takeProviderReturn } from './pages';
+import { forgetPlayerValues } from './rememberedValues';
 import { startCodeInputs } from './ui/codeInputs';
 import { showNoticeScreen, showStatus } from './ui/dom';
 import { startLanguagePicker } from './ui/languagePicker';
@@ -45,6 +46,8 @@ async function start(): Promise<void>
 			window.location.replace(readNextPage());
 			return;
 		}
+
+		forgetPlayerValues();
 	}
 	catch (error)
 	{

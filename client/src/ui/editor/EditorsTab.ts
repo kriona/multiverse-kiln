@@ -1,4 +1,4 @@
-import { canManageEditors, canPlayUniverse, UNIVERSE_ROLE_NAMES, type EditableUniverse, type EditorChange, type EditorRoleSettings, type PlayerMatch, type UniverseEditorSummary } from '@multiverse-kiln/shared';
+import { canManageEditors, canPlayUniverse, languageName, UNIVERSE_ROLE_NAMES, type EditableUniverse, type EditorChange, type EditorRoleSettings, type PlayerMatch, type UniverseEditorSummary } from '@multiverse-kiln/shared';
 import leaveIcon from 'virtual:icon/ph:sign-out';
 import undoIcon from 'virtual:icon/ph:arrow-u-up-left';
 
@@ -8,7 +8,6 @@ import { playerPageUrl } from '../../pages';
 import { refreshUnsavedWork, watchUnsavedWork } from '../changeTracker';
 import { askToConfirm, type Confirmation } from '../confirmDialog';
 import { getElement, setButtonLabel, showMessage } from '../dom';
-import { languageName } from '../languagePicker';
 import { EditorDialog } from './EditorDialog';
 import type { EditorSave } from './editorSave';
 import type { SavableTab } from './SaveBar';

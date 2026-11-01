@@ -4592,8 +4592,8 @@
 		"source": "Cookies and browser storage"
 	},
 	"privacy.cookiesCharacter": {
-		"message": "The hand each tab last sailed as, so reloadin' the tab sails as 'em again, till the tab closes.",
-		"source": "The character each tab last played, so reloading the tab plays them again, until the tab closes."
+		"message": "The hand each tab last sailed as, so reloadin' the tab sails as 'em again, till the tab closes, ye go ashore or yer time aboard runs out.",
+		"source": "The character each tab last played, so reloading the tab plays them again, until the tab closes, you log out or your login ends."
 	},
 	"privacy.cookiesCode": {
 		"message": "After ye enter a code we sent ye, a cookie that lets that browser take the next step, such as choosin' a password, for 10 minutes.",
@@ -4610,6 +4610,10 @@
 	"privacy.cookiesLanguage": {
 		"message": "The tongue ye choose at the bottom o' the page.",
 		"source": "The language you choose at the bottom of the page."
+	},
+	"privacy.cookiesName": {
+		"message": "The name ye sail under, so each page shows it at once, till ye go ashore or yer time aboard runs out.",
+		"source": "Your display name, so each page shows it at once, until you log out or your login ends."
 	},
 	"privacy.cookiesSession": {
 		"message": "A cookie that keeps ye aboard. It ends when ye go ashore, after an hour without use, or when ye close yer browser; with \"Remember me\" checked, after 30 days without use.",

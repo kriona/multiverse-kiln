@@ -276,6 +276,13 @@ export interface SessionPlayer
 	 * with 2FA on
 	 */
 	serverAdmin: boolean;
+
+	/**
+	 * How long until the browser's session ends if it isn't used again, in milliseconds. A length of
+	 * time rather than a time, so the browser's clock being wrong doesn't matter; the pages forget what
+	 * they remembered for the player once it passes (client/src/rememberedValues.ts)
+	 */
+	sessionExpiresInMs: number;
 }
 
 /**

@@ -5,6 +5,7 @@ import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 import { SESSION_ROOM_NAME, SessionServerMessageType, type AccountPayload, type AccountPlayer } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { pool } from '../src/db/client.js';
+import { SESSION_LIFETIMES } from '../src/logic/sessionLifetimes.js';
 import { connectedSessions } from '../src/players/connectedSessions.js';
 import { Inbox } from './inbox.js';
 import { addPlayer, logInBrowser, type TestBrowser } from './players.js';
@@ -93,15 +94,17 @@ describe('SessionRoom', () =>
 		await assert.rejects(colyseus.sdk.create(SESSION_ROOM_NAME));
 	});
 
-	it('tells a logged-in window who its player is', async () =>
+	it('tells a logged-in window who its player is, and when its session ends if it isn\'t used again', async () =>
 	{
 		const browser = await logInNewBrowser('Ada');
 		const window = await openWindow(browser.cookie);
+		const { sessionExpiresInMs, ...player } = (window.account ?? { sessionExpiresInMs: 0 });
 
-		assert.deepStrictEqual(window.account, {
+		assert.deepStrictEqual(player, {
 			playerId: browser.playerId,
 			name: 'Ada'
 		});
+		assert.ok((sessionExpiresInMs > (SESSION_LIFETIMES.short.idleMs - 60000)) && (sessionExpiresInMs <= SESSION_LIFETIMES.short.idleMs));
 	});
 
 	it('treats a session token it doesn\'t know as not logged in', async () =>

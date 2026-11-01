@@ -1,5 +1,7 @@
 import { Client, type Room } from '@colyseus/sdk';
-import { GAME_ROOM_NAME, GameState, LOBBY_ROOM_NAME, LobbyState, ServerMessageType, SESSION_ROOM_NAME, UNIVERSES_PATH, type GameJoinOptions, type LobbyJoinOptions, type UniverseDetails, type UniverseListPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
+import { GAME_ROOM_NAME, GameState, LOBBY_ROOM_NAME, LobbyState, ServerMessageType, SESSION_ROOM_NAME, SessionServerMessageType, UNIVERSES_PATH, type AccountPayload, type GameJoinOptions, type LobbyJoinOptions, type UniverseDetails, type UniverseListPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
+
+import { forgetPlayerValues, rememberPlayerSession } from '../rememberedValues';
 
 /**
  * How many universes Home asks for at a time
@@ -144,7 +146,9 @@ function waitForArrival(room: MapRoom): Promise<{ playerId: string; area: AreaPa
  *
  * The browser sends its session cookie, if it has one, when joining a room: every window of this
  * browser sends the same cookie, so they are all the same player. The session room admits windows
- * that aren't logged in too
+ * that aren't logged in too. Whatever the browser remembers for the player (rememberedValues.ts) is
+ * kept as long as the session room says the session lasts, and forgotten once it says the browser isn't
+ * logged in
  *
  * @return The client and the joined session room
  */
@@ -152,6 +156,18 @@ export async function connectToServer(): Promise<ServerConnection>
 {
 	const client = createClient();
 	const session = await client.joinOrCreate(SESSION_ROOM_NAME);
+
+	session.onMessage(SessionServerMessageType.Account, (account: AccountPayload) =>
+	{
+		if (account.player)
+		{
+			rememberPlayerSession(account.player.playerId, account.player.sessionExpiresInMs);
+		}
+		else
+		{
+			forgetPlayerValues();
+		}
+	});
 
 	return({ client, session });
 }

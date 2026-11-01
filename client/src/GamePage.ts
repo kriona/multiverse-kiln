@@ -8,6 +8,7 @@ import { GroupApi } from './network/groupApi';
 import { getUniverseDetails, joinGroup, joinLobby, type GameConnection, type LobbyConnection, type ServerConnection } from './network/serverConnection';
 import { isLeavingPage } from './pageLifecycle';
 import { characterPageUrl, currentPageAddress, gamePageUrl, HOME_PAGE_URL, loginPageUrl, readGameUniverseKey, readPageParameter, replacePageParameters, replacePagePath } from './pages';
+import { readPlayerValue, rememberPlayerValue } from './rememberedValues';
 import { announce } from './ui/announcer';
 import { characterMessages } from './ui/characterMessages';
 import { CharacterSheetDialog } from './ui/CharacterSheetDialog';
@@ -1138,17 +1139,19 @@ export class GamePage
 	}
 
 	/**
-	 * The storage key of the character the tab plays in the universe
+	 * The key of the character the tab plays in the universe, a player value in the tab's own storage
+	 * (rememberedValues.ts)
 	 *
 	 * @return The key, or undefined before the universe is known
 	 */
 	private characterStorageKey(): string | undefined
 	{
-		return(this.universe ? `kiln.playing.${this.universe.id}` : undefined);
+		return(this.universe ? `playing.${this.universe.id}` : undefined);
 	}
 
 	/**
-	 * Remembers which character the tab plays, so reloading the page plays them again
+	 * Remembers which character the tab plays, so reloading the page plays them again. Without storage,
+	 * the tab plays the player's most recent character next time
 	 *
 	 * @param characterId The character's ID
 	 */
@@ -1156,16 +1159,9 @@ export class GamePage
 	{
 		const key = this.characterStorageKey();
 
-		try
+		if (key !== undefined)
 		{
-			if (key !== undefined)
-			{
-				sessionStorage.setItem(key, characterId);
-			}
-		}
-		catch
-		{
-			// Without storage, the tab plays the player's most recent character next time
+			rememberPlayerValue(key, characterId, 'session');
 		}
 	}
 
@@ -1178,13 +1174,6 @@ export class GamePage
 	{
 		const key = this.characterStorageKey();
 
-		try
-		{
-			return(((key !== undefined) ? (sessionStorage.getItem(key) ?? undefined) : undefined));
-		}
-		catch
-		{
-			return(undefined);
-		}
+		return(((key !== undefined) ? (readPlayerValue(key, 'session') ?? undefined) : undefined));
 	}
 }

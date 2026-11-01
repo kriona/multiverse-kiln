@@ -6,6 +6,7 @@
  * messages with t()
  */
 import { LOCALE_PARAMETER, readPageParameter, replacePageParameters } from './pages';
+import { remember } from './rememberedValues';
 import { matchLocale, SOURCE_LOCALE, translationCatalog, Translator, type LocalizedMessage, type MessageSource, type MessageValues, type TranslationFile } from '@multiverse-kiln/shared';
 
 /**
@@ -34,7 +35,14 @@ const LOCALE_STORAGE_KEY = 'kiln.locale';
 let translator = new Translator(SOURCE_LOCALE);
 
 /**
- * Picks the player's language, loads its translations and translates the page's marked text
+ * Where the browser keeps the language the last page was shown in, which public/remembered-language.js
+ * reads to keep the next page hidden until it's translated
+ */
+const PAGE_LOCALE_STORAGE_KEY = 'kiln-page-locale';
+
+/**
+ * Picks the player's language, loads its translations and translates the page's marked text, then
+ * shows the page if public/remembered-language.js hid it to wait for that
  */
 export async function startLocalization(): Promise<void>
 {
@@ -48,11 +56,14 @@ export async function startLocalization(): Promise<void>
 	catch (error)
 	{
 		console.error(`Could not load the ${locale} translations; showing English:`, error);
+		document.documentElement.removeAttribute('data-translating');
 		return;
 	}
 
 	document.documentElement.lang = locale;
 	localizePage(document.documentElement);
+	document.documentElement.removeAttribute('data-translating');
+	remember(PAGE_LOCALE_STORAGE_KEY, locale);
 }
 
 /**

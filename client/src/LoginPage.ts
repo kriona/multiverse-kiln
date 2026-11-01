@@ -5,7 +5,7 @@ import { authFieldOf, type AuthApi } from './network/authApi';
 import { EditorApiError } from './network/editorApi';
 import { announceLogin } from './network/sessionBroadcast';
 import { readNextPage, readPageParameter, rememberLoginAddress, TWO_FACTOR_SETUP_PAGE_URL } from './pages';
-import { forgetAccountName } from './ui/accountMenu';
+import { forgetPlayerValues } from './rememberedValues';
 import { announce } from './ui/announcer';
 import { resetCodeInput } from './ui/codeInputs';
 import { getElement, setPageTitle, showMessage, showScreen, type ScreenName } from './ui/dom';
@@ -451,7 +451,7 @@ export class LoginPage
 	 */
 	private announceLoggedIn(): void
 	{
-		forgetAccountName();
+		forgetPlayerValues();
 		announceLogin();
 	}
 

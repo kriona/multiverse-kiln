@@ -12,7 +12,7 @@ import type { Executor } from '../db/client.js';
 import { saveLastLogin } from '../db/playerRepo.js';
 import { createSession, deleteSession, findSessionByTokenHash, findSessionWithPlayer, touchSession } from '../db/sessionRepo.js';
 import { clearCookie, readCookie, SESSION_COOKIE, setCookie } from '../http/cookies.js';
-import { isSessionExpired, SESSION_LIFETIMES, shouldTouchSession } from '../logic/sessionLifetimes.js';
+import { isSessionExpired, sessionExpiresAt, SESSION_LIFETIMES, shouldTouchSession } from '../logic/sessionLifetimes.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { markKnownBrowser } from './knownBrowsers.js';
 import { createToken, hashToken, isTokenForm } from './tokens.js';
@@ -37,6 +37,11 @@ export interface SessionIdentity
 	 * The language the player chose on their profile, or null when they haven't
 	 */
 	locale: string | null;
+
+	/**
+	 * When the session ends if it isn't used again
+	 */
+	expiresAt: Date;
 }
 
 /**
@@ -70,7 +75,9 @@ export async function resolveSession(cookieHeader: string | null | undefined, no
 		return(undefined);
 	}
 
-	if (shouldTouchSession(session, now))
+	const touched = shouldTouchSession(session, now);
+
+	if (touched)
 	{
 		await touchSession(session.id, now);
 	}
@@ -80,7 +87,12 @@ export async function resolveSession(cookieHeader: string | null | undefined, no
 		playerId: session.playerId,
 		username: session.username,
 		name: session.displayName,
-		locale: session.locale
+		locale: session.locale,
+		expiresAt: sessionExpiresAt({
+			createdAt: session.createdAt,
+			lastUsedAt: (touched ? now : session.lastUsedAt),
+			rememberMe: session.rememberMe
+		})
 	});
 }
 

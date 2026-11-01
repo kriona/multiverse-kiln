@@ -190,7 +190,8 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 		const account: AccountPayload = {
 			player: (session ? {
 				playerId: session.playerId,
-				name: session.name
+				name: session.name,
+				sessionExpiresInMs: Math.max(0, (session.expiresAt.getTime() - Date.now()))
 			} : null)
 		};
 
