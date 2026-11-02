@@ -11,11 +11,11 @@
 		"preview": "vite preview"
 	},
 	"dependencies": {
-		"@colyseus/sdk": "^0.18.5",
+		"@colyseus/sdk": "^0.18.8",
 		"@github/markdown-toolbar-element": "^2.2.3",
 		"@multiverse-kiln/shared": "*",
 		"dompurify": "^3.4.17",
-		"marked": "^18.1.1",
+		"marked": "^18.1.2",
 		"phaser": "^4.2.1",
 		"qrcode-generator": "^2.0.4"
 	},
