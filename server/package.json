@@ -43,7 +43,7 @@
 		"@multiverse-kiln/shared": "*",
 		"arctic": "^3.7.0",
 		"argon2": "^0.45.1",
-		"colyseus": "^0.18.2",
+		"colyseus": "^0.18.10",
 		"drizzle-orm": "^0.45.4",
 		"express": "^5.2.1",
 		"nodemailer": "^10.1.4",
