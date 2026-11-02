@@ -25,7 +25,7 @@
 	"license": "AGPL-3.0-or-later",
 	"devDependencies": {
 		"@colyseus/loadtest": "^0.18.4",
-		"@colyseus/sdk": "^0.18.1",
+		"@colyseus/sdk": "^0.18.8",
 		"@colyseus/testing": "^0.18.5",
 		"@types/express": "^5.0.6",
 		"@types/mocha": "^10.0.1",
@@ -37,16 +37,16 @@
 		"tsx": "^4.21.0"
 	},
 	"dependencies": {
-		"@aws-sdk/client-s3": "^3.1156.0",
+		"@aws-sdk/client-s3": "^3.1157.0",
 		"@colyseus/schema": "^5.0.42",
-		"@colyseus/tools": "^0.18.10",
+		"@colyseus/tools": "^0.18.11",
 		"@multiverse-kiln/shared": "*",
 		"arctic": "^3.7.0",
 		"argon2": "^0.45.1",
 		"colyseus": "^0.18.10",
 		"drizzle-orm": "^0.45.4",
 		"express": "^5.2.1",
-		"nodemailer": "^10.1.4",
+		"nodemailer": "^10.2.1",
 		"pg": "^8.23.1",
 		"sharp": "^0.35.5",
 		"zod": "^4.6.7"
