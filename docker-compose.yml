@@ -46,7 +46,7 @@ services:
   # Catches every email the server sends (SMTP_URL in server/.env), so nothing reaches a real inbox.
   # Read them at http://127.0.0.1:8025. Production sends through a real SMTP service instead
   mailpit:
-    image: axllent/mailpit:v1.31.6
+    image: axllent/mailpit:v1.32.0
     restart: unless-stopped
     ports:
       # SMTP and the web inbox, only reachable from this machine
