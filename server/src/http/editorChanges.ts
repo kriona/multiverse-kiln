@@ -9,17 +9,17 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { EDITOR_CHANGE_CHECKS, localize, mayMakeChange, type EditorChange, type NewRef, type SaveChangesPayload, type SaveRefusedPayload, type UniverseAccess } from '@multiverse-kiln/shared';
+import { ADMIN_ROLE, EDITOR_CHANGE_CHECKS, localize, mayMakeChange, type EditorAccess, type EditorChange, type NewRef, type SaveChangesPayload, type SaveRefusedPayload } from '@multiverse-kiln/shared';
 
+import { recordAdminEvent } from '../db/adminEventRepo.js';
 import { inTransaction } from '../db/transactions.js';
-import { findUniverseAccess } from '../db/universeEditorRepo.js';
-import { findEditableUniverse, lockUniverse, UniverseNameTakenError } from '../db/universeRepo.js';
+import { findDisabledReason, findEditableUniverse, lockUniverse, UniverseNameTakenError } from '../db/universeRepo.js';
 import { universeAccessChanges } from '../players/universeAccess.js';
 import { describeInvalidPayload } from '../rooms/payloads.js';
 import { deleteObject } from '../storage/objectStorage.js';
 import { areaChanges } from '../world/areaChanges.js';
 import { applyRulesetChange, applyUniverseChange, createTileChange, removeTileChange, saveTileChange } from './editor.js';
-import { universeContextOf, type UniverseContext } from './editorAccess.js';
+import { findEditorAccess, universeContextOf, type UniverseContext } from './editorAccess.js';
 import { createAreaChange, deleteAreaChange, deleteLinkChange, editCellsChange, resizeAreaChange, saveLinkChange, updateAreaChange } from './editorAreas.js';
 import { ChangeRefusal, refuse, type ChangeContext, type PreparedUpload } from './editorChangeContext.js';
 import { createClassChange, removeClassChange, saveClassChange } from './editorClasses.js';
@@ -33,11 +33,12 @@ import { deleteTileGraphicChange, prepareUpload, uploadTileGraphicChange } from 
 import { errorMessages, type Refusal } from './errors.js';
 
 /**
- * How a save went: the ID each thing made was saved with, or the change refused and why
+ * How a save went: the ID each thing made was saved with, or the change refused (null when the save
+ * as a whole was) and why
  */
 export type SaveOutcome =
 	| { saved: true; ids: Map<NewRef, number | string> }
-	| { saved: false; changeIndex: number; refusal: ChangeRefusal };
+	| { saved: false; changeIndex: number | null; refusal: ChangeRefusal };
 
 /**
  * Adds the route that saves the editor's changes to a universe's router
@@ -137,6 +138,9 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 	const lastEditorChange = changes.findLastIndex((change) => (EDITOR_CHANGE_CHECKS[change.kind] === 'manageEditors'));
 	const uploads = new Map<NewRef, PreparedUpload>();
 	let current = 0;
+
+	// Set when the save is refused as a whole, rather than one of its changes
+	let refusedWhole = false;
 	let context: ChangeContext;
 
 	try
@@ -170,7 +174,19 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 			await lockUniverse(base.universe.id, transaction);
 
 			// The role may have changed since the request was let in, by a save that held the lock
-			const access = await findUniverseAccess(base.universe.id, base.playerId, transaction);
+			const { access, serverAdmin } = await findEditorAccess(base.universe.id, base.playerId, transaction);
+
+			// Disabling the universe takes its lock too, so no save commits after it, except a server
+			// admin's, who may fix what it was disabled for
+			if (!serverAdmin && (await findDisabledReason(base.universe.id, transaction) !== null))
+			{
+				refusedWhole = true;
+				refuse(403, {
+					id: 'error.universeDisabledSave',
+					defaultMessage: 'The site\'s admins have disabled this universe, so changes to it can\'t be saved.',
+					description: 'Why the world editor couldn\'t save: one of the site\'s admins disabled the universe, for a reason the editor shows'
+				});
+			}
 
 			if (!access)
 			{
@@ -209,6 +225,16 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 			current = lastEditorChange;
 			await checkCreatorKept(saving);
 
+			if (access.role === ADMIN_ROLE)
+			{
+				await recordAdminEvent({
+					kind: 'universeEdited',
+					adminId: base.playerId,
+					universeId: base.universe.id,
+					occurredAt: new Date()
+				}, transaction);
+			}
+
 			return(saving);
 		});
 	}
@@ -223,7 +249,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 			throw error;
 		}
 
-		return({ saved: false, changeIndex: current, refusal });
+		return({ saved: false, changeIndex: (refusedWhole ? null : current), refusal });
 	}
 
 	await afterCommit(context);
@@ -234,12 +260,12 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 /**
  * The first change a player's role doesn't let them make
  *
- * @param access The player's role in the universe, and their languages
+ * @param access The player's role in the editor, and their languages
  * @param playerId The player's ID
  * @param changes The changes
  * @return The change's place in the list, or -1 when the role allows every one
  */
-function refusedIndex(access: UniverseAccess, playerId: string, changes: readonly EditorChange[]): number
+function refusedIndex(access: EditorAccess, playerId: string, changes: readonly EditorChange[]): number
 {
 	return(changes.findIndex((change) => !mayMakeChange(change, access, playerId)));
 }

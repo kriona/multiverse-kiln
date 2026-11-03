@@ -546,7 +546,7 @@ async function acceptInviteRoute(request: Request, response: Response): Promise<
 
 /**
  * The group and universe a request's invite link leads to, when the link still works and the player
- * may play the universe
+ * may play the universe, which isn't disabled
  *
  * @param request The request, with the token in its path
  * @return The universe, the group and the token's hash, or undefined
@@ -574,7 +574,7 @@ async function findInviteGroup(request: Request): Promise<{ universe: PlayableUn
 		findUniverseRole(group.universeId, playerIdOf(request))
 	]);
 
-	if (!universe || !canPlayUniverse(universe.stage, role))
+	if (!universe || (universe.disabledReason !== null) || !canPlayUniverse(universe.stage, role))
 	{
 		return(undefined);
 	}

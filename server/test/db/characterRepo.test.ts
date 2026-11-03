@@ -5,7 +5,7 @@ import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft
 import { addPlayer } from '../players.js';
 import { findDefaultRaceIds } from '../../src/db/raceRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
-import { createUniverse } from '../../src/db/universeRepo.js';
+import { createUniverse, setUniverseDisabled } from '../../src/db/universeRepo.js';
 import { addUniverse, dwarfFighter } from './fixtures.js';
 
 describe('characterRepo', () =>
@@ -238,6 +238,12 @@ describe('characterRepo', () =>
 
 			assert.deepStrictEqual(all.map((character) => [character.universeName, character.name]), [['Brightwater', 'Brokk'], ['Brightwater', 'Zed'], [all[2].universeName, 'Dain']]);
 			assert.deepStrictEqual((await listProfileCharacters(playerId, { stages: ['let_there_be_light'] })).map((character) => character.name), ['Brokk', 'Zed']);
+
+			// Others don't see characters in a universe a server admin has disabled
+			await setUniverseDisabled(otherUniverseId, 'Spam');
+			assert.deepStrictEqual(await listProfileCharacters(playerId, { stages: ['let_there_be_light'] }), []);
+			assert.strictEqual((await listProfileCharacters(playerId, {})).length, 3);
+			await setUniverseDisabled(otherUniverseId, null);
 
 			assert.strictEqual(await setCharacterVisibility(playerId, zedId, false), true);
 			assert.deepStrictEqual((await listProfileCharacters(playerId, { onlyVisible: true })).map((character) => character.name), ['Brokk', 'Dain']);

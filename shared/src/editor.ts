@@ -16,7 +16,7 @@ import type { Sf1eSettings } from './rulesets/sf1e/settings.js';
 import type { Sf1eThemeRules } from './rulesets/sf1e/themes.js';
 import type { SortDirection } from './sorting.js';
 import type { TileGraphicFormat } from './tileGraphics.js';
-import type { DisplayTime, FaerieMorning, LobbyPassageOfTime, PassageOfTime, Ruleset, UniverseRole, UniverseStage, AreaLightLevel, AreaLinkMode, AreaPassageOfTime } from './universes.js';
+import type { DisplayTime, EditorRole, FaerieMorning, LobbyPassageOfTime, PassageOfTime, Ruleset, UniverseRole, UniverseStage, AreaLightLevel, AreaLinkMode, AreaPassageOfTime } from './universes.js';
 
 /**
  * Base of every editor route. Under it, with :universeId and :areaId standing for IDs:
@@ -257,6 +257,11 @@ export interface EditableUniverseSummary
 	ruleset: Ruleset;
 	stage: UniverseStage;
 	role: UniverseRole;
+
+	/**
+	 * Whether a server admin has disabled the universe
+	 */
+	disabled: boolean;
 }
 
 /**
@@ -382,9 +387,16 @@ export interface EditableUniverse extends UniverseSettings
 	lobbyAreaId: string | null;
 
 	/**
-	 * The player's role, which decides what they may change
+	 * Why a server admin disabled the universe, or null while it isn't disabled. A disabled universe
+	 * can't be played, and the editor can't save
 	 */
-	role: UniverseRole;
+	disabledReason: string | null;
+
+	/**
+	 * The player's role in the editor, which decides what they may change: ADMIN_ROLE for a server admin
+	 * without a stronger role in the universe
+	 */
+	role: EditorRole;
 
 	/**
 	 * The languages the player may translate the universe into, as a translator; empty for other roles
@@ -395,12 +407,17 @@ export interface EditableUniverse extends UniverseSettings
 	 * The player's own ID, which the Editors tab finds them by
 	 */
 	playerId: string;
+
+	/**
+	 * Whether the player is a server admin with 2FA on, who may save while the universe is disabled
+	 */
+	serverAdmin: boolean;
 }
 
 /**
  * A universe as the server reads it, before it is told whose editor it is for
  */
-export type EditableUniverseDetails = Omit<EditableUniverse, 'role' | 'languages' | 'playerId'>;
+export type EditableUniverseDetails = Omit<EditableUniverse, 'role' | 'languages' | 'playerId' | 'serverAdmin'>;
 
 /**
  * Someone with a role in a universe, as the Editors tab lists them

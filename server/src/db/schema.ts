@@ -6,7 +6,7 @@
  */
 import { sql, type SQL } from 'drizzle-orm';
 import { boolean, check, customType, doublePrecision, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHUNK_SIZE, DARKVISIONS, EMAIL_CODE_PURPOSES, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, PROFILE_LANGUAGES, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, MAX_TRANSLATOR_LANGUAGES, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, type ProfileLanguage } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, DARKVISIONS, EMAIL_CODE_PURPOSES, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, PROFILE_LANGUAGES, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_DISABLED_REASON_LENGTH, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, MAX_TRANSLATOR_LANGUAGES, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, type ProfileLanguage } from '@multiverse-kiln/shared';
 
 import { SEEN_CHUNK_BYTES } from '../logic/seenCells.js';
 
@@ -208,9 +208,22 @@ export const universes = pgTable('universes', {
 	startingCopper: integer('starting_copper').notNull().default(0),
 	startingCredits: integer('starting_credits').notNull().default(0),
 
-	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+
+	/**
+	 * When a server admin disabled the universe, or null while it isn't disabled. A disabled universe
+	 * isn't listed or playable, and its editors can't save
+	 */
+	disabledAt: timestamp('disabled_at', { withTimezone: true }),
+
+	/**
+	 * Why the server admin disabled it, which its editors are shown; set exactly when disabledAt is
+	 */
+	disabledReason: text('disabled_reason')
 }, (table) => [
 	uniqueIndex('universes_slug_unique').on(table.slug),
+	check('universes_disabled_reason_set', sql`(${table.disabledAt} IS NULL) = (${table.disabledReason} IS NULL)`),
+	check('universes_disabled_reason_length', sql`char_length(${table.disabledReason}) BETWEEN 1 AND ${sql.raw(String(MAX_DISABLED_REASON_LENGTH))}`),
 	check('universes_faerie_morning_set', sql`(${table.passageOfTime} = 'faerie') = (${table.faerieMorning} IS NOT NULL)`),
 	check('universes_lobby_faerie_morning_set', sql`(${table.lobbyPassageOfTime} = 'faerie') = (${table.lobbyFaerieMorning} IS NOT NULL)`),
 	check('universes_lobby_day_hours_range', sql`${table.lobbyDayHours} BETWEEN ${sql.raw(String(MIN_LOBBY_DAY_HOURS))} AND ${sql.raw(String(MAX_LOBBY_DAY_HOURS))}`),
@@ -1555,4 +1568,50 @@ export const authEvents = pgTable('auth_events', {
 	index('auth_events_player_id_index').on(table.playerId),
 	index('auth_events_occurred_at_index').on(table.occurredAt),
 	check('auth_events_network_hash_length', authHashLength(table.networkHash))
+]);
+
+/**
+ * What a server admin did in an admin event: universeEdited is a save in the world editor of a universe
+ * they edit with ADMIN_ROLE
+ */
+export const ADMIN_EVENT_KINDS = ['adminAdded', 'adminRemoved', 'universeDisabled', 'universeEnabled', 'universeEdited'] as const;
+export const adminEventKind = pgEnum('admin_event_kind', ADMIN_EVENT_KINDS);
+
+/**
+ * A record of what server admins do: adding and removing admins, disabling and enabling universes, and
+ * saving universes they edit as admins. Kept after the accounts and universes it names are deleted, which empties their
+ * columns
+ */
+export const adminEvents = pgTable('admin_events', {
+	id: uuid('id').primaryKey().defaultRandom(),
+
+	/**
+	 * The admin who did it, or null once their account is deleted
+	 */
+	adminId: uuid('admin_id').references(() => players.id, { onDelete: 'set null' }),
+
+	kind: adminEventKind('kind').notNull(),
+
+	/**
+	 * The player added or removed as an admin, or null for other kinds and once their account is deleted
+	 */
+	playerId: uuid('player_id').references(() => players.id, { onDelete: 'set null' }),
+
+	/**
+	 * The universe disabled or enabled, or null for other kinds and once it is deleted
+	 */
+	universeId: uuid('universe_id').references(() => universes.id, { onDelete: 'set null' }),
+
+	/**
+	 * The reason given for disabling a universe, or null for other kinds
+	 */
+	reason: text('reason'),
+
+	occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	index('admin_events_admin_id_index').on(table.adminId),
+	index('admin_events_player_id_index').on(table.playerId),
+	index('admin_events_universe_id_index').on(table.universeId),
+	index('admin_events_occurred_at_index').on(table.occurredAt),
+	check('admin_events_reason_length', sql`char_length(${table.reason}) <= ${sql.raw(String(MAX_DISABLED_REASON_LENGTH))}`)
 ]);

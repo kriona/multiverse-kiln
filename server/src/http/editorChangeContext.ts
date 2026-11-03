@@ -2,7 +2,7 @@
  * What saving the editor's changes passes each change: the universe, the transaction they share, and
  * the IDs of the things made earlier in the same save (see editorChanges.ts)
  */
-import { isNewRef, type EditableUniverseDetails, type MessageDescriptor, type MessageValues, type NewRef, type NumberRef, type ResizeConflict, type StringRef, type UniverseRole } from '@multiverse-kiln/shared';
+import { isNewRef, type EditableUniverseDetails, type MessageDescriptor, type MessageValues, type NewRef, type NumberRef, type ResizeConflict, type StringRef, type EditorRole, type UniverseRole } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
 import type { AreaChange } from '../world/areaChanges.js';
@@ -30,9 +30,9 @@ export interface ChangeContext
 	universe: EditableUniverseDetails;
 
 	/**
-	 * The player's role, as it was when the save took the universe's lock
+	 * The player's role in the editor (ADMIN_ROLE included), as it was when the save took the universe's lock
 	 */
-	readonly role: UniverseRole;
+	readonly role: EditorRole;
 
 	/**
 	 * The editors whose role the save changes, with their role once it is saved, or undefined for those

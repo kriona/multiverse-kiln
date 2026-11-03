@@ -8,6 +8,7 @@
  * - time: a universe's passage of time, its lobby's, or an area's that others may inherit, changed
  * - universeDeleted: the universe was deleted, with its world, groups and characters, so its rooms
  *   turn every window away
+ * - universeDisabled: a server admin disabled the universe, so its rooms turn every window away
  */
 export type AreaChange =
 	| { kind: 'cells'; areaId: string; chunkKeys: string[] }
@@ -15,7 +16,8 @@ export type AreaChange =
 	| { kind: 'deleted'; areaId: string }
 	| { kind: 'tiles'; universeId: string }
 	| { kind: 'time'; universeId: string }
-	| { kind: 'universeDeleted'; universeId: string };
+	| { kind: 'universeDeleted'; universeId: string }
+	| { kind: 'universeDisabled'; universeId: string };
 
 /**
  * Called after every change

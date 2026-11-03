@@ -1,5 +1,5 @@
 import type { Client } from '@colyseus/sdk';
-import { ADMIN_PATH, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, PUBLIC_SITE_SETTINGS_PATH, SITE_SETTINGS_PATH, type AdminPlayerListPayload, type AdminPlayerListQuery, type AdminSessionListPayload, type AdminSessionListQuery, type PublicSiteSettings, type SiteSettings } from '@multiverse-kiln/shared';
+import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, PUBLIC_SITE_SETTINGS_PATH, SITE_SETTINGS_PATH, type AdminPlayerListPayload, type AdminPlayerListQuery, type AdminSessionListPayload, type AdminSessionListQuery, type AdminUniverseListPayload, type AdminUniverseListQuery, type PlayerMatch, type PlayerSearchPayload, type PlayerSearchQuery, type PublicSiteSettings, type ServerAdminListPayload, type ServerAdminRequest, type ServerAdminSummary, type SiteSettings, type UniverseDisableRequest } from '@multiverse-kiln/shared';
 
 import { queryString, sendRequest } from './editorApi';
 
@@ -76,5 +76,78 @@ export class AdminApi
 	async listPlayers(query: AdminPlayerListQuery): Promise<AdminPlayerListPayload>
 	{
 		return(sendRequest<AdminPlayerListPayload>(this.client, 'GET', `${ADMIN_PLAYERS_PATH}?${queryString(query)}`));
+	}
+
+	/**
+	 * Every server admin
+	 *
+	 * @return The admins, by username
+	 */
+	async listAdmins(): Promise<ServerAdminSummary[]>
+	{
+		return((await sendRequest<ServerAdminListPayload>(this.client, 'GET', ADMIN_ADMINS_PATH)).admins);
+	}
+
+	/**
+	 * Players who could be made server admins
+	 *
+	 * @param query What was typed: a name or username, or @ and a username
+	 * @return The players, best matches first
+	 */
+	async searchAdminCandidates(query: PlayerSearchQuery): Promise<PlayerMatch[]>
+	{
+		return((await sendRequest<PlayerSearchPayload>(this.client, 'GET', `${ADMIN_ADMINS_SEARCH_PATH}?${queryString(query)}`)).players);
+	}
+
+	/**
+	 * Makes a player a server admin
+	 *
+	 * @param request The player's username
+	 */
+	async addAdmin(request: ServerAdminRequest): Promise<void>
+	{
+		await sendRequest(this.client, 'POST', ADMIN_ADMINS_PATH, request);
+	}
+
+	/**
+	 * Takes away a player's server admin role
+	 *
+	 * @param username The player's username
+	 */
+	async removeAdmin(username: string): Promise<void>
+	{
+		await sendRequest(this.client, 'DELETE', `${ADMIN_ADMINS_PATH}/${encodeURIComponent(username)}`);
+	}
+
+	/**
+	 * A page of the universes
+	 *
+	 * @param query The search, filter and page
+	 * @return The page, and how many universes match
+	 */
+	async listUniverses(query: AdminUniverseListQuery): Promise<AdminUniverseListPayload>
+	{
+		return(sendRequest<AdminUniverseListPayload>(this.client, 'GET', `${ADMIN_UNIVERSES_PATH}?${queryString(query)}`));
+	}
+
+	/**
+	 * Disables a universe
+	 *
+	 * @param universeId The universe's ID
+	 * @param request Why, which its editors are shown
+	 */
+	async disableUniverse(universeId: string, request: UniverseDisableRequest): Promise<void>
+	{
+		await sendRequest(this.client, 'PUT', `${ADMIN_UNIVERSES_PATH}/${encodeURIComponent(universeId)}/disabled`, request);
+	}
+
+	/**
+	 * Enables a disabled universe again
+	 *
+	 * @param universeId The universe's ID
+	 */
+	async enableUniverse(universeId: string): Promise<void>
+	{
+		await sendRequest(this.client, 'DELETE', `${ADMIN_UNIVERSES_PATH}/${encodeURIComponent(universeId)}/disabled`);
 	}
 }

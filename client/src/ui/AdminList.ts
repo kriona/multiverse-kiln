@@ -1,4 +1,4 @@
-import { MAX_ADMIN_ROWS_PER_PAGE, MAX_ADMIN_SEARCH_LENGTH, type MessageSource } from '@multiverse-kiln/shared';
+import { defineMessages, MAX_ADMIN_ROWS_PER_PAGE, MAX_ADMIN_SEARCH_LENGTH, type MessageSource } from '@multiverse-kiln/shared';
 
 import { showAdminRefusal } from '../AdminPage';
 import { t } from '../localization';
@@ -7,6 +7,17 @@ import { playerPageUrl } from '../pages';
 import { announce } from './announcer';
 import { getElement, setOptions, showMessage } from './dom';
 import { formMessages } from './formMessages';
+
+/**
+ * Notes more than one admin page shows (see shared/src/localization.ts)
+ */
+export const adminNoteMessages = defineMessages({
+	twoFactor: {
+		id: 'admin.players.twoFactor',
+		defaultMessage: '2FA',
+		description: 'Note in the admin pages\' lists of players and server admins on an account with two-factor authentication on'
+	}
+});
 
 /**
  * How long the list waits after the last key typed in its search before asking the server, in milliseconds
@@ -75,7 +86,7 @@ export interface AdminListOptions<Row>
 }
 
 /**
- * A list on an admin page, such as the login sessions or the players: a table the server fills a page
+ * A list on an admin page, such as the login sessions, the players or the universes: a table the server fills a page
  * at a time, narrowed by a search and a yes-or-no filter, with Previous and Next under it. Screen
  * readers are told how many rows match after each search
  */
@@ -174,6 +185,14 @@ export class AdminList<Row>
 	}
 
 	/**
+	 * Loads the page shown again, such as after a row was changed
+	 */
+	async reload(): Promise<void>
+	{
+		await this.refresh(false);
+	}
+
+	/**
 	 * Loads the page the search, filter and offset ask for, and shows it
 	 *
 	 * @param announceMatches Whether to tell screen readers how many rows match, as after a search
@@ -250,7 +269,7 @@ export class AdminList<Row>
 			announce(t({
 				id: 'admin.matches',
 				defaultMessage: '{total, plural, =0 {Nothing matches} one {# match} other {# matches}}',
-				description: 'Read out by screen readers once an admin page\'s list of sessions or players has been narrowed by its search or filter: how many rows match'
+				description: 'Read out by screen readers once an admin page\'s list of sessions, players or universes has been narrowed by its search or filter: how many rows match'
 			}, {
 				total: page.total
 			}));
@@ -286,7 +305,7 @@ export function playerCell(displayName: string, username: string): HTMLTableCell
  * What kind of note a tag is, which picks its color (.admin-tag-<tone> in admin.scss). Notes that mean the
  * same thing on different pages, such as Active and Connected, share one
  */
-export type AdminNoteTone = 'online' | 'current' | 'remembered' | 'serverAdmin' | 'twoFactor' | 'password' | 'google' | 'discord';
+export type AdminNoteTone = 'online' | 'current' | 'remembered' | 'serverAdmin' | 'twoFactor' | 'password' | 'google' | 'discord' | 'warning';
 
 /**
  * A short note about a row, such as Server admin

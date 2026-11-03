@@ -11,12 +11,14 @@ import { addGroupMember, findGroup, leaveGroup, listGroupMembers } from '../src/
 import { createAreaLink, updateAreaSettings } from '../src/db/areaRepo.js';
 import { loadSeenChunks } from '../src/db/worldStateRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
+import { setUniverseDisabled } from '../src/db/universeRepo.js';
 import { cellCenter } from '../src/logic/movement.js';
 import { SeenCells } from '../src/logic/seenCells.js';
 import { characterChanges } from '../src/players/characterChanges.js';
 import { connectedSessions } from '../src/players/connectedSessions.js';
 import { groupChanges } from '../src/players/groupChanges.js';
 import type { GameRoom } from '../src/rooms/GameRoom.js';
+import { areaChanges } from '../src/world/areaChanges.js';
 import { addCharacter, addGroup, addPlayableUniverse, defaultRaceId, type PlayableUniverse } from './db/fixtures.js';
 import { addPlayer, TestBrowsers } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
@@ -356,6 +358,25 @@ describe('GameRoom', () =>
 		assert.strictEqual(room.getAreaId(playerId), universe.fieldAreaId);
 		assert.strictEqual((await area).areaId, universe.fieldAreaId);
 		assert.strictEqual((await area).name, 'Field');
+	});
+
+	it('refuses windows while a server admin has disabled the universe, and turns away those already in', async () =>
+	{
+		const room = await createGameRoom();
+		const { client } = await joinFromBrowser(room, randomUUID());
+		const member = await addPlayerWithCharacter('Latecomer');
+		const left = waitForLeave(client);
+
+		await joinGroup(member);
+		await setUniverseDisabled(universe.universeId, 'Breaks the rules');
+		await assert.rejects(joinAs(room, randomUUID(), member));
+
+		areaChanges.publish({
+			kind: 'universeDisabled',
+			universeId: universe.universeId
+		});
+
+		assert.strictEqual(await left, ServerCloseCode.UniverseDisabled);
 	});
 
 	it('syncs the group\'s name, anchor being and members', async () =>

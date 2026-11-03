@@ -1,12 +1,19 @@
 import assert from 'assert';
+import { randomUUID } from 'crypto';
 
-import { ADMIN_PATH, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_TWO_FACTOR_ERROR_ID, AUTH_SESSION_PATH, DEFAULT_SITE_SETTINGS, MAX_ADMIN_ROWS_PER_PAGE, MAX_CHARACTER_DELETION_DAYS, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_UNIVERSES_PER_CREATOR, PUBLIC_SITE_SETTINGS_PATH, SITE_SETTINGS_PATH, type AdminPlayerListPayload, type AdminSessionListPayload, type ErrorPayload, type SessionPayload, type SiteSettings } from '@multiverse-kiln/shared';
+import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_ROLE, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_TWO_FACTOR_ERROR_ID, ADMIN_UNIVERSES_PATH, AUTH_SESSION_PATH, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, MAX_ADMIN_ROWS_PER_PAGE, MAX_CHARACTER_DELETION_DAYS, MAX_DISABLED_REASON_LENGTH, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_UNIVERSES_PER_CREATOR, PROFILE_PATH, PUBLIC_SITE_SETTINGS_PATH, SITE_SETTINGS_PATH, UNIVERSES_PATH, type AdminPlayerListPayload, type AdminSessionListPayload, type AdminUniverseListPayload, type EditableUniverse, type EditableUniverseListPayload, type ErrorPayload, type OwnProfilePayload, type PlayerSearchPayload, type ServerAdminListPayload, type SessionPayload, type SiteSettings, type UniverseListPayload } from '@multiverse-kiln/shared';
 
+import { findPlayerAdminEvents, findUniverseAdminEvents } from '../src/db/adminEventRepo.js';
 import { pool } from '../src/db/client.js';
 import { createPlayer, saveLastLogin } from '../src/db/playerRepo.js';
 import { addProviderLogin } from '../src/db/providerLoginRepo.js';
-import { addServerAdmin } from '../src/db/serverAdminRepo.js';
+import { addServerAdmin, isServerAdmin } from '../src/db/serverAdminRepo.js';
+import { findUniverseAccess, setUniverseRole } from '../src/db/universeEditorRepo.js';
+import { findDisabledReason, setUniverseDisabled } from '../src/db/universeRepo.js';
 import { connectedSessions } from '../src/players/connectedSessions.js';
+import { areaChanges, type AreaChange } from '../src/world/areaChanges.js';
+import { addPlayableUniverse, addUniverse } from './db/fixtures.js';
+import { saveChanges } from './editorRequests.js';
 import { addPlayer, logInBrowser, type TestBrowser } from './players.js';
 import { allowedTestOrigin } from './setup.js';
 import { getTestServer, testServerUrl } from './testServer.js';
@@ -101,12 +108,16 @@ describe('Admin access', () =>
 
 	it('refuses browsers that aren\'t logged in', async () =>
 	{
-		for (const path of [ADMIN_PATH, SITE_SETTINGS_PATH, ADMIN_SESSIONS_PATH, ADMIN_PLAYERS_PATH])
+		for (const path of [ADMIN_PATH, SITE_SETTINGS_PATH, ADMIN_SESSIONS_PATH, ADMIN_PLAYERS_PATH, ADMIN_ADMINS_PATH, `${ADMIN_ADMINS_SEARCH_PATH}?query=ada`, ADMIN_UNIVERSES_PATH])
 		{
 			assert.strictEqual((await send('GET', path)).status, 401, path);
 		}
 
 		assert.strictEqual((await send('PUT', SITE_SETTINGS_PATH, { body: closed })).status, 401);
+		assert.strictEqual((await send('POST', ADMIN_ADMINS_PATH, { body: { username: 'ada' } })).status, 401);
+		assert.strictEqual((await send('DELETE', `${ADMIN_ADMINS_PATH}/ada`)).status, 401);
+		assert.strictEqual((await send('PUT', `${ADMIN_UNIVERSES_PATH}/${randomUUID()}/disabled`, { body: { reason: 'Spam' } })).status, 401);
+		assert.strictEqual((await send('DELETE', `${ADMIN_UNIVERSES_PATH}/${randomUUID()}/disabled`)).status, 401);
 	});
 
 	it('refuses players who aren\'t server admins, even with 2FA', async () =>
@@ -117,7 +128,9 @@ describe('Admin access', () =>
 
 		const browser = await logInBrowser(player.id);
 
-		for (const path of [ADMIN_PATH, SITE_SETTINGS_PATH, ADMIN_SESSIONS_PATH, ADMIN_PLAYERS_PATH])
+		const universeId = await addUniverse();
+
+		for (const path of [ADMIN_PATH, SITE_SETTINGS_PATH, ADMIN_SESSIONS_PATH, ADMIN_PLAYERS_PATH, ADMIN_ADMINS_PATH, `${ADMIN_ADMINS_SEARCH_PATH}?query=ada`, ADMIN_UNIVERSES_PATH])
 		{
 			const response = await send('GET', path, { browser });
 
@@ -126,6 +139,10 @@ describe('Admin access', () =>
 		}
 
 		assert.strictEqual((await send('PUT', SITE_SETTINGS_PATH, { browser, body: closed })).status, 403);
+		assert.strictEqual((await send('POST', ADMIN_ADMINS_PATH, { browser, body: { username: 'Ordinary' } })).status, 403);
+		assert.strictEqual((await send('PUT', `${ADMIN_UNIVERSES_PATH}/${universeId}/disabled`, { browser, body: { reason: 'Spam' } })).status, 403);
+		assert.strictEqual(await isServerAdmin(player.id), false);
+		assert.strictEqual(await findDisabledReason(universeId), null);
 		assert.deepStrictEqual(await (await send('GET', PUBLIC_SITE_SETTINGS_PATH)).json(), {
 			characterDeletionDays: DEFAULT_SITE_SETTINGS.characterDeletionDays,
 			socials: DEFAULT_SITE_SETTINGS.socials,
@@ -141,13 +158,17 @@ describe('Admin access', () =>
 
 		const browser = await logInBrowser(player.id);
 
-		for (const path of [ADMIN_PATH, ADMIN_PLAYERS_PATH])
+		for (const path of [ADMIN_PATH, ADMIN_PLAYERS_PATH, ADMIN_ADMINS_PATH, ADMIN_UNIVERSES_PATH])
 		{
 			const response = await send('GET', path, { browser });
 
 			assert.strictEqual(response.status, 403, path);
 			assert.strictEqual(((await response.json()) as ErrorPayload).error.id, ADMIN_TWO_FACTOR_ERROR_ID);
 		}
+
+		assert.strictEqual((await send('POST', ADMIN_ADMINS_PATH, { browser, body: { username: 'Unguarded' } })).status, 403);
+		assert.strictEqual((await send('DELETE', `${ADMIN_ADMINS_PATH}/Unguarded`, { browser })).status, 403);
+		assert.strictEqual(await isServerAdmin(player.id), true);
 	});
 
 	it('lets server admins with 2FA in', async () =>
@@ -496,5 +517,416 @@ describe('Admin player list', () =>
 		assert.deepStrictEqual((await listPlayers('search=grace')).players.map((player) => player.username), ['Grace_Hopper']);
 		assert.deepStrictEqual((await listPlayers('serverAdmin=true')).players.map((player) => player.username), ['Player_Admin']);
 		assert.strictEqual((await listPlayers('serverAdmin=false')).total, 2);
+	});
+});
+
+describe('Admin server admin list', () =>
+{
+	let admin: TestBrowser;
+
+	before(async () =>
+	{
+		await getTestServer();
+	});
+
+	beforeEach(async () =>
+	{
+		admin = await logInAdmin('Head Admin');
+	});
+
+	/**
+	 * Lists the server admins as the admin
+	 *
+	 * @return The admins
+	 */
+	async function listAdmins(): Promise<ServerAdminListPayload['admins']>
+	{
+		const response = await send('GET', ADMIN_ADMINS_PATH, { browser: admin });
+
+		assert.strictEqual(response.status, 200);
+
+		return(((await response.json()) as ServerAdminListPayload).admins);
+	}
+
+	it('lists the admins by username ignoring case, saying which has 2FA and which is asking', async () =>
+	{
+		await addServerAdmin((await addPlayer('alan')).id);
+
+		assert.deepStrictEqual((await listAdmins()).map((each) => [each.username, each.displayName, each.twoFactor, each.current]), [
+			['alan', 'alan', false, false],
+			['Head_Admin', 'Head Admin', true, true]
+		]);
+	});
+
+	it('finds players who aren\'t admins yet, and refuses searches too short', async () =>
+	{
+		await addPlayer('Grace Hopper');
+		await addServerAdmin((await addPlayer('Grace Admin')).id);
+
+		const response = await send('GET', `${ADMIN_ADMINS_SEARCH_PATH}?query=grace`, { browser: admin });
+
+		assert.strictEqual(response.status, 200);
+		assert.deepStrictEqual(((await response.json()) as PlayerSearchPayload).players.map((player) => player.username), ['Grace_Hopper']);
+		assert.strictEqual((await send('GET', `${ADMIN_ADMINS_SEARCH_PATH}?query=gr`, { browser: admin })).status, 400);
+	});
+
+	it('adds an admin by username, recording who did it', async () =>
+	{
+		const grace = await addPlayer('Grace Hopper');
+		const response = await send('POST', ADMIN_ADMINS_PATH, { browser: admin, body: { username: 'grace_hopper' } });
+
+		assert.strictEqual(response.status, 204);
+		assert.strictEqual(await isServerAdmin(grace.id), true);
+		assert.deepStrictEqual((await findPlayerAdminEvents(grace.id)).map((event) => [event.kind, event.adminId, event.playerId]), [
+			['adminAdded', admin.playerId, grace.id]
+		]);
+	});
+
+	it('refuses to add a username no one has, or an admin again, recording nothing', async () =>
+	{
+		const missing = await send('POST', ADMIN_ADMINS_PATH, { browser: admin, body: { username: 'nobody_here' } });
+		const again = await send('POST', ADMIN_ADMINS_PATH, { browser: admin, body: { username: 'Head_Admin' } });
+
+		assert.strictEqual(missing.status, 404);
+		assert.strictEqual(((await missing.json()) as ErrorPayload).error.id, 'error.noSuchPlayerToMakeAdmin');
+		assert.strictEqual(again.status, 409);
+		assert.strictEqual(((await again.json()) as ErrorPayload).error.id, 'error.alreadyServerAdmin');
+		assert.strictEqual((await send('POST', ADMIN_ADMINS_PATH, { browser: admin, body: { username: '' } })).status, 400);
+		assert.deepStrictEqual(await findPlayerAdminEvents(admin.playerId), []);
+	});
+
+	it('removes another admin, or the admin asking, recording who did it', async () =>
+	{
+		const alan = await addPlayer('Alan Turing');
+
+		await addServerAdmin(alan.id);
+
+		assert.strictEqual((await send('DELETE', `${ADMIN_ADMINS_PATH}/Alan_Turing`, { browser: admin })).status, 204);
+		assert.strictEqual(await isServerAdmin(alan.id), false);
+		assert.deepStrictEqual((await findPlayerAdminEvents(alan.id)).map((event) => [event.kind, event.adminId]), [
+			['adminRemoved', admin.playerId]
+		]);
+
+		await addServerAdmin(alan.id);
+
+		assert.strictEqual((await send('DELETE', `${ADMIN_ADMINS_PATH}/Head_Admin`, { browser: admin })).status, 204);
+		assert.strictEqual(await isServerAdmin(admin.playerId), false);
+		assert.strictEqual((await send('GET', ADMIN_ADMINS_PATH, { browser: admin })).status, 403);
+	});
+
+	it('never removes the last admin, and refuses players who aren\'t admins', async () =>
+	{
+		await addPlayer('Grace Hopper');
+
+		const last = await send('DELETE', `${ADMIN_ADMINS_PATH}/Head_Admin`, { browser: admin });
+		const notAdmin = await send('DELETE', `${ADMIN_ADMINS_PATH}/Grace_Hopper`, { browser: admin });
+
+		assert.strictEqual(last.status, 409);
+		assert.strictEqual(((await last.json()) as ErrorPayload).error.id, 'error.lastServerAdmin');
+		assert.strictEqual(await isServerAdmin(admin.playerId), true);
+		assert.strictEqual(notAdmin.status, 404);
+		assert.strictEqual((await send('DELETE', `${ADMIN_ADMINS_PATH}/nobody_here`, { browser: admin })).status, 404);
+		assert.deepStrictEqual(await findPlayerAdminEvents(admin.playerId), []);
+	});
+
+	it('keeps one admin when two remove each other at once', async () =>
+	{
+		const other = await logInAdmin('Other Admin');
+		const answers = await Promise.all([
+			send('DELETE', `${ADMIN_ADMINS_PATH}/Other_Admin`, { browser: admin }),
+			send('DELETE', `${ADMIN_ADMINS_PATH}/Head_Admin`, { browser: other })
+		]);
+
+		const statuses = answers.map((answer) => answer.status).sort();
+
+		// The one that loses waits for the other's lock and finds itself last, or is already no admin to ask
+		assert.strictEqual(statuses[0], 204);
+		assert.ok([403, 409].includes(statuses[1]), String(statuses[1]));
+		assert.strictEqual((await pool.query('SELECT 1 FROM server_admins')).rowCount, 1);
+	});
+
+	it('tells an admin\'s own profile that they are one, for the warning when turning 2FA off', async () =>
+	{
+		const own = (await (await send('GET', PROFILE_PATH, { browser: admin })).json()) as OwnProfilePayload;
+		const other = (await (await send('GET', PROFILE_PATH, { browser: await logInBrowser((await addPlayer('Grace Hopper')).id) })).json()) as OwnProfilePayload;
+
+		assert.strictEqual(own.serverAdmin, true);
+		assert.strictEqual(other.serverAdmin, false);
+	});
+});
+
+describe('Admin universe list', () =>
+{
+	let admin: TestBrowser;
+
+	before(async () =>
+	{
+		await getTestServer();
+	});
+
+	beforeEach(async () =>
+	{
+		admin = await logInAdmin('Universe Admin');
+	});
+
+	/**
+	 * Lists universes as the admin
+	 *
+	 * @param query The query string
+	 * @return The page
+	 */
+	async function listUniverses(query: string = ''): Promise<AdminUniverseListPayload>
+	{
+		const response = await send('GET', `${ADMIN_UNIVERSES_PATH}?${query}`, { browser: admin });
+
+		assert.strictEqual(response.status, 200);
+
+		return((await response.json()) as AdminUniverseListPayload);
+	}
+
+	/**
+	 * Disables a universe as the admin
+	 *
+	 * @param universeId The universe
+	 * @param reason Why
+	 * @return The response
+	 */
+	function disable(universeId: string, reason: unknown): Promise<Response>
+	{
+		return(send('PUT', `${ADMIN_UNIVERSES_PATH}/${universeId}/disabled`, { browser: admin, body: { reason } }));
+	}
+
+	it('lists every universe by name ignoring case, with its creators, searched and filtered', async () =>
+	{
+		const zed = await addUniverse('zed');
+		const kilnhaven = await addUniverse('Kilnhaven');
+
+		await setUniverseRole(kilnhaven, (await addPlayer('Grace Hopper')).id, 'creator');
+		await setUniverseRole(kilnhaven, (await addPlayer('ada')).id, 'creator');
+		await setUniverseRole(kilnhaven, (await addPlayer('Alan Turing')).id, 'builder');
+		await setUniverseDisabled(zed, 'Spam');
+
+		const page = await listUniverses();
+
+		assert.deepStrictEqual(page.universes.map((universe) => [universe.name, universe.stage, universe.disabledReason]), [
+			['Kilnhaven', 'in_the_beginning', null],
+			['zed', 'in_the_beginning', 'Spam']
+		]);
+		assert.deepStrictEqual(page.universes[0].creators, [
+			{ username: 'ada', displayName: 'ada' },
+			{ username: 'Grace_Hopper', displayName: 'Grace Hopper' }
+		]);
+		assert.ok(page.universes[1].disabledAt !== null);
+		assert.deepStrictEqual((await listUniverses('search=KILN')).universes.map((universe) => universe.name), ['Kilnhaven']);
+		assert.deepStrictEqual((await listUniverses('disabled=true')).universes.map((universe) => universe.name), ['zed']);
+		assert.deepStrictEqual((await listUniverses('disabled=false')).universes.map((universe) => universe.name), ['Kilnhaven']);
+		assert.strictEqual((await listUniverses('limit=1&offset=1')).total, 2);
+	});
+
+	it('disables a universe with a reason, turning its players out and recording who did it', async () =>
+	{
+		const universeId = await addUniverse();
+		const published: AreaChange[] = [];
+		const stop = areaChanges.onChange((change) =>
+		{
+			published.push(change);
+		});
+
+		try
+		{
+			assert.strictEqual((await disable(universeId, '  Copied from another game\r\nwithout permission  ')).status, 204);
+		}
+		finally
+		{
+			stop();
+		}
+
+		assert.deepStrictEqual(published, [{ kind: 'universeDisabled', universeId }]);
+		assert.strictEqual(await findDisabledReason(universeId), 'Copied from another game\nwithout permission');
+		assert.deepStrictEqual((await findUniverseAdminEvents(universeId)).map((event) => [event.kind, event.adminId, event.reason]), [
+			['universeDisabled', admin.playerId, 'Copied from another game\nwithout permission']
+		]);
+	});
+
+	it('refuses a reason that is empty, too long or holds control characters, a universe disabled already, and one that doesn\'t exist', async () =>
+	{
+		const universeId = await addUniverse();
+
+		assert.strictEqual((await disable(universeId, '   ')).status, 400);
+		assert.strictEqual((await disable(universeId, 'x'.repeat(MAX_DISABLED_REASON_LENGTH + 1))).status, 400);
+		assert.strictEqual((await disable(universeId, 'Bad\u0007')).status, 400);
+		assert.strictEqual((await disable(universeId, 7)).status, 400);
+		assert.strictEqual(await findDisabledReason(universeId), null);
+		assert.strictEqual((await disable(universeId, 'x'.repeat(MAX_DISABLED_REASON_LENGTH))).status, 204);
+
+		const again = await disable(universeId, 'Again');
+
+		assert.strictEqual(again.status, 409);
+		assert.strictEqual(((await again.json()) as ErrorPayload).error.id, 'error.universeAlreadyDisabled');
+		assert.strictEqual((await disable(randomUUID(), 'Gone')).status, 404);
+		assert.strictEqual((await disable('not-a-universe', 'Gone')).status, 404);
+		assert.strictEqual((await findUniverseAdminEvents(universeId)).length, 1);
+	});
+
+	it('enables a disabled universe again, and refuses one that isn\'t disabled', async () =>
+	{
+		const universeId = await addUniverse();
+
+		await setUniverseDisabled(universeId, 'Spam');
+
+		assert.strictEqual((await send('DELETE', `${ADMIN_UNIVERSES_PATH}/${universeId}/disabled`, { browser: admin })).status, 204);
+		assert.strictEqual(await findDisabledReason(universeId), null);
+
+		const again = await send('DELETE', `${ADMIN_UNIVERSES_PATH}/${universeId}/disabled`, { browser: admin });
+
+		assert.strictEqual(again.status, 409);
+		assert.strictEqual(((await again.json()) as ErrorPayload).error.id, 'error.universeNotDisabled');
+		assert.strictEqual((await send('DELETE', `${ADMIN_UNIVERSES_PATH}/${randomUUID()}/disabled`, { browser: admin })).status, 404);
+		assert.deepStrictEqual((await findUniverseAdminEvents(universeId)).map((event) => [event.kind, event.adminId, event.reason]), [
+			['universeEnabled', admin.playerId, null]
+		]);
+	});
+
+	it('takes a disabled universe off Home and its page, and refuses characters in it, until it is enabled', async () =>
+	{
+		const universe = await addPlayableUniverse();
+		const player = await logInBrowser((await addPlayer('Grace Hopper')).id);
+		const charactersPath = `${UNIVERSES_PATH}/${universe.universeId}/characters`;
+
+		/**
+		 * The IDs of the universes Home lists
+		 *
+		 * @return The IDs
+		 */
+		const listed = async (): Promise<string[]> => ((await (await send('GET', UNIVERSES_PATH)).json()) as UniverseListPayload).universes.map((each) => each.id);
+
+		assert.ok((await listed()).includes(universe.universeId));
+		assert.strictEqual((await disable(universe.universeId, 'Spam')).status, 204);
+		assert.ok(!(await listed()).includes(universe.universeId));
+		assert.strictEqual((await send('GET', `${UNIVERSES_PATH}/${universe.universeId}`)).status, 404);
+		assert.strictEqual((await send('GET', charactersPath, { browser: player })).status, 404);
+
+		assert.strictEqual((await send('DELETE', `${ADMIN_UNIVERSES_PATH}/${universe.universeId}/disabled`, { browser: admin })).status, 204);
+		assert.ok((await listed()).includes(universe.universeId));
+		assert.strictEqual((await send('GET', charactersPath, { browser: player })).status, 200);
+	});
+
+	it('shows a disabled universe\'s editors why, and refuses their saves', async () =>
+	{
+		const creator = await logInBrowser((await addPlayer('Ada Lovelace')).id);
+		const universeId = await addUniverse();
+
+		await setUniverseRole(universeId, creator.playerId, 'creator');
+		await disable(universeId, 'Spam');
+
+		const universe = (await (await send('GET', `${EDITOR_UNIVERSES_PATH}/${universeId}`, { browser: creator })).json()) as EditableUniverse;
+		const own = (await (await send('GET', EDITOR_UNIVERSES_PATH, { browser: creator })).json()) as EditableUniverseListPayload;
+		const saved = await saveChanges(creator, universeId, [{ kind: 'universe', update: { shortDescription: 'Changed' } }]);
+
+		assert.strictEqual(universe.disabledReason, 'Spam');
+		assert.deepStrictEqual(own.universes.map((each) => each.disabled), [true]);
+		assert.strictEqual(saved.status, 403);
+		assert.strictEqual(saved.body.changeIndex, null);
+		assert.strictEqual(saved.body.error.id, 'error.universeDisabledSave');
+
+		await send('DELETE', `${ADMIN_UNIVERSES_PATH}/${universeId}/disabled`, { browser: admin });
+
+		assert.strictEqual((await saveChanges(creator, universeId, [{ kind: 'universe', update: { shortDescription: 'Changed' } }])).status, 200);
+	});
+});
+
+describe('Editing universes as a server admin', () =>
+{
+	let admin: TestBrowser;
+
+	before(async () =>
+	{
+		await getTestServer();
+	});
+
+	beforeEach(async () =>
+	{
+		admin = await logInAdmin('Editing Admin');
+	});
+
+	/**
+	 * Opens a universe in the editor
+	 *
+	 * @param browser The browser
+	 * @param universeId The universe
+	 * @return The response, and the universe when it opened
+	 */
+	async function openEditor(browser: TestBrowser, universeId: string): Promise<{ status: number; universe: EditableUniverse }>
+	{
+		const response = await send('GET', `${EDITOR_UNIVERSES_PATH}/${universeId}`, { browser });
+
+		return({
+			status: response.status,
+			universe: ((response.status === 200) ? (await response.json()) as EditableUniverse : ({} as EditableUniverse))
+		});
+	}
+
+	it('opens any universe with the site admin role, which saves as a creator would, recording each save', async () =>
+	{
+		const universeId = await addUniverse();
+		const grace = await addPlayer('Grace Hopper');
+		const opened = await openEditor(admin, universeId);
+		const saved = await saveChanges(admin, universeId, [
+			{ kind: 'universe', update: { shortDescription: 'Cleaned up' } },
+			{ kind: 'addEditor', username: 'Grace_Hopper', settings: { role: 'creator', languages: [] } }
+		]);
+
+		assert.strictEqual(opened.status, 200);
+		assert.strictEqual(opened.universe.role, ADMIN_ROLE);
+		assert.strictEqual(opened.universe.serverAdmin, true);
+		assert.strictEqual(saved.status, 200);
+		assert.strictEqual((await findUniverseAccess(universeId, grace.id))?.role, 'creator');
+		assert.strictEqual(await findUniverseAccess(universeId, admin.playerId), undefined);
+		assert.deepStrictEqual((await findUniverseAdminEvents(universeId)).map((event) => [event.kind, event.adminId]), [
+			['universeEdited', admin.playerId]
+		]);
+	});
+
+	it('uses the site admin role over a weaker role, but a creator\'s own, which isn\'t recorded', async () =>
+	{
+		const built = await addUniverse();
+		const created = await addUniverse();
+
+		await setUniverseRole(built, admin.playerId, 'beta_tester');
+		await setUniverseRole(created, admin.playerId, 'creator');
+
+		assert.strictEqual((await openEditor(admin, built)).universe.role, ADMIN_ROLE);
+		assert.strictEqual((await openEditor(admin, created)).universe.role, 'creator');
+		assert.strictEqual((await saveChanges(admin, built, [{ kind: 'universe', update: { name: 'Renamed By Admin' } }])).status, 200);
+		assert.strictEqual((await saveChanges(admin, created, [{ kind: 'universe', update: { shortDescription: 'Mine' } }])).status, 200);
+		assert.strictEqual((await findUniverseAdminEvents(built)).length, 1);
+		assert.deepStrictEqual(await findUniverseAdminEvents(created), []);
+	});
+
+	it('lets a server admin save a disabled universe, as its creator too, while its other editors can\'t', async () =>
+	{
+		const universeId = await addUniverse();
+		const creator = await logInBrowser((await addPlayer('Ada Lovelace')).id);
+
+		await setUniverseRole(universeId, creator.playerId, 'creator');
+		await setUniverseRole(universeId, admin.playerId, 'creator');
+		await setUniverseDisabled(universeId, 'Spam');
+
+		assert.strictEqual((await saveChanges(admin, universeId, [{ kind: 'universe', update: { shortDescription: 'Fixed' } }])).status, 200);
+		assert.strictEqual((await saveChanges(creator, universeId, [{ kind: 'universe', update: { shortDescription: 'Mine' } }])).status, 403);
+		assert.strictEqual((await openEditor(creator, universeId)).universe.serverAdmin, false);
+	});
+
+	it('gives no site admin role to an admin without 2FA', async () =>
+	{
+		const player = await addPlayer('Unguarded Admin');
+		const browser = await logInBrowser(player.id);
+		const universeId = await addUniverse();
+
+		await addServerAdmin(player.id);
+
+		assert.strictEqual((await openEditor(browser, universeId)).status, 404);
+		assert.strictEqual((await saveChanges(browser, universeId, [{ kind: 'universe', update: { shortDescription: 'Sneaky' } }])).status, 404);
+		assert.deepStrictEqual(await findUniverseAdminEvents(universeId), []);
 	});
 });

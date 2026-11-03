@@ -3,8 +3,10 @@
  */
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import { z } from 'zod';
-import type { EditableUniverseDetails, EditorArea, UniverseRole } from '@multiverse-kiln/shared';
+import { editorAccessOf, type EditableUniverseDetails, type EditorAccess, type EditorArea, type EditorRole } from '@multiverse-kiln/shared';
 
+import type { Executor } from '../db/client.js';
+import { isActiveServerAdmin } from '../db/serverAdminRepo.js';
 import { findUniverseAccess } from '../db/universeEditorRepo.js';
 import { findEditableUniverse } from '../db/universeRepo.js';
 import { findEditorArea } from '../db/areaRepo.js';
@@ -13,18 +15,27 @@ import { errorMessages, sendError } from './errors.js';
 import { isOriginAllowed } from './origins.js';
 
 /**
- * The universe a request is about, and the requesting player's role in it
+ * The universe a request is about, and the requesting player's role in the editor
  */
 export interface UniverseContext
 {
 	playerId: string;
 	universe: EditableUniverseDetails;
-	role: UniverseRole;
+
+	/**
+	 * Their role in the universe, or ADMIN_ROLE for a server admin without a stronger one
+	 */
+	role: EditorRole;
 
 	/**
 	 * The languages the player may translate into, as a translator
 	 */
 	languages: readonly string[];
+
+	/**
+	 * Whether the player is a server admin with 2FA on, who may save while the universe is disabled
+	 */
+	serverAdmin: boolean;
 }
 
 /**
@@ -96,9 +107,30 @@ export async function requireLogin(request: Request, response: Response, next: N
 }
 
 /**
- * Middleware for routes under /:universeId: loads the universe and the player's role in it
+ * What a player may do in a universe's editor: their role in it, or ADMIN_ROLE for a server admin with
+ * 2FA on who has no stronger one (editorAccessOf())
  *
- * Answers 404 when the universe doesn't exist and when the player has no role in it, so the editor
+ * @param universeId The universe's ID
+ * @param playerId The player's ID
+ * @param executor The database when left out, or a transaction
+ * @return Their access, undefined when they may not open the universe's editor, and whether they are a
+ * server admin with 2FA on
+ */
+export async function findEditorAccess(universeId: string, playerId: string, executor?: Executor): Promise<{ access: EditorAccess | undefined; serverAdmin: boolean }>
+{
+	const access = await findUniverseAccess(universeId, playerId, executor);
+	const serverAdmin = await isActiveServerAdmin(playerId, executor);
+
+	return({
+		access: editorAccessOf(access, serverAdmin),
+		serverAdmin
+	});
+}
+
+/**
+ * Middleware for routes under /:universeId: loads the universe and the player's role in the editor
+ *
+ * Answers 404 when the universe doesn't exist and when the player may not edit it, so the editor
  * doesn't reveal universes the player can't see
  *
  * @param request The request
@@ -112,9 +144,9 @@ export async function loadUniverseContext(request: Request, response: Response, 
 
 	if (universeId.success)
 	{
-		const [universe, access] = await Promise.all([
+		const [universe, { access, serverAdmin }] = await Promise.all([
 			findEditableUniverse(universeId.data),
-			findUniverseAccess(universeId.data, playerId)
+			findEditorAccess(universeId.data, playerId)
 		]);
 
 		if (universe && access)
@@ -123,7 +155,8 @@ export async function loadUniverseContext(request: Request, response: Response, 
 				playerId,
 				universe,
 				role: access.role,
-				languages: access.languages
+				languages: access.languages,
+				serverAdmin
 			});
 			next();
 			return;
@@ -166,7 +199,7 @@ export async function loadAreaContext(request: Request, response: Response, next
  * @param allowed The check, such as canEditWorld
  * @return The middleware
  */
-export function requireRole(allowed: (role: UniverseRole) => boolean): RequestHandler
+export function requireRole(allowed: (role: EditorRole) => boolean): RequestHandler
 {
 	return((request, response, next) =>
 	{

@@ -27,6 +27,12 @@ export interface Confirmation
 	 * Whether the confirm button is disabled, for something the player can't do yet: the question says why
 	 */
 	confirmDisabled?: boolean;
+
+	/**
+	 * Whether confirming is harmless, such as enabling something again: the confirm button is a plain
+	 * button rather than a red, dangerous one
+	 */
+	harmless?: boolean;
 }
 
 /**
@@ -51,6 +57,7 @@ export function askToConfirm(confirmation: Confirmation): Promise<boolean>
 	note.hidden = (confirmation.note === undefined);
 	setButtonLabel(confirmButton, confirmation.confirmIcon, confirmation.confirmLabel);
 	confirmButton.disabled = (confirmation.confirmDisabled === true);
+	confirmButton.classList.toggle('danger', (confirmation.harmless !== true));
 
 	return(new Promise((resolve) =>
 	{

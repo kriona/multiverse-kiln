@@ -401,49 +401,110 @@ export interface UniverseAccess
 }
 
 /**
+ * The role a server admin edits a universe with whenever it allows more than their own role there, which
+ * is any role but creator: everything a creator may do. Never stored in universe_editors, so it isn't
+ * one of the universe's editors and isn't listed on the Editors tab
+ */
+export const ADMIN_ROLE = 'admin';
+
+/**
+ * The role the editor works with: a role in the universe, or ADMIN_ROLE
+ */
+export type EditorRole = UniverseRole | typeof ADMIN_ROLE;
+
+/**
+ * Each role's name in the editor, ADMIN_ROLE included
+ */
+export const EDITOR_ROLE_NAMES: Record<EditorRole, MessageDescriptor> = {
+	...UNIVERSE_ROLE_NAMES,
+	...defineMessages({
+		admin: {
+			id: 'universe.role.admin',
+			defaultMessage: 'site admin',
+			description: 'Role a server admin edits a universe with when they have no stronger role in it, shown in the editor\'s toolbar: they can change everything, as a creator can'
+		}
+	})
+};
+
+/**
+ * Someone's place in the editor: their role, ADMIN_ROLE included, and the languages a translator may
+ * translate into
+ */
+export interface EditorAccess
+{
+	role: EditorRole;
+
+	/**
+	 * Language tags, such as de or pt-BR; empty for every role but translator
+	 */
+	languages: readonly string[];
+}
+
+/**
+ * What someone may do in a universe's editor: a server admin with 2FA on edits with ADMIN_ROLE unless
+ * they are one of its creators, and everyone else with their role in it
+ *
+ * @param access Their role in the universe and their languages, or undefined for none
+ * @param serverAdmin Whether they are a server admin with 2FA on
+ * @return Their access, or undefined when they may not open the editor
+ */
+export function editorAccessOf(access: UniverseAccess | undefined, serverAdmin: boolean): EditorAccess | undefined
+{
+	if (serverAdmin && (access?.role !== 'creator'))
+	{
+		return({
+			role: ADMIN_ROLE,
+			languages: []
+		});
+	}
+
+	return(access);
+}
+
+/**
  * Whether a role may add, change and remove a universe's editors
  *
- * @param role The user's role in the universe
+ * @param role The user's role in the editor
  * @return True when the role may
  */
-export function canManageEditors(role: UniverseRole): boolean
+export function canManageEditors(role: EditorRole): boolean
 {
-	return(role === 'creator');
+	return((role === 'creator') || (role === ADMIN_ROLE));
 }
 
 /**
  * Whether a role may change a universe's settings: its name, descriptions, stage and passage of time
  *
- * @param role The user's role in the universe
+ * @param role The user's role in the editor
  * @return True when the role may
  */
-export function canEditUniverseSettings(role: UniverseRole): boolean
+export function canEditUniverseSettings(role: EditorRole): boolean
 {
-	return(role === 'creator');
+	return((role === 'creator') || (role === ADMIN_ROLE));
 }
 
 /**
  * Whether a role may change a universe's world: its tiles, areas, maps and links
  *
- * @param role The user's role in the universe
+ * @param role The user's role in the editor
  * @return True when the role may
  */
-export function canEditWorld(role: UniverseRole): boolean
+export function canEditWorld(role: EditorRole): boolean
 {
-	return((role === 'creator') || (role === 'builder'));
+	return((role === 'creator') || (role === 'builder') || (role === ADMIN_ROLE));
 }
 
 /**
- * Whether someone may translate a universe's text into a language: creators into any, translators into
- * the languages they are given
+ * Whether someone may translate a universe's text into a language: creators and server admins into any,
+ * translators into the languages they are given
  *
- * @param access The user's role in the universe, and their languages
+ * @param access The user's role in the editor, and their languages
  * @param language The language's tag
  * @return True when they may
  */
-export function canTranslate(access: UniverseAccess, language: string): boolean
+export function canTranslate(access: EditorAccess, language: string): boolean
 {
-	if (access.role === 'creator')
+	if ((access.role === 'creator') || (access.role === ADMIN_ROLE))
 	{
 		return(true);
 	}

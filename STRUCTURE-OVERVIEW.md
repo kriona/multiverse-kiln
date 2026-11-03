@@ -219,9 +219,11 @@ Creating a universe
 The [admin page](#admin) decides how many universes a user can create. The admin page can also turn off creating universes for everyone, which disables the Create Universe button.
 
 ## Admin
-Pages for the site's server admins. The admin page (`/admin`, `client/admin.html`) links to the tools (`client/admin/`): Settings, Sessions and Players, each a card saying what it does. Each tool's toolbar reads like a path back to it, such as Multiverse Kiln | Site Admin | Settings, with Site Admin linking to the admin page. Only server admins can see and use them, and only they see Site admin in the account menu at the end of every toolbar, which goes to the admin page.
+Pages for the site's server admins. The admin page (`/admin`, `client/admin.html`) links to the tools (`client/admin/`): Settings, Sessions, Players, Server Admins and Universes, each a card saying what it does. Each tool's toolbar reads like a path back to it, such as Multiverse Kiln | Site Admin | Settings, with Site Admin linking to the admin page. Only server admins can see and use them, and only they see Site admin in the account menu at the end of every toolbar, which goes to the admin page.
 
-Whether a player is a server admin is stored in the database (`server_admins`). The first admin is made by hand with a script run on the server (`npm run admin:add -w server -- <username>`); after that, admins add and remove other admins on the admin pages. An admin must have 2FA on to use any of them: one without it is told so, with a link to turn it on. A player who isn't an admin is told the pages are only for admins, and a browser that isn't logged in goes to the login page.
+Whether a player is a server admin is stored in the database (`server_admins`). The first admin is made by hand with a script run on the server (`npm run admin:add -w server -- <username>`); after that, admins add and remove other admins on the [Server Admins](#server-admins) page. An admin must have 2FA on to use any of them: one without it is told so, with a link to turn it on, and turning 2FA off on the profile warns an admin that they'll lose the admin pages until it's back on. A player who isn't an admin is told the pages are only for admins, and a browser that isn't logged in goes to the login page.
+
+What admins do (adding and removing admins, disabling and enabling universes, and saving a universe with the site admin role) is recorded in `admin_events`, in the same transaction as the change: the admin, what they did, the player or universe, the reason given for disabling a universe, and when. The records are kept; deleting an account or a universe empties its columns in them rather than deleting them.
 
 ### Settings
 Settings for the whole site (`/admin/settings`), stored in one row of the `site_settings` table. Anyone can read the ones the pages show (the character deletion days, the social sites and the privacy contact) through a public route of their own.
@@ -238,6 +240,21 @@ The login sessions still going (`/admin/sessions`), most recently used first, 50
 
 ### Players
 Every player account (`/admin/players`), by username, 50 to a page: name and username (linking to their profile), email address, when they joined, when they last logged in (`players.last_login_at`, set whenever a session starts), how they log in (Password, Google, Discord), and notes: Active (a window of the site open right now), Server admin and 2FA. A search narrows them by name, username or email address, and a filter to server admins or other players.
+
+### Server Admins
+The site's server admins (`/admin/admins`), by username: name and username (linking to their profile), when they became one, and notes: You, and 2FA, or a warning that an admin without it can't use the admin pages. A field finds a player who isn't an admin by name, or @ and a username, the way the [Editors tab](#tab-editors) finds players, and Add Admin makes them one. Each admin's Remove asks first, and removing yourself warns that you lose the admin pages. The site always keeps at least one admin: the last has no Remove, and the server refuses to remove them, even when two admins remove each other at once.
+
+### Universes
+Every universe (`/admin/universes`), by name, 50 to a page: its name (linking to its editor), its ruleset, its stage, its creators (linking to their profiles), when it was made, and notes: Disabled, with when and why. A search narrows them by name, and a filter to disabled universes or others.
+
+Disable asks for a reason, up to 500 characters, which the universe's editors are shown. A disabled universe:
+- isn't listed on Home, its page and lobby answer as if it didn't exist, and other players' profiles leave out characters in it
+- can't be played: its lobby and groups turn everyone out at once and refuse windows, the game page saying the site's admins disabled it, and Create Character, Create Group and invites are refused
+- shows its editors the reason above the editor's tabs, with Save and Enter Universe turned off; the server refuses saves, and the player's own universes on Home mark it disabled
+
+Enable, after asking, makes it as it was before. Its settings, world and characters are untouched while it is disabled.
+
+A universe's name opens it in the editor. A server admin with 2FA on can open any universe's editor, and edits it with the site admin role (`ADMIN_ROLE`, `editorAccessOf()` in `shared/src/universes.ts`) whenever that allows more than their own role in it, which is any role but creator. The site admin role may do everything a creator may, but isn't stored in `universe_editors`: the admin isn't one of the universe's editors, isn't listed on the Editors tab, and has nothing to leave. The editor's toolbar names the role, and a notice says the admin can change everything a creator can. Each save made with it is an admin event (`universeEdited`). A server admin can also save a disabled universe, with either role, to fix what it was disabled for; the notice says so.
 
 ## Edit Universe
 This lets you change anything about a universe. It will be a whole suite of tools unrelated to playing the game.
@@ -322,7 +339,7 @@ Lists the users who can work on the universe, and lets you add them with a role:
 
 The table lists each editor's username, name, role and, for a translator, their languages. Creators add a player by searching for them (`PlayerSearch`): typing at least 3 characters of a name or username lists up to 10 matching players under the field, each as their name and @username, leaving out the universe's editors, and the player is chosen from the list. Text starting with @ matches usernames only. Creators then choose a role and, for a translator, at least one language. Creators change an editor's role and remove editors in the same dialog. Anyone can leave the universe with Leave Universe (Alt+L), which first asks them to confirm and explains what they lose once it is saved: their role and the editor, and the right to play while the universe isn't open to everyone, and that a last creator has to make another editor a creator first. Every change is staged until Save, like the other tabs (see [Unsaved changes](#unsaved-changes)), and saved as `addEditor`, `saveEditor` and `removeEditor` changes. A universe always keeps at least one creator: a save that would leave none, by changing roles, removing editors or its last creator leaving, is refused, but one save can make another editor a creator and then let the old one leave.
 
-What each role sees in the editor: creators and builders see every tab (builders read the settings tabs without changing them), while beta testers and translators see only the Editors tab and the Universe tab, read-only. The server checks every change against the role the player has when the save starts (`mayMakeChange()` in `shared/src/editorChanges.ts`).
+What each role sees in the editor: creators and builders see every tab (builders read the settings tabs without changing them), while beta testers and translators see only the Editors tab and the Universe tab, read-only. A server admin may open any universe with the site admin role, which acts as a creator (see the admin page's [Universes](#universes)). The server checks every change against the role the player has when the save starts (`mayMakeChange()` in `shared/src/editorChanges.ts`).
 
 Losing a role takes effect at once. The player's next save in an open editor is refused, and a player who may no longer play the universe in its stage is turned out of its lobby and groups, with a message saying why. A player who changed their own role sees the editor again as the new role allows, and one who left goes Home.
 

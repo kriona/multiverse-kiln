@@ -8,7 +8,7 @@
 import type { DifficultyLevelSettings } from './difficulty.js';
 import type { AreaSettingsUpdate, AreaLinkTarget, CellChange, ClassSettings, ErrorPayload, ItemSettings, NewAreaRequest, RaceSettings, ResizeConflict, RulesetSettings, ThemeSettings, TileGraphicUploadRequest, TileSettings, UniverseSettingsUpdate } from './editor.js';
 import type { MapBounds } from './maps.js';
-import { canEditUniverseSettings, canEditWorld, canManageEditors, type UniverseAccess, type UniverseRole } from './universes.js';
+import { canEditUniverseSettings, canEditWorld, canManageEditors, type EditorAccess, type UniverseRole } from './universes.js';
 
 /**
  * Most changes one save can hold
@@ -166,11 +166,11 @@ export const EDITOR_CHANGE_CHECKS: Readonly<Record<EditorChangeKind, EditorChang
  * Whether a player's role lets them make a change
  *
  * @param change The change
- * @param access The player's role in the universe, and their languages
+ * @param access The player's role in the editor, and their languages
  * @param playerId The player's ID, since anyone may remove themself
  * @return True when it does
  */
-export function mayMakeChange(change: EditorChange, access: UniverseAccess, playerId: string): boolean
+export function mayMakeChange(change: EditorChange, access: EditorAccess, playerId: string): boolean
 {
 	switch (EDITOR_CHANGE_CHECKS[change.kind])
 	{

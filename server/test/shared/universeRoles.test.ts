@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { canEditUniverseSettings, canEditWorld, canManageEditors, canPlayUniverse, canTranslate, EDITOR_CHANGE_CHECKS, mayMakeChange, UNIVERSE_ROLES, type EditorChange, type UniverseAccess, type UniverseRole } from '@multiverse-kiln/shared';
+import { ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canManageEditors, canPlayUniverse, canTranslate, EDITOR_CHANGE_CHECKS, editorAccessOf, mayMakeChange, UNIVERSE_ROLES, type EditorAccess, type EditorChange, type UniverseAccess, type UniverseRole } from '@multiverse-kiln/shared';
 
 /**
  * Someone's access with a role and no languages
@@ -67,5 +67,24 @@ describe('Universe roles (shared)', () =>
 			['beta_tester', false, true, false, false, false],
 			['translator', false, true, false, false, false]
 		]);
+	});
+
+	it('lets the site admin role do everything a creator can', () =>
+	{
+		const admin: EditorAccess = { role: ADMIN_ROLE, languages: [] };
+
+		assert.deepStrictEqual([canManageEditors(ADMIN_ROLE), canEditUniverseSettings(ADMIN_ROLE), canEditWorld(ADMIN_ROLE), canTranslate(admin, 'ja')], [true, true, true, true]);
+		assert.deepStrictEqual([removeOther, leave, addTranslator, rename, paint].map((change) => mayMakeChange(change, admin, playerId)), [true, true, true, true, true]);
+	});
+
+	it('gives server admins the site admin role unless they are a creator, and others their own role', () =>
+	{
+		const translator: UniverseAccess = { role: 'translator', languages: ['de'] };
+
+		assert.deepStrictEqual(editorAccessOf(undefined, true), { role: ADMIN_ROLE, languages: [] });
+		assert.deepStrictEqual(editorAccessOf(translator, true), { role: ADMIN_ROLE, languages: [] });
+		assert.deepStrictEqual(UNIVERSE_ROLES.map((role) => editorAccessOf(accessOf(role), true)?.role), ['creator', ADMIN_ROLE, ADMIN_ROLE, ADMIN_ROLE]);
+		assert.strictEqual(editorAccessOf(undefined, false), undefined);
+		assert.strictEqual(editorAccessOf(translator, false), translator);
 	});
 });
