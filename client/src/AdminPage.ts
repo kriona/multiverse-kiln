@@ -9,7 +9,8 @@ import { getElement, setPageTitle } from './ui/dom';
 
 /**
  * Starts one of the admin pages (admin.html, which links to the others, and admin/settings.html,
- * admin/sessions.html and admin/players.html) in the player's language, then loads what it shows. Only
+ * admin/sessions.html, admin/players.html, admin/admins.html and admin/universes.html) in the player's
+ * language, then loads what it shows. Only
  * server admins with 2FA on can use them: the page shows why when the server refuses (showAdminRefusal())
  *
  * The pages load what they show over HTTP, so they don't wait for the session room. It tells them when

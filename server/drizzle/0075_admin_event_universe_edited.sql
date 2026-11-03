@@ -1,0 +1,1 @@
+ALTER TYPE "public"."admin_event_kind" ADD VALUE 'universeEdited';

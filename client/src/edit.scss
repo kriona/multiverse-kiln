@@ -132,6 +132,12 @@
 	}
 }
 
+// The notice above the tabs keeps the line breaks in a disabled universe's reason
+#editor-notice
+{
+	white-space: pre-line;
+}
+
 .editor-body
 {
 	flex: 1;

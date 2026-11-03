@@ -519,6 +519,20 @@
       "when": 1793550907466,
       "tag": "0073_backfill_player_last_login",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1793662373908,
+      "tag": "0074_admin_events_and_disabled_universes",
+      "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1793664603824,
+      "tag": "0075_admin_event_universe_edited",
+      "breakpoints": true
     }
   ]
-}
+}

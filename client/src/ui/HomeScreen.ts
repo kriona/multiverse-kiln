@@ -290,7 +290,8 @@ export class HomeScreen
 	}
 
 	/**
-	 * An entry in the player's own universes: its name, description, stage and the player's role, linking to the editor
+	 * An entry in the player's own universes: its name, description, stage, the player's role and whether
+	 * it is disabled, linking to the editor
 	 *
 	 * @param universe The universe
 	 * @return The list item
@@ -308,15 +309,25 @@ export class HomeScreen
 		name.textContent = universe.name;
 		description.textContent = universe.shortDescription;
 		details.className = 'universe-ruleset';
-		details.textContent = t({
-			id: 'home.ownDetails',
-			defaultMessage: '{ruleset} - {stage} - {role}',
-			description: 'Under each universe the player can edit: its ruleset (e.g. Pathfinder 1E), its stage (e.g. prologue) and the player\'s role (e.g. builder)'
-		}, {
-			ruleset: t(RULESET_NAMES[universe.ruleset]),
-			stage: t(UNIVERSE_STAGE_NAMES[universe.stage]),
-			role: t(UNIVERSE_ROLE_NAMES[universe.role])
-		});
+		details.textContent = (universe.disabled
+			? t({
+				id: 'home.ownDetailsDisabled',
+				defaultMessage: '{ruleset} - {stage} - {role} - disabled by the site\'s admins',
+				description: 'Under each universe the player can edit that one of the site\'s admins has disabled: its ruleset (e.g. Pathfinder 1E), its stage (e.g. prologue), the player\'s role (e.g. builder), and that it is disabled. The editor says why'
+			}, {
+				ruleset: t(RULESET_NAMES[universe.ruleset]),
+				stage: t(UNIVERSE_STAGE_NAMES[universe.stage]),
+				role: t(UNIVERSE_ROLE_NAMES[universe.role])
+			})
+			: t({
+				id: 'home.ownDetails',
+				defaultMessage: '{ruleset} - {stage} - {role}',
+				description: 'Under each universe the player can edit: its ruleset (e.g. Pathfinder 1E), its stage (e.g. prologue) and the player\'s role (e.g. builder)'
+			}, {
+				ruleset: t(RULESET_NAMES[universe.ruleset]),
+				stage: t(UNIVERSE_STAGE_NAMES[universe.stage]),
+				role: t(UNIVERSE_ROLE_NAMES[universe.role])
+			}));
 
 		link.append(name, description, details);
 		item.append(link);

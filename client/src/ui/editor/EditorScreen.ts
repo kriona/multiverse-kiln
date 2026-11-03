@@ -1,4 +1,4 @@
-import { canEditWorld, UNIVERSE_ROLE_NAMES, type EditableUniverse, type UniverseSettingsUpdate, type UniverseSummary } from '@multiverse-kiln/shared';
+import { ADMIN_ROLE, canEditWorld, EDITOR_ROLE_NAMES, type EditableUniverse, type UniverseSettingsUpdate, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -305,6 +305,10 @@ export class EditorScreen
 
 		this.place = { tab: (place.tab ?? ((place.areaId === undefined) ? 'universe' : 'areas')), areaId: place.areaId };
 		this.setUniverse(universe);
+		this.saveBar.setLocked(((universe.disabledReason !== null) && !universe.serverAdmin));
+		getElement('editor-play', HTMLButtonElement).disabled = (universe.disabledReason !== null);
+		this.showAccessNotice(universe);
+
 		this.universeTab.open(universe);
 		void this.rulesetTab.open(universe);
 		this.lobbyTab.open(universe);
@@ -359,6 +363,44 @@ export class EditorScreen
 	}
 
 	/**
+	 * Says above the tabs when a server admin has disabled the universe, and why, and when the player
+	 * edits it with the site admin role
+	 *
+	 * @param universe The universe
+	 */
+	private showAccessNotice(universe: EditableUniverse): void
+	{
+		if ((universe.disabledReason !== null) && universe.serverAdmin)
+		{
+			this.showNotice(t({
+				id: 'editor.universeDisabledAdmin',
+				defaultMessage: 'The site\'s admins have disabled this universe, so it can\'t be played and its editors can\'t save. As a site admin, you can still save changes to it. Reason: {reason}',
+				description: 'Shown above the editor\'s tabs to one of the site\'s admins for a universe the admins disabled; {reason} is the reason the admin gave, as they typed it'
+			}, {
+				reason: universe.disabledReason
+			}));
+		}
+		else if (universe.disabledReason !== null)
+		{
+			this.showNotice(t({
+				id: 'editor.universeDisabled',
+				defaultMessage: 'The site\'s admins have disabled this universe, so it can\'t be played and changes to it can\'t be saved. Reason: {reason}',
+				description: 'Shown above the editor\'s tabs for a universe one of the site\'s admins disabled; {reason} is the reason the admin gave, as they typed it'
+			}, {
+				reason: universe.disabledReason
+			}));
+		}
+		else if (universe.role === ADMIN_ROLE)
+		{
+			this.showNotice(t({
+				id: 'editor.editingAsAdmin',
+				defaultMessage: 'You are editing this universe as a site admin: you can change everything a creator can.',
+				description: 'Shown above the editor\'s tabs to one of the site\'s admins who opened a universe they have no stronger role in, which they edit with the site admin role'
+			}));
+		}
+	}
+
+	/**
 	 * Hides the notice
 	 */
 	hideNotice(): void
@@ -401,7 +443,7 @@ export class EditorScreen
 		}, {
 			universe: universe.name
 		}));
-		this.role.textContent = t(UNIVERSE_ROLE_NAMES[universe.role]);
+		this.role.textContent = t(EDITOR_ROLE_NAMES[universe.role]);
 		this.areasTab.setUniverse(universe);
 	}
 

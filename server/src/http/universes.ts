@@ -20,7 +20,8 @@ const listQuery = z.object({
 const universeKey = z.string().min(1).max(MAX_UNIVERSE_NAME_LENGTH * 2);
 
 /**
- * Adds the routes for the universes Home shows, which are those ready for everyone (stage let_there_be_light):
+ * Adds the routes for the universes Home shows, which are those ready for everyone (stage let_there_be_light)
+ * that a server admin hasn't disabled:
  *
  * - GET UNIVERSES_PATH lists them by name, a page at a time. Answers 400 for an offset or limit that
  *   isn't a whole number in range

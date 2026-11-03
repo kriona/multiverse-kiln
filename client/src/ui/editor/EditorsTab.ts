@@ -1,4 +1,4 @@
-import { canManageEditors, canPlayUniverse, languageName, UNIVERSE_ROLE_NAMES, type EditableUniverse, type EditorChange, type EditorRoleSettings, type PlayerMatch, type UniverseEditorSummary } from '@multiverse-kiln/shared';
+import { canManageEditors, canPlayUniverse, EDITOR_ROLE_NAMES, languageName, UNIVERSE_ROLE_NAMES, type EditableUniverse, type EditorChange, type EditorRoleSettings, type PlayerMatch, type UniverseEditorSummary } from '@multiverse-kiln/shared';
 import leaveIcon from 'virtual:icon/ph:sign-out';
 import undoIcon from 'virtual:icon/ph:arrow-u-up-left';
 
@@ -144,6 +144,9 @@ export class EditorsTab implements SavableTab, ChangeSource
 		const creators = this.view().filter(({ editor, state }) => ((editor.role === 'creator') && (state !== 'removed')));
 		const lastCreator = ((universe.role === 'creator') && (creators.length <= 1));
 
+		// A server admin editing with the admin role leaves the role they have in the universe
+		const ownRole = (this.view().find(({ editor }) => (editor.playerId === universe.playerId))?.editor.role ?? universe.role);
+
 		return({
 			title: t({
 				id: 'editor.editors.leaveTitle',
@@ -157,7 +160,7 @@ export class EditorsTab implements SavableTab, ChangeSource
 				defaultMessage: 'Once you save, you lose your role ({role}) in {universe} and can no longer open it in the editor. {play, select, yes {You can still play it, since it is open to everyone.} other {You can\'t play it until it opens to everyone, and you will be turned out of its lobby and your groups there.}}{lastCreator, select, yes {} other { Only a creator can give you a role again.}}',
 				description: 'Asked before the player leaves a universe from the editor\'s Editors tab; {role} is their role, e.g. builder, and {universe} the universe\'s name. {play} is yes when the universe is open to everyone, so they can still play it without a role; {lastCreator} is yes when they are its only creator, who can\'t leave until someone else is one: a line of its own then says so'
 			}, {
-				role: t(UNIVERSE_ROLE_NAMES[universe.role]),
+				role: t(EDITOR_ROLE_NAMES[ownRole]),
 				universe: universe.name,
 				play: (canPlayUniverse(universe.stage, undefined) ? 'yes' : 'no'),
 				lastCreator: (lastCreator ? 'yes' : 'no')

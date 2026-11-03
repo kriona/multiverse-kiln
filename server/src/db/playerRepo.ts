@@ -1,8 +1,8 @@
 /**
  * Player accounts: the only module that reads or writes the players table
  */
-import { and, count, eq, exists, isNotNull, not, sql } from 'drizzle-orm';
-import type { LoginProvider, ProfileLanguage, SocialSite, SocialUsernames } from '@multiverse-kiln/shared';
+import { and, count, eq, exists, isNotNull, not, sql, type SQL } from 'drizzle-orm';
+import type { LoginProvider, PlayerMatch, ProfileLanguage, SocialSite, SocialUsernames } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { authenticators, players, providerLogins, serverAdmins } from './schema.js';
@@ -624,4 +624,53 @@ export async function listPlayersForAdmin(filter: AdminPlayerFilter, page: { off
 		players: rows,
 		total: counted.total
 	});
+}
+
+/**
+ * What a search for players looks for (parsePlayerSearch())
+ */
+export interface PlayerSearch
+{
+	text: string;
+
+	/**
+	 * Whether only usernames are matched, rather than usernames and names
+	 */
+	usernameOnly: boolean;
+}
+
+/**
+ * Players whose username, or name unless only usernames are searched, holds some text, ignoring capitals
+ *
+ * @param search The text, and whether only usernames are searched
+ * @param limit The most players to return
+ * @param excluding A condition on the players row that leaves a player out, such as one already an editor
+ * @param executor The database, or a transaction
+ * @return The players: the one with exactly that username first, then those whose username starts
+ * with it, then the rest, each by username
+ */
+export async function searchPlayers(search: PlayerSearch, limit: number, excluding: SQL | undefined, executor: Executor = db): Promise<PlayerMatch[]>
+{
+	const text = search.text.toLowerCase();
+
+	// % and _ are wildcards in LIKE, and _ is common in usernames; backslash is LIKE's escape character
+	const pattern = text.replace(/[\\%_]/g, (character) => `\\${character}`);
+	const username = sql`lower(${players.username})`;
+	const matches = (search.usernameOnly
+		? sql`${username} LIKE ${`%${pattern}%`}`
+		: sql`(${username} LIKE ${`%${pattern}%`} OR lower(${players.displayName}) LIKE ${`%${pattern}%`})`);
+
+	return(executor
+		.select({
+			playerId: players.id,
+			username: players.username,
+			displayName: players.displayName
+		})
+		.from(players)
+		.where(and(matches, excluding))
+		.orderBy(
+			sql`CASE WHEN ${username} = ${text} THEN 0 WHEN ${username} LIKE ${`${pattern}%`} THEN 1 ELSE 2 END`,
+			username
+		)
+		.limit(limit));
 }

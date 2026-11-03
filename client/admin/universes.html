@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<!-- include head.html -->
+		<title data-message="admin.universes.title" data-translation-context="The browser tab's title for the admin page listing every universe, where admins disable and enable them, before the game engine's name">Universes</title>
+		<link rel="stylesheet" href="/src/admin.scss" />
+	</head>
+	<body>
+		<main>
+			<section class="admin-page">
+				<header class="toolbar">
+					<!-- include site-name.html -->
+					<!-- include admin-crumb.html -->
+					<h1 data-message="admin.universes.heading" data-translation-context="Heading of the admin page listing every universe, where admins disable and enable them">Universes</h1>
+					<!-- include account.html -->
+				</header>
+				<div class="admin-body admin-body-wide">
+					<!-- include admin-refusal.html -->
+					<div id="admin-content" class="panel">
+						<div class="hint" data-message="admin.universes.hint" data-translation-context="Explains the admin page listing every universe, above the list">A disabled universe isn't listed and can't be played. Its editors see the reason, and it can't save until it is enabled again.</div>
+						<div class="filters">
+							<input id="universe-search" type="search" placeholder="Search by name" aria-label="Search universes by name" data-message-placeholder="admin.universes.search" data-translation-context-placeholder="Shown in the empty field that narrows the admin page's list of universes down by name" data-message-aria-label="admin.universes.searchLabel" data-translation-context-aria-label="Name of the field that narrows the admin page's list of universes down by name, for screen readers" />
+							<label data-message="admin.universes.disabledFilter" data-translation-context="Label of the filter on the admin page's list of universes for whether a universe is disabled">
+								Disabled
+								<select id="universe-filter"></select>
+							</label>
+						</div>
+						<p id="universe-list-error" class="form-error" role="alert" hidden></p>
+						<div class="admin-table-scroll">
+							<table class="admin-table">
+								<thead>
+									<tr>
+										<th scope="col" data-message="admin.universes.universe" data-translation-context="Heading of the column of universes' names in the admin page's list of universes, each linking to the universe's editor">Universe</th>
+										<th scope="col" data-message="universe.ruleset" data-translation-context="Label of the field for a universe's game rules, e.g. Pathfinder 1E, in the Create Universe dialog, and heading of the column in the admin page's list of universes for each one's game rules">Ruleset</th>
+										<th scope="col" data-message="admin.universes.stage" data-translation-context="Heading of the column in the admin page's list of universes for each one's stage, such as in the beginning or let there be light">Stage</th>
+										<th scope="col" data-message="admin.universes.creators" data-translation-context="Heading of the column in the admin page's list of universes naming each one's creators">Creators</th>
+										<th scope="col" data-message="admin.universes.created" data-translation-context="Heading of the column in the admin page's list of universes for when each was made">Created</th>
+										<th scope="col" data-message="admin.column.notes" data-translation-context="Heading of the column in the admin pages' lists of sessions, players, server admins and universes that says more about each, such as whether a session is connected now, a player is a server admin or a universe is disabled">Notes</th>
+										<th scope="col"><span class="visually-hidden" data-message="admin.column.actions" data-translation-context="Heading, read only by screen readers, of the column of buttons in the admin pages' lists of server admins and universes, such as Remove or Disable">Actions</span></th>
+									</tr>
+								</thead>
+								<tbody id="universe-rows"></tbody>
+							</table>
+						</div>
+						<p id="universe-loading" class="admin-loading" data-message="page.loading" data-translation-context="Shown while a page or part of one loads, such as the site settings, the choices in Create Character, an area in the editor, or a universe's page">Loading...</p>
+						<p id="universe-empty" class="universe-empty" data-message="admin.universes.none" data-translation-context="Shown instead of the admin page's list of universes when none match the search and filter" hidden>No universes match.</p>
+						<div class="pager">
+							<button id="universe-previous" type="button" class="secondary" data-message="pager.previous" data-translation-context="Button that shows the previous page of a list">Previous</button>
+							<span id="universe-page"></span>
+							<button id="universe-next" type="button" class="secondary" data-message="pager.next" data-translation-context="Button that shows the next page of a list">Next</button>
+						</div>
+					</div>
+				</div>
+			</section>
+			<dialog id="universe-disable-dialog" class="panel dialog" aria-labelledby="universe-disable-title" aria-describedby="universe-disable-intro">
+				<form id="universe-disable-form" class="form" novalidate>
+					<h2 id="universe-disable-title" data-message="admin.universes.disableTitle" data-translation-context="Title of the dialog on the admin page listing universes that disables one, asking why">Disable Universe</h2>
+					<p id="universe-disable-intro"></p>
+					<label data-message="admin.universes.reason" data-translation-context="Label of the field in the dialog that disables a universe, for why it is disabled, which the universe's editors are shown">
+						Reason, shown to its editors
+						<textarea id="universe-disable-reason" rows="4" required></textarea>
+					</label>
+					<p id="universe-disable-reason-error" class="field-error field-message-slot"></p>
+					<p id="universe-disable-error" class="form-error" role="alert" hidden></p>
+					<div class="dialog-buttons">
+						<button id="universe-disable-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+						<button id="universe-disable-submit" type="submit" class="danger" aria-describedby="universe-disable-error" data-shortcut="Alt+S" data-message="admin.universes.disable" data-translation-context="Button in a row of the admin page's list of universes that opens the dialog disabling it, and the button in that dialog that disables it"><!-- icon ph:prohibit -->Disable</button>
+					</div>
+				</form>
+			</dialog>
+			<dialog id="confirm-dialog" class="panel dialog" aria-labelledby="confirm-title" aria-describedby="confirm-question confirm-note">
+				<form id="confirm-form" class="form">
+					<h2 id="confirm-title"></h2>
+					<p id="confirm-question"></p>
+					<p id="confirm-note" hidden></p>
+					<div class="dialog-buttons">
+						<button id="confirm-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+						<button id="confirm-submit" type="submit" class="danger"></button>
+					</div>
+				</form>
+			</dialog>
+		</main>
+		<!-- include footer.html -->
+		<!-- include accessibility.html -->
+		<script type="module" src="/src/adminUniverses.ts"></script>
+	</body>
+</html>

@@ -34,5 +34,10 @@ export enum ServerCloseCode
 	/**
 	 * The player's role in the universe was changed or taken away, and they may no longer play it in its stage
 	 */
-	AccessLost = 4016
+	AccessLost = 4016,
+
+	/**
+	 * A server admin disabled the universe
+	 */
+	UniverseDisabled = 4017
 }

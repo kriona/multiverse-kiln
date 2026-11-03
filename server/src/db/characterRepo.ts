@@ -214,7 +214,7 @@ export async function listCharacters(playerId: string, universeId: string, execu
  * rites, by universe name and then character name
  *
  * @param playerId The player's ID
- * @param filter Which to list: only those in universes at some stages (for others to see), and only those marked visible
+ * @param filter Which to list: only those in universes at some stages that aren't disabled (for others to see), and only those marked visible
  * @param executor The database, or a transaction
  * @return The characters
  */
@@ -237,7 +237,7 @@ export async function listProfileCharacters(playerId: string, filter: { stages?:
 		.where(and(
 			eq(characters.playerId, playerId),
 			isNull(characters.deleteAt),
-			((filter.stages === undefined) ? undefined : inArray(universes.stage, filter.stages)),
+			((filter.stages === undefined) ? undefined : and(inArray(universes.stage, filter.stages), isNull(universes.disabledAt))),
 			(filter.onlyVisible ? eq(characters.visibleOnProfile, true) : undefined)
 		))
 		.orderBy(asc(universes.name), asc(universes.id), asc(characters.name), asc(characters.id)));

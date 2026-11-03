@@ -35,9 +35,89 @@
 		"defaultMessage": "Site admin",
 		"description": "Item in the menu that opens from the player's name at the end of every page's toolbar, shown only to the site's admins: goes to the admin page, which links to the site's settings, its login sessions and its players"
 	},
+	"admin.admins.add": {
+		"defaultMessage": "Add Admin",
+		"description": "Button on the admin page listing the site's server admins that makes the player chosen in the field beside it a server admin"
+	},
+	"admin.admins.addFailed": {
+		"defaultMessage": "Could not add the admin.",
+		"description": "Shown on the admin page listing the site's server admins when a player couldn't be made an admin"
+	},
+	"admin.admins.added": {
+		"defaultMessage": "Admin since",
+		"description": "Heading of the column in the admin page's list of server admins for when each became one"
+	},
+	"admin.admins.choosePlayer": {
+		"defaultMessage": "Choose a player from the list.",
+		"description": "Shown under the field on the admin page listing the site's server admins when Add Admin is pressed before a player was chosen from the list of matches"
+	},
+	"admin.admins.heading": {
+		"defaultMessage": "Server Admins",
+		"description": "Heading of the admin page listing the site's server admins, where admins add and remove other admins"
+	},
+	"admin.admins.hint": {
+		"defaultMessage": "Server admins can use these pages once they turn on two-factor authentication. The site always keeps at least one.",
+		"description": "Explains the admin page listing the site's server admins, above the list"
+	},
+	"admin.admins.loadFailed": {
+		"defaultMessage": "Could not load the server admins.",
+		"description": "Shown on the admin page listing the site's server admins when the list couldn't be loaded"
+	},
+	"admin.admins.noTwoFactor": {
+		"defaultMessage": "No 2FA: can't use the admin pages",
+		"description": "Note in the admin page's list of server admins on an admin without two-factor authentication, who can't use the admin pages until they turn it on"
+	},
+	"admin.admins.nowAdmin": {
+		"defaultMessage": "{name} (@{username}) is now a server admin.",
+		"description": "Shown, and read out by screen readers, once a player was made one of the site's admins on the admin page listing them; {name} is their name and {username} their username"
+	},
+	"admin.admins.player": {
+		"defaultMessage": "Player to add",
+		"description": "Label of the field on the admin page listing the site's server admins that finds a player to make an admin by name or username"
+	},
+	"admin.admins.playerHint": {
+		"defaultMessage": "Type their name, or @ and their username, then choose them from the list.",
+		"description": "Under the field on the admin page listing the site's server admins that finds a player to make an admin"
+	},
+	"admin.admins.remove": {
+		"defaultMessage": "Remove",
+		"description": "Button in a row of the admin page's list of server admins that takes their admin role away, and the button in the dialog that asks first"
+	},
+	"admin.admins.removeFailed": {
+		"defaultMessage": "Could not remove the admin.",
+		"description": "Shown on the admin page listing the site's server admins when an admin's role couldn't be taken away"
+	},
+	"admin.admins.removeLabel": {
+		"defaultMessage": "Remove {name} (@{username}) as an admin",
+		"description": "Name of the Remove button in a row of the admin page's list of server admins, for screen readers; {name} is the admin's name and {username} their username"
+	},
+	"admin.admins.removeQuestion": {
+		"defaultMessage": "Stop {name} (@{username}) being one of the site's admins? They won't be able to use the admin pages.",
+		"description": "Asked before taking away another player's server admin role on the admin page listing the site's admins; {name} is their name and {username} their username"
+	},
+	"admin.admins.removeSelfQuestion": {
+		"defaultMessage": "Stop being one of the site's admins? You won't be able to use the admin pages, unless another admin adds you again.",
+		"description": "Asked before an admin takes away their own server admin role on the admin page listing the site's admins"
+	},
+	"admin.admins.removeTitle": {
+		"defaultMessage": "Remove Admin",
+		"description": "Title of the dialog that asks before taking away a server admin's role"
+	},
+	"admin.admins.removed": {
+		"defaultMessage": "{name} (@{username}) is no longer a server admin.",
+		"description": "Shown, and read out by screen readers, once a server admin's role was taken away on the admin page listing the site's admins; {name} is their name and {username} their username"
+	},
+	"admin.admins.title": {
+		"defaultMessage": "Server Admins",
+		"description": "The browser tab's title for the admin page listing the site's server admins, before the game engine's name"
+	},
+	"admin.admins.you": {
+		"defaultMessage": "You",
+		"description": "Note in the admin page's list of server admins on the player looking at it"
+	},
 	"admin.back": {
 		"defaultMessage": "Site Admin",
-		"description": "In the toolbar of each admin tool (the site settings, the list of sessions and the list of players), between the game engine's name and the tool's heading: links back to the admin page that links to them all"
+		"description": "In the toolbar of each admin tool (the site settings, and the lists of sessions, players, server admins and universes), between the game engine's name and the tool's heading: links back to the admin page that links to them all"
 	},
 	"admin.characterDeletionDays": {
 		"defaultMessage": "Days between last rites and deletion",
@@ -51,13 +131,17 @@
 		"defaultMessage": "Characters",
 		"description": "Heading of the site settings about players' characters"
 	},
+	"admin.column.actions": {
+		"defaultMessage": "Actions",
+		"description": "Heading, read only by screen readers, of the column of buttons in the admin pages' lists of server admins and universes, such as Remove or Disable"
+	},
 	"admin.column.notes": {
 		"defaultMessage": "Notes",
-		"description": "Heading of the column in the admin pages' lists of sessions and players that says more about each, such as whether a session is connected now or a player is a server admin"
+		"description": "Heading of the column in the admin pages' lists of sessions, players, server admins and universes that says more about each, such as whether a session is connected now, a player is a server admin or a universe is disabled"
 	},
 	"admin.column.player": {
 		"defaultMessage": "Player",
-		"description": "Heading of the column of players' names and usernames in the admin pages' lists of sessions and players"
+		"description": "Heading of the column of players' names and usernames in the admin pages' lists of sessions, players and server admins"
 	},
 	"admin.heading": {
 		"defaultMessage": "Settings",
@@ -65,7 +149,7 @@
 	},
 	"admin.home.heading": {
 		"defaultMessage": "Site Admin",
-		"description": "Heading of the admin page that links to the site admins' tools: the site settings, the list of sessions and the list of players"
+		"description": "Heading of the admin page that links to the site admins' tools: the site settings, and the lists of sessions, players, server admins and universes"
 	},
 	"admin.home.loadFailed": {
 		"defaultMessage": "Could not load the admin page. Try again in a moment.",
@@ -81,7 +165,7 @@
 	},
 	"admin.matches": {
 		"defaultMessage": "{total, plural, =0 {Nothing matches} one {# match} other {# matches}}",
-		"description": "Read out by screen readers once an admin page's list of sessions or players has been narrowed by its search or filter: how many rows match"
+		"description": "Read out by screen readers once an admin page's list of sessions, players or universes has been narrowed by its search or filter: how many rows match"
 	},
 	"admin.players.active": {
 		"defaultMessage": "Active",
@@ -145,7 +229,7 @@
 	},
 	"admin.players.twoFactor": {
 		"defaultMessage": "2FA",
-		"description": "Note in the admin page's list of players on an account with two-factor authentication on"
+		"description": "Note in the admin pages' lists of players and server admins on an account with two-factor authentication on"
 	},
 	"admin.privacy": {
 		"defaultMessage": "Privacy policy",
@@ -239,6 +323,14 @@
 		"defaultMessage": "Site Settings",
 		"description": "The browser tab's title for the page where the site's admins change settings for the whole site, before the game engine's name"
 	},
+	"admin.tools.admins": {
+		"defaultMessage": "Server Admins",
+		"description": "Link on the admin page to the list of the site's server admins"
+	},
+	"admin.tools.adminsHint": {
+		"defaultMessage": "Who can use these pages: add admins and remove them.",
+		"description": "Under the link to the list of server admins on the admin page"
+	},
 	"admin.tools.players": {
 		"defaultMessage": "Players",
 		"description": "Link on the admin page to the list of every player account"
@@ -263,6 +355,14 @@
 		"defaultMessage": "Creating universes, last rites, the footer's social sites and the privacy policy's contact.",
 		"description": "Under the link to the site settings on the admin page"
 	},
+	"admin.tools.universes": {
+		"defaultMessage": "Universes",
+		"description": "Link on the admin page to the list of every universe, where admins disable and enable them"
+	},
+	"admin.tools.universesHint": {
+		"defaultMessage": "Every universe, with who created it: disable one, saying why, and enable it again.",
+		"description": "Under the link to the list of universes on the admin page"
+	},
 	"admin.turnOnTwoFactor": {
 		"defaultMessage": "Turn on two-factor authentication",
 		"description": "Link on the admin pages, shown to an admin who doesn't have two-factor authentication on, that goes to their profile to set it up"
@@ -274,6 +374,118 @@
 	"admin.universes": {
 		"defaultMessage": "Universes",
 		"description": "Heading of the site settings about creating universes"
+	},
+	"admin.universes.created": {
+		"defaultMessage": "Created",
+		"description": "Heading of the column in the admin page's list of universes for when each was made"
+	},
+	"admin.universes.creators": {
+		"defaultMessage": "Creators",
+		"description": "Heading of the column in the admin page's list of universes naming each one's creators"
+	},
+	"admin.universes.disable": {
+		"defaultMessage": "Disable",
+		"description": "Button in a row of the admin page's list of universes that opens the dialog disabling it, and the button in that dialog that disables it"
+	},
+	"admin.universes.disableFailed": {
+		"defaultMessage": "Could not disable {universe}.",
+		"description": "Shown in the dialog that disables a universe when it couldn't be disabled; {universe} is its name"
+	},
+	"admin.universes.disableIntro": {
+		"defaultMessage": "Disable {universe}? It stops being listed and can't be played, and its editors can't save until it is enabled again.",
+		"description": "In the dialog that disables a universe on the admin page listing universes; {universe} is its name"
+	},
+	"admin.universes.disableLabel": {
+		"defaultMessage": "Disable {universe}",
+		"description": "Name of the Disable button in a row of the admin page's list of universes, for screen readers; {universe} is the universe's name"
+	},
+	"admin.universes.disableTitle": {
+		"defaultMessage": "Disable Universe",
+		"description": "Title of the dialog on the admin page listing universes that disables one, asking why"
+	},
+	"admin.universes.disabled": {
+		"defaultMessage": "{universe} is disabled.",
+		"description": "Shown, and read out by screen readers, once a universe was disabled on the admin page listing universes; {universe} is its name"
+	},
+	"admin.universes.disabledFilter": {
+		"defaultMessage": "Disabled",
+		"description": "Label of the filter on the admin page's list of universes for whether a universe is disabled"
+	},
+	"admin.universes.disabledNote": {
+		"defaultMessage": "Disabled",
+		"description": "Note in the admin page's list of universes on a universe a server admin has disabled, above when and why"
+	},
+	"admin.universes.disabledSince": {
+		"defaultMessage": "Since {date}: {reason}",
+		"description": "Under the Disabled note in the admin page's list of universes: when the universe was disabled, and the reason the admin gave; {date} is a date and time, and {reason} the reason as the admin typed it"
+	},
+	"admin.universes.enable": {
+		"defaultMessage": "Enable",
+		"description": "Button in a row of the admin page's list of universes that enables a disabled universe again, and the button in the dialog that asks first"
+	},
+	"admin.universes.enableFailed": {
+		"defaultMessage": "Could not enable {universe}.",
+		"description": "Shown on the admin page listing universes when a disabled universe couldn't be enabled; {universe} is its name"
+	},
+	"admin.universes.enableLabel": {
+		"defaultMessage": "Enable {universe}",
+		"description": "Name of the Enable button in a row of the admin page's list of universes, for screen readers; {universe} is the universe's name"
+	},
+	"admin.universes.enableQuestion": {
+		"defaultMessage": "Enable {universe}? It can be played and saved again.",
+		"description": "Asked before enabling a disabled universe on the admin page listing universes; {universe} is its name"
+	},
+	"admin.universes.enableTitle": {
+		"defaultMessage": "Enable Universe",
+		"description": "Title of the dialog that asks before enabling a disabled universe on the admin page listing universes"
+	},
+	"admin.universes.enabled": {
+		"defaultMessage": "{universe} is enabled.",
+		"description": "Shown, and read out by screen readers, once a disabled universe was enabled again on the admin page listing universes; {universe} is its name"
+	},
+	"admin.universes.heading": {
+		"defaultMessage": "Universes",
+		"description": "Heading of the admin page listing every universe, where admins disable and enable them"
+	},
+	"admin.universes.hint": {
+		"defaultMessage": "A disabled universe isn't listed and can't be played. Its editors see the reason, and it can't save until it is enabled again.",
+		"description": "Explains the admin page listing every universe, above the list"
+	},
+	"admin.universes.loadFailed": {
+		"defaultMessage": "Could not load the universes.",
+		"description": "Shown on the admin page listing universes when the list couldn't be loaded"
+	},
+	"admin.universes.none": {
+		"defaultMessage": "No universes match.",
+		"description": "Shown instead of the admin page's list of universes when none match the search and filter"
+	},
+	"admin.universes.reason": {
+		"defaultMessage": "Reason, shown to its editors",
+		"description": "Label of the field in the dialog that disables a universe, for why it is disabled, which the universe's editors are shown"
+	},
+	"admin.universes.reasonNeeded": {
+		"defaultMessage": "Say why the universe is disabled. Its editors are shown the reason.",
+		"description": "Shown under the reason field in the dialog that disables a universe when it was left empty"
+	},
+	"admin.universes.search": {
+		"defaultMessage": "Search by name",
+		"description": "Shown in the empty field that narrows the admin page's list of universes down by name"
+	},
+	"admin.universes.searchLabel": {
+		"defaultMessage": "Search universes by name",
+		"description": "Name of the field that narrows the admin page's list of universes down by name, for screen readers"
+	},
+	"admin.universes.stage": {
+		"defaultMessage": "Stage",
+		"description": "Heading of the column in the admin page's list of universes for each one's stage, such as in the beginning or let there be light"
+	},
+	"admin.universes.title": {
+		"defaultMessage": "Universes",
+		"description": "The browser tab's title for the admin page listing every universe, where admins disable and enable them, before the game engine's name"
+	},
+	"admin.universes.universe": {
+		"defaultMessage": "Universe",
+		"description": "Heading of the column of universes' names in the admin page's list of universes, each linking to the universe's editor"
 	},
 	"admin.universesHint": {
 		"defaultMessage": "These only affect new universes. Universes that already exist persist, even for players who have more than the limit.",
@@ -1146,6 +1358,10 @@
 	"editor.displayTime": {
 		"defaultMessage": "Display time",
 		"description": "Label of the field for how players are shown the time of day in a universe"
+	},
+	"editor.editingAsAdmin": {
+		"defaultMessage": "You are editing this universe as a site admin: you can change everything a creator can.",
+		"description": "Shown above the editor's tabs to one of the site's admins who opened a universe they have no stronger role in, which they edit with the site admin role"
 	},
 	"editor.editors.add": {
 		"defaultMessage": "Add Editor",
@@ -2327,6 +2543,14 @@
 		"defaultMessage": "Stage",
 		"description": "Heading of the choice of how far along a universe is, from being built to being retired"
 	},
+	"editor.universeDisabled": {
+		"defaultMessage": "The site's admins have disabled this universe, so it can't be played and changes to it can't be saved. Reason: {reason}",
+		"description": "Shown above the editor's tabs for a universe one of the site's admins disabled; {reason} is the reason the admin gave, as they typed it"
+	},
+	"editor.universeDisabledAdmin": {
+		"defaultMessage": "The site's admins have disabled this universe, so it can't be played and its editors can't save. As a site admin, you can still save changes to it. Reason: {reason}",
+		"description": "Shown above the editor's tabs to one of the site's admins for a universe the admins disabled; {reason} is the reason the admin gave, as they typed it"
+	},
 	"editor.universeTitle": {
 		"defaultMessage": "Edit {universe}",
 		"description": "Heading of the world editor, linking to the editor's first tab; {universe} is the universe's name"
@@ -2542,6 +2766,10 @@
 	"error.alreadyInGroup": {
 		"defaultMessage": "That character is already in a group. They have to leave it first.",
 		"description": "Why a character couldn't make or join a group: a character can be in only one group at a time"
+	},
+	"error.alreadyServerAdmin": {
+		"defaultMessage": "They are already one of the site's admins.",
+		"description": "Why a player couldn't be made one of the site's admins on the Admins admin page: they are one, perhaps because another admin added them a moment ago"
 	},
 	"error.areaInsideItself": {
 		"defaultMessage": "An area can't be inside itself.",
@@ -2795,6 +3023,10 @@
 		"defaultMessage": "Characters can't be given their last rites on this site. They can only be deleted immediately.",
 		"description": "Why a character wasn't given their last rites (deleted after some days): the site's settings have turned waiting off"
 	},
+	"error.lastServerAdmin": {
+		"defaultMessage": "The site needs at least one admin, so the last can't be removed.",
+		"description": "Why a player couldn't be removed from the site's admins on the Admins admin page: they are the only one left"
+	},
 	"error.linkOutOfBounds": {
 		"defaultMessage": "The link's cell must be inside the area's map.",
 		"description": "Why an area link was refused: its cell is outside the map, perhaps because another editor made it smaller"
@@ -2875,6 +3107,10 @@
 		"defaultMessage": "No player has that username.",
 		"description": "Why a player couldn't be added to a universe's editors, shown on the editor's Editors tab: no account has the username chosen, perhaps because the player changed it or deleted their account"
 	},
+	"error.noSuchPlayerToMakeAdmin": {
+		"defaultMessage": "No player has that username.",
+		"description": "Why a player couldn't be made one of the site's admins on the Admins admin page: no account has the username chosen, perhaps because the player changed it or deleted their account"
+	},
 	"error.noSuchRace": {
 		"defaultMessage": "The race doesn't exist.",
 		"description": "Why a request about a race (such as elf or dwarf) failed: it was deleted, perhaps by another editor"
@@ -2910,6 +3146,10 @@
 	"error.noThemes": {
 		"defaultMessage": "This universe's ruleset has no themes.",
 		"description": "Why a request about themes (character backgrounds, such as ace pilot or scholar) failed: the universe's game rules don't use them"
+	},
+	"error.notAnAdminToRemove": {
+		"defaultMessage": "They aren't one of the site's admins.",
+		"description": "Why a player couldn't be removed from the site's admins on the Admins admin page: they aren't one, perhaps because another admin removed them a moment ago"
 	},
 	"error.notServerAdmin": {
 		"defaultMessage": "Only the site's admins can use this page.",
@@ -3019,9 +3259,17 @@
 		"defaultMessage": "A tile needs a name.",
 		"description": "Why a tile the universe added couldn't be saved: its name was left out"
 	},
+	"error.universeAlreadyDisabled": {
+		"defaultMessage": "The universe is already disabled.",
+		"description": "Why a universe couldn't be disabled on the Universes admin page: it is disabled, perhaps because another admin disabled it a moment ago"
+	},
 	"error.universeCreationDisabled": {
 		"defaultMessage": "Creating universes is turned off for now.",
 		"description": "Why a new universe wasn't made: the site's admins have stopped everyone from creating universes"
+	},
+	"error.universeDisabledSave": {
+		"defaultMessage": "The site's admins have disabled this universe, so changes to it can't be saved.",
+		"description": "Why the world editor couldn't save: one of the site's admins disabled the universe, for a reason the editor shows"
 	},
 	"error.universeLimit": {
 		"defaultMessage": "You can create at most {max, plural, one {# universe} other {# universes}}.",
@@ -3030,6 +3278,10 @@
 	"error.universeNameTaken": {
 		"defaultMessage": "Another universe already has that name, or one too much like it.",
 		"description": "Why a universe wasn't made or renamed: universe names must be unique, and names that could be mistaken for each other count as the same, such as ones that differ only in capitals, accents, spaces or punctuation, letters from another alphabet that look the same, or \"1\" for \"i\""
+	},
+	"error.universeNotDisabled": {
+		"defaultMessage": "The universe isn't disabled.",
+		"description": "Why a universe couldn't be enabled on the Universes admin page: it isn't disabled, perhaps because another admin enabled it a moment ago"
 	},
 	"error.unknownItemType": {
 		"defaultMessage": "The universe's ruleset has no such type of item.",
@@ -3150,6 +3402,10 @@
 	"game.universeDeleted": {
 		"defaultMessage": "{universe} was deleted, with everything in it.",
 		"description": "Shown on the game's page when the universe being played was deleted, along with its creator's account; {universe} is its name"
+	},
+	"game.universeDisabled": {
+		"defaultMessage": "The site's admins have disabled {universe}, so it can't be played for now.",
+		"description": "Shown on the game's page when the universe being played was disabled by one of the site's admins; {universe} is its name"
 	},
 	"game.universeNotFound": {
 		"defaultMessage": "That universe could not be found.",
@@ -3286,6 +3542,10 @@
 	"home.ownDetails": {
 		"defaultMessage": "{ruleset} - {stage} - {role}",
 		"description": "Under each universe the player can edit: its ruleset (e.g. Pathfinder 1E), its stage (e.g. prologue) and the player's role (e.g. builder)"
+	},
+	"home.ownDetailsDisabled": {
+		"defaultMessage": "{ruleset} - {stage} - {role} - disabled by the site's admins",
+		"description": "Under each universe the player can edit that one of the site's admins has disabled: its ruleset (e.g. Pathfinder 1E), its stage (e.g. prologue), the player's role (e.g. builder), and that it is disabled. The editor says why"
 	},
 	"home.ownListFailed": {
 		"defaultMessage": "Could not list your universes.",
@@ -4656,7 +4916,7 @@
 		"description": "In the privacy policy, how long a deleted character is kept before it is removed for good, during which the player can restore them; {days} is the number of days the site sets"
 	},
 	"privacy.howLongSecurity": {
-		"defaultMessage": "Security records as long as the list above says: the log for 90 days, codes for 15 minutes, and counts only while a limit needs them.",
+		"defaultMessage": "Security records as long as the list above says: the log for 90 days, codes for 15 minutes, counts only while a limit needs them, and the admins' record with your name in it until you delete your account.",
 		"description": "In the privacy policy, how long security records are kept"
 	},
 	"privacy.intro": {
@@ -4718,6 +4978,10 @@
 	"privacy.security": {
 		"defaultMessage": "Keeping it safe",
 		"description": "Heading of the privacy policy's section about how the site protects a player's information, and its link in the page's contents"
+	},
+	"privacy.securityAdminLog": {
+		"defaultMessage": "A record of what the site's admins do on the admin pages, such as making a player an admin or disabling a universe. It names the admin and any player made or removed as an admin, until their accounts are deleted.",
+		"description": "In the privacy policy's list of security records: the record of what the site's admins do on the admin pages, which names the admin and the player made or removed as one, kept until their accounts are deleted"
 	},
 	"privacy.securityCodes": {
 		"defaultMessage": "The codes we email you, to register, reset your password or change your email address, kept only in a scrambled form, and only until they are used or expire 15 minutes later.",
@@ -5271,6 +5535,10 @@
 		"defaultMessage": "Logging in will need only your password again. Your recovery codes stop working, and every trusted browser is forgotten.",
 		"description": "In the dialog that turns off two-factor authentication"
 	},
+	"profile.twoFactorDisableIntroAdmin": {
+		"defaultMessage": "Logging in will need only your password again. Your recovery codes stop working, and every trusted browser is forgotten. You are one of the site's admins: you won't be able to use the admin pages until you turn it back on.",
+		"description": "In the dialog that turns off two-factor authentication, for one of the site's admins, who need it on to use the admin pages"
+	},
 	"profile.twoFactorDisableTitle": {
 		"defaultMessage": "Turn off two-factor authentication",
 		"description": "Title of the dialog that turns off two-factor authentication"
@@ -5715,6 +5983,10 @@
 		"defaultMessage": "Lobby",
 		"description": "Name given to the lobby area of a new universe, which its creator can change"
 	},
+	"universe.role.admin": {
+		"defaultMessage": "site admin",
+		"description": "Role a server admin edits a universe with when they have no stronger role in it, shown in the editor's toolbar: they can change everything, as a creator can"
+	},
 	"universe.role.beta_tester": {
 		"defaultMessage": "beta tester",
 		"description": "Role of someone who can play a universe before it opens to everyone"
@@ -5733,7 +6005,7 @@
 	},
 	"universe.ruleset": {
 		"defaultMessage": "Ruleset",
-		"description": "Label of the field for a universe's game rules, e.g. Pathfinder 1E"
+		"description": "Label of the field for a universe's game rules, e.g. Pathfinder 1E, in the Create Universe dialog, and heading of the column in the admin page's list of universes for each one's game rules"
 	},
 	"universe.ruleset.pf1e": {
 		"defaultMessage": "Pathfinder 1E",

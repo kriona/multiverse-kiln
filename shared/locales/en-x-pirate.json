@@ -35,6 +35,86 @@
 		"message": "Captain's quarters",
 		"source": "Site admin"
 	},
+	"admin.admins.add": {
+		"message": "Promote to Officer",
+		"source": "Add Admin"
+	},
+	"admin.admins.addFailed": {
+		"message": "Couldn't promote that sailor.",
+		"source": "Could not add the admin."
+	},
+	"admin.admins.added": {
+		"message": "Officer since",
+		"source": "Admin since"
+	},
+	"admin.admins.choosePlayer": {
+		"message": "Pick a sailor from the list.",
+		"source": "Choose a player from the list."
+	},
+	"admin.admins.heading": {
+		"message": "The Ship's Officers",
+		"source": "Server Admins"
+	},
+	"admin.admins.hint": {
+		"message": "Officers can set foot in these quarters once they raise two-factor authentication. The ship always keeps at least one.",
+		"source": "Server admins can use these pages once they turn on two-factor authentication. The site always keeps at least one."
+	},
+	"admin.admins.loadFailed": {
+		"message": "Couldn't haul up the officers' roll.",
+		"source": "Could not load the server admins."
+	},
+	"admin.admins.noTwoFactor": {
+		"message": "No 2FA: barred from the captain's quarters",
+		"source": "No 2FA: can't use the admin pages"
+	},
+	"admin.admins.nowAdmin": {
+		"message": "{name} (@{username}) be an officer now.",
+		"source": "{name} (@{username}) is now a server admin."
+	},
+	"admin.admins.player": {
+		"message": "Sailor to promote",
+		"source": "Player to add"
+	},
+	"admin.admins.playerHint": {
+		"message": "Type their name, or @ and their username, then pick them from the list.",
+		"source": "Type their name, or @ and their username, then choose them from the list."
+	},
+	"admin.admins.remove": {
+		"message": "Demote",
+		"source": "Remove"
+	},
+	"admin.admins.removeFailed": {
+		"message": "Couldn't demote that officer.",
+		"source": "Could not remove the admin."
+	},
+	"admin.admins.removeLabel": {
+		"message": "Demote {name} (@{username}) from officer",
+		"source": "Remove {name} (@{username}) as an admin"
+	},
+	"admin.admins.removeQuestion": {
+		"message": "Strip {name} (@{username}) of their officer's rank? They won't be able to set foot in the captain's quarters.",
+		"source": "Stop {name} (@{username}) being one of the site's admins? They won't be able to use the admin pages."
+	},
+	"admin.admins.removeSelfQuestion": {
+		"message": "Give up yer officer's rank? Ye won't be able to set foot in the captain's quarters, unless another officer promotes ye again.",
+		"source": "Stop being one of the site's admins? You won't be able to use the admin pages, unless another admin adds you again."
+	},
+	"admin.admins.removeTitle": {
+		"message": "Demote Officer",
+		"source": "Remove Admin"
+	},
+	"admin.admins.removed": {
+		"message": "{name} (@{username}) be an officer no more.",
+		"source": "{name} (@{username}) is no longer a server admin."
+	},
+	"admin.admins.title": {
+		"message": "The Ship's Officers",
+		"source": "Server Admins"
+	},
+	"admin.admins.you": {
+		"message": "Ye",
+		"source": "You"
+	},
 	"admin.back": {
 		"message": "The Captain's Quarters",
 		"source": "Site Admin"
@@ -50,6 +130,10 @@
 	"admin.characters": {
 		"message": "Hands",
 		"source": "Characters"
+	},
+	"admin.column.actions": {
+		"message": "Orders",
+		"source": "Actions"
 	},
 	"admin.column.notes": {
 		"message": "Scribblings",
@@ -239,6 +323,14 @@
 		"message": "The Captain's Orders",
 		"source": "Site Settings"
 	},
+	"admin.tools.admins": {
+		"message": "The Ship's Officers",
+		"source": "Server Admins"
+	},
+	"admin.tools.adminsHint": {
+		"message": "Who may set foot in these quarters: promote officers and demote 'em.",
+		"source": "Who can use these pages: add admins and remove them."
+	},
 	"admin.tools.players": {
 		"message": "The Crew Roll",
 		"source": "Players"
@@ -263,6 +355,14 @@
 		"message": "Launchin' universes, last rites, the social ports at the bottom o' the page and the Articles o' Secrecy's address.",
 		"source": "Creating universes, last rites, the footer's social sites and the privacy policy's contact."
 	},
+	"admin.tools.universes": {
+		"message": "Universes",
+		"source": "Universes"
+	},
+	"admin.tools.universesHint": {
+		"message": "Every universe, with who launched it: lay one up, sayin' why, and set it afloat again.",
+		"source": "Every universe, with who created it: disable one, saying why, and enable it again."
+	},
 	"admin.turnOnTwoFactor": {
 		"message": "Raise two-factor authentication",
 		"source": "Turn on two-factor authentication"
@@ -274,6 +374,118 @@
 	"admin.universes": {
 		"message": "Universes",
 		"source": "Universes"
+	},
+	"admin.universes.created": {
+		"message": "Launched",
+		"source": "Created"
+	},
+	"admin.universes.creators": {
+		"message": "Captains",
+		"source": "Creators"
+	},
+	"admin.universes.disable": {
+		"message": "Lay Up",
+		"source": "Disable"
+	},
+	"admin.universes.disableFailed": {
+		"message": "Couldn't lay up {universe}.",
+		"source": "Could not disable {universe}."
+	},
+	"admin.universes.disableIntro": {
+		"message": "Lay up {universe}? It comes off the charts and can't be sailed, and its officers can't stow changes till it's set afloat again.",
+		"source": "Disable {universe}? It stops being listed and can't be played, and its editors can't save until it is enabled again."
+	},
+	"admin.universes.disableLabel": {
+		"message": "Lay up {universe}",
+		"source": "Disable {universe}"
+	},
+	"admin.universes.disableTitle": {
+		"message": "Lay Up Universe",
+		"source": "Disable Universe"
+	},
+	"admin.universes.disabled": {
+		"message": "{universe} be laid up.",
+		"source": "{universe} is disabled."
+	},
+	"admin.universes.disabledFilter": {
+		"message": "Laid up",
+		"source": "Disabled"
+	},
+	"admin.universes.disabledNote": {
+		"message": "Laid up",
+		"source": "Disabled"
+	},
+	"admin.universes.disabledSince": {
+		"message": "Since {date}: {reason}",
+		"source": "Since {date}: {reason}"
+	},
+	"admin.universes.enable": {
+		"message": "Set Afloat",
+		"source": "Enable"
+	},
+	"admin.universes.enableFailed": {
+		"message": "Couldn't set {universe} afloat.",
+		"source": "Could not enable {universe}."
+	},
+	"admin.universes.enableLabel": {
+		"message": "Set {universe} afloat",
+		"source": "Enable {universe}"
+	},
+	"admin.universes.enableQuestion": {
+		"message": "Set {universe} afloat? It can be sailed and its changes stowed again.",
+		"source": "Enable {universe}? It can be played and saved again."
+	},
+	"admin.universes.enableTitle": {
+		"message": "Set Universe Afloat",
+		"source": "Enable Universe"
+	},
+	"admin.universes.enabled": {
+		"message": "{universe} be afloat.",
+		"source": "{universe} is enabled."
+	},
+	"admin.universes.heading": {
+		"message": "Universes",
+		"source": "Universes"
+	},
+	"admin.universes.hint": {
+		"message": "A laid-up universe comes off the charts and can't be sailed. Its officers see the reason, and it can't stow changes till it's set afloat again.",
+		"source": "A disabled universe isn't listed and can't be played. Its editors see the reason, and it can't save until it is enabled again."
+	},
+	"admin.universes.loadFailed": {
+		"message": "Couldn't haul up the universes.",
+		"source": "Could not load the universes."
+	},
+	"admin.universes.none": {
+		"message": "No universes match.",
+		"source": "No universes match."
+	},
+	"admin.universes.reason": {
+		"message": "Reason, shown to its officers",
+		"source": "Reason, shown to its editors"
+	},
+	"admin.universes.reasonNeeded": {
+		"message": "Say why the universe be laid up. Its officers are shown the reason.",
+		"source": "Say why the universe is disabled. Its editors are shown the reason."
+	},
+	"admin.universes.search": {
+		"message": "Search by name",
+		"source": "Search by name"
+	},
+	"admin.universes.searchLabel": {
+		"message": "Search the universes by name",
+		"source": "Search universes by name"
+	},
+	"admin.universes.stage": {
+		"message": "Stage",
+		"source": "Stage"
+	},
+	"admin.universes.title": {
+		"message": "Universes",
+		"source": "Universes"
+	},
+	"admin.universes.universe": {
+		"message": "Universe",
+		"source": "Universe"
 	},
 	"admin.universesHint": {
 		"message": "These only touch new universes. Universes already afloat continue to be, even fer hands what have more than the limit.",
@@ -1146,6 +1358,10 @@
 	"editor.displayTime": {
 		"message": "Show the hour",
 		"source": "Display time"
+	},
+	"editor.editingAsAdmin": {
+		"message": "Ye be editin' this universe as a ship's officer: ye can change all a captain can.",
+		"source": "You are editing this universe as a site admin: you can change everything a creator can."
 	},
 	"editor.editors.add": {
 		"message": "Sign On a Hand",
@@ -2327,6 +2543,14 @@
 		"message": "Voyage",
 		"source": "Stage"
 	},
+	"editor.universeDisabled": {
+		"message": "The ship's officers have laid up this universe, so it can't be sailed and changes to it can't be stowed. Reason: {reason}",
+		"source": "The site's admins have disabled this universe, so it can't be played and changes to it can't be saved. Reason: {reason}"
+	},
+	"editor.universeDisabledAdmin": {
+		"message": "The ship's officers have laid up this universe, so it can't be sailed and its crew can't stow changes. As a ship's officer, ye can still stow changes to it. Reason: {reason}",
+		"source": "The site's admins have disabled this universe, so it can't be played and its editors can't save. As a site admin, you can still save changes to it. Reason: {reason}"
+	},
 	"editor.universeTitle": {
 		"message": "Edit {universe}",
 		"source": "Edit {universe}"
@@ -2542,6 +2766,10 @@
 	"error.alreadyInGroup": {
 		"message": "That hand already sails with a crew. They have to jump ship first.",
 		"source": "That character is already in a group. They have to leave it first."
+	},
+	"error.alreadyServerAdmin": {
+		"message": "They already be one o' the ship's officers.",
+		"source": "They are already one of the site's admins."
 	},
 	"error.areaInsideItself": {
 		"message": "An area can't be inside its own hold.",
@@ -2795,6 +3023,10 @@
 		"message": "There be no last rites on this ship. Hands can only be thrown overboard on the spot.",
 		"source": "Characters can't be given their last rites on this site. They can only be deleted immediately."
 	},
+	"error.lastServerAdmin": {
+		"message": "The ship needs at least one officer, so the last can't be demoted.",
+		"source": "The site needs at least one admin, so the last can't be removed."
+	},
 	"error.linkOutOfBounds": {
 		"message": "The passage's cell must be inside the area's chart.",
 		"source": "The link's cell must be inside the area's map."
@@ -2875,6 +3107,10 @@
 		"message": "No sailor goes by that username.",
 		"source": "No player has that username."
 	},
+	"error.noSuchPlayerToMakeAdmin": {
+		"message": "No sailor goes by that username.",
+		"source": "No player has that username."
+	},
 	"error.noSuchRace": {
 		"message": "Those folk be lost at sea.",
 		"source": "The race doesn't exist."
@@ -2910,6 +3146,10 @@
 	"error.noThemes": {
 		"message": "This universe's ship's articles have no yarns.",
 		"source": "This universe's ruleset has no themes."
+	},
+	"error.notAnAdminToRemove": {
+		"message": "They ain't one o' the ship's officers.",
+		"source": "They aren't one of the site's admins."
 	},
 	"error.notServerAdmin": {
 		"message": "Only the ship's officers can set foot here.",
@@ -3019,9 +3259,17 @@
 		"message": "A tile needs a name.",
 		"source": "A tile needs a name."
 	},
+	"error.universeAlreadyDisabled": {
+		"message": "That universe be laid up already.",
+		"source": "The universe is already disabled."
+	},
 	"error.universeCreationDisabled": {
 		"message": "The captain's forbidden creatin' universes fer now.",
 		"source": "Creating universes is turned off for now."
+	},
+	"error.universeDisabledSave": {
+		"message": "The ship's officers have laid up this universe, so changes to it can't be stowed.",
+		"source": "The site's admins have disabled this universe, so changes to it can't be saved."
 	},
 	"error.universeLimit": {
 		"message": "Ye can create at most {max, plural, one {# universe} other {# universes}}.",
@@ -3030,6 +3278,10 @@
 	"error.universeNameTaken": {
 		"message": "Another universe already sails under that name, or one too much like it.",
 		"source": "Another universe already has that name, or one too much like it."
+	},
+	"error.universeNotDisabled": {
+		"message": "That universe ain't laid up.",
+		"source": "The universe isn't disabled."
 	},
 	"error.unknownItemType": {
 		"message": "The universe's ruleset knows no such sort o' booty.",
@@ -3150,6 +3402,10 @@
 	"game.universeDeleted": {
 		"message": "{universe} was sent to the deep, with all aboard.",
 		"source": "{universe} was deleted, with everything in it."
+	},
+	"game.universeDisabled": {
+		"message": "The ship's officers have laid up {universe}, so it can't be sailed fer now.",
+		"source": "The site's admins have disabled {universe}, so it can't be played for now."
 	},
 	"game.universeNotFound": {
 		"message": "That universe be lost at sea.",
@@ -3286,6 +3542,10 @@
 	"home.ownDetails": {
 		"message": "{ruleset} - {stage} - {role}",
 		"source": "{ruleset} - {stage} - {role}"
+	},
+	"home.ownDetailsDisabled": {
+		"message": "{ruleset} - {stage} - {role} - laid up by the ship's officers",
+		"source": "{ruleset} - {stage} - {role} - disabled by the site's admins"
 	},
 	"home.ownListFailed": {
 		"message": "Couldn't list yer universes.",
@@ -4656,8 +4916,8 @@
 		"source": "A character you delete, for {days, plural, one {# day} other {# days}}, while you can still bring them back."
 	},
 	"privacy.howLongSecurity": {
-		"message": "Security records as long as the list above says: the log for 90 days, codes for 15 minutes, an' counts only while a limit needs 'em.",
-		"source": "Security records as long as the list above says: the log for 90 days, codes for 15 minutes, and counts only while a limit needs them."
+		"message": "Security records as long as the list above says: the log for 90 days, codes for 15 minutes, counts only while a limit needs 'em, an' the officers' log with yer name in it till ye delete yer account.",
+		"source": "Security records as long as the list above says: the log for 90 days, codes for 15 minutes, counts only while a limit needs them, and the admins' record with your name in it until you delete your account."
 	},
 	"privacy.intro": {
 		"message": "These articles tell what this {siteName} ship keeps about ye when ye sail or build universes here, why it keeps it, who can see it, how long it be kept, an' how ye can haul it down or delete it. We keep as little data as we can.",
@@ -4718,6 +4978,10 @@
 	"privacy.security": {
 		"message": "Keepin' it safe",
 		"source": "Keeping it safe"
+	},
+	"privacy.securityAdminLog": {
+		"message": "A log o' what the ship's officers do in the captain's quarters, such as promotin' a sailor to officer or layin' up a universe. It names the officer and any sailor promoted or demoted, till their accounts be deleted.",
+		"source": "A record of what the site's admins do on the admin pages, such as making a player an admin or disabling a universe. It names the admin and any player made or removed as an admin, until their accounts are deleted."
 	},
 	"privacy.securityCodes": {
 		"message": "The codes we send ye, to sign on, reset yer password or change yer email address, kept only scrambled, an' only till they be used or expire 15 minutes later.",
@@ -5271,6 +5535,10 @@
 		"message": "Comin' aboard will need only yer password again. Yer recovery codes be worthless, an' every trusted browser be forgotten.",
 		"source": "Logging in will need only your password again. Your recovery codes stop working, and every trusted browser is forgotten."
 	},
+	"profile.twoFactorDisableIntroAdmin": {
+		"message": "Comin' aboard will need only yer password again. Yer recovery codes be worthless, an' every trusted browser be forgotten. Ye be one o' the ship's officers: ye won't set foot in the captain's quarters till ye raise it again.",
+		"source": "Logging in will need only your password again. Your recovery codes stop working, and every trusted browser is forgotten. You are one of the site's admins: you won't be able to use the admin pages until you turn it back on."
+	},
 	"profile.twoFactorDisableTitle": {
 		"message": "Strike two-factor authentication",
 		"source": "Turn off two-factor authentication"
@@ -5714,6 +5982,10 @@
 	"universe.lobbyAreaName": {
 		"message": "Tavern",
 		"source": "Lobby"
+	},
+	"universe.role.admin": {
+		"message": "ship's officer",
+		"source": "site admin"
 	},
 	"universe.role.beta_tester": {
 		"message": "deckhand",

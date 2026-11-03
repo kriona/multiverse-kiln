@@ -742,7 +742,7 @@ export class AreaPlayers
 				await this.applyAreaChange(area.loaded.area.id, true);
 			}
 		}
-		else if (change.kind !== 'universeDeleted')
+		else if ((change.kind !== 'universeDeleted') && (change.kind !== 'universeDisabled'))
 		{
 			await this.applyAreaChange(change.areaId, false);
 		}

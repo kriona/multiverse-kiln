@@ -283,12 +283,13 @@ async function createUniverseRoute(request: Request, response: Response): Promis
  */
 function getUniverse(request: Request, response: Response): void
 {
-	const { playerId, universe, role, languages } = universeContextOf(request);
+	const { playerId, universe, role, languages, serverAdmin } = universeContextOf(request);
 	const payload: EditableUniverse = {
 		...universe,
 		role,
 		languages: [...languages],
-		playerId
+		playerId,
+		serverAdmin
 	};
 
 	response.json(payload);

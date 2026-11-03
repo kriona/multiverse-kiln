@@ -219,6 +219,11 @@ export interface OwnProfilePayload extends ProfileFields
 	twoFactor: TwoFactorState | null;
 
 	/**
+	 * Whether the player is a server admin, who can't use the admin pages while 2FA is off
+	 */
+	serverAdmin: boolean;
+
+	/**
 	 * The language the player chose, or null when the pages follow the browser's settings
 	 */
 	locale: string | null;

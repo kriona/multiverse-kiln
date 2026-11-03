@@ -1,14 +1,15 @@
 /**
  * Universes: the only module that reads or writes the universes table
  */
-import { and, eq, or, sql } from 'drizzle-orm';
-import { nameKey, universeSlug, type EditableUniverseDetails, type PassageOfTime, type Ruleset, type UniverseDetails, type UniverseSettingsUpdate, type UniverseStage, type UniverseSummary } from '@multiverse-kiln/shared';
+import { and, count, eq, isNotNull, isNull, or, sql } from 'drizzle-orm';
+import { nameKey, universeSlug, type AdminUniverseCreator, type EditableUniverseDetails, type PassageOfTime, type Ruleset, type UniverseDetails, type UniverseSettingsUpdate, type UniverseStage, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { fromCoinColumns, toCoinColumns } from './coinColumns.js';
 import { addDefaultDifficultyLevels } from './difficultyRepo.js';
-import { universes } from './schema.js';
+import { players, universeEditors, universes } from './schema.js';
 import { loadStartingItems, replaceStartingItems } from './startingItemRepo.js';
+import { anyColumnContains } from './textSearch.js';
 
 /**
  * The unique index that keeps two universes from having the same slug, and so the same name
@@ -140,6 +141,11 @@ export interface UniverseRecord
 	startingColumn: number;
 
 	startingRow: number;
+
+	/**
+	 * Whether a server admin has disabled it, so no one may play it
+	 */
+	disabled: boolean;
 }
 
 /**
@@ -223,12 +229,13 @@ export async function findUniverse(universeId: string, executor: Executor = db):
 		lobbyAreaId: row.lobbyAreaId ?? undefined,
 		startingAreaId: row.startingAreaId ?? undefined,
 		startingColumn: row.startingColumn,
-		startingRow: row.startingRow
+		startingRow: row.startingRow,
+		disabled: (row.disabledAt !== null)
 	});
 }
 
 /**
- * A page of the universes in a stage, by name
+ * A page of the universes in a stage that aren't disabled, by name
  *
  * @param stage The stage
  * @param offset How many universes to skip
@@ -247,19 +254,22 @@ export async function listUniverses(stage: UniverseStage, offset: number, limit:
 			ruleset: universes.ruleset
 		})
 		.from(universes)
-		.where(eq(universes.stage, stage))
+		.where(and(
+			eq(universes.stage, stage),
+			isNull(universes.disabledAt)
+		))
 		.orderBy(universes.name, universes.id)
 		.offset(offset)
 		.limit(limit));
 }
 
 /**
- * A universe's details, if it is in a stage
+ * A universe's details, if it is in a stage and isn't disabled
  *
  * @param key The universe's ID or slug
  * @param stage The stage it must be in
  * @param executor The database, or a transaction
- * @return The universe, or undefined when there is none with that ID or slug in that stage
+ * @return The universe, or undefined when there is none with that ID or slug in that stage, or it is disabled
  */
 export async function findUniverseDetails(key: string, stage: UniverseStage, executor: Executor = db): Promise<UniverseDetails | undefined>
 {
@@ -276,7 +286,8 @@ export async function findUniverseDetails(key: string, stage: UniverseStage, exe
 		.from(universes)
 		.where(and(
 			(UUID_PATTERN.test(key) ? or(eq(universes.id, key), bySlug) : bySlug),
-			eq(universes.stage, stage)
+			eq(universes.stage, stage),
+			isNull(universes.disabledAt)
 		))
 		.limit(1);
 
@@ -317,7 +328,8 @@ export async function findEditableUniverse(universeId: string, executor: Executo
 			startingGold: universes.startingGold,
 			startingSilver: universes.startingSilver,
 			startingCopper: universes.startingCopper,
-			startingCredits: universes.startingCredits
+			startingCredits: universes.startingCredits,
+			disabledReason: universes.disabledReason
 		})
 		.from(universes)
 		.where(eq(universes.id, universeId))
@@ -406,6 +418,132 @@ export async function lockUniverse(universeId: string, executor: Executor): Prom
 		.for('update');
 
 	return(rows.length > 0);
+}
+
+/**
+ * Why a server admin disabled a universe
+ *
+ * @param universeId The universe's ID
+ * @param executor The database, or a transaction
+ * @return The reason, or null when it isn't disabled or doesn't exist
+ */
+export async function findDisabledReason(universeId: string, executor: Executor = db): Promise<string | null>
+{
+	const [row] = await executor
+		.select({
+			disabledReason: universes.disabledReason
+		})
+		.from(universes)
+		.where(eq(universes.id, universeId))
+		.limit(1);
+
+	return((row?.disabledReason ?? null));
+}
+
+/**
+ * A universe as the Universes admin page lists it
+ */
+export interface AdminUniverseRecord
+{
+	id: string;
+	name: string;
+	slug: string;
+	stage: UniverseStage;
+	ruleset: Ruleset;
+	createdAt: Date;
+
+	/**
+	 * Its creators, by username ignoring case
+	 */
+	creators: AdminUniverseCreator[];
+
+	disabledAt: Date | null;
+	disabledReason: string | null;
+}
+
+/**
+ * A page of every universe, for the Universes admin page, by name ignoring case
+ *
+ * @param filter Only universes whose name holds the search, ignoring capitals, and only those disabled or not
+ * @param page How many matching universes to skip, and the most to return
+ * @param executor The database, or a transaction
+ * @return The page, and how many universes match
+ */
+export async function listUniversesForAdmin(filter: { search?: string; disabled?: boolean }, page: { offset: number; limit: number }, executor: Executor = db): Promise<{ universes: AdminUniverseRecord[]; total: number }>
+{
+	const where = and(
+		((filter.search === undefined) ? undefined : anyColumnContains([universes.name], filter.search)),
+		((filter.disabled === undefined) ? undefined : (filter.disabled ? isNotNull(universes.disabledAt) : isNull(universes.disabledAt)))
+	);
+	// A query with a join names each column's table, which a single-table select leaves out
+	const creatorList = executor
+		.select({
+			creators: sql`json_agg(json_build_object('username', ${players.username}, 'displayName', ${players.displayName}) ORDER BY lower(${players.username}))`
+		})
+		.from(universeEditors)
+		.innerJoin(players, eq(players.id, universeEditors.playerId))
+		.where(and(
+			eq(universeEditors.universeId, universes.id),
+			eq(universeEditors.role, 'creator')
+		));
+	const creators = sql<AdminUniverseCreator[]>`coalesce((${creatorList}), '[]'::json)`;
+	const [rows, [counted]] = await Promise.all([
+		executor
+			.select({
+				id: universes.id,
+				name: universes.name,
+				slug: universes.slug,
+				stage: universes.stage,
+				ruleset: universes.ruleset,
+				createdAt: universes.createdAt,
+				creators,
+				disabledAt: universes.disabledAt,
+				disabledReason: universes.disabledReason
+			})
+			.from(universes)
+			.where(where)
+			.orderBy(sql`lower(${universes.name})`, universes.id)
+			.offset(page.offset)
+			.limit(page.limit),
+		executor
+			.select({
+				total: count()
+			})
+			.from(universes)
+			.where(where)
+	]);
+
+	return({
+		universes: rows,
+		total: counted.total
+	});
+}
+
+/**
+ * Disables a universe, or enables it again
+ *
+ * @param universeId The universe's ID
+ * @param reason Why it is disabled, which must have 1 to MAX_DISABLED_REASON_LENGTH characters; null enables it
+ * @param executor The database, or a transaction
+ * @return Whether it changed: false when it doesn't exist, or was already disabled (or enabled)
+ */
+export async function setUniverseDisabled(universeId: string, reason: string | null, executor: Executor = db): Promise<boolean>
+{
+	const rows = await executor
+		.update(universes)
+		.set({
+			disabledAt: ((reason === null) ? null : new Date()),
+			disabledReason: reason
+		})
+		.where(and(
+			eq(universes.id, universeId),
+			((reason === null) ? isNotNull(universes.disabledAt) : isNull(universes.disabledAt))
+		))
+		.returning({
+			id: universes.id
+		});
+
+	return((rows.length > 0));
 }
 
 /**

@@ -9,7 +9,7 @@ import { listPlayableCharacters } from '../src/db/characterRepo.js';
 import { pool } from '../src/db/client.js';
 import { saveEditedDefaultTile } from '../src/db/tileRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
-import { createUniverse, setUniverseAreas, updateUniverseSettings } from '../src/db/universeRepo.js';
+import { createUniverse, setUniverseAreas, setUniverseDisabled, updateUniverseSettings } from '../src/db/universeRepo.js';
 import { deleteArea, editCells, resizeArea } from '../src/db/areaRepo.js';
 import { cellCenter } from '../src/logic/movement.js';
 import { characterChanges } from '../src/players/characterChanges.js';
@@ -228,6 +228,32 @@ describe('LobbyRoom', () =>
 
 			assert.strictEqual(await left, ServerCloseCode.UniverseDeleted);
 			assert.strictEqual(lobbyOf(alan).clients.length, 1);
+		});
+
+		it('refuses windows while a server admin has disabled the universe, and turns away those already in', async () =>
+		{
+			const other = await addPlayableUniverse();
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const alan = await joinAsNewPlayer(other.universeId, 'Alan');
+			const { cookie } = await logInBrowser((await addPlayer('Grace')).id);
+			const left = new Promise<number>((resolve) =>
+			{
+				ada.room.onLeave(resolve);
+			});
+
+			await setUniverseDisabled(universe.universeId, 'Breaks the rules');
+			await assert.rejects(connect(cookie, { universeId: universe.universeId }));
+
+			areaChanges.publish({
+				kind: 'universeDisabled',
+				universeId: universe.universeId
+			});
+
+			assert.strictEqual(await left, ServerCloseCode.UniverseDisabled);
+			assert.strictEqual(lobbyOf(alan).clients.length, 1);
+
+			await setUniverseDisabled(universe.universeId, null);
+			await openWindow(cookie, universe.universeId);
 		});
 
 		it('turns away the windows of players who may no longer play the universe', async () =>

@@ -301,11 +301,11 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			}),
 			areaChanges.onChange((change) =>
 			{
-				if ((change.kind === 'universeDeleted') && (change.universeId === this.universeId))
+				if (((change.kind === 'universeDeleted') || (change.kind === 'universeDisabled')) && (change.universeId === this.universeId))
 				{
 					for (const client of this.clients)
 					{
-						client.leave(ServerCloseCode.UniverseDeleted);
+						client.leave(((change.kind === 'universeDeleted') ? ServerCloseCode.UniverseDeleted : ServerCloseCode.UniverseDisabled));
 					}
 
 					return;

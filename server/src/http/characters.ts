@@ -167,7 +167,8 @@ export function addCharacterRoutes(app: Application, allowedOrigins: Set<string>
 }
 
 /**
- * Middleware that loads the universe, answering 404 unless the player may play it
+ * Middleware that loads the universe, answering 404 unless the player may play it: it isn't disabled, and
+ * its stage and the player's role in it allow them to
  *
  * @param request The request
  * @param response The response
@@ -184,7 +185,7 @@ export async function loadPlayableUniverse(request: Request, response: Response,
 			findUniverseRole(universeId.data, playerIdOf(request))
 		]);
 
-		if (universe && canPlayUniverse(universe.stage, role))
+		if (universe && (universe.disabledReason === null) && canPlayUniverse(universe.stage, role))
 		{
 			universes.set(request, universe);
 			next();

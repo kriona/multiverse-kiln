@@ -283,12 +283,12 @@ export class OwnProfileScreen
 
 		this.twoFactorOffButton.addEventListener('click', () =>
 		{
-			this.twoFactorConfirmDialog.open('turnOff', (this.profile?.email ?? null));
+			this.twoFactorConfirmDialog.open('turnOff', (this.profile?.email ?? null), (this.profile?.serverAdmin ?? false));
 		});
 
 		this.twoFactorCodesButton.addEventListener('click', () =>
 		{
-			this.twoFactorConfirmDialog.open('newCodes', (this.profile?.email ?? null));
+			this.twoFactorConfirmDialog.open('newCodes', (this.profile?.email ?? null), (this.profile?.serverAdmin ?? false));
 		});
 
 		this.forgetBrowsersButton.addEventListener('click', () =>

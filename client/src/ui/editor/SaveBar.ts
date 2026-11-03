@@ -118,6 +118,11 @@ export class SaveBar
 	private saving = false;
 
 	/**
+	 * Whether saving is turned off, for a universe a server admin has disabled
+	 */
+	private locked = false;
+
+	/**
 	 * Whether the editor was just saved, so the bar says so until something changes again
 	 */
 	private justSaved = false;
@@ -183,6 +188,17 @@ export class SaveBar
 	}
 
 	/**
+	 * Turns saving off or on, for a universe a server admin has disabled. The editor says why
+	 *
+	 * @param locked True to turn it off
+	 */
+	setLocked(locked: boolean): void
+	{
+		this.locked = locked;
+		this.update();
+	}
+
+	/**
 	 * Whether any tab has changes that haven't been saved
 	 *
 	 * @return True when one has
@@ -199,7 +215,7 @@ export class SaveBar
 	{
 		const universeId = this.universeId();
 
-		if ((universeId === undefined) || this.saving || !this.hasUnsavedChanges())
+		if ((universeId === undefined) || this.saving || this.locked || !this.hasUnsavedChanges())
 		{
 			return;
 		}
@@ -312,7 +328,7 @@ export class SaveBar
 		const unsaved = this.hasUnsavedChanges();
 
 		this.bar.hidden = (!(this.tab?.canSave() ?? false) && !unsaved);
-		this.saveButton.disabled = (!unsaved || this.saving);
+		this.saveButton.disabled = (!unsaved || this.saving || this.locked);
 
 		if (this.failure !== undefined)
 		{

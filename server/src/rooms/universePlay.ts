@@ -7,7 +7,7 @@ import { findUniverseRole } from '../db/universeEditorRepo.js';
 import { findUniverse } from '../db/universeRepo.js';
 
 /**
- * Whether a player may play a universe: its stage and their role in it allow them to
+ * Whether a player may play a universe: it isn't disabled, and its stage and their role in it allow them to
  *
  * @param universeId The universe's ID
  * @param playerId The player's ID
@@ -20,5 +20,5 @@ export async function mayPlayUniverse(universeId: string, playerId: string): Pro
 		findUniverseRole(universeId, playerId)
 	]);
 
-	return((universe !== undefined) && canPlayUniverse(universe.stage, role));
+	return((universe !== undefined) && !universe.disabled && canPlayUniverse(universe.stage, role));
 }

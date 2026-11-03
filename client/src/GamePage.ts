@@ -572,6 +572,23 @@ export class GamePage
 	}
 
 	/**
+	 * Says the player was turned out of the universe because a server admin disabled it
+	 *
+	 * @param universe The universe's name
+	 */
+	private showUniverseDisabled(universe: string): void
+	{
+		this.destination = { kind: 'none' };
+		this.showOutside(t({
+			id: 'game.universeDisabled',
+			defaultMessage: 'The site\'s admins have disabled {universe}, so it can\'t be played for now.',
+			description: 'Shown on the game\'s page when the universe being played was disabled by one of the site\'s admins; {universe} is its name'
+		}, {
+			universe
+		}));
+	}
+
+	/**
 	 * Says the player was turned out of the universe because their role in it changed
 	 *
 	 * @param universe The universe's name
@@ -961,6 +978,12 @@ export class GamePage
 			return;
 		}
 
+		if (code === ServerCloseCode.UniverseDisabled.valueOf())
+		{
+			this.showUniverseDisabled(joined.universe.name);
+			return;
+		}
+
 		console.error(`Disconnected from the lobby (code ${code})`);
 		this.destination = { kind: 'none' };
 		this.showOutside(t({
@@ -1087,6 +1110,12 @@ export class GamePage
 		if (code === ServerCloseCode.AccessLost.valueOf())
 		{
 			this.showAccessLost((this.universe?.name ?? ''));
+			return;
+		}
+
+		if (code === ServerCloseCode.UniverseDisabled.valueOf())
+		{
+			this.showUniverseDisabled((this.universe?.name ?? ''));
 			return;
 		}
 

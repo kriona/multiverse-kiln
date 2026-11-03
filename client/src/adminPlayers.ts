@@ -2,7 +2,7 @@ import { LOGIN_PROVIDER_NAMES, type AdminPlayer } from '@multiverse-kiln/shared'
 
 import { startAdminPage } from './AdminPage';
 import { formatDateTime, t } from './localization';
-import { AdminList, notesCell, playerCell, textCell, type AdminNote } from './ui/AdminList';
+import { AdminList, adminNoteMessages, notesCell, playerCell, textCell, type AdminNote } from './ui/AdminList';
 
 /**
  * Starts the admin page listing every player account (admin/players.html)
@@ -96,11 +96,7 @@ function playerRow(player: AdminPlayer): HTMLTableRowElement
 	if (player.twoFactor)
 	{
 		notes.push({
-			text: t({
-				id: 'admin.players.twoFactor',
-				defaultMessage: '2FA',
-				description: 'Note in the admin page\'s list of players on an account with two-factor authentication on'
-			}),
+			text: t(adminNoteMessages.twoFactor),
 			tone: 'twoFactor'
 		});
 	}

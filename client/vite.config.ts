@@ -465,6 +465,8 @@ export default defineConfig(({ command, mode }) =>
 					adminSettings: path.resolve(import.meta.dirname, 'admin/settings.html'),
 					adminSessions: path.resolve(import.meta.dirname, 'admin/sessions.html'),
 					adminPlayers: path.resolve(import.meta.dirname, 'admin/players.html'),
+					adminAdmins: path.resolve(import.meta.dirname, 'admin/admins.html'),
+					adminUniverses: path.resolve(import.meta.dirname, 'admin/universes.html'),
 					login: path.resolve(import.meta.dirname, 'login.html'),
 					profile: path.resolve(import.meta.dirname, 'profile.html')
 				}

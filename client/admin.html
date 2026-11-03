@@ -10,7 +10,7 @@
 			<section class="admin-page">
 				<header class="toolbar">
 					<!-- include site-name.html -->
-					<h1 data-message="admin.home.heading" data-translation-context="Heading of the admin page that links to the site admins' tools: the site settings, the list of sessions and the list of players">Site Admin</h1>
+					<h1 data-message="admin.home.heading" data-translation-context="Heading of the admin page that links to the site admins' tools: the site settings, and the lists of sessions, players, server admins and universes">Site Admin</h1>
 					<!-- include account.html -->
 				</header>
 				<div class="admin-body">
@@ -33,6 +33,18 @@
 							<a class="panel admin-tool" href="/admin/players" data-shortcut="Alt+P" aria-describedby="admin-tool-players-hint">
 								<span class="admin-tool-name" data-message="admin.tools.players" data-translation-context="Link on the admin page to the list of every player account"><!-- icon ph:users -->Players</span>
 								<span id="admin-tool-players-hint" class="hint" data-message="admin.tools.playersHint" data-translation-context="Under the link to the list of player accounts on the admin page">Every account: how it logs in, when it last did, and who is a server admin.</span>
+							</a>
+						</li>
+						<li>
+							<a class="panel admin-tool" href="/admin/admins" data-shortcut="Alt+M" aria-describedby="admin-tool-admins-hint">
+								<span class="admin-tool-name" data-message="admin.tools.admins" data-translation-context="Link on the admin page to the list of the site's server admins"><!-- icon ph:shield-star -->Server Admins</span>
+								<span id="admin-tool-admins-hint" class="hint" data-message="admin.tools.adminsHint" data-translation-context="Under the link to the list of server admins on the admin page">Who can use these pages: add admins and remove them.</span>
+							</a>
+						</li>
+						<li>
+							<a class="panel admin-tool" href="/admin/universes" data-shortcut="Alt+U" aria-describedby="admin-tool-universes-hint">
+								<span class="admin-tool-name" data-message="admin.tools.universes" data-translation-context="Link on the admin page to the list of every universe, where admins disable and enable them"><!-- icon game-icons:galaxy -->Universes</span>
+								<span id="admin-tool-universes-hint" class="hint" data-message="admin.tools.universesHint" data-translation-context="Under the link to the list of universes on the admin page">Every universe, with who created it: disable one, saying why, and enable it again.</span>
 							</a>
 						</li>
 					</ul>

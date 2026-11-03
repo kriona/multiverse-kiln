@@ -6,6 +6,7 @@ import { alias } from 'drizzle-orm/pg-core';
 import type { EditableUniverseSummary, PlayerMatch, UniverseAccess, UniverseEditorSummary, UniverseRole } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
+import { searchPlayers, type PlayerSearch } from './playerRepo.js';
 import { players, universeEditors, universes } from './schema.js';
 
 /**
@@ -130,41 +131,17 @@ export async function findUniverseAccess(universeId: string, playerId: string, e
  * @return The players: the one with exactly that username first, then those whose username starts
  * with it, then the rest, each by username
  */
-export async function searchPlayersToAdd(universeId: string, search: { text: string; usernameOnly: boolean }, limit: number, executor: Executor = db): Promise<PlayerMatch[]>
+export async function searchPlayersToAdd(universeId: string, search: PlayerSearch, limit: number, executor: Executor = db): Promise<PlayerMatch[]>
 {
-	const text = search.text.toLowerCase();
-
-	// % and _ are wildcards in LIKE, and _ is common in usernames; backslash is LIKE's escape character
-	const pattern = text.replace(/[\\%_]/g, (character) => `\\${character}`);
-	const username = sql`lower(${players.username})`;
-	const matches = (search.usernameOnly
-		? sql`${username} LIKE ${`%${pattern}%`}`
-		: sql`(${username} LIKE ${`%${pattern}%`} OR lower(${players.displayName}) LIKE ${`%${pattern}%`})`);
-
-	return(executor
+	return(searchPlayers(search, limit, notExists(executor
 		.select({
-			playerId: players.id,
-			username: players.username,
-			displayName: players.displayName
+			playerId: universeEditors.playerId
 		})
-		.from(players)
+		.from(universeEditors)
 		.where(and(
-			matches,
-			notExists(executor
-				.select({
-					playerId: universeEditors.playerId
-				})
-				.from(universeEditors)
-				.where(and(
-					eq(universeEditors.universeId, universeId),
-					eq(universeEditors.playerId, players.id)
-				)))
-		))
-		.orderBy(
-			sql`CASE WHEN ${username} = ${text} THEN 0 WHEN ${username} LIKE ${`${pattern}%`} THEN 1 ELSE 2 END`,
-			username
-		)
-		.limit(limit));
+			eq(universeEditors.universeId, universeId),
+			eq(universeEditors.playerId, players.id)
+		))), executor));
 }
 
 /**
@@ -276,7 +253,8 @@ export async function listEditableUniverses(playerId: string, executor: Executor
 			shortDescription: universes.shortDescription,
 			ruleset: universes.ruleset,
 			stage: universes.stage,
-			role: universeEditors.role
+			role: universeEditors.role,
+			disabled: sql<boolean>`(${universes.disabledAt} IS NOT NULL)`
 		})
 		.from(universeEditors)
 		.innerJoin(universes, eq(universes.id, universeEditors.universeId))

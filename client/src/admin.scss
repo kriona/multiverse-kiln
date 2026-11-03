@@ -1,5 +1,6 @@
 // The admin pages: admin.html, which links to the tools, and the tools (admin/settings.html,
-// admin/sessions.html and admin/players.html): settings for the whole site, its login sessions and its players
+// admin/sessions.html, admin/players.html, admin/admins.html and admin/universes.html): settings for the
+// whole site, its login sessions, its players, its server admins and its universes
 
 @use 'shared' as *;
 
@@ -153,6 +154,53 @@
 	color: $text-faint;
 }
 
+// A tool's panel whose parts stand one above the other, such as the Admins page's form and list
+.admin-stack
+{
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+
+	&[hidden]
+	{
+		display: none;
+	}
+
+	> p
+	{
+		margin: 0;
+	}
+}
+
+// The Admins page's field for finding a player, with Add Admin under it
+.admin-add-form
+{
+	max-width: 420px;
+}
+
+// A table cell of buttons, such as Remove or Disable, kept to the end of the row
+.admin-actions
+{
+	text-align: right;
+	white-space: nowrap;
+}
+
+// Why a universe was disabled, under its Disabled note
+.admin-reason
+{
+	margin: 4px 0 0;
+	color: $text-muted;
+	white-space: pre-line;
+	overflow-wrap: anywhere;
+}
+
+// The reason a universe is disabled, typed in the Disable Universe dialog
+#universe-disable-reason
+{
+	min-height: 6em;
+	resize: vertical;
+}
+
 // A list's table scrolls sideways on its own when the window is too narrow for its columns
 .admin-table-scroll
 {
@@ -222,7 +270,8 @@ $admin-tag-tones: (
 	'twoFactor': #ce93d8,
 	'password': $text-muted,
 	'google': #ffb74d,
-	'discord': #9fa8da
+	'discord': #9fa8da,
+	'warning': #e57373
 );
 
 @each $tone, $color in $admin-tag-tones
