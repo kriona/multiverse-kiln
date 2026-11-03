@@ -1139,6 +1139,58 @@
 		"message": "home port",
 		"source": "starting area"
 	},
+	"editor.characterList.class": {
+		"message": "Callin'",
+		"source": "Class"
+	},
+	"editor.characterList.created": {
+		"message": "Signed on",
+		"source": "Created"
+	},
+	"editor.characterList.description": {
+		"message": "Folk an' callin'",
+		"source": "Race and class"
+	},
+	"editor.characterList.inGroup": {
+		"message": "Sailin' with a crew",
+		"source": "In a group"
+	},
+	"editor.characterList.listFailed": {
+		"message": "Couldn't muster the hands.",
+		"source": "Could not list the characters."
+	},
+	"editor.characterList.name": {
+		"message": "Name",
+		"source": "Name"
+	},
+	"editor.characterList.none": {
+		"message": "No hands be matchin'.",
+		"source": "No characters match."
+	},
+	"editor.characterList.noneMade": {
+		"message": "Nary a soul has signed on in this universe yet.",
+		"source": "Nobody has made a character in this universe yet."
+	},
+	"editor.characterList.notes": {
+		"message": "Scribblings",
+		"source": "Notes"
+	},
+	"editor.characterList.player": {
+		"message": "Sailor",
+		"source": "Player"
+	},
+	"editor.characterList.race": {
+		"message": "Folk",
+		"source": "Race"
+	},
+	"editor.characterList.search": {
+		"message": "Search by name or sailor",
+		"source": "Search by name or player"
+	},
+	"editor.characterList.searchLabel": {
+		"message": "Search the hands by name or sailor",
+		"source": "Search characters by name or player"
+	},
 	"editor.characters.areaFailed": {
 		"message": "Couldn't find the home port.",
 		"source": "Could not load the starting area."
@@ -2166,6 +2218,10 @@
 	"editor.tab.areas": {
 		"message": "Areas",
 		"source": "Areas"
+	},
+	"editor.tab.characterList": {
+		"message": "Ship's Roster",
+		"source": "Character List"
 	},
 	"editor.tab.characters": {
 		"message": "Crew",

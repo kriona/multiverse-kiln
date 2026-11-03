@@ -708,6 +708,13 @@ a.button.universe-item
 	color: $text-faint;
 }
 
+// A player's username after their name, in the admin pages' lists and the editor's Character List tab
+.player-username
+{
+	color: $text-faint;
+	white-space: nowrap;
+}
+
 // The search and filters above a list, such as the editor's Items tab or the admin pages' lists
 .filters
 {
@@ -1066,6 +1073,12 @@ input.field-checking
 	color: $success;
 }
 
+a,
+a:visited
+{
+	color: $link;
+}
+
 .markdown
 {
 	overflow-wrap: anywhere;
@@ -1128,11 +1141,6 @@ input.field-checking
 		margin-bottom: 0;
 	}
 
-	a
-	{
-		color: $link;
-	}
-
 	pre,
 	code
 	{
@@ -1174,6 +1182,7 @@ footer
 	color: $text-faint;
 
 	a,
+	a:visited,
 	.link-button
 	{
 		color: $text-footer-link;

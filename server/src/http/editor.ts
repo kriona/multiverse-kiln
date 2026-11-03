@@ -21,6 +21,7 @@ import { createArea, findAreasUsingTile, findEditorArea, isTileInUse, replaceTil
 import { loadUniverseContext, playerIdOf, refuseWritesFromOtherOrigins, requireLogin, universeContextOf } from './editorAccess.js';
 import { addDefaultStartingItems } from '../db/startingItemRepo.js';
 import { recordRef, refuse, resolveNumberRef, resolveStringRef, type ChangeContext } from './editorChangeContext.js';
+import { addCharacterListRoutes } from './editorCharacters.js';
 import { addChangeRoutes } from './editorChanges.js';
 import { addClassRoutes } from './editorClasses.js';
 import { addItemRoutes } from './editorItems.js';
@@ -115,6 +116,7 @@ function createEditorRouter(allowedOrigins: Set<string>): express.Router
 	universeRouter.get('/', getUniverse);
 	addChangeRoutes(universeRouter);
 	addEditorListRoutes(universeRouter);
+	addCharacterListRoutes(universeRouter);
 	universeRouter.get('/ruleset', getRulesetSettings);
 	universeRouter.get('/tiles', listTiles);
 	universeRouter.get('/tiles/:tileId/usage', tileUsage);

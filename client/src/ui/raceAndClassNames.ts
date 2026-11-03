@@ -51,6 +51,25 @@ export function themeName(theme: Named, ruleset: Ruleset): string
 }
 
 /**
+ * A character's description as the player reads it: their race and class, e.g. "Dwarf Fighter"
+ *
+ * @param character The character, or anything else with a race and class, such as their sheet
+ * @param ruleset The universe's ruleset
+ * @return The description
+ */
+export function characterDescription(character: { race: Named; characterClass: Named }, ruleset: Ruleset): string
+{
+	return(t({
+		id: 'character.raceAndClass',
+		defaultMessage: '{race} {class}',
+		description: 'A character\'s race and class, e.g. "Dwarf Fighter": under the name at the top of their sheet, after their name in the lists of the player\'s characters in the lobby, on a universe\'s page, on an invite and on profiles, and in the world editor\'s list of every character in the universe. Reorder them as your language needs'
+	}, {
+		race: raceName(character.race, ruleset),
+		class: className(character.characterClass, ruleset)
+	}));
+}
+
+/**
  * A race's or class's name as the player reads it
  *
  * @param named The race or class

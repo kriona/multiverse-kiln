@@ -1,10 +1,9 @@
 import type { CharacterListPayload, CharacterSummary, InviteDetails } from '@multiverse-kiln/shared';
 
 import { t } from '../localization';
-import { characterMessages } from './characterMessages';
 import { describeMobScale, difficultyName } from './difficultyNames';
 import { getElement, setPageTitle, showMessage } from './dom';
-import { className, raceName } from './raceAndClassNames';
+import { characterDescription } from './raceAndClassNames';
 
 /**
  * What the invite screen asks the app to do
@@ -188,10 +187,7 @@ export class InviteScreen
 
 		name.textContent = character.name;
 		description.className = 'character-description';
-		description.textContent = t(characterMessages.raceAndClass, {
-			race: raceName(character.race, characters.ruleset),
-			class: className(character.characterClass, characters.ruleset)
-		});
+		description.textContent = characterDescription(character, characters.ruleset);
 
 		button.type = 'button';
 		button.className = 'character-choice';

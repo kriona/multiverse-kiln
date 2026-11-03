@@ -6,6 +6,7 @@
  * change, 404 for something that doesn't exist and 409 for a change that conflicts with what is
  * there. Writes from a browser must come from an origin in the server's ALLOWED_ORIGINS
  */
+import type { OptionName } from './characters.js';
 import type { LocalizedMessage } from './localization.js';
 import type { MapBounds } from './maps.js';
 import type { AreaChunk } from './messages.js';
@@ -27,6 +28,7 @@ import type { DisplayTime, EditorRole, FaerieMorning, LobbyPassageOfTime, Passag
  * - POST   /:universeId/changes                    SaveChangesRequest -> SaveChangesPayload: saves the editor's changes, all or nothing (see editorChanges.ts)
  * - GET    /:universeId/editors                    UniverseEditorListPayload: everyone with a role in the universe
  * - GET    /:universeId/editors/search             PlayerSearchQuery as query parameters -> PlayerSearchPayload: players to add, by username or name (canManageEditors())
+ * - GET    /:universeId/characters                 EditorCharacterListQuery as query parameters -> EditorCharacterListPayload: the characters made in the universe (canEditWorld())
  * - GET    /:universeId/ruleset                    RulesetSettings
  * - GET    /:universeId/tiles                      TileListQuery as query parameters -> TileListPayload
  * - GET    /:universeId/tiles/:tileId/usage        TileUsagePayload: the areas whose maps use the tile
@@ -502,6 +504,120 @@ export function parsePlayerSearch(query: string): { text: string; usernameOnly: 
 		text: (usernameOnly ? trimmed.slice(1).trim() : trimmed),
 		usernameOnly
 	});
+}
+
+/**
+ * Most characters one page of the Character List tab lists
+ */
+export const MAX_CHARACTERS_PER_PAGE = 500;
+
+/**
+ * Longest search the Character List tab sends
+ */
+export const MAX_CHARACTER_SEARCH_LENGTH = 100;
+
+/**
+ * The columns the Character List tab can sort characters by
+ */
+export const EDITOR_CHARACTER_SORT_COLUMNS = ['name', 'player', 'created'] as const;
+
+export type EditorCharacterSortColumn = typeof EDITOR_CHARACTER_SORT_COLUMNS[number];
+
+/**
+ * Query parameters of GET EDITOR_UNIVERSES_PATH/:universeId/characters. Each filter left out matches
+ * every character
+ */
+export interface EditorCharacterListQuery
+{
+	/**
+	 * Part of a character's name, or of their player's username or name, ignoring capitals. Text
+	 * starting with @ is matched against usernames only, without the @ (see parsePlayerSearch())
+	 */
+	search?: string;
+
+	/**
+	 * The race, by the ID characters have it by (an EditorRace's ID)
+	 */
+	raceId?: number;
+
+	/**
+	 * The class, by the ID characters have it by (an EditorClass's ID)
+	 */
+	classId?: number;
+
+	/**
+	 * Whether the character is in a group
+	 */
+	inGroup?: boolean;
+
+	/**
+	 * The column to sort the matches by before paging, with characters that tie sorted by name: the
+	 * character's name, their player's username, or when they were made. Names sort ignoring capitals
+	 */
+	sort?: EditorCharacterSortColumn;
+
+	/**
+	 * Which way to sort, ascending when left out
+	 */
+	direction?: SortDirection;
+
+	/**
+	 * How many matching characters to skip
+	 */
+	offset?: number;
+
+	/**
+	 * Most characters to return, up to MAX_CHARACTERS_PER_PAGE (the default)
+	 */
+	limit?: number;
+}
+
+/**
+ * A character in the universe, as the Character List tab lists them
+ */
+export interface EditorCharacter
+{
+	id: string;
+	name: string;
+	race: OptionName;
+	characterClass: OptionName;
+
+	/**
+	 * The player who made the character
+	 */
+	player: {
+		username: string;
+		displayName: string;
+	};
+
+	/**
+	 * When the character was made, as an ISO 8601 time
+	 */
+	createdAt: string;
+
+	/**
+	 * When the character is deleted (an ISO 8601 time), once given their last rites; null otherwise
+	 */
+	deleteAt: string | null;
+
+	/**
+	 * Whether the character is in a group
+	 */
+	inGroup: boolean;
+}
+
+/**
+ * Response of GET EDITOR_UNIVERSES_PATH/:universeId/characters (canEditWorld()): a page of the
+ * matching characters, leaving out those whose last rites are over
+ */
+export interface EditorCharacterListPayload
+{
+	characters: EditorCharacter[];
+
+	/**
+	 * How many characters match, on every page
+	 */
+	total: number;
 }
 
 /**

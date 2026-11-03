@@ -669,7 +669,7 @@
 	},
 	"character.raceAndClass": {
 		"defaultMessage": "{race} {class}",
-		"description": "A character's race and class, e.g. \"Dwarf Fighter\": under the name at the top of their sheet, and after their name in the lists of the player's characters in the lobby, on a universe's page, on an invite and on profiles. Reorder them as your language needs"
+		"description": "A character's race and class, e.g. \"Dwarf Fighter\": under the name at the top of their sheet, after their name in the lists of the player's characters in the lobby, on a universe's page, on an invite and on profiles, and in the world editor's list of every character in the universe. Reorder them as your language needs"
 	},
 	"character.review.class": {
 		"defaultMessage": "Class",
@@ -861,7 +861,7 @@
 	},
 	"characters.inGroup": {
 		"defaultMessage": "In a group",
-		"description": "In the list of the player's characters, beside one who is in a group (characters playing together); choosing them goes to that group"
+		"description": "Beside a character who is in a group (characters playing together): in the list of the player's characters, where choosing them goes to that group, and in the world editor's list of every character in the universe"
 	},
 	"characters.inThisGroup": {
 		"defaultMessage": "In this group",
@@ -869,7 +869,7 @@
 	},
 	"characters.leaving": {
 		"defaultMessage": "To be deleted on {deleteAt, date, medium}",
-		"description": "In the list of the player's characters, in a universe's lobby and on its page, beside one given their last rites, who can't be played until restored from their sheet; {deleteAt} is the day they will be deleted"
+		"description": "Beside a character given their last rites, who can't be played until restored from their sheet: in the list of the player's characters in a universe's lobby and on its page, and in the world editor's list of every character in the universe; {deleteAt} is the day they will be deleted"
 	},
 	"characters.loadFailed": {
 		"defaultMessage": "Could not list your characters.",
@@ -1138,6 +1138,58 @@
 	"editor.areas.startingAreaTag": {
 		"defaultMessage": "starting area",
 		"description": "Under an area in the list of areas, for the area new characters start in"
+	},
+	"editor.characterList.class": {
+		"defaultMessage": "Class",
+		"description": "Label of the filter on the editor's Character List tab for the characters' class, such as fighter or wizard"
+	},
+	"editor.characterList.created": {
+		"defaultMessage": "Created",
+		"description": "Heading of the column on the editor's Character List tab for the day each character was made"
+	},
+	"editor.characterList.description": {
+		"defaultMessage": "Race and class",
+		"description": "Heading of the column on the editor's Character List tab giving each character's race and class, e.g. Dwarf Fighter"
+	},
+	"editor.characterList.inGroup": {
+		"defaultMessage": "In a group",
+		"description": "Label of the yes-or-no filter on the editor's Character List tab for whether a character is in a group (characters playing together)"
+	},
+	"editor.characterList.listFailed": {
+		"defaultMessage": "Could not list the characters.",
+		"description": "Shown on the editor's Character List tab when the universe's characters couldn't be loaded"
+	},
+	"editor.characterList.name": {
+		"defaultMessage": "Name",
+		"description": "Heading of the column of characters' names on the editor's Character List tab"
+	},
+	"editor.characterList.none": {
+		"defaultMessage": "No characters match.",
+		"description": "Shown on the editor's Character List tab instead of the list of characters when no character matches the search or filters"
+	},
+	"editor.characterList.noneMade": {
+		"defaultMessage": "Nobody has made a character in this universe yet.",
+		"description": "Shown on the editor's Character List tab instead of the list of characters when the universe has none"
+	},
+	"editor.characterList.notes": {
+		"defaultMessage": "Notes",
+		"description": "Heading of the column on the editor's Character List tab that says whether each character is in a group or waiting to be deleted"
+	},
+	"editor.characterList.player": {
+		"defaultMessage": "Player",
+		"description": "Heading of the column on the editor's Character List tab naming the player who made each character"
+	},
+	"editor.characterList.race": {
+		"defaultMessage": "Race",
+		"description": "Label of the filter on the editor's Character List tab for the characters' race, such as elf or dwarf"
+	},
+	"editor.characterList.search": {
+		"defaultMessage": "Search by name or player",
+		"description": "Shown in the empty field on the editor's Character List tab that narrows the characters down by the character's name or their player's username or name"
+	},
+	"editor.characterList.searchLabel": {
+		"defaultMessage": "Search characters by name or player",
+		"description": "Name of the field on the editor's Character List tab that narrows the characters down by the character's name or their player's username or name, for screen readers"
 	},
 	"editor.characters.areaFailed": {
 		"defaultMessage": "Could not load the starting area.",
@@ -2166,6 +2218,10 @@
 	"editor.tab.areas": {
 		"defaultMessage": "Areas",
 		"description": "Tab of the editor listing the universe's areas (places with their own map)"
+	},
+	"editor.tab.characterList": {
+		"defaultMessage": "Character List",
+		"description": "Tab of the editor listing every character players have made in the universe, with their race, class and player"
 	},
 	"editor.tab.characters": {
 		"defaultMessage": "Characters",
@@ -3317,15 +3373,15 @@
 	},
 	"filter.any": {
 		"defaultMessage": "Any",
-		"description": "Choice of a filter that shows everything: on the editor's Items or Tilesets tab (such as items of every type, or tiles whether passable or not), or on the admin pages' lists of sessions and players (such as players whether server admins or not)"
+		"description": "Choice of a filter that shows everything: on the editor's Items, Tilesets or Character List tab (such as items of every type, tiles whether passable or not, or characters of every race), or on the admin pages' lists of sessions and players (such as players whether server admins or not)"
 	},
 	"filter.no": {
 		"defaultMessage": "No",
-		"description": "Choice of a yes-or-no filter on the editor's Items or Tilesets tab, e.g. Passable: No, or on the admin pages' lists, e.g. Server admin: No"
+		"description": "Choice of a yes-or-no filter on the editor's Items, Tilesets or Character List tab, e.g. Passable: No, or on the admin pages' lists, e.g. Server admin: No"
 	},
 	"filter.yes": {
 		"defaultMessage": "Yes",
-		"description": "Choice of a yes-or-no filter on the editor's Items or Tilesets tab, e.g. Passable: Yes, or on the admin pages' lists, e.g. Server admin: Yes"
+		"description": "Choice of a yes-or-no filter on the editor's Items, Tilesets or Character List tab, e.g. Passable: Yes, or on the admin pages' lists, e.g. Server admin: Yes"
 	},
 	"form.discardChanges": {
 		"defaultMessage": "You have changes that haven't been saved. Discard them?",

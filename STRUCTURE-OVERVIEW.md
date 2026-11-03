@@ -300,6 +300,7 @@ This lets you change anything about a universe. It will be a whole suite of tool
 	- [Ruleset](#tab-ruleset)
 	- [Lobby](#tab-lobby)
 	- [Characters](#tab-characters), with [races](#races), [classes](#classes) and, for a ruleset that has them (SF1E), [themes](#themes)
+	- [Character List](#tab-character-list)
 	- [Tilesets](#tab-tilesets)
 	- [Areas](#tab-areas)
 	- [Items](#tab-items)
@@ -526,6 +527,9 @@ You can edit each class:
 	- key ability score, used as a hint when spending ability points. A soldier's is Strength or Dexterity; the default is Strength
 	- hit points per level, 0 to 99
 	- stamina points per level, 0 to 99
+
+### Tab: Character List
+Lists every character players have made in the universe, for creators and builders (the server refuses other roles too): each character's name, their race and class (as the lobby shows them, e.g. "Dwarf Fighter"), their player's name (linking to their profile) and @username, when they were made, and notes saying whether they are in a group or waiting for their [last rites](#deleting-a-character) to end. Characters whose last rites are over aren't listed. A search narrows the list by the character's name or the player's username or name, ignoring capitals; text starting with @ matches usernames only. Filters choose a race, a class (disabled ones included, since characters may still have them) and whether the character is in a group. The server searches, filters and sorts (by name until the Name, Player or Created heading is clicked, see [sortable tables](#sortable-tables)), and the list shows 500 characters a page. Characters belong to their players, so the tab only lists them and has nothing to save.
 
 ### Tab: Tilesets
 shows you a table of all tiles in the game, populated from the default for your ruleset and any tiles you have created. Default tiles can be edited: the edit applies to your universe only, and can be undone to restore the default. Disabling a default tile is such an edit, so a universe can leave out the ruleset's tiles it doesn't want. A tile you created can be deleted once no map uses it.
