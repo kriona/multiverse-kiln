@@ -2,7 +2,8 @@ import type { AdminSession } from '@multiverse-kiln/shared';
 
 import { startAdminPage } from './AdminPage';
 import { formatDateTime, t } from './localization';
-import { AdminList, notesCell, playerCell, textCell, type AdminNote } from './ui/AdminList';
+import { AdminList, notesCell, textCell, type AdminNote } from './ui/AdminList';
+import { playerCell } from './ui/playerCell';
 
 /**
  * Starts the admin page listing the login sessions still going (admin/sessions.html)

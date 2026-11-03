@@ -3,7 +3,6 @@ import { defineMessages, MAX_ADMIN_ROWS_PER_PAGE, MAX_ADMIN_SEARCH_LENGTH, type 
 import { showAdminRefusal } from '../AdminPage';
 import { t } from '../localization';
 import { describeEditorError } from '../network/editorApi';
-import { playerPageUrl } from '../pages';
 import { announce } from './announcer';
 import { getElement, setOptions, showMessage } from './dom';
 import { formMessages } from './formMessages';
@@ -275,30 +274,6 @@ export class AdminList<Row>
 			}));
 		}
 	}
-}
-
-/**
- * A table cell naming a player: their name, linking to their profile, and their username
- *
- * @param displayName The player's name
- * @param username Their username
- * @return The cell
- */
-export function playerCell(displayName: string, username: string): HTMLTableCellElement
-{
-	const cell = document.createElement('td');
-	const link = document.createElement('a');
-	const handle = document.createElement('span');
-
-	link.href = playerPageUrl(username);
-	link.textContent = displayName;
-	link.translate = false;
-	handle.className = 'admin-username';
-	handle.textContent = `@${username}`;
-	handle.translate = false;
-	cell.append(link, ' ', handle);
-
-	return(cell);
 }
 
 /**

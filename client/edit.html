@@ -24,6 +24,7 @@
 					<button id="editor-tab-ruleset" type="button" role="tab" aria-controls="editor-panel-ruleset" data-message="editor.tab.ruleset" data-translation-context="Tab of the editor with the settings of the universe's game rules, such as how ability scores are made"><!-- icon game-icons:rule-book -->Ruleset</button>
 					<button id="editor-tab-lobby" type="button" role="tab" aria-controls="editor-panel-lobby" data-message="editor.tab.lobby" data-translation-context="Tab of the editor with the lobby's settings"><!-- icon game-icons:campfire -->Lobby</button>
 					<button id="editor-tab-characters" type="button" role="tab" aria-controls="editor-panel-characters" data-message="editor.tab.characters" data-translation-context="Tab of the editor with what characters start with and how many play together"><!-- icon game-icons:character -->Characters</button>
+					<button id="editor-tab-characterList" type="button" role="tab" aria-controls="editor-panel-characterList" data-message="editor.tab.characterList" data-translation-context="Tab of the editor listing every character players have made in the universe, with their race, class and player"><!-- icon game-icons:three-friends -->Character List</button>
 					<button id="editor-tab-tilesets" type="button" role="tab" aria-controls="editor-panel-tilesets" data-message="editor.tab.tilesets" data-translation-context="Tab of the editor listing the tiles maps are painted with"><!-- icon game-icons:stone-block -->Tilesets</button>
 					<button id="editor-tab-areas" type="button" role="tab" aria-controls="editor-panel-areas" data-message="editor.tab.areas" data-translation-context="Tab of the editor listing the universe's areas (places with their own map)"><!-- icon game-icons:treasure-map -->Areas</button>
 					<button id="editor-tab-items" type="button" role="tab" aria-controls="editor-panel-items" data-message="editor.tab.items" data-translation-context="Tab of the editor listing the items characters can be given, such as weapons and gear"><!-- icon game-icons:swap-bag -->Items</button>
@@ -282,6 +283,42 @@
 								<tbody id="theme-rows"></tbody>
 							</table>
 						</section>
+					</section>
+
+					<section id="editor-panel-characterList" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-characterList" hidden>
+						<div class="filters">
+							<input id="character-list-search" type="search" placeholder="Search by name or player" aria-label="Search characters by name or player" data-message-placeholder="editor.characterList.search" data-translation-context-placeholder="Shown in the empty field on the editor's Character List tab that narrows the characters down by the character's name or their player's username or name" data-message-aria-label="editor.characterList.searchLabel" data-translation-context-aria-label="Name of the field on the editor's Character List tab that narrows the characters down by the character's name or their player's username or name, for screen readers" />
+							<label data-message="editor.characterList.race" data-translation-context="Label of the filter on the editor's Character List tab for the characters' race, such as elf or dwarf">
+								Race
+								<select id="character-list-race"></select>
+							</label>
+							<label data-message="editor.characterList.class" data-translation-context="Label of the filter on the editor's Character List tab for the characters' class, such as fighter or wizard">
+								Class
+								<select id="character-list-class"></select>
+							</label>
+							<label data-message="editor.characterList.inGroup" data-translation-context="Label of the yes-or-no filter on the editor's Character List tab for whether a character is in a group (characters playing together)">
+								In a group
+								<select id="character-list-in-group"></select>
+							</label>
+						</div>
+						<table id="character-list-table" class="item-table">
+							<thead>
+								<tr>
+									<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="editor.characterList.name" data-translation-context="Heading of the column of characters' names on the editor's Character List tab">Name</button></th>
+									<th scope="col" data-message="editor.characterList.description" data-translation-context="Heading of the column on the editor's Character List tab giving each character's race and class, e.g. Dwarf Fighter">Race and class</th>
+									<th scope="col" data-sort="player"><button type="button" class="sort-button" data-message="editor.characterList.player" data-translation-context="Heading of the column on the editor's Character List tab naming the player who made each character">Player</button></th>
+									<th scope="col" data-sort="created"><button type="button" class="sort-button" data-message="editor.characterList.created" data-translation-context="Heading of the column on the editor's Character List tab for the day each character was made">Created</button></th>
+									<th scope="col" data-message="editor.characterList.notes" data-translation-context="Heading of the column on the editor's Character List tab that says whether each character is in a group or waiting to be deleted">Notes</th>
+								</tr>
+							</thead>
+							<tbody id="character-list-rows"></tbody>
+						</table>
+						<p id="character-list-empty" class="universe-empty" data-message="editor.characterList.none" data-translation-context="Shown on the editor's Character List tab instead of the list of characters when no character matches the search or filters" hidden>No characters match.</p>
+						<div class="pager">
+							<button id="character-list-previous" type="button" class="secondary" data-message="pager.previous" data-translation-context="Button that shows the previous page of a list">Previous</button>
+							<span id="character-list-page"></span>
+							<button id="character-list-next" type="button" class="secondary" data-message="pager.next" data-translation-context="Button that shows the next page of a list">Next</button>
+						</div>
 					</section>
 
 					<section id="editor-panel-tilesets" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-tilesets" hidden>

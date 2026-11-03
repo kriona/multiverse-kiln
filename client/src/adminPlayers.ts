@@ -2,7 +2,8 @@ import { LOGIN_PROVIDER_NAMES, type AdminPlayer } from '@multiverse-kiln/shared'
 
 import { startAdminPage } from './AdminPage';
 import { formatDateTime, t } from './localization';
-import { AdminList, adminNoteMessages, notesCell, playerCell, textCell, type AdminNote } from './ui/AdminList';
+import { AdminList, adminNoteMessages, notesCell, textCell, type AdminNote } from './ui/AdminList';
+import { playerCell } from './ui/playerCell';
 
 /**
  * Starts the admin page listing every player account (admin/players.html)

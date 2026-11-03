@@ -5,11 +5,10 @@ import { currentLocale, signedNumber, t } from '../localization';
 import type { CharacterApi } from '../network/characterApi';
 import { describeEditorError } from '../network/editorApi';
 import { announce } from './announcer';
-import { characterMessages } from './characterMessages';
 import { getElement, setButtonLabel, showMessage } from './dom';
 import { createItemIcon, itemName } from './itemNames';
 import { formatMoney } from './moneyField';
-import { className, raceName, themeName } from './raceAndClassNames';
+import { characterDescription, themeName } from './raceAndClassNames';
 
 /**
  * A dialog showing one of the player's characters: their race and class, ability scores, size,
@@ -190,10 +189,7 @@ export class CharacterSheetDialog
 	private show(sheet: CharacterSheet): void
 	{
 		this.title.textContent = sheet.name;
-		this.summary.textContent = t(characterMessages.raceAndClass, {
-			race: raceName(sheet.race, sheet.ruleset),
-			class: className(sheet.characterClass, sheet.ruleset)
-		});
+		this.summary.textContent = characterDescription(sheet, sheet.ruleset);
 		this.status.textContent = '';
 		this.showAbilities(sheet);
 		this.showTraits(sheet);

@@ -5,6 +5,7 @@ import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { editPageUrl, HOME_PAGE_URL } from '../../pages';
 import { EditorsTab } from './EditorsTab';
 import { closeOpenDialogs, getElement, setPageTitle, showMessage, titleLink } from '../dom';
+import { CharacterListTab } from './CharacterListTab';
 import { CharactersTab } from './CharactersTab';
 import { LobbyTab } from './LobbyTab';
 import { ClassesSection } from './ClassesSection';
@@ -29,6 +30,7 @@ export const EDITOR_TABS = [
 	'ruleset',
 	'lobby',
 	'characters',
+	'characterList',
 	'tilesets',
 	'areas',
 	'items'
@@ -40,9 +42,9 @@ export type EditorTab = typeof EDITOR_TABS[number];
  * The order the tabs' changes are saved in: the Areas tab's maps can be painted with tiles the
  * Tilesets tab adds, so the Tilesets tab goes first and the Areas tab after it. The server checks every
  * change against the role the player had when the save began, so the Editors tab's changes to roles
- * can go anywhere
+ * can go anywhere. The Character List tab only lists, so it saves nothing
  */
-const SAVE_ORDER: readonly EditorTab[] = [
+const SAVE_ORDER = [
 	'tilesets',
 	'items',
 	'ruleset',
@@ -51,7 +53,23 @@ const SAVE_ORDER: readonly EditorTab[] = [
 	'lobby',
 	'areas',
 	'editors'
-];
+] as const satisfies readonly EditorTab[];
+
+/**
+ * A tab with changes to save
+ */
+type SavableEditorTab = typeof SAVE_ORDER[number];
+
+/**
+ * Whether a tab has changes to save
+ *
+ * @param name The tab
+ * @return True when it does
+ */
+function isSavableTab(name: EditorTab): name is SavableEditorTab
+{
+	return(SAVE_ORDER.some((tab) => (tab === name)));
+}
 
 /**
  * The tabs every role sees; the others are for roles that may change the world (canEditWorld())
@@ -96,7 +114,8 @@ export function isEditorTab(value: string | undefined): value is EditorTab
 
 /**
  * Edit Universe: a universe's editors, settings, ruleset (and the difficulty levels), lobby, characters
- * (and their races, classes and, in a ruleset with them, themes), tiles, areas and items, in tabs
+ * (and their races, classes and, in a ruleset with them, themes), the characters players have made,
+ * tiles, areas and items, in tabs
  *
  * What the player may see and change depends on their role in the universe; the server checks it again
  * on every change, so the page only hides controls that would be refused
@@ -110,6 +129,7 @@ export class EditorScreen
 	private readonly rulesetTab: RulesetTab;
 	private readonly lobbyTab: LobbyTab;
 	private readonly charactersTab: CharactersTab;
+	private readonly characterListTab: CharacterListTab;
 	private readonly racesSection: RacesSection;
 	private readonly classesSection: ClassesSection;
 	private readonly themesSection: ThemesSection;
@@ -127,7 +147,7 @@ export class EditorScreen
 	/**
 	 * What the save bar saves on each tab
 	 */
-	private readonly savableTabs: Record<EditorTab, SavableTab>;
+	private readonly savableTabs: Record<SavableEditorTab, SavableTab>;
 
 	/**
 	 * The universe being edited, once it has loaded
@@ -166,6 +186,7 @@ export class EditorScreen
 		{
 			this.updateUniverse(update);
 		});
+		this.characterListTab = new CharacterListTab(api);
 		this.racesSection = new RacesSection(api, areaSelect, itemSelect);
 		this.classesSection = new ClassesSection(api, areaSelect, itemSelect);
 		this.themesSection = new ThemesSection(api);
@@ -190,7 +211,7 @@ export class EditorScreen
 		});
 		this.saveBar = new SaveBar(api, () => this.universe?.id, (tab) =>
 		{
-			const name = EDITOR_TABS.find((candidate) => (this.savableTabs[candidate] === tab));
+			const name = SAVE_ORDER.find((candidate) => (this.savableTabs[candidate] === tab));
 
 			if (name !== undefined)
 			{
@@ -313,6 +334,7 @@ export class EditorScreen
 		void this.rulesetTab.open(universe);
 		this.lobbyTab.open(universe);
 		this.charactersTab.open(universe);
+		this.characterListTab.open(universe);
 		this.themesSection.open(universe);
 		this.difficultySection.open(universe);
 		this.racesSection.open(universe);
@@ -534,7 +556,7 @@ export class EditorScreen
 			getElement(`editor-panel-${name}`, HTMLElement).hidden = (name !== selected);
 		}
 
-		this.saveBar.show(this.savableTabs[selected]);
+		this.saveBar.show((isSavableTab(selected) ? this.savableTabs[selected] : undefined));
 		this.setPlace({ ...this.place, tab: selected });
 	}
 

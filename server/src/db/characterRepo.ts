@@ -1,13 +1,14 @@
 /**
  * Characters: the only module that reads or writes the characters, pf1e_characters, sf1e_characters,
  * character_items, character_drafts and pf1e_ability_rolls tables. It reads group_members only to
- * tell which characters are in a group, and universes only to name a profile's characters' universes
+ * tell which characters are in a group, universes only to name a profile's characters' universes, and
+ * players only to name and search for the players of the editor's list of a universe's characters
  */
 import { and, asc, count, desc, eq, gt, inArray, isNotNull, isNull, lte, ne, or, sql, type SQL } from 'drizzle-orm';
-import { isPf1eRollMethod, type AbilityScores, type CharacterDraft, type ItemQuantity, type Money, type Pf1eRollMethod, type Ruleset, type UniverseStage } from '@multiverse-kiln/shared';
+import { isPf1eRollMethod, type AbilityScores, type CharacterDraft, type EditorCharacterSortColumn, type ItemQuantity, type Money, type Pf1eRollMethod, type Ruleset, type SortDirection, type UniverseStage } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
-import { characterDrafts, characterItems, characters, groupMembers, pf1eAbilityRolls, pf1eCharacters, sf1eCharacters, universes } from './schema.js';
+import { characterDrafts, characterItems, characters, groupMembers, pf1eAbilityRolls, pf1eCharacters, players, sf1eCharacters, universes } from './schema.js';
 
 /**
  * A character as the lobby lists it
@@ -44,6 +45,47 @@ export interface ProfileCharacterRecord
 	universeSlug: string;
 	universeName: string;
 	ruleset: Ruleset;
+}
+
+/**
+ * A character in a universe, as the editor's Character List tab lists them, with their player
+ */
+export interface UniverseCharacterRecord
+{
+	id: string;
+	name: string;
+	raceId: number;
+	classId: number;
+	playerUsername: string;
+	playerDisplayName: string;
+	createdAt: Date;
+
+	/**
+	 * When the character is deleted, once given their last rites; null otherwise
+	 */
+	deleteAt: Date | null;
+
+	inGroup: boolean;
+}
+
+/**
+ * Which of a universe's characters to list, in what order, and which page of them
+ */
+export interface UniverseCharacterFilter
+{
+	/**
+	 * Text to find in the character's name or the player's username or name, ignoring capitals, or in
+	 * the username only (parsePlayerSearch())
+	 */
+	search?: { text: string; usernameOnly: boolean };
+
+	raceId?: number;
+	classId?: number;
+	inGroup?: boolean;
+	sort: EditorCharacterSortColumn;
+	direction: SortDirection;
+	offset: number;
+	limit: number;
 }
 
 /**
@@ -207,6 +249,87 @@ export async function listCharacters(playerId: string, universeId: string, execu
 			notExpired
 		))
 		.orderBy(asc(characters.createdAt), asc(characters.id)));
+}
+
+/**
+ * A page of the characters made in a universe, as the editor's Character List tab lists them: those
+ * whose last rites aren't over, matching a filter
+ *
+ * @param universeId The universe's ID
+ * @param filter Which characters, in what order, and which page
+ * @param executor The database, or a transaction
+ * @return The page of characters, and how many match in all
+ */
+export async function listUniverseCharacters(universeId: string, filter: UniverseCharacterFilter, executor: Executor = db): Promise<{ characters: UniverseCharacterRecord[]; total: number }>
+{
+	const characterName = sql`lower(${characters.name})`;
+	const sortKeys: Record<EditorCharacterSortColumn, SQL> = {
+		name: characterName,
+		player: sql`lower(${players.username})`,
+		created: sql`${characters.createdAt}`
+	};
+	const direction = ((filter.direction === 'ascending') ? asc : desc);
+	const conditions = and(
+		eq(characters.universeId, universeId),
+		notExpired,
+		((filter.search === undefined) ? undefined : searchCondition(filter.search.text, filter.search.usernameOnly)),
+		((filter.raceId === undefined) ? undefined : eq(characters.raceId, filter.raceId)),
+		((filter.classId === undefined) ? undefined : eq(characters.classId, filter.classId)),
+		((filter.inGroup === undefined) ? undefined : (filter.inGroup ? isNotNull(groupMembers.groupId) : isNull(groupMembers.groupId)))
+	);
+	const rows = await executor
+		.select({
+			id: characters.id,
+			name: characters.name,
+			raceId: characters.raceId,
+			classId: characters.classId,
+			playerUsername: players.username,
+			playerDisplayName: players.displayName,
+			createdAt: characters.createdAt,
+			deleteAt: characters.deleteAt,
+			groupId: groupMembers.groupId
+		})
+		.from(characters)
+		.innerJoin(players, eq(players.id, characters.playerId))
+		.leftJoin(groupMembers, eq(groupMembers.characterId, characters.id))
+		.where(conditions)
+		.orderBy(direction(sortKeys[filter.sort]), asc(characterName), asc(characters.id))
+		.offset(filter.offset)
+		.limit(filter.limit);
+	const [counted] = await executor
+		.select({
+			total: count()
+		})
+		.from(characters)
+		.innerJoin(players, eq(players.id, characters.playerId))
+		.leftJoin(groupMembers, eq(groupMembers.characterId, characters.id))
+		.where(conditions);
+
+	return({
+		characters: rows.map(({ groupId, ...character }) => ({
+			...character,
+			inGroup: (groupId !== null)
+		})),
+		total: counted.total
+	});
+}
+
+/**
+ * Matches characters whose name, or whose player's username or name, holds some text, ignoring capitals
+ *
+ * @param text The text
+ * @param usernameOnly Whether to match the player's username only
+ * @return The condition
+ */
+function searchCondition(text: string, usernameOnly: boolean): SQL
+{
+	// % and _ are wildcards in LIKE, and _ is common in usernames; backslash is LIKE's escape character
+	const pattern = `%${text.toLowerCase().replace(/[\\%_]/g, (character) => `\\${character}`)}%`;
+	const username = sql`lower(${players.username}) LIKE ${pattern}`;
+
+	return((usernameOnly
+		? username
+		: sql`(lower(${characters.name}) LIKE ${pattern} OR ${username} OR lower(${players.displayName}) LIKE ${pattern})`));
 }
 
 /**

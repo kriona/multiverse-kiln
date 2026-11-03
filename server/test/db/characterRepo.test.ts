@@ -1,12 +1,12 @@
 import assert from 'assert';
 import type { CharacterDraft } from '@multiverse-kiln/shared';
 
-import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findPf1eAbilityRoll, hasCharactersOfClass, hasCharactersOfRace, isCarriedItem, keepPf1eAbilityRoll, listCharacters, listPlayableCharacters, listProfileCharacters, markCharacterPlayed, purgeExpiredCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion, setCharacterVisibility } from '../../src/db/characterRepo.js';
+import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findPf1eAbilityRoll, hasCharactersOfClass, hasCharactersOfRace, isCarriedItem, keepPf1eAbilityRoll, listCharacters, listPlayableCharacters, listProfileCharacters, listUniverseCharacters, markCharacterPlayed, purgeExpiredCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion, setCharacterVisibility, type UniverseCharacterFilter } from '../../src/db/characterRepo.js';
 import { addPlayer } from '../players.js';
 import { findDefaultRaceIds } from '../../src/db/raceRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
 import { createUniverse, setUniverseDisabled } from '../../src/db/universeRepo.js';
-import { addUniverse, dwarfFighter } from './fixtures.js';
+import { addGroup, addUniverse, defaultRaceId, dwarfFighter } from './fixtures.js';
 
 describe('characterRepo', () =>
 {
@@ -54,6 +54,105 @@ describe('characterRepo', () =>
 		await markCharacterPlayed(firstId, new Date(Date.now() + 1000));
 
 		assert.deepStrictEqual((await listPlayableCharacters(playerId, universeId)).map(({ id }) => id), [firstId, secondId]);
+	});
+
+	describe('listing a universe\'s characters for the editor', () =>
+	{
+		/**
+		 * The names of a page of the universe's characters
+		 *
+		 * @param filter What to list, on top of every character by name
+		 * @return The names in order, and how many match
+		 */
+		async function names(filter: Partial<UniverseCharacterFilter> = {}): Promise<{ names: string[]; total: number }>
+		{
+			const page = await listUniverseCharacters(universeId, {
+				sort: 'name',
+				direction: 'ascending',
+				offset: 0,
+				limit: 50,
+				...filter
+			});
+
+			return({
+				names: page.characters.map(({ name }) => name),
+				total: page.total
+			});
+		}
+
+		let brokkId: string;
+		let elfId: number;
+
+		beforeEach(async () =>
+		{
+			const grace = await addPlayer('Grace Hopper');
+			const brokk = await dwarfFighter(playerId, universeId);
+			const otherUniverseId = await addUniverse('Elsewhere');
+
+			elfId = await defaultRaceId('elf');
+			brokkId = await inTransaction((transaction) => createCharacter(brokk, transaction));
+			await inTransaction((transaction) => createCharacter({ ...brokk, name: 'arwen', raceId: elfId }, transaction));
+			await inTransaction((transaction) => createCharacter({ ...brokk, playerId: grace.id, name: 'Cobb' }, transaction));
+			await inTransaction((transaction) => createCharacter({ ...brokk, universeId: otherUniverseId, name: 'Elsewhere' }, transaction));
+		});
+
+		it('lists every player\'s characters in the universe, with their players and groups', async () =>
+		{
+			await addGroup(universeId, brokkId, null);
+
+			const page = await listUniverseCharacters(universeId, { sort: 'name', direction: 'ascending', offset: 0, limit: 50 });
+			const brokk = page.characters.find(({ id }) => (id === brokkId));
+
+			assert.deepStrictEqual(page.characters.map(({ name, playerUsername, inGroup }) => [name, playerUsername, inGroup]), [
+				['arwen', 'Ada', false],
+				['Brokk', 'Ada', true],
+				['Cobb', 'Grace_Hopper', false]
+			]);
+			assert.strictEqual(page.total, 3);
+			assert.strictEqual(brokk?.playerDisplayName, 'Ada');
+			assert.ok(brokk.createdAt instanceof Date);
+			assert.deepStrictEqual((await names({ inGroup: true })).names, ['Brokk']);
+			assert.deepStrictEqual((await names({ inGroup: false })).names, ['arwen', 'Cobb']);
+		});
+
+		it('searches names, usernames and players\' names, and usernames alone after an @', async () =>
+		{
+			assert.deepStrictEqual((await names({ search: { text: 'RW', usernameOnly: false } })).names, ['arwen']);
+			assert.deepStrictEqual((await names({ search: { text: 'hopper', usernameOnly: false } })).names, ['Cobb']);
+			assert.deepStrictEqual((await names({ search: { text: 'grace hopper', usernameOnly: false } })).names, ['Cobb']);
+			assert.deepStrictEqual((await names({ search: { text: 'grace hopper', usernameOnly: true } })).names, []);
+			assert.deepStrictEqual((await names({ search: { text: '_h', usernameOnly: true } })).names, ['Cobb']);
+			assert.deepStrictEqual((await names({ search: { text: '%', usernameOnly: false } })).names, []);
+		});
+
+		it('filters by race and class, and sorts and pages', async () =>
+		{
+			const fighterId = (await dwarfFighter(playerId, universeId)).classId;
+
+			assert.deepStrictEqual((await names({ raceId: elfId })).names, ['arwen']);
+			assert.deepStrictEqual((await names({ classId: fighterId })).total, 3);
+			assert.deepStrictEqual((await names({ classId: fighterId + 1000 })).total, 0);
+			assert.deepStrictEqual((await names({ sort: 'created', direction: 'descending' })).names, ['Cobb', 'arwen', 'Brokk']);
+			assert.deepStrictEqual((await names({ sort: 'player', direction: 'descending' })).names, ['Cobb', 'arwen', 'Brokk']);
+			assert.deepStrictEqual(await names({ offset: 1, limit: 1 }), { names: ['Brokk'], total: 3 });
+		});
+
+		it('lists characters given their last rites until their time is up', async () =>
+		{
+			const dayMs = 24 * 60 * 60 * 1000;
+			const goneId = await inTransaction(async (transaction) => createCharacter({ ...(await dwarfFighter(playerId, universeId)), name: 'Gone' }, transaction));
+
+			await scheduleCharacterDeletion(playerId, universeId, brokkId, new Date(Date.now() + dayMs));
+			await scheduleCharacterDeletion(playerId, universeId, goneId, new Date(Date.now() - dayMs));
+
+			const page = await listUniverseCharacters(universeId, { sort: 'name', direction: 'ascending', offset: 0, limit: 50 });
+
+			assert.deepStrictEqual(page.characters.map(({ name, deleteAt }) => [name, (deleteAt !== null)]), [
+				['arwen', false],
+				['Brokk', true],
+				['Cobb', false]
+			]);
+		});
 	});
 
 	it('knows which races, classes and items characters have', async () =>
