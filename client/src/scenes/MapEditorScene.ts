@@ -180,6 +180,11 @@ export class MapEditorScene extends Phaser.Scene
 	private hovered: BrushCell | undefined;
 
 	/**
+	 * Whether the mouse is over the canvas
+	 */
+	private pointerOver = false;
+
+	/**
 	 * The last cell dabbed in the stroke being painted, or undefined when no stroke is under way
 	 */
 	private lastDab: BrushCell | undefined;
@@ -225,6 +230,7 @@ export class MapEditorScene extends Phaser.Scene
 		this.links = [];
 		this.highlights = [];
 		this.hovered = undefined;
+		this.pointerOver = false;
 		this.lastDab = undefined;
 		this.panStart = undefined;
 		this.lastViewKey = '';
@@ -276,9 +282,16 @@ export class MapEditorScene extends Phaser.Scene
 		this.input.on(Phaser.Input.Events.GAME_OUT, this.onPointerOut);
 		this.input.on(Phaser.Input.Events.POINTER_WHEEL, this.onWheel);
 
+		// Capturing hears the scrolling of any element the canvas is in, as well as the page's
+		window.addEventListener('scroll', this.onPageScroll, {
+			capture: true,
+			passive: true
+		});
+
 		this.events.once(Phaser.Scenes.Events.SHUTDOWN, () =>
 		{
 			this.finishStroke();
+			window.removeEventListener('scroll', this.onPageScroll, { capture: true });
 			this.input.removeAllListeners();
 			this.areaRenderer?.destroy();
 			this.areaRenderer = undefined;
@@ -432,6 +445,8 @@ export class MapEditorScene extends Phaser.Scene
 	{
 		const cell = this.cellUnder(pointer);
 
+		this.pointerOver = true;
+
 		if (this.panStart)
 		{
 			const camera = this.cameras.main;
@@ -476,8 +491,36 @@ export class MapEditorScene extends Phaser.Scene
 	 */
 	private readonly onPointerOut = (): void =>
 	{
+		this.pointerOver = false;
 		this.hovered = undefined;
 		this.host.hover(undefined);
+	};
+
+	/**
+	 * Finds where the mouse is on the canvas when the page scrolls under it, which moves the canvas
+	 * without moving the mouse, so the outlined cell stays under the mouse
+	 */
+	private readonly onPageScroll = (): void =>
+	{
+		const pointer = this.input.activePointer;
+		const event = pointer.event;
+
+		if (!this.pointerOver || !(event instanceof MouseEvent))
+		{
+			return;
+		}
+
+		// The mouse stays at the same place in the window, which is somewhere else on the page now
+		this.scale.updateBounds();
+		this.game.input.transformPointer(pointer, event.clientX + window.scrollX, event.clientY + window.scrollY, false);
+
+		if ((pointer.x < 0) || (pointer.y < 0) || (pointer.x >= this.scale.width) || (pointer.y >= this.scale.height))
+		{
+			this.onPointerOut();
+			return;
+		}
+
+		this.onPointerMove(pointer);
 	};
 
 	/**
