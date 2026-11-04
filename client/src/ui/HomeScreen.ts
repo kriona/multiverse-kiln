@@ -1,11 +1,12 @@
 import { DISALLOWED_TEXT_CHARACTERS, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_NAME_LENGTH, RULESET_NAMES, RULESETS, UNIVERSE_ROLE_NAMES, UNIVERSE_STAGE_NAMES, universeSlug, type EditableUniverseListPayload, type EditableUniverseSummary, type NewUniverseRequest, type Ruleset, type UniverseListPayload, type UniverseSummary } from '@multiverse-kiln/shared';
 
-import { t } from '../localization';
+import { currentLocale, t } from '../localization';
 import { describeEditorError } from '../network/editorApi';
 import { editPageUrl, loginPageUrl, universePageUrl } from '../pages';
 import { getElement, namedOptions, setOptions, setPageTitle, showMessage } from './dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
 import { formMessages } from './formMessages';
+import { describeUniverseLanguages } from './universeLanguages';
 
 /**
  * What the Home screen asks the app to do
@@ -238,7 +239,8 @@ export class HomeScreen
 	}
 
 	/**
-	 * A universe's entry in the list: its name, one-sentence description and ruleset, linking to its page
+	 * A universe's entry in the list: its name, one-sentence description, ruleset and languages, linking
+	 * to its page
 	 *
 	 * @param universe The universe
 	 * @return The list item
@@ -250,6 +252,7 @@ export class HomeScreen
 		const name = document.createElement('h3');
 		const description = document.createElement('span');
 		const ruleset = document.createElement('span');
+		const languages = document.createElement('span');
 
 		link.className = 'button universe-item';
 		link.href = universePageUrl(universe.slug);
@@ -257,8 +260,10 @@ export class HomeScreen
 		description.textContent = universe.shortDescription;
 		ruleset.className = 'universe-ruleset';
 		ruleset.textContent = t(RULESET_NAMES[universe.ruleset]);
+		languages.className = 'universe-ruleset';
+		languages.textContent = describeUniverseLanguages(universe);
 
-		link.append(name, description, ruleset);
+		link.append(name, description, ruleset, languages);
 		item.append(link);
 
 		return(item);
@@ -420,7 +425,7 @@ export class HomeScreen
 
 		try
 		{
-			const universeId = await this.actions.createUniverse({ name, shortDescription, ruleset: this.createRuleset.value as Ruleset });
+			const universeId = await this.actions.createUniverse({ name, shortDescription, ruleset: this.createRuleset.value as Ruleset, locale: currentLocale() });
 
 			this.createDialog.close();
 			this.actions.edit(universeId);

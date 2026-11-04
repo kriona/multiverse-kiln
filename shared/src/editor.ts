@@ -261,6 +261,13 @@ export interface EditableUniverseSummary
 
 	shortDescription: string;
 	ruleset: Ruleset;
+
+	/**
+	 * The language its text is written in, and the languages it is translated into, by tag
+	 */
+	sourceLanguage: string;
+	translationLanguages: string[];
+
 	stage: UniverseStage;
 	role: UniverseRole;
 
@@ -298,6 +305,12 @@ export interface NewUniverseRequest
 	name: string;
 	shortDescription: string;
 	ruleset: Ruleset;
+
+	/**
+	 * The language the pages are shown in, by tag. The universe's source language is the language the
+	 * player chose on their profile, then this (universeLanguageOf())
+	 */
+	locale?: string;
 }
 
 /**
@@ -312,6 +325,17 @@ export interface UniverseSettings
 	 * Markdown
 	 */
 	longDescription: string;
+
+	/**
+	 * The language the universe's editors write its text in, by tag (the Translations tab)
+	 */
+	sourceLanguage: string;
+
+	/**
+	 * The languages its text is translated into, by tag, in the order they were added: up to
+	 * MAX_UNIVERSE_LANGUAGES, never the source language. Taking one off deletes its translations
+	 */
+	translationLanguages: string[];
 
 	stage: UniverseStage;
 	passageOfTime: PassageOfTime;
@@ -431,12 +455,17 @@ export interface EditableUniverse extends UniverseSettings
 	 * Whether the player is a server admin with 2FA on, who may save while the universe is disabled
 	 */
 	serverAdmin: boolean;
+
+	/**
+	 * How many translations the universe has in each language, by tag, leaving out languages with none
+	 */
+	translationCounts: Record<string, number>;
 }
 
 /**
  * A universe as the server reads it, before it is told whose editor it is for
  */
-export type EditableUniverseDetails = Omit<EditableUniverse, 'role' | 'languages' | 'playerId' | 'serverAdmin'>;
+export type EditableUniverseDetails = Omit<EditableUniverse, 'role' | 'languages' | 'playerId' | 'serverAdmin' | 'translationCounts'>;
 
 /**
  * Someone with a role in a universe, as the Editors tab lists them
@@ -667,6 +696,8 @@ export const AUDIT_FIELDS = [
 	'name',
 	'shortDescription',
 	'longDescription',
+	'sourceLanguage',
+	'translationLanguages',
 	'stage',
 	'passageOfTime',
 	'displayTime',
@@ -758,6 +789,12 @@ export interface AuditFieldValues
 	 * How many characters it has
 	 */
 	longDescription: number;
+
+	/**
+	 * Language tags
+	 */
+	sourceLanguage: string;
+	translationLanguages: string[];
 	stage: UniverseStage;
 	passageOfTime: AuditPassageOfTime;
 	displayTime: DisplayTime;

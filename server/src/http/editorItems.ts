@@ -11,6 +11,7 @@ import { isClassStartingItem } from '../db/classRepo.js';
 import { countCustomItems, createCustomItem, deleteCustomItem, findItemKind, listEditorItems, restoreDefaultItem, saveEditedDefaultItem, updateCustomItem } from '../db/itemRepo.js';
 import { isRaceStartingItem } from '../db/raceRepo.js';
 import { isStartingItem } from '../db/startingItemRepo.js';
+import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
 import { universeContextOf } from './editorAccess.js';
 import { recordRef, refuse, resolveNumberRef, type ChangeContext } from './editorChangeContext.js';
 import { itemListQuery } from './editorPayloads.js';
@@ -185,6 +186,7 @@ export async function removeItemChange(context: ChangeContext, id: NumberRef): P
 	{
 		context.disablings.item(itemId, await isItemEnabled(context, itemId));
 		await restoreDefaultItem(universe.id, itemId, transaction);
+		await deleteUniverseTextOf(universe.id, 'item', itemId, transaction);
 		return;
 	}
 
@@ -209,4 +211,5 @@ export async function removeItemChange(context: ChangeContext, id: NumberRef): P
 	}
 
 	await deleteCustomItem(universe.id, itemId, transaction);
+	await deleteUniverseTextOf(universe.id, 'item', itemId, transaction);
 }

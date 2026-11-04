@@ -12,9 +12,10 @@ import { getElement, setPageTitle, showNoticeScreen, showScreen, showStatus } fr
 import { showMarkdown } from './ui/markdown';
 import { pageMessages } from './ui/pageMessages';
 import { UniverseCharacters } from './ui/UniverseCharacters';
+import { describeUniverseLanguages } from './ui/universeLanguages';
 
 /**
- * Shows a universe: its name, ruleset and descriptions, that it is locked at the end of time, and Enter
+ * Shows a universe: its name, ruleset, languages and descriptions, that it is locked at the end of time, and Enter
  * Universe, which goes to its lobby, or to the player's group in a locked universe. The address ends
  * with the slug, so one opened by ID changes to it
  *
@@ -24,6 +25,7 @@ function showUniverse(universe: UniverseDetails): void
 {
 	getElement('universe-name', HTMLElement).textContent = universe.name;
 	getElement('universe-ruleset', HTMLElement).textContent = t(RULESET_NAMES[universe.ruleset]);
+	getElement('universe-languages', HTMLElement).textContent = describeUniverseLanguages(universe);
 	getElement('universe-summary', HTMLElement).textContent = universe.shortDescription;
 	showMarkdown(getElement('universe-description', HTMLElement), universe.longDescription);
 	getElement('universe-locked', HTMLElement).hidden = (universe.stage !== 'end_of_time');

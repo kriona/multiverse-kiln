@@ -6,7 +6,7 @@
  */
 import { sql, type SQL } from 'drizzle-orm';
 import { boolean, check, customType, doublePrecision, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHUNK_SIZE, DARKVISIONS, EMAIL_CODE_PURPOSES, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, PROFILE_LANGUAGES, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_DISABLED_REASON_LENGTH, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, MAX_TRANSLATOR_LANGUAGES, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, EDITOR_ROLES, type ProfileLanguage, type UniverseEditDetail } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, DARKVISIONS, EMAIL_CODE_PURPOSES, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, PROFILE_LANGUAGES, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_DISABLED_REASON_LENGTH, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, MAX_TRANSLATOR_LANGUAGES, MAX_LONG_DESCRIPTION_LENGTH, MAX_TRANSLATOR_NOTE_LENGTH, MAX_UNIVERSE_LANGUAGES, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, EDITOR_ROLES, type ProfileLanguage, type UniverseEditDetail } from '@multiverse-kiln/shared';
 
 import { SEEN_CHUNK_BYTES } from '../logic/seenCells.js';
 
@@ -30,6 +30,8 @@ export const sf1eAbility = pgEnum('sf1e_ability', SF1E_ABILITIES);
 export const sf1eSize = pgEnum('sf1e_size', SF1E_SIZES);
 export const darkvision = pgEnum('darkvision', DARKVISIONS);
 export const tileGraphicFormat = pgEnum('tile_graphic_format', TILE_GRAPHIC_FORMATS);
+export const universeTextKind = pgEnum('universe_text_kind', UNIVERSE_TEXT_KINDS);
+export const universeTextField = pgEnum('universe_text_field', UNIVERSE_TEXT_FIELDS);
 
 /**
  * SQL that checks every one of some columns holds a number in a range
@@ -148,6 +150,16 @@ export const universes = pgTable('universes', {
 	 */
 	longDescription: text('long_description').notNull().default(''),
 
+	/**
+	 * The language the universe's editors write its text in, by tag
+	 */
+	sourceLanguage: text('source_language').notNull().default('en'),
+
+	/**
+	 * The languages its text is translated into, by tag, in the order they were added; never the source language
+	 */
+	translationLanguages: text('translation_languages').array().notNull().default(sql`'{}'`),
+
 	stage: universeStage('stage').notNull().default('in_the_beginning'),
 	ruleset: ruleset('ruleset').notNull(),
 	passageOfTime: passageOfTime('passage_of_time').notNull().default('flows_normally'),
@@ -232,6 +244,9 @@ export const universes = pgTable('universes', {
 	disabledReason: text('disabled_reason')
 }, (table) => [
 	uniqueIndex('universes_slug_unique').on(table.slug),
+	check('universes_source_language_length', sql`char_length(${table.sourceLanguage}) BETWEEN 1 AND ${sql.raw(String(MAX_LOCALE_LENGTH))}`),
+	check('universes_translation_languages_count', sql`cardinality(${table.translationLanguages}) <= ${sql.raw(String(MAX_UNIVERSE_LANGUAGES))}`),
+	check('universes_translation_languages_not_source', sql`NOT (${table.sourceLanguage} = ANY(${table.translationLanguages}))`),
 	check('universes_disabled_reason_set', sql`(${table.disabledAt} IS NULL) = (${table.disabledReason} IS NULL)`),
 	check('universes_disabled_reason_length', sql`char_length(${table.disabledReason}) BETWEEN 1 AND ${sql.raw(String(MAX_DISABLED_REASON_LENGTH))}`),
 	check('universes_faerie_morning_set', sql`(${table.passageOfTime} = 'faerie') = (${table.faerieMorning} IS NOT NULL)`),
@@ -331,6 +346,64 @@ export const universeEdits = pgTable('universe_edits', {
 
 	// Finds the saves old enough to delete across every universe, without reading the rest
 	index('universe_edits_saved_at_index').on(table.savedAt)
+]);
+
+/**
+ * Each translation of a piece of universe text (see Localization in STRUCTURE-OVERVIEW.md): one
+ * language's text for one field of something the universe holds, such as an area's name
+ *
+ * What the text belongs to is named by its kind and ID rather than a foreign key, since it may be any
+ * of several tables, so deleting it deletes its translations in the same transaction
+ * (universeTextRepo.ts); deleting the universe deletes them all
+ */
+export const universeTranslations = pgTable('universe_translations', {
+	universeId: uuid('universe_id').notNull().references(() => universes.id, { onDelete: 'cascade' }),
+	kind: universeTextKind('kind').notNull(),
+
+	/**
+	 * The ID of what the text belongs to (an area's UUID, or a tile's, item's, race's, class's, theme's
+	 * or difficulty level's number); the universe's own ID for its own text
+	 */
+	thingId: text('thing_id').notNull(),
+
+	field: universeTextField('field').notNull(),
+
+	/**
+	 * The language it is in, by tag: one of the universe's translation languages
+	 */
+	language: text('language').notNull(),
+
+	text: text('text').notNull(),
+
+	/**
+	 * The hash of the source text it was made from, or last confirmed against (sourceTextHash()). When
+	 * the source text's hash differs, the translation is out of date
+	 */
+	sourceHash: text('source_hash').notNull(),
+
+	updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	primaryKey({ columns: [table.universeId, table.kind, table.thingId, table.field, table.language] }),
+	check('universe_translations_language_length', sql`char_length(${table.language}) BETWEEN 1 AND ${sql.raw(String(MAX_LOCALE_LENGTH))}`),
+	check('universe_translations_text_length', sql`char_length(${table.text}) <= ${sql.raw(String(MAX_LONG_DESCRIPTION_LENGTH))}`),
+	check('universe_translations_source_hash_form', sql`${table.sourceHash} ~ '^[0-9a-f]{64}$'`)
+]);
+
+/**
+ * A note for translators on a piece of universe text, written by the universe's editors, such as why a
+ * name is a pun. One per piece of text, whatever the language; named like universeTranslations, and
+ * deleted with what it belongs to in the same way
+ */
+export const universeTranslatorNotes = pgTable('universe_translator_notes', {
+	universeId: uuid('universe_id').notNull().references(() => universes.id, { onDelete: 'cascade' }),
+	kind: universeTextKind('kind').notNull(),
+	thingId: text('thing_id').notNull(),
+	field: universeTextField('field').notNull(),
+	note: text('note').notNull(),
+	updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	primaryKey({ columns: [table.universeId, table.kind, table.thingId, table.field] }),
+	check('universe_translator_notes_note_length', sql`char_length(${table.note}) BETWEEN 1 AND ${sql.raw(String(MAX_TRANSLATOR_NOTE_LENGTH))}`)
 ]);
 
 /**

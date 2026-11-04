@@ -8,6 +8,7 @@ import { defineMessages, MAX_CUSTOM_THEMES, rulesetHasThemes, type NewRef, type 
 
 import { hasCharactersOfTheme } from '../db/characterRepo.js';
 import { countCustomThemes, createCustomTheme, deleteCustomTheme, findThemeKind, loadEditorThemes, restoreDefaultTheme, saveEditedDefaultTheme, updateCustomTheme } from '../db/themeRepo.js';
+import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
 import { universeContextOf } from './editorAccess.js';
 import { recordRef, refuse, resolveNumberRef, type ChangeContext } from './editorChangeContext.js';
 import { sendError } from './errors.js';
@@ -196,6 +197,7 @@ export async function removeThemeChange(context: ChangeContext, id: NumberRef): 
 	if (kind === 'default')
 	{
 		await restoreDefaultTheme(universe.id, themeId, transaction);
+		await deleteUniverseTextOf(universe.id, 'theme', themeId, transaction);
 		return;
 	}
 
@@ -213,6 +215,7 @@ export async function removeThemeChange(context: ChangeContext, id: NumberRef): 
 	}
 
 	await deleteCustomTheme(universe.id, themeId, transaction);
+	await deleteUniverseTextOf(universe.id, 'theme', themeId, transaction);
 }
 
 /**

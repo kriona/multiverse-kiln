@@ -159,7 +159,7 @@ export interface UniverseRecord
  * What a new universe needs. Its slug comes from its name, and its lobby and starting areas are set
  * once they exist (setUniverseAreas)
  */
-export type NewUniverse = Pick<typeof universes.$inferInsert, 'id' | 'name' | 'shortDescription' | 'longDescription' | 'stage' | 'ruleset' | 'passageOfTime'>;
+export type NewUniverse = Pick<typeof universes.$inferInsert, 'id' | 'name' | 'shortDescription' | 'longDescription' | 'sourceLanguage' | 'stage' | 'ruleset' | 'passageOfTime'>;
 
 /**
  * Adds a universe, with the default difficulty levels
@@ -260,7 +260,9 @@ export async function listUniverses(stage: UniverseStage, offset: number, limit:
 			name: universes.name,
 			slug: universes.slug,
 			shortDescription: universes.shortDescription,
-			ruleset: universes.ruleset
+			ruleset: universes.ruleset,
+			sourceLanguage: universes.sourceLanguage,
+			translationLanguages: universes.translationLanguages
 		})
 		.from(universes)
 		.where(and(
@@ -291,6 +293,8 @@ export async function findUniverseDetails(key: string, executor: Executor = db):
 			shortDescription: universes.shortDescription,
 			longDescription: universes.longDescription,
 			ruleset: universes.ruleset,
+			sourceLanguage: universes.sourceLanguage,
+			translationLanguages: universes.translationLanguages,
 			stage: universes.stage
 		})
 		.from(universes)
@@ -319,6 +323,8 @@ export async function findEditableUniverse(universeId: string, executor: Executo
 			slug: universes.slug,
 			shortDescription: universes.shortDescription,
 			longDescription: universes.longDescription,
+			sourceLanguage: universes.sourceLanguage,
+			translationLanguages: universes.translationLanguages,
 			stage: universes.stage,
 			ruleset: universes.ruleset,
 			passageOfTime: universes.passageOfTime,

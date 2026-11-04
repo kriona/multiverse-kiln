@@ -6,7 +6,7 @@
  * need the database (such as whether a tile belongs to the universe) are made as each change is saved
  */
 import { z } from 'zod';
-import { AREA_EVACUATIONS, GROUP_SIZE_LOWERINGS, ITEM_DISABLINGS, DARKVISIONS, DEFAULT_RACE_NAMES, DISALLOWED_TEXT_CHARACTERS, EDITOR_CHARACTER_SORT_COLUMNS, MAX_CHARACTER_SEARCH_LENGTH, MAX_CHARACTERS_PER_PAGE, type EditorCharacterListQuery, MAX_UNIVERSE_EDITS_PER_PAGE, type UniverseEditListQuery, TILE_USED_IN,DISPLAY_TIMES,FAERIE_MORNINGS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, isRulesetMoney, ITEM_SORT_COLUMNS, MAX_CELL_CHANGES, MAX_CHUNKS_PER_REQUEST, MAX_CLASS_NAME_LENGTH, MAX_COINS, MAX_CUSTOM_RACES, MAX_DIFFICULTY_NAME_LENGTH, MAX_GROUP_PLAYERS, MAX_ITEM_NAME_LENGTH, MAX_ITEM_QUANTITY, MAX_ITEMS_PER_PAGE, MAX_LONG_DESCRIPTION_LENGTH, MAX_MAP_SIDE, MAX_MOB_SCALE, MIN_MOB_SCALE, MAX_RACE_NAME_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_STARTING_ITEMS, MAX_THEME_NAME_LENGTH, MAX_TILE_GRAPHIC_BYTES, MAX_TILE_GRAPHIC_DRAW_ORDER, MAX_TILE_GRAPHIC_NAME_LENGTH, MAX_TILE_NAME_LENGTH, MAX_TILES_PER_PAGE, MAX_WALK_SECONDS, MIN_TILE_GRAPHIC_DRAW_ORDER,MAX_UNIVERSE_NAME_LENGTH, MAX_AREA_NAME_LENGTH, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, SORT_DIRECTIONS, TILE_GRAPHIC_FORMATS, TILE_GRAPHIC_KEYS, TILE_SORT_COLUMNS, UNIVERSE_STAGES, universeSlug, VOID_CELL, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, MAX_CHANGES_PER_SAVE, MAX_LOCALE_LENGTH, MAX_TRANSLATOR_LANGUAGES, MAX_PLAYER_NAME_LENGTH, MAX_USERNAME_LENGTH, MIN_PLAYER_SEARCH_LENGTH, parsePlayerSearch, UNIVERSE_ROLES, type PlayerSearchQuery, type EditorRoleSettings, type NewRef, type SaveChangesRequest, type TileChangeSettings, type ChunkRange, type ClassSettings, type DifficultyLevelSettings, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type RaceSettings, type Ruleset, type RulesetSettings, type ThemeSettings, type TileGraphicUploadRequest, type TileListQuery, type UniverseSettingsUpdate, type AreaLinkTarget } from '@multiverse-kiln/shared';
+import { AREA_EVACUATIONS, GROUP_SIZE_LOWERINGS, ITEM_DISABLINGS, DARKVISIONS, DEFAULT_RACE_NAMES, DISALLOWED_TEXT_CHARACTERS, EDITOR_CHARACTER_SORT_COLUMNS, MAX_CHARACTER_SEARCH_LENGTH, MAX_CHARACTERS_PER_PAGE, type EditorCharacterListQuery, MAX_UNIVERSE_EDITS_PER_PAGE, type UniverseEditListQuery, TILE_USED_IN,DISPLAY_TIMES,FAERIE_MORNINGS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, isRulesetMoney, ITEM_SORT_COLUMNS, MAX_CELL_CHANGES, MAX_CHUNKS_PER_REQUEST, MAX_CLASS_NAME_LENGTH, MAX_COINS, MAX_CUSTOM_RACES, MAX_DIFFICULTY_NAME_LENGTH, MAX_GROUP_PLAYERS, MAX_ITEM_NAME_LENGTH, MAX_ITEM_QUANTITY, MAX_ITEMS_PER_PAGE, MAX_LONG_DESCRIPTION_LENGTH, MAX_MAP_SIDE, MAX_MOB_SCALE, MIN_MOB_SCALE, MAX_RACE_NAME_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_STARTING_ITEMS, MAX_THEME_NAME_LENGTH, MAX_TILE_GRAPHIC_BYTES, MAX_TILE_GRAPHIC_DRAW_ORDER, MAX_TILE_GRAPHIC_NAME_LENGTH, MAX_TILE_NAME_LENGTH, MAX_TILES_PER_PAGE, MAX_WALK_SECONDS, MIN_TILE_GRAPHIC_DRAW_ORDER,MAX_UNIVERSE_NAME_LENGTH, MAX_AREA_NAME_LENGTH, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, SORT_DIRECTIONS, TILE_GRAPHIC_FORMATS, TILE_GRAPHIC_KEYS, TILE_SORT_COLUMNS, UNIVERSE_STAGES, universeSlug, VOID_CELL, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, MAX_CHANGES_PER_SAVE, MAX_LOCALE_LENGTH, MAX_TRANSLATOR_LANGUAGES, MAX_UNIVERSE_LANGUAGES, MAX_PLAYER_NAME_LENGTH, MAX_USERNAME_LENGTH, MIN_PLAYER_SEARCH_LENGTH, parsePlayerSearch, UNIVERSE_ROLES, type PlayerSearchQuery, type EditorRoleSettings, type NewRef, type SaveChangesRequest, type TileChangeSettings, type ChunkRange, type ClassSettings, type DifficultyLevelSettings, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type RaceSettings, type Ruleset, type RulesetSettings, type ThemeSettings, type TileGraphicUploadRequest, type TileListQuery, type UniverseSettingsUpdate, type AreaLinkTarget } from '@multiverse-kiln/shared';
 
 import { displayText } from '../rooms/payloads.js';
 
@@ -110,12 +110,45 @@ const itemKindKey = z.string().trim().min(1).max(40);
 const universeName = displayText(MAX_UNIVERSE_NAME_LENGTH).refine((name) => (universeSlug(name) !== ''), 'Has no letters or digits');
 
 /**
+ * A language tag, such as de or pt-BR, in its canonical form
+ */
+const languageTag = z.string()
+	.max(MAX_LOCALE_LENGTH)
+	.transform((tag, context) =>
+	{
+		try
+		{
+			const [canonical] = Intl.getCanonicalLocales(tag);
+
+			return(canonical);
+		}
+		catch
+		{
+			context.addIssue({
+				code: 'custom',
+				message: 'Not a language tag'
+			});
+
+			return(z.NEVER);
+		}
+	});
+
+/**
+ * The languages a universe is translated into, each listed once. Whether its source language is among
+ * them is checked as they are saved, since a change may send either without the other
+ */
+const translationLanguages = z.array(languageTag)
+	.max(MAX_UNIVERSE_LANGUAGES)
+	.refine((languages) => (new Set(languages.map((language) => language.toLowerCase())).size === languages.length), 'Each language can be listed only once');
+
+/**
  * NewUniverseRequest
  */
 export const newUniverseRequest = z.object({
 	name: universeName,
 	shortDescription,
-	ruleset: z.enum(RULESETS)
+	ruleset: z.enum(RULESETS),
+	locale: z.string().max(MAX_LOCALE_LENGTH).optional()
 }) satisfies z.ZodType<NewUniverseRequest>;
 
 /**
@@ -125,6 +158,8 @@ const universeSettingsUpdate = byRuleset((ruleset) => z.object({
 	name: universeName.optional(),
 	shortDescription: shortDescription.optional(),
 	longDescription: longDescription.optional(),
+	sourceLanguage: languageTag.optional(),
+	translationLanguages: translationLanguages.optional(),
 	stage: z.enum(UNIVERSE_STAGES).optional(),
 	passageOfTime: z.enum(PASSAGES_OF_TIME).optional(),
 	faerieMorning: z.enum(FAERIE_MORNINGS).nullable().optional(),
@@ -464,30 +499,6 @@ function listChanges<const Name extends string, Settings extends z.ZodType, cons
 		})
 	] as const);
 }
-
-/**
- * A language tag, such as de or pt-BR, in its canonical form
- */
-const languageTag = z.string()
-	.max(MAX_LOCALE_LENGTH)
-	.transform((tag, context) =>
-	{
-		try
-		{
-			const [canonical] = Intl.getCanonicalLocales(tag);
-
-			return(canonical);
-		}
-		catch
-		{
-			context.addIssue({
-				code: 'custom',
-				message: 'Not a language tag'
-			});
-
-			return(z.NEVER);
-		}
-	});
 
 /**
  * An editor's role and languages: a translator needs at least one language, and other roles have none

@@ -524,6 +524,12 @@ export interface UniverseSummary
 
 	shortDescription: string;
 	ruleset: Ruleset;
+
+	/**
+	 * The language its text is written in, and the languages it is translated into, by tag
+	 */
+	sourceLanguage: string;
+	translationLanguages: string[];
 }
 
 /**

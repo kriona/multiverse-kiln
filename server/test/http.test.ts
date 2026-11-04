@@ -188,8 +188,8 @@ describe('Universe list', () =>
 		assert.strictEqual(response.headers.get('cache-control'), 'no-store');
 		assert.deepStrictEqual(body, {
 			universes: [
-				{ id: appleId, name: 'Apple', slug: 'apple', shortDescription: 'About Apple.', ruleset: 'pf1e' },
-				{ id: zebraId, name: 'Zebra', slug: 'zebra', shortDescription: 'About Zebra.', ruleset: 'pf1e' }
+				{ id: appleId, name: 'Apple', slug: 'apple', shortDescription: 'About Apple.', ruleset: 'pf1e', sourceLanguage: 'en', translationLanguages: [] },
+				{ id: zebraId, name: 'Zebra', slug: 'zebra', shortDescription: 'About Zebra.', ruleset: 'pf1e', sourceLanguage: 'en', translationLanguages: [] }
 			],
 			hasMore: false
 		});
@@ -225,6 +225,7 @@ describe('Universe list', () =>
 			name: 'Kilnhaven',
 			shortDescription: 'A small town.',
 			longDescription: 'A **small** town.',
+			sourceLanguage: 'de',
 			ruleset: 'pf1e',
 			stage: 'let_there_be_light'
 		});
@@ -239,6 +240,8 @@ describe('Universe list', () =>
 			shortDescription: 'A small town.',
 			longDescription: 'A **small** town.',
 			ruleset: 'pf1e',
+			sourceLanguage: 'de',
+			translationLanguages: [],
 			stage: 'let_there_be_light'
 		});
 	});

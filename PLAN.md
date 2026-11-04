@@ -334,11 +334,11 @@ Built in nine steps: roles, stages, server admins, disabling things in use, then
 	- [✅] Group size: "keep those groups", "disband larger groups" or "remove members, most recently joined first" (`group_members.joined_at`); never the anchor being
 	- [✅] Each warning's choice travels with its `EditorChange` and is applied in the save's transaction, then published to the rooms. Who moves, leaves or is hidden is worked out by pure functions in `server/src/logic/` (`disabling.ts`), with tests
 5. Universe languages and translation storage
-	- [ ] A source language (the creator's language when the universe is made) and the languages it's translated into, on the Translations tab, staged like everything else
-	- [ ] Home and the universe page show the source language and the translations
-	- [ ] `universe_translations`: universe, what the text belongs to (kind and ID), field, language, text, and the hash of the source text it was made from, through a repository. Deleting what a translation belongs to deletes its translations in the same transaction, and deleting a language deletes its translations, after asking
-	- [ ] Notes for translators, one per piece of universe text, in a table beside it
-	- [ ] Finding the translation (the fallback order) and whether one is out of date as pure functions in `/shared`, with tests
+	- [✅] A source language (the creator's language when the universe is made) and the languages it's translated into, on the Translations tab, staged like everything else (saved as a `universe` change, `sourceLanguage` and `translationLanguages`)
+	- [✅] Home and the universe page show the source language and the translations
+	- [✅] `universe_translations`: universe, what the text belongs to (kind and ID), field, language, text, and the hash of the source text it was made from, through a repository (`server/src/db/universeTextRepo.ts`). Deleting what a translation belongs to (or restoring one of the ruleset's defaults) deletes its translations in the same transaction, and deleting a language deletes its translations, after asking
+	- [✅] Notes for translators, one per piece of universe text, in a table beside it (`universe_translator_notes`)
+	- [✅] Finding the translation (the fallback order) and whether one is out of date as pure functions in `/shared` (`shared/src/universeText.ts`), with tests. The hash is SHA-256, which Postgres can work out too, for step 7's "is out of date" filter
 6. Universe text in the player's language
 	- [ ] The server finds a request's language (the profile's, then what the client sends), and Home, the universe page, Create Character, the character sheet and profiles show universe text in it
 	- [ ] In the rooms, synced state carries IDs rather than universe text, since the Schema sends the same state to everyone. The client fetches the universe's text in its language once (`GET` a universe's text, cached with an ETag that changes when the text does) and looks names up by ID; a change saved in the editor tells clients to fetch again

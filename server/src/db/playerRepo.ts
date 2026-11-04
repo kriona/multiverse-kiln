@@ -372,6 +372,26 @@ export async function findPasswordHash(playerId: string, executor: Executor = db
 }
 
 /**
+ * The language a player chose for the pages and emails
+ *
+ * @param playerId The player's ID
+ * @param executor The database, or a transaction
+ * @return The language's tag, or null when they haven't chosen one or the account doesn't exist
+ */
+export async function findPlayerLocale(playerId: string, executor: Executor = db): Promise<string | null>
+{
+	const [row] = await executor
+		.select({
+			locale: players.locale
+		})
+		.from(players)
+		.where(eq(players.id, playerId))
+		.limit(1);
+
+	return((row?.locale ?? null));
+}
+
+/**
  * The columns of a profile other players can read
  */
 const publicProfileColumns = {

@@ -25,4 +25,5 @@ export * from './tileGraphics.js';
 export * from './time.js';
 export * from './vision.js';
 export * from './universes.js';
+export * from './universeText.js';
 export * from './areaTree.js';

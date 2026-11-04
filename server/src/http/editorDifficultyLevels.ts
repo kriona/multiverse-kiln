@@ -8,6 +8,7 @@ import { defineMessages, MAX_DIFFICULTY_LEVELS, type DifficultyLevelListPayload,
 
 import { countDifficultyLevels, createDifficultyLevel, deleteDifficultyLevel, findDefaultDifficultyLevel, findDifficultyLevel, listDifficultyLevels, updateDifficultyLevel } from '../db/difficultyRepo.js';
 import { moveGroupsToDifficultyLevel } from '../db/groupRepo.js';
+import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
 import { universeContextOf } from './editorAccess.js';
 import { recordRef, refuse, resolveNumberRef, type ChangeContext } from './editorChangeContext.js';
 
@@ -143,4 +144,5 @@ export async function removeDifficultyLevelChange(context: ChangeContext, id: Nu
 
 	await moveGroupsToDifficultyLevel(level.id, defaultLevel.id, transaction);
 	await deleteDifficultyLevel(universe.id, level.id, transaction);
+	await deleteUniverseTextOf(universe.id, 'difficultyLevel', level.id, transaction);
 }

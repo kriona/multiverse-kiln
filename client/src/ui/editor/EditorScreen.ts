@@ -18,6 +18,7 @@ import { RulesetTab } from './RulesetTab';
 import { combineTabs, SaveBar, type SavableTab } from './SaveBar';
 import { ThemesSection } from './ThemesSection';
 import { TilesetsTab } from './TilesetsTab';
+import { TranslationsTab } from './TranslationsTab';
 import { UniverseTab } from './UniverseTab';
 import { AreaSelectDialog } from './AreaSelectDialog';
 import { AreasTab } from './AreasTab';
@@ -35,7 +36,8 @@ export const EDITOR_TABS = [
 	'tilesets',
 	'areas',
 	'items',
-	'audit'
+	'audit',
+	'translations'
 ] as const;
 
 export type EditorTab = typeof EDITOR_TABS[number];
@@ -52,6 +54,7 @@ const SAVE_ORDER = [
 	'ruleset',
 	'characters',
 	'universe',
+	'translations',
 	'lobby',
 	'areas',
 	'editors'
@@ -113,7 +116,7 @@ export function isEditorTab(value: string | undefined): value is EditorTab
 /**
  * Edit Universe: a universe's editors, settings, ruleset (and the difficulty levels), lobby, characters
  * (and their races, classes and, in a ruleset with them, themes), the characters players have made,
- * tiles, areas, items and the record of saves, in tabs
+ * tiles, areas, items, the record of saves and its languages, in tabs
  *
  * What the player may see and change depends on their role in the universe; the server checks it again
  * on every change, so the page only hides controls that would be refused
@@ -137,6 +140,7 @@ export class EditorScreen
 	private readonly itemsTab: ItemsTab;
 	private readonly editorsTab: EditorsTab;
 	private readonly auditTab: AuditTab;
+	private readonly translationsTab: TranslationsTab;
 
 	/**
 	 * Saves every tab, which keep their changes on the page until then
@@ -192,6 +196,10 @@ export class EditorScreen
 		});
 		this.characterListTab = new CharacterListTab(api);
 		this.auditTab = new AuditTab(api);
+		this.translationsTab = new TranslationsTab((update) =>
+		{
+			this.updateUniverse(update);
+		});
 		this.racesSection = new RacesSection(api, areaSelect, itemSelect);
 		this.classesSection = new ClassesSection(api, areaSelect, itemSelect);
 		this.themesSection = new ThemesSection(api);
@@ -240,7 +248,8 @@ export class EditorScreen
 			characters: combineTabs(this.charactersTab, this.racesSection, this.classesSection, this.themesSection),
 			tilesets: this.tilesetsTab,
 			areas: this.areasTab,
-			items: this.itemsTab
+			items: this.itemsTab,
+			translations: this.translationsTab
 		};
 
 		for (const name of SAVE_ORDER)
@@ -343,6 +352,7 @@ export class EditorScreen
 		this.itemsTab.open(universe);
 		this.editorsTab.open(universe);
 		this.auditTab.open(universe);
+		this.translationsTab.open(universe);
 
 		for (const name of EDITOR_TABS)
 		{
