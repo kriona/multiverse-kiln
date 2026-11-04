@@ -5021,7 +5021,15 @@
 	},
 	"playerSearch.chosen": {
 		"defaultMessage": "{name} (@{username})",
-		"description": "Shown under a field that finds a player, such as the one for adding an editor on the editor's Editors tab, once one is chosen; {name} is their name and {username} their username"
+		"description": "Shown beside a field that finds a player, such as the one for adding an editor on the editor's Editors tab, once one is chosen; {name} is their name and {username} their username"
+	},
+	"playerSearch.clear": {
+		"defaultMessage": "Remove {name}",
+		"description": "Name of the button after the player chosen in a field that finds a player, such as the one for adding an editor on the editor's Editors tab, for screen readers: takes the choice back and empties the field; {name} is the player's name"
+	},
+	"playerSearch.cleared": {
+		"defaultMessage": "{name} removed",
+		"description": "Read out by screen readers after the player takes back the player chosen in a field that finds a player, such as the one for adding an editor on the editor's Editors tab; {name} is the player's name"
 	},
 	"playerSearch.noMatches": {
 		"defaultMessage": "No players match",
