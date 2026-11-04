@@ -377,6 +377,15 @@ tr.staged-deleted
 	}
 }
 
+// A role's name on the Editors tab, which shows what the role does when the pointer is over it
+.role-name
+{
+	text-decoration: underline dotted;
+	text-underline-offset: 3px;
+	text-decoration-thickness: from-font;
+	cursor: help;
+}
+
 // An item's picture: its category's icon until items have art of their own
 .item-icon
 {

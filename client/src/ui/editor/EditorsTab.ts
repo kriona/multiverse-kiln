@@ -1,4 +1,4 @@
-import { canManageEditors, canPlayUniverse, EDITOR_ROLE_NAMES, languageName, UNIVERSE_ROLE_NAMES, type EditableUniverse, type EditorChange, type EditorRoleSettings, type PlayerMatch, type UniverseEditorSummary } from '@multiverse-kiln/shared';
+import { canManageEditors, canPlayUniverse, EDITOR_ROLE_NAMES, languageName, UNIVERSE_ROLE_DESCRIPTIONS, UNIVERSE_ROLE_NAMES, type EditableUniverse, type EditorChange, type EditorRoleSettings, type PlayerMatch, type UniverseEditorSummary, type UniverseRole } from '@multiverse-kiln/shared';
 import leaveIcon from 'virtual:icon/ph:sign-out';
 import undoIcon from 'virtual:icon/ph:arrow-u-up-left';
 
@@ -464,7 +464,7 @@ export class EditorsTab implements SavableTab, ChangeSource
 			name.append(note);
 		}
 
-		for (const content of [name, editor.displayName, t(UNIVERSE_ROLE_NAMES[editor.role]), languages, tag])
+		for (const content of [name, editor.displayName, createRoleName(editor.role), languages, tag])
 		{
 			const cell = document.createElement('td');
 
@@ -608,4 +608,27 @@ function editorChange(playerId: string, staged: StagedEditor): EditorChange | un
 	}
 
 	return({ kind: 'saveEditor', playerId, settings: staged.settings });
+}
+
+/**
+ * A role's name in the table, which shows what the role lets an editor do when the pointer is over it,
+ * and has it after the name for screen readers
+ *
+ * @param role The role
+ * @return The name
+ */
+function createRoleName(role: UniverseRole): HTMLSpanElement
+{
+	const name = document.createElement('span');
+	const description = document.createElement('span');
+	const text = t(UNIVERSE_ROLE_DESCRIPTIONS[role]);
+
+	name.className = 'role-name';
+	name.textContent = t(UNIVERSE_ROLE_NAMES[role]);
+	name.title = text;
+	description.className = 'visually-hidden';
+	description.textContent = ` (${text})`;
+	name.append(description);
+
+	return(name);
 }

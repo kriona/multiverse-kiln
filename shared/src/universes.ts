@@ -383,6 +383,33 @@ export const UNIVERSE_ROLE_NAMES: Record<UniverseRole, MessageDescriptor> = defi
 });
 
 /**
+ * What each role lets its editors do, under its name in the dialog that gives players a role, and when
+ * the pointer is over a role on the Editors tab
+ */
+export const UNIVERSE_ROLE_DESCRIPTIONS: Record<UniverseRole, MessageDescriptor> = defineMessages({
+	creator: {
+		id: 'universe.roleDescription.creator',
+		defaultMessage: 'Can change everything about the universe, including who else works on it, and play it while it\'s still being built.',
+		description: 'What the creator role lets an editor do, under its name in the dialog on the editor\'s Editors tab, and when the pointer is over the role in the tab\'s list of editors'
+	},
+	builder: {
+		id: 'universe.roleDescription.builder',
+		defaultMessage: 'Can change the universe\'s world (its tiles, areas, maps and links) and play it while it\'s still being built. Can read its other settings without changing them.',
+		description: 'What the builder role lets an editor do, under its name in the dialog on the editor\'s Editors tab, and when the pointer is over the role in the tab\'s list of editors'
+	},
+	beta_tester: {
+		id: 'universe.roleDescription.beta_tester',
+		defaultMessage: 'Can play the universe while it\'s open for testing, before everyone can, but can\'t change it.',
+		description: 'What the beta tester role lets an editor do, under its name in the dialog on the editor\'s Editors tab, and when the pointer is over the role in the tab\'s list of editors'
+	},
+	translator: {
+		id: 'universe.roleDescription.translator',
+		defaultMessage: 'Can translate the universe\'s text into the languages they are given, and play it while it\'s open for testing, but can\'t change anything else.',
+		description: 'What the translator role lets an editor do, under its name in the dialog on the editor\'s Editors tab, and when the pointer is over the role in the tab\'s list of editors'
+	}
+});
+
+/**
  * Most languages one translator may be given
  */
 export const MAX_TRANSLATOR_LANGUAGES = 20;

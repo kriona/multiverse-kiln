@@ -1,4 +1,4 @@
-import { MAX_PLAYER_NAME_LENGTH, MAX_TRANSLATOR_LANGUAGES, MIN_PLAYER_SEARCH_LENGTH, PROFILE_LANGUAGES, UNIVERSE_ROLE_NAMES, UNIVERSE_ROLES, type EditorRoleSettings, type PlayerMatch, type UniverseEditorSummary, type UniverseRole } from '@multiverse-kiln/shared';
+import { MAX_PLAYER_NAME_LENGTH, MAX_TRANSLATOR_LANGUAGES, MIN_PLAYER_SEARCH_LENGTH, PROFILE_LANGUAGES, UNIVERSE_ROLE_DESCRIPTIONS, UNIVERSE_ROLE_NAMES, UNIVERSE_ROLES, type EditorRoleSettings, type PlayerMatch, type UniverseEditorSummary, type UniverseRole } from '@multiverse-kiln/shared';
 import undoIcon from 'virtual:icon/ph:arrow-u-up-left';
 import removeIcon from 'virtual:icon/ph:user-minus';
 
@@ -6,7 +6,7 @@ import { t } from '../../localization';
 import type { EditorApi } from '../../network/editorApi';
 import { ChangeTracker } from '../changeTracker';
 import { ChipCombobox } from '../ChipCombobox';
-import { getElement, namedOptions, setButtonLabel, setOptions, showMessage } from '../dom';
+import { getElement, setButtonLabel, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
 import { languageChoices } from '../languagePicker';
@@ -58,7 +58,13 @@ export class EditorDialog
 	private readonly title = getElement('editor-dialog-title', HTMLElement);
 	private readonly usernameField = getElement('editor-player-field', HTMLElement);
 	private readonly username = getElement('editor-player', HTMLInputElement);
-	private readonly role = getElement('editor-role-select', HTMLSelectElement);
+	private readonly roleField = getElement('editor-role-choice', HTMLFieldSetElement);
+
+	/**
+	 * Each role's radio button, by role
+	 */
+	private readonly roleInputs = new Map<UniverseRole, HTMLInputElement>();
+
 	private readonly languagesField = getElement('editor-languages-field', HTMLElement);
 	private readonly languagesSearch = getElement('editor-languages-search', HTMLInputElement);
 	private readonly error = getElement('editor-dialog-error', HTMLElement);
@@ -99,7 +105,7 @@ export class EditorDialog
 	{
 		// The longest name, or an @ and a username
 		this.username.maxLength = MAX_PLAYER_NAME_LENGTH + 1;
-		setOptions(this.role, namedOptions(UNIVERSE_ROLES, UNIVERSE_ROLE_NAMES));
+		this.roleField.append(...UNIVERSE_ROLES.map((role) => this.createRoleChoice(role)));
 		this.languages = new ChipCombobox({
 			searchId: 'editor-languages-search',
 			listboxId: 'editor-languages-options',
@@ -131,7 +137,7 @@ export class EditorDialog
 		});
 		this.changes.guardDialog(this.dialog);
 
-		this.role.addEventListener('change', () =>
+		this.roleField.addEventListener('change', () =>
 		{
 			this.showLanguages();
 		});
@@ -195,9 +201,9 @@ export class EditorDialog
 
 		this.usernameField.hidden = (editor !== undefined);
 		this.playerSearch.reset();
-		this.role.value = (editor?.role ?? 'builder');
+		this.selectRole((editor?.role ?? 'builder'));
 		this.languages.values = (editor?.languages ?? []);
-		this.role.disabled = !editable;
+		this.roleField.disabled = !editable;
 		this.languagesSearch.disabled = !editable;
 		this.showLanguages();
 
@@ -227,7 +233,59 @@ export class EditorDialog
 		clearFieldErrors(this.dialog);
 		this.dialog.showModal();
 		this.changes.markSaved();
-		(editor ? this.role : this.username).focus();
+		(editor ? this.roleInputs.get(this.chosenRole()) : this.username)?.focus();
+	}
+
+	/**
+	 * One role's choice: a radio button, with the role's name and what it lets an editor do
+	 *
+	 * @param role The role
+	 * @return The choice's label, holding its radio button
+	 */
+	private createRoleChoice(role: UniverseRole): HTMLLabelElement
+	{
+		const label = document.createElement('label');
+		const input = document.createElement('input');
+		const text = document.createElement('span');
+		const name = document.createElement('span');
+		const description = document.createElement('span');
+
+		label.className = 'checkbox described-choice';
+		input.type = 'radio';
+		input.name = 'editor-role';
+		input.value = role;
+		text.className = 'choice-text';
+		name.textContent = t(UNIVERSE_ROLE_NAMES[role]);
+		description.className = 'choice-description';
+		description.textContent = t(UNIVERSE_ROLE_DESCRIPTIONS[role]);
+		text.append(name, description);
+		label.append(input, text);
+		this.roleInputs.set(role, input);
+
+		return(label);
+	}
+
+	/**
+	 * Checks a role's radio button
+	 *
+	 * @param role The role
+	 */
+	private selectRole(role: UniverseRole): void
+	{
+		for (const [each, input] of this.roleInputs)
+		{
+			input.checked = (each === role);
+		}
+	}
+
+	/**
+	 * The role whose radio button is checked
+	 *
+	 * @return The role, or builder when none is
+	 */
+	private chosenRole(): UniverseRole
+	{
+		return((UNIVERSE_ROLES.find((role) => this.roleInputs.get(role)?.checked) ?? 'builder'));
 	}
 
 	/**
@@ -235,7 +293,7 @@ export class EditorDialog
 	 */
 	private showLanguages(): void
 	{
-		this.languagesField.hidden = (this.role.value !== 'translator');
+		this.languagesField.hidden = (this.chosenRole() !== 'translator');
 	}
 
 	/**
@@ -244,7 +302,7 @@ export class EditorDialog
 	private apply(): void
 	{
 		const edit = this.edit;
-		const role = this.role.value as UniverseRole;
+		const role = this.chosenRole();
 		const languages = ((role === 'translator') ? this.languages.values : []);
 
 		if (!edit)
@@ -268,7 +326,7 @@ export class EditorDialog
 		{
 			reportFieldError(this.username, t({
 				id: 'editor.editors.choosePlayer',
-				defaultMessage: 'Search for the player by name or username, and choose them from the list.',
+				defaultMessage: 'Search for the player by name or username, then choose them from the list.',
 				description: 'Shown under the field for finding a player in the dialog for adding an editor on the editor\'s Editors tab, when Apply is pressed before a player is chosen from the list'
 			}));
 			return;

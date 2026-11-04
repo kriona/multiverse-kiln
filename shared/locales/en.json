@@ -76,7 +76,7 @@
 		"description": "Label of the field on the admin page listing the site's server admins that finds a player to make an admin by name or username"
 	},
 	"admin.admins.playerHint": {
-		"defaultMessage": "Type their name, or @ and their username, then choose them from the list.",
+		"defaultMessage": "Type the user's name, or @ and their username, then choose them from the list.",
 		"description": "Under the field on the admin page listing the site's server admins that finds a player to make an admin"
 	},
 	"admin.admins.remove": {
@@ -1560,16 +1560,12 @@
 		"description": "Title of the dialog on the editor's Editors tab for giving a player a role in the universe"
 	},
 	"editor.editors.choosePlayer": {
-		"defaultMessage": "Search for the player by name or username, and choose them from the list.",
+		"defaultMessage": "Search for the player by name or username, then choose them from the list.",
 		"description": "Shown under the field for finding a player in the dialog for adding an editor on the editor's Editors tab, when Apply is pressed before a player is chosen from the list"
 	},
 	"editor.editors.editTitle": {
 		"defaultMessage": "Edit {username}",
 		"description": "Title of the dialog on the editor's Editors tab for changing an editor's role; {username} is their username"
-	},
-	"editor.editors.hint": {
-		"defaultMessage": "Creators can change everything, builders can change the world, beta testers can play the universe before it opens to everyone, and translators can translate it into their languages.",
-		"description": "Explains the roles on the editor's Editors tab"
 	},
 	"editor.editors.languages": {
 		"defaultMessage": "Languages",
@@ -1616,7 +1612,7 @@
 		"description": "Label of the field in the dialog for adding an editor on the editor's Editors tab that finds the player to add by name or username"
 	},
 	"editor.editors.playerHint": {
-		"defaultMessage": "Type their name, or @ and their username, then choose them from the list.",
+		"defaultMessage": "Type the user's name, or @ and their username, then choose them from the list.",
 		"description": "Under the field in the dialog for adding an editor on the editor's Editors tab that finds the player to add"
 	},
 	"editor.editors.remove": {
@@ -6242,6 +6238,22 @@
 	"universe.role.translator": {
 		"defaultMessage": "translator",
 		"description": "Role of someone who can translate a universe's text, such as the names of its areas and items, into the languages they are given, and change nothing else"
+	},
+	"universe.roleDescription.beta_tester": {
+		"defaultMessage": "Can play the universe while it's open for testing, before everyone can, but can't change it.",
+		"description": "What the beta tester role lets an editor do, under its name in the dialog on the editor's Editors tab, and when the pointer is over the role in the tab's list of editors"
+	},
+	"universe.roleDescription.builder": {
+		"defaultMessage": "Can change the universe's world (its tiles, areas, maps and links) and play it while it's still being built. Can read its other settings without changing them.",
+		"description": "What the builder role lets an editor do, under its name in the dialog on the editor's Editors tab, and when the pointer is over the role in the tab's list of editors"
+	},
+	"universe.roleDescription.creator": {
+		"defaultMessage": "Can change everything about the universe, including who else works on it, and play it while it's still being built.",
+		"description": "What the creator role lets an editor do, under its name in the dialog on the editor's Editors tab, and when the pointer is over the role in the tab's list of editors"
+	},
+	"universe.roleDescription.translator": {
+		"defaultMessage": "Can translate the universe's text into the languages they are given, and play it while it's open for testing, but can't change anything else.",
+		"description": "What the translator role lets an editor do, under its name in the dialog on the editor's Editors tab, and when the pointer is over the role in the tab's list of editors"
 	},
 	"universe.ruleset": {
 		"defaultMessage": "Ruleset",
