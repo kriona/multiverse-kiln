@@ -311,11 +311,11 @@ Built in nine steps: roles, stages, server admins, disabling things in use, then
 	- [✅] Losing a role takes effect at once: an open editor's next save is refused, and a player who may no longer play the universe in its stage is turned out of its lobby and groups (published through `server/src/players/universeAccess.ts`, like a session ending), with a message saying why. The rooms also check that a joining player may play
 	- [✅] Tests: each role's checks, the last creator, adding a username that doesn't exist, a translator saving a world change (saving another language waits for translations, step 5; `canTranslate()` is tested)
 2. Stages
-	- [ ] Home's section for universes in `prologue`, shown only to players with a role in one, and the universe page for those players
-	- [ ] Changing the stage takes effect at once in open rooms: players who may no longer play are turned out with a message, as when losing a role
-	- [ ] `end of time`: the universe page says the universe is locked; the editor refuses saves from anyone but creators; the lobby refuses players, and Enter Universe without a group says why; groups open read-only (moving, links and every other input refused on the server, the client saying it's locked) while group chat still works. Create Character, Create Group and invites are refused
-	- [ ] Moving out of `in the beginning` warns that new areas will start disabled (the area editor's rule)
-	- [ ] Tests for each stage's listing and play rules, and for players turned out when the stage changes
+	- [✅] Home's section for universes in `prologue`, shown only to players with a role in one, and the universe page for those players
+	- [✅] Changing the stage takes effect at once in open rooms: players who may no longer play are turned out with a message, as when losing a role
+	- [✅] `end of time`: the universe page says the universe is locked; the editor refuses saves from anyone but creators; the lobby refuses players, and Enter Universe without a group says why; groups open read-only (moving, links and every other input refused on the server, the client saying it's locked) while group chat still works. Create Character, Create Group and invites are refused
+	- [✅] Moving out of `in the beginning` warns that new areas will start disabled (the area editor's rule)
+	- [✅] Tests for each stage's listing and play rules, and for players turned out when the stage changes
 3. Server admins
 	- [✅] Who is a server admin, stored in the database (a migration), and a script that makes a player one by username (`npm run admin:add -w server -- <username>`), run by hand like the seed script
 	- [✅] Only server admins with 2FA on can see and use the admin pages (`/admin`, linking to the tools in `client/admin/`, the settings at `/admin/settings`), and only they see its link in the toolbar (Site admin in the account menu); an admin without 2FA is told to turn it on. Anyone can still read the character deletion days, social sites and privacy contact, which the footer and privacy policy show, through a public route of their own (`PUBLIC_SITE_SETTINGS_PATH`)

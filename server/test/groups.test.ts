@@ -434,6 +434,23 @@ describe('group routes', () =>
 		});
 	});
 
+	it('refuses making groups, invites, joining and leaving at the end of time', async () =>
+	{
+		const groupId = await createGroup(ada);
+		const token = await invite(ada, groupId);
+		const alan = await logIn('Alan');
+
+		await updateUniverseSettings(universe.universeId, { stage: 'end_of_time' });
+
+		assert.strictEqual((await send(grace, 'POST', groupsPath(universe.universeId), groupRequest(grace.characterId))).status, 404);
+		assert.strictEqual((await send(ada, 'POST', `${groupPath(universe.universeId, groupId)}/invites`, { multiUse: false, duration: 'day' })).status, 404);
+		assert.strictEqual((await send(alan, 'GET', invitePath(token))).status, 404);
+		assert.strictEqual((await send(alan, 'POST', invitePath(token), { characterId: alan.characterId })).status, 404);
+		assert.strictEqual((await send(ada, 'POST', `${groupPath(universe.universeId, groupId)}/leave`, { characterId: ada.characterId })).status, 404);
+		assert.strictEqual((await findMembership(ada.characterId))?.groupId, groupId);
+		assert.strictEqual(await findMembership(alan.characterId), undefined);
+	});
+
 	describe('leaving', () =>
 	{
 		it('takes a member out of the group', async () =>

@@ -1,9 +1,9 @@
-import { CloseCode } from '@colyseus/sdk';
+import { Callbacks, CloseCode } from '@colyseus/sdk';
 import { GameMessageType, GameServerMessageType, INVITE_QUERY_PARAMETER, LobbyMessageType, LobbyServerMessageType, NoticeReason, ServerCloseCode, SessionServerMessageType, type AccountPayload, type AccountPlayer, type CharacterListPayload, type CharacterSummary, type ChatHistoryPayload, type ChatMessage, type ChatPayload, type ChooseCharacterPayload, type ControlPayload, type NoticePayload, type PlayingAsPayload, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { t } from './localization';
 import { CharacterApi } from './network/characterApi';
-import { describeEditorError, EditorApi } from './network/editorApi';
+import { describeEditorError } from './network/editorApi';
 import { GroupApi } from './network/groupApi';
 import { getUniverseDetails, joinGroup, joinLobby, type GameConnection, type LobbyConnection, type ServerConnection } from './network/serverConnection';
 import { isLeavingPage } from './pageLifecycle';
@@ -72,7 +72,6 @@ interface JoinedLobby
  */
 export class GamePage
 {
-	private readonly editorApi: EditorApi;
 	private readonly characterApi: CharacterApi;
 	private readonly groupApi: GroupApi;
 	private readonly characterSheet: CharacterSheetDialog;
@@ -91,6 +90,12 @@ export class GamePage
 	 * The universe the page's address names, once it has been looked up
 	 */
 	private universe: UniverseSummary | undefined;
+
+	/**
+	 * Whether the universe has reached the end of time, so its lobby can't be entered and its groups
+	 * open read-only
+	 */
+	private universeLocked = false;
 
 	/**
 	 * The universe the page's address names, by slug or ID, until it has been looked up once the player has logged in
@@ -131,7 +136,6 @@ export class GamePage
 		const { client, session } = server;
 		const mapView = new MapView();
 
-		this.editorApi = new EditorApi(client);
 		this.characterApi = new CharacterApi(client);
 		this.groupApi = new GroupApi(client);
 		this.linkUniverseKey = readGameUniverseKey();
@@ -305,7 +309,10 @@ export class GamePage
 
 		try
 		{
-			this.universe = await this.findUniverse(key);
+			const { id, name, slug, shortDescription, ruleset, stage } = await getUniverseDetails(this.server.client, key);
+
+			this.universe = { id, name, slug, shortDescription, ruleset };
+			this.universeLocked = (stage === 'end_of_time');
 		}
 		catch (error)
 		{
@@ -341,37 +348,6 @@ export class GamePage
 		{
 			this.lobbyCharacterId = character?.id;
 			this.goToLobby();
-		}
-	}
-
-	/**
-	 * A universe as Home lists it. A universe that isn't listed yet is found among the universes the
-	 * player has a role in, the only ones they could play
-	 *
-	 * @param key The universe's slug or ID
-	 * @return The universe
-	 */
-	private async findUniverse(key: string): Promise<UniverseSummary>
-	{
-		try
-		{
-			const { id, name, slug, shortDescription, ruleset } = await getUniverseDetails(this.server.client, key);
-
-			return({ id, name, slug, shortDescription, ruleset });
-		}
-		catch
-		{
-			const { universes } = await this.editorApi.listUniverses();
-			const own = universes.find((universe) => ((universe.slug === key) || (universe.id === key)));
-
-			if (!own)
-			{
-				throw new Error(`The player has no universe with the slug or ID ${key}`);
-			}
-
-			const { id, name, slug, shortDescription, ruleset } = own;
-
-			return({ id, name, slug, shortDescription, ruleset });
 		}
 	}
 
@@ -493,6 +469,12 @@ export class GamePage
 	 */
 	private goToLobby(notice?: string): void
 	{
+		if (this.universeLocked)
+		{
+			this.showUniverseLocked((this.universe?.name ?? ''));
+			return;
+		}
+
 		this.destination = { kind: 'lobby' };
 
 		if (notice !== undefined)
@@ -600,6 +582,41 @@ export class GamePage
 			id: 'game.accessLost',
 			defaultMessage: 'Your role in {universe} was changed or taken away, so you can\'t play it while it is in its current stage.',
 			description: 'Shown on the game\'s page when the player was turned out of a universe they were playing because one of its creators changed or removed their role, or they left it; {universe} is its name'
+		}, {
+			universe
+		}));
+	}
+
+	/**
+	 * Says the player was turned out of the universe because its stage changed to one their role doesn't
+	 * let them play it in
+	 *
+	 * @param universe The universe's name
+	 */
+	private showStageChanged(universe: string): void
+	{
+		this.destination = { kind: 'none' };
+		this.showOutside(t({
+			id: 'game.stageChanged',
+			defaultMessage: 'The stage of {universe} was changed, and your role doesn\'t let you play it in its new stage.',
+			description: 'Shown on the game\'s page when the player was turned out of a universe they were playing because one of its creators changed its stage (e.g. from open to everyone back to testing); {universe} is its name'
+		}, {
+			universe
+		}));
+	}
+
+	/**
+	 * Says the universe's lobby can't be entered because the universe has reached the end of time
+	 *
+	 * @param universe The universe's name
+	 */
+	private showUniverseLocked(universe: string): void
+	{
+		this.destination = { kind: 'none' };
+		this.showOutside(t({
+			id: 'game.universeLocked',
+			defaultMessage: '{universe} has reached the end of time, so it is locked and its lobby can\'t be entered. Characters in a group can still open it to look around.',
+			description: 'Shown on the game\'s page instead of a universe\'s lobby when the universe is in the stage end of time, which locks it, or when it reached that stage while the player was in the lobby; {universe} is its name'
 		}, {
 			universe
 		}));
@@ -984,6 +1001,19 @@ export class GamePage
 			return;
 		}
 
+		if (code === ServerCloseCode.StageChanged.valueOf())
+		{
+			this.showStageChanged(joined.universe.name);
+			return;
+		}
+
+		if (code === ServerCloseCode.UniverseLocked.valueOf())
+		{
+			this.universeLocked = true;
+			this.showUniverseLocked(joined.universe.name);
+			return;
+		}
+
 		console.error(`Disconnected from the lobby (code ${code})`);
 		this.destination = { kind: 'none' };
 		this.showOutside(t({
@@ -1038,6 +1068,12 @@ export class GamePage
 		}
 
 		this.joinedGroup = { groupId, connection };
+
+		// The room locks when the universe reaches the end of time, and unlocks when it leaves it
+		Callbacks.get(connection.room).listen('locked', (locked: boolean) =>
+		{
+			this.universeLocked = locked;
+		});
 
 		connection.room.onMessage(GameServerMessageType.Notice, (notice: NoticePayload) =>
 		{
@@ -1116,6 +1152,12 @@ export class GamePage
 		if (code === ServerCloseCode.UniverseDisabled.valueOf())
 		{
 			this.showUniverseDisabled((this.universe?.name ?? ''));
+			return;
+		}
+
+		if (code === ServerCloseCode.StageChanged.valueOf())
+		{
+			this.showStageChanged((this.universe?.name ?? ''));
 			return;
 		}
 

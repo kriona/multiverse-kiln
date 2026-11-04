@@ -9,12 +9,13 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { EDITOR_CHANGE_CHECKS, localize, mayMakeChange, type EditorAccess, type EditorChange, type NewRef, type SaveChangesPayload, type SaveRefusedPayload } from '@multiverse-kiln/shared';
+import { EDITOR_CHANGE_CHECKS, localize, mayMakeChange, maySaveInStage, type EditorAccess, type EditorChange, type NewRef, type SaveChangesPayload, type SaveRefusedPayload } from '@multiverse-kiln/shared';
 
 import { inTransaction } from '../db/transactions.js';
 import { recordUniverseEdit } from '../db/universeEditRepo.js';
-import { findDisabledReason, findEditableUniverse, lockUniverse, UniverseNameTakenError } from '../db/universeRepo.js';
-import { universeAccessChanges } from '../players/universeAccess.js';
+import { listUniverseRoles } from '../db/universeEditorRepo.js';
+import { findEditableUniverse, findUniverse, lockUniverse, UniverseNameTakenError } from '../db/universeRepo.js';
+import { universeAccessChanges, type StageChange } from '../players/universeAccess.js';
 import { describeInvalidPayload } from '../rooms/payloads.js';
 import { deleteObject } from '../storage/objectStorage.js';
 import { areaChanges } from '../world/areaChanges.js';
@@ -142,6 +143,9 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 
 	// Set when the save is refused as a whole, rather than one of its changes
 	let refusedWhole = false;
+
+	// Set when the save changes the universe's stage
+	let stageChange: StageChange | undefined;
 	let context: ChangeContext;
 
 	try
@@ -174,12 +178,14 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 		{
 			await lockUniverse(base.universe.id, transaction);
 
-			// The role may have changed since the request was let in, by a save that held the lock
+			// The role and the stage may have changed since the request was let in, by a save that held the lock
 			const { access, serverAdmin } = await findEditorAccess(base.universe.id, base.playerId, transaction);
+			const locked = await findUniverse(base.universe.id, transaction);
+			const stageBefore = (locked?.stage ?? base.universe.stage);
 
 			// Disabling the universe takes its lock too, so no save commits after it, except a server
 			// admin's, who may fix what it was disabled for
-			if (!serverAdmin && (await findDisabledReason(base.universe.id, transaction) !== null))
+			if (!serverAdmin && (locked?.disabled ?? false))
 			{
 				refusedWhole = true;
 				refuse(403, {
@@ -195,6 +201,16 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 					id: 'error.noLongerEditor',
 					defaultMessage: 'You no longer have a role in this universe, so your changes can\'t be saved.',
 					description: 'Why the world editor couldn\'t save: the player\'s role in the universe was taken away while they were editing it'
+				});
+			}
+
+			if (!maySaveInStage(changes, stageBefore, access, base.playerId))
+			{
+				refusedWhole = true;
+				refuse(403, {
+					id: 'error.universeLockedSave',
+					defaultMessage: 'This universe has reached the end of time, so only its creators can change it.',
+					description: 'Why the world editor couldn\'t save: the universe is in the stage "end of time", which locks it, and the player isn\'t one of its creators. Leaving the universe can still be saved'
 				});
 			}
 
@@ -230,6 +246,15 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 			current = lastEditorChange;
 			await checkCreatorKept(saving);
 
+			if (saving.universe.stage !== stageBefore)
+			{
+				stageChange = {
+					universeId: base.universe.id,
+					stage: saving.universe.stage,
+					roles: await listUniverseRoles(base.universe.id, transaction)
+				};
+			}
+
 			if (audit.hasChanges())
 			{
 				await recordUniverseEdit({
@@ -258,7 +283,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 		return({ saved: false, changeIndex: (refusedWhole ? null : current), refusal });
 	}
 
-	await afterCommit(context);
+	await afterCommit(context, stageChange);
 
 	return({ saved: true, ids: context.ids });
 }
@@ -383,11 +408,13 @@ async function applyChange(context: ChangeContext, change: EditorChange): Promis
 
 /**
  * Finishes a save that has committed: removes the deleted tilesets' images, emails the players it gave
- * a role, and tells the rooms what changed, each change once, and who may no longer play there
+ * a role, and tells the rooms what changed, each change once, and who may no longer play there. A new
+ * stage goes to the rooms with every editor's role, which covers the roles the save changed too
  *
  * @param context The save
+ * @param stageChange The universe's new stage, when the save changed it
  */
-async function afterCommit(context: ChangeContext): Promise<void>
+async function afterCommit(context: ChangeContext, stageChange: StageChange | undefined): Promise<void>
 {
 	await deleteImages(context.deletedImages);
 
@@ -400,10 +427,17 @@ async function afterCommit(context: ChangeContext): Promise<void>
 		console.error('Could not email the players a save gave a role:', error);
 	}
 
-	universeAccessChanges.publish({
-		universeId: context.universe.id,
-		playerIds: playersLosingAccess(context)
-	});
+	if (stageChange)
+	{
+		universeAccessChanges.publishStage(stageChange);
+	}
+	else
+	{
+		universeAccessChanges.publish({
+			universeId: context.universe.id,
+			playerIds: playersLosingAccess(context)
+		});
+	}
 
 	const told = new Set<string>();
 

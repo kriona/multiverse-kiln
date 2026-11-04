@@ -530,6 +530,18 @@ export function canEditWorld(role: EditorRole): boolean
 }
 
 /**
+ * Whether a role may still change a universe at the end of time, when it is locked: only creators and
+ * server admins may
+ *
+ * @param role The user's role in the editor
+ * @return True when the role may
+ */
+export function canEditAtEndOfTime(role: EditorRole): boolean
+{
+	return((role === 'creator') || (role === ADMIN_ROLE));
+}
+
+/**
  * Whether someone may translate a universe's text into a language: creators and server admins into any,
  * translators into the languages they are given
  *
@@ -570,6 +582,20 @@ export function canPlayUniverse(stage: UniverseStage, role: UniverseRole | undef
 		case 'end_of_time':
 			return(false);
 	}
+}
+
+/**
+ * Whether a user may look at a universe in the stage it is in: open its page, list their characters
+ * and open their groups. Anyone may look at a universe at the end of time, which is locked, so its
+ * groups open read-only; in every other stage, those who may play it
+ *
+ * @param stage The universe's stage
+ * @param role The user's role in the universe, or undefined for none
+ * @return True when the user may
+ */
+export function canViewUniverse(stage: UniverseStage, role: UniverseRole | undefined): boolean
+{
+	return((stage === 'end_of_time') || canPlayUniverse(stage, role));
 }
 
 /**

@@ -6,7 +6,7 @@ import { createPlayer, findPlayerByUsername } from '../src/db/playerRepo.js';
 import { findUniverseAccess, setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { setEmailSender, type Email } from '../src/email/mailer.js';
 import { roleGivenEmail } from '../src/email/universeEmails.js';
-import { universeAccessChanges, type AccessLost } from '../src/players/universeAccess.js';
+import { universeAccessChanges, type AccessLost, type StageChange } from '../src/players/universeAccess.js';
 import { createUniverse, logIn, saveAll, saveChanges, send, type Editor } from './editorRequests.js';
 import { addPlayer, usernameFor } from './players.js';
 import { discardEmail } from './setup.js';
@@ -249,6 +249,66 @@ describe('Editing a universe\'s editors', () =>
 		}
 
 		assert.deepStrictEqual(heard.map((change) => [change.universeId, [...change.playerIds]]), [[universeId, [bob.playerId]]]);
+	});
+
+	it('tells the rooms a new stage with every editor\'s role once the save commits, in place of who may no longer play', async () =>
+	{
+		const bob = await logIn('Bob');
+		const stages: StageChange[] = [];
+		const lost: AccessLost[] = [];
+		const stops = [
+			universeAccessChanges.onStageChanged((change) =>
+			{
+				stages.push(change);
+			}),
+			universeAccessChanges.onLost((change) =>
+			{
+				lost.push(change);
+			})
+		];
+
+		try
+		{
+			await setUniverseRole(universeId, bob.playerId, 'builder');
+			await saveAll(ada, universeId, [
+				{ kind: 'universe', update: { stage: 'prologue' } },
+				{ kind: 'saveEditor', playerId: bob.playerId, settings: { role: 'translator', languages: ['de'] } }
+			]);
+
+			// A save that keeps the stage it has tells the rooms nothing about it
+			await saveAll(ada, universeId, [{ kind: 'universe', update: { stage: 'prologue' } }]);
+		}
+		finally
+		{
+			for (const stop of stops)
+			{
+				stop();
+			}
+		}
+
+		assert.deepStrictEqual(stages.map((change) => [change.universeId, change.stage, Object.fromEntries(change.roles)]), [[universeId, 'prologue', { [ada.playerId]: 'creator', [bob.playerId]: 'translator' }]]);
+		assert.deepStrictEqual(lost, []);
+	});
+
+	it('refuses saves at the end of time from anyone but creators, who can still leave', async () =>
+	{
+		const bob = await logIn('Bob');
+		const grace = await logIn('Grace');
+
+		await setUniverseRole(universeId, bob.playerId, 'builder');
+		await setUniverseRole(universeId, grace.playerId, 'beta_tester');
+		await saveAll(ada, universeId, [{ kind: 'universe', update: { stage: 'end_of_time' } }]);
+
+		const refused = await saveChanges(bob, universeId, [worldChange]);
+
+		assert.strictEqual(refused.status, 403);
+		assert.strictEqual(refused.body.changeIndex, null);
+		assert.strictEqual((await saveChanges(grace, universeId, [{ kind: 'removeEditor', playerId: grace.playerId }])).status, 200);
+		assert.strictEqual(await findUniverseAccess(universeId, grace.playerId), undefined);
+
+		// A creator can still change the universe, and bring it back from the end of time
+		await saveAll(ada, universeId, [{ kind: 'universe', update: { stage: 'let_there_be_light' } }]);
+		assert.strictEqual((await saveChanges(bob, universeId, [worldChange])).status, 404, 'the builder may save again, and is told the tileset doesn\'t exist');
 	});
 
 	it('emails the players a save gives a role, in their language, once it commits', async () =>

@@ -4,7 +4,7 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { canManageEditors, canPlayUniverse, defineMessages, MAX_PLAYER_SEARCH_RESULTS, parsePlayerSearch, SOURCE_LOCALE, type EditorRoleSettings, type PlayerSearchPayload, type UniverseEditorListPayload } from '@multiverse-kiln/shared';
+import { canManageEditors, canViewUniverse, defineMessages, MAX_PLAYER_SEARCH_RESULTS, parsePlayerSearch, SOURCE_LOCALE, type EditorRoleSettings, type PlayerSearchPayload, type UniverseEditorListPayload } from '@multiverse-kiln/shared';
 
 import { findEmailRecipient, findPlayer, findPlayerByUsername } from '../db/playerRepo.js';
 import { countUniverseCreators, findUniverseAccess, listUniverseEditors, removeUniverseEditor, searchPlayersToAdd, setUniverseAccess } from '../db/universeEditorRepo.js';
@@ -222,7 +222,8 @@ export async function emailAddedEditors(context: ChangeContext): Promise<void>
 }
 
 /**
- * The editors a save took the right to play the universe from, in the stage it is in once saved
+ * The editors a save took the right to play the universe from, in the stage it is in once saved. At
+ * the end of time no one plays, and anyone may still open their groups, so no role change turns anyone out
  *
  * @param context The save, once committed
  * @return Their player IDs
@@ -233,7 +234,7 @@ export function playersLosingAccess(context: ChangeContext): Set<string>
 
 	for (const [playerId, role] of context.editorRoles)
 	{
-		if (!canPlayUniverse(context.universe.stage, role))
+		if (!canViewUniverse(context.universe.stage, role))
 		{
 			lost.add(playerId);
 		}

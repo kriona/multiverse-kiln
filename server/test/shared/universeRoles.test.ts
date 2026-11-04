@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canManageEditors, canPlayUniverse, canTranslate, EDITOR_CHANGE_CHECKS, editorAccessOf, mayMakeChange, UNIVERSE_ROLES, type EditorAccess, type EditorChange, type UniverseAccess, type UniverseRole } from '@multiverse-kiln/shared';
+import { ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canManageEditors, canPlayUniverse, canTranslate, canViewUniverse, EDITOR_CHANGE_CHECKS, editorAccessOf, mayMakeChange, maySaveInStage, UNIVERSE_ROLES, UNIVERSE_STAGES, type EditorAccess, type EditorChange, type UniverseAccess, type UniverseRole } from '@multiverse-kiln/shared';
 
 /**
  * Someone's access with a role and no languages
@@ -50,6 +50,44 @@ describe('Universe roles (shared)', () =>
 	it('lets translators play only once the universe is open to everyone', () =>
 	{
 		assert.deepStrictEqual(['in_the_beginning', 'prologue', 'let_there_be_light'].map((stage) => canPlayUniverse(stage as 'prologue', 'translator')), [false, true, true]);
+	});
+
+	it('lets each role play and look at a universe by its stage, and everyone look at one at the end of time without playing it', () =>
+	{
+		const roles = [undefined, ...UNIVERSE_ROLES];
+		const playing = UNIVERSE_STAGES.map((stage) => [stage, ...roles.map((role) => canPlayUniverse(stage, role))]);
+		const viewing = UNIVERSE_STAGES.map((stage) => [stage, ...roles.map((role) => canViewUniverse(stage, role))]);
+
+		// No role, creator, builder, beta tester, translator
+		assert.deepStrictEqual(playing, [
+			['in_the_beginning', false, true, true, false, false],
+			['prologue', false, true, true, true, true],
+			['let_there_be_light', true, true, true, true, true],
+			['end_of_time', false, false, false, false, false]
+		]);
+		assert.deepStrictEqual(viewing, [
+			['in_the_beginning', false, true, true, false, false],
+			['prologue', false, true, true, true, true],
+			['let_there_be_light', true, true, true, true, true],
+			['end_of_time', true, true, true, true, true]
+		]);
+	});
+
+	it('lets only creators and the site admin role save at the end of time, and anyone leave', () =>
+	{
+		const savers = [...UNIVERSE_ROLES, ADMIN_ROLE].map((role) => [role, maySaveInStage([paint], 'end_of_time', { role, languages: [] }, playerId)]);
+
+		assert.deepStrictEqual(savers, [
+			['creator', true],
+			['builder', false],
+			['beta_tester', false],
+			['translator', false],
+			[ADMIN_ROLE, true]
+		]);
+		assert.strictEqual(maySaveInStage([leave], 'end_of_time', accessOf('beta_tester'), playerId), true);
+		assert.strictEqual(maySaveInStage([leave, paint], 'end_of_time', accessOf('builder'), playerId), false);
+		assert.strictEqual(maySaveInStage([removeOther], 'end_of_time', accessOf('builder'), playerId), false);
+		assert.strictEqual(maySaveInStage([paint], 'let_there_be_light', accessOf('builder'), playerId), true);
 	});
 
 	it('names a check for every kind of change', () =>

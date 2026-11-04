@@ -33,6 +33,7 @@ $text-dim: #888;
 
 // Green: primary buttons, hover borders and the player's own name
 $accent: #4caf50;
+$accent-text: #59d95e;
 $accent-background: #2e7d32;
 $accent-background-hover: #388e3c;
 
@@ -235,12 +236,15 @@ a.button
 	text-decoration: none;
 }
 
-// Icons from the icons plugin in vite.config.ts, sized to and colored like the text around them
+// Icons from the icons plugin in vite.config.ts, sized to and colored like the text around them. Their size
+// is rounded to whole pixels: a fractional height makes the buttons holding them, such as the account menu
+// in each toolbar, fractional too, which puts everything below on part of a pixel, where a scrolled list
+// can lose the top line of an entry's border
 .icon
 {
 	flex-shrink: 0;
-	width: 1.15em;
-	height: 1.15em;
+	width: round(1.15em, 1px);
+	height: round(1.15em, 1px);
 	vertical-align: -0.2em;
 }
 

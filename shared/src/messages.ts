@@ -1,7 +1,7 @@
 import type { MapBounds } from './maps.js';
 import type { TileGraphicFormat } from './tileGraphics.js';
 import type { AreaTime } from './time.js';
-import type { DisplayTime, Ruleset, AreaLightLevel, AreaLinkMode } from './universes.js';
+import type { DisplayTime, Ruleset, AreaLightLevel, AreaLinkMode, UniverseStage } from './universes.js';
 
 /**
  * Message types clients send to the rooms with a map: a universe's lobby and a group's game room
@@ -528,6 +528,12 @@ export interface UniverseDetails extends UniverseSummary
 	 * Markdown
 	 */
 	longDescription: string;
+
+	/**
+	 * Its stage: let_there_be_light or end_of_time for everyone, and the others for players whose role
+	 * lets them play it there
+	 */
+	stage: UniverseStage;
 }
 
 /**

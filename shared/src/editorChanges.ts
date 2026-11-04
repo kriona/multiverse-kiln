@@ -8,7 +8,7 @@
 import type { DifficultyLevelSettings } from './difficulty.js';
 import type { AreaSettingsUpdate, AreaLinkTarget, CellChange, ClassSettings, ErrorPayload, ItemSettings, NewAreaRequest, RaceSettings, ResizeConflict, RulesetSettings, ThemeSettings, TileGraphicUploadRequest, TileSettings, UniverseSettingsUpdate } from './editor.js';
 import type { MapBounds } from './maps.js';
-import { canEditUniverseSettings, canEditWorld, canManageEditors, type EditorAccess, type UniverseRole } from './universes.js';
+import { canEditAtEndOfTime, canEditUniverseSettings, canEditWorld, canManageEditors, type EditorAccess, type UniverseRole, type UniverseStage } from './universes.js';
 
 /**
  * Most changes one save can hold
@@ -183,6 +183,26 @@ export function mayMakeChange(change: EditorChange, access: EditorAccess, player
 		case 'editWorld':
 			return(canEditWorld(access.role));
 	}
+}
+
+/**
+ * Whether a save may be made in the universe's stage: at the end of time only its creators (and server
+ * admins with ADMIN_ROLE) may change it, though anyone may still leave it
+ *
+ * @param changes The save's changes
+ * @param stage The universe's stage
+ * @param access The player's role in the editor, and their languages
+ * @param playerId The player's ID
+ * @return True when it may
+ */
+export function maySaveInStage(changes: readonly EditorChange[], stage: UniverseStage, access: EditorAccess, playerId: string): boolean
+{
+	if ((stage !== 'end_of_time') || canEditAtEndOfTime(access.role))
+	{
+		return(true);
+	}
+
+	return(changes.every((change) => ((change.kind === 'removeEditor') && (change.playerId === playerId))));
 }
 
 /**

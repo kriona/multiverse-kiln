@@ -2731,6 +2731,10 @@
 		"message": "Voyage",
 		"source": "Stage"
 	},
+	"editor.universe.stageWarning": {
+		"message": "Once the universe leaves the stage {stage}, new areas start battened down, so no hand can wander into 'em before they be finished. Open each one on the Areas tab when she's ready.",
+		"source": "Once the universe leaves the stage {stage}, new areas start disabled, so players can't wander into them before they are finished. Enable each one on the Areas tab when it's ready."
+	},
 	"editor.universeDisabled": {
 		"message": "The ship's officers have laid up this universe, so it can't be sailed and changes to it can't be stowed. Reason: {reason}",
 		"source": "The site's admins have disabled this universe, so it can't be played and changes to it can't be saved. Reason: {reason}"
@@ -2738,6 +2742,10 @@
 	"editor.universeDisabledAdmin": {
 		"message": "The ship's officers have laid up this universe, so it can't be sailed and its crew can't stow changes. As a ship's officer, ye can still stow changes to it. Reason: {reason}",
 		"source": "The site's admins have disabled this universe, so it can't be played and its editors can't save. As a site admin, you can still save changes to it. Reason: {reason}"
+	},
+	"editor.universeLocked": {
+		"message": "This universe has sunk to the depths, so only her captains can change her. Ye can still jump ship on the Officers tab.",
+		"source": "This universe has reached the end of time, so only its creators can change it. You can still leave it on the Editors tab."
 	},
 	"editor.universeTitle": {
 		"message": "Edit {universe}",
@@ -3495,6 +3503,10 @@
 		"message": "Ye can create at most {max, plural, one {# universe} other {# universes}}.",
 		"source": "You can create at most {max, plural, one {# universe} other {# universes}}."
 	},
+	"error.universeLockedSave": {
+		"message": "This universe has sunk to the depths, so only her captains can change her.",
+		"source": "This universe has reached the end of time, so only its creators can change it."
+	},
 	"error.universeNameTaken": {
 		"message": "Another universe already sails under that name, or one too much like it.",
 		"source": "Another universe already has that name, or one too much like it."
@@ -3619,6 +3631,10 @@
 		"message": "Unrollin' the charts...",
 		"source": "Loading the universe..."
 	},
+	"game.stageChanged": {
+		"message": "The stage o' {universe} was changed, and yer post don't let ye sail her at her new stage.",
+		"source": "The stage of {universe} was changed, and your role doesn't let you play it in its new stage."
+	},
 	"game.universeDeleted": {
 		"message": "{universe} was sent to the deep, with all aboard.",
 		"source": "{universe} was deleted, with everything in it."
@@ -3626,6 +3642,10 @@
 	"game.universeDisabled": {
 		"message": "The ship's officers have laid up {universe}, so it can't be sailed fer now.",
 		"source": "The site's admins have disabled {universe}, so it can't be played for now."
+	},
+	"game.universeLocked": {
+		"message": "{universe} has sunk to the depths, so she be locked fast and her tavern can't be entered. Hands in a crew can still open her up to have a look about.",
+		"source": "{universe} has reached the end of time, so it is locked and its lobby can't be entered. Characters in a group can still open it to look around."
 	},
 	"game.universeNotFound": {
 		"message": "That universe be lost at sea.",
@@ -3666,6 +3686,14 @@
 	"group.leaveFailed": {
 		"message": "Couldn't jump ship.",
 		"source": "Could not leave the group."
+	},
+	"group.locked": {
+		"message": "This universe has sunk to the depths, so she be locked fast. Ye can have a look about and switch between yer hands, but nothin' can move or change.",
+		"source": "This universe has reached the end of time, so it is locked. You can look around and switch between your characters, but nothing can move or change."
+	},
+	"group.lockedNow": {
+		"message": "This universe has sunk to the depths, so she be locked fast now. Nothin' can move or change.",
+		"source": "This universe has reached the end of time, so it is now locked. Nothing can move or change."
 	},
 	"group.member.anchor": {
 		"message": "anchor",
@@ -3711,6 +3739,10 @@
 		"message": "Crew",
 		"source": "Group"
 	},
+	"group.unlockedNow": {
+		"message": "This universe be locked no more. Ye can move again.",
+		"source": "This universe is no longer locked. You can move again."
+	},
 	"group.unnamed": {
 		"message": "Crew",
 		"source": "Group"
@@ -3731,17 +3763,17 @@
 		"message": "Create Universe",
 		"source": "Create Universe"
 	},
-	"home.createDisabled": {
-		"message": "The captain's forbidden creatin' universes fer now",
-		"source": "Creating universes is turned off for now"
-	},
-	"home.createLimit": {
-		"message": "Ye can create at most {max, plural, one {# universe} other {# universes}}",
-		"source": "You can create at most {max, plural, one {# universe} other {# universes}}"
-	},
 	"home.createUniverse": {
 		"message": "Create Universe",
 		"source": "Create Universe"
+	},
+	"home.empty.text": {
+		"message": "Come back later to spy the light o' the first universe.",
+		"source": "Come back later to see the light of the first universe."
+	},
+	"home.empty.title": {
+		"message": "The stars be still in the forge.",
+		"source": "The stars are still being forged."
 	},
 	"home.listFailed": {
 		"message": "Couldn't list the universes. Reload the page to try again.",
@@ -3750,14 +3782,6 @@
 	"home.logIn": {
 		"message": "Come aboard",
 		"source": "Log in"
-	},
-	"home.noOwnUniverses": {
-		"message": "Ye haven't made a universe yet.",
-		"source": "You haven't made a universe yet."
-	},
-	"home.noUniverses": {
-		"message": "There be no universes to sail yet.",
-		"source": "There are no universes to play in yet."
 	},
 	"home.ownDetails": {
 		"message": "{ruleset} - {stage} - {role}",
@@ -3775,6 +3799,10 @@
 		"message": "Yer universes",
 		"source": "Your universes"
 	},
+	"home.ownUniversesNone": {
+		"message": "Fancy tryin' yer hand at the act o' creation?",
+		"source": "Try your hand at the act of creation?"
+	},
 	"home.pageTitle": {
 		"message": "Universes",
 		"source": "Universes"
@@ -3782,6 +3810,14 @@
 	"home.showMore": {
 		"message": "Show more",
 		"source": "Show more"
+	},
+	"home.testingHint": {
+		"message": "Universes ye hold a post in that be out on sea trials. Only their officers and deckhands spy 'em here.",
+		"source": "Universes you have a role in that are open for testing. Only their editors and beta testers see them here."
+	},
+	"home.testingUniverses": {
+		"message": "Out on sea trials",
+		"source": "Open for testing"
 	},
 	"home.universes": {
 		"message": "Universes",
@@ -6350,6 +6386,10 @@
 	"universePage.loadFailed": {
 		"message": "Couldn't haul up the universe. Reload the page to try again.",
 		"source": "Could not load the universe. Reload the page to try again."
+	},
+	"universePage.locked": {
+		"message": "This universe has sunk to the depths, so she be locked fast. Her tavern can't be entered and no hands can be signed on, but hands in a crew can still open her up to have a look about.",
+		"source": "This universe has reached the end of time, so it is locked. Its lobby can't be entered and no characters can be made, but characters in a group can still open it to look around."
 	},
 	"universePage.notFound": {
 		"message": "That universe be lost at sea. It may sail under a new name, or it ain't open to all hands yet.",

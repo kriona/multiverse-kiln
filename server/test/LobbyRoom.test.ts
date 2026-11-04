@@ -276,6 +276,49 @@ describe('LobbyRoom', () =>
 			assert.strictEqual(room.clients[0].sessionId, grace.room.sessionId);
 		});
 
+		it('turns out the players a new stage doesn\'t let play, and everyone at the end of time', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
+			const room = lobbyOf(ada);
+			const adaLeft = new Promise<number>((resolve) =>
+			{
+				ada.room.onLeave(resolve);
+			});
+			const graceLeft = new Promise<number>((resolve) =>
+			{
+				grace.room.onLeave(resolve);
+			});
+
+			universeAccessChanges.publishStage({
+				universeId: universe.universeId,
+				stage: 'prologue',
+				roles: new Map([[grace.playerId, 'beta_tester']])
+			});
+
+			assert.strictEqual(await adaLeft, ServerCloseCode.StageChanged);
+			await waitUntil(() => (room.clients.length === 1));
+			assert.strictEqual(room.clients[0].sessionId, grace.room.sessionId);
+
+			universeAccessChanges.publishStage({
+				universeId: universe.universeId,
+				stage: 'end_of_time',
+				roles: new Map([[grace.playerId, 'creator']])
+			});
+
+			assert.strictEqual(await graceLeft, ServerCloseCode.UniverseLocked);
+		});
+
+		it('refuses everyone at the end of time', async () =>
+		{
+			const playerId = (await addPlayer('Ada')).id;
+			const { cookie } = await logInBrowser(playerId);
+
+			await setUniverseRole(universe.universeId, playerId, 'creator');
+			await updateUniverseSettings(universe.universeId, { stage: 'end_of_time' });
+			await assert.rejects(connect(cookie, { universeId: universe.universeId }));
+		});
+
 		it('refuses players the universe\'s stage and their role don\'t let play', async () =>
 		{
 			const playerId = (await addPlayer('Ada')).id;

@@ -11,12 +11,13 @@ import { addGroupMember, findGroup, leaveGroup, listGroupMembers } from '../src/
 import { createAreaLink, updateAreaSettings } from '../src/db/areaRepo.js';
 import { loadSeenChunks } from '../src/db/worldStateRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
-import { setUniverseDisabled } from '../src/db/universeRepo.js';
+import { setUniverseDisabled, updateUniverseSettings } from '../src/db/universeRepo.js';
 import { cellCenter } from '../src/logic/movement.js';
 import { SeenCells } from '../src/logic/seenCells.js';
 import { characterChanges } from '../src/players/characterChanges.js';
 import { connectedSessions } from '../src/players/connectedSessions.js';
 import { groupChanges } from '../src/players/groupChanges.js';
+import { universeAccessChanges } from '../src/players/universeAccess.js';
 import type { GameRoom } from '../src/rooms/GameRoom.js';
 import { areaChanges } from '../src/world/areaChanges.js';
 import { addCharacter, addGroup, addPlayableUniverse, defaultRaceId, type PlayableUniverse } from './db/fixtures.js';
@@ -377,6 +378,56 @@ describe('GameRoom', () =>
 		});
 
 		assert.strictEqual(await left, ServerCloseCode.UniverseDisabled);
+	});
+
+	it('opens read-only at the end of time, follows the stage as it changes, and turns away players a new stage doesn\'t let play', async () =>
+	{
+		await updateUniverseSettings(universe.universeId, { stage: 'end_of_time' });
+
+		const room = await createGameRoom();
+		const client = await joinAsNewPlayer(room);
+		const player = room.state.players.get(playerIdOf(room, client)) as Player;
+
+		await room.waitForNextPatch();
+		assert.strictEqual(client.state.locked, true);
+		placeOnCell(player, 3, 3);
+
+		client.send(MessageType.Move, { x: 1, y: 0 });
+		await room.waitForNextMessage();
+		await room.waitForNextTimestep();
+		await room.waitForNextTimestep();
+		assert.strictEqual(player.x, startCenter.x, 'nothing moves while the room is locked');
+
+		universeAccessChanges.publishStage({
+			universeId: universe.universeId,
+			stage: 'let_there_be_light',
+			roles: new Map()
+		});
+		assert.strictEqual(room.state.locked, false);
+
+		client.send(MessageType.Move, { x: 1, y: 0 });
+		await room.waitForNextMessage();
+		await room.waitForNextTimestep();
+		await room.waitForNextTimestep();
+		assert.ok(player.x > startCenter.x, `x = ${player.x}`);
+
+		// Locking again stops the character at the end of their step, though the key is still held
+		universeAccessChanges.publishStage({
+			universeId: universe.universeId,
+			stage: 'end_of_time',
+			roles: new Map()
+		});
+		await waitUntilStopped(room, player);
+		assertOnCellCenter(player);
+
+		const left = waitForLeave(client);
+
+		universeAccessChanges.publishStage({
+			universeId: universe.universeId,
+			stage: 'prologue',
+			roles: new Map()
+		});
+		assert.strictEqual(await left, ServerCloseCode.StageChanged);
 	});
 
 	it('syncs the group\'s name, anchor being and members', async () =>

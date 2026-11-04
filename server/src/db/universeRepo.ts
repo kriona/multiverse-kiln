@@ -264,14 +264,14 @@ export async function listUniverses(stage: UniverseStage, offset: number, limit:
 }
 
 /**
- * A universe's details, if it is in a stage and isn't disabled
+ * A universe's details, with its stage, if it isn't disabled. The caller decides whether the stage
+ * lets the player see it
  *
  * @param key The universe's ID or slug
- * @param stage The stage it must be in
  * @param executor The database, or a transaction
- * @return The universe, or undefined when there is none with that ID or slug in that stage, or it is disabled
+ * @return The universe, or undefined when there is none with that ID or slug, or it is disabled
  */
-export async function findUniverseDetails(key: string, stage: UniverseStage, executor: Executor = db): Promise<UniverseDetails | undefined>
+export async function findUniverseDetails(key: string, executor: Executor = db): Promise<UniverseDetails | undefined>
 {
 	const bySlug = eq(universes.slug, key);
 	const [row] = await executor
@@ -281,12 +281,12 @@ export async function findUniverseDetails(key: string, stage: UniverseStage, exe
 			slug: universes.slug,
 			shortDescription: universes.shortDescription,
 			longDescription: universes.longDescription,
-			ruleset: universes.ruleset
+			ruleset: universes.ruleset,
+			stage: universes.stage
 		})
 		.from(universes)
 		.where(and(
 			(UUID_PATTERN.test(key) ? or(eq(universes.id, key), bySlug) : bySlug),
-			eq(universes.stage, stage),
 			isNull(universes.disabledAt)
 		))
 		.limit(1);
