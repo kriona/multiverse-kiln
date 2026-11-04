@@ -331,22 +331,24 @@ export class AreaPlayers
 
 	/**
 	 * Adds a joining client controlling a player. A player new to the room is first placed on the free
-	 * cell nearest the start area's center; a player already here gets another window. Either way the
-	 * client is told which player it controls and which area it is in
+	 * cell nearest a cell of the start area; a player already here gets another window. Either way the
+	 * client is told which player it controls and which area it is in. Without a start area, as in a
+	 * lobby with no map, a new player is in no area until placeAll()
 	 *
 	 * @param client The joining client
 	 * @param playerId The player the client controls
 	 * @param appearance How a player new to the room shows
-	 * @param startArea Where a player new to the room starts, with prepareStart() done
+	 * @param startArea Where a player new to the room starts, with prepareStart() done, or undefined for nowhere
+	 * @param near The cell of the start area to start nearest, its center by default
 	 * @return Whether the player is new to the room
 	 */
-	join(client: Client, playerId: string, appearance: Appearance, startArea: ActiveArea): boolean
+	join(client: Client, playerId: string, appearance: Appearance, startArea: ActiveArea | undefined, near: Cell = { column: 0, row: 0 }): boolean
 	{
 		const isNewPlayer = !this.players.has(playerId);
 
-		if (isNewPlayer)
+		if (isNewPlayer && startArea)
 		{
-			this.add(playerId, appearance, startArea, { column: 0, row: 0 });
+			this.add(playerId, appearance, startArea, near);
 		}
 
 		this.sessions.add(client.sessionId, playerId);
@@ -426,6 +428,50 @@ export class AreaPlayers
 		this.presses.delete(playerId);
 		this.travelling.delete(playerId);
 		this.sentChunks.delete(playerId);
+	}
+
+	/**
+	 * Takes every player off the map, keeping the clients that control them, as when a lobby loses its
+	 * map. Players stay in no area until placeAll()
+	 */
+	clearMap(): void
+	{
+		this.stopAll();
+		this.areaIds.clear();
+		this.refreshViews();
+		this.players.clear();
+		this.steps.clear();
+		this.presses.clear();
+		this.travelling.clear();
+		this.sentChunks.clear();
+	}
+
+	/**
+	 * Puts every player that clients control on the free cell nearest a cell of an area, wherever they
+	 * were, as when a lobby gets a map or moves to another, and sends their clients the area
+	 *
+	 * @param area The area, with prepareStart() done for the cell
+	 * @param near The cell to start nearest
+	 * @param appearanceOf How each player shows
+	 */
+	placeAll(area: ActiveArea, near: Cell, appearanceOf: (playerId: string) => Appearance): void
+	{
+		const playerIds = this.sessions.getPlayerIds();
+
+		this.clearMap();
+
+		for (const playerId of playerIds)
+		{
+			this.add(playerId, appearanceOf(playerId), area, near);
+		}
+
+		for (const playerId of playerIds)
+		{
+			for (const client of this.getClients(playerId))
+			{
+				this.attach(client, playerId);
+			}
+		}
 	}
 
 	/**

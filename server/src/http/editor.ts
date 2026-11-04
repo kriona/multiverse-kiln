@@ -17,7 +17,7 @@ import { isUniverseTileGraphic } from '../db/tileGraphicRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { countUniversesWithRole, listEditableUniverses, setUniverseRole } from '../db/universeEditorRepo.js';
 import { createUniverse, setUniverseAreas, UniverseNameTakenError, updateUniverseSettings } from '../db/universeRepo.js';
-import { createArea, findAreasUsingTile, findEditorArea, isTileInUse, replaceTileInMaps } from '../db/areaRepo.js';
+import { createArea, findAreasUsingTile, findEditorArea, isTileInUse, listStartingAreaIds, replaceTileInMaps } from '../db/areaRepo.js';
 import { loadUniverseContext, playerIdOf, refuseWritesFromOtherOrigins, requireLogin, universeContextOf } from './editorAccess.js';
 import { addDefaultStartingItems } from '../db/startingItemRepo.js';
 import { recordRef, refuse, resolveNumberRef, resolveStringRef, type ChangeContext } from './editorChangeContext.js';
@@ -318,7 +318,14 @@ export async function applyUniverseChange(context: ChangeContext, update: Univer
 	}
 
 	const { universe, transaction } = context;
-	const lobbyArea = ((universe.lobbyAreaId !== null) ? await findEditorArea(universe.lobbyAreaId, transaction) : undefined);
+	const lobbyAreaId = ((update.lobbyAreaId === undefined) ? universe.lobbyAreaId : update.lobbyAreaId);
+	const lobbyArea = ((lobbyAreaId !== null) ? await findEditorArea(lobbyAreaId, transaction) : undefined);
+
+	if ((update.lobbyAreaId !== undefined) && (update.lobbyAreaId !== null) && (update.lobbyAreaId !== universe.lobbyAreaId))
+	{
+		await checkLobbyArea(context, lobbyArea?.universeId, update);
+	}
+
 	const problem = (timeSettingsProblem({ ...universe, ...update })
 		?? lobbyTimeProblem({ ...universe, ...update }, lobbyArea?.area));
 
@@ -346,6 +353,63 @@ export async function applyUniverseChange(context: ChangeContext, update: Univer
 	else if (update.lobbyNoVisionCost !== undefined)
 	{
 		context.published.push({ kind: 'tiles', universeId: universe.id });
+	}
+
+	const lobbyMoved = ((lobbyAreaId !== universe.lobbyAreaId) || ((update.lobbyColumn ?? universe.lobbyColumn) !== universe.lobbyColumn) || ((update.lobbyRow ?? universe.lobbyRow) !== universe.lobbyRow));
+
+	// The lobby's time and vision follow its settings, so the areas it leaves and joins are read again
+	if (lobbyAreaId !== universe.lobbyAreaId)
+	{
+		for (const areaId of [universe.lobbyAreaId, lobbyAreaId])
+		{
+			if (areaId !== null)
+			{
+				context.published.push({ kind: 'area', areaId });
+			}
+		}
+	}
+
+	if (lobbyMoved)
+	{
+		context.published.push({ kind: 'lobby', universeId: universe.id });
+	}
+}
+
+/**
+ * Refuses a lobby area that isn't one of the universe's areas, or is a starting area: the universe's,
+ * a race's or a class's, or one the same change makes the universe's
+ *
+ * @param context The save
+ * @param areaUniverseId The universe the area belongs to, or undefined when there is no such area
+ * @param update The universe's settings change, naming the lobby's area
+ */
+async function checkLobbyArea(context: ChangeContext, areaUniverseId: string | undefined, update: UniverseSettingsUpdate): Promise<void>
+{
+	const { universe, transaction } = context;
+
+	if (areaUniverseId !== universe.id)
+	{
+		refuse(400, {
+			id: 'error.noSuchLobbyArea',
+			defaultMessage: 'The lobby must be one of this universe\'s areas.',
+			description: 'Why the lobby\'s area wasn\'t saved: the area chosen isn\'t one of the universe\'s, perhaps because another editor deleted it'
+		});
+	}
+
+	const startingAreaIds = new Set(await listStartingAreaIds(universe.id, transaction));
+
+	if ((update.startingAreaId !== undefined) && (update.startingAreaId !== null))
+	{
+		startingAreaIds.add(update.startingAreaId);
+	}
+
+	if ((update.lobbyAreaId !== undefined) && (update.lobbyAreaId !== null) && startingAreaIds.has(update.lobbyAreaId))
+	{
+		refuse(409, {
+			id: 'error.lobbyIsStartingArea',
+			defaultMessage: 'Characters start in this area, so it can\'t be the lobby. Choose another area, or first change where the universe\'s, races\' and classes\' characters start.',
+			description: 'Why the lobby\'s area wasn\'t saved: the area chosen is where characters of the universe, or of one of its races or classes, start, and a starting area can\'t be the lobby'
+		});
 	}
 }
 

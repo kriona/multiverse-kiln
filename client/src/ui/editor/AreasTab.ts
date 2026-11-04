@@ -6,6 +6,7 @@ import { ChangeTracker } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
+import { SearchSelect } from '../SearchSelect';
 import { tileName } from '../tileNames';
 import type { AreaSource } from './areaSource';
 import { editorMessages } from './editorMessages';
@@ -46,7 +47,20 @@ export class AreasTab implements SavableTab
 	private readonly name = getElement('area-name', HTMLInputElement);
 	private readonly enabled = getElement('area-enabled', HTMLInputElement);
 	private readonly parentDisabled = getElement('area-parent-disabled', HTMLElement);
-	private readonly parent = getElement('area-parent', HTMLSelectElement);
+	private readonly parentField = getElement('area-parent', HTMLInputElement);
+
+	/**
+	 * The area the area shown is inside, chosen by typing part of its name; '' for none
+	 */
+	private readonly parent = new SearchSelect({
+		searchId: 'area-parent',
+		listboxId: 'area-parent-options',
+		choices: [],
+		onChange: () =>
+		{
+			this.areaChanges.check();
+		}
+	});
 	private readonly outdoors = getElement('area-outdoors', HTMLInputElement);
 	private readonly indoors = getElement('area-indoors', HTMLInputElement);
 	private readonly lightField = getElement('area-light-field', HTMLElement);
@@ -60,6 +74,8 @@ export class AreasTab implements SavableTab
 	 * Shown in place of the passage of time for the lobby, whose time the Lobby tab sets
 	 */
 	private readonly lobbyTimeHint = getElement('area-lobby-time-hint', HTMLElement);
+	private readonly lobbyNotice = getElement('area-lobby-notice', HTMLElement);
+	private readonly backToLobby = getElement('area-back-lobby', HTMLButtonElement);
 	private readonly faerieField = getElement('area-faerie-field', HTMLElement);
 	private readonly faerie = getElement('area-faerie', HTMLSelectElement);
 	private readonly loopsEastWest = getElement('area-loops-east-west', HTMLInputElement);
@@ -88,7 +104,7 @@ export class AreasTab implements SavableTab
 	 */
 	private readonly areaChanges = new ChangeTracker({
 		root: this.form,
-		state: () => this.mapUnsaved
+		state: () => [this.mapUnsaved, this.parent.value]
 	});
 
 	/**
@@ -121,7 +137,7 @@ export class AreasTab implements SavableTab
 	/**
 	 * Every area of the universe, and which are the lobby and starting areas, as last loaded
 	 */
-	private areas: AreaListPayload = { areas: [], lobbyAreaId: null, startingAreaId: null };
+	private areas: AreaListPayload = { areas: [], lobbyAreaId: null, startingAreaId: null, startingAreaIds: [] };
 
 	/**
 	 * Every tile the universe can use, as last loaded
@@ -159,8 +175,9 @@ export class AreasTab implements SavableTab
 	 * @param api The editor's API
 	 * @param stagedTiles The Tilesets tab's changes, which the maps are drawn and painted with
 	 * @param onAreaChanged Called with the area the area editor opens, or undefined when the tab goes back to the list
+	 * @param onBackToLobby Called when the player leaves the lobby's area with Back to Lobby, to show the Lobby tab
 	 */
-	constructor(private readonly api: EditorApi, private readonly stagedTiles: StagedTiles, private readonly onAreaChanged: (areaId: string | undefined) => void)
+	constructor(private readonly api: EditorApi, private readonly stagedTiles: StagedTiles, private readonly onAreaChanged: (areaId: string | undefined) => void, private readonly onBackToLobby: () => void)
 	{
 		stagedTiles.tileChanges.subscribe(() =>
 		{
@@ -216,6 +233,15 @@ export class AreasTab implements SavableTab
 			if (this.areaChanges.confirmDiscard())
 			{
 				void this.showList();
+			}
+		});
+
+		this.backToLobby.addEventListener('click', () =>
+		{
+			if (this.areaChanges.confirmDiscard())
+			{
+				void this.showList();
+				this.onBackToLobby();
 			}
 		});
 
@@ -297,6 +323,39 @@ export class AreasTab implements SavableTab
 		{
 			this.universe = universe;
 		}
+	}
+
+	/**
+	 * Follows the lobby moving to another area, or to none, once the Lobby tab has saved it
+	 *
+	 * @param lobbyAreaId The lobby's area, or null for none
+	 */
+	setLobbyArea(lobbyAreaId: string | null): void
+	{
+		this.areas = { ...this.areas, lobbyAreaId };
+		this.renderList();
+
+		if (this.area && this.universe)
+		{
+			const isLobby = (this.area.id === lobbyAreaId);
+
+			this.showLobby(isLobby);
+			this.deleteButton.hidden = (!canEditWorld(this.universe.role) || isLobby || (this.area.id === this.areas.startingAreaId));
+		}
+	}
+
+	/**
+	 * Says in the area editor whether the area shown is the lobby's, whose passage of time is set on the
+	 * Lobby tab instead, and offers to go back to the Lobby tab
+	 *
+	 * @param isLobby Whether it is
+	 */
+	private showLobby(isLobby: boolean): void
+	{
+		this.lobbyNotice.hidden = !isLobby;
+		this.backToLobby.hidden = !isLobby;
+		this.timeField.hidden = isLobby;
+		this.lobbyTimeHint.hidden = !isLobby;
 	}
 
 	/**
@@ -441,7 +500,7 @@ export class AreasTab implements SavableTab
 	 */
 	private renderList(): void
 	{
-		const listing = areasTabListing(this.allAreas(), this.areas.lobbyAreaId);
+		const listing = areasTabListing(this.allAreas());
 
 		// An area the listing passed through is shown above the areas inside it, indented by how deep each is
 		this.list.replaceChildren(
@@ -451,8 +510,8 @@ export class AreasTab implements SavableTab
 		showMessage(this.empty, ((listing.areas.length === 0)
 			? t({
 				id: 'editor.areas.none',
-				defaultMessage: 'There are no areas besides the lobby.',
-				description: 'Shown instead of the list of areas when the universe only has its lobby'
+				defaultMessage: 'There are no areas yet.',
+				description: 'Shown instead of the list of areas when the universe has none'
 			})
 			: undefined));
 	}
@@ -595,6 +654,13 @@ export class AreasTab implements SavableTab
 					defaultMessage: 'outdoors',
 					description: 'Under an area in the list of areas, for an area that is outdoors'
 				})),
+			((area.id === this.areas.lobbyAreaId)
+				? t({
+					id: 'editor.areas.lobbyTag',
+					defaultMessage: 'lobby',
+					description: 'Under an area in the list of areas, for the area players walk around in the universe\'s lobby'
+				})
+				: undefined),
 			((area.id === this.areas.startingAreaId)
 				? t({
 					id: 'editor.areas.startingAreaTag',
@@ -649,20 +715,24 @@ export class AreasTab implements SavableTab
 		this.area = area;
 		this.name.value = area.name;
 		this.enabled.checked = area.enabled;
-		setOptions(this.parent, [
+		const noParent = t({
+			id: 'editor.area.noParent',
+			defaultMessage: 'None (a top-level area)',
+			description: 'Choice of parent area for an area that isn\'t inside another, also shown in the empty Parent area field, where typing finds an area by name'
+		});
+
+		this.parentField.placeholder = noParent;
+		this.parent.setChoices([
 			{
 				value: '',
-				label: t({
-					id: 'editor.area.noParent',
-					defaultMessage: 'None (a top-level area)',
-					description: 'Choice of parent area for an area that isn\'t inside another'
-				})
+				name: noParent
 			},
 			...areas
 				.filter((other) => (!excluded.has(other.id) && (!this.staged.isDeleted(other.id) || (other.id === area.parentAreaId))))
 				.map((other) => ({
 					value: other.id,
-					label: other.name
+					name: other.name,
+					detail: ancestorAreas(areas, other.id)[0]?.name
 				}))
 		]);
 		this.parent.value = (area.parentAreaId ?? '');
@@ -672,8 +742,7 @@ export class AreasTab implements SavableTab
 		this.showLightField();
 		this.fillDefaultTiles(area.indoors, area.defaultTileId);
 		this.time.value = area.passageOfTime;
-		this.timeField.hidden = isLobby;
-		this.lobbyTimeHint.hidden = !isLobby;
+		this.showLobby(isLobby);
 		this.faerie.value = (area.faerieMorning ?? FAERIE_MORNINGS[0]);
 		this.loopsEastWest.checked = area.loopsEastWest;
 		this.loopsNorthSouth.checked = area.loopsNorthSouth;
@@ -1059,13 +1128,7 @@ export class AreasTab implements SavableTab
 		this.staged.markCreated(areaId, savedId);
 		this.mapEditor.resolveIds(new Map([[areaId, savedId]]));
 
-		for (const option of this.parent.options)
-		{
-			if (option.value === areaId)
-			{
-				option.value = savedId;
-			}
-		}
+		this.parent.replaceValue(areaId, savedId);
 
 		if (this.area?.id === areaId)
 		{

@@ -48,9 +48,14 @@ export interface MapConnection<R extends MapRoom>
 export type GameConnection = MapConnection<GameRoom>;
 
 /**
- * A joined universe lobby and the player this window controls
+ * A joined universe lobby and the player this window controls. The lobby has a map only while its
+ * universe has an enabled lobby area (LobbyState.hasMap): area is undefined when it had none on joining,
+ * and the area arrives as ServerMessageType.Area once it has one
  */
-export type LobbyConnection = MapConnection<LobbyRoom>;
+export interface LobbyConnection extends Omit<MapConnection<LobbyRoom>, 'area'>
+{
+	area: AreaPayload | undefined;
+}
 
 /**
  * The connection to the server, and the session room it has joined
@@ -108,8 +113,29 @@ export function createClient(): Client
  * @param room The joined room
  * @return The player this window controls, and their area
  */
-function waitForArrival(room: MapRoom): Promise<{ playerId: string; area: AreaPayload }>
+function waitForArrival(room: MapRoom): Promise<{ playerId: string; area: AreaPayload }>;
+
+/**
+ * Resolves with the player ID from a room's Welcome message and, when the room has a map, the area from
+ * its first Area message, as in a lobby that may have no map
+ *
+ * @param room The joined room
+ * @param hasMap Whether the room has a map once Welcome has arrived, so an Area message follows
+ * @return The player this window controls, and their area, or undefined without a map
+ */
+function waitForArrival(room: MapRoom, hasMap: () => boolean): Promise<{ playerId: string; area: AreaPayload | undefined }>;
+
+/**
+ * Resolves with the player ID from a room's Welcome message and the area from its first Area message,
+ * when the room has a map
+ *
+ * @param room The joined room
+ * @param hasMap Whether the room has a map once Welcome has arrived; always, for a group's room
+ * @return The player this window controls, and their area
+ */
+function waitForArrival(room: MapRoom, hasMap: () => boolean = () => true): Promise<{ playerId: string; area: AreaPayload | undefined }>
 {
+	let stopListening: (() => void) | undefined;
 	const welcome = new Promise<string>((resolve) =>
 	{
 		room.onMessage(ServerMessageType.Welcome, (payload: WelcomePayload) =>
@@ -119,9 +145,9 @@ function waitForArrival(room: MapRoom): Promise<{ playerId: string; area: AreaPa
 	});
 	const area = new Promise<AreaPayload>((resolve) =>
 	{
-		const stopListening = room.onMessage(ServerMessageType.Area, (payload: AreaPayload) =>
+		stopListening = room.onMessage(ServerMessageType.Area, (payload: AreaPayload) =>
 		{
-			stopListening();
+			stopListening?.();
 			resolve(payload);
 		});
 	});
@@ -134,9 +160,16 @@ function waitForArrival(room: MapRoom): Promise<{ playerId: string; area: AreaPa
 	});
 
 	return(Promise.race([
-		Promise
-			.all([welcome, area])
-			.then(([playerId, firstArea]) => ({ playerId, area: firstArea })),
+		welcome.then(async (playerId) =>
+		{
+			if (!hasMap())
+			{
+				stopListening?.();
+				return({ playerId, area: undefined });
+			}
+
+			return({ playerId, area: await area });
+		}),
 		left
 	]));
 }
@@ -212,7 +245,8 @@ export async function joinLobby(client: Client, universeId: string): Promise<Lob
 	const options: LobbyJoinOptions = { universeId };
 	const room = await client.joinOrCreate<LobbyState>(LOBBY_ROOM_NAME, options, LobbyState);
 
-	return({ room, ...(await waitForArrival(room)) });
+	// The room sends its state before Welcome, so hasMap is known by then
+	return({ room, ...(await waitForArrival(room, () => room.state.hasMap)) });
 }
 
 /**

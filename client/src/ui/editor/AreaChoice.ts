@@ -1,7 +1,7 @@
-import type { EditableUniverse, StartingCell } from '@multiverse-kiln/shared';
+import type { EditableUniverse, EditorAreaSummary, StartingCell } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
-import type { AreaSelectDialog } from './AreaSelectDialog';
+import type { AreaSelectDialog, AreaSelectPurpose } from './AreaSelectDialog';
 import { startingAreaMessages } from './startingAreaMessages';
 
 /**
@@ -54,9 +54,10 @@ export class AreaChoice
 	 * @param areaSelect The dialog for choosing an area
 	 * @param elements The choice's parts of the page
 	 * @param describeNone What happens without an area, e.g. "Town (the universe's)", for when none is chosen
-	 * @param onChange Called after the player chooses or clears the area
+	 * @param onChange Called after the player chooses or clears the area, with the area chosen, or null when cleared
+	 * @param purpose What the area is chosen for, a starting area unless said otherwise
 	 */
-	constructor(private readonly areaSelect: AreaSelectDialog, private readonly elements: AreaChoiceElements, private readonly describeNone: () => string, private readonly onChange: () => void)
+	constructor(private readonly areaSelect: AreaSelectDialog, private readonly elements: AreaChoiceElements, private readonly describeNone: () => string, private readonly onChange: (area: EditorAreaSummary | null) => void, private readonly purpose: AreaSelectPurpose = 'starting')
 	{
 		elements.choose.addEventListener('click', () =>
 		{
@@ -69,7 +70,7 @@ export class AreaChoice
 			this.startingCell = MIDDLE_CELL;
 			this.render();
 			elements.choose.focus();
-			this.onChange();
+			this.onChange(null);
 		});
 	}
 
@@ -159,7 +160,7 @@ export class AreaChoice
 			return;
 		}
 
-		const selection = await this.areaSelect.open(this.universe, this.areaId, this.startingCell);
+		const selection = await this.areaSelect.open(this.universe, this.areaId, this.startingCell, this.purpose);
 
 		this.elements.choose.focus();
 
@@ -176,7 +177,7 @@ export class AreaChoice
 			this.startingCell = cell;
 			this.areaNames = new Map([...this.areaNames, [area.id, area.name]]);
 			this.render();
-			this.onChange();
+			this.onChange(area);
 		}
 	}
 }

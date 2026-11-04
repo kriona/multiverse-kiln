@@ -7,7 +7,7 @@ import { type AreaEvacuation, DEFAULT_AREA_TILE_KEYS, DEFAULT_TILE_CELL, isInBou
 
 import type { Executor } from '../db/client.js';
 import { findDefaultTileIds, findTileKind, loadUniverseTiles } from '../db/tileRepo.js';
-import { countAreas, createArea, deleteArea, deleteAreaLink, editCells, findEditorArea, listAreaLinks, listAreas, listAreasLinkingTo, loadChunks, lockAreas, resizeArea, saveAreaLink, updateAreaSettings } from '../db/areaRepo.js';
+import { countAreas, createArea, deleteArea, deleteAreaLink, editCells, findEditorArea, listAreaLinks, listAreas, listAreasLinkingTo, listStartingAreaIds, loadChunks, lockAreas, resizeArea, saveAreaLink, updateAreaSettings } from '../db/areaRepo.js';
 import { arrivalCell, enabledAncestor } from '../logic/disabling.js';
 import { chunksOfChanges, wouldCreateCycle } from '../logic/mapEdits.js';
 import type { AreaPlace } from '../world/areaChanges.js';
@@ -107,7 +107,8 @@ async function listAreasRoute(request: Request, response: Response): Promise<voi
 	const payload: AreaListPayload = {
 		areas: await listAreas(universe.id),
 		lobbyAreaId: universe.lobbyAreaId,
-		startingAreaId: universe.startingAreaId
+		startingAreaId: universe.startingAreaId,
+		startingAreaIds: await listStartingAreaIds(universe.id)
 	};
 
 	response.json(payload);

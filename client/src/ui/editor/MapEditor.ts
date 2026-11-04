@@ -1,6 +1,6 @@
 import exitFullPageIcon from 'virtual:icon/ph:arrows-in';
 import fullPageIcon from 'virtual:icon/ph:arrows-out';
-import { canPaintTile, DEFAULT_TILE_CELL, defineMessages, isInBounds, MAX_BRUSH_SIZE, MAX_CELL_CHANGES, MAX_MAP_SIDE, VOID_CELL, VIEW_HEIGHT, VIEW_WIDTH, type CellChange, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type MapBounds, type MessageDescriptor, type NumberRef, type StringRef } from '@multiverse-kiln/shared';
+import { canPaintTile, DEFAULT_TILE_CELL, defineMessages, isInBounds, MAX_BRUSH_SIZE, MAX_CELL_CHANGES, VOID_CELL, VIEW_HEIGHT, VIEW_WIDTH, type CellChange, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type MapBounds, type MessageDescriptor, type NumberRef, type StringRef } from '@multiverse-kiln/shared';
 
 import { BRUSH_SHAPES, brushCells, type BrushCell, type BrushShape } from '../../editor/brush';
 import { ChunkLoader } from '../../editor/ChunkLoader';
@@ -54,18 +54,6 @@ const BRUSH_SHAPE_NAMES: Record<BrushShape, MessageDescriptor> = defineMessages(
 const VOID_CHOICE = 'void';
 
 /**
- * The sides of a map, as the expand buttons name them
- */
-type Side = 'north' | 'east' | 'south' | 'west';
-
-const sides: Side[] = [
-	'north',
-	'east',
-	'south',
-	'west'
-];
-
-/**
  * The area being edited and everything that goes with it
  */
 interface OpenArea
@@ -106,8 +94,8 @@ interface Stroke
 
 /**
  * The map editor in the area editor: the area's map on the same grid as gameplay, a draw tool (a tile
- * or Void, 1 to MAX_BRUSH_SIZE cells across, square or circle) with undo and redo, buttons to grow the
- * map on each side, Edit Size, and a tool for the map's area links
+ * or Void, 1 to MAX_BRUSH_SIZE cells across, square or circle) with undo and redo, Edit Size, and a
+ * tool for the map's area links
  *
  * Painting, changes to the map's size and links show immediately and are kept until the editor's Save
  * button calls save(); a click, a drag or a change of size is one step to undo
@@ -124,9 +112,6 @@ export class MapEditor
 	private readonly resizeButton = getElement('map-resize', HTMLButtonElement);
 	private readonly section = getElement('map-editor', HTMLElement);
 	private readonly fullPageButton = getElement('map-full-page', HTMLButtonElement);
-	private readonly expandButtons = sides.map((side) => getElement(`map-expand-${side}`, HTMLButtonElement));
-	private readonly expandField = getElement('map-expand-field', HTMLElement);
-	private readonly expandBy = getElement('map-expand-by', HTMLInputElement);
 	private readonly cursor = getElement('map-cursor', HTMLElement);
 	private readonly saveStatus = getElement('map-save-status', HTMLElement);
 	private readonly error = getElement('map-error', HTMLElement);
@@ -234,14 +219,6 @@ export class MapEditor
 
 		this.setFullPage(false);
 
-		sides.forEach((side, index) =>
-		{
-			this.expandButtons[index].addEventListener('click', () =>
-			{
-				this.expand(side);
-			});
-		});
-
 		document.addEventListener('keydown', this.onKeyDown);
 		this.addKeyHelp();
 	}
@@ -335,13 +312,6 @@ export class MapEditor
 		this.deletedTiles = deletedTiles;
 		this.fillTiles(universe, area, tiles, sameArea);
 		this.tools.hidden = !editable;
-		this.expandField.hidden = !editable;
-
-		for (const button of this.expandButtons)
-		{
-			button.hidden = !editable;
-		}
-
 		showMessage(this.error, undefined);
 
 		let links: EditorAreaLink[];
@@ -1100,11 +1070,6 @@ export class MapEditor
 		this.undoButton.disabled = (saving || !this.history.canUndo);
 		this.redoButton.disabled = (saving || !this.history.canRedo);
 		this.resizeButton.disabled = saving;
-
-		for (const button of this.expandButtons)
-		{
-			button.disabled = saving;
-		}
 	}
 
 	/**
@@ -1223,49 +1188,6 @@ export class MapEditor
 	}
 
 	/**
-	 * Grows the map on one side by the number of cells chosen, as one step to undo. The new bounds are saved with save()
-	 *
-	 * @param side The side
-	 */
-	private expand(side: Side): void
-	{
-		const open = this.open;
-		const cells = Math.floor(this.expandBy.valueAsNumber);
-
-		if (!open || !(cells > 0))
-		{
-			return;
-		}
-
-		const bounds = { ...open.map.bounds };
-
-		if (side === 'north')
-		{
-			bounds.minRow -= cells;
-		}
-		else if (side === 'south')
-		{
-			bounds.maxRow += cells;
-		}
-		else if (side === 'west')
-		{
-			bounds.minColumn -= cells;
-		}
-		else
-		{
-			bounds.maxColumn += cells;
-		}
-
-		if ((((bounds.maxColumn - bounds.minColumn) + 1) > MAX_MAP_SIDE) || (((bounds.maxRow - bounds.minRow) + 1) > MAX_MAP_SIDE))
-		{
-			showMessage(this.error, t(mapMessages.tooLarge, { max: MAX_MAP_SIDE }));
-			return;
-		}
-
-		this.resize(bounds);
-	}
-
-	/**
 	 * Opens Edit Size, starting from the map's size as shown. The new size is one step to undo, saved with save()
 	 */
 	private openResizeDialog(): void
@@ -1370,6 +1292,9 @@ export class MapEditor
 	{
 		this.fullPage = fullPage;
 		this.section.classList.toggle('full-page', fullPage);
+
+		// The page can't scroll under a map that fills the window, so the wheel scrolls the map
+		this.canvas.setWheelPans(fullPage);
 
 		if (fullPage)
 		{

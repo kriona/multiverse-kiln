@@ -97,10 +97,17 @@ export type LobbyMember = SchemaType<typeof LobbyMember>;
  * Root state of a universe's lobby room
  *
  * players works as in GameState: a client sees only the players in its own player's area, and never
- * another player's ghost. members lists everyone in the lobby playing a character, whichever area they are in
+ * another player's ghost. members lists everyone in the lobby playing a character, whichever area they
+ * are in, and whether or not the lobby has a map
  */
 export const LobbyState = schema({
 	players: t.map(Player).view(),
-	members: t.map(LobbyMember)
+	members: t.map(LobbyMember),
+
+	/**
+	 * Whether the lobby has a map to walk around: its universe has a lobby area, and it is enabled.
+	 * Without one, players is empty, and players only chat and choose their characters
+	 */
+	hasMap: t.boolean()
 }, 'LobbyState');
 export type LobbyState = SchemaType<typeof LobbyState>;

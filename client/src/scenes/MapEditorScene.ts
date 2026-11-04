@@ -20,6 +20,16 @@ const MAX_ZOOM = 2;
 const ZOOM_STEP = 1.25;
 
 /**
+ * How far the wheel pans for each line it turns, in screen pixels, when the browser measures the turn in lines
+ */
+const WHEEL_LINE_PIXELS = 16;
+
+/**
+ * How far the map pans for each pixel the wheel turns: half, since a whole turn moves the map too far to follow
+ */
+const WHEEL_PAN_SCALE = 0.25;
+
+/**
  * How far beyond the view, in cells, chunks are asked for, so they are there before they scroll in
  */
 const LOAD_MARGIN = CHUNK_SIZE;
@@ -158,8 +168,8 @@ export interface MapEditorSceneData
  * its links and the brush outlined on top
  *
  * Left clicks paint or pick cells (see PointerMode); dragging with the right or middle button pans,
- * and Ctrl+wheel zooms around the pointer. MapCanvas does the same from the keyboard with a
- * cursor, which the scene outlines like the pointer. A looping area is shown once, without its far side
+ * Ctrl+wheel zooms around the pointer, and the wheel alone pans while wheelPans is set. MapCanvas
+ * does the same from the keyboard with a cursor, which the scene outlines like the pointer. A looping area is shown once, without its far side
  * repeated, so every cell on screen is a cell that can be edited
  */
 export class MapEditorScene extends Phaser.Scene
@@ -203,6 +213,12 @@ export class MapEditorScene extends Phaser.Scene
 	 * The chunk range last reported to the host, as a string, so it is only reported when it changes
 	 */
 	private lastViewKey = '';
+
+	/**
+	 * Whether the wheel pans the map, as when the map fills the window and the page can't scroll;
+	 * otherwise the wheel scrolls the page
+	 */
+	wheelPans = false;
 
 	constructor()
 	{
@@ -524,21 +540,70 @@ export class MapEditorScene extends Phaser.Scene
 	};
 
 	/**
-	 * Zooms in or out while Ctrl is held, keeping the point under the pointer where it is. Without Ctrl
-	 * the wheel scrolls the page
+	 * Zooms in or out while Ctrl is held, and otherwise pans the map when wheelPans is set. Without
+	 * either the wheel scrolls the page
 	 *
 	 * @param pointer The pointer
 	 * @param _over Game objects under the pointer
-	 * @param _deltaX Horizontal wheel movement
+	 * @param deltaX Horizontal wheel movement
 	 * @param deltaY Vertical wheel movement: negative zooms in
 	 */
-	private readonly onWheel = (pointer: Phaser.Input.Pointer, _over: unknown, _deltaX: number, deltaY: number): void =>
+	private readonly onWheel = (pointer: Phaser.Input.Pointer, _over: unknown, deltaX: number, deltaY: number): void =>
 	{
-		if (!pointer.event.ctrlKey)
+		const event = pointer.event;
+
+		if (event.ctrlKey)
 		{
-			return;
+			this.zoomAround(pointer, deltaY);
+		}
+		else if (this.wheelPans && (event instanceof WheelEvent))
+		{
+			this.pan(event, deltaX, deltaY);
+
+			// The map moved under the pointer, so it is over another cell, and a stroke being painted follows it
+			this.onPointerMove(pointer);
+		}
+	};
+
+	/**
+	 * Pans the map by a turn of the wheel. Shift turns the wheel's vertical movement sideways, for a
+	 * mouse without a sideways wheel
+	 *
+	 * @param event The wheel event, which says what the movement is measured in
+	 * @param deltaX Horizontal wheel movement
+	 * @param deltaY Vertical wheel movement
+	 */
+	private pan(event: WheelEvent, deltaX: number, deltaY: number): void
+	{
+		const camera = this.cameras.main;
+		const sideways = (event.shiftKey && (deltaX === 0));
+		let pixels = 1;
+
+		if (event.deltaMode === WheelEvent.DOM_DELTA_LINE)
+		{
+			pixels = WHEEL_LINE_PIXELS;
+		}
+		else if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE)
+		{
+			pixels = camera.height;
 		}
 
+		const scale = (pixels * WHEEL_PAN_SCALE) / camera.zoom;
+
+		camera.setScroll(
+			camera.scrollX + ((sideways ? deltaY : deltaX) * scale),
+			camera.scrollY + ((sideways ? 0 : deltaY) * scale)
+		);
+	}
+
+	/**
+	 * Zooms in or out one step, keeping the point under the pointer where it is
+	 *
+	 * @param pointer The pointer
+	 * @param deltaY Vertical wheel movement: negative zooms in
+	 */
+	private zoomAround(pointer: Phaser.Input.Pointer, deltaY: number): void
+	{
 		const camera = this.cameras.main;
 		const zoom = Phaser.Math.Clamp(((deltaY < 0) ? camera.zoom * ZOOM_STEP : camera.zoom / ZOOM_STEP), MIN_ZOOM, MAX_ZOOM);
 		const halfWidth = camera.width / 2;
@@ -553,7 +618,7 @@ export class MapEditorScene extends Phaser.Scene
 			worldX - halfWidth - ((pointer.x - halfWidth) / zoom),
 			worldY - halfHeight - ((pointer.y - halfHeight) / zoom)
 		);
-	};
+	}
 
 	/**
 	 * Ends the stroke being painted, if there is one

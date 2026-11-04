@@ -1,5 +1,5 @@
 import { Callbacks } from '@colyseus/sdk';
-import { DISALLOWED_TEXT_CHARACTERS, MAX_CHAT_MESSAGE_LENGTH, type CharacterListPayload, type CharacterSummary, type ChatMessage, type LobbyMember, type UniverseSummary } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, MAX_CHAT_MESSAGE_LENGTH, ServerMessageType, type AreaPayload, type CharacterListPayload, type CharacterSummary, type ChatMessage, type LobbyMember, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { currentLocale, t } from '../localization';
 import type { LobbyConnection } from '../network/serverConnection';
@@ -94,6 +94,17 @@ export class LobbyScreen
 	 * The lobby the screen is drawing, if any
 	 */
 	private attached: LobbyConnection | undefined;
+
+	/**
+	 * Whether the attached lobby's map is drawn: only while the lobby has one (LobbyState.hasMap)
+	 */
+	private mapShown = false;
+
+	/**
+	 * The area the player was last sent while the map wasn't drawn, which the map starts with once the
+	 * lobby has one. The area arrives before the state says the lobby has a map
+	 */
+	private pendingArea: AreaPayload | undefined;
 
 	/**
 	 * Stops following the attached lobby's state
@@ -211,7 +222,30 @@ export class LobbyScreen
 
 		this.detach();
 		this.attached = connection;
-		this.mapView.show(this.map, connection);
+		this.pendingArea = connection.area;
+
+		// While the map is drawn, it follows the areas sent itself
+		this.unbinds.push(connection.room.onMessage(ServerMessageType.Area, (area: AreaPayload) =>
+		{
+			if (!this.mapShown)
+			{
+				this.pendingArea = area;
+				this.showMap();
+			}
+		}));
+
+		// Fires for the lobby's state on joining too
+		this.unbinds.push(callbacks.listen('hasMap', (hasMap: boolean) =>
+		{
+			if (!hasMap)
+			{
+				this.pendingArea = undefined;
+			}
+
+			this.showMap();
+		}));
+
+		this.showMap();
 
 		// Fires for members already in the lobby too
 		this.unbinds.push(callbacks.onAdd('members', (member: LobbyMember, playerId: string) =>
@@ -228,21 +262,47 @@ export class LobbyScreen
 	}
 
 	/**
+	 * Draws the attached lobby's map while it has one, once its area has arrived, and takes the map away
+	 * while it has none (its universe has no lobby area, or it is disabled) or no lobby is attached
+	 */
+	private showMap(): void
+	{
+		const connection = this.attached;
+		const hasMap = (connection?.room.state.hasMap ?? false);
+
+		if (hasMap && !this.mapShown && connection && this.pendingArea)
+		{
+			this.mapView.show(this.map, {
+				room: connection.room,
+				playerId: connection.playerId,
+				area: this.pendingArea
+			});
+			this.mapShown = true;
+			this.pendingArea = undefined;
+		}
+		else if (!hasMap && this.mapShown)
+		{
+			this.mapView.hide();
+			this.mapShown = false;
+		}
+
+		this.map.hidden = !this.mapShown;
+	}
+
+	/**
 	 * Stops drawing and following the attached lobby, and empties the chat, the list of who's here and
 	 * the list of the player's characters
 	 */
 	detach(): void
 	{
-		if (this.attached)
-		{
-			this.mapView.hide();
-			this.attached = undefined;
-		}
-
 		for (const unbind of this.unbinds.splice(0))
 		{
 			unbind();
 		}
+
+		this.attached = undefined;
+		this.pendingArea = undefined;
+		this.showMap();
 
 		this.members.clear();
 		this.chatLog.replaceChildren();

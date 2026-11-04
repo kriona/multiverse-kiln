@@ -10,7 +10,7 @@ import { pool } from '../src/db/client.js';
 import { saveEditedDefaultTile } from '../src/db/tileRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
 import { createUniverse, setUniverseAreas, setUniverseDisabled, updateUniverseSettings } from '../src/db/universeRepo.js';
-import { deleteArea, editCells, resizeArea } from '../src/db/areaRepo.js';
+import { deleteArea, editCells, resizeArea, updateAreaSettings } from '../src/db/areaRepo.js';
 import { cellCenter } from '../src/logic/movement.js';
 import { characterChanges } from '../src/players/characterChanges.js';
 import { connectedSessions } from '../src/players/connectedSessions.js';
@@ -641,6 +641,65 @@ describe('LobbyRoom', () =>
 
 			areaChanges.publish({ kind: 'evacuated', areaId: universe.houseAreaId, destination: null });
 			await waitUntil(() => (room.getAreaId(ada.playerId) === universe.squareAreaId));
+		});
+	});
+
+	describe('without a map', () =>
+	{
+		it('lets players chat with no lobby area, then puts everyone on its starting square once it has one', async () =>
+		{
+			const { universeId, squareAreaId } = universe;
+
+			await updateUniverseSettings(universeId, { lobbyAreaId: null });
+
+			const ada = await joinAsNewPlayer(universeId, 'Ada');
+			const room = lobbyOf(ada);
+
+			assert.strictEqual(room.state.hasMap, false);
+			assert.strictEqual(room.state.players.size, 0);
+			assert.ok(room.state.members.has(ada.playerId));
+
+			ada.room.send(LobbyMessageType.Chat, { text: 'Anyone here?' });
+			assert.strictEqual((await ada.inbox.take<ChatMessage>(LobbyServerMessageType.Chat)).text, 'Anyone here?');
+
+			// Moving is ignored while there is nowhere to walk
+			ada.room.send(MessageType.Move, { x: 1, y: 0 });
+
+			await updateUniverseSettings(universeId, { lobbyAreaId: squareAreaId, lobbyColumn: 4, lobbyRow: 7 });
+			areaChanges.publish({ kind: 'lobby', universeId });
+
+			assert.strictEqual((await ada.inbox.take<AreaPayload>(ServerMessageType.Area)).areaId, squareAreaId);
+			await waitUntil(() => room.state.hasMap);
+
+			const player = playerOf(ada);
+
+			assert.deepStrictEqual([Math.floor(player.x / GRID_CELL_SIZE), Math.floor(player.y / GRID_CELL_SIZE)], [4, 7]);
+		});
+
+		it('takes the map away while the lobby\'s area is disabled, and gives it back once it is enabled', async () =>
+		{
+			const { universeId, squareAreaId } = universe;
+			const ada = await joinAsNewPlayer(universeId, 'Ada');
+			const room = lobbyOf(ada);
+
+			await ada.inbox.take(ServerMessageType.Area);
+			await updateAreaSettings(squareAreaId, { enabled: false });
+			areaChanges.publish({ kind: 'area', areaId: squareAreaId });
+			await waitUntil(() => !room.state.hasMap);
+			assert.strictEqual(room.state.players.size, 0);
+
+			// A window joining meanwhile isn't sent an area
+			const grace = await joinAsNewPlayer(universeId, 'Grace');
+
+			assert.strictEqual(grace.room.state.hasMap, false);
+			assert.ok(room.state.members.has(grace.playerId));
+
+			await updateAreaSettings(squareAreaId, { enabled: true });
+			areaChanges.publish({ kind: 'area', areaId: squareAreaId });
+			assert.strictEqual((await grace.inbox.take<AreaPayload>(ServerMessageType.Area)).areaId, squareAreaId);
+			await waitUntil(() => room.state.hasMap);
+			assert.ok(playerOf(ada));
+			assert.ok(playerOf(grace));
 		});
 	});
 
