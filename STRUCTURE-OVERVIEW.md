@@ -250,7 +250,7 @@ Every universe (`/admin/universes`), by name, 50 to a page: its name (linking to
 Disable asks for a reason, up to 500 characters, which the universe's editors are shown. A disabled universe:
 - isn't listed on Home, its page and lobby answer as if it didn't exist, and other players' profiles leave out characters in it
 - can't be played: its lobby and groups turn everyone out at once and refuse windows, the game page saying the site's admins disabled it, and Create Character, Create Group and invites are refused
-- shows its editors the reason above the editor's tabs, with Save and Enter Universe turned off; the server refuses saves, and the player's own universes on Home mark it disabled
+- shows its editors the reason above the editor's tabs, with Save turned off and Enter Universe hidden; the server refuses saves, and the player's own universes on Home mark it disabled
 
 Enable, after asking, makes it as it was before. Its settings, world and characters are untouched while it is disabled.
 

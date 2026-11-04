@@ -4,7 +4,7 @@ import { t } from './localization';
 import { EditorApi } from './network/editorApi';
 import type { ServerConnection } from './network/serverConnection';
 import { isLeavingPage } from './pageLifecycle';
-import { currentPageAddress, gamePageUrl, loginPageUrl, pushPageParameters, replacePageParameters, TAB_PARAMETER, AREA_PARAMETER } from './pages';
+import { currentPageAddress, loginPageUrl, pushPageParameters, replacePageParameters, TAB_PARAMETER, AREA_PARAMETER } from './pages';
 import { showScreen, showStatus } from './ui/dom';
 import { EditorScreen, isEditorTab, type EditorPlace } from './ui/editor/EditorScreen';
 import { pageMessages } from './ui/pageMessages';
@@ -84,10 +84,6 @@ export class EditorPage
 		const { client, session } = server;
 
 		this.editorScreen = new EditorScreen(new EditorApi(client), {
-			play: (universe) =>
-			{
-				window.location.assign(gamePageUrl(universe.slug));
-			},
 			placeChanged: (changed) =>
 			{
 				this.recordPlace(changed);
