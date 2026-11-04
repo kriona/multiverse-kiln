@@ -23,7 +23,7 @@ import { endSession, resolveSession, startSession, type SessionIdentity } from '
 import { createToken, hashToken, isTokenForm } from '../auth/tokens.js';
 import type { Executor } from '../db/client.js';
 import { deleteEmailCode, deletePlayerEmailCodes, lockContinuation, lockEmailCode, recordWrongEmailCodeGuess, replaceEmailCode, useEmailCode } from '../db/emailCodeRepo.js';
-import { AccountTakenError, createPlayer, findLocalLogin, findPasswordHash, findPlayerByUsername, findPlayerEmail, findPlayerIdByEmail, saveEmail, savePasswordHash } from '../db/playerRepo.js';
+import { AccountTakenError, createPlayer, findDisplayName, findEmailRecipient, findLocalLogin, findPasswordHash, findPlayerByUsername, findPlayerEmail, findPlayerIdByEmail, saveEmail, savePasswordHash, type EmailRecipient } from '../db/playerRepo.js';
 import { lockPendingProviderLogin } from '../db/providerLoginRepo.js';
 import { findRateLimitTimes, lockRateLimitSubject, recordRateLimitEvent } from '../db/rateLimitRepo.js';
 import { isServerAdmin } from '../db/serverAdminRepo.js';
@@ -530,7 +530,7 @@ async function sendCodeRoute(request: Request, response: Response): Promise<void
 			{
 				return({
 					kind: 'send',
-					email: accountExistsEmail(emailLocale)
+					email: accountExistsEmail(await findDisplayName(ownerId, executor), emailLocale)
 				});
 			}
 
@@ -603,7 +603,7 @@ async function sendCodeRoute(request: Request, response: Response): Promise<void
 
 		return({
 			kind: 'send',
-			email: emailCodeEmail(purpose, code, emailLocale)
+			email: emailCodeEmail(purpose, code, ((playerId === null) ? null : await findDisplayName(playerId, executor)), emailLocale)
 		});
 	});
 
@@ -900,7 +900,7 @@ async function registerRoute(request: Request, response: Response): Promise<void
 	response.sendStatus(204);
 	sendEmailInBackground({
 		to: email,
-		...accountCreatedEmail(emailLocale)
+		...accountCreatedEmail(displayName, emailLocale)
 	});
 }
 
@@ -938,7 +938,7 @@ async function passwordResetRoute(request: Request, response: Response): Promise
 	}
 
 	const passwordHash = await hashPassword(password);
-	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { playerId: string; ended: string[]; email: string | null; check: SecondFactorOutcome }> =>
+	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { playerId: string; ended: string[]; recipient: EmailRecipient | undefined; check: SecondFactorOutcome }> =>
 	{
 		const code = await lockContinuation('resetPassword', continuationHash as Buffer, now, executor);
 
@@ -975,7 +975,7 @@ async function passwordResetRoute(request: Request, response: Response): Promise
 		return({
 			playerId,
 			ended,
-			email: await findPlayerEmail(playerId, executor),
+			recipient: await findEmailRecipient(playerId, executor),
 			check
 		});
 	});
@@ -990,11 +990,11 @@ async function passwordResetRoute(request: Request, response: Response): Promise
 	clearCookie(response, CONTINUATION_COOKIE);
 	response.sendStatus(204);
 
-	if (outcome.email !== null)
+	if (outcome.recipient)
 	{
 		sendEmailInBackground({
-			to: outcome.email,
-			...passwordChangedEmail(emailLocale)
+			to: outcome.recipient.email,
+			...passwordChangedEmail(outcome.recipient.displayName, emailLocale)
 		});
 	}
 
@@ -1058,7 +1058,7 @@ async function emailChangeRoute(request: Request, response: Response): Promise<v
 		}
 	}
 
-	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { oldEmail: string | null; ended: string[]; check: SecondFactorOutcome }> =>
+	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { oldEmail: string | null; name: string | null; ended: string[]; check: SecondFactorOutcome }> =>
 	{
 		const code = await lockContinuation('changeEmail', continuationHash, now, executor);
 
@@ -1132,6 +1132,7 @@ async function emailChangeRoute(request: Request, response: Response): Promise<v
 
 		return({
 			oldEmail,
+			name: await findDisplayName(session.playerId, executor),
 			ended,
 			check
 		});
@@ -1155,13 +1156,13 @@ async function emailChangeRoute(request: Request, response: Response): Promise<v
 			...emailChangedEmail({
 				address: 'old',
 				newAddress: email
-			}, emailLocale)
+			}, outcome.name, emailLocale)
 		});
 	}
 
 	sendEmailInBackground({
 		to: email,
-		...emailChangedEmail({ address: 'new' }, emailLocale)
+		...emailChangedEmail({ address: 'new' }, outcome.name, emailLocale)
 	});
 }
 
@@ -1261,9 +1262,11 @@ async function passwordChangeRoute(request: Request, response: Response): Promis
 
 	if (email !== null)
 	{
+		const name = await findDisplayName(session.playerId);
+
 		sendEmailInBackground({
 			to: email,
-			...passwordChangedEmail(emailLocale)
+			...passwordChangedEmail(name, emailLocale)
 		});
 	}
 }

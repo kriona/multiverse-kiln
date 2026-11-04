@@ -24,7 +24,7 @@ import { createAreaChange, deleteAreaChange, deleteLinkChange, editCellsChange, 
 import { ChangeRefusal, refuse, type ChangeContext, type PreparedUpload } from './editorChangeContext.js';
 import { createClassChange, removeClassChange, saveClassChange } from './editorClasses.js';
 import { createDifficultyLevelChange, removeDifficultyLevelChange, saveDifficultyLevelChange } from './editorDifficultyLevels.js';
-import { addEditorChange, checkCreatorKept, playersLosingAccess, removeEditorChange, saveEditorChange } from './editorEditors.js';
+import { addEditorChange, checkCreatorKept, emailAddedEditors, playersLosingAccess, removeEditorChange, saveEditorChange } from './editorEditors.js';
 import { createItemChange, removeItemChange, saveItemChange } from './editorItems.js';
 import { saveChangesRequest } from './editorPayloads.js';
 import { SaveAudit } from './editorSaveAudit.js';
@@ -211,6 +211,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 				universe: base.universe,
 				role: access.role,
 				editorRoles: new Map(),
+				addedEditors: [],
 				transaction,
 				ids: new Map(),
 				uploads,
@@ -381,14 +382,23 @@ async function applyChange(context: ChangeContext, change: EditorChange): Promis
 }
 
 /**
- * Finishes a save that has committed: removes the deleted tilesets' images, and tells the rooms what
- * changed, each change once, and who may no longer play there
+ * Finishes a save that has committed: removes the deleted tilesets' images, emails the players it gave
+ * a role, and tells the rooms what changed, each change once, and who may no longer play there
  *
  * @param context The save
  */
 async function afterCommit(context: ChangeContext): Promise<void>
 {
 	await deleteImages(context.deletedImages);
+
+	try
+	{
+		await emailAddedEditors(context);
+	}
+	catch (error)
+	{
+		console.error('Could not email the players a save gave a role:', error);
+	}
 
 	universeAccessChanges.publish({
 		universeId: context.universe.id,

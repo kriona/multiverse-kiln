@@ -4,10 +4,12 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { canManageEditors, canPlayUniverse, defineMessages, MAX_PLAYER_SEARCH_RESULTS, parsePlayerSearch, type EditorRoleSettings, type PlayerSearchPayload, type UniverseEditorListPayload } from '@multiverse-kiln/shared';
+import { canManageEditors, canPlayUniverse, defineMessages, MAX_PLAYER_SEARCH_RESULTS, parsePlayerSearch, SOURCE_LOCALE, type EditorRoleSettings, type PlayerSearchPayload, type UniverseEditorListPayload } from '@multiverse-kiln/shared';
 
-import { findPlayerByUsername } from '../db/playerRepo.js';
+import { findEmailRecipient, findPlayer, findPlayerByUsername } from '../db/playerRepo.js';
 import { countUniverseCreators, findUniverseAccess, listUniverseEditors, removeUniverseEditor, searchPlayersToAdd, setUniverseAccess } from '../db/universeEditorRepo.js';
+import { sendEmailInBackground } from '../email/mailer.js';
+import { roleGivenEmail } from '../email/universeEmails.js';
 import { requireRole, universeContextOf } from './editorAccess.js';
 import { refuse, type ChangeContext } from './editorChangeContext.js';
 import { playerSearchQuery } from './editorPayloads.js';
@@ -108,6 +110,7 @@ export async function addEditorChange(context: ChangeContext, username: string, 
 
 	await setUniverseAccess(universe.id, player.id, settings, transaction);
 	context.editorRoles.set(player.id, settings.role);
+	context.addedEditors.push(player.id);
 }
 
 /**
@@ -160,6 +163,60 @@ export async function checkCreatorKept(context: ChangeContext): Promise<void>
 			id: 'error.lastCreator',
 			defaultMessage: 'A universe needs at least one creator. Make another editor a creator first.',
 			description: 'Why changes to a universe\'s editors couldn\'t be saved: they would take the role of creator from its last creator, whether by changing their role, removing them or them leaving'
+		});
+	}
+}
+
+/**
+ * Emails each player a save gave a role in the universe, in the language they chose, or English when
+ * they haven't chosen one. Players the same save removed again, the player who made the save and
+ * accounts without an address aren't emailed. The emails are sent without waiting for them
+ *
+ * @param context The save, once committed
+ */
+export async function emailAddedEditors(context: ChangeContext): Promise<void>
+{
+	const recipients = context.addedEditors.filter((playerId) => (playerId !== context.playerId));
+
+	if (recipients.length === 0)
+	{
+		return;
+	}
+
+	const giver = await findPlayer(context.playerId);
+
+	if (!giver)
+	{
+		return;
+	}
+
+	const { universe } = context;
+
+	for (const playerId of recipients)
+	{
+		const role = context.editorRoles.get(playerId);
+
+		if (role === undefined)
+		{
+			continue;
+		}
+
+		const recipient = await findEmailRecipient(playerId);
+
+		if (!recipient)
+		{
+			continue;
+		}
+
+		sendEmailInBackground({
+			to: recipient.email,
+			...roleGivenEmail({
+				giverName: giver.displayName,
+				universeId: universe.id,
+				universeName: universe.name,
+				universeSlug: universe.slug,
+				role
+			}, recipient.displayName, (recipient.locale ?? SOURCE_LOCALE))
 		});
 	}
 }

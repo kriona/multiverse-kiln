@@ -2795,6 +2795,10 @@
 		"defaultMessage": "Log in to {siteName}",
 		"description": "Link at the end of the email sent when someone asks to create an account with an address that already has one; opens the login page. {siteName} is the site's name"
 	},
+	"email.action.openEditor": {
+		"defaultMessage": "Open the editor of {universe}",
+		"description": "Link at the end of the email sent when a player is given a role in a universe other than beta tester; opens the universe's world editor. {universe} is the universe's name"
+	},
 	"email.action.resetPassword": {
 		"defaultMessage": "Reset your password",
 		"description": "Link at the end of the emails sent when an account's password, email address or linked logins change, for someone who didn't make the change; opens the forgot password screen"
@@ -2802,6 +2806,10 @@
 	"email.action.visit": {
 		"defaultMessage": "Go to {siteName}",
 		"description": "Link at the end of the email sent when a new account is created; opens the site's first page. {siteName} is the site's name"
+	},
+	"email.action.visitUniverse": {
+		"defaultMessage": "Go to {universe}",
+		"description": "Link at the end of the email sent when a player is made a beta tester of a universe; opens the universe's page, where they can enter it. {universe} is the universe's name"
 	},
 	"email.code.changeEmail.intro": {
 		"defaultMessage": "Enter this code on {siteName} to make this your account's email address:",
@@ -2879,6 +2887,14 @@
 		"defaultMessage": "This email was sent by {siteName}:",
 		"description": "At the end of every email the site sends, followed by the site's address on a line of its own; {siteName} is the site's name"
 	},
+	"email.greeting": {
+		"defaultMessage": "Hi {name},",
+		"description": "First line of every email the site sends to a player; {name} is the name they chose to be shown by"
+	},
+	"email.greetingNoName": {
+		"defaultMessage": "Hi,",
+		"description": "First line of an email whose recipient's name isn't known, such as the one with the code for creating an account"
+	},
 	"email.passwordChanged.body": {
 		"defaultMessage": "The password of your account on {siteName} was just changed, and every browser logged in to it was logged out.",
 		"description": "Paragraph of the email sent when an account's password is changed or reset; {siteName} is the site's name"
@@ -2914,6 +2930,22 @@
 	"email.recoveryCodeUsed.subject": {
 		"defaultMessage": "A recovery code was used on {siteName}",
 		"description": "Subject of the email sent when one of an account's recovery codes (used in place of an authenticator app code) is used; {siteName} is the site's name"
+	},
+	"email.roleGiven.body": {
+		"defaultMessage": "{giver} gave you the role of {role} in the universe {universe} on {siteName}.",
+		"description": "First paragraph of the email sent when a player is given a role in a universe; {giver} is the name of the player who gave it, {role} the role's name (creator, builder, beta tester or translator), {universe} the universe's name and {siteName} the site's name"
+	},
+	"email.roleGiven.leave": {
+		"defaultMessage": "If you don't want the role, you can leave the universe on its editor's Editors tab.",
+		"description": "Last paragraph of the email sent when a player is given a role in a universe, for someone who doesn't want it"
+	},
+	"email.roleGiven.subject": {
+		"defaultMessage": "You have a role in {universe} on {siteName}",
+		"description": "Subject of the email sent when a player is made one of a universe's editors (given a role in it, such as builder or beta tester); {universe} is the universe's name and {siteName} the site's name"
+	},
+	"email.roleGiven.whatItAllows": {
+		"defaultMessage": "{role, select, creator {As a creator you can change everything about the universe, including who else works on it.} builder {As a builder you can change the universe's world: its tiles, areas, maps and links.} beta_tester {As a beta tester you can play the universe before it opens to everyone.} other {As a translator you can translate the universe's text into the languages you were given.}}",
+		"description": "Second paragraph of the email sent when a player is given a role in a universe, saying what the role lets them do; {role} chooses the sentence and isn't shown"
 	},
 	"email.twoFactorDisabled.body": {
 		"defaultMessage": "Two-factor authentication was turned off for your account on {siteName}. Logging in now needs only your password, and your recovery codes no longer work.",

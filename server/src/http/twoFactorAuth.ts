@@ -22,7 +22,7 @@ import { resolveSession, startSession, type SessionIdentity } from '../auth/sess
 import { createToken, hashToken, isTokenForm } from '../auth/tokens.js';
 import { decryptTotpSecret, encryptTotpSecret } from '../auth/totpSecrets.js';
 import type { Executor } from '../db/client.js';
-import { findPasswordHash, findPlayerEmail } from '../db/playerRepo.js';
+import { findEmailRecipient, findPasswordHash, findPlayerEmail } from '../db/playerRepo.js';
 import { findRateLimitTimes, recordRateLimitEvent } from '../db/rateLimitRepo.js';
 import { deletePlayerSessions } from '../db/sessionRepo.js';
 import { countRecoveryCodes, deletePendingTwoFactorLogin, deleteTrustedBrowsers, deleteTwoFactor, enableAuthenticator, hasTwoFactor, isBrowserTrusted, lockAuthenticator, lockPendingTwoFactorLogin, recordWrongTwoFactorGuess, replaceRecoveryCodes, saveAuthenticatorSetup, saveLastUsedStep, trustBrowser, useRecoveryCode } from '../db/twoFactorRepo.js';
@@ -298,13 +298,13 @@ export async function checkSecondFactor(request: Request, response: Response, pl
 
 		if ((wrongCodesAt.length + 1) === WRONG_AUTHENTICATOR_CODES_BEFORE_WARNING)
 		{
-			const email = await findPlayerEmail(playerId, executor);
+			const recipient = await findEmailRecipient(playerId, executor);
 
-			if (email !== null)
+			if (recipient)
 			{
 				sendEmailInBackground({
-					to: email,
-					...wrongAuthenticatorCodesEmail(WRONG_AUTHENTICATOR_CODES_BEFORE_WARNING, options.emailLocale)
+					to: recipient.email,
+					...wrongAuthenticatorCodesEmail(WRONG_AUTHENTICATOR_CODES_BEFORE_WARNING, recipient.displayName, options.emailLocale)
 				});
 			}
 		}
@@ -370,13 +370,13 @@ export async function reportRecoveryCodeUse(playerId: string, outcome: SecondFac
 		return;
 	}
 
-	const email = await findPlayerEmail(playerId);
+	const recipient = await findEmailRecipient(playerId);
 
-	if (email !== null)
+	if (recipient)
 	{
 		sendEmailInBackground({
-			to: email,
-			...recoveryCodeUsedEmail(outcome.recoveryCodesLeft, emailLocale)
+			to: recipient.email,
+			...recoveryCodeUsedEmail(outcome.recoveryCodesLeft, recipient.displayName, emailLocale)
 		});
 	}
 }
@@ -723,13 +723,13 @@ async function enableRoute(request: Request, response: Response): Promise<void>
 
 	response.json(payload);
 
-	const email = await findPlayerEmail(playerId);
+	const recipient = await findEmailRecipient(playerId);
 
-	if (email !== null)
+	if (recipient)
 	{
 		sendEmailInBackground({
-			to: email,
-			...twoFactorEnabledEmail(emailLocale)
+			to: recipient.email,
+			...twoFactorEnabledEmail(recipient.displayName, emailLocale)
 		});
 	}
 }
@@ -832,13 +832,13 @@ async function disableRoute(request: Request, response: Response): Promise<void>
 
 	response.sendStatus(204);
 
-	const email = await findPlayerEmail(playerId);
+	const recipient = await findEmailRecipient(playerId);
 
-	if (email !== null)
+	if (recipient)
 	{
 		sendEmailInBackground({
-			to: email,
-			...twoFactorDisabledEmail(emailLocale)
+			to: recipient.email,
+			...twoFactorDisabledEmail(recipient.displayName, emailLocale)
 		});
 	}
 }

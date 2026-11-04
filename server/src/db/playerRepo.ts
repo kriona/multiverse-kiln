@@ -287,6 +287,71 @@ export async function findPlayerEmail(playerId: string, executor: Executor = db)
 }
 
 /**
+ * An account's display name, which emails greet it by
+ *
+ * @param playerId The account's ID
+ * @param executor The database, or a transaction
+ * @return The name, or null when the account doesn't exist
+ */
+export async function findDisplayName(playerId: string, executor: Executor = db): Promise<string | null>
+{
+	const [row] = await executor
+		.select({
+			displayName: players.displayName
+		})
+		.from(players)
+		.where(eq(players.id, playerId))
+		.limit(1);
+
+	return((row?.displayName ?? null));
+}
+
+/**
+ * Where to email a player, the name emails greet them by, and their language
+ */
+export interface EmailRecipient
+{
+	email: string;
+	displayName: string;
+
+	/**
+	 * The language the player chose, or null when they haven't chosen one
+	 */
+	locale: string | null;
+}
+
+/**
+ * Where to email an account, and who to greet
+ *
+ * @param playerId The account's ID
+ * @param executor The database, or a transaction
+ * @return The address, display name and language, or undefined when the account has no address or doesn't exist
+ */
+export async function findEmailRecipient(playerId: string, executor: Executor = db): Promise<EmailRecipient | undefined>
+{
+	const [row] = await executor
+		.select({
+			email: players.email,
+			displayName: players.displayName,
+			locale: players.locale
+		})
+		.from(players)
+		.where(eq(players.id, playerId))
+		.limit(1);
+
+	if (!row || (row.email === null))
+	{
+		return(undefined);
+	}
+
+	return({
+		email: row.email,
+		displayName: row.displayName,
+		locale: row.locale
+	});
+}
+
+/**
  * An account's password hash
  *
  * @param playerId The account's ID
