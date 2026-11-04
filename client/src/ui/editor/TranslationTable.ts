@@ -1,9 +1,9 @@
-import { canEditWorld, canMarkNoTranslation, canTranslate, languageName, MAX_UNIVERSE_TEXT_PER_PAGE, UNIVERSE_TEXT_SORT_COLUMNS, type EditableUniverse, type UniverseTextListPayload, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
+import { canEditWorld, canMarkNoTranslation, canTranslate, defineMessages, DISALLOWED_TEXT_CHARACTERS, languageName, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, readTranslationFile, sourceTextHash, TRANSLATION_FILE_EXTENSIONS, TRANSLATION_FILE_FORMATS, TRANSLATION_FILE_TYPES, TranslationFileError, translationFileFormatOf, UNIVERSE_TEXT_SORT_COLUMNS, universeTextKey, writeTranslationFile, type EditableUniverse, type MessageDescriptor, type ReadTranslationFile, type TranslationFileFormat, type UniverseTextListPayload, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { refreshUnsavedWork, watchUnsavedWork } from '../changeTracker';
-import { getElement, showMessage } from '../dom';
+import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { TableSorter } from '../tableSorter';
 import type { EditorSave } from './editorSave';
 import type { SavableTab } from './SaveBar';
@@ -19,6 +19,32 @@ const SEARCH_DELAY_MS = 250;
  * Most characters of the source text the table shows; the dialog shows all of it
  */
 const SHOWN_SOURCE_LENGTH = 200;
+
+/**
+ * Each translation file format's name, in the format choice and in messages about files
+ */
+const FILE_FORMAT_NAMES: Record<TranslationFileFormat, MessageDescriptor> = defineMessages({
+	po: {
+		id: 'editor.translations.format.po',
+		defaultMessage: 'Gettext PO (.po)',
+		description: 'A translation file format, in the format choice on the editor\'s Translations tab: Gettext PO, which translation tools such as Poedit and Weblate open. Gettext PO is a name'
+	},
+	xliff: {
+		id: 'editor.translations.format.xliff',
+		defaultMessage: 'XLIFF 2.0 (.xlf)',
+		description: 'A translation file format, in the format choice on the editor\'s Translations tab: XLIFF 2.0, the standard professional translation tools exchange. XLIFF is a name'
+	},
+	csv: {
+		id: 'editor.translations.format.csv',
+		defaultMessage: 'CSV, for spreadsheets (.csv)',
+		description: 'A translation file format, in the format choice on the editor\'s Translations tab: comma-separated values, which spreadsheets open'
+	},
+	json: {
+		id: 'editor.translations.format.json',
+		defaultMessage: 'JSON (.json)',
+		description: 'A translation file format, in the format choice on the editor\'s Translations tab: JSON, for scripts. JSON is a name'
+	}
+});
 
 /**
  * A translation changed on the tab and not saved yet
@@ -107,7 +133,8 @@ export function describeTextPlace(row: UniverseTextRow): string
  * The Translations tab's table: every piece of the universe's text with its translation into a chosen
  * language and its note for translators, searched, filtered, sorted and paged by the server. A row opens
  * the translation dialog; the translations and notes changed there show in the table until the editor
- * is saved. Translators see only their languages, and builders write notes
+ * is saved. The text exports as a translation file, and translations import from one, kept on the tab
+ * the same way. Translators see only their languages, and builders write notes
  */
 export class TranslationTable implements SavableTab, ChangeSource
 {
@@ -123,6 +150,10 @@ export class TranslationTable implements SavableTab, ChangeSource
 	private readonly page = getElement('translations-page', HTMLElement);
 	private readonly previousButton = getElement('translations-previous', HTMLButtonElement);
 	private readonly nextButton = getElement('translations-next', HTMLButtonElement);
+	private readonly format = getElement('translations-format', HTMLSelectElement);
+	private readonly importButton = getElement('translations-import', HTMLButtonElement);
+	private readonly importFile = getElement('translations-import-file', HTMLInputElement);
+	private readonly importStatus = getElement('translations-import-status', HTMLElement);
 	private readonly dialog = new TranslationDialog();
 	private readonly sorter: TableSorter<UniverseTextSortColumn>;
 
@@ -214,6 +245,36 @@ export class TranslationTable implements SavableTab, ChangeSource
 			this.offset += MAX_UNIVERSE_TEXT_PER_PAGE;
 			void this.refresh();
 		});
+
+		setOptions(this.format, namedOptions(TRANSLATION_FILE_FORMATS, FILE_FORMAT_NAMES));
+
+		this.language.addEventListener('change', () =>
+		{
+			this.showFileButtons();
+		});
+
+		getElement('translations-export', HTMLButtonElement).addEventListener('click', () =>
+		{
+			void this.exportFile();
+		});
+
+		this.importButton.addEventListener('click', () =>
+		{
+			this.importFile.click();
+		});
+
+		this.importFile.addEventListener('change', () =>
+		{
+			const file = this.importFile.files?.[0];
+
+			// Choosing the same file again imports it again
+			this.importFile.value = '';
+
+			if (file)
+			{
+				void this.importTranslations(file);
+			}
+		});
 	}
 
 	/**
@@ -231,6 +292,7 @@ export class TranslationTable implements SavableTab, ChangeSource
 		this.search.value = '';
 		this.missing.checked = false;
 		this.outOfDate.checked = false;
+		showMessage(this.importStatus, undefined);
 		this.sorter.reset();
 		this.language.replaceChildren();
 		this.notifyChanged();
@@ -260,6 +322,7 @@ export class TranslationTable implements SavableTab, ChangeSource
 		}));
 		this.language.value = (languages.includes(chosen) ? chosen : (languages[0] ?? ''));
 		this.list.hidden = (languages.length === 0);
+		this.showFileButtons();
 		showMessage(this.none, ((languages.length > 0)
 			? undefined
 			: ((universe.role === 'translator')
@@ -621,6 +684,234 @@ export class TranslationTable implements SavableTab, ChangeSource
 		}
 
 		return(tableRow);
+	}
+
+	/**
+	 * Shows Import only to those who may translate into the language chosen
+	 */
+	private showFileButtons(): void
+	{
+		const universe = this.universe;
+
+		this.importButton.hidden = !((universe !== undefined) && (this.language.value !== '') && canTranslate(universe, this.language.value));
+	}
+
+	/**
+	 * Saves the universe's text with its translations into the language chosen, as the table shows them
+	 * with the changes made, as a file in the format chosen. Text that needs no translation is left out.
+	 * The file is made in the browser
+	 */
+	private async exportFile(): Promise<void>
+	{
+		const universe = this.universe;
+		const language = this.language.value;
+		const format = TRANSLATION_FILE_FORMATS.find((each) => (each === this.format.value));
+
+		if (!universe || (language === '') || (format === undefined))
+		{
+			return;
+		}
+
+		let rows: UniverseTextRow[];
+
+		showMessage(this.error, undefined);
+
+		try
+		{
+			rows = (await this.api.listAllTranslations(universe.id, language)).rows;
+		}
+		catch (error)
+		{
+			showMessage(this.error, describeEditorError(error, {
+				id: 'editor.translations.exportFailed',
+				defaultMessage: 'Could not export the universe\'s text.',
+				description: 'Shown on the editor\'s Translations tab when the universe\'s text couldn\'t be loaded to export it as a translation file'
+			}));
+			return;
+		}
+
+		const entries = rows.flatMap((row) =>
+		{
+			const shown = this.withChanges(row);
+
+			return((shown.noTranslation
+				? []
+				: [{
+					id: universeTextKey(row),
+					place: describeTextPlace(row),
+					note: shown.note,
+					source: row.source,
+					translation: shown.translation,
+					outOfDate: shown.outOfDate
+				}]));
+		});
+		const text = writeTranslationFile(format, {
+			title: universe.name,
+			sourceLanguage: universe.sourceLanguage,
+			language,
+			entries
+		});
+		const url = URL.createObjectURL(new Blob([text], { type: `${TRANSLATION_FILE_TYPES[format]};charset=utf-8` }));
+		const link = document.createElement('a');
+
+		link.href = url;
+		link.download = `${universe.slug}-${language}${TRANSLATION_FILE_EXTENSIONS[format][0]}`;
+		link.click();
+		URL.revokeObjectURL(url);
+	}
+
+	/**
+	 * Reads translations into the language chosen from a file, in the format its name says (or the
+	 * format chosen), keeping them on the tab until the editor is saved, and says how many were read.
+	 * Each keeps the hash of the source text the file holds, so one made from text that has changed since
+	 * is out of date. Translations the file marks as needing review, for text the universe no longer has
+	 * or that needs no translation, or that are too long or hold characters that aren't allowed, are
+	 * skipped, and one that comes back as the table shows it is left as it is
+	 *
+	 * @param file The file
+	 */
+	private async importTranslations(file: File): Promise<void>
+	{
+		const universe = this.universe;
+		const language = this.language.value;
+		const format = (translationFileFormatOf(file.name) ?? TRANSLATION_FILE_FORMATS.find((each) => (each === this.format.value)));
+
+		showMessage(this.error, undefined);
+		showMessage(this.importStatus, undefined);
+
+		if (!universe || (language === '') || (format === undefined))
+		{
+			return;
+		}
+
+		let read: ReadTranslationFile;
+		let rows: UniverseTextRow[];
+
+		try
+		{
+			read = readTranslationFile(format, await file.text());
+		}
+		catch (error)
+		{
+			showMessage(this.error, this.describeUnreadable(error, format));
+			return;
+		}
+
+		if ((read.language !== null) && (read.language.toLowerCase() !== language.toLowerCase()))
+		{
+			showMessage(this.error, t({
+				id: 'editor.translations.importWrongLanguage',
+				defaultMessage: 'This file holds translations into {fileLanguage}, not {language}. Choose {fileLanguage} to import it.',
+				description: 'Shown on the editor\'s Translations tab when the translation file imported names a language other than the one chosen; {fileLanguage} and {language} are languages\' names'
+			}, {
+				fileLanguage: languageName(read.language),
+				language: languageName(language)
+			}));
+			return;
+		}
+
+		try
+		{
+			rows = (await this.api.listAllTranslations(universe.id, language)).rows;
+		}
+		catch (error)
+		{
+			showMessage(this.error, describeEditorError(error, {
+				id: 'editor.translations.importFailed',
+				defaultMessage: 'Could not import the translations.',
+				description: 'Shown on the editor\'s Translations tab when the universe\'s text couldn\'t be loaded to match a translation file against it'
+			}));
+			return;
+		}
+
+		const byKey = new Map(rows.map((row) => [universeTextKey(row), row]));
+		let imported = 0;
+		let skipped = 0;
+
+		for (const entry of read.translations)
+		{
+			const row = byKey.get(entry.id);
+
+			if (entry.translation === null)
+			{
+				continue;
+			}
+
+			const markdown = (row?.field === 'longDescription');
+			const text = (markdown ? entry.translation : entry.translation.trim());
+
+			if (entry.needsReview || !row || this.withChanges(row).noTranslation || (text === '') || (text.length > maxUniverseTextLength(row.kind, row.field)) || DISALLOWED_TEXT_CHARACTERS.test((markdown ? text.replace(/[\t\n\r]/g, '') : text)))
+			{
+				skipped++;
+				continue;
+			}
+
+			// Unchanged, so one that is out of date stays out of date
+			if (text === this.withChanges(row).translation)
+			{
+				continue;
+			}
+
+			this.translations.set(translationKey(row, language), {
+				ref: {
+					kind: row.kind,
+					thingId: row.thingId,
+					field: row.field
+				},
+				language,
+				text,
+				sourceHash: ((entry.source === null) ? row.sourceHash : sourceTextHash(entry.source))
+			});
+			imported++;
+		}
+
+		this.notifyChanged();
+		this.render();
+		showMessage(this.importStatus, t({
+			id: 'editor.translations.imported',
+			defaultMessage: '{imported, plural, =0 {No new translations to import.} one {Imported # translation, to be saved with Save.} other {Imported # translations, to be saved with Save.}} {skipped, plural, =0 {} one {Skipped # that was marked for review, too long, or for text that isn\'t the universe\'s any more or needs no translation.} other {Skipped # that were marked for review, too long, or for text that isn\'t the universe\'s any more or needs no translation.}}',
+			description: 'Shown on the editor\'s Translations tab after importing a translation file: {imported} is how many translations it read that changed something, and {skipped} how many it couldn\'t use'
+		}, {
+			imported,
+			skipped
+		}));
+	}
+
+	/**
+	 * Why a translation file couldn't be read
+	 *
+	 * @param error What reading it threw
+	 * @param format The format it was read as
+	 * @return The message
+	 */
+	private describeUnreadable(error: unknown, format: TranslationFileFormat): string
+	{
+		const formatName = t(FILE_FORMAT_NAMES[format]);
+
+		if (!(error instanceof TranslationFileError))
+		{
+			console.error('Could not read the translation file:', error);
+		}
+
+		if ((error instanceof TranslationFileError) && (error.line !== null))
+		{
+			return(t({
+				id: 'editor.translations.unreadableLine',
+				defaultMessage: 'This file can\'t be read as {format}: see line {line, number}.',
+				description: 'Shown on the editor\'s Translations tab when an imported translation file isn\'t in the format its name says (or the format chosen); {format} is the format\'s name, such as Gettext PO, and {line} the line with the problem'
+			}, {
+				format: formatName,
+				line: error.line
+			}));
+		}
+
+		return(t({
+			id: 'editor.translations.unreadable',
+			defaultMessage: 'This file can\'t be read as {format}.',
+			description: 'Shown on the editor\'s Translations tab when an imported translation file isn\'t in the format its name says (or the format chosen); {format} is the format\'s name, such as Gettext PO'
+		}, {
+			format: formatName
+		}));
 	}
 
 	/**

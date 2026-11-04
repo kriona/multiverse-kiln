@@ -349,6 +349,7 @@ Built in nine steps: roles, stages, server admins, disabling things in use, then
 	- [✅] Editing translations and notes, staged until Save (`saveTranslation` and `saveTranslatorNote`, saved after every other tab's changes); updating an out-of-date translation, or confirming it's still correct (which stores the current source hash). Notes are written by creators and builders
 	- [✅] Long descriptions translated as markdown, with a preview sanitized like the source's
 	- [✅] Marking text as needing no translation (such as a proper name), by creators, builders and translators, for every language; players see it as written, and its translations are kept
+	- [✅] Exporting and importing translation files as Gettext PO, XLIFF 2.0, CSV or JSON (`shared/src/translationFiles.ts`), imports staged until Save
 	- [✅] Translators see only their languages; creators see every language
 	- [ ] Renaming engine terms, if decided
 8. Universe versions

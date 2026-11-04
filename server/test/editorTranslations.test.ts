@@ -140,6 +140,21 @@ describe('Translations tab', () =>
 		assert.deepStrictEqual([second.body.total, placesOf(second.body.rows)], [5, ['area:Lobby:name', 'area:Meadow:name']]);
 	});
 
+	it('lists every piece of text at once for translation files, to those who may see the language', async () =>
+	{
+		const { universeId, ada } = await translatableUniverse();
+		const grace = await logIn('Grace');
+
+		await setUniverseAccess(universeId, grace.playerId, { role: 'translator', languages: ['de'] });
+
+		const all = await send<UniverseTextListPayload>(ada, 'GET', `/${universeId}/translations/all?language=fr`);
+
+		assert.strictEqual(all.status, 200);
+		assert.deepStrictEqual([all.body.total, placesOf(all.body.rows)], [5, placesOf((await listText(ada, universeId, 'language=fr')).body.rows)]);
+		assert.strictEqual((await send(grace, 'GET', `/${universeId}/translations/all?language=fr`)).status, 403);
+		assert.strictEqual((await send(ada, 'GET', `/${universeId}/translations/all?language=es`)).status, 404);
+	});
+
 	it('lets translators see and translate only their languages, and builders only write notes', async () =>
 	{
 		const { universeId, areaId, ada } = await translatableUniverse();

@@ -165,6 +165,18 @@ export class EditorApi
 	}
 
 	/**
+	 * Every piece of a universe's text with its translation into one language, for translation files
+	 *
+	 * @param universeId The universe's ID
+	 * @param language The language's tag
+	 * @return The text, by where it comes from
+	 */
+	async listAllTranslations(universeId: string, language: string): Promise<UniverseTextListPayload>
+	{
+		return(this.send<UniverseTextListPayload>('GET', `${universePath(universeId)}/translations/all?${queryString({ language })}`));
+	}
+
+	/**
 	 * A page of the characters made in a universe
 	 *
 	 * @param universeId The universe's ID
