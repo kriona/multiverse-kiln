@@ -9,6 +9,11 @@ export const characterMessages = defineMessages({
 		defaultMessage: 'To be deleted on {deleteAt, date, medium}',
 		description: 'Beside a character given their last rites, who can\'t be played until restored from their sheet: in the list of the player\'s characters in a universe\'s lobby and on its page, and in the world editor\'s list of every character in the universe; {deleteAt} is the day they will be deleted'
 	},
+	barred: {
+		id: 'characters.barred',
+		defaultMessage: '{bar, select, race {Can\'t play: your race is disabled} other {Can\'t play: your class is disabled}}',
+		description: 'Beside a character who can\'t play because the universe\'s creators disabled their race (bar is race) or class (bar is class) for characters already of it, until it is enabled again: in the list of the player\'s characters in a universe\'s lobby and on its page, and on the screen an invite link opens'
+	},
 	inGroup: {
 		id: 'characters.inGroup',
 		defaultMessage: 'In a group',

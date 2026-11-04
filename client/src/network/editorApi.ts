@@ -1,5 +1,5 @@
 import { ServerError, type Client } from '@colyseus/sdk';
-import { EDITOR_UNIVERSES_PATH, isLocalizedMessage, MAX_TILES_PER_PAGE, type ChunkListPayload, type ChunkRange, type ClassListPayload, type CreatedPayload, type DifficultyLevel, type DifficultyLevelListPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorCharacterListPayload, type EditorCharacterListQuery, type EditorClass, type EditorRace, type UniverseEditListPayload, type UniverseEditListQuery, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type NewUniverseRequest, type RaceListPayload, type RulesetSettings, type EditorTheme, type ThemeListPayload, type TileGraphicListPayload, type TileListPayload, type TileListQuery, type TileUsagePayload, type UploadedTileGraphic, type AreaLinkListPayload, type AreaListPayload, type MessageSource, type MessageValues, type EditorChange, type SaveChangesPayload, type SaveChangesRequest, type PlayerMatch, type PlayerSearchPayload, type PlayerSearchQuery, type UniverseEditorListPayload, type UniverseEditorSummary } from '@multiverse-kiln/shared';
+import { EDITOR_UNIVERSES_PATH, isLocalizedMessage, MAX_TILES_PER_PAGE, type ChunkListPayload, type ChunkRange, type ClassListPayload, type CreatedPayload, type DifficultyLevel, type DifficultyLevelListPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorCharacterListPayload, type EditorCharacterListQuery, type EditorClass, type EditorRace, type UniverseEditListPayload, type UniverseEditListQuery, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type NewUniverseRequest, type RaceListPayload, type RulesetSettings, type EditorTheme, type ThemeListPayload, type TileGraphicListPayload, type TileListPayload, type TileListQuery, type TileUsagePayload, type UploadedTileGraphic, type AreaLinkListPayload, type AreaListPayload, type MessageSource, type MessageValues, type EditorChange, type ChangeImpact, type SaveChangesPayload, type SaveChangesRequest, type SaveImpactPayload, type PlayerMatch, type PlayerSearchPayload, type PlayerSearchQuery, type UniverseEditorListPayload, type UniverseEditorSummary } from '@multiverse-kiln/shared';
 
 import { localizedText, t } from '../localization';
 
@@ -306,6 +306,20 @@ export class EditorApi
 		const body: SaveChangesRequest = { changes };
 
 		return((await this.send<SaveChangesPayload>('POST', `${universePath(universeId)}/changes`, body)).ids);
+	}
+
+	/**
+	 * Finds out what saving changes would do to players, saving nothing
+	 *
+	 * @param universeId The universe's ID
+	 * @param changes The changes, as they would be saved
+	 * @return What each change affecting players would do, in the changes' order
+	 */
+	async findImpacts(universeId: string, changes: EditorChange[]): Promise<ChangeImpact[]>
+	{
+		const body: SaveChangesRequest = { changes };
+
+		return((await this.send<SaveImpactPayload>('POST', `${universePath(universeId)}/changes/impact`, body)).impacts);
 	}
 
 	/**

@@ -3,12 +3,14 @@
  * shared/src/editor.ts), and saving changes to them (see editorChanges.ts)
  */
 import express, { type Request, type Response } from 'express';
-import { DEFAULT_AREA_TILE_KEYS, DEFAULT_TILE_CELL, isInBounds, isNewRef, MAX_AREAS, NEW_AREA_BOUNDS, VOID_CELL, type AreaChangeUpdate, type CellChange, type CellChangeRef, type ChunkListPayload, type EditorArea, type FaerieMorning, type MapBounds, type NewAreaChange, type NewRef, type Ruleset, type StringRef, type UniverseSettings, type MessageDescriptor, type AreaLinkListPayload, type AreaLinkTarget, type AreaListPayload, type AreaSettings, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
+import { type AreaEvacuation, DEFAULT_AREA_TILE_KEYS, DEFAULT_TILE_CELL, isInBounds, isNewRef, MAX_AREAS, NEW_AREA_BOUNDS, VOID_CELL, type AreaChangeUpdate, type CellChange, type CellChangeRef, type ChunkListPayload, type EditorArea, type FaerieMorning, type MapBounds, type NewAreaChange, type NewRef, type Ruleset, type StringRef, type UniverseSettings, type MessageDescriptor, type AreaLinkListPayload, type AreaLinkTarget, type AreaListPayload, type AreaSettings, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
 import { findDefaultTileIds, findTileKind, loadUniverseTiles } from '../db/tileRepo.js';
-import { countAreas, createArea, deleteArea, deleteAreaLink, editCells, findEditorArea, listAreaLinks, listAreas, loadChunks, lockAreas, resizeArea, saveAreaLink, updateAreaSettings } from '../db/areaRepo.js';
+import { countAreas, createArea, deleteArea, deleteAreaLink, editCells, findEditorArea, listAreaLinks, listAreas, listAreasLinkingTo, loadChunks, lockAreas, resizeArea, saveAreaLink, updateAreaSettings } from '../db/areaRepo.js';
+import { arrivalCell, enabledAncestor } from '../logic/disabling.js';
 import { chunksOfChanges, wouldCreateCycle } from '../logic/mapEdits.js';
+import type { AreaPlace } from '../world/areaChanges.js';
 import { loadAreaContext, universeContextOf, areaContextOf } from './editorAccess.js';
 import { ChangeRefusal, recordRef, refuse, resolveNumberRef, resolveStringRef, type ChangeContext } from './editorChangeContext.js';
 import { chunkRange } from './editorPayloads.js';
@@ -241,13 +243,16 @@ export async function createAreaChange(context: ChangeContext, ref: NewRef, area
 }
 
 /**
- * Changes an area's settings
+ * Changes an area's settings. Once the save has saved every change, an area other than the lobby's that
+ * it disables sends the characters in it where moveTo says, those playing and those saved there by their
+ * group (see editorDisablings.ts)
  *
  * @param context The save
  * @param areaId The area
  * @param update The settings to change
+ * @param moveTo Where disabling the area sends the characters in it
  */
-export async function updateAreaChange(context: ChangeContext, areaId: StringRef, update: AreaChangeUpdate): Promise<void>
+export async function updateAreaChange(context: ChangeContext, areaId: StringRef, update: AreaChangeUpdate, moveTo: AreaEvacuation): Promise<void>
 {
 	const area = await areaOf(context, areaId);
 	const resolved = resolveAreaUpdate(context, update);
@@ -261,6 +266,44 @@ export async function updateAreaChange(context: ChangeContext, areaId: StringRef
 	{
 		context.published.push({ kind: 'time', universeId: context.universe.id });
 	}
+
+	if (resolved.enabled !== undefined)
+	{
+		context.disablings.area(area.id, area.enabled, (resolved.enabled ? undefined : moveTo));
+	}
+
+	// Players aren't told about links to disabled areas, so the areas with links leading here are read again
+	if ((resolved.enabled !== undefined) && (resolved.enabled !== area.enabled))
+	{
+		for (const linkingAreaId of await listAreasLinkingTo(area.id, context.transaction))
+		{
+			context.published.push({ kind: 'area', areaId: linkingAreaId });
+		}
+	}
+}
+
+/**
+ * Where characters leaving a disabled area for its parent arrive: the nearest enabled area holding it,
+ * on a link there leading back in, or its center
+ *
+ * @param context The save
+ * @param areaId The disabled area
+ * @return The place, or null when no enabled area holds it, so they go where they start instead
+ */
+export async function parentPlace(context: Pick<ChangeContext, 'universe' | 'transaction'>, areaId: string): Promise<AreaPlace | null>
+{
+	const { universe, transaction } = context;
+	const found = enabledAncestor(await listAreas(universe.id, transaction), areaId);
+
+	if (!found)
+	{
+		return(null);
+	}
+
+	return({
+		areaId: found.ancestorId,
+		...arrivalCell(await listAreaLinks(found.ancestorId, transaction), found.passed)
+	});
 }
 
 /**

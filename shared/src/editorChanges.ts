@@ -4,7 +4,12 @@
  * POST EDITOR_UNIVERSES_PATH/:universeId/changes takes a SaveChangesRequest and answers 200 with a
  * SaveChangesPayload once every change is saved. When the server refuses one change it saves none of
  * them, and answers with the refused change's status and a SaveRefusedPayload naming it
+ *
+ * POST EDITOR_UNIVERSES_PATH/:universeId/changes/impact takes the same SaveChangesRequest and saves
+ * nothing: it answers a SaveImpactPayload, what the changes would do to players, so the editor can ask
+ * what should happen before it saves (see Disabling things players are using in STRUCTURE-OVERVIEW.md)
  */
+import type { OptionName } from './characters.js';
 import type { DifficultyLevelSettings } from './difficulty.js';
 import type { AreaSettingsUpdate, AreaLinkTarget, CellChange, ClassSettings, ErrorPayload, ItemSettings, NewAreaRequest, RaceSettings, ResizeConflict, RulesetSettings, ThemeSettings, TileGraphicUploadRequest, TileSettings, UniverseSettingsUpdate } from './editor.js';
 import type { MapBounds } from './maps.js';
@@ -53,12 +58,46 @@ export type CellChangeRef = [column: CellChange[0], row: CellChange[1], value: N
 
 /**
  * One change to a list of things the universe can use: adds one, changes one's settings, or deletes one
- * the universe added or restores one of the ruleset's defaults
+ * the universe added or restores one of the ruleset's defaults. A save change may carry more, SaveExtra
  */
-type ListChanges<Name extends string, Settings> =
+type ListChanges<Name extends string, Settings, SaveExtra = unknown> =
 	| { kind: `create${Name}`; ref: NewRef; settings: Settings }
-	| { kind: `save${Name}`; id: NumberRef; settings: Settings }
+	| ({ kind: `save${Name}`; id: NumberRef; settings: Settings } & SaveExtra)
 	| { kind: `remove${Name}`; id: NumberRef };
+
+/**
+ * What disabling an item does to the characters carrying it
+ *
+ * - keep: they keep using it, and no new copies are made (new characters aren't given a disabled item)
+ * - remove: it is taken from them, hidden rather than deleted, so enabling the item again gives it back
+ */
+export const ITEM_DISABLINGS = ['keep', 'remove'] as const;
+
+export type ItemDisabling = typeof ITEM_DISABLINGS[number];
+
+/**
+ * Where disabling an area sends the characters in it, playing or saved there by a group no one is playing
+ *
+ * - parent: to its parent area, or the nearest enabled area it is inside, onto the cell of a link there
+ *   leading back in when there is one and its center otherwise; to the start area when it is inside no
+ *   enabled area
+ * - start: to where they start: the lobby area in the lobby, and the group's starting area in a group
+ */
+export const AREA_EVACUATIONS = ['parent', 'start'] as const;
+
+export type AreaEvacuation = typeof AREA_EVACUATIONS[number];
+
+/**
+ * What lowering the universe's group size does to groups larger than the new size
+ *
+ * - keep: they keep playing; only new members are refused until they are small enough
+ * - disband: they are disbanded, as if their anchor being had left
+ * - removeMembers: members are taken out, those who joined most recently first and never the anchor
+ *   being, until the group fits
+ */
+export const GROUP_SIZE_LOWERINGS = ['keep', 'disband', 'removeMembers'] as const;
+
+export type GroupSizeLowering = typeof GROUP_SIZE_LOWERINGS[number];
 
 /**
  * An editor's role and languages in a save. languages is for translators only, and empty for other roles
@@ -76,11 +115,16 @@ export interface EditorRoleSettings
  * - addEditor, saveEditor, removeEditor: give a player a role, by username, change an editor's role, or
  *   take it away. Anyone may remove themself, leaving the universe; a save that would leave the universe
  *   without a creator is refused
- * - universe, ruleset: change the universe's settings, or how it plays under its ruleset
+ * - universe, ruleset: change the universe's settings, or how it plays under its ruleset. A universe
+ *   change lowering the group size says what happens to larger groups with largerGroups, keep when left out
  * - uploadTileGraphic, deleteTileGraphic: upload a tileset, or delete one and its image
  * - tiles: removeTile with replaceWith paints the maps using the tile with that one first
- * - items, races, classes, themes and difficulty levels
- * - createArea, updateArea, deleteArea: an area's settings; the lobby and starting areas can't be deleted
+ * - items, races, classes, themes and difficulty levels. A saveItem disabling an item says what happens to
+ *   the characters carrying it with whenDisabled, keep when left out. Enabling an item again, or restoring
+ *   a default item, gives back the copies taken. A race or class says in its settings (keepPlaying)
+ *   whether its characters may play while it is disabled
+ * - createArea, updateArea, deleteArea: an area's settings; the lobby and starting areas can't be deleted.
+ *   An updateArea disabling an area says where the characters in it go with moveTo, start when left out
  * - resizeArea: gives an area's map new bounds. Without discard, a resize that would discard painted cells
  *   or links is refused with 409 and a SaveRefusedPayload holding resizeConflict
  * - editCells: up to MAX_CELL_CHANGES cells inside the area's bounds; a cell listed twice takes the later value
@@ -90,20 +134,20 @@ export type EditorChange =
 	| { kind: 'addEditor'; username: string; settings: EditorRoleSettings }
 	| { kind: 'saveEditor'; playerId: string; settings: EditorRoleSettings }
 	| { kind: 'removeEditor'; playerId: string }
-	| { kind: 'universe'; update: UniverseSettingsUpdate }
+	| { kind: 'universe'; update: UniverseSettingsUpdate; largerGroups?: GroupSizeLowering }
 	| { kind: 'ruleset'; settings: RulesetSettings }
 	| { kind: 'uploadTileGraphic'; ref: NewRef; upload: TileGraphicUploadRequest }
 	| { kind: 'deleteTileGraphic'; graphicId: string }
 	| { kind: 'createTile'; ref: NewRef; settings: TileChangeSettings }
 	| { kind: 'saveTile'; id: NumberRef; settings: TileChangeSettings }
 	| { kind: 'removeTile'; id: NumberRef; replaceWith: NumberRef | null }
-	| ListChanges<'Item', ItemSettings>
+	| ListChanges<'Item', ItemSettings, { whenDisabled?: ItemDisabling }>
 	| ListChanges<'Race', RaceSettings>
 	| ListChanges<'Class', ClassSettings>
 	| ListChanges<'Theme', ThemeSettings>
 	| ListChanges<'DifficultyLevel', DifficultyLevelSettings>
 	| { kind: 'createArea'; ref: NewRef; area: NewAreaChange }
-	| { kind: 'updateArea'; areaId: StringRef; update: AreaChangeUpdate }
+	| { kind: 'updateArea'; areaId: StringRef; update: AreaChangeUpdate; moveTo?: AreaEvacuation }
 	| { kind: 'deleteArea'; areaId: StringRef }
 	| { kind: 'resizeArea'; areaId: StringRef; bounds: MapBounds; discard: boolean }
 	| { kind: 'editCells'; areaId: StringRef; changes: CellChangeRef[] }
@@ -236,6 +280,30 @@ export interface SaveRefusedPayload extends ErrorPayload
 	 * For a resizeArea refused because it would discard something: what it would discard
 	 */
 	resizeConflict?: ResizeConflict;
+}
+
+/**
+ * What one change in a save would do to players, compared with the universe as it is saved now
+ *
+ * - race, class: it disables a race or class that characters (not past their last rites) are; name is
+ *   the race's or class's
+ * - item: it disables an item characters carry
+ * - area: it disables an area characters are in, playing there or saved there by their group, and
+ *   hasParent says whether it is inside an enabled area they could go to
+ * - groupSize: it lowers the group size below the size of some groups
+ */
+export type ChangeImpact =
+	| { changeIndex: number; kind: 'race' | 'class' | 'item'; name: OptionName; characters: number }
+	| { changeIndex: number; kind: 'area'; name: string; characters: number; hasParent: boolean }
+	| { changeIndex: number; kind: 'groupSize'; groupSize: number; groups: number };
+
+/**
+ * Response of POST EDITOR_UNIVERSES_PATH/:universeId/changes/impact: each change that would affect
+ * players, in the order of the save's changes; empty when none would
+ */
+export interface SaveImpactPayload
+{
+	impacts: ChangeImpact[];
 }
 
 /**

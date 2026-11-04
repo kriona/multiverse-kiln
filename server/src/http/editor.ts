@@ -6,7 +6,7 @@
  * browser; routes about a universe also need a role in it, and changes need a role that allows them
  */
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
-import { DEFAULT_AREA_TILE_KEYS, defineMessages, EDITOR_UNIVERSES_PATH, isDefaultAreaTile, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, SOURCE_LOCALE, Translator, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type NewRef, type NumberRef, type Ruleset, type RulesetSettings, type TileChangeSettings, type TileSettings, type TileUsagePayload, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
+import { DEFAULT_AREA_TILE_KEYS, defineMessages, EDITOR_UNIVERSES_PATH, isDefaultAreaTile, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, SOURCE_LOCALE, Translator, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type GroupSizeLowering, type NewRef, type NumberRef, type Ruleset, type RulesetSettings, type TileChangeSettings, type TileSettings, type TileUsagePayload, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
 import { lockPlayer } from '../db/playerRepo.js';
@@ -24,6 +24,7 @@ import { recordRef, refuse, resolveNumberRef, resolveStringRef, type ChangeConte
 import { addAuditRoutes } from './editorAudit.js';
 import { addCharacterListRoutes } from './editorCharacters.js';
 import { addChangeRoutes } from './editorChanges.js';
+import { addImpactRoutes } from './editorImpact.js';
 import { addClassRoutes } from './editorClasses.js';
 import { addItemRoutes } from './editorItems.js';
 import { newUniverseRequest, tileIdParameter, tileListQuery } from './editorPayloads.js';
@@ -116,6 +117,7 @@ function createEditorRouter(allowedOrigins: Set<string>): express.Router
 
 	universeRouter.get('/', getUniverse);
 	addChangeRoutes(universeRouter);
+	addImpactRoutes(universeRouter);
 	addEditorListRoutes(universeRouter);
 	addCharacterListRoutes(universeRouter);
 	addAuditRoutes(universeRouter);
@@ -300,13 +302,21 @@ function getUniverse(request: Request, response: Response): void
 }
 
 /**
- * Changes the universe's settings. A name another universe has is refused by the save (editorChanges.ts)
+ * Changes the universe's settings. A name another universe has is refused by the save (editorChanges.ts).
+ * Once the save has saved every change, a group size it lowers does what largerGroups says to the groups
+ * larger than the new size (see editorDisablings.ts)
  *
  * @param context The save
  * @param update The settings to change
+ * @param largerGroups What lowering the group size does to larger groups
  */
-export async function applyUniverseChange(context: ChangeContext, update: UniverseSettingsUpdate): Promise<void>
+export async function applyUniverseChange(context: ChangeContext, update: UniverseSettingsUpdate, largerGroups: GroupSizeLowering): Promise<void>
 {
+	if (update.groupSize !== undefined)
+	{
+		context.disablings.groupSizeChange(context.universe.groupSize, update.groupSize, largerGroups);
+	}
+
 	const { universe, transaction } = context;
 	const lobbyArea = ((universe.lobbyAreaId !== null) ? await findEditorArea(universe.lobbyAreaId, transaction) : undefined);
 	const problem = (timeSettingsProblem({ ...universe, ...update })

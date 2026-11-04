@@ -5,7 +5,7 @@ import { CHUNK_SIZE, cellIndexInChunk, chunkKey, DEFAULT_LOBBY_DAY_HOURS, DEFAUL
 import { findDefaultTileIds } from '../../src/db/tileRepo.js';
 import { setUniverseAreas, updateUniverseSettings } from '../../src/db/universeRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
-import { countAreas, createAreaLink, deleteArea, deleteAreaLink, editCells, findEditorArea, isTileInUse, listAreaLinks, listAreas, loadChunks, loadChunksAt, loadArea, resizeArea, saveGroundChunk, saveAreaLink, updateAreaSettings } from '../../src/db/areaRepo.js';
+import { countAreas, createAreaLink, deleteArea, deleteAreaLink, editCells, findEditorArea, isTileInUse, listAreaLinks, listAreas, listAreasLinkingTo, loadChunks, loadChunksAt, loadArea, resizeArea, saveGroundChunk, saveAreaLink, updateAreaSettings } from '../../src/db/areaRepo.js';
 import { addUniverse, addArea, defaultTileId, loadWholeMap } from './fixtures.js';
 
 /**
@@ -67,6 +67,11 @@ describe('areaRepo', () =>
 
 			assert.deepStrictEqual(loaded?.links, [{ column: 1, row: 0, targetAreaId: insideId, targetColumn: -1, targetRow: 1, mode: 'automatic', requiresWholeGroup: true }]);
 			assert.deepStrictEqual((await loadArea(insideId))?.links, []);
+			assert.deepStrictEqual([...(loaded?.disabledTargetIds ?? [])], []);
+			assert.deepStrictEqual(await listAreasLinkingTo(insideId), [areaId]);
+
+			await updateAreaSettings(insideId, { enabled: false });
+			assert.deepStrictEqual([...((await loadArea(areaId))?.disabledTargetIds ?? [])], [insideId]);
 		});
 
 		it('follows inherit through the parent areas to the universe\'s passage of time', async () =>

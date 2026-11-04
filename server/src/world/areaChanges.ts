@@ -1,4 +1,14 @@
 /**
+ * A cell of an area
+ */
+export interface AreaPlace
+{
+	areaId: string;
+	column: number;
+	row: number;
+}
+
+/**
  * A change the world editor has made to a universe's world, for the rooms playing in it
  *
  * - cells: cells of an area's map changed, in the chunks listed (by chunkKey())
@@ -9,11 +19,15 @@
  * - universeDeleted: the universe was deleted, with its world, groups and characters, so its rooms
  *   turn every window away
  * - universeDisabled: a server admin disabled the universe, so its rooms turn every window away
+ * - evacuated: an area was disabled, and everyone in it goes to destination, or to where they start
+ *   (the lobby area, or their group's starting area) when it is null. Published after the area's own
+ *   change, and handled by the rooms rather than AreaPlayers.applyChange()
  */
 export type AreaChange =
 	| { kind: 'cells'; areaId: string; chunkKeys: string[] }
 	| { kind: 'area'; areaId: string }
 	| { kind: 'deleted'; areaId: string }
+	| { kind: 'evacuated'; areaId: string; destination: AreaPlace | null }
 	| { kind: 'tiles'; universeId: string }
 	| { kind: 'time'; universeId: string }
 	| { kind: 'universeDeleted'; universeId: string }

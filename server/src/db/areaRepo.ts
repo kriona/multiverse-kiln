@@ -2,7 +2,7 @@
  * Areas, their maps and their links: the only module that reads or writes the areas, map_chunks and
  * area_links tables
  */
-import { and, asc, between, count, eq, gt, gte, inArray, lt, lte, or, sql, type SQL } from 'drizzle-orm';
+import { and, asc, between, count, eq, gt, gte, inArray, lt, lte, ne, or, sql, type SQL } from 'drizzle-orm';
 import type { PgColumn } from 'drizzle-orm/pg-core';
 import { ancestorAreas, chunkCoordinate, chunkKey, isInBounds, lobbyAreaTime, resolveAreaTime, type AreaTime, type DisplayTime,type PassageOfTimeSetting, type CellChange, type ChunkRange, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type MapBounds, type Ruleset, type AreaChunk, type AreaLightLevel, type AreaLinkTarget, type AreaPassageOfTime, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
 
@@ -75,6 +75,12 @@ export interface LoadedArea
 	loopsEastWest: boolean;
 	loopsNorthSouth: boolean;
 	links: AreaLink[];
+
+	/**
+	 * The disabled areas the links lead to, as they were when the area was loaded. Nobody can go through
+	 * those links, so clients aren't told about them
+	 */
+	disabledTargetIds: ReadonlySet<string>;
 
 	/**
 	 * Every tile the map can use, for drawing it and for its walk seconds
@@ -190,9 +196,16 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 
 	const { area, ruleset, universe } = row;
 	const linkRows = await executor
-		.select()
+		.select({
+			link: areaLinks,
+			targetEnabled: areas.enabled
+		})
 		.from(areaLinks)
+		.innerJoin(areas, eq(areas.id, areaLinks.targetAreaId))
 		.where(eq(areaLinks.areaId, areaId));
+	const disabledTargetIds = new Set(linkRows
+		.filter(({ targetEnabled }) => !targetEnabled)
+		.map(({ link }) => link.targetAreaId));
 
 	const isLobby = (area.id === universe.lobbyAreaId);
 	const fullVision = (isLobby && universe.lobbyNoVisionCost);
@@ -226,7 +239,7 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 		defaultTileId: area.defaultTileId,
 		loopsEastWest: area.loopsEastWest,
 		loopsNorthSouth: area.loopsNorthSouth,
-		links: linkRows.map((link) => ({
+		links: linkRows.map(({ link }) => ({
 			column: link.column,
 			row: link.row,
 			targetAreaId: link.targetAreaId,
@@ -235,6 +248,7 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 			mode: link.mode,
 			requiresWholeGroup: link.requiresWholeGroup
 		})),
+		disabledTargetIds,
 		tiles
 	});
 }
@@ -643,6 +657,23 @@ export async function listAreaLinks(areaId: string, executor: Executor = db): Pr
 		.from(areaLinks)
 		.where(eq(areaLinks.areaId, areaId))
 		.orderBy(areaLinks.row, areaLinks.column));
+}
+
+/**
+ * The areas with links leading to an area, other than the area itself
+ *
+ * @param areaId The area's ID
+ * @param executor The database, or a transaction
+ * @return The areas' IDs
+ */
+export async function listAreasLinkingTo(areaId: string, executor: Executor = db): Promise<string[]>
+{
+	const rows = await executor
+		.selectDistinct({ areaId: areaLinks.areaId })
+		.from(areaLinks)
+		.where(and(eq(areaLinks.targetAreaId, areaId), ne(areaLinks.areaId, areaId)));
+
+	return(rows.map((row) => row.areaId));
 }
 
 /**

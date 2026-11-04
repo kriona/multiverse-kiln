@@ -63,6 +63,7 @@ export async function loadEditorRaces(universeId: string, ruleset: Ruleset, exec
 			key: races.key,
 			name: races.name,
 			enabled: races.enabled,
+			keepPlaying: races.keepPlaying,
 			startingPlatinum: races.startingPlatinum,
 			startingGold: races.startingGold,
 			startingSilver: races.startingSilver,
@@ -100,6 +101,7 @@ export async function loadEditorRaces(universeId: string, ruleset: Ruleset, exec
 				key: (custom ? null : row.key),
 				name: (custom ? row.name : (copy?.name ?? null)),
 				enabled: settings.enabled,
+				keepPlaying: settings.keepPlaying,
 				startingMoney: fromCoinColumns(settings),
 				startingItems: (startingItems.get(settings.id) ?? []),
 				startingAreaId: settings.startingAreaId,
@@ -128,6 +130,32 @@ export async function loadRaceSight(universeId: string, ruleset: Ruleset, execut
 		darkvision: darkvisionSquares(race.rules.darkvision),
 		lightSensitivity: race.rules.lightSensitivity
 	}])));
+}
+
+/**
+ * The races whose characters can't play in a universe: those it has disabled without letting the
+ * characters already of them keep playing
+ *
+ * @param universeId The universe's ID
+ * @param executor The database, or a transaction
+ * @return The races, by the IDs characters hold (a default race's own ID for an edited copy)
+ */
+export async function listBarredRaceIds(universeId: string, executor: Executor = db): Promise<Set<number>>
+{
+	// Default races are always enabled, so only the universe's own rows can bar anyone
+	const rows = await executor
+		.select({
+			id: races.id,
+			overridesRaceId: races.overridesRaceId
+		})
+		.from(races)
+		.where(and(
+			eq(races.universeId, universeId),
+			eq(races.enabled, false),
+			eq(races.keepPlaying, false)
+		));
+
+	return(new Set(rows.map((row) => (row.overridesRaceId ?? row.id))));
 }
 
 /**
@@ -464,13 +492,14 @@ export async function isRaceStartingItem(universeId: string, itemId: number, exe
  * @param settings The settings
  * @return The columns' values
  */
-function raceColumns(settings: RaceSettings): Pick<typeof races.$inferInsert, 'name' | 'enabled' | 'startingPlatinum' | 'startingGold' | 'startingSilver' | 'startingCopper' | 'startingCredits' | 'startingAreaId' | 'startingColumn' | 'startingRow'>
+function raceColumns(settings: RaceSettings): Pick<typeof races.$inferInsert, 'name' | 'enabled' | 'keepPlaying' | 'startingPlatinum' | 'startingGold' | 'startingSilver' | 'startingCopper' | 'startingCredits' | 'startingAreaId' | 'startingColumn' | 'startingRow'>
 {
 	const hasArea = (settings.startingAreaId !== null);
 
 	return({
 		name: settings.name,
 		enabled: settings.enabled,
+		keepPlaying: settings.keepPlaying,
 		...toCoinColumns(settings.startingMoney),
 		startingAreaId: settings.startingAreaId,
 		startingColumn: (hasArea ? settings.startingColumn : 0),

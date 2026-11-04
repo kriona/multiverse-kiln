@@ -4,6 +4,7 @@ import { t } from './localization';
 import { AuthApi } from './network/authApi';
 import { CharacterApi } from './network/characterApi';
 import { EditorApiError } from './network/editorApi';
+import { GroupApi } from './network/groupApi';
 import { ProfileApi } from './network/profileApi';
 import type { ServerConnection } from './network/serverConnection';
 import { isLeavingPage } from './pageLifecycle';
@@ -27,6 +28,7 @@ export class ProfilePage
 	private readonly profileApi: ProfileApi;
 	private readonly authApi: AuthApi;
 	private readonly characterApi: CharacterApi;
+	private readonly groupApi: GroupApi;
 
 	/**
 	 * The player's own profile, once it is shown
@@ -54,6 +56,7 @@ export class ProfilePage
 		this.profileApi = new ProfileApi(client);
 		this.authApi = new AuthApi(client);
 		this.characterApi = new CharacterApi(client);
+		this.groupApi = new GroupApi(client);
 
 		session.onMessage(SessionServerMessageType.Account, (account: AccountPayload) =>
 		{
@@ -105,7 +108,7 @@ export class ProfilePage
 		{
 			if (this.username === undefined)
 			{
-				const sheet = new CharacterSheetDialog(this.characterApi, () =>
+				const sheet = new CharacterSheetDialog(this.characterApi, this.groupApi, () =>
 				{
 					void this.ownScreen?.reloadCharacters();
 				});

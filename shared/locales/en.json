@@ -56,7 +56,7 @@
 		"description": "Heading of the admin page listing the site's server admins, where admins add and remove other admins"
 	},
 	"admin.admins.hint": {
-		"defaultMessage": "Server admins can use these pages once they turn on two-factor authentication. The site always keeps at least one.",
+		"defaultMessage": "Server admins can use these pages once they turn on two-factor authentication.",
 		"description": "Explains the admin page listing the site's server admins, above the list"
 	},
 	"admin.admins.loadFailed": {
@@ -787,10 +787,6 @@
 		"defaultMessage": "Hit points",
 		"description": "On a character's sheet in Starfinder, the label of their hit points"
 	},
-	"characterSheet.inGroup": {
-		"defaultMessage": "{name} is in a group, and has to leave it before they can be deleted.",
-		"description": "On the sheet of a character in a group, in place of the button that deletes them; {name} is the character's name"
-	},
 	"characterSheet.item": {
 		"defaultMessage": "{quantity, plural, =1 {{item}} other {{item} x#}}",
 		"description": "On a character's sheet, an item they carry, with how many when there is more than one; {item} is the item's name, e.g. \"Arrow x20\""
@@ -798,6 +794,10 @@
 	"characterSheet.items": {
 		"defaultMessage": "Equipment",
 		"description": "Heading on a character's sheet of the items they carry"
+	},
+	"characterSheet.leftGroup": {
+		"defaultMessage": "{name} has left the group.",
+		"description": "Read out by screen readers once a character who can't play, because their race or class is disabled, has been taken out of their group from their sheet; {name} is the character's name"
 	},
 	"characterSheet.lightSensitivityValue": {
 		"defaultMessage": "{lightSensitivity, select, true {Yes} other {No}}",
@@ -850,6 +850,10 @@
 	"characterSheet.traits": {
 		"defaultMessage": "Traits",
 		"description": "Heading on a character's sheet of their size, their darkvision and light sensitivity, and their money"
+	},
+	"characters.barred": {
+		"defaultMessage": "{bar, select, race {Can't play: your race is disabled} other {Can't play: your class is disabled}}",
+		"description": "Beside a character who can't play because the universe's creators disabled their race (bar is race) or class (bar is class) for characters already of it, until it is enabled again: in the list of the player's characters in a universe's lobby and on its page, and on the screen an invite link opens"
 	},
 	"characters.heading": {
 		"defaultMessage": "Your characters",
@@ -1671,6 +1675,70 @@
 		"defaultMessage": "Edited from default",
 		"description": "Label of the filter on the Items and Tilesets tabs for whether one of the ruleset's items or tiles was changed for this universe"
 	},
+	"editor.impact.area": {
+		"defaultMessage": "Disabling {name}: {count, plural, one {# character is in it} other {# characters are in it}}",
+		"description": "Heading of a choice in the dialog the editor's Save opens, for an area being disabled; {name} is the area's name and {count} how many characters are in it, playing or where their group left them"
+	},
+	"editor.impact.class": {
+		"defaultMessage": "Disabling {name}: {count, plural, one {# character is this class} other {# characters are this class}}",
+		"description": "Heading of a choice in the dialog the editor's Save opens, for a class being disabled; {name} is the class's name and {count} how many characters are it"
+	},
+	"editor.impact.disbandGroups": {
+		"defaultMessage": "Disband the larger groups",
+		"description": "Choice in the dialog the editor's Save opens, for a group size smaller than some groups: those groups end, and their members go back to the lobby"
+	},
+	"editor.impact.explanation": {
+		"defaultMessage": "These changes affect characters players are using. Choose what happens to them, then save.",
+		"description": "Explains the dialog that asks what should happen to characters and groups using something the save disables or limits"
+	},
+	"editor.impact.groupSize": {
+		"defaultMessage": "Groups of at most {size}: {count, plural, one {# group is larger} other {# groups are larger}}",
+		"description": "Heading of a choice in the dialog the editor's Save opens, for a group size smaller than some groups; {size} is the new group size and {count} how many groups have more members"
+	},
+	"editor.impact.item": {
+		"defaultMessage": "Disabling {name}: {count, plural, one {# character carries it} other {# characters carry it}}",
+		"description": "Heading of a choice in the dialog the editor's Save opens, for an item being disabled; {name} is the item's name and {count} how many characters carry it"
+	},
+	"editor.impact.keepGroups": {
+		"defaultMessage": "Let those groups keep playing; only limit the size of new groups",
+		"description": "Choice in the dialog the editor's Save opens, for a group size smaller than some groups: they stay as they are, and can't take new members until they fit"
+	},
+	"editor.impact.keepItem": {
+		"defaultMessage": "Let them keep using it; no new copies are made",
+		"description": "Choice in the dialog the editor's Save opens, for an item being disabled that characters carry: they keep it, and nobody new is given it"
+	},
+	"editor.impact.keepPlaying": {
+		"defaultMessage": "Let them keep playing; only new characters can't choose it",
+		"description": "Choice in the dialog the editor's Save opens, for a race or class being disabled that characters are: they can still play, and only new characters can't be it"
+	},
+	"editor.impact.preventPlaying": {
+		"defaultMessage": "Stop them playing until it is enabled again",
+		"description": "Choice in the dialog the editor's Save opens, for a race or class being disabled that characters are: they are turned out of the lobby and their groups, and can't play until it is enabled again"
+	},
+	"editor.impact.race": {
+		"defaultMessage": "Disabling {name}: {count, plural, one {# character is this race} other {# characters are this race}}",
+		"description": "Heading of a choice in the dialog the editor's Save opens, for a race being disabled; {name} is the race's name and {count} how many characters are it"
+	},
+	"editor.impact.removeItem": {
+		"defaultMessage": "Take it from them; they get it back if it is enabled again",
+		"description": "Choice in the dialog the editor's Save opens, for an item being disabled that characters carry: it is taken away from them, and given back if the item is enabled again"
+	},
+	"editor.impact.removeMembers": {
+		"defaultMessage": "Take out members, those who joined most recently first, until they fit",
+		"description": "Choice in the dialog the editor's Save opens, for a group size smaller than some groups: members leave, newest first, never the character the group is centered on (its anchor being)"
+	},
+	"editor.impact.title": {
+		"defaultMessage": "Players Are Affected",
+		"description": "Title of the dialog the editor's Save opens when the changes disable a race, class, item or area that characters are using, or make groups smaller than some are, asking what should happen to them"
+	},
+	"editor.impact.toParent": {
+		"defaultMessage": "Move everyone to the area it is in",
+		"description": "Choice in the dialog the editor's Save opens, for an area being disabled with characters in it: they go to its parent area (or the nearest enabled area holding it), arriving at a link back into it when there is one"
+	},
+	"editor.impact.toStart": {
+		"defaultMessage": "Move everyone back to where they start",
+		"description": "Choice in the dialog the editor's Save opens, for an area being disabled with characters in it: they go to the lobby's area, or to their group's starting area"
+	},
 	"editor.item.addTitle": {
 		"defaultMessage": "Add Item",
 		"description": "Title of the item editor when making a new item"
@@ -2062,6 +2130,10 @@
 	"editor.openFailed": {
 		"defaultMessage": "Could not open the universe.",
 		"description": "Shown in the editor when the universe couldn't be loaded"
+	},
+	"editor.option.keepPlaying": {
+		"defaultMessage": "Existing characters keep playing while disabled",
+		"description": "Names a race's or class's setting in the list of what a save changed, on the editor's Audit tab: whether characters already of it can keep playing while it is disabled (yes), or can't play until it is enabled again (no). Chosen in the dialog the editor's Save opens when disabling a race or class characters are"
 	},
 	"editor.pageTitle": {
 		"defaultMessage": "Edit {universe}",
@@ -3207,6 +3279,10 @@
 		"defaultMessage": "Choose the ability that gets the race's bonus, and only for a race that has one.",
 		"description": "Why a new character wasn't made: a race that lets the player choose an ability to raise had none chosen, or another race had one"
 	},
+	"error.groupCharacterBarred": {
+		"defaultMessage": "{bar, select, race {That character's race is disabled, so they can't play.} other {That character's class is disabled, so they can't play.}}",
+		"description": "Why a character couldn't make or join a group: the universe's creators disabled their race (bar is race) or class (bar is class) and stopped characters already of it playing"
+	},
 	"error.groupCharacterUnavailable": {
 		"defaultMessage": "That character can't do that: they don't exist, aren't yours, or have been given their last rites.",
 		"description": "Why a character couldn't make, join or leave a group: the character isn't one of the player's in this universe, or is waiting to be deleted"
@@ -3651,6 +3727,10 @@
 		"defaultMessage": "That universe could not be found.",
 		"description": "Shown on the game's page when it was opened to enter a universe that doesn't exist or can't be played"
 	},
+	"group.characterBarred": {
+		"defaultMessage": "The universe's creators disabled the race or class of {name}, so they can't play until it is enabled again. They are still in the group.",
+		"description": "Shown in the lobby when the character a window played in a group was taken off its map because the universe's creators disabled their race or class for characters already of it; {name} is the character's name"
+	},
 	"group.characterLeft": {
 		"defaultMessage": "{name} is no longer in the group, or can't be played.",
 		"description": "Shown in the lobby when the character a window played left the group from another window, or was deleted; {name} is the character's name"
@@ -3665,7 +3745,7 @@
 	},
 	"group.disband": {
 		"defaultMessage": "Disband Group",
-		"description": "Button, in place of Leave group while the window plays the anchor being, that takes them out of the group, which ends the group for everyone (it asks first)"
+		"description": "Button, in place of Leave group for the anchor being, that takes them out of the group, which ends the group for everyone (it asks first): in a group, while the window plays them, and on their sheet when they can't play because their race or class is disabled"
 	},
 	"group.disbanded": {
 		"defaultMessage": "The group was disbanded.",
@@ -3681,11 +3761,11 @@
 	},
 	"group.leave": {
 		"defaultMessage": "Leave group",
-		"description": "Button that takes the character this window plays out of the group, back to the lobby"
+		"description": "Button that takes a character out of their group, back to the lobby: in a group, for the character the window plays, and on the sheet of a character who can't play because their race or class is disabled"
 	},
 	"group.leaveFailed": {
 		"defaultMessage": "Could not leave the group.",
-		"description": "Shown when the character couldn't be taken out of their group"
+		"description": "Shown when the character couldn't be taken out of their group: in a group, or on the sheet of a character who can't play because their race or class is disabled"
 	},
 	"group.locked": {
 		"defaultMessage": "This universe has reached the end of time, so it is locked. You can look around and switch between your characters, but nothing can move or change.",
@@ -3734,6 +3814,10 @@
 	"group.returning": {
 		"defaultMessage": "Going back to the lobby...",
 		"description": "Shown on the whole page while the player goes back to the lobby after leaving their group"
+	},
+	"group.sizeLowered": {
+		"defaultMessage": "The universe's creators made groups smaller, so {name} is no longer in the group, or the group was disbanded.",
+		"description": "Shown in the lobby when the universe's creators lowered its group size, which took the character a window played out of their group or disbanded it; {name} is the character's name"
 	},
 	"group.title": {
 		"defaultMessage": "Group",
@@ -3981,19 +4065,19 @@
 	},
 	"leaveGroup.disbandQuestion": {
 		"defaultMessage": "{name} is the anchor being, so if they leave, the group is disbanded for everyone. Every character keeps their items and money.",
-		"description": "Asked before the anchor being leaves their group; {name} is the anchor being's name"
+		"description": "Asked before the anchor being leaves their group, from the group or from their sheet; {name} is the anchor being's name"
 	},
 	"leaveGroup.disbandTitle": {
 		"defaultMessage": "Disband the Group?",
-		"description": "Title of the dialog that asks the anchor being's player whether to leave the group, which ends it"
+		"description": "Title of the dialog that asks the anchor being's player whether to leave the group, which ends it: from the group, or from the sheet of a character who can't play because their race or class is disabled"
 	},
 	"leaveGroup.question": {
 		"defaultMessage": "{name} leaves the group and goes to the lobby. To come back, they need a new invite.",
-		"description": "Asked before a character leaves their group; {name} is the character's name"
+		"description": "Asked before a character leaves their group, from the group or from their sheet; {name} is the character's name"
 	},
 	"leaveGroup.title": {
 		"defaultMessage": "Leave the Group?",
-		"description": "Title of the dialog that asks whether to take a character out of their group"
+		"description": "Title of the dialog that asks whether to take a character out of their group: from the group, or from the sheet of a character who can't play because their race or class is disabled"
 	},
 	"license.agpl": {
 		"defaultMessage": "{siteName}™ is free software: you can redistribute it and/or modify it under the terms of the {license} as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.",
@@ -4090,6 +4174,10 @@
 	"license.warranty": {
 		"defaultMessage": "{siteName} is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.",
 		"description": "The game's license notice, saying it comes with no warranty; {siteName} is the game engine's name"
+	},
+	"lobby.characterBarred": {
+		"defaultMessage": "The universe's creators disabled that character's race or class, so they can't play until it is enabled again.",
+		"description": "Shown in the lobby when the character the player was playing, or chose, can't play because the universe's creators disabled their race or class for characters already of it; the lobby switches to another of their characters, or makes them a ghost"
 	},
 	"lobby.characterPlaying": {
 		"defaultMessage": "Playing",

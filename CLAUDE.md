@@ -50,7 +50,8 @@ An engine for making multiplayer browser-based role-playing games.
   src/players/       which login sessions have windows connected, changes to characters and groups, and players who
                      may no longer play a universe, published to the rooms (in memory; accounts, sessions,
                      characters, groups and roles are in the database)
-  src/world/         changes the world editor makes, published to the rooms playing in that world (in memory)
+  src/world/         changes the world editor makes, published to the rooms playing in that world, and which
+                     area each room's characters are in, for the editor's warnings (in memory)
   src/logic/         pure game-simulation functions (no I/O)
   src/db/            Drizzle client, schema, and repository modules
   src/storage/       object storage for uploads (any S3-compatible service; SeaweedFS locally)

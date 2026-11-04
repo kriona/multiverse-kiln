@@ -753,7 +753,7 @@ export class AreaPlayers
 				await this.applyAreaChange(area.loaded.area.id, true);
 			}
 		}
-		else if ((change.kind !== 'universeDeleted') && (change.kind !== 'universeDisabled'))
+		else if ((change.kind === 'area') || (change.kind === 'deleted'))
 		{
 			await this.applyAreaChange(change.areaId, false);
 		}
@@ -910,6 +910,29 @@ export class AreaPlayers
 	}
 
 	/**
+	 * Sends everyone in an area to a cell of another, for an area that has been disabled. They arrive on
+	 * the free cell nearest it, even when that area is disabled too, so nobody is left behind
+	 *
+	 * @param areaId The area they leave
+	 * @param target Where they go
+	 */
+	evacuate(areaId: string, target: { areaId: string; column: number; row: number }): void
+	{
+		for (const playerId of this.playersIn(areaId).filter((each) => !this.travelling.has(each)))
+		{
+			this.travel(playerId, {
+				column: 0,
+				row: 0,
+				targetAreaId: target.areaId,
+				targetColumn: target.column,
+				targetRow: target.row,
+				mode: 'automatic',
+				requiresWholeGroup: false
+			}, true);
+		}
+	}
+
+	/**
 	 * Sends players to the center of the fallback area, for when their area has been deleted
 	 *
 	 * @param playerIds The players
@@ -978,8 +1001,9 @@ export class AreaPlayers
 	 *
 	 * @param playerId The player's ID
 	 * @param link The link
+	 * @param intoDisabled Whether they may arrive in a disabled area, as when they are sent out of one
 	 */
-	private travel(playerId: string, link: AreaLink): void
+	private travel(playerId: string, link: AreaLink, intoDisabled = false): void
 	{
 		const targetCell = { column: link.targetColumn, row: link.targetRow };
 
@@ -997,7 +1021,7 @@ export class AreaPlayers
 					await this.areas.loadChunks(target.loaded.area.id, chunksNear([targetCell], CHUNK_LOAD_RADIUS, chunkMapOf(target)));
 				}
 
-				this.arrive(playerId, link, this.areas.get(link.targetAreaId));
+				this.arrive(playerId, link, this.areas.get(link.targetAreaId), intoDisabled);
 			})
 			.catch((error: unknown) =>
 			{
@@ -1012,8 +1036,9 @@ export class AreaPlayers
 	 * @param playerId The player's ID
 	 * @param link The link they took
 	 * @param target The link's area, or undefined when it doesn't exist
+	 * @param intoDisabled Whether they may arrive in it while it is disabled
 	 */
-	private arrive(playerId: string, link: AreaLink, target: ActiveArea | undefined): void
+	private arrive(playerId: string, link: AreaLink, target: ActiveArea | undefined, intoDisabled: boolean): void
 	{
 		// The player may have left the room while the area loaded
 		if (!this.travelling.delete(playerId))
@@ -1023,7 +1048,7 @@ export class AreaPlayers
 
 		const player = this.players.get(playerId);
 
-		if (!player || !target || !target.loaded.area.enabled)
+		if (!player || !target || (!target.loaded.area.enabled && !intoDisabled))
 		{
 			return;
 		}

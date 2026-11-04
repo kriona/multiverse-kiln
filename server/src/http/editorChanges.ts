@@ -9,8 +9,9 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { EDITOR_CHANGE_CHECKS, localize, mayMakeChange, maySaveInStage, type EditorAccess, type EditorChange, type NewRef, type SaveChangesPayload, type SaveRefusedPayload } from '@multiverse-kiln/shared';
+import { EDITOR_CHANGE_CHECKS, localize, mayMakeChange, maySaveInStage, type BarredOptions, type EditorAccess, type EditorChange, type NewRef, type SaveChangesPayload, type SaveRefusedPayload } from '@multiverse-kiln/shared';
 
+import { loadBarredOptions } from '../db/barredOptions.js';
 import { inTransaction } from '../db/transactions.js';
 import { recordUniverseEdit } from '../db/universeEditRepo.js';
 import { listUniverseRoles } from '../db/universeEditorRepo.js';
@@ -25,6 +26,7 @@ import { createAreaChange, deleteAreaChange, deleteLinkChange, editCellsChange, 
 import { ChangeRefusal, refuse, type ChangeContext, type PreparedUpload } from './editorChangeContext.js';
 import { createClassChange, removeClassChange, saveClassChange } from './editorClasses.js';
 import { createDifficultyLevelChange, removeDifficultyLevelChange, saveDifficultyLevelChange } from './editorDifficultyLevels.js';
+import { SaveDisablings } from './editorDisablings.js';
 import { addEditorChange, checkCreatorKept, emailAddedEditors, playersLosingAccess, removeEditorChange, saveEditorChange } from './editorEditors.js';
 import { createItemChange, removeItemChange, saveItemChange } from './editorItems.js';
 import { saveChangesRequest } from './editorPayloads.js';
@@ -232,10 +234,14 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 				ids: new Map(),
 				uploads,
 				published: [],
+				onCommit: [],
+				disablings: new SaveDisablings(),
 				deletedImages: []
 			};
 
 			const audit = new SaveAudit(saving);
+			const changesOptions = changes.some((change) => BARRING_KINDS.has(change.kind));
+			const barredBefore = (changesOptions ? await loadBarredOptions(base.universe.id, transaction) : undefined);
 
 			for (; current < changes.length; current++)
 			{
@@ -243,8 +249,25 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 				await applyChange(saving, changes[current]);
 			}
 
+			await saving.disablings.finish(saving);
 			current = lastEditorChange;
 			await checkCreatorKept(saving);
+
+			if (barredBefore)
+			{
+				const barred = await loadBarredOptions(base.universe.id, transaction);
+
+				if (!sameBarred(barredBefore, barred))
+				{
+					saving.onCommit.push(() =>
+					{
+						universeAccessChanges.publishBarred({
+							universeId: base.universe.id,
+							barred
+						});
+					});
+				}
+			}
 
 			if (saving.universe.stage !== stageBefore)
 			{
@@ -286,6 +309,25 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 	await afterCommit(context, stageChange);
 
 	return({ saved: true, ids: context.ids });
+}
+
+/**
+ * The kinds of change that can bar characters of a race or class from playing, or let them play again
+ */
+const BARRING_KINDS: ReadonlySet<EditorChange['kind']> = new Set(['saveRace', 'removeRace', 'saveClass', 'removeClass']);
+
+/**
+ * Whether two sets of barred races and classes are the same
+ *
+ * @param first One set
+ * @param second The other
+ * @return True when they bar the same races and classes
+ */
+function sameBarred(first: BarredOptions, second: BarredOptions): boolean
+{
+	const sameIds = (a: ReadonlySet<number>, b: ReadonlySet<number>): boolean => ((a.size === b.size) && [...a].every((id) => b.has(id)));
+
+	return(sameIds(first.raceIds, second.raceIds) && sameIds(first.classIds, second.classIds));
 }
 
 /**
@@ -344,7 +386,7 @@ async function applyChange(context: ChangeContext, change: EditorChange): Promis
 		case 'removeEditor':
 			return(removeEditorChange(context, change.playerId));
 		case 'universe':
-			await applyUniverseChange(context, change.update);
+			await applyUniverseChange(context, change.update, (change.largerGroups ?? 'keep'));
 			context.universe = (await findEditableUniverse(context.universe.id, context.transaction) ?? context.universe);
 			return;
 		case 'ruleset':
@@ -362,7 +404,7 @@ async function applyChange(context: ChangeContext, change: EditorChange): Promis
 		case 'createItem':
 			return(createItemChange(context, change.ref, change.settings));
 		case 'saveItem':
-			return(saveItemChange(context, change.id, change.settings));
+			return(saveItemChange(context, change.id, change.settings, (change.whenDisabled ?? 'keep')));
 		case 'removeItem':
 			return(removeItemChange(context, change.id));
 		case 'createRace':
@@ -392,7 +434,7 @@ async function applyChange(context: ChangeContext, change: EditorChange): Promis
 		case 'createArea':
 			return(createAreaChange(context, change.ref, change.area));
 		case 'updateArea':
-			return(updateAreaChange(context, change.areaId, change.update));
+			return(updateAreaChange(context, change.areaId, change.update, (change.moveTo ?? 'start')));
 		case 'deleteArea':
 			return(deleteAreaChange(context, change.areaId));
 		case 'resizeArea':
@@ -450,6 +492,11 @@ async function afterCommit(context: ChangeContext, stageChange: StageChange | un
 			told.add(key);
 			areaChanges.publish(change);
 		}
+	}
+
+	for (const tell of context.onCommit)
+	{
+		tell();
 	}
 }
 

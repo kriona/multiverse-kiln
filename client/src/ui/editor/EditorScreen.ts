@@ -209,7 +209,7 @@ export class EditorScreen
 				window.location.assign(HOME_PAGE_URL);
 			}
 		});
-		this.saveBar = new SaveBar(api, () => this.universe?.id, (tab) =>
+		this.saveBar = new SaveBar(api, () => this.universe, (tab) =>
 		{
 			const name = SAVE_ORDER.find((candidate) => (this.savableTabs[candidate] === tab));
 

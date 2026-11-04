@@ -679,6 +679,7 @@ export const AUDIT_FIELDS = [
 	'visionCost',
 	'walkSeconds',
 	'enabled',
+	'keepPlaying',
 	'type',
 	'abilityModifiers',
 	'floatingBonus',
@@ -790,6 +791,7 @@ export interface AuditFieldValues
 	visionCost: number;
 	walkSeconds: number;
 	enabled: boolean;
+	keepPlaying: boolean;
 
 	/**
 	 * An item type's key (ITEM_KINDS)
@@ -1374,6 +1376,13 @@ export interface RaceSettings extends StartingExtras
 	enabled: boolean;
 
 	/**
+	 * While the race is disabled, whether characters already of the race may keep playing, so only new
+	 * characters can't choose it; false turns them out of the lobby and their groups until it is enabled
+	 * again. It has no effect while the race is enabled
+	 */
+	keepPlaying: boolean;
+
+	/**
 	 * The race's rules under the universe's ruleset
 	 */
 	rules: RaceRules;
@@ -1452,6 +1461,12 @@ export interface ClassSettings extends StartingExtras
 	 * Whether new characters can be this class. A universe always has at least one enabled class
 	 */
 	enabled: boolean;
+
+	/**
+	 * While the class is disabled, whether characters already of the class may keep playing, as for
+	 * races (RaceSettings.keepPlaying)
+	 */
+	keepPlaying: boolean;
 
 	/**
 	 * Where the class's characters of each race listed start, each race listed once. Must be empty while

@@ -1,6 +1,7 @@
 import type { CharacterListPayload, CharacterSummary, InviteDetails } from '@multiverse-kiln/shared';
 
 import { t } from '../localization';
+import { characterMessages } from './characterMessages';
 import { describeMobScale, difficultyName } from './difficultyNames';
 import { getElement, setPageTitle, showMessage } from './dom';
 import { characterDescription } from './raceAndClassNames';
@@ -183,7 +184,11 @@ export class InviteScreen
 					defaultMessage: 'To be deleted',
 					description: 'On the screen an invite link opens, beside a character who can\'t join because they have been given their last rites (are waiting to be deleted)'
 				})
-				: undefined));
+				: ((character.barredBy !== null)
+					? t(characterMessages.barred, {
+						bar: character.barredBy
+					})
+					: undefined)));
 
 		name.textContent = character.name;
 		description.className = 'character-description';

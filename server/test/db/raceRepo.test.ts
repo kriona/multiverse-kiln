@@ -10,6 +10,7 @@ import { addUniverse, addArea } from './fixtures.js';
 const lizardfolk: CustomRaceSettings = {
 	name: 'Lizardfolk',
 	enabled: true,
+	keepPlaying: true,
 	startingMoney: emptyMoney(),
 	startingItems: [],
 	startingAreaId: null,
@@ -75,6 +76,7 @@ describe('raceRepo', () =>
 					key,
 					name: null,
 					enabled: true,
+					keepPlaying: true,
 					startingMoney: emptyMoney(),
 					startingItems: [],
 					startingAreaId: null,

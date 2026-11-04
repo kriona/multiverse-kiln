@@ -83,12 +83,19 @@ export class CharacterList
 		button.setAttribute('aria-pressed', String(isPlaying));
 		button.append(name, ' ', description);
 
-		// Kept focusable, so a screen reader still reads the character and when they go
+		// Kept focusable, so a screen reader still reads the character and when they go, or why they can't play
 		if (character.deleteAt !== null)
 		{
 			button.setAttribute('aria-disabled', 'true');
 			button.append(' ', this.note('character-leaving', t(characterMessages.leaving, {
 				deleteAt: Date.parse(character.deleteAt)
+			})));
+		}
+		else if (character.barredBy !== null)
+		{
+			button.setAttribute('aria-disabled', 'true');
+			button.append(' ', this.note('character-leaving', t(characterMessages.barred, {
+				bar: character.barredBy
 			})));
 		}
 		else if ((character.groupId !== null) && (character.groupId === groupId))
@@ -116,7 +123,7 @@ export class CharacterList
 
 		button.addEventListener('click', () =>
 		{
-			if (!isPlaying && (character.deleteAt === null))
+			if (!isPlaying && (character.deleteAt === null) && (character.barredBy === null))
 			{
 				this.actions.choose(character);
 			}

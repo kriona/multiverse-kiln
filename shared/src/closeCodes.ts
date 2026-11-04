@@ -49,5 +49,17 @@ export enum ServerCloseCode
 	/**
 	 * The universe reached the end of time, so its lobby is locked; groups can still be opened, read-only
 	 */
-	UniverseLocked = 4019
+	UniverseLocked = 4019,
+
+	/**
+	 * The universe's creators disabled the race or class of the character the window controls, for
+	 * characters already of it, so they can't play until it is enabled again
+	 */
+	CharacterBarred = 4020,
+
+	/**
+	 * The universe's creators lowered its group size, which took the character the window controls out
+	 * of the group, or disbanded it
+	 */
+	GroupSizeLowered = 4021
 }

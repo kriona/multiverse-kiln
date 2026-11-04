@@ -1,12 +1,15 @@
 import { ABILITY_NAMES, DARKVISION_NAMES, pf1eAbilityModifier, RULESET_ABILITIES, SIZE_NAMES, type CharacterSheet } from '@multiverse-kiln/shared';
 import lastRitesIcon from 'virtual:icon/game-icons:candle-light';
+import signOutIcon from 'virtual:icon/ph:sign-out';
 
 import { currentLocale, signedNumber, t } from '../localization';
 import type { CharacterApi } from '../network/characterApi';
 import { describeEditorError } from '../network/editorApi';
+import type { GroupApi } from '../network/groupApi';
 import { announce } from './announcer';
 import { getElement, setButtonLabel, showMessage } from './dom';
 import { createItemIcon, itemName } from './itemNames';
+import { describeLeaving, leaveButtonLabel, leavingMessages } from './leavingGroup';
 import { formatMoney } from './moneyField';
 import { characterDescription, themeName } from './raceAndClassNames';
 
@@ -17,7 +20,8 @@ import { characterDescription, themeName } from './raceAndClassNames';
  * It only shows the character, so there is nothing in it to save. Its Delete button asks twice before
  * deleting the character: the second question cremates them (deletes them immediately) or gives them
  * their last rites (deletes them the site's characterDeletionDays later, and isn't offered while that
- * is 0). A character given their last rites can be restored from their sheet until then
+ * is 0). A character given their last rites can be restored from their sheet until then. A character in
+ * a group who can't play, because their race or class is disabled, can leave the group from their sheet
  */
 export class CharacterSheetDialog
 {
@@ -27,7 +31,6 @@ export class CharacterSheetDialog
 	private readonly status = getElement('character-sheet-status', HTMLElement);
 	private readonly error = getElement('character-sheet-error', HTMLElement);
 	private readonly pending = getElement('character-sheet-pending', HTMLElement);
-	private readonly inGroup = getElement('character-sheet-in-group', HTMLElement);
 	private readonly body = getElement('character-sheet-body', HTMLElement);
 	private readonly abilityRows = getElement('character-sheet-ability-rows', HTMLTableSectionElement);
 	private readonly traits = getElement('character-sheet-traits', HTMLDListElement);
@@ -35,6 +38,12 @@ export class CharacterSheetDialog
 	private readonly noItems = getElement('character-sheet-no-items', HTMLElement);
 	private readonly deleteButton = getElement('character-sheet-delete', HTMLButtonElement);
 	private readonly restoreButton = getElement('character-sheet-restore', HTMLButtonElement);
+	private readonly leaveButton = getElement('character-sheet-leave', HTMLButtonElement);
+	private readonly leaveDialog = getElement('character-leave-dialog', HTMLDialogElement);
+	private readonly leaveTitle = getElement('character-leave-title', HTMLElement);
+	private readonly leaveQuestion = getElement('character-leave-question', HTMLElement);
+	private readonly leaveError = getElement('character-leave-error', HTMLElement);
+	private readonly leaveConfirm = getElement('character-leave-confirm', HTMLButtonElement);
 	private readonly deleteDialog = getElement('character-delete-dialog', HTMLDialogElement);
 	private readonly deleteQuestion = getElement('character-delete-question', HTMLElement);
 	private readonly farewellDialog = getElement('character-farewell-dialog', HTMLDialogElement);
@@ -61,9 +70,11 @@ export class CharacterSheetDialog
 
 	/**
 	 * @param api The player's characters
-	 * @param charactersChanged Called after a character is deleted, given their last rites or restored
+	 * @param groupApi The routes that take characters out of groups
+	 * @param charactersChanged Called after a character is deleted, given their last rites, restored or
+	 * taken out of their group
 	 */
-	constructor(private readonly api: CharacterApi, private readonly charactersChanged: () => void)
+	constructor(private readonly api: CharacterApi, private readonly groupApi: GroupApi, private readonly charactersChanged: () => void)
 	{
 		getElement('character-sheet-close', HTMLButtonElement).addEventListener('click', () =>
 		{
@@ -84,6 +95,30 @@ export class CharacterSheetDialog
 		this.restoreButton.addEventListener('click', () =>
 		{
 			void this.restore();
+		});
+
+		this.leaveButton.addEventListener('click', () =>
+		{
+			this.askToLeave();
+		});
+
+		getElement('character-leave-cancel', HTMLButtonElement).addEventListener('click', () =>
+		{
+			this.leaveDialog.close();
+		});
+
+		this.leaveConfirm.addEventListener('click', () =>
+		{
+			void this.leave();
+		});
+
+		// Escape doesn't close the question while the answer is being sent
+		this.leaveDialog.addEventListener('cancel', (event) =>
+		{
+			if (this.busy)
+			{
+				event.preventDefault();
+			}
 		});
 
 		getElement('character-delete-cancel', HTMLButtonElement).addEventListener('click', () =>
@@ -142,9 +177,9 @@ export class CharacterSheetDialog
 		});
 		this.body.hidden = true;
 		this.pending.hidden = true;
-		this.inGroup.hidden = true;
 		this.deleteButton.hidden = true;
 		this.restoreButton.hidden = true;
+		this.leaveButton.hidden = true;
 		this.current = undefined;
 		showMessage(this.error, undefined);
 		this.dialog.showModal();
@@ -201,7 +236,8 @@ export class CharacterSheetDialog
 	/**
 	 * Shows whether the character is waiting to be deleted, with Restore for one who is. Delete is
 	 * offered either way, so a character given their last rites can still be cremated, except to a
-	 * character in a group, whose sheet says they have to leave it first
+	 * character in a group, who has to leave it first. A character who can't play because their race or
+	 * class is disabled can't leave their group from it, so their sheet offers Leave group
 	 *
 	 * @param sheet The character
 	 */
@@ -221,17 +257,88 @@ export class CharacterSheetDialog
 			: '');
 		this.pending.hidden = !waiting;
 		this.restoreButton.hidden = !waiting;
-		this.inGroup.textContent = (sheet.inGroup
-			? t({
-				id: 'characterSheet.inGroup',
-				defaultMessage: '{name} is in a group, and has to leave it before they can be deleted.',
-				description: 'On the sheet of a character in a group, in place of the button that deletes them; {name} is the character\'s name'
-			}, {
-				name: sheet.name
-			})
-			: '');
-		this.inGroup.hidden = !sheet.inGroup;
-		this.deleteButton.hidden = sheet.inGroup;
+		this.deleteButton.hidden = (sheet.group !== null);
+		this.leaveButton.hidden = ((sheet.group === null) || (sheet.barredBy === null));
+
+		if (sheet.group)
+		{
+			setButtonLabel(this.leaveButton, signOutIcon, leaveButtonLabel(sheet.group.isAnchor));
+		}
+	}
+
+	/**
+	 * Asks whether to take the character shown out of their group
+	 */
+	private askToLeave(): void
+	{
+		const sheet = this.current?.sheet;
+
+		if (!sheet?.group)
+		{
+			return;
+		}
+
+		const { title, question, confirm } = describeLeaving(sheet.name, sheet.group.isAnchor);
+
+		this.leaveTitle.textContent = title;
+		this.leaveQuestion.textContent = question;
+		setButtonLabel(this.leaveConfirm, signOutIcon, confirm);
+		this.leaveConfirm.disabled = false;
+		showMessage(this.leaveError, undefined);
+		this.leaveDialog.showModal();
+	}
+
+	/**
+	 * Takes the character shown out of their group, once the player has said so, and offers Delete
+	 */
+	private async leave(): Promise<void>
+	{
+		const current = this.current;
+		const group = current?.sheet.group;
+
+		if (!current || !group || this.busy)
+		{
+			return;
+		}
+
+		this.busy = true;
+		this.leaveConfirm.disabled = true;
+
+		try
+		{
+			await this.groupApi.leaveGroup(current.universeId, group.groupId, current.sheet.id);
+		}
+		catch (error)
+		{
+			showMessage(this.leaveError, describeEditorError(error, leavingMessages.leaveFailed));
+			this.leaveConfirm.disabled = false;
+			return;
+		}
+		finally
+		{
+			this.busy = false;
+		}
+
+		this.leaveDialog.close();
+
+		if (this.current === current)
+		{
+			current.sheet = {
+				...current.sheet,
+				group: null
+			};
+			this.showDeletion(current.sheet);
+			this.deleteButton.focus();
+		}
+
+		announce(t({
+			id: 'characterSheet.leftGroup',
+			defaultMessage: '{name} has left the group.',
+			description: 'Read out by screen readers once a character who can\'t play, because their race or class is disabled, has been taken out of their group from their sheet; {name} is the character\'s name'
+		}, {
+			name: current.sheet.name
+		}));
+		this.charactersChanged();
 	}
 
 	/**

@@ -267,6 +267,7 @@ describe('Character routes', () =>
 				race: { key: 'dwarf', name: null },
 				characterClass: { key: 'fighter', name: null },
 				deleteAt: null,
+				barredBy: null,
 				groupId: null
 			}],
 			lastPlayedId: created.body.id
@@ -300,7 +301,8 @@ describe('Character routes', () =>
 			characterClass: { key: 'fighter', name: null },
 			deleteAt: null,
 			deletionDays: DEFAULT_SITE_SETTINGS.characterDeletionDays,
-			inGroup: false,
+			group: null,
+			barredBy: null,
 			size: 'medium',
 			darkvision: 'normal',
 			lightSensitivity: false,
@@ -491,6 +493,7 @@ describe('Character routes', () =>
 		const lizardfolk: RaceSettings = {
 			name: 'Lizardfolk',
 			enabled: false,
+			keepPlaying: true,
 			startingMoney: emptyMoney(),
 			startingItems: [],
 			startingAreaId: null,
@@ -519,6 +522,7 @@ describe('Character routes', () =>
 		const lizardfolk: RaceSettings = {
 			name: 'Lizardfolk',
 			enabled: true,
+			keepPlaying: true,
 			startingMoney: emptyMoney(),
 			startingItems: [],
 			startingAreaId: null,

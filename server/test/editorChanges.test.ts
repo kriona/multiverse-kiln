@@ -29,6 +29,7 @@ const missingRace: EditorChange = {
 	settings: {
 		name: 'Nobody',
 		enabled: true,
+		keepPlaying: true,
 		startingMoney: emptyMoney(),
 		startingItems: [],
 		startingAreaId: null,
@@ -95,7 +96,7 @@ describe('Saving editor changes', () =>
 		assert.deepStrictEqual(links.links.map((link) => link.targetAreaId), [caveId]);
 	});
 
-	it('saves nothing when a change is refused, and says which one', async () =>
+	it('nothing saves when a change is refused, and says which one', async () =>
 	{
 		const universeId = await createUniverse(ada);
 		const response = await saveChanges(ada, universeId, [

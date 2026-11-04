@@ -8,8 +8,9 @@
 import { createHash, randomBytes } from 'crypto';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { canPlayUniverse, defineMessages, DISALLOWED_TEXT_CHARACTERS, INVITE_DURATION_MS, INVITE_DURATIONS, INVITES_PATH, MAX_GROUP_NAME_LENGTH, UNIVERSES_PATH, type DifficultyLevelListPayload, type GroupCharacterRequest, type GroupCreatedPayload, type GroupJoinedPayload, type InviteCreatedPayload, type InviteDetails, type NewGroupRequest, type NewInviteRequest } from '@multiverse-kiln/shared';
+import { canPlayUniverse, characterBar, defineMessages, DISALLOWED_TEXT_CHARACTERS, INVITE_DURATION_MS, INVITE_DURATIONS, INVITES_PATH, MAX_GROUP_NAME_LENGTH, UNIVERSES_PATH, type DifficultyLevelListPayload, type GroupCharacterRequest, type GroupCreatedPayload, type GroupJoinedPayload, type InviteCreatedPayload, type InviteDetails, type NewGroupRequest, type NewInviteRequest } from '@multiverse-kiln/shared';
 
+import { loadBarredOptions } from '../db/barredOptions.js';
 import { findOwnCharacter, type OwnCharacter } from '../db/characterRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
 import type { Executor } from '../db/client.js';
@@ -73,6 +74,11 @@ const messages = defineMessages({
 		id: 'error.groupCharacterUnavailable',
 		defaultMessage: 'That character can\'t do that: they don\'t exist, aren\'t yours, or have been given their last rites.',
 		description: 'Why a character couldn\'t make, join or leave a group: the character isn\'t one of the player\'s in this universe, or is waiting to be deleted'
+	},
+	characterBarred: {
+		id: 'error.groupCharacterBarred',
+		defaultMessage: '{bar, select, race {That character\'s race is disabled, so they can\'t play.} other {That character\'s class is disabled, so they can\'t play.}}',
+		description: 'Why a character couldn\'t make or join a group: the universe\'s creators disabled their race (bar is race) or class (bar is class) and stopped characters already of it playing'
 	},
 	alreadyInGroup: {
 		id: 'error.alreadyInGroup',
@@ -219,6 +225,19 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			return({ status: 404, message: messages.characterUnavailable });
 		}
 
+		const bar = characterBar(character, await loadBarredOptions(universe.id, transaction));
+
+		if (bar !== null)
+		{
+			return({
+				status: 409,
+				message: messages.characterBarred,
+				values: {
+					bar
+				}
+			});
+		}
+
 		if (await findMembership(anchorId, transaction))
 		{
 			return({ status: 409, message: messages.alreadyInGroup });
@@ -247,6 +266,7 @@ async function createRoute(request: Request, response: Response): Promise<void>
 				playerId,
 				name: character.name,
 				raceId: character.raceId,
+				classId: character.classId,
 				playable: true
 			}
 		});
@@ -481,6 +501,19 @@ async function acceptInviteRoute(request: Request, response: Response): Promise<
 			return({ status: 404, message: messages.characterUnavailable });
 		}
 
+		const bar = characterBar(character, await loadBarredOptions(universe.id, transaction));
+
+		if (bar !== null)
+		{
+			return({
+				status: 409,
+				message: messages.characterBarred,
+				values: {
+					bar
+				}
+			});
+		}
+
 		const membership = await findMembership(joiningId, transaction);
 
 		if (membership?.groupId === group.id)
@@ -518,6 +551,7 @@ async function acceptInviteRoute(request: Request, response: Response): Promise<
 				playerId,
 				name: character.name,
 				raceId: character.raceId,
+				classId: character.classId,
 				playable: true
 			}
 		});

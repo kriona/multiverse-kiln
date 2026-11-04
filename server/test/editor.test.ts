@@ -40,6 +40,7 @@ const torch: ItemSettings = {
 const lizardfolk: RaceSettings = {
 	name: 'Lizardfolk',
 	enabled: true,
+	keepPlaying: true,
 	startingMoney: emptyMoney(),
 	startingItems: [],
 	startingAreaId: null,
@@ -51,6 +52,7 @@ const lizardfolk: RaceSettings = {
 const gunslinger: ClassSettings = {
 	name: 'Gunslinger',
 	enabled: true,
+	keepPlaying: true,
 	startingMoney: emptyMoney(),
 	startingItems: [],
 	startingAreaId: null,
@@ -184,9 +186,9 @@ function deleteTileset(editor: Editor, universeId: string, graphicId: string): P
  */
 function raceSettingsOf(race: EditorRace): RaceSettings
 {
-	const { name, enabled, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, rules } = race;
+	const { name, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, rules } = race;
 
-	return({ name, enabled, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, rules });
+	return({ name, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, rules });
 }
 
 /**
@@ -197,9 +199,9 @@ function raceSettingsOf(race: EditorRace): RaceSettings
  */
 function classSettingsOf(characterClass: EditorClass): ClassSettings
 {
-	const { name, enabled, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, raceAreas, rules } = characterClass;
+	const { name, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, raceAreas, rules } = characterClass;
 
-	return({ name, enabled, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, raceAreas, rules });
+	return({ name, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, raceAreas, rules });
 }
 
 describe('World editor API', () =>

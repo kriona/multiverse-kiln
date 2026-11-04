@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { characterPath, charactersPath, difficultyLevelsPath, groupPath, groupsPath, invitePath, type CharacterListPayload, type CharacterSheet, type DifficultyLevelListPayload, type GroupCreatedPayload, type GroupJoinedPayload, type InviteCreatedPayload, type InviteDetails, type NewGroupRequest } from '@multiverse-kiln/shared';
+import { characterPath, charactersPath, difficultyLevelsPath, groupPath, groupsPath, invitePath, type CharacterListPayload, type CharacterSheet, type DifficultyLevelListPayload, type ErrorPayload, type GroupCreatedPayload, type GroupJoinedPayload, type InviteCreatedPayload, type InviteDetails, type NewGroupRequest } from '@multiverse-kiln/shared';
 
 import { listPlayableCharacters, scheduleCharacterDeletion } from '../src/db/characterRepo.js';
 import { findDefaultDifficultyLevel, listDifficultyLevels } from '../src/db/difficultyRepo.js';
@@ -8,7 +8,7 @@ import { loadEditorRaces, saveEditedDefaultRace } from '../src/db/raceRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
 import { updateUniverseSettings } from '../src/db/universeRepo.js';
 import { groupChanges, type GroupChange } from '../src/players/groupChanges.js';
-import { addCharacter, addPlayableUniverse, defaultRaceId, type PlayableUniverse } from './db/fixtures.js';
+import { addCharacter, addPlayableUniverse, defaultClassId, defaultRaceId, type PlayableUniverse } from './db/fixtures.js';
 import { addPlayer, logInBrowser, type TestBrowser } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
 
@@ -210,8 +210,27 @@ describe('group routes', () =>
 				kind: 'joined',
 				groupId,
 				universeId: universe.universeId,
-				character: { characterId: ada.characterId, playerId: ada.playerId, name: 'Ada', raceId: await defaultRaceId('dwarf'), playable: true }
+				character: { characterId: ada.characterId, playerId: ada.playerId, name: 'Ada', raceId: await defaultRaceId('dwarf'), classId: await defaultClassId('fighter'), playable: true }
 			}]);
+		});
+
+		it('refuses a character whose race is disabled for characters already of it', async () =>
+		{
+			const dwarfId = await defaultRaceId('dwarf');
+			const dwarf = (await loadEditorRaces(universe.universeId, 'pf1e')).find((race) => (race.id === dwarfId));
+
+			assert.ok(dwarf);
+			await inTransaction((transaction) => saveEditedDefaultRace(universe.universeId, 'pf1e', dwarfId, {
+				...dwarf,
+				enabled: false,
+				keepPlaying: false
+			}, transaction));
+
+			const refused = await send<ErrorPayload>(ada, 'POST', groupsPath(universe.universeId), groupRequest(ada.characterId));
+
+			assert.strictEqual(refused.status, 409);
+			assert.strictEqual(refused.body.error.id, 'error.groupCharacterBarred');
+			assert.strictEqual(await findMembership(ada.characterId), undefined);
 		});
 
 		it('starts at the universe\'s starting cell when the character has no starting area of their own', async () =>
@@ -468,7 +487,7 @@ describe('group routes', () =>
 				kind: 'left',
 				groupId,
 				universeId: universe.universeId,
-				character: { characterId: grace.characterId, playerId: grace.playerId, name: 'Grace', raceId: await defaultRaceId('dwarf'), playable: true }
+				character: { characterId: grace.characterId, playerId: grace.playerId, name: 'Grace', raceId: await defaultRaceId('dwarf'), classId: await defaultClassId('fighter'), playable: true }
 			});
 		});
 
@@ -485,6 +504,36 @@ describe('group routes', () =>
 			assert.strictEqual(await findMembership(grace.characterId), undefined);
 			assert.strictEqual(changes.at(-1)?.kind, 'disbanded');
 			assert.deepStrictEqual((changes.at(-1) as Extract<GroupChange, { kind: 'disbanded' }>).members.map(({ characterId }) => characterId).sort(), [ada.characterId, grace.characterId].sort());
+		});
+
+		it('lets a character whose race is disabled for characters already of it leave, as their sheet offers', async () =>
+		{
+			const groupId = await createGroup(ada);
+			const dwarfId = await defaultRaceId('dwarf');
+			const path = characterPath(universe.universeId, grace.characterId);
+
+			await send(grace, 'POST', invitePath(await invite(ada, groupId)), { characterId: grace.characterId });
+
+			const dwarf = (await loadEditorRaces(universe.universeId, 'pf1e')).find((race) => (race.id === dwarfId));
+
+			assert.ok(dwarf);
+			await inTransaction((transaction) => saveEditedDefaultRace(universe.universeId, 'pf1e', dwarfId, {
+				...dwarf,
+				enabled: false,
+				keepPlaying: false
+			}, transaction));
+
+			const { group, barredBy } = (await send<CharacterSheet>(grace, 'GET', path)).body;
+
+			assert.deepStrictEqual({ group, barredBy }, {
+				group: {
+					groupId,
+					isAnchor: false
+				},
+				barredBy: 'race'
+			});
+			assert.strictEqual((await send(grace, 'POST', `${groupPath(universe.universeId, groupId)}/leave`, { characterId: grace.characterId })).status, 204);
+			assert.strictEqual((await send<CharacterSheet>(grace, 'GET', path)).body.group, null);
 		});
 
 		it('refuses another player\'s character, and a character not in the group', async () =>
@@ -508,7 +557,10 @@ describe('group routes', () =>
 
 				assert.strictEqual((await send(member, 'DELETE', path)).status, 409);
 				assert.strictEqual((await send(member, 'PUT', `${path}/deletion`)).status, 409);
-				assert.strictEqual((await send<CharacterSheet>(member, 'GET', path)).body.inGroup, true);
+				assert.deepStrictEqual((await send<CharacterSheet>(member, 'GET', path)).body.group, {
+					groupId,
+					isAnchor: (member === ada)
+				});
 			}
 
 			assert.ok(await findGroup(groupId));

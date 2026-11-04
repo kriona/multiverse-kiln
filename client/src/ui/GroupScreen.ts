@@ -8,6 +8,7 @@ import { announce } from './announcer';
 import { CharacterList } from './CharacterList';
 import { characterMessages } from './characterMessages';
 import { getElement, setButtonLabel, setPageTitle, showMessage } from './dom';
+import { describeLeaving, leaveButtonLabel } from './leavingGroup';
 import type { MapView } from './MapView';
 import { addShortcut } from './shortcuts';
 import { describeTimeOfDay } from './timeOfDay';
@@ -530,46 +531,11 @@ export class GroupScreen
 	 */
 	private askToLeave(): void
 	{
-		const name = (this.members.get(this.characterId ?? '')?.name ?? '');
-		const isAnchor = (this.characterId === this.anchorId);
+		const { title, question, confirm } = describeLeaving((this.members.get(this.characterId ?? '')?.name ?? ''), (this.characterId === this.anchorId));
 
-		this.leaveTitle.textContent = (isAnchor
-			? t({
-				id: 'leaveGroup.disbandTitle',
-				defaultMessage: 'Disband the Group?',
-				description: 'Title of the dialog that asks the anchor being\'s player whether to leave the group, which ends it'
-			})
-			: t({
-				id: 'leaveGroup.title',
-				defaultMessage: 'Leave the Group?',
-				description: 'Title of the dialog that asks whether to take a character out of their group'
-			}));
-		this.leaveQuestion.textContent = (isAnchor
-			? t({
-				id: 'leaveGroup.disbandQuestion',
-				defaultMessage: '{name} is the anchor being, so if they leave, the group is disbanded for everyone. Every character keeps their items and money.',
-				description: 'Asked before the anchor being leaves their group; {name} is the anchor being\'s name'
-			}, {
-				name
-			})
-			: t({
-				id: 'leaveGroup.question',
-				defaultMessage: '{name} leaves the group and goes to the lobby. To come back, they need a new invite.',
-				description: 'Asked before a character leaves their group; {name} is the character\'s name'
-			}, {
-				name
-			}));
-		setButtonLabel(this.leaveConfirm, signOutIcon, (isAnchor
-			? t({
-				id: 'leaveGroup.disband',
-				defaultMessage: 'Disband',
-				description: 'Button that takes the anchor being out of the group, which ends the group for everyone'
-			})
-			: t({
-				id: 'leaveGroup.confirm',
-				defaultMessage: 'Leave Group',
-				description: 'Button that takes the character out of their group'
-			})));
+		this.leaveTitle.textContent = title;
+		this.leaveQuestion.textContent = question;
+		setButtonLabel(this.leaveConfirm, signOutIcon, confirm);
 		this.leaveConfirm.disabled = false;
 		showMessage(this.leaveError, undefined);
 		this.leaveDialog.showModal();
@@ -648,17 +614,7 @@ export class GroupScreen
 		this.inviteButton.hidden = ((this.locked ?? false) || (this.members.get(this.anchorId)?.playerId !== this.ownPlayerId));
 		this.leaveButton.hidden = (this.locked ?? false);
 		this.createCharacterButton.hidden = (this.locked ?? false);
-		setButtonLabel(this.leaveButton, signOutIcon, ((this.characterId === this.anchorId)
-			? t({
-				id: 'group.disband',
-				defaultMessage: 'Disband Group',
-				description: 'Button, in place of Leave group while the window plays the anchor being, that takes them out of the group, which ends the group for everyone (it asks first)'
-			})
-			: t({
-				id: 'group.leave',
-				defaultMessage: 'Leave group',
-				description: 'Button that takes the character this window plays out of the group, back to the lobby'
-			})));
+		setButtonLabel(this.leaveButton, signOutIcon, leaveButtonLabel(this.characterId === this.anchorId));
 		this.characterChoices.render(this.characters, this.characterId, this.groupId);
 		this.renderMembers();
 	}

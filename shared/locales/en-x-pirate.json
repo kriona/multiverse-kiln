@@ -56,8 +56,8 @@
 		"source": "Server Admins"
 	},
 	"admin.admins.hint": {
-		"message": "Officers can set foot in these quarters once they raise two-factor authentication. The ship always keeps at least one.",
-		"source": "Server admins can use these pages once they turn on two-factor authentication. The site always keeps at least one."
+		"message": "Officers can set foot in these quarters once they raise two-factor authentication.",
+		"source": "Server admins can use these pages once they turn on two-factor authentication."
 	},
 	"admin.admins.loadFailed": {
 		"message": "Couldn't haul up the officers' roll.",
@@ -787,10 +787,6 @@
 		"message": "Lifeblood",
 		"source": "Hit points"
 	},
-	"characterSheet.inGroup": {
-		"message": "{name} sails with a crew, and has to jump ship before they can be sent to Davy Jones.",
-		"source": "{name} is in a group, and has to leave it before they can be deleted."
-	},
 	"characterSheet.item": {
 		"message": "{quantity, plural, =1 {{item}} other {{item} x#}}",
 		"source": "{quantity, plural, =1 {{item}} other {{item} x#}}"
@@ -798,6 +794,10 @@
 	"characterSheet.items": {
 		"message": "Kit",
 		"source": "Equipment"
+	},
+	"characterSheet.leftGroup": {
+		"message": "{name} has jumped ship.",
+		"source": "{name} has left the group."
 	},
 	"characterSheet.lightSensitivityValue": {
 		"message": "{lightSensitivity, select, true {Aye} other {Nay}}",
@@ -850,6 +850,10 @@
 	"characterSheet.traits": {
 		"message": "Marks o' the hand",
 		"source": "Traits"
+	},
+	"characters.barred": {
+		"message": "{bar, select, race {Can't sail: yer folk be closed} other {Can't sail: yer callin' be closed}}",
+		"source": "{bar, select, race {Can't play: your race is disabled} other {Can't play: your class is disabled}}"
 	},
 	"characters.heading": {
 		"message": "Yer hands",
@@ -1671,6 +1675,70 @@
 		"message": "Changed from the ruleset",
 		"source": "Edited from default"
 	},
+	"editor.impact.area": {
+		"message": "Closin' {name}: {count, plural, one {# hand be in it} other {# hands be in it}}",
+		"source": "Disabling {name}: {count, plural, one {# character is in it} other {# characters are in it}}"
+	},
+	"editor.impact.class": {
+		"message": "Closin' {name}: {count, plural, one {# hand follows this callin' fer a trade} other {# hands follow this callin' fer a trade}}",
+		"source": "Disabling {name}: {count, plural, one {# character is this class} other {# characters are this class}}"
+	},
+	"editor.impact.disbandGroups": {
+		"message": "Scuttle the bigger crews",
+		"source": "Disband the larger groups"
+	},
+	"editor.impact.explanation": {
+		"message": "These changes reach hands that sailors be usin'. Choose what befalls 'em, then stow it.",
+		"source": "These changes affect characters players are using. Choose what happens to them, then save."
+	},
+	"editor.impact.groupSize": {
+		"message": "Crews o' {size} at most: {count, plural, one {# crew be bigger} other {# crews be bigger}}",
+		"source": "Groups of at most {size}: {count, plural, one {# group is larger} other {# groups are larger}}"
+	},
+	"editor.impact.item": {
+		"message": "Closin' {name}: {count, plural, one {# hand carries it} other {# hands carry it}}",
+		"source": "Disabling {name}: {count, plural, one {# character carries it} other {# characters carry it}}"
+	},
+	"editor.impact.keepGroups": {
+		"message": "Let those crews keep sailin'; only new crews be kept small",
+		"source": "Let those groups keep playing; only limit the size of new groups"
+	},
+	"editor.impact.keepItem": {
+		"message": "Let 'em keep it; no new ones be made",
+		"source": "Let them keep using it; no new copies are made"
+	},
+	"editor.impact.keepPlaying": {
+		"message": "Let 'em keep sailin'; only new hands can't choose it",
+		"source": "Let them keep playing; only new characters can't choose it"
+	},
+	"editor.impact.preventPlaying": {
+		"message": "Keep 'em ashore till it be open again",
+		"source": "Stop them playing until it is enabled again"
+	},
+	"editor.impact.race": {
+		"message": "Closin' {name}: {count, plural, one {# hand hails from this folk} other {# hands hail from this folk}}",
+		"source": "Disabling {name}: {count, plural, one {# character is this race} other {# characters are this race}}"
+	},
+	"editor.impact.removeItem": {
+		"message": "Take it from 'em; they get it back if it be opened again",
+		"source": "Take it from them; they get it back if it is enabled again"
+	},
+	"editor.impact.removeMembers": {
+		"message": "Put hands ashore, the newest aboard first, till the crew fits",
+		"source": "Take out members, those who joined most recently first, until they fit"
+	},
+	"editor.impact.title": {
+		"message": "Sailors Be Caught Up in This",
+		"source": "Players Are Affected"
+	},
+	"editor.impact.toParent": {
+		"message": "Move all hands to the mother area",
+		"source": "Move everyone to the area it is in"
+	},
+	"editor.impact.toStart": {
+		"message": "Move all hands back to where they set sail",
+		"source": "Move everyone back to where they start"
+	},
 	"editor.item.addTitle": {
 		"message": "Add Booty",
 		"source": "Add Item"
@@ -2062,6 +2130,10 @@
 	"editor.openFailed": {
 		"message": "Couldn't open the universe.",
 		"source": "Could not open the universe."
+	},
+	"editor.option.keepPlaying": {
+		"message": "Hands already aboard keep sailin' while it be closed",
+		"source": "Existing characters keep playing while disabled"
 	},
 	"editor.pageTitle": {
 		"message": "Edit {universe}",
@@ -3207,6 +3279,10 @@
 		"message": "Choose the knack that gets the folk's gift, an' only fer folk that have one.",
 		"source": "Choose the ability that gets the race's bonus, and only for a race that has one."
 	},
+	"error.groupCharacterBarred": {
+		"message": "{bar, select, race {That hand's folk be closed, so they can't sail.} other {That hand's callin' be closed, so they can't sail.}}",
+		"source": "{bar, select, race {That character's race is disabled, so they can't play.} other {That character's class is disabled, so they can't play.}}"
+	},
 	"error.groupCharacterUnavailable": {
 		"message": "That hand can't do that: they be lost at sea, sail under another flag, or be bound for Davy Jones.",
 		"source": "That character can't do that: they don't exist, aren't yours, or have been given their last rites."
@@ -3651,6 +3727,10 @@
 		"message": "That universe be lost at sea.",
 		"source": "That universe could not be found."
 	},
+	"group.characterBarred": {
+		"message": "The universe's captains closed the folk or callin' o' {name}, so they can't sail till it be open again. They still sail with the crew.",
+		"source": "The universe's creators disabled the race or class of {name}, so they can't play until it is enabled again. They are still in the group."
+	},
 	"group.characterLeft": {
 		"message": "{name} no longer sails with the crew, or can't take the helm.",
 		"source": "{name} is no longer in the group, or can't be played."
@@ -3734,6 +3814,10 @@
 	"group.returning": {
 		"message": "Rowin' back to the tavern...",
 		"source": "Going back to the lobby..."
+	},
+	"group.sizeLowered": {
+		"message": "The universe's captains made crews smaller, so {name} no longer sails with the crew, or the crew was scuttled.",
+		"source": "The universe's creators made groups smaller, so {name} is no longer in the group, or the group was disbanded."
 	},
 	"group.title": {
 		"message": "Crew",
@@ -4090,6 +4174,10 @@
 	"license.warranty": {
 		"message": "{siteName} be handed out in the hope that it'll be useful, but WITHOUT ANY WARRANTY; without even the implied warranty o' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.",
 		"source": "{siteName} is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details."
+	},
+	"lobby.characterBarred": {
+		"message": "The universe's captains closed that hand's folk or callin', so they can't sail till it be open again.",
+		"source": "The universe's creators disabled that character's race or class, so they can't play until it is enabled again."
 	},
 	"lobby.characterPlaying": {
 		"message": "At the helm",

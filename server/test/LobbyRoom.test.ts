@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { cellIndexInChunk, chunkCoordinate, chunkKey, DARKVISION_SQUARES, GRID_CELL_SIZE, LOBBY_ROOM_NAME, LobbyMessageType, LobbyServerMessageType, LobbyState, MAX_CHAT_MESSAGE_LENGTH, MessageType, NoticeReason, ServerCloseCode, ServerMessageType, type ChatHistoryPayload, type ChatMessage, type ChunksPayload, type LobbyJoinOptions, type NoticePayload, type Player, type PlayingAsPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, chunkCoordinate, chunkKey, DARKVISION_SQUARES, GRID_CELL_SIZE, LOBBY_ROOM_NAME, LobbyMessageType, LobbyServerMessageType, LobbyState, MAX_CHAT_MESSAGE_LENGTH, MessageType, NOTHING_BARRED, NoticeReason, ServerCloseCode, ServerMessageType, type ChatHistoryPayload, type ChatMessage, type ChunksPayload, type LobbyJoinOptions, type NoticePayload, type Player, type PlayingAsPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { listPlayableCharacters } from '../src/db/characterRepo.js';
 import { pool } from '../src/db/client.js';
@@ -19,7 +19,7 @@ import { universeAccessChanges } from '../src/players/universeAccess.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { CHAT_HISTORY_LENGTH, type LobbyRoom } from '../src/rooms/LobbyRoom.js';
 import { areaChanges } from '../src/world/areaChanges.js';
-import { addCharacter, addPlayableUniverse, addArea, defaultRaceId, defaultTileId, type PlayableUniverse } from './db/fixtures.js';
+import { addCharacter, addPlayableUniverse, addArea, defaultClassId, defaultRaceId, defaultTileId, type PlayableUniverse } from './db/fixtures.js';
 import { Inbox } from './inbox.js';
 import { addPlayer, logInBrowser } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
@@ -592,6 +592,58 @@ describe('LobbyRoom', () =>
 		});
 	});
 
+	describe('barred characters', () =>
+	{
+		it('switches a player off a character whose race is barred, refuses choosing them, and plays them again once allowed', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const [character] = await listPlayableCharacters(ada.playerId, universe.universeId);
+
+			await ada.inbox.take(LobbyServerMessageType.PlayingAs);
+			universeAccessChanges.publishBarred({ universeId: universe.universeId, barred: { raceIds: new Set([character.raceId]), classIds: new Set() } });
+
+			assert.strictEqual((await ada.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs)).characterId, null);
+			assert.strictEqual((await ada.inbox.take<NoticePayload>(LobbyServerMessageType.Notice)).reason, NoticeReason.CharacterBarred);
+			await ada.inbox.take(LobbyServerMessageType.CharactersChanged);
+
+			ada.room.send(LobbyMessageType.ChooseCharacter, { characterId: character.id });
+			assert.strictEqual((await ada.inbox.take<NoticePayload>(LobbyServerMessageType.Notice)).reason, NoticeReason.CharacterBarred);
+			assert.strictEqual(playerOf(ada).ghost, true);
+
+			universeAccessChanges.publishBarred({ universeId: universe.universeId, barred: NOTHING_BARRED });
+			assert.strictEqual((await ada.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs)).characterId, character.id);
+		});
+
+		it('starts a player who joins as a ghost when their only character is barred', async () =>
+		{
+			const playerId = (await addPlayer('Grace')).id;
+
+			await addCharacter(playerId, universe.universeId, 'Grace');
+
+			// Someone already in the lobby keeps its room open to hear what is barred
+			const room = lobbyOf(await joinAsNewPlayer(universe.universeId, 'Opener'));
+
+			universeAccessChanges.publishBarred({ universeId: universe.universeId, barred: { raceIds: new Set(), classIds: new Set([await defaultClassId('fighter')]) } });
+			await room.waitForNextPatch();
+
+			const grace = await openWindow((await logInBrowser(playerId)).cookie, universe.universeId);
+
+			assert.strictEqual((await grace.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs)).characterId, null);
+		});
+
+		it('sends players in a disabled area to the lobby area, or where they are sent', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const room = lobbyOf(ada);
+
+			areaChanges.publish({ kind: 'evacuated', areaId: universe.squareAreaId, destination: { areaId: universe.houseAreaId, column: 2, row: 2 } });
+			await waitUntil(() => (room.getAreaId(ada.playerId) === universe.houseAreaId));
+
+			areaChanges.publish({ kind: 'evacuated', areaId: universe.houseAreaId, destination: null });
+			await waitUntil(() => (room.getAreaId(ada.playerId) === universe.squareAreaId));
+		});
+	});
+
 	describe('groups', () =>
 	{
 		it('stops a player playing a character here once the character joins a group, and lets them again once it is disbanded', async () =>
@@ -604,6 +656,7 @@ describe('LobbyRoom', () =>
 				playerId: ada.playerId,
 				name: character.name,
 				raceId: character.raceId,
+				classId: character.classId,
 				playable: true
 			};
 
@@ -634,6 +687,7 @@ describe('LobbyRoom', () =>
 				playerId: ada.playerId,
 				name: character.name,
 				raceId: character.raceId,
+				classId: character.classId,
 				playable: true
 			};
 
@@ -799,7 +853,8 @@ describe('LobbyRoom', () =>
 				character: {
 					id: lovelaceId,
 					name: 'Lovelace',
-					raceId: await defaultRaceId('dwarf')
+					raceId: await defaultRaceId('dwarf'),
+					classId: await defaultClassId('fighter')
 				},
 				inGroup: false
 			});
