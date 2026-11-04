@@ -1211,6 +1211,10 @@
 		"defaultMessage": "{field}: {value}",
 		"description": "In the editor's Audit tab's list of what a save changed: one setting it changed and the value it changed it to, on its own line under the thing changed, e.g. \"Characters get tired and need sleep: yes\" or \"Group size: 4\". {field} is the setting's name and {value} its new value"
 	},
+	"editor.audit.hint": {
+		"defaultMessage": "Each save is kept here for 90 days.",
+		"description": "Explains on the editor's Audit tab how long the record of each save is kept"
+	},
 	"editor.audit.listFailed": {
 		"defaultMessage": "Could not list the saves.",
 		"description": "Shown on the editor's Audit tab when the record of saves made in the universe's editor couldn't be loaded"
@@ -5140,8 +5144,8 @@
 		"description": "In the privacy policy, how long chat is kept: only in the game server's memory, and only the most recent messages"
 	},
 	"privacy.playEditRecord": {
-		"defaultMessage": "A record of each save you make in a universe's editor: when, with which role, and what it changed, by name, with the value it gave each setting it changed (a long description only by how many characters it has). The universe's creators and the site's admins can see it. It is kept until the universe is deleted, and names you until you delete your account.",
-		"description": "In the privacy policy, the record of saves made in a universe's editor, shown to the universe's creators and the site's admins on the editor's Audit tab, kept until the universe is deleted, naming the player until they delete their account"
+		"defaultMessage": "A record of each save you make in a universe's editor: when, with which role, and what it changed, by name, with the value it gave each setting it changed (a long description only by how many characters it has). The universe's creators and the site's admins can see it. It is kept for 90 days, or until the universe is deleted if that is sooner, and names you until you delete your account.",
+		"description": "In the privacy policy, the record of saves made in a universe's editor, shown to the universe's creators and the site's admins on the editor's Audit tab, kept for 90 days or until the universe is deleted, naming the player until they delete their account"
 	},
 	"privacy.playUniverses": {
 		"defaultMessage": "The universes you create or help edit, and what you upload to them, such as tile images.",

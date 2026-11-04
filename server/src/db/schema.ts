@@ -291,9 +291,9 @@ export const universeEditors = pgTable('universe_editors', {
 ]);
 
 /**
- * A record of each save made in a universe's editor, for its Audit tab: who saved, with which role, how
- * many changes of each kind the save held, and when. Deleted with the universe, and kept after the
- * account that saved is deleted, which empties playerId
+ * A record of each save made in a universe's editor, for its Audit tab: who saved, with which role, what
+ * the save changed, and when. Kept for UNIVERSE_EDIT_DAYS (src/universeEditSweep.ts), and deleted sooner
+ * with the universe; kept after the account that saved is deleted, which empties playerId
  */
 export const universeEdits = pgTable('universe_edits', {
 	id: uuid('id').primaryKey().defaultRandom(),
@@ -318,7 +318,10 @@ export const universeEdits = pgTable('universe_edits', {
 	savedAt: timestamp('saved_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	index('universe_edits_universe_id_saved_at_index').on(table.universeId, table.savedAt),
-	index('universe_edits_player_id_index').on(table.playerId)
+	index('universe_edits_player_id_index').on(table.playerId),
+
+	// Finds the saves old enough to delete across every universe, without reading the rest
+	index('universe_edits_saved_at_index').on(table.savedAt)
 ]);
 
 /**

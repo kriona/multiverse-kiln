@@ -12,6 +12,7 @@ import { SessionRoom } from './rooms/SessionRoom.js';
 import { createTransport } from './transport.js';
 import { startAuthSweep } from './authSweep.js';
 import { startCharacterSweep } from './characterSweep.js';
+import { startUniverseEditSweep } from './universeEditSweep.js';
 import { isDevToolsEnabled } from './devTools.js';
 import { addAdminRoutes } from './http/admin.js';
 import { addAuthRoutes } from './http/auth.js';
@@ -48,12 +49,14 @@ const server = defineServer({
 	transport: createTransport({ beforeUpgrade: createOriginCheck(allowedOrigins) }),
 
 	/**
-	 * Deletes characters whose last rites are over, now and every hour, and tidies the login records
-	 * (expired sessions, old email codes and rate limit records) now and every few minutes
+	 * Deletes characters whose last rites are over and audit records of editor saves 90 days old, now
+	 * and every hour, and tidies the login records (expired sessions, old email codes and rate limit
+	 * records) now and every few minutes
 	 */
 	beforeListen: () =>
 	{
 		startCharacterSweep();
+		startUniverseEditSweep();
 		startAuthSweep();
 	},
 
