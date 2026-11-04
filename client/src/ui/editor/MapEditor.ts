@@ -210,7 +210,6 @@ export class MapEditor
 		this.linkDialog = new LinkDialog();
 		this.brushSize.max = String(MAX_BRUSH_SIZE);
 		setOptions(this.brushShape, namedOptions(BRUSH_SHAPES, BRUSH_SHAPE_NAMES));
-		this.canvasElement.style.setProperty('--map-view-width', `${VIEW_WIDTH}px`);
 		this.canvasObserver.observe(this.canvasElement);
 
 		this.undoButton.addEventListener('click', () =>
@@ -1393,8 +1392,8 @@ export class MapEditor
 	}
 
 	/**
-	 * Sizes the canvas to fill its element: the space left while the map editor is full page, and in the
-	 * page the view's usual size, or less on a screen too narrow for it
+	 * Sizes the canvas to fill its element's width, and its height too while the map editor is full
+	 * page; in the page the view keeps its usual height
 	 */
 	private fitCanvas(): void
 	{
@@ -1406,14 +1405,7 @@ export class MapEditor
 			return;
 		}
 
-		if (this.fullPage)
-		{
-			this.canvas.setSize(width, this.canvasElement.clientHeight);
-		}
-		else
-		{
-			this.canvas.setSize(Math.min(width, VIEW_WIDTH), VIEW_HEIGHT);
-		}
+		this.canvas.setSize(width, (this.fullPage ? this.canvasElement.clientHeight : VIEW_HEIGHT));
 	}
 
 	/**

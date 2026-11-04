@@ -1961,7 +1961,7 @@
 	},
 	"editor.map.heading": {
 		"defaultMessage": "Map",
-		"description": "Heading of the area's map editor"
+		"description": "Name of the area's map editor (the card holding the map and its tools), for screen readers"
 	},
 	"editor.map.help": {
 		"defaultMessage": "Drag with the right mouse button to look around, and zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link.",

@@ -186,9 +186,12 @@ html:has(.editor-save-bar:not([hidden])) .map-editor.full-page
 	bottom: $save-bar-height;
 }
 
+// How wide a tab's settings and lists grow
+$editor-panel-width: 960px;
+
 .editor-panel
 {
-	max-width: 960px;
+	max-width: $editor-panel-width;
 
 	> p:first-child
 	{
@@ -479,12 +482,30 @@ tr.staged-deleted
 	list-style: none;
 }
 
+// The Areas tab uses the page's width, so the map editor's card can fill it; its other cards are as
+// wide as the other tabs
+#editor-panel-areas
+{
+	max-width: none;
+}
+
+#area-list-view,
+#area-form,
+#area-children
+{
+	max-width: $editor-panel-width;
+}
+
+#area-children h3
+{
+	margin-top: 0;
+}
+
 .map-editor
 {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
-	margin-top: 16px;
 
 	.hint
 	{
@@ -521,6 +542,21 @@ tr.staged-deleted
 	{
 		width: 72px;
 	}
+
+	// The editing tools take the row but Full Page, wrapping onto more lines when they don't fit
+	.map-editing-tools
+	{
+		display: flex;
+		flex: 1;
+		flex-wrap: wrap;
+		align-items: flex-end;
+		gap: 12px;
+	}
+
+	.map-full-page
+	{
+		margin-left: auto;
+	}
 }
 
 .map-frame
@@ -530,8 +566,7 @@ tr.staged-deleted
 		". north ."
 		"west canvas east"
 		". south .";
-	grid-template-columns: auto minmax(0, auto) auto;
-	justify-content: start;
+	grid-template-columns: auto minmax(0, 1fr) auto;
 	align-items: center;
 	justify-items: center;
 	gap: 4px;
@@ -557,13 +592,12 @@ tr.staged-deleted
 	}
 }
 
-// The map's view, as wide as MapEditor sets --map-view-width or as the page has room for; MapEditor
-// sizes the canvas to fill it
+// The map's view, as wide as the space between the West and East buttons; MapEditor sizes the canvas
+// to fill it
 .map-canvas
 {
 	grid-area: canvas;
-	width: var(--map-view-width);
-	max-width: calc(100% - 2px);
+	justify-self: stretch;
 	overflow: hidden;
 	line-height: 0;
 	border: 1px solid $border;
@@ -581,23 +615,6 @@ tr.staged-deleted
 	align-items: center;
 	gap: 16px;
 	color: $text-muted;
-
-	label
-	{
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
-
-	input[type="number"]
-	{
-		width: 72px;
-	}
-
-	.map-full-page
-	{
-		margin-left: auto;
-	}
 }
 
 // Full page: the map editor covers the window, and MapEditor sizes the canvas to fill the space left
@@ -614,6 +631,8 @@ html:has(.map-editor.full-page) body
 	z-index: 10;
 	margin: 0;
 	padding: 16px;
+	border: none;
+	border-radius: 0;
 	background: $background-page;
 
 	.hint
@@ -625,17 +644,12 @@ html:has(.map-editor.full-page) body
 	{
 		flex: 1;
 		min-height: 0;
-		grid-template-columns: auto minmax(0, 1fr) auto;
 		grid-template-rows: auto minmax(0, 1fr) auto;
-		justify-content: stretch;
 	}
 
 	.map-canvas
 	{
-		width: auto;
-		max-width: none;
 		align-self: stretch;
-		justify-self: stretch;
 	}
 }
 
