@@ -89,7 +89,6 @@
 					<section id="editor-panel-editors" class="editor-panel editor-cards" role="tabpanel" aria-labelledby="editor-tab-editors" hidden>
 						<div class="panel">
 							<div class="filters">
-								<p class="hint" data-message="editor.editors.hint" data-translation-context="Explains the roles on the editor's Editors tab">Creators can change everything, builders can change the world, beta testers can play the universe before it opens to everyone, and translators can translate it into their languages.</p>
 								<button id="editors-add" type="button" data-shortcut="Alt+N" data-message="editor.editors.add" data-translation-context="Button on the editor's Editors tab that opens the dialog for giving a player a role in the universe"><!-- icon ph:user-plus -->Add Editor</button>
 							</div>
 							<p id="editors-error" class="form-error" role="alert" hidden></p>
@@ -589,12 +588,11 @@
 										<p id="editor-player-error" class="field-error field-message-slot"></p>
 									</div>
 								</div>
-								<p id="editor-player-hint" class="hint" data-message="editor.editors.playerHint" data-translation-context="Under the field in the dialog for adding an editor on the editor's Editors tab that finds the player to add">Type their name, or @ and their username, then choose them from the list.</p>
+								<p id="editor-player-hint" class="hint" data-message="editor.editors.playerHint" data-translation-context="Under the field in the dialog for adding an editor on the editor's Editors tab that finds the player to add">Type the user's name, or @ and their username, then choose them from the list.</p>
 							</div>
-							<label data-message="editor.editors.role" data-translation-context="Heading of the column of roles (such as creator or builder) on the editor's Editors tab, and the label of the role field in its dialog; also names the setting in the list of what a save changed, on the editor's Audit tab">
-								Role
-								<select id="editor-role-select"></select>
-							</label>
+							<fieldset id="editor-role-choice" class="choice stacked">
+								<legend data-message="editor.editors.role" data-translation-context="Heading of the column of roles (such as creator or builder) on the editor's Editors tab, and the label of the role field in its dialog; also names the setting in the list of what a save changed, on the editor's Audit tab">Role</legend>
+							</fieldset>
 							<div id="editor-languages-field" class="field-label" hidden>
 								<span id="editor-languages-label" data-message="editor.editors.languages" data-translation-context="Heading of the column on the editor's Editors tab listing the languages each translator may translate the universe into, and the label of that field in its dialog; also names the setting in the list of what a save changed, on the editor's Audit tab">Languages</span>
 								<ul id="editor-languages-chosen" class="chips" aria-labelledby="editor-languages-label" hidden></ul>

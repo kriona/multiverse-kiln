@@ -76,8 +76,8 @@
 		"source": "Player to add"
 	},
 	"admin.admins.playerHint": {
-		"message": "Type their name, or @ and their username, then pick them from the list.",
-		"source": "Type their name, or @ and their username, then choose them from the list."
+		"message": "Type the user's name, or @ and their username, then pick them from the list.",
+		"source": "Type the user's name, or @ and their username, then choose them from the list."
 	},
 	"admin.admins.remove": {
 		"message": "Demote",
@@ -1560,16 +1560,12 @@
 		"source": "Add Editor"
 	},
 	"editor.editors.choosePlayer": {
-		"message": "Search for the sailor by name or username, and pick them from the list.",
-		"source": "Search for the player by name or username, and choose them from the list."
+		"message": "Search for the sailor by name or username, then pick them from the list.",
+		"source": "Search for the player by name or username, then choose them from the list."
 	},
 	"editor.editors.editTitle": {
 		"message": "Reassign {username}",
 		"source": "Edit {username}"
-	},
-	"editor.editors.hint": {
-		"message": "Captains can change anything, shipwrights can build the world, deckhands can sail the universe before it opens to all, and translators can turn its words into their tongues.",
-		"source": "Creators can change everything, builders can change the world, beta testers can play the universe before it opens to everyone, and translators can translate it into their languages."
 	},
 	"editor.editors.languages": {
 		"message": "Tongues",
@@ -1616,8 +1612,8 @@
 		"source": "Player"
 	},
 	"editor.editors.playerHint": {
-		"message": "Type their name, or @ and their username, then pick them from the list.",
-		"source": "Type their name, or @ and their username, then choose them from the list."
+		"message": "Type the user's name, or @ and their username, then pick them from the list.",
+		"source": "Type the user's name, or @ and their username, then choose them from the list."
 	},
 	"editor.editors.remove": {
 		"message": "Put Ashore",
@@ -4281,7 +4277,7 @@
 	},
 	"login.registeredTitle": {
 		"message": "Yer articles be signed!",
-		"source": "Your account is has been created!"
+		"source": "Your account has been created!"
 	},
 	"login.registeredWelcome": {
 		"message": "Welcome aboard, {name}! Ye be logged in to yer new account.",
@@ -6242,6 +6238,22 @@
 	"universe.role.translator": {
 		"message": "translator",
 		"source": "translator"
+	},
+	"universe.roleDescription.beta_tester": {
+		"message": "Can sail the universe while she's open for sea trials, afore every soul can, but can't change her.",
+		"source": "Can play the universe while it's open for testing, before everyone can, but can't change it."
+	},
+	"universe.roleDescription.builder": {
+		"message": "Can change the universe's world (its tiles, areas, charts and passages) and sail her while she's still on the slipway. Can read her other settings without changin' them.",
+		"source": "Can change the universe's world (its tiles, areas, maps and links) and play it while it's still being built. Can read its other settings without changing them."
+	},
+	"universe.roleDescription.creator": {
+		"message": "Can change everythin' about the universe, even who else sails her, and sail her while she's still on the slipway.",
+		"source": "Can change everything about the universe, including who else works on it, and play it while it's still being built."
+	},
+	"universe.roleDescription.translator": {
+		"message": "Can turn the universe's words into the tongues they be given, and sail her during sea trials, but can't change aught else.",
+		"source": "Can translate the universe's text into the languages they are given, and play it while it's open for testing, but can't change anything else."
 	},
 	"universe.ruleset": {
 		"message": "Ship's articles",
