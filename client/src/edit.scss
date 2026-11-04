@@ -935,3 +935,42 @@ div.ability-modifiers
 		margin-top: 2px;
 	}
 }
+
+// The Translations tab's table of the universe's text, below its languages
+.translations-text
+{
+	margin-top: 24px;
+
+	h2
+	{
+		margin: 0 0 12px;
+	}
+}
+
+.translations-table td
+{
+	vertical-align: top;
+	overflow-wrap: anywhere;
+}
+
+// A translation not written yet, which says so in words
+.translation-missing
+{
+	color: $text-faint;
+	font-style: italic;
+}
+
+// The source text in the dialog that translates it: as written, or rendered for a long description
+.translation-source
+{
+	max-height: 240px;
+	overflow-y: auto;
+	padding: 8px 12px;
+	border: 1px solid $border;
+	border-radius: 4px;
+
+	&:not(.markdown)
+	{
+		white-space: pre-wrap;
+	}
+}

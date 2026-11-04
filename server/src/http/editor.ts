@@ -32,6 +32,7 @@ import { newUniverseRequest, tileIdParameter, tileListQuery } from './editorPayl
 import { addRaceRoutes } from './editorRaces.js';
 import { addThemeRoutes } from './editorThemes.js';
 import { addTileGraphicRoutes } from './editorTileGraphics.js';
+import { addTranslationRoutes } from './editorTranslations.js';
 import { addDifficultyLevelRoutes } from './editorDifficultyLevels.js';
 import { addEditorListRoutes } from './editorEditors.js';
 import { checkStartingReferences } from './editorStartingExtras.js';
@@ -132,6 +133,7 @@ function createEditorRouter(allowedOrigins: Set<string>): express.Router
 	addDifficultyLevelRoutes(universeRouter);
 	addAreaRoutes(universeRouter);
 	addTileGraphicRoutes(universeRouter);
+	addTranslationRoutes(universeRouter);
 
 	router.use(handleEditorError);
 

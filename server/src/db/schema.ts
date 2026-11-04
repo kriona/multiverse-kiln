@@ -390,20 +390,33 @@ export const universeTranslations = pgTable('universe_translations', {
 ]);
 
 /**
- * A note for translators on a piece of universe text, written by the universe's editors, such as why a
- * name is a pun. One per piece of text, whatever the language; named like universeTranslations, and
- * deleted with what it belongs to in the same way
+ * What the universe's editors say to translators about a piece of universe text, whatever the language:
+ * a note, such as why a name is a pun, and whether it needs no translation, such as a proper name. One
+ * row per piece of text, kept while it holds either; named like universeTranslations, and deleted with
+ * what it belongs to in the same way
  */
 export const universeTranslatorNotes = pgTable('universe_translator_notes', {
 	universeId: uuid('universe_id').notNull().references(() => universes.id, { onDelete: 'cascade' }),
 	kind: universeTextKind('kind').notNull(),
 	thingId: text('thing_id').notNull(),
 	field: universeTextField('field').notNull(),
-	note: text('note').notNull(),
+
+	/**
+	 * The note, or null for none
+	 */
+	note: text('note'),
+
+	/**
+	 * Whether the text needs no translation, so players see it as written in every language and its
+	 * translations, which are kept, aren't used
+	 */
+	noTranslation: boolean('no_translation').notNull().default(false),
+
 	updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	primaryKey({ columns: [table.universeId, table.kind, table.thingId, table.field] }),
-	check('universe_translator_notes_note_length', sql`char_length(${table.note}) BETWEEN 1 AND ${sql.raw(String(MAX_TRANSLATOR_NOTE_LENGTH))}`)
+	check('universe_translator_notes_note_length', sql`char_length(${table.note}) BETWEEN 1 AND ${sql.raw(String(MAX_TRANSLATOR_NOTE_LENGTH))}`),
+	check('universe_translator_notes_holds_something', sql`(${table.note} IS NOT NULL) OR ${table.noTranslation}`)
 ]);
 
 /**

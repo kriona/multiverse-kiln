@@ -33,6 +33,7 @@ import { saveChangesRequest } from './editorPayloads.js';
 import { SaveAudit } from './editorSaveAudit.js';
 import { createRaceChange, removeRaceChange, saveRaceChange } from './editorRaces.js';
 import { createThemeChange, removeThemeChange, saveThemeChange } from './editorThemes.js';
+import { saveNoTranslationChange, saveTranslationChange, saveTranslatorNoteChange } from './editorTranslations.js';
 import { deleteTileGraphicChange, prepareUpload, uploadTileGraphicChange } from './editorTileGraphics.js';
 import { errorMessages, type Refusal } from './errors.js';
 
@@ -332,6 +333,9 @@ function changesRoomText(change: EditorChange): boolean
 			return((change.update.sourceLanguage !== undefined) || (change.update.translationLanguages !== undefined));
 		case 'updateArea':
 			return((change.update.name !== undefined) || (change.update.enabled !== undefined));
+		case 'saveTranslation':
+		case 'saveNoTranslation':
+			return((change.text.kind === 'area') || (change.text.kind === 'tile'));
 		case 'createArea':
 		case 'deleteArea':
 		case 'createTile':
@@ -477,6 +481,12 @@ async function applyChange(context: ChangeContext, change: EditorChange): Promis
 			return(saveLinkChange(context, change.areaId, change.column, change.row, change.target));
 		case 'deleteLink':
 			return(deleteLinkChange(context, change.areaId, change.column, change.row));
+		case 'saveTranslation':
+			return(saveTranslationChange(context, change));
+		case 'saveTranslatorNote':
+			return(saveTranslatorNoteChange(context, change));
+		case 'saveNoTranslation':
+			return(saveNoTranslationChange(context, change));
 	}
 }
 

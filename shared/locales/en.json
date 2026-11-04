@@ -1195,6 +1195,10 @@
 		"defaultMessage": "{action, select, deleted {{count, plural, one {Deleted # link in {name}} other {Deleted # links in {name}}}} other {{count, plural, one {Added or changed # link in {name}} other {Added or changed # links in {name}}}}}",
 		"description": "In the editor's Audit tab's list of what a save changed: how many links (cells on a map that take characters to another area) it added or changed, or deleted, in one area. {name} is the area's name"
 	},
+	"editor.audit.detail.noTranslation": {
+		"defaultMessage": "{action, select, added {{count, plural, one {Marked # piece of text as needing no translation} other {Marked # pieces of text as needing no translation}}} other {{count, plural, one {Marked # piece of text as needing translation again} other {Marked # pieces of text as needing translation again}}}}",
+		"description": "In the editor's Audit tab's list of what a save changed: how many pieces of the universe's text (names and descriptions) it marked as staying the same in every language, such as proper names, or as needing translation again"
+	},
 	"editor.audit.detail.race": {
 		"defaultMessage": "{action, select, added {Added race {name}} changed {Changed race {name}} restored {Restored race {name} to its default} other {Deleted race {name}}}",
 		"description": "In the editor's Audit tab's list of what a save changed: a race (such as elf or dwarf) added, changed, given back the ruleset's settings for it, or deleted. {name} is its name. A change is followed by a line for each setting it changed"
@@ -1218,6 +1222,14 @@
 	"editor.audit.detail.tileset": {
 		"defaultMessage": "{action, select, added {Uploaded tileset {name}} other {Deleted tileset {name}}}",
 		"description": "In the editor's Audit tab's list of what a save changed: a tileset (an uploaded image tiles are drawn with) uploaded or deleted. {name} is its name"
+	},
+	"editor.audit.detail.translations": {
+		"defaultMessage": "{count, plural, one {Added, changed or deleted # translation into {name}} other {Added, changed or deleted # translations into {name}}}",
+		"description": "In the editor's Audit tab's list of what a save changed: how many translations of the universe's text (names and descriptions) into one language it saved. {name} is the language's name"
+	},
+	"editor.audit.detail.translatorNotes": {
+		"defaultMessage": "{count, plural, one {Wrote or deleted # note for translators} other {Wrote or deleted # notes for translators}}",
+		"description": "In the editor's Audit tab's list of what a save changed: how many notes for translators on the universe's text it wrote or deleted"
 	},
 	"editor.audit.field.lobbyDayHours": {
 		"defaultMessage": "Length of a lobby day",
@@ -2847,9 +2859,21 @@
 		"defaultMessage": "Edit Universe",
 		"description": "Heading of the world editor until the universe's name has loaded"
 	},
+	"editor.translations.confirm": {
+		"defaultMessage": "Still Correct",
+		"description": "Button in the dialog that translates a piece of universe text, shown when the source text changed since it was translated: keeps the translation and marks it up to date, when the editor is saved"
+	},
+	"editor.translations.dialogTitle": {
+		"defaultMessage": "{place} in {language}",
+		"description": "Title of the dialog that translates a piece of universe text; {place} is where it comes from, such as Area: Waterdeep, name, and {language} the name of the language it is translated into"
+	},
 	"editor.translations.explanation": {
 		"defaultMessage": "Players see the universe's text, such as its name and the names of its areas and items, in the closest of its languages to their own, or in its source language when it isn't translated into theirs.",
 		"description": "Explains the editor's Translations tab, above its fields"
+	},
+	"editor.translations.language": {
+		"defaultMessage": "Language",
+		"description": "Label of the choice on the editor's Translations tab of the language whose translations the table shows"
 	},
 	"editor.translations.languageChoice": {
 		"defaultMessage": "{name} ({nameHere})",
@@ -2871,6 +2895,70 @@
 		"defaultMessage": "A universe can be translated into up to {max, plural, one {# language} other {# languages}}.",
 		"description": "Shown under the field for the languages a universe is translated into, on the editor's Translations tab, when more than {max}, a number, are chosen"
 	},
+	"editor.translations.listFailed": {
+		"defaultMessage": "Could not list the universe's text.",
+		"description": "Shown on the editor's Translations tab when the universe's text and its translations couldn't be loaded"
+	},
+	"editor.translations.missingFilter": {
+		"defaultMessage": "Missing",
+		"description": "Checkbox on the editor's Translations tab that shows only the text not yet translated into the language chosen (with Out of date also checked: either)"
+	},
+	"editor.translations.missingTag": {
+		"defaultMessage": "missing",
+		"description": "In the Translation column of the editor's Translations tab, for text not yet translated into the language chosen"
+	},
+	"editor.translations.noLanguages": {
+		"defaultMessage": "The universe isn't translated into any language yet. Add one above, and save, to translate its text.",
+		"description": "Shown on the editor's Translations tab in place of the table of the universe's text while the universe has no languages it is translated into"
+	},
+	"editor.translations.noTranslation": {
+		"defaultMessage": "Needs no translation",
+		"description": "Checkbox in the dialog that translates a piece of universe text, for text that stays the same in every language, such as a proper name"
+	},
+	"editor.translations.noTranslationHint": {
+		"defaultMessage": "Such as a proper name. Players see it as written in every language, and translations already made are kept for if it's unchecked.",
+		"description": "Under the checkbox for text that needs no translation, in the dialog that translates a piece of universe text"
+	},
+	"editor.translations.noTranslationTag": {
+		"defaultMessage": "needs no translation",
+		"description": "In the Translation column of the editor's Translations tab, for text marked as staying the same in every language, such as a proper name"
+	},
+	"editor.translations.noneMatch": {
+		"defaultMessage": "No text matches.",
+		"description": "Shown on the editor's Translations tab in place of the table of the universe's text when nothing matches the search and filters"
+	},
+	"editor.translations.noneOfYours": {
+		"defaultMessage": "The universe isn't translated into any of your languages yet. Its creators can add them above.",
+		"description": "Shown on the editor's Translations tab to a translator when none of the languages they may translate into is one the universe is translated into"
+	},
+	"editor.translations.note": {
+		"defaultMessage": "Note for translators",
+		"description": "Heading of the column on the editor's Translations tab with the note for translators on each piece of text, and the label of the note's field in the dialog that translates it"
+	},
+	"editor.translations.noteHint": {
+		"defaultMessage": "Anything translators should know, such as a pun to keep. Creators and builders write notes; one note serves every language.",
+		"description": "Under the note field in the dialog that translates a piece of universe text, explaining what the note is for"
+	},
+	"editor.translations.outOfDateFilter": {
+		"defaultMessage": "Out of date",
+		"description": "Checkbox on the editor's Translations tab that shows only the translations made from source text that has changed since (with Missing also checked: either)"
+	},
+	"editor.translations.outOfDateNotice": {
+		"defaultMessage": "The source text has changed since this was translated. Update the translation, or confirm it's still correct.",
+		"description": "In the dialog that translates a piece of universe text, when the source text has changed since it was translated"
+	},
+	"editor.translations.outOfDateTag": {
+		"defaultMessage": "out of date",
+		"description": "After a translation on the editor's Translations tab made from source text that has changed since"
+	},
+	"editor.translations.place": {
+		"defaultMessage": "From",
+		"description": "Heading of the column on the editor's Translations tab saying where each piece of text comes from, such as Area: Waterdeep, name"
+	},
+	"editor.translations.placeOf": {
+		"defaultMessage": "{kind, select, universe {Universe: {name}, {field, select, name {name} shortDescription {1-sentence description} other {long description}}} area {Area: {name}, name} tile {Tile: {name}, name} item {Item: {name}, name} race {Race: {name}, name} class {Class: {name}, name} theme {Theme: {name}, name} other {Difficulty level: {name}, name}}",
+		"description": "Where a piece of universe text comes from, in the From column of the editor's Translations tab and in its dialog's title, e.g. \"Area: Waterdeep, name\": what kind of thing it belongs to, {name} its name in the universe's source language, and which of its text it is"
+	},
 	"editor.translations.remove": {
 		"defaultMessage": "Take Off",
 		"description": "Button in the dialog asking whether to take a language off the languages a universe is translated into, deleting its translations when the universe is saved"
@@ -2887,6 +2975,18 @@
 		"defaultMessage": "Could not save the languages.",
 		"description": "Shown on the editor's Translations tab when the server refused its languages, followed by why; nothing was saved"
 	},
+	"editor.translations.search": {
+		"defaultMessage": "Search",
+		"description": "Shown in the empty field that narrows the Translations tab's table down to text holding what is typed, in where it comes from, the source text, the note or the translation"
+	},
+	"editor.translations.searchLabel": {
+		"defaultMessage": "Search the universe's text",
+		"description": "Name of the field that narrows the Translations tab's table down to text holding what is typed, for screen readers"
+	},
+	"editor.translations.source": {
+		"defaultMessage": "Source text",
+		"description": "Heading of the column on the editor's Translations tab with each piece of text in the universe's source language, and the label of the text in the dialog that translates it"
+	},
 	"editor.translations.sourceLanguage": {
 		"defaultMessage": "Source language",
 		"description": "Label of the field on the editor's Translations tab for the language the universe's text is written in; also names the setting in the list of what a save changed, on the editor's Audit tab"
@@ -2898,6 +2998,22 @@
 	"editor.translations.sourceTranslated": {
 		"defaultMessage": "{language} is the source language, so the universe can't also be translated into it.",
 		"description": "Shown under the field for the languages a universe is translated into, on the editor's Translations tab, when the source language is chosen there too; {language} is the language's name"
+	},
+	"editor.translations.textHeading": {
+		"defaultMessage": "Universe text",
+		"description": "Heading of the table on the editor's Translations tab listing every piece of the universe's text (names and descriptions) with its translation into the language chosen"
+	},
+	"editor.translations.textSaveFailed": {
+		"defaultMessage": "Could not save the translations and notes.",
+		"description": "Shown on the editor's Translations tab when the server refused a translation or a note for translators, followed by why; nothing was saved"
+	},
+	"editor.translations.translation": {
+		"defaultMessage": "Translation",
+		"description": "Heading of the column on the editor's Translations tab with each piece of text's translation into the language chosen, and the label of the translation's field in the dialog that translates it"
+	},
+	"editor.translations.translationMarkdown": {
+		"defaultMessage": "Translation (Markdown)",
+		"description": "Label of the field in the dialog that translates a universe's long description, which is written in Markdown"
 	},
 	"editor.universe.longDescription": {
 		"defaultMessage": "Long description (Markdown)",
@@ -3555,9 +3671,17 @@
 		"defaultMessage": "The tileset doesn't exist.",
 		"description": "Why an uploaded tileset couldn't be loaded: there is none with that address"
 	},
+	"error.noSuchTranslationLanguage": {
+		"defaultMessage": "The universe isn't translated into that language.",
+		"description": "Why the editor's Translations tab couldn't list the universe's text in a language: it isn't one of the languages the universe is translated into, perhaps because a creator just took it off"
+	},
 	"error.noSuchUniverse": {
 		"defaultMessage": "The universe doesn't exist, or you can't see it.",
 		"description": "Why a request about a universe failed: it was deleted, or the player has no access to it"
+	},
+	"error.noSuchUniverseText": {
+		"defaultMessage": "That text isn't the universe's any more. Someone may have deleted or renamed what it belongs to.",
+		"description": "Why a translation or a note for translators wasn't saved: the universe no longer has the text it was for, such as the name of an area someone deleted, or a default item whose name went back to the ruleset's"
 	},
 	"error.noSuchUploadedGraphic": {
 		"defaultMessage": "The uploaded tileset doesn't exist in this universe.",
@@ -3686,6 +3810,14 @@
 	"error.tileNeedsName": {
 		"defaultMessage": "A tile needs a name.",
 		"description": "Why a tile the universe added couldn't be saved: its name was left out"
+	},
+	"error.translationLanguageGone": {
+		"defaultMessage": "The universe isn't translated into that language any more.",
+		"description": "Why a translation wasn't saved: its language was taken off the languages the universe is translated into, perhaps by another editor"
+	},
+	"error.translationsNotAllowed": {
+		"defaultMessage": "Your role doesn't let you see the translations into that language.",
+		"description": "Why the editor's Translations tab couldn't list the universe's text: the player is a translator of other languages, or a beta tester"
 	},
 	"error.universeAlreadyDisabled": {
 		"defaultMessage": "The universe is already disabled.",

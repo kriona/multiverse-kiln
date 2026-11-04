@@ -905,8 +905,12 @@ export type AuditFieldChange = { [Field in AuditField]: { field: Field; value: A
  * - area: added, changed, resized or deleted
  * - cells: cells painted on an area's map (changed)
  * - links: an area's links, added or replaced (changed) or deleted
+ * - translations: translations into one language added, changed or deleted (changed), whose target
+ *   holds the language's tag as its name
+ * - translatorNotes: notes for translators written or deleted (changed)
+ * - noTranslation: pieces of text marked as needing no translation (added) or as needing one again (deleted)
  */
-export const AUDIT_SUBJECTS = ['editor', 'settings', 'ruleset', 'tileset', 'tile', 'item', 'race', 'class', 'theme', 'difficultyLevel', 'area', 'cells', 'links'] as const;
+export const AUDIT_SUBJECTS = ['editor', 'settings', 'ruleset', 'tileset', 'tile', 'item', 'race', 'class', 'theme', 'difficultyLevel', 'area', 'cells', 'links', 'translations', 'translatorNotes', 'noTranslation'] as const;
 
 export type AuditSubject = typeof AUDIT_SUBJECTS[number];
 
@@ -935,7 +939,8 @@ export interface UniverseEditDetail
 	fields: AuditFieldChange[];
 
 	/**
-	 * How many cells it painted, for cells, or links it changed, for links; 1 for every other subject
+	 * How many cells it painted, for cells, links it changed, for links, translations, for translations,
+	 * notes, for translatorNotes, or pieces of text marked, for noTranslation; 1 for every other subject
 	 */
 	count: number;
 }

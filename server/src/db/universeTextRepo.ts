@@ -2,26 +2,11 @@
  * Universe text's translations and notes for translators (see Localization in STRUCTURE-OVERVIEW.md):
  * the only module that reads or writes the universe_translations and universe_translator_notes tables
  */
-import { and, count, eq, inArray, notInArray, or, sql } from 'drizzle-orm';
-import type { UniverseTextField, UniverseTextKind } from '@multiverse-kiln/shared';
+import { and, count, eq, inArray, isNull, notExists, notInArray, or, sql, type SQL } from 'drizzle-orm';
+import type { UniverseTextKind, UniverseTextRef } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { universeTranslations, universeTranslatorNotes } from './schema.js';
-
-/**
- * A piece of universe text: one field of something the universe holds
- */
-export interface UniverseTextRef
-{
-	kind: UniverseTextKind;
-
-	/**
-	 * The ID of what the text belongs to, as text; the universe's own ID for its own text
-	 */
-	thingId: string;
-
-	field: UniverseTextField;
-}
 
 /**
  * A translation of a piece of universe text
@@ -42,11 +27,19 @@ export interface UniverseTranslationRecord extends UniverseTextRef
 }
 
 /**
- * A note for translators on a piece of universe text
+ * What the universe's editors say to translators about a piece of universe text
  */
 export interface TranslatorNoteRecord extends UniverseTextRef
 {
-	note: string;
+	/**
+	 * The note, or null for none
+	 */
+	note: string | null;
+
+	/**
+	 * Whether the text needs no translation, such as a proper name
+	 */
+	noTranslation: boolean;
 }
 
 /**
@@ -72,6 +65,27 @@ export async function saveTranslation(universeId: string, translation: UniverseT
 				updatedAt: sql`now()`
 			}
 		});
+}
+
+/**
+ * Deletes the translation of a piece of universe text into one language, if it has one
+ *
+ * @param universeId The universe's ID
+ * @param ref The piece of text
+ * @param language The translation's language, by tag
+ * @param executor The database, or a transaction
+ */
+export async function deleteTranslationOf(universeId: string, ref: UniverseTextRef, language: string, executor: Executor = db): Promise<void>
+{
+	await executor
+		.delete(universeTranslations)
+		.where(and(
+			eq(universeTranslations.universeId, universeId),
+			eq(universeTranslations.kind, ref.kind),
+			eq(universeTranslations.thingId, ref.thingId),
+			eq(universeTranslations.field, ref.field),
+			eq(universeTranslations.language, language)
+		));
 }
 
 /**
@@ -139,7 +153,20 @@ export async function listTranslationsIn(wanted: readonly { universeId: string; 
 				eq(universeTranslations.universeId, universeId),
 				inArray(universeTranslations.language, [...languages])
 			))),
-			((kinds === undefined) ? undefined : inArray(universeTranslations.kind, [...kinds]))
+			((kinds === undefined) ? undefined : inArray(universeTranslations.kind, [...kinds])),
+			// Text marked as needing no translation is shown as written
+			notExists(executor
+				.select({
+					kind: universeTranslatorNotes.kind
+				})
+				.from(universeTranslatorNotes)
+				.where(and(
+					eq(universeTranslatorNotes.universeId, universeTranslations.universeId),
+					eq(universeTranslatorNotes.kind, universeTranslations.kind),
+					eq(universeTranslatorNotes.thingId, universeTranslations.thingId),
+					eq(universeTranslatorNotes.field, universeTranslations.field),
+					eq(universeTranslatorNotes.noTranslation, true)
+				)))
 		)));
 }
 
@@ -186,13 +213,30 @@ export async function deleteTranslationsOutside(universeId: string, languages: r
 }
 
 /**
+ * The condition that finds a piece of universe text's row of notes
+ *
+ * @param universeId The universe's ID
+ * @param ref The piece of text
+ * @return The condition
+ */
+function noteRow(universeId: string, ref: UniverseTextRef): SQL | undefined
+{
+	return(and(
+		eq(universeTranslatorNotes.universeId, universeId),
+		eq(universeTranslatorNotes.kind, ref.kind),
+		eq(universeTranslatorNotes.thingId, ref.thingId),
+		eq(universeTranslatorNotes.field, ref.field)
+	));
+}
+
+/**
  * Adds a note for translators to a piece of universe text, or replaces the one it has
  *
  * @param universeId The universe's ID
  * @param note The note, with the text it is on
  * @param executor The database, or a transaction
  */
-export async function saveTranslatorNote(universeId: string, note: TranslatorNoteRecord, executor: Executor = db): Promise<void>
+export async function saveTranslatorNote(universeId: string, note: UniverseTextRef & { note: string }, executor: Executor = db): Promise<void>
 {
 	await executor
 		.insert(universeTranslatorNotes)
@@ -210,7 +254,8 @@ export async function saveTranslatorNote(universeId: string, note: TranslatorNot
 }
 
 /**
- * Deletes the note for translators on a piece of universe text, if it has one
+ * Deletes the note for translators on a piece of universe text, if it has one, keeping whether it
+ * needs no translation
  *
  * @param universeId The universe's ID
  * @param ref The piece of text
@@ -218,18 +263,70 @@ export async function saveTranslatorNote(universeId: string, note: TranslatorNot
  */
 export async function deleteTranslatorNote(universeId: string, ref: UniverseTextRef, executor: Executor = db): Promise<void>
 {
+	// A row that would hold nothing is deleted, and one marking the text keeps its mark
 	await executor
 		.delete(universeTranslatorNotes)
 		.where(and(
-			eq(universeTranslatorNotes.universeId, universeId),
-			eq(universeTranslatorNotes.kind, ref.kind),
-			eq(universeTranslatorNotes.thingId, ref.thingId),
-			eq(universeTranslatorNotes.field, ref.field)
+			noteRow(universeId, ref),
+			eq(universeTranslatorNotes.noTranslation, false)
 		));
+	await executor
+		.update(universeTranslatorNotes)
+		.set({
+			note: null,
+			updatedAt: sql`now()`
+		})
+		.where(noteRow(universeId, ref));
 }
 
 /**
- * Every note for translators in a universe
+ * Marks a piece of universe text as needing no translation, such as a proper name, or as needing one
+ * again. Its translations are kept either way; players see the text as written while it is marked
+ *
+ * @param universeId The universe's ID
+ * @param ref The piece of text
+ * @param noTranslation Whether it needs no translation
+ * @param executor The database, or a transaction
+ */
+export async function setNoTranslation(universeId: string, ref: UniverseTextRef, noTranslation: boolean, executor: Executor = db): Promise<void>
+{
+	if (noTranslation)
+	{
+		await executor
+			.insert(universeTranslatorNotes)
+			.values({
+				universeId,
+				...ref,
+				noTranslation
+			})
+			.onConflictDoUpdate({
+				target: [universeTranslatorNotes.universeId, universeTranslatorNotes.kind, universeTranslatorNotes.thingId, universeTranslatorNotes.field],
+				set: {
+					noTranslation,
+					updatedAt: sql`now()`
+				}
+			});
+		return;
+	}
+
+	// A row that would hold nothing is deleted, and one with a note keeps it
+	await executor
+		.delete(universeTranslatorNotes)
+		.where(and(
+			noteRow(universeId, ref),
+			isNull(universeTranslatorNotes.note)
+		));
+	await executor
+		.update(universeTranslatorNotes)
+		.set({
+			noTranslation,
+			updatedAt: sql`now()`
+		})
+		.where(noteRow(universeId, ref));
+}
+
+/**
+ * Every note for translators in a universe, and the text marked as needing no translation
  *
  * @param universeId The universe's ID
  * @param executor The database, or a transaction
@@ -242,7 +339,8 @@ export async function listTranslatorNotes(universeId: string, executor: Executor
 			kind: universeTranslatorNotes.kind,
 			thingId: universeTranslatorNotes.thingId,
 			field: universeTranslatorNotes.field,
-			note: universeTranslatorNotes.note
+			note: universeTranslatorNotes.note,
+			noTranslation: universeTranslatorNotes.noTranslation
 		})
 		.from(universeTranslatorNotes)
 		.where(eq(universeTranslatorNotes.universeId, universeId)));

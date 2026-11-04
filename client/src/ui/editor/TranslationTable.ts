@@ -1,0 +1,692 @@
+import { canEditWorld, canMarkNoTranslation, canTranslate, languageName, MAX_UNIVERSE_TEXT_PER_PAGE, UNIVERSE_TEXT_SORT_COLUMNS, type EditableUniverse, type UniverseTextListPayload, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
+
+import { t } from '../../localization';
+import { describeEditorError, type EditorApi } from '../../network/editorApi';
+import { refreshUnsavedWork, watchUnsavedWork } from '../changeTracker';
+import { getElement, showMessage } from '../dom';
+import { TableSorter } from '../tableSorter';
+import type { EditorSave } from './editorSave';
+import type { SavableTab } from './SaveBar';
+import { joinTags, type ChangeSource } from './stagedChanges';
+import { TranslationDialog } from './TranslationDialog';
+
+/**
+ * How long the search waits after the last key before searching, in milliseconds
+ */
+const SEARCH_DELAY_MS = 250;
+
+/**
+ * Most characters of the source text the table shows; the dialog shows all of it
+ */
+const SHOWN_SOURCE_LENGTH = 200;
+
+/**
+ * A translation changed on the tab and not saved yet
+ */
+interface StagedTranslation
+{
+	ref: UniverseTextRef;
+	language: string;
+
+	/**
+	 * The translation, or null to delete it
+	 */
+	text: string | null;
+
+	/**
+	 * The hash of the source text it was made from, as the table listed it
+	 */
+	sourceHash: string;
+}
+
+/**
+ * A note for translators changed on the tab and not saved yet
+ */
+interface StagedNote
+{
+	ref: UniverseTextRef;
+
+	/**
+	 * The note, or null to delete it
+	 */
+	note: string | null;
+}
+
+/**
+ * A piece of text marked, and not saved yet, as needing no translation or as needing one again
+ */
+interface StagedMark
+{
+	ref: UniverseTextRef;
+	noTranslation: boolean;
+}
+
+/**
+ * The key a piece of text is staged under
+ *
+ * @param ref The piece of text
+ * @return The key
+ */
+function refKey(ref: UniverseTextRef): string
+{
+	return(`${ref.kind}:${ref.thingId}:${ref.field}`);
+}
+
+/**
+ * The key a translation is staged under
+ *
+ * @param ref The piece of text
+ * @param language The translation's language
+ * @return The key
+ */
+function translationKey(ref: UniverseTextRef, language: string): string
+{
+	return(`${language}|${refKey(ref)}`);
+}
+
+/**
+ * Where a piece of universe text comes from, e.g. "Area: Waterdeep, name"
+ *
+ * @param row The text
+ * @return The description
+ */
+export function describeTextPlace(row: UniverseTextRow): string
+{
+	return(t({
+		id: 'editor.translations.placeOf',
+		defaultMessage: '{kind, select, universe {Universe: {name}, {field, select, name {name} shortDescription {1-sentence description} other {long description}}} area {Area: {name}, name} tile {Tile: {name}, name} item {Item: {name}, name} race {Race: {name}, name} class {Class: {name}, name} theme {Theme: {name}, name} other {Difficulty level: {name}, name}}',
+		description: 'Where a piece of universe text comes from, in the From column of the editor\'s Translations tab and in its dialog\'s title, e.g. "Area: Waterdeep, name": what kind of thing it belongs to, {name} its name in the universe\'s source language, and which of its text it is'
+	}, {
+		kind: row.kind,
+		name: row.thingName,
+		field: row.field
+	}));
+}
+
+/**
+ * The Translations tab's table: every piece of the universe's text with its translation into a chosen
+ * language and its note for translators, searched, filtered, sorted and paged by the server. A row opens
+ * the translation dialog; the translations and notes changed there show in the table until the editor
+ * is saved. Translators see only their languages, and builders write notes
+ */
+export class TranslationTable implements SavableTab, ChangeSource
+{
+	private readonly none = getElement('translations-text-none', HTMLElement);
+	private readonly list = getElement('translations-text-list', HTMLElement);
+	private readonly language = getElement('translations-language', HTMLSelectElement);
+	private readonly search = getElement('translations-search', HTMLInputElement);
+	private readonly missing = getElement('translations-missing', HTMLInputElement);
+	private readonly outOfDate = getElement('translations-out-of-date', HTMLInputElement);
+	private readonly rows = getElement('translations-rows', HTMLTableSectionElement);
+	private readonly empty = getElement('translations-empty', HTMLElement);
+	private readonly error = getElement('translations-list-error', HTMLElement);
+	private readonly page = getElement('translations-page', HTMLElement);
+	private readonly previousButton = getElement('translations-previous', HTMLButtonElement);
+	private readonly nextButton = getElement('translations-next', HTMLButtonElement);
+	private readonly dialog = new TranslationDialog();
+	private readonly sorter: TableSorter<UniverseTextSortColumn>;
+
+	/**
+	 * The translations and notes changed since the last save
+	 */
+	private readonly translations = new Map<string, StagedTranslation>();
+	private readonly notes = new Map<string, StagedNote>();
+	private readonly marks = new Map<string, StagedMark>();
+
+	/**
+	 * The changes the save being sent holds
+	 */
+	private collected: { translations: StagedTranslation[]; notes: StagedNote[]; marks: StagedMark[] } = { translations: [], notes: [], marks: [] };
+
+	private readonly listeners = new Set<(unsaved: boolean) => void>();
+
+	/**
+	 * Whether the changes were unsaved when the listeners were last told
+	 */
+	private toldUnsaved = false;
+
+	/**
+	 * Says when the table has changes that haven't been saved
+	 */
+	readonly changes: ChangeSource = this;
+
+	private universe: EditableUniverse | undefined;
+
+	/**
+	 * The page of text shown, as it was last loaded
+	 */
+	private shown: UniverseTextRow[] = [];
+
+	/**
+	 * How many matching pieces of text come before the page shown
+	 */
+	private offset = 0;
+
+	/**
+	 * Changes with every request for a page, so a page that arrives after a newer request is ignored
+	 */
+	private requestVersion = 0;
+
+	private searchTimer: number | undefined;
+
+	/**
+	 * @param api The editor's API
+	 */
+	constructor(private readonly api: EditorApi)
+	{
+		watchUnsavedWork(this);
+		this.sorter = new TableSorter(getElement('translations-table', HTMLTableElement), UNIVERSE_TEXT_SORT_COLUMNS, {
+			column: 'place',
+			direction: 'ascending'
+		}, () =>
+		{
+			this.offset = 0;
+			void this.refresh();
+		});
+
+		for (const filter of [this.language, this.missing, this.outOfDate])
+		{
+			filter.addEventListener('change', () =>
+			{
+				this.offset = 0;
+				void this.refresh();
+			});
+		}
+
+		this.search.addEventListener('input', () =>
+		{
+			window.clearTimeout(this.searchTimer);
+			this.searchTimer = window.setTimeout(() =>
+			{
+				this.offset = 0;
+				void this.refresh();
+			}, SEARCH_DELAY_MS);
+		});
+
+		this.previousButton.addEventListener('click', () =>
+		{
+			this.offset = Math.max(0, this.offset - MAX_UNIVERSE_TEXT_PER_PAGE);
+			void this.refresh();
+		});
+
+		this.nextButton.addEventListener('click', () =>
+		{
+			this.offset += MAX_UNIVERSE_TEXT_PER_PAGE;
+			void this.refresh();
+		});
+	}
+
+	/**
+	 * Lists a universe's text from the first page, in the first language the player may see, with no
+	 * search or filters and nothing changed
+	 *
+	 * @param universe The universe
+	 */
+	open(universe: EditableUniverse): void
+	{
+		this.translations.clear();
+		this.notes.clear();
+		this.marks.clear();
+		this.collected = { translations: [], notes: [], marks: [] };
+		this.search.value = '';
+		this.missing.checked = false;
+		this.outOfDate.checked = false;
+		this.sorter.reset();
+		this.language.replaceChildren();
+		this.notifyChanged();
+		this.useUniverse(universe);
+	}
+
+	/**
+	 * Follows the universe's languages as they are saved, keeping the language chosen while it is still
+	 * one of them, and the changes made
+	 *
+	 * @param universe The universe as saved
+	 */
+	useUniverse(universe: EditableUniverse): void
+	{
+		const chosen = this.language.value;
+		const languages = this.visibleLanguages(universe);
+
+		this.universe = universe;
+		this.offset = 0;
+		this.language.replaceChildren(...languages.map((language) =>
+		{
+			const option = new Option(languageName(language), language);
+
+			option.lang = language;
+
+			return(option);
+		}));
+		this.language.value = (languages.includes(chosen) ? chosen : (languages[0] ?? ''));
+		this.list.hidden = (languages.length === 0);
+		showMessage(this.none, ((languages.length > 0)
+			? undefined
+			: ((universe.role === 'translator')
+				? t({
+					id: 'editor.translations.noneOfYours',
+					defaultMessage: 'The universe isn\'t translated into any of your languages yet. Its creators can add them above.',
+					description: 'Shown on the editor\'s Translations tab to a translator when none of the languages they may translate into is one the universe is translated into'
+				})
+				: t({
+					id: 'editor.translations.noLanguages',
+					defaultMessage: 'The universe isn\'t translated into any language yet. Add one above, and save, to translate its text.',
+					description: 'Shown on the editor\'s Translations tab in place of the table of the universe\'s text while the universe has no languages it is translated into'
+				}))));
+		void this.refresh();
+	}
+
+	/**
+	 * The languages the player may see the translations of: every language the universe is translated
+	 * into for those who may write notes, and a translator's own
+	 *
+	 * @param universe The universe
+	 * @return The languages, by tag
+	 */
+	private visibleLanguages(universe: EditableUniverse): string[]
+	{
+		return(universe.translationLanguages.filter((language) => (canEditWorld(universe.role) || canTranslate(universe, language))));
+	}
+
+	/**
+	 * Whether the player may translate, write notes or mark text as needing no translation
+	 *
+	 * @return True when they may
+	 */
+	canSave(): boolean
+	{
+		const universe = this.universe;
+
+		return((universe !== undefined) && (canEditWorld(universe.role) || canMarkNoTranslation(universe) || universe.translationLanguages.some((language) => canTranslate(universe, language))));
+	}
+
+	/**
+	 * Whether translations, notes or marks have been changed and not saved
+	 *
+	 * @return True when they have
+	 */
+	hasUnsavedChanges(): boolean
+	{
+		return((this.translations.size > 0) || (this.notes.size > 0) || (this.marks.size > 0));
+	}
+
+	/**
+	 * Hears when the table starts or stops having unsaved changes
+	 *
+	 * @param listener Called with whether it has them
+	 * @return Stops listening
+	 */
+	subscribe(listener: (unsaved: boolean) => void): () => void
+	{
+		this.listeners.add(listener);
+
+		return(() =>
+		{
+			this.listeners.delete(listener);
+		});
+	}
+
+	/**
+	 * Tells the listeners and the page whether the table has unsaved changes, when that changes
+	 */
+	private notifyChanged(): void
+	{
+		const unsaved = this.hasUnsavedChanges();
+
+		refreshUnsavedWork();
+
+		if (unsaved === this.toldUnsaved)
+		{
+			return;
+		}
+
+		this.toldUnsaved = unsaved;
+
+		for (const listener of [...this.listeners])
+		{
+			listener(unsaved);
+		}
+	}
+
+	/**
+	 * Adds the translations and notes changed to a save
+	 *
+	 * @param save The save
+	 * @return True
+	 */
+	collect(save: EditorSave): boolean
+	{
+		const onRefused = (refusal: { error: unknown }): void =>
+		{
+			showMessage(this.error, describeEditorError(refusal.error, {
+				id: 'editor.translations.textSaveFailed',
+				defaultMessage: 'Could not save the translations and notes.',
+				description: 'Shown on the editor\'s Translations tab when the server refused a translation or a note for translators, followed by why; nothing was saved'
+			}));
+		};
+
+		showMessage(this.error, undefined);
+		this.collected = {
+			translations: [...this.translations.values()],
+			notes: [...this.notes.values()],
+			marks: [...this.marks.values()]
+		};
+
+		for (const staged of this.collected.marks)
+		{
+			save.add({
+				kind: 'saveNoTranslation',
+				text: staged.ref,
+				noTranslation: staged.noTranslation
+			}, onRefused);
+		}
+
+		for (const staged of this.collected.translations)
+		{
+			save.add({
+				kind: 'saveTranslation',
+				text: staged.ref,
+				language: staged.language,
+				translation: staged.text,
+				sourceHash: staged.sourceHash
+			}, onRefused);
+		}
+
+		for (const staged of this.collected.notes)
+		{
+			save.add({
+				kind: 'saveTranslatorNote',
+				text: staged.ref,
+				note: staged.note
+			}, onRefused);
+		}
+
+		return(true);
+	}
+
+	/**
+	 * Takes the changes as saved, keeping any made while the save was sent, and loads the page afresh
+	 */
+	async saved(): Promise<void>
+	{
+		for (const staged of this.collected.translations)
+		{
+			const key = translationKey(staged.ref, staged.language);
+
+			if (this.translations.get(key) === staged)
+			{
+				this.translations.delete(key);
+			}
+		}
+
+		for (const staged of this.collected.notes)
+		{
+			const key = refKey(staged.ref);
+
+			if (this.notes.get(key) === staged)
+			{
+				this.notes.delete(key);
+			}
+		}
+
+		for (const staged of this.collected.marks)
+		{
+			const key = refKey(staged.ref);
+
+			if (this.marks.get(key) === staged)
+			{
+				this.marks.delete(key);
+			}
+		}
+
+		this.collected = { translations: [], notes: [], marks: [] };
+		this.notifyChanged();
+		await this.refresh();
+	}
+
+	/**
+	 * Loads the page of text the language, search, filters, order and offset ask for, then shows it with
+	 * the changes made since
+	 */
+	private async refresh(): Promise<void>
+	{
+		const universe = this.universe;
+		const version = ++this.requestVersion;
+		const language = this.language.value;
+
+		if (!universe || (language === ''))
+		{
+			this.shown = [];
+			this.rows.replaceChildren();
+			return;
+		}
+
+		let page: UniverseTextListPayload;
+
+		try
+		{
+			page = await this.api.listTranslations(universe.id, {
+				language,
+				search: (this.search.value.trim() || undefined),
+				missing: (this.missing.checked || undefined),
+				outOfDate: (this.outOfDate.checked || undefined),
+				sort: this.sorter.order.column,
+				direction: this.sorter.order.direction,
+				offset: this.offset,
+				limit: MAX_UNIVERSE_TEXT_PER_PAGE
+			});
+		}
+		catch (error)
+		{
+			if (version === this.requestVersion)
+			{
+				showMessage(this.empty, describeEditorError(error, {
+					id: 'editor.translations.listFailed',
+					defaultMessage: 'Could not list the universe\'s text.',
+					description: 'Shown on the editor\'s Translations tab when the universe\'s text and its translations couldn\'t be loaded'
+				}));
+				this.rows.replaceChildren();
+			}
+
+			return;
+		}
+
+		if (version !== this.requestVersion)
+		{
+			return;
+		}
+
+		this.shown = page.rows;
+		this.render();
+		this.page.textContent = ((page.total === 0)
+			? ''
+			: t({
+				id: 'pager.range',
+				defaultMessage: '{first, number}-{last, number} of {total, number}',
+				description: 'Which items of a list a page shows, e.g. 1-500 of 1200'
+			}, {
+				first: this.offset + 1,
+				last: this.offset + page.rows.length,
+				total: page.total
+			}));
+		this.previousButton.disabled = (this.offset === 0);
+		this.nextButton.disabled = ((this.offset + page.rows.length) >= page.total);
+	}
+
+	/**
+	 * Shows the page of text with the changes made since it was loaded
+	 */
+	private render(): void
+	{
+		this.rows.replaceChildren(...this.shown.map((row) => this.createRow(row)));
+		showMessage(this.empty, ((this.shown.length === 0)
+			? t({
+				id: 'editor.translations.noneMatch',
+				defaultMessage: 'No text matches.',
+				description: 'Shown on the editor\'s Translations tab in place of the table of the universe\'s text when nothing matches the search and filters'
+			})
+			: undefined));
+	}
+
+	/**
+	 * A piece of text as the table shows it: its translation, note and whether it needs a translation,
+	 * with the changes made to them, and whether its translation is out of date
+	 *
+	 * @param row The text as the server listed it
+	 * @return The text as shown
+	 */
+	private withChanges(row: UniverseTextRow): { translation: string | null; note: string | null; noTranslation: boolean; outOfDate: boolean }
+	{
+		const translation = this.translations.get(translationKey(row, this.language.value));
+		const note = this.notes.get(refKey(row));
+		const noTranslation = (this.marks.get(refKey(row))?.noTranslation ?? row.noTranslation);
+
+		return({
+			translation: ((translation === undefined) ? row.translation : translation.text),
+			note: ((note === undefined) ? row.note : note.note),
+			noTranslation,
+			outOfDate: (!noTranslation && ((translation === undefined) ? row.outOfDate : false))
+		});
+	}
+
+	/**
+	 * A piece of text's row: where it comes from (opening the translation dialog), the source text, the
+	 * note and the translation, saying when it is missing or out of date
+	 *
+	 * @param row The text
+	 * @return The row
+	 */
+	private createRow(row: UniverseTextRow): HTMLTableRowElement
+	{
+		const shown = this.withChanges(row);
+		const tableRow = document.createElement('tr');
+		const placeButton = document.createElement('button');
+		const translation = document.createElement('span');
+		const tags = joinTags(shown.outOfDate
+			? t({
+				id: 'editor.translations.outOfDateTag',
+				defaultMessage: 'out of date',
+				description: 'After a translation on the editor\'s Translations tab made from source text that has changed since'
+			})
+			: undefined);
+		const source = ((row.source.length > SHOWN_SOURCE_LENGTH) ? `${row.source.slice(0, SHOWN_SOURCE_LENGTH)}...` : row.source);
+
+		placeButton.type = 'button';
+		placeButton.className = 'link-button';
+		placeButton.textContent = describeTextPlace(row);
+		placeButton.addEventListener('click', () =>
+		{
+			this.openRow(row);
+		});
+
+		if (shown.noTranslation)
+		{
+			translation.className = 'translation-missing';
+			translation.textContent = t({
+				id: 'editor.translations.noTranslationTag',
+				defaultMessage: 'needs no translation',
+				description: 'In the Translation column of the editor\'s Translations tab, for text marked as staying the same in every language, such as a proper name'
+			});
+		}
+		else if (shown.translation === null)
+		{
+			translation.className = 'translation-missing';
+			translation.textContent = t({
+				id: 'editor.translations.missingTag',
+				defaultMessage: 'missing',
+				description: 'In the Translation column of the editor\'s Translations tab, for text not yet translated into the language chosen'
+			});
+		}
+		else
+		{
+			translation.textContent = shown.translation;
+			translation.lang = this.language.value;
+		}
+
+		for (const content of [placeButton, source, (shown.note ?? ''), translation])
+		{
+			const cell = document.createElement('td');
+
+			cell.append(content);
+			tableRow.append(cell);
+		}
+
+		if (tags !== '')
+		{
+			const tagText = document.createElement('div');
+
+			tagText.className = 'hint';
+			tagText.textContent = tags;
+			tableRow.lastElementChild?.append(tagText);
+		}
+
+		return(tableRow);
+	}
+
+	/**
+	 * Opens the translation dialog for a piece of text, keeping its changes in the table
+	 *
+	 * @param row The text as the server listed it
+	 */
+	private openRow(row: UniverseTextRow): void
+	{
+		const universe = this.universe;
+		const language = this.language.value;
+
+		if (!universe)
+		{
+			return;
+		}
+
+		const shown = this.withChanges(row);
+		const ref: UniverseTextRef = {
+			kind: row.kind,
+			thingId: row.thingId,
+			field: row.field
+		};
+
+		this.dialog.open({
+			row,
+			translation: shown.translation,
+			note: shown.note,
+			noTranslation: shown.noTranslation,
+			outOfDate: shown.outOfDate,
+			mayTranslate: canTranslate(universe, language),
+			mayWriteNote: canEditWorld(universe.role),
+			mayMarkNoTranslation: canMarkNoTranslation(universe),
+			apply: (translation, note, noTranslation) =>
+			{
+				if (noTranslation === row.noTranslation)
+				{
+					this.marks.delete(refKey(ref));
+				}
+				else if (noTranslation !== undefined)
+				{
+					this.marks.set(refKey(ref), { ref, noTranslation });
+				}
+
+				// Text put back as it is saved, and up to date, has nothing left to save
+				if ((translation === row.translation) && !row.outOfDate)
+				{
+					this.translations.delete(translationKey(ref, language));
+				}
+				else if (translation !== undefined)
+				{
+					this.translations.set(translationKey(ref, language), { ref, language, text: translation, sourceHash: row.sourceHash });
+				}
+
+				if (note === row.note)
+				{
+					this.notes.delete(refKey(ref));
+				}
+				else if (note !== undefined)
+				{
+					this.notes.set(refKey(ref), { ref, note });
+				}
+
+				this.notifyChanged();
+				this.render();
+			}
+		}, describeTextPlace(row), languageName(language));
+	}
+}

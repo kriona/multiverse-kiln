@@ -345,10 +345,11 @@ Built in nine steps: roles, stages, server admins, disabling things in use, then
 	- [✅] The editor always shows the source text (its routes never translate); the Translations tab shows the translation being made with its table (step 7)
 	- [✅] Tests: the fallback through the route, the ETag changing with the text and the translations
 7. Translations tab
-	- [ ] The table of universe text for a chosen language: where it comes from ("Area: Waterdeep, name"), the source text, the note and the translation, paged on the server with search, "is missing" and "is out of date" filters, and sortable like other tables
-	- [ ] Editing translations and notes, staged until Save; updating an out-of-date translation, or confirming it's still correct (which stores the current source hash)
-	- [ ] Long descriptions translated as markdown, with a preview sanitized like the source's
-	- [ ] Translators see only their languages; creators see every language
+	- [✅] The table of universe text for a chosen language: where it comes from ("Area: Waterdeep, name"), the source text, the note and the translation, paged on the server with search, "is missing" and "is out of date" filters, and sortable like other tables (`server/src/http/editorTranslations.ts`, `client/src/ui/editor/TranslationTable.ts`)
+	- [✅] Editing translations and notes, staged until Save (`saveTranslation` and `saveTranslatorNote`, saved after every other tab's changes); updating an out-of-date translation, or confirming it's still correct (which stores the current source hash). Notes are written by creators and builders
+	- [✅] Long descriptions translated as markdown, with a preview sanitized like the source's
+	- [✅] Marking text as needing no translation (such as a proper name), by creators, builders and translators, for every language; players see it as written, and its translations are kept
+	- [✅] Translators see only their languages; creators see every language
 	- [ ] Renaming engine terms, if decided
 8. Universe versions
 	- [ ] Write the design into `STRUCTURE-OVERVIEW.md` (Universe versions) once decided, and close its open question

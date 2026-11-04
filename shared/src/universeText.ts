@@ -3,7 +3,10 @@
  * (see Localization in STRUCTURE-OVERVIEW.md). Engine text, such as a ruleset default the universe hasn't
  * renamed, is translated with the engine instead (localization.ts)
  */
+import { MAX_DIFFICULTY_NAME_LENGTH } from './difficulty.js';
+import { MAX_AREA_NAME_LENGTH, MAX_CLASS_NAME_LENGTH, MAX_ITEM_NAME_LENGTH, MAX_LONG_DESCRIPTION_LENGTH, MAX_RACE_NAME_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_THEME_NAME_LENGTH, MAX_TILE_NAME_LENGTH, MAX_UNIVERSE_NAME_LENGTH } from './editor.js';
 import { PROFILE_LANGUAGES } from './profiles.js';
+import type { SortDirection } from './sorting.js';
 
 /**
  * What a piece of universe text belongs to: the universe itself, or one of the things it holds
@@ -45,6 +48,167 @@ export const UNIVERSE_TEXT_KIND_FIELDS: Readonly<Record<UniverseTextKind, readon
 	theme: ['name'],
 	difficultyLevel: ['name']
 };
+
+/**
+ * A piece of universe text: one field of something the universe holds
+ */
+export interface UniverseTextRef
+{
+	kind: UniverseTextKind;
+
+	/**
+	 * The ID of what the text belongs to, as text (an area's UUID, or a tile's, item's, race's, class's,
+	 * theme's or difficulty level's number); the universe's own ID for its own text
+	 */
+	thingId: string;
+
+	field: UniverseTextField;
+}
+
+/**
+ * Most characters a translation of a piece of universe text may have: as many as the text itself
+ *
+ * @param kind What the text belongs to
+ * @param field Which of its text it is
+ * @return The most characters
+ */
+export function maxUniverseTextLength(kind: UniverseTextKind, field: UniverseTextField): number
+{
+	if (field === 'shortDescription')
+	{
+		return(MAX_SHORT_DESCRIPTION_LENGTH);
+	}
+
+	if (field === 'longDescription')
+	{
+		return(MAX_LONG_DESCRIPTION_LENGTH);
+	}
+
+	const nameLengths: Record<UniverseTextKind, number> = {
+		universe: MAX_UNIVERSE_NAME_LENGTH,
+		area: MAX_AREA_NAME_LENGTH,
+		tile: MAX_TILE_NAME_LENGTH,
+		item: MAX_ITEM_NAME_LENGTH,
+		race: MAX_RACE_NAME_LENGTH,
+		class: MAX_CLASS_NAME_LENGTH,
+		theme: MAX_THEME_NAME_LENGTH,
+		difficultyLevel: MAX_DIFFICULTY_NAME_LENGTH
+	};
+
+	return(nameLengths[kind]);
+}
+
+/**
+ * The columns the Translations tab's table can be sorted by: where the text comes from (by kind, then
+ * the name of what it belongs to, then its field), the source text, the note and the translation
+ */
+export const UNIVERSE_TEXT_SORT_COLUMNS = ['place', 'source', 'note', 'translation'] as const;
+
+export type UniverseTextSortColumn = typeof UNIVERSE_TEXT_SORT_COLUMNS[number];
+
+/**
+ * Most pieces of universe text one page of the Translations tab's table holds
+ */
+export const MAX_UNIVERSE_TEXT_PER_PAGE = 100;
+
+/**
+ * Query parameters of GET EDITOR_UNIVERSES_PATH/:universeId/translations: the universe's text with its
+ * translations into one language. Only creators, builders (who may write notes) and translators of the
+ * language may ask; the language must be one the universe is translated into
+ */
+export interface UniverseTextListQuery
+{
+	language: string;
+
+	/**
+	 * Text found in where it comes from, the source text, the note or the translation, ignoring capitals
+	 */
+	search?: string;
+
+	/**
+	 * With either set, only the text whose translation is missing or out of date, as set (both: either).
+	 * Text that needs no translation is neither
+	 */
+	missing?: boolean;
+	outOfDate?: boolean;
+
+	/**
+	 * The column to sort by before paging, place when left out; text that ties comes by place
+	 */
+	sort?: UniverseTextSortColumn;
+
+	/**
+	 * Which way to sort, ascending when left out
+	 */
+	direction?: SortDirection;
+
+	/**
+	 * How many matching pieces of text to skip
+	 */
+	offset?: number;
+
+	/**
+	 * Most to return, up to MAX_UNIVERSE_TEXT_PER_PAGE (the default)
+	 */
+	limit?: number;
+}
+
+/**
+ * A piece of universe text as the Translations tab lists it
+ */
+export interface UniverseTextRow extends UniverseTextRef
+{
+	/**
+	 * The name of what it belongs to, in the source language, for where it comes from ("Area: Waterdeep, name")
+	 */
+	thingName: string;
+
+	/**
+	 * The text in the source language; markdown for a long description
+	 */
+	source: string;
+
+	/**
+	 * sourceTextHash() of the source text, which a translation saved from this row keeps
+	 */
+	sourceHash: string;
+
+	/**
+	 * The note for translators, or null for none
+	 */
+	note: string | null;
+
+	/**
+	 * Whether the text needs no translation in any language, such as a proper name: players see it as
+	 * written, and it is never missing or out of date
+	 */
+	noTranslation: boolean;
+
+	/**
+	 * The translation into the language asked for, or null when there is none. One kept while the text
+	 * needs no translation isn't shown to players
+	 */
+	translation: string | null;
+
+	/**
+	 * Whether the translation was made from source text that has changed since (isTranslationOutOfDate());
+	 * never for text that needs no translation
+	 */
+	outOfDate: boolean;
+}
+
+/**
+ * Response of GET EDITOR_UNIVERSES_PATH/:universeId/translations
+ */
+export interface UniverseTextListPayload
+{
+	rows: UniverseTextRow[];
+
+	/**
+	 * How many pieces of text match, on every page
+	 */
+	total: number;
+}
 
 /**
  * Most languages a universe may be translated into, besides its source language
