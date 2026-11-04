@@ -11,12 +11,15 @@ import type { LocalizedMessage } from './localization.js';
 import type { MapBounds } from './maps.js';
 import type { AreaChunk } from './messages.js';
 import type { Money } from './money.js';
-import type { ClassRules, RaceRules } from './racesAndClasses.js';
+import type { Ability, ClassRules, RaceRules, Size } from './racesAndClasses.js';
+import type { Pf1eCastingStyle, Pf1eMagicTradition } from './rulesets/pf1e/classes.js';
 import type { Pf1eSettings } from './rulesets/pf1e/settings.js';
+import type { Pf1eStatMethod } from './rulesets/pf1e/statMethods.js';
 import type { Sf1eSettings } from './rulesets/sf1e/settings.js';
 import type { Sf1eThemeRules } from './rulesets/sf1e/themes.js';
 import type { SortDirection } from './sorting.js';
-import type { TileGraphicFormat } from './tileGraphics.js';
+import type { TileGraphic, TileGraphicFormat } from './tileGraphics.js';
+import type { Darkvision } from './vision.js';
 import type { DisplayTime, EditorRole, FaerieMorning, LobbyPassageOfTime, PassageOfTime, Ruleset, UniverseRole, UniverseStage, AreaLightLevel, AreaLinkMode, AreaPassageOfTime } from './universes.js';
 
 /**
@@ -29,6 +32,7 @@ import type { DisplayTime, EditorRole, FaerieMorning, LobbyPassageOfTime, Passag
  * - GET    /:universeId/editors                    UniverseEditorListPayload: everyone with a role in the universe
  * - GET    /:universeId/editors/search             PlayerSearchQuery as query parameters -> PlayerSearchPayload: players to add, by username or name (canManageEditors())
  * - GET    /:universeId/characters                 EditorCharacterListQuery as query parameters -> EditorCharacterListPayload: the characters made in the universe (canEditWorld())
+ * - GET    /:universeId/audit                      UniverseEditListQuery as query parameters -> UniverseEditListPayload: the saves made in the editor, newest first (canManageEditors())
  * - GET    /:universeId/ruleset                    RulesetSettings
  * - GET    /:universeId/tiles                      TileListQuery as query parameters -> TileListPayload
  * - GET    /:universeId/tiles/:tileId/usage        TileUsagePayload: the areas whose maps use the tile
@@ -616,6 +620,310 @@ export interface EditorCharacterListPayload
 
 	/**
 	 * How many characters match, on every page
+	 */
+	total: number;
+}
+
+/**
+ * Most saves one page of the Audit tab lists
+ */
+export const MAX_UNIVERSE_EDITS_PER_PAGE = 100;
+
+/**
+ * Query parameters of GET EDITOR_UNIVERSES_PATH/:universeId/audit
+ */
+export interface UniverseEditListQuery
+{
+	/**
+	 * How many saves to skip, newest first
+	 */
+	offset?: number;
+
+	/**
+	 * Most saves to return, up to MAX_UNIVERSE_EDITS_PER_PAGE (the default)
+	 */
+	limit?: number;
+}
+
+/**
+ * The settings the Audit tab names when a save changes them. Settings the editor shows as one field are
+ * one here: a starting area and its cell are startingArea, a passage of time and its faerie morning are
+ * passageOfTime (lobbyPassageOfTime for the lobby's), and a tile's graphic or uploaded graphic is graphic
+ */
+export const AUDIT_FIELDS = [
+	'name',
+	'shortDescription',
+	'longDescription',
+	'stage',
+	'passageOfTime',
+	'displayTime',
+	'lobbyPassageOfTime',
+	'lobbyDayHours',
+	'lobbyNoVisionCost',
+	'groupSize',
+	'startingMoney',
+	'startingItems',
+	'startingArea',
+	'statMethod',
+	'customPointBuyBudget',
+	'abilityPoints',
+	'needsSleep',
+	'coinsHaveWeight',
+	'tracksAmmo',
+	'role',
+	'languages',
+	'indoors',
+	'outdoors',
+	'color',
+	'graphic',
+	'visionCost',
+	'walkSeconds',
+	'enabled',
+	'type',
+	'abilityModifiers',
+	'floatingBonus',
+	'darkvision',
+	'lightSensitivity',
+	'size',
+	'hitPoints',
+	'raceAreas',
+	'primaryAbility',
+	'tradition',
+	'castingStyle',
+	'keyAbility',
+	'hitPointsPerLevel',
+	'staminaPointsPerLevel',
+	'ability',
+	'isDefault',
+	'mobScale',
+	'permadeath',
+	'parentArea',
+	'indoorsOrOutdoors',
+	'lightLevel',
+	'defaultTile',
+	'loopsEastWest',
+	'loopsNorthSouth'
+] as const;
+
+export type AuditField = typeof AUDIT_FIELDS[number];
+
+/**
+ * A place characters start: an area, by its name when saved, and a cell of its map
+ */
+export interface AuditPlace
+{
+	area: string;
+	column: number;
+	row: number;
+}
+
+/**
+ * A passage of time, with where morning is when it is faerie (null otherwise)
+ */
+export interface AuditPassageOfTime
+{
+	time: AreaPassageOfTime | LobbyPassageOfTime;
+	morning: FaerieMorning | null;
+}
+
+/**
+ * The value each audit field holds once a save changed it. What a setting names (an area, a tile, an
+ * item, a race, an uploaded tileset) is held by its name as it was when saved; a long description is
+ * held by how many characters it has, rather than its text
+ */
+export interface AuditFieldValues
+{
+	/**
+	 * Null for one of the ruleset's defaults given its default name back
+	 */
+	name: string | null;
+	shortDescription: string;
+
+	/**
+	 * How many characters it has
+	 */
+	longDescription: number;
+	stage: UniverseStage;
+	passageOfTime: AuditPassageOfTime;
+	displayTime: DisplayTime;
+	lobbyPassageOfTime: AuditPassageOfTime;
+	lobbyDayHours: number;
+	lobbyNoVisionCost: boolean;
+	groupSize: number;
+	startingMoney: Money;
+	startingItems: {
+		item: OptionName;
+		quantity: number;
+	}[];
+
+	/**
+	 * Null for a race or class with no starting area of its own
+	 */
+	startingArea: AuditPlace | null;
+	statMethod: Pf1eStatMethod;
+	customPointBuyBudget: number;
+	abilityPoints: number;
+	needsSleep: boolean;
+	coinsHaveWeight: boolean;
+	tracksAmmo: boolean;
+	role: UniverseRole;
+
+	/**
+	 * Language tags
+	 */
+	languages: string[];
+	indoors: boolean;
+	outdoors: boolean;
+
+	/**
+	 * As 0xRRGGBB
+	 */
+	color: number;
+
+	/**
+	 * One of the graphics that ship with the engine, or an uploaded tileset by name; both null for none
+	 */
+	graphic: {
+		graphic: TileGraphic | null;
+		uploaded: string | null;
+	};
+	visionCost: number;
+	walkSeconds: number;
+	enabled: boolean;
+
+	/**
+	 * An item type's key (ITEM_KINDS)
+	 */
+	type: string;
+	abilityModifiers: Partial<Record<Ability, number>>;
+	floatingBonus: boolean;
+	darkvision: Darkvision;
+	lightSensitivity: boolean;
+	size: Size;
+	hitPoints: number;
+	raceAreas: {
+		race: OptionName;
+		place: AuditPlace;
+	}[];
+	primaryAbility: Ability;
+	tradition: Pf1eMagicTradition;
+	castingStyle: Pf1eCastingStyle;
+	keyAbility: Ability;
+	hitPointsPerLevel: number;
+	staminaPointsPerLevel: number;
+	ability: Ability;
+	isDefault: boolean;
+	mobScale: number;
+	permadeath: boolean;
+
+	/**
+	 * Null for an area inside no other
+	 */
+	parentArea: string | null;
+
+	/**
+	 * True for indoors
+	 */
+	indoorsOrOutdoors: boolean;
+	lightLevel: AreaLightLevel;
+	defaultTile: OptionName;
+	loopsEastWest: boolean;
+	loopsNorthSouth: boolean;
+}
+
+/**
+ * One setting a save changed, and the value it changed it to
+ */
+export type AuditFieldChange = { [Field in AuditField]: { field: Field; value: AuditFieldValues[Field] } }[AuditField];
+
+/**
+ * What one part of a save changed, as the Audit tab lists it
+ *
+ * - editor: a player's role in the universe (added, changed, deleted)
+ * - settings, ruleset: the universe's settings, or how it plays under its ruleset (changed)
+ * - tileset: an uploaded tileset (added, deleted)
+ * - tile, item, race, class, theme, difficultyLevel: added, changed, deleted, or restored (one of the
+ *   ruleset's defaults that had been edited, given its default settings again)
+ * - area: added, changed, resized or deleted
+ * - cells: cells painted on an area's map (changed)
+ * - links: an area's links, added or replaced (changed) or deleted
+ */
+export const AUDIT_SUBJECTS = ['editor', 'settings', 'ruleset', 'tileset', 'tile', 'item', 'race', 'class', 'theme', 'difficultyLevel', 'area', 'cells', 'links'] as const;
+
+export type AuditSubject = typeof AUDIT_SUBJECTS[number];
+
+export type AuditAction = 'added' | 'changed' | 'deleted' | 'restored' | 'resized';
+
+/**
+ * One thing a save changed
+ */
+export interface UniverseEditDetail
+{
+	subject: AuditSubject;
+	action: AuditAction;
+
+	/**
+	 * What it changed, by name as it was when saved: an editor's username, an area's or tileset's name,
+	 * or a tile's, item's, race's, class's, theme's or difficulty level's name, with the key of one of the
+	 * ruleset's defaults, whose name players read in their language while its name is null. Null for
+	 * settings and ruleset, which name nothing
+	 */
+	target: OptionName | null;
+
+	/**
+	 * The settings it changed, with their new values, for changed (empty for every other action, and for
+	 * cells and links)
+	 */
+	fields: AuditFieldChange[];
+
+	/**
+	 * How many cells it painted, for cells, or links it changed, for links; 1 for every other subject
+	 */
+	count: number;
+}
+
+/**
+ * One save made in a universe's editor, as the Audit tab lists them
+ */
+export interface UniverseEdit
+{
+	id: string;
+
+	/**
+	 * The player who saved, or null once their account is deleted
+	 */
+	player: {
+		username: string;
+		displayName: string;
+	} | null;
+
+	/**
+	 * The role they saved with, ADMIN_ROLE included
+	 */
+	role: EditorRole;
+
+	/**
+	 * What the save changed, thing by thing, in the order it changed them, or null for a save made
+	 * before they were recorded
+	 */
+	details: UniverseEditDetail[] | null;
+
+	/**
+	 * When the save was made, as an ISO 8601 time
+	 */
+	savedAt: string;
+}
+
+/**
+ * Response of GET EDITOR_UNIVERSES_PATH/:universeId/audit (canManageEditors()): a page of the saves
+ * made in the universe's editor, newest first
+ */
+export interface UniverseEditListPayload
+{
+	edits: UniverseEdit[];
+
+	/**
+	 * How many saves there are, on every page
 	 */
 	total: number;
 }

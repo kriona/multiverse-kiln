@@ -323,7 +323,8 @@ Built in nine steps: roles, stages, server admins, disabling things in use, then
 	- [✅] Admins add other admins by username and remove them on the admin page (`/admin/admins`); the last admin can't be removed. Turning 2FA off asks an admin to confirm they'll lose the admin page until it's back on
 	- [✅] Disabling a universe: a list of universes on the admin page (`/admin/universes`, searchable and paged, since there may be thousands) with Disable and Enable and a reason. A disabled universe isn't listed or playable, its editors see why and can't save, and its open rooms turn their players out
 	- [✅] Admins open any universe's editor from the Universes admin page (its name links there), with the site admin role (`ADMIN_ROLE`, never stored) whenever it allows more than their own: everything a creator can do, saving even while the universe is disabled
-	- [✅] Admin actions (adding and removing admins, disabling and enabling universes, saves made with the site admin role) are logged in `admin_events`, like auth events
+	- [✅] Admin actions (adding and removing admins, disabling and enabling universes) are logged in `admin_events`, like auth events
+	- [✅] Every save in the world editor, the site admin role's included, is recorded in `universe_edits` (who, which role, each thing changed by name with the value given each setting changed, when) and listed on the editor's Audit tab for creators and site admins
 	- [✅] Tests: the admin routes refuse other players and admins without 2FA, the last admin can't be removed, the public setting stays readable, a disabled universe can't be joined or saved
 4. Disabling things players are using
 	- [ ] Counting what a change affects, for the editor's warnings: characters of a race or class, characters holding an item, characters (playing or saved) in an area, groups larger than a new group size. A route the editor asks before Save, through repositories

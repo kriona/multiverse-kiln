@@ -9,10 +9,10 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { ADMIN_ROLE, EDITOR_CHANGE_CHECKS, localize, mayMakeChange, type EditorAccess, type EditorChange, type NewRef, type SaveChangesPayload, type SaveRefusedPayload } from '@multiverse-kiln/shared';
+import { EDITOR_CHANGE_CHECKS, localize, mayMakeChange, type EditorAccess, type EditorChange, type NewRef, type SaveChangesPayload, type SaveRefusedPayload } from '@multiverse-kiln/shared';
 
-import { recordAdminEvent } from '../db/adminEventRepo.js';
 import { inTransaction } from '../db/transactions.js';
+import { recordUniverseEdit } from '../db/universeEditRepo.js';
 import { findDisabledReason, findEditableUniverse, lockUniverse, UniverseNameTakenError } from '../db/universeRepo.js';
 import { universeAccessChanges } from '../players/universeAccess.js';
 import { describeInvalidPayload } from '../rooms/payloads.js';
@@ -27,6 +27,7 @@ import { createDifficultyLevelChange, removeDifficultyLevelChange, saveDifficult
 import { addEditorChange, checkCreatorKept, playersLosingAccess, removeEditorChange, saveEditorChange } from './editorEditors.js';
 import { createItemChange, removeItemChange, saveItemChange } from './editorItems.js';
 import { saveChangesRequest } from './editorPayloads.js';
+import { SaveAudit } from './editorSaveAudit.js';
 import { createRaceChange, removeRaceChange, saveRaceChange } from './editorRaces.js';
 import { createThemeChange, removeThemeChange, saveThemeChange } from './editorThemes.js';
 import { deleteTileGraphicChange, prepareUpload, uploadTileGraphicChange } from './editorTileGraphics.js';
@@ -217,21 +218,25 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 				deletedImages: []
 			};
 
+			const audit = new SaveAudit(saving);
+
 			for (; current < changes.length; current++)
 			{
+				await audit.describe(changes[current]);
 				await applyChange(saving, changes[current]);
 			}
 
 			current = lastEditorChange;
 			await checkCreatorKept(saving);
 
-			if (access.role === ADMIN_ROLE)
+			if (audit.hasChanges())
 			{
-				await recordAdminEvent({
-					kind: 'universeEdited',
-					adminId: base.playerId,
+				await recordUniverseEdit({
 					universeId: base.universe.id,
-					occurredAt: new Date()
+					playerId: base.playerId,
+					role: access.role,
+					changeDetails: audit.details,
+					savedAt: new Date()
 				}, transaction);
 			}
 

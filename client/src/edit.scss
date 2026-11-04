@@ -863,3 +863,27 @@ div.ability-modifiers
 		gap: 8px;
 	}
 }
+
+// The Audit tab's table uses the page's width, so the Changes column has room for each change's line
+#editor-panel-audit
+{
+	max-width: none;
+}
+
+// What a save changed in the Audit tab's Changes column: a line for each thing it changed, and under
+// each, a line for each setting it changed
+.audit-details
+{
+	margin: 0;
+	padding-left: 20px;
+
+	li + li
+	{
+		margin-top: 2px;
+	}
+
+	.audit-details
+	{
+		margin-top: 2px;
+	}
+}

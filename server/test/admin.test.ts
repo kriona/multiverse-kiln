@@ -8,6 +8,7 @@ import { pool } from '../src/db/client.js';
 import { createPlayer, saveLastLogin } from '../src/db/playerRepo.js';
 import { addProviderLogin } from '../src/db/providerLoginRepo.js';
 import { addServerAdmin, isServerAdmin } from '../src/db/serverAdminRepo.js';
+import { listUniverseEdits } from '../src/db/universeEditRepo.js';
 import { findUniverseAccess, setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { findDisabledReason, setUniverseDisabled } from '../src/db/universeRepo.js';
 import { connectedSessions } from '../src/players/connectedSessions.js';
@@ -866,6 +867,17 @@ describe('Editing universes as a server admin', () =>
 		});
 	}
 
+	/**
+	 * The roles a universe's recorded saves were made with
+	 *
+	 * @param universeId The universe
+	 * @return The roles, newest save first
+	 */
+	async function savedRoles(universeId: string): Promise<string[]>
+	{
+		return((await listUniverseEdits(universeId, { offset: 0, limit: 100 })).edits.map((edit) => edit.role));
+	}
+
 	it('opens any universe with the site admin role, which saves as a creator would, recording each save', async () =>
 	{
 		const universeId = await addUniverse();
@@ -882,12 +894,11 @@ describe('Editing universes as a server admin', () =>
 		assert.strictEqual(saved.status, 200);
 		assert.strictEqual((await findUniverseAccess(universeId, grace.id))?.role, 'creator');
 		assert.strictEqual(await findUniverseAccess(universeId, admin.playerId), undefined);
-		assert.deepStrictEqual((await findUniverseAdminEvents(universeId)).map((event) => [event.kind, event.adminId]), [
-			['universeEdited', admin.playerId]
-		]);
+		assert.deepStrictEqual(await savedRoles(universeId), [ADMIN_ROLE]);
+		assert.deepStrictEqual(await findUniverseAdminEvents(universeId), []);
 	});
 
-	it('uses the site admin role over a weaker role, but a creator\'s own, which isn\'t recorded', async () =>
+	it('uses the site admin role over a weaker role, but a creator\'s own, recording the role each save used', async () =>
 	{
 		const built = await addUniverse();
 		const created = await addUniverse();
@@ -899,8 +910,8 @@ describe('Editing universes as a server admin', () =>
 		assert.strictEqual((await openEditor(admin, created)).universe.role, 'creator');
 		assert.strictEqual((await saveChanges(admin, built, [{ kind: 'universe', update: { name: 'Renamed By Admin' } }])).status, 200);
 		assert.strictEqual((await saveChanges(admin, created, [{ kind: 'universe', update: { shortDescription: 'Mine' } }])).status, 200);
-		assert.strictEqual((await findUniverseAdminEvents(built)).length, 1);
-		assert.deepStrictEqual(await findUniverseAdminEvents(created), []);
+		assert.deepStrictEqual(await savedRoles(built), [ADMIN_ROLE]);
+		assert.deepStrictEqual(await savedRoles(created), ['creator']);
 	});
 
 	it('lets a server admin save a disabled universe, as its creator too, while its other editors can\'t', async () =>
@@ -927,6 +938,6 @@ describe('Editing universes as a server admin', () =>
 
 		assert.strictEqual((await openEditor(browser, universeId)).status, 404);
 		assert.strictEqual((await saveChanges(browser, universeId, [{ kind: 'universe', update: { shortDescription: 'Sneaky' } }])).status, 404);
-		assert.deepStrictEqual(await findUniverseAdminEvents(universeId), []);
+		assert.deepStrictEqual(await savedRoles(universeId), []);
 	});
 });

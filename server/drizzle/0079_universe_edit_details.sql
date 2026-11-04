@@ -1,0 +1,1 @@
+ALTER TABLE "universe_edits" ADD COLUMN "change_details" jsonb;
