@@ -4283,6 +4283,10 @@
 		"message": "Yer articles be signed!",
 		"source": "Your account is has been created!"
 	},
+	"login.registeredWelcome": {
+		"message": "Welcome aboard, {name}! Ye be logged in to yer new account.",
+		"source": "Welcome, {name}! You're logged in to your new account."
+	},
 	"login.rememberMe": {
 		"message": "Remember me",
 		"source": "Remember me"
@@ -4354,6 +4358,10 @@
 	"login.twoFactorResetHint": {
 		"message": "Yer account has two-factor authentication, so the email code ain't enough on its own. Enter the 6-digit code from yer authenticator app, or one o' yer recovery codes.",
 		"source": "Your account has two-factor authentication, so the email code isn't enough on its own. Enter the 6-digit code from your authenticator app, or one of your recovery codes."
+	},
+	"login.twoFactorSetupHeading": {
+		"message": "Rig Two-Factor Authentication",
+		"source": "Set Up Two-Factor Authentication"
 	},
 	"login.twoFactorTitle": {
 		"message": "Enter yer authenticator code",

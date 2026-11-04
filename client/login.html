@@ -238,7 +238,12 @@
 
 			<section id="registered-screen" class="screen auth-screen" hidden>
 				<div class="panel form auth-panel">
-					<h1 data-message="login.registeredTitle" data-translation-context="Heading of the screen shown once a new account is created, offering to set up two-factor authentication">Your account is has been created!</h1>
+					<h1 data-message="login.registeredTitle" data-translation-context="Heading of the screen shown once a new account is created, offering to set up two-factor authentication">Your account has been created!</h1>
+					<div class="registered-success">
+						<!-- icon ph:check-circle -->
+						<p data-message="login.registeredWelcome" data-translation-context="Under the heading of the screen shown once a new account is created, beside a check mark; {name} is the name the player chose for other players to see">Welcome, <strong id="registered-name" data-argument="name"></strong>! You're logged in to your new account.</p>
+					</div>
+					<h2 data-message="login.twoFactorSetupHeading" data-translation-context="Heading of the part of the screen shown once a new account is created that offers to set up two-factor authentication">Set Up Two-Factor Authentication</h2>
 					<p data-message="login.registeredIntro" data-translation-context="On the screen shown once a new account is created with a password">Two-factor authentication keeps your account safe even if someone learns your password: logging in asks for a code from an app on your phone too. You can set it up now, or any time from your profile.</p>
 					<div class="form-buttons">
 						<button id="registered-continue" type="button" class="secondary" data-shortcut="Alt+N" data-message="login.notNow" data-translation-context="Button on the screen shown once a new account is created: skips setting up two-factor authentication for now and goes on"><!-- icon ph:arrow-right -->Not now</button>

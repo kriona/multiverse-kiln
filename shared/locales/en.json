@@ -4280,8 +4280,12 @@
 		"description": "On the screen shown once a new account is created with a password"
 	},
 	"login.registeredTitle": {
-		"defaultMessage": "Your account is has been created!",
+		"defaultMessage": "Your account has been created!",
 		"description": "Heading of the screen shown once a new account is created, offering to set up two-factor authentication"
+	},
+	"login.registeredWelcome": {
+		"defaultMessage": "Welcome, {name}! You're logged in to your new account.",
+		"description": "Under the heading of the screen shown once a new account is created, beside a check mark; {name} is the name the player chose for other players to see"
 	},
 	"login.rememberMe": {
 		"defaultMessage": "Remember me",
@@ -4354,6 +4358,10 @@
 	"login.twoFactorResetHint": {
 		"defaultMessage": "Your account has two-factor authentication, so the email code isn't enough on its own. Enter the 6-digit code from your authenticator app, or one of your recovery codes.",
 		"description": "Under the authenticator code field when resetting the password of an account with two-factor authentication"
+	},
+	"login.twoFactorSetupHeading": {
+		"defaultMessage": "Set Up Two-Factor Authentication",
+		"description": "Heading of the part of the screen shown once a new account is created that offers to set up two-factor authentication"
 	},
 	"login.twoFactorTitle": {
 		"defaultMessage": "Enter your authenticator code",
