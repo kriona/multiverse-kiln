@@ -2507,6 +2507,10 @@
 		"defaultMessage": "Tilesets",
 		"description": "Tab of the editor listing the tiles maps are painted with"
 	},
+	"editor.tab.translations": {
+		"defaultMessage": "Translations",
+		"description": "Tab of the editor with the languages the universe can be played in: the one its text is written in, and those it is translated into"
+	},
 	"editor.tab.universe": {
 		"defaultMessage": "Universe",
 		"description": "Tab of the editor with the universe's own settings"
@@ -2842,6 +2846,58 @@
 	"editor.title": {
 		"defaultMessage": "Edit Universe",
 		"description": "Heading of the world editor until the universe's name has loaded"
+	},
+	"editor.translations.explanation": {
+		"defaultMessage": "Players see the universe's text, such as its name and the names of its areas and items, in the closest of its languages to their own, or in its source language when it isn't translated into theirs.",
+		"description": "Explains the editor's Translations tab, above its fields"
+	},
+	"editor.translations.languageChoice": {
+		"defaultMessage": "{name} ({nameHere})",
+		"description": "A language in the list of source languages on the editor's Translations tab, when its name in itself differs from its name in the page's language; {name} is its name in itself, such as Deutsch, and {nameHere} its name in the page's language, such as German"
+	},
+	"editor.translations.languages": {
+		"defaultMessage": "Translated into",
+		"description": "Label of the field on the editor's Translations tab for the languages the universe's text is translated into; also names the setting in the list of what a save changed, on the editor's Audit tab"
+	},
+	"editor.translations.languagesHint": {
+		"defaultMessage": "Taking a language off deletes its translations when the universe is saved.",
+		"description": "Explains the field for the languages a universe is translated into, on the editor's Translations tab"
+	},
+	"editor.translations.languagesSearch": {
+		"defaultMessage": "Search languages",
+		"description": "Shown in the empty search field for choosing the languages a universe is translated into, on the editor's Translations tab"
+	},
+	"editor.translations.languagesTooMany": {
+		"defaultMessage": "A universe can be translated into up to {max, plural, one {# language} other {# languages}}.",
+		"description": "Shown under the field for the languages a universe is translated into, on the editor's Translations tab, when more than {max}, a number, are chosen"
+	},
+	"editor.translations.remove": {
+		"defaultMessage": "Take Off",
+		"description": "Button in the dialog asking whether to take a language off the languages a universe is translated into, deleting its translations when the universe is saved"
+	},
+	"editor.translations.removeQuestion": {
+		"defaultMessage": "Taking {language} off deletes the universe's {count, plural, one {# translation} other {# translations}} into it when the universe is saved. Take it off?",
+		"description": "Asks whether to take a language off the languages a universe is translated into, on the editor's Translations tab; {language} is the language's name, and {count} how many pieces of the universe's text are translated into it"
+	},
+	"editor.translations.removeTitle": {
+		"defaultMessage": "Delete translations",
+		"description": "Title of the dialog asking whether to take a language off the languages a universe is translated into, on the editor's Translations tab, when it has translations"
+	},
+	"editor.translations.saveFailed": {
+		"defaultMessage": "Could not save the languages.",
+		"description": "Shown on the editor's Translations tab when the server refused its languages, followed by why; nothing was saved"
+	},
+	"editor.translations.sourceLanguage": {
+		"defaultMessage": "Source language",
+		"description": "Label of the field on the editor's Translations tab for the language the universe's text is written in; also names the setting in the list of what a save changed, on the editor's Audit tab"
+	},
+	"editor.translations.sourceLanguageHint": {
+		"defaultMessage": "The language the universe's editors write its text in.",
+		"description": "Explains the source language field on the editor's Translations tab"
+	},
+	"editor.translations.sourceTranslated": {
+		"defaultMessage": "{language} is the source language, so the universe can't also be translated into it.",
+		"description": "Shown under the field for the languages a universe is translated into, on the editor's Translations tab, when the source language is chosen there too; {language} is the language's name"
 	},
 	"editor.universe.longDescription": {
 		"defaultMessage": "Long description (Markdown)",
@@ -3582,6 +3638,10 @@
 	"error.somethingWentWrong": {
 		"defaultMessage": "Something went wrong on the server.",
 		"description": "Why a request failed when the server had an unexpected problem"
+	},
+	"error.sourceLanguageTranslated": {
+		"defaultMessage": "The source language can't also be one of the languages the universe is translated into.",
+		"description": "Why the universe's languages weren't saved: the language its text is written in was also chosen as a language to translate it into"
 	},
 	"error.themeInUse": {
 		"defaultMessage": "Characters have this theme, so it can't be deleted. Disable it instead.",
@@ -6398,6 +6458,10 @@
 	"universe.faerie.west": {
 		"defaultMessage": "west",
 		"description": "Where morning is in faerie time: the west edge of the map"
+	},
+	"universe.languages": {
+		"defaultMessage": "Languages: {languages}",
+		"description": "Under a universe on Home, and on the universe's page under its ruleset: the languages it can be played in, the one its text is written in first; {languages} is a list of language names, each in its own language, such as \"English, Deutsch, français\""
 	},
 	"universe.lightLevel.dark": {
 		"defaultMessage": "dark",

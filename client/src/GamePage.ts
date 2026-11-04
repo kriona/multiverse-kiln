@@ -310,9 +310,9 @@ export class GamePage
 
 		try
 		{
-			const { id, name, slug, shortDescription, ruleset, stage } = await getUniverseDetails(this.server.client, key);
+			const { id, name, slug, shortDescription, ruleset, sourceLanguage, translationLanguages, stage } = await getUniverseDetails(this.server.client, key);
 
-			this.universe = { id, name, slug, shortDescription, ruleset };
+			this.universe = { id, name, slug, shortDescription, ruleset, sourceLanguage, translationLanguages };
 			this.universeLocked = (stage === 'end_of_time');
 		}
 		catch (error)

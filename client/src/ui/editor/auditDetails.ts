@@ -28,6 +28,16 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		defaultMessage: 'Long description (Markdown)',
 		description: 'Label of the field for a universe\'s full description, which is written in Markdown; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
+	sourceLanguage: {
+		id: 'editor.translations.sourceLanguage',
+		defaultMessage: 'Source language',
+		description: 'Label of the field on the editor\'s Translations tab for the language the universe\'s text is written in; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
+	translationLanguages: {
+		id: 'editor.translations.languages',
+		defaultMessage: 'Translated into',
+		description: 'Label of the field on the editor\'s Translations tab for the languages the universe\'s text is translated into; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
 	stage: {
 		id: 'editor.universe.stage',
 		defaultMessage: 'Stage',
@@ -463,6 +473,10 @@ function describeValue(change: AuditFieldChange, detail: UniverseEditDetail, rul
 			return(change.value);
 		case 'longDescription':
 			return(t(VALUE_MESSAGES.characters, { count: change.value }));
+		case 'sourceLanguage':
+			return(languageName(change.value));
+		case 'translationLanguages':
+			return(listOrNone(change.value.map((language) => languageName(language))));
 		case 'stage':
 			return(t(UNIVERSE_STAGE_NAMES[change.value]));
 		case 'passageOfTime':

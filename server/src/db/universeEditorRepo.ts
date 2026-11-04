@@ -272,6 +272,8 @@ export async function listEditableUniverses(playerId: string, executor: Executor
 			slug: universes.slug,
 			shortDescription: universes.shortDescription,
 			ruleset: universes.ruleset,
+			sourceLanguage: universes.sourceLanguage,
+			translationLanguages: universes.translationLanguages,
 			stage: universes.stage,
 			role: universeEditors.role,
 			disabled: sql<boolean>`(${universes.disabledAt} IS NOT NULL)`

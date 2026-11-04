@@ -9,6 +9,7 @@ import { defineMessages, MAX_CUSTOM_CLASSES, type ClassListPayload, type ClassSe
 import { hasCharactersOfClass } from '../db/characterRepo.js';
 import { countCustomClasses, createCustomClass, deleteCustomClass, findClassKind, loadEditorClasses, restoreDefaultClass, saveEditedDefaultClass, updateCustomClass } from '../db/classRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
+import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
 import { universeContextOf } from './editorAccess.js';
 import { recordRef, refuse, resolveNumberRef, type ChangeContext } from './editorChangeContext.js';
 import { checkStartingReferences } from './editorStartingExtras.js';
@@ -153,6 +154,7 @@ export async function removeClassChange(context: ChangeContext, id: NumberRef): 
 	if (kind === 'default')
 	{
 		await restoreDefaultClass(universe.id, classId, transaction);
+		await deleteUniverseTextOf(universe.id, 'class', classId, transaction);
 		return;
 	}
 
@@ -170,6 +172,7 @@ export async function removeClassChange(context: ChangeContext, id: NumberRef): 
 	}
 
 	await deleteCustomClass(universe.id, classId, transaction);
+	await deleteUniverseTextOf(universe.id, 'class', classId, transaction);
 }
 
 /**

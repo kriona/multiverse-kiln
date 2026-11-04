@@ -654,8 +654,9 @@ Explain that this allows characters to move freely between universes with the sa
 
 ### Tab: Translations
 Lets the universe be played in more than one language. See [Localization](#localization) for how a player's language is chosen.
-- source language, the language the universe's editors write in. Defaults to the creator's language
-- languages, the languages the universe is translated into. [Home](#home) shows the source language and these
+- source language, the language the universe's editors write in. Defaults to the creator's language: the one on their profile, then the one the pages are shown in, without its region, or English when it isn't one of the languages a profile can name (such as Pirate)
+- languages, the languages the universe is translated into ("Translated into", up to 50, never the source language). [Home](#home) and the universe's page show the source language and these. Taking off a language with translations asks first, since saving deletes its translations. Only creators change them, staged until Save like the rest of the editor, and saved as a `universe` change
+- deleting something the universe holds (an area, tile, item, race, class, theme or difficulty level), or restoring one of the ruleset's defaults, deletes its translations and notes in the same save (`server/src/db/universeTextRepo.ts`)
 - choosing a language shows a table of every piece of universe text:
 	- where it comes from (e.g. "Area: Waterdeep, name")
 	- the source text
@@ -826,12 +827,14 @@ Universe text uses the first of these that exists:
 2. the universe's translation in that language without its region (`pt`)
 3. the text in the universe's source language
 
+(`findTranslation()` and `universeText()` in `shared/src/universeText.ts`.)
+
 A ruleset default the universe hasn't renamed (such as a default tile whose color was edited but not its name) is engine text instead.
 
 Engine text uses the player's language, then that language without its region, then English.
 
 ## Out-of-date translations
-Each translation remembers the source text it was made from. When the source text changes, the translation is still shown, but the [Translations](#tab-translations) tab marks it out of date until a translator updates it or confirms it is still correct.
+Each translation remembers the source text it was made from, as its SHA-256 hash (`sourceTextHash()` in `shared/src/universeText.ts`, which Postgres works out the same way). When the source text changes, the translation is still shown, but the [Translations](#tab-translations) tab marks it out of date until a translator updates it or confirms it is still correct.
 
 ## Formatting
 - Numbers, dates, times ("5 minutes ago") and lists follow the player's language, and names are sorted the way that language sorts them.

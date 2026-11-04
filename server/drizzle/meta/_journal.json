@@ -589,6 +589,13 @@
       "when": 1793819205162,
       "tag": "0083_lobby_starting_cell",
       "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1793829812305,
+      "tag": "0084_universe_languages",
+      "breakpoints": true
     }
   ]
 }

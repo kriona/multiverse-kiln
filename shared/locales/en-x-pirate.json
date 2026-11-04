@@ -2507,6 +2507,10 @@
 		"message": "Tilesets",
 		"source": "Tilesets"
 	},
+	"editor.tab.translations": {
+		"message": "Tongues",
+		"source": "Translations"
+	},
 	"editor.tab.universe": {
 		"message": "Universe",
 		"source": "Universe"
@@ -2842,6 +2846,58 @@
 	"editor.title": {
 		"message": "Edit Universe",
 		"source": "Edit Universe"
+	},
+	"editor.translations.explanation": {
+		"message": "Sailors see the universe's words, such as its name and the names of its waters and plunder, in whichever of its tongues be nearest their own, or in its mother tongue when it ain't been turned into theirs.",
+		"source": "Players see the universe's text, such as its name and the names of its areas and items, in the closest of its languages to their own, or in its source language when it isn't translated into theirs."
+	},
+	"editor.translations.languageChoice": {
+		"message": "{name} ({nameHere})",
+		"source": "{name} ({nameHere})"
+	},
+	"editor.translations.languages": {
+		"message": "Turned into these tongues",
+		"source": "Translated into"
+	},
+	"editor.translations.languagesHint": {
+		"message": "Strike a tongue off and its translations be scuttled when the universe is stowed.",
+		"source": "Taking a language off deletes its translations when the universe is saved."
+	},
+	"editor.translations.languagesSearch": {
+		"message": "Search the tongues",
+		"source": "Search languages"
+	},
+	"editor.translations.languagesTooMany": {
+		"message": "A universe can be turned into up to {max, plural, one {# tongue} other {# tongues}}.",
+		"source": "A universe can be translated into up to {max, plural, one {# language} other {# languages}}."
+	},
+	"editor.translations.remove": {
+		"message": "Strike It Off",
+		"source": "Take Off"
+	},
+	"editor.translations.removeQuestion": {
+		"message": "Strikin' {language} off scuttles the universe's {count, plural, one {# translation} other {# translations}} into it when the universe is stowed. Strike it off?",
+		"source": "Taking {language} off deletes the universe's {count, plural, one {# translation} other {# translations}} into it when the universe is saved. Take it off?"
+	},
+	"editor.translations.removeTitle": {
+		"message": "Scuttle translations",
+		"source": "Delete translations"
+	},
+	"editor.translations.saveFailed": {
+		"message": "Couldn't stow the tongues.",
+		"source": "Could not save the languages."
+	},
+	"editor.translations.sourceLanguage": {
+		"message": "Mother tongue",
+		"source": "Source language"
+	},
+	"editor.translations.sourceLanguageHint": {
+		"message": "The tongue the universe's crew write its words in.",
+		"source": "The language the universe's editors write its text in."
+	},
+	"editor.translations.sourceTranslated": {
+		"message": "{language} be the mother tongue, so the universe can't be turned into it as well.",
+		"source": "{language} is the source language, so the universe can't also be translated into it."
 	},
 	"editor.universe.longDescription": {
 		"message": "Long tale (Markdown)",
@@ -3582,6 +3638,10 @@
 	"error.somethingWentWrong": {
 		"message": "Somethin' went awry in the server's hold.",
 		"source": "Something went wrong on the server."
+	},
+	"error.sourceLanguageTranslated": {
+		"message": "The mother tongue can't also be one o' the tongues the universe be turned into.",
+		"source": "The source language can't also be one of the languages the universe is translated into."
 	},
 	"error.themeInUse": {
 		"message": "Hands spin this yarn, so it can't be scuttled. Lock it away instead.",
@@ -6398,6 +6458,10 @@
 	"universe.faerie.west": {
 		"message": "west",
 		"source": "west"
+	},
+	"universe.languages": {
+		"message": "Tongues: {languages}",
+		"source": "Languages: {languages}"
 	},
 	"universe.lightLevel.dark": {
 		"message": "pitch dark",

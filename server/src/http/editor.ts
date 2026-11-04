@@ -6,10 +6,10 @@
  * browser; routes about a universe also need a role in it, and changes need a role that allows them
  */
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
-import { DEFAULT_AREA_TILE_KEYS, defineMessages, EDITOR_UNIVERSES_PATH, isDefaultAreaTile, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, SOURCE_LOCALE, Translator, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type GroupSizeLowering, type NewRef, type NumberRef, type Ruleset, type RulesetSettings, type TileChangeSettings, type TileSettings, type TileUsagePayload, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
+import { DEFAULT_AREA_TILE_KEYS, defineMessages, EDITOR_UNIVERSES_PATH, isDefaultAreaTile, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, SOURCE_LOCALE, Translator, universeLanguageOf, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type GroupSizeLowering, type NewRef, type NumberRef, type Ruleset, type RulesetSettings, type TileChangeSettings, type TileSettings, type TileUsagePayload, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
-import { lockPlayer } from '../db/playerRepo.js';
+import { findPlayerLocale, lockPlayer } from '../db/playerRepo.js';
 import { loadRulesetSettings, storeRulesetSettings } from '../db/rulesetRepo.js';
 import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { countCustomTiles, createCustomTile, deleteCustomTile, findDefaultTileIds, findTileKind, listEditorTiles, restoreDefaultTile, saveEditedDefaultTile, updateCustomTile } from '../db/tileRepo.js';
@@ -17,6 +17,7 @@ import { isUniverseTileGraphic } from '../db/tileGraphicRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { countUniversesWithRole, listEditableUniverses, setUniverseRole } from '../db/universeEditorRepo.js';
 import { createUniverse, setUniverseAreas, UniverseNameTakenError, updateUniverseSettings } from '../db/universeRepo.js';
+import { countTranslations, deleteTranslationsOutside, deleteUniverseTextOf } from '../db/universeTextRepo.js';
 import { createArea, findAreasUsingTile, findEditorArea, isTileInUse, listStartingAreaIds, replaceTileInMaps } from '../db/areaRepo.js';
 import { loadUniverseContext, playerIdOf, refuseWritesFromOtherOrigins, requireLogin, universeContextOf } from './editorAccess.js';
 import { addDefaultStartingItems } from '../db/startingItemRepo.js';
@@ -199,11 +200,13 @@ async function createUniverseRoute(request: Request, response: Response): Promis
 	}
 
 	const playerId = playerIdOf(request);
-	const { name, shortDescription, ruleset } = body.data;
+	const { name, shortDescription, ruleset, locale } = body.data;
 	const created = await refusingTakenName(() => inTransaction(async (transaction): Promise<Refusal | string> =>
 	{
 		// Concurrent requests from the same player wait here, so they can't all slip under the limit
 		await lockPlayer(playerId, transaction);
+
+		const sourceLanguage = universeLanguageOf((await findPlayerLocale(playerId, transaction) ?? locale));
 
 		const { universeCreationEnabled, universesPerCreator } = await findSiteSettings(transaction);
 
@@ -234,7 +237,7 @@ async function createUniverseRoute(request: Request, response: Response): Promis
 			});
 		}
 
-		const createdId = await createUniverse({ name, shortDescription, ruleset }, transaction);
+		const createdId = await createUniverse({ name, shortDescription, sourceLanguage, ruleset }, transaction);
 		const tileKey = DEFAULT_AREA_TILE_KEYS[ruleset].outdoors;
 		const defaultTileId = (await findDefaultTileIds(ruleset, transaction)).get(tileKey);
 
@@ -282,12 +285,13 @@ async function createUniverseRoute(request: Request, response: Response): Promis
 }
 
 /**
- * GET /:universeId: the universe's settings, and the player's role in it
+ * GET /:universeId: the universe's settings, the player's role in it, and how many translations it has
+ * in each language
  *
  * @param request The request
  * @param response The response
  */
-function getUniverse(request: Request, response: Response): void
+async function getUniverse(request: Request, response: Response): Promise<void>
 {
 	const { playerId, universe, role, languages, serverAdmin } = universeContextOf(request);
 	const payload: EditableUniverse = {
@@ -295,7 +299,8 @@ function getUniverse(request: Request, response: Response): void
 		role,
 		languages: [...languages],
 		playerId,
-		serverAdmin
+		serverAdmin,
+		translationCounts: Object.fromEntries(await countTranslations(universe.id))
 	};
 
 	response.json(payload);
@@ -341,6 +346,7 @@ export async function applyUniverseChange(context: ChangeContext, update: Univer
 		areaIds: (((startingAreaId === undefined) || (startingAreaId === null)) ? [] : [startingAreaId]),
 		itemIds: startingItems?.map(({ itemId }) => itemId)
 	});
+	await applyLanguages(context, update);
 	await updateUniverseSettings(universe.id, update, transaction);
 
 	const timeKeys: (keyof UniverseSettingsUpdate)[] = ['passageOfTime', 'faerieMorning', 'displayTime', 'lobbyPassageOfTime', 'lobbyDayHours', 'lobbyFaerieMorning'];
@@ -372,6 +378,39 @@ export async function applyUniverseChange(context: ChangeContext, update: Univer
 	if (lobbyMoved)
 	{
 		context.published.push({ kind: 'lobby', universeId: universe.id });
+	}
+}
+
+/**
+ * Checks a change to the universe's languages, before it is saved: the source language can't also be a
+ * language it is translated into. Deletes the translations into languages the change takes off
+ *
+ * @param context The save
+ * @param update The universe's settings change
+ */
+async function applyLanguages(context: ChangeContext, update: UniverseSettingsUpdate): Promise<void>
+{
+	if ((update.sourceLanguage === undefined) && (update.translationLanguages === undefined))
+	{
+		return;
+	}
+
+	const { universe, transaction } = context;
+	const sourceLanguage = (update.sourceLanguage ?? universe.sourceLanguage).toLowerCase();
+	const translationLanguages = (update.translationLanguages ?? universe.translationLanguages);
+
+	if (translationLanguages.some((language) => (language.toLowerCase() === sourceLanguage)))
+	{
+		refuse(400, {
+			id: 'error.sourceLanguageTranslated',
+			defaultMessage: 'The source language can\'t also be one of the languages the universe is translated into.',
+			description: 'Why the universe\'s languages weren\'t saved: the language its text is written in was also chosen as a language to translate it into'
+		});
+	}
+
+	if (update.translationLanguages !== undefined)
+	{
+		await deleteTranslationsOutside(universe.id, update.translationLanguages, transaction);
 	}
 }
 
@@ -633,6 +672,7 @@ export async function removeTileChange(context: ChangeContext, id: NumberRef, re
 	if (kind === 'default')
 	{
 		await restoreDefaultTile(universe.id, tileId, transaction);
+		await deleteUniverseTextOf(universe.id, 'tile', tileId, transaction);
 		context.published.push({ kind: 'tiles', universeId: universe.id });
 		return;
 	}
@@ -657,6 +697,7 @@ export async function removeTileChange(context: ChangeContext, id: NumberRef, re
 	}
 
 	await deleteCustomTile(universe.id, tileId, transaction);
+	await deleteUniverseTextOf(universe.id, 'tile', tileId, transaction);
 
 	for (const areaId of changedAreas)
 	{

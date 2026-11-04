@@ -7,6 +7,7 @@ import { type AreaEvacuation, DEFAULT_AREA_TILE_KEYS, DEFAULT_TILE_CELL, isInBou
 
 import type { Executor } from '../db/client.js';
 import { findDefaultTileIds, findTileKind, loadUniverseTiles } from '../db/tileRepo.js';
+import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
 import { countAreas, createArea, deleteArea, deleteAreaLink, editCells, findEditorArea, listAreaLinks, listAreas, listAreasLinkingTo, listStartingAreaIds, loadChunks, lockAreas, resizeArea, saveAreaLink, updateAreaSettings } from '../db/areaRepo.js';
 import { arrivalCell, enabledAncestor } from '../logic/disabling.js';
 import { chunksOfChanges, wouldCreateCycle } from '../logic/mapEdits.js';
@@ -328,6 +329,7 @@ export async function deleteAreaChange(context: ChangeContext, areaId: StringRef
 	}
 
 	await deleteArea(area.id, context.transaction);
+	await deleteUniverseTextOf(universe.id, 'area', area.id, context.transaction);
 	context.published.push({ kind: 'deleted', areaId: area.id });
 }
 

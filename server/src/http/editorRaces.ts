@@ -8,6 +8,7 @@ import { defineMessages, MAX_CUSTOM_RACES, type NewRef, type NumberRef, type Rac
 
 import { hasCharactersOfRace } from '../db/characterRepo.js';
 import { countCustomRaces, createCustomRace, deleteCustomRace, findRaceKind, loadEditorRaces, restoreDefaultRace, saveEditedDefaultRace, updateCustomRace } from '../db/raceRepo.js';
+import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
 import { universeContextOf } from './editorAccess.js';
 import { recordRef, refuse, resolveNumberRef, type ChangeContext } from './editorChangeContext.js';
 import { checkStartingReferences } from './editorStartingExtras.js';
@@ -151,6 +152,7 @@ export async function removeRaceChange(context: ChangeContext, id: NumberRef): P
 	if (kind === 'default')
 	{
 		await restoreDefaultRace(universe.id, raceId, transaction);
+		await deleteUniverseTextOf(universe.id, 'race', raceId, transaction);
 		return;
 	}
 
@@ -168,6 +170,7 @@ export async function removeRaceChange(context: ChangeContext, id: NumberRef): P
 	}
 
 	await deleteCustomRace(universe.id, raceId, transaction);
+	await deleteUniverseTextOf(universe.id, 'race', raceId, transaction);
 }
 
 /**

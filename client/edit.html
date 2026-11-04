@@ -28,6 +28,7 @@
 					<button id="editor-tab-tilesets" type="button" role="tab" aria-controls="editor-panel-tilesets" data-message="editor.tab.tilesets" data-translation-context="Tab of the editor listing the tiles maps are painted with"><!-- icon game-icons:stone-block -->Tilesets</button>
 					<button id="editor-tab-areas" type="button" role="tab" aria-controls="editor-panel-areas" data-message="editor.tab.areas" data-translation-context="Tab of the editor listing the universe's areas (places with their own map)"><!-- icon game-icons:treasure-map -->Areas</button>
 					<button id="editor-tab-items" type="button" role="tab" aria-controls="editor-panel-items" data-message="editor.tab.items" data-translation-context="Tab of the editor listing the items characters can be given, such as weapons and gear"><!-- icon game-icons:swap-bag -->Items</button>
+					<button id="editor-tab-translations" type="button" role="tab" aria-controls="editor-panel-translations" data-message="editor.tab.translations" data-translation-context="Tab of the editor with the languages the universe can be played in: the one its text is written in, and those it is translated into"><!-- icon ph:translate -->Translations</button>
 					<button id="editor-tab-audit" type="button" role="tab" aria-controls="editor-panel-audit" data-message="editor.tab.audit" data-translation-context="Tab of the editor listing every save made in the universe's editor: who saved, with which role, when and what changed"><!-- icon ph:clock-counter-clockwise -->Audit</button>
 				</div>
 				<div class="editor-body">
@@ -571,6 +572,29 @@
 							<span id="audit-page"></span>
 							<button id="audit-next" type="button" class="secondary" data-message="pager.next" data-translation-context="Button that shows the next page of a list">Next</button>
 						</div>
+					</section>
+
+					<section id="editor-panel-translations" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-translations" hidden>
+						<p data-message="editor.translations.explanation" data-translation-context="Explains the editor's Translations tab, above its fields">Players see the universe's text, such as its name and the names of its areas and items, in the closest of its languages to their own, or in its source language when it isn't translated into theirs.</p>
+						<form id="translations-form" class="form">
+							<fieldset id="translations-fields" class="plain">
+								<label data-message="editor.translations.sourceLanguage" data-translation-context="Label of the field on the editor's Translations tab for the language the universe's text is written in; also names the setting in the list of what a save changed, on the editor's Audit tab">
+									Source language
+									<select id="translations-source" aria-describedby="translations-source-hint"></select>
+								</label>
+								<p id="translations-source-hint" class="hint" data-message="editor.translations.sourceLanguageHint" data-translation-context="Explains the source language field on the editor's Translations tab">The language the universe's editors write its text in.</p>
+								<div class="field-label">
+									<span id="translations-languages-label" data-message="editor.translations.languages" data-translation-context="Label of the field on the editor's Translations tab for the languages the universe's text is translated into; also names the setting in the list of what a save changed, on the editor's Audit tab">Translated into</span>
+									<ul id="translations-languages-chosen" class="chips" aria-labelledby="translations-languages-label" hidden></ul>
+									<div class="combobox-field">
+										<input id="translations-languages-search" type="text" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="translations-languages-options" aria-labelledby="translations-languages-label" aria-describedby="translations-languages-hint" data-untracked placeholder="Search languages" data-message-placeholder="editor.translations.languagesSearch" data-translation-context-placeholder="Shown in the empty search field for choosing the languages a universe is translated into, on the editor's Translations tab" />
+										<ul id="translations-languages-options" class="combobox-options" role="listbox" aria-labelledby="translations-languages-label" hidden></ul>
+									</div>
+									<p id="translations-languages-hint" class="hint" data-message="editor.translations.languagesHint" data-translation-context="Explains the field for the languages a universe is translated into, on the editor's Translations tab">Taking a language off deletes its translations when the universe is saved.</p>
+								</div>
+								<p id="translations-error" class="form-error" role="alert" hidden></p>
+							</fieldset>
+						</form>
 					</section>
 				</div>
 				<footer id="editor-save-bar" class="editor-save-bar" hidden>
