@@ -623,7 +623,7 @@ Until items have pictures, the icon is the item's category's.
 ### Tab: Audit
 Lists every save made in the universe's editor, newest first, for creators and site admins (the server refuses other roles too): when it was saved, the player who saved (their name, linking to their profile, and @username, or "Deleted account" once the account is deleted), the role they saved with (site admin included), and what the save changed: each thing it changed on its own line, by name, in the order they were saved, and under a change to settings, a line for each setting it changed with the value it changed it to:
 - "Added item Shiv", "Changed item Dagger" (with "Name: Shiv" and "Enabled: no" under it), "Restored item Dagger to its default" (one of the ruleset's defaults given its settings back) and "Deleted item Shiv", and the same for tiles, races, classes, themes and difficulty levels (which are deleted, never restored)
-- "Added editor @grace", "Changed editor @grace" (with "Role: translator" and "Languages: Deutsch"), "Removed editor @grace"
+- "Added editor @grace" (with the role given, "Role: builder", and a translator's languages), "Changed editor @grace" (with "Role: translator" and "Languages: Deutsch"), "Removed editor @grace" (with the role and languages they had)
 - "Changed settings" for the Universe, Lobby and Characters tabs (with, say, "Group size: 4" and "Starting area: Meadow at 3, 4"), and "Changed the ruleset" (with "Track ammunition: yes")
 - "Uploaded tileset Caves" and "Deleted tileset Caves"
 - "Added area Cave", "Changed area Cave" (with "Indoors or outdoors: Indoors"), "Resized the map of Cave" and "Deleted area Cave"

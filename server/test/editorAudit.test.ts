@@ -3,6 +3,7 @@ import { DEFAULT_PF1E_SETTINGS, type ClassListPayload, type DifficultyLevelListP
 
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { createArea, createUniverse, logIn, saveChanges, send, type Editor } from './editorRequests.js';
+import { addPlayer } from './players.js';
 import { getTestServer } from './testServer.js';
 
 describe('The editor\'s audit of saves', () =>
@@ -218,7 +219,43 @@ describe('The editor\'s audit of saves', () =>
 			},
 			{ subject: 'class', action: 'changed', target: { key: 'fighter', name: null }, fields: [{ field: 'primaryAbility', value: 'dexterity' }], count: 1 },
 			{ subject: 'difficultyLevel', action: 'changed', target: { key: 'hard', name: null }, fields: [{ field: 'permadeath', value: !hard.permadeath }], count: 1 },
-			{ subject: 'editor', action: 'deleted', target: { key: null, name: 'Grace' }, fields: [], count: 1 }
+			{
+				subject: 'editor',
+				action: 'deleted',
+				target: { key: null, name: 'Grace' },
+				fields: [
+					{ field: 'role', value: 'translator' },
+					{ field: 'languages', value: ['de'] }
+				],
+				count: 1
+			}
+		]);
+	});
+
+	it('lists the role given to each editor added, with a translator\'s languages', async () =>
+	{
+		const grace = await addPlayer('Grace');
+		const alan = await addPlayer('Alan');
+
+		assert.strictEqual((await saveChanges(ada, universeId, [
+			{ kind: 'addEditor', username: grace.username, settings: { role: 'builder', languages: [] } },
+			{ kind: 'addEditor', username: alan.username, settings: { role: 'translator', languages: ['de', 'fr'] } }
+		])).status, 200);
+
+		const [saved] = (await send<UniverseEditListPayload>(ada, 'GET', `/${universeId}/audit`)).body.edits;
+
+		assert.deepStrictEqual(saved.details, [
+			{ subject: 'editor', action: 'added', target: { key: null, name: grace.username }, fields: [{ field: 'role', value: 'builder' }], count: 1 },
+			{
+				subject: 'editor',
+				action: 'added',
+				target: { key: null, name: alan.username },
+				fields: [
+					{ field: 'role', value: 'translator' },
+					{ field: 'languages', value: ['de', 'fr'] }
+				],
+				count: 1
+			}
 		]);
 	});
 

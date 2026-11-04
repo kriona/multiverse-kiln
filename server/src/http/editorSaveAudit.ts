@@ -4,7 +4,7 @@
  * setting sent with the value it already has isn't listed, and a thing deleted is named as it was
  */
 import { isDeepStrictEqual } from 'util';
-import { AUDIT_FIELDS, type AuditAction, type AuditField, type AuditFieldChange, type AuditPassageOfTime, type AuditPlace, type AuditSubject, type ClassRaceArea, type EditorChange, type ItemQuantity, type NumberRef, type OptionName, type StringRef, type TileGraphic, type UniverseEditDetail } from '@multiverse-kiln/shared';
+import { AUDIT_FIELDS, type AuditAction, type AuditField, type AuditFieldChange, type AuditPassageOfTime, type AuditPlace, type AuditSubject, type ClassRaceArea, type EditorChange, type EditorRoleSettings, type ItemQuantity, type NumberRef, type OptionName, type StringRef, type TileGraphic, type UniverseEditDetail } from '@multiverse-kiln/shared';
 
 import { findEditorArea } from '../db/areaRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
@@ -173,6 +173,24 @@ function fieldOf(subject: AuditSubject, key: string): AuditField | undefined
 }
 
 /**
+ * An editor's role, and a translator's languages, listed under adding or removing them
+ *
+ * @param settings Their role and languages
+ * @return The fields
+ */
+function roleFields(settings: EditorRoleSettings): AuditFieldChange[]
+{
+	const fields: AuditFieldChange[] = [{ field: 'role', value: settings.role }];
+
+	if (settings.languages.length > 0)
+	{
+		fields.push({ field: 'languages', value: [...settings.languages] });
+	}
+
+	return(fields);
+}
+
+/**
  * A passage of time as the Audit tab shows it
  *
  * @param time The passage of time
@@ -197,7 +215,7 @@ export class SaveAudit
 	 */
 	readonly details: UniverseEditDetail[] = [];
 
-	private readonly editors: CachedList<string, { username: string; role: string; languages: string[] }>;
+	private readonly editors: CachedList<string, EditorRoleSettings & { username: string }>;
 	private readonly tileGraphics: CachedList<string, { name: string }>;
 	private readonly tiles: CachedList<number, Named & { custom: boolean }>;
 	private readonly items: CachedList<number, Named & { custom: boolean }>;
@@ -250,7 +268,7 @@ export class SaveAudit
 		switch (change.kind)
 		{
 			case 'addEditor':
-				this.add('editor', 'added', { key: null, name: change.username });
+				this.add('editor', 'added', { key: null, name: change.username }, 1, roleFields(change.settings));
 				return;
 
 			case 'saveEditor':
@@ -272,7 +290,7 @@ export class SaveAudit
 
 				if (before)
 				{
-					this.add('editor', 'deleted', { key: null, name: before.username });
+					this.add('editor', 'deleted', { key: null, name: before.username }, 1, roleFields(before));
 				}
 
 				return;
@@ -667,9 +685,10 @@ export class SaveAudit
 	 * @param action What it does
 	 * @param target What it changes, by name
 	 * @param count How many cells or links it changes, for cells and links
+	 * @param fields Settings to list under it, such as the role of an editor added or removed
 	 */
-	private add(subject: AuditSubject, action: AuditAction, target: OptionName | null, count: number = 1): void
+	private add(subject: AuditSubject, action: AuditAction, target: OptionName | null, count: number = 1, fields: AuditFieldChange[] = []): void
 	{
-		this.details.push({ subject, action, target, fields: [], count });
+		this.details.push({ subject, action, target, fields, count });
 	}
 }
