@@ -5,7 +5,7 @@ import { setFieldError, setFieldSuccess } from './fieldErrors';
  * What checking a username found
  *
  * - found: the username is fine, with what the check found for it (such as the player who has it) and
- *   what to say under the field
+ *   what to say on the field's message line
  * - problem: why the username won't do
  * - undefined: the check couldn't tell, such as when the server couldn't be reached; nothing is said,
  *   and submitting the form finds out
@@ -48,7 +48,7 @@ const SPINNER_DELAY_MS = 200;
 /**
  * A username field checked as the player types (see Register local account in STRUCTURE-OVERVIEW.md):
  * when they leave the field or pause typing, the username is checked, and the
- * line under the field says what was found or why it won't do, which screen readers read out. Each
+ * field's message line says what was found or why it won't do, which screen readers read out. Each
  * username is checked once, since the server may limit how often it is asked; typing it again shows
  * the same answer. The field needs a message line of its own (a field-message-slot, see setFieldError())
  */
@@ -133,8 +133,8 @@ export class UsernameLookup<T>
 	}
 
 	/**
-	 * Checks the username typed, unless it has been already, and shows under the field what was found,
-	 * if the player hasn't typed on while it was checked
+	 * Checks the username typed, unless it has been already, and shows on the field's message line what
+	 * was found, if the player hasn't typed on while it was checked
 	 *
 	 * @return What the check found
 	 */
@@ -218,7 +218,7 @@ export class UsernameLookup<T>
 	}
 
 	/**
-	 * Shows under the field what a check found, and reads it out
+	 * Shows on the field's message line what a check found, and reads it out
 	 *
 	 * @param check What it found
 	 */

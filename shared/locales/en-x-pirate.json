@@ -4180,8 +4180,8 @@
 		"source": "Name"
 	},
 	"login.displayNameHint": {
-		"message": "The name other sailors see. It needn't be yer real name, nor yers alone.",
-		"source": "The name other players see. It doesn't have to be your real name, or unique."
+		"message": "The name other sailors see. It needn't be yer real name.",
+		"source": "The name other players see. It doesn't have to be your real name."
 	},
 	"login.email": {
 		"message": "Email address",
@@ -4280,8 +4280,8 @@
 		"source": "Two-factor authentication keeps your account safe even if someone learns your password: logging in asks for a code from an app on your phone too. You can set it up now, or any time from your profile."
 	},
 	"login.registeredTitle": {
-		"message": "Yer articles be signed",
-		"source": "Your account is ready"
+		"message": "Yer articles be signed!",
+		"source": "Your account is has been created!"
 	},
 	"login.rememberMe": {
 		"message": "Remember me",
@@ -5488,8 +5488,8 @@
 		"source": "Name"
 	},
 	"profile.displayNameHint": {
-		"message": "The name other sailors see. It needn't be yer real name, nor yers alone.",
-		"source": "The name other players see. It doesn't have to be your real name, or unique."
+		"message": "The name other sailors see. It needn't be yer real name.",
+		"source": "The name other players see. It doesn't have to be your real name."
 	},
 	"profile.downloadData": {
 		"message": "Haul yer data ashore",
