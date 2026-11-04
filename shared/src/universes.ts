@@ -343,7 +343,7 @@ export type AreaLinkMode = typeof AREA_LINK_MODES[number];
  * What a user may do with a universe (see STRUCTURE-OVERVIEW.md, Tab: Editors)
  *
  * - creator: change everything
- * - builder: change the world: tiles, areas, maps and links
+ * - builder: change the world: tiles, items, areas, maps and links
  * - beta_tester: play while the universe is in prologue
  * - translator: translate the universe's text into the languages they are given
  */
@@ -368,7 +368,7 @@ export const UNIVERSE_ROLE_NAMES: Record<UniverseRole, MessageDescriptor> = defi
 	builder: {
 		id: 'universe.role.builder',
 		defaultMessage: 'builder',
-		description: 'Role of someone who can change a universe\'s world: its tiles, areas, maps and links'
+		description: 'Role of someone who can change a universe\'s world: its tiles, items, areas, maps and links'
 	},
 	beta_tester: {
 		id: 'universe.role.beta_tester',
@@ -394,7 +394,7 @@ export const UNIVERSE_ROLE_DESCRIPTIONS: Record<UniverseRole, MessageDescriptor>
 	},
 	builder: {
 		id: 'universe.roleDescription.builder',
-		defaultMessage: 'Can change the universe\'s world (its tiles, areas, maps and links) and play it while it\'s still being built. Can read its other settings without changing them.',
+		defaultMessage: 'Can change the universe\'s world (its tiles, items, areas, maps and links) and play it while it\'s still being built. Can read its other settings without changing them.',
 		description: 'What the builder role lets an editor do, under its name in the dialog on the editor\'s Editors tab, and when the pointer is over the role in the tab\'s list of editors'
 	},
 	beta_tester: {
@@ -519,7 +519,7 @@ export function canEditUniverseSettings(role: EditorRole): boolean
 }
 
 /**
- * Whether a role may change a universe's world: its tiles, areas, maps and links
+ * Whether a role may change a universe's world: its tiles, items, areas, maps and links
  *
  * @param role The user's role in the editor
  * @return True when the role may

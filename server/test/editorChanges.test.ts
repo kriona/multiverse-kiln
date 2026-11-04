@@ -167,8 +167,12 @@ describe('Saving editor changes', () =>
 		assert.strictEqual(refused.body.changeIndex, 1);
 		assert.deepStrictEqual(await customTileNames(ada, universeId), []);
 
-		await saveAll(builder, universeId, [{ kind: 'createTile', ref: 'new:lava', settings: lava }]);
+		await saveAll(builder, universeId, [
+			{ kind: 'createTile', ref: 'new:lava', settings: lava },
+			{ kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', type: 'torch', enabled: true } }
+		]);
 		assert.deepStrictEqual(await customTileNames(ada, universeId), ['Lava']);
+		assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?custom=true`)).body.items.map((item) => item.name), ['Torch']);
 	});
 
 	it('names the change that isn\'t valid', async () =>

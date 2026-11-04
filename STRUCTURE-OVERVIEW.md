@@ -335,7 +335,7 @@ Changing the stat rolling method doesn't change existing characters.
 ### Tab: Editors
 Lists the users who can work on the universe, and lets you add them with a role:
 - `creator` (admin): can change everything
-- `builder`: can make changes to the world, e.h. to areas or NPCs
+- `builder`: can make changes to the world: its tiles, items, areas, maps and links (and NPCs once there are any)
 - `beta tester`: can create characters and play while the universe is in `prologue`
 - `translator`: can [translate](#tab-translations) the universe's text into the languages they are assigned, and can't change anything else. The role decides who may change translations however they are made, on the Translations tab or by importing a file
 
