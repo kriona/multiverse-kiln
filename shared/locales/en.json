@@ -2936,7 +2936,7 @@
 		"description": "Subject of the email sent when a player is made one of a universe's editors (given a role in it, such as builder or beta tester); {universe} is the universe's name and {siteName} the site's name"
 	},
 	"email.roleGiven.whatItAllows": {
-		"defaultMessage": "{role, select, creator {As a creator you can change everything about the universe, including who else works on it.} builder {As a builder you can change the universe's world: its tiles, areas, maps and links.} beta_tester {As a beta tester you can play the universe before it opens to everyone.} other {As a translator you can translate the universe's text into the languages you were given.}}",
+		"defaultMessage": "{role, select, creator {As a creator you can change everything about the universe, including who else works on it.} builder {As a builder you can change the universe's world: its tiles, items, areas, maps and links.} beta_tester {As a beta tester you can play the universe before it opens to everyone.} other {As a translator you can translate the universe's text into the languages you were given.}}",
 		"description": "Second paragraph of the email sent when a player is given a role in a universe, saying what the role lets them do; {role} chooses the sentence and isn't shown"
 	},
 	"email.twoFactorDisabled.body": {
@@ -6233,7 +6233,7 @@
 	},
 	"universe.role.builder": {
 		"defaultMessage": "builder",
-		"description": "Role of someone who can change a universe's world: its tiles, areas, maps and links"
+		"description": "Role of someone who can change a universe's world: its tiles, items, areas, maps and links"
 	},
 	"universe.role.creator": {
 		"defaultMessage": "creator",
@@ -6248,7 +6248,7 @@
 		"description": "What the beta tester role lets an editor do, under its name in the dialog on the editor's Editors tab, and when the pointer is over the role in the tab's list of editors"
 	},
 	"universe.roleDescription.builder": {
-		"defaultMessage": "Can change the universe's world (its tiles, areas, maps and links) and play it while it's still being built. Can read its other settings without changing them.",
+		"defaultMessage": "Can change the universe's world (its tiles, items, areas, maps and links) and play it while it's still being built. Can read its other settings without changing them.",
 		"description": "What the builder role lets an editor do, under its name in the dialog on the editor's Editors tab, and when the pointer is over the role in the tab's list of editors"
 	},
 	"universe.roleDescription.creator": {

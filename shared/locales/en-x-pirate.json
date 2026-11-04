@@ -2936,8 +2936,8 @@
 		"source": "You have a role in {universe} on {siteName}"
 	},
 	"email.roleGiven.whatItAllows": {
-		"message": "{role, select, creator {As captain ye can change everythin' about the universe, even who else sails her.} builder {As shipwright ye can change the universe's world: its tiles, areas, charts and passages.} beta_tester {As deckhand ye can sail the universe afore she opens to every soul.} other {As translator ye can turn the universe's words into the tongues ye were given.}}",
-		"source": "{role, select, creator {As a creator you can change everything about the universe, including who else works on it.} builder {As a builder you can change the universe's world: its tiles, areas, maps and links.} beta_tester {As a beta tester you can play the universe before it opens to everyone.} other {As a translator you can translate the universe's text into the languages you were given.}}"
+		"message": "{role, select, creator {As captain ye can change everythin' about the universe, even who else sails her.} builder {As shipwright ye can change the universe's world: its tiles, booty, areas, charts and passages.} beta_tester {As deckhand ye can sail the universe afore she opens to every soul.} other {As translator ye can turn the universe's words into the tongues ye were given.}}",
+		"source": "{role, select, creator {As a creator you can change everything about the universe, including who else works on it.} builder {As a builder you can change the universe's world: its tiles, items, areas, maps and links.} beta_tester {As a beta tester you can play the universe before it opens to everyone.} other {As a translator you can translate the universe's text into the languages you were given.}}"
 	},
 	"email.twoFactorDisabled.body": {
 		"message": "Two-factor authentication was struck from yer account on {siteName}. Comin' aboard now needs only yer password, an' yer recovery codes be worthless.",
@@ -6248,8 +6248,8 @@
 		"source": "Can play the universe while it's open for testing, before everyone can, but can't change it."
 	},
 	"universe.roleDescription.builder": {
-		"message": "Can change the universe's world (its tiles, areas, charts and passages) and sail her while she's still on the slipway. Can read her other settings without changin' them.",
-		"source": "Can change the universe's world (its tiles, areas, maps and links) and play it while it's still being built. Can read its other settings without changing them."
+		"message": "Can change the universe's world (its tiles, booty, areas, charts and passages) and sail her while she's still on the slipway. Can read her other settings without changin' them.",
+		"source": "Can change the universe's world (its tiles, items, areas, maps and links) and play it while it's still being built. Can read its other settings without changing them."
 	},
 	"universe.roleDescription.creator": {
 		"message": "Can change everythin' about the universe, even who else sails her, and sail her while she's still on the slipway.",
