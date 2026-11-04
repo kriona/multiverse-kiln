@@ -1,8 +1,8 @@
-import { ADMIN_ROLE, canEditWorld, canManageEditors, EDITOR_ROLE_NAMES, type EditableUniverse, type UniverseSettingsUpdate, type UniverseSummary } from '@multiverse-kiln/shared';
+import { ADMIN_ROLE, canEditWorld, canManageEditors, EDITOR_ROLE_NAMES, type EditableUniverse, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
-import { editPageUrl, HOME_PAGE_URL } from '../../pages';
+import { editPageUrl, gamePageUrl, HOME_PAGE_URL } from '../../pages';
 import { AuditTab } from './AuditTab';
 import { EditorsTab } from './EditorsTab';
 import { closeOpenDialogs, getElement, setPageTitle, showMessage, titleLink } from '../dom';
@@ -93,11 +93,6 @@ export interface EditorPlace
  */
 export interface EditorScreenActions
 {
-	/**
-	 * Goes into the universe's lobby to play it
-	 */
-	play: (universe: UniverseSummary) => void;
-
 	/**
 	 * The player has moved to another tab or area, so the page's address can follow
 	 */
@@ -265,16 +260,6 @@ export class EditorScreen
 			});
 		}
 
-		getElement('editor-play', HTMLButtonElement).addEventListener('click', () =>
-		{
-			if (this.universe)
-			{
-				const { id, name, slug, shortDescription, ruleset } = this.universe;
-
-				actions.play({ id, name, slug, shortDescription, ruleset });
-			}
-		});
-
 		getElement('lobby-edit-area', HTMLButtonElement).addEventListener('click', () =>
 		{
 			if (this.universe?.lobbyAreaId)
@@ -333,7 +318,6 @@ export class EditorScreen
 		this.place = { tab: (place.tab ?? ((place.areaId === undefined) ? 'universe' : 'areas')), areaId: place.areaId };
 		this.setUniverse(universe);
 		this.saveBar.setLocked(((universe.disabledReason !== null) && !universe.serverAdmin));
-		getElement('editor-play', HTMLButtonElement).disabled = (universe.disabledReason !== null);
 		this.showAccessNotice(universe);
 
 		this.universeTab.open(universe);
@@ -483,7 +467,31 @@ export class EditorScreen
 			universe: universe.name
 		}));
 		this.role.textContent = t(EDITOR_ROLE_NAMES[universe.role]);
+		this.showPlayLink(universe);
 		this.areasTab.setUniverse(universe);
+	}
+
+	/**
+	 * Points Enter Universe at the universe's lobby, or hides it while the universe is disabled, since
+	 * no one can play it then
+	 *
+	 * @param universe The universe
+	 */
+	private showPlayLink(universe: EditableUniverse): void
+	{
+		const link = getElement('editor-play', HTMLAnchorElement);
+		const playable = (universe.disabledReason === null);
+
+		link.hidden = !playable;
+
+		if (playable)
+		{
+			link.href = gamePageUrl(universe.slug);
+		}
+		else
+		{
+			link.removeAttribute('href');
+		}
 	}
 
 	/**
