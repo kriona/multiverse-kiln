@@ -1,6 +1,7 @@
 import { Client, type Room } from '@colyseus/sdk';
-import { GAME_ROOM_NAME, GameState, LOBBY_ROOM_NAME, LobbyState, ServerMessageType, SESSION_ROOM_NAME, SessionServerMessageType, UNIVERSES_PATH, type AccountPayload, type GameJoinOptions, type LobbyJoinOptions, type UniverseDetails, type UniverseListPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
+import { GAME_ROOM_NAME, GameState, LOBBY_ROOM_NAME, LobbyState, ServerMessageType, SESSION_ROOM_NAME, SessionServerMessageType, UNIVERSES_PATH, type AccountPayload, type GameJoinOptions, type LobbyJoinOptions, type UniverseDetails, type UniverseListPayload, type UniverseTextPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
 
+import { wantedLanguages } from '../localization';
 import { forgetPlayerValues, rememberPlayerSession } from '../rememberedValues';
 
 /**
@@ -96,13 +97,34 @@ export function serverHttpUrl(path: string): string
 }
 
 /**
- * A client for the server, for a page that only uses its HTTP routes
+ * A client for the server. Its requests name the languages the player wants in Accept-Language, which
+ * the server shows universe text in when the player's profile names none
  *
  * @return The client
  */
 export function createClient(): Client
 {
-	return(new Client(getServerUrl()));
+	const client = new Client(getServerUrl());
+
+	client.http.options.headers = { 'Accept-Language': wantedLanguages().join(', ') };
+
+	return(client);
+}
+
+/**
+ * The text a universe's rooms leave to the client to look up by ID, in the player's language. The
+ * browser keeps it, and the server answers 304 while it hasn't changed, so asking again after
+ * ServerMessageType.UniverseText is cheap
+ *
+ * @param client Client for the server
+ * @param universeId The universe's ID
+ * @return The text
+ */
+export async function getUniverseText(client: Client, universeId: string): Promise<UniverseTextPayload>
+{
+	const response = await client.http.get(`${UNIVERSES_PATH}/${encodeURIComponent(universeId)}/text`);
+
+	return(response.data as UniverseTextPayload);
 }
 
 /**

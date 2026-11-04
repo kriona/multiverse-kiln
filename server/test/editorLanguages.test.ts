@@ -8,6 +8,7 @@ import { listUniverseEdits } from '../src/db/universeEditRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { findUniverseDetails } from '../src/db/universeRepo.js';
 import { countTranslations, listTranslations, listTranslatorNotes, saveTranslation, saveTranslatorNote } from '../src/db/universeTextRepo.js';
+import { areaChanges, type AreaChange } from '../src/world/areaChanges.js';
 import { createArea, createUniverse, logIn, saveChanges, send, type Editor } from './editorRequests.js';
 import { getTestServer } from './testServer.js';
 
@@ -162,6 +163,33 @@ describe('universe languages in the editor', () =>
 		const refused = await saveChanges(bob, universeId, [{ kind: 'universe', update: { translationLanguages: ['fr'] } }]);
 
 		assert.strictEqual(refused.status, 403);
+	});
+
+	it('tells the rooms when a save changes the names they leave to clients, and only then', async () =>
+	{
+		const ada = await logIn('Ada');
+		const universeId = await createUniverse(ada);
+		const areaId = await createArea(ada, universeId);
+		const told: AreaChange[] = [];
+		const stop = areaChanges.onChange((change) =>
+		{
+			if (change.kind === 'text')
+			{
+				told.push(change);
+			}
+		});
+
+		try
+		{
+			await saveChanges(ada, universeId, [{ kind: 'universe', update: { shortDescription: 'Changed' } }]);
+			await saveChanges(ada, universeId, [{ kind: 'updateArea', areaId, update: { name: 'Meadows' } }]);
+		}
+		finally
+		{
+			stop();
+		}
+
+		assert.deepStrictEqual(told, [{ kind: 'text', universeId }]);
 	});
 
 	it('deletes an area\'s translations and notes with it', async () =>

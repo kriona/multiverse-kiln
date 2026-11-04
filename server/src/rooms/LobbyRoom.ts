@@ -1,5 +1,5 @@
 import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
-import { canPlayUniverse, characterBar, LobbyMember, LobbyMessageType, LobbyServerMessageType, LobbyState, MessageType, NOTHING_BARRED, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, ServerCloseCode, type BarredOptions, type ChatHistoryPayload, type ChatMessage, type NoticePayload, type PlayingAsPayload, type Sight } from '@multiverse-kiln/shared';
+import { canPlayUniverse, characterBar, LobbyMember, LobbyMessageType, LobbyServerMessageType, LobbyState, MessageType, NOTHING_BARRED, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, ServerCloseCode, ServerMessageType, type BarredOptions, type ChatHistoryPayload, type ChatMessage, type NoticePayload, type PlayingAsPayload, type Sight } from '@multiverse-kiln/shared';
 
 import { resolveSession } from '../auth/sessions.js';
 import { loadBarredOptions } from '../db/barredOptions.js';
@@ -282,6 +282,16 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 				for (const client of this.clients)
 				{
 					client.leave(((change.kind === 'universeDeleted') ? ServerCloseCode.UniverseDeleted : ServerCloseCode.UniverseDisabled));
+				}
+
+				return;
+			}
+
+			if (change.kind === 'text')
+			{
+				if (change.universeId === this.universeId)
+				{
+					this.broadcast(ServerMessageType.UniverseText);
 				}
 
 				return;

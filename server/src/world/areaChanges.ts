@@ -25,6 +25,8 @@ export interface AreaPlace
  * - lobby: a universe's lobby moved to another area or starting cell, or now has no area. Its lobby room
  *   reads where its players walk again (published with an area change for the old and new lobby areas,
  *   whose time and vision follow the lobby's settings while they are its area)
+ * - text: a universe's text changed (a name, a translation or its languages), so its rooms tell their
+ *   clients to fetch it again (ServerMessageType.UniverseText)
  */
 export type AreaChange =
 	| { kind: 'cells'; areaId: string; chunkKeys: string[] }
@@ -32,6 +34,7 @@ export type AreaChange =
 	| { kind: 'deleted'; areaId: string }
 	| { kind: 'evacuated'; areaId: string; destination: AreaPlace | null }
 	| { kind: 'lobby'; universeId: string }
+	| { kind: 'text'; universeId: string }
 	| { kind: 'tiles'; universeId: string }
 	| { kind: 'time'; universeId: string }
 	| { kind: 'universeDeleted'; universeId: string }

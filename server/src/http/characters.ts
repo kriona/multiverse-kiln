@@ -9,7 +9,7 @@
 import { randomInt } from 'crypto';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { addMoney, barredOptionsOf, characterBar, canPlayUniverse, canViewUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, isReservedName, isSf1eClassRules, isSf1eRaceRules, MAX_CHARACTER_NAME_LENGTH, MAX_CHARACTERS_PER_UNIVERSE, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditableUniverseDetails, type EditorClass, type EditorRace, type NewCharacterOptions, type NewCharacterRequest, type OptionName, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
+import { addMoney, barredOptionsOf, characterBar, canPlayUniverse, canViewUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, isReservedName, isSf1eClassRules, isSf1eRaceRules, MAX_CHARACTER_NAME_LENGTH, MAX_CHARACTERS_PER_UNIVERSE, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditableUniverseDetails, type EditorClass, type EditorRace, type NewCharacterOptions, type NewCharacterRequest, type OptionName, type UniverseRole, type UniverseStage, type UniverseTextKind } from '@multiverse-kiln/shared';
 
 import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findLastPlayedCharacterId, findOwnCharacter, findPf1eAbilityRoll, keepPf1eAbilityRoll, listCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion } from '../db/characterRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
@@ -30,6 +30,8 @@ import { abilityBonuses, areValidBaseScores, combineStartingItems, finalAbilityS
 import { displayText } from '../rooms/payloads.js';
 import { playerIdOf, refuseWritesFromOtherOrigins, requireLogin } from './editorAccess.js';
 import { errorMessages, sendError, sendInvalidRequest, type Refusal } from './errors.js';
+import { requestLanguages } from './requestLanguages.js';
+import { UniverseTextTranslator } from './universeTextTranslator.js';
 
 /**
  * The universe a character request is about
@@ -231,6 +233,19 @@ export function universeOf(request: Request): PlayableUniverse
 }
 
 /**
+ * Loads a universe's translations of some kinds of text, for the languages a request asks for
+ *
+ * @param request The request
+ * @param universe The universe
+ * @param kinds The kinds of text the response shows
+ * @return The translator
+ */
+export async function loadTranslator(request: Request, universe: PlayableUniverse, kinds: readonly UniverseTextKind[]): Promise<UniverseTextTranslator>
+{
+	return(UniverseTextTranslator.load(universe, await requestLanguages(request), kinds));
+}
+
+/**
  * GET /: the player's characters in the universe
  *
  * @param request The request
@@ -240,15 +255,16 @@ async function listRoute(request: Request, response: Response): Promise<void>
 {
 	const universe = universeOf(request);
 	const playerId = playerIdOf(request);
-	const [characters, races, classes] = await Promise.all([
+	const [characters, races, classes, translator] = await Promise.all([
 		listCharacters(playerId, universe.id),
 		loadEditorRaces(universe.id, universe.ruleset),
-		loadEditorClasses(universe.id, universe.ruleset)
+		loadEditorClasses(universe.id, universe.ruleset),
+		loadTranslator(request, universe, ['race', 'class'])
 	]);
 	const barred = barredOptionsOf(races, classes);
 	const lastPlayedId = await findLastPlayedCharacterId(playerId, universe.id, barred);
-	const raceNames = new Map(races.map(({ id, key, name }) => [id, { key, name }]));
-	const classNames = new Map(classes.map(({ id, key, name }) => [id, { key, name }]));
+	const raceNames = new Map(races.map(({ id, key, name }) => [id, translator.name('race', id, { key, name })]));
+	const classNames = new Map(classes.map(({ id, key, name }) => [id, translator.name('class', id, { key, name })]));
 	const unnamed: OptionName = { key: null, name: null };
 	const payload: CharacterListPayload = {
 		ruleset: universe.ruleset,
@@ -283,14 +299,15 @@ async function sheetRoute(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	const [character, membership, races, classes, themes, items, siteSettings] = await Promise.all([
+	const [character, membership, races, classes, themes, items, siteSettings, translator] = await Promise.all([
 		findCharacterDetails(playerIdOf(request), universe.id, universe.ruleset, characterId),
 		findMembership(characterId),
 		loadEditorRaces(universe.id, universe.ruleset),
 		loadEditorClasses(universe.id, universe.ruleset),
 		loadEditorThemes(universe.id, universe.ruleset),
 		loadEditorItems(universe.id, universe.ruleset),
-		findSiteSettings()
+		findSiteSettings(),
+		loadTranslator(request, universe, ['race', 'class', 'theme', 'item'])
 	]);
 
 	if (!character)
@@ -310,14 +327,14 @@ async function sheetRoute(request: Request, response: Response): Promise<void>
 		ruleset: universe.ruleset,
 		id: character.id,
 		name: character.name,
-		race: {
+		race: translator.name('race', character.raceId, {
 			key: (race?.key ?? null),
 			name: (race?.name ?? null)
-		},
-		characterClass: {
+		}),
+		characterClass: translator.name('class', character.classId, {
 			key: (characterClass?.key ?? null),
 			name: (characterClass?.name ?? null)
-		},
+		}),
 		deleteAt: (character.deleteAt?.toISOString() ?? null),
 		deletionDays: siteSettings.characterDeletionDays,
 		group: ((membership === undefined)
@@ -332,10 +349,10 @@ async function sheetRoute(request: Request, response: Response): Promise<void>
 		lightSensitivity: (race?.rules.lightSensitivity ?? NEW_RACE_RULES[universe.ruleset].lightSensitivity),
 		theme: ((character.themeId === null)
 			? null
-			: {
+			: translator.name('theme', character.themeId, {
 				key: (theme?.key ?? null),
 				name: (theme?.name ?? null)
-			}),
+			})),
 		hitPoints,
 		staminaPoints,
 		abilityScores: character.abilityScores,
@@ -344,13 +361,13 @@ async function sheetRoute(request: Request, response: Response): Promise<void>
 		{
 			const item = itemsById.get(itemId);
 
-			return({
+			return(translator.name('item', itemId, {
 				id: itemId,
 				key: (item?.key ?? null),
 				name: (item?.name ?? null),
 				type: (item?.type ?? ''),
 				quantity
-			});
+			}));
 		})
 	};
 
@@ -576,30 +593,31 @@ async function newCharacterRoute(request: Request, response: Response): Promise<
 {
 	const universe = universeOf(request);
 	const playerId = playerIdOf(request);
-	const [abilities, races, classes, themes, characterCount, storedDraft] = await Promise.all([
+	const [abilities, races, classes, themes, characterCount, storedDraft, translator] = await Promise.all([
 		offerAbilities(universe, playerId),
 		loadEditorRaces(universe.id, universe.ruleset),
 		loadEditorClasses(universe.id, universe.ruleset),
 		loadEditorThemes(universe.id, universe.ruleset),
 		countCharacters(playerId, universe.id),
-		findCharacterDraft(playerId, universe.id)
+		findCharacterDraft(playerId, universe.id),
+		loadTranslator(request, universe, ['universe', 'race', 'class', 'theme'])
 	]);
 
 	// Progress saved by an older version of Create Character is dropped rather than refused
 	const draft = characterDraft.safeParse(storedDraft);
 	const payload: NewCharacterOptions = {
-		universeName: universe.name,
+		universeName: translator.text('universe', universe.id, 'name', universe.name),
 		ruleset: universe.ruleset,
 		abilities,
 		races: races
 			.filter((race) => race.enabled)
-			.map(({ id, key, name, rules }) => ({ id, key, name, rules })),
+			.map(({ id, key, name, rules }) => translator.name('race', id, { id, key, name, rules })),
 		classes: classes
 			.filter((characterClass) => characterClass.enabled)
-			.map(({ id, key, name, rules }) => ({ id, key, name, rules })),
+			.map(({ id, key, name, rules }) => translator.name('class', id, { id, key, name, rules })),
 		themes: themes
 			.filter((theme) => theme.enabled)
-			.map(({ id, key, name, rules }) => ({ id, key, name, rules })),
+			.map(({ id, key, name, rules }) => translator.name('theme', id, { id, key, name, rules })),
 		characterCount,
 		draft: (draft.success ? draft.data : null)
 	};

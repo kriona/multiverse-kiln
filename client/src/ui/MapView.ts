@@ -3,6 +3,7 @@ import { VIEW_HEIGHT, VIEW_WIDTH } from '@multiverse-kiln/shared';
 
 import type { MapConnection, MapRoom } from '../network/serverConnection';
 import { MAP_SCENE_KEY, MapScene, type MapSceneData } from '../scenes/MapScene';
+import type { UniverseText } from './universeText';
 
 /**
  * The map the lobby and group screens show: one Phaser game, whose canvas moves to whichever screen is
@@ -15,6 +16,21 @@ export class MapView
 	private game?: Phaser.Game;
 
 	/**
+	 * The names of the universe being played, in the player's language, once the page knows the universe
+	 */
+	private text: UniverseText | undefined;
+
+	/**
+	 * Names the maps shown from now on with a universe's text
+	 *
+	 * @param text The universe's text
+	 */
+	useText(text: UniverseText): void
+	{
+		this.text = text;
+	}
+
+	/**
 	 * Shows a joined room's map in an element
 	 *
 	 * @param parent The element to show the map in
@@ -22,7 +38,10 @@ export class MapView
 	 */
 	show(parent: HTMLElement, connection: MapConnection<MapRoom>): void
 	{
-		const data: MapSceneData = { connection };
+		const data: MapSceneData = {
+			connection,
+			text: this.text
+		};
 
 		if (!this.game)
 		{

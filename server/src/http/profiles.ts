@@ -22,6 +22,8 @@ import { deletionRoute, exportRoute } from './accountData.js';
 import { authMessages, checkDisplayName, checkUsername, sendRefusal, type AuthRefusal } from './authCommon.js';
 import { playerIdOf, refuseWritesFromOtherOrigins, requireLogin } from './editorAccess.js';
 import { errorMessages, sendError, sendInvalidRequest } from './errors.js';
+import { requestLanguages } from './requestLanguages.js';
+import { UniverseTextTranslator } from './universeTextTranslator.js';
 
 /**
  * Reasons the profile routes give (see shared/src/localization.ts)
@@ -191,15 +193,23 @@ export function addProfileRoutes(app: Application, allowedOrigins: Set<string>):
 }
 
 /**
- * Names the races and classes of a profile's characters, as their universes call them
+ * Names the universes, races and classes of a profile's characters, as their universes call them, in
+ * the languages the request asks for
  *
+ * @param request The request
  * @param records The characters, with their universes
  * @return The characters as the profile lists them, in the same order
  */
-async function nameCharacters(records: ProfileCharacterRecord[]): Promise<(ProfileCharacter & { visibleOnProfile: boolean })[]>
+async function nameCharacters(request: Request, records: ProfileCharacterRecord[]): Promise<(ProfileCharacter & { visibleOnProfile: boolean })[]>
 {
-	const universes = new Map(records.map((record) => [record.universeId, record.ruleset]));
-	const names = new Map(await Promise.all([...universes].map(async ([universeId, ruleset]) =>
+	const universes = new Map(records.map((record) => [record.universeId, {
+		id: record.universeId,
+		ruleset: record.ruleset,
+		sourceLanguage: record.sourceLanguage,
+		translationLanguages: record.translationLanguages
+	}]));
+	const translators = await UniverseTextTranslator.loadAll([...universes.values()], await requestLanguages(request), ['universe', 'race', 'class']);
+	const names = new Map(await Promise.all([...universes.values()].map(async ({ id: universeId, ruleset }) =>
 	{
 		const [races, classes] = await Promise.all([
 			loadEditorRaces(universeId, ruleset),
@@ -213,19 +223,26 @@ async function nameCharacters(records: ProfileCharacterRecord[]): Promise<(Profi
 	})));
 	const unnamed: OptionName = { key: null, name: null };
 
-	return(records.map((record) => ({
-		id: record.id,
-		name: record.name,
-		race: (names.get(record.universeId)?.races.get(record.raceId) ?? unnamed),
-		characterClass: (names.get(record.universeId)?.classes.get(record.classId) ?? unnamed),
-		universe: {
-			id: record.universeId,
-			slug: record.universeSlug,
-			name: record.universeName,
-			ruleset: record.ruleset
-		},
-		visibleOnProfile: record.visibleOnProfile
-	})));
+	return(records.map((record) =>
+	{
+		const translator = translators.get(record.universeId);
+		const race = (names.get(record.universeId)?.races.get(record.raceId) ?? unnamed);
+		const characterClass = (names.get(record.universeId)?.classes.get(record.classId) ?? unnamed);
+
+		return({
+			id: record.id,
+			name: record.name,
+			race: (translator?.name('race', record.raceId, race) ?? race),
+			characterClass: (translator?.name('class', record.classId, characterClass) ?? characterClass),
+			universe: {
+				id: record.universeId,
+				slug: record.universeSlug,
+				name: (translator?.text('universe', record.universeId, 'name', record.universeName) ?? record.universeName),
+				ruleset: record.ruleset
+			},
+			visibleOnProfile: record.visibleOnProfile
+		});
+	}));
 }
 
 /**
@@ -245,7 +262,7 @@ async function playerProfileRoute(request: Request, response: Response): Promise
 		return;
 	}
 
-	const characters = await nameCharacters(await listProfileCharacters(profile.id, {
+	const characters = await nameCharacters(request, await listProfileCharacters(profile.id, {
 		stages: PUBLIC_STAGES,
 		onlyVisible: !profile.showCharacters
 	}));
@@ -302,7 +319,7 @@ async function ownProfileRoute(request: Request, response: Response): Promise<vo
 		twoFactor,
 		serverAdmin,
 		showCharacters: profile.showCharacters,
-		characters: await nameCharacters(records)
+		characters: await nameCharacters(request, records)
 	};
 
 	response.json(payload);

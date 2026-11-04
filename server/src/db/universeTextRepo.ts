@@ -2,7 +2,7 @@
  * Universe text's translations and notes for translators (see Localization in STRUCTURE-OVERVIEW.md):
  * the only module that reads or writes the universe_translations and universe_translator_notes tables
  */
-import { and, count, eq, inArray, notInArray, sql } from 'drizzle-orm';
+import { and, count, eq, inArray, notInArray, or, sql } from 'drizzle-orm';
 import type { UniverseTextField, UniverseTextKind } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
@@ -102,6 +102,44 @@ export async function listTranslations(universeId: string, languages: readonly s
 		.where(and(
 			eq(universeTranslations.universeId, universeId),
 			inArray(universeTranslations.language, [...languages])
+		)));
+}
+
+/**
+ * Translations of several universes' text, each into its own languages, such as for a list of
+ * universes or of characters in several universes
+ *
+ * @param wanted Each universe's ID and the languages wanted for it, by tag
+ * @param kinds The kinds of text wanted, or undefined for every kind
+ * @param executor The database, or a transaction
+ * @return The translations with their universes, in no particular order
+ */
+export async function listTranslationsIn(wanted: readonly { universeId: string; languages: readonly string[] }[], kinds: readonly UniverseTextKind[] | undefined, executor: Executor = db): Promise<(UniverseTranslationRecord & { universeId: string })[]>
+{
+	const universes = wanted.filter(({ languages }) => (languages.length > 0));
+
+	if ((universes.length === 0) || (kinds?.length === 0))
+	{
+		return([]);
+	}
+
+	return(executor
+		.select({
+			universeId: universeTranslations.universeId,
+			kind: universeTranslations.kind,
+			thingId: universeTranslations.thingId,
+			field: universeTranslations.field,
+			language: universeTranslations.language,
+			text: universeTranslations.text,
+			sourceHash: universeTranslations.sourceHash
+		})
+		.from(universeTranslations)
+		.where(and(
+			or(...universes.map(({ universeId, languages }) => and(
+				eq(universeTranslations.universeId, universeId),
+				inArray(universeTranslations.language, [...languages])
+			))),
+			((kinds === undefined) ? undefined : inArray(universeTranslations.kind, [...kinds]))
 		)));
 }
 

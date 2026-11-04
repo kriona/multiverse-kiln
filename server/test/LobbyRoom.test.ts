@@ -1089,6 +1089,15 @@ describe('LobbyRoom', () =>
 			await waitUntil(() => (lobbyOf(ada).getAreaId(ada.playerId) === universe.squareAreaId));
 		});
 
+		it('tells its windows to fetch the universe\'s text again when an editor changes it', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+
+			areaChanges.publish({ kind: 'text', universeId: universe.universeId });
+
+			assert.strictEqual(await ada.inbox.take(ServerMessageType.UniverseText), undefined);
+		});
+
 		it('sends the area again with the universe\'s edited tiles', async () =>
 		{
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');

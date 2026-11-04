@@ -306,9 +306,41 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 		return({ saved: false, changeIndex: (refusedWhole ? null : current), refusal });
 	}
 
+	// Told after the areas' own changes, so a room has sent their new settings before its clients fetch the text
+	if (changes.some(changesRoomText))
+	{
+		context.published.push({ kind: 'text', universeId: base.universe.id });
+	}
+
 	await afterCommit(context, stageChange);
 
 	return({ saved: true, ids: context.ids });
+}
+
+/**
+ * Whether a change may change the text the rooms leave clients to look up (UniverseTextPayload): the
+ * names of areas and tiles, which areas are enabled, and the universe's languages
+ *
+ * @param change The change
+ * @return True when it may
+ */
+function changesRoomText(change: EditorChange): boolean
+{
+	switch (change.kind)
+	{
+		case 'universe':
+			return((change.update.sourceLanguage !== undefined) || (change.update.translationLanguages !== undefined));
+		case 'updateArea':
+			return((change.update.name !== undefined) || (change.update.enabled !== undefined));
+		case 'createArea':
+		case 'deleteArea':
+		case 'createTile':
+		case 'saveTile':
+		case 'removeTile':
+			return(true);
+		default:
+			return(false);
+	}
 }
 
 /**

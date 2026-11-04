@@ -72,6 +72,51 @@ export function universeLanguageOf(locale: string | undefined): string
 }
 
 /**
+ * Which of a universe's languages a player sees its text in: the first language they want that the
+ * universe has, as it is (pt-BR) or without its region (pt)
+ *
+ * @param requested The languages the player wants, most wanted first: their profile's, then their
+ * page's (requestLanguages() on the server)
+ * @param sourceLanguage The language the universe's text is written in
+ * @param translationLanguages The languages it is translated into
+ * @return One of its translation languages, or undefined when the player sees the source text
+ */
+export function chooseUniverseLanguage(requested: readonly string[], sourceLanguage: string, translationLanguages: readonly string[]): string | undefined
+{
+	const languages = [sourceLanguage, ...translationLanguages];
+
+	for (const wanted of requested)
+	{
+		const lowerWanted = wanted.toLowerCase();
+		const base = lowerWanted.split('-')[0];
+		const found = (languages.find((language) => (language.toLowerCase() === lowerWanted)) ?? languages.find((language) => (language.toLowerCase() === base)));
+
+		if (found !== undefined)
+		{
+			return(((found === sourceLanguage) ? undefined : found));
+		}
+	}
+
+	return(undefined);
+}
+
+/**
+ * The languages a translation may be found in for a language chosen with chooseUniverseLanguage(): it,
+ * then it without its region, when the universe is translated into that
+ *
+ * @param language The language chosen
+ * @param translationLanguages The languages the universe is translated into
+ * @return The languages to look for translations in
+ */
+export function translationLanguagesFor(language: string, translationLanguages: readonly string[]): string[]
+{
+	const base = language.split('-')[0].toLowerCase();
+	const baseLanguage = translationLanguages.find((each) => ((each.toLowerCase() === base) && (each !== language)));
+
+	return(((baseLanguage === undefined) ? [language] : [language, baseLanguage]));
+}
+
+/**
  * A piece of universe text's translation into the player's language: the translation in their language
  * (pt-BR), then in that language without its region (pt). The caller shows the source text when there is
  * neither

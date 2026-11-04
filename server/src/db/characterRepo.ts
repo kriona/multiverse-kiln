@@ -45,6 +45,12 @@ export interface ProfileCharacterRecord
 	universeSlug: string;
 	universeName: string;
 	ruleset: Ruleset;
+
+	/**
+	 * The language the universe's text is written in, and the languages it is translated into
+	 */
+	sourceLanguage: string;
+	translationLanguages: string[];
 }
 
 /**
@@ -354,7 +360,9 @@ export async function listProfileCharacters(playerId: string, filter: { stages?:
 			universeId: universes.id,
 			universeSlug: universes.slug,
 			universeName: universes.name,
-			ruleset: universes.ruleset
+			ruleset: universes.ruleset,
+			sourceLanguage: universes.sourceLanguage,
+			translationLanguages: universes.translationLanguages
 		})
 		.from(characters)
 		.innerJoin(universes, eq(universes.id, characters.universeId))

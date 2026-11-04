@@ -803,9 +803,13 @@ describe('World editor API', () =>
 				assert.strictEqual((await removeFrom(ada, universeId, 'Tile', tileId, replaceWith)).status, 400, String(replaceWith));
 			}
 
+			// Telling the rooms the universe's text changed is tested in editorLanguages.test.ts
 			const stopListening = areaChanges.onChange((change) =>
 			{
-				changes.push(change);
+				if (change.kind !== 'text')
+				{
+					changes.push(change);
+				}
 			});
 
 			try
@@ -1576,9 +1580,14 @@ describe('World editor API', () =>
 		beforeEach(() =>
 		{
 			published = [];
+
+			// Telling the rooms the universe's text changed is tested in editorLanguages.test.ts
 			stopListening = areaChanges.onChange((change) =>
 			{
-				published.push(change);
+				if (change.kind !== 'text')
+				{
+					published.push(change);
+				}
 			});
 		});
 

@@ -41,7 +41,13 @@ export enum ServerMessageType
 	/**
 	 * Chunks of the area's map that the player has come near, or that an editor has changed (payload: ChunksPayload)
 	 */
-	Chunks = 'chunks'
+	Chunks = 'chunks',
+
+	/**
+	 * A save in the editor changed the universe's text (names, translations or languages), so clients
+	 * fetch it again (UniverseTextPayload). No payload
+	 */
+	UniverseText = 'universeText'
 }
 
 /**
@@ -171,8 +177,9 @@ export interface AreaTile
 	key: string | null;
 
 	/**
-	 * The universe's name for the tile, or null for a default tile's name, which the client shows in
-	 * the player's language from key
+	 * The universe's name for the tile in its source language, or null for a default tile's name, which
+	 * the client shows in the player's language from key. The game looks the universe's names up in the
+	 * player's language by id (UniverseTextPayload)
 	 */
 	name: string | null;
 
@@ -262,6 +269,11 @@ export interface AreaLinkCell
 export interface AreaPayload
 {
 	areaId: string;
+
+	/**
+	 * The area's name in the universe's source language. A room sends the same payload to every player,
+	 * so the game looks the name up in the player's language by areaId (UniverseTextPayload)
+	 */
 	name: string;
 
 	/**
@@ -530,6 +542,25 @@ export interface UniverseSummary
 	 */
 	sourceLanguage: string;
 	translationLanguages: string[];
+}
+
+/**
+ * Response of GET UNIVERSES_PATH/:universeId/text: the names the rooms leave the client to look up by
+ * ID, in the player's language, like a universe's page. Sent with an ETag that changes with the text,
+ * so the client asks again cheaply when a room says it changed (ServerMessageType.UniverseText)
+ */
+export interface UniverseTextPayload
+{
+	/**
+	 * Each enabled area's name, by ID
+	 */
+	areas: Record<string, string>;
+
+	/**
+	 * Each tile's name by ID, for tiles the universe has named; a default tile it hasn't is named in
+	 * the player's language by its key
+	 */
+	tiles: Record<string, string>;
 }
 
 /**
