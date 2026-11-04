@@ -4180,7 +4180,7 @@
 		"description": "Label of the field for the name other players see, when creating an account"
 	},
 	"login.displayNameHint": {
-		"defaultMessage": "The name other players see. It doesn't have to be your real name, or unique.",
+		"defaultMessage": "The name other players see. It doesn't have to be your real name.",
 		"description": "Under the name field when creating an account"
 	},
 	"login.email": {
@@ -4280,7 +4280,7 @@
 		"description": "On the screen shown once a new account is created with a password"
 	},
 	"login.registeredTitle": {
-		"defaultMessage": "Your account is ready",
+		"defaultMessage": "Your account is has been created!",
 		"description": "Heading of the screen shown once a new account is created, offering to set up two-factor authentication"
 	},
 	"login.rememberMe": {
@@ -4369,7 +4369,7 @@
 	},
 	"login.usernameAvailable": {
 		"defaultMessage": "That username is available.",
-		"description": "Shown under the username field when creating an account, once the site has checked that no other account has the username typed"
+		"description": "Shown beside the username field when creating an account, once the site has checked that no other account has the username typed"
 	},
 	"login.usernameHint": {
 		"defaultMessage": "How other players find you, and tell you apart from others with the same name. {min} to {max} letters (a to z), digits and underscores.",
@@ -5488,7 +5488,7 @@
 		"description": "Label of the field for the name other players see, on the player's own profile page"
 	},
 	"profile.displayNameHint": {
-		"defaultMessage": "The name other players see. It doesn't have to be your real name, or unique.",
+		"defaultMessage": "The name other players see. It doesn't have to be your real name.",
 		"description": "Under the name field on the player's own profile page"
 	},
 	"profile.downloadData": {

@@ -515,7 +515,7 @@ export class LoginPage
 			message: t({
 				id: 'login.usernameAvailable',
 				defaultMessage: 'That username is available.',
-				description: 'Shown under the username field when creating an account, once the site has checked that no other account has the username typed'
+				description: 'Shown beside the username field when creating an account, once the site has checked that no other account has the username typed'
 			})
 		});
 	}
