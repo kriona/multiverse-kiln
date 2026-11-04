@@ -22,13 +22,15 @@
 							<div class="form-group">
 								<div class="field-label">
 									<span id="admin-player-label" data-message="admin.admins.player" data-translation-context="Label of the field on the admin page listing the site's server admins that finds a player to make an admin by name or username">Player to add</span>
-									<div class="combobox-field">
-										<!-- Another player's username, which password managers must leave alone. They ignore autocomplete="off" and decide what to fill from the field's ID and type, so it is a search field without "username" in its IDs, with each manager's own opt-out as well -->
-										<input id="admin-player" type="search" class="username-input" role="combobox" autocomplete="off" autocapitalize="none" spellcheck="false" aria-autocomplete="list" aria-expanded="false" aria-controls="admin-player-options" aria-labelledby="admin-player-label" aria-describedby="admin-player-hint" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other" />
-										<ul id="admin-player-options" class="combobox-options" role="listbox" aria-labelledby="admin-player-label" hidden></ul>
+									<div class="field-beside">
+										<div class="combobox-field">
+											<!-- Another player's username, which password managers must leave alone. They ignore autocomplete="off" and decide what to fill from the field's ID and type, so it is a search field without "username" in its IDs, with each manager's own opt-out as well -->
+											<input id="admin-player" type="search" class="username-input" role="combobox" autocomplete="off" autocapitalize="none" spellcheck="false" aria-autocomplete="list" aria-expanded="false" aria-controls="admin-player-options" aria-labelledby="admin-player-label" aria-describedby="admin-player-hint" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other" />
+											<ul id="admin-player-options" class="combobox-options" role="listbox" aria-labelledby="admin-player-label" hidden></ul>
+										</div>
+										<p id="admin-player-error" class="field-error field-message-slot"></p>
 									</div>
 								</div>
-								<p id="admin-player-error" class="field-error field-message-slot"></p>
 								<p id="admin-player-hint" class="hint" data-message="admin.admins.playerHint" data-translation-context="Under the field on the admin page listing the site's server admins that finds a player to make an admin">Type their name, or @ and their username, then choose them from the list.</p>
 							</div>
 							<div class="form-buttons">

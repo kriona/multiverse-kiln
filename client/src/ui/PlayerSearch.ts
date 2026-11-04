@@ -53,7 +53,7 @@ export interface PlayerSearchOptions
  * A field that finds a player by typing their name or username, and offers the players found in a list
  * under it to choose from: what was typed is matched against usernames and names, or usernames only
  * when it starts with @ (parsePlayerSearch()). Choosing one puts their username in the field and their
- * name under it. Typing again takes the choice back
+ * name on its message line. Typing again takes the choice back
  */
 export class PlayerSearch
 {
@@ -280,7 +280,7 @@ export class PlayerSearch
 	}
 
 	/**
-	 * Chooses a player: puts their username in the field, and says under it who they are
+	 * Chooses a player: puts their username in the field, and says on its message line who they are
 	 *
 	 * @param player The player
 	 */

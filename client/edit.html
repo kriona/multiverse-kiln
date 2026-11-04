@@ -580,13 +580,15 @@
 							<div id="editor-player-field" class="form-group">
 								<div class="field-label">
 									<span id="editor-player-label" data-message="editor.editors.player" data-translation-context="Label of the field in the dialog for adding an editor on the editor's Editors tab that finds the player to add by name or username">Player</span>
-									<div class="combobox-field">
-										<!-- Another player's username, which password managers must leave alone. They ignore autocomplete="off" and decide what to fill from the field's ID and type, so it is a search field without "username" in its IDs, with each manager's own opt-out as well -->
-										<input id="editor-player" type="search" class="username-input" role="combobox" autocomplete="off" autocapitalize="none" spellcheck="false" aria-autocomplete="list" aria-expanded="false" aria-controls="editor-player-options" aria-labelledby="editor-player-label" aria-describedby="editor-player-hint" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other" />
-										<ul id="editor-player-options" class="combobox-options" role="listbox" aria-labelledby="editor-player-label" hidden></ul>
+									<div class="field-beside">
+										<div class="combobox-field">
+											<!-- Another player's username, which password managers must leave alone. They ignore autocomplete="off" and decide what to fill from the field's ID and type, so it is a search field without "username" in its IDs, with each manager's own opt-out as well -->
+											<input id="editor-player" type="search" class="username-input" role="combobox" autocomplete="off" autocapitalize="none" spellcheck="false" aria-autocomplete="list" aria-expanded="false" aria-controls="editor-player-options" aria-labelledby="editor-player-label" aria-describedby="editor-player-hint" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other" />
+											<ul id="editor-player-options" class="combobox-options" role="listbox" aria-labelledby="editor-player-label" hidden></ul>
+										</div>
+										<p id="editor-player-error" class="field-error field-message-slot"></p>
 									</div>
 								</div>
-								<p id="editor-player-error" class="field-error field-message-slot"></p>
 								<p id="editor-player-hint" class="hint" data-message="editor.editors.playerHint" data-translation-context="Under the field in the dialog for adding an editor on the editor's Editors tab that finds the player to add">Type their name, or @ and their username, then choose them from the list.</p>
 							</div>
 							<label data-message="editor.editors.role" data-translation-context="Heading of the column of roles (such as creator or builder) on the editor's Editors tab, and the label of the role field in its dialog; also names the setting in the list of what a save changed, on the editor's Audit tab">
