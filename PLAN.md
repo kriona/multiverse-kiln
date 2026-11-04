@@ -340,10 +340,10 @@ Built in nine steps: roles, stages, server admins, disabling things in use, then
 	- [✅] Notes for translators, one per piece of universe text, in a table beside it (`universe_translator_notes`)
 	- [✅] Finding the translation (the fallback order) and whether one is out of date as pure functions in `/shared` (`shared/src/universeText.ts`), with tests. The hash is SHA-256, which Postgres can work out too, for step 7's "is out of date" filter
 6. Universe text in the player's language
-	- [ ] The server finds a request's language (the profile's, then what the client sends), and Home, the universe page, Create Character, the character sheet and profiles show universe text in it
-	- [ ] In the rooms, synced state carries IDs rather than universe text, since the Schema sends the same state to everyone. The client fetches the universe's text in its language once (`GET` a universe's text, cached with an ETag that changes when the text does) and looks names up by ID; a change saved in the editor tells clients to fetch again
-	- [ ] The editor always shows the source text, and the Translations tab the translation being made
-	- [ ] Tests: the fallback through the route, the ETag changing with the text and the translations
+	- [✅] The server finds a request's language (the profile's, then what the client sends as Accept-Language; `server/src/http/requestLanguages.ts`), and Home, the universe page, Create Character, the character sheet, the character lists, profiles, Create Group's difficulty levels and invites show universe text in it (`UniverseTextTranslator`)
+	- [✅] In the rooms, synced state carries IDs rather than universe text, since the Schema sends the same state to everyone. The client fetches the universe's text in its language once (`GET UNIVERSES_PATH/:key/text`, cached with an ETag that changes when the text does) and looks names up by ID; a change saved in the editor tells clients to fetch again (`ServerMessageType.UniverseText`). Area payloads keep the source names, as the editor's previews use them and the game falls back to them
+	- [✅] The editor always shows the source text (its routes never translate); the Translations tab shows the translation being made with its table (step 7)
+	- [✅] Tests: the fallback through the route, the ETag changing with the text and the translations
 7. Translations tab
 	- [ ] The table of universe text for a chosen language: where it comes from ("Area: Waterdeep, name"), the source text, the note and the translation, paged on the server with search, "is missing" and "is out of date" filters, and sortable like other tables
 	- [ ] Editing translations and notes, staged until Save; updating an out-of-date translation, or confirming it's still correct (which stores the current source hash)

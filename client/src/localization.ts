@@ -98,6 +98,18 @@ export function chooseLocale(locale: string): void
 }
 
 /**
+ * The languages the player wants, most wanted first, for the server to show universe text in (as the
+ * Accept-Language header): the one they chose, then the browser's, whether or not the pages have them,
+ * since a universe may be translated into a language the engine isn't
+ *
+ * @return The language tags, leaving out anything that isn't one
+ */
+export function wantedLanguages(): string[]
+{
+	return([...new Set(requestedLocales())].filter((locale) => /^[A-Za-z0-9-]{1,35}$/.test(locale)));
+}
+
+/**
  * The languages the player wants, most wanted first: the one chosen with the language picker or with
  * ?locale= (e.g. ?locale=en-XA for the pseudo-language), then the browser's. ?locale= given empty
  * forgets the choice

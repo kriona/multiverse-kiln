@@ -255,7 +255,7 @@ describe('Saving editor changes', () =>
 				{ kind: 'createTile', ref: 'new:basalt', settings: { ...lava, name: 'Basalt' } },
 				{ kind: 'editCells', areaId, changes: [[0, 0, 'new:lava']] }
 			]);
-			assert.deepStrictEqual(heard.map((change) => change.kind), ['tiles', 'cells']);
+			assert.deepStrictEqual(heard.map((change) => change.kind), ['tiles', 'cells', 'text']);
 		}
 		finally
 		{

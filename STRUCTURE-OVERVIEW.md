@@ -829,6 +829,8 @@ Universe text uses the first of these that exists:
 
 (`findTranslation()` and `universeText()` in `shared/src/universeText.ts`.)
 
+The player's language here is the first of the languages they want that the universe has, as it is or without its region (`chooseUniverseLanguage()`): the language on their profile, then those the pages send in Accept-Language (the one chosen with the picker, then the browser's), whether or not the engine has them. Every page players read universe text on shows it this way; the editor always shows the source text. The rooms send every player the same messages, so they name areas and tiles by ID, and the game looks the names up in the universe's text in the player's language (`GET /universes/:key/text`), which it fetches again, cheaply with its ETag, when a save in the editor changes it.
+
 A ruleset default the universe hasn't renamed (such as a default tile whose color was edited but not its name) is engine text instead.
 
 Engine text uses the player's language, then that language without its region, then English.

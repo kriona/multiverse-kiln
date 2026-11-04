@@ -20,6 +20,7 @@ import { InviteScreen } from './ui/InviteScreen';
 import { leavingMessages } from './ui/leavingGroup';
 import { LobbyScreen } from './ui/LobbyScreen';
 import { MapView } from './ui/MapView';
+import { UniverseText } from './ui/universeText';
 import { pageMessages } from './ui/pageMessages';
 
 /**
@@ -93,6 +94,11 @@ export class GamePage
 	private universe: UniverseSummary | undefined;
 
 	/**
+	 * The map the lobby and group screens show
+	 */
+	private readonly mapView = new MapView();
+
+	/**
 	 * Whether the universe has reached the end of time, so its lobby can't be entered and its groups
 	 * open read-only
 	 */
@@ -135,7 +141,6 @@ export class GamePage
 	constructor(private readonly server: ServerConnection)
 	{
 		const { client, session } = server;
-		const mapView = new MapView();
 
 		this.characterApi = new CharacterApi(client);
 		this.groupApi = new GroupApi(client);
@@ -158,7 +163,7 @@ export class GamePage
 
 		this.inviteDialog = new InviteDialog(this.groupApi);
 
-		this.lobbyScreen = new LobbyScreen(mapView, {
+		this.lobbyScreen = new LobbyScreen(this.mapView, {
 			sendChat: (text) =>
 			{
 				const chat: ChatPayload = { text };
@@ -190,7 +195,7 @@ export class GamePage
 			}
 		});
 
-		this.groupScreen = new GroupScreen(mapView, {
+		this.groupScreen = new GroupScreen(this.mapView, {
 			chooseCharacter: (character) =>
 			{
 				this.chooseCharacter(character);
@@ -314,6 +319,12 @@ export class GamePage
 
 			this.universe = { id, name, slug, shortDescription, ruleset, sourceLanguage, translationLanguages };
 			this.universeLocked = (stage === 'end_of_time');
+
+			// The rooms name areas and tiles by ID, so the map looks their names up in this
+			const text = new UniverseText(this.server.client, id);
+
+			await text.load();
+			this.mapView.useText(text);
 		}
 		catch (error)
 		{

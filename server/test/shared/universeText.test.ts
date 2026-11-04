@@ -1,6 +1,8 @@
 import assert from 'assert';
 import { createHash } from 'crypto';
-import { findTranslation, isTranslationOutOfDate, sourceTextHash, universeLanguageOf, universeText } from '@multiverse-kiln/shared';
+import { chooseUniverseLanguage, findTranslation, isTranslationOutOfDate, sourceTextHash, translationLanguagesFor, universeLanguageOf, universeText } from '@multiverse-kiln/shared';
+
+import { acceptedLanguages } from '../../src/http/requestLanguages.js';
 
 describe('universe text (shared)', () =>
 {
@@ -38,6 +40,33 @@ describe('universe text (shared)', () =>
 		});
 	});
 
+	describe('chooseUniverseLanguage', () =>
+	{
+		it('takes the first language wanted that the universe has, as it is or without its region', () =>
+		{
+			assert.strictEqual(chooseUniverseLanguage(['pt-BR'], 'en', ['pt-BR', 'pt']), 'pt-BR');
+			assert.strictEqual(chooseUniverseLanguage(['pt-PT'], 'en', ['pt-BR', 'pt']), 'pt');
+			assert.strictEqual(chooseUniverseLanguage(['ja', 'fr-CA', 'de'], 'en', ['de', 'fr']), 'fr');
+		});
+
+		it('is undefined, for the source text, when the source language comes first or none is had', () =>
+		{
+			assert.strictEqual(chooseUniverseLanguage(['en-GB', 'fr'], 'en', ['fr']), undefined);
+			assert.strictEqual(chooseUniverseLanguage(['ja'], 'de', ['en']), undefined);
+			assert.strictEqual(chooseUniverseLanguage([], 'en', ['fr']), undefined);
+		});
+	});
+
+	describe('translationLanguagesFor', () =>
+	{
+		it('looks in the language chosen, then in it without its region when the universe has that', () =>
+		{
+			assert.deepStrictEqual(translationLanguagesFor('pt-BR', ['pt-BR', 'pt']), ['pt-BR', 'pt']);
+			assert.deepStrictEqual(translationLanguagesFor('pt-BR', ['pt-BR']), ['pt-BR']);
+			assert.deepStrictEqual(translationLanguagesFor('fr', ['fr']), ['fr']);
+		});
+	});
+
 	describe('universeText', () =>
 	{
 		it('shows the translation, or the source text when there is none', () =>
@@ -70,6 +99,20 @@ describe('universe text (shared)', () =>
 			assert.strictEqual(isTranslationOutOfDate(madeFrom, 'The Old Mill'), false);
 			assert.strictEqual(isTranslationOutOfDate(madeFrom, 'The Old Mill '), true);
 			assert.strictEqual(isTranslationOutOfDate(madeFrom, 'The Burned Mill'), true);
+		});
+	});
+
+	describe('acceptedLanguages (server)', () =>
+	{
+		it('orders the languages by quality, then as given, in canonical form', () =>
+		{
+			assert.deepStrictEqual(acceptedLanguages('fr-ca, de;q=0.5, en;q=0.9, es'), ['fr-CA', 'es', 'en', 'de']);
+		});
+
+		it('leaves out the wildcard, quality 0 and what isn\'t a language tag', () =>
+		{
+			assert.deepStrictEqual(acceptedLanguages('*, ja;q=0, not a tag, , de'), ['de']);
+			assert.deepStrictEqual(acceptedLanguages(undefined), []);
 		});
 	});
 

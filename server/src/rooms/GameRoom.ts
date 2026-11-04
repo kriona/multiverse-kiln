@@ -1,5 +1,5 @@
 import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
-import { canViewUniverse, cellIndexInChunk, characterBar, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, GameMessageType, GameServerMessageType, GameState, GroupMember, MessageType, NOTHING_BARRED, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, ServerCloseCode, visibleCells, type BarredOptions, type CellsSeenPayload, type CellValue, type NoticePayload, type Sight, type StartingCell } from '@multiverse-kiln/shared';
+import { canViewUniverse, cellIndexInChunk, characterBar, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, GameMessageType, GameServerMessageType, GameState, GroupMember, MessageType, NOTHING_BARRED, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, ServerCloseCode, ServerMessageType, visibleCells, type BarredOptions, type CellsSeenPayload, type CellValue, type NoticePayload, type Sight, type StartingCell } from '@multiverse-kiln/shared';
 
 import { resolveSession } from '../auth/sessions.js';
 import { loadBarredOptions } from '../db/barredOptions.js';
@@ -327,6 +327,16 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 					for (const client of this.clients)
 					{
 						client.leave(((change.kind === 'universeDeleted') ? ServerCloseCode.UniverseDeleted : ServerCloseCode.UniverseDisabled));
+					}
+
+					return;
+				}
+
+				if (change.kind === 'text')
+				{
+					if (change.universeId === this.universeId)
+					{
+						this.broadcast(ServerMessageType.UniverseText);
 					}
 
 					return;

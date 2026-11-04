@@ -23,7 +23,7 @@ import { findUniverseRole } from '../db/universeEditorRepo.js';
 import { findEditableUniverse, lockUniverse } from '../db/universeRepo.js';
 import { chooseStartingArea, type StartingPlace } from '../logic/startingArea.js';
 import { groupChanges } from '../players/groupChanges.js';
-import { loadPlayableUniverse, universeOf, type PlayableUniverse } from './characters.js';
+import { loadPlayableUniverse, loadTranslator, universeOf, type PlayableUniverse } from './characters.js';
 import { playerIdOf, refuseWritesFromOtherOrigins, requireLogin } from './editorAccess.js';
 import { errorMessages, sendError, sendInvalidRequest, type Refusal } from './errors.js';
 
@@ -157,7 +157,12 @@ export function addGroupRoutes(app: Application, allowedOrigins: Set<string>): v
  */
 async function difficultyLevelsRoute(request: Request, response: Response): Promise<void>
 {
-	const payload: DifficultyLevelListPayload = { difficultyLevels: await listDifficultyLevels(universeOf(request).id) };
+	const universe = universeOf(request);
+	const [levels, translator] = await Promise.all([
+		listDifficultyLevels(universe.id),
+		loadTranslator(request, universe, ['difficultyLevel'])
+	]);
+	const payload: DifficultyLevelListPayload = { difficultyLevels: levels.map((level) => translator.name('difficultyLevel', level.id, level)) };
 
 	response.json(payload);
 }
@@ -424,8 +429,11 @@ async function inviteDetailsRoute(request: Request, response: Response): Promise
 	}
 
 	const { universe, group } = found;
-	const members = await listGroupMembers(group.id);
-	const difficulty = await findDifficultyLevel(universe.id, group.difficultyLevelId);
+	const [members, difficulty, translator] = await Promise.all([
+		listGroupMembers(group.id),
+		findDifficultyLevel(universe.id, group.difficultyLevelId),
+		loadTranslator(request, universe, ['universe', 'difficultyLevel'])
+	]);
 
 	// A group's level is moved to the default before the level is deleted, so it is always there
 	if (!difficulty)
@@ -436,7 +444,7 @@ async function inviteDetailsRoute(request: Request, response: Response): Promise
 	const payload: InviteDetails = {
 		universeId: universe.id,
 		universeSlug: universe.slug,
-		universeName: universe.name,
+		universeName: translator.text('universe', universe.id, 'name', universe.name),
 		groupId: group.id,
 		groupName: group.name,
 		anchorName: (members.find((member) => (member.characterId === group.anchorCharacterId))?.name ?? ''),
@@ -444,7 +452,7 @@ async function inviteDetailsRoute(request: Request, response: Response): Promise
 		groupSize: universe.groupSize,
 		difficulty: {
 			key: difficulty.key,
-			name: difficulty.name,
+			name: translator.name('difficultyLevel', difficulty.id, difficulty).name,
 			mobScale: difficulty.mobScale,
 			permadeath: difficulty.permadeath
 		}

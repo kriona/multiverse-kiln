@@ -13,6 +13,7 @@ import { findEditorArea } from '../db/areaRepo.js';
 import { resolveSession } from '../auth/sessions.js';
 import { errorMessages, sendError } from './errors.js';
 import { isOriginAllowed } from './origins.js';
+import { rememberProfileLocale } from './requestLanguages.js';
 
 /**
  * The universe a request is about, and the requesting player's role in the editor
@@ -103,6 +104,7 @@ export async function requireLogin(request: Request, response: Response, next: N
 	}
 
 	playerIds.set(request, player.playerId);
+	rememberProfileLocale(request, player.locale);
 	next();
 }
 
