@@ -2871,6 +2871,54 @@
 		"message": "Sailors see the universe's words, such as its name and the names of its areas and booty, in whichever of its tongues be nearest their own, or in its mother tongue when it ain't been turned into theirs.",
 		"source": "Players see the universe's text, such as its name and the names of its areas and items, in the closest of its languages to their own, or in its source language when it isn't translated into theirs."
 	},
+	"editor.translations.export": {
+		"message": "Send Off",
+		"source": "Export"
+	},
+	"editor.translations.exportFailed": {
+		"message": "Couldn't send off the universe's words.",
+		"source": "Could not export the universe's text."
+	},
+	"editor.translations.fileFormat": {
+		"message": "Scroll format",
+		"source": "File format"
+	},
+	"editor.translations.filesHint": {
+		"message": "Send the words off t' be turned in another tool, then haul 'em back in here and stow. A translation that had gone stale and comes back unchanged stays stale.",
+		"source": "Export the text to translate it in another tool, then import it here and save. A translation that was out of date and comes back unchanged stays out of date."
+	},
+	"editor.translations.format.csv": {
+		"message": "CSV, fer spreadsheets (.csv)",
+		"source": "CSV, for spreadsheets (.csv)"
+	},
+	"editor.translations.format.json": {
+		"message": "JSON (.json)",
+		"source": "JSON (.json)"
+	},
+	"editor.translations.format.po": {
+		"message": "Gettext PO (.po)",
+		"source": "Gettext PO (.po)"
+	},
+	"editor.translations.format.xliff": {
+		"message": "XLIFF 2.0 (.xlf)",
+		"source": "XLIFF 2.0 (.xlf)"
+	},
+	"editor.translations.import": {
+		"message": "Haul In",
+		"source": "Import"
+	},
+	"editor.translations.importFailed": {
+		"message": "Couldn't haul in the translations.",
+		"source": "Could not import the translations."
+	},
+	"editor.translations.importWrongLanguage": {
+		"message": "This scroll holds translations into {fileLanguage}, not {language}. Choose {fileLanguage} t' haul it in.",
+		"source": "This file holds translations into {fileLanguage}, not {language}. Choose {fileLanguage} to import it."
+	},
+	"editor.translations.imported": {
+		"message": "{imported, plural, =0 {No new translations t' haul in.} one {Hauled in # translation, t' be stowed with Stow.} other {Hauled in # translations, t' be stowed with Stow.}} {skipped, plural, =0 {} one {Tossed # overboard that was marked fer review, too long, or fer words that ain't the universe's any more or need no translatin'.} other {Tossed # overboard that were marked fer review, too long, or fer words that ain't the universe's any more or need no translatin'.}}",
+		"source": "{imported, plural, =0 {No new translations to import.} one {Imported # translation, to be saved with Save.} other {Imported # translations, to be saved with Save.}} {skipped, plural, =0 {} one {Skipped # that was marked for review, too long, or for text that isn't the universe's any more or needs no translation.} other {Skipped # that were marked for review, too long, or for text that isn't the universe's any more or needs no translation.}}"
+	},
 	"editor.translations.language": {
 		"message": "Tongue",
 		"source": "Language"
@@ -3014,6 +3062,14 @@
 	"editor.translations.translationMarkdown": {
 		"message": "Translation (Markdown)",
 		"source": "Translation (Markdown)"
+	},
+	"editor.translations.unreadable": {
+		"message": "This scroll can't be read as {format}.",
+		"source": "This file can't be read as {format}."
+	},
+	"editor.translations.unreadableLine": {
+		"message": "This scroll can't be read as {format}: see line {line, number}.",
+		"source": "This file can't be read as {format}: see line {line, number}."
 	},
 	"editor.universe.longDescription": {
 		"message": "Long tale (Markdown)",

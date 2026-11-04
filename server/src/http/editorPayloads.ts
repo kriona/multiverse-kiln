@@ -180,6 +180,13 @@ function universeTextTranslation(ref: UniverseTextRef, translation: string | nul
 }
 
 /**
+ * Query parameters of GET EDITOR_UNIVERSES_PATH/:universeId/translations/all: the language
+ */
+export const universeTextLanguageQuery = z.object({
+	language: languageTag
+});
+
+/**
  * UniverseTextListQuery
  */
 export const universeTextListQuery = z.object({

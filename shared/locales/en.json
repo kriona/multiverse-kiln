@@ -2871,6 +2871,54 @@
 		"defaultMessage": "Players see the universe's text, such as its name and the names of its areas and items, in the closest of its languages to their own, or in its source language when it isn't translated into theirs.",
 		"description": "Explains the editor's Translations tab, above its fields"
 	},
+	"editor.translations.export": {
+		"defaultMessage": "Export",
+		"description": "Button on the editor's Translations tab that downloads the universe's text and its translations into the language chosen as a file, for translators working outside the editor"
+	},
+	"editor.translations.exportFailed": {
+		"defaultMessage": "Could not export the universe's text.",
+		"description": "Shown on the editor's Translations tab when the universe's text couldn't be loaded to export it as a translation file"
+	},
+	"editor.translations.fileFormat": {
+		"defaultMessage": "File format",
+		"description": "Label of the choice on the editor's Translations tab of the format translation files are exported in (and imported in, when the file's name doesn't say)"
+	},
+	"editor.translations.filesHint": {
+		"defaultMessage": "Export the text to translate it in another tool, then import it here and save. A translation that was out of date and comes back unchanged stays out of date.",
+		"description": "Under the Export and Import buttons on the editor's Translations tab, explaining translation files"
+	},
+	"editor.translations.format.csv": {
+		"defaultMessage": "CSV, for spreadsheets (.csv)",
+		"description": "A translation file format, in the format choice on the editor's Translations tab: comma-separated values, which spreadsheets open"
+	},
+	"editor.translations.format.json": {
+		"defaultMessage": "JSON (.json)",
+		"description": "A translation file format, in the format choice on the editor's Translations tab: JSON, for scripts. JSON is a name"
+	},
+	"editor.translations.format.po": {
+		"defaultMessage": "Gettext PO (.po)",
+		"description": "A translation file format, in the format choice on the editor's Translations tab: Gettext PO, which translation tools such as Poedit and Weblate open. Gettext PO is a name"
+	},
+	"editor.translations.format.xliff": {
+		"defaultMessage": "XLIFF 2.0 (.xlf)",
+		"description": "A translation file format, in the format choice on the editor's Translations tab: XLIFF 2.0, the standard professional translation tools exchange. XLIFF is a name"
+	},
+	"editor.translations.import": {
+		"defaultMessage": "Import",
+		"description": "Button on the editor's Translations tab that reads translations into the language chosen from a file, keeping them on the tab until the editor is saved"
+	},
+	"editor.translations.importFailed": {
+		"defaultMessage": "Could not import the translations.",
+		"description": "Shown on the editor's Translations tab when the universe's text couldn't be loaded to match a translation file against it"
+	},
+	"editor.translations.importWrongLanguage": {
+		"defaultMessage": "This file holds translations into {fileLanguage}, not {language}. Choose {fileLanguage} to import it.",
+		"description": "Shown on the editor's Translations tab when the translation file imported names a language other than the one chosen; {fileLanguage} and {language} are languages' names"
+	},
+	"editor.translations.imported": {
+		"defaultMessage": "{imported, plural, =0 {No new translations to import.} one {Imported # translation, to be saved with Save.} other {Imported # translations, to be saved with Save.}} {skipped, plural, =0 {} one {Skipped # that was marked for review, too long, or for text that isn't the universe's any more or needs no translation.} other {Skipped # that were marked for review, too long, or for text that isn't the universe's any more or needs no translation.}}",
+		"description": "Shown on the editor's Translations tab after importing a translation file: {imported} is how many translations it read that changed something, and {skipped} how many it couldn't use"
+	},
 	"editor.translations.language": {
 		"defaultMessage": "Language",
 		"description": "Label of the choice on the editor's Translations tab of the language whose translations the table shows"
@@ -3014,6 +3062,14 @@
 	"editor.translations.translationMarkdown": {
 		"defaultMessage": "Translation (Markdown)",
 		"description": "Label of the field in the dialog that translates a universe's long description, which is written in Markdown"
+	},
+	"editor.translations.unreadable": {
+		"defaultMessage": "This file can't be read as {format}.",
+		"description": "Shown on the editor's Translations tab when an imported translation file isn't in the format its name says (or the format chosen); {format} is the format's name, such as Gettext PO"
+	},
+	"editor.translations.unreadableLine": {
+		"defaultMessage": "This file can't be read as {format}: see line {line, number}.",
+		"description": "Shown on the editor's Translations tab when an imported translation file isn't in the format its name says (or the format chosen); {format} is the format's name, such as Gettext PO, and {line} the line with the problem"
 	},
 	"editor.universe.longDescription": {
 		"defaultMessage": "Long description (Markdown)",

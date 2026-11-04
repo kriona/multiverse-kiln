@@ -21,7 +21,7 @@ import { loadEditorTiles } from '../db/tileRepo.js';
 import { deleteTranslationOf, deleteTranslatorNote, listTranslations, listTranslatorNotes, saveTranslation, saveTranslatorNote, setNoTranslation } from '../db/universeTextRepo.js';
 import { refuse, type ChangeContext } from './editorChangeContext.js';
 import { universeContextOf } from './editorAccess.js';
-import { universeTextListQuery } from './editorPayloads.js';
+import { universeTextLanguageQuery, universeTextListQuery } from './editorPayloads.js';
 import { sendError, sendInvalidRequest } from './errors.js';
 
 /**
@@ -119,12 +119,12 @@ async function collectUniverseText(universe: EditableUniverseDetails, executor?:
 export function addTranslationRoutes(router: express.Router): void
 {
 	router.get('/translations', listTranslationsRoute);
+	router.get('/translations/all', listAllTranslationsRoute);
 }
 
 /**
- * GET /:universeId/translations: a page of the universe's text with its translations into a language.
- * Answers 403 to a role that may neither translate into the language nor write notes, and 404 for a
- * language the universe isn't translated into
+ * GET /:universeId/translations: a page of the universe's text with its translations into a language
+ * (UniverseTextListQuery)
  *
  * @param request The request
  * @param response The response
@@ -139,17 +139,67 @@ async function listTranslationsRoute(request: Request, response: Response): Prom
 		return;
 	}
 
-	const { universe, role, languages } = universeContextOf(request);
-	const language = universe.translationLanguages.find((each) => (each.toLowerCase() === query.data.language.toLowerCase()));
+	const rows = await loadTextRows(request, response, query.data.language);
 
-	if (!canTranslate({ role, languages }, query.data.language) && !canEditWorld(role))
+	if (rows)
+	{
+		response.json(pageUniverseText(rows, query.data));
+	}
+}
+
+/**
+ * GET /:universeId/translations/all?language=: every piece of the universe's text with its
+ * translation into a language, by where it comes from, for exporting and importing translation files
+ *
+ * @param request The request
+ * @param response The response
+ */
+async function listAllTranslationsRoute(request: Request, response: Response): Promise<void>
+{
+	const query = universeTextLanguageQuery.safeParse(request.query);
+
+	if (!query.success)
+	{
+		sendInvalidRequest(response, query.error);
+		return;
+	}
+
+	const rows = await loadTextRows(request, response, query.data.language);
+
+	if (rows)
+	{
+		const payload: UniverseTextListPayload = {
+			rows: sortRows(rows, ROW_COMPARERS, { column: 'place', direction: 'ascending' }),
+			total: rows.length
+		};
+
+		response.json(payload);
+	}
+}
+
+/**
+ * Every piece of the universe's text with its translation into a language and its note, answering 403
+ * to a role that may neither translate into the language nor write notes, and 404 for a language the
+ * universe isn't translated into
+ *
+ * @param request The request
+ * @param response The response, which is answered when the text can't be listed
+ * @param requested The language, as asked for
+ * @return The text, in the order of collectUniverseText(), or undefined once the response has been sent
+ */
+async function loadTextRows(request: Request, response: Response, requested: string): Promise<UniverseTextRow[] | undefined>
+{
+	const { universe, role, languages } = universeContextOf(request);
+	const language = universe.translationLanguages.find((each) => (each.toLowerCase() === requested.toLowerCase()));
+
+	if (!canTranslate({ role, languages }, requested) && !canEditWorld(role))
 	{
 		sendError(response, 403, {
 			id: 'error.translationsNotAllowed',
 			defaultMessage: 'Your role doesn\'t let you see the translations into that language.',
 			description: 'Why the editor\'s Translations tab couldn\'t list the universe\'s text: the player is a translator of other languages, or a beta tester'
 		});
-		return;
+		return(undefined);
 	}
 
 	if (language === undefined)
@@ -159,7 +209,7 @@ async function listTranslationsRoute(request: Request, response: Response): Prom
 			defaultMessage: 'The universe isn\'t translated into that language.',
 			description: 'Why the editor\'s Translations tab couldn\'t list the universe\'s text in a language: it isn\'t one of the languages the universe is translated into, perhaps because a creator just took it off'
 		});
-		return;
+		return(undefined);
 	}
 
 	const [sources, translations, notes] = await Promise.all([
@@ -169,7 +219,7 @@ async function listTranslationsRoute(request: Request, response: Response): Prom
 	]);
 	const translationsByKey = new Map(translations.map((translation) => [textKey(translation), translation]));
 	const notesByKey = new Map(notes.map((note) => [textKey(note), note]));
-	const rows = sources.map((text): UniverseTextRow =>
+	return(sources.map((text): UniverseTextRow =>
 	{
 		const translation = translationsByKey.get(textKey(text));
 		const note = notesByKey.get(textKey(text));
@@ -183,9 +233,7 @@ async function listTranslationsRoute(request: Request, response: Response): Prom
 			translation: (translation?.text ?? null),
 			outOfDate: (!noTranslation && (translation !== undefined) && isTranslationOutOfDate(translation.sourceHash, text.source))
 		});
-	});
-
-	response.json(pageUniverseText(rows, query.data));
+	}));
 }
 
 /**

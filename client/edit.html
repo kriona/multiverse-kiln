@@ -614,6 +614,17 @@
 										Out of date
 									</label>
 								</div>
+								<div class="filters">
+									<label data-message="editor.translations.fileFormat" data-translation-context="Label of the choice on the editor's Translations tab of the format translation files are exported in (and imported in, when the file's name doesn't say)">
+										File format
+										<select id="translations-format"></select>
+									</label>
+									<button id="translations-export" type="button" class="secondary" data-shortcut="Alt+X" aria-describedby="translations-files-hint" data-message="editor.translations.export" data-translation-context="Button on the editor's Translations tab that downloads the universe's text and its translations into the language chosen as a file, for translators working outside the editor"><!-- icon ph:download-simple -->Export</button>
+									<button id="translations-import" type="button" class="secondary" data-shortcut="Alt+I" aria-describedby="translations-files-hint" data-message="editor.translations.import" data-translation-context="Button on the editor's Translations tab that reads translations into the language chosen from a file, keeping them on the tab until the editor is saved"><!-- icon ph:upload-simple -->Import</button>
+									<input id="translations-import-file" type="file" accept=".po,.pot,.xlf,.xliff,.csv,.json" hidden />
+								</div>
+								<p id="translations-files-hint" class="hint" data-message="editor.translations.filesHint" data-translation-context="Under the Export and Import buttons on the editor's Translations tab, explaining translation files">Export the text to translate it in another tool, then import it here and save. A translation that was out of date and comes back unchanged stays out of date.</p>
+								<p id="translations-import-status" class="hint" role="status" hidden></p>
 								<p id="translations-list-error" class="form-error" role="alert" hidden></p>
 								<table id="translations-table" class="item-table translations-table">
 									<thead>
