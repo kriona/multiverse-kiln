@@ -24,6 +24,12 @@ export interface EditorDialogEdit
 	readonly removed: boolean;
 
 	/**
+	 * Whether the player may change the editor's role and languages: false for one who may only
+	 * remove themself, leaving the universe
+	 */
+	readonly changeable: boolean;
+
+	/**
 	 * Whether a player has a role in the universe, or is staged to be given one, so the search leaves
 	 * them out
 	 *
@@ -41,9 +47,12 @@ export interface EditorDialogEdit
 	apply(player: PlayerMatch, settings: EditorRoleSettings): void;
 
 	/**
-	 * Removes the editor when the tab is saved, or takes that back
+	 * Removes the editor when the tab is saved, or takes that back, asking first when the player is
+	 * removing themself
+	 *
+	 * @return Whether it was changed
 	 */
-	toggleRemoved(): void;
+	toggleRemoved(): Promise<boolean>;
 }
 
 /**
@@ -153,8 +162,7 @@ export class EditorDialog
 
 		this.removeButton.addEventListener('click', () =>
 		{
-			this.edit?.toggleRemoved();
-			this.close();
+			void this.toggleRemoved();
 		});
 
 		this.form.addEventListener('submit', (event) =>
@@ -174,7 +182,7 @@ export class EditorDialog
 	 */
 	open(universeId: string, editor: UniverseEditorSummary | undefined, edit: EditorDialogEdit, onChanged: () => void): void
 	{
-		const editable = !edit.removed;
+		const editable = (edit.changeable && !edit.removed);
 
 		this.universeId = universeId;
 		this.editor = editor;
@@ -226,7 +234,7 @@ export class EditorDialog
 			setButtonLabel(this.removeButton, removeIcon, t({
 				id: 'editor.editors.remove',
 				defaultMessage: 'Remove Editor',
-				description: 'Button in the dialog on the editor\'s Editors tab that takes the editor\'s role in the universe away when the tab is saved'
+				description: 'Button in the dialog on the editor\'s Editors tab that takes the editor\'s role in the universe away when the tab is saved; for the player\'s own role it leaves the universe, once they confirm'
 			}));
 		}
 
@@ -234,7 +242,7 @@ export class EditorDialog
 		clearFieldErrors(this.dialog);
 		this.dialog.showModal();
 		this.changes.markSaved();
-		(editor ? this.roleInputs.get(this.chosenRole()) : this.username)?.focus();
+		(editor ? (editable ? this.roleInputs.get(this.chosenRole()) : this.removeButton) : this.username)?.focus();
 	}
 
 	/**
@@ -338,6 +346,18 @@ export class EditorDialog
 			languages
 		});
 		this.close();
+	}
+
+	/**
+	 * Removes the editor when the tab is saved, or takes that back, and closes the dialog once it is
+	 * done. The dialog stays open when the player doesn't confirm leaving
+	 */
+	private async toggleRemoved(): Promise<void>
+	{
+		if (await this.edit?.toggleRemoved())
+		{
+			this.close();
+		}
 	}
 
 	/**

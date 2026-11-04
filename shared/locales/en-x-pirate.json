@@ -1631,10 +1631,6 @@
 		"message": "Couldn't stow the changes to {username}.",
 		"source": "Could not save the changes to {username}."
 	},
-	"editor.editors.undoLeave": {
-		"message": "Stay Aboard",
-		"source": "Undo Leave"
-	},
 	"editor.editors.undoRemove": {
 		"message": "Keep Aboard",
 		"source": "Undo Remove"

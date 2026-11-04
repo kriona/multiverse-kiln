@@ -1589,7 +1589,7 @@
 	},
 	"editor.editors.leave": {
 		"defaultMessage": "Leave Universe",
-		"description": "Button on the editor's Editors tab that gives up the player's own role in the universe when the tab is saved"
+		"description": "Button in the dialog asking the player to confirm leaving a universe, after they choose Remove Editor for themself on the editor's Editors tab: gives up their own role in the universe when the tab is saved"
 	},
 	"editor.editors.leaveLastCreator": {
 		"defaultMessage": "You are its only creator, so you can't leave until you make another editor a creator.",
@@ -1617,7 +1617,7 @@
 	},
 	"editor.editors.remove": {
 		"defaultMessage": "Remove Editor",
-		"description": "Button in the dialog on the editor's Editors tab that takes the editor's role in the universe away when the tab is saved"
+		"description": "Button in the dialog on the editor's Editors tab that takes the editor's role in the universe away when the tab is saved; for the player's own role it leaves the universe, once they confirm"
 	},
 	"editor.editors.removedNote": {
 		"defaultMessage": "(loses their role when saved)",
@@ -1630,10 +1630,6 @@
 	"editor.editors.saveFailed": {
 		"defaultMessage": "Could not save the changes to {username}.",
 		"description": "Shown on the editor's Editors tab when the server refused a change to one of the universe's editors, followed by why; {username} is their username. Nothing was saved"
-	},
-	"editor.editors.undoLeave": {
-		"defaultMessage": "Undo Leave",
-		"description": "Button on the editor's Editors tab once the player has chosen to leave the universe, before saving: keeps their role instead"
 	},
 	"editor.editors.undoRemove": {
 		"defaultMessage": "Undo Remove",
