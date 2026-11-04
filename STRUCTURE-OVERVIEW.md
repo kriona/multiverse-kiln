@@ -737,6 +737,7 @@ Lets you edit details about the area
 
 ## Editor: Map
 This is a component included in the [area editor](#editor-area). It shows you the same grid as gameplay.
+- it has its own card below the area's settings, as wide as the page, and the map fills the card's width
 - the center of map is x = 0, y = 0
 - Ctrl+wheel zooms the map; the wheel alone scrolls the page
 - a Full Page button (Alt+P) makes the map editor fill the browser window, with the map taking all the space its tools leave; the button, or Escape, puts it back
