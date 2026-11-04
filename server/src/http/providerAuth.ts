@@ -27,7 +27,7 @@ import { resolveSession, startSession } from '../auth/sessions.js';
 import { createToken, hashToken } from '../auth/tokens.js';
 import type { Executor } from '../db/client.js';
 import { deleteEmailCode, lockContinuation } from '../db/emailCodeRepo.js';
-import { AccountTakenError, createPlayer, findLocalLogin, findPasswordHash, findPlayerEmail, findPlayerIdByEmail, savePasswordHash } from '../db/playerRepo.js';
+import { AccountTakenError, createPlayer, findEmailRecipient, findLocalLogin, findPasswordHash, findPlayerIdByEmail, savePasswordHash, type EmailRecipient } from '../db/playerRepo.js';
 import { addProviderLogin, deletePendingProviderLogin, findProviderLoginPlayer, lockPendingProviderLogin, ProviderLoginTakenError, savePendingProviderLogin, type PendingProviderLogin } from '../db/providerLoginRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { savePendingTwoFactorLogin } from '../db/twoFactorRepo.js';
@@ -621,12 +621,12 @@ async function callbackRoute(request: Request, response: Response): Promise<void
  */
 async function linkToSession(request: Request, response: Response, playerId: string, provider: LoginProvider, user: ProviderUser, emailLocale: string, now: Date): Promise<void>
 {
-	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { email: string | null }> =>
+	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { recipient: EmailRecipient | undefined }> =>
 	{
 		// Linking a login the account has already changes nothing
 		if (await findProviderLoginPlayer(provider, user.providerUserId, executor) === playerId)
 		{
-			return({ email: null });
+			return({ recipient: undefined });
 		}
 
 		try
@@ -645,7 +645,7 @@ async function linkToSession(request: Request, response: Response, playerId: str
 
 		await recordEvent(request, playerId, 'providerLinked', now, executor);
 
-		return({ email: await findPlayerEmail(playerId, executor) });
+		return({ recipient: await findEmailRecipient(playerId, executor) });
 	});
 
 	if ('status' in outcome)
@@ -661,11 +661,11 @@ async function linkToSession(request: Request, response: Response, playerId: str
 
 	response.json(payload);
 
-	if (outcome.email !== null)
+	if (outcome.recipient)
 	{
 		sendEmailInBackground({
-			to: outcome.email,
-			...providerLinkedEmail(LOGIN_PROVIDER_NAMES[provider], emailLocale)
+			to: outcome.recipient.email,
+			...providerLinkedEmail(LOGIN_PROVIDER_NAMES[provider], outcome.recipient.displayName, emailLocale)
 		});
 	}
 }
@@ -772,7 +772,7 @@ async function registerRoute(request: Request, response: Response): Promise<void
 	response.sendStatus(204);
 	sendEmailInBackground({
 		to: outcome.email,
-		...accountCreatedEmail(emailLocale)
+		...accountCreatedEmail(displayName, emailLocale)
 	});
 }
 
@@ -844,7 +844,7 @@ async function linkRoute(request: Request, response: Response): Promise<void>
 		newHash = check.newHash;
 	}
 
-	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { playerId: string; provider: LoginProvider; email: string | null; check: SecondFactorOutcome }> =>
+	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { playerId: string; provider: LoginProvider; recipient: EmailRecipient | undefined; check: SecondFactorOutcome }> =>
 	{
 		const locked = await lockBrowserLogin(request, now, executor);
 
@@ -919,7 +919,7 @@ async function linkRoute(request: Request, response: Response): Promise<void>
 		return({
 			playerId,
 			provider: locked.provider,
-			email: await findPlayerEmail(playerId, executor),
+			recipient: await findEmailRecipient(playerId, executor),
 			check
 		});
 	});
@@ -934,11 +934,11 @@ async function linkRoute(request: Request, response: Response): Promise<void>
 	clearCookie(response, CONTINUATION_COOKIE);
 	response.sendStatus(204);
 
-	if (outcome.email !== null)
+	if (outcome.recipient)
 	{
 		sendEmailInBackground({
-			to: outcome.email,
-			...providerLinkedEmail(LOGIN_PROVIDER_NAMES[outcome.provider], emailLocale)
+			to: outcome.recipient.email,
+			...providerLinkedEmail(LOGIN_PROVIDER_NAMES[outcome.provider], outcome.recipient.displayName, emailLocale)
 		});
 	}
 

@@ -58,7 +58,8 @@ An engine for making multiplayer browser-based role-playing games.
   src/auth/          logins: sessions (the session cookie to a player, sessions.ts), password hashing, keyed
                      hashes, tokens, rate limits, the breached password check and the Google and Discord
                      clients (providers.ts)
-  src/email/         sending email (SMTP; Mailpit locally) and the emails logins send, in each player's language
+  src/email/         sending email (SMTP; Mailpit locally), how every email is laid out, and the emails logins
+                     send and players given a role in a universe get, in each player's language
   src/http/          REST routes (health, logins and accounts (auth.ts, and providerAuth.ts for Google and Discord), profiles, universes for Home, characters, groups and
                      invite links, the world editor's API, uploaded tilesets, the admin page's site settings). The world editor saves
                      every change through one route, editorChanges.ts, in one transaction; each kind of

@@ -1,11 +1,15 @@
 import assert from 'assert';
 import type { EditableUniverse, EditorChange, PlayerSearchPayload, UniverseEditorListPayload } from '@multiverse-kiln/shared';
 
+import { pool } from '../src/db/client.js';
 import { createPlayer, findPlayerByUsername } from '../src/db/playerRepo.js';
 import { findUniverseAccess, setUniverseRole } from '../src/db/universeEditorRepo.js';
+import { setEmailSender, type Email } from '../src/email/mailer.js';
+import { roleGivenEmail } from '../src/email/universeEmails.js';
 import { universeAccessChanges, type AccessLost } from '../src/players/universeAccess.js';
 import { createUniverse, logIn, saveAll, saveChanges, send, type Editor } from './editorRequests.js';
 import { addPlayer, usernameFor } from './players.js';
+import { discardEmail } from './setup.js';
 import { getTestServer } from './testServer.js';
 
 /**
@@ -245,5 +249,83 @@ describe('Editing a universe\'s editors', () =>
 		}
 
 		assert.deepStrictEqual(heard.map((change) => [change.universeId, [...change.playerIds]]), [[universeId, [bob.playerId]]]);
+	});
+
+	it('emails the players a save gives a role, in their language, once it commits', async () =>
+	{
+		const emails: Email[] = [];
+
+		setEmailSender((email) =>
+		{
+			emails.push(email);
+			return(Promise.resolve());
+		});
+
+		try
+		{
+			const grace = await createPlayer({
+				username: 'grace_h',
+				displayName: 'Grace',
+				email: 'grace@example.com',
+				passwordHash: null
+			});
+			const alan = await createPlayer({
+				username: 'alan_t',
+				displayName: 'Alan',
+				email: 'alan@example.com',
+				passwordHash: null
+			});
+			const carol = await createPlayer({
+				username: 'carol_s',
+				displayName: 'Carol',
+				email: 'carol@example.com',
+				passwordHash: null
+			});
+			const bob = await addPlayer('Bob');
+			const { name, slug } = (await send<EditableUniverse>(ada, 'GET', `/${universeId}`)).body;
+
+			await pool.query('UPDATE players SET locale = $1 WHERE id = $2', ['en-x-pirate', alan.id]);
+
+			// A refused save sends nothing
+			await saveChanges(ada, universeId, [
+				{ kind: 'addEditor', username: grace.username, settings: { role: 'builder', languages: [] } },
+				{ kind: 'universe', update: { name: '' } }
+			]);
+			assert.strictEqual(emails.length, 0);
+
+			// Carol is removed again in the same save, and Bob has no address
+			await saveAll(ada, universeId, [
+				{ kind: 'addEditor', username: grace.username, settings: { role: 'builder', languages: [] } },
+				{ kind: 'addEditor', username: alan.username, settings: { role: 'beta_tester', languages: [] } },
+				{ kind: 'addEditor', username: carol.username, settings: { role: 'builder', languages: [] } },
+				{ kind: 'removeEditor', playerId: carol.id },
+				{ kind: 'addEditor', username: bob.username, settings: { role: 'builder', languages: [] } }
+			]);
+
+			assert.deepStrictEqual(emails.map((email) => email.to), ['grace@example.com', 'alan@example.com']);
+
+			const [toGrace, toAlan] = emails;
+			const english = roleGivenEmail({
+				giverName: 'Ada',
+				universeId,
+				universeName: name,
+				universeSlug: slug,
+				role: 'beta_tester'
+			}, 'Alan', 'en');
+
+			assert.match(toGrace.text, /^Hi Grace,\r\n\r\nAda gave you the role of builder/);
+			assert.ok(toGrace.text.includes(`/edit/${universeId}\r\n`));
+			assert.ok(toAlan.text.includes(`/universe/${slug}\r\n`));
+			assert.notStrictEqual(toAlan.subject, english.subject);
+
+			// Changing a role isn't giving one
+			emails.length = 0;
+			await saveAll(ada, universeId, [{ kind: 'saveEditor', playerId: grace.id, settings: { role: 'creator', languages: [] } }]);
+			assert.strictEqual(emails.length, 0);
+		}
+		finally
+		{
+			setEmailSender(discardEmail);
+		}
 	});
 });

@@ -14,7 +14,7 @@ import { AUTH_ACCOUNT_DELETE_PATH, defineMessages, MAX_LOCALE_LENGTH, MAX_PASSWO
 import type { Executor } from '../db/client.js';
 import { lockContinuation } from '../db/emailCodeRepo.js';
 import { listMembersOfGroups, listPlayerMemberships } from '../db/groupRepo.js';
-import { deletePlayer, findPasswordHash, findPlayerEmail, lockPlayer } from '../db/playerRepo.js';
+import { deletePlayer, findEmailRecipient, findPasswordHash, findPlayerEmail, lockPlayer, type EmailRecipient } from '../db/playerRepo.js';
 import { deletePlayerSessions } from '../db/sessionRepo.js';
 import { listTileGraphicStorageKeys } from '../db/tileGraphicRepo.js';
 import { inTransaction } from '../db/transactions.js';
@@ -63,7 +63,11 @@ const accountDeleteRequest = z.object({
  */
 interface Deletion
 {
-	email: string | null;
+	/**
+	 * Where the account was emailed and the name it had, or undefined when it had no address
+	 */
+	recipient: EmailRecipient | undefined;
+
 	sessionIds: string[];
 	changes: GroupChange[];
 	deletedUniverseIds: string[];
@@ -203,11 +207,11 @@ async function deleteAccountRoute(request: Request, response: Response): Promise
 		}
 	}
 
-	if (outcome.email !== null)
+	if (outcome.recipient)
 	{
 		sendEmailInBackground({
-			to: outcome.email,
-			...accountDeletedEmail(emailLocale)
+			to: outcome.recipient.email,
+			...accountDeletedEmail(outcome.recipient.displayName, emailLocale)
 		});
 	}
 }
@@ -265,13 +269,13 @@ async function deleteAccount(playerId: string, decisions: ReadonlyMap<string, st
 	// Read after the universes are deleted: groups that went with them need no change, since their rooms close
 	const memberships = await listPlayerMemberships(playerId, executor);
 	const members = await listMembersOfGroups(memberships.map(({ groupId }) => groupId), executor);
-	const email = await findPlayerEmail(playerId, executor);
+	const recipient = await findEmailRecipient(playerId, executor);
 	const sessionIds = await deletePlayerSessions(playerId, executor);
 
 	await deletePlayer(playerId, executor);
 
 	return({
-		email,
+		recipient,
 		sessionIds,
 		changes: accountDeletionChanges(memberships, members),
 		deletedUniverseIds,

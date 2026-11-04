@@ -41,6 +41,11 @@ export interface ChangeContext
 	readonly editorRoles: Map<string, UniverseRole | undefined>;
 
 	/**
+	 * The players the save gives a role in the universe, emailed once it commits
+	 */
+	readonly addedEditors: string[];
+
+	/**
 	 * The save's transaction, which holds the universe's lock
 	 */
 	readonly transaction: Executor;

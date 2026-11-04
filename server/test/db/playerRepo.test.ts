@@ -1,7 +1,7 @@
 import assert from 'assert';
 
 import { pool } from '../../src/db/client.js';
-import { AccountTakenError, createPlayer, findLocalLogin, findOwnProfile, findPasswordHash, findPlayer, findPlayerByUsername, findPlayerEmail, findPlayerIdByEmail, findProfileByUsername, saveEmail, savePasswordHash, saveProfile, type NewPlayer, type ProfileChanges } from '../../src/db/playerRepo.js';
+import { AccountTakenError, createPlayer, findEmailRecipient, findLocalLogin, findOwnProfile, findPasswordHash, findPlayer, findPlayerByUsername, findPlayerEmail, findPlayerIdByEmail, findProfileByUsername, saveEmail, savePasswordHash, saveProfile, type NewPlayer, type ProfileChanges } from '../../src/db/playerRepo.js';
 
 /**
  * A local account with an email address and password
@@ -109,6 +109,33 @@ describe('playerRepo', () =>
 			});
 			assert.strictEqual(await findLocalLogin('grace@example.com'), undefined);
 			assert.strictEqual(await findLocalLogin('nobody@example.com'), undefined);
+		});
+
+		it('finds where to email an account that has an address, its name and its language', async () =>
+		{
+			const ada = await createPlayer(localAccount('Ada', 'Ada@example.com'));
+			const grace = await createPlayer({
+				username: 'Grace',
+				displayName: 'Grace',
+				email: null,
+				passwordHash: null
+			});
+
+			assert.deepStrictEqual(await findEmailRecipient(ada.id), {
+				email: 'Ada@example.com',
+				displayName: 'Ada',
+				locale: null
+			});
+
+			await pool.query('UPDATE players SET locale = $1 WHERE id = $2', ['fr', ada.id]);
+
+			assert.deepStrictEqual(await findEmailRecipient(ada.id), {
+				email: 'Ada@example.com',
+				displayName: 'Ada',
+				locale: 'fr'
+			});
+			assert.strictEqual(await findEmailRecipient(grace.id), undefined);
+			assert.strictEqual(await findEmailRecipient('00000000-0000-4000-8000-000000000001'), undefined);
 		});
 	});
 

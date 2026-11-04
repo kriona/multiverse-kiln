@@ -2795,6 +2795,10 @@
 		"message": "Come aboard {siteName}",
 		"source": "Log in to {siteName}"
 	},
+	"email.action.openEditor": {
+		"message": "Open the editor o' {universe}",
+		"source": "Open the editor of {universe}"
+	},
 	"email.action.resetPassword": {
 		"message": "Reset yer password",
 		"source": "Reset your password"
@@ -2802,6 +2806,10 @@
 	"email.action.visit": {
 		"message": "Set sail for {siteName}",
 		"source": "Go to {siteName}"
+	},
+	"email.action.visitUniverse": {
+		"message": "Set sail for {universe}",
+		"source": "Go to {universe}"
 	},
 	"email.code.changeEmail.intro": {
 		"message": "Enter this code on {siteName} to make this yer account's email address:",
@@ -2879,6 +2887,14 @@
 		"message": "This letter was sent by {siteName}:",
 		"source": "This email was sent by {siteName}:"
 	},
+	"email.greeting": {
+		"message": "Ahoy {name},",
+		"source": "Hi {name},"
+	},
+	"email.greetingNoName": {
+		"message": "Ahoy,",
+		"source": "Hi,"
+	},
 	"email.passwordChanged.body": {
 		"message": "The password o' yer account on {siteName} was just changed, an' every browser aboard it was put ashore.",
 		"source": "The password of your account on {siteName} was just changed, and every browser logged in to it was logged out."
@@ -2914,6 +2930,22 @@
 	"email.recoveryCodeUsed.subject": {
 		"message": "A recovery code was spent on {siteName}",
 		"source": "A recovery code was used on {siteName}"
+	},
+	"email.roleGiven.body": {
+		"message": "{giver} signed ye on as {role} in the universe {universe} on {siteName}.",
+		"source": "{giver} gave you the role of {role} in the universe {universe} on {siteName}."
+	},
+	"email.roleGiven.leave": {
+		"message": "If ye don't want the post, ye can jump ship on the Officers tab o' the universe's editor.",
+		"source": "If you don't want the role, you can leave the universe on its editor's Editors tab."
+	},
+	"email.roleGiven.subject": {
+		"message": "Ye have a post in {universe} on {siteName}",
+		"source": "You have a role in {universe} on {siteName}"
+	},
+	"email.roleGiven.whatItAllows": {
+		"message": "{role, select, creator {As captain ye can change everythin' about the universe, even who else sails her.} builder {As shipwright ye can change the universe's world: its tiles, areas, charts and passages.} beta_tester {As deckhand ye can sail the universe afore she opens to every soul.} other {As translator ye can turn the universe's words into the tongues ye were given.}}",
+		"source": "{role, select, creator {As a creator you can change everything about the universe, including who else works on it.} builder {As a builder you can change the universe's world: its tiles, areas, maps and links.} beta_tester {As a beta tester you can play the universe before it opens to everyone.} other {As a translator you can translate the universe's text into the languages you were given.}}"
 	},
 	"email.twoFactorDisabled.body": {
 		"message": "Two-factor authentication was struck from yer account on {siteName}. Comin' aboard now needs only yer password, an' yer recovery codes be worthless.",
