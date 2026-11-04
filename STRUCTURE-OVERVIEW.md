@@ -223,7 +223,7 @@ Pages for the site's server admins. The admin page (`/admin`, `client/admin.html
 
 Whether a player is a server admin is stored in the database (`server_admins`). The first admin is made by hand with a script run on the server (`npm run admin:add -w server -- <username>`); after that, admins add and remove other admins on the [Server Admins](#server-admins) page. An admin must have 2FA on to use any of them: one without it is told so, with a link to turn it on, and turning 2FA off on the profile warns an admin that they'll lose the admin pages until it's back on. A player who isn't an admin is told the pages are only for admins, and a browser that isn't logged in goes to the login page.
 
-What admins do (adding and removing admins, disabling and enabling universes, and saving a universe with the site admin role) is recorded in `admin_events`, in the same transaction as the change: the admin, what they did, the player or universe, the reason given for disabling a universe, and when. The records are kept; deleting an account or a universe empties its columns in them rather than deleting them.
+What admins do on the admin pages (adding and removing admins, and disabling and enabling universes) is recorded in `admin_events`, in the same transaction as the change: the admin, what they did, the player or universe, the reason given for disabling a universe, and when. The records are kept; deleting an account or a universe empties its columns in them rather than deleting them. Saves an admin makes in the world editor are recorded with everyone else's, on the editor's [Audit tab](#tab-audit).
 
 ### Settings
 Settings for the whole site (`/admin/settings`), stored in one row of the `site_settings` table. Anyone can read the ones the pages show (the character deletion days, the social sites and the privacy contact) through a public route of their own.
@@ -254,7 +254,7 @@ Disable asks for a reason, up to 500 characters, which the universe's editors ar
 
 Enable, after asking, makes it as it was before. Its settings, world and characters are untouched while it is disabled.
 
-A universe's name opens it in the editor. A server admin with 2FA on can open any universe's editor, and edits it with the site admin role (`ADMIN_ROLE`, `editorAccessOf()` in `shared/src/universes.ts`) whenever that allows more than their own role in it, which is any role but creator. The site admin role may do everything a creator may, but isn't stored in `universe_editors`: the admin isn't one of the universe's editors, isn't listed on the Editors tab, and has nothing to leave. The editor's toolbar names the role, and a notice says the admin can change everything a creator can. Each save made with it is an admin event (`universeEdited`). A server admin can also save a disabled universe, with either role, to fix what it was disabled for; the notice says so.
+A universe's name opens it in the editor. A server admin with 2FA on can open any universe's editor, and edits it with the site admin role (`ADMIN_ROLE`, `editorAccessOf()` in `shared/src/universes.ts`) whenever that allows more than their own role in it, which is any role but creator. The site admin role may do everything a creator may, but isn't stored in `universe_editors`: the admin isn't one of the universe's editors, isn't listed on the Editors tab, and has nothing to leave. The editor's toolbar names the role, and a notice says the admin can change everything a creator can. The [Audit tab](#tab-audit) lists each save made with it, as it lists every other save, naming the site admin role. A server admin can also save a disabled universe, with either role, to fix what it was disabled for; the notice says so.
 
 ## Edit Universe
 This lets you change anything about a universe. It will be a whole suite of tools unrelated to playing the game.
@@ -304,6 +304,7 @@ This lets you change anything about a universe. It will be a whole suite of tool
 	- [Tilesets](#tab-tilesets)
 	- [Areas](#tab-areas)
 	- [Items](#tab-items)
+	- [Audit](#tab-audit)
 	- [Connect to the Multiverse](#tab-connect-to-the-multiverse)
 	- [Translations](#tab-translations)
 
@@ -616,6 +617,17 @@ For SF1E:
 - `gear`: comm unit, flashlight
 
 Until items have pictures, the icon is the item's category's.
+
+### Tab: Audit
+Lists every save made in the universe's editor, newest first, for creators and site admins (the server refuses other roles too): when it was saved, the player who saved (their name, linking to their profile, and @username, or "Deleted account" once the account is deleted), the role they saved with (site admin included), and what the save changed: each thing it changed on its own line, by name, in the order they were saved, and under a change to settings, a line for each setting it changed with the value it changed it to:
+- "Added item Shiv", "Changed item Dagger" (with "Name: Shiv" and "Enabled: no" under it), "Restored item Dagger to its default" (one of the ruleset's defaults given its settings back) and "Deleted item Shiv", and the same for tiles, races, classes, themes and difficulty levels (which are deleted, never restored)
+- "Added editor @grace", "Changed editor @grace" (with "Role: translator" and "Languages: Deutsch"), "Removed editor @grace"
+- "Changed settings" for the Universe, Lobby and Characters tabs (with, say, "Group size: 4" and "Starting area: Meadow at 3, 4"), and "Changed the ruleset" (with "Track ammunition: yes")
+- "Uploaded tileset Caves" and "Deleted tileset Caves"
+- "Added area Cave", "Changed area Cave" (with "Indoors or outdoors: Indoors"), "Resized the map of Cave" and "Deleted area Cave"
+- "Painted 412 cells in Cave", and "Added or changed 3 links in Cave" or "Deleted 1 link in Cave", each counted together for an area
+
+The settings are named as their fields are in the editor, reusing those messages; settings the editor shows as one field are one (a starting area and its cell, a passage of time and its faerie morning, a tile's graphic and uploaded graphic). Values are shown in the player's language: checkboxes as yes or no, choices by their names, money as a money field writes it, and a list (starting equipment, languages, a class's starting areas by race, a race's ability modifiers other than 0) as a list, or none. What a setting names (an area, a tile, an item, a race, an uploaded tileset) is recorded by its name when saved, and the long description only by how many characters it has. Default things are named in the player's language. The tab is as wide as the page, rather than the other tabs' 960px. The server works out the details as it saves (`server/src/http/editorSaveAudit.ts`): just before each change it compares the change with what the universe holds, loading each list a save changes once, so a setting sent with the value it already has isn't named, and a thing deleted is named as it was. Each save that changes something records itself in `universe_edits`, in the same transaction as the save, with its details; a save that is refused, or changes nothing, records nothing. Saves made with the site admin role before saves were recorded show "Not recorded" for their changes. The records are deleted with the universe; deleting an account empties its column in them rather than deleting them. The list shows 100 saves a page, and loads again from the newest after each save. Saves record themselves, so the tab only lists them and has nothing to save.
 
 ### Tab: Connect to the Multiverse
 Explain that this allows characters to move freely between universes with the same ruleset. If no other universes with this ruleset exist, say that you're alone in the multiverse.

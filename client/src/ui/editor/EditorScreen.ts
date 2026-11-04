@@ -1,8 +1,9 @@
-import { ADMIN_ROLE, canEditWorld, EDITOR_ROLE_NAMES, type EditableUniverse, type UniverseSettingsUpdate, type UniverseSummary } from '@multiverse-kiln/shared';
+import { ADMIN_ROLE, canEditWorld, canManageEditors, EDITOR_ROLE_NAMES, type EditableUniverse, type UniverseSettingsUpdate, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { editPageUrl, HOME_PAGE_URL } from '../../pages';
+import { AuditTab } from './AuditTab';
 import { EditorsTab } from './EditorsTab';
 import { closeOpenDialogs, getElement, setPageTitle, showMessage, titleLink } from '../dom';
 import { CharacterListTab } from './CharacterListTab';
@@ -33,7 +34,8 @@ export const EDITOR_TABS = [
 	'characterList',
 	'tilesets',
 	'areas',
-	'items'
+	'items',
+	'audit'
 ] as const;
 
 export type EditorTab = typeof EDITOR_TABS[number];
@@ -42,7 +44,7 @@ export type EditorTab = typeof EDITOR_TABS[number];
  * The order the tabs' changes are saved in: the Areas tab's maps can be painted with tiles the
  * Tilesets tab adds, so the Tilesets tab goes first and the Areas tab after it. The server checks every
  * change against the role the player had when the save began, so the Editors tab's changes to roles
- * can go anywhere. The Character List tab only lists, so it saves nothing
+ * can go anywhere. The Character List and Audit tabs only list, so they save nothing
  */
 const SAVE_ORDER = [
 	'tilesets',
@@ -72,7 +74,8 @@ function isSavableTab(name: EditorTab): name is SavableEditorTab
 }
 
 /**
- * The tabs every role sees; the others are for roles that may change the world (canEditWorld())
+ * The tabs every role sees; the Audit tab is for roles that may manage the editors (canManageEditors()),
+ * and the others for roles that may change the world (canEditWorld())
  */
 const SHARED_TABS: ReadonlySet<EditorTab> = new Set(['editors', 'universe']);
 
@@ -115,7 +118,7 @@ export function isEditorTab(value: string | undefined): value is EditorTab
 /**
  * Edit Universe: a universe's editors, settings, ruleset (and the difficulty levels), lobby, characters
  * (and their races, classes and, in a ruleset with them, themes), the characters players have made,
- * tiles, areas and items, in tabs
+ * tiles, areas, items and the record of saves, in tabs
  *
  * What the player may see and change depends on their role in the universe; the server checks it again
  * on every change, so the page only hides controls that would be refused
@@ -138,6 +141,7 @@ export class EditorScreen
 	private readonly areasTab: AreasTab;
 	private readonly itemsTab: ItemsTab;
 	private readonly editorsTab: EditorsTab;
+	private readonly auditTab: AuditTab;
 
 	/**
 	 * Saves every tab, which keep their changes on the page until then
@@ -187,6 +191,7 @@ export class EditorScreen
 			this.updateUniverse(update);
 		});
 		this.characterListTab = new CharacterListTab(api);
+		this.auditTab = new AuditTab(api);
 		this.racesSection = new RacesSection(api, areaSelect, itemSelect);
 		this.classesSection = new ClassesSection(api, areaSelect, itemSelect);
 		this.themesSection = new ThemesSection(api);
@@ -220,6 +225,7 @@ export class EditorScreen
 		}, () =>
 		{
 			void this.areasTab.reloadTiles();
+			this.auditTab.reload();
 		});
 
 		this.savableTabs = {
@@ -343,6 +349,7 @@ export class EditorScreen
 		this.areasTab.open(universe, place.areaId);
 		this.itemsTab.open(universe);
 		this.editorsTab.open(universe);
+		this.auditTab.open(universe);
 
 		for (const name of EDITOR_TABS)
 		{
@@ -354,14 +361,24 @@ export class EditorScreen
 
 	/**
 	 * Whether the player's role shows a tab: beta testers and translators see only the editors and the
-	 * universe's settings
+	 * universe's settings, and only creators and site admins see the audit
 	 *
 	 * @param name The tab
 	 * @return True when it does
 	 */
 	private canSeeTab(name: EditorTab): boolean
 	{
-		return(SHARED_TABS.has(name) || ((this.universe !== undefined) && canEditWorld(this.universe.role)));
+		if (SHARED_TABS.has(name))
+		{
+			return(true);
+		}
+
+		if (this.universe === undefined)
+		{
+			return(false);
+		}
+
+		return(((name === 'audit') ? canManageEditors(this.universe.role) : canEditWorld(this.universe.role)));
 	}
 
 	/**

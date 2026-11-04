@@ -521,12 +521,12 @@ export class CharacterSheetDialog
 			[t({
 				id: 'character.darkvision',
 				defaultMessage: 'Darkvision',
-				description: 'How far a character can see in the dark, if at all: the label on a character\'s sheet, and of the race editor\'s field for how far the race\'s characters can'
+				description: 'How far a character can see in the dark, if at all: the label on a character\'s sheet, and of the race editor\'s field for how far the race\'s characters can; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 			}), t(DARKVISION_NAMES[sheet.darkvision])],
 			[t({
 				id: 'character.lightSensitivity',
 				defaultMessage: 'Light sensitivity',
-				description: 'Whether bright light dazzles a character: the label on a character\'s sheet, and the race editor\'s checkbox for whether it dazzles the race\'s characters'
+				description: 'Whether bright light dazzles a character: the label on a character\'s sheet, and the race editor\'s checkbox for whether it dazzles the race\'s characters; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 			}), t({
 				id: 'characterSheet.lightSensitivityValue',
 				defaultMessage: '{lightSensitivity, select, true {Yes} other {No}}',

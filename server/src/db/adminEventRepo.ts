@@ -18,7 +18,7 @@ export type AdminEventKind = (typeof ADMIN_EVENT_KINDS)[number];
 export type AdminEvent =
 	| { kind: 'adminAdded' | 'adminRemoved'; adminId: string | null; playerId: string | null; occurredAt: Date }
 	| { kind: 'universeDisabled'; adminId: string | null; universeId: string | null; reason: string; occurredAt: Date }
-	| { kind: 'universeEnabled' | 'universeEdited'; adminId: string | null; universeId: string | null; occurredAt: Date };
+	| { kind: 'universeEnabled'; adminId: string | null; universeId: string | null; occurredAt: Date };
 
 /**
  * Records what a server admin did

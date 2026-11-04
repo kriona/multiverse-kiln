@@ -413,6 +413,14 @@ export const ADMIN_ROLE = 'admin';
 export type EditorRole = UniverseRole | typeof ADMIN_ROLE;
 
 /**
+ * Every role the editor works with: the roles in a universe, and ADMIN_ROLE
+ */
+export const EDITOR_ROLES = [
+	...UNIVERSE_ROLES,
+	ADMIN_ROLE
+] as const satisfies readonly EditorRole[];
+
+/**
  * Each role's name in the editor, ADMIN_ROLE included
  */
 export const EDITOR_ROLE_NAMES: Record<EditorRole, MessageDescriptor> = {

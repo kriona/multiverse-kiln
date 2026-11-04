@@ -1,0 +1,675 @@
+/**
+ * What a save in the world editor changed, for the record of saves the Audit tab lists (universe_edits).
+ * Each change is described just before it is saved, against what the universe holds then, so a
+ * setting sent with the value it already has isn't listed, and a thing deleted is named as it was
+ */
+import { isDeepStrictEqual } from 'util';
+import { AUDIT_FIELDS, type AuditAction, type AuditField, type AuditFieldChange, type AuditPassageOfTime, type AuditPlace, type AuditSubject, type ClassRaceArea, type EditorChange, type ItemQuantity, type NumberRef, type OptionName, type StringRef, type TileGraphic, type UniverseEditDetail } from '@multiverse-kiln/shared';
+
+import { findEditorArea } from '../db/areaRepo.js';
+import { loadEditorClasses } from '../db/classRepo.js';
+import { listDifficultyLevels } from '../db/difficultyRepo.js';
+import { loadEditorItems } from '../db/itemRepo.js';
+import { loadEditorRaces } from '../db/raceRepo.js';
+import { loadRulesetSettings } from '../db/rulesetRepo.js';
+import { loadEditorThemes } from '../db/themeRepo.js';
+import { listTileGraphics } from '../db/tileGraphicRepo.js';
+import { loadEditorTiles } from '../db/tileRepo.js';
+import { listUniverseEditors } from '../db/universeEditorRepo.js';
+import { resolveNumberRef, resolveStringRef, type ChangeContext } from './editorChangeContext.js';
+
+/**
+ * Something with a name, or one of the ruleset's defaults, named by its key while its name is null
+ */
+interface Named
+{
+	key: string | null;
+	name: string | null;
+}
+
+/**
+ * A thing's settings, with its rules (a race's size, a class's key ability and so on) beside the others
+ */
+type FlatSettings = Record<string, unknown>;
+
+/**
+ * The audit field a setting is shown as for every subject, where it isn't its own key
+ */
+const SHARED_FIELD_KEYS: ReadonlyMap<string, AuditField> = new Map([
+	['startingAreaId', 'startingArea'],
+	['startingColumn', 'startingArea'],
+	['startingRow', 'startingArea'],
+	['faerieMorning', 'passageOfTime'],
+	['lobbyFaerieMorning', 'lobbyPassageOfTime'],
+	['uploadedGraphicId', 'graphic']
+]);
+
+/**
+ * The audit field a setting is shown as for one subject, where it differs from SHARED_FIELD_KEYS
+ */
+const SUBJECT_FIELD_KEYS: Partial<Record<AuditSubject, ReadonlyMap<string, AuditField>>> = {
+	area: new Map([
+		['indoors', 'indoorsOrOutdoors'],
+		['parentAreaId', 'parentArea'],
+		['defaultTileId', 'defaultTile']
+	]),
+	class: new Map([
+		['hitPoints', 'hitPointsPerLevel'],
+		['staminaPoints', 'staminaPointsPerLevel']
+	])
+};
+
+/**
+ * What each create change adds
+ */
+const LIST_SUBJECTS: Readonly<Record<'createTile' | 'createItem' | 'createRace' | 'createClass' | 'createTheme' | 'createDifficultyLevel', AuditSubject>> = {
+	createTile: 'tile',
+	createItem: 'item',
+	createRace: 'race',
+	createClass: 'class',
+	createTheme: 'theme',
+	createDifficultyLevel: 'difficultyLevel'
+};
+
+/**
+ * Every audit field, to check a setting's key against
+ */
+const AUDIT_FIELD_SET: ReadonlySet<string> = new Set(AUDIT_FIELDS);
+
+/**
+ * A list a save's changes are compared against: loaded the first time a change needs it, and again when
+ * it lacks what a change names (something made earlier in the save). Each change described updates its
+ * entry, so a later change to the same thing is compared against it
+ */
+class CachedList<Id, Entry>
+{
+	private entries: Map<Id, Entry> | undefined;
+
+	/**
+	 * @param load Loads the list, by ID
+	 */
+	constructor(private readonly load: () => Promise<Map<Id, Entry>>)
+	{
+	}
+
+	/**
+	 * One of the list's entries
+	 *
+	 * @param id Its ID
+	 * @return The entry, or undefined when the list has none with that ID
+	 */
+	async find(id: Id): Promise<Entry | undefined>
+	{
+		let entries = this.entries;
+
+		if (!entries?.has(id))
+		{
+			entries = await this.load();
+			this.entries = entries;
+		}
+
+		return(entries.get(id));
+	}
+
+	/**
+	 * Replaces one of the list's entries with how a change left it
+	 *
+	 * @param id Its ID
+	 * @param entry The entry
+	 */
+	set(id: Id, entry: Entry): void
+	{
+		this.entries?.set(id, entry);
+	}
+}
+
+/**
+ * A list of things with IDs, by ID
+ *
+ * @param entries The things
+ * @return The things by ID
+ */
+function byId<Id, Entry extends { id: Id }>(entries: readonly Entry[]): Map<Id, Entry>
+{
+	return(new Map(entries.map((entry) => [entry.id, entry])));
+}
+
+/**
+ * Whether a value is an object whose settings can be compared one by one
+ *
+ * @param value The value
+ * @return True when it is
+ */
+function isRecord(value: unknown): value is Record<string, unknown>
+{
+	return((typeof value === 'object') && (value !== null) && !Array.isArray(value));
+}
+
+/**
+ * A thing's settings with its rules beside the others, so each rule is compared and read on its own
+ *
+ * @param settings The settings
+ * @return The settings, flattened
+ */
+function flatten(settings: object): FlatSettings
+{
+	const { rules, ...others } = settings as Record<string, unknown>;
+
+	return({ ...others, ...(isRecord(rules) ? rules : {}) });
+}
+
+/**
+ * The audit field a setting is shown as
+ *
+ * @param subject What the setting belongs to
+ * @param key The setting's key
+ * @return The field, or undefined for a setting the Audit tab doesn't name
+ */
+function fieldOf(subject: AuditSubject, key: string): AuditField | undefined
+{
+	const field = (SUBJECT_FIELD_KEYS[subject]?.get(key) ?? SHARED_FIELD_KEYS.get(key) ?? key);
+
+	return((AUDIT_FIELD_SET.has(field) ? (field as AuditField) : undefined));
+}
+
+/**
+ * A passage of time as the Audit tab shows it
+ *
+ * @param time The passage of time
+ * @param morning Where morning is in faerie time
+ * @return The passage of time, with where morning is only when it is faerie
+ */
+function passageOf(time: unknown, morning: unknown): AuditPassageOfTime
+{
+	return({
+		time: time as AuditPassageOfTime['time'],
+		morning: ((time === 'faerie') ? ((morning ?? null) as AuditPassageOfTime['morning']) : null)
+	});
+}
+
+/**
+ * Builds the record of what one save changes, change by change, as they are saved
+ */
+export class SaveAudit
+{
+	/**
+	 * What the save changed, thing by thing
+	 */
+	readonly details: UniverseEditDetail[] = [];
+
+	private readonly editors: CachedList<string, { username: string; role: string; languages: string[] }>;
+	private readonly tileGraphics: CachedList<string, { name: string }>;
+	private readonly tiles: CachedList<number, Named & { custom: boolean }>;
+	private readonly items: CachedList<number, Named & { custom: boolean }>;
+	private readonly races: CachedList<number, Named & { custom: boolean }>;
+	private readonly classes: CachedList<number, Named & { custom: boolean }>;
+	private readonly themes: CachedList<number, Named & { custom: boolean }>;
+	private readonly difficultyLevels: CachedList<number, Named>;
+
+	/**
+	 * The areas changes have named, as they were before each change
+	 */
+	private readonly areas = new Map<string, Record<string, unknown> & { name: string }>();
+
+	/**
+	 * @param context The save
+	 */
+	constructor(private readonly context: ChangeContext)
+	{
+		const { id, ruleset } = context.universe;
+		const { transaction } = context;
+
+		this.editors = new CachedList(async () => new Map((await listUniverseEditors(id, transaction)).map((editor) => [editor.playerId, editor])));
+		this.tileGraphics = new CachedList(async () => byId(await listTileGraphics(id, transaction)));
+		this.tiles = new CachedList(async () => byId(await loadEditorTiles(id, ruleset, transaction)));
+		this.items = new CachedList(async () => byId(await loadEditorItems(id, ruleset, transaction)));
+		this.races = new CachedList(async () => byId(await loadEditorRaces(id, ruleset, transaction)));
+		this.classes = new CachedList(async () => byId(await loadEditorClasses(id, ruleset, transaction)));
+		this.themes = new CachedList(async () => byId(await loadEditorThemes(id, ruleset, transaction)));
+		this.difficultyLevels = new CachedList(async () => byId(await listDifficultyLevels(id, transaction)));
+	}
+
+	/**
+	 * Whether the save has changed anything so far
+	 *
+	 * @return True when it has
+	 */
+	hasChanges(): boolean
+	{
+		return(this.details.length > 0);
+	}
+
+	/**
+	 * Records what a change is about to do. Call it just before the change is saved; a change it can't
+	 * describe (one naming something that doesn't exist, which the save then refuses) records nothing
+	 *
+	 * @param change The change
+	 */
+	async describe(change: EditorChange): Promise<void>
+	{
+		switch (change.kind)
+		{
+			case 'addEditor':
+				this.add('editor', 'added', { key: null, name: change.username });
+				return;
+
+			case 'saveEditor':
+			{
+				const before = await this.editors.find(change.playerId);
+
+				if (before)
+				{
+					this.addChanged('editor', { key: null, name: before.username }, await this.changedFields('editor', before, change.settings));
+					this.editors.set(change.playerId, { ...before, ...change.settings });
+				}
+
+				return;
+			}
+
+			case 'removeEditor':
+			{
+				const before = await this.editors.find(change.playerId);
+
+				if (before)
+				{
+					this.add('editor', 'deleted', { key: null, name: before.username });
+				}
+
+				return;
+			}
+
+			case 'universe':
+				this.addChanged('settings', null, await this.changedFields('settings', this.context.universe, change.update));
+				return;
+
+			case 'ruleset':
+			{
+				const { id, ruleset } = this.context.universe;
+				const saved = await loadRulesetSettings(id, ruleset, this.context.transaction);
+
+				this.addChanged('ruleset', null, await this.changedFields('ruleset', saved.settings, change.settings.settings));
+				return;
+			}
+
+			case 'uploadTileGraphic':
+				this.add('tileset', 'added', { key: null, name: change.upload.name });
+				return;
+
+			case 'deleteTileGraphic':
+			{
+				const before = await this.tileGraphics.find(change.graphicId);
+
+				if (before)
+				{
+					this.add('tileset', 'deleted', { key: null, name: before.name });
+				}
+
+				return;
+			}
+
+			case 'createTile':
+			case 'createItem':
+			case 'createRace':
+			case 'createClass':
+			case 'createTheme':
+			case 'createDifficultyLevel':
+				this.add(LIST_SUBJECTS[change.kind], 'added', { key: null, name: change.settings.name });
+				return;
+
+			case 'saveTile':
+				return(this.saveListed('tile', this.tiles, change.id, change.settings));
+			case 'saveItem':
+				return(this.saveListed('item', this.items, change.id, change.settings));
+			case 'saveRace':
+				return(this.saveListed('race', this.races, change.id, change.settings));
+			case 'saveClass':
+				return(this.saveListed('class', this.classes, change.id, change.settings));
+			case 'saveTheme':
+				return(this.saveListed('theme', this.themes, change.id, change.settings));
+			case 'saveDifficultyLevel':
+				return(this.saveListed('difficultyLevel', this.difficultyLevels, change.id, change.settings));
+
+			case 'removeTile':
+				return(this.removeListed('tile', this.tiles, change.id));
+			case 'removeItem':
+				return(this.removeListed('item', this.items, change.id));
+			case 'removeRace':
+				return(this.removeListed('race', this.races, change.id));
+			case 'removeClass':
+				return(this.removeListed('class', this.classes, change.id));
+			case 'removeTheme':
+				return(this.removeListed('theme', this.themes, change.id));
+			case 'removeDifficultyLevel':
+			{
+				// A difficulty level is deleted even when it is one of the defaults
+				const before = await this.difficultyLevels.find(resolveNumberRef(this.context, change.id));
+
+				if (before)
+				{
+					this.add('difficultyLevel', 'deleted', { key: before.key, name: before.name });
+				}
+
+				return;
+			}
+
+			case 'createArea':
+				this.add('area', 'added', { key: null, name: change.area.name });
+				return;
+
+			case 'updateArea':
+			{
+				const areaId = resolveStringRef(this.context, change.areaId);
+				const before = await this.findArea(areaId);
+
+				if (before)
+				{
+					const name = (change.update.name ?? before.name);
+
+					this.addChanged('area', { key: null, name }, await this.changedFields('area', before, change.update));
+					this.areas.set(areaId, { ...before, ...change.update, name });
+				}
+
+				return;
+			}
+
+			case 'deleteArea':
+				return(this.changeArea(change.areaId, 'area', 'deleted', 1));
+			case 'resizeArea':
+				return(this.changeArea(change.areaId, 'area', 'resized', 1));
+			case 'editCells':
+				return(this.changeArea(change.areaId, 'cells', 'changed', change.changes.length));
+			case 'saveLink':
+				return(this.changeArea(change.areaId, 'links', 'changed', 1));
+			case 'deleteLink':
+				return(this.changeArea(change.areaId, 'links', 'deleted', 1));
+		}
+	}
+
+	/**
+	 * Records a change to a tile, item, race, class, theme or difficulty level's settings
+	 *
+	 * @param subject What it changes
+	 * @param list The things of its kind
+	 * @param ref The thing
+	 * @param settings Its settings once saved
+	 */
+	private async saveListed<Entry extends Named>(subject: AuditSubject, list: CachedList<number, Entry>, ref: NumberRef, settings: object & { name: string | null }): Promise<void>
+	{
+		const id = resolveNumberRef(this.context, ref);
+		const before = await list.find(id);
+
+		if (before)
+		{
+			this.addChanged(subject, { key: before.key, name: settings.name }, await this.changedFields(subject, before, settings));
+			list.set(id, { ...before, ...settings });
+		}
+	}
+
+	/**
+	 * Records deleting a tile, item, race, class or theme the universe added, or restoring one of the
+	 * ruleset's defaults
+	 *
+	 * @param subject What it changes
+	 * @param list The things of its kind
+	 * @param ref The thing
+	 */
+	private async removeListed(subject: AuditSubject, list: CachedList<number, Named & { custom: boolean }>, ref: NumberRef): Promise<void>
+	{
+		const before = await list.find(resolveNumberRef(this.context, ref));
+
+		if (before)
+		{
+			this.add(subject, (before.custom ? 'deleted' : 'restored'), { key: before.key, name: before.name });
+		}
+	}
+
+	/**
+	 * Records a change to an area or its map. Cells painted and links changed in the same area are
+	 * counted together
+	 *
+	 * @param ref The area
+	 * @param subject What it changes
+	 * @param action What it does
+	 * @param count How many cells or links it changes
+	 */
+	private async changeArea(ref: string, subject: AuditSubject, action: AuditAction, count: number): Promise<void>
+	{
+		const area = await this.findArea(resolveStringRef(this.context, ref));
+
+		if (!area)
+		{
+			return;
+		}
+
+		const existing = (((subject === 'cells') || (subject === 'links'))
+			? this.details.find((detail) => ((detail.subject === subject) && (detail.action === action) && (detail.target?.name === area.name)))
+			: undefined);
+
+		if (existing)
+		{
+			existing.count += count;
+			return;
+		}
+
+		this.add(subject, action, { key: null, name: area.name }, count);
+	}
+
+	/**
+	 * An area as it is before the change being described
+	 *
+	 * @param areaId The area's ID
+	 * @return Its settings and name, or undefined when the universe has no such area
+	 */
+	private async findArea(areaId: string): Promise<(Record<string, unknown> & { name: string }) | undefined>
+	{
+		const known = this.areas.get(areaId);
+
+		if (known)
+		{
+			return(known);
+		}
+
+		const found = await findEditorArea(areaId, this.context.transaction);
+
+		if (!found || (found.universeId !== this.context.universe.id))
+		{
+			return(undefined);
+		}
+
+		const area = { ...found.area };
+
+		this.areas.set(areaId, area);
+
+		return(area);
+	}
+
+	/**
+	 * The settings a change sends with values other than those saved, each with the value it is
+	 * changed to
+	 *
+	 * @param subject What the settings belong to
+	 * @param saved The settings saved
+	 * @param sent The settings the change sends; those left out (undefined) keep their values
+	 * @return The fields that differ, each once, in the order the change holds them
+	 */
+	private async changedFields(subject: AuditSubject, saved: object, sent: object): Promise<AuditFieldChange[]>
+	{
+		const before = flatten(saved);
+		const after: FlatSettings = { ...before };
+		const fields = new Map<AuditField, string>();
+
+		for (const [key, value] of Object.entries(flatten(sent)))
+		{
+			if (value === undefined)
+			{
+				continue;
+			}
+
+			after[key] = value;
+
+			const field = fieldOf(subject, key);
+
+			if ((field !== undefined) && !fields.has(field) && !isDeepStrictEqual(before[key], value))
+			{
+				fields.set(field, key);
+			}
+		}
+
+		return(Promise.all([...fields].map(([field, key]) => this.fieldValue(field, key, after))));
+	}
+
+	/**
+	 * A field's value once a change is saved
+	 *
+	 * @param field The field
+	 * @param key The setting it was changed by
+	 * @param after The thing's settings once the change is saved
+	 * @return The field and its value
+	 */
+	private async fieldValue(field: AuditField, key: string, after: FlatSettings): Promise<AuditFieldChange>
+	{
+		switch (field)
+		{
+			case 'longDescription':
+				return({ field, value: (after.longDescription as string).length });
+
+			case 'passageOfTime':
+				return({ field, value: passageOf(after.passageOfTime, after.faerieMorning) });
+
+			case 'lobbyPassageOfTime':
+				return({ field, value: passageOf(after.lobbyPassageOfTime, after.lobbyFaerieMorning) });
+
+			case 'startingArea':
+			{
+				const areaId = after.startingAreaId;
+
+				return({
+					field,
+					value: ((typeof areaId === 'string') ? await this.place(areaId, Number(after.startingColumn), Number(after.startingRow)) : null)
+				});
+			}
+
+			case 'startingItems':
+				return({
+					field,
+					value: await Promise.all((after.startingItems as ItemQuantity[]).map(async (entry) => ({
+						item: await this.nameIn(this.items, entry.itemId),
+						quantity: entry.quantity
+					})))
+				});
+
+			case 'raceAreas':
+				return({
+					field,
+					value: await Promise.all((after.raceAreas as ClassRaceArea[]).map(async (entry) => ({
+						race: await this.nameIn(this.races, entry.raceId),
+						place: await this.place(entry.areaId, entry.column, entry.row)
+					})))
+				});
+
+			case 'graphic':
+			{
+				const uploadedId = after.uploadedGraphicId as StringRef | null;
+				const uploaded = ((uploadedId === null) ? undefined : await this.tileGraphics.find(resolveStringRef(this.context, uploadedId)));
+
+				return({
+					field,
+					value: {
+						graphic: ((after.graphic ?? null) as TileGraphic | null),
+						uploaded: (uploaded?.name ?? null)
+					}
+				});
+			}
+
+			case 'parentArea':
+			{
+				const parentId = after.parentAreaId as StringRef | null;
+
+				return({
+					field,
+					value: ((parentId === null) ? null : await this.areaName(resolveStringRef(this.context, parentId)))
+				});
+			}
+
+			case 'defaultTile':
+				return({ field, value: await this.nameIn(this.tiles, resolveNumberRef(this.context, after.defaultTileId as NumberRef)) });
+
+			default:
+				// Every other field holds its setting's value as saved
+				return({ field, value: after[key] } as AuditFieldChange);
+		}
+	}
+
+	/**
+	 * A place in an area, by the area's name
+	 *
+	 * @param areaId The area's ID
+	 * @param column The cell's column
+	 * @param row The cell's row
+	 * @return The place
+	 */
+	private async place(areaId: string, column: number, row: number): Promise<AuditPlace>
+	{
+		return({
+			area: await this.areaName(areaId),
+			column,
+			row
+		});
+	}
+
+	/**
+	 * An area's name
+	 *
+	 * @param areaId The area's ID
+	 * @return Its name, or an empty string for an area the universe doesn't have
+	 */
+	private async areaName(areaId: string): Promise<string>
+	{
+		return((await this.findArea(areaId))?.name ?? '');
+	}
+
+	/**
+	 * A tile, item or race's name
+	 *
+	 * @param list The things of its kind
+	 * @param id Its ID
+	 * @return Its name, with its key for one of the ruleset's defaults; both null for one the list doesn't have
+	 */
+	private async nameIn(list: CachedList<number, Named>, id: number): Promise<OptionName>
+	{
+		const entry = await list.find(id);
+
+		return({
+			key: (entry?.key ?? null),
+			name: (entry?.name ?? null)
+		});
+	}
+
+	/**
+	 * Records a change that changed settings, when it changed any
+	 *
+	 * @param subject What it changes
+	 * @param target What it changes, by name
+	 * @param fields The settings that differ
+	 */
+	private addChanged(subject: AuditSubject, target: OptionName | null, fields: AuditFieldChange[]): void
+	{
+		if (fields.length > 0)
+		{
+			this.details.push({ subject, action: 'changed', target, fields, count: 1 });
+		}
+	}
+
+	/**
+	 * Records a change
+	 *
+	 * @param subject What it changes
+	 * @param action What it does
+	 * @param target What it changes, by name
+	 * @param count How many cells or links it changes, for cells and links
+	 */
+	private add(subject: AuditSubject, action: AuditAction, target: OptionName | null, count: number = 1): void
+	{
+		this.details.push({ subject, action, target, fields: [], count });
+	}
+}

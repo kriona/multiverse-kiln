@@ -447,10 +447,6 @@
 		"message": "Universes",
 		"source": "Universes"
 	},
-	"admin.universes.hint": {
-		"message": "A laid-up universe comes off the charts and can't be sailed. Its officers see the reason, and it can't stow changes till it's set afloat again.",
-		"source": "A disabled universe isn't listed and can't be played. Its editors see the reason, and it can't save until it is enabled again."
-	},
 	"admin.universes.loadFailed": {
 		"message": "Couldn't haul up the universes.",
 		"source": "Could not load the universes."
@@ -1138,6 +1134,142 @@
 	"editor.areas.startingAreaTag": {
 		"message": "home port",
 		"source": "starting area"
+	},
+	"editor.audit.changes": {
+		"message": "Alterations",
+		"source": "Changes"
+	},
+	"editor.audit.deletedPlayer": {
+		"message": "Scuttled account",
+		"source": "Deleted account"
+	},
+	"editor.audit.detail.area": {
+		"message": "{action, select, added {Charted new area {name}} changed {Altered area {name}} resized {Stretched the chart o' {name}} other {Scuttled area {name}}}",
+		"source": "{action, select, added {Added area {name}} changed {Changed area {name}} resized {Resized the map of {name}} other {Deleted area {name}}}"
+	},
+	"editor.audit.detail.cells": {
+		"message": "{count, plural, one {Daubed # cell in {name}} other {Daubed # cells in {name}}}",
+		"source": "{count, plural, one {Painted # cell in {name}} other {Painted # cells in {name}}}"
+	},
+	"editor.audit.detail.class": {
+		"message": "{action, select, added {Took on class {name}} changed {Altered class {name}} restored {Set class {name} back t' its old ways} other {Scuttled class {name}}}",
+		"source": "{action, select, added {Added class {name}} changed {Changed class {name}} restored {Restored class {name} to its default} other {Deleted class {name}}}"
+	},
+	"editor.audit.detail.difficultyLevel": {
+		"message": "{action, select, added {Added peril {name}} changed {Altered peril {name}} other {Scuttled peril {name}}}",
+		"source": "{action, select, added {Added difficulty level {name}} changed {Changed difficulty level {name}} other {Deleted difficulty level {name}}}"
+	},
+	"editor.audit.detail.editor": {
+		"message": "{action, select, added {Signed on officer {name}} changed {Altered officer {name}} other {Cast off officer {name}}}",
+		"source": "{action, select, added {Added editor {name}} changed {Changed editor {name}} other {Removed editor {name}}}"
+	},
+	"editor.audit.detail.item": {
+		"message": "{action, select, added {Stowed new booty {name}} changed {Altered booty {name}} restored {Set booty {name} back t' its old ways} other {Scuttled booty {name}}}",
+		"source": "{action, select, added {Added item {name}} changed {Changed item {name}} restored {Restored item {name} to its default} other {Deleted item {name}}}"
+	},
+	"editor.audit.detail.links": {
+		"message": "{action, select, deleted {{count, plural, one {Scuttled # passage in {name}} other {Scuttled # passages in {name}}}} other {{count, plural, one {Laid or altered # passage in {name}} other {Laid or altered # passages in {name}}}}}",
+		"source": "{action, select, deleted {{count, plural, one {Deleted # link in {name}} other {Deleted # links in {name}}}} other {{count, plural, one {Added or changed # link in {name}} other {Added or changed # links in {name}}}}}"
+	},
+	"editor.audit.detail.race": {
+		"message": "{action, select, added {Took on race {name}} changed {Altered race {name}} restored {Set race {name} back t' its old ways} other {Scuttled race {name}}}",
+		"source": "{action, select, added {Added race {name}} changed {Changed race {name}} restored {Restored race {name} to its default} other {Deleted race {name}}}"
+	},
+	"editor.audit.detail.ruleset": {
+		"message": "Altered the ship's articles",
+		"source": "Changed the ruleset"
+	},
+	"editor.audit.detail.settings": {
+		"message": "Altered the rigging",
+		"source": "Changed settings"
+	},
+	"editor.audit.detail.theme": {
+		"message": "{action, select, added {Took on theme {name}} changed {Altered theme {name}} restored {Set theme {name} back t' its old ways} other {Scuttled theme {name}}}",
+		"source": "{action, select, added {Added theme {name}} changed {Changed theme {name}} restored {Restored theme {name} to its default} other {Deleted theme {name}}}"
+	},
+	"editor.audit.detail.tile": {
+		"message": "{action, select, added {Laid new tile {name}} changed {Altered tile {name}} restored {Set tile {name} back t' its old ways} other {Scuttled tile {name}}}",
+		"source": "{action, select, added {Added tile {name}} changed {Changed tile {name}} restored {Restored tile {name} to its default} other {Deleted tile {name}}}"
+	},
+	"editor.audit.detail.tileset": {
+		"message": "{action, select, added {Hauled aboard tileset {name}} other {Scuttled tileset {name}}}",
+		"source": "{action, select, added {Uploaded tileset {name}} other {Deleted tileset {name}}}"
+	},
+	"editor.audit.field.lobbyDayHours": {
+		"message": "Length o' a tavern day",
+		"source": "Length of a lobby day"
+	},
+	"editor.audit.field.lobbyPassageOfTime": {
+		"message": "Tavern's passage o' time",
+		"source": "Lobby's passage of time"
+	},
+	"editor.audit.field.startingArea": {
+		"message": "Home port",
+		"source": "Starting area"
+	},
+	"editor.audit.fieldValue": {
+		"message": "{field}: {value}",
+		"source": "{field}: {value}"
+	},
+	"editor.audit.listFailed": {
+		"message": "Couldn't read the ship's log.",
+		"source": "Could not list the saves."
+	},
+	"editor.audit.none": {
+		"message": "Nothin' has been stowed in this universe's editor yet.",
+		"source": "Nothing has been saved in this universe's editor yet."
+	},
+	"editor.audit.notCounted": {
+		"message": "Not logged",
+		"source": "Not recorded"
+	},
+	"editor.audit.player": {
+		"message": "Sailor",
+		"source": "Player"
+	},
+	"editor.audit.role": {
+		"message": "Rank",
+		"source": "Role"
+	},
+	"editor.audit.saved": {
+		"message": "Stowed",
+		"source": "Saved"
+	},
+	"editor.audit.value.abilityModifier": {
+		"message": "{ability} {modifier}",
+		"source": "{ability} {modifier}"
+	},
+	"editor.audit.value.characters": {
+		"message": "{count, plural, one {# mark o' ink} other {# marks o' ink}}",
+		"source": "{count, plural, one {# character} other {# characters}}"
+	},
+	"editor.audit.value.faerieTime": {
+		"message": "{time}, mornin' be {morning}",
+		"source": "{time}, morning: {morning}"
+	},
+	"editor.audit.value.itemQuantity": {
+		"message": "{quantity, plural, =1 {{item}} other {{item} x#}}",
+		"source": "{quantity, plural, =1 {{item}} other {{item} x#}}"
+	},
+	"editor.audit.value.no": {
+		"message": "nay",
+		"source": "no"
+	},
+	"editor.audit.value.none": {
+		"message": "nothin'",
+		"source": "none"
+	},
+	"editor.audit.value.place": {
+		"message": "{area}, moored at {column}, {row}",
+		"source": "{area} at {column}, {row}"
+	},
+	"editor.audit.value.raceArea": {
+		"message": "{race}: {place}",
+		"source": "{race}: {place}"
+	},
+	"editor.audit.value.yes": {
+		"message": "aye",
+		"source": "yes"
 	},
 	"editor.characterList.class": {
 		"message": "Callin'",
@@ -2218,6 +2350,10 @@
 	"editor.tab.areas": {
 		"message": "Areas",
 		"source": "Areas"
+	},
+	"editor.tab.audit": {
+		"message": "Ship's Log",
+		"source": "Audit"
 	},
 	"editor.tab.characterList": {
 		"message": "Ship's Roster",
@@ -5002,6 +5138,10 @@
 	"privacy.playChat": {
 		"message": "Chatter ain't saved. The game server keeps a tavern's latest messages in memory, so players who arrive can read 'em, till the tavern closes or the server restarts.",
 		"source": "Chat isn't saved. The game server keeps a lobby's most recent messages in memory, so players who arrive can read them, until the lobby closes or the server restarts."
+	},
+	"privacy.playEditRecord": {
+		"message": "A record o' each time ye stow changes in a universe's editor: when, with which role, an' what it changed, by name, with the value it gave each settin' it changed (a long description only by how many characters it has). The universe's creators an' the site's admins can see it. It be kept until the universe be deleted, an' names ye until ye delete yer account.",
+		"source": "A record of each save you make in a universe's editor: when, with which role, and what it changed, by name, with the value it gave each setting it changed (a long description only by how many characters it has). The universe's creators and the site's admins can see it. It is kept until the universe is deleted, and names you until you delete your account."
 	},
 	"privacy.playUniverses": {
 		"message": "The universes ye create or help edit, an' what ye upload to 'em, such as tile pictures.",

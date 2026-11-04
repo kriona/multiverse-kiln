@@ -6,12 +6,13 @@
  */
 import { sql, type SQL } from 'drizzle-orm';
 import { boolean, check, customType, doublePrecision, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHUNK_SIZE, DARKVISIONS, EMAIL_CODE_PURPOSES, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, PROFILE_LANGUAGES, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_DISABLED_REASON_LENGTH, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, MAX_TRANSLATOR_LANGUAGES, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, type ProfileLanguage } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, DARKVISIONS, EMAIL_CODE_PURPOSES, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, PROFILE_LANGUAGES, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_DISABLED_REASON_LENGTH, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, MAX_TRANSLATOR_LANGUAGES, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, EDITOR_ROLES, type ProfileLanguage, type UniverseEditDetail } from '@multiverse-kiln/shared';
 
 import { SEEN_CHUNK_BYTES } from '../logic/seenCells.js';
 
 export const universeStage = pgEnum('universe_stage', UNIVERSE_STAGES);
 export const universeRole = pgEnum('universe_role', UNIVERSE_ROLES);
+export const editorRole = pgEnum('editor_role', EDITOR_ROLES);
 export const ruleset = pgEnum('ruleset', RULESETS);
 export const passageOfTime = pgEnum('passage_of_time', PASSAGES_OF_TIME);
 export const areaPassageOfTime = pgEnum('area_passage_of_time', AREA_PASSAGES_OF_TIME);
@@ -287,6 +288,37 @@ export const universeEditors = pgTable('universe_editors', {
 	index('universe_editors_player_id_index').on(table.playerId),
 	check('universe_editors_languages_count', sql`cardinality(${table.languages}) <= ${sql.raw(String(MAX_TRANSLATOR_LANGUAGES))}`),
 	check('universe_editors_languages_translator', sql`${table.role}::text = 'translator' OR cardinality(${table.languages}) = 0`)
+]);
+
+/**
+ * A record of each save made in a universe's editor, for its Audit tab: who saved, with which role, how
+ * many changes of each kind the save held, and when. Deleted with the universe, and kept after the
+ * account that saved is deleted, which empties playerId
+ */
+export const universeEdits = pgTable('universe_edits', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	universeId: uuid('universe_id').notNull().references(() => universes.id, { onDelete: 'cascade' }),
+
+	/**
+	 * The player who saved, or null once their account is deleted
+	 */
+	playerId: uuid('player_id').references(() => players.id, { onDelete: 'set null' }),
+
+	/**
+	 * The role they saved with, the site admin role included
+	 */
+	role: editorRole('role').notNull(),
+
+	/**
+	 * What the save changed, thing by thing, with the values it gave each setting it changed, or null for
+	 * a save recorded before they were
+	 */
+	changeDetails: jsonb('change_details').$type<UniverseEditDetail[]>(),
+
+	savedAt: timestamp('saved_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	index('universe_edits_universe_id_saved_at_index').on(table.universeId, table.savedAt),
+	index('universe_edits_player_id_index').on(table.playerId)
 ]);
 
 /**
@@ -1571,16 +1603,15 @@ export const authEvents = pgTable('auth_events', {
 ]);
 
 /**
- * What a server admin did in an admin event: universeEdited is a save in the world editor of a universe
- * they edit with ADMIN_ROLE
+ * What a server admin did in an admin event
  */
-export const ADMIN_EVENT_KINDS = ['adminAdded', 'adminRemoved', 'universeDisabled', 'universeEnabled', 'universeEdited'] as const;
+export const ADMIN_EVENT_KINDS = ['adminAdded', 'adminRemoved', 'universeDisabled', 'universeEnabled'] as const;
 export const adminEventKind = pgEnum('admin_event_kind', ADMIN_EVENT_KINDS);
 
 /**
- * A record of what server admins do: adding and removing admins, disabling and enabling universes, and
- * saving universes they edit as admins. Kept after the accounts and universes it names are deleted, which empties their
- * columns
+ * A record of what server admins do on the admin pages: adding and removing admins, and disabling and
+ * enabling universes. Their saves in the world editor are in universe_edits, with every other save. Kept
+ * after the accounts and universes it names are deleted, which empties their columns
  */
 export const adminEvents = pgTable('admin_events', {
 	id: uuid('id').primaryKey().defaultRandom(),
