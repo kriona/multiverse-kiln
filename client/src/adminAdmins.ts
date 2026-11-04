@@ -61,8 +61,10 @@ class AdminsPage
 			search: (query) => this.api.searchAdminCandidates({ query }),
 			minLength: MIN_PLAYER_SEARCH_LENGTH
 		});
+		// What is typed to search isn't a change, but the player chosen is
 		this.changes = new ChangeTracker({
-			root: this.form
+			root: this.form,
+			state: () => (this.playerSearch.player?.playerId ?? null)
 		});
 
 		this.form.addEventListener('submit', (event) =>

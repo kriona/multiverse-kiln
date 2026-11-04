@@ -5023,6 +5023,14 @@
 		"message": "{name} (@{username})",
 		"source": "{name} (@{username})"
 	},
+	"playerSearch.clear": {
+		"message": "Toss {name} overboard",
+		"source": "Remove {name}"
+	},
+	"playerSearch.cleared": {
+		"message": "{name} tossed overboard",
+		"source": "{name} removed"
+	},
 	"playerSearch.noMatches": {
 		"message": "No sailors answer to that",
 		"source": "No players match"

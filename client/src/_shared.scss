@@ -946,6 +946,15 @@ button.chip-remove
 	}
 }
 
+// After the player chosen in a player search (ui/PlayerSearch.ts), on the field's message line
+button.player-search-clear
+{
+	display: inline-flex;
+	margin-inline-start: 4px;
+	font-size: 14px;
+	vertical-align: middle;
+}
+
 // A search field with a list of choices under it (see ui/ComboboxList.ts)
 .combobox-field
 {

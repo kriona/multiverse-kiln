@@ -1,6 +1,8 @@
 import { parsePlayerSearch, type PlayerMatch } from '@multiverse-kiln/shared';
+import clearIcon from 'virtual:icon/ph:x';
 
 import { t } from '../localization';
+import { announce } from './announcer';
 import { ComboboxList, type ComboboxChoice } from './ComboboxList';
 import { getElement } from './dom';
 import { setFieldError, setFieldSuccess } from './fieldErrors';
@@ -53,7 +55,7 @@ export interface PlayerSearchOptions
  * A field that finds a player by typing their name or username, and offers the players found in a list
  * under it to choose from: what was typed is matched against usernames and names, or usernames only
  * when it starts with @ (parsePlayerSearch()). Choosing one puts their username in the field and their
- * name on its message line. Typing again takes the choice back
+ * name on its message line, with a button that takes the choice back, as typing again does
  */
 export class PlayerSearch
 {
@@ -289,14 +291,66 @@ export class PlayerSearch
 		this.list.close();
 		this.chosen = player;
 		this.field.value = `@${player.username}`;
-		this.field.dispatchEvent(new Event('change', { bubbles: true }));
 		setFieldSuccess(this.field, t({
 			id: 'playerSearch.chosen',
 			defaultMessage: '{name} (@{username})',
-			description: 'Shown under a field that finds a player, such as the one for adding an editor on the editor\'s Editors tab, once one is chosen; {name} is their name and {username} their username'
+			description: 'Shown beside a field that finds a player, such as the one for adding an editor on the editor\'s Editors tab, once one is chosen; {name} is their name and {username} their username'
 		}, {
 			name: player.displayName,
 			username: player.username
+		}));
+		document.getElementById(`${this.field.id}-error`)?.append(this.createClearButton(player));
+		this.field.dispatchEvent(new Event('change', { bubbles: true }));
+	}
+
+	/**
+	 * The button after the player chosen that takes the choice back
+	 *
+	 * @param player The player chosen
+	 * @return The button
+	 */
+	private createClearButton(player: PlayerMatch): HTMLButtonElement
+	{
+		const button = document.createElement('button');
+		const template = document.createElement('template');
+
+		button.type = 'button';
+		button.className = 'chip-remove player-search-clear';
+		button.setAttribute('aria-label', t({
+			id: 'playerSearch.clear',
+			defaultMessage: 'Remove {name}',
+			description: 'Name of the button after the player chosen in a field that finds a player, such as the one for adding an editor on the editor\'s Editors tab, for screen readers: takes the choice back and empties the field; {name} is the player\'s name'
+		}, {
+			name: player.displayName
+		}));
+		template.innerHTML = clearIcon;
+		button.append(template.content);
+		button.addEventListener('click', () =>
+		{
+			this.clear(player);
+		});
+
+		return(button);
+	}
+
+	/**
+	 * Takes the choice back: empties the field and its message line, and puts focus back in the field
+	 *
+	 * @param player The player chosen
+	 */
+	private clear(player: PlayerMatch): void
+	{
+		this.chosen = undefined;
+		this.field.value = '';
+		setFieldError(this.field, undefined);
+		this.field.focus();
+		this.field.dispatchEvent(new Event('change', { bubbles: true }));
+		announce(t({
+			id: 'playerSearch.cleared',
+			defaultMessage: '{name} removed',
+			description: 'Read out by screen readers after the player takes back the player chosen in a field that finds a player, such as the one for adding an editor on the editor\'s Editors tab; {name} is the player\'s name'
+		}, {
+			name: player.displayName
 		}));
 	}
 }

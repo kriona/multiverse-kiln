@@ -131,9 +131,10 @@ export class EditorDialog
 			exclude: (playerId) => (this.edit?.isEditor(playerId) ?? false),
 			minLength: MIN_PLAYER_SEARCH_LENGTH
 		});
+		// What is typed to search isn't a change, but the player chosen is
 		this.changes = new ChangeTracker({
 			root: this.form,
-			state: () => this.languages.values
+			state: () => [this.languages.values, (this.playerSearch.player?.playerId ?? null)]
 		});
 		this.changes.guardDialog(this.dialog);
 
