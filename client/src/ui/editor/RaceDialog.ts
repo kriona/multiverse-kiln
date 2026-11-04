@@ -323,6 +323,8 @@ export class RaceDialog
 		this.edit.apply({
 			name: ((name === defaultName) ? null : name),
 			enabled: this.enabled.checked,
+			// Chosen in the dialog Save opens when disabling the race affects characters (ImpactDialog)
+			keepPlaying: (this.race?.keepPlaying ?? true),
 			startingMoney,
 			startingItems: this.startingItems.value,
 			startingAreaId: this.startingArea.value,

@@ -3,6 +3,7 @@ import { RULESET_NAMES, SessionServerMessageType, type AccountPayload, type Univ
 
 import { t } from './localization';
 import { CharacterApi } from './network/characterApi';
+import { GroupApi } from './network/groupApi';
 import { createClient, getUniverseDetails, type ServerConnection } from './network/serverConnection';
 import { startPage } from './pageStart';
 import { gamePageUrl, HOME_PAGE_URL, readUniverseKey, replacePagePath, universePageUrl } from './pages';
@@ -55,7 +56,7 @@ async function followPlayer(universe: UniverseDetails, connection: Promise<Serve
 	}
 
 	const api = new CharacterApi(server.client);
-	const sheet = new CharacterSheetDialog(api, () =>
+	const sheet = new CharacterSheetDialog(api, new GroupApi(server.client), () =>
 	{
 		void characters.follow(true);
 	});

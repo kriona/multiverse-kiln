@@ -104,6 +104,16 @@ export class UniverseCharacters
 				});
 				button.append(' ', leaving);
 			}
+			else if (character.barredBy !== null)
+			{
+				const barred = document.createElement('span');
+
+				barred.className = 'universe-character-leaving';
+				barred.textContent = t(characterMessages.barred, {
+					bar: character.barredBy
+				});
+				button.append(' ', barred);
+			}
 			button.addEventListener('click', () =>
 			{
 				void this.sheet.open(this.universeId, character.id, character.name);

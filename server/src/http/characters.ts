@@ -9,7 +9,7 @@
 import { randomInt } from 'crypto';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { addMoney, canPlayUniverse, canViewUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, isReservedName, isSf1eClassRules, isSf1eRaceRules, MAX_CHARACTER_NAME_LENGTH, MAX_CHARACTERS_PER_UNIVERSE, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditableUniverseDetails, type EditorClass, type EditorRace, type NewCharacterOptions, type NewCharacterRequest, type OptionName, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
+import { addMoney, barredOptionsOf, characterBar, canPlayUniverse, canViewUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, isReservedName, isSf1eClassRules, isSf1eRaceRules, MAX_CHARACTER_NAME_LENGTH, MAX_CHARACTERS_PER_UNIVERSE, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditableUniverseDetails, type EditorClass, type EditorRace, type NewCharacterOptions, type NewCharacterRequest, type OptionName, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
 
 import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findLastPlayedCharacterId, findOwnCharacter, findPf1eAbilityRoll, keepPf1eAbilityRoll, listCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion } from '../db/characterRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
@@ -240,12 +240,13 @@ async function listRoute(request: Request, response: Response): Promise<void>
 {
 	const universe = universeOf(request);
 	const playerId = playerIdOf(request);
-	const [characters, lastPlayedId, races, classes] = await Promise.all([
+	const [characters, races, classes] = await Promise.all([
 		listCharacters(playerId, universe.id),
-		findLastPlayedCharacterId(playerId, universe.id),
 		loadEditorRaces(universe.id, universe.ruleset),
 		loadEditorClasses(universe.id, universe.ruleset)
 	]);
+	const barred = barredOptionsOf(races, classes);
+	const lastPlayedId = await findLastPlayedCharacterId(playerId, universe.id, barred);
 	const raceNames = new Map(races.map(({ id, key, name }) => [id, { key, name }]));
 	const classNames = new Map(classes.map(({ id, key, name }) => [id, { key, name }]));
 	const unnamed: OptionName = { key: null, name: null };
@@ -257,6 +258,7 @@ async function listRoute(request: Request, response: Response): Promise<void>
 			race: (raceNames.get(raceId) ?? unnamed),
 			characterClass: (classNames.get(classId) ?? unnamed),
 			deleteAt: (deleteAt?.toISOString() ?? null),
+			barredBy: characterBar({ raceId, classId }, barred),
 			groupId
 		})),
 		lastPlayedId: (lastPlayedId ?? null)
@@ -318,7 +320,13 @@ async function sheetRoute(request: Request, response: Response): Promise<void>
 		},
 		deleteAt: (character.deleteAt?.toISOString() ?? null),
 		deletionDays: siteSettings.characterDeletionDays,
-		inGroup: (membership !== undefined),
+		group: ((membership === undefined)
+			? null
+			: {
+				groupId: membership.groupId,
+				isAnchor: membership.isAnchor
+			}),
+		barredBy: characterBar(character, barredOptionsOf(races, classes)),
 		size: (race?.rules.size ?? NEW_RACE_RULES[universe.ruleset].size),
 		darkvision: (race?.rules.darkvision ?? NEW_RACE_RULES[universe.ruleset].darkvision),
 		lightSensitivity: (race?.rules.lightSensitivity ?? NEW_RACE_RULES[universe.ruleset].lightSensitivity),

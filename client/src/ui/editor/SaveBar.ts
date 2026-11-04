@@ -1,3 +1,5 @@
+import type { Ruleset } from '@multiverse-kiln/shared';
+
 import { t } from '../../localization';
 import { describeEditorError, EditorApiError, type EditorApi } from '../../network/editorApi';
 import { changeMessages } from '../changeTracker';
@@ -5,6 +7,7 @@ import { getElement } from '../dom';
 import { formMessages } from '../formMessages';
 import { showToast } from '../toast';
 import { EditorSave, isSaveRefused, SavedIds } from './editorSave';
+import { ImpactDialog, mayAffectPlayers } from './ImpactDialog';
 import type { ChangeSource } from './stagedChanges';
 
 /**
@@ -106,6 +109,11 @@ export class SaveBar
 	private readonly saveButton = getElement('editor-save', HTMLButtonElement);
 
 	/**
+	 * Asks what happens to characters and groups a save affects
+	 */
+	private readonly impactDialog = new ImpactDialog();
+
+	/**
 	 * The tab showing, or undefined while none that saves is
 	 */
 	private tab: SavableTab | undefined;
@@ -134,11 +142,11 @@ export class SaveBar
 
 	/**
 	 * @param api The editor's API
-	 * @param universeId The ID of the universe being edited, or undefined while none has loaded
+	 * @param universe The universe being edited, or undefined while none has loaded
 	 * @param showTab Shows a tab, whose change the server refused or whose field stopped the save
 	 * @param afterSave Called once a save is saved and every tab in it has taken its changes as saved
 	 */
-	constructor(private readonly api: EditorApi, private readonly universeId: () => string | undefined, private readonly showTab: (tab: SavableTab) => void, private readonly afterSave: () => void)
+	constructor(private readonly api: EditorApi, private readonly universe: () => { id: string; ruleset: Ruleset } | undefined, private readonly showTab: (tab: SavableTab) => void, private readonly afterSave: () => void)
 	{
 		this.saveButton.addEventListener('click', () =>
 		{
@@ -209,13 +217,15 @@ export class SaveBar
 	}
 
 	/**
-	 * Saves every tab's changes in one request, stopping before it at a field with a problem
+	 * Saves every tab's changes in one request, stopping before it at a field with a problem. Changes that
+	 * disable or limit something players are using first ask what should happen to them, and saving them
+	 * waits for the answer
 	 */
 	private async save(): Promise<void>
 	{
-		const universeId = this.universeId();
+		const universe = this.universe();
 
-		if ((universeId === undefined) || this.saving || this.locked || !this.hasUnsavedChanges())
+		if (!universe || this.saving || this.locked || !this.hasUnsavedChanges())
 		{
 			return;
 		}
@@ -245,7 +255,10 @@ export class SaveBar
 
 		try
 		{
-			ids = new SavedIds(await this.api.saveChanges(universeId, save.changes()));
+			if (await this.askAboutImpacts(universe, save))
+			{
+				ids = new SavedIds(await this.api.saveChanges(universe.id, save.changes()));
+			}
 		}
 		catch (error)
 		{
@@ -277,6 +290,45 @@ export class SaveBar
 		}
 
 		this.update();
+	}
+
+	/**
+	 * Asks what should happen to the characters and groups a save affects, when it disables or limits
+	 * something they are using, and puts the answers in its changes
+	 *
+	 * @param universe The universe being saved
+	 * @param save The save
+	 * @return False when the player cancels, so nothing is saved
+	 */
+	private async askAboutImpacts(universe: { id: string; ruleset: Ruleset }, save: EditorSave): Promise<boolean>
+	{
+		const changes = save.changes();
+
+		if (!changes.some(mayAffectPlayers))
+		{
+			return(true);
+		}
+
+		const impacts = await this.api.findImpacts(universe.id, changes);
+
+		if (impacts.length === 0)
+		{
+			return(true);
+		}
+
+		const answered = await this.impactDialog.ask(impacts, changes, universe.ruleset);
+
+		if (!answered)
+		{
+			return(false);
+		}
+
+		for (const [index, change] of answered)
+		{
+			save.replace(index, change);
+		}
+
+		return(true);
 	}
 
 	/**

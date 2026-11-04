@@ -64,6 +64,7 @@ export async function loadEditorClasses(universeId: string, ruleset: Ruleset, ex
 			key: classes.key,
 			name: classes.name,
 			enabled: classes.enabled,
+			keepPlaying: classes.keepPlaying,
 			startingPlatinum: classes.startingPlatinum,
 			startingGold: classes.startingGold,
 			startingSilver: classes.startingSilver,
@@ -102,6 +103,7 @@ export async function loadEditorClasses(universeId: string, ruleset: Ruleset, ex
 				key: (custom ? null : row.key),
 				name: (custom ? row.name : (copy?.name ?? null)),
 				enabled: settings.enabled,
+				keepPlaying: settings.keepPlaying,
 				startingMoney: fromCoinColumns(settings),
 				startingItems: (startingItems.get(settings.id) ?? []),
 				startingAreaId: settings.startingAreaId,
@@ -113,6 +115,32 @@ export async function loadEditorClasses(universeId: string, ruleset: Ruleset, ex
 				edited: (copy !== undefined)
 			});
 		}));
+}
+
+/**
+ * The classes whose characters can't play in a universe: those it has disabled without letting the
+ * characters already of them keep playing
+ *
+ * @param universeId The universe's ID
+ * @param executor The database, or a transaction
+ * @return The classes, by the IDs characters hold (a default class's own ID for an edited copy)
+ */
+export async function listBarredClassIds(universeId: string, executor: Executor = db): Promise<Set<number>>
+{
+	// Default classes are always enabled, so only the universe's own rows can bar anyone
+	const rows = await executor
+		.select({
+			id: classes.id,
+			overridesClassId: classes.overridesClassId
+		})
+		.from(classes)
+		.where(and(
+			eq(classes.universeId, universeId),
+			eq(classes.enabled, false),
+			eq(classes.keepPlaying, false)
+		));
+
+	return(new Set(rows.map((row) => (row.overridesClassId ?? row.id))));
 }
 
 /**
@@ -438,13 +466,14 @@ export async function isClassStartingItem(universeId: string, itemId: number, ex
  * @param settings The settings
  * @return The columns' values
  */
-function classColumns(settings: ClassSettings): Pick<typeof classes.$inferInsert, 'name' | 'enabled' | 'startingPlatinum' | 'startingGold' | 'startingSilver' | 'startingCopper' | 'startingCredits' | 'startingAreaId' | 'startingColumn' | 'startingRow'>
+function classColumns(settings: ClassSettings): Pick<typeof classes.$inferInsert, 'name' | 'enabled' | 'keepPlaying' | 'startingPlatinum' | 'startingGold' | 'startingSilver' | 'startingCopper' | 'startingCredits' | 'startingAreaId' | 'startingColumn' | 'startingRow'>
 {
 	const hasArea = (settings.startingAreaId !== null);
 
 	return({
 		name: settings.name,
 		enabled: settings.enabled,
+		keepPlaying: settings.keepPlaying,
 		...toCoinColumns(settings.startingMoney),
 		startingAreaId: settings.startingAreaId,
 		startingColumn: (hasArea ? settings.startingColumn : 0),

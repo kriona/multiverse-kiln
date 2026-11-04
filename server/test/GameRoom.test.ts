@@ -3,9 +3,9 @@ import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { cellIndexInChunk, DARKVISION_SQUARES, DEFAULT_OUTDOOR_WALK_SECONDS, DEFAULT_TILE_CELL,GAME_ROOM_NAME, GameMessageType, GameServerMessageType, GameState, GRID_CELL_SIZE, GROUP_START_SECONDS, MessageType, NoticeReason, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, UNSEEN_CELL, type AreaPayload, type CellsSeenPayload, type GameJoinOptions, type NoticePayload, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, DARKVISION_SQUARES, DEFAULT_OUTDOOR_WALK_SECONDS, DEFAULT_TILE_CELL,GAME_ROOM_NAME, GameMessageType, GameServerMessageType, GameState, GRID_CELL_SIZE, GROUP_START_SECONDS, MessageType, NOTHING_BARRED, NoticeReason, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, UNSEEN_CELL, type AreaPayload, type CellsSeenPayload, type GameJoinOptions, type NoticePayload, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
-import { scheduleCharacterDeletion } from '../src/db/characterRepo.js';
+import { createCharacter, scheduleCharacterDeletion } from '../src/db/characterRepo.js';
 import { pool } from '../src/db/client.js';
 import { addGroupMember, findGroup, leaveGroup, listGroupMembers } from '../src/db/groupRepo.js';
 import { createAreaLink, updateAreaSettings } from '../src/db/areaRepo.js';
@@ -20,7 +20,7 @@ import { groupChanges } from '../src/players/groupChanges.js';
 import { universeAccessChanges } from '../src/players/universeAccess.js';
 import type { GameRoom } from '../src/rooms/GameRoom.js';
 import { areaChanges } from '../src/world/areaChanges.js';
-import { addCharacter, addGroup, addPlayableUniverse, defaultRaceId, type PlayableUniverse } from './db/fixtures.js';
+import { addCharacter, addGroup, addPlayableUniverse, defaultClassId, defaultRaceId, dwarfFighter, type PlayableUniverse } from './db/fixtures.js';
 import { addPlayer, TestBrowsers } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
 import { waitUntil } from './waitUntil.js';
@@ -52,6 +52,7 @@ interface Member
 	characterId: string;
 	name: string;
 	raceId: number;
+	classId: number;
 }
 
 /**
@@ -90,7 +91,7 @@ async function addPlayerWithCharacter(name: string): Promise<Member>
 	const player = await addPlayer(`Player ${randomUUID().slice(0, 8)}`);
 	const characterId = await addCharacter(player.id, universe.universeId, name);
 
-	return({ playerId: player.id, characterId, name, raceId: await defaultRaceId('dwarf') });
+	return({ playerId: player.id, characterId, name, raceId: await defaultRaceId('dwarf'), classId: await defaultClassId('fighter') });
 }
 
 /**
@@ -119,7 +120,7 @@ async function joinGroup(member: Member): Promise<void>
 async function addSecondCharacter(member: Member, name: string): Promise<Member>
 {
 	const characterId = await addCharacter(member.playerId, universe.universeId, name);
-	const second = { playerId: member.playerId, characterId, name, raceId: member.raceId };
+	const second = { playerId: member.playerId, characterId, name, raceId: member.raceId, classId: member.classId };
 
 	await joinGroup(second);
 
@@ -1143,6 +1144,63 @@ describe('GameRoom', () =>
 			await room.waitForNextTimestep();
 
 			assert.ok(client.connection.isOpen);
+		});
+	});
+
+	describe('disabling what members use', () =>
+	{
+		/**
+		 * Adds a player with an elf fighter to the group, so a dwarf being barred leaves someone in the room
+		 *
+		 * @return The member
+		 */
+		async function addElf(): Promise<Member>
+		{
+			const player = await addPlayer(`Elf ${randomUUID().slice(0, 8)}`);
+			const raceId = await defaultRaceId('elf');
+			const character = { ...(await dwarfFighter(player.id, universe.universeId, 'Elrond')), raceId };
+			const characterId = await inTransaction((transaction) => createCharacter(character, transaction));
+			const member: Member = { playerId: player.id, characterId, name: 'Elrond', raceId, classId: character.classId };
+
+			await joinGroup(member);
+
+			return(member);
+		}
+
+		it('takes a member whose race is barred off the map, saving where they were, and lets them back once allowed', async () =>
+		{
+			const room = await createGameRoom();
+			const { client } = await joinFromBrowser(room, browserIdA);
+			const member = browserMembers.get(browserIdA) as Member;
+			const elf = await joinAs(room, browserIdB, await addElf());
+			const left = waitForLeave(client);
+
+			universeAccessChanges.publishBarred({ universeId: universe.universeId, barred: { raceIds: new Set([member.raceId]), classIds: new Set() } });
+
+			assert.strictEqual(await left, ServerCloseCode.CharacterBarred);
+			await waitUntil(() => !room.state.players.has(member.characterId));
+			assert.ok(elf.client.connection.isOpen);
+			await waitUntil(async () => ((await listGroupMembers(groupId)).find((each) => (each.characterId === member.characterId))?.position !== null));
+			await assert.rejects(connectFromBrowser(room, browserIdA, member.characterId));
+
+			universeAccessChanges.publishBarred({ universeId: universe.universeId, barred: NOTHING_BARRED });
+
+			const back = await joinAs(room, browserIdA, member);
+
+			assert.ok(back.client.connection.isOpen);
+		});
+
+		it('sends the members in a disabled area where they are sent, or to the group\'s starting area', async () =>
+		{
+			const room = await createGameRoom();
+			const { client } = await joinFromBrowser(room, browserIdA);
+			const characterId = playerIdOf(room, client);
+
+			areaChanges.publish({ kind: 'evacuated', areaId: universe.fieldAreaId, destination: { areaId: universe.houseAreaId, column: 2, row: 2 } });
+			await waitUntil(() => (room.getAreaId(characterId) === universe.houseAreaId));
+
+			areaChanges.publish({ kind: 'evacuated', areaId: universe.houseAreaId, destination: null });
+			await waitUntil(() => (room.getAreaId(characterId) === universe.fieldAreaId));
 		});
 	});
 

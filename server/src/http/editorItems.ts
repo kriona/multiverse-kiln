@@ -4,7 +4,7 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { defineMessages, isItemType, MAX_CUSTOM_ITEMS, type ItemSettings, type NewRef, type NumberRef } from '@multiverse-kiln/shared';
+import { defineMessages, isItemType, MAX_CUSTOM_ITEMS, type ItemDisabling, type ItemSettings, type NewRef, type NumberRef } from '@multiverse-kiln/shared';
 
 import { isCarriedItem } from '../db/characterRepo.js';
 import { isClassStartingItem } from '../db/classRepo.js';
@@ -105,13 +105,31 @@ export async function createItemChange(context: ChangeContext, ref: NewRef, sett
 }
 
 /**
- * Changes one of the universe's items, or stores its edited copy of a default item
+ * Whether an item is enabled, as the changes before this one left it
+ *
+ * @param context The save
+ * @param itemId The item, which exists
+ * @return True when it is
+ */
+async function isItemEnabled(context: ChangeContext, itemId: number): Promise<boolean>
+{
+	const { universe, transaction } = context;
+	const [item] = (await listEditorItems(universe.id, universe.ruleset, { ids: [itemId] }, transaction)).items;
+
+	return(item?.enabled ?? true);
+}
+
+/**
+ * Changes one of the universe's items, or stores its edited copy of a default item. Once the save has
+ * saved every change, an item it disables with remove is taken from the characters carrying it, and one
+ * it enables gives back what was taken (see editorDisablings.ts)
  *
  * @param context The save
  * @param id The item
  * @param settings Its new settings
+ * @param whenDisabled What disabling it does to the characters carrying it
  */
-export async function saveItemChange(context: ChangeContext, id: NumberRef, settings: ItemSettings): Promise<void>
+export async function saveItemChange(context: ChangeContext, id: NumberRef, settings: ItemSettings, whenDisabled: ItemDisabling): Promise<void>
 {
 	const { universe, transaction } = context;
 	const itemId = resolveNumberRef(context, id);
@@ -127,6 +145,8 @@ export async function saveItemChange(context: ChangeContext, id: NumberRef, sett
 	{
 		refuse(400, messages.unknownItemType);
 	}
+
+	context.disablings.item(itemId, await isItemEnabled(context, itemId), (settings.enabled ? undefined : whenDisabled));
 
 	if (kind === 'default')
 	{
@@ -160,8 +180,10 @@ export async function removeItemChange(context: ChangeContext, id: NumberRef): P
 		refuse(404, messages.noSuchItem);
 	}
 
+	// Default items are enabled, so restoring one gives back what was taken while it was disabled
 	if (kind === 'default')
 	{
+		context.disablings.item(itemId, await isItemEnabled(context, itemId));
 		await restoreDefaultItem(universe.id, itemId, transaction);
 		return;
 	}

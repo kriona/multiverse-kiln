@@ -1,7 +1,8 @@
 import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
-import { canPlayUniverse, LobbyMember, LobbyMessageType, LobbyServerMessageType, LobbyState, MessageType, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, ServerCloseCode, type ChatHistoryPayload, type ChatMessage, type NoticePayload, type PlayingAsPayload, type Sight } from '@multiverse-kiln/shared';
+import { canPlayUniverse, characterBar, LobbyMember, LobbyMessageType, LobbyServerMessageType, LobbyState, MessageType, NOTHING_BARRED, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, ServerCloseCode, type BarredOptions, type ChatHistoryPayload, type ChatMessage, type NoticePayload, type PlayingAsPayload, type Sight } from '@multiverse-kiln/shared';
 
 import { resolveSession } from '../auth/sessions.js';
+import { loadBarredOptions } from '../db/barredOptions.js';
 import { listPlayableCharacters, markCharacterPlayed, type PlayableCharacter } from '../db/characterRepo.js';
 import { loadRaceSight } from '../db/raceRepo.js';
 import { findUniverse } from '../db/universeRepo.js';
@@ -9,8 +10,9 @@ import { loadChunksAt, loadArea } from '../db/areaRepo.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { characterChanges, type CharacterChange } from '../players/characterChanges.js';
 import { groupChanges, type GroupChange } from '../players/groupChanges.js';
-import { universeAccessChanges, type StageChange } from '../players/universeAccess.js';
+import { universeAccessChanges, type BarredChange, type StageChange } from '../players/universeAccess.js';
 import { areaChanges } from '../world/areaChanges.js';
+import { areaOccupants } from '../world/areaOccupants.js';
 import { InvalidMessages } from './invalidMessages.js';
 import { mayPlayUniverse } from './universePlay.js';
 import { chatPayload, chooseCharacterPayload, describeInvalidPayload, movePayload, roomOptions } from './payloads.js';
@@ -71,9 +73,10 @@ const CHAT_RATE_WINDOW_MS = 5000;
  * in the universe's lobby area and can walk through its links into other areas (see AreaPlayers)
  *
  * Each player plays one of their characters in the universe who isn't in a group (those play in their
- * group's room), and can switch between them. A player with no such character is a ghost: nobody else
- * sees them, they hold no cell, and they can read the chat but not send to it. Groups are made through
- * the group routes (http/groups.ts)
+ * group's room), and can switch between them, passing over those whose race or class bars them
+ * (characterBar()). A player with no such character is a ghost: nobody else sees them, they hold no
+ * cell, and they can read the chat but not send to it. Groups are made through the group routes
+ * (http/groups.ts)
  */
 export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 {
@@ -102,6 +105,12 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	 */
 	private raceSight = new Map<number, Sight>();
 
+	/**
+	 * The races and classes whose characters can't play (see characterBar()), loaded in onCreate and
+	 * followed as saves change them
+	 */
+	private barred: BarredOptions = NOTHING_BARRED;
+
 	private universeId!: string;
 
 	/**
@@ -120,6 +129,10 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	private stopFollowingAccess?: () => void;
 
 	private stopFollowingStage?: () => void;
+
+	private stopFollowingBarred?: () => void;
+
+	private stopListingOccupants?: () => void;
 
 	/**
 	 * The most recent chat messages, oldest first (server-only, not synced)
@@ -208,7 +221,11 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 			const { playerId } = identityOf(client);
 			const character = this.characters.get(playerId)?.find((each) => (each.id === result.data.characterId));
 
-			if (character && (this.playing.get(playerId)?.id !== character.id))
+			if (character && !this.isChoosable(character))
+			{
+				this.sendNotice(client, NoticeReason.CharacterBarred);
+			}
+			else if (character && (this.playing.get(playerId)?.id !== character.id))
 			{
 				this.play(playerId, character);
 			}
@@ -236,6 +253,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		this.universeId = universeId;
 		this.lobbyAreaId = lobbyArea.loaded.area.id;
 		this.raceSight = await loadRaceSight(universeId, lobbyArea.loaded.ruleset);
+		this.barred = await loadBarredOptions(universeId);
 		this.setTimestep((deltaTime) => this.areaPlayers.update(deltaTime / 1000), 1000 / SIMULATION_TICK_RATE);
 		this.clock.setInterval(() => this.areaPlayers.refreshChunks(), CHUNK_REFRESH_INTERVAL_MS);
 
@@ -251,10 +269,32 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 				return;
 			}
 
+			// Players in the lobby start in its area, at its center
+			if (change.kind === 'evacuated')
+			{
+				this.areaPlayers.evacuate(change.areaId, (change.destination ?? { areaId: this.lobbyAreaId, column: 0, row: 0 }));
+				return;
+			}
+
 			this.areaPlayers.applyChange(change).catch((error: unknown) =>
 			{
 				console.error('Could not apply a world change to the lobby of universe', this.universeId, error);
 			});
+		});
+
+		this.stopListingOccupants = areaOccupants.register(universeId, () => [...this.playing].flatMap(([playerId, character]) =>
+		{
+			const areaId = this.areaPlayers.getAreaId(playerId);
+
+			return(((areaId === undefined) ? [] : [{ characterId: character.id, areaId }]));
+		}));
+
+		this.stopFollowingBarred = universeAccessChanges.onBarredChanged((change) =>
+		{
+			if (change.universeId === this.universeId)
+			{
+				this.applyBarredChange(change);
+			}
 		});
 
 		this.stopFollowingCharacters = characterChanges.onChange((change) =>
@@ -291,7 +331,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 
 	/**
 	 * Stops following changes to the world, to players' characters, to groups, to sessions, to who may
-	 * play and to the universe's stage
+	 * play, to the universe's stage and to what bars characters, and stops listing its characters' areas
 	 */
 	onDispose(): void
 	{
@@ -301,6 +341,8 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		this.stopFollowingSessions?.();
 		this.stopFollowingAccess?.();
 		this.stopFollowingStage?.();
+		this.stopFollowingBarred?.();
+		this.stopListingOccupants?.();
 	}
 
 	/**
@@ -350,7 +392,8 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		this.characters.set(playerId, characters);
 
 		const isNewPlayer = !this.state.players.has(playerId);
-		const character = (isNewPlayer ? characters.at(0) : undefined);
+		const choosable = characters.find((each) => this.isChoosable(each));
+		const character = (isNewPlayer ? choosable : undefined);
 
 		this.areaPlayers.join(client, playerId, this.appearanceOf(character),this.areas.get(this.lobbyAreaId) ?? lobbyArea);
 
@@ -359,9 +402,9 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 			this.playing.set(playerId, character);
 			this.state.members.set(playerId, new LobbyMember({ name: character.name }));
 		}
-		else if (!isNewPlayer && !this.playing.has(playerId) && (characters.length > 0))
+		else if (!isNewPlayer && !this.playing.has(playerId) && choosable)
 		{
-			this.play(playerId, characters[0]);
+			this.play(playerId, choosable);
 		}
 
 		const playingAs: PlayingAsPayload = { characterId: this.playing.get(playerId)?.id ?? null };
@@ -518,7 +561,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		const affected = ((change.kind === 'disbanded') ? change.members : [change.character]);
 		const players = new Set<string>();
 
-		for (const { characterId, playerId, name, raceId, playable } of affected)
+		for (const { characterId, playerId, name, raceId, classId, playable } of affected)
 		{
 			if (!this.characters.has(playerId))
 			{
@@ -531,7 +574,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 			}
 			else if (playable)
 			{
-				this.offer(playerId, { id: characterId, name, raceId });
+				this.offer(playerId, { id: characterId, name, raceId, classId });
 			}
 
 			players.add(playerId);
@@ -556,12 +599,21 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 
 		this.characters.set(playerId, remaining);
 
-		if (this.playing.get(playerId)?.id !== characterId)
+		if (this.playing.get(playerId)?.id === characterId)
 		{
-			return;
+			this.playNext(playerId);
 		}
+	}
 
-		const next = remaining.at(0);
+	/**
+	 * Makes a player in the room play the character they played or made most recently who can be played
+	 * here, or a ghost when none can
+	 *
+	 * @param playerId The player's ID
+	 */
+	private playNext(playerId: string): void
+	{
+		const next = (this.characters.get(playerId) ?? []).find((character) => this.isChoosable(character));
 
 		if (next)
 		{
@@ -575,7 +627,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 
 	/**
 	 * Lets a player in the room play one of their characters here, playing them immediately if the
-	 * player is a ghost
+	 * player is a ghost and the character's race and class don't bar them
 	 *
 	 * @param playerId The player's ID
 	 * @param character The character
@@ -589,9 +641,56 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 			this.characters.set(playerId, [character, ...characters]);
 		}
 
-		if (!this.playing.has(playerId))
+		if (!this.playing.has(playerId) && this.isChoosable(character))
 		{
 			this.play(playerId, character);
+		}
+	}
+
+	/**
+	 * Whether a character's race and class let them play
+	 *
+	 * @param character The character
+	 * @return True when nothing bars them
+	 */
+	private isChoosable(character: PlayableCharacter): boolean
+	{
+		return(characterBar(character, this.barred) === null);
+	}
+
+	/**
+	 * Follows a change to the races and classes barring their characters: a player playing a character
+	 * it bars switches to another, or becomes a ghost, and their windows are told why; a ghost plays a
+	 * character it lets play again. Every player in the room has their windows list their characters
+	 * again, which shows who is barred
+	 *
+	 * @param change What is barred now
+	 */
+	private applyBarredChange(change: BarredChange): void
+	{
+		this.barred = change.barred;
+
+		for (const playerId of this.characters.keys())
+		{
+			const playing = this.playing.get(playerId);
+
+			if (playing && !this.isChoosable(playing))
+			{
+				const notice: NoticePayload = { reason: NoticeReason.CharacterBarred };
+
+				this.playNext(playerId);
+
+				for (const client of this.areaPlayers.getClients(playerId))
+				{
+					client.send(LobbyServerMessageType.Notice, notice);
+				}
+			}
+			else if (!playing)
+			{
+				this.playNext(playerId);
+			}
+
+			this.sendCharactersChanged(playerId);
 		}
 	}
 

@@ -164,7 +164,7 @@ The sheet's Delete button asks twice. "Delete Character" asks "Do you want to de
 - **Last Rites (delete in 7 days)** deletes them after the days the [admin](#admin) setting gives (7 by default), and isn't offered when it is 0. Until then they are listed, marked with the day they go, and count toward the 20 characters a universe allows, but can't be played. Their sheet says when they go and has a Restore button. A player playing them switches to their most recent other character, or becomes a ghost; restoring a character while a ghost plays them. A character already given their last rites can still be cremated
 - **I've Made A Terrible Mistake** keeps the character, and is the button focused
 
-A character in a group can't be deleted either way: their sheet says they have to leave the group first, in place of the Delete button, and the server refuses too.
+A character in a group can't be deleted either way: their sheet has no Delete button, and the server refuses too. A character in a group who can't play because their race or class is disabled (see [Disabling things players are using](#disabling-things-players-are-using)) can't reach the group's Leave group button, so their sheet offers it instead, asking first like the group's (Disband Group for the anchor being).
 
 The server deletes characters whose days are over once an hour, and hides them until it does.
 
@@ -333,6 +333,14 @@ Disabling or limiting something that players are already using warns the editor 
 - an item characters have: "allow them to continue to use it, prevent new copies of the item from being made" or "remove it from characters, it will be re-added when the item is re-enabled"
 - lowering the group size below a group's current size: "allow those groups to continue to play, only limit the size for new groups", "disband larger groups" or "remove X number of group members, starting with those who joined most recently"
 
+Save asks the server first (`POST /:universeId/changes/impact`) what the changes would do, compared with the universe as it is saved. Only a change that disables something saved as enabled, or lowers the group size, warns, and only when characters are using it: characters (not past their last rites) of the race or class, characters carrying the item, characters in the area (playing there, from the rooms, or saved there by their group), groups with more members than the new size. One dialog lists every warning with its choices, and Save in it sends the save with the choices; Cancel aborts. Each choice travels with its change, and the server applies it in the save's transaction, then tells the rooms. A save is judged by how it leaves each thing, not by each change on its way: the editor keeps every edit in order, so one save can disable something, enable it again and disable it once more. Something the save leaves enabled warns about nothing and affects nobody, and something disabled more than once warns once, at its last change, whose choice is the one used (`server/src/http/editorDisablings.ts`). A change sent without a choice (such as one that affected nobody when the editor asked) takes the gentlest: keep playing, keep the item, keep the groups, and back to the start area.
+
+How each choice works:
+- races and classes store whether their characters keep playing while disabled (`keepPlaying`), chosen only in Save's dialog; the race and class editors keep the stored value. A character whose race or class bars them is listed with why on the lobby's and the universe page's lists and the invite screen, and can't be chosen in the lobby, be played in a group, make a group or join one. One in a group can leave it from their sheet. Players playing one are switched in the lobby to their most recent character who can play (or become ghosts), and taken off the group's map, where they were saved; enabling the race or class, or letting its characters play, lets them back. Enter Universe passes over them
+- the parent area is the nearest enabled area holding the disabled one. Characters arrive on the cell of a link there leading back in (to the disabled area or one between them), or at its center when there is none, on the nearest free cell. An area inside no enabled area offers only the start area. The start area is the lobby's area in the lobby, and the group's starting area (the anchor being's) in a group. The lobby's own area never warns: its players have nowhere else to start. Group members not on the map are moved too, in the database and in an open group room
+- a removed item is hidden on each character rather than deleted, keeping how many they had; enabling the item again, or restoring a default item, gives it back. A hidden item still counts as carried, so the item can't be deleted
+- disbanding a group or taking members out works as the anchor being or the members leaving: they go back to the lobby, told the group size was lowered. The anchor being is never taken out
+
 Changing the stat rolling method doesn't change existing characters.
 
 ### Tab: Editors
@@ -465,6 +473,7 @@ You can add your own races, but any unique abilities of a race must be coded by 
 
 You can edit each race:
 - Enabled? Checked by default. There must be at least 1 enabled race in order to save changes
+	- disabling a race characters are asks on Save whether they keep playing (see [disabling things players are using](#disabling-things-players-are-using))
 - Additional starting equipment, lets you [select items](#selection-item)
 - Additional starting [money](#field-money)
 - Starting [area](#selection-area), lets you override
@@ -514,6 +523,7 @@ You can add your own classes, but any unique abilities of a race must be coded b
 
 You can edit each class:
 - Enabled? Checked by default. There must be at least 1 enabled class in order to save changes
+	- disabling a class characters are asks on Save whether they keep playing, as for races
 - Add starting equipment, note it is in addition to starting + racial equipment, lets you [select items](#selection-item)
 - Add starting [money](#field-money), note it is in addition to starting + racial money
 - Edit starting area button. If clicked:
@@ -730,6 +740,7 @@ Lets you edit details about the area
 - enabled?
 	- For new areas, if the universe stage is `in the beginning`, default checked, otherwise default unchecked.
 	- if any parent area is not enabled, show a message
+	- nobody can go into a disabled area, so players aren't told about links leading to one: the map shows no "Press E to go through" on them. Enabling or disabling an area sends the areas with links into it to their players again
 - parent area. Parent areas mostly give areas a structure; a child area inherits only its passage of time
 - indoors / outdoors
 	- indoors shows "light level": `lit` (the default) is as light as full daylight at any time of day, and `dark` as dark as night. The map is drawn that light and vision follows it (see [vision](#vision)). Outdoor areas follow the time of day; the setting is kept while an area is outdoors but has no effect

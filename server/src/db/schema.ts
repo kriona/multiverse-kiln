@@ -522,6 +522,12 @@ export const races = pgTable('races', {
 	enabled: boolean('enabled').notNull().default(true),
 
 	/**
+	 * While the race is disabled, whether characters already of it may keep playing; when false they
+	 * can't play until it is enabled again
+	 */
+	keepPlaying: boolean('keep_playing').notNull().default(true),
+
+	/**
 	 * Coins the race's characters get on top of the universe's starting money
 	 */
 	startingPlatinum: integer('starting_platinum').notNull().default(0),
@@ -668,6 +674,11 @@ export const classes = pgTable('classes', {
 	name: text('name'),
 
 	enabled: boolean('enabled').notNull().default(true),
+
+	/**
+	 * While the class is disabled, whether characters already of it may keep playing, as for races
+	 */
+	keepPlaying: boolean('keep_playing').notNull().default(true),
 
 	/**
 	 * Coins the class's characters get on top of the universe's and their race's starting money
@@ -999,7 +1010,14 @@ export const sf1eCharacters = pgTable('sf1e_characters', {
 export const characterItems = pgTable('character_items', {
 	characterId: uuid('character_id').notNull().references(() => characters.id, { onDelete: 'cascade' }),
 	itemId: integer('item_id').notNull().references(() => items.id),
-	quantity: integer('quantity').notNull()
+	quantity: integer('quantity').notNull(),
+
+	/**
+	 * Set while the item is disabled and was taken from characters (ItemDisabling remove): the character
+	 * doesn't carry it until the item is enabled again, which clears it. A hidden item still counts as
+	 * carried for deleting the item
+	 */
+	hidden: boolean('hidden').notNull().default(false)
 }, (table) => [
 	primaryKey({ columns: [table.characterId, table.itemId] }),
 	index('character_items_item_id_index').on(table.itemId),

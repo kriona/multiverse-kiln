@@ -153,6 +153,11 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		defaultMessage: 'Enabled',
 		description: 'Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs\' filters for it; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
+	keepPlaying: {
+		id: 'editor.option.keepPlaying',
+		defaultMessage: 'Existing characters keep playing while disabled',
+		description: 'Names a race\'s or class\'s setting in the list of what a save changed, on the editor\'s Audit tab: whether characters already of it can keep playing while it is disabled (yes), or can\'t play until it is enabled again (no). Chosen in the dialog the editor\'s Save opens when disabling a race or class characters are'
+	},
 	type: {
 		id: 'editor.item.type',
 		defaultMessage: 'Type',
@@ -535,6 +540,7 @@ function describeValue(change: AuditFieldChange, detail: UniverseEditDetail, rul
 		case 'indoors':
 		case 'outdoors':
 		case 'enabled':
+		case 'keepPlaying':
 		case 'floatingBonus':
 		case 'lightSensitivity':
 		case 'isDefault':

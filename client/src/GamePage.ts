@@ -17,6 +17,7 @@ import { showNoticeScreen, showScreen, showStatus } from './ui/dom';
 import { GroupScreen } from './ui/GroupScreen';
 import { InviteDialog } from './ui/InviteDialog';
 import { InviteScreen } from './ui/InviteScreen';
+import { leavingMessages } from './ui/leavingGroup';
 import { LobbyScreen } from './ui/LobbyScreen';
 import { MapView } from './ui/MapView';
 import { pageMessages } from './ui/pageMessages';
@@ -141,7 +142,7 @@ export class GamePage
 		this.linkUniverseKey = readGameUniverseKey();
 
 		// In the lobby, the lobby tells every window of the player to list the characters again; a group's room doesn't
-		this.characterSheet = new CharacterSheetDialog(this.characterApi, () =>
+		this.characterSheet = new CharacterSheetDialog(this.characterApi, this.groupApi, () =>
 		{
 			if (this.destination.kind !== 'lobby')
 			{
@@ -336,7 +337,7 @@ export class GamePage
 
 		const characters = await this.loadCharacters();
 		const remembered = this.rememberedCharacterId();
-		const playable = characters?.characters.filter((character) => (character.deleteAt === null)) ?? [];
+		const playable = characters?.characters.filter((character) => ((character.deleteAt === null) && (character.barredBy === null))) ?? [];
 		const character = (playable.find((each) => (each.id === remembered))
 			?? playable.find((each) => (each.id === characters?.lastPlayedId)));
 
@@ -649,6 +650,14 @@ export class GamePage
 			this.groupScreen.setStatus(message, LINK_NOTICE_MS);
 			announce(message);
 		}
+		else if (reason === NoticeReason.CharacterBarred)
+		{
+			this.lobbyScreen.showNotice(t({
+				id: 'lobby.characterBarred',
+				defaultMessage: 'The universe\'s creators disabled that character\'s race or class, so they can\'t play until it is enabled again.',
+				description: 'Shown in the lobby when the character the player was playing, or chose, can\'t play because the universe\'s creators disabled their race or class for characters already of it; the lobby switches to another of their characters, or makes them a ghost'
+			}));
+		}
 	}
 
 	/**
@@ -765,11 +774,7 @@ export class GamePage
 		catch (error)
 		{
 			this.leavingCharacterId = undefined;
-			throw new Error(describeEditorError(error, {
-				id: 'group.leaveFailed',
-				defaultMessage: 'Could not leave the group.',
-				description: 'Shown when the character couldn\'t be taken out of their group'
-			}), { cause: error });
+			throw new Error(describeEditorError(error, leavingMessages.leaveFailed), { cause: error });
 		}
 
 		// Loaded first, so the lobby knows the character is free to play there
@@ -928,7 +933,8 @@ export class GamePage
 	}
 
 	/**
-	 * Whether the lobby can play one of the player's characters: they aren't in a group or given their last rites
+	 * Whether the lobby can play one of the player's characters: they aren't in a group, given their last
+	 * rites or barred by their race or class
 	 *
 	 * @param characterId The character's ID
 	 * @return True when it can
@@ -937,7 +943,7 @@ export class GamePage
 	{
 		const character = this.characters?.characters.find((each) => (each.id === characterId));
 
-		return((character !== undefined) && (character.groupId === null) && (character.deleteAt === null));
+		return((character !== undefined) && (character.groupId === null) && (character.deleteAt === null) && (character.barredBy === null));
 	}
 
 	/**
@@ -1180,6 +1186,26 @@ export class GamePage
 				id: 'group.characterLeft',
 				defaultMessage: '{name} is no longer in the group, or can\'t be played.',
 				description: 'Shown in the lobby when the character a window played left the group from another window, or was deleted; {name} is the character\'s name'
+			}, {
+				name
+			});
+		}
+		else if (code === ServerCloseCode.CharacterBarred.valueOf())
+		{
+			notice = t({
+				id: 'group.characterBarred',
+				defaultMessage: 'The universe\'s creators disabled the race or class of {name}, so they can\'t play until it is enabled again. They are still in the group.',
+				description: 'Shown in the lobby when the character a window played in a group was taken off its map because the universe\'s creators disabled their race or class for characters already of it; {name} is the character\'s name'
+			}, {
+				name
+			});
+		}
+		else if (code === ServerCloseCode.GroupSizeLowered.valueOf())
+		{
+			notice = t({
+				id: 'group.sizeLowered',
+				defaultMessage: 'The universe\'s creators made groups smaller, so {name} is no longer in the group, or the group was disbanded.',
+				description: 'Shown in the lobby when the universe\'s creators lowered its group size, which took the character a window played out of their group or disbanded it; {name} is the character\'s name'
 			}, {
 				name
 			});

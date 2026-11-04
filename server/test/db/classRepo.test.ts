@@ -12,6 +12,7 @@ import { addUniverse, addArea } from './fixtures.js';
 const gunslinger: CustomClassSettings = {
 	name: 'Gunslinger',
 	enabled: true,
+	keepPlaying: true,
 	startingMoney: emptyMoney(),
 	startingItems: [],
 	startingAreaId: null,
@@ -75,6 +76,7 @@ describe('classRepo', () =>
 					key,
 					name: null,
 					enabled: true,
+					keepPlaying: true,
 					startingMoney: emptyMoney(),
 					startingItems: [],
 					startingAreaId: null,

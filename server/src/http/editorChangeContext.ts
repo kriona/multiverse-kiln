@@ -6,6 +6,7 @@ import { isNewRef, type EditableUniverseDetails, type MessageDescriptor, type Me
 
 import type { Executor } from '../db/client.js';
 import type { AreaChange } from '../world/areaChanges.js';
+import type { SaveDisablings } from './editorDisablings.js';
 import { errorMessages, type Refusal } from './errors.js';
 
 /**
@@ -64,6 +65,18 @@ export interface ChangeContext
 	 * What to tell the rooms once the save commits
 	 */
 	readonly published: AreaChange[];
+
+	/**
+	 * Called once the save commits, in order, to tell the rooms about changes other than the world's,
+	 * such as groups the save disbanded
+	 */
+	readonly onCommit: (() => void)[];
+
+	/**
+	 * The items and areas the save enables or disables and the group size it lowers, for what happens to
+	 * the players using them once every change is saved
+	 */
+	readonly disablings: SaveDisablings;
 
 	/**
 	 * Images of deleted tilesets, removed from storage once the save commits

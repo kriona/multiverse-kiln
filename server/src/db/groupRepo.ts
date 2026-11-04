@@ -99,9 +99,11 @@ export interface GroupCharacter
 	playerId: string;
 	name: string;
 	raceId: number;
+	classId: number;
 
 	/**
-	 * False while the character has been given their last rites, so they can't be played
+	 * False while the character has been given their last rites, so they can't be played. A character
+	 * whose race or class bars them (characterBar()) is still playable here; the rooms check that
 	 */
 	playable: boolean;
 }
@@ -334,6 +336,7 @@ export async function listGroupMembers(groupId: string, executor: Executor = db)
 			playerId: characters.playerId,
 			name: characters.name,
 			raceId: characters.raceId,
+			classId: characters.classId,
 			deleteAt: characters.deleteAt,
 			areaId: groupMembers.areaId,
 			column: groupMembers.column,
@@ -347,11 +350,12 @@ export async function listGroupMembers(groupId: string, executor: Executor = db)
 		))
 		.orderBy(asc(groupMembers.joinedAt), asc(groupMembers.characterId));
 
-	return(rows.map(({ characterId, playerId, name, raceId, deleteAt, areaId, column, row }) => ({
+	return(rows.map(({ characterId, playerId, name, raceId, classId, deleteAt, areaId, column, row }) => ({
 		characterId,
 		playerId,
 		name,
 		raceId,
+		classId,
 		playable: (deleteAt === null),
 		position: (((areaId !== null) && (column !== null) && (row !== null)) ? { areaId, column, row } : null)
 	})));
@@ -502,6 +506,206 @@ export async function moveGroupsToDifficultyLevel(fromLevelId: number, toLevelId
 }
 
 /**
+ * A group with more members than a size, as lowering a universe's group size finds it
+ */
+export interface LargerGroup
+{
+	groupId: string;
+	anchorCharacterId: string;
+
+	/**
+	 * Every member, with when they joined, in the order they joined
+	 */
+	members: (GroupCharacter & { joinedAt: Date })[];
+}
+
+/**
+ * A universe's groups with more members than a size, counting those given their last rites until their
+ * time comes, as countGroupMembers() does
+ *
+ * @param universeId The universe's ID
+ * @param size The size
+ * @param executor The database, or a transaction
+ * @return The groups, by ID
+ */
+export async function listGroupsLargerThan(universeId: string, size: number, executor: Executor = db): Promise<LargerGroup[]>
+{
+	const larger = executor
+		.select({
+			groupId: groupMembers.groupId
+		})
+		.from(groupMembers)
+		.innerJoin(groups, eq(groups.id, groupMembers.groupId))
+		.innerJoin(characters, eq(characters.id, groupMembers.characterId))
+		.where(and(
+			eq(groups.universeId, universeId),
+			notExpired
+		))
+		.groupBy(groupMembers.groupId)
+		.having(sql`count(*) > ${size}`);
+	const rows = await executor
+		.select({
+			groupId: groups.id,
+			anchorCharacterId: groups.anchorCharacterId,
+			characterId: groupMembers.characterId,
+			playerId: characters.playerId,
+			name: characters.name,
+			raceId: characters.raceId,
+			classId: characters.classId,
+			deleteAt: characters.deleteAt,
+			joinedAt: groupMembers.joinedAt
+		})
+		.from(groupMembers)
+		.innerJoin(groups, eq(groups.id, groupMembers.groupId))
+		.innerJoin(characters, eq(characters.id, groupMembers.characterId))
+		.where(and(
+			inArray(groupMembers.groupId, larger),
+			notExpired
+		))
+		.orderBy(asc(groups.id), asc(groupMembers.joinedAt), asc(groupMembers.characterId));
+	const found = new Map<string, LargerGroup>();
+
+	for (const { groupId, anchorCharacterId, deleteAt, ...member } of rows)
+	{
+		let group = found.get(groupId);
+
+		if (!group)
+		{
+			group = {
+				groupId,
+				anchorCharacterId,
+				members: []
+			};
+			found.set(groupId, group);
+		}
+
+		group.members.push({
+			...member,
+			playable: (deleteAt === null)
+		});
+	}
+
+	return([...found.values()]);
+}
+
+/**
+ * Deletes groups, with their members and invites, as their anchor being leaving does
+ *
+ * @param groupIds The groups' IDs
+ * @param executor The database, or a transaction
+ */
+export async function deleteGroups(groupIds: readonly string[], executor: Executor = db): Promise<void>
+{
+	if (groupIds.length > 0)
+	{
+		await executor
+			.delete(groups)
+			.where(inArray(groups.id, [...groupIds]));
+	}
+}
+
+/**
+ * Takes characters out of a group. Call it only for members other than the anchor being, whose leaving
+ * disbands the group (see leaveGroup())
+ *
+ * @param groupId The group's ID
+ * @param characterIds The characters' IDs
+ * @param executor The database, or a transaction
+ */
+export async function removeGroupMembers(groupId: string, characterIds: readonly string[], executor: Executor = db): Promise<void>
+{
+	if (characterIds.length > 0)
+	{
+		await executor
+			.delete(groupMembers)
+			.where(and(
+				eq(groupMembers.groupId, groupId),
+				inArray(groupMembers.characterId, [...characterIds])
+			));
+	}
+}
+
+/**
+ * A group member saved in an area: where their group last left them, and where the group starts
+ */
+export interface MemberInArea
+{
+	characterId: string;
+	groupId: string;
+	areaId: string;
+
+	/**
+	 * The group's starting area and cell; the area is null when it was deleted, and the universe's is used
+	 */
+	groupStart: { areaId: string | null; column: number; row: number };
+}
+
+/**
+ * The group members saved in some areas, leaving out those past their last rites
+ *
+ * @param areaIds The areas' IDs
+ * @param executor The database, or a transaction
+ * @return The members
+ */
+export async function listMembersInAreas(areaIds: readonly string[], executor: Executor = db): Promise<MemberInArea[]>
+{
+	if (areaIds.length === 0)
+	{
+		return([]);
+	}
+
+	const rows = await executor
+		.select({
+			characterId: groupMembers.characterId,
+			groupId: groupMembers.groupId,
+			areaId: groupMembers.areaId,
+			startingAreaId: groups.startingAreaId,
+			startingColumn: groups.startingColumn,
+			startingRow: groups.startingRow
+		})
+		.from(groupMembers)
+		.innerJoin(groups, eq(groups.id, groupMembers.groupId))
+		.innerJoin(characters, eq(characters.id, groupMembers.characterId))
+		.where(and(
+			inArray(groupMembers.areaId, [...areaIds]),
+			notExpired
+		));
+
+	// The area is never null for the rows found by it, but its column may be
+	return(rows.flatMap(({ characterId, groupId, areaId, startingAreaId, startingColumn, startingRow }) => ((areaId === null) ? [] : [{
+		characterId,
+		groupId,
+		areaId,
+		groupStart: {
+			areaId: startingAreaId,
+			column: startingColumn,
+			row: startingRow
+		}
+	}])));
+}
+
+/**
+ * Records new places for group members, as if their group had left them there
+ *
+ * @param positions Where each one is now
+ * @param executor The database, or a transaction
+ */
+export async function moveMembers(positions: readonly MemberPosition[], executor: Executor = db): Promise<void>
+{
+	for (const { characterId, areaId, column, row } of positions)
+	{
+		await executor
+			.update(groupMembers)
+			.set({
+				areaId,
+				column,
+				row
+			})
+			.where(eq(groupMembers.characterId, characterId));
+	}
+}
+
+/**
  * The memberships of the characters whose last rites' time has come, for the sweep to tell the
  * groups' rooms about before deleting them
  *
@@ -543,14 +747,15 @@ async function listMembershipsWhere(condition: SQL, executor: Executor): Promise
 			characterId: groupMembers.characterId,
 			playerId: characters.playerId,
 			name: characters.name,
-			raceId: characters.raceId
+			raceId: characters.raceId,
+			classId: characters.classId
 		})
 		.from(groupMembers)
 		.innerJoin(groups, eq(groups.id, groupMembers.groupId))
 		.innerJoin(characters, eq(characters.id, groupMembers.characterId))
 		.where(condition);
 
-	return(rows.map(({ groupId, universeId, anchorCharacterId, characterId, playerId, name, raceId }) => ({
+	return(rows.map(({ groupId, universeId, anchorCharacterId, characterId, playerId, name, raceId, classId }) => ({
 		groupId,
 		universeId,
 		isAnchor: (anchorCharacterId === characterId),
@@ -559,6 +764,7 @@ async function listMembershipsWhere(condition: SQL, executor: Executor): Promise
 			playerId,
 			name,
 			raceId,
+			classId,
 			playable: false
 		}
 	})));
@@ -587,19 +793,21 @@ export async function listMembersOfGroups(groupIds: readonly string[], executor:
 			playerId: characters.playerId,
 			name: characters.name,
 			raceId: characters.raceId,
+			classId: characters.classId,
 			deleteAt: characters.deleteAt
 		})
 		.from(groupMembers)
 		.innerJoin(characters, eq(characters.id, groupMembers.characterId))
 		.where(inArray(groupMembers.groupId, [...groupIds]));
 
-	for (const { groupId, characterId, playerId, name, raceId, deleteAt } of rows)
+	for (const { groupId, characterId, playerId, name, raceId, classId, deleteAt } of rows)
 	{
 		const character: GroupCharacter = {
 			characterId,
 			playerId,
 			name,
 			raceId,
+			classId,
 			playable: (deleteAt === null)
 		};
 
@@ -687,7 +895,7 @@ export async function purgeExpiredInvites(executor: Executor = db): Promise<numb
  * @param member The member
  * @return The character and their player
  */
-function toGroupCharacter({ characterId, playerId, name, raceId, playable }: GroupMemberRecord): GroupCharacter
+function toGroupCharacter({ characterId, playerId, name, raceId, classId, playable }: GroupMemberRecord): GroupCharacter
 {
-	return({ characterId, playerId, name, raceId, playable });
+	return({ characterId, playerId, name, raceId, classId, playable });
 }

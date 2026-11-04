@@ -451,6 +451,8 @@ export class ClassDialog
 		this.edit.apply({
 			name: ((name === defaultName) ? null : name),
 			enabled: this.enabled.checked,
+			// Chosen in the dialog Save opens when disabling the class affects characters (ImpactDialog)
+			keepPlaying: (this.characterClass?.keepPlaying ?? true),
 			startingMoney,
 			startingItems: this.startingItems.value,
 			startingAreaId,

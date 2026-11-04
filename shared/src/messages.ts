@@ -491,7 +491,14 @@ export enum NoticeReason
 	/**
 	 * The player sent chat messages faster than the lobby allows; the message was dropped
 	 */
-	ChatTooFast = 'chatTooFast'
+	ChatTooFast = 'chatTooFast',
+
+	/**
+	 * The universe's creators disabled the race or class of the character the player was playing in the
+	 * lobby, for characters already of it, so the lobby switched them to another character or made them
+	 * a ghost; or the player chose a character who is barred like that
+	 */
+	CharacterBarred = 'characterBarred'
 }
 
 /**

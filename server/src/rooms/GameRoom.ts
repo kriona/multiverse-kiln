@@ -1,7 +1,8 @@
 import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
-import { canViewUniverse, cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, GameMessageType, GameServerMessageType, GameState, GroupMember, MessageType, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, ServerCloseCode, visibleCells, type CellsSeenPayload, type CellValue, type NoticePayload, type Sight, type StartingCell } from '@multiverse-kiln/shared';
+import { canViewUniverse, cellIndexInChunk, characterBar, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, GameMessageType, GameServerMessageType, GameState, GroupMember, MessageType, NOTHING_BARRED, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, ServerCloseCode, visibleCells, type BarredOptions, type CellsSeenPayload, type CellValue, type NoticePayload, type Sight, type StartingCell } from '@multiverse-kiln/shared';
 
 import { resolveSession } from '../auth/sessions.js';
+import { loadBarredOptions } from '../db/barredOptions.js';
 import { markCharacterPlayed } from '../db/characterRepo.js';
 import { findGroup, listGroupMembers, saveGroupClock, saveMemberPositions, type GroupMemberRecord, type MemberPosition } from '../db/groupRepo.js';
 import { saveSeenChunks, loadSeenChunks } from '../db/worldStateRepo.js';
@@ -14,12 +15,13 @@ import { loadChunksAt, loadArea } from '../db/areaRepo.js';
 import { characterChanges, type CharacterChange } from '../players/characterChanges.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { groupChanges, type GroupChange } from '../players/groupChanges.js';
-import { universeAccessChanges, type StageChange } from '../players/universeAccess.js';
-import { areaChanges } from '../world/areaChanges.js';
+import { universeAccessChanges, type BarredChange, type StageChange } from '../players/universeAccess.js';
+import { areaChanges, type AreaPlace } from '../world/areaChanges.js';
+import { areaOccupants } from '../world/areaOccupants.js';
 import { InvalidMessages } from './invalidMessages.js';
 import { mayViewUniverse } from './universePlay.js';
 import { controlPayload, describeInvalidPayload, gameJoinOptions, movePayload } from './payloads.js';
-import { AreaCache, type ActiveArea } from './areaCache.js';
+import { AreaCache, toLinkCells, type ActiveArea } from './areaCache.js';
 import { CHUNK_REFRESH_INTERVAL_MS, SIMULATION_TICK_RATE, AreaPlayers, type Appearance, type PlayerPosition } from './areaPlayers.js';
 
 /**
@@ -74,7 +76,8 @@ function identityOf(client: GameClient): GameIdentity
  * Clients join with GameJoinOptions, and every client asking for the same group joins the same room
  * (filterBy in app.config.ts), which loads the group from the database as the first one arrives. A
  * client is admitted only to play one of its player's characters in the group who hasn't been given
- * their last rites. While a player has any window here, every such character of theirs is on the map,
+ * their last rites and whose race and class don't bar them (characterBar(); a save barring them takes
+ * them off the map). While a player has any window here, every such character of theirs is on the map,
  * where they were when their player last left (or beside the anchor being, for a character new to the
  * group); each window controls one of them and can switch to another (GameMessageType.Control). When a
  * player's last window leaves, their characters are taken off the map and where they were is saved.
@@ -157,6 +160,12 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	 * on starting
 	 */
 	private raceSight = new Map<number, Sight>();
+
+	/**
+	 * The races and classes whose characters can't play (see characterBar()), loaded in onCreate and
+	 * followed as saves change them
+	 */
+	private barred: BarredOptions = NOTHING_BARRED;
 
 	/**
 	 * Where each member last looked from and how far they saw (see explore), by character ID
@@ -265,6 +274,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		this.state.clock = this.gameClock.seconds;
 		this.state.locked = (universe.stage === 'end_of_time');
 		this.raceSight = await loadRaceSight(universe.id, universe.ruleset);
+		this.barred = await loadBarredOptions(universe.id);
 
 		this.areaPlayers.onWalk((characterId, seconds, time) =>
 		{
@@ -327,10 +337,33 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 					this.seen.forget(change.areaId);
 				}
 
+				if (change.kind === 'evacuated')
+				{
+					this.evacuate(change.areaId, change.destination).catch((error: unknown) =>
+					{
+						console.error('Could not move the characters of group', this.groupId, 'out of area', change.areaId, error);
+					});
+
+					return;
+				}
+
 				this.areaPlayers.applyChange(change).catch((error: unknown) =>
 				{
 					console.error('Could not apply a world change to the room of group', this.groupId, error);
 				});
+			}),
+			areaOccupants.register(this.universeId, () => [...this.members.keys()].flatMap((characterId) =>
+			{
+				const areaId = this.areaPlayers.getAreaId(characterId);
+
+				return(((areaId === undefined) ? [] : [{ characterId, areaId }]));
+			})),
+			universeAccessChanges.onBarredChanged((change) =>
+			{
+				if (change.universeId === this.universeId)
+				{
+					this.applyBarredChange(change);
+				}
 			}),
 			connectedSessions.onEnd((sessionIds) =>
 			{
@@ -374,7 +407,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		const session = await resolveSession(context.headers.get('cookie'));
 		const member = this.members.get(joinOptions.data.characterId);
 
-		if (!session || (member?.playerId !== session.playerId) || !member.playable || !await mayViewUniverse(this.universeId, session.playerId))
+		if (!session || (member?.playerId !== session.playerId) || !this.canPlay(member) || !await mayViewUniverse(this.universeId, session.playerId))
 		{
 			return(false);
 		}
@@ -514,14 +547,14 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	 */
 	private async bringIn(playerId: string): Promise<void>
 	{
-		const absent = [...this.members.values()].filter((member) => ((member.playerId === playerId) && member.playable && !this.areaPlayers.has(member.characterId)));
+		const absent = [...this.members.values()].filter((member) => ((member.playerId === playerId) && this.canPlay(member) && !this.areaPlayers.has(member.characterId)));
 
 		for (const member of absent)
 		{
 			const start = await this.startOf(member);
 
-			// The member may have left, or their player's windows all closed, while the area loaded
-			if ((this.members.get(member.characterId) !== member) || !this.windows.has(playerId) || !member.playable)
+			// The member may have left, been barred, or their player's windows all closed, while the area loaded
+			if ((this.members.get(member.characterId) !== member) || !this.windows.has(playerId) || !this.canPlay(member))
 			{
 				continue;
 			}
@@ -541,7 +574,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	/**
 	 * Where a member starts on the map: where they were last, then beside the anchor being (where they
 	 * are now, or were last), then the group's starting cell of its starting area. An area that is gone or
-	 * disabled is passed over
+	 * disabled is passed over, and a cell a map no longer holds since it was made smaller moves inside it
 	 *
 	 * @param member The member
 	 * @return The area and cell
@@ -563,8 +596,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			{
 				return({
 					area,
-					column: candidate.column,
-					row: candidate.row
+					...startingCellOn(area.loaded.bounds, candidate)
 				});
 			}
 		}
@@ -687,13 +719,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			const payload: CellsSeenPayload = {
 				areaId,
 				cells: values,
-				links: area.loaded.links
-					.filter((link) => revealed.has(`${link.column},${link.row}`))
-					.map((link) => ({
-						column: link.column,
-						row: link.row,
-						mode: link.mode
-					}))
+				links: toLinkCells(area.loaded, (link) => revealed.has(`${link.column},${link.row}`))
 			};
 
 			client.send(GameServerMessageType.CellsSeen, payload);
@@ -758,12 +784,13 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	 * Takes a character off the map, disconnecting the windows controlling them
 	 *
 	 * @param characterId The character's ID
+	 * @param code Why, for the windows
 	 */
-	private dropCharacter(characterId: string): void
+	private dropCharacter(characterId: string, code: ServerCloseCode): void
 	{
 		for (const client of this.areaPlayers.getClients(characterId))
 		{
-			client.leave(ServerCloseCode.LeftGroup);
+			client.leave(code);
 		}
 
 		this.areaPlayers.remove(characterId);
@@ -785,8 +812,104 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	private linkMemberIds(): string[]
 	{
 		return([...this.members.values()]
-			.filter((member) => (member.playable || (member.characterId === this.anchorId)))
+			.filter((member) => (this.canPlay(member) || (member.characterId === this.anchorId)))
 			.map((member) => member.characterId));
+	}
+
+	/**
+	 * Whether a member can be played: they haven't been given their last rites, and their race and class
+	 * don't bar them
+	 *
+	 * @param member The member
+	 * @return True when they can
+	 */
+	private canPlay(member: GroupMemberRecord): boolean
+	{
+		return(member.playable && (characterBar(member, this.barred) === null));
+	}
+
+	/**
+	 * Follows a change to the races and classes barring their characters: members it bars are taken off
+	 * the map, where they were saved for when they can play again, and their windows are told why; members
+	 * it lets play again are put back on it if their player is here
+	 *
+	 * @param change What is barred now
+	 */
+	private applyBarredChange(change: BarredChange): void
+	{
+		this.barred = change.barred;
+
+		const positions: MemberPosition[] = [];
+		const players = new Set<string>();
+
+		for (const member of this.members.values())
+		{
+			const position = this.areaPlayers.getPosition(member.characterId);
+
+			if (!this.canPlay(member))
+			{
+				if (position)
+				{
+					member.position = position;
+					positions.push({ characterId: member.characterId, ...position });
+				}
+
+				this.dropCharacter(member.characterId, ServerCloseCode.CharacterBarred);
+			}
+			else if (!position && this.windows.has(member.playerId))
+			{
+				players.add(member.playerId);
+			}
+		}
+
+		if (positions.length > 0)
+		{
+			saveMemberPositions(this.groupId, positions).catch((error: unknown) =>
+			{
+				console.error('Could not save where the barred characters of group', this.groupId, 'were', error);
+			});
+		}
+
+		for (const playerId of players)
+		{
+			this.bringIn(playerId).catch((error: unknown) =>
+			{
+				console.error('Could not bring the characters of player', playerId, 'back into group', this.groupId, error);
+			});
+		}
+	}
+
+	/**
+	 * Sends the members in an area that has been disabled elsewhere: those on the map travel there, and
+	 * those off it are put there for when they are next played
+	 *
+	 * @param areaId The disabled area
+	 * @param destination Where they go, or null for the group's starting area
+	 */
+	private async evacuate(areaId: string, destination: AreaPlace | null): Promise<void>
+	{
+		const startingArea = (destination ? undefined : await this.areas.load(this.startingAreaId));
+		const target = (destination ?? (startingArea
+			? {
+				areaId: startingArea.loaded.area.id,
+				...startingCellOn(startingArea.loaded.bounds, this.startingCell)
+			}
+			: undefined));
+
+		if (!target)
+		{
+			return;
+		}
+
+		this.areaPlayers.evacuate(areaId, target);
+
+		for (const member of this.members.values())
+		{
+			if ((member.position?.areaId === areaId) && !this.areaPlayers.has(member.characterId))
+			{
+				member.position = { ...target };
+			}
+		}
 	}
 
 	/**
@@ -809,7 +932,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 
 			for (const client of this.clients)
 			{
-				client.leave(ServerCloseCode.GroupDisbanded);
+				client.leave(((change.groupSizeLowered === true) ? ServerCloseCode.GroupSizeLowered : ServerCloseCode.GroupDisbanded));
 			}
 
 			return;
@@ -819,7 +942,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		{
 			const { characterId } = change.character;
 
-			this.dropCharacter(characterId);
+			this.dropCharacter(characterId, ((change.groupSizeLowered === true) ? ServerCloseCode.GroupSizeLowered : ServerCloseCode.LeftGroup));
 			this.members.delete(characterId);
 			this.state.members.delete(characterId);
 			return;
@@ -863,13 +986,13 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		if (change.kind === 'removed')
 		{
 			member.playable = false;
-			this.dropCharacter(characterId);
+			this.dropCharacter(characterId, ServerCloseCode.LeftGroup);
 			return;
 		}
 
 		member.playable = true;
 
-		if (this.windows.has(member.playerId))
+		if (this.windows.has(member.playerId) && this.canPlay(member))
 		{
 			this.bringIn(member.playerId).catch((error: unknown) =>
 			{

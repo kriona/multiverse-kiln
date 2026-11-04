@@ -47,8 +47,8 @@ describe('characterRepo', () =>
 		await inTransaction((transaction) => createCharacter({ ...brokk, universeId: otherUniverseId }, transaction));
 
 		assert.deepStrictEqual(await listPlayableCharacters(playerId, universeId), [
-			{ id: secondId, name: 'Dain', raceId: brokk.raceId },
-			{ id: firstId, name: 'Brokk', raceId: brokk.raceId }
+			{ id: secondId, name: 'Dain', raceId: brokk.raceId, classId: brokk.classId },
+			{ id: firstId, name: 'Brokk', raceId: brokk.raceId, classId: brokk.classId }
 		]);
 
 		await markCharacterPlayed(firstId, new Date(Date.now() + 1000));
@@ -238,7 +238,7 @@ describe('characterRepo', () =>
 			assert.strictEqual(await countCharacters(playerId, universeId), 1);
 			assert.deepStrictEqual(await listPlayableCharacters(playerId, universeId), []);
 
-			assert.deepStrictEqual(await restoreCharacter(playerId, universeId, characterId), { id: characterId, name: 'Brokk', raceId: brokk.raceId });
+			assert.deepStrictEqual(await restoreCharacter(playerId, universeId, characterId), { id: characterId, name: 'Brokk', raceId: brokk.raceId, classId: brokk.classId });
 			assert.deepStrictEqual((await listPlayableCharacters(playerId, universeId)).map(({ id }) => id), [characterId]);
 			assert.strictEqual(await restoreCharacter(playerId, universeId, characterId), undefined);
 		});
