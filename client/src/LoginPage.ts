@@ -982,11 +982,14 @@ export class LoginPage
 		});
 		this.announceLoggedIn();
 
-		const heading = getElement('registered-screen', HTMLElement).querySelector('h1');
+		const screen = getElement('registered-screen', HTMLElement);
+		const heading = screen.querySelector('h1');
+		const welcome = screen.querySelector('.registered-success p');
 
+		getElement('registered-name', HTMLElement).textContent = this.registerName.value.trim();
 		showScreen('registered');
 		setPageTitle(heading?.textContent ?? undefined);
-		announce(heading?.textContent ?? '');
+		announce(`${heading?.textContent ?? ''} ${welcome?.textContent ?? ''}`);
 		getElement('registered-two-factor', HTMLAnchorElement).focus();
 	}
 
