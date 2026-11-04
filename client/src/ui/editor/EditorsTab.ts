@@ -1,13 +1,12 @@
 import { canManageEditors, canPlayUniverse, EDITOR_ROLE_NAMES, languageName, UNIVERSE_ROLE_DESCRIPTIONS, UNIVERSE_ROLE_NAMES, type EditableUniverse, type EditorChange, type EditorRoleSettings, type PlayerMatch, type UniverseEditorSummary, type UniverseRole } from '@multiverse-kiln/shared';
 import leaveIcon from 'virtual:icon/ph:sign-out';
-import undoIcon from 'virtual:icon/ph:arrow-u-up-left';
 
 import { formatList, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { playerPageUrl } from '../../pages';
 import { refreshUnsavedWork, watchUnsavedWork } from '../changeTracker';
 import { askToConfirm, type Confirmation } from '../confirmDialog';
-import { getElement, setButtonLabel, showMessage } from '../dom';
+import { getElement, showMessage } from '../dom';
 import { EditorDialog } from './EditorDialog';
 import type { EditorSave } from './editorSave';
 import type { SavableTab } from './SaveBar';
@@ -52,7 +51,6 @@ export interface EditorsTabActions
 export class EditorsTab implements SavableTab, ChangeSource
 {
 	private readonly addButton = getElement('editors-add', HTMLButtonElement);
-	private readonly leaveButton = getElement('editors-leave', HTMLButtonElement);
 	private readonly rows = getElement('editors-rows', HTMLTableSectionElement);
 	private readonly error = getElement('editors-error', HTMLElement);
 	private readonly dialog: EditorDialog;
@@ -104,33 +102,28 @@ export class EditorsTab implements SavableTab, ChangeSource
 		{
 			this.openEditor(undefined);
 		});
-
-		this.leaveButton.addEventListener('click', () =>
-		{
-			void this.leave();
-		});
 	}
 
 	/**
-	 * Leaves the universe when the tab is saved, once the player confirms what that means, or takes
-	 * leaving back
+	 * Removes an editor when the tab is saved, or takes that back. The player removing themself, which
+	 * leaves the universe, confirms what that means first
+	 *
+	 * @param playerId The editor's player ID
+	 * @return Whether it was changed: false when the player didn't confirm leaving
 	 */
-	private async leave(): Promise<void>
+	private async askToToggleRemoved(playerId: string): Promise<boolean>
 	{
 		const universe = this.universe;
-		const playerId = this.ownPlayerId;
+		const leaving = ((playerId === this.ownPlayerId) && (this.staged.get(playerId)?.removed !== true));
 
-		if (!universe || (playerId === undefined))
+		if (!universe || (leaving && !await askToConfirm(this.leaveConfirmation(universe))))
 		{
-			return;
-		}
-
-		if ((this.staged.get(playerId)?.removed !== true) && !await askToConfirm(this.leaveConfirmation(universe)))
-		{
-			return;
+			return(false);
 		}
 
 		this.toggleRemoved(playerId);
+
+		return(true);
 	}
 
 	/**
@@ -175,7 +168,7 @@ export class EditorsTab implements SavableTab, ChangeSource
 			confirmLabel: t({
 				id: 'editor.editors.leave',
 				defaultMessage: 'Leave Universe',
-				description: 'Button on the editor\'s Editors tab that gives up the player\'s own role in the universe when the tab is saved'
+				description: 'Button in the dialog asking the player to confirm leaving a universe, after they choose Remove Editor for themself on the editor\'s Editors tab: gives up their own role in the universe when the tab is saved'
 			}),
 			confirmIcon: leaveIcon,
 			confirmDisabled: lastCreator
@@ -383,38 +376,20 @@ export class EditorsTab implements SavableTab, ChangeSource
 	}
 
 	/**
-	 * Shows the editors, and whether the player is leaving
+	 * Shows the editors
 	 */
 	private render(): void
 	{
 		const universe = this.universe;
 		const manages = ((universe !== undefined) && canManageEditors(universe.role));
-		const leaving = ((this.ownPlayerId !== undefined) && (this.staged.get(this.ownPlayerId)?.removed === true));
 
 		this.rows.replaceChildren(...this.view().map(({ editor, state }) => this.createRow(editor, state, manages)));
-		this.leaveButton.hidden = (this.ownPlayerId === undefined);
-
-		if (leaving)
-		{
-			setButtonLabel(this.leaveButton, undoIcon, t({
-				id: 'editor.editors.undoLeave',
-				defaultMessage: 'Undo Leave',
-				description: 'Button on the editor\'s Editors tab once the player has chosen to leave the universe, before saving: keeps their role instead'
-			}));
-		}
-		else
-		{
-			setButtonLabel(this.leaveButton, leaveIcon, t({
-				id: 'editor.editors.leave',
-				defaultMessage: 'Leave Universe',
-				description: 'Button on the editor\'s Editors tab that gives up the player\'s own role in the universe when the tab is saved'
-			}));
-		}
 	}
 
 	/**
-	 * One editor's row: their username (opening the editor dialog for a creator, or their profile for
-	 * anyone else), name, role and languages, and whether it is the player's own
+	 * One editor's row: their username (opening the editor dialog for a creator, and for the player's own
+	 * row, where they can leave; their profile otherwise), name, role and languages, and whether it is
+	 * the player's own
 	 *
 	 * @param editor The editor, with the changes made since the last save
 	 * @param state How they differ from what is saved
@@ -424,7 +399,8 @@ export class EditorsTab implements SavableTab, ChangeSource
 	private createRow(editor: UniverseEditorSummary, state: StagedState, manages: boolean): HTMLTableRowElement
 	{
 		const row = document.createElement('tr');
-		const name = (manages ? document.createElement('button') : document.createElement('a'));
+		const opens = (manages || (editor.playerId === this.ownPlayerId));
+		const name = (opens ? document.createElement('button') : document.createElement('a'));
 		const languages = formatList(editor.languages.map((language) => languageName(language)));
 		const tag = ((editor.playerId === this.ownPlayerId)
 			? t({
@@ -493,18 +469,13 @@ export class EditorsTab implements SavableTab, ChangeSource
 
 		this.dialog.open(universe.id, editor, {
 			removed,
+			changeable: canManageEditors(universe.role),
 			isEditor: (playerId) => (this.editors.some((each) => (each.playerId === playerId)) || this.staged.has(playerId)),
 			apply: (player, settings) =>
 			{
 				this.apply(player, settings);
 			},
-			toggleRemoved: () =>
-			{
-				if (editor)
-				{
-					this.toggleRemoved(editor.playerId);
-				}
-			}
+			toggleRemoved: () => ((editor === undefined) ? Promise.resolve(false) : this.askToToggleRemoved(editor.playerId))
 		}, () =>
 		{
 			this.render();
