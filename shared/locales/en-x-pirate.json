@@ -1219,6 +1219,18 @@
 		"message": "{action, select, added {Hauled aboard tileset {name}} other {Scuttled tileset {name}}}",
 		"source": "{action, select, added {Uploaded tileset {name}} other {Deleted tileset {name}}}"
 	},
+	"editor.audit.detail.noTranslation": {
+		"message": "{action, select, added {{count, plural, one {Marked # scrap o' words as needin' no translation} other {Marked # scraps o' words as needin' no translation}}} other {{count, plural, one {Marked # scrap o' words as needin' translation again} other {Marked # scraps o' words as needin' translation again}}}}",
+		"source": "{action, select, added {{count, plural, one {Marked # piece of text as needing no translation} other {Marked # pieces of text as needing no translation}}} other {{count, plural, one {Marked # piece of text as needing translation again} other {Marked # pieces of text as needing translation again}}}}"
+	},
+	"editor.audit.detail.translations": {
+		"message": "{count, plural, one {Added, altered or scuttled # translation into {name}} other {Added, altered or scuttled # translations into {name}}}",
+		"source": "{count, plural, one {Added, changed or deleted # translation into {name}} other {Added, changed or deleted # translations into {name}}}"
+	},
+	"editor.audit.detail.translatorNotes": {
+		"message": "{count, plural, one {Wrote or scuttled # note fer the translators} other {Wrote or scuttled # notes fer the translators}}",
+		"source": "{count, plural, one {Wrote or deleted # note for translators} other {Wrote or deleted # notes for translators}}"
+	},
 	"editor.audit.field.lobbyDayHours": {
 		"message": "Length o' a tavern day",
 		"source": "Length of a lobby day"
@@ -2847,9 +2859,21 @@
 		"message": "Edit Universe",
 		"source": "Edit Universe"
 	},
+	"editor.translations.confirm": {
+		"message": "Still Shipshape",
+		"source": "Still Correct"
+	},
+	"editor.translations.dialogTitle": {
+		"message": "{place} in {language}",
+		"source": "{place} in {language}"
+	},
 	"editor.translations.explanation": {
-		"message": "Sailors see the universe's words, such as its name and the names of its waters and plunder, in whichever of its tongues be nearest their own, or in its mother tongue when it ain't been turned into theirs.",
+		"message": "Sailors see the universe's words, such as its name and the names of its areas and booty, in whichever of its tongues be nearest their own, or in its mother tongue when it ain't been turned into theirs.",
 		"source": "Players see the universe's text, such as its name and the names of its areas and items, in the closest of its languages to their own, or in its source language when it isn't translated into theirs."
+	},
+	"editor.translations.language": {
+		"message": "Tongue",
+		"source": "Language"
 	},
 	"editor.translations.languageChoice": {
 		"message": "{name} ({nameHere})",
@@ -2871,6 +2895,70 @@
 		"message": "A universe can be turned into up to {max, plural, one {# tongue} other {# tongues}}.",
 		"source": "A universe can be translated into up to {max, plural, one {# language} other {# languages}}."
 	},
+	"editor.translations.listFailed": {
+		"message": "Couldn't haul up the universe's words.",
+		"source": "Could not list the universe's text."
+	},
+	"editor.translations.missingFilter": {
+		"message": "Missin'",
+		"source": "Missing"
+	},
+	"editor.translations.missingTag": {
+		"message": "missin'",
+		"source": "missing"
+	},
+	"editor.translations.noLanguages": {
+		"message": "The universe ain't been turned into any tongue yet. Add one above, and stow it, t' turn its words.",
+		"source": "The universe isn't translated into any language yet. Add one above, and save, to translate its text."
+	},
+	"editor.translations.noneMatch": {
+		"message": "No words be matchin'.",
+		"source": "No text matches."
+	},
+	"editor.translations.noTranslation": {
+		"message": "Needs no translatin'",
+		"source": "Needs no translation"
+	},
+	"editor.translations.noTranslationHint": {
+		"message": "Such as a proper name. Sailors see it as written in every tongue, and translations already made be kept in case it's unchecked.",
+		"source": "Such as a proper name. Players see it as written in every language, and translations already made are kept for if it's unchecked."
+	},
+	"editor.translations.noTranslationTag": {
+		"message": "needs no translatin'",
+		"source": "needs no translation"
+	},
+	"editor.translations.noneOfYours": {
+		"message": "The universe ain't been turned into any o' yer tongues yet. Its creators can add 'em above.",
+		"source": "The universe isn't translated into any of your languages yet. Its creators can add them above."
+	},
+	"editor.translations.note": {
+		"message": "Note fer the translators",
+		"source": "Note for translators"
+	},
+	"editor.translations.noteHint": {
+		"message": "Anythin' translators should know, such as a pun worth keepin'. Creators and builders write notes; one note serves every tongue.",
+		"source": "Anything translators should know, such as a pun to keep. Creators and builders write notes; one note serves every language."
+	},
+	"editor.translations.outOfDateFilter": {
+		"message": "Gone stale",
+		"source": "Out of date"
+	},
+	"editor.translations.outOfDateNotice": {
+		"message": "The mother tongue's words have changed since this was turned. Mend the translation, or swear it be still shipshape.",
+		"source": "The source text has changed since this was translated. Update the translation, or confirm it's still correct."
+	},
+	"editor.translations.outOfDateTag": {
+		"message": "gone stale",
+		"source": "out of date"
+	},
+	"editor.translations.place": {
+		"message": "Hails from",
+		"source": "From"
+	},
+	"editor.translations.placeOf": {
+		"message": "{kind, select, universe {Universe: {name}, {field, select, name {name} shortDescription {1-sentence tale} other {long tale}}} area {Area: {name}, name} tile {Tile: {name}, name} item {Booty: {name}, name} race {Race: {name}, name} class {Class: {name}, name} theme {Theme: {name}, name} other {Peril: {name}, name}}",
+		"source": "{kind, select, universe {Universe: {name}, {field, select, name {name} shortDescription {1-sentence description} other {long description}}} area {Area: {name}, name} tile {Tile: {name}, name} item {Item: {name}, name} race {Race: {name}, name} class {Class: {name}, name} theme {Theme: {name}, name} other {Difficulty level: {name}, name}}"
+	},
 	"editor.translations.remove": {
 		"message": "Strike It Off",
 		"source": "Take Off"
@@ -2887,6 +2975,18 @@
 		"message": "Couldn't stow the tongues.",
 		"source": "Could not save the languages."
 	},
+	"editor.translations.search": {
+		"message": "Search",
+		"source": "Search"
+	},
+	"editor.translations.searchLabel": {
+		"message": "Search the universe's words",
+		"source": "Search the universe's text"
+	},
+	"editor.translations.source": {
+		"message": "Words in the mother tongue",
+		"source": "Source text"
+	},
 	"editor.translations.sourceLanguage": {
 		"message": "Mother tongue",
 		"source": "Source language"
@@ -2898,6 +2998,22 @@
 	"editor.translations.sourceTranslated": {
 		"message": "{language} be the mother tongue, so the universe can't be turned into it as well.",
 		"source": "{language} is the source language, so the universe can't also be translated into it."
+	},
+	"editor.translations.textHeading": {
+		"message": "The universe's words",
+		"source": "Universe text"
+	},
+	"editor.translations.textSaveFailed": {
+		"message": "Couldn't stow the translations and notes.",
+		"source": "Could not save the translations and notes."
+	},
+	"editor.translations.translation": {
+		"message": "Translation",
+		"source": "Translation"
+	},
+	"editor.translations.translationMarkdown": {
+		"message": "Translation (Markdown)",
+		"source": "Translation (Markdown)"
 	},
 	"editor.universe.longDescription": {
 		"message": "Long tale (Markdown)",
@@ -3559,6 +3675,14 @@
 		"message": "That universe be lost at sea, or ye can't see it.",
 		"source": "The universe doesn't exist, or you can't see it."
 	},
+	"error.noSuchUniverseText": {
+		"message": "Them words ain't the universe's any more. Someone may have scuttled or renamed what they belong to.",
+		"source": "That text isn't the universe's any more. Someone may have deleted or renamed what it belongs to."
+	},
+	"error.noSuchTranslationLanguage": {
+		"message": "The universe ain't been turned into that tongue.",
+		"source": "The universe isn't translated into that language."
+	},
 	"error.noSuchUploadedGraphic": {
 		"message": "That hauled-aboard tileset ain't in this universe's hold.",
 		"source": "The uploaded tileset doesn't exist in this universe."
@@ -3686,6 +3810,14 @@
 	"error.tileNeedsName": {
 		"message": "A tile needs a name.",
 		"source": "A tile needs a name."
+	},
+	"error.translationLanguageGone": {
+		"message": "The universe ain't turned into that tongue any more.",
+		"source": "The universe isn't translated into that language any more."
+	},
+	"error.translationsNotAllowed": {
+		"message": "Yer rank don't let ye see the translations into that tongue.",
+		"source": "Your role doesn't let you see the translations into that language."
 	},
 	"error.universeAlreadyDisabled": {
 		"message": "That universe be laid up already.",

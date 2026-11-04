@@ -1,0 +1,3 @@
+ALTER TABLE "universe_translator_notes" ALTER COLUMN "note" DROP NOT NULL;--> statement-breakpoint
+ALTER TABLE "universe_translator_notes" ADD COLUMN "no_translation" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "universe_translator_notes" ADD CONSTRAINT "universe_translator_notes_holds_something" CHECK (("universe_translator_notes"."note" IS NOT NULL) OR "universe_translator_notes"."no_translation");

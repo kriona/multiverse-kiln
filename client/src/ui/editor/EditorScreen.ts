@@ -19,6 +19,7 @@ import { combineTabs, SaveBar, type SavableTab } from './SaveBar';
 import { ThemesSection } from './ThemesSection';
 import { TilesetsTab } from './TilesetsTab';
 import { TranslationsTab } from './TranslationsTab';
+import { TranslationTable } from './TranslationTable';
 import { UniverseTab } from './UniverseTab';
 import { AreaSelectDialog } from './AreaSelectDialog';
 import { AreasTab } from './AreasTab';
@@ -46,7 +47,9 @@ export type EditorTab = typeof EDITOR_TABS[number];
  * The order the tabs' changes are saved in: the Areas tab's maps can be painted with tiles the
  * Tilesets tab adds, so the Tilesets tab goes first and the Areas tab after it. The server checks every
  * change against the role the player had when the save began, so the Editors tab's changes to roles
- * can go anywhere. The Character List and Audit tabs only list, so they save nothing
+ * can go anywhere. The Translations tab goes last, so the server checks translations and notes against
+ * the text as the other tabs' changes leave it. The Character List and Audit tabs only list, so they
+ * save nothing
  */
 const SAVE_ORDER = [
 	'tilesets',
@@ -54,10 +57,10 @@ const SAVE_ORDER = [
 	'ruleset',
 	'characters',
 	'universe',
-	'translations',
 	'lobby',
 	'areas',
-	'editors'
+	'editors',
+	'translations'
 ] as const satisfies readonly EditorTab[];
 
 /**
@@ -78,7 +81,8 @@ function isSavableTab(name: EditorTab): name is SavableEditorTab
 
 /**
  * The tabs every role sees; the Audit tab is for roles that may manage the editors (canManageEditors()),
- * and the others for roles that may change the world (canEditWorld())
+ * the Translations tab for translators as well, and the others for roles that may change the world
+ * (canEditWorld())
  */
 const SHARED_TABS: ReadonlySet<EditorTab> = new Set(['editors', 'universe']);
 
@@ -141,6 +145,7 @@ export class EditorScreen
 	private readonly editorsTab: EditorsTab;
 	private readonly auditTab: AuditTab;
 	private readonly translationsTab: TranslationsTab;
+	private readonly translationTable: TranslationTable;
 
 	/**
 	 * Saves every tab, which keep their changes on the page until then
@@ -196,9 +201,15 @@ export class EditorScreen
 		});
 		this.characterListTab = new CharacterListTab(api);
 		this.auditTab = new AuditTab(api);
+		this.translationTable = new TranslationTable(api);
 		this.translationsTab = new TranslationsTab((update) =>
 		{
 			this.updateUniverse(update);
+
+			if (this.universe)
+			{
+				this.translationTable.useUniverse(this.universe);
+			}
 		});
 		this.racesSection = new RacesSection(api, areaSelect, itemSelect);
 		this.classesSection = new ClassesSection(api, areaSelect, itemSelect);
@@ -249,7 +260,7 @@ export class EditorScreen
 			tilesets: this.tilesetsTab,
 			areas: this.areasTab,
 			items: this.itemsTab,
-			translations: this.translationsTab
+			translations: combineTabs(this.translationTable, this.translationsTab)
 		};
 
 		for (const name of SAVE_ORDER)
@@ -353,6 +364,7 @@ export class EditorScreen
 		this.editorsTab.open(universe);
 		this.auditTab.open(universe);
 		this.translationsTab.open(universe);
+		this.translationTable.open(universe);
 
 		for (const name of EDITOR_TABS)
 		{
@@ -363,8 +375,8 @@ export class EditorScreen
 	}
 
 	/**
-	 * Whether the player's role shows a tab: beta testers and translators see only the editors and the
-	 * universe's settings, and only creators and site admins see the audit
+	 * Whether the player's role shows a tab: beta testers see only the editors and the universe's
+	 * settings, translators those and the translations, and only creators and site admins see the audit
 	 *
 	 * @param name The tab
 	 * @return True when it does
@@ -379,6 +391,11 @@ export class EditorScreen
 		if (this.universe === undefined)
 		{
 			return(false);
+		}
+
+		if ((name === 'translations') && (this.universe.role === 'translator'))
+		{
+			return(true);
 		}
 
 		return(((name === 'audit') ? canManageEditors(this.universe.role) : canEditWorld(this.universe.role)));

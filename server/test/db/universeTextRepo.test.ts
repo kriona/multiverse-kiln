@@ -4,7 +4,7 @@ import { sourceTextHash } from '@multiverse-kiln/shared';
 
 import { db } from '../../src/db/client.js';
 import { deleteUniverse } from '../../src/db/universeRepo.js';
-import { countTranslations, deleteTranslationsOutside, deleteTranslatorNote, deleteUniverseTextOf, listTranslations, listTranslatorNotes, saveTranslation, saveTranslatorNote, type UniverseTranslationRecord } from '../../src/db/universeTextRepo.js';
+import { countTranslations, deleteTranslationsOutside, deleteTranslatorNote, deleteUniverseTextOf, listTranslations, listTranslationsIn, listTranslatorNotes, saveTranslation, saveTranslatorNote, setNoTranslation, type UniverseTranslationRecord } from '../../src/db/universeTextRepo.js';
 import { addUniverse } from './fixtures.js';
 
 /**
@@ -89,6 +89,39 @@ describe('universeTextRepo', () =>
 		await deleteTranslatorNote(universeId, ref);
 
 		assert.deepStrictEqual((await listTranslatorNotes(universeId)).map(({ kind }) => kind), ['item']);
+	});
+
+	it('keeps a note and the mark that text needs no translation apart, until neither is left', async () =>
+	{
+		const universeId = await addUniverse();
+		const ref = { kind: 'universe', thingId: universeId, field: 'name' } as const;
+		const notesOf = async (): Promise<unknown[]> => (await listTranslatorNotes(universeId)).map(({ note, noTranslation }) => [note, noTranslation]);
+
+		await setNoTranslation(universeId, ref, true);
+		await saveTranslatorNote(universeId, { ...ref, note: 'The founder\'s name' });
+		assert.deepStrictEqual(await notesOf(), [['The founder\'s name', true]]);
+
+		await deleteTranslatorNote(universeId, ref);
+		assert.deepStrictEqual(await notesOf(), [[null, true]]);
+
+		await setNoTranslation(universeId, ref, false);
+		assert.deepStrictEqual(await notesOf(), []);
+	});
+
+	it('leaves the translations of text that needs none out of what players see, and keeps them', async () =>
+	{
+		const universeId = await addUniverse();
+		const areaId = '7d1c1f8e-4c38-4f3b-9a58-4c7a1d7a0b11';
+		const ref = { kind: 'area', thingId: areaId, field: 'name' } as const;
+		const shown = async (): Promise<string[]> => (await listTranslationsIn([{ universeId, languages: ['fr'] }], undefined)).map(({ text }) => text);
+
+		await saveTranslation(universeId, areaName(areaId, 'fr', 'Forêt'));
+		await setNoTranslation(universeId, ref, true);
+		assert.deepStrictEqual(await shown(), []);
+		assert.deepStrictEqual(Object.fromEntries(await countTranslations(universeId)), { fr: 1 });
+
+		await setNoTranslation(universeId, ref, false);
+		assert.deepStrictEqual(await shown(), ['Forêt']);
 	});
 
 	it('deletes a thing\'s translations and notes, leaving others\' alone', async () =>

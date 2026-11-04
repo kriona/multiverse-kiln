@@ -595,12 +595,88 @@
 								<p id="translations-error" class="form-error" role="alert" hidden></p>
 							</fieldset>
 						</form>
+						<section class="translations-text" aria-labelledby="translations-text-heading">
+							<h2 id="translations-text-heading" data-message="editor.translations.textHeading" data-translation-context="Heading of the table on the editor's Translations tab listing every piece of the universe's text (names and descriptions) with its translation into the language chosen">Universe text</h2>
+							<p id="translations-text-none" class="hint" hidden></p>
+							<div id="translations-text-list">
+								<div class="filters">
+									<label data-message="editor.translations.language" data-translation-context="Label of the choice on the editor's Translations tab of the language whose translations the table shows">
+										Language
+										<select id="translations-language"></select>
+									</label>
+									<input id="translations-search" type="search" placeholder="Search" aria-label="Search the universe's text" data-message-placeholder="editor.translations.search" data-translation-context-placeholder="Shown in the empty field that narrows the Translations tab's table down to text holding what is typed, in where it comes from, the source text, the note or the translation" data-message-aria-label="editor.translations.searchLabel" data-translation-context-aria-label="Name of the field that narrows the Translations tab's table down to text holding what is typed, for screen readers" />
+									<label class="checkbox" data-message="editor.translations.missingFilter" data-translation-context="Checkbox on the editor's Translations tab that shows only the text not yet translated into the language chosen (with Out of date also checked: either)">
+										<input id="translations-missing" type="checkbox" />
+										Missing
+									</label>
+									<label class="checkbox" data-message="editor.translations.outOfDateFilter" data-translation-context="Checkbox on the editor's Translations tab that shows only the translations made from source text that has changed since (with Missing also checked: either)">
+										<input id="translations-out-of-date" type="checkbox" />
+										Out of date
+									</label>
+								</div>
+								<p id="translations-list-error" class="form-error" role="alert" hidden></p>
+								<table id="translations-table" class="item-table translations-table">
+									<thead>
+										<tr>
+											<th scope="col" data-sort="place"><button type="button" class="sort-button" data-message="editor.translations.place" data-translation-context="Heading of the column on the editor's Translations tab saying where each piece of text comes from, such as Area: Waterdeep, name">From</button></th>
+											<th scope="col" data-sort="source"><button type="button" class="sort-button" data-message="editor.translations.source" data-translation-context="Heading of the column on the editor's Translations tab with each piece of text in the universe's source language, and the label of the text in the dialog that translates it">Source text</button></th>
+											<th scope="col" data-sort="note"><button type="button" class="sort-button" data-message="editor.translations.note" data-translation-context="Heading of the column on the editor's Translations tab with the note for translators on each piece of text, and the label of the note's field in the dialog that translates it">Note for translators</button></th>
+											<th scope="col" data-sort="translation"><button type="button" class="sort-button" data-message="editor.translations.translation" data-translation-context="Heading of the column on the editor's Translations tab with each piece of text's translation into the language chosen, and the label of the translation's field in the dialog that translates it">Translation</button></th>
+										</tr>
+									</thead>
+									<tbody id="translations-rows"></tbody>
+								</table>
+								<p id="translations-empty" class="universe-empty" hidden></p>
+								<div class="pager">
+									<button id="translations-previous" type="button" class="secondary" data-message="pager.previous" data-translation-context="Button that shows the previous page of a list">Previous</button>
+									<span id="translations-page"></span>
+									<button id="translations-next" type="button" class="secondary" data-message="pager.next" data-translation-context="Button that shows the next page of a list">Next</button>
+								</div>
+							</div>
+						</section>
 					</section>
 				</div>
 				<footer id="editor-save-bar" class="editor-save-bar" hidden>
 					<span id="editor-save-status" class="form-saved" role="status"></span>
 					<button id="editor-save" type="button" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
 				</footer>
+				<dialog id="translation-dialog" class="panel dialog option-dialog" aria-labelledby="translation-dialog-title">
+					<form id="translation-form" class="form">
+						<fieldset class="plain">
+							<h2 id="translation-dialog-title"></h2>
+							<div class="field-label">
+								<span id="translation-source-label" data-message="editor.translations.source" data-translation-context="Heading of the column on the editor's Translations tab with each piece of text in the universe's source language, and the label of the text in the dialog that translates it">Source text</span>
+								<div id="translation-source" class="translation-source" aria-labelledby="translation-source-label"></div>
+							</div>
+							<p id="translation-out-of-date" class="notice" data-message="editor.translations.outOfDateNotice" data-translation-context="In the dialog that translates a piece of universe text, when the source text has changed since it was translated" hidden>The source text has changed since this was translated. Update the translation, or confirm it's still correct.</p>
+							<label data-message="editor.translations.note" data-translation-context="Heading of the column on the editor's Translations tab with the note for translators on each piece of text, and the label of the note's field in the dialog that translates it">
+								Note for translators
+								<textarea id="translation-note" rows="2" aria-describedby="translation-note-hint"></textarea>
+							</label>
+							<p id="translation-note-hint" class="hint" data-message="editor.translations.noteHint" data-translation-context="Under the note field in the dialog that translates a piece of universe text, explaining what the note is for">Anything translators should know, such as a pun to keep. Creators and builders write notes; one note serves every language.</p>
+							<label class="checkbox" data-message="editor.translations.noTranslation" data-translation-context="Checkbox in the dialog that translates a piece of universe text, for text that stays the same in every language, such as a proper name">
+								<input id="translation-no-translation" type="checkbox" aria-describedby="translation-no-translation-hint" />
+								Needs no translation
+							</label>
+							<p id="translation-no-translation-hint" class="hint" data-message="editor.translations.noTranslationHint" data-translation-context="Under the checkbox for text that needs no translation, in the dialog that translates a piece of universe text">Such as a proper name. Players see it as written in every language, and translations already made are kept for if it's unchecked.</p>
+							<label id="translation-text-field" data-message="editor.translations.translation" data-translation-context="Heading of the column on the editor's Translations tab with each piece of text's translation into the language chosen, and the label of the translation's field in the dialog that translates it">
+								Translation
+								<input id="translation-text" />
+							</label>
+							<div id="translation-long-field" class="field-label" hidden>
+								<label for="translation-long" data-message="editor.translations.translationMarkdown" data-translation-context="Label of the field in the dialog that translates a universe's long description, which is written in Markdown">Translation (Markdown)</label>
+								<textarea id="translation-long" rows="8"></textarea>
+								<div id="translation-preview" class="markdown markdown-preview"></div>
+							</div>
+							<p id="translation-dialog-error" class="form-error" role="alert" hidden></p>
+							<div class="form-buttons">
+								<button id="translation-confirm" type="button" class="secondary" data-shortcut="Alt+C" aria-describedby="translation-out-of-date" data-message="editor.translations.confirm" data-translation-context="Button in the dialog that translates a piece of universe text, shown when the source text changed since it was translated: keeps the translation and marks it up to date, when the editor is saved"><!-- icon ph:check-circle -->Still Correct</button>
+								<button id="translation-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+								<button id="translation-apply" type="submit" aria-describedby="translation-dialog-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile or area link) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
+							</div>
+						</fieldset>
+					</form>
+				</dialog>
 				<dialog id="editor-dialog" class="panel dialog option-dialog" aria-labelledby="editor-dialog-title">
 					<form id="editor-form" class="form">
 						<fieldset class="plain">

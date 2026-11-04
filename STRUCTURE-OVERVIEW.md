@@ -355,7 +355,7 @@ The table lists each editor's username, name, role and, for a translator, their 
 
 Once a save that adds editors commits, each player it added is emailed, in the language they chose (English when they haven't chosen one): who gave them which role in which universe, what the role lets them do, and that they can leave on the Editors tab. A beta tester's email links to the universe's page, where they can enter it, and every other role's to the editor. Changing an editor's role sends nothing, and neither does adding a player the same save removes again or an account without an email address (`emailAddedEditors()` in `server/src/http/editorEditors.ts`, `server/src/email/universeEmails.ts`).
 
-What each role sees in the editor: creators and builders see every tab (builders read the settings tabs without changing them), while beta testers and translators see only the Editors tab and the Universe tab, read-only. A server admin may open any universe with the site admin role, which acts as a creator (see the admin page's [Universes](#universes)). The server checks every change against the role the player has when the save starts (`mayMakeChange()` in `shared/src/editorChanges.ts`).
+What each role sees in the editor: creators and builders see every tab (builders read the settings tabs without changing them), while beta testers see only the Editors tab and the Universe tab, read-only, and translators those and the [Translations](#tab-translations) tab. A server admin may open any universe with the site admin role, which acts as a creator (see the admin page's [Universes](#universes)). The server checks every change against the role the player has when the save starts (`mayMakeChange()` in `shared/src/editorChanges.ts`).
 
 Losing a role takes effect at once. The player's next save in an open editor is refused, and a player who may no longer play the universe in its stage is turned out of its lobby and groups, with a message saying why. A player who changed their own role sees the editor again as the new role allows, and one who left goes Home.
 
@@ -657,18 +657,22 @@ Lets the universe be played in more than one language. See [Localization](#local
 - source language, the language the universe's editors write in. Defaults to the creator's language: the one on their profile, then the one the pages are shown in, without its region, or English when it isn't one of the languages a profile can name (such as Pirate)
 - languages, the languages the universe is translated into ("Translated into", up to 50, never the source language). [Home](#home) and the universe's page show the source language and these. Taking off a language with translations asks first, since saving deletes its translations. Only creators change them, staged until Save like the rest of the editor, and saved as a `universe` change
 - deleting something the universe holds (an area, tile, item, race, class, theme or difficulty level), or restoring one of the ruleset's defaults, deletes its translations and notes in the same save (`server/src/db/universeTextRepo.ts`)
-- choosing a language shows a table of every piece of universe text:
+- choosing a language shows a table of every piece of universe text (`GET /:universeId/translations`, paged, searched, filtered and sorted on the server, 100 a page; `server/src/http/editorTranslations.ts`). Ruleset defaults the universe hasn't renamed are engine text and aren't listed, and nor are descriptions it hasn't written:
 	- where it comes from (e.g. "Area: Waterdeep, name")
 	- the source text
-	- a note for translators, written by the universe's editors (e.g. "a pun on the town's founder; keep the joke rather than the words")
-	- the translation
+	- a note for translators, written by the universe's editors (e.g. "a pun on the town's founder; keep the joke rather than the words"). One note per piece of text, for every language
+	- the translation, or "missing", tagged "out of date"; or "needs no translation"
+- a piece of text can be marked as needing no translation, such as a proper name, by creators, builders and translators (`saveNoTranslation`, one mark for every language). Players then see it as written in every language, and it is never missing or out of date. Its translations are kept, unused, and come back if the mark is taken off
 - filters:
-	- search
+	- search, in where the text comes from, the source text, the note and the translation
 	- "is missing" toggle
-	- "is out of date" toggle
-- a translation that is [out of date](#out-of-date-translations) can be updated, or confirmed as still correct
-- export and import, for translators working outside the editor
-- long descriptions are translated as markdown, and sanitized the same way as the source
+	- "is out of date" toggle (with both, either)
+- sortable by each column, by where the text comes from until a heading is chosen
+- each row opens a dialog with the source text, the note and the translation. Apply keeps its changes on the tab until Save, saved as `saveTranslation` and `saveTranslatorNote` changes after every other tab's. A saved translation keeps the hash of the source text the dialog showed. A translation that is [out of date](#out-of-date-translations) can be updated, or confirmed as still correct with Still Correct (Alt+C), which saves it as it is with the current hash. Emptying a translation or a note deletes it
+- creators and site admins see and translate every language and write notes; builders see every language and write notes; translators see the tab (with the languages read-only) and only their languages, and translate them
+- export and import, for translators working outside the editor (later)
+- long descriptions are translated as markdown, with a preview below the field, rendered and sanitized the same way as the source
+- the Audit tab counts a save's translations per language ("Added, changed or deleted 3 translations into Deutsch"), its notes ("Wrote or deleted 1 note for translators") and its marks ("Marked 2 pieces of text as needing no translation")
 
 # Gameplay
 ## Time and distance

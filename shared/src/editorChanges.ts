@@ -13,7 +13,8 @@ import type { OptionName } from './characters.js';
 import type { DifficultyLevelSettings } from './difficulty.js';
 import type { AreaSettingsUpdate, AreaLinkTarget, CellChange, ClassSettings, ErrorPayload, ItemSettings, NewAreaRequest, RaceSettings, ResizeConflict, RulesetSettings, ThemeSettings, TileGraphicUploadRequest, TileSettings, UniverseSettingsUpdate } from './editor.js';
 import type { MapBounds } from './maps.js';
-import { canEditAtEndOfTime, canEditUniverseSettings, canEditWorld, canManageEditors, type EditorAccess, type UniverseRole, type UniverseStage } from './universes.js';
+import { canEditAtEndOfTime, canEditUniverseSettings, canEditWorld, canManageEditors, canMarkNoTranslation, canTranslate, type EditorAccess, type UniverseRole, type UniverseStage } from './universes.js';
+import type { UniverseTextRef } from './universeText.js';
 
 /**
  * Most changes one save can hold
@@ -129,6 +130,13 @@ export interface EditorRoleSettings
  *   or links is refused with 409 and a SaveRefusedPayload holding resizeConflict
  * - editCells: up to MAX_CELL_CHANGES cells inside the area's bounds; a cell listed twice takes the later value
  * - saveLink, deleteLink: add or replace a cell's link, or delete it
+ * - saveTranslation: translate a piece of universe text into one of the universe's translation
+ *   languages, keeping the hash of the source text the translator saw (sourceTextHash()), or with null
+ *   delete the translation. Saving the translation it has with the current hash confirms it is still
+ *   correct
+ * - saveTranslatorNote: write the note for translators on a piece of universe text, or with null delete it
+ * - saveNoTranslation: mark a piece of universe text as needing no translation in any language, such as
+ *   a proper name, so players see it as written, or as needing one again. Its translations are kept
  */
 export type EditorChange =
 	| { kind: 'addEditor'; username: string; settings: EditorRoleSettings }
@@ -152,7 +160,10 @@ export type EditorChange =
 	| { kind: 'resizeArea'; areaId: StringRef; bounds: MapBounds; discard: boolean }
 	| { kind: 'editCells'; areaId: StringRef; changes: CellChangeRef[] }
 	| { kind: 'saveLink'; areaId: StringRef; column: number; row: number; target: AreaLinkTarget }
-	| { kind: 'deleteLink'; areaId: StringRef; column: number; row: number };
+	| { kind: 'deleteLink'; areaId: StringRef; column: number; row: number }
+	| { kind: 'saveTranslation'; text: UniverseTextRef; language: string; translation: string | null; sourceHash: string }
+	| { kind: 'saveTranslatorNote'; text: UniverseTextRef; note: string | null }
+	| { kind: 'saveNoTranslation'; text: UniverseTextRef; noTranslation: boolean };
 
 /**
  * Every kind of change
@@ -165,8 +176,10 @@ export type EditorChangeKind = EditorChange['kind'];
  * - manageEditors: canManageEditors(), except a player removing themself
  * - editSettings: canEditUniverseSettings()
  * - editWorld: canEditWorld()
+ * - translate: canTranslate() into the change's language
+ * - markNoTranslation: canMarkNoTranslation()
  */
-export type EditorChangeCheck = 'manageEditors' | 'editSettings' | 'editWorld';
+export type EditorChangeCheck = 'manageEditors' | 'editSettings' | 'editWorld' | 'translate' | 'markNoTranslation';
 
 /**
  * The check each kind of change needs
@@ -203,7 +216,10 @@ export const EDITOR_CHANGE_CHECKS: Readonly<Record<EditorChangeKind, EditorChang
 	resizeArea: 'editWorld',
 	editCells: 'editWorld',
 	saveLink: 'editWorld',
-	deleteLink: 'editWorld'
+	deleteLink: 'editWorld',
+	saveTranslation: 'translate',
+	saveTranslatorNote: 'editWorld',
+	saveNoTranslation: 'markNoTranslation'
 };
 
 /**
@@ -226,6 +242,12 @@ export function mayMakeChange(change: EditorChange, access: EditorAccess, player
 
 		case 'editWorld':
 			return(canEditWorld(access.role));
+
+		case 'translate':
+			return((change.kind === 'saveTranslation') && canTranslate(access, change.language));
+
+		case 'markNoTranslation':
+			return(canMarkNoTranslation(access));
 	}
 }
 

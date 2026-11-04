@@ -92,7 +92,36 @@ describe('Universe roles (shared)', () =>
 
 	it('names a check for every kind of change', () =>
 	{
-		assert.ok(Object.values(EDITOR_CHANGE_CHECKS).every((check) => ['manageEditors', 'editSettings', 'editWorld'].includes(check)));
+		assert.ok(Object.values(EDITOR_CHANGE_CHECKS).every((check) => ['manageEditors', 'editSettings', 'editWorld', 'translate', 'markNoTranslation'].includes(check)));
+	});
+
+	it('lets creators and translators of the language translate, and creators and builders write notes', () =>
+	{
+		const text = { kind: 'area', thingId: '00000000-0000-4000-8000-000000000003', field: 'name' } as const;
+		const translateInto = (language: string): EditorChange => ({ kind: 'saveTranslation', text, language, translation: 'Wiese', sourceHash: '0'.repeat(64) });
+		const note: EditorChange = { kind: 'saveTranslatorNote', text, note: 'Flowers' };
+		const germanTranslator: EditorAccess = { role: 'translator', languages: ['de'] };
+		const allowed = UNIVERSE_ROLES.map((role) => [role, ...[translateInto('de'), note].map((change) => mayMakeChange(change, accessOf(role), playerId))]);
+
+		assert.deepStrictEqual(allowed, [
+			['creator', true, true],
+			['builder', false, true],
+			['beta_tester', false, false],
+			['translator', false, false]
+		]);
+		assert.deepStrictEqual([translateInto('de'), translateInto('fr'), note].map((change) => mayMakeChange(change, germanTranslator, playerId)), [true, false, false]);
+	});
+
+	it('lets creators, builders and translators mark text as needing no translation', () =>
+	{
+		const mark: EditorChange = { kind: 'saveNoTranslation', text: { kind: 'universe', thingId: playerId, field: 'name' }, noTranslation: true };
+
+		assert.deepStrictEqual(UNIVERSE_ROLES.map((role) => [role, mayMakeChange(mark, accessOf(role), playerId)]), [
+			['creator', true],
+			['builder', true],
+			['beta_tester', false],
+			['translator', true]
+		]);
 	});
 
 	it('checks each change against the role, letting anyone remove themself', () =>

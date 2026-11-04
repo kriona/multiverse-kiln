@@ -749,6 +749,15 @@ a.button.universe-item
 		color: $text-muted;
 	}
 
+	// A checkbox sits beside its words, level with the fields' boxes
+	label.checkbox
+	{
+		flex-direction: row;
+		align-items: center;
+		gap: 6px;
+		min-height: 32px;
+	}
+
 	input[type="search"]
 	{
 		flex: 1;

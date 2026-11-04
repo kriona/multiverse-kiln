@@ -560,6 +560,18 @@ export function canTranslate(access: EditorAccess, language: string): boolean
 }
 
 /**
+ * Whether someone may mark a piece of universe text as needing no translation in any language, such as a
+ * proper name, or as needing one again: creators, builders, server admins and translators
+ *
+ * @param access The user's role in the editor, and their languages
+ * @return True when they may
+ */
+export function canMarkNoTranslation(access: EditorAccess): boolean
+{
+	return(canEditWorld(access.role) || (access.role === 'translator'));
+}
+
+/**
  * Whether a user may play a universe, and make characters in it, in the stage it is in
  *
  * @param stage The universe's stage

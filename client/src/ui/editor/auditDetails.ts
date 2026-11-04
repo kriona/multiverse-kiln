@@ -364,6 +364,21 @@ const AUDIT_DETAILS: Readonly<Record<AuditSubject, MessageDescriptor>> = defineM
 		id: 'editor.audit.detail.links',
 		defaultMessage: '{action, select, deleted {{count, plural, one {Deleted # link in {name}} other {Deleted # links in {name}}}} other {{count, plural, one {Added or changed # link in {name}} other {Added or changed # links in {name}}}}}',
 		description: 'In the editor\'s Audit tab\'s list of what a save changed: how many links (cells on a map that take characters to another area) it added or changed, or deleted, in one area. {name} is the area\'s name'
+	},
+	translations: {
+		id: 'editor.audit.detail.translations',
+		defaultMessage: '{count, plural, one {Added, changed or deleted # translation into {name}} other {Added, changed or deleted # translations into {name}}}',
+		description: 'In the editor\'s Audit tab\'s list of what a save changed: how many translations of the universe\'s text (names and descriptions) into one language it saved. {name} is the language\'s name'
+	},
+	translatorNotes: {
+		id: 'editor.audit.detail.translatorNotes',
+		defaultMessage: '{count, plural, one {Wrote or deleted # note for translators} other {Wrote or deleted # notes for translators}}',
+		description: 'In the editor\'s Audit tab\'s list of what a save changed: how many notes for translators on the universe\'s text it wrote or deleted'
+	},
+	noTranslation: {
+		id: 'editor.audit.detail.noTranslation',
+		defaultMessage: '{action, select, added {{count, plural, one {Marked # piece of text as needing no translation} other {Marked # pieces of text as needing no translation}}} other {{count, plural, one {Marked # piece of text as needing translation again} other {Marked # pieces of text as needing translation again}}}}',
+		description: 'In the editor\'s Audit tab\'s list of what a save changed: how many pieces of the universe\'s text (names and descriptions) it marked as staying the same in every language, such as proper names, or as needing translation again'
 	}
 });
 
@@ -665,6 +680,8 @@ function targetName(subject: AuditSubject, target: OptionName | null, ruleset: R
 			return(themeName(target, ruleset));
 		case 'difficultyLevel':
 			return(difficultyName(target));
+		case 'translations':
+			return(languageName(target.name ?? ''));
 		default:
 			return(target.name ?? '');
 	}

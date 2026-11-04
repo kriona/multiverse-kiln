@@ -403,7 +403,41 @@ export class SaveAudit
 				return(this.changeArea(change.areaId, 'links', 'changed', 1));
 			case 'deleteLink':
 				return(this.changeArea(change.areaId, 'links', 'deleted', 1));
+
+			// Counted together, one line for each language, one for the notes, and one each for marking
+			// text as needing no translation and as needing one again
+			case 'saveTranslation':
+				this.count('translations', 'changed', change.language);
+				return;
+			case 'saveTranslatorNote':
+				this.count('translatorNotes', 'changed', null);
+				return;
+			case 'saveNoTranslation':
+				this.count('noTranslation', (change.noTranslation ? 'added' : 'deleted'), null);
+				return;
 		}
+	}
+
+	/**
+	 * Counts one more translation into a language, note for translators, or piece of text marked, on the
+	 * save's line for them
+	 *
+	 * @param subject translations, translatorNotes or noTranslation
+	 * @param action What was done to it
+	 * @param language The translations' language, or null for the others
+	 */
+	private count(subject: 'translations' | 'translatorNotes' | 'noTranslation', action: AuditAction, language: string | null): void
+	{
+		const target = ((language === null) ? null : { key: null, name: language });
+		const counted = this.details.find((detail) => ((detail.subject === subject) && (detail.action === action) && (detail.target?.name === target?.name)));
+
+		if (counted)
+		{
+			counted.count++;
+			return;
+		}
+
+		this.add(subject, action, target, 1);
 	}
 
 	/**
