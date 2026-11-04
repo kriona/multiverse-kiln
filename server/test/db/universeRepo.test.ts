@@ -38,13 +38,13 @@ describe('universeRepo', () =>
 		assert.strictEqual(await findDisabledReason(universeId), 'Spam');
 		assert.strictEqual((await findEditableUniverse(universeId))?.disabledReason, 'Spam');
 		assert.deepStrictEqual(await listUniverses('let_there_be_light', 0, 10), []);
-		assert.strictEqual(await findUniverseDetails(universeId, 'let_there_be_light'), undefined);
+		assert.strictEqual(await findUniverseDetails(universeId), undefined);
 
 		assert.strictEqual(await setUniverseDisabled(universeId, null), true);
 		assert.strictEqual(await setUniverseDisabled(universeId, null), false);
 		assert.strictEqual(await findDisabledReason(universeId), null);
 		assert.deepStrictEqual((await listUniverses('let_there_be_light', 0, 10)).map((universe) => universe.id), [universeId]);
-		assert.strictEqual((await findUniverseDetails('kilnhaven', 'let_there_be_light'))?.id, universeId);
+		assert.strictEqual((await findUniverseDetails('kilnhaven'))?.id, universeId);
 	});
 
 	it('refuses a disabled universe without a reason, or with one too long', async () =>
@@ -70,6 +70,17 @@ describe('universeRepo', () =>
 		assert.strictEqual(universe?.startingAreaId, startId);
 	});
 
+	it('finds a universe\'s details in any stage, with its stage', async () =>
+	{
+		const universeId = await addUniverse('Kilnhaven');
+
+		assert.strictEqual((await findUniverseDetails(universeId))?.stage, 'in_the_beginning');
+
+		await updateUniverseSettings(universeId, { stage: 'end_of_time' });
+
+		assert.strictEqual((await findUniverseDetails('kilnhaven'))?.stage, 'end_of_time');
+	});
+
 	it('finds nothing for an unknown ID', async () =>
 	{
 		assert.strictEqual(await findUniverse('00000000-0000-4000-8000-000000000000'), undefined);
@@ -93,8 +104,8 @@ describe('universeRepo', () =>
 
 		await updateUniverseSettings(isles, { name: 'Café Isles' });
 
-		assert.strictEqual((await findUniverseDetails('café-isles', 'let_there_be_light'))?.id, isles);
-		assert.strictEqual(await findUniverseDetails('the-shattered-isles', 'let_there_be_light'), undefined);
+		assert.strictEqual((await findUniverseDetails('café-isles'))?.id, isles);
+		assert.strictEqual(await findUniverseDetails('the-shattered-isles'), undefined);
 		await assert.rejects(updateUniverseSettings(kilnhaven, { name: 'CAFÉ ISLES' }), UniverseNameTakenError);
 		assert.strictEqual((await findUniverse(kilnhaven))?.name, 'Kilnhaven');
 	});

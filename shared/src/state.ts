@@ -74,7 +74,13 @@ export const GameState = schema({
 	 * The group's game clock: seconds of game time since its world began. Areas whose time flows
 	 * normally take their time of day from it (see secondOfDay)
 	 */
-	clock: t.number()
+	clock: t.number(),
+
+	/**
+	 * Whether the universe has reached the end of time: the group can look at its map, but nothing in
+	 * the game changes, so the room refuses moving and links
+	 */
+	locked: t.boolean()
 }, 'GameState');
 export type GameState = SchemaType<typeof GameState>;
 

@@ -4,9 +4,11 @@ import http from 'http';
 
 import { ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, AUTH_PROVIDERS_PATH, AUTH_SESSION_PATH, invitePath, PUBLIC_SITE_SETTINGS_PATH, playerProfilePath, PROFILE_PATH, MAX_UNIVERSES_PER_PAGE, UNIVERSES_PATH, type UniverseDetails, type UniverseListPayload, type UniverseStage } from '@multiverse-kiln/shared';
 
+import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { createUniverse } from '../src/db/universeRepo.js';
 import { DEV_BOT_LOGIN_PATH } from '../src/http/devLogin.js';
 import { HEALTH_PATH } from '../src/http/health.js';
+import { addPlayer, logInBrowser, type TestBrowser } from './players.js';
 import { allowedTestOrigin } from './setup.js';
 import { getTestServer, testServerUrl } from './testServer.js';
 
@@ -236,8 +238,43 @@ describe('Universe list', () =>
 			slug: 'kilnhaven',
 			shortDescription: 'A small town.',
 			longDescription: 'A **small** town.',
-			ruleset: 'pf1e'
+			ruleset: 'pf1e',
+			stage: 'let_there_be_light'
 		});
+	});
+
+	it('gives a universe at the end of time to anyone, and one not open to everyone only to players whose role lets them play it', async () =>
+	{
+		const retiredId = await addUniverseIn('Retired', 'end_of_time');
+		const testingId = await addUniverseIn('Testing', 'prologue');
+		const unfinishedId = await addUniverseIn('Unfinished', 'in_the_beginning');
+		const tester = await logInBrowser((await addPlayer('Tess')).id);
+		const builder = await logInBrowser((await addPlayer('Bob')).id);
+		const stranger = await logInBrowser((await addPlayer('Sam')).id);
+
+		await setUniverseRole(testingId, tester.playerId, 'beta_tester');
+		await setUniverseRole(unfinishedId, tester.playerId, 'beta_tester');
+		await setUniverseRole(unfinishedId, builder.playerId, 'builder');
+
+		/**
+		 * Fetches a universe's page as a browser
+		 *
+		 * @param universeId The universe's ID
+		 * @param browser The browser, or undefined for one that isn't logged in
+		 * @return The response's status
+		 */
+		const statusFor = async (universeId: string, browser?: TestBrowser): Promise<number> =>
+		{
+			const response = await fetch(`${testServerUrl}${UNIVERSES_PATH}/${universeId}`, { headers: (browser ? { Cookie: browser.cookie } : {}) });
+
+			await response.body?.cancel();
+
+			return(response.status);
+		};
+
+		assert.strictEqual(((await fetchUniverses(`/${retiredId}`)).body as UniverseDetails).stage, 'end_of_time');
+		assert.deepStrictEqual(await Promise.all([undefined, stranger, tester].map((browser) => statusFor(testingId, browser))), [404, 404, 200]);
+		assert.deepStrictEqual(await Promise.all([undefined, stranger, tester, builder].map((browser) => statusFor(unfinishedId, browser))), [404, 404, 404, 200]);
 	});
 
 	it('finds a listed universe by its slug as well as its ID', async () =>

@@ -39,5 +39,15 @@ export enum ServerCloseCode
 	/**
 	 * A server admin disabled the universe
 	 */
-	UniverseDisabled = 4017
+	UniverseDisabled = 4017,
+
+	/**
+	 * The universe's stage changed to one the player's role doesn't let them play it in
+	 */
+	StageChanged = 4018,
+
+	/**
+	 * The universe reached the end of time, so its lobby is locked; groups can still be opened, read-only
+	 */
+	UniverseLocked = 4019
 }

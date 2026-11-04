@@ -1,14 +1,15 @@
 /**
  * The routes for a player's characters in a universe (listed in shared/src/characters.ts)
  *
- * Every route needs a logged-in browser and a universe the player may play in its stage. The server
+ * Every route needs a logged-in browser and a universe the player may play in its stage, except listing
+ * the player's characters and their sheets, which a universe at the end of time still allows. The server
  * rolls ability scores and keeps them until a character is made with them, so asking again doesn't
  * roll again; the player only chooses which ability gets which score
  */
 import { randomInt } from 'crypto';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { addMoney, canPlayUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, isReservedName, isSf1eClassRules, isSf1eRaceRules, MAX_CHARACTER_NAME_LENGTH, MAX_CHARACTERS_PER_UNIVERSE, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditableUniverseDetails, type EditorClass, type EditorRace, type NewCharacterOptions, type NewCharacterRequest, type OptionName } from '@multiverse-kiln/shared';
+import { addMoney, canPlayUniverse, canViewUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, isReservedName, isSf1eClassRules, isSf1eRaceRules, MAX_CHARACTER_NAME_LENGTH, MAX_CHARACTERS_PER_UNIVERSE, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditableUniverseDetails, type EditorClass, type EditorRace, type NewCharacterOptions, type NewCharacterRequest, type OptionName, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
 
 import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findLastPlayedCharacterId, findOwnCharacter, findPf1eAbilityRoll, keepPf1eAbilityRoll, listCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion } from '../db/characterRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
@@ -150,54 +151,69 @@ export function addCharacterRoutes(app: Application, allowedOrigins: Set<string>
 	router.use(refuseWritesFromOtherOrigins(allowedOrigins));
 	router.use(express.json());
 	router.use(requireLogin);
-	router.use(loadPlayableUniverse);
 
-	router.get('/', listRoute);
-	router.get('/new', newCharacterRoute);
-	router.put('/draft', saveDraftRoute);
-	router.delete('/draft', deleteDraftRoute);
-	router.post('/', createRoute);
-	router.get('/:characterId', sheetRoute);
-	router.delete('/:characterId', deleteRoute);
-	router.put('/:characterId/deletion', scheduleDeletionRoute);
-	router.delete('/:characterId/deletion', restoreRoute);
+	// Characters can be listed and looked at in a universe at the end of time, but not made or deleted
+	router.get('/', loadViewableUniverse, listRoute);
+	router.get('/new', loadPlayableUniverse, newCharacterRoute);
+	router.put('/draft', loadPlayableUniverse, saveDraftRoute);
+	router.delete('/draft', loadPlayableUniverse, deleteDraftRoute);
+	router.post('/', loadPlayableUniverse, createRoute);
+	router.get('/:characterId', loadViewableUniverse, sheetRoute);
+	router.delete('/:characterId', loadPlayableUniverse, deleteRoute);
+	router.put('/:characterId/deletion', loadPlayableUniverse, scheduleDeletionRoute);
+	router.delete('/:characterId/deletion', loadPlayableUniverse, restoreRoute);
 	router.use(handleCharacterError);
 
 	app.use(`${UNIVERSES_PATH}/:universeId/characters`, router);
 }
 
 /**
- * Middleware that loads the universe, answering 404 unless the player may play it: it isn't disabled, and
- * its stage and the player's role in it allow them to
+ * Makes middleware that loads the universe, answering 404 unless it isn't disabled and its stage and
+ * the player's role in it pass a check
  *
- * @param request The request
- * @param response The response
- * @param next Continues to the next handler
+ * @param allows The check, given the universe's stage and the player's role in it
+ * @return The middleware
  */
-export async function loadPlayableUniverse(request: Request, response: Response, next: NextFunction): Promise<void>
+function universeLoader(allows: (stage: UniverseStage, role: UniverseRole | undefined) => boolean): (request: Request, response: Response, next: NextFunction) => Promise<void>
 {
-	const universeId = z.uuid().safeParse(request.params.universeId);
-
-	if (universeId.success)
+	return(async (request, response, next) =>
 	{
-		const [universe, role] = await Promise.all([
-			findEditableUniverse(universeId.data),
-			findUniverseRole(universeId.data, playerIdOf(request))
-		]);
+		const universeId = z.uuid().safeParse(request.params.universeId);
 
-		if (universe && (universe.disabledReason === null) && canPlayUniverse(universe.stage, role))
+		if (universeId.success)
 		{
-			universes.set(request, universe);
-			next();
-			return;
-		}
-	}
+			const [universe, role] = await Promise.all([
+				findEditableUniverse(universeId.data),
+				findUniverseRole(universeId.data, playerIdOf(request))
+			]);
 
-	sendError(response, 404, errorMessages.noSuchUniverse);
+			if (universe && (universe.disabledReason === null) && allows(universe.stage, role))
+			{
+				universes.set(request, universe);
+				next();
+				return;
+			}
+		}
+
+		sendError(response, 404, errorMessages.noSuchUniverse);
+	});
 }
 
 /**
- * The universe of a request that has passed loadPlayableUniverse
+ * Middleware that loads the universe, answering 404 unless the player may play it: it isn't disabled, and
+ * its stage and the player's role in it allow them to
+ */
+export const loadPlayableUniverse = universeLoader(canPlayUniverse);
+
+/**
+ * Middleware that loads the universe, answering 404 unless the player may look at it: it isn't
+ * disabled, and its stage and the player's role in it allow them to (canViewUniverse), which a universe
+ * at the end of time allows everyone
+ */
+export const loadViewableUniverse = universeLoader(canViewUniverse);
+
+/**
+ * The universe of a request that has passed loadPlayableUniverse or loadViewableUniverse
  *
  * @param request The request
  * @return The universe
@@ -208,7 +224,7 @@ export function universeOf(request: Request): PlayableUniverse
 
 	if (!universe)
 	{
-		throw new Error(`${request.method} ${request.path} reached a handler without loadPlayableUniverse`);
+		throw new Error(`${request.method} ${request.path} reached a handler without loading its universe`);
 	}
 
 	return(universe);

@@ -1,7 +1,7 @@
 import '@github/markdown-toolbar-element';
 import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, DISPLAY_TIME_NAMES, DISPLAY_TIMES, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_LONG_DESCRIPTION_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, PASSAGES_OF_TIME, UNIVERSE_STAGE_DESCRIPTIONS, UNIVERSE_STAGE_NAMES, UNIVERSE_STAGES, universeSlug, type DisplayTime, type EditableUniverse, type FaerieMorning, type PassageOfTime, type UniverseSettingsUpdate, type UniverseStage } from '@multiverse-kiln/shared';
 
-import { t } from '../../localization';
+import { formatToNodes, t } from '../../localization';
 import { describeEditorError } from '../../network/editorApi';
 import { ChangeTracker } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
@@ -32,6 +32,7 @@ export class UniverseTab implements SavableTab
 	private readonly toolbar = getElement('universe-long-toolbar', HTMLElement);
 	private readonly preview = getElement('universe-long-preview', HTMLElement);
 	private readonly stage = getElement('universe-stage', HTMLFieldSetElement);
+	private readonly stageWarning = getElement('universe-stage-warning', HTMLElement);
 	private readonly time = getElement('universe-time', HTMLSelectElement);
 	private readonly faerieField = getElement('universe-faerie-field', HTMLElement);
 	private readonly faerie = getElement('universe-faerie', HTMLSelectElement);
@@ -86,6 +87,11 @@ export class UniverseTab implements SavableTab
 			this.faerieField.hidden = (this.time.value !== 'faerie');
 		});
 
+		this.stage.addEventListener('change', () =>
+		{
+			this.showStageWarning();
+		});
+
 		for (const input of [this.name, this.shortDescription, this.longDescription])
 		{
 			input.addEventListener('input', () =>
@@ -111,6 +117,7 @@ export class UniverseTab implements SavableTab
 			input.checked = (stage === universe.stage);
 		}
 
+		this.showStageWarning();
 		this.time.value = universe.passageOfTime;
 		this.faerie.value = (universe.faerieMorning ?? FAERIE_MORNINGS[0]);
 		this.faerieField.hidden = (universe.passageOfTime !== 'faerie');
@@ -151,6 +158,45 @@ export class UniverseTab implements SavableTab
 		this.stageInputs.set(stage, input);
 
 		return(label);
+	}
+
+	/**
+	 * The stage the form has chosen
+	 *
+	 * @return The stage, or undefined before a universe is open
+	 */
+	private chosenStage(): UniverseStage | undefined
+	{
+		return((UNIVERSE_STAGES.find((stage) => this.stageInputs.get(stage)?.checked) ?? this.universe?.stage));
+	}
+
+	/**
+	 * Warns, under the stage, that new areas will start disabled once a universe still in the beginning
+	 * moves to another stage (the Areas tab's rule)
+	 */
+	private showStageWarning(): void
+	{
+		const chosen = this.chosenStage();
+		const leaving = ((this.universe?.stage === 'in_the_beginning') && (chosen !== undefined) && (chosen !== 'in_the_beginning'));
+
+		this.stageWarning.hidden = !leaving;
+
+		if (!leaving)
+		{
+			this.stageWarning.replaceChildren();
+			return;
+		}
+
+		const stage = document.createElement('em');
+
+		stage.textContent = t(UNIVERSE_STAGE_NAMES.in_the_beginning);
+		this.stageWarning.replaceChildren('⚠️', ...formatToNodes({
+			id: 'editor.universe.stageWarning',
+			defaultMessage: 'Once the universe leaves the stage {stage}, new areas start disabled, so players can\'t wander into them before they are finished. Enable each one on the Areas tab when it\'s ready.',
+			description: 'Under the stage choice on the editor\'s Universe tab, when the universe is in the stage "in the beginning" and another stage is chosen; {stage} is the name of the stage "in the beginning", shown in italics'
+		}, {
+			stage
+		}));
 	}
 
 	/**
@@ -205,7 +251,7 @@ export class UniverseTab implements SavableTab
 			name: this.name.value.trim(),
 			shortDescription: this.shortDescription.value.trim(),
 			longDescription: this.longDescription.value,
-			stage: (UNIVERSE_STAGES.find((stage) => this.stageInputs.get(stage)?.checked) ?? universe.stage),
+			stage: (this.chosenStage() ?? universe.stage),
 			passageOfTime,
 			faerieMorning: ((passageOfTime === 'faerie') ? this.faerie.value as FaerieMorning : null),
 			displayTime: this.displayTime.value as DisplayTime
@@ -238,6 +284,7 @@ export class UniverseTab implements SavableTab
 		if (universe && update)
 		{
 			this.universe = { ...universe, ...update };
+			this.showStageWarning();
 			this.changes.markSaved();
 			this.onSaved(update);
 		}

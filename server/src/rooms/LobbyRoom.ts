@@ -1,5 +1,5 @@
 import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
-import { LobbyMember, LobbyMessageType, LobbyServerMessageType, LobbyState, MessageType, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, ServerCloseCode, type ChatHistoryPayload, type ChatMessage, type NoticePayload, type PlayingAsPayload, type Sight } from '@multiverse-kiln/shared';
+import { canPlayUniverse, LobbyMember, LobbyMessageType, LobbyServerMessageType, LobbyState, MessageType, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, ServerCloseCode, type ChatHistoryPayload, type ChatMessage, type NoticePayload, type PlayingAsPayload, type Sight } from '@multiverse-kiln/shared';
 
 import { resolveSession } from '../auth/sessions.js';
 import { listPlayableCharacters, markCharacterPlayed, type PlayableCharacter } from '../db/characterRepo.js';
@@ -9,7 +9,7 @@ import { loadChunksAt, loadArea } from '../db/areaRepo.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { characterChanges, type CharacterChange } from '../players/characterChanges.js';
 import { groupChanges, type GroupChange } from '../players/groupChanges.js';
-import { universeAccessChanges } from '../players/universeAccess.js';
+import { universeAccessChanges, type StageChange } from '../players/universeAccess.js';
 import { areaChanges } from '../world/areaChanges.js';
 import { InvalidMessages } from './invalidMessages.js';
 import { mayPlayUniverse } from './universePlay.js';
@@ -118,6 +118,8 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	private stopFollowingSessions?: () => void;
 
 	private stopFollowingAccess?: () => void;
+
+	private stopFollowingStage?: () => void;
 
 	/**
 	 * The most recent chat messages, oldest first (server-only, not synced)
@@ -277,10 +279,19 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 				this.turnAwayPlayers(change.playerIds);
 			}
 		});
+
+		this.stopFollowingStage = universeAccessChanges.onStageChanged((change) =>
+		{
+			if (change.universeId === this.universeId)
+			{
+				this.applyStageChange(change);
+			}
+		});
 	}
 
 	/**
-	 * Stops following changes to the world, to players' characters, to groups and to sessions
+	 * Stops following changes to the world, to players' characters, to groups, to sessions, to who may
+	 * play and to the universe's stage
 	 */
 	onDispose(): void
 	{
@@ -289,6 +300,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		this.stopFollowingGroups?.();
 		this.stopFollowingSessions?.();
 		this.stopFollowingAccess?.();
+		this.stopFollowingStage?.();
 	}
 
 	/**
@@ -639,6 +651,27 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 			if (playerIds.has(identityOf(client).playerId))
 			{
 				client.leave(ServerCloseCode.AccessLost);
+			}
+		}
+	}
+
+	/**
+	 * Turns away the windows of players the universe's new stage doesn't let play it: everyone at the
+	 * end of time, when the lobby is locked
+	 *
+	 * @param change The new stage, and every editor's role
+	 */
+	private applyStageChange(change: StageChange): void
+	{
+		for (const client of this.clients)
+		{
+			if (change.stage === 'end_of_time')
+			{
+				client.leave(ServerCloseCode.UniverseLocked);
+			}
+			else if (!canPlayUniverse(change.stage, change.roles.get(identityOf(client).playerId)))
+			{
+				client.leave(ServerCloseCode.StageChanged);
 			}
 		}
 	}

@@ -363,6 +363,33 @@ describe('Character routes', () =>
 		assert.deepStrictEqual((await send<CharacterListPayload>(ada, 'GET', charactersPath(universeId))).body.characters, []);
 	});
 
+	it('lists characters and shows their sheets at the end of time, but makes and deletes none', async () =>
+	{
+		const request = await rolledDwarf();
+		const created = await send<CreatedPayload>(ada, 'POST', charactersPath(universeId), request);
+
+		assert.strictEqual(created.status, 201, JSON.stringify(created.body));
+
+		const path = characterPath(universeId, created.body.id);
+
+		await saveEditorChange(ada, universeId, { kind: 'universe', update: { stage: 'end_of_time' } });
+
+		assert.deepStrictEqual((await send<CharacterListPayload>(ada, 'GET', charactersPath(universeId))).body.characters.map((character) => character.id), [created.body.id]);
+		assert.strictEqual((await send(ada, 'GET', path)).status, 200);
+		assert.strictEqual((await send(ada, 'GET', `${charactersPath(universeId)}/new`)).status, 404);
+		assert.strictEqual((await send(ada, 'POST', charactersPath(universeId), request)).status, 404);
+		assert.strictEqual((await send(ada, 'PUT', `${charactersPath(universeId)}/draft`, { step: 'race' })).status, 404);
+		assert.strictEqual((await send(ada, 'PUT', `${path}/deletion`)).status, 404);
+		assert.strictEqual((await send(ada, 'DELETE', path)).status, 404);
+
+		// Anyone may look at a universe at the end of time, so a player without a role in it lists their none
+		const grace = await logIn('Grace');
+		const list = await send<CharacterListPayload>(grace, 'GET', charactersPath(universeId));
+
+		assert.strictEqual(list.status, 200);
+		assert.deepStrictEqual(list.body.characters, []);
+	});
+
 	it('waits the days the site sets after last rites, and refuses them when it sets none', async () =>
 	{
 		const created = await send<CreatedPayload>(ada, 'POST', charactersPath(universeId), await rolledDwarf());

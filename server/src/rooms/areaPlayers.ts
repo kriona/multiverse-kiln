@@ -485,6 +485,17 @@ export class AreaPlayers
 	}
 
 	/**
+	 * Stops every player at the end of their current step, as when the room stops taking moves
+	 */
+	stopAll(): void
+	{
+		for (const playerId of this.players.keys())
+		{
+			this.stop(playerId);
+		}
+	}
+
+	/**
 	 * Stops a player at the end of their current step: a window can close or switch players while its
 	 * keys are held, and its last Move may still be queued
 	 *

@@ -214,6 +214,26 @@ export async function findUniverseRole(universeId: string, playerId: string, exe
 }
 
 /**
+ * Every editor's role in a universe
+ *
+ * @param universeId The universe's ID
+ * @param executor The database, or a transaction
+ * @return The roles, by player ID
+ */
+export async function listUniverseRoles(universeId: string, executor: Executor = db): Promise<Map<string, UniverseRole>>
+{
+	const rows = await executor
+		.select({
+			playerId: universeEditors.playerId,
+			role: universeEditors.role
+		})
+		.from(universeEditors)
+		.where(eq(universeEditors.universeId, universeId));
+
+	return(new Map(rows.map((row) => [row.playerId, row.role])));
+}
+
+/**
  * How many universes a player has a role in
  *
  * @param playerId The player's ID

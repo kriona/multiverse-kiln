@@ -13,8 +13,9 @@ import { pageMessages } from './ui/pageMessages';
 import { UniverseCharacters } from './ui/UniverseCharacters';
 
 /**
- * Shows a universe: its name, ruleset and descriptions, and Enter Universe, which goes to its lobby.
- * The address ends with the slug, so one opened by ID changes to it
+ * Shows a universe: its name, ruleset and descriptions, that it is locked at the end of time, and Enter
+ * Universe, which goes to its lobby, or to the player's group in a locked universe. The address ends
+ * with the slug, so one opened by ID changes to it
  *
  * @param universe The universe
  */
@@ -24,6 +25,7 @@ function showUniverse(universe: UniverseDetails): void
 	getElement('universe-ruleset', HTMLElement).textContent = t(RULESET_NAMES[universe.ruleset]);
 	getElement('universe-summary', HTMLElement).textContent = universe.shortDescription;
 	showMarkdown(getElement('universe-description', HTMLElement), universe.longDescription);
+	getElement('universe-locked', HTMLElement).hidden = (universe.stage !== 'end_of_time');
 	getElement('universe-enter', HTMLAnchorElement).href = gamePageUrl(universe.slug);
 	replacePagePath(universePageUrl(universe.slug));
 	setPageTitle(universe.name);

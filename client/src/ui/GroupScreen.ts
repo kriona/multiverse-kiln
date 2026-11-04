@@ -85,6 +85,8 @@ export class GroupScreen
 	private readonly time = getElement('group-time', HTMLElement);
 	private readonly inviteButton = getElement('invite-group', HTMLButtonElement);
 	private readonly leaveButton = getElement('leave-group', HTMLButtonElement);
+	private readonly createCharacterButton = getElement('group-create-character', HTMLButtonElement);
+	private readonly lockedNotice = getElement('group-locked', HTMLElement);
 	private readonly map = getElement('group-map', HTMLElement);
 	private readonly memberCount = getElement('group-member-count', HTMLElement);
 	private readonly memberList = getElement('group-member-list', HTMLUListElement);
@@ -128,6 +130,11 @@ export class GroupScreen
 	private groupName = '';
 
 	/**
+	 * Whether the universe has reached the end of time, which locks the room; undefined until the room says
+	 */
+	private locked: boolean | undefined;
+
+	/**
 	 * A character the window has just switched to, until the room sends the area they are in
 	 */
 	private switchingTo: string | undefined;
@@ -161,7 +168,7 @@ export class GroupScreen
 			}
 		});
 
-		getElement('group-create-character', HTMLButtonElement).addEventListener('click', () =>
+		this.createCharacterButton.addEventListener('click', () =>
 		{
 			actions.createCharacter();
 		});
@@ -225,6 +232,7 @@ export class GroupScreen
 		this.ownPlayerId = ownPlayerId;
 		this.groupName = '';
 		this.anchorId = '';
+		this.locked = undefined;
 		this.members.clear();
 		this.leaving = false;
 		this.leaveButton.disabled = false;
@@ -270,6 +278,11 @@ export class GroupScreen
 		this.unbinds.push(callbacks.listen('clock', () =>
 		{
 			this.showClock();
+		}));
+
+		this.unbinds.push(callbacks.listen('locked', (locked: boolean) =>
+		{
+			this.followLock(locked);
 		}));
 
 		// Faerie time changes as the character walks, without the clock moving
@@ -331,6 +344,32 @@ export class GroupScreen
 			this.finishSwitch(area);
 			this.showClock();
 		}));
+	}
+
+	/**
+	 * Follows whether the room is locked, reading out a change that happens while the window is here
+	 *
+	 * @param locked Whether the universe has reached the end of time
+	 */
+	private followLock(locked: boolean): void
+	{
+		if ((this.locked !== undefined) && (locked !== this.locked))
+		{
+			announce((locked
+				? t({
+					id: 'group.lockedNow',
+					defaultMessage: 'This universe has reached the end of time, so it is now locked. Nothing can move or change.',
+					description: 'Read out by screen readers in a group when one of the universe\'s creators changed its stage to end of time while the player was playing'
+				})
+				: t({
+					id: 'group.unlockedNow',
+					defaultMessage: 'This universe is no longer locked. You can move again.',
+					description: 'Read out by screen readers in a group when one of the universe\'s creators changed its stage from end of time to another while the player was in the group'
+				})));
+		}
+
+		this.locked = locked;
+		this.queueRender();
 	}
 
 	/**
@@ -590,7 +629,8 @@ export class GroupScreen
 
 	/**
 	 * Draws the group's name, the character the window plays, the members, the player's characters,
-	 * Invite for the anchor being's player, and Leave group, which is Disband Group for the anchor being
+	 * Invite for the anchor being's player, and Leave group, which is Disband Group for the anchor being.
+	 * A locked room says so, in place of Invite, Leave group and Create Character
 	 */
 	private render(): void
 	{
@@ -604,7 +644,10 @@ export class GroupScreen
 		this.title.textContent = groupName;
 		this.characterName.textContent = (playing?.name ?? '');
 		setPageTitle(groupName);
-		this.inviteButton.hidden = (this.members.get(this.anchorId)?.playerId !== this.ownPlayerId);
+		this.lockedNotice.hidden = !this.locked;
+		this.inviteButton.hidden = ((this.locked ?? false) || (this.members.get(this.anchorId)?.playerId !== this.ownPlayerId));
+		this.leaveButton.hidden = (this.locked ?? false);
+		this.createCharacterButton.hidden = (this.locked ?? false);
 		setButtonLabel(this.leaveButton, signOutIcon, ((this.characterId === this.anchorId)
 			? t({
 				id: 'group.disband',

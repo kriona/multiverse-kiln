@@ -1,5 +1,5 @@
 import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
-import { cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, GameMessageType, GameServerMessageType, GameState, GroupMember, MessageType, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, ServerCloseCode, visibleCells, type CellsSeenPayload, type CellValue, type NoticePayload, type Sight, type StartingCell } from '@multiverse-kiln/shared';
+import { canViewUniverse, cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, GameMessageType, GameServerMessageType, GameState, GroupMember, MessageType, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, ServerCloseCode, visibleCells, type CellsSeenPayload, type CellValue, type NoticePayload, type Sight, type StartingCell } from '@multiverse-kiln/shared';
 
 import { resolveSession } from '../auth/sessions.js';
 import { markCharacterPlayed } from '../db/characterRepo.js';
@@ -14,10 +14,10 @@ import { loadChunksAt, loadArea } from '../db/areaRepo.js';
 import { characterChanges, type CharacterChange } from '../players/characterChanges.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { groupChanges, type GroupChange } from '../players/groupChanges.js';
-import { universeAccessChanges } from '../players/universeAccess.js';
+import { universeAccessChanges, type StageChange } from '../players/universeAccess.js';
 import { areaChanges } from '../world/areaChanges.js';
 import { InvalidMessages } from './invalidMessages.js';
-import { mayPlayUniverse } from './universePlay.js';
+import { mayViewUniverse } from './universePlay.js';
 import { controlPayload, describeInvalidPayload, gameJoinOptions, movePayload } from './payloads.js';
 import { AreaCache, type ActiveArea } from './areaCache.js';
 import { CHUNK_REFRESH_INTERVAL_MS, SIMULATION_TICK_RATE, AreaPlayers, type Appearance, type PlayerPosition } from './areaPlayers.js';
@@ -79,6 +79,9 @@ function identityOf(client: GameClient): GameIdentity
  * group); each window controls one of them and can switch to another (GameMessageType.Control). When a
  * player's last window leaves, their characters are taken off the map and where they were is saved.
  * The room disposes once everyone has left
+ *
+ * In a universe at the end of time the room is locked (state.locked): members can open it and look at
+ * the map, and switch between their characters, but it ignores moves and links
  *
  * The group routes (http/groups.ts) decide who is in the group, and the room follows them (groupChanges)
  */
@@ -188,12 +191,19 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 				return;
 			}
 
-			this.areaPlayers.queueMove(client.sessionId, result.data);
+			// Nothing moves in a universe at the end of time
+			if (!this.state.locked)
+			{
+				this.areaPlayers.queueMove(client.sessionId, result.data);
+			}
 		},
 
 		[MessageType.TakeLink]: (client: GameClient) =>
 		{
-			this.areaPlayers.takeLink(client.sessionId);
+			if (!this.state.locked)
+			{
+				this.areaPlayers.takeLink(client.sessionId);
+			}
 		},
 
 		[GameMessageType.Control]: (client: GameClient, payload: unknown) =>
@@ -253,6 +263,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		this.state.anchorId = group.anchorCharacterId;
 		this.gameClock = new GroupClock(group.clockSeconds);
 		this.state.clock = this.gameClock.seconds;
+		this.state.locked = (universe.stage === 'end_of_time');
 		this.raceSight = await loadRaceSight(universe.id, universe.ruleset);
 
 		this.areaPlayers.onWalk((characterId, seconds, time) =>
@@ -331,6 +342,13 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 				{
 					this.turnAwayPlayers(change.playerIds);
 				}
+			}),
+			universeAccessChanges.onStageChanged((change) =>
+			{
+				if (change.universeId === this.universeId)
+				{
+					this.applyStageChange(change);
+				}
 			})
 		);
 	}
@@ -356,7 +374,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		const session = await resolveSession(context.headers.get('cookie'));
 		const member = this.members.get(joinOptions.data.characterId);
 
-		if (!session || (member?.playerId !== session.playerId) || !member.playable || !await mayPlayUniverse(this.universeId, session.playerId))
+		if (!session || (member?.playerId !== session.playerId) || !member.playable || !await mayViewUniverse(this.universeId, session.playerId))
 		{
 			return(false);
 		}
@@ -888,6 +906,31 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			if (playerIds.has(identityOf(client).playerId))
 			{
 				client.leave(ServerCloseCode.AccessLost);
+			}
+		}
+	}
+
+	/**
+	 * Follows the universe's new stage: at the end of time the room locks and every character stops,
+	 * and in any other stage it unlocks. Windows of players the stage doesn't let look at the universe
+	 * are turned away
+	 *
+	 * @param change The new stage, and every editor's role
+	 */
+	private applyStageChange(change: StageChange): void
+	{
+		this.state.locked = (change.stage === 'end_of_time');
+
+		if (this.state.locked)
+		{
+			this.areaPlayers.stopAll();
+		}
+
+		for (const client of this.clients)
+		{
+			if (!canViewUniverse(change.stage, change.roles.get(identityOf(client).playerId)))
+			{
+				client.leave(ServerCloseCode.StageChanged);
 			}
 		}
 	}

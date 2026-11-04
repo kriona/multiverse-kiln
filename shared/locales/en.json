@@ -2731,6 +2731,10 @@
 		"defaultMessage": "Stage",
 		"description": "Heading of the choice of how far along a universe is, from being built to being retired; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
+	"editor.universe.stageWarning": {
+		"defaultMessage": "Once the universe leaves the stage {stage}, new areas start disabled, so players can't wander into them before they are finished. Enable each one on the Areas tab when it's ready.",
+		"description": "Under the stage choice on the editor's Universe tab, when the universe is in the stage \"in the beginning\" and another stage is chosen; {stage} is the name of the stage \"in the beginning\", shown in italics"
+	},
 	"editor.universeDisabled": {
 		"defaultMessage": "The site's admins have disabled this universe, so it can't be played and changes to it can't be saved. Reason: {reason}",
 		"description": "Shown above the editor's tabs for a universe one of the site's admins disabled; {reason} is the reason the admin gave, as they typed it"
@@ -2738,6 +2742,10 @@
 	"editor.universeDisabledAdmin": {
 		"defaultMessage": "The site's admins have disabled this universe, so it can't be played and its editors can't save. As a site admin, you can still save changes to it. Reason: {reason}",
 		"description": "Shown above the editor's tabs to one of the site's admins for a universe the admins disabled; {reason} is the reason the admin gave, as they typed it"
+	},
+	"editor.universeLocked": {
+		"defaultMessage": "This universe has reached the end of time, so only its creators can change it. You can still leave it on the Editors tab.",
+		"description": "Shown above the editor's tabs to a builder, beta tester or translator of a universe in the stage end of time, which locks it"
 	},
 	"editor.universeTitle": {
 		"defaultMessage": "Edit {universe}",
@@ -3495,6 +3503,10 @@
 		"defaultMessage": "You can create at most {max, plural, one {# universe} other {# universes}}.",
 		"description": "Why a new universe wasn't made: the player has made as many as allowed"
 	},
+	"error.universeLockedSave": {
+		"defaultMessage": "This universe has reached the end of time, so only its creators can change it.",
+		"description": "Why the world editor couldn't save: the universe is in the stage \"end of time\", which locks it, and the player isn't one of its creators. Leaving the universe can still be saved"
+	},
 	"error.universeNameTaken": {
 		"defaultMessage": "Another universe already has that name, or one too much like it.",
 		"description": "Why a universe wasn't made or renamed: universe names must be unique, and names that could be mistaken for each other count as the same, such as ones that differ only in capitals, accents, spaces or punctuation, letters from another alphabet that look the same, or \"1\" for \"i\""
@@ -3619,6 +3631,10 @@
 		"defaultMessage": "Loading the universe...",
 		"description": "Shown on the whole page while the game looks up the universe it was opened for"
 	},
+	"game.stageChanged": {
+		"defaultMessage": "The stage of {universe} was changed, and your role doesn't let you play it in its new stage.",
+		"description": "Shown on the game's page when the player was turned out of a universe they were playing because one of its creators changed its stage (e.g. from open to everyone back to testing); {universe} is its name"
+	},
 	"game.universeDeleted": {
 		"defaultMessage": "{universe} was deleted, with everything in it.",
 		"description": "Shown on the game's page when the universe being played was deleted, along with its creator's account; {universe} is its name"
@@ -3626,6 +3642,10 @@
 	"game.universeDisabled": {
 		"defaultMessage": "The site's admins have disabled {universe}, so it can't be played for now.",
 		"description": "Shown on the game's page when the universe being played was disabled by one of the site's admins; {universe} is its name"
+	},
+	"game.universeLocked": {
+		"defaultMessage": "{universe} has reached the end of time, so it is locked and its lobby can't be entered. Characters in a group can still open it to look around.",
+		"description": "Shown on the game's page instead of a universe's lobby when the universe is in the stage end of time, which locks it, or when it reached that stage while the player was in the lobby; {universe} is its name"
 	},
 	"game.universeNotFound": {
 		"defaultMessage": "That universe could not be found.",
@@ -3666,6 +3686,14 @@
 	"group.leaveFailed": {
 		"defaultMessage": "Could not leave the group.",
 		"description": "Shown when the character couldn't be taken out of their group"
+	},
+	"group.locked": {
+		"defaultMessage": "This universe has reached the end of time, so it is locked. You can look around and switch between your characters, but nothing can move or change.",
+		"description": "Above a group's map while its universe is in the stage end of time, which locks it"
+	},
+	"group.lockedNow": {
+		"defaultMessage": "This universe has reached the end of time, so it is now locked. Nothing can move or change.",
+		"description": "Read out by screen readers in a group when one of the universe's creators changed its stage to end of time while the player was playing"
 	},
 	"group.member.anchor": {
 		"defaultMessage": "anchor",
@@ -3711,6 +3739,10 @@
 		"defaultMessage": "Group",
 		"description": "Heading of the screen where a group plays, until the group's name has loaded, or when it has none"
 	},
+	"group.unlockedNow": {
+		"defaultMessage": "This universe is no longer locked. You can move again.",
+		"description": "Read out by screen readers in a group when one of the universe's creators changed its stage from end of time to another while the player was in the group"
+	},
 	"group.unnamed": {
 		"defaultMessage": "Group",
 		"description": "Heading of a group's screen when the group has no name"
@@ -3731,17 +3763,17 @@
 		"defaultMessage": "Create Universe",
 		"description": "Title of the dialog for making a new universe"
 	},
-	"home.createDisabled": {
-		"defaultMessage": "Creating universes is turned off for now",
-		"description": "Tooltip of the disabled Create Universe button when the site's admins have stopped everyone from creating universes"
-	},
-	"home.createLimit": {
-		"defaultMessage": "You can create at most {max, plural, one {# universe} other {# universes}}",
-		"description": "Tooltip of the disabled Create Universe button when the player has made as many universes as allowed"
-	},
 	"home.createUniverse": {
 		"defaultMessage": "Create Universe",
 		"description": "Button that opens the dialog for making a new universe"
+	},
+	"home.empty.text": {
+		"defaultMessage": "Come back later to see the light of the first universe.",
+		"description": "Under the heading Home shows when there are no universes to play yet and none can be created"
+	},
+	"home.empty.title": {
+		"defaultMessage": "The stars are still being forged.",
+		"description": "Heading Home shows in place of its lists when there are no universes to play, the player has none of their own, and the site's admins have turned off creating universes"
 	},
 	"home.listFailed": {
 		"defaultMessage": "Could not list the universes. Reload the page to try again.",
@@ -3750,14 +3782,6 @@
 	"home.logIn": {
 		"defaultMessage": "Log in",
 		"description": "Link in Home's toolbar to the page for logging in or creating an account"
-	},
-	"home.noOwnUniverses": {
-		"defaultMessage": "You haven't made a universe yet.",
-		"description": "Shown instead of the list of universes the player can edit when there are none"
-	},
-	"home.noUniverses": {
-		"defaultMessage": "There are no universes to play in yet.",
-		"description": "Shown instead of the list of universes when there are none to play"
 	},
 	"home.ownDetails": {
 		"defaultMessage": "{ruleset} - {stage} - {role}",
@@ -3775,6 +3799,10 @@
 		"defaultMessage": "Your universes",
 		"description": "Heading of the list of universes the player can edit"
 	},
+	"home.ownUniversesNone": {
+		"defaultMessage": "Try your hand at the act of creation?",
+		"description": "Heading Home shows in place of the list of universes the player can edit when they have none, above the Create Universe button"
+	},
 	"home.pageTitle": {
 		"defaultMessage": "Universes",
 		"description": "The browser tab's title while Home lists the universes, before the game engine's name"
@@ -3782,6 +3810,14 @@
 	"home.showMore": {
 		"defaultMessage": "Show more",
 		"description": "Button that adds the next page of universes to the list"
+	},
+	"home.testingHint": {
+		"defaultMessage": "Universes you have a role in that are open for testing. Only their editors and beta testers see them here.",
+		"description": "Under the heading of Home's list of universes open for testing, saying who sees them"
+	},
+	"home.testingUniverses": {
+		"defaultMessage": "Open for testing",
+		"description": "Heading of Home's list of universes in the stage prologue, open for testing before everyone can play, shown only to players with a role in one"
 	},
 	"home.universes": {
 		"defaultMessage": "Universes",
@@ -6350,6 +6386,10 @@
 	"universePage.loadFailed": {
 		"defaultMessage": "Could not load the universe. Reload the page to try again.",
 		"description": "Shown on the whole of a universe's page when the universe couldn't be loaded, such as when the server can't be reached"
+	},
+	"universePage.locked": {
+		"defaultMessage": "This universe has reached the end of time, so it is locked. Its lobby can't be entered and no characters can be made, but characters in a group can still open it to look around.",
+		"description": "On the page of a universe in the stage end of time, above Enter Universe: what being locked means"
 	},
 	"universePage.notFound": {
 		"defaultMessage": "That universe could not be found. It may have been renamed, or it isn't open to everyone yet.",

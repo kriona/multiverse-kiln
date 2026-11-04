@@ -1,4 +1,4 @@
-import { ADMIN_ROLE, canEditWorld, canManageEditors, EDITOR_ROLE_NAMES, type EditableUniverse, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
+import { ADMIN_ROLE, canEditAtEndOfTime, canEditWorld, canManageEditors, EDITOR_ROLE_NAMES, type EditableUniverse, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -386,7 +386,8 @@ export class EditorScreen
 	}
 
 	/**
-	 * Says above the tabs when a server admin has disabled the universe, and why, and when the player
+	 * Says above the tabs when a server admin has disabled the universe, and why, when the universe is
+	 * locked at the end of time and the player isn't one who may still change it, and when the player
 	 * edits it with the site admin role
 	 *
 	 * @param universe The universe
@@ -411,6 +412,14 @@ export class EditorScreen
 				description: 'Shown above the editor\'s tabs for a universe one of the site\'s admins disabled; {reason} is the reason the admin gave, as they typed it'
 			}, {
 				reason: universe.disabledReason
+			}));
+		}
+		else if ((universe.stage === 'end_of_time') && !canEditAtEndOfTime(universe.role))
+		{
+			this.showNotice(t({
+				id: 'editor.universeLocked',
+				defaultMessage: 'This universe has reached the end of time, so only its creators can change it. You can still leave it on the Editors tab.',
+				description: 'Shown above the editor\'s tabs to a builder, beta tester or translator of a universe in the stage end of time, which locks it'
 			}));
 		}
 		else if (universe.role === ADMIN_ROLE)
