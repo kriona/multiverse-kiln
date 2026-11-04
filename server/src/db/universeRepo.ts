@@ -126,9 +126,16 @@ export interface UniverseRecord
 	passageOfTime: PassageOfTime;
 
 	/**
-	 * Undefined until the universe's areas exist
+	 * Undefined until the universe's areas exist, and while it has no lobby area
 	 */
 	lobbyAreaId: string | undefined;
+
+	/**
+	 * The cell of the lobby's area players start nearest
+	 */
+	lobbyColumn: number;
+
+	lobbyRow: number;
 
 	/**
 	 * Undefined until the universe's areas exist
@@ -227,6 +234,8 @@ export async function findUniverse(universeId: string, executor: Executor = db):
 		ruleset: row.ruleset,
 		passageOfTime: row.passageOfTime,
 		lobbyAreaId: row.lobbyAreaId ?? undefined,
+		lobbyColumn: row.lobbyColumn,
+		lobbyRow: row.lobbyRow,
 		startingAreaId: row.startingAreaId ?? undefined,
 		startingColumn: row.startingColumn,
 		startingRow: row.startingRow,
@@ -320,6 +329,8 @@ export async function findEditableUniverse(universeId: string, executor: Executo
 			lobbyFaerieMorning: universes.lobbyFaerieMorning,
 			lobbyNoVisionCost: universes.lobbyNoVisionCost,
 			lobbyAreaId: universes.lobbyAreaId,
+			lobbyColumn: universes.lobbyColumn,
+			lobbyRow: universes.lobbyRow,
 			startingAreaId: universes.startingAreaId,
 			startingColumn: universes.startingColumn,
 			startingRow: universes.startingRow,

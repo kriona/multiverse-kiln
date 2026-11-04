@@ -162,7 +162,16 @@ export const universes = pgTable('universes', {
 	 */
 	displayTime: displayTime('display_time').notNull().default('precise'),
 
+	/**
+	 * The area players walk around in the lobby; while it is null or disabled, the lobby has no map
+	 */
 	lobbyAreaId: uuid('lobby_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
+
+	/**
+	 * The cell of the lobby's area players start nearest; column 0, row 0 is the middle of a new area's map
+	 */
+	lobbyColumn: integer('lobby_column').notNull().default(0),
+	lobbyRow: integer('lobby_row').notNull().default(0),
 
 	/**
 	 * How the time of day changes in the lobby, which ignores its area's own passage of time

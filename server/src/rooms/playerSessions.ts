@@ -125,4 +125,14 @@ export class PlayerSessions
 	{
 		return([...(this.sessionIdsByPlayer.get(playerId) ?? [])]);
 	}
+
+	/**
+	 * The players at least one client controls
+	 *
+	 * @return Their IDs
+	 */
+	getPlayerIds(): string[]
+	{
+		return([...this.sessionIdsByPlayer.keys()]);
+	}
 }

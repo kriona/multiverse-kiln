@@ -39,6 +39,9 @@ const SHARED_FIELD_KEYS: ReadonlyMap<string, AuditField> = new Map([
 	['startingAreaId', 'startingArea'],
 	['startingColumn', 'startingArea'],
 	['startingRow', 'startingArea'],
+	['lobbyAreaId', 'lobbyArea'],
+	['lobbyColumn', 'lobbyArea'],
+	['lobbyRow', 'lobbyArea'],
 	['faerieMorning', 'passageOfTime'],
 	['lobbyFaerieMorning', 'lobbyPassageOfTime'],
 	['uploadedGraphicId', 'graphic']
@@ -564,6 +567,16 @@ export class SaveAudit
 				return({
 					field,
 					value: ((typeof areaId === 'string') ? await this.place(areaId, Number(after.startingColumn), Number(after.startingRow)) : null)
+				});
+			}
+
+			case 'lobbyArea':
+			{
+				const areaId = after.lobbyAreaId;
+
+				return({
+					field,
+					value: ((typeof areaId === 'string') ? await this.place(areaId, Number(after.lobbyColumn), Number(after.lobbyRow)) : null)
 				});
 			}
 

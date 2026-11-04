@@ -1,21 +1,26 @@
 import { canEditUniverseSettings, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, PASSAGE_OF_TIME_NAMES, REAL_TIME_NAME, type EditableUniverse, type FaerieMorning, type LobbyPassageOfTime, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
-import { describeEditorError } from '../../network/editorApi';
+import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { ChangeTracker } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
+import { AreaChoice } from './AreaChoice';
+import type { AreaSelectDialog } from './AreaSelectDialog';
 import type { EditorSave } from './editorSave';
 import type { SavableTab } from './SaveBar';
+import { startingAreaMessages } from './startingAreaMessages';
 
 /**
- * The Lobby tab's settings: how the time of day changes in the lobby, and whether its tiles have a
- * vision cost
+ * The Lobby tab's settings: the area players walk around in the lobby and the square they start on, how
+ * the time of day changes in the lobby, and whether its tiles have a vision cost
  */
 export class LobbyTab implements SavableTab
 {
 	private readonly form = getElement('lobby-form', HTMLFormElement);
+	private readonly area: AreaChoice;
+	private readonly noMapHint = getElement('lobby-no-map-hint', HTMLElement);
 	private readonly fields = getElement('lobby-fields', HTMLFieldSetElement);
 	private readonly time = getElement('lobby-time', HTMLSelectElement);
 	private readonly dayHoursField = getElement('lobby-day-hours-field', HTMLElement);
@@ -29,7 +34,7 @@ export class LobbyTab implements SavableTab
 	/**
 	 * Whether the form has changes that haven't been saved
 	 */
-	readonly changes = new ChangeTracker({ root: this.form });
+	readonly changes: ChangeTracker;
 
 	/**
 	 * The universe as it was last loaded or saved
@@ -37,15 +42,61 @@ export class LobbyTab implements SavableTab
 	private universe: EditableUniverse | undefined;
 
 	/**
+	 * The universe's disabled areas, once they have loaded
+	 */
+	private disabledAreaIds: ReadonlySet<string> = new Set();
+
+	/**
 	 * The settings the save being sent holds
 	 */
 	private collected: UniverseSettingsUpdate | undefined;
 
 	/**
+	 * Changes every time a universe is opened, so area names that arrive for an earlier one are ignored
+	 */
+	private version = 0;
+
+	/**
+	 * @param api The editor's API
+	 * @param areaSelect The dialog for choosing the lobby's area
 	 * @param onSaved Called with the lobby settings saved, once they are
 	 */
-	constructor(private readonly onSaved: (update: UniverseSettingsUpdate) => void)
+	constructor(private readonly api: EditorApi, areaSelect: AreaSelectDialog, private readonly onSaved: (update: UniverseSettingsUpdate) => void)
 	{
+		this.area = new AreaChoice(areaSelect, {
+			name: getElement('lobby-area-name', HTMLElement),
+			choose: getElement('lobby-area-choose', HTMLButtonElement),
+			clear: getElement('lobby-area-clear', HTMLButtonElement)
+		}, () => t({
+			id: 'editor.lobby.noArea',
+			defaultMessage: 'None',
+			description: 'Shown on the editor\'s Lobby tab as the lobby\'s area when it has none, so the lobby has no map'
+		}), (area) =>
+		{
+			if (area)
+			{
+				const disabled = new Set(this.disabledAreaIds);
+
+				if (area.enabled)
+				{
+					disabled.delete(area.id);
+				}
+				else
+				{
+					disabled.add(area.id);
+				}
+
+				this.disabledAreaIds = disabled;
+			}
+
+			this.showNoMapHint();
+			this.changes.check();
+		}, 'lobby');
+		this.changes = new ChangeTracker({
+			root: this.form,
+			state: () => [this.area.value, this.area.cell]
+		});
+
 		setOptions(this.time, LOBBY_PASSAGES_OF_TIME.map((passage) => ({
 			value: passage,
 			label: t((passage === 'real_time') ? REAL_TIME_NAME : PASSAGE_OF_TIME_NAMES[passage])
@@ -81,6 +132,13 @@ export class LobbyTab implements SavableTab
 	open(universe: EditableUniverse): void
 	{
 		this.universe = universe;
+		this.disabledAreaIds = new Set();
+		this.area.show(universe, universe.lobbyAreaId, {
+			column: universe.lobbyColumn,
+			row: universe.lobbyRow
+		}, this.canSave());
+		this.showNoMapHint();
+		void this.loadAreas(universe);
 		this.time.value = universe.lobbyPassageOfTime;
 		this.dayHours.value = String(universe.lobbyDayHours);
 		this.faerie.value = (universe.lobbyFaerieMorning ?? FAERIE_MORNINGS[0]);
@@ -93,6 +151,48 @@ export class LobbyTab implements SavableTab
 	}
 
 	/**
+	 * Loads the areas again, so the lobby's area shows its current name and whether it is disabled
+	 */
+	refreshAreas(): void
+	{
+		if (this.universe)
+		{
+			void this.loadAreas(this.universe);
+		}
+	}
+
+	/**
+	 * Loads the areas' names, for the lobby's area, and which areas are disabled
+	 *
+	 * @param universe The universe
+	 */
+	private async loadAreas(universe: EditableUniverse): Promise<void>
+	{
+		const version = ++this.version;
+
+		try
+		{
+			const { areas } = await this.api.listAreas(universe.id);
+
+			if (version === this.version)
+			{
+				this.disabledAreaIds = new Set(areas
+					.filter((area) => !area.enabled)
+					.map((area) => area.id));
+				this.area.setAreaNames(new Map(areas.map((area) => [area.id, area.name])));
+				this.showNoMapHint();
+			}
+		}
+		catch (error)
+		{
+			if (version === this.version)
+			{
+				showMessage(this.error, describeEditorError(error, startingAreaMessages.loadFailed));
+			}
+		}
+	}
+
+	/**
 	 * Whether the player may change the lobby's settings
 	 *
 	 * @return True for a creator
@@ -100,6 +200,28 @@ export class LobbyTab implements SavableTab
 	canSave(): boolean
 	{
 		return((this.universe !== undefined) && canEditUniverseSettings(this.universe.role));
+	}
+
+	/**
+	 * Explains that the lobby has no map, while it has no area or its area is disabled
+	 */
+	private showNoMapHint(): void
+	{
+		const areaId = this.area.value;
+
+		if ((areaId !== null) && !this.disabledAreaIds.has(areaId))
+		{
+			showMessage(this.noMapHint, undefined);
+			return;
+		}
+
+		showMessage(this.noMapHint, t({
+			id: 'editor.lobby.noMapHint',
+			defaultMessage: '{reason, select, disabled {The lobby\'s area is disabled, so players only chat and choose their characters.} other {Without a lobby area, players only chat and choose their characters.}}',
+			description: 'Shown on the editor\'s Lobby tab when the lobby has no map to walk around: {reason} is "disabled" when its area is disabled, and otherwise it has no area'
+		}, {
+			reason: ((areaId === null) ? 'none' : 'disabled')
+		}));
 	}
 
 	/**
@@ -141,7 +263,10 @@ export class LobbyTab implements SavableTab
 			return(false);
 		}
 
-		const update: Required<Pick<UniverseSettingsUpdate, 'lobbyPassageOfTime' | 'lobbyFaerieMorning' | 'lobbyNoVisionCost'>> & Pick<UniverseSettingsUpdate, 'lobbyDayHours'> = {
+		const update: Required<Pick<UniverseSettingsUpdate, 'lobbyAreaId' | 'lobbyColumn' | 'lobbyRow' | 'lobbyPassageOfTime' | 'lobbyFaerieMorning' | 'lobbyNoVisionCost'>> & Pick<UniverseSettingsUpdate, 'lobbyDayHours'> = {
+			lobbyAreaId: this.area.value,
+			lobbyColumn: this.area.cell.column,
+			lobbyRow: this.area.cell.row,
 			lobbyPassageOfTime,
 			lobbyFaerieMorning: ((lobbyPassageOfTime === 'faerie') ? this.faerie.value as FaerieMorning : null),
 			lobbyNoVisionCost: this.noVisionCost.checked,

@@ -22,12 +22,16 @@ export interface AreaPlace
  * - evacuated: an area was disabled, and everyone in it goes to destination, or to where they start
  *   (the lobby area, or their group's starting area) when it is null. Published after the area's own
  *   change, and handled by the rooms rather than AreaPlayers.applyChange()
+ * - lobby: a universe's lobby moved to another area or starting cell, or now has no area. Its lobby room
+ *   reads where its players walk again (published with an area change for the old and new lobby areas,
+ *   whose time and vision follow the lobby's settings while they are its area)
  */
 export type AreaChange =
 	| { kind: 'cells'; areaId: string; chunkKeys: string[] }
 	| { kind: 'area'; areaId: string }
 	| { kind: 'deleted'; areaId: string }
 	| { kind: 'evacuated'; areaId: string; destination: AreaPlace | null }
+	| { kind: 'lobby'; universeId: string }
 	| { kind: 'tiles'; universeId: string }
 	| { kind: 'time'; universeId: string }
 	| { kind: 'universeDeleted'; universeId: string }

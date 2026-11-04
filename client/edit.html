@@ -167,9 +167,18 @@
 					</section>
 
 					<section id="editor-panel-lobby" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-lobby" hidden>
-						<p data-message="editor.lobby.explanation" data-translation-context="Explains the lobby on the editor's Lobby tab">The lobby is where everyone in the universe meets before joining a group. It is an area like any other, but isn't listed on the Areas tab.</p>
-						<button id="lobby-edit-area" type="button" data-message="editor.lobby.editArea" data-translation-context="Button that opens the lobby in the area editor"><!-- icon ph:pencil-simple -->Edit the lobby's area</button>
+						<p data-message="editor.lobby.explanation" data-translation-context="Explains the lobby on the editor's Lobby tab">The lobby is where everyone in the universe meets before joining a group. Its area is one of the universe's areas, edited on the Areas tab like any other.</p>
 						<form id="lobby-form" class="form">
+							<p data-message="editor.lobby.areaChoice" data-translation-context="Shows the area players walk around in the universe's lobby, on the editor's Lobby tab; {area} is the area's name and the square players start on, or that there is none">Lobby area: <strong id="lobby-area-name" data-argument="area"></strong></p>
+							<div class="form-group lobby-area-details">
+								<p class="hint" data-message="editor.lobby.areaHint" data-translation-context="Explains the lobby's area on the editor's Lobby tab, under the area's name">The area to use as the game's lobby for players between groups.</p>
+								<p id="lobby-no-map-hint" class="hint" hidden></p>
+								<div class="area-buttons">
+									<button id="lobby-area-choose" type="button" class="secondary" data-shortcut="Alt+C" data-message="editor.lobby.chooseArea" data-translation-context="Button on the editor's Lobby tab that opens the dialog for choosing the area players walk around in the lobby, and the square they start on"><!-- icon ph:map-pin -->Choose Area</button>
+									<button id="lobby-area-clear" type="button" class="secondary" data-shortcut="Alt+O" data-message="editor.lobby.clearArea" data-translation-context="Button on the editor's Lobby tab that takes away the lobby's area, so the lobby has no map to walk around"><!-- icon ph:x -->No Lobby Area</button>
+									<button id="lobby-edit-area" type="button" data-message="editor.lobby.editArea" data-translation-context="Button that opens the lobby in the area editor"><!-- icon ph:pencil-simple -->Edit the lobby's area</button>
+								</div>
+							</div>
 							<fieldset id="lobby-fields" class="plain">
 								<label data-message="editor.passageOfTime" data-translation-context="Label of the field for how the time of day changes in a universe or area; also names the setting in the list of what a save changed, on the editor's Audit tab">
 									Passage of time
@@ -373,29 +382,36 @@
 								<button id="area-add" type="button" data-shortcut="Alt+N" data-message="editor.areas.add" data-translation-context="Button that opens the dialog for making a new area"><!-- icon ph:plus -->Add Area</button>
 							</div>
 							<ul id="area-list" class="area-list"></ul>
-							<p id="area-empty" class="universe-empty" data-message="editor.areas.none" data-translation-context="Shown instead of the list of areas when the universe only has its lobby" hidden>There are no areas besides the lobby.</p>
+							<p id="area-empty" class="universe-empty" data-message="editor.areas.none" data-translation-context="Shown instead of the list of areas when the universe has none" hidden>There are no areas yet.</p>
 							<p id="area-list-error" class="form-error" role="alert" hidden></p>
 						</div>
 						<div id="area-editor-view" class="editor-cards" hidden>
 							<form id="area-form" class="panel form">
 								<!-- Outside the fieldset, so disabling the fields leaves the back button working -->
 								<div class="area-editor-top">
-									<button id="area-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="editor.area.back" data-translation-context="Button that closes the area editor and goes back to the list of areas"><!-- icon ph:arrow-left -->Back to Areas</button>
+									<div class="area-back-buttons">
+										<button id="area-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="editor.area.back" data-translation-context="Button that closes the area editor and goes back to the list of areas"><!-- icon ph:arrow-left -->Back to Areas</button>
+										<button id="area-back-lobby" type="button" class="secondary" data-shortcut="Alt+Y" data-message="editor.area.backToLobby" data-translation-context="Button in the area editor, shown while the area is the lobby's, that closes the area editor and goes to the editor's Lobby tab" hidden><!-- icon ph:arrow-left -->Back to Lobby</button>
+									</div>
 									<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
 										Name
 										<input id="area-name" required />
 									</label>
 								</div>
+								<p id="area-lobby-notice" class="lobby-notice" data-message="editor.area.lobbyNotice" data-translation-context="Shown prominently under the name in the area editor while the area is the one players walk around in the universe's lobby (chosen on the Lobby tab)" hidden>This area is the game's lobby.</p>
 								<fieldset id="area-fields" class="plain">
 									<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it; also names the setting in the list of what a save changed, on the editor's Audit tab">
 										<input id="area-enabled" type="checkbox" />
 										Enabled
 									</label>
 									<p id="area-parent-disabled" class="hint" hidden></p>
-									<label data-message="editor.area.parent" data-translation-context="Label of the field for the area this one is inside; also names the setting in the list of what a save changed, on the editor's Audit tab">
-										Parent area
-										<select id="area-parent"></select>
-									</label>
+									<div class="field-label">
+										<span id="area-parent-label" data-message="editor.area.parent" data-translation-context="Label of the field for the area this one is inside; also names the setting in the list of what a save changed, on the editor's Audit tab">Parent area</span>
+										<div class="combobox-field">
+											<input id="area-parent" type="text" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="area-parent-options" aria-labelledby="area-parent-label" data-untracked />
+											<ul id="area-parent-options" class="combobox-options" role="listbox" aria-labelledby="area-parent-label" hidden></ul>
+										</div>
+									</div>
 									<fieldset class="choice indoor-outdoor">
 										<legend data-message="form.indoorsOrOutdoors" data-translation-context="Heading of the choice between indoors and outdoors for an area or tile; also names the setting in the list of what a save changed, on the editor's Audit tab">Indoors or outdoors</legend>
 										<label class="checkbox" data-message="form.outdoors" data-translation-context="Choice for an area or tile that is outdoors; also names the setting in the list of what a save changed, on the editor's Audit tab">
@@ -471,22 +487,13 @@
 										<button id="map-undo" type="button" class="secondary" aria-keyshortcuts="Control+Z" data-message="editor.map.undo" data-translation-context="Button that takes back the last painting or change to the map's size"><!-- icon ph:arrow-counter-clockwise -->Undo</button>
 										<button id="map-redo" type="button" class="secondary" aria-keyshortcuts="Control+Y Control+Shift+Z" data-message="editor.map.redo" data-translation-context="Button that makes again the painting or change of size Undo took back"><!-- icon ph:arrow-clockwise -->Redo</button>
 										<button id="map-resize" type="button" class="secondary" data-shortcut="Alt+Z" data-message="editor.map.resize" data-translation-context="Button that opens the dialog for changing the map's size"><!-- icon ph:resize -->Edit Size</button>
-										<label id="map-expand-field" data-message="editor.map.expandBy" data-translation-context="Label of the field for how many cells the buttons around the map add">
-											Expand by
-											<input id="map-expand-by" type="number" min="1" step="1" value="10" />
-										</label>
 									</div>
 									<button id="map-full-page" type="button" class="secondary map-full-page" data-shortcut="Alt+P"></button>
 								</div>
-								<div class="map-frame">
-									<button id="map-expand-north" type="button" class="secondary map-expand-north" data-message="editor.map.expandNorth" data-translation-context="Button above the map that makes it bigger to the north">+ North</button>
-									<button id="map-expand-west" type="button" class="secondary map-expand-west" data-message="editor.map.expandWest" data-translation-context="Button left of the map that makes it bigger to the west">+ West</button>
-									<div id="map-canvas" class="map-canvas" tabindex="0" role="application" aria-label="Map" aria-describedby="map-keyboard-help map-error" data-shortcut="Alt+M" data-message-aria-label="editor.map.label" data-translation-context-aria-label="Name of the area's map in the map editor, for screen readers"></div>
-									<button id="map-expand-east" type="button" class="secondary map-expand-east" data-message="editor.map.expandEast" data-translation-context="Button right of the map that makes it bigger to the east">+ East</button>
-									<button id="map-expand-south" type="button" class="secondary map-expand-south" data-message="editor.map.expandSouth" data-translation-context="Button below the map that makes it bigger to the south">+ South</button>
+								<div id="map-canvas" class="map-canvas" tabindex="0" role="application" aria-label="Map" aria-describedby="map-keyboard-help map-error" data-shortcut="Alt+M" data-message-aria-label="editor.map.label" data-translation-context-aria-label="Name of the area's map in the map editor, for screen readers">
+									<span id="map-cursor" class="map-cursor"></span>
 								</div>
 								<div class="map-status">
-									<span id="map-cursor"></span>
 									<span id="map-save-status" role="status"></span>
 								</div>
 								<p class="hint" data-message="editor.map.help" data-translation-context="Explains how to use the map editor with the mouse and keyboard">Drag with the right mouse button to look around, and zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link.</p>
@@ -1027,6 +1034,7 @@
 				<dialog id="area-select-dialog" class="panel dialog area-select-dialog" aria-labelledby="area-select-title">
 					<form id="area-select-form" class="form">
 						<h2 id="area-select-title" data-message="editor.areaSelect.title" data-translation-context="Title of the dialog for choosing one of the universe's areas">Choose an Area</h2>
+						<p id="area-select-lobby-hint" class="hint" data-message="editor.areaSelect.lobbyHint" data-translation-context="Shown in the dialog for choosing the lobby's area, which leaves out the areas characters start in" hidden>A starting area can't be a lobby.</p>
 						<input id="area-select-search" type="search" placeholder="Search by name" aria-label="Search areas by name" autocomplete="off" data-message-placeholder="editor.searchByName" data-translation-context-placeholder="Shown in the empty field that narrows a list of tiles, items or areas down by name" data-message-aria-label="editor.areaSelect.searchLabel" data-translation-context-aria-label="Name of the field that narrows the areas down by name, for screen readers" />
 						<fieldset id="area-select-results" class="choice stacked area-select-results" aria-label="Areas" data-message-aria-label="editor.areaSelect.results" data-translation-context-aria-label="Name of the list of areas to choose from, for screen readers"></fieldset>
 						<p id="area-select-none" class="universe-empty" data-message="editor.areaSelect.none" data-translation-context="Shown in the dialog for choosing an area when no area's name matches the search" hidden>No areas match.</p>
@@ -1065,6 +1073,19 @@
 							</label>
 						</div>
 						<p id="resize-total"></p>
+						<section class="form-group" aria-labelledby="resize-extend-title">
+							<h3 id="resize-extend-title" data-message="editor.resize.extendTitle" data-translation-context="Heading of the part of the dialog for changing a map's size with buttons that make the map bigger on one side">Extend Size</h3>
+							<div class="resize-grid resize-extend">
+								<button id="resize-extend-north" type="button" class="secondary resize-north" data-message="editor.resize.extendNorth" data-translation-context="Button in the dialog for changing a map's size that adds the number of cells chosen to the map's north side">+ North</button>
+								<button id="resize-extend-west" type="button" class="secondary resize-west" data-message="editor.resize.extendWest" data-translation-context="Button in the dialog for changing a map's size that adds the number of cells chosen to the map's west side">+ West</button>
+								<label class="resize-center" data-message="editor.resize.extendBy" data-translation-context="Label of the field for how many cells the Extend Size buttons add to a side of the map">
+									Extend by
+									<input id="resize-extend-by" type="number" min="1" step="1" value="10" />
+								</label>
+								<button id="resize-extend-east" type="button" class="secondary resize-east" data-message="editor.resize.extendEast" data-translation-context="Button in the dialog for changing a map's size that adds the number of cells chosen to the map's east side">+ East</button>
+								<button id="resize-extend-south" type="button" class="secondary resize-south" data-message="editor.resize.extendSouth" data-translation-context="Button in the dialog for changing a map's size that adds the number of cells chosen to the map's south side">+ South</button>
+							</div>
+						</section>
 						<p id="resize-warning" class="form-error" role="alert" hidden></p>
 						<div class="dialog-buttons">
 							<button id="resize-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
@@ -1091,10 +1112,13 @@
 								<input id="link-whole-group" type="checkbox" />
 								Requires the whole group
 							</label>
-							<label data-message="editor.link.target" data-translation-context="Label of the field for the area a link leads to">
-								Goes to
-								<select id="link-target" required></select>
-							</label>
+							<div class="field-label">
+								<span id="link-target-label" data-message="editor.link.target" data-translation-context="Label of the field for the area a link leads to">Goes to</span>
+								<div class="combobox-field">
+									<input id="link-target" type="text" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="link-target-options" aria-labelledby="link-target-label" data-untracked placeholder="Search areas by name" data-message-placeholder="editor.areaSearch" data-translation-context-placeholder="Shown in the empty field for choosing an area by typing part of its name: the area a link goes to, in the link dialog" />
+									<ul id="link-target-options" class="combobox-options" role="listbox" aria-labelledby="link-target-label" hidden></ul>
+								</div>
+							</div>
 							<label class="checkbox" data-message="editor.link.addReturn" data-translation-context="Checkbox that also places a link in the other area leading back">
 								<input id="link-return" type="checkbox" />
 								Add a return link that leads back to this cell

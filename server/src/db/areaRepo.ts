@@ -9,7 +9,7 @@ import { ancestorAreas, chunkCoordinate, chunkKey, isInBounds, lobbyAreaTime, re
 import { applyCellChanges, chunksOfChanges, clipChunk, isChunkInside, isDefaultChunk } from '../logic/mapEdits.js';
 import type { AreaLink } from '../logic/areaGrid.js';
 import { db, type Executor } from './client.js';
-import { mapChunks, universes, areaLinks, areas } from './schema.js';
+import { mapChunks, universes, areaLinks, areas, races, classes, classRaceAreas } from './schema.js';
 import { loadUniverseTiles, type TileRecord } from './tileRepo.js';
 
 /**
@@ -657,6 +657,52 @@ export async function listAreaLinks(areaId: string, executor: Executor = db): Pr
 		.from(areaLinks)
 		.where(eq(areaLinks.areaId, areaId))
 		.orderBy(areaLinks.row, areaLinks.column));
+}
+
+/**
+ * Every area of a universe that is a starting area: the universe's, its races' and classes', and its
+ * classes' for each race. None of them may be the lobby's area
+ *
+ * @param universeId The universe's ID
+ * @param executor The database, or a transaction
+ * @return The areas' IDs
+ */
+export async function listStartingAreaIds(universeId: string, executor: Executor = db): Promise<string[]>
+{
+	const universeAreas = executor
+		.select({ id: areas.id })
+		.from(areas)
+		.where(eq(areas.universeId, universeId));
+	const ids = new Set<string | null>();
+	const queries = [
+		executor
+			.select({ areaId: universes.startingAreaId })
+			.from(universes)
+			.where(eq(universes.id, universeId)),
+		executor
+			.select({ areaId: races.startingAreaId })
+			.from(races)
+			.where(inArray(races.startingAreaId, universeAreas)),
+		executor
+			.select({ areaId: classes.startingAreaId })
+			.from(classes)
+			.where(inArray(classes.startingAreaId, universeAreas)),
+		executor
+			.select({ areaId: classRaceAreas.areaId })
+			.from(classRaceAreas)
+			.where(inArray(classRaceAreas.areaId, universeAreas))
+	];
+
+	// One after another, since they may share a transaction
+	for (const query of queries)
+	{
+		for (const { areaId } of await query)
+		{
+			ids.add(areaId);
+		}
+	}
+
+	return([...ids].filter((id): id is string => (id !== null)));
 }
 
 /**

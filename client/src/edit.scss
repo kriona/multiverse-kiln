@@ -206,8 +206,8 @@ $editor-panel-width: 960px;
 	max-width: 100%;
 }
 
-// The area's name on the left and Back to Areas on the right, or the button above the name on a
-// narrow screen
+// The area's name on the left and Back to Areas on the right, with Back to Lobby under it for the
+// lobby's area, or the buttons above the name on a narrow screen
 .area-editor-top
 {
 	display: flex;
@@ -225,11 +225,31 @@ $editor-panel-width: 960px;
 		flex-direction: column;
 		align-items: stretch;
 
-		button
+		.area-back-buttons
 		{
 			align-self: flex-end;
 		}
 	}
+}
+
+.area-back-buttons
+{
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+// Stands out in the area editor, so nobody edits the lobby's area thinking it is any other
+.lobby-notice
+{
+	margin: 0;
+	padding: 8px 12px;
+	align-self: flex-start;
+	border: 1px solid $accent;
+	border-radius: 4px;
+	background: $accent-background;
+	color: $text-on-accent;
+	font-weight: bold;
 }
 
 // Max widths: each field about as wide as the longest text it takes, and a number field as its
@@ -288,6 +308,16 @@ $editor-panel-width: 960px;
 {
 	// Up to 3600
 	max-width: 8ch;
+}
+
+#resize-north,
+#resize-east,
+#resize-south,
+#resize-west,
+#resize-extend-by
+{
+	// Up to MAX_MAP_SIDE - 1
+	max-width: 9ch;
 }
 
 fieldset
@@ -568,45 +598,10 @@ tr.staged-deleted
 	}
 }
 
-.map-frame
-{
-	display: grid;
-	grid-template-areas:
-		". north ."
-		"west canvas east"
-		". south .";
-	grid-template-columns: auto minmax(0, 1fr) auto;
-	align-items: center;
-	justify-items: center;
-	gap: 4px;
-
-	.map-expand-north
-	{
-		grid-area: north;
-	}
-
-	.map-expand-west
-	{
-		grid-area: west;
-	}
-
-	.map-expand-east
-	{
-		grid-area: east;
-	}
-
-	.map-expand-south
-	{
-		grid-area: south;
-	}
-}
-
-// The map's view, as wide as the space between the West and East buttons; MapEditor sizes the canvas
-// to fill it
+// The map's view, as wide as the map editor; MapEditor sizes the canvas to fill it
 .map-canvas
 {
-	grid-area: canvas;
-	justify-self: stretch;
+	position: relative;
 	overflow: hidden;
 	line-height: 0;
 	border: 1px solid $border;
@@ -614,6 +609,25 @@ tr.staged-deleted
 	canvas
 	{
 		cursor: crosshair;
+	}
+}
+
+// The hovered cell, over the map's corner so it never changes the map's size
+.map-cursor
+{
+	position: absolute;
+	left: 4px;
+	bottom: 4px;
+	padding: 2px 6px;
+	border-radius: 4px;
+	background: $backdrop;
+	color: $text;
+	line-height: normal;
+	pointer-events: none;
+
+	&:empty
+	{
+		display: none;
 	}
 }
 
@@ -649,16 +663,10 @@ html:has(.map-editor.full-page) body
 		display: none;
 	}
 
-	.map-frame
+	.map-canvas
 	{
 		flex: 1;
 		min-height: 0;
-		grid-template-rows: auto minmax(0, 1fr) auto;
-	}
-
-	.map-canvas
-	{
-		align-self: stretch;
 	}
 }
 
@@ -671,7 +679,13 @@ html:has(.map-editor.full-page) body
 		". south .";
 	grid-template-columns: repeat(3, 1fr);
 	align-items: center;
+	justify-items: center;
 	gap: 8px;
+
+	label
+	{
+		align-items: center;
+	}
 
 	.resize-north
 	{
@@ -697,6 +711,11 @@ html:has(.map-editor.full-page) body
 	{
 		grid-area: center;
 		text-align: center;
+	}
+
+	// The center cell's coordinates, between the fields
+	span.resize-center
+	{
 		color: $text-faint;
 	}
 }
@@ -857,6 +876,12 @@ div.ability-modifiers
 	display: flex;
 	flex-wrap: wrap;
 	gap: 8px;
+}
+
+// The hint and buttons under the lobby's area, indented to show they belong to it
+.lobby-area-details
+{
+	margin-left: 24px;
 }
 
 // Where a class's members of each race start: the race, its area, and buttons to change it

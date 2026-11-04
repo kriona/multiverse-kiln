@@ -582,6 +582,13 @@
       "when": 1793764680422,
       "tag": "0082_disabling_in_use",
       "breakpoints": true
+    },
+    {
+      "idx": 83,
+      "version": "7",
+      "when": 1793819205162,
+      "tag": "0083_lobby_starting_cell",
+      "breakpoints": true
     }
   ]
 }

@@ -73,6 +73,11 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		defaultMessage: 'Starting equipment',
 		description: 'Heading of the list of items every character starts with, on the editor\'s Characters tab; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
+	lobbyArea: {
+		id: 'editor.lobby.area',
+		defaultMessage: 'Lobby area',
+		description: 'Label of the Lobby tab\'s choice of the area players walk around in the lobby, and the square of it they start on; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
 	startingArea: {
 		id: 'editor.audit.field.startingArea',
 		defaultMessage: 'Starting area',
@@ -473,6 +478,7 @@ function describeValue(change: AuditFieldChange, detail: UniverseEditDetail, rul
 				quantity: entry.quantity
 			}))));
 		case 'startingArea':
+		case 'lobbyArea':
 			return(((change.value === null) ? t(VALUE_MESSAGES.none) : describePlace(change.value)));
 		case 'statMethod':
 			return(t(PF1E_STAT_METHOD_NAMES[change.value]));

@@ -975,6 +975,10 @@
 		"message": "Back to Areas",
 		"source": "Back to Areas"
 	},
+	"editor.area.backToLobby": {
+		"message": "Back to the Tavern",
+		"source": "Back to Lobby"
+	},
 	"editor.area.children": {
 		"message": "Areas in this one's hold",
 		"source": "Areas inside this one"
@@ -1002,6 +1006,10 @@
 	"editor.area.lightLevelHint": {
 		"message": "A lantern-lit place be bright as broad daylight at any hour, an' a pitch-dark one black as night. Places above decks follow the sun.",
 		"source": "A lit area is as light as full daylight at any time of day, and a dark one as dark as night. Outdoor areas follow the time of day."
+	},
+	"editor.area.lobbyNotice": {
+		"message": "This area be the game's tavern.",
+		"source": "This area is the game's lobby."
 	},
 	"editor.area.lobbyTime": {
 		"message": "How the hours pass in the tavern be set on the Lobby tab.",
@@ -1055,6 +1063,10 @@
 		"message": "Add Area",
 		"source": "Add Area"
 	},
+	"editor.areaSearch": {
+		"message": "Hunt fer areas by name",
+		"source": "Search areas by name"
+	},
 	"editor.areaSelect.cell": {
 		"message": "Hands start on {column}, {row}, or the free square nearest it.",
 		"source": "Characters start on {column}, {row}, or the free square nearest it."
@@ -1070,6 +1082,10 @@
 	"editor.areaSelect.loadFailed": {
 		"message": "Couldn't haul up the areas.",
 		"source": "Could not load the areas."
+	},
+	"editor.areaSelect.lobbyHint": {
+		"message": "A home port can't be a tavern.",
+		"source": "A starting area can't be a lobby."
 	},
 	"editor.areaSelect.none": {
 		"message": "No areas be matchin'.",
@@ -1127,9 +1143,13 @@
 		"message": "Couldn't list the areas.",
 		"source": "Could not list the areas."
 	},
+	"editor.areas.lobbyTag": {
+		"message": "tavern",
+		"source": "lobby"
+	},
 	"editor.areas.none": {
-		"message": "There be no areas but the tavern.",
-		"source": "There are no areas besides the lobby."
+		"message": "There be no areas yet.",
+		"source": "There are no areas yet."
 	},
 	"editor.areas.outdoorsTag": {
 		"message": "topside",
@@ -1863,6 +1883,10 @@
 		"message": "Click the chart to choose where the passage goes.",
 		"source": "Click the map to choose where the link goes."
 	},
+	"editor.link.needTarget": {
+		"message": "Pick the area the passage goes to.",
+		"source": "Choose the area the link goes to."
+	},
 	"editor.link.needReturn": {
 		"message": "Click the chart to place the return passage, or don't be addin' one.",
 		"source": "Click the map to place the return link, or don't add one."
@@ -1919,6 +1943,26 @@
 		"message": "Needs the whole crew",
 		"source": "Requires the whole group"
 	},
+	"editor.lobby.area": {
+		"message": "Tavern area",
+		"source": "Lobby area"
+	},
+	"editor.lobby.areaChoice": {
+		"message": "Tavern area: {area}",
+		"source": "Lobby area: {area}"
+	},
+	"editor.lobby.areaHint": {
+		"message": "The area to use as the game's tavern, fer scallywags between crews.",
+		"source": "The area to use as the game's lobby for players between groups."
+	},
+	"editor.lobby.chooseArea": {
+		"message": "Choose Area",
+		"source": "Choose Area"
+	},
+	"editor.lobby.clearArea": {
+		"message": "No Tavern Area",
+		"source": "No Lobby Area"
+	},
 	"editor.lobby.dayHours": {
 		"message": "How swift?",
 		"source": "How quickly?"
@@ -1932,8 +1976,16 @@
 		"source": "Edit the lobby's area"
 	},
 	"editor.lobby.explanation": {
-		"message": "The tavern be where every soul in the universe gathers afore joinin' a crew. It be an area like any other, but it ain't listed on the Areas tab.",
-		"source": "The lobby is where everyone in the universe meets before joining a group. It is an area like any other, but isn't listed on the Areas tab."
+		"message": "The tavern be where every soul in the universe gathers afore joinin' a crew. Its area be one o' the universe's areas, edited on the Areas tab like any other.",
+		"source": "The lobby is where everyone in the universe meets before joining a group. Its area is one of the universe's areas, edited on the Areas tab like any other."
+	},
+	"editor.lobby.noArea": {
+		"message": "None",
+		"source": "None"
+	},
+	"editor.lobby.noMapHint": {
+		"message": "{reason, select, disabled {The tavern's area be disabled, so scallywags only jaw an' pick their hands.} other {Without a tavern area, scallywags only jaw an' pick their hands.}}",
+		"source": "{reason, select, disabled {The lobby's area is disabled, so players only chat and choose their characters.} other {Without a lobby area, players only chat and choose their characters.}}"
 	},
 	"editor.lobby.noVisionCost": {
 		"message": "No spyglass cost in the tavern",
@@ -1994,26 +2046,6 @@
 	"editor.map.exitFullPage": {
 		"message": "Furl the Page Back",
 		"source": "Exit Full Page"
-	},
-	"editor.map.expandBy": {
-		"message": "Widen by",
-		"source": "Expand by"
-	},
-	"editor.map.expandEast": {
-		"message": "+ East",
-		"source": "+ East"
-	},
-	"editor.map.expandNorth": {
-		"message": "+ North",
-		"source": "+ North"
-	},
-	"editor.map.expandSouth": {
-		"message": "+ South",
-		"source": "+ South"
-	},
-	"editor.map.expandWest": {
-		"message": "+ West",
-		"source": "+ West"
 	},
 	"editor.map.fullPage": {
 		"message": "Unfurl Full Page",
@@ -2162,6 +2194,30 @@
 	"editor.resize.explanation": {
 		"message": "How many cells the chart reaches in each direction from its middle cell (0, 0).",
 		"source": "How many cells the map reaches in each direction from its center cell (0, 0)."
+	},
+	"editor.resize.extendBy": {
+		"message": "Widen by",
+		"source": "Extend by"
+	},
+	"editor.resize.extendEast": {
+		"message": "+ East",
+		"source": "+ East"
+	},
+	"editor.resize.extendNorth": {
+		"message": "+ North",
+		"source": "+ North"
+	},
+	"editor.resize.extendSouth": {
+		"message": "+ South",
+		"source": "+ South"
+	},
+	"editor.resize.extendTitle": {
+		"message": "Widen the Chart",
+		"source": "Extend Size"
+	},
+	"editor.resize.extendWest": {
+		"message": "+ West",
+		"source": "+ West"
 	},
 	"editor.resize.failed": {
 		"message": "Couldn't resize the chart.",
@@ -2380,8 +2436,8 @@
 		"source": "Starting area: {area}"
 	},
 	"editor.startingArea.at": {
-		"message": "{area}, from {column}, {row}",
-		"source": "{area}, from {column}, {row}"
+		"message": "{area} at ({column}, {row})",
+		"source": "{area} at ({column}, {row})"
 	},
 	"editor.startingArea.loadFailed": {
 		"message": "Couldn't make out the ports' names.",
@@ -3347,6 +3403,10 @@
 		"message": "A passage must sail to another area.",
 		"source": "A link must go to another area."
 	},
+	"error.lobbyIsStartingArea": {
+		"message": "Hands set sail from this area, so it can't be the tavern. Pick another area, or first change where the universe's, folks' an' callin's hands set sail from.",
+		"source": "Characters start in this area, so it can't be the lobby. Choose another area, or first change where the universe's, races' and classes' characters start."
+	},
 	"error.logInFirst": {
 		"message": "Come aboard first.",
 		"source": "Log in first."
@@ -3402,6 +3462,10 @@
 	"error.noSuchLink": {
 		"message": "There be no passage on that cell.",
 		"source": "There is no link on that cell."
+	},
+	"error.noSuchLobbyArea": {
+		"message": "The tavern must be one o' this universe's areas.",
+		"source": "The lobby must be one of this universe's areas."
 	},
 	"error.noSuchPlayer": {
 		"message": "No sailor goes by that username.",

@@ -348,6 +348,20 @@ export interface UniverseSettings
 	lobbyNoVisionCost: boolean;
 
 	/**
+	 * The area players walk around in the lobby: one of the universe's areas other than a starting area
+	 * (the universe's, a race's or a class's). While it is null or disabled, the lobby has no map, and
+	 * its players only chat and choose their characters
+	 */
+	lobbyAreaId: string | null;
+
+	/**
+	 * The cell of the lobby's area players start nearest (see StartingCell); 0 while lobbyAreaId is null
+	 */
+	lobbyColumn: number;
+
+	lobbyRow: number;
+
+	/**
 	 * Most characters in one group, from MIN_GROUP_SIZE to MAX_GROUP_PLAYERS
 	 */
 	groupSize: number;
@@ -390,7 +404,6 @@ export interface EditableUniverse extends UniverseSettings
 	slug: string;
 
 	ruleset: Ruleset;
-	lobbyAreaId: string | null;
 
 	/**
 	 * Why a server admin disabled the universe, or null while it isn't disabled. A disabled universe
@@ -647,7 +660,7 @@ export interface UniverseEditListQuery
 
 /**
  * The settings the Audit tab names when a save changes them. Settings the editor shows as one field are
- * one here: a starting area and its cell are startingArea, a passage of time and its faerie morning are
+ * one here: a starting area and its cell are startingArea (lobbyArea for the lobby's area), a passage of time and its faerie morning are
  * passageOfTime (lobbyPassageOfTime for the lobby's), and a tile's graphic or uploaded graphic is graphic
  */
 export const AUDIT_FIELDS = [
@@ -660,6 +673,7 @@ export const AUDIT_FIELDS = [
 	'lobbyPassageOfTime',
 	'lobbyDayHours',
 	'lobbyNoVisionCost',
+	'lobbyArea',
 	'groupSize',
 	'startingMoney',
 	'startingItems',
@@ -750,6 +764,11 @@ export interface AuditFieldValues
 	lobbyPassageOfTime: AuditPassageOfTime;
 	lobbyDayHours: number;
 	lobbyNoVisionCost: boolean;
+
+	/**
+	 * Null when the universe has no lobby area
+	 */
+	lobbyArea: AuditPlace | null;
 	groupSize: number;
 	startingMoney: Money;
 	startingItems: {
@@ -1632,6 +1651,12 @@ export interface AreaListPayload
 	areas: EditorAreaSummary[];
 	lobbyAreaId: string | null;
 	startingAreaId: string | null;
+
+	/**
+	 * Every area that is a starting area: the universe's, its races' and classes', and its classes' for
+	 * each race. None of them may be the lobby's area
+	 */
+	startingAreaIds: string[];
 }
 
 /**

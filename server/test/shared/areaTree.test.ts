@@ -28,25 +28,24 @@ describe('area tree (shared)', () =>
 {
 	describe('areasTabListing', () =>
 	{
-		it('lists the top-level areas apart from the lobby', () =>
+		it('lists the top-level areas, the lobby\'s included', () =>
 		{
-			const listing = areasTabListing([area('lobby'), area('north'), area('south'), area('cave', 'north')], 'lobby');
+			const listing = areasTabListing([area('lobby'), area('north'), area('south'), area('cave', 'north')]);
 
 			assert.deepStrictEqual(ids(listing.path), []);
-			assert.deepStrictEqual(ids(listing.areas), ['north', 'south']);
+			assert.deepStrictEqual(ids(listing.areas), ['lobby', 'north', 'south']);
 		});
 
 		it('passes through a lone area to the areas inside it, until a level has more than one', () =>
 		{
 			const areas = [
-				area('lobby'),
 				area('world'),
 				area('continent', 'world'),
 				area('city', 'continent'),
 				area('harbor', 'continent'),
 				area('inn', 'city')
 			];
-			const listing = areasTabListing(areas, 'lobby');
+			const listing = areasTabListing(areas);
 
 			assert.deepStrictEqual(ids(listing.path), ['world', 'continent']);
 			assert.deepStrictEqual(ids(listing.areas), ['city', 'harbor']);
@@ -54,15 +53,15 @@ describe('area tree (shared)', () =>
 
 		it('stops at a lone area with nothing inside it', () =>
 		{
-			const listing = areasTabListing([area('lobby'), area('start')], 'lobby');
+			const listing = areasTabListing([area('start')]);
 
 			assert.deepStrictEqual(ids(listing.path), []);
 			assert.deepStrictEqual(ids(listing.areas), ['start']);
 		});
 
-		it('lists nothing when the lobby is the only area', () =>
+		it('passes through a lobby with areas inside it when it is the only top-level area', () =>
 		{
-			assert.deepStrictEqual(areasTabListing([area('lobby'), area('house', 'lobby')], 'lobby'), { path: [], areas: [] });
+			assert.deepStrictEqual(ids(areasTabListing([area('lobby'), area('house', 'lobby')]).areas), ['house']);
 		});
 	});
 

@@ -171,15 +171,20 @@ export class EditorScreen
 			this.updateUniverse(update);
 		});
 		this.rulesetTab = new RulesetTab(api);
-		this.lobbyTab = new LobbyTab((update) =>
-		{
-			this.updateUniverse(update);
-		});
-
 		this.tilesetsTab = new TilesetsTab(api);
 
 		const areaSelect = new AreaSelectDialog(api, this.tilesetsTab);
 		const itemSelect = new ItemSelectDialog(api);
+
+		this.lobbyTab = new LobbyTab(api, areaSelect, (update) =>
+		{
+			this.updateUniverse(update);
+
+			if (update.lobbyAreaId !== undefined)
+			{
+				this.areasTab.setLobbyArea(update.lobbyAreaId);
+			}
+		});
 
 		this.charactersTab = new CharactersTab(api, areaSelect, itemSelect, (update) =>
 		{
@@ -194,6 +199,10 @@ export class EditorScreen
 		this.areasTab = new AreasTab(api, this.tilesetsTab, (areaId) =>
 		{
 			this.setPlace({ ...this.place, areaId });
+		}, () =>
+		{
+			this.selectTab('lobby');
+			getElement('editor-tab-lobby', HTMLButtonElement).focus();
 		});
 		this.itemsTab = new ItemsTab(api);
 		this.editorsTab = new EditorsTab(api, {
@@ -478,6 +487,7 @@ export class EditorScreen
 		this.role.textContent = t(EDITOR_ROLE_NAMES[universe.role]);
 		this.showPlayLink(universe);
 		this.areasTab.setUniverse(universe);
+		getElement('lobby-edit-area', HTMLButtonElement).hidden = (universe.lobbyAreaId === null);
 	}
 
 	/**
@@ -580,6 +590,13 @@ export class EditorScreen
 	private selectTab(tab: EditorTab): void
 	{
 		const selected = (this.canSeeTab(tab) ? tab : 'universe');
+
+		// Areas may have been disabled or renamed on the Areas tab. Opening a universe on the Lobby tab
+		// has just loaded them
+		if ((selected === 'lobby') && (this.place.tab !== 'lobby'))
+		{
+			this.lobbyTab.refreshAreas();
+		}
 
 		for (const name of EDITOR_TABS)
 		{

@@ -975,6 +975,10 @@
 		"defaultMessage": "Back to Areas",
 		"description": "Button that closes the area editor and goes back to the list of areas"
 	},
+	"editor.area.backToLobby": {
+		"defaultMessage": "Back to Lobby",
+		"description": "Button in the area editor, shown while the area is the lobby's, that closes the area editor and goes to the editor's Lobby tab"
+	},
 	"editor.area.children": {
 		"defaultMessage": "Areas inside this one",
 		"description": "Heading of the list of areas inside the area being edited"
@@ -1003,6 +1007,10 @@
 		"defaultMessage": "A lit area is as light as full daylight at any time of day, and a dark one as dark as night. Outdoor areas follow the time of day.",
 		"description": "Explains the light level field of an indoor area"
 	},
+	"editor.area.lobbyNotice": {
+		"defaultMessage": "This area is the game's lobby.",
+		"description": "Shown prominently under the name in the area editor while the area is the one players walk around in the universe's lobby (chosen on the Lobby tab)"
+	},
 	"editor.area.lobbyTime": {
 		"defaultMessage": "The lobby's passage of time is set on the Lobby tab.",
 		"description": "Shown in the area editor for the lobby in place of its passage of time, which the Lobby tab sets"
@@ -1021,7 +1029,7 @@
 	},
 	"editor.area.noParent": {
 		"defaultMessage": "None (a top-level area)",
-		"description": "Choice of parent area for an area that isn't inside another"
+		"description": "Choice of parent area for an area that isn't inside another, also shown in the empty Parent area field, where typing finds an area by name"
 	},
 	"editor.area.openFailed": {
 		"defaultMessage": "Could not open the area.",
@@ -1055,6 +1063,10 @@
 		"defaultMessage": "Add Area",
 		"description": "Title of the dialog for making a new area"
 	},
+	"editor.areaSearch": {
+		"defaultMessage": "Search areas by name",
+		"description": "Shown in the empty field for choosing an area by typing part of its name: the area a link goes to, in the link dialog"
+	},
 	"editor.areaSelect.cell": {
 		"defaultMessage": "Characters start on {column}, {row}, or the free square nearest it.",
 		"description": "In the dialog for choosing a starting area, under the map: the square characters start on; {column} and {row} are its coordinates"
@@ -1070,6 +1082,10 @@
 	"editor.areaSelect.loadFailed": {
 		"defaultMessage": "Could not load the areas.",
 		"description": "Shown in the dialog for choosing an area when the universe's areas couldn't be loaded"
+	},
+	"editor.areaSelect.lobbyHint": {
+		"defaultMessage": "A starting area can't be a lobby.",
+		"description": "Shown in the dialog for choosing the lobby's area, which leaves out the areas characters start in"
 	},
 	"editor.areaSelect.none": {
 		"defaultMessage": "No areas match.",
@@ -1127,9 +1143,13 @@
 		"defaultMessage": "Could not list the areas.",
 		"description": "Shown on the Areas tab when the areas couldn't be loaded"
 	},
+	"editor.areas.lobbyTag": {
+		"defaultMessage": "lobby",
+		"description": "Under an area in the list of areas, for the area players walk around in the universe's lobby"
+	},
 	"editor.areas.none": {
-		"defaultMessage": "There are no areas besides the lobby.",
-		"description": "Shown instead of the list of areas when the universe only has its lobby"
+		"defaultMessage": "There are no areas yet.",
+		"description": "Shown instead of the list of areas when the universe has none"
 	},
 	"editor.areas.outdoorsTag": {
 		"defaultMessage": "outdoors",
@@ -1867,6 +1887,10 @@
 		"defaultMessage": "Click the map to place the return link, or don't add one.",
 		"description": "Shown when Apply is pressed with a return link asked for but not placed"
 	},
+	"editor.link.needTarget": {
+		"defaultMessage": "Choose the area the link goes to.",
+		"description": "Shown under the link dialog's Goes to field when Apply is pressed with no area chosen"
+	},
 	"editor.link.noOtherAreas": {
 		"defaultMessage": "Add another area to link to first.",
 		"description": "Shown in the link dialog when the universe has only the area being edited"
@@ -1919,6 +1943,26 @@
 		"defaultMessage": "Requires the whole group",
 		"description": "Checkbox for an area link that can only be used when every member of the group is present"
 	},
+	"editor.lobby.area": {
+		"defaultMessage": "Lobby area",
+		"description": "Label of the Lobby tab's choice of the area players walk around in the lobby, and the square of it they start on; also names the setting in the list of what a save changed, on the editor's Audit tab"
+	},
+	"editor.lobby.areaChoice": {
+		"defaultMessage": "Lobby area: {area}",
+		"description": "Shows the area players walk around in the universe's lobby, on the editor's Lobby tab; {area} is the area's name and the square players start on, or that there is none"
+	},
+	"editor.lobby.areaHint": {
+		"defaultMessage": "The area to use as the game's lobby for players between groups.",
+		"description": "Explains the lobby's area on the editor's Lobby tab, under the area's name"
+	},
+	"editor.lobby.chooseArea": {
+		"defaultMessage": "Choose Area",
+		"description": "Button on the editor's Lobby tab that opens the dialog for choosing the area players walk around in the lobby, and the square they start on"
+	},
+	"editor.lobby.clearArea": {
+		"defaultMessage": "No Lobby Area",
+		"description": "Button on the editor's Lobby tab that takes away the lobby's area, so the lobby has no map to walk around"
+	},
 	"editor.lobby.dayHours": {
 		"defaultMessage": "How quickly?",
 		"description": "Label of the field for how many real hours a day in the lobby lasts, shown when the lobby's passage of time is real time"
@@ -1932,8 +1976,16 @@
 		"description": "Button that opens the lobby in the area editor"
 	},
 	"editor.lobby.explanation": {
-		"defaultMessage": "The lobby is where everyone in the universe meets before joining a group. It is an area like any other, but isn't listed on the Areas tab.",
+		"defaultMessage": "The lobby is where everyone in the universe meets before joining a group. Its area is one of the universe's areas, edited on the Areas tab like any other.",
 		"description": "Explains the lobby on the editor's Lobby tab"
+	},
+	"editor.lobby.noArea": {
+		"defaultMessage": "None",
+		"description": "Shown on the editor's Lobby tab as the lobby's area when it has none, so the lobby has no map"
+	},
+	"editor.lobby.noMapHint": {
+		"defaultMessage": "{reason, select, disabled {The lobby's area is disabled, so players only chat and choose their characters.} other {Without a lobby area, players only chat and choose their characters.}}",
+		"description": "Shown on the editor's Lobby tab when the lobby has no map to walk around: {reason} is \"disabled\" when its area is disabled, and otherwise it has no area"
 	},
 	"editor.lobby.noVisionCost": {
 		"defaultMessage": "No vision cost in the lobby",
@@ -1994,26 +2046,6 @@
 	"editor.map.exitFullPage": {
 		"defaultMessage": "Exit Full Page",
 		"description": "Button that puts the map editor back in the page after it was made to fill the window"
-	},
-	"editor.map.expandBy": {
-		"defaultMessage": "Expand by",
-		"description": "Label of the field for how many cells the buttons around the map add"
-	},
-	"editor.map.expandEast": {
-		"defaultMessage": "+ East",
-		"description": "Button right of the map that makes it bigger to the east"
-	},
-	"editor.map.expandNorth": {
-		"defaultMessage": "+ North",
-		"description": "Button above the map that makes it bigger to the north"
-	},
-	"editor.map.expandSouth": {
-		"defaultMessage": "+ South",
-		"description": "Button below the map that makes it bigger to the south"
-	},
-	"editor.map.expandWest": {
-		"defaultMessage": "+ West",
-		"description": "Button left of the map that makes it bigger to the west"
 	},
 	"editor.map.fullPage": {
 		"defaultMessage": "Full Page",
@@ -2251,6 +2283,30 @@
 		"defaultMessage": "How many cells the map reaches in each direction from its center cell (0, 0).",
 		"description": "Explains the four fields of the dialog for changing a map's size"
 	},
+	"editor.resize.extendBy": {
+		"defaultMessage": "Extend by",
+		"description": "Label of the field for how many cells the Extend Size buttons add to a side of the map"
+	},
+	"editor.resize.extendEast": {
+		"defaultMessage": "+ East",
+		"description": "Button in the dialog for changing a map's size that adds the number of cells chosen to the map's east side"
+	},
+	"editor.resize.extendNorth": {
+		"defaultMessage": "+ North",
+		"description": "Button in the dialog for changing a map's size that adds the number of cells chosen to the map's north side"
+	},
+	"editor.resize.extendSouth": {
+		"defaultMessage": "+ South",
+		"description": "Button in the dialog for changing a map's size that adds the number of cells chosen to the map's south side"
+	},
+	"editor.resize.extendTitle": {
+		"defaultMessage": "Extend Size",
+		"description": "Heading of the part of the dialog for changing a map's size with buttons that make the map bigger on one side"
+	},
+	"editor.resize.extendWest": {
+		"defaultMessage": "+ West",
+		"description": "Button in the dialog for changing a map's size that adds the number of cells chosen to the map's west side"
+	},
 	"editor.resize.failed": {
 		"defaultMessage": "Could not resize the map.",
 		"description": "Shown in the Edit Size dialog when the map's size couldn't be changed"
@@ -2380,12 +2436,12 @@
 		"description": "Shows the area characters start in: every character on the Characters tab, or a race's or class's characters in its editor; {area} is the area's name"
 	},
 	"editor.startingArea.at": {
-		"defaultMessage": "{area}, from {column}, {row}",
-		"description": "Shown as a starting area chosen on the Characters tab or in the race or class editor: the area and the square characters start on; {area} is the area's name, {column} and {row} the square's coordinates"
+		"defaultMessage": "{area} at ({column}, {row})",
+		"description": "Shown as a starting area chosen on the Characters tab or in the race or class editor, or as the lobby's area on the Lobby tab: the area and the square characters start on; {area} is the area's name, {column} and {row} the square's coordinates"
 	},
 	"editor.startingArea.loadFailed": {
 		"defaultMessage": "Could not load the areas' names.",
-		"description": "Shown in the race or class editor when the names of the areas characters start in couldn't be loaded"
+		"description": "Shown in the race or class editor when the names of the areas characters start in couldn't be loaded, and on the Lobby tab when the name of the lobby's area couldn't be"
 	},
 	"editor.startingArea.races": {
 		"defaultMessage": "{area} (the race's)",
@@ -3347,6 +3403,10 @@
 		"defaultMessage": "A link must go to another area.",
 		"description": "Why an area link was refused: it leads to the area it is in"
 	},
+	"error.lobbyIsStartingArea": {
+		"defaultMessage": "Characters start in this area, so it can't be the lobby. Choose another area, or first change where the universe's, races' and classes' characters start.",
+		"description": "Why the lobby's area wasn't saved: the area chosen is where characters of the universe, or of one of its races or classes, start, and a starting area can't be the lobby"
+	},
 	"error.logInFirst": {
 		"defaultMessage": "Log in first.",
 		"description": "Why a request was refused, such as one to the editor or to change the account's email address: the browser isn't logged in"
@@ -3402,6 +3462,10 @@
 	"error.noSuchLink": {
 		"defaultMessage": "There is no link on that cell.",
 		"description": "Why an area link couldn't be deleted: it was already gone, perhaps deleted by another editor"
+	},
+	"error.noSuchLobbyArea": {
+		"defaultMessage": "The lobby must be one of this universe's areas.",
+		"description": "Why the lobby's area wasn't saved: the area chosen isn't one of the universe's, perhaps because another editor deleted it"
 	},
 	"error.noSuchPlayer": {
 		"defaultMessage": "No player has that username.",

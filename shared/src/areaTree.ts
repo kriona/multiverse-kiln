@@ -34,18 +34,17 @@ export interface AreasTabListing<T extends AreaTreeNode>
 }
 
 /**
- * The areas the Areas tab lists: the top-level areas apart from the lobby, except that while there is
+ * The areas the Areas tab lists: the top-level areas, the lobby's included, except that while there is
  * only one area at a level and it has areas inside it, those are listed instead
  *
  * @param areas Every area of the universe, in the order to list them
- * @param lobbyAreaId The lobby's area, which the tab leaves out
  * @return The areas passed through and the areas listed
  */
-export function areasTabListing<T extends AreaTreeNode>(areas: readonly T[], lobbyAreaId: string | null): AreasTabListing<T>
+export function areasTabListing<T extends AreaTreeNode>(areas: readonly T[]): AreasTabListing<T>
 {
 	const path: T[] = [];
 	const visited = new Set<string>();
-	let level = areas.filter((area) => ((area.parentAreaId === null) && (area.id !== lobbyAreaId)));
+	let level = areas.filter((area) => (area.parentAreaId === null));
 
 	while ((level.length === 1) && !visited.has(level[0].id))
 	{

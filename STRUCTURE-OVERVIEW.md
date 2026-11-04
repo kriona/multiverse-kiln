@@ -118,6 +118,7 @@ The lobby runs the game engine. It will be a small area where many people (more 
 - If you have created a character, chat will be enabled. You will move about the space as your character, starting as the one you played or made most recently. You can switch characters at any time, and every window of yours in the lobby switches with you. Characters in a group play in their group, not the lobby; choosing one in the lobby's list goes to their group.
 - Each of your characters has a button that shows their [character sheet](#character-sheet), and Alt+K shows the sheet of the one you're playing.
 - You may create up to 20 characters per universe.
+- The space to walk around is the universe's lobby area (see [Tab: Lobby](#tab-lobby)). A universe with no lobby area, or a disabled one, has a lobby with no map: the chat, who's here and your characters work as usual, but there is nowhere to walk. The map comes and goes as the lobby's area changes, without leaving the lobby.
 - If you have a character selected, a [Create Group](#create-group) button will be enabled.
 - Groups can be listed in the lobby so players can find them without an invite. How a group manages its listing is not yet defined.
 
@@ -337,7 +338,7 @@ Save asks the server first (`POST /:universeId/changes/impact`) what the changes
 
 How each choice works:
 - races and classes store whether their characters keep playing while disabled (`keepPlaying`), chosen only in Save's dialog; the race and class editors keep the stored value. A character whose race or class bars them is listed with why on the lobby's and the universe page's lists and the invite screen, and can't be chosen in the lobby, be played in a group, make a group or join one. One in a group can leave it from their sheet. Players playing one are switched in the lobby to their most recent character who can play (or become ghosts), and taken off the group's map, where they were saved; enabling the race or class, or letting its characters play, lets them back. Enter Universe passes over them
-- the parent area is the nearest enabled area holding the disabled one. Characters arrive on the cell of a link there leading back in (to the disabled area or one between them), or at its center when there is none, on the nearest free cell. An area inside no enabled area offers only the start area. The start area is the lobby's area in the lobby, and the group's starting area (the anchor being's) in a group. The lobby's own area never warns: its players have nowhere else to start. Group members not on the map are moved too, in the database and in an open group room
+- the parent area is the nearest enabled area holding the disabled one. Characters arrive on the cell of a link there leading back in (to the disabled area or one between them), or at its center when there is none, on the nearest free cell. An area inside no enabled area offers only the start area. The start area is the lobby's area (at its starting square) in the lobby, and the group's starting area (the anchor being's) in a group. The lobby's own area never warns or moves anyone: disabling it takes the lobby's map away instead (see [Tab: Lobby](#tab-lobby)). Group members not on the map are moved too, in the database and in an open group room
 - a removed item is hidden on each character rather than deleted, keeping how many they had; enabling the item again, or restoring a default item, gives it back. A hidden item still counts as carried, so the item can't be deleted
 - disbanding a group or taking members out works as the anchor being or the members leaving: they go back to the lobby, told the group size was lowered. The anchor being is never taken out
 
@@ -418,7 +419,8 @@ Money is credits (`cr`), the only coin.
 	- `faerie`, with "where is morning?". The lobby's map can't loop while it is chosen
 	- the lobby's area has no passage of time of its own: the area editor says it is set here
 - a checkbox for "no vision cost in the lobby", checked by default: everyone in the lobby has the full daylight vision budget at any time of day, and every tile is seen past as if it had a 0% vision cost
-- a button for "Edit Map" which takes you to the [area editor](#editor-area) for the lobby
+- the lobby's area: the area players walk around in the lobby, and the square of it they start on, chosen with Choose Area in the [area selection](#selection-area) dialog (which leaves out starting areas: the universe's, a race's or a class's can't be the lobby, and the server refuses one) and shown as e.g. "Square at (3, -2)". No Lobby Area leaves the universe without one. Without a lobby area, or while it is disabled, the lobby has no map: its players still chat, see who's here and choose their characters, but have nowhere to walk, even in areas inside the lobby's; the Lobby tab says so only while that is the case. Changing the lobby's area, or enabling or disabling it, reaches the lobby at once: the map appears with everyone on the starting square, moves everyone to a new lobby area, or disappears. A new starting square in the same area is only for players who join later. Saved as `lobbyAreaId`, `lobbyColumn` and `lobbyRow`
+	- a button after No Lobby Area, "Edit the lobby's area", which takes you to the [area editor](#editor-area) for the lobby's area, while there is one
 
 ### Tab: Characters
 - Group size, minimum 1 (single player only) maximum 6 (infrastructure / server max), default server max
@@ -590,7 +592,7 @@ For SF1E, the default tiles are
 	- Bulkhead, color #4A5560, 100% vision cost, impassable
 
 ### Tab: Areas
-lists all top-level areas for a universe, excluding the lobby.
+lists all top-level areas for a universe, the lobby's area included (tagged "lobby", like the universe's starting area is tagged "starting area").
 - if there is only one area, show all child areas for that area. keep showing child areas until there are no children or there are more than 1 children.
 - clicking on an area lets you [edit it](#editor-area).
 
@@ -732,16 +734,17 @@ modal dialog, lets you type to search, shows you the top results, with name + st
 ## Selection: Area
 modal dialog, lets you type to search, shows the top results, shows you a small preview image of the area
 
-Every area chosen here is a starting area (the universe's, a race's, a class's, or a class's for one race), so the preview also chooses the square characters start on: clicking a square, or Space or Enter on the keyboard's cursor, highlights it. A newly chosen area starts on its center (column 0, row 0). The choice shows as e.g. "Town, from 3, -2".
+Every area chosen here is where characters start: a starting area (the universe's, a race's, a class's, or a class's for one race), or the lobby's area. So the preview also chooses the square characters start on: clicking a square, or Space or Enter on the keyboard's cursor, highlights it. A newly chosen area starts on its center (column 0, row 0). The choice shows as e.g. "Town at (3, -2)". A starting area can't be the lobby's, so choosing a starting area leaves out the lobby's area, and choosing the lobby's area leaves out the starting areas (`AreaListPayload.startingAreaIds`), which the dialog says ("A starting area can't be a lobby.") when choosing the lobby's area.
 
 ## Editor: Area
 Lets you edit details about the area
 - name
+	- while the area is the lobby's (see [Tab: Lobby](#tab-lobby)), a bright notice under the name says "This area is the game's lobby.", and a "Back to Lobby" button (Alt+Y) under "Back to Areas" goes to the Lobby tab
 - enabled?
 	- For new areas, if the universe stage is `in the beginning`, default checked, otherwise default unchecked.
 	- if any parent area is not enabled, show a message
 	- nobody can go into a disabled area, so players aren't told about links leading to one: the map shows no "Press E to go through" on them. Enabling or disabling an area sends the areas with links into it to their players again
-- parent area. Parent areas mostly give areas a structure; a child area inherits only its passage of time
+- parent area. Parent areas mostly give areas a structure; a child area inherits only its passage of time. The field is a search: typing part of an area's name lists the areas that match, each with the area it is inside, and leaving it empty makes a top-level area. The link dialog's "Goes to" field chooses its area the same way
 - indoors / outdoors
 	- indoors shows "light level": `lit` (the default) is as light as full daylight at any time of day, and `dark` as dark as night. The map is drawn that light and vision follows it (see [vision](#vision)). Outdoor areas follow the time of day; the setting is kept while an area is outdoors but has no effect
 - default tile, which defaults to "grass" if outdoors and "wood floor" if indoors. It lists the tiles for the area's kind (see [tile editor](#editor-tile)), plus the area's current default tile, so switching between indoors and outdoors doesn't change it
@@ -755,18 +758,19 @@ Lets you edit details about the area
 This is a component included in the [area editor](#editor-area). It shows you the same grid as gameplay.
 - it has its own card below the area's settings, as wide as the page, and the map fills the card's width
 - the center of map is x = 0, y = 0
-- Ctrl+wheel zooms the map; the wheel alone scrolls the page
+- Ctrl+wheel zooms the map; the wheel alone scrolls the page, or pans the map while it is Full Page (Shift+wheel pans sideways)
+- the coordinates and contents of the cell under the pointer or the keyboard's cursor show over the map's bottom-left corner, so they never change the map's size
 - a Full Page button (Alt+P) makes the map editor fill the browser window, with the map taking all the space its tools leave; the button, or Escape, puts it back
-- each side of the map (top, right, bottom, left) has a button with an arrow pointing away from the editor. clicking it allows you to add the specified number of grid coordinates in that direction, expanding the map
 - a map can be at most 50,000 tiles in each direction
 - a button to edit size
 	- a 3x3 grid, 4 input fields (each in north, east, south, west), showing the number of tiles in that direction
 	- a readonly sentence shows the total dimensions (e.g., 1200 tall x 800 wide)
+	- an "Extend Size" section: a 3x3 grid with + North, + West, + East and + South buttons around an "Extend by" field (10 by default). Each button adds that many tiles to its direction's field; the map changes when the dialog's Resize button is clicked
 	- shrinking the dimensions will show a warning if you delete any tiles that aren't the default tile
 - there is a [draw tool](#tool-draw)
 - undo / redo
 	- clicking and dragging counts all changes during that as 1 for the purpose of undo/redo
-	- each use of an expand button or Edit Size is 1 step too. Making the map smaller sets the cells it cuts off to the default tile, so undoing it brings them back, even after it is saved
+	- each use of Edit Size is 1 step too. Making the map smaller sets the cells it cuts off to the default tile, so undoing it brings them back, even after it is saved
 - painting, changes to the map's size and links (and return links placed in other areas) are kept in the editor until the editor's Save button saves them along with the area's settings, and the map is read-only while it is being saved. Links are saved after the map's new size, so a link can go on cells the map has grown to include
 - links on or into cells a smaller map cuts off are deleted when the smaller map is saved, after asking; undo doesn't bring them back
 - maps have multiple layers, such as the ground and objects on it
