@@ -1,7 +1,7 @@
 import assert from 'assert';
 
 import { deletePlayer } from '../../src/db/playerRepo.js';
-import { listUniverseEdits, recordUniverseEdit } from '../../src/db/universeEditRepo.js';
+import { deleteUniverseEditsBefore, listUniverseEdits, recordUniverseEdit } from '../../src/db/universeEditRepo.js';
 import { deleteUniverse } from '../../src/db/universeRepo.js';
 import { addPlayer } from '../players.js';
 import { addUniverse } from './fixtures.js';
@@ -60,5 +60,30 @@ describe('universeEditRepo', () =>
 		await deleteUniverse(universeId);
 
 		assert.strictEqual((await listUniverseEdits(universeId, { offset: 0, limit: 10 })).total, 0);
+	});
+
+	it('deletes up to a batch of the saves made before a time, in every universe', async () =>
+	{
+		const universeId = await addUniverse();
+		const otherId = await addUniverse('Elsewhere');
+		const ada = await addPlayer('Ada');
+		const cutoff = new Date(Date.UTC(2026, 10, 1, 12, 0));
+
+		for (const [minute, universe] of [[-3, universeId], [-2, otherId], [-1, universeId], [0, universeId], [1, otherId]] as const)
+		{
+			await recordUniverseEdit({
+				universeId: universe,
+				playerId: ada.id,
+				role: 'creator',
+				changeDetails: [{ subject: 'difficultyLevel', action: 'changed', target: { key: 'hard', name: null }, fields: [{ field: 'mobScale', value: minute }], count: 1 }],
+				savedAt: new Date(cutoff.getTime() + (minute * 60 * 1000))
+			});
+		}
+
+		assert.strictEqual(await deleteUniverseEditsBefore(cutoff, 2), 2);
+		assert.strictEqual(await deleteUniverseEditsBefore(cutoff, 2), 1);
+		assert.strictEqual(await deleteUniverseEditsBefore(cutoff, 2), 0);
+		assert.strictEqual((await listUniverseEdits(universeId, { offset: 0, limit: 10 })).total, 1);
+		assert.strictEqual((await listUniverseEdits(otherId, { offset: 0, limit: 10 })).total, 1);
 	});
 });

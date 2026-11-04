@@ -2,7 +2,7 @@
  * The record of saves made in universes' editors, for the editor's Audit tab: the only module that reads
  * or writes the universe_edits table
  */
-import { count, desc, eq } from 'drizzle-orm';
+import { count, desc, eq, inArray, lt } from 'drizzle-orm';
 import type { EditorRole, UniverseEditDetail } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
@@ -48,6 +48,32 @@ export async function recordUniverseEdit(edit: NewUniverseEdit, executor: Execut
 	await executor
 		.insert(universeEdits)
 		.values(edit);
+}
+
+/**
+ * Deletes up to a batch of the saves made before a time, in every universe. A delete is kept to a batch
+ * so it holds its locks briefly and writes a small transaction, however many saves are due; the
+ * universe_edits_saved_at_index finds them without reading the rest
+ *
+ * @param before Saves made before this are deleted
+ * @param limit The most to delete
+ * @param executor The database, or a transaction
+ * @return How many were deleted, so a caller can delete again while a whole batch was
+ */
+export async function deleteUniverseEditsBefore(before: Date, limit: number, executor: Executor = db): Promise<number>
+{
+	const due = executor
+		.select({
+			id: universeEdits.id
+		})
+		.from(universeEdits)
+		.where(lt(universeEdits.savedAt, before))
+		.limit(limit);
+	const result = await executor
+		.delete(universeEdits)
+		.where(inArray(universeEdits.id, due));
+
+	return(result.rowCount ?? 0);
 }
 
 /**

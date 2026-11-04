@@ -1211,6 +1211,10 @@
 		"message": "{field}: {value}",
 		"source": "{field}: {value}"
 	},
+	"editor.audit.hint": {
+		"message": "Each time ye stow changes, it stays in the ship's log fer 90 days.",
+		"source": "Each save is kept here for 90 days."
+	},
 	"editor.audit.listFailed": {
 		"message": "Couldn't read the ship's log.",
 		"source": "Could not list the saves."
@@ -5140,8 +5144,8 @@
 		"source": "Chat isn't saved. The game server keeps a lobby's most recent messages in memory, so players who arrive can read them, until the lobby closes or the server restarts."
 	},
 	"privacy.playEditRecord": {
-		"message": "A record o' each time ye stow changes in a universe's editor: when, with which role, an' what it changed, by name, with the value it gave each settin' it changed (a long description only by how many characters it has). The universe's creators an' the site's admins can see it. It be kept until the universe be deleted, an' names ye until ye delete yer account.",
-		"source": "A record of each save you make in a universe's editor: when, with which role, and what it changed, by name, with the value it gave each setting it changed (a long description only by how many characters it has). The universe's creators and the site's admins can see it. It is kept until the universe is deleted, and names you until you delete your account."
+		"message": "A record o' each time ye stow changes in a universe's editor: when, with which role, an' what it changed, by name, with the value it gave each settin' it changed (a long description only by how many characters it has). The universe's creators an' the site's admins can see it. It be kept fer 90 days, or until the universe be deleted if that comes sooner, an' names ye until ye delete yer account.",
+		"source": "A record of each save you make in a universe's editor: when, with which role, and what it changed, by name, with the value it gave each setting it changed (a long description only by how many characters it has). The universe's creators and the site's admins can see it. It is kept for 90 days, or until the universe is deleted if that is sooner, and names you until you delete your account."
 	},
 	"privacy.playUniverses": {
 		"message": "The universes ye create or help edit, an' what ye upload to 'em, such as tile pictures.",
