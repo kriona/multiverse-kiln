@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { sourceTextHash, type UniverseTextListPayload, type UniverseTextRow } from '@multiverse-kiln/shared';
+import { MAX_COIN_NAME_LENGTH, sourceTextHash, type UniverseTextListPayload, type UniverseTextRow } from '@multiverse-kiln/shared';
 
 import { findDefaultItemIds } from '../src/db/itemRepo.js';
 import { listUniverseEdits } from '../src/db/universeEditRepo.js';
@@ -82,6 +82,56 @@ describe('Translations tab', () =>
 			outOfDate: false
 		});
 		assert.strictEqual(body.total, 5);
+	});
+
+	it('lists the coin names and abbreviations the universe gives, and deletes their translations when a coin goes back to the engine\'s', async () =>
+	{
+		const { universeId, ada } = await translatableUniverse();
+		const goldName = { kind: 'coin', thingId: 'gp', field: 'name' };
+		const goldAbbreviation = { kind: 'coin', thingId: 'gp', field: 'abbreviation' };
+
+		/**
+		 * The coins' text the Translations tab lists in French, with each translation
+		 *
+		 * @return Each piece's coin, field, source text and translation
+		 */
+		const coinRows = async (): Promise<(string | null)[][]> => (await listText(ada, universeId, 'language=fr')).body.rows
+			.filter((row) => (row.kind === 'coin'))
+			.map(({ thingId, field, source, translation }) => [thingId, field, source, translation]);
+
+		for (const update of [{ coinAbbreviations: { gp: 'two words' } }, { coinAbbreviations: { gp: 'g2' } }, { coinAbbreviations: { cp: 'gp' } }, { coinAbbreviations: { gp: 'sp' } }, { coinAbbreviations: { cr: 'cr' } }, { coinNames: { cr: 'Crowns' } }, { coinNames: { gp: 'x'.repeat(MAX_COIN_NAME_LENGTH + 1) } }, { coinNames: { gp: ' ' } }])
+		{
+			const refused = await saveChanges(ada, universeId, [{ kind: 'universe', update }]);
+
+			assert.strictEqual(refused.status, 400, JSON.stringify(update));
+		}
+
+		// Silver may be shown as "gp" once gold isn't
+		const renamed = await saveChanges(ada, universeId, [{ kind: 'universe', update: { coinNames: { gp: ' Royal crowns ' }, coinAbbreviations: { gp: ' cr ', sp: 'gp' } } }]);
+
+		assert.strictEqual(renamed.status, 200, JSON.stringify(renamed.body));
+		assert.deepStrictEqual(await coinRows(), [['gp', 'name', 'Royal crowns', null], ['gp', 'abbreviation', 'cr', null], ['sp', 'abbreviation', 'gp', null]]);
+
+		const badAbbreviation = await saveChanges(ada, universeId, [{ kind: 'saveTranslation', text: goldAbbreviation, language: 'fr', translation: 'deux mots', sourceHash: sourceTextHash('cr') }]);
+
+		assert.strictEqual(badAbbreviation.status, 400);
+
+		const translated = await saveChanges(ada, universeId, [
+			{ kind: 'saveTranslation', text: goldName, language: 'fr', translation: 'Couronnes royales', sourceHash: sourceTextHash('Royal crowns') },
+			{ kind: 'saveTranslation', text: goldAbbreviation, language: 'fr', translation: 'co', sourceHash: sourceTextHash('cr') }
+		]);
+
+		assert.strictEqual(translated.status, 200, JSON.stringify(translated.body));
+		assert.deepStrictEqual((await coinRows()).slice(0, 2), [['gp', 'name', 'Royal crowns', 'Couronnes royales'], ['gp', 'abbreviation', 'cr', 'co']]);
+
+		// Gold is shown as "gp" again, so silver can't be
+		assert.strictEqual((await saveChanges(ada, universeId, [{ kind: 'universe', update: { coinAbbreviations: { sp: 'gp' } } }])).status, 400);
+		assert.strictEqual((await saveChanges(ada, universeId, [{ kind: 'universe', update: { coinAbbreviations: { sp: 'sh' } } }])).status, 200);
+		assert.deepStrictEqual(await coinRows(), [['gp', 'name', 'Royal crowns', 'Couronnes royales'], ['sp', 'abbreviation', 'sh', null]]);
+		assert.strictEqual((await saveChanges(ada, universeId, [{ kind: 'saveTranslation', text: goldAbbreviation, language: 'fr', translation: 'co', sourceHash: sourceTextHash('cr') }])).status, 404);
+
+		assert.strictEqual((await saveChanges(ada, universeId, [{ kind: 'universe', update: { coinNames: {}, coinAbbreviations: { gp: 'cr', sp: 'sh' } } }])).status, 200);
+		assert.deepStrictEqual(await coinRows(), [['gp', 'abbreviation', 'cr', null], ['sp', 'abbreviation', 'sh', null]]);
 	});
 
 	it('saves translations and notes, marks a translation out of date when its source changes, and confirms it', async () =>

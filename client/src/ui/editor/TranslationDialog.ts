@@ -1,4 +1,4 @@
-import { DISALLOWED_TEXT_CHARACTERS, MAX_TRANSLATOR_NOTE_LENGTH, maxUniverseTextLength, type UniverseTextRow } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, isValidCoinAbbreviation, MAX_COIN_ABBREVIATION_LENGTH, MAX_TRANSLATOR_NOTE_LENGTH, maxUniverseTextLength, type UniverseTextRow } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { ChangeTracker } from '../changeTracker';
@@ -6,6 +6,7 @@ import { getElement, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
 import { showMarkdown } from '../markdown';
+import { coinAbbreviationMessages } from '../moneyField';
 
 /**
  * What the translation dialog shows and does with a piece of universe text, keeping its changes on the
@@ -204,7 +205,8 @@ export class TranslationDialog
 	}
 
 	/**
-	 * Keeps the dialog's changes on the tab and closes it, unless a field holds characters that aren't allowed
+	 * Keeps the dialog's changes on the tab and closes it, unless a field holds characters that aren't
+	 * allowed, or a coin's abbreviation is one a money field couldn't read
 	 *
 	 * @param confirm Whether to keep the translation even when it hasn't changed, marking it up to date
 	 */
@@ -230,6 +232,15 @@ export class TranslationDialog
 				reportFieldError(field, t(formMessages.invalidText));
 				return;
 			}
+		}
+
+		// A coin's abbreviation is written after amounts, which a money field reads back
+		if ((edit.row.field === 'abbreviation') && (translation !== null) && !isValidCoinAbbreviation(translation))
+		{
+			reportFieldError(input, t(coinAbbreviationMessages.invalid, {
+				max: MAX_COIN_ABBREVIATION_LENGTH
+			}));
+			return;
 		}
 
 		const noTranslation = this.noTranslation.checked;

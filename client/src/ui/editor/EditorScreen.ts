@@ -11,6 +11,7 @@ import { EditorsTab } from './EditorsTab';
 import { closeOpenDialogs, getElement, setPageTitle, showMessage, titleLink } from '../dom';
 import { CharacterListTab } from './CharacterListTab';
 import { CharactersTab } from './CharactersTab';
+import { CoinsSection } from './CoinsSection';
 import { LobbyTab } from './LobbyTab';
 import { ClassesSection } from './ClassesSection';
 import { DifficultySection } from './DifficultySection';
@@ -146,6 +147,7 @@ export class EditorScreen
 	private readonly draftSection: DraftSection;
 	private readonly startDraftDialog: StartDraftDialog;
 	private readonly rulesetTab: RulesetTab;
+	private readonly coinsSection: CoinsSection;
 	private readonly lobbyTab: LobbyTab;
 	private readonly charactersTab: CharactersTab;
 	private readonly characterListTab: CharacterListTab;
@@ -208,6 +210,14 @@ export class EditorScreen
 			this.startDraftDialog.open(this.hasTabChanges());
 		});
 		this.rulesetTab = new RulesetTab(api);
+		this.coinsSection = new CoinsSection(() =>
+		{
+			this.charactersTab.coinsChanged(false);
+		}, (update) =>
+		{
+			this.updateUniverse(update);
+			this.charactersTab.coinsChanged(true);
+		});
 		this.tilesetsTab = new TilesetsTab(api);
 
 		const areaSelect = new AreaSelectDialog(api, this.tilesetsTab);
@@ -223,7 +233,7 @@ export class EditorScreen
 			}
 		});
 
-		this.charactersTab = new CharactersTab(api, areaSelect, itemSelect, (update) =>
+		this.charactersTab = new CharactersTab(api, areaSelect, itemSelect, () => this.coinsSection.abbreviations(), (update) =>
 		{
 			this.updateUniverse(update);
 		});
@@ -277,12 +287,13 @@ export class EditorScreen
 		{
 			void this.areasTab.reloadTiles();
 			this.auditTab.reload();
+			this.translationTable.reload();
 		});
 
 		this.savableTabs = {
 			editors: this.editorsTab,
 			universe: this.universeTab,
-			ruleset: combineTabs(this.rulesetTab, this.difficultySection),
+			ruleset: combineTabs(this.rulesetTab, this.coinsSection, this.difficultySection),
 			lobby: this.lobbyTab,
 			characters: combineTabs(this.charactersTab, this.racesSection, this.classesSection, this.themesSection),
 			tilesets: this.tilesetsTab,
@@ -404,6 +415,8 @@ export class EditorScreen
 		this.universeTab.open(universe);
 		this.draftSection.open(universe, this.saveBar.isLocked());
 		void this.rulesetTab.open(universe);
+		// Before the Characters tab, which writes its money in the abbreviations this shows
+		this.coinsSection.open(universe);
 		this.lobbyTab.open(universe);
 		this.charactersTab.open(universe);
 		this.characterListTab.open(universe);

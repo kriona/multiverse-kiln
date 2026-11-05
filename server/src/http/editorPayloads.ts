@@ -6,7 +6,7 @@
  * need the database (such as whether a tile belongs to the universe) are made as each change is saved
  */
 import { z } from 'zod';
-import { AREA_EVACUATIONS, GROUP_SIZE_LOWERINGS, ITEM_DISABLINGS, DARKVISIONS, DEFAULT_RACE_NAMES, DISALLOWED_TEXT_CHARACTERS, EDITOR_CHARACTER_SORT_COLUMNS, hasIdShapedSlug, MAX_CHARACTER_SEARCH_LENGTH, MAX_CHARACTERS_PER_PAGE, type EditorCharacterListQuery, MAX_UNIVERSE_EDITS_PER_PAGE, type UniverseEditListQuery, TILE_USED_IN,DISPLAY_TIMES,FAERIE_MORNINGS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, isRulesetMoney, ITEM_SORT_COLUMNS, MAX_CELL_CHANGES, MAX_CHUNKS_PER_REQUEST, MAX_CLASS_NAME_LENGTH, MAX_COINS, MAX_CUSTOM_RACES, MAX_DIFFICULTY_NAME_LENGTH, MAX_GROUP_PLAYERS, MAX_ITEM_NAME_LENGTH, MAX_ITEM_QUANTITY, MAX_ITEMS_PER_PAGE, MAX_LONG_DESCRIPTION_LENGTH, MAX_MAP_SIDE, MAX_MOB_SCALE, MIN_MOB_SCALE, MAX_RACE_NAME_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_STARTING_ITEMS, MAX_THEME_NAME_LENGTH, MAX_TILE_GRAPHIC_BYTES, MAX_TILE_GRAPHIC_DRAW_ORDER, MAX_TILE_GRAPHIC_NAME_LENGTH, MAX_TILE_NAME_LENGTH, MAX_TILES_PER_PAGE, MAX_WALK_SECONDS, MIN_TILE_GRAPHIC_DRAW_ORDER,MAX_UNIVERSE_NAME_LENGTH, MAX_AREA_NAME_LENGTH, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, SORT_DIRECTIONS, TILE_GRAPHIC_FORMATS, TILE_GRAPHIC_KEYS, TILE_SORT_COLUMNS, UNIVERSE_STAGES, universeSlug, VOID_CELL, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, MAX_CHANGES_PER_SAVE, MAX_LOCALE_LENGTH, MAX_TRANSLATOR_LANGUAGES, MAX_UNIVERSE_LANGUAGES, MAX_TRANSLATOR_NOTE_LENGTH, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KIND_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_TEXT_SORT_COLUMNS, type UniverseTextListQuery, type UniverseTextRef, MAX_PLAYER_NAME_LENGTH, MAX_USERNAME_LENGTH, MIN_PLAYER_SEARCH_LENGTH, parsePlayerSearch, UNIVERSE_ROLES, type PlayerSearchQuery, type EditorRoleSettings, type NewRef, type SaveChangesRequest, type TileChangeSettings, type ChunkRange, type ClassSettings, type DifficultyLevelSettings, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type RaceSettings, type Ruleset, type RulesetSettings, type ThemeSettings, type TileGraphicUploadRequest, type TileListQuery, type UniverseSettingsUpdate, type AreaLinkTarget } from '@multiverse-kiln/shared';
+import { AREA_EVACUATIONS, GROUP_SIZE_LOWERINGS, ITEM_DISABLINGS, DARKVISIONS, DEFAULT_RACE_NAMES, DISALLOWED_TEXT_CHARACTERS, EDITOR_CHARACTER_SORT_COLUMNS, hasIdShapedSlug, MAX_CHARACTER_SEARCH_LENGTH, MAX_CHARACTERS_PER_PAGE, type EditorCharacterListQuery, MAX_UNIVERSE_EDITS_PER_PAGE, type UniverseEditListQuery, TILE_USED_IN,DISPLAY_TIMES,FAERIE_MORNINGS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, isRulesetMoney, COIN_ABBREVIATIONS, duplicateCoinAbbreviation, isValidCoinAbbreviation, RULESET_COINS, shownCoinAbbreviations, ITEM_SORT_COLUMNS, MAX_CELL_CHANGES, MAX_CHUNKS_PER_REQUEST, MAX_CLASS_NAME_LENGTH, MAX_COINS, MAX_COIN_NAME_LENGTH, MAX_CUSTOM_RACES, MAX_DIFFICULTY_NAME_LENGTH, MAX_GROUP_PLAYERS, MAX_ITEM_NAME_LENGTH, MAX_ITEM_QUANTITY, MAX_ITEMS_PER_PAGE, MAX_LONG_DESCRIPTION_LENGTH, MAX_MAP_SIDE, MAX_MOB_SCALE, MIN_MOB_SCALE, MAX_RACE_NAME_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_STARTING_ITEMS, MAX_THEME_NAME_LENGTH, MAX_TILE_GRAPHIC_BYTES, MAX_TILE_GRAPHIC_DRAW_ORDER, MAX_TILE_GRAPHIC_NAME_LENGTH, MAX_TILE_NAME_LENGTH, MAX_TILES_PER_PAGE, MAX_WALK_SECONDS, MIN_TILE_GRAPHIC_DRAW_ORDER,MAX_UNIVERSE_NAME_LENGTH, MAX_AREA_NAME_LENGTH, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, SORT_DIRECTIONS, TILE_GRAPHIC_FORMATS, TILE_GRAPHIC_KEYS, TILE_SORT_COLUMNS, UNIVERSE_STAGES, universeSlug, VOID_CELL, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, MAX_CHANGES_PER_SAVE, MAX_LOCALE_LENGTH, MAX_TRANSLATOR_LANGUAGES, MAX_UNIVERSE_LANGUAGES, MAX_TRANSLATOR_NOTE_LENGTH, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KIND_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_TEXT_SORT_COLUMNS, type UniverseTextListQuery, type UniverseTextRef, MAX_PLAYER_NAME_LENGTH, MAX_USERNAME_LENGTH, MIN_PLAYER_SEARCH_LENGTH, parsePlayerSearch, UNIVERSE_ROLES, type PlayerSearchQuery, type EditorRoleSettings, type NewRef, type SaveChangesRequest, type TileChangeSettings, type ChunkRange, type ClassSettings, type DifficultyLevelSettings, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type RaceSettings, type Ruleset, type RulesetSettings, type ThemeSettings, type TileGraphicUploadRequest, type TileListQuery, type UniverseSettingsUpdate, type AreaLinkTarget } from '@multiverse-kiln/shared';
 
 import { displayText } from '../rooms/payloads.js';
 
@@ -70,6 +70,38 @@ function money(ruleset: Ruleset)
 		cr: coinCount
 	})
 		.refine((amount) => isRulesetMoney(amount, ruleset), 'Holds coins the universe\'s ruleset doesn\'t use'));
+}
+
+/**
+ * The names a universe gives its ruleset's coins (UniverseCoinNames): only the ruleset's coins, each
+ * trimmed and up to MAX_COIN_NAME_LENGTH characters
+ *
+ * @param ruleset The universe's ruleset
+ * @return The validator
+ */
+function coinNames(ruleset: Ruleset)
+{
+	return(z.partialRecord(z.enum(RULESET_COINS[ruleset]), z.string()
+		.trim()
+		.min(1)
+		.max(MAX_COIN_NAME_LENGTH)
+		.refine((name) => !DISALLOWED_TEXT_CHARACTERS.test(name), 'Contains disallowed characters')));
+}
+
+/**
+ * The abbreviations a universe gives its ruleset's coins (UniverseCoinAbbreviations): only the ruleset's
+ * coins, each one a money field can read, and no two coins shown alike, counting the engine's English
+ * abbreviation for each coin left out
+ *
+ * @param ruleset The universe's ruleset
+ * @return The validator
+ */
+function coinAbbreviations(ruleset: Ruleset)
+{
+	return(z.partialRecord(z.enum(RULESET_COINS[ruleset]), z.string()
+		.trim()
+		.refine(isValidCoinAbbreviation, 'Not an abbreviation a money field can read'))
+		.refine((abbreviations) => (duplicateCoinAbbreviation(ruleset, shownCoinAbbreviations(ruleset, abbreviations, (coin) => COIN_ABBREVIATIONS[coin].defaultMessage)) === undefined), 'Two coins have the same abbreviation'));
 }
 
 /**
@@ -161,7 +193,8 @@ const universeTextRef = z.object({
  *
  * @param ref The piece of text
  * @param translation The translation as sent, or null for none
- * @return The translation, null for none, or undefined when it is too long or holds disallowed characters
+ * @return The translation, null for none, or undefined when it is too long or holds disallowed characters,
+ * or for a coin's abbreviation, one a money field can't read
  */
 function universeTextTranslation(ref: UniverseTextRef, translation: string | null): string | null | undefined
 {
@@ -175,6 +208,11 @@ function universeTextTranslation(ref: UniverseTextRef, translation: string | nul
 	const checked = (markdown ? text.replace(/[\t\n\r]/g, '') : text);
 
 	if ((text.length > maxUniverseTextLength(ref.kind, ref.field)) || DISALLOWED_TEXT_CHARACTERS.test(checked))
+	{
+		return(undefined);
+	}
+
+	if ((ref.field === 'abbreviation') && (text !== '') && !isValidCoinAbbreviation(text))
 	{
 		return(undefined);
 	}
@@ -234,6 +272,8 @@ const universeSettingsUpdate = byRuleset((ruleset) => z.object({
 	lobbyRow: cellCoordinate.optional(),
 	groupSize: z.number().int().min(MIN_GROUP_SIZE).max(MAX_GROUP_PLAYERS).optional(),
 	startingMoney: money(ruleset).optional(),
+	coinNames: coinNames(ruleset).optional(),
+	coinAbbreviations: coinAbbreviations(ruleset).optional(),
 	startingItems: startingItemList.optional(),
 	startingAreaId: z.uuid().optional(),
 	startingColumn: cellCoordinate.optional(),
@@ -732,7 +772,7 @@ export const saveChangesRequest = byRuleset((ruleset) => z.object({
 					context.addIssue({
 						code: 'custom',
 						path: ['translation'],
-						message: `Too long for ${change.text.field}, or contains disallowed characters`
+						message: `Too long for ${change.text.field}, contains disallowed characters, or isn't a coin abbreviation a money field can read`
 					});
 
 					return(z.NEVER);

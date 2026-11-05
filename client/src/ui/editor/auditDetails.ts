@@ -1,9 +1,9 @@
-import { ABILITY_NAMES, AREA_LIGHT_LEVEL_NAMES, DARKVISION_NAMES, defineMessages, DISPLAY_TIME_NAMES, FAERIE_MORNING_NAMES, languageName, PASSAGE_OF_TIME_NAMES, PF1E_CASTING_STYLE_NAMES, PF1E_MAGIC_TRADITION_NAMES, PF1E_STAT_METHOD_NAMES, REAL_TIME_NAME, RULESET_ABILITIES, SIZE_NAMES, UNIVERSE_ROLE_NAMES, UNIVERSE_STAGE_NAMES, type AuditField, type AuditFieldChange, type AuditFieldValues, type AuditPassageOfTime, type AuditPlace, type AuditSubject, type MessageDescriptor, type OptionName, type Ruleset, type UniverseEditDetail } from '@multiverse-kiln/shared';
+import { ABILITY_NAMES, AREA_LIGHT_LEVEL_NAMES, DARKVISION_NAMES, defineMessages, DISPLAY_TIME_NAMES, FAERIE_MORNING_NAMES, languageName, PASSAGE_OF_TIME_NAMES, PF1E_CASTING_STYLE_NAMES, PF1E_MAGIC_TRADITION_NAMES, PF1E_STAT_METHOD_NAMES, REAL_TIME_NAME, RULESET_ABILITIES, RULESET_COINS, SIZE_NAMES, UNIVERSE_ROLE_NAMES, UNIVERSE_STAGE_NAMES, type AuditField, type AuditFieldChange, type AuditFieldValues, type AuditPassageOfTime, type AuditPlace, type AuditSubject, type Coin, type MessageDescriptor, type OptionName, type Ruleset, type UniverseEditDetail } from '@multiverse-kiln/shared';
 
-import { currentLocale, formatList, signedNumber, t } from '../../localization';
+import { capitalized, currentLocale, formatList, signedNumber, t } from '../../localization';
 import { difficultyName } from '../difficultyNames';
 import { itemName, itemTypeName } from '../itemNames';
-import { formatMoney } from '../moneyField';
+import { engineCoinName, formatMoney } from '../moneyField';
 import { className, raceName, themeName } from '../raceAndClassNames';
 import { tileName } from '../tileNames';
 import { colorToHex } from './colors';
@@ -77,6 +77,16 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		id: 'editor.characters.startingMoney',
 		defaultMessage: 'Starting money',
 		description: 'Label of the field for the money every character starts with; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
+	coinNames: {
+		id: 'editor.audit.field.coinNames',
+		defaultMessage: 'Coin names',
+		description: 'Names the setting for the names the universe gives its coins, such as Bronze kits for copper pieces, in the list of what a save changed on the editor\'s Audit tab'
+	},
+	coinAbbreviations: {
+		id: 'editor.audit.field.coinAbbreviations',
+		defaultMessage: 'Coin abbreviations',
+		description: 'Names the setting for the abbreviations the universe writes its coins with after an amount, such as bk in 2bk for bronze kits, in the list of what a save changed on the editor\'s Audit tab'
 	},
 	startingItems: {
 		id: 'editor.characters.startingEquipment',
@@ -409,7 +419,7 @@ const VALUE_MESSAGES = defineMessages({
 	none: {
 		id: 'editor.audit.value.none',
 		defaultMessage: 'none',
-		description: 'The value of a setting a save left empty, in the editor\'s Audit tab\'s list of what a save changed: no starting equipment, no starting area of its own, no parent area, no graphic, no languages or no ability modifiers'
+		description: 'The value of a setting a save left empty, in the editor\'s Audit tab\'s list of what a save changed: no starting equipment, no starting area of its own, no parent area, no graphic, no languages, no ability modifiers, or no coin names or abbreviations of the universe\'s own'
 	},
 	characters: {
 		id: 'editor.audit.value.characters',
@@ -440,6 +450,11 @@ const VALUE_MESSAGES = defineMessages({
 		id: 'editor.audit.value.abilityModifier',
 		defaultMessage: '{ability} {modifier}',
 		description: 'One ability in the value of a race\'s Ability modifiers setting, in the editor\'s Audit tab\'s list of what a save changed: the ability\'s name and how much the race adds to it or takes from it, e.g. "Constitution +2"'
+	},
+	coin: {
+		id: 'editor.audit.value.coin',
+		defaultMessage: '{coin}: {text}',
+		description: 'One coin in the value of the universe\'s Coin names or Coin abbreviations setting, in the editor\'s Audit tab\'s list of what a save changed: {coin} is the coin\'s name in the rules, as a label, and {text} the name or abbreviation the universe gives it, e.g. "Copper pieces: bronze kits" or "Copper pieces: bk"'
 	}
 });
 
@@ -505,7 +520,25 @@ function describeValue(change: AuditFieldChange, detail: UniverseEditDetail, rul
 		case 'displayTime':
 			return(t(DISPLAY_TIME_NAMES[change.value]));
 		case 'startingMoney':
-			return(formatMoney(change.value, ruleset));
+			// The engine's abbreviations, which name the coins whatever the universe has called them since
+			return(formatMoney(change.value, ruleset, {}));
+		case 'coinNames':
+		case 'coinAbbreviations':
+		{
+			const texts: Partial<Record<Coin, string>> = change.value;
+
+			return(listOrNone(RULESET_COINS[ruleset].flatMap((coin) =>
+			{
+				const text = texts[coin];
+
+				return(((text === undefined)
+					? []
+					: [t(VALUE_MESSAGES.coin, {
+						coin: capitalized(engineCoinName(coin)),
+						text
+					})]));
+			})));
+		}
 		case 'startingItems':
 			return(listOrNone(change.value.map((entry) => t(VALUE_MESSAGES.itemQuantity, {
 				item: itemName(entry.item, ruleset),

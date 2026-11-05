@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { addMoney, changePf1eMoney, emptyMoney, emptyPf1eMoney, isPf1eRollMethod, isValidPf1ePointBuy, MAX_COINS, moneyText, parseMoney, PF1E_MAX_POINT_BUY_BUDGET, PF1E_RACES, PF1E_STAT_METHODS, pf1eAbilityModifier, pf1eMoneyValue, pf1ePointBuyBudget, pf1ePointBuyCost, pf1ePointBuyTotal, type CoinAbbreviations, type Money, type MoneyParseResult, type Pf1eAbilityScores, type Pf1eMoney } from '@multiverse-kiln/shared';
+import { acceptedCoinAbbreviations, addMoney, changePf1eMoney, duplicateCoinAbbreviation, emptyMoney, emptyPf1eMoney, isPf1eRollMethod, isValidCoinAbbreviation, isValidPf1ePointBuy, MAX_COIN_ABBREVIATION_LENGTH, MAX_COINS, moneyText, parseMoney, PF1E_MAX_POINT_BUY_BUDGET, PF1E_RACES, PF1E_STAT_METHODS, pf1eAbilityModifier, pf1eMoneyValue, pf1ePointBuyBudget, pf1ePointBuyCost, pf1ePointBuyTotal, shownCoinAbbreviations, type Coin, type CoinAbbreviations, type Money, type MoneyParseResult, type Pf1eAbilityScores, type Pf1eMoney } from '@multiverse-kiln/shared';
 
 const ENGLISH_COINS = {
 	pp: ['pp'],
@@ -67,6 +67,18 @@ function readPf1e(text: string, abbreviations: CoinAbbreviations): MoneyParseRes
 function writePf1e(money: Money): string
 {
 	return(moneyText(money, 'pf1e', ENGLISH_ABBREVIATIONS));
+}
+
+/**
+ * Writes an amount for a Pathfinder money field with the abbreviations a universe shows
+ *
+ * @param money The coins
+ * @param shown Each coin's abbreviation as players see it
+ * @return The text
+ */
+function writePf1eShown(money: Money, shown: Partial<Record<Coin, string>>): string
+{
+	return(moneyText(money, 'pf1e', shown));
 }
 
 /**
@@ -255,6 +267,72 @@ describe('PF1E ruleset (shared)', () =>
 			{
 				assert.deepStrictEqual(readPf1e(writePf1e(money), ENGLISH_COINS), { money });
 			}
+		});
+
+		it('reads an abbreviation given for two coins as the more valuable', () =>
+		{
+			const twice = {
+				...ENGLISH_COINS,
+				sp: ['sp', 'gp']
+			};
+
+			assert.deepStrictEqual(readPf1e('2gp', twice), { money: coins(0, 2, 0, 0) });
+		});
+
+		it('takes coin abbreviations a money field can read back', () =>
+		{
+			for (const abbreviation of ['cr', 'Kronen', 'ŝ', '¤'])
+			{
+				assert.strictEqual(isValidCoinAbbreviation(abbreviation), true, abbreviation);
+			}
+
+			for (const abbreviation of ['', 'two words', 'gp2', 'a,b', 'x'.repeat(MAX_COIN_ABBREVIATION_LENGTH + 1), 'g\u0000p'])
+			{
+				assert.strictEqual(isValidCoinAbbreviation(abbreviation), false, abbreviation);
+			}
+		});
+
+		it('shows a universe\'s coin abbreviations, and the engine\'s for the coins it leaves out', () =>
+		{
+			const shown = shownCoinAbbreviations('pf1e', { gp: 'cr' }, (coin) => ENGLISH_ABBREVIATIONS[coin as keyof typeof ENGLISH_ABBREVIATIONS]);
+
+			assert.deepStrictEqual(shown, {
+				pp: 'pp',
+				gp: 'cr',
+				sp: 'sp',
+				cp: 'cp'
+			});
+			assert.strictEqual(writePf1eShown(coins(0, 2, 5, 0), shown), '2cr 5sp');
+		});
+
+		it('finds the less valuable of two coins shown alike, ignoring capitals', () =>
+		{
+			assert.strictEqual(duplicateCoinAbbreviation('pf1e', ENGLISH_ABBREVIATIONS), undefined);
+			assert.strictEqual(duplicateCoinAbbreviation('pf1e', {
+				...ENGLISH_ABBREVIATIONS,
+				cp: 'GP'
+			}), 'cp');
+		});
+
+		it('still reads the engine\'s abbreviation of a renamed coin, unless another coin is shown with it', () =>
+		{
+			const crowns = {
+				...ENGLISH_ABBREVIATIONS,
+				gp: 'cr'
+			};
+			const accepted = acceptedCoinAbbreviations('pf1e', crowns, ENGLISH_COINS);
+
+			assert.deepStrictEqual(readPf1e('2cr 1gp', accepted), { money: coins(0, 3, 0, 0) });
+
+			const swapped = {
+				...ENGLISH_ABBREVIATIONS,
+				gp: 'sp',
+				sp: 'gp'
+			};
+			const swappedAccepted = acceptedCoinAbbreviations('pf1e', swapped, ENGLISH_COINS);
+
+			assert.deepStrictEqual(swappedAccepted.gp, ['sp']);
+			assert.deepStrictEqual(readPf1e('2gp 1sp', swappedAccepted), { money: coins(0, 1, 2, 0) });
 		});
 
 		it('adds amounts coin by coin, without changing coins for others', () =>

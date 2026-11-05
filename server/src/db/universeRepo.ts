@@ -5,7 +5,7 @@ import { and, count, eq, isNotNull, isNull, sql } from 'drizzle-orm';
 import { nameKey, UNIVERSE_ID_PATTERN, universeSlug, type AdminUniverseCreator, type EditableUniverseDetails, type PassageOfTime, type Ruleset, type UniverseDetails, type UniverseSettingsUpdate, type UniverseStage, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
-import { fromCoinColumns, toCoinColumns } from './coinColumns.js';
+import { fromCoinAbbreviationColumns, fromCoinColumns, fromCoinNameColumns, toCoinAbbreviationColumns, toCoinColumns, toCoinNameColumns } from './coinColumns.js';
 import { addDefaultDifficultyLevels } from './difficultyRepo.js';
 import { players, universeDrafts, universeEditors, universes } from './schema.js';
 import { loadStartingItems, replaceStartingItems } from './startingItemRepo.js';
@@ -336,7 +336,17 @@ function versionSettingColumns(table: typeof universes | typeof universeDrafts)
 		startingGold: table.startingGold,
 		startingSilver: table.startingSilver,
 		startingCopper: table.startingCopper,
-		startingCredits: table.startingCredits
+		startingCredits: table.startingCredits,
+		platinumName: table.platinumName,
+		goldName: table.goldName,
+		silverName: table.silverName,
+		copperName: table.copperName,
+		creditsName: table.creditsName,
+		platinumAbbreviation: table.platinumAbbreviation,
+		goldAbbreviation: table.goldAbbreviation,
+		silverAbbreviation: table.silverAbbreviation,
+		copperAbbreviation: table.copperAbbreviation,
+		creditsAbbreviation: table.creditsAbbreviation
 	});
 }
 
@@ -412,7 +422,7 @@ export async function findEditableUniverse(version: UniverseVersion, executor: E
 		return(undefined);
 	}
 
-	const { startingPlatinum, startingGold, startingSilver, startingCopper, startingCredits, ...settings } = versionSettings;
+	const { startingPlatinum, startingGold, startingSilver, startingCopper, startingCredits, platinumName, goldName, silverName, copperName, creditsName, platinumAbbreviation, goldAbbreviation, silverAbbreviation, copperAbbreviation, creditsAbbreviation, ...settings } = versionSettings;
 
 	return({
 		...row,
@@ -420,6 +430,8 @@ export async function findEditableUniverse(version: UniverseVersion, executor: E
 		hasDraft: (version.draft || await hasDraft(version.universeId, executor)),
 		...settings,
 		startingMoney: fromCoinColumns({ startingPlatinum, startingGold, startingSilver, startingCopper, startingCredits }),
+		coinNames: fromCoinNameColumns({ platinumName, goldName, silverName, copperName, creditsName }),
+		coinAbbreviations: fromCoinAbbreviationColumns({ platinumAbbreviation, goldAbbreviation, silverAbbreviation, copperAbbreviation, creditsAbbreviation }),
 		startingItems: await loadStartingItems(version, executor)
 	});
 }
@@ -441,10 +453,12 @@ export async function findEditableUniverse(version: UniverseVersion, executor: E
  */
 export async function updateUniverseSettings(version: UniverseVersion, update: UniverseSettingsUpdate, executor: Executor = db): Promise<void>
 {
-	const { startingMoney, startingItems, name, stage, ...settings } = update;
+	const { startingMoney, coinNames, coinAbbreviations, startingItems, name, stage, ...settings } = update;
 	const versionSettings = {
 		...settings,
-		...((startingMoney === undefined) ? {} : toCoinColumns(startingMoney))
+		...((startingMoney === undefined) ? {} : toCoinColumns(startingMoney)),
+		...((coinNames === undefined) ? {} : toCoinNameColumns(coinNames)),
+		...((coinAbbreviations === undefined) ? {} : toCoinAbbreviationColumns(coinAbbreviations))
 	};
 
 	if (startingItems !== undefined)

@@ -4,12 +4,15 @@
  * renamed, is translated with the engine instead (localization.ts)
  */
 import { MAX_DIFFICULTY_NAME_LENGTH } from './difficulty.js';
+import { MAX_COIN_ABBREVIATION_LENGTH, MAX_COIN_NAME_LENGTH } from './money.js';
 import { MAX_AREA_NAME_LENGTH, MAX_CLASS_NAME_LENGTH, MAX_ITEM_NAME_LENGTH, MAX_LONG_DESCRIPTION_LENGTH, MAX_RACE_NAME_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_THEME_NAME_LENGTH, MAX_TILE_NAME_LENGTH, MAX_UNIVERSE_NAME_LENGTH } from './editor.js';
 import { PROFILE_LANGUAGES } from './profiles.js';
 import type { SortDirection } from './sorting.js';
 
 /**
- * What a piece of universe text belongs to: the universe itself, or one of the things it holds
+ * What a piece of universe text belongs to: the universe itself, one of the things it holds, or one of
+ * its ruleset's coins it gives a name or abbreviation of its own (UniverseCoinNames,
+ * UniverseCoinAbbreviations)
  */
 export const UNIVERSE_TEXT_KINDS = [
 	'universe',
@@ -19,7 +22,8 @@ export const UNIVERSE_TEXT_KINDS = [
 	'race',
 	'class',
 	'theme',
-	'difficultyLevel'
+	'difficultyLevel',
+	'coin'
 ] as const;
 
 export type UniverseTextKind = typeof UNIVERSE_TEXT_KINDS[number];
@@ -30,13 +34,15 @@ export type UniverseTextKind = typeof UNIVERSE_TEXT_KINDS[number];
 export const UNIVERSE_TEXT_FIELDS = [
 	'name',
 	'shortDescription',
-	'longDescription'
+	'longDescription',
+	'abbreviation'
 ] as const;
 
 export type UniverseTextField = typeof UNIVERSE_TEXT_FIELDS[number];
 
 /**
- * The text each kind of thing has: the universe has its name and descriptions, and everything else its name
+ * The text each kind of thing has: the universe has its name and descriptions, a coin its name and
+ * abbreviation, and everything else its name
  */
 export const UNIVERSE_TEXT_KIND_FIELDS: Readonly<Record<UniverseTextKind, readonly UniverseTextField[]>> = {
 	universe: ['name', 'shortDescription', 'longDescription'],
@@ -46,7 +52,8 @@ export const UNIVERSE_TEXT_KIND_FIELDS: Readonly<Record<UniverseTextKind, readon
 	race: ['name'],
 	class: ['name'],
 	theme: ['name'],
-	difficultyLevel: ['name']
+	difficultyLevel: ['name'],
+	coin: ['name', 'abbreviation']
 };
 
 /**
@@ -58,7 +65,8 @@ export interface UniverseTextRef
 
 	/**
 	 * The ID of what the text belongs to, as text (an area's UUID, or a tile's, item's, race's, class's,
-	 * theme's or difficulty level's number); the universe's own ID for its own text
+	 * theme's or difficulty level's number); the universe's own ID for its own text, and a coin's key
+	 * ("gp") for its name and abbreviation
 	 */
 	thingId: string;
 
@@ -84,6 +92,11 @@ export function maxUniverseTextLength(kind: UniverseTextKind, field: UniverseTex
 		return(MAX_LONG_DESCRIPTION_LENGTH);
 	}
 
+	if (field === 'abbreviation')
+	{
+		return(MAX_COIN_ABBREVIATION_LENGTH);
+	}
+
 	const nameLengths: Record<UniverseTextKind, number> = {
 		universe: MAX_UNIVERSE_NAME_LENGTH,
 		area: MAX_AREA_NAME_LENGTH,
@@ -92,7 +105,8 @@ export function maxUniverseTextLength(kind: UniverseTextKind, field: UniverseTex
 		race: MAX_RACE_NAME_LENGTH,
 		class: MAX_CLASS_NAME_LENGTH,
 		theme: MAX_THEME_NAME_LENGTH,
-		difficultyLevel: MAX_DIFFICULTY_NAME_LENGTH
+		difficultyLevel: MAX_DIFFICULTY_NAME_LENGTH,
+		coin: MAX_COIN_NAME_LENGTH
 	};
 
 	return(nameLengths[kind]);

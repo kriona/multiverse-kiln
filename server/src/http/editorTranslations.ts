@@ -8,7 +8,7 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { canEditWorld, canTranslate, isTranslationOutOfDate, rulesetHasThemes, sortRows, sourceTextHash, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, type EditableUniverseDetails, type EditorChange, type UniverseTextKind, type UniverseTextListPayload, type UniverseTextListQuery, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
+import { canEditWorld, canTranslate, COINS, isTranslationOutOfDate, RULESET_COINS, rulesetHasThemes, sortRows, sourceTextHash, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, type EditableUniverseDetails, type EditorChange, type UniverseTextKind, type UniverseTextListPayload, type UniverseTextListQuery, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
 
 import { listAreas } from '../db/areaRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
@@ -72,7 +72,7 @@ function namesOf(kind: UniverseTextKind, things: readonly Named[]): UniverseText
 
 /**
  * Every piece of a version's text in the universe's source language, leaving out descriptions it hasn't
- * written, in the order of UNIVERSE_TEXT_KINDS
+ * written and coins' names and abbreviations it hasn't given, in the order of UNIVERSE_TEXT_KINDS
  *
  * @param universe The universe, with the version's settings
  * @param version The universe's live version or draft
@@ -91,7 +91,7 @@ async function collectUniverseText(universe: EditableUniverseDetails, version: U
 	const classes = await loadEditorClasses(version, ruleset, executor);
 	const themes = (rulesetHasThemes(ruleset) ? await loadEditorThemes(version, ruleset, executor) : []);
 	const difficultyLevels = await listDifficultyLevels(version, executor);
-	const universeText = UNIVERSE_TEXT_FIELDS
+	const universeText = (['name', 'shortDescription', 'longDescription'] as const)
 		.map((field): UniverseTextSource => ({
 			kind: 'universe',
 			thingId: id,
@@ -100,6 +100,22 @@ async function collectUniverseText(universe: EditableUniverseDetails, version: U
 			source: universe[field]
 		}))
 		.filter((text) => (text.source !== ''));
+	const coinText = RULESET_COINS[ruleset].flatMap((coin) =>
+	{
+		const name = universe.coinNames[coin];
+		const abbreviation = universe.coinAbbreviations[coin];
+		const thingName = (name ?? abbreviation ?? coin);
+
+		return(([['name', name], ['abbreviation', abbreviation]] as const).flatMap(([field, source]): UniverseTextSource[] => ((source === undefined)
+			? []
+			: [{
+				kind: 'coin',
+				thingId: coin,
+				field,
+				thingName,
+				source
+			}])));
+	});
 
 	return([
 		...universeText,
@@ -109,7 +125,8 @@ async function collectUniverseText(universe: EditableUniverseDetails, version: U
 		...namesOf('race', races),
 		...namesOf('class', classes),
 		...namesOf('theme', themes),
-		...namesOf('difficultyLevel', difficultyLevels)
+		...namesOf('difficultyLevel', difficultyLevels),
+		...coinText
 	]);
 }
 
@@ -240,10 +257,11 @@ async function loadTextRows(request: Request, response: Response, requested: str
 
 /**
  * Where a piece of text comes in the table's default order: by kind, then the name of what it belongs
- * to, then by field
+ * to (coins most valuable first instead), then by field
  */
 const PLACE_ORDER = {
 	kinds: new Map(UNIVERSE_TEXT_KINDS.map((kind, index) => [kind, index])),
+	coins: new Map<string, number>(COINS.map((coin, index) => [coin, index])),
 	fields: new Map(UNIVERSE_TEXT_FIELDS.map((field, index) => [field, index]))
 };
 
@@ -269,6 +287,7 @@ function compareOptional(first: string | null, second: string | null): number
  */
 const ROW_COMPARERS: Record<UniverseTextSortColumn, (first: UniverseTextRow, second: UniverseTextRow) => number> = {
 	place: (first, second) => (((PLACE_ORDER.kinds.get(first.kind) ?? 0) - (PLACE_ORDER.kinds.get(second.kind) ?? 0))
+		|| (((first.kind === 'coin') && (second.kind === 'coin')) ? ((PLACE_ORDER.coins.get(first.thingId) ?? 0) - (PLACE_ORDER.coins.get(second.thingId) ?? 0)) : 0)
 		|| first.thingName.localeCompare(second.thingName)
 		|| ((PLACE_ORDER.fields.get(first.field) ?? 0) - (PLACE_ORDER.fields.get(second.field) ?? 0))),
 	source: (first, second) => first.source.localeCompare(second.source),

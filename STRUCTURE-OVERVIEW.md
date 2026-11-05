@@ -389,7 +389,12 @@ A universe can have several creators. If you delete your account and your univer
 ### Tab: Ruleset
 What shows up here depends on what ruleset is chosen.
 
-Below the ruleset's settings, the tab lists the universe's [difficulty](#difficulty) levels, easiest first, and saves them with the settings. Each level has:
+Below the ruleset's settings, the tab has the universe's coins: a table with a row for each of the ruleset's coins, headed by its name in the rules ("Copper pieces"), with fields for the name and abbreviation the universe gives it (such as "bronze kits" and "bk"), each showing the engine's while it is empty. Saved as `coinNames` and `coinAbbreviations` with the rest of the tab. This is the only engine text a universe can rename
+- the abbreviation is what amounts of the coin are written with everywhere in the universe, the character sheet and the editor's money fields included: up to 10 characters without spaces, digits or commas, and no two coins can be shown with the same one, counting the engine's for the coins left empty. The [Characters](#tab-characters) tab's starting money follows the abbreviations as this table shows them, before they are saved
+- the name, up to 30 characters, never follows an amount, so it has no singular and plural forms. It is written as it reads mid-sentence ("gold pieces", "bronze kits"), as are the engine's names and the name's translations, so a sentence can use it as it is. A label capitalizes its first letter in the player's language (`capitalized()` in `client/src/localization.ts`): never the reverse, since lowercasing would break a name such as "Crowns of Aldor", and nouns in languages such as German. The character sheet shows it as a label when the pointer rests on the coin's abbreviation (an `abbr`), and later shops and money changers will name coins with it
+- both are universe text, translated on the [Translations](#tab-translations) tab. Emptying one gives the coin back the engine's text and deletes that text's translations
+
+Below the coins, the tab lists the universe's [difficulty](#difficulty) levels, easiest first, and saves them with the settings. Each level has:
 - Default checkbox: the level Create Group starts on. Exactly one level is the default: checking it on another level unchecks the old one, and the default can't be unchecked or deleted
 - Name
 - Mob scale, a percentage from -1000% (easier) to +1000% (harder)
@@ -450,7 +455,7 @@ Money is credits (`cr`), the only coin.
 ### Tab: Characters
 - Group size, minimum 1 (single player only) maximum 6 (infrastructure / server max), default server max
 - Starting equipment, lets you [select items](#selection-item). A new universe starts with one dagger (PF1E) or survival knife (SF1E) for every character. An item in the starting equipment can't be deleted until it is taken out
-- Starting [money](#field-money)
+- Starting [money](#field-money), in the coins the [Ruleset](#tab-ruleset) tab names
 - Starting [area](#selection-area)
 
 Below the settings, the tab lists the [races](#races), the [classes](#classes) and, for a ruleset with them, the [themes](#themes), each in a section of its own, and saves them with the settings. Each list is a table of names, summaries and notes (custom, edited, disabled, and changes not saved yet), sorted by name until the Name or Notes heading is clicked (see [sortable tables](#sortable-tables)); rows that tie are sorted by name. Each race and class can add to the starting money and equipment, and choose a starting area of its own.
@@ -681,9 +686,9 @@ Explain that this allows characters to move freely between universes with the sa
 Lets the universe be played in more than one language. See [Localization](#localization) for how a player's language is chosen.
 - source language, the language the universe's editors write in. Defaults to the creator's language: the one on their profile, then the one the pages are shown in, without its region, or English when it isn't one of the languages a profile can name (such as Pirate)
 - languages, the languages the universe is translated into ("Translated into", up to 50, never the source language). [Home](#home) and the universe's page show the source language and these. Taking off a language with translations asks first, since saving deletes its translations. Only creators change them, staged until Save like the rest of the editor, and saved as a `universe` change
-- deleting something the universe holds (an area, tile, item, race, class, theme or difficulty level), or restoring one of the ruleset's defaults, deletes its translations and notes in the same save (`server/src/db/universeTextRepo.ts`)
-- choosing a language shows a table of every piece of universe text (`GET /:universeId/translations`, paged, searched, filtered and sorted on the server, 100 a page; `server/src/http/editorTranslations.ts`). Ruleset defaults the universe hasn't renamed are engine text and aren't listed, and nor are descriptions it hasn't written:
-	- where it comes from (e.g. "Area: Waterdeep, name")
+- deleting something the universe holds (an area, tile, item, race, class, theme or difficulty level), restoring one of the ruleset's defaults, or giving a coin back the engine's name or abbreviation, deletes its translations and notes in the same save (`server/src/db/universeTextRepo.ts`)
+- choosing a language shows a table of every piece of universe text (`GET /:universeId/translations`, paged, searched, filtered and sorted on the server, 100 a page; `server/src/http/editorTranslations.ts`). Ruleset defaults the universe hasn't renamed are engine text and aren't listed, and nor are descriptions it hasn't written or coin names and abbreviations it hasn't given (coins are listed most valuable first):
+	- where it comes from (e.g. "Area: Waterdeep, name", or "Coin: copper pieces, abbreviation"). A coin abbreviation's translation follows its rules (no spaces, digits or commas)
 	- the source text
 	- a note for translators, written by the universe's editors (e.g. "a pun on the town's founder; keep the joke rather than the words"). One note per piece of text, for every language
 	- the translation, or "missing", tagged "out of date"; or "needs no translation"
@@ -752,6 +757,8 @@ Each character has a vision budget, in squares. A character looks along straight
 
 ## Field: Money
 Freetext but requires a format like "1pp 2gp 2sp 4cp" (PF1E) or "250cr" (SF1E), in the universe's ruleset's coins only
+
+Coins are written with the abbreviations the universe gives them in the Coins table of the [Ruleset](#tab-ruleset) tab, and the engine's in the player's language for the rest. A field reads each coin's abbreviation as shown, and also the engine's in the player's language and in English, unless another coin is shown with it: in a universe that writes gold pieces as "cr", "2gp" still reads as gold, but not once it writes silver pieces as "gp" (`acceptedCoinAbbreviations()` in `shared/src/money.ts`).
 
 Money is kept as individual pieces of each coin, the way a purse holds them, and is never converted automatically: gaining 5sp twice is 10sp, not 1gp, and starting money from the universe, race and class adds up coin by coin. A character can hold 1pp 302gp 4444sp 10cp. A money changer converts coins into the fewest coins of the same worth (that purse becomes 75pp 6gp 5sp). Who offers money changing, and whether it costs a fee, comes with NPCs.
 
@@ -842,7 +849,7 @@ This is a component included in the [area editor](#editor-area). It shows you th
 # Localization
 Players choose the language they play in, and universes can be translated. There are two kinds of text, and each is looked up in the player's language separately:
 - **engine text**, written by the site developers: the pages and editors, messages from the server, emails, and each ruleset's defaults (such as PF1E's races, classes, items and tiles). Its translations ship with the engine
-- **universe text**, written by a universe's editors: the universe's name and descriptions, and the names of its areas, tiles, races, classes and items (later NPCs and dialog). Translated in the [Translations](#tab-translations) tab
+- **universe text**, written by a universe's editors: the universe's name and descriptions, the names of its areas, tiles, races, classes and items (later NPCs and dialog), and the names and abbreviations it gives its coins. Translated in the [Translations](#tab-translations) tab
 
 Text players write is never translated: character names, group names and chat.
 
@@ -872,7 +879,7 @@ Each translation remembers the source text it was made from, as its SHA-256 hash
 ## Formatting
 - Numbers, dates, times ("5 minutes ago") and lists follow the player's language, and names are sorted the way that language sorts them.
 - Plurals and other grammar that changes with a number or a person are part of each translated message, never built from pieces.
-- [Money](#field-money) denominations ("pp", "gp") are ruleset text, so they are translated.
+- [Money](#field-money) denominations ("pp", "gp") are ruleset text, so they are translated. A universe can give a coin a name and abbreviation of its own, which are universe text instead; no other engine text can be renamed by a universe.
 - Pages support right-to-left languages, and layouts leave room for text longer than English (German runs about 30% longer).
 
 ## Testing
@@ -912,7 +919,6 @@ A table that can be sorted has a button in each heading that sorts it (`TableSor
 - **Maps:** a map 50,000 tiles in each direction could hold billions of cells, so maps need to be stored sparsely or in chunks rather than as one full grid.
 - **Characters:** whether character names must be unique within a universe.
 - **Localization:**
-	- whether a universe can rename engine terms (calling gold "crowns"), which changes the pages' wording in that universe
 	- fonts for map text in scripts the default font doesn't cover, such as Chinese and Japanese
 	- whether to offer machine translation of chat
 - **Licensing:** how to use Pathfinder content within its open license and Paizo's terms for the "Pathfinder" name, alongside the project's AGPL license.

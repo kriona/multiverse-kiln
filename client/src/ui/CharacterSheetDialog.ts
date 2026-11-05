@@ -10,7 +10,7 @@ import { announce } from './announcer';
 import { getElement, setButtonLabel, showMessage } from './dom';
 import { createItemIcon, itemName } from './itemNames';
 import { describeLeaving, leaveButtonLabel, leavingMessages } from './leavingGroup';
-import { formatMoney } from './moneyField';
+import { moneyElement } from './moneyField';
 import { characterDescription, themeName } from './raceAndClassNames';
 
 /**
@@ -590,7 +590,7 @@ export class CharacterSheetDialog
 	 */
 	private showTraits(sheet: CharacterSheet): void
 	{
-		const entries: [string, string][] = [];
+		const entries: [string, string | Node][] = [];
 
 		if (sheet.theme !== null)
 		{
@@ -645,7 +645,7 @@ export class CharacterSheetDialog
 				id: 'characterSheet.money',
 				defaultMessage: 'Money',
 				description: 'On a character\'s sheet, the label of the coins they carry, such as 15gp 5sp'
-			}), formatMoney(sheet.money, sheet.ruleset)]
+			}), moneyElement(sheet.money, sheet.ruleset, sheet.coinNames, sheet.coinAbbreviations)]
 		);
 
 		this.traits.replaceChildren(...entries.flatMap(([term, value]) =>
@@ -654,7 +654,7 @@ export class CharacterSheetDialog
 			const valueElement = document.createElement('dd');
 
 			termElement.textContent = term;
-			valueElement.textContent = value;
+			valueElement.append(value);
 
 			return([termElement, valueElement]);
 		}));

@@ -167,6 +167,26 @@
 							</fieldset>
 						</form>
 
+						<section id="ruleset-coins" class="panel coins" aria-labelledby="coins-heading">
+							<h2 id="coins-heading" data-message="editor.coins.heading" data-translation-context="Heading of the part of the editor's Ruleset tab where the universe gives each coin a name and abbreviation of its own">Coins</h2>
+							<form id="coins-form" class="form">
+								<fieldset id="coins-fields" class="plain">
+									<table class="coin-table" aria-labelledby="coins-heading" aria-describedby="coins-hint">
+										<thead>
+											<tr>
+												<th id="coins-coin" scope="col" data-message="editor.coins.coinColumn" data-translation-context="Heading of the column of coins in the Coins table on the editor's Ruleset tab, which names each coin as the rules do, such as Gold pieces">Coin</th>
+												<th id="coins-name" scope="col" data-message="editor.coins.nameColumn" data-translation-context="Heading of the column of fields for the name the universe gives each coin, such as Bronze kits for copper pieces, in the Coins table on the editor's Ruleset tab">Name</th>
+												<th id="coins-abbreviation" scope="col" data-message="editor.coins.abbreviationColumn" data-translation-context="Heading of the column of fields for the abbreviation the universe writes each coin with after an amount, such as bk in 2bk for bronze kits, in the Coins table on the editor's Ruleset tab">Abbreviation</th>
+											</tr>
+										</thead>
+										<tbody id="coin-rows"></tbody>
+									</table>
+									<p id="coins-hint" class="hint" data-message="editor.coins.hint" data-translation-context="Explains the Coins table on the editor's Ruleset tab. Each field is empty while the coin uses the usual name or abbreviation, which the field shows grayed out. Names are written the way they read in the middle of a sentence, and labels capitalize their first letter">What the universe calls each coin, and what amounts of it are written with, like the gp in 2gp. Write names as they'd read mid-sentence, like gold pieces. Leave a field empty to use the default name. Abbreviations can't have spaces, digits or commas, and each coin needs its own abbreviation. Name and abbreviation are translated on the Translations tab.</p>
+									<p id="coins-error" class="form-error" role="alert" hidden></p>
+								</fieldset>
+							</form>
+						</section>
+
 						<section id="ruleset-difficulty" class="panel difficulty-levels" aria-labelledby="ruleset-difficulty-heading">
 							<h2 id="ruleset-difficulty-heading" data-message="editor.difficulty.heading" data-translation-context="Heading of the part of the editor's Ruleset tab listing the difficulty levels a new group can choose">Difficulty</h2>
 							<div class="filters">

@@ -380,10 +380,11 @@ tr.staged-deleted
 	}
 }
 
-// The races, classes and themes cards on the Characters tab (themes in a ruleset with them), and the difficulty levels card on the Ruleset tab
+// The races, classes and themes cards on the Characters tab (themes in a ruleset with them), and the coins and difficulty levels cards on the Ruleset tab
 .races,
 .classes,
 .themes,
+.coins,
 .difficulty-levels
 {
 	h2
@@ -777,6 +778,42 @@ html:has(.map-editor.full-page) body
 	{
 		margin: 0;
 		font-size: 1em;
+	}
+}
+
+// Sized to its columns, rather than stretched across the card by the form's flex column
+.coin-table
+{
+	align-self: flex-start;
+	border-collapse: collapse;
+	width: auto;
+
+	th,
+	td
+	{
+		padding: 4px 12px 4px 0;
+		text-align: start;
+	}
+
+	thead th
+	{
+		font-weight: normal;
+		color: $text-muted;
+	}
+
+	tbody th
+	{
+		font-weight: normal;
+	}
+
+	.coin-name
+	{
+		width: 24ch;
+	}
+
+	.coin-abbreviation
+	{
+		width: 10ch;
 	}
 }
 
