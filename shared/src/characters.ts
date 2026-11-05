@@ -22,7 +22,7 @@
  * - DELETE characterPath(universeId, characterId)/deletion: restores a character given their last rites
  */
 import { UNIVERSES_PATH } from './constants.js';
-import type { Money } from './money.js';
+import type { Money, UniverseCoinAbbreviations, UniverseCoinNames } from './money.js';
 import { rulesetHasThemes, type Ability, type AbilityScores, type ClassRules, type RaceRules, type Size } from './racesAndClasses.js';
 import type { Pf1eRollMethod, Pf1eStatMethod } from './rulesets/pf1e/statMethods.js';
 import type { Sf1eThemeRules } from './rulesets/sf1e/themes.js';
@@ -459,6 +459,13 @@ export interface CharacterSheet
 	abilityScores: AbilityScores;
 
 	money: Money;
+
+	/**
+	 * The names and abbreviations the universe gives its coins, in the player's language; the coins
+	 * left out have the engine's
+	 */
+	coinNames: UniverseCoinNames;
+	coinAbbreviations: UniverseCoinAbbreviations;
 
 	/**
 	 * The items the character carries, by ID

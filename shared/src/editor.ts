@@ -10,7 +10,7 @@ import type { OptionName } from './characters.js';
 import type { LocalizedMessage } from './localization.js';
 import type { MapBounds } from './maps.js';
 import type { AreaChunk } from './messages.js';
-import type { Money } from './money.js';
+import type { Money, UniverseCoinAbbreviations, UniverseCoinNames } from './money.js';
 import type { Ability, ClassRules, RaceRules, Size } from './racesAndClasses.js';
 import type { Pf1eCastingStyle, Pf1eMagicTradition } from './rulesets/pf1e/classes.js';
 import type { Pf1eSettings } from './rulesets/pf1e/settings.js';
@@ -396,6 +396,21 @@ export interface UniverseSettings
 	startingMoney: Money;
 
 	/**
+	 * The names the universe gives its ruleset's coins in place of the engine's, in its source language:
+	 * only the ruleset's coins, each 1 to MAX_COIN_NAME_LENGTH characters. Changing it replaces them all,
+	 * and a coin taken out loses its name's translations
+	 */
+	coinNames: UniverseCoinNames;
+
+	/**
+	 * The abbreviations the universe gives its ruleset's coins in place of the engine's, in its source
+	 * language: only the ruleset's coins, each isValidCoinAbbreviation(), and no two coins shown with the
+	 * same abbreviation (with the engine's English one for each coin left out). Changing it replaces
+	 * them all, and a coin taken out loses its abbreviation's translations
+	 */
+	coinAbbreviations: UniverseCoinAbbreviations;
+
+	/**
 	 * The items every character starts with, by item ID: up to MAX_STARTING_ITEMS items the universe
 	 * can use, each listed once
 	 */
@@ -731,6 +746,8 @@ export const AUDIT_FIELDS = [
 	'lobbyArea',
 	'groupSize',
 	'startingMoney',
+	'coinNames',
+	'coinAbbreviations',
 	'startingItems',
 	'startingArea',
 	'statMethod',
@@ -832,6 +849,8 @@ export interface AuditFieldValues
 	lobbyArea: AuditPlace | null;
 	groupSize: number;
 	startingMoney: Money;
+	coinNames: UniverseCoinNames;
+	coinAbbreviations: UniverseCoinAbbreviations;
 	startingItems: {
 		item: OptionName;
 		quantity: number;

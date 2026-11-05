@@ -617,6 +617,20 @@
       "when": 1793848098988,
       "tag": "0087_draft_name_and_languages",
       "breakpoints": true
+    },
+    {
+      "idx": 88,
+      "version": "7",
+      "when": 1793851401276,
+      "tag": "0088_coin_abbreviations",
+      "breakpoints": true
+    },
+    {
+      "idx": 89,
+      "version": "7",
+      "when": 1793852534995,
+      "tag": "0089_coin_names",
+      "breakpoints": true
     }
   ]
 }

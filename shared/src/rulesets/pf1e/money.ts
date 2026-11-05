@@ -56,6 +56,32 @@ export const PF1E_COIN_ABBREVIATIONS: Record<Pf1eCoin, MessageDescriptor> = defi
 });
 
 /**
+ * Each coin's name, unless a universe gives it one of its own
+ */
+export const PF1E_COIN_NAMES: Record<Pf1eCoin, MessageDescriptor> = defineMessages({
+	pp: {
+		id: 'pf1e.coinName.pp',
+		defaultMessage: 'platinum pieces',
+		description: 'Platinum pieces, the most valuable coin in Pathfinder, written as it reads in the middle of a sentence: labels capitalize its first letter. Shown on a character\'s sheet when the pointer rests on the coin\'s abbreviation, unless the universe names the coin itself, and in the editor\'s Coins table on its Ruleset tab and its Translations and Audit tabs'
+	},
+	gp: {
+		id: 'pf1e.coinName.gp',
+		defaultMessage: 'gold pieces',
+		description: 'Gold pieces, the coin prices are given in in Pathfinder, written as it reads in the middle of a sentence: labels capitalize its first letter. Shown on a character\'s sheet when the pointer rests on the coin\'s abbreviation, unless the universe names the coin itself, and in the editor\'s Coins table on its Ruleset tab and its Translations and Audit tabs'
+	},
+	sp: {
+		id: 'pf1e.coinName.sp',
+		defaultMessage: 'silver pieces',
+		description: 'Silver pieces, a coin in Pathfinder worth a tenth of a gold piece, written as it reads in the middle of a sentence: labels capitalize its first letter. Shown on a character\'s sheet when the pointer rests on the coin\'s abbreviation, unless the universe names the coin itself, and in the editor\'s Coins table on its Ruleset tab and its Translations and Audit tabs'
+	},
+	cp: {
+		id: 'pf1e.coinName.cp',
+		defaultMessage: 'copper pieces',
+		description: 'Copper pieces, the least valuable coin in Pathfinder, written as it reads in the middle of a sentence: labels capitalize its first letter. Shown on a character\'s sheet when the pointer rests on the coin\'s abbreviation, unless the universe names the coin itself, and in the editor\'s Coins table on its Ruleset tab and its Translations and Audit tabs'
+	}
+});
+
+/**
  * No money
  *
  * @return A new amount with no pieces of any coin

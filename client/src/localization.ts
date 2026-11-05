@@ -160,6 +160,20 @@ export function currentLocale(): string
 }
 
 /**
+ * Text written as it reads mid-sentence, such as a coin's name, made into a label by capitalizing its
+ * first letter the way the player's language does. Languages without capital letters are left as they are
+ *
+ * @param text The text
+ * @return The text with its first letter capitalized, e.g. "Gold pieces" for "gold pieces"
+ */
+export function capitalized(text: string): string
+{
+	const [first = '', ...rest] = text;
+
+	return(first.toLocaleUpperCase(translator.locale) + rest.join(''));
+}
+
+/**
  * Joins words into a list the way the player's language does
  *
  * @param items The words, already in the player's language

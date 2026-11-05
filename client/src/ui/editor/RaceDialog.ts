@@ -212,7 +212,7 @@ export class RaceDialog
 		this.size.value = rules.size;
 		this.hitPointsField.hidden = !isSf1eRaceRules(rules);
 		this.hitPoints.value = (isSf1eRaceRules(rules) ? String(rules.hitPoints) : '');
-		this.startingMoney.value = formatMoney((race?.startingMoney ?? emptyMoney()), universe.ruleset);
+		this.startingMoney.value = formatMoney((race?.startingMoney ?? emptyMoney()), universe.ruleset, universe.coinAbbreviations);
 		this.startingArea.show(universe, (race?.startingAreaId ?? null), {
 			column: (race?.startingColumn ?? 0),
 			row: (race?.startingRow ?? 0)
@@ -310,7 +310,7 @@ export class RaceDialog
 			return;
 		}
 
-		const startingMoney = readMoneyField(this.startingMoney, universe.ruleset);
+		const startingMoney = readMoneyField(this.startingMoney, universe.ruleset, universe.coinAbbreviations);
 
 		if (startingMoney === undefined)
 		{

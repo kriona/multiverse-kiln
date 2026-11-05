@@ -352,6 +352,29 @@ export async function listTranslatorNotes(version: UniverseVersion, executor: Ex
 }
 
 /**
+ * Deletes the translations of a piece of universe text and the note on it, as it is given back the
+ * engine's text, such as a coin's name or abbreviation
+ *
+ * @param version The universe's live version or draft
+ * @param ref The piece of text
+ * @param executor The transaction saving the change
+ */
+export async function deleteUniverseText(version: UniverseVersion, ref: UniverseTextRef, executor: Executor = db): Promise<void>
+{
+	await executor
+		.delete(universeTranslations)
+		.where(and(
+			inVersion(universeTranslations, version),
+			eq(universeTranslations.kind, ref.kind),
+			eq(universeTranslations.thingId, ref.thingId),
+			eq(universeTranslations.field, ref.field)
+		));
+	await executor
+		.delete(universeTranslatorNotes)
+		.where(noteRow(version, ref));
+}
+
+/**
  * Deletes the translations of everything something has to translate, and the notes on it, as it is
  * deleted, or given back the engine's text as one of the ruleset's defaults
  *

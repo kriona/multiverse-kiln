@@ -6,7 +6,7 @@
  * browser; routes about a universe also need a role in it, and changes need a role that allows them
  */
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
-import { DEFAULT_AREA_TILE_KEYS, defineMessages, EDITOR_UNIVERSES_PATH, isDefaultAreaTile, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, SOURCE_LOCALE, Translator, universeLanguageOf, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type GroupSizeLowering, type NewRef, type NumberRef, type Ruleset, type RulesetSettings, type TileChangeSettings, type TileSettings, type TileUsagePayload, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
+import { DEFAULT_AREA_TILE_KEYS, defineMessages, EDITOR_UNIVERSES_PATH, isDefaultAreaTile, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, RULESET_COINS, SOURCE_LOCALE, Translator, universeLanguageOf, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type GroupSizeLowering, type NewRef, type NumberRef, type Ruleset, type RulesetSettings, type TileChangeSettings, type TileSettings, type TileUsagePayload, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
 import { findPlayerLocale, lockPlayer } from '../db/playerRepo.js';
@@ -17,7 +17,7 @@ import { isUniverseTileGraphic } from '../db/tileGraphicRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { countUniversesWithRole, listEditableUniverses, setUniverseRole } from '../db/universeEditorRepo.js';
 import { createUniverse, setUniverseAreas, UniverseNameTakenError, updateUniverseSettings } from '../db/universeRepo.js';
-import { countTranslations, deleteTranslationsOutside, deleteUniverseTextOf } from '../db/universeTextRepo.js';
+import { countTranslations, deleteTranslationsOutside, deleteUniverseText, deleteUniverseTextOf } from '../db/universeTextRepo.js';
 import { createArea, findAreasUsingTile, findEditorArea, isTileInUse, listStartingAreaIds, replaceTileInMaps } from '../db/areaRepo.js';
 import { loadUniverseContext, playerIdOf, refuseWritesFromOtherOrigins, requireLogin, universeContextOf } from './editorAccess.js';
 import { addDefaultStartingItems } from '../db/startingItemRepo.js';
@@ -312,7 +312,8 @@ async function getUniverse(request: Request, response: Response): Promise<void>
 /**
  * Changes the universe's settings. A name another universe has is refused by the save (editorChanges.ts).
  * Once the save has saved every change, a group size it lowers does what largerGroups says to the groups
- * larger than the new size (see editorDisablings.ts)
+ * larger than the new size (see editorDisablings.ts). A coin's name or abbreviation taken out takes its
+ * translations and note with it
  *
  * @param context The save
  * @param update The settings to change
@@ -351,6 +352,18 @@ export async function applyUniverseChange(context: ChangeContext, update: Univer
 	});
 	await applyLanguages(context, update);
 	await updateUniverseSettings(version, update, transaction);
+
+	// A coin given back the engine's name or abbreviation has engine text again, translated with the engine
+	for (const [field, saved, sent] of [['name', universe.coinNames, update.coinNames], ['abbreviation', universe.coinAbbreviations, update.coinAbbreviations]] as const)
+	{
+		for (const coin of ((sent === undefined) ? [] : RULESET_COINS[universe.ruleset]))
+		{
+			if ((saved[coin] !== undefined) && (sent?.[coin] === undefined))
+			{
+				await deleteUniverseText(version, { kind: 'coin', thingId: coin, field }, transaction);
+			}
+		}
+	}
 
 	const timeKeys: (keyof UniverseSettingsUpdate)[] = ['passageOfTime', 'faerieMorning', 'displayTime', 'lobbyPassageOfTime', 'lobbyDayHours', 'lobbyFaerieMorning'];
 

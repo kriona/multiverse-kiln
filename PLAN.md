@@ -295,10 +295,8 @@ Decided (see `STRUCTURE-OVERVIEW.md`):
 - Server admins are site-wide and separate from universe roles. Who is one is stored in the database; a script run by hand makes the first, and admins add and remove other admins on the admin page. Admins must have 2FA on.
 - `prologue` universes aren't listed on Home for everyone: a player with a role in any sees them in a section of Home of their own.
 - `end of time`: the universe page can be reached and says the universe is locked, only creators can edit it, the lobby can't be entered, and groups can be opened read-only, with group chat still working.
+- The only engine text a universe can rename is its ruleset's coins, each coin's name and abbreviation ("bronze kits" and "bk" for copper pieces), which are then universe text, translated like the rest. Other engine terms (race, class, group and the like) stay the engine's.
 - A universe has a live version and at most one draft, a copy of the live content in the same tables with IDs of its own, each row remembering the live row it came from. The editor edits whichever is chosen in its bar; only the live version is played. Only creators start, apply and discard the draft. Applying can't be undone: it writes the draft back under the live IDs (so characters, items and groups never change their references), treats what the draft deletes while it's in use as disabled, with the step 4 warnings, and removes the draft.
-
-To decide, before the step that needs it:
-- Whether a universe can rename engine terms, such as calling gold "crowns" (step 7, or move to Later)
 
 Built in nine steps: roles, stages, server admins, disabling things in use, then translations (storage, delivery, the tab), versions, and finishing.
 
@@ -351,7 +349,7 @@ Built in nine steps: roles, stages, server admins, disabling things in use, then
 	- [✅] Marking text as needing no translation (such as a proper name), by creators, builders and translators, for every language; players see it as written, and its translations are kept
 	- [✅] Exporting and importing translation files as Gettext PO, XLIFF 2.0, CSV or JSON (`shared/src/translationFiles.ts`), imports staged until Save
 	- [✅] Translators see only their languages; creators see every language
-	- [ ] Renaming engine terms, if decided
+	- [✅] Coin names and abbreviations of the universe's own, in the Ruleset tab's Coins table (`coinNames` and `coinAbbreviations`, staged until Save), shown in money fields and on the character sheet, and translated on the Translations tab as universe text (`coin`); a coin given back the engine's name or abbreviation loses its translations
 8. Universe versions
 	- [✅] Write the design into `STRUCTURE-OVERVIEW.md` (Universe versions), and close its open question: a live version and at most one draft, applied once and for good
 	- [✅] Schema: a `draft` flag and the live row it was copied from (`origin`) on every content table (tiles and tile graphics, items, races, classes, themes, difficulty levels, areas, and the ruleset settings, starting items, translations and translator notes), in the unique keys that name the universe; tables hanging off a row (ruleset rows, starting items of a race or class, class race areas, map chunks, links) follow their row. `universe_drafts` holds the draft's own copy of the settings `universes` holds for the live version

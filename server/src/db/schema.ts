@@ -6,7 +6,7 @@
  */
 import { sql, type SQL } from 'drizzle-orm';
 import { boolean, check, customType, doublePrecision, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHUNK_SIZE, DARKVISIONS, EMAIL_CODE_PURPOSES, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, PROFILE_LANGUAGES, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_DISABLED_REASON_LENGTH, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, MAX_TRANSLATOR_LANGUAGES, MAX_LONG_DESCRIPTION_LENGTH, MAX_TRANSLATOR_NOTE_LENGTH, MAX_UNIVERSE_LANGUAGES, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, EDITOR_ROLES, type ProfileLanguage, type UniverseEditDetail } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, DARKVISIONS, EMAIL_CODE_PURPOSES, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, PROFILE_LANGUAGES, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_COIN_ABBREVIATION_LENGTH, MAX_COIN_NAME_LENGTH, MAX_GROUP_PLAYERS,MAX_CHARACTER_DELETION_DAYS, MAX_DISABLED_REASON_LENGTH, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, MAX_TRANSLATOR_LANGUAGES, MAX_LONG_DESCRIPTION_LENGTH, MAX_TRANSLATOR_NOTE_LENGTH, MAX_UNIVERSE_LANGUAGES, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, EDITOR_ROLES, type ProfileLanguage, type UniverseEditDetail } from '@multiverse-kiln/shared';
 
 import { SEEN_CHUNK_BYTES } from '../logic/seenCells.js';
 
@@ -306,7 +306,27 @@ function universeVersionColumns()
 		startingGold: integer('starting_gold').notNull().default(0),
 		startingSilver: integer('starting_silver').notNull().default(0),
 		startingCopper: integer('starting_copper').notNull().default(0),
-		startingCredits: integer('starting_credits').notNull().default(0)
+		startingCredits: integer('starting_credits').notNull().default(0),
+
+		/**
+		 * The name the universe gives each coin in its source language, such as "Bronze kits" for copper
+		 * pieces, or null for the engine's
+		 */
+		platinumName: text('platinum_name'),
+		goldName: text('gold_name'),
+		silverName: text('silver_name'),
+		copperName: text('copper_name'),
+		creditsName: text('credits_name'),
+
+		/**
+		 * The abbreviation the universe gives each coin in its source language, such as "bk" for bronze
+		 * kits, or null to write the coin with the engine's
+		 */
+		platinumAbbreviation: text('platinum_abbreviation'),
+		goldAbbreviation: text('gold_abbreviation'),
+		silverAbbreviation: text('silver_abbreviation'),
+		copperAbbreviation: text('copper_abbreviation'),
+		creditsAbbreviation: text('credits_abbreviation')
 	});
 }
 
@@ -333,7 +353,9 @@ function universeVersionChecks(tableName: string, table: UniverseVersionTable)
 		check(`${tableName}_lobby_day_hours_range`, sql`${table.lobbyDayHours} BETWEEN ${sql.raw(String(MIN_LOBBY_DAY_HOURS))} AND ${sql.raw(String(MAX_LOBBY_DAY_HOURS))}`),
 		check(`${tableName}_group_size_range`, sql`${table.groupSize} BETWEEN ${sql.raw(String(MIN_GROUP_SIZE))} AND ${sql.raw(String(MAX_GROUP_PLAYERS))}`),
 		check(`${tableName}_starting_coins_range`, sql`${table.startingPlatinum} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))} AND ${table.startingGold} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))} AND ${table.startingSilver} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))} AND ${table.startingCopper} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))}`),
-		check(`${tableName}_starting_credits_range`, sql`${table.startingCredits} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))}`)
+		check(`${tableName}_starting_credits_range`, sql`${table.startingCredits} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))}`),
+		check(`${tableName}_coin_names_length`, sql`${sql.join([table.platinumName, table.goldName, table.silverName, table.copperName, table.creditsName].map((column) => sql`char_length(${column}) BETWEEN 1 AND ${sql.raw(String(MAX_COIN_NAME_LENGTH))}`), sql` AND `)}`),
+		check(`${tableName}_coin_abbreviations_length`, sql`${sql.join([table.platinumAbbreviation, table.goldAbbreviation, table.silverAbbreviation, table.copperAbbreviation, table.creditsAbbreviation].map((column) => sql`char_length(${column}) BETWEEN 1 AND ${sql.raw(String(MAX_COIN_ABBREVIATION_LENGTH))}`), sql` AND `)}`)
 	]);
 }
 

@@ -1,9 +1,10 @@
-import { canEditWorld, canMarkNoTranslation, canTranslate, defineMessages, DISALLOWED_TEXT_CHARACTERS, languageName, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, readTranslationFile, sourceTextHash, TRANSLATION_FILE_EXTENSIONS, TRANSLATION_FILE_FORMATS, TRANSLATION_FILE_TYPES, TranslationFileError, translationFileFormatOf, UNIVERSE_TEXT_SORT_COLUMNS, universeTextKey, writeTranslationFile, type EditableUniverse, type MessageDescriptor, type ReadTranslationFile, type TranslationFileFormat, type UniverseTextListPayload, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
+import { canEditWorld, canMarkNoTranslation, canTranslate, defineMessages, DISALLOWED_TEXT_CHARACTERS, isCoin, isValidCoinAbbreviation, languageName, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, readTranslationFile, sourceTextHash, TRANSLATION_FILE_EXTENSIONS, TRANSLATION_FILE_FORMATS, TRANSLATION_FILE_TYPES, TranslationFileError, translationFileFormatOf, UNIVERSE_TEXT_SORT_COLUMNS, universeTextKey, writeTranslationFile, type EditableUniverse, type MessageDescriptor, type ReadTranslationFile, type TranslationFileFormat, type UniverseTextListPayload, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { refreshUnsavedWork, watchUnsavedWork } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
+import { engineCoinName } from '../moneyField';
 import { TableSorter } from '../tableSorter';
 import type { EditorSave } from './editorSave';
 import type { SavableTab } from './SaveBar';
@@ -120,11 +121,12 @@ export function describeTextPlace(row: UniverseTextRow): string
 {
 	return(t({
 		id: 'editor.translations.placeOf',
-		defaultMessage: '{kind, select, universe {Universe: {name}, {field, select, name {name} shortDescription {1-sentence description} other {long description}}} area {Area: {name}, name} tile {Tile: {name}, name} item {Item: {name}, name} race {Race: {name}, name} class {Class: {name}, name} theme {Theme: {name}, name} other {Difficulty level: {name}, name}}',
-		description: 'Where a piece of universe text comes from, in the From column of the editor\'s Translations tab and in its dialog\'s title, e.g. "Area: Waterdeep, name": what kind of thing it belongs to, {name} its name in the universe\'s source language, and which of its text it is'
+		defaultMessage: '{kind, select, universe {Universe: {name}, {field, select, name {name} shortDescription {1-sentence description} other {long description}}} area {Area: {name}, name} tile {Tile: {name}, name} item {Item: {name}, name} race {Race: {name}, name} class {Class: {name}, name} theme {Theme: {name}, name} coin {Coin: {coin}, {field, select, abbreviation {abbreviation} other {name}}} other {Difficulty level: {name}, name}}',
+		description: 'Where a piece of universe text comes from, in the From column of the editor\'s Translations tab and in its dialog\'s title, e.g. "Area: Waterdeep, name": what kind of thing it belongs to, {name} its name in the universe\'s source language, and which of its text it is. For a coin, {coin} is the coin\'s name in the rules as it reads mid-sentence, such as copper pieces, and the text is the name the universe gives it (such as bronze kits) or the abbreviation amounts of it are written with (such as bk)'
 	}, {
 		kind: row.kind,
 		name: row.thingName,
+		coin: (isCoin(row.thingId) ? engineCoinName(row.thingId) : ''),
 		field: row.field
 	}));
 }
@@ -508,6 +510,15 @@ export class TranslationTable implements SavableTab, ChangeSource
 	}
 
 	/**
+	 * Loads the page shown afresh, keeping the changes made since, for a save that may have changed the
+	 * universe's text on another tab, such as renaming an area or a coin
+	 */
+	reload(): void
+	{
+		void this.refresh();
+	}
+
+	/**
 	 * Loads the page of text the language, search, filters, order and offset ask for, then shows it with
 	 * the changes made since
 	 */
@@ -840,7 +851,7 @@ export class TranslationTable implements SavableTab, ChangeSource
 			const markdown = (row?.field === 'longDescription');
 			const text = (markdown ? entry.translation : entry.translation.trim());
 
-			if (entry.needsReview || !row || this.withChanges(row).noTranslation || (text === '') || (text.length > maxUniverseTextLength(row.kind, row.field)) || DISALLOWED_TEXT_CHARACTERS.test((markdown ? text.replace(/[\t\n\r]/g, '') : text)))
+			if (entry.needsReview || !row || this.withChanges(row).noTranslation || (text === '') || (text.length > maxUniverseTextLength(row.kind, row.field)) || DISALLOWED_TEXT_CHARACTERS.test((markdown ? text.replace(/[\t\n\r]/g, '') : text)) || ((row.field === 'abbreviation') && !isValidCoinAbbreviation(text)))
 			{
 				skipped++;
 				continue;

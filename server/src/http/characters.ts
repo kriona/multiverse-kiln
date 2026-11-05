@@ -308,7 +308,7 @@ async function sheetRoute(request: Request, response: Response): Promise<void>
 		loadEditorThemes(liveVersion(universe.id), universe.ruleset),
 		loadEditorItems(liveVersion(universe.id), universe.ruleset),
 		findSiteSettings(),
-		loadTranslator(request, universe, ['race', 'class', 'theme', 'item'])
+		loadTranslator(request, universe, ['race', 'class', 'theme', 'item', 'coin'])
 	]);
 
 	if (!character)
@@ -358,6 +358,10 @@ async function sheetRoute(request: Request, response: Response): Promise<void>
 		staminaPoints,
 		abilityScores: character.abilityScores,
 		money: character.money,
+		coinNames: Object.fromEntries(Object.entries(universe.coinNames)
+			.map(([coin, name]) => [coin, translator.text('coin', coin, 'name', name)])),
+		coinAbbreviations: Object.fromEntries(Object.entries(universe.coinAbbreviations)
+			.map(([coin, abbreviation]) => [coin, translator.text('coin', coin, 'abbreviation', abbreviation)])),
 		items: character.items.map(({ itemId, quantity }) =>
 		{
 			const item = itemsById.get(itemId);

@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { characterPath, charactersPath, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyMoney, MAX_CHARACTERS_PER_UNIVERSE, NEW_PF1E_RACE_RULES, PF1E_ABILITIES, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditorChange, type NewCharacterOptions, type NewCharacterRequest, type Pf1eAbilityScores, type RaceSettings, type SaveChangesPayload } from '@multiverse-kiln/shared';
+import { characterPath, charactersPath, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyMoney, MAX_CHARACTERS_PER_UNIVERSE, NEW_PF1E_RACE_RULES, PF1E_ABILITIES, sourceTextHash, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditorChange, type NewCharacterOptions, type NewCharacterRequest, type Pf1eAbilityScores, type RaceSettings, type SaveChangesPayload } from '@multiverse-kiln/shared';
 
 import { findDefaultClassIds } from '../src/db/classRepo.js';
 import { findDefaultRaceIds } from '../src/db/raceRepo.js';
@@ -314,7 +314,9 @@ describe('Character routes', () =>
 				constitution: (baseScores.constitution + 2),
 				wisdom: (baseScores.wisdom + 2),
 				charisma: (baseScores.charisma - 2)
-			}
+			},
+			coinNames: {},
+			coinAbbreviations: {}
 		});
 		assert.deepStrictEqual(Object.keys(money), Object.keys(emptyMoney()));
 		assert.deepStrictEqual(items.map(({ key, type, quantity }) => ({ key, type, quantity })), [{ key: 'dagger', type: 'dagger', quantity: 1 }]);
@@ -326,6 +328,39 @@ describe('Character routes', () =>
 		assert.strictEqual((await send(grace, 'GET', path)).status, 404);
 		assert.strictEqual((await send(ada, 'GET', characterPath(universeId, randomUUID()))).status, 404);
 		assert.strictEqual((await send(ada, 'GET', characterPath(universeId, 'brokk'))).status, 404);
+	});
+
+	it('names the universe\'s coins on the sheet the way the universe does, in the player\'s language', async () =>
+	{
+		const created = await send<CreatedPayload>(ada, 'POST', charactersPath(universeId), await rolledDwarf());
+
+		assert.strictEqual(created.status, 201, JSON.stringify(created.body));
+
+		const path = characterPath(universeId, created.body.id);
+		const renamed = await saveEditorChange(ada, universeId, { kind: 'universe', update: { coinNames: { cp: 'Bronze kits' }, coinAbbreviations: { cp: 'bk' }, translationLanguages: ['fr'] } });
+
+		assert.strictEqual(renamed.status, 200, JSON.stringify(renamed.body));
+
+		for (const [field, translation, source] of [['name', 'Kits de bronze', 'Bronze kits'], ['abbreviation', 'kb', 'bk']] as const)
+		{
+			const translated = await saveEditorChange(ada, universeId, { kind: 'saveTranslation', text: { kind: 'coin', thingId: 'cp', field }, language: 'fr', translation, sourceHash: sourceTextHash(source) });
+
+			assert.strictEqual(translated.status, 200, JSON.stringify(translated.body));
+		}
+
+		const english = (await send<CharacterSheet>(ada, 'GET', path)).body;
+
+		assert.deepStrictEqual([english.coinNames, english.coinAbbreviations], [{ cp: 'Bronze kits' }, { cp: 'bk' }]);
+
+		const french = await fetch(`${testServerUrl}${path}`, {
+			headers: {
+				'Cookie': ada.cookie,
+				'Accept-Language': 'fr'
+			}
+		});
+		const frenchSheet = (await french.json()) as CharacterSheet;
+
+		assert.deepStrictEqual([frenchSheet.coinNames, frenchSheet.coinAbbreviations], [{ cp: 'Kits de bronze' }, { cp: 'kb' }]);
 	});
 
 	it('gives a character their last rites, restores them, and deletes them', async () =>

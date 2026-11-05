@@ -223,7 +223,7 @@ export class ClassDialog
 		this.name.value = name;
 		this.enabled.checked = (characterClass?.enabled ?? true);
 		this.showRules(rules);
-		this.startingMoney.value = formatMoney((characterClass?.startingMoney ?? emptyMoney()), universe.ruleset);
+		this.startingMoney.value = formatMoney((characterClass?.startingMoney ?? emptyMoney()), universe.ruleset, universe.coinAbbreviations);
 		this.startingArea.show(universe, (characterClass?.startingAreaId ?? null), {
 			column: (characterClass?.startingColumn ?? 0),
 			row: (characterClass?.startingRow ?? 0)
@@ -434,7 +434,7 @@ export class ClassDialog
 			return;
 		}
 
-		const startingMoney = readMoneyField(this.startingMoney, universe.ruleset);
+		const startingMoney = readMoneyField(this.startingMoney, universe.ruleset, universe.coinAbbreviations);
 
 		if (startingMoney === undefined)
 		{

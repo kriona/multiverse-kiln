@@ -1239,6 +1239,14 @@
 		"defaultMessage": "Saved to the draft",
 		"description": "At the top of the Changes column of the editor's Audit tab, for a save made to the universe's draft (a copy players don't see until it is applied) rather than its live version"
 	},
+	"editor.audit.field.coinAbbreviations": {
+		"defaultMessage": "Coin abbreviations",
+		"description": "Names the setting for the abbreviations the universe writes its coins with after an amount, such as bk in 2bk for bronze kits, in the list of what a save changed on the editor's Audit tab"
+	},
+	"editor.audit.field.coinNames": {
+		"defaultMessage": "Coin names",
+		"description": "Names the setting for the names the universe gives its coins, such as Bronze kits for copper pieces, in the list of what a save changed on the editor's Audit tab"
+	},
 	"editor.audit.field.lobbyDayHours": {
 		"defaultMessage": "Length of a lobby day",
 		"description": "Names the setting for how many real hours a day in the lobby lasts, in the list of what a save changed on the editor's Audit tab"
@@ -1291,6 +1299,10 @@
 		"defaultMessage": "{count, plural, one {# character} other {# characters}}",
 		"description": "The value of a universe's long description in the editor's Audit tab's list of what a save changed: how many characters (letters, spaces and so on) the description has, rather than its text, e.g. \"Long description (Markdown) (1,204 characters)\""
 	},
+	"editor.audit.value.coin": {
+		"defaultMessage": "{coin}: {text}",
+		"description": "One coin in the value of the universe's Coin names or Coin abbreviations setting, in the editor's Audit tab's list of what a save changed: {coin} is the coin's name in the rules, as a label, and {text} the name or abbreviation the universe gives it, e.g. \"Copper pieces: bronze kits\" or \"Copper pieces: bk\""
+	},
 	"editor.audit.value.faerieTime": {
 		"defaultMessage": "{time}, morning: {morning}",
 		"description": "The value of a passage of time setting in the editor's Audit tab's list of what a save changed, when it is faerie time: {time} is the passage of time (faerie) and {morning} the side of the map that has morning, such as north"
@@ -1305,7 +1317,7 @@
 	},
 	"editor.audit.value.none": {
 		"defaultMessage": "none",
-		"description": "The value of a setting a save left empty, in the editor's Audit tab's list of what a save changed: no starting equipment, no starting area of its own, no parent area, no graphic, no languages or no ability modifiers"
+		"description": "The value of a setting a save left empty, in the editor's Audit tab's list of what a save changed: no starting equipment, no starting area of its own, no parent area, no graphic, no languages, no ability modifiers, or no coin names or abbreviations of the universe's own"
 	},
 	"editor.audit.value.place": {
 		"defaultMessage": "{area} at {column}, {row}",
@@ -1526,6 +1538,34 @@
 	"editor.classes.primaryAbility": {
 		"defaultMessage": "relies on {ability}",
 		"description": "In a character class's summary on the editor's Characters tab, the ability the class relies on most; {ability} is its name, e.g. Intelligence"
+	},
+	"editor.coins.abbreviationColumn": {
+		"defaultMessage": "Abbreviation",
+		"description": "Heading of the column of fields for the abbreviation the universe writes each coin with after an amount, such as bk in 2bk for bronze kits, in the Coins table on the editor's Ruleset tab"
+	},
+	"editor.coins.abbreviationTaken": {
+		"defaultMessage": "Another coin is already written with {abbreviation}.",
+		"description": "Shown under a coin's abbreviation on the editor's Ruleset tab when a more valuable coin has the same one, so amounts couldn't tell them apart; {abbreviation} is the abbreviation, typed or the usual one"
+	},
+	"editor.coins.coinColumn": {
+		"defaultMessage": "Coin",
+		"description": "Heading of the column of coins in the Coins table on the editor's Ruleset tab, which names each coin as the rules do, such as Gold pieces"
+	},
+	"editor.coins.heading": {
+		"defaultMessage": "Coins",
+		"description": "Heading of the part of the editor's Ruleset tab where the universe gives each coin a name and abbreviation of its own"
+	},
+	"editor.coins.hint": {
+		"defaultMessage": "What the universe calls each coin, and what amounts of it are written with, like the gp in 2gp. Write names as they'd read mid-sentence, like gold pieces. Leave a field empty to use the default name. Abbreviations can't have spaces, digits or commas, and each coin needs its own abbreviation. Name and abbreviation are translated on the Translations tab.",
+		"description": "Explains the Coins table on the editor's Ruleset tab. Each field is empty while the coin uses the usual name or abbreviation, which the field shows grayed out. Names are written the way they read in the middle of a sentence, and labels capitalize their first letter"
+	},
+	"editor.coins.nameColumn": {
+		"defaultMessage": "Name",
+		"description": "Heading of the column of fields for the name the universe gives each coin, such as Bronze kits for copper pieces, in the Coins table on the editor's Ruleset tab"
+	},
+	"editor.coins.saveFailed": {
+		"defaultMessage": "Could not save the coins.",
+		"description": "Shown on the Ruleset tab when the server refused the names and abbreviations given to the coins, followed by why; nothing was saved"
 	},
 	"editor.difficulty.add": {
 		"defaultMessage": "Add Difficulty",
@@ -3104,8 +3144,8 @@
 		"description": "Heading of the column on the editor's Translations tab saying where each piece of text comes from, such as Area: Waterdeep, name"
 	},
 	"editor.translations.placeOf": {
-		"defaultMessage": "{kind, select, universe {Universe: {name}, {field, select, name {name} shortDescription {1-sentence description} other {long description}}} area {Area: {name}, name} tile {Tile: {name}, name} item {Item: {name}, name} race {Race: {name}, name} class {Class: {name}, name} theme {Theme: {name}, name} other {Difficulty level: {name}, name}}",
-		"description": "Where a piece of universe text comes from, in the From column of the editor's Translations tab and in its dialog's title, e.g. \"Area: Waterdeep, name\": what kind of thing it belongs to, {name} its name in the universe's source language, and which of its text it is"
+		"defaultMessage": "{kind, select, universe {Universe: {name}, {field, select, name {name} shortDescription {1-sentence description} other {long description}}} area {Area: {name}, name} tile {Tile: {name}, name} item {Item: {name}, name} race {Race: {name}, name} class {Class: {name}, name} theme {Theme: {name}, name} coin {Coin: {coin}, {field, select, abbreviation {abbreviation} other {name}}} other {Difficulty level: {name}, name}}",
+		"description": "Where a piece of universe text comes from, in the From column of the editor's Translations tab and in its dialog's title, e.g. \"Area: Waterdeep, name\": what kind of thing it belongs to, {name} its name in the universe's source language, and which of its text it is. For a coin, {coin} is the coin's name in the rules as it reads mid-sentence, such as copper pieces, and the text is the name the universe gives it (such as bronze kits) or the abbreviation amounts of it are written with (such as bk)"
 	},
 	"editor.translations.remove": {
 		"defaultMessage": "Take Off",
@@ -4074,6 +4114,10 @@
 	"filter.yes": {
 		"defaultMessage": "Yes",
 		"description": "Choice of a yes-or-no filter on the editor's Items, Tilesets or Character List tab, e.g. Passable: Yes, or on the admin pages' lists, e.g. Server admin: Yes"
+	},
+	"form.coinAbbreviation.invalid": {
+		"defaultMessage": "Write up to {max, number} characters, without spaces, digits or commas.",
+		"description": "Shown under a coin's abbreviation on the editor's Ruleset tab, or under its translation on the Translations tab, when it can't be written after an amount, like the gp in 2gp; {max} is the most characters it may have"
 	},
 	"form.discardChanges": {
 		"defaultMessage": "You have changes that haven't been saved. Discard them?",
@@ -5319,6 +5363,22 @@
 		"defaultMessage": "sp",
 		"description": "Abbreviation of silver pieces, a coin in Pathfinder worth a tenth of a gold piece, written after a number with no space: \"2sp\". Players type it into money fields, so keep it short and without spaces or digits"
 	},
+	"pf1e.coinName.cp": {
+		"defaultMessage": "copper pieces",
+		"description": "Copper pieces, the least valuable coin in Pathfinder, written as it reads in the middle of a sentence: labels capitalize its first letter. Shown on a character's sheet when the pointer rests on the coin's abbreviation, unless the universe names the coin itself, and in the editor's Coins table on its Ruleset tab and its Translations and Audit tabs"
+	},
+	"pf1e.coinName.gp": {
+		"defaultMessage": "gold pieces",
+		"description": "Gold pieces, the coin prices are given in in Pathfinder, written as it reads in the middle of a sentence: labels capitalize its first letter. Shown on a character's sheet when the pointer rests on the coin's abbreviation, unless the universe names the coin itself, and in the editor's Coins table on its Ruleset tab and its Translations and Audit tabs"
+	},
+	"pf1e.coinName.pp": {
+		"defaultMessage": "platinum pieces",
+		"description": "Platinum pieces, the most valuable coin in Pathfinder, written as it reads in the middle of a sentence: labels capitalize its first letter. Shown on a character's sheet when the pointer rests on the coin's abbreviation, unless the universe names the coin itself, and in the editor's Coins table on its Ruleset tab and its Translations and Audit tabs"
+	},
+	"pf1e.coinName.sp": {
+		"defaultMessage": "silver pieces",
+		"description": "Silver pieces, a coin in Pathfinder worth a tenth of a gold piece, written as it reads in the middle of a sentence: labels capitalize its first letter. Shown on a character's sheet when the pointer rests on the coin's abbreviation, unless the universe names the coin itself, and in the editor's Coins table on its Ruleset tab and its Translations and Audit tabs"
+	},
 	"pf1e.itemCategory.armor": {
 		"defaultMessage": "Armor",
 		"description": "Kind of item in Pathfinder, a filter on the editor's Items tab: armor and shields"
@@ -6482,6 +6542,10 @@
 	"sf1e.coin.cr": {
 		"defaultMessage": "cr",
 		"description": "Abbreviation of credits, the money of Starfinder, written after a number with no space: \"250cr\". Players type it into money fields, so keep it short and without spaces or digits"
+	},
+	"sf1e.coinName.cr": {
+		"defaultMessage": "credits",
+		"description": "Credits, the money of Starfinder, written as it reads in the middle of a sentence: labels capitalize its first letter. Shown on a character's sheet when the pointer rests on the coin's abbreviation, unless the universe names the coin itself, and in the editor's Coins table on its Ruleset tab and its Translations and Audit tabs"
 	},
 	"sf1e.itemCategory.armor": {
 		"defaultMessage": "Armor",

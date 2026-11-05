@@ -1239,6 +1239,14 @@
 		"message": "Stowed in the draft",
 		"source": "Saved to the draft"
 	},
+	"editor.audit.field.coinAbbreviations": {
+		"message": "Coin marks",
+		"source": "Coin abbreviations"
+	},
+	"editor.audit.field.coinNames": {
+		"message": "Coin names",
+		"source": "Coin names"
+	},
 	"editor.audit.field.lobbyDayHours": {
 		"message": "Length o' a tavern day",
 		"source": "Length of a lobby day"
@@ -1290,6 +1298,10 @@
 	"editor.audit.value.characters": {
 		"message": "{count, plural, one {# mark o' ink} other {# marks o' ink}}",
 		"source": "{count, plural, one {# character} other {# characters}}"
+	},
+	"editor.audit.value.coin": {
+		"message": "{coin}: {text}",
+		"source": "{coin}: {text}"
 	},
 	"editor.audit.value.faerieTime": {
 		"message": "{time}, mornin' be {morning}",
@@ -1526,6 +1538,34 @@
 	"editor.classes.primaryAbility": {
 		"message": "leans on {ability}",
 		"source": "relies on {ability}"
+	},
+	"editor.coins.abbreviationColumn": {
+		"message": "Mark",
+		"source": "Abbreviation"
+	},
+	"editor.coins.abbreviationTaken": {
+		"message": "Another coin already be marked with {abbreviation}, matey.",
+		"source": "Another coin is already written with {abbreviation}."
+	},
+	"editor.coins.coinColumn": {
+		"message": "Coin",
+		"source": "Coin"
+	},
+	"editor.coins.heading": {
+		"message": "Treasure",
+		"source": "Coins"
+	},
+	"editor.coins.hint": {
+		"message": "What the crew calls each coin, an' the mark scrawled after heaps o' it, like the dbl in 2dbl. Write names as they'd sound mid-yarn, like doubloons. Leave a field empty to use the default name. Marks can't have spaces, digits or commas, an' each coin needs its own abbreviation. Name an' abbreviation be translated on the Translations tab.",
+		"source": "What the universe calls each coin, and what amounts of it are written with, like the gp in 2gp. Write names as they'd read mid-sentence, like gold pieces. Leave a field empty to use the default name. Abbreviations can't have spaces, digits or commas, and each coin needs its own abbreviation. Name and abbreviation are translated on the Translations tab."
+	},
+	"editor.coins.nameColumn": {
+		"message": "Name",
+		"source": "Name"
+	},
+	"editor.coins.saveFailed": {
+		"message": "Couldn't stow the treasure's names.",
+		"source": "Could not save the coins."
 	},
 	"editor.difficulty.add": {
 		"message": "Add a Peril",
@@ -3104,8 +3144,8 @@
 		"source": "From"
 	},
 	"editor.translations.placeOf": {
-		"message": "{kind, select, universe {Universe: {name}, {field, select, name {name} shortDescription {1-sentence tale} other {long tale}}} area {Area: {name}, name} tile {Tile: {name}, name} item {Booty: {name}, name} race {Race: {name}, name} class {Class: {name}, name} theme {Theme: {name}, name} other {Peril: {name}, name}}",
-		"source": "{kind, select, universe {Universe: {name}, {field, select, name {name} shortDescription {1-sentence description} other {long description}}} area {Area: {name}, name} tile {Tile: {name}, name} item {Item: {name}, name} race {Race: {name}, name} class {Class: {name}, name} theme {Theme: {name}, name} other {Difficulty level: {name}, name}}"
+		"message": "{kind, select, universe {Universe: {name}, {field, select, name {name} shortDescription {1-sentence tale} other {long tale}}} area {Area: {name}, name} tile {Tile: {name}, name} item {Booty: {name}, name} race {Race: {name}, name} class {Class: {name}, name} theme {Theme: {name}, name} coin {Coin: {coin}, {field, select, abbreviation {mark} other {name}}} other {Peril: {name}, name}}",
+		"source": "{kind, select, universe {Universe: {name}, {field, select, name {name} shortDescription {1-sentence description} other {long description}}} area {Area: {name}, name} tile {Tile: {name}, name} item {Item: {name}, name} race {Race: {name}, name} class {Class: {name}, name} theme {Theme: {name}, name} coin {Coin: {coin}, {field, select, abbreviation {abbreviation} other {name}}} other {Difficulty level: {name}, name}}"
 	},
 	"editor.translations.remove": {
 		"message": "Strike It Off",
@@ -4074,6 +4114,10 @@
 	"filter.yes": {
 		"message": "Aye",
 		"source": "Yes"
+	},
+	"form.coinAbbreviation.invalid": {
+		"message": "Scrawl up to {max, number} marks, without spaces, digits or commas.",
+		"source": "Write up to {max, number} characters, without spaces, digits or commas."
 	},
 	"form.discardChanges": {
 		"message": "Ye've changes not yet stowed. Toss 'em overboard?",
@@ -5319,6 +5363,22 @@
 		"message": "pcs",
 		"source": "sp"
 	},
+	"pf1e.coinName.cp": {
+		"message": "copper bits",
+		"source": "copper pieces"
+	},
+	"pf1e.coinName.gp": {
+		"message": "doubloons",
+		"source": "gold pieces"
+	},
+	"pf1e.coinName.pp": {
+		"message": "platinum pieces",
+		"source": "platinum pieces"
+	},
+	"pf1e.coinName.sp": {
+		"message": "pieces o' eight",
+		"source": "silver pieces"
+	},
 	"pf1e.itemCategory.armor": {
 		"message": "Armor",
 		"source": "Armor"
@@ -6482,6 +6542,10 @@
 	"sf1e.coin.cr": {
 		"message": "cr",
 		"source": "cr"
+	},
+	"sf1e.coinName.cr": {
+		"message": "credits",
+		"source": "credits"
 	},
 	"sf1e.itemCategory.armor": {
 		"message": "Armor",
