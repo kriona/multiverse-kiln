@@ -175,17 +175,37 @@ describe('Universe drafts', () =>
 		assert.strictEqual((await findCharacterDetails(playerId, universe.universeId, 'pf1e', brokkId))?.raceId, dwarfId);
 	});
 
-	it('changes nothing when a save applying the draft is refused', async () =>
+	it('refuses a save that applies or discards the draft with other changes, or starts it before them, changing nothing', async () =>
 	{
+		const rename: EditorChange = { kind: 'updateArea', areaId: universe.houseAreaId, update: { name: 'Tavern' } };
+		const apply: EditorChange = { kind: 'applyDraft', choices: { races: {}, classes: {}, items: {}, areas: {} } };
+		const discard: EditorChange = { kind: 'discardDraft' };
+
+		/**
+		 * Sends a save of the live version that should be refused as a whole
+		 *
+		 * @param changes The changes
+		 * @return The status and the index of the change refused
+		 */
+		const refusedSave = async (changes: EditorChange[]): Promise<[number, number | null]> =>
+		{
+			const answer = await send<SaveRefusedPayload>(ada, 'POST', `/${universe.universeId}/changes`, { body: { changes } });
+
+			return([answer.status, answer.body.changeIndex]);
+		};
+
+		assert.deepStrictEqual(await refusedSave([{ kind: 'startDraft' }, rename]), [400, 0]);
+		assert.strictEqual(await hasDraft(universe.universeId), false);
+
 		await saveAll(ada, universe.universeId, [{ kind: 'startDraft' }]);
 		await saveToDraft([{ kind: 'updateArea', areaId: await draftAreaNamed('House'), update: { name: 'Inn' } }]);
 
-		const refused = await send(ada, 'POST', `/${universe.universeId}/changes`, { body: { changes: [
-			{ kind: 'applyDraft', choices: { races: {}, classes: {}, items: {}, areas: {} } },
-			{ kind: 'deleteArea', areaId: '00000000-0000-4000-8000-000000000000' }
-		] } });
+		for (const draftChange of [apply, discard])
+		{
+			assert.deepStrictEqual(await refusedSave([draftChange, rename]), [400, 0], draftChange.kind);
+			assert.deepStrictEqual(await refusedSave([rename, draftChange]), [400, 1], draftChange.kind);
+		}
 
-		assert.strictEqual(refused.status, 404);
 		assert.strictEqual(await hasDraft(universe.universeId), true);
 		assert.ok((await areasOf('live')).areas.some((area) => ((area.id === universe.houseAreaId) && (area.name === 'House'))));
 	});

@@ -1,5 +1,6 @@
 import { MAX_EMAIL_LENGTH } from './accounts.js';
 import { ADMIN_PATH } from './admin.js';
+import { DISALLOWED_TEXT_CHARACTERS } from './constants.js';
 
 /**
  * Settings for the whole site, changed on the admin settings page (client/admin/settings.html)
@@ -85,14 +86,16 @@ export function isSiteSocialUrl(site: SiteSocialSite, url: string): boolean
 
 /**
  * Whether an address can be the privacy policy's contact: at most MAX_EMAIL_LENGTH characters, with
- * one @ that has text on both sides, and no spaces. Whether it receives email is only known by sending one
+ * one @ that has text on both sides, and no spaces, control characters or bidirectional marks (which could
+ * make the address the privacy policy shows read differently from where its link sends email). Whether it
+ * receives email is only known by sending one
  *
  * @param address The address
  * @return Whether it can be
  */
 export function isPrivacyContact(address: string): boolean
 {
-	return((address.length <= MAX_EMAIL_LENGTH) && /^[^\s@]+@[^\s@]+$/.test(address));
+	return((address.length <= MAX_EMAIL_LENGTH) && /^[^\s@]+@[^\s@]+$/.test(address) && !DISALLOWED_TEXT_CHARACTERS.test(address));
 }
 
 /**

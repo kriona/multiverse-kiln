@@ -1620,8 +1620,8 @@
 		"source": "Discard Draft"
 	},
 	"editor.draft.discardQuestion": {
-		"message": "All that changed in the draft goes to Davy Jones, and the tilesets hauled aboard it be scuttled. The live version stays as she be.",
-		"source": "Everything changed in the draft will be lost, and the tilesets uploaded to it deleted. The live version stays as it is."
+		"message": "All that changed in the draft goes to Davy Jones. The live version stays as she be.",
+		"source": "Everything changed in the draft will be discarded. The live version remains unchanged."
 	},
 	"editor.draft.discardStaged": {
 		"message": "The draft will be scuttled when ye stow.",

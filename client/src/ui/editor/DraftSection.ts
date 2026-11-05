@@ -173,7 +173,7 @@ export class DraftSection implements SavableTab
 			}),
 			question: t({
 				id: 'editor.draft.discardQuestion',
-				defaultMessage: 'Everything changed in the draft will be lost, and the tilesets uploaded to it deleted. The live version stays as it is.',
+				defaultMessage: 'Everything changed in the draft will be discarded. The live version remains unchanged.',
 				description: 'Question in the dialog asking to confirm deleting the universe\'s draft'
 			}),
 			note: (waiting ? t(messages.saveOthersFirst) : undefined),
