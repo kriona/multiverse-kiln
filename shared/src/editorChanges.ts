@@ -13,7 +13,7 @@ import type { OptionName } from './characters.js';
 import type { DifficultyLevelSettings } from './difficulty.js';
 import type { AreaSettingsUpdate, AreaLinkTarget, CellChange, ClassSettings, ErrorPayload, ItemSettings, NewAreaRequest, RaceSettings, ResizeConflict, RulesetSettings, ThemeSettings, TileGraphicUploadRequest, TileSettings, UniverseSettingsUpdate } from './editor.js';
 import type { MapBounds } from './maps.js';
-import { canEditAtEndOfTime, canEditUniverseSettings, canEditWorld, canManageEditors, canMarkNoTranslation, canTranslate, type EditorAccess, type UniverseRole, type UniverseStage } from './universes.js';
+import { canEditAtEndOfTime, canEditUniverseSettings, canEditWorld, canManageEditors, canManageVersions, canMarkNoTranslation, canTranslate, type EditorAccess, type UniverseRole, type UniverseStage } from './universes.js';
 import type { UniverseTextRef } from './universeText.js';
 
 /**
@@ -101,6 +101,29 @@ export const GROUP_SIZE_LOWERINGS = ['keep', 'disband', 'removeMembers'] as cons
 export type GroupSizeLowering = typeof GROUP_SIZE_LOWERINGS[number];
 
 /**
+ * What applying a universe's draft does to the players using what it disables or deletes (see Universe
+ * versions in STRUCTURE-OVERVIEW.md), each by the live ID of what it is about, written as text, as the
+ * editor's impact dialog chose. Something left out takes the gentlest choice, as a change sent without a
+ * choice does: keep playing, keep the item, keep the groups, and back to the start area
+ */
+export interface DraftApplyChoices
+{
+	/**
+	 * Whether each race's characters keep playing while it is disabled
+	 */
+	races: Record<string, boolean>;
+
+	/**
+	 * Whether each class's characters keep playing while it is disabled
+	 */
+	classes: Record<string, boolean>;
+
+	items: Record<string, ItemDisabling>;
+	areas: Record<string, AreaEvacuation>;
+	largerGroups?: GroupSizeLowering;
+}
+
+/**
  * An editor's role and languages in a save. languages is for translators only, and empty for other roles
  */
 export interface EditorRoleSettings
@@ -137,6 +160,10 @@ export interface EditorRoleSettings
  * - saveTranslatorNote: write the note for translators on a piece of universe text, or with null delete it
  * - saveNoTranslation: mark a piece of universe text as needing no translation in any language, such as
  *   a proper name, so players see it as written, or as needing one again. Its translations are kept
+ * - startDraft, applyDraft, discardDraft: start the universe's draft as a copy of its live version, apply
+ *   it to the live version for good, or delete it (see Universe versions in STRUCTURE-OVERVIEW.md). They
+ *   come after every other change in a save; applyDraft carries what happens to the players using what
+ *   the draft disables or deletes
  */
 export type EditorChange =
 	| { kind: 'addEditor'; username: string; settings: EditorRoleSettings }
@@ -163,7 +190,10 @@ export type EditorChange =
 	| { kind: 'deleteLink'; areaId: StringRef; column: number; row: number }
 	| { kind: 'saveTranslation'; text: UniverseTextRef; language: string; translation: string | null; sourceHash: string }
 	| { kind: 'saveTranslatorNote'; text: UniverseTextRef; note: string | null }
-	| { kind: 'saveNoTranslation'; text: UniverseTextRef; noTranslation: boolean };
+	| { kind: 'saveNoTranslation'; text: UniverseTextRef; noTranslation: boolean }
+	| { kind: 'startDraft' }
+	| { kind: 'applyDraft'; choices: DraftApplyChoices }
+	| { kind: 'discardDraft' };
 
 /**
  * Every kind of change
@@ -178,8 +208,9 @@ export type EditorChangeKind = EditorChange['kind'];
  * - editWorld: canEditWorld()
  * - translate: canTranslate() into the change's language
  * - markNoTranslation: canMarkNoTranslation()
+ * - manageVersions: canManageVersions()
  */
-export type EditorChangeCheck = 'manageEditors' | 'editSettings' | 'editWorld' | 'translate' | 'markNoTranslation';
+export type EditorChangeCheck = 'manageEditors' | 'editSettings' | 'editWorld' | 'translate' | 'markNoTranslation' | 'manageVersions';
 
 /**
  * The check each kind of change needs
@@ -219,7 +250,10 @@ export const EDITOR_CHANGE_CHECKS: Readonly<Record<EditorChangeKind, EditorChang
 	deleteLink: 'editWorld',
 	saveTranslation: 'translate',
 	saveTranslatorNote: 'editWorld',
-	saveNoTranslation: 'markNoTranslation'
+	saveNoTranslation: 'markNoTranslation',
+	startDraft: 'manageVersions',
+	applyDraft: 'manageVersions',
+	discardDraft: 'manageVersions'
 };
 
 /**
@@ -248,6 +282,9 @@ export function mayMakeChange(change: EditorChange, access: EditorAccess, player
 
 		case 'markNoTranslation':
 			return(canMarkNoTranslation(access));
+
+		case 'manageVersions':
+			return(canManageVersions(access.role));
 	}
 }
 
@@ -305,7 +342,9 @@ export interface SaveRefusedPayload extends ErrorPayload
 }
 
 /**
- * What one change in a save would do to players, compared with the universe as it is saved now
+ * What one change in a save would do to players, compared with the universe as it is saved now. An
+ * applyDraft change has one for each thing the draft disables or deletes that players are using, each
+ * naming that thing by its live ID
  *
  * - race, class: it disables a race or class that characters (not past their last rites) are; name is
  *   the race's or class's
@@ -315,8 +354,8 @@ export interface SaveRefusedPayload extends ErrorPayload
  * - groupSize: it lowers the group size below the size of some groups
  */
 export type ChangeImpact =
-	| { changeIndex: number; kind: 'race' | 'class' | 'item'; name: OptionName; characters: number }
-	| { changeIndex: number; kind: 'area'; name: string; characters: number; hasParent: boolean }
+	| { changeIndex: number; kind: 'race' | 'class' | 'item'; id: number; name: OptionName; characters: number }
+	| { changeIndex: number; kind: 'area'; id: string; name: string; characters: number; hasParent: boolean }
 	| { changeIndex: number; kind: 'groupSize'; groupSize: number; groups: number };
 
 /**

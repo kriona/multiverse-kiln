@@ -519,6 +519,18 @@ export function canEditUniverseSettings(role: EditorRole): boolean
 }
 
 /**
+ * Whether a role may start, apply and discard a universe's draft (see Universe versions in
+ * STRUCTURE-OVERVIEW.md). Every role that edits the universe may edit the draft
+ *
+ * @param role The user's role in the editor
+ * @return True when the role may
+ */
+export function canManageVersions(role: EditorRole): boolean
+{
+	return((role === 'creator') || (role === ADMIN_ROLE));
+}
+
+/**
  * Whether a role may change a universe's world: its tiles, items, areas, maps and links
  *
  * @param role The user's role in the editor

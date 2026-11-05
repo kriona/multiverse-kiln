@@ -295,9 +295,9 @@ Decided (see `STRUCTURE-OVERVIEW.md`):
 - Server admins are site-wide and separate from universe roles. Who is one is stored in the database; a script run by hand makes the first, and admins add and remove other admins on the admin page. Admins must have 2FA on.
 - `prologue` universes aren't listed on Home for everyone: a player with a role in any sees them in a section of Home of their own.
 - `end of time`: the universe page can be reached and says the universe is locked, only creators can edit it, the lobby can't be entered, and groups can be opened read-only, with group chat still working.
+- A universe has a live version and at most one draft, a copy of the live content in the same tables with IDs of its own, each row remembering the live row it came from. The editor edits whichever is chosen in its bar; only the live version is played. Only creators start, apply and discard the draft. Applying can't be undone: it writes the draft back under the live IDs (so characters, items and groups never change their references), treats what the draft deletes while it's in use as disabled, with the step 4 warnings, and removes the draft.
 
 To decide, before the step that needs it:
-- How versions are built and switched (the open question in `STRUCTURE-OVERVIEW.md`): a draft that copies the universe's content tables, or a draft stored as the editor's staged changes (`EditorChange` lists, which a save already applies in one transaction) that the editor replays over the current version and switching applies at once. Either way, what happens to a change made to the current version while a draft is open (step 8)
 - Whether a universe can rename engine terms, such as calling gold "crowns" (step 7, or move to Later)
 
 Built in nine steps: roles, stages, server admins, disabling things in use, then translations (storage, delivery, the tab), versions, and finishing.
@@ -353,12 +353,14 @@ Built in nine steps: roles, stages, server admins, disabling things in use, then
 	- [✅] Translators see only their languages; creators see every language
 	- [ ] Renaming engine terms, if decided
 8. Universe versions
-	- [ ] Write the design into `STRUCTURE-OVERVIEW.md` (Universe versions) once decided, and close its open question
-	- [ ] Starting a draft version (e.g. 1.1) from the current one; who can see it and play it (creators and builders, and beta testers?), and the editor showing which version is open
-	- [ ] Saving to the draft leaves the current version, and the rooms playing it, unchanged; a version includes its translations
-	- [ ] Switching to the draft applies it all at once, in one transaction, and publishes it to open rooms as the editor's saves do now, with the warnings from step 4 asked before switching
-	- [ ] Discarding a draft
-	- [ ] Tests: players see nothing of the draft until the switch, a switch that is refused changes nothing
+	- [✅] Write the design into `STRUCTURE-OVERVIEW.md` (Universe versions), and close its open question: a live version and at most one draft, applied once and for good
+	- [✅] Schema: a `draft` flag and the live row it was copied from (`origin`) on every content table (tiles and tile graphics, items, races, classes, themes, difficulty levels, areas, and the ruleset settings, starting items, translations and translator notes), in the unique keys that name the universe; tables hanging off a row (ruleset rows, starting items of a race or class, class race areas, map chunks, links) follow their row. `universe_drafts` holds the draft's own copy of the settings `universes` holds for the live version
+	- [✅] Every repository reads and writes either the live version or the draft (`UniverseVersion`, `server/src/db/universeVersions.ts`): the rooms, Home, the universe page, Create Character and the other player-facing routes the live one, the editor's routes the one it sends
+	- [✅] Starting a draft copies the live content (`server/src/db/universeDraftRepo.ts`, in the save's transaction), mapping every reference inside it, map cells included, to the copies; discarding deletes it and the files of tilesets only it used
+	- [ ] The editor's choice of live or draft beside the role in its toolbar, asking first over unsaved changes, and `?version=draft` in its address; every request names the version (`EDITOR_VERSION_PARAM`), saves to the draft tell no room anything, a notice says which is open and warns while the live version is open with a draft, and the Audit tab marks draft saves and lists starting, applying and discarding
+	- [ ] Start Draft, Apply Draft and Discard Draft in the toolbar, each asking first and saving at once: Start Draft's dialog explains drafts and saves any unsaved changes with it (`client/src/ui/editor/StartDraftDialog.ts`), while applying and discarding wait until nothing else is unsaved; all for creators (`canManageVersions()`), as `EditorChange` kinds saved after every other change (`client/src/ui/editor/DraftSection.ts`)
+	- [✅] Applying asks the step 4 warnings, comparing the draft with the live version (`draftImpacts()` in `server/src/http/editorImpact.ts`), with what the draft deletes while in use kept disabled. It writes the draft back under the live IDs in the save's transaction (`server/src/http/editorDrafts.ts`); once committed, open rooms load the new world and clients fetch the text
+	- [✅] Tests: starting a draft copies everything and leaves the live version alone, saving to the draft changes nothing players see, applying keeps live IDs and characters' references, an apply that is refused changes nothing, discarding removes the draft and its uploads (`server/test/db/universeDraftRepo.test.ts`, `server/test/editorDrafts.test.ts`)
 9. Finishing
 	- [ ] Check the new screens in the pseudo-language, update Pirate, and add keyboard shortcuts and screen reader text for the new tabs and dialogs
 	- [ ] Update `STRUCTURE-OVERVIEW.md` where the decisions above changed it (stages, admins, versions)
@@ -435,6 +437,7 @@ Needed before universes are open to the public.
 - Walls as a layer of their own, so a cell holds a ground tile and a wall over it, rather than walls drawn over the area's default tile
 - Tall walls with a front face: blob frames 32x64 drawn over the row south of the wall, and over players standing there
 - Exporting and importing a universe's translations (JSON or XLIFF), and a translation service such as Weblate for the engine's catalogs
+- Playing a universe's draft, so creators, builders and beta testers can test it before it is applied: choosing it, and which characters play it without changing their progress in the live version
 
 ---
 
@@ -446,7 +449,6 @@ Needed before universes are open to the public.
 - Which S3-compatible service stores uploads in production, and its bucket (Phase 16)
 - Telling users with the same name apart (Phase 19)
 - Whether a universe can rename engine terms, such as calling gold "crowns" (Phase 15)
-- How universe versions are built and switched (Phase 15)
 - Fonts for map text in scripts the default font doesn't cover (Phase 17)
 - Whether to offer machine translation of chat (later)
 - Whether to add client-side prediction (after Phase 7, if movement feels laggy)

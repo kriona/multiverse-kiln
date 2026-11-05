@@ -1,5 +1,5 @@
 import { ServerError, type Client } from '@colyseus/sdk';
-import { EDITOR_UNIVERSES_PATH, isLocalizedMessage, MAX_TILES_PER_PAGE, type UniverseTextListPayload, type UniverseTextListQuery,type ChunkListPayload, type ChunkRange, type ClassListPayload, type CreatedPayload, type DifficultyLevel, type DifficultyLevelListPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorCharacterListPayload, type EditorCharacterListQuery, type EditorClass, type EditorRace, type UniverseEditListPayload, type UniverseEditListQuery, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type NewUniverseRequest, type RaceListPayload, type RulesetSettings, type EditorTheme, type ThemeListPayload, type TileGraphicListPayload, type TileListPayload, type TileListQuery, type TileUsagePayload, type UploadedTileGraphic, type AreaLinkListPayload, type AreaListPayload, type MessageSource, type MessageValues, type EditorChange, type ChangeImpact, type SaveChangesPayload, type SaveChangesRequest, type SaveImpactPayload, type PlayerMatch, type PlayerSearchPayload, type PlayerSearchQuery, type UniverseEditorListPayload, type UniverseEditorSummary } from '@multiverse-kiln/shared';
+import { EDITOR_UNIVERSES_PATH, EDITOR_VERSION_PARAM, isLocalizedMessage, type UniverseVersionName, MAX_TILES_PER_PAGE, type UniverseTextListPayload, type UniverseTextListQuery,type ChunkListPayload, type ChunkRange, type ClassListPayload, type CreatedPayload, type DifficultyLevel, type DifficultyLevelListPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorCharacterListPayload, type EditorCharacterListQuery, type EditorClass, type EditorRace, type UniverseEditListPayload, type UniverseEditListQuery, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type NewUniverseRequest, type RaceListPayload, type RulesetSettings, type EditorTheme, type ThemeListPayload, type TileGraphicListPayload, type TileListPayload, type TileListQuery, type TileUsagePayload, type UploadedTileGraphic, type AreaLinkListPayload, type AreaListPayload, type MessageSource, type MessageValues, type EditorChange, type ChangeImpact, type SaveChangesPayload, type SaveChangesRequest, type SaveImpactPayload, type PlayerMatch, type PlayerSearchPayload, type PlayerSearchQuery, type UniverseEditorListPayload, type UniverseEditorSummary } from '@multiverse-kiln/shared';
 
 import { localizedText, t } from '../localization';
 
@@ -28,6 +28,12 @@ export class EditorApiError extends Error
  */
 export class EditorApi
 {
+	/**
+	 * The version of the universe the editor has open (see Universe versions in STRUCTURE-OVERVIEW.md),
+	 * which every request about a universe reads or changes
+	 */
+	version: UniverseVersionName = 'live';
+
 	/**
 	 * @param client Client for the server
 	 */
@@ -347,7 +353,7 @@ export class EditorApi
 	}
 
 	/**
-	 * Sends a request to an editor route
+	 * Sends a request to an editor route, about the version open when it is about a universe
 	 *
 	 * @param method The HTTP method
 	 * @param path The path under EDITOR_UNIVERSES_PATH
@@ -356,7 +362,9 @@ export class EditorApi
 	 */
 	private async send<T = unknown>(method: HttpMethod, path: string, body?: object): Promise<T>
 	{
-		return(sendRequest<T>(this.client, method, `${EDITOR_UNIVERSES_PATH}${path}`, body));
+		const versioned = (((path === '') || (this.version === 'live')) ? path : `${path}${path.includes('?') ? '&' : '?'}${EDITOR_VERSION_PARAM}=${this.version}`);
+
+		return(sendRequest<T>(this.client, method, `${EDITOR_UNIVERSES_PATH}${versioned}`, body));
 	}
 }
 

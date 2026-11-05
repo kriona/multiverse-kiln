@@ -4,6 +4,7 @@ import type { AreaListPayload, EditableUniverse } from '@multiverse-kiln/shared'
 import { listStartingAreaIds } from '../src/db/areaRepo.js';
 import { findUniverse } from '../src/db/universeRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
+import { liveVersion } from '../src/db/universeVersions.js';
 import { areaChanges, type AreaChange } from '../src/world/areaChanges.js';
 import { addArea, addPlayableUniverse, addUniverse, type PlayableUniverse } from './db/fixtures.js';
 import { logIn, saveAll, saveChanges, send, type Editor } from './editorRequests.js';
@@ -101,6 +102,6 @@ describe('Choosing the lobby\'s area', () =>
 		const list = await send<AreaListPayload>(ada, 'GET', `/${universeId}/areas`);
 
 		assert.deepStrictEqual(list.body.startingAreaIds, [fieldAreaId]);
-		assert.deepStrictEqual(await listStartingAreaIds(universeId), [fieldAreaId]);
+		assert.deepStrictEqual(await listStartingAreaIds(liveVersion(universeId)), [fieldAreaId]);
 	});
 });

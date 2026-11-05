@@ -2,11 +2,12 @@
  * Uploaded tile graphics: the only module that reads or writes the tile_graphics table. The images
  * themselves are in object storage (src/storage/)
  */
-import { and, asc, count, eq } from 'drizzle-orm';
+import { and, asc, count, eq, inArray } from 'drizzle-orm';
 import type { TileGraphicFormat, UploadedTileGraphic } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { tileGraphics } from './schema.js';
+import { inVersion, type UniverseVersion } from './universeVersions.js';
 
 /**
  * What a new uploaded tile graphic needs
@@ -14,6 +15,12 @@ import { tileGraphics } from './schema.js';
 export interface NewTileGraphic
 {
 	universeId: string;
+
+	/**
+	 * Whether it is uploaded to the universe's draft
+	 */
+	draft: boolean;
+
 	name: string;
 	format: TileGraphicFormat;
 
@@ -60,13 +67,13 @@ export async function createTileGraphic(graphicId: string, graphic: NewTileGraph
 }
 
 /**
- * The tile graphics a universe's editors uploaded
+ * The tile graphics a version of a universe holds
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param executor The database, or a transaction
  * @return The graphics, by name
  */
-export async function listTileGraphics(universeId: string, executor: Executor = db): Promise<UploadedTileGraphic[]>
+export async function listTileGraphics(version: UniverseVersion, executor: Executor = db): Promise<UploadedTileGraphic[]>
 {
 	return(executor
 		.select({
@@ -76,38 +83,38 @@ export async function listTileGraphics(universeId: string, executor: Executor = 
 			drawOrder: tileGraphics.drawOrder
 		})
 		.from(tileGraphics)
-		.where(eq(tileGraphics.universeId, universeId))
+		.where(inVersion(tileGraphics, version))
 		.orderBy(asc(tileGraphics.name), asc(tileGraphics.createdAt)));
 }
 
 /**
- * How many tile graphics a universe's editors have uploaded
+ * How many tile graphics a version of a universe holds
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param executor The database, or a transaction
  * @return The number of graphics
  */
-export async function countTileGraphics(universeId: string, executor: Executor = db): Promise<number>
+export async function countTileGraphics(version: UniverseVersion, executor: Executor = db): Promise<number>
 {
 	const [row] = await executor
 		.select({
 			total: count()
 		})
 		.from(tileGraphics)
-		.where(eq(tileGraphics.universeId, universeId));
+		.where(inVersion(tileGraphics, version));
 
 	return(row.total);
 }
 
 /**
- * Whether a universe's editors uploaded a tile graphic, so its tiles can be drawn with it
+ * Whether a version of a universe holds a tile graphic, so its tiles can be drawn with it
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param graphicId The graphic's ID
  * @param executor The database, or a transaction
- * @return True when the graphic belongs to the universe
+ * @return True when the graphic belongs to the version
  */
-export async function isUniverseTileGraphic(universeId: string, graphicId: string, executor: Executor = db): Promise<boolean>
+export async function isUniverseTileGraphic(version: UniverseVersion, graphicId: string, executor: Executor = db): Promise<boolean>
 {
 	const rows = await executor
 		.select({
@@ -116,7 +123,7 @@ export async function isUniverseTileGraphic(universeId: string, graphicId: strin
 		.from(tileGraphics)
 		.where(and(
 			eq(tileGraphics.id, graphicId),
-			eq(tileGraphics.universeId, universeId)
+			inVersion(tileGraphics, version)
 		))
 		.limit(1);
 
@@ -144,17 +151,17 @@ export async function findTileGraphicStorageKey(graphicId: string, executor: Exe
 }
 
 /**
- * Where every one of a universe's uploaded tile graphics is stored, for deleting the images along with
- * the universe
+ * Where every one of a universe's uploaded tile graphics is stored, its live version's and its draft's,
+ * for deleting the images along with the universe
  *
  * @param universeId The universe's ID
  * @param executor The database, or a transaction
- * @return Their keys in object storage
+ * @return Their keys in object storage, each once
  */
 export async function listTileGraphicStorageKeys(universeId: string, executor: Executor = db): Promise<string[]>
 {
 	const rows = await executor
-		.select({
+		.selectDistinct({
 			storageKey: tileGraphics.storageKey
 		})
 		.from(tileGraphics)
@@ -164,25 +171,62 @@ export async function listTileGraphicStorageKeys(universeId: string, executor: E
 }
 
 /**
- * Deletes one of a universe's uploaded tile graphics. Tiles drawn with it are drawn in their colors
- * after (the tiles table sets their uploaded_graphic_id to null); delete its image from storage too
+ * Of some images in storage, those no tile graphic uses any more, which can be deleted from storage
  *
- * @param universeId The universe's ID
+ * @param storageKeys The images' keys in object storage
+ * @param executor The database, or a transaction
+ * @return The keys no row of tile_graphics holds, each once
+ */
+export async function findUnusedStorageKeys(storageKeys: readonly string[], executor: Executor = db): Promise<string[]>
+{
+	if (storageKeys.length === 0)
+	{
+		return([]);
+	}
+
+	const rows = await executor
+		.selectDistinct({
+			storageKey: tileGraphics.storageKey
+		})
+		.from(tileGraphics)
+		.where(inArray(tileGraphics.storageKey, [...storageKeys]));
+	const used = new Set(rows.map((row) => row.storageKey));
+
+	return([...new Set(storageKeys)].filter((storageKey) => !used.has(storageKey)));
+}
+
+/**
+ * Deletes one of a version's uploaded tile graphics. Tiles drawn with it are drawn in their colors after
+ * (the tiles table sets their uploaded_graphic_id to null); delete its image from storage too once no
+ * other copy of it uses the image
+ *
+ * @param version The universe's live version or draft
  * @param graphicId The graphic's ID
  * @param executor The database, or a transaction
- * @return Where its image is stored, or undefined when the universe has no such graphic
+ * @return Where its image is stored, and whether no other graphic uses it (the other version's copy may),
+ * so it can be deleted from storage; undefined when the version has no such graphic
  */
-export async function deleteTileGraphic(universeId: string, graphicId: string, executor: Executor = db): Promise<string | undefined>
+export async function deleteTileGraphic(version: UniverseVersion, graphicId: string, executor: Executor = db): Promise<{ storageKey: string; unused: boolean } | undefined>
 {
 	const [row] = await executor
 		.delete(tileGraphics)
 		.where(and(
 			eq(tileGraphics.id, graphicId),
-			eq(tileGraphics.universeId, universeId)
+			inVersion(tileGraphics, version)
 		))
 		.returning({
 			storageKey: tileGraphics.storageKey
 		});
 
-	return(row?.storageKey);
+	if (!row)
+	{
+		return(undefined);
+	}
+
+	const unused = await findUnusedStorageKeys([row.storageKey], executor);
+
+	return({
+		storageKey: row.storageKey,
+		unused: (unused.length > 0)
+	});
 }

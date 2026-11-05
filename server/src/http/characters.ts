@@ -24,6 +24,7 @@ import { loadEditorThemes } from '../db/themeRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { findUniverseRole } from '../db/universeEditorRepo.js';
 import { findEditableUniverse, lockUniverse } from '../db/universeRepo.js';
+import { liveVersion } from '../db/universeVersions.js';
 import { rollPf1eAbilityScores } from '../logic/abilityRolls.js';
 import { characterChanges } from '../players/characterChanges.js';
 import { abilityBonuses, areValidBaseScores, combineStartingItems, finalAbilityScores, isValidFloatingAbility, type ScoreSource } from '../logic/characterCreation.js';
@@ -185,7 +186,7 @@ function universeLoader(allows: (stage: UniverseStage, role: UniverseRole | unde
 		if (universeId.success)
 		{
 			const [universe, role] = await Promise.all([
-				findEditableUniverse(universeId.data),
+				findEditableUniverse(liveVersion(universeId.data)),
 				findUniverseRole(universeId.data, playerIdOf(request))
 			]);
 
@@ -257,8 +258,8 @@ async function listRoute(request: Request, response: Response): Promise<void>
 	const playerId = playerIdOf(request);
 	const [characters, races, classes, translator] = await Promise.all([
 		listCharacters(playerId, universe.id),
-		loadEditorRaces(universe.id, universe.ruleset),
-		loadEditorClasses(universe.id, universe.ruleset),
+		loadEditorRaces(liveVersion(universe.id), universe.ruleset),
+		loadEditorClasses(liveVersion(universe.id), universe.ruleset),
 		loadTranslator(request, universe, ['race', 'class'])
 	]);
 	const barred = barredOptionsOf(races, classes);
@@ -302,10 +303,10 @@ async function sheetRoute(request: Request, response: Response): Promise<void>
 	const [character, membership, races, classes, themes, items, siteSettings, translator] = await Promise.all([
 		findCharacterDetails(playerIdOf(request), universe.id, universe.ruleset, characterId),
 		findMembership(characterId),
-		loadEditorRaces(universe.id, universe.ruleset),
-		loadEditorClasses(universe.id, universe.ruleset),
-		loadEditorThemes(universe.id, universe.ruleset),
-		loadEditorItems(universe.id, universe.ruleset),
+		loadEditorRaces(liveVersion(universe.id), universe.ruleset),
+		loadEditorClasses(liveVersion(universe.id), universe.ruleset),
+		loadEditorThemes(liveVersion(universe.id), universe.ruleset),
+		loadEditorItems(liveVersion(universe.id), universe.ruleset),
 		findSiteSettings(),
 		loadTranslator(request, universe, ['race', 'class', 'theme', 'item'])
 	]);
@@ -595,9 +596,9 @@ async function newCharacterRoute(request: Request, response: Response): Promise<
 	const playerId = playerIdOf(request);
 	const [abilities, races, classes, themes, characterCount, storedDraft, translator] = await Promise.all([
 		offerAbilities(universe, playerId),
-		loadEditorRaces(universe.id, universe.ruleset),
-		loadEditorClasses(universe.id, universe.ruleset),
-		loadEditorThemes(universe.id, universe.ruleset),
+		loadEditorRaces(liveVersion(universe.id), universe.ruleset),
+		loadEditorClasses(liveVersion(universe.id), universe.ruleset),
+		loadEditorThemes(liveVersion(universe.id), universe.ruleset),
 		countCharacters(playerId, universe.id),
 		findCharacterDraft(playerId, universe.id),
 		loadTranslator(request, universe, ['universe', 'race', 'class', 'theme'])
@@ -639,11 +640,11 @@ async function offerAbilities(universe: PlayableUniverse, playerId: string): Pro
 	{
 		return({
 			kind: 'abilityPoints',
-			points: (await findSf1eSettings(universe.id)).abilityPoints
+			points: (await findSf1eSettings(liveVersion(universe.id))).abilityPoints
 		});
 	}
 
-	const settings = await findPf1eSettings(universe.id);
+	const settings = await findPf1eSettings(liveVersion(universe.id));
 	const { statMethod } = settings;
 
 	if (isPf1eRollMethod(statMethod))
@@ -733,7 +734,7 @@ async function createRoute(request: Request, response: Response): Promise<void>
 		await lockPlayer(playerId, transaction);
 		await lockUniverse(universeId, transaction);
 
-		const universe = await findEditableUniverse(universeId, transaction);
+		const universe = await findEditableUniverse(liveVersion(universeId), transaction);
 
 		if (!universe)
 		{
@@ -762,7 +763,7 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			});
 		}
 
-		const race = (await loadEditorRaces(universeId, universe.ruleset, transaction)).find((option) => ((option.id === raceId) && option.enabled));
+		const race = (await loadEditorRaces(liveVersion(universeId), universe.ruleset, transaction)).find((option) => ((option.id === raceId) && option.enabled));
 
 		if (!race)
 		{
@@ -772,7 +773,7 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			});
 		}
 
-		const characterClass = (await loadEditorClasses(universeId, universe.ruleset, transaction)).find((option) => ((option.id === classId) && option.enabled));
+		const characterClass = (await loadEditorClasses(liveVersion(universeId), universe.ruleset, transaction)).find((option) => ((option.id === classId) && option.enabled));
 
 		if (!characterClass)
 		{
@@ -783,7 +784,7 @@ async function createRoute(request: Request, response: Response): Promise<void>
 		}
 
 		const theme = (rulesetHasThemes(universe.ruleset)
-			? (await loadEditorThemes(universeId, universe.ruleset, transaction)).find((option) => ((option.id === themeId) && option.enabled))
+			? (await loadEditorThemes(liveVersion(universeId), universe.ruleset, transaction)).find((option) => ((option.id === themeId) && option.enabled))
 			: undefined);
 
 		if (rulesetHasThemes(universe.ruleset) ? !theme : (themeId !== null))
@@ -812,7 +813,7 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			});
 		}
 
-		const enabledItemIds = new Set((await loadEditorItems(universeId, universe.ruleset, transaction))
+		const enabledItemIds = new Set((await loadEditorItems(liveVersion(universeId), universe.ruleset, transaction))
 			.filter((item) => item.enabled)
 			.map((item) => item.id));
 		const characterId = await createCharacter({
@@ -864,11 +865,11 @@ async function findScoreSource(universe: PlayableUniverse, playerId: string, exe
 	{
 		return({
 			kind: 'abilityPoints',
-			points: (await findSf1eSettings(universe.id, executor)).abilityPoints
+			points: (await findSf1eSettings(liveVersion(universe.id), executor)).abilityPoints
 		});
 	}
 
-	const settings = await findPf1eSettings(universe.id, executor);
+	const settings = await findPf1eSettings(liveVersion(universe.id), executor);
 
 	if (!isPf1eRollMethod(settings.statMethod))
 	{

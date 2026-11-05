@@ -51,7 +51,7 @@ export function addDifficultyLevelRoutes(router: express.Router): void
  */
 async function listLevels(request: Request, response: Response): Promise<void>
 {
-	const payload: DifficultyLevelListPayload = { difficultyLevels: await listDifficultyLevels(universeContextOf(request).universe.id) };
+	const payload: DifficultyLevelListPayload = { difficultyLevels: await listDifficultyLevels(universeContextOf(request).version) };
 
 	response.json(payload);
 }
@@ -65,7 +65,7 @@ async function listLevels(request: Request, response: Response): Promise<void>
  */
 export async function createDifficultyLevelChange(context: ChangeContext, ref: NewRef, settings: DifficultyLevelSettings): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { version, transaction } = context;
 	const { name } = settings;
 
 	if (name === null)
@@ -73,7 +73,7 @@ export async function createDifficultyLevelChange(context: ChangeContext, ref: N
 		refuse(400, messages.levelNeedsName);
 	}
 
-	if (await countDifficultyLevels(universe.id, transaction) >= MAX_DIFFICULTY_LEVELS)
+	if (await countDifficultyLevels(version, transaction) >= MAX_DIFFICULTY_LEVELS)
 	{
 		refuse(409, {
 			id: 'error.difficultyLevelLimit',
@@ -84,7 +84,7 @@ export async function createDifficultyLevelChange(context: ChangeContext, ref: N
 		});
 	}
 
-	recordRef(context, ref, await createDifficultyLevel(universe.id, { ...settings, name }, transaction));
+	recordRef(context, ref, await createDifficultyLevel(version, { ...settings, name }, transaction));
 }
 
 /**
@@ -96,8 +96,8 @@ export async function createDifficultyLevelChange(context: ChangeContext, ref: N
  */
 export async function saveDifficultyLevelChange(context: ChangeContext, id: NumberRef, settings: DifficultyLevelSettings): Promise<void>
 {
-	const { universe, transaction } = context;
-	const level = await findDifficultyLevel(universe.id, resolveNumberRef(context, id), transaction);
+	const { version, transaction } = context;
+	const level = await findDifficultyLevel(version, resolveNumberRef(context, id), transaction);
 
 	if (!level)
 	{
@@ -114,7 +114,7 @@ export async function saveDifficultyLevelChange(context: ChangeContext, id: Numb
 		refuse(409, messages.needsDefault);
 	}
 
-	await updateDifficultyLevel(universe.id, level.id, settings, transaction);
+	await updateDifficultyLevel(version, level.id, settings, transaction);
 }
 
 /**
@@ -125,17 +125,17 @@ export async function saveDifficultyLevelChange(context: ChangeContext, id: Numb
  */
 export async function removeDifficultyLevelChange(context: ChangeContext, id: NumberRef): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { version, transaction } = context;
 
 	// Making a group waits for the universe's lock too, so nobody takes the level as it is deleted
-	const level = await findDifficultyLevel(universe.id, resolveNumberRef(context, id), transaction);
+	const level = await findDifficultyLevel(version, resolveNumberRef(context, id), transaction);
 
 	if (!level)
 	{
 		refuse(404, messages.noSuchLevel);
 	}
 
-	const defaultLevel = await findDefaultDifficultyLevel(universe.id, transaction);
+	const defaultLevel = await findDefaultDifficultyLevel(version, transaction);
 
 	if (!defaultLevel || (defaultLevel.id === level.id))
 	{
@@ -143,6 +143,6 @@ export async function removeDifficultyLevelChange(context: ChangeContext, id: Nu
 	}
 
 	await moveGroupsToDifficultyLevel(level.id, defaultLevel.id, transaction);
-	await deleteDifficultyLevel(universe.id, level.id, transaction);
-	await deleteUniverseTextOf(universe.id, 'difficultyLevel', level.id, transaction);
+	await deleteDifficultyLevel(version, level.id, transaction);
+	await deleteUniverseTextOf(version, 'difficultyLevel', level.id, transaction);
 }

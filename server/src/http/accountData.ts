@@ -19,6 +19,7 @@ import { listPlayerSessions } from '../db/sessionRepo.js';
 import { loadEditorThemes } from '../db/themeRepo.js';
 import { findTwoFactorState, hasTwoFactor } from '../db/twoFactorRepo.js';
 import { listEditableUniverses, listOtherUniverseEditors, listSoleCreatedUniverses } from '../db/universeEditorRepo.js';
+import { liveVersion } from '../db/universeVersions.js';
 import { emailTranslator } from '../email/emailLocales.js';
 import { playerIdOf } from './editorAccess.js';
 import { errorMessages, sendError } from './errors.js';
@@ -108,10 +109,10 @@ async function exportCharacters(playerId: string, records: readonly ProfileChara
 	const options = new Map(await Promise.all([...universes].map(async ([universeId, ruleset]) =>
 	{
 		const [races, classes, themes, items] = await Promise.all([
-			loadEditorRaces(universeId, ruleset),
-			loadEditorClasses(universeId, ruleset),
-			loadEditorThemes(universeId, ruleset),
-			loadEditorItems(universeId, ruleset)
+			loadEditorRaces(liveVersion(universeId), ruleset),
+			loadEditorClasses(liveVersion(universeId), ruleset),
+			loadEditorThemes(liveVersion(universeId), ruleset),
+			loadEditorItems(liveVersion(universeId), ruleset)
 		]);
 
 		return([universeId, { races, classes, themes, items }] as const);

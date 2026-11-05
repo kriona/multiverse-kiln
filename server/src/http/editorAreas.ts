@@ -11,6 +11,7 @@ import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
 import { countAreas, createArea, deleteArea, deleteAreaLink, editCells, findEditorArea, listAreaLinks, listAreas, listAreasLinkingTo, listStartingAreaIds, loadChunks, lockAreas, resizeArea, saveAreaLink, updateAreaSettings } from '../db/areaRepo.js';
 import { arrivalCell, enabledAncestor } from '../logic/disabling.js';
 import { chunksOfChanges, wouldCreateCycle } from '../logic/mapEdits.js';
+import { isSameVersion } from '../db/universeVersions.js';
 import type { AreaPlace } from '../world/areaChanges.js';
 import { loadAreaContext, universeContextOf, areaContextOf } from './editorAccess.js';
 import { ChangeRefusal, recordRef, refuse, resolveNumberRef, resolveStringRef, type ChangeContext } from './editorChangeContext.js';
@@ -104,12 +105,12 @@ export function lobbyTimeProblem(lobby: Pick<UniverseSettings, 'lobbyPassageOfTi
  */
 async function listAreasRoute(request: Request, response: Response): Promise<void>
 {
-	const { universe } = universeContextOf(request);
+	const { universe, version } = universeContextOf(request);
 	const payload: AreaListPayload = {
-		areas: await listAreas(universe.id),
+		areas: await listAreas(version),
 		lobbyAreaId: universe.lobbyAreaId,
 		startingAreaId: universe.startingAreaId,
-		startingAreaIds: await listStartingAreaIds(universe.id)
+		startingAreaIds: await listStartingAreaIds(version)
 	};
 
 	response.json(payload);
@@ -177,7 +178,7 @@ async function areaOf(context: ChangeContext, ref: StringRef): Promise<EditorAre
 {
 	const found = await findEditorArea(resolveStringRef(context, ref), context.transaction);
 
-	if (!found || (found.universeId !== context.universe.id))
+	if (!found || !isSameVersion(found.version, context.version))
 	{
 		refuse(404, errorMessages.noSuchArea);
 	}
@@ -212,7 +213,7 @@ function resolveAreaUpdate(context: ChangeContext, update: AreaChangeUpdate): Ar
  */
 export async function createAreaChange(context: ChangeContext, ref: NewRef, area: NewAreaChange): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { universe, version, transaction } = context;
 	const resolved = resolveAreaUpdate(context, area);
 	const indoors = (resolved.indoors ?? false);
 	const settings: AreaSettings = {
@@ -230,7 +231,7 @@ export async function createAreaChange(context: ChangeContext, ref: NewRef, area
 
 	await checkAreaSettings(context, undefined, settings);
 
-	if (await countAreas(universe.id, transaction) >= MAX_AREAS)
+	if (await countAreas(version, transaction) >= MAX_AREAS)
 	{
 		refuse(409, {
 			id: 'error.areaLimit',
@@ -241,7 +242,12 @@ export async function createAreaChange(context: ChangeContext, ref: NewRef, area
 		});
 	}
 
-	recordRef(context, ref, await createArea({ ...settings, universeId: universe.id, bounds: NEW_AREA_BOUNDS }, transaction));
+	recordRef(context, ref, await createArea({
+		...settings,
+		universeId: version.universeId,
+		draft: version.draft,
+		bounds: NEW_AREA_BOUNDS
+	}, transaction));
 }
 
 /**
@@ -292,10 +298,10 @@ export async function updateAreaChange(context: ChangeContext, areaId: StringRef
  * @param areaId The disabled area
  * @return The place, or null when no enabled area holds it, so they go where they start instead
  */
-export async function parentPlace(context: Pick<ChangeContext, 'universe' | 'transaction'>, areaId: string): Promise<AreaPlace | null>
+export async function parentPlace(context: Pick<ChangeContext, 'version' | 'transaction'>, areaId: string): Promise<AreaPlace | null>
 {
-	const { universe, transaction } = context;
-	const found = enabledAncestor(await listAreas(universe.id, transaction), areaId);
+	const { version, transaction } = context;
+	const found = enabledAncestor(await listAreas(version, transaction), areaId);
 
 	if (!found)
 	{
@@ -316,7 +322,7 @@ export async function parentPlace(context: Pick<ChangeContext, 'universe' | 'tra
  */
 export async function deleteAreaChange(context: ChangeContext, areaId: StringRef): Promise<void>
 {
-	const { universe } = context;
+	const { universe, version } = context;
 	const area = await areaOf(context, areaId);
 
 	if ((area.id === universe.lobbyAreaId) || (area.id === universe.startingAreaId))
@@ -329,7 +335,7 @@ export async function deleteAreaChange(context: ChangeContext, areaId: StringRef
 	}
 
 	await deleteArea(area.id, context.transaction);
-	await deleteUniverseTextOf(universe.id, 'area', area.id, context.transaction);
+	await deleteUniverseTextOf(version, 'area', area.id, context.transaction);
 	context.published.push({ kind: 'deleted', areaId: area.id });
 }
 
@@ -378,12 +384,12 @@ export async function resizeAreaChange(context: ChangeContext, areaId: StringRef
  */
 export async function editCellsChange(context: ChangeContext, areaId: StringRef, changes: readonly CellChangeRef[]): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { universe, version, transaction } = context;
 	const area = await areaOf(context, areaId);
 	const resolved = changes.map(([column, row, value]): CellChange => [column, row, (isNewRef(value) ? resolveNumberRef(context, value) : value)]);
 
 	// Deleting a tile waits for the universe's lock too, so a tile can't be deleted while it is being painted
-	const usable = new Set((await loadUniverseTiles(universe.id, universe.ruleset, transaction)).map((tile) => tile.id));
+	const usable = new Set((await loadUniverseTiles(version, universe.ruleset, transaction)).map((tile) => tile.id));
 
 	if (resolved.some(([, , value]) => ((value !== DEFAULT_TILE_CELL) && (value !== VOID_CELL) && !usable.has(value))))
 	{
@@ -424,7 +430,7 @@ export async function editCellsChange(context: ChangeContext, areaId: StringRef,
  */
 export async function saveLinkChange(context: ChangeContext, areaId: StringRef, column: number, row: number, target: AreaLinkTarget): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { version, transaction } = context;
 	const area = await areaOf(context, areaId);
 	const targetAreaId = resolveStringRef(context, target.targetAreaId);
 
@@ -447,7 +453,7 @@ export async function saveLinkChange(context: ChangeContext, areaId: StringRef, 
 		refuse(400, errorMessages.noSuchArea);
 	}
 
-	if (!destination || (destination.universeId !== universe.id))
+	if (!destination || !isSameVersion(destination.version, version))
 	{
 		refuse(400, {
 			id: 'error.linkTargetNotInUniverse',
@@ -534,7 +540,7 @@ async function defaultAreaTileId(ruleset: Ruleset, indoors: boolean, executor: E
  */
 async function checkAreaSettings(context: ChangeContext, areaId: string | undefined, settings: AreaSettings): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { universe, version, transaction } = context;
 	const timeProblem = (timeSettingsProblem(settings)
 		?? ((areaId === universe.lobbyAreaId) ? lobbyTimeProblem(universe, settings) : undefined));
 
@@ -545,7 +551,7 @@ async function checkAreaSettings(context: ChangeContext, areaId: string | undefi
 
 	if (settings.parentAreaId !== null)
 	{
-		const parents = new Map((await listAreas(universe.id, transaction)).map((area) => [area.id, area.parentAreaId]));
+		const parents = new Map((await listAreas(version, transaction)).map((area) => [area.id, area.parentAreaId]));
 
 		if (!parents.has(settings.parentAreaId))
 		{
@@ -566,7 +572,7 @@ async function checkAreaSettings(context: ChangeContext, areaId: string | undefi
 		}
 	}
 
-	if (await findTileKind(universe.id, universe.ruleset, settings.defaultTileId, transaction) === undefined)
+	if (await findTileKind(version, universe.ruleset, settings.defaultTileId, transaction) === undefined)
 	{
 		refuse(400, {
 			id: 'error.unusableDefaultTile',

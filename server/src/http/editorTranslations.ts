@@ -19,6 +19,7 @@ import { loadEditorRaces } from '../db/raceRepo.js';
 import { loadEditorThemes } from '../db/themeRepo.js';
 import { loadEditorTiles } from '../db/tileRepo.js';
 import { deleteTranslationOf, deleteTranslatorNote, listTranslations, listTranslatorNotes, saveTranslation, saveTranslatorNote, setNoTranslation } from '../db/universeTextRepo.js';
+import type { UniverseVersion } from '../db/universeVersions.js';
 import { refuse, type ChangeContext } from './editorChangeContext.js';
 import { universeContextOf } from './editorAccess.js';
 import { universeTextLanguageQuery, universeTextListQuery } from './editorPayloads.js';
@@ -70,25 +71,26 @@ function namesOf(kind: UniverseTextKind, things: readonly Named[]): UniverseText
 }
 
 /**
- * Every piece of a universe's text in its source language, leaving out descriptions it hasn't written,
- * in the order of UNIVERSE_TEXT_KINDS
+ * Every piece of a version's text in the universe's source language, leaving out descriptions it hasn't
+ * written, in the order of UNIVERSE_TEXT_KINDS
  *
- * @param universe The universe
+ * @param universe The universe, with the version's settings
+ * @param version The universe's live version or draft
  * @param executor The database, or a transaction
  * @return The text
  */
-async function collectUniverseText(universe: EditableUniverseDetails, executor?: Executor): Promise<UniverseTextSource[]>
+async function collectUniverseText(universe: EditableUniverseDetails, version: UniverseVersion, executor?: Executor): Promise<UniverseTextSource[]>
 {
 	const { id, ruleset } = universe;
 
 	// One after another, since a transaction runs one query at a time
-	const areas = await listAreas(id, executor);
-	const tiles = await loadEditorTiles(id, ruleset, executor);
-	const items = await loadEditorItems(id, ruleset, executor);
-	const races = await loadEditorRaces(id, ruleset, executor);
-	const classes = await loadEditorClasses(id, ruleset, executor);
-	const themes = (rulesetHasThemes(ruleset) ? await loadEditorThemes(id, ruleset, executor) : []);
-	const difficultyLevels = await listDifficultyLevels(id, executor);
+	const areas = await listAreas(version, executor);
+	const tiles = await loadEditorTiles(version, ruleset, executor);
+	const items = await loadEditorItems(version, ruleset, executor);
+	const races = await loadEditorRaces(version, ruleset, executor);
+	const classes = await loadEditorClasses(version, ruleset, executor);
+	const themes = (rulesetHasThemes(ruleset) ? await loadEditorThemes(version, ruleset, executor) : []);
+	const difficultyLevels = await listDifficultyLevels(version, executor);
 	const universeText = UNIVERSE_TEXT_FIELDS
 		.map((field): UniverseTextSource => ({
 			kind: 'universe',
@@ -189,7 +191,7 @@ async function listAllTranslationsRoute(request: Request, response: Response): P
  */
 async function loadTextRows(request: Request, response: Response, requested: string): Promise<UniverseTextRow[] | undefined>
 {
-	const { universe, role, languages } = universeContextOf(request);
+	const { universe, version, role, languages } = universeContextOf(request);
 	const language = universe.translationLanguages.find((each) => (each.toLowerCase() === requested.toLowerCase()));
 
 	if (!canTranslate({ role, languages }, requested) && !canEditWorld(role))
@@ -213,9 +215,9 @@ async function loadTextRows(request: Request, response: Response, requested: str
 	}
 
 	const [sources, translations, notes] = await Promise.all([
-		collectUniverseText(universe),
-		listTranslations(universe.id, [language]),
-		listTranslatorNotes(universe.id)
+		collectUniverseText(universe, version),
+		listTranslations(version, [language]),
+		listTranslatorNotes(version)
 	]);
 	const translationsByKey = new Map(translations.map((translation) => [textKey(translation), translation]));
 	const notesByKey = new Map(notes.map((note) => [textKey(note), note]));
@@ -326,7 +328,7 @@ async function textOf(context: ChangeContext, ref: UniverseTextRef): Promise<Uni
 
 	if (!loaded)
 	{
-		loaded = collectUniverseText(context.universe, context.transaction).then((texts) => new Map(texts.map((text) => [textKey(text), text])));
+		loaded = collectUniverseText(context.universe, context.version, context.transaction).then((texts) => new Map(texts.map((text) => [textKey(text), text])));
 		savedText.set(context, loaded);
 	}
 
@@ -373,11 +375,11 @@ export async function saveTranslationChange(context: ChangeContext, change: Extr
 
 	if (change.translation === null)
 	{
-		await deleteTranslationOf(context.universe.id, ref, language, context.transaction);
+		await deleteTranslationOf(context.version, ref, language, context.transaction);
 		return;
 	}
 
-	await saveTranslation(context.universe.id, {
+	await saveTranslation(context.version, {
 		...ref,
 		language,
 		text: change.translation,
@@ -402,11 +404,11 @@ export async function saveTranslatorNoteChange(context: ChangeContext, change: E
 
 	if (change.note === null)
 	{
-		await deleteTranslatorNote(context.universe.id, ref, context.transaction);
+		await deleteTranslatorNote(context.version, ref, context.transaction);
 		return;
 	}
 
-	await saveTranslatorNote(context.universe.id, { ...ref, note: change.note }, context.transaction);
+	await saveTranslatorNote(context.version, { ...ref, note: change.note }, context.transaction);
 }
 
 /**
@@ -419,7 +421,7 @@ export async function saveNoTranslationChange(context: ChangeContext, change: Ex
 {
 	const text = await textOf(context, change.text);
 
-	await setNoTranslation(context.universe.id, {
+	await setNoTranslation(context.version, {
 		kind: text.kind,
 		thingId: text.thingId,
 		field: text.field

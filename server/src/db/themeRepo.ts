@@ -8,6 +8,7 @@ import type { EditorTheme, Ruleset, ThemeSettings } from '@multiverse-kiln/share
 
 import { db, type Executor } from './client.js';
 import { sf1eThemes, themes } from './schema.js';
+import { inVersion, type UniverseVersion } from './universeVersions.js';
 
 /**
  * The settings of a theme a universe added, which always has a name of its own
@@ -20,20 +21,20 @@ export type CustomThemeSettings = ThemeSettings & { name: string };
 export type ThemeKind = 'default' | 'custom';
 
 /**
- * Matches the rows of themes a universe can see: its ruleset's default themes, and its own themes and
- * edited copies
+ * Matches the rows of themes a version of a universe can see: its ruleset's default themes, and the
+ * version's own themes and edited copies
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @return The condition
  */
-function usableThemes(universeId: string, ruleset: Ruleset): SQL | undefined
+function usableThemes(version: UniverseVersion, ruleset: Ruleset): SQL | undefined
 {
 	return(and(
 		eq(themes.ruleset, ruleset),
 		or(
 			isNull(themes.universeId),
-			eq(themes.universeId, universeId)
+			inVersion(themes, version)
 		)
 	));
 }
@@ -42,12 +43,12 @@ function usableThemes(universeId: string, ruleset: Ruleset): SQL | undefined
  * Every theme a universe can use, as the editor lists them: with whether each theme is custom or
  * edited, and a default theme's key in place of a name it kept
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param executor The database, or a transaction
  * @return The themes, by ID; none for a ruleset without themes
  */
-export async function loadEditorThemes(universeId: string, ruleset: Ruleset, executor: Executor = db): Promise<EditorTheme[]>
+export async function loadEditorThemes(version: UniverseVersion, ruleset: Ruleset, executor: Executor = db): Promise<EditorTheme[]>
 {
 	const rows = await executor
 		.select({
@@ -61,7 +62,7 @@ export async function loadEditorThemes(universeId: string, ruleset: Ruleset, exe
 		})
 		.from(themes)
 		.innerJoin(sf1eThemes, eq(sf1eThemes.themeId, themes.id))
-		.where(usableThemes(universeId, ruleset))
+		.where(usableThemes(version, ruleset))
 		.orderBy(asc(themes.id));
 	const copies = new Map(rows
 		.filter((row) => (row.overridesThemeId !== null))
@@ -90,16 +91,16 @@ export async function loadEditorThemes(universeId: string, ruleset: Ruleset, exe
 }
 
 /**
- * Whether a theme ID is one of a ruleset's default themes or one of a universe's own themes
+ * Whether a theme ID is one of a ruleset's default themes or one of a version's own themes
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param themeId The theme's ID
  * @param executor The database, or a transaction
- * @return The kind of theme, or undefined when the universe can't use a theme with that ID (an edited
+ * @return The kind of theme, or undefined when the version can't use a theme with that ID (an edited
  * copy's own ID included)
  */
-export async function findThemeKind(universeId: string, ruleset: Ruleset, themeId: number, executor: Executor = db): Promise<ThemeKind | undefined>
+export async function findThemeKind(version: UniverseVersion, ruleset: Ruleset, themeId: number, executor: Executor = db): Promise<ThemeKind | undefined>
 {
 	const [row] = await executor
 		.select({
@@ -109,7 +110,7 @@ export async function findThemeKind(universeId: string, ruleset: Ruleset, themeI
 		.where(and(
 			eq(themes.id, themeId),
 			isNull(themes.overridesThemeId),
-			usableThemes(universeId, ruleset)
+			usableThemes(version, ruleset)
 		))
 		.limit(1);
 
@@ -122,13 +123,13 @@ export async function findThemeKind(universeId: string, ruleset: Ruleset, themeI
 }
 
 /**
- * How many themes a universe has added, not counting its edited copies of default themes
+ * How many themes a version of a universe has added, not counting its edited copies of default themes
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param executor The database, or a transaction
  * @return The number of themes
  */
-export async function countCustomThemes(universeId: string, executor: Executor = db): Promise<number>
+export async function countCustomThemes(version: UniverseVersion, executor: Executor = db): Promise<number>
 {
 	const [row] = await executor
 		.select({
@@ -136,7 +137,7 @@ export async function countCustomThemes(universeId: string, executor: Executor =
 		})
 		.from(themes)
 		.where(and(
-			eq(themes.universeId, universeId),
+			inVersion(themes, version),
 			isNull(themes.overridesThemeId)
 		));
 
@@ -144,21 +145,23 @@ export async function countCustomThemes(universeId: string, executor: Executor =
 }
 
 /**
- * Adds a theme to a universe. Call it inside a transaction, so the theme is never left without its rules
+ * Adds a theme to a version of a universe. Call it inside a transaction, so the theme is never left
+ * without its rules
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param settings The theme's settings
  * @param executor A transaction
  * @return The new theme's ID
  */
-export async function createCustomTheme(universeId: string, ruleset: Ruleset, settings: CustomThemeSettings, executor: Executor): Promise<number>
+export async function createCustomTheme(version: UniverseVersion, ruleset: Ruleset, settings: CustomThemeSettings, executor: Executor): Promise<number>
 {
 	const [created] = await executor
 		.insert(themes)
 		.values({
 			ruleset,
-			universeId,
+			universeId: version.universeId,
+			draft: version.draft,
 			name: settings.name,
 			enabled: settings.enabled
 		})
@@ -170,14 +173,14 @@ export async function createCustomTheme(universeId: string, ruleset: Ruleset, se
 }
 
 /**
- * Changes one of a universe's own themes. Call it inside a transaction
+ * Changes one of a version's own themes. Call it inside a transaction
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param themeId The theme's ID, from findThemeKind() as custom
  * @param settings The theme's new settings
  * @param executor A transaction
  */
-export async function updateCustomTheme(universeId: string, themeId: number, settings: CustomThemeSettings, executor: Executor): Promise<void>
+export async function updateCustomTheme(version: UniverseVersion, themeId: number, settings: CustomThemeSettings, executor: Executor): Promise<void>
 {
 	await executor
 		.update(themes)
@@ -187,21 +190,21 @@ export async function updateCustomTheme(universeId: string, themeId: number, set
 		})
 		.where(and(
 			eq(themes.id, themeId),
-			eq(themes.universeId, universeId)
+			inVersion(themes, version)
 		));
 	await saveThemeRules(themeId, settings, executor);
 }
 
 /**
- * Stores a universe's edited copy of a default theme, replacing any copy it had. Call it inside a transaction
+ * Stores a version's edited copy of a default theme, replacing any copy it had. Call it inside a transaction
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param defaultThemeId The default theme's ID, from findThemeKind() as default
  * @param settings The copy's settings; a null name keeps the default theme's
  * @param executor A transaction
  */
-export async function saveEditedDefaultTheme(universeId: string, ruleset: Ruleset, defaultThemeId: number, settings: ThemeSettings, executor: Executor): Promise<void>
+export async function saveEditedDefaultTheme(version: UniverseVersion, ruleset: Ruleset, defaultThemeId: number, settings: ThemeSettings, executor: Executor): Promise<void>
 {
 	const columns = {
 		name: settings.name,
@@ -211,12 +214,13 @@ export async function saveEditedDefaultTheme(universeId: string, ruleset: Rulese
 		.insert(themes)
 		.values({
 			ruleset,
-			universeId,
+			universeId: version.universeId,
+			draft: version.draft,
 			overridesThemeId: defaultThemeId,
 			...columns
 		})
 		.onConflictDoUpdate({
-			target: [themes.universeId, themes.overridesThemeId],
+			target: [themes.universeId, themes.draft, themes.overridesThemeId],
 			set: columns
 		})
 		.returning({ id: themes.id });
@@ -225,36 +229,36 @@ export async function saveEditedDefaultTheme(universeId: string, ruleset: Rulese
 }
 
 /**
- * Discards a universe's edited copy of a default theme, so the universe sees the default again
+ * Discards a version's edited copy of a default theme, so the version sees the default again
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param defaultThemeId The default theme's ID
  * @param executor The database, or a transaction
  */
-export async function restoreDefaultTheme(universeId: string, defaultThemeId: number, executor: Executor = db): Promise<void>
+export async function restoreDefaultTheme(version: UniverseVersion, defaultThemeId: number, executor: Executor = db): Promise<void>
 {
 	await executor
 		.delete(themes)
 		.where(and(
-			eq(themes.universeId, universeId),
+			inVersion(themes, version),
 			eq(themes.overridesThemeId, defaultThemeId)
 		));
 }
 
 /**
- * Deletes one of a universe's own themes
+ * Deletes one of a version's own themes
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param themeId The theme's ID, from findThemeKind() as custom
  * @param executor The database, or a transaction
  */
-export async function deleteCustomTheme(universeId: string, themeId: number, executor: Executor = db): Promise<void>
+export async function deleteCustomTheme(version: UniverseVersion, themeId: number, executor: Executor = db): Promise<void>
 {
 	await executor
 		.delete(themes)
 		.where(and(
 			eq(themes.id, themeId),
-			eq(themes.universeId, universeId)
+			inVersion(themes, version)
 		));
 }
 

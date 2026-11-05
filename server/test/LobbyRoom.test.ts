@@ -17,6 +17,7 @@ import { connectedSessions } from '../src/players/connectedSessions.js';
 import { groupChanges } from '../src/players/groupChanges.js';
 import { universeAccessChanges } from '../src/players/universeAccess.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
+import { liveVersion } from '../src/db/universeVersions.js';
 import { CHAT_HISTORY_LENGTH, type LobbyRoom } from '../src/rooms/LobbyRoom.js';
 import { areaChanges } from '../src/world/areaChanges.js';
 import { addCharacter, addPlayableUniverse, addArea, defaultClassId, defaultRaceId, defaultTileId, type PlayableUniverse } from './db/fixtures.js';
@@ -315,7 +316,7 @@ describe('LobbyRoom', () =>
 			const { cookie } = await logInBrowser(playerId);
 
 			await setUniverseRole(universe.universeId, playerId, 'creator');
-			await updateUniverseSettings(universe.universeId, { stage: 'end_of_time' });
+			await updateUniverseSettings(liveVersion(universe.universeId), { stage: 'end_of_time' });
 			await assert.rejects(connect(cookie, { universeId: universe.universeId }));
 		});
 
@@ -324,7 +325,7 @@ describe('LobbyRoom', () =>
 			const playerId = (await addPlayer('Ada')).id;
 			const { cookie } = await logInBrowser(playerId);
 
-			await updateUniverseSettings(universe.universeId, { stage: 'prologue' });
+			await updateUniverseSettings(liveVersion(universe.universeId), { stage: 'prologue' });
 			await assert.rejects(connect(cookie, { universeId: universe.universeId }));
 
 			await setUniverseRole(universe.universeId, playerId, 'beta_tester');
@@ -458,7 +459,7 @@ describe('LobbyRoom', () =>
 
 		it('shows each window only the players its character can see, not past mountains or beyond their sight', async () =>
 		{
-			await updateUniverseSettings(universe.universeId, { lobbyPassageOfTime: 'always_noon', lobbyFaerieMorning: null, lobbyNoVisionCost: false });
+			await updateUniverseSettings(liveVersion(universe.universeId), { lobbyPassageOfTime: 'always_noon', lobbyFaerieMorning: null, lobbyNoVisionCost: false });
 
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
 			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
@@ -482,7 +483,7 @@ describe('LobbyRoom', () =>
 
 		it('lets a character with darkvision see twelve squares at night', async () =>
 		{
-			await updateUniverseSettings(universe.universeId, { lobbyPassageOfTime: 'always_midnight', lobbyFaerieMorning: null });
+			await updateUniverseSettings(liveVersion(universe.universeId), { lobbyPassageOfTime: 'always_midnight', lobbyFaerieMorning: null });
 
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
 			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
@@ -650,7 +651,7 @@ describe('LobbyRoom', () =>
 		{
 			const { universeId, squareAreaId } = universe;
 
-			await updateUniverseSettings(universeId, { lobbyAreaId: null });
+			await updateUniverseSettings(liveVersion(universeId), { lobbyAreaId: null });
 
 			const ada = await joinAsNewPlayer(universeId, 'Ada');
 			const room = lobbyOf(ada);
@@ -665,7 +666,7 @@ describe('LobbyRoom', () =>
 			// Moving is ignored while there is nowhere to walk
 			ada.room.send(MessageType.Move, { x: 1, y: 0 });
 
-			await updateUniverseSettings(universeId, { lobbyAreaId: squareAreaId, lobbyColumn: 4, lobbyRow: 7 });
+			await updateUniverseSettings(liveVersion(universeId), { lobbyAreaId: squareAreaId, lobbyColumn: 4, lobbyRow: 7 });
 			areaChanges.publish({ kind: 'lobby', universeId });
 
 			assert.strictEqual((await ada.inbox.take<AreaPayload>(ServerMessageType.Area)).areaId, squareAreaId);
@@ -1104,7 +1105,7 @@ describe('LobbyRoom', () =>
 			const grass = await defaultTileId('grass');
 
 			await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
-			await saveEditedDefaultTile(universe.universeId, 'pf1e', grass, { name: 'Autumn Grass', indoors: false, outdoors: true, color: 0xc08030, graphic: 'grass', uploadedGraphicId: null, visionCost: 0, walkSeconds: 600, enabled: true });
+			await saveEditedDefaultTile(liveVersion(universe.universeId), 'pf1e', grass, { name: 'Autumn Grass', indoors: false, outdoors: true, color: 0xc08030, graphic: 'grass', uploadedGraphicId: null, visionCost: 0, walkSeconds: 600, enabled: true });
 			areaChanges.publish({ kind: 'tiles', universeId: universe.universeId });
 
 			const area = await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
@@ -1118,7 +1119,7 @@ describe('LobbyRoom', () =>
 			const forest = await defaultTileId('forest');
 
 			await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
-			await updateUniverseSettings(universe.universeId, { lobbyNoVisionCost: false });
+			await updateUniverseSettings(liveVersion(universe.universeId), { lobbyNoVisionCost: false });
 			areaChanges.publish({ kind: 'tiles', universeId: universe.universeId });
 
 			const area = await ada.inbox.take<AreaPayload>(ServerMessageType.Area);

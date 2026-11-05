@@ -47,6 +47,35 @@ function allInRange(columns: AnyPgColumn[], min: number, max: number): SQL
 }
 
 /**
+ * The column saying whether a row of a universe's content belongs to its draft (see universe_drafts)
+ * rather than its live version. A ruleset's defaults belong to neither, and are never in a draft
+ *
+ * @return The column builder
+ */
+function draftColumn()
+{
+	return(boolean('draft').notNull().default(false));
+}
+
+/**
+ * The constraints on origin_id, the live row a draft row was copied from (which applying the draft writes
+ * it back into): set only on draft rows, and indexed for deleting live rows. A draft row is always a
+ * universe's
+ *
+ * @param tableName The table's name, which starts each constraint's name
+ * @param table The table's columns
+ * @return The index and checks
+ */
+function originConstraints(tableName: string, table: { universeId: AnyPgColumn; draft: AnyPgColumn; originId: AnyPgColumn })
+{
+	return([
+		index(`${tableName}_origin_id_index`).on(table.originId),
+		check(`${tableName}_origin_in_draft`, sql`${table.originId} IS NULL OR ${table.draft}`),
+		check(`${tableName}_draft_belongs_to_universe`, sql`NOT ${table.draft} OR ${table.universeId} IS NOT NULL`)
+	]);
+}
+
+/**
  * One row per player account
  */
 export const players = pgTable('players', {
@@ -135,101 +164,16 @@ export const players = pgTable('players', {
  */
 export const universes = pgTable('universes', {
 	id: uuid('id').primaryKey().defaultRandom(),
-	name: text('name').notNull(),
 
 	/**
-	 * The name in the form its page's address uses (universeSlug), kept with the name. Unique, which
+	 * The live name in the form its page's address uses (universeSlug), kept with the name. Unique, which
 	 * makes universe names unique
 	 */
 	slug: text('slug').notNull(),
 
-	shortDescription: text('short_description').notNull().default(''),
-
-	/**
-	 * Markdown
-	 */
-	longDescription: text('long_description').notNull().default(''),
-
-	/**
-	 * The language the universe's editors write its text in, by tag
-	 */
-	sourceLanguage: text('source_language').notNull().default('en'),
-
-	/**
-	 * The languages its text is translated into, by tag, in the order they were added; never the source language
-	 */
-	translationLanguages: text('translation_languages').array().notNull().default(sql`'{}'`),
-
 	stage: universeStage('stage').notNull().default('in_the_beginning'),
 	ruleset: ruleset('ruleset').notNull(),
-	passageOfTime: passageOfTime('passage_of_time').notNull().default('flows_normally'),
-
-	/**
-	 * Set when passageOfTime is faerie
-	 */
-	faerieMorning: faerieMorning('faerie_morning'),
-
-	/**
-	 * How players are shown the time of day
-	 */
-	displayTime: displayTime('display_time').notNull().default('precise'),
-
-	/**
-	 * The area players walk around in the lobby; while it is null or disabled, the lobby has no map
-	 */
-	lobbyAreaId: uuid('lobby_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
-
-	/**
-	 * The cell of the lobby's area players start nearest; column 0, row 0 is the middle of a new area's map
-	 */
-	lobbyColumn: integer('lobby_column').notNull().default(0),
-	lobbyRow: integer('lobby_row').notNull().default(0),
-
-	/**
-	 * How the time of day changes in the lobby, which ignores its area's own passage of time
-	 */
-	lobbyPassageOfTime: lobbyPassageOfTime('lobby_passage_of_time').notNull().default('real_time'),
-
-	/**
-	 * How many real hours a lobby day lasts when lobbyPassageOfTime is real_time
-	 */
-	lobbyDayHours: smallint('lobby_day_hours').notNull().default(DEFAULT_LOBBY_DAY_HOURS),
-
-	/**
-	 * Set when lobbyPassageOfTime is faerie
-	 */
-	lobbyFaerieMorning: faerieMorning('lobby_faerie_morning'),
-
-	/**
-	 * Whether the lobby's tiles are seen past as if none had a vision cost
-	 */
-	lobbyNoVisionCost: boolean('lobby_no_vision_cost').notNull().default(true),
-
-	/**
-	 * Where characters start unless their race or class says otherwise
-	 */
-	startingAreaId: uuid('starting_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
-
-	/**
-	 * The cell of the starting area characters start nearest; column 0, row 0 is the middle of a new area's map
-	 */
-	startingColumn: integer('starting_column').notNull().default(0),
-	startingRow: integer('starting_row').notNull().default(0),
-
-	/**
-	 * Most characters in one group
-	 */
-	groupSize: smallint('group_size').notNull().default(MAX_GROUP_PLAYERS),
-
-	/**
-	 * The coins every character starts with, by coin: money is kept as pieces, never converted
-	 */
-	startingPlatinum: integer('starting_platinum').notNull().default(0),
-	startingGold: integer('starting_gold').notNull().default(0),
-	startingSilver: integer('starting_silver').notNull().default(0),
-	startingCopper: integer('starting_copper').notNull().default(0),
-	startingCredits: integer('starting_credits').notNull().default(0),
-
+	...universeVersionColumns(),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 
 	/**
@@ -244,24 +188,161 @@ export const universes = pgTable('universes', {
 	disabledReason: text('disabled_reason')
 }, (table) => [
 	uniqueIndex('universes_slug_unique').on(table.slug),
-	check('universes_source_language_length', sql`char_length(${table.sourceLanguage}) BETWEEN 1 AND ${sql.raw(String(MAX_LOCALE_LENGTH))}`),
-	check('universes_translation_languages_count', sql`cardinality(${table.translationLanguages}) <= ${sql.raw(String(MAX_UNIVERSE_LANGUAGES))}`),
-	check('universes_translation_languages_not_source', sql`NOT (${table.sourceLanguage} = ANY(${table.translationLanguages}))`),
 	check('universes_disabled_reason_set', sql`(${table.disabledAt} IS NULL) = (${table.disabledReason} IS NULL)`),
 	check('universes_disabled_reason_length', sql`char_length(${table.disabledReason}) BETWEEN 1 AND ${sql.raw(String(MAX_DISABLED_REASON_LENGTH))}`),
-	check('universes_faerie_morning_set', sql`(${table.passageOfTime} = 'faerie') = (${table.faerieMorning} IS NOT NULL)`),
-	check('universes_lobby_faerie_morning_set', sql`(${table.lobbyPassageOfTime} = 'faerie') = (${table.lobbyFaerieMorning} IS NOT NULL)`),
-	check('universes_lobby_day_hours_range', sql`${table.lobbyDayHours} BETWEEN ${sql.raw(String(MIN_LOBBY_DAY_HOURS))} AND ${sql.raw(String(MAX_LOBBY_DAY_HOURS))}`),
-	check('universes_group_size_range', sql`${table.groupSize} BETWEEN ${sql.raw(String(MIN_GROUP_SIZE))} AND ${sql.raw(String(MAX_GROUP_PLAYERS))}`),
-	check('universes_starting_coins_range', sql`${table.startingPlatinum} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))} AND ${table.startingGold} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))} AND ${table.startingSilver} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))} AND ${table.startingCopper} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))}`),
-	check('universes_starting_credits_range', sql`${table.startingCredits} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))}`)
+	...universeVersionChecks('universes', table)
 ]);
+
+/**
+ * The settings a universe's draft holds its own copy of (see universeVersionColumns()), one row per
+ * universe with a draft. The draft's content is in the content tables' rows marked draft
+ */
+export const universeDrafts = pgTable('universe_drafts', {
+	universeId: uuid('universe_id').primaryKey().references(() => universes.id, { onDelete: 'cascade' }),
+	...universeVersionColumns(),
+
+	/**
+	 * When the draft was started
+	 */
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	...universeVersionChecks('universe_drafts', table)
+]);
+
+/**
+ * The columns of a universe's settings that its live version and its draft each have their own copy of
+ *
+ * @return The column builders, for universes and universe_drafts
+ */
+function universeVersionColumns()
+{
+	return({
+		/**
+		 * The universe's name. The draft's is checked against other universes' names when it is saved and
+		 * again when the draft is applied, which changes the address (slug) with it
+		 */
+		name: text('name').notNull(),
+
+		shortDescription: text('short_description').notNull().default(''),
+
+		/**
+		 * Markdown
+		 */
+		longDescription: text('long_description').notNull().default(''),
+
+		/**
+		 * The language the universe's editors write its text in, by tag
+		 */
+		sourceLanguage: text('source_language').notNull().default('en'),
+
+		/**
+		 * The languages its text is translated into, by tag, in the order they were added; never the source language
+		 */
+		translationLanguages: text('translation_languages').array().notNull().default(sql`'{}'`),
+
+		passageOfTime: passageOfTime('passage_of_time').notNull().default('flows_normally'),
+
+		/**
+		 * Set when passageOfTime is faerie
+		 */
+		faerieMorning: faerieMorning('faerie_morning'),
+
+		/**
+		 * How players are shown the time of day
+		 */
+		displayTime: displayTime('display_time').notNull().default('precise'),
+
+		/**
+		 * The area players walk around in the lobby; while it is null or disabled, the lobby has no map
+		 */
+		lobbyAreaId: uuid('lobby_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
+
+		/**
+		 * The cell of the lobby's area players start nearest; column 0, row 0 is the middle of a new area's map
+		 */
+		lobbyColumn: integer('lobby_column').notNull().default(0),
+		lobbyRow: integer('lobby_row').notNull().default(0),
+
+		/**
+		 * How the time of day changes in the lobby, which ignores its area's own passage of time
+		 */
+		lobbyPassageOfTime: lobbyPassageOfTime('lobby_passage_of_time').notNull().default('real_time'),
+
+		/**
+		 * How many real hours a lobby day lasts when lobbyPassageOfTime is real_time
+		 */
+		lobbyDayHours: smallint('lobby_day_hours').notNull().default(DEFAULT_LOBBY_DAY_HOURS),
+
+		/**
+		 * Set when lobbyPassageOfTime is faerie
+		 */
+		lobbyFaerieMorning: faerieMorning('lobby_faerie_morning'),
+
+		/**
+		 * Whether the lobby's tiles are seen past as if none had a vision cost
+		 */
+		lobbyNoVisionCost: boolean('lobby_no_vision_cost').notNull().default(true),
+
+		/**
+		 * Where characters start unless their race or class says otherwise
+		 */
+		startingAreaId: uuid('starting_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
+
+		/**
+		 * The cell of the starting area characters start nearest; column 0, row 0 is the middle of a new area's map
+		 */
+		startingColumn: integer('starting_column').notNull().default(0),
+		startingRow: integer('starting_row').notNull().default(0),
+
+		/**
+		 * Most characters in one group
+		 */
+		groupSize: smallint('group_size').notNull().default(MAX_GROUP_PLAYERS),
+
+		/**
+		 * The coins every character starts with, by coin: money is kept as pieces, never converted
+		 */
+		startingPlatinum: integer('starting_platinum').notNull().default(0),
+		startingGold: integer('starting_gold').notNull().default(0),
+		startingSilver: integer('starting_silver').notNull().default(0),
+		startingCopper: integer('starting_copper').notNull().default(0),
+		startingCredits: integer('starting_credits').notNull().default(0)
+	});
+}
+
+/**
+ * The columns of universeVersionColumns() in a table that has them
+ */
+type UniverseVersionTable = Record<keyof ReturnType<typeof universeVersionColumns>, AnyPgColumn>;
+
+/**
+ * The checks on the columns of universeVersionColumns()
+ *
+ * @param tableName The table's name, which starts each check's name
+ * @param table The table's columns
+ * @return The checks
+ */
+function universeVersionChecks(tableName: string, table: UniverseVersionTable)
+{
+	return([
+		check(`${tableName}_source_language_length`, sql`char_length(${table.sourceLanguage}) BETWEEN 1 AND ${sql.raw(String(MAX_LOCALE_LENGTH))}`),
+		check(`${tableName}_translation_languages_count`, sql`cardinality(${table.translationLanguages}) <= ${sql.raw(String(MAX_UNIVERSE_LANGUAGES))}`),
+		check(`${tableName}_translation_languages_not_source`, sql`NOT (${table.sourceLanguage} = ANY(${table.translationLanguages}))`),
+		check(`${tableName}_faerie_morning_set`, sql`(${table.passageOfTime} = 'faerie') = (${table.faerieMorning} IS NOT NULL)`),
+		check(`${tableName}_lobby_faerie_morning_set`, sql`(${table.lobbyPassageOfTime} = 'faerie') = (${table.lobbyFaerieMorning} IS NOT NULL)`),
+		check(`${tableName}_lobby_day_hours_range`, sql`${table.lobbyDayHours} BETWEEN ${sql.raw(String(MIN_LOBBY_DAY_HOURS))} AND ${sql.raw(String(MAX_LOBBY_DAY_HOURS))}`),
+		check(`${tableName}_group_size_range`, sql`${table.groupSize} BETWEEN ${sql.raw(String(MIN_GROUP_SIZE))} AND ${sql.raw(String(MAX_GROUP_PLAYERS))}`),
+		check(`${tableName}_starting_coins_range`, sql`${table.startingPlatinum} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))} AND ${table.startingGold} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))} AND ${table.startingSilver} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))} AND ${table.startingCopper} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))}`),
+		check(`${tableName}_starting_credits_range`, sql`${table.startingCredits} BETWEEN 0 AND ${sql.raw(String(MAX_COINS))}`)
+	]);
+}
 
 /**
  * How each Pathfinder 1E universe plays (its Ruleset tab). A universe without a row has DEFAULT_PF1E_SETTINGS
  */
 export const pf1eSettings = pgTable('pf1e_settings', {
-	universeId: uuid('universe_id').primaryKey().references(() => universes.id, { onDelete: 'cascade' }),
+	universeId: uuid('universe_id').notNull().references(() => universes.id, { onDelete: 'cascade' }),
+	draft: draftColumn(),
 	statMethod: pf1eStatMethod('stat_method').notNull().default(DEFAULT_PF1E_SETTINGS.statMethod),
 
 	/**
@@ -273,6 +354,7 @@ export const pf1eSettings = pgTable('pf1e_settings', {
 	coinsHaveWeight: boolean('coins_have_weight').notNull().default(DEFAULT_PF1E_SETTINGS.coinsHaveWeight),
 	tracksAmmo: boolean('tracks_ammo').notNull().default(DEFAULT_PF1E_SETTINGS.tracksAmmo)
 }, (table) => [
+	primaryKey({ columns: [table.universeId, table.draft] }),
 	check('pf1e_settings_custom_point_buy_budget_range', sql`${table.customPointBuyBudget} BETWEEN ${sql.raw(String(PF1E_MIN_POINT_BUY_BUDGET))} AND ${sql.raw(String(PF1E_MAX_POINT_BUY_BUDGET))}`)
 ]);
 
@@ -280,7 +362,8 @@ export const pf1eSettings = pgTable('pf1e_settings', {
  * How each Starfinder 1E universe plays (its Ruleset tab). A universe without a row has DEFAULT_SF1E_SETTINGS
  */
 export const sf1eSettings = pgTable('sf1e_settings', {
-	universeId: uuid('universe_id').primaryKey().references(() => universes.id, { onDelete: 'cascade' }),
+	universeId: uuid('universe_id').notNull().references(() => universes.id, { onDelete: 'cascade' }),
+	draft: draftColumn(),
 
 	/**
 	 * The ability points players spend on their characters' ability scores
@@ -290,6 +373,7 @@ export const sf1eSettings = pgTable('sf1e_settings', {
 	needsSleep: boolean('needs_sleep').notNull().default(DEFAULT_SF1E_SETTINGS.needsSleep),
 	tracksAmmo: boolean('tracks_ammo').notNull().default(DEFAULT_SF1E_SETTINGS.tracksAmmo)
 }, (table) => [
+	primaryKey({ columns: [table.universeId, table.draft] }),
 	check('sf1e_settings_ability_points_range', sql`${table.abilityPoints} BETWEEN ${sql.raw(String(SF1E_MIN_ABILITY_POINTS))} AND ${sql.raw(String(SF1E_MAX_ABILITY_POINTS))}`)
 ]);
 
@@ -334,6 +418,11 @@ export const universeEdits = pgTable('universe_edits', {
 	role: editorRole('role').notNull(),
 
 	/**
+	 * Whether the save changed the universe's draft rather than its live version
+	 */
+	draft: boolean('draft').notNull().default(false),
+
+	/**
 	 * What the save changed, thing by thing, with the values it gave each setting it changed, or null for
 	 * a save recorded before they were
 	 */
@@ -358,6 +447,7 @@ export const universeEdits = pgTable('universe_edits', {
  */
 export const universeTranslations = pgTable('universe_translations', {
 	universeId: uuid('universe_id').notNull().references(() => universes.id, { onDelete: 'cascade' }),
+	draft: draftColumn(),
 	kind: universeTextKind('kind').notNull(),
 
 	/**
@@ -383,7 +473,7 @@ export const universeTranslations = pgTable('universe_translations', {
 
 	updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
-	primaryKey({ columns: [table.universeId, table.kind, table.thingId, table.field, table.language] }),
+	primaryKey({ columns: [table.universeId, table.draft, table.kind, table.thingId, table.field, table.language] }),
 	check('universe_translations_language_length', sql`char_length(${table.language}) BETWEEN 1 AND ${sql.raw(String(MAX_LOCALE_LENGTH))}`),
 	check('universe_translations_text_length', sql`char_length(${table.text}) <= ${sql.raw(String(MAX_LONG_DESCRIPTION_LENGTH))}`),
 	check('universe_translations_source_hash_form', sql`${table.sourceHash} ~ '^[0-9a-f]{64}$'`)
@@ -397,6 +487,7 @@ export const universeTranslations = pgTable('universe_translations', {
  */
 export const universeTranslatorNotes = pgTable('universe_translator_notes', {
 	universeId: uuid('universe_id').notNull().references(() => universes.id, { onDelete: 'cascade' }),
+	draft: draftColumn(),
 	kind: universeTextKind('kind').notNull(),
 	thingId: text('thing_id').notNull(),
 	field: universeTextField('field').notNull(),
@@ -414,7 +505,7 @@ export const universeTranslatorNotes = pgTable('universe_translator_notes', {
 
 	updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
-	primaryKey({ columns: [table.universeId, table.kind, table.thingId, table.field] }),
+	primaryKey({ columns: [table.universeId, table.draft, table.kind, table.thingId, table.field] }),
 	check('universe_translator_notes_note_length', sql`char_length(${table.note}) BETWEEN 1 AND ${sql.raw(String(MAX_TRANSLATOR_NOTE_LENGTH))}`),
 	check('universe_translator_notes_holds_something', sql`(${table.note} IS NOT NULL) OR ${table.noTranslation}`)
 ]);
@@ -429,6 +520,8 @@ export const universeTranslatorNotes = pgTable('universe_translator_notes', {
 export const tileGraphics = pgTable('tile_graphics', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	universeId: uuid('universe_id').notNull().references(() => universes.id, { onDelete: 'cascade' }),
+	draft: draftColumn(),
+	originId: uuid('origin_id').references((): AnyPgColumn => tileGraphics.id, { onDelete: 'set null' }),
 	name: text('name').notNull(),
 	format: tileGraphicFormat('format').notNull().default('dualGrid'),
 
@@ -438,7 +531,10 @@ export const tileGraphics = pgTable('tile_graphics', {
 	 */
 	drawOrder: smallint('draw_order'),
 
-	storageKey: text('storage_key').notNull().unique(),
+	/**
+	 * Unique within the live version and within the draft: a draft's copy of a graphic shares its file
+	 */
+	storageKey: text('storage_key').notNull(),
 
 	/**
 	 * Who uploaded it, and confirmed they have the rights to use it, until their account is deleted
@@ -448,6 +544,8 @@ export const tileGraphics = pgTable('tile_graphics', {
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	index('tile_graphics_universe_id_index').on(table.universeId),
+	unique('tile_graphics_draft_storage_key_unique').on(table.draft, table.storageKey),
+	...originConstraints('tile_graphics', table),
 	check('tile_graphics_draw_order_range', sql`${table.drawOrder} BETWEEN ${sql.raw(String(MIN_TILE_GRAPHIC_DRAW_ORDER))} AND ${sql.raw(String(MAX_TILE_GRAPHIC_DRAW_ORDER))}`),
 	check('tile_graphics_draw_order_format', sql`(${table.format} = 'blob') = (${table.drawOrder} IS NULL)`)
 ]);
@@ -466,6 +564,8 @@ export const tiles = pgTable('tiles', {
 	id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
 	ruleset: ruleset('ruleset').notNull(),
 	universeId: uuid('universe_id').references(() => universes.id, { onDelete: 'cascade' }),
+	draft: draftColumn(),
+	originId: integer('origin_id').references((): AnyPgColumn => tiles.id, { onDelete: 'set null' }),
 	key: text('key'),
 
 	/**
@@ -520,8 +620,9 @@ export const tiles = pgTable('tiles', {
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	unique('tiles_ruleset_key_unique').on(table.ruleset, table.key),
-	unique('tiles_universe_overrides_unique').on(table.universeId, table.overridesTileId),
+	unique('tiles_universe_overrides_unique').on(table.universeId, table.draft, table.overridesTileId),
 	index('tiles_universe_id_index').on(table.universeId),
+	...originConstraints('tiles', table),
 	check('tiles_overrides_belong_to_universe', sql`${table.overridesTileId} IS NULL OR ${table.universeId} IS NOT NULL`),
 	check('tiles_name_required', sql`${table.name} IS NOT NULL OR ${table.overridesTileId} IS NOT NULL`),
 	check('tiles_color_range', sql`${table.color} BETWEEN 0 AND 16777215`),
@@ -544,6 +645,8 @@ export const items = pgTable('items', {
 	id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
 	ruleset: ruleset('ruleset').notNull(),
 	universeId: uuid('universe_id').references(() => universes.id, { onDelete: 'cascade' }),
+	draft: draftColumn(),
+	originId: integer('origin_id').references((): AnyPgColumn => items.id, { onDelete: 'set null' }),
 	key: text('key'),
 
 	/**
@@ -566,8 +669,9 @@ export const items = pgTable('items', {
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	unique('items_ruleset_key_unique').on(table.ruleset, table.key),
-	unique('items_universe_overrides_unique').on(table.universeId, table.overridesItemId),
+	unique('items_universe_overrides_unique').on(table.universeId, table.draft, table.overridesItemId),
 	index('items_universe_id_index').on(table.universeId),
+	...originConstraints('items', table),
 	check('items_overrides_belong_to_universe', sql`${table.overridesItemId} IS NULL OR ${table.universeId} IS NOT NULL`),
 	check('items_name_required', sql`${table.name} IS NOT NULL OR ${table.overridesItemId} IS NOT NULL`)
 ]);
@@ -579,10 +683,11 @@ export const items = pgTable('items', {
  */
 export const universeStartingItems = pgTable('universe_starting_items', {
 	universeId: uuid('universe_id').notNull().references(() => universes.id, { onDelete: 'cascade' }),
+	draft: draftColumn(),
 	itemId: integer('item_id').notNull().references(() => items.id, { onDelete: 'cascade' }),
 	quantity: smallint('quantity').notNull()
 }, (table) => [
-	primaryKey({ columns: [table.universeId, table.itemId] }),
+	primaryKey({ columns: [table.universeId, table.draft, table.itemId] }),
 	index('universe_starting_items_item_id_index').on(table.itemId),
 	check('universe_starting_items_quantity_range', sql`${table.quantity} BETWEEN 1 AND ${sql.raw(String(MAX_ITEM_QUANTITY))}`)
 ]);
@@ -601,6 +706,8 @@ export const races = pgTable('races', {
 	id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
 	ruleset: ruleset('ruleset').notNull(),
 	universeId: uuid('universe_id').references(() => universes.id, { onDelete: 'cascade' }),
+	draft: draftColumn(),
+	originId: integer('origin_id').references((): AnyPgColumn => races.id, { onDelete: 'set null' }),
 	key: text('key'),
 
 	/**
@@ -645,8 +752,9 @@ export const races = pgTable('races', {
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	unique('races_ruleset_key_unique').on(table.ruleset, table.key),
-	unique('races_universe_overrides_unique').on(table.universeId, table.overridesRaceId),
+	unique('races_universe_overrides_unique').on(table.universeId, table.draft, table.overridesRaceId),
 	index('races_universe_id_index').on(table.universeId),
+	...originConstraints('races', table),
 	index('races_starting_area_id_index').on(table.startingAreaId),
 	check('races_overrides_belong_to_universe', sql`${table.overridesRaceId} IS NULL OR ${table.universeId} IS NOT NULL`),
 	check('races_name_required', sql`${table.name} IS NOT NULL OR ${table.overridesRaceId} IS NOT NULL`),
@@ -755,6 +863,8 @@ export const classes = pgTable('classes', {
 	id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
 	ruleset: ruleset('ruleset').notNull(),
 	universeId: uuid('universe_id').references(() => universes.id, { onDelete: 'cascade' }),
+	draft: draftColumn(),
+	originId: integer('origin_id').references((): AnyPgColumn => classes.id, { onDelete: 'set null' }),
 	key: text('key'),
 
 	/**
@@ -799,8 +909,9 @@ export const classes = pgTable('classes', {
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	unique('classes_ruleset_key_unique').on(table.ruleset, table.key),
-	unique('classes_universe_overrides_unique').on(table.universeId, table.overridesClassId),
+	unique('classes_universe_overrides_unique').on(table.universeId, table.draft, table.overridesClassId),
 	index('classes_universe_id_index').on(table.universeId),
+	...originConstraints('classes', table),
 	index('classes_starting_area_id_index').on(table.startingAreaId),
 	check('classes_overrides_belong_to_universe', sql`${table.overridesClassId} IS NULL OR ${table.universeId} IS NOT NULL`),
 	check('classes_name_required', sql`${table.name} IS NOT NULL OR ${table.overridesClassId} IS NOT NULL`),
@@ -856,6 +967,8 @@ export const themes = pgTable('themes', {
 	id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
 	ruleset: ruleset('ruleset').notNull(),
 	universeId: uuid('universe_id').references(() => universes.id, { onDelete: 'cascade' }),
+	draft: draftColumn(),
+	originId: integer('origin_id').references((): AnyPgColumn => themes.id, { onDelete: 'set null' }),
 	key: text('key'),
 
 	/**
@@ -873,8 +986,9 @@ export const themes = pgTable('themes', {
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	unique('themes_ruleset_key_unique').on(table.ruleset, table.key),
-	unique('themes_universe_overrides_unique').on(table.universeId, table.overridesThemeId),
+	unique('themes_universe_overrides_unique').on(table.universeId, table.draft, table.overridesThemeId),
 	index('themes_universe_id_index').on(table.universeId),
+	...originConstraints('themes', table),
 	check('themes_overrides_belong_to_universe', sql`${table.overridesThemeId} IS NULL OR ${table.universeId} IS NOT NULL`),
 	check('themes_name_required', sql`${table.name} IS NOT NULL OR ${table.overridesThemeId} IS NOT NULL`)
 ]);
@@ -936,6 +1050,8 @@ export const classRaceAreas = pgTable('class_race_areas', {
 export const areas = pgTable('areas', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	universeId: uuid('universe_id').notNull().references(() => universes.id, { onDelete: 'cascade' }),
+	draft: draftColumn(),
+	originId: uuid('origin_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
 	parentAreaId: uuid('parent_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
 	name: text('name').notNull(),
 	enabled: boolean('enabled').notNull().default(true),
@@ -964,6 +1080,7 @@ export const areas = pgTable('areas', {
 }, (table) => [
 	index('areas_universe_id_index').on(table.universeId),
 	index('areas_parent_area_id_index').on(table.parentAreaId),
+	...originConstraints('areas', table),
 	check('areas_width', sql`${table.maxColumn} - ${table.minColumn} BETWEEN 0 AND ${sql.raw(String(MAX_MAP_SIDE - 1))}`),
 	check('areas_height', sql`${table.maxRow} - ${table.minRow} BETWEEN 0 AND ${sql.raw(String(MAX_MAP_SIDE - 1))}`),
 	check('areas_faerie_morning_set', sql`(${table.passageOfTime} = 'faerie') = (${table.faerieMorning} IS NOT NULL)`),
@@ -1169,6 +1286,8 @@ export const pf1eAbilityRolls = pgTable('pf1e_ability_rolls', {
 export const difficultyLevels = pgTable('difficulty_levels', {
 	id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
 	universeId: uuid('universe_id').notNull().references(() => universes.id, { onDelete: 'cascade' }),
+	draft: draftColumn(),
+	originId: integer('origin_id').references((): AnyPgColumn => difficultyLevels.id, { onDelete: 'set null' }),
 
 	/**
 	 * A default level's key, e.g. normal, which finds its name in DIFFICULTY_LEVEL_NAMES; null for a
@@ -1200,8 +1319,9 @@ export const difficultyLevels = pgTable('difficulty_levels', {
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	index('difficulty_levels_universe_id_index').on(table.universeId),
-	unique('difficulty_levels_universe_key_unique').on(table.universeId, table.key),
-	uniqueIndex('difficulty_levels_one_default').on(table.universeId).where(sql`${table.isDefault}`),
+	unique('difficulty_levels_universe_key_unique').on(table.universeId, table.draft, table.key),
+	uniqueIndex('difficulty_levels_one_default').on(table.universeId, table.draft).where(sql`${table.isDefault}`),
+	...originConstraints('difficulty_levels', table),
 	check('difficulty_levels_name_required', sql`${table.name} IS NOT NULL OR ${table.key} IS NOT NULL`),
 	check('difficulty_levels_mob_scale_range', sql`${table.mobScale} BETWEEN ${sql.raw(String(MIN_MOB_SCALE))} AND ${sql.raw(String(MAX_MOB_SCALE))}`)
 ]);

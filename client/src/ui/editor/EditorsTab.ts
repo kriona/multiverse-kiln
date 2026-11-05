@@ -51,6 +51,11 @@ export interface EditorsTabActions
 export class EditorsTab implements SavableTab, ChangeSource
 {
 	private readonly addButton = getElement('editors-add', HTMLButtonElement);
+
+	/**
+	 * Says, while the draft is open, that editors belong to the whole universe
+	 */
+	private readonly draftNote = getElement('editors-draft-note', HTMLElement);
 	private readonly rows = getElement('editors-rows', HTMLTableSectionElement);
 	private readonly error = getElement('editors-error', HTMLElement);
 	private readonly dialog: EditorDialog;
@@ -184,6 +189,7 @@ export class EditorsTab implements SavableTab, ChangeSource
 	{
 		this.universe = universe;
 		this.addButton.hidden = !canManageEditors(universe.role);
+		this.draftNote.hidden = (universe.version !== 'draft');
 		this.editors = [];
 		this.ownPlayerId = undefined;
 		this.staged = new Map();

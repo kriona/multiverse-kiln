@@ -379,6 +379,11 @@ const AUDIT_DETAILS: Readonly<Record<AuditSubject, MessageDescriptor>> = defineM
 		id: 'editor.audit.detail.noTranslation',
 		defaultMessage: '{action, select, added {{count, plural, one {Marked # piece of text as needing no translation} other {Marked # pieces of text as needing no translation}}} other {{count, plural, one {Marked # piece of text as needing translation again} other {Marked # pieces of text as needing translation again}}}}',
 		description: 'In the editor\'s Audit tab\'s list of what a save changed: how many pieces of the universe\'s text (names and descriptions) it marked as staying the same in every language, such as proper names, or as needing translation again'
+	},
+	draft: {
+		id: 'editor.audit.detail.draft',
+		defaultMessage: '{action, select, added {Started a draft} applied {Applied the draft to the live version} other {Discarded the draft}}',
+		description: 'In the editor\'s Audit tab\'s list of what a save changed: the universe\'s draft (a copy of the universe editors change without players seeing it) started, applied so players see it, or thrown away'
 	}
 });
 

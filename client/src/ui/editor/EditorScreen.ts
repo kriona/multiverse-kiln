@@ -1,7 +1,10 @@
-import { ADMIN_ROLE, canEditAtEndOfTime, canEditWorld, canManageEditors, EDITOR_ROLE_NAMES, type EditableUniverse, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
+import { ADMIN_ROLE, canEditAtEndOfTime, canEditWorld, canManageEditors, canManageVersions, EDITOR_ROLE_NAMES, type EditableUniverse, type UniverseSettingsUpdate, type UniverseVersionName } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
-import { describeEditorError, type EditorApi } from '../../network/editorApi';
+import { describeEditorError, EditorApiError, type EditorApi } from '../../network/editorApi';
+import { changeMessages, hasUnsavedWork } from '../changeTracker';
+import { DraftSection } from './DraftSection';
+import { StartDraftDialog } from './StartDraftDialog';
 import { editPageUrl, gamePageUrl, HOME_PAGE_URL } from '../../pages';
 import { AuditTab } from './AuditTab';
 import { EditorsTab } from './EditorsTab';
@@ -104,6 +107,11 @@ export interface EditorScreenActions
 	 * The player has moved to another tab or area, so the page's address can follow
 	 */
 	placeChanged: (place: EditorPlace) => void;
+
+	/**
+	 * The editor has opened another version of the universe, so the page's address can follow
+	 */
+	versionChanged: (version: UniverseVersionName) => void;
 }
 
 /**
@@ -130,7 +138,13 @@ export class EditorScreen
 	private readonly title = getElement('editor-title', HTMLElement);
 	private readonly role = getElement('editor-role', HTMLElement);
 	private readonly notice = getElement('editor-notice', HTMLElement);
+	private readonly versionField = getElement('editor-version-field', HTMLElement);
+	private readonly versionChoice = getElement('editor-version', HTMLSelectElement);
+	private readonly versionNotice = getElement('editor-version-notice', HTMLElement);
+	private readonly startDraftButton = getElement('editor-start-draft', HTMLButtonElement);
 	private readonly universeTab: UniverseTab;
+	private readonly draftSection: DraftSection;
+	private readonly startDraftDialog: StartDraftDialog;
 	private readonly rulesetTab: RulesetTab;
 	private readonly lobbyTab: LobbyTab;
 	private readonly charactersTab: CharactersTab;
@@ -178,6 +192,20 @@ export class EditorScreen
 		this.universeTab = new UniverseTab((update) =>
 		{
 			this.updateUniverse(update);
+		});
+		this.draftSection = new DraftSection(() => this.hasTabChanges(), (announce) => this.saveBar.save(announce), (action) =>
+		{
+			// Starting a draft opens it; applying or discarding one leaves only the live version
+			this.switchVersion((action === 'start') ? 'draft' : 'live');
+		});
+		this.startDraftDialog = new StartDraftDialog(() =>
+		{
+			// The save says the changes were saved only when there were some besides starting the draft
+			void this.draftSection.stageAndSave('start', this.hasTabChanges());
+		});
+		this.startDraftButton.addEventListener('click', () =>
+		{
+			this.startDraftDialog.open(this.hasTabChanges());
 		});
 		this.rulesetTab = new RulesetTab(api);
 		this.tilesetsTab = new TilesetsTab(api);
@@ -239,7 +267,7 @@ export class EditorScreen
 		});
 		this.saveBar = new SaveBar(api, () => this.universe, (tab) =>
 		{
-			const name = SAVE_ORDER.find((candidate) => (this.savableTabs[candidate] === tab));
+			const name = ((tab === this.draftSection) ? 'universe' : SAVE_ORDER.find((candidate) => (this.savableTabs[candidate] === tab)));
 
 			if (name !== undefined)
 			{
@@ -270,9 +298,21 @@ export class EditorScreen
 			this.saveBar.add(tab, getElement(`editor-panel-${name}`, HTMLElement));
 			tab.changes.subscribe((unsaved) =>
 			{
-				this.markTab(name, unsaved);
+				this.markTab(name, (unsaved || ((name === 'universe') && this.draftSection.changes.hasUnsavedChanges())));
 			});
 		}
+
+		// Starting, applying or discarding the draft saves after every other change
+		this.saveBar.add(this.draftSection, getElement('editor-panel-universe', HTMLElement));
+		this.draftSection.changes.subscribe((unsaved) =>
+		{
+			this.markTab('universe', (unsaved || this.universeTab.changes.hasUnsavedChanges()));
+		});
+
+		this.versionChoice.addEventListener('change', () =>
+		{
+			this.chooseVersion(this.versionChoice.value as UniverseVersionName);
+		});
 
 		for (const name of EDITOR_TABS)
 		{
@@ -327,6 +367,16 @@ export class EditorScreen
 		}
 		catch (error)
 		{
+			// The draft may have been applied or discarded since the address was made, so the live version opens
+			if ((version === this.openVersion) && (this.api.version === 'draft') && (error instanceof EditorApiError) && (error.status === 404))
+			{
+				this.api.version = 'live';
+				this.actions.versionChanged('live');
+				await this.open(universeId, { tab: place.tab, areaId: undefined });
+				this.showNotice(error.message);
+				return;
+			}
+
 			if (version === this.openVersion)
 			{
 				this.showNotice(describeEditorError(error, {
@@ -348,8 +398,11 @@ export class EditorScreen
 		this.setUniverse(universe);
 		this.saveBar.setLocked(((universe.disabledReason !== null) && !universe.serverAdmin));
 		this.showAccessNotice(universe);
+		this.showVersion(universe);
+		this.startDraftButton.hidden = (universe.hasDraft || !canManageVersions(universe.role) || this.saveBar.isLocked());
 
 		this.universeTab.open(universe);
+		this.draftSection.open(universe, this.saveBar.isLocked());
 		void this.rulesetTab.open(universe);
 		this.lobbyTab.open(universe);
 		this.charactersTab.open(universe);
@@ -474,6 +527,94 @@ export class EditorScreen
 	hideNotice(): void
 	{
 		showMessage(this.notice, undefined);
+	}
+
+	/**
+	 * Shows which version of the universe is open, with the choice of the other while it has a draft, and
+	 * says what saving it does: the draft reaches no player until it is applied, and changes saved to the
+	 * live version while there is a draft are replaced when it is applied
+	 *
+	 * @param universe The universe
+	 */
+	private showVersion(universe: EditableUniverse): void
+	{
+		this.versionField.hidden = !universe.hasDraft;
+		this.versionChoice.value = universe.version;
+
+		if (universe.version === 'draft')
+		{
+			showMessage(this.versionNotice, t({
+				id: 'editor.version.draftNotice',
+				defaultMessage: 'You are editing the draft version of this universe. Players will not see changes until they are applied.',
+				description: 'Shown above the editor\'s tabs while the universe\'s draft (a copy players don\'t see) is open'
+			}));
+		}
+		else if (universe.hasDraft)
+		{
+			showMessage(this.versionNotice, t({
+				id: 'editor.version.liveWithDraftNotice',
+				defaultMessage: 'You are editing the live version of this universe. The universe has a draft: changes saved here are replaced when the draft is applied unless they are also made in the draft.',
+				description: 'Shown above the editor\'s tabs while the live version of a universe with a draft is open'
+			}));
+		}
+		else
+		{
+			showMessage(this.versionNotice, undefined);
+		}
+	}
+
+	/**
+	 * Whether any tab has changes that haven't been saved, other than what is staged for the draft
+	 *
+	 * @return True when one has
+	 */
+	private hasTabChanges(): boolean
+	{
+		return(SAVE_ORDER.some((name) => this.savableTabs[name].changes.hasUnsavedChanges()));
+	}
+
+	/**
+	 * Opens the version the player chose beside their role, after asking whether to throw away unsaved
+	 * changes, which belong to the version open
+	 *
+	 * @param version The version
+	 */
+	private chooseVersion(version: UniverseVersionName): void
+	{
+		if ((version === this.api.version) || !this.universe)
+		{
+			return;
+		}
+
+		if (hasUnsavedWork() && !window.confirm(t(changeMessages.discardChanges)))
+		{
+			this.versionChoice.value = this.api.version;
+			return;
+		}
+
+		this.switchVersion(version);
+	}
+
+	/**
+	 * Opens another version of the universe on the tab showing. The area open stays closed, since the
+	 * versions' areas have IDs of their own
+	 *
+	 * @param version The version
+	 */
+	private switchVersion(version: UniverseVersionName): void
+	{
+		const universe = this.universe;
+
+		if (!universe)
+		{
+			return;
+		}
+
+		closeOpenDialogs();
+		this.api.version = version;
+		this.actions.versionChanged(version);
+		this.setPlace({ tab: this.place.tab, areaId: undefined });
+		void this.open(universe.id, this.place);
 	}
 
 	/**

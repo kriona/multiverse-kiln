@@ -56,6 +56,12 @@ export const TAB_PARAMETER = 'tab';
 export const AREA_PARAMETER = 'area';
 
 /**
+ * Query string parameter of the editor naming the version of the universe open: draft for its draft, or
+ * left out for its live version
+ */
+export const VERSION_PARAMETER = 'version';
+
+/**
  * Query string parameter of the player's own profile that opens the dialog setting up two-factor
  * authentication, as in /profile?setUpTwoFactor
  */

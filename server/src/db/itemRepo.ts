@@ -6,11 +6,12 @@ import { compareNumbers, itemCategory, sortRows, type EditorItem, type ItemListP
 
 import { db, type Executor } from './client.js';
 import { items } from './schema.js';
+import { inVersion, type UniverseVersion } from './universeVersions.js';
 
 /**
  * What a new item needs
  */
-export type NewItem = Pick<typeof items.$inferInsert, 'ruleset' | 'universeId' | 'key' | 'name' | 'type' | 'enabled'>;
+export type NewItem = Pick<typeof items.$inferInsert, 'ruleset' | 'universeId' | 'draft' | 'key' | 'name' | 'type' | 'enabled'>;
 
 /**
  * The settings of an item a universe added, which always has a name of its own
@@ -51,26 +52,26 @@ export async function findDefaultItemIds(ruleset: Ruleset, executor: Executor = 
  * Every item a universe can use, as the editor lists them: with whether each item is custom or
  * edited, and a default item's key in place of a name it kept
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param executor The database, or a transaction
  * @return The items, by ID
  */
-export async function loadEditorItems(universeId: string, ruleset: Ruleset, executor: Executor = db): Promise<EditorItem[]>
+export async function loadEditorItems(version: UniverseVersion, ruleset: Ruleset, executor: Executor = db): Promise<EditorItem[]>
 {
-	return((await loadNamedItems(universeId, ruleset, executor)).map(({ item }) => item));
+	return((await loadNamedItems(version, ruleset, executor)).map(({ item }) => item));
 }
 
 /**
  * Every item a universe can use, as the editor lists them, each with a name in English: the
  * universe's name for it, or a default item's own
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param executor The database, or a transaction
  * @return The items, by ID
  */
-async function loadNamedItems(universeId: string, ruleset: Ruleset, executor: Executor): Promise<{ item: EditorItem; englishName: string }[]>
+async function loadNamedItems(version: UniverseVersion, ruleset: Ruleset, executor: Executor): Promise<{ item: EditorItem; englishName: string }[]>
 {
 	const rows = await executor
 		.select({
@@ -87,7 +88,7 @@ async function loadNamedItems(universeId: string, ruleset: Ruleset, executor: Ex
 			eq(items.ruleset, ruleset),
 			or(
 				isNull(items.universeId),
-				eq(items.universeId, universeId)
+				inVersion(items, version)
 			)
 		))
 		.orderBy(items.id);
@@ -147,19 +148,19 @@ function notesSortKey(item: EditorItem): number
 /**
  * A page of a universe's items, as the Items tab lists them
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param query The filters, the order, and which page
  * @param executor The database, or a transaction
  * @return The page, and how many items match in all
  */
-export async function listEditorItems(universeId: string, ruleset: Ruleset, query: ItemListQuery, executor: Executor = db): Promise<ItemListPayload>
+export async function listEditorItems(version: UniverseVersion, ruleset: Ruleset, query: ItemListQuery, executor: Executor = db): Promise<ItemListPayload>
 {
 	const name = query.name?.toLowerCase();
 	const ids = ((query.ids === undefined) ? undefined : new Set(query.ids));
 
 	// A default item that kept its name matches by its English name, since the server doesn't have the translations
-	const matching = (await loadNamedItems(universeId, ruleset, executor)).filter(({ item, englishName }) =>
+	const matching = (await loadNamedItems(version, ruleset, executor)).filter(({ item, englishName }) =>
 	{
 		return(
 			((name === undefined) || englishName.toLowerCase().includes(name))
@@ -190,14 +191,14 @@ export async function listEditorItems(universeId: string, ruleset: Ruleset, quer
 /**
  * Whether an item ID is one of a ruleset's default items or one of a universe's own items
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param itemId The item's ID
  * @param executor The database, or a transaction
  * @return The kind of item, or undefined when the universe can't use an item with that ID (an edited
  * copy's own ID included)
  */
-export async function findItemKind(universeId: string, ruleset: Ruleset, itemId: number, executor: Executor = db): Promise<ItemKind | undefined>
+export async function findItemKind(version: UniverseVersion, ruleset: Ruleset, itemId: number, executor: Executor = db): Promise<ItemKind | undefined>
 {
 	const [row] = await executor
 		.select({
@@ -210,7 +211,7 @@ export async function findItemKind(universeId: string, ruleset: Ruleset, itemId:
 			isNull(items.overridesItemId),
 			or(
 				isNull(items.universeId),
-				eq(items.universeId, universeId)
+				inVersion(items, version)
 			)
 		))
 		.limit(1);
@@ -226,11 +227,11 @@ export async function findItemKind(universeId: string, ruleset: Ruleset, itemId:
 /**
  * How many items a universe has added, not counting its edited copies of default items
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param executor The database, or a transaction
  * @return The number of items
  */
-export async function countCustomItems(universeId: string, executor: Executor = db): Promise<number>
+export async function countCustomItems(version: UniverseVersion, executor: Executor = db): Promise<number>
 {
 	const [row] = await executor
 		.select({
@@ -238,7 +239,7 @@ export async function countCustomItems(universeId: string, executor: Executor = 
 		})
 		.from(items)
 		.where(and(
-			eq(items.universeId, universeId),
+			inVersion(items, version),
 			isNull(items.overridesItemId)
 		));
 
@@ -248,17 +249,18 @@ export async function countCustomItems(universeId: string, executor: Executor = 
 /**
  * Adds an item to a universe
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param settings The item's settings
  * @param executor The database, or a transaction
  * @return The new item's ID
  */
-export async function createCustomItem(universeId: string, ruleset: Ruleset, settings: CustomItemSettings, executor: Executor = db): Promise<number>
+export async function createCustomItem(version: UniverseVersion, ruleset: Ruleset, settings: CustomItemSettings, executor: Executor = db): Promise<number>
 {
 	return(createItem({
 		ruleset,
-		universeId,
+		universeId: version.universeId,
+		draft: version.draft,
 		key: null,
 		...settings
 	}, executor));
@@ -267,43 +269,44 @@ export async function createCustomItem(universeId: string, ruleset: Ruleset, set
 /**
  * Changes one of a universe's own items
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param itemId The item's ID, from findItemKind() as custom
  * @param settings The item's new settings
  * @param executor The database, or a transaction
  */
-export async function updateCustomItem(universeId: string, itemId: number, settings: CustomItemSettings, executor: Executor = db): Promise<void>
+export async function updateCustomItem(version: UniverseVersion, itemId: number, settings: CustomItemSettings, executor: Executor = db): Promise<void>
 {
 	await executor
 		.update(items)
 		.set(settings)
 		.where(and(
 			eq(items.id, itemId),
-			eq(items.universeId, universeId)
+			inVersion(items, version)
 		));
 }
 
 /**
  * Stores a universe's edited copy of a default item, replacing any copy it had
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param defaultItemId The default item's ID, from findItemKind() as default
  * @param settings The copy's settings; a null name keeps the default item's
  * @param executor The database, or a transaction
  */
-export async function saveEditedDefaultItem(universeId: string, ruleset: Ruleset, defaultItemId: number, settings: ItemSettings, executor: Executor = db): Promise<void>
+export async function saveEditedDefaultItem(version: UniverseVersion, ruleset: Ruleset, defaultItemId: number, settings: ItemSettings, executor: Executor = db): Promise<void>
 {
 	await executor
 		.insert(items)
 		.values({
 			ruleset,
-			universeId,
+			universeId: version.universeId,
+			draft: version.draft,
 			overridesItemId: defaultItemId,
 			...settings
 		})
 		.onConflictDoUpdate({
-			target: [items.universeId, items.overridesItemId],
+			target: [items.universeId, items.draft, items.overridesItemId],
 			set: settings
 		});
 }
@@ -311,16 +314,16 @@ export async function saveEditedDefaultItem(universeId: string, ruleset: Ruleset
 /**
  * Discards a universe's edited copy of a default item, so the universe sees the default again
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param defaultItemId The default item's ID
  * @param executor The database, or a transaction
  */
-export async function restoreDefaultItem(universeId: string, defaultItemId: number, executor: Executor = db): Promise<void>
+export async function restoreDefaultItem(version: UniverseVersion, defaultItemId: number, executor: Executor = db): Promise<void>
 {
 	await executor
 		.delete(items)
 		.where(and(
-			eq(items.universeId, universeId),
+			inVersion(items, version),
 			eq(items.overridesItemId, defaultItemId)
 		));
 }
@@ -328,17 +331,17 @@ export async function restoreDefaultItem(universeId: string, defaultItemId: numb
 /**
  * Deletes one of a universe's own items
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param itemId The item's ID, from findItemKind() as custom
  * @param executor The database, or a transaction
  */
-export async function deleteCustomItem(universeId: string, itemId: number, executor: Executor = db): Promise<void>
+export async function deleteCustomItem(version: UniverseVersion, itemId: number, executor: Executor = db): Promise<void>
 {
 	await executor
 		.delete(items)
 		.where(and(
 			eq(items.id, itemId),
-			eq(items.universeId, universeId)
+			inVersion(items, version)
 		));
 }
 

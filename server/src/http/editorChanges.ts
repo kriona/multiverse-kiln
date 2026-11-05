@@ -9,13 +9,13 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { EDITOR_CHANGE_CHECKS, localize, mayMakeChange, maySaveInStage, type BarredOptions, type EditorAccess, type EditorChange, type NewRef, type SaveChangesPayload, type SaveRefusedPayload } from '@multiverse-kiln/shared';
+import { EDITOR_CHANGE_CHECKS, localize, mayMakeChange, maySaveInStage, type EditorAccess, type EditorChange, type NewRef, type SaveChangesPayload, type SaveRefusedPayload } from '@multiverse-kiln/shared';
 
-import { loadBarredOptions } from '../db/barredOptions.js';
+import { loadBarredOptions, sameBarred } from '../db/barredOptions.js';
 import { inTransaction } from '../db/transactions.js';
 import { recordUniverseEdit } from '../db/universeEditRepo.js';
 import { listUniverseRoles } from '../db/universeEditorRepo.js';
-import { findEditableUniverse, findUniverse, lockUniverse, UniverseNameTakenError } from '../db/universeRepo.js';
+import { findEditableUniverse, findUniverse, hasDraft, lockUniverse, UniverseNameTakenError } from '../db/universeRepo.js';
 import { universeAccessChanges, type StageChange } from '../players/universeAccess.js';
 import { describeInvalidPayload } from '../rooms/payloads.js';
 import { deleteObject } from '../storage/objectStorage.js';
@@ -34,6 +34,7 @@ import { SaveAudit } from './editorSaveAudit.js';
 import { createRaceChange, removeRaceChange, saveRaceChange } from './editorRaces.js';
 import { createThemeChange, removeThemeChange, saveThemeChange } from './editorThemes.js';
 import { saveNoTranslationChange, saveTranslationChange, saveTranslatorNoteChange } from './editorTranslations.js';
+import { applyDraftChange, discardDraftChange, startDraftChange } from './editorDrafts.js';
 import { deleteTileGraphicChange, prepareUpload, uploadTileGraphicChange } from './editorTileGraphics.js';
 import { errorMessages, type Refusal } from './errors.js';
 
@@ -225,9 +226,17 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 				refuse(403, errorMessages.roleNotAllowed);
 			}
 
+			// Applying or discarding the draft takes the universe's lock too
+			if (base.version.draft && !await hasDraft(base.universe.id, transaction))
+			{
+				refusedWhole = true;
+				refuse(404, errorMessages.noSuchDraft);
+			}
+
 			const saving: ChangeContext = {
 				playerId: base.playerId,
 				universe: base.universe,
+				version: base.version,
 				role: access.role,
 				editorRoles: new Map(),
 				addedEditors: [],
@@ -237,11 +246,12 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 				published: [],
 				onCommit: [],
 				disablings: new SaveDisablings(),
-				deletedImages: []
+				deletedImages: [],
+				draftApplied: false
 			};
 
 			const audit = new SaveAudit(saving);
-			const changesOptions = changes.some((change) => BARRING_KINDS.has(change.kind));
+			const changesOptions = (!base.version.draft && changes.some((change) => BARRING_KINDS.has(change.kind)));
 			const barredBefore = (changesOptions ? await loadBarredOptions(base.universe.id, transaction) : undefined);
 
 			for (; current < changes.length; current++)
@@ -285,6 +295,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 					universeId: base.universe.id,
 					playerId: base.playerId,
 					role: access.role,
+					draft: base.version.draft,
 					changeDetails: audit.details,
 					savedAt: new Date()
 				}, transaction);
@@ -307,8 +318,13 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 		return({ saved: false, changeIndex: (refusedWhole ? null : current), refusal });
 	}
 
+	// The rooms play the live version, so the draft's areas and settings are nothing to them until it is applied
+	if (base.version.draft && !context.draftApplied)
+	{
+		context.published.length = 0;
+	}
 	// Told after the areas' own changes, so a room has sent their new settings before its clients fetch the text
-	if (changes.some(changesRoomText))
+	else if (changes.some(changesRoomText))
 	{
 		context.published.push({ kind: 'text', universeId: base.universe.id });
 	}
@@ -351,20 +367,6 @@ function changesRoomText(change: EditorChange): boolean
  * The kinds of change that can bar characters of a race or class from playing, or let them play again
  */
 const BARRING_KINDS: ReadonlySet<EditorChange['kind']> = new Set(['saveRace', 'removeRace', 'saveClass', 'removeClass']);
-
-/**
- * Whether two sets of barred races and classes are the same
- *
- * @param first One set
- * @param second The other
- * @return True when they bar the same races and classes
- */
-function sameBarred(first: BarredOptions, second: BarredOptions): boolean
-{
-	const sameIds = (a: ReadonlySet<number>, b: ReadonlySet<number>): boolean => ((a.size === b.size) && [...a].every((id) => b.has(id)));
-
-	return(sameIds(first.raceIds, second.raceIds) && sameIds(first.classIds, second.classIds));
-}
 
 /**
  * The first change a player's role doesn't let them make
@@ -423,7 +425,7 @@ async function applyChange(context: ChangeContext, change: EditorChange): Promis
 			return(removeEditorChange(context, change.playerId));
 		case 'universe':
 			await applyUniverseChange(context, change.update, (change.largerGroups ?? 'keep'));
-			context.universe = (await findEditableUniverse(context.universe.id, context.transaction) ?? context.universe);
+			context.universe = (await findEditableUniverse(context.version, context.transaction) ?? context.universe);
 			return;
 		case 'ruleset':
 			return(applyRulesetChange(context, change.settings));
@@ -487,6 +489,12 @@ async function applyChange(context: ChangeContext, change: EditorChange): Promis
 			return(saveTranslatorNoteChange(context, change));
 		case 'saveNoTranslation':
 			return(saveNoTranslationChange(context, change));
+		case 'startDraft':
+			return(startDraftChange(context));
+		case 'applyDraft':
+			return(applyDraftChange(context, change.choices));
+		case 'discardDraft':
+			return(discardDraftChange(context));
 	}
 }
 

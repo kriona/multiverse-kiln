@@ -42,6 +42,11 @@ $danger: #c62828;
 $danger-background: #8e1c1c;
 $danger-background-hover: #a52222;
 
+// Purple: buttons for a universe's draft, such as the editor's Start Draft
+$draft: #9c4dcc;
+$draft-background: #6a1b9a;
+$draft-background-hover: #7b1fa2;
+
 $link: #00B2EE;
 $focus: #ffd54f;
 $link-hover: #ffd54f;
@@ -312,6 +317,17 @@ button.danger
 	&:hover
 	{
 		background: $danger-background-hover;
+	}
+}
+
+button.draft
+{
+	border-color: $draft;
+	background: $draft-background;
+
+	&:hover
+	{
+		background: $draft-background-hover;
 	}
 }
 

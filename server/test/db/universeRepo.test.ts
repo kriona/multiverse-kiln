@@ -3,6 +3,7 @@ import { MAX_DISABLED_REASON_LENGTH } from '@multiverse-kiln/shared';
 
 import { createUniverse, deleteUniverse, findDisabledReason, findEditableUniverse, findUniverse, findUniverseDetails, listUniverses, setUniverseAreas, setUniverseDisabled, UniverseNameTakenError, updateUniverseSettings } from '../../src/db/universeRepo.js';
 import { loadArea } from '../../src/db/areaRepo.js';
+import { liveVersion } from '../../src/db/universeVersions.js';
 import { addUniverse, addArea } from './fixtures.js';
 
 describe('universeRepo', () =>
@@ -32,13 +33,13 @@ describe('universeRepo', () =>
 	{
 		const universeId = await addUniverse('Kilnhaven');
 
-		await updateUniverseSettings(universeId, { stage: 'let_there_be_light' });
+		await updateUniverseSettings(liveVersion(universeId), { stage: 'let_there_be_light' });
 
 		assert.strictEqual(await setUniverseDisabled(universeId, 'Spam'), true);
 		assert.strictEqual(await setUniverseDisabled(universeId, 'Spam again'), false);
 		assert.strictEqual((await findUniverse(universeId))?.disabled, true);
 		assert.strictEqual(await findDisabledReason(universeId), 'Spam');
-		assert.strictEqual((await findEditableUniverse(universeId))?.disabledReason, 'Spam');
+		assert.strictEqual((await findEditableUniverse(liveVersion(universeId)))?.disabledReason, 'Spam');
 		assert.deepStrictEqual(await listUniverses('let_there_be_light', 0, 10), []);
 		assert.strictEqual(await findUniverseDetails(universeId), undefined);
 
@@ -78,7 +79,7 @@ describe('universeRepo', () =>
 
 		assert.strictEqual((await findUniverseDetails(universeId))?.stage, 'in_the_beginning');
 
-		await updateUniverseSettings(universeId, { stage: 'end_of_time' });
+		await updateUniverseSettings(liveVersion(universeId), { stage: 'end_of_time' });
 
 		assert.strictEqual((await findUniverseDetails('kilnhaven'))?.stage, 'end_of_time');
 	});
@@ -104,11 +105,11 @@ describe('universeRepo', () =>
 		const isles = await createUniverse({ name: 'The Shattered Isles', ruleset: 'pf1e', stage: 'let_there_be_light' });
 		const kilnhaven = await createUniverse({ name: 'Kilnhaven', ruleset: 'pf1e' });
 
-		await updateUniverseSettings(isles, { name: 'Café Isles' });
+		await updateUniverseSettings(liveVersion(isles), { name: 'Café Isles' });
 
 		assert.strictEqual((await findUniverseDetails('café-isles'))?.id, isles);
 		assert.strictEqual(await findUniverseDetails('the-shattered-isles'), undefined);
-		await assert.rejects(updateUniverseSettings(kilnhaven, { name: 'CAFÉ ISLES' }), UniverseNameTakenError);
+		await assert.rejects(updateUniverseSettings(liveVersion(kilnhaven), { name: 'CAFÉ ISLES' }), UniverseNameTakenError);
 		assert.strictEqual((await findUniverse(kilnhaven))?.name, 'Kilnhaven');
 	});
 

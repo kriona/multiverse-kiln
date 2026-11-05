@@ -7,6 +7,7 @@ import { darkvisionSquares, isSf1eRaceRules, type EditorRace, type Sight, type I
 import { db, type Executor } from './client.js';
 import { fromCoinColumns, toCoinColumns } from './coinColumns.js';
 import { pf1eRaces, races, raceStartingItems, sf1eRaces } from './schema.js';
+import { inVersion, liveVersion, type UniverseVersion } from './universeVersions.js';
 
 /**
  * The settings of a race a universe added, which always has a name of its own
@@ -48,12 +49,12 @@ export async function findDefaultRaceIds(ruleset: Ruleset, executor: Executor = 
  * Every race a universe can use, as the editor lists them: with whether each race is custom or edited,
  * and a default race's key in place of a name it kept
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param executor The database, or a transaction
  * @return The races, by ID
  */
-export async function loadEditorRaces(universeId: string, ruleset: Ruleset, executor: Executor = db): Promise<EditorRace[]>
+export async function loadEditorRaces(version: UniverseVersion, ruleset: Ruleset, executor: Executor = db): Promise<EditorRace[]>
 {
 	const rows = await executor
 		.select({
@@ -74,10 +75,10 @@ export async function loadEditorRaces(universeId: string, ruleset: Ruleset, exec
 			startingRow: races.startingRow
 		})
 		.from(races)
-		.where(usableRaces(universeId, ruleset))
+		.where(usableRaces(version, ruleset))
 		.orderBy(asc(races.id));
-	const rules = await loadRaceRules(universeId, ruleset, executor);
-	const startingItems = await loadRaceStartingItems(universeId, executor);
+	const rules = await loadRaceRules(version, ruleset, executor);
+	const startingItems = await loadRaceStartingItems(version, executor);
 	const copies = new Map(rows
 		.filter((row) => (row.overridesRaceId !== null))
 		.map((row) => [row.overridesRaceId, row]));
@@ -115,7 +116,7 @@ export async function loadEditorRaces(universeId: string, ruleset: Ruleset, exec
 }
 
 /**
- * The darkvision and light sensitivity of each race a universe can use, as the universe sets them now
+ * The darkvision and light sensitivity of each race a universe can use, as its live version sets them now
  *
  * @param universeId The universe's ID
  * @param ruleset The universe's ruleset
@@ -124,7 +125,7 @@ export async function loadEditorRaces(universeId: string, ruleset: Ruleset, exec
  */
 export async function loadRaceSight(universeId: string, ruleset: Ruleset, executor: Executor = db): Promise<Map<number, Sight>>
 {
-	const editorRaces = await loadEditorRaces(universeId, ruleset, executor);
+	const editorRaces = await loadEditorRaces(liveVersion(universeId), ruleset, executor);
 
 	return(new Map(editorRaces.map((race) => [race.id, {
 		darkvision: darkvisionSquares(race.rules.darkvision),
@@ -136,11 +137,11 @@ export async function loadRaceSight(universeId: string, ruleset: Ruleset, execut
  * The races whose characters can't play in a universe: those it has disabled without letting the
  * characters already of them keep playing
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param executor The database, or a transaction
  * @return The races, by the IDs characters hold (a default race's own ID for an edited copy)
  */
-export async function listBarredRaceIds(universeId: string, executor: Executor = db): Promise<Set<number>>
+export async function listBarredRaceIds(version: UniverseVersion, executor: Executor = db): Promise<Set<number>>
 {
 	// Default races are always enabled, so only the universe's own rows can bar anyone
 	const rows = await executor
@@ -150,7 +151,7 @@ export async function listBarredRaceIds(universeId: string, executor: Executor =
 		})
 		.from(races)
 		.where(and(
-			eq(races.universeId, universeId),
+			inVersion(races, version),
 			eq(races.enabled, false),
 			eq(races.keepPlaying, false)
 		));
@@ -162,17 +163,17 @@ export async function listBarredRaceIds(universeId: string, executor: Executor =
  * Matches the rows of races a universe can see: its ruleset's default races, and its own races and
  * edited copies
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @return The condition
  */
-function usableRaces(universeId: string, ruleset: Ruleset): SQL | undefined
+function usableRaces(version: UniverseVersion, ruleset: Ruleset): SQL | undefined
 {
 	return(and(
 		eq(races.ruleset, ruleset),
 		or(
 			isNull(races.universeId),
-			eq(races.universeId, universeId)
+			inVersion(races, version)
 		)
 	));
 }
@@ -180,12 +181,12 @@ function usableRaces(universeId: string, ruleset: Ruleset): SQL | undefined
 /**
  * The rules of each row of races a universe can see, from its ruleset's table
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param executor The database, or a transaction
  * @return The rules, keyed by the ID of the row holding the race's settings
  */
-async function loadRaceRules(universeId: string, ruleset: Ruleset, executor: Executor): Promise<Map<number, RaceRules>>
+async function loadRaceRules(version: UniverseVersion, ruleset: Ruleset, executor: Executor): Promise<Map<number, RaceRules>>
 {
 	switch (ruleset)
 	{
@@ -207,7 +208,7 @@ async function loadRaceRules(universeId: string, ruleset: Ruleset, executor: Exe
 				})
 				.from(pf1eRaces)
 				.innerJoin(races, eq(races.id, pf1eRaces.raceId))
-				.where(usableRaces(universeId, ruleset));
+				.where(usableRaces(version, ruleset));
 
 			return(new Map(rows.map((row): [number, Pf1eRaceRules] => [row.raceId, {
 				abilityModifiers: {
@@ -244,7 +245,7 @@ async function loadRaceRules(universeId: string, ruleset: Ruleset, executor: Exe
 				})
 				.from(sf1eRaces)
 				.innerJoin(races, eq(races.id, sf1eRaces.raceId))
-				.where(usableRaces(universeId, ruleset));
+				.where(usableRaces(version, ruleset));
 
 			return(new Map(rows.map((row): [number, Sf1eRaceRules] => [row.raceId, {
 				abilityModifiers: {
@@ -268,11 +269,11 @@ async function loadRaceRules(universeId: string, ruleset: Ruleset, executor: Exe
 /**
  * The extra starting equipment of each of a universe's rows of race settings
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param executor The database, or a transaction
  * @return The items and how many of each, by item ID, keyed by the ID of the row holding the race's settings
  */
-async function loadRaceStartingItems(universeId: string, executor: Executor): Promise<Map<number, ItemQuantity[]>>
+async function loadRaceStartingItems(version: UniverseVersion, executor: Executor): Promise<Map<number, ItemQuantity[]>>
 {
 	const rows = await executor
 		.select({
@@ -282,7 +283,7 @@ async function loadRaceStartingItems(universeId: string, executor: Executor): Pr
 		})
 		.from(raceStartingItems)
 		.innerJoin(races, eq(races.id, raceStartingItems.raceId))
-		.where(eq(races.universeId, universeId))
+		.where(inVersion(races, version))
 		.orderBy(asc(raceStartingItems.itemId));
 	const byRace = new Map<number, ItemQuantity[]>();
 
@@ -297,14 +298,14 @@ async function loadRaceStartingItems(universeId: string, executor: Executor): Pr
 /**
  * Whether a race ID is one of a ruleset's default races or one of a universe's own races
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param raceId The race's ID
  * @param executor The database, or a transaction
  * @return The kind of race, or undefined when the universe can't use a race with that ID (an edited
  * copy's own ID included)
  */
-export async function findRaceKind(universeId: string, ruleset: Ruleset, raceId: number, executor: Executor = db): Promise<RaceKind | undefined>
+export async function findRaceKind(version: UniverseVersion, ruleset: Ruleset, raceId: number, executor: Executor = db): Promise<RaceKind | undefined>
 {
 	const [row] = await executor
 		.select({
@@ -317,7 +318,7 @@ export async function findRaceKind(universeId: string, ruleset: Ruleset, raceId:
 			isNull(races.overridesRaceId),
 			or(
 				isNull(races.universeId),
-				eq(races.universeId, universeId)
+				inVersion(races, version)
 			)
 		))
 		.limit(1);
@@ -333,11 +334,11 @@ export async function findRaceKind(universeId: string, ruleset: Ruleset, raceId:
 /**
  * How many races a universe has added, not counting its edited copies of default races
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param executor The database, or a transaction
  * @return The number of races
  */
-export async function countCustomRaces(universeId: string, executor: Executor = db): Promise<number>
+export async function countCustomRaces(version: UniverseVersion, executor: Executor = db): Promise<number>
 {
 	const [row] = await executor
 		.select({
@@ -345,7 +346,7 @@ export async function countCustomRaces(universeId: string, executor: Executor = 
 		})
 		.from(races)
 		.where(and(
-			eq(races.universeId, universeId),
+			inVersion(races, version),
 			isNull(races.overridesRaceId)
 		));
 
@@ -355,19 +356,20 @@ export async function countCustomRaces(universeId: string, executor: Executor = 
 /**
  * Adds a race to a universe. Call it inside a transaction, so the race is never left without its rules
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param settings The race's settings
  * @param executor A transaction
  * @return The new race's ID
  */
-export async function createCustomRace(universeId: string, ruleset: Ruleset, settings: CustomRaceSettings, executor: Executor): Promise<number>
+export async function createCustomRace(version: UniverseVersion, ruleset: Ruleset, settings: CustomRaceSettings, executor: Executor): Promise<number>
 {
 	const [created] = await executor
 		.insert(races)
 		.values({
 			ruleset,
-			universeId,
+			universeId: version.universeId,
+			draft: version.draft,
 			...raceColumns(settings)
 		})
 		.returning({ id: races.id });
@@ -380,20 +382,20 @@ export async function createCustomRace(universeId: string, ruleset: Ruleset, set
 /**
  * Changes one of a universe's own races. Call it inside a transaction
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param raceId The race's ID, from findRaceKind() as custom
  * @param settings The race's new settings
  * @param executor A transaction
  */
-export async function updateCustomRace(universeId: string, ruleset: Ruleset, raceId: number, settings: CustomRaceSettings, executor: Executor): Promise<void>
+export async function updateCustomRace(version: UniverseVersion, ruleset: Ruleset, raceId: number, settings: CustomRaceSettings, executor: Executor): Promise<void>
 {
 	await executor
 		.update(races)
 		.set(raceColumns(settings))
 		.where(and(
 			eq(races.id, raceId),
-			eq(races.universeId, universeId)
+			inVersion(races, version)
 		));
 	await saveRaceDetails(raceId, ruleset, settings, executor);
 }
@@ -401,25 +403,26 @@ export async function updateCustomRace(universeId: string, ruleset: Ruleset, rac
 /**
  * Stores a universe's edited copy of a default race, replacing any copy it had. Call it inside a transaction
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param defaultRaceId The default race's ID, from findRaceKind() as default
  * @param settings The copy's settings; a null name keeps the default race's
  * @param executor A transaction
  */
-export async function saveEditedDefaultRace(universeId: string, ruleset: Ruleset, defaultRaceId: number, settings: RaceSettings, executor: Executor): Promise<void>
+export async function saveEditedDefaultRace(version: UniverseVersion, ruleset: Ruleset, defaultRaceId: number, settings: RaceSettings, executor: Executor): Promise<void>
 {
 	const columns = raceColumns(settings);
 	const [copy] = await executor
 		.insert(races)
 		.values({
 			ruleset,
-			universeId,
+			universeId: version.universeId,
+			draft: version.draft,
 			overridesRaceId: defaultRaceId,
 			...columns
 		})
 		.onConflictDoUpdate({
-			target: [races.universeId, races.overridesRaceId],
+			target: [races.universeId, races.draft, races.overridesRaceId],
 			set: columns
 		})
 		.returning({ id: races.id });
@@ -430,16 +433,16 @@ export async function saveEditedDefaultRace(universeId: string, ruleset: Ruleset
 /**
  * Discards a universe's edited copy of a default race, so the universe sees the default again
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param defaultRaceId The default race's ID
  * @param executor The database, or a transaction
  */
-export async function restoreDefaultRace(universeId: string, defaultRaceId: number, executor: Executor = db): Promise<void>
+export async function restoreDefaultRace(version: UniverseVersion, defaultRaceId: number, executor: Executor = db): Promise<void>
 {
 	await executor
 		.delete(races)
 		.where(and(
-			eq(races.universeId, universeId),
+			inVersion(races, version),
 			eq(races.overridesRaceId, defaultRaceId)
 		));
 }
@@ -447,29 +450,29 @@ export async function restoreDefaultRace(universeId: string, defaultRaceId: numb
 /**
  * Deletes one of a universe's own races
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param raceId The race's ID, from findRaceKind() as custom
  * @param executor The database, or a transaction
  */
-export async function deleteCustomRace(universeId: string, raceId: number, executor: Executor = db): Promise<void>
+export async function deleteCustomRace(version: UniverseVersion, raceId: number, executor: Executor = db): Promise<void>
 {
 	await executor
 		.delete(races)
 		.where(and(
 			eq(races.id, raceId),
-			eq(races.universeId, universeId)
+			inVersion(races, version)
 		));
 }
 
 /**
  * Whether the extra starting equipment of any of a universe's races holds an item
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param itemId The item's ID
  * @param executor The database, or a transaction
  * @return True when it does
  */
-export async function isRaceStartingItem(universeId: string, itemId: number, executor: Executor = db): Promise<boolean>
+export async function isRaceStartingItem(version: UniverseVersion, itemId: number, executor: Executor = db): Promise<boolean>
 {
 	const rows = await executor
 		.select({
@@ -478,7 +481,7 @@ export async function isRaceStartingItem(universeId: string, itemId: number, exe
 		.from(raceStartingItems)
 		.innerJoin(races, eq(races.id, raceStartingItems.raceId))
 		.where(and(
-			eq(races.universeId, universeId),
+			inVersion(races, version),
 			eq(raceStartingItems.itemId, itemId)
 		))
 		.limit(1);

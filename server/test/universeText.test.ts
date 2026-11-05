@@ -5,6 +5,7 @@ import { charactersPath, sourceTextHash, UNIVERSES_PATH, type NewCharacterOption
 import { db } from '../src/db/client.js';
 import { players } from '../src/db/schema.js';
 import { saveTranslation } from '../src/db/universeTextRepo.js';
+import { liveVersion } from '../src/db/universeVersions.js';
 import { createArea, createUniverse, logIn, saveChanges, type Editor } from './editorRequests.js';
 import { testServerUrl, getTestServer } from './testServer.js';
 
@@ -41,7 +42,7 @@ async function fetchUniverse<T>(path: string, headers: Record<string, string> = 
  */
 async function translate(universeId: string, kind: 'universe' | 'area' | 'tile' | 'race', thingId: string, field: 'name' | 'shortDescription', language: string, text: string): Promise<void>
 {
-	await saveTranslation(universeId, { kind, thingId, field, language, text, sourceHash: sourceTextHash('source') });
+	await saveTranslation(liveVersion(universeId), { kind, thingId, field, language, text, sourceHash: sourceTextHash('source') });
 }
 
 /**

@@ -1,4 +1,4 @@
-import { type AreaEvacuation, type ChangeImpact, type EditorChange, type GroupSizeLowering, type ItemDisabling, type MessageDescriptor, type Ruleset } from '@multiverse-kiln/shared';
+import { type AreaEvacuation, type ChangeImpact, type DraftApplyChoices, type EditorChange, type GroupSizeLowering, type ItemDisabling, type MessageDescriptor, type Ruleset } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { getElement } from '../dom';
@@ -16,7 +16,7 @@ interface ImpactOption
 
 /**
  * Whether a change could affect players, so the editor asks the server before saving it: one that
- * disables a race, class, item or area, or sets the group size
+ * disables a race, class, item or area, sets the group size, or applies the universe's draft
  *
  * @param change The change
  * @return True when it could
@@ -33,6 +33,8 @@ export function mayAffectPlayers(change: EditorChange): boolean
 			return(change.update.enabled === false);
 		case 'universe':
 			return(change.update.groupSize !== undefined);
+		case 'applyDraft':
+			return(true);
 		default:
 			return(false);
 	}
@@ -157,7 +159,7 @@ export class ImpactDialog
 	 */
 	ask(impacts: readonly ChangeImpact[], changes: readonly EditorChange[], ruleset: Ruleset): Promise<Map<number, EditorChange> | undefined>
 	{
-		const groups = impacts.map((impact) => this.renderImpact(impact, ruleset));
+		const groups = impacts.map((impact, index) => this.renderImpact(impact, index, ruleset));
 
 		this.choices.replaceChildren(...groups.map(({ fieldset }) => fieldset));
 
@@ -173,7 +175,18 @@ export class ImpactDialog
 			const onSubmit = (event: SubmitEvent): void =>
 			{
 				event.preventDefault();
-				answered = new Map(impacts.map((impact, index) => [impact.changeIndex, withAnswer(changes[impact.changeIndex], groups[index].answer())]));
+
+				const changed = new Map<number, EditorChange>();
+
+				// Applying a draft has an impact for each thing it disables, each answered in the same change
+				for (const [index, impact] of impacts.entries())
+				{
+					const change = (changed.get(impact.changeIndex) ?? changes[impact.changeIndex]);
+
+					changed.set(impact.changeIndex, withAnswer(change, impact, groups[index].answer()));
+				}
+
+				answered = changed;
 				this.dialog.close();
 			};
 
@@ -205,15 +218,16 @@ export class ImpactDialog
 	 * The choice for one impact: what it affects, and the answers
 	 *
 	 * @param impact The impact
+	 * @param position The impact's place in the dialog, which names its radio buttons
 	 * @param ruleset The universe's ruleset
 	 * @return The choice's fieldset, and the answer chosen in it once the dialog is submitted
 	 */
-	private renderImpact(impact: ChangeImpact, ruleset: Ruleset): { fieldset: HTMLFieldSetElement; answer: () => string }
+	private renderImpact(impact: ChangeImpact, position: number, ruleset: Ruleset): { fieldset: HTMLFieldSetElement; answer: () => string }
 	{
 		const { legend, options, chosen } = describeImpact(impact, ruleset);
 		const fieldset = document.createElement('fieldset');
 		const heading = document.createElement('legend');
-		const name = `impact-${impact.changeIndex}`;
+		const name = `impact-${position}`;
 		const inputs = options.map((option) =>
 		{
 			const label = document.createElement('label');
@@ -323,16 +337,19 @@ function describeImpact(impact: ChangeImpact, ruleset: Ruleset): { legend: strin
 }
 
 /**
- * A change with the answer to its impact
+ * A change with the answer to one of its impacts
  *
  * @param change The change
+ * @param impact The impact answered
  * @param answer The answer chosen
  * @return The change to save
  */
-function withAnswer(change: EditorChange, answer: string): EditorChange
+function withAnswer(change: EditorChange, impact: ChangeImpact, answer: string): EditorChange
 {
 	switch (change.kind)
 	{
+		case 'applyDraft':
+			return({ ...change, choices: withDraftAnswer(change.choices, impact, answer) });
 		case 'saveRace':
 			return({ ...change, settings: { ...change.settings, keepPlaying: (answer === 'keep') } });
 		case 'saveClass':
@@ -342,8 +359,45 @@ function withAnswer(change: EditorChange, answer: string): EditorChange
 		case 'updateArea':
 			return({ ...change, moveTo: ((answer === 'parent') ? 'parent' : 'start') });
 		case 'universe':
-			return({ ...change, largerGroups: GROUP_ANSWERS.find((option) => (option.value === answer))?.value ?? 'keep' });
+			return({ ...change, largerGroups: groupAnswer(answer) });
 		default:
 			return(change);
 	}
+}
+
+/**
+ * The choices of a change applying the universe's draft, with the answer to one of its impacts, which
+ * names what it is about by its live ID
+ *
+ * @param choices The choices so far
+ * @param impact The impact answered
+ * @param answer The answer chosen
+ * @return The choices
+ */
+function withDraftAnswer(choices: DraftApplyChoices, impact: ChangeImpact, answer: string): DraftApplyChoices
+{
+	switch (impact.kind)
+	{
+		case 'race':
+			return({ ...choices, races: { ...choices.races, [impact.id]: (answer === 'keep') } });
+		case 'class':
+			return({ ...choices, classes: { ...choices.classes, [impact.id]: (answer === 'keep') } });
+		case 'item':
+			return({ ...choices, items: { ...choices.items, [impact.id]: ((answer === 'remove') ? 'remove' : 'keep') } });
+		case 'area':
+			return({ ...choices, areas: { ...choices.areas, [impact.id]: ((answer === 'parent') ? 'parent' : 'start') } });
+		case 'groupSize':
+			return({ ...choices, largerGroups: groupAnswer(answer) });
+	}
+}
+
+/**
+ * What a lowered group size does to larger groups, from the answer chosen
+ *
+ * @param answer The answer
+ * @return The choice
+ */
+function groupAnswer(answer: string): GroupSizeLowering
+{
+	return((GROUP_ANSWERS.find((option) => (option.value === answer))?.value ?? 'keep'));
 }

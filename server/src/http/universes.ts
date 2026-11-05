@@ -7,6 +7,7 @@ import { listAreas } from '../db/areaRepo.js';
 import { loadEditorTiles } from '../db/tileRepo.js';
 import { findUniverseRole } from '../db/universeEditorRepo.js';
 import { findUniverseDetails, listUniverses } from '../db/universeRepo.js';
+import { liveVersion } from '../db/universeVersions.js';
 import { errorMessages, sendError, sendInvalidRequest } from './errors.js';
 import { requestLanguages } from './requestLanguages.js';
 import { UniverseTextTranslator } from './universeTextTranslator.js';
@@ -55,8 +56,8 @@ async function maySeeUniverse(universe: UniverseDetails, cookieHeader: string | 
 async function loadUniverseText(universe: UniverseDetails, requested: readonly string[]): Promise<UniverseTextPayload>
 {
 	const [areas, tiles, translator] = await Promise.all([
-		listAreas(universe.id),
-		loadEditorTiles(universe.id, universe.ruleset),
+		listAreas(liveVersion(universe.id)),
+		loadEditorTiles(liveVersion(universe.id), universe.ruleset),
 		UniverseTextTranslator.load(universe, requested, ['area', 'tile'])
 	]);
 

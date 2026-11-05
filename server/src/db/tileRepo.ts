@@ -6,6 +6,7 @@ import { compareNumbers, IMPASSABLE_WALK_SECONDS, MAX_WALK_SECONDS, sortRows, TI
 
 import { db, type Executor } from './client.js';
 import { tiles } from './schema.js';
+import { inVersion, type UniverseVersion } from './universeVersions.js';
 import { listTileGraphics } from './tileGraphicRepo.js';
 
 /**
@@ -52,7 +53,7 @@ export interface TileRecord
 /**
  * What a new tile needs
  */
-export type NewTile = Pick<typeof tiles.$inferInsert, 'ruleset' | 'universeId' | 'key' | 'name' | 'indoors' | 'outdoors' | 'color' | 'graphic' | 'uploadedGraphicId' | 'visionCost' | 'walkSeconds' | 'enabled'>;
+export type NewTile = Pick<typeof tiles.$inferInsert, 'ruleset' | 'universeId' | 'draft' | 'key' | 'name' | 'indoors' | 'outdoors' | 'color' | 'graphic' | 'uploadedGraphicId' | 'visionCost' | 'walkSeconds' | 'enabled'>;
 
 /**
  * The settings of a tile a universe added, which always has a name of its own
@@ -104,14 +105,14 @@ export async function findDefaultTileIds(ruleset: Ruleset, executor: Executor = 
  *
  * A default tile the universe has edited has the edited copy's settings, under the default tile's ID
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param executor The database, or a transaction
  * @return The tiles, by ID
  */
-export async function loadUniverseTiles(universeId: string, ruleset: Ruleset, executor: Executor = db): Promise<TileRecord[]>
+export async function loadUniverseTiles(version: UniverseVersion, ruleset: Ruleset, executor: Executor = db): Promise<TileRecord[]>
 {
-	const editorTiles = await loadNamedTiles(universeId, ruleset, executor);
+	const editorTiles = await loadNamedTiles(version, ruleset, executor);
 
 	return(editorTiles.map(({ tile, englishName }) => ({
 		id: tile.id,
@@ -131,26 +132,26 @@ export async function loadUniverseTiles(universeId: string, ruleset: Ruleset, ex
  * Every tile a universe can paint with, as the editor lists them: with whether each tile is custom
  * or edited, and a default tile's key in place of a name it kept
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param executor The database, or a transaction
  * @return The tiles, by ID
  */
-export async function loadEditorTiles(universeId: string, ruleset: Ruleset, executor: Executor = db): Promise<EditorTile[]>
+export async function loadEditorTiles(version: UniverseVersion, ruleset: Ruleset, executor: Executor = db): Promise<EditorTile[]>
 {
-	return((await loadNamedTiles(universeId, ruleset, executor)).map(({ tile }) => tile));
+	return((await loadNamedTiles(version, ruleset, executor)).map(({ tile }) => tile));
 }
 
 /**
  * Every tile a universe can paint with, as the editor lists them, each with a name in English: the
  * universe's name for it, or a default tile's own
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param executor The database, or a transaction
  * @return The tiles, by ID
  */
-async function loadNamedTiles(universeId: string, ruleset: Ruleset, executor: Executor): Promise<{ tile: EditorTile; englishName: string }[]>
+async function loadNamedTiles(version: UniverseVersion, ruleset: Ruleset, executor: Executor): Promise<{ tile: EditorTile; englishName: string }[]>
 {
 	const rows = await executor
 		.select({
@@ -165,14 +166,14 @@ async function loadNamedTiles(universeId: string, ruleset: Ruleset, executor: Ex
 			eq(tiles.ruleset, ruleset),
 			or(
 				isNull(tiles.universeId),
-				eq(tiles.universeId, universeId)
+				inVersion(tiles, version)
 			)
 		))
 		.orderBy(tiles.id);
 	const copies = new Map(rows
 		.filter((row) => (row.overridesTileId !== null))
 		.map((row) => [row.overridesTileId, row]));
-	const uploadedGraphics = new Map((await listTileGraphics(universeId, executor)).map((graphic) => [graphic.id, graphic]));
+	const uploadedGraphics = new Map((await listTileGraphics(version, executor)).map((graphic) => [graphic.id, graphic]));
 
 	return(rows
 		.filter((row) => (row.overridesTileId === null))
@@ -234,18 +235,18 @@ function walkSortKey(tile: EditorTile): number
 /**
  * A page of a universe's tiles, as the Tilesets tab lists them
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param query The filters, the order, and which page
  * @param executor The database, or a transaction
  * @return The page, and how many tiles match in all
  */
-export async function listEditorTiles(universeId: string, ruleset: Ruleset, query: TileListQuery, executor: Executor = db): Promise<TileListPayload>
+export async function listEditorTiles(version: UniverseVersion, ruleset: Ruleset, query: TileListQuery, executor: Executor = db): Promise<TileListPayload>
 {
 	const name = query.name?.toLowerCase();
 
 	// A default tile that kept its name matches by its English name, since the server doesn't have the translations
-	const matching = (await loadNamedTiles(universeId, ruleset, executor)).filter(({ tile, englishName }) =>
+	const matching = (await loadNamedTiles(version, ruleset, executor)).filter(({ tile, englishName }) =>
 	{
 		return(
 			((name === undefined) || englishName.toLowerCase().includes(name))
@@ -275,14 +276,14 @@ export async function listEditorTiles(universeId: string, ruleset: Ruleset, quer
 /**
  * Whether a tile ID is one of a ruleset's default tiles or one of a universe's own tiles
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param tileId The tile's ID
  * @param executor The database, or a transaction
  * @return The kind of tile, or undefined when the universe can't use a tile with that ID (an edited
  * copy's own ID included)
  */
-export async function findTileKind(universeId: string, ruleset: Ruleset, tileId: number, executor: Executor = db): Promise<TileKind | undefined>
+export async function findTileKind(version: UniverseVersion, ruleset: Ruleset, tileId: number, executor: Executor = db): Promise<TileKind | undefined>
 {
 	const [row] = await executor
 		.select({
@@ -293,7 +294,7 @@ export async function findTileKind(universeId: string, ruleset: Ruleset, tileId:
 			eq(tiles.id, tileId),
 			eq(tiles.ruleset, ruleset),
 			isNull(tiles.overridesTileId),
-			or(isNull(tiles.universeId), eq(tiles.universeId, universeId))
+			or(isNull(tiles.universeId), inVersion(tiles, version))
 		))
 		.limit(1);
 
@@ -308,11 +309,11 @@ export async function findTileKind(universeId: string, ruleset: Ruleset, tileId:
 /**
  * How many tiles a universe has added, not counting its edited copies of default tiles
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param executor The database, or a transaction
  * @return The number of tiles
  */
-export async function countCustomTiles(universeId: string, executor: Executor = db): Promise<number>
+export async function countCustomTiles(version: UniverseVersion, executor: Executor = db): Promise<number>
 {
 	const [row] = await executor
 		.select({
@@ -320,7 +321,7 @@ export async function countCustomTiles(universeId: string, executor: Executor = 
 		})
 		.from(tiles)
 		.where(and(
-			eq(tiles.universeId, universeId),
+			inVersion(tiles, version),
 			isNull(tiles.overridesTileId)
 		));
 
@@ -330,57 +331,64 @@ export async function countCustomTiles(universeId: string, executor: Executor = 
 /**
  * Adds a tile to a universe
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param settings The tile's settings
  * @param executor The database, or a transaction
  * @return The new tile's ID
  */
-export async function createCustomTile(universeId: string, ruleset: Ruleset, settings: CustomTileSettings, executor: Executor = db): Promise<number>
+export async function createCustomTile(version: UniverseVersion, ruleset: Ruleset, settings: CustomTileSettings, executor: Executor = db): Promise<number>
 {
-	return(createTile({ ruleset, universeId, key: null, ...settings }, executor));
+	return(createTile({
+		ruleset,
+		universeId: version.universeId,
+		draft: version.draft,
+		key: null,
+		...settings
+	}, executor));
 }
 
 /**
  * Changes one of a universe's own tiles
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param tileId The tile's ID, from findTileKind() as custom
  * @param settings The tile's new settings
  * @param executor The database, or a transaction
  */
-export async function updateCustomTile(universeId: string, tileId: number, settings: CustomTileSettings, executor: Executor = db): Promise<void>
+export async function updateCustomTile(version: UniverseVersion, tileId: number, settings: CustomTileSettings, executor: Executor = db): Promise<void>
 {
 	await executor
 		.update(tiles)
 		.set(settings)
 		.where(and(
 			eq(tiles.id, tileId),
-			eq(tiles.universeId, universeId)
+			inVersion(tiles, version)
 		));
 }
 
 /**
  * Stores a universe's edited copy of a default tile, replacing any copy it had
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param defaultTileId The default tile's ID, from findTileKind() as default
  * @param settings The copy's settings; a null name keeps the default tile's
  * @param executor The database, or a transaction
  */
-export async function saveEditedDefaultTile(universeId: string, ruleset: Ruleset, defaultTileId: number, settings: TileSettings, executor: Executor = db): Promise<void>
+export async function saveEditedDefaultTile(version: UniverseVersion, ruleset: Ruleset, defaultTileId: number, settings: TileSettings, executor: Executor = db): Promise<void>
 {
 	await executor
 		.insert(tiles)
 		.values({
 			ruleset,
-			universeId,
+			universeId: version.universeId,
+			draft: version.draft,
 			overridesTileId: defaultTileId,
 			...settings
 		})
 		.onConflictDoUpdate({
-			target: [tiles.universeId, tiles.overridesTileId],
+			target: [tiles.universeId, tiles.draft, tiles.overridesTileId],
 			set: settings
 		});
 }
@@ -388,16 +396,16 @@ export async function saveEditedDefaultTile(universeId: string, ruleset: Ruleset
 /**
  * Discards a universe's edited copy of a default tile, so the universe sees the default again
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param defaultTileId The default tile's ID
  * @param executor The database, or a transaction
  */
-export async function restoreDefaultTile(universeId: string, defaultTileId: number, executor: Executor = db): Promise<void>
+export async function restoreDefaultTile(version: UniverseVersion, defaultTileId: number, executor: Executor = db): Promise<void>
 {
 	await executor
 		.delete(tiles)
 		.where(and(
-			eq(tiles.universeId, universeId),
+			inVersion(tiles, version),
 			eq(tiles.overridesTileId, defaultTileId)
 		));
 }
@@ -405,17 +413,17 @@ export async function restoreDefaultTile(universeId: string, defaultTileId: numb
 /**
  * Deletes one of a universe's own tiles. Check that no map uses it first (isTileInUse in areaRepo)
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param tileId The tile's ID, from findTileKind() as custom
  * @param executor The database, or a transaction
  */
-export async function deleteCustomTile(universeId: string, tileId: number, executor: Executor = db): Promise<void>
+export async function deleteCustomTile(version: UniverseVersion, tileId: number, executor: Executor = db): Promise<void>
 {
 	await executor
 		.delete(tiles)
 		.where(and(
 			eq(tiles.id, tileId),
-			eq(tiles.universeId, universeId)
+			inVersion(tiles, version)
 		));
 }
 

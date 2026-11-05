@@ -64,9 +64,9 @@ async function listItems(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	const { universe } = universeContextOf(request);
+	const { universe, version } = universeContextOf(request);
 
-	response.json(await listEditorItems(universe.id, universe.ruleset, query.data));
+	response.json(await listEditorItems(version, universe.ruleset, query.data));
 }
 
 /**
@@ -78,7 +78,7 @@ async function listItems(request: Request, response: Response): Promise<void>
  */
 export async function createItemChange(context: ChangeContext, ref: NewRef, settings: ItemSettings): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { universe, version, transaction } = context;
 	const { name } = settings;
 
 	if (name === null)
@@ -91,7 +91,7 @@ export async function createItemChange(context: ChangeContext, ref: NewRef, sett
 		refuse(400, messages.unknownItemType);
 	}
 
-	if (await countCustomItems(universe.id, transaction) >= MAX_CUSTOM_ITEMS)
+	if (await countCustomItems(version, transaction) >= MAX_CUSTOM_ITEMS)
 	{
 		refuse(409, {
 			id: 'error.itemLimit',
@@ -102,7 +102,7 @@ export async function createItemChange(context: ChangeContext, ref: NewRef, sett
 		});
 	}
 
-	recordRef(context, ref, await createCustomItem(universe.id, universe.ruleset, { ...settings, name }, transaction));
+	recordRef(context, ref, await createCustomItem(version, universe.ruleset, { ...settings, name }, transaction));
 }
 
 /**
@@ -114,8 +114,8 @@ export async function createItemChange(context: ChangeContext, ref: NewRef, sett
  */
 async function isItemEnabled(context: ChangeContext, itemId: number): Promise<boolean>
 {
-	const { universe, transaction } = context;
-	const [item] = (await listEditorItems(universe.id, universe.ruleset, { ids: [itemId] }, transaction)).items;
+	const { universe, version, transaction } = context;
+	const [item] = (await listEditorItems(version, universe.ruleset, { ids: [itemId] }, transaction)).items;
 
 	return(item?.enabled ?? true);
 }
@@ -132,9 +132,9 @@ async function isItemEnabled(context: ChangeContext, itemId: number): Promise<bo
  */
 export async function saveItemChange(context: ChangeContext, id: NumberRef, settings: ItemSettings, whenDisabled: ItemDisabling): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { universe, version, transaction } = context;
 	const itemId = resolveNumberRef(context, id);
-	const kind = await findItemKind(universe.id, universe.ruleset, itemId, transaction);
+	const kind = await findItemKind(version, universe.ruleset, itemId, transaction);
 	const { name } = settings;
 
 	if (kind === undefined)
@@ -151,7 +151,7 @@ export async function saveItemChange(context: ChangeContext, id: NumberRef, sett
 
 	if (kind === 'default')
 	{
-		await saveEditedDefaultItem(universe.id, universe.ruleset, itemId, settings, transaction);
+		await saveEditedDefaultItem(version, universe.ruleset, itemId, settings, transaction);
 	}
 	else if (name === null)
 	{
@@ -159,7 +159,7 @@ export async function saveItemChange(context: ChangeContext, id: NumberRef, sett
 	}
 	else
 	{
-		await updateCustomItem(universe.id, itemId, { ...settings, name }, transaction);
+		await updateCustomItem(version, itemId, { ...settings, name }, transaction);
 	}
 }
 
@@ -172,9 +172,9 @@ export async function saveItemChange(context: ChangeContext, id: NumberRef, sett
  */
 export async function removeItemChange(context: ChangeContext, id: NumberRef): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { universe, version, transaction } = context;
 	const itemId = resolveNumberRef(context, id);
-	const kind = await findItemKind(universe.id, universe.ruleset, itemId, transaction);
+	const kind = await findItemKind(version, universe.ruleset, itemId, transaction);
 
 	if (kind === undefined)
 	{
@@ -185,14 +185,14 @@ export async function removeItemChange(context: ChangeContext, id: NumberRef): P
 	if (kind === 'default')
 	{
 		context.disablings.item(itemId, await isItemEnabled(context, itemId));
-		await restoreDefaultItem(universe.id, itemId, transaction);
-		await deleteUniverseTextOf(universe.id, 'item', itemId, transaction);
+		await restoreDefaultItem(version, itemId, transaction);
+		await deleteUniverseTextOf(version, 'item', itemId, transaction);
 		return;
 	}
 
 	// Saving the starting equipment and making a character wait for the universe's lock too, so the
 	// item can't be added to either before it is deleted
-	if (await isStartingItem(universe.id, itemId, transaction) || await isRaceStartingItem(universe.id, itemId, transaction) || await isClassStartingItem(universe.id, itemId, transaction))
+	if (await isStartingItem(version, itemId, transaction) || await isRaceStartingItem(version, itemId, transaction) || await isClassStartingItem(version, itemId, transaction))
 	{
 		refuse(409, {
 			id: 'error.itemInStartingEquipment',
@@ -210,6 +210,6 @@ export async function removeItemChange(context: ChangeContext, id: NumberRef): P
 		});
 	}
 
-	await deleteCustomItem(universe.id, itemId, transaction);
-	await deleteUniverseTextOf(universe.id, 'item', itemId, transaction);
+	await deleteCustomItem(version, itemId, transaction);
+	await deleteUniverseTextOf(version, 'item', itemId, transaction);
 }

@@ -1183,6 +1183,10 @@
 		"message": "{action, select, added {Added peril {name}} changed {Altered peril {name}} other {Scuttled peril {name}}}",
 		"source": "{action, select, added {Added difficulty level {name}} changed {Changed difficulty level {name}} other {Deleted difficulty level {name}}}"
 	},
+	"editor.audit.detail.draft": {
+		"message": "{action, select, added {Laid down a draft} applied {Launched the draft upon the live seas} other {Scuttled the draft}}",
+		"source": "{action, select, added {Started a draft} applied {Applied the draft to the live version} other {Discarded the draft}}"
+	},
 	"editor.audit.detail.editor": {
 		"message": "{action, select, added {Signed on officer {name}} changed {Altered officer {name}} other {Cast off officer {name}}}",
 		"source": "{action, select, added {Added editor {name}} changed {Changed editor {name}} other {Removed editor {name}}}"
@@ -1230,6 +1234,10 @@
 	"editor.audit.detail.translatorNotes": {
 		"message": "{count, plural, one {Wrote or scuttled # note fer the translators} other {Wrote or scuttled # notes fer the translators}}",
 		"source": "{count, plural, one {Wrote or deleted # note for translators} other {Wrote or deleted # notes for translators}}"
+	},
+	"editor.audit.draftSave": {
+		"message": "Stowed in the draft",
+		"source": "Saved to the draft"
 	},
 	"editor.audit.field.lobbyDayHours": {
 		"message": "Length o' a tavern day",
@@ -1583,6 +1591,70 @@
 		"message": "Show the hour",
 		"source": "Display time"
 	},
+	"editor.draft.apply": {
+		"message": "Launch Draft",
+		"source": "Apply Draft"
+	},
+	"editor.draft.applyConfirm": {
+		"message": "Launch Draft",
+		"source": "Apply Draft"
+	},
+	"editor.draft.applyQuestion": {
+		"message": "Every hand aboard will see all that changed in the draft at once. Changes stowed to the live version since the draft were laid down be replaced by the draft's. There be no turnin' back.",
+		"source": "Players will see everything changed in the draft at once. Changes saved to the live version since the draft was started are replaced by the draft's. This can't be undone."
+	},
+	"editor.draft.applyStaged": {
+		"message": "The draft will be launched upon the live version when ye stow.",
+		"source": "The draft will be applied to the live version when the editor is saved."
+	},
+	"editor.draft.applyTitle": {
+		"message": "Launch the draft?",
+		"source": "Apply the draft?"
+	},
+	"editor.draft.discard": {
+		"message": "Scuttle Draft",
+		"source": "Discard Draft"
+	},
+	"editor.draft.discardConfirm": {
+		"message": "Scuttle Draft",
+		"source": "Discard Draft"
+	},
+	"editor.draft.discardQuestion": {
+		"message": "All that changed in the draft goes to Davy Jones, and the tilesets hauled aboard it be scuttled. The live version stays as she be.",
+		"source": "Everything changed in the draft will be lost, and the tilesets uploaded to it deleted. The live version stays as it is."
+	},
+	"editor.draft.discardStaged": {
+		"message": "The draft will be scuttled when ye stow.",
+		"source": "The draft will be discarded when the editor is saved."
+	},
+	"editor.draft.discardTitle": {
+		"message": "Scuttle the draft?",
+		"source": "Discard the draft?"
+	},
+	"editor.draft.heading": {
+		"message": "Draft",
+		"source": "Draft"
+	},
+	"editor.draft.saveFailed": {
+		"message": "Couldn't change the draft.",
+		"source": "Could not change the draft."
+	},
+	"editor.draft.saveOthersFirst": {
+		"message": "Stow or undo yer other changes first.",
+		"source": "Save or undo your other changes first."
+	},
+	"editor.draft.start": {
+		"message": "Lay Down Draft",
+		"source": "Start Draft"
+	},
+	"editor.draft.startStaged": {
+		"message": "A draft will be laid down when ye stow, a copy o' the live version with the other changes bein' stowed.",
+		"source": "A draft will be started when the editor is saved, as a copy of the live version with the other changes being saved."
+	},
+	"editor.draft.undo": {
+		"message": "Belay",
+		"source": "Undo"
+	},
 	"editor.editingAsAdmin": {
 		"message": "Ye be editin' this universe as a ship's officer: ye can change all a captain can.",
 		"source": "You are editing this universe as a site admin: you can change everything a creator can."
@@ -1598,6 +1670,10 @@
 	"editor.editors.choosePlayer": {
 		"message": "Search for the sailor by name or username, then pick them from the list.",
 		"source": "Search for the player by name or username, then choose them from the list."
+	},
+	"editor.editors.draftNote": {
+		"message": "Changes to the crew roster apply to every version o' the universe - the live version an' the draft alike.",
+		"source": "Changes to editors apply to all versions of the universe - both the live and the draft versions."
 	},
 	"editor.editors.editTitle": {
 		"message": "Reassign {username}",
@@ -2443,6 +2519,30 @@
 		"message": "Don't Restore",
 		"source": "Undo Restore"
 	},
+	"editor.startDraft.copy": {
+		"message": "A draft be a copy o' the whole universe: its settings, races, classes, items, tilesets, areas an' their charts, an' translations. The crew keeps sailin' the live version, an' sees naught o' the draft till it be launched.",
+		"source": "A draft is a copy of the whole universe: its settings, races, classes, items, tilesets, areas and their maps, and translations. Players keep playing the live version and won't see draft changes until they are applied."
+	},
+	"editor.startDraft.finishing": {
+		"message": "When the draft be shipshape, a captain launches it with Launch Draft atop the editor, an' the crew sees all that changed in it at once. Scuttle Draft sinks it instead, leavin' the live version as she be.",
+		"source": "When the draft is ready, a creator applies it with Apply Draft at the top of the editor, and players see everything changed in it at once. Discard Draft deletes it instead, leaving the live version as it is."
+	},
+	"editor.startDraft.overwrite": {
+		"message": "⚠️ Launchin' the draft writes it over the entire universe, includin' any changes stowed to the live version while the draft be open. There be no turnin' back.",
+		"source": "⚠️ Applying the draft overwrites the entire universe with it, including any changes saved to the live version while the draft is open. Applying can't be undone."
+	},
+	"editor.startDraft.saveAndStart": {
+		"message": "Stow Changes An' Lay Down Draft",
+		"source": "Save Changes And Start Draft"
+	},
+	"editor.startDraft.title": {
+		"message": "Lay Down a Draft",
+		"source": "Start a Draft"
+	},
+	"editor.startDraft.unsaved": {
+		"message": "Yer unstowed changes be stowed to the live version first, so the draft starts with 'em.",
+		"source": "Your unsaved changes are saved to the live version first, so the draft starts with them."
+	},
 	"editor.startingArea.area": {
 		"message": "Home port: {area}",
 		"source": "Starting area: {area}"
@@ -3107,6 +3207,26 @@
 		"message": "Edit {universe}",
 		"source": "Edit {universe}"
 	},
+	"editor.version": {
+		"message": "Workin' on",
+		"source": "Editing"
+	},
+	"editor.version.draft": {
+		"message": "Draft",
+		"source": "Draft"
+	},
+	"editor.version.draftNotice": {
+		"message": "Ye be workin' on the draft version o' this universe. The crew won't see yer changes till they be launched.",
+		"source": "You are editing the draft version of this universe. Players will not see changes until they are applied."
+	},
+	"editor.version.live": {
+		"message": "Live version",
+		"source": "Live version"
+	},
+	"editor.version.liveWithDraftNotice": {
+		"message": "Ye be workin' on the live version, the one the crew sails. This universe has a draft: changes stowed here be replaced when it's launched, unless ye make 'em in the draft too.",
+		"source": "You are editing the live version of this universe. The universe has a draft: changes saved here are replaced when the draft is applied unless they are also made in the draft."
+	},
 	"email.accountCreated.body": {
 		"message": "Yer account on {siteName} be ready.",
 		"source": "Your account on {siteName} has been created."
@@ -3547,6 +3667,10 @@
 		"message": "A peril needs a name.",
 		"source": "A difficulty level needs a name."
 	},
+	"error.draftExists": {
+		"message": "This universe already has a draft on the slipway. Launch it or scuttle it afore layin' down another.",
+		"source": "The universe already has a draft. Apply it or discard it before starting another."
+	},
 	"error.faerieCantLoop": {
 		"message": "An area where the hours pass the faerie way can't loop.",
 		"source": "An area whose passage of time is faerie can't loop."
@@ -3674,6 +3798,10 @@
 	"error.noSuchDifficultyLevelToEdit": {
 		"message": "That peril be lost at sea.",
 		"source": "The difficulty level doesn't exist."
+	},
+	"error.noSuchDraft": {
+		"message": "This universe has no draft. It may have been launched or scuttled.",
+		"source": "The universe has no draft. It may have been applied or discarded."
 	},
 	"error.noSuchEditor": {
 		"message": "That hand no longer serves aboard this universe.",

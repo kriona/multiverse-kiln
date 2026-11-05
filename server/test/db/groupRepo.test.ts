@@ -10,6 +10,7 @@ import { addGroupMember, countGroupMembers, createInvite, deleteInvite, findGrou
 import { addPlayer } from '../players.js';
 import { characters } from '../../src/db/schema.js';
 import { inTransaction } from '../../src/db/transactions.js';
+import { liveVersion } from '../../src/db/universeVersions.js';
 import { addCharacter, addGroup, addPlayableUniverse, defaultRaceId, type PlayableUniverse } from './fixtures.js';
 
 describe('groupRepo', () =>
@@ -41,7 +42,7 @@ describe('groupRepo', () =>
 			startingColumn: 0,
 			startingRow: 0,
 			clockSeconds: GROUP_START_SECONDS,
-			difficultyLevelId: (await findDefaultDifficultyLevel(universe.universeId))?.id
+			difficultyLevelId: (await findDefaultDifficultyLevel(liveVersion(universe.universeId)))?.id
 		});
 		assert.deepStrictEqual(await findMembership(anchorId), { groupId, universeId: universe.universeId, isAnchor: true });
 		assert.deepStrictEqual(await findMembership(memberId), { groupId, universeId: universe.universeId, isAnchor: false });

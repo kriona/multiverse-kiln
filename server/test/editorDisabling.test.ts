@@ -124,7 +124,7 @@ describe('Disabling things players are using', () =>
 		const dwarfId = await defaultRaceId('dwarf');
 		const keep = await saveRace(dwarfId, { enabled: false, keepPlaying: true });
 
-		assert.deepStrictEqual(await impactsOf([keep]), [{ changeIndex: 0, kind: 'race', name: { key: 'dwarf', name: null }, characters: 1 }]);
+		assert.deepStrictEqual(await impactsOf([keep]), [{ changeIndex: 0, kind: 'race', id: dwarfId, name: { key: 'dwarf', name: null }, characters: 1 }]);
 
 		await saveAll(ada, universe.universeId, [keep]);
 		assert.strictEqual((await loadBarredOptions(universe.universeId)).raceIds.size, 0);
@@ -167,7 +167,7 @@ describe('Disabling things players are using', () =>
 		const carried = await brokkItems();
 
 		assert.ok(carried.some((item) => (item.itemId === dagger.id)));
-		assert.deepStrictEqual(await impactsOf([disable]), [{ changeIndex: 0, kind: 'item', name: { key: 'dagger', name: null }, characters: 1 }]);
+		assert.deepStrictEqual(await impactsOf([disable]), [{ changeIndex: 0, kind: 'item', id: dagger.id, name: { key: 'dagger', name: null }, characters: 1 }]);
 
 		await saveAll(ada, universe.universeId, [disable]);
 		assert.ok(!(await brokkItems()).some((item) => (item.itemId === dagger.id)));
@@ -206,7 +206,7 @@ describe('Disabling things players are using', () =>
 
 		const disable: EditorChange = { kind: 'updateArea', areaId: houseAreaId, update: { enabled: false }, moveTo: 'parent' };
 
-		assert.deepStrictEqual(await impactsOf([disable]), [{ changeIndex: 0, kind: 'area', name: 'House', characters: 1, hasParent: true }]);
+		assert.deepStrictEqual(await impactsOf([disable]), [{ changeIndex: 0, kind: 'area', id: houseAreaId, name: 'House', characters: 1, hasParent: true }]);
 
 		try
 		{
@@ -234,7 +234,7 @@ describe('Disabling things players are using', () =>
 		await moveMembers([{ characterId: brokkId, areaId: houseAreaId, column: 3, row: 3 }]);
 
 		// The house is inside no other area, so the only way out is back to the start
-		assert.deepStrictEqual(await impactsOf([{ kind: 'updateArea', areaId: houseAreaId, update: { enabled: false } }]), [{ changeIndex: 0, kind: 'area', name: 'House', characters: 1, hasParent: false }]);
+		assert.deepStrictEqual(await impactsOf([{ kind: 'updateArea', areaId: houseAreaId, update: { enabled: false } }]), [{ changeIndex: 0, kind: 'area', id: houseAreaId, name: 'House', characters: 1, hasParent: false }]);
 
 		await saveAll(ada, universe.universeId, [{ kind: 'updateArea', areaId: houseAreaId, update: { enabled: false }, moveTo: 'start' }]);
 
