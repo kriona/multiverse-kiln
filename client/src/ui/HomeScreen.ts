@@ -1,4 +1,4 @@
-import { DISALLOWED_TEXT_CHARACTERS, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_NAME_LENGTH, RULESET_NAMES, RULESETS, UNIVERSE_ROLE_NAMES, UNIVERSE_STAGE_NAMES, universeSlug, type EditableUniverseListPayload, type EditableUniverseSummary, type NewUniverseRequest, type Ruleset, type UniverseListPayload, type UniverseSummary } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, hasIdShapedSlug, MAX_SHORT_DESCRIPTION_LENGTH,MAX_UNIVERSE_NAME_LENGTH, RULESET_NAMES, RULESETS, UNIVERSE_ROLE_NAMES, UNIVERSE_STAGE_NAMES, universeSlug, type EditableUniverseListPayload, type EditableUniverseSummary, type NewUniverseRequest, type Ruleset, type UniverseListPayload, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { currentLocale, t } from '../localization';
 import { describeEditorError } from '../network/editorApi';
@@ -412,6 +412,12 @@ export class HomeScreen
 		if (universeSlug(name) === '')
 		{
 			reportFieldError(this.createName, t(formMessages.universeNameNoLetters));
+			return;
+		}
+
+		if (hasIdShapedSlug(name))
+		{
+			reportFieldError(this.createName, t(formMessages.universeNameLikeId));
 			return;
 		}
 

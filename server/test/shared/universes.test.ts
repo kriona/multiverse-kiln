@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { universeSlug } from '@multiverse-kiln/shared';
+import { hasIdShapedSlug, universeSlug } from '@multiverse-kiln/shared';
 
 describe('universeSlug (shared)', () =>
 {
@@ -28,5 +28,24 @@ describe('universeSlug (shared)', () =>
 	{
 		assert.strictEqual(universeSlug('!?'), '');
 		assert.strictEqual(universeSlug(''), '');
+	});
+});
+
+describe('hasIdShapedSlug (shared)', () =>
+{
+	it('finds names whose slug has the form of a universe\'s ID, however they are capitalized or punctuated', () =>
+	{
+		for (const name of ['7d1c1f8e-4c38-4f3b-9a58-4c7a1d7a0b11', ' 7D1C1F8E 4c38 4f3b 9a58 4c7a1d7a0b11! ', '7d1c1f8e_4c38.4f3b-9a58--4c7a1d7a0b11'])
+		{
+			assert.strictEqual(hasIdShapedSlug(name), true, name);
+		}
+	});
+
+	it('allows other names, including ones holding an ID among other words', () =>
+	{
+		for (const name of ['Kilnhaven', '7d1c1f8e-4c38-4f3b-9a58-4c7a1d7a0b11 Station', '7d1c1f8e-4c38-4f3b-9a58-4c7a1d7a0b1', 'gd1c1f8e-4c38-4f3b-9a58-4c7a1d7a0b11'])
+		{
+			assert.strictEqual(hasIdShapedSlug(name), false, name);
+		}
 	});
 });

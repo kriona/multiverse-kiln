@@ -382,6 +382,19 @@ describe('World editor API', () =>
 			assert.strictEqual((await updateUniverse(ada, universeId, { name: 'KilnHaven' })).status, 200);
 		});
 
+		it('refuses a name whose address would have the form of a universe\'s ID, when creating or renaming', async () =>
+		{
+			const universeId = await createUniverse(ada, 'Kilnhaven');
+
+			for (const name of [universeId, universeId.toUpperCase().replaceAll('-', ' ')])
+			{
+				assert.strictEqual((await send(ada, 'POST', '', { body: { name, shortDescription: '', ruleset: 'pf1e' } })).status, 400, name);
+				assert.strictEqual((await updateUniverse(ada, universeId, { name })).status, 400, name);
+			}
+
+			assert.strictEqual((await updateUniverse(ada, universeId, { name: `${universeId} Station` })).status, 200);
+		});
+
 		it('changes the settings, keeping faerie time and its morning together', async () =>
 		{
 			const universeId = await createUniverse(ada);

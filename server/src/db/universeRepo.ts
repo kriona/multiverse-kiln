@@ -1,8 +1,8 @@
 /**
  * Universes: the only module that reads or writes the universes table
  */
-import { and, count, eq, isNotNull, isNull, or, sql } from 'drizzle-orm';
-import { nameKey, universeSlug, type AdminUniverseCreator, type EditableUniverseDetails, type PassageOfTime, type Ruleset, type UniverseDetails, type UniverseSettingsUpdate, type UniverseStage, type UniverseSummary } from '@multiverse-kiln/shared';
+import { and, count, eq, isNotNull, isNull, sql } from 'drizzle-orm';
+import { nameKey, UNIVERSE_ID_PATTERN, universeSlug, type AdminUniverseCreator, type EditableUniverseDetails, type PassageOfTime, type Ruleset, type UniverseDetails, type UniverseSettingsUpdate, type UniverseStage, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { fromCoinColumns, toCoinColumns } from './coinColumns.js';
@@ -107,12 +107,6 @@ async function settingName<T>(name: string, universeId: string | undefined, exec
 		throw error;
 	}
 }
-
-/**
- * The form of a universe's ID. Only text in this form is compared with the ID column, which refuses
- * anything else, so a slug is only compared with the slug column
- */
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * A universe as the rest of the server sees it
@@ -285,7 +279,9 @@ export async function listUniverses(stage: UniverseStage, offset: number, limit:
  */
 export async function findUniverseDetails(key: string, executor: Executor = db): Promise<UniverseDetails | undefined>
 {
-	const bySlug = eq(universes.slug, key);
+	// A key in the form of an ID is only compared with the ID column, which refuses anything else; no
+	// slug has that form (hasIdShapedSlug), so one universe at most matches either way
+	const byKey = (UNIVERSE_ID_PATTERN.test(key) ? eq(universes.id, key) : eq(universes.slug, key));
 	const [row] = await executor
 		.select({
 			id: universes.id,
@@ -300,7 +296,7 @@ export async function findUniverseDetails(key: string, executor: Executor = db):
 		})
 		.from(universes)
 		.where(and(
-			(UUID_PATTERN.test(key) ? or(eq(universes.id, key), bySlug) : bySlug),
+			byKey,
 			isNull(universes.disabledAt)
 		))
 		.limit(1);

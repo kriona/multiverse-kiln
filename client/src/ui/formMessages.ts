@@ -14,6 +14,11 @@ export const formMessages = defineMessages({
 		defaultMessage: 'A universe\'s name needs at least one letter or number.',
 		description: 'Shown by the field for a universe\'s name when it has only spaces and punctuation; the name is made into the universe\'s web address, which needs a letter or number'
 	},
+	universeNameLikeId: {
+		id: 'form.universeNameLikeId',
+		defaultMessage: 'Choose a name that doesn\'t look like a universe\'s ID.',
+		description: 'Shown by the field for a universe\'s name when it has the form of the long code that identifies a universe (32 letters and digits in groups split by hyphens); the name is made into the universe\'s web address, where that form would name another universe'
+	},
 	wholeNumber: {
 		id: 'form.wholeNumber',
 		defaultMessage: 'Enter a whole number from {min, number} to {max, number}.',
