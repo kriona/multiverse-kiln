@@ -321,6 +321,19 @@ describe('Universe list', () =>
 		}
 	});
 
+	it('takes a key in the form of an ID as an ID, even when a universe\'s slug is the same', async () =>
+	{
+		const universeId = await addUniverseIn('Kilnhaven', 'let_there_be_light');
+
+		// The repository leaves checking names to the editor's routes, so it can save a slug they refuse
+		await addUniverseIn(universeId, 'let_there_be_light');
+
+		const { response, body } = await fetchUniverses(`/${universeId}`);
+
+		assert.strictEqual(response.status, 200);
+		assert.strictEqual((body as UniverseDetails).name, 'Kilnhaven');
+	});
+
 	it('answers 404 for a universe that is not listed, does not exist or has no such slug', async () =>
 	{
 		const unlistedId = await addUniverseIn('Unfinished', 'in_the_beginning');

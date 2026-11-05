@@ -4131,6 +4131,10 @@
 		"message": "Not yet stowed",
 		"source": "Unsaved changes"
 	},
+	"form.universeNameLikeId": {
+		"message": "Pick a name that don't look like a universe's ID, matey.",
+		"source": "Choose a name that doesn't look like a universe's ID."
+	},
 	"form.universeNameNoLetters": {
 		"message": "A universe's name needs at least one letter or number, matey.",
 		"source": "A universe's name needs at least one letter or number."

@@ -640,3 +640,21 @@ export function universeSlug(name: string): string
 		.replace(/[^\p{L}\p{M}\p{N}]+/gu, '-')
 		.replace(/^-+|-+$/g, ''));
 }
+
+/**
+ * The form of a universe's ID. A universe's page is found by its ID or its slug, and text in this form is
+ * only ever taken as an ID, so no universe's slug may have it (hasIdShapedSlug)
+ */
+export const UNIVERSE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Whether a universe's name makes a slug in the form of a universe's ID, which a universe can't be named,
+ * since its page's address would name another universe
+ *
+ * @param name The universe's name
+ * @return True when its slug has the form of an ID
+ */
+export function hasIdShapedSlug(name: string): boolean
+{
+	return(UNIVERSE_ID_PATTERN.test(universeSlug(name)));
+}

@@ -4127,6 +4127,10 @@
 		"defaultMessage": "Saving...",
 		"description": "Shown while work is being stored, such as painting under the map editor's map, or the player's progress in the toolbar of Create Character"
 	},
+	"form.universeNameLikeId": {
+		"defaultMessage": "Choose a name that doesn't look like a universe's ID.",
+		"description": "Shown by the field for a universe's name when it has the form of the long code that identifies a universe (32 letters and digits in groups split by hyphens); the name is made into the universe's web address, where that form would name another universe"
+	},
 	"form.universeNameNoLetters": {
 		"defaultMessage": "A universe's name needs at least one letter or number.",
 		"description": "Shown by the field for a universe's name when it has only spaces and punctuation; the name is made into the universe's web address, which needs a letter or number"
