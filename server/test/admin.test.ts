@@ -270,6 +270,8 @@ describe('Site settings', () =>
 			{ ...closed, privacyContact: 'privacy@' },
 			{ ...closed, privacyContact: 'pri vacy@example.com' },
 			{ ...closed, privacyContact: 'a@b@example.com' },
+			{ ...closed, privacyContact: 'privacy\u0000@example.com' },
+			{ ...closed, privacyContact: 'privacy@‮moc.elpmaxe' },
 			{ ...closed, privacyContact: `${'a'.repeat(MAX_EMAIL_LENGTH)}@example.com` }
 		];
 

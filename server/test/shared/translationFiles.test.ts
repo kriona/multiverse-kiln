@@ -119,6 +119,29 @@ describe('translation files (shared)', () =>
 		assert.throws(() => readTranslationFile('csv', 'id,translation\n"unclosed,x\n'), TranslationFileError);
 	});
 
+	it('writes CSV text a spreadsheet would run as a formula after an apostrophe, and reads it back as it was', () =>
+	{
+		const texts = ['=HYPERLINK("https://evil.example")', '+1', '-2', '@SUM(A1)', '\tTabbed', '\rReturned', '\'=Quoted', 'Plain', '\'Apostrophe'];
+		const formulas: TranslationFileContents = {
+			...contents,
+			entries: texts.map((text, index) => ({
+				id: `item:${index}:name`,
+				place: 'Item',
+				note: null,
+				source: text,
+				translation: text,
+				outOfDate: false
+			}))
+		};
+		const written = writeTranslationFile('csv', formulas);
+		const cells = written.split('\r\n')
+			.slice(1, -1)
+			.map((row) => row.split('","')[4]);
+
+		assert.deepStrictEqual(cells, ['\'=HYPERLINK(""https://evil.example"")', '\'+1', '\'-2', '\'@SUM(A1)', '\'\tTabbed', '\'\rReturned', '\'\'=Quoted', 'Plain', '\'Apostrophe']);
+		assert.deepStrictEqual(readTranslationFile('csv', written).translations.map(({ source, translation }) => [source, translation]), texts.map((text) => [text, text]));
+	});
+
 	it('refuses a file that isn\'t in its format, saying where when it can', () =>
 	{
 		assert.throws(() => readTranslationFile('po', 'msgid "x"\nthis is not po\n'), (error: unknown) => ((error instanceof TranslationFileError) && (error.line === 2)));

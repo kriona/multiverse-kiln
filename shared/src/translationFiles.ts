@@ -764,14 +764,36 @@ function readXliff(text: string): ReadTranslationFile
 const CSV_COLUMNS = ['id', 'from', 'note', 'source', 'translation', 'outOfDate'] as const;
 
 /**
- * A CSV field, in quotes, its quotes doubled
+ * The start of text a spreadsheet would run as a formula (=, +, -, @, a tab or a carriage return), after
+ * any apostrophes in front of it. A CSV file puts one more apostrophe in front of such text, which
+ * spreadsheets show as text, and reading the file takes it off again
+ */
+const CSV_FORMULA_START = /^'*[=+\-@\t\r]/;
+
+/**
+ * A CSV field, in quotes, its quotes doubled, with an apostrophe in front of text a spreadsheet would
+ * run as a formula
  *
  * @param text The field's text
  * @return The field
  */
 function csvField(text: string): string
 {
-	return(`"${text.replace(/"/g, '""')}"`);
+	const safe = (CSV_FORMULA_START.test(text) ? `'${text}` : text);
+
+	return(`"${safe.replace(/"/g, '""')}"`);
+}
+
+/**
+ * A CSV field's text, without the apostrophe csvField() puts in front of text a spreadsheet would run as
+ * a formula
+ *
+ * @param field The field
+ * @return The text
+ */
+function csvText(field: string): string
+{
+	return((field.startsWith('\'') && CSV_FORMULA_START.test(field)) ? field.slice(1) : field);
 }
 
 /**
@@ -892,9 +914,9 @@ function readCsv(text: string): ReadTranslationFile
 	return({
 		language: null,
 		translations: rows.map((row) => ({
-			id: (row[idColumn] ?? ''),
-			source: ((sourceColumn < 0) ? null : (row[sourceColumn] ?? '')),
-			translation: ((row[translationColumn] ?? '') || null),
+			id: csvText(row[idColumn] ?? ''),
+			source: ((sourceColumn < 0) ? null : csvText(row[sourceColumn] ?? '')),
+			translation: (csvText(row[translationColumn] ?? '') || null),
 			needsReview: false
 		}))
 	});

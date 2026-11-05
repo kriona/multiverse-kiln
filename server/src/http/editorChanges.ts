@@ -115,6 +115,19 @@ function sendRefused(response: Response, changeIndex: number | null, refusal: Ch
 }
 
 /**
+ * Finds a change to the universe's draft that is out of place. Starting the draft copies what the rest
+ * of the save changes, so it comes last; applying or discarding it is the only change in its save, since
+ * a change saved after it would be saved to a version that is gone
+ *
+ * @param changes The save's changes
+ * @return The index of the first change out of place, or -1 when there is none
+ */
+function misplacedDraftChange(changes: readonly EditorChange[]): number
+{
+	return(changes.findIndex((change, index) => (((change.kind === 'startDraft') && (index !== (changes.length - 1))) || (((change.kind === 'applyDraft') || (change.kind === 'discardDraft')) && (changes.length > 1)))));
+}
+
+/**
  * Saves changes to a universe in one transaction, in the order given, stopping at the first one refused
  * and saving none of them then
  *
@@ -137,6 +150,23 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 			refusal: new ChangeRefusal({
 				status: 403,
 				message: errorMessages.roleNotAllowed
+			})
+		});
+	}
+
+	const draftIndex = misplacedDraftChange(changes);
+
+	if (draftIndex >= 0)
+	{
+		return({
+			saved: false,
+			changeIndex: draftIndex,
+			refusal: new ChangeRefusal({
+				status: 400,
+				message: errorMessages.invalidRequest,
+				values: {
+					problem: `${changes[draftIndex].kind} must be ${((changes[draftIndex].kind === 'startDraft') ? 'the last change' : 'the only change')} in a save`
+				}
 			})
 		});
 	}

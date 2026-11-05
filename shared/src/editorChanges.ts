@@ -161,9 +161,10 @@ export interface EditorRoleSettings
  * - saveNoTranslation: mark a piece of universe text as needing no translation in any language, such as
  *   a proper name, so players see it as written, or as needing one again. Its translations are kept
  * - startDraft, applyDraft, discardDraft: start the universe's draft as a copy of its live version, apply
- *   it to the live version for good, or delete it (see Universe versions in STRUCTURE-OVERVIEW.md). They
- *   come after every other change in a save; applyDraft carries what happens to the players using what
- *   the draft disables or deletes
+ *   it to the live version for good, or delete it (see Universe versions in STRUCTURE-OVERVIEW.md).
+ *   startDraft comes after every other change in a save, and applyDraft and discardDraft are the only
+ *   change in theirs; the server refuses a save that puts them anywhere else. applyDraft carries what
+ *   happens to the players using what the draft disables or deletes
  */
 export type EditorChange =
 	| { kind: 'addEditor'; username: string; settings: EditorRoleSettings }

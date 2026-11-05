@@ -2,7 +2,7 @@ import assert from 'assert';
 import { randomBytes, randomUUID } from 'crypto';
 import http from 'http';
 
-import { ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, AUTH_PROVIDERS_PATH, AUTH_SESSION_PATH, invitePath, PUBLIC_SITE_SETTINGS_PATH, playerProfilePath, PROFILE_PATH, MAX_UNIVERSES_PER_PAGE, UNIVERSES_PATH, type UniverseDetails, type UniverseListPayload, type UniverseStage } from '@multiverse-kiln/shared';
+import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, AUTH_PROVIDERS_PATH, AUTH_SESSION_PATH, EDITOR_UNIVERSES_PATH, invitePath, PUBLIC_SITE_SETTINGS_PATH, playerProfilePath, PROFILE_PATH, MAX_UNIVERSES_PER_PAGE, SITE_SETTINGS_PATH, UNIVERSES_PATH, type UniverseDetails, type UniverseListPayload, type UniverseStage } from '@multiverse-kiln/shared';
 
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { createUniverse } from '../src/db/universeRepo.js';
@@ -81,7 +81,35 @@ describe('HTTP responses', () =>
 
 	it('sends nosniff on Express routes, Colyseus routes and 404s', async () =>
 	{
-		for (const route of [HEALTH_PATH, AUTH_SESSION_PATH, AUTH_PROVIDERS_PATH, PROFILE_PATH, playerProfilePath('nobody_here'), PUBLIC_SITE_SETTINGS_PATH, ADMIN_SESSIONS_PATH, ADMIN_PLAYERS_PATH, '/__healthcheck', '/nothing-here', invitePath('no-such-invite-token')])
+		const editorUniversePath = `${EDITOR_UNIVERSES_PATH}/${randomUUID()}`;
+		const routes = [
+			HEALTH_PATH,
+			AUTH_SESSION_PATH,
+			AUTH_PROVIDERS_PATH,
+			PROFILE_PATH,
+			playerProfilePath('nobody_here'),
+			PUBLIC_SITE_SETTINGS_PATH,
+			ADMIN_PATH,
+			SITE_SETTINGS_PATH,
+			ADMIN_SESSIONS_PATH,
+			ADMIN_PLAYERS_PATH,
+			ADMIN_ADMINS_PATH,
+			`${ADMIN_ADMINS_SEARCH_PATH}?query=ada`,
+			ADMIN_UNIVERSES_PATH,
+			`${UNIVERSES_PATH}/no-such-universe/text`,
+			EDITOR_UNIVERSES_PATH,
+			`${editorUniversePath}/editors`,
+			`${editorUniversePath}/editors/search?query=ada`,
+			`${editorUniversePath}/characters`,
+			`${editorUniversePath}/audit`,
+			`${editorUniversePath}/translations`,
+			`${editorUniversePath}/translations/all`,
+			'/__healthcheck',
+			'/nothing-here',
+			invitePath('no-such-invite-token')
+		];
+
+		for (const route of routes)
 		{
 			const response = await fetch(`${testServerUrl}${route}`);
 
@@ -345,6 +373,61 @@ describe('CORS', () =>
 		});
 
 		assert.strictEqual(preflight.headers.get('access-control-allow-origin'), allowedTestOrigin);
+	});
+});
+
+describe('Changes from other websites', () =>
+{
+	before(async () =>
+	{
+		await getTestServer();
+	});
+
+	/**
+	 * Sends a change to a route with an empty JSON body, from a browser that isn't logged in
+	 *
+	 * @param method The HTTP method
+	 * @param route The route's path
+	 * @param origin The Origin header to send
+	 * @return The response's status
+	 */
+	async function statusOfChange(method: string, route: string, origin: string): Promise<number>
+	{
+		const response = await fetch(`${testServerUrl}${route}`, {
+			method,
+			headers: {
+				'Origin': origin,
+				'Content-Type': 'application/json'
+			},
+			body: '{}'
+		});
+
+		await response.body?.cancel();
+
+		return(response.status);
+	}
+
+	it('refuses changes to the admin and editor routes from other origins, before asking who is logged in', async () =>
+	{
+		const universeId = randomUUID();
+		const changes: [string, string][] = [
+			['PUT', SITE_SETTINGS_PATH],
+			['POST', ADMIN_ADMINS_PATH],
+			['DELETE', `${ADMIN_ADMINS_PATH}/ada`],
+			['PUT', `${ADMIN_UNIVERSES_PATH}/${universeId}/disabled`],
+			['DELETE', `${ADMIN_UNIVERSES_PATH}/${universeId}/disabled`],
+			['POST', EDITOR_UNIVERSES_PATH],
+			['POST', `${EDITOR_UNIVERSES_PATH}/${universeId}/changes`],
+			['POST', `${EDITOR_UNIVERSES_PATH}/${universeId}/changes/impact`]
+		];
+
+		for (const [method, route] of changes)
+		{
+			assert.strictEqual(await statusOfChange(method, route, otherOrigin), 403, `${method} ${route}`);
+
+			// From the client's own origin the same change gets as far as asking for a login
+			assert.strictEqual(await statusOfChange(method, route, allowedTestOrigin), 401, `${method} ${route}`);
+		}
 	});
 });
 
