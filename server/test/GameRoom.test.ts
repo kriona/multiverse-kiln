@@ -12,6 +12,7 @@ import { createAreaLink, updateAreaSettings } from '../src/db/areaRepo.js';
 import { loadSeenChunks } from '../src/db/worldStateRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
 import { setUniverseDisabled, updateUniverseSettings } from '../src/db/universeRepo.js';
+import { liveVersion } from '../src/db/universeVersions.js';
 import { cellCenter } from '../src/logic/movement.js';
 import { SeenCells } from '../src/logic/seenCells.js';
 import { characterChanges } from '../src/players/characterChanges.js';
@@ -383,7 +384,7 @@ describe('GameRoom', () =>
 
 	it('opens read-only at the end of time, follows the stage as it changes, and turns away players a new stage doesn\'t let play', async () =>
 	{
-		await updateUniverseSettings(universe.universeId, { stage: 'end_of_time' });
+		await updateUniverseSettings(liveVersion(universe.universeId), { stage: 'end_of_time' });
 
 		const room = await createGameRoom();
 		const client = await joinAsNewPlayer(room);

@@ -1,7 +1,7 @@
 import { EditorPage } from './EditorPage';
 import { t } from './localization';
 import { startPage } from './pageStart';
-import { HOME_PAGE_URL, readEditUniverseId, readPageParameter, TAB_PARAMETER, AREA_PARAMETER } from './pages';
+import { HOME_PAGE_URL, readEditUniverseId, readPageParameter, TAB_PARAMETER, AREA_PARAMETER, VERSION_PARAMETER } from './pages';
 import { isEditorTab } from './ui/editor/EditorScreen';
 import { setPageTitle, showStatus } from './ui/dom';
 import { pageMessages } from './ui/pageMessages';
@@ -31,7 +31,7 @@ async function start(): Promise<void>
 		new EditorPage(await server, universeId, {
 			tab: (isEditorTab(tab) ? tab : undefined),
 			areaId: readPageParameter(AREA_PARAMETER)
-		});
+		}, ((readPageParameter(VERSION_PARAMETER) === 'draft') ? 'draft' : 'live'));
 	}
 	catch (error)
 	{

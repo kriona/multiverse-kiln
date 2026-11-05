@@ -8,6 +8,7 @@ import { listUniverseEdits } from '../src/db/universeEditRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { findUniverseDetails } from '../src/db/universeRepo.js';
 import { countTranslations, listTranslations, listTranslatorNotes, saveTranslation, saveTranslatorNote } from '../src/db/universeTextRepo.js';
+import { liveVersion } from '../src/db/universeVersions.js';
 import { areaChanges, type AreaChange } from '../src/world/areaChanges.js';
 import { createArea, createUniverse, logIn, saveChanges, send, type Editor } from './editorRequests.js';
 import { getTestServer } from './testServer.js';
@@ -38,7 +39,7 @@ async function openUniverse(editor: Editor, universeId: string): Promise<Editabl
  */
 async function addTranslation(universeId: string, kind: 'universe' | 'area', thingId: string, language: string): Promise<void>
 {
-	await saveTranslation(universeId, {
+	await saveTranslation(liveVersion(universeId), {
 		kind,
 		thingId,
 		field: 'name',
@@ -149,7 +150,7 @@ describe('universe languages in the editor', () =>
 		]);
 
 		assert.notStrictEqual(refused.status, 200);
-		assert.deepStrictEqual(Object.fromEntries(await countTranslations(universeId)), { fr: 1 });
+		assert.deepStrictEqual(Object.fromEntries(await countTranslations(liveVersion(universeId))), { fr: 1 });
 	});
 
 	it('lets only creators change the languages', async () =>
@@ -201,12 +202,12 @@ describe('universe languages in the editor', () =>
 		await saveChanges(ada, universeId, [{ kind: 'universe', update: { translationLanguages: ['fr'] } }]);
 		await addTranslation(universeId, 'area', areaId, 'fr');
 		await addTranslation(universeId, 'universe', universeId, 'fr');
-		await saveTranslatorNote(universeId, { kind: 'area', thingId: areaId, field: 'name', note: 'A field of flowers' });
+		await saveTranslatorNote(liveVersion(universeId), { kind: 'area', thingId: areaId, field: 'name', note: 'A field of flowers' });
 
 		const deleted = await saveChanges(ada, universeId, [{ kind: 'deleteArea', areaId }]);
 
 		assert.strictEqual(deleted.status, 200, JSON.stringify(deleted.body));
-		assert.deepStrictEqual((await listTranslations(universeId, ['fr'])).map(({ kind }) => kind), ['universe']);
-		assert.deepStrictEqual(await listTranslatorNotes(universeId), []);
+		assert.deepStrictEqual((await listTranslations(liveVersion(universeId), ['fr'])).map(({ kind }) => kind), ['universe']);
+		assert.deepStrictEqual(await listTranslatorNotes(liveVersion(universeId)), []);
 	});
 });

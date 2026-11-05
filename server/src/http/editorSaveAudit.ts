@@ -16,6 +16,7 @@ import { loadEditorThemes } from '../db/themeRepo.js';
 import { listTileGraphics } from '../db/tileGraphicRepo.js';
 import { loadEditorTiles } from '../db/tileRepo.js';
 import { listUniverseEditors } from '../db/universeEditorRepo.js';
+import { isSameVersion } from '../db/universeVersions.js';
 import { resolveNumberRef, resolveStringRef, type ChangeContext } from './editorChangeContext.js';
 
 /**
@@ -238,16 +239,16 @@ export class SaveAudit
 	constructor(private readonly context: ChangeContext)
 	{
 		const { id, ruleset } = context.universe;
-		const { transaction } = context;
+		const { version, transaction } = context;
 
 		this.editors = new CachedList(async () => new Map((await listUniverseEditors(id, transaction)).map((editor) => [editor.playerId, editor])));
-		this.tileGraphics = new CachedList(async () => byId(await listTileGraphics(id, transaction)));
-		this.tiles = new CachedList(async () => byId(await loadEditorTiles(id, ruleset, transaction)));
-		this.items = new CachedList(async () => byId(await loadEditorItems(id, ruleset, transaction)));
-		this.races = new CachedList(async () => byId(await loadEditorRaces(id, ruleset, transaction)));
-		this.classes = new CachedList(async () => byId(await loadEditorClasses(id, ruleset, transaction)));
-		this.themes = new CachedList(async () => byId(await loadEditorThemes(id, ruleset, transaction)));
-		this.difficultyLevels = new CachedList(async () => byId(await listDifficultyLevels(id, transaction)));
+		this.tileGraphics = new CachedList(async () => byId(await listTileGraphics(version, transaction)));
+		this.tiles = new CachedList(async () => byId(await loadEditorTiles(version, ruleset, transaction)));
+		this.items = new CachedList(async () => byId(await loadEditorItems(version, ruleset, transaction)));
+		this.races = new CachedList(async () => byId(await loadEditorRaces(version, ruleset, transaction)));
+		this.classes = new CachedList(async () => byId(await loadEditorClasses(version, ruleset, transaction)));
+		this.themes = new CachedList(async () => byId(await loadEditorThemes(version, ruleset, transaction)));
+		this.difficultyLevels = new CachedList(async () => byId(await listDifficultyLevels(version, transaction)));
 	}
 
 	/**
@@ -270,6 +271,18 @@ export class SaveAudit
 	{
 		switch (change.kind)
 		{
+			case 'startDraft':
+				this.add('draft', 'added', null);
+				return;
+
+			case 'applyDraft':
+				this.add('draft', 'applied', null);
+				return;
+
+			case 'discardDraft':
+				this.add('draft', 'deleted', null);
+				return;
+
 			case 'addEditor':
 				this.add('editor', 'added', { key: null, name: change.username }, 1, roleFields(change.settings));
 				return;
@@ -305,8 +318,7 @@ export class SaveAudit
 
 			case 'ruleset':
 			{
-				const { id, ruleset } = this.context.universe;
-				const saved = await loadRulesetSettings(id, ruleset, this.context.transaction);
+				const saved = await loadRulesetSettings(this.context.version, this.context.universe.ruleset, this.context.transaction);
 
 				this.addChanged('ruleset', null, await this.changedFields('ruleset', saved.settings, change.settings.settings));
 				return;
@@ -526,7 +538,7 @@ export class SaveAudit
 
 		const found = await findEditorArea(areaId, this.context.transaction);
 
-		if (!found || (found.universeId !== this.context.universe.id))
+		if (!found || !isSameVersion(found.version, this.context.version))
 		{
 			return(undefined);
 		}

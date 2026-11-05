@@ -416,11 +416,35 @@ export interface UniverseSettings
 }
 
 /**
+ * The copies of a universe the editor works on: its live version, which players play, and its draft, which
+ * reaches players once it is applied (see Universe versions in STRUCTURE-OVERVIEW.md)
+ */
+export const UNIVERSE_VERSIONS = ['live', 'draft'] as const;
+
+export type UniverseVersionName = typeof UNIVERSE_VERSIONS[number];
+
+/**
+ * The query parameter every route under EDITOR_UNIVERSES_PATH/:universeId takes, naming the version it
+ * reads or changes (UniverseVersionName); left out, the live version
+ */
+export const EDITOR_VERSION_PARAM = 'version';
+
+/**
  * Response of GET EDITOR_UNIVERSES_PATH/:universeId
  */
 export interface EditableUniverse extends UniverseSettings
 {
 	id: string;
+
+	/**
+	 * The version the settings are of: the one the request asked for
+	 */
+	version: UniverseVersionName;
+
+	/**
+	 * Whether the universe has a draft
+	 */
+	hasDraft: boolean;
 
 	/**
 	 * The name in the form its page's address uses (universeSlug)
@@ -909,12 +933,14 @@ export type AuditFieldChange = { [Field in AuditField]: { field: Field; value: A
  *   holds the language's tag as its name
  * - translatorNotes: notes for translators written or deleted (changed)
  * - noTranslation: pieces of text marked as needing no translation (added) or as needing one again (deleted)
+ * - draft: the universe's draft, started (added), applied to the live version (applied) or discarded
+ *   (deleted); see Universe versions in STRUCTURE-OVERVIEW.md
  */
-export const AUDIT_SUBJECTS = ['editor', 'settings', 'ruleset', 'tileset', 'tile', 'item', 'race', 'class', 'theme', 'difficultyLevel', 'area', 'cells', 'links', 'translations', 'translatorNotes', 'noTranslation'] as const;
+export const AUDIT_SUBJECTS = ['editor', 'settings', 'ruleset', 'tileset', 'tile', 'item', 'race', 'class', 'theme', 'difficultyLevel', 'area', 'cells', 'links', 'translations', 'translatorNotes', 'noTranslation', 'draft'] as const;
 
 export type AuditSubject = typeof AUDIT_SUBJECTS[number];
 
-export type AuditAction = 'added' | 'changed' | 'deleted' | 'restored' | 'resized';
+export type AuditAction = 'added' | 'changed' | 'deleted' | 'restored' | 'resized' | 'applied';
 
 /**
  * One thing a save changed
@@ -964,6 +990,11 @@ export interface UniverseEdit
 	 * The role they saved with, ADMIN_ROLE included
 	 */
 	role: EditorRole;
+
+	/**
+	 * Whether the save changed the universe's draft rather than its live version
+	 */
+	draft: boolean;
 
 	/**
 	 * What the save changed, thing by thing, in the order it changed them, or null for a save made

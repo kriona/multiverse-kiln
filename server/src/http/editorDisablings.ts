@@ -91,6 +91,12 @@ export class SaveDisablings
 	 */
 	async finish(context: ChangeContext): Promise<void>
 	{
+		// The draft's characters are the live version's: applying the draft asks what happens to them
+		if (context.version.draft)
+		{
+			return;
+		}
+
 		await this.finishItems(context);
 		await this.finishAreas(context);
 		await this.finishGroupSize(context);
@@ -112,7 +118,7 @@ export class SaveDisablings
 		}
 
 		// An item the save deleted isn't listed, and nobody carries it
-		const { items } = await listEditorItems(universe.id, universe.ruleset, { ids: [...this.items.keys()] }, transaction);
+		const { items } = await listEditorItems(context.version, universe.ruleset, { ids: [...this.items.keys()] }, transaction);
 
 		for (const item of items)
 		{
@@ -144,7 +150,7 @@ export class SaveDisablings
 		const { universe, transaction } = context;
 
 		// An area the save deleted isn't listed
-		for (const area of await listAreas(universe.id, transaction))
+		for (const area of await listAreas(context.version, transaction))
 		{
 			const noted = this.areas.get(area.id);
 

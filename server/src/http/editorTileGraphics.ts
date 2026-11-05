@@ -33,9 +33,9 @@ export function addTileGraphicRoutes(router: express.Router): void
  */
 async function listTileGraphicsRoute(request: Request, response: Response): Promise<void>
 {
-	const { universe } = universeContextOf(request);
+	const { version } = universeContextOf(request);
 	const payload: TileGraphicListPayload = {
-		graphics: await listTileGraphics(universe.id)
+		graphics: await listTileGraphics(version)
 	};
 
 	response.json(payload);
@@ -114,7 +114,7 @@ export async function prepareUpload(universeId: string, upload: TileGraphicUploa
  */
 export async function uploadTileGraphicChange(context: ChangeContext, ref: NewRef, upload: TileGraphicUploadRequest): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { version, transaction } = context;
 	const prepared = context.uploads.get(ref);
 
 	if (!prepared)
@@ -122,7 +122,7 @@ export async function uploadTileGraphicChange(context: ChangeContext, ref: NewRe
 		throw new Error(`The upload ${ref} wasn't prepared`);
 	}
 
-	if (await countTileGraphics(universe.id, transaction) >= MAX_UPLOADED_TILE_GRAPHICS)
+	if (await countTileGraphics(version, transaction) >= MAX_UPLOADED_TILE_GRAPHICS)
 	{
 		refuse(409, {
 			id: 'error.tileGraphicLimit',
@@ -134,7 +134,8 @@ export async function uploadTileGraphicChange(context: ChangeContext, ref: NewRe
 	}
 
 	await createTileGraphic(prepared.graphicId, {
-		universeId: universe.id,
+		universeId: version.universeId,
+		draft: version.draft,
 		name: upload.name,
 		format: upload.format,
 		drawOrder: upload.drawOrder,
@@ -153,10 +154,10 @@ export async function uploadTileGraphicChange(context: ChangeContext, ref: NewRe
  */
 export async function deleteTileGraphicChange(context: ChangeContext, graphicId: string): Promise<void>
 {
-	const { universe, transaction } = context;
-	const storageKey = await deleteTileGraphic(universe.id, graphicId, transaction);
+	const { universe, version, transaction } = context;
+	const deleted = await deleteTileGraphic(version, graphicId, transaction);
 
-	if (storageKey === undefined)
+	if (deleted === undefined)
 	{
 		refuse(404, {
 			id: 'error.noSuchUploadedGraphicToDelete',
@@ -165,6 +166,10 @@ export async function deleteTileGraphicChange(context: ChangeContext, graphicId:
 		});
 	}
 
-	context.deletedImages.push(storageKey);
+	if (deleted.unused)
+	{
+		context.deletedImages.push(deleted.storageKey);
+	}
+
 	context.published.push({ kind: 'tiles', universeId: universe.id });
 }

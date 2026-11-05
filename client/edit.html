@@ -14,10 +14,21 @@
 					<!-- include site-name.html -->
 					<h1 id="editor-title" data-message="editor.title" data-translation-context="Heading of the world editor until the universe's name has loaded">Edit Universe</h1>
 					<span class="toolbar-name" data-message="editor.role" data-translation-context="In the editor's toolbar, the player's role in the universe; {role} is e.g. creator or builder">Your role: <strong id="editor-role" data-argument="role"></strong></span>
+					<label id="editor-version-field" class="toolbar-name editor-version" hidden>
+						<span data-message="editor.version" data-translation-context="Label of the choice in the editor's toolbar of which version of the universe to edit: the live version players play, or the draft being built beside it">Editing</span>
+						<select id="editor-version">
+							<option value="live" data-message="editor.version.live" data-translation-context="Choice in the editor's toolbar for editing the live version of the universe, the one players play">Live version</option>
+							<option value="draft" data-message="editor.version.draft" data-translation-context="Choice in the editor's toolbar for editing the universe's draft, a copy players don't see until it is applied">Draft</option>
+						</select>
+					</label>
+					<button id="editor-start-draft" class="draft" type="button" hidden data-message="editor.draft.start" data-translation-context="Button that starts a draft of the universe when the editor is saved: a copy editors change without players seeing it, in the editor's toolbar and in the dialog explaining drafts"><!-- icon ph:copy -->Start Draft</button>
+					<button id="editor-apply-draft" class="draft" type="button" hidden data-message="editor.draft.apply" data-translation-context="Button in the editor's toolbar that applies the universe's draft to the live version after asking, so players see everything changed in it"><!-- icon ph:rocket-launch -->Apply Draft</button>
+					<button id="editor-discard-draft" class="danger" type="button" hidden data-message="editor.draft.discard" data-translation-context="Button in the editor's toolbar that deletes the universe's draft after asking, leaving the live version as it is"><!-- icon ph:trash -->Discard Draft</button>
 					<a id="editor-play" class="button" data-shortcut="Alt+U" hidden data-message="editor.play" data-translation-context="Button in the editor's toolbar that goes to the universe's lobby to play"><!-- icon game-icons:magic-portal -->Enter Universe</a>
 					<!-- include account.html -->
 				</header>
 				<p id="editor-notice" class="notice" role="status" hidden></p>
+				<p id="editor-version-notice" class="notice" role="status" hidden></p>
 				<div class="tabs" role="tablist">
 					<button id="editor-tab-universe" type="button" role="tab" aria-controls="editor-panel-universe" data-message="editor.tab.universe" data-translation-context="Tab of the editor with the universe's own settings"><!-- icon game-icons:galaxy -->Universe</button>
 					<button id="editor-tab-editors" type="button" role="tab" aria-controls="editor-panel-editors" data-message="editor.tab.editors" data-translation-context="Tab of the editor listing the players who can work on or test the universe, and their roles"><!-- icon ph:users -->Editors</button>
@@ -86,10 +97,19 @@
 								<p id="universe-error" class="form-error" role="alert" hidden></p>
 							</fieldset>
 						</form>
+						<section id="universe-draft" class="universe-draft" aria-labelledby="universe-draft-heading" hidden>
+							<h2 id="universe-draft-heading" data-message="editor.draft.heading" data-translation-context="Heading of the part of the editor's Universe tab shown when starting, applying or discarding the universe's draft (a copy of the universe editors change without players seeing it) couldn't be saved">Draft</h2>
+							<p id="universe-draft-status" role="status"></p>
+							<div class="form-buttons">
+								<button id="universe-draft-undo" type="button" data-message="editor.draft.undo" data-translation-context="Button on the editor's Universe tab that takes back starting, applying or discarding the draft, when saving it was refused"><!-- icon ph:arrow-counter-clockwise -->Undo</button>
+							</div>
+							<p id="universe-draft-error" class="form-error" role="alert" hidden></p>
+						</section>
 					</section>
 
 					<section id="editor-panel-editors" class="editor-panel editor-cards" role="tabpanel" aria-labelledby="editor-tab-editors" hidden>
 						<div class="panel">
+							<p id="editors-draft-note" class="notice" data-message="editor.editors.draftNote" data-translation-context="On the editor's Editors tab while the universe's draft (a copy players don't see until it is applied) is open: editors aren't part of the draft" hidden>Changes to editors apply to all versions of the universe - both the live and the draft versions.</p>
 							<div class="filters">
 								<button id="editors-add" type="button" data-shortcut="Alt+N" data-message="editor.editors.add" data-translation-context="Button on the editor's Editors tab that opens the dialog for giving a player a role in the universe"><!-- icon ph:user-plus -->Add Editor</button>
 							</div>
@@ -1056,6 +1076,22 @@
 						<div class="dialog-buttons">
 							<button id="impact-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
 							<button id="impact-submit" type="submit" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+						</div>
+					</form>
+				</dialog>
+				<dialog id="start-draft-dialog" class="panel dialog" aria-labelledby="start-draft-title" aria-describedby="start-draft-explanation start-draft-overwrite start-draft-unsaved">
+					<form id="start-draft-form" class="form">
+						<h2 id="start-draft-title" data-message="editor.startDraft.title" data-translation-context="Title of the dialog the editor's Start Draft button opens, explaining drafts before one is started">Start a Draft</h2>
+						<div id="start-draft-explanation" class="form-group">
+							<p data-message="editor.startDraft.copy" data-translation-context="In the dialog explaining drafts before one is started: what a draft is">A draft is a copy of the whole universe: its settings, races, classes, items, tilesets, areas and their maps, and translations. Players keep playing the live version and won't see draft changes until they are applied.</p>
+							<p data-message="editor.startDraft.finishing" data-translation-context="In the dialog explaining drafts before one is started: how a draft ends">When the draft is ready, a creator applies it with Apply Draft at the top of the editor, and players see everything changed in it at once. Discard Draft deletes it instead, leaving the live version as it is.</p>
+						</div>
+						<p id="start-draft-overwrite" class="notice" data-message="editor.startDraft.overwrite" data-translation-context="Warning in the dialog explaining drafts before one is started, shown in a box that stands out">⚠️ Applying the draft overwrites the entire universe with it, including any changes saved to the live version while the draft is open. Applying can't be undone.</p>
+						<p id="start-draft-unsaved" data-message="editor.startDraft.unsaved" data-translation-context="In the dialog explaining drafts before one is started, when the editor has unsaved changes: they are saved first, so the draft starts with them" hidden>Your unsaved changes are saved to the live version first, so the draft starts with them.</p>
+						<p id="start-draft-error" class="form-error" role="alert" hidden></p>
+						<div class="dialog-buttons">
+							<button id="start-draft-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="start-draft-submit" class="draft" type="submit" data-shortcut="Alt+S"></button>
 						</div>
 					</form>
 				</dialog>

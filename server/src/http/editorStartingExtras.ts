@@ -49,12 +49,12 @@ export interface StartingReferences
  */
 export async function checkStartingReferences(context: ChangeContext, references: StartingReferences): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { universe, version, transaction } = context;
 	const { areaIds = [], itemIds = [] } = references;
 
 	if (areaIds.length > 0)
 	{
-		const usableAreaIds = new Set((await listAreas(universe.id, transaction))
+		const usableAreaIds = new Set((await listAreas(version, transaction))
 			.map((area) => area.id)
 			.filter((areaId) => (areaId !== universe.lobbyAreaId)));
 
@@ -66,7 +66,7 @@ export async function checkStartingReferences(context: ChangeContext, references
 
 	if (itemIds.length > 0)
 	{
-		const usableItemIds = new Set((await loadEditorItems(universe.id, universe.ruleset, transaction)).map((item) => item.id));
+		const usableItemIds = new Set((await loadEditorItems(version, universe.ruleset, transaction)).map((item) => item.id));
 
 		if (!itemIds.every((itemId) => usableItemIds.has(itemId)))
 		{

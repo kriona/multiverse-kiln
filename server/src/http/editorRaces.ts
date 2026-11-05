@@ -57,8 +57,8 @@ export function addRaceRoutes(router: express.Router): void
  */
 async function listRaces(request: Request, response: Response): Promise<void>
 {
-	const { universe } = universeContextOf(request);
-	const payload: RaceListPayload = { races: await loadEditorRaces(universe.id, universe.ruleset) };
+	const { universe, version } = universeContextOf(request);
+	const payload: RaceListPayload = { races: await loadEditorRaces(version, universe.ruleset) };
 
 	response.json(payload);
 }
@@ -72,7 +72,7 @@ async function listRaces(request: Request, response: Response): Promise<void>
  */
 export async function createRaceChange(context: ChangeContext, ref: NewRef, settings: RaceSettings): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { universe, version, transaction } = context;
 	const { name } = settings;
 
 	if (name === null)
@@ -80,7 +80,7 @@ export async function createRaceChange(context: ChangeContext, ref: NewRef, sett
 		refuse(400, messages.raceNeedsName);
 	}
 
-	if (await countCustomRaces(universe.id, transaction) >= MAX_CUSTOM_RACES)
+	if (await countCustomRaces(version, transaction) >= MAX_CUSTOM_RACES)
 	{
 		refuse(409, {
 			id: 'error.raceLimit',
@@ -92,7 +92,7 @@ export async function createRaceChange(context: ChangeContext, ref: NewRef, sett
 	}
 
 	await checkRace(context, undefined, settings);
-	recordRef(context, ref, await createCustomRace(universe.id, universe.ruleset, { ...settings, name }, transaction));
+	recordRef(context, ref, await createCustomRace(version, universe.ruleset, { ...settings, name }, transaction));
 }
 
 /**
@@ -104,9 +104,9 @@ export async function createRaceChange(context: ChangeContext, ref: NewRef, sett
  */
 export async function saveRaceChange(context: ChangeContext, id: NumberRef, settings: RaceSettings): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { universe, version, transaction } = context;
 	const raceId = resolveNumberRef(context, id);
-	const kind = await findRaceKind(universe.id, universe.ruleset, raceId, transaction);
+	const kind = await findRaceKind(version, universe.ruleset, raceId, transaction);
 	const { name } = settings;
 
 	if (kind === undefined)
@@ -123,11 +123,11 @@ export async function saveRaceChange(context: ChangeContext, id: NumberRef, sett
 
 	if (kind === 'default')
 	{
-		await saveEditedDefaultRace(universe.id, universe.ruleset, raceId, settings, transaction);
+		await saveEditedDefaultRace(version, universe.ruleset, raceId, settings, transaction);
 	}
 	else if (name !== null)
 	{
-		await updateCustomRace(universe.id, universe.ruleset, raceId, { ...settings, name }, transaction);
+		await updateCustomRace(version, universe.ruleset, raceId, { ...settings, name }, transaction);
 	}
 }
 
@@ -139,9 +139,9 @@ export async function saveRaceChange(context: ChangeContext, id: NumberRef, sett
  */
 export async function removeRaceChange(context: ChangeContext, id: NumberRef): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { universe, version, transaction } = context;
 	const raceId = resolveNumberRef(context, id);
-	const kind = await findRaceKind(universe.id, universe.ruleset, raceId, transaction);
+	const kind = await findRaceKind(version, universe.ruleset, raceId, transaction);
 
 	if (kind === undefined)
 	{
@@ -151,8 +151,8 @@ export async function removeRaceChange(context: ChangeContext, id: NumberRef): P
 	// Default races are enabled, so restoring one never leaves the universe without an enabled race
 	if (kind === 'default')
 	{
-		await restoreDefaultRace(universe.id, raceId, transaction);
-		await deleteUniverseTextOf(universe.id, 'race', raceId, transaction);
+		await restoreDefaultRace(version, raceId, transaction);
+		await deleteUniverseTextOf(version, 'race', raceId, transaction);
 		return;
 	}
 
@@ -162,15 +162,15 @@ export async function removeRaceChange(context: ChangeContext, id: NumberRef): P
 		refuse(409, messages.raceInUse);
 	}
 
-	const others = (await loadEditorRaces(universe.id, universe.ruleset, transaction)).filter((race) => (race.id !== raceId));
+	const others = (await loadEditorRaces(version, universe.ruleset, transaction)).filter((race) => (race.id !== raceId));
 
 	if (!others.some((race) => race.enabled))
 	{
 		refuse(409, messages.noEnabledRace);
 	}
 
-	await deleteCustomRace(universe.id, raceId, transaction);
-	await deleteUniverseTextOf(universe.id, 'race', raceId, transaction);
+	await deleteCustomRace(version, raceId, transaction);
+	await deleteUniverseTextOf(version, 'race', raceId, transaction);
 }
 
 /**
@@ -183,14 +183,14 @@ export async function removeRaceChange(context: ChangeContext, id: NumberRef): P
  */
 async function checkRace(context: ChangeContext, raceId: number | undefined, settings: RaceSettings): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { universe, version, transaction } = context;
 
 	await checkStartingReferences(context, {
 		areaIds: ((settings.startingAreaId === null) ? [] : [settings.startingAreaId]),
 		itemIds: settings.startingItems.map(({ itemId }) => itemId)
 	});
 
-	if (!settings.enabled && !(await loadEditorRaces(universe.id, universe.ruleset, transaction)).some((race) => ((race.id !== raceId) && race.enabled)))
+	if (!settings.enabled && !(await loadEditorRaces(version, universe.ruleset, transaction)).some((race) => ((race.id !== raceId) && race.enabled)))
 	{
 		refuse(409, messages.noEnabledRace);
 	}

@@ -5,6 +5,7 @@ import { DEFAULT_RACE_NAMES, emptyMoney, NEW_PF1E_RACE_RULES, PF1E_RACES, pf1eRa
 import { findDefaultItemIds } from '../../src/db/itemRepo.js';
 import { countCustomRaces, createCustomRace, deleteCustomRace, findDefaultRaceIds, findRaceKind, isRaceStartingItem, loadEditorRaces, restoreDefaultRace, saveEditedDefaultRace, updateCustomRace, type CustomRaceSettings } from '../../src/db/raceRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
+import { liveVersion } from '../../src/db/universeVersions.js';
 import { addUniverse, addArea } from './fixtures.js';
 
 const lizardfolk: CustomRaceSettings = {
@@ -52,7 +53,7 @@ async function defaultRaceId(key: string): Promise<number>
  */
 async function findRace(universeId: string, raceId: number): Promise<EditorRace | undefined>
 {
-	return((await loadEditorRaces(universeId, 'pf1e')).find((race) => (race.id === raceId)));
+	return((await loadEditorRaces(liveVersion(universeId), 'pf1e')).find((race) => (race.id === raceId)));
 }
 
 describe('raceRepo', () =>
@@ -62,7 +63,7 @@ describe('raceRepo', () =>
 		it('are the Pathfinder 1E races, each with its name message and rules', async () =>
 		{
 			const universeId = await addUniverse();
-			const races = await loadEditorRaces(universeId, 'pf1e');
+			const races = await loadEditorRaces(liveVersion(universeId), 'pf1e');
 
 			assert.deepStrictEqual(races.map((race) => race.key), Object.keys(PF1E_RACES));
 
@@ -95,11 +96,11 @@ describe('raceRepo', () =>
 		const universeId = await addUniverse();
 		const areaId = await addArea(universeId);
 		const daggerId = (await findDefaultItemIds('pf1e')).get('dagger') as number;
-		const raceId = await inTransaction((transaction) => createCustomRace(universeId, 'pf1e', lizardfolk, transaction));
+		const raceId = await inTransaction((transaction) => createCustomRace(liveVersion(universeId), 'pf1e', lizardfolk, transaction));
 
-		assert.strictEqual(await findRaceKind(universeId, 'pf1e', raceId), 'custom');
-		assert.strictEqual(await findRaceKind(await addUniverse('Other'), 'pf1e', raceId), undefined);
-		assert.strictEqual(await countCustomRaces(universeId), 1);
+		assert.strictEqual(await findRaceKind(liveVersion(universeId), 'pf1e', raceId), 'custom');
+		assert.strictEqual(await findRaceKind(liveVersion(await addUniverse('Other')), 'pf1e', raceId), undefined);
+		assert.strictEqual(await countCustomRaces(liveVersion(universeId)), 1);
 		assert.deepStrictEqual(await findRace(universeId, raceId), { id: raceId, key: null, ...lizardfolk, custom: true, edited: false });
 
 		const changed: CustomRaceSettings = {
@@ -121,13 +122,13 @@ describe('raceRepo', () =>
 			}
 		};
 
-		await inTransaction((transaction) => updateCustomRace(universeId, 'pf1e', raceId, changed, transaction));
+		await inTransaction((transaction) => updateCustomRace(liveVersion(universeId), 'pf1e', raceId, changed, transaction));
 		assert.deepStrictEqual(await findRace(universeId, raceId), { id: raceId, key: null, ...changed, custom: true, edited: false });
-		assert.strictEqual(await isRaceStartingItem(universeId, daggerId), true);
+		assert.strictEqual(await isRaceStartingItem(liveVersion(universeId), daggerId), true);
 
-		await deleteCustomRace(universeId, raceId);
+		await deleteCustomRace(liveVersion(universeId), raceId);
 		assert.strictEqual(await findRace(universeId, raceId), undefined);
-		assert.strictEqual(await isRaceStartingItem(universeId, daggerId), false);
+		assert.strictEqual(await isRaceStartingItem(liveVersion(universeId), daggerId), false);
 	});
 
 	it('edits a default race for one universe only, and restores it', async () =>
@@ -147,22 +148,22 @@ describe('raceRepo', () =>
 			}
 		};
 
-		assert.strictEqual(await findRaceKind(universeId, 'pf1e', dwarfId), 'default');
+		assert.strictEqual(await findRaceKind(liveVersion(universeId), 'pf1e', dwarfId), 'default');
 
-		await inTransaction((transaction) => saveEditedDefaultRace(universeId, 'pf1e', dwarfId, edited, transaction));
+		await inTransaction((transaction) => saveEditedDefaultRace(liveVersion(universeId), 'pf1e', dwarfId, edited, transaction));
 		assert.deepStrictEqual(await findRace(universeId, dwarfId), { ...original, ...edited, edited: true });
 		assert.deepStrictEqual(await findRace(otherId, dwarfId), original);
-		assert.strictEqual(await countCustomRaces(universeId), 0);
-		assert.strictEqual(await isRaceStartingItem(universeId, daggerId), true);
-		assert.strictEqual(await isRaceStartingItem(otherId, daggerId), false);
+		assert.strictEqual(await countCustomRaces(liveVersion(universeId)), 0);
+		assert.strictEqual(await isRaceStartingItem(liveVersion(universeId), daggerId), true);
+		assert.strictEqual(await isRaceStartingItem(liveVersion(otherId), daggerId), false);
 
 		// Saving again replaces the copy rather than adding another
-		await inTransaction((transaction) => saveEditedDefaultRace(universeId, 'pf1e', dwarfId, { ...edited, name: 'Mountain Folk' }, transaction));
+		await inTransaction((transaction) => saveEditedDefaultRace(liveVersion(universeId), 'pf1e', dwarfId, { ...edited, name: 'Mountain Folk' }, transaction));
 		assert.strictEqual((await findRace(universeId, dwarfId))?.name, 'Mountain Folk');
-		assert.strictEqual((await loadEditorRaces(universeId, 'pf1e')).length, Object.keys(PF1E_RACES).length);
+		assert.strictEqual((await loadEditorRaces(liveVersion(universeId), 'pf1e')).length, Object.keys(PF1E_RACES).length);
 
-		await restoreDefaultRace(universeId, dwarfId);
+		await restoreDefaultRace(liveVersion(universeId), dwarfId);
 		assert.deepStrictEqual(await findRace(universeId, dwarfId), original);
-		assert.strictEqual(await isRaceStartingItem(universeId, daggerId), false);
+		assert.strictEqual(await isRaceStartingItem(liveVersion(universeId), daggerId), false);
 	});
 });

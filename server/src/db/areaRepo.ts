@@ -9,8 +9,9 @@ import { ancestorAreas, chunkCoordinate, chunkKey, isInBounds, lobbyAreaTime, re
 import { applyCellChanges, chunksOfChanges, clipChunk, isChunkInside, isDefaultChunk } from '../logic/mapEdits.js';
 import type { AreaLink } from '../logic/areaGrid.js';
 import { db, type Executor } from './client.js';
-import { mapChunks, universes, areaLinks, areas, races, classes, classRaceAreas } from './schema.js';
+import { mapChunks, universes, universeDrafts, areaLinks, areas, races, classes, classRaceAreas } from './schema.js';
 import { loadUniverseTiles, type TileRecord } from './tileRepo.js';
+import { inVersion, liveVersion, type UniverseVersion } from './universeVersions.js';
 
 /**
  * Map layer holding the ground
@@ -91,7 +92,7 @@ export interface LoadedArea
 /**
  * What a new area needs
  */
-export type NewArea = Pick<typeof areas.$inferInsert, 'universeId' | 'parentAreaId' | 'name' | 'enabled' | 'indoors' | 'lightLevel' | 'defaultTileId' | 'loopsEastWest' | 'loopsNorthSouth' | 'passageOfTime' | 'faerieMorning'> & { bounds: MapBounds };
+export type NewArea = Pick<typeof areas.$inferInsert, 'universeId' | 'draft' | 'parentAreaId' | 'name' | 'enabled' | 'indoors' | 'lightLevel' | 'defaultTileId' | 'loopsEastWest' | 'loopsNorthSouth' | 'passageOfTime' | 'faerieMorning'> & { bounds: MapBounds };
 
 /**
  * What a new area link needs
@@ -159,13 +160,14 @@ export async function createAreaLink(link: NewAreaLink, executor: Executor = db)
 }
 
 /**
- * Loads an area with everything needed to play in it except its map's cells, which a map up to
- * MAX_MAP_SIDE across has too many of to load at once: load them a piece at a time with loadChunks.
- * A lobby has full vision and its tiles no vision cost when its universe's lobbyNoVisionCost is set
+ * Loads one of a universe's live areas with everything needed to play in it except its map's cells, which
+ * a map up to MAX_MAP_SIDE across has too many of to load at once: load them a piece at a time with
+ * loadChunks. A lobby has full vision and its tiles no vision cost when its universe's lobbyNoVisionCost
+ * is set
  *
  * @param areaId The area's ID
  * @param executor The database, or a transaction
- * @return The area, or undefined when there is none with that ID
+ * @return The area, or undefined when there is no live area with that ID
  */
 export async function loadArea(areaId: string, executor: Executor = db): Promise<LoadedArea | undefined>
 {
@@ -186,7 +188,10 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 		})
 		.from(areas)
 		.innerJoin(universes, eq(universes.id, areas.universeId))
-		.where(eq(areas.id, areaId))
+		.where(and(
+			eq(areas.id, areaId),
+			eq(areas.draft, false)
+		))
 		.limit(1);
 
 	if (!row)
@@ -209,7 +214,7 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 
 	const isLobby = (area.id === universe.lobbyAreaId);
 	const fullVision = (isLobby && universe.lobbyNoVisionCost);
-	const universeTiles = await loadUniverseTiles(area.universeId, ruleset, executor);
+	const universeTiles = await loadUniverseTiles(liveVersion(area.universeId), ruleset, executor);
 	const tiles = (fullVision
 		? universeTiles.map((tile) => ({ ...tile, visionCost: 0 }))
 		: universeTiles);
@@ -276,19 +281,22 @@ async function loadTimeChain(area: typeof areas.$inferSelect, executor: Executor
 			faerieMorning: areas.faerieMorning
 		})
 		.from(areas)
-		.where(eq(areas.universeId, area.universeId));
+		.where(inVersion(areas, {
+			universeId: area.universeId,
+			draft: area.draft
+		}));
 
 	return([area, ...ancestorAreas(rows, area.id)]);
 }
 
 /**
- * An area with every setting the editor shows, and the universe it belongs to
+ * An area with every setting the editor shows, and the version of the universe it belongs to
  *
  * @param areaId The area's ID
  * @param executor The database, or a transaction
- * @return The area and its universe's ID, or undefined when there is no area with that ID
+ * @return The area and its version, or undefined when there is no area with that ID
  */
-export async function findEditorArea(areaId: string, executor: Executor = db): Promise<{ universeId: string; area: EditorArea } | undefined>
+export async function findEditorArea(areaId: string, executor: Executor = db): Promise<{ version: UniverseVersion; area: EditorArea } | undefined>
 {
 	const [row] = await executor
 		.select()
@@ -302,7 +310,10 @@ export async function findEditorArea(areaId: string, executor: Executor = db): P
 	}
 
 	return({
-		universeId: row.universeId,
+		version: {
+			universeId: row.universeId,
+			draft: row.draft
+		},
 		area: {
 			id: row.id,
 			name: row.name,
@@ -323,11 +334,11 @@ export async function findEditorArea(areaId: string, executor: Executor = db): P
 /**
  * Every area of a universe, by name
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param executor The database, or a transaction
  * @return The areas
  */
-export async function listAreas(universeId: string, executor: Executor = db): Promise<EditorAreaSummary[]>
+export async function listAreas(version: UniverseVersion, executor: Executor = db): Promise<EditorAreaSummary[]>
 {
 	return(executor
 		.select({
@@ -338,25 +349,25 @@ export async function listAreas(universeId: string, executor: Executor = db): Pr
 			indoors: areas.indoors
 		})
 		.from(areas)
-		.where(eq(areas.universeId, universeId))
+		.where(inVersion(areas, version))
 		.orderBy(areas.name, areas.id));
 }
 
 /**
  * How many areas a universe has
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param executor The database, or a transaction
  * @return The number of areas
  */
-export async function countAreas(universeId: string, executor: Executor = db): Promise<number>
+export async function countAreas(version: UniverseVersion, executor: Executor = db): Promise<number>
 {
 	const [row] = await executor
 		.select({
 			total: count()
 		})
 		.from(areas)
-		.where(eq(areas.universeId, universeId));
+		.where(inVersion(areas, version));
 
 	return(row.total);
 }
@@ -404,9 +415,9 @@ export async function deleteArea(areaId: string, executor: Executor = db): Promi
  *
  * @param areaIds The areas' IDs
  * @param executor A transaction
- * @return Each area that exists, with its universe and bounds, by ID
+ * @return Each area that exists, with the version of the universe it belongs to and its bounds, by ID
  */
-export async function lockAreas(areaIds: readonly string[], executor: Executor): Promise<Map<string, { universeId: string; bounds: MapBounds }>>
+export async function lockAreas(areaIds: readonly string[], executor: Executor): Promise<Map<string, { version: UniverseVersion; bounds: MapBounds }>>
 {
 	// Locking in ID order keeps two transactions that lock the same areas from waiting on each other
 	const rows = await executor
@@ -416,7 +427,13 @@ export async function lockAreas(areaIds: readonly string[], executor: Executor):
 		.orderBy(asc(areas.id))
 		.for('update');
 
-	return(new Map(rows.map((row) => [row.id, { universeId: row.universeId, bounds: boundsOf(row) }])));
+	return(new Map(rows.map((row) => [row.id, {
+		version: {
+			universeId: row.universeId,
+			draft: row.draft
+		},
+		bounds: boundsOf(row)
+	}])));
 }
 
 /**
@@ -663,22 +680,27 @@ export async function listAreaLinks(areaId: string, executor: Executor = db): Pr
  * Every area of a universe that is a starting area: the universe's, its races' and classes', and its
  * classes' for each race. None of them may be the lobby's area
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param executor The database, or a transaction
  * @return The areas' IDs
  */
-export async function listStartingAreaIds(universeId: string, executor: Executor = db): Promise<string[]>
+export async function listStartingAreaIds(version: UniverseVersion, executor: Executor = db): Promise<string[]>
 {
 	const universeAreas = executor
 		.select({ id: areas.id })
 		.from(areas)
-		.where(eq(areas.universeId, universeId));
+		.where(inVersion(areas, version));
 	const ids = new Set<string | null>();
 	const queries = [
-		executor
-			.select({ areaId: universes.startingAreaId })
-			.from(universes)
-			.where(eq(universes.id, universeId)),
+		(version.draft
+			? executor
+				.select({ areaId: universeDrafts.startingAreaId })
+				.from(universeDrafts)
+				.where(eq(universeDrafts.universeId, version.universeId))
+			: executor
+				.select({ areaId: universes.startingAreaId })
+				.from(universes)
+				.where(eq(universes.id, version.universeId))),
 		executor
 			.select({ areaId: races.startingAreaId })
 			.from(races)
@@ -773,12 +795,12 @@ export async function deleteAreaLink(areaId: string, column: number, row: number
 /**
  * The areas of a universe that use a tile, as their default tile or in a cell
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param tileId The tile's ID
  * @param executor The database, or a transaction
  * @return The areas, by name
  */
-export async function findAreasUsingTile(universeId: string, tileId: number, executor: Executor = db): Promise<{ id: string; name: string }[]>
+export async function findAreasUsingTile(version: UniverseVersion, tileId: number, executor: Executor = db): Promise<{ id: string; name: string }[]>
 {
 	return(executor
 		.select({
@@ -787,7 +809,7 @@ export async function findAreasUsingTile(universeId: string, tileId: number, exe
 		})
 		.from(areas)
 		.where(and(
-			eq(areas.universeId, universeId),
+			inVersion(areas, version),
 			or(
 				eq(areas.defaultTileId, tileId),
 				sql`EXISTS (SELECT 1 FROM ${mapChunks} WHERE ${mapChunks.areaId} = ${areas.id} AND ${tileId} = ANY(${mapChunks.cells}))`
@@ -800,20 +822,20 @@ export async function findAreasUsingTile(universeId: string, tileId: number, exe
  * Paints every use of a tile in a universe's maps with another tile: the cells holding it, and the areas
  * whose default tile it is. Lock the universe first, so painting can't use the tile meanwhile
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param tileId The tile to replace
  * @param replacementId The tile to paint in its place
  * @param executor The database, or a transaction
  * @return The IDs of the areas that changed
  */
-export async function replaceTileInMaps(universeId: string, tileId: number, replacementId: number, executor: Executor = db): Promise<string[]>
+export async function replaceTileInMaps(version: UniverseVersion, tileId: number, replacementId: number, executor: Executor = db): Promise<string[]>
 {
 	const universeAreas = executor
 		.select({
 			id: areas.id
 		})
 		.from(areas)
-		.where(eq(areas.universeId, universeId));
+		.where(inVersion(areas, version));
 	const repainted = await executor
 		.update(mapChunks)
 		.set({
@@ -832,7 +854,7 @@ export async function replaceTileInMaps(universeId: string, tileId: number, repl
 			defaultTileId: replacementId
 		})
 		.where(and(
-			eq(areas.universeId, universeId),
+			inVersion(areas, version),
 			eq(areas.defaultTileId, tileId)
 		))
 		.returning({
@@ -845,12 +867,12 @@ export async function replaceTileInMaps(universeId: string, tileId: number, repl
 /**
  * Whether any area of a universe uses a tile, as its default tile or in a cell
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param tileId The tile's ID
  * @param executor The database, or a transaction
  * @return True when the tile is used
  */
-export async function isTileInUse(universeId: string, tileId: number, executor: Executor = db): Promise<boolean>
+export async function isTileInUse(version: UniverseVersion, tileId: number, executor: Executor = db): Promise<boolean>
 {
 	const [asDefault] = await executor
 		.select({
@@ -858,7 +880,7 @@ export async function isTileInUse(universeId: string, tileId: number, executor: 
 		})
 		.from(areas)
 		.where(and(
-			eq(areas.universeId, universeId),
+			inVersion(areas, version),
 			eq(areas.defaultTileId, tileId)
 		))
 		.limit(1);
@@ -875,7 +897,7 @@ export async function isTileInUse(universeId: string, tileId: number, executor: 
 		.from(mapChunks)
 		.innerJoin(areas, eq(areas.id, mapChunks.areaId))
 		.where(and(
-			eq(areas.universeId, universeId),
+			inVersion(areas, version),
 			sql`${tileId} = ANY(${mapChunks.cells})`
 		))
 		.limit(1);

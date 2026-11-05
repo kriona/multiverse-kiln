@@ -16,6 +16,12 @@ export interface NewUniverseEdit
 	universeId: string;
 	playerId: string;
 	role: EditorRole;
+
+	/**
+	 * Whether the save changed the universe's draft; left out, it changed the live version
+	 */
+	draft?: boolean;
+
 	changeDetails: UniverseEditDetail[];
 	savedAt: Date;
 }
@@ -33,6 +39,11 @@ export interface UniverseEditRecord
 	player: { username: string; displayName: string } | null;
 
 	role: EditorRole;
+
+	/**
+	 * Whether the save changed the universe's draft
+	 */
+	draft: boolean;
 	changeDetails: UniverseEditDetail[] | null;
 	savedAt: Date;
 }
@@ -92,6 +103,7 @@ export async function listUniverseEdits(universeId: string, page: { offset: numb
 			username: players.username,
 			displayName: players.displayName,
 			role: universeEdits.role,
+			draft: universeEdits.draft,
 			changeDetails: universeEdits.changeDetails,
 			savedAt: universeEdits.savedAt
 		})

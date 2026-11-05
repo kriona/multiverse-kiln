@@ -7,9 +7,10 @@ import { nameKey, universeSlug, type AdminUniverseCreator, type EditableUniverse
 import { db, type Executor } from './client.js';
 import { fromCoinColumns, toCoinColumns } from './coinColumns.js';
 import { addDefaultDifficultyLevels } from './difficultyRepo.js';
-import { players, universeEditors, universes } from './schema.js';
+import { players, universeDrafts, universeEditors, universes } from './schema.js';
 import { loadStartingItems, replaceStartingItems } from './startingItemRepo.js';
 import { anyColumnContains } from './textSearch.js';
+import type { UniverseVersion } from './universeVersions.js';
 
 /**
  * The unique index that keeps two universes from having the same slug, and so the same name
@@ -308,112 +309,196 @@ export async function findUniverseDetails(key: string, executor: Executor = db):
 }
 
 /**
- * A universe with every setting the editor shows
+ * The columns of a version's own settings (universeVersionColumns() in schema.ts), as the editor shows them
  *
- * @param universeId The universe's ID
- * @param executor The database, or a transaction
- * @return The universe without the player's role, or undefined when there is none with that ID
+ * @param table The live version's table (universes) or the draft's (universe_drafts)
+ * @return The columns
  */
-export async function findEditableUniverse(universeId: string, executor: Executor = db): Promise<EditableUniverseDetails | undefined>
+function versionSettingColumns(table: typeof universes | typeof universeDrafts)
 {
-	const [row] = await executor
-		.select({
-			id: universes.id,
-			name: universes.name,
-			slug: universes.slug,
-			shortDescription: universes.shortDescription,
-			longDescription: universes.longDescription,
-			sourceLanguage: universes.sourceLanguage,
-			translationLanguages: universes.translationLanguages,
-			stage: universes.stage,
-			ruleset: universes.ruleset,
-			passageOfTime: universes.passageOfTime,
-			faerieMorning: universes.faerieMorning,
-			displayTime: universes.displayTime,
-			lobbyPassageOfTime: universes.lobbyPassageOfTime,
-			lobbyDayHours: universes.lobbyDayHours,
-			lobbyFaerieMorning: universes.lobbyFaerieMorning,
-			lobbyNoVisionCost: universes.lobbyNoVisionCost,
-			lobbyAreaId: universes.lobbyAreaId,
-			lobbyColumn: universes.lobbyColumn,
-			lobbyRow: universes.lobbyRow,
-			startingAreaId: universes.startingAreaId,
-			startingColumn: universes.startingColumn,
-			startingRow: universes.startingRow,
-			groupSize: universes.groupSize,
-			startingPlatinum: universes.startingPlatinum,
-			startingGold: universes.startingGold,
-			startingSilver: universes.startingSilver,
-			startingCopper: universes.startingCopper,
-			startingCredits: universes.startingCredits,
-			disabledReason: universes.disabledReason
-		})
-		.from(universes)
-		.where(eq(universes.id, universeId))
-		.limit(1);
-
-	if (!row)
-	{
-		return(undefined);
-	}
-
-	const { startingPlatinum, startingGold, startingSilver, startingCopper, startingCredits, ...settings } = row;
-
 	return({
-		...settings,
-		startingMoney: fromCoinColumns({ startingPlatinum, startingGold, startingSilver, startingCopper, startingCredits }),
-		startingItems: await loadStartingItems(universeId, executor)
+		name: table.name,
+		shortDescription: table.shortDescription,
+		longDescription: table.longDescription,
+		sourceLanguage: table.sourceLanguage,
+		translationLanguages: table.translationLanguages,
+		passageOfTime: table.passageOfTime,
+		faerieMorning: table.faerieMorning,
+		displayTime: table.displayTime,
+		lobbyPassageOfTime: table.lobbyPassageOfTime,
+		lobbyDayHours: table.lobbyDayHours,
+		lobbyFaerieMorning: table.lobbyFaerieMorning,
+		lobbyNoVisionCost: table.lobbyNoVisionCost,
+		lobbyAreaId: table.lobbyAreaId,
+		lobbyColumn: table.lobbyColumn,
+		lobbyRow: table.lobbyRow,
+		startingAreaId: table.startingAreaId,
+		startingColumn: table.startingColumn,
+		startingRow: table.startingRow,
+		groupSize: table.groupSize,
+		startingPlatinum: table.startingPlatinum,
+		startingGold: table.startingGold,
+		startingSilver: table.startingSilver,
+		startingCopper: table.startingCopper,
+		startingCredits: table.startingCredits
 	});
 }
 
 /**
- * Changes some of a universe's settings
+ * A version's own settings
+ *
+ * @param version The universe's live version or draft
+ * @param executor The database, or a transaction
+ * @return The settings, or undefined when the universe doesn't exist or has no draft
+ */
+async function findVersionSettings(version: UniverseVersion, executor: Executor)
+{
+	const [row] = await (version.draft
+		? executor
+			.select(versionSettingColumns(universeDrafts))
+			.from(universeDrafts)
+			.where(eq(universeDrafts.universeId, version.universeId))
+			.limit(1)
+		: executor
+			.select(versionSettingColumns(universes))
+			.from(universes)
+			.where(eq(universes.id, version.universeId))
+			.limit(1));
+
+	return(row);
+}
+
+/**
+ * Whether a universe has a draft
+ *
+ * @param universeId The universe's ID
+ * @param executor The database, or a transaction
+ * @return True when it has one
+ */
+export async function hasDraft(universeId: string, executor: Executor = db): Promise<boolean>
+{
+	const rows = await executor
+		.select({
+			universeId: universeDrafts.universeId
+		})
+		.from(universeDrafts)
+		.where(eq(universeDrafts.universeId, universeId))
+		.limit(1);
+
+	return(rows.length > 0);
+}
+
+/**
+ * A version of a universe with every setting the editor shows: the universe's own, and the version's
+ *
+ * @param version The universe's live version or draft
+ * @param executor The database, or a transaction
+ * @return The universe without the player's role, or undefined when there is none with that ID, or it
+ * has no draft when the draft is asked for
+ */
+export async function findEditableUniverse(version: UniverseVersion, executor: Executor = db): Promise<EditableUniverseDetails | undefined>
+{
+	const [row] = await executor
+		.select({
+			id: universes.id,
+			slug: universes.slug,
+			stage: universes.stage,
+			ruleset: universes.ruleset,
+			disabledReason: universes.disabledReason
+		})
+		.from(universes)
+		.where(eq(universes.id, version.universeId))
+		.limit(1);
+	const versionSettings = (row ? await findVersionSettings(version, executor) : undefined);
+
+	if (!row || !versionSettings)
+	{
+		return(undefined);
+	}
+
+	const { startingPlatinum, startingGold, startingSilver, startingCopper, startingCredits, ...settings } = versionSettings;
+
+	return({
+		...row,
+		version: (version.draft ? 'draft' : 'live'),
+		hasDraft: (version.draft || await hasDraft(version.universeId, executor)),
+		...settings,
+		startingMoney: fromCoinColumns({ startingPlatinum, startingGold, startingSilver, startingCopper, startingCredits }),
+		startingItems: await loadStartingItems(version, executor)
+	});
+}
+
+/**
+ * Changes some of a universe's settings: its stage, which the universe has once for both versions,
+ * whichever version is given, and the rest in that version
  *
  * The database refuses a faerie passage of time without a faerie morning, a faerie morning without
  * faerie time (for the universe and for its lobby), and a lobby day length, group size or starting
- * money out of range. The caller checks that a starting area
- * is one of the universe's, and that the starting items are items it can use. A new name changes the
- * universe's slug with it
+ * money out of range. The caller checks that a starting area is one of the version's, and that the
+ * starting items are items it can use. A new name is checked against other universes' names; the live
+ * version's changes the universe's slug with it, and the draft's waits until the draft is applied
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param update The settings to change; a name must have a letter or digit
  * @param executor A transaction when the update holds starting items, otherwise the database or a transaction
  * @throws UniverseNameTakenError when another universe has the new name, or one too much like it
  */
-export async function updateUniverseSettings(universeId: string, update: UniverseSettingsUpdate, executor: Executor = db): Promise<void>
+export async function updateUniverseSettings(version: UniverseVersion, update: UniverseSettingsUpdate, executor: Executor = db): Promise<void>
 {
-	const { startingMoney, startingItems, ...settings } = update;
+	const { startingMoney, startingItems, name, stage, ...settings } = update;
+	const versionSettings = {
+		...settings,
+		...((startingMoney === undefined) ? {} : toCoinColumns(startingMoney))
+	};
 
 	if (startingItems !== undefined)
 	{
-		await replaceStartingItems(universeId, startingItems, executor);
+		await replaceStartingItems(version, startingItems, executor);
 	}
 
-	if ((Object.keys(settings).length === 0) && (startingMoney === undefined))
+	if (stage !== undefined)
 	{
-		return;
-	}
-
-	const { name } = settings;
-
-	/**
-	 * Changes the settings
-	 *
-	 * @param transaction The database, or a transaction
-	 */
-	const save = async (transaction: Executor): Promise<void> =>
-	{
-		await transaction
+		await executor
 			.update(universes)
 			.set({
-				...settings,
-				...((name === undefined) ? {} : { slug: universeSlug(name) }),
-				...((startingMoney === undefined) ? {} : toCoinColumns(startingMoney))
+				stage
 			})
-			.where(eq(universes.id, universeId));
+			.where(eq(universes.id, version.universeId));
+	}
+
+	/**
+	 * Changes the version's settings, with its name when given
+	 *
+	 * @param transaction The database, or a transaction
+	 * @param named The settings, with the name when it changes
+	 */
+	const save = async (transaction: Executor, named: Record<string, unknown>): Promise<void> =>
+	{
+		if (Object.keys(named).length === 0)
+		{
+			return;
+		}
+
+		await (version.draft
+			? transaction
+				.update(universeDrafts)
+				.set(named)
+				.where(eq(universeDrafts.universeId, version.universeId))
+			: transaction
+				.update(universes)
+				.set({
+					...named,
+					...((name === undefined) ? {} : { slug: universeSlug(name) })
+				})
+				.where(eq(universes.id, version.universeId)));
 	};
 
-	await ((name === undefined) ? save(executor) : settingName(name, universeId, executor, save));
+	await ((name === undefined)
+		? save(executor, versionSettings)
+		: settingName(name, version.universeId, executor, (transaction) => save(transaction, {
+			...versionSettings,
+			name
+		})));
 }
 
 /**

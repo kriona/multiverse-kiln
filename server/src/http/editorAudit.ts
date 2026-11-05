@@ -45,6 +45,7 @@ async function listEdits(request: Request, response: Response): Promise<void>
 			id: edit.id,
 			player: edit.player,
 			role: edit.role,
+			draft: edit.draft,
 			details: edit.changeDetails,
 			savedAt: edit.savedAt.toISOString()
 		})),

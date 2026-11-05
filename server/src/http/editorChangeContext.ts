@@ -5,6 +5,7 @@
 import { isNewRef, type EditableUniverseDetails, type MessageDescriptor, type MessageValues, type NewRef, type NumberRef, type ResizeConflict, type StringRef, type EditorRole, type UniverseRole } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
+import type { UniverseVersion } from '../db/universeVersions.js';
 import type { AreaChange } from '../world/areaChanges.js';
 import type { SaveDisablings } from './editorDisablings.js';
 import { errorMessages, type Refusal } from './errors.js';
@@ -26,9 +27,14 @@ export interface ChangeContext
 	readonly playerId: string;
 
 	/**
-	 * The universe as the changes before this one left it
+	 * The universe as the changes before this one left it, with the settings of the version the save changes
 	 */
 	universe: EditableUniverseDetails;
+
+	/**
+	 * The version the save changes. A save to the draft reaches no player, so it tells no room anything
+	 */
+	readonly version: UniverseVersion;
 
 	/**
 	 * The player's role in the editor (ADMIN_ROLE included), as it was when the save took the universe's lock
@@ -82,6 +88,12 @@ export interface ChangeContext
 	 * Images of deleted tilesets, removed from storage once the save commits
 	 */
 	readonly deletedImages: string[];
+
+	/**
+	 * Set once the save applies the universe's draft, which reaches the rooms then as a save to the live
+	 * version does
+	 */
+	draftApplied: boolean;
 }
 
 /**

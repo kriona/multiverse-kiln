@@ -6,6 +6,7 @@ import { findDefaultTileIds } from '../../src/db/tileRepo.js';
 import { setUniverseAreas, updateUniverseSettings } from '../../src/db/universeRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
 import { countAreas, createAreaLink, deleteArea, deleteAreaLink, editCells, findEditorArea, isTileInUse, listAreaLinks, listAreas, listAreasLinkingTo, loadChunks, loadChunksAt, loadArea, resizeArea, saveGroundChunk, saveAreaLink, updateAreaSettings } from '../../src/db/areaRepo.js';
+import { liveVersion } from '../../src/db/universeVersions.js';
 import { addUniverse, addArea, defaultTileId, loadWholeMap } from './fixtures.js';
 
 /**
@@ -50,7 +51,7 @@ describe('areaRepo', () =>
 			const universeId = await addUniverse();
 			const areaId = await addArea(universeId, 'Meadow');
 
-			await updateUniverseSettings(universeId, { displayTime: 'none' });
+			await updateUniverseSettings(liveVersion(universeId), { displayTime: 'none' });
 
 			assert.strictEqual((await loadArea(areaId))?.displayTime, 'none');
 		});
@@ -106,7 +107,7 @@ describe('areaRepo', () =>
 
 			assert.deepStrictEqual((await loadArea(lobbyId))?.time, { passage: 'real_time', dayHours: DEFAULT_LOBBY_DAY_HOURS });
 
-			await updateUniverseSettings(universeId, { lobbyPassageOfTime: 'faerie', lobbyFaerieMorning: 'horizon' });
+			await updateUniverseSettings(liveVersion(universeId), { lobbyPassageOfTime: 'faerie', lobbyFaerieMorning: 'horizon' });
 
 			assert.deepStrictEqual((await loadArea(lobbyId))?.time, { passage: 'faerie', morning: 'horizon' });
 		});
@@ -154,7 +155,7 @@ describe('areaRepo', () =>
 			await addArea(await addUniverse('Other'), 'Elsewhere');
 
 			assert.deepStrictEqual(await findEditorArea(areaId), {
-				universeId,
+				version: liveVersion(universeId),
 				area: {
 					id: areaId,
 					name: 'Village',
@@ -170,8 +171,8 @@ describe('areaRepo', () =>
 					bounds: { minColumn: -2, minRow: -1, maxColumn: 2, maxRow: 1 }
 				}
 			});
-			assert.deepStrictEqual((await listAreas(universeId)).map((area) => area.name), ['Abbey', 'Village']);
-			assert.strictEqual(await countAreas(universeId), 2);
+			assert.deepStrictEqual((await listAreas(liveVersion(universeId))).map((area) => area.name), ['Abbey', 'Village']);
+			assert.strictEqual(await countAreas(liveVersion(universeId)), 2);
 		});
 	});
 
@@ -356,13 +357,13 @@ describe('areaRepo', () =>
 
 			await addArea(otherId, 'Lake', { tile: 'water' });
 
-			assert.strictEqual(await isTileInUse(universeId, await defaultTileId('grass')), true);
-			assert.strictEqual(await isTileInUse(universeId, forest), false);
-			assert.strictEqual(await isTileInUse(universeId, water), false);
+			assert.strictEqual(await isTileInUse(liveVersion(universeId), await defaultTileId('grass')), true);
+			assert.strictEqual(await isTileInUse(liveVersion(universeId), forest), false);
+			assert.strictEqual(await isTileInUse(liveVersion(universeId), water), false);
 
 			await inTransaction((transaction) => editCells(areaId, [[1, 1, forest]], transaction));
 
-			assert.strictEqual(await isTileInUse(universeId, forest), true);
+			assert.strictEqual(await isTileInUse(liveVersion(universeId), forest), true);
 		});
 	});
 });

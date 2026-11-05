@@ -341,6 +341,13 @@ fieldset
 	gap: 16px;
 }
 
+// The Editors tab's note that editors belong to every version, at the top of its panel rather than under
+// the toolbar, where notices sit
+#editors-draft-note
+{
+	margin: 0 0 12px;
+}
+
 // A row in an editor list that will be deleted when its tab is saved (markStagedRow)
 tr.staged-deleted
 {
@@ -973,4 +980,21 @@ div.ability-modifiers
 	{
 		white-space: pre-wrap;
 	}
+}
+
+// The choice in the toolbar of the version of the universe to edit, while it has a draft
+.editor-version
+{
+	display: flex;
+	flex: 0 0 auto;
+	align-items: center;
+	gap: 6px;
+}
+
+// Starting, applying and discarding the draft, under the Universe tab's settings
+.universe-draft
+{
+	margin-top: 24px;
+	padding-top: 16px;
+	border-top: 1px solid $border;
 }

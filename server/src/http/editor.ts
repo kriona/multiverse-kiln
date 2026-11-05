@@ -21,6 +21,7 @@ import { countTranslations, deleteTranslationsOutside, deleteUniverseTextOf } fr
 import { createArea, findAreasUsingTile, findEditorArea, isTileInUse, listStartingAreaIds, replaceTileInMaps } from '../db/areaRepo.js';
 import { loadUniverseContext, playerIdOf, refuseWritesFromOtherOrigins, requireLogin, universeContextOf } from './editorAccess.js';
 import { addDefaultStartingItems } from '../db/startingItemRepo.js';
+import { isSameVersion, type UniverseVersion } from '../db/universeVersions.js';
 import { recordRef, refuse, resolveNumberRef, resolveStringRef, type ChangeContext } from './editorChangeContext.js';
 import { addAuditRoutes } from './editorAudit.js';
 import { addCharacterListRoutes } from './editorCharacters.js';
@@ -295,14 +296,14 @@ async function createUniverseRoute(request: Request, response: Response): Promis
  */
 async function getUniverse(request: Request, response: Response): Promise<void>
 {
-	const { playerId, universe, role, languages, serverAdmin } = universeContextOf(request);
+	const { playerId, universe, version, role, languages, serverAdmin } = universeContextOf(request);
 	const payload: EditableUniverse = {
 		...universe,
 		role,
 		languages: [...languages],
 		playerId,
 		serverAdmin,
-		translationCounts: Object.fromEntries(await countTranslations(universe.id))
+		translationCounts: Object.fromEntries(await countTranslations(version))
 	};
 
 	response.json(payload);
@@ -324,13 +325,13 @@ export async function applyUniverseChange(context: ChangeContext, update: Univer
 		context.disablings.groupSizeChange(context.universe.groupSize, update.groupSize, largerGroups);
 	}
 
-	const { universe, transaction } = context;
+	const { universe, version, transaction } = context;
 	const lobbyAreaId = ((update.lobbyAreaId === undefined) ? universe.lobbyAreaId : update.lobbyAreaId);
 	const lobbyArea = ((lobbyAreaId !== null) ? await findEditorArea(lobbyAreaId, transaction) : undefined);
 
 	if ((update.lobbyAreaId !== undefined) && (update.lobbyAreaId !== null) && (update.lobbyAreaId !== universe.lobbyAreaId))
 	{
-		await checkLobbyArea(context, lobbyArea?.universeId, update);
+		await checkLobbyArea(context, lobbyArea?.version, update);
 	}
 
 	const problem = (timeSettingsProblem({ ...universe, ...update })
@@ -349,7 +350,7 @@ export async function applyUniverseChange(context: ChangeContext, update: Univer
 		itemIds: startingItems?.map(({ itemId }) => itemId)
 	});
 	await applyLanguages(context, update);
-	await updateUniverseSettings(universe.id, update, transaction);
+	await updateUniverseSettings(version, update, transaction);
 
 	const timeKeys: (keyof UniverseSettingsUpdate)[] = ['passageOfTime', 'faerieMorning', 'displayTime', 'lobbyPassageOfTime', 'lobbyDayHours', 'lobbyFaerieMorning'];
 
@@ -397,7 +398,7 @@ async function applyLanguages(context: ChangeContext, update: UniverseSettingsUp
 		return;
 	}
 
-	const { universe, transaction } = context;
+	const { universe, version, transaction } = context;
 	const sourceLanguage = (update.sourceLanguage ?? universe.sourceLanguage).toLowerCase();
 	const translationLanguages = (update.translationLanguages ?? universe.translationLanguages);
 
@@ -412,23 +413,23 @@ async function applyLanguages(context: ChangeContext, update: UniverseSettingsUp
 
 	if (update.translationLanguages !== undefined)
 	{
-		await deleteTranslationsOutside(universe.id, update.translationLanguages, transaction);
+		await deleteTranslationsOutside(version, update.translationLanguages, transaction);
 	}
 }
 
 /**
- * Refuses a lobby area that isn't one of the universe's areas, or is a starting area: the universe's,
+ * Refuses a lobby area that isn't one of the version's areas, or is a starting area: the universe's,
  * a race's or a class's, or one the same change makes the universe's
  *
  * @param context The save
- * @param areaUniverseId The universe the area belongs to, or undefined when there is no such area
+ * @param areaVersion The version the area belongs to, or undefined when there is no such area
  * @param update The universe's settings change, naming the lobby's area
  */
-async function checkLobbyArea(context: ChangeContext, areaUniverseId: string | undefined, update: UniverseSettingsUpdate): Promise<void>
+async function checkLobbyArea(context: ChangeContext, areaVersion: UniverseVersion | undefined, update: UniverseSettingsUpdate): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { version, transaction } = context;
 
-	if (areaUniverseId !== universe.id)
+	if (!areaVersion || !isSameVersion(areaVersion, version))
 	{
 		refuse(400, {
 			id: 'error.noSuchLobbyArea',
@@ -437,7 +438,7 @@ async function checkLobbyArea(context: ChangeContext, areaUniverseId: string | u
 		});
 	}
 
-	const startingAreaIds = new Set(await listStartingAreaIds(universe.id, transaction));
+	const startingAreaIds = new Set(await listStartingAreaIds(version, transaction));
 
 	if ((update.startingAreaId !== undefined) && (update.startingAreaId !== null))
 	{
@@ -462,8 +463,8 @@ async function checkLobbyArea(context: ChangeContext, areaUniverseId: string | u
  */
 async function getRulesetSettings(request: Request, response: Response): Promise<void>
 {
-	const { universe } = universeContextOf(request);
-	const payload: RulesetSettings = await loadRulesetSettings(universe.id, universe.ruleset);
+	const { universe, version } = universeContextOf(request);
+	const payload: RulesetSettings = await loadRulesetSettings(version, universe.ruleset);
 
 	response.json(payload);
 }
@@ -476,7 +477,7 @@ async function getRulesetSettings(request: Request, response: Response): Promise
  */
 export async function applyRulesetChange(context: ChangeContext, settings: RulesetSettings): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { universe, version, transaction } = context;
 
 	if (settings.ruleset !== universe.ruleset)
 	{
@@ -487,7 +488,7 @@ export async function applyRulesetChange(context: ChangeContext, settings: Rules
 		});
 	}
 
-	await storeRulesetSettings(universe.id, settings, transaction);
+	await storeRulesetSettings(version, settings, transaction);
 }
 
 /**
@@ -506,9 +507,9 @@ async function listTiles(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	const { universe } = universeContextOf(request);
+	const { universe, version } = universeContextOf(request);
 
-	response.json(await listEditorTiles(universe.id, universe.ruleset, query.data));
+	response.json(await listEditorTiles(version, universe.ruleset, query.data));
 }
 
 /**
@@ -520,7 +521,7 @@ async function listTiles(request: Request, response: Response): Promise<void>
  */
 export async function createTileChange(context: ChangeContext, ref: NewRef, settings: TileChangeSettings): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { universe, version, transaction } = context;
 	const { name } = settings;
 
 	if (name === null)
@@ -530,7 +531,7 @@ export async function createTileChange(context: ChangeContext, ref: NewRef, sett
 
 	const tile = await withUniverseGraphic(context, settings);
 
-	if (await countCustomTiles(universe.id, transaction) >= MAX_CUSTOM_TILES)
+	if (await countCustomTiles(version, transaction) >= MAX_CUSTOM_TILES)
 	{
 		refuse(409, {
 			id: 'error.tileLimit',
@@ -541,7 +542,7 @@ export async function createTileChange(context: ChangeContext, ref: NewRef, sett
 		});
 	}
 
-	recordRef(context, ref, await createCustomTile(universe.id, universe.ruleset, { ...tile, name }, transaction));
+	recordRef(context, ref, await createCustomTile(version, universe.ruleset, { ...tile, name }, transaction));
 	context.published.push({ kind: 'tiles', universeId: universe.id });
 }
 
@@ -554,9 +555,9 @@ export async function createTileChange(context: ChangeContext, ref: NewRef, sett
  */
 export async function saveTileChange(context: ChangeContext, id: NumberRef, settings: TileChangeSettings): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { universe, version, transaction } = context;
 	const tileId = resolveNumberRef(context, id);
-	const kind = await findTileKind(universe.id, universe.ruleset, tileId, transaction);
+	const kind = await findTileKind(version, universe.ruleset, tileId, transaction);
 
 	if (kind === undefined)
 	{
@@ -573,7 +574,7 @@ export async function saveTileChange(context: ChangeContext, id: NumberRef, sett
 
 	if (kind === 'default')
 	{
-		await saveEditedDefaultTile(universe.id, universe.ruleset, tileId, tile, transaction);
+		await saveEditedDefaultTile(version, universe.ruleset, tileId, tile, transaction);
 	}
 	else if (name === null)
 	{
@@ -581,7 +582,7 @@ export async function saveTileChange(context: ChangeContext, id: NumberRef, sett
 	}
 	else
 	{
-		await updateCustomTile(universe.id, tileId, { ...tile, name }, transaction);
+		await updateCustomTile(version, tileId, { ...tile, name }, transaction);
 	}
 
 	context.published.push({ kind: 'tiles', universeId: universe.id });
@@ -619,7 +620,7 @@ async function withUniverseGraphic(context: ChangeContext, settings: TileChangeS
 
 	const uploadedGraphicId = resolveStringRef(context, settings.uploadedGraphicId);
 
-	if (!await isUniverseTileGraphic(context.universe.id, uploadedGraphicId, context.transaction))
+	if (!await isUniverseTileGraphic(context.version, uploadedGraphicId, context.transaction))
 	{
 		refuse(400, messages.noSuchUploadedGraphic);
 	}
@@ -636,16 +637,16 @@ async function withUniverseGraphic(context: ChangeContext, settings: TileChangeS
 async function tileUsage(request: Request, response: Response): Promise<void>
 {
 	const tileId = tileIdParameter.safeParse(request.params.tileId);
-	const { universe } = universeContextOf(request);
+	const { universe, version } = universeContextOf(request);
 
-	if (!tileId.success || (await findTileKind(universe.id, universe.ruleset, tileId.data) === undefined))
+	if (!tileId.success || (await findTileKind(version, universe.ruleset, tileId.data) === undefined))
 	{
 		sendError(response, 404, messages.noSuchTile);
 		return;
 	}
 
 	const payload: TileUsagePayload = {
-		areas: await findAreasUsingTile(universe.id, tileId.data)
+		areas: await findAreasUsingTile(version, tileId.data)
 	};
 
 	response.json(payload);
@@ -662,9 +663,9 @@ async function tileUsage(request: Request, response: Response): Promise<void>
  */
 export async function removeTileChange(context: ChangeContext, id: NumberRef, replaceWith: NumberRef | null): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { universe, version, transaction } = context;
 	const tileId = resolveNumberRef(context, id);
-	const kind = await findTileKind(universe.id, universe.ruleset, tileId, transaction);
+	const kind = await findTileKind(version, universe.ruleset, tileId, transaction);
 
 	if (kind === undefined)
 	{
@@ -673,23 +674,23 @@ export async function removeTileChange(context: ChangeContext, id: NumberRef, re
 
 	if (kind === 'default')
 	{
-		await restoreDefaultTile(universe.id, tileId, transaction);
-		await deleteUniverseTextOf(universe.id, 'tile', tileId, transaction);
+		await restoreDefaultTile(version, tileId, transaction);
+		await deleteUniverseTextOf(version, 'tile', tileId, transaction);
 		context.published.push({ kind: 'tiles', universeId: universe.id });
 		return;
 	}
 
 	const replacementId = ((replaceWith === null) ? undefined : resolveNumberRef(context, replaceWith));
 
-	if ((replacementId !== undefined) && ((replacementId === tileId) || (await findTileKind(universe.id, universe.ruleset, replacementId, transaction) === undefined)))
+	if ((replacementId !== undefined) && ((replacementId === tileId) || (await findTileKind(version, universe.ruleset, replacementId, transaction) === undefined)))
 	{
 		refuse(400, messages.noSuchReplacementTile);
 	}
 
 	// Painting waits for the universe's lock too, so the tile can't come into use before it is deleted
-	const changedAreas = ((replacementId === undefined) ? [] : await replaceTileInMaps(universe.id, tileId, replacementId, transaction));
+	const changedAreas = ((replacementId === undefined) ? [] : await replaceTileInMaps(version, tileId, replacementId, transaction));
 
-	if (await isTileInUse(universe.id, tileId, transaction))
+	if (await isTileInUse(version, tileId, transaction))
 	{
 		refuse(409, {
 			id: 'error.tileInUse',
@@ -698,8 +699,8 @@ export async function removeTileChange(context: ChangeContext, id: NumberRef, re
 		});
 	}
 
-	await deleteCustomTile(universe.id, tileId, transaction);
-	await deleteUniverseTextOf(universe.id, 'tile', tileId, transaction);
+	await deleteCustomTile(version, tileId, transaction);
+	await deleteUniverseTextOf(version, 'tile', tileId, transaction);
 
 	for (const areaId of changedAreas)
 	{

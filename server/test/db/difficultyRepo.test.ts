@@ -6,6 +6,7 @@ import { findGroup, moveGroupsToDifficultyLevel } from '../../src/db/groupRepo.j
 import { addPlayer } from '../players.js';
 import { inTransaction } from '../../src/db/transactions.js';
 import { createUniverse } from '../../src/db/universeRepo.js';
+import { liveVersion } from '../../src/db/universeVersions.js';
 import { addCharacter, addGroup } from './fixtures.js';
 
 describe('difficultyRepo', () =>
@@ -26,34 +27,34 @@ describe('difficultyRepo', () =>
 
 	it('gives a new universe the default levels, easiest first', async () =>
 	{
-		const levels = await listDifficultyLevels(universeId);
+		const levels = await listDifficultyLevels(liveVersion(universeId));
 
 		assert.deepStrictEqual(levels.map(({ id: _id, ...level }) => level), DEFAULT_DIFFICULTY_LEVELS.map((level) => ({ ...level, name: null })));
-		assert.deepStrictEqual(await findDefaultDifficultyLevel(universeId), levels.find((level) => (level.key === 'normal')));
-		assert.strictEqual(await countDifficultyLevels(universeId), DEFAULT_DIFFICULTY_LEVELS.length);
+		assert.deepStrictEqual(await findDefaultDifficultyLevel(liveVersion(universeId)), levels.find((level) => (level.key === 'normal')));
+		assert.strictEqual(await countDifficultyLevels(liveVersion(universeId)), DEFAULT_DIFFICULTY_LEVELS.length);
 	});
 
 	it('finds only the universe\'s own levels', async () =>
 	{
 		const otherId = await createUniverse({ name: 'Brightwater', ruleset: 'pf1e' });
-		const [theirs] = await listDifficultyLevels(otherId);
+		const [theirs] = await listDifficultyLevels(liveVersion(otherId));
 
-		assert.strictEqual(await findDifficultyLevel(universeId, theirs.id), undefined);
-		assert.deepStrictEqual(await findDifficultyLevel(otherId, theirs.id), theirs);
+		assert.strictEqual(await findDifficultyLevel(liveVersion(universeId), theirs.id), undefined);
+		assert.deepStrictEqual(await findDifficultyLevel(liveVersion(otherId), theirs.id), theirs);
 	});
 
 	it('adds and changes levels, keeping one default', async () =>
 	{
-		const levelId = await inTransaction((transaction) => createDifficultyLevel(universeId, { ...nightmare, isDefault: true }, transaction));
+		const levelId = await inTransaction((transaction) => createDifficultyLevel(liveVersion(universeId), { ...nightmare, isDefault: true }, transaction));
 
-		assert.deepStrictEqual(await findDefaultDifficultyLevel(universeId), { id: levelId, key: null, ...nightmare, isDefault: true });
+		assert.deepStrictEqual(await findDefaultDifficultyLevel(liveVersion(universeId)), { id: levelId, key: null, ...nightmare, isDefault: true });
 
-		const [story] = await listDifficultyLevels(universeId);
+		const [story] = await listDifficultyLevels(liveVersion(universeId));
 
-		await inTransaction((transaction) => updateDifficultyLevel(universeId, story.id, { ...story, name: 'Tale', isDefault: true }, transaction));
+		await inTransaction((transaction) => updateDifficultyLevel(liveVersion(universeId), story.id, { ...story, name: 'Tale', isDefault: true }, transaction));
 
-		assert.deepStrictEqual(await findDefaultDifficultyLevel(universeId), { ...story, name: 'Tale', isDefault: true });
-		assert.strictEqual((await listDifficultyLevels(universeId)).filter((level) => level.isDefault).length, 1);
+		assert.deepStrictEqual(await findDefaultDifficultyLevel(liveVersion(universeId)), { ...story, name: 'Tale', isDefault: true });
+		assert.strictEqual((await listDifficultyLevels(liveVersion(universeId))).filter((level) => level.isDefault).length, 1);
 	});
 
 	it('deletes a level once its groups are moved to another', async () =>
@@ -61,16 +62,16 @@ describe('difficultyRepo', () =>
 		const { id: playerId } = await addPlayer('Ada');
 		const characterId = await addCharacter(playerId, universeId, 'Ada');
 		const groupId = await addGroup(universeId, characterId, null);
-		const normal = await findDefaultDifficultyLevel(universeId);
-		const levelId = await inTransaction((transaction) => createDifficultyLevel(universeId, nightmare, transaction));
+		const normal = await findDefaultDifficultyLevel(liveVersion(universeId));
+		const levelId = await inTransaction((transaction) => createDifficultyLevel(liveVersion(universeId), nightmare, transaction));
 
 		await moveGroupsToDifficultyLevel(normal?.id ?? 0, levelId);
 		assert.strictEqual((await findGroup(groupId))?.difficultyLevelId, levelId);
 
 		await moveGroupsToDifficultyLevel(levelId, normal?.id ?? 0);
-		await deleteDifficultyLevel(universeId, levelId);
+		await deleteDifficultyLevel(liveVersion(universeId), levelId);
 
-		assert.strictEqual(await findDifficultyLevel(universeId, levelId), undefined);
+		assert.strictEqual(await findDifficultyLevel(liveVersion(universeId), levelId), undefined);
 		assert.strictEqual((await findGroup(groupId))?.difficultyLevelId, normal?.id);
 	});
 });

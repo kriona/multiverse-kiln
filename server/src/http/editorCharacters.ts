@@ -9,6 +9,7 @@ import { canEditWorld, parsePlayerSearch, type EditorCharacterListPayload, type 
 import { listUniverseCharacters } from '../db/characterRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
+import { liveVersion } from '../db/universeVersions.js';
 import { requireRole, universeContextOf } from './editorAccess.js';
 import { editorCharacterListQuery } from './editorPayloads.js';
 import { sendInvalidRequest } from './errors.js';
@@ -39,6 +40,7 @@ async function listCharacters(request: Request, response: Response): Promise<voi
 		return;
 	}
 
+	// Characters are the live version's, whatever version the editor has open
 	const { universe } = universeContextOf(request);
 	const { search, raceId, classId, inGroup, sort, direction, offset, limit } = query.data;
 	const parsedSearch = ((search === undefined) ? undefined : parsePlayerSearch(search));
@@ -53,8 +55,8 @@ async function listCharacters(request: Request, response: Response): Promise<voi
 			offset,
 			limit
 		}),
-		loadEditorRaces(universe.id, universe.ruleset),
-		loadEditorClasses(universe.id, universe.ruleset)
+		loadEditorRaces(liveVersion(universe.id), universe.ruleset),
+		loadEditorClasses(liveVersion(universe.id), universe.ruleset)
 	]);
 	const raceNames = new Map(races.map(({ id, key, name }) => [id, { key, name }]));
 	const classNames = new Map(classes.map(({ id, key, name }) => [id, { key, name }]));

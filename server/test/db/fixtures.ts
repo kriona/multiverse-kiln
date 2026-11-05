@@ -12,6 +12,7 @@ import { findDefaultTileIds } from '../../src/db/tileRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
 import { createUniverse, setUniverseAreas } from '../../src/db/universeRepo.js';
 import { createArea, createAreaLink, loadChunks, loadArea, saveGroundChunk } from '../../src/db/areaRepo.js';
+import { liveVersion } from '../../src/db/universeVersions.js';
 import type { AreaMap } from '../../src/logic/areaGrid.js';
 
 /**
@@ -114,7 +115,7 @@ export async function addCharacter(playerId: string, universeId: string, name: s
  */
 export async function addGroup(universeId: string, anchorCharacterId: string, startingAreaId: string | null, name: string = ''): Promise<string>
 {
-	const difficultyLevel = await findDefaultDifficultyLevel(universeId);
+	const difficultyLevel = await findDefaultDifficultyLevel(liveVersion(universeId));
 
 	if (!difficultyLevel)
 	{

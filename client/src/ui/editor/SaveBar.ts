@@ -207,27 +207,40 @@ export class SaveBar
 	}
 
 	/**
+	 * Whether saving is turned off, for a universe a server admin has disabled
+	 *
+	 * @return True when it is
+	 */
+	isLocked(): boolean
+	{
+		return(this.locked);
+	}
+
+	/**
 	 * Whether any tab has changes that haven't been saved
 	 *
 	 * @return True when one has
 	 */
-	private hasUnsavedChanges(): boolean
+	hasUnsavedChanges(): boolean
 	{
 		return([...this.panels.keys()].some((tab) => tab.changes.hasUnsavedChanges()));
 	}
 
 	/**
-	 * Saves every tab's changes in one request, stopping before it at a field with a problem. Changes that
-	 * disable or limit something players are using first ask what should happen to them, and saving them
-	 * waits for the answer
+	 * Saves every tab's changes in one request, stopping before it at a field with a problem, as the Save
+	 * button does. Changes that disable or limit something players are using first ask what should happen
+	 * to them, and saving them waits for the answer
+	 *
+	 * @param announce Whether to say the changes were saved, which a save made only to change the draft doesn't
+	 * @return Whether it saved: false when a field stopped it, the player cancelled or the server refused it
 	 */
-	private async save(): Promise<void>
+	async save(announce: boolean = true): Promise<boolean>
 	{
 		const universe = this.universe();
 
 		if (!universe || this.saving || this.locked || !this.hasUnsavedChanges())
 		{
-			return;
+			return(false);
 		}
 
 		const tabs = [...this.panels.keys()].filter((tab) => (tab.canSave() && tab.changes.hasUnsavedChanges()));
@@ -244,7 +257,7 @@ export class SaveBar
 				save.finish();
 				this.showTab(tab);
 				this.update();
-				return;
+				return(false);
 			}
 		}
 
@@ -278,7 +291,7 @@ export class SaveBar
 			}
 
 			this.afterSave();
-			this.justSaved = !this.hasUnsavedChanges();
+			this.justSaved = (announce && !this.hasUnsavedChanges());
 
 			if (this.justSaved)
 			{
@@ -290,6 +303,8 @@ export class SaveBar
 		}
 
 		this.update();
+
+		return(ids !== undefined);
 	}
 
 	/**

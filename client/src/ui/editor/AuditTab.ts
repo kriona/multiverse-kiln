@@ -173,7 +173,23 @@ function createRow(edit: UniverseEdit, ruleset: Ruleset): HTMLTableRowElement
 	}
 
 	role.textContent = t(EDITOR_ROLE_NAMES[edit.role]);
-	row.append(saved, player, role, createChangesCell(edit, ruleset));
+
+	const changes = createChangesCell(edit, ruleset);
+
+	if (edit.draft)
+	{
+		const note = document.createElement('p');
+
+		note.className = 'hint';
+		note.textContent = t({
+			id: 'editor.audit.draftSave',
+			defaultMessage: 'Saved to the draft',
+			description: 'At the top of the Changes column of the editor\'s Audit tab, for a save made to the universe\'s draft (a copy players don\'t see until it is applied) rather than its live version'
+		});
+		changes.prepend(note);
+	}
+
+	row.append(saved, player, role, changes);
 
 	return(row);
 }

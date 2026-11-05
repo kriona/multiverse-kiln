@@ -7,6 +7,7 @@ import { findGroup, findMembership, listGroupMembers } from '../src/db/groupRepo
 import { loadEditorRaces, saveEditedDefaultRace } from '../src/db/raceRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
 import { updateUniverseSettings } from '../src/db/universeRepo.js';
+import { liveVersion } from '../src/db/universeVersions.js';
 import { groupChanges, type GroupChange } from '../src/players/groupChanges.js';
 import { addCharacter, addPlayableUniverse, defaultClassId, defaultRaceId, type PlayableUniverse } from './db/fixtures.js';
 import { addPlayer, logInBrowser, type TestBrowser } from './players.js';
@@ -152,7 +153,7 @@ describe('group routes', () =>
 	beforeEach(async () =>
 	{
 		universe = await addPlayableUniverse();
-		defaultLevelId = (await findDefaultDifficultyLevel(universe.universeId))?.id ?? 0;
+		defaultLevelId = (await findDefaultDifficultyLevel(liveVersion(universe.universeId)))?.id ?? 0;
 		ada = await logIn('Ada');
 		grace = await logIn('Grace');
 		changes = [];
@@ -217,10 +218,10 @@ describe('group routes', () =>
 		it('refuses a character whose race is disabled for characters already of it', async () =>
 		{
 			const dwarfId = await defaultRaceId('dwarf');
-			const dwarf = (await loadEditorRaces(universe.universeId, 'pf1e')).find((race) => (race.id === dwarfId));
+			const dwarf = (await loadEditorRaces(liveVersion(universe.universeId), 'pf1e')).find((race) => (race.id === dwarfId));
 
 			assert.ok(dwarf);
-			await inTransaction((transaction) => saveEditedDefaultRace(universe.universeId, 'pf1e', dwarfId, {
+			await inTransaction((transaction) => saveEditedDefaultRace(liveVersion(universe.universeId), 'pf1e', dwarfId, {
 				...dwarf,
 				enabled: false,
 				keepPlaying: false
@@ -235,7 +236,7 @@ describe('group routes', () =>
 
 		it('starts at the universe\'s starting cell when the character has no starting area of their own', async () =>
 		{
-			await updateUniverseSettings(universe.universeId, { startingColumn: 6, startingRow: 4 });
+			await updateUniverseSettings(liveVersion(universe.universeId), { startingColumn: 6, startingRow: 4 });
 
 			const group = await findGroup(await createGroup(ada));
 
@@ -247,10 +248,10 @@ describe('group routes', () =>
 		it('starts where the character\'s race starts as the group is made, not as the character was', async () =>
 		{
 			const dwarfId = await defaultRaceId('dwarf');
-			const dwarf = (await loadEditorRaces(universe.universeId, 'pf1e')).find((race) => (race.id === dwarfId));
+			const dwarf = (await loadEditorRaces(liveVersion(universe.universeId), 'pf1e')).find((race) => (race.id === dwarfId));
 
 			assert.ok(dwarf);
-			await inTransaction((transaction) => saveEditedDefaultRace(universe.universeId, 'pf1e', dwarfId, {
+			await inTransaction((transaction) => saveEditedDefaultRace(liveVersion(universe.universeId), 'pf1e', dwarfId, {
 				...dwarf,
 				startingAreaId: universe.houseAreaId,
 				startingColumn: 3,
@@ -319,7 +320,7 @@ describe('group routes', () =>
 
 		it('saves the difficulty level chosen to the group', async () =>
 		{
-			const levels = await listDifficultyLevels(universe.universeId);
+			const levels = await listDifficultyLevels(liveVersion(universe.universeId));
 			const hardcore = levels.find((level) => (level.key === 'hardcore'));
 			const created = await send<GroupCreatedPayload>(ada, 'POST', groupsPath(universe.universeId), { ...groupRequest(ada.characterId), difficultyLevelId: hardcore?.id });
 
@@ -330,7 +331,7 @@ describe('group routes', () =>
 		it('refuses a difficulty level of another universe, and a missing one', async () =>
 		{
 			const other = await addPlayableUniverse();
-			const othersLevel = await findDefaultDifficultyLevel(other.universeId);
+			const othersLevel = await findDefaultDifficultyLevel(liveVersion(other.universeId));
 			const fromOther = await send(ada, 'POST', groupsPath(universe.universeId), { ...groupRequest(ada.characterId), difficultyLevelId: othersLevel?.id });
 			const missing = await send(ada, 'POST', groupsPath(universe.universeId), { ...groupRequest(ada.characterId), difficultyLevelId: 2147483647 });
 			const none = await send(ada, 'POST', groupsPath(universe.universeId), { characterId: ada.characterId, name: '' });
@@ -381,7 +382,7 @@ describe('group routes', () =>
 
 		it('say what difficulty the group plays at', async () =>
 		{
-			const hardcore = (await listDifficultyLevels(universe.universeId)).find((level) => (level.key === 'hardcore'));
+			const hardcore = (await listDifficultyLevels(liveVersion(universe.universeId))).find((level) => (level.key === 'hardcore'));
 			const created = await send<GroupCreatedPayload>(ada, 'POST', groupsPath(universe.universeId), { ...groupRequest(ada.characterId), difficultyLevelId: hardcore?.id });
 			const token = await invite(ada, created.body.groupId);
 			const details = await send<InviteDetails>(grace, 'GET', invitePath(token));
@@ -426,7 +427,7 @@ describe('group routes', () =>
 
 		it('refuse a character once the group has the universe\'s group size', async () =>
 		{
-			await updateUniverseSettings(universe.universeId, { groupSize: 2 });
+			await updateUniverseSettings(liveVersion(universe.universeId), { groupSize: 2 });
 
 			const groupId = await createGroup(ada);
 			const token = await invite(ada, groupId, true);
@@ -459,7 +460,7 @@ describe('group routes', () =>
 		const token = await invite(ada, groupId);
 		const alan = await logIn('Alan');
 
-		await updateUniverseSettings(universe.universeId, { stage: 'end_of_time' });
+		await updateUniverseSettings(liveVersion(universe.universeId), { stage: 'end_of_time' });
 
 		assert.strictEqual((await send(grace, 'POST', groupsPath(universe.universeId), groupRequest(grace.characterId))).status, 404);
 		assert.strictEqual((await send(ada, 'POST', `${groupPath(universe.universeId, groupId)}/invites`, { multiUse: false, duration: 'day' })).status, 404);
@@ -514,10 +515,10 @@ describe('group routes', () =>
 
 			await send(grace, 'POST', invitePath(await invite(ada, groupId)), { characterId: grace.characterId });
 
-			const dwarf = (await loadEditorRaces(universe.universeId, 'pf1e')).find((race) => (race.id === dwarfId));
+			const dwarf = (await loadEditorRaces(liveVersion(universe.universeId), 'pf1e')).find((race) => (race.id === dwarfId));
 
 			assert.ok(dwarf);
-			await inTransaction((transaction) => saveEditedDefaultRace(universe.universeId, 'pf1e', dwarfId, {
+			await inTransaction((transaction) => saveEditedDefaultRace(liveVersion(universe.universeId), 'pf1e', dwarfId, {
 				...dwarf,
 				enabled: false,
 				keepPlaying: false

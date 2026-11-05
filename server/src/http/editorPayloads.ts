@@ -607,6 +607,11 @@ export const universeEditListQuery = z.object({
 }) satisfies z.ZodType<UniverseEditListQuery, unknown>;
 
 /**
+ * A numeric ID written as text, as a JSON object's keys are
+ */
+const numericIdKey = z.string().regex(/^[1-9][0-9]{0,9}$/);
+
+/**
  * SaveChangesRequest, by the universe's ruleset. Whether what each change names exists in the universe
  * is checked as the change is saved
  */
@@ -746,6 +751,22 @@ export const saveChangesRequest = byRuleset((ruleset) => z.object({
 			kind: z.literal('saveNoTranslation'),
 			text: universeTextRef,
 			noTranslation: z.boolean()
+		}),
+		z.object({
+			kind: z.literal('startDraft')
+		}),
+		z.object({
+			kind: z.literal('applyDraft'),
+			choices: z.object({
+				races: z.record(numericIdKey, z.boolean()),
+				classes: z.record(numericIdKey, z.boolean()),
+				items: z.record(numericIdKey, z.enum(ITEM_DISABLINGS)),
+				areas: z.record(z.uuid(), z.enum(AREA_EVACUATIONS)),
+				largerGroups: z.enum(GROUP_SIZE_LOWERINGS).optional()
+			})
+		}),
+		z.object({
+			kind: z.literal('discardDraft')
 		})
 	])).max(MAX_CHANGES_PER_SAVE)
 }) satisfies z.ZodType<SaveChangesRequest>);

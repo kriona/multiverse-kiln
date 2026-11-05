@@ -17,6 +17,7 @@ import { listProviderLogins } from '../db/providerLoginRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
 import { isServerAdmin } from '../db/serverAdminRepo.js';
 import { findTwoFactorState } from '../db/twoFactorRepo.js';
+import { liveVersion } from '../db/universeVersions.js';
 import { displayText } from '../rooms/payloads.js';
 import { deletionRoute, exportRoute } from './accountData.js';
 import { authMessages, checkDisplayName, checkUsername, sendRefusal, type AuthRefusal } from './authCommon.js';
@@ -212,8 +213,8 @@ async function nameCharacters(request: Request, records: ProfileCharacterRecord[
 	const names = new Map(await Promise.all([...universes.values()].map(async ({ id: universeId, ruleset }) =>
 	{
 		const [races, classes] = await Promise.all([
-			loadEditorRaces(universeId, ruleset),
-			loadEditorClasses(universeId, ruleset)
+			loadEditorRaces(liveVersion(universeId), ruleset),
+			loadEditorClasses(liveVersion(universeId), ruleset)
 		]);
 
 		return([universeId, {

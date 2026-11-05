@@ -5,6 +5,7 @@ import { sourceTextHash } from '@multiverse-kiln/shared';
 import { db } from '../../src/db/client.js';
 import { deleteUniverse } from '../../src/db/universeRepo.js';
 import { countTranslations, deleteTranslationsOutside, deleteTranslatorNote, deleteUniverseTextOf, listTranslations, listTranslationsIn, listTranslatorNotes, saveTranslation, saveTranslatorNote, setNoTranslation, type UniverseTranslationRecord } from '../../src/db/universeTextRepo.js';
+import { liveVersion } from '../../src/db/universeVersions.js';
 import { addUniverse } from './fixtures.js';
 
 /**
@@ -48,15 +49,15 @@ describe('universeTextRepo', () =>
 		const otherId = await addUniverse('Elsewhere');
 		const areaId = '7d1c1f8e-4c38-4f3b-9a58-4c7a1d7a0b11';
 
-		await saveTranslation(universeId, areaName(areaId, 'fr', 'Bois'));
-		await saveTranslation(universeId, areaName(areaId, 'fr', 'Forêt'));
-		await saveTranslation(universeId, areaName(areaId, 'de', 'Wald'));
-		await saveTranslation(universeId, areaName(areaId, 'es', 'Bosque'));
-		await saveTranslation(otherId, areaName(areaId, 'fr', 'Ailleurs'));
+		await saveTranslation(liveVersion(universeId), areaName(areaId, 'fr', 'Bois'));
+		await saveTranslation(liveVersion(universeId), areaName(areaId, 'fr', 'Forêt'));
+		await saveTranslation(liveVersion(universeId), areaName(areaId, 'de', 'Wald'));
+		await saveTranslation(liveVersion(universeId), areaName(areaId, 'es', 'Bosque'));
+		await saveTranslation(liveVersion(otherId), areaName(areaId, 'fr', 'Ailleurs'));
 
-		assert.deepStrictEqual(byLanguage(await listTranslations(universeId, ['fr', 'de'])), [['de', 'Wald'], ['fr', 'Forêt']]);
-		assert.deepStrictEqual(await listTranslations(universeId, []), []);
-		assert.deepStrictEqual(Object.fromEntries(await countTranslations(universeId)), { fr: 1, de: 1, es: 1 });
+		assert.deepStrictEqual(byLanguage(await listTranslations(liveVersion(universeId), ['fr', 'de'])), [['de', 'Wald'], ['fr', 'Forêt']]);
+		assert.deepStrictEqual(await listTranslations(liveVersion(universeId), []), []);
+		assert.deepStrictEqual(Object.fromEntries(await countTranslations(liveVersion(universeId))), { fr: 1, de: 1, es: 1 });
 	});
 
 	it('deletes the translations into languages taken off, and every one when none are left', async () =>
@@ -66,13 +67,13 @@ describe('universeTextRepo', () =>
 
 		for (const [language, text] of [['fr', 'Forêt'], ['de', 'Wald'], ['es', 'Bosque']])
 		{
-			await saveTranslation(universeId, areaName(areaId, language, text));
+			await saveTranslation(liveVersion(universeId), areaName(areaId, language, text));
 		}
 
-		assert.strictEqual(await deleteTranslationsOutside(universeId, ['fr', 'es']), 1);
-		assert.deepStrictEqual(byLanguage(await listTranslations(universeId, ['fr', 'de', 'es'])), [['es', 'Bosque'], ['fr', 'Forêt']]);
-		assert.strictEqual(await deleteTranslationsOutside(universeId, []), 2);
-		assert.deepStrictEqual(await countTranslations(universeId), new Map());
+		assert.strictEqual(await deleteTranslationsOutside(liveVersion(universeId), ['fr', 'es']), 1);
+		assert.deepStrictEqual(byLanguage(await listTranslations(liveVersion(universeId), ['fr', 'de', 'es'])), [['es', 'Bosque'], ['fr', 'Forêt']]);
+		assert.strictEqual(await deleteTranslationsOutside(liveVersion(universeId), []), 2);
+		assert.deepStrictEqual(await countTranslations(liveVersion(universeId)), new Map());
 	});
 
 	it('keeps one note for translators per piece of text, and deletes it', async () =>
@@ -80,31 +81,31 @@ describe('universeTextRepo', () =>
 		const universeId = await addUniverse();
 		const ref = { kind: 'universe', thingId: universeId, field: 'name' } as const;
 
-		await saveTranslatorNote(universeId, { ...ref, note: 'A pun' });
-		await saveTranslatorNote(universeId, { ...ref, note: 'A pun on the founder\'s name' });
-		await saveTranslatorNote(universeId, { kind: 'item', thingId: '12', field: 'name', note: 'A short sword' });
+		await saveTranslatorNote(liveVersion(universeId), { ...ref, note: 'A pun' });
+		await saveTranslatorNote(liveVersion(universeId), { ...ref, note: 'A pun on the founder\'s name' });
+		await saveTranslatorNote(liveVersion(universeId), { kind: 'item', thingId: '12', field: 'name', note: 'A short sword' });
 
-		assert.deepStrictEqual((await listTranslatorNotes(universeId)).map(({ kind, note }) => [kind, note]).sort(), [['item', 'A short sword'], ['universe', 'A pun on the founder\'s name']]);
+		assert.deepStrictEqual((await listTranslatorNotes(liveVersion(universeId))).map(({ kind, note }) => [kind, note]).sort(), [['item', 'A short sword'], ['universe', 'A pun on the founder\'s name']]);
 
-		await deleteTranslatorNote(universeId, ref);
+		await deleteTranslatorNote(liveVersion(universeId), ref);
 
-		assert.deepStrictEqual((await listTranslatorNotes(universeId)).map(({ kind }) => kind), ['item']);
+		assert.deepStrictEqual((await listTranslatorNotes(liveVersion(universeId))).map(({ kind }) => kind), ['item']);
 	});
 
 	it('keeps a note and the mark that text needs no translation apart, until neither is left', async () =>
 	{
 		const universeId = await addUniverse();
 		const ref = { kind: 'universe', thingId: universeId, field: 'name' } as const;
-		const notesOf = async (): Promise<unknown[]> => (await listTranslatorNotes(universeId)).map(({ note, noTranslation }) => [note, noTranslation]);
+		const notesOf = async (): Promise<unknown[]> => (await listTranslatorNotes(liveVersion(universeId))).map(({ note, noTranslation }) => [note, noTranslation]);
 
-		await setNoTranslation(universeId, ref, true);
-		await saveTranslatorNote(universeId, { ...ref, note: 'The founder\'s name' });
+		await setNoTranslation(liveVersion(universeId), ref, true);
+		await saveTranslatorNote(liveVersion(universeId), { ...ref, note: 'The founder\'s name' });
 		assert.deepStrictEqual(await notesOf(), [['The founder\'s name', true]]);
 
-		await deleteTranslatorNote(universeId, ref);
+		await deleteTranslatorNote(liveVersion(universeId), ref);
 		assert.deepStrictEqual(await notesOf(), [[null, true]]);
 
-		await setNoTranslation(universeId, ref, false);
+		await setNoTranslation(liveVersion(universeId), ref, false);
 		assert.deepStrictEqual(await notesOf(), []);
 	});
 
@@ -115,12 +116,12 @@ describe('universeTextRepo', () =>
 		const ref = { kind: 'area', thingId: areaId, field: 'name' } as const;
 		const shown = async (): Promise<string[]> => (await listTranslationsIn([{ universeId, languages: ['fr'] }], undefined)).map(({ text }) => text);
 
-		await saveTranslation(universeId, areaName(areaId, 'fr', 'Forêt'));
-		await setNoTranslation(universeId, ref, true);
+		await saveTranslation(liveVersion(universeId), areaName(areaId, 'fr', 'Forêt'));
+		await setNoTranslation(liveVersion(universeId), ref, true);
 		assert.deepStrictEqual(await shown(), []);
-		assert.deepStrictEqual(Object.fromEntries(await countTranslations(universeId)), { fr: 1 });
+		assert.deepStrictEqual(Object.fromEntries(await countTranslations(liveVersion(universeId))), { fr: 1 });
 
-		await setNoTranslation(universeId, ref, false);
+		await setNoTranslation(liveVersion(universeId), ref, false);
 		assert.deepStrictEqual(await shown(), ['Forêt']);
 	});
 
@@ -128,14 +129,14 @@ describe('universeTextRepo', () =>
 	{
 		const universeId = await addUniverse();
 
-		await saveTranslation(universeId, { kind: 'item', thingId: '12', field: 'name', language: 'fr', text: 'Épée', sourceHash: sourceTextHash('Sword') });
-		await saveTranslation(universeId, { kind: 'race', thingId: '12', field: 'name', language: 'fr', text: 'Nain', sourceHash: sourceTextHash('Dwarf') });
-		await saveTranslatorNote(universeId, { kind: 'item', thingId: '12', field: 'name', note: 'A weapon' });
+		await saveTranslation(liveVersion(universeId), { kind: 'item', thingId: '12', field: 'name', language: 'fr', text: 'Épée', sourceHash: sourceTextHash('Sword') });
+		await saveTranslation(liveVersion(universeId), { kind: 'race', thingId: '12', field: 'name', language: 'fr', text: 'Nain', sourceHash: sourceTextHash('Dwarf') });
+		await saveTranslatorNote(liveVersion(universeId), { kind: 'item', thingId: '12', field: 'name', note: 'A weapon' });
 
-		await deleteUniverseTextOf(universeId, 'item', 12);
+		await deleteUniverseTextOf(liveVersion(universeId), 'item', 12);
 
-		assert.deepStrictEqual((await listTranslations(universeId, ['fr'])).map(({ kind }) => kind), ['race']);
-		assert.deepStrictEqual(await listTranslatorNotes(universeId), []);
+		assert.deepStrictEqual((await listTranslations(liveVersion(universeId), ['fr'])).map(({ kind }) => kind), ['race']);
+		assert.deepStrictEqual(await listTranslatorNotes(liveVersion(universeId)), []);
 	});
 
 	it('hashes source text the way Postgres does, so the database can find out-of-date translations', async () =>
@@ -150,11 +151,11 @@ describe('universeTextRepo', () =>
 	{
 		const universeId = await addUniverse();
 
-		await saveTranslation(universeId, areaName('7d1c1f8e-4c38-4f3b-9a58-4c7a1d7a0b11', 'fr', 'Forêt'));
-		await saveTranslatorNote(universeId, { kind: 'universe', thingId: universeId, field: 'name', note: 'A pun' });
+		await saveTranslation(liveVersion(universeId), areaName('7d1c1f8e-4c38-4f3b-9a58-4c7a1d7a0b11', 'fr', 'Forêt'));
+		await saveTranslatorNote(liveVersion(universeId), { kind: 'universe', thingId: universeId, field: 'name', note: 'A pun' });
 		await deleteUniverse(universeId);
 
-		assert.deepStrictEqual(await countTranslations(universeId), new Map());
-		assert.deepStrictEqual(await listTranslatorNotes(universeId), []);
+		assert.deepStrictEqual(await countTranslations(liveVersion(universeId)), new Map());
+		assert.deepStrictEqual(await listTranslatorNotes(liveVersion(universeId)), []);
 	});
 });

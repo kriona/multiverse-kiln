@@ -1,10 +1,10 @@
-import { SessionServerMessageType, type AccountPayload } from '@multiverse-kiln/shared';
+import { SessionServerMessageType, type AccountPayload, type UniverseVersionName } from '@multiverse-kiln/shared';
 
 import { t } from './localization';
 import { EditorApi } from './network/editorApi';
 import type { ServerConnection } from './network/serverConnection';
 import { isLeavingPage } from './pageLifecycle';
-import { currentPageAddress, loginPageUrl, pushPageParameters, replacePageParameters, TAB_PARAMETER, AREA_PARAMETER } from './pages';
+import { currentPageAddress, loginPageUrl, pushPageParameters, replacePageParameters, TAB_PARAMETER, AREA_PARAMETER, VERSION_PARAMETER } from './pages';
 import { showScreen, showStatus } from './ui/dom';
 import { EditorScreen, isEditorTab, type EditorPlace } from './ui/editor/EditorScreen';
 import { pageMessages } from './ui/pageMessages';
@@ -77,16 +77,25 @@ export class EditorPage
 	/**
 	 * @param server The connection to the server and the joined session room
 	 * @param universeId The universe to edit
-	 * @param place The tab and area to open it at
+	 * @param startingPlace The tab and area to open it at
+	 * @param version The version of the universe to open
 	 */
-	constructor(server: ServerConnection, private readonly universeId: string, private readonly startingPlace: Partial<EditorPlace>)
+	constructor(server: ServerConnection, private readonly universeId: string, private readonly startingPlace: Partial<EditorPlace>, version: UniverseVersionName)
 	{
 		const { client, session } = server;
+		const api = new EditorApi(client);
 
-		this.editorScreen = new EditorScreen(new EditorApi(client), {
+		api.version = version;
+		this.editorScreen = new EditorScreen(api, {
 			placeChanged: (changed) =>
 			{
 				this.recordPlace(changed);
+			},
+			versionChanged: (changed) =>
+			{
+				replacePageParameters({
+					[VERSION_PARAMETER]: ((changed === 'draft') ? changed : undefined)
+				});
 			}
 		});
 

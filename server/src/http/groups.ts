@@ -21,6 +21,7 @@ import { loadEditorRaces } from '../db/raceRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { findUniverseRole } from '../db/universeEditorRepo.js';
 import { findEditableUniverse, lockUniverse } from '../db/universeRepo.js';
+import { liveVersion } from '../db/universeVersions.js';
 import { chooseStartingArea, type StartingPlace } from '../logic/startingArea.js';
 import { groupChanges } from '../players/groupChanges.js';
 import { loadPlayableUniverse, loadTranslator, universeOf, type PlayableUniverse } from './characters.js';
@@ -159,7 +160,7 @@ async function difficultyLevelsRoute(request: Request, response: Response): Prom
 {
 	const universe = universeOf(request);
 	const [levels, translator] = await Promise.all([
-		listDifficultyLevels(universe.id),
+		listDifficultyLevels(liveVersion(universe.id)),
 		loadTranslator(request, universe, ['difficultyLevel'])
 	]);
 	const payload: DifficultyLevelListPayload = { difficultyLevels: levels.map((level) => translator.name('difficultyLevel', level.id, level)) };
@@ -178,8 +179,8 @@ async function difficultyLevelsRoute(request: Request, response: Response): Prom
  */
 async function findStartingPlace(universe: PlayableUniverse, character: OwnCharacter, executor: Executor): Promise<StartingPlace | null>
 {
-	const race = (await loadEditorRaces(universe.id, universe.ruleset, executor)).find((option) => (option.id === character.raceId));
-	const characterClass = (await loadEditorClasses(universe.id, universe.ruleset, executor)).find((option) => (option.id === character.classId));
+	const race = (await loadEditorRaces(liveVersion(universe.id), universe.ruleset, executor)).find((option) => (option.id === character.raceId));
+	const characterClass = (await loadEditorClasses(liveVersion(universe.id), universe.ruleset, executor)).find((option) => (option.id === character.classId));
 
 	// A race or class that characters have can't be deleted
 	if (!race || !characterClass)
@@ -248,7 +249,7 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			return({ status: 409, message: messages.alreadyInGroup });
 		}
 
-		if (!(await findDifficultyLevel(universe.id, difficultyLevelId, transaction)))
+		if (!(await findDifficultyLevel(liveVersion(universe.id), difficultyLevelId, transaction)))
 		{
 			return({ status: 404, message: messages.noSuchDifficulty });
 		}
@@ -431,7 +432,7 @@ async function inviteDetailsRoute(request: Request, response: Response): Promise
 	const { universe, group } = found;
 	const [members, difficulty, translator] = await Promise.all([
 		listGroupMembers(group.id),
-		findDifficultyLevel(universe.id, group.difficultyLevelId),
+		findDifficultyLevel(liveVersion(universe.id), group.difficultyLevelId),
 		loadTranslator(request, universe, ['universe', 'difficultyLevel'])
 	]);
 
@@ -612,7 +613,7 @@ async function findInviteGroup(request: Request): Promise<{ universe: PlayableUn
 	}
 
 	const [universe, role] = await Promise.all([
-		findEditableUniverse(group.universeId),
+		findEditableUniverse(liveVersion(group.universeId)),
 		findUniverseRole(group.universeId, playerIdOf(request))
 	]);
 

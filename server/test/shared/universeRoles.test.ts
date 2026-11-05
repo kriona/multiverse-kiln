@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canManageEditors, canPlayUniverse, canTranslate, canViewUniverse, EDITOR_CHANGE_CHECKS, editorAccessOf, mayMakeChange, maySaveInStage, UNIVERSE_ROLES, UNIVERSE_STAGES, type EditorAccess, type EditorChange, type UniverseAccess, type UniverseRole } from '@multiverse-kiln/shared';
+import { ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canManageEditors, canManageVersions, canPlayUniverse, canTranslate, canViewUniverse, EDITOR_CHANGE_CHECKS, editorAccessOf, mayMakeChange, maySaveInStage, UNIVERSE_ROLES, UNIVERSE_STAGES, type EditorAccess, type EditorChange, type EditorRole, type UniverseAccess, type UniverseRole } from '@multiverse-kiln/shared';
 
 /**
  * Someone's access with a role and no languages
@@ -92,7 +92,21 @@ describe('Universe roles (shared)', () =>
 
 	it('names a check for every kind of change', () =>
 	{
-		assert.ok(Object.values(EDITOR_CHANGE_CHECKS).every((check) => ['manageEditors', 'editSettings', 'editWorld', 'translate', 'markNoTranslation'].includes(check)));
+		assert.ok(Object.values(EDITOR_CHANGE_CHECKS).every((check) => ['manageEditors', 'editSettings', 'editWorld', 'translate', 'markNoTranslation', 'manageVersions'].includes(check)));
+	});
+
+	it('lets only creators and the site admin role start, apply and discard the draft', () =>
+	{
+		const managers = ([...UNIVERSE_ROLES, ADMIN_ROLE] as EditorRole[]).map((role) => [role, ...(['startDraft', 'discardDraft'] as const).map((kind) => mayMakeChange({ kind }, { role, languages: [] }, playerId))]);
+
+		assert.deepStrictEqual(managers, [
+			['creator', true, true],
+			['builder', false, false],
+			['beta_tester', false, false],
+			['translator', false, false],
+			[ADMIN_ROLE, true, true]
+		]);
+		assert.strictEqual(canManageVersions('builder'), false);
 	});
 
 	it('lets creators and translators of the language translate, and creators and builders write notes', () =>

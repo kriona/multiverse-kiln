@@ -7,15 +7,16 @@ import { DEFAULT_STARTING_ITEMS, type ItemQuantity, type Ruleset } from '@multiv
 import { db, type Executor } from './client.js';
 import { findDefaultItemIds } from './itemRepo.js';
 import { universeStartingItems } from './schema.js';
+import { inVersion, liveVersion, type UniverseVersion } from './universeVersions.js';
 
 /**
  * The items every character of a universe starts with
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param executor The database, or a transaction
  * @return The items and how many of each, by item ID
  */
-export async function loadStartingItems(universeId: string, executor: Executor = db): Promise<ItemQuantity[]>
+export async function loadStartingItems(version: UniverseVersion, executor: Executor = db): Promise<ItemQuantity[]>
 {
 	return(executor
 		.select({
@@ -23,7 +24,7 @@ export async function loadStartingItems(universeId: string, executor: Executor =
 			quantity: universeStartingItems.quantity
 		})
 		.from(universeStartingItems)
-		.where(eq(universeStartingItems.universeId, universeId))
+		.where(inVersion(universeStartingItems, version))
 		.orderBy(asc(universeStartingItems.itemId)));
 }
 
@@ -31,22 +32,23 @@ export async function loadStartingItems(universeId: string, executor: Executor =
  * Replaces the items every character of a universe starts with. Call it inside a transaction, so the
  * universe is never left with only some of them
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param startingItems The items, each one the universe can use and listed once
  * @param executor A transaction
  */
-export async function replaceStartingItems(universeId: string, startingItems: readonly ItemQuantity[], executor: Executor): Promise<void>
+export async function replaceStartingItems(version: UniverseVersion, startingItems: readonly ItemQuantity[], executor: Executor): Promise<void>
 {
 	await executor
 		.delete(universeStartingItems)
-		.where(eq(universeStartingItems.universeId, universeId));
+		.where(inVersion(universeStartingItems, version));
 
 	if (startingItems.length > 0)
 	{
 		await executor
 			.insert(universeStartingItems)
 			.values(startingItems.map(({ itemId, quantity }) => ({
-				universeId,
+				universeId: version.universeId,
+				draft: version.draft,
 				itemId,
 				quantity
 			})));
@@ -54,7 +56,7 @@ export async function replaceStartingItems(universeId: string, startingItems: re
 }
 
 /**
- * Gives a new universe its ruleset's default starting equipment (DEFAULT_STARTING_ITEMS)
+ * Gives a new universe's live version its ruleset's default starting equipment (DEFAULT_STARTING_ITEMS)
  *
  * @param universeId The universe's ID
  * @param ruleset The universe's ruleset
@@ -64,7 +66,7 @@ export async function addDefaultStartingItems(universeId: string, ruleset: Rules
 {
 	const itemIds = await findDefaultItemIds(ruleset, executor);
 
-	await replaceStartingItems(universeId, DEFAULT_STARTING_ITEMS[ruleset].map(({ key, quantity }) =>
+	await replaceStartingItems(liveVersion(universeId), DEFAULT_STARTING_ITEMS[ruleset].map(({ key, quantity }) =>
 	{
 		const itemId = itemIds.get(key);
 
@@ -83,12 +85,12 @@ export async function addDefaultStartingItems(universeId: string, ruleset: Rules
 /**
  * Whether a universe's starting equipment holds an item
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param itemId The item's ID
  * @param executor The database, or a transaction
  * @return True when it does
  */
-export async function isStartingItem(universeId: string, itemId: number, executor: Executor = db): Promise<boolean>
+export async function isStartingItem(version: UniverseVersion, itemId: number, executor: Executor = db): Promise<boolean>
 {
 	const rows = await executor
 		.select({
@@ -96,7 +98,7 @@ export async function isStartingItem(universeId: string, itemId: number, executo
 		})
 		.from(universeStartingItems)
 		.where(and(
-			eq(universeStartingItems.universeId, universeId),
+			inVersion(universeStartingItems, version),
 			eq(universeStartingItems.itemId, itemId)
 		))
 		.limit(1);

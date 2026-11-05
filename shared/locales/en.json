@@ -1183,6 +1183,10 @@
 		"defaultMessage": "{action, select, added {Added difficulty level {name}} changed {Changed difficulty level {name}} other {Deleted difficulty level {name}}}",
 		"description": "In the editor's Audit tab's list of what a save changed: a difficulty level added, changed or deleted. {name} is its name. A change is followed by a line for each setting it changed"
 	},
+	"editor.audit.detail.draft": {
+		"defaultMessage": "{action, select, added {Started a draft} applied {Applied the draft to the live version} other {Discarded the draft}}",
+		"description": "In the editor's Audit tab's list of what a save changed: the universe's draft (a copy of the universe editors change without players seeing it) started, applied so players see it, or thrown away"
+	},
 	"editor.audit.detail.editor": {
 		"defaultMessage": "{action, select, added {Added editor {name}} changed {Changed editor {name}} other {Removed editor {name}}}",
 		"description": "In the editor's Audit tab's list of what a save changed: a player given a role in the universe, their role or languages changed, or their role taken away. {name} is their @username. A change is followed by a line for each setting it changed, such as Role"
@@ -1230,6 +1234,10 @@
 	"editor.audit.detail.translatorNotes": {
 		"defaultMessage": "{count, plural, one {Wrote or deleted # note for translators} other {Wrote or deleted # notes for translators}}",
 		"description": "In the editor's Audit tab's list of what a save changed: how many notes for translators on the universe's text it wrote or deleted"
+	},
+	"editor.audit.draftSave": {
+		"defaultMessage": "Saved to the draft",
+		"description": "At the top of the Changes column of the editor's Audit tab, for a save made to the universe's draft (a copy players don't see until it is applied) rather than its live version"
 	},
 	"editor.audit.field.lobbyDayHours": {
 		"defaultMessage": "Length of a lobby day",
@@ -1583,6 +1591,70 @@
 		"defaultMessage": "Display time",
 		"description": "Label of the field for how players are shown the time of day in a universe; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
+	"editor.draft.apply": {
+		"defaultMessage": "Apply Draft",
+		"description": "Button in the editor's toolbar that applies the universe's draft to the live version after asking, so players see everything changed in it"
+	},
+	"editor.draft.applyConfirm": {
+		"defaultMessage": "Apply Draft",
+		"description": "Button in the dialog asking to confirm applying the universe's draft, which applies it"
+	},
+	"editor.draft.applyQuestion": {
+		"defaultMessage": "Players will see everything changed in the draft at once. Changes saved to the live version since the draft was started are replaced by the draft's. This can't be undone.",
+		"description": "Question in the dialog asking to confirm applying the universe's draft to the live version, which players play"
+	},
+	"editor.draft.applyStaged": {
+		"defaultMessage": "The draft will be applied to the live version when the editor is saved.",
+		"description": "On the editor's Universe tab once Apply Draft in the toolbar is confirmed, until the editor is saved; it shows only when that save was refused"
+	},
+	"editor.draft.applyTitle": {
+		"defaultMessage": "Apply the draft?",
+		"description": "Title of the dialog asking to confirm applying the universe's draft to the live version"
+	},
+	"editor.draft.discard": {
+		"defaultMessage": "Discard Draft",
+		"description": "Button in the editor's toolbar that deletes the universe's draft after asking, leaving the live version as it is"
+	},
+	"editor.draft.discardConfirm": {
+		"defaultMessage": "Discard Draft",
+		"description": "Button in the dialog asking to confirm deleting the universe's draft, which deletes it"
+	},
+	"editor.draft.discardQuestion": {
+		"defaultMessage": "Everything changed in the draft will be lost, and the tilesets uploaded to it deleted. The live version stays as it is.",
+		"description": "Question in the dialog asking to confirm deleting the universe's draft"
+	},
+	"editor.draft.discardStaged": {
+		"defaultMessage": "The draft will be discarded when the editor is saved.",
+		"description": "On the editor's Universe tab once Discard Draft in the toolbar is confirmed, until the editor is saved; it shows only when that save was refused"
+	},
+	"editor.draft.discardTitle": {
+		"defaultMessage": "Discard the draft?",
+		"description": "Title of the dialog asking to confirm deleting the universe's draft"
+	},
+	"editor.draft.heading": {
+		"defaultMessage": "Draft",
+		"description": "Heading of the part of the editor's Universe tab shown when starting, applying or discarding the universe's draft (a copy of the universe editors change without players seeing it) couldn't be saved"
+	},
+	"editor.draft.saveFailed": {
+		"defaultMessage": "Could not change the draft.",
+		"description": "Shown on the editor's Universe tab when the server refused starting, applying or discarding the draft, followed by why; nothing was saved"
+	},
+	"editor.draft.saveOthersFirst": {
+		"defaultMessage": "Save or undo your other changes first.",
+		"description": "In the dialogs asking to confirm applying or discarding the universe's draft, and on the editor's Universe tab, while other changes are unsaved: the draft is applied as it is saved, and discarding it would throw them away"
+	},
+	"editor.draft.start": {
+		"defaultMessage": "Start Draft",
+		"description": "Button that starts a draft of the universe when the editor is saved: a copy editors change without players seeing it, in the editor's toolbar and in the dialog explaining drafts"
+	},
+	"editor.draft.startStaged": {
+		"defaultMessage": "A draft will be started when the editor is saved, as a copy of the live version with the other changes being saved.",
+		"description": "On the editor's Universe tab once a draft is started from the dialog the toolbar's Start Draft opens, until the editor is saved; it shows only when that save was refused"
+	},
+	"editor.draft.undo": {
+		"defaultMessage": "Undo",
+		"description": "Button on the editor's Universe tab that takes back starting, applying or discarding the draft, when saving it was refused"
+	},
 	"editor.editingAsAdmin": {
 		"defaultMessage": "You are editing this universe as a site admin: you can change everything a creator can.",
 		"description": "Shown above the editor's tabs to one of the site's admins who opened a universe they have no stronger role in, which they edit with the site admin role"
@@ -1598,6 +1670,10 @@
 	"editor.editors.choosePlayer": {
 		"defaultMessage": "Search for the player by name or username, then choose them from the list.",
 		"description": "Shown under the field for finding a player in the dialog for adding an editor on the editor's Editors tab, when Apply is pressed before a player is chosen from the list"
+	},
+	"editor.editors.draftNote": {
+		"defaultMessage": "Changes to editors apply to all versions of the universe - both the live and the draft versions.",
+		"description": "On the editor's Editors tab while the universe's draft (a copy players don't see until it is applied) is open: editors aren't part of the draft"
 	},
 	"editor.editors.editTitle": {
 		"defaultMessage": "Edit {username}",
@@ -2443,6 +2519,30 @@
 		"defaultMessage": "Undo Restore",
 		"description": "Button in an editor dialog (race, class, theme, item or tile) for one of the ruleset's that will be put back as the ruleset has it when the tab is saved: keeps the universe's changes instead"
 	},
+	"editor.startDraft.copy": {
+		"defaultMessage": "A draft is a copy of the whole universe: its settings, races, classes, items, tilesets, areas and their maps, and translations. Players keep playing the live version and won't see draft changes until they are applied.",
+		"description": "In the dialog explaining drafts before one is started: what a draft is"
+	},
+	"editor.startDraft.finishing": {
+		"defaultMessage": "When the draft is ready, a creator applies it with Apply Draft at the top of the editor, and players see everything changed in it at once. Discard Draft deletes it instead, leaving the live version as it is.",
+		"description": "In the dialog explaining drafts before one is started: how a draft ends"
+	},
+	"editor.startDraft.overwrite": {
+		"defaultMessage": "⚠️ Applying the draft overwrites the entire universe with it, including any changes saved to the live version while the draft is open. Applying can't be undone.",
+		"description": "Warning in the dialog explaining drafts before one is started, shown in a box that stands out"
+	},
+	"editor.startDraft.saveAndStart": {
+		"defaultMessage": "Save Changes And Start Draft",
+		"description": "Button in the dialog explaining drafts, when the editor has unsaved changes: saves them to the live version, then starts a draft (a copy of the universe editors change without players seeing it) with them"
+	},
+	"editor.startDraft.title": {
+		"defaultMessage": "Start a Draft",
+		"description": "Title of the dialog the editor's Start Draft button opens, explaining drafts before one is started"
+	},
+	"editor.startDraft.unsaved": {
+		"defaultMessage": "Your unsaved changes are saved to the live version first, so the draft starts with them.",
+		"description": "In the dialog explaining drafts before one is started, when the editor has unsaved changes: they are saved first, so the draft starts with them"
+	},
 	"editor.startingArea.area": {
 		"defaultMessage": "Starting area: {area}",
 		"description": "Shows the area characters start in: every character on the Characters tab, or a race's or class's characters in its editor; {area} is the area's name"
@@ -3107,6 +3207,26 @@
 		"defaultMessage": "Edit {universe}",
 		"description": "Heading of the world editor, linking to the editor's first tab; {universe} is the universe's name"
 	},
+	"editor.version": {
+		"defaultMessage": "Editing",
+		"description": "Label of the choice in the editor's toolbar of which version of the universe to edit: the live version players play, or the draft being built beside it"
+	},
+	"editor.version.draft": {
+		"defaultMessage": "Draft",
+		"description": "Choice in the editor's toolbar for editing the universe's draft, a copy players don't see until it is applied"
+	},
+	"editor.version.draftNotice": {
+		"defaultMessage": "You are editing the draft version of this universe. Players will not see changes until they are applied.",
+		"description": "Shown above the editor's tabs while the universe's draft (a copy players don't see) is open"
+	},
+	"editor.version.live": {
+		"defaultMessage": "Live version",
+		"description": "Choice in the editor's toolbar for editing the live version of the universe, the one players play"
+	},
+	"editor.version.liveWithDraftNotice": {
+		"defaultMessage": "You are editing the live version of this universe. The universe has a draft: changes saved here are replaced when the draft is applied unless they are also made in the draft.",
+		"description": "Shown above the editor's tabs while the live version of a universe with a draft is open"
+	},
 	"email.accountCreated.body": {
 		"defaultMessage": "Your account on {siteName} has been created.",
 		"description": "Paragraph of the email sent when a new account is created; {siteName} is the site's name"
@@ -3547,6 +3667,10 @@
 		"defaultMessage": "A difficulty level needs a name.",
 		"description": "Why a difficulty level the universe added couldn't be saved: its name was left out"
 	},
+	"error.draftExists": {
+		"defaultMessage": "The universe already has a draft. Apply it or discard it before starting another.",
+		"description": "Why a draft of the universe couldn't be started (see Universe versions): it has one already, perhaps started by another editor"
+	},
 	"error.faerieCantLoop": {
 		"defaultMessage": "An area whose passage of time is faerie can't loop.",
 		"description": "Why an area can't both have faerie time and a map that wraps around: shown by the area editor's loop checkboxes, and as the reason the server refused an area's settings"
@@ -3674,6 +3798,10 @@
 	"error.noSuchDifficultyLevelToEdit": {
 		"defaultMessage": "The difficulty level doesn't exist.",
 		"description": "Why a request about a difficulty level failed: it was deleted, perhaps by another editor"
+	},
+	"error.noSuchDraft": {
+		"defaultMessage": "The universe has no draft. It may have been applied or discarded.",
+		"description": "Why a request about a universe's draft failed: the universe has no draft (see Universe versions), perhaps because another editor applied or discarded it"
 	},
 	"error.noSuchEditor": {
 		"defaultMessage": "They are no longer one of the universe's editors.",
