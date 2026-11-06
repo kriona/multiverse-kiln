@@ -2599,6 +2599,10 @@
 		"message": "Couldn't stow it.",
 		"source": "Could not save."
 	},
+	"editor.saveNotice": {
+		"message": "{more, plural, =0 {{name} stowed: {changes}} one {{name} stowed: {changes}, an' # more change besides} other {{name} stowed: {changes}, an' # more changes besides}}",
+		"source": "{more, plural, =0 {{name} saved: {changes}} one {{name} saved: {changes}, and # more change} other {{name} saved: {changes}, and # more changes}}"
+	},
 	"editor.searchByName": {
 		"message": "Search by name",
 		"source": "Search by name"

@@ -5,13 +5,14 @@
  * Each change is checked and saved by its own module (editor.ts for the universe, its ruleset and its
  * tiles, editorItems.ts for items, and so on), through a ChangeContext. A change that is refused throws
  * a ChangeRefusal, which rolls the whole save back. The rooms only hear about the changes once the save
- * has committed
+ * has committed, and the universe's editor room what it changed, for its other windows
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { EDITOR_CHANGE_CHECKS, localize, mayMakeChange, maySaveInStage, type EditorAccess, type EditorChange, type NewRef, type SaveChangesPayload, type SaveRefusedPayload } from '@multiverse-kiln/shared';
+import { EDITOR_CHANGE_CHECKS, localize, mayMakeChange, maySaveInStage, type EditorAccess, type EditorChange, type NewRef, type SaveChangesPayload, type SaveRefusedPayload, type UniverseEditDetail } from '@multiverse-kiln/shared';
 
 import { loadBarredOptions, sameBarred } from '../db/barredOptions.js';
+import { findPlayer } from '../db/playerRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { recordUniverseEdit } from '../db/universeEditRepo.js';
 import { listUniverseRoles } from '../db/universeEditorRepo.js';
@@ -83,7 +84,7 @@ async function saveChangesRoute(request: Request, response: Response): Promise<v
 		return;
 	}
 
-	const outcome = await saveChanges(context, body.data.changes);
+	const outcome = await saveChanges(context, body.data.changes, body.data.windowId);
 
 	if (!outcome.saved)
 	{
@@ -137,9 +138,10 @@ function misplacedDraftChange(changes: readonly EditorChange[]): number
  *
  * @param base The universe, and the player and their role
  * @param changes The changes
+ * @param windowId The editor room session ID of the window saving, which isn't told of the save
  * @return The IDs the things made were saved with, or the change refused
  */
-export async function saveChanges(base: UniverseContext, changes: readonly EditorChange[]): Promise<SaveOutcome>
+export async function saveChanges(base: UniverseContext, changes: readonly EditorChange[], windowId?: string): Promise<SaveOutcome>
 {
 	const roleIndex = refusedIndex(base, base.playerId, changes);
 
@@ -181,6 +183,9 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 
 	// Set when the save changes the universe's stage
 	let stageChange: StageChange | undefined;
+
+	// What the save changed, as the Audit tab lists it
+	let details: UniverseEditDetail[] = [];
 	let context: ChangeContext;
 
 	try
@@ -332,6 +337,8 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 				}, transaction);
 			}
 
+			details = audit.details;
+
 			return(saving);
 		});
 	}
@@ -361,6 +368,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 	}
 
 	await afterCommit(context, stageChange);
+	await publishSave(base, windowId, details);
 
 	return({ saved: true, ids: context.ids });
 }
@@ -589,6 +597,41 @@ async function afterCommit(context: ChangeContext, stageChange: StageChange | un
 	{
 		tell();
 	}
+}
+
+/**
+ * Tells the universe's editor room what a save that has committed changed, for its other windows, when
+ * it changed anything. A save whose player can't be found (their account deleted as it saved) tells
+ * no one, since there is no one to name
+ *
+ * @param base The universe and version saved, and the player who saved
+ * @param windowId The editor room session ID of the window that saved, or undefined when it named none
+ * @param details What the save changed, as the Audit tab lists it
+ */
+async function publishSave(base: UniverseContext, windowId: string | undefined, details: UniverseEditDetail[]): Promise<void>
+{
+	if (details.length === 0)
+	{
+		return;
+	}
+
+	const player = await findPlayer(base.playerId);
+
+	if (!player)
+	{
+		return;
+	}
+
+	editorUpdates.publish({
+		kind: 'saved',
+		universeId: base.universe.id,
+		windowId,
+		playerId: player.id,
+		name: player.displayName,
+		username: player.username,
+		version: (base.version.draft ? 'draft' : 'live'),
+		details
+	});
 }
 
 /**

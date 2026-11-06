@@ -316,6 +316,12 @@ export function maySaveInStage(changes: readonly EditorChange[], stage: Universe
 export interface SaveChangesRequest
 {
 	changes: EditorChange[];
+
+	/**
+	 * The editor room session ID of the window saving, which the room doesn't tell of its own save
+	 * (EditorServerMessageType.Saved); left out by a window not in the room
+	 */
+	windowId?: string;
 }
 
 /**

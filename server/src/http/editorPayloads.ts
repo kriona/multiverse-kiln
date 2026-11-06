@@ -11,6 +11,11 @@ import { AREA_EVACUATIONS, GROUP_SIZE_LOWERINGS, ITEM_DISABLINGS, DARKVISIONS, D
 import { displayText } from '../rooms/payloads.js';
 
 /**
+ * The longest window ID a save may name: an editor room session ID, which Colyseus keeps far shorter
+ */
+const MAX_WINDOW_ID_LENGTH = 64;
+
+/**
  * A cell's column or row: generous enough for any map, and small enough for the database
  */
 const cellCoordinate = z.number().int().min(-MAX_MAP_SIDE).max(MAX_MAP_SIDE);
@@ -811,5 +816,6 @@ export const saveChangesRequest = byRuleset((ruleset) => z.object({
 		z.object({
 			kind: z.literal('discardDraft')
 		})
-	])).max(MAX_CHANGES_PER_SAVE)
+	])).max(MAX_CHANGES_PER_SAVE),
+	windowId: z.string().min(1).max(MAX_WINDOW_ID_LENGTH).optional()
 }) satisfies z.ZodType<SaveChangesRequest>);

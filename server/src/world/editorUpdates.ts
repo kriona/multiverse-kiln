@@ -1,14 +1,47 @@
-import type { UniverseRole } from '@multiverse-kiln/shared';
+import type { UniverseEditDetail, UniverseRole, UniverseVersionName } from '@multiverse-kiln/shared';
+
+/**
+ * A save that has committed, for the editor room to tell the other windows of
+ */
+export interface SavedUpdate
+{
+	kind: 'saved';
+	universeId: string;
+
+	/**
+	 * The editor room session ID of the window that saved, which isn't told, or undefined when it named none
+	 */
+	windowId: string | undefined;
+
+	/**
+	 * Who saved, with their display name and username
+	 */
+	playerId: string;
+	name: string;
+	username: string;
+
+	/**
+	 * The version the save changed
+	 */
+	version: UniverseVersionName;
+
+	/**
+	 * What it changed, as the Audit tab lists it
+	 */
+	details: readonly UniverseEditDetail[];
+}
 
 /**
  * Something open editors of a universe hear about, for its editor room
  *
  * - roles: a save gave players a role, changed it or took it away (undefined), by player ID
  * - access: a server admin disabled the universe or enabled it again, which changes who may save
+ * - saved: a save committed (SavedUpdate)
  */
 export type EditorUpdate =
 	| { kind: 'roles'; universeId: string; roles: ReadonlyMap<string, UniverseRole | undefined> }
-	| { kind: 'access'; universeId: string };
+	| { kind: 'access'; universeId: string }
+	| SavedUpdate;
 
 /**
  * Called after every update

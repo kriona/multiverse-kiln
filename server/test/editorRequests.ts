@@ -83,11 +83,12 @@ export async function send<T = unknown>(editor: Editor | undefined, method: stri
  * @param editor The browser saving them
  * @param universeId The universe's ID
  * @param changes The changes
+ * @param windowId The editor room session ID of the window saving, which isn't told of the save
  * @return The answer: the IDs of the things made, or why the save was refused
  */
-export async function saveChanges(editor: Editor, universeId: string, changes: unknown[]): Promise<EditorResponse<SaveChangesPayload & SaveRefusedPayload>>
+export async function saveChanges(editor: Editor, universeId: string, changes: unknown[], windowId?: string): Promise<EditorResponse<SaveChangesPayload & SaveRefusedPayload>>
 {
-	return(send<SaveChangesPayload & SaveRefusedPayload>(editor, 'POST', `/${universeId}/changes`, { body: { changes } }));
+	return(send<SaveChangesPayload & SaveRefusedPayload>(editor, 'POST', `/${universeId}/changes`, { body: { changes, windowId } }));
 }
 
 /**

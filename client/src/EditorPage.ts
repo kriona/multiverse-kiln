@@ -1,5 +1,5 @@
 import { CloseCode } from '@colyseus/sdk';
-import { EditorMessageType, EditorServerMessageType, NoticeReason, ServerCloseCode, SessionServerMessageType, type AccountPayload, type ChatPayload, type EditorPlacePayload, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type UniverseVersionName } from '@multiverse-kiln/shared';
+import { EditorMessageType, EditorServerMessageType, NoticeReason, ServerCloseCode, SessionServerMessageType, type AccountPayload, type ChatPayload, type EditorPlacePayload, type EditorSavedPayload, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type UniverseVersionName } from '@multiverse-kiln/shared';
 
 import { t } from './localization';
 import { EditorApi } from './network/editorApi';
@@ -51,12 +51,17 @@ function isEditorPlace(state: unknown): state is EditorPlace
  *
  * The page joins the session room, which says whether the browser is logged in and tells it when its
  * session ends. Being open counts as using the session. Once logged in, it joins the universe's editor
- * room too, which lists who has the editor open and carries the editors' chat, and tells it what this
- * window has open
+ * room too, which lists who has the editor open, carries the editors' chat and says what other windows
+ * save, and tells it what this window has open
  */
 export class EditorPage
 {
 	private readonly editorScreen: EditorScreen;
+
+	/**
+	 * The editor's API, which tells each save the window's ID in the editor room
+	 */
+	private readonly api: EditorApi;
 
 	/**
 	 * Whether the editor has been opened; it opens once, the first time the browser is logged in
@@ -111,6 +116,7 @@ export class EditorPage
 		const api = new EditorApi(client);
 
 		api.version = version;
+		this.api = api;
 		this.version = version;
 		this.editorScreen = new EditorScreen(api, {
 			placeChanged: (changed) =>
@@ -211,6 +217,7 @@ export class EditorPage
 		}
 
 		this.editorRoom = room;
+		this.api.windowId = room.sessionId;
 		chat.setConnected(true);
 		this.sendPlace();
 
@@ -243,6 +250,11 @@ export class EditorPage
 			this.editorScreen.accessChanged();
 		});
 
+		room.onMessage(EditorServerMessageType.Saved, (saved: EditorSavedPayload) =>
+		{
+			this.editorScreen.otherSaved(saved);
+		});
+
 		room.onLeave((code: number) =>
 		{
 			this.onEditorRoomLeft(chat, code);
@@ -259,6 +271,7 @@ export class EditorPage
 	private onEditorRoomLeft(chat: EditorChat, code: number): void
 	{
 		this.editorRoom = undefined;
+		this.api.windowId = undefined;
 		this.presenceBar?.show([]);
 
 		// A session that ended goes to the login page when the session room says so

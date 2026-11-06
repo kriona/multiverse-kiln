@@ -45,7 +45,7 @@ An engine for making multiplayer browser-based role-playing games.
   src/rooms/         Room classes (lifecycle hooks, message handlers, tick loop): SessionRoom (one, global: tells
                      every window who its player is, and when its session ends), LobbyRoom (one per universe),
                      GameRoom (one per group, made from the database when a member returns, with the group's chat) and EditorRoom (one
-                     per universe: who has its editor open, and the editors' chat). Every room
+                     per universe: who has its editor open, the editors' chat, and what each window saves). Every room
                      finds its clients' players from their session cookie in onAuth. The two map rooms share
                      AreaPlayers (movement, areas, who sees whom, area links) and AreaCache
   src/players/       which login sessions have windows connected, changes to characters and groups, and players who
