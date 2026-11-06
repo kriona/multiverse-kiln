@@ -3,8 +3,9 @@ import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { cellIndexInChunk, DARKVISION_SQUARES, DEFAULT_OUTDOOR_WALK_SECONDS, DEFAULT_TILE_CELL,GAME_ROOM_NAME, GameMessageType, GameServerMessageType, GameState, GRID_CELL_SIZE, GROUP_START_SECONDS, MessageType, NOTHING_BARRED, NoticeReason, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, UNSEEN_CELL, type AreaPayload, type CellsSeenPayload, type GameJoinOptions, type NoticePayload, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, DARKVISION_SQUARES, DEFAULT_OUTDOOR_WALK_SECONDS, DEFAULT_TILE_CELL,GAME_ROOM_NAME, GameMessageType, GameServerMessageType, GameState, GRID_CELL_SIZE, GROUP_START_SECONDS, MAX_CHAT_MESSAGE_LENGTH, MessageType, NOTHING_BARRED, NoticeReason, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, UNSEEN_CELL, type AreaPayload, type CellsSeenPayload, type GameJoinOptions, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
+import { listChatMessages } from '../src/db/chatRepo.js';
 import { createCharacter, scheduleCharacterDeletion } from '../src/db/characterRepo.js';
 import { pool } from '../src/db/client.js';
 import { addGroupMember, findGroup, leaveGroup, listGroupMembers } from '../src/db/groupRepo.js';
@@ -22,6 +23,7 @@ import { universeAccessChanges } from '../src/players/universeAccess.js';
 import type { GameRoom } from '../src/rooms/GameRoom.js';
 import { areaChanges } from '../src/world/areaChanges.js';
 import { addCharacter, addGroup, addPlayableUniverse, defaultClassId, defaultRaceId, dwarfFighter, type PlayableUniverse } from './db/fixtures.js';
+import { Inbox } from './inbox.js';
 import { addPlayer, TestBrowsers } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
 import { waitUntil } from './waitUntil.js';
@@ -57,8 +59,9 @@ interface Member
 }
 
 /**
- * A client-side room, the Welcome and first Area payloads once they arrive, and the cells the group
- * has seen for the first time since it joined (GameServerMessageType.CellsSeen), by "column,row"
+ * A client-side room, the Welcome and first Area payloads once they arrive, the cells the group has
+ * seen for the first time since it joined (GameServerMessageType.CellsSeen), by "column,row", and the
+ * group's chat it was sent
  */
 interface JoinedWindow
 {
@@ -66,6 +69,7 @@ interface JoinedWindow
 	welcome: Promise<WelcomePayload>;
 	area: Promise<AreaPayload>;
 	cellsSeen: Map<string, number>;
+	chat: Inbox<GameServerMessageType>;
 }
 
 let universe: PlayableUniverse;
@@ -237,6 +241,7 @@ async function joinAs(room: GameRoom, browserId: string, member: Member): Promis
 		client.onMessage(ServerMessageType.Area, resolve);
 	});
 	const cellsSeen = new Map<string, number>();
+	const chat = new Inbox<GameServerMessageType>(client, [GameServerMessageType.ChatHistory, GameServerMessageType.Chat]);
 
 	client.onMessage(GameServerMessageType.CellsSeen, (payload: CellsSeenPayload) =>
 	{
@@ -248,7 +253,7 @@ async function joinAs(room: GameRoom, browserId: string, member: Member): Promis
 
 	await client.waitForInitialState();
 
-	return({ client, welcome, area, cellsSeen });
+	return({ client, welcome, area, cellsSeen, chat });
 }
 
 /**
@@ -974,6 +979,92 @@ describe('GameRoom', () =>
 			await waitUntil(() => !room.state.players.has(ada.characterId));
 
 			assert.strictEqual(room.state.players.has(second.characterId), false);
+		});
+	});
+
+	describe('chat', () =>
+	{
+		it('sends a message to every window as the character the window controls, and the chat to windows joining later', async () =>
+		{
+			const room = await createGameRoom();
+			const ada = await addPlayerWithCharacter('Ada');
+
+			await joinGroup(ada);
+
+			const second = await addSecondCharacter(ada, 'Byron');
+			const adaWindow = await joinAs(room, browserIdA, ada);
+			const other = await joinFromBrowser(room, browserIdB, 'Cleo');
+
+			assert.deepStrictEqual((await adaWindow.chat.take<KeptChatHistoryPayload>(GameServerMessageType.ChatHistory)).messages, []);
+			adaWindow.client.send(GameMessageType.Chat, { text: '  Which way to the tower?  ' });
+
+			const received = await other.chat.take<KeptChatMessage>(GameServerMessageType.Chat);
+
+			assert.deepStrictEqual([received.playerId, received.name, received.username, received.text], [ada.playerId, 'Ada', null, 'Which way to the tower?']);
+			assert.strictEqual((await adaWindow.chat.take<KeptChatMessage>(GameServerMessageType.Chat)).text, received.text);
+
+			const welcome = nextMessage<WelcomePayload>(adaWindow.client, ServerMessageType.Welcome);
+
+			adaWindow.client.send(GameMessageType.Control, { characterId: second.characterId });
+			await welcome;
+			adaWindow.client.send(GameMessageType.Chat, { text: 'North' });
+			assert.strictEqual((await other.chat.take<KeptChatMessage>(GameServerMessageType.Chat)).name, 'Byron');
+
+			const later = await joinFromBrowser(room, browserIdB);
+			const history = (await later.chat.take<KeptChatHistoryPayload>(GameServerMessageType.ChatHistory)).messages;
+
+			assert.deepStrictEqual(history.map((message) => [message.name, message.text]), [['Ada', 'Which way to the tower?'], ['Byron', 'North']]);
+		});
+
+		it('drops messages that are empty, too long or hold disallowed characters, and tells a player sending too fast', async () =>
+		{
+			const room = await createGameRoom();
+			const { client, chat } = await joinFromBrowser(room, browserIdA);
+			const notice = nextMessage<NoticePayload>(client, GameServerMessageType.Notice);
+
+			client.send(GameMessageType.Chat, { text: '   ' });
+			client.send(GameMessageType.Chat, { text: 'x'.repeat(MAX_CHAT_MESSAGE_LENGTH + 1) });
+			client.send(GameMessageType.Chat, { text: 'right‮to left' });
+
+			for (let sent = 0; sent < 6; sent++)
+			{
+				client.send(GameMessageType.Chat, { text: `Line ${sent}` });
+			}
+
+			assert.strictEqual((await notice).reason, NoticeReason.ChatTooFast);
+			assert.strictEqual((await chat.take<KeptChatMessage>(GameServerMessageType.Chat)).text, 'Line 0');
+			assert.strictEqual(chat.pending(GameServerMessageType.Chat), 4);
+		});
+
+		it('works at the end of time, and keeps the chat in the database, written as the room closes, for the room that opens next', async () =>
+		{
+			await updateUniverseSettings(liveVersion(universe.universeId), { stage: 'end_of_time' });
+
+			const chat = { kind: 'group', universeId: universe.universeId, groupId } as const;
+			const room = await createGameRoom();
+			const window = await joinFromBrowser(room, browserIdA, 'Ada');
+
+			window.client.send(GameMessageType.Chat, { text: 'Saved for later' });
+			await window.chat.take<KeptChatMessage>(GameServerMessageType.Chat);
+			assert.deepStrictEqual(await listChatMessages(chat), []);
+			await window.client.leave();
+			await waitUntil(async () => ((await listChatMessages(chat)).length === 1));
+
+			const reopened = await joinFromBrowser(await createGameRoom(), browserIdA);
+			const [kept] = (await reopened.chat.take<KeptChatHistoryPayload>(GameServerMessageType.ChatHistory)).messages;
+
+			assert.deepStrictEqual([kept.playerId, kept.name, kept.username, kept.text], [browserMembers.get(browserIdA)?.playerId, 'Ada', null, 'Saved for later']);
+		});
+
+		it('writes new messages every few seconds while the room is open', async () =>
+		{
+			const room = await createGameRoom();
+			const window = await joinFromBrowser(room, browserIdA);
+
+			window.client.send(GameMessageType.Chat, { text: 'Checkpoint' });
+			await window.chat.take<KeptChatMessage>(GameServerMessageType.Chat);
+			await room.saveChat();
+			assert.deepStrictEqual((await listChatMessages({ kind: 'group', universeId: universe.universeId, groupId })).map((message) => message.text), ['Checkpoint']);
 		});
 	});
 

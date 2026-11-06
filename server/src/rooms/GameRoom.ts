@@ -19,8 +19,10 @@ import { universeAccessChanges, type BarredChange, type StageChange } from '../p
 import { areaChanges, type AreaPlace } from '../world/areaChanges.js';
 import { areaOccupants } from '../world/areaOccupants.js';
 import { InvalidMessages } from './invalidMessages.js';
+import { CHAT_SAVE_INTERVAL_MS, KeptChatLog } from './keptChat.js';
 import { mayViewUniverse } from './universePlay.js';
-import { controlPayload, describeInvalidPayload, gameJoinOptions, movePayload } from './payloads.js';
+import { chatPayload, controlPayload, describeInvalidPayload, gameJoinOptions, movePayload } from './payloads.js';
+import { createChatLimiter } from './rateLimiter.js';
 import { AreaCache, toLinkCells, type ActiveArea } from './areaCache.js';
 import { CHUNK_REFRESH_INTERVAL_MS, SIMULATION_TICK_RATE, AreaPlayers, type Appearance, type PlayerPosition } from './areaPlayers.js';
 
@@ -85,6 +87,10 @@ function identityOf(client: GameClient): GameIdentity
  *
  * In a universe at the end of time the room is locked (state.locked): members can open it and look at
  * the map, and switch between their characters, but it ignores moves and links
+ *
+ * The group's chat is kept (server/src/db/chatRepo.ts), written as the character each window controls:
+ * the room loads its messages as it starts, and writes new ones every CHAT_SAVE_INTERVAL_MS and as it
+ * closes, never inside a tick. It works while the room is locked too
  *
  * The group routes (http/groups.ts) decide who is in the group, and the room follows them (groupChanges)
  */
@@ -187,6 +193,13 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	 */
 	private readonly invalidMessages = new InvalidMessages();
 
+	/**
+	 * The group's chat, loaded in onCreate
+	 */
+	private readonly chat = new KeptChatLog();
+
+	private readonly chatLimiter = createChatLimiter();
+
 	private readonly stopListening: (() => void)[] = [];
 
 	messages = {
@@ -232,13 +245,49 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			{
 				this.areaPlayers.control(client, member.characterId);
 			}
+		},
+
+		[GameMessageType.Chat]: (client: GameClient, payload: unknown) =>
+		{
+			const result = chatPayload.safeParse(payload);
+
+			if (!result.success)
+			{
+				this.invalidMessages.reject(client, GameMessageType.Chat, describeInvalidPayload(result.error));
+				return;
+			}
+
+			const { playerId } = identityOf(client);
+			const characterId = this.areaPlayers.getPlayerId(client.sessionId);
+			const member = ((characterId === undefined) ? undefined : this.members.get(characterId));
+
+			// A window whose character has just been taken off the map has no one to write as
+			if (!member)
+			{
+				return;
+			}
+
+			if (!this.chatLimiter.tryTake(playerId))
+			{
+				this.sendNotice([client], NoticeReason.ChatTooFast);
+				return;
+			}
+
+			const message = this.chat.add({
+				playerId,
+				name: member.name,
+				username: null
+			}, result.data.text);
+
+			this.broadcast(GameServerMessageType.Chat, message);
 		}
 	};
 
 	/**
-	 * Loads the group, its members and its starting area, starts the simulation loop and the loading of
-	 * chunks near players, and starts following changes to the group, its characters and the world. Fails
-	 * for a group that doesn't exist, or whose universe has no starting area
+	 * Loads the group, its members, its chat and its starting area, starts the simulation loop, the
+	 * loading of chunks near players and the writing of new chat messages, and starts following changes to
+	 * the group, its characters and the world. Fails for a group that doesn't exist, or whose universe has
+	 * no starting area
 	 *
 	 * @param options The group, from the first client's GameJoinOptions
 	 */
@@ -296,6 +345,11 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		}
 
 		this.seen.load(await loadSeenChunks(group.id));
+		await this.chat.load({
+			kind: 'group',
+			universeId: group.universeId,
+			groupId: group.id
+		});
 
 		this.setTimestep((deltaTime) =>
 		{
@@ -310,6 +364,10 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 				console.error('Could not save what group', this.groupId, 'has seen', error);
 			});
 		}, SEEN_SAVE_INTERVAL_MS);
+		this.clock.setInterval(() =>
+		{
+			void this.saveChat();
+		}, CHAT_SAVE_INTERVAL_MS);
 
 		this.stopListening.push(
 			groupChanges.onChange((change) =>
@@ -431,7 +489,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 
 	/**
 	 * Puts every playable character of the joining client's player on the map, if they aren't already,
-	 * and gives the client the character it asked for
+	 * gives the client the character it asked for, and sends it the group's chat
 	 *
 	 * @param client The joining client
 	 */
@@ -461,6 +519,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		const member = this.members.get(characterId);
 
 		this.areaPlayers.join(client, characterId, this.appearanceOf(member), startingArea);
+		client.send(GameServerMessageType.ChatHistory, this.chat.history());
 		connectedSessions.connect(identityOf(client).sessionId);
 
 		console.log(client.sessionId, 'joined group', this.groupId, 'as character', characterId);
@@ -491,6 +550,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		}
 
 		this.windows.delete(playerId);
+		this.chatLimiter.forget(playerId);
 
 		const positions = this.takeOut(playerId);
 
@@ -515,9 +575,10 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
-	 * Stops following changes, once everyone has left (or nobody joined)
+	 * Stops following changes, once everyone has left (or nobody joined), and writes the chat's last new
+	 * messages
 	 */
-	onDispose(): void
+	async onDispose(): Promise<void>
 	{
 		for (const stop of this.stopListening)
 		{
@@ -525,6 +586,23 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		}
 
 		console.log('Room of group', this.groupId, 'disposing');
+		await this.saveChat();
+	}
+
+	/**
+	 * Writes the chat's new messages to the database, after any write going on, unless the group is no
+	 * more. Messages that can't be written are tried again next time
+	 *
+	 * @return Resolves once they are written, or have failed to be
+	 */
+	saveChat(): Promise<void>
+	{
+		if (this.disbanded)
+		{
+			return(Promise.resolve());
+		}
+
+		return(this.chat.save());
 	}
 
 	/**

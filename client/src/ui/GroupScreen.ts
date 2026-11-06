@@ -1,5 +1,5 @@
 import { Callbacks } from '@colyseus/sdk';
-import { DAY_SECONDS, defineMessages, GRID_CELL_SIZE, secondOfDay, ServerMessageType, type AreaPayload, type CharacterListPayload, type CharacterSummary, type GroupMember, type WelcomePayload } from '@multiverse-kiln/shared';
+import { DAY_SECONDS, defineMessages, GRID_CELL_SIZE, MAX_KEPT_CHAT_MESSAGES, secondOfDay, ServerMessageType, type AreaPayload, type CharacterListPayload, type CharacterSummary, type GroupMember, type KeptChatMessage, type WelcomePayload } from '@multiverse-kiln/shared';
 import signOutIcon from 'virtual:icon/ph:sign-out';
 
 import { currentLocale, t } from '../localization';
@@ -7,6 +7,7 @@ import type { GameConnection } from '../network/serverConnection';
 import { announce } from './announcer';
 import { CharacterList } from './CharacterList';
 import { characterMessages } from './characterMessages';
+import { ChatLog } from './ChatLog';
 import { getElement, setButtonLabel, setPageTitle, showMessage } from './dom';
 import { describeLeaving, leaveButtonLabel } from './leavingGroup';
 import type { MapView } from './MapView';
@@ -67,16 +68,25 @@ export interface GroupScreenActions
 	 * @return Resolves once they have left; rejects with the reason, in the player's language, when they couldn't
 	 */
 	leave: (characterId: string) => Promise<void>;
+
+	/**
+	 * Say something in the group's chat, as the character this window plays
+	 */
+	sendChat: (text: string) => void;
 }
 
 /**
  * The group screen: the group's map, its members (who is here, and who the anchor being is), the
- * player's characters with Create Character, and the Invite and Leave group buttons
+ * player's characters with Create Character, the group's chat, and the Invite and Leave group buttons
  *
  * Each window plays one character. Choosing another of the player's characters in the group switches
  * the window to them without leaving the room: the room sends Welcome and Area again, and the map
  * starts over around them. Only the anchor being's player sees Invite. Leaving asks first; the anchor
  * being leaving disbands the group
+ *
+ * The chat is written as the character the window plays, and works while the room is locked. A line
+ * above it names the members who are here, and screen readers hear other players' characters arrive
+ * and leave
  */
 export class GroupScreen
 {
@@ -96,7 +106,9 @@ export class GroupScreen
 	private readonly leaveQuestion = getElement('leave-group-question', HTMLElement);
 	private readonly leaveError = getElement('leave-group-error', HTMLElement);
 	private readonly leaveConfirm = getElement('leave-group-confirm', HTMLButtonElement);
+	private readonly chatHere = getElement('group-chat-here', HTMLElement);
 	private readonly characterChoices: CharacterList;
+	private readonly chat: ChatLog;
 	private statusTimer?: number;
 
 	/**
@@ -141,6 +153,12 @@ export class GroupScreen
 	private switchingTo: string | undefined;
 
 	/**
+	 * Other players' characters last named as here, with their names, by character ID; undefined until
+	 * the room's members first arrive, so those already here aren't read out as arriving
+	 */
+	private shownHere: Map<string, string> | undefined;
+
+	/**
 	 * Stops following the room
 	 */
 	private readonly unbinds: Array<() => void> = [];
@@ -167,6 +185,16 @@ export class GroupScreen
 			{
 				actions.openCharacterSheet(character);
 			}
+		});
+
+		this.chat = new ChatLog({
+			log: 'group-chat-log',
+			form: 'group-chat-form',
+			input: 'group-chat-input',
+			sendButton: 'group-chat-send'
+		}, MAX_KEPT_CHAT_MESSAGES, (text) =>
+		{
+			actions.sendChat(text);
 		});
 
 		this.createCharacterButton.addEventListener('click', () =>
@@ -235,6 +263,9 @@ export class GroupScreen
 		this.anchorId = '';
 		this.locked = undefined;
 		this.members.clear();
+		this.shownHere = undefined;
+		this.chat.setOwnPlayer(ownPlayerId);
+		this.chat.clear();
 		this.leaving = false;
 		this.leaveButton.disabled = false;
 		this.inviteButton.hidden = true;
@@ -387,6 +418,8 @@ export class GroupScreen
 		this.area = undefined;
 		this.groupId = undefined;
 		this.switchingTo = undefined;
+		this.shownHere = undefined;
+		this.chat.clear();
 		this.time.textContent = '';
 		this.leaveDialog.close();
 		this.mapView.hide();
@@ -479,6 +512,35 @@ export class GroupScreen
 				this.status.textContent = '';
 			}, durationMs);
 		}
+	}
+
+	/**
+	 * Replaces the chat with the messages the group's chat keeps
+	 *
+	 * @param messages The messages, oldest first
+	 */
+	setChatHistory(messages: readonly KeptChatMessage[]): void
+	{
+		this.chat.setHistory(messages);
+	}
+
+	/**
+	 * Adds a new chat message, following it if the chat was scrolled to the bottom
+	 *
+	 * @param message The message
+	 */
+	addChatMessage(message: KeptChatMessage): void
+	{
+		this.chat.add(message);
+	}
+
+	/**
+	 * Says the player's last chat message was sent too quickly, which the server dropped, and puts it back
+	 * in the field
+	 */
+	refuseChatTooFast(): void
+	{
+		this.chat.refuseTooFast();
 	}
 
 	/**
@@ -617,6 +679,88 @@ export class GroupScreen
 		setButtonLabel(this.leaveButton, signOutIcon, leaveButtonLabel(this.characterId === this.anchorId));
 		this.characterChoices.render(this.characters, this.characterId, this.groupId);
 		this.renderMembers();
+		this.renderHere();
+	}
+
+	/**
+	 * Names the members who are here above the chat, by name, and reads out other players' characters
+	 * who have arrived or left since the last time
+	 */
+	private renderHere(): void
+	{
+		const here = [...this.members.values()]
+			.filter((member) => member.present)
+			.map((member) => member.name)
+			.sort((a, b) => a.localeCompare(b, currentLocale()));
+		const others = new Map([...this.members]
+			.filter(([, member]) => (member.present && (member.playerId !== this.ownPlayerId)))
+			.map(([characterId, member]) => [characterId, member.name]));
+
+		this.chatHere.hidden = (here.length === 0);
+		this.chatHere.textContent = t({
+			id: 'group.chat.here',
+			defaultMessage: 'Here: {names}',
+			description: 'Above a group\'s chat, the characters in the group whose players are in the game; {names} is their names joined as a list, e.g. "Ada, Byron and Cleo"'
+		}, {
+			names: this.formatNames(here)
+		});
+
+		// The room's members arrive once it is joined
+		if (!this.connection)
+		{
+			return;
+		}
+
+		const previous = this.shownHere;
+
+		this.shownHere = others;
+
+		if (!previous)
+		{
+			return;
+		}
+
+		const arrived = [...others]
+			.filter(([characterId]) => !previous.has(characterId))
+			.map(([, name]) => name);
+		const left = [...previous]
+			.filter(([characterId]) => !others.has(characterId))
+			.map(([, name]) => name);
+
+		if (arrived.length > 0)
+		{
+			announce(t({
+				id: 'group.chat.arrived',
+				defaultMessage: '{count, plural, one {{names} is here} other {{names} are here}}',
+				description: 'Read out by screen readers in a group when another player comes into the game; {names} is the names of their characters in the group joined as a list, and {count} how many there are'
+			}, {
+				count: arrived.length,
+				names: this.formatNames(arrived)
+			}));
+		}
+
+		if (left.length > 0)
+		{
+			announce(t({
+				id: 'group.chat.left',
+				defaultMessage: '{count, plural, one {{names} has left} other {{names} have left}}',
+				description: 'Read out by screen readers in a group when another player closes their last window of the game, or one of their characters leaves the group; {names} is the names of the characters joined as a list, and {count} how many there are'
+			}, {
+				count: left.length,
+				names: this.formatNames(left)
+			}));
+		}
+	}
+
+	/**
+	 * Joins names as a list in the player's language
+	 *
+	 * @param names The names
+	 * @return E.g. "Ada, Byron and Cleo"
+	 */
+	private formatNames(names: readonly string[]): string
+	{
+		return(new Intl.ListFormat(currentLocale(), { style: 'long', type: 'conjunction' }).format(names));
 	}
 
 	/**

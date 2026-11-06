@@ -107,6 +107,15 @@
 	min-height: 200px;
 }
 
+// Above a group's chat, the members whose players are in the game
+.chat-here
+{
+	margin: 0 0 8px;
+	font-size: 14px;
+	color: $text-dim;
+	overflow-wrap: anywhere;
+}
+
 .members
 {
 	display: flex;
