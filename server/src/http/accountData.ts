@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { accountExportFileName, DEFAULT_CLASS_NAMES, DEFAULT_ITEM_NAMES, DEFAULT_RACE_NAMES, DEFAULT_THEME_NAMES, MAX_LOCALE_LENGTH, type AccountDeletionPayload, type AccountExport, type ExportedCharacter, type MessageDescriptor, type Ruleset, type Translator } from '@multiverse-kiln/shared';
 
 import { findPlayerAuthEvents } from '../db/authEventRepo.js';
+import { listOwnChatMessages } from '../db/chatRepo.js';
 import { findCharacterDetails, listCharacterDrafts, listProfileCharacters, type ProfileCharacterRecord } from '../db/characterRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
 import { findMembership } from '../db/groupRepo.js';
@@ -175,7 +176,7 @@ export async function exportRoute(request: Request, response: Response): Promise
 	const now = new Date();
 	const locale = exportLocale.safeParse(request.query.locale);
 	const translator = emailTranslator((locale.success ? locale.data : 'en'));
-	const [profile, providers, twoFactor, sessions, events, universes, records, drafts] = await Promise.all([
+	const [profile, providers, twoFactor, sessions, events, universes, records, drafts, chats] = await Promise.all([
 		findOwnProfile(playerId),
 		listProviderLogins(playerId),
 		findTwoFactorState(playerId, now),
@@ -183,7 +184,8 @@ export async function exportRoute(request: Request, response: Response): Promise
 		findPlayerAuthEvents(playerId),
 		listEditableUniverses(playerId),
 		listProfileCharacters(playerId, {}),
-		listCharacterDrafts(playerId)
+		listCharacterDrafts(playerId),
+		listOwnChatMessages(playerId)
 	]);
 
 	if (!profile)
@@ -223,7 +225,11 @@ export async function exportRoute(request: Request, response: Response): Promise
 		})),
 		universes: universes.map(({ id, name, role }) => ({ id, name, role })),
 		characters: await exportCharacters(playerId, records, translator),
-		characterDrafts: drafts
+		characterDrafts: drafts,
+		chatMessages: chats.map((message) => ({
+			...message,
+			sentAt: message.sentAt.toISOString()
+		}))
 	};
 
 	response.attachment(accountExportFileName(profile.username));

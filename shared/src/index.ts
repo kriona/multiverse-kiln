@@ -7,6 +7,7 @@ export * from './defaultTiles.js';
 export * from './difficulty.js';
 export * from './editor.js';
 export * from './editorChanges.js';
+export * from './editorRoom.js';
 export * from './groups.js';
 export * from './items.js';
 export * from './localization.js';

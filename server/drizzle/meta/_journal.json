@@ -631,6 +631,13 @@
       "when": 1793852534995,
       "tag": "0089_coin_names",
       "breakpoints": true
+    },
+    {
+      "idx": 90,
+      "version": "7",
+      "when": 1793921035297,
+      "tag": "0090_chat_messages",
+      "breakpoints": true
     }
   ]
 }

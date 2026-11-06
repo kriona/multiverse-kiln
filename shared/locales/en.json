@@ -971,6 +971,14 @@
 		"defaultMessage": "Story",
 		"description": "Name of the easiest default difficulty level, for players who are there for the story: mobs (monsters and enemies) are 50% easier"
 	},
+	"editor.accessChanged": {
+		"defaultMessage": "What you can do in this universe has changed: your role, its stage, or whether the site's admins have disabled it. Save or undo your changes, then reload the page to see what you can do now.",
+		"description": "Shown above the editor's tabs when the player's role in the universe, its stage, or whether the site's admins disabled it changed while they had unsaved changes, which loading the universe again would throw away"
+	},
+	"editor.accessLost": {
+		"defaultMessage": "You no longer have a role in this universe, so your changes can't be saved.",
+		"description": "Shown above the editor's tabs, and in the editors' chat panel, when the player's role in the universe was taken away while they had the editor open"
+	},
 	"editor.area.back": {
 		"defaultMessage": "Back to Areas",
 		"description": "Button that closes the area editor and goes back to the list of areas"
@@ -1426,6 +1434,66 @@
 	"editor.characters.startingMoneyHint": {
 		"defaultMessage": "Amounts of coins, like {example}. Coins stay as they are given; races and classes can add more.",
 		"description": "Explains the starting money field on the editor's Characters tab; {example} is an amount of money, e.g. 1pp 2gp 2sp 4cp or 250cr. Coins are never changed into other coins automatically"
+	},
+	"editor.chat.close": {
+		"defaultMessage": "Close",
+		"description": "Button that hides the panel with the chat of the universe's editors; Escape does the same"
+	},
+	"editor.chat.closed": {
+		"defaultMessage": "{name} closed the editor",
+		"description": "Read out by screen readers when another editor closes their last window of the universe's editor; {name} is their display name"
+	},
+	"editor.chat.deletedAccount": {
+		"defaultMessage": "Deleted account",
+		"description": "In the editors' chat, in place of the name of a player who wrote a message and has since deleted their account"
+	},
+	"editor.chat.disconnected": {
+		"defaultMessage": "The editors' chat was disconnected. Reload the page to reconnect.",
+		"description": "Shown in the editors' chat panel when its connection to the server was lost"
+	},
+	"editor.chat.draftTab": {
+		"defaultMessage": "{tab} (draft)",
+		"description": "In the editors' chat panel's list of who has the editor open, a tab an editor has open on the universe's draft (a copy players don't see until it is applied); {tab} is the tab's name, such as Areas"
+	},
+	"editor.chat.heading": {
+		"defaultMessage": "Editors' Chat",
+		"description": "Heading of the panel with the chat of the universe's editors, opened with the Chat button in the editor's toolbar"
+	},
+	"editor.chat.here": {
+		"defaultMessage": "Here now",
+		"description": "Heading in the editors' chat panel above the list of the players who have the universe's editor open, each with their role and the tabs they have open"
+	},
+	"editor.chat.newMessage": {
+		"defaultMessage": "{name} wrote in the editors' chat: {text}",
+		"description": "Read out by screen readers when another editor writes in the editors' chat while its panel is hidden; {name} is their display name and {text} what they wrote"
+	},
+	"editor.chat.notJoined": {
+		"defaultMessage": "Could not connect to the editors' chat. Reload the page to try again.",
+		"description": "Shown in the editors' chat panel when the page couldn't join it, which also lists who has the editor open"
+	},
+	"editor.chat.opened": {
+		"defaultMessage": "{name} opened the editor",
+		"description": "Read out by screen readers when another editor opens the universe's editor; {name} is their display name"
+	},
+	"editor.chat.toggle": {
+		"defaultMessage": "Chat",
+		"description": "Button in the editor's toolbar that shows or hides the chat of the universe's editors, with who has the editor open"
+	},
+	"editor.chat.tooFast": {
+		"defaultMessage": "You are sending messages too quickly. Wait a moment, then send it again.",
+		"description": "Shown in the editors' chat panel when the player sent chat messages faster than allowed; their message is put back in the field"
+	},
+	"editor.chat.unread": {
+		"defaultMessage": "{count, plural, one {# new message} other {# new messages}}",
+		"description": "Beside the Chat button in the editor's toolbar, how many messages other editors wrote in the editors' chat while it was hidden"
+	},
+	"editor.chat.where": {
+		"defaultMessage": "@{username}, {role}, on {tabs}",
+		"description": "In the editors' chat panel's list of who has the editor open, after an editor's name: {username} is their username, {role} their role (such as builder) and {tabs} the tabs their windows show, such as \"Areas and Items (draft)\""
+	},
+	"editor.chat.you": {
+		"defaultMessage": "{name} (you)",
+		"description": "In the editors' chat panel's list of who has the editor open, the player themself; {name} is their display name"
 	},
 	"editor.chooseEquipment": {
 		"defaultMessage": "Choose Equipment",
@@ -3230,6 +3298,10 @@
 	"editor.universe.stageWarning": {
 		"defaultMessage": "Once the universe leaves the stage {stage}, new areas start disabled, so players can't wander into them before they are finished. Enable each one on the Areas tab when it's ready.",
 		"description": "Under the stage choice on the editor's Universe tab, when the universe is in the stage \"in the beginning\" and another stage is chosen; {stage} is the name of the stage \"in the beginning\", shown in italics"
+	},
+	"editor.universeDeleted": {
+		"defaultMessage": "This universe has been deleted, so changes to it can't be saved.",
+		"description": "Shown above the editor's tabs, and in the editors' chat panel, when the universe was deleted while the player had its editor open"
 	},
 	"editor.universeDisabled": {
 		"defaultMessage": "The site's admins have disabled this universe, so it can't be played and changes to it can't be saved. Reason: {reason}",
@@ -5808,12 +5880,16 @@
 		"description": "In the privacy policy, the game information the site keeps: characters and groups, and what a group has explored"
 	},
 	"privacy.playChat": {
-		"defaultMessage": "Chat isn't saved. The game server keeps a lobby's most recent messages in memory, so players who arrive can read them, until the lobby closes or the server restarts.",
-		"description": "In the privacy policy, how long chat is kept: only in the game server's memory, and only the most recent messages"
+		"defaultMessage": "Lobby chat isn't saved. The game server keeps a lobby's most recent messages in memory, so players who arrive can read them, until the lobby closes or the server restarts.",
+		"description": "In the privacy policy, how long chat is kept: a lobby's only in the game server's memory, and only the most recent messages"
 	},
 	"privacy.playEditRecord": {
 		"defaultMessage": "A record of each save you make in a universe's editor: when, with which role, and what it changed, by name, with the value it gave each setting it changed (a long description only by how many characters it has). The universe's creators and the site's admins can see it. It is kept for 90 days, or until the universe is deleted if that is sooner, and names you until you delete your account.",
 		"description": "In the privacy policy, the record of saves made in a universe's editor, shown to the universe's creators and the site's admins on the editor's Audit tab, kept for 90 days or until the universe is deleted, naming the player until they delete their account"
+	},
+	"privacy.playKeptChat": {
+		"defaultMessage": "The chat of a universe's editors is saved, so editors who arrive can read it: it keeps its newest 200 messages, until the universe is deleted. When you delete your account, your messages stay in it without your name.",
+		"description": "In the privacy policy, how long the chat of a universe's editors is kept: its newest 200 messages, until the universe is deleted, and what happens to a player's messages when they delete their account"
 	},
 	"privacy.playUniverses": {
 		"defaultMessage": "The universes you create or help edit, and what you upload to them, such as tile images.",

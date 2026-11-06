@@ -2,6 +2,7 @@ import assert from 'assert';
 import { accountExportFileName, AUTH_ACCOUNT_DELETE_PATH, AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_LOGIN_PATH, PROFILE_DELETION_PATH, PROFILE_EXPORT_PATH, type AccountDeletionPayload, type AccountExport, type AuthErrorPayload } from '@multiverse-kiln/shared';
 
 import { hashPassword } from '../src/auth/passwords.js';
+import { addChatMessages, listChatMessages } from '../src/db/chatRepo.js';
 import { pool } from '../src/db/client.js';
 import { addGroupMember, findMembership } from '../src/db/groupRepo.js';
 import { createPlayer } from '../src/db/playerRepo.js';
@@ -149,6 +150,12 @@ describe('account deletion and data export', () =>
 
 		await addGroup(universe.universeId, characterId, null);
 		await setUniverseRole(universe.universeId, playerId, 'builder');
+		await addChatMessages({ kind: 'editors', universeId: universe.universeId }, [{
+			playerId,
+			authorName: null,
+			text: 'Kept for the editors',
+			sentAt: new Date(Date.UTC(2026, 10, 1))
+		}]);
 
 		const response = await fetch(`${testServerUrl}${PROFILE_EXPORT_PATH}?locale=en`, {
 			headers: {
@@ -175,6 +182,7 @@ describe('account deletion and data export', () =>
 			id: (await findMembership(characterId))?.groupId,
 			anchorBeing: true
 		});
+		assert.deepStrictEqual(exported.chatMessages.map(({ groupId, text, sentAt }) => [groupId, text, sentAt]), [[null, 'Kept for the editors', '2026-11-01T00:00:00.000Z']]);
 
 		// Nothing that could log in, or tell where the player logged in from
 		assert.doesNotMatch(text, /argon2|password_hash|networkHash|tokenHash|secret/i);
@@ -311,6 +319,28 @@ describe('account deletion and data export', () =>
 		assert.strictEqual((await pool.query('SELECT id FROM universes WHERE id = $1', [deleted])).rowCount, 0);
 		await waitUntil(() => (areaChangesSeen.length > 0));
 		assert.deepStrictEqual(areaChangesSeen, [{ kind: 'universeDeleted', universeId: deleted }]);
+	});
+
+	it('leaves the messages the player wrote in the editors\' chat of a universe handed on, without their name', async () =>
+	{
+		const { playerId, browser } = await addLocalAccount('ada');
+		const grace = await addPlayer('Grace');
+		const universeId = await addUniverse('Handed On');
+
+		await setUniverseRole(universeId, playerId, 'creator');
+		await setUniverseRole(universeId, grace.id, 'builder');
+		await addChatMessages({ kind: 'editors', universeId }, [{
+			playerId,
+			authorName: null,
+			text: 'It is yours now',
+			sentAt: new Date()
+		}]);
+
+		assert.strictEqual((await deleteAccount(browser, {
+			password: PASSWORD,
+			universes: [{ universeId, newCreatorId: grace.id }]
+		})).status, 204);
+		assert.deepStrictEqual((await listChatMessages({ kind: 'editors', universeId })).map(({ playerId: writer, name, username, text }) => [writer, name, username, text]), [[null, '', null, 'It is yours now']]);
 	});
 
 	it('disbands the groups the player\'s characters anchor, takes them out of others, and ends their sessions', async () =>

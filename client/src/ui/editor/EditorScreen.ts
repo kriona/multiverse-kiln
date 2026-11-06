@@ -1,4 +1,4 @@
-import { ADMIN_ROLE, canEditAtEndOfTime, canEditWorld, canManageEditors, canManageVersions, EDITOR_ROLE_NAMES, type EditableUniverse, type UniverseSettingsUpdate, type UniverseVersionName } from '@multiverse-kiln/shared';
+import { ADMIN_ROLE, canEditAtEndOfTime, canEditWorld, canManageEditors, canManageVersions, EDITOR_ROLE_NAMES, EDITOR_TABS, type EditableUniverse, type EditorTab, type UniverseSettingsUpdate, type UniverseVersionName } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, EditorApiError, type EditorApi } from '../../network/editorApi';
@@ -27,25 +27,6 @@ import { TranslationTable } from './TranslationTable';
 import { UniverseTab } from './UniverseTab';
 import { AreaSelectDialog } from './AreaSelectDialog';
 import { AreasTab } from './AreasTab';
-
-/**
- * The editor's tabs
- */
-export const EDITOR_TABS = [
-	'universe',
-	'editors',
-	'ruleset',
-	'lobby',
-	'characters',
-	'characterList',
-	'tilesets',
-	'areas',
-	'items',
-	'audit',
-	'translations'
-] as const;
-
-export type EditorTab = typeof EDITOR_TABS[number];
 
 /**
  * The order the tabs' changes are saved in: the Areas tab's maps can be painted with tiles the
@@ -532,6 +513,42 @@ export class EditorScreen
 				description: 'Shown above the editor\'s tabs to one of the site\'s admins who opened a universe they have no stronger role in, which they edit with the site admin role'
 			}));
 		}
+	}
+
+	/**
+	 * Loads the universe again after what the player may do in it changed (their role, its stage, or
+	 * whether the site's admins have disabled it), on the tab and area showing. While anything is
+	 * unsaved it only says so, since loading again would throw the changes away
+	 */
+	accessChanged(): void
+	{
+		if (!this.universe)
+		{
+			return;
+		}
+
+		if (hasUnsavedWork())
+		{
+			this.showNotice(t({
+				id: 'editor.accessChanged',
+				defaultMessage: 'What you can do in this universe has changed: your role, its stage, or whether the site\'s admins have disabled it. Save or undo your changes, then reload the page to see what you can do now.',
+				description: 'Shown above the editor\'s tabs when the player\'s role in the universe, its stage, or whether the site\'s admins disabled it changed while they had unsaved changes, which loading the universe again would throw away'
+			}));
+			return;
+		}
+
+		void this.open(this.universe.id, this.place);
+	}
+
+	/**
+	 * Turns saving off for good and says why, once the player may no longer open the universe's editor
+	 *
+	 * @param message Why, in the player's language
+	 */
+	lockOut(message: string): void
+	{
+		this.saveBar.setLocked(true);
+		this.showNotice(message);
 	}
 
 	/**

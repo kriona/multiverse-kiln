@@ -298,7 +298,12 @@ Decided (see `STRUCTURE-OVERVIEW.md`):
 - The only engine text a universe can rename is its ruleset's coins, each coin's name and abbreviation ("bronze kits" and "bk" for copper pieces), which are then universe text, translated like the rest. Other engine terms (race, class, group and the like) stay the engine's.
 - A universe has a live version and at most one draft, a copy of the live content in the same tables with IDs of its own, each row remembering the live row it came from. The editor edits whichever is chosen in its bar; only the live version is played. Only creators start, apply and discard the draft. Applying can't be undone: it writes the draft back under the live IDs (so characters, items and groups never change their references), treats what the draft deletes while it's in use as disabled, with the step 4 warnings, and removes the draft.
 
-Built in nine steps: roles, stages, server admins, disabling things in use, then translations (storage, delivery, the tab), versions, and finishing.
+- Every editor window joins its universe's editor room, which says who has the editor open and where, carries the editors' chat, and tells each editor what the others save. Changes stay staged until Save: nothing is edited together live, keystroke by keystroke, since that would blur who is saving what.
+- Chats that are kept (the editors' and each group's) keep their newest 200 messages. Lobby chat is in memory only.
+- A save sends only the fields it changed, each with the value the editor loaded. Changes to different fields of the same thing both save; only one field changed by two editors is a conflict, which the second to save resolves. The live version and the draft are separate rows, so an edit to one never conflicts with the other.
+- An area open in the area editor is claimed softly: others opening it are told who is editing it, but can still edit it.
+
+Built in eleven steps: roles, stages, server admins, disabling things in use, then translations (storage, delivery, the tab), versions, editing together, regions, and finishing.
 
 1. Editors tab and roles
 	- [✅] A `translator` role, and the languages each translator may translate into (`universe_editors.languages`)
@@ -359,7 +364,21 @@ Built in nine steps: roles, stages, server admins, disabling things in use, then
 	- [ ] Start Draft, Apply Draft and Discard Draft in the toolbar, each asking first and saving at once: Start Draft's dialog explains drafts and saves any unsaved changes with it (`client/src/ui/editor/StartDraftDialog.ts`), while applying and discarding wait until nothing else is unsaved; all for creators (`canManageVersions()`), as `EditorChange` kinds saved after every other change (`client/src/ui/editor/DraftSection.ts`)
 	- [✅] Applying asks the step 4 warnings, comparing the draft with the live version (`draftImpacts()` in `server/src/http/editorImpact.ts`), with what the draft deletes while in use kept disabled. It writes the draft back under the live IDs in the save's transaction (`server/src/http/editorDrafts.ts`); once committed, open rooms load the new world and clients fetch the text
 	- [✅] Tests: starting a draft copies everything and leaves the live version alone, saving to the draft changes nothing players see, applying keeps live IDs and characters' references, an apply that is refused changes nothing, discarding removes the draft and its uploads (`server/test/db/universeDraftRepo.test.ts`, `server/test/editorDrafts.test.ts`)
-9. Finishing
+9. Editing together
+	- [✅] Write the design into `STRUCTURE-OVERVIEW.md` (Editing together, and group chat under Create Group)
+	- [✅] An `EditorRoom` per universe (`filterBy` the universe ID), joined by each editor window once the editor has loaded. onAuth finds the player from the session cookie and refuses anyone without a role in the universe (server admins join with the site admin role). Its synced state lists who has the editor open: each player once, with their role and, for each of their windows, the version, tab and area it has open. Losing a role, the universe being disabled and the stage changing reach open editors through it at once, rather than on their next save (`server/src/world/editorUpdates.ts` and the stage changes; the editor loads the universe again, or says to once its changes are saved)
+	- [✅] Kept chats in the database: one table for every chat that is kept (`chat_messages`, through a repository), holding the newest 200 messages of each (`MAX_KEPT_CHAT_MESSAGES`), with older ones deleted as new ones are written. A room keeps new messages in memory and writes them as a periodic checkpoint every few seconds and as it closes, never inside a tick. A chat is deleted with its universe or group; deleting an account empties the author of its messages, shown as "Deleted account". The data download includes the player's kept messages, and the privacy policy says what is kept and for how long
+	- [✅] The editors' chat, in a panel of the editor opened with the toolbar's Chat button (Alt+H, `client/src/ui/editor/EditorChat.ts`): out of character, as the player (display name and @username), rate-limited like the lobby's, with a list above it naming who has the editor open
+	- [ ] Group chat on the group screen, kept the same way: as the character, with a line naming the members who are here
+	- [ ] Save notices: once a save commits, the change route publishes what it changed (through `server/src/world/`, like `areaChanges`: the audit's details, and for each thing changed, its fields) to the universe's editor room, which tells every other editor window open on the same version. A toast says who saved what ("Bea saved race Dwarf and painted 40 cells in Cave"), read out with `announce()`
+	- [ ] Keeping views current: the editor fetches what a save changed, and updates whatever it has no unsaved changes to (lists, an open dialog, the area editor's map). Something it does have unsaved changes to gets a note inline ("Bea changed Name and Speed since you opened this"), and the toast stays until dismissed, naming the tab
+	- [ ] Saving only what changed: changes to the universe's and the ruleset's settings, items, races, classes, themes, difficulty levels, tiles, areas, editors and translations carry only the fields changed, each with the value the editor loaded. A list (starting equipment, a class's races) is one field. The server compares each with what is saved, and when another editor changed the same field since, refuses with 409 and a `SaveRefusedPayload` naming the thing, the field, its saved value and who saved it. The editor then asks, for each: keep mine, or take theirs. Painting: each cell takes the latest save, and the area editor marks cells another editor painted while it was open
+	- [ ] Soft claims on areas: opening an area in the area editor claims it for that window, in the room's state, until the window closes it or disconnects. Another editor opening it sees "Bea is editing this area" above the map, without being locked out, and the Areas tab tags the area with who is editing it
+	- [ ] Tests: the room refuses players without a role and turns out one who loses theirs; a chat keeps its newest 200 messages, through the room closing; saves to different fields of one race both land; a save to a field changed since is refused naming who changed it; edits to a race in the draft and in the live version don't conflict; a claim ends when its window leaves
+10. Regions
+	- [ ] Decide and write into `STRUCTURE-OVERVIEW.md`: a region groups areas without a map of its own and sets general rules for the areas in it, and a creator assigns a builder to one ("this is your area, work on it"). Still open: whether a region is a kind of area (areas already nest and pass settings to the areas in them) or a thing of its own, which rules it sets, and whether an assignment limits which areas a builder may save or only says whose they are, shown beside the area claims
+	- [ ] Build it, with tests
+11. Finishing
 	- [ ] Check the new screens in the pseudo-language, update Pirate, and add keyboard shortcuts and screen reader text for the new tabs and dialogs
 	- [ ] Update `STRUCTURE-OVERVIEW.md` where the decisions above changed it (stages, admins, versions)
 	- [ ] Review the new routes against `SECURITY-PRACTICES.md`, and cover them in `server/test/http.test.ts`
@@ -380,6 +399,7 @@ The first deploy tends to surface WebSocket, TLS and environment issues, so leav
 - [ ] Run migrations against Neon `prod`
 - [ ] Deploy server with `npx @colyseus/cloud deploy`; set env vars in the dashboard (pooled Neon URL, `ALLOWED_ORIGINS` = the production client origin)
 - [ ] Set `CLIENT_ADDRESS_HEADER` (and `TRUSTED_PROXY_HOPS` for X-Forwarded-For) for the game server's host, then check it once deployed (see TODO at the end of this file)
+- [ ] Before running more than one game server process: Redis presence and driver, and the in-memory publishers (`server/src/players/`, `server/src/world/`) carried over it, so the rooms and routes of one universe (editor rooms, lobbies, groups and the change routes) reach each other across processes
 - [ ] Point a production client build at the `wss://` endpoint
 - [ ] Set security headers on the client host and test them against the production build:
 	- `Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://<game server>; media-src 'self' data: blob:; connect-src 'self' https://<game server> wss://<game server>; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests` (Phaser needs `data:`/`blob:` for some textures and audio; the game server in `img-src` is for uploaded tilesets)
@@ -443,6 +463,8 @@ Needed before universes are open to the public.
 
 - Whether character names must be unique within a universe (Phase 10)
 - How groups are listed in the lobby (Phase 11)
+- How the lobby shows who is online, when it may hold many more players than a group or a universe's editors
+- What regions are and what they set (Phase 15)
 - Auth approach, account linking, the email sending service, and whether to add a CAPTCHA (Phase 14)
 - Which S3-compatible service stores uploads in production, and its bucket (Phase 16)
 - Telling users with the same name apart (Phase 19)

@@ -20,6 +20,7 @@ import { universeAccessChanges, type StageChange } from '../players/universeAcce
 import { describeInvalidPayload } from '../rooms/payloads.js';
 import { deleteObject } from '../storage/objectStorage.js';
 import { areaChanges } from '../world/areaChanges.js';
+import { editorUpdates } from '../world/editorUpdates.js';
 import { applyRulesetChange, applyUniverseChange, createTileChange, removeTileChange, saveTileChange } from './editor.js';
 import { findEditorAccess, universeContextOf, type UniverseContext } from './editorAccess.js';
 import { createAreaChange, deleteAreaChange, deleteLinkChange, editCellsChange, resizeAreaChange, saveLinkChange, updateAreaChange } from './editorAreas.js';
@@ -531,7 +532,8 @@ async function applyChange(context: ChangeContext, change: EditorChange): Promis
 /**
  * Finishes a save that has committed: removes the deleted tilesets' images, emails the players it gave
  * a role, and tells the rooms what changed, each change once, and who may no longer play there. A new
- * stage goes to the rooms with every editor's role, which covers the roles the save changed too
+ * stage goes to the rooms with every editor's role, which covers the roles the save changed too. The
+ * editor room hears of the roles the save changed either way
  *
  * @param context The save
  * @param stageChange The universe's new stage, when the save changed it
@@ -558,6 +560,15 @@ async function afterCommit(context: ChangeContext, stageChange: StageChange | un
 		universeAccessChanges.publish({
 			universeId: context.universe.id,
 			playerIds: playersLosingAccess(context)
+		});
+	}
+
+	if (context.editorRoles.size > 0)
+	{
+		editorUpdates.publish({
+			kind: 'roles',
+			universeId: context.universe.id,
+			roles: new Map(context.editorRoles)
 		});
 	}
 
