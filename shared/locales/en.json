@@ -879,6 +879,14 @@
 		"defaultMessage": "You haven't made a character in this universe yet.",
 		"description": "Shown instead of the list of the player's characters, in a universe's lobby and on its page, when they haven't made one in the universe"
 	},
+	"chat.deletedAccount": {
+		"defaultMessage": "Deleted account",
+		"description": "In a kept chat (the editors' chat or a group's chat), in place of the name of a player who wrote a message and has since deleted their account"
+	},
+	"chat.tooFast": {
+		"defaultMessage": "You are sending messages too quickly. Wait a moment and try again.",
+		"description": "In a toast when the player sends chat messages faster than allowed, in a universe's lobby, a group or the editors' chat; the message they last sent is put back in the chat field"
+	},
 	"chips.added": {
 		"defaultMessage": "{name} added",
 		"description": "Read out by screen readers after the player chooses something from a search field that adds choices as chips, such as a language on the profile page; {name} is what was chosen"
@@ -1443,10 +1451,6 @@
 		"defaultMessage": "{name} closed the editor",
 		"description": "Read out by screen readers when another editor closes their last window of the universe's editor; {name} is their display name"
 	},
-	"editor.chat.deletedAccount": {
-		"defaultMessage": "Deleted account",
-		"description": "In the editors' chat, in place of the name of a player who wrote a message and has since deleted their account"
-	},
 	"editor.chat.disconnected": {
 		"defaultMessage": "The editors' chat was disconnected. Reload the page to reconnect.",
 		"description": "Shown in the editors' chat panel when its connection to the server was lost"
@@ -1479,13 +1483,9 @@
 		"defaultMessage": "Chat",
 		"description": "Button in the editor's toolbar that shows or hides the chat of the universe's editors, with who has the editor open"
 	},
-	"editor.chat.tooFast": {
-		"defaultMessage": "You are sending messages too quickly. Wait a moment, then send it again.",
-		"description": "Shown in the editors' chat panel when the player sent chat messages faster than allowed; their message is put back in the field"
-	},
 	"editor.chat.unread": {
 		"defaultMessage": "{count, plural, one {# new message} other {# new messages}}",
-		"description": "Read out by screen readers with the Chat button in the editor's toolbar, which shows the number over its icon: how many messages other editors wrote in the editors' chat while it was hidden"
+		"description": "Read out by screen readers with the Chat button in the editor's toolbar, which shows the number over its icon: how many messages other editors wrote in the editors' chat while it or the page's tab was hidden"
 	},
 	"editor.chat.you": {
 		"defaultMessage": "{name} (you)",
@@ -4311,6 +4311,18 @@
 		"defaultMessage": "{name} is no longer in the group, or can't be played.",
 		"description": "Shown in the lobby when the character a window played left the group from another window, or was deleted; {name} is the character's name"
 	},
+	"group.chat.arrived": {
+		"defaultMessage": "{count, plural, one {{names} is here} other {{names} are here}}",
+		"description": "Read out by screen readers in a group when another player comes into the game; {names} is the names of their characters in the group joined as a list, and {count} how many there are"
+	},
+	"group.chat.here": {
+		"defaultMessage": "Here: {names}",
+		"description": "Above a group's chat, the characters in the group whose players are in the game; {names} is their names joined as a list, e.g. \"Ada, Byron and Cleo\""
+	},
+	"group.chat.left": {
+		"defaultMessage": "{count, plural, one {{names} has left} other {{names} have left}}",
+		"description": "Read out by screen readers in a group when another player closes their last window of the game, or one of their characters leaves the group; {names} is the names of the characters joined as a list, and {count} how many there are"
+	},
 	"group.clock": {
 		"defaultMessage": "Day {day, number}, {time}",
 		"description": "In the group's toolbar, the group's game clock: how many days its world has run, counting the first as 1, and the time of day, e.g. \"Day 1, 8:00:00 AM\" or \"Day 1, afternoon\""
@@ -4778,10 +4790,6 @@
 	"lobby.chat.send": {
 		"defaultMessage": "Send",
 		"description": "Button that sends the chat message typed"
-	},
-	"lobby.chat.tooFast": {
-		"defaultMessage": "You are sending messages too quickly. Wait a moment and try again.",
-		"description": "Shown in the lobby when the player sends chat messages faster than allowed"
 	},
 	"lobby.connectionLost": {
 		"defaultMessage": "Lost the connection to {universe}.",
@@ -5908,8 +5916,8 @@
 		"description": "In the privacy policy, the record of saves made in a universe's editor, shown to the universe's creators and the site's admins on the editor's Audit tab, kept for 90 days or until the universe is deleted, naming the player until they delete their account"
 	},
 	"privacy.playKeptChat": {
-		"defaultMessage": "The chat of a universe's editors is saved, so editors who arrive can read it: it keeps its newest 200 messages, until the universe is deleted. When you delete your account, your messages stay in it without your name.",
-		"description": "In the privacy policy, how long the chat of a universe's editors is kept: its newest 200 messages, until the universe is deleted, and what happens to a player's messages when they delete their account"
+		"defaultMessage": "Each group's chat and the chat of a universe's editors are saved, so players who arrive can read them: each keeps its newest 200 messages, until the group disbands or the universe is deleted. When you delete your account, your messages stay in them without your name.",
+		"description": "In the privacy policy, how long the chats of groups and of a universe's editors are kept: each its newest 200 messages, until the group disbands or the universe is deleted, and what happens to a player's messages when they delete their account"
 	},
 	"privacy.playUniverses": {
 		"defaultMessage": "The universes you create or help edit, and what you upload to them, such as tile images.",

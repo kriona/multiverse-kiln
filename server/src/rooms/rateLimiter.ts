@@ -47,3 +47,20 @@ export class RateLimiter
 		this.eventTimes.delete(key);
 	}
 }
+
+/**
+ * Most chat messages a player may send to a room in CHAT_RATE_WINDOW_MS; more are dropped
+ */
+const CHAT_RATE_LIMIT = 5;
+
+const CHAT_RATE_WINDOW_MS = 3000;
+
+/**
+ * Makes the limit on how fast a player may send to a room's chat, which every room with a chat uses
+ *
+ * @return A limiter keyed by player ID
+ */
+export function createChatLimiter(): RateLimiter
+{
+	return(new RateLimiter(CHAT_RATE_LIMIT, CHAT_RATE_WINDOW_MS));
+}

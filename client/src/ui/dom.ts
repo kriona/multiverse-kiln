@@ -299,9 +299,10 @@ export function showStatus(message: string): void
 let pageTitle: string | undefined;
 
 /**
- * How many chat messages the page's chat holds that the player hasn't read, shown before the title
+ * How many chat messages the player hasn't read in each of the page's chats that has any, shown added up
+ * before the title
  */
-let unreadChatCount = 0;
+const unreadChatCounts = new Map<object, number>();
 
 /**
  * Sets the browser tab's title, followed by the game engine's name, which messages leave out, and led
@@ -317,13 +318,23 @@ export function setPageTitle(title?: string): void
 
 /**
  * Shows how many chat messages the player hasn't read before the browser tab's title, as "(3) Edit
- * Kilnhaven", so they can be seen from other tabs. Each page's chat sets it as messages arrive and are read
+ * Kilnhaven", so they can be seen from other tabs. Each of the page's chats sets its own count as messages
+ * arrive and are read, and the title shows them added up
  *
- * @param count How many, or 0 to show the title alone
+ * @param chat The chat whose messages these are
+ * @param count How many, or 0 once they are read
  */
-export function setUnreadChatCount(count: number): void
+export function setUnreadChatCount(chat: object, count: number): void
 {
-	unreadChatCount = count;
+	if (count === 0)
+	{
+		unreadChatCounts.delete(chat);
+	}
+	else
+	{
+		unreadChatCounts.set(chat, count);
+	}
+
 	showPageTitle();
 }
 
@@ -333,6 +344,7 @@ export function setUnreadChatCount(count: number): void
 function showPageTitle(): void
 {
 	const title = ((pageTitle === undefined) ? SITE_NAME : `${pageTitle} - ${SITE_NAME}`);
+	const unreadChatCount = [...unreadChatCounts.values()].reduce((total, count) => (total + count), 0);
 
 	document.title = ((unreadChatCount === 0) ? title : t({
 		id: 'page.titleUnread',

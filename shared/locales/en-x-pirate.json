@@ -879,6 +879,14 @@
 		"message": "Ye haven't signed on a hand in this universe yet.",
 		"source": "You haven't made a character in this universe yet."
 	},
+	"chat.deletedAccount": {
+		"message": "Scuttled account",
+		"source": "Deleted account"
+	},
+	"chat.tooFast": {
+		"message": "Ye be squawkin' too fast. Wait a moment and try again.",
+		"source": "You are sending messages too quickly. Wait a moment and try again."
+	},
 	"chips.added": {
 		"message": "{name} brought aboard",
 		"source": "{name} added"
@@ -1443,10 +1451,6 @@
 		"message": "{name} left the chartroom",
 		"source": "{name} closed the editor"
 	},
-	"editor.chat.deletedAccount": {
-		"message": "Scuttled account",
-		"source": "Deleted account"
-	},
 	"editor.chat.disconnected": {
 		"message": "The officers' parley lost its line. Reload the page to hail 'em again.",
 		"source": "The editors' chat was disconnected. Reload the page to reconnect."
@@ -1478,10 +1482,6 @@
 	"editor.chat.toggle": {
 		"message": "Parley",
 		"source": "Chat"
-	},
-	"editor.chat.tooFast": {
-		"message": "Ye be squawkin' too fast. Wait a moment, then send it again.",
-		"source": "You are sending messages too quickly. Wait a moment, then send it again."
 	},
 	"editor.chat.unread": {
 		"message": "{count, plural, one {# new word} other {# new words}}",
@@ -4311,6 +4311,18 @@
 		"message": "{name} no longer sails with the crew, or can't take the helm.",
 		"source": "{name} is no longer in the group, or can't be played."
 	},
+	"group.chat.arrived": {
+		"message": "{count, plural, one {{names} be aboard} other {{names} be aboard}}",
+		"source": "{count, plural, one {{names} is here} other {{names} are here}}"
+	},
+	"group.chat.here": {
+		"message": "Aboard: {names}",
+		"source": "Here: {names}"
+	},
+	"group.chat.left": {
+		"message": "{count, plural, one {{names} has gone ashore} other {{names} have gone ashore}}",
+		"source": "{count, plural, one {{names} has left} other {{names} have left}}"
+	},
 	"group.clock": {
 		"message": "Day {day, number} o' the voyage, {time}",
 		"source": "Day {day, number}, {time}"
@@ -4778,10 +4790,6 @@
 	"lobby.chat.send": {
 		"message": "Send",
 		"source": "Send"
-	},
-	"lobby.chat.tooFast": {
-		"message": "Ye be squawkin' too fast. Wait a moment and try again.",
-		"source": "You are sending messages too quickly. Wait a moment and try again."
 	},
 	"lobby.connectionLost": {
 		"message": "Lost sight o' {universe}.",
@@ -5908,8 +5916,8 @@
 		"source": "A record of each save you make in a universe's editor: when, with which role, and what it changed, by name, with the value it gave each setting it changed (a long description only by how many characters it has). The universe's creators and the site's admins can see it. It is kept for 90 days, or until the universe is deleted if that is sooner, and names you until you delete your account."
 	},
 	"privacy.playKeptChat": {
-		"message": "The chatter o' a universe's editors be saved, so editors who arrive can read it: it keeps its newest 200 messages, until the universe be deleted. When ye delete yer account, yer messages stay in it without yer name.",
-		"source": "The chat of a universe's editors is saved, so editors who arrive can read it: it keeps its newest 200 messages, until the universe is deleted. When you delete your account, your messages stay in it without your name."
+		"message": "Each crew's chatter and the chatter o' a universe's editors be saved, so hands who arrive can read them: each keeps its newest 200 messages, until the crew disbands or the universe be deleted. When ye delete yer account, yer messages stay in them without yer name.",
+		"source": "Each group's chat and the chat of a universe's editors are saved, so players who arrive can read them: each keeps its newest 200 messages, until the group disbands or the universe is deleted. When you delete your account, your messages stay in them without your name."
 	},
 	"privacy.playUniverses": {
 		"message": "The universes ye create or help edit, an' what ye upload to 'em, such as tile pictures.",

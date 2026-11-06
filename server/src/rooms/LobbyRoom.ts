@@ -17,7 +17,7 @@ import { areaOccupants } from '../world/areaOccupants.js';
 import { InvalidMessages } from './invalidMessages.js';
 import { mayPlayUniverse } from './universePlay.js';
 import { chatPayload, chooseCharacterPayload, describeInvalidPayload, movePayload, roomOptions } from './payloads.js';
-import { RateLimiter } from './rateLimiter.js';
+import { createChatLimiter } from './rateLimiter.js';
 import { AreaCache, type ActiveArea } from './areaCache.js';
 import { CHUNK_REFRESH_INTERVAL_MS, SIMULATION_TICK_RATE, AreaPlayers, type Appearance } from './areaPlayers.js';
 
@@ -57,13 +57,6 @@ function identityOf(client: LobbyClient): LobbyIdentity
  * Chat messages kept for players who join later
  */
 export const CHAT_HISTORY_LENGTH = 50;
-
-/**
- * Most chat messages a player may send in CHAT_RATE_WINDOW_MS; more are dropped
- */
-const CHAT_RATE_LIMIT = 5;
-
-const CHAT_RATE_WINDOW_MS = 5000;
 
 /**
  * A universe's lobby: its map, its chat and who's here
@@ -146,7 +139,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	 */
 	private chatHistory: ChatMessage[] = [];
 
-	private readonly chatLimiter = new RateLimiter(CHAT_RATE_LIMIT, CHAT_RATE_WINDOW_MS);
+	private readonly chatLimiter = createChatLimiter();
 
 	/**
 	 * Each player's characters in the universe, read again whenever one of their windows joins

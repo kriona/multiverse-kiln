@@ -25,11 +25,6 @@ export const EDITOR_TABS = [
 export type EditorTab = typeof EDITOR_TABS[number];
 
 /**
- * Most messages a kept chat holds (the editors' chat and each group's); writing another deletes the oldest
- */
-export const MAX_KEPT_CHAT_MESSAGES = 200;
-
-/**
  * Message types clients send to a universe's editor room
  */
 export enum EditorMessageType
@@ -92,41 +87,4 @@ export interface EditorPlacePayload
 	 * The area open in the area editor, or null when none is
 	 */
 	areaId: string | null;
-}
-
-/**
- * One message of a chat that is kept
- */
-export interface KeptChatMessage
-{
-	/**
-	 * The player who wrote it, or null once their account is deleted
-	 */
-	playerId: string | null;
-
-	/**
-	 * The writer's name: in a group's chat, their character's when they wrote it, and in the editors'
-	 * chat the player's display name. Empty once their account is deleted
-	 */
-	name: string;
-
-	/**
-	 * In the editors' chat, the writer's username; null in a group's chat, and once their account is deleted
-	 */
-	username: string | null;
-
-	text: string;
-
-	/**
-	 * When the server received it, in milliseconds since the epoch
-	 */
-	sentAt: number;
-}
-
-/**
- * Payload of EditorServerMessageType.ChatHistory: the messages the chat keeps, oldest first
- */
-export interface KeptChatHistoryPayload
-{
-	messages: KeptChatMessage[];
 }

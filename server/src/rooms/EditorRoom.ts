@@ -1,8 +1,7 @@
 import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
-import { editorAccessOf, EditorMessageType, EditorPresence, EditorServerMessageType, EditorState, EditorWindow, MAX_KEPT_CHAT_MESSAGES, NoticeReason, ServerCloseCode, type EditorRole, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type UniverseRole } from '@multiverse-kiln/shared';
+import { editorAccessOf, EditorMessageType, EditorPresence, EditorServerMessageType, EditorState, EditorWindow, NoticeReason, ServerCloseCode, type EditorRole, type NoticePayload, type UniverseRole } from '@multiverse-kiln/shared';
 
 import { resolveSession } from '../auth/sessions.js';
-import { addChatMessages, listChatMessages, type KeptChat, type NewChatMessage } from '../db/chatRepo.js';
 import { isActiveServerAdmin } from '../db/serverAdminRepo.js';
 import { findUniverseAccess } from '../db/universeEditorRepo.js';
 import { findUniverse } from '../db/universeRepo.js';
@@ -11,8 +10,9 @@ import { universeAccessChanges } from '../players/universeAccess.js';
 import { areaChanges } from '../world/areaChanges.js';
 import { editorUpdates, type EditorUpdate } from '../world/editorUpdates.js';
 import { InvalidMessages } from './invalidMessages.js';
+import { CHAT_SAVE_INTERVAL_MS, KeptChatLog } from './keptChat.js';
 import { chatPayload, describeInvalidPayload, editorPlacePayload, roomOptions } from './payloads.js';
-import { RateLimiter } from './rateLimiter.js';
+import { createChatLimiter } from './rateLimiter.js';
 
 /**
  * What onAuth found out about a client, available afterward as client.auth
@@ -63,18 +63,6 @@ function identityOf(client: EditorClient): EditorIdentity
 }
 
 /**
- * How often the room writes the chat's new messages to the database, in milliseconds
- */
-export const CHAT_SAVE_INTERVAL_MS = 5000;
-
-/**
- * Most chat messages a player may send in CHAT_RATE_WINDOW_MS; more are dropped
- */
-const CHAT_RATE_LIMIT = 5;
-
-const CHAT_RATE_WINDOW_MS = 5000;
-
-/**
  * A universe's editor room: who has its editor open, and the editors' chat
  *
  * Every window with the universe's editor open joins it with the universe's ID (EditorJoinOptions), and
@@ -101,24 +89,12 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 
 	private universeId!: string;
 
-	private chat!: KeptChat;
-
 	/**
-	 * The chat's kept messages, oldest first, as the room holds them (server-only, not synced)
+	 * The editors' chat, loaded in onCreate
 	 */
-	private chatHistory: KeptChatMessage[] = [];
+	private readonly chat = new KeptChatLog();
 
-	/**
-	 * Messages sent since the chat was last written to the database, oldest first
-	 */
-	private unsavedChat: NewChatMessage[] = [];
-
-	/**
-	 * The write of the chat going on, if any; each waits for the one before
-	 */
-	private savingChat: Promise<void> = Promise.resolve();
-
-	private readonly chatLimiter = new RateLimiter(CHAT_RATE_LIMIT, CHAT_RATE_WINDOW_MS);
+	private readonly chatLimiter = createChatLimiter();
 
 	private readonly invalidMessages = new InvalidMessages();
 
@@ -178,21 +154,12 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 				return;
 			}
 
-			const message: KeptChatMessage = {
+			const message = this.chat.add({
 				playerId,
 				name,
-				username,
-				text: result.data.text,
-				sentAt: Date.now()
-			};
+				username
+			}, result.data.text);
 
-			this.chatHistory = [...this.chatHistory, message].slice(-MAX_KEPT_CHAT_MESSAGES);
-			this.unsavedChat.push({
-				playerId,
-				authorName: null,
-				text: message.text,
-				sentAt: new Date(message.sentAt)
-			});
 			this.broadcast(EditorServerMessageType.Chat, message);
 		}
 	};
@@ -214,8 +181,7 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 		}
 
 		this.universeId = universeId;
-		this.chat = { kind: 'editors', universeId };
-		this.chatHistory = await listChatMessages(this.chat);
+		await this.chat.load({ kind: 'editors', universeId });
 
 		this.clock.setInterval(() =>
 		{
@@ -325,7 +291,6 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 		}
 
 		const key = String(this.nextWindowKey++);
-		const history: KeptChatHistoryPayload = { messages: this.chatHistory };
 
 		this.windowKeys.set(client.sessionId, key);
 		presence.windows.set(key, new EditorWindow({
@@ -333,7 +298,7 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 			tab: 'universe',
 			areaId: ''
 		}));
-		client.send(EditorServerMessageType.ChatHistory, history);
+		client.send(EditorServerMessageType.ChatHistory, this.chat.history());
 		connectedSessions.connect(sessionId);
 	}
 
@@ -368,39 +333,13 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 	}
 
 	/**
-	 * Writes the chat's new messages to the database, after any write going on. Messages that can't be
-	 * written are kept for the next try, unless the universe or a writer's account is gone
+	 * Writes the chat's new messages to the database, after any write going on
 	 *
 	 * @return Resolves once they are written, or have failed to be
 	 */
 	saveChat(): Promise<void>
 	{
-		this.savingChat = this.savingChat.then(async () =>
-		{
-			const messages = this.unsavedChat;
-
-			if (messages.length === 0)
-			{
-				return;
-			}
-
-			this.unsavedChat = [];
-
-			try
-			{
-				if (!await addChatMessages(this.chat, messages))
-				{
-					console.log('Dropped', messages.length, 'chat messages of universe', this.universeId, 'whose universe or writer no longer exists');
-				}
-			}
-			catch (error)
-			{
-				this.unsavedChat = [...messages, ...this.unsavedChat].slice(-MAX_KEPT_CHAT_MESSAGES);
-				console.error('Could not keep the editors\' chat of universe', this.universeId, error);
-			}
-		});
-
-		return(this.savingChat);
+		return(this.chat.save());
 	}
 
 	/**

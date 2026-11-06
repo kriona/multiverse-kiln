@@ -1,5 +1,5 @@
 import { Callbacks, CloseCode } from '@colyseus/sdk';
-import { GameMessageType, GameServerMessageType, INVITE_QUERY_PARAMETER, LobbyMessageType, LobbyServerMessageType, NoticeReason, ServerCloseCode, SessionServerMessageType, type AccountPayload, type AccountPlayer, type CharacterListPayload, type CharacterSummary, type ChatHistoryPayload, type ChatMessage, type ChatPayload, type ChooseCharacterPayload, type ControlPayload, type NoticePayload, type PlayingAsPayload, type UniverseSummary } from '@multiverse-kiln/shared';
+import { GameMessageType, GameServerMessageType, INVITE_QUERY_PARAMETER, LobbyMessageType, LobbyServerMessageType, NoticeReason, ServerCloseCode, SessionServerMessageType, type AccountPayload, type AccountPlayer, type CharacterListPayload, type CharacterSummary, type ChatHistoryPayload, type ChatMessage, type ChatPayload, type ChooseCharacterPayload, type ControlPayload, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type PlayingAsPayload, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { t } from './localization';
 import { CharacterApi } from './network/characterApi';
@@ -24,9 +24,9 @@ import { UniverseText } from './ui/universeText';
 import { pageMessages } from './ui/pageMessages';
 
 /**
- * How long a refused link's message stays in the group's toolbar, in milliseconds
+ * How long a notice, such as a refused link, stays in the group's toolbar, in milliseconds
  */
-const LINK_NOTICE_MS = 5000;
+const GROUP_NOTICE_MS = 5000;
 
 /**
  * Where a window plays
@@ -219,7 +219,13 @@ export class GamePage
 			{
 				void this.loadCharacters();
 			},
-			leave: (characterId) => this.leaveGroup(characterId)
+			leave: (characterId) => this.leaveGroup(characterId),
+			sendChat: (text) =>
+			{
+				const chat: ChatPayload = { text };
+
+				this.joinedGroup?.connection.room.send(GameMessageType.Chat, chat);
+			}
 		});
 
 		this.inviteScreen = new InviteScreen({
@@ -642,12 +648,14 @@ export class GamePage
 	{
 		if (reason === NoticeReason.ChatTooFast)
 		{
-			this.lobbyScreen.restoreLastChat();
-			this.lobbyScreen.showNotice(t({
-				id: 'lobby.chat.tooFast',
-				defaultMessage: 'You are sending messages too quickly. Wait a moment and try again.',
-				description: 'Shown in the lobby when the player sends chat messages faster than allowed'
-			}));
+			if (this.joinedGroup)
+			{
+				this.groupScreen.refuseChatTooFast();
+			}
+			else
+			{
+				this.lobbyScreen.refuseChatTooFast();
+			}
 		}
 		else if (reason === NoticeReason.GroupNotTogether)
 		{
@@ -657,7 +665,7 @@ export class GamePage
 				description: 'Shown in a group\'s toolbar, and read out, when a character tries a door or path that needs every member of the group, and one isn\'t playing, is in another area, or is on their way somewhere'
 			});
 
-			this.groupScreen.setStatus(message, LINK_NOTICE_MS);
+			this.groupScreen.setStatus(message, GROUP_NOTICE_MS);
 			announce(message);
 		}
 		else if (reason === NoticeReason.CharacterBarred)
@@ -1094,6 +1102,16 @@ export class GamePage
 		connection.room.onMessage(GameServerMessageType.Notice, (notice: NoticePayload) =>
 		{
 			this.onNotice(notice.reason);
+		});
+
+		connection.room.onMessage(GameServerMessageType.ChatHistory, (history: KeptChatHistoryPayload) =>
+		{
+			this.groupScreen.setChatHistory(history.messages);
+		});
+
+		connection.room.onMessage(GameServerMessageType.Chat, (message: KeptChatMessage) =>
+		{
+			this.groupScreen.addChatMessage(message);
 		});
 
 		connection.room.onLeave((code: number) =>

@@ -59,7 +59,12 @@ export enum GameMessageType
 	 * Control another of the player's characters in the group, in this window only
 	 * (payload: ControlPayload). The room answers with Welcome and Area, as on joining
 	 */
-	Control = 'control'
+	Control = 'control',
+
+	/**
+	 * Say something in the group's chat, as the character the window controls (payload: ChatPayload)
+	 */
+	Chat = 'chat'
 }
 
 /**
@@ -76,7 +81,17 @@ export enum GameServerMessageType
 	 * The group has seen cells of the client's area for the first time: their tiles, which were sent as
 	 * UNSEEN_CELL until now (payload: CellsSeenPayload)
 	 */
-	CellsSeen = 'cellsSeen'
+	CellsSeen = 'cellsSeen',
+
+	/**
+	 * The group's kept chat, sent to a window as it joins (payload: KeptChatHistoryPayload)
+	 */
+	ChatHistory = 'chatHistory',
+
+	/**
+	 * A new message in the group's chat, sent to every window in the room (payload: KeptChatMessage)
+	 */
+	Chat = 'chat'
 }
 
 /**
@@ -396,7 +411,7 @@ export interface LobbyJoinOptions
 }
 
 /**
- * Payload of LobbyMessageType.Chat and EditorMessageType.Chat
+ * Payload of LobbyMessageType.Chat, GameMessageType.Chat and EditorMessageType.Chat
  */
 export interface ChatPayload
 {
@@ -487,6 +502,49 @@ export interface ChatMessage
 export interface ChatHistoryPayload
 {
 	messages: ChatMessage[];
+}
+
+/**
+ * Most messages a kept chat holds (the editors' chat and each group's); writing another deletes the oldest
+ */
+export const MAX_KEPT_CHAT_MESSAGES = 200;
+
+/**
+ * One message of a chat that is kept: a group's or the editors'
+ */
+export interface KeptChatMessage
+{
+	/**
+	 * The player who wrote it, or null once their account is deleted
+	 */
+	playerId: string | null;
+
+	/**
+	 * The writer's name: in a group's chat, their character's when they wrote it, and in the editors'
+	 * chat the player's display name. Empty once their account is deleted
+	 */
+	name: string;
+
+	/**
+	 * In the editors' chat, the writer's username; null in a group's chat, and once their account is deleted
+	 */
+	username: string | null;
+
+	text: string;
+
+	/**
+	 * When the server received it, in milliseconds since the epoch
+	 */
+	sentAt: number;
+}
+
+/**
+ * Payload of GameServerMessageType.ChatHistory and EditorServerMessageType.ChatHistory: the messages the
+ * chat keeps, oldest first
+ */
+export interface KeptChatHistoryPayload
+{
+	messages: KeptChatMessage[];
 }
 
 /**
