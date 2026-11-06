@@ -396,7 +396,7 @@ export interface LobbyJoinOptions
 }
 
 /**
- * Payload of LobbyMessageType.Chat
+ * Payload of LobbyMessageType.Chat and EditorMessageType.Chat
  */
 export interface ChatPayload
 {
@@ -501,7 +501,7 @@ export enum NoticeReason
 	GroupNotTogether = 'groupNotTogether',
 
 	/**
-	 * The player sent chat messages faster than the lobby allows; the message was dropped
+	 * The player sent chat messages faster than the room allows; the message was dropped
 	 */
 	ChatTooFast = 'chatTooFast',
 
@@ -514,7 +514,7 @@ export enum NoticeReason
 }
 
 /**
- * Payload of LobbyServerMessageType.Notice and GameServerMessageType.Notice
+ * Payload of LobbyServerMessageType.Notice, GameServerMessageType.Notice and EditorServerMessageType.Notice
  */
 export interface NoticePayload
 {

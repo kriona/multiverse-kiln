@@ -1,5 +1,5 @@
 import { Client, type Room } from '@colyseus/sdk';
-import { GAME_ROOM_NAME, GameState, LOBBY_ROOM_NAME, LobbyState, ServerMessageType, SESSION_ROOM_NAME, SessionServerMessageType, UNIVERSES_PATH, type AccountPayload, type GameJoinOptions, type LobbyJoinOptions, type UniverseDetails, type UniverseListPayload, type UniverseTextPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
+import { EDITOR_ROOM_NAME, EditorState, GAME_ROOM_NAME, GameState, LOBBY_ROOM_NAME, LobbyState, ServerMessageType, SESSION_ROOM_NAME, SessionServerMessageType, UNIVERSES_PATH, type AccountPayload, type EditorJoinOptions, type GameJoinOptions, type LobbyJoinOptions, type UniverseDetails, type UniverseListPayload, type UniverseTextPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
 
 import { wantedLanguages } from '../localization';
 import { forgetPlayerValues, rememberPlayerSession } from '../rememberedValues';
@@ -18,6 +18,11 @@ export type GameRoom = Room<unknown, GameState>;
  * A joined universe lobby, with typed state
  */
 export type LobbyRoom = Room<unknown, LobbyState>;
+
+/**
+ * A joined universe editor room, with typed state
+ */
+export type EditorRoom = Room<unknown, EditorState>;
 
 /**
  * A joined room with a map: a universe's lobby or a group's game room
@@ -269,6 +274,21 @@ export async function joinLobby(client: Client, universeId: string): Promise<Lob
 
 	// The room sends its state before Welcome, so hasMap is known by then
 	return({ room, ...(await waitForArrival(room, () => room.state.hasMap)) });
+}
+
+/**
+ * Joins a universe's editor room, which says who has its editor open and carries the editors' chat; the
+ * browser must be logged in as a player who may open the universe's editor
+ *
+ * @param client Client for the server
+ * @param universeId The universe's ID
+ * @return The joined room
+ */
+export async function joinEditorRoom(client: Client, universeId: string): Promise<EditorRoom>
+{
+	const options: EditorJoinOptions = { universeId };
+
+	return(await client.joinOrCreate<EditorState>(EDITOR_ROOM_NAME, options, EditorState));
 }
 
 /**

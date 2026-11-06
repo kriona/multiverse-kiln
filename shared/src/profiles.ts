@@ -458,4 +458,22 @@ export interface AccountExport
 		universeId: string;
 		draft: unknown;
 	}[];
+
+	/**
+	 * The messages the player wrote that the kept chats still hold (the editors' chat of a universe, and
+	 * groups' chats), oldest first
+	 */
+	chatMessages: {
+		universeId: string;
+		universeName: string;
+
+		/**
+		 * The group whose chat it is in, or null for the universe's editors' chat
+		 */
+		groupId: string | null;
+
+		groupName: string | null;
+		text: string;
+		sentAt: string;
+	}[];
 }

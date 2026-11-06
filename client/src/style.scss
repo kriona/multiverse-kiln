@@ -107,52 +107,6 @@
 	min-height: 200px;
 }
 
-.chat-log
-{
-	flex: 1;
-	overflow-y: auto;
-	margin: 0 0 12px;
-	padding: 0;
-	list-style: none;
-	overflow-wrap: anywhere;
-
-	li
-	{
-		padding: 2px 0;
-	}
-}
-
-.chat-time
-{
-	margin-right: 6px;
-	font-size: 12px;
-	color: $text-dim;
-}
-
-.chat-name
-{
-	margin-right: 6px;
-	font-weight: bold;
-	color: $chat-name;
-
-	.chat-own &
-	{
-		color: $accent;
-	}
-}
-
-.chat-form
-{
-	display: flex;
-	gap: 8px;
-}
-
-.chat-form input
-{
-	flex: 1;
-	min-width: 0;
-}
-
 .members
 {
 	display: flex;

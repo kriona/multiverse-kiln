@@ -24,6 +24,10 @@
 					<button id="editor-start-draft" class="draft" type="button" hidden data-message="editor.draft.start" data-translation-context="Button that starts a draft of the universe when the editor is saved: a copy editors change without players seeing it, in the editor's toolbar and in the dialog explaining drafts"><!-- icon ph:copy -->Start Draft</button>
 					<button id="editor-apply-draft" class="draft" type="button" hidden data-message="editor.draft.apply" data-translation-context="Button in the editor's toolbar that applies the universe's draft to the live version after asking, so players see everything changed in it"><!-- icon ph:rocket-launch -->Apply Draft</button>
 					<button id="editor-discard-draft" class="danger" type="button" hidden data-message="editor.draft.discard" data-translation-context="Button in the editor's toolbar that deletes the universe's draft after asking, leaving the live version as it is"><!-- icon ph:trash -->Discard Draft</button>
+					<span class="editor-chat-toggle">
+						<button id="editor-chat-toggle" type="button" class="secondary" aria-expanded="false" aria-controls="editor-chat" aria-describedby="editor-chat-unread" data-shortcut="Alt+H" data-message="editor.chat.toggle" data-translation-context="Button in the editor's toolbar that shows or hides the chat of the universe's editors, with who has the editor open"><!-- icon ph:chats-circle -->Chat</button>
+						<span id="editor-chat-unread" class="chat-unread" hidden></span>
+					</span>
 					<a id="editor-play" class="button" data-shortcut="Alt+U" hidden data-message="editor.play" data-translation-context="Button in the editor's toolbar that goes to the universe's lobby to play"><!-- icon game-icons:magic-portal -->Enter Universe</a>
 					<!-- include account.html -->
 				</header>
@@ -687,6 +691,22 @@
 						</section>
 					</section>
 				</div>
+				<aside id="editor-chat" class="panel editor-chat" tabindex="-1" aria-labelledby="editor-chat-heading" hidden>
+					<div class="editor-chat-header">
+						<h2 id="editor-chat-heading" data-message="editor.chat.heading" data-translation-context="Heading of the panel with the chat of the universe's editors, opened with the Chat button in the editor's toolbar">Editors' Chat</h2>
+						<button id="editor-chat-close" type="button" class="secondary" data-message="editor.chat.close" data-translation-context="Button that hides the panel with the chat of the universe's editors; Escape does the same">Close</button>
+					</div>
+					<p id="editor-chat-status" class="hint" role="status" hidden></p>
+					<div class="editor-chat-here">
+						<h3 id="editor-chat-here-heading" data-message="editor.chat.here" data-translation-context="Heading in the editors' chat panel above the list of the players who have the universe's editor open, each with their role and the tabs they have open">Here now</h3>
+						<ul id="editor-chat-here" class="editor-chat-here-list" aria-labelledby="editor-chat-here-heading"></ul>
+					</div>
+					<ol id="editor-chat-log" class="chat-log" aria-live="polite"></ol>
+					<form id="editor-chat-form" class="chat-form">
+						<input id="editor-chat-input" name="text" autocomplete="off" placeholder="Say something..." aria-label="Chat message" data-message-placeholder="lobby.chat.placeholder" data-translation-context-placeholder="Shown in the empty chat field" data-message-aria-label="lobby.chat.label" data-translation-context-aria-label="Name of the chat field for screen readers" />
+						<button id="editor-chat-send" type="submit" data-message="lobby.chat.send" data-translation-context="Button that sends the chat message typed"><!-- icon ph:paper-plane-right -->Send</button>
+					</form>
+				</aside>
 				<footer id="editor-save-bar" class="editor-save-bar" hidden>
 					<span id="editor-save-status" class="form-saved" role="status"></span>
 					<button id="editor-save" type="button" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>

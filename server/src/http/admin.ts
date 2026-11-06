@@ -21,6 +21,7 @@ import { listUniversesForAdmin, lockUniverse, setUniverseDisabled } from '../db/
 import { sessionExpiresAt } from '../logic/sessionLifetimes.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { areaChanges } from '../world/areaChanges.js';
+import { editorUpdates } from '../world/editorUpdates.js';
 import { refuseWritesFromOtherOrigins } from './editorAccess.js';
 import { playerSearchQuery } from './editorPayloads.js';
 import { errorMessages, sendError, sendInvalidRequest, type Refusal } from './errors.js';
@@ -689,6 +690,10 @@ async function disableUniverse(request: Request, response: Response): Promise<vo
 		kind: 'universeDisabled',
 		universeId: universeId.data
 	});
+	editorUpdates.publish({
+		kind: 'access',
+		universeId: universeId.data
+	});
 	response.sendStatus(204);
 }
 
@@ -747,6 +752,10 @@ async function enableUniverse(request: Request, response: Response): Promise<voi
 		return;
 	}
 
+	editorUpdates.publish({
+		kind: 'access',
+		universeId: universeId.data
+	});
 	response.sendStatus(204);
 }
 

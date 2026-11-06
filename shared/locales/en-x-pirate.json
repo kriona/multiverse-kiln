@@ -971,6 +971,14 @@
 		"message": "Tall Tale",
 		"source": "Story"
 	},
+	"editor.accessChanged": {
+		"message": "What ye can do in this universe has changed: yer rank, her stage, or whether the ship's officers have laid her up. Stow or undo yer changes, then reload the page to see what ye can do now.",
+		"source": "What you can do in this universe has changed: your role, its stage, or whether the site's admins have disabled it. Save or undo your changes, then reload the page to see what you can do now."
+	},
+	"editor.accessLost": {
+		"message": "Ye no longer hold a rank in this universe, so yer changes can't be stowed.",
+		"source": "You no longer have a role in this universe, so your changes can't be saved."
+	},
 	"editor.area.back": {
 		"message": "Back to Areas",
 		"source": "Back to Areas"
@@ -1426,6 +1434,66 @@
 	"editor.characters.startingMoneyHint": {
 		"message": "Heaps o' coins, like {example}. Coins stay as they're given; races an' classes can add more to the purse.",
 		"source": "Amounts of coins, like {example}. Coins stay as they are given; races and classes can add more."
+	},
+	"editor.chat.close": {
+		"message": "Batten down",
+		"source": "Close"
+	},
+	"editor.chat.closed": {
+		"message": "{name} left the chartroom",
+		"source": "{name} closed the editor"
+	},
+	"editor.chat.deletedAccount": {
+		"message": "Scuttled account",
+		"source": "Deleted account"
+	},
+	"editor.chat.disconnected": {
+		"message": "The officers' parley lost its line. Reload the page to hail 'em again.",
+		"source": "The editors' chat was disconnected. Reload the page to reconnect."
+	},
+	"editor.chat.draftTab": {
+		"message": "{tab} (draft)",
+		"source": "{tab} (draft)"
+	},
+	"editor.chat.heading": {
+		"message": "Officers' Parley",
+		"source": "Editors' Chat"
+	},
+	"editor.chat.here": {
+		"message": "Aboard now",
+		"source": "Here now"
+	},
+	"editor.chat.newMessage": {
+		"message": "{name} spoke in the officers' parley: {text}",
+		"source": "{name} wrote in the editors' chat: {text}"
+	},
+	"editor.chat.notJoined": {
+		"message": "Couldn't hail the officers' parley. Reload the page to try again.",
+		"source": "Could not connect to the editors' chat. Reload the page to try again."
+	},
+	"editor.chat.opened": {
+		"message": "{name} came into the chartroom",
+		"source": "{name} opened the editor"
+	},
+	"editor.chat.toggle": {
+		"message": "Parley",
+		"source": "Chat"
+	},
+	"editor.chat.tooFast": {
+		"message": "Ye be squawkin' too fast. Wait a moment, then send it again.",
+		"source": "You are sending messages too quickly. Wait a moment, then send it again."
+	},
+	"editor.chat.unread": {
+		"message": "{count, plural, one {# new word} other {# new words}}",
+		"source": "{count, plural, one {# new message} other {# new messages}}"
+	},
+	"editor.chat.where": {
+		"message": "@{username}, {role}, at {tabs}",
+		"source": "@{username}, {role}, on {tabs}"
+	},
+	"editor.chat.you": {
+		"message": "{name} (ye)",
+		"source": "{name} (you)"
 	},
 	"editor.chooseEquipment": {
 		"message": "Choose Kit",
@@ -3230,6 +3298,10 @@
 	"editor.universe.stageWarning": {
 		"message": "Once the universe leaves the stage {stage}, new areas start battened down, so no hand can wander into 'em before they be finished. Open each one on the Areas tab when she's ready.",
 		"source": "Once the universe leaves the stage {stage}, new areas start disabled, so players can't wander into them before they are finished. Enable each one on the Areas tab when it's ready."
+	},
+	"editor.universeDeleted": {
+		"message": "This universe has been scuttled, so changes to her can't be stowed.",
+		"source": "This universe has been deleted, so changes to it can't be saved."
 	},
 	"editor.universeDisabled": {
 		"message": "The ship's officers have laid up this universe, so it can't be sailed and changes to it can't be stowed. Reason: {reason}",
@@ -5808,12 +5880,16 @@
 		"source": "Your characters, their items and progress, the groups they are in, and the parts of each universe your groups have explored."
 	},
 	"privacy.playChat": {
-		"message": "Chatter ain't saved. The game server keeps a tavern's latest messages in memory, so players who arrive can read 'em, till the tavern closes or the server restarts.",
-		"source": "Chat isn't saved. The game server keeps a lobby's most recent messages in memory, so players who arrive can read them, until the lobby closes or the server restarts."
+		"message": "Tavern chatter ain't saved. The game server keeps a tavern's latest messages in memory, so players who arrive can read 'em, till the tavern closes or the server restarts.",
+		"source": "Lobby chat isn't saved. The game server keeps a lobby's most recent messages in memory, so players who arrive can read them, until the lobby closes or the server restarts."
 	},
 	"privacy.playEditRecord": {
 		"message": "A record o' each time ye stow changes in a universe's editor: when, with which role, an' what it changed, by name, with the value it gave each settin' it changed (a long description only by how many characters it has). The universe's creators an' the site's admins can see it. It be kept fer 90 days, or until the universe be deleted if that comes sooner, an' names ye until ye delete yer account.",
 		"source": "A record of each save you make in a universe's editor: when, with which role, and what it changed, by name, with the value it gave each setting it changed (a long description only by how many characters it has). The universe's creators and the site's admins can see it. It is kept for 90 days, or until the universe is deleted if that is sooner, and names you until you delete your account."
+	},
+	"privacy.playKeptChat": {
+		"message": "The chatter o' a universe's editors be saved, so editors who arrive can read it: it keeps its newest 200 messages, until the universe be deleted. When ye delete yer account, yer messages stay in it without yer name.",
+		"source": "The chat of a universe's editors is saved, so editors who arrive can read it: it keeps its newest 200 messages, until the universe is deleted. When you delete your account, your messages stay in it without your name."
 	},
 	"privacy.playUniverses": {
 		"message": "The universes ye create or help edit, an' what ye upload to 'em, such as tile pictures.",

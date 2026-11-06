@@ -5,7 +5,8 @@ import {
 	playground,
 } from 'colyseus';
 
-import { GAME_ROOM_NAME, LOBBY_ROOM_NAME, SESSION_ROOM_NAME } from '@multiverse-kiln/shared';
+import { EDITOR_ROOM_NAME, GAME_ROOM_NAME, LOBBY_ROOM_NAME, SESSION_ROOM_NAME } from '@multiverse-kiln/shared';
+import { EditorRoom } from './rooms/EditorRoom.js';
 import { GameRoom } from './rooms/GameRoom.js';
 import { LobbyRoom } from './rooms/LobbyRoom.js';
 import { SessionRoom } from './rooms/SessionRoom.js';
@@ -71,6 +72,9 @@ const server = defineServer({
 
 		// One game room per group: clients asking for the same groupId share a room
 		[GAME_ROOM_NAME]: defineRoom(GameRoom).filterBy(['groupId']),
+
+		// One editor room per universe: windows asking for the same universeId share a room
+		[EDITOR_ROOM_NAME]: defineRoom(EditorRoom).filterBy(['universeId']),
 	},
 
 	/**
