@@ -1,8 +1,10 @@
-import { EDITOR_ROLE_NAMES, MAX_CHAT_MESSAGE_LENGTH, MAX_KEPT_CHAT_MESSAGES, type EditorPresence, type EditorRole, type KeptChatMessage } from '@multiverse-kiln/shared';
+import { MAX_CHAT_MESSAGE_LENGTH, MAX_KEPT_CHAT_MESSAGES, type EditorPresence, type KeptChatMessage } from '@multiverse-kiln/shared';
 
-import { currentLocale, t } from '../../localization';
+import { currentLocale, formatToNodes, t } from '../../localization';
+import { playerPageUrl } from '../../pages';
 import { announce } from '../announcer';
-import { getElement, showMessage } from '../dom';
+import { getElement, setUnreadChatCount, showMessage } from '../dom';
+import { showToast } from '../toast';
 
 /**
  * How close to the bottom, in pixels, the chat must be scrolled to keep following new messages
@@ -10,45 +12,19 @@ import { getElement, showMessage } from '../dom';
 const FOLLOW_THRESHOLD = 40;
 
 /**
- * Whether a value names one of the editor's roles
- *
- * @param role The value, from the room's state
- * @return True when it does
- */
-function isEditorRole(role: string): role is EditorRole
-{
-	return(Object.hasOwn(EDITOR_ROLE_NAMES, role));
-}
-
-/**
- * The name of one of the editor's tabs as its tab shows it, in the player's language
- *
- * @param tab The tab
- * @return Its name, without the mark of unsaved changes
- */
-function tabName(tab: string): string
-{
-	const button = document.getElementById(`editor-tab-${tab}`);
-
-	return([...(button?.childNodes ?? [])]
-		.filter((node) => (node.nodeType === Node.TEXT_NODE))
-		.map((node) => (node.textContent ?? ''))
-		.join('')
-		.trim());
-}
-
-/**
  * The editors' chat, in a panel the Chat button in the editor's toolbar shows and hides: the messages of
- * the universe's editors, kept by the server, and who has the editor open, with their role and the tabs
- * their windows show
+ * the universe's editors, kept by the server, and the names of who has the editor open. The save bar
+ * shows where each of the others is (EditorPresenceBar)
  *
- * Messages that arrive while the panel is hidden are counted beside the button and read out by screen
- * readers, as are players opening and closing the editor
+ * Messages that arrive while the panel is hidden are counted over the button's icon, and the newest
+ * shows in a toast, read out by screen readers; clicking the toast away clears the count, as opening the
+ * panel does. Screen readers hear players opening and closing the editor too
  */
 export class EditorChat
 {
 	private readonly toggle = getElement('editor-chat-toggle', HTMLButtonElement);
 	private readonly unread = getElement('editor-chat-unread', HTMLElement);
+	private readonly unreadBadge = getElement('editor-chat-unread-count', HTMLElement);
 	private readonly panel = getElement('editor-chat', HTMLElement);
 	private readonly status = getElement('editor-chat-status', HTMLElement);
 	private readonly here = getElement('editor-chat-here', HTMLUListElement);
@@ -61,6 +37,11 @@ export class EditorChat
 	 * How many messages from others have arrived since the panel was last shown
 	 */
 	private unreadCount = 0;
+
+	/**
+	 * Closes the toast showing the newest message, while there may be one
+	 */
+	private closeToast: (() => void) | undefined;
 
 	/**
 	 * The players listed as having the editor open, by player ID, with their names; undefined until the
@@ -133,6 +114,8 @@ export class EditorChat
 
 		if (open)
 		{
+			this.closeToast?.();
+			this.closeToast = undefined;
 			this.setUnread(0);
 			this.log.scrollTop = this.log.scrollHeight;
 			(this.input.disabled ? this.panel : this.input).focus();
@@ -233,11 +216,32 @@ export class EditorChat
 
 		if (this.panel.hidden && (message.playerId !== this.ownPlayerId))
 		{
+			const name = document.createElement('span');
+
+			name.className = 'toast-chat-name';
+			name.translate = false;
+			name.textContent = this.nameOf(message);
 			this.setUnread(this.unreadCount + 1);
+			this.closeToast?.();
+			this.closeToast = showToast(formatToNodes({
+				id: 'editor.chat.toast',
+				defaultMessage: '{name}: {text}',
+				description: 'In a toast when another editor writes in the editors\' chat while its panel is hidden; {name} is their display name, shown in color, and {text} what they wrote'
+			}, {
+				name,
+				text: message.text
+			}), {
+				announce: false,
+				onDismiss: () =>
+				{
+					this.closeToast = undefined;
+					this.setUnread(0);
+				}
+			});
 			announce(t({
 				id: 'editor.chat.newMessage',
 				defaultMessage: '{name} wrote in the editors\' chat: {text}',
-				description: 'Read out by screen readers when another editor writes in the editors\' chat while its panel is hidden; {name} is their display name and {text} what they wrote'
+				description: 'Read out by screen readers when another editor writes in the editors\' chat while its panel is hidden, which a toast shows; {name} is their display name and {text} what they wrote'
 			}, {
 				name: this.nameOf(message),
 				text: message.text
@@ -292,8 +296,7 @@ export class EditorChat
 	}
 
 	/**
-	 * One player in the list of who has the editor open: their name, username and role, and the tabs
-	 * their windows show, marking those showing the draft
+	 * One player in the list of who has the editor open: their name, linking to their profile
 	 *
 	 * @param playerId The player's ID
 	 * @param editor The player
@@ -302,41 +305,20 @@ export class EditorChat
 	private editorItem(playerId: string, editor: EditorPresence): HTMLLIElement
 	{
 		const item = document.createElement('li');
-		const name = document.createElement('span');
-		const where = document.createElement('span');
-		const places = new Set<string>();
-
-		for (const window of editor.windows.values())
-		{
-			places.add((window.version === 'draft') ? t({
-				id: 'editor.chat.draftTab',
-				defaultMessage: '{tab} (draft)',
-				description: 'In the editors\' chat panel\'s list of who has the editor open, a tab an editor has open on the universe\'s draft (a copy players don\'t see until it is applied); {tab} is the tab\'s name, such as Areas'
-			}, {
-				tab: tabName(window.tab)
-			}) : tabName(window.tab));
-		}
+		const name = document.createElement('a');
 
 		name.className = 'chat-name';
+		name.href = playerPageUrl(editor.username);
+		name.translate = false;
 		name.textContent = ((playerId === this.ownPlayerId) ? t({
 			id: 'editor.chat.you',
 			defaultMessage: '{name} (you)',
-			description: 'In the editors\' chat panel\'s list of who has the editor open, the player themself; {name} is their display name'
+			description: 'In the editors\' chat panel\'s list of who has the editor open, the player themself; {name} is their display name, which links to their profile'
 		}, {
 			name: editor.name
 		}) : editor.name);
-		where.className = 'editor-chat-where';
-		where.textContent = t({
-			id: 'editor.chat.where',
-			defaultMessage: '@{username}, {role}, on {tabs}',
-			description: 'In the editors\' chat panel\'s list of who has the editor open, after an editor\'s name: {username} is their username, {role} their role (such as builder) and {tabs} the tabs their windows show, such as "Areas and Items (draft)"'
-		}, {
-			username: editor.username,
-			role: (isEditorRole(editor.role) ? t(EDITOR_ROLE_NAMES[editor.role]) : editor.role),
-			tabs: new Intl.ListFormat(currentLocale(), { type: 'conjunction' }).format([...places])
-		});
 		item.classList.toggle('chat-own', (playerId === this.ownPlayerId));
-		item.append(name, where);
+		item.append(name);
 
 		return(item);
 	}
@@ -390,17 +372,20 @@ export class EditorChat
 	}
 
 	/**
-	 * Shows how many messages arrived while the panel was hidden, beside the Chat button
+	 * Shows how many messages arrived while the panel was hidden, as a number over the Chat button's icon
+	 * and before the page's title, and to screen readers as the button's description
 	 *
 	 * @param count How many
 	 */
 	private setUnread(count: number): void
 	{
 		this.unreadCount = count;
+		setUnreadChatCount(count);
+		showMessage(this.unreadBadge, ((count === 0) ? undefined : new Intl.NumberFormat(currentLocale()).format(count)));
 		showMessage(this.unread, ((count === 0) ? undefined : t({
 			id: 'editor.chat.unread',
 			defaultMessage: '{count, plural, one {# new message} other {# new messages}}',
-			description: 'Beside the Chat button in the editor\'s toolbar, how many messages other editors wrote in the editors\' chat while it was hidden'
+			description: 'Read out by screen readers with the Chat button in the editor\'s toolbar, which shows the number over its icon: how many messages other editors wrote in the editors\' chat while it was hidden'
 		}, {
 			count
 		})));

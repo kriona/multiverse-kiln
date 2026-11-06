@@ -1451,21 +1451,17 @@
 		"defaultMessage": "The editors' chat was disconnected. Reload the page to reconnect.",
 		"description": "Shown in the editors' chat panel when its connection to the server was lost"
 	},
-	"editor.chat.draftTab": {
-		"defaultMessage": "{tab} (draft)",
-		"description": "In the editors' chat panel's list of who has the editor open, a tab an editor has open on the universe's draft (a copy players don't see until it is applied); {tab} is the tab's name, such as Areas"
-	},
 	"editor.chat.heading": {
 		"defaultMessage": "Editors' Chat",
 		"description": "Heading of the panel with the chat of the universe's editors, opened with the Chat button in the editor's toolbar"
 	},
 	"editor.chat.here": {
 		"defaultMessage": "Here now",
-		"description": "Heading in the editors' chat panel above the list of the players who have the universe's editor open, each with their role and the tabs they have open"
+		"description": "Heading in the editors' chat panel above the names of the players who have the universe's editor open, each linking to their profile"
 	},
 	"editor.chat.newMessage": {
 		"defaultMessage": "{name} wrote in the editors' chat: {text}",
-		"description": "Read out by screen readers when another editor writes in the editors' chat while its panel is hidden; {name} is their display name and {text} what they wrote"
+		"description": "Read out by screen readers when another editor writes in the editors' chat while its panel is hidden, which a toast shows; {name} is their display name and {text} what they wrote"
 	},
 	"editor.chat.notJoined": {
 		"defaultMessage": "Could not connect to the editors' chat. Reload the page to try again.",
@@ -1474,6 +1470,10 @@
 	"editor.chat.opened": {
 		"defaultMessage": "{name} opened the editor",
 		"description": "Read out by screen readers when another editor opens the universe's editor; {name} is their display name"
+	},
+	"editor.chat.toast": {
+		"defaultMessage": "{name}: {text}",
+		"description": "In a toast when another editor writes in the editors' chat while its panel is hidden; {name} is their display name, shown in color, and {text} what they wrote"
 	},
 	"editor.chat.toggle": {
 		"defaultMessage": "Chat",
@@ -1485,15 +1485,11 @@
 	},
 	"editor.chat.unread": {
 		"defaultMessage": "{count, plural, one {# new message} other {# new messages}}",
-		"description": "Beside the Chat button in the editor's toolbar, how many messages other editors wrote in the editors' chat while it was hidden"
-	},
-	"editor.chat.where": {
-		"defaultMessage": "@{username}, {role}, on {tabs}",
-		"description": "In the editors' chat panel's list of who has the editor open, after an editor's name: {username} is their username, {role} their role (such as builder) and {tabs} the tabs their windows show, such as \"Areas and Items (draft)\""
+		"description": "Read out by screen readers with the Chat button in the editor's toolbar, which shows the number over its icon: how many messages other editors wrote in the editors' chat while it was hidden"
 	},
 	"editor.chat.you": {
 		"defaultMessage": "{name} (you)",
-		"description": "In the editors' chat panel's list of who has the editor open, the player themself; {name} is their display name"
+		"description": "In the editors' chat panel's list of who has the editor open, the player themself; {name} is their display name, which links to their profile"
 	},
 	"editor.chooseEquipment": {
 		"defaultMessage": "Choose Equipment",
@@ -2374,6 +2370,22 @@
 	"editor.play": {
 		"defaultMessage": "Enter Universe",
 		"description": "Button in the editor's toolbar that goes to the universe's lobby to play"
+	},
+	"editor.presence.area": {
+		"defaultMessage": "{tab} - {area}",
+		"description": "In the bar at the bottom of the universe's editor, where another editor's window is: {tab} is the tab's name, such as Areas, and {area} the name of the area it shows"
+	},
+	"editor.presence.draft": {
+		"defaultMessage": "{place} (draft)",
+		"description": "In the bar at the bottom of the universe's editor, where another editor's window is when it shows the universe's draft (a copy players don't see until it is applied); {place} is the tab, or the tab and area, such as \"Areas - Forest\""
+	},
+	"editor.presence.editor": {
+		"defaultMessage": "{name}: {places}",
+		"description": "In the bar at the bottom of the universe's editor, another editor who has it open; {name} is their display name and {places} where their windows are, such as \"Areas - Forest (draft) and Items\""
+	},
+	"editor.presence.label": {
+		"defaultMessage": "Also here:",
+		"description": "In the bar at the bottom of the universe's editor, before the list of the other editors who have it open and where each is"
 	},
 	"editor.race.abilityModifiers": {
 		"defaultMessage": "Ability modifiers",
@@ -5306,6 +5318,10 @@
 	"page.sourceCode": {
 		"defaultMessage": "Source code",
 		"description": "Link to where the game engine's source code can be downloaded, at the bottom of every page and on the license page"
+	},
+	"page.titleUnread": {
+		"defaultMessage": "({count, number}) {title}",
+		"description": "The browser tab's title on a page with a chat while it has messages the player hasn't read; {count} is how many and {title} the page's usual title"
 	},
 	"pager.next": {
 		"defaultMessage": "Next",

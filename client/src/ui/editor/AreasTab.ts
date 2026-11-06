@@ -175,9 +175,10 @@ export class AreasTab implements SavableTab
 	 * @param api The editor's API
 	 * @param stagedTiles The Tilesets tab's changes, which the maps are drawn and painted with
 	 * @param onAreaChanged Called with the area the area editor opens, or undefined when the tab goes back to the list
+	 * @param onAreasLoaded Called each time the tab has loaded the universe's areas, which areaName() names
 	 * @param onBackToLobby Called when the player leaves the lobby's area with Back to Lobby, to show the Lobby tab
 	 */
-	constructor(private readonly api: EditorApi, private readonly stagedTiles: StagedTiles, private readonly onAreaChanged: (areaId: string | undefined) => void, private readonly onBackToLobby: () => void)
+	constructor(private readonly api: EditorApi, private readonly stagedTiles: StagedTiles, private readonly onAreaChanged: (areaId: string | undefined) => void, private readonly onAreasLoaded: () => void, private readonly onBackToLobby: () => void)
 	{
 		stagedTiles.tileChanges.subscribe(() =>
 		{
@@ -359,6 +360,17 @@ export class AreasTab implements SavableTab
 	}
 
 	/**
+	 * The name of a saved area, as the tab last loaded the universe's areas
+	 *
+	 * @param areaId The area's ID
+	 * @return Its name, or undefined while the areas haven't loaded or it isn't one of them
+	 */
+	areaName(areaId: string): string | undefined
+	{
+		return(this.areas.areas.find((area) => (area.id === areaId))?.name);
+	}
+
+	/**
 	 * Opens an area in the area editor, first asking whether to discard the unsaved changes of the area it shows
 	 *
 	 * @param areaId The area's ID
@@ -524,6 +536,7 @@ export class AreasTab implements SavableTab
 	private async loadAreas(universe: EditableUniverse): Promise<void>
 	{
 		this.areas = await this.api.listAreas(universe.id);
+		this.onAreasLoaded();
 	}
 
 	/**

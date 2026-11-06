@@ -249,7 +249,6 @@ export class GamePage
 		{
 			this.onAccount(account.player);
 		});
-
 		session.onLeave(() =>
 		{
 			this.player = null;

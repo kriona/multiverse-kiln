@@ -434,6 +434,13 @@ button.sort-button
 	}
 }
 
+// Who wrote a chat message a toast shows, in the chat's color for names
+.toast-chat-name
+{
+	font-weight: bold;
+	color: $chat-name;
+}
+
 .chat-form
 {
 	display: flex;

@@ -94,6 +94,11 @@ export interface EditorScreenActions
 	 * The editor has opened another version of the universe, so the page's address can follow
 	 */
 	versionChanged: (version: UniverseVersionName) => void;
+
+	/**
+	 * The Areas tab has loaded the universe's areas, so areaName() knows their names
+	 */
+	areasLoaded: () => void;
 }
 
 /**
@@ -237,6 +242,9 @@ export class EditorScreen
 		this.areasTab = new AreasTab(api, this.tilesetsTab, (areaId) =>
 		{
 			this.setPlace({ ...this.place, areaId });
+		}, () =>
+		{
+			actions.areasLoaded();
 		}, () =>
 		{
 			this.selectTab('lobby');
@@ -549,6 +557,28 @@ export class EditorScreen
 	{
 		this.saveBar.setLocked(true);
 		this.showNotice(message);
+	}
+
+	/**
+	 * Keeps the save bar showing while it lists other editors, even on a tab with nothing to save
+	 *
+	 * @param shown Whether it lists any
+	 */
+	setOthersHere(shown: boolean): void
+	{
+		this.saveBar.setOthersHere(shown);
+	}
+
+	/**
+	 * The name of an area of the version of the universe open, once the Areas tab has loaded them
+	 *
+	 * @param version The version the area is in, live or draft
+	 * @param areaId The area's ID
+	 * @return Its name, or undefined when it isn't known here, such as for an area of the other version
+	 */
+	areaName(version: string, areaId: string): string | undefined
+	{
+		return(((version === this.api.version) ? this.areasTab.areaName(areaId) : undefined));
 	}
 
 	/**
