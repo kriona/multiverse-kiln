@@ -2859,6 +2859,10 @@
 		"message": "Stone Rampart",
 		"source": "Stone Wall"
 	},
+	"editor.tile.graphic.woodWall": {
+		"message": "Timber Bulkhead",
+		"source": "Wood Wall"
+	},
 	"editor.tile.graphicHint.blob": {
 		"message": "Painted atop the area's default tile, lashed to its neighbors (47-Tile Blob).",
 		"source": "Drawn over the area's default tile, joining up with its neighbors (47-Tile Blob)."
@@ -2952,8 +2956,8 @@
 		"source": "{count, plural, one {The map of {areas} uses it.} other {The maps of {areas} use it.}} Choose a tile to paint {count, plural, one {it} other {them}} with in its place."
 	},
 	"editor.tileGraphic.blobFormatHint": {
-		"message": "A PNG o' {width, number} by {height, number} pixels, no heavier than {kilobytes, number} KB: {columns, number} frames across an' {rows, number} down in the 47-tile blob layout, with the last berth left empty. These tiles be painted atop the ground, so they need no stackin' order.",
-		"source": "A PNG of {width, number} by {height, number} pixels, at most {kilobytes, number} KB: {columns, number} frames across and {rows, number} down in the 47-tile blob layout, with the last place empty. These tiles are drawn over the ground, so they have no draw order."
+		"message": "A PNG no heavier than {kilobytes, number} KB in the 47-tile blob layout: {width, number} by {height, number} pixels, {columns, number} frames across an' {columns, number} down like the tilesets that sail with the game, with 2 berths left empty, or {sortedWidth, number} by {sortedHeight, number} pixels, {sortedColumns, number} frames across an' {sortedRows, number} down, sorted by the neighbors they join, with the last berth left empty. These tiles be painted atop the ground, so they need no stackin' order.",
+		"source": "A PNG of at most {kilobytes, number} KB in the 47-tile blob layout: {width, number} by {height, number} pixels, {columns, number} frames across and {columns, number} down like the game's own tilesets, with 2 places empty, or {sortedWidth, number} by {sortedHeight, number} pixels, {sortedColumns, number} frames across and {sortedRows, number} down, sorted by the neighbors they join, with the last place empty. These tiles are drawn over the ground, so they have no draw order."
 	},
 	"editor.tileGraphic.drawOrder": {
 		"message": "Stackin' order",

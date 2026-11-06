@@ -6,6 +6,7 @@ import grassUrl from '../assets/tilesets/grass.png';
 import hedgeUrl from '../assets/tilesets/hedge.png';
 import mountainsUrl from '../assets/tilesets/mountains.png';
 import stoneWallUrl from '../assets/tilesets/stoneWall.png';
+import woodWallUrl from '../assets/tilesets/woodWall.png';
 import { serverHttpUrl } from '../network/serverConnection';
 
 /**
@@ -17,6 +18,7 @@ export const TILE_GRAPHIC_URLS: Record<TileGraphic, string> = {
 	forest: forestUrl,
 	mountains: mountainsUrl,
 	stoneWall: stoneWallUrl,
+	woodWall: woodWallUrl,
 	hedge: hedgeUrl
 };
 

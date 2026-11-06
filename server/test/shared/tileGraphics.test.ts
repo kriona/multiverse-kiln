@@ -1,16 +1,53 @@
 import assert from 'assert';
-import { BLOB_FRAME_MASKS, BLOB_SHEET_COLUMNS, blobFrame, reduceBlobMask } from '@multiverse-kiln/shared';
+import { BLOB_FRAME_MASKS, BLOB_SHEET_COLUMNS, BLOB_SHEET_MASKS, blobFrame, DUAL_GRID_FRAME_CORNERS, dualGridFrame, reduceBlobMask } from '@multiverse-kiln/shared';
 
 describe('tile graphics (shared)', () =>
 {
+	describe('Dual-Grid frames', () =>
+	{
+		it('gives every set of corners its own frame', () =>
+		{
+			const frames = new Set(Array.from({ length: 16 }, (_, corners) => dualGridFrame(corners)));
+
+			assert.strictEqual(frames.size, 16);
+			assert.ok([...frames].every((frame) => ((frame >= 0) && (frame < 16))));
+		});
+
+		it('finds each frame of the sheet from the corners it fills', () =>
+		{
+			DUAL_GRID_FRAME_CORNERS.forEach((corners, frame) =>
+			{
+				assert.strictEqual(dualGridFrame(corners), frame);
+			});
+		});
+
+		it('puts no corners first and all 4 last', () =>
+		{
+			assert.strictEqual(dualGridFrame(0), 0);
+			assert.strictEqual(dualGridFrame(15), 15);
+			assert.strictEqual(dualGridFrame(1 | 8), 5);
+			assert.strictEqual(dualGridFrame(4 | 8), 4);
+		});
+	});
+
 	describe('blob frames', () =>
 	{
-		it('has 47 frames, which fit the sheet with one place to spare', () =>
+		it('has 47 frames, which fit the sheet with 2 places to spare', () =>
 		{
 			assert.strictEqual(BLOB_FRAME_MASKS.length, 47);
-			assert.strictEqual(BLOB_SHEET_COLUMNS * 6, 48);
+			assert.strictEqual(BLOB_SHEET_MASKS.length, BLOB_SHEET_COLUMNS * BLOB_SHEET_COLUMNS);
+			assert.strictEqual(BLOB_SHEET_MASKS.filter((mask) => (mask === null)).length, 2);
 			assert.strictEqual(BLOB_FRAME_MASKS[0], 0);
 			assert.strictEqual(BLOB_FRAME_MASKS[46], 255);
+		});
+
+		it('has a frame in the sheet for every mask', () =>
+		{
+			const sheetMasks = BLOB_SHEET_MASKS
+				.filter((mask): mask is number => (mask !== null))
+				.sort((a, b) => (a - b));
+
+			assert.deepStrictEqual(sheetMasks, [...BLOB_FRAME_MASKS]);
 		});
 
 		it('ignores a diagonal unless both neighbors beside it hold the tile', () =>
@@ -22,10 +59,21 @@ describe('tile graphics (shared)', () =>
 			assert.strictEqual(blobFrame(255 & ~2), blobFrame(1 | 4 | 8 | 16 | 32 | 64 | 128));
 		});
 
-		it('gives a cell alone the first frame and a cell surrounded the last', () =>
+		it('finds a cell alone and a cell surrounded in the sheet', () =>
 		{
-			assert.strictEqual(blobFrame(0), 0);
-			assert.strictEqual(blobFrame(255), 46);
+			assert.strictEqual(blobFrame(0), 24);
+			assert.strictEqual(blobFrame(255), 8);
+		});
+
+		it('finds each frame of the sheet from the mask it is drawn for', () =>
+		{
+			BLOB_SHEET_MASKS.forEach((mask, frame) =>
+			{
+				if (mask !== null)
+				{
+					assert.strictEqual(blobFrame(mask), frame);
+				}
+			});
 		});
 
 		it('gives every reduced mask its own frame', () =>

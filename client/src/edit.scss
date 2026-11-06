@@ -551,11 +551,12 @@ tr.staged-deleted
 		image-rendering: pixelated;
 	}
 
-	// A blob sheet is 8 frames by 6, and the 47th, second from the right on the bottom row, is the tile on every side
+	// A blob sheet is 7 frames by 7, and the second frame of the second row is the tile on every side
+	// (BLOB_SHEET_MASKS)
 	&.graphic.blob
 	{
-		background-size: 100% 100%, 800% 600%;
-		background-position: 0 0, calc(600% / 7) 100%;
+		background-size: 100% 100%, 700% 700%;
+		background-position: 0 0, calc(100% / 6) calc(100% / 6);
 	}
 }
 

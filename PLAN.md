@@ -222,7 +222,7 @@ Decided:
 
 - [✅] Cells are 32 world units; a step takes 0.16 seconds
 - [✅] A sample Dual-Grid grass sheet (`client/src/assets/tilesets/grass.png`)
-- [✅] Blob graphics (the 47-Tile Blob Set) drawn in a walls layer over the ground, each cell's frame picked from its 8 neighbors, with a sample hedge sheet (`client/src/assets/tilesets/hedge.png`) used by the sample universe's Hedge; its Stone Wall uses a Dual-Grid sheet of a wall top (`stoneWall.png`)
+- [✅] Blob graphics (the 47-Tile Blob Set) drawn in a walls layer over the ground, each cell's frame picked from its 8 neighbors, with a sample hedge sheet (`client/src/assets/tilesets/hedge.png`) used by the sample universe's Hedge, and a wood wall blob sheet (`woodWall.png`) used by its Wood Wall, for the cottage's and cellar's walls; its Stone Wall, the cottage's outside, uses a Dual-Grid sheet of a wall top (`stoneWall.png`)
 - [✅] Uploading blob tilesets: the upload dialog chooses the layout (matched to the image's size), each upload stores its format, and the server checks the image against that format's size; a blob sheet has no draw order
 - [✅] `AreaRenderer` draws a tile's Dual-Grid graphic, falling back to its color: frames picked from each corner's 4 cells, wrapping on areas that loop, with void, unseen and out-of-bounds cells counting as another tile
 - [✅] Several tiles meeting: each graphic has a draw order in `TILE_GRAPHICS` (which graphic's edges overlap which; tiles drawn in their colors go below every graphic), and one frame is drawn for each combination of 4 corner tiles as it appears, cached in an atlas, so each piece stays one layer
