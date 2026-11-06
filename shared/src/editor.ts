@@ -1291,8 +1291,9 @@ export interface TileGraphicUploadRequest
 	drawOrder: number | null;
 
 	/**
-	 * The PNG, base64-encoded: its format's size (TILE_GRAPHIC_SIZES) and at most MAX_TILE_GRAPHIC_BYTES.
-	 * The server stores it re-encoded, without anything but the picture
+	 * The PNG, base64-encoded: its format's size (TILE_GRAPHIC_SIZES) and at most MAX_TILE_GRAPHIC_BYTES,
+	 * a Dual-Grid sheet's frames in the game's order (DUAL_GRID_FRAME_CORNERS). The server stores it
+	 * re-encoded, without anything but the picture
 	 */
 	image: string;
 

@@ -2859,6 +2859,10 @@
 		"defaultMessage": "Stone Wall",
 		"description": "One of the graphics a tile can be drawn with, in the tile editor's list of them and read out for the Tilesets table's pictures of tiles: the top of a thick stone wall seen from above, which joins up with the same tile in the cells around it"
 	},
+	"editor.tile.graphic.woodWall": {
+		"defaultMessage": "Wood Wall",
+		"description": "One of the graphics a tile can be drawn with, in the tile editor's list of them and read out for the Tilesets table's pictures of tiles: the top of a wooden wall seen from above, such as a building's inside walls, which joins up with the same tile in the cells around it"
+	},
 	"editor.tile.graphicHint.blob": {
 		"defaultMessage": "Drawn over the area's default tile, joining up with its neighbors (47-Tile Blob).",
 		"description": "Under the tile editor's list of graphics, when the chosen graphic is drawn over the ground, such as a hedge, and joins up with the same tile in the cells around it. \"47-Tile Blob\" is the name of the tile system, in parentheses"
@@ -2952,8 +2956,8 @@
 		"description": "Shown in the dialog before deleting a tile that maps use; {areas} lists the areas' names, and {count} is how many there are"
 	},
 	"editor.tileGraphic.blobFormatHint": {
-		"defaultMessage": "A PNG of {width, number} by {height, number} pixels, at most {kilobytes, number} KB: {columns, number} frames across and {rows, number} down in the 47-tile blob layout, with the last place empty. These tiles are drawn over the ground, so they have no draw order.",
-		"description": "Explains what picture a tileset upload in the 47-tile layout needs, for things drawn over the ground such as hedges; {width} and {height} are its size in pixels, {kilobytes} the largest file allowed, and {columns} and {rows} how many frames it has across and down"
+		"defaultMessage": "A PNG of at most {kilobytes, number} KB in the 47-tile blob layout: {width, number} by {height, number} pixels, {columns, number} frames across and {columns, number} down like the game's own tilesets, with 2 places empty, or {sortedWidth, number} by {sortedHeight, number} pixels, {sortedColumns, number} frames across and {sortedRows, number} down, sorted by the neighbors they join, with the last place empty. These tiles are drawn over the ground, so they have no draw order.",
+		"description": "Explains what picture a tileset upload in the 47-tile layout needs, for things drawn over the ground such as hedges. It takes either of 2 arrangements of the frames: {width} and {height} are the size in pixels of the game's own, and {columns} how many frames it has across and down; {sortedWidth}, {sortedHeight}, {sortedColumns} and {sortedRows} the same for the other, whose frames go in order of which neighboring cells they join up with. {kilobytes} is the largest file allowed"
 	},
 	"editor.tileGraphic.drawOrder": {
 		"defaultMessage": "Draw order",

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { BLOB_NEIGHBORS, BLOB_SHEET_COLUMNS, blobFrame, CHUNK_SIZE, chunkCoordinate, chunkKey, GRID_CELL_SIZE, isInBounds, parseChunkKey, positiveModulo, tileIdAt, type AreaPayload, type AreaTile, type AreaTiles } from '@multiverse-kiln/shared';
+import { BLOB_NEIGHBORS, BLOB_SHEET_COLUMNS, blobFrame, CHUNK_SIZE, chunkCoordinate, chunkKey, dualGridFrame, GRID_CELL_SIZE, isInBounds, parseChunkKey, positiveModulo, tileIdAt, type AreaPayload, type AreaTile, type AreaTiles } from '@multiverse-kiln/shared';
 
 import { DUAL_GRID_COLUMNS, tileGraphicImage } from './tileGraphics';
 
@@ -45,8 +45,8 @@ const ATLAS_COLUMNS = 32;
 const GRID_FRAME = 0;
 
 /**
- * The 4 cells around a corner, in the order of their bits in a frame's number (top-left 1, top-right 2,
- * bottom-left 4, bottom-right 8), as offsets from the corner's column and row: the corner at column c
+ * The 4 cells around a corner, in the order of their bits in the sum of a frame's corners (top-left 1,
+ * top-right 2, bottom-left 4, bottom-right 8; see DUAL_GRID_FRAME_CORNERS), as offsets from the corner's column and row: the corner at column c
  * and row r is the top-left corner of cell (c, r)
  */
 const CORNER_CELLS = [
@@ -159,7 +159,7 @@ interface Piece
  *
  * Each frame is drawn on a corner where 4 cells meet, half a cell up and left of the cells, and is made
  * from the tiles of those 4 cells: the lowest-ranked tile fills it, and each tile above it draws its
- * sheet's frame for the corners it, or a tile above it, holds (see TILE_GRAPHICS). A tile without a
+ * sheet's frame for the corners it, or a tile above it, holds (see TILE_GRAPHICS and dualGridFrame()). A tile without a
  * graphic fills its quarter of the frame in its color. Each combination is drawn once into an atlas as
  * it first appears, so a piece is one layer of frames, with the grid's lines in a layer over it
  *
@@ -871,8 +871,9 @@ export class AreaRenderer
 
 			if (drawable.image)
 			{
-				const sourceLeft = (mask % DUAL_GRID_COLUMNS) * GRID_CELL_SIZE;
-				const sourceTop = Math.floor(mask / DUAL_GRID_COLUMNS) * GRID_CELL_SIZE;
+				const sheetFrame = dualGridFrame(mask);
+				const sourceLeft = (sheetFrame % DUAL_GRID_COLUMNS) * GRID_CELL_SIZE;
+				const sourceTop = Math.floor(sheetFrame / DUAL_GRID_COLUMNS) * GRID_CELL_SIZE;
 
 				context.drawImage(drawable.image, sourceLeft, sourceTop, GRID_CELL_SIZE, GRID_CELL_SIZE, left, top, GRID_CELL_SIZE, GRID_CELL_SIZE);
 			}

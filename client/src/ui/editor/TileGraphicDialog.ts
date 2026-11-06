@@ -1,4 +1,4 @@
-import { BLOB_SHEET_COLUMNS, DISALLOWED_TEXT_CHARACTERS, GRID_CELL_SIZE, MAX_TILE_GRAPHIC_BYTES, MAX_TILE_GRAPHIC_DRAW_ORDER, MAX_TILE_GRAPHIC_NAME_LENGTH, MIN_TILE_GRAPHIC_DRAW_ORDER, TILE_GRAPHIC_FORMATS, TILE_GRAPHIC_KEYS, TILE_GRAPHIC_SIZES, TILE_GRAPHICS, type TileGraphicFormat, type TileGraphicUploadRequest } from '@multiverse-kiln/shared';
+import { BLOB_FRAME_MASKS, BLOB_SHEET_COLUMNS, BLOB_SHEET_MASKS, defineMessages, DISALLOWED_TEXT_CHARACTERS, GRID_CELL_SIZE, MAX_TILE_GRAPHIC_BYTES, MAX_TILE_GRAPHIC_DRAW_ORDER, MAX_TILE_GRAPHIC_NAME_LENGTH, MIN_TILE_GRAPHIC_DRAW_ORDER, SORTED_BLOB_SHEET, TILE_GRAPHIC_FORMATS, TILE_GRAPHIC_KEYS, TILE_GRAPHIC_SIZES, TILE_GRAPHICS, type TileGraphicFormat, type TileGraphicUploadRequest } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../../localization';
 import { DUAL_GRID_COLUMNS } from '../../rendering/tileGraphics';
@@ -12,6 +12,14 @@ import { tileGraphicName } from './tileSwatches';
  * The draw order the field starts with: between the grass and forest that ship with the engine
  */
 const DEFAULT_DRAW_ORDER = 35;
+
+const messages = defineMessages({
+	unreadable: {
+		id: 'editor.tileGraphic.unreadable',
+		defaultMessage: 'Could not read the image.',
+		description: 'Shown in the tileset upload dialog when the chosen file couldn\'t be opened as a picture'
+	}
+});
 
 /**
  * A tileset chosen in the upload dialog, waiting for the Tilesets tab to be saved
@@ -34,6 +42,9 @@ export interface StagedUpload
  * Dual-Grid layout, which blends with the ground, or the blob layout, drawn over it (chosen to match the image's size when it is
  * picked), its name, a Dual-Grid sheet's draw order, and the uploader's confirmation that they have the
  * rights to use it
+ *
+ * A blob sheet sorted by mask (SORTED_BLOB_SHEET, told apart by its size) is rearranged into the game's
+ * order (BLOB_SHEET_MASKS) before it is staged, so the maps and the server only ever see the game's order
  *
  * Like every change in the editor, the upload waits for the Tilesets tab to be saved; the dialog checks
  * what it can in the browser first, and the server checks the image again when it arrives
@@ -187,14 +198,17 @@ export class TileGraphicDialog
 		{
 			this.format.textContent = t({
 				id: 'editor.tileGraphic.blobFormatHint',
-				defaultMessage: 'A PNG of {width, number} by {height, number} pixels, at most {kilobytes, number} KB: {columns, number} frames across and {rows, number} down in the 47-tile blob layout, with the last place empty. These tiles are drawn over the ground, so they have no draw order.',
-				description: 'Explains what picture a tileset upload in the 47-tile layout needs, for things drawn over the ground such as hedges; {width} and {height} are its size in pixels, {kilobytes} the largest file allowed, and {columns} and {rows} how many frames it has across and down'
+				defaultMessage: 'A PNG of at most {kilobytes, number} KB in the 47-tile blob layout: {width, number} by {height, number} pixels, {columns, number} frames across and {columns, number} down like the game\'s own tilesets, with 2 places empty, or {sortedWidth, number} by {sortedHeight, number} pixels, {sortedColumns, number} frames across and {sortedRows, number} down, sorted by the neighbors they join, with the last place empty. These tiles are drawn over the ground, so they have no draw order.',
+				description: 'Explains what picture a tileset upload in the 47-tile layout needs, for things drawn over the ground such as hedges. It takes either of 2 arrangements of the frames: {width} and {height} are the size in pixels of the game\'s own, and {columns} how many frames it has across and down; {sortedWidth}, {sortedHeight}, {sortedColumns} and {sortedRows} the same for the other, whose frames go in order of which neighboring cells they join up with. {kilobytes} is the largest file allowed'
 			}, {
+				kilobytes: MAX_TILE_GRAPHIC_BYTES / 1024,
 				width,
 				height,
-				kilobytes: MAX_TILE_GRAPHIC_BYTES / 1024,
 				columns: BLOB_SHEET_COLUMNS,
-				rows: height / GRID_CELL_SIZE
+				sortedWidth: SORTED_BLOB_SHEET.width,
+				sortedHeight: SORTED_BLOB_SHEET.height,
+				sortedColumns: SORTED_BLOB_SHEET.columns,
+				sortedRows: SORTED_BLOB_SHEET.height / GRID_CELL_SIZE
 			});
 		}
 		else
@@ -239,7 +253,7 @@ export class TileGraphicDialog
 			return;
 		}
 
-		const format = TILE_GRAPHIC_FORMATS.find((candidate) => ((TILE_GRAPHIC_SIZES[candidate].width === size.width) && (TILE_GRAPHIC_SIZES[candidate].height === size.height)));
+		const format = (isSortedBlobSheet(size) ? 'blob' : TILE_GRAPHIC_FORMATS.find((candidate) => ((TILE_GRAPHIC_SIZES[candidate].width === size.width) && (TILE_GRAPHIC_SIZES[candidate].height === size.height))));
 
 		if ((format !== undefined) && (format !== this.chosenFormat()))
 		{
@@ -285,23 +299,34 @@ export class TileGraphicDialog
 		}
 		catch
 		{
-			showMessage(this.error, t({
-				id: 'editor.tileGraphic.unreadable',
-				defaultMessage: 'Could not read the image.',
-				description: 'Shown in the tileset upload dialog when the chosen file couldn\'t be opened as a picture'
-			}));
+			showMessage(this.error, t(messages.unreadable));
 			this.submitButton.disabled = false;
 			return;
 		}
 
 		const format = this.chosenFormat();
 		const size = await imageSize(previewUrl);
+		const sorted = ((format === 'blob') && (size !== undefined) && isSortedBlobSheet(size));
 
-		if ((size?.width !== TILE_GRAPHIC_SIZES[format].width) || (size.height !== TILE_GRAPHIC_SIZES[format].height))
+		if (!sorted && ((size?.width !== TILE_GRAPHIC_SIZES[format].width) || (size.height !== TILE_GRAPHIC_SIZES[format].height)))
 		{
 			this.submitButton.disabled = false;
 			reportFieldError(this.file, this.format.textContent ?? '');
 			return;
+		}
+
+		if (sorted)
+		{
+			const reordered = await rearrangeSheet(previewUrl, SORTED_BLOB_REARRANGEMENT);
+
+			if (reordered === undefined)
+			{
+				showMessage(this.error, t(messages.unreadable));
+				this.submitButton.disabled = false;
+				return;
+			}
+
+			previewUrl = reordered;
 		}
 
 		this.changes.markSaved();
@@ -344,12 +369,12 @@ function readDataUrl(file: File): Promise<string>
 }
 
 /**
- * An image's width and height in pixels
+ * Opens an image
  *
  * @param url The image as a data URL
- * @return Its size, or undefined when it isn't an image the browser can open
+ * @return The loaded image, or undefined when it isn't an image the browser can open
  */
-function imageSize(url: string): Promise<{ width: number; height: number } | undefined>
+function loadImage(url: string): Promise<HTMLImageElement | undefined>
 {
 	return(new Promise((resolve) =>
 	{
@@ -357,10 +382,7 @@ function imageSize(url: string): Promise<{ width: number; height: number } | und
 
 		image.addEventListener('load', () =>
 		{
-			resolve({
-				width: image.naturalWidth,
-				height: image.naturalHeight
-			});
+			resolve(image);
 		});
 		image.addEventListener('error', () =>
 		{
@@ -368,4 +390,113 @@ function imageSize(url: string): Promise<{ width: number; height: number } | und
 		});
 		image.src = url;
 	}));
+}
+
+/**
+ * An image's width and height in pixels
+ *
+ * @param url The image as a data URL
+ * @return Its size, or undefined when it isn't an image the browser can open
+ */
+async function imageSize(url: string): Promise<{ width: number; height: number } | undefined>
+{
+	const image = await loadImage(url);
+
+	if (!image)
+	{
+		return(undefined);
+	}
+
+	return({
+		width: image.naturalWidth,
+		height: image.naturalHeight
+	});
+}
+
+/**
+ * Whether an image is the size of a blob sheet sorted by mask (SORTED_BLOB_SHEET)
+ *
+ * @param size The image's width and height in pixels
+ * @return True when it is that size
+ */
+function isSortedBlobSheet(size: { width: number; height: number }): boolean
+{
+	return(((size.width === SORTED_BLOB_SHEET.width) && (size.height === SORTED_BLOB_SHEET.height)));
+}
+
+/**
+ * How to rearrange a sheet laid out another way into the game's order
+ */
+interface SheetRearrangement
+{
+	/**
+	 * How many frames wide the sheet as uploaded is
+	 */
+	sourceColumns: number;
+
+	/**
+	 * The size and frames across of the game's sheet
+	 */
+	width: number;
+	height: number;
+	columns: number;
+
+	/**
+	 * For each frame of the game's sheet, the place in the uploaded sheet it is taken from, or null for
+	 * a place left empty
+	 */
+	sourceFrames: readonly (number | null)[];
+}
+
+/**
+ * A blob sheet sorted by mask (SORTED_BLOB_SHEET)
+ */
+const SORTED_BLOB_REARRANGEMENT: SheetRearrangement = {
+	sourceColumns: SORTED_BLOB_SHEET.columns,
+	width: TILE_GRAPHIC_SIZES.blob.width,
+	height: TILE_GRAPHIC_SIZES.blob.height,
+	columns: BLOB_SHEET_COLUMNS,
+	sourceFrames: BLOB_SHEET_MASKS.map((mask) => ((mask === null) ? null : BLOB_FRAME_MASKS.indexOf(mask)))
+};
+
+/**
+ * Rearranges a sheet laid out another way into the game's order
+ *
+ * @param url The sheet as a data URL
+ * @param rearrangement Where each of the game's frames is in the sheet
+ * @return The rearranged sheet as a PNG data URL, or undefined when the image can't be opened
+ */
+async function rearrangeSheet(url: string, rearrangement: SheetRearrangement): Promise<string | undefined>
+{
+	const image = await loadImage(url);
+	const canvas = document.createElement('canvas');
+
+	canvas.width = rearrangement.width;
+	canvas.height = rearrangement.height;
+
+	const context = canvas.getContext('2d');
+
+	if (!image || !context)
+	{
+		return(undefined);
+	}
+
+	context.imageSmoothingEnabled = false;
+
+	rearrangement.sourceFrames.forEach((source, frame) =>
+	{
+		if (source === null)
+		{
+			return;
+		}
+
+		const sourceLeft = (source % rearrangement.sourceColumns) * GRID_CELL_SIZE;
+		const sourceTop = Math.floor(source / rearrangement.sourceColumns) * GRID_CELL_SIZE;
+		const left = (frame % rearrangement.columns) * GRID_CELL_SIZE;
+		const top = Math.floor(frame / rearrangement.columns) * GRID_CELL_SIZE;
+
+		context.drawImage(image, sourceLeft, sourceTop, GRID_CELL_SIZE, GRID_CELL_SIZE, left, top, GRID_CELL_SIZE, GRID_CELL_SIZE);
+	});
+
+	return(canvas.toDataURL('image/png'));
 }

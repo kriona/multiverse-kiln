@@ -6,7 +6,7 @@
  *
  *   .  the area's default tile        g  grass        f  forest     d  desert
  *   ^  mountains                      ~  water        =  wood floor
- *   #  stone wall                     h  hedge      (tiles of this universe's own)
+ *   #  stone wall    w  wood wall     h  hedge      (tiles of this universe's own)
  *   (space)  void
  *
  * Digits mark cells that links start from or arrive at. Each area says which tile its digits are
@@ -73,8 +73,8 @@ export const sampleUniverse = {
 };
 
 /**
- * The universe's own tiles, by the character that stands for each on the maps: stone walls (`#`) and
- * hedges (`h`)
+ * The universe's own tiles, by the character that stands for each on the maps: stone walls (`#`), wood
+ * walls (`w`) and hedges (`h`)
  */
 export const sampleTiles = {
 	'#': {
@@ -84,6 +84,16 @@ export const sampleTiles = {
 		outdoors: true,
 		color: 0x8a8a8a,
 		graphic: 'stoneWall',
+		visionCost: 100,
+		walkSeconds: IMPASSABLE_WALK_SECONDS
+	},
+	'w': {
+		key: 'wood_wall',
+		name: 'Wood Wall',
+		indoors: true,
+		outdoors: true,
+		color: 0x7a5230,
+		graphic: 'woodWall',
 		visionCost: 100,
 		walkSeconds: IMPASSABLE_WALK_SECONDS
 	},
@@ -135,13 +145,13 @@ export const sampleAreas: SampleArea[] = [
 		defaultTile: 'wood_floor',
 		markers: { 3: 'wood_floor', 4: 'wood_floor', 5: 'wood_floor' },
 		map: [
-			'###########',
-			'#.........#',
-			'#...3.....#',
-			'#.........#',
-			'#.........#',
-			'#....5....#',
-			'#####4#####'
+			'wwwwwwwwwww',
+			'w.........w',
+			'w...3.....w',
+			'w.........w',
+			'w.........w',
+			'w....5....w',
+			'wwwww4wwwww'
 		]
 	},
 	{
@@ -152,11 +162,11 @@ export const sampleAreas: SampleArea[] = [
 		defaultTile: 'wood_floor',
 		markers: { 6: 'wood_floor' },
 		map: [
-			'#########',
-			'#.......#',
-			'#.6.....#',
-			'#.......#',
-			'#########'
+			'wwwwwwwww',
+			'w.......w',
+			'w.6.....w',
+			'w.......w',
+			'wwwwwwwww'
 		]
 	},
 	{

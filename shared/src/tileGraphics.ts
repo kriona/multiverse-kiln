@@ -9,7 +9,7 @@
  *   look is made of edges and corners, such as the tops of walls. Where tiles meet, the one with the
  *   higher draw order has its edges drawn over the other's
  * - blob: the 47-Tile Blob Set, one frame per cell picked from which of its 8 neighbors hold the same
- *   tile (BLOB_FRAME_MASKS), for things such as hedges, and for art centered on a cell, which a
+ *   tile (BLOB_SHEET_MASKS), for things such as hedges and walls, and for art centered on a cell, which a
  *   Dual-Grid sheet can't draw. A blob tile is drawn over the ground, with the area's default tile
  *   drawn under it
  */
@@ -19,7 +19,7 @@ export type TileGraphicFormat = typeof TILE_GRAPHIC_FORMATS[number];
 
 /**
  * Width and height in pixels of each format's sheet: a Dual-Grid sheet is 4 frames by 4, and a blob
- * sheet 8 by 6 (BLOB_SHEET_COLUMNS), each frame a cell
+ * sheet 7 by 7 (BLOB_SHEET_COLUMNS), each frame a cell
  */
 export const TILE_GRAPHIC_SIZES: Record<TileGraphicFormat, { width: number; height: number }> = {
 	dualGrid: {
@@ -27,10 +27,38 @@ export const TILE_GRAPHIC_SIZES: Record<TileGraphicFormat, { width: number; heig
 		height: 128
 	},
 	blob: {
-		width: 256,
-		height: 192
+		width: 224,
+		height: 224
 	}
 };
+
+/**
+ * The corners each frame of a Dual-Grid sheet fills, in the sheet's order: left to right, top to bottom,
+ * 4 frames to a row. A frame's corners are summed from top-left 1, top-right 2, bottom-left 4 and
+ * bottom-right 8, so frame 0 fills none of them and is never drawn, and the last fills all 4. By rows:
+ *
+ * - none, bottom-right, bottom-left, top-right
+ * - bottom half, top-left and bottom-right, top half, top-right and bottom-left
+ * - all but bottom-right, all but bottom-left, all but top-left, all but top-right
+ * - right half, left half, top-left, all 4
+ */
+export const DUAL_GRID_FRAME_CORNERS: readonly number[] = [0, 8, 4, 2, 12, 9, 3, 6, 7, 11, 14, 13, 10, 5, 1, 15];
+
+/**
+ * Each set of corners' frame in a Dual-Grid sheet, by the corners' sum
+ */
+const DUAL_GRID_FRAMES: readonly number[] = Array.from({ length: DUAL_GRID_FRAME_CORNERS.length }, (_, corners) => DUAL_GRID_FRAME_CORNERS.indexOf(corners));
+
+/**
+ * The frame of a Dual-Grid sheet drawn on a corner where 4 cells meet
+ *
+ * @param corners The sum of the corners holding the tile (see DUAL_GRID_FRAME_CORNERS)
+ * @return The frame's index in the sheet
+ */
+export function dualGridFrame(corners: number): number
+{
+	return(DUAL_GRID_FRAMES[corners & 15]);
+}
 
 /**
  * Each graphic, by the key tiles store
@@ -55,6 +83,9 @@ export const TILE_GRAPHICS = {
 	stoneWall: {
 		format: 'dualGrid',
 		drawOrder: 60
+	},
+	woodWall: {
+		format: 'blob'
 	},
 	hedge: {
 		format: 'blob'
@@ -110,21 +141,47 @@ export function reduceBlobMask(neighbors: number): number
 }
 
 /**
- * The 47 masks a blob sheet has frames for, in the sheet's order: left to right, top to bottom, 8
- * frames to a row (BLOB_SHEET_COLUMNS). The last, 255, is the tile on every side
+ * The 47 masks a blob frame can be drawn for, in ascending order: 0 is a cell alone and 255 the tile on
+ * every side
  */
 export const BLOB_FRAME_MASKS: readonly number[] = [...new Set(Array.from({ length: 256 }, (_, neighbors) => reduceBlobMask(neighbors)))]
 	.sort((a, b) => (a - b));
 
 /**
- * How many frames wide a blob sheet is; it is 6 frames tall, and its last place is empty
+ * The mask (BLOB_NEIGHBORS) each frame of a blob sheet is drawn for, in the sheet's order: left to
+ * right, top to bottom, 7 frames to a row (BLOB_SHEET_COLUMNS). The sheet's shapes join up across its
+ * frames, like the tiles drawn on a map; the 2 null places, at the start of the last row, are empty
  */
-export const BLOB_SHEET_COLUMNS = 8;
+export const BLOB_SHEET_MASKS: readonly (number | null)[] = [
+	28, 124, 112, 16, 247, 223, 95,
+	31, 255, 241, 17, 253, 127, 125,
+	7, 199, 193, 1, 93, 117, 245,
+	4, 68, 64, 0, 87, 213, 215,
+	116, 92, 23, 209, 20, 84, 80,
+	197, 71, 29, 113, 21, 85, 81,
+	null, null, 221, 119, 5, 69, 65
+];
+
+/**
+ * How many frames wide a blob sheet is; it is as many tall
+ */
+export const BLOB_SHEET_COLUMNS = 7;
+
+/**
+ * A blob sheet laid out the other common way, which the tileset upload dialog rearranges into the
+ * game's order: 8 frames to a row and 6 rows, holding the masks of BLOB_FRAME_MASKS in its order, with
+ * the last place empty
+ */
+export const SORTED_BLOB_SHEET = {
+	columns: 8,
+	width: 256,
+	height: 192
+} as const;
 
 /**
  * Each mask's frame in a blob sheet, by reduced mask
  */
-const BLOB_FRAMES = new Map(BLOB_FRAME_MASKS.map((mask, frame) => [mask, frame]));
+const BLOB_FRAMES = new Map(BLOB_SHEET_MASKS.flatMap((mask, frame) => ((mask === null) ? [] : [[mask, frame] as const])));
 
 /**
  * The frame of a blob sheet a cell is drawn with
@@ -134,7 +191,7 @@ const BLOB_FRAMES = new Map(BLOB_FRAME_MASKS.map((mask, frame) => [mask, frame])
  */
 export function blobFrame(neighbors: number): number
 {
-	return(BLOB_FRAMES.get(reduceBlobMask(neighbors)) ?? (BLOB_FRAME_MASKS.length - 1));
+	return(BLOB_FRAMES.get(reduceBlobMask(neighbors)) ?? BLOB_SHEET_MASKS.indexOf(255));
 }
 
 /**
