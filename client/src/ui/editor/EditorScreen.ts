@@ -1,4 +1,4 @@
-import { ADMIN_ROLE, canEditAtEndOfTime, canEditWorld, canManageEditors, canManageVersions, EDITOR_ROLE_NAMES, EDITOR_TABS, type EditableUniverse, type EditorTab, type UniverseSettingsUpdate, type UniverseVersionName } from '@multiverse-kiln/shared';
+import { ADMIN_ROLE, canEditAtEndOfTime, canEditWorld, canManageEditors, canManageVersions, EDITOR_ROLE_NAMES, EDITOR_TABS, type EditableUniverse, type EditorSavedPayload, type EditorTab, type UniverseSettingsUpdate, type UniverseVersionName } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, EditorApiError, type EditorApi } from '../../network/editorApi';
@@ -20,6 +20,7 @@ import { ItemsTab } from './ItemsTab';
 import { RacesSection } from './RacesSection';
 import { RulesetTab } from './RulesetTab';
 import { combineTabs, SaveBar, type SavableTab } from './SaveBar';
+import { showSaveNotice } from './saveNotices';
 import { ThemesSection } from './ThemesSection';
 import { TilesetsTab } from './TilesetsTab';
 import { TranslationsTab } from './TranslationsTab';
@@ -546,6 +547,27 @@ export class EditorScreen
 		}
 
 		void this.open(this.universe.id, this.place);
+	}
+
+	/**
+	 * Follows a save made in another window, once the universe has loaded: says who saved what, when it
+	 * changed anything this window shows, and lists the saves on the Audit tab again
+	 *
+	 * @param saved The save
+	 */
+	otherSaved(saved: EditorSavedPayload): void
+	{
+		if (!this.universe)
+		{
+			return;
+		}
+
+		if (saved.details.length > 0)
+		{
+			showSaveNotice(saved, this.universe.ruleset);
+		}
+
+		this.auditTab.otherSaved();
 	}
 
 	/**

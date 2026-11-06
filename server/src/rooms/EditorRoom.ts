@@ -1,14 +1,15 @@
 import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
-import { editorAccessOf, EditorMessageType, EditorPresence, EditorServerMessageType, EditorState, EditorWindow, NoticeReason, ServerCloseCode, type EditorRole, type NoticePayload, type UniverseRole } from '@multiverse-kiln/shared';
+import { editorAccessOf, EditorMessageType, EditorPresence, EditorServerMessageType, EditorState, EditorWindow, NoticeReason, ServerCloseCode, type EditorRole, type EditorSavedPayload, type NoticePayload, type UniverseRole } from '@multiverse-kiln/shared';
 
 import { resolveSession } from '../auth/sessions.js';
 import { isActiveServerAdmin } from '../db/serverAdminRepo.js';
 import { findUniverseAccess } from '../db/universeEditorRepo.js';
 import { findUniverse } from '../db/universeRepo.js';
+import { noticeDetails } from '../logic/saveNotices.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { universeAccessChanges } from '../players/universeAccess.js';
 import { areaChanges } from '../world/areaChanges.js';
-import { editorUpdates, type EditorUpdate } from '../world/editorUpdates.js';
+import { editorUpdates, type EditorUpdate, type SavedUpdate } from '../world/editorUpdates.js';
 import { InvalidMessages } from './invalidMessages.js';
 import { CHAT_SAVE_INTERVAL_MS, KeptChatLog } from './keptChat.js';
 import { chatPayload, describeInvalidPayload, editorPlacePayload, roomOptions } from './payloads.js';
@@ -63,7 +64,7 @@ function identityOf(client: EditorClient): EditorIdentity
 }
 
 /**
- * A universe's editor room: who has its editor open, and the editors' chat
+ * A universe's editor room: who has its editor open, the editors' chat, and what each saves
  *
  * Every window with the universe's editor open joins it with the universe's ID (EditorJoinOptions), and
  * every window of the same universe joins the same room (filterBy in app.config.ts). Only players who may
@@ -77,7 +78,9 @@ function identityOf(client: EditorClient): EditorIdentity
  * A window whose session ends is turned away (ServerCloseCode.LoggedOut), as are a player's windows when
  * they lose the right to open the editor (ServerCloseCode.AccessLost) and every window when the universe
  * is deleted. A change to a player's role, to the universe's stage or to whether it is disabled tells
- * the windows it concerns (EditorServerMessageType.AccessChanged), which load the universe again
+ * the windows it concerns (EditorServerMessageType.AccessChanged), which load the universe again. Once a
+ * save commits, every other window hears of it, with what it changed that the window shows
+ * (EditorServerMessageType.Saved)
  */
 export class EditorRoom extends Room<{ state: EditorState; client: EditorClient }>
 {
@@ -370,9 +373,43 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 			return;
 		}
 
+		if (update.kind === 'saved')
+		{
+			this.tellSaved(update);
+			return;
+		}
+
 		for (const [playerId, role] of update.roles)
 		{
 			this.applyRole(playerId, role);
+		}
+	}
+
+	/**
+	 * Tells every window but the one that saved of a save, with what it changed that the window shows
+	 * (noticeDetails()), by the version it has open. A window hears of every save, even one changing
+	 * nothing it shows, since the Audit tab lists the saves of both versions
+	 *
+	 * @param update The save
+	 */
+	private tellSaved(update: SavedUpdate): void
+	{
+		for (const client of this.clients)
+		{
+			if (client.sessionId === update.windowId)
+			{
+				continue;
+			}
+
+			const payload: EditorSavedPayload = {
+				playerId: update.playerId,
+				name: update.name,
+				username: update.username,
+				version: update.version,
+				details: noticeDetails(update.details, update.version, ((this.windowOf(client)?.version === 'draft') ? 'draft' : 'live'))
+			};
+
+			client.send(EditorServerMessageType.Saved, payload);
 		}
 	}
 

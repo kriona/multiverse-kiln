@@ -76,6 +76,14 @@ export class AuditTab
 	}
 
 	/**
+	 * Lists the page shown again after another window saved, so the player stays on the page they are reading
+	 */
+	otherSaved(): void
+	{
+		void this.refresh();
+	}
+
+	/**
 	 * Loads the page of saves the offset asks for, and shows it
 	 */
 	private async refresh(): Promise<void>

@@ -35,6 +35,12 @@ export class EditorApi
 	version: UniverseVersionName = 'live';
 
 	/**
+	 * The window's session ID in the universe's editor room while it is joined, sent with each save so the
+	 * room doesn't tell this window of its own saves
+	 */
+	windowId: string | undefined;
+
+	/**
 	 * @param client Client for the server
 	 */
 	constructor(private readonly client: Client)
@@ -333,7 +339,10 @@ export class EditorApi
 	 */
 	async saveChanges(universeId: string, changes: EditorChange[]): Promise<SaveChangesPayload['ids']>
 	{
-		const body: SaveChangesRequest = { changes };
+		const body: SaveChangesRequest = {
+			changes,
+			windowId: this.windowId
+		};
 
 		return((await this.send<SaveChangesPayload>('POST', `${universePath(universeId)}/changes`, body)).ids);
 	}

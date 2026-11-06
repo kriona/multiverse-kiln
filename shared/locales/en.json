@@ -2599,6 +2599,10 @@
 		"defaultMessage": "Could not save.",
 		"description": "Shown in the editor's save bar when saving failed, followed by why; nothing was saved"
 	},
+	"editor.saveNotice": {
+		"defaultMessage": "{more, plural, =0 {{name} saved: {changes}} one {{name} saved: {changes}, and # more change} other {{name} saved: {changes}, and # more changes}}",
+		"description": "In a toast, also read out by screen readers, when another editor (or the player in another window) saves changes to the universe open in the editor. {name} is their display name, {changes} a list of up to three things the save changed, as the Audit tab lists them (e.g. \"Changed race Dwarf, Painted 40 cells in Cave\"), and {more} how many more it changed"
+	},
 	"editor.searchByName": {
 		"defaultMessage": "Search by name",
 		"description": "Shown in the empty field that narrows a list of tiles, items or areas down by name"

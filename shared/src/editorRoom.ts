@@ -1,9 +1,9 @@
 /**
  * The editor room: one per universe, joined by every window with its editor open, which says who has the
- * editor open and what each window has open, and carries the editors' chat (see Editing together in
- * STRUCTURE-OVERVIEW.md)
+ * editor open and what each window has open, carries the editors' chat, and tells each window what the
+ * others save (see Editing together in STRUCTURE-OVERVIEW.md)
  */
-import type { UniverseVersionName } from './editor.js';
+import type { UniverseEditDetail, UniverseVersionName } from './editor.js';
 
 /**
  * The editor's tabs, in the order they are shown
@@ -62,9 +62,41 @@ export enum EditorServerMessageType
 	AccessChanged = 'accessChanged',
 
 	/**
+	 * Someone saved changes from another window (payload: EditorSavedPayload)
+	 */
+	Saved = 'saved',
+
+	/**
 	 * Something the player asked for didn't happen (payload: NoticePayload)
 	 */
 	Notice = 'notice'
+}
+
+/**
+ * Payload of EditorServerMessageType.Saved: a save made in another window, sent to each window it
+ * concerns once it has committed
+ */
+export interface EditorSavedPayload
+{
+	/**
+	 * Who saved, with their display name and username
+	 */
+	playerId: string;
+	name: string;
+	username: string;
+
+	/**
+	 * The version the save changed
+	 */
+	version: UniverseVersionName;
+
+	/**
+	 * What it changed that the window shows, as the Audit tab lists it: everything, for a window with the
+	 * same version open, and only what the universe holds once (its editors, its stage and its draft) for
+	 * a window with the other version open. Empty when it changed nothing the window shows, which still
+	 * hears of it for the Audit tab, which lists the saves of both versions
+	 */
+	details: UniverseEditDetail[];
 }
 
 /**
