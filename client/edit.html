@@ -26,7 +26,8 @@
 					<button id="editor-discard-draft" class="danger" type="button" hidden data-message="editor.draft.discard" data-translation-context="Button in the editor's toolbar that deletes the universe's draft after asking, leaving the live version as it is"><!-- icon ph:trash -->Discard Draft</button>
 					<span class="editor-chat-toggle">
 						<button id="editor-chat-toggle" type="button" class="secondary" aria-expanded="false" aria-controls="editor-chat" aria-describedby="editor-chat-unread" data-shortcut="Alt+H" data-message="editor.chat.toggle" data-translation-context="Button in the editor's toolbar that shows or hides the chat of the universe's editors, with who has the editor open"><!-- icon ph:chats-circle -->Chat</button>
-						<span id="editor-chat-unread" class="chat-unread" hidden></span>
+						<span id="editor-chat-unread-count" class="chat-unread" aria-hidden="true" hidden></span>
+						<span id="editor-chat-unread" class="visually-hidden" hidden></span>
 					</span>
 					<a id="editor-play" class="button" data-shortcut="Alt+U" hidden data-message="editor.play" data-translation-context="Button in the editor's toolbar that goes to the universe's lobby to play"><!-- icon game-icons:magic-portal -->Enter Universe</a>
 					<!-- include account.html -->
@@ -698,7 +699,7 @@
 					</div>
 					<p id="editor-chat-status" class="hint" role="status" hidden></p>
 					<div class="editor-chat-here">
-						<h3 id="editor-chat-here-heading" data-message="editor.chat.here" data-translation-context="Heading in the editors' chat panel above the list of the players who have the universe's editor open, each with their role and the tabs they have open">Here now</h3>
+						<h3 id="editor-chat-here-heading" data-message="editor.chat.here" data-translation-context="Heading in the editors' chat panel above the names of the players who have the universe's editor open, each linking to their profile">Here now</h3>
 						<ul id="editor-chat-here" class="editor-chat-here-list" aria-labelledby="editor-chat-here-heading"></ul>
 					</div>
 					<ol id="editor-chat-log" class="chat-log" aria-live="polite"></ol>
@@ -708,6 +709,10 @@
 					</form>
 				</aside>
 				<footer id="editor-save-bar" class="editor-save-bar" hidden>
+					<div id="editor-presence" class="editor-presence" hidden>
+						<span id="editor-presence-label" class="editor-presence-label" data-message="editor.presence.label" data-translation-context="In the bar at the bottom of the universe's editor, before the list of the other editors who have it open and where each is">Also here:</span>
+						<ul id="editor-presence-list" class="editor-presence-list" aria-labelledby="editor-presence-label"></ul>
+					</div>
 					<span id="editor-save-status" class="form-saved" role="status"></span>
 					<button id="editor-save" type="button" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
 				</footer>

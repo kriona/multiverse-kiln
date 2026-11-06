@@ -2,6 +2,7 @@ import { Client, type Room } from '@colyseus/sdk';
 import { EDITOR_ROOM_NAME, EditorState, GAME_ROOM_NAME, GameState, LOBBY_ROOM_NAME, LobbyState, ServerMessageType, SESSION_ROOM_NAME, SessionServerMessageType, UNIVERSES_PATH, type AccountPayload, type EditorJoinOptions, type GameJoinOptions, type LobbyJoinOptions, type UniverseDetails, type UniverseListPayload, type UniverseTextPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
 
 import { wantedLanguages } from '../localization';
+import { leaveOnPageHide } from '../pageLifecycle';
 import { forgetPlayerValues, rememberPlayerSession } from '../rememberedValues';
 
 /**
@@ -208,7 +209,7 @@ function waitForArrival(room: MapRoom, hasMap: () => boolean = () => true): Prom
  * browser sends the same cookie, so they are all the same player. The session room admits windows
  * that aren't logged in too. Whatever the browser remembers for the player (rememberedValues.ts) is
  * kept as long as the session room says the session lasts, and forgotten once it says the browser isn't
- * logged in
+ * logged in. Every room joined here is left as the page is left (leaveOnPageHide in pageLifecycle.ts)
  *
  * @return The client and the joined session room
  */
@@ -216,6 +217,8 @@ export async function connectToServer(): Promise<ServerConnection>
 {
 	const client = createClient();
 	const session = await client.joinOrCreate(SESSION_ROOM_NAME);
+
+	leaveOnPageHide(session);
 
 	session.onMessage(SessionServerMessageType.Account, (account: AccountPayload) =>
 	{
@@ -272,6 +275,8 @@ export async function joinLobby(client: Client, universeId: string): Promise<Lob
 	const options: LobbyJoinOptions = { universeId };
 	const room = await client.joinOrCreate<LobbyState>(LOBBY_ROOM_NAME, options, LobbyState);
 
+	leaveOnPageHide(room);
+
 	// The room sends its state before Welcome, so hasMap is known by then
 	return({ room, ...(await waitForArrival(room, () => room.state.hasMap)) });
 }
@@ -287,8 +292,11 @@ export async function joinLobby(client: Client, universeId: string): Promise<Lob
 export async function joinEditorRoom(client: Client, universeId: string): Promise<EditorRoom>
 {
 	const options: EditorJoinOptions = { universeId };
+	const room = await client.joinOrCreate<EditorState>(EDITOR_ROOM_NAME, options, EditorState);
 
-	return(await client.joinOrCreate<EditorState>(EDITOR_ROOM_NAME, options, EditorState));
+	leaveOnPageHide(room);
+
+	return(room);
 }
 
 /**
@@ -306,5 +314,8 @@ export async function joinGroup(client: Client, groupId: string, characterId: st
 {
 	const options: GameJoinOptions = { groupId, characterId };
 	const room = await client.joinOrCreate<GameState>(GAME_ROOM_NAME, options, GameState);
+
+	leaveOnPageHide(room);
+
 	return({ room, ...(await waitForArrival(room)) });
 }

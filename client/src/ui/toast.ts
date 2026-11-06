@@ -37,6 +37,12 @@ export interface ToastOptions
 	 * announce()), and false leaves it to the caller, for text read out already
 	 */
 	announce?: 'polite' | 'urgent' | false;
+
+	/**
+	 * Called when the player clicks the toast to close it, but not when it closes by itself or is closed
+	 * by the function showToast() returns
+	 */
+	onDismiss?: () => void;
 }
 
 /**
@@ -44,10 +50,11 @@ export interface ToastOptions
  * screen readers read it out. Its time stops while the pointer is on it, and clicking it closes it early. The toasts are hidden from screen readers,
  * which hear the text through the announcer instead, so it isn't read twice
  *
- * @param text The message, in the player's language
+ * @param content The message, in the player's language: text, or text and elements such as a name shown in color (see formatToNodes())
  * @param options How it shows and is read out
+ * @return Closes the toast early, such as when a newer one takes its place; nothing once it has closed
  */
-export function showToast(text: string, options: ToastOptions = {}): void
+export function showToast(content: string | readonly (string | Node)[], options: ToastOptions = {}): () => void
 {
 	const container = getElement('toasts', HTMLElement);
 	const toast = document.createElement('div');
@@ -92,8 +99,21 @@ export function showToast(text: string, options: ToastOptions = {}): void
 	};
 
 	toast.className = `toast ${options.kind ?? 'info'}`;
-	toast.textContent = text;
-	toast.addEventListener('click', close);
+
+	if (typeof content === 'string')
+	{
+		toast.textContent = content;
+	}
+	else
+	{
+		toast.append(...content);
+	}
+
+	toast.addEventListener('click', () =>
+	{
+		options.onDismiss?.();
+		close();
+	});
 
 	// The pointer resting on a toast holds it, so it can be read to the end
 	toast.addEventListener('pointerenter', () =>
@@ -117,6 +137,8 @@ export function showToast(text: string, options: ToastOptions = {}): void
 
 	if (urgency !== false)
 	{
-		announce(text, (urgency === 'urgent'));
+		announce((toast.textContent ?? ''), (urgency === 'urgent'));
 	}
+
+	return(close);
 }

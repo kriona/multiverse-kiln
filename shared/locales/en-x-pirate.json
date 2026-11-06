@@ -1451,10 +1451,6 @@
 		"message": "The officers' parley lost its line. Reload the page to hail 'em again.",
 		"source": "The editors' chat was disconnected. Reload the page to reconnect."
 	},
-	"editor.chat.draftTab": {
-		"message": "{tab} (draft)",
-		"source": "{tab} (draft)"
-	},
 	"editor.chat.heading": {
 		"message": "Officers' Parley",
 		"source": "Editors' Chat"
@@ -1475,6 +1471,10 @@
 		"message": "{name} came into the chartroom",
 		"source": "{name} opened the editor"
 	},
+	"editor.chat.toast": {
+		"message": "{name} hails: {text}",
+		"source": "{name}: {text}"
+	},
 	"editor.chat.toggle": {
 		"message": "Parley",
 		"source": "Chat"
@@ -1486,10 +1486,6 @@
 	"editor.chat.unread": {
 		"message": "{count, plural, one {# new word} other {# new words}}",
 		"source": "{count, plural, one {# new message} other {# new messages}}"
-	},
-	"editor.chat.where": {
-		"message": "@{username}, {role}, at {tabs}",
-		"source": "@{username}, {role}, on {tabs}"
 	},
 	"editor.chat.you": {
 		"message": "{name} (ye)",
@@ -2374,6 +2370,22 @@
 	"editor.play": {
 		"message": "Set Sail",
 		"source": "Enter Universe"
+	},
+	"editor.presence.area": {
+		"message": "{tab} - {area}",
+		"source": "{tab} - {area}"
+	},
+	"editor.presence.draft": {
+		"message": "{place} (draft)",
+		"source": "{place} (draft)"
+	},
+	"editor.presence.editor": {
+		"message": "{name} be at {places}",
+		"source": "{name}: {places}"
+	},
+	"editor.presence.label": {
+		"message": "Also aboard:",
+		"source": "Also here:"
 	},
 	"editor.resize.cutOffWarning": {
 		"message": "The smaller chart cuts off {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# passage} other {# passages}}. Undo brings the cells back, but the passages be scuttled when the chart is stowed. Resize anyway?",
@@ -5306,6 +5318,10 @@
 	"page.sourceCode": {
 		"message": "Source code",
 		"source": "Source code"
+	},
+	"page.titleUnread": {
+		"message": "({count, number}) {title}",
+		"source": "({count, number}) {title}"
 	},
 	"pager.next": {
 		"message": "Onward",

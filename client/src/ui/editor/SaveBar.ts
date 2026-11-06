@@ -131,6 +131,11 @@ export class SaveBar
 	private locked = false;
 
 	/**
+	 * Whether the bar lists other editors who have the editor open, which keeps it showing
+	 */
+	private othersHere = false;
+
+	/**
 	 * Whether the editor was just saved, so the bar says so until something changes again
 	 */
 	private justSaved = false;
@@ -203,6 +208,17 @@ export class SaveBar
 	setLocked(locked: boolean): void
 	{
 		this.locked = locked;
+		this.update();
+	}
+
+	/**
+	 * Keeps the bar showing while it lists other editors, even on a tab with nothing to save
+	 *
+	 * @param shown Whether it lists any
+	 */
+	setOthersHere(shown: boolean): void
+	{
+		this.othersHere = shown;
 		this.update();
 	}
 
@@ -393,8 +409,10 @@ export class SaveBar
 	private update(): void
 	{
 		const unsaved = this.hasUnsavedChanges();
+		const canSave = ((this.tab?.canSave() ?? false) || unsaved);
 
-		this.bar.hidden = (!(this.tab?.canSave() ?? false) && !unsaved);
+		this.bar.hidden = (!canSave && !this.othersHere);
+		this.saveButton.hidden = !canSave;
 		this.saveButton.disabled = (!unsaved || this.saving || this.locked);
 
 		if (this.failure !== undefined)

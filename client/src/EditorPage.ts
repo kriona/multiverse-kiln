@@ -8,6 +8,7 @@ import { isLeavingPage } from './pageLifecycle';
 import { currentPageAddress, loginPageUrl, pushPageParameters, replacePageParameters, TAB_PARAMETER, AREA_PARAMETER, VERSION_PARAMETER } from './pages';
 import { showScreen, showStatus } from './ui/dom';
 import { EditorChat } from './ui/editor/EditorChat';
+import { EditorPresenceBar } from './ui/editor/EditorPresenceBar';
 import { EditorScreen, isEditorTab, type EditorPlace } from './ui/editor/EditorScreen';
 import { pageMessages } from './ui/pageMessages';
 
@@ -94,6 +95,11 @@ export class EditorPage
 	private chat: EditorChat | undefined;
 
 	/**
+	 * The other editors and where they are, in the save bar, once the browser is known to be logged in
+	 */
+	private presenceBar: EditorPresenceBar | undefined;
+
+	/**
 	 * @param server The connection to the server and the joined session room
 	 * @param universeId The universe to edit
 	 * @param startingPlace The tab and area to open it at
@@ -119,6 +125,10 @@ export class EditorPage
 					[VERSION_PARAMETER]: ((changed === 'draft') ? changed : undefined)
 				});
 				this.sendPlace();
+			},
+			areasLoaded: () =>
+			{
+				this.presenceBar?.refresh();
 			}
 		});
 
@@ -126,7 +136,6 @@ export class EditorPage
 		{
 			this.restorePlace(event.state);
 		});
-
 		session.onMessage(SessionServerMessageType.Account, (account: AccountPayload) =>
 		{
 			this.onAccount(account);
@@ -166,8 +175,12 @@ export class EditorPage
 
 				this.editorRoom?.send(EditorMessageType.Chat, chat);
 			});
+			this.presenceBar = new EditorPresenceBar(account.player.playerId, (version, areaId) => this.editorScreen.areaName(version, areaId), (shown) =>
+			{
+				this.editorScreen.setOthersHere(shown);
+			});
 			void this.editorScreen.open(this.universeId, this.startingPlace);
-			void this.joinEditorRoom(this.chat);
+			void this.joinEditorRoom(this.chat, this.presenceBar);
 		}
 	}
 
@@ -176,8 +189,9 @@ export class EditorPage
 	 * chat, and follows what it says
 	 *
 	 * @param chat The editors' chat
+	 * @param presenceBar The other editors and where they are, in the save bar
 	 */
-	private async joinEditorRoom(chat: EditorChat): Promise<void>
+	private async joinEditorRoom(chat: EditorChat, presenceBar: EditorPresenceBar): Promise<void>
 	{
 		let room: EditorRoom;
 
@@ -203,6 +217,7 @@ export class EditorPage
 		room.onStateChange(() =>
 		{
 			chat.showEditors(room.state.editors);
+			presenceBar.show(room.state.editors);
 		});
 
 		room.onMessage(EditorServerMessageType.ChatHistory, (history: KeptChatHistoryPayload) =>
@@ -244,6 +259,7 @@ export class EditorPage
 	private onEditorRoomLeft(chat: EditorChat, code: number): void
 	{
 		this.editorRoom = undefined;
+		this.presenceBar?.show([]);
 
 		// A session that ended goes to the login page when the session room says so
 		if (isLeavingPage() || (code === CloseCode.CONSENTED) || (code === ServerCloseCode.LoggedOut.valueOf()))
