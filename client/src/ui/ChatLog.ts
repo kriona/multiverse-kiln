@@ -58,7 +58,9 @@ export interface ChatElementIds
  * (DISALLOWED_TEXT_CHARACTERS) isn't sent
  *
  * Messages from others that arrive while the chat can't be seen (its tab is hidden, or the chat is, or it
- * is scrolled out of view) are counted before the page's title until it is seen again
+ * is scrolled out of view) are counted before the page's title until it is seen again. A chat that
+ * remembers how far the player has read it (the editors') also counts those sent while they were away,
+ * and reports how far they read (onRead)
  */
 export class ChatLog
 {
@@ -83,7 +85,18 @@ export class ChatLog
 	private closeTooFast: (() => void) | undefined;
 
 	/**
-	 * How many messages from others have arrived since the chat was last seen
+	 * Who wrote each message on screen, and when, oldest first, for counting those that are unread
+	 */
+	private messages: Pick<ChatLine, 'playerId' | 'sentAt'>[] = [];
+
+	/**
+	 * When the newest message the player has seen was sent, in milliseconds since the epoch: others'
+	 * messages after it are unread
+	 */
+	private readAt = 0;
+
+	/**
+	 * How many messages from others were sent after readAt
 	 */
 	private unreadCount = 0;
 
@@ -97,8 +110,10 @@ export class ChatLog
 	 * @param maxLines Most messages kept on screen
 	 * @param send Sends a message to the chat
 	 * @param onUnreadChange Told how many messages are unread each time the count changes
+	 * @param onRead Told when the newest message the player has seen was sent, each time that moves, for
+	 * a chat that remembers how far the player has read it
 	 */
-	constructor(ids: ChatElementIds, private readonly maxLines: number, send: (text: string) => void, private readonly onUnreadChange?: (count: number) => void)
+	constructor(ids: ChatElementIds, private readonly maxLines: number, send: (text: string) => void, private readonly onUnreadChange?: (count: number) => void, private readonly onRead?: (readAt: number) => void)
 	{
 		this.log = getElement(ids.log, HTMLOListElement);
 		this.form = getElement(ids.form, HTMLFormElement);
@@ -185,22 +200,38 @@ export class ChatLog
 	 * Replaces the messages
 	 *
 	 * @param messages The messages, oldest first
+	 * @param readAt In a chat that remembers how far the player has read it, when the newest message
+	 * they have seen was sent; others' messages after it are unread. Without it, every message given is read
 	 */
-	setHistory(messages: readonly ChatLine[]): void
+	setHistory(messages: readonly ChatLine[], readAt?: number): void
 	{
 		this.log.replaceChildren();
+		this.messages = [];
 
 		for (const message of messages)
 		{
 			this.addLine(message);
 		}
 
+		const newest = (messages.at(-1)?.sentAt ?? 0);
+		const known = this.readAt;
+
+		this.readAt = Math.max(known, (readAt ?? newest));
+
+		// Reading reported while the room couldn't be told, such as while reconnecting, is told now
+		if ((readAt !== undefined) && (known > readAt))
+		{
+			this.onRead?.(known);
+		}
+
 		this.scrollToEnd();
+		this.countUnread();
+		this.markReadIfSeen();
 	}
 
 	/**
-	 * Adds a new message, following it if the chat was scrolled to the bottom, and counting it as unread
-	 * if it is someone else's and the chat can't be seen
+	 * Adds a new message, following it if the chat was scrolled to the bottom. Seen, it is read at once;
+	 * otherwise someone else's counts as unread
 	 *
 	 * @param message The message
 	 */
@@ -215,9 +246,13 @@ export class ChatLog
 			this.scrollToEnd();
 		}
 
-		if ((message.playerId !== this.ownPlayerId) && !this.isSeen())
+		if (this.isSeen())
 		{
-			this.setUnread(this.unreadCount + 1);
+			this.markRead();
+		}
+		else
+		{
+			this.countUnread();
 		}
 	}
 
@@ -227,7 +262,8 @@ export class ChatLog
 	clear(): void
 	{
 		this.log.replaceChildren();
-		this.markRead();
+		this.messages = [];
+		this.countUnread();
 	}
 
 	/**
@@ -235,9 +271,28 @@ export class ChatLog
 	 */
 	markRead(): void
 	{
-		if (this.unreadCount !== 0)
+		const newest = this.messages.at(-1)?.sentAt;
+
+		if ((newest !== undefined) && (newest > this.readAt))
 		{
-			this.setUnread(0);
+			this.readAt = newest;
+			this.onRead?.(newest);
+		}
+
+		this.countUnread();
+	}
+
+	/**
+	 * Counts the messages sent up to a time as read, when the player has read them in another window
+	 *
+	 * @param readAt When the newest message they have seen was sent, in milliseconds since the epoch
+	 */
+	setReadAt(readAt: number): void
+	{
+		if (readAt > this.readAt)
+		{
+			this.readAt = readAt;
+			this.countUnread();
 		}
 	}
 
@@ -290,15 +345,19 @@ export class ChatLog
 	}
 
 	/**
-	 * Sets how many messages are unread, before the page's title and for onUnreadChange
-	 *
-	 * @param count How many
+	 * Counts the messages from others sent after readAt, showing the count before the page's title and
+	 * telling onUnreadChange when it changes
 	 */
-	private setUnread(count: number): void
+	private countUnread(): void
 	{
-		this.unreadCount = count;
-		setUnreadChatCount(this, count);
-		this.onUnreadChange?.(count);
+		const count = this.messages.filter((message) => ((message.playerId !== this.ownPlayerId) && (message.sentAt > this.readAt))).length;
+
+		if (count !== this.unreadCount)
+		{
+			this.unreadCount = count;
+			setUnreadChatCount(this, count);
+			this.onUnreadChange?.(count);
+		}
 	}
 
 	/**
@@ -327,11 +386,17 @@ export class ChatLog
 		line.classList.toggle('chat-own', ((message.playerId !== null) && (message.playerId === this.ownPlayerId)));
 		line.append(time, name, text);
 		this.log.append(line);
+		this.messages.push({
+			playerId: message.playerId,
+			sentAt: message.sentAt
+		});
 
 		while (this.log.childElementCount > this.maxLines)
 		{
 			this.log.firstElementChild?.remove();
 		}
+
+		this.messages = this.messages.slice(-this.maxLines);
 	}
 }
 

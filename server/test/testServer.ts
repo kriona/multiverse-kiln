@@ -1,6 +1,7 @@
 import { type ColyseusTestServer, boot } from '@colyseus/testing';
 
 import appConfig from '../src/app.config.js';
+import { registerTestServer } from './testServerHooks.js';
 
 /**
  * Base URL of the test server for plain HTTP requests (the port @colyseus/testing's boot() uses)
@@ -19,14 +20,17 @@ let testServer: ColyseusTestServer<typeof appConfig> | undefined;
  */
 export async function getTestServer(): Promise<ColyseusTestServer<typeof appConfig>>
 {
-	// boot() returns ColyseusTestServer<any> when given a Server instance
-	testServer ??= (await boot(appConfig)) as ColyseusTestServer<typeof appConfig>;
+	if (!testServer)
+	{
+		// boot() returns ColyseusTestServer<any> when given a Server instance
+		const server = (await boot(appConfig)) as ColyseusTestServer<typeof appConfig>;
+
+		testServer = server;
+		registerTestServer({
+			closeRooms: () => server.cleanup(),
+			shutDown: () => server.shutdown()
+		});
+	}
 
 	return(testServer);
 }
-
-// Root-level hook: registered once (this module is only evaluated once) and runs after all tests
-after(async () =>
-{
-	await testServer?.shutdown();
-});

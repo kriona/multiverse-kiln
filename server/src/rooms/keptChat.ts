@@ -1,6 +1,6 @@
 import { MAX_KEPT_CHAT_MESSAGES, type KeptChatHistoryPayload, type KeptChatMessage } from '@multiverse-kiln/shared';
 
-import { addChatMessages, listChatMessages, type KeptChat, type NewChatMessage } from '../db/chatRepo.js';
+import { addChatMessages, findChatRead, listChatMessages, saveChatReads, type KeptChat, type NewChatMessage } from '../db/chatRepo.js';
 
 /**
  * How often a room writes its chat's new messages to the database, in milliseconds
@@ -27,10 +27,11 @@ export interface ChatAuthor
 
 /**
  * A room's kept chat (server/src/db/chatRepo.ts): the messages it holds, oldest first, and those not yet
- * written to the database (server-only, never synced)
+ * written to the database (server-only, never synced). A room whose chat remembers how far each player
+ * has read it loads each player's record with loadRead() as they join, and moves it with markRead()
  *
  * The room loads it as it starts and calls save() every CHAT_SAVE_INTERVAL_MS and as it closes, so
- * adding a message never waits for the database
+ * adding a message or reading the chat never waits for the database
  */
 export class KeptChatLog
 {
@@ -45,6 +46,17 @@ export class KeptChatLog
 	 * Messages added since the chat was last written to the database, oldest first
 	 */
 	private unsaved: NewChatMessage[] = [];
+
+	/**
+	 * How far each player loaded with loadRead() has read the chat: when the newest message they have
+	 * seen was sent, in milliseconds since the epoch, by player ID
+	 */
+	private readonly reads = new Map<string, number>();
+
+	/**
+	 * The players whose record has moved since the chat was last written to the database
+	 */
+	private unsavedReads = new Set<string>();
 
 	/**
 	 * The write going on, if any; each waits for the one before
@@ -63,13 +75,89 @@ export class KeptChatLog
 	}
 
 	/**
-	 * The messages the chat holds, for a window joining
+	 * Reads how far a player has read the chat from the database, unless the log knows already. A
+	 * player the chat has no record of starts with every message it holds so far read, so a chat they
+	 * have never seen doesn't greet them with its whole history as new
 	 *
+	 * @param playerId The player's ID
+	 */
+	async loadRead(playerId: string): Promise<void>
+	{
+		if (!this.chat)
+		{
+			throw new Error('A player\'s reading was loaded for a chat that has not loaded');
+		}
+
+		if (this.reads.has(playerId))
+		{
+			return;
+		}
+
+		const readAt = await findChatRead(this.chat, playerId);
+
+		// Another window of the player may have loaded it, or read further, while this one waited
+		if (this.reads.has(playerId))
+		{
+			return;
+		}
+
+		if (readAt === undefined)
+		{
+			this.markRead(playerId, Date.now());
+		}
+		else
+		{
+			this.reads.set(playerId, readAt.getTime());
+		}
+	}
+
+	/**
+	 * Moves how far a player has read the chat, to be written with the next save(). It never moves
+	 * back, or past the present
+	 *
+	 * @param playerId The player's ID
+	 * @param readAt When the newest message they have seen was sent, in milliseconds since the epoch
+	 * @return True when their record moved
+	 */
+	markRead(playerId: string, readAt: number): boolean
+	{
+		const at = Math.min(readAt, Date.now());
+
+		if (at <= (this.reads.get(playerId) ?? -1))
+		{
+			return(false);
+		}
+
+		this.reads.set(playerId, at);
+		this.unsavedReads.add(playerId);
+
+		return(true);
+	}
+
+	/**
+	 * How far a player has read the chat
+	 *
+	 * @param playerId The player's ID
+	 * @return When the newest message they have seen was sent, in milliseconds since the epoch, or
+	 * undefined until loadRead() has found it
+	 */
+	readOf(playerId: string): number | undefined
+	{
+		return(this.reads.get(playerId));
+	}
+
+	/**
+	 * The messages the chat holds, for a window joining, with how far its player has read them when the
+	 * chat remembers that
+	 *
+	 * @param playerId The window's player, for a chat that remembers how far players have read it
 	 * @return The payload of a ChatHistory message
 	 */
-	history(): KeptChatHistoryPayload
+	history(playerId?: string): KeptChatHistoryPayload
 	{
-		return({ messages: this.messages });
+		const readAt = ((playerId === undefined) ? undefined : this.reads.get(playerId));
+
+		return(((readAt === undefined) ? { messages: this.messages } : { messages: this.messages, readAt }));
 	}
 
 	/**
@@ -106,9 +194,9 @@ export class KeptChatLog
 	}
 
 	/**
-	 * Writes the new messages to the database, after any write going on. Messages that can't be written
-	 * are kept for the next try, unless the chat's universe or group, or a writer's account, is gone. A
-	 * chat that hasn't loaded has nothing to write
+	 * Writes the new messages, and how far players have read the chat, to the database, after any write
+	 * going on. What can't be written is kept for the next try, unless the chat's universe or group, or
+	 * the writer or reader's account, is gone. A chat that hasn't loaded has nothing to write
 	 *
 	 * @return Resolves once they are written, or have failed to be
 	 */
@@ -117,30 +205,81 @@ export class KeptChatLog
 		this.saving = this.saving.then(async () =>
 		{
 			const chat = this.chat;
-			const messages = this.unsaved;
 
-			if (!chat || (messages.length === 0))
+			if (!chat)
 			{
 				return;
 			}
 
-			this.unsaved = [];
-
-			try
-			{
-				if (!await addChatMessages(chat, messages))
-				{
-					console.log('Dropped', messages.length, 'messages of', describeChat(chat), 'whose universe, group or writer no longer exists');
-				}
-			}
-			catch (error)
-			{
-				this.unsaved = [...messages, ...this.unsaved].slice(-MAX_KEPT_CHAT_MESSAGES);
-				console.error('Could not keep', describeChat(chat), error);
-			}
+			await this.saveMessages(chat);
+			await this.saveReads(chat);
 		});
 
 		return(this.saving);
+	}
+
+	/**
+	 * Writes the messages added since the last write
+	 *
+	 * @param chat The chat
+	 */
+	private async saveMessages(chat: KeptChat): Promise<void>
+	{
+		const messages = this.unsaved;
+
+		if (messages.length === 0)
+		{
+			return;
+		}
+
+		this.unsaved = [];
+
+		try
+		{
+			if (!await addChatMessages(chat, messages))
+			{
+				console.log('Dropped', messages.length, 'messages of', describeChat(chat), 'whose universe, group or writer no longer exists');
+			}
+		}
+		catch (error)
+		{
+			this.unsaved = [...messages, ...this.unsaved].slice(-MAX_KEPT_CHAT_MESSAGES);
+			console.error('Could not keep', describeChat(chat), error);
+		}
+	}
+
+	/**
+	 * Writes how far players have read the chat, for those whose record has moved since the last write
+	 *
+	 * @param chat The chat
+	 */
+	private async saveReads(chat: KeptChat): Promise<void>
+	{
+		const playerIds = this.unsavedReads;
+
+		if (playerIds.size === 0)
+		{
+			return;
+		}
+
+		this.unsavedReads = new Set();
+
+		const reads = new Map([...playerIds].map((playerId) => [playerId, new Date(this.reads.get(playerId) ?? 0)]));
+
+		try
+		{
+			const dropped = await saveChatReads(chat, reads);
+
+			if (dropped > 0)
+			{
+				console.log('Dropped', dropped, 'records of reading', describeChat(chat), 'whose universe, group or reader no longer exists');
+			}
+		}
+		catch (error)
+		{
+			this.unsavedReads = new Set([...playerIds, ...this.unsavedReads]);
+			console.error('Could not keep how far players have read', describeChat(chat), error);
+		}
 	}
 }
 

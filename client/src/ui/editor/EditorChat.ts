@@ -12,8 +12,9 @@ import { showToast } from '../toast';
  * the universe's editors, kept by the server, and the names of who has the editor open. The save bar
  * shows where each of the others is (EditorPresenceBar)
  *
- * Messages from others that arrive while the panel or its tab is hidden are counted over the button's
- * icon and before the page's title (ChatLog). While the panel is hidden, the newest shows in a toast,
+ * Messages from others that arrive while the panel or its tab is hidden, and those written since the
+ * player last saw the chat in any window, are counted over the button's icon and before the page's title
+ * (ChatLog); the room remembers how far they have read. While the panel is hidden, a new message shows in a toast,
  * read out by screen readers; clicking the toast away clears the count, as opening the panel does.
  * Screen readers hear players opening and closing the editor too
  */
@@ -41,8 +42,9 @@ export class EditorChat
 	/**
 	 * @param ownPlayerId The player whose page this is
 	 * @param send Sends a message to the chat
+	 * @param sendRead Tells the room when the newest message the player has seen was sent
 	 */
-	constructor(private readonly ownPlayerId: string, send: (text: string) => void)
+	constructor(private readonly ownPlayerId: string, send: (text: string) => void, sendRead: (readAt: number) => void)
 	{
 		this.chat = new ChatLog({
 			log: 'editor-chat-log',
@@ -52,7 +54,7 @@ export class EditorChat
 		}, MAX_KEPT_CHAT_MESSAGES, send, (count) =>
 		{
 			this.showUnread(count);
-		});
+		}, sendRead);
 		this.chat.setOwnPlayer(ownPlayerId);
 		this.setConnected(false);
 
@@ -143,10 +145,21 @@ export class EditorChat
 	 * Replaces the chat with the messages the server keeps
 	 *
 	 * @param messages The messages, oldest first
+	 * @param readAt When the newest message the player has seen was sent, when the room knows
 	 */
-	setHistory(messages: readonly KeptChatMessage[]): void
+	setHistory(messages: readonly KeptChatMessage[], readAt: number | undefined): void
 	{
-		this.chat.setHistory(messages);
+		this.chat.setHistory(messages, readAt);
+	}
+
+	/**
+	 * Counts the messages sent up to a time as read, when the player has read them in another window
+	 *
+	 * @param readAt When the newest message they have seen was sent
+	 */
+	setReadAt(readAt: number): void
+	{
+		this.chat.setReadAt(readAt);
 	}
 
 	/**

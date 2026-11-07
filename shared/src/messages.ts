@@ -545,6 +545,25 @@ export interface KeptChatMessage
 export interface KeptChatHistoryPayload
 {
 	messages: KeptChatMessage[];
+
+	/**
+	 * In a chat that remembers how far each player has read it (the editors' chat), when the newest
+	 * message the window's player has seen was sent, in milliseconds since the epoch. Others' messages
+	 * sent after it are unread. Absent in other chats, whose kept messages all count as read
+	 */
+	readAt?: number;
+}
+
+/**
+ * Payload of EditorMessageType.ChatRead and EditorServerMessageType.ChatRead: how far the player has
+ * read the chat
+ */
+export interface ChatReadPayload
+{
+	/**
+	 * When the newest message the player has seen was sent, in milliseconds since the epoch
+	 */
+	readAt: number;
 }
 
 /**

@@ -1,5 +1,5 @@
 import { CloseCode } from '@colyseus/sdk';
-import { EditorMessageType, EditorServerMessageType, NoticeReason, ServerCloseCode, SessionServerMessageType, type AccountPayload, type ChatPayload, type EditorPlacePayload, type EditorSavedPayload, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type UniverseVersionName } from '@multiverse-kiln/shared';
+import { EditorMessageType, EditorServerMessageType, NoticeReason, ServerCloseCode, SessionServerMessageType, type AccountPayload, type ChatPayload, type ChatReadPayload, type EditorPlacePayload, type EditorSavedPayload, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type UniverseVersionName } from '@multiverse-kiln/shared';
 
 import { t } from './localization';
 import { EditorApi } from './network/editorApi';
@@ -181,6 +181,11 @@ export class EditorPage
 				const chat: ChatPayload = { text };
 
 				this.editorRoom?.send(EditorMessageType.Chat, chat);
+			}, (readAt) =>
+			{
+				const read: ChatReadPayload = { readAt };
+
+				this.editorRoom?.send(EditorMessageType.ChatRead, read);
 			});
 			this.presenceBar = new EditorPresenceBar(account.player.playerId, (version, areaId) => this.editorScreen.areaName(version, areaId), (shown) =>
 			{
@@ -232,7 +237,12 @@ export class EditorPage
 
 		room.onMessage(EditorServerMessageType.ChatHistory, (history: KeptChatHistoryPayload) =>
 		{
-			chat.setHistory(history.messages);
+			chat.setHistory(history.messages, history.readAt);
+		});
+
+		room.onMessage(EditorServerMessageType.ChatRead, (read: ChatReadPayload) =>
+		{
+			chat.setReadAt(read.readAt);
 		});
 
 		room.onMessage(EditorServerMessageType.Chat, (message: KeptChatMessage) =>

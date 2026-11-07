@@ -645,6 +645,13 @@
       "when": 1794016069776,
       "tag": "0091_translation_saved_by",
       "breakpoints": true
+    },
+    {
+      "idx": 92,
+      "version": "7",
+      "when": 1794028936521,
+      "tag": "0092_chat_reads",
+      "breakpoints": true
     }
   ]
 }

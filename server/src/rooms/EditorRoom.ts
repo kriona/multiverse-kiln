@@ -1,5 +1,5 @@
 import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
-import { editorAccessOf, EditorMessageType, EditorPresence, EditorServerMessageType, EditorState, EditorWindow, NoticeReason, ServerCloseCode, type EditorRole, type EditorSavedPayload, type NoticePayload, type UniverseRole } from '@multiverse-kiln/shared';
+import { editorAccessOf, EditorMessageType, EditorPresence, EditorServerMessageType, EditorState, EditorWindow, NoticeReason, ServerCloseCode, type ChatReadPayload, type EditorRole, type EditorSavedPayload, type NoticePayload, type UniverseRole } from '@multiverse-kiln/shared';
 
 import { resolveSession } from '../auth/sessions.js';
 import { isActiveServerAdmin } from '../db/serverAdminRepo.js';
@@ -12,7 +12,7 @@ import { areaChanges } from '../world/areaChanges.js';
 import { editorUpdates, type EditorUpdate, type SavedUpdate } from '../world/editorUpdates.js';
 import { InvalidMessages } from './invalidMessages.js';
 import { CHAT_SAVE_INTERVAL_MS, KeptChatLog } from './keptChat.js';
-import { chatPayload, describeInvalidPayload, editorPlacePayload, roomOptions } from './payloads.js';
+import { chatPayload, chatReadPayload, describeInvalidPayload, editorPlacePayload, roomOptions } from './payloads.js';
 import { createChatLimiter } from './rateLimiter.js';
 
 /**
@@ -73,7 +73,9 @@ function identityOf(client: EditorClient): EditorIdentity
  * however many windows they have, with what each window has open (EditorMessageType.Place)
  *
  * The chat is kept (server/src/db/chatRepo.ts): the room loads its messages as it starts, and writes new
- * ones every CHAT_SAVE_INTERVAL_MS and as it closes, never while a message is being handled
+ * ones every CHAT_SAVE_INTERVAL_MS and as it closes, never while a message is being handled. It
+ * remembers how far each player has read it the same way, loading their record as they join, so
+ * messages written while they were away count as new (EditorMessageType.ChatRead)
  *
  * A window whose session ends is turned away (ServerCloseCode.LoggedOut), as are a player's windows when
  * they lose the right to open the editor (ServerCloseCode.AccessLost) and every window when the universe
@@ -164,6 +166,34 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 			}, result.data.text);
 
 			this.broadcast(EditorServerMessageType.Chat, message);
+		},
+
+		[EditorMessageType.ChatRead]: (client: EditorClient, payload: unknown) =>
+		{
+			const result = chatReadPayload.safeParse(payload);
+
+			if (!result.success)
+			{
+				this.invalidMessages.reject(client, EditorMessageType.ChatRead, describeInvalidPayload(result.error));
+				return;
+			}
+
+			const { playerId } = identityOf(client);
+
+			if (!this.chat.markRead(playerId, result.data.readAt))
+			{
+				return;
+			}
+
+			const read: ChatReadPayload = { readAt: (this.chat.readOf(playerId) ?? result.data.readAt) };
+
+			for (const other of this.clients)
+			{
+				if ((other !== client) && (identityOf(other).playerId === playerId))
+				{
+					other.send(EditorServerMessageType.ChatRead, read);
+				}
+			}
 		}
 	};
 
@@ -234,7 +264,8 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 	}
 
 	/**
-	 * Admits only clients whose browser is logged in as a player who may open the universe's editor
+	 * Admits only clients whose browser is logged in as a player who may open the universe's editor, and
+	 * loads how far that player has read the chat
 	 *
 	 * @param _client The joining client
 	 * @param _options Join options from the client (already used to pick this room)
@@ -258,6 +289,16 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 			return(false);
 		}
 
+		try
+		{
+			await this.chat.loadRead(session.playerId);
+		}
+		catch (error)
+		{
+			// The editor works without it: the chat's history then counts as read
+			console.error('Could not find how far player', session.playerId, 'has read the editors\' chat of universe', this.universeId, error);
+		}
+
 		return({
 			sessionId: session.sessionId,
 			playerId: session.playerId,
@@ -270,7 +311,7 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 
 	/**
 	 * Lists the window, and its player with the role just found when they have no other window here,
-	 * then sends it the chat
+	 * then sends it the chat, with how far its player has read it
 	 *
 	 * @param client The joining client
 	 */
@@ -301,7 +342,7 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 			tab: 'universe',
 			areaId: ''
 		}));
-		client.send(EditorServerMessageType.ChatHistory, this.chat.history());
+		client.send(EditorServerMessageType.ChatHistory, this.chat.history(playerId));
 		connectedSessions.connect(sessionId);
 	}
 

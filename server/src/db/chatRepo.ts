@@ -1,12 +1,12 @@
 /**
- * The chats that are kept: the only module that reads or writes the chat_messages table. Each holds its
- * newest MAX_KEPT_CHAT_MESSAGES messages
+ * The chats that are kept: the only module that reads or writes the chat_messages and chat_reads tables.
+ * Each chat holds its newest MAX_KEPT_CHAT_MESSAGES messages, and remembers how far each player has read it
  */
-import { and, asc, desc, eq, inArray, isNull, type SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, sql, type SQL } from 'drizzle-orm';
 import { MAX_KEPT_CHAT_MESSAGES, type KeptChatMessage } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
-import { chatMessages, groups, players, universes } from './schema.js';
+import { chatMessages, chatReads, groups, players, universes } from './schema.js';
 import { inTransaction } from './transactions.js';
 
 /**
@@ -53,6 +53,27 @@ export interface OwnChatMessage
 	groupName: string | null;
 	text: string;
 	sentAt: Date;
+}
+
+/**
+ * How far a player has read a chat, as their data download gives it
+ */
+export interface OwnChatRead
+{
+	universeId: string;
+	universeName: string;
+
+	/**
+	 * The group whose chat it is, or null for the editors' chat
+	 */
+	groupId: string | null;
+
+	groupName: string | null;
+
+	/**
+	 * When the newest message they have seen was sent
+	 */
+	readAt: Date;
 }
 
 /**
@@ -203,6 +224,106 @@ export async function listOwnChatMessages(playerId: string, executor: Executor =
 		.leftJoin(groups, eq(groups.id, chatMessages.groupId))
 		.where(eq(chatMessages.playerId, playerId))
 		.orderBy(asc(chatMessages.id)));
+}
+
+/**
+ * The condition that picks a player's row of how far they have read a chat
+ *
+ * @param chat The chat
+ * @param playerId The player's ID
+ * @return The condition
+ */
+function readOf(chat: KeptChat, playerId: string): SQL | undefined
+{
+	return(and(eq(chatReads.playerId, playerId), eq(chatReads.universeId, chat.universeId), ((chat.kind === 'editors') ? isNull(chatReads.groupId) : eq(chatReads.groupId, chat.groupId))));
+}
+
+/**
+ * How far a player has read a chat
+ *
+ * @param chat The chat
+ * @param playerId The player's ID
+ * @param executor The database, or a transaction
+ * @return When the newest message they have seen was sent, or undefined when the chat has no record of them
+ */
+export async function findChatRead(chat: KeptChat, playerId: string, executor: Executor = db): Promise<Date | undefined>
+{
+	const [row] = await executor
+		.select({ readAt: chatReads.readAt })
+		.from(chatReads)
+		.where(readOf(chat, playerId))
+		.limit(1);
+
+	return(row?.readAt);
+}
+
+/**
+ * Records how far players have read a chat. A player's record only moves forward, so a write that
+ * arrives late never undoes a newer one
+ *
+ * @param chat The chat
+ * @param reads When the newest message each player has seen was sent, by player ID
+ * @return How many records were dropped because the chat's universe or group, or the player, is gone
+ */
+export async function saveChatReads(chat: KeptChat, reads: ReadonlyMap<string, Date>): Promise<number>
+{
+	let dropped = 0;
+
+	for (const [playerId, readAt] of reads)
+	{
+		try
+		{
+			await db
+				.insert(chatReads)
+				.values({
+					playerId,
+					universeId: chat.universeId,
+					groupId: ((chat.kind === 'group') ? chat.groupId : null),
+					readAt
+				})
+				.onConflictDoUpdate({
+					target: [chatReads.playerId, chatReads.universeId, chatReads.groupId],
+					set: {
+						readAt: sql`greatest(${chatReads.readAt}, excluded.read_at)`
+					}
+				});
+		}
+		catch (error)
+		{
+			if (!isForeignKeyViolation(error))
+			{
+				throw error;
+			}
+
+			dropped++;
+		}
+	}
+
+	return(dropped);
+}
+
+/**
+ * How far a player has read each kept chat, for their data download
+ *
+ * @param playerId The player's ID
+ * @param executor The database, or a transaction
+ * @return The records, by universe and then group
+ */
+export async function listOwnChatReads(playerId: string, executor: Executor = db): Promise<OwnChatRead[]>
+{
+	return(await executor
+		.select({
+			universeId: chatReads.universeId,
+			universeName: universes.name,
+			groupId: chatReads.groupId,
+			groupName: groups.name,
+			readAt: chatReads.readAt
+		})
+		.from(chatReads)
+		.innerJoin(universes, eq(universes.id, chatReads.universeId))
+		.leftJoin(groups, eq(groups.id, chatReads.groupId))
+		.where(eq(chatReads.playerId, playerId))
+		.orderBy(asc(universes.name), asc(groups.name)));
 }
 
 /**

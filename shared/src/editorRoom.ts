@@ -37,7 +37,13 @@ export enum EditorMessageType
 	/**
 	 * Say something in the editors' chat (payload: ChatPayload)
 	 */
-	Chat = 'chat'
+	Chat = 'chat',
+
+	/**
+	 * The player has seen the editors' chat up to a message, sent as the chat is seen with newer
+	 * messages in it (payload: ChatReadPayload)
+	 */
+	ChatRead = 'chatRead'
 }
 
 /**
@@ -54,6 +60,12 @@ export enum EditorServerMessageType
 	 * A new chat message, sent to every window in the room (payload: KeptChatMessage)
 	 */
 	Chat = 'chat',
+
+	/**
+	 * The player has seen the editors' chat up to a message in another of their windows, which counts
+	 * the messages before it as read too (payload: ChatReadPayload)
+	 */
+	ChatRead = 'chatRead',
 
 	/**
 	 * What the player may do in the editor may have changed: their role, the universe's stage, or whether

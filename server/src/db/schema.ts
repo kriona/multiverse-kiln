@@ -1526,6 +1526,28 @@ export const chatMessages = pgTable('chat_messages', {
 ]);
 
 /**
+ * How far each player has read each kept chat: when the newest message they have seen was sent. A chat
+ * is its universe's editors' chat (without a group) or a group's, as in chat_messages, so the unique key
+ * treats a missing group as one chat. Written by the rooms with their chat's messages
+ * (server/src/db/chatRepo.ts), and goes with its player, universe or group
+ */
+export const chatReads = pgTable('chat_reads', {
+	playerId: uuid('player_id').notNull().references(() => players.id, { onDelete: 'cascade' }),
+	universeId: uuid('universe_id').notNull().references(() => universes.id, { onDelete: 'cascade' }),
+
+	/**
+	 * The group whose chat it is, or null for the universe's editors' chat
+	 */
+	groupId: uuid('group_id').references(() => groups.id, { onDelete: 'cascade' }),
+
+	readAt: timestamp('read_at', { withTimezone: true }).notNull()
+}, (table) => [
+	unique('chat_reads_chat_unique').on(table.playerId, table.universeId, table.groupId).nullsNotDistinct(),
+	index('chat_reads_universe_id_index').on(table.universeId),
+	index('chat_reads_group_id_index').on(table.groupId)
+]);
+
+/**
  * Settings for the whole site, in at most one row. A site without the row has DEFAULT_SITE_SETTINGS
  */
 export const siteSettings = pgTable('site_settings', {

@@ -6,7 +6,7 @@
  * Unknown keys are stripped rather than rejected
  */
 import { z } from 'zod';
-import { DISALLOWED_TEXT_CHARACTERS, EDITOR_TABS, MAX_CHAT_MESSAGE_LENGTH, UNIVERSE_VERSIONS, type ChatPayload, type ChooseCharacterPayload, type ControlPayload, type EditorJoinOptions, type EditorPlacePayload, type GameJoinOptions, type LobbyJoinOptions, type MovePayload } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, EDITOR_TABS, MAX_CHAT_MESSAGE_LENGTH, UNIVERSE_VERSIONS, type ChatPayload, type ChatReadPayload, type ChooseCharacterPayload, type ControlPayload, type EditorJoinOptions, type EditorPlacePayload, type GameJoinOptions, type LobbyJoinOptions, type MovePayload } from '@multiverse-kiln/shared';
 
 const direction = z.literal([-1, 0, 1]);
 
@@ -35,6 +35,13 @@ export const movePayload = z.object({
 export const chatPayload = z.object({
 	text: displayText(MAX_CHAT_MESSAGE_LENGTH)
 }) satisfies z.ZodType<ChatPayload>;
+
+/**
+ * ChatReadPayload: when the newest message the player has seen was sent
+ */
+export const chatReadPayload = z.object({
+	readAt: z.number().int().nonnegative()
+}) satisfies z.ZodType<ChatReadPayload>;
 
 /**
  * ChooseCharacterPayload: a character's ID

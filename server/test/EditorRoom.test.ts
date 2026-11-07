@@ -3,9 +3,9 @@ import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { EDITOR_ROOM_NAME, EditorMessageType, EditorServerMessageType, EditorState, MAX_CHAT_MESSAGE_LENGTH, NoticeReason, ServerCloseCode, VOID_CELL, type EditorJoinOptions, type EditorPlacePayload, type EditorSavedPayload, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type RaceListPayload } from '@multiverse-kiln/shared';
+import { EDITOR_ROOM_NAME, EditorMessageType, EditorServerMessageType, EditorState, MAX_CHAT_MESSAGE_LENGTH, NoticeReason, ServerCloseCode, VOID_CELL, type ChatReadPayload, type EditorJoinOptions, type EditorPlacePayload, type EditorSavedPayload, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type RaceListPayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
-import { listChatMessages } from '../src/db/chatRepo.js';
+import { findChatRead, listChatMessages } from '../src/db/chatRepo.js';
 import { addServerAdmin } from '../src/db/serverAdminRepo.js';
 import { listUniverseEdits } from '../src/db/universeEditRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
@@ -287,6 +287,44 @@ describe('EditorRoom', () =>
 			await window.inbox.take<KeptChatMessage>(EditorServerMessageType.Chat);
 			await roomOf(window).saveChat();
 			assert.deepStrictEqual((await listChatMessages({ kind: 'editors', universeId })).map((message) => message.text), ['Checkpoint']);
+		});
+
+		it('remembers how far each player has read, telling their other windows and the room that opens next', async () =>
+		{
+			const grace = await addEditor('Grace', 'builder');
+			const joinedAt = Date.now();
+			const adaWindow = await openEditor(ada, universeId);
+			const graceWindow = await openEditor(grace, universeId);
+			const chat = { kind: 'editors', universeId } as const;
+
+			// A player new to the chat starts with what it held as they joined read
+			assert.ok(((await adaWindow.inbox.take<KeptChatHistoryPayload>(EditorServerMessageType.ChatHistory)).readAt ?? 0) >= joinedAt);
+			await graceWindow.inbox.take<KeptChatHistoryPayload>(EditorServerMessageType.ChatHistory);
+			graceWindow.room.send(EditorMessageType.Chat, { text: 'Read me' });
+
+			const message = await adaWindow.inbox.take<KeptChatMessage>(EditorServerMessageType.Chat);
+			const adaSecond = await openEditor(ada, universeId);
+
+			assert.ok(((await adaSecond.inbox.take<KeptChatHistoryPayload>(EditorServerMessageType.ChatHistory)).readAt ?? Infinity) < message.sentAt);
+
+			adaWindow.room.send(EditorMessageType.ChatRead, { readAt: message.sentAt });
+			assert.strictEqual((await adaSecond.inbox.take<ChatReadPayload>(EditorServerMessageType.ChatRead)).readAt, message.sentAt);
+			assert.strictEqual(adaWindow.inbox.pending(EditorServerMessageType.ChatRead), 0);
+			assert.strictEqual(graceWindow.inbox.pending(EditorServerMessageType.ChatRead), 0);
+
+			// Reading back to an older message, or one the server can't have sent yet, never moves it back
+			adaWindow.room.send(EditorMessageType.ChatRead, { readAt: 0 });
+			adaWindow.room.send(EditorMessageType.ChatRead, { readAt: 'soon' });
+			await roomOf(adaWindow).saveChat();
+			assert.deepStrictEqual(await findChatRead(chat, ada.playerId), new Date(message.sentAt));
+
+			await adaWindow.room.leave();
+			await adaSecond.room.leave();
+			await graceWindow.room.leave();
+
+			const reopened = await openEditor(ada, universeId);
+
+			assert.strictEqual((await reopened.inbox.take<KeptChatHistoryPayload>(EditorServerMessageType.ChatHistory)).readAt, message.sentAt);
 		});
 	});
 

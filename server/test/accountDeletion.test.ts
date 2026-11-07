@@ -2,7 +2,7 @@ import assert from 'assert';
 import { accountExportFileName, AUTH_ACCOUNT_DELETE_PATH, AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_LOGIN_PATH, PROFILE_DELETION_PATH, PROFILE_EXPORT_PATH, type AccountDeletionPayload, type AccountExport, type AuthErrorPayload } from '@multiverse-kiln/shared';
 
 import { hashPassword } from '../src/auth/passwords.js';
-import { addChatMessages, listChatMessages } from '../src/db/chatRepo.js';
+import { addChatMessages, listChatMessages, saveChatReads } from '../src/db/chatRepo.js';
 import { pool } from '../src/db/client.js';
 import { addGroupMember, findMembership } from '../src/db/groupRepo.js';
 import { createPlayer } from '../src/db/playerRepo.js';
@@ -156,6 +156,7 @@ describe('account deletion and data export', () =>
 			text: 'Kept for the editors',
 			sentAt: new Date(Date.UTC(2026, 10, 1))
 		}]);
+		await saveChatReads({ kind: 'editors', universeId: universe.universeId }, new Map([[playerId, new Date(Date.UTC(2026, 10, 2))]]));
 
 		const response = await fetch(`${testServerUrl}${PROFILE_EXPORT_PATH}?locale=en`, {
 			headers: {
@@ -183,6 +184,7 @@ describe('account deletion and data export', () =>
 			anchorBeing: true
 		});
 		assert.deepStrictEqual(exported.chatMessages.map(({ groupId, text, sentAt }) => [groupId, text, sentAt]), [[null, 'Kept for the editors', '2026-11-01T00:00:00.000Z']]);
+		assert.deepStrictEqual(exported.chatReads.map(({ universeId, groupId, readAt }) => [universeId, groupId, readAt]), [[universe.universeId, null, '2026-11-02T00:00:00.000Z']]);
 
 		// Nothing that could log in, or tell where the player logged in from
 		assert.doesNotMatch(text, /argon2|password_hash|networkHash|tokenHash|secret/i);
