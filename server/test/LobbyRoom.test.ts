@@ -294,6 +294,7 @@ describe('LobbyRoom', () =>
 			universeAccessChanges.publishStage({
 				universeId: universe.universeId,
 				stage: 'prologue',
+				previousStage: 'let_there_be_light',
 				roles: new Map([[grace.playerId, 'beta_tester']])
 			});
 
@@ -304,6 +305,7 @@ describe('LobbyRoom', () =>
 			universeAccessChanges.publishStage({
 				universeId: universe.universeId,
 				stage: 'end_of_time',
+				previousStage: 'prologue',
 				roles: new Map([[grace.playerId, 'creator']])
 			});
 

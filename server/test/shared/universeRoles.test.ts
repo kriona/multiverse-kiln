@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canManageEditors, canManageVersions, canPlayUniverse, canTranslate, canViewUniverse, EDITOR_CHANGE_CHECKS, EDITOR_ROLES, editorAccessOf, mayMakeChange, maySaveInStage, UNIVERSE_ROLES, UNIVERSE_STAGES, type EditorAccess, type EditorChange, type UniverseAccess, type UniverseRole } from '@multiverse-kiln/shared';
+import { ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canManageEditors, canManageVersions, canPlayUniverse, canTranslate, canViewUniverse, EDITOR_CHANGE_CHECKS, EDITOR_ROLES, editorAccessOf, mayMakeChange, maySaveInStage, stageChangesEditorAccess, UNIVERSE_ROLES, UNIVERSE_STAGES, type EditorAccess, type EditorChange, type UniverseAccess, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
 
 /**
  * Someone's access with a role and no languages
@@ -70,6 +70,34 @@ describe('Universe roles (shared)', () =>
 			['prologue', false, true, true, true, true],
 			['let_there_be_light', true, true, true, true, true],
 			['end_of_time', true, true, true, true, true]
+		]);
+	});
+
+	it('changes what a role may do in the editor only when the end of time locks it out or a stage changes whether it may look at the universe', () =>
+	{
+		/**
+		 * Whether moving between two stages changes what each editor role may do
+		 *
+		 * @param from The stage before
+		 * @param to The stage after
+		 * @return Each role, with whether it changes
+		 */
+		const changes = (from: UniverseStage, to: UniverseStage) => EDITOR_ROLES.map((role) => [role, stageChangesEditorAccess(role, from, to)]);
+
+		assert.deepStrictEqual(changes('in_the_beginning', 'prologue'), [
+			['creator', false],
+			['builder', false],
+			['beta_tester', true],
+			['translator', true],
+			[ADMIN_ROLE, false]
+		]);
+		assert.deepStrictEqual(changes('prologue', 'let_there_be_light'), EDITOR_ROLES.map((role) => [role, false]));
+		assert.deepStrictEqual(changes('let_there_be_light', 'end_of_time'), [
+			['creator', false],
+			['builder', true],
+			['beta_tester', true],
+			['translator', true],
+			[ADMIN_ROLE, false]
 		]);
 	});
 

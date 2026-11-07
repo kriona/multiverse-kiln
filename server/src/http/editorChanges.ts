@@ -345,6 +345,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 				stageChange = {
 					universeId: base.universe.id,
 					stage: saving.universe.stage,
+					previousStage: stageBefore,
 					roles: await listUniverseRoles(base.universe.id, transaction)
 				};
 			}

@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { EDITOR_ROOM_NAME, EditorMessageType, EditorServerMessageType, EditorState, MAX_CHAT_MESSAGE_LENGTH, NoticeReason, ServerCloseCode, VOID_CELL, type ChatReadPayload, type EditorJoinOptions, type EditorPlacePayload, type EditorSavedPayload, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type RaceListPayload } from '@multiverse-kiln/shared';
+import { EDITOR_ROOM_NAME, EditorMessageType, EditorServerMessageType, EditorState, MAX_CHAT_MESSAGE_LENGTH, NoticeReason, ServerCloseCode, VOID_CELL, type ChatReadPayload, type EditorJoinOptions, type EditorPlacePayload, type EditorSavedPayload, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type RaceListPayload, type UniverseRole } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { findChatRead, listChatMessages } from '../src/db/chatRepo.js';
 import { addServerAdmin } from '../src/db/serverAdminRepo.js';
@@ -468,16 +468,45 @@ describe('EditorRoom', () =>
 			assert.strictEqual(roomOf(window).state.editors.get(grace.playerId)?.role, 'admin');
 		});
 
-		it('tells every window when the stage changes or the universe is disabled or enabled, and ignores other universes', async () =>
+		it('tells only the windows of players a stage change changes what they may do for', async () =>
 		{
-			const window = await openEditor(ada, universeId);
+			const grace = await addEditor('Grace', 'builder');
+			const alan = await addEditor('Alan', 'translator');
+			const adaWindow = await openEditor(ada, universeId);
+			const graceWindow = await openEditor(grace, universeId);
+			const alanWindow = await openEditor(alan, universeId);
+			const roles = new Map<string, UniverseRole>([
+				[ada.playerId, 'creator'],
+				[grace.playerId, 'builder'],
+				[alan.playerId, 'translator']
+			]);
 
+			// Leaving in the beginning lets translators look at the universe's page, and changes nothing for builders
+			universeAccessChanges.publishStage({
+				universeId,
+				stage: 'prologue',
+				previousStage: 'in_the_beginning',
+				roles
+			});
+			await alanWindow.inbox.take(EditorServerMessageType.AccessChanged);
+
+			// The end of time locks the universe to everyone but its creators
 			universeAccessChanges.publishStage({
 				universeId,
 				stage: 'end_of_time',
-				roles: new Map([[ada.playerId, 'creator']])
+				previousStage: 'prologue',
+				roles
 			});
-			await window.inbox.take(EditorServerMessageType.AccessChanged);
+			await graceWindow.inbox.take(EditorServerMessageType.AccessChanged);
+			await alanWindow.inbox.take(EditorServerMessageType.AccessChanged);
+			await assert.rejects(adaWindow.inbox.take(EditorServerMessageType.AccessChanged, 200));
+			assert.strictEqual(graceWindow.inbox.pending(EditorServerMessageType.AccessChanged), 0);
+		});
+
+		it('tells every window when the universe is disabled or enabled, and ignores other universes', async () =>
+		{
+			const window = await openEditor(ada, universeId);
+
 			editorUpdates.publish({
 				kind: 'access',
 				universeId
