@@ -70,7 +70,8 @@ export const roomOptions = z.object({
 export const editorPlacePayload = z.object({
 	version: z.enum(UNIVERSE_VERSIONS),
 	tab: z.enum(EDITOR_TABS),
-	areaId: z.uuid().nullable()
+	areaId: z.uuid().nullable(),
+	unsaved: z.boolean()
 }) satisfies z.ZodType<EditorPlacePayload>;
 
 /**

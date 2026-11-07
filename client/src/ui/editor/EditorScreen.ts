@@ -895,6 +895,16 @@ export class EditorScreen
 	}
 
 	/**
+	 * Shows who else has unsaved work on the draft, which applying or discarding it warns about
+	 *
+	 * @param names Their display names, from unsavedDraftEditors()
+	 */
+	setUnsavedDraftEditors(names: readonly string[]): void
+	{
+		this.draftSection.setUnsavedEditors(names);
+	}
+
+	/**
 	 * The name of an area of the version of the universe open, once the Areas tab has loaded them
 	 *
 	 * @param version The version the area is in, live or draft

@@ -1879,6 +1879,10 @@
 		"defaultMessage": "Apply the draft?",
 		"description": "Title of the dialog asking to confirm applying the universe's draft to the live version"
 	},
+	"editor.draft.applyUnsavedOthers": {
+		"defaultMessage": "{count, plural, one {{names} has} other {{names} have}} changes to the draft that aren't saved yet, which can't be saved once it is applied. Ask them to save first.",
+		"description": "In the dialog asking to confirm applying the universe's draft, while other editors have the draft open with unsaved changes; {names} is their display names as a list, e.g. \"Bea and Cal\", and {count} how many. It warns rather than stops: the player can still apply the draft"
+	},
 	"editor.draft.discard": {
 		"defaultMessage": "Discard Draft",
 		"description": "Button in the editor's toolbar that deletes the universe's draft after asking, leaving the live version as it is"
@@ -1898,6 +1902,10 @@
 	"editor.draft.discardTitle": {
 		"defaultMessage": "Discard the draft?",
 		"description": "Title of the dialog asking to confirm deleting the universe's draft"
+	},
+	"editor.draft.discardUnsavedOthers": {
+		"defaultMessage": "{count, plural, one {{names} has} other {{names} have}} changes to the draft that aren't saved yet, which are lost once it is discarded.",
+		"description": "In the dialog asking to confirm discarding the universe's draft, while other editors have the draft open with unsaved changes; {names} is their display names as a list, e.g. \"Bea and Cal\", and {count} how many. It warns rather than stops: the player can still discard the draft"
 	},
 	"editor.draft.heading": {
 		"defaultMessage": "Draft",

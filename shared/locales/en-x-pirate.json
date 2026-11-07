@@ -1879,6 +1879,10 @@
 		"message": "Launch the draft?",
 		"source": "Apply the draft?"
 	},
+	"editor.draft.applyUnsavedOthers": {
+		"message": "{count, plural, one {{names} has} other {{names} have}} changes to the draft not yet stowed, which can't be stowed once she's launched. Bid them stow first.",
+		"source": "{count, plural, one {{names} has} other {{names} have}} changes to the draft that aren't saved yet, which can't be saved once it is applied. Ask them to save first."
+	},
 	"editor.draft.discard": {
 		"message": "Scuttle Draft",
 		"source": "Discard Draft"
@@ -1898,6 +1902,10 @@
 	"editor.draft.discardTitle": {
 		"message": "Scuttle the draft?",
 		"source": "Discard the draft?"
+	},
+	"editor.draft.discardUnsavedOthers": {
+		"message": "{count, plural, one {{names} has} other {{names} have}} changes to the draft not yet stowed, which go to Davy Jones once she's scuttled.",
+		"source": "{count, plural, one {{names} has} other {{names} have}} changes to the draft that aren't saved yet, which are lost once it is discarded."
 	},
 	"editor.draft.heading": {
 		"message": "Draft",

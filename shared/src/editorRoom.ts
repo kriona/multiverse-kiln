@@ -165,4 +165,9 @@ export interface EditorPlacePayload
 	 * The area open in the area editor, or null when none is
 	 */
 	areaId: string | null;
+
+	/**
+	 * Whether the window holds work not yet saved
+	 */
+	unsaved: boolean;
 }

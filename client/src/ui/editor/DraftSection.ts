@@ -1,8 +1,8 @@
-import { canManageVersions, defineMessages, type EditableUniverse, type EditorChange } from '@multiverse-kiln/shared';
+import { canManageVersions, defineMessages, type EditableUniverse, type EditorChange, type EditorPresence } from '@multiverse-kiln/shared';
 import trashIcon from 'virtual:icon/ph:trash';
 import rocketIcon from 'virtual:icon/ph:rocket-launch';
 
-import { t } from '../../localization';
+import { currentLocale, formatList, t } from '../../localization';
 import { describeEditorError } from '../../network/editorApi';
 import { refreshUnsavedWork, watchUnsavedWork } from '../changeTracker';
 import { askToConfirm } from '../confirmDialog';
@@ -23,6 +23,22 @@ const messages = defineMessages({
 		description: 'In the dialogs asking to confirm applying or discarding the universe\'s draft, and on the editor\'s Universe tab, while other changes are unsaved: the draft is applied as it is saved, and discarding it would throw them away'
 	}
 });
+
+/**
+ * The other players with a window on the draft holding unsaved work, from the editor room's state. Once
+ * the draft is applied or discarded, that work can't be saved. The player's own windows don't count
+ *
+ * @param editors The room's state.editors: each player with the editor open, by player ID
+ * @param ownPlayerId The player whose page this is
+ * @return Their display names, in alphabetical order
+ */
+export function unsavedDraftEditors(editors: Iterable<[string, EditorPresence]>, ownPlayerId: string): string[]
+{
+	return([...editors]
+		.filter(([playerId, editor]) => ((playerId !== ownPlayerId) && [...editor.windows.values()].some((window) => ((window.version === 'draft') && window.unsaved))))
+		.map(([, editor]) => editor.name)
+		.sort((a, b) => a.localeCompare(b, currentLocale())));
+}
 
 /**
  * Starting, applying and discarding the universe's draft (see Universe versions in STRUCTURE-OVERVIEW.md),
@@ -56,6 +72,11 @@ export class DraftSection implements SavableTab
 	private collected: DraftAction | undefined;
 
 	private readonly listeners = new Set<(unsaved: boolean) => void>();
+
+	/**
+	 * The other players with unsaved work on the draft, from unsavedDraftEditors()
+	 */
+	private unsavedEditors: readonly string[] = [];
 
 	/**
 	 * Whether an action is waiting to be saved
@@ -117,6 +138,16 @@ export class DraftSection implements SavableTab
 	}
 
 	/**
+	 * Follows who else has unsaved work on the draft, which applying and discarding it warn about
+	 *
+	 * @param names Their display names
+	 */
+	setUnsavedEditors(names: readonly string[]): void
+	{
+		this.unsavedEditors = names;
+	}
+
+	/**
 	 * Whether the player may start, apply and discard the draft
 	 *
 	 * @return True for a creator
@@ -143,7 +174,14 @@ export class DraftSection implements SavableTab
 				defaultMessage: 'Players will see everything changed in the draft at once. Changes saved to the live version since the draft was started are replaced by the draft\'s. This can\'t be undone.',
 				description: 'Question in the dialog asking to confirm applying the universe\'s draft to the live version, which players play'
 			}),
-			note: (waiting ? t(messages.saveOthersFirst) : undefined),
+			note: (waiting ? t(messages.saveOthersFirst) : ((this.unsavedEditors.length === 0) ? undefined : t({
+				id: 'editor.draft.applyUnsavedOthers',
+				defaultMessage: '{count, plural, one {{names} has} other {{names} have}} changes to the draft that aren\'t saved yet, which can\'t be saved once it is applied. Ask them to save first.',
+				description: 'In the dialog asking to confirm applying the universe\'s draft, while other editors have the draft open with unsaved changes; {names} is their display names as a list, e.g. "Bea and Cal", and {count} how many. It warns rather than stops: the player can still apply the draft'
+			}, {
+				names: formatList(this.unsavedEditors, 'conjunction'),
+				count: this.unsavedEditors.length
+			}))),
 			confirmLabel: t({
 				id: 'editor.draft.applyConfirm',
 				defaultMessage: 'Apply Draft',
@@ -176,7 +214,14 @@ export class DraftSection implements SavableTab
 				defaultMessage: 'Everything changed in the draft will be discarded. The live version remains unchanged.',
 				description: 'Question in the dialog asking to confirm deleting the universe\'s draft'
 			}),
-			note: (waiting ? t(messages.saveOthersFirst) : undefined),
+			note: (waiting ? t(messages.saveOthersFirst) : ((this.unsavedEditors.length === 0) ? undefined : t({
+				id: 'editor.draft.discardUnsavedOthers',
+				defaultMessage: '{count, plural, one {{names} has} other {{names} have}} changes to the draft that aren\'t saved yet, which are lost once it is discarded.',
+				description: 'In the dialog asking to confirm discarding the universe\'s draft, while other editors have the draft open with unsaved changes; {names} is their display names as a list, e.g. "Bea and Cal", and {count} how many. It warns rather than stops: the player can still discard the draft'
+			}, {
+				names: formatList(this.unsavedEditors, 'conjunction'),
+				count: this.unsavedEditors.length
+			}))),
 			confirmLabel: t({
 				id: 'editor.draft.discardConfirm',
 				defaultMessage: 'Discard Draft',

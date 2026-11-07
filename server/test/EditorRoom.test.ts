@@ -171,7 +171,8 @@ describe('EditorRoom', () =>
 			const place: EditorPlacePayload = {
 				version: 'draft',
 				tab: 'areas',
-				areaId: randomUUID()
+				areaId: randomUUID(),
+				unsaved: true
 			};
 
 			assert.strictEqual(roomOf(other), room);
@@ -181,7 +182,7 @@ describe('EditorRoom', () =>
 			const presence = room.state.editors.get(ada.playerId);
 
 			assert.deepStrictEqual([presence?.name, presence?.username, presence?.role], ['Ada', usernameFor('Ada'), 'creator']);
-			assert.deepStrictEqual([...(presence?.windows.values() ?? [])].map((window) => [window.version, window.tab, window.areaId]).sort(), [['draft', 'areas', place.areaId], ['live', 'universe', '']]);
+			assert.deepStrictEqual([...(presence?.windows.values() ?? [])].map((window) => [window.version, window.tab, window.areaId, window.unsaved]).sort(), [['draft', 'areas', place.areaId, true], ['live', 'universe', '', false]]);
 			assert.strictEqual(room.state.editors.get(grace.playerId)?.role, 'builder');
 
 			await second.room.leave();
@@ -205,18 +206,18 @@ describe('EditorRoom', () =>
 			 */
 			const claimed = (): string[] => [...(watching.room.state.editors.get(grace.playerId)?.windows.values() ?? [])].map((window) => window.areaId);
 
-			claiming.room.send(EditorMessageType.Place, { version: 'live', tab: 'areas', areaId });
+			claiming.room.send(EditorMessageType.Place, { version: 'live', tab: 'areas', areaId, unsaved: false });
 			await waitUntil(() => claimed().includes(areaId));
 
 			// A window on another tab keeps its area open
-			claiming.room.send(EditorMessageType.Place, { version: 'live', tab: 'items', areaId });
+			claiming.room.send(EditorMessageType.Place, { version: 'live', tab: 'items', areaId, unsaved: false });
 			await waitUntil(() => [...(watching.room.state.editors.get(grace.playerId)?.windows.values() ?? [])].some((window) => (window.tab === 'items')));
 			assert.deepStrictEqual(claimed(), [areaId]);
 
-			claiming.room.send(EditorMessageType.Place, { version: 'live', tab: 'areas', areaId: null });
+			claiming.room.send(EditorMessageType.Place, { version: 'live', tab: 'areas', areaId: null, unsaved: false });
 			await waitUntil(() => claimed().every((each) => (each === '')));
 
-			claiming.room.send(EditorMessageType.Place, { version: 'live', tab: 'areas', areaId });
+			claiming.room.send(EditorMessageType.Place, { version: 'live', tab: 'areas', areaId, unsaved: false });
 			await waitUntil(() => claimed().includes(areaId));
 			await claiming.room.leave();
 			await waitUntil(() => !watching.room.state.editors.has(grace.playerId));
@@ -227,10 +228,11 @@ describe('EditorRoom', () =>
 			const window = await openEditor(ada, universeId);
 			const room = roomOf(window);
 
-			window.room.send(EditorMessageType.Place, { version: 'old', tab: 'areas', areaId: null });
-			window.room.send(EditorMessageType.Place, { version: 'live', tab: 'secrets', areaId: null });
-			window.room.send(EditorMessageType.Place, { version: 'live', tab: 'items', areaId: 'not an ID' });
-			window.room.send(EditorMessageType.Place, { version: 'live', tab: 'lobby', areaId: null });
+			window.room.send(EditorMessageType.Place, { version: 'old', tab: 'areas', areaId: null, unsaved: false });
+			window.room.send(EditorMessageType.Place, { version: 'live', tab: 'secrets', areaId: null, unsaved: false });
+			window.room.send(EditorMessageType.Place, { version: 'live', tab: 'items', areaId: 'not an ID', unsaved: false });
+			window.room.send(EditorMessageType.Place, { version: 'live', tab: 'items', areaId: null, unsaved: 'yes' });
+			window.room.send(EditorMessageType.Place, { version: 'live', tab: 'lobby', areaId: null, unsaved: false });
 			await waitUntil(() => [...(room.state.editors.get(ada.playerId)?.windows.values() ?? [])].some((each) => (each.tab === 'lobby')));
 		});
 	});
@@ -392,7 +394,8 @@ describe('EditorRoom', () =>
 			const place: EditorPlacePayload = {
 				version: 'draft',
 				tab: 'universe',
-				areaId: null
+				areaId: null,
+				unsaved: false
 			};
 
 			window.room.send(EditorMessageType.Place, place);

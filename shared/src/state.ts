@@ -130,7 +130,13 @@ export const EditorWindow = schema({
 	/**
 	 * The area open in the area editor, or empty when none is
 	 */
-	areaId: t.string()
+	areaId: t.string(),
+
+	/**
+	 * Whether the window holds work not yet saved, which applying or discarding the draft would leave it
+	 * unable to save when the draft is open
+	 */
+	unsaved: t.boolean()
 }, 'EditorWindow');
 export type EditorWindow = SchemaType<typeof EditorWindow>;
 

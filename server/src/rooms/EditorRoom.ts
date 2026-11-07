@@ -185,6 +185,7 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 				window.version = result.data.version;
 				window.tab = result.data.tab;
 				window.areaId = (result.data.areaId ?? '');
+				window.unsaved = result.data.unsaved;
 			}
 		},
 
@@ -426,7 +427,8 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 		presence.windows.set(key, new EditorWindow({
 			version: 'live',
 			tab: 'universe',
-			areaId: ''
+			areaId: '',
+			unsaved: false
 		}));
 		client.send(EditorServerMessageType.ChatHistory, this.chat.history(playerId));
 		connectedSessions.connect(client, sessionId);

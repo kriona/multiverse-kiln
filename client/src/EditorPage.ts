@@ -6,8 +6,10 @@ import { EditorApi } from './network/editorApi';
 import { joinEditorRoom, type EditorRoom, type ServerConnection } from './network/serverConnection';
 import { isLeavingPage } from './pageLifecycle';
 import { currentPageAddress, loginPageUrl, pushPageParameters, replacePageParameters, TAB_PARAMETER, AREA_PARAMETER, universePageUrl, VERSION_PARAMETER } from './pages';
+import { followUnsavedWork, hasUnsavedWork } from './ui/changeTracker';
 import { showScreen, showStatus } from './ui/dom';
 import { areaClaims } from './ui/editor/areaClaims';
+import { unsavedDraftEditors } from './ui/editor/DraftSection';
 import { EditorChat } from './ui/editor/EditorChat';
 import { EditorPresenceBar } from './ui/editor/EditorPresenceBar';
 import { EditorScreen, isEditorTab, type EditorPlace } from './ui/editor/EditorScreen';
@@ -143,6 +145,10 @@ export class EditorPage
 		{
 			this.restorePlace(event.state);
 		});
+		followUnsavedWork(() =>
+		{
+			this.sendPlace();
+		});
 		session.onMessage(SessionServerMessageType.Account, (account: AccountPayload) =>
 		{
 			this.onAccount(account);
@@ -240,6 +246,7 @@ export class EditorPage
 			chat.showEditors(room.state.editors);
 			presenceBar.show(room.state.editors);
 			this.editorScreen.setAreaClaims(areaClaims(room.state.editors, playerId, this.version));
+			this.editorScreen.setUnsavedDraftEditors(unsavedDraftEditors(room.state.editors, playerId));
 		});
 
 		room.onMessage(EditorServerMessageType.ChatHistory, (history: KeptChatHistoryPayload) =>
@@ -302,6 +309,7 @@ export class EditorPage
 		this.api.windowId = undefined;
 		this.presenceBar?.show([]);
 		this.editorScreen.setAreaClaims(new Map());
+		this.editorScreen.setUnsavedDraftEditors([]);
 
 		// A session that ended goes to the login page when the session room says so
 		if (isLeavingPage() || (code === CloseCode.CONSENTED) || (code === ServerCloseCode.LoggedOut.valueOf()))
@@ -344,7 +352,8 @@ export class EditorPage
 	}
 
 	/**
-	 * Tells the editor room which version, tab and area the page has open, once it has opened one
+	 * Tells the editor room which version, tab and area the page has open, once it has opened one, and
+	 * whether it holds unsaved work
 	 */
 	private sendPlace(): void
 	{
@@ -356,7 +365,8 @@ export class EditorPage
 		const place: EditorPlacePayload = {
 			version: this.version,
 			tab: this.place.tab,
-			areaId: (this.place.areaId ?? null)
+			areaId: (this.place.areaId ?? null),
+			unsaved: hasUnsavedWork()
 		};
 
 		this.editorRoom.send(EditorMessageType.Place, place);

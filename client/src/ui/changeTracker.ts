@@ -40,6 +40,11 @@ const unsavedWork = new Set<UnsavedWork>();
 let warningOnLeave = false;
 
 /**
+ * Called whenever the page starts or stops holding unsaved work
+ */
+const unsavedWorkListeners = new Set<(unsaved: boolean) => void>();
+
+/**
  * Asks the browser to warn that work would be lost before the page closes, reloads or goes to another page
  *
  * @param event The browser's beforeunload event
@@ -102,6 +107,27 @@ export function refreshUnsavedWork(): void
 	{
 		window.removeEventListener('beforeunload', warnBeforeLeaving);
 	}
+
+	for (const listener of unsavedWorkListeners)
+	{
+		listener(warn);
+	}
+}
+
+/**
+ * Hears when the page starts or stops holding unsaved work, as refreshUnsavedWork() finds it
+ *
+ * @param listener Called with whether it holds some
+ * @return Stops listening
+ */
+export function followUnsavedWork(listener: (unsaved: boolean) => void): () => void
+{
+	unsavedWorkListeners.add(listener);
+
+	return(() =>
+	{
+		unsavedWorkListeners.delete(listener);
+	});
 }
 
 /**
