@@ -23,14 +23,16 @@ export interface ToastOptions
 {
 	/**
 	 * What it tells of: info (the default) for news, success for something done, such as changes saved,
-	 * which shows green. Its text says the same, so it isn't told by color alone
+	 * which shows green, and warning for something to look at, such as another editor's save meeting
+	 * unsaved changes, which shows in the notice colors. Its text says the same, so it isn't told by
+	 * color alone
 	 */
-	kind?: 'info' | 'success';
+	kind?: 'info' | 'success' | 'warning';
 
 	/**
-	 * How long it shows, in milliseconds
+	 * How long it shows, in milliseconds, or null to show it until the player clicks it away
 	 */
-	durationMs?: number;
+	durationMs?: number | null;
 
 	/**
 	 * How screen readers read it out: polite waits for what they are reading, urgent interrupts it (see
@@ -59,6 +61,7 @@ export function showToast(content: string | readonly (string | Node)[], options:
 	const container = getElement('toasts', HTMLElement);
 	const toast = document.createElement('div');
 	const urgency = (options.announce ?? 'polite');
+	const lasts = (options.durationMs !== null);
 	let remainingMs = (options.durationMs ?? DEFAULT_TOAST_MS);
 	let startedAt = 0;
 	let timer: number | undefined;
@@ -90,12 +93,15 @@ export function showToast(content: string | readonly (string | Node)[], options:
 	};
 
 	/**
-	 * Counts down the time the toast has left
+	 * Counts down the time the toast has left, unless it shows until it is clicked away
 	 */
 	const resume = (): void =>
 	{
-		startedAt = performance.now();
-		timer = window.setTimeout(close, remainingMs);
+		if (lasts)
+		{
+			startedAt = performance.now();
+			timer = window.setTimeout(close, remainingMs);
+		}
 	};
 
 	toast.className = `toast ${options.kind ?? 'info'}`;

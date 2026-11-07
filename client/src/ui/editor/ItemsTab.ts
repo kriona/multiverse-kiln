@@ -9,6 +9,7 @@ import { TableSorter } from '../tableSorter';
 import { editorMessages } from './editorMessages';
 import { ItemDialog } from './ItemDialog';
 import type { EditorSave, SavedIds } from './editorSave';
+import { ChangedSinceNotes, type FollowsOtherSaves, type OtherSave } from './otherSaves';
 import type { SavableTab } from './SaveBar';
 import { describeRefusedChange, joinTags, listChange, listRef, markStagedRow, StagedChanges, stagedPage, stagedTag, type StagedChange, type StagedState } from './stagedChanges';
 
@@ -22,7 +23,7 @@ const SEARCH_DELAY_MS = 250;
  * server, before paging) and a page at a time, opening the item editor. Changes wait on the page until the tab is saved: changed items show their changes on the
  * page they are on, and items added since show at the top of the first page, whatever the filters
  */
-export class ItemsTab implements SavableTab
+export class ItemsTab implements SavableTab, FollowsOtherSaves
 {
 	private readonly nameFilter = getElement('item-filter-name', HTMLInputElement);
 	private readonly categoryFilter = getElement('item-filter-category', HTMLSelectElement);
@@ -44,6 +45,11 @@ export class ItemsTab implements SavableTab
 	 * The changes made since the items were last saved
 	 */
 	readonly changes = new StagedChanges<ItemSettings>();
+
+	/**
+	 * The items other windows saved while this one had unsaved changes to them
+	 */
+	private readonly changedSince = new ChangedSinceNotes('item');
 
 	/**
 	 * The changes the save being sent holds
@@ -169,6 +175,7 @@ export class ItemsTab implements SavableTab
 		this.items = [];
 		this.known.clear();
 		this.changes.clear();
+		this.changedSince.clear();
 		showMessage(this.error, undefined);
 		this.nameFilter.value = '';
 		setOptions(this.categoryFilter, [
@@ -233,6 +240,25 @@ export class ItemsTab implements SavableTab
 		this.changes.markSaved(this.collected, (id) => ids.number(listRef('Item', id)));
 		this.collected = [];
 		await this.refresh();
+	}
+
+	/**
+	 * Loads the page shown again after another window saved changes to the items, keeping the changes
+	 * made here and marking the items they and the save both changed
+	 *
+	 * @param save The save
+	 * @return True when the save changed an item with unsaved changes here
+	 */
+	otherSaved(save: OtherSave): boolean
+	{
+		const { changed, kept } = this.changedSince.follow(save, (id) => ((typeof id === 'number') && (this.changes.stateOf(id) !== undefined)));
+
+		if (changed)
+		{
+			void this.refresh();
+		}
+
+		return(kept);
 	}
 
 	/**
@@ -437,6 +463,8 @@ export class ItemsTab implements SavableTab
 			cell.append(content);
 			row.append(cell);
 		}
+
+		this.changedSince.mark(row.cells[1], item.id, (state !== undefined));
 
 		return(markStagedRow(row, state, !item.custom));
 	}

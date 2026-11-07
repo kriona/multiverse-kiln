@@ -7,6 +7,7 @@ import { getElement, showMessage } from '../dom';
 import { DifficultyDialog } from './DifficultyDialog';
 import { createOptionRow } from './optionRows';
 import type { EditorSave, SavedIds } from './editorSave';
+import { ChangedSinceNotes, type FollowsOtherSaves, type OtherSave } from './otherSaves';
 import type { SavableTab } from './SaveBar';
 import { describeRefusedChange, joinTags, listChange, listRef, markStagedRow, StagedChanges, stagedTag, stagedView, type StagedChange, type StagedState } from './stagedChanges';
 
@@ -14,12 +15,17 @@ import { describeRefusedChange, joinTags, listChange, listRef, markStagedRow, St
  * The difficulty levels on the Ruleset tab: every level a new group can choose, easiest first,
  * opening the difficulty level editor. Changes wait on the page until the tab is saved
  */
-export class DifficultySection implements SavableTab
+export class DifficultySection implements SavableTab, FollowsOtherSaves
 {
 	private readonly addButton = getElement('difficulty-add', HTMLButtonElement);
 	private readonly rows = getElement('difficulty-rows', HTMLTableSectionElement);
 	private readonly error = getElement('difficulty-list-error', HTMLElement);
 	private readonly dialog = new DifficultyDialog();
+
+	/**
+	 * The levels other windows saved while this one had unsaved changes to them
+	 */
+	private readonly changedSince = new ChangedSinceNotes('difficultyLevel');
 
 	/**
 	 * The changes made since the levels were last saved
@@ -65,6 +71,7 @@ export class DifficultySection implements SavableTab
 		this.addButton.hidden = !canEditUniverseSettings(universe.role);
 		this.levels = [];
 		this.changes.clear();
+		this.changedSince.clear();
 		this.rows.replaceChildren();
 		showMessage(this.error, undefined);
 		void this.refresh();
@@ -109,6 +116,25 @@ export class DifficultySection implements SavableTab
 		this.changes.markSaved(this.collected, (id) => ids.number(listRef('DifficultyLevel', id)));
 		this.collected = [];
 		await this.refresh();
+	}
+
+	/**
+	 * Loads the levels again after another window saved changes to them, keeping the changes made here
+	 * and marking the levels they and the save both changed
+	 *
+	 * @param save The save
+	 * @return True when the save changed a level with unsaved changes here
+	 */
+	otherSaved(save: OtherSave): boolean
+	{
+		const { changed, kept } = this.changedSince.follow(save, (id) => ((typeof id === 'number') && (this.changes.stateOf(id) !== undefined)));
+
+		if (changed)
+		{
+			void this.refresh();
+		}
+
+		return(kept);
 	}
 
 	/**
@@ -189,10 +215,17 @@ export class DifficultySection implements SavableTab
 	{
 		this.rows.replaceChildren(...this.view()
 			.sort((a, b) => ((a.item.mobScale - b.item.mobScale) || (Math.abs(a.item.id) - Math.abs(b.item.id))))
-			.map(({ item, state }) => markStagedRow(createOptionRow(difficultyName(item), describeMobScale(item.mobScale), joinTags(levelTags(item), stagedTag(state, false)), () =>
+			.map(({ item, state }) =>
 			{
-				this.openLevel(item);
-			}), state, false)));
+				const row = markStagedRow(createOptionRow(difficultyName(item), describeMobScale(item.mobScale), joinTags(levelTags(item), stagedTag(state, false)), () =>
+				{
+					this.openLevel(item);
+				}), state, false);
+
+				this.changedSince.mark(row.cells[0], item.id, (state !== undefined));
+
+				return(row);
+			}));
 	}
 
 	/**

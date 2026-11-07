@@ -505,6 +505,25 @@ tr.staged-deleted
 	}
 }
 
+// What another editor saved to something with unsaved changes here (otherSaves.ts): under its name in a
+// list, or at the top of its form. Its words say so, so it isn't told by color alone
+.changed-since
+{
+	margin: 4px 0 0;
+	padding: 4px 8px;
+	border: 1px solid $notice-border;
+	border-radius: 4px;
+	background: $notice-background;
+	color: $notice-text;
+	font-size: 12px;
+	font-style: normal;
+}
+
+form > .changed-since
+{
+	margin: 0 0 12px;
+}
+
 // An area in the list of areas that will be deleted when the tab is saved
 .area-list .staged-deleted
 {

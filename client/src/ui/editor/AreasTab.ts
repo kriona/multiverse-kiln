@@ -1,4 +1,4 @@
-import { ancestorAreas, AREA_LIGHT_LEVEL_NAMES, AREA_LIGHT_LEVELS, canEditWorld, canPaintTile, childAreas, DEFAULT_AREA_TILE_KEYS, descendantAreaIds, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_AREA_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, AREA_PASSAGES_OF_TIME, areasTabListing, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary, type FaerieMorning, type AreaListPayload, type AreaLightLevel, type AreaPassageOfTime, type AreaSettings } from '@multiverse-kiln/shared';
+import { ancestorAreas, AREA_LIGHT_LEVEL_NAMES, AREA_LIGHT_LEVELS, canEditWorld, canPaintTile, childAreas, DEFAULT_AREA_TILE_KEYS, descendantAreaIds, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_AREA_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, AREA_PASSAGES_OF_TIME, areasTabListing, type AuditSubject, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary, type FaerieMorning, type AreaListPayload, type AreaLightLevel, type AreaPassageOfTime, type AreaSettings } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -12,6 +12,7 @@ import type { AreaSource } from './areaSource';
 import { editorMessages } from './editorMessages';
 import { MapEditor } from './MapEditor';
 import { newRef, numberRef, type EditorSave, type SavedIds } from './editorSave';
+import { ChangedSinceLine, type FollowsOtherSaves, type OtherSave } from './otherSaves';
 import { combineChanges, type SavableTab } from './SaveBar';
 import { isNewAreaId, StagedAreas } from './stagedAreas';
 import { deletedNote, labelRemoveButton, stagedTag, type StagedTiles } from './stagedChanges';
@@ -28,13 +29,18 @@ function areaRef(areaId: string): string
 }
 
 /**
+ * What a save changes on the tab, as the Audit tab names it
+ */
+const AREA_SUBJECTS: ReadonlySet<AuditSubject> = new Set(['area', 'cells', 'links']);
+
+/**
  * The Areas tab: the universe's areas, opening the area editor, and adding and deleting areas
  *
  * The area editor is a view in the tab rather than a dialog, since it holds the area's map. Areas added
  * and deleted wait on the page until the tab is saved, as do the changes made to the area open in the
  * area editor; a new area can be opened, painted and linked to before it is saved
  */
-export class AreasTab implements SavableTab
+export class AreasTab implements SavableTab, FollowsOtherSaves
 {
 	private readonly listView = getElement('area-list-view', HTMLElement);
 	private readonly list = getElement('area-list', HTMLUListElement);
@@ -106,6 +112,12 @@ export class AreasTab implements SavableTab
 		root: this.form,
 		state: () => [this.mapUnsaved, this.parent.value]
 	});
+
+	/**
+	 * Says above the area editor's settings what other windows saved to the area open while it had
+	 * unsaved changes
+	 */
+	private readonly changedSince = new ChangedSinceLine(this.form, this.areaChanges);
 
 	/**
 	 * The areas added and deleted since the tab was last saved
@@ -423,6 +435,7 @@ export class AreasTab implements SavableTab
 		// Any unsaved painting has been discarded, so the map loads afresh
 		this.mapEditor.hide();
 		this.areaChanges.markSaved();
+		this.changedSince.hide();
 		// A new area has no address until it is saved
 		this.onAreaChanged((isNewAreaId(areaId) ? undefined : areaId));
 		this.listView.hidden = true;
@@ -474,6 +487,7 @@ export class AreasTab implements SavableTab
 		this.mapEditor.hide();
 		// The hidden area editor is filled afresh when an area opens, so nothing left in it can be saved
 		this.areaChanges.markSaved();
+		this.changedSince.hide();
 		this.listView.hidden = false;
 		this.editorView.hidden = true;
 
@@ -591,6 +605,55 @@ export class AreasTab implements SavableTab
 			this.fillDefaultTiles(this.indoors.checked, Number(this.defaultTile.value));
 			void this.mapEditor.setTiles(this.tiles, this.deletedTiles, this.indoors.checked);
 		}
+	}
+
+	/**
+	 * Follows a save made in another window that changed areas: loads the list again, and the area open
+	 * when the save changed it and it has no unsaved changes here; with them, keeps them and says above
+	 * the area's settings what the save changed
+	 *
+	 * @param save The save
+	 * @return True when the save changed an area with unsaved changes here: the area open, or one being
+	 * deleted when the tab is saved
+	 */
+	otherSaved(save: OtherSave): boolean
+	{
+		const universe = this.universe;
+		const changed = save.details.filter((detail) => AREA_SUBJECTS.has(detail.subject));
+
+		if (!universe || (changed.length === 0))
+		{
+			return(false);
+		}
+
+		const open = this.area;
+		const aboutOpen = changed.filter((detail) => ((open !== undefined) && (detail.id === open.id)));
+		const deletedHere = changed.some((detail) => ((typeof detail.id === 'string') && this.staged.isDeleted(detail.id)));
+
+		if (open === undefined)
+		{
+			void this.showList();
+			return(deletedHere);
+		}
+
+		if (aboutOpen.length === 0)
+		{
+			void this.loadAreas(universe).catch(() =>
+			{
+				// The areas stay as they were last loaded, until the next area opens
+			});
+			return(deletedHere);
+		}
+
+		if (this.areaChanges.hasUnsavedChanges())
+		{
+			this.changedSince.add(save.name, aboutOpen);
+			return(true);
+		}
+
+		void (aboutOpen.some((detail) => ((detail.subject === 'area') && (detail.action === 'deleted'))) ? this.showList() : this.loadArea(open.id));
+
+		return(deletedHere);
 	}
 
 	/**
