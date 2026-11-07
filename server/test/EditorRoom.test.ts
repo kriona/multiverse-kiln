@@ -381,6 +381,50 @@ describe('EditorRoom', () =>
 			assert.strictEqual(window.inbox.pending(EditorServerMessageType.Saved), 0);
 		});
 
+		it('tells each window only of what its player\'s role shows', async () =>
+		{
+			const grace = await addEditor('Grace', 'beta_tester');
+			const alan = await addEditor('Alan', 'translator');
+			const graceWindow = await openEditor(grace, universeId);
+			const alanWindow = await openEditor(alan, universeId);
+			const races = (await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races;
+			const dwarf = races.find((race) => (race.key === 'dwarf'))!;
+			const elf = races.find((race) => (race.key === 'elf'))!;
+
+			assert.strictEqual((await saveChanges(ada, universeId, [
+				{ kind: 'saveRace', id: dwarf.id, settings: { ...dwarf, name: 'Stout', enabled: !dwarf.enabled } },
+				{ kind: 'saveRace', id: elf.id, settings: { ...elf, enabled: !elf.enabled } },
+				{ kind: 'universe', update: { groupSize: 3 } }
+			])).status, 200);
+
+			const settings = { subject: 'settings', action: 'changed', target: null, fields: [{ field: 'groupSize', value: 3 }], count: 1, id: null };
+			const alanNotice = await alanWindow.inbox.take<EditorSavedPayload>(EditorServerMessageType.Saved);
+
+			assert.deepStrictEqual((await graceWindow.inbox.take<EditorSavedPayload>(EditorServerMessageType.Saved)).details, [settings]);
+			assert.deepStrictEqual(alanNotice.details.map((detail) => [detail.subject, detail.id, detail.fields.map((change) => change.field)]), [
+				['race', dwarf.id, ['name']],
+				['settings', null, ['groupSize']]
+			]);
+		});
+
+		it('tells a window by the role its player has once a save changes it', async () =>
+		{
+			const grace = await addEditor('Grace', 'builder');
+			const window = await openEditor(grace, universeId);
+			const races = (await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races;
+			const dwarf = races.find((race) => (race.key === 'dwarf'))!;
+
+			assert.strictEqual((await saveChanges(ada, universeId, [
+				{ kind: 'saveEditor', playerId: grace.playerId, settings: { role: 'beta_tester', languages: [] } }
+			])).status, 200);
+			await window.inbox.take(EditorServerMessageType.AccessChanged);
+			await window.inbox.take(EditorServerMessageType.Saved);
+			assert.strictEqual((await saveChanges(ada, universeId, [
+				{ kind: 'saveRace', id: dwarf.id, settings: { ...dwarf, name: 'Stout' } }
+			])).status, 200);
+			assert.deepStrictEqual((await window.inbox.take<EditorSavedPayload>(EditorServerMessageType.Saved)).details, []);
+		});
+
 		it('tells no window of a save that changed nothing', async () =>
 		{
 			const window = await openEditor(ada, universeId);
