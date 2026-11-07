@@ -1,7 +1,7 @@
 import assert from 'assert';
-import { settleConflict, settleTextConflict, sourceTextHash, type EditorChange, type EditorRace, type RaceListPayload, type SaveChangesPayload, type SaveRefusedPayload, type UniverseTextRef } from '@multiverse-kiln/shared';
+import { settleConflict, settleTextConflict, sourceTextHash, type ClassListPayload, type EditorChange, type EditorClass, type EditorRace, type RaceListPayload, type SaveChangesPayload, type SaveRefusedPayload, type UniverseTextRef } from '@multiverse-kiln/shared';
 
-import { setUniverseRole } from '../src/db/universeEditorRepo.js';
+import { findUniverseAccess, setUniverseAccess, setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { findTranslation } from '../src/db/universeTextRepo.js';
 import { liveVersion } from '../src/db/universeVersions.js';
 import { createArea, createUniverse, logIn, saveChanges, send, type Editor } from './editorRequests.js';
@@ -154,6 +154,137 @@ describe('Saving only what changed', () =>
 		assert.strictEqual(draftSave.status, 200);
 		assert.strictEqual((await saveChanges(ada, universeId, [saveRace(dwarf, { name: 'Live Dwarf' })])).status, 200);
 		assert.deepStrictEqual([(await findRace('dwarf')).name, (await findRace('dwarf', 'draft')).name], ['Live Dwarf', 'Draft Dwarf']);
+	});
+
+	describe('settings that can\'t be set together', () =>
+	{
+		let areaId: string;
+		let elfId: number;
+
+		/**
+		 * The fighter class as the universe has it saved
+		 *
+		 * @return The class
+		 */
+		async function findFighter(): Promise<EditorClass>
+		{
+			const characterClass = (await send<ClassListPayload>(ada, 'GET', `/${universeId}/classes`)).body.classes.find((candidate) => (candidate.key === 'fighter'));
+
+			assert.ok(characterClass, 'no fighter');
+
+			return(characterClass);
+		}
+
+		/**
+		 * A change to a class made from the class as the editor loaded it
+		 *
+		 * @param loaded The class as loaded
+		 * @param settings The settings the editor changed it to
+		 * @return The change
+		 */
+		function saveClass(loaded: EditorClass, settings: Partial<EditorClass>): EditorChange & { kind: 'saveClass' }
+		{
+			return({
+				kind: 'saveClass',
+				id: loaded.id,
+				settings: { ...loaded, ...settings },
+				loaded: { ...loaded }
+			});
+		}
+
+		beforeEach(async () =>
+		{
+			areaId = await createArea(ada, universeId, { name: 'Meadow' });
+			elfId = (await findRace('elf')).id;
+		});
+
+		it('conflicts on a class\'s own starting area and its areas by race, rather than saving both', async () =>
+		{
+			const fighter = await findFighter();
+
+			assert.strictEqual((await saveChanges(ada, universeId, [saveClass(fighter, { startingAreaId: areaId, startingColumn: 2, startingRow: 3 })])).status, 200);
+
+			const change = saveClass(fighter, { raceAreas: [{ raceId: elfId, areaId, column: 1, row: 1 }] });
+			const refused = await saveChanges(grace, universeId, [change]);
+
+			assert.strictEqual(refused.status, 409);
+			assert.deepStrictEqual(refused.body.conflicts?.map((conflict) => [conflict.field, conflict.mine, conflict.theirs, conflict.savedBy?.name]), [
+				[
+					'startingArea',
+					{ field: 'raceAreas', value: [{ race: { key: 'elf', name: null }, place: { area: 'Meadow', column: 1, row: 1 } }] },
+					{ field: 'startingArea', value: { area: 'Meadow', column: 2, row: 3 } },
+					'Ada'
+				]
+			]);
+			assert.deepStrictEqual([(await findFighter()).startingAreaId, (await findFighter()).raceAreas], [areaId, []]);
+
+			const [conflict] = (refused.body.conflicts ?? []);
+
+			assert.ok(conflict);
+			assert.strictEqual((await saveChanges(grace, universeId, [settleConflict(change, conflict.saved, true)])).status, 200);
+
+			const kept = await findFighter();
+
+			assert.deepStrictEqual([kept.startingAreaId, kept.raceAreas], [null, [{ raceId: elfId, areaId, column: 1, row: 1 }]]);
+		});
+
+		it('takes the class\'s saved areas by race, without the starting area of its own, when the editor chooses theirs', async () =>
+		{
+			const fighter = await findFighter();
+
+			assert.strictEqual((await saveChanges(ada, universeId, [saveClass(fighter, { raceAreas: [{ raceId: elfId, areaId, column: 1, row: 1 }] })])).status, 200);
+
+			const change = saveClass(fighter, { startingAreaId: areaId, startingColumn: 2, startingRow: 3 });
+			const refused = await saveChanges(grace, universeId, [change]);
+
+			assert.strictEqual(refused.status, 409);
+			assert.strictEqual((await saveChanges(grace, universeId, [settleConflict(change, refused.body.conflicts![0].saved, false)])).status, 200);
+
+			const taken = await findFighter();
+
+			assert.deepStrictEqual([taken.startingAreaId, taken.raceAreas], [null, [{ raceId: elfId, areaId, column: 1, row: 1 }]]);
+		});
+
+		it('conflicts on an editor\'s role and languages, so taking theirs saves a role with the languages it allows', async () =>
+		{
+			const hopper = await logIn('Hopper');
+			const loaded = {
+				role: 'translator',
+				languages: ['fr']
+			} as const;
+
+			await setUniverseAccess(universeId, hopper.playerId, { ...loaded, languages: [...loaded.languages] });
+			assert.strictEqual((await saveChanges(ada, universeId, [{
+				kind: 'saveEditor',
+				playerId: hopper.playerId,
+				settings: {
+					role: 'translator',
+					languages: ['de']
+				},
+				loaded
+			}])).status, 200);
+
+			const change: EditorChange & { kind: 'saveEditor' } = {
+				kind: 'saveEditor',
+				playerId: hopper.playerId,
+				settings: {
+					role: 'builder',
+					languages: []
+				},
+				loaded: { ...loaded }
+			};
+			const refused = await saveChanges(grace, universeId, [change]);
+
+			assert.strictEqual(refused.status, 409);
+			assert.deepStrictEqual(refused.body.conflicts?.map((conflict) => [conflict.field, conflict.mine, conflict.theirs]), [
+				['role', { field: 'role', value: 'builder' }, { field: 'languages', value: ['de'] }]
+			]);
+			assert.strictEqual((await saveChanges(grace, universeId, [settleConflict(change, refused.body.conflicts[0].saved, false)])).status, 200);
+			assert.deepStrictEqual(await findUniverseAccess(universeId, hopper.playerId), {
+				role: 'translator',
+				languages: ['de']
+			});
+		});
 	});
 
 	describe('translations and notes', () =>

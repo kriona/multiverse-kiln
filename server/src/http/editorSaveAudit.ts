@@ -64,6 +64,16 @@ const SUBJECT_FIELD_KEYS: Partial<Record<AuditSubject, ReadonlyMap<string, Audit
 };
 
 /**
+ * Audit fields merged as part of another, by subject, where only some combinations of the two can be
+ * saved: a class with its own starting area has no areas by race, and only a translator has languages.
+ * Merged as one setting, a change saves both as it sent them or both as saved, never one of each
+ */
+const MERGED_WITH: Partial<Record<AuditSubject, ReadonlyMap<AuditField, AuditField>>> = {
+	class: new Map([['raceAreas', 'startingArea']]),
+	editor: new Map([['languages', 'role']])
+};
+
+/**
  * What each create change adds
  */
 const LIST_SUBJECTS: Readonly<Record<'createTile' | 'createItem' | 'createRace' | 'createClass' | 'createTheme' | 'createDifficultyLevel', AuditSubject>> = {
@@ -201,7 +211,8 @@ function fieldOf(subject: AuditSubject, key: string): AuditField | undefined
 
 /**
  * The setting the editor shows that a setting is part of, for merging a change's settings a setting at a
- * time (mergeSettings()): its audit field, or its own key for a setting the Audit tab doesn't name
+ * time (mergeSettings()): its audit field, or the one MERGED_WITH merges that with, or its own key for
+ * a setting the Audit tab doesn't name
  *
  * @param subject What the setting belongs to
  * @param key The setting's key
@@ -209,7 +220,14 @@ function fieldOf(subject: AuditSubject, key: string): AuditField | undefined
  */
 export function settingGroup(subject: AuditSubject, key: string): string
 {
-	return((fieldOf(subject, key) ?? key));
+	const field = fieldOf(subject, key);
+
+	if (field === undefined)
+	{
+		return(key);
+	}
+
+	return((MERGED_WITH[subject]?.get(field) ?? field));
 }
 
 /**
