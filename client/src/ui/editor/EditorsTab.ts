@@ -333,6 +333,8 @@ export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 		const { changed, kept } = this.changedSince.follow(save, isStaged);
 		const dialog = this.dialogFollower.follow(save, isStaged);
 
+		this.followRemoved(save);
+
 		if (changed)
 		{
 			void this.refresh().then(() =>
@@ -345,6 +347,58 @@ export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 		}
 
 		return(kept || dialog.kept);
+	}
+
+	/**
+	 * Follows a save made in another window that took editors' roles away: a new role given here to one
+	 * of them is kept as adding them again, which deleting discards, and taking their role away here is
+	 * dropped, since it is gone already
+	 *
+	 * @param save The save
+	 */
+	private followRemoved(save: OtherSave): void
+	{
+		const removed = new Set(save.details
+			.filter((detail) => ((detail.subject === 'editor') && (detail.action === 'deleted')))
+			.map((detail) => detail.id));
+		const dropped = new Map<string, undefined>();
+		let followed = false;
+
+		for (const [playerId, staged] of [...this.staged])
+		{
+			const saved = this.editors.find((editor) => (editor.playerId === playerId));
+
+			if (!removed.has(playerId) || staged.added || !saved)
+			{
+				continue;
+			}
+
+			if (staged.removed || !staged.settings)
+			{
+				this.staged.delete(playerId);
+				dropped.set(playerId, undefined);
+			}
+			else
+			{
+				this.staged.set(playerId, {
+					added: {
+						playerId,
+						username: saved.username,
+						displayName: saved.displayName
+					},
+					settings: staged.settings
+				});
+			}
+
+			followed = true;
+		}
+
+		this.changedSince.move(dropped);
+
+		if (followed)
+		{
+			this.changed();
+		}
 	}
 
 	/**

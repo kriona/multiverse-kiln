@@ -195,6 +195,28 @@ export class ChangedSinceNotes
 	}
 
 	/**
+	 * Moves the notes of things a save in another window deleted to the new things their changes here
+	 * are kept as, and forgets those whose changes were dropped
+	 *
+	 * @param followed The ID each has as a new thing, or undefined, by the ID it had, from
+	 * StagedChanges.followDeleted()
+	 */
+	move(followed: ReadonlyMap<number | string, number | string | undefined>): void
+	{
+		for (const [id, newId] of followed)
+		{
+			const changed = this.notes.get(id);
+
+			this.notes.delete(id);
+
+			if (changed && (newId !== undefined))
+			{
+				this.notes.set(newId, changed);
+			}
+		}
+	}
+
+	/**
 	 * Forgets every note, such as when the list is loaded for another universe
 	 */
 	clear(): void

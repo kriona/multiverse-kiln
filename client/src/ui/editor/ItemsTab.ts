@@ -260,6 +260,8 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 		const { changed, kept } = this.changedSince.follow(save, isStaged);
 		const dialog = this.dialogFollower.follow(save, isStaged);
 
+		this.changedSince.move(this.changes.followDeleted(save, 'item'));
+
 		if (changed)
 		{
 			void this.refresh().then(() =>

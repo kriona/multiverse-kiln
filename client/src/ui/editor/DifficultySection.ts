@@ -136,6 +136,8 @@ export class DifficultySection implements SavableTab, FollowsOtherSaves
 		const { changed, kept } = this.changedSince.follow(save, isStaged);
 		const dialog = this.dialogFollower.follow(save, isStaged);
 
+		this.changedSince.move(this.changes.followDeleted(save, 'difficultyLevel'));
+
 		if (changed)
 		{
 			void this.refresh().then(() =>

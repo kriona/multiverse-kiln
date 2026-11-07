@@ -180,13 +180,15 @@ export class StagedAreas implements ChangeSource
 	}
 
 	/**
-	 * Takes a saved area as deleted
+	 * Takes a saved area as deleted, by a save from this window or another: it is no longer to be
+	 * deleted, and new areas inside it become top-level areas, as the server makes the areas inside it
 	 *
 	 * @param areaId Its ID
 	 */
 	markDeleted(areaId: string): void
 	{
 		this.deleted.delete(areaId);
+		this.added = this.added.map((area) => ((area.parentAreaId === areaId) ? { ...area, parentAreaId: null } : area));
 		this.changed();
 	}
 

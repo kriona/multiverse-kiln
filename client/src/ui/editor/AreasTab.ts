@@ -642,7 +642,8 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	/**
 	 * Follows a save made in another window that changed areas: loads the list again, and the area open
 	 * when the save changed it and it has no unsaved changes here; with them, keeps them and says above
-	 * the area's settings what the save changed. Painting the open area's map is left to followPainting()
+	 * the area's settings what the save changed. An area the save deleted is taken as deleted here too
+	 * (StagedAreas.markDeleted()). Painting the open area's map is left to followPainting()
 	 *
 	 * @param save The save
 	 * @return True when the save changed an area with unsaved changes here: the area open, or one being
@@ -658,9 +659,17 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			return(false);
 		}
 
+		for (const detail of changed)
+		{
+			if ((detail.subject === 'area') && (detail.action === 'deleted') && (typeof detail.id === 'string'))
+			{
+				this.staged.markDeleted(detail.id);
+			}
+		}
+
 		const open = this.area;
 		const aboutOpen = changed.filter((detail) => ((open !== undefined) && (detail.id === open.id)));
-		const deletedHere = changed.some((detail) => ((typeof detail.id === 'string') && this.staged.isDeleted(detail.id)));
+		const deletedHere =changed.some((detail) => ((typeof detail.id === 'string') && this.staged.isDeleted(detail.id)));
 
 		if (open === undefined)
 		{
