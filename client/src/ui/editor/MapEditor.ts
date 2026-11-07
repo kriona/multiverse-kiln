@@ -4,7 +4,7 @@ import { canPaintTile, CHUNK_SIZE, DEFAULT_TILE_CELL, defineMessages, isInBounds
 
 import { BRUSH_SHAPES, brushCells, type BrushCell, type BrushShape } from '../../editor/brush';
 import { ChunkLoader } from '../../editor/ChunkLoader';
-import { EditHistory, type EditStep } from '../../editor/EditHistory';
+import { EditHistory, type EditStep, type SavedCell } from '../../editor/EditHistory';
 import { EditorMap } from '../../editor/EditorMap';
 import { editorAreaPayload, MapCanvas } from '../../editor/MapCanvas';
 import { currentLocale, t } from '../../localization';
@@ -895,7 +895,7 @@ export class MapEditor
 		}
 
 		const applied: CellChange[] = [];
-		const rebased = new Map<string, { before: number; after: number }>();
+		const rebased: SavedCell[] = [];
 		const save = ++this.followedSaves;
 		let paintedOver = 0;
 
@@ -923,7 +923,12 @@ export class MapEditor
 				const strokeValue = this.stroke?.after.get(key);
 				const overPainting = (this.paintedHere.has(key) || ((mine !== undefined) && (mine[2] !== theirs)) || ((strokeValue !== undefined) && (strokeValue !== theirs)));
 
-				rebased.set(key, { before, after: theirs });
+				rebased.push({
+					column,
+					row,
+					before,
+					after: theirs
+				});
 				this.paintedByOthers.set(key, { name, overPainting, save });
 
 				if (overPainting)
