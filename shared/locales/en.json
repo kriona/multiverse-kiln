@@ -1651,6 +1651,10 @@
 		"defaultMessage": "{known, select, yes {{hasValue, select, yes {Take {name}'s: {value}} other {Take {name}'s}}} other {{hasValue, select, yes {Take the saved one: {value}} other {Take the saved one}}}}",
 		"description": "Choice in the dialog the editor's Save opens when another editor saved a different value for a setting the player changed: drop the player's value and keep theirs. {name} is the other editor's display name when it is known ({known} is yes), and {value} the value they saved, e.g. \"Stout\" or \"no\""
 	},
+	"editor.conflict.text": {
+		"defaultMessage": "{subject, select, translations {Translation into {language} of {place}} other {Note for translators on {place}}}",
+		"description": "Heading of a choice in the dialog the editor's Save opens when another editor saved a different translation, or note for translators, of a piece of universe text the player also changed, e.g. \"Translation into French of Area: Waterdeep, name\". {language} is the translation's language and {place} where the text comes from, as the Translations tab's From column says it"
+	},
 	"editor.conflict.title": {
 		"defaultMessage": "Settings Changed by Others",
 		"description": "Title of the dialog the editor's Save opens when other editors saved different values for settings the player also changed, asking whose to keep"

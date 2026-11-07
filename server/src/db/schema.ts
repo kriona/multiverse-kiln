@@ -494,6 +494,12 @@ export const universeTranslations = pgTable('universe_translations', {
 	 */
 	sourceHash: text('source_hash').notNull(),
 
+	/**
+	 * Who saved it last, for an editor saving over it to be told whose it is; null once their account is
+	 * deleted
+	 */
+	savedBy: uuid('saved_by').references(() => players.id, { onDelete: 'set null' }),
+
 	updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	primaryKey({ columns: [table.universeId, table.draft, table.kind, table.thingId, table.field, table.language] }),
@@ -519,6 +525,11 @@ export const universeTranslatorNotes = pgTable('universe_translator_notes', {
 	 * The note, or null for none
 	 */
 	note: text('note'),
+
+	/**
+	 * Who wrote or deleted the note last, as savedBy is for a translation
+	 */
+	noteSavedBy: uuid('note_saved_by').references(() => players.id, { onDelete: 'set null' }),
 
 	/**
 	 * Whether the text needs no translation, so players see it as written in every language and its

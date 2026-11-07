@@ -22,6 +22,12 @@ const MAX_WINDOW_ID_LENGTH = 64;
 const loadedSettings = z.record(z.string(), z.unknown()).optional();
 
 /**
+ * A translation or note for translators as the editor loaded it, null for none, only compared with what
+ * is saved as loadedSettings are
+ */
+const loadedText = z.string().max(MAX_LONG_DESCRIPTION_LENGTH).nullable().optional();
+
+/**
  * A cell's column or row: generous enough for any map, and small enough for the database
  */
 const cellCoordinate = z.number().int().min(-MAX_MAP_SIDE).max(MAX_MAP_SIDE);
@@ -778,7 +784,8 @@ export const saveChangesRequest = byRuleset((ruleset) => z.object({
 			text: universeTextRef,
 			language: languageTag,
 			translation: z.string().nullable(),
-			sourceHash: z.string().regex(/^[0-9a-f]{64}$/)
+			sourceHash: z.string().regex(/^[0-9a-f]{64}$/),
+			loaded: loadedText
 		})
 			.transform((change, context) =>
 			{
@@ -805,7 +812,8 @@ export const saveChangesRequest = byRuleset((ruleset) => z.object({
 				.max(MAX_TRANSLATOR_NOTE_LENGTH)
 				.refine((text) => !DISALLOWED_TEXT_CHARACTERS.test(text.replace(/[\t\n\r]/g, '')), 'Contains disallowed characters')
 				.transform((note) => ((note === '') ? null : note))
-				.nullable()
+				.nullable(),
+			loaded: loadedText
 		}),
 		z.object({
 			kind: z.literal('saveNoTranslation'),

@@ -6,7 +6,7 @@ import { and, count, eq, inArray, isNull, notExists, notInArray, or, sql, type S
 import type { UniverseTextKind, UniverseTextRef } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
-import { universeTranslations, universeTranslatorNotes } from './schema.js';
+import { players, universeTranslations, universeTranslatorNotes } from './schema.js';
 import { inVersion, liveVersion, type UniverseVersion } from './universeVersions.js';
 
 /**
@@ -44,29 +44,90 @@ export interface TranslatorNoteRecord extends UniverseTextRef
 }
 
 /**
+ * Who saved a translation or a note for translators last
+ */
+export interface TextSaver
+{
+	name: string;
+	username: string;
+}
+
+/**
  * Adds a translation of a piece of universe text, or replaces the one it has in that language
  *
  * @param version The universe's live version or draft
- * @param translation The translation
+ * @param translation The translation, with the player saving it (null or left out for none)
  * @param executor The database, or a transaction
  */
-export async function saveTranslation(version: UniverseVersion, translation: UniverseTranslationRecord, executor: Executor = db): Promise<void>
+export async function saveTranslation(version: UniverseVersion, translation: UniverseTranslationRecord & { savedBy?: string | null }, executor: Executor = db): Promise<void>
 {
+	const savedBy = (translation.savedBy ?? null);
+
 	await executor
 		.insert(universeTranslations)
 		.values({
 			universeId: version.universeId,
 			draft: version.draft,
-			...translation
+			...translation,
+			savedBy
 		})
 		.onConflictDoUpdate({
 			target: [universeTranslations.universeId, universeTranslations.draft, universeTranslations.kind, universeTranslations.thingId, universeTranslations.field, universeTranslations.language],
 			set: {
 				text: translation.text,
 				sourceHash: translation.sourceHash,
+				savedBy,
 				updatedAt: sql`now()`
 			}
 		});
+}
+
+/**
+ * The translation of a piece of universe text into one language, with who saved it
+ *
+ * @param version The universe's live version or draft
+ * @param ref The piece of text
+ * @param language The translation's language, by tag
+ * @param executor The database, or a transaction
+ * @return The translation and its source text's hash, with who saved it (null once their account is
+ * deleted, or when that isn't known); undefined when it has none
+ */
+export async function findTranslation(version: UniverseVersion, ref: UniverseTextRef, language: string, executor: Executor = db): Promise<{ text: string; sourceHash: string; savedBy: TextSaver | null } | undefined>
+{
+	const [row] = await executor
+		.select({
+			text: universeTranslations.text,
+			sourceHash: universeTranslations.sourceHash,
+			name: players.displayName,
+			username: players.username
+		})
+		.from(universeTranslations)
+		.leftJoin(players, eq(players.id, universeTranslations.savedBy))
+		.where(and(
+			inVersion(universeTranslations, version),
+			eq(universeTranslations.kind, ref.kind),
+			eq(universeTranslations.thingId, ref.thingId),
+			eq(universeTranslations.field, ref.field),
+			eq(universeTranslations.language, language)
+		))
+		.limit(1);
+
+	return(row && {
+		text: row.text,
+		sourceHash: row.sourceHash,
+		savedBy: saverOf(row)
+	});
+}
+
+/**
+ * Who saved a row, from its joined player
+ *
+ * @param row The row, with the player's display name and username (null without one)
+ * @return Who saved it, or null
+ */
+function saverOf(row: { name: string | null; username: string | null }): TextSaver | null
+{
+	return((((row.name === null) || (row.username === null)) ? null : { name: row.name, username: row.username }));
 }
 
 /**
@@ -236,25 +297,58 @@ function noteRow(version: UniverseVersion, ref: UniverseTextRef): SQL | undefine
  * Adds a note for translators to a piece of universe text, or replaces the one it has
  *
  * @param version The universe's live version or draft
- * @param note The note, with the text it is on
+ * @param note The note, with the text it is on and the player saving it (null or left out for none)
  * @param executor The database, or a transaction
  */
-export async function saveTranslatorNote(version: UniverseVersion, note: UniverseTextRef & { note: string }, executor: Executor = db): Promise<void>
+export async function saveTranslatorNote(version: UniverseVersion, note: UniverseTextRef & { note: string; savedBy?: string | null }, executor: Executor = db): Promise<void>
 {
+	const { savedBy, ...values } = note;
+	const noteSavedBy = (savedBy ?? null);
+
 	await executor
 		.insert(universeTranslatorNotes)
 		.values({
 			universeId: version.universeId,
 			draft: version.draft,
-			...note
+			...values,
+			noteSavedBy
 		})
 		.onConflictDoUpdate({
 			target: [universeTranslatorNotes.universeId, universeTranslatorNotes.draft, universeTranslatorNotes.kind, universeTranslatorNotes.thingId, universeTranslatorNotes.field],
 			set: {
 				note: note.note,
+				noteSavedBy,
 				updatedAt: sql`now()`
 			}
 		});
+}
+
+/**
+ * The note for translators on a piece of universe text, with who wrote or deleted it last
+ *
+ * @param version The universe's live version or draft
+ * @param ref The piece of text
+ * @param executor The database, or a transaction
+ * @return The note (null for none), with who saved it (null once their account is deleted, or when that
+ * isn't known); undefined when the text has no row of notes
+ */
+export async function findTranslatorNote(version: UniverseVersion, ref: UniverseTextRef, executor: Executor = db): Promise<{ note: string | null; savedBy: TextSaver | null } | undefined>
+{
+	const [row] = await executor
+		.select({
+			note: universeTranslatorNotes.note,
+			name: players.displayName,
+			username: players.username
+		})
+		.from(universeTranslatorNotes)
+		.leftJoin(players, eq(players.id, universeTranslatorNotes.noteSavedBy))
+		.where(noteRow(version, ref))
+		.limit(1);
+
+	return(row && {
+		note: row.note,
+		savedBy: saverOf(row)
+	});
 }
 
 /**
@@ -262,10 +356,10 @@ export async function saveTranslatorNote(version: UniverseVersion, note: Univers
  * needs no translation
  *
  * @param version The universe's live version or draft
- * @param ref The piece of text
+ * @param ref The piece of text, with the player deleting the note (null or left out for none)
  * @param executor The database, or a transaction
  */
-export async function deleteTranslatorNote(version: UniverseVersion, ref: UniverseTextRef, executor: Executor = db): Promise<void>
+export async function deleteTranslatorNote(version: UniverseVersion, ref: UniverseTextRef & { savedBy?: string | null }, executor: Executor = db): Promise<void>
 {
 	// A row that would hold nothing is deleted, and one marking the text keeps its mark
 	await executor
@@ -278,6 +372,7 @@ export async function deleteTranslatorNote(version: UniverseVersion, ref: Univer
 		.update(universeTranslatorNotes)
 		.set({
 			note: null,
+			noteSavedBy: (ref.savedBy ?? null),
 			updatedAt: sql`now()`
 		})
 		.where(noteRow(version, ref));

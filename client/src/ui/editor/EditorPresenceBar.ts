@@ -22,8 +22,8 @@ function tabName(tab: string): string
 
 /**
  * The left of the editor's save bar: the other players who have the universe's editor open, each with
- * where their windows are (the tab, the area when this window knows its name, and whether it is the
- * draft). The chat panel lists everyone's names
+ * where their windows are (the tab, the area on the Areas tab when this window knows its name, and
+ * whether it is the draft). The chat panel lists everyone's names
  */
 export class EditorPresenceBar
 {
@@ -105,15 +105,16 @@ export class EditorPresenceBar
 	}
 
 	/**
-	 * Where one window is: its tab, the area it shows when this window knows the area's name, and whether
-	 * it shows the draft
+	 * Where one window is: its tab, the area it shows when it is on the Areas tab and this window knows
+	 * the area's name, and whether it shows the draft. A window on another tab keeps its area open in the
+	 * Areas tab, which isn't where the player is looking, so the area is left out
 	 *
 	 * @param window The window
 	 * @return The place, in the player's language
 	 */
 	private placeOf(window: EditorWindow): string
 	{
-		const area = ((window.areaId === '') ? undefined : this.areaName(window.version, window.areaId));
+		const area = (((window.tab !== 'areas') || (window.areaId === '')) ? undefined : this.areaName(window.version, window.areaId));
 		const place = ((area === undefined) ? tabName(window.tab) : t({
 			id: 'editor.presence.area',
 			defaultMessage: '{tab} - {area}',

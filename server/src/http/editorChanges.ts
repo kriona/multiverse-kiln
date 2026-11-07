@@ -297,6 +297,11 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 			{
 				const change = await merge.merge(current, changes[current]);
 
+				if (change === null)
+				{
+					continue;
+				}
+
 				await audit.describe(change);
 				await applyChange(saving, change);
 			}

@@ -62,6 +62,34 @@ export function isMergedChange(change: EditorChange): change is MergedChange
 }
 
 /**
+ * A change to a translation or a note for translators, which conflicts as a whole rather than a setting
+ * at a time
+ */
+export type MergedTextChange = Extract<EditorChange, { kind: 'saveTranslation' | 'saveTranslatorNote' }>;
+
+/**
+ * Whether a change is to a translation or a note for translators
+ *
+ * @param change The change
+ * @return True when it is
+ */
+export function isMergedTextChange(change: EditorChange): change is MergedTextChange
+{
+	return((change.kind === 'saveTranslation') || (change.kind === 'saveTranslatorNote'));
+}
+
+/**
+ * The text a translation or a note for translators saves
+ *
+ * @param change The change
+ * @return The translation or note, or null to delete it
+ */
+export function changeText(change: MergedTextChange): string | null
+{
+	return(((change.kind === 'saveTranslation') ? change.translation : change.note));
+}
+
+/**
  * Whether a value is an object whose settings can be read one by one
  *
  * @param value The value
@@ -281,4 +309,37 @@ export function settleConflict<Change extends MergedChange>(change: Change, save
 	}
 
 	return(withChangeSettings(change, unflattenSettings(settings, shape), loaded));
+}
+
+/**
+ * Settles a translation's or note's conflict, as settleConflict() does a setting's. Taking the one saved
+ * takes its source text's hash too, so the change then saves nothing and the translation stays as up to
+ * date as it was
+ *
+ * @param change The change
+ * @param saved The translation and its hash, or the note, as saved (SaveConflict.saved)
+ * @param keepMine True to keep the change's text, false to take the one saved
+ * @return The change to save
+ */
+export function settleTextConflict<Change extends MergedTextChange>(change: Change, saved: Record<string, unknown>, keepMine: boolean): Change
+{
+	const savedText = ((change.kind === 'saveTranslation') ? saved.translation : saved.note);
+	const text = ((typeof savedText === 'string') ? savedText : null);
+
+	if (keepMine)
+	{
+		return({ ...change, loaded: text });
+	}
+
+	if (change.kind === 'saveTranslation')
+	{
+		return({
+			...change,
+			translation: text,
+			sourceHash: ((typeof saved.sourceHash === 'string') ? saved.sourceHash : change.sourceHash),
+			loaded: text
+		});
+	}
+
+	return({ ...change, note: text, loaded: text });
 }
