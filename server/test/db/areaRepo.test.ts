@@ -5,9 +5,12 @@ import { CHUNK_SIZE, cellIndexInChunk, chunkKey, DEFAULT_LOBBY_DAY_HOURS, DEFAUL
 import { findDefaultTileIds } from '../../src/db/tileRepo.js';
 import { setUniverseAreas, updateUniverseSettings } from '../../src/db/universeRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
-import { countAreas, createAreaLink, deleteArea, deleteAreaLink, editCells, findEditorArea, isTileInUse, listAreaLinks, listAreas, listAreasLinkingTo, loadChunks, loadChunksAt, loadArea, resizeArea, saveGroundChunk, saveAreaLink, updateAreaSettings } from '../../src/db/areaRepo.js';
+import { countAreas, createAreaLink, deleteArea, deleteAreaLink, editCells, findEditorArea, isTileInUse, listAreaLinks, listAreas, listAreasLinkingTo, loadChunks, loadChunksAt, loadArea, lockAreas, resizeArea, saveGroundChunk, saveAreaLink, updateAreaSettings } from '../../src/db/areaRepo.js';
+import { findDefaultDifficultyLevel } from '../../src/db/difficultyRepo.js';
+import { createGroup } from '../../src/db/groupRepo.js';
 import { liveVersion } from '../../src/db/universeVersions.js';
-import { addUniverse, addArea, defaultTileId, loadWholeMap } from './fixtures.js';
+import { addPlayer } from '../players.js';
+import { addCharacter, addPlayableUniverse, addUniverse, addArea, defaultTileId, inTransactionWithoutWaiting, loadWholeMap } from './fixtures.js';
 
 /**
  * A chunk of default cells with its first cell set
@@ -310,6 +313,32 @@ describe('areaRepo', () =>
 			assert.strictEqual(await deleteAreaLink(areaId, 1, 1), true);
 			assert.strictEqual(await deleteAreaLink(areaId, 1, 1), false);
 			assert.strictEqual((await listAreaLinks(areaId)).length, 1);
+		});
+	});
+
+	describe('lockAreas', () =>
+	{
+		it('locks areas without keeping rows that refer to them, such as a group starting in one, from being added', async () =>
+		{
+			const { universeId, fieldAreaId } = await addPlayableUniverse();
+			const player = await addPlayer('Locksmith');
+			const anchorCharacterId = await addCharacter(player.id, universeId, 'Brokk');
+			const difficultyLevel = await findDefaultDifficultyLevel(liveVersion(universeId));
+
+			assert.ok(difficultyLevel);
+			await inTransaction(async (transaction) =>
+			{
+				assert.ok((await lockAreas([fieldAreaId], transaction)).has(fieldAreaId));
+				await inTransactionWithoutWaiting((other) => createGroup({
+					universeId,
+					anchorCharacterId,
+					name: '',
+					startingAreaId: fieldAreaId,
+					startingColumn: 0,
+					startingRow: 0,
+					difficultyLevelId: difficultyLevel.id
+				}, other));
+			});
 		});
 	});
 

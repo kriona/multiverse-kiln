@@ -393,6 +393,12 @@ Built in ten steps: roles, stages, server admins, disabling things in use, then 
 	- [ ] Edit Size: a field whose value differs from the map's size now shows in a changed color
 	- [ ] A fill tool (with a warning if a large number of tiles will be updated)
 	- [ ] Middle click on a cell picks its tile as the tile to paint with
+3. Site font
+	- [ ] Load the font locally, not from Google's servers. Make sure phaser is ready before drawing text
+	- [ ] 2FA code fields keep their current font
+	- [ ] Alegreya (calligraphic) for headers. Maybe sans-serf if it looks too jagged. Another fallback: Texturina.
+	- [ ] Nunito for everything else
+	- [ ] Consider using a second monospace font for usernames that distinguised between 0O and 1l.
 
 **Done when:** a creator groups areas into a region and gives it to a builder, who fills a field with grass in one click and picks a tile off the map with the middle button.
 

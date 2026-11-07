@@ -1,10 +1,13 @@
 import assert from 'assert';
 import { MAX_DISABLED_REASON_LENGTH } from '@multiverse-kiln/shared';
 
-import { createUniverse, deleteUniverse, findDisabledReason, findEditableUniverse, findUniverse, findUniverseDetails, listUniverses, setUniverseAreas, setUniverseDisabled, UniverseNameTakenError, updateUniverseSettings } from '../../src/db/universeRepo.js';
+import { createUniverse, deleteUniverse, findDisabledReason, findEditableUniverse, findUniverse, findUniverseDetails, listUniverses, lockUniverse, setUniverseAreas, setUniverseDisabled, UniverseNameTakenError, updateUniverseSettings } from '../../src/db/universeRepo.js';
 import { loadArea } from '../../src/db/areaRepo.js';
+import { createCharacter } from '../../src/db/characterRepo.js';
+import { inTransaction } from '../../src/db/transactions.js';
 import { liveVersion } from '../../src/db/universeVersions.js';
-import { addUniverse, addArea } from './fixtures.js';
+import { addPlayer } from '../players.js';
+import { addUniverse, addArea, dwarfFighter, inTransactionWithoutWaiting } from './fixtures.js';
 
 describe('universeRepo', () =>
 {
@@ -48,6 +51,19 @@ describe('universeRepo', () =>
 		assert.strictEqual(await findDisabledReason(universeId), null);
 		assert.deepStrictEqual((await listUniverses('let_there_be_light', 0, 10)).map((universe) => universe.id), [universeId]);
 		assert.strictEqual((await findUniverseDetails('kilnhaven'))?.id, universeId);
+	});
+
+	it('locks a universe without keeping rows that refer to it from being added', async () =>
+	{
+		const universeId = await addUniverse();
+		const player = await addPlayer('Locksmith');
+		const character = await dwarfFighter(player.id, universeId);
+
+		await inTransaction(async (transaction) =>
+		{
+			assert.strictEqual(await lockUniverse(universeId, transaction), true);
+			await inTransactionWithoutWaiting((other) => createCharacter(character, other));
+		});
 	});
 
 	it('refuses a disabled universe without a reason, or with one too long', async () =>

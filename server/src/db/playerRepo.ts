@@ -596,7 +596,8 @@ export async function saveLastLogin(playerId: string, now: Date, executor: Execu
 
 /**
  * Locks a player's row until the transaction ends, so checks and changes made for that player in
- * concurrent transactions happen one after another
+ * concurrent transactions happen one after another. FOR NO KEY UPDATE doesn't block foreign key
+ * checks, so rows that refer to the player (such as sessions) can still be added
  *
  * @param playerId The player's ID
  * @param executor A transaction
@@ -610,7 +611,7 @@ export async function lockPlayer(playerId: string, executor: Executor): Promise<
 		})
 		.from(players)
 		.where(eq(players.id, playerId))
-		.for('update');
+		.for('no key update');
 
 	return(rows.length > 0);
 }
