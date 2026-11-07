@@ -148,13 +148,11 @@ export class EditorMap
 	}
 
 	/**
-	 * The cells on the map, outside some bounds, that hold anything but the default tile, such as the
-	 * cells a smaller map would cut off. Only loaded chunks are looked at
+	 * The cells on the map that hold anything but the default tile. Only loaded chunks are looked at
 	 *
-	 * @param bounds The bounds
 	 * @return The cells and their values
 	 */
-	paintedCellsOutside(bounds: MapBounds): CellChange[]
+	paintedCells(): CellChange[]
 	{
 		const cells: CellChange[] = [];
 
@@ -167,7 +165,7 @@ export class EditorMap
 				const column = (chunkColumn * CHUNK_SIZE) + (index % CHUNK_SIZE);
 				const row = (chunkRow * CHUNK_SIZE) + Math.floor(index / CHUNK_SIZE);
 
-				if ((value !== DEFAULT_TILE_CELL) && isInBounds(this.bounds, column, row) && !isInBounds(bounds, column, row))
+				if ((value !== DEFAULT_TILE_CELL) && isInBounds(this.bounds, column, row))
 				{
 					cells.push([column, row, value]);
 				}
@@ -175,6 +173,18 @@ export class EditorMap
 		}
 
 		return(cells);
+	}
+
+	/**
+	 * The cells on the map, outside some bounds, that hold anything but the default tile, such as the
+	 * cells a smaller map would cut off. Only loaded chunks are looked at
+	 *
+	 * @param bounds The bounds
+	 * @return The cells and their values
+	 */
+	paintedCellsOutside(bounds: MapBounds): CellChange[]
+	{
+		return(this.paintedCells().filter(([column, row]) => !isInBounds(bounds, column, row)));
 	}
 
 	/**

@@ -659,12 +659,11 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			return(false);
 		}
 
-		for (const detail of changed)
+		const deletedAreaIds = new Set(changed.flatMap((detail) => (((detail.subject === 'area') && (detail.action === 'deleted') && (typeof detail.id === 'string')) ? [detail.id] : [])));
+
+		for (const areaId of deletedAreaIds)
 		{
-			if ((detail.subject === 'area') && (detail.action === 'deleted') && (typeof detail.id === 'string'))
-			{
-				this.staged.markDeleted(detail.id);
-			}
+			this.staged.markDeleted(areaId);
 		}
 
 		const open = this.area;
@@ -695,6 +694,12 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 		if (this.areaChanges.hasUnsavedChanges() || linkDialog.hasUnappliedChanges())
 		{
 			this.changedSince.add(save.name, rest);
+
+			if (deletedAreaIds.has(open.id) && !isNewAreaId(open.id))
+			{
+				this.recreateOpenArea(open, deletedAreaIds);
+			}
+
 			return(true);
 		}
 
@@ -706,6 +711,45 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 		void (aboutOpen.some((detail) => ((detail.subject === 'area') && (detail.action === 'deleted'))) ? this.showList() : this.refreshArea(open.id));
 
 		return(deletedHere);
+	}
+
+	/**
+	 * Keeps the area open, which a save in another window deleted while it had unsaved changes here, as a
+	 * new area with the settings it was loaded with and its map as it shows here (MapEditor.recreate()),
+	 * so saving adds it again with the changes made to it, and deleting it discards them. One inside an
+	 * area the save deleted too becomes a top-level area, as the server makes the areas inside it
+	 *
+	 * @param area The area, as it was loaded
+	 * @param deletedAreaIds The areas the save deleted
+	 */
+	private recreateOpenArea(area: EditorArea, deletedAreaIds: ReadonlySet<string>): void
+	{
+		const parentDeleted = ((area.parentAreaId !== null) && deletedAreaIds.has(area.parentAreaId));
+
+		if ((this.parent.value !== '') && deletedAreaIds.has(this.parent.value))
+		{
+			this.parent.value = '';
+			this.updateParentMessage();
+		}
+
+		const added = this.staged.create({
+			name: area.name,
+			parentAreaId: (parentDeleted ? null : area.parentAreaId),
+			enabled: area.enabled,
+			indoors: area.indoors,
+			lightLevel: area.lightLevel,
+			defaultTileId: area.defaultTileId,
+			passageOfTime: area.passageOfTime,
+			faerieMorning: area.faerieMorning,
+			loopsEastWest: area.loopsEastWest,
+			loopsNorthSouth: area.loopsNorthSouth
+		});
+
+		this.mapEditor.recreate(added.id, added.bounds);
+		this.area = { ...area, id: added.id };
+		// A new area has no address until it is saved
+		this.onAreaChanged(undefined);
+		this.showClaim();
 	}
 
 	/**

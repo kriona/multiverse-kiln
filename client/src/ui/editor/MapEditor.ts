@@ -1,6 +1,6 @@
 import exitFullPageIcon from 'virtual:icon/ph:arrows-in';
 import fullPageIcon from 'virtual:icon/ph:arrows-out';
-import { canPaintTile, CHUNK_SIZE, DEFAULT_TILE_CELL, defineMessages, isInBounds, MAX_BRUSH_SIZE, MAX_CELL_CHANGES, parseChunkKey, VOID_CELL, VIEW_HEIGHT, VIEW_WIDTH, type CellChange, type ChunkCoordinates, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type MapBounds, type MessageDescriptor, type NumberRef, type StringRef } from '@multiverse-kiln/shared';
+import { canPaintTile, CHUNK_SIZE, DEFAULT_TILE_CELL, defineMessages, isInBounds, MAX_BRUSH_SIZE, MAX_CELL_CHANGES, parseChunkKey, VOID_CELL, VIEW_HEIGHT, VIEW_WIDTH, type CellChange, type ChunkCoordinates, type ChunkRange, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type MapBounds, type MessageDescriptor, type NumberRef, type StringRef } from '@multiverse-kiln/shared';
 
 import { BRUSH_SHAPES, brushCells, type BrushCell, type BrushShape } from '../../editor/brush';
 import { ChunkLoader } from '../../editor/ChunkLoader';
@@ -230,6 +230,11 @@ export class MapEditor
 	private openVersion = 0;
 
 	/**
+	 * The chunks the view last reached, which the open area's chunk loader was asked for
+	 */
+	private view: ChunkRange | undefined;
+
+	/**
 	 * @param source Where the areas, their links and their maps' chunks come from
 	 * @param onBoundsChanged Called with an area's new bounds after the map editor resizes it
 	 * @param onUnsavedChanged Called with whether the map has painting, a change of size or links that haven't been saved, whenever that may have changed
@@ -411,6 +416,7 @@ export class MapEditor
 		this.openVersion++;
 		this.open?.loader.stop();
 		this.open = undefined;
+		this.view = undefined;
 		this.stroke = undefined;
 		this.history.clear();
 		this.unsaved.clear();
@@ -471,6 +477,71 @@ export class MapEditor
 				target: ((change.target === null) ? null : { ...change.target, targetAreaId: resolve(change.target.targetAreaId) })
 			}))
 			.map((change) => [linkKey(change.areaId, change.column, change.row), change]));
+	}
+
+	/**
+	 * Keeps the open area as a new area once a save in another window deleted it, so saving adds it again
+	 * with the map as it shows here: every loaded cell that isn't the default tile is painting not yet
+	 * saved, the map grows or shrinks from the size every new area starts with, and its links are links
+	 * not yet saved, except those deleted here. The parts of the map that hadn't loaded went with the
+	 * area, so they load as the default tile, and the links other areas had into it are gone
+	 *
+	 * @param areaId The area's ID as a new area
+	 * @param bounds The map every new area starts with
+	 */
+	recreate(areaId: string, bounds: MapBounds): void
+	{
+		const open = this.open;
+
+		if (!open)
+		{
+			return;
+		}
+
+		this.resolveIds(new Map([[open.area.id, areaId]]));
+		open.loader.stop();
+		open.loader = this.createLoader(areaId, open.map);
+		open.area = { ...open.area, bounds };
+
+		for (const { column, row, ...target } of open.links)
+		{
+			const key = linkKey(areaId, column, row);
+
+			if (!this.stagedLinks.has(key))
+			{
+				this.stagedLinks.set(key, { areaId, column, row, target });
+			}
+		}
+
+		for (const [key, change] of [...this.stagedLinks])
+		{
+			if ((change.areaId === areaId) && (change.target === null))
+			{
+				this.stagedLinks.delete(key);
+			}
+		}
+
+		open.links = [];
+		this.unsaved.clear();
+		this.savedValues.clear();
+
+		for (const cell of open.map.paintedCells())
+		{
+			const key = `${cell[0]},${cell[1]}`;
+
+			this.unsaved.set(key, cell);
+			this.savedValues.set(key, DEFAULT_TILE_CELL);
+		}
+
+		if (this.view)
+		{
+			open.loader.request(this.view);
+		}
+
+		this.canvas.scene?.setLinks(linksOnMap(open, this.currentLinks(areaId, open.links)));
+		this.showHoveredCell();
+		this.unsavedChanged();
+		this.updateButtons();
 	}
 
 	/**
@@ -797,15 +868,26 @@ export class MapEditor
 	private openMap(universe: EditableUniverse, area: EditorArea, tiles: readonly EditorTile[], areas: readonly EditorAreaSummary[], links: EditorAreaLink[], editable: boolean): OpenArea
 	{
 		const map = new EditorMap(area.bounds);
-		const loader = new ChunkLoader((range) => this.source.loadChunks(area.id, range), map, (chunkKeys) =>
+
+		return({ universe, area, tiles, areas, map, loader: this.createLoader(area.id, map), links, editable });
+	}
+
+	/**
+	 * Creates what loads an area's chunks into its map as the view reaches them
+	 *
+	 * @param areaId The area's ID
+	 * @param map The area's map
+	 * @return The loader
+	 */
+	private createLoader(areaId: string, map: EditorMap): ChunkLoader
+	{
+		return(new ChunkLoader((range) => this.source.loadChunks(areaId, range), map, (chunkKeys) =>
 		{
 			this.canvas.scene?.refreshChunks(chunkKeys);
 		}, (error) =>
 		{
 			showMessage(this.error, describeEditorError(error, mapMessages.loadFailed));
-		});
-
-		return({ universe, area, tiles, areas, map, loader, links, editable });
+		}));
 	}
 
 	/**
@@ -1036,6 +1118,7 @@ export class MapEditor
 			describe: (cell) => this.cellText(cell),
 			viewChanged: (range) =>
 			{
+				this.view = range;
 				this.open?.loader.request(range);
 			}
 		});
