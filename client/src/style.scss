@@ -54,6 +54,20 @@
 	color: $accent-text;
 }
 
+// The universes the player can edit, in the drafts' purple to set them apart from the universes to play
+#own-universes .universe-item
+{
+	&:hover
+	{
+		border-color: $draft;
+	}
+
+	h3
+	{
+		color: $draft-text;
+	}
+}
+
 // Under the player's own universes, or under the question asking them to create one
 .home-create
 {
