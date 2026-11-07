@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { CHUNK_SIZE, chunkCoordinate, GRID_CELL_SIZE, type ChunkRange, type AreaLinkMode, type AreaPayload } from '@multiverse-kiln/shared';
 
 import { brushOrigin, cellsBetween, type BrushCell, type BrushShape } from '../editor/brush';
+import { outlineRuns, type OutlineRun } from '../editor/cellOutlines';
 import { AreaRenderer } from '../rendering/AreaRenderer';
 import { loadUploadedTileGraphics, preloadTileGraphics } from '../rendering/tileGraphics';
 
@@ -182,7 +183,23 @@ export class MapEditorScene extends Phaser.Scene
 	private areaRenderer?: AreaRenderer;
 	private overlay?: Phaser.GameObjects.Graphics;
 	private links: LinkMarker[] = [];
-	private highlights: CellHighlight[] = [];
+
+	/**
+	 * The highlighted cells' outlines, drawn apart from the overlay, which is drawn again every frame:
+	 * there can be tens of thousands of them, as when another editor paints a large part of the map
+	 */
+	private highlightOverlay?: Phaser.GameObjects.Graphics;
+
+	/**
+	 * The highlighted cells' outlines, joined into runs
+	 */
+	private highlightRuns: OutlineRun[] = [];
+
+	/**
+	 * The zoom the highlights were last drawn at, since their lines stay the same width on screen; 0 when
+	 * they must be drawn again
+	 */
+	private highlightZoom = 0;
 
 	/**
 	 * The cell under the pointer, while it is over the canvas
@@ -244,7 +261,9 @@ export class MapEditorScene extends Phaser.Scene
 		this.areaRenderer = undefined;
 		this.overlay = undefined;
 		this.links = [];
-		this.highlights = [];
+		this.highlightOverlay = undefined;
+		this.highlightRuns = [];
+		this.highlightZoom = 0;
 		this.hovered = undefined;
 		this.pointerOver = false;
 		this.lastDab = undefined;
@@ -266,6 +285,9 @@ export class MapEditorScene extends Phaser.Scene
 	create(): void
 	{
 		this.areaRenderer = new AreaRenderer(this, this.area, this.chunks);
+
+		// Added first, so the brush is outlined over the highlights
+		this.highlightOverlay = this.add.graphics().setDepth(1);
 		this.overlay = this.add.graphics().setDepth(1);
 
 		// Tiles with uploaded graphics are drawn in their colors until the graphics arrive
@@ -326,6 +348,11 @@ export class MapEditorScene extends Phaser.Scene
 		this.areaRenderer?.update(view);
 		this.reportView(view);
 		this.drawOverlay();
+
+		if (this.highlightZoom !== this.cameras.main.zoom)
+		{
+			this.drawHighlights();
+		}
 	}
 
 	/**
@@ -355,7 +382,8 @@ export class MapEditorScene extends Phaser.Scene
 	 */
 	setHighlights(highlights: CellHighlight[]): void
 	{
-		this.highlights = highlights;
+		this.highlightRuns = outlineRuns(highlights);
+		this.highlightZoom = 0;
 	}
 
 	/**
@@ -672,7 +700,53 @@ export class MapEditorScene extends Phaser.Scene
 	}
 
 	/**
-	 * Outlines the map's edges, its center cell, its links, the highlighted cells and the brush
+	 * Outlines the highlighted cells, a line along each run of their edges
+	 */
+	private drawHighlights(): void
+	{
+		const overlay = this.highlightOverlay;
+
+		if (!overlay)
+		{
+			return;
+		}
+
+		const zoom = this.cameras.main.zoom;
+
+		// As thick as the overlay's lines and a half, and the same width on screen however far the camera
+		// zooms. Each run reaches half a line past its ends, so the corners where runs meet are filled
+		const line = 3 / zoom;
+		const overhang = line / 2;
+		let color: number | undefined;
+
+		this.highlightZoom = zoom;
+		overlay.clear();
+
+		for (const run of this.highlightRuns)
+		{
+			if (run.color !== color)
+			{
+				color = run.color;
+				overlay.lineStyle(line, color, 1);
+			}
+
+			const at = run.line * GRID_CELL_SIZE;
+			const start = (run.start * GRID_CELL_SIZE) - overhang;
+			const end = (run.end * GRID_CELL_SIZE) + overhang;
+
+			if (run.vertical)
+			{
+				overlay.lineBetween(at, start, at, end);
+			}
+			else
+			{
+				overlay.lineBetween(start, at, end, at);
+			}
+		}
+	}
+
+	/**
+	 * Outlines the map's edges, its center cell, its links and the brush
 	 */
 	private drawOverlay(): void
 	{
@@ -699,12 +773,6 @@ export class MapEditorScene extends Phaser.Scene
 			overlay.fillRect(link.column * GRID_CELL_SIZE, link.row * GRID_CELL_SIZE, GRID_CELL_SIZE, GRID_CELL_SIZE);
 			overlay.lineStyle(line, LINK_COLORS[link.mode], 1);
 			overlay.strokeRect(link.column * GRID_CELL_SIZE, link.row * GRID_CELL_SIZE, GRID_CELL_SIZE, GRID_CELL_SIZE);
-		}
-
-		for (const highlight of this.highlights)
-		{
-			overlay.lineStyle(line * 1.5, highlight.color, 1);
-			overlay.strokeRect(highlight.column * GRID_CELL_SIZE, highlight.row * GRID_CELL_SIZE, GRID_CELL_SIZE, GRID_CELL_SIZE);
 		}
 
 		const mode = this.host.pointerMode();
