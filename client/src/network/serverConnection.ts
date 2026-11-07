@@ -203,13 +203,28 @@ function waitForArrival(room: MapRoom, hasMap: () => boolean = () => true): Prom
 }
 
 /**
+ * Readies a room just joined: it is left as the page is left, and it leaves as soon as its connection
+ * drops. No room on the server holds a dropped window's place, so the SDK's attempts to reconnect can't
+ * succeed, and while they ran the room would look joined, holding what the page sends to it until they
+ * gave up and threw it away
+ *
+ * @param room The room, just joined
+ */
+function readyJoinedRoom(room: Parameters<typeof leaveOnPageHide>[0] & { reconnection: { enabled: boolean } }): void
+{
+	room.reconnection.enabled = false;
+	leaveOnPageHide(room);
+}
+
+/**
  * Connects to the server and joins the session room, which says whether the browser is logged in
  *
  * The browser sends its session cookie, if it has one, when joining a room: every window of this
  * browser sends the same cookie, so they are all the same player. The session room admits windows
  * that aren't logged in too. Whatever the browser remembers for the player (rememberedValues.ts) is
  * kept as long as the session room says the session lasts, and forgotten once it says the browser isn't
- * logged in. Every room joined here is left as the page is left (leaveOnPageHide in pageLifecycle.ts)
+ * logged in. Every room joined here is left as the page is left (leaveOnPageHide in pageLifecycle.ts), and
+ * leaves as soon as its connection drops (readyJoinedRoom)
  *
  * @return The client and the joined session room
  */
@@ -218,7 +233,7 @@ export async function connectToServer(): Promise<ServerConnection>
 	const client = createClient();
 	const session = await client.joinOrCreate(SESSION_ROOM_NAME);
 
-	leaveOnPageHide(session);
+	readyJoinedRoom(session);
 
 	session.onMessage(SessionServerMessageType.Account, (account: AccountPayload) =>
 	{
@@ -275,7 +290,7 @@ export async function joinLobby(client: Client, universeId: string): Promise<Lob
 	const options: LobbyJoinOptions = { universeId };
 	const room = await client.joinOrCreate<LobbyState>(LOBBY_ROOM_NAME, options, LobbyState);
 
-	leaveOnPageHide(room);
+	readyJoinedRoom(room);
 
 	// The room sends its state before Welcome, so hasMap is known by then
 	return({ room, ...(await waitForArrival(room, () => room.state.hasMap)) });
@@ -294,7 +309,7 @@ export async function joinEditorRoom(client: Client, universeId: string): Promis
 	const options: EditorJoinOptions = { universeId };
 	const room = await client.joinOrCreate<EditorState>(EDITOR_ROOM_NAME, options, EditorState);
 
-	leaveOnPageHide(room);
+	readyJoinedRoom(room);
 
 	return(room);
 }
@@ -315,7 +330,7 @@ export async function joinGroup(client: Client, groupId: string, characterId: st
 	const options: GameJoinOptions = { groupId, characterId };
 	const room = await client.joinOrCreate<GameState>(GAME_ROOM_NAME, options, GameState);
 
-	leaveOnPageHide(room);
+	readyJoinedRoom(room);
 
 	return({ room, ...(await waitForArrival(room)) });
 }

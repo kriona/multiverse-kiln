@@ -1,4 +1,4 @@
-import { CloseCode } from '@colyseus/sdk';
+import { CloseCode, ErrorCode, ServerError } from '@colyseus/sdk';
 import { EditorMessageType, EditorServerMessageType, NoticeReason, ServerCloseCode, SessionServerMessageType, type AccountPayload, type ChatAuthorDeletedPayload, type ChatPayload, type ChatReadPayload, type EditorPlacePayload, type EditorSavedPayload, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type UniverseVersionName } from '@multiverse-kiln/shared';
 
 import { t } from './localization';
@@ -220,6 +220,13 @@ export class EditorPage
 				defaultMessage: 'Could not connect to the editors\' chat. Reload the page to try again.',
 				description: 'Shown in the editors\' chat panel when the page couldn\'t join it, which also lists who has the editor open'
 			}));
+
+			// A player the room turns away can't open the universe either, which the page says above the tabs
+			if (!((error instanceof ServerError) && (error.code === ErrorCode.AUTH_FAILED)))
+			{
+				this.editorScreen.showDisconnected();
+			}
+
 			return;
 		}
 
@@ -280,8 +287,9 @@ export class EditorPage
 	}
 
 	/**
-	 * Handles the editor room closing when the page isn't being left: says why in the chat, and turns
-	 * saving off when the player may no longer edit the universe or it was deleted. A player who may no
+	 * Handles the editor room closing when the page isn't being left: says why in the chat, and above the
+	 * tabs when the connection was lost, and turns saving off when the player may no longer edit the
+	 * universe or it was deleted. A player who may no
 	 * longer edit it goes to the universe's page, unless they choose to stay when the browser asks about
 	 * changes not yet saved
 	 *
@@ -331,6 +339,7 @@ export class EditorPage
 				defaultMessage: 'The editors\' chat was disconnected. Reload the page to reconnect.',
 				description: 'Shown in the editors\' chat panel when its connection to the server was lost'
 			}));
+			this.editorScreen.showDisconnected();
 		}
 	}
 

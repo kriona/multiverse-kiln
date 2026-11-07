@@ -1,6 +1,7 @@
 import { ADMIN_ROLE, canEditAtEndOfTime, canEditWorld, canManageEditors, canManageVersions, canViewUniverse, EDITOR_ROLE_NAMES, EDITOR_TABS, type EditableUniverse, type EditorSavedPayload, type EditorTab, type UniverseSettingsUpdate, type UniverseVersionName } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
+import { announce } from '../announcer';
 import { describeEditorError, EditorApiError, type EditorApi } from '../../network/editorApi';
 import { changeMessages, hasUnsavedWork } from '../changeTracker';
 import { DraftSection } from './DraftSection';
@@ -145,6 +146,7 @@ export class EditorScreen
 	private readonly title = getElement('editor-title', HTMLElement);
 	private readonly role = getElement('editor-role', HTMLElement);
 	private readonly notice = getElement('editor-notice', HTMLElement);
+	private readonly connectionNotice = getElement('editor-connection-notice', HTMLElement);
 	private readonly versionField = getElement('editor-version-field', HTMLElement);
 	private readonly versionChoice = getElement('editor-version', HTMLSelectElement);
 	private readonly versionNotice = getElement('editor-version-notice', HTMLElement);
@@ -853,6 +855,23 @@ export class EditorScreen
 	{
 		this.saveBar.setLocked(true);
 		this.showNotice(message);
+	}
+
+	/**
+	 * Says above the tabs, and reads out, that the page isn't connected to the universe's editor room, so
+	 * the tabs don't follow what other windows save. It shows until the page is reloaded, whichever
+	 * universe or version is opened
+	 */
+	showDisconnected(): void
+	{
+		const message = t({
+			id: 'editor.disconnected',
+			defaultMessage: 'This window isn\'t connected to the other editors, so changes saved in other windows don\'t show here and the editors\' chat is off. Save your changes, then reload the page to connect again.',
+			description: 'Shown above the editor\'s tabs, and read out by screen readers, when the page couldn\'t connect to the server\'s room for the universe\'s editors or lost its connection to it; saving still works'
+		});
+
+		showMessage(this.connectionNotice, message);
+		announce(message, true);
 	}
 
 	/**

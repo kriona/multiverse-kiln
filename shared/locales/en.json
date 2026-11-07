@@ -1851,6 +1851,10 @@
 		"defaultMessage": "Characters who die in a group at this level are gone for good.",
 		"description": "Explains the difficulty level editor's Permadeath checkbox"
 	},
+	"editor.disconnected": {
+		"defaultMessage": "This window isn't connected to the other editors, so changes saved in other windows don't show here and the editors' chat is off. Save your changes, then reload the page to connect again.",
+		"description": "Shown above the editor's tabs, and read out by screen readers, when the page couldn't connect to the server's room for the universe's editors or lost its connection to it; saving still works"
+	},
 	"editor.displayTime": {
 		"defaultMessage": "Display time",
 		"description": "Label of the field for how players are shown the time of day in a universe; also names the setting in the list of what a save changed, on the editor's Audit tab"

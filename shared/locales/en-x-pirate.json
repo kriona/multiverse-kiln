@@ -1851,6 +1851,10 @@
 		"message": "Hands who die in a crew at this peril go to Davy Jones for good.",
 		"source": "Characters who die in a group at this level are gone for good."
 	},
+	"editor.disconnected": {
+		"message": "This window has lost its line to the other officers, so changes stowed in other windows don't show here and the officers' parley be silent. Stow yer changes, then reload the page to hail 'em again.",
+		"source": "This window isn't connected to the other editors, so changes saved in other windows don't show here and the editors' chat is off. Save your changes, then reload the page to connect again."
+	},
 	"editor.displayTime": {
 		"message": "Show the hour",
 		"source": "Display time"
