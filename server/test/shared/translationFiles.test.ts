@@ -85,6 +85,35 @@ describe('translation files (shared)', () =>
 		});
 	});
 
+	it('reads an obsolete PO entry\'s flags as its own, not the next entry\'s', () =>
+	{
+		const file = [
+			'msgid ""',
+			'msgstr "Language: de\\n"',
+			'',
+			'#, fuzzy',
+			'#~ msgctxt "item:4:name"',
+			'#~ msgid "Old"',
+			'#~ msgstr "Alt"',
+			'',
+			'msgctxt "area:a:name"',
+			'msgid "Forest"',
+			'msgstr "Wald"',
+			'#, fuzzy',
+			'#~ msgctxt "item:5:name"',
+			'#~ msgid "Older"',
+			'#~ msgstr "Älter"',
+			'msgctxt "item:3:name"',
+			'msgid "Arrow"',
+			'msgstr "Pfeil"'
+		].join('\n');
+
+		assert.deepStrictEqual(readTranslationFile('po', file).translations.map(({ id, needsReview }) => ({ id, needsReview })), [
+			{ id: 'area:a:name', needsReview: false },
+			{ id: 'item:3:name', needsReview: false }
+		]);
+	});
+
 	it('reads a PO header\'s POSIX language name, such as pt_BR, as a language tag', () =>
 	{
 		const header = (language: string): string => ['msgid ""', `msgstr "Language: ${language}\\n"`].join('\n');

@@ -442,13 +442,16 @@ function readPo(text: string): ReadTranslationFile
 		const line = raw.trim();
 		const lineNumber = index + 1;
 
-		if ((line === '') || line.startsWith('#~'))
+		// The comments above an obsolete entry, such as its fuzzy flag, are its own, so its lines end the entry
+		// they started even before it has fields
+		if (line.startsWith('#~') || ((line === '') && (entry.fields.size > 0)))
 		{
-			if (entry.fields.size > 0)
-			{
-				finish();
-			}
+			finish();
+			return;
+		}
 
+		if (line === '')
+		{
 			return;
 		}
 
