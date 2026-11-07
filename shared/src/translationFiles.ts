@@ -759,17 +759,29 @@ function parseXml(text: string): XmlElement
 }
 
 /**
- * The elements of a name inside an element, at any depth
+ * The elements with any of some names inside an element, at any depth
  *
  * @param element The element
- * @param name The name to find
+ * @param names The names to find
  * @return The elements, in document order
  */
-function findElements(element: XmlElement, name: string): XmlElement[]
+function findElements(element: XmlElement, ...names: string[]): XmlElement[]
 {
 	return(element.children.flatMap((child) => ((typeof child === 'string')
 		? []
-		: ((child.name === name) ? [child] : findElements(child, name)))));
+		: (names.includes(child.name) ? [child] : findElements(child, ...names)))));
+}
+
+/**
+ * The text of the elements of a name inside an element, joined
+ *
+ * @param element The element
+ * @param name The name of the elements holding the text
+ * @return The text
+ */
+function textIn(element: XmlElement, name: string): string
+{
+	return(findElements(element, name).map(textOf).join(''));
 }
 
 /**
@@ -784,8 +796,10 @@ function textOf(element: XmlElement): string
 }
 
 /**
- * Reads an XLIFF 2.0 file's units. A unit's segments are joined, and one without a target has no
- * translation. The trgLang attribute names the language
+ * Reads an XLIFF 2.0 file's units. A unit's segments and ignorables (such as the spaces between
+ * sentences a translation tool split apart) are joined in order, and a unit whose segments have no
+ * target has no translation. An ignorable without a target stands for its source in the translation,
+ * as XLIFF 2.0 has it. The trgLang attribute names the language
  *
  * @param text The file's text
  * @return What it holds
@@ -803,14 +817,18 @@ function readXliff(text: string): ReadTranslationFile
 		language: (document.attributes.get('trgLang') ?? null),
 		translations: findElements(document, 'unit').map((unit) =>
 		{
-			const segments = findElements(unit, 'segment');
-			const targets = segments.flatMap((segment) => findElements(segment, 'target'));
-			const translation = targets.map(textOf).join('');
+			const parts = findElements(unit, 'segment', 'ignorable');
+			const translated = parts.some((part) => ((part.name === 'segment') && (textIn(part, 'target') !== '')));
+			const translation = parts
+				.map((part) => (((part.name === 'ignorable') && (findElements(part, 'target').length === 0))
+					? textIn(part, 'source')
+					: textIn(part, 'target')))
+				.join('');
 
 			return({
 				id: (unit.attributes.get('id') ?? ''),
-				source: segments.map((segment) => findElements(segment, 'source').map(textOf).join('')).join(''),
-				translation: ((translation === '') ? null : translation),
+				source: parts.map((part) => textIn(part, 'source')).join(''),
+				translation: (translated ? translation : null),
 				needsReview: false
 			});
 		})

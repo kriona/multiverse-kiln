@@ -117,6 +117,27 @@ describe('translation files (shared)', () =>
 		assert.throws(() => readTranslationFile('xliff', '<xliff><unit></xliff>'), TranslationFileError);
 	});
 
+	it('keeps the text of XLIFF ignorables between segments, using the source where an ignorable has no target', () =>
+	{
+		const file = [
+			'<xliff xmlns="urn:oasis:names:tc:xliff:document:2.0" version="2.0" srcLang="en" trgLang="fr"><file id="f">',
+			'<unit id="area:a:description">',
+			'<segment><source>Hello.</source><target>Bonjour.</target></segment>',
+			'<ignorable><source> </source></ignorable>',
+			'<segment><source>Bye.</source><target>Salut.</target></segment>',
+			'<ignorable><source>\n</source><target>\n\n</target></ignorable>',
+			'</unit>',
+			'<unit id="area:b:description">',
+			'<segment><source>Lake.</source></segment><ignorable><source> </source></ignorable><segment><source>Hill.</source></segment>',
+			'</unit></file></xliff>'
+		].join('');
+
+		assert.deepStrictEqual(readTranslationFile('xliff', file).translations, [
+			{ id: 'area:a:description', source: 'Hello. Bye.\n', translation: 'Bonjour. Salut.\n\n', needsReview: false },
+			{ id: 'area:b:description', source: 'Lake. Hill.', translation: null, needsReview: false }
+		]);
+	});
+
 	it('says which line of an XLIFF file has an entity it can\'t read, in text and in attributes', () =>
 	{
 		const inText = '<xliff>\n<file>\n<unit id="a">&nope;</unit>\n</file>\n</xliff>';
