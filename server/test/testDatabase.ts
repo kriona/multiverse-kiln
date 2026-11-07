@@ -16,7 +16,13 @@ const DEADLOCK_DETECTED = '40P01';
 /**
  * How many times emptying the database is tried before its error is passed on
  */
-const MAX_TRUNCATE_ATTEMPTS = 5;
+const MAX_EMPTY_ATTEMPTS = 5;
+
+/**
+ * Postgres's codes (pg_constraint.confdeltype) for SET NULL and SET DEFAULT, the foreign key actions
+ * that only clear the reference when the row referred to is deleted
+ */
+const CLEARING_DELETE_ACTIONS = ['n', 'd'];
 
 /**
  * The test suite's own connection to its database, as the migration role: it builds the tables and
@@ -25,10 +31,10 @@ const MAX_TRUNCATE_ATTEMPTS = 5;
 let migrationPool: pg.Pool | undefined;
 
 /**
- * Tables the migrations put rows in, each after the tables its foreign keys refer to, so rows that
- * refer to other tables' rows are put back after them
+ * The statements that empty the database and put back the rows the migrations inserted, made once
+ * the database is built (see buildResetStatements())
  */
-let baselineTables: string[] = [];
+let resetStatements: string | undefined;
 
 /**
  * Reads a test database connection string from the environment, refusing anything that isn't a test
@@ -79,7 +85,7 @@ export async function buildTestDatabase(connectionString: string): Promise<void>
 	await migrationPool.query(`CREATE SCHEMA ${BASELINE_SCHEMA}`);
 
 	const tables = await migrationPool.query<{ name: string }>(`SELECT c.relname AS name FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'public' AND c.relkind = 'r' ORDER BY c.oid`);
-	const references = await migrationPool.query<{ child: string; parent: string }>(`SELECT child.relname AS child, parent.relname AS parent FROM pg_constraint k JOIN pg_class child ON child.oid = k.conrelid JOIN pg_class parent ON parent.oid = k.confrelid JOIN pg_namespace n ON n.oid = child.relnamespace WHERE k.contype = 'f' AND n.nspname = 'public'`);
+	const references = await migrationPool.query<{ child: string; parent: string; onDelete: string }>(`SELECT child.relname AS child, parent.relname AS parent, k.confdeltype AS "onDelete" FROM pg_constraint k JOIN pg_class child ON child.oid = k.conrelid JOIN pg_class parent ON parent.oid = k.confrelid JOIN pg_namespace n ON n.oid = child.relnamespace WHERE k.contype = 'f' AND n.nspname = 'public'`);
 	const filled: string[] = [];
 
 	for (const { name } of tables.rows)
@@ -92,16 +98,52 @@ export async function buildTestDatabase(connectionString: string): Promise<void>
 		}
 	}
 
-	baselineTables = orderByReferences(filled, references.rows);
+	// Deleting a row that SET NULL or SET DEFAULT foreign keys refer to only clears those references,
+	// so those keys don't order the deletes. Leaving them out breaks the cycles between universes,
+	// areas and tiles. Every other key does: deleting a parent first would fail (NO ACTION, RESTRICT)
+	// or cascade into rows other tables still refer to (CASCADE)
+	const names = tables.rows.map(({ name }) => name);
+	const ordering = references.rows.filter(({ onDelete }) => !CLEARING_DELETE_ACTIONS.includes(onDelete));
+
+	resetStatements = buildResetStatements(orderByReferences(names, ordering).reverse(), orderByReferences(filled, references.rows));
+}
+
+/**
+ * Builds the transaction emptyTestDatabase() runs: it locks every table, deletes every row, and puts
+ * back the rows the migrations inserted
+ *
+ * Every table is locked first, as TRUNCATE would lock it, so a save from the test before either
+ * finishes before the rows are deleted or waits until the database has been emptied. DELETE is used
+ * rather than TRUNCATE because truncating replaces each table's files, which costs far more than
+ * deleting the few rows a test leaves
+ *
+ * @param deleteOrder Every table, children first
+ * @param baselineOrder The tables the migrations put rows in, parents first
+ * @return The statements, as one string
+ */
+function buildResetStatements(deleteOrder: readonly string[], baselineOrder: readonly string[]): string
+{
+	const qualified = deleteOrder.map((name) => `public.${pg.escapeIdentifier(name)}`);
+
+	return([
+		'BEGIN',
+		`LOCK TABLE ${qualified.join(', ')} IN ACCESS EXCLUSIVE MODE`,
+		...qualified.map((table) => `DELETE FROM ${table}`),
+		...baselineOrder.map((name) => `INSERT INTO public.${pg.escapeIdentifier(name)} OVERRIDING SYSTEM VALUE SELECT * FROM ${BASELINE_SCHEMA}.${pg.escapeIdentifier(name)}`),
+		'COMMIT'
+	]
+		.join(';\n'));
 }
 
 /**
  * Orders tables so each comes after the tables its foreign keys refer to. A table that refers to
- * itself only needs its own rows in order, which a copy of them keeps
+ * itself only needs its own rows in order, which a copy of them keeps, or deleting them all in one
+ * statement handles
  *
  * @param tables The tables' names
  * @param references Each foreign key, as the referring (child) and referred-to (parent) table
  * @return The tables, parents first
+ * @throws Error when the foreign keys between the tables form a cycle, which no order satisfies
  */
 function orderByReferences(tables: readonly string[], references: readonly { child: string; parent: string }[]): string[]
 {
@@ -115,9 +157,14 @@ function orderByReferences(tables: readonly string[], references: readonly { chi
 	 */
 	const visit = (table: string): void =>
 	{
-		if (ordered.includes(table) || visiting.has(table))
+		if (ordered.includes(table))
 		{
 			return;
+		}
+
+		if (visiting.has(table))
+		{
+			throw new Error(`The test database's foreign keys form a cycle through ${table}, so its tables can't be ordered`);
 		}
 
 		visiting.add(table);
@@ -147,41 +194,36 @@ function orderByReferences(tables: readonly string[], references: readonly { chi
  */
 export async function emptyTestDatabase(): Promise<void>
 {
-	if (!migrationPool)
+	if (!migrationPool || !resetStatements)
 	{
 		throw new Error('The test database has not been built');
 	}
 
-	const result = await migrationPool.query<{ tables: string | null }>(`SELECT string_agg(format('%I.%I', schemaname, tablename), ', ') AS tables FROM pg_tables WHERE schemaname = 'public'`);
-	const tables = result.rows[0]?.tables;
-
-	if (!tables)
-	{
-		return;
-	}
-
 	// Identity sequences carry on from where they were, so new rows never reuse a baseline row's ID.
-	// A room from the test before may still be saving as it closes; truncating every table can deadlock
-	// with that save, and Postgres may choose the truncate to fail, so it is tried again
+	// A room from the test before may still be saving as it closes; locking every table can deadlock
+	// with that save, and Postgres may choose the reset to fail, so it is tried again
 	for (let attempt = 1; ; attempt++)
 	{
+		const client = await migrationPool.connect();
+
 		try
 		{
-			await migrationPool.query(`TRUNCATE ${tables} CASCADE`);
+			await client.query(resetStatements);
 			break;
 		}
 		catch (error)
 		{
-			if (((error as { code?: string }).code !== DEADLOCK_DETECTED) || (attempt >= MAX_TRUNCATE_ATTEMPTS))
+			await client.query('ROLLBACK');
+
+			if (((error as { code?: string }).code !== DEADLOCK_DETECTED) || (attempt >= MAX_EMPTY_ATTEMPTS))
 			{
 				throw error;
 			}
 		}
-	}
-
-	for (const name of baselineTables)
-	{
-		await migrationPool.query(`INSERT INTO public.${pg.escapeIdentifier(name)} OVERRIDING SYSTEM VALUE SELECT * FROM ${BASELINE_SCHEMA}.${pg.escapeIdentifier(name)}`);
+		finally
+		{
+			client.release();
+		}
 	}
 }
 
