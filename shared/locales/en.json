@@ -3187,6 +3187,10 @@
 		"defaultMessage": "Could not import the translations.",
 		"description": "Shown on the editor's Translations tab when the universe's text couldn't be loaded to match a translation file against it"
 	},
+	"editor.translations.importTooLarge": {
+		"defaultMessage": "This file is too large for a translation file: translation files are at most {megabytes, number} MB.",
+		"description": "Shown on the editor's Translations tab when the file chosen to import is larger than any translation file of a universe could be, so it is probably the wrong file; {megabytes} is the largest size allowed"
+	},
 	"editor.translations.importWrongLanguage": {
 		"defaultMessage": "This file holds translations into {fileLanguage}, not {language}. Choose {fileLanguage} to import it.",
 		"description": "Shown on the editor's Translations tab when the translation file imported names a language other than the one chosen; {fileLanguage} and {language} are languages' names"

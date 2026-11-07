@@ -107,6 +107,39 @@ describe('translation files (shared)', () =>
 		assert.throws(() => readTranslationFile('xliff', '<xliff><unit></xliff>'), TranslationFileError);
 	});
 
+	it('says which line of an XLIFF file has an entity it can\'t read, in text and in attributes', () =>
+	{
+		const inText = '<xliff>\n<file>\n<unit id="a">&nope;</unit>\n</file>\n</xliff>';
+		const inAttribute = '<xliff>\n<file>\n\n<unit id="&nope;"/>\n</file>\n</xliff>';
+
+		assert.throws(() => readTranslationFile('xliff', inText), (error: unknown) => ((error instanceof TranslationFileError) && (error.line === 3)));
+		assert.throws(() => readTranslationFile('xliff', inAttribute), (error: unknown) => ((error instanceof TranslationFileError) && (error.line === 4)));
+	});
+
+	it('reads a large XLIFF file in time growing with its length, not its square', () =>
+	{
+		// Read in time growing with the square of its length, this file takes several seconds; read in a
+		// single pass, a few milliseconds, so the limit leaves room for a slow machine
+		const large: TranslationFileContents = {
+			...contents,
+			entries: Array.from({ length: 2000 }, (_, index) => ({
+				id: `area:${index}:name`,
+				place: `Area: Area ${index}, name`,
+				note: `Note ${index}`,
+				source: `Area ${index}`,
+				translation: `Zone ${index}`,
+				outOfDate: false
+			}))
+		};
+		const written = writeTranslationFile('xliff', large);
+		const start = performance.now();
+		const read = readTranslationFile('xliff', written);
+		const elapsedMs = (performance.now() - start);
+
+		assert.strictEqual(read.translations.length, 2000);
+		assert.ok((elapsedMs < 1000), `Reading took ${Math.round(elapsedMs)} ms`);
+	});
+
 	it('reads CSV by its column names, in any order, with a byte order mark and line breaks in quotes', () =>
 	{
 		const file = String.fromCharCode(0xfeff) + 'Translation,ID\n"Zwei\nZeilen",area:a:name\n,item:3:name\n';
