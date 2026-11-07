@@ -136,11 +136,7 @@ export class HomeScreen
 	 */
 	show(loggedIn: boolean): void
 	{
-		setPageTitle(t({
-			id: 'home.pageTitle',
-			defaultMessage: 'Universes',
-			description: 'The browser tab\'s title while Home lists the universes, before the game engine\'s name'
-		}));
+		setPageTitle();
 		this.logInLink.hidden = loggedIn;
 		this.loggedIn = loggedIn;
 		this.listed = 0;

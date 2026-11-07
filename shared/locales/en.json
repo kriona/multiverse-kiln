@@ -4535,10 +4535,6 @@
 		"defaultMessage": "Try your hand at the act of creation?",
 		"description": "Heading Home shows in place of the list of universes the player can edit when they have none, above the Create Universe button"
 	},
-	"home.pageTitle": {
-		"defaultMessage": "Universes",
-		"description": "The browser tab's title while Home lists the universes, before the game engine's name"
-	},
 	"home.showMore": {
 		"defaultMessage": "Show more",
 		"description": "Button that adds the next page of universes to the list"
