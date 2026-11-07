@@ -48,7 +48,7 @@ export interface LobbyScreenActions
 	createGroup: (character: CharacterSummary) => void;
 
 	/**
-	 * Go back to Home
+	 * Go back to the universe's page
 	 */
 	leaveLobby: () => void;
 }

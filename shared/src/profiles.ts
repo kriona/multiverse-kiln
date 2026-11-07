@@ -90,6 +90,13 @@ export function profileCharacterPath(characterId: string): string
 }
 
 /**
+ * PUT: changes the language the logged-in player's profile names (ProfileLocaleRequest), when it names
+ * one. A profile left on the browser's language keeps it, since the language the browser asks for is
+ * already the one chosen
+ */
+export const PROFILE_LOCALE_PATH = `${PROFILE_PATH}/locale`;
+
+/**
  * GET: everything the site keeps about the logged-in player, to download as one JSON file
  * (AccountExport), with ?locale= naming the language of the default races', classes' and items' names
  */
@@ -276,6 +283,17 @@ export interface ProfileErrorPayload
 {
 	error: LocalizedMessage;
 	field?: ProfileField;
+}
+
+/**
+ * Body of PUT PROFILE_LOCALE_PATH
+ */
+export interface ProfileLocaleRequest
+{
+	/**
+	 * The language's tag, such as de or pt-BR
+	 */
+	locale: string;
 }
 
 /**

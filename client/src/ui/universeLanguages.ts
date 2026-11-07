@@ -3,7 +3,7 @@ import { languageName } from '@multiverse-kiln/shared';
 import { formatList, t } from '../localization';
 
 /**
- * The languages a universe can be played in, as Home and the universe's page show them: the language
+ * The languages a universe can be played in, as Home shows them: the language
  * its text is written in, then those it is translated into, each named in its own language
  *
  * @param universe The universe's source language and translation languages, by tag
@@ -14,7 +14,7 @@ export function describeUniverseLanguages(universe: { sourceLanguage: string; tr
 	return(t({
 		id: 'universe.languages',
 		defaultMessage: 'Languages: {languages}',
-		description: 'Under a universe on Home, and on the universe\'s page under its ruleset: the languages it can be played in, the one its text is written in first; {languages} is a list of language names, each in its own language, such as "English, Deutsch, français"'
+		description: 'Under a universe on Home: the languages it can be played in, the one its text is written in first; {languages} is a list of language names, each in its own language, such as "English, Deutsch, français"'
 	}, {
 		languages: formatList([universe.sourceLanguage, ...universe.translationLanguages].map((language) => languageName(language)))
 	}));

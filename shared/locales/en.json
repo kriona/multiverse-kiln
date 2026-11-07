@@ -4877,7 +4877,7 @@
 	},
 	"lobby.leave": {
 		"defaultMessage": "Leave lobby",
-		"description": "Button that leaves the lobby and goes back to the list of universes"
+		"description": "Button that leaves the lobby and goes back to the universe's page"
 	},
 	"lobby.morePlayers": {
 		"defaultMessage": "and {count, number} more",
@@ -7009,7 +7009,7 @@
 	},
 	"universe.languages": {
 		"defaultMessage": "Languages: {languages}",
-		"description": "Under a universe on Home, and on the universe's page under its ruleset: the languages it can be played in, the one its text is written in first; {languages} is a list of language names, each in its own language, such as \"English, Deutsch, français\""
+		"description": "Under a universe on Home: the languages it can be played in, the one its text is written in first; {languages} is a list of language names, each in its own language, such as \"English, Deutsch, français\""
 	},
 	"universe.lightLevel.dark": {
 		"defaultMessage": "dark",
@@ -7147,6 +7147,22 @@
 		"defaultMessage": "Enter Universe",
 		"description": "Button on a universe's page that takes the player into the universe, starting in its lobby"
 	},
+	"universePage.languageShown": {
+		"defaultMessage": "In use",
+		"description": "In the Languages section of a universe's page, beside the language the player sees the universe's text in now"
+	},
+	"universePage.languagesHeading": {
+		"defaultMessage": "Languages",
+		"description": "Heading of the section of a universe's page that lists the languages the universe can be played in, and lets the player choose one"
+	},
+	"universePage.languagesIntro": {
+		"defaultMessage": "Choose the language to play this universe in.",
+		"description": "Under the Languages heading on a universe's page, above the list of the languages it can be played in, each a button"
+	},
+	"universePage.languagesProfileNote": {
+		"defaultMessage": "Choosing a language also makes it the language on your profile.",
+		"description": "Under the list in the Languages section of a universe's page, while the player is logged in and their profile names a language: choosing a language in the list changes the one on their profile too"
+	},
 	"universePage.loadFailed": {
 		"defaultMessage": "Could not load the universe. Reload the page to try again.",
 		"description": "Shown on the whole of a universe's page when the universe couldn't be loaded, such as when the server can't be reached"
@@ -7159,8 +7175,20 @@
 		"defaultMessage": "That universe could not be found. It may have been renamed, or it isn't open to everyone yet.",
 		"description": "Shown on the whole of a universe's page when the universe its address names doesn't exist or isn't listed on Home"
 	},
+	"universePage.profileLocaleFailed": {
+		"defaultMessage": "Could not change the language on your profile, so the language wasn't changed.",
+		"description": "Shown in the Languages section of a universe's page when choosing a language failed because the player's profile couldn't be changed to it"
+	},
 	"universePage.unavailableTitle": {
 		"defaultMessage": "Universe",
 		"description": "The browser tab's title on a universe's page when the universe couldn't be shown, before the game engine's name"
+	},
+	"universePage.universeTextOnly": {
+		"defaultMessage": "Universe text only",
+		"description": "In the Languages section of a universe's page, beside a language the site itself isn't translated into, and quoted in the note under the list that explains it: choosing it shows the universe's own text in it, while the site's buttons and menus stay as they are"
+	},
+	"universePage.universeTextOnlyNote": {
+		"defaultMessage": "The site itself isn't translated into the languages marked \"{label}\" yet. Choosing one shows universes' own text in it, such as their names, descriptions, areas and items, wherever a universe is translated into it. The site's buttons and menus stay in the language they are in now.",
+		"description": "Under the list in the Languages section of a universe's page, when some of its languages are ones the site isn't translated into; {label} is the words shown beside those languages, \"Universe text only\""
 	}
 }

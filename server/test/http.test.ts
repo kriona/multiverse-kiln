@@ -2,7 +2,7 @@ import assert from 'assert';
 import { randomBytes, randomUUID } from 'crypto';
 import http from 'http';
 
-import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, AUTH_PROVIDERS_PATH, AUTH_SESSION_PATH, EDITOR_UNIVERSES_PATH, invitePath, PUBLIC_SITE_SETTINGS_PATH, playerProfilePath, PROFILE_PATH, MAX_UNIVERSES_PER_PAGE, SITE_SETTINGS_PATH, UNIVERSES_PATH, type UniverseDetails, type UniverseListPayload, type UniverseStage } from '@multiverse-kiln/shared';
+import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, AUTH_PROVIDERS_PATH, AUTH_SESSION_PATH, EDITOR_UNIVERSES_PATH, invitePath, PUBLIC_SITE_SETTINGS_PATH, playerProfilePath, PROFILE_LOCALE_PATH, PROFILE_PATH, MAX_UNIVERSES_PER_PAGE, SITE_SETTINGS_PATH, UNIVERSES_PATH, type UniverseDetails, type UniverseListPayload, type UniverseStage } from '@multiverse-kiln/shared';
 
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { createUniverse } from '../src/db/universeRepo.js';
@@ -420,10 +420,12 @@ describe('Changes from other websites', () =>
 		return(response.status);
 	}
 
-	it('refuses changes to the admin and editor routes from other origins, before asking who is logged in', async () =>
+	it('refuses changes to the admin, editor and profile routes from other origins, before asking who is logged in', async () =>
 	{
 		const universeId = randomUUID();
 		const changes: [string, string][] = [
+			['PUT', PROFILE_PATH],
+			['PUT', PROFILE_LOCALE_PATH],
 			['PUT', SITE_SETTINGS_PATH],
 			['POST', ADMIN_ADMINS_PATH],
 			['DELETE', `${ADMIN_ADMINS_PATH}/ada`],
