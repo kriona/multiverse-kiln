@@ -82,9 +82,12 @@ An engine for making multiplayer browser-based role-playing games.
                      (git-ignored)
   scripts/           the message extractor (extractMessages.ts), run by `npm run messages` and the client's dev server
 docker-compose.yml   local Postgres and object storage (SeaweedFS)
+/scratchpad      scratch work (git-ignored): benchmarks, review notes, throwaway scripts and their output
 ```
 
 npm workspaces are assumed (`client`, `server`, `shared`). Update this section if the package manager changes.
+
+Put scratch files in `scratchpad/`, not a system or session temp folder, so they last and can be run again. Scripts there import the repository's code by relative path (e.g. `../shared/dist/translationFiles.js`). Don't overwrite the notes already there without asking.
 
 ## Architecture rules (do not violate)
 
