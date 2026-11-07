@@ -1,4 +1,4 @@
-import { chunkCoordinate, chunkKey, MAX_CHUNKS_PER_REQUEST, type ChunkListPayload, type ChunkRange, type MapBounds } from '@multiverse-kiln/shared';
+import { chunkCoordinate, chunkKey, MAX_CHUNKS_PER_REQUEST, type ChunkCoordinates, type ChunkListPayload, type ChunkRange, type MapBounds } from '@multiverse-kiln/shared';
 
 import type { EditorMap } from './EditorMap';
 
@@ -123,6 +123,69 @@ export class ChunkLoader
 				}
 			}
 		}
+	}
+
+	/**
+	 * Loads some of the map's chunks again as they are stored now, such as the chunks another editor
+	 * painted, without changing the map. Only chunks on the map that have loaded are asked for, the
+	 * chunks in one block in one request
+	 *
+	 * @param chunks The chunks
+	 * @return Each chunk asked for, by chunkKey(), with its stored cells, or undefined for one that is all
+	 * the default tile; empty once the loader has stopped
+	 */
+	async reload(chunks: readonly ChunkCoordinates[]): Promise<Map<string, number[] | undefined>>
+	{
+		const area = this.map.chunkRange;
+		const blocks = new Map<string, ChunkRange>();
+		const reloaded = new Map<string, number[] | undefined>();
+
+		for (const { chunkColumn, chunkRow } of chunks)
+		{
+			const onMap = ((chunkColumn >= area.minChunkColumn) && (chunkColumn <= area.maxChunkColumn) && (chunkRow >= area.minChunkRow) && (chunkRow <= area.maxChunkRow));
+
+			if (!onMap || !this.map.isLoaded(chunkColumn, chunkRow))
+			{
+				continue;
+			}
+
+			const key = chunkKey(Math.floor(chunkColumn / BLOCK_SIDE), Math.floor(chunkRow / BLOCK_SIDE));
+			const block = blocks.get(key);
+
+			reloaded.set(chunkKey(chunkColumn, chunkRow), undefined);
+			blocks.set(key, ((block === undefined)
+				? {
+					minChunkColumn: chunkColumn,
+					minChunkRow: chunkRow,
+					maxChunkColumn: chunkColumn,
+					maxChunkRow: chunkRow
+				}
+				: {
+					minChunkColumn: Math.min(block.minChunkColumn, chunkColumn),
+					minChunkRow: Math.min(block.minChunkRow, chunkRow),
+					maxChunkColumn: Math.max(block.maxChunkColumn, chunkColumn),
+					maxChunkRow: Math.max(block.maxChunkRow, chunkRow)
+				}));
+		}
+
+		const answers = await Promise.all([...blocks.values()].map((range) => this.source(range)));
+
+		if (this.stopped)
+		{
+			return(new Map());
+		}
+
+		for (const chunk of answers.flatMap((answer) => answer.chunks))
+		{
+			const key = chunkKey(chunk.chunkColumn, chunk.chunkRow);
+
+			if (reloaded.has(key))
+			{
+				reloaded.set(key, chunk.cells);
+			}
+		}
+
+		return(reloaded);
 	}
 
 	/**

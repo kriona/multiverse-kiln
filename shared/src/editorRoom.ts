@@ -110,6 +110,21 @@ export interface SavedEditDetail extends UniverseEditDetail
 	 * added, and for the settings, the ruleset, translations and the draft
 	 */
 	id: number | string | null;
+
+	/**
+	 * For cells, the chunks of the area's map the save painted, for the area editor to load again and mark
+	 * the cells that changed; left out of the details saved for the Audit tab
+	 */
+	chunks?: ChunkCoordinates[];
+}
+
+/**
+ * A chunk of an area's map, by its column and row among chunks
+ */
+export interface ChunkCoordinates
+{
+	chunkColumn: number;
+	chunkRow: number;
 }
 
 /**

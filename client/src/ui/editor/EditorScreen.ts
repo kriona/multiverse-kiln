@@ -675,12 +675,13 @@ export class EditorScreen
 	/**
 	 * Follows a save made in another window, once the universe has loaded: lists the saves on the Audit
 	 * tab again, updates what the save changed that this window has no unsaved changes to, marks what it
-	 * has them to, and says who saved what. Starting, applying or discarding the draft changes the whole
-	 * universe, which loads again, or says to reload while anything is unsaved
+	 * has them to, and says who saved what, once the painting it made to the area open is taken into its
+	 * map. Starting, applying or discarding the draft changes the whole universe, which loads again, or
+	 * says to reload while anything is unsaved
 	 *
 	 * @param saved The save
 	 */
-	otherSaved(saved: EditorSavedPayload): void
+	async otherSaved(saved: EditorSavedPayload): Promise<void>
 	{
 		const universe = this.universe;
 
@@ -730,7 +731,7 @@ export class EditorScreen
 		}
 
 		void this.reloadSettings();
-		showSaveNotice(saved, universe.ruleset, kept);
+		showSaveNotice(saved, universe.ruleset, kept, await this.areasTab.followPainting(save));
 	}
 
 	/**

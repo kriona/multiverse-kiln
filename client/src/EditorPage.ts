@@ -252,7 +252,7 @@ export class EditorPage
 
 		room.onMessage(EditorServerMessageType.Saved, (saved: EditorSavedPayload) =>
 		{
-			this.editorScreen.otherSaved(saved);
+			void this.editorScreen.otherSaved(saved);
 		});
 
 		room.onLeave((code: number) =>

@@ -361,7 +361,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 				}, transaction);
 			}
 
-			details = audit.savedDetails();
+			details = audit.noticedDetails();
 
 			return(saving);
 		});
@@ -630,7 +630,8 @@ async function afterCommit(context: ChangeContext, stageChange: StageChange | un
  *
  * @param base The universe and version saved, and the player who saved
  * @param windowId The editor room session ID of the window that saved, or undefined when it named none
- * @param details What the save changed, as the Audit tab lists it, with the ID of each thing
+ * @param details What the save changed, as the Audit tab lists it, with the ID of each thing and the
+ * chunks each area's painting touched
  */
 async function publishSave(base: UniverseContext, windowId: string | undefined, details: SavedEditDetail[]): Promise<void>
 {

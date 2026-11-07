@@ -109,6 +109,31 @@ export class EditHistory
 	}
 
 	/**
+	 * Follows cells another editor saved: wherever a step holds a cell's value as it was saved before, it
+	 * holds the value saved now, so undoing back to the saved map gives the cells as they are saved
+	 *
+	 * @param cells Each cell's value as saved before and now, by "column,row"
+	 */
+	rebase(cells: ReadonlyMap<string, { before: number; after: number }>): void
+	{
+		for (const step of [...this.undoSteps, ...this.redoSteps])
+		{
+			for (const list of [step.changes, step.inverse])
+			{
+				list.forEach(([column, row, value], index) =>
+				{
+					const saved = cells.get(`${column},${row}`);
+
+					if (saved && (saved.before === value))
+					{
+						list[index] = [column, row, saved.after];
+					}
+				});
+			}
+		}
+	}
+
+	/**
 	 * Forgets every step, for when another map opens
 	 */
 	clear(): void

@@ -2255,6 +2255,10 @@
 		"defaultMessage": "loading...",
 		"description": "What the cell under the pointer holds, while that part of the map is loading"
 	},
+	"editor.map.cellPaintedBy": {
+		"defaultMessage": "{over, select, yes {{cell} (painted by {name} over your painting while you had this map open)} other {{cell} (painted by {name} while you had this map open)}}",
+		"description": "Under the map editor's map, the cell under the pointer or the keyboard's cursor when another editor painted it and saved while the player had the area open; the map marks such cells. {cell} is the cell and what it holds, e.g. \"3, -2: Grass\", {name} the other editor's display name, and {over} yes when the player had painted the cell too (saved or not), which the map marks in a warning color"
+	},
 	"editor.map.cellWithLink": {
 		"defaultMessage": "{column}, {row}: {contents} ({mode, select, automatic {automatic link} other {manual link}})",
 		"description": "Under the map, the cell under the pointer when it has an area link: its coordinates, what it holds and the kind of link"
@@ -2638,6 +2642,10 @@
 	"editor.saveNoticeKept": {
 		"defaultMessage": "{count, plural, one {This conflicts with your unsaved changes on the {tabs} tab.} other {This conflicts with your unsaved changes on the {tabs} tabs.}}",
 		"description": "A second sentence in the toast saying another editor saved changes, when they changed something the player also has unsaved changes to; the toast stays until clicked away. {tabs} names the editor's tabs those things are on, e.g. \"Characters and Items\", and {count} how many tabs"
+	},
+	"editor.saveNoticePaintedOver": {
+		"defaultMessage": "{count, plural, one {They painted over # cell you painted, outlined in orange on the map.} other {They painted over # cells you painted, outlined in orange on the map.}}",
+		"description": "A sentence in the toast saying another editor saved changes, when they painted cells of the open area's map that the player had also painted since opening it, saved or not; the toast stays until clicked away. {count} is how many cells. The map outlines those cells in orange, and the text under the map names who painted the cell under the pointer"
 	},
 	"editor.searchByName": {
 		"defaultMessage": "Search by name",
