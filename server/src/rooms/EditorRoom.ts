@@ -1,5 +1,5 @@
 import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
-import { editorAccessOf, EditorMessageType, EditorPresence, EditorServerMessageType, EditorState, EditorWindow, NoticeReason, ServerCloseCode, type ChatReadPayload, type EditorRole, type EditorSavedPayload, type NoticePayload, type UniverseRole } from '@multiverse-kiln/shared';
+import { editorAccessOf, EditorMessageType, EditorPresence, EditorServerMessageType, EditorState, EditorWindow, NoticeReason, ServerCloseCode, stageChangesEditorAccess, type ChatReadPayload, type EditorRole, type EditorSavedPayload, type NoticePayload, type UniverseRole } from '@multiverse-kiln/shared';
 
 import { resolveSession } from '../auth/sessions.js';
 import { isActiveServerAdmin } from '../db/serverAdminRepo.js';
@@ -7,7 +7,7 @@ import { findUniverseAccess } from '../db/universeEditorRepo.js';
 import { findUniverse } from '../db/universeRepo.js';
 import { noticeDetails } from '../logic/saveNotices.js';
 import { connectedSessions } from '../players/connectedSessions.js';
-import { universeAccessChanges } from '../players/universeAccess.js';
+import { universeAccessChanges, type StageChange } from '../players/universeAccess.js';
 import { areaChanges } from '../world/areaChanges.js';
 import { editorUpdates, type EditorUpdate, type SavedUpdate } from '../world/editorUpdates.js';
 import { InvalidMessages } from './invalidMessages.js';
@@ -246,7 +246,7 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 		{
 			if (change.universeId === this.universeId)
 			{
-				this.broadcast(EditorServerMessageType.AccessChanged);
+				this.applyStageChange(change);
 			}
 		});
 	}
@@ -490,6 +490,28 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 		for (const client of clients)
 		{
 			client.send(EditorServerMessageType.AccessChanged);
+		}
+	}
+
+	/**
+	 * Follows a change to the universe's stage: tells the windows of the players it changes what they may
+	 * do for (stageChangesEditorAccess), by the role each has once the save committed. A player left with
+	 * no role is turned away when the room hears of the roles the save changed
+	 *
+	 * @param change The universe's new stage, the one before it and its editors' roles
+	 */
+	private applyStageChange(change: StageChange): void
+	{
+		for (const client of this.clients)
+		{
+			const { playerId, serverAdmin } = identityOf(client);
+			const role = change.roles.get(playerId);
+			const access = editorAccessOf(((role === undefined) ? undefined : { role, languages: [] }), serverAdmin);
+
+			if (access && stageChangesEditorAccess(access.role, change.previousStage, change.stage))
+			{
+				client.send(EditorServerMessageType.AccessChanged);
+			}
 		}
 	}
 

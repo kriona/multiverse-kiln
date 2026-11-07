@@ -24,6 +24,11 @@ export interface StageChange
 	stage: UniverseStage;
 
 	/**
+	 * The stage the universe was in before the save
+	 */
+	previousStage: UniverseStage;
+
+	/**
 	 * Every editor's role once the save that changed the stage committed, by player ID; players without
 	 * one aren't in it
 	 */

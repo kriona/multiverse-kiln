@@ -286,7 +286,7 @@ describe('Editing a universe\'s editors', () =>
 			}
 		}
 
-		assert.deepStrictEqual(stages.map((change) => [change.universeId, change.stage, Object.fromEntries(change.roles)]), [[universeId, 'prologue', { [ada.playerId]: 'creator', [bob.playerId]: 'translator' }]]);
+		assert.deepStrictEqual(stages.map((change) => [change.universeId, change.previousStage, change.stage, Object.fromEntries(change.roles)]), [[universeId, 'in_the_beginning', 'prologue', {[ada.playerId]: 'creator', [bob.playerId]: 'translator' }]]);
 		assert.deepStrictEqual(lost, []);
 	});
 

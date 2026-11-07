@@ -408,6 +408,7 @@ describe('GameRoom', () =>
 		universeAccessChanges.publishStage({
 			universeId: universe.universeId,
 			stage: 'let_there_be_light',
+			previousStage: 'end_of_time',
 			roles: new Map()
 		});
 		assert.strictEqual(room.state.locked, false);
@@ -422,6 +423,7 @@ describe('GameRoom', () =>
 		universeAccessChanges.publishStage({
 			universeId: universe.universeId,
 			stage: 'end_of_time',
+			previousStage: 'let_there_be_light',
 			roles: new Map()
 		});
 		await waitUntilStopped(room, player);
@@ -432,6 +434,7 @@ describe('GameRoom', () =>
 		universeAccessChanges.publishStage({
 			universeId: universe.universeId,
 			stage: 'prologue',
+			previousStage: 'end_of_time',
 			roles: new Map()
 		});
 		assert.strictEqual(await left, ServerCloseCode.StageChanged);

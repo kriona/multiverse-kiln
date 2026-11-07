@@ -623,6 +623,29 @@ export function canViewUniverse(stage: UniverseStage, role: UniverseRole | undef
 }
 
 /**
+ * Whether a universe moving from one stage to another changes what a role may do in its editor: whether
+ * the universe is locked to it at the end of time (canEditAtEndOfTime), and whether it may look at the
+ * universe's page (canViewUniverse), which the site admin role always may. Creators and server admins
+ * may do the same in every stage
+ *
+ * @param role The user's role in the editor
+ * @param from The stage the universe was in
+ * @param to The stage the universe is in now
+ * @return True when the role may do something different
+ */
+export function stageChangesEditorAccess(role: EditorRole, from: UniverseStage, to: UniverseStage): boolean
+{
+	if (role === ADMIN_ROLE)
+	{
+		return(false);
+	}
+
+	const lockChanged = (!canEditAtEndOfTime(role) && ((from === 'end_of_time') !== (to === 'end_of_time')));
+
+	return(lockChanged || (canViewUniverse(from, role) !== canViewUniverse(to, role)));
+}
+
+/**
  * The part of a universe's address that names it, made from its name: lowercase, with every run of
  * characters other than letters and digits turned into one hyphen, e.g. "The Shattered Isles!" is
  * the-shattered-isles. Letters of every alphabet are kept, so a name in any language reads in its
