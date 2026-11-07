@@ -3395,6 +3395,14 @@
 		"message": "The universe ain't been turned into any o' yer tongues yet. Its creators can add 'em above.",
 		"source": "The universe isn't translated into any of your languages yet. Its creators can add them above."
 	},
+	"editor.translations.notUtf8": {
+		"message": "This scroll ain't penned in UTF-8, so its letters be gibberish. Stow it as UTF-8 an' haul it in again.",
+		"source": "This file isn't saved as UTF-8 text, so its letters can't be read. Save it as UTF-8 and import it again."
+	},
+	"editor.translations.notUtf8Csv": {
+		"message": "This scroll ain't penned in UTF-8, so its letters be gibberish. Stow it from the spreadsheet as CSV UTF-8 an' haul it in again.",
+		"source": "This file isn't saved as UTF-8 text, so its letters can't be read. Save it from the spreadsheet as CSV UTF-8 and import it again."
+	},
 	"editor.translations.note": {
 		"message": "Note fer the translators",
 		"source": "Note for translators"

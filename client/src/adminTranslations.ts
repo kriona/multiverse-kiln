@@ -1,4 +1,4 @@
-import { canonicalLanguage, engineTranslationContents, importLanguageFile, isEngineTranslationLanguage, languageFileName, languageFileText, languageName, languageNameIn, MAX_TRANSLATION_FILE_BYTES, messageArguments, PSEUDO_LOCALE, readTranslationFile, SITE_NAME, SOURCE_LOCALE, TRANSLATION_FILE_EXTENSIONS, TRANSLATION_FILE_FORMATS, TRANSLATION_FILE_TYPES, translationFileFormatOf, UNIVERSE_LANGUAGES, universeSlug, writeTranslationFile, type EngineCatalog, type LanguageFileImport, type ReadTranslationFile, type SkippedTranslation, type TranslationFile, type TranslationFileFormat } from '@multiverse-kiln/shared';
+import { canonicalLanguage, engineTranslationContents, importLanguageFile, isEngineTranslationLanguage, languageFileName, languageFileText, languageName, languageNameIn, MAX_TRANSLATION_FILE_BYTES, messageArguments, PSEUDO_LOCALE, SITE_NAME, SOURCE_LOCALE, TRANSLATION_FILE_EXTENSIONS, TRANSLATION_FILE_FORMATS, TRANSLATION_FILE_TYPES, translationFileFormatOf, UNIVERSE_LANGUAGES, universeSlug, writeTranslationFile, type EngineCatalog, type LanguageFileImport, type ReadTranslationFile, type SkippedTranslation, type TranslationFile, type TranslationFileFormat } from '@multiverse-kiln/shared';
 
 import { showAdminRefusal, startAdminPage } from './AdminPage';
 import { availableLocales, currentLocale, formatList, formatToNodes, loadTranslationFile, t } from './localization';
@@ -6,7 +6,7 @@ import { describeEditorError } from './network/editorApi';
 import { refreshUnsavedWork, watchUnsavedWork } from './ui/changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from './ui/dom';
 import { reportFieldError, setFieldError } from './ui/fieldErrors';
-import { describeTooLarge, describeUnreadable, describeWrongLanguage, downloadText, FILE_FORMAT_NAMES } from './ui/translationFiles';
+import { describeTooLarge, describeUnreadable, describeWrongLanguage, downloadText, FILE_FORMAT_NAMES, readTranslationFileFrom } from './ui/translationFiles';
 
 /**
  * The English messages, as the build has shared/locales/en.json. Only this page's script holds them
@@ -348,7 +348,7 @@ class EngineTranslationFiles
 
 		try
 		{
-			read = readTranslationFile(format, await file.text());
+			read = await readTranslationFileFrom(file, format);
 		}
 		catch (error)
 		{

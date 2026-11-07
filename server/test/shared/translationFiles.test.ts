@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { parseUniverseTextKey, readTranslationFile, TRANSLATION_FILE_FORMATS, TranslationFileError, translationFileFormatOf, universeTextKey, writeTranslationFile, type TranslationFileContents } from '@multiverse-kiln/shared';
+import { decodeTranslationFile, parseUniverseTextKey, readTranslationFile, TRANSLATION_FILE_FORMATS, TranslationFileEncodingError, TranslationFileError, translationFileFormatOf, universeTextKey, writeTranslationFile, type TranslationFileContents } from '@multiverse-kiln/shared';
 
 /**
  * A file's contents with text that is hard to write in every format: quotes, commas, line breaks,
@@ -240,6 +240,64 @@ describe('translation files (shared)', () =>
 		assert.throws(() => readTranslationFile('po', 'msgid "x"\nthis is not po\n'), (error: unknown) => ((error instanceof TranslationFileError) && (error.line === 2)));
 		assert.throws(() => readTranslationFile('json', '{"text": []}'), TranslationFileError);
 		assert.throws(() => readTranslationFile('json', 'not json'), TranslationFileError);
+	});
+
+	it('decodes a file as UTF-8, or as the Unicode encoding its byte order mark names', () =>
+	{
+		const text = 'id,translation\nitem:1:name,Café 🐉\n';
+		/**
+		 * The text as UTF-16 with a byte order mark
+		 *
+		 * @param littleEndian Whether it is UTF-16LE rather than UTF-16BE
+		 * @return The bytes
+		 */
+		const utf16 = (littleEndian: boolean): Uint8Array =>
+		{
+			const units = String.fromCharCode(0xfeff) + text;
+			const view = new DataView(new ArrayBuffer(units.length * 2));
+
+			for (let index = 0; index < units.length; index++)
+			{
+				view.setUint16(index * 2, units.charCodeAt(index), littleEndian);
+			}
+
+			return(new Uint8Array(view.buffer));
+		};
+		const utf8 = new TextEncoder().encode(text);
+
+		assert.strictEqual(decodeTranslationFile('csv', utf8), text);
+		assert.strictEqual(decodeTranslationFile('csv', Uint8Array.of(0xef, 0xbb, 0xbf, ...utf8)), text);
+		assert.strictEqual(decodeTranslationFile('csv', utf16(true)), text);
+		assert.strictEqual(decodeTranslationFile('csv', utf16(false)), text);
+	});
+
+	it('refuses a file that isn\'t UTF-8 and names no other encoding, such as a spreadsheet\'s Windows-1252 CSV', () =>
+	{
+		const windows1252 = Uint8Array.of(...new TextEncoder().encode('id,translation\nitem:1:name,Caf'), 0xe9, 0x0a);
+
+		assert.throws(() => decodeTranslationFile('csv', windows1252), TranslationFileEncodingError);
+		assert.throws(() => decodeTranslationFile('json', windows1252), TranslationFileEncodingError);
+	});
+
+	it('decodes a PO or XLIFF file in the encoding it names', () =>
+	{
+		/**
+		 * Text as Latin-1, one byte for each character
+		 *
+		 * @param text The text, with no character past U+00FF
+		 * @return The bytes
+		 */
+		const latin1 = (text: string): Uint8Array => Uint8Array.from(text, (character) => character.charCodeAt(0));
+		const po = 'msgid ""\nmsgstr ""\n"Language: fr\\n"\n"Content-Type: text/plain; charset=ISO-8859-1\\n"\n\nmsgctxt "item:1:name"\nmsgid "Cafe"\nmsgstr "Café"\n';
+		const template = po.replace('ISO-8859-1', 'CHARSET');
+		const xliff = '<?xml version="1.0" encoding="windows-1252"?>\n<xliff version="2.0" srcLang="en" trgLang="fr"><file id="f"><unit id="item:1:name"><segment><source>Cafe</source><target>Café</target></segment></unit></file></xliff>';
+
+		assert.strictEqual(decodeTranslationFile('po', latin1(po)), po);
+		assert.strictEqual(decodeTranslationFile('xliff', latin1(xliff)), xliff);
+		assert.strictEqual(decodeTranslationFile('po', new TextEncoder().encode(template)), template);
+		assert.throws(() => decodeTranslationFile('po', latin1(template)), TranslationFileEncodingError);
+		assert.throws(() => decodeTranslationFile('xliff', latin1(xliff.replace('windows-1252', 'UTF-16'))), TranslationFileEncodingError);
+		assert.throws(() => decodeTranslationFile('xliff', Uint8Array.of(...latin1(xliff.replace('windows-1252', 'Shift_JIS')), 0x81)), TranslationFileError);
 	});
 
 	it('names pieces of text by their keys, and formats by their files\' extensions', () =>

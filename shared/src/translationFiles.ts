@@ -161,6 +161,22 @@ export class TranslationFileError extends Error
 }
 
 /**
+ * Thrown when a file read as UTF-8 isn't UTF-8 text, such as a CSV file a spreadsheet saved in the
+ * computer's own encoding
+ */
+export class TranslationFileEncodingError extends Error
+{
+	/**
+	 * Makes the error
+	 */
+	constructor()
+	{
+		super('Not UTF-8 text');
+		this.name = 'TranslationFileEncodingError';
+	}
+}
+
+/**
  * The key a piece of universe text has in a translation file, e.g. "area:7d1c...:name"
  *
  * @param ref The piece of text
@@ -267,6 +283,111 @@ export function readTranslationFile(format: TranslationFileFormat, text: string)
 		case 'json':
 			return(readJson(withoutMark));
 	}
+}
+
+/**
+ * How much of the start of a PO or XLIFF file is searched for the encoding it names, in bytes: an XML
+ * declaration comes first, and a PO header follows only the comments at the top of the file
+ */
+const DECLARED_ENCODING_BYTES = 16 * 1024;
+
+/**
+ * The text a file's bytes hold. A byte order mark says which Unicode encoding they are in; without
+ * one, a PO file is in the charset its header's Content-Type names and an XLIFF file in the encoding
+ * its XML declaration names, and every other file, and one naming an encoding there is no decoder for,
+ * is read as UTF-8
+ *
+ * @param format The file's format
+ * @param bytes The file's bytes
+ * @return The file's text
+ * @throws TranslationFileEncodingError when a file read as UTF-8 isn't UTF-8, and TranslationFileError
+ * when a file isn't text in the encoding it names
+ */
+export function decodeTranslationFile(format: TranslationFileFormat, bytes: Uint8Array): string
+{
+	const decoder = (byteOrderMarkDecoder(bytes) ?? declaredDecoder(format, bytes) ?? new TextDecoder('utf-8', { fatal: true }));
+
+	try
+	{
+		return(decoder.decode(bytes));
+	}
+	catch
+	{
+		if (decoder.encoding === 'utf-8')
+		{
+			throw new TranslationFileEncodingError();
+		}
+
+		throw new TranslationFileError(null);
+	}
+}
+
+/**
+ * A decoder for the Unicode encoding the byte order mark a file starts with names
+ *
+ * @param bytes The file's bytes
+ * @return The decoder, which skips the mark, or undefined when the file doesn't start with one
+ */
+function byteOrderMarkDecoder(bytes: Uint8Array): TextDecoder | undefined
+{
+	if ((bytes[0] === 0xef) && (bytes[1] === 0xbb) && (bytes[2] === 0xbf))
+	{
+		return(new TextDecoder('utf-8', { fatal: true }));
+	}
+	else if ((bytes[0] === 0xff) && (bytes[1] === 0xfe))
+	{
+		return(new TextDecoder('utf-16le', { fatal: true }));
+	}
+	else if ((bytes[0] === 0xfe) && (bytes[1] === 0xff))
+	{
+		return(new TextDecoder('utf-16be', { fatal: true }));
+	}
+
+	return(undefined);
+}
+
+/**
+ * A decoder for the encoding a PO or XLIFF file names: the charset in a PO header's Content-Type, or
+ * an XML declaration's encoding. Both are written in ASCII, so the file's start is searched as
+ * Windows-1252, which turns every byte into a character. Finding the name that way means the file uses
+ * one byte for each ASCII character, so it isn't UTF-16 whatever it says, and one naming UTF-16 is read
+ * as UTF-8
+ *
+ * @param format The file's format
+ * @param bytes The file's bytes
+ * @return The decoder, or undefined when the file names no encoding, or one there is no decoder for
+ */
+function declaredDecoder(format: TranslationFileFormat, bytes: Uint8Array): TextDecoder | undefined
+{
+	const start = new TextDecoder('windows-1252').decode(bytes.subarray(0, DECLARED_ENCODING_BYTES));
+	let label: string | undefined;
+
+	if (format === 'po')
+	{
+		label = /^(?:msgstr\s+)?"Content-Type:[^"\n]*?\bcharset=([\w.:-]+)/im.exec(start)?.[1];
+	}
+	else if (format === 'xliff')
+	{
+		label = /^<\?xml\s[^>]*?\bencoding\s*=\s*["']([\w.:-]+)["']/.exec(start)?.[1];
+	}
+
+	if (label === undefined)
+	{
+		return(undefined);
+	}
+
+	let decoder: TextDecoder;
+
+	try
+	{
+		decoder = new TextDecoder(label, { fatal: true });
+	}
+	catch
+	{
+		return(undefined);
+	}
+
+	return((decoder.encoding.startsWith('utf-16') ? undefined : decoder));
 }
 
 /**

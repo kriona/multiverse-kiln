@@ -1,4 +1,4 @@
-import { canEditWorld, canMarkNoTranslation, canonicalLanguage, canTranslate, DISALLOWED_TEXT_CHARACTERS, isCoin, isValidCoinAbbreviation, languageName, MAX_TRANSLATION_FILE_BYTES, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, readTranslationFile, sourceTextHash, TRANSLATION_FILE_EXTENSIONS, TRANSLATION_FILE_FORMATS, TRANSLATION_FILE_TYPES, translationFileFormatOf, UNIVERSE_TEXT_SORT_COLUMNS, universeTextFileKey, writeTranslationFile, type AuditSubject, type EditableUniverse, type ReadTranslationFile, type UniverseTextListPayload, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
+import { canEditWorld, canMarkNoTranslation, canonicalLanguage, canTranslate, DISALLOWED_TEXT_CHARACTERS, isCoin, isValidCoinAbbreviation, languageName, MAX_TRANSLATION_FILE_BYTES, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, sourceTextHash, TRANSLATION_FILE_EXTENSIONS, TRANSLATION_FILE_FORMATS, TRANSLATION_FILE_TYPES, translationFileFormatOf, UNIVERSE_TEXT_SORT_COLUMNS, universeTextFileKey, writeTranslationFile, type AuditSubject, type EditableUniverse, type ReadTranslationFile, type UniverseTextListPayload, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -6,7 +6,7 @@ import { refreshUnsavedWork, watchUnsavedWork } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { engineCoinName } from '../moneyField';
 import { TableSorter } from '../tableSorter';
-import { describeTooLarge, describeUnreadable, describeWrongLanguage, downloadText, FILE_FORMAT_NAMES } from '../translationFiles';
+import { describeTooLarge, describeUnreadable, describeWrongLanguage, downloadText, FILE_FORMAT_NAMES, readTranslationFileFrom } from '../translationFiles';
 import type { EditorSave } from './editorSave';
 import type { FollowsOtherSaves, OtherSave } from './otherSaves';
 import type { SavableTab } from './SaveBar';
@@ -868,7 +868,7 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 
 		try
 		{
-			read = readTranslationFile(format, await file.text());
+			read = await readTranslationFileFrom(file, format);
 		}
 		catch (error)
 		{

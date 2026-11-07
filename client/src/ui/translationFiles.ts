@@ -1,9 +1,9 @@
 /**
  * What the editor's Translations tab and the admin page's Translations tool share about translation
- * files (shared/src/translationFiles.ts): the formats' names, why a file can't be imported, and saving
- * one to the browser's downloads
+ * files (shared/src/translationFiles.ts): the formats' names, reading a file chosen to import and why
+ * one can't be imported, and saving one to the browser's downloads
  */
-import { defineMessages, MAX_TRANSLATION_FILE_BYTES, TranslationFileError, type MessageDescriptor, type TranslationFileFormat } from '@multiverse-kiln/shared';
+import { decodeTranslationFile, defineMessages, MAX_TRANSLATION_FILE_BYTES, readTranslationFile, TranslationFileEncodingError, TranslationFileError, type MessageDescriptor, type ReadTranslationFile, type TranslationFileFormat } from '@multiverse-kiln/shared';
 
 import { t } from '../localization';
 
@@ -61,9 +61,27 @@ export function describeUnreadable(error: unknown, format: TranslationFileFormat
 {
 	const formatName = t(FILE_FORMAT_NAMES[format]);
 
-	if (!(error instanceof TranslationFileError))
+	if (!(error instanceof TranslationFileError) && !(error instanceof TranslationFileEncodingError))
 	{
 		console.error('Could not read the translation file:', error);
+	}
+
+	if ((error instanceof TranslationFileEncodingError) && (format === 'csv'))
+	{
+		return(t({
+			id: 'editor.translations.notUtf8Csv',
+			defaultMessage: 'This file isn\'t saved as UTF-8 text, so its letters can\'t be read. Save it from the spreadsheet as CSV UTF-8 and import it again.',
+			description: 'Shown on the editor\'s Translations tab and on the admin page\'s Translations tool when an imported CSV file isn\'t in the UTF-8 text encoding, such as one a spreadsheet saved in the computer\'s own encoding. "CSV UTF-8" is the name a spreadsheet such as Excel gives that choice of file type when saving'
+		}));
+	}
+
+	if (error instanceof TranslationFileEncodingError)
+	{
+		return(t({
+			id: 'editor.translations.notUtf8',
+			defaultMessage: 'This file isn\'t saved as UTF-8 text, so its letters can\'t be read. Save it as UTF-8 and import it again.',
+			description: 'Shown on the editor\'s Translations tab and on the admin page\'s Translations tool when an imported translation file isn\'t in the UTF-8 text encoding and doesn\'t name another'
+		}));
 	}
 
 	if ((error instanceof TranslationFileError) && (error.line !== null))
@@ -85,6 +103,19 @@ export function describeUnreadable(error: unknown, format: TranslationFileFormat
 	}, {
 		format: formatName
 	}));
+}
+
+/**
+ * Reads the translations in a file chosen to import, in the encoding its bytes say (decodeTranslationFile())
+ *
+ * @param file The file
+ * @param format The format to read it in
+ * @return The language it says it holds, and its translations
+ * @throws TranslationFileEncodingError or TranslationFileError when it can't be read, which describeUnreadable() describes
+ */
+export async function readTranslationFileFrom(file: File, format: TranslationFileFormat): Promise<ReadTranslationFile>
+{
+	return(readTranslationFile(format, decodeTranslationFile(format, new Uint8Array(await file.arrayBuffer()))));
 }
 
 /**

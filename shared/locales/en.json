@@ -3395,6 +3395,14 @@
 		"defaultMessage": "The universe isn't translated into any of your languages yet. Its creators can add them above.",
 		"description": "Shown on the editor's Translations tab to a translator when none of the languages they may translate into is one the universe is translated into"
 	},
+	"editor.translations.notUtf8": {
+		"defaultMessage": "This file isn't saved as UTF-8 text, so its letters can't be read. Save it as UTF-8 and import it again.",
+		"description": "Shown on the editor's Translations tab and on the admin page's Translations tool when an imported translation file isn't in the UTF-8 text encoding and doesn't name another"
+	},
+	"editor.translations.notUtf8Csv": {
+		"defaultMessage": "This file isn't saved as UTF-8 text, so its letters can't be read. Save it from the spreadsheet as CSV UTF-8 and import it again.",
+		"description": "Shown on the editor's Translations tab and on the admin page's Translations tool when an imported CSV file isn't in the UTF-8 text encoding, such as one a spreadsheet saved in the computer's own encoding. \"CSV UTF-8\" is the name a spreadsheet such as Excel gives that choice of file type when saving"
+	},
 	"editor.translations.note": {
 		"defaultMessage": "Note for translators",
 		"description": "Heading of the column on the editor's Translations tab with the note for translators on each piece of text, and the label of the note's field in the dialog that translates it"
