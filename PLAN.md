@@ -393,14 +393,23 @@ Built in ten steps: roles, stages, server admins, disabling things in use, then 
 	- [ ] Edit Size: a field whose value differs from the map's size now shows in a changed color
 	- [ ] A fill tool (with a warning if a large number of tiles will be updated)
 	- [ ] Middle click on a cell picks its tile as the tile to paint with
-3. Site font
-	- [ ] Load the font locally, not from Google's servers. Make sure phaser is ready before drawing text
-	- [ ] 2FA code fields keep their current font
-	- [ ] Alegreya (calligraphic) for headers. Maybe sans-serf if it looks too jagged. Another fallback: Texturina.
-	- [ ] Nunito for everything else
-	- [ ] Consider using a second monospace font for usernames that distinguised between 0O and 1l.
+3. Site fonts and text sizes
+	Decided, and already done in the static placeholder site (`C:\dev\multiverse-kiln-html`: `css/fonts.css`, `css/shared.css`), which can be copied from:
+	- Nunito for body text and every control; Alegreya (calligraphic serif) for headings (`h1` to `h6`) and the site's name. If Alegreya looks too jagged at small heading sizes, Alegreya Sans is the fallback, then Texturina. Both are under the SIL Open Font License
+	- Both are hosted with the site, never loaded from Google's servers (which would send every visitor's address to Google, a service the privacy policy doesn't list)
+	- Text sizes are in `rem`, so they follow the base size a player sets in their browser; no `px` or `pt` font sizes. Body text is `1rem`, and each heading size 1.25 times the one below
+	- [ ] The font files: Google Fonts' variable woff2 files for weights 400 to 700, upright and italic, split by character set (Nunito: Latin, Latin Extended, Cyrillic, Cyrillic Extended, Vietnamese; Alegreya: the same and Greek), with one `@font-face` per file and its `unicode-range`, so a browser downloads only the sets a page's text uses. Kept in the client's public folder (e.g. `client/public/fonts/<font>/`), each with its `OFL.txt`
+	- [ ] In `client/src/_shared.scss`: the fonts as `--font-body: 'Nunito', sans-serif` and `--font-heading: 'Alegreya', serif`, and the size scale as variables: `--font-size-small` `0.875rem` (14px at the default: hints, field errors, the footer and every other 12px text), `--font-size-h3` `1.25rem`, `--font-size-h2` `1.5625rem`, `--font-size-h1` `1.953rem`
+	- [ ] Headings: `line-height: 1.25`, margins in `em` so the space grows with the heading. A page's `h1` (its title in the toolbar) and the site's name are `--font-size-h2`; rendered markdown's `h1` to `h3` follow the scale, `h4` `1.125rem`, `h5` `1rem`, `h6` small. Big page headings, like Home's, can shrink on phones with `clamp()` between the `h2` and `h1` sizes
+	- [ ] Replace every `px` and `pt` font size in the client's styles with the scale or a `rem` value
+	- [ ] Nunito's regular weight is light on the dark background: check small text, and use weight 500 where it looks faint
+	- [ ] 2FA code fields and other monospace text keep their current font (Consolas, Menlo, monospace)
+	- [ ] Phaser draws canvas text with the font it has when the text is made, and doesn't redraw it when the font arrives: wait for the fonts (`document.fonts.load()`) before the map's scenes create text, and change `MapScene`'s `fontFamily: 'sans-serif'` to the body font
+	- [ ] Credit Nunito (copyright 2014 The Nunito Project Authors) and Alegreya (copyright 2011 The Alegreya Project Authors) in a Fonts section of `client/license.html`, linking to each font's `OFL.txt`
+	- [ ] Check the pages in the pseudo-language (`?locale=en-XA`), whose accented letters use the Latin Extended files, and with the browser's base text size raised
+	- [ ] Consider a second monospace font for usernames, one that tells 0 from O and 1 from l
 
-**Done when:** a creator groups areas into a region and gives it to a builder, who fills a field with grass in one click and picks a tile off the map with the middle button.
+**Done when:** a creator groups areas into a region and gives it to a builder, who fills a field with grass in one click and picks a tile off the map with the middle button. Every page shows Nunito and Alegreya from the site's own server, and its text grows with the browser's base text size.
 
 ## Phase 17: Cloud deployment
 

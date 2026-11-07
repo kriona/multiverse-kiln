@@ -218,7 +218,9 @@ function remappedCells(universeId: string, cells: SQL, toDraft: boolean): SQL
 
 /**
  * A translation's or note's thing_id with the thing the draft has a copy of replaced by its copy, or by
- * its live row
+ * its live row. The thing_id is cast to the table's ID type, rather than the IDs to text, so the lookup
+ * uses the table's primary key or origin_id index. Saving text checks that the universe holds the thing,
+ * so every thing_id of a kind with a table is one of its IDs written as text
  *
  * @param universeId The universe's ID
  * @param alias The translation's or note's alias
@@ -228,9 +230,14 @@ function remappedCells(universeId: string, cells: SQL, toDraft: boolean): SQL
 function remappedThingId(universeId: string, alias: string, toDraft: boolean): SQL
 {
 	const thingId = columnOf(alias, 'thing_id');
-	const cases = Object.entries(TEXT_TABLES).map(([kind, target]) => (toDraft
-		? sql`WHEN ${kind} THEN coalesce((SELECT m.id::text FROM ${target} AS m WHERE m.draft AND m.universe_id = ${universeId} AND m.origin_id::text = ${thingId}), ${thingId})`
-		: sql`WHEN ${kind} THEN coalesce((SELECT m.origin_id::text FROM ${target} AS m WHERE m.draft AND m.universe_id = ${universeId} AND m.origin_id IS NOT NULL AND m.id::text = ${thingId}), ${thingId})`));
+	const cases = Object.entries(TEXT_TABLES).map(([kind, target]) =>
+	{
+		const typedThingId = sql`${thingId}::${sql.raw(getTableColumns(target).id.getSQLType())}`;
+
+		return((toDraft
+			? sql`WHEN ${kind} THEN coalesce((SELECT m.id::text FROM ${target} AS m WHERE m.draft AND m.universe_id = ${universeId} AND m.origin_id = ${typedThingId}), ${thingId})`
+			: sql`WHEN ${kind} THEN coalesce((SELECT m.origin_id::text FROM ${target} AS m WHERE m.draft AND m.universe_id = ${universeId} AND m.origin_id IS NOT NULL AND m.id = ${typedThingId}), ${thingId})`));
+	});
 
 	return(sql`CASE ${columnOf(alias, 'kind')}::text ${sql.join(cases, sql` `)} ELSE ${thingId} END`);
 }
