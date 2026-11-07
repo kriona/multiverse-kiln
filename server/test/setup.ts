@@ -24,7 +24,19 @@
 import { existsSync } from 'fs';
 
 import type { EmailSender } from '../src/email/mailer.js';
+import type { TestServerHooks } from './testServerHooks.js';
 import { buildTestDatabase, closeTestDatabase, emptyTestDatabase, requireTestDatabaseUrl } from './testDatabase.js';
+
+/**
+ * The booted test server's hooks. Imported when used rather than above: this file is loaded with mocha's
+ * --require, and only a dynamic import reaches the same module the tests' testServer.ts registers with
+ *
+ * @return The hooks, or undefined when no test has booted the server
+ */
+async function testServerHooks(): Promise<TestServerHooks | undefined>
+{
+	return((await import('./testServerHooks.js')).testServerHooks());
+}
 
 /**
  * The only origin the test server allows
@@ -76,7 +88,7 @@ export const discardEmail: EmailSender = () =>
 
 /**
  * Root hooks for every test file: discard email, build the test database once, empty it before
- * each test, and close both connections at the end
+ * each test, and at the end shut the test server down and close both connections
  */
 export const mochaHooks = {
 	async beforeAll(): Promise<void>
@@ -91,6 +103,9 @@ export const mochaHooks = {
 
 	async beforeEach(): Promise<void>
 	{
+		// Rooms write to the database as they close and every few seconds while open, so the last
+		// test's rooms close before the database is emptied, never during it or the next test
+		await (await testServerHooks())?.closeRooms();
 		await emptyTestDatabase();
 	},
 
@@ -98,6 +113,7 @@ export const mochaHooks = {
 	{
 		const { pool } = await import('../src/db/client.js');
 
+		await (await testServerHooks())?.shutDown();
 		await closeTestDatabase();
 		await pool.end();
 	}

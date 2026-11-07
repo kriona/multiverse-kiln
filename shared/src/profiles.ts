@@ -494,4 +494,21 @@ export interface AccountExport
 		text: string;
 		sentAt: string;
 	}[];
+
+	/**
+	 * How far the player has read each kept chat that remembers it: when the newest message they have
+	 * seen was sent
+	 */
+	chatReads: {
+		universeId: string;
+		universeName: string;
+
+		/**
+		 * The group whose chat it is, or null for the universe's editors' chat
+		 */
+		groupId: string | null;
+
+		groupName: string | null;
+		readAt: string;
+	}[];
 }

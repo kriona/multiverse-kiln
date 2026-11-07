@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { accountExportFileName, DEFAULT_CLASS_NAMES, DEFAULT_ITEM_NAMES, DEFAULT_RACE_NAMES, DEFAULT_THEME_NAMES, MAX_LOCALE_LENGTH, type AccountDeletionPayload, type AccountExport, type ExportedCharacter, type MessageDescriptor, type Ruleset, type Translator } from '@multiverse-kiln/shared';
 
 import { findPlayerAuthEvents } from '../db/authEventRepo.js';
-import { listOwnChatMessages } from '../db/chatRepo.js';
+import { listOwnChatMessages, listOwnChatReads } from '../db/chatRepo.js';
 import { findCharacterDetails, listCharacterDrafts, listProfileCharacters, type ProfileCharacterRecord } from '../db/characterRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
 import { findMembership } from '../db/groupRepo.js';
@@ -176,7 +176,7 @@ export async function exportRoute(request: Request, response: Response): Promise
 	const now = new Date();
 	const locale = exportLocale.safeParse(request.query.locale);
 	const translator = emailTranslator((locale.success ? locale.data : 'en'));
-	const [profile, providers, twoFactor, sessions, events, universes, records, drafts, chats] = await Promise.all([
+	const [profile, providers, twoFactor, sessions, events, universes, records, drafts, chats, reads] = await Promise.all([
 		findOwnProfile(playerId),
 		listProviderLogins(playerId),
 		findTwoFactorState(playerId, now),
@@ -185,7 +185,8 @@ export async function exportRoute(request: Request, response: Response): Promise
 		listEditableUniverses(playerId),
 		listProfileCharacters(playerId, {}),
 		listCharacterDrafts(playerId),
-		listOwnChatMessages(playerId)
+		listOwnChatMessages(playerId),
+		listOwnChatReads(playerId)
 	]);
 
 	if (!profile)
@@ -229,6 +230,10 @@ export async function exportRoute(request: Request, response: Response): Promise
 		chatMessages: chats.map((message) => ({
 			...message,
 			sentAt: message.sentAt.toISOString()
+		})),
+		chatReads: reads.map((read) => ({
+			...read,
+			readAt: read.readAt.toISOString()
 		}))
 	};
 
