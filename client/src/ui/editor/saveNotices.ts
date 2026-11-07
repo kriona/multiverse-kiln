@@ -20,8 +20,8 @@ const SAVE_NOTICE_MS = 10000;
  * Says in a toast, read out by screen readers, who saved what in another window, from the save's audit
  * details, e.g. "Bea saved: Changed race Dwarf, Painted 40 cells in Cave". When the save changed
  * something the player has unsaved changes to, or painted over cells the player painted, the toast says
- * so, in the warning style, and shows until it is clicked away. Clicking it away takes the marks the
- * save's painting made off the area editor's map
+ * so, in the warning style, and shows until it is closed, by clicking it or with its Got It button.
+ * Closing it takes the marks the save's painting made off the area editor's map
  *
  * @param saved The save
  * @param ruleset The universe's ruleset, which names its default tiles, items, races, classes and themes
@@ -52,7 +52,7 @@ export function showSaveNotice(saved: EditorSavedPayload, ruleset: Ruleset, kept
 		warnings.push(t({
 			id: 'editor.saveNoticeKept',
 			defaultMessage: '{count, plural, one {This conflicts with your unsaved changes on the {tabs} tab.} other {This conflicts with your unsaved changes on the {tabs} tabs.}}',
-			description: 'A second sentence in the toast saying another editor saved changes, when they changed something the player also has unsaved changes to; the toast stays until clicked away. {tabs} names the editor\'s tabs those things are on, e.g. "Characters and Items", and {count} how many tabs'
+			description: 'A second sentence in the toast saying another editor saved changes, when they changed something the player also has unsaved changes to; the toast stays until closed. {tabs} names the editor\'s tabs those things are on, e.g. "Characters and Items", and {count} how many tabs'
 		}, {
 			tabs: formatList(keptTabs, 'conjunction'),
 			count: keptTabs.length
@@ -64,7 +64,7 @@ export function showSaveNotice(saved: EditorSavedPayload, ruleset: Ruleset, kept
 		warnings.push(t({
 			id: 'editor.saveNoticePaintedOver',
 			defaultMessage: '{count, plural, one {They painted over # cell you painted, outlined in orange on the map.} other {They painted over # cells you painted, outlined in orange on the map.}}',
-			description: 'A sentence in the toast saying another editor saved changes, when they painted cells of the open area\'s map that the player had also painted since opening it, saved or not; the toast stays until clicked away. {count} is how many cells. The map outlines those cells in orange, and the text under the map names who painted the cell under the pointer'
+			description: 'A sentence in the toast saying another editor saved changes, when they painted cells of the open area\'s map that the player had also painted since opening it, saved or not; the toast stays until closed. {count} is how many cells. The map outlines those cells in orange, and the text under the map names who painted the cell under the pointer'
 		}, {
 			count: paintedOver
 		}));

@@ -683,6 +683,19 @@ button.sort-button
 	color: $notice-text;
 }
 
+// A toast that stays until it is closed, with its Got It button after the text
+.toast.stays
+{
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.toast-close
+{
+	flex-shrink: 0;
+}
+
 // A toast with more than one paragraph, such as a save notice naming tabs with unsaved changes
 .toast p
 {

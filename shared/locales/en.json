@@ -2773,11 +2773,11 @@
 	},
 	"editor.saveNoticeKept": {
 		"defaultMessage": "{count, plural, one {This conflicts with your unsaved changes on the {tabs} tab.} other {This conflicts with your unsaved changes on the {tabs} tabs.}}",
-		"description": "A second sentence in the toast saying another editor saved changes, when they changed something the player also has unsaved changes to; the toast stays until clicked away. {tabs} names the editor's tabs those things are on, e.g. \"Characters and Items\", and {count} how many tabs"
+		"description": "A second sentence in the toast saying another editor saved changes, when they changed something the player also has unsaved changes to; the toast stays until closed. {tabs} names the editor's tabs those things are on, e.g. \"Characters and Items\", and {count} how many tabs"
 	},
 	"editor.saveNoticePaintedOver": {
 		"defaultMessage": "{count, plural, one {They painted over # cell you painted, outlined in orange on the map.} other {They painted over # cells you painted, outlined in orange on the map.}}",
-		"description": "A sentence in the toast saying another editor saved changes, when they painted cells of the open area's map that the player had also painted since opening it, saved or not; the toast stays until clicked away. {count} is how many cells. The map outlines those cells in orange, and the text under the map names who painted the cell under the pointer"
+		"description": "A sentence in the toast saying another editor saved changes, when they painted cells of the open area's map that the player had also painted since opening it, saved or not; the toast stays until closed. {count} is how many cells. The map outlines those cells in orange, and the text under the map names who painted the cell under the pointer"
 	},
 	"editor.searchByName": {
 		"defaultMessage": "Search by name",
@@ -7082,6 +7082,10 @@
 	"time.periodOfDay": {
 		"defaultMessage": "{period, select, midnight {midnight} pre_dawn {pre-dawn} dawn {dawn} early_morning {early morning} morning {morning} late_morning {late morning} noon {noon} early_afternoon {early afternoon} afternoon {afternoon} late_afternoon {late afternoon} evening {evening} late_evening {late evening} other {night}}",
 		"description": "A word for the time of day in the game, shown in place of the time on the clock, e.g. \"late morning\". It follows \"Day 1, \" in the group's toolbar and \"It is \" when the player asks where they are"
+	},
+	"toast.close": {
+		"defaultMessage": "Got It",
+		"description": "Button in a toast that stays at the top of the page until it is closed, such as the editor's warning that another editor saved changes meeting the player's unsaved ones: closes the toast, as clicking it does"
 	},
 	"universe.displayTime.none": {
 		"defaultMessage": "nothing",

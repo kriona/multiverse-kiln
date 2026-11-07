@@ -1,5 +1,9 @@
+import closeIcon from 'virtual:icon/ph:check';
+
+import { t } from '../localization';
 import { announce } from './announcer';
-import { getElement } from './dom';
+import { getElement, setButtonLabel } from './dom';
+import { setShortcut } from './shortcuts';
 
 /**
  * How long a toast shows before it goes, in milliseconds, unless the caller chooses otherwise
@@ -12,9 +16,20 @@ const DEFAULT_TOAST_MS = 6000;
 const MAX_TOASTS = 3;
 
 /**
+ * The shortcut of the Got It button that closes a toast showing until it is closed. With several, it
+ * closes the oldest first
+ */
+const CLOSE_KEYS = 'Alt+G';
+
+/**
  * What closes each toast on the page
  */
 const closers = new WeakMap<Element, () => void>();
+
+/**
+ * How many toasts with a Got It button have shown, which numbers their text for the button to point at
+ */
+let toastCount = 0;
 
 /**
  * How a toast shows and is read out
@@ -30,7 +45,8 @@ export interface ToastOptions
 	kind?: 'info' | 'success' | 'warning';
 
 	/**
-	 * How long it shows, in milliseconds, or null to show it until the player clicks it away
+	 * How long it shows, in milliseconds, or null to show it until the player closes it, by clicking it
+	 * or with its Got It button (Alt+G)
 	 */
 	durationMs?: number | null;
 
@@ -41,16 +57,18 @@ export interface ToastOptions
 	announce?: 'polite' | 'urgent' | false;
 
 	/**
-	 * Called when the player clicks the toast to close it, but not when it closes by itself or is closed
-	 * by the function showToast() returns
+	 * Called when the player closes the toast, by clicking it or with its Got It button, but not when it
+	 * closes by itself or is closed by the function showToast() returns
 	 */
 	onDismiss?: () => void;
 }
 
 /**
  * Shows a short message at the top of the page for a few seconds, over whatever is there, and has
- * screen readers read it out. Its time stops while the pointer is on it, and clicking it closes it early. The toasts are hidden from screen readers,
- * which hear the text through the announcer instead, so it isn't read twice
+ * screen readers read it out. Its time stops while the pointer is on it, and clicking it closes it
+ * early. A toast that shows until it is closed has a Got It button, so a keyboard can close it too. The
+ * toasts' text is hidden from screen readers, which hear it through the announcer instead, so it isn't
+ * read twice; the Got It button is described by it
  *
  * @param content The message, in the player's language: text, or text and elements such as a name shown in color (see formatToNodes())
  * @param options How it shows and is read out
@@ -60,8 +78,10 @@ export function showToast(content: string | readonly (string | Node)[], options:
 {
 	const container = getElement('toasts', HTMLElement);
 	const toast = document.createElement('div');
+	const message = document.createElement('div');
 	const urgency = (options.announce ?? 'polite');
 	const lasts = (options.durationMs !== null);
+	const closeButton = (lasts ? undefined : document.createElement('button'));
 	let remainingMs = (options.durationMs ?? DEFAULT_TOAST_MS);
 	let startedAt = 0;
 	let timer: number | undefined;
@@ -79,6 +99,12 @@ export function showToast(content: string | readonly (string | Node)[], options:
 		}
 
 		toast.classList.add('closing');
+
+		// Disabled, so its shortcut passes to the next toast's button while this one fades out
+		if (closeButton)
+		{
+			closeButton.disabled = true;
+		}
 
 		if (toast.getAnimations().length === 0)
 		{
@@ -105,18 +131,44 @@ export function showToast(content: string | readonly (string | Node)[], options:
 	};
 
 	toast.className = `toast ${options.kind ?? 'info'}`;
+	message.className = 'toast-message';
+	message.setAttribute('aria-hidden', 'true');
 
 	if (typeof content === 'string')
 	{
-		toast.textContent = content;
+		message.textContent = content;
 	}
 	else
 	{
-		toast.append(...content);
+		message.append(...content);
+	}
+
+	toast.append(message);
+
+	// The button's click, from the mouse or the keyboard, reaches the toast's listener, which closes it
+	if (closeButton)
+	{
+		toast.classList.add('stays');
+		message.id = `toast-${++toastCount}`;
+		closeButton.type = 'button';
+		closeButton.className = 'secondary toast-close';
+		closeButton.setAttribute('aria-describedby', message.id);
+		setButtonLabel(closeButton, closeIcon, t({
+			id: 'toast.close',
+			defaultMessage: 'Got It',
+			description: 'Button in a toast that stays at the top of the page until it is closed, such as the editor\'s warning that another editor saved changes meeting the player\'s unsaved ones: closes the toast, as clicking it does'
+		}));
+		setShortcut(closeButton, CLOSE_KEYS);
+		toast.append(closeButton);
 	}
 
 	toast.addEventListener('click', () =>
 	{
+		if (toast.classList.contains('closing'))
+		{
+			return;
+		}
+
 		options.onDismiss?.();
 		close();
 	});
@@ -143,7 +195,7 @@ export function showToast(content: string | readonly (string | Node)[], options:
 
 	if (urgency !== false)
 	{
-		announce((toast.textContent ?? ''), (urgency === 'urgent'));
+		announce((message.textContent ?? ''), (urgency === 'urgent'));
 	}
 
 	return(close);

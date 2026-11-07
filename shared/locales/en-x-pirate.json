@@ -7083,6 +7083,10 @@
 		"message": "{period, select, midnight {the witchin' hour} pre_dawn {afore first light} dawn {first light} early_morning {early mornin''} morning {mornin''} late_morning {late mornin''} noon {high noon} early_afternoon {early afternoon} afternoon {afternoon} late_afternoon {late afternoon} evening {eventide} late_evening {late eventide} other {the dark o' night}}",
 		"source": "{period, select, midnight {midnight} pre_dawn {pre-dawn} dawn {dawn} early_morning {early morning} morning {morning} late_morning {late morning} noon {noon} early_afternoon {early afternoon} afternoon {afternoon} late_afternoon {late afternoon} evening {evening} late_evening {late evening} other {night}}"
 	},
+	"toast.close": {
+		"message": "Aye, Got It",
+		"source": "Got It"
+	},
 	"universe.displayTime.none": {
 		"message": "naught",
 		"source": "nothing"
