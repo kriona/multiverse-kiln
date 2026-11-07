@@ -4,6 +4,8 @@ import { MAX_COIN_NAME_LENGTH, sourceTextHash, type UniverseTextListPayload, typ
 import { findDefaultItemIds } from '../src/db/itemRepo.js';
 import { listUniverseEdits } from '../src/db/universeEditRepo.js';
 import { setUniverseAccess, setUniverseRole } from '../src/db/universeEditorRepo.js';
+import { listTranslations } from '../src/db/universeTextRepo.js';
+import { liveVersion } from '../src/db/universeVersions.js';
 import { UniverseTextTranslator } from '../src/http/universeTextTranslator.js';
 import { createArea, createUniverse, logIn, saveChanges, send, type Editor } from './editorRequests.js';
 import { getTestServer } from './testServer.js';
@@ -171,6 +173,38 @@ describe('Translations tab', () =>
 			['translations', 'fr', 1],
 			['translatorNotes', null, 1]
 		]);
+	});
+
+	it('writes a save\'s translations together, as its changes leave them in order', async () =>
+	{
+		const { universeId, areaId, ada } = await translatableUniverse();
+		const forestId = await createArea(ada, universeId, { name: 'Forest' });
+		const meadow = { kind: 'area', thingId: areaId, field: 'name' };
+		const forest = { kind: 'area', thingId: forestId, field: 'name' };
+		const meadowHash = sourceTextHash('Meadow');
+
+		// The last change to a translation wins, and one deleting what text belongs to deletes its
+		// translations, those the save added before it too
+		const saved = await saveChanges(ada, universeId, [
+			{ kind: 'saveTranslation', text: meadow, language: 'fr', translation: 'Pré', sourceHash: meadowHash },
+			{ kind: 'saveTranslation', text: meadow, language: 'de', translation: 'Wiese', sourceHash: meadowHash },
+			{ kind: 'saveTranslation', text: meadow, language: 'fr', translation: 'Prairie', sourceHash: meadowHash },
+			{ kind: 'saveTranslation', text: meadow, language: 'de', translation: null, sourceHash: meadowHash },
+			{ kind: 'saveTranslation', text: forest, language: 'fr', translation: 'Forêt', sourceHash: sourceTextHash('Forest') },
+			{ kind: 'deleteArea', areaId: forestId }
+		]);
+
+		assert.strictEqual(saved.status, 200, JSON.stringify(saved.body));
+		assert.deepStrictEqual((await listTranslations(liveVersion(universeId), ['fr', 'de'])).map(({ thingId, language, text }) => [thingId, language, text]), [[areaId, 'fr', 'Prairie']]);
+
+		// A translation saved earlier in the same save is what a later change to it is merged with
+		const again = await saveChanges(ada, universeId, [
+			{ kind: 'saveTranslation', text: meadow, language: 'de', translation: 'Wiese', sourceHash: meadowHash, loaded: null },
+			{ kind: 'saveTranslation', text: meadow, language: 'de', translation: 'Weide', sourceHash: meadowHash, loaded: 'Wiese' }
+		]);
+
+		assert.strictEqual(again.status, 200, JSON.stringify(again.body));
+		assert.deepStrictEqual((await listTranslations(liveVersion(universeId), ['de'])).map(({ text }) => text), ['Weide']);
 	});
 
 	it('filters by missing translations, searches, sorts and pages on the server', async () =>

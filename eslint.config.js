@@ -91,7 +91,9 @@ export default defineConfig(
 		'server/src/index.ts',
 		'server/ecosystem.config.cjs',
 		// Third-party agent skills, installed and updated by `npx skills`
-		'.agents/'
+		'.agents/',
+		// Scratch work, which git ignores too (see CLAUDE.md)
+		'scratchpad/'
 	]),
 
 	js.configs.recommended,
