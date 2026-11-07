@@ -1,8 +1,10 @@
 import { randomUUID } from 'crypto';
+import { sql } from 'drizzle-orm';
 
 import { CHUNK_SIZE, cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, type MapBounds } from '@multiverse-kiln/shared';
 
 import { createCharacter, type NewCharacter } from '../../src/db/characterRepo.js';
+import type { Executor } from '../../src/db/client.js';
 import { findDefaultClassIds } from '../../src/db/classRepo.js';
 import { findDefaultDifficultyLevel } from '../../src/db/difficultyRepo.js';
 import { createGroup } from '../../src/db/groupRepo.js';
@@ -123,6 +125,23 @@ export async function addGroup(universeId: string, anchorCharacterId: string, st
 	}
 
 	return(inTransaction((transaction) => createGroup({ universeId, anchorCharacterId, name, startingAreaId, startingColumn: 0, startingRow: 0, difficultyLevelId: difficultyLevel.id }, transaction)));
+}
+
+/**
+ * Runs repository calls in a transaction that fails rather than wait for a lock, to show that a lock
+ * another transaction holds doesn't block them
+ *
+ * @param work The calls to make
+ * @return What work resolves with
+ */
+export function inTransactionWithoutWaiting<T>(work: (executor: Executor) => Promise<T>): Promise<T>
+{
+	return(inTransaction(async (transaction) =>
+	{
+		await transaction.execute(sql`SET LOCAL lock_timeout = '200ms'`);
+
+		return(work(transaction));
+	}));
 }
 
 /**

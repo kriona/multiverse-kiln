@@ -247,7 +247,8 @@ export async function findGroup(groupId: string, executor: Executor = db): Promi
 }
 
 /**
- * Locks a group's row until the transaction ends, so characters join it one at a time
+ * Locks a group's row until the transaction ends, so characters join it one at a time. FOR NO KEY
+ * UPDATE doesn't block foreign key checks, so rows that refer to the group can still be added
  *
  * @param groupId The group's ID
  * @param executor A transaction
@@ -259,7 +260,7 @@ export async function lockGroup(groupId: string, executor: Executor): Promise<Gr
 		.select(groupColumns)
 		.from(groups)
 		.where(eq(groups.id, groupId))
-		.for('update');
+		.for('no key update');
 
 	return(row);
 }

@@ -515,6 +515,9 @@ export async function updateUniverseSettings(version: UniverseVersion, update: U
  * Locks a universe's row until the transaction ends, so limits on what it holds (such as its number
  * of areas) are checked by one transaction at a time
  *
+ * FOR NO KEY UPDATE doesn't block the key share lock foreign key checks take, so rows that refer to
+ * the universe (chat messages, characters, groups) can still be added while a long save holds it
+ *
  * @param universeId The universe's ID
  * @param executor A transaction
  * @return Whether the universe exists
@@ -527,7 +530,7 @@ export async function lockUniverse(universeId: string, executor: Executor): Prom
 		})
 		.from(universes)
 		.where(eq(universes.id, universeId))
-		.for('update');
+		.for('no key update');
 
 	return(rows.length > 0);
 }

@@ -419,13 +419,15 @@ export async function deleteArea(areaId: string, executor: Executor = db): Promi
  */
 export async function lockAreas(areaIds: readonly string[], executor: Executor): Promise<Map<string, { version: UniverseVersion; bounds: MapBounds }>>
 {
-	// Locking in ID order keeps two transactions that lock the same areas from waiting on each other
+	// Locking in ID order keeps two transactions that lock the same areas from waiting on each other.
+	// FOR NO KEY UPDATE doesn't block foreign key checks, so rows that refer to the areas (such as
+	// groups' positions) can still be saved while a long editor save holds them
 	const rows = await executor
 		.select()
 		.from(areas)
 		.where(inArray(areas.id, [...areaIds]))
 		.orderBy(asc(areas.id))
-		.for('update');
+		.for('no key update');
 
 	return(new Map(rows.map((row) => [row.id, {
 		version: {
