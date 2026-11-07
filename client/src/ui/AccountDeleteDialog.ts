@@ -1,4 +1,4 @@
-import { EMAIL_CODE_LIFETIME_MINUTES, MAX_PASSWORD_LENGTH, MAX_USERNAME_LENGTH, UNIVERSE_ROLE_NAMES, type AccountDeletionPayload, type UniverseDecision } from '@multiverse-kiln/shared';
+import { EMAIL_CODE_LIFETIME_MINUTES, LAST_SERVER_ADMIN_DELETION, MAX_PASSWORD_LENGTH, MAX_USERNAME_LENGTH, UNIVERSE_ROLE_NAMES, type AccountDeletionPayload, type UniverseDecision } from '@multiverse-kiln/shared';
 
 import { currentLocale, t } from '../localization';
 import { authFieldOf, type AuthApi } from '../network/authApi';
@@ -42,6 +42,7 @@ export class AccountDeleteDialog
 	private readonly username = getElement('account-delete-username', HTMLInputElement);
 	private readonly error = getElement('account-delete-error', HTMLElement);
 	private readonly submitButton = getElement('account-delete-submit', HTMLButtonElement);
+	private readonly cancelButton = getElement('account-delete-cancel', HTMLButtonElement);
 
 	/**
 	 * What deleting the account asks, once loaded
@@ -94,7 +95,7 @@ export class AccountDeleteDialog
 			void this.submit();
 		});
 
-		getElement('account-delete-cancel', HTMLButtonElement).addEventListener('click', () =>
+		this.cancelButton.addEventListener('click', () =>
 		{
 			this.dialog.close();
 		});
@@ -163,6 +164,14 @@ export class AccountDeleteDialog
 		const deletion = this.deletion;
 
 		this.status.textContent = '';
+
+		if (deletion.lastServerAdmin)
+		{
+			showMessage(this.error, t(LAST_SERVER_ADMIN_DELETION));
+			this.cancelButton.focus();
+			return;
+		}
+
 		this.showUniverses(deletion);
 		this.passwordField.hidden = !deletion.hasPassword;
 		this.codeField.hidden = !deletion.twoFactor;

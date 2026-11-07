@@ -75,20 +75,13 @@ export async function isActiveServerAdmin(playerId: string, executor: Executor =
 }
 
 /**
- * Why a server admin couldn't be removed
- */
-export type ServerAdminRemoval = 'removed' | 'notAdmin' | 'lastAdmin';
-
-/**
- * Takes away a player's server admin role, unless they are the last server admin
+ * Locks every server admin's row until the transaction ends, so two admins leaving at once can't both
+ * see another left
  *
- * Every admin's row is locked first, so two admins removed at once can't both see another left
- *
- * @param playerId The player
  * @param executor A transaction
- * @return Whether they were removed, or why not
+ * @return The admins' player IDs
  */
-export async function removeServerAdmin(playerId: string, executor: Executor): Promise<ServerAdminRemoval>
+async function lockServerAdmins(executor: Executor): Promise<string[]>
 {
 	const admins = await executor
 		.select({
@@ -97,7 +90,41 @@ export async function removeServerAdmin(playerId: string, executor: Executor): P
 		.from(serverAdmins)
 		.for('update');
 
-	if (!admins.some((admin) => (admin.playerId === playerId)))
+	return(admins.map((admin) => admin.playerId));
+}
+
+/**
+ * Whether a player is the only server admin. In a transaction, every admin's row stays locked until it
+ * ends, so the answer holds while it deletes the player
+ *
+ * @param playerId The player
+ * @param executor The database, or a transaction
+ * @return Whether they are
+ */
+export async function isLastServerAdmin(playerId: string, executor: Executor = db): Promise<boolean>
+{
+	const admins = await lockServerAdmins(executor);
+
+	return(((admins.length === 1) && (admins[0] === playerId)));
+}
+
+/**
+ * Why a server admin couldn't be removed
+ */
+export type ServerAdminRemoval = 'removed' | 'notAdmin' | 'lastAdmin';
+
+/**
+ * Takes away a player's server admin role, unless they are the last server admin
+ *
+ * @param playerId The player
+ * @param executor A transaction
+ * @return Whether they were removed, or why not
+ */
+export async function removeServerAdmin(playerId: string, executor: Executor): Promise<ServerAdminRemoval>
+{
+	const admins = await lockServerAdmins(executor);
+
+	if (!admins.includes(playerId))
 	{
 		return('notAdmin');
 	}

@@ -9,13 +9,14 @@
  */
 import type { Request, Response, Router } from 'express';
 import { z } from 'zod';
-import { AUTH_ACCOUNT_DELETE_PATH, defineMessages, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_TWO_FACTOR_CODE_INPUT_LENGTH, MAX_USERNAME_LENGTH, type AccountDeleteRequest } from '@multiverse-kiln/shared';
+import { AUTH_ACCOUNT_DELETE_PATH, defineMessages, LAST_SERVER_ADMIN_DELETION, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_TWO_FACTOR_CODE_INPUT_LENGTH, MAX_USERNAME_LENGTH, type AccountDeleteRequest } from '@multiverse-kiln/shared';
 
 import { forgetChatAuthor } from '../db/chatRepo.js';
 import type { Executor } from '../db/client.js';
 import { lockContinuation } from '../db/emailCodeRepo.js';
 import { listMembersOfGroups, listPlayerMemberships } from '../db/groupRepo.js';
 import { deletePlayer, findEmailRecipient, findPasswordHash, findPlayerEmail, lockPlayer, type EmailRecipient } from '../db/playerRepo.js';
+import { isLastServerAdmin } from '../db/serverAdminRepo.js';
 import { deletePlayerSessions } from '../db/sessionRepo.js';
 import { listTileGraphicStorageKeys } from '../db/tileGraphicRepo.js';
 import { inTransaction } from '../db/transactions.js';
@@ -225,7 +226,8 @@ async function deleteAccountRoute(request: Request, response: Response): Promise
  * @param playerId The account
  * @param decisions The new creator of each universe the player is the only creator of, by universe ID; null deletes it
  * @param executor A transaction that has locked the player
- * @return What was deleted, or the refusal when the decisions don't match the player's universes
+ * @return What was deleted, or the refusal when the player is the site's only server admin or the
+ * decisions don't match the player's universes
  */
 async function deleteAccount(playerId: string, decisions: ReadonlyMap<string, string | null>, executor: Executor): Promise<AuthRefusal | Deletion>
 {
@@ -233,7 +235,16 @@ async function deleteAccount(playerId: string, decisions: ReadonlyMap<string, st
 	const storageKeys: string[] = [];
 	const universes: { id: string; newCreatorId: string | null }[] = [];
 
-	// Every decision is checked before any is carried out: the transaction is committed even when refused
+	// Every check comes before anything changes: the transaction is committed even when refused. Deleting
+	// the player deletes their server admin row with them, so the site's only admin can't go
+	if (await isLastServerAdmin(playerId, executor))
+	{
+		return({
+			status: 409,
+			message: LAST_SERVER_ADMIN_DELETION
+		});
+	}
+
 	for (const universe of await listSoleCreatedUniverses(playerId, executor))
 	{
 		await lockUniverse(universe.id, executor);

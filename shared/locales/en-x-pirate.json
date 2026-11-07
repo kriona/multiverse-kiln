@@ -6379,6 +6379,10 @@
 		"message": "Couldn't scuttle yer account.",
 		"source": "Could not delete your account."
 	},
+	"profile.deleteLastServerAdmin": {
+		"message": "Ye be the ship's only officer, so yer account can't be scuttled. Promote another sailor to officer first.",
+		"source": "You're the site's only admin, so your account can't be deleted. Make another player an admin first."
+	},
 	"profile.deleteLoadFailed": {
 		"message": "Couldn't see what scuttlin' yer account needs. Close this and try again.",
 		"source": "Could not check what deleting your account needs. Close this and try again."

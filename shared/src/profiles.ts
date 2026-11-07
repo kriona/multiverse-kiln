@@ -5,7 +5,7 @@
 import type { LoginProvider } from './accounts.js';
 import type { OptionName } from './characters.js';
 import { SITE_NAME } from './constants.js';
-import type { LocalizedMessage } from './localization.js';
+import { defineMessages, type LocalizedMessage, type MessageDescriptor } from './localization.js';
 import type { Money } from './money.js';
 import type { AbilityScores } from './racesAndClasses.js';
 import type { Ruleset, UniverseRole } from './universes.js';
@@ -350,7 +350,25 @@ export interface AccountDeletionPayload
 	 * Whether deleting the account asks for its authenticator or recovery code too
 	 */
 	twoFactor: boolean;
+
+	/**
+	 * Whether the player is the site's only server admin, whose account can't be deleted until another
+	 * player is made one (LAST_SERVER_ADMIN_DELETION)
+	 */
+	lastServerAdmin: boolean;
 }
+
+/**
+ * Why the account of the site's only server admin can't be deleted, shown in the dialog that deletes it
+ * and given by the server when it refuses
+ */
+export const LAST_SERVER_ADMIN_DELETION: MessageDescriptor = defineMessages({
+	lastServerAdmin: {
+		id: 'profile.deleteLastServerAdmin',
+		defaultMessage: 'You\'re the site\'s only admin, so your account can\'t be deleted. Make another player an admin first.',
+		description: 'In the dialog that deletes the player\'s account, in place of what it asks, and the reason deleting it was refused: the player is the only admin of the whole site, and the site needs one'
+	}
+}).lastServerAdmin;
 
 /**
  * A character in the data export

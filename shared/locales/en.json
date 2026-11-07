@@ -6379,6 +6379,10 @@
 		"defaultMessage": "Could not delete your account.",
 		"description": "Shown in the dialog that deletes the player's account when it couldn't be deleted"
 	},
+	"profile.deleteLastServerAdmin": {
+		"defaultMessage": "You're the site's only admin, so your account can't be deleted. Make another player an admin first.",
+		"description": "In the dialog that deletes the player's account, in place of what it asks, and the reason deleting it was refused: the player is the only admin of the whole site, and the site needs one"
+	},
 	"profile.deleteLoadFailed": {
 		"defaultMessage": "Could not check what deleting your account needs. Close this and try again.",
 		"description": "Shown in the dialog that deletes the player's account when the universes they alone create couldn't be loaded"

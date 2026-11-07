@@ -15,6 +15,7 @@ import { findMembership } from '../db/groupRepo.js';
 import { loadEditorItems } from '../db/itemRepo.js';
 import { findOwnProfile } from '../db/playerRepo.js';
 import { listProviderLogins } from '../db/providerLoginRepo.js';
+import { isLastServerAdmin } from '../db/serverAdminRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
 import { listPlayerSessions } from '../db/sessionRepo.js';
 import { loadEditorThemes } from '../db/themeRepo.js';
@@ -63,7 +64,8 @@ function nameOf(named: Named | undefined, defaultNames: Record<string, MessageDe
 
 /**
  * GET PROFILE_DELETION_PATH: the universes the logged-in player is the only creator of, with the
- * editors each could be handed to, and how the player confirms deleting their account
+ * editors each could be handed to, how the player confirms deleting their account, and whether they
+ * can't because they are the site's only server admin
  *
  * @param request The request
  * @param response The response: an AccountDeletionPayload
@@ -71,10 +73,11 @@ function nameOf(named: Named | undefined, defaultNames: Record<string, MessageDe
 export async function deletionRoute(request: Request, response: Response): Promise<void>
 {
 	const playerId = playerIdOf(request);
-	const [profile, universes, twoFactor] = await Promise.all([
+	const [profile, universes, twoFactor, lastServerAdmin] = await Promise.all([
 		findOwnProfile(playerId),
 		listSoleCreatedUniverses(playerId),
-		hasTwoFactor(playerId)
+		hasTwoFactor(playerId),
+		isLastServerAdmin(playerId)
 	]);
 
 	if (!profile)
@@ -90,7 +93,8 @@ export async function deletionRoute(request: Request, response: Response): Promi
 			editors: await listOtherUniverseEditors(universe.id, playerId)
 		}))),
 		hasPassword: profile.hasPassword,
-		twoFactor
+		twoFactor,
+		lastServerAdmin
 	};
 
 	response.json(payload);

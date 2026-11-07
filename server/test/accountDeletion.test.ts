@@ -1,11 +1,12 @@
 import assert from 'assert';
-import { accountExportFileName, AUTH_ACCOUNT_DELETE_PATH, AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_LOGIN_PATH, PROFILE_DELETION_PATH, PROFILE_EXPORT_PATH, type AccountDeletionPayload, type AccountExport, type AuthErrorPayload } from '@multiverse-kiln/shared';
+import { accountExportFileName, AUTH_ACCOUNT_DELETE_PATH, AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_LOGIN_PATH, LAST_SERVER_ADMIN_DELETION, PROFILE_DELETION_PATH, PROFILE_EXPORT_PATH, type AccountDeletionPayload, type AccountExport, type AuthErrorPayload } from '@multiverse-kiln/shared';
 
 import { hashPassword } from '../src/auth/passwords.js';
 import { addChatMessages, listChatMessages, saveChatReads } from '../src/db/chatRepo.js';
 import { pool } from '../src/db/client.js';
 import { addGroupMember, findMembership } from '../src/db/groupRepo.js';
 import { createPlayer } from '../src/db/playerRepo.js';
+import { addServerAdmin, isServerAdmin } from '../src/db/serverAdminRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
 import { findUniverseRole, setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { setEmailSender, type Email } from '../src/email/mailer.js';
@@ -216,8 +217,29 @@ describe('account deletion and data export', () =>
 				}]
 			}],
 			hasPassword: true,
-			twoFactor: false
+			twoFactor: false,
+			lastServerAdmin: false
 		});
+	});
+
+	it('won\'t delete the site\'s only server admin, until another player is made one', async () =>
+	{
+		const { playerId, browser } = await addLocalAccount('ada');
+
+		await addServerAdmin(playerId);
+		assert.strictEqual((await browser.send<AccountDeletionPayload>('GET', PROFILE_DELETION_PATH)).body.lastServerAdmin, true);
+
+		const refused = await deleteAccount(browser, { password: PASSWORD });
+
+		assert.strictEqual(refused.status, 409);
+		assert.strictEqual(refused.body.error.id, LAST_SERVER_ADMIN_DELETION.id);
+		assert.ok(await accountExists(playerId));
+		assert.ok(await isServerAdmin(playerId));
+
+		await addServerAdmin((await addPlayer('Grace')).id);
+		assert.strictEqual((await browser.send<AccountDeletionPayload>('GET', PROFILE_DELETION_PATH)).body.lastServerAdmin, false);
+		assert.strictEqual((await deleteAccount(browser, { password: PASSWORD })).status, 204);
+		assert.ok(!await accountExists(playerId));
 	});
 
 	it('needs the password, and the authenticator code when the account has 2FA', async () =>
