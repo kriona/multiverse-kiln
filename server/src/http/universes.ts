@@ -1,6 +1,6 @@
 import type { Application } from 'express';
 import { z } from 'zod';
-import { canViewUniverse, MAX_UNIVERSE_NAME_LENGTH, MAX_UNIVERSES_PER_PAGE, sourceTextHash, UNIVERSES_PATH, type UniverseDetails, type UniverseListPayload, type UniverseTextPayload } from '@multiverse-kiln/shared';
+import { canViewUniverse, MAX_UNIVERSE_NAME_LENGTH, MAX_UNIVERSES_PER_PAGE, UNIVERSES_PATH, type UniverseDetails, type UniverseListPayload, type UniverseTextPayload } from '@multiverse-kiln/shared';
 
 import { resolveSession } from '../auth/sessions.js';
 import { listAreas } from '../db/areaRepo.js';
@@ -10,6 +10,7 @@ import { findUniverseDetails, listUniverses } from '../db/universeRepo.js';
 import { liveVersion } from '../db/universeVersions.js';
 import { errorMessages, sendError, sendInvalidRequest } from './errors.js';
 import { requestLanguages } from './requestLanguages.js';
+import { universeTextCache } from './universeTextCache.js';
 import { UniverseTextTranslator } from './universeTextTranslator.js';
 
 /**
@@ -80,7 +81,8 @@ async function loadUniverseText(universe: UniverseDetails, requested: readonly s
  *   end of time, or one whose stage the player's role lets them play it in (maySeeUniverse). Answers
  *   404 for any other, and for a disabled universe
  * - GET UNIVERSES_PATH/:key/text gives the names its rooms leave to the client (UniverseTextPayload),
- *   for the same universes, with an ETag that changes with the text, answering 304 while it is the same
+ *   for the same universes, with an ETag that changes with the text, answering 304 while it is the same.
+ *   The text is kept for each universe and language (universeTextCache) until it changes
  *
  * @param app Express app to add the routes to
  */
@@ -150,11 +152,10 @@ export function addUniversesRoutes(app: Application): void
 				return;
 			}
 
-			const payload = await loadUniverseText(universe, await requestLanguages(request));
-			const body = JSON.stringify(payload);
+			const requested = await requestLanguages(request);
+			const { body, etag } = await universeTextCache.get(universe, requested, () => loadUniverseText(universe, requested));
 
-			// The ETag is the text's own hash, so it changes exactly when the text does, in this language
-			response.set('ETag', `"${sourceTextHash(body)}"`);
+			response.set('ETag', etag);
 
 			if (request.fresh)
 			{

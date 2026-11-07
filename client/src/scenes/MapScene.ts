@@ -291,7 +291,7 @@ export class MapScene extends Phaser.Scene
 		// Names are looked up when they are read out, so the next one read is in the new text
 		this.unbinds.push(this.room.onMessage(ServerMessageType.UniverseText, () =>
 		{
-			void this.text?.load();
+			this.text?.reloadSoon();
 		}));
 
 		this.unbinds.push(this.room.onMessage(ServerMessageType.Chunks, (payload: ChunksPayload) =>
