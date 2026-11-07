@@ -402,6 +402,47 @@ export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 	}
 
 	/**
+	 * Follows the editors as loaded for players given a role here who already have one, such as when
+	 * another window added them first: the role given here is kept as changing theirs, made from the role
+	 * just loaded, and is no change when it is the same
+	 *
+	 * @return Whether any change made here was followed
+	 */
+	private followAdded(): boolean
+	{
+		let followed = false;
+
+		for (const [playerId, staged] of [...this.staged])
+		{
+			const saved = this.editors.find((editor) => (editor.playerId === playerId));
+
+			if (!staged.added || !saved)
+			{
+				continue;
+			}
+
+			if (!staged.settings || ((saved.role === staged.settings.role) && (saved.languages.join() === staged.settings.languages.join())))
+			{
+				this.staged.delete(playerId);
+			}
+			else
+			{
+				this.staged.set(playerId, {
+					settings: staged.settings,
+					loaded: {
+						role: saved.role,
+						languages: saved.languages
+					}
+				});
+			}
+
+			followed = true;
+		}
+
+		return(followed);
+	}
+
+	/**
 	 * Loads the editors, then shows them with the changes made since
 	 */
 	private async refresh(): Promise<void>
@@ -422,7 +463,15 @@ export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 			{
 				this.editors = editors;
 				this.ownPlayerId = editors.find((editor) => (editor.playerId === universe.playerId))?.playerId;
-				this.render();
+
+				if (this.followAdded())
+				{
+					this.changed();
+				}
+				else
+				{
+					this.render();
+				}
 			}
 		}
 		catch (error)
