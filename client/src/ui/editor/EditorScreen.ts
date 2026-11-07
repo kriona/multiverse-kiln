@@ -214,6 +214,13 @@ export class EditorScreen
 	private openVersion = 0;
 
 	/**
+	 * What the save being taken as saved did to the player's own place in the universe: changed their
+	 * role or languages, or left it. The editor follows it once every tab has taken its changes as saved,
+	 * so the changes the other tabs saved don't count as unsaved
+	 */
+	private ownChangeSaved: 'role' | 'left' | undefined;
+
+	/**
 	 * @param api The editor's API
 	 * @param actions What the screen's controls do
 	 */
@@ -296,14 +303,11 @@ export class EditorScreen
 		this.editorsTab = new EditorsTab(api, {
 			ownRoleChanged: () =>
 			{
-				if (this.universe)
-				{
-					void this.open(this.universe.id, this.place);
-				}
+				this.ownChangeSaved = 'role';
 			},
 			left: () =>
 			{
-				window.location.assign(HOME_PAGE_URL);
+				this.ownChangeSaved = 'left';
 			}
 		});
 		this.saveBar = new SaveBar(api, () => this.universe, (tab) =>
@@ -316,6 +320,22 @@ export class EditorScreen
 			}
 		}, (saved) =>
 		{
+			const own = this.ownChangeSaved;
+
+			this.ownChangeSaved = undefined;
+
+			if (own === 'left')
+			{
+				window.location.assign(HOME_PAGE_URL);
+				return;
+			}
+
+			// Opening the universe again loads everything below
+			if ((own === 'role') && this.accessChanged())
+			{
+				return;
+			}
+
 			void this.areasTab.reloadTiles();
 			this.auditTab.reload();
 
@@ -666,14 +686,16 @@ export class EditorScreen
 	 * Loads the universe again after what the player may do in it changed (their role, its stage, or
 	 * whether the site's admins have disabled it), on the tab and area showing. While anything is
 	 * unsaved it only says so, since loading again would throw the changes away
+	 *
+	 * @return True when the universe loads again
 	 */
-	accessChanged(): void
+	accessChanged(): boolean
 	{
-		this.reloadUniverse(t({
+		return(this.reloadUniverse(t({
 			id: 'editor.accessChanged',
 			defaultMessage: 'What you can do in this universe has changed: your role, its stage, or whether the site\'s admins have disabled it. Save or undo your changes, then reload the page to see what you can do now.',
 			description: 'Shown above the editor\'s tabs when the player\'s role in the universe, its stage, or whether the site\'s admins disabled it changed while they had unsaved changes, which loading the universe again would throw away'
-		}));
+		})));
 	}
 
 	/**
@@ -681,21 +703,23 @@ export class EditorScreen
 	 * should be, since loading again would throw the changes away
 	 *
 	 * @param unsavedMessage What to say above the tabs while anything is unsaved, in the player's language
+	 * @return True when the universe loads again
 	 */
-	private reloadUniverse(unsavedMessage: string): void
+	private reloadUniverse(unsavedMessage: string): boolean
 	{
 		if (!this.universe)
 		{
-			return;
+			return(false);
 		}
 
 		if (hasUnsavedWork())
 		{
 			this.showNotice(unsavedMessage);
-			return;
+			return(false);
 		}
 
 		void this.open(this.universe.id, this.place);
+		return(true);
 	}
 
 	/**

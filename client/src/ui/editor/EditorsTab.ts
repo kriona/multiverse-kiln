@@ -39,12 +39,13 @@ export interface EditorsTabActions
 {
 	/**
 	 * The player's own role or languages were changed and saved, so the editor opens the universe again
-	 * to show what the new role may do
+	 * to show what the new role may do, once every tab in the save has taken its changes as saved
 	 */
 	ownRoleChanged(): void;
 
 	/**
-	 * The player left the universe, and the save was saved
+	 * The player left the universe, and the save was saved, so the editor goes once every tab in the
+	 * save has taken its changes as saved
 	 */
 	left(): void;
 }
@@ -306,8 +307,8 @@ export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 	}
 
 	/**
-	 * Takes the changes as saved, and loads the editors afresh, unless the player changed their own role
-	 * or left, when the editor opens the universe again or goes
+	 * Takes the changes as saved, and loads the editors afresh, unless the player left. Tells the editor
+	 * when the player changed their own role or left, so it opens the universe again or goes
 	 */
 	async saved(): Promise<void>
 	{
@@ -333,7 +334,6 @@ export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 		if (own?.settings)
 		{
 			this.actions.ownRoleChanged();
-			return;
 		}
 
 		await this.refresh();

@@ -411,7 +411,7 @@ Once a save that adds editors commits, each player it added is emailed, in the l
 
 What each role sees in the editor: creators and builders see every tab (builders read the settings tabs without changing them), while beta testers see only the Editors tab and the Universe tab, read-only, and translators those and the [Translations](#tab-translations) tab. A server admin may open any universe with the site admin role, which acts as a creator (see the admin page's [Universes](#universes)). The server checks every change against the role the player has when the save starts (`mayMakeChange()` in `shared/src/editorChanges.ts`).
 
-Losing a role takes effect at once. The player's next save in an open editor is refused, and a player who may no longer play the universe in its stage is turned out of its lobby and groups, with a message saying why. A player who changed their own role sees the editor again as the new role allows, and one who left goes Home.
+Losing a role takes effect at once. The player's next save in an open editor is refused, and a player who may no longer play the universe in its stage is turned out of its lobby and groups, with a message saying why. A save is checked against the role the player had when it began, so one that lowers their own role saves the rest of its changes too. A player who changed their own role sees the editor again as the new role allows, or, with changes made during the save still unsaved, is told to reload once they are saved or undone; one who left goes Home.
 
 A universe can have several creators. If you delete your account and your universe has no other creator, you choose what happens to it (see [Deleting an account](#deleting-an-account)): make another of its editors its creator, or delete it.
 

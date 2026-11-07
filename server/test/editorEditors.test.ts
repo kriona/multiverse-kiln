@@ -174,6 +174,25 @@ describe('Editing a universe\'s editors', () =>
 		assert.strictEqual((await send(ada, 'GET', `/${universeId}`)).status, 404);
 	});
 
+	it('checks a save against the role the player had when it began, so lowering their own role first still saves what that role allowed', async () =>
+	{
+		const grace = await addPlayer('Grace');
+		const alan = await addPlayer('Alan');
+
+		await saveAll(ada, universeId, [{ kind: 'addEditor', username: grace.username, settings: { role: 'creator', languages: [] } }]);
+		await saveAll(ada, universeId, [
+			{ kind: 'saveEditor', playerId: ada.playerId, settings: { role: 'beta_tester', languages: [] } },
+			{ kind: 'addEditor', username: alan.username, settings: { role: 'builder', languages: [] } },
+			{ kind: 'universe', update: { groupSize: 3 } }
+		]);
+
+		const universe = (await send<EditableUniverse>(ada, 'GET', `/${universeId}`)).body;
+
+		assert.deepStrictEqual(await listEditors(ada, universeId), ['Ada beta_tester', 'Alan builder', 'Grace creator']);
+		assert.deepStrictEqual([universe.role, universe.groupSize], ['beta_tester', 3]);
+		assert.strictEqual((await saveChanges(ada, universeId, [{ kind: 'universe', update: { groupSize: 4 } }])).status, 403);
+	});
+
 	it('lets any editor leave, but only creators change other editors', async () =>
 	{
 		const bob = await logIn('Bob');
