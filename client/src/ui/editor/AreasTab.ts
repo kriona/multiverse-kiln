@@ -1,4 +1,4 @@
-import { ancestorAreas, AREA_LIGHT_LEVEL_NAMES, AREA_LIGHT_LEVELS, canEditWorld, canPaintTile, childAreas, DEFAULT_AREA_TILE_KEYS, descendantAreaIds, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_AREA_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, AREA_PASSAGES_OF_TIME, areasTabListing, loadedFor, type AreaChangeUpdate, type AuditSubject, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary, type FaerieMorning, type AreaListPayload, type AreaLightLevel, type AreaPassageOfTime, type AreaSettings } from '@multiverse-kiln/shared';
+import { ancestorAreas, AREA_LIGHT_LEVEL_NAMES, AREA_LIGHT_LEVELS, canEditWorld, canPaintTile, childAreas, DEFAULT_AREA_TILE_KEYS, descendantAreaIds, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_AREA_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, AREA_PASSAGES_OF_TIME, areasTabListing, loadedFor, type AreaChangeUpdate, type AuditSubject, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary, type FaerieMorning, type AreaListPayload, type AreaLightLevel, type AreaPassageOfTime, type AreaSettings, type SavedEditDetail } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -10,7 +10,7 @@ import { SearchSelect } from '../SearchSelect';
 import { tileName } from '../tileNames';
 import type { AreaSource } from './areaSource';
 import { editorMessages } from './editorMessages';
-import { MapEditor } from './MapEditor';
+import { MapEditor, type FollowedPainting } from './MapEditor';
 import { newRef, numberRef, type EditorSave, type SavedIds } from './editorSave';
 import { ChangedSinceLine, type FollowsOtherSaves, type OtherSave } from './otherSaves';
 import { combineChanges, type SavableTab } from './SaveBar';
@@ -32,6 +32,18 @@ function areaRef(areaId: string): string
  * What a save changes on the tab, as the Audit tab names it
  */
 const AREA_SUBJECTS: ReadonlySet<AuditSubject> = new Set(['area', 'cells', 'links']);
+
+/**
+ * Whether a save's detail is painting the map editor takes into its map as it is: painting that names
+ * the chunks it touched
+ *
+ * @param detail The detail
+ * @return True when it is
+ */
+function isFollowedPainting(detail: SavedEditDetail): boolean
+{
+	return((detail.subject === 'cells') && (detail.chunks !== undefined));
+}
 
 /**
  * The Areas tab: the universe's areas, opening the area editor, and adding and deleting areas
@@ -610,7 +622,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	/**
 	 * Follows a save made in another window that changed areas: loads the list again, and the area open
 	 * when the save changed it and it has no unsaved changes here; with them, keeps them and says above
-	 * the area's settings what the save changed
+	 * the area's settings what the save changed. Painting the open area's map is left to followPainting()
 	 *
 	 * @param save The save
 	 * @return True when the save changed an area with unsaved changes here: the area open, or one being
@@ -636,7 +648,10 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			return(deletedHere);
 		}
 
-		if (aboutOpen.length === 0)
+		// Painting is taken into the map as it is by followPainting()
+		const rest = aboutOpen.filter((detail) => !isFollowedPainting(detail));
+
+		if (rest.length === 0)
 		{
 			void this.loadAreas(universe).catch(() =>
 			{
@@ -650,7 +665,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 
 		if (this.areaChanges.hasUnsavedChanges() || linkDialog.hasUnappliedChanges())
 		{
-			this.changedSince.add(save.name, aboutOpen);
+			this.changedSince.add(save.name, rest);
 			return(true);
 		}
 
@@ -659,9 +674,81 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			linkDialog.close();
 		}
 
-		void (aboutOpen.some((detail) => ((detail.subject === 'area') && (detail.action === 'deleted'))) ? this.showList() : this.loadArea(open.id));
+		void (aboutOpen.some((detail) => ((detail.subject === 'area') && (detail.action === 'deleted'))) ? this.showList() : this.refreshArea(open.id));
 
 		return(deletedHere);
+	}
+
+	/**
+	 * Takes the painting a save made in another window to the open area into its map, unsaved changes or
+	 * not, marking the cells it changed (MapEditor.followPainting()). Call it after otherSaved()
+	 *
+	 * @param save The save
+	 * @return How many of the cells it changed had been painted here while the area was open, and what
+	 * takes its marks off the map
+	 */
+	async followPainting(save: OtherSave): Promise<FollowedPainting>
+	{
+		const open = this.area;
+		const followed = ((open === undefined)
+			? []
+			: await Promise.all(save.details
+				.filter((detail) => (isFollowedPainting(detail) && (detail.id === open.id)))
+				.map((detail) => this.mapEditor.followPainting(open.id, (detail.chunks ?? []), save.name))));
+
+		return({
+			paintedOver: followed.reduce((sum, each) => (sum + each.paintedOver), 0),
+			unmark: () =>
+			{
+				for (const each of followed)
+				{
+					each.unmark();
+				}
+			}
+		});
+	}
+
+	/**
+	 * Loads the open area's settings and links again after another window saved them, keeping its map as
+	 * it has loaded, with the painting other editors saved taken in, unless its size changed. One that
+	 * can't be loaded opens afresh
+	 *
+	 * @param areaId The area's ID
+	 */
+	private async refreshArea(areaId: string): Promise<void>
+	{
+		const universe = this.universe;
+		const version = this.openVersion;
+
+		if (!universe)
+		{
+			return;
+		}
+
+		let area: EditorArea;
+
+		try
+		{
+			[area] = await Promise.all([
+				this.source.getArea(areaId),
+				this.loadAreas(universe)
+			]);
+		}
+		catch
+		{
+			if (version === this.openVersion)
+			{
+				await this.loadArea(areaId);
+			}
+
+			return;
+		}
+
+		if ((version === this.openVersion) && (this.area?.id === areaId))
+		{
+			this.changedSince.hide();
+			this.showArea(universe, area);
+		}
 	}
 
 	/**

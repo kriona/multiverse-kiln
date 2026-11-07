@@ -1,6 +1,6 @@
 import exitFullPageIcon from 'virtual:icon/ph:arrows-in';
 import fullPageIcon from 'virtual:icon/ph:arrows-out';
-import { canPaintTile, DEFAULT_TILE_CELL, defineMessages, isInBounds, MAX_BRUSH_SIZE, MAX_CELL_CHANGES, VOID_CELL, VIEW_HEIGHT, VIEW_WIDTH, type CellChange, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type MapBounds, type MessageDescriptor, type NumberRef, type StringRef } from '@multiverse-kiln/shared';
+import { canPaintTile, CHUNK_SIZE, DEFAULT_TILE_CELL, defineMessages, isInBounds, MAX_BRUSH_SIZE, MAX_CELL_CHANGES, parseChunkKey, VOID_CELL, VIEW_HEIGHT, VIEW_WIDTH, type CellChange, type ChunkCoordinates, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type MapBounds, type MessageDescriptor, type NumberRef, type StringRef } from '@multiverse-kiln/shared';
 
 import { BRUSH_SHAPES, brushCells, type BrushCell, type BrushShape } from '../../editor/brush';
 import { ChunkLoader } from '../../editor/ChunkLoader';
@@ -55,6 +55,17 @@ const BRUSH_SHAPE_NAMES: Record<BrushShape, MessageDescriptor> = defineMessages(
 const VOID_CHOICE = 'void';
 
 /**
+ * The outline of the cells other editors painted while the area was open
+ */
+const PAINTED_BY_OTHERS_COLOR = 0xe040fb;
+
+/**
+ * The outline of the cells other editors painted over painting here, a warning color apart from the
+ * automatic links' orange
+ */
+const PAINTED_OVER_COLOR = 0xff3d00;
+
+/**
  * The area being edited and everything that goes with it
  */
 interface OpenArea
@@ -75,6 +86,22 @@ interface OpenArea
 	 * Whether the map can be changed
 	 */
 	editable: boolean;
+}
+
+/**
+ * What taking in another editor's painting did to the open map
+ */
+export interface FollowedPainting
+{
+	/**
+	 * How many of the cells it changed had been painted here while the area was open
+	 */
+	paintedOver: number;
+
+	/**
+	 * Takes the save's marks off the map
+	 */
+	unmark: () => void;
 }
 
 /**
@@ -148,6 +175,23 @@ export class MapEditor
 	 * The server's value of each cell in unsaved, by "column,row"
 	 */
 	private readonly savedValues = new Map<string, number>();
+
+	/**
+	 * The cells other editors painted while the area was open, with the display name of the last to
+	 * paint each, whether they painted over painting here and the save that marked it (counted by
+	 * followedSaves), by "column,row"
+	 */
+	private readonly paintedByOthers = new Map<string, { name: string; overPainting: boolean; save: number }>();
+
+	/**
+	 * How many saves made in other windows followPainting() has taken in, which numbers their marks
+	 */
+	private followedSaves = 0;
+
+	/**
+	 * The cells this window saved painting to while the area was open, by "column,row"
+	 */
+	private readonly paintedHere = new Set<string>();
 
 	/**
 	 * Links added, changed or deleted that haven't been saved, in this area and return links in others,
@@ -348,6 +392,8 @@ export class MapEditor
 			this.open?.loader.stop();
 			this.history.clear();
 			this.stagedLinks.clear();
+			this.paintedByOthers.clear();
+			this.paintedHere.clear();
 			this.open = this.openMap(universe, area, tiles, areas, links, editable);
 			this.unsavedChanged();
 		}
@@ -370,6 +416,8 @@ export class MapEditor
 		this.unsaved.clear();
 		this.savedValues.clear();
 		this.stagedLinks.clear();
+		this.paintedByOthers.clear();
+		this.paintedHere.clear();
 		this.canvas.stop();
 		this.unsavedChanged();
 	}
@@ -583,6 +631,12 @@ export class MapEditor
 		}
 
 		this.markCellsSaved(collected.cells);
+
+		for (const [column, row] of collected.cells)
+		{
+			this.paintedHere.add(`${column},${row}`);
+		}
+
 		open.area = { ...open.area, bounds: collected.bounds };
 
 		for (const [key, change] of collected.links)
@@ -774,7 +828,173 @@ export class MapEditor
 		if (this.open === open)
 		{
 			scene.setLinks(linksOnMap(open, this.currentLinks(open.area.id, open.links)));
+			this.showPaintedByOthers();
 		}
+	}
+
+	/**
+	 * Marks on the map the cells other editors painted while the area was open
+	 */
+	private showPaintedByOthers(): void
+	{
+		this.canvas.scene?.setHighlights([...this.paintedByOthers].map(([key, painted]) =>
+		{
+			const [column, row] = key.split(',').map(Number);
+
+			return({ column, row, color: (painted.overPainting ? PAINTED_OVER_COLOR : PAINTED_BY_OTHERS_COLOR) });
+		}));
+	}
+
+	/**
+	 * Takes in the painting another editor saved to the open area: loads the chunks it painted again, if
+	 * they have loaded here, and marks each cell it changed, in the warning color where it painted over
+	 * painting here: painting not yet saved, or saved from here while the area was open. A cell painted
+	 * here and not yet saved keeps the painting here, which is saved over theirs, and undoing back to the
+	 * saved map gives theirs
+	 *
+	 * @param areaId The area painted
+	 * @param chunks The chunks of its map the save painted
+	 * @param name The display name of the editor who saved
+	 * @return How many of the cells it changed had been painted here, and what takes its marks off the
+	 * map, leaving those a later save made
+	 */
+	async followPainting(areaId: string, chunks: readonly ChunkCoordinates[], name: string): Promise<FollowedPainting>
+	{
+		const opened = this.open;
+		const nothing: FollowedPainting = {
+			paintedOver: 0,
+			unmark: () =>
+			{
+				// The save marked nothing
+			}
+		};
+
+		if (!opened || (opened.area.id !== areaId))
+		{
+			return(nothing);
+		}
+
+		let reloaded: Map<string, number[] | undefined>;
+
+		try
+		{
+			reloaded = await opened.loader.reload(chunks);
+		}
+		catch (error)
+		{
+			showMessage(this.error, describeEditorError(error, mapMessages.loadFailed));
+			return(nothing);
+		}
+
+		// Showing the area's settings again keeps its map, which a new size replaces
+		const open = this.open;
+
+		if (!open || (open.map !== opened.map))
+		{
+			return(nothing);
+		}
+
+		const applied: CellChange[] = [];
+		const rebased = new Map<string, { before: number; after: number }>();
+		const save = ++this.followedSaves;
+		let paintedOver = 0;
+
+		for (const [chunk, cells] of reloaded)
+		{
+			const { chunkColumn, chunkRow } = parseChunkKey(chunk);
+
+			for (let index = 0; index < (CHUNK_SIZE * CHUNK_SIZE); index++)
+			{
+				const column = (chunkColumn * CHUNK_SIZE) + (index % CHUNK_SIZE);
+				const row = (chunkRow * CHUNK_SIZE) + Math.floor(index / CHUNK_SIZE);
+				const key = `${column},${row}`;
+				const theirs = (cells?.[index] ?? DEFAULT_TILE_CELL);
+				const shown = open.map.valueAt(column, row);
+				const before = (this.savedValues.get(key) ?? this.stroke?.before.get(key)?.[2] ?? shown);
+
+				if ((before === undefined) || (before === theirs))
+				{
+					continue;
+				}
+
+				// A cell painted here, in an earlier stroke or the one under way, keeps the painting here
+				const mine = this.unsaved.get(key);
+				const strokeBefore = this.stroke?.before.get(key);
+				const strokeValue = this.stroke?.after.get(key);
+				const overPainting = (this.paintedHere.has(key) || ((mine !== undefined) && (mine[2] !== theirs)) || ((strokeValue !== undefined) && (strokeValue !== theirs)));
+
+				rebased.set(key, { before, after: theirs });
+				this.paintedByOthers.set(key, { name, overPainting, save });
+
+				if (overPainting)
+				{
+					paintedOver++;
+				}
+
+				if (mine)
+				{
+					this.savedValues.set(key, theirs);
+
+					if (mine[2] === theirs)
+					{
+						this.unsaved.delete(key);
+						this.savedValues.delete(key);
+					}
+				}
+				else if (strokeBefore)
+				{
+					strokeBefore[2] = theirs;
+				}
+				else
+				{
+					applied.push([column, row, theirs]);
+				}
+			}
+		}
+
+		this.history.rebase(rebased);
+
+		if (applied.length > 0)
+		{
+			this.canvas.scene?.refreshChunks(open.map.apply(applied));
+		}
+
+		this.showPaintedByOthers();
+		this.showHoveredCell();
+		this.unsavedChanged();
+
+		return({
+			paintedOver,
+			unmark: () =>
+			{
+				this.unmarkPainting(open.map, save);
+			}
+		});
+	}
+
+	/**
+	 * Takes the marks one save made off the map, while the map they are on is still open
+	 *
+	 * @param map The map the save painted
+	 * @param save The save, as followPainting() numbered it
+	 */
+	private unmarkPainting(map: EditorMap, save: number): void
+	{
+		if (this.open?.map !== map)
+		{
+			return;
+		}
+
+		for (const [key, painted] of this.paintedByOthers)
+		{
+			if (painted.save === save)
+			{
+				this.paintedByOthers.delete(key);
+			}
+		}
+
+		this.showPaintedByOthers();
+		this.showHoveredCell();
 	}
 
 	/**
@@ -1107,13 +1327,26 @@ export class MapEditor
 			return('');
 		}
 
-		return(describeCell({
+		const described = describeCell({
 			map: open.map,
 			defaultTileId: open.area.defaultTileId,
 			tiles: open.tiles,
 			links: this.currentLinks(open.area.id, open.links),
 			ruleset: open.universe.ruleset
-		}, cell));
+		}, cell);
+		const paintedBy = this.paintedByOthers.get(`${cell.column},${cell.row}`);
+
+		return((((paintedBy === undefined) || (described === ''))
+			? described
+			: t({
+				id: 'editor.map.cellPaintedBy',
+				defaultMessage: '{over, select, yes {{cell} (painted by {name} over your painting while you had this map open)} other {{cell} (painted by {name} while you had this map open)}}',
+				description: 'Under the map editor\'s map, the cell under the pointer or the keyboard\'s cursor when another editor painted it and saved while the player had the area open; the map marks such cells. {cell} is the cell and what it holds, e.g. "3, -2: Grass", {name} the other editor\'s display name, and {over} yes when the player had painted the cell too (saved or not), which the map marks in a warning color'
+			}, {
+				over: (paintedBy.overPainting ? 'yes' : 'no'),
+				cell: described,
+				name: paintedBy.name
+			})));
 	}
 
 	/**

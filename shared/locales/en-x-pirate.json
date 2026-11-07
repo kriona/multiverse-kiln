@@ -2255,6 +2255,10 @@
 		"message": "hoistin'...",
 		"source": "loading..."
 	},
+	"editor.map.cellPaintedBy": {
+		"message": "{over, select, yes {{cell} (daubed by {name} over yer own daubin' while ye had this chart open)} other {{cell} (daubed by {name} while ye had this chart open)}}",
+		"source": "{over, select, yes {{cell} (painted by {name} over your painting while you had this map open)} other {{cell} (painted by {name} while you had this map open)}}"
+	},
 	"editor.map.cellWithLink": {
 		"message": "{column}, {row}: {contents} ({mode, select, automatic {passage that hauls ye through} other {passage that asks first}})",
 		"source": "{column}, {row}: {contents} ({mode, select, automatic {automatic link} other {manual link}})"
@@ -2638,6 +2642,10 @@
 	"editor.saveNoticeKept": {
 		"message": "{count, plural, one {This be crossin' yer unstowed changes on the {tabs} tab.} other {This be crossin' yer unstowed changes on the {tabs} tabs.}}",
 		"source": "{count, plural, one {This conflicts with your unsaved changes on the {tabs} tab.} other {This conflicts with your unsaved changes on the {tabs} tabs.}}"
+	},
+	"editor.saveNoticePaintedOver": {
+		"message": "{count, plural, one {They daubed over # cell ye daubed, ringed in orange on the chart.} other {They daubed over # cells ye daubed, ringed in orange on the chart.}}",
+		"source": "{count, plural, one {They painted over # cell you painted, outlined in orange on the map.} other {They painted over # cells you painted, outlined in orange on the map.}}"
 	},
 	"editor.searchByName": {
 		"message": "Search by name",

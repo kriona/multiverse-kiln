@@ -4,7 +4,7 @@
  * setting sent with the value it already has isn't listed, and a thing deleted is named as it was
  */
 import { isDeepStrictEqual } from 'util';
-import { AUDIT_FIELDS, type AuditAction, type AuditField, type AuditFieldChange, type AuditPassageOfTime, type AuditPlace, type AuditSubject, type ClassRaceArea, type EditorChange, type EditorRoleSettings, type ItemQuantity, type NumberRef, type MergedChange, type OptionName, type SavedEditDetail, type StringRef, type TileGraphic, type UniverseEditDetail } from '@multiverse-kiln/shared';
+import { AUDIT_FIELDS, chunkCoordinate, chunkKey, parseChunkKey, type AuditAction, type AuditField, type AuditFieldChange, type AuditPassageOfTime, type AuditPlace, type AuditSubject, type ClassRaceArea, type EditorChange, type EditorRoleSettings, type ItemQuantity, type NumberRef, type MergedChange, type OptionName, type SavedEditDetail, type StringRef, type TileGraphic, type UniverseEditDetail } from '@multiverse-kiln/shared';
 
 import { findEditorArea } from '../db/areaRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
@@ -268,6 +268,11 @@ export class SaveAudit
 	private readonly areas = new Map<string, Record<string, unknown> & { name: string }>();
 
 	/**
+	 * The chunks of each area's map the save painted, by chunkKey(), by the area's ID
+	 */
+	private readonly paintedChunks = new Map<string, Set<string>>();
+
+	/**
 	 * @param context The save
 	 */
 	constructor(private readonly context: ChangeContext)
@@ -304,6 +309,22 @@ export class SaveAudit
 	savedDetails(): SavedEditDetail[]
 	{
 		return(this.details.map((detail, index) => ({ ...detail, id: (this.ids[index] ?? null) })));
+	}
+
+	/**
+	 * What the save changed, as savedDetails() has it, with the chunks each area's painting touched, for
+	 * telling the editor windows of the save
+	 *
+	 * @return The details
+	 */
+	noticedDetails(): SavedEditDetail[]
+	{
+		return(this.savedDetails().map((detail) =>
+		{
+			const chunks = (((detail.subject === 'cells') && (typeof detail.id === 'string')) ? this.paintedChunks.get(detail.id) : undefined);
+
+			return(((chunks === undefined) ? detail : { ...detail, chunks: [...chunks].map(parseChunkKey) }));
+		}));
 	}
 
 	/**
@@ -457,7 +478,19 @@ export class SaveAudit
 			case 'resizeArea':
 				return(this.changeArea(change.areaId, 'area', 'resized', 1));
 			case 'editCells':
+			{
+				const areaId = resolveStringRef(this.context, change.areaId);
+				const chunks = (this.paintedChunks.get(areaId) ?? new Set<string>());
+
+				for (const [column, row] of change.changes)
+				{
+					chunks.add(chunkKey(chunkCoordinate(column), chunkCoordinate(row)));
+				}
+
+				this.paintedChunks.set(areaId, chunks);
+
 				return(this.changeArea(change.areaId, 'cells', 'changed', change.changes.length));
+			}
 			case 'saveLink':
 				return(this.changeArea(change.areaId, 'links', 'changed', 1));
 			case 'deleteLink':

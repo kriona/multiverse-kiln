@@ -7,6 +7,7 @@ import { EDITOR_ROOM_NAME, EditorMessageType, EditorServerMessageType, EditorSta
 import type appConfig from '../src/app.config.js';
 import { listChatMessages } from '../src/db/chatRepo.js';
 import { addServerAdmin } from '../src/db/serverAdminRepo.js';
+import { listUniverseEdits } from '../src/db/universeEditRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { connectedSessions } from '../src/players/connectedSessions.js';
 import { universeAccessChanges } from '../src/players/universeAccess.js';
@@ -334,6 +335,25 @@ describe('EditorRoom', () =>
 				['cells', 'changed', areaId],
 				['area', 'added', null]
 			]);
+		});
+
+		it('names the chunks each area\'s painting touched, without keeping them for the Audit tab', async () =>
+		{
+			const window = await openEditor(ada, universeId);
+			const areaId = await createArea(ada, universeId);
+
+			await window.inbox.take(EditorServerMessageType.Saved);
+			assert.strictEqual((await saveChanges(ada, universeId, [
+				{ kind: 'editCells', areaId, changes: [[0, 0, VOID_CELL], [1, 0, VOID_CELL], [-1, -1, VOID_CELL]] }
+			])).status, 200);
+
+			const [painted] = (await window.inbox.take<EditorSavedPayload>(EditorServerMessageType.Saved)).details;
+
+			assert.deepStrictEqual([painted.subject, painted.count, painted.chunks], ['cells', 3, [{ chunkColumn: 0, chunkRow: 0 }, { chunkColumn: -1, chunkRow: -1 }]]);
+
+			const [recorded] = (await listUniverseEdits(universeId, { offset: 0, limit: 1 })).edits;
+
+			assert.ok(recorded.changeDetails.every((detail) => !('chunks' in detail)));
 		});
 	});
 
