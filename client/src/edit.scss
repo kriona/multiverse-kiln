@@ -93,25 +93,57 @@
 	color: $text;
 }
 
+// The editors' chat's width, and its distance from the window's right edge
+$editor-chat-width: min(360px, calc(100vw - 32px));
+$editor-chat-inset: 16px;
+
+// The editor's tabs and the arrows over their ends (see ui/scrollingTabs.ts). While the chat is open, the
+// tabs end where it begins, so none are hidden under it
+.tab-strip
+{
+	position: relative;
+}
+
+// The screen keeps to the window's width rather than growing to fit every tab, so the tabs scroll
+#editor-screen
+{
+	min-width: 0;
+}
+
+#editor-screen:has(> .editor-chat:not([hidden])) .tab-strip
+{
+	padding-right: calc(#{$editor-chat-width} + #{$editor-chat-inset});
+}
+
+// The tabs stay on one line and scroll sideways when they don't fit. A scrolling list cuts off whatever
+// reaches past its edges, so the line under the tabs is drawn inside it, along its bottom, for the tab
+// showing to cover
 .tabs
 {
 	display: flex;
 	gap: 4px;
 	padding: 12px 16px 0;
-	border-bottom: 1px solid $border;
+	overflow-x: auto;
+	scrollbar-width: none;
+	// A tab the keyboard moves to is scrolled clear of the arrows over the ends
+	scroll-padding: 0 40px;
+	background: linear-gradient(to top, $border 1px, transparent 1px);
 
 	button
 	{
+		flex-shrink: 0;
+		margin-bottom: 1px;
 		border-color: $border;
 		border-bottom: none;
 		border-radius: 4px 4px 0 0;
 		background: $background-field;
 		color: $text-muted;
+		white-space: nowrap;
 
-		// The tab showing reaches 1px further down, covering the line under the tabs so it opens onto its panel
+		// The tab showing reaches over the line under the tabs, so it opens onto its panel
 		&[aria-selected="true"]
 		{
-			margin-bottom: -1px;
+			margin-bottom: 0;
 			padding-bottom: 7px;
 			background: $background-page;
 			color: $text;
@@ -130,6 +162,68 @@
 		background: $notice-text;
 		vertical-align: middle;
 	}
+}
+
+// An arrow over an end of the tabs with tabs hidden past it, fading the tabs out under it. It stops short
+// of the line under the tabs, which stays drawn across the whole strip
+.tab-scroll
+{
+	position: absolute;
+	top: 0;
+	bottom: 1px;
+	display: flex;
+	align-items: center;
+	width: 40px;
+	padding: 12px 0 0;
+	border: none;
+	border-radius: 0;
+	color: $text-muted;
+
+	&:hover
+	{
+		color: $text;
+	}
+
+	&[hidden]
+	{
+		display: none;
+	}
+
+	.icon
+	{
+		margin-inline-end: 0;
+	}
+}
+
+.tab-scroll-back
+{
+	left: 0;
+	justify-content: flex-start;
+	padding-left: 4px;
+	background: linear-gradient(to right, $background-page 50%, transparent);
+
+	&:hover
+	{
+		background: linear-gradient(to right, $background-page 50%, transparent);
+	}
+}
+
+.tab-scroll-forward
+{
+	right: 0;
+	justify-content: flex-end;
+	padding-right: 4px;
+	background: linear-gradient(to left, $background-page 50%, transparent);
+
+	&:hover
+	{
+		background: linear-gradient(to left, $background-page 50%, transparent);
+	}
+}
+
+#editor-screen:has(> .editor-chat:not([hidden])) .tab-scroll-forward
+{
+	right: calc(#{$editor-chat-width} + #{$editor-chat-inset});
 }
 
 // The notice above the tabs keeps the line breaks in a disabled universe's reason
@@ -179,13 +273,13 @@
 {
 	position: fixed;
 	top: 72px;
-	right: 16px;
+	right: $editor-chat-inset;
 	bottom: 72px;
 	z-index: 12;
 	display: flex;
 	flex-direction: column;
 	box-sizing: border-box;
-	width: min(360px, calc(100vw - 32px));
+	width: $editor-chat-width;
 	box-shadow: 0 4px 16px $backdrop;
 
 	&[hidden]

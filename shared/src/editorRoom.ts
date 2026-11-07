@@ -6,20 +6,20 @@
 import type { UniverseEditDetail, UniverseVersionName } from './editor.js';
 
 /**
- * The editor's tabs, in the order they are shown
+ * The names of the editor's tabs. The page's tab list decides the order they are shown in
  */
 export const EDITOR_TABS = [
-	'universe',
-	'editors',
-	'ruleset',
-	'lobby',
-	'characters',
-	'characterList',
-	'tilesets',
 	'areas',
-	'items',
 	'audit',
-	'translations'
+	'characterList',
+	'characters',
+	'editors',
+	'items',
+	'lobby',
+	'ruleset',
+	'tilesets',
+	'translations',
+	'universe'
 ] as const;
 
 export type EditorTab = typeof EDITOR_TABS[number];
