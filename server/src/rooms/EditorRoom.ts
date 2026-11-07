@@ -41,7 +41,8 @@ interface EditorIdentity
 	serverAdmin: boolean;
 
 	/**
-	 * The player's role in the editor as of when the window joined; later changes go to the state
+	 * The player's role in the editor: found as the window joins, and changed when the room hears of a
+	 * new one. The state lists it too, once for each player
 	 */
 	role: EditorRole;
 }
@@ -449,8 +450,8 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 
 	/**
 	 * Tells every window but the one that saved of a save, with what it changed that the window shows
-	 * (noticeDetails()), by the version it has open. A window hears of every save, even one changing
-	 * nothing it shows, since the Audit tab lists the saves of both versions
+	 * (noticeDetails()), by the version it has open and its player's role. A window hears of every save,
+	 * even one changing nothing it shows, since the Audit tab lists the saves of both versions
 	 *
 	 * @param update The save
 	 */
@@ -468,7 +469,7 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 				name: update.name,
 				username: update.username,
 				version: update.version,
-				details: noticeDetails(update.details, update.version, ((this.windowOf(client)?.version === 'draft') ? 'draft' : 'live'))
+				details: noticeDetails(update.details, update.version, ((this.windowOf(client)?.version === 'draft') ? 'draft' : 'live'), identityOf(client).role)
 			};
 
 			client.send(EditorServerMessageType.Saved, payload);
@@ -510,6 +511,7 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 
 		for (const client of clients)
 		{
+			identityOf(client).role = access.role;
 			client.send(EditorServerMessageType.AccessChanged);
 		}
 	}

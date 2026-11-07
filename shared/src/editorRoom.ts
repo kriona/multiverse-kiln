@@ -103,10 +103,11 @@ export interface EditorSavedPayload
 	version: UniverseVersionName;
 
 	/**
-	 * What it changed that the window shows, as the Audit tab lists it: everything, for a window with the
-	 * same version open, and only what the universe holds once (its editors, its stage and its draft) for
-	 * a window with the other version open. Empty when it changed nothing the window shows, which still
-	 * hears of it for the Audit tab, which lists the saves of both versions
+	 * What it changed that the window shows, as the Audit tab lists it: what the tabs its player's role
+	 * sees show, all of it for a window with the same version open, and only what the universe holds once
+	 * (its editors, its stage and its draft) for a window with the other version open. Empty when it
+	 * changed nothing the window shows, which still hears of it for the Audit tab, which lists the saves
+	 * of both versions
 	 */
 	details: SavedEditDetail[];
 }
