@@ -28,7 +28,8 @@ export interface ChatAuthor
 /**
  * A room's kept chat (server/src/db/chatRepo.ts): the messages it holds, oldest first, and those not yet
  * written to the database (server-only, never synced). A room whose chat remembers how far each player
- * has read it loads each player's record with loadRead() as they join, and moves it with markRead()
+ * has read it loads each player's record with findRead() and keepRead() as they join, and moves it
+ * with markRead()
  *
  * The room loads it as it starts and calls save() every CHAT_SAVE_INTERVAL_MS and as it closes, so
  * adding a message or reading the chat never waits for the database
@@ -48,7 +49,7 @@ export class KeptChatLog
 	private unsaved: NewChatMessage[] = [];
 
 	/**
-	 * How far each player loaded with loadRead() has read the chat: when the newest message they have
+	 * How far each player held with keepRead() has read the chat: when the newest message they have
 	 * seen was sent, in milliseconds since the epoch, by player ID
 	 */
 	private readonly reads = new Map<string, number>();
@@ -75,13 +76,15 @@ export class KeptChatLog
 	}
 
 	/**
-	 * Reads how far a player has read the chat from the database, unless the log knows already. A
-	 * player the chat has no record of starts with every message it holds so far read, so a chat they
-	 * have never seen doesn't greet them with its whole history as new
+	 * Reads how far a player has read the chat from the database, unless the log knows already, for
+	 * keepRead() to hold. It holds nothing itself, so a room can look it up while it is still deciding
+	 * whether to admit the player
 	 *
 	 * @param playerId The player's ID
+	 * @return When the newest message they have seen was sent; undefined when the chat has no record of
+	 * them, or the log knows already
 	 */
-	async loadRead(playerId: string): Promise<void>
+	async findRead(playerId: string): Promise<Date | undefined>
 	{
 		if (!this.chat)
 		{
@@ -90,12 +93,23 @@ export class KeptChatLog
 
 		if (this.reads.has(playerId))
 		{
-			return;
+			return(undefined);
 		}
 
-		const readAt = await findChatRead(this.chat, playerId);
+		return(await findChatRead(this.chat, playerId));
+	}
 
-		// Another window of the player may have loaded it, or read further, while this one waited
+	/**
+	 * Holds how far a player has read the chat, as findRead() found it, unless the log knows already. A
+	 * player the chat has no record of starts with every message it holds so far read, so a chat they
+	 * have never seen doesn't greet them with its whole history as new
+	 *
+	 * @param playerId The player's ID
+	 * @param readAt What findRead() found for them
+	 */
+	keepRead(playerId: string, readAt: Date | undefined): void
+	{
+		// Another window of the player may have loaded it, or read further, while findRead() waited
 		if (this.reads.has(playerId))
 		{
 			return;
@@ -139,7 +153,7 @@ export class KeptChatLog
 	 *
 	 * @param playerId The player's ID
 	 * @return When the newest message they have seen was sent, in milliseconds since the epoch, or
-	 * undefined until loadRead() has found it
+	 * undefined until keepRead() has held it
 	 */
 	readOf(playerId: string): number | undefined
 	{
