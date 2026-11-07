@@ -87,6 +87,14 @@ describe('universeDraftRepo', () =>
 			text: 'Place',
 			sourceHash: '0'.repeat(64)
 		});
+		await saveTranslation(liveVersion(universe.universeId), {
+			kind: 'tile',
+			thingId: String(lavaId),
+			field: 'name',
+			language: 'fr',
+			text: 'Lave',
+			sourceHash: '0'.repeat(64)
+		});
 		await updateUniverseSettings(liveVersion(universe.universeId), { translationLanguages: ['fr'], shortDescription: 'Live' });
 	});
 
@@ -125,10 +133,14 @@ describe('universeDraftRepo', () =>
 			assert.ok(draftLava && (draftLava.id !== lavaId));
 			assert.strictEqual(chunk.cells[cellIndexInChunk(1, 1)], draftLava.id);
 
-			const [translation] = await listTranslations(draftVersion(universeId), ['fr']);
+			const translations = await listTranslations(draftVersion(universeId), ['fr']);
+			const areaTranslation = translations.find((translation) => (translation.kind === 'area'));
+			const tileTranslation = translations.find((translation) => (translation.kind === 'tile'));
 
-			assert.strictEqual(translation.thingId, draftSquareId);
-			assert.strictEqual(translation.text, 'Place');
+			assert.strictEqual(areaTranslation?.thingId, draftSquareId);
+			assert.strictEqual(areaTranslation.text, 'Place');
+			assert.strictEqual(tileTranslation?.thingId, String(draftLava.id));
+			assert.strictEqual(tileTranslation.text, 'Lave');
 		});
 
 		it('leaves the live version as it was when the draft changes', async () =>
@@ -200,14 +212,15 @@ describe('universeDraftRepo', () =>
 			assert.deepStrictEqual(character?.items.map((item) => item.itemId), [torchId]);
 			assert.ok((await loadEditorItems(liveVersion(universeId), 'pf1e')).some((item) => ((item.id === torchId) && (item.name === 'Lantern'))));
 
-			// The map paints the live lava again, and the translation names the live area
+			// The map paints the live lava again, and the translations name the live area and tile
 			const [chunk] = await loadChunks(fieldAreaId, { minChunkColumn: 0, minChunkRow: 0, maxChunkColumn: 0, maxChunkRow: 0 });
 
 			assert.strictEqual(chunk.cells[cellIndexInChunk(1, 1)], lavaId);
 
-			const [translation] = await listTranslations(liveVersion(universeId), ['fr']);
+			const translations = await listTranslations(liveVersion(universeId), ['fr']);
 
-			assert.strictEqual(translation.thingId, squareAreaId);
+			assert.strictEqual(translations.find((translation) => (translation.kind === 'area'))?.thingId, squareAreaId);
+			assert.strictEqual(translations.find((translation) => (translation.kind === 'tile'))?.thingId, String(lavaId));
 		});
 
 		it('leaves alone the live rows the draft didn\'t change', async () =>
@@ -223,7 +236,8 @@ describe('universeDraftRepo', () =>
 				sql`${areaLinks} WHERE area_id = ${squareAreaId}`,
 				sql`${tiles} WHERE id = ${lavaId}`,
 				sql`${areas} WHERE id = ${fieldAreaId}`,
-				sql`${universeTranslations} WHERE universe_id = ${universeId} AND NOT draft`
+				sql`${universeTranslations} WHERE universe_id = ${universeId} AND NOT draft AND kind = 'area'`,
+				sql`${universeTranslations} WHERE universe_id = ${universeId} AND NOT draft AND kind = 'tile'`
 			];
 			const before = await Promise.all(unchanged.map((from) => rowVersion(from)));
 
