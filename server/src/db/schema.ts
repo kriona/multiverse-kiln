@@ -445,8 +445,9 @@ export const universeEdits = pgTable('universe_edits', {
 	draft: boolean('draft').notNull().default(false),
 
 	/**
-	 * What the save changed, thing by thing, with the values it gave each setting it changed, or null for
-	 * a save recorded before they were
+	 * What the save changed, thing by thing, with the values it gave each setting it changed and the ID of
+	 * each thing (SavedEditDetail; saves recorded before the IDs were have none), or null for a save
+	 * recorded before any details were
 	 */
 	changeDetails: jsonb('change_details').$type<UniverseEditDetail[]>(),
 

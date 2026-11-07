@@ -1635,6 +1635,26 @@
 		"message": "Couldn't stow the treasure's names.",
 		"source": "Could not save the coins."
 	},
+	"editor.conflict.explanation": {
+		"message": "Other hands stowed different values for some o' the settings ye changed. Choose which t' keep for each, then stow.",
+		"source": "Other editors saved different values for some of the settings you changed. Choose which to keep for each, then save."
+	},
+	"editor.conflict.keepMine": {
+		"message": "{hasValue, select, yes {Keep me own: {value}} other {Keep me own}}",
+		"source": "{hasValue, select, yes {Keep mine: {value}} other {Keep mine}}"
+	},
+	"editor.conflict.setting": {
+		"message": "{subject, select, settings {Universe settings: {field}} ruleset {Ship's Articles: {field}} editor {Officer {name}: {field}} race {Race {name}: {field}} class {Class {name}: {field}} theme {Theme {name}: {field}} item {Item {name}: {field}} tile {Tile {name}: {field}} difficultyLevel {Difficulty level {name}: {field}} area {Area {name}: {field}} other {{name}: {field}}}",
+		"source": "{subject, select, settings {Universe settings: {field}} ruleset {Ruleset: {field}} editor {Editor {name}: {field}} race {Race {name}: {field}} class {Class {name}: {field}} theme {Theme {name}: {field}} item {Item {name}: {field}} tile {Tile {name}: {field}} difficultyLevel {Difficulty level {name}: {field}} area {Area {name}: {field}} other {{name}: {field}}}"
+	},
+	"editor.conflict.takeTheirs": {
+		"message": "{known, select, yes {{hasValue, select, yes {Take {name}'s: {value}} other {Take {name}'s}}} other {{hasValue, select, yes {Take the stowed one: {value}} other {Take the stowed one}}}}",
+		"source": "{known, select, yes {{hasValue, select, yes {Take {name}'s: {value}} other {Take {name}'s}}} other {{hasValue, select, yes {Take the saved one: {value}} other {Take the saved one}}}}"
+	},
+	"editor.conflict.title": {
+		"message": "Crossed Courses",
+		"source": "Settings Changed by Others"
+	},
 	"editor.difficulty.add": {
 		"message": "Add a Peril",
 		"source": "Add Difficulty"
@@ -4082,6 +4102,10 @@
 	"error.roleNotAllowed": {
 		"message": "Yer rank in this universe don't allow that.",
 		"source": "Your role in this universe doesn't allow that."
+	},
+	"error.saveConflicts": {
+		"message": "Other hands changed some o' the same settings since ye loaded 'em. Choose whose t' keep, then stow again.",
+		"source": "Other editors changed some of the same settings since you loaded them. Choose whose to keep, then save again."
 	},
 	"error.scoresChanged": {
 		"message": "The universe has changed how knacks be scored. Close Sign On a Hand an' open it again.",

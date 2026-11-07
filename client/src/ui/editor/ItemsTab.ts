@@ -1,4 +1,4 @@
-import { canEditWorld, ITEM_KINDS, ITEM_SORT_COLUMNS, MAX_ITEMS_PER_PAGE, type EditableUniverse, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type Ruleset } from '@multiverse-kiln/shared';
+import { canEditWorld, ITEM_KINDS, ITEM_SORT_COLUMNS, loadedFrom, MAX_ITEMS_PER_PAGE, type EditableUniverse, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type Ruleset } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -493,7 +493,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 		if (this.universe)
 		{
 			this.dialogFollower.opened(item?.id);
-			this.dialog.open(this.universe, item, this.changes.edit(item?.id), () =>
+			this.dialog.open(this.universe, item, this.changes.edit(item?.id, loadedFrom((item === undefined) ? undefined : this.known.get(item.id))), () =>
 			{
 				this.render();
 			});

@@ -16,6 +16,12 @@ import { displayText } from '../rooms/payloads.js';
 const MAX_WINDOW_ID_LENGTH = 64;
 
 /**
+ * The settings a change was made from, as the editor loaded them (LoadedSettings). They are only compared
+ * with what is saved, never saved themselves, so any object will do
+ */
+const loadedSettings = z.record(z.string(), z.unknown()).optional();
+
+/**
  * A cell's column or row: generous enough for any map, and small enough for the database
  */
 const cellCoordinate = z.number().int().min(-MAX_MAP_SIDE).max(MAX_MAP_SIDE);
@@ -597,6 +603,7 @@ function listChanges<const Name extends string, Settings extends z.ZodType, cons
 			kind: z.literal(`save${name}`),
 			id: numberRef,
 			settings,
+			loaded: loadedSettings,
 			...(saveFields ?? ({} as SaveFields))
 		}),
 		z.object({
@@ -673,7 +680,8 @@ export const saveChangesRequest = byRuleset((ruleset) => z.object({
 		z.object({
 			kind: z.literal('saveEditor'),
 			playerId: z.uuid(),
-			settings: editorRoleSettings
+			settings: editorRoleSettings,
+			loaded: loadedSettings
 		}),
 		z.object({
 			kind: z.literal('removeEditor'),
@@ -682,11 +690,13 @@ export const saveChangesRequest = byRuleset((ruleset) => z.object({
 		z.object({
 			kind: z.literal('universe'),
 			update: universeSettingsUpdate[ruleset],
+			loaded: loadedSettings,
 			largerGroups: z.enum(GROUP_SIZE_LOWERINGS).optional()
 		}),
 		z.object({
 			kind: z.literal('ruleset'),
-			settings: rulesetSettings
+			settings: rulesetSettings,
+			loaded: loadedSettings
 		}),
 		z.object({
 			kind: z.literal('uploadTileGraphic'),
@@ -705,7 +715,8 @@ export const saveChangesRequest = byRuleset((ruleset) => z.object({
 		z.object({
 			kind: z.literal('saveTile'),
 			id: numberRef,
-			settings: tileChangeSettings
+			settings: tileChangeSettings,
+			loaded: loadedSettings
 		}),
 		z.object({
 			kind: z.literal('removeTile'),
@@ -731,6 +742,7 @@ export const saveChangesRequest = byRuleset((ruleset) => z.object({
 			kind: z.literal('updateArea'),
 			areaId: stringRef,
 			update: z.object(areaChangeFields),
+			loaded: loadedSettings,
 			moveTo: z.enum(AREA_EVACUATIONS).optional()
 		}),
 		z.object({

@@ -4,7 +4,7 @@
  * setting sent with the value it already has isn't listed, and a thing deleted is named as it was
  */
 import { isDeepStrictEqual } from 'util';
-import { AUDIT_FIELDS, type AuditAction, type AuditField, type AuditFieldChange, type AuditPassageOfTime, type AuditPlace, type AuditSubject, type ClassRaceArea, type EditorChange, type EditorRoleSettings, type ItemQuantity, type NumberRef, type OptionName, type SavedEditDetail, type StringRef, type TileGraphic, type UniverseEditDetail } from '@multiverse-kiln/shared';
+import { AUDIT_FIELDS, type AuditAction, type AuditField, type AuditFieldChange, type AuditPassageOfTime, type AuditPlace, type AuditSubject, type ClassRaceArea, type EditorChange, type EditorRoleSettings, type ItemQuantity, type NumberRef, type MergedChange, type OptionName, type SavedEditDetail, type StringRef, type TileGraphic, type UniverseEditDetail } from '@multiverse-kiln/shared';
 
 import { findEditorArea } from '../db/areaRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
@@ -174,6 +174,30 @@ function fieldOf(subject: AuditSubject, key: string): AuditField | undefined
 	const field = (SUBJECT_FIELD_KEYS[subject]?.get(key) ?? SHARED_FIELD_KEYS.get(key) ?? key);
 
 	return((AUDIT_FIELD_SET.has(field) ? (field as AuditField) : undefined));
+}
+
+/**
+ * The setting the editor shows that a setting is part of, for merging a change's settings a setting at a
+ * time (mergeSettings()): its audit field, or its own key for a setting the Audit tab doesn't name
+ *
+ * @param subject What the setting belongs to
+ * @param key The setting's key
+ * @return The group's name
+ */
+export function settingGroup(subject: AuditSubject, key: string): string
+{
+	return((fieldOf(subject, key) ?? key));
+}
+
+/**
+ * Whether a group of settings is one the Audit tab names
+ *
+ * @param group The group, from settingGroup()
+ * @return True when it is an audit field
+ */
+export function isAuditField(group: string): group is AuditField
+{
+	return(AUDIT_FIELD_SET.has(group));
 }
 
 /**
@@ -454,6 +478,93 @@ export class SaveAudit
 	}
 
 	/**
+	 * The settings a change to settings meets, as saved now (earlier changes in the save included), for
+	 * merging it with them
+	 *
+	 * @param change The change
+	 * @return What it changes, by name and ID, with its settings; undefined when the universe has no such
+	 * thing, which the change's own module then refuses
+	 */
+	async savedSettings(change: MergedChange): Promise<{ subject: AuditSubject; target: OptionName | null; id: number | string | null; saved: Record<string, unknown> } | undefined>
+	{
+		const id = this.idOf(change);
+
+		/**
+		 * One of the lists' things, as the merge needs it
+		 *
+		 * @param subject What it is
+		 * @param entry The thing, or undefined when the list has none
+		 * @return What the merge needs, or undefined
+		 */
+		const listed = (subject: AuditSubject, entry: (Named & object) | undefined): { subject: AuditSubject; target: OptionName | null; id: number | string | null; saved: Record<string, unknown> } | undefined => ((entry === undefined)
+			? undefined
+			: {
+				subject,
+				target: {
+					key: entry.key,
+					name: entry.name
+				},
+				id,
+				saved: { ...entry }
+			});
+
+		switch (change.kind)
+		{
+			case 'saveEditor':
+			{
+				const editor = await this.editors.find(change.playerId);
+
+				return(editor && {
+					subject: 'editor',
+					target: { key: null, name: editor.username },
+					id,
+					saved: { role: editor.role, languages: editor.languages }
+				});
+			}
+			case 'universe':
+				return({ subject: 'settings', target: null, id, saved: { ...this.context.universe } });
+			case 'ruleset':
+			{
+				const saved = await loadRulesetSettings(this.context.version, this.context.universe.ruleset, this.context.transaction);
+
+				return({ subject: 'ruleset', target: null, id, saved: { ...saved.settings } });
+			}
+			case 'saveTile':
+				return(listed('tile', await this.tiles.find(Number(id))));
+			case 'saveItem':
+				return(listed('item', await this.items.find(Number(id))));
+			case 'saveRace':
+				return(listed('race', await this.races.find(Number(id))));
+			case 'saveClass':
+				return(listed('class', await this.classes.find(Number(id))));
+			case 'saveTheme':
+				return(listed('theme', await this.themes.find(Number(id))));
+			case 'saveDifficultyLevel':
+				return(listed('difficultyLevel', await this.difficultyLevels.find(Number(id))));
+			case 'updateArea':
+			{
+				const area = await this.findArea(String(id));
+
+				return(area && { subject: 'area', target: { key: null, name: area.name }, id, saved: { ...area } });
+			}
+		}
+	}
+
+	/**
+	 * Some settings as the Audit tab shows them, by the setting the editor shows: for a conflict, the
+	 * change's values and the ones saved
+	 *
+	 * @param subject What the settings belong to
+	 * @param base Every setting of the thing, which the values are read against
+	 * @param values The settings to show, by key, flattened
+	 * @return The settings that the Audit tab names, with their values
+	 */
+	describeSettings(subject: AuditSubject, base: Record<string, unknown>, values: Record<string, unknown>): Promise<AuditFieldChange[]>
+	{
+		return(this.namedFields(subject, Object.keys(values), { ...flatten(base), ...values }));
+	}
+
+	/**
 	 * The ID of what a change changes, for the editor windows told of the save to find it by
 	 *
 	 * @param change The change
@@ -628,7 +739,7 @@ export class SaveAudit
 	{
 		const before = flatten(saved);
 		const after: FlatSettings = { ...before };
-		const fields = new Map<AuditField, string>();
+		const changed: string[] = [];
 
 		for (const [key, value] of Object.entries(flatten(sent)))
 		{
@@ -639,9 +750,32 @@ export class SaveAudit
 
 			after[key] = value;
 
+			if (!isDeepStrictEqual(before[key], value))
+			{
+				changed.push(key);
+			}
+		}
+
+		return(this.namedFields(subject, changed, after));
+	}
+
+	/**
+	 * The fields some settings are shown as, each once, with their values
+	 *
+	 * @param subject What the settings belong to
+	 * @param keys The settings, by key, in order
+	 * @param after Every setting of the thing, with the values to show
+	 * @return The fields the Audit tab names, in the order of the settings
+	 */
+	private async namedFields(subject: AuditSubject, keys: readonly string[], after: FlatSettings): Promise<AuditFieldChange[]>
+	{
+		const fields = new Map<AuditField, string>();
+
+		for (const key of keys)
+		{
 			const field = fieldOf(subject, key);
 
-			if ((field !== undefined) && !fields.has(field) && !isDeepStrictEqual(before[key], value))
+			if ((field !== undefined) && !fields.has(field))
 			{
 				fields.set(field, key);
 			}

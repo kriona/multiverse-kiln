@@ -1,4 +1,4 @@
-import { defineMessages, type ClassSettings, type DifficultyLevelSettings, type EditorChange, type EditorTile, type ItemSettings, type NewRef, type RaceSettings, type ThemeSettings } from '@multiverse-kiln/shared';
+import { defineMessages, loadedFrom, type ClassSettings, type DifficultyLevelSettings, type EditorChange, type EditorTile, type ItemSettings, type LoadedSettings, type NewRef, type RaceSettings, type ThemeSettings } from '@multiverse-kiln/shared';
 import restoreIcon from 'virtual:icon/ph:arrow-counter-clockwise';
 import undoIcon from 'virtual:icon/ph:arrow-u-up-left';
 import trashIcon from 'virtual:icon/ph:trash';
@@ -49,12 +49,13 @@ export interface StagedTiles
  * negative ID until it is saved
  *
  * - create: adds a thing
- * - save: changes a thing's settings
+ * - save: changes a thing's settings, from the settings it had when the change was made (loaded: as the
+ *   list loaded them, or as the change before it left them), so only the settings it changed are saved
  * - remove: deletes a thing the universe added, or restores one of the ruleset's defaults it changed
  */
 export type StagedChange<S> =
 	| { kind: 'create'; id: number; settings: S }
-	| { kind: 'save'; id: number; settings: S }
+	| { kind: 'save'; id: number; settings: S; loaded: LoadedSettings | undefined }
 	| { kind: 'remove'; id: number };
 
 /**
@@ -86,7 +87,7 @@ export function listChange<List extends keyof ListSettings>(list: List, change: 
 		case 'create':
 			return({ kind: `create${list}`, ref: newRef(kind, change.id), settings: change.settings } as EditorChange);
 		case 'save':
-			return({ kind: `save${list}`, id: numberRef(kind, change.id), settings: change.settings } as EditorChange);
+			return({ kind: `save${list}`, id: numberRef(kind, change.id), settings: change.settings, loaded: change.loaded } as EditorChange);
 		case 'remove':
 			return({ kind: `remove${list}`, id: numberRef(kind, change.id) } as EditorChange);
 	}
@@ -265,14 +266,23 @@ export class StagedChanges<S> implements ChangeSource
 	}
 
 	/**
-	 * Changes a thing's settings
+	 * Changes a thing's settings. The change is made from the settings an earlier change gave it, or
+	 * else from those it was loaded with
 	 *
 	 * @param id Its ID
 	 * @param settings Its settings
+	 * @param loaded Its settings as the list loaded them, or undefined to save every setting as given
 	 */
-	save(id: number, settings: S): void
+	save(id: number, settings: S, loaded?: LoadedSettings): void
 	{
-		this.changes.push({ kind: 'save', id, settings });
+		const earlier = this.settingsOf(id);
+
+		this.changes.push({
+			kind: 'save',
+			id,
+			settings,
+			loaded: ((earlier === undefined) ? loaded : loadedFrom(earlier as object))
+		});
 		this.changed();
 	}
 
@@ -378,9 +388,10 @@ export class StagedChanges<S> implements ChangeSource
 	 * What an editor dialog does with a thing, or with a new one
 	 *
 	 * @param id The thing's ID, or undefined for a new one
+	 * @param loaded The thing's settings as the list loaded them, which its changes are made from
 	 * @return Its staged edit
 	 */
-	edit(id: number | undefined): StagedEdit<S>
+	edit(id: number | undefined, loaded?: LoadedSettings): StagedEdit<S>
 	{
 		return({
 			removed: ((id !== undefined) && this.isRemoved(id)),
@@ -392,7 +403,7 @@ export class StagedChanges<S> implements ChangeSource
 				}
 				else
 				{
-					this.save(id, settings);
+					this.save(id, settings, loaded);
 				}
 			},
 			remove: () =>

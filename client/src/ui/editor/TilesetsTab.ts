@@ -1,4 +1,4 @@
-import { canEditWorld, defineMessages, IMPASSABLE_WALK_SECONDS, MAX_TILES_PER_PAGE, TILE_SORT_COLUMNS, TILE_USED_IN, tileUsedIn, type EditableUniverse, type EditorChange, type EditorTile, type NewRef, type TileChangeSettings, type TileListPayload, type TileListQuery, type TileSettings, type TileSortColumn, type UploadedTileGraphic } from '@multiverse-kiln/shared';
+import { canEditWorld, defineMessages, IMPASSABLE_WALK_SECONDS, loadedFrom, MAX_TILES_PER_PAGE, TILE_SORT_COLUMNS, TILE_USED_IN, tileUsedIn, type EditableUniverse, type EditorChange, type EditorTile, type NewRef, type TileChangeSettings, type TileListPayload, type TileListQuery, type TileSettings, type TileSortColumn, type UploadedTileGraphic } from '@multiverse-kiln/shared';
 
 import { formatDuration, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -499,7 +499,7 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 			case 'create':
 				return({ kind: 'createTile', ref: newRef('tile', change.id), settings: this.resolveUpload(change.settings) });
 			case 'save':
-				return({ kind: 'saveTile', id: numberRef('tile', change.id), settings: this.resolveUpload(change.settings) });
+				return({ kind: 'saveTile', id: numberRef('tile', change.id), settings: this.resolveUpload(change.settings), loaded: change.loaded });
 			case 'remove':
 			{
 				const replacement = this.replacements.get(change.id);
@@ -867,7 +867,7 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 		if (this.universe)
 		{
 			this.dialogFollower.opened(tile?.id);
-			this.dialog.open(this.universe, tile, this.staged.edit(tile?.id), () =>
+			this.dialog.open(this.universe, tile, this.staged.edit(tile?.id, loadedFrom((tile === undefined) ? undefined : this.known.get(tile.id))), () =>
 			{
 				this.render();
 			});

@@ -1,4 +1,4 @@
-import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, duplicateCoinAbbreviation, isValidCoinAbbreviation, MAX_COIN_ABBREVIATION_LENGTH, MAX_COIN_NAME_LENGTH, RULESET_COINS, shownCoinAbbreviations, type Coin, type EditableUniverse, type UniverseCoinAbbreviations, type UniverseCoinNames, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, loadedFor, duplicateCoinAbbreviation, isValidCoinAbbreviation, MAX_COIN_ABBREVIATION_LENGTH, MAX_COIN_NAME_LENGTH, RULESET_COINS, shownCoinAbbreviations, type Coin, type EditableUniverse, type UniverseCoinAbbreviations, type UniverseCoinNames, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { capitalized, t } from '../../localization';
 import { describeEditorError } from '../../network/editorApi';
@@ -144,7 +144,7 @@ export class CoinsSection implements SavableTab
 
 		showMessage(this.error, undefined);
 		this.collected = update;
-		save.add({ kind: 'universe', update }, (refusal) =>
+		save.add({ kind: 'universe', update, loaded: loadedFor(this.universe, update) }, (refusal) =>
 		{
 			showMessage(this.error, describeEditorError(refusal.error, {
 				id: 'editor.coins.saveFailed',

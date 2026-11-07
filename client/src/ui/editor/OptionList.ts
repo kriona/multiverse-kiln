@@ -1,4 +1,4 @@
-import { sortRows, type AuditSubject, type EditableUniverse, type MessageDescriptor, type RowComparers, type Ruleset } from '@multiverse-kiln/shared';
+import { loadedFrom, sortRows, type AuditSubject, type EditableUniverse, type MessageDescriptor, type RowComparers, type Ruleset } from '@multiverse-kiln/shared';
 
 import { currentLocale } from '../../localization';
 import { describeEditorError } from '../../network/editorApi';
@@ -386,7 +386,7 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab, Fo
 		if (this.universe)
 		{
 			this.dialogFollower.opened(option?.id);
-			this.setup.openDialog(this.universe, option, this.changes.edit(option?.id), () =>
+			this.setup.openDialog(this.universe, option, this.changes.edit(option?.id, loadedFrom(this.options.find((saved) => (saved.id === option?.id)))), () =>
 			{
 				this.render();
 			});

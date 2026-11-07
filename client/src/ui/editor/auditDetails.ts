@@ -502,14 +502,14 @@ export function describeFieldChange(change: AuditFieldChange, detail: UniverseEd
 }
 
 /**
- * A setting's value in the player's language
+ * A setting's value in the player's language, without its name, e.g. "yes" or "Meadow at 3, 4"
  *
  * @param change The setting and its value
  * @param detail The part of the save that changed it, whose target names one of the ruleset's defaults given its default name back
  * @param ruleset The universe's ruleset
  * @return The value
  */
-function describeValue(change: AuditFieldChange, detail: UniverseEditDetail, ruleset: Ruleset): string
+export function describeValue(change: AuditFieldChange, detail: UniverseEditDetail, ruleset: Ruleset): string
 {
 	switch (change.field)
 	{
@@ -706,7 +706,7 @@ function describeGraphic(graphic: AuditFieldValues['graphic']): string
  * @param ruleset The universe's ruleset
  * @return The name
  */
-function targetName(subject: AuditSubject, target: OptionName | null, ruleset: Ruleset): string
+export function targetName(subject: AuditSubject, target: OptionName | null, ruleset: Ruleset): string
 {
 	if (target === null)
 	{

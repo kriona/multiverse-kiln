@@ -11,7 +11,8 @@
  */
 import type { OptionName } from './characters.js';
 import type { DifficultyLevelSettings } from './difficulty.js';
-import type { AreaSettingsUpdate, AreaLinkTarget, CellChange, ClassSettings, ErrorPayload, ItemSettings, NewAreaRequest, RaceSettings, ResizeConflict, RulesetSettings, ThemeSettings, TileGraphicUploadRequest, TileSettings, UniverseSettingsUpdate } from './editor.js';
+import type { AreaSettingsUpdate, AreaLinkTarget, AuditField, AuditFieldChange, AuditSubject, CellChange, ClassSettings, ErrorPayload, ItemSettings, NewAreaRequest, RaceSettings, ResizeConflict, RulesetSettings, ThemeSettings, TileGraphicUploadRequest, TileSettings, UniverseSettingsUpdate } from './editor.js';
+import type { LoadedSettings } from './fieldMerge.js';
 import type { MapBounds } from './maps.js';
 import { canEditAtEndOfTime, canEditUniverseSettings, canEditWorld, canManageEditors, canManageVersions, canMarkNoTranslation, canTranslate, type EditorAccess, type UniverseRole, type UniverseStage } from './universes.js';
 import type { UniverseTextRef } from './universeText.js';
@@ -63,7 +64,7 @@ export type CellChangeRef = [column: CellChange[0], row: CellChange[1], value: N
  */
 type ListChanges<Name extends string, Settings, SaveExtra = unknown> =
 	| { kind: `create${Name}`; ref: NewRef; settings: Settings }
-	| ({ kind: `save${Name}`; id: NumberRef; settings: Settings } & SaveExtra)
+	| ({ kind: `save${Name}`; id: NumberRef; settings: Settings; loaded?: LoadedSettings } & SaveExtra)
 	| { kind: `remove${Name}`; id: NumberRef };
 
 /**
@@ -165,17 +166,23 @@ export interface EditorRoleSettings
  *   startDraft comes after every other change in a save, and applyDraft and discardDraft are the only
  *   change in theirs; the server refuses a save that puts them anywhere else. applyDraft carries what
  *   happens to the players using what the draft disables or deletes
+ *
+ * A change to settings (saveEditor, universe, ruleset, and saving a tile, item, race, class, theme,
+ * difficulty level or area) may carry loaded, the settings as the editor loaded them: then only the
+ * settings it changed from those are saved, and the others keep what is saved, so editors changing
+ * different settings of one thing both save. A setting another editor changed since to something else is
+ * refused with 409 and a SaveRefusedPayload holding conflicts (see shared/src/fieldMerge.ts)
  */
 export type EditorChange =
 	| { kind: 'addEditor'; username: string; settings: EditorRoleSettings }
-	| { kind: 'saveEditor'; playerId: string; settings: EditorRoleSettings }
+	| { kind: 'saveEditor'; playerId: string; settings: EditorRoleSettings; loaded?: LoadedSettings }
 	| { kind: 'removeEditor'; playerId: string }
-	| { kind: 'universe'; update: UniverseSettingsUpdate; largerGroups?: GroupSizeLowering }
-	| { kind: 'ruleset'; settings: RulesetSettings }
+	| { kind: 'universe'; update: UniverseSettingsUpdate; loaded?: LoadedSettings; largerGroups?: GroupSizeLowering }
+	| { kind: 'ruleset'; settings: RulesetSettings; loaded?: LoadedSettings }
 	| { kind: 'uploadTileGraphic'; ref: NewRef; upload: TileGraphicUploadRequest }
 	| { kind: 'deleteTileGraphic'; graphicId: string }
 	| { kind: 'createTile'; ref: NewRef; settings: TileChangeSettings }
-	| { kind: 'saveTile'; id: NumberRef; settings: TileChangeSettings }
+	| { kind: 'saveTile'; id: NumberRef; settings: TileChangeSettings; loaded?: LoadedSettings }
 	| { kind: 'removeTile'; id: NumberRef; replaceWith: NumberRef | null }
 	| ListChanges<'Item', ItemSettings, { whenDisabled?: ItemDisabling }>
 	| ListChanges<'Race', RaceSettings>
@@ -183,7 +190,7 @@ export type EditorChange =
 	| ListChanges<'Theme', ThemeSettings>
 	| ListChanges<'DifficultyLevel', DifficultyLevelSettings>
 	| { kind: 'createArea'; ref: NewRef; area: NewAreaChange }
-	| { kind: 'updateArea'; areaId: StringRef; update: AreaChangeUpdate; moveTo?: AreaEvacuation }
+	| { kind: 'updateArea'; areaId: StringRef; update: AreaChangeUpdate; loaded?: LoadedSettings; moveTo?: AreaEvacuation }
 	| { kind: 'deleteArea'; areaId: StringRef }
 	| { kind: 'resizeArea'; areaId: StringRef; bounds: MapBounds; discard: boolean }
 	| { kind: 'editCells'; areaId: StringRef; changes: CellChangeRef[] }
@@ -346,6 +353,57 @@ export interface SaveRefusedPayload extends ErrorPayload
 	 * For a resizeArea refused because it would discard something: what it would discard
 	 */
 	resizeConflict?: ResizeConflict;
+
+	/**
+	 * For a save refused because other editors changed settings it changes, since they were loaded, to
+	 * something else: each such setting, in the order of the changes
+	 */
+	conflicts?: SaveConflict[];
+}
+
+/**
+ * A setting a save changes that another editor changed to something else since it was loaded, for the
+ * editor to keep its own value or take the one saved
+ */
+export interface SaveConflict
+{
+	/**
+	 * The change, by its place in the request's list
+	 */
+	changeIndex: number;
+
+	/**
+	 * What the setting belongs to, as the Audit tab names it, and by name (null for the universe's
+	 * settings and the ruleset, which name nothing)
+	 */
+	subject: AuditSubject;
+	target: OptionName | null;
+
+	/**
+	 * The setting as the editor's fields and the Audit tab name it, or null for one they don't name
+	 */
+	field: AuditField | null;
+
+	/**
+	 * The change's settings it covers, by key, as saved now: a race's size is one of its rules, and a
+	 * starting area covers the area, column and row
+	 */
+	saved: Record<string, unknown>;
+
+	/**
+	 * The setting as the change has it and as it is saved, as the Audit tab shows a setting's value, or
+	 * null for a setting it doesn't name
+	 */
+	mine: AuditFieldChange | null;
+	theirs: AuditFieldChange | null;
+
+	/**
+	 * Who saved it last, or null when that isn't known
+	 */
+	savedBy: {
+		name: string;
+		username: string;
+	} | null;
 }
 
 /**

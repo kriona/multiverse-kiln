@@ -189,6 +189,12 @@ export class EditorScreen
 	private readonly formsToReload = new Map<SettingsForm, (universe: EditableUniverse) => void>();
 
 	/**
+	 * Each form holding the universe's settings: its unsaved changes, and what loads it from the universe
+	 * as the server has it
+	 */
+	private readonly settingsForms: Record<SettingsForm, { changes: ChangeSource; open: (universe: EditableUniverse) => void }>;
+
+	/**
 	 * The universe being edited, once it has loaded
 	 */
 	private universe: EditableUniverse | undefined;
@@ -306,6 +312,7 @@ export class EditorScreen
 			void this.areasTab.reloadTiles();
 			this.auditTab.reload();
 			this.translationTable.reload();
+			this.reloadSavedSettings();
 		});
 
 		this.savableTabs = {
@@ -320,20 +327,59 @@ export class EditorScreen
 			translations: combineTabs(this.translationTable, this.translationsTab)
 		};
 
+		this.settingsForms = {
+			universe: {
+				changes: this.universeTab.changes,
+				open: (universe) =>
+				{
+					this.universeTab.open(universe);
+				}
+			},
+			lobby: {
+				changes: this.lobbyTab.changes,
+				open: (universe) =>
+				{
+					this.lobbyTab.open(universe);
+					this.areasTab.setLobbyArea(universe.lobbyAreaId);
+				}
+			},
+			coins: {
+				changes: this.coinsSection.changes,
+				open: (universe) =>
+				{
+					this.coinsSection.open(universe);
+					this.charactersTab.coinsChanged(true);
+				}
+			},
+			characters: {
+				changes: this.charactersTab.changes,
+				open: (universe) =>
+				{
+					this.charactersTab.open(universe);
+				}
+			},
+			translations: {
+				changes: this.translationsTab.changes,
+				open: (universe) =>
+				{
+					this.translationsTab.open(universe);
+					this.translationTable.useUniverse(universe);
+				}
+			}
+		};
+
 		/**
 		 * Keeps one of the forms holding the universe's settings up with saves made in other windows
 		 *
 		 * @param form The form
-		 * @param changes Its unsaved changes
-		 * @param open Loads it, from the universe as the server has it
 		 * @return Its follower
 		 */
-		const settingsForm = (form: SettingsForm, changes: ChangeSource, open: (universe: EditableUniverse) => void): FormFollower => new FormFollower(getElement(`${form}-form`, HTMLFormElement), {
+		const settingsForm = (form: SettingsForm): FormFollower => new FormFollower(getElement(`${form}-form`, HTMLFormElement), {
 			subject: 'settings',
 			fields: SETTINGS_FORMS[form].fields
-		}, changes, () =>
+		}, this.settingsForms[form].changes, () =>
 		{
-			this.formsToReload.set(form, open);
+			this.formsToReload.set(form, this.settingsForms[form].open);
 		});
 
 		this.followers = {
@@ -347,45 +393,15 @@ export class EditorScreen
 						void this.rulesetTab.open(this.universe);
 					}
 				}),
-				settingsForm('coins', this.coinsSection.changes, (universe) =>
-				{
-					this.coinsSection.open(universe);
-					this.charactersTab.coinsChanged(true);
-				}),
+				settingsForm('coins'),
 				this.difficultySection
 			],
-			characters: [
-				settingsForm('characters', this.charactersTab.changes, (universe) =>
-				{
-					this.charactersTab.open(universe);
-				}),
-				this.racesSection,
-				this.classesSection,
-				this.themesSection
-			],
-			universe: [
-				settingsForm('universe', this.universeTab.changes, (universe) =>
-				{
-					this.universeTab.open(universe);
-				})
-			],
-			lobby: [
-				settingsForm('lobby', this.lobbyTab.changes, (universe) =>
-				{
-					this.lobbyTab.open(universe);
-					this.areasTab.setLobbyArea(universe.lobbyAreaId);
-				})
-			],
+			characters: [settingsForm('characters'), this.racesSection, this.classesSection, this.themesSection],
+			universe: [settingsForm('universe')],
+			lobby: [settingsForm('lobby')],
 			areas: [this.areasTab],
 			editors: [this.editorsTab],
-			translations: [
-				settingsForm('translations', this.translationsTab.changes, (universe) =>
-				{
-					this.translationsTab.open(universe);
-					this.translationTable.useUniverse(universe);
-				}),
-				this.translationTable
-			]
+			translations: [settingsForm('translations'), this.translationTable]
 		};
 
 		for (const name of SAVE_ORDER)
@@ -715,6 +731,25 @@ export class EditorScreen
 
 		void this.reloadSettings();
 		showSaveNotice(saved, universe.ruleset, kept);
+	}
+
+	/**
+	 * Loads the forms holding the universe's settings again after this window saved, those without
+	 * unsaved changes, since the save kept the settings other editors saved that this window didn't change
+	 */
+	private reloadSavedSettings(): void
+	{
+		for (const form of Object.keys(this.settingsForms) as SettingsForm[])
+		{
+			const { changes, open } = this.settingsForms[form];
+
+			if (!changes.hasUnsavedChanges())
+			{
+				this.formsToReload.set(form, open);
+			}
+		}
+
+		void this.reloadSettings();
 	}
 
 	/**

@@ -1,4 +1,4 @@
-import { canEditUniverseSettings, languageName, MAX_UNIVERSE_LANGUAGES, PROFILE_LANGUAGES, type EditableUniverse, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, languageName, loadedFor, MAX_UNIVERSE_LANGUAGES, PROFILE_LANGUAGES, type EditableUniverse, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 import trashIcon from 'virtual:icon/ph:trash';
 
 import { currentLocale, t } from '../../localization';
@@ -240,7 +240,7 @@ export class TranslationsTab implements SavableTab
 
 		showMessage(this.error, undefined);
 		this.collected = update;
-		save.add({ kind: 'universe', update }, (refusal) =>
+		save.add({ kind: 'universe', update, loaded: loadedFor(this.universe, update) }, (refusal) =>
 		{
 			showMessage(this.error, describeEditorError(refusal.error, {
 				id: 'editor.translations.saveFailed',
