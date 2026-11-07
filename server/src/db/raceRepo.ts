@@ -2,7 +2,7 @@
  * Races: the only module that reads or writes the races, pf1e_races, sf1e_races and race_starting_items tables
  */
 import { and, asc, count, eq, isNull, or, type SQL } from 'drizzle-orm';
-import { darkvisionSquares, isSf1eRaceRules, type EditorRace, type Sight, type ItemQuantity, type Pf1eRaceRules, type RaceRules, type RaceSettings, type Ruleset, type Sf1eRaceRules } from '@multiverse-kiln/shared';
+import { darkvisionSquares, isSf1eRaceRules, type EditorRace, type Sight, type ItemQuantity, type OptionName, type Pf1eRaceRules, type RaceRules, type RaceSettings, type Ruleset, type Sf1eRaceRules } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { fromCoinColumns, toCoinColumns } from './coinColumns.js';
@@ -43,6 +43,44 @@ export async function findDefaultRaceIds(ruleset: Ruleset, executor: Executor = 
 	return(new Map(rows
 		.filter((row) => (row.key !== null))
 		.map((row) => [row.key as string, row.id])));
+}
+
+/**
+ * What each race a universe can use is called, without its settings: a default race's key, and the
+ * name the universe gives it, if any
+ *
+ * @param version The universe's live version or draft
+ * @param ruleset The universe's ruleset
+ * @param executor The database, or a transaction
+ * @return Each race's key and name, by its ID
+ */
+export async function loadRaceNames(version: UniverseVersion, ruleset: Ruleset, executor: Executor = db): Promise<Map<number, OptionName>>
+{
+	const rows = await executor
+		.select({
+			id: races.id,
+			universeId: races.universeId,
+			overridesRaceId: races.overridesRaceId,
+			key: races.key,
+			name: races.name
+		})
+		.from(races)
+		.where(usableRaces(version, ruleset));
+	const copies = new Map(rows
+		.filter((row) => (row.overridesRaceId !== null))
+		.map((row) => [row.overridesRaceId, row]));
+
+	return(new Map(rows
+		.filter((row) => (row.overridesRaceId === null))
+		.map((row) =>
+		{
+			const custom = (row.universeId !== null);
+
+			return([row.id, {
+				key: (custom ? null : row.key),
+				name: (custom ? row.name : (copies.get(row.id)?.name ?? null))
+			}]);
+		})));
 }
 
 /**

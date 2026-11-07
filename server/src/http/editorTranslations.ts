@@ -6,19 +6,13 @@
  * The text comes from the universe and the things it holds, as the editor's lists load them, so one of
  * the ruleset's defaults the universe hasn't renamed is engine text and isn't listed
  */
+import { createHash } from 'node:crypto';
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { canEditWorld, canTranslate, COINS, isTranslationOutOfDate, RULESET_COINS, rulesetHasThemes, sortRows, sourceTextHash, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, type EditableUniverseDetails, type EditorChange, type MergedTextChange, type UniverseTextKind, type UniverseTextListPayload, type UniverseTextListQuery, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
+import { canEditWorld, canTranslate, COINS, RULESET_COINS, sortRows, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, type EditableUniverseDetails, type EditorChange, type MergedTextChange, type UniverseTextListPayload, type UniverseTextListQuery, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
 
-import { listAreas } from '../db/areaRepo.js';
-import { loadEditorClasses } from '../db/classRepo.js';
 import type { Executor } from '../db/client.js';
-import { listDifficultyLevels } from '../db/difficultyRepo.js';
-import { loadEditorItems } from '../db/itemRepo.js';
-import { loadEditorRaces } from '../db/raceRepo.js';
-import { loadEditorThemes } from '../db/themeRepo.js';
-import { loadEditorTiles } from '../db/tileRepo.js';
-import { deleteTranslationOf, deleteTranslatorNote, findTranslation, findTranslatorNote, listTranslations, listTranslationsWithSavers, listTranslatorNotes, listTranslatorNotesWithSavers, saveTranslations, saveTranslatorNote, setNoTranslation, type TextSaver, type UniverseTranslationRecord } from '../db/universeTextRepo.js';
+import { deleteTranslationOf, deleteTranslatorNote, findTranslation, findTranslatorNote, listThingNames, listTranslations, listTranslationsWithSavers, listTranslatorNotes, listTranslatorNotesWithSavers, saveTranslations, saveTranslatorNote, setNoTranslation, type TextSaver, type UniverseTranslationRecord } from '../db/universeTextRepo.js';
 import type { UniverseVersion } from '../db/universeVersions.js';
 import { refuse, type ChangeContext } from './editorChangeContext.js';
 import { universeContextOf } from './editorAccess.js';
@@ -42,37 +36,9 @@ function textKey(ref: UniverseTextRef): string
 }
 
 /**
- * Something with a name, or one of the ruleset's defaults without one of its own
- */
-interface Named
-{
-	id: number | string;
-	name: string | null;
-}
-
-/**
- * The names of things of one kind as universe text, leaving out defaults the universe hasn't renamed
- *
- * @param kind What they are
- * @param things The things
- * @return Their names
- */
-function namesOf(kind: UniverseTextKind, things: readonly Named[]): UniverseTextSource[]
-{
-	return(things.flatMap(({ id, name }) => ((name === null)
-		? []
-		: [{
-			kind,
-			thingId: String(id),
-			field: 'name' as const,
-			thingName: name,
-			source: name
-		}])));
-}
-
-/**
  * Every piece of a version's text in the universe's source language, leaving out descriptions it hasn't
- * written and coins' names and abbreviations it hasn't given, in the order of UNIVERSE_TEXT_KINDS
+ * written, defaults it hasn't renamed and coins' names and abbreviations it hasn't given: the universe's
+ * own text, then the names of the things it holds in no particular order, then its coins' text
  *
  * @param universe The universe, with the version's settings
  * @param version The universe's live version or draft
@@ -82,15 +48,7 @@ function namesOf(kind: UniverseTextKind, things: readonly Named[]): UniverseText
 async function collectUniverseText(universe: EditableUniverseDetails, version: UniverseVersion, executor?: Executor): Promise<UniverseTextSource[]>
 {
 	const { id, ruleset } = universe;
-
-	// One after another, since a transaction runs one query at a time
-	const areas = await listAreas(version, executor);
-	const tiles = await loadEditorTiles(version, ruleset, executor);
-	const items = await loadEditorItems(version, ruleset, executor);
-	const races = await loadEditorRaces(version, ruleset, executor);
-	const classes = await loadEditorClasses(version, ruleset, executor);
-	const themes = (rulesetHasThemes(ruleset) ? await loadEditorThemes(version, ruleset, executor) : []);
-	const difficultyLevels = await listDifficultyLevels(version, executor);
+	const names = await listThingNames(version, executor);
 	const universeText = (['name', 'shortDescription', 'longDescription'] as const)
 		.map((field): UniverseTextSource => ({
 			kind: 'universe',
@@ -119,13 +77,13 @@ async function collectUniverseText(universe: EditableUniverseDetails, version: U
 
 	return([
 		...universeText,
-		...namesOf('area', areas),
-		...namesOf('tile', tiles),
-		...namesOf('item', items),
-		...namesOf('race', races),
-		...namesOf('class', classes),
-		...namesOf('theme', themes),
-		...namesOf('difficultyLevel', difficultyLevels),
+		...names.map(({ kind, thingId, name }): UniverseTextSource => ({
+			kind,
+			thingId,
+			field: 'name',
+			thingName: name,
+			source: name
+		})),
 		...coinText
 	]);
 }
@@ -240,24 +198,49 @@ async function loadTextRows(request: Request, response: Response, requested: str
 	const notesByKey = new Map(notes.map((note) => [textKey(note), note]));
 	return(sources.map((text): UniverseTextRow =>
 	{
-		const translation = translationsByKey.get(textKey(text));
-		const note = notesByKey.get(textKey(text));
+		const key = textKey(text);
+		const translation = translationsByKey.get(key);
+		const note = notesByKey.get(key);
 		const noTranslation = (note?.noTranslation ?? false);
+		const sourceHash = hashSourceText(text.source);
 
 		return({
 			...text,
-			sourceHash: sourceTextHash(text.source),
+			sourceHash,
 			note: (note?.note ?? null),
 			noTranslation,
 			translation: (translation?.text ?? null),
-			outOfDate: (!noTranslation && (translation !== undefined) && isTranslationOutOfDate(translation.sourceHash, text.source))
+			outOfDate: (!noTranslation && (translation !== undefined) && (translation.sourceHash !== sourceHash))
 		});
 	}));
 }
 
 /**
+ * The hash a translation keeps of the source text it was made from, the same as sourceTextHash() but
+ * worked out by Node's crypto, which is many times faster than the shared code
+ *
+ * @param text The source text
+ * @return The hash, 64 hex digits
+ */
+export function hashSourceText(text: string): string
+{
+	return(createHash('sha256').update(text, 'utf8').digest('hex'));
+}
+
+/**
+ * Compares text in the server's language, as localeCompare() does without arguments, but faster
+ */
+const textCollator = new Intl.Collator();
+
+/**
+ * Compares IDs, which may be numbers, so that 9 comes before 10
+ */
+const idCollator = new Intl.Collator('en', { numeric: true });
+
+/**
  * Where a piece of text comes in the table's default order: by kind, then the name of what it belongs
- * to (coins most valuable first instead), then by field
+ * to (coins most valuable first instead), then by field, then by the ID of what it belongs to, for
+ * things with the same name
  */
 const PLACE_ORDER = {
 	kinds: new Map(UNIVERSE_TEXT_KINDS.map((kind, index) => [kind, index])),
@@ -279,7 +262,7 @@ function compareOptional(first: string | null, second: string | null): number
 		return((Number(first === null) - Number(second === null)));
 	}
 
-	return(first.localeCompare(second));
+	return(textCollator.compare(first, second));
 }
 
 /**
@@ -288,9 +271,10 @@ function compareOptional(first: string | null, second: string | null): number
 const ROW_COMPARERS: Record<UniverseTextSortColumn, (first: UniverseTextRow, second: UniverseTextRow) => number> = {
 	place: (first, second) => (((PLACE_ORDER.kinds.get(first.kind) ?? 0) - (PLACE_ORDER.kinds.get(second.kind) ?? 0))
 		|| (((first.kind === 'coin') && (second.kind === 'coin')) ? ((PLACE_ORDER.coins.get(first.thingId) ?? 0) - (PLACE_ORDER.coins.get(second.thingId) ?? 0)) : 0)
-		|| first.thingName.localeCompare(second.thingName)
-		|| ((PLACE_ORDER.fields.get(first.field) ?? 0) - (PLACE_ORDER.fields.get(second.field) ?? 0))),
-	source: (first, second) => first.source.localeCompare(second.source),
+		|| textCollator.compare(first.thingName, second.thingName)
+		|| ((PLACE_ORDER.fields.get(first.field) ?? 0) - (PLACE_ORDER.fields.get(second.field) ?? 0))
+		|| idCollator.compare(first.thingId, second.thingId)),
+	source: (first, second) => textCollator.compare(first.source, second.source),
 	note: (first, second) => compareOptional(first.note, second.note),
 	translation: (first, second) => compareOptional(first.translation, second.translation)
 };
@@ -315,15 +299,15 @@ export function pageUniverseText(rows: readonly UniverseTextRow[], query: Univer
 
 		return((search === undefined) || (search === '') || [row.thingName, row.source, row.note, row.translation].some((text) => ((text !== null) && text.toLowerCase().includes(search))));
 	});
-	const byPlace = sortRows(matching, ROW_COMPARERS, { column: 'place', direction: 'ascending' });
-	const sorted = sortRows(byPlace, ROW_COMPARERS, {
-		column: (query.sort ?? 'place'),
-		direction: (query.direction ?? 'ascending')
-	});
+	const compare = ROW_COMPARERS[query.sort ?? 'place'];
+	const sign = ((query.direction === 'descending') ? -1 : 1);
+
+	// Rows the column ties keep their place order, going up whichever way the column goes
+	matching.sort((first, second) => ((sign * compare(first, second)) || ROW_COMPARERS.place(first, second)));
 
 	return({
-		rows: sorted.slice(query.offset, (query.offset + query.limit)),
-		total: sorted.length
+		rows: matching.slice(query.offset, (query.offset + query.limit)),
+		total: matching.length
 	});
 }
 

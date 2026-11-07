@@ -1,12 +1,15 @@
 /**
  * Universe text's translations and notes for translators (see Localization in STRUCTURE-OVERVIEW.md):
- * the only module that reads or writes the universe_translations and universe_translator_notes tables
+ * the only module that reads or writes the universe_translations and universe_translator_notes tables.
+ * It also lists the names the universe gives the things it holds, the text the Translations tab lists
+ * most of
  */
-import { and, count, eq, inArray, isNull, notExists, notInArray, or, sql, type SQL } from 'drizzle-orm';
+import { and, count, eq, inArray, isNotNull, isNull, notExists, notInArray, or, sql, type SQL } from 'drizzle-orm';
+import { unionAll, type AnyPgColumn } from 'drizzle-orm/pg-core';
 import type { UniverseTextKind, UniverseTextRef } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
-import { players, universeTranslations, universeTranslatorNotes } from './schema.js';
+import { areas, classes, difficultyLevels, items, players, races, themes, tiles, universeTranslations, universeTranslatorNotes } from './schema.js';
 import { inVersion, liveVersion, type UniverseVersion } from './universeVersions.js';
 
 /**
@@ -212,6 +215,92 @@ export async function deleteTranslationOf(version: UniverseVersion, ref: Univers
 			eq(universeTranslations.field, ref.field),
 			eq(universeTranslations.language, language)
 		));
+}
+
+/**
+ * The name a universe gives one of the things it holds, as universe text
+ */
+export interface ThingName
+{
+	kind: UniverseTextKind;
+
+	/**
+	 * The thing's ID, or for a name given to one of the ruleset's defaults, the default's
+	 */
+	thingId: string;
+
+	name: string;
+}
+
+/**
+ * The names a universe gives the things it holds, in one query: its areas' and difficulty levels'
+ * names, the names of the tiles, items, races, classes and themes it adds, and the names it gives the
+ * ruleset's defaults. A default it hasn't renamed keeps the engine's name, which isn't universe text
+ * and isn't listed
+ *
+ * @param version The universe's live version or draft
+ * @param executor The database, or a transaction
+ * @return The names, in no particular order
+ */
+export async function listThingNames(version: UniverseVersion, executor: Executor = db): Promise<ThingName[]>
+{
+	/**
+	 * The columns each part of the query selects
+	 *
+	 * @param kind What the things are
+	 * @param thingId The ID the text is found by
+	 * @return The columns
+	 */
+	const columns = (kind: UniverseTextKind, thingId: SQL<string>): { kind: SQL<UniverseTextKind>; thingId: SQL<string> } => ({
+		kind: sql<UniverseTextKind>`${kind}::text`,
+		thingId
+	});
+
+	/**
+	 * The names in one of the tables whose rows may be the ruleset's defaults: a universe's own rows,
+	 * which are the things it adds and its copies of the defaults it changed, each copy named for its
+	 * default
+	 *
+	 * @param kind What the things are
+	 * @param table The table
+	 * @param overrides Its column naming the default a copy is of
+	 * @return The query
+	 */
+	const overridable = (kind: UniverseTextKind, table: typeof tiles | typeof items | typeof races | typeof classes | typeof themes, overrides: AnyPgColumn) => executor
+		.select({
+			...columns(kind, sql<string>`coalesce(${overrides}, ${table.id})::text`),
+			name: sql<string>`${table.name}`
+		})
+		.from(table)
+		.where(and(
+			inVersion(table, version),
+			isNotNull(table.name)
+		));
+
+	return(unionAll(
+		executor
+			.select({
+				...columns('area', sql<string>`${areas.id}::text`),
+				name: sql<string>`${areas.name}`
+			})
+			.from(areas)
+			.where(inVersion(areas, version)),
+		executor
+			.select({
+				...columns('difficultyLevel', sql<string>`${difficultyLevels.id}::text`),
+				name: sql<string>`${difficultyLevels.name}`
+			})
+			.from(difficultyLevels)
+			.where(and(
+				inVersion(difficultyLevels, version),
+				isNotNull(difficultyLevels.name)
+			)),
+		overridable('tile', tiles, tiles.overridesTileId),
+		overridable('item', items, items.overridesItemId),
+		overridable('race', races, races.overridesRaceId),
+		overridable('class', classes, classes.overridesClassId),
+		overridable('theme', themes, themes.overridesThemeId)
+	));
 }
 
 /**
