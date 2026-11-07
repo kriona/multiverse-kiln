@@ -2,7 +2,7 @@ import { canEditUniverseSettings, FAERIE_MORNING_NAMES, loadedFor, FAERIE_MORNIN
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
-import { ChangeTracker } from '../changeTracker';
+import { ChangeTracker, type FormSnapshot } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
@@ -47,9 +47,9 @@ export class LobbyTab implements SavableTab
 	private disabledAreaIds: ReadonlySet<string> = new Set();
 
 	/**
-	 * The settings the save being sent holds
+	 * The settings the save being sent holds, and the form as it collected them
 	 */
-	private collected: UniverseSettingsUpdate | undefined;
+	private collected: { update: UniverseSettingsUpdate; form: FormSnapshot } | undefined;
 
 	/**
 	 * Changes every time a universe is opened, so area names that arrive for an earlier one are ignored
@@ -275,7 +275,10 @@ export class LobbyTab implements SavableTab
 		};
 
 		showMessage(this.error, undefined);
-		this.collected = update;
+		this.collected = {
+			update,
+			form: this.changes.snapshot()
+		};
 		save.add({ kind: 'universe', update, loaded: loadedFor(this.universe, update) }, (refusal) =>
 		{
 			showMessage(this.error, describeEditorError(refusal.error, {
@@ -289,21 +292,30 @@ export class LobbyTab implements SavableTab
 	}
 
 	/**
-	 * Takes the settings as saved
+	 * Takes the settings as saved. Changes made while the save was sent stay unsaved
 	 */
 	saved(): void
 	{
 		const universe = this.universe;
-		const update = this.collected;
+		const collected = this.collected;
 
 		this.collected = undefined;
 
-		if (universe && update)
+		if (universe && collected)
 		{
-			this.universe = { ...universe, ...update };
-			this.dayHours.value = String(this.universe.lobbyDayHours);
-			this.changes.markSaved();
-			this.onSaved(update);
+			this.universe = { ...universe, ...collected.update };
+
+			if (this.changes.changedSince(collected.form))
+			{
+				this.changes.markSaved(collected.form);
+			}
+			else
+			{
+				this.dayHours.value = String(this.universe.lobbyDayHours);
+				this.changes.markSaved();
+			}
+
+			this.onSaved(collected.update);
 		}
 	}
 }

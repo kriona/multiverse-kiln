@@ -182,10 +182,10 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	private deletedTiles: ReadonlyMap<number, number | undefined> = new Map();
 
 	/**
-	 * What the save being sent holds: the areas deleted and added, the area open as it is saved, and
-	 * the openVersion when the save started
+	 * What the save being sent holds: the areas deleted and added, the area open as it is saved and its
+	 * settings as the form showed them, and the openVersion when the save started
 	 */
-	private collected: { deletedIds: string[]; createdIds: string[]; area: EditorArea | undefined; version: number } = { deletedIds: [], createdIds: [], area: undefined, version: -1 };
+	private collected: { deletedIds: string[]; createdIds: string[]; area: EditorArea | undefined; shown: AreaSettings | undefined; version: number } = { deletedIds: [], createdIds: [], area: undefined, shown: undefined, version: -1 };
 
 	/**
 	 * The area the editor is showing
@@ -708,7 +708,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			linkDialog.close();
 		}
 
-		void (aboutOpen.some((detail) => ((detail.subject === 'area') && (detail.action === 'deleted'))) ? this.showList() : this.refreshArea(open.id));
+		void (aboutOpen.some((detail) => ((detail.subject === 'area') && (detail.action === 'deleted'))) ? this.showList() : this.refreshArea(open.id, save.name, rest));
 
 		return(deletedHere);
 	}
@@ -845,11 +845,14 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	/**
 	 * Loads the open area's settings and links again after another window saved them, keeping its map as
 	 * it has loaded, with the painting other editors saved taken in, unless its size changed. One that
-	 * can't be loaded opens afresh
+	 * can't be loaded opens afresh, and one that has unsaved changes by the time it loads keeps them,
+	 * saying above its settings what the save changed
 	 *
 	 * @param areaId The area's ID
+	 * @param name Who saved, for the note above the settings
+	 * @param details What the save changed in the area
 	 */
-	private async refreshArea(areaId: string): Promise<void>
+	private async refreshArea(areaId: string, name: string, details: readonly SavedEditDetail[]): Promise<void>
 	{
 		const universe = this.universe;
 		const version = this.openVersion;
@@ -878,11 +881,19 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			return;
 		}
 
-		if ((version === this.openVersion) && (this.area?.id === areaId))
+		if ((version !== this.openVersion) || (this.area?.id !== areaId))
 		{
-			this.changedSince.hide();
-			this.showArea(universe, area);
+			return;
 		}
+
+		if (this.areaChanges.hasUnsavedChanges() || this.mapEditor.linkDialogFollowing().hasUnappliedChanges())
+		{
+			this.changedSince.add(name, details);
+			return;
+		}
+
+		this.changedSince.hide();
+		this.showArea(universe, area);
 	}
 
 	/**
@@ -1019,8 +1030,6 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 		const isStart = (area.id === this.areas.startingAreaId);
 
 		this.area = area;
-		this.name.value = area.name;
-		this.enabled.checked = area.enabled;
 		const noParent = t({
 			id: 'editor.area.noParent',
 			defaultMessage: 'None (a top-level area)',
@@ -1041,19 +1050,9 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 					detail: ancestorAreas(areas, other.id)[0]?.name
 				}))
 		]);
-		this.parent.value = (area.parentAreaId ?? '');
-		this.outdoors.checked = !area.indoors;
-		this.indoors.checked = area.indoors;
-		this.lightLevel.value = area.lightLevel;
-		this.showLightField();
-		this.fillDefaultTiles(area.indoors, area.defaultTileId);
-		this.time.value = area.passageOfTime;
+		this.fillSettings(area);
 		this.showLobby(isLobby);
-		this.faerie.value = (area.faerieMorning ?? FAERIE_MORNINGS[0]);
-		this.loopsEastWest.checked = area.loopsEastWest;
-		this.loopsNorthSouth.checked = area.loopsNorthSouth;
 		this.showSize(area);
-		this.updateTimeFields();
 		this.updateParentMessage();
 		this.fields.disabled = !editable;
 		this.name.disabled = !editable;
@@ -1073,6 +1072,53 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 		this.showClaim();
 		this.areaChanges.markSaved();
 		void this.mapEditor.show(universe, area, this.tiles, this.deletedTiles, areas.filter((other) => !this.staged.isDeleted(other.id)), editable);
+	}
+
+	/**
+	 * Fills the area editor's settings fields, after its parent choices
+	 *
+	 * @param settings The settings
+	 */
+	private fillSettings(settings: AreaSettings): void
+	{
+		this.name.value = settings.name;
+		this.enabled.checked = settings.enabled;
+		this.parent.value = (settings.parentAreaId ?? '');
+		this.outdoors.checked = !settings.indoors;
+		this.indoors.checked = settings.indoors;
+		this.lightLevel.value = settings.lightLevel;
+		this.showLightField();
+		this.fillDefaultTiles(settings.indoors, settings.defaultTileId);
+		this.time.value = settings.passageOfTime;
+		this.faerie.value = (settings.faerieMorning ?? FAERIE_MORNINGS[0]);
+		this.loopsEastWest.checked = settings.loopsEastWest;
+		this.loopsNorthSouth.checked = settings.loopsNorthSouth;
+		this.updateTimeFields();
+	}
+
+	/**
+	 * Fills the area editor with the area open as a save made in this window saved it. Settings changed
+	 * in the form while the save was sent keep their values, as unsaved changes
+	 *
+	 * @param universe The area's universe
+	 * @param area The area, as saved
+	 * @param collected The form's settings as the save collected them, or undefined when it didn't
+	 */
+	private showSavedArea(universe: EditableUniverse, area: EditorArea, collected: AreaSettings | undefined): void
+	{
+		const shown = this.shownSettings();
+		const changed = ((collected === undefined) ? [] : (Object.keys(shown) as (keyof AreaSettings)[]).filter((key) => (shown[key] !== collected[key])));
+
+		this.showArea(universe, area);
+
+		if (changed.length > 0)
+		{
+			this.fillSettings({
+				...this.shownSettings(),
+				...Object.fromEntries(changed.map((key) => [key, shown[key]]))
+			});
+			this.areaChanges.check();
+		}
 	}
 
 	/**
@@ -1182,7 +1228,8 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	 */
 	private readSettings(): AreaSettings | undefined
 	{
-		const name = this.name.value.trim();
+		const settings = this.shownSettings();
+		const name = settings.name.trim();
 
 		if ((name === '') || DISALLOWED_TEXT_CHARACTERS.test(name))
 		{
@@ -1190,10 +1237,24 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			return(undefined);
 		}
 
+		return({
+			...settings,
+			name
+		});
+	}
+
+	/**
+	 * The area editor's settings exactly as the form shows them, the name untrimmed, whether or not they
+	 * can be saved
+	 *
+	 * @return The settings
+	 */
+	private shownSettings(): AreaSettings
+	{
 		const passageOfTime = this.time.value as AreaPassageOfTime;
 
 		return({
-			name,
+			name: this.name.value,
 			parentAreaId: ((this.parent.value === '') ? null : this.parent.value),
 			enabled: this.enabled.checked,
 			indoors: this.indoors.checked,
@@ -1342,6 +1403,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			deletedIds,
 			createdIds: created.map((newArea) => newArea.id),
 			area: saved,
+			shown: ((saved === undefined) ? undefined : this.shownSettings()),
 			version: this.openVersion
 		};
 
@@ -1357,9 +1419,9 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	async saved(ids: SavedIds): Promise<void>
 	{
 		const universe = this.universe;
-		const { deletedIds, createdIds, area, version } = this.collected;
+		const { deletedIds, createdIds, area, shown, version } = this.collected;
 
-		this.collected = { deletedIds: [], createdIds: [], area: undefined, version: -1 };
+		this.collected = { deletedIds: [], createdIds: [], area: undefined, shown: undefined, version: -1 };
 
 		if (!universe)
 		{
@@ -1389,7 +1451,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			id: (ids.string(areaRef(area.id)) ?? area.id),
 			parentAreaId: ((area.parentAreaId === null) ? null : (ids.string(areaRef(area.parentAreaId)) ?? null)),
 			defaultTileId: (ids.number(numberRef('tile', area.defaultTileId)) ?? area.defaultTileId)
-		}));
+		}), shown);
 	}
 
 	/**
@@ -1454,8 +1516,9 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	 * @param universe The universe
 	 * @param version The tab's openVersion when saving started; when another area or the list has opened since, it is left alone
 	 * @param area The area open, as saved, or undefined when the area editor isn't showing one to keep
+	 * @param shown The area editor's settings as the save collected them
 	 */
-	private async refreshAfterSave(universe: EditableUniverse, version: number, area?: EditorArea): Promise<void>
+	private async refreshAfterSave(universe: EditableUniverse, version: number, area?: EditorArea, shown?: AreaSettings): Promise<void>
 	{
 		if (version !== this.openVersion)
 		{
@@ -1479,7 +1542,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 
 		if (version === this.openVersion)
 		{
-			this.showArea(universe, area);
+			this.showSavedArea(universe, area, shown);
 		}
 	}
 

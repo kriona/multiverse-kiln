@@ -187,10 +187,11 @@ export class EditorScreen
 	private readonly followers: Record<SavableEditorTab, readonly FollowsOtherSaves[]>;
 
 	/**
-	 * The settings forms a save in another window changed while they had no unsaved changes, each with
-	 * what loads it, waiting for the universe to load again
+	 * The settings forms waiting for the universe to load again, since a save changed their settings
+	 * while they had no unsaved changes, each with what notes the save if they have some by the time
+	 * it loads
 	 */
-	private readonly formsToReload = new Map<SettingsForm, (universe: EditableUniverse) => void>();
+	private readonly formsToReload = new Map<SettingsForm, () => void>();
 
 	/**
 	 * Each form holding the universe's settings: its unsaved changes, and what loads it from the universe
@@ -387,9 +388,9 @@ export class EditorScreen
 		const settingsForm = (form: SettingsForm): FormFollower => new FormFollower(getElement(`${form}-form`, HTMLFormElement), {
 			subject: 'settings',
 			fields: SETTINGS_FORMS[form].fields
-		}, this.settingsForms[form].changes, () =>
+		}, this.settingsForms[form].changes, (kept) =>
 		{
-			this.formsToReload.set(form, this.settingsForms[form].open);
+			this.formsToReload.set(form, kept);
 		});
 
 		this.followers = {
@@ -768,11 +769,10 @@ export class EditorScreen
 	{
 		for (const form of Object.keys(this.settingsForms) as SettingsForm[])
 		{
-			const { changes, open } = this.settingsForms[form];
-
-			if (!changes.hasUnsavedChanges())
+			if (!this.settingsForms[form].changes.hasUnsavedChanges())
 			{
-				this.formsToReload.set(form, open);
+				// The save was this window's, so a form changed while the settings load has nothing to note
+				this.formsToReload.set(form, () => undefined);
 			}
 		}
 
@@ -780,9 +780,9 @@ export class EditorScreen
 	}
 
 	/**
-	 * Loads the universe's settings again for the forms a save in another window changed while they had
-	 * no unsaved changes, and shows them there. The other forms keep the settings this window has,
-	 * unsaved changes included
+	 * Loads the universe's settings again for the forms waiting for them (formsToReload), and shows them
+	 * there. A form that has unsaved changes by the time they arrive keeps them, noting the save, and
+	 * the other forms keep the settings this window has, unsaved changes included
 	 */
 	private async reloadSettings(): Promise<void>
 	{
@@ -816,6 +816,15 @@ export class EditorScreen
 			return;
 		}
 
+		for (const [form, kept] of forms)
+		{
+			if (this.settingsForms[form].changes.hasUnsavedChanges())
+			{
+				forms.delete(form);
+				kept();
+			}
+		}
+
 		const keptSettings = Object.fromEntries(Object.entries(SETTINGS_FORMS)
 			.filter(([form]) => !forms.has(form as SettingsForm))
 			.flatMap(([, { keys }]) => keys.map((key) => [key, shown[key]])));
@@ -828,7 +837,10 @@ export class EditorScreen
 
 		for (const form of Object.keys(SETTINGS_FORMS) as SettingsForm[])
 		{
-			forms.get(form)?.(universe);
+			if (forms.has(form))
+			{
+				this.settingsForms[form].open(universe);
+			}
 		}
 	}
 

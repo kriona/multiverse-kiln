@@ -573,9 +573,10 @@ export class FormFollower implements FollowsOtherSaves
 	 * @param form The form, above whose fields the note goes
 	 * @param settings Which settings the form has
 	 * @param changes The form's unsaved changes
-	 * @param reload Loads the form again, as the server has it
+	 * @param reload Loads the form again, as the server has it. When the form has unsaved changes by the
+	 * time the settings arrive, it keeps them and calls kept instead, which notes the save
 	 */
-	constructor(form: HTMLElement, private readonly settings: FormSettings, private readonly changes: ChangeSource, private readonly reload: () => void)
+	constructor(form: HTMLElement, private readonly settings: FormSettings, private readonly changes: ChangeSource, private readonly reload: (kept: () => void) => void)
 	{
 		this.line = new ChangedSinceLine(form, changes);
 	}
@@ -605,7 +606,10 @@ export class FormFollower implements FollowsOtherSaves
 		if (!this.changes.hasUnsavedChanges())
 		{
 			this.line.hide();
-			this.reload();
+			this.reload(() =>
+			{
+				this.line.add(save.name, changed);
+			});
 			return(false);
 		}
 

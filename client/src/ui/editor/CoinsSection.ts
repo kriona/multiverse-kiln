@@ -2,7 +2,7 @@ import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, loadedFor, duplica
 
 import { capitalized, t } from '../../localization';
 import { describeEditorError } from '../../network/editorApi';
-import { ChangeTracker } from '../changeTracker';
+import { ChangeTracker, type FormSnapshot } from '../changeTracker';
 import { getElement, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
@@ -40,9 +40,9 @@ export class CoinsSection implements SavableTab
 	private savedAbbreviations: UniverseCoinAbbreviations = {};
 
 	/**
-	 * The settings the save being sent holds
+	 * The settings the save being sent holds, and the form as it collected them
 	 */
-	private collected: UniverseSettingsUpdate | undefined;
+	private collected: { update: UniverseSettingsUpdate; form: FormSnapshot } | undefined;
 
 	/**
 	 * @param onInput Called when an abbreviation field changes
@@ -143,7 +143,10 @@ export class CoinsSection implements SavableTab
 		};
 
 		showMessage(this.error, undefined);
-		this.collected = update;
+		this.collected = {
+			update,
+			form: this.changes.snapshot()
+		};
 		save.add({ kind: 'universe', update, loaded: loadedFor(this.universe, update) }, (refusal) =>
 		{
 			showMessage(this.error, describeEditorError(refusal.error, {
@@ -157,19 +160,21 @@ export class CoinsSection implements SavableTab
 	}
 
 	/**
-	 * Takes the coins as saved
+	 * Takes the coins as saved. Changes made while the save was sent stay unsaved
 	 */
 	saved(): void
 	{
-		const update = this.collected;
+		const collected = this.collected;
 
 		this.collected = undefined;
 
-		if (this.universe && update)
+		if (this.universe && collected)
 		{
+			const { update } = collected;
+
 			this.universe = { ...this.universe, ...update };
 			this.savedAbbreviations = (update.coinAbbreviations ?? this.savedAbbreviations);
-			this.changes.markSaved();
+			this.changes.markSaved(collected.form);
 			this.onSaved(update);
 		}
 	}

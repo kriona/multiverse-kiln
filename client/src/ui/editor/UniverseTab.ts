@@ -3,7 +3,7 @@ import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, DISPLAY_TIME_NAMES
 
 import { formatToNodes, t } from '../../localization';
 import { describeEditorError } from '../../network/editorApi';
-import { ChangeTracker } from '../changeTracker';
+import { ChangeTracker, type FormSnapshot } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
@@ -55,9 +55,9 @@ export class UniverseTab implements SavableTab
 	private universe: EditableUniverse | undefined;
 
 	/**
-	 * The settings the save being sent holds
+	 * The settings the save being sent holds, and the form as it collected them
 	 */
-	private collected: UniverseSettingsUpdate | undefined;
+	private collected: { update: UniverseSettingsUpdate; form: FormSnapshot } | undefined;
 
 	/**
 	 * @param onSaved Called with the settings saved, once they are
@@ -258,7 +258,10 @@ export class UniverseTab implements SavableTab
 		};
 
 		showMessage(this.error, undefined);
-		this.collected = update;
+		this.collected = {
+			update,
+			form: this.changes.snapshot()
+		};
 		save.add({ kind: 'universe', update, loaded: loadedFor(this.universe, update) }, (refusal) =>
 		{
 			showMessage(this.error, describeEditorError(refusal.error, {
@@ -272,21 +275,21 @@ export class UniverseTab implements SavableTab
 	}
 
 	/**
-	 * Takes the settings as saved
+	 * Takes the settings as saved. Changes made while the save was sent stay unsaved
 	 */
 	saved(): void
 	{
 		const universe = this.universe;
-		const update = this.collected;
+		const collected = this.collected;
 
 		this.collected = undefined;
 
-		if (universe && update)
+		if (universe && collected)
 		{
-			this.universe = { ...universe, ...update };
+			this.universe = { ...universe, ...collected.update };
 			this.showStageWarning();
-			this.changes.markSaved();
-			this.onSaved(update);
+			this.changes.markSaved(collected.form);
+			this.onSaved(collected.update);
 		}
 	}
 

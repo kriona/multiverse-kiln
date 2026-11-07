@@ -173,18 +173,25 @@ export class SiteSettingsForm
 			privacyContact: ((privacyContact === '') ? null : privacyContact)
 		};
 
+		const form = this.changes.snapshot();
+
 		this.saveButton.disabled = true;
 		showMessage(this.error, undefined);
 
 		try
 		{
 			await this.api.saveSiteSettings(settings);
-			this.changes.markSaved();
-			this.saved.textContent = t(formMessages.saved);
-			showToast(t(formMessages.savedToast), {
-				kind: 'success',
-				announce: false
-			});
+			// Changes made while the save was sent stay unsaved
+			this.changes.markSaved(form);
+
+			if (!this.changes.hasUnsavedChanges())
+			{
+				this.saved.textContent = t(formMessages.saved);
+				showToast(t(formMessages.savedToast), {
+					kind: 'success',
+					announce: false
+				});
+			}
 		}
 		catch (error)
 		{

@@ -2,7 +2,7 @@ import { canEditUniverseSettings, loadedFrom, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MI
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
-import { ChangeTracker } from '../changeTracker';
+import { ChangeTracker, type FormSnapshot } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
@@ -43,6 +43,11 @@ export class RulesetTab implements SavableTab
 	 * The settings as they were last loaded, which a save's changes are made from
 	 */
 	private loaded: LoadedSettings | undefined;
+
+	/**
+	 * The settings the save being sent holds, and the form as it collected them
+	 */
+	private collected: { settings: RulesetSettings; form: FormSnapshot } | undefined;
 
 	/**
 	 * Changes every time the tab opens a universe, so settings that arrive for an earlier one are ignored
@@ -166,6 +171,10 @@ export class RulesetTab implements SavableTab
 		}
 
 		showMessage(this.error, undefined);
+		this.collected = {
+			settings: ruleset,
+			form: this.changes.snapshot()
+		};
 		save.add({ kind: 'ruleset', settings: ruleset, loaded: this.loaded }, (refusal) =>
 		{
 			showMessage(this.error, describeEditorError(refusal.error, {
@@ -180,10 +189,22 @@ export class RulesetTab implements SavableTab
 
 	/**
 	 * Takes the settings as saved, and loads them again, since the save kept the settings other editors
-	 * saved that this form didn't change
+	 * saved that this form didn't change. A form changed while the save was sent keeps its changes,
+	 * unsaved, and isn't loaded again
 	 */
 	async saved(): Promise<void>
 	{
+		const collected = this.collected;
+
+		this.collected = undefined;
+
+		if (collected && this.changes.changedSince(collected.form))
+		{
+			this.loaded = loadedFrom(collected.settings.settings);
+			this.changes.markSaved(collected.form);
+			return;
+		}
+
 		this.changes.markSaved();
 
 		if (this.universe)

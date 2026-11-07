@@ -824,6 +824,8 @@ export class OwnProfileScreen
 			}
 		}
 
+		const form = this.changes.snapshot();
+
 		this.saveButton.disabled = true;
 		showMessage(this.error, undefined);
 
@@ -865,11 +867,17 @@ export class OwnProfileScreen
 
 		this.viewLink.href = playerPageUrl(profile.username);
 		showAccountName(profile.displayName);
-		this.changes.markSaved();
+		// Changes made while the save was sent stay unsaved
+		this.changes.markSaved(form);
 
 		if ((profile.locale !== null) && (profile.locale !== previousLocale))
 		{
 			chooseLocale(profile.locale);
+			return;
+		}
+
+		if (this.changes.hasUnsavedChanges())
+		{
 			return;
 		}
 

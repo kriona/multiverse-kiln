@@ -105,6 +105,17 @@ export function refreshUnsavedWork(): void
 }
 
 /**
+ * A form's fields and state as they were at one moment, from ChangeTracker.snapshot()
+ */
+export interface FormSnapshot
+{
+	/**
+	 * The fields and state, as JSON
+	 */
+	readonly json: string;
+}
+
+/**
  * How a ChangeTracker follows a form
  */
 export interface ChangeTrackerOptions
@@ -180,12 +191,36 @@ export class ChangeTracker implements UnsavedWork
 	}
 
 	/**
-	 * Takes the form as it is now as saved: call once it has loaded, after it saves, and after its
-	 * changes are discarded
+	 * The form's fields and state as they are now: take one as a save collects the form, and give it to
+	 * markSaved() once the save has finished, so changes made while it was sent stay unsaved
+	 *
+	 * @return The form as it is
 	 */
-	markSaved(): void
+	snapshot(): FormSnapshot
 	{
-		this.saved = this.read();
+		return({ json: this.read() });
+	}
+
+	/**
+	 * Whether the form's fields or state have changed since a snapshot of them
+	 *
+	 * @param snapshot The form as it was, from snapshot()
+	 * @return True when they have
+	 */
+	changedSince(snapshot: FormSnapshot): boolean
+	{
+		return(this.read() !== snapshot.json);
+	}
+
+	/**
+	 * Takes the form as saved: as it is now, once it has loaded and after its changes are discarded, or
+	 * as a save collected it, once that save has finished
+	 *
+	 * @param snapshot The form as the save collected it, from snapshot()
+	 */
+	markSaved(snapshot?: FormSnapshot): void
+	{
+		this.saved = (snapshot?.json ?? this.read());
 		this.check();
 	}
 

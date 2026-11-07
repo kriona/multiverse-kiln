@@ -3,7 +3,7 @@ import trashIcon from 'virtual:icon/ph:trash';
 
 import { currentLocale, t } from '../../localization';
 import { describeEditorError } from '../../network/editorApi';
-import { ChangeTracker } from '../changeTracker';
+import { ChangeTracker, type FormSnapshot } from '../changeTracker';
 import { ChipCombobox } from '../ChipCombobox';
 import type { ComboboxChoice } from '../ComboboxList';
 import { askToConfirm } from '../confirmDialog';
@@ -50,9 +50,9 @@ export class TranslationsTab implements SavableTab
 	private chosenBefore: string[] = [];
 
 	/**
-	 * The languages the save being sent holds
+	 * The languages the save being sent holds, and the form as it collected them
 	 */
-	private collected: Required<Pick<UniverseSettingsUpdate, 'sourceLanguage' | 'translationLanguages'>> | undefined;
+	private collected: { update: Required<Pick<UniverseSettingsUpdate, 'sourceLanguage' | 'translationLanguages'>>; form: FormSnapshot } | undefined;
 
 	/**
 	 * @param onSaved Called with the settings saved, once they are
@@ -240,7 +240,10 @@ export class TranslationsTab implements SavableTab
 		}
 
 		showMessage(this.error, undefined);
-		this.collected = update;
+		this.collected = {
+			update,
+			form: this.changes.snapshot()
+		};
 		save.add({ kind: 'universe', update, loaded: loadedFor(this.universe, update) }, (refusal) =>
 		{
 			showMessage(this.error, describeEditorError(refusal.error, {
@@ -254,22 +257,24 @@ export class TranslationsTab implements SavableTab
 	}
 
 	/**
-	 * Takes the languages as saved; the translations into languages taken off are gone
+	 * Takes the languages as saved; the translations into languages taken off are gone. Changes made
+	 * while the save was sent stay unsaved
 	 */
 	saved(): void
 	{
 		const universe = this.universe;
-		const update = this.collected;
+		const collected = this.collected;
 
 		this.collected = undefined;
 
-		if (universe && update)
+		if (universe && collected)
 		{
+			const { update } = collected;
 			const translationCounts = Object.fromEntries(Object.entries(universe.translationCounts)
 				.filter(([language]) => update.translationLanguages.includes(language)));
 
 			this.universe = { ...universe, ...update, translationCounts };
-			this.changes.markSaved();
+			this.changes.markSaved(collected.form);
 			this.onSaved(update);
 		}
 	}
