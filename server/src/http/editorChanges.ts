@@ -33,6 +33,7 @@ import { addEditorChange, checkCreatorKept, emailAddedEditors, playersLosingAcce
 import { createItemChange, removeItemChange, saveItemChange } from './editorItems.js';
 import { saveChangesRequest } from './editorPayloads.js';
 import { SaveAudit } from './editorSaveAudit.js';
+import { SaveMerge } from './editorSaveMerge.js';
 import { createRaceChange, removeRaceChange, saveRaceChange } from './editorRaces.js';
 import { createThemeChange, removeThemeChange, saveThemeChange } from './editorThemes.js';
 import { saveNoTranslationChange, saveTranslationChange, saveTranslatorNoteChange } from './editorTranslations.js';
@@ -110,7 +111,8 @@ function sendRefused(response: Response, changeIndex: number | null, refusal: Ch
 	const payload: SaveRefusedPayload = {
 		error: localize(message, values),
 		changeIndex,
-		...((refusal.resizeConflict === undefined) ? {} : { resizeConflict: refusal.resizeConflict })
+		...((refusal.resizeConflict === undefined) ? {} : { resizeConflict: refusal.resizeConflict }),
+		...((refusal.conflicts === undefined) ? {} : { conflicts: refusal.conflicts })
 	};
 
 	response.status(status).json(payload);
@@ -287,13 +289,30 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 			};
 
 			const audit = new SaveAudit(saving);
+			const merge = new SaveMerge(saving, audit);
 			const changesOptions = (!base.version.draft && changes.some((change) => BARRING_KINDS.has(change.kind)));
 			const barredBefore = (changesOptions ? await loadBarredOptions(base.universe.id, transaction) : undefined);
 
 			for (; current < changes.length; current++)
 			{
-				await audit.describe(changes[current]);
-				await applyChange(saving, changes[current]);
+				const change = await merge.merge(current, changes[current]);
+
+				await audit.describe(change);
+				await applyChange(saving, change);
+			}
+
+			if (merge.conflicts.length > 0)
+			{
+				current = merge.conflicts[0].changeIndex;
+
+				throw new ChangeRefusal({
+					status: 409,
+					message: {
+						id: 'error.saveConflicts',
+						defaultMessage: 'Other editors changed some of the same settings since you loaded them. Choose whose to keep, then save again.',
+						description: 'Why the world editor couldn\'t save: another editor saved different values for settings the player also changed; the editor then lists each one, to keep the player\'s value or take the other editor\'s'
+					}
+				}, undefined, merge.conflicts);
 			}
 
 			await saving.disablings.finish(saving);
@@ -332,7 +351,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 					playerId: base.playerId,
 					role: access.role,
 					draft: base.version.draft,
-					changeDetails: audit.details,
+					changeDetails: audit.savedDetails(),
 					savedAt: new Date()
 				}, transaction);
 			}

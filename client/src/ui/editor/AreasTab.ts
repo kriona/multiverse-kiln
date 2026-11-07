@@ -1,4 +1,4 @@
-import { ancestorAreas, AREA_LIGHT_LEVEL_NAMES, AREA_LIGHT_LEVELS, canEditWorld, canPaintTile, childAreas, DEFAULT_AREA_TILE_KEYS, descendantAreaIds, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_AREA_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, AREA_PASSAGES_OF_TIME, areasTabListing, type AuditSubject, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary, type FaerieMorning, type AreaListPayload, type AreaLightLevel, type AreaPassageOfTime, type AreaSettings } from '@multiverse-kiln/shared';
+import { ancestorAreas, AREA_LIGHT_LEVEL_NAMES, AREA_LIGHT_LEVELS, canEditWorld, canPaintTile, childAreas, DEFAULT_AREA_TILE_KEYS, descendantAreaIds, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_AREA_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, AREA_PASSAGES_OF_TIME, areasTabListing, loadedFor, type AreaChangeUpdate, type AuditSubject, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary, type FaerieMorning, type AreaListPayload, type AreaLightLevel, type AreaPassageOfTime, type AreaSettings } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -1091,14 +1091,17 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			// A new area is added with the form's settings
 			if (this.areaChanges.hasUnsavedChanges() && !isNewAreaId(area.id))
 			{
+				const update: AreaChangeUpdate = {
+					...settings,
+					parentAreaId: parentOf(settings.parentAreaId),
+					defaultTileId: numberRef('tile', defaultTileId)
+				};
+
 				save.add({
 					kind: 'updateArea',
 					areaId: area.id,
-					update: {
-						...settings,
-						parentAreaId: parentOf(settings.parentAreaId),
-						defaultTileId: numberRef('tile', defaultTileId)
-					}
+					update,
+					loaded: loadedFor(area, update)
 				}, (refusal) =>
 				{
 					showMessage(this.error, describeEditorError(refusal.error, {

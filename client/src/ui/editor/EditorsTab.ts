@@ -1,4 +1,4 @@
-import { canManageEditors, canPlayUniverse, EDITOR_ROLE_NAMES, languageName, UNIVERSE_ROLE_DESCRIPTIONS, UNIVERSE_ROLE_NAMES, type EditableUniverse, type EditorChange, type EditorRoleSettings, type PlayerMatch, type UniverseEditorSummary, type UniverseRole } from '@multiverse-kiln/shared';
+import { canManageEditors, canPlayUniverse, EDITOR_ROLE_NAMES, languageName, UNIVERSE_ROLE_DESCRIPTIONS, UNIVERSE_ROLE_NAMES, type EditableUniverse, type EditorChange, type EditorRoleSettings, type LoadedSettings, type PlayerMatch, type UniverseEditorSummary, type UniverseRole } from '@multiverse-kiln/shared';
 import leaveIcon from 'virtual:icon/ph:sign-out';
 
 import { formatList, t } from '../../localization';
@@ -24,6 +24,11 @@ interface StagedEditor
 {
 	added?: PlayerMatch;
 	settings?: EditorRoleSettings;
+
+	/**
+	 * The editor's role and languages as the tab loaded them, which the change is made from
+	 */
+	loaded?: LoadedSettings;
 	removed?: boolean;
 }
 
@@ -552,7 +557,11 @@ export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 			this.staged.delete(player.playerId);
 			this.staged.set(player.playerId, {
 				added: (saved ? undefined : (staged?.added ?? player)),
-				settings
+				settings,
+				loaded: (staged?.loaded ?? (saved && {
+					role: saved.role,
+					languages: saved.languages
+				}))
 			});
 		}
 
@@ -627,7 +636,7 @@ function editorChange(playerId: string, staged: StagedEditor): EditorChange | un
 		return({ kind: 'addEditor', username: staged.added.username, settings: staged.settings });
 	}
 
-	return({ kind: 'saveEditor', playerId, settings: staged.settings });
+	return({ kind: 'saveEditor', playerId, settings: staged.settings, loaded: staged.loaded });
 }
 
 /**

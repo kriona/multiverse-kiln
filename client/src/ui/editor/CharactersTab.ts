@@ -1,4 +1,4 @@
-import { canEditUniverseSettings, MAX_GROUP_PLAYERS, MIN_GROUP_SIZE, type EditableUniverse, type StartingCell, type UniverseCoinAbbreviations, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, loadedFor, MAX_GROUP_PLAYERS, MIN_GROUP_SIZE, type EditableUniverse, type StartingCell, type UniverseCoinAbbreviations, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -322,7 +322,7 @@ export class CharactersTab implements SavableTab
 
 		showMessage(this.error, undefined);
 		this.collected = update;
-		save.add({ kind: 'universe', update }, (refusal) =>
+		save.add({ kind: 'universe', update, loaded: loadedFor(this.universe, update) }, (refusal) =>
 		{
 			showMessage(this.error, describeEditorError(refusal.error, {
 				id: 'editor.characters.saveFailed',

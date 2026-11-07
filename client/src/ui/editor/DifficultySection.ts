@@ -1,4 +1,4 @@
-import { canEditUniverseSettings, type DifficultyLevel, type DifficultyLevelSettings, type EditableUniverse } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, loadedFrom, type DifficultyLevel, type DifficultyLevelSettings, type EditableUniverse } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -251,7 +251,7 @@ export class DifficultySection implements SavableTab, FollowsOtherSaves
 		if (this.universe)
 		{
 			this.dialogFollower.opened(level?.id);
-			this.dialog.open(this.universe, level, this.changes.edit(level?.id), () =>
+			this.dialog.open(this.universe, level, this.changes.edit(level?.id, loadedFrom(this.levels.find((saved) => (saved.id === level?.id)))), () =>
 			{
 				this.render();
 			});

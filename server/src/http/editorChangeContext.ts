@@ -2,7 +2,7 @@
  * What saving the editor's changes passes each change: the universe, the transaction they share, and
  * the IDs of the things made earlier in the same save (see editorChanges.ts)
  */
-import { isNewRef, type EditableUniverseDetails, type MessageDescriptor, type MessageValues, type NewRef, type NumberRef, type ResizeConflict, type StringRef, type EditorRole, type UniverseRole } from '@multiverse-kiln/shared';
+import { isNewRef, type EditableUniverseDetails, type MessageDescriptor, type MessageValues, type NewRef, type NumberRef, type ResizeConflict, type SaveConflict, type StringRef, type EditorRole, type UniverseRole } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
 import type { UniverseVersion } from '../db/universeVersions.js';
@@ -104,8 +104,9 @@ export class ChangeRefusal extends Error
 	/**
 	 * @param refusal The status and the reason
 	 * @param resizeConflict For a resize refused because it would discard something, what it would discard
+	 * @param conflicts For a save refused because other editors changed settings it changes, each such setting
 	 */
-	constructor(readonly refusal: Refusal, readonly resizeConflict?: ResizeConflict)
+	constructor(readonly refusal: Refusal, readonly resizeConflict?: ResizeConflict, readonly conflicts?: SaveConflict[])
 	{
 		super(refusal.message.id);
 	}

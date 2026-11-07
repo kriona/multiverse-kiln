@@ -1,4 +1,4 @@
-import type { Ruleset } from '@multiverse-kiln/shared';
+import { isMergedChange, settleConflict, type Ruleset, type SaveConflict } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, EditorApiError, type EditorApi } from '../../network/editorApi';
@@ -6,6 +6,7 @@ import { changeMessages } from '../changeTracker';
 import { getElement } from '../dom';
 import { formMessages } from '../formMessages';
 import { showToast } from '../toast';
+import { ConflictDialog } from './ConflictDialog';
 import { EditorSave, isSaveRefused, SavedIds } from './editorSave';
 import { ImpactDialog, mayAffectPlayers } from './ImpactDialog';
 import type { ChangeSource } from './stagedChanges';
@@ -112,6 +113,11 @@ export class SaveBar
 	 * Asks what happens to characters and groups a save affects
 	 */
 	private readonly impactDialog = new ImpactDialog();
+
+	/**
+	 * Asks whose value to keep for settings other editors saved differently meanwhile
+	 */
+	private readonly conflictDialog = new ConflictDialog();
 
 	/**
 	 * The tab showing, or undefined while none that saves is
@@ -286,7 +292,7 @@ export class SaveBar
 		{
 			if (await this.askAboutImpacts(universe, save))
 			{
-				ids = new SavedIds(await this.api.saveChanges(universe.id, save.changes()));
+				ids = await this.send(universe, save);
 			}
 		}
 		catch (error)
@@ -321,6 +327,55 @@ export class SaveBar
 		this.update();
 
 		return(ids !== undefined);
+	}
+
+	/**
+	 * Sends a save. When other editors saved different values for settings it changes, asks whose to
+	 * keep for each, settles its changes so, and sends it again, until it is saved or the player cancels
+	 *
+	 * @param universe The universe being saved
+	 * @param save The save
+	 * @return The IDs the save gave the things it made, or undefined when the player cancelled
+	 */
+	private async send(universe: { id: string; ruleset: Ruleset }, save: EditorSave): Promise<SavedIds | undefined>
+	{
+		for (;;)
+		{
+			let conflicts: SaveConflict[];
+
+			try
+			{
+				return(new SavedIds(await this.api.saveChanges(universe.id, save.changes())));
+			}
+			catch (error)
+			{
+				const data = ((error instanceof EditorApiError) ? error.data : undefined);
+
+				if (!isSaveRefused(data) || (data.conflicts === undefined))
+				{
+					throw error;
+				}
+
+				conflicts = data.conflicts;
+			}
+
+			const keepMine = await this.conflictDialog.ask(conflicts, universe.ruleset);
+
+			if (!keepMine)
+			{
+				return(undefined);
+			}
+
+			for (const [index, conflict] of conflicts.entries())
+			{
+				const change = save.changes().at(conflict.changeIndex);
+
+				if (change && isMergedChange(change))
+				{
+					save.replace(conflict.changeIndex, settleConflict(change, conflict.saved, keepMine[index]));
+				}
+			}
+		}
 	}
 
 	/**

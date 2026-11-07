@@ -1,4 +1,4 @@
-import { canEditUniverseSettings, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MIN_POINT_BUY_BUDGET, PF1E_STAT_METHOD_NAMES, PF1E_STAT_METHODS, RULESET_NAMES, SF1E_MAX_ABILITY_POINTS, SF1E_MIN_ABILITY_POINTS, type EditableUniverse, type Pf1eStatMethod, type RulesetSettings } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, loadedFrom, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MIN_POINT_BUY_BUDGET, PF1E_STAT_METHOD_NAMES, PF1E_STAT_METHODS, RULESET_NAMES, SF1E_MAX_ABILITY_POINTS, SF1E_MIN_ABILITY_POINTS, type EditableUniverse, type LoadedSettings, type Pf1eStatMethod, type RulesetSettings } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -40,6 +40,11 @@ export class RulesetTab implements SavableTab
 	private universe: EditableUniverse | undefined;
 
 	/**
+	 * The settings as they were last loaded, which a save's changes are made from
+	 */
+	private loaded: LoadedSettings | undefined;
+
+	/**
 	 * Changes every time the tab opens a universe, so settings that arrive for an earlier one are ignored
 	 */
 	private openVersion = 0;
@@ -79,6 +84,7 @@ export class RulesetTab implements SavableTab
 		const version = ++this.openVersion;
 
 		this.universe = universe;
+		this.loaded = undefined;
 		this.rulesetName.textContent = t(RULESET_NAMES[universe.ruleset]);
 		this.pf1eStats.hidden = (universe.ruleset !== 'pf1e');
 		this.coinsHaveWeightField.hidden = (universe.ruleset !== 'pf1e');
@@ -129,6 +135,7 @@ export class RulesetTab implements SavableTab
 		this.needsSleep.checked = ruleset.settings.needsSleep;
 		this.tracksAmmo.checked = ruleset.settings.tracksAmmo;
 		this.fields.disabled = !canEditUniverseSettings(universe.role);
+		this.loaded = loadedFrom(ruleset.settings);
 		this.changes.markSaved();
 	}
 
@@ -159,7 +166,7 @@ export class RulesetTab implements SavableTab
 		}
 
 		showMessage(this.error, undefined);
-		save.add({ kind: 'ruleset', settings: ruleset }, (refusal) =>
+		save.add({ kind: 'ruleset', settings: ruleset, loaded: this.loaded }, (refusal) =>
 		{
 			showMessage(this.error, describeEditorError(refusal.error, {
 				id: 'editor.ruleset.saveFailed',
@@ -172,11 +179,17 @@ export class RulesetTab implements SavableTab
 	}
 
 	/**
-	 * Takes the settings as saved
+	 * Takes the settings as saved, and loads them again, since the save kept the settings other editors
+	 * saved that this form didn't change
 	 */
-	saved(): void
+	async saved(): Promise<void>
 	{
 		this.changes.markSaved();
+
+		if (this.universe)
+		{
+			await this.open(this.universe);
+		}
 	}
 
 	/**

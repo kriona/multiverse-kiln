@@ -1,4 +1,4 @@
-import { canEditUniverseSettings, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, PASSAGE_OF_TIME_NAMES, REAL_TIME_NAME, type EditableUniverse, type FaerieMorning, type LobbyPassageOfTime, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, FAERIE_MORNING_NAMES, loadedFor, FAERIE_MORNINGS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, PASSAGE_OF_TIME_NAMES, REAL_TIME_NAME, type EditableUniverse, type FaerieMorning, type LobbyPassageOfTime, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -276,7 +276,7 @@ export class LobbyTab implements SavableTab
 
 		showMessage(this.error, undefined);
 		this.collected = update;
-		save.add({ kind: 'universe', update }, (refusal) =>
+		save.add({ kind: 'universe', update, loaded: loadedFor(this.universe, update) }, (refusal) =>
 		{
 			showMessage(this.error, describeEditorError(refusal.error, {
 				id: 'editor.lobby.saveFailed',

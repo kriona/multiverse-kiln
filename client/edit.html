@@ -1113,6 +1113,17 @@
 						</div>
 					</form>
 				</dialog>
+				<dialog id="conflict-dialog" class="panel dialog" aria-labelledby="conflict-title" aria-describedby="conflict-explanation">
+					<form id="conflict-form" class="form">
+						<h2 id="conflict-title" data-message="editor.conflict.title" data-translation-context="Title of the dialog the editor's Save opens when other editors saved different values for settings the player also changed, asking whose to keep">Settings Changed by Others</h2>
+						<p id="conflict-explanation" data-message="editor.conflict.explanation" data-translation-context="Explains the dialog that asks, for each setting another editor saved a different value for since the player loaded it, whether to keep the player's value or take the other editor's">Other editors saved different values for some of the settings you changed. Choose which to keep for each, then save.</p>
+						<div id="conflict-choices" class="form-group"></div>
+						<div class="dialog-buttons">
+							<button id="conflict-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="conflict-submit" type="submit" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+						</div>
+					</form>
+				</dialog>
 				<dialog id="impact-dialog" class="panel dialog" aria-labelledby="impact-title" aria-describedby="impact-explanation">
 					<form id="impact-form" class="form">
 						<h2 id="impact-title" data-message="editor.impact.title" data-translation-context="Title of the dialog the editor's Save opens when the changes disable a race, class, item or area that characters are using, or make groups smaller than some are, asking what should happen to them">Players Are Affected</h2>
