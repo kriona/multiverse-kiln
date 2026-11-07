@@ -7,7 +7,7 @@ import { getElement, showMessage } from '../dom';
 import { DifficultyDialog } from './DifficultyDialog';
 import { createOptionRow } from './optionRows';
 import type { EditorSave, SavedIds } from './editorSave';
-import { ChangedSinceNotes, type FollowsOtherSaves, type OtherSave } from './otherSaves';
+import { ChangedSinceNotes, DialogFollower, type FollowsOtherSaves, type OtherSave } from './otherSaves';
 import type { SavableTab } from './SaveBar';
 import { describeRefusedChange, joinTags, listChange, listRef, markStagedRow, StagedChanges, stagedTag, stagedView, type StagedChange, type StagedState } from './stagedChanges';
 
@@ -26,6 +26,11 @@ export class DifficultySection implements SavableTab, FollowsOtherSaves
 	 * The levels other windows saved while this one had unsaved changes to them
 	 */
 	private readonly changedSince = new ChangedSinceNotes('difficultyLevel');
+
+	/**
+	 * Keeps the difficulty level editor up with saves made in other windows to the level it shows
+	 */
+	private readonly dialogFollower = new DialogFollower(this.dialog.following, 'difficultyLevel');
 
 	/**
 	 * The changes made since the levels were last saved
@@ -127,14 +132,22 @@ export class DifficultySection implements SavableTab, FollowsOtherSaves
 	 */
 	otherSaved(save: OtherSave): boolean
 	{
-		const { changed, kept } = this.changedSince.follow(save, (id) => ((typeof id === 'number') && (this.changes.stateOf(id) !== undefined)));
+		const isStaged = (id: number | string): boolean => ((typeof id === 'number') && (this.changes.stateOf(id) !== undefined));
+		const { changed, kept } = this.changedSince.follow(save, isStaged);
+		const dialog = this.dialogFollower.follow(save, isStaged);
 
 		if (changed)
 		{
-			void this.refresh();
+			void this.refresh().then(() =>
+			{
+				this.dialogFollower.reopen(dialog.reopen, (id) => this.view().find(({ item }) => (item.id === id))?.item, (level) =>
+				{
+					this.openLevel(level);
+				});
+			});
 		}
 
-		return(kept);
+		return(kept || dialog.kept);
 	}
 
 	/**
@@ -237,6 +250,7 @@ export class DifficultySection implements SavableTab, FollowsOtherSaves
 	{
 		if (this.universe)
 		{
+			this.dialogFollower.opened(level?.id);
 			this.dialog.open(this.universe, level, this.changes.edit(level?.id), () =>
 			{
 				this.render();

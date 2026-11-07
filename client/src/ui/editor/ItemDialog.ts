@@ -7,6 +7,7 @@ import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldError
 import { formMessages } from '../formMessages';
 import { itemCategoryName, itemName, itemTypeName } from '../itemNames';
 import { editorMessages } from './editorMessages';
+import { FollowedDialog } from './otherSaves';
 import { labelRemoveButton, type StagedEdit } from './stagedChanges';
 
 /**
@@ -33,6 +34,11 @@ export class ItemDialog
 	 * Whether the item has changes that haven't been applied
 	 */
 	private readonly changes = new ChangeTracker({ root: this.form });
+
+	/**
+	 * How the dialog follows saves made in other windows to the item it shows
+	 */
+	readonly following = new FollowedDialog(this.dialog, this.title, this.changes);
 
 	private universe: EditableUniverse | undefined;
 
@@ -146,7 +152,7 @@ export class ItemDialog
 			: t(editorMessages.restore)));
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.dialog);
-		this.dialog.showModal();
+		this.following.show();
 		this.changes.markSaved();
 	}
 

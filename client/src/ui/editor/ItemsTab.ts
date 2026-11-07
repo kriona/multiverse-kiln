@@ -9,7 +9,7 @@ import { TableSorter } from '../tableSorter';
 import { editorMessages } from './editorMessages';
 import { ItemDialog } from './ItemDialog';
 import type { EditorSave, SavedIds } from './editorSave';
-import { ChangedSinceNotes, type FollowsOtherSaves, type OtherSave } from './otherSaves';
+import { ChangedSinceNotes, DialogFollower, type FollowsOtherSaves, type OtherSave } from './otherSaves';
 import type { SavableTab } from './SaveBar';
 import { describeRefusedChange, joinTags, listChange, listRef, markStagedRow, StagedChanges, stagedPage, stagedTag, type StagedChange, type StagedState } from './stagedChanges';
 
@@ -50,6 +50,11 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 	 * The items other windows saved while this one had unsaved changes to them
 	 */
 	private readonly changedSince = new ChangedSinceNotes('item');
+
+	/**
+	 * Keeps the item editor up with saves made in other windows to the item it shows
+	 */
+	private readonly dialogFollower = new DialogFollower(this.dialog.following, 'item');
 
 	/**
 	 * The changes the save being sent holds
@@ -251,14 +256,23 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 	 */
 	otherSaved(save: OtherSave): boolean
 	{
-		const { changed, kept } = this.changedSince.follow(save, (id) => ((typeof id === 'number') && (this.changes.stateOf(id) !== undefined)));
+		const isStaged = (id: number | string): boolean => ((typeof id === 'number') && (this.changes.stateOf(id) !== undefined));
+		const { changed, kept } = this.changedSince.follow(save, isStaged);
+		const dialog = this.dialogFollower.follow(save, isStaged);
 
 		if (changed)
 		{
-			void this.refresh();
+			void this.refresh().then(() =>
+			{
+				// Only an item on the page shown is known as saved now
+				this.dialogFollower.reopen(dialog.reopen, (id) => (this.items.some((item) => (item.id === id)) ? this.itemWithChanges(id as number) : undefined), (item) =>
+				{
+					this.openItem(item);
+				});
+			});
 		}
 
-		return(kept);
+		return(kept || dialog.kept);
 	}
 
 	/**
@@ -478,6 +492,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 	{
 		if (this.universe)
 		{
+			this.dialogFollower.opened(item?.id);
 			this.dialog.open(this.universe, item, this.changes.edit(item?.id), () =>
 			{
 				this.render();

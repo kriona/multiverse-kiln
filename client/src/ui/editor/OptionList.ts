@@ -6,7 +6,7 @@ import { showMessage } from '../dom';
 import { TableSorter } from '../tableSorter';
 import { createOptionRow, optionTags } from './optionRows';
 import type { EditorSave, SavedIds } from './editorSave';
-import { ChangedSinceNotes, type FollowsOtherSaves, type OtherSave } from './otherSaves';
+import { ChangedSinceNotes, DialogFollower, type FollowingDialog, type FollowsOtherSaves, type OtherSave } from './otherSaves';
 import type { SavableTab } from './SaveBar';
 import { describeRefusedChange, joinTags, listChange, listRef, markStagedRow, StagedChanges, stagedTag, stagedView, type StagedChange, type StagedEdit, type StagedState } from './stagedChanges';
 
@@ -86,6 +86,11 @@ export interface OptionListSetup<T extends EditorOption, S>
 	describe(option: T, ruleset: Ruleset): string;
 
 	/**
+	 * The option's editor dialog, as it follows saves made in other windows
+	 */
+	dialog: FollowingDialog;
+
+	/**
 	 * Opens the option's editor dialog
 	 *
 	 * @param universe The universe
@@ -137,6 +142,11 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab, Fo
 	private readonly changedSince: ChangedSinceNotes;
 
 	/**
+	 * Keeps the editor dialog up with saves made in other windows to the option it shows
+	 */
+	private readonly dialogFollower: DialogFollower;
+
+	/**
 	 * The changes the save being sent holds
 	 */
 	private collected: readonly StagedChange<S>[] = [];
@@ -167,6 +177,7 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab, Fo
 		}
 
 		this.changedSince = new ChangedSinceNotes(LIST_SUBJECTS[setup.list]);
+		this.dialogFollower = new DialogFollower(setup.dialog, LIST_SUBJECTS[setup.list]);
 
 		this.sorter = new TableSorter(table, OPTION_SORT_COLUMNS, {
 			column: 'name',
@@ -257,14 +268,22 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab, Fo
 	 */
 	otherSaved(save: OtherSave): boolean
 	{
-		const { changed, kept } = this.changedSince.follow(save, (id) => ((typeof id === 'number') && (this.changes.stateOf(id) !== undefined)));
+		const isStaged = (id: number | string): boolean => ((typeof id === 'number') && (this.changes.stateOf(id) !== undefined));
+		const { changed, kept } = this.changedSince.follow(save, isStaged);
+		const dialog = this.dialogFollower.follow(save, isStaged);
 
 		if (changed)
 		{
-			void this.refresh();
+			void this.refresh().then(() =>
+			{
+				this.dialogFollower.reopen(dialog.reopen, (id) => this.view().find(({ item }) => (item.id === id))?.item, (option) =>
+				{
+					this.openOption(option);
+				});
+			});
 		}
 
-		return(kept);
+		return(kept || dialog.kept);
 	}
 
 	/**
@@ -366,6 +385,7 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab, Fo
 	{
 		if (this.universe)
 		{
+			this.dialogFollower.opened(option?.id);
 			this.setup.openDialog(this.universe, option, this.changes.edit(option?.id), () =>
 			{
 				this.render();

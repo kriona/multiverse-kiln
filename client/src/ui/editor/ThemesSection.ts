@@ -44,6 +44,7 @@ export class ThemesSection extends OptionList<EditorTheme, ThemeSettings>
 			}),
 			name: themeName,
 			describe: describeTheme,
+			dialog: dialog.following,
 			openDialog: (universe, theme, edit, onChanged) =>
 			{
 				dialog.open(universe, theme, edit, onChanged);

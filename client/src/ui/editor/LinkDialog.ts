@@ -15,6 +15,7 @@ import { addKeyHelp } from '../shortcuts';
 import type { AreaSource, LinkChange } from './areaSource';
 import { describeCell } from './cellDescription';
 import { mapMessages } from './mapMessages';
+import { FollowedDialog } from './otherSaves';
 
 /**
  * Width of the target area's preview, in pixels
@@ -141,6 +142,12 @@ export class LinkDialog
 	});
 
 	/**
+	 * Whether the dialog is open with changes not yet applied, for the area editor following saves made
+	 * in other windows
+	 */
+	readonly following = new FollowedDialog(this.dialog, this.title, this.changes);
+
+	/**
 	 * Changes every time the preview switches area, so an area that arrives for an earlier choice is ignored
 	 */
 	private previewVersion = 0;
@@ -255,7 +262,7 @@ export class LinkDialog
 			})
 			: undefined));
 		this.updateCells();
-		this.dialog.showModal();
+		this.following.show();
 		this.changes.markSaved();
 
 		if (this.targetArea.value !== '')

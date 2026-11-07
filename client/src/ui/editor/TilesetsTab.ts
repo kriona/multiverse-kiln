@@ -9,7 +9,7 @@ import { TableSorter } from '../tableSorter';
 import { tileName } from '../tileNames';
 import { editorMessages } from './editorMessages';
 import { newRef, numberRef, type EditorSave, type SavedIds } from './editorSave';
-import { ChangedSinceNotes, type FollowsOtherSaves, type OtherSave } from './otherSaves';
+import { ChangedSinceNotes, DialogFollower, type FollowsOtherSaves, type OtherSave } from './otherSaves';
 import { combineChanges, type SavableTab } from './SaveBar';
 import { describeRefusedChange, joinTags, markStagedRow, StagedAdditions, StagedChanges, StagedDeletions, stagedPage, stagedTag, stagedView, type StagedChange, type StagedState } from './stagedChanges';
 import { TileDialog } from './TileDialog';
@@ -91,6 +91,11 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 	 * The tiles other windows saved while this one had unsaved changes to them
 	 */
 	private readonly changedSince = new ChangedSinceNotes('tile');
+
+	/**
+	 * Keeps the tile editor up with saves made in other windows to the tile it shows
+	 */
+	private readonly dialogFollower: DialogFollower;
 
 	/**
 	 * Tilesets chosen in the upload dialog, uploaded when the tab is saved. Until then tiles refer to
@@ -201,6 +206,7 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 			}
 		});
 
+		this.dialogFollower = new DialogFollower(this.dialog.following, 'tile');
 		this.sorter = new TableSorter(getElement('tile-table', HTMLTableElement), TILE_SORT_COLUMNS, {
 			column: 'name',
 			direction: 'ascending'
@@ -563,11 +569,20 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 	 */
 	otherSaved(save: OtherSave): boolean
 	{
-		const { changed, kept } = this.changedSince.follow(save, (id) => ((typeof id === 'number') && (this.staged.stateOf(id) !== undefined)));
+		const isStaged = (id: number | string): boolean => ((typeof id === 'number') && (this.staged.stateOf(id) !== undefined));
+		const { changed, kept } = this.changedSince.follow(save, isStaged);
+		const dialog = this.dialogFollower.follow(save, isStaged);
 
 		if (changed)
 		{
-			void this.refresh();
+			void this.refresh().then(() =>
+			{
+				// Only a tile on the page shown is known as saved now
+				this.dialogFollower.reopen(dialog.reopen, (id) => (this.tiles.some((tile) => (tile.id === id)) ? this.tileWithChanges(id as number) : undefined), (tile) =>
+				{
+					this.openTile(tile);
+				});
+			});
 		}
 
 		if (this.universe && save.details.some((detail) => (detail.subject === 'tileset')))
@@ -575,7 +590,7 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 			void this.loadUploads(this.universe);
 		}
 
-		return(kept);
+		return(kept || dialog.kept);
 	}
 
 	/**
@@ -851,6 +866,7 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 	{
 		if (this.universe)
 		{
+			this.dialogFollower.opened(tile?.id);
 			this.dialog.open(this.universe, tile, this.staged.edit(tile?.id), () =>
 			{
 				this.render();

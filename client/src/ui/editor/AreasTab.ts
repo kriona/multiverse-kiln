@@ -645,10 +645,18 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			return(deletedHere);
 		}
 
-		if (this.areaChanges.hasUnsavedChanges())
+		// A link dialog with changes not yet applied applies them to the map as it is open, so the map stays
+		const linkDialog = this.mapEditor.linkDialogFollowing();
+
+		if (this.areaChanges.hasUnsavedChanges() || linkDialog.hasUnappliedChanges())
 		{
 			this.changedSince.add(save.name, aboutOpen);
 			return(true);
+		}
+
+		if (linkDialog.isOpen())
+		{
+			linkDialog.close();
 		}
 
 		void (aboutOpen.some((detail) => ((detail.subject === 'area') && (detail.action === 'deleted'))) ? this.showList() : this.loadArea(open.id));
