@@ -9,6 +9,7 @@ import { editPageUrl, gamePageUrl, HOME_PAGE_URL } from '../../pages';
 import { AuditTab } from './AuditTab';
 import { EditorsTab } from './EditorsTab';
 import { closeOpenDialogs, getElement, setPageTitle, showMessage, titleLink } from '../dom';
+import { ScrollingTabs } from '../scrollingTabs';
 import { CharacterListTab } from './CharacterListTab';
 import { CharactersTab } from './CharactersTab';
 import { CoinsSection } from './CoinsSection';
@@ -148,6 +149,8 @@ export class EditorScreen
 	private readonly versionChoice = getElement('editor-version', HTMLSelectElement);
 	private readonly versionNotice = getElement('editor-version-notice', HTMLElement);
 	private readonly startDraftButton = getElement('editor-start-draft', HTMLButtonElement);
+	private readonly tabList = getElement('editor-tabs', HTMLElement);
+	private readonly tabStrip = new ScrollingTabs(this.tabList, getElement('editor-tabs-back', HTMLButtonElement), getElement('editor-tabs-forward', HTMLButtonElement));
 	private readonly universeTab: UniverseTab;
 	private readonly draftSection: DraftSection;
 	private readonly startDraftDialog: StartDraftDialog;
@@ -571,13 +574,25 @@ export class EditorScreen
 	}
 
 	/**
-	 * The tabs the player's role shows, in order
+	 * Every tab, in the order the page shows them
+	 *
+	 * @return The tabs
+	 */
+	private tabsInPageOrder(): EditorTab[]
+	{
+		return([...this.tabList.querySelectorAll('[role="tab"]')]
+			.map((tab) => tab.id.slice('editor-tab-'.length))
+			.filter(isEditorTab));
+	}
+
+	/**
+	 * The tabs the player's role shows, in the order the page shows them
 	 *
 	 * @return The tabs
 	 */
 	private visibleTabs(): EditorTab[]
 	{
-		return(EDITOR_TABS.filter((name) => this.canSeeTab(name)));
+		return(this.tabsInPageOrder().filter((name) => this.canSeeTab(name)));
 	}
 
 	/**
@@ -717,7 +732,7 @@ export class EditorScreen
 
 		this.formsToReload.clear();
 
-		for (const name of EDITOR_TABS)
+		for (const name of this.tabsInPageOrder())
 		{
 			// Every part follows the save, even once one has kept changes
 			if (isSavableTab(name) && this.followers[name].map((follower) => follower.otherSaved(save)).includes(true))
@@ -1103,6 +1118,8 @@ export class EditorScreen
 			tab.tabIndex = ((name === selected) ? 0 : -1);
 			getElement(`editor-panel-${name}`, HTMLElement).hidden = (name !== selected);
 		}
+
+		this.tabStrip.reveal(getElement(`editor-tab-${selected}`, HTMLButtonElement));
 
 		this.saveBar.show((isSavableTab(selected) ? this.savableTabs[selected] : undefined));
 		this.setPlace({ ...this.place, tab: selected });
