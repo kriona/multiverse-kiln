@@ -278,6 +278,38 @@ describe('EditorRoom', () =>
 			assert.strictEqual(window.inbox.pending(EditorServerMessageType.Chat), 4);
 		});
 
+		it('keeps a player sending too fast held back when they close their last window and open another, and when the room closes and opens again', async () =>
+		{
+			const grace = await addEditor('Grace', 'builder');
+			const graceWindow = await openEditor(grace, universeId);
+			const first = await openEditor(ada, universeId);
+			const room = roomOf(first);
+
+			for (let sent = 0; sent < 5; sent++)
+			{
+				first.room.send(EditorMessageType.Chat, { text: `Line ${sent}` });
+				await first.inbox.take<KeptChatMessage>(EditorServerMessageType.Chat);
+			}
+
+			await first.room.leave();
+			await waitUntil(() => !room.state.editors.has(ada.playerId));
+
+			const second = await openEditor(ada, universeId);
+
+			second.room.send(EditorMessageType.Chat, { text: 'One more' });
+			assert.strictEqual((await second.inbox.take<NoticePayload>(EditorServerMessageType.Notice)).reason, NoticeReason.ChatTooFast);
+
+			await second.room.leave();
+			await graceWindow.room.leave();
+			await waitUntil(() => !colyseus.getRoomById(room.roomId));
+
+			const reopened = await openEditor(ada, universeId);
+
+			assert.notStrictEqual(reopened.room.roomId, room.roomId);
+			reopened.room.send(EditorMessageType.Chat, { text: 'And another' });
+			assert.strictEqual((await reopened.inbox.take<NoticePayload>(EditorServerMessageType.Notice)).reason, NoticeReason.ChatTooFast);
+		});
+
 		it('keeps the chat in the database, written as the room closes, for the room that opens next', async () =>
 		{
 			const window = await openEditor(ada, universeId);

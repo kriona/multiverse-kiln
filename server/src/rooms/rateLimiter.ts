@@ -1,9 +1,15 @@
 /**
- * Allows each key at most a number of events in any window of time
+ * Allows each key at most a number of events in any window of time. A key is kept only while its events
+ * could still count
  */
 export class RateLimiter
 {
 	private readonly eventTimes = new Map<string, number[]>();
+
+	/**
+	 * When the keys whose events are all out of the window are next dropped
+	 */
+	private nextSweep = 0;
 
 	/**
 	 * @param maxEvents Most events allowed in one window
@@ -23,6 +29,9 @@ export class RateLimiter
 	tryTake(key: string): boolean
 	{
 		const now = this.now();
+
+		this.sweep(now);
+
 		const times = (this.eventTimes.get(key) ?? []).filter((time) => (time > now - this.windowMs));
 
 		if (times.length >= this.maxEvents)
@@ -38,29 +47,62 @@ export class RateLimiter
 	}
 
 	/**
-	 * Forgets a key's events
-	 *
-	 * @param key Who the events were for
+	 * How many keys are kept
 	 */
-	forget(key: string): void
+	get size(): number
 	{
-		this.eventTimes.delete(key);
+		return(this.eventTimes.size);
+	}
+
+	/**
+	 * Drops the keys whose events are all out of the window, at most once a window
+	 *
+	 * @param now The current time in milliseconds
+	 */
+	private sweep(now: number): void
+	{
+		if (now < this.nextSweep)
+		{
+			return;
+		}
+
+		const cutoff = now - this.windowMs;
+
+		this.nextSweep = now + this.windowMs;
+
+		for (const [key, times] of this.eventTimes)
+		{
+			if (!times.some((time) => (time > cutoff)))
+			{
+				this.eventTimes.delete(key);
+			}
+		}
 	}
 }
 
 /**
- * Most chat messages a player may send to a room in CHAT_RATE_WINDOW_MS; more are dropped
+ * Most chat messages a player may send to one chat in CHAT_RATE_WINDOW_MS; more are dropped
  */
 const CHAT_RATE_LIMIT = 5;
 
 const CHAT_RATE_WINDOW_MS = 3000;
 
 /**
- * Makes the limit on how fast a player may send to a room's chat, which every room with a chat uses
- *
- * @return A limiter keyed by player ID
+ * Every chat's limit, shared by the rooms rather than kept by each, so that a player closing their last
+ * window and opening another, or the room closing and opening again, doesn't start their limit over
  */
-export function createChatLimiter(): RateLimiter
+const chatRates = new RateLimiter(CHAT_RATE_LIMIT, CHAT_RATE_WINDOW_MS);
+
+/**
+ * Records a chat message a player sends if it is within the limit on how fast a player may send to one
+ * chat, which every room with a chat uses
+ *
+ * @param chat Which chat the message is for, the same for every room that opens for it, such as
+ * 'editors <universe ID>'
+ * @param playerId The sending player's ID
+ * @return Whether the message is allowed; a refused message doesn't count toward the limit
+ */
+export function tryTakeChatMessage(chat: string, playerId: string): boolean
 {
-	return(new RateLimiter(CHAT_RATE_LIMIT, CHAT_RATE_WINDOW_MS));
+	return(chatRates.tryTake(`${chat} ${playerId}`));
 }

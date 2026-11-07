@@ -19,7 +19,7 @@ import { InvalidMessages } from './invalidMessages.js';
 import { JoinChanges } from './joinChanges.js';
 import { entryRefusalCode, findPlayRefusal, type EntryRefusal } from './universePlay.js';
 import { chatPayload, chooseCharacterPayload, describeInvalidPayload, movePayload, roomOptions } from './payloads.js';
-import { createChatLimiter } from './rateLimiter.js';
+import { tryTakeChatMessage } from './rateLimiter.js';
 import { AreaCache, type ActiveArea } from './areaCache.js';
 import { CHUNK_REFRESH_INTERVAL_MS, SIMULATION_TICK_RATE, AreaPlayers, type Appearance } from './areaPlayers.js';
 
@@ -168,8 +168,6 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	 */
 	private chatHistory: ChatMessage[] = [];
 
-	private readonly chatLimiter = createChatLimiter();
-
 	private readonly joinChanges = new JoinChanges<LobbyJoinChange, LobbyLookup>();
 
 	/**
@@ -229,7 +227,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 				return;
 			}
 
-			if (!this.chatLimiter.tryTake(playerId))
+			if (!tryTakeChatMessage(`lobby ${this.universeId}`, playerId))
 			{
 				this.sendNotice(client, NoticeReason.ChatTooFast);
 				return;
@@ -553,7 +551,6 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 
 		this.areaPlayers.remove(left.playerId);
 		this.state.members.delete(left.playerId);
-		this.chatLimiter.forget(left.playerId);
 		this.characters.delete(left.playerId);
 		this.playing.delete(left.playerId);
 

@@ -16,7 +16,7 @@ import { InvalidMessages } from './invalidMessages.js';
 import { JoinChanges } from './joinChanges.js';
 import { CHAT_SAVE_INTERVAL_MS, KeptChatLog } from './keptChat.js';
 import { chatPayload, chatReadPayload, describeInvalidPayload, editorPlacePayload, roomOptions } from './payloads.js';
-import { createChatLimiter } from './rateLimiter.js';
+import { tryTakeChatMessage } from './rateLimiter.js';
 
 /**
  * What onAuth found out about a client, available afterward as client.auth
@@ -142,8 +142,6 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 	 */
 	private readonly chat = new KeptChatLog();
 
-	private readonly chatLimiter = createChatLimiter();
-
 	private readonly invalidMessages = new InvalidMessages();
 
 	private readonly joinChanges = new JoinChanges<EditorJoinChange, EditorLookup>();
@@ -201,7 +199,7 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 
 			const { playerId, name, username } = identityOf(client);
 
-			if (!this.chatLimiter.tryTake(playerId))
+			if (!tryTakeChatMessage(`editors ${this.universeId}`, playerId))
 			{
 				const notice: NoticePayload = { reason: NoticeReason.ChatTooFast };
 
@@ -455,7 +453,6 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 			if (presence.windows.size === 0)
 			{
 				this.state.editors.delete(playerId);
-				this.chatLimiter.forget(playerId);
 			}
 		}
 

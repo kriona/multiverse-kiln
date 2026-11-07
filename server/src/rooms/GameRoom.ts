@@ -24,7 +24,7 @@ import { JoinChanges } from './joinChanges.js';
 import { CHAT_SAVE_INTERVAL_MS, KeptChatLog } from './keptChat.js';
 import { entryRefusalCode, findViewRefusal, type EntryRefusal } from './universePlay.js';
 import { chatPayload, controlPayload, describeInvalidPayload, gameJoinOptions, movePayload } from './payloads.js';
-import { createChatLimiter } from './rateLimiter.js';
+import { tryTakeChatMessage } from './rateLimiter.js';
 import { AreaCache, toLinkCells, type ActiveArea } from './areaCache.js';
 import { CHUNK_REFRESH_INTERVAL_MS, SIMULATION_TICK_RATE, AreaPlayers, type Appearance, type PlayerPosition } from './areaPlayers.js';
 
@@ -228,8 +228,6 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	 */
 	private readonly chat = new KeptChatLog();
 
-	private readonly chatLimiter = createChatLimiter();
-
 	private readonly stopListening: (() => void)[] = [];
 
 	messages = {
@@ -297,7 +295,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 				return;
 			}
 
-			if (!this.chatLimiter.tryTake(playerId))
+			if (!tryTakeChatMessage(`group ${this.groupId}`, playerId))
 			{
 				this.sendNotice([client], NoticeReason.ChatTooFast);
 				return;
@@ -601,7 +599,6 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		}
 
 		this.windows.delete(playerId);
-		this.chatLimiter.forget(playerId);
 
 		const positions = this.takeOut(playerId);
 
