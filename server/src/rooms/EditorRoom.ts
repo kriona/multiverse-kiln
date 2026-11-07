@@ -599,9 +599,9 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 	}
 
 	/**
-	 * Tells every window but the one that saved of a save, with what it changed that the window shows
-	 * (noticeDetails()), by the version it has open and its player's role. A window hears of every save,
-	 * even one changing nothing it shows, since the Audit tab lists the saves of both versions
+	 * Tells every window but the one that saved of a save, with what it changed that its player's role
+	 * shows (noticeDetails()). A window hears of every save, even one changing nothing it shows, since the
+	 * Audit tab lists the saves of both versions
 	 *
 	 * @param update The save
 	 */
@@ -619,7 +619,7 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 				name: update.name,
 				username: update.username,
 				version: update.version,
-				details: noticeDetails(update.details, update.version, ((this.windowOf(client)?.version === 'draft') ? 'draft' : 'live'), identityOf(client).role)
+				details: noticeDetails(update.details, identityOf(client).role)
 			};
 
 			client.send(EditorServerMessageType.Saved, payload);

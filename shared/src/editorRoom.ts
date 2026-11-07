@@ -3,7 +3,7 @@
  * editor open and what each window has open, carries the editors' chat, and tells each window what the
  * others save (see Editing together in STRUCTURE-OVERVIEW.md)
  */
-import type { UniverseEditDetail, UniverseVersionName } from './editor.js';
+import type { AuditSubject, UniverseEditDetail, UniverseVersionName } from './editor.js';
 
 /**
  * The names of the editor's tabs. The page's tab list decides the order they are shown in
@@ -108,13 +108,57 @@ export interface EditorSavedPayload
 	version: UniverseVersionName;
 
 	/**
-	 * What it changed that the window shows, as the Audit tab lists it: what the tabs its player's role
-	 * sees show, all of it for a window with the same version open, and only what the universe holds once
-	 * (its editors, its stage and its draft) for a window with the other version open. Empty when it
-	 * changed nothing the window shows, which still hears of it for the Audit tab, which lists the saves
-	 * of both versions
+	 * What it changed that the tabs its player's role sees show, as the Audit tab lists it, whichever
+	 * version the window has open: the window follows only what the universe holds once of a save to the
+	 * other version (detailsForVersionOpen()), since it knows which it has open before the room does.
+	 * Empty when it changed nothing the role's tabs show, which the window still hears of for the Audit
+	 * tab, which lists the saves of both versions
 	 */
 	details: SavedEditDetail[];
+}
+
+/**
+ * The parts of a save that change what the universe holds once, its editors and its draft, whichever
+ * version is open. Its stage is one of its settings, kept apart in detailsForVersionOpen()
+ */
+const UNIVERSE_WIDE_SUBJECTS: ReadonlySet<AuditSubject> = new Set(['editor', 'draft']);
+
+/**
+ * What a window follows of a save: everything, when it has the version saved open, and otherwise only
+ * what the universe holds once, the same in both versions: its editors, its stage and its draft
+ *
+ * @param details What the save changed, as the Audit tab lists it
+ * @param savedVersion The version the save changed
+ * @param openVersion The version the window has open
+ * @return What the window follows, in the save's order; empty when it follows nothing
+ */
+export function detailsForVersionOpen<Detail extends UniverseEditDetail>(details: readonly Detail[], savedVersion: UniverseVersionName, openVersion: UniverseVersionName): Detail[]
+{
+	if (savedVersion === openVersion)
+	{
+		return([...details]);
+	}
+
+	const followed: Detail[] = [];
+
+	for (const detail of details)
+	{
+		if (UNIVERSE_WIDE_SUBJECTS.has(detail.subject))
+		{
+			followed.push(detail);
+		}
+		else if (detail.subject === 'settings')
+		{
+			const fields = detail.fields.filter((change) => (change.field === 'stage'));
+
+			if (fields.length > 0)
+			{
+				followed.push({ ...detail, fields });
+			}
+		}
+	}
+
+	return(followed);
 }
 
 /**

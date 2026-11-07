@@ -387,7 +387,7 @@ describe('EditorRoom', () =>
 			await assert.rejects(saving.inbox.take(EditorServerMessageType.Saved, 200));
 		});
 
-		it('tells a window with the other version open only of what the universe holds once, and of a save to that version with no details, for the Audit tab', async () =>
+		it('tells a window with the other version open everything its role shows, with the version saved, since the window decides what it follows', async () =>
 		{
 			const window = await openEditor(ada, universeId);
 			const room = roomOf(window);
@@ -402,14 +402,9 @@ describe('EditorRoom', () =>
 			await waitUntil(() => [...(room.state.editors.get(ada.playerId)?.windows.values() ?? [])].some((each) => (each.version === 'draft')));
 			assert.strictEqual((await saveChanges(ada, universeId, [{ kind: 'universe', update: { groupSize: 3 } }])).status, 200);
 
-			const versionOnly = await window.inbox.take<EditorSavedPayload>(EditorServerMessageType.Saved);
-
-			assert.deepStrictEqual([versionOnly.version, versionOnly.details], ['live', []]);
-			assert.strictEqual((await saveChanges(ada, universeId, [{ kind: 'universe', update: { groupSize: 3, stage: 'prologue' } }])).status, 200);
-
 			const notice = await window.inbox.take<EditorSavedPayload>(EditorServerMessageType.Saved);
 
-			assert.deepStrictEqual(notice.details, [{ subject: 'settings', action: 'changed', target: null, fields: [{ field: 'stage', value: 'prologue' }], count: 1, id: null }]);
+			assert.deepStrictEqual([notice.version, notice.details], ['live', [{ subject: 'settings', action: 'changed', target: null, fields: [{ field: 'groupSize', value: 3 }], count: 1, id: null }]]);
 			assert.strictEqual(window.inbox.pending(EditorServerMessageType.Saved), 0);
 		});
 

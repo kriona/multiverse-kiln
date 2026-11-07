@@ -1,4 +1,4 @@
-import { ADMIN_ROLE, canEditAtEndOfTime, canEditWorld, canManageEditors, canManageVersions, canViewUniverse, EDITOR_ROLE_NAMES, EDITOR_TABS, type EditableUniverse, type EditorSavedPayload, type EditorTab, type UniverseSettingsUpdate, type UniverseVersionName } from '@multiverse-kiln/shared';
+import { ADMIN_ROLE, canEditAtEndOfTime, canEditWorld, canManageEditors, canManageVersions, canViewUniverse, detailsForVersionOpen, EDITOR_ROLE_NAMES, EDITOR_TABS, type EditableUniverse, type EditorSavedPayload, type EditorTab, type UniverseSettingsUpdate, type UniverseVersionName } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { announce } from '../announcer';
@@ -212,6 +212,12 @@ export class EditorScreen
 	 * Changes every time a universe is opened, so one that arrives for an earlier open is ignored
 	 */
 	private openVersion = 0;
+
+	/**
+	 * Saves made in other windows while a universe is loading, followed once it has loaded, since it may
+	 * have loaded from before them
+	 */
+	private savesWhileOpening: EditorSavedPayload[] = [];
 
 	/**
 	 * What the save being taken as saved did to the player's own place in the universe: changed their
@@ -496,6 +502,8 @@ export class EditorScreen
 	{
 		const version = ++this.openVersion;
 
+		// Saves heard of before now are in what loads
+		this.savesWhileOpening = [];
 		this.universe = undefined;
 		this.api.forgetLists();
 		this.title.textContent = t({
@@ -526,6 +534,7 @@ export class EditorScreen
 
 			if (version === this.openVersion)
 			{
+				this.savesWhileOpening = [];
 				this.showNotice(describeEditorError(error, {
 					id: 'editor.openFailed',
 					defaultMessage: 'Could not open the universe.',
@@ -574,6 +583,15 @@ export class EditorScreen
 		}
 
 		this.selectTab(this.place.tab);
+
+		const saves = this.savesWhileOpening;
+
+		this.savesWhileOpening = [];
+
+		for (const saved of saves)
+		{
+			void this.otherSaved(saved);
+		}
 	}
 
 	/**
@@ -723,22 +741,30 @@ export class EditorScreen
 	}
 
 	/**
-	 * Follows a save made in another window, once the universe has loaded: lists the saves on the Audit
-	 * tab again (once the tab shows), updates what the save changed that this window has no unsaved changes to, marks what it
-	 * has them to, and says who saved what, once the painting it made to the area open is taken into its
-	 * map. Starting, applying or discarding the draft changes the whole universe, which loads again, or
-	 * says to reload while anything is unsaved
+	 * Follows a save made in another window, once the universe has loaded (a save heard of while it
+	 * loads waits for it): lists the saves on the Audit tab again (once the tab shows), updates what the
+	 * save changed that this window has no unsaved changes to, marks what it has them to, and says who
+	 * saved what, once the painting it made to the area open is taken into its map. Of a save to the
+	 * other version, it follows only what the universe holds once (detailsForVersionOpen()). Starting,
+	 * applying or discarding the draft changes the whole universe, which loads again, or says to reload
+	 * while anything is unsaved
 	 *
-	 * @param saved The save
+	 * @param heard The save, with everything it changed that the player's role shows
 	 */
-	async otherSaved(saved: EditorSavedPayload): Promise<void>
+	async otherSaved(heard: EditorSavedPayload): Promise<void>
 	{
 		const universe = this.universe;
 
 		if (!universe)
 		{
+			this.savesWhileOpening.push(heard);
 			return;
 		}
+
+		const saved: EditorSavedPayload = {
+			...heard,
+			details: detailsForVersionOpen(heard.details, heard.version, this.api.version)
+		};
 
 		this.auditTab.otherSaved();
 
