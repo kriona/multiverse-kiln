@@ -2,12 +2,16 @@ import assert from 'assert';
 import { randomUUID } from 'crypto';
 import { characterPath, charactersPath, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyMoney, MAX_CHARACTERS_PER_UNIVERSE, NEW_PF1E_RACE_RULES, PF1E_ABILITIES, sourceTextHash, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditorChange, type NewCharacterOptions, type NewCharacterRequest, type Pf1eAbilityScores, type RaceSettings, type SaveChangesPayload } from '@multiverse-kiln/shared';
 
+import { countCharacters } from '../src/db/characterRepo.js';
 import { findDefaultClassIds } from '../src/db/classRepo.js';
 import { findDefaultRaceIds } from '../src/db/raceRepo.js';
 import { saveSiteSettings } from '../src/db/siteSettingsRepo.js';
-import { setUniverseRole } from '../src/db/universeEditorRepo.js';
+import { removeUniverseEditor, setUniverseRole } from '../src/db/universeEditorRepo.js';
+import { setUniverseDisabled, updateUniverseSettings } from '../src/db/universeRepo.js';
+import { liveVersion } from '../src/db/universeVersions.js';
 import { addPlayer, logInBrowser, type TestBrowser } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
+import { changeWhileWaitingForUniverse } from './universeLock.js';
 
 /**
  * A logged-in browser
@@ -425,6 +429,36 @@ describe('Character routes', () =>
 
 		assert.strictEqual(list.status, 200);
 		assert.deepStrictEqual(list.body.characters, []);
+	});
+
+	it('makes no character in a universe disabled, moved to the end of time, or the player\'s role in it removed while the request waited for it', async () =>
+	{
+		const request = await rolledDwarf();
+		const create = (): Promise<Answer<unknown>> => send(ada, 'POST', charactersPath(universeId), request);
+		const disabled = await changeWhileWaitingForUniverse(universeId, create, async (transaction) =>
+		{
+			await setUniverseDisabled(universeId, 'Spam', transaction);
+		});
+
+		assert.strictEqual(disabled.status, 404);
+		await setUniverseDisabled(universeId, null);
+
+		const ended = await changeWhileWaitingForUniverse(universeId, create, async (transaction) =>
+		{
+			await updateUniverseSettings(liveVersion(universeId), { stage: 'end_of_time' }, transaction);
+		});
+
+		assert.strictEqual(ended.status, 404);
+		await updateUniverseSettings(liveVersion(universeId), { stage: 'in_the_beginning' });
+
+		// In the beginning only the universe's world editors may play it
+		const removed = await changeWhileWaitingForUniverse(universeId, create, async (transaction) =>
+		{
+			await removeUniverseEditor(universeId, ada.playerId, transaction);
+		});
+
+		assert.strictEqual(removed.status, 404);
+		assert.strictEqual(await countCharacters(ada.playerId, universeId), 0);
 	});
 
 	it('waits the days the site sets after last rites, and refuses them when it sets none', async () =>

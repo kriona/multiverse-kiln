@@ -6,12 +6,14 @@ import { findDefaultDifficultyLevel, listDifficultyLevels } from '../src/db/diff
 import { findGroup, findMembership, listGroupMembers } from '../src/db/groupRepo.js';
 import { loadEditorRaces, saveEditedDefaultRace } from '../src/db/raceRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
-import { updateUniverseSettings } from '../src/db/universeRepo.js';
+import { removeUniverseEditor, setUniverseRole } from '../src/db/universeEditorRepo.js';
+import { setUniverseDisabled, updateUniverseSettings } from '../src/db/universeRepo.js';
 import { liveVersion } from '../src/db/universeVersions.js';
 import { groupChanges, type GroupChange } from '../src/players/groupChanges.js';
 import { addCharacter, addPlayableUniverse, defaultClassId, defaultRaceId, type PlayableUniverse } from './db/fixtures.js';
 import { addPlayer, logInBrowser, type TestBrowser } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
+import { changeWhileWaitingForUniverse } from './universeLock.js';
 
 /**
  * A logged-in browser, and a character its player has in the test universe
@@ -468,6 +470,43 @@ describe('group routes', () =>
 		assert.strictEqual((await send(alan, 'POST', invitePath(token), { characterId: alan.characterId })).status, 404);
 		assert.strictEqual((await send(ada, 'POST', `${groupPath(universe.universeId, groupId)}/leave`, { characterId: ada.characterId })).status, 404);
 		assert.strictEqual((await findMembership(ada.characterId))?.groupId, groupId);
+		assert.strictEqual(await findMembership(alan.characterId), undefined);
+	});
+
+	it('makes no group in a universe disabled while the request waited for it', async () =>
+	{
+		const answer = await changeWhileWaitingForUniverse(universe.universeId, () => send(grace, 'POST', groupsPath(universe.universeId), groupRequest(grace.characterId)), async (transaction) =>
+		{
+			await setUniverseDisabled(universe.universeId, 'Spam', transaction);
+		});
+
+		assert.strictEqual(answer.status, 404);
+		assert.strictEqual(await findMembership(grace.characterId), undefined);
+	});
+
+	it('lets no character follow an invite into a universe moved to the end of time, or one their role no longer lets them play, while the request waited for it', async () =>
+	{
+		const groupId = await createGroup(ada);
+		const token = await invite(ada, groupId, true);
+		const alan = await logIn('Alan');
+		const follow = (): Promise<Answer<unknown>> => send(alan, 'POST', invitePath(token), { characterId: alan.characterId });
+		const ended = await changeWhileWaitingForUniverse(universe.universeId, follow, async (transaction) =>
+		{
+			await updateUniverseSettings(liveVersion(universe.universeId), { stage: 'end_of_time' }, transaction);
+		});
+
+		assert.strictEqual(ended.status, 404);
+
+		// In the prologue only players with a role in the universe may play it
+		await updateUniverseSettings(liveVersion(universe.universeId), { stage: 'prologue' });
+		await setUniverseRole(universe.universeId, alan.playerId, 'beta_tester');
+
+		const removed = await changeWhileWaitingForUniverse(universe.universeId, follow, async (transaction) =>
+		{
+			await removeUniverseEditor(universe.universeId, alan.playerId, transaction);
+		});
+
+		assert.strictEqual(removed.status, 404);
 		assert.strictEqual(await findMembership(alan.characterId), undefined);
 	});
 

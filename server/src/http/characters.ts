@@ -182,24 +182,38 @@ function universeLoader(allows: (stage: UniverseStage, role: UniverseRole | unde
 	return(async (request, response, next) =>
 	{
 		const universeId = z.uuid().safeParse(request.params.universeId);
+		const universe = (universeId.success ? await findAllowedUniverse(universeId.data, playerIdOf(request), allows) : undefined);
 
-		if (universeId.success)
+		if (universe)
 		{
-			const [universe, role] = await Promise.all([
-				findEditableUniverse(liveVersion(universeId.data)),
-				findUniverseRole(universeId.data, playerIdOf(request))
-			]);
-
-			if (universe && (universe.disabledReason === null) && allows(universe.stage, role))
-			{
-				universes.set(request, universe);
-				next();
-				return;
-			}
+			universes.set(request, universe);
+			next();
+			return;
 		}
 
 		sendError(response, 404, errorMessages.noSuchUniverse);
 	});
+}
+
+/**
+ * Loads a universe's live version when it isn't disabled and its stage and the player's role in it pass
+ * a check. Disabling a universe, changing its stage and changing roles all take the universe's lock, so
+ * a transaction holding it reads what stays true until it commits
+ *
+ * @param universeId The universe's ID
+ * @param playerId The player's ID
+ * @param allows The check, given the universe's stage and the player's role in it
+ * @param executor The database, or a transaction
+ * @return The universe, or undefined when there is none or the player may not
+ */
+export async function findAllowedUniverse(universeId: string, playerId: string, allows: (stage: UniverseStage, role: UniverseRole | undefined) => boolean, executor?: Executor): Promise<PlayableUniverse | undefined>
+{
+	const [universe, role] = await Promise.all([
+		findEditableUniverse(liveVersion(universeId), executor),
+		findUniverseRole(universeId, playerId, executor)
+	]);
+
+	return(((universe && (universe.disabledReason === null) && allows(universe.stage, role)) ? universe : undefined));
 }
 
 /**
@@ -738,7 +752,7 @@ async function createRoute(request: Request, response: Response): Promise<void>
 		await lockPlayer(playerId, transaction);
 		await lockUniverse(universeId, transaction);
 
-		const universe = await findEditableUniverse(liveVersion(universeId), transaction);
+		const universe = await findAllowedUniverse(universeId, playerId, canPlayUniverse, transaction);
 
 		if (!universe)
 		{

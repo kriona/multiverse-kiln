@@ -19,12 +19,11 @@ import { addGroupMember, countGroupMembers, createGroup, createInvite, deleteInv
 import { lockPlayer } from '../db/playerRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
 import { inTransaction } from '../db/transactions.js';
-import { findUniverseRole } from '../db/universeEditorRepo.js';
-import { findEditableUniverse, lockUniverse } from '../db/universeRepo.js';
+import { lockUniverse } from '../db/universeRepo.js';
 import { liveVersion } from '../db/universeVersions.js';
 import { chooseStartingArea, type StartingPlace } from '../logic/startingArea.js';
 import { groupChanges } from '../players/groupChanges.js';
-import { loadPlayableUniverse, loadTranslator, universeOf, type PlayableUniverse } from './characters.js';
+import { findAllowedUniverse, loadPlayableUniverse, loadTranslator, universeOf, type PlayableUniverse } from './characters.js';
 import { playerIdOf, refuseWritesFromOtherOrigins, requireLogin } from './editorAccess.js';
 import { errorMessages, sendError, sendInvalidRequest, type Refusal } from './errors.js';
 
@@ -224,6 +223,15 @@ async function createRoute(request: Request, response: Response): Promise<void>
 		// Deleting a difficulty level waits for the universe's lock too, so the level can't go as the group takes it
 		await lockUniverse(universe.id, transaction);
 
+		// Read again under the lock, since a save or a server admin that held it may have disabled the
+		// universe, changed its stage or the player's role, or moved its starting area and deleted the old one
+		const locked = await findAllowedUniverse(universe.id, playerId, canPlayUniverse, transaction);
+
+		if (!locked)
+		{
+			return({ status: 404, message: errorMessages.noSuchUniverse });
+		}
+
 		const character = await findOwnCharacter(playerId, universe.id, anchorId, transaction);
 
 		if (!character?.playable)
@@ -254,8 +262,6 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			return({ status: 404, message: messages.noSuchDifficulty });
 		}
 
-		// Read again under the lock, since a save that held it may have moved the starting area and deleted the old one
-		const locked = (await findEditableUniverse(liveVersion(universe.id), transaction) ?? universe);
 		const start = await findStartingPlace(locked, character, transaction);
 		const groupId = await createGroup({
 			universeId: universe.id,
@@ -494,6 +500,20 @@ async function acceptInviteRoute(request: Request, response: Response): Promise<
 	const joiningId = body.data.characterId;
 	const result = await inTransaction(async (transaction): Promise<Refusal | { groupId: string; joined?: GroupCharacter }> =>
 	{
+		// The player, then the universe, then the group: the order making a group and saving the world
+		// editor (which changes groups) take them in
+		await lockPlayer(playerId, transaction);
+		await lockUniverse(universe.id, transaction);
+
+		// Read again under the lock, since a save or a server admin that held it may have disabled the
+		// universe, changed its stage, its group size or the player's role
+		const locked = await findAllowedUniverse(universe.id, playerId, canPlayUniverse, transaction);
+
+		if (!locked)
+		{
+			return({ status: 404, message: messages.inviteGone });
+		}
+
 		// The invite is read again under the group's lock, so a single-use link lets in only one character
 		const invite = await findInvite(tokenHash, transaction);
 		const group = (invite ? await lockGroup(invite.groupId, transaction) : undefined);
@@ -502,8 +522,6 @@ async function acceptInviteRoute(request: Request, response: Response): Promise<
 		{
 			return({ status: 404, message: messages.inviteGone });
 		}
-
-		await lockPlayer(playerId, transaction);
 
 		const character = await findOwnCharacter(playerId, universe.id, joiningId, transaction);
 
@@ -537,13 +555,13 @@ async function acceptInviteRoute(request: Request, response: Response): Promise<
 			return({ status: 409, message: messages.alreadyInGroup });
 		}
 
-		if (await countGroupMembers(group.id, transaction) >= universe.groupSize)
+		if (await countGroupMembers(group.id, transaction) >= locked.groupSize)
 		{
 			return({
 				status: 409,
 				message: messages.groupFull,
 				values: {
-					max: universe.groupSize
+					max: locked.groupSize
 				}
 			});
 		}
@@ -614,12 +632,9 @@ async function findInviteGroup(request: Request): Promise<{ universe: PlayableUn
 		return(undefined);
 	}
 
-	const [universe, role] = await Promise.all([
-		findEditableUniverse(liveVersion(group.universeId)),
-		findUniverseRole(group.universeId, playerIdOf(request))
-	]);
+	const universe = await findAllowedUniverse(group.universeId, playerIdOf(request), canPlayUniverse);
 
-	if (!universe || (universe.disabledReason !== null) || !canPlayUniverse(universe.stage, role))
+	if (!universe)
 	{
 		return(undefined);
 	}
