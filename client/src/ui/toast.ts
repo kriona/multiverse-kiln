@@ -22,7 +22,7 @@ const MAX_TOASTS = 3;
 const CLOSE_KEYS = 'Alt+G';
 
 /**
- * What closes each toast on the page
+ * What closes each toast on the page when newer ones take its place
  */
 const closers = new WeakMap<Element, () => void>();
 
@@ -57,8 +57,9 @@ export interface ToastOptions
 	announce?: 'polite' | 'urgent' | false;
 
 	/**
-	 * Called when the player closes the toast, by clicking it or with its Got It button, but not when it
-	 * closes by itself or is closed by the function showToast() returns
+	 * Called when the player closes the toast, by clicking it or with its Got It button, and when newer
+	 * toasts take the place of one that shows until it is closed, but not when it closes by itself or is
+	 * closed by the function showToast() returns
 	 */
 	onDismiss?: () => void;
 }
@@ -119,7 +120,21 @@ export function showToast(content: string | readonly (string | Node)[], options:
 	};
 
 	/**
-	 * Counts down the time the toast has left, unless it shows until it is clicked away
+	 * Closes the toast in the player's place, telling the caller (see onDismiss), unless it is closing already
+	 */
+	const dismiss = (): void =>
+	{
+		if (toast.classList.contains('closing'))
+		{
+			return;
+		}
+
+		options.onDismiss?.();
+		close();
+	};
+
+	/**
+	 * Counts down the time the toast has left, unless it shows until it is closed
 	 */
 	const resume = (): void =>
 	{
@@ -162,16 +177,7 @@ export function showToast(content: string | readonly (string | Node)[], options:
 		toast.append(closeButton);
 	}
 
-	toast.addEventListener('click', () =>
-	{
-		if (toast.classList.contains('closing'))
-		{
-			return;
-		}
-
-		options.onDismiss?.();
-		close();
-	});
+	toast.addEventListener('click', dismiss);
 
 	// The pointer resting on a toast holds it, so it can be read to the end
 	toast.addEventListener('pointerenter', () =>
@@ -180,7 +186,11 @@ export function showToast(content: string | readonly (string | Node)[], options:
 		remainingMs = Math.max(remainingMs - (performance.now() - startedAt), 0);
 	});
 	toast.addEventListener('pointerleave', resume);
-	closers.set(toast, close);
+
+	// One that shows until it is closed is closed for the player, as clicking it would, so what it held
+	// up, such as a save's marks on the map, doesn't outlast it. One that shows for a while has only gone
+	// early, as when its time runs out
+	closers.set(toast, (lasts ? close : dismiss));
 	container.append(toast);
 
 	// Toasts already fading out don't count

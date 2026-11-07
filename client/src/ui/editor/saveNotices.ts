@@ -20,8 +20,8 @@ const SAVE_NOTICE_MS = 10000;
  * Says in a toast, read out by screen readers, who saved what in another window, from the save's audit
  * details, e.g. "Bea saved: Changed race Dwarf, Painted 40 cells in Cave". When the save changed
  * something the player has unsaved changes to, or painted over cells the player painted, the toast says
- * so, in the warning style, and shows until it is closed, by clicking it or with its Got It button.
- * Closing it takes the marks the save's painting made off the area editor's map
+ * so, in the warning style, and shows until it is closed, by clicking it or with its Got It button, or
+ * newer toasts take its place. Closing it takes the marks the save's painting made off the area editor's map
  *
  * @param saved The save
  * @param ruleset The universe's ruleset, which names its default tiles, items, races, classes and themes
