@@ -281,22 +281,33 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 			return(false);
 		}
 
-		const serverAdmin = await isActiveServerAdmin(session.playerId);
-		const access = editorAccessOf(await findUniverseAccess(this.universeId, session.playerId), serverAdmin);
+		// How far the player has read the chat is looked up alongside their access, and held only once
+		// they are admitted
+		const chatRead = this.chat.findRead(session.playerId)
+			.then(
+				(readAt) => ({ found: true as const, readAt }),
+				(error: unknown) => ({ found: false as const, error })
+			);
+		const [serverAdmin, universeAccess, read] = await Promise.all([
+			isActiveServerAdmin(session.playerId),
+			findUniverseAccess(this.universeId, session.playerId),
+			chatRead
+		]);
+		const access = editorAccessOf(universeAccess, serverAdmin);
 
 		if (!access)
 		{
 			return(false);
 		}
 
-		try
+		if (read.found)
 		{
-			await this.chat.loadRead(session.playerId);
+			this.chat.keepRead(session.playerId, read.readAt);
 		}
-		catch (error)
+		else
 		{
 			// The editor works without it: the chat's history then counts as read
-			console.error('Could not find how far player', session.playerId, 'has read the editors\' chat of universe', this.universeId, error);
+			console.error('Could not find how far player', session.playerId, 'has read the editors\' chat of universe', this.universeId, read.error);
 		}
 
 		return({

@@ -133,6 +133,13 @@ describe('EditorRoom', () =>
 			await assert.rejects(connect(alan.cookie, { universeId }));
 			await assert.rejects(connect(ada.cookie, { universeId: randomUUID() }));
 			await assert.rejects(connect(ada.cookie, {}));
+
+			// The chat keeps no record of how far a player turned away from an open room has read it
+			const window = await openEditor(ada, universeId);
+
+			await assert.rejects(connect(alan.cookie, { universeId }));
+			await roomOf(window).saveChat();
+			assert.strictEqual(await findChatRead({ kind: 'editors', universeId }, alan.playerId), undefined);
 		});
 
 		it('admits a server admin with 2FA on with the site admin role, but not one without 2FA', async () =>
