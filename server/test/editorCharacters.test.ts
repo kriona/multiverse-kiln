@@ -1,10 +1,10 @@
 import assert from 'assert';
-import type { EditorCharacterListPayload } from '@multiverse-kiln/shared';
+import type { EditorCharacterListPayload, RaceListPayload } from '@multiverse-kiln/shared';
 
 import { findDefaultRaceIds } from '../src/db/raceRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { addCharacter } from './db/fixtures.js';
-import { createUniverse, logIn, send, type Editor } from './editorRequests.js';
+import { createUniverse, logIn, saveChanges, send, type Editor } from './editorRequests.js';
 import { getTestServer } from './testServer.js';
 
 describe('The editor\'s list of a universe\'s characters', () =>
@@ -58,6 +58,20 @@ describe('The editor\'s list of a universe\'s characters', () =>
 		const searched = await send<EditorCharacterListPayload>(ada, 'GET', `/${universeId}/characters?search=${encodeURIComponent('@gra')}&raceId=${dwarfId}`);
 
 		assert.deepStrictEqual(searched.body.characters.map(({ name }) => name), ['Dain']);
+	});
+
+	it('names a race the universe renamed by its new name, alongside its key', async () =>
+	{
+		await addCharacter(ada.playerId, universeId, 'Brokk');
+
+		const dwarf = (await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races.find((race) => (race.key === 'dwarf'))!;
+		const saved = await saveChanges(ada, universeId, [{ kind: 'saveRace', id: dwarf.id, settings: { ...dwarf, name: 'Stout' } }]);
+
+		assert.strictEqual(saved.status, 200, JSON.stringify(saved.body));
+
+		const response = await send<EditorCharacterListPayload>(ada, 'GET', `/${universeId}/characters`);
+
+		assert.deepStrictEqual(response.body.characters.map(({ race, characterClass }) => [race, characterClass]), [[{ key: 'dwarf', name: 'Stout' }, { key: 'fighter', name: null }]]);
 	});
 
 	it('is only for roles that may change the world', async () =>

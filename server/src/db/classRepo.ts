@@ -3,7 +3,7 @@
  * class_starting_items and class_race_areas tables
  */
 import { and, asc, count, eq, isNull, or, type SQL } from 'drizzle-orm';
-import { isSf1eClassRules, type ClassRaceArea, type ClassRules, type ClassSettings, type EditorClass, type ItemQuantity, type Pf1eClassRules, type Ruleset, type Sf1eClassRules } from '@multiverse-kiln/shared';
+import { isSf1eClassRules, type ClassRaceArea, type ClassRules, type ClassSettings, type EditorClass, type ItemQuantity, type OptionName, type Pf1eClassRules, type Ruleset, type Sf1eClassRules } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { fromCoinColumns, toCoinColumns } from './coinColumns.js';
@@ -44,6 +44,44 @@ export async function findDefaultClassIds(ruleset: Ruleset, executor: Executor =
 	return(new Map(rows
 		.filter((row) => (row.key !== null))
 		.map((row) => [row.key as string, row.id])));
+}
+
+/**
+ * What each class a universe can use is called, without its settings: a default class's key, and the
+ * name the universe gives it, if any
+ *
+ * @param version The universe's live version or draft
+ * @param ruleset The universe's ruleset
+ * @param executor The database, or a transaction
+ * @return Each class's key and name, by its ID
+ */
+export async function loadClassNames(version: UniverseVersion, ruleset: Ruleset, executor: Executor = db): Promise<Map<number, OptionName>>
+{
+	const rows = await executor
+		.select({
+			id: classes.id,
+			universeId: classes.universeId,
+			overridesClassId: classes.overridesClassId,
+			key: classes.key,
+			name: classes.name
+		})
+		.from(classes)
+		.where(usableClasses(version, ruleset));
+	const copies = new Map(rows
+		.filter((row) => (row.overridesClassId !== null))
+		.map((row) => [row.overridesClassId, row]));
+
+	return(new Map(rows
+		.filter((row) => (row.overridesClassId === null))
+		.map((row) =>
+		{
+			const custom = (row.universeId !== null);
+
+			return([row.id, {
+				key: (custom ? null : row.key),
+				name: (custom ? row.name : (copies.get(row.id)?.name ?? null))
+			}]);
+		})));
 }
 
 /**

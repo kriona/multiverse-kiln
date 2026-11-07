@@ -7,8 +7,8 @@ import type { Request, Response } from 'express';
 import { canEditWorld, parsePlayerSearch, type EditorCharacterListPayload, type OptionName } from '@multiverse-kiln/shared';
 
 import { listUniverseCharacters } from '../db/characterRepo.js';
-import { loadEditorClasses } from '../db/classRepo.js';
-import { loadEditorRaces } from '../db/raceRepo.js';
+import { loadClassNames } from '../db/classRepo.js';
+import { loadRaceNames } from '../db/raceRepo.js';
 import { liveVersion } from '../db/universeVersions.js';
 import { requireRole, universeContextOf } from './editorAccess.js';
 import { editorCharacterListQuery } from './editorPayloads.js';
@@ -44,7 +44,7 @@ async function listCharacters(request: Request, response: Response): Promise<voi
 	const { universe } = universeContextOf(request);
 	const { search, raceId, classId, inGroup, sort, direction, offset, limit } = query.data;
 	const parsedSearch = ((search === undefined) ? undefined : parsePlayerSearch(search));
-	const [page, races, classes] = await Promise.all([
+	const [page, raceNames, classNames] = await Promise.all([
 		listUniverseCharacters(universe.id, {
 			search: ((parsedSearch && (parsedSearch.text !== '')) ? parsedSearch : undefined),
 			raceId,
@@ -55,11 +55,9 @@ async function listCharacters(request: Request, response: Response): Promise<voi
 			offset,
 			limit
 		}),
-		loadEditorRaces(liveVersion(universe.id), universe.ruleset),
-		loadEditorClasses(liveVersion(universe.id), universe.ruleset)
+		loadRaceNames(liveVersion(universe.id), universe.ruleset),
+		loadClassNames(liveVersion(universe.id), universe.ruleset)
 	]);
-	const raceNames = new Map(races.map(({ id, key, name }) => [id, { key, name }]));
-	const classNames = new Map(classes.map(({ id, key, name }) => [id, { key, name }]));
 	const unnamed: OptionName = { key: null, name: null };
 	const payload: EditorCharacterListPayload = {
 		characters: page.characters.map((character) => ({

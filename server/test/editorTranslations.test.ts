@@ -1,11 +1,12 @@
 import assert from 'assert';
-import { MAX_COIN_NAME_LENGTH, sourceTextHash, type UniverseTextListPayload, type UniverseTextRow } from '@multiverse-kiln/shared';
+import { MAX_COIN_NAME_LENGTH, sourceTextHash, type ItemListPayload, type RaceListPayload, type TileListPayload, type UniverseTextListPayload, type UniverseTextRow } from '@multiverse-kiln/shared';
 
 import { findDefaultItemIds } from '../src/db/itemRepo.js';
 import { listUniverseEdits } from '../src/db/universeEditRepo.js';
 import { setUniverseAccess, setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { listTranslations } from '../src/db/universeTextRepo.js';
 import { liveVersion } from '../src/db/universeVersions.js';
+import { hashSourceText } from '../src/http/editorTranslations.js';
 import { UniverseTextTranslator } from '../src/http/universeTextTranslator.js';
 import { createArea, createUniverse, logIn, saveChanges, send, type Editor } from './editorRequests.js';
 import { getTestServer } from './testServer.js';
@@ -84,6 +85,47 @@ describe('Translations tab', () =>
 			outOfDate: false
 		});
 		assert.strictEqual(body.total, 5);
+	});
+
+	it('lists the names the universe gives the ruleset\'s defaults by the default\'s ID, and the names of things it adds', async () =>
+	{
+		const { universeId, ada } = await translatableUniverse();
+		const races = (await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races;
+		const items = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items`)).body.items;
+		const tiles = (await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles`)).body.tiles;
+		const dwarf = races.find((race) => (race.key === 'dwarf'))!;
+		const elf = races.find((race) => (race.key === 'elf'))!;
+		const dagger = items.find((item) => (item.key === 'dagger'))!;
+		const grass = tiles.find((tile) => (tile.key === 'grass'))!;
+		const saved = await saveChanges(ada, universeId, [
+			{ kind: 'saveRace', id: dwarf.id, settings: { ...dwarf, name: 'Stout' } },
+			{ kind: 'saveRace', id: elf.id, settings: { ...elf, enabled: false } },
+			{ kind: 'saveItem', id: dagger.id, settings: { ...dagger, name: 'Shiv' } },
+			{ kind: 'saveTile', id: grass.id, settings: { ...grass, walkSeconds: 9 } },
+			{ kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', type: 'torch', enabled: true } }
+		]);
+
+		assert.strictEqual(saved.status, 200, JSON.stringify(saved.body));
+
+		const { body } = await listText(ada, universeId, 'language=fr');
+		const torchId = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items`)).body.items.find((item) => (item.name === 'Torch'))!.id;
+
+		// The elf and the grass are changed but keep the engine's names, which aren't universe text
+		assert.deepStrictEqual(body.rows
+			.filter((row) => ((row.kind === 'race') || (row.kind === 'item') || (row.kind === 'tile')))
+			.map(({ kind, thingId, source }) => [kind, thingId, source]), [
+			['item', String(dagger.id), 'Shiv'],
+			['item', String(torchId), 'Torch'],
+			['race', String(dwarf.id), 'Stout']
+		]);
+	});
+
+	it('hashes source text on the server as the client does', () =>
+	{
+		for (const text of ['', 'Kilnhaven', 'Forêt', '森の小道', '🐉 Dragon\'s lair', 'x'.repeat(200)])
+		{
+			assert.strictEqual(hashSourceText(text), sourceTextHash(text), text);
+		}
 	});
 
 	it('lists the coin names and abbreviations the universe gives, and deletes their translations when a coin goes back to the engine\'s', async () =>
