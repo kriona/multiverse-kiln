@@ -190,7 +190,7 @@ export const universes = pgTable('universes', {
 	uniqueIndex('universes_slug_unique').on(table.slug),
 	check('universes_disabled_reason_set', sql`(${table.disabledAt} IS NULL) = (${table.disabledReason} IS NULL)`),
 	check('universes_disabled_reason_length', sql`char_length(${table.disabledReason}) BETWEEN 1 AND ${sql.raw(String(MAX_DISABLED_REASON_LENGTH))}`),
-	...universeVersionChecks('universes', table)
+	...universeVersionConstraints('universes', table)
 ]);
 
 /**
@@ -206,7 +206,7 @@ export const universeDrafts = pgTable('universe_drafts', {
 	 */
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
-	...universeVersionChecks('universe_drafts', table)
+	...universeVersionConstraints('universe_drafts', table)
 ]);
 
 /**
@@ -336,15 +336,18 @@ function universeVersionColumns()
 type UniverseVersionTable = Record<keyof ReturnType<typeof universeVersionColumns>, AnyPgColumn>;
 
 /**
- * The checks on the columns of universeVersionColumns()
+ * The indexes and checks on the columns of universeVersionColumns(). The area columns are indexed for
+ * deleting areas, which clears them
  *
- * @param tableName The table's name, which starts each check's name
+ * @param tableName The table's name, which starts each constraint's name
  * @param table The table's columns
- * @return The checks
+ * @return The indexes and checks
  */
-function universeVersionChecks(tableName: string, table: UniverseVersionTable)
+function universeVersionConstraints(tableName: string, table: UniverseVersionTable)
 {
 	return([
+		index(`${tableName}_lobby_area_id_index`).on(table.lobbyAreaId),
+		index(`${tableName}_starting_area_id_index`).on(table.startingAreaId),
 		check(`${tableName}_source_language_length`, sql`char_length(${table.sourceLanguage}) BETWEEN 1 AND ${sql.raw(String(MAX_LOCALE_LENGTH))}`),
 		check(`${tableName}_translation_languages_count`, sql`cardinality(${table.translationLanguages}) <= ${sql.raw(String(MAX_UNIVERSE_LANGUAGES))}`),
 		check(`${tableName}_translation_languages_not_source`, sql`NOT (${table.sourceLanguage} = ANY(${table.translationLanguages}))`),
@@ -503,6 +506,7 @@ export const universeTranslations = pgTable('universe_translations', {
 	updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	primaryKey({ columns: [table.universeId, table.draft, table.kind, table.thingId, table.field, table.language] }),
+	index('universe_translations_saved_by_index').on(table.savedBy),
 	check('universe_translations_language_length', sql`char_length(${table.language}) BETWEEN 1 AND ${sql.raw(String(MAX_LOCALE_LENGTH))}`),
 	check('universe_translations_text_length', sql`char_length(${table.text}) <= ${sql.raw(String(MAX_LONG_DESCRIPTION_LENGTH))}`),
 	check('universe_translations_source_hash_form', sql`${table.sourceHash} ~ '^[0-9a-f]{64}$'`)
@@ -540,6 +544,7 @@ export const universeTranslatorNotes = pgTable('universe_translator_notes', {
 	updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	primaryKey({ columns: [table.universeId, table.draft, table.kind, table.thingId, table.field] }),
+	index('universe_translator_notes_note_saved_by_index').on(table.noteSavedBy),
 	check('universe_translator_notes_note_length', sql`char_length(${table.note}) BETWEEN 1 AND ${sql.raw(String(MAX_TRANSLATOR_NOTE_LENGTH))}`),
 	check('universe_translator_notes_holds_something', sql`(${table.note} IS NOT NULL) OR ${table.noTranslation}`)
 ]);
@@ -578,6 +583,7 @@ export const tileGraphics = pgTable('tile_graphics', {
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	index('tile_graphics_universe_id_index').on(table.universeId),
+	index('tile_graphics_uploaded_by_index').on(table.uploadedBy),
 	unique('tile_graphics_draft_storage_key_unique').on(table.draft, table.storageKey),
 	...originConstraints('tile_graphics', table),
 	check('tile_graphics_draw_order_range', sql`${table.drawOrder} BETWEEN ${sql.raw(String(MIN_TILE_GRAPHIC_DRAW_ORDER))} AND ${sql.raw(String(MAX_TILE_GRAPHIC_DRAW_ORDER))}`),
@@ -656,6 +662,8 @@ export const tiles = pgTable('tiles', {
 	unique('tiles_ruleset_key_unique').on(table.ruleset, table.key),
 	unique('tiles_universe_overrides_unique').on(table.universeId, table.draft, table.overridesTileId),
 	index('tiles_universe_id_index').on(table.universeId),
+	index('tiles_overrides_tile_id_index').on(table.overridesTileId),
+	index('tiles_uploaded_graphic_id_index').on(table.uploadedGraphicId),
 	...originConstraints('tiles', table),
 	check('tiles_overrides_belong_to_universe', sql`${table.overridesTileId} IS NULL OR ${table.universeId} IS NOT NULL`),
 	check('tiles_name_required', sql`${table.name} IS NOT NULL OR ${table.overridesTileId} IS NOT NULL`),
@@ -705,6 +713,7 @@ export const items = pgTable('items', {
 	unique('items_ruleset_key_unique').on(table.ruleset, table.key),
 	unique('items_universe_overrides_unique').on(table.universeId, table.draft, table.overridesItemId),
 	index('items_universe_id_index').on(table.universeId),
+	index('items_overrides_item_id_index').on(table.overridesItemId),
 	...originConstraints('items', table),
 	check('items_overrides_belong_to_universe', sql`${table.overridesItemId} IS NULL OR ${table.universeId} IS NOT NULL`),
 	check('items_name_required', sql`${table.name} IS NOT NULL OR ${table.overridesItemId} IS NOT NULL`)
@@ -788,6 +797,7 @@ export const races = pgTable('races', {
 	unique('races_ruleset_key_unique').on(table.ruleset, table.key),
 	unique('races_universe_overrides_unique').on(table.universeId, table.draft, table.overridesRaceId),
 	index('races_universe_id_index').on(table.universeId),
+	index('races_overrides_race_id_index').on(table.overridesRaceId),
 	...originConstraints('races', table),
 	index('races_starting_area_id_index').on(table.startingAreaId),
 	check('races_overrides_belong_to_universe', sql`${table.overridesRaceId} IS NULL OR ${table.universeId} IS NOT NULL`),
@@ -945,6 +955,7 @@ export const classes = pgTable('classes', {
 	unique('classes_ruleset_key_unique').on(table.ruleset, table.key),
 	unique('classes_universe_overrides_unique').on(table.universeId, table.draft, table.overridesClassId),
 	index('classes_universe_id_index').on(table.universeId),
+	index('classes_overrides_class_id_index').on(table.overridesClassId),
 	...originConstraints('classes', table),
 	index('classes_starting_area_id_index').on(table.startingAreaId),
 	check('classes_overrides_belong_to_universe', sql`${table.overridesClassId} IS NULL OR ${table.universeId} IS NOT NULL`),
@@ -1022,6 +1033,7 @@ export const themes = pgTable('themes', {
 	unique('themes_ruleset_key_unique').on(table.ruleset, table.key),
 	unique('themes_universe_overrides_unique').on(table.universeId, table.draft, table.overridesThemeId),
 	index('themes_universe_id_index').on(table.universeId),
+	index('themes_overrides_theme_id_index').on(table.overridesThemeId),
 	...originConstraints('themes', table),
 	check('themes_overrides_belong_to_universe', sql`${table.overridesThemeId} IS NULL OR ${table.universeId} IS NOT NULL`),
 	check('themes_name_required', sql`${table.name} IS NOT NULL OR ${table.overridesThemeId} IS NOT NULL`)
@@ -1114,6 +1126,7 @@ export const areas = pgTable('areas', {
 }, (table) => [
 	index('areas_universe_id_index').on(table.universeId),
 	index('areas_parent_area_id_index').on(table.parentAreaId),
+	index('areas_default_tile_id_index').on(table.defaultTileId),
 	...originConstraints('areas', table),
 	check('areas_width', sql`${table.maxColumn} - ${table.minColumn} BETWEEN 0 AND ${sql.raw(String(MAX_MAP_SIDE - 1))}`),
 	check('areas_height', sql`${table.maxRow} - ${table.minRow} BETWEEN 0 AND ${sql.raw(String(MAX_MAP_SIDE - 1))}`),
@@ -1520,6 +1533,7 @@ export const chatMessages = pgTable('chat_messages', {
 	sentAt: timestamp('sent_at', { withTimezone: true }).notNull()
 }, (table) => [
 	check('chat_messages_text_length', sql`char_length(${table.text}) BETWEEN 1 AND ${sql.raw(String(MAX_CHAT_MESSAGE_LENGTH))}`),
+	index('chat_messages_universe_id_index').on(table.universeId),
 	index('chat_messages_group_id_index').on(table.groupId, table.id).where(sql`${table.groupId} is not null`),
 	index('chat_messages_editors_index').on(table.universeId, table.id).where(sql`${table.groupId} is null`),
 	index('chat_messages_player_id_index').on(table.playerId)
