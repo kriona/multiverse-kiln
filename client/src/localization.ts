@@ -77,21 +77,38 @@ export function availableLocales(): string[]
 }
 
 /**
- * Switches to a language: remembers it in the browser and loads the page again in it
+ * Whether the pages can be shown in a language, as it is or in another region's version of it
+ *
+ * @param locale The language tag, e.g. "de"
+ * @return Whether there are translations for it, or it is English
+ */
+export function pagesHaveLanguage(locale: string): boolean
+{
+	const base = (language: string) => language.split('-')[0].toLowerCase();
+
+	return((base(matchLocale([locale], availableLocales())) === base(locale)));
+}
+
+/**
+ * Switches to a language: remembers it in the browser and loads the page again in it. A language the
+ * pages aren't translated into is remembered with the page's language after it, so universe text is
+ * shown in it and the pages stay as they are
  *
  * @param locale The language tag
  */
 export function chooseLocale(locale: string): void
 {
+	const choice = (pagesHaveLanguage(locale) ? locale : `${locale},${translator.locale}`);
+
 	try
 	{
-		localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+		localStorage.setItem(LOCALE_STORAGE_KEY, choice);
 		replacePageParameters({ [LOCALE_PARAMETER]: undefined });
 	}
 	catch
 	{
 		// Without storage, the choice lasts as long as it stays in the page's address
-		replacePageParameters({ [LOCALE_PARAMETER]: locale });
+		replacePageParameters({ [LOCALE_PARAMETER]: choice });
 	}
 
 	window.location.reload();
@@ -99,7 +116,7 @@ export function chooseLocale(locale: string): void
 
 /**
  * The languages the player wants, most wanted first, for the server to show universe text in (as the
- * Accept-Language header): the one they chose, then the browser's, whether or not the pages have them,
+ * Accept-Language header): those they chose, then the browser's, whether or not the pages have them,
  * since a universe may be translated into a language the engine isn't
  *
  * @return The language tags, leaving out anything that isn't one
@@ -110,9 +127,9 @@ export function wantedLanguages(): string[]
 }
 
 /**
- * The languages the player wants, most wanted first: the one chosen with the language picker or with
- * ?locale= (e.g. ?locale=en-XA for the pseudo-language), then the browser's. ?locale= given empty
- * forgets the choice
+ * The languages the player wants, most wanted first: those chosen with a language picker or with
+ * ?locale= (e.g. ?locale=en-XA for the pseudo-language, or ?locale=de,en-x-pirate for German universe
+ * text on Pirate pages), then the browser's. ?locale= given empty forgets the choice
  *
  * @return The languages
  */
@@ -135,18 +152,32 @@ function requestedLocales(): readonly string[]
 
 		if (remembered !== null)
 		{
-			return([remembered, ...navigator.languages]);
+			return([...splitLocales(remembered), ...navigator.languages]);
 		}
 	}
 	catch
 	{
 		if ((chosen !== undefined) && (chosen !== ''))
 		{
-			return([chosen, ...navigator.languages]);
+			return([...splitLocales(chosen), ...navigator.languages]);
 		}
 	}
 
 	return(navigator.languages);
+}
+
+/**
+ * The languages in a remembered choice
+ *
+ * @param choice Language tags separated by commas, most wanted first
+ * @return The tags
+ */
+function splitLocales(choice: string): string[]
+{
+	return(choice
+		.split(',')
+		.map((locale) => locale.trim())
+		.filter((locale) => (locale !== '')));
 }
 
 /**

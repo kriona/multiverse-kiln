@@ -9,6 +9,8 @@ Each universe links to its [page](#universe-page).
 ## Universe page
 Every universe on Home has a page of its own at `/universe/<slug>`, listing all details about the universe, with an [Enter Universe](#enter-universe) button. A universe at the `end of time` has one too, which says it is locked; one in `prologue` or `in the beginning` has one only for players whose role lets them play it in that stage (`canViewUniverse()` in `shared/src/universes.ts`), and a disabled universe has none. The page doesn't need a login; while the browser is logged in (in any tab), it also lists the player's characters in the universe, with each one's race and class; choosing one shows their [character sheet](#character-sheet). The slug is made from the universe's name: lowercase, with every run of characters other than letters and digits turned into a hyphen ("The Shattered Isles!" is `the-shattered-isles`). Letters of every alphabet are kept, so a name in any language reads in its address. `/universe/<id>` always works too, and changes the address to the slug.
 
+Its Languages section lists the languages the universe can be played in (its source language, then those it is translated into), each named in its own language and in the page's, and marks the one the player sees its text in now. Choosing one plays the universe in it, the way the language picker at the bottom of the page does (see [Choosing a language](#choosing-a-language)), and lets players choose languages the site itself isn't translated into: those are marked "Universe text only", and a note under the list explains that choosing one shows universes' own text in it while the site's buttons and menus stay in the language they are in. While the browser is logged in and the player's profile names a language, choosing one changes the profile's language too (`PUT /profile/locale`), since universe text is looked up in the profile's language first, and the section says so.
+
 Universe names are unique, and names that could be mistaken for each other count as the same, so one universe can't pass as another. Two names are the same when they have the same slug, or when they match once capitals, accents, letters from other alphabets that look like Latin ones, stand-ins such as "1" for "i", repeated letters and the spaces and punctuation between words are set aside (the same comparison player names get for reserved words, `shared/src/names.ts`). "Kilnhaven", "Kiln Haven", "K1lnhaven" and "Кilnhaven" (with a Cyrillic К) are all the same name. A name needs at least one letter or digit. Renaming a universe changes its slug, so links that used the old slug stop working; links by ID keep working.
 
 ## About
@@ -121,6 +123,7 @@ The lobby runs the game engine. It will be a small area where many people (more 
 - The space to walk around is the universe's lobby area (see [Tab: Lobby](#tab-lobby)). A universe with no lobby area, or a disabled one, has a lobby with no map: the chat, who's here and your characters work as usual, but there is nowhere to walk. The map comes and goes as the lobby's area changes, without leaving the lobby.
 - If you have a character selected, a [Create Group](#create-group) button will be enabled.
 - Groups can be listed in the lobby so players can find them without an invite. How a group manages its listing is not yet defined.
+- Leave lobby goes back to the universe's [page](#universe-page).
 
 Colyseus has no built-in player limit for a room; we set it (`maxClients`). The real limit comes from the server's CPU and bandwidth: every movement is sent to every other player, so traffic grows with the square of the number of players. The number will come from load testing. When the lobby is full, another instance of it opens.
 
@@ -876,6 +879,7 @@ Translators get context for every piece of text, because one English word can ne
 ## Choosing a language
 - A player's language comes from their [profile](#profile-edit), then the language picker at the bottom of every page (which the browser remembers, so it works without a profile), then the browser's settings, then English. The picker names each language in that language.
 - The pages and editors use the player's language if the engine has it. Universe text uses the closest language the universe has, so a French player sees French pages even in a universe written only in English.
+- A universe's page also lets the player choose any language the universe is translated into, including ones the engine isn't. The browser then remembers that language with the page's language after it, so universe text is shown in the chosen language and the pages stay in theirs.
 
 ## Finding a translation
 Universe text uses the first of these that exists:

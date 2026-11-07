@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canManageEditors, canManageVersions, canPlayUniverse, canTranslate, canViewUniverse, EDITOR_CHANGE_CHECKS, editorAccessOf, mayMakeChange, maySaveInStage, UNIVERSE_ROLES, UNIVERSE_STAGES, type EditorAccess, type EditorChange, type EditorRole, type UniverseAccess, type UniverseRole } from '@multiverse-kiln/shared';
+import { ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canManageEditors, canManageVersions, canPlayUniverse, canTranslate, canViewUniverse, EDITOR_CHANGE_CHECKS, EDITOR_ROLES, editorAccessOf, mayMakeChange, maySaveInStage, UNIVERSE_ROLES, UNIVERSE_STAGES, type EditorAccess, type EditorChange, type UniverseAccess, type UniverseRole } from '@multiverse-kiln/shared';
 
 /**
  * Someone's access with a role and no languages
@@ -75,7 +75,7 @@ describe('Universe roles (shared)', () =>
 
 	it('lets only creators and the site admin role save at the end of time, and anyone leave', () =>
 	{
-		const savers = [...UNIVERSE_ROLES, ADMIN_ROLE].map((role) => [role, maySaveInStage([paint], 'end_of_time', { role, languages: [] }, playerId)]);
+		const savers = EDITOR_ROLES.map((role) => [role, maySaveInStage([paint], 'end_of_time', { role, languages: [] }, playerId)]);
 
 		assert.deepStrictEqual(savers, [
 			['creator', true],
@@ -97,7 +97,7 @@ describe('Universe roles (shared)', () =>
 
 	it('lets only creators and the site admin role start, apply and discard the draft', () =>
 	{
-		const managers = ([...UNIVERSE_ROLES, ADMIN_ROLE] as EditorRole[]).map((role) => [role, ...(['startDraft', 'discardDraft'] as const).map((kind) => mayMakeChange({ kind }, { role, languages: [] }, playerId))]);
+		const managers = EDITOR_ROLES.map((role) => [role, ...(['startDraft', 'discardDraft'] as const).map((kind) => mayMakeChange({ kind }, { role, languages: [] }, playerId))]);
 
 		assert.deepStrictEqual(managers, [
 			['creator', true, true],

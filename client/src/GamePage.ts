@@ -7,7 +7,7 @@ import { describeEditorError } from './network/editorApi';
 import { GroupApi } from './network/groupApi';
 import { getUniverseDetails, joinGroup, joinLobby, type GameConnection, type LobbyConnection, type ServerConnection } from './network/serverConnection';
 import { isLeavingPage } from './pageLifecycle';
-import { characterPageUrl, currentPageAddress, gamePageUrl, HOME_PAGE_URL, loginPageUrl, readGameUniverseKey, readPageParameter, replacePageParameters, replacePagePath } from './pages';
+import { characterPageUrl, currentPageAddress, gamePageUrl, HOME_PAGE_URL, loginPageUrl, readGameUniverseKey, readPageParameter, replacePageParameters, replacePagePath, universePageUrl } from './pages';
 import { readPlayerValue, rememberPlayerValue } from './rememberedValues';
 import { announce } from './ui/announcer';
 import { characterMessages } from './ui/characterMessages';
@@ -191,7 +191,7 @@ export class GamePage
 			},
 			leaveLobby: () =>
 			{
-				window.location.assign(HOME_PAGE_URL);
+				window.location.assign((this.universe ? universePageUrl(this.universe.slug) : HOME_PAGE_URL));
 			}
 		});
 

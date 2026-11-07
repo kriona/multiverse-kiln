@@ -507,6 +507,28 @@ export async function saveProfile(playerId: string, changes: ProfileChanges, exe
 }
 
 /**
+ * Changes the language a player's profile names, when it names one; a profile left on the browser's
+ * language keeps it
+ *
+ * @param playerId The account's ID
+ * @param locale The language's tag, written the usual way (Intl.getCanonicalLocales())
+ * @param executor The database, or a transaction
+ * @return Whether the profile named a language, and now names this one
+ */
+export async function replaceProfileLocale(playerId: string, locale: string, executor: Executor = db): Promise<boolean>
+{
+	const changed = await executor
+		.update(players)
+		.set({
+			locale
+		})
+		.where(and(eq(players.id, playerId), isNotNull(players.locale)))
+		.returning({ id: players.id });
+
+	return((changed.length > 0));
+}
+
+/**
  * Stores an account's new password hash
  *
  * @param playerId The account's ID

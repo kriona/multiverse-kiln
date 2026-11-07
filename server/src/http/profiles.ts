@@ -8,11 +8,11 @@
  */
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { canPlayUniverse, defineMessages, DISALLOWED_TEXT_CHARACTERS, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, PLAYERS_PATH, PROFILE_LANGUAGES, PROFILE_PATH, SOCIAL_SITES, SOCIAL_USERNAME_PATTERNS, UNIVERSE_STAGES, type CharacterVisibilityRequest, type OptionName, type OwnProfilePayload, type PlayerProfilePayload, type ProfileCharacter, type ProfileField, type ProfileUpdateRequest, type SocialSite, type SocialUsernames } from '@multiverse-kiln/shared';
+import { canPlayUniverse, defineMessages, DISALLOWED_TEXT_CHARACTERS, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, PLAYERS_PATH, PROFILE_LANGUAGES, PROFILE_PATH, SOCIAL_SITES, SOCIAL_USERNAME_PATTERNS, UNIVERSE_STAGES, type CharacterVisibilityRequest, type OptionName, type OwnProfilePayload, type PlayerProfilePayload, type ProfileCharacter, type ProfileField, type ProfileLocaleRequest, type ProfileUpdateRequest, type SocialSite, type SocialUsernames } from '@multiverse-kiln/shared';
 
 import { listProfileCharacters, setCharacterVisibility, type ProfileCharacterRecord } from '../db/characterRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
-import { AccountTakenError, findOwnProfile, findProfileByUsername, saveProfile } from '../db/playerRepo.js';
+import { AccountTakenError, findOwnProfile, findProfileByUsername, replaceProfileLocale, saveProfile } from '../db/playerRepo.js';
 import { listProviderLogins } from '../db/providerLoginRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
 import { isServerAdmin } from '../db/serverAdminRepo.js';
@@ -116,6 +116,10 @@ const profileUpdateRequest = z.object({
 	showCharacters: z.boolean()
 }) satisfies z.ZodType<ProfileUpdateRequest, unknown>;
 
+const profileLocaleRequest = z.object({
+	locale: z.string().max(MAX_LOCALE_LENGTH)
+}) satisfies z.ZodType<ProfileLocaleRequest>;
+
 const characterVisibilityRequest = z.object({
 	visibleOnProfile: z.boolean()
 }) satisfies z.ZodType<CharacterVisibilityRequest>;
@@ -173,6 +177,7 @@ export function addProfileRoutes(app: Application, allowedOrigins: Set<string>):
 	own.use(requireLogin);
 	own.get('/', ownProfileRoute);
 	own.put('/', updateProfileRoute);
+	own.put('/locale', profileLocaleRoute);
 	own.put('/characters/:characterId', characterVisibilityRoute);
 	own.get('/export', exportRoute);
 	own.get('/deletion', deletionRoute);
@@ -407,6 +412,36 @@ async function updateProfileRoute(request: Request, response: Response): Promise
 		return;
 	}
 
+	response.sendStatus(204);
+}
+
+/**
+ * PUT PROFILE_LOCALE_PATH: changes the language the logged-in player's profile names, when it names one
+ *
+ * @param request The request, with a ProfileLocaleRequest
+ * @param response The response: 204, whether or not the profile named a language
+ */
+async function profileLocaleRoute(request: Request, response: Response): Promise<void>
+{
+	const body = profileLocaleRequest.safeParse(request.body);
+
+	if (!body.success)
+	{
+		sendInvalidRequest(response, body.error);
+		return;
+	}
+
+	if (!isLanguageTag(body.data.locale))
+	{
+		sendRefusal<ProfileField>(response, {
+			status: 400,
+			message: profileMessages.locale,
+			field: 'locale'
+		});
+		return;
+	}
+
+	await replaceProfileLocale(playerIdOf(request), Intl.getCanonicalLocales(body.data.locale)[0]);
 	response.sendStatus(204);
 }
 

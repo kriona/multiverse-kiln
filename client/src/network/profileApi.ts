@@ -1,5 +1,5 @@
 import type { Client } from '@colyseus/sdk';
-import { playerProfilePath, PROFILE_DELETION_PATH, PROFILE_EXPORT_PATH, PROFILE_PATH, profileCharacterPath, type AccountDeletionPayload, type AccountExport, type OwnProfilePayload, type PlayerProfilePayload, type ProfileField, type ProfileUpdateRequest } from '@multiverse-kiln/shared';
+import { playerProfilePath, PROFILE_DELETION_PATH, PROFILE_EXPORT_PATH, PROFILE_LOCALE_PATH, PROFILE_PATH, profileCharacterPath, type AccountDeletionPayload, type AccountExport, type OwnProfilePayload, type PlayerProfilePayload, type ProfileField, type ProfileLocaleRequest, type ProfileUpdateRequest } from '@multiverse-kiln/shared';
 
 import { EditorApiError, sendRequest } from './editorApi';
 
@@ -35,6 +35,19 @@ export class ProfileApi
 	async saveProfile(profile: ProfileUpdateRequest): Promise<void>
 	{
 		await sendRequest(this.client, 'PUT', PROFILE_PATH, profile);
+	}
+
+	/**
+	 * Changes the language the logged-in player's profile names, when it names one; a profile left on
+	 * the browser's language keeps it
+	 *
+	 * @param locale The language's tag
+	 */
+	async saveProfileLocale(locale: string): Promise<void>
+	{
+		const request: ProfileLocaleRequest = { locale };
+
+		await sendRequest(this.client, 'PUT', PROFILE_LOCALE_PATH, request);
 	}
 
 	/**

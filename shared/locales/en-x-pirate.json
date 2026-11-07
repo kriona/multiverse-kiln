@@ -7147,6 +7147,22 @@
 		"message": "Set Sail",
 		"source": "Enter Universe"
 	},
+	"universePage.languageShown": {
+		"message": "Hoisted",
+		"source": "In use"
+	},
+	"universePage.languagesHeading": {
+		"message": "Tongues",
+		"source": "Languages"
+	},
+	"universePage.languagesIntro": {
+		"message": "Pick the tongue to sail this universe in.",
+		"source": "Choose the language to play this universe in."
+	},
+	"universePage.languagesProfileNote": {
+		"message": "Pickin' a tongue also makes it the tongue on yer profile.",
+		"source": "Choosing a language also makes it the language on your profile."
+	},
 	"universePage.loadFailed": {
 		"message": "Couldn't haul up the universe. Reload the page to try again.",
 		"source": "Could not load the universe. Reload the page to try again."
@@ -7159,8 +7175,20 @@
 		"message": "That universe be lost at sea. It may sail under a new name, or it ain't open to all hands yet.",
 		"source": "That universe could not be found. It may have been renamed, or it isn't open to everyone yet."
 	},
+	"universePage.profileLocaleFailed": {
+		"message": "Couldn't change the tongue on yer profile, so the tongue weren't changed.",
+		"source": "Could not change the language on your profile, so the language wasn't changed."
+	},
 	"universePage.unavailableTitle": {
 		"message": "Universe",
 		"source": "Universe"
+	},
+	"universePage.universeTextOnly": {
+		"message": "Universe words only",
+		"source": "Universe text only"
+	},
+	"universePage.universeTextOnlyNote": {
+		"message": "The site itself ain't been turned into the tongues marked \"{label}\" yet. Pickin' one shows universes' own words in it, such as their names, tales, areas and booty, wherever a universe be turned into it. The site's buttons and menus stay in the tongue they be in now.",
+		"source": "The site itself isn't translated into the languages marked \"{label}\" yet. Choosing one shows universes' own text in it, such as their names, descriptions, areas and items, wherever a universe is translated into it. The site's buttons and menus stay in the language they are in now."
 	}
 }
