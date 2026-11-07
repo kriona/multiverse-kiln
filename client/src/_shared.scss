@@ -400,9 +400,11 @@ button.sort-button
 }
 
 // A chat's messages and the field for sending one, in the lobby, a group and the editors' chat
+// Fills its chat panel and scrolls; min-height lets it shrink below its messages' height to do so
 .chat-log
 {
 	flex: 1;
+	min-height: 0;
 	overflow-y: auto;
 	margin: 0 0 12px;
 	padding: 0;
