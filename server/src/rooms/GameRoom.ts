@@ -1,7 +1,7 @@
-import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
+import { Room, ServerError, type AuthContext, type Client, type CloseCode } from 'colyseus';
 import { canViewUniverse, cellIndexInChunk, characterBar, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, GameMessageType, GameServerMessageType, GameState, GroupMember, MessageType, NOTHING_BARRED, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, ServerCloseCode, ServerMessageType, visibleCells, type BarredOptions, type CellsSeenPayload, type ChatAuthorDeletedPayload, type CellValue, type NoticePayload, type Sight, type StartingCell } from '@multiverse-kiln/shared';
 
-import { resolveSession } from '../auth/sessions.js';
+import { resolveSession, type SessionIdentity } from '../auth/sessions.js';
 import { loadBarredOptions } from '../db/barredOptions.js';
 import { markCharacterPlayed } from '../db/characterRepo.js';
 import { findGroup, listGroupMembers, saveGroupClock, saveMemberPositions, type GroupMemberRecord, type MemberPosition } from '../db/groupRepo.js';
@@ -20,8 +20,9 @@ import { universeAccessChanges, type BarredChange, type StageChange } from '../p
 import { areaChanges, type AreaPlace } from '../world/areaChanges.js';
 import { areaOccupants } from '../world/areaOccupants.js';
 import { InvalidMessages } from './invalidMessages.js';
+import { JoinChanges } from './joinChanges.js';
 import { CHAT_SAVE_INTERVAL_MS, KeptChatLog } from './keptChat.js';
-import { mayViewUniverse } from './universePlay.js';
+import { entryRefusalCode, findViewRefusal, type EntryRefusal } from './universePlay.js';
 import { chatPayload, controlPayload, describeInvalidPayload, gameJoinOptions, movePayload } from './payloads.js';
 import { createChatLimiter } from './rateLimiter.js';
 import { AreaCache, toLinkCells, type ActiveArea } from './areaCache.js';
@@ -49,6 +50,30 @@ interface GameIdentity
 }
 
 type GameClient = Client<{ auth: GameIdentity }>;
+
+/**
+ * What a joining window found out about itself: its session, and whether its player may open their
+ * groups in the universe
+ */
+interface GameLookup
+{
+	/**
+	 * Undefined when the window's browser isn't logged in
+	 */
+	session: SessionIdentity | undefined;
+
+	/**
+	 * Why the player may not open their groups; undefined when they may, or there is no session
+	 */
+	refusal: EntryRefusal | undefined;
+}
+
+/**
+ * The changes to who may open the universe's groups that a joining window may miss (JoinChanges):
+ * sessions ending, the universe being deleted or disabled, players losing their role, and its stage
+ * changing
+ */
+type GameJoinChange = 'session' | 'universe' | 'access' | 'stage';
 
 /**
  * Milliseconds between saves of what the group has seen while players are in the room; it is saved
@@ -84,7 +109,9 @@ function identityOf(client: GameClient): GameIdentity
  * where they were when their player last left (or beside the anchor being, for a character new to the
  * group); each window controls one of them and can switch to another (GameMessageType.Control). When a
  * player's last window leaves, their characters are taken off the map and where they were is saved.
- * The room disposes once everyone has left
+ * The room disposes once everyone has left. A window that joins while its session ends, or while who
+ * may open the universe's groups changes, looks itself up again once it is listed (JoinChanges), so the
+ * change reaches it too
  *
  * In a universe at the end of time the room is locked (state.locked): members can open it and look at
  * the map, and switch between their characters, but it ignores moves and links
@@ -193,6 +220,8 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	 * How many invalid messages each client has sent this session (server-only, not synced)
 	 */
 	private readonly invalidMessages = new InvalidMessages();
+
+	private readonly joinChanges = new JoinChanges<GameJoinChange, GameLookup>();
 
 	/**
 	 * The group's chat, loaded in onCreate
@@ -392,6 +421,8 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			{
 				if (((change.kind === 'universeDeleted') || (change.kind === 'universeDisabled')) && (change.universeId === this.universeId))
 				{
+					this.joinChanges.note('universe');
+
 					for (const client of this.clients)
 					{
 						client.leave(((change.kind === 'universeDeleted') ? ServerCloseCode.UniverseDeleted : ServerCloseCode.UniverseDisabled));
@@ -445,12 +476,14 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			}),
 			connectedSessions.onEnd((sessionIds) =>
 			{
+				this.joinChanges.note('session');
 				this.turnAwaySessions(sessionIds);
 			}),
 			universeAccessChanges.onLost((change) =>
 			{
 				if (change.universeId === this.universeId)
 				{
+					this.joinChanges.note('access');
 					this.turnAwayPlayers(change.playerIds);
 				}
 			}),
@@ -458,6 +491,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			{
 				if (change.universeId === this.universeId)
 				{
+					this.joinChanges.note('stage');
 					this.applyStageChange(change);
 				}
 			})
@@ -468,12 +502,12 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	 * Admits a client only when its browser is logged in and asks to play one of its player's characters
 	 * in this group who can be played
 	 *
-	 * @param _client The joining client
+	 * @param client The joining client
 	 * @param options The client's GameJoinOptions
 	 * @param context The connection's request headers, which carry the session cookie
 	 * @return The client's identity, stored as client.auth; false to turn the client away
 	 */
-	async onAuth(_client: Client, options: unknown, context: AuthContext): Promise<GameIdentity | false>
+	async onAuth(client: Client, options: unknown, context: AuthContext): Promise<GameIdentity | false>
 	{
 		const joinOptions = gameJoinOptions.safeParse(options);
 
@@ -482,10 +516,14 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			return(false);
 		}
 
-		const session = await resolveSession(context.headers.get('cookie'));
+		const cookieHeader = context.headers.get('cookie');
+
+		this.joinChanges.startLookup(client, () => this.lookUp(cookieHeader));
+
+		const { session, refusal } = await this.lookUp(cookieHeader);
 		const member = this.members.get(joinOptions.data.characterId);
 
-		if (!session || (member?.playerId !== session.playerId) || !this.canPlay(member) || !await mayViewUniverse(this.universeId, session.playerId))
+		if (!session || (member?.playerId !== session.playerId) || !this.canPlay(member) || (refusal !== undefined))
 		{
 			return(false);
 		}
@@ -499,12 +537,15 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 
 	/**
 	 * Puts every playable character of the joining client's player on the map, if they aren't already,
-	 * gives the client the character it asked for, and sends it the group's chat
+	 * gives the client the character it asked for, and sends it the group's chat. A window that may have
+	 * missed a change while it joined looks itself up again first (recheckJoining())
 	 *
 	 * @param client The joining client
 	 */
 	async onJoin(client: GameClient): Promise<void>
 	{
+		await this.recheckJoining(client);
+
 		const { playerId, characterId } = identityOf(client);
 		let clients = this.windows.get(playerId);
 
@@ -530,7 +571,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 
 		this.areaPlayers.join(client, characterId, this.appearanceOf(member), startingArea);
 		client.send(GameServerMessageType.ChatHistory, this.chat.history());
-		connectedSessions.connect(identityOf(client).sessionId);
+		connectedSessions.connect(client, identityOf(client).sessionId);
 
 		console.log(client.sessionId, 'joined group', this.groupId, 'as character', characterId);
 	}
@@ -545,11 +586,11 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	 */
 	async onLeave(client: GameClient, code: CloseCode): Promise<void>
 	{
-		const { sessionId, playerId } = identityOf(client);
+		const { playerId } = identityOf(client);
 		const left = this.areaPlayers.leave(client);
 		const clients = this.windows.get(playerId);
 
-		connectedSessions.disconnect(sessionId);
+		connectedSessions.disconnect(client);
 		this.invalidMessages.forget(client.sessionId);
 		clients?.delete(client);
 		console.log(client.sessionId, 'left group', this.groupId, code);
@@ -1096,6 +1137,53 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			{
 				console.error('Could not bring character', characterId, 'back into group', this.groupId, error);
 			});
+		}
+	}
+
+	/**
+	 * Looks a joining window up: its session, and whether its player may open their groups in the
+	 * universe
+	 *
+	 * @param cookieHeader The connection's Cookie header
+	 * @return What it found
+	 */
+	private async lookUp(cookieHeader: string | null): Promise<GameLookup>
+	{
+		const session = await resolveSession(cookieHeader);
+
+		return({
+			session,
+			refusal: (session ? await findViewRefusal(this.universeId, session.playerId) : undefined)
+		});
+	}
+
+	/**
+	 * Looks a joining window up again when a change it may have missed was published while onAuth looked
+	 * it up (JoinChanges), and turns it away, with the code the room's listeners would have turned it away
+	 * with, when its session has ended or its player may no longer open their groups in the universe
+	 *
+	 * @param client The joining client, already among the room's clients
+	 * @return Resolves once the window may stay
+	 */
+	private async recheckJoining(client: GameClient): Promise<void>
+	{
+		const rechecked = await this.joinChanges.recheck(client);
+
+		if (!rechecked)
+		{
+			return;
+		}
+
+		const { found, missed } = rechecked;
+
+		if (!found.session)
+		{
+			throw new ServerError(ServerCloseCode.LoggedOut, 'The window\'s session ended while it joined');
+		}
+
+		if (found.refusal !== undefined)
+		{
+			throw new ServerError(entryRefusalCode(found.refusal, missed.has('stage')), 'The window\'s player may no longer open their groups in the universe');
 		}
 	}
 

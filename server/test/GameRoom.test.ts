@@ -25,6 +25,7 @@ import type { GameRoom } from '../src/rooms/GameRoom.js';
 import { areaChanges } from '../src/world/areaChanges.js';
 import { addCharacter, addGroup, addPlayableUniverse, defaultClassId, defaultRaceId, dwarfFighter, type PlayableUniverse } from './db/fixtures.js';
 import { Inbox } from './inbox.js';
+import { changeDuringNextLookup, refusedWith } from './joinRaces.js';
 import { addPlayer, TestBrowsers } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
 import { waitUntil } from './waitUntil.js';
@@ -386,6 +387,29 @@ describe('GameRoom', () =>
 		});
 
 		assert.strictEqual(await left, ServerCloseCode.UniverseDisabled);
+	});
+
+	it('turns away a window whose universe is disabled while it joins', async () =>
+	{
+		const room = await createGameRoom();
+		const { client } = await joinFromBrowser(room, randomUUID());
+		const member = await addPlayerWithCharacter('Latecomer');
+
+		await joinGroup(member);
+		changeDuringNextLookup(room, 'lookUp', async () =>
+		{
+			await setUniverseDisabled(universe.universeId, 'Breaks the rules');
+			areaChanges.publish({
+				kind: 'universeDisabled',
+				universeId: universe.universeId
+			});
+		});
+
+		const left = waitForLeave(client);
+
+		await assert.rejects(joinAs(room, randomUUID(), member), refusedWith(ServerCloseCode.UniverseDisabled));
+		assert.strictEqual(await left, ServerCloseCode.UniverseDisabled);
+		assert.ok(!room.state.players.has(member.characterId));
 	});
 
 	it('opens read-only at the end of time, follows the stage as it changes, and turns away players a new stage doesn\'t let play', async () =>

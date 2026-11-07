@@ -352,8 +352,9 @@ describe('Admin session list', () =>
 	{
 		const ada = await addPlayer('Ada Lovelace');
 		const playing = await logInBrowser(ada.id);
+		const window = {};
 
-		connectedSessions.connect(playing.sessionId);
+		connectedSessions.connect(window, playing.sessionId);
 
 		try
 		{
@@ -364,7 +365,7 @@ describe('Admin session list', () =>
 		}
 		finally
 		{
-			connectedSessions.disconnect(playing.sessionId);
+			connectedSessions.disconnect(window);
 		}
 	});
 
@@ -489,7 +490,10 @@ describe('Admin player list', () =>
 
 		await addPlayer('Alan Turing');
 		await logInBrowser(ada.id);
-		connectedSessions.connect(playing.sessionId);
+
+		const window = {};
+
+		connectedSessions.connect(window, playing.sessionId);
 
 		try
 		{
@@ -502,7 +506,7 @@ describe('Admin player list', () =>
 		}
 		finally
 		{
-			connectedSessions.disconnect(playing.sessionId);
+			connectedSessions.disconnect(window);
 		}
 	});
 

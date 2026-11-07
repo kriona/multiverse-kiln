@@ -8,7 +8,9 @@ import { pool } from '../src/db/client.js';
 import { addServerAdmin } from '../src/db/serverAdminRepo.js';
 import { SESSION_LIFETIMES } from '../src/logic/sessionLifetimes.js';
 import { connectedSessions } from '../src/players/connectedSessions.js';
+import type { SessionRoom } from '../src/rooms/SessionRoom.js';
 import { Inbox } from './inbox.js';
+import { changeDuringNextLookup } from './joinRaces.js';
 import { addPlayer, logInBrowser, type TestBrowser } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
 import { waitUntil } from './waitUntil.js';
@@ -164,6 +166,21 @@ describe('SessionRoom', () =>
 		assert.strictEqual(await takeAccount(window1.inbox), null);
 		assert.strictEqual(await takeAccount(window2.inbox), null);
 		assert.strictEqual(other.inbox.pending(SessionServerMessageType.Account), 0);
+	});
+
+	it('tells a window whose session ends while it joins that it isn\'t logged in', async () =>
+	{
+		const browser = await logInNewBrowser('Ada');
+		const room = colyseus.getRoomById<SessionRoom>((await openWindow()).room.roomId);
+
+		changeDuringNextLookup(room, 'lookUp', async () =>
+		{
+			await pool.query('DELETE FROM sessions WHERE id = $1', [browser.sessionId]);
+			connectedSessions.end([browser.sessionId]);
+		});
+
+		assert.strictEqual((await openWindow(browser.cookie)).account, null);
+		assert.ok(!connectedSessions.ids().includes(browser.sessionId));
 	});
 
 	it('counts a session\'s connected windows until the last leaves', async () =>

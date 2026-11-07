@@ -6,8 +6,10 @@ import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 import { EDITOR_ROOM_NAME, EditorMessageType, EditorServerMessageType, EditorState, MAX_CHAT_MESSAGE_LENGTH, NoticeReason, ServerCloseCode, VOID_CELL, type ChatAuthorDeletedPayload, type ChatReadPayload, type EditorJoinOptions, type EditorPlacePayload, type EditorSavedPayload, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type RaceListPayload, type UniverseRole } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { findChatRead, listChatMessages } from '../src/db/chatRepo.js';
+import { pool } from '../src/db/client.js';
 import { deletePlayer } from '../src/db/playerRepo.js';
 import { addServerAdmin } from '../src/db/serverAdminRepo.js';
+import { deleteTwoFactor } from '../src/db/twoFactorRepo.js';
 import { listUniverseEdits } from '../src/db/universeEditRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { accountDeletions } from '../src/players/accountDeletions.js';
@@ -19,6 +21,7 @@ import { areaChanges } from '../src/world/areaChanges.js';
 import { editorUpdates } from '../src/world/editorUpdates.js';
 import { createArea, createUniverse, logIn, saveChanges, send, type Editor } from './editorRequests.js';
 import { Inbox } from './inbox.js';
+import { changeDuringNextLookup, refusedWith } from './joinRaces.js';
 import { usernameFor } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
 import { turnOnTwoFactor } from './twoFactorAccounts.js';
@@ -584,6 +587,62 @@ describe('EditorRoom', () =>
 				roles: new Map([[alan.playerId, undefined]])
 			});
 			assert.strictEqual(await alanLeft, ServerCloseCode.AccessLost);
+		});
+
+		it('turns away a window whose player stops being a server admin while it joins, when they have no role', async () =>
+		{
+			const grace = await logIn('Grace');
+			const adaWindow = await openEditor(ada, universeId);
+			const room = roomOf(adaWindow);
+
+			await addServerAdmin(grace.playerId);
+			await turnOnTwoFactor(grace.playerId);
+			changeDuringNextLookup(room, 'findAdmission', async () =>
+			{
+				await deleteTwoFactor(grace.playerId);
+				serverAdminChanges.publishLost(grace.playerId);
+			});
+
+			await assert.rejects(openEditor(grace, universeId), refusedWith(ServerCloseCode.AccessLost));
+			await waitUntil(() => (room.clients.length === 1));
+			assert.deepStrictEqual([...room.state.editors.keys()], [ada.playerId]);
+		});
+
+		it('gives a window the role its player is given while it joins, and has it load the universe again', async () =>
+		{
+			const alan = await addEditor('Alan', 'builder');
+			const room = roomOf(await openEditor(ada, universeId));
+
+			changeDuringNextLookup(room, 'findAdmission', async () =>
+			{
+				await setUniverseRole(universeId, alan.playerId, 'translator');
+				editorUpdates.publish({
+					kind: 'roles',
+					universeId,
+					roles: new Map([[alan.playerId, 'translator']])
+				});
+			});
+
+			const alanWindow = await openEditor(alan, universeId);
+
+			await alanWindow.inbox.take(EditorServerMessageType.AccessChanged);
+			assert.strictEqual(room.state.editors.get(alan.playerId)?.role, 'translator');
+		});
+
+		it('turns away a window whose session ends while it joins', async () =>
+		{
+			const alan = await addEditor('Alan', 'builder');
+			const room = roomOf(await openEditor(ada, universeId));
+
+			changeDuringNextLookup(room, 'findAdmission', async () =>
+			{
+				await pool.query('DELETE FROM sessions WHERE player_id = $1', [alan.playerId]);
+				connectedSessions.end([alan.sessionId]);
+			});
+
+			await assert.rejects(openEditor(alan, universeId), refusedWith(ServerCloseCode.LoggedOut));
+			assert.deepStrictEqual([...room.state.editors.keys()], [ada.playerId]);
+			assert.ok(!connectedSessions.ids().includes(alan.sessionId));
 		});
 
 		it('tells only the windows of players a stage change changes what they may do for', async () =>

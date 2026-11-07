@@ -1,7 +1,7 @@
-import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
+import { Room, ServerError, type AuthContext, type Client, type CloseCode } from 'colyseus';
 import { canPlayUniverse, characterBar, LobbyMember, LobbyMessageType, LobbyServerMessageType, LobbyState, MessageType, NOTHING_BARRED, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, ServerCloseCode, ServerMessageType, type BarredOptions, type ChatAuthorDeletedPayload, type ChatHistoryPayload, type ChatMessage, type NoticePayload, type PlayingAsPayload, type Sight } from '@multiverse-kiln/shared';
 
-import { resolveSession } from '../auth/sessions.js';
+import { resolveSession, type SessionIdentity } from '../auth/sessions.js';
 import { loadBarredOptions } from '../db/barredOptions.js';
 import { listPlayableCharacters, markCharacterPlayed, type PlayableCharacter } from '../db/characterRepo.js';
 import { loadRaceSight } from '../db/raceRepo.js';
@@ -16,7 +16,8 @@ import { universeAccessChanges, type BarredChange, type StageChange } from '../p
 import { areaChanges } from '../world/areaChanges.js';
 import { areaOccupants } from '../world/areaOccupants.js';
 import { InvalidMessages } from './invalidMessages.js';
-import { mayPlayUniverse } from './universePlay.js';
+import { JoinChanges } from './joinChanges.js';
+import { entryRefusalCode, findPlayRefusal, type EntryRefusal } from './universePlay.js';
 import { chatPayload, chooseCharacterPayload, describeInvalidPayload, movePayload, roomOptions } from './payloads.js';
 import { createChatLimiter } from './rateLimiter.js';
 import { AreaCache, type ActiveArea } from './areaCache.js';
@@ -37,6 +38,29 @@ interface LobbyIdentity
 }
 
 type LobbyClient = Client<{ auth: LobbyIdentity }>;
+
+/**
+ * What a joining window found out about itself: its session, and whether its player may play the
+ * universe
+ */
+interface LobbyLookup
+{
+	/**
+	 * Undefined when the window's browser isn't logged in
+	 */
+	session: SessionIdentity | undefined;
+
+	/**
+	 * Why the player may not play the universe; undefined when they may, or there is no session
+	 */
+	refusal: EntryRefusal | undefined;
+}
+
+/**
+ * The changes to who may play the universe that a joining window may miss (JoinChanges): sessions
+ * ending, the universe being deleted or disabled, players losing their role, and its stage changing
+ */
+type LobbyJoinChange = 'session' | 'universe' | 'access' | 'stage';
 
 /**
  * Who a lobby client is
@@ -64,7 +88,9 @@ export const CHAT_HISTORY_LENGTH = 50;
  *
  * Clients join with the universe's ID (LobbyJoinOptions), and every client asking for the same universe
  * joins the same room (filterBy in app.config.ts). Only logged-in browsers are admitted, and a window
- * whose session ends is turned away (ServerCloseCode.LoggedOut). Players start
+ * whose session ends is turned away (ServerCloseCode.LoggedOut). A window that joins while its session
+ * ends, or while who may play the universe changes, looks itself up again once it is listed
+ * (JoinChanges), so the change reaches it too. Players start
  * in the universe's lobby area and can walk through its links into other areas (see AreaPlayers)
  *
  * Each player plays one of their characters in the universe who isn't in a group (those play in their
@@ -143,6 +169,8 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	private chatHistory: ChatMessage[] = [];
 
 	private readonly chatLimiter = createChatLimiter();
+
+	private readonly joinChanges = new JoinChanges<LobbyJoinChange, LobbyLookup>();
 
 	/**
 	 * Each player's characters in the universe, read again whenever one of their windows joins
@@ -275,6 +303,8 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		{
 			if (((change.kind === 'universeDeleted') || (change.kind === 'universeDisabled')) && (change.universeId === this.universeId))
 			{
+				this.joinChanges.note('universe');
+
 				for (const client of this.clients)
 				{
 					client.leave(((change.kind === 'universeDeleted') ? ServerCloseCode.UniverseDeleted : ServerCloseCode.UniverseDisabled));
@@ -350,6 +380,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 
 		this.stopFollowingSessions = connectedSessions.onEnd((sessionIds) =>
 		{
+			this.joinChanges.note('session');
 			this.turnAwaySessions(sessionIds);
 		});
 
@@ -362,6 +393,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		{
 			if (change.universeId === this.universeId)
 			{
+				this.joinChanges.note('access');
 				this.turnAwayPlayers(change.playerIds);
 			}
 		});
@@ -370,6 +402,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		{
 			if (change.universeId === this.universeId)
 			{
+				this.joinChanges.note('stage');
 				this.applyStageChange(change);
 			}
 		});
@@ -418,18 +451,22 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	}
 
 	/**
-	 * Admits only clients whose browser is logged in
+	 * Admits only clients whose browser is logged in as a player who may play the universe
 	 *
-	 * @param _client The joining client
+	 * @param client The joining client
 	 * @param _options Join options from the client (already used to pick this room)
 	 * @param context The connection's request headers, which carry the session cookie
 	 * @return The client's identity, stored as client.auth; false to turn the client away
 	 */
-	async onAuth(_client: Client, _options: unknown, context: AuthContext): Promise<LobbyIdentity | false>
+	async onAuth(client: Client, _options: unknown, context: AuthContext): Promise<LobbyIdentity | false>
 	{
-		const session = await resolveSession(context.headers.get('cookie'));
+		const cookieHeader = context.headers.get('cookie');
 
-		if (!session || !await mayPlayUniverse(this.universeId, session.playerId))
+		this.joinChanges.startLookup(client, () => this.lookUp(cookieHeader));
+
+		const { session, refusal } = await this.lookUp(cookieHeader);
+
+		if (!session || (refusal !== undefined))
 		{
 			return(false);
 		}
@@ -446,12 +483,15 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	 * area, while the lobby has a map, as the character they played or made most recently (a ghost when
 	 * they have none). A player
 	 * already here keeps their character, unless they were a ghost and have since made one. Then sends
-	 * the client who it is playing and the recent chat
+	 * the client who it is playing and the recent chat. A window that may have missed a change while it
+	 * joined looks itself up again first (recheckJoining())
 	 *
 	 * @param client The joining client
 	 */
 	async onJoin(client: LobbyClient): Promise<void>
 	{
+		await this.recheckJoining(client);
+
 		const { playerId } = identityOf(client);
 		const characters = await listPlayableCharacters(playerId, this.universeId);
 		const lobbyArea = (this.state.hasMap ? await this.lobbyArea() : undefined);
@@ -485,7 +525,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 
 		client.send(LobbyServerMessageType.PlayingAs, playingAs);
 		client.send(LobbyServerMessageType.ChatHistory, history);
-		connectedSessions.connect(identityOf(client).sessionId);
+		connectedSessions.connect(client, identityOf(client).sessionId);
 	}
 
 	/**
@@ -499,7 +539,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	{
 		const left = this.areaPlayers.leave(client);
 
-		connectedSessions.disconnect(identityOf(client).sessionId);
+		connectedSessions.disconnect(client);
 
 		this.invalidMessages.forget(client.sessionId);
 		console.log(client.sessionId, 'left the lobby of universe', this.universeId, code);
@@ -859,6 +899,52 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		for (const client of this.areaPlayers.getClients(playerId))
 		{
 			client.send(LobbyServerMessageType.CharactersChanged);
+		}
+	}
+
+	/**
+	 * Looks a joining window up: its session, and whether its player may play the universe
+	 *
+	 * @param cookieHeader The connection's Cookie header
+	 * @return What it found
+	 */
+	private async lookUp(cookieHeader: string | null): Promise<LobbyLookup>
+	{
+		const session = await resolveSession(cookieHeader);
+
+		return({
+			session,
+			refusal: (session ? await findPlayRefusal(this.universeId, session.playerId) : undefined)
+		});
+	}
+
+	/**
+	 * Looks a joining window up again when a change it may have missed was published while onAuth looked
+	 * it up (JoinChanges), and turns it away, with the code the room's listeners would have turned it away
+	 * with, when its session has ended or its player may no longer play the universe
+	 *
+	 * @param client The joining client, already among the room's clients
+	 * @return Resolves once the window may stay
+	 */
+	private async recheckJoining(client: LobbyClient): Promise<void>
+	{
+		const rechecked = await this.joinChanges.recheck(client);
+
+		if (!rechecked)
+		{
+			return;
+		}
+
+		const { found, missed } = rechecked;
+
+		if (!found.session)
+		{
+			throw new ServerError(ServerCloseCode.LoggedOut, 'The window\'s session ended while it joined');
+		}
+
+		if (found.refusal !== undefined)
+		{
+			throw new ServerError(entryRefusalCode(found.refusal, missed.has('stage')), 'The window\'s player may no longer play the universe');
 		}
 	}
 

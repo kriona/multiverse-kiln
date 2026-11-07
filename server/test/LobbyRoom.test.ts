@@ -23,6 +23,7 @@ import { CHAT_HISTORY_LENGTH, type LobbyRoom } from '../src/rooms/LobbyRoom.js';
 import { areaChanges } from '../src/world/areaChanges.js';
 import { addCharacter, addPlayableUniverse, addArea, defaultClassId, defaultRaceId, defaultTileId, type PlayableUniverse } from './db/fixtures.js';
 import { Inbox } from './inbox.js';
+import { changeDuringNextLookup, refusedWith } from './joinRaces.js';
 import { addPlayer, logInBrowser } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
 import { waitUntil } from './waitUntil.js';
@@ -276,6 +277,53 @@ describe('LobbyRoom', () =>
 			assert.strictEqual(await left, ServerCloseCode.AccessLost);
 			await waitUntil(() => (room.clients.length === 1));
 			assert.strictEqual(room.clients[0].sessionId, grace.room.sessionId);
+		});
+
+		it('turns away a window whose session ends while it joins', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const room = lobbyOf(ada);
+			const playerId = (await addPlayer('Grace')).id;
+
+			await addCharacter(playerId, universe.universeId, 'Grace');
+
+			const grace = await logInBrowser(playerId);
+
+			changeDuringNextLookup(room, 'lookUp', async () =>
+			{
+				await pool.query('DELETE FROM sessions WHERE id = $1', [grace.sessionId]);
+				connectedSessions.end([grace.sessionId]);
+			});
+
+			await assert.rejects(connect(grace.cookie, { universeId: universe.universeId }), refusedWith(ServerCloseCode.LoggedOut));
+			await waitUntil(() => (room.clients.length === 1));
+			assert.ok(!room.state.players.has(playerId));
+			assert.ok(!connectedSessions.ids().includes(grace.sessionId));
+		});
+
+		it('turns away a window whose player the universe\'s new stage shuts out while it joins', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const room = lobbyOf(ada);
+			const playerId = (await addPlayer('Grace')).id;
+
+			await addCharacter(playerId, universe.universeId, 'Grace');
+
+			const grace = await logInBrowser(playerId);
+
+			changeDuringNextLookup(room, 'lookUp', async () =>
+			{
+				await updateUniverseSettings(liveVersion(universe.universeId), { stage: 'prologue' });
+				universeAccessChanges.publishStage({
+					universeId: universe.universeId,
+					stage: 'prologue',
+					previousStage: 'let_there_be_light',
+					roles: new Map()
+				});
+			});
+
+			await assert.rejects(connect(grace.cookie, { universeId: universe.universeId }), refusedWith(ServerCloseCode.StageChanged));
+			await waitUntil(() => (room.clients.length === 0));
 		});
 
 		it('turns out the players a new stage doesn\'t let play, and everyone at the end of time', async () =>

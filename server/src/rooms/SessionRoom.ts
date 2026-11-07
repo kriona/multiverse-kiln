@@ -4,6 +4,7 @@ import { SessionServerMessageType, type AccountPayload } from '@multiverse-kiln/
 import { resolveSession, type SessionIdentity } from '../auth/sessions.js';
 import { isServerAdmin } from '../db/serverAdminRepo.js';
 import { connectedSessions } from '../players/connectedSessions.js';
+import { JoinChanges } from './joinChanges.js';
 
 /**
  * What onAuth found out about a client, available afterward as client.auth
@@ -64,6 +65,11 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 	 */
 	private readonly windows = new Map<string, Set<SessionClient>>();
 
+	/**
+	 * Sessions ending while windows join, which their lookups may miss
+	 */
+	private readonly joinChanges = new JoinChanges<'session', SessionWindow>();
+
 	private stopListening?: () => void;
 
 	messages = {};
@@ -82,6 +88,7 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 
 		this.stopListening = connectedSessions.onEnd((sessionIds) =>
 		{
+			this.joinChanges.note('session');
 			this.onSessionsEnd(sessionIds);
 		});
 	}
@@ -90,28 +97,37 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 	 * Admits every window, finding out from its session cookie whether its browser is logged in, and
 	 * whether its player is a server admin
 	 *
-	 * @param _client The joining client
+	 * @param client The joining client
 	 * @param _options Join options from the client (unused)
 	 * @param context The connection's request headers, which carry the session cookie
 	 * @return The window's identity, stored as client.auth
 	 */
-	async onAuth(_client: Client, _options: unknown, context: AuthContext): Promise<SessionWindow>
+	async onAuth(client: Client, _options: unknown, context: AuthContext): Promise<SessionWindow>
 	{
-		const session = ((await resolveSession(context.headers.get('cookie'))) ?? null);
+		const cookieHeader = context.headers.get('cookie');
 
-		return({
-			session,
-			serverAdmin: (session ? await isServerAdmin(session.playerId) : false)
-		});
+		this.joinChanges.startLookup(client, () => this.lookUp(cookieHeader));
+
+		return(this.lookUp(cookieHeader));
 	}
 
 	/**
-	 * Records the window and tells it who its player is
+	 * Records the window and tells it who its player is. A window whose lookup a session ending was
+	 * published during looks itself up again first (JoinChanges), since it isn't yet among the windows
+	 * onSessionsEnd() tells
 	 *
 	 * @param client The joining client
 	 */
-	onJoin(client: SessionClient): void
+	async onJoin(client: SessionClient): Promise<void>
 	{
+		const rechecked = await this.joinChanges.recheck(client);
+
+		if (rechecked)
+		{
+			windowOf(client).session = rechecked.found.session;
+			windowOf(client).serverAdmin = rechecked.found.serverAdmin;
+		}
+
 		const { session, serverAdmin } = windowOf(client);
 
 		if (session)
@@ -125,7 +141,7 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 			}
 
 			clients.add(client);
-			connectedSessions.connect(session.sessionId);
+			connectedSessions.connect(client, session.sessionId);
 		}
 
 		this.sendAccount(client, session, serverAdmin);
@@ -151,11 +167,26 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 			{
 				this.windows.delete(session.sessionId);
 			}
-
-			connectedSessions.disconnect(session.sessionId);
 		}
 
+		connectedSessions.disconnect(client);
 		console.log(client.sessionId, 'left the session', code);
+	}
+
+	/**
+	 * Looks a joining window up: its session, and whether its player is a server admin
+	 *
+	 * @param cookieHeader The connection's Cookie header
+	 * @return Its identity
+	 */
+	private async lookUp(cookieHeader: string | null): Promise<SessionWindow>
+	{
+		const session = ((await resolveSession(cookieHeader)) ?? null);
+
+		return({
+			session,
+			serverAdmin: (session ? await isServerAdmin(session.playerId) : false)
+		});
 	}
 
 	/**

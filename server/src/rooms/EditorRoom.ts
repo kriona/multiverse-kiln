@@ -1,7 +1,7 @@
-import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
+import { Room, ServerError, type AuthContext, type Client, type CloseCode } from 'colyseus';
 import { editorAccessOf, EditorMessageType, EditorPresence, EditorServerMessageType, EditorState, EditorWindow, NoticeReason, ServerCloseCode, stageChangesEditorAccess, type ChatAuthorDeletedPayload, type ChatReadPayload, type EditorRole, type EditorSavedPayload, type NoticePayload, type UniverseAccess, type UniverseRole } from '@multiverse-kiln/shared';
 
-import { resolveSession } from '../auth/sessions.js';
+import { resolveSession, type SessionIdentity } from '../auth/sessions.js';
 import { isActiveServerAdmin } from '../db/serverAdminRepo.js';
 import { findUniverseAccess } from '../db/universeEditorRepo.js';
 import { findUniverse } from '../db/universeRepo.js';
@@ -13,6 +13,7 @@ import { universeAccessChanges, type StageChange } from '../players/universeAcce
 import { areaChanges } from '../world/areaChanges.js';
 import { editorUpdates, type EditorUpdate, type SavedUpdate } from '../world/editorUpdates.js';
 import { InvalidMessages } from './invalidMessages.js';
+import { JoinChanges } from './joinChanges.js';
 import { CHAT_SAVE_INTERVAL_MS, KeptChatLog } from './keptChat.js';
 import { chatPayload, chatReadPayload, describeInvalidPayload, editorPlacePayload, roomOptions } from './payloads.js';
 import { createChatLimiter } from './rateLimiter.js';
@@ -51,6 +52,43 @@ interface EditorIdentity
 type EditorClient = Client<{ auth: EditorIdentity }>;
 
 /**
+ * The role a player may open the editor with
+ */
+interface EditorAdmission
+{
+	/**
+	 * Whether they are a server admin with 2FA on
+	 */
+	serverAdmin: boolean;
+
+	role: EditorRole;
+}
+
+/**
+ * What a joining window found out about itself: its session, and the role its player may open the
+ * editor with
+ */
+interface EditorLookup
+{
+	/**
+	 * Undefined when the window's browser isn't logged in
+	 */
+	session: SessionIdentity | undefined;
+
+	/**
+	 * Undefined when the player may not open the editor, or there is no session
+	 */
+	admission: EditorAdmission | undefined;
+}
+
+/**
+ * The changes to who may open the editor, and with what role, that a joining window may miss
+ * (JoinChanges): sessions ending, the universe being deleted, roles changing, server admins losing
+ * the site admin role, and the universe's stage changing or it being disabled or enabled
+ */
+type EditorJoinChange = 'session' | 'universeDeleted' | 'roles' | 'serverAdmin' | 'stage' | 'access';
+
+/**
  * Who an editor client is
  *
  * @param client A client that has passed onAuth
@@ -84,9 +122,10 @@ function identityOf(client: EditorClient): EditorIdentity
  * they lose the right to open the editor (ServerCloseCode.AccessLost), by losing their role or by no longer
  * being a server admin with 2FA on, and every window when the universe is deleted. A change to a player's
  * role, to the universe's stage or to whether it is disabled tells
- * the windows it concerns (EditorServerMessageType.AccessChanged), which load the universe again. Once a
- * save commits, every other window hears of it, with what it changed that the window shows
- * (EditorServerMessageType.Saved)
+ * the windows it concerns (EditorServerMessageType.AccessChanged), which load the universe again. A
+ * window that joins while one of these changes is published looks itself up again once it is listed
+ * (JoinChanges), so the change reaches it too. Once a save commits, every other window hears of it, with
+ * what it changed that the window shows (EditorServerMessageType.Saved)
  */
 export class EditorRoom extends Room<{ state: EditorState; client: EditorClient }>
 {
@@ -106,6 +145,8 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 	private readonly chatLimiter = createChatLimiter();
 
 	private readonly invalidMessages = new InvalidMessages();
+
+	private readonly joinChanges = new JoinChanges<EditorJoinChange, EditorLookup>();
 
 	/**
 	 * Each window's key in its player's EditorPresence.windows, by the client's session ID
@@ -231,6 +272,7 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 
 		this.stopFollowingSessions = connectedSessions.onEnd((sessionIds) =>
 		{
+			this.joinChanges.note('session');
 			this.turnAway((identity) => sessionIds.has(identity.sessionId), ServerCloseCode.LoggedOut);
 		});
 
@@ -238,6 +280,7 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 		{
 			if ((change.kind === 'universeDeleted') && (change.universeId === this.universeId))
 			{
+				this.joinChanges.note('universeDeleted');
 				this.turnAway(() => true, ServerCloseCode.UniverseDeleted);
 			}
 		});
@@ -254,12 +297,14 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 		{
 			if (change.universeId === this.universeId)
 			{
+				this.joinChanges.note('stage');
 				this.applyStageChange(change);
 			}
 		});
 
 		this.stopFollowingAdmins = serverAdminChanges.onLost((playerId) =>
 		{
+			this.joinChanges.note('serverAdmin');
 			void this.applyServerAdminLost(playerId);
 		});
 
@@ -292,14 +337,18 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 	 * Admits only clients whose browser is logged in as a player who may open the universe's editor, and
 	 * loads how far that player has read the chat
 	 *
-	 * @param _client The joining client
+	 * @param client The joining client
 	 * @param _options Join options from the client (already used to pick this room)
 	 * @param context The connection's request headers, which carry the session cookie
 	 * @return The client's identity, stored as client.auth; false to turn the client away
 	 */
-	async onAuth(_client: Client, _options: unknown, context: AuthContext): Promise<EditorIdentity | false>
+	async onAuth(client: Client, _options: unknown, context: AuthContext): Promise<EditorIdentity | false>
 	{
-		const session = await resolveSession(context.headers.get('cookie'));
+		const cookieHeader = context.headers.get('cookie');
+
+		this.joinChanges.startLookup(client, () => this.lookUp(cookieHeader));
+
+		const session = await resolveSession(cookieHeader);
 
 		if (!session)
 		{
@@ -313,14 +362,12 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 				(readAt) => ({ found: true as const, readAt }),
 				(error: unknown) => ({ found: false as const, error })
 			);
-		const [serverAdmin, universeAccess, read] = await Promise.all([
-			isActiveServerAdmin(session.playerId),
-			findUniverseAccess(this.universeId, session.playerId),
+		const [admission, read] = await Promise.all([
+			this.findAdmission(session.playerId),
 			chatRead
 		]);
-		const access = editorAccessOf(universeAccess, serverAdmin);
 
-		if (!access)
+		if (!admission)
 		{
 			return(false);
 		}
@@ -340,19 +387,22 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 			playerId: session.playerId,
 			name: session.name,
 			username: session.username,
-			serverAdmin,
-			role: access.role
+			serverAdmin: admission.serverAdmin,
+			role: admission.role
 		});
 	}
 
 	/**
 	 * Lists the window, and its player with the role just found when they have no other window here,
-	 * then sends it the chat, with how far its player has read it
+	 * then sends it the chat, with how far its player has read it. A window that may have missed a
+	 * change while it joined looks itself up again first (recheckJoining())
 	 *
 	 * @param client The joining client
 	 */
-	onJoin(client: EditorClient): void
+	async onJoin(client: EditorClient): Promise<void>
 	{
+		await this.recheckJoining(client);
+
 		const { sessionId, playerId, name, username, role } = identityOf(client);
 		let presence = this.state.editors.get(playerId);
 
@@ -379,7 +429,7 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 			areaId: ''
 		}));
 		client.send(EditorServerMessageType.ChatHistory, this.chat.history(playerId));
-		connectedSessions.connect(sessionId);
+		connectedSessions.connect(client, sessionId);
 	}
 
 	/**
@@ -390,7 +440,7 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 	 */
 	onLeave(client: EditorClient, code: CloseCode): void
 	{
-		const { sessionId, playerId } = identityOf(client);
+		const { playerId } = identityOf(client);
 		const presence = this.state.editors.get(playerId);
 		const key = this.windowKeys.get(client.sessionId);
 
@@ -407,9 +457,90 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 			}
 		}
 
-		connectedSessions.disconnect(sessionId);
+		connectedSessions.disconnect(client);
 		this.invalidMessages.forget(client.sessionId);
 		console.log(client.sessionId, 'left the editor of universe', this.universeId, code);
+	}
+
+	/**
+	 * Finds whether a player is a server admin with 2FA on, and the role they may open the editor with
+	 *
+	 * @param playerId The player's ID
+	 * @return Both; undefined when they may not open the editor
+	 */
+	private async findAdmission(playerId: string): Promise<EditorAdmission | undefined>
+	{
+		const [serverAdmin, universeAccess] = await Promise.all([
+			isActiveServerAdmin(playerId),
+			findUniverseAccess(this.universeId, playerId)
+		]);
+		const access = editorAccessOf(universeAccess, serverAdmin);
+
+		return((access ? { serverAdmin, role: access.role } : undefined));
+	}
+
+	/**
+	 * Looks a joining window up again, as onAuth did
+	 *
+	 * @param cookieHeader The connection's Cookie header
+	 * @return Its session, and the role its player may open the editor with
+	 */
+	private async lookUp(cookieHeader: string | null): Promise<EditorLookup>
+	{
+		const session = await resolveSession(cookieHeader);
+
+		return({
+			session,
+			admission: (session ? await this.findAdmission(session.playerId) : undefined)
+		});
+	}
+
+	/**
+	 * Looks a joining window up again when a change it may have missed was published while onAuth looked
+	 * it up (JoinChanges). The window is turned away, as the room's listeners would have turned it away,
+	 * when its session has ended, the universe was deleted or its player may no longer open the editor.
+	 * Otherwise it takes the role its player has now, and loads the universe again when that role, the
+	 * universe's stage or whether it is disabled changed, since the window may have loaded it before
+	 *
+	 * @param client The joining client, already among the room's clients
+	 * @return Resolves once the window has the role it has now
+	 */
+	private async recheckJoining(client: EditorClient): Promise<void>
+	{
+		const rechecked = await this.joinChanges.recheck(client);
+
+		if (!rechecked)
+		{
+			return;
+		}
+
+		const { found, missed } = rechecked;
+		const identity = identityOf(client);
+
+		if (missed.has('universeDeleted'))
+		{
+			throw new ServerError(ServerCloseCode.UniverseDeleted, 'The universe was deleted while the window joined');
+		}
+
+		if (!found.session)
+		{
+			throw new ServerError(ServerCloseCode.LoggedOut, 'The window\'s session ended while it joined');
+		}
+
+		if (!found.admission)
+		{
+			throw new ServerError(ServerCloseCode.AccessLost, 'The window\'s player lost access to the editor while it joined');
+		}
+
+		const changed = ((found.admission.role !== identity.role) || missed.has('stage') || missed.has('access'));
+
+		identity.serverAdmin = found.admission.serverAdmin;
+		identity.role = found.admission.role;
+
+		if (changed)
+		{
+			client.send(EditorServerMessageType.AccessChanged);
+		}
 	}
 
 	/**
@@ -446,6 +577,7 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 	{
 		if (update.kind === 'access')
 		{
+			this.joinChanges.note('access');
 			this.broadcast(EditorServerMessageType.AccessChanged);
 			return;
 		}
@@ -455,6 +587,8 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 			this.tellSaved(update);
 			return;
 		}
+
+		this.joinChanges.note('roles');
 
 		for (const [playerId, role] of update.roles)
 		{
