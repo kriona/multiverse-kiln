@@ -36,7 +36,7 @@ import { SaveAudit } from './editorSaveAudit.js';
 import { SaveMerge } from './editorSaveMerge.js';
 import { createRaceChange, removeRaceChange, saveRaceChange } from './editorRaces.js';
 import { createThemeChange, removeThemeChange, saveThemeChange } from './editorThemes.js';
-import { saveNoTranslationChange, saveTranslationChange, saveTranslatorNoteChange } from './editorTranslations.js';
+import { isUniverseTextChange, saveNoTranslationChange, saveTranslationChange, saveTranslatorNoteChange, settleUniverseText, writeSavedTranslations } from './editorTranslations.js';
 import { applyDraftChange, discardDraftChange, startDraftChange } from './editorDrafts.js';
 import { deleteTileGraphicChange, prepareUpload, uploadTileGraphicChange } from './editorTileGraphics.js';
 import { errorMessages, type Refusal } from './errors.js';
@@ -302,9 +302,16 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 					continue;
 				}
 
+				if (!isUniverseTextChange(change))
+				{
+					await settleUniverseText(saving);
+				}
+
 				await audit.describe(change);
 				await applyChange(saving, change);
 			}
+
+			await writeSavedTranslations(saving);
 
 			if (merge.conflicts.length > 0)
 			{

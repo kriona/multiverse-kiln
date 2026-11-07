@@ -53,6 +53,12 @@ export interface TextSaver
 }
 
 /**
+ * Most translations saveTranslations() writes in one statement, which keeps it well under the number
+ * of parameters a statement can take
+ */
+const TRANSLATIONS_PER_STATEMENT = 1000;
+
+/**
  * Adds a translation of a piece of universe text, or replaces the one it has in that language
  *
  * @param version The universe's live version or draft
@@ -61,25 +67,46 @@ export interface TextSaver
  */
 export async function saveTranslation(version: UniverseVersion, translation: UniverseTranslationRecord & { savedBy?: string | null }, executor: Executor = db): Promise<void>
 {
-	const savedBy = (translation.savedBy ?? null);
+	await saveTranslations(version, [translation], executor);
+}
 
-	await executor
-		.insert(universeTranslations)
-		.values({
-			universeId: version.universeId,
-			draft: version.draft,
-			...translation,
-			savedBy
-		})
-		.onConflictDoUpdate({
-			target: [universeTranslations.universeId, universeTranslations.draft, universeTranslations.kind, universeTranslations.thingId, universeTranslations.field, universeTranslations.language],
-			set: {
-				text: translation.text,
-				sourceHash: translation.sourceHash,
-				savedBy,
-				updatedAt: sql`now()`
-			}
-		});
+/**
+ * Adds translations of pieces of universe text, or replaces the ones they have in those languages, a
+ * statement for many at a time. A piece of text may come only once in each language
+ *
+ * @param version The universe's live version or draft
+ * @param translations The translations, each with the player saving it (null or left out for none)
+ * @param executor The database, or a transaction
+ */
+export async function saveTranslations(version: UniverseVersion, translations: readonly (UniverseTranslationRecord & { savedBy?: string | null })[], executor: Executor = db): Promise<void>
+{
+	for (let start = 0; start < translations.length; start += TRANSLATIONS_PER_STATEMENT)
+	{
+		await executor
+			.insert(universeTranslations)
+			.values(translations
+				.slice(start, (start + TRANSLATIONS_PER_STATEMENT))
+				.map((translation) => ({
+					universeId: version.universeId,
+					draft: version.draft,
+					kind: translation.kind,
+					thingId: translation.thingId,
+					field: translation.field,
+					language: translation.language,
+					text: translation.text,
+					sourceHash: translation.sourceHash,
+					savedBy: (translation.savedBy ?? null)
+				})))
+			.onConflictDoUpdate({
+				target: [universeTranslations.universeId, universeTranslations.draft, universeTranslations.kind, universeTranslations.thingId, universeTranslations.field, universeTranslations.language],
+				set: {
+					text: sql`excluded.text`,
+					sourceHash: sql`excluded.source_hash`,
+					savedBy: sql`excluded.saved_by`,
+					updatedAt: sql`now()`
+				}
+			});
+	}
 }
 
 /**
@@ -117,6 +144,42 @@ export async function findTranslation(version: UniverseVersion, ref: UniverseTex
 		sourceHash: row.sourceHash,
 		savedBy: saverOf(row)
 	});
+}
+
+/**
+ * A universe's translations into one language, with who saved each, as a save merges its changes with
+ * them
+ *
+ * @param version The universe's live version or draft
+ * @param language The language, by tag
+ * @param executor The database, or a transaction
+ * @return The translations, each with who saved it (null once their account is deleted, or when that
+ * isn't known), in no particular order
+ */
+export async function listTranslationsWithSavers(version: UniverseVersion, language: string, executor: Executor = db): Promise<(UniverseTranslationRecord & { savedBy: TextSaver | null })[]>
+{
+	const rows = await executor
+		.select({
+			kind: universeTranslations.kind,
+			thingId: universeTranslations.thingId,
+			field: universeTranslations.field,
+			language: universeTranslations.language,
+			text: universeTranslations.text,
+			sourceHash: universeTranslations.sourceHash,
+			name: players.displayName,
+			username: players.username
+		})
+		.from(universeTranslations)
+		.leftJoin(players, eq(players.id, universeTranslations.savedBy))
+		.where(and(
+			inVersion(universeTranslations, version),
+			eq(universeTranslations.language, language)
+		));
+
+	return(rows.map(({ name, username, ...translation }) => ({
+		...translation,
+		savedBy: saverOf({ name, username })
+	})));
 }
 
 /**
@@ -349,6 +412,36 @@ export async function findTranslatorNote(version: UniverseVersion, ref: Universe
 		note: row.note,
 		savedBy: saverOf(row)
 	});
+}
+
+/**
+ * Every note for translators in a universe, with who wrote or deleted each last, as a save merges its
+ * changes with them
+ *
+ * @param version The universe's live version or draft
+ * @param executor The database, or a transaction
+ * @return Each text's row of notes: its note (null for none), with who saved it (null once their account
+ * is deleted, or when that isn't known), in no particular order
+ */
+export async function listTranslatorNotesWithSavers(version: UniverseVersion, executor: Executor = db): Promise<(UniverseTextRef & { note: string | null; savedBy: TextSaver | null })[]>
+{
+	const rows = await executor
+		.select({
+			kind: universeTranslatorNotes.kind,
+			thingId: universeTranslatorNotes.thingId,
+			field: universeTranslatorNotes.field,
+			note: universeTranslatorNotes.note,
+			name: players.displayName,
+			username: players.username
+		})
+		.from(universeTranslatorNotes)
+		.leftJoin(players, eq(players.id, universeTranslatorNotes.noteSavedBy))
+		.where(inVersion(universeTranslatorNotes, version));
+
+	return(rows.map(({ name, username, ...note }) => ({
+		...note,
+		savedBy: saverOf({ name, username })
+	})));
 }
 
 /**

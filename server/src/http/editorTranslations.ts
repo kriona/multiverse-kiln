@@ -18,7 +18,7 @@ import { loadEditorItems } from '../db/itemRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
 import { loadEditorThemes } from '../db/themeRepo.js';
 import { loadEditorTiles } from '../db/tileRepo.js';
-import { deleteTranslationOf, deleteTranslatorNote, findTranslation, findTranslatorNote, listTranslations, listTranslatorNotes, saveTranslation, saveTranslatorNote, setNoTranslation, type TextSaver } from '../db/universeTextRepo.js';
+import { deleteTranslationOf, deleteTranslatorNote, findTranslation, findTranslatorNote, listTranslations, listTranslationsWithSavers, listTranslatorNotes, listTranslatorNotesWithSavers, saveTranslations, saveTranslatorNote, setNoTranslation, type TextSaver, type UniverseTranslationRecord } from '../db/universeTextRepo.js';
 import type { UniverseVersion } from '../db/universeVersions.js';
 import { refuse, type ChangeContext } from './editorChangeContext.js';
 import { universeContextOf } from './editorAccess.js';
@@ -328,10 +328,150 @@ export function pageUniverseText(rows: readonly UniverseTextRow[], query: Univer
 }
 
 /**
- * The universe's text as a save sees it, loaded the first time one of its changes needs it. The
- * Translations tab saves after the other tabs, so the text is as their changes left it
+ * A translation as saved, with who saved it
  */
-const savedText = new WeakMap<ChangeContext, Promise<Map<string, UniverseTextSource>>>();
+interface SavedTranslation
+{
+	text: string;
+	sourceHash: string;
+	savedBy: TextSaver | null;
+}
+
+/**
+ * A note for translators as saved, with who saved it
+ */
+interface SavedNote
+{
+	note: string | null;
+	savedBy: TextSaver | null;
+}
+
+/**
+ * What a save's text changes share: the universe's text, its translations and its notes as saved,
+ * each loaded the first time one of its changes needs it, rather than a query for each change, and
+ * the translations it saves, written together. The changes of another kind can change any of it, so
+ * the save forgets it before each of those (settleUniverseText())
+ */
+interface SaveTextState
+{
+	/**
+	 * The universe's text in the source language, by textKey()
+	 */
+	text?: Promise<Map<string, UniverseTextSource>>;
+
+	/**
+	 * Its translations into each language, by the language as the universe writes its tag, then by textKey()
+	 */
+	translations: Map<string, Promise<Map<string, SavedTranslation>>>;
+
+	/**
+	 * Its notes, by textKey()
+	 */
+	notes?: Promise<Map<string, SavedNote>>;
+
+	/**
+	 * The translations (by translationKey()) and notes (by textKey()) the save has changed, which are
+	 * looked up in the database again, since those loaded were loaded before it changed them
+	 */
+	changedTranslations: Set<string>;
+	changedNotes: Set<string>;
+
+	/**
+	 * The translations the save adds or replaces and hasn't written yet, by translationKey()
+	 */
+	unwritten: Map<string, UniverseTranslationRecord & { savedBy: string }>;
+}
+
+/**
+ * Each save's text changes' state
+ */
+const saveTextStates = new WeakMap<ChangeContext, SaveTextState>();
+
+/**
+ * A save's text changes' state, made the first time a change needs it
+ *
+ * @param context The save
+ * @return The state
+ */
+function saveTextState(context: ChangeContext): SaveTextState
+{
+	let state = saveTextStates.get(context);
+
+	if (!state)
+	{
+		state = {
+			translations: new Map(),
+			changedTranslations: new Set(),
+			changedNotes: new Set(),
+			unwritten: new Map()
+		};
+		saveTextStates.set(context, state);
+	}
+
+	return(state);
+}
+
+/**
+ * The key a translation is found by
+ *
+ * @param ref The piece of text
+ * @param language The translation's language, as the universe writes its tag
+ * @return The key
+ */
+function translationKey(ref: UniverseTextRef, language: string): string
+{
+	return(`${textKey(ref)}\n${language}`);
+}
+
+/**
+ * Whether a change saves a translation, a note for translators or a mark that text needs no
+ * translation: the changes whose state a save keeps (SaveTextState)
+ *
+ * @param change The change
+ * @return True when it does
+ */
+export function isUniverseTextChange(change: EditorChange): boolean
+{
+	return((change.kind === 'saveTranslation') || (change.kind === 'saveTranslatorNote') || (change.kind === 'saveNoTranslation'));
+}
+
+/**
+ * Writes the translations a save adds or replaces that it hasn't written yet, a statement for many at
+ * a time. Call it once the save's other changes are saved, and before any change of another kind,
+ * which may change the same translations
+ *
+ * @param context The save
+ */
+export async function writeSavedTranslations(context: ChangeContext): Promise<void>
+{
+	const state = saveTextStates.get(context);
+
+	if (!state || (state.unwritten.size === 0))
+	{
+		return;
+	}
+
+	const translations = [...state.unwritten.values()];
+
+	state.unwritten.clear();
+	await saveTranslations(context.version, translations, context.transaction);
+}
+
+/**
+ * Writes the translations a save hasn't written yet, and forgets the text, translations and notes it
+ * loaded, before a change of another kind, which may change them: renaming or deleting what text
+ * belongs to, or changing the universe's languages
+ *
+ * @param context The save
+ */
+export async function settleUniverseText(context: ChangeContext): Promise<void>
+{
+	if (saveTextStates.has(context))
+	{
+		await writeSavedTranslations(context);
+		saveTextStates.delete(context);
+	}
+}
 
 /**
  * A piece of the universe's text, as a save sees it
@@ -342,15 +482,66 @@ const savedText = new WeakMap<ChangeContext, Promise<Map<string, UniverseTextSou
  */
 async function findText(context: ChangeContext, ref: UniverseTextRef): Promise<UniverseTextSource | undefined>
 {
-	let loaded = savedText.get(context);
+	const state = saveTextState(context);
+
+	state.text ??= collectUniverseText(context.universe, context.version, context.transaction).then((texts) => new Map(texts.map((text) => [textKey(text), text])));
+
+	return((await state.text).get(textKey(ref)));
+}
+
+/**
+ * A translation as a save sees it
+ *
+ * @param context The save
+ * @param ref The piece of text, by the universe's own ref
+ * @param language The translation's language, as the universe writes its tag
+ * @return The translation, or undefined when there is none
+ */
+async function findSavedTranslation(context: ChangeContext, ref: UniverseTextRef, language: string): Promise<SavedTranslation | undefined>
+{
+	const state = saveTextState(context);
+	const key = translationKey(ref, language);
+
+	if (state.unwritten.has(key))
+	{
+		await writeSavedTranslations(context);
+	}
+
+	if (state.changedTranslations.has(key))
+	{
+		return(findTranslation(context.version, ref, language, context.transaction));
+	}
+
+	let loaded = state.translations.get(language);
 
 	if (!loaded)
 	{
-		loaded = collectUniverseText(context.universe, context.version, context.transaction).then((texts) => new Map(texts.map((text) => [textKey(text), text])));
-		savedText.set(context, loaded);
+		loaded = listTranslationsWithSavers(context.version, language, context.transaction).then((rows) => new Map(rows.map((row) => [textKey(row), row])));
+		state.translations.set(language, loaded);
 	}
 
 	return((await loaded).get(textKey(ref)));
+}
+
+/**
+ * A note for translators as a save sees it
+ *
+ * @param context The save
+ * @param ref The piece of text, by the universe's own ref
+ * @return The note, or undefined when the text has no row of notes
+ */
+async function findSavedNote(context: ChangeContext, ref: UniverseTextRef): Promise<SavedNote | undefined>
+{
+	const state = saveTextState(context);
+
+	if (state.changedNotes.has(textKey(ref)))
+	{
+		return(findTranslatorNote(context.version, ref, context.transaction));
+	}
+
+	state.notes ??= listTranslatorNotesWithSavers(context.version, context.transaction).then((rows) => new Map(rows.map((row) => [textKey(row), row])));
+
+	return((await state.notes).get(textKey(ref)));
 }
 
 /**
@@ -419,7 +610,7 @@ export async function findSavedText(context: ChangeContext, change: MergedTextCh
 
 	if (change.kind === 'saveTranslatorNote')
 	{
-		const saved = await findTranslatorNote(context.version, ref, context.transaction);
+		const saved = await findSavedNote(context, ref);
 
 		return({
 			place,
@@ -437,7 +628,7 @@ export async function findSavedText(context: ChangeContext, change: MergedTextCh
 		return(undefined);
 	}
 
-	const saved = await findTranslation(context.version, ref, language, context.transaction);
+	const saved = await findSavedTranslation(context, ref, language);
 
 	return({
 		place,
@@ -474,7 +665,8 @@ async function textOf(context: ChangeContext, ref: UniverseTextRef): Promise<Uni
 
 /**
  * Saves a translation of a piece of universe text, or deletes it. The language must be one the universe
- * is translated into
+ * is translated into. A translation added or replaced is written with the save's others, by
+ * writeSavedTranslations()
  *
  * @param context The save
  * @param change The change
@@ -499,19 +691,25 @@ export async function saveTranslationChange(context: ChangeContext, change: Extr
 		field: text.field
 	};
 
+	const state = saveTextState(context);
+	const key = translationKey(ref, language);
+
+	state.changedTranslations.add(key);
+
 	if (change.translation === null)
 	{
+		state.unwritten.delete(key);
 		await deleteTranslationOf(context.version, ref, language, context.transaction);
 		return;
 	}
 
-	await saveTranslation(context.version, {
+	state.unwritten.set(key, {
 		...ref,
 		language,
 		text: change.translation,
 		sourceHash: change.sourceHash,
 		savedBy: context.playerId
-	}, context.transaction);
+	});
 }
 
 /**
@@ -528,6 +726,8 @@ export async function saveTranslatorNoteChange(context: ChangeContext, change: E
 		thingId: text.thingId,
 		field: text.field
 	};
+
+	saveTextState(context).changedNotes.add(textKey(ref));
 
 	if (change.note === null)
 	{
@@ -547,10 +747,13 @@ export async function saveTranslatorNoteChange(context: ChangeContext, change: E
 export async function saveNoTranslationChange(context: ChangeContext, change: Extract<EditorChange, { kind: 'saveNoTranslation' }>): Promise<void>
 {
 	const text = await textOf(context, change.text);
-
-	await setNoTranslation(context.version, {
+	const ref: UniverseTextRef = {
 		kind: text.kind,
 		thingId: text.thingId,
 		field: text.field
-	}, change.noTranslation, context.transaction);
+	};
+
+	// Marking text can add or delete its row of notes
+	saveTextState(context).changedNotes.add(textKey(ref));
+	await setNoTranslation(context.version, ref, change.noTranslation, context.transaction);
 }
