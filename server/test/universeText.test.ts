@@ -133,7 +133,20 @@ describe('universe text in the player\'s language', () =>
 		assert.match(before.response.headers.get('cache-control') ?? '', /no-cache/);
 		assert.strictEqual((await textIn('fr', etag)).response.status, 304);
 
-		await translate(universeId, 'area', areaId, 'name', 'fr', 'Prairie');
+		// Saved from the editor, which tells the server the text changed, so it builds it again
+		const translatedSave = await saveChanges(ada, universeId, [{
+			kind: 'saveTranslation',
+			text: {
+				kind: 'area',
+				thingId: areaId,
+				field: 'name'
+			},
+			language: 'fr',
+			translation: 'Prairie',
+			sourceHash: sourceTextHash('Meadow')
+		}]);
+
+		assert.strictEqual(translatedSave.status, 200, JSON.stringify(translatedSave.body));
 
 		const translated = await textIn('fr', etag);
 		const english = await textIn('de');

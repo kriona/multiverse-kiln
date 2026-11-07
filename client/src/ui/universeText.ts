@@ -5,6 +5,13 @@ import { getUniverseText } from '../network/serverConnection';
 import { tileName } from './tileNames';
 
 /**
+ * Longest a window waits to load the text again after a room says it changed, in milliseconds. Every
+ * window of the universe hears it at once, so each waits a random time up to this, and the server isn't
+ * asked by all of them together
+ */
+const RELOAD_SPREAD_MS = 5000;
+
+/**
  * The names a universe's rooms leave the game to look up by ID, in the player's language: a room sends
  * the same areas to every player, with their names in the universe's source language
  */
@@ -19,6 +26,11 @@ export class UniverseText
 	 * Changes with every load, so text that arrives for an earlier one is ignored
 	 */
 	private version = 0;
+
+	/**
+	 * The load waiting to start after a room said the text changed, if there is one
+	 */
+	private reloadTimer: number | undefined;
 
 	/**
 	 * @param client Client for the server
@@ -49,6 +61,24 @@ export class UniverseText
 		{
 			console.error('Could not load the universe\'s text; showing its names as its editors wrote them:', error);
 		}
+	}
+
+	/**
+	 * Loads the text again after a room says it changed, after waiting a random time up to
+	 * RELOAD_SPREAD_MS. Saying so again while it waits loads it once
+	 */
+	reloadSoon(): void
+	{
+		if (this.reloadTimer !== undefined)
+		{
+			return;
+		}
+
+		this.reloadTimer = window.setTimeout(() =>
+		{
+			this.reloadTimer = undefined;
+			void this.load();
+		}, (Math.random() * RELOAD_SPREAD_MS));
 	}
 
 	/**
