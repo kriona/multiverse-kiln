@@ -217,6 +217,16 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 	 */
 	private requestVersion = 0;
 
+	/**
+	 * Whether the Translations tab is showing. A hidden table loads nothing: it waits to be shown
+	 */
+	private visible = false;
+
+	/**
+	 * Whether the page shown was asked to load while the table was hidden, so it loads once it shows
+	 */
+	private stale = false;
+
 	private searchTimer: number | undefined;
 
 	/**
@@ -315,22 +325,40 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 		this.sorter.reset();
 		this.language.replaceChildren();
 		this.notifyChanged();
-		this.useUniverse(universe);
+		this.showLanguages(universe);
+		this.offset = 0;
+		void this.refresh();
 	}
 
 	/**
 	 * Follows the universe's languages as they are saved, keeping the language chosen while it is still
-	 * one of them, and the changes made
+	 * one of them, and the changes made. The table loads from the first page when the language chosen
+	 * changes; otherwise it keeps the page it shows
 	 *
 	 * @param universe The universe as saved
 	 */
 	useUniverse(universe: EditableUniverse): void
 	{
+		if (this.showLanguages(universe))
+		{
+			this.offset = 0;
+			void this.refresh();
+		}
+	}
+
+	/**
+	 * Offers the languages of a universe the player may see, keeping the language chosen while it is
+	 * still one of them, and says when there are none
+	 *
+	 * @param universe The universe
+	 * @return True when the language chosen changed
+	 */
+	private showLanguages(universe: EditableUniverse): boolean
+	{
 		const chosen = this.language.value;
 		const languages = this.visibleLanguages(universe);
 
 		this.universe = universe;
-		this.offset = 0;
 		this.language.replaceChildren(...languages.map((language) =>
 		{
 			const option = new Option(languageName(language), language);
@@ -355,7 +383,8 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 					defaultMessage: 'The universe isn\'t translated into any language yet. Add one above, and save, to translate its text.',
 					description: 'Shown on the editor\'s Translations tab in place of the table of the universe\'s text while the universe has no languages it is translated into'
 				}))));
-		void this.refresh();
+
+		return(this.language.value !== chosen);
 	}
 
 	/**
@@ -558,14 +587,38 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 	}
 
 	/**
+	 * Follows whether the Translations tab is showing, loading the page shown once it does if it was
+	 * asked to load while the tab was hidden
+	 *
+	 * @param visible Whether it is showing
+	 */
+	setVisible(visible: boolean): void
+	{
+		this.visible = visible;
+
+		if (visible && this.stale)
+		{
+			void this.refresh();
+		}
+	}
+
+	/**
 	 * Loads the page of text the language, search, filters, order and offset ask for, then shows it with
-	 * the changes made since
+	 * the changes made since. While the tab is hidden it only notes that the page is out of date
 	 */
 	private async refresh(): Promise<void>
 	{
 		const universe = this.universe;
 		const version = ++this.requestVersion;
 		const language = this.language.value;
+
+		if (!this.visible)
+		{
+			this.stale = true;
+			return;
+		}
+
+		this.stale = false;
 
 		if (!universe || (language === ''))
 		{
