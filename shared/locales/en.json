@@ -2411,10 +2411,6 @@
 		"defaultMessage": "Passage of time",
 		"description": "Label of the field for how the time of day changes in a universe or area; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
-	"editor.play": {
-		"defaultMessage": "Enter Universe",
-		"description": "Button in the editor's toolbar that goes to the universe's lobby to play"
-	},
 	"editor.presence.area": {
 		"defaultMessage": "{tab} - {area}",
 		"description": "In the bar at the bottom of the universe's editor, where another editor's window is: {tab} is the tab's name, such as Areas, and {area} the name of the area it shows"
@@ -3410,6 +3406,10 @@
 	"editor.version.liveWithDraftNotice": {
 		"defaultMessage": "You are editing the live version of this universe. The universe has a draft: changes saved here are replaced when the draft is applied unless they are also made in the draft.",
 		"description": "Shown above the editor's tabs while the live version of a universe with a draft is open"
+	},
+	"editor.view": {
+		"defaultMessage": "View Universe",
+		"description": "Button in the editor's toolbar that goes to the universe's page, which players see"
 	},
 	"email.accountCreated.body": {
 		"defaultMessage": "Your account on {siteName} has been created.",
@@ -7179,16 +7179,24 @@
 		"defaultMessage": "Could not change the language on your profile, so the language wasn't changed.",
 		"description": "Shown in the Languages section of a universe's page when choosing a language failed because the player's profile couldn't be changed to it"
 	},
+	"universePage.siteLanguageChanged": {
+		"defaultMessage": "The site is now in {language}.",
+		"description": "Shown for a few seconds at the top of a universe's page after the player chose a language in its Languages section that the site is translated into, so the site switched to it; {language} is the language's name in itself, such as \"Deutsch\""
+	},
 	"universePage.unavailableTitle": {
 		"defaultMessage": "Universe",
 		"description": "The browser tab's title on a universe's page when the universe couldn't be shown, before the game engine's name"
 	},
 	"universePage.universeTextOnly": {
-		"defaultMessage": "Universe text only",
-		"description": "In the Languages section of a universe's page, beside a language the site itself isn't translated into, and quoted in the note under the list that explains it: choosing it shows the universe's own text in it, while the site's buttons and menus stay as they are"
+		"defaultMessage": "universe text only",
+		"description": "In the Languages section of a universe's page, in parentheses beside a language the site itself isn't translated into, and quoted in the note under the list that explains it: choosing it shows the universe's own text in it, while the site's buttons and menus stay as they are"
 	},
 	"universePage.universeTextOnlyNote": {
 		"defaultMessage": "The site itself isn't translated into the languages marked \"{label}\" yet. Choosing one shows universes' own text in it, such as their names, descriptions, areas and items, wherever a universe is translated into it. The site's buttons and menus stay in the language they are in now.",
-		"description": "Under the list in the Languages section of a universe's page, when some of its languages are ones the site isn't translated into; {label} is the words shown beside those languages, \"Universe text only\""
+		"description": "Under the list in the Languages section of a universe's page, when some of its languages are ones the site isn't translated into; {label} is the words shown in parentheses beside those languages, \"universe text only\""
+	},
+	"universePage.universeTextOnlyTag": {
+		"defaultMessage": "({label})",
+		"description": "Parentheses around the words beside a language the site itself isn't translated into, in the Languages section of a universe's page; {label} is those words, \"universe text only\""
 	}
 }

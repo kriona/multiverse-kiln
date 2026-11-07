@@ -1,4 +1,4 @@
-import { canEditUniverseSettings, languageName, loadedFor, MAX_UNIVERSE_LANGUAGES, PROFILE_LANGUAGES, type EditableUniverse, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, languageName, loadedFor, MAX_UNIVERSE_LANGUAGES, UNIVERSE_LANGUAGES, type EditableUniverse, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 import trashIcon from 'virtual:icon/ph:trash';
 
 import { currentLocale, t } from '../../localization';
@@ -26,10 +26,11 @@ export class TranslationsTab implements SavableTab
 	private readonly error = getElement('translations-error', HTMLElement);
 
 	/**
-	 * The languages that can be chosen: every language a profile can name, and any other the universe
-	 * already has, which open() adds so a save never drops it. The chip field reads it as it changes
+	 * The languages that can be chosen: those the editor offers universes (UNIVERSE_LANGUAGES), and any
+	 * other the universe already has, which open() adds so a save never drops it. The chip field reads
+	 * it as it changes
 	 */
-	private readonly choices: ComboboxChoice[] = languageChoices(PROFILE_LANGUAGES);
+	private readonly choices: ComboboxChoice[] = languageChoices(UNIVERSE_LANGUAGES);
 
 	private readonly languages: ChipCombobox;
 

@@ -4,6 +4,7 @@
  * renamed, is translated with the engine instead (localization.ts)
  */
 import { MAX_DIFFICULTY_NAME_LENGTH } from './difficulty.js';
+import { PIRATE_LOCALE } from './localization.js';
 import { MAX_COIN_ABBREVIATION_LENGTH, MAX_COIN_NAME_LENGTH } from './money.js';
 import { MAX_AREA_NAME_LENGTH, MAX_CLASS_NAME_LENGTH, MAX_ITEM_NAME_LENGTH, MAX_LONG_DESCRIPTION_LENGTH, MAX_RACE_NAME_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_THEME_NAME_LENGTH, MAX_TILE_NAME_LENGTH, MAX_UNIVERSE_NAME_LENGTH } from './editor.js';
 import { PROFILE_LANGUAGES } from './profiles.js';
@@ -228,6 +229,12 @@ export interface UniverseTextListPayload
  * Most languages a universe may be translated into, besides its source language
  */
 export const MAX_UNIVERSE_LANGUAGES = 50;
+
+/**
+ * The languages the editor offers for a universe's text and its translators: every language a profile
+ * can name, and Pirate, which players who chose Pirate for the site see the universe in
+ */
+export const UNIVERSE_LANGUAGES: readonly string[] = [...PROFILE_LANGUAGES, PIRATE_LOCALE];
 
 /**
  * Most characters in a note for translators

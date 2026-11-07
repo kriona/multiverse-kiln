@@ -2411,10 +2411,6 @@
 		"message": "How the hours pass",
 		"source": "Passage of time"
 	},
-	"editor.play": {
-		"message": "Set Sail",
-		"source": "Enter Universe"
-	},
 	"editor.presence.area": {
 		"message": "{tab} - {area}",
 		"source": "{tab} - {area}"
@@ -3410,6 +3406,10 @@
 	"editor.version.liveWithDraftNotice": {
 		"message": "Ye be workin' on the live version, the one the crew sails. This universe has a draft: changes stowed here be replaced when it's launched, unless ye make 'em in the draft too.",
 		"source": "You are editing the live version of this universe. The universe has a draft: changes saved here are replaced when the draft is applied unless they are also made in the draft."
+	},
+	"editor.view": {
+		"message": "Spy the Universe",
+		"source": "View Universe"
 	},
 	"email.accountCreated.body": {
 		"message": "Yer account on {siteName} be ready.",
@@ -7179,16 +7179,24 @@
 		"message": "Couldn't change the tongue on yer profile, so the tongue weren't changed.",
 		"source": "Could not change the language on your profile, so the language wasn't changed."
 	},
+	"universePage.siteLanguageChanged": {
+		"message": "The site now speaks {language}, matey.",
+		"source": "The site is now in {language}."
+	},
 	"universePage.unavailableTitle": {
 		"message": "Universe",
 		"source": "Universe"
 	},
 	"universePage.universeTextOnly": {
-		"message": "Universe words only",
-		"source": "Universe text only"
+		"message": "universe words only",
+		"source": "universe text only"
 	},
 	"universePage.universeTextOnlyNote": {
 		"message": "The site itself ain't been turned into the tongues marked \"{label}\" yet. Pickin' one shows universes' own words in it, such as their names, tales, areas and booty, wherever a universe be turned into it. The site's buttons and menus stay in the tongue they be in now.",
 		"source": "The site itself isn't translated into the languages marked \"{label}\" yet. Choosing one shows universes' own text in it, such as their names, descriptions, areas and items, wherever a universe is translated into it. The site's buttons and menus stay in the language they are in now."
+	},
+	"universePage.universeTextOnlyTag": {
+		"message": "({label})",
+		"source": "({label})"
 	}
 }

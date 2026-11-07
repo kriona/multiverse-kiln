@@ -1,7 +1,7 @@
 import assert from 'assert';
 import fs from 'fs';
 import path from 'path';
-import { catalogProblems, defineMessages, isLocalizedMessage, localize, matchLocale, messageArguments, PSEUDO_LOCALE, pseudoMessage, SOURCE_LOCALE, translationCatalog, Translator, translationStatus, type TranslationFile } from '@multiverse-kiln/shared';
+import { catalogProblems, defineMessages, isLocalizedMessage, languageNameIn, localize, matchLocale, messageArguments, PIRATE_LOCALE, PSEUDO_LOCALE, pseudoMessage, SOURCE_LOCALE, translationCatalog, Translator, translationStatus, type TranslationFile } from '@multiverse-kiln/shared';
 
 /**
  * Where the English catalog and the translations are
@@ -67,6 +67,21 @@ describe('localization (shared)', () =>
 		{
 			assert.strictEqual(matchLocale(['de', 'ja'], ['en', 'fr']), SOURCE_LOCALE);
 			assert.strictEqual(matchLocale([], ['en', 'fr']), SOURCE_LOCALE);
+		});
+	});
+
+	describe('languageNameIn', () =>
+	{
+		it('names a language in another language', () =>
+		{
+			assert.strictEqual(languageNameIn('de', 'en'), 'German');
+			assert.strictEqual(languageNameIn('de', 'fr'), 'allemand');
+		});
+
+		it('gives Pirate its own name in every language, since Intl can\'t name it', () =>
+		{
+			assert.strictEqual(languageNameIn(PIRATE_LOCALE, 'en'), 'Pirate');
+			assert.strictEqual(languageNameIn(PIRATE_LOCALE, 'de'), 'Pirate');
 		});
 	});
 

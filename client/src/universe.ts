@@ -14,7 +14,7 @@ import { getElement, setPageTitle, showNoticeScreen, showScreen, showStatus } fr
 import { showMarkdown } from './ui/markdown';
 import { pageMessages } from './ui/pageMessages';
 import { UniverseCharacters } from './ui/UniverseCharacters';
-import { UniverseLanguageChooser } from './ui/UniverseLanguageChooser';
+import { reportSiteLanguageChange, UniverseLanguageChooser } from './ui/UniverseLanguageChooser';
 
 /**
  * Shows a universe: its name, ruleset and descriptions, that it is locked at the end of time, and Enter
@@ -125,6 +125,7 @@ async function start(): Promise<void>
 
 	const { server } = await startPage();
 
+	reportSiteLanguageChange();
 	showStatus(t(pageMessages.loading));
 
 	let universe: UniverseDetails;

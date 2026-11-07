@@ -1,4 +1,4 @@
-import { MAX_PLAYER_NAME_LENGTH, MAX_TRANSLATOR_LANGUAGES, MIN_PLAYER_SEARCH_LENGTH, PROFILE_LANGUAGES, UNIVERSE_ROLE_DESCRIPTIONS, UNIVERSE_ROLE_NAMES, UNIVERSE_ROLES, type EditorRoleSettings, type PlayerMatch, type UniverseEditorSummary, type UniverseRole } from '@multiverse-kiln/shared';
+import { MAX_PLAYER_NAME_LENGTH, MAX_TRANSLATOR_LANGUAGES, MIN_PLAYER_SEARCH_LENGTH, UNIVERSE_LANGUAGES, UNIVERSE_ROLE_DESCRIPTIONS, UNIVERSE_ROLE_NAMES, UNIVERSE_ROLES, type EditorRoleSettings, type PlayerMatch, type UniverseEditorSummary, type UniverseRole } from '@multiverse-kiln/shared';
 import undoIcon from 'virtual:icon/ph:arrow-u-up-left';
 import removeIcon from 'virtual:icon/ph:user-minus';
 
@@ -125,7 +125,7 @@ export class EditorDialog
 			searchId: 'editor-languages-search',
 			listboxId: 'editor-languages-options',
 			chosenId: 'editor-languages-chosen',
-			choices: languageChoices(PROFILE_LANGUAGES),
+			choices: languageChoices(UNIVERSE_LANGUAGES),
 			max: MAX_TRANSLATOR_LANGUAGES,
 			tooMany: t({
 				id: 'editor.editors.languagesTooMany',

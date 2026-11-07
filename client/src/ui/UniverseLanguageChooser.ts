@@ -1,9 +1,49 @@
-import { chooseUniverseLanguage, defineMessages, languageName, type UniverseDetails } from '@multiverse-kiln/shared';
+import { chooseUniverseLanguage, defineMessages, languageName, languageNameIn, type UniverseDetails } from '@multiverse-kiln/shared';
 
 import { chooseLocale, currentLocale, pagesHaveLanguage, t, wantedLanguages } from '../localization';
 import { describeEditorError } from '../network/editorApi';
 import type { ProfileApi } from '../network/profileApi';
 import { getElement, showMessage } from './dom';
+import { showToast } from './toast';
+
+/**
+ * Where the tab keeps the site's language while the page loads again in a language chosen here, for
+ * reportSiteLanguageChange()
+ */
+const SITE_LANGUAGE_BEFORE_KEY = 'kiln-site-language-before';
+
+/**
+ * Says the site's language changed, when choosing a language in the Languages section changed it and
+ * the page has loaded again in it. Nothing shows when the site stayed in its language, as it does for
+ * a language it isn't translated into
+ */
+export function reportSiteLanguageChange(): void
+{
+	let before: string | null;
+
+	try
+	{
+		before = sessionStorage.getItem(SITE_LANGUAGE_BEFORE_KEY);
+		sessionStorage.removeItem(SITE_LANGUAGE_BEFORE_KEY);
+	}
+	catch
+	{
+		return;
+	}
+
+	if ((before === null) || (before === currentLocale()))
+	{
+		return;
+	}
+
+	showToast(t({
+		id: 'universePage.siteLanguageChanged',
+		defaultMessage: 'The site is now in {language}.',
+		description: 'Shown for a few seconds at the top of a universe\'s page after the player chose a language in its Languages section that the site is translated into, so the site switched to it; {language} is the language\'s name in itself, such as "Deutsch"'
+	}, {
+		language: languageName(currentLocale())
+	}), { kind: 'success' });
+}
 
 /**
  * Text the Languages section shows in more than one place
@@ -11,8 +51,8 @@ import { getElement, showMessage } from './dom';
 const chooserMessages = defineMessages({
 	universeTextOnly: {
 		id: 'universePage.universeTextOnly',
-		defaultMessage: 'Universe text only',
-		description: 'In the Languages section of a universe\'s page, beside a language the site itself isn\'t translated into, and quoted in the note under the list that explains it: choosing it shows the universe\'s own text in it, while the site\'s buttons and menus stay as they are'
+		defaultMessage: 'universe text only',
+		description: 'In the Languages section of a universe\'s page, in parentheses beside a language the site itself isn\'t translated into, and quoted in the note under the list that explains it: choosing it shows the universe\'s own text in it, while the site\'s buttons and menus stay as they are'
 	}
 });
 
@@ -89,13 +129,12 @@ export class UniverseLanguageChooser
 	{
 		const languages = [this.universe.sourceLanguage, ...this.universe.translationLanguages];
 		const shown = this.shownLanguage();
-		const pageNames = new Intl.DisplayNames([currentLocale()], { type: 'language' });
 
-		this.list.replaceChildren(...languages.map((language) => this.renderLanguage(language, (language === shown), pageNames)));
+		this.list.replaceChildren(...languages.map((language) => this.renderLanguage(language, (language === shown))));
 		showMessage(this.pagesNote, (languages.some((language) => !pagesHaveLanguage(language)) ? t({
 			id: 'universePage.universeTextOnlyNote',
 			defaultMessage: 'The site itself isn\'t translated into the languages marked "{label}" yet. Choosing one shows universes\' own text in it, such as their names, descriptions, areas and items, wherever a universe is translated into it. The site\'s buttons and menus stay in the language they are in now.',
-			description: 'Under the list in the Languages section of a universe\'s page, when some of its languages are ones the site isn\'t translated into; {label} is the words shown beside those languages, "Universe text only"'
+			description: 'Under the list in the Languages section of a universe\'s page, when some of its languages are ones the site isn\'t translated into; {label} is the words shown in parentheses beside those languages, "universe text only"'
 		}, {
 			label: t(chooserMessages.universeTextOnly)
 		}) : undefined));
@@ -107,16 +146,15 @@ export class UniverseLanguageChooser
 	 *
 	 * @param language The language's tag
 	 * @param isShown Whether the player sees the universe's text in it now
-	 * @param pageNames Names languages in the page's language
 	 * @return The list item
 	 */
-	private renderLanguage(language: string, isShown: boolean, pageNames: Intl.DisplayNames): HTMLLIElement
+	private renderLanguage(language: string, isShown: boolean): HTMLLIElement
 	{
 		const item = document.createElement('li');
 		const button = document.createElement('button');
 		const name = document.createElement('strong');
 		const ownName = languageName(language);
-		const pageName = pageNames.of(language);
+		const pageName = languageNameIn(language, currentLocale());
 
 		// Each name is in its own language, so translation tools leave it alone
 		name.textContent = ownName;
@@ -128,14 +166,20 @@ export class UniverseLanguageChooser
 		button.setAttribute('aria-pressed', String(isShown));
 		button.append(name);
 
-		if ((pageName !== undefined) && (pageName !== ownName))
+		if (pageName !== ownName)
 		{
 			button.append(' ', this.note('universe-language-detail', pageName));
 		}
 
 		if (!pagesHaveLanguage(language))
 		{
-			button.append(' ', this.note('universe-language-only', t(chooserMessages.universeTextOnly)));
+			button.append(' ', this.note('universe-language-only', t({
+				id: 'universePage.universeTextOnlyTag',
+				defaultMessage: '({label})',
+				description: 'Parentheses around the words beside a language the site itself isn\'t translated into, in the Languages section of a universe\'s page; {label} is those words, "universe text only"'
+			}, {
+				label: t(chooserMessages.universeTextOnly)
+			})));
 		}
 
 		// Said in words as well as by the outline, for players who can't see it
@@ -210,6 +254,15 @@ export class UniverseLanguageChooser
 				this.choosing = false;
 				return;
 			}
+		}
+
+		try
+		{
+			sessionStorage.setItem(SITE_LANGUAGE_BEFORE_KEY, currentLocale());
+		}
+		catch
+		{
+			// Without storage, the page loads in the new language without saying so
 		}
 
 		chooseLocale(language);

@@ -1,11 +1,11 @@
-import { ADMIN_ROLE, canEditAtEndOfTime, canEditWorld, canManageEditors, canManageVersions, EDITOR_ROLE_NAMES, EDITOR_TABS, type EditableUniverse, type EditorSavedPayload, type EditorTab, type UniverseSettingsUpdate, type UniverseVersionName } from '@multiverse-kiln/shared';
+import { ADMIN_ROLE, canEditAtEndOfTime, canEditWorld, canManageEditors, canManageVersions, canViewUniverse, EDITOR_ROLE_NAMES, EDITOR_TABS, type EditableUniverse, type EditorSavedPayload, type EditorTab, type UniverseSettingsUpdate, type UniverseVersionName } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, EditorApiError, type EditorApi } from '../../network/editorApi';
 import { changeMessages, hasUnsavedWork } from '../changeTracker';
 import { DraftSection } from './DraftSection';
 import { StartDraftDialog } from './StartDraftDialog';
-import { editPageUrl, gamePageUrl, HOME_PAGE_URL } from '../../pages';
+import { editPageUrl, HOME_PAGE_URL, universePageUrl } from '../../pages';
 import { AuditTab } from './AuditTab';
 import { EditorsTab } from './EditorsTab';
 import { closeOpenDialogs, getElement, setPageTitle, showMessage, titleLink } from '../dom';
@@ -997,27 +997,29 @@ export class EditorScreen
 			universe: universe.name
 		}));
 		this.role.textContent = t(EDITOR_ROLE_NAMES[universe.role]);
-		this.showPlayLink(universe);
+		this.showViewLink(universe);
 		this.areasTab.setUniverse(universe);
 		getElement('lobby-edit-area', HTMLButtonElement).hidden = (universe.lobbyAreaId === null);
 	}
 
 	/**
-	 * Points Enter Universe at the universe's lobby, or hides it while the universe is disabled, since
-	 * no one can play it then
+	 * Points View Universe at the universe's page, by ID, since a rename saved here changes its slug.
+	 * Hidden while the universe has no page for the player: while it is disabled, and in a stage their
+	 * role doesn't let them view it in. A server admin's own role in the universe isn't known here, so
+	 * the site admin role always sees it
 	 *
 	 * @param universe The universe
 	 */
-	private showPlayLink(universe: EditableUniverse): void
+	private showViewLink(universe: EditableUniverse): void
 	{
-		const link = getElement('editor-play', HTMLAnchorElement);
-		const playable = (universe.disabledReason === null);
+		const link = getElement('editor-view', HTMLAnchorElement);
+		const viewable = ((universe.disabledReason === null) && ((universe.role === ADMIN_ROLE) || canViewUniverse(universe.stage, universe.role)));
 
-		link.hidden = !playable;
+		link.hidden = !viewable;
 
-		if (playable)
+		if (viewable)
 		{
-			link.href = gamePageUrl(universe.slug);
+			link.href = universePageUrl(universe.id);
 		}
 		else
 		{

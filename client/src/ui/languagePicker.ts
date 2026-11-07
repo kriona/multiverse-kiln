@@ -1,4 +1,4 @@
-import { languageName } from '@multiverse-kiln/shared';
+import { languageName, languageNameIn } from '@multiverse-kiln/shared';
 
 import { availableLocales, chooseLocale, currentLocale } from '../localization';
 import type { ComboboxChoice } from './ComboboxList';
@@ -45,19 +45,18 @@ export function startLanguagePicker(): void
 export function languageChoices(languages: readonly string[]): ComboboxChoice[]
 {
 	const current = currentLocale();
-	const pageNames = new Intl.DisplayNames([current], { type: 'language' });
 
 	return(languages
 		.map((language) =>
 		{
 			const name = languageName(language);
-			const pageName = pageNames.of(language);
+			const pageName = languageNameIn(language, current);
 
 			return({
 				value: language,
 				name,
 				lang: language,
-				detail: (((pageName === undefined) || (pageName === name)) ? undefined : pageName)
+				detail: ((pageName === name) ? undefined : pageName)
 			});
 		})
 		.sort((first, second) => first.name.localeCompare(second.name, current)));
