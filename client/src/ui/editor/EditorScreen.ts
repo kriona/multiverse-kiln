@@ -638,8 +638,8 @@ export class EditorScreen
 		{
 			this.showNotice(t({
 				id: 'editor.universeDisabled',
-				defaultMessage: 'The site\'s admins have disabled this universe, so it can\'t be played and changes to it can\'t be saved. Reason: {reason}',
-				description: 'Shown above the editor\'s tabs for a universe one of the site\'s admins disabled; {reason} is the reason the admin gave, as they typed it'
+				defaultMessage: 'The site\'s admins have disabled this universe, so it can\'t be played and changes to it can\'t be saved. You can still leave it on the Editors tab. Reason: {reason}',
+				description: 'Shown above the editor\'s tabs for a universe one of the site\'s admins disabled, where the player can only save leaving it; {reason} is the reason the admin gave, as they typed it'
 			}, {
 				reason: universe.disabledReason
 			}));

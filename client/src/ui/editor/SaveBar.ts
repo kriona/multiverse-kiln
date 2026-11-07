@@ -43,6 +43,14 @@ export interface SavableTab
 	 * @param ids The IDs the save gave the things it made
 	 */
 	saved(ids: SavedIds): Promise<void> | void;
+
+	/**
+	 * Whether the tab's only unsaved change is the player leaving the universe, which may be saved while
+	 * saving is turned off. A tab without it never only leaves
+	 *
+	 * @return True when it is
+	 */
+	onlyLeaving?(): boolean;
 }
 
 /**
@@ -132,7 +140,8 @@ export class SaveBar
 	private saving = false;
 
 	/**
-	 * Whether saving is turned off, for a universe a server admin has disabled
+	 * Whether saving is turned off, for a universe a server admin has disabled, except for the player
+	 * leaving it
 	 */
 	private locked = false;
 
@@ -208,7 +217,8 @@ export class SaveBar
 	}
 
 	/**
-	 * Turns saving off or on, for a universe a server admin has disabled. The editor says why
+	 * Turns saving off or on, for a universe a server admin has disabled. The editor says why. While it is
+	 * off, the player can still save leaving the universe
 	 *
 	 * @param locked True to turn it off
 	 */
@@ -240,6 +250,19 @@ export class SaveBar
 	}
 
 	/**
+	 * Whether the changes waiting can't be saved: while saving is turned off, only the player leaving
+	 * the universe can be
+	 *
+	 * @return True when they can't
+	 */
+	private isBlocked(): boolean
+	{
+		return(this.locked && ![...this.panels.keys()]
+			.filter((tab) => (tab.canSave() && tab.changes.hasUnsavedChanges()))
+			.every((tab) => (tab.onlyLeaving?.() ?? false)));
+	}
+
+	/**
 	 * Whether any tab has changes that haven't been saved
 	 *
 	 * @return True when one has
@@ -261,7 +284,7 @@ export class SaveBar
 	{
 		const universe = this.universe();
 
-		if (!universe || this.saving || this.locked || !this.hasUnsavedChanges())
+		if (!universe || this.saving || this.isBlocked() || !this.hasUnsavedChanges())
 		{
 			return(false);
 		}
@@ -473,7 +496,7 @@ export class SaveBar
 
 		this.bar.hidden = (!canSave && !this.othersHere);
 		this.saveButton.hidden = !canSave;
-		this.saveButton.disabled = (!unsaved || this.saving || this.locked);
+		this.saveButton.disabled = (!unsaved || this.saving || this.isBlocked());
 
 		if (this.failure !== undefined)
 		{

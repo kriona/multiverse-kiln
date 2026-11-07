@@ -3504,8 +3504,8 @@
 		"source": "This universe has been deleted, so changes to it can't be saved."
 	},
 	"editor.universeDisabled": {
-		"message": "The ship's officers have laid up this universe, so it can't be sailed and changes to it can't be stowed. Reason: {reason}",
-		"source": "The site's admins have disabled this universe, so it can't be played and changes to it can't be saved. Reason: {reason}"
+		"message": "The ship's officers have laid up this universe, so it can't be sailed and changes to it can't be stowed. Ye can still jump ship on the Officers tab. Reason: {reason}",
+		"source": "The site's admins have disabled this universe, so it can't be played and changes to it can't be saved. You can still leave it on the Editors tab. Reason: {reason}"
 	},
 	"editor.universeDisabledAdmin": {
 		"message": "The ship's officers have laid up this universe, so it can't be sailed and its crew can't stow changes. As a ship's officer, ye can still stow changes to it. Reason: {reason}",

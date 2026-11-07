@@ -316,6 +316,19 @@ export function maySaveInStage(changes: readonly EditorChange[], stage: Universe
 		return(true);
 	}
 
+	return(onlyLeaves(changes, playerId));
+}
+
+/**
+ * Whether a save only has the player leave the universe, which anyone may save, even while the universe
+ * is locked at the end of time or disabled by the site's admins
+ *
+ * @param changes The save's changes
+ * @param playerId The player's ID
+ * @return True when every change removes the player from the universe's editors
+ */
+export function onlyLeaves(changes: readonly EditorChange[], playerId: string): boolean
+{
 	return(changes.every((change) => ((change.kind === 'removeEditor') && (change.playerId === playerId))));
 }
 

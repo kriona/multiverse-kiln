@@ -1,4 +1,4 @@
-import { canManageEditors, canPlayUniverse, EDITOR_ROLE_NAMES, languageName, UNIVERSE_ROLE_DESCRIPTIONS, UNIVERSE_ROLE_NAMES, type EditableUniverse, type EditorChange, type EditorRoleSettings, type LoadedSettings, type PlayerMatch, type UniverseEditorSummary, type UniverseRole } from '@multiverse-kiln/shared';
+import { canManageEditors, canPlayUniverse, EDITOR_ROLE_NAMES, languageName, onlyLeaves, UNIVERSE_ROLE_DESCRIPTIONS, UNIVERSE_ROLE_NAMES, type EditableUniverse, type EditorChange, type EditorRoleSettings, type LoadedSettings, type PlayerMatch, type UniverseEditorSummary, type UniverseRole } from '@multiverse-kiln/shared';
 import leaveIcon from 'virtual:icon/ph:sign-out';
 
 import { formatList, t } from '../../localization';
@@ -251,6 +251,25 @@ export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 	canSave(): boolean
 	{
 		return(this.universe !== undefined);
+	}
+
+	/**
+	 * Whether the only change waiting is the player leaving the universe
+	 *
+	 * @return True when it is
+	 */
+	onlyLeaving(): boolean
+	{
+		if (!this.universe)
+		{
+			return(false);
+		}
+
+		const changes = [...this.staged]
+			.map(([playerId, staged]) => editorChange(playerId, staged))
+			.filter((change) => (change !== undefined));
+
+		return((changes.length > 0) && onlyLeaves(changes, this.universe.playerId));
 	}
 
 	/**

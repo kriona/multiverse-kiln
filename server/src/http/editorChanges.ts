@@ -9,7 +9,7 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { EDITOR_CHANGE_CHECKS, localize, mayMakeChange, maySaveInStage, type EditorAccess, type EditorChange, type NewRef, type SaveChangesPayload, type SaveRefusedPayload, type SavedEditDetail } from '@multiverse-kiln/shared';
+import { EDITOR_CHANGE_CHECKS, localize, mayMakeChange, maySaveInStage, onlyLeaves, type EditorAccess, type EditorChange, type NewRef, type SaveChangesPayload, type SaveRefusedPayload, type SavedEditDetail } from '@multiverse-kiln/shared';
 
 import { loadBarredOptions, sameBarred } from '../db/barredOptions.js';
 import { findPlayer } from '../db/playerRepo.js';
@@ -227,14 +227,14 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 			const stageBefore = (locked?.stage ?? base.universe.stage);
 
 			// Disabling the universe takes its lock too, so no save commits after it, except a server
-			// admin's, who may fix what it was disabled for
-			if (!serverAdmin && (locked?.disabled ?? false))
+			// admin's, who may fix what it was disabled for, and one that only leaves the universe
+			if (!serverAdmin && (locked?.disabled ?? false) && !onlyLeaves(changes, base.playerId))
 			{
 				refusedWhole = true;
 				refuse(403, {
 					id: 'error.universeDisabledSave',
 					defaultMessage: 'The site\'s admins have disabled this universe, so changes to it can\'t be saved.',
-					description: 'Why the world editor couldn\'t save: one of the site\'s admins disabled the universe, for a reason the editor shows'
+					description: 'Why the world editor couldn\'t save: one of the site\'s admins disabled the universe, for a reason the editor shows. Leaving the universe can still be saved'
 				});
 			}
 

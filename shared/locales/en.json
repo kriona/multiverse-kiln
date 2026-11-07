@@ -3504,8 +3504,8 @@
 		"description": "Shown above the editor's tabs, and in the editors' chat panel, when the universe was deleted while the player had its editor open"
 	},
 	"editor.universeDisabled": {
-		"defaultMessage": "The site's admins have disabled this universe, so it can't be played and changes to it can't be saved. Reason: {reason}",
-		"description": "Shown above the editor's tabs for a universe one of the site's admins disabled; {reason} is the reason the admin gave, as they typed it"
+		"defaultMessage": "The site's admins have disabled this universe, so it can't be played and changes to it can't be saved. You can still leave it on the Editors tab. Reason: {reason}",
+		"description": "Shown above the editor's tabs for a universe one of the site's admins disabled, where the player can only save leaving it; {reason} is the reason the admin gave, as they typed it"
 	},
 	"editor.universeDisabledAdmin": {
 		"defaultMessage": "The site's admins have disabled this universe, so it can't be played and its editors can't save. As a site admin, you can still save changes to it. Reason: {reason}",
@@ -4333,7 +4333,7 @@
 	},
 	"error.universeDisabledSave": {
 		"defaultMessage": "The site's admins have disabled this universe, so changes to it can't be saved.",
-		"description": "Why the world editor couldn't save: one of the site's admins disabled the universe, for a reason the editor shows"
+		"description": "Why the world editor couldn't save: one of the site's admins disabled the universe, for a reason the editor shows. Leaving the universe can still be saved"
 	},
 	"error.universeLimit": {
 		"defaultMessage": "You can create at most {max, plural, one {# universe} other {# universes}}.",

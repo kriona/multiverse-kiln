@@ -868,6 +868,30 @@ describe('Admin universe list', () =>
 
 		assert.strictEqual((await saveChanges(creator, universeId, [{ kind: 'universe', update: { shortDescription: 'Changed' } }])).status, 200);
 	});
+
+	it('lets a disabled universe\'s editors leave it, but not leave and change it in one save', async () =>
+	{
+		const ada = await logInBrowser((await addPlayer('Ada Lovelace')).id);
+		const grace = await logInBrowser((await addPlayer('Grace Hopper')).id);
+		const universeId = await addUniverse();
+
+		await setUniverseRole(universeId, ada.playerId, 'creator');
+		await setUniverseRole(universeId, grace.playerId, 'creator');
+		await disable(universeId, 'Spam');
+
+		const changed = await saveChanges(grace, universeId, [
+			{ kind: 'removeEditor', playerId: grace.playerId },
+			{ kind: 'universe', update: { shortDescription: 'Changed' } }
+		]);
+		const removedOther = await saveChanges(ada, universeId, [{ kind: 'removeEditor', playerId: grace.playerId }]);
+
+		assert.strictEqual(changed.status, 403);
+		assert.strictEqual(changed.body.error.id, 'error.universeDisabledSave');
+		assert.strictEqual(removedOther.status, 403);
+		assert.strictEqual(removedOther.body.error.id, 'error.universeDisabledSave');
+		assert.strictEqual((await saveChanges(grace, universeId, [{ kind: 'removeEditor', playerId: grace.playerId }])).status, 200);
+		assert.strictEqual((await send('GET', `${EDITOR_UNIVERSES_PATH}/${universeId}`, { browser: grace })).status, 404);
+	});
 });
 
 describe('Editing universes as a server admin', () =>
