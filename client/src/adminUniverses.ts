@@ -57,10 +57,7 @@ void startAdminPage(async (api) =>
 			},
 			enable: () =>
 			{
-				void enableUniverse(api, universe, () =>
-				{
-					void list.reload();
-				});
+				void enableUniverse(api, universe, () => list.reload());
 			}
 		}),
 		loadFailed: {
@@ -232,10 +229,13 @@ function creatorsCell(creators: readonly AdminUniverseCreator[]): HTMLTableCellE
  *
  * @param api The admin routes
  * @param universe The universe
- * @param changed Called once it is enabled, or the server refused because it changed meanwhile
+ * @param changed Called once it is enabled, or the server refused because it changed meanwhile, to load the
+ * list again
  */
-async function enableUniverse(api: AdminApi, universe: AdminUniverse, changed: () => void): Promise<void>
+async function enableUniverse(api: AdminApi, universe: AdminUniverse, changed: () => Promise<void>): Promise<void>
 {
+	let failure: string | undefined;
+
 	const confirmed = await askToConfirm({
 		title: t({
 			id: 'admin.universes.enableTitle',
@@ -272,19 +272,27 @@ async function enableUniverse(api: AdminApi, universe: AdminUniverse, changed: (
 	}
 	catch (error)
 	{
-		if (!showAdminRefusal(error))
+		if (showAdminRefusal(error))
 		{
-			showMessage(getElement('universe-list-error', HTMLElement), describeEditorError(error, {
-				id: 'admin.universes.enableFailed',
-				defaultMessage: 'Could not enable {universe}.',
-				description: 'Shown on the admin page listing universes when a disabled universe couldn\'t be enabled; {universe} is its name'
-			}, {
-				universe: universe.name
-			}));
+			return;
 		}
+
+		failure = describeEditorError(error, {
+			id: 'admin.universes.enableFailed',
+			defaultMessage: 'Could not enable {universe}.',
+			description: 'Shown on the admin page listing universes when a disabled universe couldn\'t be enabled; {universe} is its name'
+		}, {
+			universe: universe.name
+		});
 	}
 
-	changed();
+	// The failure shares the list's error element, which loading the list clears, so it is shown after
+	await changed();
+
+	if (failure !== undefined)
+	{
+		showMessage(getElement('universe-list-error', HTMLElement), failure);
+	}
 }
 
 /**
