@@ -26,6 +26,7 @@ certs/
 # Logs
 *.log
 npm-debug.log*
+scratchpad/
 
 # The pseudo-language's catalog, which the client's dev server makes from shared/locales/en.json
 shared/locales/en-XA.json

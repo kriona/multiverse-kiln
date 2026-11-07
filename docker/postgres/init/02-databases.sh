@@ -1,6 +1,7 @@
 #!/bin/sh
-# Creates the kiln database and the kiln_test database the test suite uses, each owned by kiln_migrator
-# with the same grants for kiln_app. Needs the roles from 01-roles.sh
+# Creates the kiln database, the kiln_test database the test suite uses when it runs in one process, and
+# kiln_test_1 to kiln_test_8, one for each of the test suite's parallel workers (server/test/testWorker.ts).
+# Each is owned by kiln_migrator with the same grants for kiln_app. Needs the roles from 01-roles.sh
 #
 # The Postgres image runs this once, when the data volume is empty. A database that already exists is
 # left alone, so it can also be run by hand to add a missing one (see README "Start the database"):
@@ -9,7 +10,7 @@ set -eu
 
 superuser="${POSTGRES_USER:-postgres}"
 
-for database in kiln kiln_test
+for database in kiln kiln_test kiln_test_1 kiln_test_2 kiln_test_3 kiln_test_4 kiln_test_5 kiln_test_6 kiln_test_7 kiln_test_8
 do
 	psql -v ON_ERROR_STOP=1 --username "$superuser" --dbname postgres -v database="$database" <<-'EOSQL'
 		SELECT format('CREATE DATABASE %I OWNER kiln_migrator', :'database')

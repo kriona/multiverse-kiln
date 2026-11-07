@@ -128,7 +128,7 @@ Then copy the hex values the root `.env` shares with `server/.env`: put `KILN_AP
 | `ALLOWED_ORIGINS` | `server/.env` | Comma-separated origins allowed to use the server from a browser (CORS and WebSocket connections). Required. Locally: the client and the server itself (for the playground). |
 | `DATABASE_URL` | `server/.env` | Postgres connection string for the game server, as `kiln_app`. In production: Neon's pooled connection string. |
 | `MIGRATION_DATABASE_URL` | `server/.env` | Postgres connection string for `npm run db:migrate -w server`, as `kiln_migrator`. Never give it to the running server. |
-| `TEST_DATABASE_URL`, `TEST_MIGRATION_DATABASE_URL` | `server/.env` | The same two connection strings for the `kiln_test` database that `npm test` uses. The tests empty it before every test, so they refuse to run against a database whose name doesn't end in `_test`. |
+| `TEST_DATABASE_URL`, `TEST_MIGRATION_DATABASE_URL` | `server/.env` | The same two connection strings for the `kiln_test` database that the tests use. `npm test` runs them in parallel, each worker with a database of its own named after this one (`kiln_test_1` to `kiln_test_8`). The tests empty their database before every test, so they refuse to run against a database whose name doesn't end in `_test`. |
 | `LOADTEST_ENDPOINT` | `server/.env` | Server URL that `npm run loadtest -w server` connects to: `wss://www.multiversekiln-dev.com:2567`. |
 | `STORAGE_ENDPOINT`, `STORAGE_REGION`, `STORAGE_BUCKET`, `STORAGE_ACCESS_KEY_ID`, `STORAGE_SECRET_ACCESS_KEY`, `STORAGE_FORCE_PATH_STYLE` | `server/.env` | Object storage for uploads such as tilesets: any S3-compatible service. Locally the storage container (`http://127.0.0.1:8333`, path-style, the keys from `.env`); in production Cloudflare R2, AWS S3, Backblaze B2 or similar, with a bucket made in its own tools. |
 | `TEST_STORAGE_BUCKET` | `server/.env` | The bucket `npm test` uploads to, on the same storage (`kiln-test`). The tests create it if it doesn't exist. |
@@ -191,16 +191,16 @@ Nobody can open Kilnhaven in the world editor unless you name its creator: `npm 
 
 Postgres listens on `127.0.0.1:5432` (only reachable from your machine) and keeps its data in a Docker volume, so it survives restarts. It keeps running in the background until you run `docker compose stop`.
 
-The first start runs the scripts in `docker/postgres/init/`, which create two roles and two databases: `kiln` for the game, and `kiln_test` for the test suite.
+The first start runs the scripts in `docker/postgres/init/`, which create two roles and the databases: `kiln` for the game, and `kiln_test` and `kiln_test_1` to `kiln_test_8` for the test suite (one for each of its parallel workers).
 
 | Role | Used by | Can |
 |---|---|---|
 | `kiln_migrator` | `npm run db:migrate -w server` (`MIGRATION_DATABASE_URL`) | Create, alter and drop tables (it owns them) |
 | `kiln_app` | The game server (`DATABASE_URL`) | Read and write rows, but not change tables |
 
-`npm test` rebuilds `kiln_test` from the migrations at the start of every run and empties it before every test (keeping the rows migrations insert, such as default tiles), so it never needs migrating by hand.
+`npm test` rebuilds each test database it uses from the migrations at the start of every run and empties it before every test (keeping the rows migrations insert, such as default tiles), so they never need migrating by hand.
 
-The setup scripts and the passwords in `.env` only take effect when the data volume is first created. A volume created before `kiln_test` existed can add it without losing data:
+The setup scripts and the passwords in `.env` only take effect when the data volume is first created. A volume created before the test databases existed can add them without losing data:
 
 ```bash
 docker compose exec postgres sh /docker-entrypoint-initdb.d/02-databases.sh

@@ -107,8 +107,8 @@ npm workspaces are assumed (`client`, `server`, `shared`). Update this section i
 - Give migrations descriptive names (`npx drizzle-kit generate --name=<name>` from `server/`). Data every database needs, such as a ruleset's default tiles, goes in a custom migration (`--custom --name=<name>`); sample data for development goes in the seed script instead.
 - Use a standard TCP Postgres driver (`pg` or `postgres.js`) with a connection pool. Do not use Neon's HTTP/serverless driver; the server is a long-running process.
 - In production, use Neon's **pooled** connection string.
-- Two roles: migrations run as the migration role, which owns the tables; the server runs as the app role, which can read and write rows but not alter tables. Locally, the scripts in `docker/postgres/init/` create them, along with the `kiln` and `kiln_test` databases. Never give the server the migration role's credentials.
-- `server/src/db/client.ts` throws on import when `DATABASE_URL` is unset. Tests run against their own database: `server/test/setup.ts` points `DATABASE_URL` at `TEST_DATABASE_URL`, rebuilds it from the migrations at the start of every run, and before each test deletes every row except those the migrations inserted (such as default tiles), so a test never depends on rows another test left behind. It refuses a database whose name doesn't end in `_test`.
+- Two roles: migrations run as the migration role, which owns the tables; the server runs as the app role, which can read and write rows but not alter tables. Locally, the scripts in `docker/postgres/init/` create them, along with the `kiln` database and the test databases (`kiln_test`, and `kiln_test_1` to `kiln_test_8` for the parallel test workers). Never give the server the migration role's credentials.
+- `server/src/db/client.ts` throws on import when `DATABASE_URL` is unset. Tests run against their own database: `server/test/setup.ts` points `DATABASE_URL` at `TEST_DATABASE_URL`, rebuilds it from the migrations at the start of every run, and before each test deletes every row except those the migrations inserted (such as default tiles), so a test never depends on rows another test left behind. It refuses a database whose name doesn't end in `_test`. `npm test` runs the test files in parallel (mocha's `--parallel`), and each worker process uses a database of its own: `TEST_DATABASE_URL`'s with the worker's number after it, such as `kiln_test_3` (`server/test/testWorker.ts`). Mocha without `--parallel`, such as for one file or `.only`, uses `kiln_test` itself.
 - Write repository tests against the real test database (`server/test/db/`), not mocks.
 
 ## Configuration
@@ -130,7 +130,7 @@ npm workspaces are assumed (`client`, `server`, `shared`). Update this section i
 
 - Only origins in `ALLOWED_ORIGINS` may use the server from a browser; the server refuses to start without it. `server/src/http/responseHeaders.ts` replaces Colyseus's default CORS (which allows every origin with credentials), and `createOriginCheck` in `server/src/http/origins.ts` rejects WebSocket connections from other origins (browsers don't apply CORS to WebSockets). Requests without an `Origin` header (non-browser clients) are allowed.
 - Every HTTP response gets `X-Content-Type-Options: nosniff`; `X-Powered-By` is disabled, and `/` returns 404 unless dev tools are on, so the server doesn't advertise Colyseus or Express. Don't undo these, and cover new routes in `server/test/http.test.ts`.
-- Tests share one server through `server/test/testServer.ts` (`getTestServer()`): the app's `Server` instance can only be booted once per run.
+- Tests share one server through `server/test/testServer.ts` (`getTestServer()`): the app's `Server` instance can only be booted once per process, so every file a test worker runs shares it. Each worker's server has a port of its own (2568, plus the worker's number), so use `testServerUrl` rather than writing the port.
 
 ## Local development
 

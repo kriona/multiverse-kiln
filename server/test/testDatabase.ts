@@ -14,6 +14,11 @@ const BASELINE_SCHEMA = 'test_baseline';
 const DEADLOCK_DETECTED = '40P01';
 
 /**
+ * Postgres's error code for connecting to a database that doesn't exist
+ */
+const INVALID_CATALOG_NAME = '3D000';
+
+/**
  * How many times emptying the database is tried before its error is passed on
  */
 const MAX_EMPTY_ATTEMPTS = 5;
@@ -63,6 +68,29 @@ export function requireTestDatabaseUrl(name: string): string
 }
 
 /**
+ * The connection string for a test worker's own database: the test database's name followed by the
+ * worker's number, such as kiln_test_3 for worker 3. Worker 0, the one process that runs every test
+ * file when the tests don't run in parallel, uses the test database itself
+ *
+ * @param connectionString The test database's connection string
+ * @param worker The worker (testWorker in testWorker.ts)
+ * @return The worker's connection string
+ */
+export function workerDatabaseUrl(connectionString: string, worker: number): string
+{
+	if (worker === 0)
+	{
+		return(connectionString);
+	}
+
+	const url = new URL(connectionString);
+
+	url.pathname = `${url.pathname}_${worker}`;
+
+	return(url.toString());
+}
+
+/**
  * Builds the test database from nothing: drops every table and type, applies every migration, and
  * keeps a copy of the rows the migrations inserted
  *
@@ -75,7 +103,23 @@ export async function buildTestDatabase(connectionString: string): Promise<void>
 {
 	migrationPool = new pg.Pool({ connectionString });
 
-	await migrationPool.query(`DROP SCHEMA IF EXISTS drizzle CASCADE`);
+	try
+	{
+		await migrationPool.query(`DROP SCHEMA IF EXISTS drizzle CASCADE`);
+	}
+	catch (error)
+	{
+		if ((error as { code?: string }).code === INVALID_CATALOG_NAME)
+		{
+			const database = decodeURIComponent(new URL(connectionString).pathname.slice(1));
+
+			throw new Error(`The test database "${database}" doesn't exist. Create it with docker/postgres/init/02-databases.sh (see README "Start the database")`, { cause: error });
+		}
+
+		throw error;
+	}
+
+	await migrationPool.query(`DROP SCHEMA IF EXISTS ${BASELINE_SCHEMA} CASCADE`);
 	await migrationPool.query(`DROP SCHEMA IF EXISTS ${BASELINE_SCHEMA} CASCADE`);
 	await dropAll(migrationPool, `SELECT format('%I.%I', schemaname, tablename) FROM pg_tables WHERE schemaname = 'public'`, 'TABLE');
 	await dropAll(migrationPool, `SELECT format('%I.%I', n.nspname, t.typname) FROM pg_type t JOIN pg_namespace n ON n.oid = t.typnamespace WHERE n.nspname = 'public' AND t.typtype = 'e'`, 'TYPE');
