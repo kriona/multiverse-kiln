@@ -474,6 +474,7 @@ export class EditorScreen
 		const version = ++this.openVersion;
 
 		this.universe = undefined;
+		this.api.forgetLists();
 		this.title.textContent = t({
 			id: 'editor.title',
 			defaultMessage: 'Edit Universe',
@@ -718,6 +719,9 @@ export class EditorScreen
 		{
 			return;
 		}
+
+		// Before the tabs follow the save, so the lists they load again are the saved ones
+		this.api.forgetLists();
 
 		if (saved.details.some((detail) => (detail.subject === 'draft')))
 		{
@@ -1111,8 +1115,9 @@ export class EditorScreen
 	{
 		const selected = (this.canSeeTab(tab) ? tab : 'universe');
 
-		// Areas may have been disabled or renamed on the Areas tab. Opening a universe on the Lobby tab
-		// has just loaded them
+		// A save may have disabled or renamed areas since the Lobby tab showed them; the areas are only
+		// loaded again after one (see EditorApi.sendShared()). Opening a universe on the Lobby tab has
+		// just loaded them
 		if ((selected === 'lobby') && (this.place.tab !== 'lobby'))
 		{
 			this.lobbyTab.refreshAreas();

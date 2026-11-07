@@ -506,7 +506,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	}
 
 	/**
-	 * Shows the list of areas, loading them afresh
+	 * Shows the list of areas, loading them when a save may have changed them since they last loaded
 	 */
 	private async showList(): Promise<void>
 	{
@@ -575,7 +575,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	}
 
 	/**
-	 * Loads every area of the universe
+	 * Loads every area of the universe, sharing the load with the other tabs (see EditorApi.sendShared())
 	 *
 	 * @param universe The universe
 	 */
