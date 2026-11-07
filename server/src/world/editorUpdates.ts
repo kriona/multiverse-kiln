@@ -1,4 +1,4 @@
-import type { UniverseEditDetail, UniverseRole, UniverseVersionName } from '@multiverse-kiln/shared';
+import type { SavedEditDetail, UniverseRole, UniverseVersionName } from '@multiverse-kiln/shared';
 
 /**
  * A save that has committed, for the editor room to tell the other windows of
@@ -26,9 +26,9 @@ export interface SavedUpdate
 	version: UniverseVersionName;
 
 	/**
-	 * What it changed, as the Audit tab lists it
+	 * What it changed, as the Audit tab lists it, with the ID of each thing
 	 */
-	details: readonly UniverseEditDetail[];
+	details: readonly SavedEditDetail[];
 }
 
 /**

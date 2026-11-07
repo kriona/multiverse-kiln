@@ -672,6 +672,24 @@ button.sort-button
 	color: $success-toast-text;
 }
 
+.toast.warning
+{
+	border-color: $notice-border;
+	background: $notice-background;
+	color: $notice-text;
+}
+
+// A toast with more than one paragraph, such as a save notice naming tabs with unsaved changes
+.toast p
+{
+	margin: 0;
+}
+
+.toast p + p
+{
+	margin-top: 6px;
+}
+
 // A toast fading out can't be clicked or hovered
 .toast.closing
 {

@@ -9,7 +9,7 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { EDITOR_CHANGE_CHECKS, localize, mayMakeChange, maySaveInStage, type EditorAccess, type EditorChange, type NewRef, type SaveChangesPayload, type SaveRefusedPayload, type UniverseEditDetail } from '@multiverse-kiln/shared';
+import { EDITOR_CHANGE_CHECKS, localize, mayMakeChange, maySaveInStage, type EditorAccess, type EditorChange, type NewRef, type SaveChangesPayload, type SaveRefusedPayload, type SavedEditDetail } from '@multiverse-kiln/shared';
 
 import { loadBarredOptions, sameBarred } from '../db/barredOptions.js';
 import { findPlayer } from '../db/playerRepo.js';
@@ -185,7 +185,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 	let stageChange: StageChange | undefined;
 
 	// What the save changed, as the Audit tab lists it
-	let details: UniverseEditDetail[] = [];
+	let details: SavedEditDetail[] = [];
 	let context: ChangeContext;
 
 	try
@@ -337,7 +337,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 				}, transaction);
 			}
 
-			details = audit.details;
+			details = audit.savedDetails();
 
 			return(saving);
 		});
@@ -606,9 +606,9 @@ async function afterCommit(context: ChangeContext, stageChange: StageChange | un
  *
  * @param base The universe and version saved, and the player who saved
  * @param windowId The editor room session ID of the window that saved, or undefined when it named none
- * @param details What the save changed, as the Audit tab lists it
+ * @param details What the save changed, as the Audit tab lists it, with the ID of each thing
  */
-async function publishSave(base: UniverseContext, windowId: string | undefined, details: UniverseEditDetail[]): Promise<void>
+async function publishSave(base: UniverseContext, windowId: string | undefined, details: SavedEditDetail[]): Promise<void>
 {
 	if (details.length === 0)
 	{

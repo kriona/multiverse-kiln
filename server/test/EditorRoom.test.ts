@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { EDITOR_ROOM_NAME, EditorMessageType, EditorServerMessageType, EditorState, MAX_CHAT_MESSAGE_LENGTH, NoticeReason, ServerCloseCode, type EditorJoinOptions, type EditorPlacePayload, type EditorSavedPayload, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload } from '@multiverse-kiln/shared';
+import { EDITOR_ROOM_NAME, EditorMessageType, EditorServerMessageType, EditorState, MAX_CHAT_MESSAGE_LENGTH, NoticeReason, ServerCloseCode, VOID_CELL, type EditorJoinOptions, type EditorPlacePayload, type EditorSavedPayload, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type RaceListPayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { listChatMessages } from '../src/db/chatRepo.js';
 import { addServerAdmin } from '../src/db/serverAdminRepo.js';
@@ -13,7 +13,7 @@ import { universeAccessChanges } from '../src/players/universeAccess.js';
 import type { EditorRoom } from '../src/rooms/EditorRoom.js';
 import { areaChanges } from '../src/world/areaChanges.js';
 import { editorUpdates } from '../src/world/editorUpdates.js';
-import { createUniverse, logIn, saveChanges, type Editor } from './editorRequests.js';
+import { createArea, createUniverse, logIn, saveChanges, send, type Editor } from './editorRequests.js';
 import { Inbox } from './inbox.js';
 import { usernameFor } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
@@ -273,7 +273,7 @@ describe('EditorRoom', () =>
 			const notice = await graceWindow.inbox.take<EditorSavedPayload>(EditorServerMessageType.Saved);
 
 			assert.deepStrictEqual([notice.playerId, notice.name, notice.username, notice.version], [ada.playerId, 'Ada', usernameFor('Ada'), 'live']);
-			assert.deepStrictEqual(notice.details, [{ subject: 'settings', action: 'changed', target: null, fields: [{ field: 'groupSize', value: 3 }], count: 1 }]);
+			assert.deepStrictEqual(notice.details, [{ subject: 'settings', action: 'changed', target: null, fields: [{ field: 'groupSize', value: 3 }], count: 1, id: null }]);
 			assert.deepStrictEqual((await other.inbox.take<EditorSavedPayload>(EditorServerMessageType.Saved)).details, notice.details);
 			await assert.rejects(saving.inbox.take(EditorServerMessageType.Saved, 200));
 		});
@@ -299,7 +299,7 @@ describe('EditorRoom', () =>
 
 			const notice = await window.inbox.take<EditorSavedPayload>(EditorServerMessageType.Saved);
 
-			assert.deepStrictEqual(notice.details, [{ subject: 'settings', action: 'changed', target: null, fields: [{ field: 'stage', value: 'prologue' }], count: 1 }]);
+			assert.deepStrictEqual(notice.details, [{ subject: 'settings', action: 'changed', target: null, fields: [{ field: 'stage', value: 'prologue' }], count: 1, id: null }]);
 			assert.strictEqual(window.inbox.pending(EditorServerMessageType.Saved), 0);
 		});
 
@@ -311,6 +311,29 @@ describe('EditorRoom', () =>
 			await window.inbox.take(EditorServerMessageType.Saved);
 			assert.strictEqual((await saveChanges(ada, universeId, [{ kind: 'universe', update: { groupSize: 3 } }])).status, 200);
 			await assert.rejects(window.inbox.take(EditorServerMessageType.Saved, 200));
+		});
+
+		it('names each thing changed by its ID, and nothing added, so other windows can find it', async () =>
+		{
+			const window = await openEditor(ada, universeId);
+			const races = (await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races;
+			const dwarf = races.find((race) => (race.key === 'dwarf'))!;
+			const areaId = await createArea(ada, universeId);
+
+			await window.inbox.take(EditorServerMessageType.Saved);
+			assert.strictEqual((await saveChanges(ada, universeId, [
+				{ kind: 'saveRace', id: dwarf.id, settings: { ...dwarf, name: 'Stout' } },
+				{ kind: 'editCells', areaId, changes: [[0, 0, VOID_CELL]] },
+				{ kind: 'createArea', ref: 'new:cave', area: { name: 'Cave' } }
+			])).status, 200);
+
+			const notice = await window.inbox.take<EditorSavedPayload>(EditorServerMessageType.Saved);
+
+			assert.deepStrictEqual(notice.details.map((detail) => [detail.subject, detail.action, detail.id]), [
+				['race', 'changed', dwarf.id],
+				['cells', 'changed', areaId],
+				['area', 'added', null]
+			]);
 		});
 	});
 

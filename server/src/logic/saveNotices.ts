@@ -19,14 +19,14 @@ const UNIVERSE_WIDE_SUBJECTS: ReadonlySet<AuditSubject> = new Set(['editor', 'dr
  * @param windowVersion The version the window has open
  * @return What the window hears of, in the save's order; empty when it hears of nothing
  */
-export function noticeDetails(details: readonly UniverseEditDetail[], savedVersion: UniverseVersionName, windowVersion: UniverseVersionName): UniverseEditDetail[]
+export function noticeDetails<Detail extends UniverseEditDetail>(details: readonly Detail[], savedVersion: UniverseVersionName, windowVersion: UniverseVersionName): Detail[]
 {
 	if (savedVersion === windowVersion)
 	{
 		return([...details]);
 	}
 
-	const heard: UniverseEditDetail[] = [];
+	const heard: Detail[] = [];
 
 	for (const detail of details)
 	{

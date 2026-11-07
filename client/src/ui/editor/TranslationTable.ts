@@ -1,4 +1,4 @@
-import { canEditWorld, canMarkNoTranslation, canTranslate, defineMessages, DISALLOWED_TEXT_CHARACTERS, isCoin, isValidCoinAbbreviation, languageName, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, readTranslationFile, sourceTextHash, TRANSLATION_FILE_EXTENSIONS, TRANSLATION_FILE_FORMATS, TRANSLATION_FILE_TYPES, TranslationFileError, translationFileFormatOf, UNIVERSE_TEXT_SORT_COLUMNS, universeTextKey, writeTranslationFile, type EditableUniverse, type MessageDescriptor, type ReadTranslationFile, type TranslationFileFormat, type UniverseTextListPayload, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
+import { canEditWorld, canMarkNoTranslation, canTranslate, defineMessages, DISALLOWED_TEXT_CHARACTERS, isCoin, isValidCoinAbbreviation, languageName, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, readTranslationFile, sourceTextHash, TRANSLATION_FILE_EXTENSIONS, TRANSLATION_FILE_FORMATS, TRANSLATION_FILE_TYPES, TranslationFileError, translationFileFormatOf, UNIVERSE_TEXT_SORT_COLUMNS, universeTextKey, writeTranslationFile, type AuditSubject, type EditableUniverse, type MessageDescriptor, type ReadTranslationFile, type TranslationFileFormat, type UniverseTextListPayload, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -7,6 +7,7 @@ import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { engineCoinName } from '../moneyField';
 import { TableSorter } from '../tableSorter';
 import type { EditorSave } from './editorSave';
+import type { FollowsOtherSaves, OtherSave } from './otherSaves';
 import type { SavableTab } from './SaveBar';
 import { joinTags, type ChangeSource } from './stagedChanges';
 import { TranslationDialog } from './TranslationDialog';
@@ -20,6 +21,11 @@ const SEARCH_DELAY_MS = 250;
  * Most characters of the source text the table shows; the dialog shows all of it
  */
 const SHOWN_SOURCE_LENGTH = 200;
+
+/**
+ * What a save changes on the table, as the Audit tab names it
+ */
+const TEXT_SUBJECTS: ReadonlySet<AuditSubject> = new Set(['translations', 'translatorNotes', 'noTranslation']);
 
 /**
  * Each translation file format's name, in the format choice and in messages about files
@@ -138,7 +144,7 @@ export function describeTextPlace(row: UniverseTextRow): string
  * is saved. The text exports as a translation file, and translations import from one, kept on the tab
  * the same way. Translators see only their languages, and builders write notes
  */
-export class TranslationTable implements SavableTab, ChangeSource
+export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherSaves
 {
 	private readonly none = getElement('translations-text-none', HTMLElement);
 	private readonly list = getElement('translations-text-list', HTMLElement);
@@ -516,6 +522,26 @@ export class TranslationTable implements SavableTab, ChangeSource
 	reload(): void
 	{
 		void this.refresh();
+	}
+
+	/**
+	 * Loads the page shown afresh after another window saved, keeping the changes made here, since any
+	 * save may change the universe's text. The save's details count translations rather than naming
+	 * them, so the rows aren't marked
+	 *
+	 * @param save The save
+	 * @return True when the save changed translations, notes or marks while the table has unsaved changes
+	 */
+	otherSaved(save: OtherSave): boolean
+	{
+		if (save.details.length === 0)
+		{
+			return(false);
+		}
+
+		void this.refresh();
+
+		return(this.hasUnsavedChanges() && save.details.some((detail) => TEXT_SUBJECTS.has(detail.subject)));
 	}
 
 	/**

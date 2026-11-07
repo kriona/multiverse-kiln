@@ -21,6 +21,8 @@ import { RacesSection } from './RacesSection';
 import { RulesetTab } from './RulesetTab';
 import { combineTabs, SaveBar, type SavableTab } from './SaveBar';
 import { showSaveNotice } from './saveNotices';
+import { FormFollower, SETTINGS_FORMS, type FollowsOtherSaves, type OtherSave, type SettingsForm } from './otherSaves';
+import type { ChangeSource } from './stagedChanges';
 import { ThemesSection } from './ThemesSection';
 import { TilesetsTab } from './TilesetsTab';
 import { TranslationsTab } from './TranslationsTab';
@@ -103,6 +105,21 @@ export interface EditorScreenActions
 }
 
 /**
+ * A tab's name as its button shows it, without the words screen readers hear for its unsaved changes
+ *
+ * @param name The tab
+ * @return Its name in the player's language
+ */
+function tabName(name: EditorTab): string
+{
+	const button = getElement(`editor-tab-${name}`, HTMLButtonElement).cloneNode(true) as HTMLButtonElement;
+
+	button.querySelector('.tab-changes')?.remove();
+
+	return(button.textContent.trim());
+}
+
+/**
  * Whether a value names one of the editor's tabs
  *
  * @param value The value, e.g. from the page's address
@@ -159,6 +176,17 @@ export class EditorScreen
 	 * What the save bar saves on each tab
 	 */
 	private readonly savableTabs: Record<SavableEditorTab, SavableTab>;
+
+	/**
+	 * What keeps each tab up with saves made in other windows
+	 */
+	private readonly followers: Record<SavableEditorTab, readonly FollowsOtherSaves[]>;
+
+	/**
+	 * The settings forms a save in another window changed while they had no unsaved changes, each with
+	 * what loads it, waiting for the universe to load again
+	 */
+	private readonly formsToReload = new Map<SettingsForm, (universe: EditableUniverse) => void>();
 
 	/**
 	 * The universe being edited, once it has loaded
@@ -290,6 +318,74 @@ export class EditorScreen
 			areas: this.areasTab,
 			items: this.itemsTab,
 			translations: combineTabs(this.translationTable, this.translationsTab)
+		};
+
+		/**
+		 * Keeps one of the forms holding the universe's settings up with saves made in other windows
+		 *
+		 * @param form The form
+		 * @param changes Its unsaved changes
+		 * @param open Loads it, from the universe as the server has it
+		 * @return Its follower
+		 */
+		const settingsForm = (form: SettingsForm, changes: ChangeSource, open: (universe: EditableUniverse) => void): FormFollower => new FormFollower(getElement(`${form}-form`, HTMLFormElement), {
+			subject: 'settings',
+			fields: SETTINGS_FORMS[form].fields
+		}, changes, () =>
+		{
+			this.formsToReload.set(form, open);
+		});
+
+		this.followers = {
+			tilesets: [this.tilesetsTab],
+			items: [this.itemsTab],
+			ruleset: [
+				new FormFollower(getElement('ruleset-form', HTMLFormElement), { subject: 'ruleset' }, this.rulesetTab.changes, () =>
+				{
+					if (this.universe)
+					{
+						void this.rulesetTab.open(this.universe);
+					}
+				}),
+				settingsForm('coins', this.coinsSection.changes, (universe) =>
+				{
+					this.coinsSection.open(universe);
+					this.charactersTab.coinsChanged(true);
+				}),
+				this.difficultySection
+			],
+			characters: [
+				settingsForm('characters', this.charactersTab.changes, (universe) =>
+				{
+					this.charactersTab.open(universe);
+				}),
+				this.racesSection,
+				this.classesSection,
+				this.themesSection
+			],
+			universe: [
+				settingsForm('universe', this.universeTab.changes, (universe) =>
+				{
+					this.universeTab.open(universe);
+				})
+			],
+			lobby: [
+				settingsForm('lobby', this.lobbyTab.changes, (universe) =>
+				{
+					this.lobbyTab.open(universe);
+					this.areasTab.setLobbyArea(universe.lobbyAreaId);
+				})
+			],
+			areas: [this.areasTab],
+			editors: [this.editorsTab],
+			translations: [
+				settingsForm('translations', this.translationsTab.changes, (universe) =>
+				{
+					this.translationsTab.open(universe);
+					this.translationTable.useUniverse(universe);
+				}),
+				this.translationTable
+			]
 		};
 
 		for (const name of SAVE_ORDER)
@@ -531,6 +627,21 @@ export class EditorScreen
 	 */
 	accessChanged(): void
 	{
+		this.reloadUniverse(t({
+			id: 'editor.accessChanged',
+			defaultMessage: 'What you can do in this universe has changed: your role, its stage, or whether the site\'s admins have disabled it. Save or undo your changes, then reload the page to see what you can do now.',
+			description: 'Shown above the editor\'s tabs when the player\'s role in the universe, its stage, or whether the site\'s admins disabled it changed while they had unsaved changes, which loading the universe again would throw away'
+		}));
+	}
+
+	/**
+	 * Loads the universe again on the tab and area showing, or, while anything is unsaved, says why it
+	 * should be, since loading again would throw the changes away
+	 *
+	 * @param unsavedMessage What to say above the tabs while anything is unsaved, in the player's language
+	 */
+	private reloadUniverse(unsavedMessage: string): void
+	{
 		if (!this.universe)
 		{
 			return;
@@ -538,11 +649,7 @@ export class EditorScreen
 
 		if (hasUnsavedWork())
 		{
-			this.showNotice(t({
-				id: 'editor.accessChanged',
-				defaultMessage: 'What you can do in this universe has changed: your role, its stage, or whether the site\'s admins have disabled it. Save or undo your changes, then reload the page to see what you can do now.',
-				description: 'Shown above the editor\'s tabs when the player\'s role in the universe, its stage, or whether the site\'s admins disabled it changed while they had unsaved changes, which loading the universe again would throw away'
-			}));
+			this.showNotice(unsavedMessage);
 			return;
 		}
 
@@ -550,24 +657,117 @@ export class EditorScreen
 	}
 
 	/**
-	 * Follows a save made in another window, once the universe has loaded: says who saved what, when it
-	 * changed anything this window shows, and lists the saves on the Audit tab again
+	 * Follows a save made in another window, once the universe has loaded: lists the saves on the Audit
+	 * tab again, updates what the save changed that this window has no unsaved changes to, marks what it
+	 * has them to, and says who saved what. Starting, applying or discarding the draft changes the whole
+	 * universe, which loads again, or says to reload while anything is unsaved
 	 *
 	 * @param saved The save
 	 */
 	otherSaved(saved: EditorSavedPayload): void
 	{
-		if (!this.universe)
+		const universe = this.universe;
+
+		if (!universe)
 		{
 			return;
 		}
 
-		if (saved.details.length > 0)
+		this.auditTab.otherSaved();
+
+		if (saved.details.length === 0)
 		{
-			showSaveNotice(saved, this.universe.ruleset);
+			return;
 		}
 
-		this.auditTab.otherSaved();
+		if (saved.details.some((detail) => (detail.subject === 'draft')))
+		{
+			showSaveNotice(saved, universe.ruleset, []);
+			this.reloadUniverse(t({
+				id: 'editor.draftChangedElsewhere',
+				defaultMessage: 'Another editor started, applied or discarded the universe\'s draft. Save or undo your changes, then reload the page to see the universe as it now is.',
+				description: 'Shown above the editor\'s tabs when another editor started, applied or discarded the universe\'s draft (a copy players don\'t see) while the player had unsaved changes, which loading the universe again would throw away'
+			}));
+			return;
+		}
+
+		const save: OtherSave = {
+			name: saved.name,
+			details: saved.details
+		};
+		const kept: string[] = [];
+
+		this.formsToReload.clear();
+
+		for (const name of EDITOR_TABS)
+		{
+			// Every part follows the save, even once one has kept changes
+			if (isSavableTab(name) && this.followers[name].map((follower) => follower.otherSaved(save)).includes(true))
+			{
+				kept.push(tabName(name));
+			}
+		}
+
+		if (saved.details.some((detail) => ((detail.subject === 'tile') || (detail.subject === 'tileset'))))
+		{
+			void this.areasTab.reloadTiles();
+		}
+
+		void this.reloadSettings();
+		showSaveNotice(saved, universe.ruleset, kept);
+	}
+
+	/**
+	 * Loads the universe's settings again for the forms a save in another window changed while they had
+	 * no unsaved changes, and shows them there. The other forms keep the settings this window has,
+	 * unsaved changes included
+	 */
+	private async reloadSettings(): Promise<void>
+	{
+		const forms = new Map(this.formsToReload);
+		const current = this.universe;
+		const version = this.openVersion;
+
+		this.formsToReload.clear();
+
+		if ((forms.size === 0) || !current)
+		{
+			return;
+		}
+
+		let saved: EditableUniverse;
+
+		try
+		{
+			saved = await this.api.getUniverse(current.id);
+		}
+		catch
+		{
+			// The forms keep the settings they show until the universe is next loaded
+			return;
+		}
+
+		const shown = this.universe;
+
+		if ((version !== this.openVersion) || !shown)
+		{
+			return;
+		}
+
+		const keptSettings = Object.fromEntries(Object.entries(SETTINGS_FORMS)
+			.filter(([form]) => !forms.has(form as SettingsForm))
+			.flatMap(([, { keys }]) => keys.map((key) => [key, shown[key]])));
+		const universe: EditableUniverse = {
+			...saved,
+			...keptSettings
+		};
+
+		this.setUniverse(universe);
+
+		for (const form of Object.keys(SETTINGS_FORMS) as SettingsForm[])
+		{
+			forms.get(form)?.(universe);
+		}
 	}
 
 	/**

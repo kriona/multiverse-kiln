@@ -475,6 +475,17 @@ export function describeDetail(detail: UniverseEditDetail, ruleset: Ruleset): st
 }
 
 /**
+ * A setting's name, as the Audit tab and the editor's fields name it
+ *
+ * @param field The setting
+ * @return Its name in the player's language
+ */
+export function auditFieldName(field: AuditField): string
+{
+	return(t(AUDIT_FIELD_NAMES[field]));
+}
+
+/**
  * One setting a part of a save changed, with the value it changed it to, e.g. "Track ammunition (yes)"
  *
  * @param change The setting and its value

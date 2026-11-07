@@ -96,7 +96,20 @@ export interface EditorSavedPayload
 	 * a window with the other version open. Empty when it changed nothing the window shows, which still
 	 * hears of it for the Audit tab, which lists the saves of both versions
 	 */
-	details: UniverseEditDetail[];
+	details: SavedEditDetail[];
+}
+
+/**
+ * One thing a save changed, as the Audit tab lists it, with the ID the editor finds it by on its tabs
+ */
+export interface SavedEditDetail extends UniverseEditDetail
+{
+	/**
+	 * The ID of the tile, item, race, class, theme, difficulty level, area (the one whose map or links it
+	 * changed, for cells and links) or uploaded tileset, or the editor's player ID; null for something
+	 * added, and for the settings, the ruleset, translations and the draft
+	 */
+	id: number | string | null;
 }
 
 /**

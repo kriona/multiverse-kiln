@@ -4,7 +4,7 @@
  * setting sent with the value it already has isn't listed, and a thing deleted is named as it was
  */
 import { isDeepStrictEqual } from 'util';
-import { AUDIT_FIELDS, type AuditAction, type AuditField, type AuditFieldChange, type AuditPassageOfTime, type AuditPlace, type AuditSubject, type ClassRaceArea, type EditorChange, type EditorRoleSettings, type ItemQuantity, type NumberRef, type OptionName, type StringRef, type TileGraphic, type UniverseEditDetail } from '@multiverse-kiln/shared';
+import { AUDIT_FIELDS, type AuditAction, type AuditField, type AuditFieldChange, type AuditPassageOfTime, type AuditPlace, type AuditSubject, type ClassRaceArea, type EditorChange, type EditorRoleSettings, type ItemQuantity, type NumberRef, type OptionName, type SavedEditDetail, type StringRef, type TileGraphic, type UniverseEditDetail } from '@multiverse-kiln/shared';
 
 import { findEditorArea } from '../db/areaRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
@@ -219,6 +219,16 @@ export class SaveAudit
 	 */
 	readonly details: UniverseEditDetail[] = [];
 
+	/**
+	 * The ID of what each of the details changed, in the same order (SavedEditDetail.id)
+	 */
+	private readonly ids: (number | string | null)[] = [];
+
+	/**
+	 * The ID of what the change being described changes, which the details it adds take
+	 */
+	private changeId: number | string | null = null;
+
 	private readonly editors: CachedList<string, EditorRoleSettings & { username: string }>;
 	private readonly tileGraphics: CachedList<string, { name: string }>;
 	private readonly tiles: CachedList<number, Named & { custom: boolean }>;
@@ -262,6 +272,17 @@ export class SaveAudit
 	}
 
 	/**
+	 * What the save changed, thing by thing, each with the ID of what it changed, for the editor windows
+	 * told of the save
+	 *
+	 * @return The details
+	 */
+	savedDetails(): SavedEditDetail[]
+	{
+		return(this.details.map((detail, index) => ({ ...detail, id: (this.ids[index] ?? null) })));
+	}
+
+	/**
 	 * Records what a change is about to do. Call it just before the change is saved; a change it can't
 	 * describe (one naming something that doesn't exist, which the save then refuses) records nothing
 	 *
@@ -269,6 +290,8 @@ export class SaveAudit
 	 */
 	async describe(change: EditorChange): Promise<void>
 	{
+		this.changeId = this.idOf(change);
+
 		switch (change.kind)
 		{
 			case 'startDraft':
@@ -427,6 +450,48 @@ export class SaveAudit
 			case 'saveNoTranslation':
 				this.count('noTranslation', (change.noTranslation ? 'added' : 'deleted'), null);
 				return;
+		}
+	}
+
+	/**
+	 * The ID of what a change changes, for the editor windows told of the save to find it by
+	 *
+	 * @param change The change
+	 * @return The ID of the tile, item, race, class, theme, difficulty level, area (the one whose map or
+	 * links it changes, for cells and links), uploaded tileset or editor (their player ID); null for
+	 * a change adding something, and one to the settings, the ruleset, translations or the draft
+	 */
+	private idOf(change: EditorChange): number | string | null
+	{
+		switch (change.kind)
+		{
+			case 'saveEditor':
+			case 'removeEditor':
+				return(change.playerId);
+			case 'deleteTileGraphic':
+				return(change.graphicId);
+			case 'saveTile':
+			case 'removeTile':
+			case 'saveItem':
+			case 'removeItem':
+			case 'saveRace':
+			case 'removeRace':
+			case 'saveClass':
+			case 'removeClass':
+			case 'saveTheme':
+			case 'removeTheme':
+			case 'saveDifficultyLevel':
+			case 'removeDifficultyLevel':
+				return(resolveNumberRef(this.context, change.id));
+			case 'updateArea':
+			case 'deleteArea':
+			case 'resizeArea':
+			case 'editCells':
+			case 'saveLink':
+			case 'deleteLink':
+				return(resolveStringRef(this.context, change.areaId));
+			default:
+				return(null);
 		}
 	}
 
@@ -734,6 +799,7 @@ export class SaveAudit
 		if (fields.length > 0)
 		{
 			this.details.push({ subject, action: 'changed', target, fields, count: 1 });
+			this.ids.push(this.changeId);
 		}
 	}
 
@@ -749,5 +815,6 @@ export class SaveAudit
 	private add(subject: AuditSubject, action: AuditAction, target: OptionName | null, count: number = 1, fields: AuditFieldChange[] = []): void
 	{
 		this.details.push({ subject, action, target, fields, count });
+		this.ids.push(this.changeId);
 	}
 }

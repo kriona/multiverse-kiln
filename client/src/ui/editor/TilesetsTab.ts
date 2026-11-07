@@ -9,6 +9,7 @@ import { TableSorter } from '../tableSorter';
 import { tileName } from '../tileNames';
 import { editorMessages } from './editorMessages';
 import { newRef, numberRef, type EditorSave, type SavedIds } from './editorSave';
+import { ChangedSinceNotes, type FollowsOtherSaves, type OtherSave } from './otherSaves';
 import { combineChanges, type SavableTab } from './SaveBar';
 import { describeRefusedChange, joinTags, markStagedRow, StagedAdditions, StagedChanges, StagedDeletions, stagedPage, stagedTag, stagedView, type StagedChange, type StagedState } from './stagedChanges';
 import { TileDialog } from './TileDialog';
@@ -62,7 +63,7 @@ function uploadRef(stagedId: string): NewRef
  * Tilesets uploaded and deleted from the tile editor wait too. Saving uploads the new ones first, so the
  * tiles staged to use them can name them, then saves the tiles, then deletes the tilesets marked to delete
  */
-export class TilesetsTab implements SavableTab
+export class TilesetsTab implements SavableTab, FollowsOtherSaves
 {
 	private readonly nameFilter = getElement('tile-filter-name', HTMLInputElement);
 	private readonly passableFilter = getElement('tile-filter-passable', HTMLSelectElement);
@@ -85,6 +86,11 @@ export class TilesetsTab implements SavableTab
 	 * since, so its ID stays clear of the values cells hold for void and unseen cells
 	 */
 	private readonly staged = new StagedChanges<TileSettings>(FIRST_NEW_TILE_ID);
+
+	/**
+	 * The tiles other windows saved while this one had unsaved changes to them
+	 */
+	private readonly changedSince = new ChangedSinceNotes('tile');
 
 	/**
 	 * Tilesets chosen in the upload dialog, uploaded when the tab is saved. Until then tiles refer to
@@ -284,6 +290,7 @@ export class TilesetsTab implements SavableTab
 		this.tiles = [];
 		this.known.clear();
 		this.staged.clear();
+		this.changedSince.clear();
 		this.uploadsToAdd.clear();
 		this.uploadsToDelete.clear();
 		this.uploadedIds.clear();
@@ -548,6 +555,30 @@ export class TilesetsTab implements SavableTab
 	}
 
 	/**
+	 * Loads the tiles and uploaded tilesets again after another window saved changes to them, keeping the
+	 * changes made here and marking the tiles they and the save both changed
+	 *
+	 * @param save The save
+	 * @return True when the save changed a tile with unsaved changes here
+	 */
+	otherSaved(save: OtherSave): boolean
+	{
+		const { changed, kept } = this.changedSince.follow(save, (id) => ((typeof id === 'number') && (this.staged.stateOf(id) !== undefined)));
+
+		if (changed)
+		{
+			void this.refresh();
+		}
+
+		if (this.universe && save.details.some((detail) => (detail.subject === 'tileset')))
+		{
+			void this.loadUploads(this.universe);
+		}
+
+		return(kept);
+	}
+
+	/**
 	 * Every tile as it will be once the tab is saved, for the maps: the saved tiles with their changes,
 	 * then the tiles added since. A tile staged for deletion is drawn as the tile chosen to replace it
 	 *
@@ -805,6 +836,8 @@ export class TilesetsTab implements SavableTab
 		{
 			row.classList.add('staged-deleted');
 		}
+
+		this.changedSince.mark(row.cells[1], tile.id, (state !== undefined));
 
 		return(markStagedRow(row, state, !tile.custom));
 	}

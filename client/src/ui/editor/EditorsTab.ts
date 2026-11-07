@@ -9,6 +9,7 @@ import { askToConfirm, type Confirmation } from '../confirmDialog';
 import { getElement, showMessage } from '../dom';
 import { EditorDialog } from './EditorDialog';
 import type { EditorSave } from './editorSave';
+import { ChangedSinceNotes, type FollowsOtherSaves, type OtherSave } from './otherSaves';
 import type { SavableTab } from './SaveBar';
 import type { ChangeSource, StagedState } from './stagedChanges';
 
@@ -48,7 +49,7 @@ export interface EditorsTabActions
  * languages. Creators add players by username, change roles and remove editors; anyone can leave. Changes
  * wait on the page until the tab is saved
  */
-export class EditorsTab implements SavableTab, ChangeSource
+export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 {
 	private readonly addButton = getElement('editors-add', HTMLButtonElement);
 
@@ -74,6 +75,11 @@ export class EditorsTab implements SavableTab, ChangeSource
 	 * The changes the save being sent holds
 	 */
 	private collected = new Map<string, StagedEditor>();
+
+	/**
+	 * The editors other windows saved while this one had unsaved changes to them, by player ID
+	 */
+	private readonly changedSince = new ChangedSinceNotes('editor');
 
 	private readonly listeners = new Set<(unsaved: boolean) => void>();
 
@@ -193,6 +199,7 @@ export class EditorsTab implements SavableTab, ChangeSource
 		this.editors = [];
 		this.ownPlayerId = undefined;
 		this.staged = new Map();
+		this.changedSince.clear();
 		this.changed();
 		this.rows.replaceChildren();
 		showMessage(this.error, undefined);
@@ -300,6 +307,25 @@ export class EditorsTab implements SavableTab, ChangeSource
 		}
 
 		await this.refresh();
+	}
+
+	/**
+	 * Loads the editors again after another window saved changes to them, keeping the changes made here
+	 * and marking the editors they and the save both changed
+	 *
+	 * @param save The save
+	 * @return True when the save changed an editor with unsaved changes here
+	 */
+	otherSaved(save: OtherSave): boolean
+	{
+		const { changed, kept } = this.changedSince.follow(save, (id) => ((typeof id === 'string') && this.staged.has(id)));
+
+		if (changed)
+		{
+			void this.refresh();
+		}
+
+		return(kept);
 	}
 
 	/**
@@ -453,6 +479,8 @@ export class EditorsTab implements SavableTab, ChangeSource
 			cell.append(content);
 			row.append(cell);
 		}
+
+		this.changedSince.mark(row.cells[0], editor.playerId, (state !== undefined));
 
 		return(row);
 	}

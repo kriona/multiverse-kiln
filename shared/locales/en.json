@@ -1347,6 +1347,10 @@
 		"defaultMessage": "yes",
 		"description": "The value of a checkbox setting a save turned on, in the editor's Audit tab's list of what a save changed, e.g. \"Track ammunition (yes)\""
 	},
+	"editor.changedSince": {
+		"defaultMessage": "{action, select, deleted {{names} deleted this since you opened it.} restored {{names} restored this to its default since you opened it.} other {{fieldCount, plural, =0 {{names} changed this since you opened it.} other {{names} changed {fields} since you opened this.}}}}",
+		"description": "In the world editor, under something the player has unsaved changes to (a race, item, tile, the universe's settings and so on) that another editor saved changes to in the meantime; the player's changes stay as they are. {names} is who saved, by display name, {fields} the settings they changed, e.g. \"Name and Speed\", and {fieldCount} how many"
+	},
 	"editor.characterList.class": {
 		"defaultMessage": "Class",
 		"description": "Label of the filter on the editor's Character List tab for the characters' class, such as fighter or wizard"
@@ -1758,6 +1762,10 @@
 	"editor.draft.undo": {
 		"defaultMessage": "Undo",
 		"description": "Button on the editor's Universe tab that takes back starting, applying or discarding the draft, when saving it was refused"
+	},
+	"editor.draftChangedElsewhere": {
+		"defaultMessage": "Another editor started, applied or discarded the universe's draft. Save or undo your changes, then reload the page to see the universe as it now is.",
+		"description": "Shown above the editor's tabs when another editor started, applied or discarded the universe's draft (a copy players don't see) while the player had unsaved changes, which loading the universe again would throw away"
 	},
 	"editor.editingAsAdmin": {
 		"defaultMessage": "You are editing this universe as a site admin: you can change everything a creator can.",
@@ -2602,6 +2610,10 @@
 	"editor.saveNotice": {
 		"defaultMessage": "{more, plural, =0 {{name} saved: {changes}} one {{name} saved: {changes}, and # more change} other {{name} saved: {changes}, and # more changes}}",
 		"description": "In a toast, also read out by screen readers, when another editor (or the player in another window) saves changes to the universe open in the editor. {name} is their display name, {changes} a list of up to three things the save changed, as the Audit tab lists them (e.g. \"Changed race Dwarf, Painted 40 cells in Cave\"), and {more} how many more it changed"
+	},
+	"editor.saveNoticeKept": {
+		"defaultMessage": "{count, plural, one {This conflicts with your unsaved changes on the {tabs} tab.} other {This conflicts with your unsaved changes on the {tabs} tabs.}}",
+		"description": "A second sentence in the toast saying another editor saved changes, when they changed something the player also has unsaved changes to; the toast stays until clicked away. {tabs} names the editor's tabs those things are on, e.g. \"Characters and Items\", and {count} how many tabs"
 	},
 	"editor.searchByName": {
 		"defaultMessage": "Search by name",

@@ -1347,6 +1347,10 @@
 		"message": "aye",
 		"source": "yes"
 	},
+	"editor.changedSince": {
+		"message": "{action, select, deleted {{names} scuttled this since ye opened it.} restored {{names} restored this to its default since ye opened it.} other {{fieldCount, plural, =0 {{names} changed this since ye opened it.} other {{names} changed {fields} since ye opened this.}}}}",
+		"source": "{action, select, deleted {{names} deleted this since you opened it.} restored {{names} restored this to its default since you opened it.} other {{fieldCount, plural, =0 {{names} changed this since you opened it.} other {{names} changed {fields} since you opened this.}}}}"
+	},
 	"editor.characterList.class": {
 		"message": "Callin'",
 		"source": "Class"
@@ -1758,6 +1762,10 @@
 	"editor.draft.undo": {
 		"message": "Belay",
 		"source": "Undo"
+	},
+	"editor.draftChangedElsewhere": {
+		"message": "Another hand laid down, launched or scuttled the universe's draft. Stow or undo yer changes, then reload the page to see the universe as she now be.",
+		"source": "Another editor started, applied or discarded the universe's draft. Save or undo your changes, then reload the page to see the universe as it now is."
 	},
 	"editor.editingAsAdmin": {
 		"message": "Ye be editin' this universe as a ship's officer: ye can change all a captain can.",
@@ -2602,6 +2610,10 @@
 	"editor.saveNotice": {
 		"message": "{more, plural, =0 {{name} stowed: {changes}} one {{name} stowed: {changes}, an' # more change besides} other {{name} stowed: {changes}, an' # more changes besides}}",
 		"source": "{more, plural, =0 {{name} saved: {changes}} one {{name} saved: {changes}, and # more change} other {{name} saved: {changes}, and # more changes}}"
+	},
+	"editor.saveNoticeKept": {
+		"message": "{count, plural, one {This be crossin' yer unstowed changes on the {tabs} tab.} other {This be crossin' yer unstowed changes on the {tabs} tabs.}}",
+		"source": "{count, plural, one {This conflicts with your unsaved changes on the {tabs} tab.} other {This conflicts with your unsaved changes on the {tabs} tabs.}}"
 	},
 	"editor.searchByName": {
 		"message": "Search by name",
