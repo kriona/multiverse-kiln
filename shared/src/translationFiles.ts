@@ -39,6 +39,12 @@ export const TRANSLATION_FILE_TYPES: Readonly<Record<TranslationFileFormat, stri
 };
 
 /**
+ * The largest translation file the editor imports, in bytes: many times a large universe's text, so a
+ * larger file is the wrong file, which isn't read into memory
+ */
+export const MAX_TRANSLATION_FILE_BYTES = 10 * 1024 * 1024;
+
+/**
  * The byte order mark, which spreadsheets need at the start of a CSV file to read it as UTF-8, and
  * which reading any file skips
  */
@@ -532,10 +538,10 @@ interface XmlElement
  * The text of XML character data, its entities read
  *
  * @param text The character data
- * @param line The line it starts on, for errors
+ * @param line Finds the line it starts on, for errors: only called on one, since finding it reads the document up to there
  * @return The text
  */
-function decodeXml(text: string, line: number): string
+function decodeXml(text: string, line: () => number): string
 {
 	const named: Record<string, string> = { lt: '<', gt: '>', amp: '&', quot: '"', apos: '\'' };
 
@@ -546,7 +552,7 @@ function decodeXml(text: string, line: number): string
 
 		if (!match.endsWith(';'))
 		{
-			throw new TranslationFileError(line);
+			throw new TranslationFileError(line());
 		}
 
 		if (code !== null)
@@ -563,7 +569,7 @@ function decodeXml(text: string, line: number): string
 
 		if (character === undefined)
 		{
-			throw new TranslationFileError(line);
+			throw new TranslationFileError(line());
 		}
 
 		return(character);
@@ -584,7 +590,9 @@ function parseXml(text: string): XmlElement
 	let position = 0;
 
 	/**
-	 * The line a position in the document is on
+	 * The line a position in the document is on. It reads the document up to the position, so it is
+	 * only called for an error: calling it for every node would take time growing with the square of
+	 * the document's length
 	 *
 	 * @param at The position
 	 * @return The line, from 1
@@ -666,7 +674,7 @@ function parseXml(text: string): XmlElement
 
 			for (const attribute of body.slice(nameMatch[0].length).matchAll(/([^\s=]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g))
 			{
-				element.attributes.set((attribute[1].split(':').pop() ?? ''), decodeXml((attribute[2] ?? attribute[3]), lineAt(position)));
+				element.attributes.set((attribute[1].split(':').pop() ?? ''), decodeXml((attribute[2] ?? attribute[3]), () => lineAt(position)));
 			}
 
 			current.children.push(element);
@@ -683,7 +691,7 @@ function parseXml(text: string): XmlElement
 			const next = text.indexOf('<', position);
 			const end = ((next < 0) ? text.length : next);
 
-			current.children.push(decodeXml(text.slice(position, end), lineAt(position)));
+			current.children.push(decodeXml(text.slice(position, end), () => lineAt(position)));
 			position = end;
 		}
 	}

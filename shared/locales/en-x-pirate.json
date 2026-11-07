@@ -3187,6 +3187,10 @@
 		"message": "Couldn't haul in the translations.",
 		"source": "Could not import the translations."
 	},
+	"editor.translations.importTooLarge": {
+		"message": "This scroll be too heavy fer a translation scroll: translation scrolls weigh no more than {megabytes, number} MB.",
+		"source": "This file is too large for a translation file: translation files are at most {megabytes, number} MB."
+	},
 	"editor.translations.importWrongLanguage": {
 		"message": "This scroll holds translations into {fileLanguage}, not {language}. Choose {fileLanguage} t' haul it in.",
 		"source": "This file holds translations into {fileLanguage}, not {language}. Choose {fileLanguage} to import it."

@@ -1,4 +1,4 @@
-import { canEditWorld, canMarkNoTranslation, canTranslate, defineMessages, DISALLOWED_TEXT_CHARACTERS, isCoin, isValidCoinAbbreviation, languageName, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, readTranslationFile, sourceTextHash, TRANSLATION_FILE_EXTENSIONS, TRANSLATION_FILE_FORMATS, TRANSLATION_FILE_TYPES, TranslationFileError, translationFileFormatOf, UNIVERSE_TEXT_SORT_COLUMNS, universeTextKey, writeTranslationFile, type AuditSubject, type EditableUniverse, type MessageDescriptor, type ReadTranslationFile, type TranslationFileFormat, type UniverseTextListPayload, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
+import { canEditWorld, canMarkNoTranslation, canTranslate, defineMessages, DISALLOWED_TEXT_CHARACTERS, isCoin, isValidCoinAbbreviation, languageName, MAX_TRANSLATION_FILE_BYTES, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, readTranslationFile, sourceTextHash, TRANSLATION_FILE_EXTENSIONS, TRANSLATION_FILE_FORMATS, TRANSLATION_FILE_TYPES, TranslationFileError, translationFileFormatOf, UNIVERSE_TEXT_SORT_COLUMNS, universeTextKey, writeTranslationFile, type AuditSubject, type EditableUniverse, type MessageDescriptor, type ReadTranslationFile, type TranslationFileFormat, type UniverseTextListPayload, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -816,7 +816,8 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 	 * Each keeps the hash of the source text the file holds, so one made from text that has changed since
 	 * is out of date. Translations the file marks as needing review, for text the universe no longer has
 	 * or that needs no translation, or that are too long or hold characters that aren't allowed, are
-	 * skipped, and one that comes back as the table shows it is left as it is
+	 * skipped, and one that comes back as the table shows it is left as it is. A file larger than
+	 * MAX_TRANSLATION_FILE_BYTES is refused without being read
 	 *
 	 * @param file The file
 	 */
@@ -831,6 +832,18 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 
 		if (!universe || (language === '') || (format === undefined))
 		{
+			return;
+		}
+
+		if (file.size > MAX_TRANSLATION_FILE_BYTES)
+		{
+			showMessage(this.error, t({
+				id: 'editor.translations.importTooLarge',
+				defaultMessage: 'This file is too large for a translation file: translation files are at most {megabytes, number} MB.',
+				description: 'Shown on the editor\'s Translations tab when the file chosen to import is larger than any translation file of a universe could be, so it is probably the wrong file; {megabytes} is the largest size allowed'
+			}, {
+				megabytes: MAX_TRANSLATION_FILE_BYTES / (1024 * 1024)
+			}));
 			return;
 		}
 
