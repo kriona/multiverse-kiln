@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { eq } from 'drizzle-orm';
+import { eq, sql, type SQL } from 'drizzle-orm';
 import { CHUNK_SIZE, DEFAULT_TILE_CELL, cellIndexInChunk } from '@multiverse-kiln/shared';
 
 import { listAreas, loadChunks, saveGroundChunk, updateAreaSettings, listAreaLinks } from '../../src/db/areaRepo.js';
@@ -12,7 +12,8 @@ import { applyDraft, deleteRemovedRows, discardDraft, findDraftOrigins, startDra
 import { findEditableUniverse, hasDraft, updateUniverseSettings } from '../../src/db/universeRepo.js';
 import { listTranslations, saveTranslation } from '../../src/db/universeTextRepo.js';
 import { draftVersion, liveVersion } from '../../src/db/universeVersions.js';
-import { areas, tiles } from '../../src/db/schema.js';
+import { db } from '../../src/db/client.js';
+import { areaLinks, areas, mapChunks, tiles, universeTranslations } from '../../src/db/schema.js';
 import { addArea, addPlayableUniverse, dwarfFighter, type PlayableUniverse } from './fixtures.js';
 import { addPlayer } from '../players.js';
 
@@ -31,6 +32,21 @@ async function draftAreaOf(universeId: string, liveAreaId: string): Promise<stri
 	assert.ok(draftId, `The draft has no copy of area ${liveAreaId}`);
 
 	return(draftId);
+}
+
+/**
+ * Which version of a row the database holds, which changes whenever the row is written
+ *
+ * @param from The row's table and the condition finding it
+ * @return The version; undefined when there is no such row
+ */
+async function rowVersion(from: SQL): Promise<string | undefined>
+{
+	const result = await db.execute<{ version: string }>(sql`SELECT xmin::text AS version FROM ${from}`);
+
+	assert.ok(result.rows.length <= 1, 'The condition finds more than one row');
+
+	return(result.rows[0]?.version);
 }
 
 describe('universeDraftRepo', () =>
@@ -192,6 +208,52 @@ describe('universeDraftRepo', () =>
 			const [translation] = await listTranslations(liveVersion(universeId), ['fr']);
 
 			assert.strictEqual(translation.thingId, squareAreaId);
+		});
+
+		it('leaves alone the live rows the draft didn\'t change', async () =>
+		{
+			const { universeId, squareAreaId, houseAreaId, fieldAreaId } = universe;
+			const grass = new Array<number>(CHUNK_SIZE * CHUNK_SIZE).fill(DEFAULT_TILE_CELL);
+
+			await saveGroundChunk(houseAreaId, 0, 0, grass);
+			await inTransaction((transaction) => startDraft(universeId, transaction));
+
+			const unchanged = [
+				sql`${mapChunks} WHERE area_id = ${fieldAreaId}`,
+				sql`${areaLinks} WHERE area_id = ${squareAreaId}`,
+				sql`${tiles} WHERE id = ${lavaId}`,
+				sql`${areas} WHERE id = ${fieldAreaId}`,
+				sql`${universeTranslations} WHERE universe_id = ${universeId} AND NOT draft`
+			];
+			const before = await Promise.all(unchanged.map((from) => rowVersion(from)));
+
+			// The draft paints its lava into the square, and clears the house's map
+			const draftLava = (await loadEditorTiles(draftVersion(universeId), 'pf1e')).find((tile) => (tile.name === 'Lava'));
+			const draftSquareId = await draftAreaOf(universeId, squareAreaId);
+			const draftHouseId = await draftAreaOf(universeId, houseAreaId);
+			const [draftSquareChunk] = await loadChunks(draftSquareId, { minChunkColumn: 0, minChunkRow: 0, maxChunkColumn: 0, maxChunkRow: 0 });
+
+			assert.ok(draftLava);
+			draftSquareChunk.cells[cellIndexInChunk(7, 7)] = draftLava.id;
+			await saveGroundChunk(draftSquareId, 0, 0, draftSquareChunk.cells);
+			await inTransaction(async (transaction) =>
+			{
+				await transaction
+					.delete(mapChunks)
+					.where(eq(mapChunks.areaId, draftHouseId));
+			});
+
+			await inTransaction((transaction) => applyDraft(universeId, transaction));
+
+			assert.deepStrictEqual(await Promise.all(unchanged.map((from) => rowVersion(from))), before);
+
+			const bounds = { minChunkColumn: 0, minChunkRow: 0, maxChunkColumn: 0, maxChunkRow: 0 };
+			const [fieldChunk] = await loadChunks(fieldAreaId, bounds);
+			const [squareChunk] = await loadChunks(squareAreaId, bounds);
+
+			assert.strictEqual(fieldChunk.cells[cellIndexInChunk(1, 1)], lavaId);
+			assert.strictEqual(squareChunk.cells[cellIndexInChunk(7, 7)], lavaId);
+			assert.deepStrictEqual(await loadChunks(houseAreaId, bounds), []);
 		});
 
 		it('leaves the rows the draft deleted for the caller, then deletes them', async () =>

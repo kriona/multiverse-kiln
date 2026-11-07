@@ -47,19 +47,19 @@ const TEXT_TABLES: Partial<Record<UniverseTextKind, CopiedTable>> = {
 
 /**
  * The tables whose rows belong to one row of a copied table, by the column naming it, copied and applied
- * with it
+ * with it. The key is the columns that tell one parent's rows apart, besides the parent's
  */
-const CHILD_TABLES: readonly { child: PgTable; column: string; parent: CopiedTable }[] = [
-	{ child: pf1eRaces, column: 'race_id', parent: races },
-	{ child: sf1eRaces, column: 'race_id', parent: races },
-	{ child: raceStartingItems, column: 'race_id', parent: races },
-	{ child: pf1eClasses, column: 'class_id', parent: classes },
-	{ child: sf1eClasses, column: 'class_id', parent: classes },
-	{ child: classStartingItems, column: 'class_id', parent: classes },
-	{ child: classRaceAreas, column: 'class_id', parent: classes },
-	{ child: sf1eThemes, column: 'theme_id', parent: themes },
-	{ child: mapChunks, column: 'area_id', parent: areas },
-	{ child: areaLinks, column: 'area_id', parent: areas }
+const CHILD_TABLES: readonly { child: PgTable; column: string; parent: CopiedTable; key: readonly string[] }[] = [
+	{ child: pf1eRaces, column: 'race_id', parent: races, key: [] },
+	{ child: sf1eRaces, column: 'race_id', parent: races, key: [] },
+	{ child: raceStartingItems, column: 'race_id', parent: races, key: ['item_id'] },
+	{ child: pf1eClasses, column: 'class_id', parent: classes, key: [] },
+	{ child: sf1eClasses, column: 'class_id', parent: classes, key: [] },
+	{ child: classStartingItems, column: 'class_id', parent: classes, key: ['item_id'] },
+	{ child: classRaceAreas, column: 'class_id', parent: classes, key: ['race_id'] },
+	{ child: sf1eThemes, column: 'theme_id', parent: themes, key: [] },
+	{ child: mapChunks, column: 'area_id', parent: areas, key: ['layer', 'chunk_column', 'chunk_row'] },
+	{ child: areaLinks, column: 'area_id', parent: areas, key: ['column', 'row'] }
 ];
 
 /**
@@ -81,9 +81,16 @@ const REFERENCES: readonly { table: PgTable; column: string; target: CopiedTable
 ];
 
 /**
- * The tables of a version's own lists, one set of rows per version without IDs of their own
+ * The tables of a version's own lists, one set of rows per version without IDs of their own. The key is
+ * the columns that tell one version's rows apart
  */
-const VERSION_TABLES = [universeStartingItems, pf1eSettings, sf1eSettings, universeTranslations, universeTranslatorNotes] as const;
+const VERSION_TABLES: readonly { table: PgTable; key: readonly string[] }[] = [
+	{ table: universeStartingItems, key: ['item_id'] },
+	{ table: pf1eSettings, key: [] },
+	{ table: sf1eSettings, key: [] },
+	{ table: universeTranslations, key: ['kind', 'thing_id', 'field', 'language'] },
+	{ table: universeTranslatorNotes, key: ['kind', 'thing_id', 'field'] }
+];
 
 /**
  * The columns a draft row never takes from its live row, or a live row from its draft row
@@ -163,7 +170,36 @@ function draftIdOf(target: CopiedTable, universeId: string, value: SQL): SQL
 }
 
 /**
- * A map chunk's cells with each tile the draft has a copy of replaced by its copy, or by its live row
+ * The live row a draft row was copied from, or the value itself when it names no such row (a row the
+ * draft added, or one of the ruleset's defaults)
+ *
+ * @param target The table the value names a row of
+ * @param universeId The universe's ID
+ * @param value The draft row's ID
+ * @return The live row's ID
+ */
+function liveIdOf(target: CopiedTable, universeId: string, value: SQL): SQL
+{
+	return(sql`coalesce((SELECT m.origin_id FROM ${target} AS m WHERE m.draft AND m.universe_id = ${universeId} AND m.id = ${value} AND m.origin_id IS NOT NULL), ${value})`);
+}
+
+/**
+ * The tiles a map chunk's cells name that remapping replaces: the live tiles the draft has copies of, or
+ * those copies
+ *
+ * @param universeId The universe's ID
+ * @param toDraft Whether to list the live tiles; otherwise their copies
+ * @return The tiles' IDs, as an array
+ */
+function remappedTileIds(universeId: string, toDraft: boolean): SQL
+{
+	return(sql`ARRAY(SELECT ${(toDraft ? sql`m.origin_id` : sql`m.id`)} FROM ${tiles} AS m WHERE m.draft AND m.universe_id = ${universeId} AND m.origin_id IS NOT NULL)`);
+}
+
+/**
+ * A map chunk's cells with each tile the draft has a copy of replaced by its copy, or by its live row.
+ * Chunks that name none of those tiles, such as those painted only with the ruleset's defaults, are
+ * returned as they are without going through their cells
  *
  * @param universeId The universe's ID
  * @param cells The cells
@@ -177,7 +213,7 @@ function remappedCells(universeId: string, cells: SQL, toDraft: boolean): SQL
 		: sql`m.draft AND m.universe_id = ${universeId} AND m.id = c.cell AND m.origin_id IS NOT NULL`);
 	const replacement = (toDraft ? sql`m.id` : sql`m.origin_id`);
 
-	return(sql`ARRAY(SELECT coalesce(${replacement}, c.cell) FROM unnest(${cells}) WITH ORDINALITY AS c(cell, n) LEFT JOIN ${tiles} AS m ON ${join} ORDER BY c.n)`);
+	return(sql`CASE WHEN ${cells} && ${remappedTileIds(universeId, toDraft)} THEN ARRAY(SELECT coalesce(${replacement}, c.cell) FROM unnest(${cells}) WITH ORDINALITY AS c(cell, n) LEFT JOIN ${tiles} AS m ON ${join} ORDER BY c.n) ELSE ${cells} END`);
 }
 
 /**
@@ -197,6 +233,152 @@ function remappedThingId(universeId: string, alias: string, toDraft: boolean): S
 		: sql`WHEN ${kind} THEN coalesce((SELECT m.origin_id::text FROM ${target} AS m WHERE m.draft AND m.universe_id = ${universeId} AND m.origin_id IS NOT NULL AND m.id::text = ${thingId}), ${thingId})`));
 
 	return(sql`CASE ${columnOf(alias, 'kind')}::text ${sql.join(cases, sql` `)} ELSE ${thingId} END`);
+}
+
+/**
+ * A column of a row as the other version holds it: what names a row the draft has a copy of replaced by
+ * the copy, or by the live row
+ *
+ * @param table The row's table
+ * @param name The column's name
+ * @param alias The row's alias
+ * @param universeId The universe's ID
+ * @param toDraft Whether the row is live, its column replaced with the draft's copies; otherwise a draft row
+ * @return The value; undefined when the column names no copied row, and is the same in both versions
+ */
+function remappedColumn(table: PgTable, name: string, alias: string, universeId: string, toDraft: boolean): SQL | undefined
+{
+	const reference = REFERENCES.find((each) => ((each.table === table) && (each.column === name)));
+	const value = columnOf(alias, name);
+
+	if (reference !== undefined)
+	{
+		return((toDraft ? draftIdOf(reference.target, universeId, value) : liveIdOf(reference.target, universeId, value)));
+	}
+	else if ((table === mapChunks) && (name === 'cells'))
+	{
+		return(remappedCells(universeId, value, toDraft));
+	}
+	else if (((table === universeTranslations) || (table === universeTranslatorNotes)) && (name === 'thing_id'))
+	{
+		return(remappedThingId(universeId, alias, toDraft));
+	}
+
+	return(undefined);
+}
+
+/**
+ * Whether a live row, aliased l, and a draft row, aliased d, hold the same in some columns once the
+ * references between the draft's rows are remapped
+ *
+ * @param table The rows' table
+ * @param names The columns' names
+ * @param universeId The universe's ID
+ * @param remapLive Whether to remap the live row into the draft's IDs, so the condition can use the draft
+ * row's indexes; otherwise the draft row into the live IDs, for the live row's
+ * @return The condition
+ */
+function sameValues(table: PgTable, names: readonly string[], universeId: string, remapLive: boolean): SQL
+{
+	const columns = Object.values(getTableColumns(table));
+	const [own, other] = (remapLive ? ['d', 'l'] : ['l', 'd']);
+	const conditions = names.map((name) =>
+	{
+		const value = (remappedColumn(table, name, other, universeId, remapLive) ?? columnOf(other, name));
+		const notNull = columns.some((column) => ((column.name === name) && column.notNull));
+
+		// Cells equal as they are stay equal once the draft's are remapped, since a live chunk names none of
+		// the draft's tiles. Most chunks name only the ruleset's tiles, and this skips remapping them
+		if ((table === mapChunks) && (name === 'cells'))
+		{
+			return(sql`(${columnOf(own, name)} = ${columnOf(other, name)} OR ${columnOf(own, name)} = ${value})`);
+		}
+
+		return((notNull ? sql`${columnOf(own, name)} = ${value}` : sql`${columnOf(own, name)} IS NOT DISTINCT FROM ${value}`));
+	});
+
+	return(((conditions.length === 0) ? sql`true` : sql.join(conditions, sql` AND `)));
+}
+
+/**
+ * How the live and draft rows of a table applyDraft() merges go together: the child rows of a copied
+ * row, or a version's own list
+ */
+interface RowPairing
+{
+	/**
+	 * The table the statements join, aliased p, such as the child rows' parents; undefined for none
+	 */
+	join: SQL | undefined;
+
+	/**
+	 * The condition on the joined table, or true
+	 */
+	where: SQL;
+
+	/**
+	 * Places a row, by its alias, among the live rows that pair with the draft's
+	 */
+	live: (alias: string) => SQL;
+
+	/**
+	 * Places a row, by its alias, among the draft's rows
+	 */
+	draft: (alias: string) => SQL;
+
+	/**
+	 * The columns that make two rows the same, besides those that place them
+	 */
+	compared: readonly string[];
+
+	/**
+	 * The compared columns that tell the rows of one place apart
+	 */
+	key: readonly string[];
+
+	/**
+	 * The columns a draft row changes to become live, besides those remapped to the live IDs
+	 */
+	moved: Record<string, SQL>;
+
+	/**
+	 * Live rows kept whatever the draft holds; undefined for none
+	 */
+	kept: SQL | undefined;
+}
+
+/**
+ * Writes the draft's rows of a table into the live version, leaving alone the live rows the draft holds
+ * unchanged: the live rows the draft changed or doesn't have are deleted, the draft rows the live version
+ * already holds are deleted, and the rest become live, pointing at the live IDs. A draft row whose key is
+ * left in the live version is the same as the live row, since the key tells the rows of one place apart
+ *
+ * @param executor A transaction
+ * @param universeId The universe's ID
+ * @param table The table
+ * @param pairing How its live and draft rows go together
+ */
+async function mergeRows(executor: Executor, universeId: string, table: PgTable, pairing: RowPairing): Promise<void>
+{
+	const { join, where, live, draft, compared, key, moved, kept } = pairing;
+	const using = ((join === undefined) ? sql`` : sql` USING ${join}`);
+	const from = ((join === undefined) ? sql`` : sql` FROM ${join}`);
+	const keptCondition = ((kept === undefined) ? sql`` : sql` AND NOT (${kept})`);
+	const values = { ...moved };
+
+	for (const name of columnNames(table))
+	{
+		const value = remappedColumn(table, name, 'd', universeId, false);
+
+		if (value !== undefined)
+		{
+			values[name] = value;
+		}
+	}
+
+	await executor.execute(sql`DELETE FROM ${table} AS l${using} WHERE ${where} AND ${live('l')}${keptCondition} AND NOT EXISTS (SELECT 1 FROM ${table} AS d WHERE ${draft('d')} AND ${sameValues(table, compared, universeId, true)})`);
+	await executor.execute(sql`DELETE FROM ${table} AS d${using} WHERE ${where} AND ${draft('d')} AND EXISTS (SELECT 1 FROM ${table} AS l WHERE ${live('l')} AND ${sameValues(table, key, universeId, false)})`);
+	await executor.execute(sql`UPDATE ${table} AS d SET ${sql.join(Object.entries(values).map(([name, value]) => sql`${sql.identifier(name)} = ${value}`), sql`, `)}${from} WHERE ${where} AND ${draft('d')}`);
 }
 
 /**
@@ -255,7 +437,7 @@ export async function startDraft(universeId: string, executor: Executor): Promis
 		await copyRows(executor, child, sql`${child} AS src JOIN ${parent} AS p ON p.origin_id = ${columnOf('src', column)} AND p.draft AND p.universe_id = ${universeId}`, values, ((child === areaLinks) ? ['id'] : []));
 	}
 
-	for (const table of VERSION_TABLES)
+	for (const { table } of VERSION_TABLES)
 	{
 		const values: Record<string, SQL> = {
 			draft: sql`true`
@@ -295,7 +477,8 @@ async function findRemoved<Id extends number | string>(table: CopiedTable, unive
 /**
  * Applies a universe's draft to its live version, all but removing the live rows the draft doesn't have:
  * each draft row is written into the live row it was copied from, under the live row's ID, and what the
- * draft added becomes live with its own ID. The draft is gone after. Call it inside a transaction holding
+ * draft added becomes live with its own ID. Live rows the draft holds unchanged, such as the chunks of
+ * maps it didn't paint, are left as they are. The draft is gone after. Call it inside a transaction holding
  * the universe's lock, on a universe with a draft, then deal with the removed rows (removeRows())
  *
  * @param universeId The universe's ID
@@ -340,34 +523,54 @@ export async function applyDraft(universeId: string, executor: Executor): Promis
 		})
 		.where(and(
 			eq(difficultyLevels.universeId, universeId),
-			eq(difficultyLevels.draft, false)
+			eq(difficultyLevels.draft, false),
+			eq(difficultyLevels.isDefault, true)
 		));
+
+	// The chunks of the areas the draft added become live as they are, so they are pointed at the live
+	// tiles while those areas are still marked draft and can be found. The other areas' chunks are
+	// remapped as they are merged
+	await executor.execute(sql`UPDATE ${mapChunks} AS d SET cells = ${remappedCells(universeId, sql`d.cells`, false)} WHERE d.area_id IN (SELECT id FROM ${areas} WHERE universe_id = ${universeId} AND draft AND origin_id IS NULL) AND d.cells && ${remappedTileIds(universeId, false)}`);
 
 	for (const table of COPIED_TABLES)
 	{
 		const names = columnNames(table, OWN_COLUMNS);
+		const values = names.map((name) => sql`${sql.identifier(name)} = ${(remappedColumn(table, name, 'd', universeId, false) ?? columnOf('d', name))}`);
 
-		await executor.execute(sql`UPDATE ${table} AS l SET ${sql.join(names.map((name) => sql`${sql.identifier(name)} = ${columnOf('d', name)}`), sql`, `)} FROM ${table} AS d WHERE d.universe_id = ${universeId} AND d.draft AND d.origin_id = l.id`);
+		await executor.execute(sql`UPDATE ${table} AS l SET ${sql.join(values, sql`, `)} FROM ${table} AS d WHERE d.universe_id = ${universeId} AND d.draft AND d.origin_id = l.id AND NOT (${sameValues(table, names, universeId, false)})`);
 		await executor.execute(sql`UPDATE ${table} SET draft = false WHERE universe_id = ${universeId} AND draft AND origin_id IS NULL`);
 	}
 
-	for (const { child, column, parent } of CHILD_TABLES)
+	for (const { child, column, parent, key } of CHILD_TABLES)
 	{
-		const merged = sql`SELECT p.origin_id FROM ${parent} AS p WHERE p.universe_id = ${universeId} AND p.draft AND p.origin_id IS NOT NULL`;
-
-		await executor.execute(sql`DELETE FROM ${child} WHERE ${sql.identifier(column)} IN (${merged})`);
-		await executor.execute(sql`UPDATE ${child} SET ${sql.identifier(column)} = p.origin_id FROM ${parent} AS p WHERE ${child}.${sql.identifier(column)} = p.id AND p.universe_id = ${universeId} AND p.draft AND p.origin_id IS NOT NULL`);
+		await mergeRows(executor, universeId, child, {
+			join: sql`${parent} AS p`,
+			where: sql`p.universe_id = ${universeId} AND p.draft AND p.origin_id IS NOT NULL`,
+			live: (alias) => sql`${columnOf(alias, column)} = p.origin_id`,
+			draft: (alias) => sql`${columnOf(alias, column)} = p.id`,
+			compared: columnNames(child, [column, 'id']),
+			key,
+			moved: {
+				[column]: sql`p.origin_id`
+			},
+			kept: undefined
+		});
 	}
 
-	for (const table of VERSION_TABLES)
+	for (const { table, key } of VERSION_TABLES)
 	{
-		const kept = ((table === universeTranslations) || (table === universeTranslatorNotes)) ? removedTextCondition(removed) : undefined;
-
-		await executor.execute(sql`DELETE FROM ${table} WHERE universe_id = ${universeId} AND NOT draft${((kept === undefined) ? sql`` : sql` AND NOT (${kept})`)}`);
-
-		const thingId = (((table === universeTranslations) || (table === universeTranslatorNotes)) ? sql`, thing_id = ${remappedThingId(universeId, 't', false)}` : sql``);
-
-		await executor.execute(sql`UPDATE ${table} AS t SET draft = false${thingId} WHERE t.universe_id = ${universeId} AND t.draft`);
+		await mergeRows(executor, universeId, table, {
+			join: undefined,
+			where: sql`true`,
+			live: (alias) => sql`${columnOf(alias, 'universe_id')} = ${universeId} AND NOT ${columnOf(alias, 'draft')}`,
+			draft: (alias) => sql`${columnOf(alias, 'universe_id')} = ${universeId} AND ${columnOf(alias, 'draft')}`,
+			compared: columnNames(table, ['universe_id', 'draft']),
+			key,
+			moved: {
+				draft: sql`false`
+			},
+			kept: (((table === universeTranslations) || (table === universeTranslatorNotes)) ? removedTextCondition(removed) : undefined)
+		});
 	}
 
 	const settingNames = columnNames(universeDrafts, ['universe_id', 'created_at']);
@@ -379,8 +582,6 @@ export async function applyDraft(universeId: string, executor: Executor): Promis
 	{
 		await executor.execute(sql`UPDATE ${table} SET ${sql.identifier(column)} = m.origin_id FROM ${target} AS m WHERE ${table}.${sql.identifier(column)} = m.id AND m.universe_id = ${universeId} AND m.draft AND m.origin_id IS NOT NULL`);
 	}
-
-	await executor.execute(sql`UPDATE ${mapChunks} SET cells = ${remappedCells(universeId, sql`${mapChunks}.cells`, false)} WHERE area_id IN (SELECT id FROM ${areas} WHERE universe_id = ${universeId} AND NOT draft) AND cells && ARRAY(SELECT id FROM ${tiles} WHERE universe_id = ${universeId} AND draft AND origin_id IS NOT NULL)`);
 
 	// Areas first, since they name tiles that can't be deleted while named
 	for (const table of [...COPIED_TABLES].reverse())
@@ -550,7 +751,7 @@ export async function discardDraft(universeId: string, executor: Executor): Prom
 		await executor.execute(sql`DELETE FROM ${table} WHERE universe_id = ${universeId} AND draft`);
 	}
 
-	for (const table of VERSION_TABLES)
+	for (const { table } of VERSION_TABLES)
 	{
 		await executor.execute(sql`DELETE FROM ${table} WHERE universe_id = ${universeId} AND draft`);
 	}
