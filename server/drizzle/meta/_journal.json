@@ -652,6 +652,13 @@
       "when": 1794028936521,
       "tag": "0092_chat_reads",
       "breakpoints": true
+    },
+    {
+      "idx": 93,
+      "version": "7",
+      "when": 1794065936833,
+      "tag": "0093_foreign_key_indexes",
+      "breakpoints": true
     }
   ]
 }
