@@ -10,6 +10,7 @@ import { recordRateLimitEvent } from '../src/db/rateLimitRepo.js';
 import { setEmailSender, type Email } from '../src/email/mailer.js';
 import { HOUR_MS } from '../src/logic/emailCodes.js';
 import { MAX_TWO_FACTOR_ATTEMPTS_PER_ACCOUNT_HOUR, MAX_WRONG_AUTHENTICATOR_CODES_PER_ACCOUNT_DAY, MAX_WRONG_TWO_FACTOR_CODES_PER_LOGIN, WRONG_AUTHENTICATOR_CODES_BEFORE_WARNING } from '../src/logic/twoFactor.js';
+import { serverAdminChanges } from '../src/players/serverAdminChanges.js';
 import { Browser } from './browser.js';
 import { logInBrowser } from './players.js';
 import { discardEmail } from './setup.js';
@@ -454,19 +455,35 @@ describe('2FA routes', () =>
 
 	describe('turning off', () =>
 	{
-		it('needs the password and a code, and emails the account', async () =>
+		it('needs the password and a code, emails the account and tells the editor rooms', async () =>
 		{
-			const authenticator = await turnOnTwoFactor(await addAda());
+			const playerId = await addAda();
+			const authenticator = await turnOnTwoFactor(playerId);
 			const browser = new Browser();
+			const lost: string[] = [];
+			const stop = serverAdminChanges.onLost((lostId) =>
+			{
+				lost.push(lostId);
+			});
 
 			await logIn(browser);
 			assert.strictEqual((await sendCode(browser, authenticatorCode(authenticator.secret), true)).status, 204);
 
 			const code = authenticatorCode(authenticator.secret, 1);
 
-			assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_DISABLE_PATH, { password: 'not the password at all', code, locale: 'en' })).body.field, 'password');
-			assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_DISABLE_PATH, { password: PASSWORD, code: wrongCode(authenticator), locale: 'en' })).body.field, 'twoFactorCode');
-			assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_DISABLE_PATH, { password: PASSWORD, code, locale: 'en' })).status, 204);
+			try
+			{
+				assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_DISABLE_PATH, { password: 'not the password at all', code, locale: 'en' })).body.field, 'password');
+				assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_DISABLE_PATH, { password: PASSWORD, code: wrongCode(authenticator), locale: 'en' })).body.field, 'twoFactorCode');
+				assert.deepStrictEqual(lost, []);
+				assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_DISABLE_PATH, { password: PASSWORD, code, locale: 'en' })).status, 204);
+				assert.deepStrictEqual(lost, [playerId]);
+			}
+			finally
+			{
+				stop();
+			}
+
 			await waitUntil(() => emails.some((email) => /Two-factor authentication is off/.test(email.subject)));
 			assert.deepStrictEqual(await logIn(new Browser()), { outcome: 'loggedIn' });
 

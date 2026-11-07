@@ -5,7 +5,7 @@ import { t } from './localization';
 import { EditorApi } from './network/editorApi';
 import { joinEditorRoom, type EditorRoom, type ServerConnection } from './network/serverConnection';
 import { isLeavingPage } from './pageLifecycle';
-import { currentPageAddress, loginPageUrl, pushPageParameters, replacePageParameters, TAB_PARAMETER, AREA_PARAMETER, VERSION_PARAMETER } from './pages';
+import { currentPageAddress, loginPageUrl, pushPageParameters, replacePageParameters, TAB_PARAMETER, AREA_PARAMETER, universePageUrl, VERSION_PARAMETER } from './pages';
 import { showScreen, showStatus } from './ui/dom';
 import { areaClaims } from './ui/editor/areaClaims';
 import { EditorChat } from './ui/editor/EditorChat';
@@ -276,7 +276,9 @@ export class EditorPage
 
 	/**
 	 * Handles the editor room closing when the page isn't being left: says why in the chat, and turns
-	 * saving off when the player may no longer edit the universe or it was deleted
+	 * saving off when the player may no longer edit the universe or it was deleted. A player who may no
+	 * longer edit it goes to the universe's page, unless they choose to stay when the browser asks about
+	 * changes not yet saved
 	 *
 	 * @param chat The editors' chat
 	 * @param code WebSocket close code
@@ -304,6 +306,7 @@ export class EditorPage
 
 			this.editorScreen.lockOut(message);
 			chat.showProblem(message);
+			window.location.replace(universePageUrl(this.universeId));
 		}
 		else if (code === ServerCloseCode.UniverseDeleted.valueOf())
 		{
