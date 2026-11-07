@@ -70,6 +70,12 @@ interface StagedTranslation
 	 * The hash of the source text it was made from, as the table listed it
 	 */
 	sourceHash: string;
+
+	/**
+	 * The translation as the table listed it when it was first changed, or null for none, for the save
+	 * to tell whether another translator saved one since
+	 */
+	loaded: string | null;
 }
 
 /**
@@ -83,6 +89,11 @@ interface StagedNote
 	 * The note, or null to delete it
 	 */
 	note: string | null;
+
+	/**
+	 * The note as the table listed it when it was first changed, or null for none
+	 */
+	loaded: string | null;
 }
 
 /**
@@ -120,10 +131,10 @@ function translationKey(ref: UniverseTextRef, language: string): string
 /**
  * Where a piece of universe text comes from, e.g. "Area: Waterdeep, name"
  *
- * @param row The text
+ * @param row The text, with the name of what it belongs to
  * @return The description
  */
-export function describeTextPlace(row: UniverseTextRow): string
+export function describeTextPlace(row: UniverseTextRef & { thingName: string }): string
 {
 	return(t({
 		id: 'editor.translations.placeOf',
@@ -459,7 +470,8 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 				text: staged.ref,
 				language: staged.language,
 				translation: staged.text,
-				sourceHash: staged.sourceHash
+				sourceHash: staged.sourceHash,
+				loaded: staged.loaded
 			}, onRefused);
 		}
 
@@ -468,7 +480,8 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 			save.add({
 				kind: 'saveTranslatorNote',
 				text: staged.ref,
-				note: staged.note
+				note: staged.note,
+				loaded: staged.loaded
 			}, onRefused);
 		}
 
@@ -897,7 +910,8 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 				},
 				language,
 				text,
-				sourceHash: ((entry.source === null) ? row.sourceHash : sourceTextHash(entry.source))
+				sourceHash: ((entry.source === null) ? row.sourceHash : sourceTextHash(entry.source)),
+				loaded: this.loadedTranslation(row, language)
 			});
 			imported++;
 		}
@@ -952,6 +966,21 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 	}
 
 	/**
+	 * The translation a change to one is made from: as the table listed it, or as it was when an earlier
+	 * change not yet saved was made
+	 *
+	 * @param row The text as the server listed it
+	 * @param language The translation's language
+	 * @return The translation, or null for none
+	 */
+	private loadedTranslation(row: UniverseTextRow, language: string): string | null
+	{
+		const staged = this.translations.get(translationKey(row, language));
+
+		return(((staged === undefined) ? row.translation : staged.loaded));
+	}
+
+	/**
 	 * Opens the translation dialog for a piece of text, keeping its changes in the table
 	 *
 	 * @param row The text as the server listed it
@@ -1000,7 +1029,7 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 				}
 				else if (translation !== undefined)
 				{
-					this.translations.set(translationKey(ref, language), { ref, language, text: translation, sourceHash: row.sourceHash });
+					this.translations.set(translationKey(ref, language), { ref, language, text: translation, sourceHash: row.sourceHash, loaded: this.loadedTranslation(row, language) });
 				}
 
 				if (note === row.note)
@@ -1009,7 +1038,9 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 				}
 				else if (note !== undefined)
 				{
-					this.notes.set(refKey(ref), { ref, note });
+					const staged = this.notes.get(refKey(ref));
+
+					this.notes.set(refKey(ref), { ref, note, loaded: ((staged === undefined) ? row.note : staged.loaded) });
 				}
 
 				this.notifyChanged();

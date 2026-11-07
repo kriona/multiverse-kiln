@@ -1,4 +1,4 @@
-import { isMergedChange, settleConflict, type Ruleset, type SaveConflict } from '@multiverse-kiln/shared';
+import { isMergedChange, isMergedTextChange, settleConflict, settleTextConflict, type Ruleset, type SaveConflict } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, EditorApiError, type EditorApi } from '../../network/editorApi';
@@ -373,6 +373,10 @@ export class SaveBar
 				if (change && isMergedChange(change))
 				{
 					save.replace(conflict.changeIndex, settleConflict(change, conflict.saved, keepMine[index]));
+				}
+				else if (change && isMergedTextChange(change))
+				{
+					save.replace(conflict.changeIndex, settleTextConflict(change, conflict.saved, keepMine[index]));
 				}
 			}
 		}

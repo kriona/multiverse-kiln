@@ -171,7 +171,10 @@ export interface EditorRoleSettings
  * difficulty level or area) may carry loaded, the settings as the editor loaded them: then only the
  * settings it changed from those are saved, and the others keep what is saved, so editors changing
  * different settings of one thing both save. A setting another editor changed since to something else is
- * refused with 409 and a SaveRefusedPayload holding conflicts (see shared/src/fieldMerge.ts)
+ * refused with 409 and a SaveRefusedPayload holding conflicts (see shared/src/fieldMerge.ts). A
+ * saveTranslation or saveTranslatorNote may carry loaded too, the translation or note as the editor
+ * loaded it (null for none), and conflicts the same way when another editor saved a different one since.
+ * One that saves what is saved saves nothing
  */
 export type EditorChange =
 	| { kind: 'addEditor'; username: string; settings: EditorRoleSettings }
@@ -196,8 +199,8 @@ export type EditorChange =
 	| { kind: 'editCells'; areaId: StringRef; changes: CellChangeRef[] }
 	| { kind: 'saveLink'; areaId: StringRef; column: number; row: number; target: AreaLinkTarget }
 	| { kind: 'deleteLink'; areaId: StringRef; column: number; row: number }
-	| { kind: 'saveTranslation'; text: UniverseTextRef; language: string; translation: string | null; sourceHash: string }
-	| { kind: 'saveTranslatorNote'; text: UniverseTextRef; note: string | null }
+	| { kind: 'saveTranslation'; text: UniverseTextRef; language: string; translation: string | null; sourceHash: string; loaded?: string | null }
+	| { kind: 'saveTranslatorNote'; text: UniverseTextRef; note: string | null; loaded?: string | null }
 	| { kind: 'saveNoTranslation'; text: UniverseTextRef; noTranslation: boolean }
 	| { kind: 'startDraft' }
 	| { kind: 'applyDraft'; choices: DraftApplyChoices }
@@ -374,21 +377,30 @@ export interface SaveConflict
 
 	/**
 	 * What the setting belongs to, as the Audit tab names it, and by name (null for the universe's
-	 * settings and the ruleset, which name nothing)
+	 * settings and the ruleset, which name nothing). A translation's target holds its language's tag as
+	 * its name, as the Audit tab's does
 	 */
 	subject: AuditSubject;
 	target: OptionName | null;
 
 	/**
-	 * The setting as the editor's fields and the Audit tab name it, or null for one they don't name
+	 * The setting as the editor's fields and the Audit tab name it, or null for one they don't name, and
+	 * for a translation or a note for translators
 	 */
 	field: AuditField | null;
 
 	/**
 	 * The change's settings it covers, by key, as saved now: a race's size is one of its rules, and a
-	 * starting area covers the area, column and row
+	 * starting area covers the area, column and row. A translation's are its translation and sourceHash,
+	 * and a note's its note, each null for none
 	 */
 	saved: Record<string, unknown>;
+
+	/**
+	 * For a translation or a note for translators, the text it is on and both versions of it; null for
+	 * settings
+	 */
+	text: SaveConflictText | null;
 
 	/**
 	 * The setting as the change has it and as it is saved, as the Audit tab shows a setting's value, or
@@ -404,6 +416,24 @@ export interface SaveConflict
 		name: string;
 		username: string;
 	} | null;
+}
+
+/**
+ * The piece of universe text a conflicting translation or note for translators is on, with the change's
+ * translation or note and the one saved
+ */
+export interface SaveConflictText
+{
+	/**
+	 * Where the text comes from, as the Translations tab names it ("Area: Waterdeep, name")
+	 */
+	place: UniverseTextRef & { thingName: string };
+
+	/**
+	 * The change's translation or note, and the one saved, each null for none
+	 */
+	mine: string | null;
+	theirs: string | null;
 }
 
 /**

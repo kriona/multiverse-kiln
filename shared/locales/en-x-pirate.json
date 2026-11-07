@@ -1647,6 +1647,10 @@
 		"message": "{subject, select, settings {Universe settings: {field}} ruleset {Ship's Articles: {field}} editor {Officer {name}: {field}} race {Race {name}: {field}} class {Class {name}: {field}} theme {Theme {name}: {field}} item {Item {name}: {field}} tile {Tile {name}: {field}} difficultyLevel {Difficulty level {name}: {field}} area {Area {name}: {field}} other {{name}: {field}}}",
 		"source": "{subject, select, settings {Universe settings: {field}} ruleset {Ruleset: {field}} editor {Editor {name}: {field}} race {Race {name}: {field}} class {Class {name}: {field}} theme {Theme {name}: {field}} item {Item {name}: {field}} tile {Tile {name}: {field}} difficultyLevel {Difficulty level {name}: {field}} area {Area {name}: {field}} other {{name}: {field}}}"
 	},
+	"editor.conflict.text": {
+		"message": "{subject, select, translations {Translation into {language} o' {place}} other {Note fer the translators on {place}}}",
+		"source": "{subject, select, translations {Translation into {language} of {place}} other {Note for translators on {place}}}"
+	},
 	"editor.conflict.takeTheirs": {
 		"message": "{known, select, yes {{hasValue, select, yes {Take {name}'s: {value}} other {Take {name}'s}}} other {{hasValue, select, yes {Take the stowed one: {value}} other {Take the stowed one}}}}",
 		"source": "{known, select, yes {{hasValue, select, yes {Take {name}'s: {value}} other {Take {name}'s}}} other {{hasValue, select, yes {Take the saved one: {value}} other {Take the saved one}}}}"

@@ -1,8 +1,10 @@
 import assert from 'assert';
-import { settleConflict, type EditorChange, type EditorRace, type RaceListPayload, type SaveChangesPayload, type SaveRefusedPayload } from '@multiverse-kiln/shared';
+import { settleConflict, settleTextConflict, sourceTextHash, type EditorChange, type EditorRace, type RaceListPayload, type SaveChangesPayload, type SaveRefusedPayload, type UniverseTextRef } from '@multiverse-kiln/shared';
 
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
-import { createUniverse, logIn, saveChanges, send, type Editor } from './editorRequests.js';
+import { findTranslation } from '../src/db/universeTextRepo.js';
+import { liveVersion } from '../src/db/universeVersions.js';
+import { createArea, createUniverse, logIn, saveChanges, send, type Editor } from './editorRequests.js';
 import { usernameFor } from './players.js';
 import { getTestServer } from './testServer.js';
 
@@ -152,5 +154,95 @@ describe('Saving only what changed', () =>
 		assert.strictEqual(draftSave.status, 200);
 		assert.strictEqual((await saveChanges(ada, universeId, [saveRace(dwarf, { name: 'Live Dwarf' })])).status, 200);
 		assert.deepStrictEqual([(await findRace('dwarf')).name, (await findRace('dwarf', 'draft')).name], ['Live Dwarf', 'Draft Dwarf']);
+	});
+
+	describe('translations and notes', () =>
+	{
+		let meadow: UniverseTextRef;
+
+		/**
+		 * A translation of the meadow's name into French, made from the translation as loaded
+		 *
+		 * @param translation The translation, or null to delete it
+		 * @param loaded The translation as loaded, or null for none
+		 * @return The change
+		 */
+		function translate(translation: string | null, loaded: string | null): EditorChange & { kind: 'saveTranslation' }
+		{
+			return({
+				kind: 'saveTranslation',
+				text: meadow,
+				language: 'fr',
+				translation,
+				sourceHash: sourceTextHash('Meadow'),
+				loaded
+			});
+		}
+
+		beforeEach(async () =>
+		{
+			meadow = {
+				kind: 'area',
+				thingId: await createArea(ada, universeId, { name: 'Meadow' }),
+				field: 'name'
+			};
+			assert.strictEqual((await saveChanges(ada, universeId, [{ kind: 'universe', update: { translationLanguages: ['fr'] } }])).status, 200);
+		});
+
+		it('refuses a translation another translator saved since, naming the text and who saved it', async () =>
+		{
+			assert.strictEqual((await saveChanges(ada, universeId, [translate('Prairie', null)])).status, 200);
+
+			const change = translate('Pré', null);
+			const refused = await saveChanges(grace, universeId, [change]);
+
+			assert.strictEqual(refused.status, 409);
+			assert.deepStrictEqual(refused.body.conflicts?.map((conflict) => [conflict.subject, conflict.target, conflict.text, conflict.savedBy]), [
+				['translations', { key: null, name: 'fr' }, { place: { ...meadow, thingName: 'Meadow' }, mine: 'Pré', theirs: 'Prairie' }, { name: 'Ada', username: usernameFor('Ada') }]
+			]);
+
+			const [conflict] = (refused.body.conflicts ?? []);
+
+			assert.ok(conflict);
+			assert.strictEqual((await saveChanges(grace, universeId, [settleTextConflict(change, conflict.saved, true)])).status, 200);
+
+			const saved = await findTranslation(liveVersion(universeId), meadow, 'fr');
+
+			assert.deepStrictEqual([saved?.text, saved?.savedBy?.name], ['Pré', 'Grace']);
+		});
+
+		it('saves nothing when the translator takes the one saved', async () =>
+		{
+			assert.strictEqual((await saveChanges(ada, universeId, [translate('Prairie', null)])).status, 200);
+
+			const change = translate(null, null);
+			const refused = await saveChanges(grace, universeId, [change]);
+
+			assert.strictEqual(refused.status, 409);
+			assert.strictEqual((await saveChanges(grace, universeId, [settleTextConflict(change, refused.body.conflicts![0].saved, false)])).status, 200);
+
+			const saved = await findTranslation(liveVersion(universeId), meadow, 'fr');
+
+			assert.deepStrictEqual([saved?.text, saved?.savedBy?.name], ['Prairie', 'Ada']);
+		});
+
+		it('saves a translation over one saved since that is the same', async () =>
+		{
+			assert.strictEqual((await saveChanges(ada, universeId, [translate('Prairie', null)])).status, 200);
+			assert.strictEqual((await saveChanges(grace, universeId, [translate('Prairie', null)])).status, 200);
+			assert.strictEqual((await findTranslation(liveVersion(universeId), meadow, 'fr'))?.savedBy?.name, 'Ada');
+		});
+
+		it('refuses a note for translators another editor wrote since', async () =>
+		{
+			assert.strictEqual((await saveChanges(ada, universeId, [{ kind: 'saveTranslatorNote', text: meadow, note: 'A field', loaded: null }])).status, 200);
+
+			const refused = await saveChanges(grace, universeId, [{ kind: 'saveTranslatorNote', text: meadow, note: 'Grassland', loaded: null }]);
+
+			assert.strictEqual(refused.status, 409);
+			assert.deepStrictEqual(refused.body.conflicts?.map((conflict) => [conflict.subject, conflict.saved, conflict.text?.theirs, conflict.savedBy?.name]), [
+				['translatorNotes', { note: 'A field' }, 'A field', 'Ada']
+			]);
+		});
 	});
 });
