@@ -1,12 +1,12 @@
 /**
  * Files translators work on outside the editor (see Tab: Translations in STRUCTURE-OVERVIEW.md): one
  * language of a universe's text, written and read as Gettext PO, XLIFF 2.0, CSV or JSON. Each entry is
- * a piece of universe text, named by its key (universeTextKey()), with the source text it was
+ * a piece of universe text, named by its key (universeTextFileKey()), with the source text it was
  * translated from, so a translation made from text that has changed since comes back out of date. The
  * admin page's Translations tool writes and reads the engine's messages in the same files, each named
  * by its message ID (engineTranslations.ts)
  */
-import { UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, type UniverseTextRef } from './universeText.js';
+import { UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, type UniverseTextRef, type UniverseTextRow } from './universeText.js';
 
 /**
  * The formats translation files can be written and read in
@@ -58,7 +58,7 @@ const BYTE_ORDER_MARK = String.fromCharCode(0xfeff);
 export interface TranslationFileEntry
 {
 	/**
-	 * The text's key (universeTextKey())
+	 * The text's key (universeTextFileKey())
 	 */
 	id: string;
 
@@ -168,6 +168,22 @@ export class TranslationFileError extends Error
 export function universeTextKey(ref: UniverseTextRef): string
 {
 	return(`${ref.kind}:${ref.thingId}:${ref.field}`);
+}
+
+/**
+ * The key a row of the Translations tab has in a translation file: its universeTextKey() with the ID
+ * what it belongs to has in the live version, the same in the live version and the draft
+ *
+ * @param row The row
+ * @return The key
+ */
+export function universeTextFileKey(row: UniverseTextRow): string
+{
+	return(universeTextKey({
+		kind: row.kind,
+		thingId: row.liveThingId,
+		field: row.field
+	}));
 }
 
 /**

@@ -22,7 +22,7 @@ import { sendError, sendInvalidRequest } from './errors.js';
 /**
  * A piece of universe text in the source language, with the name of what it belongs to
  */
-type UniverseTextSource = UniverseTextRef & { thingName: string; source: string };
+type UniverseTextSource = UniverseTextRef & { liveThingId: string; thingName: string; source: string };
 
 /**
  * The key a piece of text is found by
@@ -53,6 +53,7 @@ async function collectUniverseText(universe: EditableUniverseDetails, version: U
 		.map((field): UniverseTextSource => ({
 			kind: 'universe',
 			thingId: id,
+			liveThingId: id,
 			field,
 			thingName: universe.name,
 			source: universe[field]
@@ -69,6 +70,7 @@ async function collectUniverseText(universe: EditableUniverseDetails, version: U
 			: [{
 				kind: 'coin',
 				thingId: coin,
+				liveThingId: coin,
 				field,
 				thingName,
 				source
@@ -77,9 +79,10 @@ async function collectUniverseText(universe: EditableUniverseDetails, version: U
 
 	return([
 		...universeText,
-		...names.map(({ kind, thingId, name }): UniverseTextSource => ({
+		...names.map(({ kind, thingId, liveThingId, name }): UniverseTextSource => ({
 			kind,
 			thingId,
+			liveThingId,
 			field: 'name',
 			thingName: name,
 			source: name

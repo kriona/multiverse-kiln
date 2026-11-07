@@ -1,4 +1,4 @@
-import { canEditWorld, canMarkNoTranslation, canTranslate, DISALLOWED_TEXT_CHARACTERS, isCoin, isValidCoinAbbreviation, languageName, MAX_TRANSLATION_FILE_BYTES, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, readTranslationFile, sourceTextHash, TRANSLATION_FILE_EXTENSIONS, TRANSLATION_FILE_FORMATS, TRANSLATION_FILE_TYPES, translationFileFormatOf, UNIVERSE_TEXT_SORT_COLUMNS, universeTextKey, writeTranslationFile, type AuditSubject, type EditableUniverse, type ReadTranslationFile, type UniverseTextListPayload, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
+import { canEditWorld, canMarkNoTranslation, canTranslate, DISALLOWED_TEXT_CHARACTERS, isCoin, isValidCoinAbbreviation, languageName, MAX_TRANSLATION_FILE_BYTES, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, readTranslationFile, sourceTextHash, TRANSLATION_FILE_EXTENSIONS, TRANSLATION_FILE_FORMATS, TRANSLATION_FILE_TYPES, translationFileFormatOf, UNIVERSE_TEXT_SORT_COLUMNS, universeTextFileKey, writeTranslationFile, type AuditSubject, type EditableUniverse, type ReadTranslationFile, type UniverseTextListPayload, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -815,7 +815,7 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 			return((shown.noTranslation
 				? []
 				: [{
-					id: universeTextKey(row),
+					id: universeTextFileKey(row),
 					place: describeTextPlace(row),
 					note: shown.note,
 					source: row.source,
@@ -896,7 +896,7 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 			return;
 		}
 
-		const byKey = new Map(rows.map((row) => [universeTextKey(row), row]));
+		const byKey = new Map(rows.map((row) => [universeTextFileKey(row), row]));
 		let imported = 0;
 		let skipped = 0;
 

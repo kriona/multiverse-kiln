@@ -174,6 +174,14 @@ export interface UniverseTextListQuery
 export interface UniverseTextRow extends UniverseTextRef
 {
 	/**
+	 * The ID what it belongs to has in the live version: in the draft, the ID of the live row it was
+	 * copied from, or its own for one the draft added, which keeps it when the draft is applied; the same
+	 * as thingId in the live version. Translation files name text by it (universeTextFileKey()), so a file
+	 * made from one version imports into the other, and into the live version once the draft is applied
+	 */
+	liveThingId: string;
+
+	/**
 	 * The name of what it belongs to, in the source language, for where it comes from ("Area: Waterdeep, name")
 	 */
 	thingName: string;

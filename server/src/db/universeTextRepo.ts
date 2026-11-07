@@ -229,6 +229,13 @@ export interface ThingName
 	 */
 	thingId: string;
 
+	/**
+	 * The ID the thing has in the live version, found the way applying the draft finds it: in the draft,
+	 * the live row it was copied from, or its own ID for a row the draft added, which keeps it when the
+	 * draft is applied; the same as thingId in the live version and for the ruleset's defaults
+	 */
+	liveThingId: string;
+
 	name: string;
 }
 
@@ -249,11 +256,13 @@ export async function listThingNames(version: UniverseVersion, executor: Executo
 	 *
 	 * @param kind What the things are
 	 * @param thingId The ID the text is found by
+	 * @param liveThingId The ID the thing has in the live version
 	 * @return The columns
 	 */
-	const columns = (kind: UniverseTextKind, thingId: SQL<string>): { kind: SQL<UniverseTextKind>; thingId: SQL<string> } => ({
+	const columns = (kind: UniverseTextKind, thingId: SQL<string>, liveThingId: SQL<string>): { kind: SQL<UniverseTextKind>; thingId: SQL<string>; liveThingId: SQL<string> } => ({
 		kind: sql<UniverseTextKind>`${kind}::text`,
-		thingId
+		thingId,
+		liveThingId
 	});
 
 	/**
@@ -268,7 +277,7 @@ export async function listThingNames(version: UniverseVersion, executor: Executo
 	 */
 	const overridable = (kind: UniverseTextKind, table: typeof tiles | typeof items | typeof races | typeof classes | typeof themes, overrides: AnyPgColumn) => executor
 		.select({
-			...columns(kind, sql<string>`coalesce(${overrides}, ${table.id})::text`),
+			...columns(kind, sql<string>`coalesce(${overrides}, ${table.id})::text`, sql<string>`coalesce(${overrides}, ${table.originId}, ${table.id})::text`),
 			name: sql<string>`${table.name}`
 		})
 		.from(table)
@@ -280,14 +289,16 @@ export async function listThingNames(version: UniverseVersion, executor: Executo
 	return(unionAll(
 		executor
 			.select({
-				...columns('area', sql<string>`${areas.id}::text`),
+				...columns('area', sql<string>`${areas.id}::text`, sql<string>`coalesce(${areas.originId}, ${areas.id})::text`),
 				name: sql<string>`${areas.name}`
 			})
 			.from(areas)
 			.where(inVersion(areas, version)),
 		executor
 			.select({
-				...columns('difficultyLevel', sql<string>`${difficultyLevels.id}::text`),
+				// A default level the draft has with no live row it was copied from is written into the
+				// live version's level with the same key, if there is one
+				...columns('difficultyLevel', sql<string>`${difficultyLevels.id}::text`, sql<string>`coalesce(${difficultyLevels.originId}, (SELECT l.id FROM ${difficultyLevels} AS l WHERE l.universe_id = ${difficultyLevels.universeId} AND NOT l.draft AND l.key = ${difficultyLevels.key}), ${difficultyLevels.id})::text`),
 				name: sql<string>`${difficultyLevels.name}`
 			})
 			.from(difficultyLevels)

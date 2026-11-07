@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { MAX_COIN_NAME_LENGTH, sourceTextHash, type ItemListPayload, type RaceListPayload, type TileListPayload, type UniverseTextListPayload, type UniverseTextRow } from '@multiverse-kiln/shared';
+import { MAX_COIN_NAME_LENGTH, sourceTextHash, universeTextFileKey, type ItemListPayload, type RaceListPayload, type SaveChangesPayload, type TileListPayload, type UniverseTextListPayload, type UniverseTextRow } from '@multiverse-kiln/shared';
 
 import { findDefaultItemIds } from '../src/db/itemRepo.js';
 import { listUniverseEdits } from '../src/db/universeEditRepo.js';
@@ -8,7 +8,7 @@ import { listTranslations } from '../src/db/universeTextRepo.js';
 import { liveVersion } from '../src/db/universeVersions.js';
 import { hashSourceText } from '../src/http/editorTranslations.js';
 import { UniverseTextTranslator } from '../src/http/universeTextTranslator.js';
-import { createArea, createUniverse, logIn, saveChanges, send, type Editor } from './editorRequests.js';
+import { createArea, createUniverse, logIn, saveAll, saveChanges, send, type Editor } from './editorRequests.js';
 import { getTestServer } from './testServer.js';
 
 /**
@@ -75,6 +75,7 @@ describe('Translations tab', () =>
 		assert.deepStrictEqual(body.rows[0], {
 			kind: 'universe',
 			thingId: universeId,
+			liveThingId: universeId,
 			field: 'name',
 			thingName: 'Kilnhaven',
 			source: 'Kilnhaven',
@@ -279,6 +280,51 @@ describe('Translations tab', () =>
 		assert.deepStrictEqual([all.body.total, placesOf(all.body.rows)], [5, placesOf((await listText(ada, universeId, 'language=fr')).body.rows)]);
 		assert.strictEqual((await send(grace, 'GET', `/${universeId}/translations/all?language=fr`)).status, 403);
 		assert.strictEqual((await send(ada, 'GET', `/${universeId}/translations/all?language=es`)).status, 404);
+	});
+
+	it('names text in translation files by its live IDs, the same in the draft and once the draft is applied', async () =>
+	{
+		const { universeId, areaId, ada } = await translatableUniverse();
+
+		/**
+		 * Every piece of one version's text, as translation files list it
+		 *
+		 * @param version The version
+		 * @return The rows
+		 */
+		const allText = async (version: 'live' | 'draft'): Promise<UniverseTextRow[]> =>
+		{
+			const answer = await send<UniverseTextListPayload>(ada, 'GET', `/${universeId}/translations/all?language=fr&version=${version}`);
+
+			assert.strictEqual(answer.status, 200, JSON.stringify(answer.body));
+
+			return(answer.body.rows);
+		};
+
+		await saveAll(ada, universeId, [{ kind: 'startDraft' }]);
+
+		const added = await send<SaveChangesPayload>(ada, 'POST', `/${universeId}/changes?version=draft`, { body: { changes: [{ kind: 'createArea', ref: 'new:area', area: { name: 'Cave' } }] } });
+
+		assert.strictEqual(added.status, 200, JSON.stringify(added.body));
+
+		const caveId = added.body.ids['new:area'];
+		const draft = await allText('draft');
+		const meadow = draft.find((row) => (row.thingName === 'Meadow'))!;
+		const cave = draft.find((row) => (row.thingName === 'Cave'))!;
+
+		// The draft's copy of the meadow has an ID of its own, and the cave keeps its ID when applied
+		assert.notStrictEqual(meadow.thingId, areaId);
+		assert.deepStrictEqual([meadow.liveThingId, cave.thingId, cave.liveThingId], [areaId, caveId, caveId]);
+		assert.deepStrictEqual((await allText('live')).map(universeTextFileKey), draft
+			.filter((row) => (row !== cave))
+			.map(universeTextFileKey));
+
+		await saveAll(ada, universeId, [{ kind: 'applyDraft', choices: { races: {}, classes: {}, items: {}, areas: {} } }]);
+
+		const live = await allText('live');
+
+		assert.deepStrictEqual(live.map(universeTextFileKey), draft.map(universeTextFileKey));
+		assert.ok(live.every((row) => (row.thingId === row.liveThingId)));
 	});
 
 	it('lets translators see and translate only their languages, and builders only write notes', async () =>
