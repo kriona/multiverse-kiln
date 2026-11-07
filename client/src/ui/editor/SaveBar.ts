@@ -155,9 +155,10 @@ export class SaveBar
 	 * @param api The editor's API
 	 * @param universe The universe being edited, or undefined while none has loaded
 	 * @param showTab Shows a tab, whose change the server refused or whose field stopped the save
-	 * @param afterSave Called once a save is saved and every tab in it has taken its changes as saved
+	 * @param afterSave Called once a save is saved and every tab in it has taken its changes as saved,
+	 * with those tabs
 	 */
-	constructor(private readonly api: EditorApi, private readonly universe: () => { id: string; ruleset: Ruleset } | undefined, private readonly showTab: (tab: SavableTab) => void, private readonly afterSave: () => void)
+	constructor(private readonly api: EditorApi, private readonly universe: () => { id: string; ruleset: Ruleset } | undefined, private readonly showTab: (tab: SavableTab) => void, private readonly afterSave: (saved: readonly SavableTab[]) => void)
 	{
 		this.saveButton.addEventListener('click', () =>
 		{
@@ -312,7 +313,7 @@ export class SaveBar
 				await tab.saved(ids);
 			}
 
-			this.afterSave();
+			this.afterSave(tabs);
 			this.justSaved = (announce && !this.hasUnsavedChanges());
 
 			if (this.justSaved)

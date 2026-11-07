@@ -32,6 +32,16 @@ export class AuditTab
 	private requestVersion = 0;
 
 	/**
+	 * Whether the tab is showing. A hidden tab loads nothing: it waits to be shown
+	 */
+	private visible = false;
+
+	/**
+	 * Whether the page shown was asked to load while the tab was hidden, so it loads once the tab shows
+	 */
+	private stale = false;
+
+	/**
 	 * @param api The editor's API
 	 */
 	constructor(private readonly api: EditorApi)
@@ -84,12 +94,37 @@ export class AuditTab
 	}
 
 	/**
-	 * Loads the page of saves the offset asks for, and shows it
+	 * Follows whether the tab is showing, loading the page shown once it does if saves were made while
+	 * it was hidden
+	 *
+	 * @param visible Whether it is showing
+	 */
+	setVisible(visible: boolean): void
+	{
+		this.visible = visible;
+
+		if (visible && this.stale)
+		{
+			void this.refresh();
+		}
+	}
+
+	/**
+	 * Loads the page of saves the offset asks for, and shows it. While the tab is hidden it only notes
+	 * that the page is out of date
 	 */
 	private async refresh(): Promise<void>
 	{
 		const universe = this.universe;
 		const version = ++this.requestVersion;
+
+		if (!this.visible)
+		{
+			this.stale = true;
+			return;
+		}
+
+		this.stale = false;
 
 		if (!universe || !canManageEditors(universe.role))
 		{

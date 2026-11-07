@@ -311,11 +311,17 @@ export class EditorScreen
 			{
 				this.selectTab(name);
 			}
-		}, () =>
+		}, (saved) =>
 		{
 			void this.areasTab.reloadTiles();
 			this.auditTab.reload();
-			this.translationTable.reload();
+
+			// A save of the Translations tab loads its table itself
+			if (!saved.includes(this.savableTabs.translations))
+			{
+				this.translationTable.reload();
+			}
+
 			this.reloadSavedSettings();
 		});
 
@@ -690,7 +696,7 @@ export class EditorScreen
 
 	/**
 	 * Follows a save made in another window, once the universe has loaded: lists the saves on the Audit
-	 * tab again, updates what the save changed that this window has no unsaved changes to, marks what it
+	 * tab again (once the tab shows), updates what the save changed that this window has no unsaved changes to, marks what it
 	 * has them to, and says who saved what, once the painting it made to the area open is taken into its
 	 * map. Starting, applying or discarding the draft changes the whole universe, which loads again, or
 	 * says to reload while anything is unsaved
@@ -1122,6 +1128,8 @@ export class EditorScreen
 		}
 
 		this.tabStrip.reveal(getElement(`editor-tab-${selected}`, HTMLButtonElement));
+		this.auditTab.setVisible(selected === 'audit');
+		this.translationTable.setVisible(selected === 'translations');
 
 		this.saveBar.show((isSavableTab(selected) ? this.savableTabs[selected] : undefined));
 		this.setPlace({ ...this.place, tab: selected });
