@@ -204,6 +204,223 @@ export class ChangedSinceNotes
 }
 
 /**
+ * An editor dialog for one thing in a list, such as the race editor, as it follows saves made in other
+ * windows
+ */
+export interface FollowingDialog
+{
+	/**
+	 * Whether the dialog is open
+	 *
+	 * @return True when it is
+	 */
+	isOpen(): boolean;
+
+	/**
+	 * Whether the dialog has changes that haven't been applied to its tab
+	 *
+	 * @return True when it has
+	 */
+	hasUnappliedChanges(): boolean;
+
+	/**
+	 * Says at the top of the dialog what a save in another window changed in the thing it shows
+	 *
+	 * @param name Who saved
+	 * @param details What the save changed in the thing
+	 */
+	noteChangedSince(name: string, details: readonly SavedEditDetail[]): void;
+
+	/**
+	 * Closes the dialog, such as once another window deleted the thing it shows
+	 */
+	close(): void;
+}
+
+/**
+ * What an editor dialog for one thing in a list does to follow saves made in other windows, for the
+ * dialog to hold: the line under its title saying what changed, and showing it afresh while it is open
+ */
+export class FollowedDialog implements FollowingDialog
+{
+	private readonly line: ChangedSinceLine;
+
+	/**
+	 * @param dialog The dialog
+	 * @param title Its title, under which the line saying what changed goes
+	 * @param changes The dialog's changes not yet applied
+	 */
+	constructor(private readonly dialog: HTMLDialogElement, title: HTMLElement, private readonly changes: ChangeSource)
+	{
+		this.line = new ChangedSinceLine(title, changes, 'after');
+	}
+
+	/**
+	 * Whether the dialog is open
+	 *
+	 * @return True when it is
+	 */
+	isOpen(): boolean
+	{
+		return(this.dialog.open);
+	}
+
+	/**
+	 * Whether the dialog has changes that haven't been applied to its tab
+	 *
+	 * @return True when it has
+	 */
+	hasUnappliedChanges(): boolean
+	{
+		return(this.changes.hasUnsavedChanges());
+	}
+
+	/**
+	 * Says under the dialog's title what a save in another window changed in the thing it shows
+	 *
+	 * @param name Who saved
+	 * @param details What the save changed in the thing
+	 */
+	noteChangedSince(name: string, details: readonly SavedEditDetail[]): void
+	{
+		this.line.add(name, details);
+	}
+
+	/**
+	 * Closes the dialog
+	 */
+	close(): void
+	{
+		this.dialog.close();
+	}
+
+	/**
+	 * Shows the dialog once it has been filled, without the line saying what changed. A dialog open
+	 * already, showing its thing afresh, stays as it is, keeping the focus where the player left it
+	 */
+	show(): void
+	{
+		this.line.hide();
+
+		if (!this.dialog.open)
+		{
+			this.dialog.showModal();
+		}
+	}
+}
+
+/**
+ * Keeps a list's editor dialog up with saves made in other windows: a dialog showing something a save
+ * changed shows it afresh once the list has loaded again, or closes when the save deleted it, while
+ * neither the dialog nor the tab has unsaved changes to it; otherwise the dialog says what changed
+ */
+export class DialogFollower
+{
+	/**
+	 * The thing the dialog was last opened on, or undefined for a new one
+	 */
+	private openedId: number | string | undefined;
+
+	/**
+	 * What the save being followed changed in the thing, until the dialog shows it afresh
+	 */
+	private pending: { name: string; details: readonly SavedEditDetail[] } | undefined;
+
+	/**
+	 * @param dialog The dialog
+	 * @param subject What the list holds, as the Audit tab names it
+	 */
+	constructor(private readonly dialog: FollowingDialog, private readonly subject: AuditSubject)
+	{
+	}
+
+	/**
+	 * Remembers what the dialog was opened on
+	 *
+	 * @param id The thing's ID, or undefined for a new one
+	 */
+	opened(id: number | string | undefined): void
+	{
+		this.openedId = id;
+		this.pending = undefined;
+	}
+
+	/**
+	 * Follows a save made in another window
+	 *
+	 * @param save The save
+	 * @param isStaged Whether the tab has unsaved changes to a thing, by its ID
+	 * @return The ID of the thing to show afresh once the list has loaded again (reopen()), or undefined;
+	 * and whether the dialog or the tab has unsaved changes to the thing the save changed
+	 */
+	follow(save: OtherSave, isStaged: (id: number | string) => boolean): { reopen: number | string | undefined; kept: boolean }
+	{
+		const id = this.openedId;
+
+		if ((id === undefined) || !this.dialog.isOpen())
+		{
+			return({ reopen: undefined, kept: false });
+		}
+
+		const details = save.details.filter((detail) => ((detail.subject === this.subject) && (detail.id === id)));
+
+		if (details.length === 0)
+		{
+			return({ reopen: undefined, kept: false });
+		}
+
+		if (this.dialog.hasUnappliedChanges() || isStaged(id))
+		{
+			this.dialog.noteChangedSince(save.name, details);
+			return({ reopen: undefined, kept: true });
+		}
+
+		if (details.some((detail) => (detail.action === 'deleted')))
+		{
+			this.dialog.close();
+			return({ reopen: undefined, kept: false });
+		}
+
+		this.pending = {
+			name: save.name,
+			details
+		};
+
+		return({ reopen: id, kept: false });
+	}
+
+	/**
+	 * Shows the thing afresh in the dialog once the list has loaded again, unless the dialog has moved
+	 * on or the player has started changing it meanwhile. One the list doesn't show, such as an item on
+	 * another page, gets the note instead
+	 *
+	 * @param id The thing's ID, from follow()
+	 * @param find The thing as the list now shows it, by its ID
+	 * @param open Opens the dialog on it
+	 */
+	reopen<T>(id: number | string | undefined, find: (id: number | string) => T | undefined, open: (item: T) => void): void
+	{
+		const pending = this.pending;
+
+		if ((id === undefined) || (id !== this.openedId) || !pending || !this.dialog.isOpen())
+		{
+			return;
+		}
+
+		const item = find(id);
+
+		if (this.dialog.hasUnappliedChanges() || (item === undefined))
+		{
+			this.dialog.noteChangedSince(pending.name, pending.details);
+			this.pending = undefined;
+			return;
+		}
+
+		open(item);
+	}
+}
+
+/**
  * The forms on the editor's tabs that hold the universe's settings
  */
 export type SettingsForm = 'universe' | 'lobby' | 'characters' | 'coins' | 'translations';
@@ -264,13 +481,23 @@ export class ChangedSinceLine
 	private changedSince: ChangedSince | undefined;
 
 	/**
-	 * @param form The form, at whose top the line goes
+	 * @param anchor Where the line goes: at the top of the form, or after its title
 	 * @param changes The form's unsaved changes
+	 * @param position start to put the line at the top of the anchor, after to put it after the anchor
 	 */
-	constructor(form: HTMLElement, changes: ChangeSource)
+	constructor(anchor: HTMLElement, changes: ChangeSource, position: 'start' | 'after' = 'start')
 	{
 		this.line.hidden = true;
-		form.prepend(this.line);
+
+		if (position === 'start')
+		{
+			anchor.prepend(this.line);
+		}
+		else
+		{
+			anchor.after(this.line);
+		}
+
 		changes.subscribe((unsaved) =>
 		{
 			if (!unsaved)

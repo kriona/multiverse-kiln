@@ -9,7 +9,7 @@ import { askToConfirm, type Confirmation } from '../confirmDialog';
 import { getElement, showMessage } from '../dom';
 import { EditorDialog } from './EditorDialog';
 import type { EditorSave } from './editorSave';
-import { ChangedSinceNotes, type FollowsOtherSaves, type OtherSave } from './otherSaves';
+import { ChangedSinceNotes, DialogFollower, type FollowsOtherSaves, type OtherSave } from './otherSaves';
 import type { SavableTab } from './SaveBar';
 import type { ChangeSource, StagedState } from './stagedChanges';
 
@@ -81,6 +81,11 @@ export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 	 */
 	private readonly changedSince = new ChangedSinceNotes('editor');
 
+	/**
+	 * Keeps the editor dialog up with saves made in other windows to the editor it shows
+	 */
+	private readonly dialogFollower: DialogFollower;
+
 	private readonly listeners = new Set<(unsaved: boolean) => void>();
 
 	private universe: EditableUniverse | undefined;
@@ -107,6 +112,7 @@ export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 	constructor(private readonly api: EditorApi, private readonly actions: EditorsTabActions)
 	{
 		this.dialog = new EditorDialog(api);
+		this.dialogFollower = new DialogFollower(this.dialog.following, 'editor');
 		watchUnsavedWork(this);
 
 		this.addButton.addEventListener('click', () =>
@@ -318,14 +324,22 @@ export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 	 */
 	otherSaved(save: OtherSave): boolean
 	{
-		const { changed, kept } = this.changedSince.follow(save, (id) => ((typeof id === 'string') && this.staged.has(id)));
+		const isStaged = (id: number | string): boolean => ((typeof id === 'string') && this.staged.has(id));
+		const { changed, kept } = this.changedSince.follow(save, isStaged);
+		const dialog = this.dialogFollower.follow(save, isStaged);
 
 		if (changed)
 		{
-			void this.refresh();
+			void this.refresh().then(() =>
+			{
+				this.dialogFollower.reopen(dialog.reopen, (id) => this.view().find((entry) => (entry.editor.playerId === id))?.editor, (editor) =>
+				{
+					this.openEditor(editor);
+				});
+			});
 		}
 
-		return(kept);
+		return(kept || dialog.kept);
 	}
 
 	/**
@@ -501,6 +515,7 @@ export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 
 		const removed = ((editor !== undefined) && (this.staged.get(editor.playerId)?.removed === true));
 
+		this.dialogFollower.opened(editor?.playerId);
 		this.dialog.open(universe.id, editor, {
 			removed,
 			changeable: canManageEditors(universe.role),

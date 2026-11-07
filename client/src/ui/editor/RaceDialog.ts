@@ -10,6 +10,7 @@ import { formatMoney, readMoneyField } from '../moneyField';
 import { raceName } from '../raceAndClassNames';
 import { editorMessages } from './editorMessages';
 import type { ItemSelectDialog } from './ItemSelectDialog';
+import { FollowedDialog } from './otherSaves';
 import { startingAreaMessages } from './startingAreaMessages';
 import { StartingItemsField } from './StartingItemsField';
 import { AreaChoice } from './AreaChoice';
@@ -58,6 +59,11 @@ export class RaceDialog
 	 * Whether the race has changes that haven't been applied
 	 */
 	private readonly changes: ChangeTracker;
+
+	/**
+	 * How the dialog follows saves made in other windows to the race it shows
+	 */
+	readonly following: FollowedDialog;
 
 	private universe: EditableUniverse | undefined;
 
@@ -121,6 +127,7 @@ export class RaceDialog
 			state: () => [this.startingItems.value, this.startingArea.value, this.startingArea.cell]
 		});
 		this.changes.guardDialog(this.dialog);
+		this.following = new FollowedDialog(this.dialog, this.title, this.changes);
 
 		for (const input of [this.name, this.startingMoney, this.hitPoints, ...Object.values(this.modifiers)])
 		{
@@ -243,7 +250,7 @@ export class RaceDialog
 		clearFieldErrors(this.dialog);
 		void this.startingItems.show(universe, (race?.startingItems ?? []));
 		void this.loadAreaNames(universe);
-		this.dialog.showModal();
+		this.following.show();
 		this.changes.markSaved();
 	}
 

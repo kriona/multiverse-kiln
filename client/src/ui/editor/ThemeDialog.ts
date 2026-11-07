@@ -7,6 +7,7 @@ import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldError
 import { formMessages } from '../formMessages';
 import { themeName } from '../raceAndClassNames';
 import { editorMessages } from './editorMessages';
+import { FollowedDialog } from './otherSaves';
 import { labelRemoveButton, type StagedEdit } from './stagedChanges';
 
 /**
@@ -33,6 +34,11 @@ export class ThemeDialog
 	 * Whether the theme has changes that haven't been applied
 	 */
 	private readonly changes: ChangeTracker;
+
+	/**
+	 * How the dialog follows saves made in other windows to the theme it shows
+	 */
+	readonly following: FollowedDialog;
 
 	private universe: EditableUniverse | undefined;
 
@@ -64,6 +70,7 @@ export class ThemeDialog
 		});
 		this.changes = new ChangeTracker({ root: this.form });
 		this.changes.guardDialog(this.dialog);
+		this.following = new FollowedDialog(this.dialog, this.title, this.changes);
 
 		this.name.addEventListener('input', () =>
 		{
@@ -155,7 +162,7 @@ export class ThemeDialog
 
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.dialog);
-		this.dialog.showModal();
+		this.following.show();
 		this.changes.markSaved();
 	}
 

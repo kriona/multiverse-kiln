@@ -11,6 +11,7 @@ import { clearFieldErrors, reportFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
 import { languageChoices } from '../languagePicker';
 import { PlayerSearch } from '../PlayerSearch';
+import { FollowedDialog } from './otherSaves';
 
 /**
  * What the editor dialog does with the editor it shows, keeping its changes on the Editors tab until
@@ -88,6 +89,11 @@ export class EditorDialog
 	private readonly changes: ChangeTracker;
 
 	/**
+	 * How the dialog follows saves made in other windows to the editor it shows
+	 */
+	readonly following: FollowedDialog;
+
+	/**
 	 * The editor shown, or undefined while adding one
 	 */
 	private editor: UniverseEditorSummary | undefined;
@@ -146,6 +152,7 @@ export class EditorDialog
 			state: () => [this.languages.values, (this.playerSearch.player?.playerId ?? null)]
 		});
 		this.changes.guardDialog(this.dialog);
+		this.following = new FollowedDialog(this.dialog, this.title, this.changes);
 
 		this.roleField.addEventListener('change', () =>
 		{
@@ -238,11 +245,18 @@ export class EditorDialog
 			}));
 		}
 
+		const wasOpen = this.dialog.open;
+
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.dialog);
-		this.dialog.showModal();
+		this.following.show();
 		this.changes.markSaved();
-		(editor ? (editable ? this.roleInputs.get(this.chosenRole()) : this.removeButton) : this.username)?.focus();
+
+		// A dialog showing its editor afresh leaves the focus where the player had it
+		if (!wasOpen)
+		{
+			(editor ? (editable ? this.roleInputs.get(this.chosenRole()) : this.removeButton) : this.username)?.focus();
+		}
 	}
 
 	/**

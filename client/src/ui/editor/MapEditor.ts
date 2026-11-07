@@ -19,6 +19,7 @@ import { describeCell } from './cellDescription';
 import type { EditorSave, SaveRefusal } from './editorSave';
 import { LinkDialog } from './LinkDialog';
 import { mapMessages } from './mapMessages';
+import type { FollowedDialog } from './otherSaves';
 import { ResizeDialog, type ResizeLoss } from './ResizeDialog';
 
 /**
@@ -381,6 +382,17 @@ export class MapEditor
 	hasUnsavedChanges(): boolean
 	{
 		return((this.unsaved.size > 0) || this.hasUnsavedBounds() || (this.stagedLinks.size > 0));
+	}
+
+	/**
+	 * The link dialog, as the area editor follows saves made in other windows: one open with changes not
+	 * yet applied keeps the area from loading again under it
+	 *
+	 * @return The dialog's following
+	 */
+	linkDialogFollowing(): FollowedDialog
+	{
+		return(this.linkDialog.following);
 	}
 
 	/**
