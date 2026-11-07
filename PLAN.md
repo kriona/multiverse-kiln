@@ -2,10 +2,7 @@
 
 Phased roadmap for building the game locally, then deploying to Colyseus Cloud + Neon.
 Each phase ends with a "Done when" check. Tick boxes as work completes and keep the
-**Current phase** line updated so each new session knows where to pick up.
 `STRUCTURE-OVERVIEW.md` describes the pages, editors and game rules these phases build.
-
-**Current phase:** 14
 
 ---
 
@@ -58,7 +55,7 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 
 ## Phase 4: Repository security
 
-- [✅] Move the inline `<style>` in `client/index.html` to a CSS file so the CSP (Phase 16) doesn't need `'unsafe-inline'`
+- [✅] Move the inline `<style>` in `client/index.html` to a CSS file so the CSP (Phase 17) doesn't need `'unsafe-inline'`
 - [✅] In the GitHub repository's Settings > Advanced Security, turn on Dependabot alerts, Dependabot security updates and secret scanning with push protection (`.github/dependabot.yml` already configures version updates, and gitleaks runs in the pre-commit hook)
 - [✅] Add a `docker-compose` entry to `.github/dependabot.yml`
 - [ ] Add a `github-actions` entry to `.github/dependabot.yml` once there are workflows
@@ -112,7 +109,7 @@ Built in four steps: the server API, the editor pages, the map editor, then load
 
 - [✅] Editor API as REST routes in `server/src/http/` backed by repositories (editing isn't real-time, so it doesn't need a room). Every request checks the user may edit that universe, and validates against the same limits as the UI. Who may edit is stored in `universe_editors` (creator, builder, beta tester; Phase 15 adds the Editors tab), and until logins exist (Phase 14) a request's player is the one its browser ID cookie is logged in as
 - [✅] Create Universe modal (name, 1-sentence description, ruleset), up to 5 per user. Creates a lobby area and a default area as every race's starting area, and makes the user its creator. Home lists the universes the user has a role in, which opens them in the editor
-- [✅] Edit Universe page: name, descriptions (markdown rendered sanitized with `marked` and DOMPurify, also on Home's overview), stage, ruleset, passage of time. Logo and banner wait for image storage (Phase 18). A Lobby tab opens the lobby's area until the rest of the tab arrives (Phase 12)
+- [✅] Edit Universe page: name, descriptions (markdown rendered sanitized with `marked` and DOMPurify, also on Home's overview), stage, ruleset, passage of time. Logo and banner wait for image storage (Phase 19). A Lobby tab opens the lobby's area until the rest of the tab arrives (Phase 12)
 - [✅] Tilesets tab (filters for name, passable, custom and edited; pagination) and tile editor (name, indoors, color, vision cost, walk time)
 - [✅] Areas tab with the single-area drill-down, and the area editor's settings. Its map is the next item
 - [✅] Map editor: grid centered on 0,0, expand buttons, edit-size dialog with its warning, draw tool (a tile or Void; size 1-100; circle or square), undo/redo with a drag counted as one step. It loads chunks as the view reaches them, pans with the right or middle mouse button and zooms with the wheel. Undo covers painting; resizing to a smaller map clears the undo history
@@ -218,7 +215,7 @@ Decided:
 - Impassable tiles with graphics, such as mountains 1.5 cells tall, are drawn again in a layer over players, cut down to what they draw over the cell north of them. No player can stand on them, so this puts a player north of a mountain behind its peaks without the hiding and uncovering that ruled out the forest canopy. The fog is drawn over that layer.
 - Distinctive buildings and lone trees are placed objects, not tiles (see Later).
 - Graphics only change what the client draws: movement, vision and the server don't change.
-- The engine ships default graphics as files in the client (`client/src/assets/tilesets/`), and a universe's editors can upload their own tilesets: PNG Dual-Grid sheets 128x128, each with a name and a draw order. Uploads go to S3-compatible object storage (SeaweedFS locally, any S3-compatible service in production), which pulls image storage forward from Phase 18. Uploading and deleting tilesets wait for the Tilesets tab's Save like every editor change. The server checks and re-encodes each upload, the uploader confirms they have the rights to use it, and the game server serves it to anyone at `/tile-graphics/<ID>.png`, cached for good since an upload never changes.
+- The engine ships default graphics as files in the client (`client/src/assets/tilesets/`), and a universe's editors can upload their own tilesets: PNG Dual-Grid sheets 128x128, each with a name and a draw order. Uploads go to S3-compatible object storage (SeaweedFS locally, any S3-compatible service in production), which pulls image storage forward from Phase 19. Uploading and deleting tilesets wait for the Tilesets tab's Save like every editor change. The server checks and re-encodes each upload, the uploader confirms they have the rights to use it, and the game server serves it to anyone at `/tile-graphics/<ID>.png`, cached for good since an upload never changes.
 
 - [✅] Cells are 32 world units; a step takes 0.16 seconds
 - [✅] A sample Dual-Grid grass sheet (`client/src/assets/tilesets/grass.png`)
@@ -244,14 +241,14 @@ Decided:
 
 Decided:
 - Built in-house, not with a hosted provider or `@colyseus/auth`: the email code rules in `STRUCTURE-OVERVIEW.md` are more specific than a provider offers. A small OAuth library (such as `arctic`) handles Google and Discord, and passwords are hashed with Argon2id.
-- Sessions live on the server (a `sessions` table) and reach the browser as an HttpOnly `__Host-` cookie, in place of today's browser ID cookie; there are no JWTs. `onAuth` looks the session up, a lifecycle boundary. Logging out, or changing the password, deletes sessions on the server, so a password change signs the account out everywhere. Production therefore needs the client and game server on the same site (e.g. `play.<domain>` and `api.<domain>`), which Phase 16's hosting choice has to keep.
+- Sessions live on the server (a `sessions` table) and reach the browser as an HttpOnly `__Host-` cookie, in place of today's browser ID cookie; there are no JWTs. `onAuth` looks the session up, a lifecycle boundary. Logging out, or changing the password, deletes sessions on the server, so a password change signs the account out everywhere. Production therefore needs the client and game server on the same site (e.g. `play.<domain>` and `api.<domain>`), which Phase 17's hosting choice has to keep.
 - Session lifetimes (see Login in `STRUCTURE-OVERVIEW.md`): 1 hour idle and 24 hours in all without "Remember me"; with it, 30 days idle and 90 days in all. An open connection to a room counts as activity.
 - An account can be logged in from several browsers at once, each with its own session; every window of the player, in any browser, acts as that player.
 - Sessions arrive with the first real login (local accounts, then Google and Discord), so the name-only login never starts one.
 - Every account has a unique username, for finding users and invites, and a display name that needn't be unique. The name-only login's data is dropped rather than carried over, and the seed script's `--creator` names a username.
 - Linking: a provider login whose email matches a local account is never linked automatically. The player proves they own the local account (its password, or an email code) to link them; providers can also be linked from the profile.
-- Email is sent over SMTP with `nodemailer`, so the service is configuration (chosen in Phase 16), and caught by Mailpit in `docker-compose.yml` locally. Emails are HTML, with a plain text part, in the recipient's language.
-- Rate limits and the email code counters are Postgres rows updated atomically, so they hold across several server processes. The client's network comes from one function, which reads the connection's address, or behind a proxy the one forwarding header configured as trusted (`CLIENT_ADDRESS_HEADER`, `TRUSTED_PROXY_HOPS`); Phase 16 sets them for the host.
+- Email is sent over SMTP with `nodemailer`, so the service is configuration (chosen in Phase 17), and caught by Mailpit in `docker-compose.yml` locally. Emails are HTML, with a plain text part, in the recipient's language.
+- Rate limits and the email code counters are Postgres rows updated atomically, so they hold across several server processes. The client's network comes from one function, which reads the connection's address, or behind a proxy the one forwarding header configured as trusted (`CLIENT_ADDRESS_HEADER`, `TRUSTED_PROXY_HOPS`); Phase 17 sets them for the host.
 - Passwords are 15 to 256 characters (NIST SP 800-63B rev. 4's minimum for a password that is the only factor, which it is without 2FA; the same for every account, so turning 2FA off never leaves a shorter one), with no composition rules, and are checked against HaveIBeenPwned's k-anonymity API (only the first 5 characters of the password's SHA-1 hash leave the server).
 - Password hashes are stored as self-describing strings (`$argon2id$v=19$m=...,p=...,t=...$<salt>$<hash>`), and one module (`server/src/auth/passwords.ts`) holds the current algorithm and settings, starting at OWASP's Argon2id minimum (19 MiB, 2 iterations, 1 thread). After a correct password, a hash made with older settings or an older algorithm is replaced with a current one, and the replacement is logged without ending the account's sessions. `verifyPassword()` picks the checker by the hash's prefix, so old hashes keep working when the algorithm changes. If an old algorithm is ever found weak, hashes of accounts that don't log in can be wrapped in the new one (`newAlgorithm(oldHash)`, marked by its prefix). Tests: a hash with old settings still verifies, and is replaced at login.
 - 2FA is TOTP with recovery codes, for local accounts only; provider logins rely on the provider's 2FA. Passkeys can come later. No CAPTCHA for now.
@@ -303,7 +300,7 @@ Decided (see `STRUCTURE-OVERVIEW.md`):
 - A save sends only the fields it changed, each with the value the editor loaded. Changes to different fields of the same thing both save; only one field changed by two editors is a conflict, which the second to save resolves. The live version and the draft are separate rows, so an edit to one never conflicts with the other.
 - An area open in the area editor is claimed softly: others opening it are told who is editing it, but can still edit it.
 
-Built in eleven steps: roles, stages, server admins, disabling things in use, then translations (storage, delivery, the tab), versions, editing together, regions, and finishing.
+Built in ten steps: roles, stages, server admins, disabling things in use, then translations (storage, delivery, the tab), versions, editing together, and finishing. Regions follow in Phase 16.
 
 1. Editors tab and roles
 	- [✅] A `translator` role, and the languages each translator may translate into (`universe_editors.languages`)
@@ -378,19 +375,28 @@ Built in eleven steps: roles, stages, server admins, disabling things in use, th
 		- [✅] Settings: each change to settings (`MERGED_CHANGE_KINDS`) carries `loaded`, the settings as the editor loaded them (as the change before it left them, for a second change to the same thing in one save), beside the settings it sends. The server merges them a setting at a time, as the Audit tab groups them (`mergeSettings()` in `shared/src/fieldMerge.ts`, `server/src/http/editorSaveMerge.ts`): what the change changed is saved, the rest keeps what is saved, and a setting another editor changed since to something else is refused with 409 and `SaveRefusedPayload.conflicts`, naming the thing, the setting, both values as the Audit tab shows them and who saved it last (`findLastSaver()`, from the IDs `universe_edits` records with each detail). The save bar asks Keep Mine or Take Theirs for each (`ConflictDialog`), settles the changes (`settleConflict()`) and sends the save again. After a save, the forms with no unsaved changes load again, showing what the merge kept
 		- [✅] Translations: `saveTranslation` and `saveTranslatorNote` carry `loaded`, the translation or note as the Translations tab listed it, and conflict as a whole when another editor saved a different one since (`SaveMerge.mergeText()`), naming the text, both versions and who saved it (`universe_translations.saved_by`, `universe_translator_notes.note_saved_by`). One that saves what is saved is skipped, so taking theirs (`settleTextConflict()`) saves nothing
 		- [✅] Painting: the save notice's cells details name the chunks each area's painting touched (`SavedEditDetail.chunks`, left out of `universe_edits`). The area editor loads those it has loaded again (`ChunkLoader.reload()`) and takes in each changed cell, keeping cells painted here and not yet saved, with the undo history following the saved values (`EditHistory.rebase()`), and outlines them with the cell text naming who painted them (`MapEditor.followPainting()`), unsaved changes or not. Cells painted here since the area opened, saved or not, are outlined in orange, and the save notice waits for the painting to say how many, as a warning kept until clicked away (`AreasTab.followPainting()`); clicking the toast away takes that save's marks off (`FollowedPainting.unmark()`). A save changing the open area's settings with no unsaved changes here shows them again keeping the map, rather than loading the area afresh
-	- [ ] Soft claims on areas: opening an area in the area editor claims it for that window, in the room's state, until the window closes it or disconnects. Another editor opening it sees "Bea is editing this area" above the map, without being locked out, and the Areas tab tags the area with who is editing it
-	- [ ] Tests: the room refuses players without a role and turns out one who loses theirs; a chat keeps its newest 200 messages, through the room closing; saves to different fields of one race both land; a save to a field changed since is refused naming who changed it; edits to a race in the draft and in the live version don't conflict; a claim ends when its window leaves
-10. Regions
-	- [ ] Decide and write into `STRUCTURE-OVERVIEW.md`: a region groups areas without a map of its own and sets general rules for the areas in it, and a creator assigns a builder to one ("this is your area, work on it"). Still open: whether a region is a kind of area (areas already nest and pass settings to the areas in them) or a thing of its own, which rules it sets, and whether an assignment limits which areas a builder may save or only says whose they are, shown beside the area claims
-	- [ ] Build it, with tests
-11. Finishing
+	- [✅] Soft claims on areas: opening an area in the area editor claims it for that window, in the room's state, until the window closes it or disconnects. Another editor opening it sees "Bea is editing this area" above the map, without being locked out, and the Areas tab tags the area with who is editing it. The claim is each window's `EditorWindow.areaId`, kept while the window shows another tab; the editor reads other players' claims on its version from the room's state (`areaClaims()`, `client/src/ui/editor/areaClaims.ts`), says above the map who else is editing the area open, read out when that changes, and tags the areas in the lists (`AreasTab.setClaims()`)
+	- [✅] Tests: the room refuses players without a role and turns out one who loses theirs; a chat keeps its newest 200 messages, through the room closing; saves to different fields of one race both land; a save to a field changed since is refused naming who changed it; edits to a race in the draft and in the live version don't conflict; a claim ends when its window leaves (`server/test/EditorRoom.test.ts`, `server/test/db/chatRepo.test.ts`, `server/test/editorMerge.test.ts`, `server/test/shared/fieldMerge.test.ts`)
+10. Finishing
 	- [ ] Check the new screens in the pseudo-language, update Pirate, and add keyboard shortcuts and screen reader text for the new tabs and dialogs
 	- [ ] Update `STRUCTURE-OVERVIEW.md` where the decisions above changed it (stages, admins, versions)
 	- [ ] Review the new routes against `SECURITY-PRACTICES.md`, and cover them in `server/test/http.test.ts`
 
 **Done when:** a team of editors and beta testers takes a universe from `in the beginning` to `let there be light`, and a creator can disable a race without breaking its existing characters. A translator adds French to the universe, and a French player sees it in French.
 
-## Phase 16: Cloud deployment
+## Phase 16: Regions and map editing
+
+1. Regions
+	- [ ] Decide and write into `STRUCTURE-OVERVIEW.md`: a region groups areas without a map of its own and sets general rules for the areas in it, and a creator assigns a builder to one ("this is your area, work on it"). Still open: whether a region is a kind of area (areas already nest and pass settings to the areas in them) or a thing of its own, which rules it sets, and whether an assignment limits which areas a builder may save or only says whose they are, shown beside the area claims
+	- [ ] Build it, with tests
+2. Map editor
+	- [ ] Edit Size: a field whose value differs from the map's size now shows in a changed color
+	- [ ] A fill tool (with a warning if a large number of tiles will be updated)
+	- [ ] Middle click on a cell picks its tile as the tile to paint with
+
+**Done when:** a creator groups areas into a region and gives it to a builder, who fills a field with grass in one click and picks a tile off the map with the middle button.
+
+## Phase 17: Cloud deployment
 
 Neon and Colyseus Cloud cost money, so this waits until the game is worth testing with outside players.
 The first deploy tends to surface WebSocket, TLS and environment issues, so leave time for it.
@@ -413,7 +419,7 @@ The first deploy tends to surface WebSocket, TLS and environment issues, so leav
 
 **Done when:** two players on different networks can join the same room in the cloud.
 
-## Phase 17: Robustness and polish
+## Phase 18: Robustness and polish
 
 - [ ] Reconnection with `allowReconnection` for unexpected disconnects
 - [ ] Graceful handling of server restarts during deploys
@@ -427,11 +433,11 @@ The first deploy tends to surface WebSocket, TLS and environment issues, so leav
 
 **Done when:** players survive brief network drops and a redeploy without data loss.
 
-## Phase 18: Images and moderation
+## Phase 19: Images and moderation
 
 Needed before universes are open to the public.
 
-- [✅] Image storage: S3-compatible object storage (`server/src/storage/`), with uploads validated and re-encoded to strip metadata and anything that isn't an image (`server/src/images/`); done for tilesets in Phase 13. The production service is chosen with the deployment (Phase 16)
+- [✅] Image storage: S3-compatible object storage (`server/src/storage/`), with uploads validated and re-encoded to strip metadata and anything that isn't an image (`server/src/images/`); done for tilesets in Phase 13. The production service is chosen with the deployment (Phase 17)
 - [ ] "I have the rights to use this image" on every upload (tilesets have it)
 - [ ] Profile photos, universe logos and banners (tilesets are uploaded since Phase 13)
 - [ ] Stock graphics for each ruleset
@@ -439,7 +445,7 @@ Needed before universes are open to the public.
 
 **Done when:** universes can use uploaded art, and anything inappropriate can be reported and taken down.
 
-## Phase 19: Messages
+## Phase 20: Messages
 
 - [ ] Private messages with blocking, reporting and rules for who can message whom
 - [ ] Group invites sent by private message
@@ -469,22 +475,22 @@ Needed before universes are open to the public.
 - Whether character names must be unique within a universe (Phase 10)
 - How groups are listed in the lobby (Phase 11)
 - How the lobby shows who is online, when it may hold many more players than a group or a universe's editors
-- What regions are and what they set (Phase 15)
+- What regions are and what they set (Phase 16)
 - Auth approach, account linking, the email sending service, and whether to add a CAPTCHA (Phase 14)
-- Which S3-compatible service stores uploads in production, and its bucket (Phase 16)
-- Telling users with the same name apart (Phase 19)
+- Which S3-compatible service stores uploads in production, and its bucket (Phase 17)
+- Telling users with the same name apart (Phase 20)
 - Whether a universe can rename engine terms, such as calling gold "crowns" (Phase 15)
-- Fonts for map text in scripts the default font doesn't cover (Phase 17)
+- Fonts for map text in scripts the default font doesn't cover (Phase 18)
 - Whether to offer machine translation of chat (later)
 - Whether to add client-side prediction (after Phase 7, if movement feels laggy)
-- Game server host (Colyseus Cloud or another), and its deployment location(s) (Phase 16). The host's proxies decide which forwarding header the server trusts for clients' addresses
-- Client host, and a subdomain or separate domain for QA/staging (Phase 16)
+- Game server host (Colyseus Cloud or another), and its deployment location(s) (Phase 17). The host's proxies decide which forwarding header the server trusts for clients' addresses
+- Client host, and a subdomain or separate domain for QA/staging (Phase 17)
 
 ---
 
 ## TODO
 
-- [ ] Confirm the client address header on the game server's host (Phase 16; finding 4 in `SECURITY-FINDINGS.md`). The code trusts only the header `CLIENT_ADDRESS_HEADER` names, but which one is safe depends on the host's proxies, which aren't chosen yet:
+- [ ] Confirm the client address header on the game server's host (Phase 17; finding 4 in `SECURITY-FINDINGS.md`). The code trusts only the header `CLIENT_ADDRESS_HEADER` names, but which one is safe depends on the host's proxies, which aren't chosen yet:
 	- Find out which header the host's proxy sets, and whether it overwrites X-Real-IP or only adds to X-Forwarded-For. Prefer X-Forwarded-For unless the proxy is known to overwrite X-Real-IP
 	- Count the proxies that add to X-Forwarded-For (a load balancer or CDN in front of the host's proxy is a second one) and set `TRUSTED_PROXY_HOPS`
 	- Once deployed, log in from one network twice: once plainly, and once with a forged `X-Real-IP` and a padded `X-Forwarded-For` (`X-Forwarded-For: 203.0.113.9, 198.51.100.8`). Both auth events should have the same network hash; a different one means the server trusted the forged header

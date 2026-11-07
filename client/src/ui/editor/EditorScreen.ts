@@ -28,6 +28,7 @@ import { TilesetsTab } from './TilesetsTab';
 import { TranslationsTab } from './TranslationsTab';
 import { TranslationTable } from './TranslationTable';
 import { UniverseTab } from './UniverseTab';
+import type { AreaClaims } from './areaClaims';
 import { AreaSelectDialog } from './AreaSelectDialog';
 import { AreasTab } from './AreasTab';
 
@@ -825,6 +826,16 @@ export class EditorScreen
 	setOthersHere(shown: boolean): void
 	{
 		this.saveBar.setOthersHere(shown);
+	}
+
+	/**
+	 * Shows who else is editing each area of the version open, on the Areas tab
+	 *
+	 * @param claims Who else has each area open, from areaClaims()
+	 */
+	setAreaClaims(claims: AreaClaims): void
+	{
+		this.areasTab.setClaims(claims);
 	}
 
 	/**
