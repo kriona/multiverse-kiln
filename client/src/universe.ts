@@ -37,15 +37,34 @@ function showUniverse(universe: UniverseDetails): void
 }
 
 /**
+ * A universe shown on the page, with its Languages section
+ */
+interface ShownUniverse
+{
+	universe: UniverseDetails;
+	languages: UniverseLanguageChooser;
+}
+
+/**
+ * The parts of the page that follow the player logging in and out
+ */
+interface PlayerFollowers
+{
+	characters: UniverseCharacters;
+	languages: UniverseLanguageChooser;
+	auth: AuthApi;
+	profiles: ProfileApi;
+}
+
+/**
  * Lists the player's characters in the universe while the browser is logged in, and tells the Languages
  * section about their profile's language, following the session as the player logs in or out in any
  * window. The page works without it, so a failed connection only leaves the list hidden
  *
- * @param universe The universe
- * @param languages The Languages section
+ * @param shown The universe once it is shown, or undefined when it couldn't be
  * @param connection The page's connection to the server (startPage())
  */
-async function followPlayer(universe: UniverseDetails, languages: UniverseLanguageChooser, connection: Promise<ServerConnection>): Promise<void>
+async function followPlayer(shown: Promise<ShownUniverse | undefined>, connection: Promise<ServerConnection>): Promise<void>
 {
 	let server: ServerConnection;
 
@@ -59,25 +78,56 @@ async function followPlayer(universe: UniverseDetails, languages: UniverseLangua
 		return;
 	}
 
+	// The session room's first message can come before the universe has loaded, and the room doesn't
+	// keep messages for listeners added later, so these listen at once and wait for the universe
+	const followers = shown.then((page) => ((page === undefined) ? undefined : createFollowers(page, server)));
+
+	server.session.onMessage(SessionServerMessageType.Account, (account: AccountPayload) =>
+	{
+		void followers.then((parts) =>
+		{
+			if (parts)
+			{
+				void parts.characters.follow(account.player !== null);
+				void followProfileLocale(parts.languages, parts.auth, ((account.player === null) ? undefined : parts.profiles));
+			}
+		});
+	});
+
+	server.session.onLeave(() =>
+	{
+		void followers.then((parts) =>
+		{
+			if (parts)
+			{
+				void parts.characters.follow(false);
+				parts.languages.setPlayer(undefined, null);
+			}
+		});
+	});
+}
+
+/**
+ * Makes the parts of the page that follow the player
+ *
+ * @param page The universe shown
+ * @param server The page's connection to the server
+ * @return The parts
+ */
+function createFollowers(page: ShownUniverse, server: ServerConnection): PlayerFollowers
+{
 	const api = new CharacterApi(server.client);
 	const sheet = new CharacterSheetDialog(api, new GroupApi(server.client), () =>
 	{
 		void characters.follow(true);
 	});
-	const characters = new UniverseCharacters(api, universe.id, sheet);
-	const auth = new AuthApi(server.client);
-	const profiles = new ProfileApi(server.client);
+	const characters = new UniverseCharacters(api, page.universe.id, sheet);
 
-	server.session.onMessage(SessionServerMessageType.Account, (account: AccountPayload) =>
-	{
-		void characters.follow(account.player !== null);
-		void followProfileLocale(languages, auth, ((account.player === null) ? undefined : profiles));
-	});
-
-	server.session.onLeave(() =>
-	{
-		void characters.follow(false);
-		languages.setPlayer(undefined, null);
+	return({
+		characters,
+		languages: page.languages,
+		auth: new AuthApi(server.client),
+		profiles: new ProfileApi(server.client)
 	});
 }
 
@@ -127,7 +177,17 @@ async function start(): Promise<void>
 
 	reportSiteLanguageChange();
 	showStatus(t(pageMessages.loading));
+	void followPlayer(loadUniverse(key), server);
+}
 
+/**
+ * Loads and shows the universe an address names, or says why it can't be shown
+ *
+ * @param key The universe's slug or ID
+ * @return The universe shown, or undefined when it couldn't be
+ */
+async function loadUniverse(key: string): Promise<ShownUniverse | undefined>
+{
 	let universe: UniverseDetails;
 
 	try
@@ -150,11 +210,15 @@ async function start(): Promise<void>
 			defaultMessage: 'Universe',
 			description: 'The browser tab\'s title on a universe\'s page when the universe couldn\'t be shown, before the game engine\'s name'
 		}));
-		return;
+		return(undefined);
 	}
 
 	showUniverse(universe);
-	void followPlayer(universe, new UniverseLanguageChooser(universe), server);
+
+	return({
+		universe,
+		languages: new UniverseLanguageChooser(universe)
+	});
 }
 
 void start();
