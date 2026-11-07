@@ -83,11 +83,17 @@ const AUDIT_FIELD_SET: ReadonlySet<string> = new Set(AUDIT_FIELDS);
 /**
  * A list a save's changes are compared against: loaded the first time a change needs it, and again when
  * it lacks what a change names (something made earlier in the save). Each change described updates its
- * entry, so a later change to the same thing is compared against it
+ * entry, so a later change to the same thing is compared against it. Lookups made at the same time (the
+ * starting items a class lists, say) share one load
  */
-class CachedList<Id, Entry>
+export class CachedList<Id, Entry>
 {
 	private entries: Map<Id, Entry> | undefined;
+
+	/**
+	 * The load in progress, which lookups that miss while it runs wait for rather than loading again
+	 */
+	private loading: Promise<void> | undefined;
 
 	/**
 	 * @param load Loads the list, by ID
@@ -104,15 +110,32 @@ class CachedList<Id, Entry>
 	 */
 	async find(id: Id): Promise<Entry | undefined>
 	{
-		let entries = this.entries;
-
-		if (!entries?.has(id))
+		if (!this.entries?.has(id))
 		{
-			entries = await this.load();
-			this.entries = entries;
+			await this.reload();
 		}
 
-		return(entries.get(id));
+		return(this.entries?.get(id));
+	}
+
+	/**
+	 * Loads the list again, or joins the load already in progress
+	 *
+	 * @return Resolves once the list is loaded
+	 */
+	private reload(): Promise<void>
+	{
+		this.loading ??= this.load()
+			.then((entries) =>
+			{
+				this.entries = entries;
+			})
+			.finally(() =>
+			{
+				this.loading = undefined;
+			});
+
+		return(this.loading);
 	}
 
 	/**
