@@ -220,7 +220,8 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 		{
 			await lockUniverse(base.universe.id, transaction);
 
-			// The role and the stage may have changed since the request was let in, by a save that held the lock
+			// The role, the stage and the universe's settings may have changed since the request was let in,
+			// by a save that held the lock
 			const { access, serverAdmin } = await findEditorAccess(base.universe.id, base.playerId, transaction);
 			const locked = await findUniverse(base.universe.id, transaction);
 			const stageBefore = (locked?.stage ?? base.universe.stage);
@@ -273,7 +274,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 
 			const saving: ChangeContext = {
 				playerId: base.playerId,
-				universe: base.universe,
+				universe: (await findEditableUniverse(base.version, transaction) ?? base.universe),
 				version: base.version,
 				role: access.role,
 				editorRoles: new Map(),

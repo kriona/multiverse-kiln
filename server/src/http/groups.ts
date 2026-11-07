@@ -254,7 +254,9 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			return({ status: 404, message: messages.noSuchDifficulty });
 		}
 
-		const start = await findStartingPlace(universe, character, transaction);
+		// Read again under the lock, since a save that held it may have moved the starting area and deleted the old one
+		const locked = (await findEditableUniverse(liveVersion(universe.id), transaction) ?? universe);
+		const start = await findStartingPlace(locked, character, transaction);
 		const groupId = await createGroup({
 			universeId: universe.id,
 			anchorCharacterId: anchorId,
