@@ -78,6 +78,8 @@
 {
 	color: $text-faint;
 }
+// The map, with the side panels beside it, or under it when the window is too narrow for both; then
+// they scroll together between the toolbar and the footer
 .lobby-body
 {
 	display: flex;
@@ -86,8 +88,11 @@
 	gap: 16px;
 	min-height: 0;
 	padding: 16px;
+	overflow-y: auto;
 }
 
+// A wrapping row is as tall as its content, so the side panels are kept to the body's height, and a
+// long chat scrolls in its own panel rather than stretching the page
 .lobby-side
 {
 	display: flex;
@@ -96,6 +101,7 @@
 	gap: 16px;
 	min-width: 280px;
 	min-height: 0;
+	max-height: 100%;
 }
 
 .chat
