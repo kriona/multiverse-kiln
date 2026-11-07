@@ -7,6 +7,7 @@ import { joinEditorRoom, type EditorRoom, type ServerConnection } from './networ
 import { isLeavingPage } from './pageLifecycle';
 import { currentPageAddress, loginPageUrl, pushPageParameters, replacePageParameters, TAB_PARAMETER, AREA_PARAMETER, VERSION_PARAMETER } from './pages';
 import { showScreen, showStatus } from './ui/dom';
+import { areaClaims } from './ui/editor/areaClaims';
 import { EditorChat } from './ui/editor/EditorChat';
 import { EditorPresenceBar } from './ui/editor/EditorPresenceBar';
 import { EditorScreen, isEditorTab, type EditorPlace } from './ui/editor/EditorScreen';
@@ -186,7 +187,7 @@ export class EditorPage
 				this.editorScreen.setOthersHere(shown);
 			});
 			void this.editorScreen.open(this.universeId, this.startingPlace);
-			void this.joinEditorRoom(this.chat, this.presenceBar);
+			void this.joinEditorRoom(this.chat, this.presenceBar, account.player.playerId);
 		}
 	}
 
@@ -196,8 +197,9 @@ export class EditorPage
 	 *
 	 * @param chat The editors' chat
 	 * @param presenceBar The other editors and where they are, in the save bar
+	 * @param playerId The browser's player, whose own windows claim no areas from it
 	 */
-	private async joinEditorRoom(chat: EditorChat, presenceBar: EditorPresenceBar): Promise<void>
+	private async joinEditorRoom(chat: EditorChat, presenceBar: EditorPresenceBar, playerId: string): Promise<void>
 	{
 		let room: EditorRoom;
 
@@ -225,6 +227,7 @@ export class EditorPage
 		{
 			chat.showEditors(room.state.editors);
 			presenceBar.show(room.state.editors);
+			this.editorScreen.setAreaClaims(areaClaims(room.state.editors, playerId, this.version));
 		});
 
 		room.onMessage(EditorServerMessageType.ChatHistory, (history: KeptChatHistoryPayload) =>
@@ -273,6 +276,7 @@ export class EditorPage
 		this.editorRoom = undefined;
 		this.api.windowId = undefined;
 		this.presenceBar?.show([]);
+		this.editorScreen.setAreaClaims(new Map());
 
 		// A session that ended goes to the login page when the session room says so
 		if (isLeavingPage() || (code === CloseCode.CONSENTED) || (code === ServerCloseCode.LoggedOut.valueOf()))

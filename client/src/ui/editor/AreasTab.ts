@@ -2,12 +2,14 @@ import { ancestorAreas, AREA_LIGHT_LEVEL_NAMES, AREA_LIGHT_LEVELS, canEditWorld,
 
 import { formatList, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
+import { announce } from '../announcer';
 import { ChangeTracker } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
 import { SearchSelect } from '../SearchSelect';
 import { tileName } from '../tileNames';
+import { claimTag, sameClaims, type AreaClaims } from './areaClaims';
 import type { AreaSource } from './areaSource';
 import { editorMessages } from './editorMessages';
 import { MapEditor, type FollowedPainting } from './MapEditor';
@@ -189,6 +191,21 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	 * The area the editor is showing
 	 */
 	private area: EditorArea | undefined;
+
+	/**
+	 * Says above the map who else is editing the area open
+	 */
+	private readonly claimLine = getElement('map-claim', HTMLParagraphElement);
+
+	/**
+	 * Who else has each area open in the area editor, as the editor room last said
+	 */
+	private claims: AreaClaims = new Map();
+
+	/**
+	 * The names the claim line last showed, so it is read out only when they change
+	 */
+	private shownClaim: readonly string[] = [];
 
 	/**
 	 * Changes every time the tab opens a universe or an area, so data that arrives for an earlier one is ignored
@@ -448,6 +465,8 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 		this.mapEditor.hide();
 		this.areaChanges.markSaved();
 		this.changedSince.hide();
+		showMessage(this.claimLine, undefined);
+		this.shownClaim = [];
 		// A new area has no address until it is saved
 		this.onAreaChanged((isNewAreaId(areaId) ? undefined : areaId));
 		this.listView.hidden = true;
@@ -502,6 +521,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 		this.changedSince.hide();
 		this.listView.hidden = false;
 		this.editorView.hidden = true;
+		this.showClaim();
 
 		if (!universe)
 		{
@@ -709,6 +729,67 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	}
 
 	/**
+	 * Follows who else is editing each area, as the editor room says: tags the areas in the lists, and
+	 * says above the map who else is editing the area open
+	 *
+	 * @param claims Who else has each area open, from areaClaims()
+	 */
+	setClaims(claims: AreaClaims): void
+	{
+		if (sameClaims(claims, this.claims))
+		{
+			return;
+		}
+
+		this.claims = claims;
+
+		if (!this.listView.hidden)
+		{
+			this.renderList();
+		}
+
+		if (this.area)
+		{
+			this.childList.replaceChildren(...childAreas(this.allAreas(), this.area.id).map((child) => this.createItem(child, 0)));
+		}
+
+		this.showClaim();
+	}
+
+	/**
+	 * Says above the map who else is editing the area open, reading it out when the names change
+	 */
+	private showClaim(): void
+	{
+		const names = (((this.area === undefined) || this.editorView.hidden) ? [] : (this.claims.get(this.area.id) ?? []));
+		const changed = ((names.length !== this.shownClaim.length) || names.some((name, index) => (name !== this.shownClaim[index])));
+
+		this.shownClaim = names;
+
+		if (names.length === 0)
+		{
+			showMessage(this.claimLine, undefined);
+			return;
+		}
+
+		const text = t({
+			id: 'editor.area.claimed',
+			defaultMessage: '{count, plural, one {{names} is also editing this area. You can still modify it; cells the other person paints will be shown to you (including conflicts).} other {{names} are editing this area too. You can still modify it; cells the others paint will be shown to you (including conflicts).}}',
+			description: 'Above the map in the area editor while other editors have the same area open in theirs; {names} is their display names as a list, e.g. "Bea and Cal", and {count} how many. It warns rather than locks. Also read out by screen readers when it changes'
+		}, {
+			names: formatList(names, 'conjunction'),
+			count: names.length
+		});
+
+		showMessage(this.claimLine, text);
+
+		if (changed)
+		{
+			announce(text);
+		}
+	}
+
+	/**
 	 * Loads the open area's settings and links again after another window saved them, keeping its map as
 	 * it has loaded, with the painting other editors saved taken in, unless its size changed. One that
 	 * can't be loaded opens afresh
@@ -842,7 +923,8 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			(area.enabled
 				? undefined
 				: t(editorMessages.disabledTag)),
-			(isNewAreaId(area.id) ? stagedTag('new', false) : undefined)
+			(isNewAreaId(area.id) ? stagedTag('new', false) : undefined),
+			(this.claims.has(area.id) ? claimTag(this.claims.get(area.id) ?? []) : undefined)
 		].filter((tag) => (tag !== undefined));
 
 		item.style.paddingLeft = `${depth * 20}px`;
@@ -935,6 +1017,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 
 		this.childList.replaceChildren(...children.map((child) => this.createItem(child, 0)));
 		this.children.hidden = (children.length === 0);
+		this.showClaim();
 		this.areaChanges.markSaved();
 		void this.mapEditor.show(universe, area, this.tiles, this.deletedTiles, areas.filter((other) => !this.staged.isDeleted(other.id)), editable);
 	}

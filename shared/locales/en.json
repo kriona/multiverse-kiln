@@ -999,6 +999,10 @@
 		"defaultMessage": "Areas inside this one",
 		"description": "Heading of the list of areas inside the area being edited"
 	},
+	"editor.area.claimed": {
+		"defaultMessage": "{count, plural, one {{names} is also editing this area. You can still modify it; cells the other person paints will be shown to you (including conflicts).} other {{names} are editing this area too. You can still modify it; cells the others paint will be shown to you (including conflicts).}}",
+		"description": "Above the map in the area editor while other editors have the same area open in theirs; {names} is their display names as a list, e.g. \"Bea and Cal\", and {count} how many. It warns rather than locks. Also read out by screen readers when it changes"
+	},
 	"editor.area.confirmDelete": {
 		"defaultMessage": "Delete {area}, its map and every link into it when the Areas tab is saved? Areas inside it become top-level areas.",
 		"description": "Asks before marking an area to be deleted when the Areas tab is saved; {area} is its name"
@@ -1138,6 +1142,10 @@
 	"editor.areas.add": {
 		"defaultMessage": "Add Area",
 		"description": "Button that opens the dialog for making a new area"
+	},
+	"editor.areas.claimedTag": {
+		"defaultMessage": "{count, plural, one {{names} is editing} other {{names} are editing}}",
+		"description": "Under an area in the list of areas, among its tags, when other editors have it open in the area editor right now; {names} is their display names as a list, e.g. \"Bea and Cal\", and {count} how many. It warns rather than locks: anyone may still open and change the area"
 	},
 	"editor.areas.createFailed": {
 		"defaultMessage": "Could not add {area}.",

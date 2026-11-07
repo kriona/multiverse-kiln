@@ -25,7 +25,7 @@ let reportedUnreadable = false;
  * Reads and checks where clients' addresses come from (CLIENT_ADDRESS_HEADER and TRUSTED_PROXY_HOPS).
  * Without a header, the connection's address is used, since a header could come from the client.
  * Which header to trust depends on the proxies in front of the server, so it is set for each host
- * and checked once deployed (see Phase 16 in PLAN.md)
+ * and checked once deployed (see Phase 17 in PLAN.md)
  *
  * @param env Environment variables to read
  * @return Where the address comes from

@@ -995,6 +995,10 @@
 		"message": "Back to the Tavern",
 		"source": "Back to Lobby"
 	},
+	"editor.area.claimed": {
+		"message": "{count, plural, one {{names} be workin' this area too. Ye can still tinker with it; cells the other hand daubs will be shown to ye (crossed ones too).} other {{names} be workin' this area too. Ye can still tinker with it; cells the other hands daub will be shown to ye (crossed ones too).}}",
+		"source": "{count, plural, one {{names} is also editing this area. You can still modify it; cells the other person paints will be shown to you (including conflicts).} other {{names} are editing this area too. You can still modify it; cells the others paint will be shown to you (including conflicts).}}"
+	},
 	"editor.area.children": {
 		"message": "Areas in this one's hold",
 		"source": "Areas inside this one"
@@ -1150,6 +1154,10 @@
 	"editor.areas.heading": {
 		"message": "Areas",
 		"source": "Areas"
+	},
+	"editor.areas.claimedTag": {
+		"message": "{count, plural, one {{names} be workin' it} other {{names} be workin' it}}",
+		"source": "{count, plural, one {{names} is editing} other {{names} are editing}}"
 	},
 	"editor.areas.indoorsTag": {
 		"message": "below decks",

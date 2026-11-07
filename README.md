@@ -2,7 +2,7 @@
 
 An engine for making multiplayer browser-based role-playing games.
 
-See `PLAN.md` for the roadmap and current phase, and `CLAUDE.md` for architecture and coding rules.
+See `PLAN.md` for the roadmap and `CLAUDE.md` for architecture and coding rules.
 
 ## Technology overview
 

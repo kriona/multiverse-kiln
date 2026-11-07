@@ -178,6 +178,37 @@ describe('EditorRoom', () =>
 			assert.ok(room.state.editors.has(grace.playerId));
 		});
 
+		it('shows other windows the area a window has open, as its claim, until it closes the area or leaves', async () =>
+		{
+			const grace = await addEditor('Grace', 'builder');
+			const claiming = await openEditor(grace, universeId);
+			const watching = await openEditor(ada, universeId);
+			const areaId = randomUUID();
+
+			/**
+			 * The areas Grace's windows have open, as the watching window's synced state has them
+			 *
+			 * @return The areas' IDs, empty for a window with none open
+			 */
+			const claimed = (): string[] => [...(watching.room.state.editors.get(grace.playerId)?.windows.values() ?? [])].map((window) => window.areaId);
+
+			claiming.room.send(EditorMessageType.Place, { version: 'live', tab: 'areas', areaId });
+			await waitUntil(() => claimed().includes(areaId));
+
+			// A window on another tab keeps its area open
+			claiming.room.send(EditorMessageType.Place, { version: 'live', tab: 'items', areaId });
+			await waitUntil(() => [...(watching.room.state.editors.get(grace.playerId)?.windows.values() ?? [])].some((window) => (window.tab === 'items')));
+			assert.deepStrictEqual(claimed(), [areaId]);
+
+			claiming.room.send(EditorMessageType.Place, { version: 'live', tab: 'areas', areaId: null });
+			await waitUntil(() => claimed().every((each) => (each === '')));
+
+			claiming.room.send(EditorMessageType.Place, { version: 'live', tab: 'areas', areaId });
+			await waitUntil(() => claimed().includes(areaId));
+			await claiming.room.leave();
+			await waitUntil(() => !watching.room.state.editors.has(grace.playerId));
+		});
+
 		it('ignores a place that names no tab or version it has', async () =>
 		{
 			const window = await openEditor(ada, universeId);
@@ -353,7 +384,7 @@ describe('EditorRoom', () =>
 
 			const [recorded] = (await listUniverseEdits(universeId, { offset: 0, limit: 1 })).edits;
 
-			assert.ok(recorded.changeDetails.every((detail) => !('chunks' in detail)));
+			assert.ok((recorded.changeDetails ?? []).every((detail) => !('chunks' in detail)));
 		});
 	});
 

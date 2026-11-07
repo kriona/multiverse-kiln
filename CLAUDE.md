@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 Context and rules for working in this repository. Read this before making changes.
-See `PLAN.md` for the build roadmap and current phase, and `STRUCTURE-OVERVIEW.md` for the pages, editors and game rules the phases build. Read the relevant sections of `STRUCTURE-OVERVIEW.md` before planning or implementing a feature, and update it when a design decision changes.
+See `PLAN.md` for the build roadmap and `STRUCTURE-OVERVIEW.md` for the pages, editors and game rules the phases build. Read the relevant sections of `STRUCTURE-OVERVIEW.md` before planning or implementing a feature, and update it when a design decision changes.
 
 ## Project overview
 

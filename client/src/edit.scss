@@ -506,8 +506,10 @@ tr.staged-deleted
 }
 
 // What another editor saved to something with unsaved changes here (otherSaves.ts): under its name in a
-// list, or at the top of its form. Its words say so, so it isn't told by color alone
-.changed-since
+// list, or at the top of its form; and who else is editing the area open, above its map (areaClaims.ts).
+// Its words say so, so it isn't told by color alone
+.changed-since,
+.area-claim
 {
 	margin: 4px 0 0;
 	padding: 4px 8px;
@@ -519,9 +521,16 @@ tr.staged-deleted
 	font-style: normal;
 }
 
-form > .changed-since
+form > .changed-since,
+.map-editor > .area-claim
 {
 	margin: 0 0 12px;
+}
+
+// The map editor's column stretches what it holds, so the line keeps to its text
+.map-editor > .area-claim
+{
+	align-self: flex-start;
 }
 
 // An area in the list of areas that will be deleted when the tab is saved
