@@ -26,10 +26,16 @@ export const SOURCE_LOCALE = 'en';
 export const PSEUDO_LOCALE = 'en-XA';
 
 /**
- * Names of languages Intl.DisplayNames doesn't know, as each calls itself
+ * Pirate, a joke translation that ships with the engine for testing how languages load and switch.
+ * Universes can be translated into it too
+ */
+export const PIRATE_LOCALE = 'en-x-pirate';
+
+/**
+ * Names of languages Intl.DisplayNames doesn't know, as each calls itself and in every other language
  */
 const LANGUAGE_NAMES: Readonly<Record<string, string>> = {
-	'en-x-pirate': 'Pirate',
+	[PIRATE_LOCALE]: 'Pirate',
 	[PSEUDO_LOCALE]: 'Gibberish'
 };
 
@@ -43,6 +49,19 @@ const LANGUAGE_NAMES: Readonly<Record<string, string>> = {
 export function languageName(locale: string): string
 {
 	return(LANGUAGE_NAMES[locale] ?? new Intl.DisplayNames([locale], { type: 'language' }).of(locale) ?? locale);
+}
+
+/**
+ * A language's name in another language, e.g. German for de in English. Intl.DisplayNames can't name
+ * private-use tags such as Pirate's, which keep their own names
+ *
+ * @param locale The language tag
+ * @param displayLocale The language to name it in
+ * @return The name
+ */
+export function languageNameIn(locale: string, displayLocale: string): string
+{
+	return(LANGUAGE_NAMES[locale] ?? new Intl.DisplayNames([displayLocale], { type: 'language' }).of(locale) ?? locale);
 }
 
 /**

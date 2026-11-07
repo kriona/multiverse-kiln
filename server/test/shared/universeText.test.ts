@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { createHash } from 'crypto';
-import { chooseUniverseLanguage, findTranslation, isTranslationOutOfDate, sourceTextHash, translationLanguagesFor, universeLanguageOf, universeText } from '@multiverse-kiln/shared';
+import { chooseUniverseLanguage, findTranslation, isTranslationOutOfDate, PIRATE_LOCALE, PSEUDO_LOCALE, sourceTextHash, translationLanguagesFor, UNIVERSE_LANGUAGES, universeLanguageOf, universeText } from '@multiverse-kiln/shared';
 
 import { acceptedLanguages } from '../../src/http/requestLanguages.js';
 
@@ -55,6 +55,15 @@ describe('universe text (shared)', () =>
 			assert.strictEqual(chooseUniverseLanguage(['ja'], 'de', ['en']), undefined);
 			assert.strictEqual(chooseUniverseLanguage([], 'en', ['fr']), undefined);
 		});
+
+		it('shows the Pirate translation to players who chose Pirate, and to no one else', () =>
+		{
+			assert.strictEqual(chooseUniverseLanguage([PIRATE_LOCALE, 'en-US'], 'en', [PIRATE_LOCALE]), PIRATE_LOCALE);
+			assert.strictEqual(chooseUniverseLanguage([PIRATE_LOCALE, 'en-US'], 'de', ['en', PIRATE_LOCALE]), PIRATE_LOCALE);
+			assert.strictEqual(chooseUniverseLanguage(['en-US', PIRATE_LOCALE], 'en', [PIRATE_LOCALE]), undefined);
+			assert.strictEqual(chooseUniverseLanguage(['en'], 'de', [PIRATE_LOCALE]), undefined);
+			assert.strictEqual(chooseUniverseLanguage([PIRATE_LOCALE], 'de', ['en']), 'en');
+		});
 	});
 
 	describe('translationLanguagesFor', () =>
@@ -64,6 +73,11 @@ describe('universe text (shared)', () =>
 			assert.deepStrictEqual(translationLanguagesFor('pt-BR', ['pt-BR', 'pt']), ['pt-BR', 'pt']);
 			assert.deepStrictEqual(translationLanguagesFor('pt-BR', ['pt-BR']), ['pt-BR']);
 			assert.deepStrictEqual(translationLanguagesFor('fr', ['fr']), ['fr']);
+		});
+
+		it('looks for Pirate text missing a translation in English, when the universe is translated into that', () =>
+		{
+			assert.deepStrictEqual(translationLanguagesFor(PIRATE_LOCALE, ['en', PIRATE_LOCALE]), [PIRATE_LOCALE, 'en']);
 		});
 	});
 
@@ -113,6 +127,21 @@ describe('universe text (shared)', () =>
 		{
 			assert.deepStrictEqual(acceptedLanguages('*, ja;q=0, not a tag, , de'), ['de']);
 			assert.deepStrictEqual(acceptedLanguages(undefined), []);
+		});
+
+		it('keeps Pirate, so universes can be shown in it', () =>
+		{
+			assert.deepStrictEqual(acceptedLanguages(`${PIRATE_LOCALE}, en-US`), [PIRATE_LOCALE, 'en-US']);
+		});
+	});
+
+	describe('UNIVERSE_LANGUAGES', () =>
+	{
+		it('offers Pirate alongside every language a profile can name, but not the pseudo-language', () =>
+		{
+			assert.ok(UNIVERSE_LANGUAGES.includes(PIRATE_LOCALE));
+			assert.ok(UNIVERSE_LANGUAGES.includes('de'));
+			assert.ok(!UNIVERSE_LANGUAGES.includes(PSEUDO_LOCALE));
 		});
 	});
 
