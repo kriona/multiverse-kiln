@@ -1,7 +1,7 @@
 import assert from 'assert';
 import fs from 'fs';
 import path from 'path';
-import { catalogProblems, defineMessages, isLocalizedMessage, languageNameIn, localize, matchLocale, messageArguments, PIRATE_LOCALE, PSEUDO_LOCALE, pseudoMessage, SOURCE_LOCALE, translationCatalog, Translator, translationStatus, type TranslationFile } from '@multiverse-kiln/shared';
+import { canonicalLanguage, catalogProblems, defineMessages, isLocalizedMessage, languageName, languageNameIn, localize, matchLocale, messageArguments, PIRATE_LOCALE, PSEUDO_LOCALE, pseudoMessage, SOURCE_LOCALE, translationCatalog, Translator, translationStatus, type TranslationFile } from '@multiverse-kiln/shared';
 
 /**
  * Where the English catalog and the translations are
@@ -82,6 +82,21 @@ describe('localization (shared)', () =>
 		{
 			assert.strictEqual(languageNameIn(PIRATE_LOCALE, 'en'), 'Pirate');
 			assert.strictEqual(languageNameIn(PIRATE_LOCALE, 'de'), 'Pirate');
+		});
+
+		it('names text that isn\'t a language tag as it is, rather than throwing', () =>
+		{
+			assert.strictEqual(languageNameIn('pt_BR', 'en'), 'pt_BR');
+			assert.strictEqual(languageName('pt_BR'), 'pt_BR');
+		});
+	});
+
+	describe('canonicalLanguage', () =>
+	{
+		it('writes a tag the usual way, and gives undefined for text that isn\'t one', () =>
+		{
+			assert.strictEqual(canonicalLanguage(' pt-br '), 'pt-BR');
+			assert.strictEqual(canonicalLanguage('pt_BR'), undefined);
 		});
 	});
 

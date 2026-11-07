@@ -1,4 +1,4 @@
-import { engineTranslationContents, importLanguageFile, isEngineTranslationLanguage, languageFileName, languageFileText, languageName, languageNameIn, MAX_TRANSLATION_FILE_BYTES, messageArguments, PSEUDO_LOCALE, readTranslationFile, SITE_NAME, SOURCE_LOCALE, TRANSLATION_FILE_EXTENSIONS, TRANSLATION_FILE_FORMATS, TRANSLATION_FILE_TYPES, translationFileFormatOf, UNIVERSE_LANGUAGES, universeSlug, writeTranslationFile, type EngineCatalog, type LanguageFileImport, type ReadTranslationFile, type SkippedTranslation, type TranslationFile, type TranslationFileFormat } from '@multiverse-kiln/shared';
+import { canonicalLanguage, engineTranslationContents, importLanguageFile, isEngineTranslationLanguage, languageFileName, languageFileText, languageName, languageNameIn, MAX_TRANSLATION_FILE_BYTES, messageArguments, PSEUDO_LOCALE, readTranslationFile, SITE_NAME, SOURCE_LOCALE, TRANSLATION_FILE_EXTENSIONS, TRANSLATION_FILE_FORMATS, TRANSLATION_FILE_TYPES, translationFileFormatOf, UNIVERSE_LANGUAGES, universeSlug, writeTranslationFile, type EngineCatalog, type LanguageFileImport, type ReadTranslationFile, type SkippedTranslation, type TranslationFile, type TranslationFileFormat } from '@multiverse-kiln/shared';
 
 import { showAdminRefusal, startAdminPage } from './AdminPage';
 import { availableLocales, currentLocale, formatList, formatToNodes, loadTranslationFile, t } from './localization';
@@ -554,26 +554,6 @@ function skippedReason(entry: SkippedTranslation): string
 				names: formatList(names.map((name) => (name.startsWith('<') ? name : `{${name}}`)))
 			}));
 		}
-	}
-}
-
-/**
- * A language tag in its canonical form
- *
- * @param text The tag as typed, e.g. pt-br
- * @return The tag, e.g. pt-BR, or undefined when the text isn't one
- */
-function canonicalLanguage(text: string): string | undefined
-{
-	try
-	{
-		const [language] = Intl.getCanonicalLocales(text.trim());
-
-		return(language);
-	}
-	catch
-	{
-		return(undefined);
 	}
 }
 

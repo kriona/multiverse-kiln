@@ -1,4 +1,4 @@
-import { canEditWorld, canMarkNoTranslation, canTranslate, DISALLOWED_TEXT_CHARACTERS, isCoin, isValidCoinAbbreviation, languageName, MAX_TRANSLATION_FILE_BYTES, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, readTranslationFile, sourceTextHash, TRANSLATION_FILE_EXTENSIONS, TRANSLATION_FILE_FORMATS, TRANSLATION_FILE_TYPES, translationFileFormatOf, UNIVERSE_TEXT_SORT_COLUMNS, universeTextFileKey, writeTranslationFile, type AuditSubject, type EditableUniverse, type ReadTranslationFile, type UniverseTextListPayload, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
+import { canEditWorld, canMarkNoTranslation, canonicalLanguage, canTranslate, DISALLOWED_TEXT_CHARACTERS, isCoin, isValidCoinAbbreviation, languageName, MAX_TRANSLATION_FILE_BYTES, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, readTranslationFile, sourceTextHash, TRANSLATION_FILE_EXTENSIONS, TRANSLATION_FILE_FORMATS, TRANSLATION_FILE_TYPES, translationFileFormatOf, UNIVERSE_TEXT_SORT_COLUMNS, universeTextFileKey, writeTranslationFile, type AuditSubject, type EditableUniverse, type ReadTranslationFile, type UniverseTextListPayload, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -876,9 +876,11 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 			return;
 		}
 
-		if ((read.language !== null) && (read.language.toLowerCase() !== language.toLowerCase()))
+		const fileLanguage = ((read.language === null) ? undefined : (canonicalLanguage(read.language) ?? read.language));
+
+		if ((fileLanguage !== undefined) && (fileLanguage.toLowerCase() !== language.toLowerCase()))
 		{
-			showMessage(this.error, describeWrongLanguage(languageName(read.language), languageName(language)));
+			showMessage(this.error, describeWrongLanguage(languageName(fileLanguage), languageName(language)));
 			return;
 		}
 

@@ -6,6 +6,7 @@
  * admin page's Translations tool writes and reads the engine's messages in the same files, each named
  * by its message ID (engineTranslations.ts)
  */
+import { canonicalLanguage } from './localization.js';
 import { UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, type UniverseTextRef, type UniverseTextRow } from './universeText.js';
 
 /**
@@ -367,6 +368,23 @@ function readPoString(quoted: string, line: number): string
 }
 
 /**
+ * A PO header's Language as a language tag. Gettext names languages the POSIX way, with an underscore
+ * and sometimes a character set, such as pt_BR or de_DE.UTF-8, where language tags use hyphens: pt-BR
+ *
+ * @param name The header's value
+ * @return The language tag in its canonical form, or the name with its underscores made hyphens when
+ * it isn't one
+ */
+function poLanguageTag(name: string): string
+{
+	const tag = name
+		.replace(/\.[^@]*/, '')
+		.replace(/_/g, '-');
+
+	return(canonicalLanguage(tag) ?? tag);
+}
+
+/**
  * Reads a PO file's entries. Obsolete entries (#~) and plural entries are left out, and the header's
  * Language names the language
  *
@@ -401,7 +419,9 @@ function readPo(text: string): ReadTranslationFile
 
 			if ((source === '') && (context === undefined))
 			{
-				language = (/^Language:\s*(\S+)\s*$/m.exec(translation)?.[1] ?? language);
+				const header = /^Language:\s*(\S+)\s*$/m.exec(translation)?.[1];
+
+				language = ((header === undefined) ? language : poLanguageTag(header));
 			}
 			else if (context !== undefined)
 			{

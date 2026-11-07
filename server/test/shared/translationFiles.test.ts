@@ -85,6 +85,16 @@ describe('translation files (shared)', () =>
 		});
 	});
 
+	it('reads a PO header\'s POSIX language name, such as pt_BR, as a language tag', () =>
+	{
+		const header = (language: string): string => ['msgid ""', `msgstr "Language: ${language}\\n"`].join('\n');
+
+		assert.strictEqual(readTranslationFile('po', header('pt_BR')).language, 'pt-BR');
+		assert.strictEqual(readTranslationFile('po', header('de_DE.UTF-8')).language, 'de-DE');
+		assert.strictEqual(readTranslationFile('po', header('pt-br')).language, 'pt-BR');
+		assert.strictEqual(readTranslationFile('po', header('sr_RS@latin')).language, 'sr-RS@latin');
+	});
+
 	it('reads XLIFF with entities, CDATA and several segments, and refuses a document type declaration', () =>
 	{
 		const file = [
