@@ -8,6 +8,13 @@ import { addChatMessages, findChatRead, listChatMessages, saveChatReads, type Ke
 export const CHAT_SAVE_INTERVAL_MS = 5000;
 
 /**
+ * Each chat's latest write going on, by chatKey(), for a log loading that chat to wait for. A room's last
+ * write runs in onDispose, after Colyseus has stopped listing it, so the next room for the same chat
+ * can be loading it meanwhile
+ */
+const writesGoingOn = new Map<string, Promise<void>>();
+
+/**
  * Who wrote a message to a kept chat
  */
 export interface ChatAuthor
@@ -32,7 +39,8 @@ export interface ChatAuthor
  * with markRead()
  *
  * The room loads it as it starts and calls save() every CHAT_SAVE_INTERVAL_MS and as it closes, so
- * adding a message or reading the chat never waits for the database
+ * adding a message or reading the chat never waits for the database. A log loading a chat waits for
+ * the writes of any other log of the same chat, such as one whose room is closing
  */
 export class KeptChatLog
 {
@@ -65,12 +73,14 @@ export class KeptChatLog
 	private saving: Promise<void> = Promise.resolve();
 
 	/**
-	 * Reads the messages the database keeps for a chat, which the log holds from then on
+	 * Reads the messages the database keeps for a chat, which the log holds from then on, once another
+	 * log's write of the chat going on is done
 	 *
 	 * @param chat The chat
 	 */
 	async load(chat: KeptChat): Promise<void>
 	{
+		await writesGoingOn.get(chatKey(chat));
 		this.messages = await listChatMessages(chat);
 		this.chat = chat;
 	}
@@ -254,7 +264,7 @@ export class KeptChatLog
 	 */
 	save(): Promise<void>
 	{
-		this.saving = this.saving.then(async () =>
+		const saving = this.saving.then(async () =>
 		{
 			const chat = this.chat;
 
@@ -267,7 +277,14 @@ export class KeptChatLog
 			await this.saveReads(chat);
 		});
 
-		return(this.saving);
+		this.saving = saving;
+
+		if (this.chat)
+		{
+			holdWrite(this.chat, saving);
+		}
+
+		return(saving);
 	}
 
 	/**
@@ -333,6 +350,37 @@ export class KeptChatLog
 			console.error('Could not keep how far players have read', describeChat(chat), error);
 		}
 	}
+}
+
+/**
+ * Identifies a chat, whichever log holds it
+ *
+ * @param chat The chat
+ * @return E.g. "group:<ID>"
+ */
+function chatKey(chat: KeptChat): string
+{
+	return(((chat.kind === 'group') ? `group:${chat.groupId}` : `editors:${chat.universeId}`));
+}
+
+/**
+ * Records a write of a chat going on, for a log loading the chat to wait for, until it is done
+ *
+ * @param chat The chat
+ * @param write The write, which resolves once its messages and records are written or have failed to be
+ */
+function holdWrite(chat: KeptChat, write: Promise<void>): void
+{
+	const key = chatKey(chat);
+
+	writesGoingOn.set(key, write);
+	void write.finally(() =>
+	{
+		if (writesGoingOn.get(key) === write)
+		{
+			writesGoingOn.delete(key);
+		}
+	});
 }
 
 /**

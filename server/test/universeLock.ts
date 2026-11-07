@@ -14,7 +14,7 @@ import { waitUntil } from './waitUntil.js';
  *
  * @return True when one is
  */
-async function someoneWaitsForALock(): Promise<boolean>
+export async function someoneWaitsForALock(): Promise<boolean>
 {
 	const result = await db.execute<{ waiting: boolean }>(sql`SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock' AND pid <> pg_backend_pid()) AS waiting`);
 
