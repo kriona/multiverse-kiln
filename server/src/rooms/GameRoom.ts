@@ -687,16 +687,14 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 
 		for (const member of absent)
 		{
-			const start = await this.startOf(member);
+			const start = await this.preparedStartOf(member);
 
-			// The member may have left, been barred, or their player's windows all closed, while the area loaded
-			if ((this.members.get(member.characterId) !== member) || !this.windows.has(playerId) || !this.canPlay(member))
+			if (!start)
 			{
 				continue;
 			}
 
-			await this.areaPlayers.prepareStart(start.area, start);
-			this.areaPlayers.add(member.characterId, this.appearanceOf(member), this.areas.get(start.area.loaded.area.id) ?? start.area, start);
+			this.areaPlayers.add(member.characterId, this.appearanceOf(member), start.area, start);
 
 			const shown = this.state.members.get(member.characterId);
 
@@ -705,6 +703,55 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 				shown.present = true;
 			}
 		}
+	}
+
+	/**
+	 * Where a member starts on the map (startOf()), with the chunks around it loaded. Looks again when
+	 * where they were last, or the area, changes while the chunks load, as when the area is disabled and
+	 * the members in it are sent elsewhere
+	 *
+	 * @param member The member
+	 * @return The area and cell; undefined when the member left, was barred, or their player's windows
+	 * all closed, while the area loaded
+	 */
+	private async preparedStartOf(member: GroupMemberRecord): Promise<{ area: ActiveArea; column: number; row: number } | undefined>
+	{
+		for (;;)
+		{
+			const position = member.position;
+			const start = await this.startOf(member);
+
+			if (!this.mayBringIn(member))
+			{
+				return(undefined);
+			}
+
+			const area = await this.areaPlayers.prepareStart(start.area, start);
+
+			if (!this.mayBringIn(member))
+			{
+				return(undefined);
+			}
+
+			if (area && (member.position === position))
+			{
+				return({
+					...start,
+					area
+				});
+			}
+		}
+	}
+
+	/**
+	 * Whether a member is still one to put on the map
+	 *
+	 * @param member The member, as bringIn() found them
+	 * @return True while they are in the group, may play, and their player has a window here
+	 */
+	private mayBringIn(member: GroupMemberRecord): boolean
+	{
+		return((this.members.get(member.characterId) === member) && this.windows.has(member.playerId) && this.canPlay(member));
 	}
 
 	/**

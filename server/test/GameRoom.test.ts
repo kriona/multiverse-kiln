@@ -1343,6 +1343,28 @@ describe('GameRoom', () =>
 			areaChanges.publish({ kind: 'evacuated', areaId: universe.houseAreaId, destination: null });
 			await waitUntil(() => (room.getAreaId(characterId) === universe.fieldAreaId));
 		});
+
+		it('sends a member who comes back while their area is disabled where its members are sent', async () =>
+		{
+			const room = await createGameRoom();
+			const { client } = await joinFromBrowser(room, browserIdA);
+			const characterId = playerIdOf(room, client);
+			const grace = await joinFromBrowser(room, browserIdB, 'Grace');
+			const member = browserMembers.get(browserIdB) as Member;
+
+			await grace.client.leave();
+			await waitUntil(() => !room.state.players.has(member.characterId));
+
+			changeDuringNextLookup((room as unknown as { areaPlayers: object }).areaPlayers, 'prepareStart', async () =>
+			{
+				areaChanges.publish({ kind: 'evacuated', areaId: universe.fieldAreaId, destination: { areaId: universe.houseAreaId, column: 2, row: 2 } });
+				await waitUntil(() => (room.getAreaId(characterId) === universe.houseAreaId));
+			});
+
+			await joinAs(room, browserIdB, member);
+
+			assert.strictEqual(room.getAreaId(member.characterId), universe.houseAreaId);
+		});
 	});
 
 	describe('links that require the whole group', () =>

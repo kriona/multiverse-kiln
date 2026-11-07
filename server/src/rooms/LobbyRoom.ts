@@ -492,19 +492,16 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 
 		const { playerId } = identityOf(client);
 		const characters = await listPlayableCharacters(playerId, this.universeId);
-		const lobbyArea = (this.state.hasMap ? await this.lobbyArea() : undefined);
-
-		if (lobbyArea)
-		{
-			await this.areaPlayers.prepareStart(lobbyArea, this.lobbyCell);
-		}
+		const lobbyStart = (this.state.hasMap ? await this.lobbyStart() : undefined);
 
 		this.characters.set(playerId, characters);
 
 		const isNewPlayer = (this.areaPlayers.getClients(playerId).length === 0);
 		const choosable = characters.find((each) => this.isChoosable(each));
 		const character = (isNewPlayer ? choosable : undefined);
-		const startArea = (lobbyArea ? (this.areas.get(lobbyArea.loaded.area.id) ?? lobbyArea) : undefined);
+
+		// The map may have been taken away while its area loaded
+		const startArea = (this.state.hasMap ? lobbyStart : undefined);
 
 		this.areaPlayers.join(client, playerId, this.appearanceOf(character), startArea, this.lobbyCell);
 
@@ -832,6 +829,34 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	}
 
 	/**
+	 * The lobby's area with the chunks around its starting cell loaded, to place players on. Looks again
+	 * when the lobby moves to another area or cell, or its area is changed, while the chunks load, so
+	 * nobody is placed on an area the lobby has left or that has been disabled
+	 *
+	 * @return The area, or undefined when the lobby has no map
+	 */
+	private async lobbyStart(): Promise<ActiveArea | undefined>
+	{
+		for (;;)
+		{
+			const cell = this.lobbyCell;
+			const area = await this.lobbyArea();
+
+			if (!area)
+			{
+				return(undefined);
+			}
+
+			const prepared = await this.areaPlayers.prepareStart(area, cell);
+
+			if (prepared && (prepared.loaded.area.id === this.lobbyAreaId) && (this.lobbyCell === cell))
+			{
+				return(prepared);
+			}
+		}
+	}
+
+	/**
 	 * Reads the universe's lobby area and starting cell again, after an editor changed them, and puts
 	 * the lobby's players in its new area, or takes the map away
 	 */
@@ -865,7 +890,14 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	{
 		const area = await this.lobbyArea();
 
-		if (!area)
+		if (area && this.state.hasMap && !moved)
+		{
+			return;
+		}
+
+		const start = (area ? await this.lobbyStart() : undefined);
+
+		if (!start)
 		{
 			if (this.state.hasMap)
 			{
@@ -876,13 +908,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 			return;
 		}
 
-		if (this.state.hasMap && !moved)
-		{
-			return;
-		}
-
-		await this.areaPlayers.prepareStart(area, this.lobbyCell);
-		this.areaPlayers.placeAll((this.areas.get(area.loaded.area.id) ?? area), this.lobbyCell, (playerId) => this.appearanceOf(this.playing.get(playerId)));
+		this.areaPlayers.placeAll(start, this.lobbyCell, (playerId) => this.appearanceOf(this.playing.get(playerId)));
 		this.state.hasMap = true;
 	}
 

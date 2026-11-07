@@ -129,6 +129,17 @@ describe('LobbyRoom', () =>
 	}
 
 	/**
+	 * The object a lobby places its players with, for making a change while a player joining is placed
+	 *
+	 * @param room The server-side room
+	 * @return Its AreaPlayers
+	 */
+	function areaPlayersOf(room: LobbyRoom): object
+	{
+		return((room as unknown as { areaPlayers: object }).areaPlayers);
+	}
+
+	/**
 	 * A window's player in the server-side room
 	 *
 	 * @param window The window
@@ -434,6 +445,45 @@ describe('LobbyRoom', () =>
 
 			assert.strictEqual(second.playerId, ada.playerId);
 			assert.strictEqual(lobbyOf(ada).state.members.size, 1);
+		});
+
+		it('puts a player who joins while the lobby moves to another area in the new one', async () =>
+		{
+			const { universeId, houseAreaId } = universe;
+			const ada = await joinAsNewPlayer(universeId, 'Ada');
+			const room = lobbyOf(ada);
+
+			changeDuringNextLookup(areaPlayersOf(room), 'prepareStart', async () =>
+			{
+				await updateUniverseSettings(liveVersion(universeId), { lobbyAreaId: houseAreaId, lobbyColumn: 2, lobbyRow: 2 });
+				areaChanges.publish({ kind: 'lobby', universeId });
+				await waitUntil(() => (room.getAreaId(ada.playerId) === houseAreaId));
+			});
+
+			const grace = await joinAsNewPlayer(universeId, 'Grace');
+
+			assert.strictEqual(room.getAreaId(grace.playerId), houseAreaId);
+			assert.strictEqual((await grace.inbox.take<AreaPayload>(ServerMessageType.Area)).areaId, houseAreaId);
+		});
+
+		it('puts a player who joins while the lobby\'s area is disabled in no area', async () =>
+		{
+			const { universeId, squareAreaId } = universe;
+			const ada = await joinAsNewPlayer(universeId, 'Ada');
+			const room = lobbyOf(ada);
+
+			changeDuringNextLookup(areaPlayersOf(room), 'prepareStart', async () =>
+			{
+				await updateAreaSettings(squareAreaId, { enabled: false });
+				areaChanges.publish({ kind: 'area', areaId: squareAreaId });
+				await waitUntil(() => !room.state.hasMap);
+			});
+
+			const grace = await joinAsNewPlayer(universeId, 'Grace');
+
+			assert.strictEqual(room.getAreaId(grace.playerId), undefined);
+			assert.strictEqual(room.state.players.size, 0);
+			assert.ok(room.state.members.has(grace.playerId));
 		});
 	});
 

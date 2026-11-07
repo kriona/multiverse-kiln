@@ -284,14 +284,22 @@ export class AreaPlayers
 	}
 
 	/**
-	 * Loads the chunks a new player needs to be placed in an area, around a cell. Call it before add() or join()
+	 * Loads the chunks a new player needs to be placed in an area, around a cell. Call it before add() or
+	 * join(), with what it returns
 	 *
-	 * @param area The area
+	 * @param area The area, as the cache holds it
 	 * @param near The cell, the area's center by default
+	 * @return The area, or undefined when the cache was holding another copy of it or reloaded or forgot
+	 * it while the chunks loaded, as after an editor changed or disabled it: the caller looks for where
+	 * the player starts again
 	 */
-	async prepareStart(area: ActiveArea, near: Cell = { column: 0, row: 0 }): Promise<void>
+	async prepareStart(area: ActiveArea, near: Cell = { column: 0, row: 0 }): Promise<ActiveArea | undefined>
 	{
-		await this.areas.loadChunks(area.loaded.area.id, chunksNear([near], CHUNK_LOAD_RADIUS, chunkMapOf(area)));
+		const areaId = area.loaded.area.id;
+
+		await this.areas.loadChunks(areaId, chunksNear([near], CHUNK_LOAD_RADIUS, chunkMapOf(area)));
+
+		return(((this.areas.get(areaId) === area) ? area : undefined));
 	}
 
 	/**
@@ -300,7 +308,7 @@ export class AreaPlayers
 	 *
 	 * @param playerId The player's ID
 	 * @param appearance How they show
-	 * @param area Where they start, with prepareStart() done
+	 * @param area Where they start, as prepareStart() returned it
 	 * @param near The cell to start nearest
 	 */
 	add(playerId: string, appearance: Appearance, area: ActiveArea, near: Cell): void
@@ -338,7 +346,7 @@ export class AreaPlayers
 	 * @param client The joining client
 	 * @param playerId The player the client controls
 	 * @param appearance How a player new to the room shows
-	 * @param startArea Where a player new to the room starts, with prepareStart() done, or undefined for nowhere
+	 * @param startArea Where a player new to the room starts, as prepareStart() returned it, or undefined for nowhere
 	 * @param near The cell of the start area to start nearest, its center by default
 	 * @return Whether the player is new to the room
 	 */
@@ -450,7 +458,7 @@ export class AreaPlayers
 	 * Puts every player that clients control on the free cell nearest a cell of an area, wherever they
 	 * were, as when a lobby gets a map or moves to another, and sends their clients the area
 	 *
-	 * @param area The area, with prepareStart() done for the cell
+	 * @param area The area, as prepareStart() returned it for the cell
 	 * @param near The cell to start nearest
 	 * @param appearanceOf How each player shows
 	 */
