@@ -10,6 +10,7 @@ import { addServerAdmin } from '../src/db/serverAdminRepo.js';
 import { listUniverseEdits } from '../src/db/universeEditRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { connectedSessions } from '../src/players/connectedSessions.js';
+import { serverAdminChanges } from '../src/players/serverAdminChanges.js';
 import { universeAccessChanges } from '../src/players/universeAccess.js';
 import type { EditorRoom } from '../src/rooms/EditorRoom.js';
 import { areaChanges } from '../src/world/areaChanges.js';
@@ -473,6 +474,46 @@ describe('EditorRoom', () =>
 			});
 			await window.inbox.take(EditorServerMessageType.AccessChanged);
 			assert.strictEqual(roomOf(window).state.editors.get(grace.playerId)?.role, 'admin');
+		});
+
+		it('turns away a player who is no longer a server admin when they have no role, and gives one with a role theirs', async () =>
+		{
+			const grace = await logIn('Grace');
+			const alan = await addEditor('Alan', 'builder');
+
+			for (const admin of [grace, alan, ada])
+			{
+				await addServerAdmin(admin.playerId);
+				await turnOnTwoFactor(admin.playerId);
+			}
+
+			const graceWindow = await openEditor(grace, universeId);
+			const alanWindow = await openEditor(alan, universeId);
+			const adaWindow = await openEditor(ada, universeId);
+			const room = roomOf(adaWindow);
+			const left = closeOf(graceWindow);
+
+			assert.strictEqual(room.state.editors.get(alan.playerId)?.role, 'admin');
+			serverAdminChanges.publishLost(grace.playerId);
+			serverAdminChanges.publishLost(alan.playerId);
+			assert.strictEqual(await left, ServerCloseCode.AccessLost);
+			await alanWindow.inbox.take(EditorServerMessageType.AccessChanged);
+			assert.strictEqual(room.state.editors.get(alan.playerId)?.role, 'builder');
+
+			// A creator keeps the role they have without being a server admin, so nothing changes for them
+			serverAdminChanges.publishLost(ada.playerId);
+			await assert.rejects(adaWindow.inbox.take(EditorServerMessageType.AccessChanged, 200));
+			assert.strictEqual(room.state.editors.get(ada.playerId)?.role, 'creator');
+
+			// They edit with their own role from then on, so losing it turns them away
+			const alanLeft = closeOf(alanWindow);
+
+			editorUpdates.publish({
+				kind: 'roles',
+				universeId,
+				roles: new Map([[alan.playerId, undefined]])
+			});
+			assert.strictEqual(await alanLeft, ServerCloseCode.AccessLost);
 		});
 
 		it('tells only the windows of players a stage change changes what they may do for', async () =>

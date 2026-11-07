@@ -12,6 +12,7 @@ import { listUniverseEdits } from '../src/db/universeEditRepo.js';
 import { findUniverseAccess, setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { findDisabledReason, setUniverseDisabled } from '../src/db/universeRepo.js';
 import { connectedSessions } from '../src/players/connectedSessions.js';
+import { serverAdminChanges } from '../src/players/serverAdminChanges.js';
 import { areaChanges, type AreaChange } from '../src/world/areaChanges.js';
 import { addPlayableUniverse, addUniverse } from './db/fixtures.js';
 import { saveChanges } from './editorRequests.js';
@@ -598,38 +599,65 @@ describe('Admin server admin list', () =>
 		assert.deepStrictEqual(await findPlayerAdminEvents(admin.playerId), []);
 	});
 
-	it('removes another admin, or the admin asking, recording who did it', async () =>
+	it('removes another admin, or the admin asking, recording who did it and telling the editor rooms', async () =>
 	{
 		const alan = await addPlayer('Alan Turing');
+		const lost: string[] = [];
+		const stop = serverAdminChanges.onLost((playerId) =>
+		{
+			lost.push(playerId);
+		});
 
-		await addServerAdmin(alan.id);
+		try
+		{
+			await addServerAdmin(alan.id);
 
-		assert.strictEqual((await send('DELETE', `${ADMIN_ADMINS_PATH}/Alan_Turing`, { browser: admin })).status, 204);
-		assert.strictEqual(await isServerAdmin(alan.id), false);
-		assert.deepStrictEqual((await findPlayerAdminEvents(alan.id)).map((event) => [event.kind, event.adminId]), [
-			['adminRemoved', admin.playerId]
-		]);
+			assert.strictEqual((await send('DELETE', `${ADMIN_ADMINS_PATH}/Alan_Turing`, { browser: admin })).status, 204);
+			assert.strictEqual(await isServerAdmin(alan.id), false);
+			assert.deepStrictEqual((await findPlayerAdminEvents(alan.id)).map((event) => [event.kind, event.adminId]), [
+				['adminRemoved', admin.playerId]
+			]);
 
-		await addServerAdmin(alan.id);
+			await addServerAdmin(alan.id);
 
-		assert.strictEqual((await send('DELETE', `${ADMIN_ADMINS_PATH}/Head_Admin`, { browser: admin })).status, 204);
-		assert.strictEqual(await isServerAdmin(admin.playerId), false);
-		assert.strictEqual((await send('GET', ADMIN_ADMINS_PATH, { browser: admin })).status, 403);
+			assert.strictEqual((await send('DELETE', `${ADMIN_ADMINS_PATH}/Head_Admin`, { browser: admin })).status, 204);
+			assert.strictEqual(await isServerAdmin(admin.playerId), false);
+			assert.strictEqual((await send('GET', ADMIN_ADMINS_PATH, { browser: admin })).status, 403);
+			assert.deepStrictEqual(lost, [alan.id, admin.playerId]);
+		}
+		finally
+		{
+			stop();
+		}
 	});
 
 	it('never removes the last admin, and refuses players who aren\'t admins', async () =>
 	{
 		await addPlayer('Grace Hopper');
 
-		const last = await send('DELETE', `${ADMIN_ADMINS_PATH}/Head_Admin`, { browser: admin });
-		const notAdmin = await send('DELETE', `${ADMIN_ADMINS_PATH}/Grace_Hopper`, { browser: admin });
+		const lost: string[] = [];
+		const stop = serverAdminChanges.onLost((playerId) =>
+		{
+			lost.push(playerId);
+		});
 
-		assert.strictEqual(last.status, 409);
-		assert.strictEqual(((await last.json()) as ErrorPayload).error.id, 'error.lastServerAdmin');
-		assert.strictEqual(await isServerAdmin(admin.playerId), true);
-		assert.strictEqual(notAdmin.status, 404);
-		assert.strictEqual((await send('DELETE', `${ADMIN_ADMINS_PATH}/nobody_here`, { browser: admin })).status, 404);
-		assert.deepStrictEqual(await findPlayerAdminEvents(admin.playerId), []);
+		try
+		{
+			const last = await send('DELETE', `${ADMIN_ADMINS_PATH}/Head_Admin`, { browser: admin });
+			const notAdmin = await send('DELETE', `${ADMIN_ADMINS_PATH}/Grace_Hopper`, { browser: admin });
+
+			assert.strictEqual(last.status, 409);
+			assert.strictEqual(((await last.json()) as ErrorPayload).error.id, 'error.lastServerAdmin');
+			assert.strictEqual(await isServerAdmin(admin.playerId), true);
+			assert.strictEqual(notAdmin.status, 404);
+			assert.strictEqual((await send('DELETE', `${ADMIN_ADMINS_PATH}/nobody_here`, { browser: admin })).status, 404);
+			assert.deepStrictEqual(await findPlayerAdminEvents(admin.playerId), []);
+			assert.deepStrictEqual(lost, []);
+		}
+		finally
+		{
+			stop();
+		}
 	});
 
 	it('keeps one admin when two remove each other at once', async () =>

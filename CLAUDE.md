@@ -48,8 +48,8 @@ An engine for making multiplayer browser-based role-playing games.
                      per universe: who has its editor open, the editors' chat, and what each window saves). Every room
                      finds its clients' players from their session cookie in onAuth. The two map rooms share
                      AreaPlayers (movement, areas, who sees whom, area links) and AreaCache
-  src/players/       which login sessions have windows connected, changes to characters and groups, and players who
-                     may no longer play a universe, published to the rooms (in memory; accounts, sessions,
+  src/players/       which login sessions have windows connected, changes to characters and groups, players who
+                     may no longer play a universe, and players who are no longer server admins, published to the rooms (in memory; accounts, sessions,
                      characters, groups and roles are in the database)
   src/world/         changes the world editor makes, published to the rooms playing in that world, what changes
                      for a universe's open editors (roles, disabling), published to its editor room, and which

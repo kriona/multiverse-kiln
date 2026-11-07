@@ -20,6 +20,7 @@ import { hasTwoFactor } from '../db/twoFactorRepo.js';
 import { listUniversesForAdmin, lockUniverse, setUniverseDisabled } from '../db/universeRepo.js';
 import { sessionExpiresAt } from '../logic/sessionLifetimes.js';
 import { connectedSessions } from '../players/connectedSessions.js';
+import { serverAdminChanges } from '../players/serverAdminChanges.js';
 import { areaChanges } from '../world/areaChanges.js';
 import { editorUpdates } from '../world/editorUpdates.js';
 import { refuseWritesFromOtherOrigins } from './editorAccess.js';
@@ -512,8 +513,8 @@ async function addAdmin(request: Request, response: Response): Promise<void>
 }
 
 /**
- * DELETE ADMIN_ADMINS_PATH/:username: takes away a player's server admin role, unless they are the last.
- * An admin may remove themself
+ * DELETE ADMIN_ADMINS_PATH/:username: takes away a player's server admin role, unless they are the last,
+ * and tells the editor rooms they no longer edit with the site admin role. An admin may remove themself
  *
  * @param request The request
  * @param response The response
@@ -537,6 +538,7 @@ async function removeAdmin(request: Request, response: Response): Promise<void>
 	}
 
 	const adminId = adminOf(request).playerId;
+	let removedId: string | undefined;
 	const refusal = await inTransaction(async (transaction): Promise<Refusal | undefined> =>
 	{
 		const player = await findPlayerByUsername(username.data, transaction);
@@ -565,6 +567,7 @@ async function removeAdmin(request: Request, response: Response): Promise<void>
 			playerId: player.id,
 			occurredAt: new Date()
 		}, transaction);
+		removedId = player.id;
 
 		return(undefined);
 	});
@@ -573,6 +576,11 @@ async function removeAdmin(request: Request, response: Response): Promise<void>
 	{
 		sendError(response, refusal.status, refusal.message, refusal.values);
 		return;
+	}
+
+	if (removedId !== undefined)
+	{
+		serverAdminChanges.publishLost(removedId);
 	}
 
 	response.sendStatus(204);

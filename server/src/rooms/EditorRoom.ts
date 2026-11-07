@@ -1,5 +1,5 @@
 import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
-import { editorAccessOf, EditorMessageType, EditorPresence, EditorServerMessageType, EditorState, EditorWindow, NoticeReason, ServerCloseCode, stageChangesEditorAccess, type ChatReadPayload, type EditorRole, type EditorSavedPayload, type NoticePayload, type UniverseRole } from '@multiverse-kiln/shared';
+import { editorAccessOf, EditorMessageType, EditorPresence, EditorServerMessageType, EditorState, EditorWindow, NoticeReason, ServerCloseCode, stageChangesEditorAccess, type ChatReadPayload, type EditorRole, type EditorSavedPayload, type NoticePayload, type UniverseAccess, type UniverseRole } from '@multiverse-kiln/shared';
 
 import { resolveSession } from '../auth/sessions.js';
 import { isActiveServerAdmin } from '../db/serverAdminRepo.js';
@@ -7,6 +7,7 @@ import { findUniverseAccess } from '../db/universeEditorRepo.js';
 import { findUniverse } from '../db/universeRepo.js';
 import { noticeDetails } from '../logic/saveNotices.js';
 import { connectedSessions } from '../players/connectedSessions.js';
+import { serverAdminChanges } from '../players/serverAdminChanges.js';
 import { universeAccessChanges, type StageChange } from '../players/universeAccess.js';
 import { areaChanges } from '../world/areaChanges.js';
 import { editorUpdates, type EditorUpdate, type SavedUpdate } from '../world/editorUpdates.js';
@@ -35,7 +36,7 @@ interface EditorIdentity
 
 	/**
 	 * Whether the player is a server admin with 2FA on, who edits with the site admin role when they have
-	 * no stronger one
+	 * no stronger one: found as the window joins, and turned off when the room hears they no longer are
 	 */
 	serverAdmin: boolean;
 
@@ -78,8 +79,9 @@ function identityOf(client: EditorClient): EditorIdentity
  * messages written while they were away count as new (EditorMessageType.ChatRead)
  *
  * A window whose session ends is turned away (ServerCloseCode.LoggedOut), as are a player's windows when
- * they lose the right to open the editor (ServerCloseCode.AccessLost) and every window when the universe
- * is deleted. A change to a player's role, to the universe's stage or to whether it is disabled tells
+ * they lose the right to open the editor (ServerCloseCode.AccessLost), by losing their role or by no longer
+ * being a server admin with 2FA on, and every window when the universe is deleted. A change to a player's
+ * role, to the universe's stage or to whether it is disabled tells
  * the windows it concerns (EditorServerMessageType.AccessChanged), which load the universe again. Once a
  * save commits, every other window hears of it, with what it changed that the window shows
  * (EditorServerMessageType.Saved)
@@ -117,6 +119,8 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 	private stopFollowingUpdates?: () => void;
 
 	private stopFollowingStage?: () => void;
+
+	private stopFollowingAdmins?: () => void;
 
 	messages = {
 		[EditorMessageType.Place]: (client: EditorClient, payload: unknown) =>
@@ -249,6 +253,11 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 				this.applyStageChange(change);
 			}
 		});
+
+		this.stopFollowingAdmins = serverAdminChanges.onLost((playerId) =>
+		{
+			void this.applyServerAdminLost(playerId);
+		});
 	}
 
 	/**
@@ -260,6 +269,7 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 		this.stopFollowingWorld?.();
 		this.stopFollowingUpdates?.();
 		this.stopFollowingStage?.();
+		this.stopFollowingAdmins?.();
 		await this.saveChat();
 	}
 
@@ -473,7 +483,7 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 	 */
 	private applyRole(playerId: string, role: UniverseRole | undefined): void
 	{
-		const clients = this.clients.filter((client) => (identityOf(client).playerId === playerId));
+		const clients = this.windowsOf(playerId);
 		const presence = this.state.editors.get(playerId);
 
 		if (clients.length === 0)
@@ -524,6 +534,75 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 				client.send(EditorServerMessageType.AccessChanged);
 			}
 		}
+	}
+
+	/**
+	 * Follows a player no longer being a server admin with 2FA on: their windows stop editing with the
+	 * site admin role and take their role in the universe, looked up again, or are turned away when they
+	 * have none. Their windows are also turned away when the lookup fails, rather than keep a role they
+	 * may not have
+	 *
+	 * @param playerId The player's ID
+	 * @return Resolves once their windows have been told, or turned away
+	 */
+	private async applyServerAdminLost(playerId: string): Promise<void>
+	{
+		if (!this.windowsOf(playerId).some((client) => identityOf(client).serverAdmin))
+		{
+			return;
+		}
+
+		// Turned off before the lookup so that a role changed meanwhile is applied without the site admin
+		// role, and again after it for windows that joined meanwhile
+		this.stopServerAdmin(playerId);
+
+		let universeAccess: UniverseAccess | undefined;
+
+		try
+		{
+			universeAccess = await findUniverseAccess(this.universeId, playerId);
+		}
+		catch (error)
+		{
+			console.error('Could not find the role of player', playerId, 'in universe', this.universeId, 'once they were no longer a server admin', error);
+			this.turnAway((identity) => (identity.playerId === playerId), ServerCloseCode.AccessLost);
+			return;
+		}
+
+		this.stopServerAdmin(playerId);
+
+		const access = editorAccessOf(universeAccess, false);
+
+		if (access && (this.state.editors.get(playerId)?.role === access.role))
+		{
+			return;
+		}
+
+		this.applyRole(playerId, universeAccess?.role);
+	}
+
+	/**
+	 * Stops a player's windows editing with the site admin role
+	 *
+	 * @param playerId The player's ID
+	 */
+	private stopServerAdmin(playerId: string): void
+	{
+		for (const client of this.windowsOf(playerId))
+		{
+			identityOf(client).serverAdmin = false;
+		}
+	}
+
+	/**
+	 * A player's windows in the room
+	 *
+	 * @param playerId The player's ID
+	 * @return Their clients
+	 */
+	private windowsOf(playerId: string): EditorClient[]
+	{
+		return(this.clients.filter((client) => (identityOf(client).playerId === playerId)));
 	}
 
 	/**
