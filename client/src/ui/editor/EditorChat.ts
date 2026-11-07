@@ -163,6 +163,16 @@ export class EditorChat
 	}
 
 	/**
+	 * Shows the messages a player wrote without their name, once their account is deleted
+	 *
+	 * @param playerId The player's ID
+	 */
+	forgetAuthor(playerId: string): void
+	{
+		this.chat.forgetAuthor(playerId);
+	}
+
+	/**
 	 * Adds a new message, following it if the chat was scrolled to the bottom. One from someone else
 	 * while the panel is hidden shows in a toast and is read out
 	 *

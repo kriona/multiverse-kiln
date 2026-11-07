@@ -91,7 +91,13 @@ export enum GameServerMessageType
 	/**
 	 * A new message in the group's chat, sent to every window in the room (payload: KeptChatMessage)
 	 */
-	Chat = 'chat'
+	Chat = 'chat',
+
+	/**
+	 * A player who wrote messages in the group's chat deleted their account (payload:
+	 * ChatAuthorDeletedPayload)
+	 */
+	ChatAuthorDeleted = 'chatAuthorDeleted'
 }
 
 /**
@@ -385,6 +391,11 @@ export enum LobbyServerMessageType
 	Chat = 'chat',
 
 	/**
+	 * A player who wrote messages in the chat deleted their account (payload: ChatAuthorDeletedPayload)
+	 */
+	ChatAuthorDeleted = 'chatAuthorDeleted',
+
+	/**
 	 * Which character the player is playing, sent to a window as it joins and to every window of the
 	 * player when it changes (payload: PlayingAsPayload)
 	 */
@@ -481,10 +492,13 @@ export interface AccountPayload
  */
 export interface ChatMessage
 {
-	playerId: string;
+	/**
+	 * The player who sent it, or null once their account is deleted
+	 */
+	playerId: string | null;
 
 	/**
-	 * The sender's name when they sent it: in a lobby, their character's
+	 * The sender's name when they sent it: in a lobby, their character's. Empty once their account is deleted
 	 */
 	name: string;
 
@@ -536,6 +550,16 @@ export interface KeptChatMessage
 	 * When the server received it, in milliseconds since the epoch
 	 */
 	sentAt: number;
+}
+
+/**
+ * Payload of LobbyServerMessageType.ChatAuthorDeleted, GameServerMessageType.ChatAuthorDeleted and
+ * EditorServerMessageType.ChatAuthorDeleted: a player who wrote messages in the chat has deleted their
+ * account, so the window shows those messages without their name
+ */
+export interface ChatAuthorDeletedPayload
+{
+	playerId: string;
 }
 
 /**

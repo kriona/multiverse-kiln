@@ -535,6 +535,16 @@ export class GroupScreen
 	}
 
 	/**
+	 * Shows the chat messages a player wrote without their name, once their account is deleted
+	 *
+	 * @param playerId The player's ID
+	 */
+	forgetChatAuthor(playerId: string): void
+	{
+		this.chat.forgetAuthor(playerId);
+	}
+
+	/**
 	 * Says the player's last chat message was sent too quickly, which the server dropped, and puts it back
 	 * in the field
 	 */

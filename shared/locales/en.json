@@ -880,8 +880,8 @@
 		"description": "Shown instead of the list of the player's characters, in a universe's lobby and on its page, when they haven't made one in the universe"
 	},
 	"chat.deletedAccount": {
-		"defaultMessage": "Deleted account",
-		"description": "In a kept chat (the editors' chat or a group's chat), in place of the name of a player who wrote a message and has since deleted their account"
+		"defaultMessage": "[deleted user]",
+		"description": "In a chat (a universe's lobby, a group's or the editors'), in place of the name of a player who wrote a message and has since deleted their account; the brackets mark it as a stand-in rather than a name"
 	},
 	"chat.tooFast": {
 		"defaultMessage": "You are sending messages too quickly. Wait a moment and try again.",
@@ -1188,8 +1188,8 @@
 		"description": "Heading of the column on the editor's Audit tab listing what each save changed, such as Changed item Dagger, with a line for each setting it changed"
 	},
 	"editor.audit.deletedPlayer": {
-		"defaultMessage": "Deleted account",
-		"description": "In the Player column of the editor's Audit tab, in place of the player who made a save, once they have deleted their account"
+		"defaultMessage": "[deleted user]",
+		"description": "In the Player column of the editor's Audit tab, in place of the player who made a save, once they have deleted their account; the brackets mark it as a stand-in rather than a name"
 	},
 	"editor.audit.detail.area": {
 		"defaultMessage": "{action, select, added {Added area {name}} changed {Changed area {name}} resized {Resized the map of {name}} other {Deleted area {name}}}",

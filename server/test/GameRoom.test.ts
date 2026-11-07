@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { cellIndexInChunk, DARKVISION_SQUARES, DEFAULT_OUTDOOR_WALK_SECONDS, DEFAULT_TILE_CELL,GAME_ROOM_NAME, GameMessageType, GameServerMessageType, GameState, GRID_CELL_SIZE, GROUP_START_SECONDS, MAX_CHAT_MESSAGE_LENGTH, MessageType, NOTHING_BARRED, NoticeReason, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, UNSEEN_CELL, type AreaPayload, type CellsSeenPayload, type GameJoinOptions, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, DARKVISION_SQUARES, DEFAULT_OUTDOOR_WALK_SECONDS, DEFAULT_TILE_CELL,GAME_ROOM_NAME, GameMessageType, GameServerMessageType, GameState, GRID_CELL_SIZE, GROUP_START_SECONDS, MAX_CHAT_MESSAGE_LENGTH, MessageType, NOTHING_BARRED, NoticeReason, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, UNSEEN_CELL, type AreaPayload, type CellsSeenPayload, type ChatAuthorDeletedPayload, type GameJoinOptions, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { listChatMessages } from '../src/db/chatRepo.js';
 import { createCharacter, scheduleCharacterDeletion } from '../src/db/characterRepo.js';
@@ -16,6 +16,7 @@ import { setUniverseDisabled, updateUniverseSettings } from '../src/db/universeR
 import { liveVersion } from '../src/db/universeVersions.js';
 import { cellCenter } from '../src/logic/movement.js';
 import { SeenCells } from '../src/logic/seenCells.js';
+import { accountDeletions } from '../src/players/accountDeletions.js';
 import { characterChanges } from '../src/players/characterChanges.js';
 import { connectedSessions } from '../src/players/connectedSessions.js';
 import { groupChanges } from '../src/players/groupChanges.js';
@@ -241,7 +242,7 @@ async function joinAs(room: GameRoom, browserId: string, member: Member): Promis
 		client.onMessage(ServerMessageType.Area, resolve);
 	});
 	const cellsSeen = new Map<string, number>();
-	const chat = new Inbox<GameServerMessageType>(client, [GameServerMessageType.ChatHistory, GameServerMessageType.Chat]);
+	const chat = new Inbox<GameServerMessageType>(client, [GameServerMessageType.ChatHistory, GameServerMessageType.Chat, GameServerMessageType.ChatAuthorDeleted]);
 
 	client.onMessage(GameServerMessageType.CellsSeen, (payload: CellsSeenPayload) =>
 	{
@@ -1017,6 +1018,27 @@ describe('GameRoom', () =>
 			const history = (await later.chat.take<KeptChatHistoryPayload>(GameServerMessageType.ChatHistory)).messages;
 
 			assert.deepStrictEqual(history.map((message) => [message.name, message.text]), [['Ada', 'Which way to the tower?'], ['Byron', 'North']]);
+		});
+
+		it('takes a deleted account\'s name off its messages, telling the windows and those joining later', async () =>
+		{
+			const room = await createGameRoom();
+			const ada = await addPlayerWithCharacter('Ada');
+
+			await joinGroup(ada);
+
+			const adaWindow = await joinAs(room, browserIdA, ada);
+			const other = await joinFromBrowser(room, browserIdB, 'Cleo');
+
+			adaWindow.client.send(GameMessageType.Chat, { text: 'Off I go' });
+			await other.chat.take<KeptChatMessage>(GameServerMessageType.Chat);
+			accountDeletions.publish(ada.playerId);
+			assert.deepStrictEqual(await other.chat.take<ChatAuthorDeletedPayload>(GameServerMessageType.ChatAuthorDeleted), { playerId: ada.playerId });
+
+			const later = await joinFromBrowser(room, browserIdB);
+			const history = (await later.chat.take<KeptChatHistoryPayload>(GameServerMessageType.ChatHistory)).messages;
+
+			assert.deepStrictEqual(history.map((message) => [message.playerId, message.name, message.text]), [[null, '', 'Off I go']]);
 		});
 
 		it('drops messages that are empty, too long or hold disallowed characters, and tells a player sending too fast', async () =>

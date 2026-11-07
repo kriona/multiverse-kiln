@@ -1,5 +1,5 @@
 import { CloseCode } from '@colyseus/sdk';
-import { EditorMessageType, EditorServerMessageType, NoticeReason, ServerCloseCode, SessionServerMessageType, type AccountPayload, type ChatPayload, type ChatReadPayload, type EditorPlacePayload, type EditorSavedPayload, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type UniverseVersionName } from '@multiverse-kiln/shared';
+import { EditorMessageType, EditorServerMessageType, NoticeReason, ServerCloseCode, SessionServerMessageType, type AccountPayload, type ChatAuthorDeletedPayload, type ChatPayload, type ChatReadPayload, type EditorPlacePayload, type EditorSavedPayload, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type UniverseVersionName } from '@multiverse-kiln/shared';
 
 import { t } from './localization';
 import { EditorApi } from './network/editorApi';
@@ -248,6 +248,11 @@ export class EditorPage
 		room.onMessage(EditorServerMessageType.Chat, (message: KeptChatMessage) =>
 		{
 			chat.addMessage(message);
+		});
+
+		room.onMessage(EditorServerMessageType.ChatAuthorDeleted, (deleted: ChatAuthorDeletedPayload) =>
+		{
+			chat.forgetAuthor(deleted.playerId);
 		});
 
 		room.onMessage(EditorServerMessageType.Notice, (notice: NoticePayload) =>

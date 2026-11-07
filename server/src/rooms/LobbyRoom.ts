@@ -1,5 +1,5 @@
 import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
-import { canPlayUniverse, characterBar, LobbyMember, LobbyMessageType, LobbyServerMessageType, LobbyState, MessageType, NOTHING_BARRED, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, ServerCloseCode, ServerMessageType, type BarredOptions, type ChatHistoryPayload, type ChatMessage, type NoticePayload, type PlayingAsPayload, type Sight } from '@multiverse-kiln/shared';
+import { canPlayUniverse, characterBar, LobbyMember, LobbyMessageType, LobbyServerMessageType, LobbyState, MessageType, NOTHING_BARRED, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, ServerCloseCode, ServerMessageType, type BarredOptions, type ChatAuthorDeletedPayload, type ChatHistoryPayload, type ChatMessage, type NoticePayload, type PlayingAsPayload, type Sight } from '@multiverse-kiln/shared';
 
 import { resolveSession } from '../auth/sessions.js';
 import { loadBarredOptions } from '../db/barredOptions.js';
@@ -8,6 +8,7 @@ import { loadRaceSight } from '../db/raceRepo.js';
 import { findUniverse } from '../db/universeRepo.js';
 import { loadChunksAt, loadArea } from '../db/areaRepo.js';
 import type { Cell } from '../logic/movement.js';
+import { accountDeletions } from '../players/accountDeletions.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { characterChanges, type CharacterChange } from '../players/characterChanges.js';
 import { groupChanges, type GroupChange } from '../players/groupChanges.js';
@@ -131,6 +132,8 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	private stopFollowingStage?: () => void;
 
 	private stopFollowingBarred?: () => void;
+
+	private stopFollowingDeletions?: () => void;
 
 	private stopListingOccupants?: () => void;
 
@@ -350,6 +353,11 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 			this.turnAwaySessions(sessionIds);
 		});
 
+		this.stopFollowingDeletions = accountDeletions.onDeleted((playerId) =>
+		{
+			this.forgetChatAuthor(playerId);
+		});
+
 		this.stopFollowingAccess = universeAccessChanges.onLost((change) =>
 		{
 			if (change.universeId === this.universeId)
@@ -380,7 +388,33 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		this.stopFollowingAccess?.();
 		this.stopFollowingStage?.();
 		this.stopFollowingBarred?.();
+		this.stopFollowingDeletions?.();
 		this.stopListingOccupants?.();
+	}
+
+	/**
+	 * Takes the name off the chat messages a player sent, once their account is deleted, and tells the
+	 * windows to
+	 *
+	 * @param playerId The player's ID
+	 */
+	private forgetChatAuthor(playerId: string): void
+	{
+		if (!this.chatHistory.some((message) => (message.playerId === playerId)))
+		{
+			return;
+		}
+
+		const deleted: ChatAuthorDeletedPayload = { playerId };
+
+		this.chatHistory = this.chatHistory.map((message) => ((message.playerId === playerId)
+			? {
+				...message,
+				playerId: null,
+				name: ''
+			}
+			: message));
+		this.broadcast(LobbyServerMessageType.ChatAuthorDeleted, deleted);
 	}
 
 	/**

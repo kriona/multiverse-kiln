@@ -257,6 +257,39 @@ export class ChatLog
 	}
 
 	/**
+	 * Shows the messages a player wrote without their name, once their account is deleted
+	 *
+	 * @param playerId The player's ID
+	 */
+	forgetAuthor(playerId: string): void
+	{
+		const lines = [...this.log.children];
+
+		this.messages.forEach((message, index) =>
+		{
+			if (message.playerId !== playerId)
+			{
+				return;
+			}
+
+			const line = lines.at(index);
+			const name = line?.querySelector('.chat-name');
+
+			message.playerId = null;
+			line?.classList.remove('chat-own');
+
+			if (name instanceof HTMLElement)
+			{
+				name.textContent = chatAuthorName({
+					playerId: null,
+					name: ''
+				});
+				name.removeAttribute('title');
+			}
+		});
+	}
+
+	/**
 	 * Empties the chat
 	 */
 	clear(): void
@@ -406,11 +439,11 @@ export class ChatLog
  * @param message The message
  * @return Their name, or a stand-in once their account is deleted
  */
-export function chatAuthorName(message: ChatLine): string
+export function chatAuthorName(message: Pick<ChatLine, 'playerId' | 'name'>): string
 {
 	return(((message.playerId === null) ? t({
 		id: 'chat.deletedAccount',
-		defaultMessage: 'Deleted account',
-		description: 'In a kept chat (the editors\' chat or a group\'s chat), in place of the name of a player who wrote a message and has since deleted their account'
+		defaultMessage: '[deleted user]',
+		description: 'In a chat (a universe\'s lobby, a group\'s or the editors\'), in place of the name of a player who wrote a message and has since deleted their account; the brackets mark it as a stand-in rather than a name'
 	}) : message.name));
 }

@@ -880,8 +880,8 @@
 		"source": "You haven't made a character in this universe yet."
 	},
 	"chat.deletedAccount": {
-		"message": "Scuttled account",
-		"source": "Deleted account"
+		"message": "[scuttled sailor]",
+		"source": "[deleted user]"
 	},
 	"chat.tooFast": {
 		"message": "Ye be squawkin' too fast. Wait a moment and try again.",
@@ -1188,8 +1188,8 @@
 		"source": "Changes"
 	},
 	"editor.audit.deletedPlayer": {
-		"message": "Scuttled account",
-		"source": "Deleted account"
+		"message": "[scuttled sailor]",
+		"source": "[deleted user]"
 	},
 	"editor.audit.detail.area": {
 		"message": "{action, select, added {Charted new area {name}} changed {Altered area {name}} resized {Stretched the chart o' {name}} other {Scuttled area {name}}}",

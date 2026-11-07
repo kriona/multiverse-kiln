@@ -1,5 +1,5 @@
 import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
-import { canViewUniverse, cellIndexInChunk, characterBar, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, GameMessageType, GameServerMessageType, GameState, GroupMember, MessageType, NOTHING_BARRED, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, ServerCloseCode, ServerMessageType, visibleCells, type BarredOptions, type CellsSeenPayload, type CellValue, type NoticePayload, type Sight, type StartingCell } from '@multiverse-kiln/shared';
+import { canViewUniverse, cellIndexInChunk, characterBar, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, GameMessageType, GameServerMessageType, GameState, GroupMember, MessageType, NOTHING_BARRED, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, ServerCloseCode, ServerMessageType, visibleCells, type BarredOptions, type CellsSeenPayload, type ChatAuthorDeletedPayload, type CellValue, type NoticePayload, type Sight, type StartingCell } from '@multiverse-kiln/shared';
 
 import { resolveSession } from '../auth/sessions.js';
 import { loadBarredOptions } from '../db/barredOptions.js';
@@ -12,6 +12,7 @@ import { startingCellOn } from '../logic/startingArea.js';
 import { loadRaceSight } from '../db/raceRepo.js';
 import { findUniverse } from '../db/universeRepo.js';
 import { loadChunksAt, loadArea } from '../db/areaRepo.js';
+import { accountDeletions } from '../players/accountDeletions.js';
 import { characterChanges, type CharacterChange } from '../players/characterChanges.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { groupChanges, type GroupChange } from '../players/groupChanges.js';
@@ -373,6 +374,15 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			groupChanges.onChange((change) =>
 			{
 				this.applyGroupChange(change);
+			}),
+			accountDeletions.onDeleted((playerId) =>
+			{
+				if (this.chat.forgetAuthor(playerId))
+				{
+					const deleted: ChatAuthorDeletedPayload = { playerId };
+
+					this.broadcast(GameServerMessageType.ChatAuthorDeleted, deleted);
+				}
 			}),
 			characterChanges.onChange((change) =>
 			{

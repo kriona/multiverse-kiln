@@ -389,6 +389,16 @@ export class LobbyScreen
 	}
 
 	/**
+	 * Shows the chat messages a player sent without their name, once their account is deleted
+	 *
+	 * @param playerId The player's ID
+	 */
+	forgetChatAuthor(playerId: string): void
+	{
+		this.chat.forgetAuthor(playerId);
+	}
+
+	/**
 	 * Shows a message above the lobby until the player does something else
 	 *
 	 * @param message Text to show

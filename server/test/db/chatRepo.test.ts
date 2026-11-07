@@ -80,6 +80,28 @@ describe('chatRepo', () =>
 		assert.deepStrictEqual((await listChatMessages({ kind: 'editors', universeId })).map(({ playerId, name, username, text }) => [playerId, name, username, text]), [[null, '', null, 'Still here']]);
 	});
 
+	it('adds the messages of a writer whose account is gone without their name, keeping the others\'', async () =>
+	{
+		const universeId = await addUniverse();
+		const ada = await addPlayer('Ada');
+		const grace = await addPlayer('Grace');
+		const group: KeptChat = { kind: 'group', universeId, groupId: await addGroup(universeId, await addCharacter(grace.id, universeId, 'Brokk'), null) };
+		const messages = [
+			...messagesOf(grace.id, ['Before'], 'Brokk'),
+			...messagesOf(ada.id, ['Gone'], 'Thora'),
+			...messagesOf(grace.id, ['After'], 'Brokk')
+		];
+
+		await deletePlayer(ada.id);
+
+		assert.strictEqual(await addChatMessages(group, messages), true);
+		assert.deepStrictEqual((await listChatMessages(group)).map(({ playerId, name, text }) => [playerId, name, text]), [
+			[grace.id, 'Brokk', 'Before'],
+			[null, '', 'Gone'],
+			[grace.id, 'Brokk', 'After']
+		]);
+	});
+
 	it('adds nothing to a universe that is gone, and goes with its universe', async () =>
 	{
 		const universeId = await addUniverse();

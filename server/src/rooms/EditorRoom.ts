@@ -1,11 +1,12 @@
 import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
-import { editorAccessOf, EditorMessageType, EditorPresence, EditorServerMessageType, EditorState, EditorWindow, NoticeReason, ServerCloseCode, stageChangesEditorAccess, type ChatReadPayload, type EditorRole, type EditorSavedPayload, type NoticePayload, type UniverseAccess, type UniverseRole } from '@multiverse-kiln/shared';
+import { editorAccessOf, EditorMessageType, EditorPresence, EditorServerMessageType, EditorState, EditorWindow, NoticeReason, ServerCloseCode, stageChangesEditorAccess, type ChatAuthorDeletedPayload, type ChatReadPayload, type EditorRole, type EditorSavedPayload, type NoticePayload, type UniverseAccess, type UniverseRole } from '@multiverse-kiln/shared';
 
 import { resolveSession } from '../auth/sessions.js';
 import { isActiveServerAdmin } from '../db/serverAdminRepo.js';
 import { findUniverseAccess } from '../db/universeEditorRepo.js';
 import { findUniverse } from '../db/universeRepo.js';
 import { noticeDetails } from '../logic/saveNotices.js';
+import { accountDeletions } from '../players/accountDeletions.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { serverAdminChanges } from '../players/serverAdminChanges.js';
 import { universeAccessChanges, type StageChange } from '../players/universeAccess.js';
@@ -123,6 +124,8 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 
 	private stopFollowingAdmins?: () => void;
 
+	private stopFollowingDeletions?: () => void;
+
 	messages = {
 		[EditorMessageType.Place]: (client: EditorClient, payload: unknown) =>
 		{
@@ -204,7 +207,7 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 
 	/**
 	 * Loads the editors' chat and starts writing its new messages, and starts following changes to
-	 * sessions, roles and the universe. Fails for a universe that doesn't exist, which turns away the
+	 * sessions, roles and the universe, and deleted accounts, whose names the chat drops. Fails for a universe that doesn't exist, which turns away the
 	 * client asking for it
 	 *
 	 * @param options The universe, from the first client's EditorJoinOptions
@@ -259,6 +262,16 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 		{
 			void this.applyServerAdminLost(playerId);
 		});
+
+		this.stopFollowingDeletions = accountDeletions.onDeleted((playerId) =>
+		{
+			if (this.chat.forgetAuthor(playerId))
+			{
+				const deleted: ChatAuthorDeletedPayload = { playerId };
+
+				this.broadcast(EditorServerMessageType.ChatAuthorDeleted, deleted);
+			}
+		});
 	}
 
 	/**
@@ -271,6 +284,7 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 		this.stopFollowingUpdates?.();
 		this.stopFollowingStage?.();
 		this.stopFollowingAdmins?.();
+		this.stopFollowingDeletions?.();
 		await this.saveChat();
 	}
 

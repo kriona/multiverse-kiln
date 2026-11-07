@@ -1,5 +1,5 @@
 import { Callbacks, CloseCode } from '@colyseus/sdk';
-import { GameMessageType, GameServerMessageType, INVITE_QUERY_PARAMETER, LobbyMessageType, LobbyServerMessageType, NoticeReason, ServerCloseCode, SessionServerMessageType, type AccountPayload, type AccountPlayer, type CharacterListPayload, type CharacterSummary, type ChatHistoryPayload, type ChatMessage, type ChatPayload, type ChooseCharacterPayload, type ControlPayload, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type PlayingAsPayload, type UniverseSummary } from '@multiverse-kiln/shared';
+import { GameMessageType, GameServerMessageType, INVITE_QUERY_PARAMETER, LobbyMessageType, LobbyServerMessageType, NoticeReason, ServerCloseCode, SessionServerMessageType, type AccountPayload, type AccountPlayer, type CharacterListPayload, type CharacterSummary, type ChatAuthorDeletedPayload, type ChatHistoryPayload, type ChatMessage, type ChatPayload, type ChooseCharacterPayload, type ControlPayload, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type PlayingAsPayload, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { t } from './localization';
 import { CharacterApi } from './network/characterApi';
@@ -902,6 +902,11 @@ export class GamePage
 			this.lobbyScreen.addChatMessage(message);
 		});
 
+		room.onMessage(LobbyServerMessageType.ChatAuthorDeleted, (deleted: ChatAuthorDeletedPayload) =>
+		{
+			this.lobbyScreen.forgetChatAuthor(deleted.playerId);
+		});
+
 		// The lobby starts a player as their most recent character there; a window that came to play
 		// another asks for them. A character the screen doesn't list was made in another window since the list loaded
 		room.onMessage(LobbyServerMessageType.PlayingAs, (playingAs: PlayingAsPayload) =>
@@ -1112,6 +1117,11 @@ export class GamePage
 		connection.room.onMessage(GameServerMessageType.Chat, (message: KeptChatMessage) =>
 		{
 			this.groupScreen.addChatMessage(message);
+		});
+
+		connection.room.onMessage(GameServerMessageType.ChatAuthorDeleted, (deleted: ChatAuthorDeletedPayload) =>
+		{
+			this.groupScreen.forgetChatAuthor(deleted.playerId);
 		});
 
 		connection.room.onLeave((code: number) =>

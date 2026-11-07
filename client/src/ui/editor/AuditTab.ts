@@ -206,8 +206,8 @@ function createRow(edit: UniverseEdit, ruleset: Ruleset): HTMLTableRowElement
 		player = document.createElement('td');
 		player.textContent = t({
 			id: 'editor.audit.deletedPlayer',
-			defaultMessage: 'Deleted account',
-			description: 'In the Player column of the editor\'s Audit tab, in place of the player who made a save, once they have deleted their account'
+			defaultMessage: '[deleted user]',
+			description: 'In the Player column of the editor\'s Audit tab, in place of the player who made a save, once they have deleted their account; the brackets mark it as a stand-in rather than a name'
 		});
 	}
 	else

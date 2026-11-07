@@ -3,12 +3,14 @@ import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { EDITOR_ROOM_NAME, EditorMessageType, EditorServerMessageType, EditorState, MAX_CHAT_MESSAGE_LENGTH, NoticeReason, ServerCloseCode, VOID_CELL, type ChatReadPayload, type EditorJoinOptions, type EditorPlacePayload, type EditorSavedPayload, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type RaceListPayload, type UniverseRole } from '@multiverse-kiln/shared';
+import { EDITOR_ROOM_NAME, EditorMessageType, EditorServerMessageType, EditorState, MAX_CHAT_MESSAGE_LENGTH, NoticeReason, ServerCloseCode, VOID_CELL, type ChatAuthorDeletedPayload, type ChatReadPayload, type EditorJoinOptions, type EditorPlacePayload, type EditorSavedPayload, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type RaceListPayload, type UniverseRole } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { findChatRead, listChatMessages } from '../src/db/chatRepo.js';
+import { deletePlayer } from '../src/db/playerRepo.js';
 import { addServerAdmin } from '../src/db/serverAdminRepo.js';
 import { listUniverseEdits } from '../src/db/universeEditRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
+import { accountDeletions } from '../src/players/accountDeletions.js';
 import { connectedSessions } from '../src/players/connectedSessions.js';
 import { serverAdminChanges } from '../src/players/serverAdminChanges.js';
 import { universeAccessChanges } from '../src/players/universeAccess.js';
@@ -285,6 +287,30 @@ describe('EditorRoom', () =>
 			const [kept] = (await reopened.inbox.take<KeptChatHistoryPayload>(EditorServerMessageType.ChatHistory)).messages;
 
 			assert.deepStrictEqual([kept.playerId, kept.name, kept.username, kept.text], [ada.playerId, 'Ada', usernameFor('Ada'), 'Saved for later']);
+		});
+
+		it('takes a deleted account\'s name off its messages, telling the windows, and still writes them with the others\'', async () =>
+		{
+			const grace = await addEditor('Grace', 'builder');
+			const adaWindow = await openEditor(ada, universeId);
+			const graceWindow = await openEditor(grace, universeId);
+
+			graceWindow.room.send(EditorMessageType.Chat, { text: 'Leaving soon' });
+			await adaWindow.inbox.take<KeptChatMessage>(EditorServerMessageType.Chat);
+			adaWindow.room.send(EditorMessageType.Chat, { text: 'Goodbye' });
+			await adaWindow.inbox.take<KeptChatMessage>(EditorServerMessageType.Chat);
+			await graceWindow.room.leave();
+			await deletePlayer(grace.playerId);
+			accountDeletions.publish(grace.playerId);
+
+			assert.deepStrictEqual(await adaWindow.inbox.take<ChatAuthorDeletedPayload>(EditorServerMessageType.ChatAuthorDeleted), { playerId: grace.playerId });
+
+			const later = await openEditor(ada, universeId);
+			const expected = [[null, '', null, 'Leaving soon'], [ada.playerId, 'Ada', usernameFor('Ada'), 'Goodbye']];
+
+			assert.deepStrictEqual((await later.inbox.take<KeptChatHistoryPayload>(EditorServerMessageType.ChatHistory)).messages.map(({ playerId, name, username, text }) => [playerId, name, username, text]), expected);
+			await roomOf(adaWindow).saveChat();
+			assert.deepStrictEqual((await listChatMessages({ kind: 'editors', universeId })).map(({ playerId, name, username, text }) => [playerId, name, username, text]), expected);
 		});
 
 		it('writes new messages every few seconds while the room is open', async () =>

@@ -62,6 +62,11 @@ export enum EditorServerMessageType
 	Chat = 'chat',
 
 	/**
+	 * A player who wrote messages in the chat deleted their account (payload: ChatAuthorDeletedPayload)
+	 */
+	ChatAuthorDeleted = 'chatAuthorDeleted',
+
+	/**
 	 * The player has seen the editors' chat up to a message in another of their windows, which counts
 	 * the messages before it as read too (payload: ChatReadPayload)
 	 */

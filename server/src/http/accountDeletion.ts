@@ -23,6 +23,7 @@ import { listOtherUniverseEditors, listSoleCreatedUniverses, setUniverseRole } f
 import { deleteUniverse, lockUniverse } from '../db/universeRepo.js';
 import { accountDeletedEmail } from '../email/authEmails.js';
 import { sendEmailInBackground } from '../email/mailer.js';
+import { accountDeletions } from '../players/accountDeletions.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { accountDeletionChanges, groupChanges, type GroupChange } from '../players/groupChanges.js';
 import { deleteObject } from '../storage/objectStorage.js';
@@ -182,6 +183,7 @@ async function deleteAccountRoute(request: Request, response: Response): Promise
 	clearCookie(response, CONTINUATION_COOKIE);
 	response.sendStatus(204);
 	connectedSessions.end(outcome.sessionIds);
+	accountDeletions.publish(playerId);
 
 	for (const universeId of outcome.deletedUniverseIds)
 	{

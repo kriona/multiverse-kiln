@@ -26,7 +26,10 @@ export type KeptChat =
  */
 export interface NewChatMessage
 {
-	playerId: string;
+	/**
+	 * Who wrote it, or null once their account is deleted
+	 */
+	playerId: string | null;
 
 	/**
 	 * In a group's chat, the name of the character who wrote it; null in the editors' chat
@@ -137,11 +140,13 @@ function isForeignKeyViolation(error: unknown): boolean
 }
 
 /**
- * Adds messages to a chat, in the order given, and deletes the oldest past MAX_KEPT_CHAT_MESSAGES
+ * Adds messages to a chat, in the order given, and deletes the oldest past MAX_KEPT_CHAT_MESSAGES. A
+ * message whose writer's account is gone is added without its writer, as forgetChatAuthor() leaves the
+ * messages kept already
  *
  * @param chat The chat
  * @param messages The messages
- * @return False when the chat's universe or group, or a writer's account, is gone, and nothing was added
+ * @return False when the chat's universe or group is gone, and nothing was added
  */
 export async function addChatMessages(chat: KeptChat, messages: readonly NewChatMessage[]): Promise<boolean>
 {
@@ -153,6 +158,33 @@ export async function addChatMessages(chat: KeptChat, messages: readonly NewChat
 	try
 	{
 		await saveChatMessages(chat, messages);
+		return(true);
+	}
+	catch (error)
+	{
+		if (!isForeignKeyViolation(error))
+		{
+			throw error;
+		}
+	}
+
+	const writers = await listExistingPlayers(messages.flatMap((message) => ((message.playerId === null) ? [] : [message.playerId])));
+	const kept = messages.map((message) => (((message.playerId === null) || writers.has(message.playerId))
+		? message
+		: {
+			...message,
+			playerId: null,
+			authorName: null
+		}));
+
+	if (kept.every((message, index) => (message === messages[index])))
+	{
+		return(false);
+	}
+
+	try
+	{
+		await saveChatMessages(chat, kept);
 	}
 	catch (error)
 	{
@@ -165,6 +197,27 @@ export async function addChatMessages(chat: KeptChat, messages: readonly NewChat
 	}
 
 	return(true);
+}
+
+/**
+ * Which of some players' accounts still exist
+ *
+ * @param playerIds The players' IDs
+ * @return The IDs of those that do
+ */
+async function listExistingPlayers(playerIds: readonly string[]): Promise<Set<string>>
+{
+	if (playerIds.length === 0)
+	{
+		return(new Set());
+	}
+
+	const rows = await db
+		.select({ id: players.id })
+		.from(players)
+		.where(inArray(players.id, [...new Set(playerIds)]));
+
+	return(new Set(rows.map((row) => row.id)));
 }
 
 /**

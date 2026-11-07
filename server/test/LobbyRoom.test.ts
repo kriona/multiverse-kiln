@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { cellIndexInChunk, chunkCoordinate, chunkKey, DARKVISION_SQUARES, GRID_CELL_SIZE, LOBBY_ROOM_NAME, LobbyMessageType, LobbyServerMessageType, LobbyState, MAX_CHAT_MESSAGE_LENGTH, MessageType, NOTHING_BARRED, NoticeReason, ServerCloseCode, ServerMessageType, type ChatHistoryPayload, type ChatMessage, type ChunksPayload, type LobbyJoinOptions, type NoticePayload, type Player, type PlayingAsPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, chunkCoordinate, chunkKey, DARKVISION_SQUARES, GRID_CELL_SIZE, LOBBY_ROOM_NAME, LobbyMessageType, LobbyServerMessageType, LobbyState, MAX_CHAT_MESSAGE_LENGTH, MessageType, NOTHING_BARRED, NoticeReason, ServerCloseCode, ServerMessageType, type ChatAuthorDeletedPayload, type ChatHistoryPayload, type ChatMessage, type ChunksPayload, type LobbyJoinOptions, type NoticePayload, type Player, type PlayingAsPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { listPlayableCharacters } from '../src/db/characterRepo.js';
 import { pool } from '../src/db/client.js';
@@ -12,6 +12,7 @@ import { inTransaction } from '../src/db/transactions.js';
 import { createUniverse, setUniverseAreas, setUniverseDisabled, updateUniverseSettings } from '../src/db/universeRepo.js';
 import { deleteArea, editCells, resizeArea, updateAreaSettings } from '../src/db/areaRepo.js';
 import { cellCenter } from '../src/logic/movement.js';
+import { accountDeletions } from '../src/players/accountDeletions.js';
 import { characterChanges } from '../src/players/characterChanges.js';
 import { connectedSessions } from '../src/players/connectedSessions.js';
 import { groupChanges } from '../src/players/groupChanges.js';
@@ -576,6 +577,35 @@ describe('LobbyRoom', () =>
 			assert.strictEqual(history.messages.length, CHAT_HISTORY_LENGTH);
 			assert.strictEqual(history.messages[0].text, `message ${sent - CHAT_HISTORY_LENGTH + 1}`);
 			assert.strictEqual(history.messages[CHAT_HISTORY_LENGTH - 1].text, `message ${sent}`);
+		});
+
+		it('takes a deleted account\'s name off its messages, telling the windows and those joining later', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
+
+			ada.room.send(LobbyMessageType.Chat, { text: 'Off I go' });
+
+			const { playerId } = await grace.inbox.take<ChatMessage>(LobbyServerMessageType.Chat);
+
+			grace.room.send(LobbyMessageType.Chat, { text: 'Farewell' });
+			await grace.inbox.take<ChatMessage>(LobbyServerMessageType.Chat);
+
+			if (playerId === null)
+			{
+				assert.fail('The message has no writer');
+			}
+
+			accountDeletions.publish(playerId);
+			assert.deepStrictEqual(await grace.inbox.take<ChatAuthorDeletedPayload>(LobbyServerMessageType.ChatAuthorDeleted), { playerId });
+
+			const late = await joinAsNewPlayer(universe.universeId, 'Late');
+			const history = await late.inbox.take<ChatHistoryPayload>(LobbyServerMessageType.ChatHistory);
+
+			assert.deepStrictEqual(history.messages.slice(-2).map((message) => [(message.playerId === null), message.name, message.text]), [
+				[true, '', 'Off I go'],
+				[false, 'Grace', 'Farewell']
+			]);
 		});
 
 		it('drops messages sent too quickly, and says so', async () =>

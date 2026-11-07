@@ -208,9 +208,47 @@ export class KeptChatLog
 	}
 
 	/**
+	 * Takes the name off the messages a player wrote, held or not yet written, once their account is
+	 * deleted, as the database does with those it keeps (forgetChatAuthor()), and forgets how far they
+	 * have read the chat
+	 *
+	 * @param playerId The player's ID
+	 * @return True when the log held a message of theirs, for the room to tell its windows
+	 */
+	forgetAuthor(playerId: string): boolean
+	{
+		const held = this.messages.some((message) => (message.playerId === playerId));
+
+		if (held)
+		{
+			this.messages = this.messages.map((message) => ((message.playerId === playerId)
+				? {
+					...message,
+					playerId: null,
+					name: '',
+					username: null
+				}
+				: message));
+		}
+
+		this.unsaved = this.unsaved.map((message) => ((message.playerId === playerId)
+			? {
+				...message,
+				playerId: null,
+				authorName: null
+			}
+			: message));
+		this.reads.delete(playerId);
+		this.unsavedReads.delete(playerId);
+
+		return(held);
+	}
+
+	/**
 	 * Writes the new messages, and how far players have read the chat, to the database, after any write
-	 * going on. What can't be written is kept for the next try, unless the chat's universe or group, or
-	 * the writer or reader's account, is gone. A chat that hasn't loaded has nothing to write
+	 * going on. What can't be written is kept for the next try, unless the chat's universe or group is
+	 * gone, or the reader's account; a message whose writer's account is gone is kept without its writer.
+	 * A chat that hasn't loaded has nothing to write
 	 *
 	 * @return Resolves once they are written, or have failed to be
 	 */
@@ -252,7 +290,7 @@ export class KeptChatLog
 		{
 			if (!await addChatMessages(chat, messages))
 			{
-				console.log('Dropped', messages.length, 'messages of', describeChat(chat), 'whose universe, group or writer no longer exists');
+				console.log('Dropped', messages.length, 'messages of', describeChat(chat), 'whose universe or group no longer exists');
 			}
 		}
 		catch (error)
