@@ -17,7 +17,7 @@ An engine for making multiplayer browser-based role-playing games.
 
 ```
 /client          Phaser game (Vite). Uses `@colyseus/sdk` (formerly colyseus.js) to connect to the server.
-                 Fifteen pages, linked without .html (/game): index.html (Home; src/main.ts, src/style.scss),
+                 Sixteen pages, linked without .html (/game): index.html (Home; src/main.ts, src/style.scss),
                  universe.html (a universe's page at /universe/<slug or id>; src/universe.ts, src/universe.scss),
                  game.html (lobby and game at /game/<slug or id>, apart from Home so other pages can be open in
                  other tabs while playing; src/game.ts, src/style.scss), edit.html (the
@@ -26,11 +26,12 @@ An engine for making multiplayer browser-based role-playing games.
                  licenses of what it uses, linked from the footer; src/license.ts, src/license.scss), privacy.html
                  (the privacy policy, linked from the footer; src/privacy.ts, src/privacy.scss),
                  the admin pages for server admins: admin.html (/admin, linking to the tools; src/admin.ts) and the
-                 tools in admin/ (settings.html, sessions.html, players.html, admins.html and universes.html at
-                 /admin/settings, /admin/sessions, /admin/players, /admin/admins and /admin/universes: the site's
-                 settings, its login sessions, its players, its server admins and disabling universes;
-                 src/adminSettings.ts, src/adminSessions.ts, src/adminPlayers.ts, src/adminAdmins.ts,
-                 src/adminUniverses.ts), sharing src/AdminPage.ts and src/admin.scss, login.html (logging
+                 tools in admin/ (settings.html, sessions.html, players.html, admins.html, universes.html and
+                 translations.html at /admin/settings, /admin/sessions, /admin/players, /admin/admins,
+                 /admin/universes and /admin/translations: the site's settings, its login sessions, its players,
+                 its server admins, disabling universes, and translation files of the engine text to make
+                 language files from; src/adminSettings.ts, src/adminSessions.ts, src/adminPlayers.ts,
+                 src/adminAdmins.ts, src/adminUniverses.ts, src/adminTranslations.ts), sharing src/AdminPage.ts and src/admin.scss, login.html (logging
                  in, creating an account and resetting a password, at /login?next=<page to go back to>; src/login.ts,
                  src/LoginPage.ts, src/login.scss) and profile.html (the player's own profile at /profile, and
                  other players' at /player/<username>; src/profile.ts, src/ProfilePage.ts, src/profile.scss). HTML the pages share (the tags every <head> starts with, the logged-in player's name at the end of each toolbar, opening a menu with Edit profile, Site admin for server admins and Log out, Site Admin in the admin tools' toolbars and their refusal notice, status and notice screens,

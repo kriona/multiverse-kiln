@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<!-- include head.html -->
+		<title data-message="admin.translations.title" data-translation-context="The browser tab's title for the admin page where the site's admins export the site's English text for translators and turn a translated file into a language's file, before the game engine's name">Translations</title>
+		<link rel="stylesheet" href="/src/admin.scss" />
+	</head>
+	<body>
+		<main>
+			<section class="admin-page">
+				<header class="toolbar">
+					<!-- include site-name.html -->
+					<!-- include admin-crumb.html -->
+					<h1 data-message="admin.translations.heading" data-translation-context="Heading of the admin page where the site's admins export the site's English text for translators and turn a translated file into a language's file, after a link back to the admin page">Translations</h1>
+					<!-- include account.html -->
+				</header>
+				<div class="admin-body">
+					<!-- include admin-refusal.html -->
+					<p id="admin-loading" class="admin-loading" data-message="page.loading" data-translation-context="Shown while a page or part of one loads, such as the site settings, the choices in Create Character, an area in the editor, or a universe's page">Loading...</p>
+					<div id="admin-content" class="admin-form" hidden>
+						<section class="panel form" aria-labelledby="translation-export-heading">
+							<h2 id="translation-export-heading" data-message="admin.translations.exportHeading" data-translation-context="Heading of the part of the admin page's Translations tool that exports the site's English text as a file for translators">Export</h2>
+							<p id="translation-export-hint" class="hint" data-message="admin.translations.exportHint" data-translation-context="Under the Export heading of the admin page's Translations tool, explaining what exporting does">Export the site's English text as a file for translators, with what the language has translated so far.</p>
+							<label data-message="admin.translations.language" data-translation-context="Label of the field on the admin page's Translations tool for the language to export the site's text for, or to import translations into, as a language tag such as de">
+								Language
+								<input id="translation-language" type="text" list="translation-language-choices" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="35" required aria-describedby="translation-language-hint translation-language-name" />
+							</label>
+							<datalist id="translation-language-choices"></datalist>
+							<p id="translation-language-hint" class="hint" data-message="admin.translations.languageHint" data-translation-context="Under the language field on the admin page's Translations tool. de, pt-BR and en-x-pirate are language tags, which stay as they are">A language tag, such as de, pt-BR or en-x-pirate.</p>
+							<p id="translation-language-name" class="hint" aria-live="polite" hidden></p>
+							<label data-message="editor.translations.fileFormat" data-translation-context="Label of the choice of the format translation files are exported in (and imported in, when the file's name doesn't say), on the editor's Translations tab and on the admin page's Translations tool">
+								File format
+								<select id="translation-format"></select>
+							</label>
+							<p id="translation-export-error" class="form-error" role="alert" hidden></p>
+							<div class="form-buttons">
+								<button id="translation-export" type="button" class="secondary" data-shortcut="Alt+X" aria-describedby="translation-export-hint translation-export-error" data-message="admin.translations.export" data-translation-context="Button on the admin page's Translations tool that downloads the site's English text, with the translations into the language chosen so far, as a file for translators"><!-- icon ph:download-simple -->Export</button>
+							</div>
+						</section>
+						<section class="panel form" aria-labelledby="translation-import-heading">
+							<h2 id="translation-import-heading" data-message="admin.translations.importHeading" data-translation-context="Heading of the part of the admin page's Translations tool that reads a translated file and makes the language's file from it">Import</h2>
+							<p id="translation-import-hint" class="hint" data-message="admin.translations.importHint" data-translation-context="Under the Import heading of the admin page's Translations tool, explaining what importing does. The language file is the file the site's code keeps a language's translations in. The language field and the file format choice are in the Export part above">Import the file translators send back to make the language file, which goes in the site's code. It is read into the language chosen above, or the language the file names when none is chosen, and in the format its name says.</p>
+							<p id="translation-import-error" class="form-error" role="alert" hidden></p>
+							<div class="form-buttons">
+								<button id="translation-import" type="button" class="secondary" data-shortcut="Alt+I" aria-describedby="translation-import-hint translation-import-error" data-message="admin.translations.import" data-translation-context="Button on the admin page's Translations tool that reads a file of translations into the language chosen and makes the language's file from it, to download"><!-- icon ph:upload-simple -->Import</button>
+								<input id="translation-import-file" type="file" accept=".po,.pot,.xlf,.xliff,.csv,.json" hidden />
+							</div>
+						</section>
+						<section id="translation-result" class="panel form" aria-labelledby="translation-result-heading" hidden>
+							<h2 id="translation-result-heading" tabindex="-1" data-message="admin.translations.resultHeading" data-translation-context="Heading of the part of the admin page's Translations tool that shows the language file made from an imported file, and offers to download it">Language file</h2>
+							<p id="translation-result-status" role="status"></p>
+							<p id="translation-result-commit" class="notice"></p>
+							<details id="translation-skipped" hidden>
+								<summary id="translation-skipped-summary"></summary>
+								<ul id="translation-skipped-list" class="translation-skipped-list"></ul>
+							</details>
+							<div class="form-buttons">
+								<button id="translation-download" type="button" data-shortcut="Alt+W" aria-describedby="translation-result-commit" data-message="admin.translations.download" data-translation-context="Button on the admin page's Translations tool that saves the language file made from an imported file to the browser's downloads, to be added to the site's code"><!-- icon ph:download-simple -->Download</button>
+							</div>
+						</section>
+					</div>
+				</div>
+			</section>
+		</main>
+		<!-- include footer.html -->
+		<!-- include accessibility.html -->
+		<script type="module" src="/src/adminTranslations.ts"></script>
+	</body>
+</html>

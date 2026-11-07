@@ -10,25 +10,13 @@
 			<section class="admin-page">
 				<header class="toolbar">
 					<!-- include site-name.html -->
-					<h1 data-message="admin.home.heading" data-translation-context="Heading of the admin page that links to the site admins' tools: the site settings, and the lists of sessions, players, server admins and universes">Site Admin</h1>
+					<h1 data-message="admin.home.heading" data-translation-context="Heading of the admin page that links to the site admins' tools: the site settings, the lists of sessions, players, server admins and universes, and the translation files">Site Admin</h1>
 					<!-- include account.html -->
 				</header>
 				<div class="admin-body">
 					<!-- include admin-refusal.html -->
 					<p id="admin-loading" class="admin-loading" data-message="page.loading" data-translation-context="Shown while a page or part of one loads, such as the site settings, the choices in Create Character, an area in the editor, or a universe's page">Loading...</p>
 					<ul id="admin-content" class="admin-tools" hidden>
-						<li>
-							<a class="panel admin-tool" href="/admin/settings" data-shortcut="Alt+G" aria-describedby="admin-tool-settings-hint">
-								<span class="admin-tool-name" data-message="admin.tools.settings" data-translation-context="Link on the admin page to the site settings, such as whether players can create universes"><!-- icon ph:gear -->Settings</span>
-								<span id="admin-tool-settings-hint" class="hint" data-message="admin.tools.settingsHint" data-translation-context="Under the link to the site settings on the admin page">Creating universes, last rites, the footer's social sites and the privacy policy's contact.</span>
-							</a>
-						</li>
-						<li>
-							<a class="panel admin-tool" href="/admin/sessions" data-shortcut="Alt+O" aria-describedby="admin-tool-sessions-hint">
-								<span class="admin-tool-name" data-message="admin.tools.sessions" data-translation-context="Link on the admin page to the list of login sessions"><!-- icon ph:devices -->Sessions</span>
-								<span id="admin-tool-sessions-hint" class="hint" data-message="admin.tools.sessionsHint" data-translation-context="Under the link to the list of login sessions on the admin page">Every browser logged in to the site, and which are connected now.</span>
-							</a>
-						</li>
 						<li>
 							<a class="panel admin-tool" href="/admin/players" data-shortcut="Alt+P" aria-describedby="admin-tool-players-hint">
 								<span class="admin-tool-name" data-message="admin.tools.players" data-translation-context="Link on the admin page to the list of every player account"><!-- icon ph:users -->Players</span>
@@ -39,6 +27,24 @@
 							<a class="panel admin-tool" href="/admin/admins" data-shortcut="Alt+M" aria-describedby="admin-tool-admins-hint">
 								<span class="admin-tool-name" data-message="admin.tools.admins" data-translation-context="Link on the admin page to the list of the site's server admins"><!-- icon ph:shield-star -->Server Admins</span>
 								<span id="admin-tool-admins-hint" class="hint" data-message="admin.tools.adminsHint" data-translation-context="Under the link to the list of server admins on the admin page">Who can use these pages: add admins and remove them.</span>
+							</a>
+						</li>
+						<li>
+							<a class="panel admin-tool" href="/admin/sessions" data-shortcut="Alt+O" aria-describedby="admin-tool-sessions-hint">
+								<span class="admin-tool-name" data-message="admin.tools.sessions" data-translation-context="Link on the admin page to the list of login sessions"><!-- icon ph:devices -->Sessions</span>
+								<span id="admin-tool-sessions-hint" class="hint" data-message="admin.tools.sessionsHint" data-translation-context="Under the link to the list of login sessions on the admin page">Every browser logged in to the site, and which are connected now.</span>
+							</a>
+						</li>
+						<li>
+							<a class="panel admin-tool" href="/admin/settings" data-shortcut="Alt+G" aria-describedby="admin-tool-settings-hint">
+								<span class="admin-tool-name" data-message="admin.tools.settings" data-translation-context="Link on the admin page to the site settings, such as whether players can create universes"><!-- icon ph:gear -->Settings</span>
+								<span id="admin-tool-settings-hint" class="hint" data-message="admin.tools.settingsHint" data-translation-context="Under the link to the site settings on the admin page">Creating universes, last rites, the footer's social sites and the privacy policy's contact.</span>
+							</a>
+						</li>
+						<li>
+							<a class="panel admin-tool" href="/admin/translations" data-shortcut="Alt+R" aria-describedby="admin-tool-translations-hint">
+								<span class="admin-tool-name" data-message="admin.tools.translations" data-translation-context="Link on the admin page to the tool that exports the site's English text for translators and turns translated files into language files"><!-- icon ph:translate -->Translations</span>
+								<span id="admin-tool-translations-hint" class="hint" data-message="admin.tools.translationsHint" data-translation-context="Under the link to the Translations tool on the admin page. The site's code is where its translations are kept, so a language file has to be added there">Export the site's text for translators, and turn what they translate into a language file for the site's code.</span>
 							</a>
 						</li>
 						<li>

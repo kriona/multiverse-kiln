@@ -467,6 +467,7 @@ export default defineConfig(({ command, mode }) =>
 					adminPlayers: path.resolve(import.meta.dirname, 'admin/players.html'),
 					adminAdmins: path.resolve(import.meta.dirname, 'admin/admins.html'),
 					adminUniverses: path.resolve(import.meta.dirname, 'admin/universes.html'),
+					adminTranslations: path.resolve(import.meta.dirname, 'admin/translations.html'),
 					login: path.resolve(import.meta.dirname, 'login.html'),
 					profile: path.resolve(import.meta.dirname, 'profile.html')
 				}

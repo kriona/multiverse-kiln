@@ -77,6 +77,19 @@ export function availableLocales(): string[]
 }
 
 /**
+ * A language's file in shared/locales, as the build has it
+ *
+ * @param locale The language tag, as its file is named
+ * @return The file, or undefined when there is no translation into the language
+ */
+export async function loadTranslationFile(locale: string): Promise<TranslationFile | undefined>
+{
+	const load = loaders.get(locale);
+
+	return(((load === undefined) ? undefined : load()));
+}
+
+/**
  * Whether the pages can be shown in a language, as it is or in another region's version of it
  *
  * @param locale The language tag, e.g. "de"

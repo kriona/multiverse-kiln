@@ -1,6 +1,7 @@
 // The admin pages: admin.html, which links to the tools, and the tools (admin/settings.html,
-// admin/sessions.html, admin/players.html, admin/admins.html and admin/universes.html): settings for the
-// whole site, its login sessions, its players, its server admins and its universes
+// admin/sessions.html, admin/players.html, admin/admins.html, admin/universes.html and
+// admin/translations.html): settings for the whole site, its login sessions, its players, its server
+// admins, its universes and the translation files of its text
 
 @use 'shared' as *;
 
@@ -153,6 +154,26 @@
 .admin-loading
 {
 	color: $text-faint;
+}
+
+// The Translations tool's language field, about as wide as a long language tag
+#translation-language
+{
+	max-width: 24ch;
+}
+
+// The translations an import skipped, each by its message ID with why
+.translation-skipped-list
+{
+	margin: 8px 0 0;
+	padding-inline-start: 20px;
+	color: $text-muted;
+	overflow-wrap: anywhere;
+
+	li + li
+	{
+		margin-top: 4px;
+	}
 }
 
 // A tool's panel whose parts stand one above the other, such as the Admins page's form and list

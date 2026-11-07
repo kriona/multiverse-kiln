@@ -1,10 +1,11 @@
 import { showAdminRefusal, startAdminPage } from './AdminPage';
+import { currentLocale } from './localization';
 import { describeEditorError } from './network/editorApi';
 import { getElement, showMessage } from './ui/dom';
 
 /**
- * Starts the admin page (admin.html), which links to the admin tools once the server says the player
- * may use them
+ * Starts the admin page (admin.html), which links to the admin tools, in alphabetical order, once the
+ * server says the player may use them
  */
 void startAdminPage(async (api) =>
 {
@@ -34,5 +35,20 @@ void startAdminPage(async (api) =>
 	}
 
 	loading.hidden = true;
+	sortTools(getElement('admin-content', HTMLUListElement));
 	getElement('admin-content', HTMLElement).hidden = false;
 });
+
+/**
+ * Puts the links to the admin tools in alphabetical order by their names in the page's language. The
+ * page lists them in English's order, which a translation's names may not keep
+ *
+ * @param list The list of links
+ */
+function sortTools(list: HTMLUListElement): void
+{
+	const locale = currentLocale();
+	const nameOf = (item: Element): string => (item.querySelector('.admin-tool-name')?.textContent?.trim() ?? '');
+
+	list.append(...[...list.children].sort((first, second) => nameOf(first).localeCompare(nameOf(second), locale)));
+}

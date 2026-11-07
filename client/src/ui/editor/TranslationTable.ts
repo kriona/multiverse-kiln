@@ -1,4 +1,4 @@
-import { canEditWorld, canMarkNoTranslation, canTranslate, defineMessages, DISALLOWED_TEXT_CHARACTERS, isCoin, isValidCoinAbbreviation, languageName, MAX_TRANSLATION_FILE_BYTES, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, readTranslationFile, sourceTextHash, TRANSLATION_FILE_EXTENSIONS, TRANSLATION_FILE_FORMATS, TRANSLATION_FILE_TYPES, TranslationFileError, translationFileFormatOf, UNIVERSE_TEXT_SORT_COLUMNS, universeTextKey, writeTranslationFile, type AuditSubject, type EditableUniverse, type MessageDescriptor, type ReadTranslationFile, type TranslationFileFormat, type UniverseTextListPayload, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
+import { canEditWorld, canMarkNoTranslation, canTranslate, DISALLOWED_TEXT_CHARACTERS, isCoin, isValidCoinAbbreviation, languageName, MAX_TRANSLATION_FILE_BYTES, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, readTranslationFile, sourceTextHash, TRANSLATION_FILE_EXTENSIONS, TRANSLATION_FILE_FORMATS, TRANSLATION_FILE_TYPES, translationFileFormatOf, UNIVERSE_TEXT_SORT_COLUMNS, universeTextKey, writeTranslationFile, type AuditSubject, type EditableUniverse, type ReadTranslationFile, type UniverseTextListPayload, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -6,6 +6,7 @@ import { refreshUnsavedWork, watchUnsavedWork } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { engineCoinName } from '../moneyField';
 import { TableSorter } from '../tableSorter';
+import { describeTooLarge, describeUnreadable, describeWrongLanguage, downloadText, FILE_FORMAT_NAMES } from '../translationFiles';
 import type { EditorSave } from './editorSave';
 import type { FollowsOtherSaves, OtherSave } from './otherSaves';
 import type { SavableTab } from './SaveBar';
@@ -26,32 +27,6 @@ const SHOWN_SOURCE_LENGTH = 200;
  * What a save changes on the table, as the Audit tab names it
  */
 const TEXT_SUBJECTS: ReadonlySet<AuditSubject> = new Set(['translations', 'translatorNotes', 'noTranslation']);
-
-/**
- * Each translation file format's name, in the format choice and in messages about files
- */
-const FILE_FORMAT_NAMES: Record<TranslationFileFormat, MessageDescriptor> = defineMessages({
-	po: {
-		id: 'editor.translations.format.po',
-		defaultMessage: 'Gettext PO (.po)',
-		description: 'A translation file format, in the format choice on the editor\'s Translations tab: Gettext PO, which translation tools such as Poedit and Weblate open. Gettext PO is a name'
-	},
-	xliff: {
-		id: 'editor.translations.format.xliff',
-		defaultMessage: 'XLIFF 2.0 (.xlf)',
-		description: 'A translation file format, in the format choice on the editor\'s Translations tab: XLIFF 2.0, the standard professional translation tools exchange. XLIFF is a name'
-	},
-	csv: {
-		id: 'editor.translations.format.csv',
-		defaultMessage: 'CSV, for spreadsheets (.csv)',
-		description: 'A translation file format, in the format choice on the editor\'s Translations tab: comma-separated values, which spreadsheets open'
-	},
-	json: {
-		id: 'editor.translations.format.json',
-		defaultMessage: 'JSON (.json)',
-		description: 'A translation file format, in the format choice on the editor\'s Translations tab: JSON, for scripts. JSON is a name'
-	}
-});
 
 /**
  * A translation changed on the tab and not saved yet
@@ -854,13 +829,7 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 			language,
 			entries
 		});
-		const url = URL.createObjectURL(new Blob([text], { type: `${TRANSLATION_FILE_TYPES[format]};charset=utf-8` }));
-		const link = document.createElement('a');
-
-		link.href = url;
-		link.download = `${universe.slug}-${language}${TRANSLATION_FILE_EXTENSIONS[format][0]}`;
-		link.click();
-		URL.revokeObjectURL(url);
+		downloadText(text, TRANSLATION_FILE_TYPES[format], `${universe.slug}-${language}${TRANSLATION_FILE_EXTENSIONS[format][0]}`);
 	}
 
 	/**
@@ -890,13 +859,7 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 
 		if (file.size > MAX_TRANSLATION_FILE_BYTES)
 		{
-			showMessage(this.error, t({
-				id: 'editor.translations.importTooLarge',
-				defaultMessage: 'This file is too large for a translation file: translation files are at most {megabytes, number} MB.',
-				description: 'Shown on the editor\'s Translations tab when the file chosen to import is larger than any translation file of a universe could be, so it is probably the wrong file; {megabytes} is the largest size allowed'
-			}, {
-				megabytes: MAX_TRANSLATION_FILE_BYTES / (1024 * 1024)
-			}));
+			showMessage(this.error, describeTooLarge());
 			return;
 		}
 
@@ -909,20 +872,13 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 		}
 		catch (error)
 		{
-			showMessage(this.error, this.describeUnreadable(error, format));
+			showMessage(this.error, describeUnreadable(error, format));
 			return;
 		}
 
 		if ((read.language !== null) && (read.language.toLowerCase() !== language.toLowerCase()))
 		{
-			showMessage(this.error, t({
-				id: 'editor.translations.importWrongLanguage',
-				defaultMessage: 'This file holds translations into {fileLanguage}, not {language}. Choose {fileLanguage} to import it.',
-				description: 'Shown on the editor\'s Translations tab when the translation file imported names a language other than the one chosen; {fileLanguage} and {language} are languages\' names'
-			}, {
-				fileLanguage: languageName(read.language),
-				language: languageName(language)
-			}));
+			showMessage(this.error, describeWrongLanguage(languageName(read.language), languageName(language)));
 			return;
 		}
 
@@ -991,43 +947,6 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 		}, {
 			imported,
 			skipped
-		}));
-	}
-
-	/**
-	 * Why a translation file couldn't be read
-	 *
-	 * @param error What reading it threw
-	 * @param format The format it was read as
-	 * @return The message
-	 */
-	private describeUnreadable(error: unknown, format: TranslationFileFormat): string
-	{
-		const formatName = t(FILE_FORMAT_NAMES[format]);
-
-		if (!(error instanceof TranslationFileError))
-		{
-			console.error('Could not read the translation file:', error);
-		}
-
-		if ((error instanceof TranslationFileError) && (error.line !== null))
-		{
-			return(t({
-				id: 'editor.translations.unreadableLine',
-				defaultMessage: 'This file can\'t be read as {format}: see line {line, number}.',
-				description: 'Shown on the editor\'s Translations tab when an imported translation file isn\'t in the format its name says (or the format chosen); {format} is the format\'s name, such as Gettext PO, and {line} the line with the problem'
-			}, {
-				format: formatName,
-				line: error.line
-			}));
-		}
-
-		return(t({
-			id: 'editor.translations.unreadable',
-			defaultMessage: 'This file can\'t be read as {format}.',
-			description: 'Shown on the editor\'s Translations tab when an imported translation file isn\'t in the format its name says (or the format chosen); {format} is the format\'s name, such as Gettext PO'
-		}, {
-			format: formatName
 		}));
 	}
 

@@ -355,6 +355,14 @@
 		"message": "Launchin' universes, last rites, the social ports at the bottom o' the page and the Articles o' Secrecy's address.",
 		"source": "Creating universes, last rites, the footer's social sites and the privacy policy's contact."
 	},
+	"admin.tools.translations": {
+		"message": "Tongues",
+		"source": "Translations"
+	},
+	"admin.tools.translationsHint": {
+		"message": "Send off the ship's words to the tongue-turners, and make what they bring back into a tongue scroll for the ship's code.",
+		"source": "Export the site's text for translators, and turn what they translate into a language file for the site's code."
+	},
 	"admin.tools.universes": {
 		"message": "Universes",
 		"source": "Universes"
@@ -362,6 +370,122 @@
 	"admin.tools.universesHint": {
 		"message": "Every universe, with who launched it: lay one up, sayin' why, and set it afloat again.",
 		"source": "Every universe, with who created it: disable one, saying why, and enable it again."
+	},
+	"admin.translations.commit": {
+		"message": "Haul {fileName} ashore and lash it into the ship's code as {path}{replacing, select, yes {, in place o' the scroll there} other {}}. The ship speaks the tongue once she be built and set sail with it.",
+		"source": "Download {fileName} and commit it to the site's code as {path}{replacing, select, yes {, replacing the file there} other {}}. The site shows the translation once it is built and deployed with it."
+	},
+	"admin.translations.coverage": {
+		"message": "The tongue scroll turns {translated, number} o' the ship's {total, number} messages, {outdated, plural, =0 {every one o' them shipshape} one {# o' them gone stale} other {# o' them gone stale}}.",
+		"source": "The language file translates {translated, number} of the site's {total, number} messages, {outdated, plural, =0 {all of them up to date} one {# of them out of date} other {# of them out of date}}."
+	},
+	"admin.translations.download": {
+		"message": "Stow Ashore",
+		"source": "Download"
+	},
+	"admin.translations.existingFailed": {
+		"message": "Couldn't haul up the ship's {language} tongue. Reload the page and try again.",
+		"source": "Could not load the site's translation into {language}. Reload the page and try again."
+	},
+	"admin.translations.export": {
+		"message": "Send Off",
+		"source": "Export"
+	},
+	"admin.translations.exportHeading": {
+		"message": "Send Off",
+		"source": "Export"
+	},
+	"admin.translations.exportHint": {
+		"message": "Send off the ship's English as a scroll for the tongue-turners, with what the tongue has turned so far.",
+		"source": "Export the site's English text as a file for translators, with what the language has translated so far."
+	},
+	"admin.translations.hasTranslation": {
+		"message": "{language}: the ship speaks this tongue already, which Send Off carries and Haul In adds to.",
+		"source": "{language}: the site has a translation into it, which Export includes and Import adds to."
+	},
+	"admin.translations.heading": {
+		"message": "Tongues",
+		"source": "Translations"
+	},
+	"admin.translations.import": {
+		"message": "Haul In",
+		"source": "Import"
+	},
+	"admin.translations.importHeading": {
+		"message": "Haul In",
+		"source": "Import"
+	},
+	"admin.translations.importHint": {
+		"message": "Haul in the scroll the tongue-turners send back to make the tongue scroll, which goes in the ship's code. It be read into the tongue picked above, or the tongue the scroll names when none be picked, and in the format its name says.",
+		"source": "Import the file translators send back to make the language file, which goes in the site's code. It is read into the language chosen above, or the language the file names when none is chosen, and in the format its name says."
+	},
+	"admin.translations.imported": {
+		"message": "{imported, plural, =0 {The scroll holds nothin' new.} one {Hauled in # translation.} other {Hauled in # translations.}}",
+		"source": "{imported, plural, =0 {The file has no new translations.} one {Imported # translation.} other {Imported # translations.}}"
+	},
+	"admin.translations.language": {
+		"message": "Tongue",
+		"source": "Language"
+	},
+	"admin.translations.languageEnglish": {
+		"message": "The ship's words be writ in English. Pick the tongue to turn 'em into.",
+		"source": "The site's text is written in English. Choose the language to translate it into."
+	},
+	"admin.translations.languageHint": {
+		"message": "A tongue's tag, such as de, pt-BR or en-x-pirate.",
+		"source": "A language tag, such as de, pt-BR or en-x-pirate."
+	},
+	"admin.translations.languageInvalid": {
+		"message": "Give a tongue's tag, such as de or pt-BR.",
+		"source": "Enter a language tag, such as de or pt-BR."
+	},
+	"admin.translations.languagePseudo": {
+		"message": "{language} be made from the English as the ship sails, so it has no scroll to turn. Pick another tongue.",
+		"source": "{language} is made from the English as the site runs, so it has no file to translate. Choose another language."
+	},
+	"admin.translations.loadFailed": {
+		"message": "Couldn't hoist the Tongues tool. Try again in a moment.",
+		"source": "Could not load the Translations tool. Try again in a moment."
+	},
+	"admin.translations.noTranslation": {
+		"message": "{language}: the ship don't speak this tongue yet.",
+		"source": "{language}: the site has no translation into it yet."
+	},
+	"admin.translations.removed": {
+		"message": "{removed, plural, one {It leaves out # translation o' a message the ship no longer has.} other {It leaves out # translations o' messages the ship no longer has.}}",
+		"source": "{removed, plural, one {It leaves out # translation of a message the site no longer has.} other {It leaves out # translations of messages the site no longer has.}}"
+	},
+	"admin.translations.resultHeading": {
+		"message": "Tongue scroll",
+		"source": "Language file"
+	},
+	"admin.translations.skipped": {
+		"message": "{count, plural, one {Tossed # translation overboard} other {Tossed # translations overboard}}",
+		"source": "{count, plural, one {Skipped # translation} other {Skipped # translations}}"
+	},
+	"admin.translations.skippedArguments": {
+		"message": "{count, plural, =0 {It has arguments or tags, and the English has none.} other {It must carry the same arguments and tags as the English: {names}.}}",
+		"source": "{count, plural, =0 {It has arguments or tags, and the English has none.} other {It must use the same arguments and tags as the English: {names}.}}"
+	},
+	"admin.translations.skippedItem": {
+		"message": "{id}: {reason}",
+		"source": "{id}: {reason}"
+	},
+	"admin.translations.skippedNeedsReview": {
+		"message": "The scroll marks it as needin' a second look.",
+		"source": "The file marks it as needing review."
+	},
+	"admin.translations.skippedUnknown": {
+		"message": "The ship has no message by this ID.",
+		"source": "The site has no message with this ID."
+	},
+	"admin.translations.skippedUnreadable": {
+		"message": "It ain't proper ICU MessageFormat: check its braces.",
+		"source": "It isn't valid ICU MessageFormat: check its braces."
+	},
+	"admin.translations.title": {
+		"message": "Tongues",
+		"source": "Translations"
 	},
 	"admin.turnOnTwoFactor": {
 		"message": "Raise two-factor authentication",

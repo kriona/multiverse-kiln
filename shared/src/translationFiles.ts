@@ -2,7 +2,9 @@
  * Files translators work on outside the editor (see Tab: Translations in STRUCTURE-OVERVIEW.md): one
  * language of a universe's text, written and read as Gettext PO, XLIFF 2.0, CSV or JSON. Each entry is
  * a piece of universe text, named by its key (universeTextKey()), with the source text it was
- * translated from, so a translation made from text that has changed since comes back out of date
+ * translated from, so a translation made from text that has changed since comes back out of date. The
+ * admin page's Translations tool writes and reads the engine's messages in the same files, each named
+ * by its message ID (engineTranslations.ts)
  */
 import { UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, type UniverseTextRef } from './universeText.js';
 
@@ -61,9 +63,10 @@ export interface TranslationFileEntry
 	id: string;
 
 	/**
-	 * Where the text comes from, in the exporting player's language, e.g. "Area: Waterdeep, name"
+	 * Where the text comes from, in the exporting player's language, e.g. "Area: Waterdeep, name", or
+	 * null when the note says
 	 */
-	place: string;
+	place: string | null;
 
 	/**
 	 * The note for translators, or null for none
@@ -84,12 +87,12 @@ export interface TranslationFileEntry
 }
 
 /**
- * What a file holds: one language of a universe's text
+ * What a file holds: one language of a universe's text, or of the engine's
  */
 export interface TranslationFileContents
 {
 	/**
-	 * The universe's name
+	 * The universe's name, or the engine's (SITE_NAME)
 	 */
 	title: string;
 
@@ -306,7 +309,11 @@ function writePo(contents: TranslationFileContents): string
 	for (const entry of contents.entries)
 	{
 		lines.push('');
-		lines.push(`#. ${entry.place}`);
+
+		if (entry.place !== null)
+		{
+			lines.push(`#. ${entry.place}`);
+		}
 
 		for (const noteLine of (entry.note?.split(/\r?\n/) ?? []))
 		{
@@ -494,15 +501,24 @@ function writeXliff(contents: TranslationFileContents): string
 		const translated = ((entry.translation !== null) && !entry.outOfDate);
 
 		lines.push(`\t\t<unit id="${escapeXml(entry.id)}" xml:space="preserve">`);
-		lines.push('\t\t\t<notes>');
-		lines.push(`\t\t\t\t<note category="location">${escapeXml(entry.place)}</note>`);
 
-		if (entry.note !== null)
+		if ((entry.place !== null) || (entry.note !== null))
 		{
-			lines.push(`\t\t\t\t<note category="description">${escapeXml(entry.note)}</note>`);
+			lines.push('\t\t\t<notes>');
+
+			if (entry.place !== null)
+			{
+				lines.push(`\t\t\t\t<note category="location">${escapeXml(entry.place)}</note>`);
+			}
+
+			if (entry.note !== null)
+			{
+				lines.push(`\t\t\t\t<note category="description">${escapeXml(entry.note)}</note>`);
+			}
+
+			lines.push('\t\t\t</notes>');
 		}
 
-		lines.push('\t\t\t</notes>');
 		lines.push(`\t\t\t<segment state="${(translated ? 'translated' : 'initial')}">`);
 		lines.push(`\t\t\t\t<source>${escapeXml(entry.source)}</source>`);
 
@@ -813,7 +829,7 @@ function csvText(field: string): string
  */
 function writeCsv(contents: TranslationFileContents): string
 {
-	const rows = contents.entries.map((entry) => [entry.id, entry.place, (entry.note ?? ''), entry.source, (entry.translation ?? ''), ((entry.outOfDate && (entry.translation !== null)) ? 'yes' : '')]);
+	const rows = contents.entries.map((entry) => [entry.id, (entry.place ?? ''), (entry.note ?? ''), entry.source, (entry.translation ?? ''), ((entry.outOfDate && (entry.translation !== null)) ? 'yes' : '')]);
 
 	return(`${BYTE_ORDER_MARK}${[[...CSV_COLUMNS], ...rows].map((row) => row.map(csvField).join(',')).join('\r\n')}\r\n`);
 }

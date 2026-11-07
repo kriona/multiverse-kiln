@@ -117,7 +117,7 @@
 	},
 	"admin.back": {
 		"defaultMessage": "Site Admin",
-		"description": "In the toolbar of each admin tool (the site settings, and the lists of sessions, players, server admins and universes), between the game engine's name and the tool's heading: links back to the admin page that links to them all"
+		"description": "In the toolbar of each admin tool (the site settings, the lists of sessions, players, server admins and universes, and the translation files), between the game engine's name and the tool's heading: links back to the admin page that links to them all"
 	},
 	"admin.characterDeletionDays": {
 		"defaultMessage": "Days between last rites and deletion",
@@ -149,7 +149,7 @@
 	},
 	"admin.home.heading": {
 		"defaultMessage": "Site Admin",
-		"description": "Heading of the admin page that links to the site admins' tools: the site settings, and the lists of sessions, players, server admins and universes"
+		"description": "Heading of the admin page that links to the site admins' tools: the site settings, the lists of sessions, players, server admins and universes, and the translation files"
 	},
 	"admin.home.loadFailed": {
 		"defaultMessage": "Could not load the admin page. Try again in a moment.",
@@ -355,6 +355,14 @@
 		"defaultMessage": "Creating universes, last rites, the footer's social sites and the privacy policy's contact.",
 		"description": "Under the link to the site settings on the admin page"
 	},
+	"admin.tools.translations": {
+		"defaultMessage": "Translations",
+		"description": "Link on the admin page to the tool that exports the site's English text for translators and turns translated files into language files"
+	},
+	"admin.tools.translationsHint": {
+		"defaultMessage": "Export the site's text for translators, and turn what they translate into a language file for the site's code.",
+		"description": "Under the link to the Translations tool on the admin page. The site's code is where its translations are kept, so a language file has to be added there"
+	},
 	"admin.tools.universes": {
 		"defaultMessage": "Universes",
 		"description": "Link on the admin page to the list of every universe, where admins disable and enable them"
@@ -362,6 +370,122 @@
 	"admin.tools.universesHint": {
 		"defaultMessage": "Every universe, with who created it: disable one, saying why, and enable it again.",
 		"description": "Under the link to the list of universes on the admin page"
+	},
+	"admin.translations.commit": {
+		"defaultMessage": "Download {fileName} and commit it to the site's code as {path}{replacing, select, yes {, replacing the file there} other {}}. The site shows the translation once it is built and deployed with it.",
+		"description": "Shown on the admin page's Translations tool after importing a translation file, above the Download button: the language file only changes the site once it is added to the site's code and the site is built again. {fileName} is the file's name, such as de.json, and {path} where it goes, such as shared/locales/de.json; both stay as they are. {replacing} is yes when the site has a file for the language already"
+	},
+	"admin.translations.coverage": {
+		"defaultMessage": "The language file translates {translated, number} of the site's {total, number} messages, {outdated, plural, =0 {all of them up to date} one {# of them out of date} other {# of them out of date}}.",
+		"description": "Shown on the admin page's Translations tool after importing a translation file, about the language file made from it: {translated} is how many of the site's {total} messages it translates, and {outdated} how many of those were translated from English that has changed since"
+	},
+	"admin.translations.download": {
+		"defaultMessage": "Download",
+		"description": "Button on the admin page's Translations tool that saves the language file made from an imported file to the browser's downloads, to be added to the site's code"
+	},
+	"admin.translations.existingFailed": {
+		"defaultMessage": "Could not load the site's translation into {language}. Reload the page and try again.",
+		"description": "Shown on the admin page's Translations tool when the site's translations into the language chosen couldn't be loaded, to export them or import into them; {language} is the language's name"
+	},
+	"admin.translations.export": {
+		"defaultMessage": "Export",
+		"description": "Button on the admin page's Translations tool that downloads the site's English text, with the translations into the language chosen so far, as a file for translators"
+	},
+	"admin.translations.exportHeading": {
+		"defaultMessage": "Export",
+		"description": "Heading of the part of the admin page's Translations tool that exports the site's English text as a file for translators"
+	},
+	"admin.translations.exportHint": {
+		"defaultMessage": "Export the site's English text as a file for translators, with what the language has translated so far.",
+		"description": "Under the Export heading of the admin page's Translations tool, explaining what exporting does"
+	},
+	"admin.translations.hasTranslation": {
+		"defaultMessage": "{language}: the site has a translation into it, which Export includes and Import adds to.",
+		"description": "Under the language field on the admin page's Translations tool, once it holds a language the site is translated into; {language} is the language's name. Export and Import are the buttons below"
+	},
+	"admin.translations.heading": {
+		"defaultMessage": "Translations",
+		"description": "Heading of the admin page where the site's admins export the site's English text for translators and turn a translated file into a language's file, after a link back to the admin page"
+	},
+	"admin.translations.import": {
+		"defaultMessage": "Import",
+		"description": "Button on the admin page's Translations tool that reads a file of translations into the language chosen and makes the language's file from it, to download"
+	},
+	"admin.translations.importHeading": {
+		"defaultMessage": "Import",
+		"description": "Heading of the part of the admin page's Translations tool that reads a translated file and makes the language's file from it"
+	},
+	"admin.translations.importHint": {
+		"defaultMessage": "Import the file translators send back to make the language file, which goes in the site's code. It is read into the language chosen above, or the language the file names when none is chosen, and in the format its name says.",
+		"description": "Under the Import heading of the admin page's Translations tool, explaining what importing does. The language file is the file the site's code keeps a language's translations in. The language field and the file format choice are in the Export part above"
+	},
+	"admin.translations.imported": {
+		"defaultMessage": "{imported, plural, =0 {The file has no new translations.} one {Imported # translation.} other {Imported # translations.}}",
+		"description": "Shown on the admin page's Translations tool after importing a translation file: {imported} is how many translations it added or changed"
+	},
+	"admin.translations.language": {
+		"defaultMessage": "Language",
+		"description": "Label of the field on the admin page's Translations tool for the language to export the site's text for, or to import translations into, as a language tag such as de"
+	},
+	"admin.translations.languageEnglish": {
+		"defaultMessage": "The site's text is written in English. Choose the language to translate it into.",
+		"description": "Shown under the language field on the admin page's Translations tool when it holds English, the language the site's text is written in"
+	},
+	"admin.translations.languageHint": {
+		"defaultMessage": "A language tag, such as de, pt-BR or en-x-pirate.",
+		"description": "Under the language field on the admin page's Translations tool. de, pt-BR and en-x-pirate are language tags, which stay as they are"
+	},
+	"admin.translations.languageInvalid": {
+		"defaultMessage": "Enter a language tag, such as de or pt-BR.",
+		"description": "Shown under the language field on the admin page's Translations tool when it is empty or doesn't hold a language tag. de and pt-BR are language tags, which stay as they are"
+	},
+	"admin.translations.languagePseudo": {
+		"defaultMessage": "{language} is made from the English as the site runs, so it has no file to translate. Choose another language.",
+		"description": "Shown under the language field on the admin page's Translations tool when it holds the pseudo-language for testing, which is made from the English; {language} is its name"
+	},
+	"admin.translations.loadFailed": {
+		"defaultMessage": "Could not load the Translations tool. Try again in a moment.",
+		"description": "Shown on the admin page's Translations tool when the server couldn't be asked whether the player may use it"
+	},
+	"admin.translations.noTranslation": {
+		"defaultMessage": "{language}: the site has no translation into it yet.",
+		"description": "Under the language field on the admin page's Translations tool, once it holds a language the site isn't translated into; {language} is the language's name"
+	},
+	"admin.translations.removed": {
+		"defaultMessage": "{removed, plural, one {It leaves out # translation of a message the site no longer has.} other {It leaves out # translations of messages the site no longer has.}}",
+		"description": "Shown on the admin page's Translations tool after importing a translation file, when the language's file had translations of messages the site's English doesn't have any more, which the new file leaves out; {removed} is how many"
+	},
+	"admin.translations.resultHeading": {
+		"defaultMessage": "Language file",
+		"description": "Heading of the part of the admin page's Translations tool that shows the language file made from an imported file, and offers to download it"
+	},
+	"admin.translations.skipped": {
+		"defaultMessage": "{count, plural, one {Skipped # translation} other {Skipped # translations}}",
+		"description": "Shown on the admin page's Translations tool after importing a translation file, when some of its translations couldn't be used; opens the list of them with why. {count} is how many"
+	},
+	"admin.translations.skippedArguments": {
+		"defaultMessage": "{count, plural, =0 {It has arguments or tags, and the English has none.} other {It must use the same arguments and tags as the English: {names}.}}",
+		"description": "Why the admin page's Translations tool skipped a translation it imported: its arguments (such as {name}) or tags differ from the English message's. {count} is how many the English has, and {names} lists them, as they stay"
+	},
+	"admin.translations.skippedItem": {
+		"defaultMessage": "{id}: {reason}",
+		"description": "One translation in the list of those an import skipped on the admin page's Translations tool: {id} is the message's ID, which stays as it is, and {reason} why it was skipped"
+	},
+	"admin.translations.skippedNeedsReview": {
+		"defaultMessage": "The file marks it as needing review.",
+		"description": "Why the admin page's Translations tool skipped a translation it imported: the file marks it as still needing review (fuzzy, in a Gettext PO file)"
+	},
+	"admin.translations.skippedUnknown": {
+		"defaultMessage": "The site has no message with this ID.",
+		"description": "Why the admin page's Translations tool skipped a translation it imported: the site's English has no message with its ID, such as one deleted since the file was exported"
+	},
+	"admin.translations.skippedUnreadable": {
+		"defaultMessage": "It isn't valid ICU MessageFormat: check its braces.",
+		"description": "Why the admin page's Translations tool skipped a translation it imported: it can't be read as a message, usually because of a missing or extra brace. ICU MessageFormat is a name"
+	},
+	"admin.translations.title": {
+		"defaultMessage": "Translations",
+		"description": "The browser tab's title for the admin page where the site's admins export the site's English text for translators and turn a translated file into a language's file, before the game engine's name"
 	},
 	"admin.turnOnTwoFactor": {
 		"defaultMessage": "Turn on two-factor authentication",
@@ -3157,7 +3281,7 @@
 	},
 	"editor.translations.fileFormat": {
 		"defaultMessage": "File format",
-		"description": "Label of the choice on the editor's Translations tab of the format translation files are exported in (and imported in, when the file's name doesn't say)"
+		"description": "Label of the choice of the format translation files are exported in (and imported in, when the file's name doesn't say), on the editor's Translations tab and on the admin page's Translations tool"
 	},
 	"editor.translations.filesHint": {
 		"defaultMessage": "Export the text to translate it in another tool, then import it here and save. A translation that was out of date and comes back unchanged stays out of date.",
@@ -3165,19 +3289,19 @@
 	},
 	"editor.translations.format.csv": {
 		"defaultMessage": "CSV, for spreadsheets (.csv)",
-		"description": "A translation file format, in the format choice on the editor's Translations tab: comma-separated values, which spreadsheets open"
+		"description": "A translation file format, in the format choice on the editor's Translations tab and on the admin page's Translations tool: comma-separated values, which spreadsheets open"
 	},
 	"editor.translations.format.json": {
 		"defaultMessage": "JSON (.json)",
-		"description": "A translation file format, in the format choice on the editor's Translations tab: JSON, for scripts. JSON is a name"
+		"description": "A translation file format, in the format choice on the editor's Translations tab and on the admin page's Translations tool: JSON, for scripts. JSON is a name"
 	},
 	"editor.translations.format.po": {
 		"defaultMessage": "Gettext PO (.po)",
-		"description": "A translation file format, in the format choice on the editor's Translations tab: Gettext PO, which translation tools such as Poedit and Weblate open. Gettext PO is a name"
+		"description": "A translation file format, in the format choice on the editor's Translations tab and on the admin page's Translations tool: Gettext PO, which translation tools such as Poedit and Weblate open. Gettext PO is a name"
 	},
 	"editor.translations.format.xliff": {
 		"defaultMessage": "XLIFF 2.0 (.xlf)",
-		"description": "A translation file format, in the format choice on the editor's Translations tab: XLIFF 2.0, the standard professional translation tools exchange. XLIFF is a name"
+		"description": "A translation file format, in the format choice on the editor's Translations tab and on the admin page's Translations tool: XLIFF 2.0, the standard professional translation tools exchange. XLIFF is a name"
 	},
 	"editor.translations.import": {
 		"defaultMessage": "Import",
@@ -3189,11 +3313,11 @@
 	},
 	"editor.translations.importTooLarge": {
 		"defaultMessage": "This file is too large for a translation file: translation files are at most {megabytes, number} MB.",
-		"description": "Shown on the editor's Translations tab when the file chosen to import is larger than any translation file of a universe could be, so it is probably the wrong file; {megabytes} is the largest size allowed"
+		"description": "Shown on the editor's Translations tab and on the admin page's Translations tool when the file chosen to import is larger than any translation file could be, so it is probably the wrong file; {megabytes} is the largest size allowed"
 	},
 	"editor.translations.importWrongLanguage": {
 		"defaultMessage": "This file holds translations into {fileLanguage}, not {language}. Choose {fileLanguage} to import it.",
-		"description": "Shown on the editor's Translations tab when the translation file imported names a language other than the one chosen; {fileLanguage} and {language} are languages' names"
+		"description": "Shown on the editor's Translations tab and on the admin page's Translations tool when the translation file imported names a language other than the one chosen; {fileLanguage} and {language} are languages' names"
 	},
 	"editor.translations.imported": {
 		"defaultMessage": "{imported, plural, =0 {No new translations to import.} one {Imported # translation, to be saved with Save.} other {Imported # translations, to be saved with Save.}} {skipped, plural, =0 {} one {Skipped # that was marked for review, too long, or for text that isn't the universe's any more or needs no translation.} other {Skipped # that were marked for review, too long, or for text that isn't the universe's any more or needs no translation.}}",
@@ -3345,11 +3469,11 @@
 	},
 	"editor.translations.unreadable": {
 		"defaultMessage": "This file can't be read as {format}.",
-		"description": "Shown on the editor's Translations tab when an imported translation file isn't in the format its name says (or the format chosen); {format} is the format's name, such as Gettext PO"
+		"description": "Shown on the editor's Translations tab and on the admin page's Translations tool when an imported translation file isn't in the format its name says (or the format chosen); {format} is the format's name, such as Gettext PO"
 	},
 	"editor.translations.unreadableLine": {
 		"defaultMessage": "This file can't be read as {format}: see line {line, number}.",
-		"description": "Shown on the editor's Translations tab when an imported translation file isn't in the format its name says (or the format chosen); {format} is the format's name, such as Gettext PO, and {line} the line with the problem"
+		"description": "Shown on the editor's Translations tab and on the admin page's Translations tool when an imported translation file isn't in the format its name says (or the format chosen); {format} is the format's name, such as Gettext PO, and {line} the line with the problem"
 	},
 	"editor.universe.longDescription": {
 		"defaultMessage": "Long description (Markdown)",
