@@ -41,6 +41,12 @@ export class EditorApi
 	windowId: string | undefined;
 
 	/**
+	 * The lists several tabs and dialogs read (areas, races and classes), by version and path, each
+	 * loaded once until forgetLists() or a save from this window
+	 */
+	private readonly sharedLists = new Map<string, Promise<unknown>>();
+
+	/**
 	 * @param client Client for the server
 	 */
 	constructor(private readonly client: Client)
@@ -213,25 +219,27 @@ export class EditorApi
 	}
 
 	/**
-	 * Every race a universe can use
+	 * Every race a universe can use, shared with every other caller until the next save (see
+	 * sendShared()), so callers don't change it
 	 *
 	 * @param universeId The universe's ID
 	 * @return The races, by ID
 	 */
 	async listRaces(universeId: string): Promise<EditorRace[]>
 	{
-		return((await this.send<RaceListPayload>('GET', `${universePath(universeId)}/races`)).races);
+		return((await this.sendShared<RaceListPayload>(`${universePath(universeId)}/races`)).races);
 	}
 
 	/**
-	 * Every class a universe can use
+	 * Every class a universe can use, shared with every other caller until the next save (see
+	 * sendShared()), so callers don't change it
 	 *
 	 * @param universeId The universe's ID
 	 * @return The classes, by ID
 	 */
 	async listClasses(universeId: string): Promise<EditorClass[]>
 	{
-		return((await this.send<ClassListPayload>('GET', `${universePath(universeId)}/classes`)).classes);
+		return((await this.sendShared<ClassListPayload>(`${universePath(universeId)}/classes`)).classes);
 	}
 
 	/**
@@ -280,14 +288,15 @@ export class EditorApi
 	}
 
 	/**
-	 * Every area of a universe
+	 * Every area of a universe, shared with every other caller until the next save (see sendShared()),
+	 * so callers don't change it
 	 *
 	 * @param universeId The universe's ID
 	 * @return The areas, and which are the lobby and starting areas
 	 */
 	async listAreas(universeId: string): Promise<AreaListPayload>
 	{
-		return(this.send<AreaListPayload>('GET', `${universePath(universeId)}/areas`));
+		return(this.sendShared<AreaListPayload>(`${universePath(universeId)}/areas`));
 	}
 
 	/**
@@ -344,7 +353,15 @@ export class EditorApi
 			windowId: this.windowId
 		};
 
-		return((await this.send<SaveChangesPayload>('POST', `${universePath(universeId)}/changes`, body)).ids);
+		try
+		{
+			return((await this.send<SaveChangesPayload>('POST', `${universePath(universeId)}/changes`, body)).ids);
+		}
+		finally
+		{
+			// Before the tabs take the save, so the lists they load again are the saved ones
+			this.forgetLists();
+		}
 	}
 
 	/**
@@ -359,6 +376,47 @@ export class EditorApi
 		const body: SaveChangesRequest = { changes };
 
 		return((await this.send<SaveImpactPayload>('POST', `${universePath(universeId)}/changes/impact`, body)).impacts);
+	}
+
+	/**
+	 * Loads the shared lists afresh the next time they are asked for, after they may have changed: a
+	 * universe is opened, or another window saved
+	 */
+	forgetLists(): void
+	{
+		this.sharedLists.clear();
+	}
+
+	/**
+	 * Sends a GET request that every caller shares, about the version open, until forgetLists() or a
+	 * save from this window: the tabs and dialogs that read the same list when the editor opens send one
+	 * request between them. A request that fails is sent again by the next caller
+	 *
+	 * @param path The path under EDITOR_UNIVERSES_PATH
+	 * @return The response body
+	 */
+	private sendShared<T>(path: string): Promise<T>
+	{
+		const key = `${this.version} ${path}`;
+		const shared = this.sharedLists.get(key);
+
+		if (shared)
+		{
+			return(shared as Promise<T>);
+		}
+
+		const request = this.send<T>('GET', path);
+
+		this.sharedLists.set(key, request);
+		request.catch(() =>
+		{
+			if (this.sharedLists.get(key) === request)
+			{
+				this.sharedLists.delete(key);
+			}
+		});
+
+		return(request);
 	}
 
 	/**
